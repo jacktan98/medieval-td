@@ -1,3 +1,4 @@
+import { loadArt } from './assets.js';
 import { startGold, startLives } from './data/level01.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers } from './towers.js';
@@ -50,4 +51,4 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-requestAnimationFrame(frame);
+loadArt().then(() => requestAnimationFrame(frame));
