@@ -1,6 +1,6 @@
-import { art } from './assets.js';
 import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
+import { art } from './assets.js';
 
 const PLOT_R = 30;
 const DEBUG_MUZZLE = true;   // set false once the sprites look right
@@ -65,7 +65,7 @@ function drawTowers(ctx, state) {
       ctx.stroke();
     }
 
-    // Placeholder building. Swap for drawImage once sprites are cut.
+    // Placeholder building. Swap for drawImage once tower sprites are cut.
     const w = t.def.w * 0.5;
     const h = t.def.h * 0.5;
     ctx.fillStyle = ['#9C7248', '#7A5230', '#B8B2A4'][t.def.tier - 1];
