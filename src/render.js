@@ -75,11 +75,7 @@ function drawTowers(ctx, state) {
       ctx.stroke();
     }
 
-    // Drawn in code rather than from a sprite. When the tower sheets land,
-    // these become one drawImage each and the box is already the right size.
-    const box = towerBox(t);
-    if (t.def.shape === 'camp') drawCamp(ctx, t, box);
-    else drawStoneTower(ctx, t, box);
+    drawBuilding(ctx, t, towerBox(t));
 
     if (t.def.gunner) drawGunner(ctx, t);
 
@@ -104,6 +100,20 @@ function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   const f = c => Math.max(0, Math.min(255, Math.round(c + 255 * amt)));
   return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+// Real artwork if the tier has any, otherwise the vector building. Families
+// get wired up one tier at a time as art arrives, and a PNG that fails to
+// load falls back to something drawn rather than to an empty plot.
+function drawBuilding(ctx, t, box) {
+  const img = t.def.sprite && art[t.def.sprite];
+  if (img) {
+    const [sx, sy, sw, sh] = t.def.spriteTrim;
+    ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+    return;
+  }
+  if (t.def.shape === 'camp') drawCamp(ctx, t, box);
+  else drawStoneTower(ctx, t, box);
 }
 
 // Archery tower: a tapered shaft carrying a platform, with a merlon at each
@@ -227,7 +237,7 @@ function drawGunner(ctx, t) {
 
   const img = art[t.def.gunner];
   if (img) {
-    const [sx, sy, sw, sh] = t.def.trim;
+    const [sx, sy, sw, sh] = t.def.gunnerTrim;
     ctx.drawImage(img, sx, sy, sw, sh, -t.def.gw / 2, -t.def.gh, t.def.gw, t.def.gh);
   } else {
     ctx.fillStyle = '#E0D6C2';

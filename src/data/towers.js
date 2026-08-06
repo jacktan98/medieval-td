@@ -9,11 +9,16 @@
 //            own feet. y is negative because it is measured upward. Mirrored
 //            on x when the tower aims left.
 // gunner   = sprite key in assets.js
-// trim     = [sx, sy, sw, sh] — the tight bounding box of the artwork inside
-//            the source PNG. The generated sprites carry 30-40% transparent
+// sprite / spriteTrim
+//          = artwork for the BUILDING, drawn to fill w x h. Tiers without one
+//            fall back to the vector building in render.js, so a family can be
+//            wired up one tier at a time as art arrives.
+// gunnerTrim
+//          = [sx, sy, sw, sh] — the tight bounding box of the GUNNER artwork
+//            inside its source PNG. Source art carries 20-40% transparent
 //            margin, which would otherwise shrink and off-centre the drawing.
-//            Cropped at draw time so the art files stay as generated; if a
-//            PNG is ever re-cut tight, set its trim to [0, 0, width, height].
+//            Cropped at draw time so the art files stay as exported; if a PNG
+//            is ever re-cut tight, set its trim to [0, 0, width, height].
 // gw / gh  = size the gunner sprite is drawn at, standing on the mount point.
 //            Keep gw/gh at the trim box's aspect ratio or the art squashes.
 
@@ -31,7 +36,7 @@ export const archery = [
     mount: [22, 10],
     muzzle: [10, -20],
     gunner: 'archer_t1',
-    trim: [96, 153, 268, 407],
+    gunnerTrim: [96, 153, 268, 407],
     gw: 20, gh: 30
   },
   {
@@ -47,7 +52,7 @@ export const archery = [
     mount: [24, 11],
     muzzle: [9, -19],
     gunner: 'archer_t2',
-    trim: [61, 44, 321, 569],
+    gunnerTrim: [61, 44, 321, 569],
     gw: 18, gh: 32
   },
   {
@@ -63,7 +68,7 @@ export const archery = [
     mount: [28, 13],
     muzzle: [12, -24],
     gunner: 'crossbow_t3',
-    trim: [7, 63, 405, 467],
+    gunnerTrim: [7, 63, 405, 467],
     gw: 26, gh: 30
   }
 ];
@@ -85,7 +90,12 @@ export const barracks = [
     range: 110,
     colour: '#6E7A6A',
     shape: 'camp',
-    w: 52, h: 46,
+    // 125x137 of art inside a 200x200 export. The banner and pole are part of
+    // that box, so h covers them and the tent itself reads about 54 wide —
+    // roughly the size the vector camp was.
+    sprite: 'barracks_t1',
+    spriteTrim: [34, 24, 125, 137],
+    w: 54, h: 59,
     soldier: { count: 3, hp: 70, damage: 3, cd: 1.00, speed: 60, respawn: 10, regen: 3, r: 8, colour: '#7C93B8' }
   },
   {
