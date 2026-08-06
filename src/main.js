@@ -24,7 +24,7 @@ function newGame() {
     spawned: 0,
     timer: 2,
     resting: false,
-    selected: null,
+    menu: null,
     result: null
   });
 }

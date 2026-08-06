@@ -2,6 +2,7 @@ import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { art } from './assets.js';
 import { towerBox, facing, muzzlePoint } from './towers.js';
+import { BTN_R, CANCEL_R, canUse } from './menu.js';
 
 const PLOT_R = 30;
 
@@ -24,6 +25,7 @@ export function draw(ctx, state) {
   drawShots(ctx, state);
   drawHits(ctx, state);
   drawHud(ctx, state);
+  drawMenu(ctx, state);
 
   if (state.result) drawResult(ctx, state);
 }
@@ -50,6 +52,8 @@ function drawPlots(ctx, state) {
   for (const p of plots) {
     const taken = state.towers.some(t => t.plot === p);
     if (taken) continue;
+    // The open menu draws its own marker on its plot; two rings read as noise.
+    if (state.menu && state.menu.plot === p) continue;
     ctx.strokeStyle = '#C4A574';
     ctx.lineWidth = 3;
     ctx.setLineDash([6, 6]);
@@ -62,7 +66,7 @@ function drawPlots(ctx, state) {
 
 function drawTowers(ctx, state) {
   for (const t of state.towers) {
-    if (t === state.selected) {
+    if (state.menu && state.menu.tower === t) {
       ctx.strokeStyle = 'rgba(255,255,255,0.35)';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -175,18 +179,145 @@ function drawHud(ctx, state) {
   ctx.fillText(`Lives ${state.lives}`, 150, 21);
   ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, waves.length)} / ${waves.length}`, 280, 21);
 
-  const hint = state.selected
-    ? (state.selected.def.tier < 3
-        ? `Tap again to upgrade — ${nextCost(state.selected)}g`
-        : 'Max tier')
-    : 'Tap a ring to build — 70g';
+  const hint = state.menu
+    ? (state.menu.tower ? 'Upgrade or sell' : 'Pick a tower')
+    : 'Tap a plot to build';
   ctx.fillStyle = '#C4A574';
   ctx.font = '16px system-ui, sans-serif';
   ctx.fillText(hint, 470, 21);
 }
 
-function nextCost(t) {
-  return t.def.tier === 1 ? 90 : 140;
+function drawMenu(ctx, state) {
+  const menu = state.menu;
+  if (!menu) return;
+
+  const clamped = menu.cx !== menu.plot.x || menu.cy !== menu.plot.y;
+
+  // Leader first, so the ring and buttons draw over it.
+  if (clamped) {
+    ctx.strokeStyle = 'rgba(240,230,210,0.45)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(menu.plot.x, menu.plot.y);
+    ctx.lineTo(menu.cx, menu.cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Marks which plot the menu will act on. A clamped menu puts a button on top
+  // of the plot, so use a small dot there instead of the full ring.
+  ctx.strokeStyle = '#F0E6D2';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (clamped) ctx.arc(menu.plot.x, menu.plot.y, 5, 0, Math.PI * 2);
+  else ctx.arc(menu.plot.x, menu.plot.y, PLOT_R, 0, Math.PI * 2);
+  ctx.stroke();
+
+  drawCancel(ctx, menu);
+  for (const it of menu.items) drawButton(ctx, state, it);
+}
+
+function drawCancel(ctx, menu) {
+  ctx.fillStyle = 'rgba(34,32,28,0.7)';
+  ctx.beginPath();
+  ctx.arc(menu.cx, menu.cy, CANCEL_R, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#8A8478';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(menu.cx - 5, menu.cy - 5);
+  ctx.lineTo(menu.cx + 5, menu.cy + 5);
+  ctx.moveTo(menu.cx + 5, menu.cy - 5);
+  ctx.lineTo(menu.cx - 5, menu.cy + 5);
+  ctx.stroke();
+}
+
+function drawButton(ctx, state, it) {
+  const on = canUse(state, it);
+
+  ctx.fillStyle = on ? 'rgba(34,32,28,0.92)' : 'rgba(34,32,28,0.55)';
+  ctx.beginPath();
+  ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = on ? '#C4A574' : '#5A5348';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate(it.x, it.y - 5);
+  ctx.strokeStyle = ctx.fillStyle = on ? '#F0E6D2' : '#6E665A';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  drawGlyph(ctx, it.glyph);
+  ctx.restore();
+
+  const caption = it.gain !== null ? `+${it.gain}g`
+                : it.cost !== null ? `${it.cost}g`
+                : it.available ? '' : 'soon';
+  if (!caption) return;
+
+  ctx.fillStyle = it.gain !== null ? '#6BBF59' : (on ? '#C4A574' : '#6E665A');
+  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(caption, it.x, it.y + 14);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+// Vector glyphs rather than sprites — UI art is still unspecced, and these
+// need to stay legible at 52px on a phone. Each draws centred on the origin
+// in roughly a 22px box.
+function drawGlyph(ctx, kind) {
+  ctx.beginPath();
+
+  if (kind === 'bow') {
+    ctx.arc(-3, 0, 9, -Math.PI / 2.2, Math.PI / 2.2);
+    ctx.moveTo(3, -8); ctx.lineTo(3, 8);
+    ctx.moveTo(-6, 0); ctx.lineTo(9, 0);
+    ctx.stroke();
+  } else if (kind === 'swords') {
+    ctx.moveTo(-8, 8); ctx.lineTo(7, -8);
+    ctx.moveTo(8, 8); ctx.lineTo(-7, -8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-9, 3); ctx.lineTo(-3, 9);
+    ctx.moveTo(9, 3); ctx.lineTo(3, 9);
+    ctx.stroke();
+  } else if (kind === 'catapult') {
+    ctx.moveTo(-9, 8); ctx.lineTo(0, -2); ctx.lineTo(9, 8);
+    ctx.moveTo(-5, 3); ctx.lineTo(5, 3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -2); ctx.lineTo(8, -8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(9, -9, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (kind === 'cross') {
+    ctx.moveTo(0, -9); ctx.lineTo(0, 9);
+    ctx.moveTo(-6, -3); ctx.lineTo(6, -3);
+    ctx.stroke();
+  } else if (kind === 'up') {
+    ctx.moveTo(-7, 2); ctx.lineTo(0, -6); ctx.lineTo(7, 2);
+    ctx.moveTo(-7, 9); ctx.lineTo(0, 1); ctx.lineTo(7, 9);
+    ctx.stroke();
+  } else if (kind === 'max') {
+    ctx.moveTo(-8, -6); ctx.lineTo(8, -6);
+    ctx.moveTo(-7, 2); ctx.lineTo(0, -5); ctx.lineTo(7, 2);
+    ctx.moveTo(-7, 9); ctx.lineTo(0, 2); ctx.lineTo(7, 9);
+    ctx.stroke();
+  } else if (kind === 'coin') {
+    ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 }
 
 function drawResult(ctx, state) {

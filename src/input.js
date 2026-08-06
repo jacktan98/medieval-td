@@ -1,6 +1,6 @@
 import { plots } from './data/level01.js';
-import { archery } from './data/towers.js';
 import { PLOT_R } from './render.js';
+import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue } from './menu.js';
 
 export function attachInput(canvas, state, restart) {
   canvas.addEventListener('pointerdown', e => {
@@ -10,30 +10,56 @@ export function attachInput(canvas, state, restart) {
 
     if (state.result) { restart(); return; }
 
-    const plot = plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
-    if (!plot) { state.selected = null; return; }
-
-    const existing = state.towers.find(t => t.plot === plot);
-
-    if (!existing) {
-      const def = archery[0];
-      if (state.gold < def.cost) return;
-      state.gold -= def.cost;
-      state.towers.push({
-        plot, def,
-        x: plot.x, y: plot.y,
-        aim: 0, cd: 0, recoil: 0
-      });
-      return;
+    // A menu button wins over anything underneath it, including the plot ring
+    // the menu is anchored to.
+    const item = hitMenu(state, x, y);
+    if (item) {
+      if (canUse(state, item)) run(state, item);
+      return;   // an unaffordable button absorbs the tap rather than closing
     }
 
-    // First tap selects and shows range, second tap upgrades.
-    if (state.selected !== existing) { state.selected = existing; return; }
+    if (hitCancel(state, x, y)) { closeMenu(state); return; }
 
-    const next = archery[existing.def.tier];
-    if (!next || state.gold < next.cost) return;
-    state.gold -= next.cost;
-    existing.def = next;
-    existing.cd = 0;
+    const plot = plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
+    if (!plot) { closeMenu(state); return; }
+
+    openMenu(state, plot, state.towers.find(t => t.plot === plot) || null);
   });
+}
+
+function run(state, item) {
+  const menu = state.menu;
+
+  if (item.act === 'build') {
+    const def = item.family.tiers[0];
+    state.gold -= def.cost;
+    state.towers.push({
+      plot: menu.plot,
+      fam: item.family,
+      def,
+      x: menu.plot.x,
+      y: menu.plot.y,
+      aim: 0,
+      cd: 0,
+      recoil: 0,
+      spent: def.cost
+    });
+  }
+
+  if (item.act === 'upgrade') {
+    const t = menu.tower;
+    const next = t.fam.tiers[t.def.tier];
+    state.gold -= next.cost;
+    t.def = next;
+    t.spent += next.cost;
+    t.cd = 0;
+  }
+
+  if (item.act === 'sell') {
+    const t = menu.tower;
+    state.gold += sellValue(t);
+    state.towers = state.towers.filter(other => other !== t);
+  }
+
+  closeMenu(state);
 }

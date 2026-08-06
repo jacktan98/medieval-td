@@ -62,4 +62,15 @@ export const archery = [
   }
 ];
 
+// The four quadrants of the build menu, in N/E/S/W order. A family with no
+// tiers yet still takes its quadrant, drawn locked — the layout is the same
+// on day one as it will be when all four are in, so nothing moves under the
+// player's thumb as families land.
+export const families = [
+  { id: 'archery',   name: 'Archery',   glyph: 'bow',      tiers: archery },
+  { id: 'barracks',  name: 'Barracks',  glyph: 'swords',   tiers: null },
+  { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: null },
+  { id: 'monastery', name: 'Monastery', glyph: 'cross',    tiers: null }
+];
+
 export const projectileSpeed = 360;
