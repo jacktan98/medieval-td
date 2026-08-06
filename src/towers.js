@@ -1,13 +1,22 @@
 import { pickTarget } from './enemies.js';
 import { projectileSpeed } from './data/towers.js';
 
-// Where the projectile actually leaves the gunner, in world space.
-// Rotates the muzzle offset by the current aim angle.
 export function muzzlePoint(t) {
   const [mx, my] = t.def.mount;
   const [ox, oy] = t.def.muzzle;
+  const flip = Math.abs(t.aim) > Math.PI / 2 ? -1 : 1;
+  const fy = oy * flip;
   const c = Math.cos(t.aim);
   const s = Math.sin(t.aim);
+
+  const left = t.x - t.def.w / 2;
+  const top = t.y - t.def.h + 18;
+
+  return {
+    x: left + mx + ox * c - fy * s,
+    y: top + my + ox * s + fy * c
+  };
+}
 
   // Tower sprite is drawn centred on the plot, so back out to its top-left.
   const left = t.x - t.def.w / 2;
