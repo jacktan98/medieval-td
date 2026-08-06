@@ -29,6 +29,28 @@
      Tune <code>mount</code>, <code>muzzle</code>, <code>gw</code> and
      <code>gh</code> in <code>src/data/towers.js</code>, then reload.</p>
 
+  <!-- Same cache-busting map as index.html; see the comment there. A stale
+       aim-test is worse than a stale game, because it reports offsets that no
+       longer match the code. -->
+  <script>
+    (function () {
+      var stamp = Math.floor(Date.now() / 60000);
+      var mods = [
+        'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
+        'render', 'input', 'menu', 'units',
+        'data/level01', 'data/towers', 'data/waves'
+      ];
+      var imports = {};
+      for (var i = 0; i < mods.length; i++) {
+        imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+      }
+      var tag = document.createElement('script');
+      tag.type = 'importmap';
+      tag.textContent = JSON.stringify({ imports: imports });
+      document.head.appendChild(tag);
+    })();
+  </script>
+
 <script type="module">
 import { loadArt } from './src/assets.js';
 import { archery } from './src/data/towers.js';

@@ -32,6 +32,37 @@
 </head>
 <body>
   <div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
-  <script type="module" src="./src/main.js?v=4"></script>
+
+  <!-- Cache busting. GitHub Pages serves static files with max-age=600, and a
+       ?v on main.js alone never helped: the modules it imports keep their own
+       URLs, so edits to render.js or data/towers.js stayed invisible for ten
+       minutes and looked like broken code.
+
+       This maps every module to a versioned URL in one go. The version is the
+       current minute, so a push is always visible on the next reload and a
+       play session still reuses its modules. For fixed versions instead, set
+       stamp to a number you bump by hand.
+
+       Adding a file under src/ means adding it here. tools/check-modules.mjs
+       fails if you forget. -->
+  <script>
+    (function () {
+      var stamp = Math.floor(Date.now() / 60000);
+      var mods = [
+        'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
+        'render', 'input', 'menu', 'units',
+        'data/level01', 'data/towers', 'data/waves'
+      ];
+      var imports = {};
+      for (var i = 0; i < mods.length; i++) {
+        imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+      }
+      var tag = document.createElement('script');
+      tag.type = 'importmap';
+      tag.textContent = JSON.stringify({ imports: imports });
+      document.head.appendChild(tag);
+    })();
+  </script>
+  <script type="module">import './src/main.js';</script>
 </body>
 </html>
