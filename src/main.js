@@ -11,6 +11,34 @@ import { attachInput } from './input.js';
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
+// The game is drawn in a fixed 960x540 coordinate space, but the backing store
+// is sized to real device pixels. Without this the canvas holds 960 pixels and
+// the browser stretches them across a phone's ~2500 physical ones, so art is
+// downscaled into the canvas and then blown back up — detail thrown away, then
+// re-inflated. Sprites are the obvious casualty; text and thin lines suffer too.
+//
+// Nothing else has to care: the transform keeps every draw call in 960x540
+// units, and input.js converts taps through the CSS box, which is unaffected.
+const MAX_SCALE = 3;   // caps fill rate on very dense displays
+
+function fitToDisplay() {
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const scale = Math.min(MAX_SCALE, Math.max(1, (rect.width / 960) * dpr));
+  const w = Math.round(960 * scale);
+  const h = Math.round(540 * scale);
+
+  // Assigning width or height clears the canvas and resets the context, so
+  // only do it when the size actually changed.
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
+  ctx.setTransform(w / 960, 0, 0, h / 540, 0, 0);
+}
+
 const state = {};
 
 function newGame() {
@@ -37,6 +65,8 @@ attachInput(canvas, state, newGame);
 let last = performance.now();
 
 function frame(now) {
+  fitToDisplay();
+
   // Clamp dt so a backgrounded tab doesn't teleport every enemy into the keep.
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
