@@ -10,13 +10,21 @@ export function spawn(state, typeId) {
     hp: def.hp,
     maxHp: def.hp,
     leg: 0,          // index of the waypoint being walked toward
-    t: 0             // wobble timer, drives the idle bob
+    t: 0,            // wobble timer, drives the idle bob
+    foe: null,       // the barracks soldier holding it, if any
+    acd: 0           // melee cooldown, only ticks while held
   });
 }
 
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     e.t += dt;
+
+    // Held in melee by a soldier. Blocked enemies stop dead rather than
+    // sliding past — this is the whole point of the barracks family, and the
+    // one case where an enemy is not a pure path-follower.
+    if (e.foe) continue;
+
     let move = e.def.speed * dt;
 
     while (move > 0 && e.leg < path.length - 1) {
@@ -46,7 +54,21 @@ export function updateEnemies(state, dt) {
     if (e.leaked) state.lives -= e.def.leak;
   }
 
-  state.enemies = state.enemies.filter(e => !e.leaked && e.hp > 0);
+  // Bounty is paid here rather than in projectiles.js, so a soldier's kill and
+  // an arrow's kill are worth the same and neither can pay out twice.
+  state.enemies = state.enemies.filter(e => {
+    if (e.leaked) {
+      if (e.foe) { e.foe.foe = null; e.foe = null; }
+      return false;
+    }
+    if (e.hp <= 0) {
+      state.gold += e.def.bounty;
+      state.hits.push({ x: e.x, y: e.y, life: 0.25 });
+      if (e.foe) { e.foe.foe = null; e.foe = null; }
+      return false;
+    }
+    return true;
+  });
 }
 
 // Furthest along the path, so towers focus whatever is closest to leaking.

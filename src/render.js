@@ -22,6 +22,7 @@ export function draw(ctx, state) {
   drawPlots(ctx, state);
   drawTowers(ctx, state);
   drawEnemies(ctx, state);
+  drawUnits(ctx, state);
   drawShots(ctx, state);
   drawHits(ctx, state);
   drawHud(ctx, state);
@@ -77,13 +78,13 @@ function drawTowers(ctx, state) {
     // Placeholder building. Swap for drawImage once tower sprites are cut —
     // the box is already the size the sprite should be drawn at.
     const box = towerBox(t);
-    ctx.fillStyle = ['#9C7248', '#7A5230', '#B8B2A4'][t.def.tier - 1];
+    ctx.fillStyle = t.def.colour;
     ctx.fillRect(box.left, box.top, box.w, box.h);
     ctx.strokeStyle = '#22201C';
     ctx.lineWidth = 2;
     ctx.strokeRect(box.left, box.top, box.w, box.h);
 
-    drawGunner(ctx, t);
+    if (t.def.gunner) drawGunner(ctx, t);
 
     if (DEBUG_MUZZLE) {
       // Drawn from muzzlePoint itself, so the dot marks where arrows really
@@ -141,6 +142,39 @@ function drawEnemies(ctx, state) {
     ctx.fillRect(e.x - 12, e.y - e.def.r - 10 + bob, 24, 5);
     ctx.fillStyle = pct > 0.5 ? '#6BBF59' : '#D4453A';
     ctx.fillRect(e.x - 11, e.y - e.def.r - 9 + bob, 22 * pct, 3);
+  }
+}
+
+// Barracks soldiers. Coloured discs like the enemies, until unit art exists.
+function drawUnits(ctx, state) {
+  for (const u of state.units) {
+    if (u.respawn > 0) {
+      // Muster ring on the barracks, so a dead squad reads as coming back
+      // rather than as a tower that stopped working.
+      const left = u.respawn / u.def.respawn;
+      ctx.strokeStyle = 'rgba(240,230,210,0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      // One ring per slot, nested, so three reviving soldiers read as three.
+      ctx.arc(u.tower.x, u.tower.y, 11 + u.slot * 4, -Math.PI / 2, -Math.PI / 2 + (1 - left) * Math.PI * 2);
+      ctx.stroke();
+      continue;
+    }
+
+    ctx.fillStyle = u.def.colour;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y, u.def.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#22201C';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    if (u.hp >= u.maxHp) continue;
+    const pct = u.hp / u.maxHp;
+    ctx.fillStyle = '#22201C';
+    ctx.fillRect(u.x - 11, u.y - u.def.r - 9, 22, 5);
+    ctx.fillStyle = pct > 0.5 ? '#6BBF59' : '#D4453A';
+    ctx.fillRect(u.x - 10, u.y - u.def.r - 8, 20 * pct, 3);
   }
 }
 

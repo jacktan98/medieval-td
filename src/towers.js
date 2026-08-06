@@ -37,6 +37,10 @@ export function muzzlePoint(t) {
 
 export function updateTowers(state, dt) {
   for (const t of state.towers) {
+    // Barracks have no weapon — their range is rally reach, not a firing arc,
+    // and they carry no mount or muzzle to aim with.
+    if (!t.def.cooldown) continue;
+
     t.cd -= dt;
     t.recoil = Math.max(0, t.recoil - dt * 5);
 

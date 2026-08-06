@@ -1,6 +1,7 @@
 import { plots } from './data/level01.js';
 import { PLOT_R } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue } from './menu.js';
+import { makeUnits, removeUnits } from './units.js';
 
 export function attachInput(canvas, state, restart) {
   canvas.addEventListener('pointerdown', e => {
@@ -44,6 +45,7 @@ function run(state, item) {
       recoil: 0,
       spent: def.cost
     });
+    makeUnits(state, state.towers[state.towers.length - 1]);
   }
 
   if (item.act === 'upgrade') {
@@ -53,11 +55,15 @@ function run(state, item) {
     t.def = next;
     t.spent += next.cost;
     t.cd = 0;
+    // Rebuilt rather than patched: the new tier has its own soldier stats and
+    // a longer reach, so the rally point moves too.
+    makeUnits(state, t);
   }
 
   if (item.act === 'sell') {
     const t = menu.tower;
     state.gold += sellValue(t);
+    removeUnits(state, t);
     state.towers = state.towers.filter(other => other !== t);
   }
 

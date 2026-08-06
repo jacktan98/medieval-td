@@ -9,14 +9,11 @@ export function updateShots(state, dt) {
     if (s.target.hp <= 0) { s.dead = true; continue; }
 
     if (dist <= step) {
+      // Damage only — the bounty and the kill FX are paid out in enemies.js,
+      // which is the one place that sees every death however it was caused.
       s.target.hp -= s.damage;
       s.dead = true;
-      if (s.target.hp <= 0) {
-        state.gold += s.target.def.bounty;
-        state.hits.push({ x: s.target.x, y: s.target.y, life: 0.25 });
-      } else {
-        state.hits.push({ x: s.x, y: s.y, life: 0.12 });
-      }
+      state.hits.push({ x: s.x, y: s.y, life: 0.12 });
     } else {
       s.x += (dx / dist) * step;
       s.y += (dy / dist) * step;

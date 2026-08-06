@@ -2,6 +2,7 @@ import { loadArt } from './assets.js';
 import { startGold, startLives } from './data/level01.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers } from './towers.js';
+import { updateUnits } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateWaves } from './waves.js';
 import { draw } from './render.js';
@@ -18,6 +19,7 @@ function newGame() {
     lives: startLives,
     towers: [],
     enemies: [],
+    units: [],
     shots: [],
     hits: [],
     waveIndex: 0,
@@ -41,6 +43,9 @@ function frame(now) {
 
   if (!state.result) {
     updateWaves(state, dt);
+    // Units run before enemies so an enemy that just walked into a soldier is
+    // already held when the movement step asks whether it may advance.
+    updateUnits(state, dt);
     updateEnemies(state, dt);
     updateTowers(state, dt);
     updateShots(state, dt);

@@ -4,6 +4,8 @@ export const enemyTypes = {
     speed: 52,      // logical px per second
     bounty: 10,
     leak: 1,        // lives lost if it reaches the keep
+    damage: 6,      // per swing, once a barracks soldier has stopped it
+    atkCd: 1.0,
     r: 11,
     colour: '#B98B5E'
   }

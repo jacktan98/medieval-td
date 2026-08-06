@@ -43,7 +43,7 @@ const aims = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4,
 const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
   resting: false, menu: null, result: null,
-  enemies: [], shots: [], hits: [],
+  enemies: [], units: [], shots: [], hits: [],
   towers: aims.map((aim, i) => ({
     plot: null, def: archery[tier],
     x: 60 + i * 120, y: 300,
