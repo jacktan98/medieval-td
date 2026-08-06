@@ -3,6 +3,7 @@ import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
 
 const PLOT_R = 30;
+const DEBUG_MUZZLE = true;   // set false once the sprites look right
 
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
