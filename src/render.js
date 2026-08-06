@@ -1,9 +1,14 @@
 import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { art } from './assets.js';
+import { towerBox, facing, muzzlePoint } from './towers.js';
 
 const PLOT_R = 30;
-const DEBUG_MUZZLE = true;   // set false once the sprites look right
+
+// Draws a red dot at each tower's firing origin. Off by default; add ?muzzle
+// to the URL to switch it on, so offsets can be checked on a phone without
+// editing a file and redeploying.
+const DEBUG_MUZZLE = new URLSearchParams(location.search).has('muzzle');
 
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
@@ -65,51 +70,51 @@ function drawTowers(ctx, state) {
       ctx.stroke();
     }
 
-    // Placeholder building. Swap for drawImage once tower sprites are cut.
-    const w = t.def.w * 0.5;
-    const h = t.def.h * 0.5;
+    // Placeholder building. Swap for drawImage once tower sprites are cut —
+    // the box is already the size the sprite should be drawn at.
+    const box = towerBox(t);
     ctx.fillStyle = ['#9C7248', '#7A5230', '#B8B2A4'][t.def.tier - 1];
-    ctx.fillRect(t.x - w / 2, t.y - h + 12, w, h);
+    ctx.fillRect(box.left, box.top, box.w, box.h);
     ctx.strokeStyle = '#22201C';
     ctx.lineWidth = 2;
-    ctx.strokeRect(t.x - w / 2, t.y - h + 12, w, h);
+    ctx.strokeRect(box.left, box.top, box.w, box.h);
 
     drawGunner(ctx, t);
+
+    if (DEBUG_MUZZLE) {
+      // Drawn from muzzlePoint itself, so the dot marks where arrows really
+      // spawn rather than where the sprite transform thinks they should.
+      const m = muzzlePoint(t);
+      ctx.fillStyle = '#D4453A';
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
-// The rotating element. Flips vertically when aiming left so the archer
-// never renders head-down. Mirroring y keeps the muzzle on the bow.
+// Stands the gunner on its mount point and mirrors it when the tower aims
+// left. Never rotates — these are side-elevation sprites, so a rotated archer
+// is an archer lying on the floor.
 function drawGunner(ctx, t) {
+  const box = towerBox(t);
   const [mx, my] = t.def.mount;
-  const left = t.x - t.def.w / 2;
-  const top = t.y - t.def.h + 18;
-
-  const flip = Math.abs(t.aim) > Math.PI / 2 ? -1 : 1;
 
   ctx.save();
-  ctx.translate(left + mx, top + my);
-  ctx.rotate(t.aim);
-  ctx.scale(1, flip);
-  ctx.translate(-t.recoil * 4, 0);
+  ctx.translate(box.left + mx, box.top + my);
+  ctx.scale(facing(t), 1);
+  ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
 
   const img = art[t.def.gunner];
   if (img) {
-    ctx.drawImage(img, -t.def.gw / 2, -t.def.gh / 2, t.def.gw, t.def.gh);
+    const [sx, sy, sw, sh] = t.def.trim;
+    ctx.drawImage(img, sx, sy, sw, sh, -t.def.gw / 2, -t.def.gh, t.def.gw, t.def.gh);
   } else {
     ctx.fillStyle = '#E0D6C2';
-    ctx.fillRect(-8, -7, 16, 14);
+    ctx.fillRect(-8, -14, 16, 14);
     ctx.strokeStyle = '#22201C';
     ctx.lineWidth = 2;
-    ctx.strokeRect(-8, -7, 16, 14);
-  }
-
-  if (DEBUG_MUZZLE) {
-    const [ox, oy] = t.def.muzzle;
-    ctx.fillStyle = '#D4453A';
-    ctx.beginPath();
-    ctx.arc(ox, oy, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.strokeRect(-8, -14, 16, 14);
   }
 
   ctx.restore();

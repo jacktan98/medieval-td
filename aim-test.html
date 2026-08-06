@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Medieval TD — gunner aim test</title>
+<style>
+  body { margin: 0; background: #23201c; color: #C4A574;
+         font: 15px system-ui, sans-serif; }
+  canvas { display: block; width: 100%; image-rendering: pixelated; }
+  nav { padding: 10px 12px; }
+  a { display: inline-block; min-width: 44px; min-height: 44px; line-height: 44px;
+      text-align: center; color: #F0E6D2; text-decoration: none; }
+  a.on { color: #C4A574; text-decoration: underline; }
+  p { padding: 0 12px 16px; margin: 0; }
+</style>
+</head>
+<body>
+  <nav>
+    Tier
+    <a href="?tier=0&muzzle" id="t0">1</a>
+    <a href="?tier=1&muzzle" id="t1">2</a>
+    <a href="?tier=2&muzzle" id="t2">3</a>
+  </nav>
+  <canvas id="view"></canvas>
+  <canvas id="game" width="960" height="540" hidden></canvas>
+  <p>Eight aim angles, left to right. Red dot is the firing origin from
+     <code>muzzlePoint()</code> — it should sit on the bow at every angle.
+     Tune <code>mount</code>, <code>muzzle</code>, <code>gw</code> and
+     <code>gh</code> in <code>src/data/towers.js</code>, then reload.</p>
+
+<script type="module">
+import { loadArt } from './src/assets.js';
+import { archery } from './src/data/towers.js';
+import { draw } from './src/render.js';
+
+const tier = +(new URLSearchParams(location.search).get('tier') || 0);
+document.getElementById('t' + tier).className = 'on';
+
+const aims = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4,
+              Math.PI, -3 * Math.PI / 4, -Math.PI / 2, -Math.PI / 4];
+
+const state = {
+  gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
+  resting: false, selected: null, result: null,
+  enemies: [], shots: [], hits: [],
+  towers: aims.map((aim, i) => ({
+    plot: null, def: archery[tier],
+    x: 60 + i * 120, y: 300,
+    aim, cd: 0, recoil: 0
+  }))
+};
+
+const ctx = document.getElementById('game').getContext('2d');
+await loadArt();
+draw(ctx, state);
+
+ctx.fillStyle = '#F0E6D2';
+ctx.font = '14px system-ui, sans-serif';
+aims.forEach((a, i) => ctx.fillText(Math.round(a * 180 / Math.PI) + '°', 42 + i * 120, 340));
+
+// Blit the interesting strip at 2x with smoothing off, so the offsets are
+// readable on a phone.
+const view = document.getElementById('view');
+view.width = 1920;
+view.height = 480;
+const v = view.getContext('2d');
+v.imageSmoothingEnabled = false;
+v.drawImage(document.getElementById('game'), 0, 180, 960, 240, 0, 0, 1920, 480);
+</script>
+</body>
+</html>
