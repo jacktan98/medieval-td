@@ -270,7 +270,39 @@ function drawEnemies(ctx, state) {
   }
 }
 
-// Barracks soldiers. Coloured discs like the enemies, until unit art exists.
+// Soldier artwork is top-down, so unlike the archers it rotates freely rather
+// than mirroring — a figure seen from above has no wrong way up.
+//
+// The drawn size comes from the soldier's own radius via bodyFrac, so the
+// sprite's body always matches the radius the formation layout and
+// tools/formation.mjs use. Resize the art and the two stay in agreement.
+function drawSoldier(ctx, u) {
+  const s = u.def;
+  const img = s.sprite && art[s.sprite];
+
+  if (!img) {
+    ctx.fillStyle = s.colour;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    return;
+  }
+
+  const [sx, sy, sw, sh] = s.spriteTrim;
+  const dw = (s.r * 2) / s.bodyFrac;
+  const dh = dw * (sh / sw);
+
+  ctx.save();
+  ctx.translate(u.x, u.y);
+  ctx.rotate(u.face - s.spriteAim * Math.PI / 180);
+  ctx.drawImage(img, sx, sy, sw, sh, -s.pivot[0] * dw, -s.pivot[1] * dh, dw, dh);
+  ctx.restore();
+}
+
+// Barracks soldiers, plus a muster ring on the barracks for any that are dead.
 function drawUnits(ctx, state) {
   for (const u of state.units) {
     if (u.respawn > 0) {
@@ -286,13 +318,7 @@ function drawUnits(ctx, state) {
       continue;
     }
 
-    ctx.fillStyle = u.def.colour;
-    ctx.beginPath();
-    ctx.arc(u.x, u.y, u.def.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#22201C';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    drawSoldier(ctx, u);
 
     if (u.hp >= u.maxHp) continue;
     const pct = u.hp / u.maxHp;

@@ -13,17 +13,20 @@ const ENGAGE = 30;   // an enemy this close to a free soldier stops and fights
 const REACH  = 20;   // melee lands at this range
 const SETTLE = 16;   // stop walking here, so the two stand adjacent not stacked
 
-// Formation offsets as [along, across] in path-local units: along is the
-// direction enemies travel, across is perpendicular. The point of the wedge
-// faces upstream, into the oncoming enemies, with two behind it.
+// Formation offsets as [along, across, splay] in path-local units: along is
+// the direction enemies travel, across is perpendicular, splay is degrees
+// added to the idle facing. The point of the wedge faces upstream, into the
+// oncoming enemies, with two behind it.
 //
 // The road is 34px wide, so `across` plus the soldier's radius must stay
 // within 17 or the squad stands on the grass. The widest soldier is the tier 3
-// knight at r 9, so 7 is the ceiling here — check tools/formation against any
-// change to either number. The wedge is long rather than wide for the same
-// reason: two 18px soldiers cannot sit side by side across a 34px road without
-// touching, so the depth carries the shape instead.
-const FORMATION = [[-12, 0], [7, -7], [7, 7]];
+// knight at r 8, so 8 is the ceiling here — tools/formation.mjs checks it.
+//
+// The splay exists because the sprites carry spears roughly three times the
+// length of their bodies. Three of them pointing the same way down a 34px road
+// merge into one unreadable smudge; fanning the rear pair outward separates
+// the spears and reads as a guard covering its flanks.
+const FORMATION = [[-15, 0, 0], [8, -8, -24], [8, 8, 24]];
 
 // Nearest point on the path polyline — the rally point a barracks sends its
 // soldiers to. Returns the segment direction too, so the formation can be laid
@@ -75,7 +78,8 @@ export function makeUnits(state, tower) {
   const ny = ax;
 
   for (let i = 0; i < s.count; i++) {
-    const [along, across] = FORMATION[i % FORMATION.length];
+    const [along, across, splay] = FORMATION[i % FORMATION.length];
+    const idle = Math.atan2(-ay, -ax) + splay * Math.PI / 180;
     state.units.push({
       tower,
       def: s,
@@ -84,6 +88,10 @@ export function makeUnits(state, tower) {
       ry: ry + ay * along + ny * across,
       x: tower.x,
       y: tower.y,
+      // Sprites are top-down and rotate. At rest a soldier watches the way the
+      // enemies come from, which is back along the segment they walk.
+      faceIdle: idle,
+      face: idle,
       hp: s.hp,
       maxHp: s.hp,
       foe: null,
@@ -114,6 +122,7 @@ export function updateUnits(state, dt) {
         u.hp = u.maxHp;
         u.x = u.tower.x;
         u.y = u.tower.y;
+        u.face = u.faceIdle;
       }
       continue;
     }
@@ -136,6 +145,10 @@ export function updateUnits(state, dt) {
     const tx = u.foe ? u.foe.x : u.rx;
     const ty = u.foe ? u.foe.y : u.ry;
     const d = Math.hypot(tx - u.x, ty - u.y);
+
+    if (u.foe) u.face = Math.atan2(u.foe.y - u.y, u.foe.x - u.x);
+    else if (d > SETTLE) u.face = Math.atan2(ty - u.y, tx - u.x);
+    else u.face = u.faceIdle;
 
     if (d > SETTLE) {
       const step = Math.min(u.def.speed * dt, d);
