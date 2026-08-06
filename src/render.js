@@ -78,16 +78,19 @@ function drawTowers(ctx, state) {
   }
 }
 
-// The rotating element. Draws the gunner sprite if loaded, otherwise the
-// grey-box rectangle so a missing file doesn't hide the tower.
+// The rotating element. Flips vertically when aiming left so the archer
+// never renders head-down. Mirroring y keeps the muzzle on the bow.
 function drawGunner(ctx, t) {
   const [mx, my] = t.def.mount;
   const left = t.x - t.def.w / 2;
   const top = t.y - t.def.h + 18;
 
+  const flip = Math.abs(t.aim) > Math.PI / 2 ? -1 : 1;
+
   ctx.save();
   ctx.translate(left + mx, top + my);
   ctx.rotate(t.aim);
+  ctx.scale(1, flip);
   ctx.translate(-t.recoil * 4, 0);
 
   const img = art[t.def.gunner];
