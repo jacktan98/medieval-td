@@ -1,3 +1,4 @@
+import { art } from './assets.js';
 import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
 
