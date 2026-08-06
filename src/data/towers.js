@@ -26,6 +26,7 @@ export const archery = [
     range: 118,
     cooldown: 0.75,
     colour: '#9C7248',
+    shape: 'tower',
     w: 44, h: 68,
     mount: [22, 10],
     muzzle: [10, -20],
@@ -41,8 +42,9 @@ export const archery = [
     range: 134,
     cooldown: 0.65,
     colour: '#7A5230',
+    shape: 'tower',
     w: 48, h: 76,
-    mount: [24, 10],
+    mount: [24, 11],
     muzzle: [9, -19],
     gunner: 'archer_t2',
     trim: [61, 44, 321, 569],
@@ -56,8 +58,9 @@ export const archery = [
     range: 152,
     cooldown: 0.55,
     colour: '#B8B2A4',
+    shape: 'tower',
     w: 56, h: 88,
-    mount: [28, 14],
+    mount: [28, 13],
     muzzle: [12, -24],
     gunner: 'crossbow_t3',
     trim: [7, 63, 405, 467],
@@ -81,6 +84,7 @@ export const barracks = [
     cost: 70,
     range: 110,
     colour: '#6E7A6A',
+    shape: 'camp',
     w: 52, h: 46,
     soldier: { count: 3, hp: 70, damage: 3, cd: 1.00, speed: 60, respawn: 10, regen: 3, r: 8, colour: '#7C93B8' }
   },
@@ -90,8 +94,9 @@ export const barracks = [
     cost: 100,
     range: 120,
     colour: '#5E6B5C',
+    shape: 'camp',
     w: 58, h: 54,
-    soldier: { count: 3, hp: 95, damage: 4, cd: 0.95, speed: 64, respawn: 9, regen: 3.5, r: 9, colour: '#6E86B4' }
+    soldier: { count: 3, hp: 95, damage: 4, cd: 0.95, speed: 64, respawn: 9, regen: 3.5, r: 8, colour: '#6E86B4' }
   },
   {
     tier: 3,
@@ -99,8 +104,9 @@ export const barracks = [
     cost: 150,
     range: 130,
     colour: '#8A8478',
+    shape: 'camp',
     w: 64, h: 62,
-    soldier: { count: 3, hp: 125, damage: 5, cd: 0.90, speed: 68, respawn: 8, regen: 4, r: 10, colour: '#5C79AE' }
+    soldier: { count: 3, hp: 125, damage: 5, cd: 0.90, speed: 68, respawn: 8, regen: 4, r: 9, colour: '#5C79AE' }
   }
 ];
 

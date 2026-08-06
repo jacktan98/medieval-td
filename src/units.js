@@ -12,7 +12,18 @@ import { path } from './data/level01.js';
 const ENGAGE = 30;   // an enemy this close to a free soldier stops and fights
 const REACH  = 20;   // melee lands at this range
 const SETTLE = 16;   // stop walking here, so the two stand adjacent not stacked
-const SPREAD = [-14, 0, 14];   // across the path, not along it, so the line blocks
+
+// Formation offsets as [along, across] in path-local units: along is the
+// direction enemies travel, across is perpendicular. The point of the wedge
+// faces upstream, into the oncoming enemies, with two behind it.
+//
+// The road is 34px wide, so `across` plus the soldier's radius must stay
+// within 17 or the squad stands on the grass. The widest soldier is the tier 3
+// knight at r 9, so 7 is the ceiling here — check tools/formation against any
+// change to either number. The wedge is long rather than wide for the same
+// reason: two 18px soldiers cannot sit side by side across a 34px road without
+// touching, so the depth carries the shape instead.
+const FORMATION = [[-12, 0], [7, -7], [7, 7]];
 
 // Nearest point on the path polyline — the rally point a barracks sends its
 // soldiers to. Returns the segment direction too, so the formation can be laid
@@ -57,17 +68,20 @@ export function makeUnits(state, tower) {
     ry = tower.y + (ry - tower.y) * k;
   }
 
-  const nx = -near.ty / near.len;
-  const ny = near.tx / near.len;
+  // Unit vectors along the path segment and across it.
+  const ax = near.tx / near.len;
+  const ay = near.ty / near.len;
+  const nx = -ay;
+  const ny = ax;
 
   for (let i = 0; i < s.count; i++) {
-    const off = SPREAD[i % SPREAD.length];
+    const [along, across] = FORMATION[i % FORMATION.length];
     state.units.push({
       tower,
       def: s,
       slot: i,
-      rx: rx + nx * off,
-      ry: ry + ny * off,
+      rx: rx + ax * along + nx * across,
+      ry: ry + ay * along + ny * across,
       x: tower.x,
       y: tower.y,
       hp: s.hp,

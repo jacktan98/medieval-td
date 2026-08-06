@@ -75,14 +75,11 @@ function drawTowers(ctx, state) {
       ctx.stroke();
     }
 
-    // Placeholder building. Swap for drawImage once tower sprites are cut —
-    // the box is already the size the sprite should be drawn at.
+    // Drawn in code rather than from a sprite. When the tower sheets land,
+    // these become one drawImage each and the box is already the right size.
     const box = towerBox(t);
-    ctx.fillStyle = t.def.colour;
-    ctx.fillRect(box.left, box.top, box.w, box.h);
-    ctx.strokeStyle = '#22201C';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(box.left, box.top, box.w, box.h);
+    if (t.def.shape === 'camp') drawCamp(ctx, t, box);
+    else drawStoneTower(ctx, t, box);
 
     if (t.def.gunner) drawGunner(ctx, t);
 
@@ -96,6 +93,124 @@ function drawTowers(ctx, state) {
       ctx.fill();
     }
   }
+}
+
+const OUTLINE = '#22201C';
+const DECK_H = 7;      // thickness of the platform slab the gunner stands on
+
+// Lighten (positive) or darken (negative) a #rrggbb by a fraction of full
+// range. Saves carrying three shades of every tower colour in the data.
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.max(0, Math.min(255, Math.round(c + 255 * amt)));
+  return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+// Archery tower: a tapered shaft carrying a platform, with a merlon at each
+// end and the gap between them left clear for the gunner.
+//
+// The platform's top surface is box.top + mount[1] — the exact point the
+// gunner's feet are placed on. Deriving the floor from the mount rather than
+// from its own constant is what stops the archer floating above the stonework
+// or sinking into it when a tier's numbers are retuned.
+function drawStoneTower(ctx, t, box) {
+  const stone = t.def.colour;
+  const deckTop = box.top + t.def.mount[1];
+  const deckBottom = deckTop + DECK_H;
+  const bottom = box.top + box.h;
+
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+
+  // Shaft, wider at the base so it reads as load-bearing.
+  const topIn = box.w * 0.13;
+  const baseIn = box.w * 0.05;
+  ctx.fillStyle = shade(stone, -0.06);
+  ctx.beginPath();
+  ctx.moveTo(box.left + topIn, deckBottom);
+  ctx.lineTo(box.left + box.w - topIn, deckBottom);
+  ctx.lineTo(box.left + box.w - baseIn, bottom);
+  ctx.lineTo(box.left + baseIn, bottom);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Arrow slit, centred on the shaft.
+  const slitH = Math.min(14, (bottom - deckBottom) * 0.3);
+  ctx.fillStyle = '#3E3E46';
+  ctx.fillRect(box.left + box.w / 2 - 2, deckBottom + 9, 4, slitH);
+
+  // Door at the foot.
+  ctx.fillStyle = '#3E3E46';
+  ctx.fillRect(box.left + box.w / 2 - 6, bottom - 13, 12, 13);
+  ctx.strokeRect(box.left + box.w / 2 - 6, bottom - 13, 12, 13);
+
+  // Platform slab, overhanging the shaft on both sides.
+  ctx.fillStyle = shade(stone, 0.1);
+  ctx.fillRect(box.left, deckTop, box.w, DECK_H);
+  ctx.strokeRect(box.left, deckTop, box.w, DECK_H);
+
+  // Merlons at the ends only. The gunner stands in the gap between them, feet
+  // on the slab, which is the whole point of drawing the deck at all.
+  const mw = box.w * 0.27;
+  const mh = t.def.mount[1];
+  ctx.fillStyle = stone;
+  ctx.fillRect(box.left, deckTop - mh, mw, mh);
+  ctx.strokeRect(box.left, deckTop - mh, mw, mh);
+  ctx.fillRect(box.left + box.w - mw, deckTop - mh, mw, mh);
+  ctx.strokeRect(box.left + box.w - mw, deckTop - mh, mw, mh);
+}
+
+// Barracks: a timber hall under a pitched roof. No gunner, so nothing has to
+// line up with the roofline.
+function drawCamp(ctx, t, box) {
+  const wall = t.def.colour;
+  const bottom = box.top + box.h;
+  const eaves = box.top + box.h * 0.46;
+
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+
+  // Walls.
+  ctx.fillStyle = shade(wall, 0.04);
+  ctx.fillRect(box.left + 4, eaves, box.w - 8, bottom - eaves);
+  ctx.strokeRect(box.left + 4, eaves, box.w - 8, bottom - eaves);
+
+  // Roof, overhanging the walls at the eaves.
+  ctx.fillStyle = shade(wall, -0.2);
+  ctx.beginPath();
+  ctx.moveTo(box.left, eaves);
+  ctx.lineTo(box.left + box.w / 2, box.top + 3);
+  ctx.lineTo(box.left + box.w, eaves);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Doorway.
+  const dw = 13;
+  const dh = (bottom - eaves) * 0.66;
+  ctx.fillStyle = '#3E3E46';
+  ctx.fillRect(box.left + box.w / 2 - dw / 2, bottom - dh, dw, dh);
+  ctx.strokeRect(box.left + box.w / 2 - dw / 2, bottom - dh, dw, dh);
+
+  // A banner from tier 2, so the upgrade is visible at a glance.
+  if (t.def.tier < 2) return;
+  const px = box.left + box.w - 7;
+  ctx.strokeStyle = OUTLINE;
+  ctx.beginPath();
+  ctx.moveTo(px, eaves + 2);
+  ctx.lineTo(px, box.top - 12);
+  ctx.stroke();
+  ctx.fillStyle = t.def.tier === 3 ? '#C4A574' : '#8C4A3C';
+  ctx.beginPath();
+  ctx.moveTo(px, box.top - 12);
+  ctx.lineTo(px + 14, box.top - 8);
+  ctx.lineTo(px, box.top - 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 // Stands the gunner on its mount point and mirrors it when the tower aims
