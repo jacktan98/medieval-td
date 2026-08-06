@@ -78,32 +78,36 @@ function drawTowers(ctx, state) {
   }
 }
 
-// The rotating element. This is what proves the mount/muzzle offsets before
-// any gunner art gets generated.
+// The rotating element. Draws the gunner sprite if loaded, otherwise the
+// grey-box rectangle so a missing file doesn't hide the tower.
 function drawGunner(ctx, t) {
   const [mx, my] = t.def.mount;
   const left = t.x - t.def.w / 2;
   const top = t.y - t.def.h + 18;
-  const px = left + mx;
-  const py = top + my;
 
   ctx.save();
-  ctx.translate(px, py);
+  ctx.translate(left + mx, top + my);
   ctx.rotate(t.aim);
   ctx.translate(-t.recoil * 4, 0);
 
-  ctx.fillStyle = '#E0D6C2';
-  ctx.fillRect(-8, -7, 16, 14);
-  ctx.strokeStyle = '#22201C';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(-8, -7, 16, 14);
+  const img = art[t.def.gunner];
+  if (img) {
+    ctx.drawImage(img, -t.def.gw / 2, -t.def.gh / 2, t.def.gw, t.def.gh);
+  } else {
+    ctx.fillStyle = '#E0D6C2';
+    ctx.fillRect(-8, -7, 16, 14);
+    ctx.strokeStyle = '#22201C';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-8, -7, 16, 14);
+  }
 
-  // Muzzle marker — delete once real sprites are in.
-  const [ox, oy] = t.def.muzzle;
-  ctx.fillStyle = '#D4453A';
-  ctx.beginPath();
-  ctx.arc(ox, oy, 3, 0, Math.PI * 2);
-  ctx.fill();
+  if (DEBUG_MUZZLE) {
+    const [ox, oy] = t.def.muzzle;
+    ctx.fillStyle = '#D4453A';
+    ctx.beginPath();
+    ctx.arc(ox, oy, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 }
