@@ -41,7 +41,7 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // absolute source pixels, so they are the one thing that MUST be re-pasted after
 // a re-export at a different size; everything else below is a fraction of the
 // trim and carries over untouched.
-const TOWER_TRIM = [59, 24, 375, 464];
+const TOWER_TRIM = [59, 24, 355, 459];
 const ARCHER_TRIM = [184, 163, 144, 137];
 const CAMP_TRIM = [50, 86, 393, 340];
 const SPEAR_TRIM = [151, 167, 172, 130];
@@ -53,11 +53,18 @@ const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
   w: drawnW(TOWER_TRIM), h: drawnH(TOWER_TRIM),
-  // Top surface of the platform, measured off the art: the deck is the widest
-  // run of rows in the tower's upper half, spanning source x 45..151 of a trim
-  // that starts at 17 and is 151 wide. It is NOT the middle of the box — the
-  // ladder hangs off one side and pulls the box centre away from the deck.
-  mountFrac: [0.536, 0.281],
+  // Where the archer's feet go, as a fraction of the trim. NOT the middle of the
+  // box: the ladder hangs off one side and drags the box centre away from the
+  // deck, and the mount sits on the deck floor rather than the parapet rail.
+  //
+  // Re-derived, not re-measured, when the artist recoloured the tower's ground
+  // patch. That edit shrank the trim from 375x464 to 355x459 while leaving the
+  // building itself untouched — the deck is still the same absolute pixels,
+  // row 113, x 124..391. A fraction of a box that changed size is a different
+  // point, so the old [0.536, 0.281] was converted back to absolute (260.0,
+  // 154.4) and divided by the new box. Anchor the archer to the art, not to the
+  // bounding box the exporter happened to produce.
+  mountFrac: [0.566, 0.284],
   shape: 'tower'
 };
 

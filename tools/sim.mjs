@@ -18,6 +18,7 @@ import { updateWaves } from '../src/waves.js';
 import { updateUnits, makeUnits } from '../src/units.js';
 import { families } from '../src/data/towers.js';
 import { plots, startGold, startLives } from '../src/data/level01.js';
+import { openingDelay } from '../src/data/waves.js';
 
 const DT = 1 / 60;
 const TIME_LIMIT = 900;   // seconds of game time before a run is called stuck
@@ -32,7 +33,7 @@ function newState() {
     gold: startGold,
     lives: startLives,
     towers: [], enemies: [], units: [], shots: [], hits: [],
-    waveIndex: 0, spawned: 0, timer: 2,
+    waveIndex: 0, spawned: 0, timer: openingDelay,
     resting: false, menu: null, result: null
   };
 }
@@ -124,11 +125,11 @@ export function run(plan) {
 // (Those figures are at the old tier 1 range of 118. The reach is 150 now, so
 // every plot covers more than this — the ORDER is what still matters.)
 const scenarios = {
-  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(4), A(5), A(7), A(8)],
-  'ALL archery x8  (expect LOSS)':  [A(0), A(1), A(4), A(5), A(7), A(8), A(2), A(3)],
+  'ALL archery x6  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8)],
+  'ALL archery x8  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8), A(0), A(3)],
   'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(4), B(5), B(7)],
   'MIX 5 archery + 1 barracks':     [A(1), A(2), A(4), A(5), A(7), B(8)],
-  'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],
+  'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],   // the best build there is
   'MIX 3 archery + 3 barracks':     [A(1), B(2), A(4), A(5), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };

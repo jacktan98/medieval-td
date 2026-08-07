@@ -52,12 +52,14 @@ export function updateWaves(state, dt) {
   }
 }
 
-// True when the player may call the next wave in early. Only during the rest
-// between waves: calling mid-wave would stack two waves on the road, which is a
-// different game and not one this level is balanced for.
+// True when the player may call the next wave in early: during the rest between
+// waves, and during the opening delay before the first one. Not mid-wave —
+// calling then would stack two waves on the road, which is a different game and
+// not one this level is balanced for.
 export function canCallWave(state) {
-  return !state.result && state.resting && state.timer > 0 &&
-         state.waveIndex < waves.length;
+  if (state.result || state.waveIndex >= waves.length || state.timer <= 0) return false;
+  const opening = state.waveIndex === 0 && state.spawned === 0;
+  return state.resting || opening;
 }
 
 // Gold for the rest you give up. Paid immediately, so the trade is visible: you

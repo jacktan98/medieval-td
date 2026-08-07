@@ -46,6 +46,17 @@ export function attachInput(canvas, state, restart) {
       return;   // an unaffordable button absorbs the tap rather than closing
     }
 
+    // Clicking the plot whose menu opened itself on hover PINS that menu rather
+    // than dismissing it. Without this, the most natural thing a mouse user does
+    // — point at a plot, then click it — lands in the cancel hole at the middle
+    // of the ring and closes the menu the hover just opened, so the game looks
+    // like it ignored the click.
+    if (state.menu && state.menu.viaHover &&
+        Math.hypot(state.menu.plot.x - x, state.menu.plot.y - y) <= PLOT_R + 8) {
+      state.menu.viaHover = false;
+      return;
+    }
+
     if (hitCancel(state, x, y)) { closeMenu(state); return; }
 
     const plot = plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);

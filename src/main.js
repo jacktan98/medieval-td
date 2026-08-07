@@ -1,5 +1,6 @@
 import { loadArt } from './assets.js';
 import { startGold, startLives } from './data/level01.js';
+import { openingDelay } from './data/waves.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers } from './towers.js';
 import { updateUnits } from './units.js';
@@ -52,7 +53,7 @@ function newGame() {
     hits: [],
     waveIndex: 0,
     spawned: 0,
-    timer: 2,
+    timer: openingDelay,
     resting: false,
     menu: null,
     result: null,

@@ -37,20 +37,23 @@ export const enemyTypes = {
   // either more blockers to spread the load or enough archery to focus one down
   // before it reaches the wall.
   //
-  // 540hp is where the level's invariant sits. Raising the archers' range to 150
-  // made a pure-archery build win comfortably again, and the obvious repair —
-  // more hp on the militia — turned out to be the wrong lever: at 110 every
-  // build died on WAVE 2, because the early game is the tightest part of the
-  // curve and militia hp is what it is made of. Heavies first appear in wave 4,
-  // so their hp raises the ceiling without touching the floor, which is exactly
-  // what "harder later waves" means. At 500 archery alone still wins; by 620 the
-  // mixes stop winning too.
+  // This hp is where the level's invariant sits, and it is the ONLY knob used to
+  // hold it. Militia hp is the wrong lever — at 110 every build died on wave 2,
+  // because the opening is the tightest part of the curve and militia hp is what
+  // it is made of. Heavies first appear in wave 4, so their hp raises the ceiling
+  // without touching the floor, which is exactly what "harder later waves" means.
+  //
+  // 540 -> 620 when waves 1 and 2 were thinned and the opening delay went to 14s.
+  // Making the start gentler hands the archers a tower they did not have before,
+  // and a pure-archery build went back to winning. Swept against every six-tower
+  // build: at 540 archery alone wins with 6 lives, at 620 it dies on wave 7 while
+  // the best mix still wins with 8, and by 780 nothing wins at all.
   heavy_inf: {
     sprite: 'enemy_t2',
     spriteTrim: [169, 172, 161, 135],
     pivot: [0.541, 0.978],
     spriteFaces: -1,
-    hp: 540,
+    hp: 620,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
@@ -69,9 +72,14 @@ export const enemyTypes = {
 // heavy lands in wave 4 as a single one, alone, so it is unmistakable. From
 // there heavies come in growing packs behind a militia screen, and the last two
 // waves are the real test — wave 8 is 34 militia and 6 heavies back to back.
+//
+// Waves 1 and 2 are deliberately thin — 4 and 6 — and they are thin because the
+// opening is the tightest part of the whole curve, not the easiest. 220 gold is
+// three tier 1 towers, and you have not earned a bounty yet, so wave 1 is the
+// only wave you meet with whatever you could afford before it started.
 export const waves = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.30 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 9, gap: 1.20 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 12, gap: 1.10 }] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 10, gap: 1.00 },
@@ -96,6 +104,13 @@ export const waves = [
 ];
 
 export const waveClearBonus = 40;
+
+// Seconds before the first enemy appears. It was 2, which is not enough time to
+// place one tower, let alone decide where — the first wave was effectively being
+// fought with an empty board. The dashboard's "Next wave" button works during
+// this delay too, so anyone who knows where they want their towers can take the
+// gold instead of the time.
+export const openingDelay = 14;
 
 // Calling a wave early pays this much gold per second of rest skipped. The
 // whole point is that it is a real choice: 9 seconds of rest is 36 gold, which

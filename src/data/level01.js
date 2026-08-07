@@ -61,7 +61,7 @@ export const path = [
 // of it at tier 1 range (118) — plot 3 covers literally none — so they are
 // tier 3 positions or barracks positions, not general-purpose ones.
 export const plots = [
-  { x: 118, y: 107 },   // 10% along,  71 off
+  { x:  84, y: 259 },   //  7% along,  73 off
   { x: 319, y: 248 },   // 21% along,  59 off
   { x: 462, y: 130 },   // 27% along,  76 off
   { x: 122, y: 465 },   // 44% along, 129 off   FAR
@@ -69,7 +69,7 @@ export const plots = [
   { x: 485, y: 401 },   // 58% along,  51 off
   { x: 709, y: 475 },   // 66% along, 112 off   FAR
   { x: 666, y: 315 },   // 80% along,  86 off
-  { x: 750, y: 142 }    // 86% along,  70 off
+  { x: 732, y: 143 }    // 85% along,  72 off
 ];
 
 // There is no keep coordinate any more. It existed only so render.js could draw
