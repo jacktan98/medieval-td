@@ -6,7 +6,7 @@
 export const enemyTypes = {
   light_inf: {
     sprite: 'enemy_t1',
-    spriteTrim: [80, 75, 40, 46],
+    spriteTrim: [208, 182, 96, 113],   // source px, re-paste from tools/trim.mjs
     pivot: [0.377, 0.978],   // feet on the anchor, standing axis from the legs
     spriteFaces: -1,
     hp: 80,

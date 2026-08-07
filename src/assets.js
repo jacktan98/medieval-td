@@ -11,7 +11,7 @@ const paths = {
   barracks_t1: 'assets/towers/Barracks_Tower_T1.png',
   archer_t1:   'assets/units/Archers_Man_T1.png',
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
-  arrow_t1:    'assets/projectiles/Archers_Arrow_T1.png',
+  arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
   enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the

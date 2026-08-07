@@ -1,9 +1,8 @@
-import { path, plots, keep } from './data/level01.js';
+import { plots } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { SCALE, arrow } from './data/towers.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
-import { nearestOnPath } from './units.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 
 const PLOT_R = 30;
@@ -20,8 +19,6 @@ export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
 
   drawGround(ctx);
-  drawScenery(ctx);
-  drawKeep(ctx);
   drawPlots(ctx, state);
   drawTowers(ctx, state);
   drawEnemies(ctx, state);
@@ -57,155 +54,22 @@ function drawGround(ctx) {
 // to the grass, so it is the true width of the widest part of the band.
 //
 // Nothing draws a road with it any more. It survives because tools/formation.mjs
-// uses it to check the barracks squad stands on the road rather than beside it,
-// and because makeScenery keeps props clear of it.
+// uses it to check the barracks squad stands on the road rather than beside it.
 export const ROAD_W = 125;
 
-// The keep the enemies are walking towards. Built from a ground shadow, a
-// front wall with a lit top face, and two towers standing proud of it, so it
-// reads as a solid object rather than a flat rectangle.
-function drawKeep(ctx) {
-  const x = keep.x;
-  const y = keep.y;
-  const w = 74;
-  const h = 46;         // wall height above its footprint
-  const left = x - w / 2;
-  const base = y + 26;  // where the walls meet the ground
-
-  ctx.fillStyle = 'rgba(28,32,24,0.34)';
-  ctx.beginPath();
-  ctx.ellipse(x, base + 3, w * 0.62, 15, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  const wall = '#9A937F';
-  const lit = '#B7B09A';
-  const dark = '#6E6857';
-
-  // Curtain wall: shaded face, then a lit cap along the top edge.
-  ctx.fillStyle = wall;
-  ctx.fillRect(left, base - h, w, h);
-  ctx.fillStyle = dark;
-  ctx.fillRect(left, base - 10, w, 10);          // shadowed footing
-  ctx.fillStyle = lit;
-  ctx.fillRect(left, base - h, w, 7);            // sunlit parapet top
-
-  // Gate, recessed.
-  ctx.fillStyle = '#2E2A26';
-  ctx.beginPath();
-  ctx.moveTo(x - 11, base);
-  ctx.lineTo(x - 11, base - 20);
-  ctx.quadraticCurveTo(x, base - 32, x + 11, base - 20);
-  ctx.lineTo(x + 11, base);
-  ctx.closePath();
-  ctx.fill();
-
-  // Flanking towers, taller than the wall so the silhouette has steps in it.
-  for (const tx of [left - 4, left + w - 14]) {
-    const th = h + 20;
-    ctx.fillStyle = wall;
-    ctx.fillRect(tx, base - th, 18, th);
-    ctx.fillStyle = lit;
-    ctx.fillRect(tx, base - th, 18, 7);
-    ctx.fillStyle = dark;
-    ctx.fillRect(tx, base - 8, 18, 8);
-    // merlons
-    ctx.fillStyle = lit;
-    ctx.fillRect(tx, base - th - 6, 5, 6);
-    ctx.fillRect(tx + 13, base - th - 6, 5, 6);
-  }
-
-  ctx.strokeStyle = 'rgba(34,32,28,0.55)';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(left, base - h, w, h);
-}
-
-// Trees and rocks, generated once from a fixed seed so the map looks the same
-// on every load without shipping a hand-placed list. Anything that lands on the
-// road, on a build plot, on the keep or on top of another prop is rejected —
-// scenery must never be mistaken for something you can interact with.
-const SCENERY = makeScenery();
-
-function makeScenery() {
-  let seed = 20260807;
-  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
-  const out = [];
-
-  for (let tries = 0; tries < 6000 && out.length < 34; tries++) {
-    const x = 16 + rnd() * 928;
-    // Starts at 78, not 58: a tree's canopy reaches about 20px above its
-    // anchor, and anything higher has its crown sliced off by the HUD bar.
-    const y = 78 + rnd() * 450;
-
-    if (nearestOnPath(x, y).d < ROAD_W / 2 + 20) continue;   // clear of the painted road
-    if (plots.some(p => Math.hypot(p.x - x, p.y - y) < 78)) continue;   // clear of plots AND their menus
-    if (Math.hypot(keep.x - x, keep.y - y) < 96) continue;
-    if (out.some(s => Math.hypot(s.x - x, s.y - y) < 36)) continue;
-
-    out.push({ x, y, tree: rnd() < 0.62, size: 0.78 + rnd() * 0.5, tone: rnd() });
-  }
-
-  return out.sort((a, b) => a.y - b.y);   // painter's order, far things first
-}
-
-function drawScenery(ctx) {
-  for (const s of SCENERY) {
-    if (s.tree) drawTree(ctx, s);
-    else drawRock(ctx, s);
-  }
-}
-
-function drawTree(ctx, s) {
-  const k = s.size;
-  const trunkH = 9 * k;
-
-  ctx.fillStyle = 'rgba(28,32,24,0.32)';
-  ctx.beginPath();
-  ctx.ellipse(s.x + 3, s.y + 2, 11 * k, 4.5 * k, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#5A452C';
-  ctx.fillRect(s.x - 1.6 * k, s.y - trunkH, 3.2 * k, trunkH);
-
-  // Canopy: a dark mass, then a smaller lit crown up and to the left.
-  const dark = s.tone < 0.5 ? '#2F4A2C' : '#35502F';
-  const lite = s.tone < 0.5 ? '#40643A' : '#4A6E3F';
-  ctx.fillStyle = dark;
-  ctx.beginPath();
-  ctx.ellipse(s.x, s.y - trunkH - 6 * k, 11 * k, 9.5 * k, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = lite;
-  ctx.beginPath();
-  ctx.ellipse(s.x - 2.5 * k, s.y - trunkH - 9 * k, 7 * k, 6 * k, 0, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawRock(ctx, s) {
-  const k = s.size;
-
-  ctx.fillStyle = 'rgba(28,32,24,0.30)';
-  ctx.beginPath();
-  ctx.ellipse(s.x + 2, s.y + 2, 9 * k, 4 * k, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#6A6A63';
-  ctx.beginPath();
-  ctx.moveTo(s.x - 9 * k, s.y + 1);
-  ctx.lineTo(s.x - 5 * k, s.y - 7 * k);
-  ctx.lineTo(s.x + 3 * k, s.y - 8 * k);
-  ctx.lineTo(s.x + 9 * k, s.y - 1 * k);
-  ctx.lineTo(s.x + 6 * k, s.y + 2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = '#8A8A80';
-  ctx.beginPath();
-  ctx.moveTo(s.x - 5 * k, s.y - 7 * k);
-  ctx.lineTo(s.x + 3 * k, s.y - 8 * k);
-  ctx.lineTo(s.x + 1 * k, s.y - 3.5 * k);
-  ctx.lineTo(s.x - 3 * k, s.y - 3 * k);
-  ctx.closePath();
-  ctx.fill();
-}
+// NOTHING ON THE GROUND IS DRAWN IN CODE. The grass, the road, the rocks and
+// the grass tufts are all in the artwork now, so the vector trees, rocks and
+// keep that used to stand in for them are deleted rather than switched off —
+// two sources for the same object is how a map ends up with a code rock sitting
+// on a painted one.
+//
+// The keep is not in the artwork yet, so for now there is simply nothing at the
+// end of the road; enemies walk off the right-hand edge. Nothing in the rules
+// depended on it — a leak is triggered by running out of path, not by touching
+// a building — so it left no hole in the game, only in the picture.
+//
+// The one exception is the plot marker below, and it is an exception for a
+// reason: it has to be able to disappear.
 
 // The artist's plot marker, stamped on every plot that is still empty. Sizes
 // come from tools/split-map.mjs, which centres the marker's viewBox on its
@@ -675,8 +539,16 @@ function drawHits(ctx, state) {
 }
 
 function drawHud(ctx, state) {
-  ctx.fillStyle = 'rgba(34,32,28,0.75)';
-  ctx.fillRect(0, 0, 960, 40);
+  // The map artwork paints its own header strip across the top, 50px deep, so
+  // the HUD does not paint one. Drawing both left a seam: the translucent bar
+  // stopped at 40 and the painted strip carried on to 50 in a warmer brown.
+  //
+  // Still drawn when the map is missing, because then the text would be sitting
+  // on the flat-green fallback with nothing behind it.
+  if (!art.map01) {
+    ctx.fillStyle = 'rgba(34,32,28,0.75)';
+    ctx.fillRect(0, 0, 960, 40);
+  }
 
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '600 20px system-ui, sans-serif';

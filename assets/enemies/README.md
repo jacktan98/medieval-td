@@ -13,8 +13,8 @@ and re-run `tools/sim.mjs` to see what it does to the balance.
 
 ## Export
 
-Same square canvas as everything else — see `assets/map/README.md` for the size
-rule and why 200 is currently too small. Whatever the size, **every asset in the
+Same square canvas as everything else: **512 x 512** — see
+`assets/map/README.md` for why. Whatever the size, **every asset in the
 game must use the same one**, because a single `SCALE` in `src/data/towers.js`
 converts all of them to game pixels. Draw an enemy at its true size relative to
 a soldier on that shared canvas; never scale one to "look right" on its own.
@@ -23,8 +23,8 @@ Draw it **standing upright and facing left or right**, not top-down. Enemies
 mirror to face the way they are walking and are never rotated — a standing
 figure rotated to face north is a standing figure lying down.
 
-`Enemies_Man_T1.png` currently draws 21 x 24 game px against a spearman's
-36 x 27, which reads correctly as a lighter troop.
+`Enemies_Man_T1.png` currently draws 20 x 23 game px against a spearman's
+35 x 27, which reads correctly as a lighter troop.
 
 ## After uploading
 
@@ -37,3 +37,7 @@ sprite and the error looks like a bad pivot rather than a bad number.
 `pivot` is `[across, down]` as a fraction of the trim, and the convention is
 **feet on the anchor, standing axis of the legs across** — not the middle of
 the bounding box, which a weapon pulls off-centre.
+
+Because it is a fraction of the trim rather than a pixel count, a pivot survives
+a re-export at a different canvas size untouched. The trim rect does not — that
+is absolute source pixels, and it is the one thing that has to be re-pasted.

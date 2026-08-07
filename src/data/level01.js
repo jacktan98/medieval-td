@@ -67,9 +67,11 @@ export const plots = [
   { x: 714, y: 142 }    // 84% along,  76 off
 ];
 
-// On the final approach, where the road runs off the right-hand edge. Sits on
-// the last long straight so it reads as the thing the column is marching at.
-export const keep = { x: 900, y: 186 };
+// There is no keep coordinate any more. It existed only so render.js could draw
+// a vector castle at the end of the road, and the artwork does not have one yet.
+// The rules never read it: an enemy leaks when it runs out of path, not when it
+// touches a building. If a keep is drawn later it belongs in the map artwork,
+// and it still does not need a coordinate here.
 
 export const startGold = 220;
 export const startLives = 20;

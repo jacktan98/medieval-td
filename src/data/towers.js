@@ -15,14 +15,14 @@
 //
 // Derived from the export size rather than typed, so re-exporting the same
 // artwork bigger or smaller changes ONE number and every drawn size stays put.
-// The exports were 1000x1000 (SCALE 0.105) and are 200x200 now (SCALE 0.525).
+// The exports have been 1000x1000, then 200x200, and are 512x512 now.
 //
-// 200 is too small for a phone. The tallest sprite is drawn 97px and the canvas
-// backing store goes to 3x device pixels, so it needs 291 source pixels and has
-// 185 — a 1.57x upscale, which is exactly why the art is soft on a phone and
-// crisp on a laptop. `node tools/trim.mjs` reports this per sprite. 320 clears
-// it; 512 leaves headroom.
-const EXPORT_PX = 200;
+// 512 is the size that makes the art sharp on a phone. The tallest sprite is
+// drawn 97px and the canvas backing store goes to 3x device pixels, so it needs
+// 291 source pixels; at 200px it had 185 and was upscaled 1.57x, which is why it
+// looked soft on a phone and crisp on a laptop (a laptop asks for 1x). Every
+// sprite now has pixels to spare. `node tools/trim.mjs` checks this per sprite.
+const EXPORT_PX = 512;
 export const SCALE = 105 / EXPORT_PX;
 
 const drawnW = trim => Math.round(trim[2] * SCALE);
@@ -37,11 +37,14 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // gunnerPivot= the body centre as a fraction of the gunner's trim — the point
 //              it mirrors about, not the middle of a box a bow pulls off-centre.
 
-// Measured from the PNGs' alpha by tools/trim.mjs — do not hand-edit.
-const TOWER_TRIM = [17, 6, 151, 185];
-const ARCHER_TRIM = [73, 68, 57, 55];
-const CAMP_TRIM = [19, 32, 157, 136];
-const SPEAR_TRIM = [55, 72, 68, 51];
+// Measured from the PNGs' alpha by tools/trim.mjs — do not hand-edit. These are
+// absolute source pixels, so they are the one thing that MUST be re-pasted after
+// a re-export at a different size; everything else below is a fraction of the
+// trim and carries over untouched.
+const TOWER_TRIM = [59, 24, 375, 464];
+const ARCHER_TRIM = [184, 163, 144, 137];
+const CAMP_TRIM = [50, 86, 393, 340];
+const SPEAR_TRIM = [151, 167, 172, 130];
 
 // Tier 1 artwork, reused for tiers 2 and 3 until they have their own. All three
 // tiers are the SAME SIZE — scale is fixed by the export, so a tier reads as an
@@ -67,11 +70,17 @@ const archer = {
   // off-centre.
   gunnerPivot: [0.360, 0.982],
   spriteFaces: -1,
-  // Where the arrow leaves the bow, from the feet: 14.2 source px in front and
-  // 22.6 above, taken from the centroid of the frontmost 22% of the art. The
-  // bow has to be isolated like this because a naive centroid of the whole
-  // figure is dominated by the hat and the quiver.
-  muzzle: [Math.round(14.2 * SCALE), -Math.round(22.6 * SCALE)]
+  // Where the arrow leaves the bow, measured from the feet as a fraction of the
+  // archer's trim: a quarter of the way across in front, and 41% of the height
+  // above. Taken from the centroid of the frontmost 22% of the art — the bow has
+  // to be isolated like that because a naive centroid of the whole figure is
+  // dominated by the hat and the quiver.
+  //
+  // Kept as fractions, not source pixels. Written as pixels it was 14.2 and 22.6
+  // against a 200px export, and a 512px re-export left those numbers looking
+  // fine while silently moving the arrow's origin to a third of the way up the
+  // archer's shin.
+  muzzle: [Math.round(0.249 * ARCHER_TRIM[2] * SCALE), -Math.round(0.411 * ARCHER_TRIM[3] * SCALE)]
 };
 
 export const archery = [
@@ -127,7 +136,7 @@ export const barracks = [
 // pointing left in the source, same as the figures.
 export const arrow = {
   sprite: 'arrow_t1',
-  trim: [80, 93, 40, 8],
+  trim: [203, 246, 100, 20],
   faces: -1
 };
 
