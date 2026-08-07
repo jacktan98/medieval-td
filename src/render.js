@@ -38,25 +38,45 @@ export function draw(ctx, state) {
 // so widening the road there and here must stay in step.
 export const ROAD_W = 52;
 
-// Drawn as stacked strokes rather than one flat band: a dark cut edge, the
-// sunken roadbed, then a lighter crown down the middle. Cheap, and it reads as
-// a track worn into the ground instead of a painted line.
+// How thick the road slab is. The top face stays on the path centreline — that
+// is where units walk — and the slab is extruded downward from it, so raising
+// this makes the causeway look taller without moving anything that walks on it.
+const ROAD_LIFT = 7;
+
+// The road is a very flat cuboid, not a band of colour: a top face on the path
+// itself, and a south-facing side wall stamped underneath it.
+//
+// Extruding a polyline properly would mean building the outline as a polygon
+// and mitring every corner. Stamping the same stroke once per pixel of depth
+// gets the same picture for eight strokes — the copies overlap into a solid
+// side wall, and round joins mitre the corners for free. The side is only
+// visible along the south edge of a horizontal run and at the south end of a
+// vertical one, which is exactly what a slab seen from the south looks like.
 function drawPath(ctx) {
-  const lay = (width, colour) => {
+  const lay = (width, colour, dy) => {
     ctx.strokeStyle = colour;
     ctx.lineWidth = width;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+    ctx.moveTo(path[0].x, path[0].y + dy);
+    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y + dy);
     ctx.stroke();
   };
 
-  lay(ROAD_W + 8, '#3B4436');   // shadowed lip where the ground is cut away
-  lay(ROAD_W, '#6B5844');       // the roadbed
-  lay(ROAD_W - 10, '#7A6650');  // worn crown, lit from above
-  lay(ROAD_W - 26, '#84705A');  // the rut down the middle
+  // Ground contact shadow, cast a little past the foot of the slab.
+  lay(ROAD_W + 12, '#3B4436', ROAD_LIFT + 2);
+
+  // Side wall, darkest at the foot so the face has a gradient down it.
+  for (let i = ROAD_LIFT; i >= 1; i--) {
+    lay(ROAD_W + 2, i > ROAD_LIFT - 2 ? '#3E3327' : '#54432F', i);
+  }
+
+  // Top face: rim, bed, worn crown, then the rut down the middle.
+  lay(ROAD_W + 2, '#43372A', 0);
+  lay(ROAD_W, '#7B6852', 0);
+  lay(ROAD_W - 12, '#8A7660', 0);
+  lay(ROAD_W - 28, '#96806A', 0);
 }
 
 // The keep the enemies are walking towards. Built from a ground shadow, a
@@ -132,7 +152,7 @@ function makeScenery() {
     const x = 16 + rnd() * 928;
     const y = 58 + rnd() * 470;
 
-    if (nearestOnPath(x, y).d < ROAD_W / 2 + 24) continue;
+    if (nearestOnPath(x, y).d < ROAD_W / 2 + 28) continue;   // clear of the slab and its shadow
     if (plots.some(p => Math.hypot(p.x - x, p.y - y) < 78)) continue;   // clear of plots AND their menus
     if (Math.hypot(keep.x - x, keep.y - y) < 96) continue;
     if (out.some(s => Math.hypot(s.x - x, s.y - y) < 36)) continue;
@@ -213,11 +233,16 @@ function drawPlots(ctx, state) {
   }
 }
 
+// How much a circle lying on the ground is squashed by the viewing angle.
+// Anything drawn flat on the ground uses this, so the plots, the range rings
+// and anything added later all agree on where the ground plane is.
+const SQUASH = 0.62;
+
 // A raised patch of bare earth rather than a dashed outline: an ellipse for the
 // ground plane, a darker skirt under it for thickness, and a lighter top face.
 function drawGroundDisc(ctx, x, y) {
   const rx = PLOT_R;
-  const ry = PLOT_R * 0.62;   // squashed, because the ground is seen at an angle
+  const ry = PLOT_R * SQUASH;
   const lift = 5;
 
   ctx.fillStyle = 'rgba(28,32,24,0.30)';        // contact shadow
@@ -244,13 +269,7 @@ function drawGroundDisc(ctx, x, y) {
 
 function drawTowers(ctx, state) {
   for (const t of state.towers) {
-    if (state.menu && state.menu.tower === t) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, t.def.range, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    if (state.menu && state.menu.tower === t) drawRangeDisc(ctx, t);
 
     const box = towerBox(t);
     drawBuilding(ctx, t, box);
@@ -267,6 +286,38 @@ function drawTowers(ctx, state) {
       ctx.fill();
     }
   }
+}
+
+// The tower's reach, drawn lying on the ground rather than standing up facing
+// the camera: same SQUASH as the build plots, a translucent fill so you can see
+// which stretch of road it covers, a shadowed rim below and a lit rim on top.
+//
+// CAVEAT: pickTarget uses a true circle, so the ring under-reads by SQUASH
+// straight up and down — an enemy 118px due north of an archery tower is in
+// range but outside the drawn ellipse. This is the same trade the plots already
+// make (elliptical art, circular tap target). Squashing the target test too
+// would cut a tower's covered area by 38% and rebalance the whole game, so the
+// picture bends and the rules do not.
+function drawRangeDisc(ctx, t) {
+  const rx = t.def.range;
+  const ry = rx * SQUASH;
+
+  ctx.fillStyle = 'rgba(240,230,210,0.10)';
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(24,26,20,0.40)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y + 3, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,247,228,0.72)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 // Tiers are all drawn at the same size — the art's scale is fixed by the
