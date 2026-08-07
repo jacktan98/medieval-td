@@ -55,7 +55,16 @@ function newGame() {
     timer: 2,
     resting: false,
     menu: null,
-    result: null
+    result: null,
+    // Dashboard fast-forward. 1 or 2; multiplies the simulation step, so the
+    // game runs at double tempo without any per-system speed constant.
+    speed: 1,
+    // Desktop-only, and null on a phone for the whole session: the tower under
+    // the mouse, and the pointer position while a rally is being placed.
+    hoverTower: null,
+    ghost: null,
+    // The barracks waiting for its rally point to be tapped.
+    placing: null
   });
 }
 
@@ -68,22 +77,30 @@ function frame(now) {
   fitToDisplay();
 
   // Clamp dt so a backgrounded tab doesn't teleport every enemy into the keep.
-  const dt = Math.min((now - last) / 1000, 0.05);
+  // The clamp is applied BEFORE the fast-forward multiplier, so 2x is exactly
+  // two normal steps' worth of time and never a single huge one — a big step
+  // walks enemies straight through a blocker's ENGAGE radius without stopping.
+  const real = Math.min((now - last) / 1000, 0.05);
   last = now;
 
   if (!state.result) {
-    updateWaves(state, dt);
-    // Units run before enemies so an enemy that just walked into a soldier is
-    // already held when the movement step asks whether it may advance.
-    updateUnits(state, dt);
-    updateEnemies(state, dt);
-    updateTowers(state, dt);
-    updateShots(state, dt);
-    if (state.lives <= 0) state.result = 'lost';
+    for (let i = 0; i < state.speed; i++) step(state, real);
   }
 
   draw(ctx, state);
   requestAnimationFrame(frame);
+}
+
+function step(state, dt) {
+  if (state.result) return;
+  updateWaves(state, dt);
+  // Units run before enemies so an enemy that just walked into a soldier is
+  // already held when the movement step asks whether it may advance.
+  updateUnits(state, dt);
+  updateEnemies(state, dt);
+  updateTowers(state, dt);
+  updateShots(state, dt);
+  if (state.lives <= 0) state.result = 'lost';
 }
 
 loadArt().then(() => requestAnimationFrame(frame));

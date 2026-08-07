@@ -121,10 +121,12 @@ export function run(plan) {
 // really a bad shopping list. Coverage per plot at tier 1 range against the
 // 1832px road is 9.5 / 21.5 / 6.7 / 0 / 22.6 / 18.3 / 1.4 / 18.2 / 10.2 percent
 // for plots 0..8; re-measure after any redraw before trusting these lists.
+// (Those figures are at the old tier 1 range of 118. The reach is 150 now, so
+// every plot covers more than this — the ORDER is what still matters.)
 const scenarios = {
-  'ALL archery x6  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8)],
-  'ALL archery x8  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8), A(0), A(3)],
-  'ALL barracks x6 (expect LOSS)':  [B(1), B(2), B(4), B(5), B(7), B(8)],
+  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(4), A(5), A(7), A(8)],
+  'ALL archery x8  (expect LOSS)':  [A(0), A(1), A(4), A(5), A(7), A(8), A(2), A(3)],
+  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(4), B(5), B(7)],
   'MIX 5 archery + 1 barracks':     [A(1), A(2), A(4), A(5), A(7), B(8)],
   'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],
   'MIX 3 archery + 3 barracks':     [A(1), B(2), A(4), A(5), B(7), B(8)],

@@ -104,10 +104,13 @@ function buildItems() {
 // Upgrade and sell sit on the horizontal axis, not the vertical. Towers are
 // 44px wide and 68 tall, so N/S buttons bury the building and its gunner —
 // exactly what you want to look at while deciding whether to upgrade it.
+//
+// A barracks gets a third button, south, for moving its rally point. South
+// rather than north because north is where the roof and the muster rings are.
 function towerItems(t) {
   const next = t.fam.tiers[t.def.tier];
 
-  return [
+  const items = [
     {
       angle: E,
       act: 'upgrade',
@@ -129,4 +132,19 @@ function towerItems(t) {
       available: true
     }
   ];
+
+  if (t.def.soldier) {
+    items.push({
+      angle: S,
+      act: 'rally',
+      glyph: 'flag',
+      label: 'Rally',
+      tier: null,
+      cost: null,
+      gain: null,
+      available: true
+    });
+  }
+
+  return items;
 }

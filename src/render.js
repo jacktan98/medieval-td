@@ -1,5 +1,6 @@
 import { plots } from './data/level01.js';
 import { waves } from './data/waves.js';
+import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, arrow } from './data/towers.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
@@ -25,6 +26,7 @@ export function draw(ctx, state) {
   drawUnits(ctx, state);
   drawShots(ctx, state);
   drawHits(ctx, state);
+  drawRally(ctx, state);
   drawHud(ctx, state);
   drawMenu(ctx, state);
 
@@ -112,7 +114,12 @@ const SQUASH = 0.62;
 
 function drawTowers(ctx, state) {
   for (const t of state.towers) {
-    if (state.menu && state.menu.tower === t) drawRangeDisc(ctx, t);
+    // Menu open, or the mouse is over it. The hover half only ever fires on a
+    // desktop — input.js gates it on pointerType — so the menu remains the only
+    // way to see this on a phone.
+    if ((state.menu && state.menu.tower === t) || state.hoverTower === t) {
+      drawRangeDisc(ctx, t);
+    }
 
     const box = towerBox(t);
     drawBuilding(ctx, t, box);
@@ -387,6 +394,11 @@ function drawGunner(ctx, t) {
   ctx.restore();
 }
 
+// How far an enemy shifts forward on its swing. Smaller than a spearman's 6:
+// a spear is thrust, a fist is swung, and the same distance on a 20px militiaman
+// reads as a stumble.
+const ENEMY_LUNGE = 4;
+
 // Enemies stay upright and only mirror, same rule as the gunners and soldiers.
 // They face the way they are walking, which is the direction of the segment
 // they are on, so a column marching left is drawn facing left.
@@ -410,15 +422,23 @@ function drawEnemies(ctx, state) {
       const dir = e.face;
 
       ctx.save();
-      ctx.translate(e.x, e.y + bob);
+      // Lunge toward whatever it is hitting, the same way a soldier does, so a
+      // melee reads as two figures trading blows rather than one animated one.
+      ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y + bob);
       ctx.scale(mirror(e.def, dir), 1);
       ctx.drawImage(img, sx, sy, sw, sh, -e.def.pivot[0] * dw, -e.def.pivot[1] * dh, dw, dh);
       ctx.restore();
     }
 
-    healthBar(ctx, e.x, e.y - e.def.r - 6 + bob, e.def.r, e.hp / e.maxHp);
+    healthBar(ctx, e.x, e.y - artHeight(e.def) - 4 + bob, e.def.r, e.hp / e.maxHp);
   }
 }
+
+// How tall a figure is DRAWN, which is not the same as how big its body is for
+// collisions. Health bars hang off this: pinned to the collision radius instead,
+// a bar sat across the chest of anything drawn taller than its hitbox, and the
+// tier 2 enemy — 28px of art over a 12px body — made that obvious.
+const artHeight = def => def.spriteTrim ? def.spriteTrim[3] * SCALE : def.r * 2;
 
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
 // over 12px soldiers read as a wall of stripes and hide the fight underneath.
@@ -503,7 +523,7 @@ function drawUnits(ctx, state) {
     }
 
     drawSoldier(ctx, u);
-    healthBar(ctx, u.x, u.y - u.def.r - 8, u.def.r, u.hp / u.maxHp);
+    healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
   }
 }
 
@@ -551,6 +571,134 @@ function drawHits(ctx, state) {
   }
 }
 
+// Rally point overlay. Two jobs: while a barracks is selected for placement it
+// shows how far the squad may be sent, and at all other times it marks where a
+// moved rally actually sits, so a squad standing off in the distance is not a
+// mystery.
+//
+// Only ever shown for ONE barracks at a time — the one being placed, or the one
+// whose menu is open, or the one under the mouse. Nine rally flags on screen at
+// once is noise, not information.
+function drawRally(ctx, state) {
+  const t = state.placing ||
+            (state.menu && state.menu.tower && state.menu.tower.def.soldier ? state.menu.tower : null) ||
+            (state.hoverTower && state.hoverTower.def.soldier ? state.hoverTower : null);
+  if (!t) return;
+
+  const placing = state.placing === t;
+
+  // The reach, on the ground plane like every other radius in the game.
+  ctx.save();
+  ctx.setLineDash([6, 5]);
+  ctx.strokeStyle = placing ? 'rgba(150,225,255,0.95)' : 'rgba(240,230,210,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y, t.def.range, t.def.range * SQUASH, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  if (placing) {
+    ctx.fillStyle = 'rgba(200,240,255,0.06)';
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Where the squad is actually standing, which is the rally projected onto the
+  // road — not the raw point, because that is what the soldiers obey.
+  const squad = state.units.filter(u => u.tower === t);
+  if (squad.length) {
+    const mx = squad.reduce((a, u) => a + u.rx, 0) / squad.length;
+    const my = squad.reduce((a, u) => a + u.ry, 0) / squad.length;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'rgba(240,230,210,0.40)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(t.x, t.y);
+    ctx.lineTo(mx, my);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    flag(ctx, mx, my, '#C4A574');
+  }
+
+  // The ghost follows the mouse while placing. There is no ghost on a phone —
+  // a thumb has no position until it touches — so the flag above is what makes
+  // the feature usable there: tap, look, tap again to correct.
+  if (placing && state.ghost) {
+    const d = Math.hypot(state.ghost.x - t.x, state.ghost.y - t.y);
+    const k = d > t.def.range ? t.def.range / d : 1;
+    flag(ctx, t.x + (state.ghost.x - t.x) * k, t.y + (state.ghost.y - t.y) * k,
+         'rgba(150,225,255,0.95)');
+  }
+}
+
+function flag(ctx, x, y, colour) {
+  ctx.strokeStyle = 'rgba(24,26,20,0.55)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y - 17);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#F0E6D2';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y - 17);
+  ctx.stroke();
+
+  ctx.fillStyle = colour;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 17);
+  ctx.lineTo(x + 12, y - 13);
+  ctx.lineTo(x, y - 9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(24,26,20,0.55)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// The two dashboard controls, at the right-hand end of the header strip.
+//
+// The drawn boxes are 44 tall, but the TAP targets run the full depth of the
+// strip and overhang the sides, the same trick the radial menu uses with
+// HIT_R > BTN_R. At the smallest phone this game targets — a 667px-wide canvas
+// — 63 logical px is 44 real ones, which is the minimum a thumb can hit.
+export const HUD_BTN = {
+  speed: { x: 676, y: 9, w: 88, h: 44 },
+  wave:  { x: 776, y: 9, w: 168, h: 44 }
+};
+const HUD_PAD = 12;
+
+export function hitHudButton(state, x, y) {
+  if (y > 63) return null;
+  for (const [id, b] of Object.entries(HUD_BTN)) {
+    if (x < b.x - HUD_PAD || x > b.x + b.w + HUD_PAD) continue;
+    if (id === 'wave' && !canCallWave(state)) return null;
+    return id;
+  }
+  return null;
+}
+
+function hudButton(ctx, b, label, sub, on) {
+  ctx.fillStyle = on ? 'rgba(28,32,24,0.55)' : 'rgba(28,32,24,0.28)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = on ? 'rgba(240,230,210,0.75)' : 'rgba(240,230,210,0.25)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = on ? '#F0E6D2' : 'rgba(240,230,210,0.40)';
+  ctx.font = '700 17px system-ui, sans-serif';
+  ctx.fillText(label, b.x + b.w / 2, b.y + (sub ? 16 : b.h / 2));
+  if (sub) {
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillStyle = on ? '#9BE08A' : 'rgba(240,230,210,0.35)';
+    ctx.fillText(sub, b.x + b.w / 2, b.y + 32);
+  }
+  ctx.textAlign = 'left';
+}
+
 function drawHud(ctx, state) {
   // The map artwork paints its own header strip across the top, 50px deep, so
   // the HUD does not paint one. Drawing both left a seam: the translucent bar
@@ -581,15 +729,12 @@ function drawHud(ctx, state) {
   ctx.fillText(`Lives ${state.lives}`, 150, 21);
   ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, waves.length)} / ${waves.length}`, 280, 21);
 
-  const hint = state.menu
-    ? (state.menu.tower ? 'Upgrade or sell' : 'Pick a tower')
-    : 'Tap a plot to build';
-  // Lifted from #C4A574 to #E8D5B0: the tan was chosen against a near-black
-  // strip and only reached about 3:1 on the blue one, which is under the line
-  // for text this size.
-  ctx.fillStyle = '#E8D5B0';
-  ctx.font = '16px system-ui, sans-serif';
-  ctx.fillText(hint, 470, 21);
+  // The "Tap a plot to build" hint is gone. It said the same thing on every
+  // frame of every game and this is where the controls live now.
+  const call = canCallWave(state);
+  hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
+  hudButton(ctx, HUD_BTN.wave, 'Next wave',
+    call ? `+${earlyCallBonus(state)}g` : null, call);
   ctx.restore();
 }
 
@@ -738,6 +883,13 @@ function drawGlyph(ctx, kind) {
     ctx.moveTo(-7, 2); ctx.lineTo(0, -5); ctx.lineTo(7, 2);
     ctx.moveTo(-7, 9); ctx.lineTo(0, 2); ctx.lineTo(7, 9);
     ctx.stroke();
+  } else if (kind === 'flag') {
+    ctx.moveTo(-5, 9); ctx.lineTo(-5, -9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5, -9); ctx.lineTo(8, -5); ctx.lineTo(-5, -1);
+    ctx.closePath();
+    ctx.fill();
   } else if (kind === 'coin') {
     ctx.arc(0, 0, 8, 0, Math.PI * 2);
     ctx.stroke();

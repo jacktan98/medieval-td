@@ -105,11 +105,15 @@ export function makeUnits(state, tower) {
   const s = tower.def.soldier;
   if (!s) return;
 
-  const near = nearestOnPath(tower.x, tower.y);
+  // Where the player has sent the squad, or the nearest bit of road if they
+  // have not sent it anywhere. The rally is stored as a free point rather than
+  // a point on the path, so it survives an upgrade and stays where it was put.
+  const want = tower.rally || { x: tower.x, y: tower.y };
+  const near = nearestOnPath(want.x, want.y);
 
-  // Keep the rally inside the tower's reach. Every plot on level 1 sits within
-  // 96px of the path and the shortest barracks reach is 110, so this only bites
-  // if a later level puts a plot further out.
+  // Keep the rally inside the tower's reach, measured from the TOWER — that
+  // reach is what the barracks upgrade buys, and it is drawn as a circle around
+  // the building, so the clamp has to agree with the picture.
   let rx = near.x;
   let ry = near.y;
   const away = Math.hypot(rx - tower.x, ry - tower.y);
@@ -219,6 +223,7 @@ export function updateUnits(state, dt) {
       if (u.foe.acd <= 0) {
         u.hp -= u.foe.def.damage;
         u.foe.acd = u.foe.def.atkCd;
+        u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
       }
     }
 

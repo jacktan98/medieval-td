@@ -13,6 +13,7 @@ const paths = {
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
   arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
   enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
+  enemy_t2:    'assets/enemies/Enemies_Man_T2.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is

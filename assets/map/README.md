@@ -97,6 +97,13 @@ the markers by up to 36px, which raised coverage from 81% to 83.6% and was
 enough to let a pure-archery build win outright — enemy speed went 88 -> 94 to
 put it back. Before that it had gone 72 -> 88 for the same reason.
 
+Speed is no longer that lever. The game was deliberately slowed down afterwards
+(militia 94 -> 70, archery cooldown 0.75 -> 1.00) and the archers' reach raised
+to 150, which made archery strong again; the repair was the tier 2 enemy's hp,
+because heavies first appear in wave 4 and so raise the ceiling without touching
+the opening. Militia hp is the wrong knob for that — at 110 every build died on
+wave 2.
+
 The invariant to protect is that **neither family wins alone**: the best
 all-archery build must lose, the best all-barracks build must lose, and a mix
 must win. `tools/sim.mjs` checks exactly that.

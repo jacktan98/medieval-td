@@ -13,13 +13,18 @@ export function spawn(state, typeId) {
     t: 0,            // wobble timer, drives the idle bob
     face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
     foe: null,       // the barracks soldier holding it, if any
-    acd: 0           // melee cooldown, only ticks while held
+    acd: 0,          // melee cooldown, only ticks while held
+    thrust: 0        // 1 on the swing, decays; drives the lunge in render.js
   });
 }
 
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     e.t += dt;
+    // Decays wherever the enemy is, so a swing that lands just as its holder
+    // dies still plays out instead of freezing mid-lunge. Same rate as the
+    // soldiers' thrust, so the two sides of a fight move at the same tempo.
+    e.thrust = Math.max(0, e.thrust - dt * 4);
 
     // Held in melee by a soldier. Blocked enemies stop dead rather than
     // sliding past — this is the whole point of the barracks family, and the

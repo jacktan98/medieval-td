@@ -83,16 +83,26 @@ const archer = {
   muzzle: [Math.round(0.249 * ARCHER_TRIM[2] * SCALE), -Math.round(0.411 * ARCHER_TRIM[3] * SCALE)]
 };
 
+// Range up across the board and cooldown down with it. The reach is what makes
+// a tower feel useful in the first three waves, when there is only one or two of
+// them on the map; the slower draw is what stops that reach turning archery into
+// the only family worth building. Both were moved together and the pair was
+// re-checked against tools/sim.mjs, not tuned one at a time.
 export const archery = [
-  { ...watchtower, ...archer, tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 118, cooldown: 0.75, colour: '#9C7248' },
-  { ...watchtower, ...archer, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 134, cooldown: 0.65, colour: '#7A5230' },
-  { ...watchtower, ...archer, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 152, cooldown: 0.55, colour: '#B8B2A4' }
+  { ...watchtower, ...archer, tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower, ...archer, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower, ...archer, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
-// Barracks. These do not shoot — range is how far from the tower the rally
-// point may sit, not a weapon range. soldier.count stays at 3 across all tiers
-// on purpose: how many enemies you can hold at once is the dominant balance
-// lever, so upgrades make the same wall tougher rather than wider.
+// Barracks. These do not shoot — `range` is how far from the tower the rally
+// point may sit, not a weapon range. The player moves that rally point, so the
+// number is a real upgrade rather than bookkeeping: 130 -> 165 -> 200 turns a
+// squad that can only cover the nearest bend into one that can be sent to
+// whichever stretch of road is leaking.
+//
+// soldier.count stays at 3 across all tiers on purpose: how many enemies you can
+// hold at once is the dominant balance lever, so upgrades make the same wall
+// tougher rather than wider.
 const camp = {
   sprite: 'barracks_t1',
   spriteTrim: CAMP_TRIM,
@@ -119,15 +129,15 @@ const spearman = {
 
 export const barracks = [
   {
-    ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 110, colour: '#6E7A6A',
+    ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 130, colour: '#6E7A6A',
     soldier: { ...spearman, count: 3, hp: 105, damage: 4, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
-    ...camp, tier: 2, name: 'Guard Post', cost: 100, range: 120, colour: '#5E6B5C',
+    ...camp, tier: 2, name: 'Guard Post', cost: 100, range: 165, colour: '#5E6B5C',
     soldier: { ...spearman, count: 3, hp: 145, damage: 5, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
-    ...camp, tier: 3, name: "Knight's Hall", cost: 150, range: 130, colour: '#8A8478',
+    ...camp, tier: 3, name: "Knight's Hall", cost: 150, range: 200, colour: '#8A8478',
     soldier: { ...spearman, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
