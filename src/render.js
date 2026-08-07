@@ -1,7 +1,7 @@
 import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { art } from './assets.js';
-import { towerBox, mountPoint, muzzlePoint } from './towers.js';
+import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 
 const PLOT_R = 30;
@@ -219,13 +219,13 @@ function drawCamp(ctx, t, box) {
   ctx.stroke();
 }
 
-// Gunner art is top-down, so it rotates rigidly to aim, pivoting on the body
-// rather than on the middle of a box that a bow or a spear pulls off-centre.
-// Nothing mirrors — a figure seen from above has no wrong way up, which is why
-// the old left/right flip could be deleted rather than fixed.
+// Gunners stay upright and only mirror. The art is drawn standing, so rotating
+// it to the aim angle lays the figure on its side; a left/right flip is the
+// only orientation that reads correctly for a standing sprite.
 //
 // The drawn size comes from gunnerR, so the body reads at a known radius
-// whatever the source art's proportions are.
+// whatever the source art's proportions are, and it mirrors about the body
+// rather than the middle of a box that a bow pulls off-centre.
 function drawGunner(ctx, t) {
   const d = t.def;
   const m = mountPoint(t);
@@ -248,7 +248,7 @@ function drawGunner(ctx, t) {
 
   ctx.save();
   ctx.translate(m.x, m.y);
-  ctx.rotate(t.aim - d.gunnerAim * Math.PI / 180);
+  ctx.scale(mirror(d, facing(t)), 1);
   ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
   ctx.drawImage(img, sx, sy, sw, sh, -d.gunnerPivot[0] * dw, -d.gunnerPivot[1] * dh, dw, dh);
   ctx.restore();
@@ -274,12 +274,13 @@ function drawEnemies(ctx, state) {
   }
 }
 
-// Soldier artwork is top-down, so unlike the archers it rotates freely rather
-// than mirroring — a figure seen from above has no wrong way up.
+// Soldiers stay upright and only mirror, same as the gunners — the art is
+// drawn standing, and a standing figure rotated to face north-east is a
+// standing figure lying down.
 //
 // The drawn size comes from the soldier's own radius via bodyFrac, so the
 // sprite's body always matches the radius the formation layout and
-// tools/formation.mjs use. Resize the art and the two stay in agreement.
+// tools/formation.mjs use.
 function drawSoldier(ctx, u) {
   const s = u.def;
   const img = s.sprite && art[s.sprite];
@@ -298,10 +299,11 @@ function drawSoldier(ctx, u) {
   const [sx, sy, sw, sh] = s.spriteTrim;
   const dw = (s.r * 2) / s.bodyFrac;
   const dh = dw * (sh / sw);
+  const dir = Math.cos(u.face) >= 0 ? 1 : -1;
 
   ctx.save();
   ctx.translate(u.x, u.y);
-  ctx.rotate(u.face - s.spriteAim * Math.PI / 180);
+  ctx.scale(mirror(s, dir), 1);
   ctx.drawImage(img, sx, sy, sw, sh, -s.pivot[0] * dw, -s.pivot[1] * dh, dw, dh);
   ctx.restore();
 }

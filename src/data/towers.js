@@ -1,9 +1,10 @@
 // Archery and barracks families. Tier 1 is built on an empty plot; tapping an
 // existing tower upgrades it. Costs are cumulative spend, not refundable.
 //
-// EVERY sprite in this file is drawn top-down. Buildings are seen from above at
-// a slight angle, units straight down. That is what lets a gunner rotate freely
-// to aim instead of mirroring — a figure seen from above has no wrong way up.
+// Every figure in this file is drawn standing upright and is never rotated.
+// Aiming mirrors it left or right and nothing else: rotating a standing figure
+// to point at a target lays it on its side, which is the whole reason the
+// archers looked wrong to begin with.
 //
 // w / h      = the size the building is drawn at. towerBox() in towers.js turns
 //              this into a world-space box anchored 12px below the plot centre.
@@ -14,12 +15,13 @@
 // mountFrac  = where the gunner stands, as a fraction of the building box —
 //              the centre of the platform. A fraction rather than pixels so it
 //              stays correct when a tier's w/h change.
-// muzzle     = [forward, sideways] from the gunner, along its aim. Rotated with
-//              the sprite, so the arrow always leaves the bow.
+// muzzle     = [sideways, vertical] from the gunner. The sideways part flips
+//              with the sprite, so the arrow always leaves the bow.
+// spriteFaces= which way the artwork is drawn, -1 for left. Figures never
+//              rotate — they are drawn standing, so they only mirror.
 // gunner*    = the gunner sprite, its trim, the body centre as a fraction of
-//              that trim (the point it rotates about), the body's diameter as a
-//              fraction of trim width, the direction the weapon points in the
-//              source art in degrees, and the drawn body radius.
+//              that trim (the point it mirrors about), the body's diameter as a
+//              fraction of trim width, and the drawn body radius.
 
 // Tier 1 artwork, reused for tiers 2 and 3 until they have their own. Sizes
 // differ per tier, so everything positional here is a fraction, not a pixel.
@@ -34,10 +36,11 @@ const archer = {
   gunnerTrim: [344, 322, 286, 273],
   gunnerPivot: [0.436, 0.732],
   gunnerBodyFrac: 0.413,
-  // The bow's belly, 104 source px ahead of the body centre. Measured from the
-  // art rather than eyeballed; the hat and quiver sit at -90 and -45 and will
-  // skew any naive centroid of the brown pixels.
-  gunnerAim: 180,
+  // The archer is drawn facing left, so spriteFaces is -1 and the sprite is
+  // mirrored when the target is to the right. The bow's belly sits 104 source
+  // px out from the body, which is the 11px muzzle offset — measured, not
+  // eyeballed, because the hat and quiver drown out the bow in a naive centroid.
+  spriteFaces: -1,
   muzzle: [11, 0]
 };
 
@@ -97,7 +100,7 @@ const spearman = {
   spriteTrim: [300, 354, 343, 247],
   pivot: [0.640, 0.791],
   bodyFrac: 0.341,
-  spriteAim: -153
+  spriteFaces: -1
 };
 
 export const barracks = [

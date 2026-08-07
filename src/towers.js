@@ -26,20 +26,32 @@ export function mountPoint(t) {
   };
 }
 
-// Where the projectile leaves the gunner, in world space.
+// Which side the target is on: +1 to the right, -1 to the left.
 //
-// Gunner art is top-down, so the sprite rotates rigidly to aim and the muzzle
-// rides along with it — [forward, sideways] relative to the aim. No mirroring,
-// which is what used to flip the sprite as a target crossed straight overhead.
+// Figures stay upright and only ever mirror. The art is drawn standing, so
+// rotating it to the aim angle lays the figure over — upright with a left/right
+// flip is the only orientation that reads correctly for a standing sprite.
+export function facing(t) {
+  return Math.cos(t.aim) >= 0 ? 1 : -1;
+}
+
+// Whether the sprite has to be mirrored to face the target. spriteFaces says
+// which way the artwork is drawn, so art drawn facing the other way needs one
+// number changed rather than the transform inverted.
+export function mirror(def, dir) {
+  return dir === def.spriteFaces ? 1 : -1;
+}
+
+// Where the projectile leaves the gunner, in world space. The muzzle is
+// [sideways, vertical] from the body, and the sideways part flips with the
+// sprite so the arrow always leaves the bow.
 export function muzzlePoint(t) {
   const m = mountPoint(t);
-  const [forward, side] = t.def.muzzle;
-  const c = Math.cos(t.aim);
-  const s = Math.sin(t.aim);
+  const [out, up] = t.def.muzzle;
 
   return {
-    x: m.x + forward * c - side * s,
-    y: m.y + forward * s + side * c
+    x: m.x + out * facing(t),
+    y: m.y + up
   };
 }
 
