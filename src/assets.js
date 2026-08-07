@@ -19,7 +19,11 @@ const paths = {
   // built on that plot. Both are SVG, so unlike the sprites they stay sharp at
   // any device pixel ratio.
   map01:       'assets/map/Map_1_base.svg',
-  plot_marker: 'assets/map/Plot_Marker.svg'
+  // Space encoded as %20. The file really is called "Plot Marker.svg" and the
+  // name is left alone on purpose — it is what comes out of the artist's export,
+  // and renaming it here would only mean renaming it again after every upload.
+  // A raw space in a URL is what breaks, not a space in a filename.
+  plot_marker: 'assets/map/Plot%20Marker.svg'
 };
 
 export const art = {};

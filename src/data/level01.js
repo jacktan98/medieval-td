@@ -42,29 +42,34 @@ export const path = [
 // fine: that clearance rule existed so the code-drawn plot discs would not
 // overlap the code-drawn road, and neither is drawn any more.
 //
-// The one rule that still binds is the HUD. A tower is drawn 97 tall from 12
-// below its plot and the archer stands on a deck 28% down it, so the archer's
-// head lands at plot.y - 86 and the header covers everything above y=40. Any
-// plot above y=127 has its archer clipped; the top-left marker was painted at
-// 116 and is placed at 127 here, 11px below where it is drawn.
+// These are exactly where the markers are painted — no nudging any more. The
+// old note here said a plot above y=127 had its archer clipped by the HUD, and
+// that stopped being true when the HUD stopped painting a bar over the board:
+// the header is part of the map now, drawn first, so a tall tower stands in
+// front of it rather than being cut off by it. Only the HUD *text* is drawn
+// after the towers, and tools/hud-clear.mjs checks that no tower reaches it.
+//
 // Ordered by how far along the road they sit, so an index means something: plot
 // 0 is the first one the column walks past and plot 8 is the last. tools/sim.mjs
 // picks plots by index, so an arbitrary order there quietly builds a "spread"
 // of towers that is nothing of the sort.
 //
+// Both the positions and this ordering come out of `node tools/split-map.mjs`,
+// which reads them off the artwork. Do not hand-edit them; redraw and re-run.
+//
 // The two marked FAR are more than 110px off the road. They cover almost none
 // of it at tier 1 range (118) — plot 3 covers literally none — so they are
 // tier 3 positions or barracks positions, not general-purpose ones.
 export const plots = [
-  { x: 134, y: 127 },   // 11% along,  49 off
-  { x: 454, y: 129 },   // 27% along,  74 off
-  { x: 330, y: 257 },   // 35% along,  62 off
-  { x: 126, y: 462 },   // 44% along, 124 off   FAR
-  { x: 368, y: 409 },   // 52% along,  54 off
-  { x: 471, y: 406 },   // 57% along,  48 off
-  { x: 706, y: 482 },   // 66% along, 114 off   FAR
-  { x: 667, y: 312 },   // 80% along,  83 off
-  { x: 714, y: 142 }    // 84% along,  76 off
+  { x: 118, y: 107 },   // 10% along,  71 off
+  { x: 319, y: 248 },   // 21% along,  59 off
+  { x: 462, y: 130 },   // 27% along,  76 off
+  { x: 122, y: 465 },   // 44% along, 129 off   FAR
+  { x: 368, y: 404 },   // 52% along,  59 off
+  { x: 485, y: 401 },   // 58% along,  51 off
+  { x: 709, y: 475 },   // 66% along, 112 off   FAR
+  { x: 666, y: 315 },   // 80% along,  86 off
+  { x: 750, y: 142 }    // 86% along,  70 off
 ];
 
 // There is no keep coordinate any more. It existed only so render.js could draw

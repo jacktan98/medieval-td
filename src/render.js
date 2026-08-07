@@ -79,16 +79,29 @@ export const ROAD_W = 125;
 // Drawing them rather than painting them into the map is the whole point: an
 // occupied plot loses its marker, so the signpost stops poking out between a
 // watchtower's legs.
-const MARKER_W = 69.4;
-const MARKER_H = 40.2;
+// Read the same way as every sprite: a trim rect into the source, drawn at the
+// shared SCALE, anchored by a pivot. The pivot is the centre of the ground
+// ellipse rather than the middle of the box, because the signpost sticks up out
+// of the top — anchoring on the box would bury the ellipse below the plot.
+//
+// All four numbers come from `node tools/split-map.mjs`, which measures the
+// artist's file. It also reports how far off the map's own painted markers this
+// draws; at the time of writing, 2.5%.
+const MARKER_TRIM = [72, 156, 347, 164];
+const MARKER_PIVOT = [0.500, 0.614];
+const MARKER_W = MARKER_TRIM[2] * SCALE;
+const MARKER_H = MARKER_TRIM[3] * SCALE;
 
 function drawPlots(ctx, state) {
   const img = art.plot_marker;
   if (!img) return;
 
+  const [sx, sy, sw, sh] = MARKER_TRIM;
   for (const p of plots) {
     if (state.towers.some(t => t.plot === p)) continue;
-    ctx.drawImage(img, p.x - MARKER_W / 2, p.y - MARKER_H / 2, MARKER_W, MARKER_H);
+    ctx.drawImage(img, sx, sy, sw, sh,
+      p.x - MARKER_PIVOT[0] * MARKER_W, p.y - MARKER_PIVOT[1] * MARKER_H,
+      MARKER_W, MARKER_H);
   }
 }
 
@@ -550,6 +563,16 @@ function drawHud(ctx, state) {
     ctx.fillRect(0, 0, 960, 40);
   }
 
+  // A drop shadow, not decoration. Two things sit behind this text and neither
+  // is under our control: the artist's header strip, whose colour changes when
+  // the map is redrawn, and the top of any tower built on a high plot, because
+  // the HUD draws after the towers. The shadow means neither can make a number
+  // unreadable. tools/hud-clear.mjs checks the second case has not got silly.
+  ctx.save();
+  ctx.shadowColor = 'rgba(12,14,10,0.85)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
+
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '600 20px system-ui, sans-serif';
   ctx.textBaseline = 'middle';
@@ -561,9 +584,13 @@ function drawHud(ctx, state) {
   const hint = state.menu
     ? (state.menu.tower ? 'Upgrade or sell' : 'Pick a tower')
     : 'Tap a plot to build';
-  ctx.fillStyle = '#C4A574';
+  // Lifted from #C4A574 to #E8D5B0: the tan was chosen against a near-black
+  // strip and only reached about 3:1 on the blue one, which is under the line
+  // for text this size.
+  ctx.fillStyle = '#E8D5B0';
   ctx.font = '16px system-ui, sans-serif';
   ctx.fillText(hint, 470, 21);
+  ctx.restore();
 }
 
 function drawMenu(ctx, state) {

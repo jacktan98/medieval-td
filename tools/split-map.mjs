@@ -8,22 +8,29 @@
 // tower is built on that plot, or the signpost pokes out through the tower's
 // legs.
 //
-// So this writes two derived files, both committed:
+// So this writes ONE derived file, committed:
 //
 //   Map_1_base.svg    the map with the markers removed
-//   Plot_Marker.svg   one marker on its own, centred on its ellipse
 //
-// render.js draws the base once and stamps the marker on each EMPTY plot, which
-// is what makes "occupied" a thing the renderer can express at all.
+// render.js draws the base once and stamps the artist's own `Plot Marker.svg`
+// on each EMPTY plot, which is what makes "occupied" a thing the renderer can
+// express at all. That marker is hand-drawn now rather than cut out of the map,
+// so this only measures it and prints how to draw it.
 //
-// Map_1.svg is never modified. Re-run this after any redraw.
+// It also prints the plot positions the artwork implies, in road order, ready
+// to paste into src/data/level01.js. The map is the source of truth for where
+// the plots are; the data file only has to agree with it.
+//
+// Map_1.svg and Plot Marker.svg are never modified. Re-run after any redraw.
 
 import { readFileSync, writeFileSync } from 'fs';
-import { plots } from '../src/data/level01.js';
+import { path, plots } from '../src/data/level01.js';
+import { nearestOnPath } from '../src/units.js';
+import { SCALE } from '../src/data/towers.js';
 
 const SRC = 'assets/map/Map_1.svg';
 const BASE = 'assets/map/Map_1_base.svg';
-const MARKER = 'assets/map/Plot_Marker.svg';
+const MARKER = 'assets/map/Plot Marker.svg';
 
 const svg = readFileSync(SRC, 'utf8');
 
@@ -216,8 +223,9 @@ if (markers.length !== plots.length) {
 // Guards the tie-break above: "biggest repeated drawing" would happily pick a
 // group that wrapped a marker together with half the scenery. A marker is a
 // signpost on a patch of dirt, so it is small.
+const markerBounds = bounds(markers[0].subPaths.flat());
 {
-  const b = bounds(markers[0].subPaths.flat());
+  const b = markerBounds;
   if (b.x1 - b.x0 > 300 || b.y1 - b.y0 > 300) {
     throw new Error(`the shape matched is ${Math.round(b.x1-b.x0)}x${Math.round(b.y1-b.y0)} ` +
       `map units — too big to be a plot marker`);
@@ -231,54 +239,70 @@ for (const g of [...markers].reverse()) base = base.slice(0, g.start) + base.sli
 writeFileSync(BASE, base);
 console.log(`wrote ${BASE}`);
 
-// --- marker: one group, re-based so its ellipse centre is the middle ---------
+// --- the artist's plot marker, measured --------------------------------------
 //
-// The ellipse is the ground patch — the widest sub-path — and it is what has to
-// land on the plot coordinate. The signpost sticks up above it, so the group's
-// full extent is taller and NOT centred on the ellipse.
+// The marker used to be derived here, cut out of the map and re-based. It is a
+// hand-drawn file now — `Plot Marker.svg`, on the same 512 square canvas as
+// every sprite — so this only has to measure it and say how to draw it.
+//
+// The ellipse is the ground patch, the widest sub-path, and it is what lands on
+// the plot coordinate. The signpost sticks up above it, so the pivot is NOT the
+// middle of the box.
 
-const one = markers[0];
-const all = bounds(one.subPaths.flat());
-const wide = one.subPaths.reduce((a, b) => {
+const mk = readFileSync(MARKER, 'utf8');
+const mkGroups = allGroups(mk);
+if (!mkGroups.length) throw new Error(`no geometry found in ${MARKER}`);
+
+const mkPaths = mkGroups.reduce((a, b) => (b.subPaths.length > a.subPaths.length ? b : a)).subPaths;
+const mkAll = bounds(mkPaths.flat());
+const mkEll = bounds(mkPaths.reduce((a, b) => {
   const [ba, bb] = [bounds(a), bounds(b)];
   return (bb.x1 - bb.x0) > (ba.x1 - ba.x0) ? b : a;
-});
-const ell = bounds(wide);
-const cx = (ell.x0 + ell.x1) / 2;
-const cy = (ell.y0 + ell.y1) / 2;
+}));
 
-// Pad the viewBox symmetrically about the ellipse centre, so the game can draw
-// the marker centred on the plot with no anchor fraction to carry around.
-const hw = Math.max(cx - all.x0, all.x1 - cx);
-const hh = Math.max(cy - all.y0, all.y1 - cy);
+const mkW = mkAll.x1 - mkAll.x0;
+const mkH = mkAll.y1 - mkAll.y0;
+const pivotX = ((mkEll.x0 + mkEll.x1) / 2 - mkAll.x0) / mkW;
+const pivotY = ((mkEll.y0 + mkEll.y1) / 2 - mkAll.y0) / mkH;
 
-writeFileSync(MARKER,
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${(cx-hw).toFixed(2)} ${(cy-hh).toFixed(2)} ` +
-  `${(hw*2).toFixed(2)} ${(hh*2).toFixed(2)}" width="${(hw*2).toFixed(2)}" height="${(hh*2).toFixed(2)}">` +
-  `${svg.slice(one.start, one.end)}</svg>\n`);
+console.log(`\n${MARKER}`);
+console.log(`  trim   [${mkAll.x0.toFixed(0)}, ${mkAll.y0.toFixed(0)}, ${mkW.toFixed(0)}, ${mkH.toFixed(0)}]  (source px)`);
+console.log(`  drawn  ${(mkW * SCALE).toFixed(1)} x ${(mkH * SCALE).toFixed(1)} game px at the shared SCALE`);
+console.log(`  pivot  [${pivotX.toFixed(3)}, ${pivotY.toFixed(3)}]  (ellipse centre, as a fraction of the trim)`);
+console.log(`  the map's own markers draw ${((markerBounds.x1 - markerBounds.x0) / 2).toFixed(1)} px wide, ` +
+  `so this is ${(((mkW * SCALE) / ((markerBounds.x1 - markerBounds.x0) / 2) - 1) * 100).toFixed(1)}% off them`);
 
-// The map is authored at 1920x1080 against a 960x540 game, hence the halving.
-console.log(`wrote ${MARKER}`);
-console.log(`  draw it ${(hw).toFixed(1)} x ${(hh).toFixed(1)} game px, centred on the plot`);
+// --- where the artist put the plots ------------------------------------------
+//
+// In road order, because an index into `plots` has to mean something: plot 0 is
+// the first one the column walks past. tools/sim.mjs picks plots by index, and
+// an arbitrary order there quietly builds a "spread of towers" that is nothing
+// of the sort.
+//
+// Printed ready to paste into src/data/level01.js. Only the HUD nudge is left to
+// apply by hand, and the clearance each plot has is printed next to it.
 
-// Where the artist actually put each marker, in game coordinates, next to where
-// level01.js says the plot is. They are allowed to differ — plot 0 is nudged
-// down so the HUD does not clip its archer — but a large gap means the map moved
-// and the level needs re-extracting.
-console.log('  marker centres vs plots (game px):');
+const along = p => {
+  const n = nearestOnPath(p.x, p.y);
+  let d = 0;
+  for (let i = 0; i < n.seg; i++) d += Math.hypot(path[i+1].x - path[i].x, path[i+1].y - path[i].y);
+  return d + n.t * Math.hypot(path[n.seg+1].x - path[n.seg].x, path[n.seg+1].y - path[n.seg].y);
+};
+const total = path.slice(1).reduce((a, p, i) => a + Math.hypot(p.x - path[i].x, p.y - path[i].y), 0);
+
 const centres = markers.map(g => {
-  const w = g.subPaths.reduce((a, b) => {
-    const [ba, bb] = [bounds(a), bounds(b)];
-    return (bb.x1 - bb.x0) > (ba.x1 - ba.x0) ? b : a;
-  });
-  const b = bounds(w);
-  return { x: (b.x0 + b.x1) / 4, y: (b.y0 + b.y1) / 4 };
-}).sort((a, b) => a.x - b.x);
+  const b = bounds(g.subPaths.reduce((a, c) => {
+    const [ba, bc] = [bounds(a), bounds(c)];
+    return (bc.x1 - bc.x0) > (ba.x1 - ba.x0) ? c : a;
+  }));
+  return { x: Math.round((b.x0 + b.x1) / 4), y: Math.round((b.y0 + b.y1) / 4) };
+}).sort((a, b) => along(a) - along(b));
 
-for (const c of [...plots].sort((a, b) => a.x - b.x)) {
-  const near = centres.reduce((a, b) =>
-    Math.hypot(b.x - c.x, b.y - c.y) < Math.hypot(a.x - c.x, a.y - c.y) ? b : a);
-  const d = Math.hypot(near.x - c.x, near.y - c.y);
-  console.log(`    plot (${String(c.x).padStart(3)}, ${String(c.y).padStart(3)})  ` +
-    `marker (${near.x.toFixed(0).padStart(3)}, ${near.y.toFixed(0).padStart(3)})  off by ${d.toFixed(1)}`);
+console.log('\nplots as painted, in road order — paste into src/data/level01.js:');
+for (const c of centres) {
+  const n = nearestOnPath(c.x, c.y);
+  console.log(`  { x: ${String(c.x).padStart(3)}, y: ${String(c.y).padStart(3)} },` +
+    `   // ${String(Math.round(along(c) / total * 100)).padStart(2)}% along, ` +
+    `${String(Math.round(n.d)).padStart(3)} off` +
+    (n.d > 110 ? '   FAR' : ''));
 }

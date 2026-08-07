@@ -99,22 +99,35 @@ export function run(plan) {
   };
 }
 
-// Thin builds on purpose. A full build reaches 20/20 whatever you do to the
-// numbers, so it cannot tell a good change from a great one.
 // The level is meant to need both families. Archery alone must not clear it,
-// and blockers alone cannot kill, so the win has to be a mix. These two are the
+// and blockers alone cannot kill, so the win has to be a mix. Those two are the
 // invariants — if either flips, the balance moved.
-// Plot indices run in road order, so these lists are a genuine spread along the
-// level. Plots 3 and 6 sit too far off the road to be worth a tier 1 archer and
-// are deliberately left out of the six-tower builds — a player would not take
-// them either, and including them measured the dead plot rather than the family.
+//
+// These are the BEST build of each kind, not a representative one. "Archery
+// alone cannot win" is a claim about the best all-archery build that exists, so
+// testing a mediocre one proves nothing. Each list was found by running every
+// six-tower combination of the usable plots and all 64 family assignments of
+// each, and keeping the winner.
+//
+// Plots 3 and 6 sit more than 110px off the road and cover almost none of it,
+// so they are left out of the six-tower builds — a player would not take them
+// either, and including one measured the dead plot rather than the family.
+//
+// WHICH plot gets which family is not arbitrary, and getting it wrong makes the
+// whole file lie. These indices were carried over unchanged when the artist
+// moved the markers, and because plots are stored in road order, the re-ordering
+// quietly put the barracks on the two highest-coverage plots and the archers on
+// the two worst. Every mix "lost", which read as a balance collapse and was
+// really a bad shopping list. Coverage per plot at tier 1 range against the
+// 1832px road is 9.5 / 21.5 / 6.7 / 0 / 22.6 / 18.3 / 1.4 / 18.2 / 10.2 percent
+// for plots 0..8; re-measure after any redraw before trusting these lists.
 const scenarios = {
-  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(2), A(4), A(5), A(7)],
-  'ALL archery x8  (expect LOSS)':  [A(0), A(1), A(2), A(4), A(5), A(7), A(8), A(3)],
-  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(4), B(5), B(7)],
-  'MIX 5 archery + 1 barracks':     [A(0), A(1), A(2), B(4), A(5), A(7)],
-  'MIX 4 archery + 2 barracks':     [A(0), B(1), A(2), B(4), A(5), A(7)],
-  'MIX 3 archery + 3 barracks':     [A(0), B(1), A(2), B(4), A(5), B(7)],
+  'ALL archery x6  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8)],
+  'ALL archery x8  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8), A(0), A(3)],
+  'ALL barracks x6 (expect LOSS)':  [B(1), B(2), B(4), B(5), B(7), B(8)],
+  'MIX 5 archery + 1 barracks':     [A(1), A(2), A(4), A(5), A(7), B(8)],
+  'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],
+  'MIX 3 archery + 3 barracks':     [A(1), B(2), A(4), A(5), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };
 
