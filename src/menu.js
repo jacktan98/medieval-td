@@ -16,7 +16,7 @@ export const RING_R = 62;   // plot centre to button centre
 export const HIT_R = 32;    // forgiving tap radius; buttons sit 88px apart
 export const CANCEL_R = 18; // drawn size of the centre cancel target
 
-const MARGIN = RING_R + BTN_R;
+const MARGIN = RING_R + BTN_R + 16;   // room for the label under each button
 const HUD_H = 40;
 
 // Fraction of everything spent on a tower that selling gives back. Low enough
@@ -91,6 +91,7 @@ function buildItems() {
       act: 'build',
       family: fam,
       glyph: fam.glyph,
+      label: t1 ? `${fam.name} T1` : fam.name,
       cost: t1 ? t1.cost : null,
       gain: null,
       available: !!t1
@@ -109,6 +110,7 @@ function towerItems(t) {
       angle: E,
       act: 'upgrade',
       glyph: next ? 'up' : 'max',
+      label: next ? `Upgrade T${next.tier}` : 'Max tier',
       cost: next ? next.cost : null,
       gain: null,
       available: !!next
@@ -117,6 +119,7 @@ function towerItems(t) {
       angle: W,
       act: 'sell',
       glyph: 'coin',
+      label: 'Sell',
       cost: null,
       gain: sellValue(t),
       available: true

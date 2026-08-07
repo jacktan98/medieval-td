@@ -75,8 +75,11 @@ export function run(plan) {
   let time = 0;
 
   while (!state.result && time < TIME_LIMIT) {
-    while (pending.length && build(state, pending[0])) pending.shift();
+    // Upgrade before expanding. Spending everything on tier 1s and only then
+    // improving them is a strategy no one plays, and modelling it that way made
+    // the economy, not the towers, decide the outcome.
     upgrade(state);
+    while (pending.length && build(state, pending[0])) pending.shift();
 
     updateWaves(state, DT);
     updateUnits(state, DT);      // before enemies, so a freshly blocked enemy
@@ -98,13 +101,17 @@ export function run(plan) {
 
 // Thin builds on purpose. A full build reaches 20/20 whatever you do to the
 // numbers, so it cannot tell a good change from a great one.
+// The level is meant to need both families. Archery alone must not clear it,
+// and blockers alone cannot kill, so the win has to be a mix. These two are the
+// invariants — if either flips, the balance moved.
 const scenarios = {
-  'archery baseline (expect won 20/20)': [A(1), A(4), A(6), A(3), A(0), A(7)],
-  'under-built (expect loss)':           [A(1, 0)],
-  'thin: 2 archery (expect loss)':       [A(1), A(4)],
-  'thin: 2 archery + 1 barracks':        [A(1), A(4), B(6)],
-  'thin: 3 archery':                     [A(1), A(4), A(6)],
-  'barracks only (expect loss)':         [B(1), B(4), B(6), B(3)]
+  'ALL archery x6  (expect LOSS)':  [A(1), A(4), A(6), A(3), A(0), A(7)],
+  'ALL archery x8  (expect LOSS)':  [A(1), A(4), A(6), A(3), A(0), A(7), A(2), A(5)],
+  'ALL barracks x6 (expect LOSS)':  [B(1), B(4), B(6), B(3), B(0), B(7)],
+  'MIX 5 archery + 1 barracks':     [A(1), A(4), A(6), A(0), B(3), A(7)],
+  'MIX 4 archery + 2 barracks':     [A(1), A(4), B(6), A(0), B(3), A(7)],
+  'MIX 3 archery + 3 barracks':     [A(1), B(4), A(6), B(3), A(0), B(7)],
+  'under-built     (expect LOSS)':  [A(1, 0)]
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {

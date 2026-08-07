@@ -1,5 +1,6 @@
 import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
+import { SCALE, arrow } from './data/towers.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
@@ -31,15 +32,29 @@ export function draw(ctx, state) {
   if (state.result) drawResult(ctx, state);
 }
 
+// Road width. tools/formation.mjs reads this to check the barracks squad fits,
+// so widening the road there and here must stay in step.
+export const ROAD_W = 52;
+
+// Drawn as stacked strokes rather than one flat band: a dark cut edge, the
+// sunken roadbed, then a lighter crown down the middle. Cheap, and it reads as
+// a track worn into the ground instead of a painted line.
 function drawPath(ctx) {
-  ctx.strokeStyle = '#6B5844';
-  ctx.lineWidth = 34;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(path[0].x, path[0].y);
-  for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
-  ctx.stroke();
+  const lay = (width, colour) => {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+    ctx.stroke();
+  };
+
+  lay(ROAD_W + 8, '#3B4436');   // shadowed lip where the ground is cut away
+  lay(ROAD_W, '#6B5844');       // the roadbed
+  lay(ROAD_W - 10, '#7A6650');  // worn crown, lit from above
+  lay(ROAD_W - 26, '#84705A');  // the rut down the middle
 }
 
 function drawKeep(ctx) {
@@ -55,14 +70,37 @@ function drawPlots(ctx, state) {
     if (taken) continue;
     // The open menu draws its own marker on its plot; two rings read as noise.
     if (state.menu && state.menu.plot === p) continue;
-    ctx.strokeStyle = '#C4A574';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, PLOT_R, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawGroundDisc(ctx, p.x, p.y);
   }
+}
+
+// A raised patch of bare earth rather than a dashed outline: an ellipse for the
+// ground plane, a darker skirt under it for thickness, and a lighter top face.
+function drawGroundDisc(ctx, x, y) {
+  const rx = PLOT_R;
+  const ry = PLOT_R * 0.62;   // squashed, because the ground is seen at an angle
+  const lift = 5;
+
+  ctx.fillStyle = 'rgba(28,32,24,0.30)';        // contact shadow
+  ctx.beginPath();
+  ctx.ellipse(x, y + 3, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#5E5140';                     // the side of the mound
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#8A7355';                     // the lit top face
+  ctx.beginPath();
+  ctx.ellipse(x, y - lift, rx - 2, ry - 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#A98D66';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(x, y - lift, rx - 2, ry - 2, 0, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 function drawTowers(ctx, state) {
@@ -75,9 +113,10 @@ function drawTowers(ctx, state) {
       ctx.stroke();
     }
 
-    drawBuilding(ctx, t, towerBox(t));
-
+    const box = towerBox(t);
+    drawBuilding(ctx, t, box);
     if (t.def.gunner) drawGunner(ctx, t);
+    drawTierStars(ctx, t, box);
 
     if (DEBUG_MUZZLE) {
       // Drawn from muzzlePoint itself, so the dot marks where arrows really
@@ -89,6 +128,35 @@ function drawTowers(ctx, state) {
       ctx.fill();
     }
   }
+}
+
+// Tiers are all drawn at the same size — the art's scale is fixed by the
+// export and must not be stretched — so the upgrade reads as stars over the
+// roof instead of a bigger building.
+function drawTierStars(ctx, t, box) {
+  const n = t.def.tier;
+  const cx = box.left + box.w / 2;
+  const y = box.top - 7;
+  const gap = 9;
+
+  for (let i = 0; i < n; i++) star(ctx, cx + (i - (n - 1) / 2) * gap, y, 4);
+}
+
+function star(ctx, cx, cy, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 ? r * 0.45 : r;
+    const px = cx + Math.cos(a) * rad;
+    const py = cy + Math.sin(a) * rad;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#F2C64B';
+  ctx.fill();
+  ctx.strokeStyle = '#5A4415';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
 }
 
 const OUTLINE = '#22201C';
@@ -236,15 +304,15 @@ function drawGunner(ctx, t) {
     ctx.strokeStyle = OUTLINE;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(m.x, m.y, d.gunnerR, 0, Math.PI * 2);
+    ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     return;
   }
 
   const [sx, sy, sw, sh] = d.gunnerTrim;
-  const dw = (d.gunnerR * 2) / d.gunnerBodyFrac;
-  const dh = dw * (sh / sw);
+  const dw = sw * SCALE;
+  const dh = sh * SCALE;
 
   ctx.save();
   ctx.translate(m.x, m.y);
@@ -266,12 +334,19 @@ function drawEnemies(ctx, state) {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    const pct = e.hp / e.maxHp;
-    ctx.fillStyle = '#22201C';
-    ctx.fillRect(e.x - 12, e.y - e.def.r - 10 + bob, 24, 5);
-    ctx.fillStyle = pct > 0.5 ? '#6BBF59' : '#D4453A';
-    ctx.fillRect(e.x - 11, e.y - e.def.r - 9 + bob, 22 * pct, 3);
+    healthBar(ctx, e.x, e.y - e.def.r - 6 + bob, e.def.r, e.hp / e.maxHp);
   }
+}
+
+// Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
+// over 12px soldiers read as a wall of stripes and hide the fight underneath.
+function healthBar(ctx, x, y, r, pct) {
+  if (pct >= 1) return;
+  const w = Math.max(14, r * 2.6);
+  ctx.fillStyle = 'rgba(34,32,28,0.85)';
+  ctx.fillRect(x - w / 2, y, w, 4);
+  ctx.fillStyle = pct > 0.5 ? '#6BBF59' : '#D4453A';
+  ctx.fillRect(x - w / 2 + 1, y + 1, (w - 2) * Math.max(0, pct), 2);
 }
 
 // Soldiers stay upright and only mirror, same as the gunners — the art is
@@ -297,12 +372,13 @@ function drawSoldier(ctx, u) {
   }
 
   const [sx, sy, sw, sh] = s.spriteTrim;
-  const dw = (s.r * 2) / s.bodyFrac;
-  const dh = dw * (sh / sw);
+  const dw = sw * SCALE;
+  const dh = sh * SCALE;
   const dir = Math.cos(u.face) >= 0 ? 1 : -1;
 
   ctx.save();
-  ctx.translate(u.x, u.y);
+  // Lunge toward the foe on the swing, so a spear thrust reads as a thrust.
+  ctx.translate(u.x + dir * u.thrust * s.lunge, u.y);
   ctx.scale(mirror(s, dir), 1);
   ctx.drawImage(img, sx, sy, sw, sh, -s.pivot[0] * dw, -s.pivot[1] * dh, dw, dh);
   ctx.restore();
@@ -325,26 +401,41 @@ function drawUnits(ctx, state) {
     }
 
     drawSoldier(ctx, u);
-
-    if (u.hp >= u.maxHp) continue;
-    const pct = u.hp / u.maxHp;
-    ctx.fillStyle = '#22201C';
-    ctx.fillRect(u.x - 11, u.y - u.def.r - 9, 22, 5);
-    ctx.fillStyle = pct > 0.5 ? '#6BBF59' : '#D4453A';
-    ctx.fillRect(u.x - 10, u.y - u.def.r - 8, 20 * pct, 3);
+    healthBar(ctx, u.x, u.y - u.def.r - 8, u.def.r, u.hp / u.maxHp);
   }
 }
 
+// Arrows are the only sprite that rotates: a projectile has no upright, and it
+// has to point where it is flying. The art is drawn pointing left, so the
+// rotation is the heading plus a half turn.
 function drawShots(ctx, state) {
-  ctx.strokeStyle = '#F0E6D2';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
+  const img = art[arrow.sprite];
+  const [sx, sy, sw, sh] = arrow.trim;
+  const dw = sw * SCALE;
+  const dh = sh * SCALE;
+  const flip = arrow.faces < 0 ? Math.PI : 0;
+
   for (const s of state.shots) {
     const a = s.angle || 0;
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
-    ctx.lineTo(s.x - Math.cos(a) * 10, s.y - Math.sin(a) * 10);
-    ctx.stroke();
+
+    if (!img) {
+      ctx.strokeStyle = '#F0E6D2';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - Math.cos(a) * 10, s.y - Math.sin(a) * 10);
+      ctx.stroke();
+      continue;
+    }
+
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(a + flip);
+    // Anchored at the head, so the point sits on the target rather than the
+    // shaft ending there.
+    ctx.drawImage(img, sx, sy, sw, sh, -dw * 0.08, -dh / 2, dw, dh);
+    ctx.restore();
   }
 }
 
@@ -451,11 +542,27 @@ function drawButton(ctx, state, it) {
                 : it.available ? '' : 'soon';
   if (!caption) return;
 
-  ctx.fillStyle = it.gain !== null ? '#6BBF59' : (on ? '#C4A574' : '#6E665A');
-  ctx.font = '600 11px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(caption, it.x, it.y + 14);
+
+  if (caption) {
+    ctx.fillStyle = it.gain !== null ? '#6BBF59' : (on ? '#C4A574' : '#6E665A');
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.fillText(caption, it.x, it.y + 14);
+  }
+
+  // Named, not just glyphed. Four vector glyphs are not self-explanatory, and
+  // there is no hover on a touch screen to reveal what they mean.
+  if (it.label) {
+    const ly = it.y + BTN_R + 10;
+    ctx.font = '600 10px system-ui, sans-serif';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(34,32,28,0.85)';
+    ctx.strokeText(it.label, it.x, ly);       // outline, so it reads over any ground
+    ctx.fillStyle = on ? '#F0E6D2' : '#8A8478';
+    ctx.fillText(it.label, it.x, ly);
+  }
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 }

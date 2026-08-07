@@ -74,6 +74,7 @@ export function updateTowers(state, dt) {
       state.shots.push({
         x: m.x,
         y: m.y,
+        angle: t.aim,          // so the first frame already points at the target
         target,
         damage: t.def.damage,
         speed: projectileSpeed

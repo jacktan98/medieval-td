@@ -1,12 +1,15 @@
 export const enemyTypes = {
   light_inf: {
-    hp: 50,
-    speed: 52,      // logical px per second
-    bounty: 10,
+    hp: 80,
+    // Speed is the lever that makes blockers necessary. Fast enemies spend less
+    // time inside a tower's range, so archery alone cannot kill them in transit
+    // — but a soldier stops them dead, and blocking ignores speed entirely.
+    speed: 72,      // logical px per second
+    bounty: 14,
     leak: 1,        // lives lost if it reaches the keep
-    damage: 6,      // per swing, once a barracks soldier has stopped it
+    damage: 9,      // per swing, once a barracks soldier has stopped it
     atkCd: 1.0,
-    r: 11,
+    r: 8,
     colour: '#B98B5E'
   }
 };
@@ -24,4 +27,4 @@ export const waves = [
   { type: 'light_inf', count: 30, gap: 0.40, rest: 0 }
 ];
 
-export const waveClearBonus = 30;
+export const waveClearBonus = 40;

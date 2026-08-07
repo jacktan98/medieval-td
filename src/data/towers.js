@@ -4,143 +4,108 @@
 // Every figure in this file is drawn standing upright and is never rotated.
 // Aiming mirrors it left or right and nothing else: rotating a standing figure
 // to point at a target lays it on its side, which is the whole reason the
-// archers looked wrong to begin with.
+// archers looked wrong to begin with. Arrows are the exception — a projectile
+// has no upright, so it rotates to point where it is flying.
 //
-// w / h      = the size the building is drawn at. towerBox() in towers.js turns
-//              this into a world-space box anchored 12px below the plot centre.
-// sprite / spriteTrim
-//            = building artwork, and the tight bounding box of the art inside
-//              its source PNG. Cropping at draw time keeps the exported files
-//              untouched. Tiers with no sprite fall back to a vector building.
-// mountFrac  = where the gunner stands, as a fraction of the building box —
-//              the centre of the platform. A fraction rather than pixels so it
-//              stays correct when a tier's w/h change.
+// ONE SCALE FOR EVERYTHING. Every asset is exported on a 1000x1000 canvas, and
+// the artist sized them against each other on that canvas — a soldier is small
+// next to a tower because that is how tall a soldier is. So a single factor
+// converts source pixels to game pixels for all of them, and no sprite is ever
+// sized on its own. Change SCALE to resize the whole game's art together.
+export const SCALE = 0.105;
+
+const drawnW = trim => Math.round(trim[2] * SCALE);
+const drawnH = trim => Math.round(trim[3] * SCALE);
+
+// spriteTrim = the tight bounding box of the art inside its 1000x1000 export.
+// mountFrac  = where the gunner stands as a fraction of the building box: the
+//              middle of the platform.
 // muzzle     = [sideways, vertical] from the gunner. The sideways part flips
 //              with the sprite, so the arrow always leaves the bow.
-// spriteFaces= which way the artwork is drawn, -1 for left. Figures never
-//              rotate — they are drawn standing, so they only mirror.
-// gunner*    = the gunner sprite, its trim, the body centre as a fraction of
-//              that trim (the point it mirrors about), the body's diameter as a
-//              fraction of trim width, and the drawn body radius.
+// spriteFaces= which way the artwork is drawn, -1 for left.
+// gunnerPivot= the body centre as a fraction of the gunner's trim — the point
+//              it mirrors about, not the middle of a box a bow pulls off-centre.
 
-// Tier 1 artwork, reused for tiers 2 and 3 until they have their own. Sizes
-// differ per tier, so everything positional here is a fraction, not a pixel.
+const TOWER_TRIM = [210, 42, 579, 916];
+const ARCHER_TRIM = [344, 322, 286, 273];
+const CAMP_TRIM = [136, 152, 728, 680];
+const SPEAR_TRIM = [300, 354, 343, 247];
+
+// Tier 1 artwork, reused for tiers 2 and 3 until they have their own. All three
+// tiers are the SAME SIZE — scale is fixed by the export, so a tier reads as an
+// upgrade from the stars over its roof, not from being bigger.
 const watchtower = {
   sprite: 'archery_t1',
-  spriteTrim: [210, 42, 579, 916],
-  mountFrac: [0.449, 0.314]
+  spriteTrim: TOWER_TRIM,
+  w: drawnW(TOWER_TRIM), h: drawnH(TOWER_TRIM),
+  mountFrac: [0.465, 0.284],
+  shape: 'tower'
 };
 
 const archer = {
   gunner: 'archer_t1',
-  gunnerTrim: [344, 322, 286, 273],
+  gunnerTrim: ARCHER_TRIM,
   gunnerPivot: [0.436, 0.732],
-  gunnerBodyFrac: 0.413,
-  // The archer is drawn facing left, so spriteFaces is -1 and the sprite is
-  // mirrored when the target is to the right. The bow's belly sits 104 source
-  // px out from the body, which is the 11px muzzle offset — measured, not
+  // The bow's belly sits 104 source px out from the body — measured, not
   // eyeballed, because the hat and quiver drown out the bow in a naive centroid.
   spriteFaces: -1,
-  muzzle: [11, 0]
+  muzzle: [Math.round(104 * SCALE), 0]
 };
 
 export const archery = [
-  {
-    ...watchtower, ...archer,
-    tier: 1,
-    name: 'Watchtower',
-    cost: 70,
-    damage: 9,
-    range: 118,
-    cooldown: 0.75,
-    colour: '#9C7248',
-    shape: 'tower',
-    w: 52, h: 82,
-    gunnerR: 6
-  },
-  {
-    ...watchtower, ...archer,
-    tier: 2,
-    name: 'Archer Post',
-    cost: 90,
-    damage: 14,
-    range: 134,
-    cooldown: 0.65,
-    colour: '#7A5230',
-    shape: 'tower',
-    w: 58, h: 92,
-    gunnerR: 7
-  },
-  {
-    ...watchtower, ...archer,
-    tier: 3,
-    name: 'Crossbow Tower',
-    cost: 140,
-    damage: 22,
-    range: 152,
-    cooldown: 0.55,
-    colour: '#B8B2A4',
-    shape: 'tower',
-    w: 64, h: 101,
-    gunnerR: 8
-  }
+  { ...watchtower, ...archer, tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 118, cooldown: 0.75, colour: '#9C7248' },
+  { ...watchtower, ...archer, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 134, cooldown: 0.65, colour: '#7A5230' },
+  { ...watchtower, ...archer, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 152, cooldown: 0.55, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — range is how far from the tower the rally
 // point may sit, not a weapon range. soldier.count stays at 3 across all tiers
 // on purpose: how many enemies you can hold at once is the dominant balance
-// lever, so upgrades make the same wall tougher rather than changing the shape
-// of the defence.
+// lever, so upgrades make the same wall tougher rather than wider.
+const camp = {
+  sprite: 'barracks_t1',
+  spriteTrim: CAMP_TRIM,
+  w: drawnW(CAMP_TRIM), h: drawnH(CAMP_TRIM),
+  shape: 'camp'
+};
 
-// Soldier artwork, same top-down treatment as the archer. Tier 1 art stands in
-// for tiers 2 and 3 — a knight is a bigger spearman for now, which beats
-// reverting to a plain circle halfway up the upgrade path.
+// The soldier's collision radius is DERIVED from the drawn art, not chosen, so
+// the formation and tools/formation.mjs always agree with what you can see.
+const SPEAR_W = drawnW(SPEAR_TRIM);
+const SPEAR_BODY = 0.341;
+
 const spearman = {
   sprite: 'soldier_t1',
-  spriteTrim: [300, 354, 343, 247],
+  spriteTrim: SPEAR_TRIM,
   pivot: [0.640, 0.791],
-  bodyFrac: 0.341,
-  spriteFaces: -1
+  bodyFrac: SPEAR_BODY,
+  spriteFaces: -1,
+  r: Math.round(SPEAR_W * SPEAR_BODY / 2),
+  lunge: 6            // px thrust when the spear goes in
 };
 
 export const barracks = [
   {
-    tier: 1,
-    name: 'Militia Camp',
-    cost: 70,
-    range: 110,
-    colour: '#6E7A6A',
-    shape: 'camp',
-    sprite: 'barracks_t1',
-    spriteTrim: [136, 152, 728, 680],
-    w: 62, h: 58,
-    soldier: { ...spearman, count: 3, hp: 70, damage: 3, cd: 1.00, speed: 60, respawn: 10, regen: 3, r: 7, colour: '#7C93B8' }
+    ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 110, colour: '#6E7A6A',
+    soldier: { ...spearman, count: 3, hp: 105, damage: 4, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
-    tier: 2,
-    name: 'Guard Post',
-    cost: 100,
-    range: 120,
-    colour: '#5E6B5C',
-    shape: 'camp',
-    sprite: 'barracks_t1',
-    spriteTrim: [136, 152, 728, 680],
-    w: 68, h: 64,
-    soldier: { ...spearman, count: 3, hp: 95, damage: 4, cd: 0.95, speed: 64, respawn: 9, regen: 3.5, r: 7, colour: '#6E86B4' }
+    ...camp, tier: 2, name: 'Guard Post', cost: 100, range: 120, colour: '#5E6B5C',
+    soldier: { ...spearman, count: 3, hp: 145, damage: 5, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
-    tier: 3,
-    name: "Knight's Hall",
-    cost: 150,
-    range: 130,
-    colour: '#8A8478',
-    shape: 'camp',
-    sprite: 'barracks_t1',
-    spriteTrim: [136, 152, 728, 680],
-    w: 74, h: 69,
-    soldier: { ...spearman, count: 3, hp: 125, damage: 5, cd: 0.90, speed: 68, respawn: 8, regen: 4, r: 8, colour: '#5C79AE' }
+    ...camp, tier: 3, name: "Knight's Hall", cost: 150, range: 130, colour: '#8A8478',
+    soldier: { ...spearman, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
+
+// Arrow. The only sprite that rotates: it points where it is flying. Drawn
+// pointing left in the source, same as the figures.
+export const arrow = {
+  sprite: 'arrow_t1',
+  trim: [400, 464, 200, 41],
+  faces: -1
+};
 
 // The four quadrants of the build menu, in N/E/S/W order. A family with no
 // tiers yet still takes its quadrant, drawn locked — the layout is the same

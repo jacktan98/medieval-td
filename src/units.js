@@ -3,11 +3,10 @@ import { path } from './data/level01.js';
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
 //
-// The whole family is a stall, not a damage source. A tier 1 militiaman holds
-// one light infantry for 11.7s and deals 35 of its 50 hp before dying — the
-// enemy walks away wounded, not dead. Holding the path is the product. Raising
-// soldier damage is the fastest way to break this: at 4 damage a barracks-only
-// build clears all eight waves on its own, which is not what the family is for.
+// The family is a stall first and a damage source second. Soldiers must be
+// strong enough that a pure-archery build cannot win — see tools/sim.mjs — but
+// not so strong that a pure-barracks build can. Both ends are checked there;
+// soldier damage is the number that breaks it fastest in either direction.
 
 const ENGAGE = 30;   // an enemy this close to a free soldier stops and fights
 const REACH  = 20;   // melee lands at this range
@@ -18,15 +17,14 @@ const SETTLE = 16;   // stop walking here, so the two stand adjacent not stacked
 // added to the idle facing. The point of the wedge faces upstream, into the
 // oncoming enemies, with two behind it.
 //
-// The road is 34px wide, so `across` plus the soldier's radius must stay
-// within 17 or the squad stands on the grass. The widest soldier is the tier 3
-// knight at r 8, so 8 is the ceiling here — tools/formation.mjs checks it.
+// `across` plus the soldier's radius must stay inside half the road width or
+// the squad stands on the grass — tools/formation.mjs checks it against the
+// road drawn in render.js. The road was widened to give the squad room, so the
+// wedge can now spread properly instead of piling into one smudge.
 //
-// The splay exists because the sprites carry spears roughly three times the
-// length of their bodies. Three of them pointing the same way down a 34px road
-// merge into one unreadable smudge; fanning the rear pair outward separates
-// the spears and reads as a guard covering its flanks.
-const FORMATION = [[-15, 0, 0], [8, -8, -24], [8, 8, 24]];
+// The splay fans the rear pair outward, which separates three long spears that
+// would otherwise all point the same way and merge together.
+const FORMATION = [[-17, 0, 0], [9, -13, -22], [9, 13, 22]];
 
 // Nearest point on the path polyline — the rally point a barracks sends its
 // soldiers to. Returns the segment direction too, so the formation can be laid
@@ -88,14 +86,15 @@ export function makeUnits(state, tower) {
       ry: ry + ay * along + ny * across,
       x: tower.x,
       y: tower.y,
-      // Sprites are top-down and rotate. At rest a soldier watches the way the
-      // enemies come from, which is back along the segment they walk.
+      // At rest a soldier watches the way the enemies come from, which is back
+      // along the segment they walk. Only the left/right of this is drawn.
       faceIdle: idle,
       face: idle,
       hp: s.hp,
       maxHp: s.hp,
       foe: null,
       cd: 0,
+      thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       respawn: 0
     });
   }
@@ -157,11 +156,13 @@ export function updateUnits(state, dt) {
     }
 
     u.cd -= dt;
+    u.thrust = Math.max(0, u.thrust - dt * 4);
 
     if (u.foe && d <= REACH) {
       if (u.cd <= 0) {
         u.foe.hp -= u.def.damage;
         u.cd = u.def.cd;
+        u.thrust = 1;
       }
       u.foe.acd -= dt;
       if (u.foe.acd <= 0) {

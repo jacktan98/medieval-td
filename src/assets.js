@@ -5,7 +5,8 @@ const paths = {
   archery_t1:  'assets/towers/Archers_T1.png',
   archer_t1:   'assets/units/Archers_Soldier_T1.png',
   barracks_t1: 'assets/towers/Barracks_T1.png',
-  soldier_t1:  'assets/units/Barracks_Soldier_T1.png'
+  soldier_t1:  'assets/units/Barracks_Soldier_T1.png',
+  arrow_t1:    'assets/projectiles/Archers_Arrow_T1.png'
 };
 
 export const art = {};
