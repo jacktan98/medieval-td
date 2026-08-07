@@ -11,18 +11,20 @@ const PLOT_R = 30;
 // Draws a red dot at each tower's firing origin. Off by default; add ?muzzle
 // to the URL to switch it on, so offsets can be checked on a phone without
 // editing a file and redeploying.
-const DEBUG_MUZZLE = new URLSearchParams(location.search).has('muzzle');
+// Guarded so this module can be imported by the node tools, which need ROAD_W
+// and have no `location`. Duplicating that constant in a tool is how it drifts.
+const DEBUG_MUZZLE = typeof location !== 'undefined' &&
+  new URLSearchParams(location.search).has('muzzle');
 
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
 
-  ctx.fillStyle = '#4A5744';
-  ctx.fillRect(0, 0, 960, 540);
-
-  drawPath(ctx);
+  // Nothing draws the build plots. The map paints a marker on each one, and the
+  // tower sprites carry their own ground shadow, so a code-drawn disc on top
+  // only greys out the artwork underneath it.
+  drawGround(ctx);
   drawScenery(ctx);
   drawKeep(ctx);
-  drawPlots(ctx, state);
   drawTowers(ctx, state);
   drawEnemies(ctx, state);
   drawUnits(ctx, state);
@@ -34,50 +36,32 @@ export function draw(ctx, state) {
   if (state.result) drawResult(ctx, state);
 }
 
-// Road width. tools/formation.mjs reads this to check the barracks squad fits,
-// so widening the road there and here must stay in step.
-export const ROAD_W = 52;
-
-// How thick the road slab is. The top face stays on the path centreline — that
-// is where units walk — and the slab is extruded downward from it, so raising
-// this makes the causeway look taller without moving anything that walks on it.
-const ROAD_LIFT = 7;
-
-// The road is a very flat cuboid, not a band of colour: a top face on the path
-// itself, and a south-facing side wall stamped underneath it.
+// The painted board. The road, the ground and the plot markers all live in this
+// one image now, so nothing here draws them.
 //
-// Extruding a polyline properly would mean building the outline as a polygon
-// and mitring every corner. Stamping the same stroke once per pixel of depth
-// gets the same picture for eight strokes — the copies overlap into a solid
-// side wall, and round joins mitre the corners for free. The side is only
-// visible along the south edge of a horizontal run and at the south end of a
-// vertical one, which is exactly what a slab seen from the south looks like.
-function drawPath(ctx) {
-  const lay = (width, colour, dy) => {
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = width;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y + dy);
-    for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y + dy);
-    ctx.stroke();
-  };
-
-  // Ground contact shadow, cast a little past the foot of the slab.
-  lay(ROAD_W + 12, '#3B4436', ROAD_LIFT + 2);
-
-  // Side wall, darkest at the foot so the face has a gradient down it.
-  for (let i = ROAD_LIFT; i >= 1; i--) {
-    lay(ROAD_W + 2, i > ROAD_LIFT - 2 ? '#3E3327' : '#54432F', i);
+// It is stretched to the full 960x540 rather than letter-boxed: the artwork is
+// authored at exactly 16:9 against this coordinate space, so any mismatch is a
+// bug in the export rather than something to paper over at draw time. If the
+// image is missing, fall back to flat ground — the game stays playable and the
+// console says which file did not load.
+function drawGround(ctx) {
+  const img = art.map01;
+  if (img) {
+    ctx.drawImage(img, 0, 0, 960, 540);
+    return;
   }
-
-  // Top face: rim, bed, worn crown, then the rut down the middle.
-  lay(ROAD_W + 2, '#43372A', 0);
-  lay(ROAD_W, '#7B6852', 0);
-  lay(ROAD_W - 12, '#8A7660', 0);
-  lay(ROAD_W - 28, '#96806A', 0);
+  ctx.fillStyle = '#4A5744';
+  ctx.fillRect(0, 0, 960, 540);
 }
+
+// Width of the painted road, measured off the artwork rather than chosen: the
+// map was rasterised and this is twice the largest distance from any road pixel
+// to the grass, so it is the true width of the widest part of the band.
+//
+// Nothing draws a road with it any more. It survives because tools/formation.mjs
+// uses it to check the barracks squad stands on the road rather than beside it,
+// and because makeScenery keeps props clear of it.
+export const ROAD_W = 125;
 
 // The keep the enemies are walking towards. Built from a ground shadow, a
 // front wall with a lit top face, and two towers standing proud of it, so it
@@ -150,9 +134,11 @@ function makeScenery() {
 
   for (let tries = 0; tries < 6000 && out.length < 34; tries++) {
     const x = 16 + rnd() * 928;
-    const y = 58 + rnd() * 470;
+    // Starts at 78, not 58: a tree's canopy reaches about 20px above its
+    // anchor, and anything higher has its crown sliced off by the HUD bar.
+    const y = 78 + rnd() * 450;
 
-    if (nearestOnPath(x, y).d < ROAD_W / 2 + 28) continue;   // clear of the slab and its shadow
+    if (nearestOnPath(x, y).d < ROAD_W / 2 + 20) continue;   // clear of the painted road
     if (plots.some(p => Math.hypot(p.x - x, p.y - y) < 78)) continue;   // clear of plots AND their menus
     if (Math.hypot(keep.x - x, keep.y - y) < 96) continue;
     if (out.some(s => Math.hypot(s.x - x, s.y - y) < 36)) continue;
@@ -223,49 +209,10 @@ function drawRock(ctx, s) {
   ctx.fill();
 }
 
-function drawPlots(ctx, state) {
-  for (const p of plots) {
-    const taken = state.towers.some(t => t.plot === p);
-    if (taken) continue;
-    // The open menu draws its own marker on its plot; two rings read as noise.
-    if (state.menu && state.menu.plot === p) continue;
-    drawGroundDisc(ctx, p.x, p.y);
-  }
-}
-
 // How much a circle lying on the ground is squashed by the viewing angle.
-// Anything drawn flat on the ground uses this, so the plots, the range rings
-// and anything added later all agree on where the ground plane is.
+// Anything drawn flat on the ground uses this, so the tower shadows, the range
+// rings and anything added later all agree on where the ground plane is.
 const SQUASH = 0.62;
-
-// A raised patch of bare earth rather than a dashed outline: an ellipse for the
-// ground plane, a darker skirt under it for thickness, and a lighter top face.
-function drawGroundDisc(ctx, x, y) {
-  const rx = PLOT_R;
-  const ry = PLOT_R * SQUASH;
-  const lift = 5;
-
-  ctx.fillStyle = 'rgba(28,32,24,0.30)';        // contact shadow
-  ctx.beginPath();
-  ctx.ellipse(x, y + 3, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#5E5140';                     // the side of the mound
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#8A7355';                     // the lit top face
-  ctx.beginPath();
-  ctx.ellipse(x, y - lift, rx - 2, ry - 2, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#A98D66';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.ellipse(x, y - lift, rx - 2, ry - 2, 0, 0, Math.PI * 2);
-  ctx.stroke();
-}
 
 function drawTowers(ctx, state) {
   for (const t of state.towers) {

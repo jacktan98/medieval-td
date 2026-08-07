@@ -1,59 +1,75 @@
 // Hand-authored waypoints. Enemies walk these in order, then damage the keep.
 // Coordinates are in logical canvas space (960x540).
-
-// The top leg sits at y=156 rather than 116. The plot above it has to clear the
-// 40px HUD bar, and at the old height there was only room for a plot centred at
-// y=54 — half of it lived under the header, so its ring was unreadable and the
-// top of its tap target was stolen by the HUD.
 //
-// Dropping that leg by 40 shortens the walk by 80 — it cuts both of the
-// verticals that meet it — so the path is 1566 rather than 1646 and the level
-// is about 5% harder. Sweeping the bottom leg to buy that length back was tried
-// and abandoned: the sim's surviving-lives figure barely moved and did not move
-// monotonically, because which enemy a blocker happens to grab cascades through
-// the rest of the wave. Lives-remaining is a noisy read of this map; what is
-// stable across the whole sweep is the shape of the result, and that held
-// everywhere — archery alone loses, barracks alone loses, mixes win.
+// TRACED FROM THE ARTWORK. These are not drawn by hand any more: the road in
+// assets/map/Map_1.svg is the level, and this polyline is its centreline,
+// extracted by rasterising the map, isolating the road colour, and walking the
+// ridge of the distance transform from one end of the shape to the other. The
+// art is the source of truth for where the road is; this file just has to agree
+// with it. If the map is redrawn, re-extract rather than nudging numbers here.
+//
+// The first and last points sit off-canvas so enemies enter and leave unseen.
 export const path = [
-  { x: -30, y: 268 },
-  { x: 176, y: 268 },
-  { x: 176, y: 156 },
-  { x: 424, y: 156 },
-  { x: 424, y: 402 },
-  { x: 700, y: 402 },
-  { x: 700, y: 214 },
-  { x: 990, y: 214 }
+  { x: -29, y: 263 },
+  { x: 0, y: 236 },
+  { x: 49, y: 191 },
+  { x: 149, y: 174 },
+  { x: 428, y: 198 },
+  { x: 441, y: 216 },
+  { x: 437, y: 236 },
+  { x: 416, y: 271 },
+  { x: 280, y: 370 },
+  { x: 243, y: 421 },
+  { x: 247, y: 431 },
+  { x: 272, y: 452 },
+  { x: 332, y: 466 },
+  { x: 582, y: 444 },
+  { x: 614, y: 415 },
+  { x: 613, y: 405 },
+  { x: 544, y: 314 },
+  { x: 548, y: 304 },
+  { x: 581, y: 263 },
+  { x: 637, y: 233 },
+  { x: 927, y: 181 },
+  { x: 959, y: 149 },
+  { x: 987, y: 121 }
 ];
 
-// Fixed build plots. Radius 30 logical px — hit target stays above 44 real px
-// on a phone once the canvas is scaled down.
+// Fixed build plots — the nine markers painted into the map, read out of the
+// SVG's group transforms so they line up with the artwork exactly.
 //
-// Two hard constraints, and on this map they do not overlap in the strip above
-// the road's top leg:
+// They sit much closer to the road than the old hand-placed plots did, which is
+// fine: that clearance rule existed so the code-drawn plot discs would not
+// overlap the code-drawn road, and neither is drawn any more.
 //
-//   road gap  — centre at least 62 from the path centreline (30 plot radius +
-//               30 half-width of the road's cut lip + a hair)
-//   HUD gap   — centre at y >= 136. A tower is drawn 96 tall from 12 below the
-//               plot, so a lower plot pushes the deck, the archer standing on
-//               it and the tier stars up behind the 40px header. At y=92 the
-//               plot itself is clear but the archer sits at y=14, invisible.
+// The one rule that still binds is the HUD. A tower is drawn 97 tall from 12
+// below its plot and the archer stands on a deck 28% down it, so the archer's
+// head lands at plot.y - 86 and the header covers everything above y=40. Any
+// plot above y=127 has its archer clipped; the top-left marker was painted at
+// 116 and is placed at 127 here, 11px below where it is drawn.
+// Ordered by how far along the road they sit, so an index means something: plot
+// 0 is the first one the column walks past and plot 8 is the last. tools/sim.mjs
+// picks plots by index, so an arbitrary order there quietly builds a "spread"
+// of towers that is nothing of the sort.
 //
-// Above the top leg (y=156) the road gap caps a plot at y<=94, so the old
-// top-left plot could not satisfy both wherever it sat in that strip. It moved
-// out to (500,136), east of the leg's corner, where the nearest path point is
-// 79 away and the whole tower is visible.
+// The two marked FAR are more than 110px off the road. They cover almost none
+// of it at tier 1 range (118) — plot 3 covers literally none — so they are
+// tier 3 positions or barracks positions, not general-purpose ones.
 export const plots = [
-  { x: 104, y: 190 },
-  { x: 262, y: 218 },
-  { x: 500, y: 136 },
-  { x: 348, y: 328 },
-  { x: 520, y: 254 },
-  { x: 596, y: 476 },
-  { x: 636, y: 306 },
-  { x: 796, y: 330 }
+  { x: 134, y: 127 },   // 11% along,  49 off
+  { x: 454, y: 129 },   // 27% along,  74 off
+  { x: 330, y: 257 },   // 35% along,  62 off
+  { x: 126, y: 462 },   // 44% along, 124 off   FAR
+  { x: 368, y: 409 },   // 52% along,  54 off
+  { x: 471, y: 406 },   // 57% along,  48 off
+  { x: 706, y: 482 },   // 66% along, 114 off   FAR
+  { x: 667, y: 312 },   // 80% along,  83 off
+  { x: 714, y: 142 }    // 84% along,  76 off
 ];
 
-export const keep = { x: 918, y: 214 };
+// On the final approach, where the road runs off the right-hand edge. Sits on
+// the last long straight so it reads as the thing the column is marching at.
+export const keep = { x: 900, y: 186 };
 
 export const startGold = 220;
 export const startLives = 20;

@@ -104,13 +104,17 @@ export function run(plan) {
 // The level is meant to need both families. Archery alone must not clear it,
 // and blockers alone cannot kill, so the win has to be a mix. These two are the
 // invariants — if either flips, the balance moved.
+// Plot indices run in road order, so these lists are a genuine spread along the
+// level. Plots 3 and 6 sit too far off the road to be worth a tier 1 archer and
+// are deliberately left out of the six-tower builds — a player would not take
+// them either, and including them measured the dead plot rather than the family.
 const scenarios = {
-  'ALL archery x6  (expect LOSS)':  [A(1), A(4), A(6), A(3), A(0), A(7)],
-  'ALL archery x8  (expect LOSS)':  [A(1), A(4), A(6), A(3), A(0), A(7), A(2), A(5)],
-  'ALL barracks x6 (expect LOSS)':  [B(1), B(4), B(6), B(3), B(0), B(7)],
-  'MIX 5 archery + 1 barracks':     [A(1), A(4), A(6), A(0), B(3), A(7)],
-  'MIX 4 archery + 2 barracks':     [A(1), A(4), B(6), A(0), B(3), A(7)],
-  'MIX 3 archery + 3 barracks':     [A(1), B(4), A(6), B(3), A(0), B(7)],
+  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(2), A(4), A(5), A(7)],
+  'ALL archery x8  (expect LOSS)':  [A(0), A(1), A(2), A(4), A(5), A(7), A(8), A(3)],
+  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(4), B(5), B(7)],
+  'MIX 5 archery + 1 barracks':     [A(0), A(1), A(2), B(4), A(5), A(7)],
+  'MIX 4 archery + 2 barracks':     [A(0), B(1), A(2), B(4), A(5), A(7)],
+  'MIX 3 archery + 3 barracks':     [A(0), B(1), A(2), B(4), A(5), B(7)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };
 

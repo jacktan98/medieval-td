@@ -13,7 +13,14 @@ export const enemyTypes = {
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit
     // — but a soldier stops them dead, and blocking ignores speed entirely.
-    speed: 72,      // logical px per second
+    speed: 88,      // logical px per second
+    //
+    // Raised from 72 when the level was retraced from the artwork. The new road
+    // is longer (1832 vs 1566) AND better covered by the plots the artist
+    // painted (81% of it within tier 1 range, against 75% before), and the two
+    // together made a pure-archery build win outright — the one thing this
+    // level is not supposed to allow. Above about 96 the mixed builds stop
+    // winning too, so the usable window is 88-96 and this sits at the gentle end.
     bounty: 14,
     leak: 1,        // lives lost if it reaches the keep
     damage: 9,      // per swing, once a barracks soldier has stopped it

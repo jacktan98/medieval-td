@@ -3,8 +3,8 @@
 Upload the level 1 background here as **`Level01.png`** or `Level01.svg` (the
 name matches `src/data/level01.js`, which owns that level's road and plots).
 
-`Map_1.svg` is the current drawing. It is **not wired into the game yet** — see
-"The road has to match the path" below.
+`Map_1.svg` is the level. The game draws it as the whole board — ground, road
+and plot markers — and `src/data/level01.js` is traced from it.
 
 ## Export size, and why 200 was too small
 
@@ -38,31 +38,29 @@ tower is built or a menu is open, so a painted plot shows through a built tower.
 
 **The top 40px is covered.** The HUD bar paints over `y 0..40` at 75% opacity.
 
-**The road has to match the path.** Enemies walk the polyline in
-`src/data/level01.js` no matter what is painted, and barracks soldiers stand
-across it. The road in `Map_1.svg` does not follow it — it is a decorative S
-that enters the left edge twice and never reaches the right edge or the keep, so
-enemies would walk over grass and off the end of the drawing.
+**The road has to run edge to edge.** Enemies walk the polyline in
+`src/data/level01.js`, which is traced from the painted road, so the drawing
+decides the level. The road must reach both the left and the right edge of the
+canvas — enemies spawn off-screen at one end and reach the keep at the other. A
+road that stops in the middle of the board has nowhere for them to come from.
 
-Either trace the road onto the centreline below, or say the word and the level
-data gets rebuilt around the drawing instead — that is the better option if the
-drawn layout is what you want, but it moves every plot and re-opens the balance,
-so it is a deliberate choice rather than something to do quietly.
+Draw plot markers wherever you want towers. They are read straight out of the
+SVG's group transforms, so they line up exactly. One rule binds: a plot painted
+above **y=127** has its archer's head clipped by the HUD, because a tower is
+drawn 97 tall from 12 below the plot. The top-left marker is painted at 116 and
+the game places it at 127.
 
-Current centreline, in 960 x 540 coordinates (double them for a 1920-wide
-export):
+## Re-tracing after a redraw
 
-    -30,268 -> 176,268 -> 176,156 -> 424,156 -> 424,402 -> 700,402
-    -> 700,214 -> 990,214
+The level data is derived, not hand-written, so a redraw does not mean editing
+coordinates. Rasterise the map, isolate the road colour, drop the plot markers,
+and walk the ridge of the distance transform from one end of the road to the
+other — that is the centreline. `ROAD_W` in `src/render.js` is twice the largest
+distance from any road pixel to the grass.
 
-It runs off both edges on purpose so enemies enter and leave off-screen.
+Expect to re-check the balance afterwards: `node tools/sim.mjs`. Tracing this
+map made the road longer and better covered by the plots, which was enough to
+let a pure-archery build win, and enemy speed had to go from 72 to 88 to put
+that back. The invariant to protect is that neither family wins alone.
 
-Widths, centred on that line: **52** for the walkable surface, 54 including the
-rim, 64 for the ground shadow. 52 is not just visual — `ROAD_W` in
-`src/render.js` is what `tools/formation.mjs` checks the barracks squad against,
-so a narrower painted road puts soldiers on the grass. The road in `Map_1.svg`
-is about 125 wide, which is fine on its own but has to be matched in code.
-
-The keep sits at **918,214**.
-
-`Level01_template.svg` is all of the above drawn to scale, for tracing.
+`Level01_template.svg` shows the old hand-authored layout, kept for reference.

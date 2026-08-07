@@ -12,7 +12,11 @@ const paths = {
   archer_t1:   'assets/units/Archers_Man_T1.png',
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
   arrow_t1:    'assets/projectiles/Archers_Arrow_T1.png',
-  enemy_t1:    'assets/enemies/Enemies_Man_T1.png'
+  enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
+  // The whole board: ground, road and the plot markers, painted as one image.
+  // An SVG has no fixed resolution, so unlike the sprites it stays sharp at any
+  // device pixel ratio.
+  map01:       'assets/map/Map_1.svg'
 };
 
 export const art = {};

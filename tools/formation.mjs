@@ -10,8 +10,8 @@
 import { makeUnits } from '../src/units.js';
 import { path, plots } from '../src/data/level01.js';
 import { barracks } from '../src/data/towers.js';
+import { ROAD_W } from '../src/render.js';
 
-const ROAD_W = 52;              // must match ROAD_W in render.js
 const HALF = ROAD_W / 2;
 
 function distToPath(x, y) {

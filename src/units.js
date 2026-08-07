@@ -24,13 +24,19 @@ const SETTLE = 16;   // stop walking here, so the two stand adjacent not stacked
 //
 // The splay fans the rear pair outward, which separates three long spears that
 // would otherwise all point the same way and merge together.
-const FORMATION = [[-17, 0, 0], [9, -13, -22], [9, 13, 22]];
+// Widened when the painted road replaced the drawn one: the road went from 52
+// to 125 across, and the old tight wedge read as a huddle in the middle of it.
+//
+// Spreading them does NOT weaken the block. Enemies walk the centreline exactly,
+// so what matters is each soldier's distance to across=0, and 20 is still well
+// inside ENGAGE. Spreading only changes how it looks.
+const FORMATION = [[-24, 0, 0], [13, -20, -22], [13, 20, 22]];
 
 // Nearest point on the path polyline — the rally point a barracks sends its
 // soldiers to. Returns the segment direction too, so the formation can be laid
 // out across the path rather than along it.
 export function nearestOnPath(x, y) {
-  let best = { x: path[0].x, y: path[0].y, d: Infinity, tx: 1, ty: 0, len: 1 };
+  let best = { x: path[0].x, y: path[0].y, d: Infinity, tx: 1, ty: 0, len: 1, seg: 0, t: 0 };
 
   for (let i = 0; i < path.length - 1; i++) {
     const a = path[i];
@@ -43,10 +49,54 @@ export function nearestOnPath(x, y) {
     const py = a.y + dy * t;
     const d = Math.hypot(px - x, py - y);
 
-    if (d < best.d) best = { x: px, y: py, d, tx: dx, ty: dy, len: Math.sqrt(len2) || 1 };
+    if (d < best.d) {
+      best = { x: px, y: py, d, tx: dx, ty: dy, len: Math.sqrt(len2) || 1, seg: i, t };
+    }
   }
 
   return best;
+}
+
+// Walk `dist` along the polyline from (seg, t), forwards if positive. Returns
+// the point and the unit tangent there.
+//
+// This is what keeps a squad on a bending road. Offsetting along the straight
+// tangent of one segment is fine on a level made of long straight legs, but the
+// road is traced from artwork now and curves constantly — a soldier placed 24px
+// "forward" along a tangent ends up off the tarmac on the outside of a bend.
+// Far enough off and enemies walk past outside ENGAGE without ever being
+// blocked, which reads as the barracks being broken rather than misplaced.
+function walkPath(seg, t, dist) {
+  let i = seg;
+  let u = t;
+  let left = Math.abs(dist);
+  const fwd = dist >= 0;
+
+  const segLen = k => Math.hypot(path[k + 1].x - path[k].x, path[k + 1].y - path[k].y) || 1;
+
+  while (left > 0) {
+    const L = segLen(i);
+    const avail = fwd ? L * (1 - u) : L * u;
+
+    if (avail >= left) {
+      u += (fwd ? left : -left) / L;
+      break;
+    }
+    left -= avail;
+    if (fwd) {
+      if (i >= path.length - 2) { u = 1; break; }
+      i++; u = 0;
+    } else {
+      if (i <= 0) { u = 0; break; }
+      i--; u = 1;
+    }
+  }
+
+  const a = path[i];
+  const b = path[i + 1];
+  const L = segLen(i);
+  return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u,
+           tx: (b.x - a.x) / L, ty: (b.y - a.y) / L };
 }
 
 export function makeUnits(state, tower) {
@@ -69,21 +119,22 @@ export function makeUnits(state, tower) {
     ry = tower.y + (ry - tower.y) * k;
   }
 
-  // Unit vectors along the path segment and across it.
-  const ax = near.tx / near.len;
-  const ay = near.ty / near.len;
-  const nx = -ay;
-  const ny = ax;
+  // Re-find the rally on the path after the range clamp, so the slots are laid
+  // out from a point that is actually on the road.
+  const base = nearestOnPath(rx, ry);
 
   for (let i = 0; i < s.count; i++) {
     const [along, across, splay] = FORMATION[i % FORMATION.length];
-    const idle = Math.atan2(-ay, -ax) + splay * Math.PI / 180;
+    // `along` follows the road's curve; `across` steps off the tangent there.
+    const at = walkPath(base.seg, base.t, along);
+    const idle = Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180;
+
     state.units.push({
       tower,
       def: s,
       slot: i,
-      rx: rx + ax * along + nx * across,
-      ry: ry + ay * along + ny * across,
+      rx: at.x - at.ty * across,
+      ry: at.y + at.tx * across,
       x: tower.x,
       y: tower.y,
       // At rest a soldier watches the way the enemies come from, which is back
