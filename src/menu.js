@@ -3,20 +3,21 @@ import { families } from './data/towers.js';
 // Radial menu around the tapped plot. Four families map to four quadrants;
 // a built tower shows upgrade and sell in two of them.
 //
-// Sized for touch: a button is BTN_R * 2 = 52 logical px. A 960-wide canvas
-// shows at roughly 800 CSS px on a landscape phone, so 52 logical lands at
-// about 44 real px — the minimum target. Do not shrink these without
-// re-checking that ratio.
+// Sized for touch AND for text: a button is BTN_R * 2 = 60 logical px, which a
+// 960-wide canvas shows at about 50 real px on a landscape phone — comfortably
+// over the 44px minimum. The extra size over the old 52 is what lets the name
+// sit inside the circle; labels hung underneath collided with each other and
+// with whatever was on the ground behind them.
 //
 // The geometry lives here rather than in render.js so input.js hit-tests
 // exactly what gets drawn. Two copies of these numbers is how the muzzle
 // offsets drifted apart.
-export const BTN_R = 26;
-export const RING_R = 62;   // plot centre to button centre
-export const HIT_R = 32;    // forgiving tap radius; buttons sit 88px apart
+export const BTN_R = 30;
+export const RING_R = 68;   // plot centre to button centre; buttons sit 96 apart
+export const HIT_R = 34;    // forgiving tap radius
 export const CANCEL_R = 18; // drawn size of the centre cancel target
 
-const MARGIN = RING_R + BTN_R + 16;   // room for the label under each button
+const MARGIN = RING_R + BTN_R;
 const HUD_H = 40;
 
 // Fraction of everything spent on a tower that selling gives back. Low enough
@@ -91,8 +92,9 @@ function buildItems() {
       act: 'build',
       family: fam,
       glyph: fam.glyph,
-      label: t1 ? `${fam.name} T1` : fam.name,
+      label: fam.name,
       cost: t1 ? t1.cost : null,
+      tier: t1 ? 1 : null,
       gain: null,
       available: !!t1
     };
@@ -110,8 +112,9 @@ function towerItems(t) {
       angle: E,
       act: 'upgrade',
       glyph: next ? 'up' : 'max',
-      label: next ? `Upgrade T${next.tier}` : 'Max tier',
+      label: next ? 'Upgrade' : 'Max',
       cost: next ? next.cost : null,
+      tier: next ? next.tier : null,
       gain: null,
       available: !!next
     },
@@ -120,6 +123,7 @@ function towerItems(t) {
       act: 'sell',
       glyph: 'coin',
       label: 'Sell',
+      tier: null,
       cost: null,
       gain: sellValue(t),
       available: true

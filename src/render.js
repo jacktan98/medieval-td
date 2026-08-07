@@ -3,6 +3,7 @@ import { waves } from './data/waves.js';
 import { SCALE, arrow } from './data/towers.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
+import { nearestOnPath } from './units.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 
 const PLOT_R = 30;
@@ -19,6 +20,7 @@ export function draw(ctx, state) {
   ctx.fillRect(0, 0, 960, 540);
 
   drawPath(ctx);
+  drawScenery(ctx);
   drawKeep(ctx);
   drawPlots(ctx, state);
   drawTowers(ctx, state);
@@ -57,11 +59,148 @@ function drawPath(ctx) {
   lay(ROAD_W - 26, '#84705A');  // the rut down the middle
 }
 
+// The keep the enemies are walking towards. Built from a ground shadow, a
+// front wall with a lit top face, and two towers standing proud of it, so it
+// reads as a solid object rather than a flat rectangle.
 function drawKeep(ctx) {
-  ctx.fillStyle = '#8A8478';
-  ctx.fillRect(keep.x - 22, keep.y - 40, 52, 80);
-  ctx.fillStyle = '#3E3E46';
-  ctx.fillRect(keep.x - 8, keep.y + 6, 20, 34);
+  const x = keep.x;
+  const y = keep.y;
+  const w = 74;
+  const h = 46;         // wall height above its footprint
+  const left = x - w / 2;
+  const base = y + 26;  // where the walls meet the ground
+
+  ctx.fillStyle = 'rgba(28,32,24,0.34)';
+  ctx.beginPath();
+  ctx.ellipse(x, base + 3, w * 0.62, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const wall = '#9A937F';
+  const lit = '#B7B09A';
+  const dark = '#6E6857';
+
+  // Curtain wall: shaded face, then a lit cap along the top edge.
+  ctx.fillStyle = wall;
+  ctx.fillRect(left, base - h, w, h);
+  ctx.fillStyle = dark;
+  ctx.fillRect(left, base - 10, w, 10);          // shadowed footing
+  ctx.fillStyle = lit;
+  ctx.fillRect(left, base - h, w, 7);            // sunlit parapet top
+
+  // Gate, recessed.
+  ctx.fillStyle = '#2E2A26';
+  ctx.beginPath();
+  ctx.moveTo(x - 11, base);
+  ctx.lineTo(x - 11, base - 20);
+  ctx.quadraticCurveTo(x, base - 32, x + 11, base - 20);
+  ctx.lineTo(x + 11, base);
+  ctx.closePath();
+  ctx.fill();
+
+  // Flanking towers, taller than the wall so the silhouette has steps in it.
+  for (const tx of [left - 4, left + w - 14]) {
+    const th = h + 20;
+    ctx.fillStyle = wall;
+    ctx.fillRect(tx, base - th, 18, th);
+    ctx.fillStyle = lit;
+    ctx.fillRect(tx, base - th, 18, 7);
+    ctx.fillStyle = dark;
+    ctx.fillRect(tx, base - 8, 18, 8);
+    // merlons
+    ctx.fillStyle = lit;
+    ctx.fillRect(tx, base - th - 6, 5, 6);
+    ctx.fillRect(tx + 13, base - th - 6, 5, 6);
+  }
+
+  ctx.strokeStyle = 'rgba(34,32,28,0.55)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(left, base - h, w, h);
+}
+
+// Trees and rocks, generated once from a fixed seed so the map looks the same
+// on every load without shipping a hand-placed list. Anything that lands on the
+// road, on a build plot, on the keep or on top of another prop is rejected —
+// scenery must never be mistaken for something you can interact with.
+const SCENERY = makeScenery();
+
+function makeScenery() {
+  let seed = 20260807;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const out = [];
+
+  for (let tries = 0; tries < 6000 && out.length < 34; tries++) {
+    const x = 16 + rnd() * 928;
+    const y = 58 + rnd() * 470;
+
+    if (nearestOnPath(x, y).d < ROAD_W / 2 + 24) continue;
+    if (plots.some(p => Math.hypot(p.x - x, p.y - y) < 78)) continue;   // clear of plots AND their menus
+    if (Math.hypot(keep.x - x, keep.y - y) < 96) continue;
+    if (out.some(s => Math.hypot(s.x - x, s.y - y) < 36)) continue;
+
+    out.push({ x, y, tree: rnd() < 0.62, size: 0.78 + rnd() * 0.5, tone: rnd() });
+  }
+
+  return out.sort((a, b) => a.y - b.y);   // painter's order, far things first
+}
+
+function drawScenery(ctx) {
+  for (const s of SCENERY) {
+    if (s.tree) drawTree(ctx, s);
+    else drawRock(ctx, s);
+  }
+}
+
+function drawTree(ctx, s) {
+  const k = s.size;
+  const trunkH = 9 * k;
+
+  ctx.fillStyle = 'rgba(28,32,24,0.32)';
+  ctx.beginPath();
+  ctx.ellipse(s.x + 3, s.y + 2, 11 * k, 4.5 * k, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#5A452C';
+  ctx.fillRect(s.x - 1.6 * k, s.y - trunkH, 3.2 * k, trunkH);
+
+  // Canopy: a dark mass, then a smaller lit crown up and to the left.
+  const dark = s.tone < 0.5 ? '#2F4A2C' : '#35502F';
+  const lite = s.tone < 0.5 ? '#40643A' : '#4A6E3F';
+  ctx.fillStyle = dark;
+  ctx.beginPath();
+  ctx.ellipse(s.x, s.y - trunkH - 6 * k, 11 * k, 9.5 * k, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = lite;
+  ctx.beginPath();
+  ctx.ellipse(s.x - 2.5 * k, s.y - trunkH - 9 * k, 7 * k, 6 * k, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawRock(ctx, s) {
+  const k = s.size;
+
+  ctx.fillStyle = 'rgba(28,32,24,0.30)';
+  ctx.beginPath();
+  ctx.ellipse(s.x + 2, s.y + 2, 9 * k, 4 * k, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#6A6A63';
+  ctx.beginPath();
+  ctx.moveTo(s.x - 9 * k, s.y + 1);
+  ctx.lineTo(s.x - 5 * k, s.y - 7 * k);
+  ctx.lineTo(s.x + 3 * k, s.y - 8 * k);
+  ctx.lineTo(s.x + 9 * k, s.y - 1 * k);
+  ctx.lineTo(s.x + 6 * k, s.y + 2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#8A8A80';
+  ctx.beginPath();
+  ctx.moveTo(s.x - 5 * k, s.y - 7 * k);
+  ctx.lineTo(s.x + 3 * k, s.y - 8 * k);
+  ctx.lineTo(s.x + 1 * k, s.y - 3.5 * k);
+  ctx.lineTo(s.x - 3 * k, s.y - 3 * k);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawPlots(ctx, state) {
@@ -520,7 +659,7 @@ function drawCancel(ctx, menu) {
 function drawButton(ctx, state, it) {
   const on = canUse(state, it);
 
-  ctx.fillStyle = on ? 'rgba(34,32,28,0.92)' : 'rgba(34,32,28,0.55)';
+  ctx.fillStyle = on ? 'rgba(34,32,28,0.94)' : 'rgba(34,32,28,0.62)';
   ctx.beginPath();
   ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
   ctx.fill();
@@ -529,7 +668,7 @@ function drawButton(ctx, state, it) {
   ctx.stroke();
 
   ctx.save();
-  ctx.translate(it.x, it.y - 5);
+  ctx.translate(it.x, it.y - 13);
   ctx.strokeStyle = ctx.fillStyle = on ? '#F0E6D2' : '#6E665A';
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
@@ -537,34 +676,39 @@ function drawButton(ctx, state, it) {
   drawGlyph(ctx, it.glyph);
   ctx.restore();
 
-  const caption = it.gain !== null ? `+${it.gain}g`
-                : it.cost !== null ? `${it.cost}g`
-                : it.available ? '' : 'soon';
-  if (!caption) return;
-
+  // Name and price stack INSIDE the circle. Anything hung outside overlapped
+  // the neighbouring button and the ground behind it.
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  ctx.fillStyle = on ? '#F0E6D2' : '#8A8478';
+  ctx.font = '700 9px system-ui, sans-serif';
+  ctx.fillText(fit(ctx, it.label, BTN_R * 1.85), it.x, it.y + 6);
+
+  const caption = it.gain !== null ? `+${it.gain}g`
+                : !it.available ? 'soon'
+                : it.cost !== null ? `T${it.tier} ${it.cost}g`
+                : '';
   if (caption) {
     ctx.fillStyle = it.gain !== null ? '#6BBF59' : (on ? '#C4A574' : '#6E665A');
-    ctx.font = '600 11px system-ui, sans-serif';
-    ctx.fillText(caption, it.x, it.y + 14);
-  }
-
-  // Named, not just glyphed. Four vector glyphs are not self-explanatory, and
-  // there is no hover on a touch screen to reveal what they mean.
-  if (it.label) {
-    const ly = it.y + BTN_R + 10;
-    ctx.font = '600 10px system-ui, sans-serif';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(34,32,28,0.85)';
-    ctx.strokeText(it.label, it.x, ly);       // outline, so it reads over any ground
-    ctx.fillStyle = on ? '#F0E6D2' : '#8A8478';
-    ctx.fillText(it.label, it.x, ly);
+    ctx.font = '600 9px system-ui, sans-serif';
+    ctx.fillText(caption, it.x, it.y + 18);
   }
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// Shrinks a label until it fits the given width, so a longer family name added
+// later cannot silently spill out of its button.
+function fit(ctx, text, max) {
+  if (!text) return '';
+  let size = 9;
+  while (size > 6 && ctx.measureText(text).width > max) {
+    size -= 0.5;
+    ctx.font = `700 ${size}px system-ui, sans-serif`;
+  }
+  return text;
 }
 
 // Vector glyphs rather than sprites — UI art is still unspecced, and these
