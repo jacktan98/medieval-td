@@ -512,17 +512,34 @@ function drawGunner(ctx, t) {
   ctx.restore();
 }
 
+// Enemies stay upright and only mirror, same rule as the gunners and soldiers.
+// They face the way they are walking, which is the direction of the segment
+// they are on, so a column marching left is drawn facing left.
 function drawEnemies(ctx, state) {
   for (const e of state.enemies) {
     const bob = Math.sin(e.t * 9) * 2;
+    const img = e.def.sprite && art[e.def.sprite];
 
-    ctx.fillStyle = e.def.colour;
-    ctx.beginPath();
-    ctx.arc(e.x, e.y + bob, e.def.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#22201C';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    if (!img) {
+      ctx.fillStyle = e.def.colour;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y + bob, e.def.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#22201C';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      const [sx, sy, sw, sh] = e.def.spriteTrim;
+      const dw = sw * SCALE;
+      const dh = sh * SCALE;
+      const dir = e.face;
+
+      ctx.save();
+      ctx.translate(e.x, e.y + bob);
+      ctx.scale(mirror(e.def, dir), 1);
+      ctx.drawImage(img, sx, sy, sw, sh, -e.def.pivot[0] * dw, -e.def.pivot[1] * dh, dw, dh);
+      ctx.restore();
+    }
 
     healthBar(ctx, e.x, e.y - e.def.r - 6 + bob, e.def.r, e.hp / e.maxHp);
   }
@@ -574,19 +591,39 @@ function drawSoldier(ctx, u) {
   ctx.restore();
 }
 
+// Countdown ring for a soldier that is dead and coming back, floating off the
+// barracks' top-right corner rather than centred on the building.
+//
+// Centred, the rings sat behind the roof and read as part of the building. Out
+// in the air beside it they read as status. They are anchored to the drawn box
+// rather than to tower.x/y so they follow the roofline of whatever art a tier
+// has, and they hug the corner tightly: at the highest plot the box top is only
+// 51px down, and the 40px HUD is waiting just above it.
+function musterRing(ctx, u) {
+  const box = towerBox(u.tower);
+  const cx = box.left + box.w + 2;
+  const cy = box.top + 8;
+  const r = 4 + u.slot * 3;      // one ring per slot, nested, so three read as three
+  const done = 1 - u.respawn / u.def.respawn;
+
+  ctx.strokeStyle = 'rgba(20,22,16,0.30)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(240,230,210,0.85)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + done * Math.PI * 2);
+  ctx.stroke();
+}
+
 // Barracks soldiers, plus a muster ring on the barracks for any that are dead.
 function drawUnits(ctx, state) {
   for (const u of state.units) {
     if (u.respawn > 0) {
-      // Muster ring on the barracks, so a dead squad reads as coming back
-      // rather than as a tower that stopped working.
-      const left = u.respawn / u.def.respawn;
-      ctx.strokeStyle = 'rgba(240,230,210,0.35)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      // One ring per slot, nested, so three reviving soldiers read as three.
-      ctx.arc(u.tower.x, u.tower.y, 11 + u.slot * 4, -Math.PI / 2, -Math.PI / 2 + (1 - left) * Math.PI * 2);
-      ctx.stroke();
+      musterRing(ctx, u);
       continue;
     }
 

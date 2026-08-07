@@ -1,5 +1,14 @@
+// Enemies are drawn standing and only mirror, same rule as every other figure:
+// sprite/trim/pivot are read the same way as the soldiers in data/towers.js and
+// scaled by the same SCALE, so an enemy is sized against a spearman by the art
+// rather than by a number picked here. `r` stays the collision radius and is
+// deliberately smaller than the drawn sprite — it is the body, not the outline.
 export const enemyTypes = {
   light_inf: {
+    sprite: 'enemy_t1',
+    spriteTrim: [80, 75, 40, 46],
+    pivot: [0.377, 0.978],   // feet on the anchor, standing axis from the legs
+    spriteFaces: -1,
     hp: 80,
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit

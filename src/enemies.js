@@ -11,6 +11,7 @@ export function spawn(state, typeId) {
     maxHp: def.hp,
     leg: 0,          // index of the waypoint being walked toward
     t: 0,            // wobble timer, drives the idle bob
+    face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
     foe: null,       // the barracks soldier holding it, if any
     acd: 0           // melee cooldown, only ticks while held
   });
@@ -23,7 +24,11 @@ export function updateEnemies(state, dt) {
     // Held in melee by a soldier. Blocked enemies stop dead rather than
     // sliding past — this is the whole point of the barracks family, and the
     // one case where an enemy is not a pure path-follower.
-    if (e.foe) continue;
+    if (e.foe) {
+      // Turn to fight whoever is holding it, so the two face each other.
+      if (e.foe.x !== e.x) e.face = e.foe.x > e.x ? 1 : -1;
+      continue;
+    }
 
     let move = e.def.speed * dt;
 
@@ -32,6 +37,10 @@ export function updateEnemies(state, dt) {
       const dx = target.x - e.x;
       const dy = target.y - e.y;
       const dist = Math.hypot(dx, dy);
+
+      // A vertical leg says nothing about which way the figure should look, so
+      // keep the last horizontal heading rather than snapping to a default.
+      if (dx) e.face = dx > 0 ? 1 : -1;
 
       if (dist <= move) {
         e.x = target.x;

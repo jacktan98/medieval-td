@@ -7,17 +7,28 @@
 // archers looked wrong to begin with. Arrows are the exception — a projectile
 // has no upright, so it rotates to point where it is flying.
 //
-// ONE SCALE FOR EVERYTHING. Every asset is exported on a 1000x1000 canvas, and
-// the artist sized them against each other on that canvas — a soldier is small
-// next to a tower because that is how tall a soldier is. So a single factor
-// converts source pixels to game pixels for all of them, and no sprite is ever
-// sized on its own. Change SCALE to resize the whole game's art together.
-export const SCALE = 0.105;
+// ONE SCALE FOR EVERYTHING. Every asset is exported on the same square canvas,
+// and the artist sized them against each other on it — a soldier is small next
+// to a tower because that is how tall a soldier is. So a single factor converts
+// source pixels to game pixels for all of them, and no sprite is ever sized on
+// its own. Change SCALE to resize the whole game's art together.
+//
+// Derived from the export size rather than typed, so re-exporting the same
+// artwork bigger or smaller changes ONE number and every drawn size stays put.
+// The exports were 1000x1000 (SCALE 0.105) and are 200x200 now (SCALE 0.525).
+//
+// 200 is too small for a phone. The tallest sprite is drawn 97px and the canvas
+// backing store goes to 3x device pixels, so it needs 291 source pixels and has
+// 185 — a 1.57x upscale, which is exactly why the art is soft on a phone and
+// crisp on a laptop. `node tools/trim.mjs` reports this per sprite. 320 clears
+// it; 512 leaves headroom.
+const EXPORT_PX = 200;
+export const SCALE = 105 / EXPORT_PX;
 
 const drawnW = trim => Math.round(trim[2] * SCALE);
 const drawnH = trim => Math.round(trim[3] * SCALE);
 
-// spriteTrim = the tight bounding box of the art inside its 1000x1000 export.
+// spriteTrim = the tight bounding box of the art inside its square export.
 // mountFrac  = where the gunner stands as a fraction of the building box: the
 //              middle of the platform.
 // muzzle     = [sideways, vertical] from the gunner. The sideways part flips
@@ -26,10 +37,11 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // gunnerPivot= the body centre as a fraction of the gunner's trim — the point
 //              it mirrors about, not the middle of a box a bow pulls off-centre.
 
-const TOWER_TRIM = [210, 42, 579, 916];
-const ARCHER_TRIM = [344, 322, 286, 273];
-const CAMP_TRIM = [136, 152, 728, 680];
-const SPEAR_TRIM = [300, 354, 343, 247];
+// Measured from the PNGs' alpha by tools/trim.mjs — do not hand-edit.
+const TOWER_TRIM = [17, 6, 151, 185];
+const ARCHER_TRIM = [73, 68, 57, 55];
+const CAMP_TRIM = [19, 32, 157, 136];
+const SPEAR_TRIM = [55, 72, 68, 51];
 
 // Tier 1 artwork, reused for tiers 2 and 3 until they have their own. All three
 // tiers are the SAME SIZE — scale is fixed by the export, so a tier reads as an
@@ -38,18 +50,28 @@ const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
   w: drawnW(TOWER_TRIM), h: drawnH(TOWER_TRIM),
-  mountFrac: [0.465, 0.284],
+  // Top surface of the platform, measured off the art: the deck is the widest
+  // run of rows in the tower's upper half, spanning source x 45..151 of a trim
+  // that starts at 17 and is 151 wide. It is NOT the middle of the box — the
+  // ladder hangs off one side and pulls the box centre away from the deck.
+  mountFrac: [0.536, 0.281],
   shape: 'tower'
 };
 
 const archer = {
   gunner: 'archer_t1',
   gunnerTrim: ARCHER_TRIM,
-  gunnerPivot: [0.436, 0.732],
-  // The bow's belly sits 104 source px out from the body — measured, not
-  // eyeballed, because the hat and quiver drown out the bow in a naive centroid.
+  // Anchored at the FEET (0.982 down) on the standing axis of the legs (0.360
+  // across), so the archer stands on the deck instead of hovering over it, and
+  // mirrors about its own legs rather than the middle of a box the bow pulls
+  // off-centre.
+  gunnerPivot: [0.360, 0.982],
   spriteFaces: -1,
-  muzzle: [Math.round(104 * SCALE), 0]
+  // Where the arrow leaves the bow, from the feet: 14.2 source px in front and
+  // 22.6 above, taken from the centroid of the frontmost 22% of the art. The
+  // bow has to be isolated like this because a naive centroid of the whole
+  // figure is dominated by the hat and the quiver.
+  muzzle: [Math.round(14.2 * SCALE), -Math.round(22.6 * SCALE)]
 };
 
 export const archery = [
@@ -77,7 +99,9 @@ const SPEAR_BODY = 0.341;
 const spearman = {
   sprite: 'soldier_t1',
   spriteTrim: SPEAR_TRIM,
-  pivot: [0.640, 0.791],
+  // Feet on the anchor, standing axis of the legs across — the same convention
+  // as the archer's gunnerPivot, so "where a figure is" means one thing.
+  pivot: [0.657, 0.980],
   bodyFrac: SPEAR_BODY,
   spriteFaces: -1,
   r: Math.round(SPEAR_W * SPEAR_BODY / 2),
@@ -103,7 +127,7 @@ export const barracks = [
 // pointing left in the source, same as the figures.
 export const arrow = {
   sprite: 'arrow_t1',
-  trim: [400, 464, 200, 41],
+  trim: [80, 93, 40, 8],
   faces: -1
 };
 
