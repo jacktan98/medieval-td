@@ -20,12 +20,26 @@
     display: grid;
     place-items: center;
   }
+  /* The whole board must be on screen. It is a fixed 960x540 world with plots
+     in the corners, so anything cut off is a plot you cannot build on.
+
+     Sized from whichever axis actually binds, rather than from the width with
+     a max-height to catch the overflow: `width: 100%` is a DEFINITE width, so
+     aspect-ratio derives the height from it and `max-height` never shrinks the
+     width back. On a 844x390 phone in landscape that made the canvas 844x475
+     inside a 390-tall window, and body{overflow:hidden} quietly ate the bottom
+     18% of the map — the two lowest plots and the bottom of the road. It read
+     as the map being zoomed in.
+
+     177.78vh is 100vh x 16/9, the width the board would need if height were the
+     limit. The dvh line repeats it in dynamic viewport units so a phone's
+     retracting address bar is accounted for; browsers without dvh ignore it and
+     keep the vh line above. */
   canvas {
-    max-width: 100%;
-    max-height: 100%;
-    aspect-ratio: 16 / 9;
-    width: 100%;
     display: block;
+    width: min(100vw, 177.78vh);
+    width: min(100dvw, 177.78dvh);
+    aspect-ratio: 16 / 9;
   }
 </style>
 </head>
