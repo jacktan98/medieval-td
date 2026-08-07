@@ -1,7 +1,7 @@
 import { path, plots, keep } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { art } from './assets.js';
-import { towerBox, facing, muzzlePoint } from './towers.js';
+import { towerBox, mountPoint, muzzlePoint } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 
 const PLOT_R = 30;
@@ -116,16 +116,12 @@ function drawBuilding(ctx, t, box) {
   else drawStoneTower(ctx, t, box);
 }
 
-// Archery tower: a tapered shaft carrying a platform, with a merlon at each
-// end and the gap between them left clear for the gunner.
-//
-// The platform's top surface is box.top + mount[1] — the exact point the
-// gunner's feet are placed on. Deriving the floor from the mount rather than
-// from its own constant is what stops the archer floating above the stonework
-// or sinking into it when a tier's numbers are retuned.
+// Fallback archery tower, drawn only when the sprite fails to load. Side
+// elevation rather than top-down, so it will not match a rotating gunner —
+// it exists so a failed image leaves a building rather than bare ground.
 function drawStoneTower(ctx, t, box) {
   const stone = t.def.colour;
-  const deckTop = box.top + t.def.mount[1];
+  const deckTop = box.top + box.h * 0.15;
   const deckBottom = deckTop + DECK_H;
   const bottom = box.top + box.h;
 
@@ -164,7 +160,7 @@ function drawStoneTower(ctx, t, box) {
   // Merlons at the ends only. The gunner stands in the gap between them, feet
   // on the slab, which is the whole point of drawing the deck at all.
   const mw = box.w * 0.27;
-  const mh = t.def.mount[1];
+  const mh = box.h * 0.15;
   ctx.fillStyle = stone;
   ctx.fillRect(box.left, deckTop - mh, mw, mh);
   ctx.strokeRect(box.left, deckTop - mh, mw, mh);
@@ -223,30 +219,38 @@ function drawCamp(ctx, t, box) {
   ctx.stroke();
 }
 
-// Stands the gunner on its mount point and mirrors it when the tower aims
-// left. Never rotates — these are side-elevation sprites, so a rotated archer
-// is an archer lying on the floor.
+// Gunner art is top-down, so it rotates rigidly to aim, pivoting on the body
+// rather than on the middle of a box that a bow or a spear pulls off-centre.
+// Nothing mirrors — a figure seen from above has no wrong way up, which is why
+// the old left/right flip could be deleted rather than fixed.
+//
+// The drawn size comes from gunnerR, so the body reads at a known radius
+// whatever the source art's proportions are.
 function drawGunner(ctx, t) {
-  const box = towerBox(t);
-  const [mx, my] = t.def.mount;
+  const d = t.def;
+  const m = mountPoint(t);
+  const img = art[d.gunner];
 
-  ctx.save();
-  ctx.translate(box.left + mx, box.top + my);
-  ctx.scale(facing(t), 1);
-  ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
-
-  const img = art[t.def.gunner];
-  if (img) {
-    const [sx, sy, sw, sh] = t.def.gunnerTrim;
-    ctx.drawImage(img, sx, sy, sw, sh, -t.def.gw / 2, -t.def.gh, t.def.gw, t.def.gh);
-  } else {
+  if (!img) {
     ctx.fillStyle = '#E0D6C2';
-    ctx.fillRect(-8, -14, 16, 14);
-    ctx.strokeStyle = '#22201C';
+    ctx.strokeStyle = OUTLINE;
     ctx.lineWidth = 2;
-    ctx.strokeRect(-8, -14, 16, 14);
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, d.gunnerR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    return;
   }
 
+  const [sx, sy, sw, sh] = d.gunnerTrim;
+  const dw = (d.gunnerR * 2) / d.gunnerBodyFrac;
+  const dh = dw * (sh / sw);
+
+  ctx.save();
+  ctx.translate(m.x, m.y);
+  ctx.rotate(t.aim - d.gunnerAim * Math.PI / 180);
+  ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
+  ctx.drawImage(img, sx, sy, sw, sh, -d.gunnerPivot[0] * dw, -d.gunnerPivot[1] * dh, dw, dh);
   ctx.restore();
 }
 

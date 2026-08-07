@@ -15,23 +15,31 @@ export function towerBox(t) {
   };
 }
 
-// Gunner sprites are side elevation, drawn facing right, same as every other
-// building in the game. Aiming left mirrors them horizontally. They are never
-// rotated — a standing archer rotated to aim upward is an archer lying down.
-export function facing(t) {
-  return Math.abs(t.aim) > Math.PI / 2 ? -1 : 1;
+// Where the gunner stands: the centre of the building's platform. Held as a
+// fraction of the box rather than a pixel offset, so it follows w/h when a
+// tier is resized instead of drifting off the deck.
+export function mountPoint(t) {
+  const box = towerBox(t);
+  return {
+    x: box.left + box.w * t.def.mountFrac[0],
+    y: box.top + box.h * t.def.mountFrac[1]
+  };
 }
 
-// Where the projectile leaves the gunner, in world space. Mirrors the muzzle's
-// x offset with the sprite so the arrow always leaves the bow.
+// Where the projectile leaves the gunner, in world space.
+//
+// Gunner art is top-down, so the sprite rotates rigidly to aim and the muzzle
+// rides along with it — [forward, sideways] relative to the aim. No mirroring,
+// which is what used to flip the sprite as a target crossed straight overhead.
 export function muzzlePoint(t) {
-  const box = towerBox(t);
-  const [mx, my] = t.def.mount;
-  const [ox, oy] = t.def.muzzle;
+  const m = mountPoint(t);
+  const [forward, side] = t.def.muzzle;
+  const c = Math.cos(t.aim);
+  const s = Math.sin(t.aim);
 
   return {
-    x: box.left + mx + ox * facing(t),
-    y: box.top + my + oy
+    x: m.x + forward * c - side * s,
+    y: m.y + forward * s + side * c
   };
 }
 

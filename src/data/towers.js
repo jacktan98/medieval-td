@@ -1,29 +1,49 @@
-// Archery family. Tier 1 is built on an empty plot; tapping an existing
-// tower upgrades it. Costs are cumulative spend, not refundable.
+// Archery and barracks families. Tier 1 is built on an empty plot; tapping an
+// existing tower upgrades it. Costs are cumulative spend, not refundable.
 //
-// w / h    = the size the tower building is drawn at. towerBox() in towers.js
-//            turns this into a world-space box anchored 12px below the plot
-//            centre; mount and muzzle are measured from that box's top-left.
-// mount    = where the gunner's FEET stand, offset from the box's top-left.
-// muzzle   = where the projectile leaves the gunner, offset from the gunner's
-//            own feet. y is negative because it is measured upward. Mirrored
-//            on x when the tower aims left.
-// gunner   = sprite key in assets.js
+// EVERY sprite in this file is drawn top-down. Buildings are seen from above at
+// a slight angle, units straight down. That is what lets a gunner rotate freely
+// to aim instead of mirroring — a figure seen from above has no wrong way up.
+//
+// w / h      = the size the building is drawn at. towerBox() in towers.js turns
+//              this into a world-space box anchored 12px below the plot centre.
 // sprite / spriteTrim
-//          = artwork for the BUILDING, drawn to fill w x h. Tiers without one
-//            fall back to the vector building in render.js, so a family can be
-//            wired up one tier at a time as art arrives.
-// gunnerTrim
-//          = [sx, sy, sw, sh] — the tight bounding box of the GUNNER artwork
-//            inside its source PNG. Source art carries 20-40% transparent
-//            margin, which would otherwise shrink and off-centre the drawing.
-//            Cropped at draw time so the art files stay as exported; if a PNG
-//            is ever re-cut tight, set its trim to [0, 0, width, height].
-// gw / gh  = size the gunner sprite is drawn at, standing on the mount point.
-//            Keep gw/gh at the trim box's aspect ratio or the art squashes.
+//            = building artwork, and the tight bounding box of the art inside
+//              its source PNG. Cropping at draw time keeps the exported files
+//              untouched. Tiers with no sprite fall back to a vector building.
+// mountFrac  = where the gunner stands, as a fraction of the building box —
+//              the centre of the platform. A fraction rather than pixels so it
+//              stays correct when a tier's w/h change.
+// muzzle     = [forward, sideways] from the gunner, along its aim. Rotated with
+//              the sprite, so the arrow always leaves the bow.
+// gunner*    = the gunner sprite, its trim, the body centre as a fraction of
+//              that trim (the point it rotates about), the body's diameter as a
+//              fraction of trim width, the direction the weapon points in the
+//              source art in degrees, and the drawn body radius.
+
+// Tier 1 artwork, reused for tiers 2 and 3 until they have their own. Sizes
+// differ per tier, so everything positional here is a fraction, not a pixel.
+const watchtower = {
+  sprite: 'archery_t1',
+  spriteTrim: [210, 42, 579, 916],
+  mountFrac: [0.449, 0.314]
+};
+
+const archer = {
+  gunner: 'archer_t1',
+  gunnerTrim: [344, 322, 286, 273],
+  gunnerPivot: [0.436, 0.732],
+  gunnerBodyFrac: 0.413,
+  // The bow's belly, 104 source px ahead of the body centre. Measured from the
+  // art rather than eyeballed; the hat and quiver sit at -90 and -45 and will
+  // skew any naive centroid of the brown pixels.
+  gunnerAim: 180,
+  muzzle: [11, 0]
+};
 
 export const archery = [
   {
+    ...watchtower, ...archer,
     tier: 1,
     name: 'Watchtower',
     cost: 70,
@@ -32,14 +52,11 @@ export const archery = [
     cooldown: 0.75,
     colour: '#9C7248',
     shape: 'tower',
-    w: 44, h: 68,
-    mount: [22, 10],
-    muzzle: [10, -20],
-    gunner: 'archer_t1',
-    gunnerTrim: [96, 153, 268, 407],
-    gw: 20, gh: 30
+    w: 52, h: 82,
+    gunnerR: 6
   },
   {
+    ...watchtower, ...archer,
     tier: 2,
     name: 'Archer Post',
     cost: 90,
@@ -48,14 +65,11 @@ export const archery = [
     cooldown: 0.65,
     colour: '#7A5230',
     shape: 'tower',
-    w: 48, h: 76,
-    mount: [24, 11],
-    muzzle: [9, -19],
-    gunner: 'archer_t2',
-    gunnerTrim: [61, 44, 321, 569],
-    gw: 18, gh: 32
+    w: 58, h: 92,
+    gunnerR: 7
   },
   {
+    ...watchtower, ...archer,
     tier: 3,
     name: 'Crossbow Tower',
     cost: 140,
@@ -64,12 +78,8 @@ export const archery = [
     cooldown: 0.55,
     colour: '#B8B2A4',
     shape: 'tower',
-    w: 56, h: 88,
-    mount: [28, 13],
-    muzzle: [12, -24],
-    gunner: 'crossbow_t3',
-    gunnerTrim: [7, 63, 405, 467],
-    gw: 26, gh: 30
+    w: 64, h: 101,
+    gunnerR: 8
   }
 ];
 
@@ -79,29 +89,15 @@ export const archery = [
 // lever, so upgrades make the same wall tougher rather than changing the shape
 // of the defence.
 
-// Soldier artwork. Drawn top-down, unlike the archers — it is a figure seen
-// from above, so it rotates freely to face its target with no mirroring.
-//
-// spriteAim  = the direction the spear points in the source art, in degrees.
-//              Rendering rotates by (facing - spriteAim), so the spear ends up
-//              pointing where the soldier is looking.
-// pivot      = the body centre as a fraction of the trim box. Rotation happens
-//              about the body, not about the middle of a box that a long spear
-//              has pulled off-centre.
-// bodyFrac   = the body's diameter as a fraction of the trim width. The drawn
-//              size is derived from this and the soldier's radius, so the
-//              sprite's body always matches the radius the formation and the
-//              road-fit check use.
-//
-// Tier 1 art, reused for tiers 2 and 3 until they have their own — a knight is
-// simply a bigger spearman for now, which beats reverting to a plain circle
-// halfway up the upgrade path.
+// Soldier artwork, same top-down treatment as the archer. Tier 1 art stands in
+// for tiers 2 and 3 — a knight is a bigger spearman for now, which beats
+// reverting to a plain circle halfway up the upgrade path.
 const spearman = {
   sprite: 'soldier_t1',
-  spriteTrim: [263, 350, 412, 297],
-  pivot: [0.560, 0.791],
-  bodyFrac: 0.342,
-  spriteAim: -150
+  spriteTrim: [300, 354, 343, 247],
+  pivot: [0.640, 0.791],
+  bodyFrac: 0.341,
+  spriteAim: -153
 };
 
 export const barracks = [
@@ -112,11 +108,9 @@ export const barracks = [
     range: 110,
     colour: '#6E7A6A',
     shape: 'camp',
-    // 742x819 of art inside a 1000x1000 export. The banner and pole are part
-    // of that box, so h covers them and the tent itself reads about 54 wide.
     sprite: 'barracks_t1',
-    spriteTrim: [97, 72, 742, 819],
-    w: 54, h: 60,
+    spriteTrim: [136, 152, 728, 680],
+    w: 62, h: 58,
     soldier: { ...spearman, count: 3, hp: 70, damage: 3, cd: 1.00, speed: 60, respawn: 10, regen: 3, r: 7, colour: '#7C93B8' }
   },
   {
@@ -126,7 +120,9 @@ export const barracks = [
     range: 120,
     colour: '#5E6B5C',
     shape: 'camp',
-    w: 58, h: 54,
+    sprite: 'barracks_t1',
+    spriteTrim: [136, 152, 728, 680],
+    w: 68, h: 64,
     soldier: { ...spearman, count: 3, hp: 95, damage: 4, cd: 0.95, speed: 64, respawn: 9, regen: 3.5, r: 7, colour: '#6E86B4' }
   },
   {
@@ -136,7 +132,9 @@ export const barracks = [
     range: 130,
     colour: '#8A8478',
     shape: 'camp',
-    w: 64, h: 62,
+    sprite: 'barracks_t1',
+    spriteTrim: [136, 152, 728, 680],
+    w: 74, h: 69,
     soldier: { ...spearman, count: 3, hp: 125, damage: 5, cd: 0.90, speed: 68, respawn: 8, regen: 4, r: 8, colour: '#5C79AE' }
   }
 ];
