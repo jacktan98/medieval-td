@@ -19,12 +19,10 @@ const DEBUG_MUZZLE = typeof location !== 'undefined' &&
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
 
-  // Nothing draws the build plots. The map paints a marker on each one, and the
-  // tower sprites carry their own ground shadow, so a code-drawn disc on top
-  // only greys out the artwork underneath it.
   drawGround(ctx);
   drawScenery(ctx);
   drawKeep(ctx);
+  drawPlots(ctx, state);
   drawTowers(ctx, state);
   drawEnemies(ctx, state);
   drawUnits(ctx, state);
@@ -209,6 +207,27 @@ function drawRock(ctx, s) {
   ctx.fill();
 }
 
+// The artist's plot marker, stamped on every plot that is still empty. Sizes
+// come from tools/split-map.mjs, which centres the marker's viewBox on its
+// ground ellipse so it can simply be drawn centred here — the signpost sticks
+// up out of the top and the padding accounts for it.
+//
+// Drawing them rather than painting them into the map is the whole point: an
+// occupied plot loses its marker, so the signpost stops poking out between a
+// watchtower's legs.
+const MARKER_W = 69.4;
+const MARKER_H = 40.2;
+
+function drawPlots(ctx, state) {
+  const img = art.plot_marker;
+  if (!img) return;
+
+  for (const p of plots) {
+    if (state.towers.some(t => t.plot === p)) continue;
+    ctx.drawImage(img, p.x - MARKER_W / 2, p.y - MARKER_H / 2, MARKER_W, MARKER_H);
+  }
+}
+
 // How much a circle lying on the ground is squashed by the viewing angle.
 // Anything drawn flat on the ground uses this, so the tower shadows, the range
 // rings and anything added later all agree on where the ground plane is.
@@ -248,6 +267,38 @@ function drawTowers(ctx, state) {
 function drawRangeDisc(ctx, t) {
   const rx = t.def.range;
   const ry = rx * SQUASH;
+  const next = t.fam.tiers[t.def.tier];
+
+  // The reach the upgrade would buy, as a dotted ring outside the solid one.
+  //
+  // Shown whenever the menu is open, NOT on hover: there is no hover on a
+  // phone, and this game is played with a thumb. Anything that only appears
+  // under a mouse pointer is invisible to most of the people playing it, so the
+  // trigger is "you are looking at this tower's menu" instead.
+  //
+  // Drawn first so the current range's rim stays the crisper of the two.
+  if (next && next.range > t.def.range) {
+    const gx = next.range;
+    ctx.save();
+    ctx.fillStyle = 'rgba(200,240,255,0.07)';
+    ctx.beginPath();
+    ctx.ellipse(t.x, t.y, gx, gx * SQUASH, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.setLineDash([7, 6]);
+    ctx.strokeStyle = 'rgba(24,26,20,0.35)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(t.x, t.y + 3, gx, gx * SQUASH, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(150,225,255,0.90)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(t.x, t.y, gx, gx * SQUASH, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   ctx.fillStyle = 'rgba(240,230,210,0.10)';
   ctx.beginPath();

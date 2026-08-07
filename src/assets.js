@@ -13,10 +13,13 @@ const paths = {
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
   arrow_t1:    'assets/projectiles/Archers_Arrow_T1.png',
   enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
-  // The whole board: ground, road and the plot markers, painted as one image.
-  // An SVG has no fixed resolution, so unlike the sprites it stays sharp at any
-  // device pixel ratio.
-  map01:       'assets/map/Map_1.svg'
+  // The board and the plot marker, split out of the artist's Map_1.svg by
+  // tools/split-map.mjs. They are separate because a marker painted into the
+  // background can never be taken away, and it has to vanish when a tower is
+  // built on that plot. Both are SVG, so unlike the sprites they stay sharp at
+  // any device pixel ratio.
+  map01:       'assets/map/Map_1_base.svg',
+  plot_marker: 'assets/map/Plot_Marker.svg'
 };
 
 export const art = {};
