@@ -21,16 +21,40 @@ export const CORPSE_LIFE = 2;
 // existence draws the eye straight to the frame it disappears on.
 export const CORPSE_FADE = 0.5;
 
-// How far back the blow throws him. A man who is speared or shot does not fold
-// up on the spot he was standing on — he goes over backwards, away from whatever
-// hit him — and 5px is enough to read as that without the body looking like it
-// teleported.
+// How far back the blow throws him, in game px.
 //
 // Backwards means opposite the way he was FACING, which is the direction the
 // thing that killed him came from: both sides of a fight stand nose to nose, and
 // the lunge in enemies.js/units.js already uses the same axis. Sideways is not
 // an option here — these figures never move up and down.
-export const KNOCKBACK = 5;
+//
+// This was 5px and applied instantly, and that read as nothing at all: a body
+// that appears 5px from where the man stood has not been thrown, it has been
+// placed. What sells a knockback is the MOVEMENT, so the distance went to 10 —
+// half a militiaman's width — and the body now travels it.
+export const KNOCKBACK = 10;
+
+// How long the throw takes. Short enough to belong to the blow that caused it
+// rather than looking like the corpse is sliding downhill; long enough to be
+// several frames at 1x, and still 3-4 frames on the dashboard's 2x.
+export const KNOCKBACK_TIME = 0.18;
+
+// Ease-out cubic: fastest at the instant of the hit, then settling. The opposite
+// curve would look like the body pushing itself along the ground.
+const eased = p => 1 - (1 - p) ** 3;
+
+// How far through the throw a body is, 0 at the moment of death to 1 once it has
+// settled. A corpse with no `kb` — corpse-test.html places its bodies directly —
+// is treated as having landed already, so nothing there moves.
+const thrown = c => (c.kb ? eased(Math.min(1, (CORPSE_LIFE - c.life) / KNOCKBACK_TIME)) : 1);
+
+// The body's offset from its resting place, in world px. Positive is back toward
+// the spot the man was killed on, which is where the throw starts.
+export const knockbackOffset = c => c.face * (c.kb || 0) * (1 - thrown(c));
+
+// The pool's opacity ramp. Blood spreads once the body is down, so the stain
+// arrives with the landing rather than being on the ground ahead of it.
+export const settled = thrown;
 
 // `def` is the living figure's def, not a separate corpse def: the body is drawn
 // from `def.dead` and positioned from the same trim and pivot the standing
@@ -44,10 +68,17 @@ export function dropCorpse(state, def, x, y, face) {
   // always appear together, sit together and fade together. render.js draws it
   // in an earlier pass, which is what keeps the body on top of it.
   //
-  // The pool moves back with him, not with the spot he was killed on: the blood
-  // under a body belongs to the body. The spatter from the killing blow was
-  // already thrown at the fight, and that one stays put.
-  state.corpses.push({ def, x: x - face * KNOCKBACK, y, face, life: CORPSE_LIFE, pool: poolFor() });
+  // `x` is where he ENDS UP, one knockback back from where he was killed — the
+  // pool belongs to the body and it forms where the body comes to rest, not
+  // along the path it took. The spatter from the killing blow was already thrown
+  // at the fight, and that one stays put.
+  state.corpses.push({
+    def, y, face,
+    x: x - face * KNOCKBACK,
+    kb: KNOCKBACK,
+    life: CORPSE_LIFE,
+    pool: poolFor()
+  });
 }
 
 export function updateCorpses(state, dt) {

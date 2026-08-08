@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Medieval TD — death knockback</title>
+<!-- The throw is over in 180ms, which is too quick to judge while playing. This
+     freezes one throw at five points and lays them out left to right, for three
+     figures of different sizes.
+
+     The cyan line is the spot the man was standing on when he died. Read it as:
+     at t = 0 the body must be ON the line — a body that starts anywhere else
+     pops away from the living figure it replaced — and by the last column it
+     must have settled one KNOCKBACK behind it, away from the way it was facing.
+     All three face right, so all three travel left.
+
+     The pool is the other half of the check: no blood at t = 0, full blood once
+     the body has landed. Blood on the ground ahead of the body gives it away. -->
+<style>body{margin:0;background:#23201c}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="game" width="960" height="440"></canvas>
+<script>
+  (function () {
+    var stamp = Math.floor(Date.now() / 60000);
+    var mods = [
+      'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
+      'render', 'input', 'menu', 'units', 'corpses', 'blood',
+      'data/level01', 'data/towers', 'data/waves'
+    ];
+    var imports = {};
+    for (var i = 0; i < mods.length; i++) {
+      imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+    }
+    var tag = document.createElement('script');
+    tag.type = 'importmap';
+    tag.textContent = JSON.stringify({ imports: imports });
+    document.head.appendChild(tag);
+  })();
+</script>
+<script type="module">
+import { loadArt } from './src/assets.js';
+import { draw } from './src/render.js';
+import { enemyTypes } from './src/data/waves.js';
+import { barracks } from './src/data/towers.js';
+import { CORPSE_LIFE, KNOCKBACK, KNOCKBACK_TIME } from './src/corpses.js';
+import { poolFor } from './src/blood.js';
+
+// Five stills through one throw. A corpse's age is CORPSE_LIFE - life, so a
+// given point in the throw is reached by winding `life` back from full.
+const STEPS = [0, 0.25, 0.5, 0.75, 1];
+const DEATH_X = i => 140 + i * 180;
+
+// Every corpse in a row shares one pool, so the blood is in the same place in
+// all five columns and the only thing changing across them is the throw itself.
+const row = (def, y) => {
+  const pool = poolFor();
+  return STEPS.map((p, i) => ({
+    def, y, face: 1, kb: KNOCKBACK,
+    x: DEATH_X(i) - KNOCKBACK,          // where it comes to rest
+    life: CORPSE_LIFE - p * KNOCKBACK_TIME,
+    pool
+  }));
+};
+
+const state = {
+  gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
+  resting: false, menu: null, result: null,
+  towers: [], enemies: [], units: [], shots: [], hits: [], splats: [],
+  corpses: [
+    ...row(enemyTypes.light_inf, 150),
+    ...row(enemyTypes.heavy_inf, 270),
+    ...row(barracks[1].soldier, 390)
+  ]
+};
+
+const ctx = document.getElementById('game').getContext('2d');
+await loadArt();
+draw(ctx, state);
+
+ctx.setTransform(1, 0, 0, 1, 0, 0);
+ctx.strokeStyle = '#00E5FF';
+ctx.lineWidth = 1;
+STEPS.forEach((p, i) => {
+  const x = DEATH_X(i) + 0.5;
+  ctx.beginPath();
+  ctx.moveTo(x, 100); ctx.lineTo(x, 430);
+  ctx.stroke();
+});
+
+// Everything below the HUD bar, which draw() paints across the top like any
+// other frame of the game.
+ctx.fillStyle = '#F0E6D2';
+ctx.font = '13px system-ui, sans-serif';
+STEPS.forEach((p, i) => {
+  const ms = Math.round(p * KNOCKBACK_TIME * 1000);
+  ctx.fillText(ms + 'ms', DEATH_X(i) - 14, 94);
+});
+ctx.fillText(`${KNOCKBACK}px over ${Math.round(KNOCKBACK_TIME * 1000)}ms, ease-out`, 20, 432);
+ctx.fillText('militia', 20, 155);
+ctx.fillText('heavy', 20, 275);
+ctx.fillText('spear T2', 20, 395);
+window.ready = true;
+</script>
+</body>
+</html>

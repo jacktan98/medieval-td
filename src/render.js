@@ -2,7 +2,7 @@ import { plots } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE, arrow } from './data/towers.js';
-import { CORPSE_FADE } from './corpses.js';
+import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
@@ -518,11 +518,16 @@ function drawBlood(ctx, key, x, y, alpha) {
 // The stain under each body. Offset and image were chosen once, when the corpse
 // was created, and both live on the corpse — so a pool never flickers between
 // the two pictures and never crawls around between frames.
+//
+// It sits at the corpse's resting x and does NOT follow the knockback: the body
+// slides into its pool rather than dragging it along. It fades in over the throw
+// for the same reason — blood on the ground before the man has landed on it
+// would give the whole thing away.
 function drawPools(ctx, state) {
   for (const c of state.corpses) {
     if (!c.pool) continue;
     drawBlood(ctx, c.pool.img, c.x + c.pool.dx, c.y + c.pool.dy,
-      Math.min(1, c.life / CORPSE_FADE));
+      Math.min(1, c.life / CORPSE_FADE) * settled(c));
   }
 }
 
@@ -560,7 +565,9 @@ function drawCorpse(ctx, c) {
 
   ctx.save();
   ctx.globalAlpha = Math.min(1, c.life / CORPSE_FADE);
-  ctx.translate(c.x, c.y);
+  // The throw is applied in world space, before the mirror, so a body goes back
+  // from the way it was facing rather than back from the way the art is drawn.
+  ctx.translate(c.x + knockbackOffset(c), c.y);
   ctx.scale(mirror(c.def, c.face), 1);
 
   if (c.def.deadTrim) {

@@ -123,21 +123,41 @@ Everything else is the same as every other sprite in this project:
 
 ## What the game does with it
 
-The body appears **5 game px behind where he fell**, stays **2 seconds**, then
-goes. The last half second fades out — that fade is inside the 2 seconds, not
-added to it, and it is there because a body that pops out of existence pulls
+The body appears **exactly where the living figure was standing**, is **thrown
+10 game px backwards over 180ms**, then lies there for the rest of its **2
+seconds**. The last half second fades out — that fade is inside the 2 seconds,
+not added to it, and it is there because a body that pops out of existence pulls
 your eye to the exact frame it vanishes.
 
-Those 5px are the killing blow throwing him over backwards, and "backwards"
-means opposite the way he was FACING — which is where the blow came from, since
-both sides of a fight stand nose to nose. It is the same axis the attack lunge
-uses; nothing here ever moves up and down. The pool of blood goes back with him,
-because the blood under a body belongs to the body. The spatter thrown at the
-moment of the hit stays at the fight.
+"Backwards" means opposite the way he was FACING — which is where the blow came
+from, since both sides of a fight stand nose to nose. It is the same axis the
+attack lunge uses; nothing here ever moves up and down.
+
+The throw is what makes it read. It was 10px applied instantly and it may as
+well not have been there: a body that simply *appears* 10px away has not been
+thrown, it has been placed, and the jump away from the living figure is the only
+thing the eye catches. The movement is the effect, so the body now starts on the
+dead man's own feet and travels, easing out — fastest at the instant of the
+blow. Distances and timing are `KNOCKBACK` and `KNOCKBACK_TIME` in
+`src/corpses.js`; both are single numbers and safe to retune.
+
+One consequence worth knowing: the throw is a flat distance for everyone, so it
+is a smaller fraction of a big figure than a small one — 10px moves a militiaman
+half his own width and a heavy barely a quarter. That reads as weight without
+any per-enemy number, which is why there isn't one.
+
+The pool of blood does **not** travel with him. It sits where he comes to rest
+and fades in as he lands, because blood spreads under a body once it is down —
+a stain already on the ground ahead of a body in flight gives the whole thing
+away. The spatter thrown at the moment of the hit stays at the fight.
+
+`knock-test.html` freezes one throw at five points, for three sizes of figure,
+with a line on the spot each man died on. That is the page to open after
+changing either number.
 
 `corpse-test.html` places its bodies directly rather than killing anything, so
-the crosshairs there are the pose anchor with no knockback in it — which is what
-you want when checking a new drawing. The 5px only happens in play.
+the crosshairs there are the pose anchor with no throw applied — which is what
+you want when checking a new drawing.
 
 Two seconds is *game* time. On 2x from the dashboard a body lasts one real
 second, which is deliberate: fast-forward speeds up the whole simulation, and a
