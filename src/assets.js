@@ -14,11 +14,15 @@ const paths = {
   arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
   enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
   enemy_t2:    'assets/enemies/Enemies_Man_T2.png',
-  // Death poses. See assets/dead/README.md. Absent until the artist draws them,
-  // which is why they are in OPTIONAL below — a body simply does not appear.
-  dead_enemy_t1:   'assets/dead/Enemies_Man_T1_Dead.png',
-  dead_enemy_t2:   'assets/dead/Enemies_Man_T2_Dead.png',
-  dead_soldier_t1: 'assets/dead/Barracks_Man_T1_Dead.png',
+  // Death poses. See assets/dead/README.md.
+  //
+  // The tier comes LAST in these names — Man_Dead_T1, not Man_T1_Dead — because
+  // that is how they were exported. The code bends to the artist's filenames
+  // rather than the other way round: renaming an upload only means renaming it
+  // again after the next one.
+  dead_enemy_t1:   'assets/dead/Enemies_Man_Dead_T1.png',
+  dead_enemy_t2:   'assets/dead/Enemies_Man_Dead_T2.png',
+  dead_soldier_t1: 'assets/dead/Barracks_Man_Dead_T1.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is
@@ -33,14 +37,15 @@ const paths = {
 };
 
 // Art the game is wired for but does not have yet. A miss here is expected, so
-// it must not raise a warning — three console warnings on every single load is
-// how you learn to ignore the console, and the console is the only thing that
-// tells you a real sprite failed to deploy.
+// it must not raise a warning — console warnings on every single load are how
+// you learn to ignore the console, and the console is the only thing that tells
+// you a real sprite failed to deploy.
 //
-// They are still reported, once, as a quiet note: that way a file uploaded under
-// a slightly wrong name still shows up as missing instead of silently doing
-// nothing. Delete a key from this set when its art is permanent.
-const OPTIONAL = new Set(['dead_enemy_t1', 'dead_enemy_t2', 'dead_soldier_t1']);
+// Misses are still reported, once, as a quiet note: that way a file uploaded
+// under a slightly wrong name shows up as missing instead of silently doing
+// nothing. Empty now that all three death poses have landed — put a key back
+// here when a family is wired ahead of its artwork.
+const OPTIONAL = new Set();
 
 export const art = {};
 

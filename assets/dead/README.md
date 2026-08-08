@@ -1,23 +1,23 @@
 # Death artwork
 
-Drop the dead-pose PNGs here. **One file per man who can die on the road**, and
-that is the only new drawing each of them needs — see "Why only one file" below.
+One dead-pose PNG per man who can die on the road, and that is the only new
+drawing each of them needs — see "Why only one file" below. All three are in:
 
-| file                        | who dies                        | required? |
-|-----------------------------|---------------------------------|-----------|
-| `Enemies_Man_T1_Dead.png`   | the militia, every wave         | yes       |
-| `Enemies_Man_T2_Dead.png`   | the heavy, waves 4-8            | yes       |
-| `Barracks_Man_T1_Dead.png`  | your own spearman               | optional  |
+| file                        | who dies                       | drawn as    |
+|-----------------------------|--------------------------------|-------------|
+| `Enemies_Man_Dead_T1.png`   | the militia, every wave        | 27 x 18 px  |
+| `Enemies_Man_Dead_T2.png`   | the heavy, waves 4-8           | 38 x 22 px  |
+| `Barracks_Man_Dead_T1.png`  | your own spearman              | 43 x 21 px  |
 
-The names are the living file's name with `_Dead` on the end. The code is
-already wired to all three: a file that is not here simply produces no body, and
-the game behaves exactly as it does today. Nothing to change when you upload —
-put the PNG in this folder and the bodies appear.
+The tier comes last in these names, matching how they were exported. `assets.js`
+was changed to suit rather than the files being renamed — renaming an upload
+only means renaming it again after the next one.
 
-The spearman is marked optional because he is not an enemy: he dies, leaves a
-body, and then musters again from the barracks after his respawn timer. If you
-draw him, that body reads as the cost of holding the road. If you do not, he
-just vanishes as he does now.
+The spearman's body is scenery and nothing else. **A dead soldier stops blocking
+the instant he falls**: the enemy he was holding is released that same frame and
+walks straight over him while the body is still on the ground. There is a check
+for exactly this, because "the body still blocks" is the kind of bug that would
+look like the barracks being stronger than it is.
 
 ## Why only one file
 
@@ -30,10 +30,11 @@ A man on the road has three states, and you only have to draw the third:
 | dead     | **the new PNG in this folder** |
 
 The attack is not a drawing. The figure lunges toward whatever it is hitting and
-settles back, in code, on every swing — 4 game px for an enemy and 6 for a
-spearman. That is why there is no `_Attack.png` in the table: adding one would
-mean throwing the lunge away and building a frame system, and a single pose
-cannot show a swing the way the movement already does.
+settles back, in code, on every swing — **6 game px, the same for both sides of
+a fight**. (The enemy's was 4 and read as a flinch next to the spearman's 6.)
+That is why there is no `_Attack.png` in the table: adding one would mean
+throwing the lunge away and building a frame system, and a single pose cannot
+show a swing the way the movement already does.
 
 ## How to draw it
 
@@ -84,12 +85,30 @@ no body. That is on purpose — the body is the reward for killing something.
 
 ## After uploading
 
-The game draws the whole 512 canvas until the file has been measured, which is
-correct as long as you followed the placement rule above. Run
+Run `node tools/trim.mjs`, which measures this folder along with everything else,
+and paste the rect in as `deadTrim`. As shipped:
 
-    node tools/trim.mjs
+| file                       | `deadTrim`            | `deadPivot`      |
+|----------------------------|-----------------------|------------------|
+| `Enemies_Man_Dead_T1.png`  | `[189, 211, 134, 90]` | `[0.412, 0.906]` |
+| `Enemies_Man_Dead_T2.png`  | `[164, 203, 183, 106]`| `[0.503, 0.953]` |
+| `Barracks_Man_Dead_T1.png` | `[150, 206, 212, 100]`| `[0.538, 0.884]` |
 
-and I will paste the tight rect in as `deadTrim` / `deadPivot`, the same way
-every other sprite in the project works. That step is an optimisation and a
-safety net — if the body did end up somewhere unexpected on the canvas, the
-measured rect is what puts it back on the right spot.
+`deadPivot` is **not measured off the corpse** — nothing about a body's own
+outline knows which end the man was standing on. It is the LIVING figure's feet
+located inside the dead trim:
+
+    deadPivot = (livingTrim origin + pivot x livingTrim size - deadTrim origin)
+                / deadTrim size
+
+which means it has to be recomputed if **either** export is redrawn, not just the
+dead one. All three currently land well inside their own body, which is the quick
+sanity check that the pose was drawn in the right place.
+
+Until a file has been measured the game draws the whole 512 canvas instead, which
+is already correct if you followed the placement rule — that fallback is what
+makes an upload work on its own. Measuring only tightens it.
+
+Then open `corpse-test.html`: every pose, both facings, one mid-fade, with the
+living figure of each above it for scale and a crosshair on the spot each man
+died. The body must lie **across** its cross.

@@ -449,10 +449,11 @@ function drawCorpses(ctx, state) {
   }
 }
 
-// How far an enemy shifts forward on its swing. Smaller than a spearman's 6:
-// a spear is thrust, a fist is swung, and the same distance on a 20px militiaman
-// reads as a stumble.
-const ENEMY_LUNGE = 4;
+// How far an enemy shifts forward on its swing, in game px. Now the same 6 as a
+// spearman's, so both sides of a melee move the same distance as well as at the
+// same tempo — at 4 the enemy read as flinching while the spearman attacked.
+// One number for both is also one number to change.
+const ENEMY_LUNGE = 6;
 
 // Enemies stay upright and only mirror, same rule as the gunners and soldiers.
 // They face the way they are walking, which is the direction of the segment

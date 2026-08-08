@@ -9,9 +9,17 @@ export const enemyTypes = {
     spriteTrim: [208, 182, 96, 113],   // source px, re-paste from tools/trim.mjs
     pivot: [0.377, 0.978],   // feet on the anchor, standing axis from the legs
     spriteFaces: -1,
-    // The dead pose, left on the road for two seconds. Optional: until the file
-    // exists this key names an image that never loads and no body appears.
+    // The dead pose, left on the road for two seconds.
+    //
+    // deadTrim is measured by tools/trim.mjs like every other trim. deadPivot is
+    // NOT measured: it is where this figure's FEET are, expressed inside the
+    // dead trim, because the body has to land on the spot the man died on and
+    // nothing about the corpse's own outline knows where that is. Derived as
+    // (livingTrim origin + pivot x livingTrim size - deadTrim origin) / deadTrim
+    // size, so it has to be recomputed if EITHER export is redrawn.
     dead: 'dead_enemy_t1',
+    deadTrim: [189, 211, 134, 90],
+    deadPivot: [0.412, 0.906],
     hp: 80,
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit
@@ -57,6 +65,8 @@ export const enemyTypes = {
     pivot: [0.541, 0.978],
     spriteFaces: -1,
     dead: 'dead_enemy_t2',
+    deadTrim: [164, 203, 183, 106],
+    deadPivot: [0.503, 0.953],
     hp: 620,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,

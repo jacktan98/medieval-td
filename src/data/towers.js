@@ -134,8 +134,15 @@ const spearman = {
   bodyFrac: SPEAR_BODY,
   spriteFaces: -1,
   // A spearman leaves a body too, then musters again from the barracks once his
-  // respawn timer runs out. Optional art, same as the enemies'.
+  // respawn timer runs out. The body is scenery and nothing else — a dead
+  // soldier stops blocking the instant he falls, so the enemy he was holding
+  // walks straight over him.
+  //
+  // deadPivot is the LIVING figure's feet located inside the dead trim, not
+  // anything measured off the corpse; see the note in data/waves.js.
   dead: 'dead_soldier_t1',
+  deadTrim: [150, 206, 212, 100],
+  deadPivot: [0.538, 0.884],
   r: Math.round(SPEAR_W * SPEAR_BODY / 2),
   lunge: 6            // px thrust when the spear goes in
 };

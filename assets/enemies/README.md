@@ -35,10 +35,11 @@ a heavier one either side of your own soldier.
 
 ## Attacking is not a drawing
 
-An enemy that has been stopped by a spearman lunges 4 game px toward him on each
-swing and settles back, in code. There is no attack frame to draw, and adding
-one would mean replacing that movement with a frame system. The same is true of
-the walk — enemies bob as they move rather than cycling through poses.
+An enemy that has been stopped by a spearman lunges 6 game px toward him on each
+swing and settles back, in code — the same distance the spearman lunges, so both
+sides of a melee move alike. There is no attack frame to draw, and adding one
+would mean replacing that movement with a frame system. The same is true of the
+walk — enemies bob as they move rather than cycling through poses.
 
 ## After uploading
 
