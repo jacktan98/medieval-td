@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Medieval TD — tower layering</title>
+<!-- Open this after uploading anything to assets/towers. It draws every archery
+     tier with its gunner, aiming both ways, at the size the game draws them —
+     no gold to earn and no plot to tap.
+
+     The thing to look at is DEPTH INSIDE ONE SPRITE. From tier 2 the tower has a
+     roof and a post at the deck's nearest corner, and both stand between the
+     archer and the camera, so both must be drawn OVER him. A roof he pokes
+     through, or a post he stands in front of, means the front rects in
+     data/towers.js no longer match the artwork — assets/towers/README.md says
+     how to re-measure them.
+
+     The cyan crosshair is the archer's mount. His feet belong on it, and it
+     belongs on the deck. -->
+<style>body{margin:0;background:#23201c}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="game" width="960" height="540"></canvas>
+<script>
+  (function () {
+    var stamp = Math.floor(Date.now() / 60000);
+    var mods = [
+      'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
+      'render', 'input', 'menu', 'units', 'corpses', 'blood',
+      'data/level01', 'data/towers', 'data/waves'
+    ];
+    var imports = {};
+    for (var i = 0; i < mods.length; i++) {
+      imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+    }
+    var tag = document.createElement('script');
+    tag.type = 'importmap';
+    tag.textContent = JSON.stringify({ imports: imports });
+    document.head.appendChild(tag);
+  })();
+</script>
+<script type="module">
+import { loadArt } from './src/assets.js';
+import { draw } from './src/render.js';
+import { mountPoint } from './src/towers.js';
+import { archery, families } from './src/data/towers.js';
+
+const fam = families.find(f => f.id === 'archery');
+
+// One column per tier, one row per facing. aim is what facing() reads, so 0
+// points the archer right and PI points him left — the two states the sprite has.
+const towers = [];
+archery.forEach((def, i) => {
+  const x = 200 + i * 260;
+  towers.push({ plot: null, fam, def, x, y: 200, aim: 0,        cd: 0, recoil: 0, spent: 0, rally: null });
+  towers.push({ plot: null, fam, def, x, y: 440, aim: Math.PI,  cd: 0, recoil: 0, spent: 0, rally: null });
+});
+
+const state = {
+  gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
+  resting: false, menu: null, result: null,
+  towers, shots: [], hits: [], splats: [], corpses: [], enemies: [], units: []
+};
+
+const ctx = document.getElementById('game').getContext('2d');
+await loadArt();
+draw(ctx, state);
+
+ctx.strokeStyle = '#00E5FF';
+ctx.lineWidth = 1;
+for (const t of towers) {
+  const m = mountPoint(t);
+  ctx.beginPath();
+  ctx.moveTo(m.x - 7, m.y); ctx.lineTo(m.x + 7, m.y);
+  ctx.moveTo(m.x, m.y - 7); ctx.lineTo(m.x, m.y + 7);
+  ctx.stroke();
+}
+
+ctx.fillStyle = '#F0E6D2';
+ctx.font = '13px system-ui, sans-serif';
+archery.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 225));
+ctx.fillText('aiming right', 20, 205);
+ctx.fillText('aiming left', 20, 445);
+window.ready = true;
+</script>
+</body>
+</html>

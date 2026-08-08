@@ -71,13 +71,15 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // a re-export at a different size; everything else below is a fraction of the
 // trim and carries over untouched.
 const TOWER_TRIM = [59, 24, 355, 459];
+const TOWER2_TRIM = [52, 23, 370, 466];
 const ARCHER_TRIM = [184, 163, 144, 137];
 const CAMP_TRIM = [50, 86, 393, 340];
 const SPEAR_TRIM = [151, 167, 172, 130];
 
-// Tier 1 artwork, reused for tiers 2 and 3 until they have their own. All three
-// tiers are the SAME SIZE — scale is fixed by the export, so a tier reads as an
-// upgrade from the stars over its roof, not from being bigger.
+// All three tiers are the SAME SIZE — scale is fixed by the export, so a tier
+// reads as an upgrade from the artwork and the stars over its roof, never from
+// being bigger. Tier 3 has no drawing yet and borrows tier 2's rather than tier
+// 1's: an upgrade must never make the building look like less than it did.
 const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
@@ -94,6 +96,48 @@ const watchtower = {
   // 154.4) and divided by the new box. Anchor the archer to the art, not to the
   // bounding box the exporter happened to produce.
   mountFrac: [0.566, 0.284],
+  shape: 'tower'
+};
+
+// Tier 2: the same tower with a roof on it. Two things follow from that roof.
+//
+// FIRST, the archer has to stand somewhere the roof leaves him readable. The
+// covered headroom over this deck is about 120 source px and the archer is 137
+// tall, so a man standing in the middle of the deck is half swallowed — that is
+// not a bug in the placement, it is what a low roof does to anyone under it.
+// The mount is at the FRONT of the deck, where an archer would stand anyway,
+// which is the one spot that keeps his hat, face and bow all legible.
+//
+// SECOND, parts of the building are nearer the camera than he is and have to be
+// drawn OVER him. See frontTrims below.
+const watchtower2 = {
+  sprite: 'archery_t2',
+  spriteTrim: TOWER2_TRIM,
+  w: drawnW(TOWER2_TRIM), h: drawnH(TOWER2_TRIM),
+  // Front-centre of the deck, just right of the near post. Derived, not eyeballed:
+  // the four corner posts fix the deck as a parallelogram, and this point is 38%
+  // along it toward the far corner and 90% toward the near one. Source pixel
+  // (300, 268) inside the 512 canvas.
+  //
+  // The offset from the post is deliberate and is worth keeping if this is ever
+  // re-tuned. A gunner mirrors about his FEET, not his middle, and this archer's
+  // feet are 36% across his own art — so flipping him swings his body 34px
+  // sideways. Standing him on the post centres it on his face in one facing.
+  mountFrac: [0.670, 0.526],
+  // The parts of the tower that stand between the archer and the camera, as
+  // rects in source pixels, re-drawn after him. Measured off the artwork; see
+  // assets/towers/README.md for how, and re-measure after a redraw.
+  //
+  //   [52, 23, 370, 136]  everything above the deck: the roof, and the top
+  //                       plates and post heads it sits on. The cut is at y=158
+  //                       because the deck's own topmost pixel is y=159 — one
+  //                       row lower and the deck's far corner would be painted
+  //                       over the archer's hat.
+  //   [249, 152, 21, 140] the near post, the one standing on the deck's nearest
+  //                       corner. Tight to its outline, so nothing but post is
+  //                       in the rect, and it starts above the cut so the roof's
+  //                       front tip stays whole where the two meet.
+  frontTrims: [[52, 23, 370, 136], [249, 152, 21, 140]],
   shape: 'tower'
 };
 
@@ -125,9 +169,9 @@ const archer = {
 // the only family worth building. Both were moved together and the pair was
 // re-checked against tools/sim.mjs, not tuned one at a time.
 export const archery = [
-  { ...watchtower, ...archer, tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower, ...archer, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower, ...archer, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer, tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower2, ...archer, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower2, ...archer, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally

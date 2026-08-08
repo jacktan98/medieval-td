@@ -174,6 +174,7 @@ function drawTower(ctx, t) {
   const box = towerBox(t);
   drawBuilding(ctx, t, box);
   if (t.def.gunner) drawGunner(ctx, t);
+  drawBuildingFront(ctx, t, box);
   drawTierStars(ctx, t, box);
 
   if (DEBUG_MUZZLE) {
@@ -318,6 +319,36 @@ function drawBuilding(ctx, t, box) {
   }
   if (t.def.shape === 'camp') drawCamp(ctx, t, box);
   else drawStoneTower(ctx, t, box);
+}
+
+// The bits of the building that stand between the gunner and the camera: the
+// roof he is under, and the post at the deck's nearest corner. Drawn again after
+// him, from rects of the SAME image, so nothing new has to be exported and the
+// two layers cannot drift apart the way a separate "front" file would.
+//
+// Re-drawing a rect of the sprite paints exactly what the artist put there,
+// transparency included — the archer shows through wherever the tower does not
+// cover him, and each rect only has to be chosen so that everything solid inside
+// it really does belong in front. That is the whole trick, and it is why the
+// rects are tight rather than generous.
+//
+// Depth inside one sprite is the tower's own business. The y-sort in
+// drawFigures decides where the whole tower sits against everything else on the
+// board; this decides what the tower puts in front of its own gunner.
+function drawBuildingFront(ctx, t, box) {
+  const img = t.def.frontTrims && t.def.sprite && art[t.def.sprite];
+  if (!img) return;
+
+  const [tx, ty, tw, th] = t.def.spriteTrim;
+  for (const [sx, sy, sw, sh] of t.def.frontTrims) {
+    ctx.drawImage(
+      img, sx, sy, sw, sh,
+      box.left + (sx - tx) / tw * box.w,
+      box.top + (sy - ty) / th * box.h,
+      sw / tw * box.w,
+      sh / th * box.h
+    );
+  }
 }
 
 // Fallback archery tower, drawn only when the sprite fails to load. Side

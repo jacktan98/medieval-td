@@ -11,7 +11,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import { inflateSync } from 'zlib';
 import { join } from 'path';
-import { SCALE, BLOOD_SCALE } from '../src/data/towers.js';
+import { SCALE, BLOOD_SCALE, archery, barracks } from '../src/data/towers.js';
 
 // Art that is not drawn at the shared SCALE. Without this the sharpness verdict
 // lies in the most dangerous direction: blood measures 17 source px and would be
@@ -121,6 +121,28 @@ for (const d of dirs) {
       ` ${have}px`.padEnd(8) +
       (ok ? 'sharp' : `SOFT, upscaled ${ratio.toFixed(2)}x`)
     );
+  }
+}
+
+// The front layer — the roof and near post a tier 2 tower draws OVER its archer
+// — is rects of source pixels, and it is the one set of numbers here that has no
+// picture to check itself against. A rect that falls outside its sprite's trim
+// after a re-export still draws, just in the wrong place and at the wrong size,
+// and it looks like a bad mount rather than a stale number. Catch it here.
+{
+  let bad = 0;
+  for (const def of [...archery, ...barracks]) {
+    if (!def.frontTrims) continue;
+    const [tx, ty, tw, th] = def.spriteTrim;
+    for (const r of def.frontTrims) {
+      if (r[0] >= tx && r[1] >= ty && r[0] + r[2] <= tx + tw && r[1] + r[3] <= ty + th) continue;
+      console.log(`\n${def.name}: frontTrim [${r}] falls outside spriteTrim [${def.spriteTrim}]`);
+      bad++;
+    }
+  }
+  if (bad) {
+    console.log('Re-measure the front rects against the new export — see assets/towers/README.md.');
+    process.exitCode = 1;
   }
 }
 
