@@ -465,10 +465,10 @@ function drawGunner(ctx, t) {
 // Anchored at the CENTRE of the trim, not at a pivot. A splash has no feet and
 // no upright; the point it is thrown at is the middle of it.
 const BLOOD_TRIM = {
-  blood_1:      [248, 248, 17, 16],
-  blood_2:      [246, 248, 18,  9],
-  blood_dead_1: [232, 248, 48, 16],
-  blood_dead_2: [228, 244, 56, 14]
+  blood_1:      [241, 240,  33, 32],
+  blood_2:      [238, 239,  36, 20],
+  blood_dead_1: [207, 241,  98, 30],
+  blood_dead_2: [200, 243, 112, 26]
 };
 
 function drawBlood(ctx, key, x, y, alpha) {

@@ -34,20 +34,25 @@ export const SCALE = 105 / EXPORT_PX;
 // sized against each other by the artwork — a soldier is small next to a tower
 // because that is how tall a soldier is. A splash of blood has no such truth to
 // respect: how big it should be is a question about how well it reads, not about
-// anatomy. Drawn at the shared SCALE the spatter comes out 3x3 game px and the
-// pool 10x3, which is a couple of red specks nobody will ever see.
+// anatomy.
 //
-// x4. That puts the spatter at about 14px beside a 23px militia and the pool at
+// x2. That puts the spatter at about 14px beside a 23px militia and the pool at
 // about 40px under a 27px body — big enough to read, small enough not to be the
-// loudest thing on the board.
+// loudest thing on the board. Drawn at the shared SCALE instead it would be a
+// 7x7 speck.
 //
-// The cost is sharpness: the source art is only 17-56px, so at 3x device pixels
-// it is upscaled about 2.5x and the edges go soft. That is survivable for a red
-// blob and much less visible than it would be on a figure with linework, but the
-// real fix is a re-export drawn larger on the same 512 canvas. tools/trim.mjs
-// knows about this multiplier, so it reports blood honestly rather than calling
-// a 3px sprite sharp.
-export const BLOOD_SCALE = SCALE * 4;
+// THIS NUMBER IS HALF OF WHAT IT WAS, AND THE BLOOD IS THE SAME SIZE ON SCREEN.
+// It was x4 against art that filled 17-56px of its canvas; the art was redrawn
+// at twice that, so the multiplier came down by the same factor to hold the
+// drawn size still. That is the whole point of keeping the size in one constant:
+// the artist changes how many pixels the drawing has, and one number here decides
+// how big it appears, so the two can move independently.
+//
+// It also bought back most of the sharpness. The upscale at 3x device pixels went
+// from 2.46x to 1.23x — visibly softer than a sprite drawn 1:1, but close enough
+// that a red blob will not read as blurry. Do not raise this to chase the last of
+// it: bigger blood was explicitly not wanted.
+export const BLOOD_SCALE = SCALE * 2;
 
 const drawnW = trim => Math.round(trim[2] * SCALE);
 const drawnH = trim => Math.round(trim[3] * SCALE);
