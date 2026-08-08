@@ -22,12 +22,12 @@ export function draw(ctx, state) {
 
   drawGround(ctx);
   drawPlots(ctx, state);
-  drawTowers(ctx, state);
-  // Bodies before the living, so a fresh corpse never hides the enemy that
-  // walked over it.
-  drawCorpses(ctx, state);
-  drawEnemies(ctx, state);
-  drawUnits(ctx, state);
+  drawRangeDiscs(ctx, state);
+  // Every solid thing standing on the ground, in one pass sorted by depth.
+  drawFigures(ctx, state);
+  // Health bars and muster rings after it, so status is never hidden by a
+  // figure standing in front of the thing it belongs to.
+  drawStatus(ctx, state);
   drawShots(ctx, state);
   drawHits(ctx, state);
   drawRally(ctx, state);
@@ -116,29 +116,80 @@ function drawPlots(ctx, state) {
 // rings and anything added later all agree on where the ground plane is.
 const SQUASH = 0.62;
 
-function drawTowers(ctx, state) {
+// Range rings lie flat on the ground, so they belong under everything that
+// stands on it — including the tower they belong to.
+//
+// Menu open, or the mouse is over it. The hover half only ever fires on a
+// desktop — input.js gates it on pointerType — so the menu remains the only way
+// to see this on a phone.
+function drawRangeDiscs(ctx, state) {
   for (const t of state.towers) {
-    // Menu open, or the mouse is over it. The hover half only ever fires on a
-    // desktop — input.js gates it on pointerType — so the menu remains the only
-    // way to see this on a phone.
     if ((state.menu && state.menu.tower === t) || state.hoverTower === t) {
       drawRangeDisc(ctx, t);
     }
+  }
+}
 
-    const box = towerBox(t);
-    drawBuilding(ctx, t, box);
-    if (t.def.gunner) drawGunner(ctx, t);
-    drawTierStars(ctx, t, box);
+// DEPTH. Everything solid standing on the board is drawn in one pass, ordered by
+// how far down the screen its feet are: lower is nearer the camera, so it draws
+// later and covers what is behind it.
+//
+// The order used to be structural — all towers, then bodies, then enemies in
+// spawn order, then soldiers — which is not depth at all. A spearman covered an
+// enemy even while standing behind it, an enemy that spawned earlier was covered
+// by one that spawned later wherever the two happened to be, and anything on
+// foot drew over a tower it was walking behind. With three soldiers and a knot
+// of enemies meeting on the same bend, that is most of the screen.
+//
+// Sorting on the ANCHOR, not the sprite: every figure is anchored at its feet
+// and a building at its base, so one number means the same thing for all of
+// them. Sorting by sprite top would put a tall figure behind a short one it is
+// standing in front of.
+function drawFigures(ctx, state) {
+  const items = [];
+  const add = (y, rank, run) => items.push({ y, rank, run });
 
-    if (DEBUG_MUZZLE) {
-      // Drawn from muzzlePoint itself, so the dot marks where arrows really
-      // spawn rather than where the sprite transform thinks they should.
-      const m = muzzlePoint(t);
-      ctx.fillStyle = '#D4453A';
-      ctx.beginPath();
-      ctx.arc(m.x, m.y, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  // towerBox puts the base at y + 12; that slab is the part touching the ground.
+  for (const t of state.towers) add(t.y + 12, 1, () => drawTower(ctx, t));
+  // Bodies are flat on the ground, so at equal depth they go under a figure
+  // standing at the same spot rather than over its feet.
+  for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
+  for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
+  for (const u of state.units) if (u.respawn <= 0) add(u.y, 1, () => drawSoldier(ctx, u));
+
+  items.sort((a, b) => a.y - b.y || a.rank - b.rank);
+  for (const it of items) it.run();
+}
+
+function drawTower(ctx, t) {
+  const box = towerBox(t);
+  drawBuilding(ctx, t, box);
+  if (t.def.gunner) drawGunner(ctx, t);
+  drawTierStars(ctx, t, box);
+
+  if (DEBUG_MUZZLE) {
+    // Drawn from muzzlePoint itself, so the dot marks where arrows really
+    // spawn rather than where the sprite transform thinks they should.
+    const m = muzzlePoint(t);
+    ctx.fillStyle = '#D4453A';
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Health bars and muster rings. Drawn after every figure rather than with the
+// one they belong to, because they are information: a bar hidden behind the
+// soldier standing in front of its enemy is the one thing depth sorting must not
+// take away.
+function drawStatus(ctx, state) {
+  for (const e of state.enemies) {
+    const lift = Math.sin(e.t * 9) * 2 * e.bobAmp;
+    healthBar(ctx, e.x, e.y - artHeight(e.def) - 4 + lift, e.def.r, e.hp / e.maxHp);
+  }
+  for (const u of state.units) {
+    if (u.respawn > 0) musterRing(ctx, u);
+    else healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
   }
 }
 
@@ -420,33 +471,31 @@ function canvasAnchor(def) {
 // A def with no death art, or one whose PNG has not been uploaded yet, draws
 // nothing at all. That is the whole fallback: no grey box, no placeholder, just
 // the game exactly as it was before the feature existed.
-function drawCorpses(ctx, state) {
-  for (const c of state.corpses) {
-    const img = art[c.def.dead];
-    if (!img) continue;
+function drawCorpse(ctx, c) {
+  const img = art[c.def.dead];
+  if (!img) return;
 
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, c.life / CORPSE_FADE);
-    ctx.translate(c.x, c.y);
-    ctx.scale(mirror(c.def, c.face), 1);
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, c.life / CORPSE_FADE);
+  ctx.translate(c.x, c.y);
+  ctx.scale(mirror(c.def, c.face), 1);
 
-    if (c.def.deadTrim) {
-      // Measured art, once tools/trim.mjs has been run on the upload. Read the
-      // same way as every other sprite: a window into the source, drawn at the
-      // shared SCALE, anchored by a pivot into that window.
-      const [sx, sy, sw, sh] = c.def.deadTrim;
-      const dw = sw * SCALE;
-      const dh = sh * SCALE;
-      ctx.drawImage(img, sx, sy, sw, sh,
-        -c.def.deadPivot[0] * dw, -c.def.deadPivot[1] * dh, dw, dh);
-    } else {
-      const [ax, ay] = canvasAnchor(c.def);
-      const d = EXPORT_PX * SCALE;
-      ctx.drawImage(img, -ax * d, -ay * d, d, d);
-    }
-
-    ctx.restore();
+  if (c.def.deadTrim) {
+    // Measured art, once tools/trim.mjs has been run on the upload. Read the
+    // same way as every other sprite: a window into the source, drawn at the
+    // shared SCALE, anchored by a pivot into that window.
+    const [sx, sy, sw, sh] = c.def.deadTrim;
+    const dw = sw * SCALE;
+    const dh = sh * SCALE;
+    ctx.drawImage(img, sx, sy, sw, sh,
+      -c.def.deadPivot[0] * dw, -c.def.deadPivot[1] * dh, dw, dh);
+  } else {
+    const [ax, ay] = canvasAnchor(c.def);
+    const d = EXPORT_PX * SCALE;
+    ctx.drawImage(img, -ax * d, -ay * d, d, d);
   }
+
+  ctx.restore();
 }
 
 // How far an enemy shifts forward on its swing, in game px. Now the same 6 as a
@@ -458,36 +507,36 @@ const ENEMY_LUNGE = 6;
 // Enemies stay upright and only mirror, same rule as the gunners and soldiers.
 // They face the way they are walking, which is the direction of the segment
 // they are on, so a column marching left is drawn facing left.
-function drawEnemies(ctx, state) {
-  for (const e of state.enemies) {
-    const bob = Math.sin(e.t * 9) * 2;
-    const img = e.def.sprite && art[e.def.sprite];
+//
+// The vertical bob is the WALK, and enemies.js fades it out when one stops to
+// fight, so an attacking enemy moves along its facing and in no other direction.
+function drawEnemy(ctx, e) {
+  const lift = Math.sin(e.t * 9) * 2 * e.bobAmp;
+  const img = e.def.sprite && art[e.def.sprite];
 
-    if (!img) {
-      ctx.fillStyle = e.def.colour;
-      ctx.beginPath();
-      ctx.arc(e.x, e.y + bob, e.def.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#22201C';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    } else {
-      const [sx, sy, sw, sh] = e.def.spriteTrim;
-      const dw = sw * SCALE;
-      const dh = sh * SCALE;
-      const dir = e.face;
-
-      ctx.save();
-      // Lunge toward whatever it is hitting, the same way a soldier does, so a
-      // melee reads as two figures trading blows rather than one animated one.
-      ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y + bob);
-      ctx.scale(mirror(e.def, dir), 1);
-      ctx.drawImage(img, sx, sy, sw, sh, -e.def.pivot[0] * dw, -e.def.pivot[1] * dh, dw, dh);
-      ctx.restore();
-    }
-
-    healthBar(ctx, e.x, e.y - artHeight(e.def) - 4 + bob, e.def.r, e.hp / e.maxHp);
+  if (!img) {
+    ctx.fillStyle = e.def.colour;
+    ctx.beginPath();
+    ctx.arc(e.x, e.y + lift, e.def.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#22201C';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    return;
   }
+
+  const [sx, sy, sw, sh] = e.def.spriteTrim;
+  const dw = sw * SCALE;
+  const dh = sh * SCALE;
+  const dir = e.face;
+
+  ctx.save();
+  // Lunge toward whatever it is hitting, the same way a soldier does, so a
+  // melee reads as two figures trading blows rather than one animated one.
+  ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y + lift);
+  ctx.scale(mirror(e.def, dir), 1);
+  ctx.drawImage(img, sx, sy, sw, sh, -e.def.pivot[0] * dw, -e.def.pivot[1] * dh, dw, dh);
+  ctx.restore();
 }
 
 // How tall a figure is DRAWN, which is not the same as how big its body is for
@@ -568,19 +617,6 @@ function musterRing(ctx, u) {
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + done * Math.PI * 2);
   ctx.stroke();
-}
-
-// Barracks soldiers, plus a muster ring on the barracks for any that are dead.
-function drawUnits(ctx, state) {
-  for (const u of state.units) {
-    if (u.respawn > 0) {
-      musterRing(ctx, u);
-      continue;
-    }
-
-    drawSoldier(ctx, u);
-    healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
-  }
 }
 
 // Arrows are the only sprite that rotates: a projectile has no upright, and it

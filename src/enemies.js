@@ -11,7 +11,8 @@ export function spawn(state, typeId) {
     hp: def.hp,
     maxHp: def.hp,
     leg: 0,          // index of the waypoint being walked toward
-    t: 0,            // wobble timer, drives the idle bob
+    t: 0,            // walk-cycle timer, drives the bob; frozen while fighting
+    bobAmp: 1,       // 0..1 fade on that bob, so it eases out rather than snaps
     face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
     foe: null,       // the barracks soldier holding it, if any
     acd: 0,          // melee cooldown, only ticks while held
@@ -21,11 +22,22 @@ export function spawn(state, typeId) {
 
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
-    e.t += dt;
     // Decays wherever the enemy is, so a swing that lands just as its holder
     // dies still plays out instead of freezing mid-lunge. Same rate as the
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
     e.thrust = Math.max(0, e.thrust - dt * 4);
+
+    // The bob is a WALK cycle, so it runs only while walking. A fighting enemy
+    // must move forward and back on its swing and nothing else — bobbing at the
+    // same time made a melee read as two figures hopping on the spot.
+    //
+    // The timer FREEZES rather than resetting, and the amplitude fades over
+    // about a sixth of a second at each end. Cutting the bob dead on contact
+    // would drop the figure up to 2px in one frame, which is a visible twitch
+    // at the exact moment the player is watching the fight start.
+    const walking = !e.foe;
+    if (walking) e.t += dt;
+    e.bobAmp = walking ? Math.min(1, e.bobAmp + dt * 6) : Math.max(0, e.bobAmp - dt * 6);
 
     // Held in melee by a soldier. Blocked enemies stop dead rather than
     // sliding past — this is the whole point of the barracks family, and the

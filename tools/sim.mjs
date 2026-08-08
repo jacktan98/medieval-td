@@ -116,6 +116,11 @@ export function run(plan) {
 // so they are left out of the six-tower builds — a player would not take them
 // either, and including one measured the dead plot rather than the family.
 //
+// WHICH build is best moves when the level does. Putting the path's ends back on
+// the road shortened it from 1832 to 1804 and lifted the entry leg 40px, and the
+// crown passed from the 4+2 build to the 5+1 one. Re-sweep rather than assuming
+// the labels below still rank the way they did: 448 builds is 18 seconds.
+//
 // WHICH plot gets which family is not arbitrary, and getting it wrong makes the
 // whole file lie. These indices were carried over unchanged when the artist
 // moved the markers, and because plots are stored in road order, the re-ordering
@@ -130,8 +135,8 @@ const scenarios = {
   'ALL archery x6  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8)],
   'ALL archery x8  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8), A(0), A(3)],
   'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(4), B(5), B(7)],
-  'MIX 5 archery + 1 barracks':     [A(1), A(2), A(4), A(5), A(7), B(8)],
-  'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],   // the best build there is
+  'MIX 5 archery + 1 barracks':     [A(1), A(2), A(4), A(5), A(7), B(8)],   // the best build there is
+  'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],
   'MIX 3 archery + 3 barracks':     [A(1), B(2), A(4), A(5), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };

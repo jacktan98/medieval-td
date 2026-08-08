@@ -9,9 +9,23 @@
 // with it. If the map is redrawn, re-extract rather than nudging numbers here.
 //
 // The first and last points sit off-canvas so enemies enter and leave unseen.
+//
+// BOTH ENDS WERE RE-MEASURED. The ridge walk that produced this polyline bends
+// where the road is cut off by the canvas edge — a distance transform has no way
+// to know the shape continues past the crop, so its ridge curls toward the
+// middle of the flat end cap. That put the entry at (0, 236) when the road at
+// x=0 actually spans y 160..230: the first enemy of every wave walked in six
+// pixels BELOW the tarmac and took 80px to find it. The exit had the same fault
+// mirrored, drifting 26px above centre and leaving along the top kerb.
+//
+// The two points at each end now sit on the road's measured centreline (x=0 is
+// 195, x=959 is 175) and the off-canvas points extend along the road's own
+// slope there rather than toward a corner. The middle of the path was left
+// alone: it tracks about 5px below centre the whole way, which is a consistent
+// bias on a 70px road and not worth disturbing a tuned level over.
 export const path = [
-  { x: -29, y: 263 },
-  { x: 0, y: 236 },
+  { x: -40, y: 203 },
+  { x: 0, y: 195 },
   { x: 49, y: 191 },
   { x: 149, y: 174 },
   { x: 428, y: 198 },
@@ -31,8 +45,8 @@ export const path = [
   { x: 581, y: 263 },
   { x: 637, y: 233 },
   { x: 927, y: 181 },
-  { x: 959, y: 149 },
-  { x: 987, y: 121 }
+  { x: 959, y: 176 },
+  { x: 1000, y: 174 }
 ];
 
 // Fixed build plots — the nine markers painted into the map, read out of the
@@ -60,16 +74,19 @@ export const path = [
 // The two marked FAR are more than 110px off the road. They cover almost none
 // of it at tier 1 range (118) — plot 3 covers literally none — so they are
 // tier 3 positions or barracks positions, not general-purpose ones.
+// Percentages recomputed after the path's ends were put back on the road; the
+// road is 1804px long now rather than 1832, because the old entry and exit
+// legs were partly a detour off the tarmac.
 export const plots = [
-  { x:  84, y: 259 },   //  7% along,  73 off
-  { x: 319, y: 248 },   // 21% along,  59 off
-  { x: 462, y: 130 },   // 27% along,  76 off
+  { x:  84, y: 259 },   //  6% along,  73 off
+  { x: 319, y: 248 },   // 20% along,  59 off
+  { x: 462, y: 130 },   // 26% along,  76 off
   { x: 122, y: 465 },   // 44% along, 129 off   FAR
   { x: 368, y: 404 },   // 52% along,  59 off
   { x: 485, y: 401 },   // 58% along,  51 off
   { x: 709, y: 475 },   // 66% along, 112 off   FAR
   { x: 666, y: 315 },   // 80% along,  86 off
-  { x: 732, y: 143 }    // 85% along,  72 off
+  { x: 732, y: 143 }    // 86% along,  72 off
 ];
 
 // There is no keep coordinate any more. It existed only so render.js could draw

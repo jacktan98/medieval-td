@@ -46,8 +46,8 @@ const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
   resting: false, menu: null, result: null, towers: [], shots: [], hits: [],
   enemies: [
-    { def: enemyTypes.light_inf, x: 160, y: 150, hp: 1, maxHp: 1, t: 0, face: 1, thrust: 0 },
-    { def: enemyTypes.heavy_inf, x: 460, y: 150, hp: 1, maxHp: 1, t: 0, face: 1, thrust: 0 }
+    { def: enemyTypes.light_inf, x: 160, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 },
+    { def: enemyTypes.heavy_inf, x: 460, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 }
   ],
   units: [
     { def: spear, x: 760, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null }
