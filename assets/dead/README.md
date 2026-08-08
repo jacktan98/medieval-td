@@ -7,7 +7,8 @@ drawing each of them needs — see "Why only one file" below. All three are in:
 |-----------------------------|--------------------------------|-------------|
 | `Enemies_Man_Dead_T1.png`   | the militia, every wave        | 27 x 18 px  |
 | `Enemies_Man_Dead_T2.png`   | the heavy, waves 4-8           | 38 x 22 px  |
-| `Barracks_Man_Dead_T1.png`  | your own spearman              | 43 x 21 px  |
+| `Barracks_Man_Dead_T1.png`  | your spearman, tier 1          | 43 x 21 px  |
+| `Barracks_Man_Dead_T2.png`  | your spearman, tiers 2 and 3   | 41 x 24 px  |
 
 The tier comes last in these names, matching how they were exported. `assets.js`
 was changed to suit rather than the files being renamed — renaming an upload
@@ -101,6 +102,12 @@ centred on a fresh canvas. Those foot points are:
 | `Enemies_Man_T1`    | x 244, y 293               |
 | `Enemies_Man_T2`    | x 256, y 304               |
 | `Barracks_Man_T1`   | x 264, y 294               |
+| `Barracks_Man_T2`   | x 281, y 313               |
+
+`Barracks_Man_Dead_T2` was drawn about 13px high against that point, which is
+why its `deadPivot` sits at the very bottom edge of its own trim and the body
+lands ~3 game px further above the death spot than tier 1's does. Small enough
+to leave; worth knowing if the next pose drifts further.
 
 Everything else is the same as every other sprite in this project:
 
@@ -142,6 +149,7 @@ and paste the rect in as `deadTrim`. As shipped:
 | `Enemies_Man_Dead_T1.png`  | `[189, 211, 134, 90]` | `[0.412, 0.906]` |
 | `Enemies_Man_Dead_T2.png`  | `[164, 203, 183, 106]`| `[0.503, 0.953]` |
 | `Barracks_Man_Dead_T1.png` | `[150, 206, 212, 100]`| `[0.538, 0.884]` |
+| `Barracks_Man_Dead_T2.png` | `[169, 198, 201, 116]`| `[0.557, 0.995]` |
 
 `deadPivot` is **not measured off the corpse** — nothing about a body's own
 outline knows which end the man was standing on. It is the LIVING figure's feet

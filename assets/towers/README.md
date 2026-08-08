@@ -9,6 +9,10 @@
 512 x 512, transparent, one shared `SCALE` — the same rules as every other
 sprite. `assets/map/README.md` has the reasoning behind the export size.
 
+The men who stand on these are in `assets/units`; their numbers live in the same
+`src/data/towers.js` and are re-measured the same way. Tiers 2 and 3 share
+`Archers_Man_T2.png` and `Barracks_Man_T2.png`.
+
 **Tier 3 borrows tier 2's drawing, not tier 1's.** A tier is an upgrade, so it
 must never look like less than the tier below it; until tier 3 has its own art
 the safe reuse is the nearest tier that has one. All three are the same size on
@@ -55,21 +59,27 @@ of. Its SVG could not provide one anyway: the whole tower is a single group of
 
 ## Where the archer stands
 
-`mountFrac` on each tier. Tier 2's is `[0.670, 0.526]` — source pixel (300, 268)
-inside the 512 canvas, at the FRONT of the deck and just right of the near post.
+`mountFrac` on each tier. Tier 2's is `[0.586, 0.438]` — the **middle of the
+deck**, source pixel (269, 227) inside the 512 canvas.
 
-That is not the middle of the deck, and the reason is worth keeping if it is
-ever re-tuned. The covered headroom under this roof is about 120 source px and
-the archer is 137 tall, so **a man standing mid-deck is half swallowed by the
-roof** — not a placement bug, just what a low roof does to anyone under it. The
-front of the deck is where an archer would stand anyway, and it is the one spot
-that keeps his hat, face and bow all legible. As placed, the roof and post
-together hide about 17% of him facing left and 21% facing right.
+That point is measured, not eyeballed. The four corner posts fix the deck as a
+parallelogram — far (276.5, 159), right (391.5, 248), near (261.5, 294), left
+(146.5, 205) — and the mount is where its diagonals cross. If the tower is ever
+redrawn, re-measure the posts and take the centre again rather than nudging the
+old fraction.
 
-The sideways offset from the post is deliberate too. A gunner mirrors about his
+**The cost of the middle is the roof.** There is only about 120 source px of
+covered headroom over this deck, so standing dead centre the roof's near slope
+takes the top of the archer's helmet — roughly 30% of him, against about 13% if
+he stood a third of the way further forward. That is a real occlusion, not a
+placement bug: it is what a low roof does to anyone under it. Moving him forward
+is one number if it ever needs trading back.
+
+One thing to know before nudging him sideways: a gunner mirrors about his
 **feet**, not his middle, and this archer's feet are 36% across his own art — so
-flipping him swings his body 34px sideways, which is wider than the post. Stand
-him on the post and one facing puts it straight down his face.
+flipping him swings his body 34px sideways, which is wider than the near post.
+Any position within about 20px of the post puts it straight down his face in one
+of the two facings.
 
 ## After a redraw
 

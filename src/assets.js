@@ -11,7 +11,9 @@ const paths = {
   archery_t2:  'assets/towers/Archers_Tower_T2.png',
   barracks_t1: 'assets/towers/Barracks_Tower_T1.png',
   archer_t1:   'assets/units/Archers_Man_T1.png',
+  archer_t2:   'assets/units/Archers_Man_T2.png',
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
+  soldier_t2:  'assets/units/Barracks_Man_T2.png',
   arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
   enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
   enemy_t2:    'assets/enemies/Enemies_Man_T2.png',
@@ -24,6 +26,7 @@ const paths = {
   dead_enemy_t1:   'assets/dead/Enemies_Man_Dead_T1.png',
   dead_enemy_t2:   'assets/dead/Enemies_Man_Dead_T2.png',
   dead_soldier_t1: 'assets/dead/Barracks_Man_Dead_T1.png',
+  dead_soldier_t2: 'assets/dead/Barracks_Man_Dead_T2.png',
   // Blood, two of each so a hit or a death is never the same picture twice in a
   // row. The spatter files sit in assets/projectiles and the pools in
   // assets/dead — that is where they were uploaded, and where the next ones will

@@ -73,8 +73,10 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 const TOWER_TRIM = [59, 24, 355, 459];
 const TOWER2_TRIM = [52, 23, 370, 466];
 const ARCHER_TRIM = [184, 163, 144, 137];
+const ARCHER2_TRIM = [184, 197, 144, 118];
 const CAMP_TRIM = [50, 86, 393, 340];
 const SPEAR_TRIM = [151, 167, 172, 130];
+const SPEAR2_TRIM = [156, 198, 166, 117];
 
 // All three tiers are the SAME SIZE — scale is fixed by the export, so a tier
 // reads as an upgrade from the artwork and the stars over its roof, never from
@@ -99,31 +101,25 @@ const watchtower = {
   shape: 'tower'
 };
 
-// Tier 2: the same tower with a roof on it. Two things follow from that roof.
-//
-// FIRST, the archer has to stand somewhere the roof leaves him readable. The
-// covered headroom over this deck is about 120 source px and the archer is 137
-// tall, so a man standing in the middle of the deck is half swallowed — that is
-// not a bug in the placement, it is what a low roof does to anyone under it.
-// The mount is at the FRONT of the deck, where an archer would stand anyway,
-// which is the one spot that keeps his hat, face and bow all legible.
-//
-// SECOND, parts of the building are nearer the camera than he is and have to be
-// drawn OVER him. See frontTrims below.
+// Tier 2: the same tower with a roof on it, and parts of the building are nearer
+// the camera than the archer under it, so they have to be drawn OVER him. See
+// frontTrims below.
 const watchtower2 = {
   sprite: 'archery_t2',
   spriteTrim: TOWER2_TRIM,
   w: drawnW(TOWER2_TRIM), h: drawnH(TOWER2_TRIM),
-  // Front-centre of the deck, just right of the near post. Derived, not eyeballed:
-  // the four corner posts fix the deck as a parallelogram, and this point is 38%
-  // along it toward the far corner and 90% toward the near one. Source pixel
-  // (300, 268) inside the 512 canvas.
+  // The MIDDLE of the deck. Measured, not eyeballed: the four corner posts fix
+  // the deck as a parallelogram — far (276.5, 159), right (391.5, 248), near
+  // (261.5, 294), left (146.5, 205) — and this is where its diagonals cross,
+  // source pixel (269, 227) inside the 512 canvas.
   //
-  // The offset from the post is deliberate and is worth keeping if this is ever
-  // re-tuned. A gunner mirrors about his FEET, not his middle, and this archer's
-  // feet are 36% across his own art — so flipping him swings his body 34px
-  // sideways. Standing him on the post centres it on his face in one facing.
-  mountFrac: [0.670, 0.526],
+  // The cost of the middle is the roof. There is about 120 source px of covered
+  // headroom over this deck, so standing dead centre the roof's near slope takes
+  // the top of the archer's helmet — roughly 30% of him, against 13% if he stood
+  // a third of the way further forward. That is a real occlusion and not a
+  // placement bug; it is what a low roof does to anyone under it, and the middle
+  // was asked for with that trade understood.
+  mountFrac: [0.586, 0.438],
   // The parts of the tower that stand between the archer and the camera, as
   // rects in source pixels, re-drawn after him. Measured off the artwork; see
   // assets/towers/README.md for how, and re-measure after a redraw.
@@ -163,15 +159,36 @@ const archer = {
   muzzle: [Math.round(0.249 * ARCHER_TRIM[2] * SCALE), -Math.round(0.411 * ARCHER_TRIM[3] * SCALE)]
 };
 
+// Tier 2's archer: helmet instead of a hat, so he is 19 source px shorter, and
+// the artist drew him 15px further down the same canvas. Both of those move the
+// numbers below even though the man is unchanged from the waist down — every
+// anchor here is a fraction of a trim, and this trim is a different box.
+//
+// Derived, not re-eyeballed. The base of the figure is pixel-for-pixel where
+// tier 1's is (same centroid, same 201..275 span, 15 rows lower), so the feet
+// are tier 1's feet plus 15 and the bow is tier 1's bow plus 15. Everything
+// below is that one shift, divided by the new box.
+const archer2 = {
+  gunner: 'archer_t2',
+  gunnerTrim: ARCHER2_TRIM,
+  // Same absolute point as tier 1's feet, 15px down: source (235.8, 312.5).
+  gunnerPivot: [0.360, 0.979],
+  spriteFaces: -1,
+  // Same bow, so the same 0.249 across — but 0.477 of a shorter box, not 0.411
+  // of a taller one, which is the same 56px above the feet. The muzzle comes out
+  // at exactly tier 1's [7, -12]: two different fractions describing one point.
+  muzzle: [Math.round(0.249 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.477 * ARCHER2_TRIM[3] * SCALE)]
+};
+
 // Range up across the board and cooldown down with it. The reach is what makes
 // a tower feel useful in the first three waves, when there is only one or two of
 // them on the map; the slower draw is what stops that reach turning archery into
 // the only family worth building. Both were moved together and the pair was
 // re-checked against tools/sim.mjs, not tuned one at a time.
 export const archery = [
-  { ...watchtower,  ...archer, tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower2, ...archer, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower2, ...archer, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower2, ...archer2, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -217,6 +234,41 @@ const spearman = {
   lunge: 6            // px thrust when the spear goes in
 };
 
+// Tier 2's spearman: helmet instead of a hat, and the artist drew him 17px right
+// and 19px down the same canvas. Same body, different box, so every fraction
+// below had to be re-derived even though nothing about the man changed.
+//
+// The 17/19 is measured, not eyeballed: it is the shift that best overlays the
+// two silhouettes (IoU 0.80). It is the BODY that agrees at that shift, not the
+// spear — the spear is drawn a little differently, which is also why the trim
+// did not simply move with the figure. The body is the right thing to match: a
+// man stands where his body is.
+const SPEAR2_W = drawnW(SPEAR2_TRIM);
+// The same 59 source px of torso as tier 1, over a 166-wide box instead of 172.
+// Both come out at r = 6, so the collision radius — and the formation, and the
+// balance that rests on it — is unchanged by the new artwork.
+const SPEAR2_BODY = 0.354;
+
+const spearman2 = {
+  sprite: 'soldier_t2',
+  spriteTrim: SPEAR2_TRIM,
+  // Tier 1's feet plus (17, 19): source (281.0, 313.4).
+  pivot: [0.753, 0.986],
+  bodyFrac: SPEAR2_BODY,
+  spriteFaces: -1,
+  dead: 'dead_soldier_t2',
+  deadTrim: [169, 198, 201, 116],
+  // The living figure's feet located inside the dead trim, same as every other
+  // deadPivot. It lands at the very bottom edge of the corpse art, because this
+  // pose was drawn about 13 source px higher against its own box than tier 1's
+  // was — so the body sits ~3 game px further above the death spot than tier
+  // 1's does. That is the artist's placement showing through, not a bad sum, and
+  // 3px is small enough to leave alone. corpse-test.html is where to judge it.
+  deadPivot: [0.557, 0.995],
+  r: Math.round(SPEAR2_W * SPEAR2_BODY / 2),
+  lunge: 6
+};
+
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 130, colour: '#6E7A6A',
@@ -224,11 +276,11 @@ export const barracks = [
   },
   {
     ...camp, tier: 2, name: 'Guard Post', cost: 100, range: 165, colour: '#5E6B5C',
-    soldier: { ...spearman, count: 3, hp: 145, damage: 5, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
+    soldier: { ...spearman2, count: 3, hp: 145, damage: 5, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
     ...camp, tier: 3, name: "Knight's Hall", cost: 150, range: 200, colour: '#8A8478',
-    soldier: { ...spearman, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+    soldier: { ...spearman2, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
 
