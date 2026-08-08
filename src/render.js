@@ -1,8 +1,9 @@
 import { plots } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
-import { SCALE, EXPORT_PX, arrow } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE, arrow } from './data/towers.js';
 import { CORPSE_FADE } from './corpses.js';
+import { SPLAT_FADE } from './blood.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
@@ -23,9 +24,17 @@ export function draw(ctx, state) {
   drawGround(ctx);
   drawPlots(ctx, state);
   drawRangeDiscs(ctx, state);
+  // Blood pools BEFORE the depth pass, not inside it. A pool is a stain on the
+  // ground, so nothing standing on the board should ever be behind one — and in
+  // particular the body that made it has to lie on top of its own pool, which
+  // sorting by depth could not guarantee once the pool is offset a few pixels.
+  drawPools(ctx, state);
   // Every solid thing standing on the ground, in one pass sorted by depth.
   drawFigures(ctx, state);
-  // Health bars and muster rings after it, so status is never hidden by a
+  // Spatter above the figures: it is blood coming off a body, not a mark on the
+  // ground, so it belongs in front of the fight rather than under it.
+  drawSplats(ctx, state);
+  // Health bars and muster rings after that, so status is never hidden by a
   // figure standing in front of the thing it belongs to.
   drawStatus(ctx, state);
   drawShots(ctx, state);
@@ -449,6 +458,49 @@ function drawGunner(ctx, t) {
   ctx.restore();
 }
 
+// Blood. Measured by tools/trim.mjs like everything else, but drawn at
+// BLOOD_SCALE rather than the shared SCALE — see the note on that constant in
+// data/towers.js for why an effect is allowed to break the one-scale rule.
+//
+// Anchored at the CENTRE of the trim, not at a pivot. A splash has no feet and
+// no upright; the point it is thrown at is the middle of it.
+const BLOOD_TRIM = {
+  blood_1:      [248, 248, 17, 16],
+  blood_2:      [246, 248, 18,  9],
+  blood_dead_1: [232, 248, 48, 16],
+  blood_dead_2: [228, 244, 56, 14]
+};
+
+function drawBlood(ctx, key, x, y, alpha) {
+  const img = art[key];
+  if (!img) return;
+  const [sx, sy, sw, sh] = BLOOD_TRIM[key];
+  const dw = sw * BLOOD_SCALE;
+  const dh = sh * BLOOD_SCALE;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(img, sx, sy, sw, sh, x - dw / 2, y - dh / 2, dw, dh);
+  ctx.restore();
+}
+
+// The stain under each body. Offset and image were chosen once, when the corpse
+// was created, and both live on the corpse — so a pool never flickers between
+// the two pictures and never crawls around between frames.
+function drawPools(ctx, state) {
+  for (const c of state.corpses) {
+    if (!c.pool) continue;
+    drawBlood(ctx, c.pool.img, c.x + c.pool.dx, c.y + c.pool.dy,
+      Math.min(1, c.life / CORPSE_FADE));
+  }
+}
+
+function drawSplats(ctx, state) {
+  for (const s of state.splats) {
+    drawBlood(ctx, s.img, s.x, s.y, Math.min(1, s.life / SPLAT_FADE));
+  }
+}
+
 // Where a figure's feet sit inside its FULL square export, as a fraction of that
 // square. Every other anchor in the game is a fraction of a sprite's trim; this
 // one is not, and cannot be, because it has to place a second drawing that has a
@@ -791,6 +843,41 @@ function hudButton(ctx, b, label, sub, on) {
   ctx.textAlign = 'left';
 }
 
+// HUD icons. These are the one kind of artwork NOT sized by the shared SCALE,
+// and correctly so: an icon's job is to sit beside a number and be read, so it
+// is sized to the text, not to how big a coin is next to a soldier. 24px against
+// a 20px font puts its cap height on the digits' cap height.
+//
+// Trims measured from the alpha the same as everything else. The aspect comes
+// out of them rather than being assumed, so a redrawn icon that is a different
+// shape still lands on its baseline instead of being squashed to fit.
+const HUD_ICON = {
+  hud_gold: [117, 190, 278, 132],
+  hud_life: [160, 178, 192, 156]
+};
+const HUD_ICON_H = 24;
+
+// Draws the icon and returns the x to carry on from. Falls back to the old word
+// if the image is missing, so a failed load leaves a readable HUD rather than a
+// bare number.
+function hudIcon(ctx, key, x, word) {
+  const img = art[key];
+  if (!img) {
+    ctx.fillText(word, x, 21);
+    return x + ctx.measureText(word).width + 7;
+  }
+  const [sx, sy, sw, sh] = HUD_ICON[key];
+  const w = (sw / sh) * HUD_ICON_H;
+  ctx.drawImage(img, sx, sy, sw, sh, x, 21 - HUD_ICON_H / 2, w, HUD_ICON_H);
+  return x + w + 7;
+}
+
+function statValue(ctx, x, value) {
+  const text = String(value);
+  ctx.fillText(text, x, 21);
+  return x + ctx.measureText(text).width;
+}
+
 function drawHud(ctx, state) {
   // The map artwork paints its own header strip across the top, 50px deep, so
   // the HUD does not paint one. Drawing both left a seam: the translucent bar
@@ -817,9 +904,13 @@ function drawHud(ctx, state) {
   ctx.font = '600 20px system-ui, sans-serif';
   ctx.textBaseline = 'middle';
 
-  ctx.fillText(`Gold ${state.gold}`, 16, 21);
-  ctx.fillText(`Lives ${state.lives}`, 150, 21);
-  ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, waves.length)} / ${waves.length}`, 280, 21);
+  // Icons where the words used to be. "Wave" keeps its label: a count of eight
+  // has no picture that reads faster than the word, and inventing one would be
+  // a puzzle rather than a shortcut.
+  let x = 16;
+  x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold'), state.gold);
+  x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives'), state.lives);
+  ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, waves.length)} / ${waves.length}`, x + 26, 21);
 
   // The "Tap a plot to build" hint is gone. It said the same thing on every
   // frame of every game and this is where the controls live now.

@@ -8,6 +8,8 @@
 // except the renderer, so adding bodies cannot move the balance — tools/sim.mjs
 // runs with an empty art table and never creates one.
 
+import { poolFor } from './blood.js';
+
 // How long a body stays, in GAME seconds. On 2x from the dashboard that is one
 // real second, because the fast-forward runs the whole simulation twice per
 // frame. That is the right behaviour: bodies that ignored the speed control
@@ -27,7 +29,10 @@ export const CORPSE_FADE = 0.5;
 // feature inert until the art lands.
 export function dropCorpse(state, def, x, y, face) {
   if (!def.dead) return;
-  state.corpses.push({ def, x, y, face, life: CORPSE_LIFE });
+  // The pool comes with the body rather than being its own effect, so the two
+  // always appear together, sit together and fade together. render.js draws it
+  // in an earlier pass, which is what keeps the body on top of it.
+  state.corpses.push({ def, x, y, face, life: CORPSE_LIFE, pool: poolFor() });
 }
 
 export function updateCorpses(state, dt) {

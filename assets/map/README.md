@@ -1,19 +1,37 @@
 # Map artwork
 
-Two hand-drawn files live here, and both are authored, never generated:
+Four hand-drawn files live here, all authored, never generated:
 
 - **`Map_1.svg`** — the whole board at 1920 x 1080: sky strip, grass, road,
   scenery, and a marker on each of the nine build plots.
 - **`Plot Marker.svg`** — one plot marker on its own, on the same 512 square
   canvas as the sprites. The space in the name is fine; `src/assets.js` asks for
   it as `Plot%20Marker.svg`, because a raw space is illegal in a URL.
+- **`Gold.png`, `Life.png`** — the two HUD icons, at the top of the screen.
 
 One derived file is generated from them and committed:
 
 - **`Map_1_base.svg`** — the board with the nine markers cut out.
 
-`node tools/split-map.mjs` writes it, and never touches the two hand-drawn
-files. Run it after every redraw, or the game keeps drawing the previous board.
+`node tools/split-map.mjs` writes it, and never touches the hand-drawn files.
+
+> **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`.** Uploading a redrawn
+> board changes nothing on screen until that command is run. This has caught us
+> out on three of the last four map uploads — twice because the upload deleted
+> the derived file, once because it left a stale one in place. If a change to the
+> board does not appear, this is why, before anything else.
+
+## The HUD icons are not world art
+
+`Gold.png` and `Life.png` are the only artwork in the project deliberately NOT
+sized by the shared `SCALE`. An icon's job is to sit beside a number and be read,
+so it is sized to the text — 24px tall against the 20px HUD font, which puts its
+cap height on the digits'. Their aspect comes from their measured trims, so a
+redrawn icon of a different shape still lands on its baseline rather than being
+squashed to fit. The trims are in `src/render.js` beside the other UI numbers.
+
+If either file goes missing the HUD falls back to the words "Gold" and "Lives",
+so a failed load leaves something readable rather than a bare number.
 
 ## Export size
 

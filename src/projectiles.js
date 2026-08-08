@@ -1,3 +1,5 @@
+import { splat } from './blood.js';
+
 export function updateShots(state, dt) {
   for (const s of state.shots) {
     // Homing keeps it simple — no lead prediction until enemies get faster.
@@ -14,6 +16,9 @@ export function updateShots(state, dt) {
       s.target.hp -= s.damage;
       s.dead = true;
       state.hits.push({ x: s.x, y: s.y, life: 0.12 });
+      // Thrown from the arrow's own position rather than the target's centre,
+      // so it appears where the shaft went in.
+      splat(state, s.x, s.y);
     } else {
       s.x += (dx / dist) * step;
       s.y += (dy / dist) * step;

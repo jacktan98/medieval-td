@@ -13,6 +13,40 @@ The tier comes last in these names, matching how they were exported. `assets.js`
 was changed to suit rather than the files being renamed — renaming an upload
 only means renaming it again after the next one.
 
+## Blood
+
+Two more files here, plus two in `assets/projectiles`:
+
+| file                             | when                        | lasts        |
+|----------------------------------|-----------------------------|--------------|
+| `Blood_Dead_1.png`, `_2.png`     | the pool a body lies in     | with the body |
+| `../projectiles/Blood_1.png`, `_2.png` | every hit that lands  | 0.35s        |
+
+One of each pair is picked at random, so no two hits and no two deaths are the
+same picture. The pool's image and its small offset are chosen **once**, when
+the body is created, and stored on it — picking either at draw time would make
+the pool flicker between the two pictures and crawl about every frame. It has no
+lifetime of its own either: it fades with the body, so there is one number to get
+right instead of two to keep in step.
+
+**The body is always drawn on top of its pool.** Pools are painted before the
+depth pass rather than inside it, which is what guarantees it — sorting a pool by
+depth would put it over the body's feet as soon as the random offset pushed it a
+few pixels nearer the camera.
+
+Blood is drawn at **`BLOOD_SCALE`, which is 4x the shared `SCALE`** — the one
+place in the project where art is not sized by the single scale factor, and the
+reasoning is on that constant in `src/data/towers.js`. Short version: the shared
+scale exists so figures are sized against each other truthfully, and a splash of
+blood has no such truth to respect. At 1x it comes out 3x3 game px.
+
+The cost is sharpness. The art only fills 17-56px of its 512 canvas, so it gets
+upscaled about 2.5x and `tools/trim.mjs` reports all four as SOFT. That is
+survivable on a red blob and much less visible than it would be on a figure with
+linework, but if you want it crisp, **redraw the blood larger on the same 512
+canvas**. Nothing in the code changes — the trim is re-measured and the drawn
+size still comes from `BLOOD_SCALE`.
+
 The spearman's body is scenery and nothing else. **A dead soldier stops blocking
 the instant he falls**: the enemy he was holding is released that same frame and
 walks straight over him while the body is still on the ground. There is a check

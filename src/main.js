@@ -6,6 +6,7 @@ import { updateTowers } from './towers.js';
 import { updateUnits } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
+import { updateSplats } from './blood.js';
 import { updateWaves } from './waves.js';
 import { draw } from './render.js';
 import { attachInput } from './input.js';
@@ -52,9 +53,11 @@ function newGame() {
     units: [],
     shots: [],
     hits: [],
-    // Bodies on the road. Cleared with everything else on restart, so a lost
-    // game does not hand the next one a battlefield.
+    // Bodies on the road, and the blood thrown by every hit. Cleared with
+    // everything else on restart, so a lost game does not hand the next one a
+    // battlefield. The pools are not here: each one belongs to a corpse.
     corpses: [],
+    splats: [],
     waveIndex: 0,
     spawned: 0,
     timer: openingDelay,
@@ -105,9 +108,10 @@ function step(state, dt) {
   updateEnemies(state, dt);
   updateTowers(state, dt);
   updateShots(state, dt);
-  // Last, so a body dropped by this step gets its full life rather than being
-  // aged by the frame that created it.
+  // Last, so blood and bodies made by this step get their full life rather than
+  // being aged by the frame that created them.
   updateCorpses(state, dt);
+  updateSplats(state, dt);
   if (state.lives <= 0) state.result = 'lost';
 }
 

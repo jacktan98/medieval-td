@@ -18,7 +18,7 @@
     var stamp = Math.floor(Date.now() / 60000);
     var mods = [
       'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
-      'render', 'input', 'menu', 'units', 'corpses',
+      'render', 'input', 'menu', 'units', 'corpses', 'blood',
       'data/level01', 'data/towers', 'data/waves'
     ];
     var imports = {};
@@ -37,6 +37,7 @@ import { draw } from './src/render.js';
 import { enemyTypes } from './src/data/waves.js';
 import { barracks } from './src/data/towers.js';
 import { CORPSE_LIFE } from './src/corpses.js';
+import { poolFor, splat } from './src/blood.js';
 
 const spear = barracks[0].soldier;
 
@@ -44,7 +45,7 @@ const spear = barracks[0].soldier;
 // be compared directly, plus one of each facing and one mid-fade.
 const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
-  resting: false, menu: null, result: null, towers: [], shots: [], hits: [],
+  resting: false, menu: null, result: null, towers: [], shots: [], hits: [], splats: [],
   enemies: [
     { def: enemyTypes.light_inf, x: 160, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 },
     { def: enemyTypes.heavy_inf, x: 460, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 }
@@ -53,17 +54,21 @@ const state = {
     { def: spear, x: 760, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null }
   ],
   corpses: [
-    { def: enemyTypes.light_inf, x: 160, y: 300, face: 1,  life: CORPSE_LIFE },
-    { def: enemyTypes.light_inf, x: 160, y: 420, face: -1, life: CORPSE_LIFE },
-    { def: enemyTypes.heavy_inf, x: 460, y: 300, face: 1,  life: CORPSE_LIFE },
-    { def: enemyTypes.heavy_inf, x: 460, y: 420, face: -1, life: CORPSE_LIFE },
-    { def: spear,                x: 760, y: 300, face: 1,  life: CORPSE_LIFE },
-    { def: spear,                x: 760, y: 420, face: -1, life: 0.25 }
+    { def: enemyTypes.light_inf, x: 160, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: enemyTypes.light_inf, x: 160, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
+    { def: enemyTypes.heavy_inf, x: 460, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: enemyTypes.heavy_inf, x: 460, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear,                x: 760, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear,                x: 760, y: 420, face: -1, life: 0.25, pool: poolFor() }
   ]
 };
 
 const ctx = document.getElementById('game').getContext('2d');
 await loadArt();
+// A handful of spatter around each living figure, so the hit effect is on the
+// same page as the pools rather than needing a fight to see it.
+for (const f of [...state.enemies, ...state.units])
+  for (let i = 0; i < 5; i++) splat(state, f.x, f.y - 10);
 draw(ctx, state);
 
 // Crosshairs on every anchor: the body must lie ACROSS its cross, not beside it.

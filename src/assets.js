@@ -23,6 +23,19 @@ const paths = {
   dead_enemy_t1:   'assets/dead/Enemies_Man_Dead_T1.png',
   dead_enemy_t2:   'assets/dead/Enemies_Man_Dead_T2.png',
   dead_soldier_t1: 'assets/dead/Barracks_Man_Dead_T1.png',
+  // Blood, two of each so a hit or a death is never the same picture twice in a
+  // row. The spatter files sit in assets/projectiles and the pools in
+  // assets/dead — that is where they were uploaded, and where the next ones will
+  // go. assets/effects would describe them better; say the word and I will move
+  // them, but the code following the upload is the cheaper habit.
+  blood_1:         'assets/projectiles/Blood_1.png',
+  blood_2:         'assets/projectiles/Blood_2.png',
+  blood_dead_1:    'assets/dead/Blood_Dead_1.png',
+  blood_dead_2:    'assets/dead/Blood_Dead_2.png',
+  // HUD icons. NOT world art: they are sized to the text beside them rather than
+  // by the shared SCALE, so they live with the other UI numbers in render.js.
+  hud_gold:        'assets/map/Gold.png',
+  hud_life:        'assets/map/Life.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is

@@ -28,6 +28,27 @@
 export const EXPORT_PX = 512;
 export const SCALE = 105 / EXPORT_PX;
 
+// THE ONE EXCEPTION TO THE RULE ABOVE, and it is deliberate.
+//
+// Blood is an effect, not a figure. The shared SCALE exists so that figures are
+// sized against each other by the artwork — a soldier is small next to a tower
+// because that is how tall a soldier is. A splash of blood has no such truth to
+// respect: how big it should be is a question about how well it reads, not about
+// anatomy. Drawn at the shared SCALE the spatter comes out 3x3 game px and the
+// pool 10x3, which is a couple of red specks nobody will ever see.
+//
+// x4. That puts the spatter at about 14px beside a 23px militia and the pool at
+// about 40px under a 27px body — big enough to read, small enough not to be the
+// loudest thing on the board.
+//
+// The cost is sharpness: the source art is only 17-56px, so at 3x device pixels
+// it is upscaled about 2.5x and the edges go soft. That is survivable for a red
+// blob and much less visible than it would be on a figure with linework, but the
+// real fix is a re-export drawn larger on the same 512 canvas. tools/trim.mjs
+// knows about this multiplier, so it reports blood honestly rather than calling
+// a 3px sprite sharp.
+export const BLOOD_SCALE = SCALE * 4;
+
 const drawnW = trim => Math.round(trim[2] * SCALE);
 const drawnH = trim => Math.round(trim[3] * SCALE);
 

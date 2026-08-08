@@ -1,5 +1,6 @@
 import { path } from './data/level01.js';
 import { dropCorpse } from './corpses.js';
+import { splat } from './blood.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -215,16 +216,20 @@ export function updateUnits(state, dt) {
     u.thrust = Math.max(0, u.thrust - dt * 4);
 
     if (u.foe && d <= REACH) {
+      // Each side spatters the one it HITS, so a melee throws blood both ways
+      // and you can see which of the two is currently landing blows.
       if (u.cd <= 0) {
         u.foe.hp -= u.def.damage;
         u.cd = u.def.cd;
         u.thrust = 1;
+        splat(state, u.foe.x, u.foe.y - u.foe.def.r);
       }
       u.foe.acd -= dt;
       if (u.foe.acd <= 0) {
         u.hp -= u.foe.def.damage;
         u.foe.acd = u.foe.def.atkCd;
         u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
+        splat(state, u.x, u.y - u.def.r);
       }
     }
 

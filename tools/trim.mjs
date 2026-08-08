@@ -11,7 +11,13 @@
 import { readFileSync, readdirSync } from 'fs';
 import { inflateSync } from 'zlib';
 import { join } from 'path';
-import { SCALE } from '../src/data/towers.js';
+import { SCALE, BLOOD_SCALE } from '../src/data/towers.js';
+
+// Art that is not drawn at the shared SCALE. Without this the sharpness verdict
+// lies in the most dangerous direction: blood measures 17 source px and would be
+// reported as a comfortably sharp 3x3 sprite, when the game actually draws it at
+// 14px and upscales it two and a half times.
+const scaleFor = file => /Blood/i.test(file) ? BLOOD_SCALE : SCALE;
 
 // Decode enough PNG to reach the alpha channel: 8-bit RGBA or grey+alpha, which
 // is what every export tool produces for transparent art.
@@ -97,7 +103,8 @@ for (const d of dirs) {
     const t = trim(img);
     if (!t) { console.log(`${path.padEnd(35)} fully transparent`); continue; }
 
-    const dw = t[2] * SCALE, dh = t[3] * SCALE;
+    const s = scaleFor(f);
+    const dw = t[2] * s, dh = t[3] * s;
     // The tallest the sprite is ever rasterised: drawn size times the device
     // pixel cap. If the source has fewer pixels than that, it is being blown up.
     const need = Math.max(dw, dh) * MAX_DPR;
@@ -118,12 +125,17 @@ for (const d of dirs) {
 }
 
 if (soft) {
-  const factor = 1.35;
   console.log(
     `\n${soft} sprite(s) get upscaled at 3x device pixels, which is why they` +
     `\nlook soft on a phone and fine on a laptop (a laptop asks for 1x).` +
-    `\nRe-export at a larger canvas and raise SCALE by the same factor;` +
-    `\nthe drawn sizes stay identical. ${Math.ceil(200 * factor / 100) * 100}px+ clears it, 512 leaves headroom.`
+    `\n` +
+    `\nThere are two different causes and two different fixes:` +
+    `\n  - the whole export is too small: re-export on a larger canvas and raise` +
+    `\n    SCALE by the same factor, and every drawn size stays identical.` +
+    `\n  - the ART is small inside a big enough canvas, which is what the blood` +
+    `\n    does: 512 is plenty, but the splash only fills 17px of it. Redraw it` +
+    `\n    LARGER on the same canvas. Nothing in the code changes — the trim is` +
+    `\n    re-measured from here and the drawn size is set by BLOOD_SCALE.`
   );
 } else {
   console.log('\nEvery sprite has enough source pixels for a 3x display.');
