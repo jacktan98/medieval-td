@@ -81,7 +81,7 @@ function trim({ w, h, ch, px }) {
 
 const MAX_DPR = 3;     // MAX_SCALE in src/main.js
 
-const dirs = ['towers', 'units', 'enemies', 'projectiles'];
+const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead'];
 let soft = 0;
 
 console.log('sprite                              export   trim                  drawn    3x needs  source  verdict');

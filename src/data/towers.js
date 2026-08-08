@@ -22,7 +22,10 @@
 // 291 source pixels; at 200px it had 185 and was upscaled 1.57x, which is why it
 // looked soft on a phone and crisp on a laptop (a laptop asks for 1x). Every
 // sprite now has pixels to spare. `node tools/trim.mjs` checks this per sprite.
-const EXPORT_PX = 512;
+// Exported because render.js needs it to place a death pose: an untrimmed corpse
+// is drawn as the whole square, anchored by where the living figure's feet sit
+// inside it, so the canvas size is part of that sum.
+export const EXPORT_PX = 512;
 export const SCALE = 105 / EXPORT_PX;
 
 const drawnW = trim => Math.round(trim[2] * SCALE);
@@ -130,6 +133,9 @@ const spearman = {
   pivot: [0.657, 0.980],
   bodyFrac: SPEAR_BODY,
   spriteFaces: -1,
+  // A spearman leaves a body too, then musters again from the barracks once his
+  // respawn timer runs out. Optional art, same as the enemies'.
+  dead: 'dead_soldier_t1',
   r: Math.round(SPEAR_W * SPEAR_BODY / 2),
   lunge: 6            // px thrust when the spear goes in
 };

@@ -1,5 +1,6 @@
 import { path } from './data/level01.js';
 import { enemyTypes } from './data/waves.js';
+import { dropCorpse } from './corpses.js';
 
 export function spawn(state, typeId) {
   const def = enemyTypes[typeId];
@@ -78,6 +79,9 @@ export function updateEnemies(state, dt) {
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
+      // Falls where it stood, still facing the way it was. A leak above gets no
+      // body on purpose: the body is what you get for killing something.
+      dropCorpse(state, e.def, e.x, e.y, e.face);
       if (e.foe) { e.foe.foe = null; e.foe = null; }
       return false;
     }

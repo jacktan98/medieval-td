@@ -16,6 +16,7 @@ import { updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateWaves } from '../src/waves.js';
 import { updateUnits, makeUnits } from '../src/units.js';
+import { updateCorpses } from '../src/corpses.js';
 import { families } from '../src/data/towers.js';
 import { plots, startGold, startLives } from '../src/data/level01.js';
 import { openingDelay } from '../src/data/waves.js';
@@ -32,7 +33,7 @@ function newState() {
   return {
     gold: startGold,
     lives: startLives,
-    towers: [], enemies: [], units: [], shots: [], hits: [],
+    towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [],
     waveIndex: 0, spawned: 0, timer: openingDelay,
     resting: false, menu: null, result: null
   };
@@ -87,6 +88,7 @@ export function run(plan) {
     updateEnemies(state, DT);    // is already held when movement is decided
     updateTowers(state, DT);
     updateShots(state, DT);
+    updateCorpses(state, DT);    // decoration, but kept so this stays the game
     if (state.lives <= 0) state.result = 'lost';
     time += DT;
   }

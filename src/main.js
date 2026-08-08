@@ -5,6 +5,7 @@ import { updateEnemies } from './enemies.js';
 import { updateTowers } from './towers.js';
 import { updateUnits } from './units.js';
 import { updateShots } from './projectiles.js';
+import { updateCorpses } from './corpses.js';
 import { updateWaves } from './waves.js';
 import { draw } from './render.js';
 import { attachInput } from './input.js';
@@ -51,6 +52,9 @@ function newGame() {
     units: [],
     shots: [],
     hits: [],
+    // Bodies on the road. Cleared with everything else on restart, so a lost
+    // game does not hand the next one a battlefield.
+    corpses: [],
     waveIndex: 0,
     spawned: 0,
     timer: openingDelay,
@@ -101,6 +105,9 @@ function step(state, dt) {
   updateEnemies(state, dt);
   updateTowers(state, dt);
   updateShots(state, dt);
+  // Last, so a body dropped by this step gets its full life rather than being
+  // aged by the frame that created it.
+  updateCorpses(state, dt);
   if (state.lives <= 0) state.result = 'lost';
 }
 

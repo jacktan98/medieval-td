@@ -1,7 +1,8 @@
 import { plots } from './data/level01.js';
 import { waves } from './data/waves.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
-import { SCALE, arrow } from './data/towers.js';
+import { SCALE, EXPORT_PX, arrow } from './data/towers.js';
+import { CORPSE_FADE } from './corpses.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
@@ -22,6 +23,9 @@ export function draw(ctx, state) {
   drawGround(ctx);
   drawPlots(ctx, state);
   drawTowers(ctx, state);
+  // Bodies before the living, so a fresh corpse never hides the enemy that
+  // walked over it.
+  drawCorpses(ctx, state);
   drawEnemies(ctx, state);
   drawUnits(ctx, state);
   drawShots(ctx, state);
@@ -392,6 +396,57 @@ function drawGunner(ctx, t) {
   ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
   ctx.drawImage(img, sx, sy, sw, sh, -d.gunnerPivot[0] * dw, -d.gunnerPivot[1] * dh, dw, dh);
   ctx.restore();
+}
+
+// Where a figure's feet sit inside its FULL square export, as a fraction of that
+// square. Every other anchor in the game is a fraction of a sprite's trim; this
+// one is not, and cannot be, because it has to place a second drawing that has a
+// different trim of its own.
+//
+// It is what lets a death pose work with no numbers pasted in: the body is drawn
+// as the whole 512 canvas, lined up so the point the living man stood on lands
+// where he died. Draw the corpse over the standing figure on the same canvas and
+// it is right by construction — assets/dead/README.md says exactly that.
+function canvasAnchor(def) {
+  const [sx, sy, sw, sh] = def.spriteTrim;
+  return [(sx + def.pivot[0] * sw) / EXPORT_PX, (sy + def.pivot[1] * sh) / EXPORT_PX];
+}
+
+// Bodies. Two seconds on the ground, fading out over the last half of a second,
+// mirrored to the way the man was facing when he died — the same upright-and-
+// mirror-only rule as every other figure, except that this one is drawn already
+// lying down. Nothing is ever rotated to tip a standing sprite over.
+//
+// A def with no death art, or one whose PNG has not been uploaded yet, draws
+// nothing at all. That is the whole fallback: no grey box, no placeholder, just
+// the game exactly as it was before the feature existed.
+function drawCorpses(ctx, state) {
+  for (const c of state.corpses) {
+    const img = art[c.def.dead];
+    if (!img) continue;
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, c.life / CORPSE_FADE);
+    ctx.translate(c.x, c.y);
+    ctx.scale(mirror(c.def, c.face), 1);
+
+    if (c.def.deadTrim) {
+      // Measured art, once tools/trim.mjs has been run on the upload. Read the
+      // same way as every other sprite: a window into the source, drawn at the
+      // shared SCALE, anchored by a pivot into that window.
+      const [sx, sy, sw, sh] = c.def.deadTrim;
+      const dw = sw * SCALE;
+      const dh = sh * SCALE;
+      ctx.drawImage(img, sx, sy, sw, sh,
+        -c.def.deadPivot[0] * dw, -c.def.deadPivot[1] * dh, dw, dh);
+    } else {
+      const [ax, ay] = canvasAnchor(c.def);
+      const d = EXPORT_PX * SCALE;
+      ctx.drawImage(img, -ax * d, -ay * d, d, d);
+    }
+
+    ctx.restore();
+  }
 }
 
 // How far an enemy shifts forward on its swing. Smaller than a spearman's 6:

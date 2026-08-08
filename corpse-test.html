@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Medieval TD — corpse placement</title>
+<!-- Open this after uploading anything to assets/dead. It draws every death
+     pose the game knows about, both facings, and one mid-fade, with the LIVING
+     figure of each directly above it for scale — no wave to play and no kill to
+     wait for. The cyan crosshair is the spot the man died on: a body must lie
+     ACROSS its cross, not beside it. If one is off, the pose was drawn in the
+     wrong place on its 512 canvas; assets/dead/README.md has the foot points. -->
+<style>body{margin:0;background:#23201c}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="game" width="960" height="540"></canvas>
+<script>
+  (function () {
+    var stamp = Math.floor(Date.now() / 60000);
+    var mods = [
+      'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
+      'render', 'input', 'menu', 'units', 'corpses',
+      'data/level01', 'data/towers', 'data/waves'
+    ];
+    var imports = {};
+    for (var i = 0; i < mods.length; i++) {
+      imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+    }
+    var tag = document.createElement('script');
+    tag.type = 'importmap';
+    tag.textContent = JSON.stringify({ imports: imports });
+    document.head.appendChild(tag);
+  })();
+</script>
+<script type="module">
+import { loadArt } from './src/assets.js';
+import { draw } from './src/render.js';
+import { enemyTypes } from './src/data/waves.js';
+import { barracks } from './src/data/towers.js';
+import { CORPSE_LIFE } from './src/corpses.js';
+
+const spear = barracks[0].soldier;
+
+// A living figure beside each body at the same spot, so size and ground line can
+// be compared directly, plus one of each facing and one mid-fade.
+const state = {
+  gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
+  resting: false, menu: null, result: null, towers: [], shots: [], hits: [],
+  enemies: [
+    { def: enemyTypes.light_inf, x: 160, y: 150, hp: 1, maxHp: 1, t: 0, face: 1, thrust: 0 },
+    { def: enemyTypes.heavy_inf, x: 460, y: 150, hp: 1, maxHp: 1, t: 0, face: 1, thrust: 0 }
+  ],
+  units: [
+    { def: spear, x: 760, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null }
+  ],
+  corpses: [
+    { def: enemyTypes.light_inf, x: 160, y: 300, face: 1,  life: CORPSE_LIFE },
+    { def: enemyTypes.light_inf, x: 160, y: 420, face: -1, life: CORPSE_LIFE },
+    { def: enemyTypes.heavy_inf, x: 460, y: 300, face: 1,  life: CORPSE_LIFE },
+    { def: enemyTypes.heavy_inf, x: 460, y: 420, face: -1, life: CORPSE_LIFE },
+    { def: spear,                x: 760, y: 300, face: 1,  life: CORPSE_LIFE },
+    { def: spear,                x: 760, y: 420, face: -1, life: 0.25 }
+  ]
+};
+
+const ctx = document.getElementById('game').getContext('2d');
+await loadArt();
+draw(ctx, state);
+
+// Crosshairs on every anchor: the body must lie ACROSS its cross, not beside it.
+ctx.strokeStyle = '#00E5FF';
+ctx.lineWidth = 1;
+for (const c of [...state.corpses, ...state.enemies, ...state.units]) {
+  ctx.beginPath();
+  ctx.moveTo(c.x - 9, c.y); ctx.lineTo(c.x + 9, c.y);
+  ctx.moveTo(c.x, c.y - 9); ctx.lineTo(c.x, c.y + 9);
+  ctx.stroke();
+}
+
+ctx.fillStyle = '#F0E6D2';
+ctx.font = '13px system-ui, sans-serif';
+ctx.fillText('alive', 60, 155);
+ctx.fillText('dead, facing right', 20, 305);
+ctx.fillText('dead, facing left', 20, 425);
+ctx.fillText('mid-fade →', 640, 425);
+window.ready = true;
+</script>
+</body>
+</html>

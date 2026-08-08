@@ -9,6 +9,9 @@ export const enemyTypes = {
     spriteTrim: [208, 182, 96, 113],   // source px, re-paste from tools/trim.mjs
     pivot: [0.377, 0.978],   // feet on the anchor, standing axis from the legs
     spriteFaces: -1,
+    // The dead pose, left on the road for two seconds. Optional: until the file
+    // exists this key names an image that never loads and no body appears.
+    dead: 'dead_enemy_t1',
     hp: 80,
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit
@@ -53,6 +56,7 @@ export const enemyTypes = {
     spriteTrim: [169, 172, 161, 135],
     pivot: [0.541, 0.978],
     spriteFaces: -1,
+    dead: 'dead_enemy_t2',
     hp: 620,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,

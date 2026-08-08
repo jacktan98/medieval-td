@@ -14,6 +14,11 @@ const paths = {
   arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
   enemy_t1:    'assets/enemies/Enemies_Man_T1.png',
   enemy_t2:    'assets/enemies/Enemies_Man_T2.png',
+  // Death poses. See assets/dead/README.md. Absent until the artist draws them,
+  // which is why they are in OPTIONAL below — a body simply does not appear.
+  dead_enemy_t1:   'assets/dead/Enemies_Man_T1_Dead.png',
+  dead_enemy_t2:   'assets/dead/Enemies_Man_T2_Dead.png',
+  dead_soldier_t1: 'assets/dead/Barracks_Man_T1_Dead.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is
@@ -27,14 +32,33 @@ const paths = {
   plot_marker: 'assets/map/Plot%20Marker.svg'
 };
 
+// Art the game is wired for but does not have yet. A miss here is expected, so
+// it must not raise a warning — three console warnings on every single load is
+// how you learn to ignore the console, and the console is the only thing that
+// tells you a real sprite failed to deploy.
+//
+// They are still reported, once, as a quiet note: that way a file uploaded under
+// a slightly wrong name still shows up as missing instead of silently doing
+// nothing. Delete a key from this set when its art is permanent.
+const OPTIONAL = new Set(['dead_enemy_t1', 'dead_enemy_t2', 'dead_soldier_t1']);
+
 export const art = {};
 
 export function loadArt() {
+  const absent = [];
+
   const jobs = Object.entries(paths).map(([key, src]) => new Promise(resolve => {
     const img = new Image();
     img.onload = () => { art[key] = img; resolve(); };
-    img.onerror = () => { console.warn('Missing sprite:', src); resolve(); };
+    img.onerror = () => {
+      if (OPTIONAL.has(key)) absent.push(src);
+      else console.warn('Missing sprite:', src);
+      resolve();
+    };
     img.src = src;
   }));
-  return Promise.all(jobs);
+
+  return Promise.all(jobs).then(() => {
+    if (absent.length) console.info('Not drawn yet:', absent.join(', '));
+  });
 }

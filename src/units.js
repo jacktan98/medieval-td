@@ -1,4 +1,5 @@
 import { path } from './data/level01.js';
+import { dropCorpse } from './corpses.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -237,6 +238,9 @@ export function updateUnits(state, dt) {
       release(u);
       u.respawn = u.def.respawn;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
+      // A soldier's `face` is an angle, not a side — only its sign is ever
+      // drawn, the same reduction drawSoldier makes.
+      dropCorpse(state, u.def, u.x, u.y, Math.cos(u.face) >= 0 ? 1 : -1);
     }
   }
 }
