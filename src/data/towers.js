@@ -70,8 +70,8 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // absolute source pixels, so they are the one thing that MUST be re-pasted after
 // a re-export at a different size; everything else below is a fraction of the
 // trim and carries over untouched.
-const TOWER_TRIM = [59, 24, 355, 459];
-const TOWER2_TRIM = [52, 23, 370, 466];
+const TOWER_TRIM = [61, 18, 349, 458];
+const TOWER2_TRIM = [47, 23, 372, 466];
 const ARCHER_TRIM = [184, 163, 144, 137];
 const ARCHER2_TRIM = [184, 197, 144, 118];
 const CAMP_TRIM = [50, 86, 393, 340];
@@ -86,18 +86,15 @@ const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
   w: drawnW(TOWER_TRIM), h: drawnH(TOWER_TRIM),
-  // Where the archer's feet go, as a fraction of the trim. NOT the middle of the
-  // box: the ladder hangs off one side and drags the box centre away from the
-  // deck, and the mount sits on the deck floor rather than the parapet rail.
+  // The MIDDLE of the deck, source pixel (258, 219) inside the 512 canvas.
   //
-  // Re-derived, not re-measured, when the artist recoloured the tower's ground
-  // patch. That edit shrank the trim from 375x464 to 355x459 while leaving the
-  // building itself untouched — the deck is still the same absolute pixels,
-  // row 113, x 124..391. A fraction of a box that changed size is a different
-  // point, so the old [0.536, 0.281] was converted back to absolute (260.0,
-  // 154.4) and divided by the new box. Anchor the archer to the art, not to the
+  // NOT the middle of the trim: the ladder and the flagpole hang off opposite
+  // sides and drag the box centre away from the deck. The deck is found from the
+  // four corner posts instead — their centres are x 133.5, 246.5 (near), 267.5
+  // (far), 385.5, and the planks run y 152..286 — and the mount is where the
+  // parallelogram's diagonals cross. Anchor the archer to the art, never to the
   // bounding box the exporter happened to produce.
-  mountFrac: [0.566, 0.284],
+  mountFrac: [0.564, 0.439],
   shape: 'tower'
 };
 
@@ -108,55 +105,63 @@ const watchtower2 = {
   sprite: 'archery_t2',
   spriteTrim: TOWER2_TRIM,
   w: drawnW(TOWER2_TRIM), h: drawnH(TOWER2_TRIM),
-  // The MIDDLE of the deck. Measured, not eyeballed: the four corner posts fix
-  // the deck as a parallelogram — far (276.5, 159), right (391.5, 248), near
-  // (261.5, 294), left (146.5, 205) — and this is where its diagonals cross,
-  // source pixel (269, 227) inside the 512 canvas.
+  // The MIDDLE of the deck, source pixel (265.5, 257.5), found the same way as
+  // tier 1's: corner posts at x 144, 256 (near), 274 (far), 388, planks running
+  // y 190..325, mount where the diagonals cross.
   //
-  // The cost of the middle is the roof. There is about 120 source px of covered
-  // headroom over this deck, so standing dead centre the roof's near slope takes
-  // the top of the archer's helmet — roughly 30% of him, against 13% if he stood
-  // a third of the way further forward. That is a real occlusion and not a
-  // placement bug; it is what a low roof does to anyone under it, and the middle
-  // was asked for with that trade understood.
-  mountFrac: [0.586, 0.438],
+  // The raised roof did what it was meant to. The archer's helmet now clears the
+  // near eave with only its top corner clipped, where before the roof took a
+  // third of him at this spot. What still crosses him is the near post — dead
+  // centre of the deck is 10px right of that post's centre, so a man standing
+  // there is behind it by construction. Nothing to fix: he is behind it.
+  mountFrac: [0.587, 0.503],
   // The parts of the tower that stand between the archer and the camera, as
   // rects in source pixels, re-drawn after him. Measured off the artwork; see
   // assets/towers/README.md for how, and re-measure after a redraw.
   //
-  //   [52, 23, 370, 136]  everything above the deck: the roof, and the top
-  //                       plates and post heads it sits on. The cut is at y=158
-  //                       because the deck's own topmost pixel is y=159 — one
-  //                       row lower and the deck's far corner would be painted
-  //                       over the archer's hat.
-  //   [249, 152, 21, 140] the near post, the one standing on the deck's nearest
-  //                       corner. Tight to its outline, so nothing but post is
-  //                       in the rect, and it starts above the cut so the roof's
-  //                       front tip stays whole where the two meet.
-  frontTrims: [[52, 23, 370, 136], [249, 152, 21, 140]],
+  //   [47, 23, 372, 127]  everything down to y=149: the roof, and the post heads
+  //                       still hidden behind it at that height.
+  //   [200, 150, 67, 20]  the roof's front tip, which hangs below that cut. It
+  //                       stops at x=266 on purpose — one pixel further and it
+  //                       catches the FAR post, which is behind the archer and
+  //                       would land a brown patch on his helmet.
+  //   [244, 150, 23, 120] the near post, the one on the deck's nearest corner,
+  //                       tight to its outline so nothing but post is inside.
+  frontTrims: [[47, 23, 372, 127], [200, 150, 67, 20], [244, 150, 23, 120]],
   shape: 'tower'
 };
 
 const archer = {
   gunner: 'archer_t1',
   gunnerTrim: ARCHER_TRIM,
-  // Anchored at the FEET (0.982 down) on the standing axis of the legs (0.360
-  // across), so the archer stands on the deck instead of hovering over it, and
-  // mirrors about its own legs rather than the middle of a box the bow pulls
-  // off-centre.
-  gunnerPivot: [0.360, 0.982],
+  // Anchored at the FEET (0.982 down) on the BODY's axis (0.451 across).
+  //
+  // That across figure was 0.360 and it was wrong. This art is seen from above,
+  // so the point the man stands on is the middle of his torso — measured at the
+  // rows where the bow arc separates from the body, source x 215..285, centre
+  // 249. At 0.360 the anchor sat 13px to the LEFT of that, which drew the whole
+  // figure 13px right of wherever he was mounted. Centring the mount on the deck
+  // did not centre the man, and "standing too far right" was the symptom.
+  //
+  // A gunner also mirrors about this point, so an anchor off the body's middle
+  // swings him sideways when he turns: 34px at 0.360, 14px now.
+  gunnerPivot: [0.451, 0.982],
   spriteFaces: -1,
   // Where the arrow leaves the bow, measured from the feet as a fraction of the
-  // archer's trim: a quarter of the way across in front, and 41% of the height
-  // above. Taken from the centroid of the frontmost 22% of the art — the bow has
-  // to be isolated like that because a naive centroid of the whole figure is
-  // dominated by the hat and the quiver.
+  // archer's trim: 34% of the way across in front, and 41% of the height above.
+  // Taken from the centroid of the frontmost 22% of the art — the bow has to be
+  // isolated like that because a naive centroid of the whole figure is dominated
+  // by the hat and the quiver.
+  //
+  // The across figure was 0.249 while the anchor was at 0.360. Both moved by the
+  // same 13px when the anchor did, so the arrow still leaves the same absolute
+  // point of the drawing — source x 200 — which is the invariant that matters.
   //
   // Kept as fractions, not source pixels. Written as pixels it was 14.2 and 22.6
   // against a 200px export, and a 512px re-export left those numbers looking
   // fine while silently moving the arrow's origin to a third of the way up the
   // archer's shin.
-  muzzle: [Math.round(0.249 * ARCHER_TRIM[2] * SCALE), -Math.round(0.411 * ARCHER_TRIM[3] * SCALE)]
+  muzzle: [Math.round(0.341 * ARCHER_TRIM[2] * SCALE), -Math.round(0.411 * ARCHER_TRIM[3] * SCALE)]
 };
 
 // Tier 2's archer: helmet instead of a hat, so he is 19 source px shorter, and
@@ -171,13 +176,14 @@ const archer = {
 const archer2 = {
   gunner: 'archer_t2',
   gunnerTrim: ARCHER2_TRIM,
-  // Same absolute point as tier 1's feet, 15px down: source (235.8, 312.5).
-  gunnerPivot: [0.360, 0.979],
+  // Same absolute point as tier 1's feet, 15px down: source (249, 312.5). Same
+  // body-centre correction as tier 1 — see the note there.
+  gunnerPivot: [0.451, 0.979],
   spriteFaces: -1,
-  // Same bow, so the same 0.249 across — but 0.477 of a shorter box, not 0.411
+  // Same bow, so the same 0.341 across — but 0.477 of a shorter box, not 0.411
   // of a taller one, which is the same 56px above the feet. The muzzle comes out
-  // at exactly tier 1's [7, -12]: two different fractions describing one point.
-  muzzle: [Math.round(0.249 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.477 * ARCHER2_TRIM[3] * SCALE)]
+  // at exactly tier 1's [10, -12]: two different fractions describing one point.
+  muzzle: [Math.round(0.341 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.477 * ARCHER2_TRIM[3] * SCALE)]
 };
 
 // Range up across the board and cooldown down with it. The reach is what makes

@@ -30,8 +30,14 @@ mirror to face the way they are walking and are never rotated — a standing
 figure rotated to face north is a standing figure lying down.
 
 `Enemies_Man_T1.png` draws 20 x 23 game px and `Enemies_Man_T2.png` draws
-33 x 28, against a spearman's 35 x 27. That reads correctly: a lighter troop and
+38 x 32, against a spearman's 35 x 27. That reads correctly: a lighter troop and
 a heavier one either side of your own soldier.
+
+The heavy was redrawn 1.16x bigger, and its collision radius went 12 -> 14 with
+it rather than being left behind — the hitbox is meant to match the body you can
+see. That was checked before the change, not after: the whole sim comes out
+identical either way, so it is a picture change and not a balance one. Do not
+assume the next size change is free; run `node tools/sim.mjs` and look.
 
 ## Attacking is not a drawing
 

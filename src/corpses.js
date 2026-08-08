@@ -21,6 +21,17 @@ export const CORPSE_LIFE = 2;
 // existence draws the eye straight to the frame it disappears on.
 export const CORPSE_FADE = 0.5;
 
+// How far back the blow throws him. A man who is speared or shot does not fold
+// up on the spot he was standing on — he goes over backwards, away from whatever
+// hit him — and 5px is enough to read as that without the body looking like it
+// teleported.
+//
+// Backwards means opposite the way he was FACING, which is the direction the
+// thing that killed him came from: both sides of a fight stand nose to nose, and
+// the lunge in enemies.js/units.js already uses the same axis. Sideways is not
+// an option here — these figures never move up and down.
+export const KNOCKBACK = 5;
+
 // `def` is the living figure's def, not a separate corpse def: the body is drawn
 // from `def.dead` and positioned from the same trim and pivot the standing
 // sprite uses, so a re-export moves both together.
@@ -32,7 +43,11 @@ export function dropCorpse(state, def, x, y, face) {
   // The pool comes with the body rather than being its own effect, so the two
   // always appear together, sit together and fade together. render.js draws it
   // in an earlier pass, which is what keeps the body on top of it.
-  state.corpses.push({ def, x, y, face, life: CORPSE_LIFE, pool: poolFor() });
+  //
+  // The pool moves back with him, not with the spot he was killed on: the blood
+  // under a body belongs to the body. The spatter from the killing blow was
+  // already thrown at the fight, and that one stays put.
+  state.corpses.push({ def, x: x - face * KNOCKBACK, y, face, life: CORPSE_LIFE, pool: poolFor() });
 }
 
 export function updateCorpses(state, dt) {

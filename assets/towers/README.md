@@ -2,7 +2,7 @@
 
 | file                       | drawn as   | used by                        |
 |----------------------------|------------|--------------------------------|
-| `Archers_Tower_T1.png`     | 73 x 94 px | Watchtower (tier 1)            |
+| `Archers_Tower_T1.png`     | 72 x 94 px | Watchtower (tier 1)            |
 | `Archers_Tower_T2.png`     | 76 x 96 px | Archer Post (2), Crossbow Tower (3) |
 | `Barracks_Tower_T1.png`    | 81 x 70 px | all three barracks tiers       |
 
@@ -34,52 +34,62 @@ lists rects of the SAME image, re-drawn after the gunner:
 
 | rect                  | what it is                                        |
 |-----------------------|---------------------------------------------------|
-| `[52, 23, 370, 136]`  | everything above the deck: roof, top plates, post heads |
-| `[249, 152, 21, 140]` | the near post, tight to its outline               |
+| `[47, 23, 372, 127]`  | down to y=149: the roof, and the post heads still hidden behind it |
+| `[200, 150, 67, 20]`  | the roof's front tip, which hangs below that cut  |
+| `[244, 150, 23, 120]` | the near post, tight to its outline               |
 
 Re-drawing a rect paints exactly what the artist put there, transparency and
 all, so the archer still shows through wherever the tower does not cover him.
 The only rule a rect has to obey is that **everything solid inside it really
 does belong in front of the archer** — which is why they are tight rather than
-generous, and why there are two of them instead of one box around both.
+generous, and why there are three of them instead of one box around the lot.
 
-Two numbers in there are load-bearing:
+Two edges in there are load-bearing:
 
-- The roof rect stops at **y = 158** because the deck's own topmost pixel is
-  y = 159. One row lower and the deck's far corner gets painted across the
-  archer's hat.
-- The post rect **starts at y = 152**, above that cut, so the roof's front tip —
-  which hangs below 158 right where the post is — stays whole where the two
-  meet. Checked at 9x: no notch.
+- The full-width rect stops at **y = 149**, because below that the FAR post and
+  the back rails come out from behind the roof, and both of those are behind the
+  archer.
+- The tip rect stops at **x = 266**. One pixel further and it catches that far
+  post and lands a brown patch on the archer's helmet.
 
-Tier 1 gets no front layer and needs none. Its near post is a stub that ends at
-the deck, about 3px shy of the archer's feet, so there is nothing to be in front
-of. Its SVG could not provide one anyway: the whole tower is a single group of
-118 paths, where tier 2's is 19 separate parts.
+Tier 1 gets no front layer and needs none. Its near post is a stub whose top is
+below the deck's near corner, well under the archer's feet, so there is nothing
+to be in front of.
 
 ## Where the archer stands
 
-`mountFrac` on each tier. Tier 2's is `[0.586, 0.438]` — the **middle of the
-deck**, source pixel (269, 227) inside the 512 canvas.
+Both tiers stand in the **middle of the deck**: tier 1 at source (258, 219),
+tier 2 at (265.5, 257.5).
 
-That point is measured, not eyeballed. The four corner posts fix the deck as a
-parallelogram — far (276.5, 159), right (391.5, 248), near (261.5, 294), left
-(146.5, 205) — and the mount is where its diagonals cross. If the tower is ever
-redrawn, re-measure the posts and take the centre again rather than nudging the
-old fraction.
+Those points are measured, not eyeballed, and the method is the thing to keep.
+The bounding box is no help — the ladder and the flagpole hang off opposite
+sides and drag its centre away from the deck. **The four corner posts are what
+fix the deck**, as a parallelogram, and the mount is where its diagonals cross:
 
-**The cost of the middle is the roof.** There is only about 120 source px of
-covered headroom over this deck, so standing dead centre the roof's near slope
-takes the top of the archer's helmet — roughly 30% of him, against about 13% if
-he stood a third of the way further forward. That is a real occlusion, not a
-placement bug: it is what a low roof does to anyone under it. Moving him forward
-is one number if it ever needs trading back.
+| tier | post centres, x        | planks, y | mount        |
+|------|------------------------|-----------|--------------|
+| 1    | 133.5, 246.5, 267.5, 385.5 | 152..286 | (258, 219)  |
+| 2    | 144, 256, 274, 388     | 190..325  | (265.5, 257.5) |
 
-One thing to know before nudging him sideways: a gunner mirrors about his
-**feet**, not his middle, and this archer's feet are 36% across his own art — so
-flipping him swings his body 34px sideways, which is wider than the near post.
-Any position within about 20px of the post puts it straight down his face in one
-of the two facings.
+After a redraw, re-measure the posts and take the centre again rather than
+nudging the old fraction — a fraction of a box that changed shape is a different
+point.
+
+**Centring the mount is not the same as centring the man**, and that caught us
+out. `gunnerPivot` says which point of the archer's own drawing is "him", and it
+was set at 0.360 across, 13px left of his body. That drew the whole figure 13px
+right of wherever he was mounted, which read exactly as "standing too far right".
+It is 0.451 now — the middle of his torso, measured at the rows where the bow arc
+separates from the body. If the archer is ever redrawn, that fraction has to move
+with him or the same bug comes back.
+
+The same number decides how far he swings when he turns, because a gunner mirrors
+about it: 34px of swing at 0.360, 14px at 0.451. Anything off his middle makes
+the two facings sit in visibly different places.
+
+What still crosses the tier 2 archer is the near post: the deck's centre is only
+10px right of that post's centre, so a man standing there is behind it by
+construction. That is the drawing being honest, not a number to fix.
 
 ## After a redraw
 

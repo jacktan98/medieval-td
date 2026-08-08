@@ -6,7 +6,7 @@ drawing each of them needs — see "Why only one file" below. All three are in:
 | file                        | who dies                       | drawn as    |
 |-----------------------------|--------------------------------|-------------|
 | `Enemies_Man_Dead_T1.png`   | the militia, every wave        | 27 x 18 px  |
-| `Enemies_Man_Dead_T2.png`   | the heavy, waves 4-8           | 38 x 22 px  |
+| `Enemies_Man_Dead_T2.png`   | the heavy, waves 4-8           | 53 x 30 px  |
 | `Barracks_Man_Dead_T1.png`  | your spearman, tier 1          | 43 x 21 px  |
 | `Barracks_Man_Dead_T2.png`  | your spearman, tiers 2 and 3   | 41 x 24 px  |
 
@@ -100,7 +100,7 @@ centred on a fresh canvas. Those foot points are:
 | file                | feet at, in the 512 canvas |
 |---------------------|----------------------------|
 | `Enemies_Man_T1`    | x 244, y 293               |
-| `Enemies_Man_T2`    | x 256, y 304               |
+| `Enemies_Man_T2`    | x 228, y 320               |
 | `Barracks_Man_T1`   | x 264, y 294               |
 | `Barracks_Man_T2`   | x 281, y 313               |
 
@@ -123,10 +123,21 @@ Everything else is the same as every other sprite in this project:
 
 ## What the game does with it
 
-The body appears where he fell, stays **2 seconds**, then goes. The last half
-second fades out — that fade is inside the 2 seconds, not added to it, and it is
-there because a body that pops out of existence pulls your eye to the exact
-frame it vanishes.
+The body appears **5 game px behind where he fell**, stays **2 seconds**, then
+goes. The last half second fades out — that fade is inside the 2 seconds, not
+added to it, and it is there because a body that pops out of existence pulls
+your eye to the exact frame it vanishes.
+
+Those 5px are the killing blow throwing him over backwards, and "backwards"
+means opposite the way he was FACING — which is where the blow came from, since
+both sides of a fight stand nose to nose. It is the same axis the attack lunge
+uses; nothing here ever moves up and down. The pool of blood goes back with him,
+because the blood under a body belongs to the body. The spatter thrown at the
+moment of the hit stays at the fight.
+
+`corpse-test.html` places its bodies directly rather than killing anything, so
+the crosshairs there are the pose anchor with no knockback in it — which is what
+you want when checking a new drawing. The 5px only happens in play.
 
 Two seconds is *game* time. On 2x from the dashboard a body lasts one real
 second, which is deliberate: fast-forward speeds up the whole simulation, and a
@@ -147,7 +158,7 @@ and paste the rect in as `deadTrim`. As shipped:
 | file                       | `deadTrim`            | `deadPivot`      |
 |----------------------------|-----------------------|------------------|
 | `Enemies_Man_Dead_T1.png`  | `[189, 211, 134, 90]` | `[0.412, 0.906]` |
-| `Enemies_Man_Dead_T2.png`  | `[164, 203, 183, 106]`| `[0.503, 0.953]` |
+| `Enemies_Man_Dead_T2.png`  | `[159, 199, 256, 148]`| `[0.270, 0.818]` |
 | `Barracks_Man_Dead_T1.png` | `[150, 206, 212, 100]`| `[0.538, 0.884]` |
 | `Barracks_Man_Dead_T2.png` | `[169, 198, 201, 116]`| `[0.557, 0.995]` |
 

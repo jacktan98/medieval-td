@@ -39,7 +39,7 @@ export const enemyTypes = {
     colour: '#B98B5E'
   },
 
-  // Tier 2. Drawn half again as big as the militia — 33x28 game px against
+  // Tier 2. Drawn getting on for twice the militia — 38x32 game px against
   // 20x23 — and it plays the way it looks: slow, heavy, and not something a
   // single tier 1 tower kills on the way past.
   //
@@ -61,19 +61,27 @@ export const enemyTypes = {
   // the best mix still wins with 8, and by 780 nothing wins at all.
   heavy_inf: {
     sprite: 'enemy_t2',
-    spriteTrim: [169, 172, 161, 135],
-    pivot: [0.541, 0.978],
+    // Redrawn 1.16x bigger. Both anchors below were carried across rather than
+    // re-eyeballed: the new art is the old art scaled 1.16 about (256, 310) and
+    // shifted (-28, +17), which is the transform that best overlays the two
+    // silhouettes (IoU 0.98). Put the old feet through it and they land here.
+    spriteTrim: [127, 167, 186, 157],
+    pivot: [0.544, 0.975],
     spriteFaces: -1,
     dead: 'dead_enemy_t2',
-    deadTrim: [164, 203, 183, 106],
-    deadPivot: [0.503, 0.953],
+    deadTrim: [159, 199, 256, 148],
+    deadPivot: [0.270, 0.818],
     hp: 620,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
     damage: 18,
     atkCd: 1.2,
-    r: 12,
+    // 12 -> 14, moved with the art rather than left behind, so the hitbox still
+    // matches the body you can see. Checked before changing it, not after: the
+    // whole sim is identical either way — same wave, same lives, same gold in
+    // every scenario — so this is a picture change and not a balance one.
+    r: 14,
     colour: '#8A6A4A'
   }
 };
