@@ -56,13 +56,17 @@ from the alpha channel — do not type it by hand, a few pixels out shifts the
 sprite and the error looks like a bad pivot rather than a bad number.
 
 `pivot` is `[across, down]` as a fraction of the trim, and the convention is
-**feet on the anchor, standing axis of the legs across** — not the middle of
-the bounding box, which a weapon pulls off-centre.
+**the centre of the figure's grey ground shadow**. Not his feet, and definitely
+not the middle of the bounding box, which a weapon pulls off-centre — the
+militia's mace dragged the old box centre 21% of his width off his body.
+
+Run `node tools/shadow.mjs` for it. Do not measure it by eye: the artist decides
+where a figure stands by drawing the ellipse, and the code reads it.
 
 Because it is a fraction of the trim rather than a pixel count, a pivot survives
 a re-export at a different canvas size untouched. The trim rect does not — that
 is absolute source pixels, and it is the one thing that has to be re-pasted.
 
-Re-exporting also moves the foot points that `assets/dead/` is drawn against, so
-if you redraw one of these, the matching death pose has to be checked with
-`corpse-test.html`.
+A death pose no longer has to be drawn against this one's foot point — it
+carries its own shadow and is measured on its own. Still worth opening
+`corpse-test.html` after a redraw, but the two files are independent now.

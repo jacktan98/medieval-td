@@ -6,20 +6,23 @@
 export const enemyTypes = {
   light_inf: {
     sprite: 'enemy_t1',
-    spriteTrim: [208, 182, 96, 113],   // source px, re-paste from tools/trim.mjs
-    pivot: [0.377, 0.978],   // feet on the anchor, standing axis from the legs
+    spriteTrim: [208, 199, 96, 114],   // source px, re-paste from tools/trim.mjs
+    pivot: [0.594, 0.908],   // the centre of his ground shadow
     spriteFaces: -1,
     // The dead pose, left on the road for two seconds.
     //
-    // deadTrim is measured by tools/trim.mjs like every other trim. deadPivot is
-    // NOT measured: it is where this figure's FEET are, expressed inside the
-    // dead trim, because the body has to land on the spot the man died on and
-    // nothing about the corpse's own outline knows where that is. Derived as
-    // (livingTrim origin + pivot x livingTrim size - deadTrim origin) / deadTrim
-    // size, so it has to be recomputed if EITHER export is redrawn.
+    // BOTH numbers are measured from the corpse's own drawing now. deadTrim
+    // comes from tools/trim.mjs and deadPivot is the centre of the corpse's own
+    // grey shadow, from tools/shadow.mjs.
+    //
+    // It used to be derived instead — the LIVING figure's feet, located inside
+    // the dead trim by arithmetic — because a corpse had no shadow and nothing
+    // about its outline said where it lay. That coupled the two exports: redraw
+    // either one and the number had to be recomputed from both. Now each drawing
+    // carries its own answer, and a body lies where its shadow is.
     dead: 'dead_enemy_t1',
-    deadTrim: [189, 211, 134, 90],
-    deadPivot: [0.412, 0.906],
+    deadTrim: [193, 211, 126, 90],
+    deadPivot: [0.163, 0.753],
     hp: 80,
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit
@@ -76,12 +79,12 @@ export const enemyTypes = {
     // re-eyeballed: the new art is the old art scaled 1.16 about (256, 310) and
     // shifted (-28, +17), which is the transform that best overlays the two
     // silhouettes (IoU 0.98). Put the old feet through it and they land here.
-    spriteTrim: [127, 167, 186, 157],
-    pivot: [0.544, 0.975],
+    spriteTrim: [163, 175, 186, 162],
+    pivot: [0.737, 0.904],
     spriteFaces: -1,
     dead: 'dead_enemy_t2',
-    deadTrim: [159, 199, 256, 148],
-    deadPivot: [0.270, 0.818],
+    deadTrim: [125, 182, 241, 148],
+    deadPivot: [0.135, 0.644],
     hp: 780,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,

@@ -57,9 +57,14 @@ building stands precisely where the marker it replaced was standing.
 
 | file                    | shadow centre | as a fraction of the trim |
 |-------------------------|---------------|---------------------------|
-| `Archers_Tower_T1.png`  | (510.5, 730)  | `[0.497, 0.862]`          |
-| `Archers_Tower_T2.png`  | (546.5, 793)  | `[0.581, 0.880]`          |
-| `Barracks_Tower_T1.png` | (518.5, 628)  | `[0.511, 0.704]`          |
+| `Archers_Tower_T1.png`  | (508, 744)    | `[0.492, 0.886]`          |
+| `Archers_Tower_T2.png`  | (544, 811)    | `[0.575, 0.904]`          |
+| `Barracks_Tower_T1.png` | (518.5, 628.5)| `[0.511, 0.705]`          |
+
+**The same rule applies to every figure**, not just buildings — `pivot`,
+`gunnerPivot` and `deadPivot` are all the centre of that figure's own shadow now.
+`node tools/shadow.mjs` measures all thirteen sprites and checks the anchors the
+data files hold still land on them.
 
 It is `groundFrac` in `src/data/towers.js`, and it replaced a rule that centred
 the bounding box on the plot and put the bottom of the trim 12px below it. That
@@ -73,11 +78,15 @@ these have something:
   across rather than 0.5 — the box rule had it 7px left of where it belongs.
 - **Tier 1** was 5px high for the same reason as the barracks, just less of it.
 
-To measure a new one: take the pixels of the exact shadow colour and find the
-**widest row**. For an ellipse that row is the centre line, and unlike the
-bounding box it survives having legs and tents standing on top of it — the
-barracks' shadow has its top 20px covered, which drags a bounding-box centre
-down but leaves the widest row exactly where it was.
+The measurement is not a bounding box of the visible grey either, because the
+building stands ON its shadow and hides the top of it — the barracks covers 20px
+of its own, which drags a box centre 10px down. An ellipse's leftmost and
+rightmost pixels lie exactly on its horizontal axis, and those tips are the part
+nothing standing in the middle can cover, so the tips give the centre line.
+
+One wrinkle the tool handles: legs and stakes cut a building's shadow into
+pieces — eleven of them on the barracks — so the ellipse has to be reassembled
+from all of them before it is measured.
 
 ## The tower can stand in front of its own archer
 
@@ -144,17 +153,18 @@ After a redraw, re-measure the legs and take the centre again rather than
 nudging the old fraction — a fraction of a box that changed shape is a different
 point.
 
-**Centring the mount is not the same as centring the man**, and that caught us
-out. `gunnerPivot` says which point of the archer's own drawing is "him", and it
-was set at 0.360 across, 13px left of his body. That drew the whole figure 13px
-right of wherever he was mounted, which read exactly as "standing too far right".
-It is 0.451 now — the middle of his torso, measured at the rows where the bow arc
-separates from the body. If the archer is ever redrawn, that fraction has to move
-with him or the same bug comes back.
+**Centring the mount is not the same as centring the man.** `gunnerPivot` says
+which point of the archer's own drawing is "him", and it is now the centre of his
+grey ground shadow — `node tools/shadow.mjs` reads it out of the PNG.
+
+That used to be guesswork dressed up as measurement ("the middle of his torso, at
+the rows where the bow arc separates from the body") and it was wrong twice, once
+by 13px, which read exactly as "the archer is standing too far right". The shadow
+removes the judgement call: the artist decides where he stands by drawing it.
 
 The same number decides how far he swings when he turns, because a gunner mirrors
-about it: 34px of swing at 0.360, 14px at 0.451. Anything off his middle makes
-the two facings sit in visibly different places.
+about it. Anything off his middle makes the two facings sit in visibly different
+places, and the shadow's centre is his middle by construction.
 
 What still crosses both archers is the near post: the deck's centre is close to
 that post in x, so a man standing dead centre is behind it by construction. That
@@ -174,7 +184,7 @@ is the drawing being honest, not a number to fix.
    them, with a crosshair on each mount. The archer's feet belong on the cross,
    the cross belongs on the deck, and no part of him may cover the roof or the
    near post.
-5. Re-measure `groundFrac` — the widest row of shadow-coloured pixels. It is a
-   fraction of the trim, so it survives a resize, but not a reshape.
+5. `node tools/shadow.mjs` — it re-measures `groundFrac` and every figure anchor
+   from the grey ellipses, and fails if one has drifted off its shadow.
 6. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
    a building into the HUD text and by how much.

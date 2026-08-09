@@ -84,11 +84,11 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // 490 wide here and 144 wide for the archer are not the same units.
 const TOWER_TRIM = [267, 211, 490, 602];
 const TOWER2_TRIM = [300, 142, 424, 740];
-const ARCHER_TRIM = [184, 163, 144, 137];
-const ARCHER2_TRIM = [184, 197, 144, 118];
+const ARCHER_TRIM = [184, 197, 144, 119];
+const ARCHER2_TRIM = [184, 195, 144, 122];
 const CAMP_TRIM = [207, 228, 610, 568];
-const SPEAR_TRIM = [151, 167, 172, 130];
-const SPEAR2_TRIM = [156, 198, 166, 117];
+const SPEAR_TRIM = [170, 198, 172, 116];
+const SPEAR2_TRIM = [173, 196, 166, 120];
 
 // All three tiers are the SAME SIZE — scale is fixed by the export, so a tier
 // reads as an upgrade from the artwork and the stars over its roof, never from
@@ -113,11 +113,10 @@ const watchtower = {
   // which is 1.4 game px of slack on a 1024 canvas.
   mountFrac: [0.489, 0.383],
   // Where the building meets the ground: the centre of its grey shadow ellipse,
-  // source (510.5, 730). See towerBox in src/towers.js for why this and not the
-  // bounding box. Measured as the widest row of pixels of the shadow's exact
-  // colour (150,150,150) — the widest row is the ellipse's own centre line, and
-  // unlike the bounding box it survives the legs standing on top of it.
-  groundFrac: [0.497, 0.862],
+  // source (508, 744). See towerBox in src/towers.js for why this and not the
+  // bounding box, and run tools/shadow.mjs to re-measure it — the legs cut the
+  // ellipse into four pieces, and the tool reassembles them.
+  groundFrac: [0.492, 0.886],
   // Tier 1 needs a front layer now, where the old drawing did not. The redraw
   // gave it full corner rails instead of the stub it used to have, and the post
   // on the deck's NEAREST corner — source x 547..561, running from y 397 down to
@@ -145,10 +144,10 @@ const watchtower2 = {
   // which is the reassuring answer: the deck sits in the same place inside the
   // drawing, the drawing just got bigger.
   mountFrac: [0.574, 0.498],
-  // Shadow centre, source (546.5, 793). Note it is NOT 0.5 across: the flagpole
+  // Shadow centre, source (544, 811). Note it is NOT 0.5 across: the flagpole
   // leans out one side of the drawing, so centring the box put the tower 7px
   // left of where it should stand.
-  groundFrac: [0.581, 0.880],
+  groundFrac: [0.575, 0.904],
   // The parts of the tower that stand between the archer and the camera, as
   // rects in source pixels, re-drawn after him. Measured off the artwork; see
   // assets/towers/README.md for how, and re-measure after a redraw.
@@ -168,56 +167,49 @@ const watchtower2 = {
 const archer = {
   gunner: 'archer_t1',
   gunnerTrim: ARCHER_TRIM,
-  // Anchored at the FEET (0.982 down) on the BODY's axis (0.451 across).
+  // THE CENTRE OF HIS GROUND SHADOW, source (252, 303). Not his feet, not the
+  // middle of his box: the artist now draws a grey ellipse under every figure,
+  // and that ellipse is where the figure stands. `node tools/shadow.mjs` reads
+  // it straight out of the PNG.
   //
-  // That across figure was 0.360 and it was wrong. This art is seen from above,
-  // so the point the man stands on is the middle of his torso — measured at the
-  // rows where the bow arc separates from the body, source x 215..285, centre
-  // 249. At 0.360 the anchor sat 13px to the LEFT of that, which drew the whole
-  // figure 13px right of wherever he was mounted. Centring the mount on the deck
-  // did not centre the man, and "standing too far right" was the symptom.
+  // This used to be guesswork dressed up as measurement — "the middle of his
+  // torso, at the rows where the bow arc separates from the body" — and it was
+  // wrong twice, once by 13px. The shadow removes the judgement call entirely:
+  // the artist decides where he stands by drawing it, and the code reads it.
   //
-  // A gunner also mirrors about this point, so an anchor off the body's middle
-  // swings him sideways when he turns: 34px at 0.360, 14px now.
-  gunnerPivot: [0.451, 0.982],
+  // A gunner also mirrors about this point, so it has to be the body's middle or
+  // he jumps sideways when he turns. The shadow's centre is exactly that.
+  gunnerPivot: [0.472, 0.891],
   spriteFaces: -1,
-  // Where the arrow leaves the bow, measured from the feet as a fraction of the
-  // archer's trim: 34% of the way across in front, and 41% of the height above.
-  // Taken from the centroid of the frontmost 22% of the art — the bow has to be
-  // isolated like that because a naive centroid of the whole figure is dominated
-  // by the hat and the quiver.
+  // Where the arrow leaves the bow, as an offset from the anchor above. The bow
+  // is the brown arc in front of him and it bulges forward, so its grip — the
+  // point an arrow rests on — is the arc's frontmost pixel at its vertical
+  // middle: source (190, 255), which is 62 in front of the anchor and 48 above.
   //
-  // The across figure was 0.249 while the anchor was at 0.360. Both moved by the
-  // same 13px when the anchor did, so the arrow still leaves the same absolute
-  // point of the drawing — source x 200 — which is the invariant that matters.
-  //
-  // Kept as fractions, not source pixels. Written as pixels it was 14.2 and 22.6
-  // against a 200px export, and a 512px re-export left those numbers looking
-  // fine while silently moving the arrow's origin to a third of the way up the
-  // archer's shin.
-  muzzle: [Math.round(0.341 * ARCHER_TRIM[2] * SCALE), -Math.round(0.411 * ARCHER_TRIM[3] * SCALE)]
+  // Kept as fractions of the trim, not source pixels. Written as pixels it was
+  // 14.2 and 22.6 against a 200px export, and a 512px re-export left those
+  // numbers looking fine while silently moving the arrow's origin to a third of
+  // the way up the archer's shin.
+  muzzle: [Math.round(0.431 * ARCHER_TRIM[2] * SCALE), -Math.round(0.403 * ARCHER_TRIM[3] * SCALE)]
 };
 
-// Tier 2's archer: helmet instead of a hat, so he is 19 source px shorter, and
-// the artist drew him 15px further down the same canvas. Both of those move the
-// numbers below even though the man is unchanged from the waist down — every
-// anchor here is a fraction of a trim, and this trim is a different box.
+// Tier 2's archer: helmet instead of a hat, and a slightly different box. Every
+// anchor here is a fraction of a trim, and this trim is not tier 1's, so the
+// fractions differ even where the drawing does not.
 //
-// Derived, not re-eyeballed. The base of the figure is pixel-for-pixel where
-// tier 1's is (same centroid, same 201..275 span, 15 rows lower), so the feet
-// are tier 1's feet plus 15 and the bow is tier 1's bow plus 15. Everything
-// below is that one shift, divided by the new box.
+// Nothing here is derived from tier 1 any more. Both are measured from their own
+// shadow and their own bow, and they agree to within a pixel — which is the
+// check that the measurement is real rather than a number carried across.
 const archer2 = {
   gunner: 'archer_t2',
   gunnerTrim: ARCHER2_TRIM,
-  // Same absolute point as tier 1's feet, 15px down: source (249, 312.5). Same
-  // body-centre correction as tier 1 — see the note there.
-  gunnerPivot: [0.451, 0.979],
+  // The centre of his ground shadow, source (253, 304) — a pixel from tier 1's.
+  gunnerPivot: [0.476, 0.892],
   spriteFaces: -1,
-  // Same bow, so the same 0.341 across — but 0.477 of a shorter box, not 0.411
-  // of a taller one, which is the same 56px above the feet. The muzzle comes out
-  // at exactly tier 1's [10, -12]: two different fractions describing one point.
-  muzzle: [Math.round(0.341 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.477 * ARCHER2_TRIM[3] * SCALE)]
+  // Same bow, grip at source (190, 256.5): 63 in front of the anchor and 47.5
+  // above. Different fractions from tier 1 because the box differs, and they
+  // round to exactly tier 1's [13, -10] — two measurements describing one bow.
+  muzzle: [Math.round(0.438 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.389 * ARCHER2_TRIM[3] * SCALE)]
 };
 
 // Range up across the board and cooldown down with it. The reach is what makes
@@ -262,7 +254,7 @@ const spearman = {
   spriteTrim: SPEAR_TRIM,
   // Feet on the anchor, standing axis of the legs across — the same convention
   // as the archer's gunnerPivot, so "where a figure is" means one thing.
-  pivot: [0.657, 0.980],
+  pivot: [0.657, 0.903],
   bodyFrac: SPEAR_BODY,
   spriteFaces: -1,
   // A spearman leaves a body too, then musters again from the barracks once his
@@ -270,11 +262,12 @@ const spearman = {
   // soldier stops blocking the instant he falls, so the enemy he was holding
   // walks straight over him.
   //
-  // deadPivot is the LIVING figure's feet located inside the dead trim, not
-  // anything measured off the corpse; see the note in data/waves.js.
+  // deadPivot is the centre of the corpse's OWN ground shadow, measured by
+  // tools/shadow.mjs — not derived from the living figure any more; see the note
+  // in data/waves.js for what that used to cost.
   dead: 'dead_soldier_t1',
-  deadTrim: [150, 206, 212, 100],
-  deadPivot: [0.538, 0.884],
+  deadTrim: [153, 206, 206, 100],
+  deadPivot: [0.078, 0.697],
   r: Math.round(SPEAR_W * SPEAR_BODY / 2),
   lunge: 6            // px thrust when the spear goes in
 };
@@ -298,18 +291,13 @@ const spearman2 = {
   sprite: 'soldier_t2',
   spriteTrim: SPEAR2_TRIM,
   // Tier 1's feet plus (17, 19): source (281.0, 313.4).
-  pivot: [0.753, 0.986],
+  pivot: [0.753, 0.908],
   bodyFrac: SPEAR2_BODY,
   spriteFaces: -1,
   dead: 'dead_soldier_t2',
-  deadTrim: [169, 198, 201, 116],
-  // The living figure's feet located inside the dead trim, same as every other
-  // deadPivot. It lands at the very bottom edge of the corpse art, because this
-  // pose was drawn about 13 source px higher against its own box than tier 1's
-  // was — so the body sits ~3 game px further above the death spot than tier
-  // 1's does. That is the artist's placement showing through, not a bad sum, and
-  // 3px is small enough to leave alone. corpse-test.html is where to judge it.
-  deadPivot: [0.557, 0.995],
+  deadTrim: [158, 198, 195, 116],
+  // The centre of this corpse's own shadow.
+  deadPivot: [0.131, 0.583],
   r: Math.round(SPEAR2_W * SPEAR2_BODY / 2),
   lunge: 6
 };
