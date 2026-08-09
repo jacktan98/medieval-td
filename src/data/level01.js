@@ -71,22 +71,27 @@ export const path = [
 // Both the positions and this ordering come out of `node tools/split-map.mjs`,
 // which reads them off the artwork. Do not hand-edit them; redraw and re-run.
 //
-// The two marked FAR are more than 110px off the road. They cover almost none
-// of it at tier 1 range (118) — plot 3 covers literally none — so they are
-// tier 3 positions or barracks positions, not general-purpose ones.
-// Percentages recomputed after the path's ends were put back on the road; the
-// road is 1804px long now rather than 1832, because the old entry and exit
-// legs were partly a detour off the tarmac.
+// The two marked FAR are more than 110px off the road and cover very little of
+// it, so they are tier 3 positions or barracks positions, not general-purpose
+// ones.
+//
+// THE LAST REDRAW RENUMBERED THESE. The road did not move, but two markers did,
+// and because the list is in road order that was enough to shuffle the indices:
+// the top-middle plot went from index 2 (26% along) to index 6 (77% along), and
+// everything between it and the end shifted down one. Anything that names a plot
+// by number — tools/sim.mjs does — has to be re-derived, not carried over. That
+// is the single most expensive mistake available in this file and it has already
+// been made once.
 export const plots = [
-  { x:  84, y: 259 },   //  6% along,  73 off
-  { x: 319, y: 248 },   // 20% along,  59 off
-  { x: 462, y: 130 },   // 26% along,  76 off
-  { x: 122, y: 465 },   // 44% along, 129 off   FAR
-  { x: 368, y: 404 },   // 52% along,  59 off
-  { x: 485, y: 401 },   // 58% along,  51 off
-  { x: 709, y: 475 },   // 66% along, 112 off   FAR
-  { x: 666, y: 315 },   // 80% along,  86 off
-  { x: 732, y: 143 }    // 86% along,  72 off
+  { x:  91, y: 245 },   //  7% along,  60 off
+  { x: 335, y: 238 },   // 21% along,  48 off
+  { x: 124, y: 452 },   // 44% along, 123 off   FAR
+  { x: 360, y: 404 },   // 51% along,  59 off
+  { x: 495, y: 396 },   // 59% along,  55 off
+  { x: 717, y: 466 },   // 66% along, 115 off   FAR
+  { x: 557, y: 185 },   // 77% along,  80 off
+  { x: 652, y: 306 },   // 78% along,  71 off
+  { x: 664, y: 153 }    // 82% along,  74 off
 ];
 
 // There is no keep coordinate any more. It existed only so render.js could draw

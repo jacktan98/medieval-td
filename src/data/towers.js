@@ -70,11 +70,23 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // absolute source pixels, so they are the one thing that MUST be re-pasted after
 // a re-export at a different size; everything else below is a fraction of the
 // trim and carries over untouched.
-const TOWER_TRIM = [61, 18, 349, 458];
-const TOWER2_TRIM = [47, 23, 372, 466];
+// THE THREE TOWERS ARE ON A 1024 CANVAS; EVERY FIGURE IS STILL ON 512.
+//
+// That is not a mistake and it needs no special case in the code. A trim is
+// absolute source pixels into whatever image it names, and SCALE turns source
+// pixels into game px, so a drawing on a bigger canvas simply draws bigger —
+// which is what the redraw was for. The check that the two canvases still agree
+// with each other is external: the plot marker is on 1024 too, and at this same
+// SCALE it comes out within 2.5% of the markers painted into the 1920-wide map.
+// The map is authored at the game's own scale, so that agreement is the proof.
+//
+// It does mean a tower's trim can no longer be eyeballed against a figure's.
+// 490 wide here and 144 wide for the archer are not the same units.
+const TOWER_TRIM = [267, 211, 490, 602];
+const TOWER2_TRIM = [300, 142, 424, 740];
 const ARCHER_TRIM = [184, 163, 144, 137];
 const ARCHER2_TRIM = [184, 197, 144, 118];
-const CAMP_TRIM = [50, 86, 393, 340];
+const CAMP_TRIM = [207, 228, 610, 568];
 const SPEAR_TRIM = [151, 167, 172, 130];
 const SPEAR2_TRIM = [156, 198, 166, 117];
 
@@ -86,15 +98,29 @@ const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
   w: drawnW(TOWER_TRIM), h: drawnH(TOWER_TRIM),
-  // The MIDDLE of the deck, source pixel (258, 219) inside the 512 canvas.
+  // The MIDDLE of the deck, source pixel (507, 441) inside the 1024 canvas.
   //
   // NOT the middle of the trim: the ladder and the flagpole hang off opposite
   // sides and drag the box centre away from the deck. The deck is found from the
-  // four corner posts instead — their centres are x 133.5, 246.5 (near), 267.5
-  // (far), 385.5, and the planks run y 152..286 — and the mount is where the
-  // parallelogram's diagonals cross. Anchor the archer to the art, never to the
-  // bounding box the exporter happened to produce.
-  mountFrac: [0.564, 0.439],
+  // four corner posts instead, and the mount is where the parallelogram's
+  // diagonals cross. Anchor the archer to the art, never to the bounding box the
+  // exporter happened to produce.
+  //
+  // The corners are the tops of the four legs, read out of the SVG: (356, 460),
+  // (466, 382), (688-ish is tier 2's — here 651, 418) and (554, 505). The two
+  // diagonals cross 7px apart rather than exactly, because a leg has width and
+  // the rail caps differ; the mount is the midpoint of those two crossings,
+  // which is 1.4 game px of slack on a 1024 canvas.
+  mountFrac: [0.489, 0.383],
+  // Tier 1 needs a front layer now, where the old drawing did not. The redraw
+  // gave it full corner rails instead of the stub it used to have, and the post
+  // on the deck's NEAREST corner — source x 547..561, running from y 397 down to
+  // the planks — crosses the archer's legs. One rect, tight to the post.
+  //
+  // The far corner's post is the trap here, exactly as it is on tier 2: it sits
+  // at x 457..474, well inside the archer's span, and it is BEHIND him. A rect
+  // generous enough to take both would paint a brown bar across his chest.
+  frontTrims: [[547, 397, 15, 60]],
   shape: 'tower'
 };
 
@@ -105,16 +131,14 @@ const watchtower2 = {
   sprite: 'archery_t2',
   spriteTrim: TOWER2_TRIM,
   w: drawnW(TOWER2_TRIM), h: drawnH(TOWER2_TRIM),
-  // The MIDDLE of the deck, source pixel (265.5, 257.5), found the same way as
-  // tier 1's: corner posts at x 144, 256 (near), 274 (far), 388, planks running
-  // y 190..325, mount where the diagonals cross.
+  // The MIDDLE of the deck, source pixel (543, 510) in the 1024 canvas, found
+  // the same way as tier 1's: leg tops at (392, 529), (502, 451), (688, 487),
+  // (590, 574), mount where the diagonals cross.
   //
-  // The raised roof did what it was meant to. The archer's helmet now clears the
-  // near eave with only its top corner clipped, where before the roof took a
-  // third of him at this spot. What still crosses him is the near post — dead
-  // centre of the deck is 10px right of that post's centre, so a man standing
-  // there is behind it by construction. Nothing to fix: he is behind it.
-  mountFrac: [0.587, 0.503],
+  // As a fraction this barely moved across the redraw — 0.587, 0.503 before —
+  // which is the reassuring answer: the deck sits in the same place inside the
+  // drawing, the drawing just got bigger.
+  mountFrac: [0.574, 0.498],
   // The parts of the tower that stand between the archer and the camera, as
   // rects in source pixels, re-drawn after him. Measured off the artwork; see
   // assets/towers/README.md for how, and re-measure after a redraw.
@@ -127,7 +151,7 @@ const watchtower2 = {
   //                       would land a brown patch on his helmet.
   //   [244, 150, 23, 120] the near post, the one on the deck's nearest corner,
   //                       tight to its outline so nothing but post is inside.
-  frontTrims: [[47, 23, 372, 127], [200, 150, 67, 20], [244, 150, 23, 120]],
+  frontTrims: [[583, 392, 15, 124]],
   shape: 'tower'
 };
 

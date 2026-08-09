@@ -56,9 +56,20 @@ export const enemyTypes = {
   //
   // 540 -> 620 when waves 1 and 2 were thinned and the opening delay went to 14s.
   // Making the start gentler hands the archers a tower they did not have before,
-  // and a pure-archery build went back to winning. Swept against every six-tower
-  // build: at 540 archery alone wins with 6 lives, at 620 it dies on wave 7 while
-  // the best mix still wins with 8, and by 780 nothing wins at all.
+  // and a pure-archery build went back to winning.
+  //
+  // 620 -> 780 after the map redraw that moved two plot markers. The markers'
+  // total reach barely changed — the union of all nine at tier 1 range actually
+  // fell from 93.0% of the road to 89.1% — but the one that moved from (462,130)
+  // to (557,185) went from covering 10.6% to 17.0%, and it is a plot the best
+  // all-archery build takes. That was the whole margin: archery alone went from
+  // losing on wave 7 to winning with 4 lives.
+  //
+  // 780 is chosen over the 700 that would also have restored the invariant,
+  // because 700 leaves the game easier than it was — the best mix wins with 14
+  // lives against the 7 it had before the redraw. At 780 the best mix wins with
+  // 7 again, so the redraw costs no difficulty. It is not a knife edge either:
+  // 780 and 860 give the same result, so the plateau is picked at its near end.
   heavy_inf: {
     sprite: 'enemy_t2',
     // Redrawn 1.16x bigger. Both anchors below were carried across rather than
@@ -71,7 +82,7 @@ export const enemyTypes = {
     dead: 'dead_enemy_t2',
     deadTrim: [159, 199, 256, 148],
     deadPivot: [0.270, 0.818],
-    hp: 620,
+    hp: 780,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts

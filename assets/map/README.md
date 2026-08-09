@@ -4,9 +4,19 @@ Four hand-drawn files live here, all authored, never generated:
 
 - **`Map_1.svg`** — the whole board at 1920 x 1080: sky strip, grass, road,
   scenery, and a marker on each of the nine build plots.
-- **`Plot Marker.svg`** — one plot marker on its own, on the same 512 square
-  canvas as the sprites. The space in the name is fine; `src/assets.js` asks for
-  it as `Plot%20Marker.svg`, because a raw space is illegal in a URL.
+- **`Plot Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
+  of the last redraw. The space in the name is fine; `src/assets.js` asks for it
+  as `Plot%20Marker.svg`, because a raw space is illegal in a URL.
+
+  This file is quietly the most useful one in the project, because it is the only
+  asset whose correct game size is known independently: the same marker is
+  painted into `Map_1.svg`, which is authored at the board's own scale. When the
+  towers moved to a 1024 canvas and it was not obvious whether they should be
+  read at the shared `SCALE` or half of it, this is what settled it — at the
+  shared `SCALE` the standalone marker lands within 2.5% of the painted one, so
+  1024-at-`SCALE` is the artist's convention. `tools/split-map.mjs` prints that
+  percentage on every run. **If it ever drifts far from zero, the canvases have
+  stopped agreeing and every 1024 asset is the wrong size.**
 - **`Gold.png`, `Life.png`** — the two HUD icons, at the top of the screen.
 
 One derived file is generated from them and committed:
@@ -93,12 +103,14 @@ Draw plot markers wherever you want towers. Their positions are read straight
 out of the drawing, so they line up exactly, and there is no longer any nudging
 between what you paint and where the game puts them.
 
-A tower is drawn 95px tall from 12px below its plot, so a marker painted above
-about **y=120** puts a building behind the HUD text. That is no longer fatal —
-the header is part of the map, so a tall tower stands in front of it rather than
-being cut off, and the text has a shadow — but `node tools/hud-clear.mjs` will
-tell you which plots reach the text and by how much. The top-left marker at
-y=107 currently reaches it with its flag and tier star only, which reads fine.
+The tallest tower is drawn 152px from 12px below its plot — it was 96px before
+the towers were redrawn bigger — so a marker painted above about **y=180** now
+puts a building behind the HUD text, where the limit used to be y=120. That is
+not fatal: the header is part of the map, so a tall tower stands in front of it
+rather than being cut off, and the text has a shadow. `node tools/hud-clear.mjs`
+says which plots reach the text and by how much. Two do now, at y=185 and y=153,
+and both reach it with a flag and tier stars only, which reads fine. A plot much
+higher than that would put roof timber behind the gold counter.
 
 ## Re-tracing after a redraw
 
@@ -110,10 +122,23 @@ distance from any road pixel to the grass.
 
 **Moving the markers is a balance change.** Expect to re-check it every time:
 `node tools/sim.mjs`. The plots decide how much of the road the archers can
-reach, and that is the single biggest lever in the game. The last redraw moved
+reach, and that is the single biggest lever in the game. An earlier redraw moved
 the markers by up to 36px, which raised coverage from 81% to 83.6% and was
 enough to let a pure-archery build win outright — enemy speed went 88 -> 94 to
 put it back. Before that it had gone 72 -> 88 for the same reason.
+
+**And moving one marker can renumber all of them,** because the plots are stored
+in road order. The latest redraw is the clean example of how little it takes:
+the road did not move at all, and the total reach of the nine markers actually
+went DOWN (their union covers 89.1% of the road where it covered 93.0%). But one
+marker moved from (462, 130) to (557, 185), taking it from covering 10.6% of the
+road to 17.0% — and it is a plot the best all-archery build takes. That single
+plot was the whole margin: all-archery went from losing on wave 7 to winning
+with 4 lives. The heavy's hp went 620 -> 780 to put it back.
+
+So do not read "coverage barely changed" as "balance barely changed". Which
+plots are good matters more than how good they are in total, and the indices
+that name them shift underneath anything that hard-codes them.
 
 Speed is no longer that lever. The game was deliberately slowed down afterwards
 (militia 94 -> 70, archery cooldown 0.75 -> 1.00) and the archers' reach raised

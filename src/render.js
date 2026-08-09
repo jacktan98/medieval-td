@@ -102,8 +102,14 @@ export const ROAD_W = 125;
 // All four numbers come from `node tools/split-map.mjs`, which measures the
 // artist's file. It also reports how far off the map's own painted markers this
 // draws; at the time of writing, 2.5%.
-const MARKER_TRIM = [72, 156, 347, 164];
-const MARKER_PIVOT = [0.500, 0.614];
+// Measured on the marker's OWN canvas, which is 1024 square as of the last
+// redraw where every other sprite is 512. That is fine and needs no special
+// case: a trim is source pixels into whatever image it names, and SCALE turns
+// them into game px, so the only thing that matters is that the two agree. The
+// check that it is right is the last line tools/split-map.mjs prints — the
+// stamped marker against the ones painted into the board, currently 2.5% apart.
+const MARKER_TRIM = [302, 419, 420, 184];
+const MARKER_PIVOT = [0.500, 0.586];
 const MARKER_W = MARKER_TRIM[2] * SCALE;
 const MARKER_H = MARKER_TRIM[3] * SCALE;
 

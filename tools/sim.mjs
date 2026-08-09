@@ -114,7 +114,7 @@ export function run(plan) {
 // six-tower combination of the usable plots and all 64 family assignments of
 // each, and keeping the winner.
 //
-// Plots 3 and 6 sit more than 110px off the road and cover almost none of it,
+// Plots 2 and 5 sit more than 110px off the road and cover almost none of it,
 // so they are left out of the six-tower builds — a player would not take them
 // either, and including one measured the dead plot rather than the family.
 //
@@ -124,22 +124,32 @@ export function run(plan) {
 // the labels below still rank the way they did: 448 builds is 18 seconds.
 //
 // WHICH plot gets which family is not arbitrary, and getting it wrong makes the
-// whole file lie. These indices were carried over unchanged when the artist
-// moved the markers, and because plots are stored in road order, the re-ordering
-// quietly put the barracks on the two highest-coverage plots and the archers on
-// the two worst. Every mix "lost", which read as a balance collapse and was
-// really a bad shopping list. Coverage per plot at tier 1 range against the
-// 1832px road is 9.5 / 21.5 / 6.7 / 0 / 22.6 / 18.3 / 1.4 / 18.2 / 10.2 percent
-// for plots 0..8; re-measure after any redraw before trusting these lists.
-// (Those figures are at the old tier 1 range of 118. The reach is 150 now, so
-// every plot covers more than this — the ORDER is what still matters.)
+// whole file lie. These indices were carried over unchanged the first time the
+// artist moved the markers, and because plots are stored in road order, the
+// re-ordering quietly put the barracks on the two highest-coverage plots and the
+// archers on the two worst. Every mix "lost", which read as a balance collapse
+// and was really a bad shopping list.
+//
+// Coverage per plot at tier 1 range (150) is
+//   15.0 / 27.2 / 4.4 / 28.4 / 26.9 / 5.5 / 17.0 / 23.4 / 13.6 percent
+// for plots 0..8. Re-measure after any redraw before trusting these lists.
+//
+// Every list below was re-derived by sweep after the last map redraw, which
+// moved two markers and renumbered everything after them. The marker that used
+// to be plot 2 is plot 6 now, and it is a better position than it was — 10.6% of
+// the road to 17.0% — which on its own was enough to let all-archery win, so the
+// heavy's hp went 620 -> 780 to put the invariant back.
 const scenarios = {
-  'ALL archery x6  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8)],
-  'ALL archery x8  (expect LOSS)':  [A(1), A(2), A(4), A(5), A(7), A(8), A(0), A(3)],
-  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(4), B(5), B(7)],
-  'MIX 5 archery + 1 barracks':     [A(1), A(2), A(4), A(5), A(7), B(8)],   // the best build there is
-  'MIX 4 archery + 2 barracks':     [A(1), B(2), A(4), A(5), A(7), B(8)],
-  'MIX 3 archery + 3 barracks':     [A(1), B(2), A(4), A(5), B(7), B(8)],
+  'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
+  'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],
+  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(3), B(4), B(6), B(7)],
+  // Listed in plot order, which is also BUILD order: the plan is a shopping list
+  // spent as gold arrives, so moving a barracks to the end of the line is a
+  // different build, not the same one written differently. Sorting these lists
+  // "tidily" by family turned the 4+2 win into a wave 7 loss.
+  'MIX 5 archery + 1 barracks':     [A(1), A(3), A(4), A(6), B(7), A(8)],
+  'MIX 4 archery + 2 barracks':     [A(1), B(3), A(4), A(6), B(7), A(8)],
+  'MIX 3 archery + 3 barracks':     [A(1), A(3), A(4), B(6), B(7), B(8)],   // the best build there is
   'under-built     (expect LOSS)':  [A(1, 0)]
 };
 
