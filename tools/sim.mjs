@@ -132,8 +132,12 @@ export function run(plan) {
 // and was really a bad shopping list.
 //
 // Coverage per plot at tier 1 range (150) is
-//   15.5 / 28.9 / 1.7 / 29.7 / 30.2 / 3.3 / 15.0 / 23.7 / 13.3 percent
-// for plots 0..8. Re-measure after any redraw before trusting these lists.
+//   15.5 / 28.9 / 1.7 / 29.7 / 30.2 / 3.3 / 15.0 / 23.7 / 15.3 percent
+// for plots 0..8. Re-measure after any redraw before trusting these lists, and
+// do not trust the number itself too far: plot 8 rose from 13.3 to 15.3 in the
+// redraw that forced the heavy's hp DOWN. See the note on that hp in
+// data/waves.js — coverage says where a tower can shoot, not whether anything
+// can shoot the place a blocker stands.
 //
 // Every list below was re-derived by sweep after the redraw that made the plot
 // marker bigger, which slid all nine markers to make room. That redraw is worth
@@ -144,9 +148,9 @@ export function run(plan) {
 // two, and the winning build now ends on a barracks at plot 8 instead of an
 // archer. Total coverage says nothing about that; only the sweep does.
 //
-// The heavy's hp was not touched. The invariant came back on its own once the
-// lists were right, which is the outcome to hope for: a redraw should cost a
-// re-sweep, not a re-tune.
+// That redraw cost only a re-sweep. The one after it — a single marker moving
+// from (721,128) to (809,262) — cost both: nothing at all cleared the level
+// until the heavy's hp came down from 780 to 755.
 const scenarios = {
   'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
   'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],
@@ -155,9 +159,13 @@ const scenarios = {
   // spent as gold arrives, so moving a barracks to the end of the line is a
   // different build, not the same one written differently. Sorting these lists
   // "tidily" by family turned a 4+2 win into a wave 7 loss once already.
-  'MIX 5 archery + 1 barracks':     [A(1), A(3), A(4), A(6), A(7), B(8)],   // the best build there is
-  'MIX 4 archery + 2 barracks':     [A(1), A(3), B(4), A(6), A(7), B(8)],
-  'MIX 3 archery + 3 barracks':     [A(0), B(3), A(4), B(6), B(7), A(8)],
+  //
+  // All three now win by exactly 2 lives, and that is the level rather than a
+  // coincidence: see the heavy's hp in data/waves.js for why the margin got this
+  // thin. A mix that wins by 3 means something moved.
+  'MIX 5 archery + 1 barracks':     [A(1), A(3), A(4), A(6), B(7), A(8)],
+  'MIX 4 archery + 2 barracks':     [A(1), A(3), A(4), B(6), A(7), B(8)],
+  'MIX 3 archery + 3 barracks':     [A(1), B(3), A(4), B(6), A(7), B(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };
 

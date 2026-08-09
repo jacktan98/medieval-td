@@ -73,11 +73,35 @@ export const enemyTypes = {
   // all-archery build takes. That was the whole margin: archery alone went from
   // losing on wave 7 to winning with 4 lives.
   //
-  // 780 is chosen over the 700 that would also have restored the invariant,
-  // because 700 leaves the game easier than it was — the best mix wins with 14
-  // lives against the 7 it had before the redraw. At 780 the best mix wins with
-  // 7 again, so the redraw costs no difficulty. It is not a knife edge either:
-  // 780 and 860 give the same result, so the plateau is picked at its near end.
+  // 780 was chosen over the 700 that would also have worked, because 700 left
+  // the game easier than it had been. It was not a knife edge: 780 and 860 gave
+  // the same result, so the plateau was picked at its near end.
+  //
+  // 780 -> 755 after the last plot moved from (721,128) to (809,262), which is
+  // the whole of that redraw — no other marker moved and the road is identical
+  // to the pixel. At 780 NOTHING cleared the level any more, which is the first
+  // time this knob has been needed in that direction.
+  //
+  // The surprise is that the plot got BETTER on paper and the level got harder.
+  // Its own coverage went 13.3% -> 15.3% of the road and the part no other plot
+  // reaches went 4.1% -> 8.5%. But the build it broke used that plot as a
+  // BARRACKS, and a blocker is worth what the archers behind it can shoot: the
+  // squad's stand moved from 85% along the road to 89%, which took it from 102px
+  // off the nearest other tower to about 145px — the outer edge of tier 1 range.
+  // Coverage measures where a tower can shoot. It says nothing about whether
+  // anything can shoot the place a blocker stands.
+  //
+  // 755 is the middle of the band, not its near end, because this plateau is
+  // bounded on BOTH sides: 740 lets archery win alone and 770 lets nothing win.
+  // 745 to 765 all hold, so 755 has 10 of margin either way.
+  //
+  // Worth knowing before the next map change: that band is 20 wide where the
+  // last one was 80, and every value inside it has the best build scraping home
+  // with 2 lives where it used to have 7. The new plot is strong for archery and
+  // weak for blocking, and those two together squeeze the gap between "archery
+  // alone is enough" and "nothing is enough". If the next redraw breaks this
+  // again, the honest fix is probably the wave curve rather than this number —
+  // the whole difficulty now lands in wave 8.
   heavy_inf: {
     sprite: 'enemy_t1b',
     // Redrawn 1.16x bigger. Both anchors below were carried across rather than
@@ -90,7 +114,7 @@ export const enemyTypes = {
     dead: 'dead_enemy_t1b',
     deadTrim: [125, 182, 241, 148],
     deadPivot: [0.135, 0.644],
-    hp: 780,
+    hp: 755,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts

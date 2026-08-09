@@ -115,16 +115,15 @@ sit 11px higher again, so they are the first thing to go: they vanish while the
 roof still looks fine, and the stars are the only thing on the board that says
 which tier a tower is.
 
-**The plot at (721, 128) is over that line, and it is also directly under the
-speed button** — 677..765 against the button's 676..764, which is as exact an
-overlap as you could arrange on purpose. Even a tier 1 watchtower there puts its
-deck, its archer and its flag inside the "1x" control.
+This has already bitten once. A marker sat at (721, 128), which was over the
+ceiling AND directly under the speed button — 677..765 against the button's
+676..764, as exact an overlap as you could arrange on purpose — so even a tier 1
+watchtower there put its deck, its archer and its flag inside the "1x" control.
+It has since moved to (809, 262) and both faults are gone.
 
-Together those two want the marker at **y >= 190**, which is 124 map units lower
-in `Map.svg`. Moving it sideways instead is cheaper if that stretch of road
-matters: clear of the button means the plot's x below 632 or above 808, and then
-only the 20px of height is left to fix. Nothing in the code can fix either,
-short of putting the plot somewhere the marker is not.
+`node tools/hud-clear.mjs` reports the strictest fix rather than the first fault
+it finds, because that plot failed two rules at once and fixing the smaller one
+first would have meant moving the same marker twice.
 
 Below the ceiling, a plot high enough to reach the HUD **text** is a much
 smaller problem — the header is part of the map, so a tall tower stands in front
@@ -164,17 +163,41 @@ and that was enough to change **which six plots the best build takes** and which
 family goes on each. The fix was re-sweeping the shopping lists, not re-tuning
 the game.
 
-So do not read "coverage barely changed" as "balance barely changed". Which
-plots are good matters more than how good they are in total, the indices that
-name them shift underneath anything that hard-codes them, and the answer to both
-is the sweep: 448 six-tower builds, 20 seconds.
+**And the one after THAT is the sharpest of the three, because it moved a single
+marker and the marker got better.** Plot 8 went from (721, 128) to (809, 262) to
+clear the HUD. Its own coverage rose from 13.3% to 15.3% of the road, the part no
+other plot reaches rose from 4.1% to 8.5%, the union rose from 89.0% to 93.4%,
+nothing was renumbered and the road is identical to the pixel. **Nothing cleared
+the level afterwards** — the first time this has needed the heavy's hp brought
+DOWN, 780 to 755.
+
+The reason is that the build it broke used that plot as a barracks, and a
+blocker is worth what the archers behind it can shoot. Its squad's stand moved
+from 85% along the road to 89%, which took it from 102px off the nearest other
+tower to about 145px, the outer edge of tier 1 range. **Coverage measures where a
+tower can shoot; it says nothing about whether anything can shoot the place a
+blocker stands.**
+
+So do not read "coverage barely changed" as "balance barely changed", and do not
+read "coverage went up" as "the level got easier". Which plots are good matters
+more than how good they are in total, good-for-archery and good-for-blocking are
+different questions about the same spot, the indices shift underneath anything
+that hard-codes them, and the answer to all of it is the sweep: `node
+tools/sweep.mjs`, 448 six-tower builds, 20 seconds. Run it before `sim.mjs`, not
+after.
 
 Speed is no longer that lever. The game was deliberately slowed down afterwards
 (militia 94 -> 70, archery cooldown 0.75 -> 1.00) and the archers' reach raised
-to 150, which made archery strong again; the repair was the tier 2 enemy's hp,
-because heavies first appear in wave 4 and so raise the ceiling without touching
-the opening. Militia hp is the wrong knob for that — at 110 every build died on
+to 150, which made archery strong again; the repair was the heavy's hp, because
+heavies first appear in wave 4 and so raise the ceiling without touching the
+opening. Militia hp is the wrong knob for that — at 110 every build died on
 wave 2.
+
+**That knob is running out of room.** The hp values where the invariant holds are
+745 to 765, a band 20 wide where the previous one was 80, and every value inside
+it has the best build scraping home with 2 lives out of 20 where it used to have
+7. All the difficulty now lands in wave 8. If the next map change breaks this
+again, the honest repair is probably the wave curve rather than one enemy's hp.
 
 The invariant to protect is that **neither family wins alone**: the best
 all-archery build must lose, the best all-barracks build must lose, and a mix

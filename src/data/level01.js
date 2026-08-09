@@ -86,6 +86,12 @@ export const path = [
 // none of them: every marker slid a little to make room, and each stayed on its
 // own stretch of road. Check the percentages against the previous list rather
 // than assuming it, though — that check is cheap and the mistake is not.
+//
+// The last entry then moved again on its own, from (721, 128), because a tier 2
+// tower there was cut off by the top of the board and stood inside the speed
+// button. It is a better plot now by every measure that can be counted — and it
+// still cost the heavy 25 hp to keep the level winnable. The note on that hp in
+// data/waves.js is the one to read before moving a marker.
 export const plots = [
   { x: 153, y: 247 },   // 11% along,  72 off
   { x: 311, y: 239 },   // 20% along,  51 off
@@ -95,7 +101,7 @@ export const plots = [
   { x: 734, y: 471 },   // 66% along, 132 off   FAR
   { x: 561, y: 171 },   // 78% along,  91 off
   { x: 670, y: 305 },   // 81% along,  77 off
-  { x: 721, y: 128 }    // 85% along,  89 off
+  { x: 809, y: 262 }    // 89% along,  59 off
 ];
 
 // There is no keep coordinate any more. It existed only so render.js could draw
