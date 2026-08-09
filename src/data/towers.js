@@ -112,6 +112,12 @@ const watchtower = {
   // the rail caps differ; the mount is the midpoint of those two crossings,
   // which is 1.4 game px of slack on a 1024 canvas.
   mountFrac: [0.489, 0.383],
+  // Where the building meets the ground: the centre of its grey shadow ellipse,
+  // source (510.5, 730). See towerBox in src/towers.js for why this and not the
+  // bounding box. Measured as the widest row of pixels of the shadow's exact
+  // colour (150,150,150) — the widest row is the ellipse's own centre line, and
+  // unlike the bounding box it survives the legs standing on top of it.
+  groundFrac: [0.497, 0.862],
   // Tier 1 needs a front layer now, where the old drawing did not. The redraw
   // gave it full corner rails instead of the stub it used to have, and the post
   // on the deck's NEAREST corner — source x 547..561, running from y 397 down to
@@ -139,6 +145,10 @@ const watchtower2 = {
   // which is the reassuring answer: the deck sits in the same place inside the
   // drawing, the drawing just got bigger.
   mountFrac: [0.574, 0.498],
+  // Shadow centre, source (546.5, 793). Note it is NOT 0.5 across: the flagpole
+  // leans out one side of the drawing, so centring the box put the tower 7px
+  // left of where it should stand.
+  groundFrac: [0.581, 0.880],
   // The parts of the tower that stand between the archer and the camera, as
   // rects in source pixels, re-drawn after him. Measured off the artwork; see
   // assets/towers/README.md for how, and re-measure after a redraw.
@@ -234,6 +244,11 @@ const camp = {
   sprite: 'barracks_t1',
   spriteTrim: CAMP_TRIM,
   w: drawnW(CAMP_TRIM), h: drawnH(CAMP_TRIM),
+  // Shadow centre, source (518.5, 628). This is the one that was visibly wrong:
+  // the stakes planted in front of the tent reach 68 source px below the shadow,
+  // and the old bounding-box rule pinned THEM to the ground, standing the tent
+  // 22px too high on its plot.
+  groundFrac: [0.511, 0.704],
   shape: 'camp'
 };
 

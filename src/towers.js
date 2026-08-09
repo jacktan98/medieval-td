@@ -3,13 +3,24 @@ import { projectileSpeed } from './data/towers.js';
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
-// art and the firing origin cannot drift apart. When real tower sprites land,
-// set w/h in data/towers.js to the size the sprite is drawn at — nothing else
-// needs to change.
+// art and the firing origin cannot drift apart.
+//
+// A building is placed by its GROUND SHADOW, not by its bounding box. The
+// shadow's centre lands on the plot point, which is the same point the plot
+// marker's own dirt ellipse lands on — so a building stands exactly where the
+// marker it replaced was standing.
+//
+// The old rule was "centre the trim on x, put the bottom of the trim 12px below
+// the plot", and it is wrong for any drawing with something sticking out. The
+// barracks has a row of stakes planted in front of the tent that hang 68 source
+// px BELOW its shadow; pinning those to the ground shoved the whole tent 22px
+// up the screen. Tier 2's flagpole did the same thing sideways, 7px off centre.
+// A bounding box is not where a building is — the shadow is the part that
+// touches the ground, so it is the part that decides.
 export function towerBox(t) {
   return {
-    left: t.x - t.def.w / 2,
-    top: t.y + 12 - t.def.h,
+    left: t.x - t.def.groundFrac[0] * t.def.w,
+    top: t.y - t.def.groundFrac[1] * t.def.h,
     w: t.def.w,
     h: t.def.h
   };

@@ -38,9 +38,10 @@ const RUNS = [
   [470, 200, 'hint']
 ];
 
-// Same geometry as towerBox(). The stars drawTierStars puts at box.top - 7 with
-// a radius of 4 are the topmost ink, but only the box counts as solid.
-const boxTop = (plot, def) => plot.y + 12 - def.h;
+// Same geometry as towerBox(): a building hangs off its ground shadow, whose
+// centre sits on the plot point. The stars drawTierStars puts at box.top - 7
+// with a radius of 4 are the topmost ink, but only the box counts as solid.
+const boxTop = (plot, def) => plot.y - def.groundFrac[1] * def.h;
 const inkTop = (plot, def) => boxTop(plot, def) - 11;
 
 let bad = 0, noted = 0;

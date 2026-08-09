@@ -164,8 +164,10 @@ function drawFigures(ctx, state) {
   const items = [];
   const add = (y, rank, run) => items.push({ y, rank, run });
 
-  // towerBox puts the base at y + 12; that slab is the part touching the ground.
-  for (const t of state.towers) add(t.y + 12, 1, () => drawTower(ctx, t));
+  // A building is anchored by its ground shadow, whose centre sits on the plot
+  // point — so the plot point IS the building's ground line, the same way a
+  // figure's feet are its own.
+  for (const t of state.towers) add(t.y, 1, () => drawTower(ctx, t));
   // Bodies are flat on the ground, so at equal depth they go under a figure
   // standing at the same spot rather than over its feet.
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));

@@ -48,6 +48,37 @@ The `.svg` files beside the PNGs are the originals. Nothing loads them; they are
 here because they are the only place the tower's parts exist as separate
 objects, which is what made the front layer below measurable at all.
 
+## Where a building stands: the grey shadow, not the bounding box
+
+Every one of these has a grey ground shadow under it, in exactly `150,150,150`.
+**That ellipse's centre is the building's position**, and it lands on the plot
+point — the same point the plot marker's own dirt ellipse lands on, so a
+building stands precisely where the marker it replaced was standing.
+
+| file                    | shadow centre | as a fraction of the trim |
+|-------------------------|---------------|---------------------------|
+| `Archers_Tower_T1.png`  | (510.5, 730)  | `[0.497, 0.862]`          |
+| `Archers_Tower_T2.png`  | (546.5, 793)  | `[0.581, 0.880]`          |
+| `Barracks_Tower_T1.png` | (518.5, 628)  | `[0.511, 0.704]`          |
+
+It is `groundFrac` in `src/data/towers.js`, and it replaced a rule that centred
+the bounding box on the plot and put the bottom of the trim 12px below it. That
+rule is wrong for any drawing with something sticking out, and all three of
+these have something:
+
+- The **barracks** has stakes planted in front of the tent that hang 68 source
+  px BELOW its shadow. Pinning those to the ground stood the whole tent 22px too
+  high on its plot. This is the one that was visible.
+- **Tier 2's** flagpole leans out one side, so its shadow centre is at 0.581
+  across rather than 0.5 — the box rule had it 7px left of where it belongs.
+- **Tier 1** was 5px high for the same reason as the barracks, just less of it.
+
+To measure a new one: take the pixels of the exact shadow colour and find the
+**widest row**. For an ellipse that row is the centre line, and unlike the
+bounding box it survives having legs and tents standing on top of it — the
+barracks' shadow has its top 20px covered, which drags a bounding-box centre
+down but leaves the widest row exactly where it was.
+
 ## The tower can stand in front of its own archer
 
 From tier 2 the tower has a roof, and a post on the deck's nearest corner. Both
@@ -143,5 +174,7 @@ is the drawing being honest, not a number to fix.
    them, with a crosshair on each mount. The archer's feet belong on the cross,
    the cross belongs on the deck, and no part of him may cover the roof or the
    near post.
-5. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
+5. Re-measure `groundFrac` — the widest row of shadow-coloured pixels. It is a
+   fraction of the trim, so it survives a resize, but not a reshape.
+6. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
    a building into the HUD text and by how much.
