@@ -29,11 +29,11 @@ export function draw(ctx, state) {
   // particular the body that made it has to lie on top of its own pool, which
   // sorting by depth could not guarantee once the pool is offset a few pixels.
   drawPools(ctx, state);
-  // Every solid thing standing on the ground, in one pass sorted by depth.
+  // Every solid thing standing on the ground, in one pass sorted by depth. The
+  // spatter goes through that pass too — it is not solid, but it does have a
+  // place on the board, and drawing it afterwards put it on top of buildings it
+  // was thrown behind. See drawFigures.
   drawFigures(ctx, state);
-  // Spatter above the figures: it is blood coming off a body, not a mark on the
-  // ground, so it belongs in front of the fight rather than under it.
-  drawSplats(ctx, state);
   // Health bars and muster rings after that, so status is never hidden by a
   // figure standing in front of the thing it belongs to.
   drawStatus(ctx, state);
@@ -178,6 +178,15 @@ function drawFigures(ctx, state) {
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   for (const u of state.units) if (u.respawn <= 0) add(u.y, 1, () => drawSoldier(ctx, u));
+  // Spatter sorts HERE rather than in a pass of its own, and by the victim's
+  // feet rather than by the wound it is drawn at. Rank 2 puts it just in front
+  // of the figure it came out of, which is where blood coming off a body
+  // belongs; being in the pass at all is what stops it landing on a building
+  // that is nearer the camera than the fight. It used to be a separate pass
+  // after this one, and painted red dots on the barracks roof.
+  for (const s of state.splats) {
+    add(s.groundY ?? s.y, 2, () => drawBlood(ctx, s.img, s.x, s.y, Math.min(1, s.life / SPLAT_FADE)));
+  }
 
   items.sort((a, b) => a.y - b.y || a.rank - b.rank);
   for (const it of items) it.run();
@@ -554,12 +563,6 @@ function drawPools(ctx, state) {
     if (!c.pool) continue;
     drawBlood(ctx, c.pool.img, c.x + c.pool.dx, c.y + c.pool.dy,
       Math.min(1, c.life / CORPSE_FADE) * settled(c));
-  }
-}
-
-function drawSplats(ctx, state) {
-  for (const s of state.splats) {
-    drawBlood(ctx, s.img, s.x, s.y, Math.min(1, s.life / SPLAT_FADE));
   }
 }
 

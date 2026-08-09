@@ -222,14 +222,16 @@ export function updateUnits(state, dt) {
         u.foe.hp -= u.def.damage;
         u.cd = u.def.cd;
         u.thrust = 1;
-        splat(state, u.foe.x, u.foe.y - u.foe.def.r);
+        splat(state, u.foe.x, u.foe.y - u.foe.def.r, u.foe.y);
+        u.foe.struckFrom = u.x >= u.foe.x ? 1 : -1;
       }
       u.foe.acd -= dt;
       if (u.foe.acd <= 0) {
         u.hp -= u.foe.def.damage;
         u.foe.acd = u.foe.def.atkCd;
         u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
-        splat(state, u.x, u.y - u.def.r);
+        splat(state, u.x, u.y - u.def.r, u.y);
+        u.struckFrom = u.foe.x >= u.x ? 1 : -1;
       }
     }
 
@@ -243,9 +245,12 @@ export function updateUnits(state, dt) {
       release(u);
       u.respawn = u.def.respawn;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
-      // A soldier's `face` is an angle, not a side — only its sign is ever
-      // drawn, the same reduction drawSoldier makes.
-      dropCorpse(state, u.def, u.x, u.y, Math.cos(u.face) >= 0 ? 1 : -1);
+      // He falls facing whatever killed him. The fallback is his own facing —
+      // a soldier's `face` is an angle, not a side, so it is reduced to a sign
+      // the same way drawSoldier reduces it — and it should never be reached,
+      // because nothing dies without being hit first.
+      dropCorpse(state, u.def, u.x, u.y, u.struckFrom || (Math.cos(u.face) >= 0 ? 1 : -1));
+      u.struckFrom = 0;
     }
   }
 }

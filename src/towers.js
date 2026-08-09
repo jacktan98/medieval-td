@@ -86,6 +86,10 @@ export function updateTowers(state, dt) {
         x: m.x,
         y: m.y,
         angle: t.aim,          // so the first frame already points at the target
+        // Where it was shot FROM, kept because the arrow's own position at the
+        // moment it lands is the target's. A corpse faces the blow, and this is
+        // the only record of which side the blow was on.
+        fromX: t.x,
         target,
         damage: t.def.damage,
         speed: projectileSpeed

@@ -13,8 +13,10 @@ const paths = {
   barracks_t2: 'assets/towers/Barracks_Tower_T2.png',
   archer_t1:   'assets/units/Archers_Man_T1.png',
   archer_t2:   'assets/units/Archers_Man_T2.png',
+  archer_t3:   'assets/units/Archers_Man_T3.png',
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
   soldier_t2:  'assets/units/Barracks_Man_T2.png',
+  soldier_t3:  'assets/units/Barracks_Man_T3.png',
   arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
   // T1a and T1b, not T1 and T2. The artist renamed the heavy from tier 2 to
   // "tier 1b" — it is a bigger militiaman, not the next rank up — so the tier 2
@@ -33,6 +35,7 @@ const paths = {
   dead_enemy_t1b:  'assets/dead/Enemies_Man_Dead_T1b.png',
   dead_soldier_t1: 'assets/dead/Barracks_Man_Dead_T1.png',
   dead_soldier_t2: 'assets/dead/Barracks_Man_Dead_T2.png',
+  dead_soldier_t3: 'assets/dead/Barracks_Man_Dead_T3.png',
   // Blood, two of each so a hit or a death is never the same picture twice in a
   // row. The spatter files sit in assets/projectiles and the pools in
   // assets/dead — that is where they were uploaded, and where the next ones will

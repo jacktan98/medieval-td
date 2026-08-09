@@ -41,6 +41,12 @@ import { poolFor, splat } from './src/blood.js';
 
 const spear = barracks[0].soldier;
 const spear2 = barracks[1].soldier;
+const spear3 = barracks[2].soldier;
+
+// One column per figure that can die. Five of them since tier 3 stopped sharing
+// tier 2's drawing, so the columns are tighter than they were.
+const COL = [110, 300, 490, 680, 870];
+const [militia, heavy, s1, s2, s3] = COL;
 
 // A living figure beside each body at the same spot, so size and ground line can
 // be compared directly, plus one of each facing and one mid-fade.
@@ -48,31 +54,35 @@ const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
   resting: false, menu: null, result: null, towers: [], shots: [], hits: [], splats: [],
   enemies: [
-    { def: enemyTypes.light_inf, x: 130, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 },
-    { def: enemyTypes.heavy_inf, x: 380, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 }
+    { def: enemyTypes.light_inf, x: militia, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 },
+    { def: enemyTypes.heavy_inf, x: heavy,   y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 }
   ],
   units: [
-    { def: spear,  x: 620, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null },
-    { def: spear2, x: 850, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null }
+    { def: spear,  x: s1, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null },
+    { def: spear2, x: s2, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null },
+    { def: spear3, x: s3, y: 150, hp: 1, maxHp: 1, face: 0, thrust: 0, respawn: 0, tower: null }
   ],
   corpses: [
-    { def: enemyTypes.light_inf, x: 130, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
-    { def: enemyTypes.light_inf, x: 130, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
-    { def: enemyTypes.heavy_inf, x: 380, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
-    { def: enemyTypes.heavy_inf, x: 380, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
-    { def: spear,                x: 620, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
-    { def: spear,                x: 620, y: 420, face: -1, life: 0.25, pool: poolFor() },
-    { def: spear2,               x: 850, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
-    { def: spear2,               x: 850, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() }
+    { def: enemyTypes.light_inf, x: militia, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: enemyTypes.light_inf, x: militia, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
+    { def: enemyTypes.heavy_inf, x: heavy,   y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: enemyTypes.heavy_inf, x: heavy,   y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear,                x: s1, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear,                x: s1, y: 420, face: -1, life: 0.25, pool: poolFor() },
+    { def: spear2,               x: s2, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear2,               x: s2, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear3,               x: s3, y: 300, face: 1,  life: CORPSE_LIFE, pool: poolFor() },
+    { def: spear3,               x: s3, y: 420, face: -1, life: CORPSE_LIFE, pool: poolFor() }
   ]
 };
 
 const ctx = document.getElementById('game').getContext('2d');
 await loadArt();
 // A handful of spatter around each living figure, so the hit effect is on the
-// same page as the pools rather than needing a fight to see it.
+// same page as the pools rather than needing a fight to see it. Third argument
+// is the victim's feet, which is what the renderer sorts the spatter by.
 for (const f of [...state.enemies, ...state.units])
-  for (let i = 0; i < 5; i++) splat(state, f.x, f.y - 10);
+  for (let i = 0; i < 5; i++) splat(state, f.x, f.y - 10, f.y);
 draw(ctx, state);
 
 // Crosshairs on every anchor: the body must lie ACROSS its cross, not beside it.
@@ -87,14 +97,12 @@ for (const c of [...state.corpses, ...state.enemies, ...state.units]) {
 
 ctx.fillStyle = '#F0E6D2';
 ctx.font = '13px system-ui, sans-serif';
+ctx.textAlign = 'center';
 ctx.fillText('alive', 40, 155);
-ctx.fillText('dead, facing right', 10, 305);
-ctx.fillText('dead, facing left', 10, 425);
-ctx.fillText('mid-fade →', 520, 425);
-ctx.fillText('militia', 105, 195);
-ctx.fillText('heavy', 360, 195);
-ctx.fillText('spear T1', 595, 195);
-ctx.fillText('spear T2', 825, 195);
+ctx.fillText('dead, facing right', 70, 275);
+ctx.fillText('dead, facing left', 70, 395);
+['militia', 'heavy', 'spear T1', 'spear T2', 'knight T3'].forEach((n, i) => ctx.fillText(n, COL[i], 195));
+ctx.textAlign = 'left';
 window.ready = true;
 </script>
 </body>

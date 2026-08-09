@@ -8,7 +8,8 @@ drawing each of them needs — see "Why only one file" below. All three are in:
 | `Enemies_Man_Dead_T1a.png`  | the militia, every wave        | 26 x 18 px  |
 | `Enemies_Man_Dead_T1b.png`  | the heavy, waves 4-8           | 49 x 30 px  |
 | `Barracks_Man_Dead_T1.png`  | your spearman, tier 1          | 42 x 21 px  |
-| `Barracks_Man_Dead_T2.png`  | your spearman, tiers 2 and 3   | 40 x 24 px  |
+| `Barracks_Man_Dead_T2.png`  | your spearman, tier 2          | 40 x 24 px  |
+| `Barracks_Man_Dead_T3.png`  | your knight, tier 3            | 36 x 18 px  |
 
 The tier comes last in these names, matching how they were exported, and the
 heavy's files are T1b rather than T2 because the artist renamed that enemy — it
@@ -129,9 +130,22 @@ seconds**. The last half second fades out — that fade is inside the 2 seconds,
 not added to it, and it is there because a body that pops out of existence pulls
 your eye to the exact frame it vanishes.
 
-"Backwards" means opposite the way he was FACING — which is where the blow came
-from, since both sides of a fight stand nose to nose. It is the same axis the
-attack lunge uses; nothing here ever moves up and down.
+"Backwards" means opposite the way the BODY faces, and **the body faces whatever
+killed it** — not the way the man was walking. A militiaman heading left who
+takes an arrow from a tower on his right falls looking right, and is thrown left.
+
+That is a change, and the old rule was visibly wrong in exactly that case: the
+body kept its travel facing, so it lay with its back to the arrow AND flew toward
+the archer that shot it. Both halves came from one number, so both were fixed by
+one change — the throw is derived from the facing, not chosen separately.
+
+The side the blow came from is recorded as `struckFrom` wherever damage is dealt.
+An arrow uses the TOWER's x rather than its own, because at the moment it lands
+the arrow is on top of what it hit and its position says nothing about where it
+was fired from. `node tools/facing.mjs` checks all four combinations of heading
+and blow side.
+
+Nothing here ever moves up and down; sideways is the only axis a body has.
 
 The throw is what makes it read. It was 10px applied instantly and it may as
 well not have been there: a body that simply *appears* 10px away has not been
@@ -157,7 +171,8 @@ changing either number.
 
 `corpse-test.html` places its bodies directly rather than killing anything, so
 the crosshairs there are the pose anchor with no throw applied — which is what
-you want when checking a new drawing.
+you want when checking a new drawing. It has five columns now: tier 3 stopped
+sharing tier 2's body when the knight arrived.
 
 Two seconds is *game* time. On 2x from the dashboard a body lasts one real
 second, which is deliberate: fast-forward speeds up the whole simulation, and a
@@ -181,6 +196,7 @@ and paste the rect in as `deadTrim`. As shipped:
 | `Enemies_Man_Dead_T1b.png` | `[125, 182, 241, 148]`| `[0.135, 0.644]` |
 | `Barracks_Man_Dead_T1.png` | `[153, 206, 206, 100]`| `[0.078, 0.697]` |
 | `Barracks_Man_Dead_T2.png` | `[158, 198, 195, 116]`| `[0.131, 0.583]` |
+| `Barracks_Man_Dead_T3.png` | `[168, 211, 176, 90]` | `[0.168, 0.759]` |
 
 `deadPivot` is **the centre of the corpse's own shadow**, from
 `node tools/shadow.mjs`. Both numbers now come from this file and nothing else.

@@ -46,12 +46,22 @@ taken yet:
    re-run and probably an hp pass with it.
 
 The men who stand on these are in `assets/units`; their numbers live in the same
-`src/data/towers.js` and are re-measured the same way. Tiers 2 and 3 share
-`Archers_Man_T2.png` and `Barracks_Man_T2.png`.
+`src/data/towers.js` and are re-measured the same way. **All three tiers now have
+their own man in both families** — plate armour at tier 3, a knight with a sword
+where the lower tiers carry a spear.
 
-**Tier 3 borrows tier 2's drawing, not tier 1's,** in both families. A tier is an
-upgrade, so it must never look like less than the tier below it; until tier 3 has
-art of its own the safe reuse is the nearest tier that does.
+**The BUILDINGS are still shared: tier 3 borrows tier 2's drawing, not tier 1's,**
+in both families. A tier is an upgrade, so it must never look like less than the
+tier below it; until tier 3 has a building of its own the safe reuse is the
+nearest tier that does.
+
+Note what the tier 3 knight cost to wire up, because it is the general case: his
+box is 114 source px wide against the spearmen's 172 and 166, since a sword held
+across the chest reaches nowhere near as far as a spear. Every anchor is a
+fraction of that box, so not one of them could be carried across — the same
+fraction on a box that lost a third of its width describes a different man.
+`bodyFrac` especially: it feeds the collision radius, and all three tiers happen
+to come out at r = 6, which is worth checking rather than assuming every time.
 
 Within a family, tiers 2 and 3 are the same size because they are the same
 drawing — a tier reads as an upgrade from the artwork and the stars over its

@@ -91,9 +91,12 @@ export function updateEnemies(state, dt) {
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
-      // Falls where it stood, still facing the way it was. A leak above gets no
-      // body on purpose: the body is what you get for killing something.
-      dropCorpse(state, e.def, e.x, e.y, e.face);
+      // Falls where it stood, facing whatever killed it rather than facing the
+      // way it was walking — see dropCorpse. The fallback is its heading, and
+      // nothing should ever reach it: an enemy cannot die without being hit.
+      //
+      // A leak gets no body on purpose: the body is what you get for a kill.
+      dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
       if (e.foe) { e.foe.foe = null; e.foe = null; }
       return false;
     }

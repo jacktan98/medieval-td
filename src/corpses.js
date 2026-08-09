@@ -23,10 +23,10 @@ export const CORPSE_FADE = 0.5;
 
 // How far back the blow throws him, in game px.
 //
-// Backwards means opposite the way he was FACING, which is the direction the
-// thing that killed him came from: both sides of a fight stand nose to nose, and
-// the lunge in enemies.js/units.js already uses the same axis. Sideways is not
-// an option here — these figures never move up and down.
+// Backwards means opposite the way the BODY faces, and the body faces the thing
+// that killed it — see dropCorpse. So a man shot from the right lies looking
+// right and is thrown left, which is the only combination that reads as being
+// hit. Sideways is not an option here: these figures never move up and down.
 //
 // This was 5px and applied instantly, and that read as nothing at all: a body
 // that appears 5px from where the man stood has not been thrown, it has been
@@ -62,6 +62,18 @@ export const settled = thrown;
 //
 // A def with no `dead` sprite makes no body, which is what keeps the whole
 // feature inert until the art lands.
+//
+// `face` IS NOT THE WAY HE WAS WALKING. It is the side the killing blow came
+// from, +1 for the right, recorded as `struckFrom` wherever damage is dealt.
+// A militiaman walking left who takes an arrow from a tower on his right used to
+// keep facing left, so the body lay with its back to the arrow and was thrown
+// toward the archer that shot it. Both halves of that read as wrong, and both
+// come from this one number: the throw is derived from the facing, so fixing the
+// facing fixes the direction he flies for free.
+//
+// Walking direction is still the fallback, for a death with no recorded blow.
+// Nothing can currently die that way — you have to be hit to lose hp — so it is
+// there to keep a body pointing somewhere sane rather than because it happens.
 export function dropCorpse(state, def, x, y, face) {
   if (!def.dead) return;
   // The pool comes with the body rather than being its own effect, so the two

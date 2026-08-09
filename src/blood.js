@@ -33,11 +33,23 @@ const jitter = r => (Math.random() * 2 - 1) * r;
 
 // Called from wherever damage is dealt. `x, y` is the victim, not the attacker:
 // blood comes out of the thing that was hit.
-export function splat(state, x, y) {
+//
+// `groundY` is the victim's FEET, and it is a separate argument because `y` is
+// not one: spatter is thrown at the wound, which is chest height, and a wound is
+// not a place to stand. The renderer sorts the board by ground line, so passing
+// the chest would file this spatter further from the camera than the man it came
+// out of — behind him, and behind anything else standing on that line.
+//
+// This is what put blood on the barracks roof: a fight beside a building threw
+// spatter that sorted as if it were up at roof height and several rows further
+// back, so the building did not cover it. Sorting it by the victim's feet puts
+// it exactly where the victim is, which is where it came from.
+export function splat(state, x, y, groundY) {
   state.splats.push({
     img: pick('blood_1', 'blood_2'),
     x: x + jitter(SPLAT_SPREAD_X),
     y: y + jitter(SPLAT_SPREAD_Y),
+    groundY,
     life: SPLAT_LIFE
   });
 }

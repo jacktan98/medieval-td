@@ -86,10 +86,12 @@ const TOWER_TRIM = [267, 211, 490, 602];
 const TOWER2_TRIM = [298, 140, 428, 744];
 const ARCHER_TRIM = [184, 197, 144, 119];
 const ARCHER2_TRIM = [184, 195, 144, 122];
+const ARCHER3_TRIM = [186, 186, 141, 121];
 const CAMP_TRIM = [207, 249, 610, 526];
 const CAMP2_TRIM = [200, 197, 624, 630];
 const SPEAR_TRIM = [170, 198, 172, 116];
 const SPEAR2_TRIM = [173, 196, 166, 120];
+const SPEAR3_TRIM = [199, 196, 114, 120];
 
 // All three tiers are the SAME SIZE — scale is fixed by the export, so a tier
 // reads as an upgrade from the artwork and the stars over its roof, never from
@@ -232,6 +234,30 @@ const archer2 = {
   muzzle: [Math.round(0.438 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.389 * ARCHER2_TRIM[3] * SCALE)]
 };
 
+// Tier 3's archer, and the first one tier 3 has had of its own — it borrowed
+// tier 2's man for as long as it borrowed tier 2's tower. The tower is still
+// borrowed; only the man on it is new.
+//
+// Plate armour instead of a leather jerkin, and he stands a little higher in his
+// own box, which is the whole reason none of these numbers could be carried
+// across: a fraction of a box that changed shape is a different point.
+const archer3 = {
+  gunner: 'archer_t3',
+  gunnerTrim: ARCHER3_TRIM,
+  // The centre of his ground shadow, source (253.5, 296.1).
+  gunnerPivot: [0.479, 0.910],
+  spriteFaces: -1,
+  // Same bow, measured the same way: the arc's frontmost pixel at its vertical
+  // middle, taken 5px inside the outline because that is the face the arrow
+  // rests on. Source (191, 244), which is 62.5 in front of the anchor and 52.1
+  // above.
+  //
+  // The sideways figure rounds to 13 like both tiers below it — three drawings
+  // of one bow — but the height is 11 rather than 10, and that is real: this
+  // archer carries the bow higher relative to where he stands.
+  muzzle: [Math.round(0.443 * ARCHER3_TRIM[2] * SCALE), -Math.round(0.431 * ARCHER3_TRIM[3] * SCALE)]
+};
+
 // Range up across the board and cooldown down with it. The reach is what makes
 // a tower feel useful in the first three waves, when there is only one or two of
 // them on the map; the slower draw is what stops that reach turning archery into
@@ -240,7 +266,7 @@ const archer2 = {
 export const archery = [
   { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower2, ...archer2, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower2, ...archer3, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -313,6 +339,8 @@ const spearman = {
 // and 19px down the same canvas. Same body, different box, so every fraction
 // below had to be re-derived even though nothing about the man changed.
 //
+// Tiers 2 and 3 no longer share a drawing — tier 3 has its own knight below.
+//
 // The 17/19 is measured, not eyeballed: it is the shift that best overlays the
 // two silhouettes (IoU 0.80). It is the BODY that agrees at that shift, not the
 // spear — the spear is drawn a little differently, which is also why the trim
@@ -339,6 +367,34 @@ const spearman2 = {
   lunge: 6
 };
 
+// Tier 3's soldier: a knight in plate with a sword, and the narrowest box of the
+// three because a sword held across the chest reaches nowhere near as far as a
+// spear does. 114 wide against 172 and 166 — which is exactly why bodyFrac has
+// to be re-measured rather than carried across. The same fraction on a box that
+// lost a third of its width would make a wider man, not a narrower box.
+const SPEAR3_W = drawnW(SPEAR3_TRIM);
+// 59 source px of torso again, over a 114-wide box. All three tiers come out at
+// r = 6, so the collision radius — and the formation, and the balance resting on
+// it — is untouched by the new artwork. That is worth checking rather than
+// assuming every time: the radius is derived from the drawing, so a redraw can
+// move it without anyone deciding to.
+const SPEAR3_BODY = 0.518;
+
+const spearman3 = {
+  sprite: 'soldier_t3',
+  spriteTrim: SPEAR3_TRIM,
+  // The centre of his ground shadow, source (278.0, 304.3).
+  pivot: [0.693, 0.903],
+  bodyFrac: SPEAR3_BODY,
+  spriteFaces: -1,
+  dead: 'dead_soldier_t3',
+  deadTrim: [168, 211, 176, 90],
+  // The centre of this corpse's own shadow, source (197.5, 279.3).
+  deadPivot: [0.168, 0.759],
+  r: Math.round(SPEAR3_W * SPEAR3_BODY / 2),
+  lunge: 6
+};
+
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 130, colour: '#6E7A6A',
@@ -350,7 +406,7 @@ export const barracks = [
   },
   {
     ...camp2, tier: 3, name: "Knight's Hall", cost: 150, range: 200, colour: '#8A8478',
-    soldier: { ...spearman2, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+    soldier: { ...spearman3, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
 

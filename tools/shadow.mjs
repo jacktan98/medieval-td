@@ -217,6 +217,7 @@ function centre(parts) {
 const towers = await import('../src/data/towers.js');
 const waves = await import('../src/data/waves.js');
 const spear = towers.barracks[0].soldier, spear2 = towers.barracks[1].soldier;
+const spear3 = towers.barracks[2].soldier;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 
 // `whole` sprites are the buildings: nothing else in those files is painted the
@@ -231,12 +232,15 @@ const SPRITES = [
   ['assets/towers/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
   ['assets/units/Archers_Man_T1.png',       'archer.gunnerPivot',     towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
   ['assets/units/Archers_Man_T2.png',       'archer2.gunnerPivot',    towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
+  ['assets/units/Archers_Man_T3.png',       'archer3.gunnerPivot',    towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
   ['assets/units/Barracks_Man_T1.png',      'spearman.pivot',         spear.spriteTrim, spear.pivot],
   ['assets/units/Barracks_Man_T2.png',      'spearman2.pivot',        spear2.spriteTrim, spear2.pivot],
+  ['assets/units/Barracks_Man_T3.png',      'spearman3.pivot',        spear3.spriteTrim, spear3.pivot],
   ['assets/enemies/Enemies_Man_T1a.png',    'light_inf.pivot',        light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Man_T1b.png',    'heavy_inf.pivot',        heavy.spriteTrim, heavy.pivot],
   ['assets/dead/Barracks_Man_Dead_T1.png',  'spearman.deadPivot',     spear.deadTrim, spear.deadPivot],
   ['assets/dead/Barracks_Man_Dead_T2.png',  'spearman2.deadPivot',    spear2.deadTrim, spear2.deadPivot],
+  ['assets/dead/Barracks_Man_Dead_T3.png',  'spearman3.deadPivot',    spear3.deadTrim, spear3.deadPivot],
   ['assets/dead/Enemies_Man_Dead_T1a.png',  'light_inf.deadPivot',    light.deadTrim, light.deadPivot],
   ['assets/dead/Enemies_Man_Dead_T1b.png',  'heavy_inf.deadPivot',    heavy.deadTrim, heavy.deadPivot]
 ];
