@@ -131,11 +131,6 @@ function drawPlots(ctx, state) {
   }
 }
 
-// How much a circle lying on the ground is squashed by the viewing angle.
-// Anything drawn flat on the ground uses this, so the tower shadows, the range
-// rings and anything added later all agree on where the ground plane is.
-const SQUASH = 0.62;
-
 // Range rings lie flat on the ground, so they belong under everything that
 // stands on it — including the tower they belong to.
 //
@@ -225,19 +220,35 @@ function drawStatus(ctx, state) {
   }
 }
 
-// The tower's reach, drawn lying on the ground rather than standing up facing
-// the camera: same SQUASH as the build plots, a translucent fill so you can see
-// which stretch of road it covers, a shadowed rim below and a lit rim on top.
+// The tower's reach: a translucent fill so you can see which stretch of road it
+// covers, a shadowed rim below and a lit rim on top.
 //
-// CAVEAT: pickTarget uses a true circle, so the ring under-reads by SQUASH
-// straight up and down — an enemy 118px due north of an archery tower is in
-// range but outside the drawn ellipse. This is the same trade the plots already
-// make (elliptical art, circular tap target). Squashing the target test too
-// would cut a tower's covered area by 38% and rebalance the whole game, so the
-// picture bends and the rules do not.
+// A TRUE CIRCLE, because that is what the rule is. pickTarget measures plain 2D
+// distance from the tower's plot to the enemy's ground anchor, and every other
+// radius in the game — the rally reach in units.js, the drag clamp in input.js —
+// is the same plain distance. The board is painted in perspective but nothing in
+// the rules knows that: path lengths, speeds and collision radii are all flat
+// screen pixels.
+//
+// This used to be drawn squashed to 62%, on the reasoning that a circle lying on
+// a foreshortened ground plane looks like an ellipse. That is true of a circle
+// on the ground and false of this one, because this one is not on the ground —
+// it is the set of points the tower can shoot, and that set is round. The
+// squashed version was not a stylised picture of the rule, it was a picture of a
+// different rule.
+//
+// It read as a bug and it was reported as one. At range 150 the ellipse stops
+// 93px straight up while the tower shoots to 150, so there is a 57px band above
+// and below every tower that is outside the drawn ring and shootable anyway. An
+// enemy standing there has its head inside the ring and its shadow outside — and
+// since the shadow is where a figure IS, the tower looked like it was targeting
+// heads. It was not; the ring was drawing 62% of the truth.
+//
+// The alternative fix was to squash the rule to match the picture. That is a
+// different game: it cuts every tower's covered area by 38% and needs the whole
+// balance re-tuned. The picture was the thing that was wrong.
 function drawRangeDisc(ctx, t) {
-  const rx = t.def.range;
-  const ry = rx * SQUASH;
+  const r = t.def.range;
   const next = t.fam.tiers[t.def.tier];
 
   // The reach the upgrade would buy, as a dotted ring outside the solid one.
@@ -253,39 +264,39 @@ function drawRangeDisc(ctx, t) {
     ctx.save();
     ctx.fillStyle = 'rgba(200,240,255,0.07)';
     ctx.beginPath();
-    ctx.ellipse(t.x, t.y, gx, gx * SQUASH, 0, 0, Math.PI * 2);
+    ctx.arc(t.x, t.y, gx, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.setLineDash([7, 6]);
     ctx.strokeStyle = 'rgba(24,26,20,0.35)';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.ellipse(t.x, t.y + 3, gx, gx * SQUASH, 0, 0, Math.PI * 2);
+    ctx.arc(t.x, t.y + 3, gx, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.strokeStyle = 'rgba(150,225,255,0.90)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(t.x, t.y, gx, gx * SQUASH, 0, 0, Math.PI * 2);
+    ctx.arc(t.x, t.y, gx, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
 
   ctx.fillStyle = 'rgba(240,230,210,0.10)';
   ctx.beginPath();
-  ctx.ellipse(t.x, t.y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.strokeStyle = 'rgba(24,26,20,0.40)';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.ellipse(t.x, t.y + 3, rx, ry, 0, 0, Math.PI * 2);
+  ctx.arc(t.x, t.y + 3, r, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.strokeStyle = 'rgba(255,247,228,0.72)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.ellipse(t.x, t.y, rx, ry, 0, 0, Math.PI * 2);
+  ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
   ctx.stroke();
 }
 
@@ -798,13 +809,15 @@ function drawRally(ctx, state) {
 
   const placing = state.placing === t;
 
-  // The reach, on the ground plane like every other radius in the game.
+  // How far the rally point may be dragged, and a true circle for the same
+  // reason the archery ring is: input.js clamps the drag by plain distance, so
+  // an ellipse here would refuse drags inside the line it drew.
   ctx.save();
   ctx.setLineDash([6, 5]);
   ctx.strokeStyle = placing ? 'rgba(150,225,255,0.95)' : 'rgba(240,230,210,0.55)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.ellipse(t.x, t.y, t.def.range, t.def.range * SQUASH, 0, 0, Math.PI * 2);
+  ctx.arc(t.x, t.y, t.def.range, 0, Math.PI * 2);
   ctx.stroke();
   if (placing) {
     ctx.fillStyle = 'rgba(200,240,255,0.06)';

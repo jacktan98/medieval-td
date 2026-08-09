@@ -105,6 +105,14 @@ Draw plot markers wherever you want towers. Their positions are read straight
 out of the drawing, so they line up exactly, and there is no longer any nudging
 between what you paint and where the game puts them.
 
+**The board is painted in perspective; the rules are flat.** Path lengths, unit
+speeds, collision radii and tower range are all plain screen pixels, and nothing
+in the code knows the ground is foreshortened. That is fine as long as no piece
+of UI pretends otherwise — the range ring used to be drawn squashed to 62% like
+the painted dirt patches, which made it a picture of a rule the game does not
+have. It is a true circle now. Draw the ground however you like; do not squash
+anything that is meant to show what a rule covers.
+
 ### There is a hard ceiling now, and one marker is above it
 
 The tallest tower is the tier 2 archery post: 153px tall standing 136px above
