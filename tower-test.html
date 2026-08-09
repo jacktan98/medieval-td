@@ -42,17 +42,28 @@
 import { loadArt } from './src/assets.js';
 import { draw } from './src/render.js';
 import { mountPoint } from './src/towers.js';
-import { archery, families } from './src/data/towers.js';
+import { archery, barracks, families } from './src/data/towers.js';
 
-const fam = families.find(f => f.id === 'archery');
+const archeryFam = families.find(f => f.id === 'archery');
+const barracksFam = families.find(f => f.id === 'barracks');
 
-// One column per tier, one row per facing. aim is what facing() reads, so 0
-// points the archer right and PI points him left — the two states the sprite has.
+// One column per tier. Rows 1 and 2 are archery aiming each way — aim is what
+// facing() reads, so 0 points the archer right and PI points him left, the two
+// states the sprite has. Row 3 is the barracks, which has no gunner and so has
+// only one state; it is here because it has artwork of its own now, and the
+// thing to check on it is that all three tiers stand ON their plot rather than
+// above or below it.
+//
+// The three row heights are chosen so the tallest building in each never
+// reaches the row below: 34..187, 194..347, 388..517 on a 540 canvas.
 const towers = [];
 archery.forEach((def, i) => {
   const x = 200 + i * 260;
-  towers.push({ plot: null, fam, def, x, y: 200, aim: 0,        cd: 0, recoil: 0, spent: 0, rally: null });
-  towers.push({ plot: null, fam, def, x, y: 440, aim: Math.PI,  cd: 0, recoil: 0, spent: 0, rally: null });
+  towers.push({ plot: null, fam: archeryFam, def, x, y: 170, aim: 0,       cd: 0, recoil: 0, spent: 0, rally: null });
+  towers.push({ plot: null, fam: archeryFam, def, x, y: 330, aim: Math.PI, cd: 0, recoil: 0, spent: 0, rally: null });
+});
+barracks.forEach((def, i) => {
+  towers.push({ plot: null, fam: barracksFam, def, x: 200 + i * 260, y: 490, aim: 0, cd: 0, recoil: 0, spent: 0, rally: null });
 });
 
 const state = {
@@ -65,21 +76,30 @@ const ctx = document.getElementById('game').getContext('2d');
 await loadArt();
 draw(ctx, state);
 
-ctx.strokeStyle = '#00E5FF';
+// Cyan cross on the archer's mount, magenta cross on the plot point every
+// building stands on. The first says where the man goes, the second says where
+// the building goes, and they are different questions: the mount is the middle
+// of the deck and the plot is the middle of the ground shadow.
 ctx.lineWidth = 1;
 for (const t of towers) {
-  const m = mountPoint(t);
-  ctx.beginPath();
-  ctx.moveTo(m.x - 7, m.y); ctx.lineTo(m.x + 7, m.y);
-  ctx.moveTo(m.x, m.y - 7); ctx.lineTo(m.x, m.y + 7);
-  ctx.stroke();
+  const cross = (x, y, c) => {
+    ctx.strokeStyle = c;
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y);
+    ctx.moveTo(x, y - 7); ctx.lineTo(x, y + 7);
+    ctx.stroke();
+  };
+  if (t.def.gunner) { const m = mountPoint(t); cross(m.x, m.y, '#00E5FF'); }
+  cross(t.x, t.y, '#FF3DDC');
 }
 
 ctx.fillStyle = '#F0E6D2';
 ctx.font = '13px system-ui, sans-serif';
-archery.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 225));
-ctx.fillText('aiming right', 20, 205);
-ctx.fillText('aiming left', 20, 445);
+archery.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 195));
+barracks.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 515));
+ctx.fillText('aiming right', 20, 175);
+ctx.fillText('aiming left', 20, 335);
+ctx.fillText('barracks', 20, 495);
 window.ready = true;
 </script>
 </body>

@@ -70,7 +70,7 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // absolute source pixels, so they are the one thing that MUST be re-pasted after
 // a re-export at a different size; everything else below is a fraction of the
 // trim and carries over untouched.
-// THE THREE TOWERS ARE ON A 1024 CANVAS; EVERY FIGURE IS STILL ON 512.
+// THE FOUR TOWERS ARE ON A 1024 CANVAS; EVERY FIGURE IS STILL ON 512.
 //
 // That is not a mistake and it needs no special case in the code. A trim is
 // absolute source pixels into whatever image it names, and SCALE turns source
@@ -83,10 +83,11 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // It does mean a tower's trim can no longer be eyeballed against a figure's.
 // 490 wide here and 144 wide for the archer are not the same units.
 const TOWER_TRIM = [267, 211, 490, 602];
-const TOWER2_TRIM = [300, 142, 424, 740];
+const TOWER2_TRIM = [298, 140, 428, 744];
 const ARCHER_TRIM = [184, 197, 144, 119];
 const ARCHER2_TRIM = [184, 195, 144, 122];
-const CAMP_TRIM = [207, 228, 610, 568];
+const CAMP_TRIM = [207, 249, 610, 526];
+const CAMP2_TRIM = [200, 197, 624, 630];
 const SPEAR_TRIM = [170, 198, 172, 116];
 const SPEAR2_TRIM = [173, 196, 166, 120];
 
@@ -98,7 +99,7 @@ const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
   w: drawnW(TOWER_TRIM), h: drawnH(TOWER_TRIM),
-  // The MIDDLE of the deck, source pixel (507, 441) inside the 1024 canvas.
+  // The MIDDLE of the deck, source pixel (506.5, 438.6) inside the 1024 canvas.
   //
   // NOT the middle of the trim: the ladder and the flagpole hang off opposite
   // sides and drag the box centre away from the deck. The deck is found from the
@@ -107,33 +108,42 @@ const watchtower = {
   // exporter happened to produce.
   //
   // The corners are the tops of the four legs, read out of the SVG: (356, 460),
-  // (466, 382), (688-ish is tier 2's — here 651, 418) and (554, 505). The two
-  // diagonals cross 7px apart rather than exactly, because a leg has width and
-  // the rail caps differ; the mount is the midpoint of those two crossings,
-  // which is 1.4 game px of slack on a 1024 canvas.
-  mountFrac: [0.489, 0.383],
-  // Where the building meets the ground: the centre of its grey shadow ellipse,
-  // source (508, 744). See towerBox in src/towers.js for why this and not the
-  // bounding box, and run tools/shadow.mjs to re-measure it — the legs cut the
-  // ellipse into four pieces, and the tool reassembles them.
-  groundFrac: [0.492, 0.886],
-  // Tier 1 needs a front layer now, where the old drawing did not. The redraw
-  // gave it full corner rails instead of the stub it used to have, and the post
-  // on the deck's NEAREST corner — source x 547..561, running from y 397 down to
-  // the planks — crosses the archer's legs. One rect, tight to the post.
+  // (466, 382), (651.5, 418) and (554, 505). Those four have not moved across
+  // two redraws — it is the rails between them that keep changing height, and a
+  // rail is not what fixes the deck.
+  mountFrac: [0.489, 0.378],
+  // Where the building meets the ground: the centre of its shadow ellipse,
+  // source (507.3, 735.6). See towerBox in src/towers.js for why this and not
+  // the bounding box, and run tools/shadow.mjs to re-measure it.
+  //
+  // The tool fits the ellipse rather than reading its extremes, because the log
+  // and the ladder lie across this one and hide its left and right tips at
+  // different heights. Reading the tips put it 9px low.
+  groundFrac: [0.490, 0.871],
+  // The post on the deck's NEAREST corner — source x 547..560, from y 399 down
+  // past the planks — crosses the archer's legs, so it is re-drawn over him.
+  // One rect, tight to the post.
   //
   // The far corner's post is the trap here, exactly as it is on tier 2: it sits
-  // at x 457..474, well inside the archer's span, and it is BEHIND him. A rect
+  // at x 459..473, well inside the archer's span, and it is BEHIND him. A rect
   // generous enough to take both would paint a brown bar across his chest.
   frontTrims: [[547, 397, 15, 60]],
-  // The two NEAR railings, as polygons in the same source pixels. They run
-  // diagonally along the deck's two near edges — from the left corner down to
-  // the near corner, and from the near corner up to the right — so a rect around
-  // one takes the deck behind it too. Traced from the rail outlines in the SVG
-  // and padded 5px for the black stroke the PNG draws around them.
+  // The near-left railing, as a polygon in the same source pixels. It runs
+  // diagonally along the deck's near-left edge, from the left corner down to the
+  // near corner, so a rect around it takes the deck behind it too. Traced from
+  // the rail outline in the SVG and padded 5px for the black stroke the PNG
+  // draws around a shape the SVG stores without one.
+  //
+  // There is only one now. The near-RIGHT edge has no rail on either tier — that
+  // is the side the ladder comes up — and the previous drawing's second polygon
+  // was tracing the deck's edge board, which is below the archer's feet and
+  // never covers him.
+  //
+  // The rail was lowered in the redraw to give the archer more room, and it
+  // shows in the numbers: it crosses him from x 438 to about x 484 and only
+  // across his shins. Past that it passes below his feet entirely.
   frontPolys: [
-    [[350, 410], [559, 451], [558, 470], [349, 429]],
-    [[548, 511], [656, 416], [658, 427], [556, 517]]
+    [[352, 419], [560, 462], [558, 480], [350, 438]]
   ],
   shape: 'tower'
 };
@@ -145,35 +155,31 @@ const watchtower2 = {
   sprite: 'archery_t2',
   spriteTrim: TOWER2_TRIM,
   w: drawnW(TOWER2_TRIM), h: drawnH(TOWER2_TRIM),
-  // The MIDDLE of the deck, source pixel (543, 510) in the 1024 canvas, found
-  // the same way as tier 1's: leg tops at (392, 529), (502, 451), (688, 487),
-  // (590, 574), mount where the diagonals cross.
+  // The MIDDLE of the deck, source pixel (541.2, 505.2) in the 1024 canvas,
+  // found the same way as tier 1's: leg tops at (391, 526), (501, 449),
+  // (687, 485), (589, 572), mount where the diagonals cross.
   //
-  // As a fraction this barely moved across the redraw — 0.587, 0.503 before —
-  // which is the reassuring answer: the deck sits in the same place inside the
-  // drawing, the drawing just got bigger.
-  mountFrac: [0.574, 0.498],
-  // Shadow centre, source (544, 811). Note it is NOT 0.5 across: the flagpole
-  // leans out one side of the drawing, so centring the box put the tower 7px
-  // left of where it should stand.
-  groundFrac: [0.575, 0.904],
-  // The parts of the tower that stand between the archer and the camera, as
-  // rects in source pixels, re-drawn after him. Measured off the artwork; see
-  // assets/towers/README.md for how, and re-measure after a redraw.
+  // The whole drawing shifted about (-1, -2) between exports and the deck came
+  // with it, which is the reassuring answer: the tower was redrawn, not
+  // rebuilt. Re-measured anyway rather than nudged, because a fraction of a box
+  // that changed shape is a different point.
+  mountFrac: [0.568, 0.491],
+  // Shadow centre, source (545.3, 802.5). Note it is NOT 0.5 across: the
+  // flagpole leans out one side of the drawing, so centring the box put the
+  // tower 7px left of where it should stand.
+  groundFrac: [0.578, 0.890],
+  // The near corner post, source x 583..596, running the whole height of the
+  // tower from the roof at y=374 down through the deck to y=563. It is between
+  // the archer and the camera for his entire height, so this rect is taller
+  // than tier 1's — it has to cover him from over his helmet to under his feet.
   //
-  //   [47, 23, 372, 127]  everything down to y=149: the roof, and the post heads
-  //                       still hidden behind it at that height.
-  //   [200, 150, 67, 20]  the roof's front tip, which hangs below that cut. It
-  //                       stops at x=266 on purpose — one pixel further and it
-  //                       catches the FAR post, which is behind the archer and
-  //                       would land a brown patch on his helmet.
-  //   [244, 150, 23, 120] the near post, the one on the deck's nearest corner,
-  //                       tight to its outline so nothing but post is inside.
-  frontTrims: [[583, 392, 15, 124]],
-  // The two near railings — see the note on tier 1's.
+  // Tight to the post on purpose: the deck planks are behind it at the same x,
+  // and two columns of deck painted over the archer is two columns too many.
+  frontTrims: [[583, 392, 15, 130]],
+  // The near-left railing — see the note on tier 1's. Same single rail, same
+  // 5px pad, lowered by the same redraw.
   frontPolys: [
-    [[386, 479], [594, 520], [594, 539], [386, 498]],
-    [[584, 580], [693, 485], [695, 497], [595, 585]]
+    [[387, 487], [594, 530], [592, 548], [385, 506]]
   ],
   shape: 'tower'
 };
@@ -250,11 +256,28 @@ const camp = {
   sprite: 'barracks_t1',
   spriteTrim: CAMP_TRIM,
   w: drawnW(CAMP_TRIM), h: drawnH(CAMP_TRIM),
-  // Shadow centre, source (518.5, 628). This is the one that was visibly wrong:
-  // the stakes planted in front of the tent reach 68 source px below the shadow,
-  // and the old bounding-box rule pinned THEM to the ground, standing the tent
-  // 22px too high on its plot.
-  groundFrac: [0.511, 0.704],
+  // Shadow centre, source (521.1, 605.4). This is the one that was visibly
+  // wrong under the old bounding-box rule: the stakes planted in front of the
+  // tent reach 68 source px below the shadow, and the box pinned THEM to the
+  // ground, standing the whole tent 22px too high on its plot.
+  groundFrac: [0.515, 0.678],
+  shape: 'camp'
+};
+
+// Tier 2's barracks: a log hut where tier 1 is a tent, and the biggest building
+// in the game — 128x129 game px against the tent's 125x108 and the tier 2
+// watchtower's 88x153. It is the reason the artist redrew the plot marker
+// bigger, so re-check tools/hud-clear.mjs whenever either of them changes.
+//
+// Tier 3 borrows this rather than the tent, for the same reason tier 3 archery
+// borrows the tier 2 tower: an upgrade must never look like less than the tier
+// below it.
+const camp2 = {
+  sprite: 'barracks_t2',
+  spriteTrim: CAMP2_TRIM,
+  w: drawnW(CAMP2_TRIM), h: drawnH(CAMP2_TRIM),
+  // Shadow centre, source (503.8, 696.8).
+  groundFrac: [0.487, 0.793],
   shape: 'camp'
 };
 
@@ -322,11 +345,11 @@ export const barracks = [
     soldier: { ...spearman, count: 3, hp: 105, damage: 4, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
-    ...camp, tier: 2, name: 'Guard Post', cost: 100, range: 165, colour: '#5E6B5C',
+    ...camp2, tier: 2, name: 'Guard Post', cost: 100, range: 165, colour: '#5E6B5C',
     soldier: { ...spearman2, count: 3, hp: 145, damage: 5, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
-    ...camp, tier: 3, name: "Knight's Hall", cost: 150, range: 200, colour: '#8A8478',
+    ...camp2, tier: 3, name: "Knight's Hall", cost: 150, range: 200, colour: '#8A8478',
     soldier: { ...spearman2, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];

@@ -10,7 +10,7 @@
 //
 // So this writes ONE derived file, committed:
 //
-//   Map_1_base.svg    the map with the markers removed
+//   Map_base.svg      the map with the markers removed
 //
 // render.js draws the base once and stamps the artist's own `Plot Marker.svg`
 // on each EMPTY plot, which is what makes "occupied" a thing the renderer can
@@ -21,15 +21,15 @@
 // to paste into src/data/level01.js. The map is the source of truth for where
 // the plots are; the data file only has to agree with it.
 //
-// Map_1.svg and Plot Marker.svg are never modified. Re-run after any redraw.
+// Map.svg and Plot Marker.svg are never modified. Re-run after any redraw.
 
 import { readFileSync, writeFileSync } from 'fs';
 import { path, plots } from '../src/data/level01.js';
 import { nearestOnPath } from '../src/units.js';
 import { SCALE } from '../src/data/towers.js';
 
-const SRC = 'assets/map/Map_1.svg';
-const BASE = 'assets/map/Map_1_base.svg';
+const SRC = 'assets/map/Map.svg';
+const BASE = 'assets/map/Map_base.svg';
 const MARKER = 'assets/map/Plot Marker.svg';
 
 const svg = readFileSync(SRC, 'utf8');

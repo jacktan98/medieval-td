@@ -110,9 +110,10 @@ export function run(plan) {
 //
 // These are the BEST build of each kind, not a representative one. "Archery
 // alone cannot win" is a claim about the best all-archery build that exists, so
-// testing a mediocre one proves nothing. Each list was found by running every
-// six-tower combination of the usable plots and all 64 family assignments of
-// each, and keeping the winner.
+// testing a mediocre one proves nothing. Each list is the winner of every
+// six-tower combination of the usable plots crossed with all 64 family
+// assignments of each — `node tools/sweep.mjs` prints them ready to paste, and
+// it is the thing to run after any map redraw, before this.
 //
 // Plots 2 and 5 sit more than 110px off the road and cover almost none of it,
 // so they are left out of the six-tower builds — a player would not take them
@@ -131,25 +132,32 @@ export function run(plan) {
 // and was really a bad shopping list.
 //
 // Coverage per plot at tier 1 range (150) is
-//   15.0 / 27.2 / 4.4 / 28.4 / 26.9 / 5.5 / 17.0 / 23.4 / 13.6 percent
+//   15.5 / 28.9 / 1.7 / 29.7 / 30.2 / 3.3 / 15.0 / 23.7 / 13.3 percent
 // for plots 0..8. Re-measure after any redraw before trusting these lists.
 //
-// Every list below was re-derived by sweep after the last map redraw, which
-// moved two markers and renumbered everything after them. The marker that used
-// to be plot 2 is plot 6 now, and it is a better position than it was — 10.6% of
-// the road to 17.0% — which on its own was enough to let all-archery win, so the
-// heavy's hp went 620 -> 780 to put the invariant back.
+// Every list below was re-derived by sweep after the redraw that made the plot
+// marker bigger, which slid all nine markers to make room. That redraw is worth
+// reading as a warning: the union of all nine at tier 1 range hardly moved (89.1%
+// of the road to 89.0%) and NOT ONE index was renumbered, and the old lists still
+// went from winning with 7 lives to losing on wave 7. What changed is which SIX
+// plots are worth taking — plots 3 and 4 gained about 3 points each while 6 lost
+// two, and the winning build now ends on a barracks at plot 8 instead of an
+// archer. Total coverage says nothing about that; only the sweep does.
+//
+// The heavy's hp was not touched. The invariant came back on its own once the
+// lists were right, which is the outcome to hope for: a redraw should cost a
+// re-sweep, not a re-tune.
 const scenarios = {
   'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
   'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],
-  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(3), B(4), B(6), B(7)],
+  'ALL barracks x6 (expect LOSS)':  [B(1), B(3), B(4), B(6), B(7), B(8)],
   // Listed in plot order, which is also BUILD order: the plan is a shopping list
   // spent as gold arrives, so moving a barracks to the end of the line is a
   // different build, not the same one written differently. Sorting these lists
-  // "tidily" by family turned the 4+2 win into a wave 7 loss.
-  'MIX 5 archery + 1 barracks':     [A(1), A(3), A(4), A(6), B(7), A(8)],
-  'MIX 4 archery + 2 barracks':     [A(1), B(3), A(4), A(6), B(7), A(8)],
-  'MIX 3 archery + 3 barracks':     [A(1), A(3), A(4), B(6), B(7), B(8)],   // the best build there is
+  // "tidily" by family turned a 4+2 win into a wave 7 loss once already.
+  'MIX 5 archery + 1 barracks':     [A(1), A(3), A(4), A(6), A(7), B(8)],   // the best build there is
+  'MIX 4 archery + 2 barracks':     [A(1), A(3), B(4), A(6), A(7), B(8)],
+  'MIX 3 archery + 3 barracks':     [A(0), B(3), A(4), B(6), B(7), A(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };
 

@@ -108,8 +108,13 @@ export const ROAD_W = 125;
 // them into game px, so the only thing that matters is that the two agree. The
 // check that it is right is the last line tools/split-map.mjs prints — the
 // stamped marker against the ones painted into the board, currently 2.5% apart.
-const MARKER_TRIM = [302, 419, 420, 184];
-const MARKER_PIVOT = [0.500, 0.586];
+// The marker was redrawn BIGGER — 99x49 game px where it was 86x38 — because
+// the tier 2 barracks is the biggest building in the game and a marker the old
+// size read as a plot too small to hold it. The nine painted into the map moved
+// to make room for the new one, so the plot list in data/level01.js changed with
+// it; re-run tools/split-map.mjs and re-paste both together.
+const MARKER_TRIM = [270, 393, 484, 238];
+const MARKER_PIVOT = [0.500, 0.532];
 const MARKER_W = MARKER_TRIM[2] * SCALE;
 const MARKER_H = MARKER_TRIM[3] * SCALE;
 

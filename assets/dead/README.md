@@ -5,14 +5,16 @@ drawing each of them needs — see "Why only one file" below. All three are in:
 
 | file                        | who dies                       | drawn as    |
 |-----------------------------|--------------------------------|-------------|
-| `Enemies_Man_Dead_T1.png`   | the militia, every wave        | 26 x 18 px  |
-| `Enemies_Man_Dead_T2.png`   | the heavy, waves 4-8           | 49 x 30 px  |
+| `Enemies_Man_Dead_T1a.png`  | the militia, every wave        | 26 x 18 px  |
+| `Enemies_Man_Dead_T1b.png`  | the heavy, waves 4-8           | 49 x 30 px  |
 | `Barracks_Man_Dead_T1.png`  | your spearman, tier 1          | 42 x 21 px  |
 | `Barracks_Man_Dead_T2.png`  | your spearman, tiers 2 and 3   | 40 x 24 px  |
 
-The tier comes last in these names, matching how they were exported. `assets.js`
-was changed to suit rather than the files being renamed — renaming an upload
-only means renaming it again after the next one.
+The tier comes last in these names, matching how they were exported, and the
+heavy's files are T1b rather than T2 because the artist renamed that enemy — it
+is a bigger militiaman, not the next rank up. `assets.js` was changed to suit
+both times rather than the files being renamed: renaming an upload only means
+renaming it again after the next one.
 
 ## Blood
 
@@ -92,10 +94,13 @@ show a swing the way the movement already does.
 standing figure.** That one habit gets the placement right for free, and
 placement is the only thing that can go wrong here.
 
+It is working: the last redraw touched all four of these files and not one anchor
+moved — every trim and every pivot came out identical to the pixel.
+
 The reason used to be that the game found the death spot by locating the LIVING
 figure's feet inside the dead export, so a pose drawn anywhere else on its canvas
 landed in the wrong place. **That is no longer true, and it is the shadow that
-freed it.** A death pose now carries its own grey ellipse, and the centre of that
+freed it.** A death pose now carries its own shadow ellipse, and the centre of that
 ellipse is where the body lies — measured from this file alone, by
 `node tools/shadow.mjs`, with no reference to the standing sprite at all.
 
@@ -172,13 +177,19 @@ and paste the rect in as `deadTrim`. As shipped:
 
 | file                       | `deadTrim`            | `deadPivot`      |
 |----------------------------|-----------------------|------------------|
-| `Enemies_Man_Dead_T1.png`  | `[193, 211, 126, 90]` | `[0.163, 0.753]` |
-| `Enemies_Man_Dead_T2.png`  | `[125, 182, 241, 148]`| `[0.135, 0.644]` |
+| `Enemies_Man_Dead_T1a.png` | `[193, 211, 126, 90]` | `[0.163, 0.753]` |
+| `Enemies_Man_Dead_T1b.png` | `[125, 182, 241, 148]`| `[0.135, 0.644]` |
 | `Barracks_Man_Dead_T1.png` | `[153, 206, 206, 100]`| `[0.078, 0.697]` |
 | `Barracks_Man_Dead_T2.png` | `[158, 198, 195, 116]`| `[0.131, 0.583]` |
 
-`deadPivot` is **the centre of the corpse's own grey shadow**, from
+`deadPivot` is **the centre of the corpse's own shadow**, from
 `node tools/shadow.mjs`. Both numbers now come from this file and nothing else.
+
+The shadow is dark brown, exactly `54,36,7`. It was flat grey `150,150,150` until
+the last upload and the tool matches the colour exactly, so a recolour reports
+NO SHADOW COLOUR FOUND rather than measuring something else. Note the same brown
+is the club on the dead militia and the boots on the dead heavy, which is why the
+tool checks the anchor you give it instead of picking a blob for you.
 
 It used to be derived instead — the living figure's feet, located inside the dead
 trim by arithmetic — because a corpse had no shadow and nothing about its outline

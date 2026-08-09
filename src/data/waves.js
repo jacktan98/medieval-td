@@ -5,7 +5,7 @@
 // deliberately smaller than the drawn sprite — it is the body, not the outline.
 export const enemyTypes = {
   light_inf: {
-    sprite: 'enemy_t1',
+    sprite: 'enemy_t1a',
     spriteTrim: [208, 199, 96, 114],   // source px, re-paste from tools/trim.mjs
     pivot: [0.594, 0.908],   // the centre of his ground shadow
     spriteFaces: -1,
@@ -20,7 +20,7 @@ export const enemyTypes = {
     // about its outline said where it lay. That coupled the two exports: redraw
     // either one and the number had to be recomputed from both. Now each drawing
     // carries its own answer, and a body lies where its shadow is.
-    dead: 'dead_enemy_t1',
+    dead: 'dead_enemy_t1a',
     deadTrim: [193, 211, 126, 90],
     deadPivot: [0.163, 0.753],
     hp: 80,
@@ -42,9 +42,14 @@ export const enemyTypes = {
     colour: '#B98B5E'
   },
 
-  // Tier 2. Drawn getting on for twice the militia — 38x32 game px against
-  // 20x23 — and it plays the way it looks: slow, heavy, and not something a
-  // single tier 1 tower kills on the way past.
+  // The heavy. Its artwork is called T1b, not T2, and that rename is the
+  // artist's: this is a bigger militiaman rather than the next rank up, so the
+  // tier 2 enemy slot is still empty and whatever fills it later gets T2. The
+  // gameplay name here did not change, because what it DOES did not.
+  //
+  // Drawn getting on for twice the militia — 38x33 game px against 20x23 — and
+  // it plays the way it looks: slow, heavy, and not something a single tier 1
+  // tower kills on the way past.
   //
   // It is the reason later waves are dangerous now that everything moves more
   // slowly. Two of them will walk through a lone militia squad; the answer is
@@ -74,7 +79,7 @@ export const enemyTypes = {
   // 7 again, so the redraw costs no difficulty. It is not a knife edge either:
   // 780 and 860 give the same result, so the plateau is picked at its near end.
   heavy_inf: {
-    sprite: 'enemy_t2',
+    sprite: 'enemy_t1b',
     // Redrawn 1.16x bigger. Both anchors below were carried across rather than
     // re-eyeballed: the new art is the old art scaled 1.16 about (256, 310) and
     // shifted (-28, +17), which is the transform that best overlays the two
@@ -82,7 +87,7 @@ export const enemyTypes = {
     spriteTrim: [163, 175, 186, 162],
     pivot: [0.737, 0.904],
     spriteFaces: -1,
-    dead: 'dead_enemy_t2',
+    dead: 'dead_enemy_t1b',
     deadTrim: [125, 182, 241, 148],
     deadPivot: [0.135, 0.644],
     hp: 780,

@@ -4,8 +4,14 @@ One file per entry in `enemyTypes` in `src/data/waves.js`:
 
 | file                    | type key    | notes                                    |
 |-------------------------|-------------|------------------------------------------|
-| `Enemies_Man_T1.png`    | `light_inf` | the militia, in all 8 waves              |
-| `Enemies_Man_T2.png`    | `heavy_inf` | the heavy, waves 4-8, in growing packs   |
+| `Enemies_Man_T1a.png`   | `light_inf` | the militia, in all 8 waves              |
+| `Enemies_Man_T1b.png`   | `heavy_inf` | the heavy, waves 4-8, in growing packs   |
+
+**T1a and T1b, not T1 and T2**, since the last upload. The heavy is a bigger
+militiaman rather than the next rank up, so the tier 2 slot is still empty and
+whatever fills it later gets the T2 name. The `art` keys in `src/assets.js`
+followed the rename; the type keys above did not, because what these enemies DO
+did not change and `heavy_inf` is what the rules call it.
 
 Adding a new enemy means adding both the file and the `enemyTypes` entry, so
 tell me the intended hp / speed / bounty when you upload one and I will wire it
@@ -29,8 +35,8 @@ Draw it **standing upright and facing left or right**, not top-down. Enemies
 mirror to face the way they are walking and are never rotated — a standing
 figure rotated to face north is a standing figure lying down.
 
-`Enemies_Man_T1.png` draws 20 x 23 game px and `Enemies_Man_T2.png` draws
-38 x 32, against a spearman's 35 x 27. That reads correctly: a lighter troop and
+`Enemies_Man_T1a.png` draws 20 x 23 game px and `Enemies_Man_T1b.png` draws
+38 x 33, against a spearman's 35 x 24. That reads correctly: a lighter troop and
 a heavier one either side of your own soldier.
 
 The heavy was redrawn 1.16x bigger, and its collision radius went 12 -> 14 with
@@ -56,9 +62,16 @@ from the alpha channel — do not type it by hand, a few pixels out shifts the
 sprite and the error looks like a bad pivot rather than a bad number.
 
 `pivot` is `[across, down]` as a fraction of the trim, and the convention is
-**the centre of the figure's grey ground shadow**. Not his feet, and definitely
-not the middle of the bounding box, which a weapon pulls off-centre — the
-militia's mace dragged the old box centre 21% of his width off his body.
+**the centre of the figure's ground shadow**. Not his feet, and definitely not
+the middle of the bounding box, which a weapon pulls off-centre — the militia's
+mace dragged the old box centre 21% of his width off his body.
+
+The shadow is **dark brown, 54,36,7** on a figure and **dark green, 55,66,47**
+under a building. It was flat grey on every sprite before the last upload. If a
+shadow is recoloured again, `tools/shadow.mjs` has to be told: it matches the
+colour exactly, so it will report NO SHADOW COLOUR FOUND rather than quietly
+measuring the wrong thing — which is the behaviour you want, because the same
+brown is also the club and the boots on some of these figures.
 
 Run `node tools/shadow.mjs` for it. Do not measure it by eye: the artist decides
 where a figure stands by drawing the ellipse, and the code reads it.

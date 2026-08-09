@@ -2,15 +2,17 @@
 
 Four hand-drawn files live here, all authored, never generated:
 
-- **`Map_1.svg`** — the whole board at 1920 x 1080: sky strip, grass, road,
-  scenery, and a marker on each of the nine build plots.
+- **`Map.svg`** — the whole board at 1920 x 1080: sky strip, grass, road,
+  scenery, and a marker on each of the nine build plots. It was `Map_1.svg`
+  until the last upload; the tool follows the artist's filename rather than the
+  other way round.
 - **`Plot Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
   of the last redraw. The space in the name is fine; `src/assets.js` asks for it
   as `Plot%20Marker.svg`, because a raw space is illegal in a URL.
 
   This file is quietly the most useful one in the project, because it is the only
   asset whose correct game size is known independently: the same marker is
-  painted into `Map_1.svg`, which is authored at the board's own scale. When the
+  painted into `Map.svg`, which is authored at the board's own scale. When the
   towers moved to a 1024 canvas and it was not obvious whether they should be
   read at the shared `SCALE` or half of it, this is what settled it — at the
   shared `SCALE` the standalone marker lands within 2.5% of the painted one, so
@@ -21,15 +23,15 @@ Four hand-drawn files live here, all authored, never generated:
 
 One derived file is generated from them and committed:
 
-- **`Map_1_base.svg`** — the board with the nine markers cut out.
+- **`Map_base.svg`** — the board with the nine markers cut out.
 
 `node tools/split-map.mjs` writes it, and never touches the hand-drawn files.
 
-> **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`.** Uploading a redrawn
+> **THE GAME DRAWS `Map_base.svg`, NOT `Map.svg`.** Uploading a redrawn
 > board changes nothing on screen until that command is run. This has caught us
-> out on three of the last four map uploads — twice because the upload deleted
-> the derived file, once because it left a stale one in place. If a change to the
-> board does not appear, this is why, before anything else.
+> out on four of the last five map uploads — three times because the upload
+> deleted the derived file, once because it left a stale one in place. If a
+> change to the board does not appear, this is why, before anything else.
 
 ## The HUD icons are not world art
 
@@ -49,7 +51,7 @@ The game draws in a fixed 960 x 540 space, and the canvas backing store is sized
 to real device pixels up to 3x (`MAX_SCALE` in `src/main.js`). So:
 
 - **Map: 2880 x 1620** preferred, 1920 x 1080 acceptable. An SVG is better than
-  either — it has no fixed resolution. `Map_1.svg` is 1920 x 1080 with a
+  either — it has no fixed resolution. `Map.svg` is 1920 x 1080 with a
   matching `viewBox`, which is exactly right.
 - **Sprites: 512 x 512.** This is the one that bit us, and it is settled now.
   At 200 x 200 the tallest sprite had 185 source pixels and needed 291 on a 3x
@@ -87,7 +89,7 @@ positions in road order, ready to paste into `src/data/level01.js`.
 
 ## Two things that will break if the artwork ignores them
 
-**The top of the board is the HUD.** `Map_1.svg` paints a strip across the top —
+**The top of the board is the HUD.** `Map.svg` paints a strip across the top —
 currently sky blue, 126 map units (63 game px) — and the gold/lives/wave text is
 drawn straight onto it. The game paints no bar of its own, so keep a strip
 there. The text carries a dark shadow so it survives most backgrounds, but a
@@ -103,14 +105,31 @@ Draw plot markers wherever you want towers. Their positions are read straight
 out of the drawing, so they line up exactly, and there is no longer any nudging
 between what you paint and where the game puts them.
 
-The tallest tower is drawn 152px from 12px below its plot — it was 96px before
-the towers were redrawn bigger — so a marker painted above about **y=180** now
-puts a building behind the HUD text, where the limit used to be y=120. That is
-not fatal: the header is part of the map, so a tall tower stands in front of it
-rather than being cut off, and the text has a shadow. `node tools/hud-clear.mjs`
-says which plots reach the text and by how much. Two do now, at y=185 and y=153,
-and both reach it with a flag and tier stars only, which reads fine. A plot much
-higher than that would put roof timber behind the gold counter.
+### There is a hard ceiling now, and one marker is above it
+
+The tallest tower is the tier 2 archery post: 153px tall standing 136px above
+its own plot. So a plot at y=136 puts the roof's top pixel on the top edge of the
+board, and anything higher is **cut off** — not drawn in front of the HUD, cut
+off, because the canvas edge does not care what is behind what. The tier stars
+sit 11px higher again, so they are the first thing to go: they vanish while the
+roof still looks fine, and the stars are the only thing on the board that says
+which tier a tower is.
+
+**The plot at (721, 128) is over that line, and it is also directly under the
+speed button** — 677..765 against the button's 676..764, which is as exact an
+overlap as you could arrange on purpose. Even a tier 1 watchtower there puts its
+deck, its archer and its flag inside the "1x" control.
+
+Together those two want the marker at **y >= 190**, which is 124 map units lower
+in `Map.svg`. Moving it sideways instead is cheaper if that stretch of road
+matters: clear of the button means the plot's x below 632 or above 808, and then
+only the 20px of height is left to fix. Nothing in the code can fix either,
+short of putting the plot somewhere the marker is not.
+
+Below the ceiling, a plot high enough to reach the HUD **text** is a much
+smaller problem — the header is part of the map, so a tall tower stands in front
+of it, and the text carries a shadow. `node tools/hud-clear.mjs` reports both
+kinds and says by how much: cut-off is a failure, behind-the-text is a note.
 
 ## Re-tracing after a redraw
 
@@ -128,17 +147,27 @@ enough to let a pure-archery build win outright — enemy speed went 88 -> 94 to
 put it back. Before that it had gone 72 -> 88 for the same reason.
 
 **And moving one marker can renumber all of them,** because the plots are stored
-in road order. The latest redraw is the clean example of how little it takes:
-the road did not move at all, and the total reach of the nine markers actually
-went DOWN (their union covers 89.1% of the road where it covered 93.0%). But one
-marker moved from (462, 130) to (557, 185), taking it from covering 10.6% of the
-road to 17.0% — and it is a plot the best all-archery build takes. That single
-plot was the whole margin: all-archery went from losing on wave 7 to winning
-with 4 lives. The heavy's hp went 620 -> 780 to put it back.
+in road order. One redraw is the clean example of how little it takes: the road
+did not move at all, and the total reach of the nine markers actually went DOWN
+(their union covers 89.1% of the road where it covered 93.0%). But one marker
+moved from (462, 130) to (557, 185), taking it from covering 10.6% of the road to
+17.0% — and it is a plot the best all-archery build takes. That single plot was
+the whole margin: all-archery went from losing on wave 7 to winning with 4 lives.
+The heavy's hp went 620 -> 780 to put it back.
+
+**The redraw after that one is the other half of the same lesson.** Making the
+plot marker bigger slid all nine to make room. Nothing was renumbered, the union
+went 89.1% -> 89.0%, and the heavy's hp did not have to move at all — but every
+scenario in `tools/sim.mjs` went from winning to losing on wave 7, because
+plots 3 and 4 each gained about three points of coverage while plot 6 lost two,
+and that was enough to change **which six plots the best build takes** and which
+family goes on each. The fix was re-sweeping the shopping lists, not re-tuning
+the game.
 
 So do not read "coverage barely changed" as "balance barely changed". Which
-plots are good matters more than how good they are in total, and the indices
-that name them shift underneath anything that hard-codes them.
+plots are good matters more than how good they are in total, the indices that
+name them shift underneath anything that hard-codes them, and the answer to both
+is the sweep: 448 six-tower builds, 20 seconds.
 
 Speed is no longer that lever. The game was deliberately slowed down afterwards
 (militia 94 -> 70, archery cooldown 0.75 -> 1.00) and the archers' reach raised

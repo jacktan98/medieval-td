@@ -2,7 +2,7 @@
 // Coordinates are in logical canvas space (960x540).
 //
 // TRACED FROM THE ARTWORK. These are not drawn by hand any more: the road in
-// assets/map/Map_1.svg is the level, and this polyline is its centreline,
+// assets/map/Map.svg is the level, and this polyline is its centreline,
 // extracted by rasterising the map, isolating the road colour, and walking the
 // ridge of the distance transform from one end of the shape to the other. The
 // art is the source of truth for where the road is; this file just has to agree
@@ -75,23 +75,27 @@ export const path = [
 // it, so they are tier 3 positions or barracks positions, not general-purpose
 // ones.
 //
-// THE LAST REDRAW RENUMBERED THESE. The road did not move, but two markers did,
-// and because the list is in road order that was enough to shuffle the indices:
-// the top-middle plot went from index 2 (26% along) to index 6 (77% along), and
-// everything between it and the end shifted down one. Anything that names a plot
-// by number — tools/sim.mjs does — has to be re-derived, not carried over. That
-// is the single most expensive mistake available in this file and it has already
-// been made once.
+// A REDRAW CAN RENUMBER THESE, and once did: the road did not move, but two
+// markers did, and because the list is in road order that was enough to shuffle
+// the indices — the top-middle plot went from index 2 (26% along) to index 6
+// (77% along) and everything after it shifted down one. Anything that names a
+// plot by number — tools/sim.mjs does — has to be re-derived, not carried over.
+// That is the single most expensive mistake available in this file.
+//
+// The redraw that made the plot marker bigger moved all nine and renumbered
+// none of them: every marker slid a little to make room, and each stayed on its
+// own stretch of road. Check the percentages against the previous list rather
+// than assuming it, though — that check is cheap and the mistake is not.
 export const plots = [
-  { x:  91, y: 245 },   //  7% along,  60 off
-  { x: 335, y: 238 },   // 21% along,  48 off
-  { x: 124, y: 452 },   // 44% along, 123 off   FAR
-  { x: 360, y: 404 },   // 51% along,  59 off
-  { x: 495, y: 396 },   // 59% along,  55 off
-  { x: 717, y: 466 },   // 66% along, 115 off   FAR
-  { x: 557, y: 185 },   // 77% along,  80 off
-  { x: 652, y: 306 },   // 78% along,  71 off
-  { x: 664, y: 153 }    // 82% along,  74 off
+  { x: 153, y: 247 },   // 11% along,  72 off
+  { x: 311, y: 239 },   // 20% along,  51 off
+  { x: 105, y: 454 },   // 44% along, 142 off   FAR
+  { x: 373, y: 395 },   // 52% along,  67 off
+  { x: 484, y: 392 },   // 58% along,  60 off
+  { x: 734, y: 471 },   // 66% along, 132 off   FAR
+  { x: 561, y: 171 },   // 78% along,  91 off
+  { x: 670, y: 305 },   // 81% along,  77 off
+  { x: 721, y: 128 }    // 85% along,  89 off
 ];
 
 // There is no keep coordinate any more. It existed only so render.js could draw
