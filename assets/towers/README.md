@@ -102,6 +102,19 @@ lists rects of the SAME image, re-drawn after the gunner:
 | 1    | `[547, 397, 15, 60]`   | the post on the deck's nearest corner   |
 | 2    | `[583, 392, 15, 124]`  | the post on the deck's nearest corner   |
 
+**The two near railings need polygons, not rects,** and that is `frontPolys`
+beside them. They run diagonally along the deck's near edges — left corner down
+to the near corner, near corner up to the right — so any rectangle around one
+contains the deck behind it as well, and painting that over the archer erases
+his legs. The renderer clips the canvas to the polygon and redraws the sprite
+through it: four points instead of a staircase of a dozen rects, and exact
+rather than approximate.
+
+The polygons are traced from the rail outlines in the `.svg` and padded 5px,
+because the PNG draws a black stroke around a shape the SVG stores without one.
+The check that they are tight: rendering with and without them changes **350
+pixels on the whole board**, and every one of them is on a rail.
+
 **Tier 1 needs one now and did not before.** The old drawing had a stub whose
 top sat below the deck's near corner, so there was nothing to be in front of.
 The redraw gave it full corner rails, and the near post crosses the archer's

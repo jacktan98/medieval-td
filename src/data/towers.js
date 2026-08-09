@@ -126,6 +126,15 @@ const watchtower = {
   // at x 457..474, well inside the archer's span, and it is BEHIND him. A rect
   // generous enough to take both would paint a brown bar across his chest.
   frontTrims: [[547, 397, 15, 60]],
+  // The two NEAR railings, as polygons in the same source pixels. They run
+  // diagonally along the deck's two near edges — from the left corner down to
+  // the near corner, and from the near corner up to the right — so a rect around
+  // one takes the deck behind it too. Traced from the rail outlines in the SVG
+  // and padded 5px for the black stroke the PNG draws around them.
+  frontPolys: [
+    [[350, 410], [559, 451], [558, 470], [349, 429]],
+    [[548, 511], [656, 416], [658, 427], [556, 517]]
+  ],
   shape: 'tower'
 };
 
@@ -161,6 +170,11 @@ const watchtower2 = {
   //   [244, 150, 23, 120] the near post, the one on the deck's nearest corner,
   //                       tight to its outline so nothing but post is inside.
   frontTrims: [[583, 392, 15, 124]],
+  // The two near railings — see the note on tier 1's.
+  frontPolys: [
+    [[386, 479], [594, 520], [594, 539], [386, 498]],
+    [[584, 580], [693, 485], [695, 497], [595, 585]]
+  ],
   shape: 'tower'
 };
 

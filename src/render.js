@@ -344,18 +344,31 @@ function drawBuilding(ctx, t, box) {
 // drawFigures decides where the whole tower sits against everything else on the
 // board; this decides what the tower puts in front of its own gunner.
 function drawBuildingFront(ctx, t, box) {
-  const img = t.def.frontTrims && t.def.sprite && art[t.def.sprite];
-  if (!img) return;
+  const d = t.def;
+  const img = d.sprite && art[d.sprite];
+  if (!img || (!d.frontTrims && !d.frontPolys)) return;
 
-  const [tx, ty, tw, th] = t.def.spriteTrim;
-  for (const [sx, sy, sw, sh] of t.def.frontTrims) {
-    ctx.drawImage(
-      img, sx, sy, sw, sh,
-      box.left + (sx - tx) / tw * box.w,
-      box.top + (sy - ty) / th * box.h,
-      sw / tw * box.w,
-      sh / th * box.h
-    );
+  const [tx, ty, tw, th] = d.spriteTrim;
+  const toX = sx => box.left + (sx - tx) / tw * box.w;
+  const toY = sy => box.top + (sy - ty) / th * box.h;
+
+  for (const [sx, sy, sw, sh] of d.frontTrims || []) {
+    ctx.drawImage(img, sx, sy, sw, sh, toX(sx), toY(sy), sw / tw * box.w, sh / th * box.h);
+  }
+
+  // The railings run diagonally, and a rect around one always contains the deck
+  // behind it as well — paint that over the archer and it erases his legs. So a
+  // rail is given as a POLYGON in the same source pixels, the canvas is clipped
+  // to it, and the sprite is redrawn through the hole. Four points instead of a
+  // staircase of a dozen rects, and exact rather than approximate.
+  for (const poly of d.frontPolys || []) {
+    ctx.save();
+    ctx.beginPath();
+    poly.forEach(([px, py], i) => (i ? ctx.lineTo(toX(px), toY(py)) : ctx.moveTo(toX(px), toY(py))));
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(img, tx, ty, tw, th, box.left, box.top, box.w, box.h);
+    ctx.restore();
   }
 }
 
