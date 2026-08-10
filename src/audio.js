@@ -48,6 +48,47 @@ const SAME_CLIP_GAP = 0.04;
 // Master level for everything. Per-clip trims go in GAIN below.
 const MASTER = 0.9;
 
+// --- How Category A shares itself out ---------------------------------------
+//
+// The gate alone is first-come-first-served, and that is not a fair contest.
+// Soldiers swing every 0.9s each and there are several of them, so `Soldier_
+// attack` asks for the channel far more often than anything else and therefore
+// wins it far more often. A recorded 90-second run came out 12 swings to 4 of
+// everything else, which is not a soundtrack, it is a metronome.
+//
+// So a clip has to earn the channel against what has just been heard, not only
+// against what else is asking right now. Two rules, both reading the same
+// short memory of what actually played:
+//
+//   never the same clip twice running
+//   never more than twice in the last five
+//
+// A clip that fails either is passed over and — this is the part that makes it
+// "priority" rather than "throttling" — the gate is left OPEN, so the next
+// thing along can take the slot the swing just gave up.
+//
+// The ceiling falls out of the two together: with at most two appearances in
+// five and never two in a row, no clip can exceed 2/5 of what you hear.
+const MEMORY_N = 5;
+const MAX_REPEATS = 2;
+
+// How long a play stays in that memory, in seconds. Without an expiry the rules
+// deadlock in the quietest case: a melee grind where nothing but swings ever
+// happens plays ONE swing and then nothing at all for the rest of the game,
+// because "not twice running" has no other sound to be broken by and no way to
+// lapse.
+//
+// The size is a straight trade and both ends are real. It has to be LONGER than
+// the time five plays take, or the share rule never sees five of anything and
+// stops capping — measured at about 14s in a busy fight, since the gate spaces
+// plays at least 1.66s apart and typically nearer 3. It wants to be SHORT,
+// because it is also how long a clip with nothing to alternate with waits
+// before it may repeat itself. 20 clears the first with room and keeps the
+// second tolerable.
+//
+// This is the knob if swings feel too frequent or too sparse: larger is rarer.
+const MEMORY_S = 20;
+
 // Every clip, by the name the game calls it. Spaces are encoded for the same
 // reason they are in assets.js — `Soldier dies.mp3` really does have a space in
 // it and a raw space is not legal in a URL. The file is left alone rather than
@@ -101,6 +142,11 @@ const buffers = {};
 
 // When Category A may speak again, on the context's clock.
 let gateUntil = 0;
+
+// The last few Category A clips actually HEARD, newest last, as { key, t }.
+// Requests that were passed over are not in here — the rules are about what
+// reached the player's ears, not about what the game tried to say.
+let heard = [];
 
 // When each Category B clip last started, for the same-millisecond guard.
 const lastStart = {};
@@ -167,27 +213,59 @@ export function play(key) {
   fire(key);
 }
 
-// Category A. One at a time, then a second of quiet.
+// Category A. One at a time, then a second of quiet — and never the same clip
+// twice running, nor more than twice in the last five.
 //
 // The gate closes for the clip's own length plus the gap, so a three-second
 // line holds the channel for four. That is a real cost and it is worth knowing
 // where it lands: tapping a thug is the longest silence in the game.
 //
-// Note the order — the gate is only touched once a clip has actually been
-// chosen and started. A cue whose files have not loaded yet must not close the
-// channel on everything else while playing nothing.
+// Note the order of the exits. The gate is only touched once a clip has
+// actually been chosen and started, so a cue that is passed over — because its
+// files have not loaded, or because everything in it was heard too recently —
+// leaves the channel open for whatever asks next. That is the whole mechanism
+// by which a swing yields to a death cry.
 export function solo(cue) {
   // Callers pass the result of a lookup straight in, and plenty of things have
   // nothing to say — bare ground, a siege plot, a family with no voice yet.
   if (!cue) return;
   if (!ctx || ctx.state !== 'running') return;
-  if (ctx.currentTime < gateUntil) return;
 
+  const now = ctx.currentTime;
+  if (now < gateUntil) return;
+
+  heard = heard.filter(h => now - h.t < MEMORY_S);
+  const last = heard.length ? heard[heard.length - 1].key : null;
+  const times = key => heard.reduce((n, h) => n + (h.key === key ? 1 : 0), 0);
+
+  // A cue is a list of interchangeable takes, so being passed over is per CLIP,
+  // not per cue: three barracks lines rotate among themselves, and a cue that
+  // mixes a cry with a blade reaches for the other one rather than falling
+  // silent. `Stab` sits in two cues and is counted once across both, which is
+  // right — the player hears one sound, however the game got there.
   const ready = cue.filter(key => buffers[key]);
-  if (!ready.length) return;
+  let eligible = ready.filter(key => key !== last && times(key) < MAX_REPEATS);
 
-  const key = ready[(Math.random() * ready.length) | 0];
-  gateUntil = ctx.currentTime + fire(key) + GAP;
+  // A cue with several takes must never talk itself into silence. Five
+  // remembered plays of three takes can reach A B A B C — two of them at their
+  // limit and the third being the one just heard — and with the share rule held
+  // absolute the barracks would then say nothing at all until something aged
+  // out. So for a cue that HAS alternatives the share rule yields here: it is a
+  // priority between takes, not a ban.
+  //
+  // A single-take cue gets no such relief, and that asymmetry is the point. The
+  // swing has nothing to rotate to, so its share rule is the only thing
+  // standing between one clip and the whole soundtrack. It stays absolute, and
+  // the swing waits its turn or gives up the slot.
+  if (!eligible.length && ready.length > 1) eligible = ready.filter(key => key !== last);
+  if (!eligible.length) return;
+
+  const key = eligible[(Math.random() * eligible.length) | 0];
+
+  heard.push({ key, t: now });
+  if (heard.length > MEMORY_N) heard.shift();
+
+  gateUntil = now + fire(key) + GAP;
 }
 
 // A tower family's voice, or null for one with nothing recorded. Siege and the

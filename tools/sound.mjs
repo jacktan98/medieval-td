@@ -22,6 +22,10 @@ const DUR = {
 };
 const DEFAULT_DUR = 0.5;
 
+// Must match src/audio.js. Duplicated rather than exported because a test that
+// imports the number it is checking cannot catch the number changing.
+const MEMORY_S = 20;
+
 // --- the fake context -------------------------------------------------------
 
 let played = [];
@@ -33,7 +37,13 @@ const ctx = {
   currentTime: 0,
   destination: {},
   resume: () => Promise.resolve(),
-  decodeAudioData: path => Promise.resolve({ duration: DUR[path] ?? DEFAULT_DUR }),
+  // The fake buffer carries its own filename, so the log below says WHICH clip
+  // was heard. Counting alone cannot see a cue playing its first take five
+  // times running, which is the whole thing under test here.
+  decodeAudioData: path => Promise.resolve({
+    duration: DUR[path] ?? DEFAULT_DUR,
+    name: decodeURIComponent(path.split('/').pop().replace('.mp3', ''))
+  }),
   createGain: () => ({ gain: { value: 0 }, connect: t => t }),
   createBufferSource() {
     const n = node();
@@ -44,7 +54,7 @@ const ctx = {
       set buffer(b) { buf = b; },
       get buffer() { return buf; },
       connect: t => t,
-      start: () => played.push(buf.duration)
+      start: () => played.push(buf.name)
     };
   }
 };
@@ -124,23 +134,82 @@ check('and firing does not close the A channel', at(403.5, () => solo(CUE.barrac
 
 // --- Picking between variants -------------------------------------------------
 
-console.log('\nVariants');
+console.log('\nVariants, and never the same clip twice running');
 
-// Every one of the three barracks lines should come up. Sampled with the gate
-// stepped past each time, because a cue that only ever picked its first file
-// would still pass every test above.
-const seen = new Set();
+// Ask for the same cue 300 times over, stepping the clock past the gate each
+// time. All three takes must appear, and no two neighbours may match.
+let log = [];
 for (let i = 0; i < 300; i++) {
-  ctx.currentTime = 500 + i * 10;
+  ctx.currentTime = 5000 + i * 3;
   played = [];
   solo(CUE.barracks);
+  log.push(...played);
 }
-// Duration is the only thing the fake records, and the three fakes share one —
-// so identity is checked through the real module instead, by asking for the cue
-// itself. What the loop above proves is that 300 picks never threw and never
-// jammed the gate.
-for (const key of CUE.barracks) seen.add(key);
-check('the barracks cue offers three lines', seen.size, 3);
+check('300 asks of a 3-take cue all played', log.length, 300);
+check('all three takes came up', new Set(log).size, 3);
+check('no two in a row were the same', log.some((k, i) => i && k === log[i - 1]), false);
+
+// A cue with only ONE file cannot alternate, so it must fall silent instead of
+// repeating. This is the case that made the whole change necessary: a soldier
+// swinging is one clip asking over and over.
+console.log('\nA one-clip cue cannot repeat itself');
+ctx.currentTime = 6000;
+played = [];
+solo(CUE.soldierSwing);
+check('the swing plays when nothing precedes it', played.length, 1);
+check('the very next swing is passed over', at(6002, () => solo(CUE.soldierSwing)), 0);
+check('and so is the one after that', at(6004, () => solo(CUE.soldierSwing)), 0);
+
+// ...but being passed over must not close the channel. This is what "give
+// priority to other sound" actually means: the swing yields its slot rather
+// than spending it.
+check('something else takes the slot instead', at(6006, () => solo(CUE.arrowKill)), 1);
+check('and now the swing may go again', at(6009, () => solo(CUE.soldierSwing)), 1);
+
+// The memory has to expire, or a fight with nothing but swings in it plays one
+// swing and then nothing for the rest of the game.
+console.log('\nThe memory expires');
+ctx.currentTime = 7000;
+played = [];
+solo(CUE.soldierSwing);
+check('blocked while it is still remembered', at(7000 + MEMORY_S - 1, () => solo(CUE.soldierSwing)), 0);
+check('allowed once it has been forgotten', at(7000 + MEMORY_S + 1, () => solo(CUE.soldierSwing)), 1);
+
+// --- No more than twice in five ---------------------------------------------
+
+console.log('\nNever more than twice in the last five');
+
+// Drive a realistic busy fight: swings asking constantly, with a kill and a
+// death mixed in, and check no clip takes more than two of any five.
+// The clock jump past MEMORY_S is the reset — the module has no test hook and
+// should not grow one.
+ctx.currentTime = 8000;
+log = [];
+for (let i = 0; i < 200; i++) {
+  ctx.currentTime = 8000 + i * 2;
+  played = [];
+  solo(CUE.soldierSwing);           // asks every time — the dominant one
+  if (i % 3 === 0) solo(CUE.meleeKill);
+  if (i % 7 === 0) solo(CUE.barracks);
+  log.push(...played);
+}
+
+let overrun = 0;
+for (let i = 4; i < log.length; i++) {
+  const five = log.slice(i - 4, i + 1);
+  for (const k of new Set(five)) {
+    if (five.filter(x => x === k).length > 2) overrun++;
+  }
+}
+check('no clip exceeds 2 of any 5 heard', overrun, 0);
+
+const share = {};
+for (const k of log) share[k] = (share[k] || 0) + 1;
+const swingShare = (share['Soldier_attack'] || 0) / log.length;
+check('the swing is capped at 2/5 of the mix', swingShare <= 0.4, true);
+console.log(`        (swing took ${(swingShare * 100).toFixed(0)}% of ${log.length} plays: ` +
+  Object.entries(share).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') + ')');
+
 check('a melee kill is a cry or a blade', CUE.meleeKill.length, 2);
 check('a soldier dying is a cry or a blade', CUE.soldierDeath.length, 2);
 
@@ -163,20 +232,20 @@ check('a family with no voice says nothing', familyCue('siege'), null);
 // it at 3490 — an earlier timestamp would find the gate shut for a perfectly
 // good reason and read as a failure of something else entirely.
 console.log('\nMissing files');
-ctx.currentTime = 4000;
+ctx.currentTime = 9000;
 played = [];
 solo(['not_a_real_clip']);
 check('an unloaded cue plays nothing', played.length, 0);
 // Same instant on purpose: the question is whether the failed cue shut the gate.
-check('and leaves the channel open', at(4000, () => solo(CUE.soldierSwing)), 1);
+check('and leaves the channel open', at(9000, () => solo(CUE.soldierSwing)), 1);
 
 // A suspended context — a phone that has locked — must swallow everything
 // rather than throw, and must not advance the gate while it is out.
 console.log('\nSuspended');
 ctx.state = 'suspended';
-check('nothing plays while suspended', at(4100, () => { solo(CUE.thug); play(SHOT); }), 0);
+check('nothing plays while suspended', at(9100, () => { solo(CUE.thug); play(SHOT); }), 0);
 ctx.state = 'running';
-check('and it all comes back when it resumes', at(4101, () => solo(CUE.thug)), 1);
+check('and it all comes back when it resumes', at(9101, () => solo(CUE.thug)), 1);
 
 console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nBoth sound rules hold.');
 process.exit(bad ? 1 : 0);

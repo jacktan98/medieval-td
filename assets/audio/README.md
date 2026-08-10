@@ -25,6 +25,54 @@ on the screen is worse than no sound.
 towers firing is ten things the player can see happen, and the shot you are
 watching has to be the shot you hear.
 
+## Category A also has to share itself out
+
+The gate on its own is first-come-first-served, and that is not a fair contest.
+Soldiers swing every 0.9s each and there are several of them, so `Soldier_
+attack` asks far more often than anything else and therefore wins far more
+often. The first build measured **12 swings out of 16 Category A clips in 90
+seconds**, which is not a soundtrack, it is a metronome.
+
+So a clip earns the channel against what has just been heard, not only against
+what else is asking. Two rules, over a memory of the last five plays:
+
+- **never the same clip twice running**
+- **never more than twice in the last five**
+
+A clip that fails either is passed over and the gate is left **open**, so the
+next thing along takes the slot the swing gave up. That is the difference
+between priority and throttling: nothing is delayed, something else is heard
+instead.
+
+The same 90-second run after the change:
+
+| | before | after |
+|---|---|---|
+| `Soldier_attack` | 12 of 16 | **4 of 10** |
+| distinct clips heard | 3 | **6** |
+| tapping the squad mid-fight | silent | **answers** |
+
+The last row was not aimed at and is the best part. Swings had been holding the
+channel so consistently that a tap on your own men often came back silent; with
+them yielding, the player's own actions get heard.
+
+Two details worth knowing before changing any of it:
+
+**A cue with several takes will break the share rule rather than fall silent.**
+Five remembered plays of three takes can reach `A B A B C` — two at their limit
+and the third just heard — and an absolute rule would mute the barracks until
+something aged out. So a cue with alternatives relaxes it. A **single**-take cue
+gets no such relief, which is the whole point: the swing has nothing to rotate
+to, so its share rule is the only thing between one clip and the entire
+soundtrack.
+
+**The memory expires after 20 seconds**, and that number is a straight trade. It
+must be longer than the time five plays take (about 14s in a fight) or the share
+rule never sees five of anything and stops capping. It wants to be short,
+because it is also how long a clip with nothing to alternate with waits before
+it may repeat. A melee where nothing but swings ever happens gets one swing
+every 20s. Larger is rarer; the constant is `MEMORY_S` in `src/audio.js`.
+
 ## What plays when
 
 | moment | clip |
@@ -70,14 +118,8 @@ Tapping a thug is the longest silence in the game — nothing else can be heard
 for four and a half seconds. Trimming `Thug_1` is the cheapest fix if that reads
 wrong in play; nothing in the code has to change.
 
-The other consequence showed up in a 90-second recorded run: **16 Category A
-clips, 12 of them `Soldier_attack`.** Swings are the most frequent thing in the
-category by a distance, so during a fight they hold the channel most of the
-time, and a tap on a tower or a man can come back silent. That is the rule
-working as specified, not a fault — but if a silent tap feels broken, the fix is
-to let the things the PLAYER does (selecting, rallying) interrupt the channel
-while the things the GAME does keep queuing behind each other. Also a small
-change, and it is a judgement call rather than a bug.
+Swings dominating the channel was the other cost, and the share rules above
+deal with it — see the table there.
 
 ## Format, for the next upload
 
