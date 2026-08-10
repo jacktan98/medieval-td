@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Nine files in, three still vector.** Everything below that is not in the table
+**Thirteen files in, three still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -19,6 +19,10 @@ usable button rather than a blank disc.
 | `Upgrade Icon.png`       | `up`              | 26 box       |
 | `Sell Icon.png`          | `coin`            | 26 box       |
 | `Rally Point Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
+| `Speed Box.png`          | the 1x plate      | 54 x 24      |
+| `Next Wave Box.png`      | the wave plate    | 127 x 24     |
+| `Description Box.png`    | the info panel    | 220 x 76     |
+| `Damage Icon.png`        | the word "Damage" | 16 tall      |
 
 Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
 **`max`** — the chevrons on a tower with nothing left to buy. Siege and the
@@ -82,28 +86,45 @@ The header strip itself is painted in `Map.svg` (126 map units, 63 game px) and
 the code deliberately paints no bar of its own. See the trap below before drawing
 a panel.
 
-| element             | drawn     | export at least | states       |
-|---------------------|-----------|-----------------|--------------|
-| speed button plate  | 56 x 24   | **168 x 72**    | one          |
-| "Next wave" plate   | 136 x 24  | **408 x 72**    | lit / dimmed |
-| description panel   | 224 x 76  | **672 x 228**   | one          |
-| gold icon           | 24 tall   | 72 tall         | done         |
-| lives icon          | 24 tall   | 72 tall         | done         |
+All four dashboard pieces are drawn now.
 
-Those are the sizes of the ART inside the file, not the canvas. Canvas size is
-free — a trim is absolute source pixels into whatever image it names, which is
-how the towers sit on 1024 while every figure sits on 512. The two buttons fit a
-512 square comfortably; the description panel does not, so put it on something
-like 1024 x 512.
+| element             | art         | drawn    | 3x needs |
+|---------------------|-------------|----------|----------|
+| speed plate         | 174 x 78    | 54 x 24  | 162      |
+| "Next wave" plate   | 414 x 78    | 127 x 24 | 381      |
+| description panel   | 678 x 234   | 220 x 76 | 660      |
+| gold icon           | 278 x 132   | 51 x 24  | 152      |
+| lives icon          | 192 x 156   | 30 x 24  | 89       |
+| damage sword        | 142 x 142   | 16 x 16  | 48       |
 
-**Keep the proportions**, or say so. The plates are drawn to the exact box in the
-table, so art at a different aspect would be stretched to fit. If a different
-shape is wanted, that is a change to the box in `render.js` — tell me the shape
-and I will resize the slot rather than squash the drawing.
+**A plate's HEIGHT is chosen and its WIDTH follows from the drawing.** 24 ties
+the two controls to the icons beside them and 76 holds the panel's title and two
+stat rows next to a 56px portrait; the widths are then whatever the art's own
+proportions ask for, computed in `render.js` from the trims. So nothing is ever
+squashed, and **a redrawn plate of a different shape resizes its slot instead of
+being stretched into the old one**. The spec asked for 168 x 72, 408 x 72 and
+672 x 228; the drawings came in a little taller in proportion, and the slots
+moved to suit rather than the pictures being flattened.
 
-**The two controls are centred on the board**, spanning x 377 to 583: 56 wide,
-a 14px gap, then 136. The readouts end around x=324 and the info box starts at
-724, so there is room either side, but a wider pair eats into both.
+Redraw them at whatever size you like above the 3x column. Canvas size is free —
+a trim is absolute source pixels into whatever image it names, which is how the
+towers sit on 1024 while every figure sits on 512. The panel is on 1024 because
+it does not fit 512; the two buttons are on 512.
+
+**The pair of controls is centred on the board**, x 383 to 578. The readouts end
+around x=324 and the info box starts at 728, so there is room either side, but a
+wider pair eats into both — and the centring is computed, so it re-centres itself
+if either plate is redrawn wider.
+
+**Every colour on these plates is dark, because the plates are pale.** The
+dashboard and the info box used to be dark translucent panels with cream text; on
+cream art all of that inverted. The five inks live together in `render.js` —
+`INK`, `INK_GREEN`, `INK_AMBER`, `INK_RED` — so a plate redrawn dark is one edit,
+not a hunt.
+
+The HUD's drop shadow stops before the buttons now. It is there because the
+readouts sit straight on grass with nothing behind them; on dark text on a pale
+plate it was a dirty halo rather than legibility.
 
 **Both controls are 24 tall, the same height as the icons beside them**, so the
 dashboard sits on one band instead of the controls being twice the depth of the
@@ -245,6 +266,16 @@ the whole panel is 224 x 76.
 
 ### The rest of it
 
+**The rows are icons, not words.** "Health:" and "Damage:" are a heart and a
+sword — the heart being the SAME file as the lives icon in the dashboard, drawn
+at 16 tall instead of 24. A heart is a heart: lives are the keep's health and
+this is a figure's, and two different hearts would imply two different things.
+One trim, two sizes, no duplication.
+
+Both icons sit in a 22px column so the numbers line up whether the health row is
+there or not — a tower has no health, and a damage figure that shifted left on
+towers and right on units would read as two different layouts.
+
 Health is read off the live object every frame, so the number in the box and the
 bar over the figure's head are the same fact twice. If they ever disagree, one of
 them is reading a copy.
@@ -256,9 +287,9 @@ Taps fall straight through the panel; it is a reader and never takes one.
 `node tools/hud-clear.mjs` includes it alongside the two buttons, so a plot that
 could push a building up behind it would be reported.
 
-The panel is a rounded rectangle drawn in code — 224 x 76, 9px corners, 1.5px
-border — and it is the third thing on the dashboard that could be artwork. See
-the export size in the table above.
+The panel is `Description Box.png`, 220 x 76. The rounded rectangle it replaced is
+still in the code as the fallback, for the same reason every other file here has
+one: a UI PNG that fails to load must leave a readable panel, not a hole.
 
 ## The tier stars are gone
 

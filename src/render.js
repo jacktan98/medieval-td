@@ -8,7 +8,8 @@ import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange } from './ground.js';
-import { ui, uiSize, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT, PORTRAIT_SCALE } from './data/ui.js';
+import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
+         PORTRAIT_SCALE, STAT_ICON_H, STAT_COL } from './data/ui.js';
 import { selectionInfo } from './select.js';
 
 const PLOT_R = 30;
@@ -888,16 +889,22 @@ function flag(ctx, x, y, alpha) {
 // which is unchanged: the full 63px depth of the strip plus HUD_PAD each side,
 // and 63 logical px is 44 real ones on the smallest canvas this game targets.
 // Shrinking the picture does not shrink the target.
-// Centred on the board. The pair is 56 + 14 + 136 = 206 wide, so it starts at
-// 480 - 103 = 377 and ends at 583 — clear of the readouts, which end around
-// x=324, and well clear of the info box, which starts at 724.
+// The plates are artwork now, so the HEIGHT is chosen and the WIDTH follows from
+// the drawing's own proportions — 24 tall ties them to the icons beside them, and
+// squashing a plate to a width picked before it was drawn is the one thing this
+// project never does to art. 174x78 and 414x78 at 24 tall come out 54 and 127.
 //
-// Written out rather than computed from a centre, because input.js and
-// tools/hud-clear.mjs both read these boxes and a derived layout would have to
-// be derived identically in three places.
+// Centred as a pair: 54 + 14 + 127 = 195, so 383..578 puts the middle on 480.
+// The readouts end around x=324 and the info box starts at 728.
+const PLATE_H = 24;
+const HUD_GAP = 14;
+const SPEED_W = Math.round(PLATE_H * aspect('plate_speed'));
+const WAVE_W = Math.round(PLATE_H * aspect('plate_wave'));
+const HUD_X = Math.round(480 - (SPEED_W + HUD_GAP + WAVE_W) / 2);
+
 export const HUD_BTN = {
-  speed: { x: 377, y: 9, w: 56, h: 24 },
-  wave:  { x: 447, y: 9, w: 136, h: 24 }
+  speed: { x: HUD_X, y: 9, w: SPEED_W, h: PLATE_H, art: 'plate_speed' },
+  wave:  { x: HUD_X + SPEED_W + HUD_GAP, y: 9, w: WAVE_W, h: PLATE_H, art: 'plate_wave' }
 };
 
 // Sized so the two padded boxes do not touch: the gap between the buttons is 14,
@@ -919,14 +926,24 @@ export function hitHudButton(state, x, y) {
 // One line, not two. At 24px deep there is room for a single row of 13px text,
 // so the early-call bonus sits AFTER the label rather than under it — still in
 // green, so it reads as a reward and not as part of the button's name.
+//
+// Disabled is the whole plate at 45%, the same as the menu buttons, rather than a
+// second drawing. One file per control is the rule for this folder.
 function hudButton(ctx, b, label, sub, on) {
-  ctx.fillStyle = on ? 'rgba(28,32,24,0.62)' : 'rgba(28,32,24,0.34)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 7);
-  ctx.fill();
-  ctx.strokeStyle = on ? 'rgba(240,230,210,0.75)' : 'rgba(240,230,210,0.25)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.save();
+  if (!on) ctx.globalAlpha = 0.45;
+
+  const drawn = drawPlate(ctx, b.art, b);
+  if (!drawn) {
+    // Vector fallback: the dark translucent plate this replaced.
+    ctx.fillStyle = 'rgba(28,32,24,0.62)';
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 7);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(240,230,210,0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
   const mid = b.y + b.h / 2;
   ctx.textAlign = 'left';
@@ -935,16 +952,41 @@ function hudButton(ctx, b, label, sub, on) {
   ctx.font = '600 12px system-ui, sans-serif';
   const sw = sub ? ctx.measureText(sub).width + 5 : 0;
 
-  let x = b.x + (b.w - lw - sw) / 2;
+  const x = b.x + (b.w - lw - sw) / 2;
   ctx.font = '700 13px system-ui, sans-serif';
-  ctx.fillStyle = on ? '#F0E6D2' : 'rgba(240,230,210,0.40)';
+  ctx.fillStyle = drawn ? INK : '#F0E6D2';
   ctx.fillText(label, x, mid);
 
   if (sub) {
     ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillStyle = on ? '#9BE08A' : 'rgba(240,230,210,0.35)';
+    ctx.fillStyle = drawn ? INK_GREEN : '#9BE08A';
     ctx.fillText(sub, x + lw + 5, mid);
   }
+
+  ctx.restore();
+}
+
+// Ink for text sitting on a CREAM plate. The dashboard and the info box used to
+// be dark translucent panels with pale text; the drawn plates are pale, so every
+// colour on them inverted. Kept together here because they are one decision —
+// if a plate is ever redrawn dark, these all change at once.
+const INK = '#3A3026';
+const INK_GREEN = '#2F6B27';
+const INK_AMBER = '#8A6A12';
+const INK_RED = '#A83A2C';
+
+// A plate drawn to an exact rect rather than fitted to a box. Returns false if
+// the art has not loaded, so the caller can fall back to the vector it replaced.
+//
+// The rect is safe to stretch to because it was DERIVED from this trim's aspect
+// — see HUD_BTN and INFO_BOX. If a plate is redrawn at a different shape its slot
+// changes with it and nothing is squashed.
+function drawPlate(ctx, key, b) {
+  const img = key && art[key];
+  if (!img) return false;
+  const [sx, sy, sw, sh] = ui[key].trim;
+  ctx.drawImage(img, sx, sy, sw, sh, b.x, b.y, b.w, b.h);
+  return true;
 }
 
 // HUD icons. These are the one kind of artwork NOT sized by the shared SCALE,
@@ -1025,13 +1067,18 @@ function drawHud(ctx, state) {
   x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives'), state.lives);
   ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, waves.length)} / ${waves.length}`, x + 26, 21);
 
+  // The shadow ends here. It exists because the readouts sit straight on grass
+  // and road with nothing behind them; the two controls have a cream plate behind
+  // them now, and a drop shadow on dark text on a pale plate is a dirty halo
+  // rather than legibility. Restore BEFORE the buttons, not after.
+  ctx.restore();
+
   // The "Tap a plot to build" hint is gone. It said the same thing on every
   // frame of every game and this is where the controls live now.
   const call = canCallWave(state);
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
   hudButton(ctx, HUD_BTN.wave, 'Next wave',
     call ? `+${earlyCallBonus(state)}g` : null, call);
-  ctx.restore();
 }
 
 function drawMenu(ctx, state) {
@@ -1219,14 +1266,16 @@ function drawGlyph(ctx, kind) {
 
 // The info box: who you have selected, and how they are doing.
 //
-// TOP right, and the dashboard controls moved left to clear it. It was bottom
-// right, which put it over plot 5's marker; up here it is beside the readouts
-// instead of on the board, and no plot is anywhere near it.
+// TOP right, with the dashboard controls centred to its left. What it shows comes
+// from selectionInfo() in select.js; health is read off the live object every
+// frame, so a soldier's bar and this number are the same fact twice.
 //
-// What it shows comes from selectionInfo() in select.js. Health is read off the
-// live object every frame, so a soldier's bar and this number are the same fact
-// twice — if they ever disagree, one of them is reading a copy.
-export const INFO_BOX = { x: 724, y: 9, w: 224, h: 76 };
+// Same rule as the dashboard plates: the HEIGHT is chosen — 76 holds a title and
+// two stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
+// own proportions. 678x234 at 76 tall is 220.
+const INFO_H = 76;
+const INFO_W = Math.round(INFO_H * aspect('plate_info'));
+export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art: 'plate_info' };
 
 // The portrait slot, sized to the BIGGEST figure rather than the other way
 // round. Every portrait is drawn at PORTRAIT_SCALE * SCALE — one factor, so a
@@ -1239,14 +1288,17 @@ function drawInfo(ctx, state) {
   if (!info) return;
 
   const { x, y, w, h } = INFO_BOX;
+  const drawn = drawPlate(ctx, INFO_BOX.art, INFO_BOX);
 
-  ctx.fillStyle = 'rgba(28,32,24,0.82)';
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 9);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(240,230,210,0.55)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  if (!drawn) {
+    ctx.fillStyle = 'rgba(28,32,24,0.82)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 9);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(240,230,210,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
   // The figure, at the shared portrait scale rather than fitted to the slot.
   // Drawn from its own sprite trim, so a re-export moves the portrait with the
@@ -1262,36 +1314,35 @@ function drawInfo(ctx, state) {
       dw, dh);
   }
 
-  const tx = x + 12 + PORTRAIT.w + 12;
+  const tx = x + 12 + PORTRAIT.w + 10;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  ctx.fillStyle = '#F0E6D2';
+  ctx.fillStyle = drawn ? INK : '#F0E6D2';
   ctx.font = '700 13px system-ui, sans-serif';
   ctx.fillText(info.title, tx, y + 20);
 
-  ctx.font = '11px system-ui, sans-serif';
-  let ty = y + 43;
+  // The two rows are ICONS now, not the words "Health:" and "Damage:". Both sit
+  // in a column STAT_COL wide so the numbers beside them line up whether the
+  // row above is there or not — a tower has no health row, and a damage figure
+  // that shifted left on towers and right on units would read as two layouts.
+  ctx.font = '700 12px system-ui, sans-serif';
+  let ty = y + 44;
 
-  // A tower has no health line at all, rather than a blank or a dash: it cannot
-  // be hurt, so a health row would be answering a question the game never asks.
   if (info.hp !== null) {
+    drawUi(ctx, 'hud_life', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
     // Reddens as it drops, on the same thresholds as the health bars over their
     // heads, so the two readings agree at a glance.
     const frac = info.maxHp ? info.hp / info.maxHp : 1;
-    ctx.fillStyle = 'rgba(240,230,210,0.75)';
-    ctx.fillText('Health: ', tx, ty);
-    const lw = ctx.measureText('Health: ').width;
-    ctx.fillStyle = frac > 0.5 ? '#8ED080' : frac > 0.25 ? '#E5C04A' : '#E06A5A';
-    ctx.fillText(`${info.hp}/${info.maxHp}`, tx + lw, ty);
-    ty += 18;
+    ctx.fillStyle = !drawn ? '#F0E6D2'
+                  : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED;
+    ctx.fillText(`${info.hp}/${info.maxHp}`, tx + STAT_COL + 6, ty);
+    ty += 20;
   }
 
-  ctx.fillStyle = 'rgba(240,230,210,0.75)';
-  ctx.fillText('Damage: ', tx, ty);
-  const dw2 = ctx.measureText('Damage: ').width;
-  ctx.fillStyle = '#F0E6D2';
-  ctx.fillText(String(info.damage), tx + dw2, ty);
+  drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
+  ctx.fillStyle = drawn ? INK : '#F0E6D2';
+  ctx.fillText(String(info.damage), tx + STAT_COL + 6, ty);
 }
 
 // The title screen, and the reason it exists.

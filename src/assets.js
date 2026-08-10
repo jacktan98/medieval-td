@@ -62,6 +62,12 @@ const paths = {
   glyph_up:        'assets/ui/Upgrade%20Icon.png',
   glyph_coin:      'assets/ui/Sell%20Icon.png',
   glyph_flag:      'assets/ui/Rally%20Point%20Icon.png',
+  // The three plates, and the sword that replaced the word "Damage". Health
+  // reuses the lives icon rather than having one of its own — a heart is a heart.
+  plate_speed:     'assets/ui/Speed%20Box.png',
+  plate_wave:      'assets/ui/Next%20Wave%20Box.png',
+  plate_info:      'assets/ui/Description%20Box.png',
+  stat_damage:     'assets/ui/Damage%20Icon.png',
   // The board and the plot marker, split out of the artist's Map.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is

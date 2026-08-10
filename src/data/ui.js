@@ -52,6 +52,20 @@ export const RALLY_FLAG_H = 20;
 // the bottom row of the art, where the pole spans x 2..14 of 72.
 export const FLAG_FOOT = [0.111, 1];
 
+// The two stat icons in the info box, which replaced the words "Health:" and
+// "Damage:". 16 tall against the 11px rows beside them — bigger than the text,
+// because a picture standing in for a word has to be read at a glance and has no
+// cap height to sit on.
+//
+// Health borrows the LIVES icon rather than having one of its own. A heart is a
+// heart: lives are the keep's health and this is a figure's, and drawing two
+// different hearts would imply they were different things.
+export const STAT_ICON_H = 16;
+
+// The column the two icons sit in, so the numbers beside them line up. The
+// widest of the pair is the heart at 19.7 drawn, so 22 clears it.
+export const STAT_COL = 22;
+
 export const ui = {
   // Dashboard. `h` rather than `fit`: these are sized by HEIGHT, because they
   // sit on a text baseline. The gold icon is 2.11 wide to 1 tall, and fitting
@@ -77,8 +91,27 @@ export const ui = {
   // reads as the flag sitting slightly left. 3px puts it back.
   //
   // This is the only glyph that needs it, because it is the only asymmetric one.
-  glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] }
+  glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] },
+
+  // The sword beside a damage number. Health uses hud_life above, at STAT_ICON_H
+  // rather than at its own HUD height — same file, two sizes, one trim.
+  stat_damage:  { trim: [185, 185, 142, 142], h: STAT_ICON_H },
+
+  // The three plates. These are drawn to a RECT rather than fitted to a box, so
+  // the entry carries no size: the rect comes from HUD_BTN and INFO_BOX in
+  // render.js, whose widths are derived from these trims' aspects at a fixed
+  // height. That is the way round that matters — the height ties the controls to
+  // the icon band beside them and the panel to its three rows of text, and the
+  // width is then whatever the drawing's proportions ask for. Nothing is
+  // stretched, and a redrawn plate of a different shape resizes its slot instead
+  // of being squashed into the old one.
+  plate_speed:  { trim: [169, 217, 174, 78] },
+  plate_wave:   { trim: [49, 217, 414, 78] },
+  plate_info:   { trim: [173, 395, 678, 234] }
 };
+
+// The aspect of a plate, for deriving its drawn width from a fixed height.
+export const aspect = key => ui[key].trim[2] / ui[key].trim[3];
 
 // How big a FIGURE is drawn in the info box, as a multiple of the board's SCALE.
 //
@@ -109,12 +142,23 @@ export const GLYPH_ART = {
   flag: 'glyph_flag'
 };
 
-// Drawn size in game px, aspect preserved. `h` drives from the height, `fit`
-// from whichever side is longer, and `override` lets a caller ask for a
-// different box than the table's default without a second entry.
+// Drawn size in game px, aspect always preserved. Three ways to ask:
+//
+//   uiSize(key)            the entry's own `fit` box, or its own `h`
+//   uiSize(key, 26)        fit inside a 26px box, whichever side is longer
+//   uiSize(key, { h: 16 }) exactly 16 tall
+//
+// The third exists because the same file is drawn at two sizes in two places —
+// the heart is 24 tall in the dashboard and 16 in the info box — and duplicating
+// its trim to say so would mean two places to re-paste after a re-export.
 export function uiSize(key, override) {
   const e = ui[key];
   const [, , w, h] = e.trim;
+
+  if (override && typeof override === 'object') {
+    return { w: (w / h) * override.h, h: override.h };
+  }
+
   const box = override ?? e.fit;
   if (box) {
     const k = box / Math.max(w, h);

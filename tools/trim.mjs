@@ -13,6 +13,16 @@ import { inflateSync } from 'zlib';
 import { join } from 'path';
 import { SCALE, BLOOD_SCALE, archery, barracks } from '../src/data/towers.js';
 import { ui, uiSize, PORTRAIT_SCALE } from '../src/data/ui.js';
+import { HUD_BTN, INFO_BOX } from '../src/render.js';
+
+// The three plates are sized by the renderer, not by data/ui.js — their widths
+// are derived from these very trims at a fixed height. Read the boxes back so
+// the sharpness verdict is against what is actually drawn.
+const PLATES = {
+  plate_speed: HUD_BTN.speed,
+  plate_wave: HUD_BTN.wave,
+  plate_info: INFO_BOX
+};
 
 // Art that is not drawn at the shared SCALE. Without this the sharpness verdict
 // lies in the most dangerous direction: blood measures 17 source px and would be
@@ -98,6 +108,10 @@ const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead', 'effects', 'u
 // filename is matched back through it — that way a renamed upload shows up here
 // as "not referenced" instead of being silently skipped.
 const UI_FILES = {
+  'Speed Box.png': 'plate_speed',
+  'Next Wave Box.png': 'plate_wave',
+  'Description Box.png': 'plate_info',
+  'Damage Icon.png': 'stat_damage',
   'Gold Icon.png': 'hud_gold',
   'Life Icon.png': 'hud_life',
   'Button Plate Icon.png': 'btn_plate',
@@ -133,9 +147,12 @@ for (const d of dirs) {
     if (d === 'ui') {
       const key = uiKey(f);
       if (!key) { console.log(`${path.padEnd(35)} not referenced by src/data/ui.js`); continue; }
-      // Every UI entry now carries the box it is actually drawn at, so this is
-      // the real drawn size rather than the worst case.
-      ({ w: dw, h: dh } = uiSize(key));
+      // Every UI entry carries the box it is actually drawn at — except the
+      // three plates, which are drawn to a rect derived elsewhere, so their
+      // sizes come from the renderer's own boxes rather than being guessed.
+      const plate = PLATES[key];
+      if (plate) { dw = plate.w; dh = plate.h; }
+      else ({ w: dw, h: dh } = uiSize(key));
     } else {
       const s = scaleFor(f);
       dw = t[2] * s;
