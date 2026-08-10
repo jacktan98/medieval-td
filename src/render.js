@@ -1139,6 +1139,28 @@ function drawHud(ctx, state) {
   const plated = hudButton(ctx, HUD_BTN.pause, null, null, true);
   transportGlyph(ctx, HUD_BTN.pause, state.paused, plated ? INK : '#F0E6D2');
 
+  // A word, because a paused game now refuses every tap except the one that
+  // restarts it. Without a reason on screen, a plot that will not open its menu
+  // reads as the game having hung — the changed glyph is 12px of detail in a
+  // corner and nobody looks at it while they are jabbing at a tower.
+  //
+  // No dimming veil over the board, which is the usual way to say this: the
+  // whole point of pausing here is to study the board, and a game that greys out
+  // the thing you paused to look at has answered the wrong question. A label
+  // under the dashboard says it and hides nothing.
+  if (state.paused) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(24,28,20,0.55)';
+    ctx.strokeText('Paused', 480, 78);
+    ctx.fillStyle = '#F0E6D2';
+    ctx.fillText('Paused', 480, 78);
+    ctx.restore();
+  }
+
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
   hudButton(ctx, HUD_BTN.wave, 'Next wave',
     call ? `+${earlyCallBonus(state)}g` : null, call);

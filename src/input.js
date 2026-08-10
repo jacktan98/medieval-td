@@ -57,7 +57,18 @@ export function attachInput(canvas, state, restart) {
     // asked first — otherwise a button that happens to overlap a plot's menu
     // would lose to it.
     const hud = hitHudButton(state, x, y);
-    if (hud === 'pause') { state.paused = !state.paused; return; }
+    if (hud === 'pause') { togglePause(state); return; }
+
+    // PAUSED SWALLOWS EVERYTHING ELSE. Not just the board — the speed toggle and
+    // the early wave call go too, because "paused" has to mean the game is not
+    // moving in any respect. Half a pause, where you can still queue the next
+    // wave or spend gold with the clock stopped, is not a pause; it is free
+    // thinking time with the shop open.
+    //
+    // Only the button that undoes it still answers, which is why it is tested
+    // first.
+    if (state.paused) return;
+
     if (hud === 'speed') { toggleSpeed(state); return; }
     if (hud === 'wave') { callWaveEarly(state); return; }
 
@@ -135,6 +146,12 @@ export function attachInput(canvas, state, restart) {
   // and would be unusable on a thumb.
   canvas.addEventListener('pointermove', e => {
     if (e.pointerType !== 'mouse') return;
+
+    // A paused game does not follow the mouse either. Hovering an empty plot
+    // opens its build menu on desktop, so without this the one input that needs
+    // no tap at all would walk straight through the pause.
+    if (state.paused) { state.hoverTower = null; state.ghost = null; return; }
+
     const { x, y } = at(e);
 
     if (state.placing) { state.ghost = { x, y }; return; }
@@ -167,6 +184,21 @@ export function attachInput(canvas, state, restart) {
     state.ghost = null;
     if (state.menu && state.menu.viaHover) closeMenu(state);
   });
+}
+
+// Stopping the game also puts away anything the player was in the middle of.
+//
+// A radial menu left open across a pause is the worst of both: it is the one
+// thing on screen that looks like it should still answer a tap, and every one of
+// its buttons is dead. Same for a rally point half-placed — the board is armed
+// for a tap that will now be ignored. Both are cleared, so a paused game shows
+// nothing that invites an action it will refuse.
+function togglePause(state) {
+  state.paused = !state.paused;
+  if (!state.paused) return;
+  closeMenu(state);
+  state.placing = null;
+  state.ghost = null;
 }
 
 // 1x and 2x only. A third speed sounds generous and mostly produces a setting
