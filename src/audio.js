@@ -1,6 +1,6 @@
 // Sound. Two rules, and the rules are the whole design.
 //
-//   play(key)     Category B — every time, however many at once.
+//   play(cue)     Category B — every time, however many at once.
 //   solo(cue)     Category A — one at a time, then a second of quiet.
 //
 // Category A is a SINGLE CHANNEL shared by everything in it. While one of its
@@ -76,6 +76,44 @@ const BG_DUCKED = 0.15;
 const DUCK_IN = 0.04;
 const DUCK_OUT = 0.25;
 
+// --- Levelling, measured rather than declared -------------------------------
+//
+// The clips arrive up to 20dB apart. Measured across the fourteen: the voices
+// were never normalised and peak around 0.12, while the death effects peak near
+// 1.0 — so `Archers_1` came in 9.6dB under the middle of the pack and
+// `Thug_dies` 10.1dB over it. Nothing in the mixing above can survive that. A
+// bus sitting "7dB under" means nothing when the clips on it differ by twenty.
+//
+// So every clip is analysed once, at load, and given the gain that brings it to
+// a common loudness. Measured rather than typed into a table on purpose: this
+// project re-uploads audio constantly, and a hand-tuned table would be silently
+// wrong the moment a file was re-recorded — the sound would just be off, with
+// nothing to point at. Analysis costs a few milliseconds for the whole folder
+// and cannot go stale.
+//
+// One target for BOTH categories, which is what finally makes BG_LEVEL honest:
+// with every clip arriving at the same loudness, the bus gain is the only thing
+// setting how far the battle sits under the voices, and it means exactly what
+// it says.
+const TARGET_LOUD = 0.09;
+
+// Loudness is the RMS of the loudest window of this many seconds, not of the
+// whole clip. Whole-clip RMS punishes a sound for having a tail of quiet, which
+// is not a difference the ear hears as loudness — it would push a clip with a
+// long decay up until its attack was painful.
+const LOUD_WINDOW = 0.3;
+
+// How far the automatic gain may go in either direction. A clip recorded at
+// almost nothing would otherwise be multiplied until its noise floor was the
+// loudest thing in the game.
+const GAIN_MIN = 0.1;
+const GAIN_MAX = 4;
+
+// Anything quieter than this counts as silence when finding where a clip really
+// starts and ends. Absolute rather than a share of the peak, so a quiet clip is
+// not credited with a quiet opening.
+const FLOOR = 0.01;
+
 // --- How Category A shares itself out ---------------------------------------
 //
 // The gate alone is first-come-first-served, and that is not a fair contest.
@@ -141,10 +179,13 @@ const paths = {
   thug_1:          'assets/audio/voice/Thug_1.mp3'
 };
 
-// Per-clip level, where a file arrived louder or quieter than its neighbours.
-// Anything not listed plays at 1. This is the knob to reach for when something
-// sits wrong in the mix — it is a number here, not a re-export, so it costs
-// nothing to try.
+// Deliberate exceptions to the automatic levelling, applied on top of it.
+// Anything not listed plays at the common loudness.
+//
+// This is for INTENT, not for correction — a giant that should be louder than
+// a common thug, a line that should sound distant. Reaching for it because
+// something "sounds wrong" is usually a sign the analysis is being fought
+// rather than helped.
 const GAIN = {};
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
@@ -166,7 +207,10 @@ export const SHOT = ['arrow_shot'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 
 let ctx = null;
-const buffers = {};
+
+// Each loaded clip, as { buf, gain, offset, audible } — the decoded audio plus
+// what the analysis found out about it. See analyse().
+const clips = {};
 
 // Two buses into one master, which is what makes ducking possible at all:
 //
@@ -223,11 +267,90 @@ export function loadAudio() {
     fetch(src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { buffers[key] = buf; })
+      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1); })
       .catch(() => console.warn('Missing or unreadable audio:', src))
   );
 
-  return Promise.all(jobs);
+  return Promise.all(jobs).then(report);
+}
+
+// Everything the mix needs to know about a clip, worked out from the audio
+// itself: how loud it is, and where in the file the sound actually is.
+//
+// The channels are summed to mono first. What the player hears is the sum, and
+// measuring one side of a stereo file would under-read anything panned.
+function analyse(buf, trim) {
+  const n = buf.length;
+  const mix = new Float32Array(n);
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < n; i++) mix[i] += d[i] / buf.numberOfChannels;
+  }
+
+  let peak = 0;
+  for (let i = 0; i < n; i++) {
+    const a = mix[i] < 0 ? -mix[i] : mix[i];
+    if (a > peak) peak = a;
+  }
+
+  // Loudest window, as a running sum rather than a fresh pass per position —
+  // the naive version is O(n * window) and would take a noticeable bite out of
+  // startup on the longer lines.
+  const w = Math.min(n, Math.max(1, Math.round(buf.sampleRate * LOUD_WINDOW)));
+  let run = 0;
+  for (let i = 0; i < w; i++) run += mix[i] * mix[i];
+  let best = run;
+  for (let i = w; i < n; i++) {
+    run += mix[i] * mix[i] - mix[i - w] * mix[i - w];
+    if (run > best) best = run;
+  }
+  const loud = Math.sqrt(best / w);
+
+  // Where the sound really starts and ends.
+  let head = 0;
+  while (head < n && (mix[head] < 0 ? -mix[head] : mix[head]) < FLOOR) head++;
+  let tail = n - 1;
+  while (tail > head && (mix[tail] < 0 ? -mix[tail] : mix[tail]) < FLOOR) tail--;
+
+  // A clip that is silent all through — a failed export — keeps its own timing
+  // and is left alone rather than being multiplied by GAIN_MAX.
+  const silent = head >= n || loud <= 0;
+
+  const gain = silent ? trim
+    : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD / loud));
+
+  return {
+    buf,
+    gain,
+    peak,
+    loud,
+    // Playback starts here, skipping the dead air at the front. This is the
+    // whole fix for a sword that lands a quarter of a second after the blow:
+    // the offset is real time removed from the sound, not a delay compensated
+    // for somewhere else.
+    offset: silent ? 0 : head / buf.sampleRate,
+    // How long the clip is AUDIBLE for, which is what the Category A gate and
+    // the duck should use. Holding the channel through a clip's trailing
+    // silence is time spent saying nothing.
+    audible: silent ? buf.duration : (tail - head + 1) / buf.sampleRate
+  };
+}
+
+// A short note about anything the analysis had to move a long way. Not a dump
+// of all fourteen — a console that prints something every load is a console
+// nobody reads — but a clip being pulled down 10dB or having a quarter of a
+// second cut off its front is worth knowing about, because it usually means the
+// file itself could be better.
+function report() {
+  const notes = [];
+  for (const [key, c] of Object.entries(clips)) {
+    const bits = [];
+    const db = 20 * Math.log10(c.gain);
+    if (Math.abs(db) > 3) bits.push(`${db > 0 ? '+' : ''}${db.toFixed(1)}dB`);
+    if (c.offset > 0.05) bits.push(`skipped ${Math.round(c.offset * 1000)}ms of silence`);
+    if (bits.length) notes.push(`${key} ${bits.join(', ')}`);
+  }
+  if (notes.length) console.info('Audio levelled:', notes.join(' | '));
 }
 
 // Let sound out. Must be called from inside a real touch or click handler —
@@ -244,16 +367,18 @@ export function unlock() {
 }
 
 function fire(key, bus) {
-  const buf = buffers[key];
+  const c = clips[key];
   const src = ctx.createBufferSource();
-  src.buffer = buf;
+  src.buffer = c.buf;
 
   const g = ctx.createGain();
-  g.gain.value = GAIN[key] ?? 1;
+  g.gain.value = c.gain;
 
   src.connect(g).connect(bus);
-  src.start(0);
-  return buf.duration;
+  // Second argument is WHERE IN THE CLIP to begin. Starting past the dead air
+  // is what makes a hit sound land on the hit.
+  src.start(0, c.offset);
+  return c.audible;
 }
 
 // Get the battle out of the way for the length of a Category A clip, then let
@@ -279,7 +404,7 @@ const lastB = new WeakMap();
 export function play(cue) {
   if (!ctx || ctx.state !== 'running') return;
 
-  const ready = cue.filter(key => buffers[key]);
+  const ready = cue.filter(key => clips[key]);
   if (!ready.length) return;
 
   // Not the same take twice running where there is a choice. The Category A
@@ -331,7 +456,7 @@ export function solo(cue) {
   // not per cue: the three barracks lines rotate among themselves. A clip shared
   // by two cues would be counted once across both, which is right — the player
   // hears one sound, however the game got there.
-  const ready = cue.filter(key => buffers[key]);
+  const ready = cue.filter(key => clips[key]);
   let eligible = ready.filter(key => key !== last && times(key) < MAX_REPEATS);
 
   // A cue with several takes must never talk itself into silence. Five

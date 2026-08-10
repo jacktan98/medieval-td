@@ -26,6 +26,12 @@ const DEFAULT_DUR = 0.5;
 const BG_LEVEL = 0.45;
 const BG_DUCKED = 0.15;
 
+// The shape of every fake clip: LEAD seconds of silence, then a tone at AMP.
+// The module should skip the silence and level the tone to TARGET_LOUD.
+const LEAD = 0.1;
+const AMP = 0.3;
+const TARGET_LOUD = 0.09;
+
 // Must match src/audio.js. Duplicated rather than exported because a test that
 // imports the number it is checking cannot catch the number changing.
 const MEMORY_S = 20;
@@ -42,13 +48,29 @@ const ctx = {
   currentTime: 0,
   destination: {},
   resume: () => Promise.resolve(),
-  // The fake buffer carries its own filename, so the log below says WHICH clip
-  // was heard. Counting alone cannot see a cue playing its first take five
-  // times running, which is the whole thing under test here.
-  decodeAudioData: path => Promise.resolve({
-    duration: DUR[path] ?? DEFAULT_DUR,
-    name: decodeURIComponent(path.split('/').pop().replace('.mp3', ''))
-  }),
+  // A real buffer of samples, not a stub, because the module analyses what it
+  // loads — loudness, peak, and where the sound starts and stops. A stub with
+  // only a duration would make analyse() divide by nothing.
+  //
+  // The shape is deliberate and the tests below read it back: LEAD seconds of
+  // silence, then a constant tone at AMP. That gives a known loudness, a known
+  // offset to skip, and a known audible length, so the gate arithmetic can be
+  // checked against numbers rather than against whatever the real files happen
+  // to contain this week.
+  decodeAudioData: path => {
+    const duration = DUR[path] ?? DEFAULT_DUR;
+    const sampleRate = 1000;
+    const n = Math.round(duration * sampleRate);
+    const lead = Math.round(LEAD * sampleRate);
+    const data = new Float32Array(n);
+    for (let i = lead; i < n; i++) data[i] = AMP;
+    return Promise.resolve({
+      duration, sampleRate, length: n,
+      numberOfChannels: 1,
+      getChannelData: () => data,
+      name: decodeURIComponent(path.split('/').pop().replace('.mp3', ''))
+    });
+  },
   // Gain nodes are named by creation order, because that is the only thing the
   // module tells us about them: it builds master, then busA, then busB, and
   // every later one is a per-play trim. Naming them is what lets the routing
@@ -77,9 +99,14 @@ const ctx = {
       set buffer(b) { buf = b; },
       get buffer() { return buf; },
       connect(t) { trim = t; return t; },
-      start: () => {
+      start: (when, offset) => {
         played.push(buf.name);
-        routes.push({ name: buf.name, bus: trim && trim._out && trim._out._name });
+        routes.push({
+          name: buf.name,
+          bus: trim && trim._out && trim._out._name,
+          offset: +Number(offset).toFixed(3),
+          gain: +Number(trim.gain.value).toFixed(3)
+        });
       }
     };
   }
@@ -91,7 +118,14 @@ globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promis
 const { loadAudio, play, solo, CUE, SHOT, ATTACK, selectionCue, familyCue } =
   await import('../src/audio.js');
 
+// Load with console.info muted. The module reports anything it had to move a
+// long way, which is useful in a browser and pure noise here — every fake clip
+// is identical by construction, so it would print the same line fourteen times
+// above the results. Silenced rather than skipped so the reporting still runs.
+const info = console.info;
+console.info = () => {};
 await loadAudio();
+console.info = info;
 
 // --- helpers ----------------------------------------------------------------
 
@@ -112,16 +146,27 @@ function at(t, fn) {
   return played.length;
 }
 
+// --- Levelling and the dead air at the front --------------------------------
+
+console.log('\nEvery clip is measured and levelled at load');
+
+routes = [];
+at(0, () => solo(CUE.thug));
+check('playback skips the silent lead-in', routes[0] && routes[0].offset, LEAD);
+check('and the tone is levelled to the target', routes[0] && routes[0].gain, +(TARGET_LOUD / AMP).toFixed(3));
+
 // --- Category A: one at a time, then a second of quiet -----------------------
 
 console.log('\nCategory A — one channel, then a second of quiet');
 
-// A 2s clip starting at t=0 holds the channel until 2 + 1 = 3.
-check('a cue plays when the channel is free', at(0, () => solo(CUE.thug)), 1);
-check('another is dropped while it sounds', at(1.5, () => solo(CUE.barracks)), 0);
-check('still dropped in the second of quiet after', at(2.5, () => solo(CUE.barracks)), 0);
-check('and dropped right up to the last moment', at(2.99, () => solo(CUE.barracks)), 0);
-check('plays again once the rest is over', at(3.01, () => solo(CUE.barracks)), 1);
+// The fake Thug_1 is 2s long with 0.1s of that silent, so it is AUDIBLE for
+// 1.9s and holds the channel until 1.9 + 1 = 2.9. Holding it for the full 2s
+// would be a tenth of a second spent saying nothing.
+check('a cue plays when the channel is free', at(30, () => solo(CUE.thug)), 1);
+check('another is dropped while it sounds', at(31.5, () => solo(CUE.barracks)), 0);
+check('still dropped in the second of quiet after', at(32.5, () => solo(CUE.barracks)), 0);
+check('and dropped right up to the last moment', at(32.89, () => solo(CUE.barracks)), 0);
+check('plays again once the rest is over', at(32.91, () => solo(CUE.barracks)), 1);
 
 // Everything in the category shares ONE channel — a soldier's swing is held off
 // by a thug's line, not just by another swing. This is the rule that keeps a
@@ -182,7 +227,8 @@ at(520, () => solo(CUE.thug));
 check('the background is pulled down', ducks[0] && ducks[0].target, BG_DUCKED);
 check('on the background bus', ducks[0] && ducks[0].bus, 'busB');
 check('and let back up afterwards', ducks[1] && ducks[1].target, BG_LEVEL);
-check('exactly when the clip ends', ducks[1] && ducks[1].at, 522);
+// 520 + 1.9 audible seconds, not 520 + the clip's 2s length.
+check('exactly when the clip stops sounding', ducks[1] && ducks[1].at, 521.9);
 
 // A Category B sound that is passed over for de-duping must not duck anything —
 // only Category A moves the bus.

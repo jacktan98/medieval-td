@@ -116,30 +116,90 @@ voice so far. Silence for the giant would read as a bug rather than as a gap.
 
 ## What the one-second rule actually costs
 
-The gate holds for the clip's own length **plus** the second, so a long clip is
-a long silence. Measured:
+The gate holds for as long as the clip is AUDIBLE, plus the second — not for the
+length of the file. Skipping the dead air at both ends bought back real time
+here, most of a second on some clips:
 
-| clip | length | holds the channel |
-|---|---|---|
-| `Thug_1` | 3.40s | **4.40s** |
-| `Archers_3` | 2.53s | 3.53s |
-| `Barracks_3` | 2.17s | 3.17s |
-| `Thug_dies` | 1.34s | 2.34s |
-| `Soldier_dies` | 0.70s | 1.70s |
+| clip | file | audible | holds the channel |
+|---|---|---|---|
+| `Thug_1` | 3.40s | 2.80s | **3.80s** |
+| `Archers_3` | 2.53s | 1.94s | 2.94s |
+| `Barracks_3` | 2.17s | 1.69s | 2.69s |
+| `Thug_dies` | 1.34s | 1.04s | 2.04s |
+| `Archers_1` | 1.44s | 0.77s | 1.77s |
+| `Soldier_dies` | 0.70s | 0.48s | 1.48s |
+| `Arrow_hit_enemy` | 1.05s | 0.30s | 1.30s |
 
-Tapping a thug is the longest silence in the game — no other Category A clip can
-be heard for four and a half seconds. The battle plays on underneath throughout,
-so it is not silence exactly, but nothing else gets announced. Trimming `Thug_1`
-is the cheapest fix if it reads wrong in play; nothing in the code has to
-change.
+`Arrow_hit_enemy` is the striking one: a 1.05s file with 0.30s of sound in it,
+so it used to hold the channel for two seconds to say something that took a
+third of one.
+
+Tapping a thug is still the longest hold in the game at 3.8s. The battle plays
+on underneath throughout, so it is not silence exactly — nothing else gets
+announced. Trimming `Thug_1` would take it under 2s if that ever reads wrong in
+play.
+
+## Levelling is automatic — you do not have to normalise
+
+The clips arrived up to **20dB apart**. The voices had never been normalised and
+peaked around 0.12; the death effects peaked near 1.0. So `Archers_1` was 9.6dB
+under the middle of the pack and `Thug_dies` 10.1dB over it, and no amount of
+bus mixing survives that — "the battle sits 7dB under the voices" means nothing
+when the clips themselves differ by twenty.
+
+Every clip is now **analysed once at load** and given the gain that brings it to
+a common loudness, measured as the RMS of its loudest 300ms. What that did to
+the current fourteen:
+
+| clip | adjustment |
+|---|---|
+| `Archers_1` | **+11.1 dB** |
+| `Archers_2` | +10.5 dB |
+| `Attack_2` | +7.0 dB |
+| `Archers_3` | +4.4 dB |
+| `Barracks_1` | +3.6 dB |
+| `Attack_1` | −3.3 dB |
+| `Soldier_dies` | −7.0 dB |
+| `Thug_1` | −7.1 dB |
+| `Thug_dies` | −8.6 dB |
+
+Measured rather than typed into a table, and that is the point: this project
+re-uploads audio constantly, and a hand-tuned table would be silently wrong the
+moment a file was re-recorded. The sound would just be off, with nothing to
+point at. The analysis costs a few milliseconds for the whole folder and cannot
+go stale.
+
+**So do not normalise before uploading, and do not worry if a take comes in
+quiet.** The gain is capped at 4x either way, so a clip recorded at almost
+nothing will still come up short rather than dragging its own hiss up with it —
+that is the one case worth re-recording.
+
+`GAIN` in `src/audio.js` overrides the analysis per clip, and it is for INTENT
+— a giant that should be louder than a common thug — not for correction.
+
+## Dead air at the front is skipped, also automatically
+
+Measured lead-in across the uploads: `Thug_1` 299ms, `Attack_3` 275ms,
+`Archers_2` 224ms, `Attack_2` 201ms, most others 50–150ms. A sword landing
+275ms after the blow is **sixteen frames late**, and it was the single biggest
+reason the audio felt loose against the action.
+
+Playback now starts past the silence — the analysis finds the first audible
+sample and begins there. Real time removed, not a delay compensated for
+elsewhere.
+
+The same measurement gives the clip's **audible** length, and that is what the
+Category A gate and the duck use rather than the file's length. Holding the
+channel through a clip's trailing silence is time spent saying nothing.
+
+It is still worth trimming in the editor when it is easy — a smaller file
+downloads faster — but nothing depends on it any more.
 
 ## Format, for the next upload
 
 `.mp3`. Mono where you can — all seven effects are stereo, which is twice the
 bytes to store the same sound twice, and nothing here is positioned in the
-stereo field. Keep effects short and trim the silence off the front: leading
-quiet is dead time between the arrow leaving the bow and the twang, and no code
-can take it back out.
+stereo field. Keep effects short.
 
 Every filename is now a plain URL — no `%20` anywhere, unlike `assets/ui`. Keep
 it that way and the paths in `src/audio.js` stay readable.
@@ -149,11 +209,14 @@ file, and flags anything long, heavy or stereo. It parses the MP3 frames itself
 — there is no ffmpeg here and no npm to install one, the same constraint that
 makes `tools/trim.mjs` decode PNGs by hand.
 
-**`Attack_1` is the odd one of the three swings**: 1.70s and 70kB against 0.51s
-and 0.53s for `Attack_2` and `Attack_3` — it is the old `Stab.mp3` under a new
-name, byte for byte. Nothing breaks, since Category B lets clips overlap freely,
-but one swing in three ringing three times as long as its neighbours is
-audible as a pattern. Re-cutting it to match is the fix.
+The three swings are now within reach of each other — `Attack_1` 1.10s,
+`Attack_2` 0.84s, `Attack_3` 0.98s — after the first `Attack_1` came in at
+1.70s, twice its siblings, and read as a pattern every third swing.
+
+**Two clips still peak at exactly 1.000**, `Thug_1` and `Attack_1`, which
+usually means they were clipped or limited on the way in. The automatic
+levelling turns them down, but it cannot undo distortion already baked into the
+file. Worth a listen at volume; only a re-record fixes it if it is audible.
 
 ## Adding a clip
 
