@@ -1,52 +1,58 @@
-// Hand-authored waypoints. Enemies walk these in order, then damage the keep.
-// Coordinates are in logical canvas space (960x540).
+// The road, as waypoints enemies walk. Coordinates are in the logical canvas
+// space (960x540), and the first and last points sit off-canvas so enemies
+// enter and leave unseen.
 //
-// TRACED FROM THE ARTWORK. These are not drawn by hand any more: the road in
-// assets/map/Map.svg is the level, and this polyline is its centreline,
-// extracted by rasterising the map, isolating the road colour, and walking the
-// ridge of the distance transform from one end of the shape to the other. The
-// art is the source of truth for where the road is; this file just has to agree
-// with it. If the map is redrawn, re-extract rather than nudging numbers here.
+// TRACED FROM THE ARTWORK by `node tools/trace-road.mjs assets/map/Map.svg`.
+// The road in assets/map/Map.svg is the level; this is its centreline. Redraw
+// and re-run rather than nudging numbers here.
 //
-// The first and last points sit off-canvas so enemies enter and leave unseen.
+// IT USED TO BE HAND-TUNED, and that is what had to go. The old polyline was
+// extracted before the tool existed and then patched by hand at both ends; its
+// own notes admitted it "tracks about 5px below centre the whole way", which was
+// harmless while enemies walked it single file. It stopped being harmless when
+// they got lanes: a line 5px off centre in the straights and further through the
+// bends left only 10px of road beside it in places, so the outer lane walked on
+// the grass for a tenth of the route. The fix is not a narrower lane, it is a
+// line that is actually down the middle — this one has 32px of road either side
+// at its narrowest, which fits every lane with room to spare.
 //
-// BOTH ENDS WERE RE-MEASURED. The ridge walk that produced this polyline bends
-// where the road is cut off by the canvas edge — a distance transform has no way
-// to know the shape continues past the crop, so its ridge curls toward the
-// middle of the flat end cap. That put the entry at (0, 236) when the road at
-// x=0 actually spans y 160..230: the first enemy of every wave walked in six
-// pixels BELOW the tarmac and took 80px to find it. The exit had the same fault
-// mirrored, drifting 26px above centre and leaving along the top kerb.
-//
-// The two points at each end now sit on the road's measured centreline (x=0 is
-// 195, x=959 is 175) and the off-canvas points extend along the road's own
-// slope there rather than toward a corner. The middle of the path was left
-// alone: it tracks about 5px below centre the whole way, which is a consistent
-// bias on a 70px road and not worth disturbing a tuned level over.
+// `node tools/trace-road.mjs assets/map/Map.svg` checks that, at the end of its
+// output, against the routes the game actually loads.
 const route1 = [
-  { x: -40, y: 203 },
-  { x: 0, y: 195 },
-  { x: 49, y: 191 },
-  { x: 149, y: 174 },
-  { x: 428, y: 198 },
-  { x: 441, y: 216 },
-  { x: 437, y: 236 },
-  { x: 416, y: 271 },
-  { x: 280, y: 370 },
-  { x: 243, y: 421 },
-  { x: 247, y: 431 },
-  { x: 272, y: 452 },
-  { x: 332, y: 466 },
-  { x: 582, y: 444 },
-  { x: 614, y: 415 },
-  { x: 613, y: 405 },
-  { x: 544, y: 314 },
-  { x: 548, y: 304 },
-  { x: 581, y: 263 },
-  { x: 637, y: 233 },
-  { x: 927, y: 181 },
-  { x: 959, y: 176 },
-  { x: 1000, y: 174 }
+  { x: -39, y: 198 },
+  { x: 1, y: 195 },
+  { x: 145, y: 170 },
+  { x: 227, y: 163 },
+  { x: 339, y: 168 },
+  { x: 387, y: 178 },
+  { x: 415, y: 189 },
+  { x: 429, y: 202 },
+  { x: 436, y: 219 },
+  { x: 433, y: 237 },
+  { x: 421, y: 257 },
+  { x: 381, y: 297 },
+  { x: 279, y: 368 },
+  { x: 257, y: 393 },
+  { x: 251, y: 413 },
+  { x: 264, y: 437 },
+  { x: 297, y: 453 },
+  { x: 351, y: 463 },
+  { x: 439, y: 465 },
+  { x: 493, y: 460 },
+  { x: 551, y: 448 },
+  { x: 579, y: 436 },
+  { x: 596, y: 420 },
+  { x: 604, y: 405 },
+  { x: 602, y: 389 },
+  { x: 558, y: 329 },
+  { x: 551, y: 305 },
+  { x: 565, y: 275 },
+  { x: 603, y: 245 },
+  { x: 669, y: 217 },
+  { x: 761, y: 193 },
+  { x: 847, y: 182 },
+  { x: 959, y: 177 },
+  { x: 999, y: 172 }
 ];
 
 // Fixed build plots — the nine markers painted into the map, read out of the

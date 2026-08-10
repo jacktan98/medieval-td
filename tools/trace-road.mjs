@@ -23,6 +23,8 @@
 
 import { readFileSync } from 'fs';
 import { shapesByFill } from './svg.mjs';
+import { levels } from '../src/level.js';
+import { LANES, at as pointOn, laneOf } from '../src/route.js';
 
 const SRC = process.argv[2] || 'assets/map/Map_2.svg';
 
@@ -327,3 +329,55 @@ for (let gy = 0; gy < GH; gy++) {
 widths.sort((a, b) => a - b);
 console.log(`\nroad width: median ${Math.round(widths[widths.length >> 1])}px, ` +
   `widest ${Math.round(maxClear * STEP * 2)}px`);
+
+
+// --- do the lanes the game actually uses stay on the tarmac? ------------------
+//
+// The routes printed above are what the tool WOULD write. What the game plays is
+// whatever is in src/data/level*.js, and for map 1 those are not the same thing:
+// its polyline is hand-tuned and predates this tool, tracking a few px off the
+// ridge the whole way and further than that through the bends.
+//
+// So the clearance figure printed above is about the traced line and says
+// nothing about the line in use. Enemies were walking on the grass through map
+// 1's hairpin because of exactly that gap. This checks the real thing: every
+// lane, sampled along the route the game loads, against the mask built here.
+const level = levels.find(l => l.src === SRC);
+if (level) {
+  console.log(`\nlanes of ${level.id}, as the game loads them:`);
+  let worst = null;
+
+  level.routes.forEach((r, ri) => {
+    LANES.forEach((lane, li) => {
+      // The lane's own polyline, which is what an enemy walks — not the
+      // centreline with an offset applied at draw time.
+      //
+      // NOT called `road`: that is the mask array in this file, and shadowing it
+      // here made every sample report itself off the tarmac, lane 0 included.
+      const lanePath = laneOf(r, li);
+      let off = 0, samples = 0, minEdge = Infinity, at = null;
+      for (let s = 0; s <= lanePath.total; s += 2) {
+        const p = pointOn(lanePath, s);
+        if (p.x < 0 || p.x > W || p.y < 0 || p.y > H) continue;   // off-canvas tails
+        samples++;
+        const gx = Math.min(GW - 1, Math.max(0, Math.round((p.x - STEP / 2) / STEP)));
+        const gy = Math.min(GH - 1, Math.max(0, Math.round((p.y - STEP / 2) / STEP)));
+        const c = road[gy * GW + gx] ? clear[gy * GW + gx] * STEP : 0;
+        if (!road[gy * GW + gx]) off++;
+        if (c < minEdge) { minEdge = c; at = [Math.round(p.x), Math.round(p.y)]; }
+      }
+      const bad = off > 0;
+      if (bad && (!worst || off > worst.off)) worst = { ri, lane, off, samples, at };
+      console.log(`  route ${ri} lane ${String(lane).padStart(3)}  ` +
+        `${bad ? `OFF THE ROAD for ${off} of ${samples} samples` : 'on the road'}` +
+        `, closest to the kerb ${minEdge.toFixed(0)}px at (${at})`);
+    });
+  });
+
+  if (worst) {
+    console.log(`\n  worst: route ${worst.ri} lane ${worst.lane} leaves the road near (${worst.at})`);
+    process.exitCode = 1;
+  } else {
+    console.log('\n  every lane stays on the road.');
+  }
+}

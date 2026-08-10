@@ -1,5 +1,5 @@
 import { level, remaining } from './level.js';
-import { offset, randomLane } from './route.js';
+import { at as pointOn, laneOf, randomLane } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { unhook } from './units.js';
@@ -17,21 +17,19 @@ import { solo, CUE } from './audio.js';
 export function spawn(state, typeId) {
   const def = enemyTypes[typeId];
   const ri = (Math.random() * level.routes.length) | 0;
-  const route = level.routes[ri];
   const lane = randomLane();
-  const at0 = offset(route, 0, lane);
+  const road = laneOf(level.routes[ri], lane);
+  const at0 = pointOn(road, 0);
 
   state.enemies.push({
     def,
     route: ri,
-    lane,
-    s: 0,            // distance walked along the route
+    lane,            // which of the three, as an index into LANES
+    s: 0,            // distance walked along that lane's own polyline
     x: at0.x,
     y: at0.y,
     hp: def.hp,
     maxHp: def.hp,
-    t: 0,            // walk-cycle timer, drives the bob; frozen while fighting
-    bobAmp: 1,       // 0..1 fade on that bob, so it eases out rather than snaps
     face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
     foe: null,       // the barracks soldier holding it, if any
     acd: 0,          // melee cooldown, only ticks while held
@@ -46,18 +44,6 @@ export function updateEnemies(state, dt) {
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
     e.thrust = Math.max(0, e.thrust - dt * 4);
 
-    // The bob is a WALK cycle, so it runs only while walking. A fighting enemy
-    // must move forward and back on its swing and nothing else — bobbing at the
-    // same time made a melee read as two figures hopping on the spot.
-    //
-    // The timer FREEZES rather than resetting, and the amplitude fades over
-    // about a sixth of a second at each end. Cutting the bob dead on contact
-    // would drop the figure up to 2px in one frame, which is a visible twitch
-    // at the exact moment the player is watching the fight start.
-    const walking = !e.foe;
-    if (walking) e.t += dt;
-    e.bobAmp = walking ? Math.min(1, e.bobAmp + dt * 6) : Math.max(0, e.bobAmp - dt * 6);
-
     // Held in melee by a soldier. Blocked enemies stop dead rather than
     // sliding past — this is the whole point of the barracks family, and the
     // one case where an enemy is not a pure path-follower.
@@ -71,10 +57,13 @@ export function updateEnemies(state, dt) {
     // old loop walked from waypoint to waypoint consuming the frame's movement,
     // which cannot express a lane: an offset has to be measured perpendicular
     // to the road, and there is no perpendicular to "somewhere near vertex 7".
-    const route = level.routes[e.route];
+    // The lane's own road, not the centreline. Walking the centreline and
+    // drawing the figure offset from it makes speed depend on which way the
+    // road is bending — see route.js.
+    const road = laneOf(level.routes[e.route], e.lane);
     e.s += e.def.speed * level.march * dt;
 
-    const p = offset(route, e.s, e.lane);
+    const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should
     // look, so keep the last horizontal heading rather than snapping to a
     // default.
@@ -82,7 +71,7 @@ export function updateEnemies(state, dt) {
     e.x = p.x;
     e.y = p.y;
 
-    if (e.s >= route.total) e.leaked = true;
+    if (e.s >= road.total) e.leaked = true;
   }
 
   for (const e of state.enemies) {
@@ -132,7 +121,7 @@ export function pickTarget(enemies, x, y, range) {
     // Measured from the enemy's ground anchor — its shadow — because that is
     // where the figure IS. Its head is drawn well above that and never counts.
     if (!inRange(x, y, e.x, e.y, range)) continue;
-    const left = remaining(level.routes[e.route], e.s);
+    const left = remaining(laneOf(level.routes[e.route], e.lane), e.s);
     if (left < least) {
       least = left;
       best = e;

@@ -41,12 +41,42 @@ export const LANES = [-LANE, 0, LANE];
 
 // Pick one at random. Called once per enemy, at spawn — a lane is a decision a
 // figure makes on the way in and then keeps, not something re-rolled per frame.
-export const randomLane = () => LANES[(Math.random() * LANES.length) | 0];
+// An INDEX, because a lane is a road of its own now rather than a number added
+// to a position. See prepare().
+export const randomLane = () => (Math.random() * LANES.length) | 0;
 
 const norm = (x, y) => {
   const L = Math.hypot(x, y) || 1;
   return [x / L, y / L];
 };
+
+// A route, and the three roads-of-their-own its lanes are.
+//
+// Each lane is built as its OWN polyline and measured like any other, which is
+// what makes an enemy's speed constant. Walking the centreline and drawing the
+// figure offset from it does not: on the outside of a bend the offset point
+// sweeps a longer arc for the same step, so the figure visibly accelerates
+// through every corner and slows through the ones curving the other way. It is
+// most obvious exactly where it is least wanted — the sharper the bend, the
+// bigger the lie.
+//
+// Walking the lane itself means the outer lane is simply a longer road, and an
+// enemy on it arrives later. That is the correct answer rather than a
+// compromise: they set off together and the one that took the long way round
+// gets there last.
+export function prepare(pts) {
+  const base = measure(pts);
+  base.lanes = LANES.map(lane => measure(shift(base, lane)));
+  return base;
+}
+
+// The centreline pushed sideways by `lane`, as points.
+function shift(r, lane) {
+  return r.pts.map((p, i) => ({
+    x: p.x + r.nrm[i][0] * lane,
+    y: p.y + r.nrm[i][1] * lane
+  }));
+}
 
 // Measure a polyline once: cumulative distance to each vertex, the unit tangent
 // of each segment, and a normal at each VERTEX.
@@ -57,7 +87,7 @@ const norm = (x, y) => {
 // the sine of half the turn: about 11px at a 30-degree bend, which is very
 // visible on a figure that is 12px wide. Averaging makes the lane a proper
 // parallel curve, continuous through the joint.
-export function prepare(pts) {
+function measure(pts) {
   const cum = [0];
   const tan = [];
 
@@ -107,11 +137,8 @@ export function at(r, s) {
   };
 }
 
-// Where a figure in `lane` stands, having walked `s` along the road.
-export function offset(r, s, lane) {
-  const p = at(r, s);
-  return { x: p.x + p.nx * lane, y: p.y + p.ny * lane, tx: p.tx, ty: p.ty };
-}
+// The road an enemy in lane `i` actually walks.
+export const laneOf = (r, i) => r.lanes[i];
 
 // The nearest point on ANY of a level's routes — the rally point a barracks
 // sends its soldiers to, and the "is this plot near the road" test.

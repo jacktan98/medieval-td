@@ -219,8 +219,7 @@ function drawTower(ctx, t) {
 // take away.
 function drawStatus(ctx, state) {
   for (const e of state.enemies) {
-    const lift = Math.sin(e.t * 9) * 2 * e.bobAmp;
-    healthBar(ctx, e.x, e.y - artHeight(e.def) - 4 + lift, e.def.r, e.hp / e.maxHp);
+    healthBar(ctx, e.x, e.y - artHeight(e.def) - 4, e.def.r, e.hp / e.maxHp);
   }
   for (const u of state.units) {
     if (u.respawn > 0) musterRing(ctx, u);
@@ -619,16 +618,19 @@ const ENEMY_LUNGE = 6;
 // They face the way they are walking, which is the direction of the segment
 // they are on, so a column marching left is drawn facing left.
 //
-// The vertical bob is the WALK, and enemies.js fades it out when one stops to
-// fight, so an attacking enemy moves along its facing and in no other direction.
+// THEY DO NOT BOB. A walking enemy used to rise and fall about 2px on a sine of
+// its walk timer, fading out when it stopped to fight. It is gone: a figure that
+// moves up and down as well as along reads as hopping rather than marching, and
+// with three lanes on the road there are enough of them on screen for the
+// hopping to be the thing you notice. The only movement an enemy has now is
+// along its lane, plus the lunge when it swings.
 function drawEnemy(ctx, e) {
-  const lift = Math.sin(e.t * 9) * 2 * e.bobAmp;
   const img = e.def.sprite && art[e.def.sprite];
 
   if (!img) {
     ctx.fillStyle = e.def.colour;
     ctx.beginPath();
-    ctx.arc(e.x, e.y + lift, e.def.r, 0, Math.PI * 2);
+    ctx.arc(e.x, e.y, e.def.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#22201C';
     ctx.lineWidth = 2;
@@ -644,7 +646,7 @@ function drawEnemy(ctx, e) {
   ctx.save();
   // Lunge toward whatever it is hitting, the same way a soldier does, so a
   // melee reads as two figures trading blows rather than one animated one.
-  ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y + lift);
+  ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y);
   ctx.scale(mirror(e.def, dir), 1);
   ctx.drawImage(img, sx, sy, sw, sh, -e.def.pivot[0] * dw, -e.def.pivot[1] * dh, dw, dh);
   ctx.restore();

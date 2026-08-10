@@ -24,7 +24,7 @@ import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { level } from '../src/level.js';
-import { offset } from '../src/route.js';
+import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
 
 // Where on the road the test stands its victim. An enemy's position is DERIVED
@@ -33,7 +33,7 @@ import { KNOCKBACK } from '../src/corpses.js';
 // place on the road instead of a coordinate. 400px along route 0 is somewhere in
 // the middle of map 1's first straight.
 const AT = 400;
-const SPOT = offset(level.routes[0], AT, 0);
+const SPOT = pointOn(laneOf(level.routes[0], 1), AT);
 
 // One arrow, lethal, fired from `side` of the enemy, at one walking `walkFace`.
 // Everything else about the enemy is the minimum updateEnemies will accept.
@@ -52,8 +52,8 @@ function kill(side, walkFace) {
     // the body drops a pixel further on, which is correct behaviour and just
     // noise in a test about which way it falls.
     def: { ...enemyTypes.light_inf, speed: 0 }, x: SPOT.x, y: SPOT.y, hp: 1, maxHp: 80,
-    face: walkFace, route: 0, s: AT, lane: 0,
-    t: 0, bobAmp: 1, acd: 0, thrust: 0, leaked: false
+    face: walkFace, route: 0, s: AT, lane: 1,
+    acd: 0, thrust: 0, leaked: false
   };
   state.enemies.push(e);
   state.shots.push({

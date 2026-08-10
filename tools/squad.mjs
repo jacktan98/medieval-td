@@ -80,7 +80,7 @@ const check = (ok, label, detail = '') => {
   const foe = {
     def: { r: 12, damage: 18, atkCd: 1.2, speed: 0 },
     x: point.rx, y: point.ry, hp: 4000, maxHp: 4000,
-    foe: null, acd: 0, thrust: 0, face: 1, leg: 0, t: 0, bobAmp: 1
+    foe: null, acd: 0, thrust: 0, face: 1, route: 0, lane: 1, s: 0
   };
   state.enemies.push(foe);
 
@@ -114,7 +114,7 @@ const check = (ok, label, detail = '') => {
   const first = {
     def: { r: 12, damage: 18, atkCd: 1.2, speed: 0 },
     x: men[0].rx, y: men[0].ry, hp: 9000, maxHp: 9000,
-    foe: null, acd: 0, thrust: 0, face: 1, leg: 0, t: 0, bobAmp: 1
+    foe: null, acd: 0, thrust: 0, face: 1, route: 0, lane: 1, s: 0
   };
   state.enemies.push(first);
   step(state, 2.5);
@@ -126,7 +126,7 @@ const check = (ok, label, detail = '') => {
     state.enemies.push({
       def: { r: 12, damage: 18, atkCd: 1.2, speed: 0 },
       x: u.rx, y: u.ry, hp: 9000, maxHp: 9000,
-      foe: null, acd: 0, thrust: 0, face: 1, leg: 0, t: 0, bobAmp: 1
+      foe: null, acd: 0, thrust: 0, face: 1, route: 0, lane: 1, s: 0
     });
   }
   step(state, 2);
