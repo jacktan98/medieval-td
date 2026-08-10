@@ -17,6 +17,10 @@ import { SCALE, BLOOD_SCALE, archery, barracks } from '../src/data/towers.js';
 // lies in the most dangerous direction: blood measures 17 source px and would be
 // reported as a comfortably sharp 3x3 sprite, when the game actually draws it at
 // 14px and upscales it two and a half times.
+//
+// Keyed on the FILENAME rather than the folder, which is why moving all four
+// blood files into assets/effects changed nothing here. Worth keeping that way:
+// the folder is where a thing was uploaded and the name is what it is.
 const scaleFor = file => /Blood/i.test(file) ? BLOOD_SCALE : SCALE;
 
 // Decode enough PNG to reach the alpha channel: 8-bit RGBA or grey+alpha, which
@@ -87,7 +91,7 @@ function trim({ w, h, ch, px }) {
 
 const MAX_DPR = 3;     // MAX_SCALE in src/main.js
 
-const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead'];
+const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead', 'effects'];
 let soft = 0;
 
 console.log('sprite                              export   trim                  drawn    3x needs  source  verdict');

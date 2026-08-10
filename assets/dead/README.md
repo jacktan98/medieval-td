@@ -17,54 +17,19 @@ is a bigger militiaman, not the next rank up. `assets.js` was changed to suit
 both times rather than the files being renamed: renaming an upload only means
 renaming it again after the next one.
 
-## Blood
+## Blood lives in `assets/effects` now
 
-Two more files here, plus two in `assets/projectiles`:
+All four blood files — the two spatters and the two pools — moved out of here and
+out of `assets/projectiles`. See `assets/effects/README.md`. A pool is not a body
+and a spatter is not a projectile; they were only ever in those folders because
+that is where they happened to be uploaded.
 
-| file                             | when                        | lasts        |
-|----------------------------------|-----------------------------|--------------|
-| `Blood_Dead_1.png`, `_2.png`     | the pool a body lies in     | with the body |
-| `../projectiles/Blood_1.png`, `_2.png` | every hit that lands  | 0.35s        |
-
-One of each pair is picked at random, so no two hits and no two deaths are the
-same picture. The pool's image and its small offset are chosen **once**, when
-the body is created, and stored on it — picking either at draw time would make
-the pool flicker between the two pictures and crawl about every frame. It has no
-lifetime of its own either: it fades with the body, so there is one number to get
-right instead of two to keep in step.
-
-**The body is always drawn on top of its pool.** Pools are painted before the
-depth pass rather than inside it, which is what guarantees it — sorting a pool by
-depth would put it over the body's feet as soon as the random offset pushed it a
-few pixels nearer the camera.
-
-Blood is drawn at **`BLOOD_SCALE`, which is 2x the shared `SCALE`** — the one
-place in the project where art is not sized by the single scale factor, and the
-reasoning is on that constant in `src/data/towers.js`. Short version: the shared
-scale exists so figures are sized against each other truthfully, and a splash of
-blood has no such truth to respect.
-
-**Drawn size is settled and should not grow.** Spatter about 14px beside a 23px
-militia, pools about 40-46px under a 27px body:
-
-| file               | trim                  | drawn   |
-|--------------------|-----------------------|---------|
-| `Blood_1`          | `[241, 240, 33, 32]`  | 14 x 13 |
-| `Blood_2`          | `[238, 239, 36, 20]`  | 15 x 8  |
-| `Blood_Dead_1`     | `[207, 241, 98, 30]`  | 40 x 12 |
-| `Blood_Dead_2`     | `[200, 243, 112, 26]` | 46 x 11 |
-
-The multiplier was **4x** against the first export and is **2x** now, and the
-blood is the same size on screen either way — the art was redrawn at twice the
-pixels, so the multiplier came down by the same factor. That is exactly what the
-constant is for: how many pixels the drawing has and how big it appears are two
-separate decisions, one yours and one the code's, and neither has to disturb the
-other.
-
-That re-export bought back most of the sharpness — the upscale at 3x device
-pixels went from **2.46x to 1.23x**. `tools/trim.mjs` still prints SOFT, because
-it flags anything upscaled at all, but 1.23x on a red blob is not something you
-will see. It is not worth another redraw.
+What still belongs here is how a body and its pool go together: **the body is
+always drawn on top of its pool**, and the pool's image and small offset are
+chosen once when the body is created and stored on it, rather than picked at draw
+time — otherwise the pool flickers between the two pictures and crawls about
+every frame. It has no lifetime of its own either; it fades with the body, so
+there is one number to keep right instead of two to keep in step.
 
 The spearman's body is scenery and nothing else. **A dead soldier stops blocking
 the instant he falls**: the enemy he was holding is released that same frame and
