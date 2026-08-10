@@ -10,7 +10,7 @@
 // That makes this check more important, not less. Three things are wrong, in
 // descending order of how badly they read:
 //
-//   the top of the CANVAS      cuts, and the tier stars go first
+//   the top of the CANVAS      cuts, and the roof goes with it
 //   a HUD BUTTON               a building inside a control the player taps
 //   the gold/lives/wave TEXT   drawn after the towers, so both get hard to read
 //
@@ -38,8 +38,11 @@ import { HUD_BTN, INFO_BOX } from '../src/render.js';
 //   reaching above TEXT_BOTTOM  -> reported, because it is worth knowing
 //   reaching above TEXT_TOP     -> a failure, the text is inside the building
 //
-// A tower's tier stars are excluded from the failing measure. They are small
-// and float in the gaps between words; the building box is what reads as solid.
+// There used to be a third band here for a tower's tier stars, which floated
+// above the roof and were excluded from the failing measure because they were
+// small and sat in the gaps between words. The stars have been removed from the
+// game — the info box says the tier in words now — so ink top and box top are
+// the same number and the distinction is gone with them.
 //
 // The runs are measured from the layout drawHud actually produces: the gold icon
 // is 24 tall and 50 wide at its aspect, the lives icon 30, the gaps are 7 after
@@ -69,10 +72,11 @@ const PANELS = [...Object.entries(HUD_BTN), ['info', INFO_BOX]]
   .map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
 
 // Same geometry as towerBox(): a building hangs off its ground shadow, whose
-// centre sits on the plot point. The stars drawTierStars puts at box.top - 7
-// with a radius of 4 are the topmost ink, but only the box counts as solid.
+// centre sits on the plot point. Nothing is drawn above the box any more, so the
+// topmost ink IS the box — the two used to differ by the 11px the tier stars and
+// their radius reached, and that allowance came out with the stars.
 const boxTop = (plot, def) => plot.y - def.groundFrac[1] * def.h;
-const inkTop = (plot, def) => boxTop(plot, def) - 11;
+const inkTop = boxTop;
 
 let bad = 0, noted = 0;
 console.log('plot            tallest tower   ink top  box top  verdict');
@@ -114,7 +118,7 @@ for (let i = 0; i < plots.length; i++) {
   const faults = [];
   if (worst.top < 0) {
     faults.push([p.y - worst.top,
-      `CUT OFF by the top of the board (${worst.box < 0 ? 'roof and stars' : 'stars only'})`]);
+      'CUT OFF by the top of the board']);
   }
   if (under.length) {
     faults.push([p.y + under[0][2] - worst.box,
@@ -135,7 +139,7 @@ for (let i = 0; i < plots.length; i++) {
     `${String(Math.round(worst.box)).padStart(6)}  ` +
     (faults.length
       ? `${faults.map(f => f[1]).join('; ')} — needs y >= ${Math.ceil(faults[0][0])}`
-      : behind ? `behind ${hits.join('/')}, but only stars reach it — ok`
+      : behind ? `behind ${hits.join('/')} — the text is drawn over it, ok`
       : worst.top < TEXT_BOTTOM
         ? `reaches the text band, but beside every readout — ok`
         : `clear by ${Math.round(worst.top - TEXT_BOTTOM)}px`)
@@ -143,6 +147,6 @@ for (let i = 0; i < plots.length; i++) {
 }
 
 if (bad) console.log(`\n${bad} plot(s) cut a building off, or put it under a HUD button or the HUD text.`);
-else if (noted) console.log(`\n${noted} plot(s) reach the text band with stars or a flag only, which reads fine.`);
+else if (noted) console.log(`\n${noted} plot(s) reach the text band, which the drop shadow carries.`);
 else console.log('\nEvery plot keeps its tallest tower on the board and clear of the HUD.');
 process.exit(bad ? 1 : 0);

@@ -200,7 +200,6 @@ function drawTower(ctx, t) {
   drawBuilding(ctx, t, box);
   if (t.def.gunner) drawGunner(ctx, t);
   drawBuildingFront(ctx, t, box);
-  drawTierStars(ctx, t, box);
 
   if (DEBUG_MUZZLE) {
     // Drawn from muzzlePoint itself, so the dot marks where arrows really
@@ -293,34 +292,22 @@ function drawRangeDisc(ctx, t) {
   ctx.stroke();
 }
 
-// Tiers are all drawn at the same size — the art's scale is fixed by the
-// export and must not be stretched — so the upgrade reads as stars over the
-// roof instead of a bigger building.
-function drawTierStars(ctx, t, box) {
-  const n = t.def.tier;
-  const cx = box.left + box.w / 2;
-  const y = box.top - 7;
-  const gap = 9;
-
-  for (let i = 0; i < n; i++) star(ctx, cx + (i - (n - 1) / 2) * gap, y, 4);
-}
-
-function star(ctx, cx, cy, r) {
-  ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + (i * Math.PI) / 5;
-    const rad = i % 2 ? r * 0.45 : r;
-    const px = cx + Math.cos(a) * rad;
-    const py = cy + Math.sin(a) * rad;
-    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fillStyle = '#F2C64B';
-  ctx.fill();
-  ctx.strokeStyle = '#5A4415';
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-}
+// THE TIER STARS ARE GONE. They sat over every tower's roof, one per tier, and
+// they were the only thing on the board that said which tier a building was.
+//
+// What replaced them is the info box: selecting a tower says "Barracks Tier II"
+// in words, which is what the stars were approximating. Two indicators for one
+// fact is one too many, and the stars were the worse of the pair — three small
+// shapes above a roof, competing with the flag and the muster rings, and the
+// first thing to be cut off by the top of the board on a high plot.
+//
+// One consequence to know: tier is now visible only when a tower is SELECTED. A
+// glance across the board no longer tells you which of your towers are upgraded.
+// If that turns out to matter, the answer is something on the building rather
+// than above it — a banner colour, a different roof — not the stars back.
+//
+// tools/hud-clear.mjs measured its "ink top" as 11px above the box for the stars
+// and their radius; that allowance came out with them.
 
 const OUTLINE = '#22201C';
 const DECK_H = 7;      // thickness of the platform slab the gunner stands on
@@ -901,12 +888,16 @@ function flag(ctx, x, y, alpha) {
 // which is unchanged: the full 63px depth of the strip plus HUD_PAD each side,
 // and 63 logical px is 44 real ones on the smallest canvas this game targets.
 // Shrinking the picture does not shrink the target.
-// Right edge at 710, not 944: the info box owns the top-right corner now, and
-// these moved left to clear it. The readouts end around x=324, so the controls
-// sit in the middle-right of the strip with the panel beyond them.
+// Centred on the board. The pair is 56 + 14 + 136 = 206 wide, so it starts at
+// 480 - 103 = 377 and ends at 583 — clear of the readouts, which end around
+// x=324, and well clear of the info box, which starts at 724.
+//
+// Written out rather than computed from a centre, because input.js and
+// tools/hud-clear.mjs both read these boxes and a derived layout would have to
+// be derived identically in three places.
 export const HUD_BTN = {
-  speed: { x: 504, y: 9, w: 56, h: 24 },
-  wave:  { x: 574, y: 9, w: 136, h: 24 }
+  speed: { x: 377, y: 9, w: 56, h: 24 },
+  wave:  { x: 447, y: 9, w: 136, h: 24 }
 };
 
 // Sized so the two padded boxes do not touch: the gap between the buttons is 14,

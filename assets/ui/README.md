@@ -82,21 +82,32 @@ The header strip itself is painted in `Map.svg` (126 map units, 63 game px) and
 the code deliberately paints no bar of its own. See the trap below before drawing
 a panel.
 
-| element             | drawn     | needs at 3x | states       |
-|---------------------|-----------|-------------|--------------|
-| speed button plate  | 56 x 24   | 168 x 72    | one          |
-| "Next wave" plate   | 136 x 24  | 408 x 72    | lit / dimmed |
-| gold icon           | 24 tall   | 72          | done         |
-| lives icon          | 24 tall   | 72          | done         |
+| element             | drawn     | export at least | states       |
+|---------------------|-----------|-----------------|--------------|
+| speed button plate  | 56 x 24   | **168 x 72**    | one          |
+| "Next wave" plate   | 136 x 24  | **408 x 72**    | lit / dimmed |
+| description panel   | 224 x 76  | **672 x 228**   | one          |
+| gold icon           | 24 tall   | 72 tall         | done         |
+| lives icon          | 24 tall   | 72 tall         | done         |
 
-**The two controls sit in the middle-right of the strip, ending at x=710**, not
-against the right edge. The info box owns the top-right corner and they moved
-left to clear it. Anything drawn for this dashboard has to fit between the
-readouts, which end around x=324, and that panel.
+Those are the sizes of the ART inside the file, not the canvas. Canvas size is
+free — a trim is absolute source pixels into whatever image it names, which is
+how the towers sit on 1024 while every figure sits on 512. The two buttons fit a
+512 square comfortably; the description panel does not, so put it on something
+like 1024 x 512.
 
-**Both controls are 24 tall now, the same height as the icons beside them**, so
-the dashboard sits on one band instead of the controls being twice the depth of
-the readouts. They were 88 x 44 and 168 x 44.
+**Keep the proportions**, or say so. The plates are drawn to the exact box in the
+table, so art at a different aspect would be stretched to fit. If a different
+shape is wanted, that is a change to the box in `render.js` — tell me the shape
+and I will resize the slot rather than squash the drawing.
+
+**The two controls are centred on the board**, spanning x 377 to 583: 56 wide,
+a 14px gap, then 136. The readouts end around x=324 and the info box starts at
+724, so there is room either side, but a wider pair eats into both.
+
+**Both controls are 24 tall, the same height as the icons beside them**, so the
+dashboard sits on one band instead of the controls being twice the depth of the
+readouts. They were 88 x 44 and 168 x 44.
 
 That does not weaken the touch target, because the drawn box was never the
 target. `hitHudButton` takes the full 63px depth of the strip plus `HUD_PAD` each
@@ -244,3 +255,24 @@ be hurt — a row answering a question the game never asks is worse than no row.
 Taps fall straight through the panel; it is a reader and never takes one.
 `node tools/hud-clear.mjs` includes it alongside the two buttons, so a plot that
 could push a building up behind it would be reported.
+
+The panel is a rounded rectangle drawn in code — 224 x 76, 9px corners, 1.5px
+border — and it is the third thing on the dashboard that could be artwork. See
+the export size in the table above.
+
+## The tier stars are gone
+
+Every tower used to carry one small star per tier over its roof, and they were
+the only thing on the board that said which tier a building was. The info box
+says it in words now, and two indicators for one fact is one too many.
+
+The stars were the worse of the pair: three shapes above a roof competing with
+the flag and the muster rings, and the first thing cut off by the top of the
+board on a high plot. Removing them gave every plot 11px more headroom —
+`tools/hud-clear.mjs` measured "ink top" as 11px above the building box purely to
+allow for them, and that allowance came out with them.
+
+One consequence worth knowing: **tier is now visible only when a tower is
+selected.** A glance across the board no longer says which of your towers are
+upgraded. If that turns out to matter, the fix is something ON the building — a
+banner colour, a different roof — rather than the stars back.
