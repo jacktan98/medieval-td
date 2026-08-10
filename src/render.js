@@ -8,7 +8,8 @@ import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange } from './ground.js';
-import { ui, uiSize, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE } from './data/ui.js';
+import { ui, uiSize, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT } from './data/ui.js';
+import { selectionInfo } from './select.js';
 
 const PLOT_R = 30;
 
@@ -43,6 +44,7 @@ export function draw(ctx, state) {
   drawHits(ctx, state);
   drawRally(ctx, state);
   drawHud(ctx, state);
+  drawInfo(ctx, state);
   drawMenu(ctx, state);
 
   // Over everything, including the menu: while either of these is up the board
@@ -829,7 +831,8 @@ function drawRally(ctx, state) {
     ctx.lineTo(mx, my);
     ctx.stroke();
     ctx.setLineDash([]);
-    flag(ctx, mx, my, '#C4A574');
+    // Dimmed: this is where they ARE, which is a reminder rather than an action.
+    flag(ctx, mx, my, 0.6);
   }
 
   // The ghost follows the mouse while placing. There is no ghost on a phone —
@@ -837,35 +840,50 @@ function drawRally(ctx, state) {
   // the feature usable there: tap, look, tap again to correct.
   if (placing && state.ghost) {
     const at = clampToRange(t.x, t.y, state.ghost.x, state.ghost.y, t.def.range);
-    flag(ctx, at.x, at.y, 'rgba(150,225,255,0.95)');
+    // Full strength: this is where they would GO, under the player's pointer.
+    flag(ctx, at.x, at.y, 1);
   }
 }
 
-function flag(ctx, x, y, colour) {
-  ctx.strokeStyle = 'rgba(24,26,20,0.55)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x, y - 17);
-  ctx.stroke();
+// The rally flag, on the board. The SAME picture as the rally button in the
+// menu, so the control and the thing it places look like each other — it used to
+// be a vector pole and triangle drawn here, which meant tapping a drawn flag
+// produced a different flag.
+//
+// Planted, not centred: FLAG_FOOT puts the bottom of the pole on (x, y), which
+// is the point being marked. Centring it would float the marker half a flag
+// above the spot and lean it to one side, because the pennant is all on the
+// right of the pole.
+//
+// `alpha` is the dimming. The squad's current stand is a quiet marker and the
+// ghost under a live drag is the loud one, and one file covers both.
+function flag(ctx, x, y, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
 
-  ctx.strokeStyle = '#F0E6D2';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x, y - 17);
-  ctx.stroke();
+  if (!drawUi(ctx, 'glyph_flag', x, y, RALLY_FLAG_H, FLAG_FOOT)) {
+    // Vector fallback, matched to the drawing's proportions: a 20px pole with
+    // the pennant on the upper right.
+    ctx.strokeStyle = 'rgba(24,26,20,0.75)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - RALLY_FLAG_H);
+    ctx.stroke();
 
-  ctx.fillStyle = colour;
-  ctx.beginPath();
-  ctx.moveTo(x, y - 17);
-  ctx.lineTo(x + 12, y - 13);
-  ctx.lineTo(x, y - 9);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(24,26,20,0.55)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+    ctx.fillStyle = '#1F63AB';
+    ctx.beginPath();
+    ctx.moveTo(x, y - RALLY_FLAG_H);
+    ctx.lineTo(x + 14, y - RALLY_FLAG_H + 5);
+    ctx.lineTo(x, y - RALLY_FLAG_H + 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(24,26,20,0.75)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }
 
 // The two dashboard controls, at the right-hand end of the header strip.
@@ -946,14 +964,18 @@ function hudButton(ctx, b, label, sub, on) {
 // Draws a piece of UI art centred on (x, y), at the box data/ui.js gives it.
 // Returns false if the image is not loaded, so every caller can fall back to the
 // vector it replaced rather than leaving a hole.
-function drawUi(ctx, key, x, y, box) {
+function drawUi(ctx, key, x, y, box, anchor = HALF) {
   const img = art[key];
   if (!img) return false;
   const [sx, sy, sw, sh] = ui[key].trim;
   const { w, h } = uiSize(key, box);
-  ctx.drawImage(img, sx, sy, sw, sh, x - w / 2, y - h / 2, w, h);
+  ctx.drawImage(img, sx, sy, sw, sh, x - anchor[0] * w, y - anchor[1] * h, w, h);
   return true;
 }
+
+// Centred, which is what every piece of UI wants except the rally flag — that
+// one is planted, so it hangs off its pole foot.
+const HALF = [0.5, 0.5];
 
 // Draws a HUD icon and returns the x to carry on from. Falls back to the old
 // word if the image is missing, so a failed load leaves a readable dashboard
@@ -1123,7 +1145,10 @@ function drawButton(ctx, state, it) {
     ctx.textBaseline = 'middle';
     // Dark on the cream plate, and green when it is gold coming back to you.
     ctx.fillStyle = it.gain !== null ? '#2F6B27' : '#3A3026';
-    ctx.font = '700 12px system-ui, sans-serif';
+    // 11px, down from 12. The glyphs grew when the labels came out and the
+    // price is the smaller half of the button's job — what it IS reads first,
+    // what it costs second.
+    ctx.font = '700 11px system-ui, sans-serif';
     ctx.fillText(caption, it.x, it.y + 16);
     ctx.textAlign = 'left';
   }
@@ -1192,6 +1217,81 @@ function drawGlyph(ctx, kind) {
     ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
     ctx.stroke();
   }
+}
+
+// The info box: who you have selected, and how they are doing.
+//
+// Bottom right, which is the one corner nothing else uses — the dashboard owns
+// the top, the radial menu is clamped to y <= 442 and centred on a plot, and the
+// result and title screens cover everything anyway. It is a reader: tapping it
+// does nothing, so it never has to fight the board for a tap.
+//
+// What it shows comes from selectionInfo() in select.js. Health is read off the
+// live object every frame, so a soldier's bar and this number are the same fact
+// twice — if they ever disagree, one of them is reading a copy.
+const INFO = { w: 236, h: 96, pad: 12 };
+const INFO_PORTRAIT = 68;
+
+function drawInfo(ctx, state) {
+  const info = selectionInfo(state);
+  if (!info) return;
+
+  const x = 960 - INFO.w - INFO.pad;
+  const y = 540 - INFO.h - INFO.pad;
+
+  ctx.fillStyle = 'rgba(28,32,24,0.82)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, INFO.w, INFO.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(240,230,210,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // The figure, fitted into a square on the left. Drawn from its own sprite
+  // trim, so a re-export moves the portrait with the board art and there is no
+  // second set of pictures to keep in step.
+  const img = info.sprite && art[info.sprite];
+  if (img && info.trim) {
+    const [sx, sy, sw, sh] = info.trim;
+    const k = INFO_PORTRAIT / Math.max(sw, sh);
+    const w = sw * k;
+    const h = sh * k;
+    ctx.drawImage(img, sx, sy, sw, sh,
+      x + 14 + (INFO_PORTRAIT - w) / 2,
+      y + INFO.h / 2 - h / 2,
+      w, h);
+  }
+
+  const tx = x + 14 + INFO_PORTRAIT + 14;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '700 15px system-ui, sans-serif';
+  ctx.fillText(info.title, tx, y + 26);
+
+  ctx.font = '13px system-ui, sans-serif';
+  let ty = y + 54;
+
+  // A tower has no health line at all, rather than a blank or a dash: it cannot
+  // be hurt, so a health row would be answering a question the game never asks.
+  if (info.hp !== null) {
+    // Reddens as it drops, on the same thresholds as the health bars over their
+    // heads, so the two readings agree at a glance.
+    const frac = info.maxHp ? info.hp / info.maxHp : 1;
+    ctx.fillStyle = 'rgba(240,230,210,0.75)';
+    ctx.fillText('Health: ', tx, ty);
+    const lw = ctx.measureText('Health: ').width;
+    ctx.fillStyle = frac > 0.5 ? '#8ED080' : frac > 0.25 ? '#E5C04A' : '#E06A5A';
+    ctx.fillText(`${info.hp}/${info.maxHp}`, tx + lw, ty);
+    ty += 22;
+  }
+
+  ctx.fillStyle = 'rgba(240,230,210,0.75)';
+  ctx.fillText('Damage: ', tx, ty);
+  const dw = ctx.measureText('Damage: ').width;
+  ctx.fillStyle = '#F0E6D2';
+  ctx.fillText(String(info.damage), tx + dw, ty);
 }
 
 // The title screen, and the reason it exists.

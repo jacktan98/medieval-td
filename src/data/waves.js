@@ -5,6 +5,10 @@
 // deliberately smaller than the drawn sprite — it is the body, not the outline.
 export const enemyTypes = {
   light_inf: {
+    // What the info box calls him. The gameplay key stays light_inf: what he is
+    // called and what he does are different questions, and the balance files
+    // read the second one.
+    name: 'Thug',
     sprite: 'enemy_t1a',
     spriteTrim: [208, 199, 96, 114],   // source px, re-paste from tools/trim.mjs
     pivot: [0.594, 0.908],   // the centre of his ground shadow
@@ -112,6 +116,7 @@ export const enemyTypes = {
   // asked for. Do not read the wide band as permission to stop checking: it is
   // wide because of a mechanic, and a mechanic can be tuned away again.
   heavy_inf: {
+    name: 'Giant Thug',
     sprite: 'enemy_t1b',
     // Redrawn 1.16x bigger. Both anchors below were carried across rather than
     // re-eyeballed: the new art is the old art scaled 1.16 about (256, 310) and

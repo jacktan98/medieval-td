@@ -18,11 +18,25 @@ usable button rather than a blank disc.
 | `Barracks Icon.png`      | `swords`          | 26 box       |
 | `Upgrade Icon.png`       | `up`              | 26 box       |
 | `Sell Icon.png`          | `coin`            | 26 box       |
-| `Rally Point Icon.png`   | `flag`            | 30 box       |
+| `Rally Point Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
 
 Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
 **`max`** — the chevrons on a tower with nothing left to buy. Siege and the
 monastery have no tiers yet, so their buttons are drawn dim in any case.
+
+**`Rally Point Icon.png` is the one file here that is also drawn on the board.**
+The flag marking where a squad stands, and the ghost that follows a rally drag,
+used to be a vector pole and triangle drawn in `render.js` — so tapping a drawn
+flag produced a different flag. It is the same picture now, at 20px tall, and the
+two uses are told apart by dimming: the squad's current stand is drawn at 60%
+because it is a reminder, and the ghost under a live drag at full because it is
+what you are doing.
+
+It is the one icon **not** centred on its point. A flag is planted, so `FLAG_FOOT`
+in `src/data/ui.js` hangs it off the bottom of its pole, at x 0.111 of the trim —
+measured from the bottom row of the art, where the pole spans x 2..14 of 72.
+Centring it would float the marker half a flag above the spot and lean it right,
+because the pennant is all on one side.
 
 Trims and drawn boxes are in `src/data/ui.js`; paths in `src/assets.js`. The
 filenames have spaces, so `assets.js` encodes them as `%20` for the same reason
@@ -168,3 +182,30 @@ Name the files whatever you like. The code follows the artist's filenames rather
 than the other way round, which is why the enemies are `T1a`/`T1b` and the corpses
 put the tier last. One file per element and a note saying which is which is
 enough.
+
+## The info box is not made of UI art
+
+Bottom-right, when a tower, a soldier or an enemy is selected: a portrait, a
+name, live health and damage per hit. `src/select.js` decides what it says and
+`drawInfo` in `render.js` lays it out.
+
+**The portraits come from `assets/units` and `assets/enemies`, not from here.**
+A tower shows its MAN rather than its building — the building is already on the
+board in front of you at the size the game draws it, and what you want to compare
+between tiers is the soldier or archer it puts on the road. So there is nothing
+to draw for this box: it reads the same sprite trims the board does, and a
+re-export moves the portrait with the figure automatically.
+
+Health is read off the live object every frame, so the number in the box and the
+bar over the figure's head are the same fact twice. If they ever disagree, one of
+them is reading a copy.
+
+A tower has no health row at all rather than a blank one, because a tower cannot
+be hurt — a row answering a question the game never asks is worse than no row.
+
+**One overlap worth knowing:** the box covers most of plot 5's marker at
+(734, 471). Taps fall straight through it — the box is a reader and never takes
+a tap — so the plot is still buildable, just partly behind a translucent panel
+while something is selected. Plot 5 is one of the two plots more than 130px off
+the road that no winning build ever takes, which is why this was left rather than
+moved. If a level ever puts a good plot down there, the box moves.

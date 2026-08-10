@@ -33,6 +33,20 @@ export const GLYPH_BOX = 26;
 // needs 90 and every file is sharp.
 export const GLYPH_BOX_BARE = 30;
 
+// The rally flag is the one UI file also drawn ON THE BOARD, as the marker
+// showing where a squad stands and as the ghost that follows a rally drag. It
+// used to be a vector flag drawn in code; it is the same picture as the menu
+// button now, so the button and the thing the button does look like each other.
+//
+// 20 tall, against the vector's 17 — a drawn flag needs a little more room than
+// two strokes and a triangle before the pennant reads.
+export const RALLY_FLAG_H = 20;
+
+// Where the flag's POLE FOOT sits inside its trim. A flag on the board is
+// planted, not centred: the pole's bottom is the point it marks. Measured off
+// the bottom row of the art, where the pole spans x 2..14 of 72.
+export const FLAG_FOOT = [0.111, 1];
+
 export const ui = {
   // Dashboard. `h` rather than `fit`: these are sized by HEIGHT, because they
   // sit on a text baseline. The gold icon is 2.11 wide to 1 tall, and fitting
@@ -50,9 +64,9 @@ export const ui = {
   // two sizes depending on whether its button carries a price.
   glyph_bow:    { trim: [208, 200, 96, 112] },
   glyph_swords: { trim: [210, 212, 92, 88] },
-  glyph_up:     { trim: [228, 210, 56, 92] },
+  glyph_up:     { trim: [225, 211, 62, 90] },
   glyph_coin:   { trim: [233, 207, 55, 97] },
-  glyph_flag:   { trim: [218, 207, 76, 98] }
+  glyph_flag:   { trim: [220, 207, 72, 98] }
 };
 
 // Which drawn glyph replaces which vector one. A glyph with no entry — siege's

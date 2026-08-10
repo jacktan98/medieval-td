@@ -10,6 +10,7 @@ import { updateSplats } from './blood.js';
 import { updateWaves } from './waves.js';
 import { draw } from './render.js';
 import { attachInput } from './input.js';
+import { validate } from './select.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -79,7 +80,11 @@ function newGame() {
     hoverTower: null,
     ghost: null,
     // The barracks waiting for its rally point to be tapped.
-    placing: null
+    placing: null,
+    // What the info box is describing: { kind, ref } or null. A direct reference
+    // to the live enemy, soldier or tower, which is what makes the health in the
+    // box the same number the health bar over its head is reading.
+    selected: null
   });
 }
 
@@ -102,6 +107,9 @@ function frame(now) {
     for (let i = 0; i < state.speed; i++) step(state, real);
   }
 
+  // Outside the step, so a selection is dropped even while the game is paused at
+  // a result — and before the draw, so the box never renders a dead reference.
+  validate(state);
   draw(ctx, state);
   requestAnimationFrame(frame);
 }

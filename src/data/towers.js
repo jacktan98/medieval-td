@@ -1,6 +1,16 @@
 // Archery and barracks families. Tier 1 is built on an empty plot; tapping an
 // existing tower upgrades it. Costs are cumulative spend, not refundable.
 //
+// TWO NAMES PER TIER, on purpose. `name` is the flavour one — Watchtower, Guard
+// Post, Knight's Hall — and it is what the tools print, so a sim row still says
+// which building it means. `title` is what the game SHOWS in the info box, and
+// the player asked for it plainly: "Barracks Tier II", "Archers Tier III". The
+// flavour names are not drawn anywhere on screen since the menu buttons lost
+// their labels, so the two never disagree in front of anybody.
+//
+// A soldier has a name of his own — Spearman, Pikeman, Swordsman — because you
+// can select one individually and he is not the building he came from.
+//
 // Every figure in this file is drawn standing upright and is never rotated.
 // Aiming mirrors it left or right and nothing else: rotating a standing figure
 // to point at a target lays it on its side, which is the whole reason the
@@ -324,9 +334,9 @@ const archer3 = {
 // above a bend is worth less. Plot 0 went from being in none of the winning
 // builds to being in three of the four.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archers Tier I',   cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archers Tier II',  cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archers Tier III', cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -496,16 +506,16 @@ const spearman3 = {
 
 export const barracks = [
   {
-    ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 165, colour: '#6E7A6A',
-    soldier: { ...spearman, count: 3, hp: 105, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
+    ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
+    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 105, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
-    ...camp2, tier: 2, name: 'Guard Post', cost: 100, range: 180, colour: '#5E6B5C',
-    soldier: { ...spearman2, count: 3, hp: 145, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
+    ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
+    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 145, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
-    ...camp3, tier: 3, name: "Knight's Hall", cost: 150, range: 195, colour: '#8A8478',
-    soldier: { ...spearman3, count: 3, hp: 195, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+    ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
+    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 195, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
 

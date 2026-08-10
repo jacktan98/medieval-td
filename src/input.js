@@ -4,6 +4,7 @@ import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue, RING_R } fr
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
+import { pickFigure } from './select.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
@@ -68,11 +69,26 @@ export function attachInput(canvas, state, restart) {
     if (hitCancel(state, x, y)) { closeMenu(state); return; }
 
     const plot = plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
-    if (!plot) { closeMenu(state); return; }
+    if (plot) {
+      const tower = state.towers.find(t => t.plot === plot) || null;
+      openMenu(state, plot, tower);
+      // Opened deliberately, so moving the mouse away must not take it back.
+      state.menu.viaHover = false;
+      // A built tower fills the info box the moment its menu opens: you are
+      // deciding whether to upgrade it, which is the one moment its numbers
+      // matter. An empty plot has nothing to describe.
+      state.selected = tower ? { kind: 'tower', ref: tower } : null;
+      return;
+    }
 
-    openMenu(state, plot, state.towers.find(t => t.plot === plot) || null);
-    // Opened deliberately, so moving the mouse away must not take it back.
-    state.menu.viaHover = false;
+    // Nothing to build on here, so this is a look. A figure under the tap gets
+    // selected; bare ground clears whatever was.
+    //
+    // AFTER the plot check, deliberately: soldiers stand on the road and plots
+    // sit off it, so the two rarely overlap — but where they do, building is the
+    // action and looking is the fallback.
+    closeMenu(state);
+    state.selected = pickFigure(state, x, y);
   });
 
   // --- desktop hover ---------------------------------------------------------
@@ -158,7 +174,11 @@ function run(state, item) {
       spent: def.cost,
       rally: null
     });
-    makeUnits(state, state.towers[state.towers.length - 1]);
+    const built = state.towers[state.towers.length - 1];
+    makeUnits(state, built);
+    // Show what you just bought. The menu closes on a build, so without this the
+    // one moment you most want its numbers is the one moment nothing is selected.
+    state.selected = { kind: 'tower', ref: built };
   }
 
   if (item.act === 'upgrade') {
