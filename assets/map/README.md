@@ -89,11 +89,25 @@ positions in road order, ready to paste into `src/data/level01.js`.
 
 ## Two things that will break if the artwork ignores them
 
-**The top of the board is the HUD.** `Map.svg` paints a strip across the top —
-currently sky blue, 126 map units (63 game px) — and the gold/lives/wave text is
-drawn straight onto it. The game paints no bar of its own, so keep a strip
-there. The text carries a dark shadow so it survives most backgrounds, but a
-pale strip would still be a bad idea.
+**The top of the board is the HUD, and there is nothing behind it any more.**
+`Map.svg` used to paint a sky-blue strip across the top — 126 map units, 63 game
+px — with the gold/lives/wave text drawn onto it. That strip has been removed and
+the board is grass to the top edge, so the readouts and the two controls now sit
+directly on grass and road.
+
+They survive it. The text carries a dark drop shadow for exactly this case, the
+control plates are translucent dark, and `node tools/hud-clear.mjs` checks that
+no plot can push a building up behind a number. But nothing owns that background
+now, and if a dashboard panel is wanted it belongs in `assets/ui` rather than
+back in the map: a panel painted into the board cannot be dimmed, moved or
+hidden, and the title screen dims everything else.
+
+If a strip does come back here, keep it dark. Pale would fight the text.
+
+`tools/hud-clear.mjs` had a stale fourth text run in it — the "Tap a plot to
+build" hint, deleted when the dashboard controls arrived — which was reporting a
+plot as sitting behind text that had not been drawn for weeks. The runs are
+measured from the real layout now.
 
 **The road has to run edge to edge.** Enemies walk the polyline in
 `src/data/level01.js`, which is traced from the painted road, so the drawing

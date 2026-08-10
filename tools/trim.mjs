@@ -12,6 +12,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { inflateSync } from 'zlib';
 import { join } from 'path';
 import { SCALE, BLOOD_SCALE, archery, barracks } from '../src/data/towers.js';
+import { ui, uiSize, GLYPH_BOX_BARE } from '../src/data/ui.js';
 
 // Art that is not drawn at the shared SCALE. Without this the sharpness verdict
 // lies in the most dangerous direction: blood measures 17 source px and would be
@@ -91,7 +92,23 @@ function trim({ w, h, ch, px }) {
 
 const MAX_DPR = 3;     // MAX_SCALE in src/main.js
 
-const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead', 'effects'];
+const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead', 'effects', 'ui'];
+
+// Which data/ui.js entry a UI file belongs to. assets.js holds the paths, so the
+// filename is matched back through it — that way a renamed upload shows up here
+// as "not referenced" instead of being silently skipped.
+const UI_FILES = {
+  'Gold Icon.png': 'hud_gold',
+  'Life Icon.png': 'hud_life',
+  'Button Plate Icon.png': 'btn_plate',
+  'Cancel Button Icon.png': 'btn_cancel',
+  'Archers Icon.png': 'glyph_bow',
+  'Barracks Icon.png': 'glyph_swords',
+  'Upgrade Icon.png': 'glyph_up',
+  'Sell Icon.png': 'glyph_coin',
+  'Rally Point Icon.png': 'glyph_flag'
+};
+const uiKey = f => UI_FILES[f];
 let soft = 0;
 
 console.log('sprite                              export   trim                  drawn    3x needs  source  verdict');
@@ -107,8 +124,22 @@ for (const d of dirs) {
     const t = trim(img);
     if (!t) { console.log(`${path.padEnd(35)} fully transparent`); continue; }
 
-    const s = scaleFor(f);
-    const dw = t[2] * s, dh = t[3] * s;
+    // UI is the one folder where the drawn size does NOT come from a scale
+    // factor. A button is 60px because a thumb needs 60px; an icon is 24px tall
+    // because the number beside it is 20px. So its size is looked up rather than
+    // multiplied — and a UI file with no entry in data/ui.js is reported as
+    // unused rather than measured against a scale that does not apply to it.
+    let dw, dh;
+    if (d === 'ui') {
+      const key = uiKey(f);
+      if (!key) { console.log(`${path.padEnd(35)} not referenced by src/data/ui.js`); continue; }
+      // Glyphs are drawn at two sizes; measure the bigger one.
+      ({ w: dw, h: dh } = uiSize(key, ui[key].fit || ui[key].h ? undefined : GLYPH_BOX_BARE));
+    } else {
+      const s = scaleFor(f);
+      dw = t[2] * s;
+      dh = t[3] * s;
+    }
     // The tallest the sprite is ever rasterised: drawn size times the device
     // pixel cap. If the source has fewer pixels than that, it is being blown up.
     const need = Math.max(dw, dh) * MAX_DPR;

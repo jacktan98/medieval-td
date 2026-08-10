@@ -8,6 +8,7 @@ import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange } from './ground.js';
+import { ui, uiSize, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE } from './data/ui.js';
 
 const PLOT_R = 30;
 
@@ -44,7 +45,11 @@ export function draw(ctx, state) {
   drawHud(ctx, state);
   drawMenu(ctx, state);
 
-  if (state.result) drawResult(ctx, state);
+  // Over everything, including the menu: while either of these is up the board
+  // is not accepting the taps it normally would, and a dimmed board is how that
+  // is said.
+  if (!state.started) drawStart(ctx);
+  else if (state.result) drawResult(ctx, state);
 }
 
 // The painted board. The road, the ground and the plot markers all live in this
@@ -869,11 +874,25 @@ function flag(ctx, x, y, colour) {
 // strip and overhang the sides, the same trick the radial menu uses with
 // HIT_R > BTN_R. At the smallest phone this game targets — a 667px-wide canvas
 // — 63 logical px is 44 real ones, which is the minimum a thumb can hit.
+// The two dashboard controls, right-aligned to x=944.
+//
+// 24 TALL, the same height as the gold and lives icons beside them, so the whole
+// dashboard sits on one band instead of the controls being twice the depth of
+// the readouts. They were 44 tall, which is the touch minimum — but the touch
+// minimum was never being met by the drawn box anyway. It is met by the HIT box,
+// which is unchanged: the full 63px depth of the strip plus HUD_PAD each side,
+// and 63 logical px is 44 real ones on the smallest canvas this game targets.
+// Shrinking the picture does not shrink the target.
 export const HUD_BTN = {
-  speed: { x: 676, y: 9, w: 88, h: 44 },
-  wave:  { x: 776, y: 9, w: 168, h: 44 }
+  speed: { x: 738, y: 9, w: 56, h: 24 },
+  wave:  { x: 808, y: 9, w: 136, h: 24 }
 };
-const HUD_PAD = 12;
+
+// Sized so the two padded boxes do not touch: the gap between the buttons is 14,
+// so 7 a side exactly fills it and no tap is ambiguous. It used to be 12 against
+// a 12px gap, which overlapped, and the loop below silently gave the overlap to
+// whichever button came first in the object.
+const HUD_PAD = 7;
 
 export function hitHudButton(state, x, y) {
   if (y > 63) return null;
@@ -885,25 +904,35 @@ export function hitHudButton(state, x, y) {
   return null;
 }
 
+// One line, not two. At 24px deep there is room for a single row of 13px text,
+// so the early-call bonus sits AFTER the label rather than under it — still in
+// green, so it reads as a reward and not as part of the button's name.
 function hudButton(ctx, b, label, sub, on) {
-  ctx.fillStyle = on ? 'rgba(28,32,24,0.55)' : 'rgba(28,32,24,0.28)';
+  ctx.fillStyle = on ? 'rgba(28,32,24,0.62)' : 'rgba(28,32,24,0.34)';
   ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 10);
+  ctx.roundRect(b.x, b.y, b.w, b.h, 7);
   ctx.fill();
   ctx.strokeStyle = on ? 'rgba(240,230,210,0.75)' : 'rgba(240,230,210,0.25)';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  ctx.textAlign = 'center';
+  const mid = b.y + b.h / 2;
+  ctx.textAlign = 'left';
+  ctx.font = '700 13px system-ui, sans-serif';
+  const lw = ctx.measureText(label).width;
+  ctx.font = '600 12px system-ui, sans-serif';
+  const sw = sub ? ctx.measureText(sub).width + 5 : 0;
+
+  let x = b.x + (b.w - lw - sw) / 2;
+  ctx.font = '700 13px system-ui, sans-serif';
   ctx.fillStyle = on ? '#F0E6D2' : 'rgba(240,230,210,0.40)';
-  ctx.font = '700 17px system-ui, sans-serif';
-  ctx.fillText(label, b.x + b.w / 2, b.y + (sub ? 16 : b.h / 2));
+  ctx.fillText(label, x, mid);
+
   if (sub) {
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = on ? '#9BE08A' : 'rgba(240,230,210,0.35)';
-    ctx.fillText(sub, b.x + b.w / 2, b.y + 32);
+    ctx.fillText(sub, x + lw + 5, mid);
   }
-  ctx.textAlign = 'left';
 }
 
 // HUD icons. These are the one kind of artwork NOT sized by the shared SCALE,
@@ -914,24 +943,28 @@ function hudButton(ctx, b, label, sub, on) {
 // Trims measured from the alpha the same as everything else. The aspect comes
 // out of them rather than being assumed, so a redrawn icon that is a different
 // shape still lands on its baseline instead of being squashed to fit.
-const HUD_ICON = {
-  hud_gold: [117, 190, 278, 132],
-  hud_life: [160, 178, 192, 156]
-};
-const HUD_ICON_H = 24;
-
-// Draws the icon and returns the x to carry on from. Falls back to the old word
-// if the image is missing, so a failed load leaves a readable HUD rather than a
-// bare number.
-function hudIcon(ctx, key, x, word) {
+// Draws a piece of UI art centred on (x, y), at the box data/ui.js gives it.
+// Returns false if the image is not loaded, so every caller can fall back to the
+// vector it replaced rather than leaving a hole.
+function drawUi(ctx, key, x, y, box) {
   const img = art[key];
-  if (!img) {
+  if (!img) return false;
+  const [sx, sy, sw, sh] = ui[key].trim;
+  const { w, h } = uiSize(key, box);
+  ctx.drawImage(img, sx, sy, sw, sh, x - w / 2, y - h / 2, w, h);
+  return true;
+}
+
+// Draws a HUD icon and returns the x to carry on from. Falls back to the old
+// word if the image is missing, so a failed load leaves a readable dashboard
+// rather than a bare number.
+function hudIcon(ctx, key, x, word) {
+  if (!art[key]) {
     ctx.fillText(word, x, 21);
     return x + ctx.measureText(word).width + 7;
   }
-  const [sx, sy, sw, sh] = HUD_ICON[key];
-  const w = (sw / sh) * HUD_ICON_H;
-  ctx.drawImage(img, sx, sy, sw, sh, x, 21 - HUD_ICON_H / 2, w, HUD_ICON_H);
+  const { w } = uiSize(key);
+  drawUi(ctx, key, x + w / 2, 21);
   return x + w + 7;
 }
 
@@ -1016,6 +1049,8 @@ function drawMenu(ctx, state) {
 }
 
 function drawCancel(ctx, menu) {
+  if (drawUi(ctx, 'btn_cancel', menu.cx, menu.cy)) return;
+
   ctx.fillStyle = 'rgba(34,32,28,0.7)';
   ctx.beginPath();
   ctx.arc(menu.cx, menu.cy, CANCEL_R, 0, Math.PI * 2);
@@ -1032,64 +1067,78 @@ function drawCancel(ctx, menu) {
   ctx.stroke();
 }
 
+// A menu button: a plate, a picture, and a price. NO WORDS.
+//
+// The names came out — "Barracks", "Sell", "Upgrade", the "T1" in front of every
+// cost. What is left is the glyph and the gold, which is the whole decision: a
+// button says what it builds by showing it and what it costs by saying it. The
+// text that remains is the one part a picture cannot carry.
+//
+// The picture takes the room the words used to. A button with a price gets a 26px
+// glyph above it; a button with nothing to say — rally, and a tower already at
+// tier 3 — centres a 32px one instead.
+//
+// Disabled is one draw at 45% rather than a second set of files. That is what
+// keeps this folder at nine PNGs instead of eighteen.
 function drawButton(ctx, state, it) {
   const on = canUse(state, it);
-
-  ctx.fillStyle = on ? 'rgba(34,32,28,0.94)' : 'rgba(34,32,28,0.62)';
-  ctx.beginPath();
-  ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = on ? '#C4A574' : '#5A5348';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  const caption = it.gain !== null ? `+${it.gain}g`
+                : it.cost !== null ? `${it.cost}g`
+                : '';
 
   ctx.save();
-  ctx.translate(it.x, it.y - 13);
-  ctx.strokeStyle = ctx.fillStyle = on ? '#F0E6D2' : '#6E665A';
-  ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  drawGlyph(ctx, it.glyph);
-  ctx.restore();
+  ctx.globalAlpha = on ? 1 : 0.45;
 
-  // Name and price stack INSIDE the circle. Anything hung outside overlapped
-  // the neighbouring button and the ground behind it.
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  if (!drawUi(ctx, 'btn_plate', it.x, it.y)) {
+    ctx.fillStyle = 'rgba(34,32,28,0.94)';
+    ctx.beginPath();
+    ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#C4A574';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
 
-  ctx.fillStyle = on ? '#F0E6D2' : '#8A8478';
-  ctx.font = '700 9px system-ui, sans-serif';
-  ctx.fillText(fit(ctx, it.label, BTN_R * 1.85), it.x, it.y + 6);
+  const gy = caption ? it.y - 7 : it.y;
+  const box = caption ? GLYPH_BOX : GLYPH_BOX_BARE;
+  const key = GLYPH_ART[it.glyph];
 
-  const caption = it.gain !== null ? `+${it.gain}g`
-                : !it.available ? 'soon'
-                : it.cost !== null ? `T${it.tier} ${it.cost}g`
-                : '';
+  if (!key || !drawUi(ctx, key, it.x, gy, box)) {
+    // Siege, the monastery and the `max` chevrons have no drawing yet. The
+    // vector is scaled to the same box so a mixed ring does not look like two
+    // different sets of icons, and it is drawn dark because the plate is cream.
+    ctx.save();
+    ctx.translate(it.x, gy);
+    ctx.scale(box / 22, box / 22);
+    ctx.strokeStyle = ctx.fillStyle = '#3A3026';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    drawGlyph(ctx, it.glyph);
+    ctx.restore();
+  }
+
   if (caption) {
-    ctx.fillStyle = it.gain !== null ? '#6BBF59' : (on ? '#C4A574' : '#6E665A');
-    ctx.font = '600 9px system-ui, sans-serif';
-    ctx.fillText(caption, it.x, it.y + 18);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Dark on the cream plate, and green when it is gold coming back to you.
+    ctx.fillStyle = it.gain !== null ? '#2F6B27' : '#3A3026';
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText(caption, it.x, it.y + 16);
+    ctx.textAlign = 'left';
   }
 
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
+  ctx.restore();
 }
 
-// Shrinks a label until it fits the given width, so a longer family name added
-// later cannot silently spill out of its button.
-function fit(ctx, text, max) {
-  if (!text) return '';
-  let size = 9;
-  while (size > 6 && ctx.measureText(text).width > max) {
-    size -= 0.5;
-    ctx.font = `700 ${size}px system-ui, sans-serif`;
-  }
-  return text;
-}
-
-// Vector glyphs rather than sprites — UI art is still unspecced, and these
-// need to stay legible at 52px on a phone. Each draws centred on the origin
-// in roughly a 22px box.
+// Vector glyphs, now the FALLBACK rather than the design. Five of the eight have
+// drawings in assets/ui and go through drawUi; these are what siege, the
+// monastery and a maxed-out tower still use, plus what every button falls back to
+// if its PNG fails to load. Each draws centred on the origin in a 22px box, and
+// drawButton scales that to whatever box the drawn glyphs are using.
+//
+// The label-shrinking helper that used to live here went with the labels. Buttons
+// carry a glyph and a price now, and a price cannot get long enough to need it.
 function drawGlyph(ctx, kind) {
   ctx.beginPath();
 
@@ -1143,6 +1192,62 @@ function drawGlyph(ctx, kind) {
     ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
     ctx.stroke();
   }
+}
+
+// The title screen, and the reason it exists.
+//
+// The game used to be live the instant the page finished loading: state.timer
+// started at openingDelay and ticked down from that first frame. That timer is
+// also what the early-call bonus is worth — 14 seconds at earlyCallRate 4 — so a
+// player who spent ten seconds looking at the board had already lost 40 of the 56
+// gold they could have claimed, without touching anything or being told. Nothing
+// on screen said it was running.
+//
+// So nothing runs until this is dismissed. main.js skips the whole step while
+// state.started is false, which means the wave timer, the bonus, the spawns and
+// the clock are all held, not just hidden.
+export const START_BTN = { x: 400, y: 286, w: 160, h: 54 };
+
+// Generous on a thumb without being a whole-screen tap: a mis-tap on the board
+// should do nothing rather than start a game you were not ready for.
+const START_PAD = 16;
+
+export function hitStart(state, x, y) {
+  if (state.started) return false;
+  const b = START_BTN;
+  return x >= b.x - START_PAD && x <= b.x + b.w + START_PAD &&
+         y >= b.y - START_PAD && y <= b.y + b.h + START_PAD;
+}
+
+function drawStart(ctx) {
+  ctx.fillStyle = 'rgba(34,32,28,0.72)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '700 46px system-ui, sans-serif';
+  ctx.fillText('Medieval TD', 480, 214);
+
+  ctx.font = '17px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(240,230,210,0.72)';
+  ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 252);
+
+  const b = START_BTN;
+  ctx.fillStyle = 'rgba(28,32,24,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#C4A574';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '700 24px system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Start', b.x + b.w / 2, b.y + b.h / 2 + 1);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
 }
 
 function drawResult(ctx, state) {

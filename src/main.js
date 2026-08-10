@@ -61,6 +61,13 @@ function newGame() {
     waveIndex: 0,
     spawned: 0,
     timer: openingDelay,
+    // Held at the title screen. Nothing steps until the player presses Start —
+    // not the spawn clock and not `timer`, which is what the early-call bonus is
+    // computed from. Loading the page used to start that draining silently.
+    //
+    // A restart comes back here rather than straight into a running game, so the
+    // second attempt gets the same look at the board as the first.
+    started: false,
     resting: false,
     menu: null,
     result: null,
@@ -91,7 +98,7 @@ function frame(now) {
   const real = Math.min((now - last) / 1000, 0.05);
   last = now;
 
-  if (!state.result) {
+  if (state.started && !state.result) {
     for (let i = 0; i < state.speed; i++) step(state, real);
   }
 

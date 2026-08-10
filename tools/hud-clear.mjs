@@ -3,9 +3,12 @@
 //
 //   node tools/hud-clear.mjs
 //
-// The map paints its own header strip and the game paints no bar of its own, so
-// a tall tower standing in front of the strip is fine and wanted. Three things
-// are not, in descending order of how badly they read:
+// The map USED to paint a blue header strip and the game paints no bar of its
+// own, so a tall tower standing in front of the strip was fine and wanted. The
+// strip is gone — the artist removed it and the board is grass to the top edge
+// now — so the readouts sit straight on the board and lean on their drop shadow.
+// That makes this check more important, not less. Three things are wrong, in
+// descending order of how badly they read:
 //
 //   the top of the CANVAS      cuts, and the tier stars go first
 //   a HUD BUTTON               a building inside a control the player taps
@@ -37,13 +40,19 @@ import { HUD_BTN } from '../src/render.js';
 //
 // A tower's tier stars are excluded from the failing measure. They are small
 // and float in the gaps between words; the building box is what reads as solid.
+//
+// The runs are measured from the layout drawHud actually produces: the gold icon
+// is 24 tall and 50 wide at its aspect, the lives icon 30, the gaps are 7 after
+// an icon and 26 between readouts, and "Wave 1 / 8" is about 105 at 20px. The
+// fourth run used to be the "Tap a plot to build" hint, which was deleted when
+// the dashboard controls arrived; it was still listed here and was reporting a
+// plot as sitting behind text that had not been drawn for weeks.
 const TEXT_TOP = 11;
 const TEXT_BOTTOM = 34;
 const RUNS = [
-  [16, 140, 'Gold'],
-  [150, 130, 'Lives'],
-  [280, 130, 'Wave'],
-  [470, 200, 'hint']
+  [16, 100, 'Gold'],
+  [130, 70, 'Lives'],
+  [215, 115, 'Wave']
 ];
 
 // The two HUD BUTTONS are a different problem from the text, and they sit on the
@@ -89,8 +98,9 @@ for (let i = 0; i < plots.length; i++) {
   // on the board that says which tier a tower is — sit 11px higher again and
   // vanish entirely before the roof does.
   //
-  // A HUD button reaches lower than the text does — the panel runs to y=53 — and
-  // it is a control, not decoration.
+  // A HUD button is a control, not decoration. The panels used to run to y=53
+  // and run to y=33 now that they are the same height as the icons, so this got
+  // easier — but it is read from HUD_BTN rather than remembered, so it tracks.
   //
   // Each failing condition asks the plot to move down by a different amount, and
   // reporting only the first one found sends you round the loop twice: fix the
@@ -120,8 +130,10 @@ for (let i = 0; i < plots.length; i++) {
     `${String(Math.round(worst.box)).padStart(6)}  ` +
     (faults.length
       ? `${faults.map(f => f[1]).join('; ')} — needs y >= ${Math.ceil(faults[0][0])}`
-      : behind ? `behind ${hits.join('/')}, but only sky and stars — ok`
-      : `clear by ${Math.round(worst.top - TEXT_BOTTOM)}px`)
+      : behind ? `behind ${hits.join('/')}, but only stars reach it — ok`
+      : worst.top < TEXT_BOTTOM
+        ? `reaches the text band, but beside every readout — ok`
+        : `clear by ${Math.round(worst.top - TEXT_BOTTOM)}px`)
   );
 }
 

@@ -46,10 +46,22 @@ const paths = {
   blood_2:         'assets/effects/Blood_2.png',
   blood_dead_1:    'assets/effects/Blood_Dead_1.png',
   blood_dead_2:    'assets/effects/Blood_Dead_2.png',
-  // HUD icons. NOT world art: they are sized to the text beside them rather than
-  // by the shared SCALE, so they live with the other UI numbers in render.js.
-  hud_gold:        'assets/map/Gold.png',
-  hud_life:        'assets/map/Life.png',
+  // UI: the dashboard and the radial menu. NOT world art — none of it is sized
+  // by the shared SCALE, because a button is as big as a thumb needs and an icon
+  // is as big as the number beside it. Trims and drawn boxes are in data/ui.js.
+  //
+  // The filenames have spaces in them, so they are encoded here for the same
+  // reason 'Plot%20Marker.svg' is: a raw space is not legal in a URL. The names
+  // are the artist's and the code bends to them.
+  hud_gold:        'assets/ui/Gold%20Icon.png',
+  hud_life:        'assets/ui/Life%20Icon.png',
+  btn_plate:       'assets/ui/Button%20Plate%20Icon.png',
+  btn_cancel:      'assets/ui/Cancel%20Button%20Icon.png',
+  glyph_bow:       'assets/ui/Archers%20Icon.png',
+  glyph_swords:    'assets/ui/Barracks%20Icon.png',
+  glyph_up:        'assets/ui/Upgrade%20Icon.png',
+  glyph_coin:      'assets/ui/Sell%20Icon.png',
+  glyph_flag:      'assets/ui/Rally%20Point%20Icon.png',
   // The board and the plot marker, split out of the artist's Map.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is

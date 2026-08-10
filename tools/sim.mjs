@@ -36,6 +36,10 @@ function newState() {
     lives: startLives,
     towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [],
     waveIndex: 0, spawned: 0, timer: openingDelay,
+    // Set explicitly rather than left undefined: the game holds everything until
+    // the player presses Start, and a headless run has no player. If this is ever
+    // missing the sim measures a game that never begins.
+    started: true,
     resting: false, menu: null, result: null
   };
 }

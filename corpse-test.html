@@ -18,7 +18,7 @@
     var stamp = Math.floor(Date.now() / 60000);
     var mods = [
       'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
-      'render', 'input', 'menu', 'units', 'corpses', 'blood', 'ground',
+      'render', 'input', 'menu', 'units', 'corpses', 'blood', 'ground', 'data/ui',
       'data/level01', 'data/towers', 'data/waves'
     ];
     var imports = {};
@@ -52,6 +52,7 @@ const [militia, heavy, s1, s2, s3] = COL;
 // be compared directly, plus one of each facing and one mid-fade.
 const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
+  started: true,          // no title screen on a test page
   resting: false, menu: null, result: null, towers: [], shots: [], hits: [], splats: [],
   enemies: [
     { def: enemyTypes.light_inf, x: militia, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 },

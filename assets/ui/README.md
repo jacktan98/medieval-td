@@ -3,10 +3,31 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Empty so far.** This folder and this file exist ahead of the art so there is a
-place to upload to and a spec to draw against. Everything listed below is
-currently drawn in code, as rounded rectangles and vector glyphs in
-`src/render.js`, and each file that lands replaces one of them.
+**Nine files in, three still vector.** Everything below that is not in the table
+of what landed is still drawn in code, in `src/render.js`, and those vectors are
+also the fallback for every file here — a UI PNG that fails to load leaves a
+usable button rather than a blank disc.
+
+| file                     | replaces          | drawn        |
+|--------------------------|-------------------|--------------|
+| `Gold Icon.png`          | the gold icon     | 51 x 24      |
+| `Life Icon.png`          | the lives icon    | 30 x 24      |
+| `Button Plate Icon.png`  | the menu disc     | 60 diameter  |
+| `Cancel Button Icon.png` | the centre cancel | 36 diameter  |
+| `Archers Icon.png`       | `bow`             | 27 x 32 box  |
+| `Barracks Icon.png`      | `swords`          | 26 box       |
+| `Upgrade Icon.png`       | `up`              | 26 box       |
+| `Sell Icon.png`          | `coin`            | 26 box       |
+| `Rally Point Icon.png`   | `flag`            | 30 box       |
+
+Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
+**`max`** — the chevrons on a tower with nothing left to buy. Siege and the
+monastery have no tiers yet, so their buttons are drawn dim in any case.
+
+Trims and drawn boxes are in `src/data/ui.js`; paths in `src/assets.js`. The
+filenames have spaces, so `assets.js` encodes them as `%20` for the same reason
+`Plot%20Marker.svg` does — a raw space is not legal in a URL, and the artist's
+names are left alone.
 
 ## The one rule that makes this folder different
 
@@ -43,13 +64,25 @@ a panel.
 
 | element             | drawn     | needs at 3x | states       |
 |---------------------|-----------|-------------|--------------|
-| speed button plate  | 88 x 44   | 264 x 132   | one          |
-| "Next wave" plate   | 168 x 44  | **504** x 132 | lit / dimmed |
-| gold icon           | 24 tall   | 72          | exists       |
-| lives icon          | 24 tall   | 72          | exists       |
+| speed button plate  | 56 x 24   | 168 x 72    | one          |
+| "Next wave" plate   | 136 x 24  | 408 x 72    | lit / dimmed |
+| gold icon           | 24 tall   | 72          | done         |
+| lives icon          | 24 tall   | 72          | done         |
 
-The gold and lives icons are `Gold.png` and `Life.png`, still in `assets/map`.
-They belong here and move when the rest arrives.
+**Both controls are 24 tall now, the same height as the icons beside them**, so
+the dashboard sits on one band instead of the controls being twice the depth of
+the readouts. They were 88 x 44 and 168 x 44.
+
+That does not weaken the touch target, because the drawn box was never the
+target. `hitHudButton` takes the full 63px depth of the strip plus `HUD_PAD` each
+side, and 63 logical px is 44 real ones on the smallest canvas this game aims at.
+Shrinking the picture did not shrink the tap. The one thing that had to move with
+it was `HUD_PAD`, from 12 to 7: the gap between the buttons is 14, so 7 a side
+fills it exactly and no tap falls in both padded boxes at once. At 12 they
+overlapped and the loop silently gave the overlap to whichever came first.
+
+The early-call bonus moved from a second line under the label to the same line
+after it, in green, because 24px of height has room for one row of text.
 
 ### Radial menu
 
@@ -57,6 +90,13 @@ Opens on the tapped plot, up to four buttons on a ring 68px from the centre, wit
 a cancel target in the middle. Geometry is in `src/menu.js` — `BTN_R`, `RING_R`,
 `CANCEL_R` — and `input.js` hit-tests those same constants, so the drawn size and
 the tappable size are related but not equal.
+
+**There are no words on these buttons.** "Barracks", "Sell", "Upgrade" and the
+`T1` in front of every price all came out. What is left is the glyph and the
+gold — `70g` to build, `90g` to upgrade, `+42g` to sell — which is the whole
+decision: the picture says what it is and the number says what it costs. A
+button with nothing to say (rally, and a tower already at tier 3) carries no text
+at all and draws its glyph bigger to fill the space the price would have used.
 
 | element              | drawn         | needs at 3x | count |
 |----------------------|---------------|-------------|-------|
@@ -89,11 +129,13 @@ and buys nothing.
 `+38g` and every family name are drawn by the code, change every frame, and the
 names are auto-shrunk to fit their button. The art is plates and pictures only.
 
-**Decide who owns the dashboard background.** `Map.svg` paints the header strip
-and the code paints nothing behind it — there is a comment in `drawHud` about the
-visible seam from when both did. Either the painted strip stays the background and
-this folder supplies only the two button plates, or a drawn panel takes over and
-the strip in `Map.svg` becomes plain colour behind it. Not both.
+**Nothing owns the dashboard background at the moment.** The blue header strip
+was removed from `Map.svg` and no panel replaced it, so the readouts and the two
+controls now sit straight on grass and road. They survive it — the text carries a
+drop shadow for exactly this reason, and `node tools/hud-clear.mjs` checks no
+tower can push a building up behind a number — but "survives" is not "designed".
+If a dashboard panel is wanted it is the next file, and it goes here rather than
+back into the map: a panel painted into the board cannot dim, move or be hidden.
 
 **The glyph slot is 22 x 22 game px** — about 4mm on a phone — and it shares its
 60px circle with a 9px name and a 9px price. Silhouette only; interior detail will

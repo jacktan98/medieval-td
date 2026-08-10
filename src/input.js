@@ -1,5 +1,5 @@
 import { plots } from './data/level01.js';
-import { PLOT_R, hitHudButton } from './render.js';
+import { PLOT_R, hitHudButton, hitStart } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
@@ -21,6 +21,13 @@ export function attachInput(canvas, state, restart) {
 
   canvas.addEventListener('pointerdown', e => {
     const { x, y } = at(e);
+
+    // The title screen owns the whole board: nothing under it may act on a tap,
+    // including a plot the Start button happens to be sitting over.
+    if (!state.started) {
+      if (hitStart(state, x, y)) state.started = true;
+      return;
+    }
 
     if (state.result) { restart(); return; }
 
