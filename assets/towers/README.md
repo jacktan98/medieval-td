@@ -1,14 +1,26 @@
 # Tower artwork
 
-| file                       | canvas | drawn as     | used by                        |
-|----------------------------|--------|--------------|--------------------------------|
-| `Archers_Tower_T1.png`     | 1024   | 100 x 123 px | Watchtower (tier 1)            |
-| `Archers_Tower_T2.png`     | 1024   | 88 x 153 px  | Archer Post (2), Crossbow Tower (3) |
-| `Barracks_Tower_T1.png`    | 1024   | 125 x 108 px | Militia Camp (tier 1)          |
-| `Barracks_Tower_T2.png`    | 1024   | 128 x 129 px | Guard Post (2), Knight's Hall (3) |
+| file                       | canvas | drawn as     | used by            |
+|----------------------------|--------|--------------|--------------------|
+| `Archers_Tower_T1.png`     | 1024   | 100 x 123 px | Watchtower (1)     |
+| `Archers_Tower_T2.png`     | 1024   | 88 x 153 px  | Archer Post (2)    |
+| `Archers_Tower_T3.png`     | 1024   | 74 x 153 px  | Crossbow Tower (3) |
+| `Barracks_Tower_T1.png`    | 1024   | 125 x 108 px | Militia Camp (1)   |
+| `Barracks_Tower_T2.png`    | 1024   | 128 x 129 px | Guard Post (2)     |
+| `Barracks_Tower_T3.png`    | 1024   | 128 x 127 px | Knight's Hall (3)  |
 
-The barracks hut is the biggest building in the game, which is why the plot
-marker was redrawn bigger to hold it.
+**Every tier now has its own building.** Nothing is shared any more, in either
+family — the note that used to be here about tier 3 borrowing tier 2's drawing is
+gone because tier 3 has its own.
+
+The barracks hall is the biggest building in the game, which is why the plot
+marker was redrawn bigger to hold it. Tier 3 is 128 x 127 against tier 2's
+128 x 129, so the ceiling did not move; `node tools/hud-clear.mjs` confirms every
+plot is as clear as it was.
+
+Tier 3 archery is the same 153px tall as tier 2 and 14px NARROWER, because a
+stone keep has no splayed legs. Same height means the HUD ceiling is unchanged
+there too.
 
 ## These are on a 1024 canvas and every figure is still on 512
 
@@ -46,14 +58,9 @@ taken yet:
    re-run and probably an hp pass with it.
 
 The men who stand on these are in `assets/units`; their numbers live in the same
-`src/data/towers.js` and are re-measured the same way. **All three tiers now have
+`src/data/towers.js` and are re-measured the same way. **All three tiers have
 their own man in both families** — plate armour at tier 3, a knight with a sword
 where the lower tiers carry a spear.
-
-**The BUILDINGS are still shared: tier 3 borrows tier 2's drawing, not tier 1's,**
-in both families. A tier is an upgrade, so it must never look like less than the
-tier below it; until tier 3 has a building of its own the safe reuse is the
-nearest tier that does.
 
 Note what the tier 3 knight cost to wire up, because it is the general case: his
 box is 114 source px wide against the spearmen's 172 and 166, since a sword held
@@ -70,9 +77,15 @@ hut is wider than the tallest tower and the marker was resized for it.
 
 The `.svg` files beside the PNGs are the originals. Nothing loads them; they are
 here because they are the only place the tower's parts exist as separate
-objects, which is what made the front layer below measurable at all. Only the two
-archery towers have one — the barracks huts are PNG-only, which is fine because
-neither has a gunner to be in front of.
+objects, which is what made the front layer below measurable at all. Only the
+three archery towers have one — the barracks huts are PNG-only, which is fine
+because none of them has a gunner to be in front of.
+
+The SVGs carry no ids or labels, so the parts are identified by geometry and fill
+colour after composing the transform stack: `#969696` is stone, `#735a31` is
+structural timber, `#74592e` is roof, `#37422f` is the ground shadow. On tier 3
+that picks out the deck face, the four 13x191 posts, the three beams between them
+and the ladder without any guessing about which shape is which.
 
 ## Where a building stands: the shadow, not the bounding box
 
@@ -86,8 +99,10 @@ marker it replaced was standing.
 |--------------------------|----------------|---------------------------|
 | `Archers_Tower_T1.png`   | (507.3, 735.6) | `[0.490, 0.871]`          |
 | `Archers_Tower_T2.png`   | (545.3, 802.5) | `[0.578, 0.890]`          |
+| `Archers_Tower_T3.png`   | (512.3, 802.4) | `[0.501, 0.890]`          |
 | `Barracks_Tower_T1.png`  | (521.0, 605.4) | `[0.515, 0.678]`          |
 | `Barracks_Tower_T2.png`  | (503.8, 696.9) | `[0.487, 0.793]`          |
+| `Barracks_Tower_T3.png`  | (504.2, 701.8) | `[0.487, 0.806]`          |
 
 **The same rule applies to every figure**, not just buildings — `pivot`,
 `gunnerPivot` and `deadPivot` are all the centre of that figure's own shadow.
@@ -124,9 +139,11 @@ own plot. The tool fits an axis-aligned ellipse to the outline instead and
 re-fits a few times, dropping the worst points each round; occluded outline lies
 inside the true ellipse, so it falls out and the surviving arc decides.
 
-That fit is checkable, and it checks out: the tier 1 tower's shadow is a single
-`<path>` in the `.svg`, describing an ellipse centred at (507.9, 736.1). The fit
-reads (507.3, 735.6) out of the PNG without being shown the SVG.
+That fit is checkable, and it checks out twice now. The tier 1 tower's shadow is a
+single `<path>` in the `.svg` describing an ellipse centred at (507.9, 736.1), and
+the fit reads (507.3, 735.6) out of the PNG without being shown the SVG. Tier 3's
+shadow path spans x 335.6..689.9 and y 724.4..881.5, centre (512.75, 802.95); the
+fit reads (512.3, 802.4). Under a pixel each time, on two different drawings.
 
 **Figures are measured the other way round, by their tips.** Their shadows are
 58px across and 14px tall with the figure standing on the middle, so the visible
@@ -147,10 +164,15 @@ lists rects of the SAME image, re-drawn after the gunner:
 |------|------------------------|-----------------------------------------|
 | 1    | `[547, 397, 15, 60]`   | the post on the deck's nearest corner   |
 | 2    | `[583, 392, 15, 130]`  | the post on the deck's nearest corner   |
+| 3    | `[547, 370, 18, 197]`  | the post on the deck's nearest corner   |
 
 Tier 2's is more than twice as tall because its near post runs the whole height
 of the tower, from the roof down through the deck, so it is in front of the
 archer from over his helmet to under his feet. Tier 1's post starts at the deck.
+Tier 3's is taller again — the SVG has it as a single 13x191 timber from
+(549.4, 373.0) to (562.8, 563.8), padded 2px for the stroke — but for a different
+reason: its deck is the top of a stone keep, so the post stands entirely ON the
+deck and it is the POSTS that are tall, not the run below them.
 
 **The near railing needs a polygon, not a rect,** and that is `frontPolys`
 beside them. It runs diagonally along the deck's near-left edge, from the left
@@ -164,6 +186,16 @@ approximate.
 |------|-----------------------------------------------------|
 | 1    | `[352,419] [560,462] [558,480] [350,438]`           |
 | 2    | `[387,487] [594,530] [592,548] [385,506]`           |
+| 3    | none — see below                                    |
+
+**Tier 3 has no `frontPolys` at all, and that is measured rather than skipped.**
+It does have a near-left timber, `(358.4,492.2) (556.1,534.7) (554.3,543.4)
+(356.5,500.9)` in the SVG, and it looks exactly like tiers 1 and 2's rail. It is
+not one. The archer stands at y=502 and the beam runs at y=525..534 directly
+under him; across his whole 141px span the beam's top edge never rises above
+y=510, which is below his feet at every x he occupies. It is the deck's near edge
+board — the same thing an earlier pass wrongly gave tier 1 a polygon for. The
+rails got lower with each redraw and on tier 3 they have gone under the floor.
 
 **There is only ONE rail per tower, not two.** The deck's near-RIGHT edge has no
 rail on either tier — that is the side the ladder comes up — and an earlier pass
@@ -183,6 +215,13 @@ without it he stands in front of a rail he is behind.
 the archer's head starts at y=396, so they overlap by four rows at the very edges
 of both — nothing you can see. An older tier 2 needed three rects for the roof
 alone; the headroom in the redraws is what removed them.
+
+Tier 3 clears by the same hair, and it is worth writing the sum down because it
+is the one that decides. The roof's near fascia runs from (343.5, 362.0) to
+(580.1, 400.1), so at the archer's x=509 its lowest pixel is y=389. His head top
+is `0.910 x 25 / SCALE = 111` source px above the mount at y=502, which is y=391.
+Two pixels, in his favour. Anything that lowers that roof or raises that deck
+needs a rect over the helmet.
 
 Re-drawing a rect paints exactly what the artist put there, transparency and
 all, so the archer still shows through wherever the tower does not cover him.
@@ -206,14 +245,29 @@ sides and drag its centre away from the deck. **The four corner posts are what
 fix the deck**, as a parallelogram, and the mount is where its diagonals cross.
 The corners are the tops of the four legs, read out of the `.svg`:
 
-| tier | leg tops (x, y)                                    | mount          |
+| tier | deck corners (x, y)                                | mount          |
 |------|----------------------------------------------------|----------------|
 | 1    | (356, 460) (466, 382) (651.5, 418) (554, 505)      | (506.5, 438.6) |
 | 2    | (391, 526) (501, 449) (687, 485) (589, 572)        | (541.2, 505.2) |
+| 3    | (467.3, 445.1) (659.9, 474.7) (555.9, 564.9) (350.6, 517.6) | (509.5, 502.0) |
 
 **Use the leg tops, never the rails.** Tier 1's four legs have not moved across
 two redraws while its rails have changed height in both of them, which is exactly
 why the deck is defined by the legs: a rail is furniture and a leg is structure.
+
+**Tier 3 is the one case where the corners are not leg tops, and the centre rule
+changes with them.** Its deck is the top face of a stone keep — one `<path>` in
+the SVG, the four points above — and the four roof posts stand on its corners
+rather than holding it up. So the face is read directly, and the check is that
+the posts land on it: the left post's foot is (350.6, 517.6) and the right's is
+(660.5, 474.9), both within a pixel of the corners.
+
+That face is NOT a parallelogram. Its two diagonals cross 10.9px apart at their
+midpoints, so "where the diagonals cross" is not well defined on it and gives
+(505.1, 496.2), 7px from the answer. The mount is the polygon's **area centroid**
+instead, (509.5, 502.0), which is the same point on tiers 1 and 2 and the right
+one here. If tier 4 is another drawn face rather than four legs, use the centroid
+again.
 
 The answer is checkable against the deck planks, which are their own shape in the
 `.svg`: tier 1's plank group is x 349..658, y 378..498, whose centre is

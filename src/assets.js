@@ -9,8 +9,10 @@
 const paths = {
   archery_t1:  'assets/towers/Archers_Tower_T1.png',
   archery_t2:  'assets/towers/Archers_Tower_T2.png',
+  archery_t3:  'assets/towers/Archers_Tower_T3.png',
   barracks_t1: 'assets/towers/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/Barracks_Tower_T2.png',
+  barracks_t3: 'assets/towers/Barracks_Tower_T3.png',
   archer_t1:   'assets/units/Archers_Man_T1.png',
   archer_t2:   'assets/units/Archers_Man_T2.png',
   archer_t3:   'assets/units/Archers_Man_T3.png',

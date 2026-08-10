@@ -228,8 +228,10 @@ const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const SPRITES = [
   ['assets/towers/Archers_Tower_T1.png',    'watchtower.groundFrac',  towers.archery[0].spriteTrim, towers.archery[0].groundFrac, 'whole'],
   ['assets/towers/Archers_Tower_T2.png',    'watchtower2.groundFrac', towers.archery[1].spriteTrim, towers.archery[1].groundFrac, 'whole'],
+  ['assets/towers/Archers_Tower_T3.png',    'watchtower3.groundFrac', towers.archery[2].spriteTrim, towers.archery[2].groundFrac, 'whole'],
   ['assets/towers/Barracks_Tower_T1.png',   'camp.groundFrac',        towers.barracks[0].spriteTrim, towers.barracks[0].groundFrac, 'whole'],
   ['assets/towers/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
+  ['assets/towers/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],
   ['assets/units/Archers_Man_T1.png',       'archer.gunnerPivot',     towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
   ['assets/units/Archers_Man_T2.png',       'archer2.gunnerPivot',    towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
   ['assets/units/Archers_Man_T3.png',       'archer3.gunnerPivot',    towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],

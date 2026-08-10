@@ -84,19 +84,21 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 // 490 wide here and 144 wide for the archer are not the same units.
 const TOWER_TRIM = [267, 211, 490, 602];
 const TOWER2_TRIM = [298, 140, 428, 744];
+const TOWER3_TRIM = [331, 140, 362, 744];
 const ARCHER_TRIM = [184, 197, 144, 119];
 const ARCHER2_TRIM = [184, 195, 144, 122];
 const ARCHER3_TRIM = [186, 186, 141, 121];
 const CAMP_TRIM = [207, 249, 610, 526];
 const CAMP2_TRIM = [200, 197, 624, 630];
+const CAMP3_TRIM = [200, 201, 624, 621];
 const SPEAR_TRIM = [170, 198, 172, 116];
 const SPEAR2_TRIM = [173, 196, 166, 120];
 const SPEAR3_TRIM = [199, 196, 114, 120];
 
-// All three tiers are the SAME SIZE — scale is fixed by the export, so a tier
-// reads as an upgrade from the artwork and the stars over its roof, never from
-// being bigger. Tier 3 has no drawing yet and borrows tier 2's rather than tier
-// 1's: an upgrade must never make the building look like less than it did.
+// Every tier has its own drawing now, in both families — nothing is shared.
+// They are all within a few px of each other in size, because scale is fixed by
+// the export: a tier reads as an upgrade from what the building is MADE of and
+// from the stars over its roof, never from being bigger. Timber becomes stone.
 const watchtower = {
   sprite: 'archery_t1',
   spriteTrim: TOWER_TRIM,
@@ -183,6 +185,49 @@ const watchtower2 = {
   frontPolys: [
     [[387, 487], [594, 530], [592, 548], [385, 506]]
   ],
+  shape: 'tower'
+};
+
+// Tier 3: a stone keep with a roofed timber deck on top. Tiers 1 and 2 are
+// timber towers on splayed legs; this one is masonry, so it is 14px narrower and
+// the same height. Nothing is shared with tier 2 any more.
+const watchtower3 = {
+  sprite: 'archery_t3',
+  spriteTrim: TOWER3_TRIM,
+  w: drawnW(TOWER3_TRIM), h: drawnH(TOWER3_TRIM),
+  // The MIDDLE of the deck, source (509.5, 502.0), and it is found differently
+  // from the two tiers below because the building is built differently. There
+  // are no leg tops to take: the deck is the top FACE of the stone keep, one
+  // path in the SVG with corners (467.3, 445.1), (659.9, 474.7), (555.9, 564.9)
+  // and (350.6, 517.6), and the four roof posts stand ON it rather than holding
+  // it up. The check that it is the right face is that the posts land on those
+  // corners — the left post's foot is (350.6, 517.6) to the pixel.
+  //
+  // That face is not a parallelogram: its diagonals cross 10.9px apart at their
+  // midpoints, so tiers 1 and 2's "where the diagonals cross" is not defined on
+  // it and lands 7px off. This is the polygon's AREA CENTROID, which is the same
+  // point on a true parallelogram and the right one here.
+  mountFrac: [0.493, 0.487],
+  // Shadow centre, source (512.3, 802.4). The SVG's shadow path spans
+  // 335.6..689.9 by 724.4..881.5, centre (512.75, 802.95) — the fit is 0.7px off
+  // it without being shown the SVG, the same check tier 1 passes.
+  groundFrac: [0.501, 0.890],
+  // The near corner post: a single 13x191 timber from (549.4, 373.0) to
+  // (562.8, 563.8), padded 2px for the black stroke the PNG draws around it.
+  // Taller than either tier below, but for the opposite reason to tier 2's —
+  // tier 2's post runs DOWN past the deck through the tower, and this one runs
+  // UP from a deck that is already at the top of a stone keep.
+  //
+  // The far post at x 466..479 is the usual trap: it is inside the archer's span
+  // and behind him, so the rect stays tight to the near one.
+  frontTrims: [[547, 370, 18, 197]],
+  // NO frontPolys, and that is measured rather than forgotten. There IS a
+  // near-left timber — (358.4, 492.2) (556.1, 534.7) (554.3, 543.4)
+  // (356.5, 500.9) — and it looks like the rail tiers 1 and 2 need a polygon
+  // for. It is not one: the archer stands at y=502 and that beam runs at
+  // y=525..534 under him, never rising above y=510 anywhere across his 141px
+  // span. It is the deck's near edge board. The rails have been lowered in every
+  // redraw and on this tower they have gone under the floor.
   shape: 'tower'
 };
 
@@ -281,7 +326,7 @@ const archer3 = {
 export const archery = [
   { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower2, ...archer3, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -344,6 +389,20 @@ const camp2 = {
   w: drawnW(CAMP2_TRIM), h: drawnH(CAMP2_TRIM),
   // Shadow centre, source (503.8, 696.8).
   groundFrac: [0.487, 0.793],
+  shape: 'camp'
+};
+
+// Tier 3's barracks: the tent and the log hut become a stone hall. 128x127
+// against tier 2's 128x129 — the same building in stone, so the plot marker that
+// was redrawn to hold tier 2 still holds this, and the HUD ceiling has not moved.
+const camp3 = {
+  sprite: 'barracks_t3',
+  spriteTrim: CAMP3_TRIM,
+  w: drawnW(CAMP3_TRIM), h: drawnH(CAMP3_TRIM),
+  // Shadow centre, source (504.2, 701.8). PNG-only like the other two huts —
+  // there is no SVG to check it against, and none is needed: nothing in a
+  // barracks has to be drawn in front of anything, because it has no gunner.
+  groundFrac: [0.487, 0.806],
   shape: 'camp'
 };
 
@@ -445,7 +504,7 @@ export const barracks = [
     soldier: { ...spearman2, count: 3, hp: 145, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
-    ...camp2, tier: 3, name: "Knight's Hall", cost: 150, range: 195, colour: '#8A8478',
+    ...camp3, tier: 3, name: "Knight's Hall", cost: 150, range: 195, colour: '#8A8478',
     soldier: { ...spearman3, count: 3, hp: 195, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
