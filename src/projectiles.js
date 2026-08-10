@@ -26,6 +26,10 @@ export function updateShots(state, dt) {
       // from. Overwritten by every hit, so the last blow is the one that counts,
       // which is the one that killed him.
       s.target.struckFrom = s.fromX >= s.target.x ? 1 : -1;
+      // Who to credit if this is the killing blow — see enemies.js, which is
+      // the one place that sees every death however it was caused, and so the
+      // only place that can tell an arrow kill from a sword kill.
+      s.target.killedBy = 'arrow';
     } else {
       s.x += (dx / dist) * step;
       s.y += (dy / dist) * step;

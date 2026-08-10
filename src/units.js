@@ -2,6 +2,7 @@ import { path } from './data/level01.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { clampToRange } from './ground.js';
+import { solo, CUE } from './audio.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -328,6 +329,11 @@ export function updateUnits(state, dt) {
         u.thrust = 1;
         splat(state, u.foe.x, u.foe.y - u.foe.def.r, u.foe.y);
         u.foe.struckFrom = u.x >= u.foe.x ? 1 : -1;
+        // Which family gets the credit if this is the blow that kills it.
+        // Overwritten by every hit exactly like struckFrom above, and for the
+        // same reason: the last blow is the one that counts.
+        u.foe.killedBy = 'melee';
+        solo(CUE.soldierSwing);
       }
       // The enemy swings back at the man BLOCKING it and nobody else. It is
       // already committed to him; the others are flanking it. So a squad that
@@ -362,6 +368,7 @@ export function updateUnits(state, dt) {
       release(u);
       u.respawn = u.def.respawn;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
+      solo(CUE.soldierDeath);
       // He falls facing whatever killed him. The fallback is his own facing —
       // a soldier's `face` is an angle, not a side, so it is reduced to a sign
       // the same way drawSoldier reduces it — and it should never be reached,

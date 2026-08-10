@@ -1,4 +1,5 @@
 import { loadArt } from './assets.js';
+import { loadAudio } from './audio.js';
 import { startGold, startLives } from './data/level01.js';
 import { openingDelay } from './data/waves.js';
 import { updateEnemies } from './enemies.js';
@@ -130,4 +131,10 @@ function step(state, dt) {
   if (state.lives <= 0) state.result = 'lost';
 }
 
+// Art gates the first frame; sound does not. A player waiting on half a
+// megabyte of mp3 before the title screen appears would rightly think the game
+// was broken, and every clip is optional at every call site — one still in
+// flight simply does not play. It starts alongside the art rather than after
+// it, so in practice it is all there before the Start button is pressed.
+loadAudio();
 loadArt().then(() => requestAnimationFrame(frame));

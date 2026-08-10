@@ -3,6 +3,7 @@ import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { unhook } from './units.js';
 import { inRange } from './ground.js';
+import { solo, CUE } from './audio.js';
 
 export function spawn(state, typeId) {
   const def = enemyTypes[typeId];
@@ -93,6 +94,12 @@ export function updateEnemies(state, dt) {
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
+      // A kill sounds like whatever landed the last blow, and the two are
+      // different sounds because they are different events to watch: an arrow
+      // finding its mark across the map, or a man winning the fight he is in.
+      // Sorted here for the same reason the bounty is — this is the only place
+      // that sees every death.
+      solo(e.killedBy === 'arrow' ? CUE.arrowKill : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and
       // nothing should ever reach it: an enemy cannot die without being hit.

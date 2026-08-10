@@ -1,5 +1,6 @@
 import { pickTarget } from './enemies.js';
 import { projectileSpeed } from './data/towers.js';
+import { play, SHOT } from './audio.js';
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
@@ -96,6 +97,10 @@ export function updateTowers(state, dt) {
       });
       t.cd = t.def.cooldown;
       t.recoil = 1;
+      // Category B: never skipped, never queued. Every arrow you can see leave
+      // a bow makes its own noise, because ten towers firing is ten events the
+      // player is watching and a shared channel would silence nine of them.
+      play(SHOT);
     }
   }
 }

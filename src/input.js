@@ -5,6 +5,7 @@ import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
+import { solo, unlock, selectionCue, familyCue, CUE } from './audio.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
@@ -22,6 +23,15 @@ export function attachInput(canvas, state, restart) {
 
   canvas.addEventListener('pointerdown', e => {
     const { x, y } = at(e);
+
+    // Every tap, not just the first. A phone will not let sound out until the
+    // screen has been touched, and it takes that permission back whenever the
+    // context is suspended — the phone locking, a call, the tab going to the
+    // background. Asking again on each tap is free when it is already running
+    // and is the difference between coming back to the game and coming back to
+    // a silent game. It sits above the title-screen gate on purpose, so the
+    // Start button is itself the tap that unlocks.
+    unlock();
 
     // The title screen owns the whole board: nothing under it may act on a tap,
     // including a plot the Start button happens to be sitting over.
@@ -78,6 +88,7 @@ export function attachInput(canvas, state, restart) {
       // deciding whether to upgrade it, which is the one moment its numbers
       // matter. An empty plot has nothing to describe.
       state.selected = tower ? { kind: 'tower', ref: tower } : null;
+      solo(selectionCue(state.selected));
       return;
     }
 
@@ -89,6 +100,7 @@ export function attachInput(canvas, state, restart) {
     // action and looking is the fallback.
     closeMenu(state);
     state.selected = pickFigure(state, x, y);
+    solo(selectionCue(state.selected));
   });
 
   // --- desktop hover ---------------------------------------------------------
@@ -154,6 +166,10 @@ function toggleSpeed(state) {
 function setRally(state, tower, x, y) {
   tower.rally = clampToRange(tower.x, tower.y, x, y, tower.def.range);
   moveUnits(state, tower);
+  // The squad answering the order. Here rather than on the menu button, because
+  // the button only arms the placement — this is the tap that actually moves
+  // them, and a voice on the earlier tap would answer an order not yet given.
+  solo(CUE.barracks);
 }
 
 function run(state, item) {
@@ -179,6 +195,7 @@ function run(state, item) {
     // Show what you just bought. The menu closes on a build, so without this the
     // one moment you most want its numbers is the one moment nothing is selected.
     state.selected = { kind: 'tower', ref: built };
+    solo(selectionCue(state.selected));
   }
 
   if (item.act === 'upgrade') {
@@ -191,6 +208,7 @@ function run(state, item) {
     // Rebuilt rather than patched: the new tier has its own soldier stats and
     // a longer reach, so the rally point moves too.
     makeUnits(state, t);
+    solo(familyCue(t.fam.id));
   }
 
   if (item.act === 'sell') {
