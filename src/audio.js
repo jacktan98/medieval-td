@@ -106,8 +106,18 @@ const LOUD_WINDOW = 0.3;
 // How far the automatic gain may go in either direction. A clip recorded at
 // almost nothing would otherwise be multiplied until its noise floor was the
 // loudest thing in the game.
+//
+// The ceiling was 4 and is 5 because a real upload needed 4.55: `Archers_5`
+// came in at 0.0198, peaking at 0.089, which is a quiet recording rather than a
+// broken one. A clamp that bites on a file nothing is wrong with is set too
+// tight — it would have left that line about a decibel under everything else,
+// which is the exact defect this whole mechanism exists to remove.
+//
+// Even at the ceiling the arithmetic stays safe: the loudest a clip can come
+// out is its peak times the gain, and the quiet files that need the boost are
+// quiet in peak as well — 0.089 x 4.55 is 0.40, nowhere near clipping.
 const GAIN_MIN = 0.1;
-const GAIN_MAX = 4;
+const GAIN_MAX = 5;
 
 // Anything quieter than this counts as silence when finding where a clip really
 // starts and ends. Absolute rather than a share of the peak, so a quiet clip is
@@ -173,9 +183,13 @@ const paths = {
   archers_1:       'assets/audio/voice/Archers_1.mp3',
   archers_2:       'assets/audio/voice/Archers_2.mp3',
   archers_3:       'assets/audio/voice/Archers_3.mp3',
+  archers_4:       'assets/audio/voice/Archers_4.mp3',
+  archers_5:       'assets/audio/voice/Archers_5.mp3',
   barracks_1:      'assets/audio/voice/Barracks_1.mp3',
   barracks_2:      'assets/audio/voice/Barracks_2.mp3',
   barracks_3:      'assets/audio/voice/Barracks_3.mp3',
+  barracks_4:      'assets/audio/voice/Barracks_4.mp3',
+  barracks_5:      'assets/audio/voice/Barracks_5.mp3',
   thug_1:          'assets/audio/voice/Thug_1.mp3'
 };
 
@@ -194,8 +208,8 @@ const GAIN = {};
 //
 // Category A — one at a time, and the rules above about repeating apply.
 export const CUE = {
-  archery:      ['archers_1', 'archers_2', 'archers_3'],
-  barracks:     ['barracks_1', 'barracks_2', 'barracks_3'],
+  archery:      ['archers_1', 'archers_2', 'archers_3', 'archers_4', 'archers_5'],
+  barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_hit_enemy'],
   meleeKill:    ['thug_dies'],

@@ -247,7 +247,7 @@ for (let i = 0; i < 200; i++) {
   swings.push(...played);
 }
 check('200 swings all played', swings.length, 200);
-check('all three takes came up', new Set(swings).size, 3);
+check('every take came up', new Set(swings).size, ATTACK.length);
 check('no two swings in a row matched', swings.some((k, i) => i && k === swings[i - 1]), false);
 
 // --- Picking between variants -------------------------------------------------
@@ -255,7 +255,11 @@ check('no two swings in a row matched', swings.some((k, i) => i && k === swings[
 console.log('\nVariants, and never the same clip twice running');
 
 // Ask for the same cue 300 times over, stepping the clock past the gate each
-// time. All three takes must appear, and no two neighbours may match.
+// time. Every take must appear, and no two neighbours may match.
+//
+// Read the cue's own length rather than writing a number here: takes get added
+// — the barracks went from three to five — and a test that has to be edited
+// every time one lands is a test that gets edited without being thought about.
 let log = [];
 for (let i = 0; i < 300; i++) {
   ctx.currentTime = 5000 + i * 3;
@@ -263,9 +267,17 @@ for (let i = 0; i < 300; i++) {
   solo(CUE.barracks);
   log.push(...played);
 }
-check('300 asks of a 3-take cue all played', log.length, 300);
-check('all three takes came up', new Set(log).size, 3);
+check('300 asks of a multi-take cue all played', log.length, 300);
+check('every take came up', new Set(log).size, CUE.barracks.length);
 check('no two in a row were the same', log.some((k, i) => i && k === log[i - 1]), false);
+
+// With five takes the share rule can no longer talk the cue into silence at
+// all: jamming needs every take but the last to be at its limit of two, which
+// is eight plays inside a memory of five. Worth pinning, because it means the
+// relaxation below is now only reachable by the three-take cues.
+const spread = {};
+for (const k of log) spread[k] = (spread[k] || 0) + 1;
+check('and no take was starved', Math.min(...Object.values(spread)) > 300 / CUE.barracks.length / 2, true);
 
 // A cue with only ONE file cannot alternate, so it must fall silent instead of
 // repeating. That is the common case now rather than a corner: an arrow kill, a

@@ -3,10 +3,10 @@
 ```
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_hit_enemy,
                       Thug_dies, Soldier_dies
-assets/audio/voice/   Archers_1..3, Barracks_1..3, Thug_1
+assets/audio/voice/   Archers_1..5, Barracks_1..5, Thug_1
 ```
 
-Fourteen clips, all wired. `node tools/audio.mjs` measures them; `node
+Eighteen clips, all wired. `node tools/audio.mjs` measures them; `node
 tools/sound.mjs` checks the rules below against the real `src/audio.js`.
 
 ## Two categories, and the categories are the design
@@ -63,16 +63,20 @@ Two details worth knowing before changing any of it:
 
 **A cue with several takes will break the share rule rather than fall silent.**
 Five remembered plays of three takes can reach `A B A B C` — two at their limit
-and the third just heard — and an absolute rule would mute the barracks until
-the memory moved on. So a cue with alternatives relaxes it. A **single**-take
-cue gets no such relief, and that asymmetry is the point: with nothing to rotate
-to, its share rule is the only thing between one clip and the whole channel.
+and the third just heard — and an absolute rule would mute the cue until the
+memory moved on. So a cue with alternatives relaxes it. A **single**-take cue
+gets no such relief, and that asymmetry is the point: with nothing to rotate to,
+its share rule is the only thing between one clip and the whole channel.
 
-Most cues are single-take now, which makes this the common case rather than the
-corner. **A second melee kill straight after the first is silent** — there is
-one `Thug_dies` and it may not run twice running. If that reads as a dropped
-sound rather than as restraint, a second take of the same event is the fix, and
-it needs no code beyond a line in `paths` and the cue.
+**At five takes that can no longer happen at all.** Jamming needs every take but
+the last to be at its limit of two, which is eight plays inside a memory of
+five. So the two voice cues are now safe by arithmetic rather than by the
+relaxation, and only the three-take cues can still reach it.
+
+The single-take cues are where it bites. **A second melee kill straight after
+the first is silent** — there is one `Thug_dies` and it may not run twice
+running. If that reads as a dropped sound rather than as restraint, a second
+take is the fix, and it needs no code beyond a line in `paths` and the cue.
 
 **The memory is wiped by silence, not by age.** The last five plays are the last
 five plays however long they took; if nothing at all has been heard for 20
@@ -87,10 +91,10 @@ and it now means "how long a lull has to be before the game forgets".
 
 | moment | clip |
 |---|---|
-| an archery tower is selected, built or upgraded | `Archers_1/2/3` |
-| a barracks is selected, built or upgraded | `Barracks_1/2/3` |
-| a rally point is moved | `Barracks_1/2/3` |
-| a barracks man is selected | `Barracks_1/2/3` |
+| an archery tower is selected, built or upgraded | `Archers_1..5` |
+| a barracks is selected, built or upgraded | `Barracks_1..5` |
+| a rally point is moved | `Barracks_1..5` |
+| a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
 | an arrow kills an enemy | `Arrow_hit_enemy` |
 | a barracks man kills an enemy | `Thug_dies` |
@@ -148,16 +152,21 @@ bus mixing survives that — "the battle sits 7dB under the voices" means nothin
 when the clips themselves differ by twenty.
 
 Every clip is now **analysed once at load** and given the gain that brings it to
-a common loudness, measured as the RMS of its loudest 300ms. What that did to
-the current fourteen:
+a common loudness, measured as the RMS of its loudest 300ms. What that does to
+the current eighteen — the four newest voices needed it as much as the first
+batch:
 
 | clip | adjustment |
 |---|---|
-| `Archers_1` | **+11.1 dB** |
+| `Archers_5` | **+13.1 dB** |
+| `Archers_1` | +11.1 dB |
 | `Archers_2` | +10.5 dB |
 | `Attack_2` | +7.0 dB |
+| `Barracks_4` | +6.6 dB |
 | `Archers_3` | +4.4 dB |
+| `Archers_4` | +3.7 dB |
 | `Barracks_1` | +3.6 dB |
+| `Barracks_2/3/5` | left alone |
 | `Attack_1` | −3.3 dB |
 | `Soldier_dies` | −7.0 dB |
 | `Thug_1` | −7.1 dB |
@@ -170,9 +179,15 @@ point at. The analysis costs a few milliseconds for the whole folder and cannot
 go stale.
 
 **So do not normalise before uploading, and do not worry if a take comes in
-quiet.** The gain is capped at 4x either way, so a clip recorded at almost
+quiet.** The gain is capped at 5x either way, so a clip recorded at almost
 nothing will still come up short rather than dragging its own hiss up with it —
 that is the one case worth re-recording.
+
+The ceiling was 4 until `Archers_5` arrived needing 4.55x. That is a quiet
+recording, not a broken one — it peaks at 0.089 — and a clamp that bites on a
+file with nothing wrong with it is set too tight, so it went to 5. If a future
+upload reports exactly `+14.0dB` it has hit the new ceiling and is genuinely too
+quiet to rescue.
 
 `GAIN` in `src/audio.js` overrides the analysis per clip, and it is for INTENT
 — a giant that should be louder than a common thug — not for correction.
