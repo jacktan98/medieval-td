@@ -14,9 +14,16 @@
 // death cry of a man who died four seconds ago, which is worse than silence —
 // it is sound that lies about what is on the screen right now.
 //
-// Category B is for the one sound that has to be exact: an arrow leaving a bow.
-// Ten towers firing is ten twangs, because each one is a thing you can see
-// happen, and the shot you are watching must be the shot you hear.
+// Category B is the sound of the battle itself — arrows leaving bows, blades
+// landing. Every one of them is a thing you can see happen, so every one of them
+// makes its noise; ten towers firing is ten twangs.
+//
+// It is BACKGROUND, though, and mixed like it. Category B runs through a bus of
+// its own that sits well under Category A and drops further the moment a
+// Category A clip starts, coming back up when it finishes. So a death cry cuts
+// through a battle rather than competing with it, and nothing has to be
+// silenced to make room — which is the whole reason these sounds are in
+// Category B and not fighting for the one channel.
 //
 // --- Web Audio, not <audio> ------------------------------------------------
 //
@@ -48,6 +55,27 @@ const SAME_CLIP_GAP = 0.04;
 // Master level for everything. Per-clip trims go in GAIN below.
 const MASTER = 0.9;
 
+// --- How far under Category A the background sits ---------------------------
+//
+// Two numbers, both in gain rather than decibels because that is what the Web
+// Audio API takes. BG_LEVEL is where the battle sits normally; BG_DUCKED is
+// where it drops to while something in Category A is speaking.
+//
+// 0.45 is about 7dB under Category A, which is the difference between a sound
+// you notice and one you listen to. 0.15 is a further 9dB or so, the usual
+// broadcast duck for getting a voice over a bed of noise: still clearly there,
+// no longer competing.
+//
+// These are the knobs if the battle is too loud or the ducking too obvious.
+const BG_LEVEL = 0.45;
+const BG_DUCKED = 0.15;
+
+// How quickly the background gets out of the way, and how leisurely it comes
+// back, as time constants in seconds. Down fast enough not to talk over the
+// first syllable, up slowly enough that the return is not itself an event.
+const DUCK_IN = 0.04;
+const DUCK_OUT = 0.25;
+
 // --- How Category A shares itself out ---------------------------------------
 //
 // The gate alone is first-come-first-served, and that is not a fair contest.
@@ -72,36 +100,38 @@ const MASTER = 0.9;
 const MEMORY_N = 5;
 const MAX_REPEATS = 2;
 
-// How long a play stays in that memory, in seconds. Without an expiry the rules
-// deadlock in the quietest case: a melee grind where nothing but swings ever
-// happens plays ONE swing and then nothing at all for the rest of the game,
-// because "not twice running" has no other sound to be broken by and no way to
-// lapse.
+// How long the channel must stay QUIET before the memory is wiped, in seconds.
 //
-// The size is a straight trade and both ends are real. It has to be LONGER than
-// the time five plays take, or the share rule never sees five of anything and
-// stops capping — measured at about 14s in a busy fight, since the gate spaces
-// plays at least 1.66s apart and typically nearer 3. It wants to be SHORT,
-// because it is also how long a clip with nothing to alternate with waits
-// before it may repeat itself. 20 clears the first with room and keeps the
-// second tolerable.
+// Some expiry is needed or the rules deadlock in the quietest case: a stretch
+// where one thing keeps happening and nothing else does plays it once and then
+// nothing at all for the rest of the game, because "not twice running" has no
+// other sound to be broken by and no way to lapse.
 //
-// This is the knob if swings feel too frequent or too sparse: larger is rarer.
+// But it is quiet that clears the memory, not age — the last five plays are the
+// last five plays however long they took. An earlier version expired each entry
+// on its own clock and the share rule quietly stopped working: most cues have a
+// single take now, so they are passed over often, so plays come further apart —
+// about 4.5s in a measured fight — and five of them no longer fitted inside the
+// window. The rule was still running; it just never had five plays to look at.
+//
+// Wiping on silence instead keeps the two cases apart. In a fight nothing is
+// ever 20s quiet, so the memory is exactly the last five plays and the share
+// rule means what it says. In a lull the slate clears and everything is fair
+// game again — so a cue with nothing to alternate with repeats every 20s rather
+// than never.
 const MEMORY_S = 20;
 
-// Every clip, by the name the game calls it. Spaces are encoded for the same
-// reason they are in assets.js — `Soldier dies.mp3` really does have a space in
-// it and a raw space is not legal in a URL. The file is left alone rather than
-// renamed: renaming an upload only means renaming it again after the next one,
-// and worse, a rename here plus a re-upload there leaves you with two files and
-// no idea which one is playing.
+// Every clip, by the name the game calls it. No %20 anywhere here, unlike
+// assets.js — the one file that had a space in its name has been renamed, so
+// every path is a plain URL. Keep it that way.
 const paths = {
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   arrow_hit_enemy: 'assets/audio/sfx/Arrow_hit_enemy.mp3',
-  stab:            'assets/audio/sfx/Stab.mp3',
   thug_dies:       'assets/audio/sfx/Thug_dies.mp3',
-  soldier_dies:    'assets/audio/sfx/Soldier%20dies.mp3',
-  soldier_attack:  'assets/audio/sfx/Soldier_attack.mp3',
+  soldier_dies:    'assets/audio/sfx/Soldier_dies.mp3',
+  attack_1:        'assets/audio/sfx/Attack_1.mp3',
+  attack_2:        'assets/audio/sfx/Attack_2.mp3',
+  attack_3:        'assets/audio/sfx/Attack_3.mp3',
   archers_1:       'assets/audio/voice/Archers_1.mp3',
   archers_2:       'assets/audio/voice/Archers_2.mp3',
   archers_3:       'assets/audio/voice/Archers_3.mp3',
@@ -121,24 +151,37 @@ const GAIN = {};
 // file: `solo(CUE.barracks)` picks one of the three at random, so the same
 // order twice running is not the same voice twice running.
 //
-// Two of them mix a cry with a blade on purpose. A barracks kill is either the
-// thug's death or the sound of the sword going in — one or the other, never
-// both, because Category A is one channel and layering is a thing it cannot do.
+// Category A — one at a time, and the rules above about repeating apply.
 export const CUE = {
   archery:      ['archers_1', 'archers_2', 'archers_3'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_hit_enemy'],
-  meleeKill:    ['thug_dies', 'stab'],
-  soldierDeath: ['soldier_dies', 'stab'],
-  soldierSwing: ['soldier_attack']
+  meleeKill:    ['thug_dies'],
+  soldierDeath: ['soldier_dies']
 };
 
-// The Category B clip, alone in its category.
-export const SHOT = 'arrow_shot';
+// Category B — the battle underneath, on its own bus, every time it happens.
+export const SHOT = ['arrow_shot'];
+export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 
 let ctx = null;
 const buffers = {};
+
+// Two buses into one master, which is what makes ducking possible at all:
+//
+//   busA ──┐
+//          ├── master ── speakers
+//   busB ──┘   (busB's gain is what the duck moves)
+//
+// Category B goes through busB as a GROUP rather than each clip carrying its own
+// level, so the duck moves everything in it at once — including arrows already
+// in the air when the cry starts. Ducking each source as it began would leave
+// whatever was already sounding at full volume, which is precisely the noise
+// being ducked out of the way.
+let master = null;
+let busA = null;
+let busB = null;
 
 // When Category A may speak again, on the context's clock.
 let gateUntil = 0;
@@ -165,6 +208,17 @@ export function loadAudio() {
 
   ctx = new AC();
 
+  master = ctx.createGain();
+  master.gain.value = MASTER;
+  master.connect(ctx.destination);
+
+  busA = ctx.createGain();
+  busA.connect(master);
+
+  busB = ctx.createGain();
+  busB.gain.value = BG_LEVEL;
+  busB.connect(master);
+
   const jobs = Object.entries(paths).map(([key, src]) =>
     fetch(src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
@@ -189,28 +243,59 @@ export function unlock() {
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
 }
 
-function fire(key, when = 0) {
+function fire(key, bus) {
   const buf = buffers[key];
   const src = ctx.createBufferSource();
   src.buffer = buf;
 
   const g = ctx.createGain();
-  g.gain.value = MASTER * (GAIN[key] ?? 1);
+  g.gain.value = GAIN[key] ?? 1;
 
-  src.connect(g).connect(ctx.destination);
-  src.start(when);
+  src.connect(g).connect(bus);
+  src.start(0);
   return buf.duration;
 }
 
-// Category B. Every time it happens, however many at once.
-export function play(key) {
-  if (!ctx || ctx.state !== 'running' || !buffers[key]) return;
+// Get the battle out of the way for the length of a Category A clip, then let
+// it back up. Scheduled on the audio clock rather than driven by a timer, so it
+// keeps its timing regardless of what the frame rate is doing.
+function duck(now, seconds) {
+  const g = busB.gain;
+  // Cancel first: two Category A clips close together would otherwise leave the
+  // first one's rise fighting the second one's fall.
+  if (g.cancelScheduledValues) g.cancelScheduledValues(now);
+  g.setTargetAtTime(BG_DUCKED, now, DUCK_IN);
+  g.setTargetAtTime(BG_LEVEL, now + seconds, DUCK_OUT);
+}
+
+// The last clip each Category B cue used, so three takes of a sword do not come
+// out as the same take three times. Keyed by the cue itself, which is why cues
+// are module-level constants rather than built at the call site.
+const lastB = new WeakMap();
+
+// Category B. Every time it happens, however many at once, on the background
+// bus. No gate and no share rules — this is the battle, and it is mixed low
+// enough not to need them.
+export function play(cue) {
+  if (!ctx || ctx.state !== 'running') return;
+
+  const ready = cue.filter(key => buffers[key]);
+  if (!ready.length) return;
+
+  // Not the same take twice running where there is a choice. The Category A
+  // rules do not apply down here, but a sword that makes one identical noise
+  // forty times a wave is the machine-gun problem all over again, and avoiding
+  // it costs one comparison.
+  const prev = lastB.get(cue);
+  const choices = ready.length > 1 ? ready.filter(key => key !== prev) : ready;
+  const key = choices[(Math.random() * choices.length) | 0];
 
   const now = ctx.currentTime;
   if (now - (lastStart[key] ?? -Infinity) < SAME_CLIP_GAP) return;
   lastStart[key] = now;
+  lastB.set(cue, key);
 
-  fire(key);
+  fire(key, busB);
 }
 
 // Category A. One at a time, then a second of quiet — and never the same clip
@@ -234,15 +319,18 @@ export function solo(cue) {
   const now = ctx.currentTime;
   if (now < gateUntil) return;
 
-  heard = heard.filter(h => now - h.t < MEMORY_S);
+  // Silence clears the slate; otherwise the last five stand however old they
+  // are. Measured from the most recent play, so a busy fight never forgets and
+  // a lull forgets everything at once.
+  if (heard.length && now - heard[heard.length - 1].t >= MEMORY_S) heard = [];
+
   const last = heard.length ? heard[heard.length - 1].key : null;
   const times = key => heard.reduce((n, h) => n + (h.key === key ? 1 : 0), 0);
 
   // A cue is a list of interchangeable takes, so being passed over is per CLIP,
-  // not per cue: three barracks lines rotate among themselves, and a cue that
-  // mixes a cry with a blade reaches for the other one rather than falling
-  // silent. `Stab` sits in two cues and is counted once across both, which is
-  // right — the player hears one sound, however the game got there.
+  // not per cue: the three barracks lines rotate among themselves. A clip shared
+  // by two cues would be counted once across both, which is right — the player
+  // hears one sound, however the game got there.
   const ready = cue.filter(key => buffers[key]);
   let eligible = ready.filter(key => key !== last && times(key) < MAX_REPEATS);
 
@@ -265,7 +353,9 @@ export function solo(cue) {
   heard.push({ key, t: now });
   if (heard.length > MEMORY_N) heard.shift();
 
-  gateUntil = now + fire(key) + GAP;
+  const seconds = fire(key, busA);
+  duck(now, seconds);
+  gateUntil = now + seconds + GAP;
 }
 
 // A tower family's voice, or null for one with nothing recorded. Siege and the

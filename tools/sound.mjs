@@ -22,6 +22,10 @@ const DUR = {
 };
 const DEFAULT_DUR = 0.5;
 
+// Must match src/audio.js, for the ducking checks.
+const BG_LEVEL = 0.45;
+const BG_DUCKED = 0.15;
+
 // Must match src/audio.js. Duplicated rather than exported because a test that
 // imports the number it is checking cannot catch the number changing.
 const MEMORY_S = 20;
@@ -29,8 +33,9 @@ const MEMORY_S = 20;
 // --- the fake context -------------------------------------------------------
 
 let played = [];
-
-const node = () => ({ connect: t => t, start() {} });
+let routes = [];
+let ducks = [];
+const gains = [];
 
 const ctx = {
   state: 'running',
@@ -44,17 +49,38 @@ const ctx = {
     duration: DUR[path] ?? DEFAULT_DUR,
     name: decodeURIComponent(path.split('/').pop().replace('.mp3', ''))
   }),
-  createGain: () => ({ gain: { value: 0 }, connect: t => t }),
+  // Gain nodes are named by creation order, because that is the only thing the
+  // module tells us about them: it builds master, then busA, then busB, and
+  // every later one is a per-play trim. Naming them is what lets the routing
+  // checks below say WHICH bus a clip went out on.
+  createGain() {
+    const name = ['master', 'busA', 'busB'][gains.length] || 'clip';
+    const g = {
+      _name: name,
+      _out: null,
+      gain: {
+        value: 0,
+        setTargetAtTime: (target, at) => ducks.push({ bus: name, target, at }),
+        cancelScheduledValues: () => {}
+      },
+      connect(t) { g._out = t; return t; }
+    };
+    gains.push(g);
+    return g;
+  },
   createBufferSource() {
-    const n = node();
-    // The game sets .buffer, then starts it. Recording on start rather than on
-    // assignment is what makes this a log of sounds HEARD.
-    let buf = null;
+    // The game sets .buffer, connects through a trim gain to a bus, then starts
+    // it. Recording on start rather than on assignment is what makes this a log
+    // of sounds HEARD.
+    let buf = null, trim = null;
     return {
       set buffer(b) { buf = b; },
       get buffer() { return buf; },
-      connect: t => t,
-      start: () => played.push(buf.name)
+      connect(t) { trim = t; return t; },
+      start: () => {
+        played.push(buf.name);
+        routes.push({ name: buf.name, bus: trim && trim._out && trim._out._name });
+      }
     };
   }
 };
@@ -62,7 +88,7 @@ const ctx = {
 globalThis.AudioContext = function () { return ctx; };
 globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(path) });
 
-const { loadAudio, play, solo, CUE, SHOT, selectionCue, familyCue } =
+const { loadAudio, play, solo, CUE, SHOT, ATTACK, selectionCue, familyCue } =
   await import('../src/audio.js');
 
 await loadAudio();
@@ -103,13 +129,13 @@ check('plays again once the rest is over', at(3.01, () => solo(CUE.barracks)), 1
 ctx.currentTime = 100;
 played = [];
 solo(CUE.thug);                                    // 2s clip, holds until 103
-check('a swing is held off by an unrelated line', at(101, () => solo(CUE.soldierSwing)), 0);
+check('a swing is held off by an unrelated line', at(101, () => solo(CUE.arrowKill)), 0);
 check('a death is held off by it too', at(102, () => solo(CUE.soldierDeath)), 0);
 
 // Nine things happening at once is the case this all exists for.
 ctx.currentTime = 200;
 played = [];
-for (let i = 0; i < 9; i++) solo(CUE.soldierSwing);
+for (let i = 0; i < 9; i++) solo(CUE.arrowKill);
 check('nine at the same instant come out as one', played.length, 1);
 
 // --- Category B: every time ---------------------------------------------------
@@ -132,6 +158,52 @@ check('an arrow is not silenced by a held channel', at(401, () => play(SHOT)), 1
 // ...and must not close it either.
 check('and firing does not close the A channel', at(403.5, () => solo(CUE.barracks)), 1);
 
+// --- Category B is background, and gets out of the way -----------------------
+
+console.log('\nCategory B is background');
+
+// Routing is the whole mechanism: everything in Category B has to leave through
+// busB, or the duck moves a bus with nothing on it and the mix never changes.
+routes = [];
+ctx.currentTime = 500;
+play(SHOT);
+play(ATTACK);
+check('the shot goes out on the background bus', routes[0] && routes[0].bus, 'busB');
+check('a sword swing does too', routes[1] && routes[1].bus, 'busB');
+
+routes = [];
+at(510, () => solo(CUE.arrowKill));
+check('a Category A clip goes out on its own bus', routes[0] && routes[0].bus, 'busA');
+
+// The duck itself: down when a Category A clip starts, back up when it ends.
+// Thug_1 is 2s in this fake, so the return is scheduled for 2s later.
+ducks = [];
+at(520, () => solo(CUE.thug));
+check('the background is pulled down', ducks[0] && ducks[0].target, BG_DUCKED);
+check('on the background bus', ducks[0] && ducks[0].bus, 'busB');
+check('and let back up afterwards', ducks[1] && ducks[1].target, BG_LEVEL);
+check('exactly when the clip ends', ducks[1] && ducks[1].at, 522);
+
+// A Category B sound that is passed over for de-duping must not duck anything —
+// only Category A moves the bus.
+ducks = [];
+at(530, () => { play(SHOT); play(ATTACK); });
+check('the battle never ducks itself', ducks.length, 0);
+
+// Three takes of a sword, and no two in a row. Category B has none of the
+// Category A share rules, but an identical clip forty times a wave is the same
+// machine-gun problem.
+const swings = [];
+for (let i = 0; i < 200; i++) {
+  played = [];
+  ctx.currentTime = 600 + i;
+  play(ATTACK);
+  swings.push(...played);
+}
+check('200 swings all played', swings.length, 200);
+check('all three takes came up', new Set(swings).size, 3);
+check('no two swings in a row matched', swings.some((k, i) => i && k === swings[i - 1]), false);
+
 // --- Picking between variants -------------------------------------------------
 
 console.log('\nVariants, and never the same clip twice running');
@@ -150,30 +222,30 @@ check('all three takes came up', new Set(log).size, 3);
 check('no two in a row were the same', log.some((k, i) => i && k === log[i - 1]), false);
 
 // A cue with only ONE file cannot alternate, so it must fall silent instead of
-// repeating. This is the case that made the whole change necessary: a soldier
-// swinging is one clip asking over and over.
+// repeating. That is the common case now rather than a corner: an arrow kill, a
+// melee kill and a soldier dying are one clip each.
 console.log('\nA one-clip cue cannot repeat itself');
 ctx.currentTime = 6000;
 played = [];
-solo(CUE.soldierSwing);
-check('the swing plays when nothing precedes it', played.length, 1);
-check('the very next swing is passed over', at(6002, () => solo(CUE.soldierSwing)), 0);
-check('and so is the one after that', at(6004, () => solo(CUE.soldierSwing)), 0);
+solo(CUE.arrowKill);
+check('it plays when nothing precedes it', played.length, 1);
+check('the very next ask is passed over', at(6002, () => solo(CUE.arrowKill)), 0);
+check('and so is the one after that', at(6004, () => solo(CUE.arrowKill)), 0);
 
 // ...but being passed over must not close the channel. This is what "give
-// priority to other sound" actually means: the swing yields its slot rather
-// than spending it.
-check('something else takes the slot instead', at(6006, () => solo(CUE.arrowKill)), 1);
-check('and now the swing may go again', at(6009, () => solo(CUE.soldierSwing)), 1);
+// priority to other sound" actually means: it yields its slot rather than
+// spending it.
+check('a different cue takes the slot instead', at(6006, () => solo(CUE.meleeKill)), 1);
+check('and now the first may go again', at(6009, () => solo(CUE.arrowKill)), 1);
 
-// The memory has to expire, or a fight with nothing but swings in it plays one
-// swing and then nothing for the rest of the game.
+// The memory has to expire, or a stretch where one thing keeps happening plays
+// it once and then nothing for the rest of the game.
 console.log('\nThe memory expires');
 ctx.currentTime = 7000;
 played = [];
-solo(CUE.soldierSwing);
-check('blocked while it is still remembered', at(7000 + MEMORY_S - 1, () => solo(CUE.soldierSwing)), 0);
-check('allowed once it has been forgotten', at(7000 + MEMORY_S + 1, () => solo(CUE.soldierSwing)), 1);
+solo(CUE.arrowKill);
+check('blocked while it is still remembered', at(7000 + MEMORY_S - 1, () => solo(CUE.arrowKill)), 0);
+check('allowed once it has been forgotten', at(7000 + MEMORY_S + 1, () => solo(CUE.arrowKill)), 1);
 
 // --- No more than twice in five ---------------------------------------------
 
@@ -188,7 +260,7 @@ log = [];
 for (let i = 0; i < 200; i++) {
   ctx.currentTime = 8000 + i * 2;
   played = [];
-  solo(CUE.soldierSwing);           // asks every time — the dominant one
+  solo(CUE.arrowKill);           // asks every time — the dominant one
   if (i % 3 === 0) solo(CUE.meleeKill);
   if (i % 7 === 0) solo(CUE.barracks);
   log.push(...played);
@@ -205,13 +277,10 @@ check('no clip exceeds 2 of any 5 heard', overrun, 0);
 
 const share = {};
 for (const k of log) share[k] = (share[k] || 0) + 1;
-const swingShare = (share['Soldier_attack'] || 0) / log.length;
-check('the swing is capped at 2/5 of the mix', swingShare <= 0.4, true);
-console.log(`        (swing took ${(swingShare * 100).toFixed(0)}% of ${log.length} plays: ` +
+const topShare = (share['Arrow_hit_enemy'] || 0) / log.length;
+check('the most frequent is capped at 2/5 of the mix', topShare <= 0.4, true);
+console.log(`        (it took ${(topShare * 100).toFixed(0)}% of ${log.length} plays: ` +
   Object.entries(share).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') + ')');
-
-check('a melee kill is a cry or a blade', CUE.meleeKill.length, 2);
-check('a soldier dying is a cry or a blade', CUE.soldierDeath.length, 2);
 
 // --- What the player tapped maps to what they hear ---------------------------
 
@@ -237,7 +306,7 @@ played = [];
 solo(['not_a_real_clip']);
 check('an unloaded cue plays nothing', played.length, 0);
 // Same instant on purpose: the question is whether the failed cue shut the gate.
-check('and leaves the channel open', at(9000, () => solo(CUE.soldierSwing)), 1);
+check('and leaves the channel open', at(9000, () => solo(CUE.arrowKill)), 1);
 
 // A suspended context — a phone that has locked — must swallow everything
 // rather than throw, and must not advance the gate while it is out.
