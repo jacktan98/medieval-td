@@ -124,7 +124,8 @@ a long silence. Measured:
 | `Thug_1` | 3.40s | **4.40s** |
 | `Archers_3` | 2.53s | 3.53s |
 | `Barracks_3` | 2.17s | 3.17s |
-| `Thug_dies` | 0.67s | 1.67s |
+| `Thug_dies` | 1.34s | 2.34s |
+| `Soldier_dies` | 0.70s | 1.70s |
 
 Tapping a thug is the longest silence in the game — no other Category A clip can
 be heard for four and a half seconds. The battle plays on underneath throughout,

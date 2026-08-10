@@ -18,12 +18,26 @@ import { join } from 'node:path';
 
 const ROOT = new URL('../assets/audio/', import.meta.url).pathname;
 
-// MPEG audio frame header tables. Only the rows this project can actually
-// produce are filled in — MPEG 1 Layer III, which is what every encoder emits
-// for a 44.1 kHz mp3.
-const BITRATES = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
-const RATES = [44100, 48000, 22050];
-const V25_RATES = [11025, 12000, 8000];
+// MPEG audio frame header tables, Layer III.
+//
+// BOTH versions, and that is not belt-and-braces. The first cut of this tool
+// assumed every file was MPEG 1 and derived MPEG 2 by halving the MPEG 1
+// numbers, which is true of the sample rates and NOT of the bitrates — they are
+// a different table entirely. The frame lengths came out wrong, the scan
+// resynced in the wrong places, and the durations it printed for the 24 kHz
+// files were about half of what a decoder plays. Cross-checked against
+// Chromium's decodeAudioData now, file by file.
+const BITRATES = {
+  1: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0],
+  2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0]
+};
+
+// Keyed by the header's version bits: 3 = MPEG 1, 2 = MPEG 2, 0 = MPEG 2.5.
+const RATES = {
+  3: [44100, 48000, 32000],
+  2: [22050, 24000, 16000],
+  0: [11025, 12000, 8000]
+};
 
 // What the README asks for. Anything outside these is reported, not rejected —
 // the tool's job is to tell you, and whether a 2.4s line is wrong depends on
@@ -58,14 +72,17 @@ function measure(buf) {
     const layer = (buf[i + 1] >> 1) & 3;     // 1 = Layer III
     const brIdx = (buf[i + 2] >> 4) & 15;
     const srIdx = (buf[i + 2] >> 2) & 3;
-    const pad = (buf[i + 2] >> 2) & 1;
+    // Bit 1 of byte 2. It was read as bit 2 here at first, which is one of the
+    // sample-rate bits — so the padding byte was taken from the wrong field and
+    // half the frame lengths came out one byte short.
+    const pad = (buf[i + 2] >> 1) & 1;
     const mode = (buf[i + 3] >> 6) & 3;      // 3 = mono
 
     if (verBits === 1 || layer !== 1 || brIdx === 0 || brIdx === 15 || srIdx === 3) { i++; continue; }
 
     const mpeg1 = verBits === 3;
-    const sr = (verBits === 0 ? V25_RATES : RATES)[srIdx] / (verBits === 0 ? 1 : 1) * (mpeg1 || verBits === 0 ? 1 : 0.5);
-    const kbps = mpeg1 ? BITRATES[brIdx] : BITRATES[brIdx] / 2;
+    const sr = RATES[verBits][srIdx];
+    const kbps = BITRATES[mpeg1 ? 1 : 2][brIdx];
     // MPEG 1 Layer III carries 1152 samples a frame; MPEG 2 and 2.5 carry 576.
     const samples = mpeg1 ? 1152 : 576;
     const len = Math.floor((samples / 8) * kbps * 1000 / sr) + pad;
