@@ -76,6 +76,11 @@ function newGame() {
     // A restart comes back here rather than straight into a running game, so the
     // second attempt gets the same look at the board as the first.
     started: false,
+    // Stopped by the player rather than by the title screen. Kept separate from
+    // `started` because they mean different things to the rest of the game: a
+    // paused game is running and simply not stepping, so its board, its menus
+    // and its info box all stay live and a tower can still be bought.
+    paused: false,
     resting: false,
     menu: null,
     result: null,
@@ -110,7 +115,7 @@ function frame(now) {
   const real = Math.min((now - last) / 1000, 0.05);
   last = now;
 
-  if (state.started && !state.result) {
+  if (state.started && !state.paused && !state.result) {
     for (let i = 0; i < state.speed; i++) step(state, real);
   }
 

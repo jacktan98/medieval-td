@@ -57,6 +57,7 @@ export function attachInput(canvas, state, restart) {
     // asked first — otherwise a button that happens to overlap a plot's menu
     // would lose to it.
     const hud = hitHudButton(state, x, y);
+    if (hud === 'pause') { state.paused = !state.paused; return; }
     if (hud === 'speed') { toggleSpeed(state); return; }
     if (hud === 'wave') { callWaveEarly(state); return; }
 
@@ -98,8 +99,15 @@ export function attachInput(canvas, state, restart) {
       // A built tower fills the info box the moment its menu opens: you are
       // deciding whether to upgrade it, which is the one moment its numbers
       // matter. An empty plot has nothing to describe.
+      //
+      // AND IT DOES SO SILENTLY. Selecting a tower is how you read its numbers,
+      // and it is done constantly — every time you weigh an upgrade, every time
+      // you check what is already there. A line on each of those taps is the
+      // same clip several times a minute, which is exactly what the Category A
+      // share rules exist to stop, and this was slipping past them by being a
+      // different event each time. Building and upgrading still speak; those
+      // happen once each.
       state.selected = tower ? { kind: 'tower', ref: tower } : null;
-      solo(selectionCue(state.selected));
       return;
     }
 

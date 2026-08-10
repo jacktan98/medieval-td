@@ -896,17 +896,25 @@ function flag(ctx, x, y, alpha) {
 // squashing a plate to a width picked before it was drawn is the one thing this
 // project never does to art. 174x78 and 414x78 at 24 tall come out 54 and 127.
 //
-// Centred as a pair: 54 + 14 + 127 = 195, so 383..578 puts the middle on 480.
-// The readouts end around x=324 and the info box starts at 728.
+// Centred as a ROW: 54 + 14 + 54 + 14 + 127 = 263, so 349..612 puts the middle
+// on 480. The readouts end around x=324 and the info box starts at 728.
+//
+// Pause borrows the speed plate's artwork, because it is the same size and shape
+// of control and there is no third plate drawn yet. When one arrives it only has
+// to be added to data/ui.js and named here — the width comes off its own aspect,
+// so a differently proportioned plate re-centres the row rather than being
+// squashed into this one's slot.
 const PLATE_H = 24;
 const HUD_GAP = 14;
+const PAUSE_W = Math.round(PLATE_H * aspect('plate_speed'));
 const SPEED_W = Math.round(PLATE_H * aspect('plate_speed'));
 const WAVE_W = Math.round(PLATE_H * aspect('plate_wave'));
-const HUD_X = Math.round(480 - (SPEED_W + HUD_GAP + WAVE_W) / 2);
+const HUD_X = Math.round(480 - (PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP + WAVE_W) / 2);
 
 export const HUD_BTN = {
-  speed: { x: HUD_X, y: 9, w: SPEED_W, h: PLATE_H, art: 'plate_speed' },
-  wave:  { x: HUD_X + SPEED_W + HUD_GAP, y: 9, w: WAVE_W, h: PLATE_H, art: 'plate_wave' }
+  pause: { x: HUD_X, y: 9, w: PAUSE_W, h: PLATE_H, art: 'plate_speed' },
+  speed: { x: HUD_X + PAUSE_W + HUD_GAP, y: 9, w: SPEED_W, h: PLATE_H, art: 'plate_speed' },
+  wave:  { x: HUD_X + PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP, y: 9, w: WAVE_W, h: PLATE_H, art: 'plate_wave' }
 };
 
 // Sized so the two padded boxes do not touch: the gap between the buttons is 14,
@@ -931,6 +939,34 @@ export function hitHudButton(state, x, y) {
 //
 // Disabled is the whole plate at 45%, the same as the menu buttons, rather than a
 // second drawing. One file per control is the rule for this folder.
+// A pair of bars, or a triangle. Drawn rather than written, because "||" and a
+// play arrow are not characters every phone has at the same weight — the two
+// bars come out as a broken vertical bar on some Android builds, and a triangle
+// is an emoji on others.
+//
+// The button shows the ACTION, not the state: running, it offers a pause; paused,
+// it offers a play. That is the convention every transport control uses, and the
+// alternative reads as a status light nobody can press.
+function transportGlyph(ctx, b, paused, ink) {
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  ctx.fillStyle = ink;
+
+  if (paused) {
+    const r = 6;
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.6, cy - r);
+    ctx.lineTo(cx + r, cy);
+    ctx.lineTo(cx - r * 0.6, cy + r);
+    ctx.closePath();
+    ctx.fill();
+    return;
+  }
+
+  const w = 3.5, h = 12, gap = 3.5;
+  ctx.fillRect(cx - gap / 2 - w, cy - h / 2, w, h);
+  ctx.fillRect(cx + gap / 2, cy - h / 2, w, h);
+}
+
 function hudButton(ctx, b, label, sub, on) {
   ctx.save();
   if (!on) ctx.globalAlpha = 0.45;
@@ -962,6 +998,10 @@ function hudButton(ctx, b, label, sub, on) {
   // The rule this file follows now: anything that draws text sets its own align
   // and baseline. Inheriting canvas state across functions is how a change in
   // one place moves the pixels in another.
+  // A button with no words is a button with a picture on it, and the caller
+  // draws that itself — see the pause control in drawHud.
+  if (label === null) { ctx.restore(); return drawn; }
+
   const mid = b.y + b.h / 2;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -982,6 +1022,7 @@ function hudButton(ctx, b, label, sub, on) {
   }
 
   ctx.restore();
+  return drawn;
 }
 
 // Ink for text sitting on a CREAM plate. The dashboard and the info box used to
@@ -1095,6 +1136,9 @@ function drawHud(ctx, state) {
   // The "Tap a plot to build" hint is gone. It said the same thing on every
   // frame of every game and this is where the controls live now.
   const call = canCallWave(state);
+  const plated = hudButton(ctx, HUD_BTN.pause, null, null, true);
+  transportGlyph(ctx, HUD_BTN.pause, state.paused, plated ? INK : '#F0E6D2');
+
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
   hudButton(ctx, HUD_BTN.wave, 'Next wave',
     call ? `+${earlyCallBonus(state)}g` : null, call);
