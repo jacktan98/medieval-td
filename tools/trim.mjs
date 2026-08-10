@@ -12,7 +12,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { inflateSync } from 'zlib';
 import { join } from 'path';
 import { SCALE, BLOOD_SCALE, archery, barracks } from '../src/data/towers.js';
-import { ui, uiSize, GLYPH_BOX_BARE } from '../src/data/ui.js';
+import { ui, uiSize, PORTRAIT_SCALE } from '../src/data/ui.js';
 
 // Art that is not drawn at the shared SCALE. Without this the sharpness verdict
 // lies in the most dangerous direction: blood measures 17 source px and would be
@@ -133,8 +133,9 @@ for (const d of dirs) {
     if (d === 'ui') {
       const key = uiKey(f);
       if (!key) { console.log(`${path.padEnd(35)} not referenced by src/data/ui.js`); continue; }
-      // Glyphs are drawn at two sizes; measure the bigger one.
-      ({ w: dw, h: dh } = uiSize(key, ui[key].fit || ui[key].h ? undefined : GLYPH_BOX_BARE));
+      // Every UI entry now carries the box it is actually drawn at, so this is
+      // the real drawn size rather than the worst case.
+      ({ w: dw, h: dh } = uiSize(key));
     } else {
       const s = scaleFor(f);
       dw = t[2] * s;
@@ -157,6 +158,25 @@ for (const d of dirs) {
       (ok ? 'sharp' : `SOFT, upscaled ${ratio.toFixed(2)}x`)
     );
   }
+}
+
+// The info box draws FIGURES, not UI art, and at PORTRAIT_SCALE times the board
+// scale rather than the board scale itself. That multiplier is the one number
+// that can quietly make every portrait soft at once — it is the same ratio for
+// every sprite, because a figure's source pixels and its drawn size scale
+// together, so one comparison covers all of them.
+//
+// This is what caught the blur: the box used to FIT each portrait into a 68px
+// square, which drew a 114px sprite at 68 and wanted 204 source pixels it did
+// not have. Sizing by a multiple instead makes the question answerable once.
+{
+  const ceiling = 1 / (MAX_DPR * SCALE);
+  const ok = PORTRAIT_SCALE <= ceiling;
+  console.log(
+    `\ninfo-box portraits: ${PORTRAIT_SCALE}x board scale, ceiling ${ceiling.toFixed(3)}x  ` +
+    (ok ? 'sharp' : `SOFT, upscaled ${(PORTRAIT_SCALE / ceiling).toFixed(2)}x`)
+  );
+  if (!ok) process.exitCode = 1;
 }
 
 // The front layer — the roof and near post a tier 2 tower draws OVER its archer

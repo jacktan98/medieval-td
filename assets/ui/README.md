@@ -38,6 +38,12 @@ measured from the bottom row of the art, where the pole spans x 2..14 of 72.
 Centring it would float the marker half a flag above the spot and lean it right,
 because the pennant is all on one side.
 
+It is also the one glyph with a **`nudge`**, 3px right inside its button. The
+pole is a thin dark bar and the pennant a pale triangle filling the rest, so the
+ink the eye weights is not where the bounding box says the middle is, and box-
+centring reads as the flag sitting slightly left. Only asymmetric art needs this;
+nothing else here has it.
+
 Trims and drawn boxes are in `src/data/ui.js`; paths in `src/assets.js`. The
 filenames have spaces, so `assets.js` encodes them as `%20` for the same reason
 `Plot%20Marker.svg` does — a raw space is not legal in a URL, and the artist's
@@ -82,6 +88,11 @@ a panel.
 | "Next wave" plate   | 136 x 24  | 408 x 72    | lit / dimmed |
 | gold icon           | 24 tall   | 72          | done         |
 | lives icon          | 24 tall   | 72          | done         |
+
+**The two controls sit in the middle-right of the strip, ending at x=710**, not
+against the right edge. The info box owns the top-right corner and they moved
+left to clear it. Anything drawn for this dashboard has to fit between the
+readouts, which end around x=324, and that panel.
 
 **Both controls are 24 tall now, the same height as the icons beside them**, so
 the dashboard sits on one band instead of the controls being twice the depth of
@@ -185,9 +196,10 @@ enough.
 
 ## The info box is not made of UI art
 
-Bottom-right, when a tower, a soldier or an enemy is selected: a portrait, a
+**Top right**, when a tower, a soldier or an enemy is selected: a portrait, a
 name, live health and damage per hit. `src/select.js` decides what it says and
-`drawInfo` in `render.js` lays it out.
+`drawInfo` in `render.js` lays it out. It was bottom-right, which put it over
+plot 5's marker; up here it sits beside the readouts and no plot is near it.
 
 **The portraits come from `assets/units` and `assets/enemies`, not from here.**
 A tower shows its MAN rather than its building — the building is already on the
@@ -196,6 +208,32 @@ between tiers is the soldier or archer it puts on the road. So there is nothing
 to draw for this box: it reads the same sprite trims the board does, and a
 re-export moves the portrait with the figure automatically.
 
+### Portraits are sized by a MULTIPLE, not fitted to a box
+
+This is the fix for the blur, and it is worth understanding rather than copying.
+
+The box used to fit every portrait into a 68px square. That is wrong twice. It
+drew a 114-source-pixel sprite at 68 game px, which at the 3x device-pixel cap
+wants 204 source pixels that do not exist — a 1.2x upscale on every figure, which
+is exactly what "blurry" looked like. And it drew a Giant Thug and a Thug the
+same size, which is a lie about the only thing that separates them.
+
+Portraits are now drawn at `PORTRAIT_SCALE` times the board's own `SCALE`. One
+factor for all of them, so they stay in proportion to each other exactly as they
+are on the board — the giant is genuinely bigger.
+
+`PORTRAIT_SCALE` is 1.6, and it is not an eyeballed number. A sprite stays crisp
+while its drawn size times the 3x cap fits inside its source pixels, so the
+largest honest multiple is `1 / (3 * SCALE)` = 512/315 = **1.625** — and it is
+the same ceiling for every figure, because a sprite's source pixels and its drawn
+size scale together. `node tools/trim.mjs` prints that comparison on every run.
+
+The slot is then sized to the biggest portrait rather than the other way round:
+the heavy is 186 x 162 source, which lands at 61 x 53, so the slot is 64 x 56 and
+the whole panel is 224 x 76.
+
+### The rest of it
+
 Health is read off the live object every frame, so the number in the box and the
 bar over the figure's head are the same fact twice. If they ever disagree, one of
 them is reading a copy.
@@ -203,9 +241,6 @@ them is reading a copy.
 A tower has no health row at all rather than a blank one, because a tower cannot
 be hurt — a row answering a question the game never asks is worse than no row.
 
-**One overlap worth knowing:** the box covers most of plot 5's marker at
-(734, 471). Taps fall straight through it — the box is a reader and never takes
-a tap — so the plot is still buildable, just partly behind a translucent panel
-while something is selected. Plot 5 is one of the two plots more than 130px off
-the road that no winning build ever takes, which is why this was left rather than
-moved. If a level ever puts a good plot down there, the box moves.
+Taps fall straight through the panel; it is a reader and never takes one.
+`node tools/hud-clear.mjs` includes it alongside the two buttons, so a plot that
+could push a building up behind it would be reported.

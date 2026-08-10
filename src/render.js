@@ -8,7 +8,7 @@ import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange } from './ground.js';
-import { ui, uiSize, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT } from './data/ui.js';
+import { ui, uiSize, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT, PORTRAIT_SCALE } from './data/ui.js';
 import { selectionInfo } from './select.js';
 
 const PLOT_R = 30;
@@ -901,9 +901,12 @@ function flag(ctx, x, y, alpha) {
 // which is unchanged: the full 63px depth of the strip plus HUD_PAD each side,
 // and 63 logical px is 44 real ones on the smallest canvas this game targets.
 // Shrinking the picture does not shrink the target.
+// Right edge at 710, not 944: the info box owns the top-right corner now, and
+// these moved left to clear it. The readouts end around x=324, so the controls
+// sit in the middle-right of the strip with the panel beyond them.
 export const HUD_BTN = {
-  speed: { x: 738, y: 9, w: 56, h: 24 },
-  wave:  { x: 808, y: 9, w: 136, h: 24 }
+  speed: { x: 504, y: 9, w: 56, h: 24 },
+  wave:  { x: 574, y: 9, w: 136, h: 24 }
 };
 
 // Sized so the two padded boxes do not touch: the gap between the buttons is 14,
@@ -976,6 +979,7 @@ function drawUi(ctx, key, x, y, box, anchor = HALF) {
 // Centred, which is what every piece of UI wants except the rally flag — that
 // one is planted, so it hangs off its pole foot.
 const HALF = [0.5, 0.5];
+const ZERO = [0, 0];
 
 // Draws a HUD icon and returns the x to carry on from. Falls back to the old
 // word if the image is missing, so a failed load leaves a readable dashboard
@@ -1124,8 +1128,10 @@ function drawButton(ctx, state, it) {
   const gy = caption ? it.y - 7 : it.y;
   const box = caption ? GLYPH_BOX : GLYPH_BOX_BARE;
   const key = GLYPH_ART[it.glyph];
+  // Optical centring, per glyph. Only the flag needs it — see data/ui.js.
+  const nudge = (key && ui[key].nudge) || ZERO;
 
-  if (!key || !drawUi(ctx, key, it.x, gy, box)) {
+  if (!key || !drawUi(ctx, key, it.x + nudge[0], gy + nudge[1], ui[key] && ui[key].fit)) {
     // Siege, the monastery and the `max` chevrons have no drawing yet. The
     // vector is scaled to the same box so a mixed ring does not look like two
     // different sets of icons, and it is drawn dark because the plate is cream.
@@ -1145,10 +1151,11 @@ function drawButton(ctx, state, it) {
     ctx.textBaseline = 'middle';
     // Dark on the cream plate, and green when it is gold coming back to you.
     ctx.fillStyle = it.gain !== null ? '#2F6B27' : '#3A3026';
-    // 11px, down from 12. The glyphs grew when the labels came out and the
-    // price is the smaller half of the button's job — what it IS reads first,
-    // what it costs second.
-    ctx.font = '700 11px system-ui, sans-serif';
+    // 10px. The glyphs grew when the labels came out, and the price is the
+    // smaller half of the button's job — what it IS reads first, what it costs
+    // second. 12 -> 11 -> 10 over two passes, each time to give the glyph more
+    // of the disc.
+    ctx.font = '700 10px system-ui, sans-serif';
     ctx.fillText(caption, it.x, it.y + 16);
     ctx.textAlign = 'left';
   }
@@ -1221,57 +1228,59 @@ function drawGlyph(ctx, kind) {
 
 // The info box: who you have selected, and how they are doing.
 //
-// Bottom right, which is the one corner nothing else uses — the dashboard owns
-// the top, the radial menu is clamped to y <= 442 and centred on a plot, and the
-// result and title screens cover everything anyway. It is a reader: tapping it
-// does nothing, so it never has to fight the board for a tap.
+// TOP right, and the dashboard controls moved left to clear it. It was bottom
+// right, which put it over plot 5's marker; up here it is beside the readouts
+// instead of on the board, and no plot is anywhere near it.
 //
 // What it shows comes from selectionInfo() in select.js. Health is read off the
 // live object every frame, so a soldier's bar and this number are the same fact
 // twice — if they ever disagree, one of them is reading a copy.
-const INFO = { w: 236, h: 96, pad: 12 };
-const INFO_PORTRAIT = 68;
+export const INFO_BOX = { x: 724, y: 9, w: 224, h: 76 };
+
+// The portrait slot, sized to the BIGGEST figure rather than the other way
+// round. Every portrait is drawn at PORTRAIT_SCALE * SCALE — one factor, so a
+// Giant Thug is genuinely bigger than a Thug — and the largest of them is the
+// heavy at 186 x 162 source, which lands at 61 x 53. 64 x 56 holds it.
+const PORTRAIT = { w: 64, h: 56 };
 
 function drawInfo(ctx, state) {
   const info = selectionInfo(state);
   if (!info) return;
 
-  const x = 960 - INFO.w - INFO.pad;
-  const y = 540 - INFO.h - INFO.pad;
+  const { x, y, w, h } = INFO_BOX;
 
   ctx.fillStyle = 'rgba(28,32,24,0.82)';
   ctx.beginPath();
-  ctx.roundRect(x, y, INFO.w, INFO.h, 10);
+  ctx.roundRect(x, y, w, h, 9);
   ctx.fill();
   ctx.strokeStyle = 'rgba(240,230,210,0.55)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // The figure, fitted into a square on the left. Drawn from its own sprite
-  // trim, so a re-export moves the portrait with the board art and there is no
-  // second set of pictures to keep in step.
+  // The figure, at the shared portrait scale rather than fitted to the slot.
+  // Drawn from its own sprite trim, so a re-export moves the portrait with the
+  // board art and there is no second set of pictures to keep in step.
   const img = info.sprite && art[info.sprite];
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
-    const k = INFO_PORTRAIT / Math.max(sw, sh);
-    const w = sw * k;
-    const h = sh * k;
+    const dw = sw * SCALE * PORTRAIT_SCALE;
+    const dh = sh * SCALE * PORTRAIT_SCALE;
     ctx.drawImage(img, sx, sy, sw, sh,
-      x + 14 + (INFO_PORTRAIT - w) / 2,
-      y + INFO.h / 2 - h / 2,
-      w, h);
+      x + 12 + (PORTRAIT.w - dw) / 2,
+      y + h / 2 - dh / 2,
+      dw, dh);
   }
 
-  const tx = x + 14 + INFO_PORTRAIT + 14;
+  const tx = x + 12 + PORTRAIT.w + 12;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = '#F0E6D2';
-  ctx.font = '700 15px system-ui, sans-serif';
-  ctx.fillText(info.title, tx, y + 26);
+  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.fillText(info.title, tx, y + 20);
 
-  ctx.font = '13px system-ui, sans-serif';
-  let ty = y + 54;
+  ctx.font = '11px system-ui, sans-serif';
+  let ty = y + 43;
 
   // A tower has no health line at all, rather than a blank or a dash: it cannot
   // be hurt, so a health row would be answering a question the game never asks.
@@ -1284,14 +1293,14 @@ function drawInfo(ctx, state) {
     const lw = ctx.measureText('Health: ').width;
     ctx.fillStyle = frac > 0.5 ? '#8ED080' : frac > 0.25 ? '#E5C04A' : '#E06A5A';
     ctx.fillText(`${info.hp}/${info.maxHp}`, tx + lw, ty);
-    ty += 22;
+    ty += 18;
   }
 
   ctx.fillStyle = 'rgba(240,230,210,0.75)';
   ctx.fillText('Damage: ', tx, ty);
-  const dw = ctx.measureText('Damage: ').width;
+  const dw2 = ctx.measureText('Damage: ').width;
   ctx.fillStyle = '#F0E6D2';
-  ctx.fillText(String(info.damage), tx + dw, ty);
+  ctx.fillText(String(info.damage), tx + dw2, ty);
 }
 
 // The title screen, and the reason it exists.

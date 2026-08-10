@@ -25,7 +25,7 @@
 
 import { plots } from '../src/data/level01.js';
 import { families } from '../src/data/towers.js';
-import { HUD_BTN } from '../src/render.js';
+import { HUD_BTN, INFO_BOX } from '../src/render.js';
 
 // Where drawHud puts its text. textBaseline is 'middle' at y=21, the biggest
 // font is 20px, so the ink runs from about 11 to 31.
@@ -61,7 +61,12 @@ const RUNS = [
 // inside a control the player taps, with the button's border drawn across it,
 // and there is no reading of that which looks intended. Taken from render.js
 // rather than copied, because a button that moves must move here too.
-const PANELS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
+// The info box counts too. It is only drawn when something is selected, which
+// makes it easier to forget than the buttons and no less in the way — it is
+// 224px of opaque panel in the top-right corner, and a tower reaching into it
+// would be behind the thing describing it.
+const PANELS = [...Object.entries(HUD_BTN), ['info', INFO_BOX]]
+  .map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
 
 // Same geometry as towerBox(): a building hangs off its ground shadow, whose
 // centre sits on the plot point. The stars drawTierStars puts at box.top - 7
