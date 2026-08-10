@@ -1318,32 +1318,45 @@ function drawInfo(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
+  // The whole block is CENTRED in the panel rather than hung from the top, so a
+  // tower's two lines and a figure's three both sit in the middle of the plate
+  // instead of the last row crowding the bottom edge. That is why the number of
+  // rows is counted before anything is drawn.
+  const rows = info.hp !== null ? 2 : 1;
+  const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
+
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
   ctx.font = '700 13px system-ui, sans-serif';
-  ctx.fillText(info.title, tx, y + 20);
+  ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
-  // The two rows are ICONS now, not the words "Health:" and "Damage:". Both sit
-  // in a column STAT_COL wide so the numbers beside them line up whether the
-  // row above is there or not — a tower has no health row, and a damage figure
-  // that shifted left on towers and right on units would read as two layouts.
+  // The rows are ICONS, not the words "Health:" and "Damage:". Both sit in a
+  // column STAT_COL wide so the numbers beside them line up whether the row
+  // above is there or not — a tower has no health row, and a damage figure that
+  // shifted left on towers and right on units would read as two layouts.
   ctx.font = '700 12px system-ui, sans-serif';
-  let ty = y + 44;
+  let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
   if (info.hp !== null) {
-    drawUi(ctx, 'hud_life', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
+    drawUi(ctx, 'stat_health', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
     // Reddens as it drops, on the same thresholds as the health bars over their
     // heads, so the two readings agree at a glance.
     const frac = info.maxHp ? info.hp / info.maxHp : 1;
     ctx.fillStyle = !drawn ? '#F0E6D2'
                   : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED;
     ctx.fillText(`${info.hp}/${info.maxHp}`, tx + STAT_COL + 6, ty);
-    ty += 20;
+    ty += ROW_PITCH;
   }
 
   drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
   ctx.fillText(String(info.damage), tx + STAT_COL + 6, ty);
 }
+
+// How much vertical room the title takes, and the pitch between stat rows. 20 is
+// a 16px icon with 4 of air, which is the tightest the two hearts and swords can
+// sit without touching.
+const TITLE_BAND = 22;
+const ROW_PITCH = 20;
 
 // The title screen, and the reason it exists.
 //

@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Thirteen files in, three still vector.** Everything below that is not in the table
+**Fourteen files in, three still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -23,6 +23,7 @@ usable button rather than a blank disc.
 | `Next Wave Box.png`      | the wave plate    | 127 x 24     |
 | `Description Box.png`    | the info panel    | 220 x 76     |
 | `Damage Icon.png`        | the word "Damage" | 16 tall      |
+| `Health Icon.png`        | the word "Health" | 16 tall      |
 
 Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
 **`max`** — the chevrons on a tower with nothing left to buy. Siege and the
@@ -95,7 +96,8 @@ All four dashboard pieces are drawn now.
 | description panel   | 678 x 234   | 220 x 76 | 660      |
 | gold icon           | 278 x 132   | 51 x 24  | 152      |
 | lives icon          | 192 x 156   | 30 x 24  | 89       |
-| damage sword        | 142 x 142   | 16 x 16  | 48       |
+| damage sword        | 148 x 148   | 16 x 16  | 48       |
+| health heart        | 198 x 160   | 20 x 16  | 59       |
 
 **A plate's HEIGHT is chosen and its WIDTH follows from the drawing.** 24 ties
 the two controls to the icons beside them and 76 holds the panel's title and two
@@ -267,14 +269,19 @@ the whole panel is 224 x 76.
 ### The rest of it
 
 **The rows are icons, not words.** "Health:" and "Damage:" are a heart and a
-sword — the heart being the SAME file as the lives icon in the dashboard, drawn
-at 16 tall instead of 24. A heart is a heart: lives are the keep's health and
-this is a figure's, and two different hearts would imply two different things.
-One trim, two sizes, no duplication.
+sword, both 16 tall. The heart is `Health Icon.png`, its own file — it borrowed
+the dashboard's `Life Icon.png` for one build on the reasoning that a heart is a
+heart, and then got drawn properly. Keeping them separate is right anyway: the
+dashboard heart is the keep's lives and this one is a figure's health.
 
 Both icons sit in a 22px column so the numbers line up whether the health row is
 there or not — a tower has no health, and a damage figure that shifted left on
 towers and right on units would read as two different layouts.
+
+**The whole block is centred in the panel**, not hung from the top. The number of
+rows is counted before anything is drawn, so a tower's two lines and a figure's
+three both sit in the middle of the plate — hanging them from the top put the
+last row four pixels off the bottom edge.
 
 Health is read off the live object every frame, so the number in the box and the
 bar over the figure's head are the same fact twice. If they ever disagree, one of

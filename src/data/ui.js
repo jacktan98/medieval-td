@@ -57,13 +57,15 @@ export const FLAG_FOOT = [0.111, 1];
 // because a picture standing in for a word has to be read at a glance and has no
 // cap height to sit on.
 //
-// Health borrows the LIVES icon rather than having one of its own. A heart is a
-// heart: lives are the keep's health and this is a figure's, and drawing two
-// different hearts would imply they were different things.
+// Health has a heart of its own now — `Health Icon.png`, not the dashboard's
+// `Life Icon.png`. It borrowed the lives icon for one build, on the reasoning
+// that a heart is a heart; the artist drew a second one, so the two are two
+// files and two keys. They are different questions anyway: lives are the keep's
+// and this is a figure's.
 export const STAT_ICON_H = 16;
 
 // The column the two icons sit in, so the numbers beside them line up. The
-// widest of the pair is the heart at 19.7 drawn, so 22 clears it.
+// widest of the pair is the heart at 19.8 drawn, so 22 clears it.
 export const STAT_COL = 22;
 
 export const ui = {
@@ -93,9 +95,9 @@ export const ui = {
   // This is the only glyph that needs it, because it is the only asymmetric one.
   glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] },
 
-  // The sword beside a damage number. Health uses hud_life above, at STAT_ICON_H
-  // rather than at its own HUD height — same file, two sizes, one trim.
-  stat_damage:  { trim: [185, 185, 142, 142], h: STAT_ICON_H },
+  // The heart and the sword that replaced the words "Health:" and "Damage:".
+  stat_health:  { trim: [157, 176, 198, 160], h: STAT_ICON_H },
+  stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
 
   // The three plates. These are drawn to a RECT rather than fitted to a box, so
   // the entry carries no size: the rect comes from HUD_BTN and INFO_BOX in

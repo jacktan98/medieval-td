@@ -112,6 +112,7 @@ const UI_FILES = {
   'Next Wave Box.png': 'plate_wave',
   'Description Box.png': 'plate_info',
   'Damage Icon.png': 'stat_damage',
+  'Health Icon.png': 'stat_health',
   'Gold Icon.png': 'hud_gold',
   'Life Icon.png': 'hud_life',
   'Button Plate Icon.png': 'btn_plate',

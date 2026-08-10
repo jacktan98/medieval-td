@@ -62,12 +62,16 @@ const paths = {
   glyph_up:        'assets/ui/Upgrade%20Icon.png',
   glyph_coin:      'assets/ui/Sell%20Icon.png',
   glyph_flag:      'assets/ui/Rally%20Point%20Icon.png',
-  // The three plates, and the sword that replaced the word "Damage". Health
-  // reuses the lives icon rather than having one of its own — a heart is a heart.
+  // The three plates, and the two stat icons that replaced the words "Health:"
+  // and "Damage:" in the info box.
   plate_speed:     'assets/ui/Speed%20Box.png',
   plate_wave:      'assets/ui/Next%20Wave%20Box.png',
   plate_info:      'assets/ui/Description%20Box.png',
   stat_damage:     'assets/ui/Damage%20Icon.png',
+  // A heart of its own for the info box. It is NOT hud_life: the dashboard's
+  // heart is the keep's lives and this one is a figure's health, and the artist
+  // drew them as two files, so they are two keys.
+  stat_health:     'assets/ui/Health%20Icon.png',
   // The board and the plot marker, split out of the artist's Map.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is
