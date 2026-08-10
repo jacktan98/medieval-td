@@ -1,6 +1,6 @@
 import { loadArt } from './assets.js';
 import { loadAudio } from './audio.js';
-import { startGold, startLives } from './data/level01.js';
+import { level } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers } from './towers.js';
@@ -47,9 +47,15 @@ function fitToDisplay() {
 const state = {};
 
 function newGame() {
+  // Survives the reset: the map the player chose is a menu setting, not part of
+  // the game being reset. Without this, switching to map 2 on the title screen
+  // would bounce straight back to map 1, and so would losing a game on it.
+  const levelIndex = state.levelIndex ?? 0;
+
   Object.assign(state, {
-    gold: startGold,
-    lives: startLives,
+    levelIndex,
+    gold: level.startGold,
+    lives: level.startLives,
     towers: [],
     enemies: [],
     units: [],

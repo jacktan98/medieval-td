@@ -23,7 +23,7 @@
 // written for failed two of the three at once, and fixing the smaller one first
 // would have meant moving the same marker twice.
 
-import { plots } from '../src/data/level01.js';
+import { level } from '../src/level.js';
 import { families } from '../src/data/towers.js';
 import { HUD_BTN, INFO_BOX } from '../src/render.js';
 
@@ -81,8 +81,8 @@ const inkTop = boxTop;
 let bad = 0, noted = 0;
 console.log('plot            tallest tower   ink top  box top  verdict');
 
-for (let i = 0; i < plots.length; i++) {
-  const p = plots[i];
+for (let i = 0; i < level.plots.length; i++) {
+  const p = level.plots[i];
 
   // The worst case across every family and tier, so this does not go stale when
   // a taller tier-3 building arrives.

@@ -23,7 +23,7 @@
 // slope there rather than toward a corner. The middle of the path was left
 // alone: it tracks about 5px below centre the whole way, which is a consistent
 // bias on a 70px road and not worth disturbing a tuned level over.
-export const path = [
+const route1 = [
   { x: -40, y: 203 },
   { x: 0, y: 195 },
   { x: 49, y: 191 },
@@ -92,7 +92,7 @@ export const path = [
 // button. It is a better plot now by every measure that can be counted — and it
 // still cost the heavy 25 hp to keep the level winnable. The note on that hp in
 // data/waves.js is the one to read before moving a marker.
-export const plots = [
+const plots1 = [
   { x: 153, y: 247 },   // 11% along,  72 off
   { x: 311, y: 239 },   // 20% along,  51 off
   { x: 105, y: 454 },   // 44% along, 142 off   FAR
@@ -110,5 +110,19 @@ export const plots = [
 // touches a building. If a keep is drawn later it belongs in the map artwork,
 // and it still does not need a coordinate here.
 
-export const startGold = 220;
-export const startLives = 20;
+
+
+// The level, as the game asks for it. `routes` is a LIST because a map can have
+// more than one road in — map 2 has two. This one has a single road, so it has
+// a single route, and nothing about it changed when the list arrived.
+export const level01 = {
+  id: 'm1',
+  name: 'The Bend',
+  art: 'map01',
+  src: 'assets/map/Map.svg',
+  routes: [route1],
+  plots: plots1,
+  march: 1,
+  startGold: 220,
+  startLives: 20
+};

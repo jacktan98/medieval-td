@@ -8,7 +8,7 @@
 // soldier radius, the road width in render.js, or the plot positions.
 
 import { makeUnits } from '../src/units.js';
-import { path, plots } from '../src/data/level01.js';
+import { level } from '../src/level.js';
 import { barracks } from '../src/data/towers.js';
 import { ROAD_W } from '../src/render.js';
 
@@ -16,6 +16,7 @@ const HALF = ROAD_W / 2;
 
 function distToPath(x, y) {
   let best = Infinity;
+  const path = level.routes[0].pts;
   for (let i = 0; i < path.length - 1; i++) {
     const a = path[i];
     const b = path[i + 1];
@@ -32,9 +33,9 @@ let worst = 0;
 let offRoad = 0;
 
 for (const def of barracks) {
-  for (let i = 0; i < plots.length; i++) {
+  for (let i = 0; i < level.plots.length; i++) {
     const state = { units: [] };
-    makeUnits(state, { def, x: plots[i].x, y: plots[i].y });
+    makeUnits(state, { def, x: level.plots[i].x, y: level.plots[i].y });
 
     for (const u of state.units) {
       const edge = distToPath(u.rx, u.ry) + u.def.r;

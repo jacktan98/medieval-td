@@ -1,4 +1,5 @@
-import { path } from './data/level01.js';
+import { level } from './level.js';
+import { at as pointOn, nearestOn } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { clampToRange } from './ground.js';
@@ -44,76 +45,24 @@ const ASSIST = 70;
 // Widened when the painted road replaced the drawn one: the road went from 52
 // to 125 across, and the old tight wedge read as a huddle in the middle of it.
 //
-// Spreading them does NOT weaken the block. Enemies walk the centreline exactly,
-// so what matters is each soldier's distance to across=0, and 20 is still well
-// inside ENGAGE. Spreading only changes how it looks.
+// Spreading them used to be purely cosmetic, on the reasoning that enemies walk
+// the centreline exactly so all that mattered was each soldier's distance to
+// across=0. THAT IS NO LONGER TRUE: enemies pick one of three lanes at spawn and
+// walk 20px either side of the centre. The wedge is now doing real work — the
+// two rear men at across=-20 and +20 sit on exactly the two outer lanes — and
+// its width is a blocking parameter rather than a look. Widening it further
+// would leave a gap up the middle; narrowing it lets the kerb lanes through.
 const FORMATION = [[-24, 0, 0], [13, -20, -22], [13, 20, 22]];
 
-// Nearest point on the path polyline — the rally point a barracks sends its
-// soldiers to. Returns the segment direction too, so the formation can be laid
-// out across the path rather than along it.
-export function nearestOnPath(x, y) {
-  let best = { x: path[0].x, y: path[0].y, d: Infinity, tx: 1, ty: 0, len: 1, seg: 0, t: 0 };
-
-  for (let i = 0; i < path.length - 1; i++) {
-    const a = path[i];
-    const b = path[i + 1];
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const len2 = dx * dx + dy * dy;
-    const t = len2 ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / len2)) : 0;
-    const px = a.x + dx * t;
-    const py = a.y + dy * t;
-    const d = Math.hypot(px - x, py - y);
-
-    if (d < best.d) {
-      best = { x: px, y: py, d, tx: dx, ty: dy, len: Math.sqrt(len2) || 1, seg: i, t };
-    }
-  }
-
-  return best;
-}
-
-// Walk `dist` along the polyline from (seg, t), forwards if positive. Returns
-// the point and the unit tangent there.
+// Nearest point on any of the level's roads — the rally point a barracks sends
+// its soldiers to.
 //
-// This is what keeps a squad on a bending road. Offsetting along the straight
-// tangent of one segment is fine on a level made of long straight legs, but the
-// road is traced from artwork now and curves constantly — a soldier placed 24px
-// "forward" along a tangent ends up off the tarmac on the outside of a bend.
-// Far enough off and enemies walk past outside ENGAGE without ever being
-// blocked, which reads as the barracks being broken rather than misplaced.
-function walkPath(seg, t, dist) {
-  let i = seg;
-  let u = t;
-  let left = Math.abs(dist);
-  const fwd = dist >= 0;
-
-  const segLen = k => Math.hypot(path[k + 1].x - path[k].x, path[k + 1].y - path[k].y) || 1;
-
-  while (left > 0) {
-    const L = segLen(i);
-    const avail = fwd ? L * (1 - u) : L * u;
-
-    if (avail >= left) {
-      u += (fwd ? left : -left) / L;
-      break;
-    }
-    left -= avail;
-    if (fwd) {
-      if (i >= path.length - 2) { u = 1; break; }
-      i++; u = 0;
-    } else {
-      if (i <= 0) { u = 0; break; }
-      i--; u = 1;
-    }
-  }
-
-  const a = path[i];
-  const b = path[i + 1];
-  const L = segLen(i);
-  return { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u,
-           tx: (b.x - a.x) / L, ty: (b.y - a.y) / L };
+// The measuring lives in route.js now, and across ALL routes rather than one:
+// map 2 has two roads in, and a barracks built beside the southern one must not
+// send its men to the northern one. Kept as a named export because the tools
+// use it to ask how far a plot is from the road.
+export function nearestOnPath(x, y) {
+  return nearestOn(level.routes, x, y);
 }
 
 // Where each man in the squad should be standing, given the tower's rally.
@@ -138,12 +87,17 @@ function stations(tower) {
   // Re-find the rally on the path after the range clamp, so the slots are laid
   // out from a point that is actually on the road.
   const base = nearestOnPath(held.x, held.y);
+  const road = level.routes[base.route];
   const out = [];
 
   for (let i = 0; i < s.count; i++) {
     const [along, across, splay] = FORMATION[i % FORMATION.length];
     // `along` follows the road's curve; `across` steps off the tangent there.
-    const at = walkPath(base.seg, base.t, along);
+    // Walking by arc length keeps a squad on a bending road: offsetting along
+    // one segment's straight tangent puts a man 24px "forward" onto the grass
+    // on the outside of a bend, far enough that enemies pass outside ENGAGE
+    // without ever being blocked.
+    const at = pointOn(road, base.s + along);
     out.push({
       rx: at.x - at.ty * across,
       ry: at.y + at.tx * across,

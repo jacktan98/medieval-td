@@ -1,5 +1,5 @@
-import { plots } from './data/level01.js';
-import { PLOT_R, hitHudButton, hitStart } from './render.js';
+import { level, useLevel } from './level.js';
+import { PLOT_R, hitHudButton, hitStart, hitMapButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
@@ -36,6 +36,17 @@ export function attachInput(canvas, state, restart) {
     // The title screen owns the whole board: nothing under it may act on a tap,
     // including a plot the Start button happens to be sitting over.
     if (!state.started) {
+      const pick = hitMapButton(state, x, y);
+      if (pick !== null) {
+        // Switching maps rebuilds the game rather than just remembering the
+        // choice, because the board behind the title screen is the chosen map:
+        // its roads, its plots, its purse. Anything already placed belonged to
+        // the other map's plots and cannot come along.
+        state.levelIndex = pick;
+        useLevel(pick);
+        restart();
+        return;
+      }
       if (hitStart(state, x, y)) state.started = true;
       return;
     }
@@ -78,7 +89,7 @@ export function attachInput(canvas, state, restart) {
 
     if (hitCancel(state, x, y)) { closeMenu(state); return; }
 
-    const plot = plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
+    const plot = level.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
     if (plot) {
       const tower = state.towers.find(t => t.plot === plot) || null;
       openMenu(state, plot, tower);
@@ -135,7 +146,7 @@ export function attachInput(canvas, state, restart) {
 
     if (state.menu) return;   // never steal a menu that is already up
 
-    const plot = plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
+    const plot = level.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
     if (plot && !state.towers.some(t => t.plot === plot)) {
       openMenu(state, plot, null);
       state.menu.viaHover = true;

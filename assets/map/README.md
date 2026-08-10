@@ -1,11 +1,14 @@
 # Map artwork
 
-Four hand-drawn files live here, all authored, never generated:
+Hand-drawn files live here, all authored, never generated:
 
-- **`Map.svg`** — the whole board at 1920 x 1080: sky strip, grass, road,
+- **`Map.svg`** — the first board at 1920 x 1080: sky strip, grass, road,
   scenery, and a marker on each of the nine build plots. It was `Map_1.svg`
-  until the last upload; the tool follows the artist's filename rather than the
+  until an early upload; the tool follows the artist's filename rather than the
   other way round.
+- **`Map_2.svg`** — the second stage, the same size and the same conventions.
+  Two roads come in from the west and merge before the keep, and it has nine
+  markers of its own.
 - **`Plot Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
   of the last redraw. The space in the name is fine; `src/assets.js` asks for it
   as `Plot%20Marker.svg`, because a raw space is illegal in a URL.
@@ -21,13 +24,17 @@ Four hand-drawn files live here, all authored, never generated:
   stopped agreeing and every 1024 asset is the wrong size.**
 - **`Gold.png`, `Life.png`** — the two HUD icons, at the top of the screen.
 
-One derived file is generated from them and committed:
+One derived file per board is generated from them and committed:
 
-- **`Map_base.svg`** — the board with the nine markers cut out.
+- **`Map_base.svg`**, **`Map_2_base.svg`** — the board with its markers cut out.
 
-`node tools/split-map.mjs` writes it, and never touches the hand-drawn files.
+`node tools/split-map.mjs assets/map/Map_2.svg` writes one, and never touches the
+hand-drawn files. With no argument it does map 1. The tool finds which level a
+file belongs to by matching the `src` recorded in `src/data/level*.js`, so a new
+map needs its level file to exist first, even with an empty plot list.
 
-> **THE GAME DRAWS `Map_base.svg`, NOT `Map.svg`.** Uploading a redrawn
+> **THE GAME DRAWS `Map_base.svg`, NOT `Map.svg`** — and `Map_2_base.svg`, not
+> `Map_2.svg`. Uploading a redrawn
 > board changes nothing on screen until that command is run. This has caught us
 > out on four of the last five map uploads — three times because the upload
 > deleted the derived file, once because it left a stale one in place. If a
@@ -259,3 +266,46 @@ Two traps worth knowing when you re-tune:
   mix "lost" and it looked like a balance collapse; it was a bad shopping list.
 - Test the **best** build of each family, not a typical one. "Archery alone
   cannot win" is a claim about the strongest all-archery build that exists.
+
+
+## Two things every new map needs extracted
+
+A board is not playable until two lists have been read off it. Both have tools,
+and both should be re-run after any redraw rather than hand-edited.
+
+**The road**, by `node tools/trace-road.mjs assets/map/Map_2.svg`. It reads the
+single filled road shape straight out of the SVG — no rasteriser, there is no
+image decoder in this project — builds a mask, and walks the ridge of the
+clearance field from each entry to the exit. One route per entry, so a forked
+road comes out as two routes that agree about the stretch they share.
+
+It also prints how much road there is either side of the line at its narrowest,
+which is the number the lane offsets in `src/route.js` have to fit inside: 32px
+on map 1, 40px on map 2.
+
+**The plots**, by `node tools/split-map.mjs assets/map/Map_2.svg`, which is the
+same command that writes the base. They come out in road order — on a forked map
+that means by how far each still is from the keep — because a plot index has to
+mean something: `tools/sim.mjs` picks plots by number.
+
+## The exporter does not always write transforms the same way
+
+Map 1 has its shapes' coordinates baked in; **map 2 puts a `transform` on each
+`<path>` element**. The reader in `tools/svg.mjs` handles both, and did not at
+first — reading only group transforms put map 2's road at x -1935..154 on a
+1920-wide canvas, and the tracer reported a road that never reached the right
+edge. If a new map produces geometry that is wildly off the canvas, this is the
+first thing to check.
+
+## A shorter road is a much easier map, and it has to be paid for
+
+Map 1's road is 1804px long. Map 2's are about 1060 each. Waves are shared
+between the maps, so the same enemy is under fire for 59% as long on map 2, and
+the six towers that hold map 1 lose map 2 by wave 4.
+
+That is settled by `march` in the level file — how fast the column walks, as a
+multiple of each enemy's own speed — and NOT by starting gold, which was tried
+from 220 up to 620 and never bought a single win. The shortfall is time under
+fire, not towers. Map 2 marches at 0.62, measured against map 1's best build at
+each family split. Any new map wants the same treatment: trace it, sweep it with
+`node tools/sweep.mjs <n>`, and set `march` until the table matches.

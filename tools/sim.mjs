@@ -19,7 +19,7 @@ import { updateUnits, makeUnits } from '../src/units.js';
 import { updateCorpses } from '../src/corpses.js';
 import { updateSplats } from '../src/blood.js';
 import { families } from '../src/data/towers.js';
-import { plots, startGold, startLives } from '../src/data/level01.js';
+import { level, levels, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
 
 const DT = 1 / 60;
@@ -32,8 +32,8 @@ export const B = (plot, tier = 2) => ({ plot, fam: 'barracks', tier });
 
 function newState() {
   return {
-    gold: startGold,
-    lives: startLives,
+    gold: level.startGold,
+    lives: level.startLives,
     towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [],
     waveIndex: 0, spawned: 0, timer: openingDelay,
     // Set explicitly rather than left undefined: the game holds everything until
@@ -49,7 +49,7 @@ function build(state, entry) {
   const def = fam.tiers[0];
   if (state.gold < def.cost) return false;
 
-  const plot = plots[entry.plot];
+  const plot = level.plots[entry.plot];
   const t = {
     plot, fam, def,
     x: plot.x, y: plot.y,
@@ -76,7 +76,41 @@ function upgrade(state) {
   }
 }
 
-export function run(plan) {
+// A seeded random number generator, installed over Math.random for the length
+// of a run and taken off again afterwards.
+//
+// The game became RANDOM when enemies got lanes: each one picks a road and a
+// side of it at spawn, so no two runs of the same build are the same game. That
+// turned this tool from a measurement into a coin toss — the same plan measured
+// twice in a row came out "won with 3 lives" and then "lost at wave 7", which is
+// not a difference anyone can tune against.
+//
+// Seeding it puts determinism back without taking the randomness out of the
+// game: the same plan and seed always play out identically, and different seeds
+// are different battles. That is why the scenarios below are run across several
+// seeds rather than one — a single seed is one battle, and the question is how a
+// build does in general.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function run(plan, seed = 1) {
+  const realRandom = Math.random;
+  Math.random = mulberry32(seed);
+  try {
+    return play(plan);
+  } finally {
+    Math.random = realRandom;
+  }
+}
+
+function play(plan) {
   const state = newState();
   const pending = [...plan];
   let time = 0;
@@ -164,7 +198,12 @@ export function run(plan) {
 // The level is far less brittle than it was. 33 of 448 builds clear it, against 4
 // before these changes — and the 4 was fragile enough that a single plot marker
 // moving 150px took it to 0. Wider is the point; it is still 7%.
-const scenarios = {
+//
+// PER LEVEL, because a plot index means a different place on each map and a
+// shopping list is only meaningful against the map it was swept on. Run
+// `node tools/sweep.mjs 2` after redrawing map 2 and paste its rows here.
+const byLevel = {
+m1: {
   'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
   'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],
   'ALL barracks x6 (expect LOSS)':  [B(1), B(3), B(4), B(6), B(7), B(8)],
@@ -180,14 +219,56 @@ const scenarios = {
   'MIX 3 archery + 3 barracks':     [A(1), B(3), A(4), B(6), B(7), A(8)],
   'MIX 2 archery + 4 barracks':     [B(0), B(3), A(4), A(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
+},
+
+// Map 2, from `node tools/sweep.mjs 2`. Its plots are all live — none of them is
+// more than 91px off the road — so there is no dead-plot scenario to write.
+//
+// The two roads are why the mixes look the way they do: plots 0 and 4 watch the
+// northern road only, 1, 2 and 3 the southern, and 5 to 8 sit past the junction
+// where everything funnels together. A build that ignores one arm loses to the
+// half of every wave that walks up it.
+m2: {
+  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(2), A(3), A(5), A(6)],
+  'ALL barracks x6 (expect LOSS)':  [B(2), B(3), B(4), B(5), B(7), B(8)],
+  'BEST 5 archery + 1 (expect LOSS)': [A(0), A(1), B(2), A(3), A(4), A(7)],
+  'MIX 4 archery + 2 barracks':     [A(0), A(2), B(5), B(6), A(7), A(8)],
+  'MIX 3 archery + 3 barracks':     [A(2), B(4), A(5), A(6), B(7), B(8)],
+  'MIX 2 archery + 4 barracks':     [A(1), B(3), B(4), B(5), B(7), A(8)],
+  'under-built     (expect LOSS)':  [A(2, 0)]
+}
 };
 
+// Which map to balance. `node tools/sim.mjs 2` runs the second one.
+//
+// Only when this file IS the program. It used to select the level at import
+// time from process.argv, which quietly broke every other script that imports
+// run() — those scripts have their own arguments, sim.mjs read them as a map
+// number, and an experiment that thought it was measuring map 2 measured map 1
+// with map 2's plot indices. Two hours of "the second map is unwinnable" came
+// out of that.
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const which = Number(process.argv[2] || 1);
+  useLevel(which - 1);
+  console.log(`level ${which}: ${level.name}\n`);
+
+  // Five battles per build, not one. See mulberry32 above: with lanes in, a
+  // single run is a single battle, and the spread between them is wide enough
+  // to flip a verdict.
+  const SEEDS = [1, 2, 3, 4, 5];
+
+  const scenarios = byLevel[level.id];
+  if (!scenarios) throw new Error(`no scenarios for level ${level.id}`);
+
   for (const [label, plan] of Object.entries(scenarios)) {
-    const r = run(plan);
+    const rs = SEEDS.map(s => run(plan, s));
+    const wins = rs.filter(r => r.result === 'won').length;
+    const lives = rs.map(r => r.lives).sort((a, b) => a - b);
+    const waves = rs.map(r => r.wave).sort((a, b) => a - b);
+    const verdict = wins === SEEDS.length ? 'won' : wins === 0 ? 'lost' : `${wins}/5`;
     console.log(
-      `${label.padEnd(38)} ${r.result.padEnd(6)}  lives ${String(r.lives).padStart(3)}/${startLives}` +
-      `  wave ${r.wave}  gold ${String(r.gold).padStart(4)}  ${r.time}s`
+      `${label.padEnd(38)} ${verdict.padEnd(6)}  lives ${String(lives[2]).padStart(3)}/${level.startLives}` +
+      ` (${lives[0]}..${lives[lives.length - 1]})  wave ${waves[2]}`
     );
   }
 }

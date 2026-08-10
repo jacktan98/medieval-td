@@ -23,21 +23,43 @@
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { enemyTypes } from '../src/data/waves.js';
+import { level } from '../src/level.js';
+import { offset } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
 
-// One arrow, lethal, fired from `towerX` at an enemy walking `walkFace`.
+// Where on the road the test stands its victim. An enemy's position is DERIVED
+// from its route and how far along it has walked — setting x and y directly does
+// nothing, they are overwritten on the next step — so the fixture has to name a
+// place on the road instead of a coordinate. 400px along route 0 is somewhere in
+// the middle of map 1's first straight.
+const AT = 400;
+const SPOT = offset(level.routes[0], AT, 0);
+
+// One arrow, lethal, fired from `side` of the enemy, at one walking `walkFace`.
 // Everything else about the enemy is the minimum updateEnemies will accept.
-function kill(towerX, walkFace) {
+function kill(side, walkFace) {
   const state = {
     enemies: [], corpses: [], shots: [], hits: [], splats: [], units: [],
     gold: 0, lives: 20
   };
+  // `route` and `s` are how an enemy knows where it is now — a road index and a
+  // distance along it. Route 0 at s 0 is the spawn end of the first road, which
+  // is fine here: the arrow kills it on the first step and nothing about this
+  // test depends on where it was standing.
   const e = {
-    def: enemyTypes.light_inf, x: 400, y: 300, hp: 1, maxHp: 80,
-    face: walkFace, seg: 0, t: 0, bobAmp: 1, acd: 0, thrust: 0, leaked: false
+    // Standing still, so "the body starts on the spot the man died" is an exact
+    // claim. A walking victim advances a pixel in the frame the arrow lands and
+    // the body drops a pixel further on, which is correct behaviour and just
+    // noise in a test about which way it falls.
+    def: { ...enemyTypes.light_inf, speed: 0 }, x: SPOT.x, y: SPOT.y, hp: 1, maxHp: 80,
+    face: walkFace, route: 0, s: AT, lane: 0,
+    t: 0, bobAmp: 1, acd: 0, thrust: 0, leaked: false
   };
   state.enemies.push(e);
-  state.shots.push({ x: 401, y: 300, angle: 0, fromX: towerX, target: e, damage: 99, speed: 999 });
+  state.shots.push({
+    x: SPOT.x + 1, y: SPOT.y, angle: 0,
+    fromX: SPOT.x + side * 200, target: e, damage: 99, speed: 999
+  });
 
   updateShots(state, 1 / 60);
   updateEnemies(state, 1 / 60);
@@ -49,26 +71,28 @@ function kill(towerX, walkFace) {
   return { face: c.face, rest: c.x, death: c.x + c.face * KNOCKBACK };
 }
 
+// The tower is named as a SIDE of the victim rather than an absolute x, since
+// where the victim stands is now the road's business and not the test's.
 const CASES = [
-  ['walking LEFT,  shot from the RIGHT', 600, -1,  1],
-  ['walking LEFT,  shot from the LEFT ', 200, -1, -1],
-  ['walking RIGHT, shot from the RIGHT', 600,  1,  1],
-  ['walking RIGHT, shot from the LEFT ', 200,  1, -1]
+  ['walking LEFT,  shot from the RIGHT',  1, -1,  1],
+  ['walking LEFT,  shot from the LEFT ', -1, -1, -1],
+  ['walking RIGHT, shot from the RIGHT',  1,  1,  1],
+  ['walking RIGHT, shot from the LEFT ', -1,  1, -1]
 ];
 
 let bad = 0;
-for (const [label, towerX, walkFace, wantFace] of CASES) {
-  const r = kill(towerX, walkFace);
+for (const [label, side, walkFace, wantFace] of CASES) {
+  const r = kill(side, walkFace);
   const facesBlow = r.face === wantFace;
   // Thrown away from what it faces, and starting on the spot the man died.
   const thrownBack = Math.sign(r.rest - r.death) === -r.face;
-  const onTheSpot = r.death === 400;
+  const onTheSpot = Math.abs(r.death - SPOT.x) < 1e-6;
   const ok = facesBlow && thrownBack && onTheSpot;
   if (!ok) bad++;
 
   console.log(
     `${label}  ->  faces ${r.face > 0 ? 'RIGHT' : 'LEFT '}, ` +
-    `dies at ${r.death}, settles at ${r.rest} ` +
+    `dies at ${r.death.toFixed(0)}, settles at ${r.rest.toFixed(0)} ` +
     (ok ? '  ok'
         : `  WRONG:${facesBlow ? '' : ' should face the blow'}` +
           `${thrownBack ? '' : ' should be thrown away from its facing'}` +

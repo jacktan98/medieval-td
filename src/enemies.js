@@ -1,19 +1,35 @@
-import { path } from './data/level01.js';
+import { level, remaining } from './level.js';
+import { offset, randomLane } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { unhook } from './units.js';
 import { inRange } from './ground.js';
 import { solo, CUE } from './audio.js';
 
+// Which road, and which side of it. Two decisions made once, on the way in,
+// and then kept for the figure's whole life.
+//
+// The lane is what stops a wave reading as a snake. Enemies used to file down
+// the exact centreline one behind another; now each one walks its own side of
+// the road, so a column arrives loose and ragged the way a body of men actually
+// would. It is three lanes per road — near kerb, middle, far kerb — so a map
+// with two roads in has six ways for an enemy to arrive.
 export function spawn(state, typeId) {
   const def = enemyTypes[typeId];
+  const ri = (Math.random() * level.routes.length) | 0;
+  const route = level.routes[ri];
+  const lane = randomLane();
+  const at0 = offset(route, 0, lane);
+
   state.enemies.push({
     def,
-    x: path[0].x,
-    y: path[0].y,
+    route: ri,
+    lane,
+    s: 0,            // distance walked along the route
+    x: at0.x,
+    y: at0.y,
     hp: def.hp,
     maxHp: def.hp,
-    leg: 0,          // index of the waypoint being walked toward
     t: 0,            // walk-cycle timer, drives the bob; frozen while fighting
     bobAmp: 1,       // 0..1 fade on that bob, so it eases out rather than snaps
     face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
@@ -51,33 +67,22 @@ export function updateEnemies(state, dt) {
       continue;
     }
 
-    let move = e.def.speed * dt;
+    // One number forward along the road, then the position is looked up. The
+    // old loop walked from waypoint to waypoint consuming the frame's movement,
+    // which cannot express a lane: an offset has to be measured perpendicular
+    // to the road, and there is no perpendicular to "somewhere near vertex 7".
+    const route = level.routes[e.route];
+    e.s += e.def.speed * level.march * dt;
 
-    while (move > 0 && e.leg < path.length - 1) {
-      const target = path[e.leg + 1];
-      const dx = target.x - e.x;
-      const dy = target.y - e.y;
-      const dist = Math.hypot(dx, dy);
+    const p = offset(route, e.s, e.lane);
+    // A vertical stretch of road says nothing about which way the figure should
+    // look, so keep the last horizontal heading rather than snapping to a
+    // default.
+    if (p.tx) e.face = p.tx > 0 ? 1 : -1;
+    e.x = p.x;
+    e.y = p.y;
 
-      // A vertical leg says nothing about which way the figure should look, so
-      // keep the last horizontal heading rather than snapping to a default.
-      if (dx) e.face = dx > 0 ? 1 : -1;
-
-      if (dist <= move) {
-        e.x = target.x;
-        e.y = target.y;
-        move -= dist;
-        e.leg++;
-      } else {
-        e.x += (dx / dist) * move;
-        e.y += (dy / dist) * move;
-        move = 0;
-      }
-    }
-
-    if (e.leg >= path.length - 1) {
-      e.leaked = true;
-    }
+    if (e.s >= route.total) e.leaked = true;
   }
 
   for (const e of state.enemies) {
@@ -113,18 +118,23 @@ export function updateEnemies(state, dt) {
   });
 }
 
-// Furthest along the path, so towers focus whatever is closest to leaking.
+// Closest to leaking, so towers focus whatever is about to cost a life.
+//
+// Measured as distance REMAINING rather than distance travelled, which is the
+// same ordering on a single road and the only meaningful one on a forked map:
+// the two roads into map 2 are not the same length, so "further along" says
+// nothing about which enemy is nearer the keep.
 export function pickTarget(enemies, x, y, range) {
   let best = null;
-  let bestProgress = -1;
+  let least = Infinity;
 
   for (const e of enemies) {
     // Measured from the enemy's ground anchor — its shadow — because that is
     // where the figure IS. Its head is drawn well above that and never counts.
     if (!inRange(x, y, e.x, e.y, range)) continue;
-    const progress = e.leg + 1 / (1 + Math.hypot(path[e.leg + 1].x - e.x, path[e.leg + 1].y - e.y));
-    if (progress > bestProgress) {
-      bestProgress = progress;
+    const left = remaining(level.routes[e.route], e.s);
+    if (left < least) {
+      least = left;
       best = e;
     }
   }

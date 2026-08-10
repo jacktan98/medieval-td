@@ -24,140 +24,26 @@
 // Map.svg and Plot Marker.svg are never modified. Re-run after any redraw.
 
 import { readFileSync, writeFileSync } from 'fs';
-import { path, plots } from '../src/data/level01.js';
-import { nearestOnPath } from '../src/units.js';
+import { levels } from '../src/level.js';
+import { nearestOn } from '../src/route.js';
 import { SCALE } from '../src/data/towers.js';
+import { allGroups, bounds } from './svg.mjs';
 
-const SRC = 'assets/map/Map.svg';
-const BASE = 'assets/map/Map_base.svg';
+// Which map to split. Every level records the file it was drawn from, so the
+// tool finds its own level rather than being told twice.
+const SRC = process.argv[2] || 'assets/map/Map.svg';
+const BASE = SRC.replace(/\.svg$/, '_base.svg');
 const MARKER = 'assets/map/Plot Marker.svg';
+
+const level = levels.find(l => l.src === SRC);
+if (!level) {
+  throw new Error(`no level in src/level.js has src '${SRC}' — ` +
+    `add one before splitting its map, even with an empty plot list`);
+}
 
 const svg = readFileSync(SRC, 'utf8');
 
 // --- geometry ----------------------------------------------------------------
-
-// Flatten a path's `d` to points under a 2x3 affine. Curves are sampled rather
-// than solved: this is measuring bounding boxes, not rendering.
-function points(d, tf) {
-  const [a, b, c, e, f, g] = tf;
-  const tk = d.match(/[MmLlCcQqZzHhVv]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) || [];
-  const pts = [];
-  let i = 0, cur = [0, 0], start = [0, 0], cmd = null;
-  const n = () => parseFloat(tk[i++]);
-  const push = p => { pts.push([a * p[0] + c * p[1] + f, b * p[0] + e * p[1] + g]); return p; };
-
-  while (i < tk.length) {
-    if (/[A-Za-z]/.test(tk[i])) cmd = tk[i++];
-    if (!cmd) { i++; continue; }
-    const rel = cmd === cmd.toLowerCase();
-
-    if (cmd === 'M' || cmd === 'm') {
-      let x = n(), y = n();
-      if (rel) { x += cur[0]; y += cur[1]; }
-      cur = push([x, y]); start = cur; cmd = rel ? 'l' : 'L';
-    } else if (cmd === 'L' || cmd === 'l') {
-      let x = n(), y = n();
-      if (rel) { x += cur[0]; y += cur[1]; }
-      cur = push([x, y]);
-    } else if (cmd === 'H' || cmd === 'h') {
-      let x = n(); if (rel) x += cur[0]; cur = push([x, cur[1]]);
-    } else if (cmd === 'V' || cmd === 'v') {
-      let y = n(); if (rel) y += cur[1]; cur = push([cur[0], y]);
-    } else if (cmd === 'C' || cmd === 'c') {
-      let x1 = n(), y1 = n(), x2 = n(), y2 = n(), x = n(), y = n();
-      if (rel) { x1 += cur[0]; y1 += cur[1]; x2 += cur[0]; y2 += cur[1]; x += cur[0]; y += cur[1]; }
-      const p0 = cur;
-      for (let s = 1; s <= 16; s++) {
-        const u = s / 16, m = 1 - u;
-        push([m*m*m*p0[0] + 3*m*m*u*x1 + 3*m*u*u*x2 + u*u*u*x,
-              m*m*m*p0[1] + 3*m*m*u*y1 + 3*m*u*u*y2 + u*u*u*y]);
-      }
-      cur = [x, y];
-    } else if (cmd === 'Q' || cmd === 'q') {
-      let x1 = n(), y1 = n(), x = n(), y = n();
-      if (rel) { x1 += cur[0]; y1 += cur[1]; x += cur[0]; y += cur[1]; }
-      const p0 = cur;
-      for (let s = 1; s <= 12; s++) {
-        const u = s / 12, m = 1 - u;
-        push([m*m*p0[0] + 2*m*u*x1 + u*u*x, m*m*p0[1] + 2*m*u*y1 + u*u*y]);
-      }
-      cur = [x, y];
-    } else if (cmd === 'Z' || cmd === 'z') {
-      cur = start;
-    } else { i++; }
-  }
-  return pts;
-}
-
-function compose(p, q) {
-  // p and q are [a,b,c,d,e,f] as in SVG's matrix(a,b,c,d,e,f).
-  return [
-    p[0]*q[0] + p[2]*q[1],
-    p[1]*q[0] + p[3]*q[1],
-    p[0]*q[2] + p[2]*q[3],
-    p[1]*q[2] + p[3]*q[3],
-    p[0]*q[4] + p[2]*q[5] + p[4],
-    p[1]*q[4] + p[3]*q[5] + p[5]
-  ];
-}
-
-function parseTransform(attr) {
-  if (!attr) return [1, 0, 0, 1, 0, 0];
-  const m = attr.match(/matrix\(([^)]*)\)/);
-  if (m) return m[1].split(/[,\s]+/).map(Number);
-  const t = attr.match(/translate\(([^)]*)\)/);
-  if (t) { const v = t[1].split(/[,\s]+/).map(Number); return [1, 0, 0, 1, v[0], v[1] || 0]; }
-  return [1, 0, 0, 1, 0, 0];
-}
-
-const bounds = ps => ({
-  x0: Math.min(...ps.map(p => p[0])), x1: Math.max(...ps.map(p => p[0])),
-  y0: Math.min(...ps.map(p => p[1])), y1: Math.max(...ps.map(p => p[1]))
-});
-
-// --- walk every group, at every depth ----------------------------------------
-//
-// Regex alone cannot do this: groups nest, so a closing tag has to be matched by
-// depth. For each group we record its text span, the transform it inherits, and
-// the sub-paths it draws.
-
-function allGroups(text) {
-  const clip = text.indexOf('<g clip-path');
-  if (clip < 0) throw new Error('no clipped artboard group found');
-
-  const tag = /<(\/?)(g|path|rect)\b([^>]*?)(\/?)>/g;
-  tag.lastIndex = text.indexOf('>', clip) + 1;
-
-  const stack = [];                       // open groups
-  const out = [];
-  let tf = [[1, 0, 0, 1, 0, 0]];           // inherited transform per open group
-
-  for (let m; (m = tag.exec(text));) {
-    const [, close, name, attrs, selfClose] = m;
-
-    if (name === 'path' || name === 'rect') {
-      const d = attrs.match(/\bd="([^"]*)"/);
-      if (d) {
-        const pts = points(d[1], tf[tf.length - 1]);
-        if (pts.length) for (const g of stack) g.subPaths.push(pts);
-      }
-      continue;
-    }
-
-    if (!close && !selfClose) {
-      const local = parseTransform((attrs.match(/transform="([^"]*)"/) || [])[1]);
-      tf.push(compose(tf[tf.length - 1], local));
-      stack.push({ start: m.index, subPaths: [] });
-    } else if (close) {
-      tf.pop();
-      const g = stack.pop();
-      if (!g) break;                       // the artboard group's own closing tag
-      g.end = tag.lastIndex;
-      if (g.subPaths.length) out.push(g);
-    }
-  }
-  return out;
-}
 
 // A shape signature that ignores where the group sits: the sorted list of
 // sub-path sizes. Two copies of the same drawing at different offsets — which is
@@ -214,9 +100,9 @@ let markers = tied
 markers = [...markers].sort((a, b) => a.start - b.start);
 
 console.log(`${groups.length} groups, largest identical-shape cluster has ${markers.length}`);
-if (markers.length !== plots.length) {
+if (markers.length !== level.plots.length) {
   throw new Error(
-    `found ${markers.length} repeated shapes but level01.js has ${plots.length} plots — ` +
+    `found ${markers.length} repeated shapes but ${level.id} has ${level.plots.length} plots — ` +
     `if the artwork gained or lost a marker, re-extract the plots before re-running this`);
 }
 
@@ -279,16 +165,19 @@ console.log(`  the map's own markers draw ${((markerBounds.x1 - markerBounds.x0)
 // an arbitrary order there quietly builds a "spread of towers" that is nothing
 // of the sort.
 //
-// Printed ready to paste into src/data/level01.js. Only the HUD nudge is left to
-// apply by hand, and the clearance each plot has is printed next to it.
+// On a FORKED map "along the road" is not a single number — a plot beside the
+// northern road and one beside the southern are not on the same line. So the
+// order is by how far each plot still is FROM THE KEEP, measured along whichever
+// route passes nearest. That is the same ordering on a map with one road, and
+// the only one that means anything on a map with two.
+//
+// Printed ready to paste into the level file. The clearance each plot has is
+// printed next to it.
 
-const along = p => {
-  const n = nearestOnPath(p.x, p.y);
-  let d = 0;
-  for (let i = 0; i < n.seg; i++) d += Math.hypot(path[i+1].x - path[i].x, path[i+1].y - path[i].y);
-  return d + n.t * Math.hypot(path[n.seg+1].x - path[n.seg].x, path[n.seg+1].y - path[n.seg].y);
+const remainingAt = p => {
+  const n = nearestOn(level.routes, p.x, p.y);
+  return { left: level.routes[n.route].total - n.s, off: n.d };
 };
-const total = path.slice(1).reduce((a, p, i) => a + Math.hypot(p.x - path[i].x, p.y - path[i].y), 0);
 
 const centres = markers.map(g => {
   const b = bounds(g.subPaths.reduce((a, c) => {
@@ -296,13 +185,13 @@ const centres = markers.map(g => {
     return (bc.x1 - bc.x0) > (ba.x1 - ba.x0) ? c : a;
   }));
   return { x: Math.round((b.x0 + b.x1) / 4), y: Math.round((b.y0 + b.y1) / 4) };
-}).sort((a, b) => along(a) - along(b));
+}).sort((a, b) => remainingAt(b).left - remainingAt(a).left);
 
-console.log('\nplots as painted, in road order — paste into src/data/level01.js:');
+console.log(`\nplots as painted, in road order — paste into the level file:`);
 for (const c of centres) {
-  const n = nearestOnPath(c.x, c.y);
+  const { left, off } = remainingAt(c);
   console.log(`  { x: ${String(c.x).padStart(3)}, y: ${String(c.y).padStart(3)} },` +
-    `   // ${String(Math.round(along(c) / total * 100)).padStart(2)}% along, ` +
-    `${String(Math.round(n.d)).padStart(3)} off` +
-    (n.d > 110 ? '   FAR' : ''));
+    `   // ${String(Math.round(left)).padStart(4)} from the keep, ` +
+    `${String(Math.round(off)).padStart(3)} off the road` +
+    (off > 95 ? '   FAR' : ''));
 }

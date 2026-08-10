@@ -23,16 +23,34 @@
 // moved — the heavy's hp, which is the one the difficulty is held with.
 
 import { run, A, B } from './sim.mjs';
+import { level, useLevel } from '../src/level.js';
 
-// Plots 2 and 5 are more than 130px off the road and cover under 4% of it. A
-// player would not take them and neither does this: including one measures the
-// dead plot rather than the family. They are still in the ALL archery x8
-// scenario in sim.mjs, which is the "even with everything" case.
-const USABLE = [0, 1, 3, 4, 6, 7, 8];
+// Which map to sweep. `node tools/sweep.mjs 2` for the second.
+const WHICH = Number(process.argv[2] || 1);
+useLevel(WHICH - 1);
+console.log(`level ${WHICH}: ${level.name}`);
+
+// Which plots are worth measuring. Map 1's plots 2 and 5 are more than 130px
+// off the road and cover under 4% of it — a player would not take them, and
+// including one measures the dead plot rather than the family. They are still
+// in the ALL archery x8 scenario in sim.mjs, which is the "even with
+// everything" case.
+//
+// Map 2 has no dead plots at all: every one of its nine sits 79 to 91px off the
+// road. So there is nothing to exclude, and the sweep is over all nine rather
+// than seven — which is 9 choose 6 times 64, four times as many runs.
+const USABLE = WHICH === 1 ? [0, 1, 3, 4, 6, 7, 8] : [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+// Every way of leaving out (USABLE.length - 6) of them.
+function combinations(list, k) {
+  if (k === 0) return [[]];
+  if (list.length < k) return [];
+  const [head, ...rest] = list;
+  return [...combinations(rest, k - 1).map(c => [head, ...c]), ...combinations(rest, k)];
+}
 
 const results = [];
-for (let drop = 0; drop < USABLE.length; drop++) {
-  const combo = USABLE.filter((_, i) => i !== drop);
+for (const combo of combinations(USABLE, 6)) {
   for (let mask = 0; mask < 1 << combo.length; mask++) {
     const plan = combo.map((plot, i) => ((mask >> i) & 1 ? B(plot) : A(plot)));
     results.push({ plan, archers: plan.filter(e => e.fam === 'archery').length, r: run(plan) });

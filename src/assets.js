@@ -82,6 +82,9 @@ const paths = {
   // artist's upload alone is not enough. Re-run tools/split-map.mjs after every
   // map redraw or the board keeps the old road and the old markers.
   map01:       'assets/map/Map_base.svg',
+  // The second stage. Same pipeline, same rule: DERIVED and committed, so
+  // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.
+  map02:       'assets/map/Map_2_base.svg',
   // Space encoded as %20. The file really is called "Plot Marker.svg" and the
   // name is left alone on purpose — it is what comes out of the artist's export,
   // and renaming it here would only mean renaming it again after every upload.

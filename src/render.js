@@ -1,4 +1,4 @@
-import { plots } from './data/level01.js';
+import { level, levels } from './level.js';
 import { waves } from './data/waves.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE, arrow } from './data/towers.js';
@@ -51,7 +51,7 @@ export function draw(ctx, state) {
   // Over everything, including the menu: while either of these is up the board
   // is not accepting the taps it normally would, and a dimmed board is how that
   // is said.
-  if (!state.started) drawStart(ctx);
+  if (!state.started) drawStart(ctx, state);
   else if (state.result) drawResult(ctx, state);
 }
 
@@ -64,7 +64,7 @@ export function draw(ctx, state) {
 // image is missing, fall back to flat ground — the game stays playable and the
 // console says which file did not load.
 function drawGround(ctx) {
-  const img = art.map01;
+  const img = art[level.art];
   if (img) {
     ctx.drawImage(img, 0, 0, 960, 540);
     return;
@@ -132,7 +132,7 @@ function drawPlots(ctx, state) {
   if (!img) return;
 
   const [sx, sy, sw, sh] = MARKER_TRIM;
-  for (const p of plots) {
+  for (const p of level.plots) {
     if (state.towers.some(t => t.plot === p)) continue;
     ctx.drawImage(img, sx, sy, sw, sh,
       p.x - MARKER_PIVOT[0] * MARKER_W, p.y - MARKER_PIVOT[1] * MARKER_H,
@@ -1056,7 +1056,7 @@ function drawHud(ctx, state) {
   //
   // Still drawn when the map is missing, because then the text would be sitting
   // on the flat-green fallback with nothing behind it.
-  if (!art.map01) {
+  if (!art[level.art]) {
     ctx.fillStyle = 'rgba(34,32,28,0.75)';
     ctx.fillRect(0, 0, 960, 40);
   }
@@ -1387,7 +1387,34 @@ const ROW_PITCH = 20;
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 286, w: 160, h: 54 };
+export const START_BTN = { x: 400, y: 344, w: 160, h: 54 };
+
+// One button per level, side by side above Start. Sized for a thumb like
+// everything else — 150 x 46 is well over the 44px minimum — and laid out from
+// the middle so a third map would not need the numbers re-typed.
+const MAP_BTN_W = 150, MAP_BTN_H = 46, MAP_GAP = 16;
+
+export function mapButtons() {
+  const n = levels.length;
+  const total = n * MAP_BTN_W + (n - 1) * MAP_GAP;
+  return levels.map((l, i) => ({
+    i,
+    name: l.name,
+    x: Math.round(480 - total / 2 + i * (MAP_BTN_W + MAP_GAP)),
+    y: 272,
+    w: MAP_BTN_W,
+    h: MAP_BTN_H
+  }));
+}
+
+// Which map button is under a tap, or null. Only meaningful on the title
+// screen; input.js asks before it asks about Start.
+export function hitMapButton(state, x, y) {
+  for (const b of mapButtons()) {
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.i;
+  }
+  return null;
+}
 
 // Generous on a thumb without being a whole-screen tap: a mis-tap on the board
 // should do nothing rather than start a game you were not ready for.
@@ -1400,7 +1427,7 @@ export function hitStart(state, x, y) {
          y >= b.y - START_PAD && y <= b.y + b.h + START_PAD;
 }
 
-function drawStart(ctx) {
+function drawStart(ctx, state) {
   ctx.fillStyle = 'rgba(34,32,28,0.72)';
   ctx.fillRect(0, 0, 960, 540);
 
@@ -1413,6 +1440,23 @@ function drawStart(ctx) {
   ctx.font = '17px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(240,230,210,0.72)';
   ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 252);
+
+  // The board behind this overlay is already the chosen map, so picking one is
+  // its own preview: the roads and the plots change under the panel as you tap.
+  for (const m of mapButtons()) {
+    const on = m.i === (state.levelIndex ?? 0);
+    ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
+    ctx.beginPath();
+    ctx.roundRect(m.x, m.y, m.w, m.h, 9);
+    ctx.fill();
+    ctx.strokeStyle = on ? '#F0E6D2' : 'rgba(196,165,116,0.55)';
+    ctx.lineWidth = on ? 2.5 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
+    ctx.font = '700 18px system-ui, sans-serif';
+    ctx.fillText(m.name, m.x + m.w / 2, m.y + m.h / 2 + 1);
+  }
 
   const b = START_BTN;
   ctx.fillStyle = 'rgba(28,32,24,0.85)';

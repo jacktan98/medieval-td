@@ -10,14 +10,14 @@
 
 import { makeUnits, moveUnits, updateUnits } from '../src/units.js';
 import { families } from '../src/data/towers.js';
-import { plots, path } from '../src/data/level01.js';
+import { level } from '../src/level.js';
 
 const DT = 1 / 60;
 const barracks = families.find(f => f.id === 'barracks');
 
 function board(tier = 0) {
   const state = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [] };
-  const plot = plots[3];
+  const plot = level.plots[3];
   const t = { plot, fam: barracks, def: barracks.tiers[tier], x: plot.x, y: plot.y, rally: null };
   state.towers.push(t);
   makeUnits(state, t);
@@ -45,7 +45,8 @@ const check = (ok, label, detail = '') => {
   const stood = before.map(u => ({ x: u.x, y: u.y }));
 
   // Send them somewhere else on the road, well inside the tier 1 leash.
-  const far = path.find(p => Math.hypot(p.x - t.x, p.y - t.y) > 60) || path[0];
+  const road = level.routes[0].pts;
+  const far = road.find(p => Math.hypot(p.x - t.x, p.y - t.y) > 60) || road[0];
   t.rally = { x: far.x, y: far.y };
   moveUnits(state, t);
 
