@@ -105,13 +105,30 @@ Draw plot markers wherever you want towers. Their positions are read straight
 out of the drawing, so they line up exactly, and there is no longer any nudging
 between what you paint and where the game puts them.
 
-**The board is painted in perspective; the rules are flat.** Path lengths, unit
-speeds, collision radii and tower range are all plain screen pixels, and nothing
-in the code knows the ground is foreshortened. That is fine as long as no piece
-of UI pretends otherwise — the range ring used to be drawn squashed to 62% like
-the painted dirt patches, which made it a picture of a rule the game does not
-have. It is a true circle now. Draw the ground however you like; do not squash
-anything that is meant to show what a rule covers.
+**The board is painted in perspective, and one rule now follows it.** A REACH —
+tower range, barracks rally leash — is a patch of ground, so it is an ellipse
+flattened to 62%, both drawn and measured. `src/ground.js` holds the shape once
+and the drawing, the targeting test and the rally clamp all go through it.
+
+Everything else is still flat screen pixels: path lengths, unit speeds, collision
+radii, melee reach. Those are distances between two things standing on the
+ground rather than areas of it, and they read fine unforeshortened.
+
+That 62% is deliberately rounder than the ground you paint. The dirt ellipse
+under a plot marker is 193 x 89, so the artwork's own foreshortening is about
+46%, and the tower shadows agree with it. A ring at 46% was tried and is not
+playable: it leaves plot 0 covering **0%** of the road at tier 1 range and needs
+150 range before a barracks there can reach the road at all, which kills the
+vertical axis of the whole level. 62% reads as the same ground and still lets a
+plot above the road be worth building on.
+
+The history is worth keeping, because both halves were reported as bugs. First
+the ring was drawn squashed while the rules used plain round distance, which left
+a 57px band above and below every tier 1 tower that was outside the ring and shot
+at anyway — an enemy there had its head inside the ring and its shadow outside,
+so the tower read as aiming at heads. Making the ring round fixed that and lost
+the 3D. Squashing the rule instead is the version that keeps it, and it cost a
+rebalance: see below.
 
 ### There is a hard ceiling now, and one marker is above it
 
@@ -201,11 +218,20 @@ heavies first appear in wave 4 and so raise the ceiling without touching the
 opening. Militia hp is the wrong knob for that — at 110 every build died on
 wave 2.
 
-**That knob is running out of room.** The hp values where the invariant holds are
-745 to 765, a band 20 wide where the previous one was 80, and every value inside
-it has the best build scraping home with 2 lives out of 20 where it used to have
-7. All the difficulty now lands in wave 8. If the next map change breaks this
-again, the honest repair is probably the wave curve rather than one enemy's hp.
+**That knob had almost run out of room, and then got a lot of it back.** The band
+where the invariant holds was 745 to 765 — 20 wide, where the previous one was 80
+— with the best build scraping home on 2 lives out of 20. Making reach elliptical
+and letting barracks men gang up widened it to 755..2200 and beyond, because the
+two changes push the level's two failure modes apart: the ellipse costs archery
+38% of its covered area, which puts "archery alone wins" far out of reach, while
+the assist makes a mix stronger. The heavy sits at 1500 in the middle of that.
+
+The same widening shows up in how many builds work. Before those changes **4 of
+448** six-tower builds cleared the level, which is a puzzle with one answer and
+is why a single marker moving 150px once took it to zero. It is **33 of 448**
+now: still 7%, still a level you have to think about, no longer a level one
+redraw can delete. Run `node tools/sweep.mjs` after any map change and read that
+count as well as the invariant.
 
 The invariant to protect is that **neither family wins alone**: the best
 all-archery build must lose, the best all-barracks build must lose, and a mix

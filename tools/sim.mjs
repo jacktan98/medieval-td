@@ -131,41 +131,50 @@ export function run(plan) {
 // archers on the two worst. Every mix "lost", which read as a balance collapse
 // and was really a bad shopping list.
 //
-// Coverage per plot at tier 1 range (150) is
-//   15.5 / 28.9 / 1.7 / 29.7 / 30.2 / 3.3 / 15.0 / 23.7 / 15.3 percent
-// for plots 0..8. Re-measure after any redraw before trusting these lists, and
-// do not trust the number itself too far: plot 8 rose from 13.3 to 15.3 in the
-// redraw that forced the heavy's hp DOWN. See the note on that hp in
-// data/waves.js — coverage says where a tower can shoot, not whether anything
-// can shoot the place a blocker stands.
+// Coverage per plot at tier 1 range (190, elliptical) is
+//   18.9 / 28.0 / 5.8 / 29.7 / 30.7 / 6.1 / 17.5 / 22.0 / 18.2 percent
+// for plots 0..8, and the seven usable ones cover 95.7% between them.
 //
-// Every list below was re-derived by sweep after the redraw that made the plot
-// marker bigger, which slid all nine markers to make room. That redraw is worth
-// reading as a warning: the union of all nine at tier 1 range hardly moved (89.1%
-// of the road to 89.0%) and NOT ONE index was renumbered, and the old lists still
-// went from winning with 7 lives to losing on wave 7. What changed is which SIX
-// plots are worth taking — plots 3 and 4 gained about 3 points each while 6 lost
-// two, and the winning build now ends on a barracks at plot 8 instead of an
-// archer. Total coverage says nothing about that; only the sweep does.
+// Those are ELLIPSE numbers and are not comparable to the circle numbers this
+// comment used to carry. Range went 150 -> 190 at tier 1 in the same change that
+// made reach elliptical, and the two roughly cancel: a plot covers about what it
+// used to, out of a ring that is 27% wider and 21% shorter. Re-measure after any
+// redraw before trusting these, and do not trust the number itself too far: plot
+// 8 once rose from 13.3 to 15.3 in the redraw that forced the heavy's hp DOWN.
+// See the note on that hp in data/waves.js — coverage says where a tower can
+// shoot, not whether anything can shoot the place a blocker stands.
 //
-// That redraw cost only a re-sweep. The one after it — a single marker moving
-// from (721,128) to (809,262) — cost both: nothing at all cleared the level
-// until the heavy's hp came down from 780 to 755.
+// Every list below was re-derived by sweep after reach became elliptical and the
+// barracks learned to gang up. Both of those moved which plots are worth taking:
+// plot 0 is in three of the four winning builds now and was in none of them, and
+// the best 5+1 build no longer wins at all, so the scenario that used to be the
+// thinnest win is now listed as a loss. That is not a regression — it is the same
+// lesson as every redraw before it, which is that the shopping list goes stale
+// before the balance does.
+//
+// One thing this file CANNOT measure: barracks `range`. It is the leash on the
+// rally point, and the sim never moves a rally, so every barracks here fights at
+// its default stand. Changing 130 -> 165 showed up as literally identical output
+// in all seven scenarios. That number is checked by playing, not by this.
+//
+// The level is far less brittle than it was. 33 of 448 builds clear it, against 4
+// before these changes — and the 4 was fragile enough that a single plot marker
+// moving 150px took it to 0. Wider is the point; it is still 7%.
 const scenarios = {
   'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
   'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],
   'ALL barracks x6 (expect LOSS)':  [B(1), B(3), B(4), B(6), B(7), B(8)],
+  // The best 5+1 build there is, and it loses. One blocker is no longer enough
+  // to hold wave 8 now that the heavy has 1500hp, which is what makes the two
+  // families need each other properly rather than nominally.
+  'BEST 5 archery + 1 (expect LOSS)': [A(1), B(3), A(4), A(6), A(7), A(8)],
   // Listed in plot order, which is also BUILD order: the plan is a shopping list
   // spent as gold arrives, so moving a barracks to the end of the line is a
   // different build, not the same one written differently. Sorting these lists
   // "tidily" by family turned a 4+2 win into a wave 7 loss once already.
-  //
-  // All three now win by exactly 2 lives, and that is the level rather than a
-  // coincidence: see the heavy's hp in data/waves.js for why the margin got this
-  // thin. A mix that wins by 3 means something moved.
-  'MIX 5 archery + 1 barracks':     [A(1), A(3), A(4), A(6), B(7), A(8)],
-  'MIX 4 archery + 2 barracks':     [A(1), A(3), A(4), B(6), A(7), B(8)],
-  'MIX 3 archery + 3 barracks':     [A(1), B(3), A(4), B(6), A(7), B(8)],
+  'MIX 4 archery + 2 barracks':     [A(0), A(1), A(4), B(6), B(7), A(8)],
+  'MIX 3 archery + 3 barracks':     [A(1), B(3), A(4), B(6), B(7), A(8)],
+  'MIX 2 archery + 4 barracks':     [B(0), B(3), A(4), A(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 };
 

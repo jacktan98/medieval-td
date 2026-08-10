@@ -91,17 +91,26 @@ export const enemyTypes = {
   // Coverage measures where a tower can shoot. It says nothing about whether
   // anything can shoot the place a blocker stands.
   //
-  // 755 is the middle of the band, not its near end, because this plateau is
-  // bounded on BOTH sides: 740 lets archery win alone and 770 lets nothing win.
-  // 745 to 765 all hold, so 755 has 10 of margin either way.
+  // 755 -> 880 when tower reach became an ELLIPSE instead of a circle and the
+  // barracks learned to gang up on one enemy. Both landed at once and both are
+  // in ground.js and units.js rather than here; this number is where the two
+  // were paid for.
   //
-  // Worth knowing before the next map change: that band is 20 wide where the
-  // last one was 80, and every value inside it has the best build scraping home
-  // with 2 lives where it used to have 7. The new plot is strong for archery and
-  // weak for blocking, and those two together squeeze the gap between "archery
-  // alone is enough" and "nothing is enough". If the next redraw breaks this
-  // again, the honest fix is probably the wave curve rather than this number —
-  // the whole difficulty now lands in wave 8.
+  // It is worth reading as the counter-example to the paragraph above, because
+  // it went the other way and by a lot. The last three entries were 20-to-80-wide
+  // bands found by scraping a knife edge. This one is 755 to 940 — 185 wide —
+  // and every value in it holds the invariant. What bought that back is that the
+  // two changes pull in opposite directions on the thing the band measures: the
+  // ellipse costs archery 38% of its covered area, which pushes "archery alone
+  // wins" a long way out of reach, while the assist makes a mix noticeably
+  // stronger. The gap between the two failure modes is the band, and widening it
+  // is worth more than any single value inside it.
+  //
+  // 880 is the middle. At it the best mixes clear with 4 to 10 lives out of 20,
+  // against the 2 the level had been scraping by on and the 7 before that — so
+  // this is also the wave-8 cliff getting its shoulder back, which the note above
+  // asked for. Do not read the wide band as permission to stop checking: it is
+  // wide because of a mechanic, and a mechanic can be tuned away again.
   heavy_inf: {
     sprite: 'enemy_t1b',
     // Redrawn 1.16x bigger. Both anchors below were carried across rather than
@@ -114,7 +123,7 @@ export const enemyTypes = {
     dead: 'dead_enemy_t1b',
     deadTrim: [125, 182, 241, 148],
     deadPivot: [0.135, 0.644],
-    hp: 755,
+    hp: 1500,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts

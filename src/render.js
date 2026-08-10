@@ -7,6 +7,7 @@ import { SPLAT_FADE } from './blood.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
+import { ringPath, clampToRange } from './ground.js';
 
 const PLOT_R = 30;
 
@@ -223,30 +224,21 @@ function drawStatus(ctx, state) {
 // The tower's reach: a translucent fill so you can see which stretch of road it
 // covers, a shadowed rim below and a lit rim on top.
 //
-// A TRUE CIRCLE, because that is what the rule is. pickTarget measures plain 2D
-// distance from the tower's plot to the enemy's ground anchor, and every other
-// radius in the game — the rally reach in units.js, the drag clamp in input.js —
-// is the same plain distance. The board is painted in perspective but nothing in
-// the rules knows that: path lengths, speeds and collision radii are all flat
-// screen pixels.
+// An ELLIPSE flattened to SQUASH, because a reach is a patch of GROUND and the
+// ground is drawn in perspective. It is not decoration: ground.js holds the
+// shape once, and pickTarget's test, the rally clamp and this drawing all go
+// through it, so the picture and the rule cannot be different shapes.
 //
-// This used to be drawn squashed to 62%, on the reasoning that a circle lying on
-// a foreshortened ground plane looks like an ellipse. That is true of a circle
-// on the ground and false of this one, because this one is not on the ground —
-// it is the set of points the tower can shoot, and that set is round. The
-// squashed version was not a stylised picture of the rule, it was a picture of a
-// different rule.
-//
-// It read as a bug and it was reported as one. At range 150 the ellipse stops
-// 93px straight up while the tower shoots to 150, so there is a 57px band above
-// and below every tower that is outside the drawn ring and shootable anyway. An
-// enemy standing there has its head inside the ring and its shadow outside — and
-// since the shadow is where a figure IS, the tower looked like it was targeting
-// heads. It was not; the ring was drawing 62% of the truth.
-//
-// The alternative fix was to squash the rule to match the picture. That is a
-// different game: it cuts every tower's covered area by 38% and needs the whole
-// balance re-tuned. The picture was the thing that was wrong.
+// Both halves of that were reported as bugs, in order, and the pair is the
+// lesson. First the ring was drawn squashed while the rules used plain round
+// distance — which left a 57px band above and below every tier 1 tower that was
+// outside the ring and shot at anyway. An enemy standing there had its head
+// inside the ring and its shadow outside, and since the shadow is where a figure
+// IS, the tower read as aiming at heads. Drawing a true circle fixed that and
+// threw away the perspective with it. So the rule was squashed to match the
+// picture instead, which is the version that keeps the 3D and costs a rebalance
+// — a tower now covers 62% of the area it used to, and the ranges went up to pay
+// for it. That is the real price of the look, and it has been paid once.
 function drawRangeDisc(ctx, t) {
   const r = t.def.range;
   const next = t.fam.tiers[t.def.tier];
@@ -263,40 +255,34 @@ function drawRangeDisc(ctx, t) {
     const gx = next.range;
     ctx.save();
     ctx.fillStyle = 'rgba(200,240,255,0.07)';
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, gx, 0, Math.PI * 2);
+    ringPath(ctx, t.x, t.y, gx);
     ctx.fill();
 
     ctx.setLineDash([7, 6]);
     ctx.strokeStyle = 'rgba(24,26,20,0.35)';
     ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y + 3, gx, 0, Math.PI * 2);
+    ringPath(ctx, t.x, t.y, gx, 3);
     ctx.stroke();
 
     ctx.strokeStyle = 'rgba(150,225,255,0.90)';
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, gx, 0, Math.PI * 2);
+    ringPath(ctx, t.x, t.y, gx);
     ctx.stroke();
     ctx.restore();
   }
 
   ctx.fillStyle = 'rgba(240,230,210,0.10)';
-  ctx.beginPath();
-  ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+  ringPath(ctx, t.x, t.y, r);
   ctx.fill();
 
   ctx.strokeStyle = 'rgba(24,26,20,0.40)';
   ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(t.x, t.y + 3, r, 0, Math.PI * 2);
+  ringPath(ctx, t.x, t.y, r, 3);
   ctx.stroke();
 
   ctx.strokeStyle = 'rgba(255,247,228,0.72)';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+  ringPath(ctx, t.x, t.y, r);
   ctx.stroke();
 }
 
@@ -809,15 +795,14 @@ function drawRally(ctx, state) {
 
   const placing = state.placing === t;
 
-  // How far the rally point may be dragged, and a true circle for the same
-  // reason the archery ring is: input.js clamps the drag by plain distance, so
-  // an ellipse here would refuse drags inside the line it drew.
+  // How far the rally point may be dragged, through the same ringPath the
+  // archery reach uses — input.js clamps the drag with clampToRange, so this
+  // line is exactly the set of points a drag can land on.
   ctx.save();
   ctx.setLineDash([6, 5]);
   ctx.strokeStyle = placing ? 'rgba(150,225,255,0.95)' : 'rgba(240,230,210,0.55)';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(t.x, t.y, t.def.range, 0, Math.PI * 2);
+  ringPath(ctx, t.x, t.y, t.def.range);
   ctx.stroke();
   if (placing) {
     ctx.fillStyle = 'rgba(200,240,255,0.06)';
@@ -846,10 +831,8 @@ function drawRally(ctx, state) {
   // a thumb has no position until it touches — so the flag above is what makes
   // the feature usable there: tap, look, tap again to correct.
   if (placing && state.ghost) {
-    const d = Math.hypot(state.ghost.x - t.x, state.ghost.y - t.y);
-    const k = d > t.def.range ? t.def.range / d : 1;
-    flag(ctx, t.x + (state.ghost.x - t.x) * k, t.y + (state.ghost.y - t.y) * k,
-         'rgba(150,225,255,0.95)');
+    const at = clampToRange(t.x, t.y, state.ghost.x, state.ghost.y, t.def.range);
+    flag(ctx, at.x, at.y, 'rgba(150,225,255,0.95)');
   }
 }
 

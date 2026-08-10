@@ -1,7 +1,8 @@
 import { plots } from './data/level01.js';
 import { PLOT_R, hitHudButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue, RING_R } from './menu.js';
-import { makeUnits, removeUnits } from './units.js';
+import { makeUnits, moveUnits, removeUnits } from './units.js';
+import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
@@ -120,14 +121,16 @@ function toggleSpeed(state) {
   state.speed = state.speed === 2 ? 1 : 2;
 }
 
-// The rally is clamped to the tower's reach here as well as in makeUnits, so
+// The rally is clamped to the tower's reach here as well as in stations(), so
 // the stored point is always one the barracks could actually use — otherwise
 // dragging far away and then upgrading would silently teleport the squad.
+//
+// moveUnits, not makeUnits: the squad walks to the new flag. Rebuilding it here
+// is what used to make a rally change replace three wounded men with three fresh
+// ones standing back at the barracks.
 function setRally(state, tower, x, y) {
-  const d = Math.hypot(x - tower.x, y - tower.y);
-  const k = d > tower.def.range ? tower.def.range / d : 1;
-  tower.rally = { x: tower.x + (x - tower.x) * k, y: tower.y + (y - tower.y) * k };
-  makeUnits(state, tower);
+  tower.rally = clampToRange(tower.x, tower.y, x, y, tower.def.range);
+  moveUnits(state, tower);
 }
 
 function run(state, item) {

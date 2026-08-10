@@ -263,21 +263,61 @@ const archer3 = {
 // them on the map; the slower draw is what stops that reach turning archery into
 // the only family worth building. Both were moved together and the pair was
 // re-checked against tools/sim.mjs, not tuned one at a time.
+//
+// 150/170/190 -> 190/210/230 when reach became an ELLIPSE (see src/ground.js).
+// This is not a buff. The number is now the reach ACROSS; the reach up and down
+// is 62% of it, so a tier 1 tower covers 190 x 118 where it covered 150 x 150 —
+// 8% MORE area, chosen to land the per-plot road coverage back on roughly what
+// it was rather than to make archery stronger. It measured out at almost exactly
+// even: the seven usable plots covered 93.5% of the road as circles at 150 and
+// cover 95.7% as ellipses at 190.
+//
+// What did change is the SHAPE of what a plot is worth, and that is a real
+// gameplay difference rather than a cosmetic one. A tower now reaches much
+// further along a road running past it and much less far up a road running away
+// from it, so a plot beside a straight is worth more than it was and a plot
+// above a bend is worth less. Plot 0 went from being in none of the winning
+// builds to being in three of the four.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 150, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 170, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower2, ...archer3, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 190, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower2, ...archer3, tier: 3, name: 'Crossbow Tower', cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
 // point may sit, not a weapon range. The player moves that rally point, so the
-// number is a real upgrade rather than bookkeeping: 130 -> 165 -> 200 turns a
-// squad that can only cover the nearest bend into one that can be sent to
-// whichever stretch of road is leaking.
+// number is a real upgrade rather than bookkeeping.
+//
+// 130/165/200 -> 165/180/195: a much longer leash at tier 1 and a much smaller
+// one per upgrade. Two things forced it, and they compound.
+//
+// The tier 2 barracks is the biggest building in the game and the plot markers
+// were redrawn bigger to hold it, which slid every plot further from the road.
+// Then reach became elliptical, and a barracks needs to reach the road, which is
+// mostly the direction the ellipse is SHORT in. The minimum range that touches
+// the road at all went from 51..142 across the nine plots to 82..151 — at the
+// old 130, the tier 1 squad at plots 0 and 6 could barely leave the building,
+// and at plot 2 it could not reach the road at all.
+//
+// 165 clears the worst usable plot (6, which needs 126) by 39. Taking the
+// upgrade steps down from 35 to 15 is what keeps that from being a straight
+// buff: tier 3's leash is 195 where it used to be 200, so the barracks now
+// starts most of the way to its ceiling instead of climbing to it. A first
+// barracks is immediately useful; upgrading one is about the men, not the map.
+//
+// None of this shows up in tools/sim.mjs, which never moves a rally point — the
+// number is the size of a choice the player makes, and the sim does not make it.
 //
 // soldier.count stays at 3 across all tiers on purpose: how many enemies you can
 // hold at once is the dominant balance lever, so upgrades make the same wall
 // tougher rather than wider.
+//
+// soldier.damage went 4/5/6 -> 3/4/5 when the men learned to gang up on an enemy
+// a squadmate is already blocking (see updateUnits). Three men hitting one enemy
+// is three times the damage, and at the old numbers that alone took the best
+// all-barracks build from losing on wave 3 to winning with 9 lives out of 20 —
+// which breaks the one rule the level has. The assist is what was asked for and
+// it stayed; its price was one point off each tier's damage.
 const camp = {
   sprite: 'barracks_t1',
   spriteTrim: CAMP_TRIM,
@@ -397,16 +437,16 @@ const spearman3 = {
 
 export const barracks = [
   {
-    ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 130, colour: '#6E7A6A',
-    soldier: { ...spearman, count: 3, hp: 105, damage: 4, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
+    ...camp, tier: 1, name: 'Militia Camp', cost: 70, range: 165, colour: '#6E7A6A',
+    soldier: { ...spearman, count: 3, hp: 105, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
-    ...camp2, tier: 2, name: 'Guard Post', cost: 100, range: 165, colour: '#5E6B5C',
-    soldier: { ...spearman2, count: 3, hp: 145, damage: 5, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
+    ...camp2, tier: 2, name: 'Guard Post', cost: 100, range: 180, colour: '#5E6B5C',
+    soldier: { ...spearman2, count: 3, hp: 145, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
-    ...camp2, tier: 3, name: "Knight's Hall", cost: 150, range: 200, colour: '#8A8478',
-    soldier: { ...spearman3, count: 3, hp: 195, damage: 6, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+    ...camp2, tier: 3, name: "Knight's Hall", cost: 150, range: 195, colour: '#8A8478',
+    soldier: { ...spearman3, count: 3, hp: 195, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
 

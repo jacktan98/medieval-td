@@ -1,6 +1,8 @@
 import { path } from './data/level01.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
+import { unhook } from './units.js';
+import { inRange } from './ground.js';
 
 export function spawn(state, typeId) {
   const def = enemyTypes[typeId];
@@ -85,7 +87,7 @@ export function updateEnemies(state, dt) {
   // an arrow's kill are worth the same and neither can pay out twice.
   state.enemies = state.enemies.filter(e => {
     if (e.leaked) {
-      if (e.foe) { e.foe.foe = null; e.foe = null; }
+      unhook(e);
       return false;
     }
     if (e.hp <= 0) {
@@ -97,7 +99,7 @@ export function updateEnemies(state, dt) {
       //
       // A leak gets no body on purpose: the body is what you get for a kill.
       dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
-      if (e.foe) { e.foe.foe = null; e.foe = null; }
+      unhook(e);
       return false;
     }
     return true;
@@ -110,7 +112,9 @@ export function pickTarget(enemies, x, y, range) {
   let bestProgress = -1;
 
   for (const e of enemies) {
-    if (Math.hypot(e.x - x, e.y - y) > range) continue;
+    // Measured from the enemy's ground anchor — its shadow — because that is
+    // where the figure IS. Its head is drawn well above that and never counts.
+    if (!inRange(x, y, e.x, e.y, range)) continue;
     const progress = e.leg + 1 / (1 + Math.hypot(path[e.leg + 1].x - e.x, path[e.leg + 1].y - e.y));
     if (progress > bestProgress) {
       bestProgress = progress;

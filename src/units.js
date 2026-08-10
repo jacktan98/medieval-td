@@ -1,6 +1,7 @@
 import { path } from './data/level01.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
+import { clampToRange } from './ground.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -13,6 +14,19 @@ import { splat } from './blood.js';
 const ENGAGE = 30;   // an enemy this close to a free soldier stops and fights
 const REACH  = 20;   // melee lands at this range
 const SETTLE = 16;   // stop walking here, so the two stand adjacent not stacked
+
+// How far a soldier will go to join a fight one of his squadmates is already
+// in. Bigger than ENGAGE on purpose, and it has to be: the wedge is 37px deep
+// and 40px wide, so a rear man is about 42px from the point man before either
+// of them takes a step. At ENGAGE's 30 he could not reach a fight happening in
+// his own formation, which is why three militiamen used to stand and watch one
+// of their own get killed. 70 clears the wedge with room for the enemy to be
+// stopped short of it.
+//
+// This is a reach, not a leash on the block: see the two passes in updateUnits.
+// A soldier who is only assisting drops it the instant an unblocked enemy comes
+// within ENGAGE of him, so helping never costs the squad its grip on the road.
+const ASSIST = 70;
 
 // Formation offsets as [along, across, splay] in path-local units: along is
 // the direction enemies travel, across is perpendicular, splay is degrees
@@ -101,11 +115,12 @@ function walkPath(seg, t, dist) {
            tx: (b.x - a.x) / L, ty: (b.y - a.y) / L };
 }
 
-export function makeUnits(state, tower) {
-  removeUnits(state, tower);
-
+// Where each man in the squad should be standing, given the tower's rally.
+//
+// Split out from makeUnits because moving the rally must not create anybody:
+// the standing orders change, the men do not. See moveUnits.
+function stations(tower) {
   const s = tower.def.soldier;
-  if (!s) return;
 
   // Where the player has sent the squad, or the nearest bit of road if they
   // have not sent it anywhere. The rally is stored as a free point rather than
@@ -114,46 +129,84 @@ export function makeUnits(state, tower) {
   const near = nearestOnPath(want.x, want.y);
 
   // Keep the rally inside the tower's reach, measured from the TOWER — that
-  // reach is what the barracks upgrade buys, and it is drawn as a circle around
-  // the building, so the clamp has to agree with the picture.
-  let rx = near.x;
-  let ry = near.y;
-  const away = Math.hypot(rx - tower.x, ry - tower.y);
-  if (away > tower.def.range) {
-    const k = tower.def.range / away;
-    rx = tower.x + (rx - tower.x) * k;
-    ry = tower.y + (ry - tower.y) * k;
-  }
+  // reach is what the barracks upgrade buys, and it is drawn as an ellipse
+  // around the building, so the clamp goes through the same helper the drawing
+  // does rather than through a round distance that would disagree with it.
+  const held = clampToRange(tower.x, tower.y, near.x, near.y, tower.def.range);
 
   // Re-find the rally on the path after the range clamp, so the slots are laid
   // out from a point that is actually on the road.
-  const base = nearestOnPath(rx, ry);
+  const base = nearestOnPath(held.x, held.y);
+  const out = [];
 
   for (let i = 0; i < s.count; i++) {
     const [along, across, splay] = FORMATION[i % FORMATION.length];
     // `along` follows the road's curve; `across` steps off the tangent there.
     const at = walkPath(base.seg, base.t, along);
-    const idle = Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180;
+    out.push({
+      rx: at.x - at.ty * across,
+      ry: at.y + at.tx * across,
+      // At rest a soldier watches the way the enemies come from, which is back
+      // along the segment they walk. Only the left/right of this is drawn.
+      faceIdle: Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180
+    });
+  }
 
+  return out;
+}
+
+export function makeUnits(state, tower) {
+  removeUnits(state, tower);
+
+  const s = tower.def.soldier;
+  if (!s) return;
+
+  for (const [i, at] of stations(tower).entries()) {
     state.units.push({
       tower,
       def: s,
       slot: i,
-      rx: at.x - at.ty * across,
-      ry: at.y + at.tx * across,
+      rx: at.rx,
+      ry: at.ry,
       x: tower.x,
       y: tower.y,
-      // At rest a soldier watches the way the enemies come from, which is back
-      // along the segment they walk. Only the left/right of this is drawn.
-      faceIdle: idle,
-      face: idle,
+      faceIdle: at.faceIdle,
+      face: at.faceIdle,
       hp: s.hp,
       maxHp: s.hp,
       foe: null,
+      holds: false,   // true only if he is the one BLOCKING his foe
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       respawn: 0
     });
+  }
+}
+
+// A new rally point is a MARCH ORDER, not a new garrison.
+//
+// This used to call makeUnits, which deletes the squad and posts three fresh
+// men at the tower — so moving the flag healed every wound, cancelled every
+// respawn timer and made the men you were watching vanish and be replaced. It
+// read as the barracks resetting itself as a punishment for using its one
+// controllable feature. The men now keep their hp, their fight and their place
+// on the board, and simply walk.
+//
+// They do drop what they are holding, because a move order they will not obey
+// until their current fight ends is not a move order. The enemy is free for the
+// half second it takes somebody to arrive, which is the cost of the order and
+// is visible on the board — the right way round for a decision the player made.
+export function moveUnits(state, tower) {
+  const squad = state.units.filter(u => u.tower === tower);
+  if (!squad.length) { makeUnits(state, tower); return; }
+
+  const at = stations(tower);
+  for (const u of squad) {
+    const post = at[u.slot % at.length];
+    u.rx = post.rx;
+    u.ry = post.ry;
+    u.faceIdle = post.faceIdle;
+    release(u);
   }
 }
 
@@ -164,10 +217,24 @@ export function removeUnits(state, tower) {
   state.units = state.units.filter(u => u.tower !== tower);
 }
 
+// Let go of the enemy, from the soldier's side. Only a soldier who is BLOCKING
+// clears the enemy's own hook — an assisting soldier never owned it, and
+// clearing it would hand the enemy a free walk past the man still fighting it.
 function release(u) {
   if (!u.foe) return;
-  u.foe.foe = null;
+  if (u.holds) u.foe.foe = null;
   u.foe = null;
+  u.holds = false;
+}
+
+// The same parting, from the enemy's side, for an enemy that has just died or
+// leaked. Only its blocker is hooked to it; anyone assisting notices on the next
+// tick, when the corpse fails the hp check at the top of updateUnits.
+export function unhook(e) {
+  if (!e.foe) return;
+  e.foe.foe = null;
+  e.foe.holds = false;
+  e.foe = null;
 }
 
 export function updateUnits(state, dt) {
@@ -185,9 +252,26 @@ export function updateUnits(state, dt) {
 
     if (u.foe && (u.foe.hp <= 0 || u.foe.leaked)) release(u);
 
-    // A free soldier grabs the nearest unheld enemy that has walked into range.
-    // One soldier holds one enemy, so three militiamen stall exactly three.
-    if (!u.foe) {
+    // Three passes, in this order, and the order is the design.
+    //
+    // BLOCKING is still strictly one soldier per enemy — that is what the whole
+    // family does, and three militiamen must stall exactly three enemies. What
+    // changed is what a soldier does with the time left over. He used to stand
+    // in his slot watching a squadmate fight and die two paces away, because the
+    // only enemy nearby was already somebody's and he had no other instruction.
+    // Now he goes and helps.
+
+    // 1. Take over. His enemy has lost its blocker — the man holding it fell —
+    //    so the assistant already standing there becomes the block. Without
+    //    this the squad lets go of an enemy at the exact moment it is winning.
+    if (u.foe && !u.foe.foe) { u.foe.foe = u; u.holds = true; }
+
+    // 2. Block. Any soldier not currently holding someone — free OR merely
+    //    assisting — grabs the nearest unheld enemy inside ENGAGE. Assisting
+    //    loses to blocking every time, so piling onto one enemy can never let
+    //    the next one walk past: the moment it comes into reach, somebody peels
+    //    off to meet it.
+    if (!u.holds) {
       let best = null;
       let bestD = ENGAGE;
       for (const e of state.enemies) {
@@ -195,7 +279,27 @@ export function updateUnits(state, dt) {
         const d = Math.hypot(e.x - u.x, e.y - u.y);
         if (d < bestD) { bestD = d; best = e; }
       }
-      if (best) { u.foe = best; best.foe = u; }
+      if (best) { release(u); u.foe = best; best.foe = u; u.holds = true; }
+    }
+
+    // 3. Assist. Nothing to block, so join the nearest fight within ASSIST. He
+    //    fights, but he does not hook the enemy: it stays stopped by its blocker
+    //    and stays free to be re-blocked if that man dies.
+    //
+    //    Not capped. A cap of one helper was tried and dropped: it is worth
+    //    almost nothing in balance — 78 winning builds out of 448 against 81
+    //    uncapped — and it puts the third man back in his slot watching, which
+    //    is the exact thing that was reported. If everyone is free, everyone
+    //    goes.
+    if (!u.foe) {
+      let best = null;
+      let bestD = ASSIST;
+      for (const e of state.enemies) {
+        if (!e.foe || e.hp <= 0) continue;
+        const d = Math.hypot(e.x - u.x, e.y - u.y);
+        if (d < bestD) { bestD = d; best = e; }
+      }
+      if (best) { u.foe = best; u.holds = false; }
     }
 
     const tx = u.foe ? u.foe.x : u.rx;
@@ -225,13 +329,26 @@ export function updateUnits(state, dt) {
         splat(state, u.foe.x, u.foe.y - u.foe.def.r, u.foe.y);
         u.foe.struckFrom = u.x >= u.foe.x ? 1 : -1;
       }
-      u.foe.acd -= dt;
-      if (u.foe.acd <= 0) {
-        u.hp -= u.foe.def.damage;
-        u.foe.acd = u.foe.def.atkCd;
-        u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
-        splat(state, u.x, u.y - u.def.r, u.y);
-        u.struckFrom = u.foe.x >= u.x ? 1 : -1;
+      // The enemy swings back at the man BLOCKING it and nobody else. It is
+      // already committed to him; the others are flanking it. So a squad that
+      // gangs up trades three swords for one, which is the whole reward for
+      // holding a line rather than three separate duels — and it only happens
+      // when there are fewer enemies than soldiers, because blocking outranks
+      // assisting. On a busy road every man has his own and nothing changes.
+      //
+      // It also has to be exactly one soldier ticking this clock. `acd` lives on
+      // the enemy, so if every man attacking it decremented the timer, an enemy
+      // fighting three would swing three times as often — the counter-attack
+      // would speed up in proportion to how outnumbered it is.
+      if (u.holds) {
+        u.foe.acd -= dt;
+        if (u.foe.acd <= 0) {
+          u.hp -= u.foe.def.damage;
+          u.foe.acd = u.foe.def.atkCd;
+          u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
+          splat(state, u.x, u.y - u.def.r, u.y);
+          u.struckFrom = u.foe.x >= u.x ? 1 : -1;
+        }
       }
     }
 
