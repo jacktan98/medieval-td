@@ -945,8 +945,24 @@ function hudButton(ctx, b, label, sub, on) {
     ctx.stroke();
   }
 
+  // BOTH text properties, set here rather than inherited. This is the one that
+  // bit: the buttons used to sit inside drawHud's save/restore and picked up its
+  // textBaseline = 'middle' for free, and when that restore moved above them —
+  // so a drop shadow meant for text on grass would stop before these plates —
+  // they started inheriting whatever the previous frame happened to leave.
+  //
+  // Usually that was 'middle' and nothing looked wrong. But ROTATING A PHONE
+  // resizes the canvas, and assigning canvas.width RESETS the whole 2D context,
+  // including textBaseline, back to 'alphabetic'. So the labels dropped half a
+  // line inside their plates after a rotation and stayed there until something
+  // else set 'middle' and left it. That is why it was intermittent.
+  //
+  // The rule this file follows now: anything that draws text sets its own align
+  // and baseline. Inheriting canvas state across functions is how a change in
+  // one place moves the pixels in another.
   const mid = b.y + b.h / 2;
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
   ctx.font = '700 13px system-ui, sans-serif';
   const lw = ctx.measureText(label).width;
   ctx.font = '600 12px system-ui, sans-serif';
@@ -1057,6 +1073,7 @@ function drawHud(ctx, state) {
 
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '600 20px system-ui, sans-serif';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   // Icons where the words used to be. "Wave" keeps its label: a count of eight
@@ -1388,6 +1405,7 @@ function drawStart(ctx) {
   ctx.fillRect(0, 0, 960, 540);
 
   ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '700 46px system-ui, sans-serif';
   ctx.fillText('Medieval TD', 480, 214);
@@ -1407,7 +1425,6 @@ function drawStart(ctx) {
 
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '700 24px system-ui, sans-serif';
-  ctx.textBaseline = 'middle';
   ctx.fillText('Start', b.x + b.w / 2, b.y + b.h / 2 + 1);
 
   ctx.textAlign = 'left';
@@ -1420,6 +1437,7 @@ function drawResult(ctx, state) {
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '700 52px system-ui, sans-serif';
   ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   ctx.fillText(state.result === 'won' ? 'Waves cleared' : 'The keep has fallen', 480, 250);
   ctx.font = '20px system-ui, sans-serif';
   ctx.fillText('Tap to play again', 480, 306);
