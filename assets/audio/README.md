@@ -4,7 +4,7 @@
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
                       Rock_hit_ground, Rock_kill_enemy,
                       Thug_dies, Soldier_dies
-assets/audio/voice/   Archers_1..5, Barracks_1..5, Artillery_1..5, Thug_1
+assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5, Thug_1
 ```
 
 Twenty-five clips, all recorded and all wired. `node tools/audio.mjs` measures
@@ -101,7 +101,7 @@ and it now means "how long a lull has to be before the game forgets".
 
 | moment | clip |
 |---|---|
-| an archery tower is **built or upgraded** | `Archers_1..5` |
+| an archery tower is **built or upgraded** | `Archery_1..5` |
 | a barracks is **built or upgraded** | `Barracks_1..5` |
 | an artillery tower is **built or upgraded** | `Artillery_1..5` |
 | a rally point is moved | `Barracks_1..5` |
@@ -167,10 +167,10 @@ here, most of a second on some clips:
 | clip | file | audible | holds the channel |
 |---|---|---|---|
 | `Thug_1` | 3.40s | 2.80s | **3.80s** |
-| `Archers_3` | 2.53s | 1.94s | 2.94s |
+| `Archery_3` | 2.53s | 1.94s | 2.94s |
 | `Barracks_3` | 2.17s | 1.69s | 2.69s |
 | `Thug_dies` | 1.34s | 1.04s | 2.04s |
-| `Archers_1` | 1.44s | 0.77s | 1.77s |
+| `Archery_1` | 1.44s | 0.77s | 1.77s |
 | `Soldier_dies` | 0.70s | 0.48s | 1.48s |
 | `Arrow_kill_enemy` | 1.05s | 0.30s | 1.30s |
 
@@ -186,7 +186,7 @@ play.
 ## Levelling is automatic — you do not have to normalise
 
 The clips arrived up to **20dB apart**. The voices had never been normalised and
-peaked around 0.12; the death effects peaked near 1.0. So `Archers_1` was 9.6dB
+peaked around 0.12; the death effects peaked near 1.0. So `Archery_1` was 9.6dB
 under the middle of the pack and `Thug_dies` 10.1dB over it, and no amount of
 bus mixing survives that — "the battle sits 7dB under the voices" means nothing
 when the clips themselves differ by twenty.
@@ -198,13 +198,13 @@ batch:
 
 | clip | adjustment |
 |---|---|
-| `Archers_5` | **+13.1 dB** |
-| `Archers_1` | +11.1 dB |
-| `Archers_2` | +10.5 dB |
+| `Archery_5` | **+13.1 dB** |
+| `Archery_1` | +11.1 dB |
+| `Archery_2` | +10.5 dB |
 | `Attack_2` | +7.0 dB |
 | `Barracks_4` | +6.6 dB |
-| `Archers_3` | +4.4 dB |
-| `Archers_4` | +3.7 dB |
+| `Archery_3` | +4.4 dB |
+| `Archery_4` | +3.7 dB |
 | `Barracks_1` | +3.6 dB |
 | `Barracks_2/3/5` | left alone |
 | `Attack_1` | −3.3 dB |
@@ -223,7 +223,7 @@ quiet.** The gain is capped at 5x either way, so a clip recorded at almost
 nothing will still come up short rather than dragging its own hiss up with it —
 that is the one case worth re-recording.
 
-The ceiling was 4 until `Archers_5` arrived needing 4.55x. That is a quiet
+The ceiling was 4 until `Archery_5` arrived needing 4.55x. That is a quiet
 recording, not a broken one — it peaks at 0.089 — and a clamp that bites on a
 file with nothing wrong with it is set too tight, so it went to 5. If a future
 upload reports exactly `+14.0dB` it has hit the new ceiling and is genuinely too
@@ -235,7 +235,7 @@ quiet to rescue.
 ## Dead air at the front is skipped, also automatically
 
 Measured lead-in across the uploads: `Thug_1` 299ms, `Attack_3` 275ms,
-`Archers_2` 224ms, `Attack_2` 201ms, most others 50–150ms. A sword landing
+`Archery_2` 224ms, `Attack_2` 201ms, most others 50–150ms. A sword landing
 275ms after the blow is **sixteen frames late**, and it was the single biggest
 reason the audio felt loose against the action.
 

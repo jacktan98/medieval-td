@@ -22,6 +22,7 @@ import { archery, barracks, siege, SCALE } from './data/towers.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
 import { occupant } from './select.js';
+import { PORTRAIT_SCALE } from './data/ui.js';
 
 export const PAGES = 2;
 
@@ -31,8 +32,6 @@ export const PAGES = 2;
 // builds from, so a tier whose cost or damage changes changes here too and there
 // is no second table to forget.
 const LADDERS = [archery, barracks, siege];
-
-const ROWS = 6;          // per column, per half
 
 // Which cell each tier sits in. Families are kept WHOLE — a ladder never
 // straddles two columns — so archery and barracks fill the first column exactly
@@ -55,92 +54,202 @@ export function shelf() {
 }
 
 // --- page geometry -----------------------------------------------------------
-
-const TOP = 72;          // under the page heading
-const CARD_H = 65;
-const CARD_GAP = 6;
-const CARD_W = 226;
-const SIDE = 10;         // margin at each edge of a half
-const COL_GAP = 8;
-
-// The left half is towers and the right half is men. 480 is the fold.
 //
-// Named FOLD rather than HALF because render.js already has a HALF — the [0.5,
-// 0.5] anchor every centred icon is drawn from — and two of them in one module
-// is a redeclaration the browser reports as a blank page.
+// ONE MARGIN, everywhere. The parchment sheet is inset from the board and every
+// piece of the page is inset from the sheet by the same `PAD` — the first card's
+// left edge, the last card's right edge, the Close button and the bottom of the
+// footer all sit exactly PAD from the parchment. Bands between them use the same
+// number again, so the gap above the footer is the gap around the outside.
+//
+// It was not this before, and the failure is the kind you only see once it is
+// pointed out: cards were 2px inside the sheet, the Close button was 12, and the
+// footer's bottom edge was flush with the parchment. Every one of those numbers
+// was chosen on its own and looked fine on its own.
+export const SHEET = { x: 8, y: 8, w: 944, h: 524 };
+const PAD = 16;
+
+// The usable rectangle: what the page may draw in.
+const INNER = {
+  x: SHEET.x + PAD,
+  y: SHEET.y + PAD,
+  r: SHEET.x + SHEET.w - PAD,
+  b: SHEET.y + SHEET.h - PAD
+};
+
+// The two title bands, by the centre-line their text sits on.
+export const TITLE_Y = INNER.y + 15;
+export const HEAD_Y = INNER.y + 48;
+
+// The footer, hung off the bottom margin so its own bottom edge is PAD from the
+// parchment — the same PAD as the sides.
+const FOOT_H = 38;
+export const FOOT_Y = INNER.b - FOOT_H;
+
+// The grid. Rows are DERIVED from what is left between the heading and the
+// footer rather than chosen, so the margins are the fixed thing and the cards
+// give way — which is the right way round when the complaint is about gaps.
+const TOP = INNER.y + 58;
+const ROWS = 6;               // per column, per half
+const COLS = 2;               // per half
+const CARD_GAP = 4;
+const CARD_H = Math.floor((FOOT_Y - PAD - TOP - (ROWS - 1) * CARD_GAP) / ROWS);
+
+// The fold, with a gutter of its own so the two halves do not touch it.
 export const FOLD = 480;
+const GUTTER = 12;
+const HALF_W = FOLD - GUTTER - INNER.x;
+const COL_GAP = 6;
+const CARD_W = Math.floor((HALF_W - (COLS - 1) * COL_GAP) / COLS);
+
+// Where each half's first column starts. The right half is mirrored about the
+// fold rather than measured from the left, so the two margins are equal by
+// construction.
+export const HALVES = [INNER.x, FOLD + GUTTER];
 
 export function cardRect(col, row, fold) {
   return {
-    x: fold + SIDE + col * (CARD_W + COL_GAP),
+    x: fold + col * (CARD_W + COL_GAP),
     y: TOP + row * (CARD_H + CARD_GAP),
     w: CARD_W,
     h: CARD_H
   };
 }
 
-// The picture slot inside a card, on its left. Everything else in the card is
-// text, laid out from the right-hand edge of this box.
-export const ART_BOX = { x: 6, w: 60, h: CARD_H - 8 };
+// --- what goes in a card's picture slot --------------------------------------
+
+// EVERY DRAWING IN THE BOOK IS ANCHORED ON ITS SHADOW, never centred on its
+// bounding box, and that is the same rule the board itself follows.
+//
+// A bounding box is not where a thing is. The tier 2 watchtower's flagpole leans
+// out one side, so box-centring stands it 7px off its own axis; the barracks
+// tent's stakes hang 35px below its shadow, so box-bottoming lifts the whole
+// tent off the ground line. Among the men it is worse, because they carry
+// things: a spearman's spear and a pikeman's pike stick out by different amounts
+// on different sides, so three soldiers centred by their boxes stand in three
+// different places while their shadows say they are all standing still.
+//
+// So each drawing is placed by the anchor it already carries — `groundFrac` for
+// a building, `pivot` / `gunnerPivot` / `portraitPivot` for a figure — and every
+// card puts that anchor at the SAME point in its slot. A column of towers then
+// shares one vertical axis and one ground line, and so does a column of men.
+function anchored(items) {
+  let left = 0, right = 0, above = 0, below = 0;
+  for (const { w, h, a } of items) {
+    left = Math.max(left, a[0] * w);
+    right = Math.max(right, (1 - a[0]) * w);
+    above = Math.max(above, a[1] * h);
+    below = Math.max(below, (1 - a[1]) * h);
+  }
+  return { left, right, above, below, w: left + right, h: above + below };
+}
+
+// The shape of a tier's building and of the man inside it, both in the form
+// anchored() wants. Read through occupant() so the book and the info box cannot
+// disagree about which drawing a tower's man is.
+const buildingOf = d => ({ w: d.w, h: d.h, a: d.groundFrac });
+
+function figureOf(def) {
+  const man = occupant(def);
+  return figureArt(man.trim, man.pivot);
+}
+
+const figureArt = (trim, pivot) => ({
+  w: trim[2] * SCALE * PORTRAIT_SCALE,
+  h: trim[3] * SCALE * PORTRAIT_SCALE,
+  a: pivot
+});
+
+const TIERS = LADDERS.flat();
+const FIGURES = [
+  ...TIERS.map(figureOf),
+  ...Object.values(enemyTypes).map(d => figureArt(d.spriteTrim, d.pivot))
+];
+
+const TOWER_SPAN = anchored(TIERS.map(buildingOf));
+const FIGURE_SPAN = anchored(FIGURES);
+
+// The two picture slots. They are DIFFERENT WIDTHS on purpose: a building
+// shrinks to fit its slot, so it can be given a narrow one, while a figure is
+// drawn at the fixed PORTRAIT_SCALE and its slot has to be wide enough for the
+// widest man in the game — the Giant Thug, whose club reaches 45px left of the
+// spot he stands on. One slot sized for both would either crop him or waste
+// 30px of every tower card's text.
+//
+// Height is shared, because it is the card that decides it.
+const SLOT_H = CARD_H - 6;
+const SLOT_Y = (CARD_H - SLOT_H) / 2;
+export const TOWER_BOX = { x: 6, y: SLOT_Y, w: 48, h: SLOT_H };
+export const FIGURE_BOX = { x: 6, y: SLOT_Y, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
 
 // ONE FACTOR FOR EVERY BUILDING, exactly as PORTRAIT_SCALE is one factor for
-// every figure, and for the same reason: fitting each drawing to the slot would
-// draw a Militia Camp and a Catapult the same size, which is a lie about the two
-// buildings the player is choosing between. Sized so the LARGEST tower fits and
-// the rest come out in proportion to it.
+// every figure, and for the same reason: fitting each drawing to its own slot
+// would draw a Militia Camp and a Catapult the same size, which is a lie about
+// the two buildings the player is choosing between.
 //
-// Derived from the defs rather than typed, so a redrawn building that is taller
-// than anything before it shrinks the whole shelf by itself instead of hanging
-// over the card above.
+// Derived from the defs, and from the SHADOW-ANCHORED span rather than the
+// bounding box — the span is what actually has to fit once everything shares a
+// ground line, and it is 171px tall against the tallest single building's 153
+// because the tent hangs below the line the towers stand on.
 //
-// It is always well under 1, so a thumbnail is always a downscale of art that is
-// already sharp at 1x — the crispness question that PORTRAIT_SCALE has to answer
-// carefully does not arise on this side of the page.
-const tallest = Math.max(...LADDERS.flat().map(d => d.h));
-const widest = Math.max(...LADDERS.flat().map(d => d.w));
-export const BOOK_TOWER_SCALE = SCALE * Math.min(ART_BOX.w / widest, ART_BOX.h / tallest);
+// It is always well under 1, so a thumbnail is a downscale of art already sharp
+// at 1x; the crispness question PORTRAIT_SCALE has to answer carefully does not
+// arise on this side of the page.
+export const BOOK_TOWER_SCALE =
+  SCALE * Math.min(TOWER_BOX.w / TOWER_SPAN.w, TOWER_BOX.h / TOWER_SPAN.h);
+
+// Where the shared anchor sits inside a slot: the span centred, with the anchor
+// at its own offset within that. Returned as a function of the box so render.js
+// has one thing to ask and no arithmetic of its own.
+const anchorIn = (box, span, k) => ({
+  x: box.x + (box.w - span.w * k) / 2 + span.left * k,
+  y: box.y + (box.h - span.h * k) / 2 + span.above * k
+});
+
+export function towerArt(def) {
+  const k = BOOK_TOWER_SCALE / SCALE;
+  return { ...buildingOf(def), k, box: TOWER_BOX, anchor: anchorIn(TOWER_BOX, TOWER_SPAN, k) };
+}
+
+export function figureSlot(trim, pivot) {
+  return { ...figureArt(trim, pivot), k: 1, box: FIGURE_BOX,
+           anchor: anchorIn(FIGURE_BOX, FIGURE_SPAN, 1) };
+}
 
 // --- the enemies page --------------------------------------------------------
 
-// FULL-WIDTH ROWS, stacked, rather than two cards side by side. There are only
-// two enemies in the game, and side by side they left two thirds of the page
-// blank while each card's own contents were crammed into a 2x2 grid. Across the
-// page instead, the four stats sit in ONE row — which is also how they read: hp,
-// damage, what killing it pays, what letting it through costs, in that order.
+// THE SAME CARD, in the same grid. Enemies used to get full-width rows of their
+// own because two of them side by side left most of the page blank — which was
+// solving the wrong problem: a reference page whose boxes are three sizes reads
+// as three different kinds of thing, and an enemy is exactly as much "a box
+// description" as a tower is. Empty space on a short page is fine; boxes that do
+// not match are not.
 //
-// A third and fourth enemy will fit the same way. A fifth will not, and the
-// answer then is a third page rather than shrinking these.
-const ENEMY_W = 904, ENEMY_H = 172, ENEMY_GAP = 24;
-
+// They flow across all four columns of the spread and then down, so a third and
+// fourth enemy fill the row before anything starts a second one.
 export function enemyCards() {
-  const list = Object.values(enemyTypes);
-  const total = list.length * ENEMY_H + (list.length - 1) * ENEMY_GAP;
-  const top = TOP + Math.round((492 - TOP - total) / 2);
-
-  return list.map((def, i) => ({
-    def,
-    x: Math.round((960 - ENEMY_W) / 2),
-    y: top + i * (ENEMY_H + ENEMY_GAP),
-    w: ENEMY_W,
-    h: ENEMY_H
-  }));
+  return Object.values(enemyTypes).map((def, i) => {
+    const across = i % (COLS * HALVES.length);
+    const row = Math.floor(i / (COLS * HALVES.length));
+    return { def, ...cardRect(across % COLS, row, HALVES[Math.floor(across / COLS)]) };
+  });
 }
-
-// Inside an enemy card: the picture slot, and where the stat row starts.
-//
-// The slot is as tall as the tallest enemy is DRAWN, so bottom-anchoring both
-// figures stands them on one line with no dead air above the smaller one. That
-// shared line is the whole point of the page: a Giant Thug is nearly twice a
-// Thug, and two portraits floating in boxes of their own would throw that away.
-export const FOE_BOX = { x: 24, w: 130 };
-export const FOE_TEXT = 172;   // from the card's left edge
 
 // --- controls ----------------------------------------------------------------
 
 // The footer. Close on the left where a thumb rests, the flip in the middle.
-export const BOOK_CLOSE = { x: 20, y: 494, w: 110, h: 38 };
-export const BOOK_PREV = { x: 372, y: 494, w: 56, h: 38 };
-export const BOOK_NEXT = { x: 532, y: 494, w: 56, h: 38 };
+//
+// EVERY NUMBER HERE IS DERIVED. Close starts on the page's own left margin, so
+// it lines up with the first card above it and sits PAD from the parchment like
+// everything else; the two arrows are placed symmetrically about the fold with
+// a fixed reading gap for the "Page 1 / 2" between them; all three hang off
+// FOOT_Y, whose bottom edge is PAD from the parchment. Type any of these as a
+// literal and it drifts the next time a margin moves.
+const FLIP_W = 56;
+const LABEL_HALF = 62;   // room for "Page 1 / 2" between the arrows
+
+export const BOOK_CLOSE = { x: INNER.x, y: FOOT_Y, w: 110, h: FOOT_H };
+export const BOOK_PREV = { x: FOLD - LABEL_HALF - FLIP_W, y: FOOT_Y, w: FLIP_W, h: FOOT_H };
+export const BOOK_NEXT = { x: FOLD + LABEL_HALF, y: FOOT_Y, w: FLIP_W, h: FOOT_H };
 
 // The drawn boxes are 38 deep and the tap targets are 64, the same trick the
 // dashboard and the radial menu both use: 64 logical px is 44 real ones on the
@@ -203,8 +312,9 @@ export function towerEntry(def, tiers) {
     title: def.title,
     sprite: def.sprite,
     trim: def.spriteTrim,
-    w: def.w * (BOOK_TOWER_SCALE / SCALE),
-    h: def.h * (BOOK_TOWER_SCALE / SCALE),
+    // The resting frame for an animated building, which `def.sprite` already is
+    // — a catapult in the book is not mid-throw.
+    art: towerArt(def),
     occupier: `${man.count} x ${man.name}`,
     cost: def.cost,
     refund: refundOf(tiers, def.tier)
@@ -221,6 +331,7 @@ export function unitEntry(def) {
     title: man.name,
     sprite: man.sprite,
     trim: man.trim,
+    art: figureSlot(man.trim, man.pivot),
     hp: man.hp,
     damage: man.damage
   };

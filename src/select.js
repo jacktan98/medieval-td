@@ -94,6 +94,12 @@ export function occupant(def) {
     count: man ? man.count : 1,
     sprite: man ? man.sprite : def.portrait || def.gunner,
     trim: man ? man.spriteTrim : def.portraitTrim || def.gunnerTrim,
+    // The centre of his ground shadow, as a fraction of that trim — the point he
+    // STANDS on. Three names again for the same reason as the trim above, and
+    // the encyclopedia is what needs it: a column of men lined up by their
+    // bounding boxes stand in three different places, because a spear and a pike
+    // stick out by different amounts on different sides.
+    pivot: man ? man.pivot : def.portraitPivot || def.gunnerPivot,
     hp: man ? man.hp : null,
     // A barracks does no damage itself; its men do. Reading the building's own
     // (nonexistent) damage would print a 0 under a tent full of spears.

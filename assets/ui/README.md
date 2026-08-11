@@ -14,7 +14,7 @@ usable button rather than a blank disc.
 | `Life_Icon.png`          | the lives icon    | 30 x 24      |
 | `Button_Plate_Icon.png`  | the menu disc     | 60 diameter  |
 | `Cancel_Button_Icon.png` | the centre cancel | 36 diameter  |
-| `Archers_Icon.png`       | `bow`             | 27 x 32 box  |
+| `Archery_Icon.png`       | `bow`             | 27 x 32 box  |
 | `Barracks_Icon.png`      | `swords`          | 26 box       |
 | `Upgrade_Icon.png`       | `up`              | 26 box       |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
@@ -334,13 +334,65 @@ There is **no new art for it** beyond `Cost_Icon.png`. The page is a parchment
 sheet drawn in code, and every picture on it is the board's own — buildings from
 `assets/towers`, men from `assets/units`, enemies from `assets/enemies`.
 
-Both scale factors on the page are chosen the way `PORTRAIT_SCALE` is, and for
-the same reason: **one factor per kind, never fitted per item**. Figures use
-`PORTRAIT_SCALE` itself, so a man is the same size in the book as in the info
-box; buildings use `BOOK_TOWER_SCALE`, derived from the defs so the tallest tower
-exactly fills its slot and every other building comes out in proportion to it. A
-Militia Camp reads as bigger than a Catapult on the page because it is bigger on
-the board.
+### One margin, everywhere
 
-If a redrawn tower is taller than anything before it, that factor shrinks by
+The sheet is inset from the board and everything on it is inset from the sheet by
+the same 16px: the first card's left edge, the last card's right edge, the Close
+button, the bottom of the footer, and the gap between the last row and the
+footer. **The margins are the fixed thing and the card height is derived from
+what is left**, which is the right way round — a card that has to be a pixel
+shorter is invisible, a margin that is 4px out is the first thing you see.
+
+It was not this at first, and the failure is worth knowing because none of it
+looked wrong in isolation: cards sat 2px inside the sheet, Close sat 12, and the
+footer's bottom edge was flush with the parchment. Three numbers, each chosen on
+its own, each fine on its own. `tools/book.mjs` now measures every one of those
+edges against the same constant.
+
+### Every box is the same size
+
+A tower, a man and an enemy all get the identical card. Enemies briefly had
+full-width rows of their own, because two of them side by side left most of the
+page blank — which was solving the wrong problem. **A reference page whose boxes
+are three sizes reads as three different kinds of thing.** Empty space on a short
+page is fine; boxes that do not match are not.
+
+### Everything stands on its shadow
+
+**Nothing on the page is centred on its bounding box.** Every drawing is placed by
+the anchor it already carries — `groundFrac` for a building, `pivot` /
+`gunnerPivot` / `portraitPivot` for a figure — and every card puts that anchor at
+the same point in its slot, so a column of towers shares one vertical axis and
+one ground line and so does a column of men.
+
+That is the same rule the board follows, and for the same reason: a bounding box
+is not where a thing is. The tier 2 watchtower's flagpole leans out one side; the
+barracks tent's stakes hang 35px below its shadow. Among the men it is worse,
+because they carry things — a spearman's spear and a pikeman's pike stick out by
+different amounts on different sides, so three soldiers centred by their boxes
+stand in three visibly different places while their shadows say they are all
+standing still.
+
+This is what needed `catapult.portraitPivot`. The crewman never stands on the
+board, so he had never been given a shadow anchor, and he was the one figure on
+the page floating by his box while the row beside him stood on a line.
+
+### Both scale factors are one-per-kind
+
+Chosen the way `PORTRAIT_SCALE` is, and for the same reason: **one factor per
+kind, never fitted per item.** Figures use `PORTRAIT_SCALE` itself, so a man is
+the same size in the book as in the info box; buildings use `BOOK_TOWER_SCALE`,
+derived from the defs so the tallest span exactly fills its slot and every other
+building comes out in proportion. A Militia Camp reads as bigger than a Catapult
+on the page because it is bigger on the board.
+
+It is derived from the **shadow-anchored span**, not from the tallest single
+drawing: 171px against the tallest building's 153, because the tent hangs below
+the line the towers stand on. Redraw a taller tower and the factor shrinks by
 itself and the whole shelf follows. Nothing here needs re-typing after a redraw.
+
+The two picture slots are **different widths** on purpose. A building shrinks to
+fit, so it can have a narrow one; a figure is drawn at a fixed scale and its slot
+has to hold the widest man in the game — the Giant Thug, whose club reaches 45px
+left of the spot he stands on. One slot sized for both would either crop him or
+waste 30px of every tower card's text.

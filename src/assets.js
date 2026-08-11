@@ -20,9 +20,9 @@
 // trim they share; hard-coding those paths in the tool is how a moved file ends
 // up checked in its old location and reported as fine.
 export const paths = {
-  archery_t1:  'assets/towers/archery/Archers_Tower_T1.png',
-  archery_t2:  'assets/towers/archery/Archers_Tower_T2.png',
-  archery_t3:  'assets/towers/archery/Archers_Tower_T3.png',
+  archery_t1:  'assets/towers/archery/Archery_Tower_T1.png',
+  archery_t2:  'assets/towers/archery/Archery_Tower_T2.png',
+  archery_t3:  'assets/towers/archery/Archery_Tower_T3.png',
   barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
   barracks_t3: 'assets/towers/barracks/Barracks_Tower_T3.png',
@@ -36,9 +36,9 @@ export const paths = {
   artillery_t1:        'assets/towers/artillery/Artillery_Default_T1.png',
   artillery_t1_reload: 'assets/towers/artillery/Artillery_Reload_T1.png',
   artillery_t1_fire:   'assets/towers/artillery/Artillery_Fire_T1.png',
-  archer_t1:   'assets/units/Archers_Man_T1.png',
-  archer_t2:   'assets/units/Archers_Man_T2.png',
-  archer_t3:   'assets/units/Archers_Man_T3.png',
+  archer_t1:   'assets/units/Archery_Man_T1.png',
+  archer_t2:   'assets/units/Archery_Man_T2.png',
+  archer_t3:   'assets/units/Archery_Man_T3.png',
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
   soldier_t2:  'assets/units/Barracks_Man_T2.png',
   soldier_t3:  'assets/units/Barracks_Man_T3.png',
@@ -47,7 +47,7 @@ export const paths = {
   // sits with the other men rather than with the machine because that is what he
   // is: assets/units is every figure in the game.
   crew_t1:     'assets/units/Artillery_Man_T1.png',
-  arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
+  arrow_t1:    'assets/projectiles/Archery_Arrows_T1.png',
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   // T1a and T1b, not T1 and T2. The artist renamed the heavy from tier 2 to
   // "tier 1b" — it is a bigger militiaman, not the next rank up — so the tier 2
@@ -94,7 +94,7 @@ export const paths = {
   hud_life:        'assets/ui/Life_Icon.png',
   btn_plate:       'assets/ui/Button_Plate_Icon.png',
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
-  glyph_bow:       'assets/ui/Archers_Icon.png',
+  glyph_bow:       'assets/ui/Archery_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',
   glyph_up:        'assets/ui/Upgrade_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —

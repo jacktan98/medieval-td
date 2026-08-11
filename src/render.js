@@ -12,8 +12,9 @@ import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          PORTRAIT_SCALE, STAT_ICON_H, STAT_COL, BOOK_ICON_H, FOE_ICON_H } from './data/ui.js';
 import { selectionInfo } from './select.js';
-import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, ART_BOX, FOLD,
-         FOE_BOX, FOE_TEXT, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
+import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
+         SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
+         BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START, BOOK_BTN_PAUSE } from './book.js';
 
 const PLOT_R = 30;
@@ -1755,13 +1756,14 @@ function drawStart(ctx, state) {
 // book. Geometry comes from src/book.js so input.js hit-tests the rects that
 // actually get drawn; everything below is layout.
 //
-// NOTHING HERE IS STRETCHED TO FIT. Every building is drawn at one shared
-// factor and every figure at another, so the sizes on the page mean the same
-// thing they mean on the board — a Militia Camp really is bigger than a
-// Catapult, and a Giant Thug really is bigger than a Thug. That is also what
-// keeps the page sharp: both factors are downscales of art that is already
-// crisp at 1x, so nothing on the page is ever upscaled. tools/book.mjs checks it.
-const SHEET = { x: 8, y: 8, w: 944, h: 524 };
+// NOTHING HERE IS STRETCHED TO FIT AND NOTHING IS CENTRED ON ITS BOUNDING BOX.
+// Every building is drawn at one shared factor and every figure at another, so
+// the sizes on the page mean what they mean on the board — a Militia Camp really
+// is bigger than a Catapult, a Giant Thug really is bigger than a Thug. And each
+// drawing is placed on its own ground shadow, so a column of towers shares one
+// vertical axis and one ground line and so does a column of men. Both factors
+// are downscales of art already crisp at 1x, so nothing here is upscaled.
+// tools/book.mjs checks all of it.
 
 // Parchment, and the ink that reads on it. Deliberately the same INK family the
 // dashboard plates use, so the book and the box do not look like two games.
@@ -1787,7 +1789,7 @@ function drawBook(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
   ctx.font = '700 22px system-ui, sans-serif';
-  ctx.fillText('Encyclopedia', 480, 30);
+  ctx.fillText('Encyclopedia', 480, TITLE_Y);
 
   if (state.book === 0) drawShelfPage(ctx);
   else drawEnemyPage(ctx);
@@ -1803,19 +1805,22 @@ function drawShelfPage(ctx) {
   // The gutter. It is what says "two halves of one spread" rather than "four
   // columns", which is the difference between the layout being read as towers
   // beside their men and being read as an undifferentiated grid.
+  //
+  // Only on this page: page 2 is one list, and a rule down the middle of it
+  // would divide something that is not divided.
   ctx.strokeStyle = 'rgba(58,48,38,0.22)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(FOLD, 48);
-  ctx.lineTo(FOLD, 488);
+  ctx.moveTo(FOLD, HEAD_Y - 12);
+  ctx.lineTo(FOLD, FOOT_Y - 16);
   ctx.stroke();
 
-  heading(ctx, 'Tower', cardRect(0, 0, 0).x);
-  heading(ctx, 'Unit', cardRect(0, 0, FOLD).x);
+  heading(ctx, 'Tower', HALVES[0]);
+  heading(ctx, 'Unit', HALVES[1]);
 
   for (const { def, tiers, col, row } of shelf()) {
-    towerCard(ctx, cardRect(col, row, 0), towerEntry(def, tiers));
-    unitCard(ctx, cardRect(col, row, FOLD), unitEntry(def));
+    towerCard(ctx, cardRect(col, row, HALVES[0]), towerEntry(def, tiers));
+    unitCard(ctx, cardRect(col, row, HALVES[1]), unitEntry(def));
   }
 }
 
@@ -1824,7 +1829,7 @@ function heading(ctx, text, x) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
   ctx.font = '700 14px system-ui, sans-serif';
-  ctx.fillText(text, x, 56);
+  ctx.fillText(text, x, HEAD_Y);
 }
 
 function card(ctx, b) {
@@ -1837,62 +1842,64 @@ function card(ctx, b) {
   ctx.stroke();
 }
 
-// A drawing standing on the bottom of the picture slot, centred across it.
-// Buildings and figures are both anchored at their feet on the board, so they
-// are anchored at their feet here — a row of thumbnails hung from their tops
-// would put a tall tower's base halfway up the card.
-function standing(ctx, sprite, trim, box, dw, dh) {
+// A drawing standing on its own shadow inside a card's picture slot.
+//
+// `art` comes from towerArt() or figureSlot() and carries four things: the drawn
+// size, the anchor as a fraction of it, and where in the slot that anchor goes.
+// Every card in a column passes the same anchor, which is what lines the column
+// up — see the note on anchored() in src/book.js for why a bounding box will not
+// do it.
+function drawArt(ctx, sprite, trim, b, slot) {
   const img = sprite && art[sprite];
-  if (!img || !trim) return;
-  const [sx, sy, sw, sh] = trim;
-  ctx.drawImage(img, sx, sy, sw, sh,
-    box.x + (box.w - dw) / 2, box.y + box.h - dh, dw, dh);
-}
+  if (!img || !trim || !slot.a) return;
 
-function artBox(b) {
-  return { x: b.x + ART_BOX.x, y: b.y + (b.h - ART_BOX.h) / 2, w: ART_BOX.w, h: ART_BOX.h };
+  const [sx, sy, sw, sh] = trim;
+  const dw = slot.w * slot.k;
+  const dh = slot.h * slot.k;
+  ctx.drawImage(img, sx, sy, sw, sh,
+    b.x + slot.anchor.x - slot.a[0] * dw,
+    b.y + slot.anchor.y - slot.a[1] * dh,
+    dw, dh);
 }
 
 function towerCard(ctx, b, e) {
   card(ctx, b);
-  standing(ctx, e.sprite, e.trim, artBox(b), e.w, e.h);
+  drawArt(ctx, e.sprite, e.trim, b, e.art);
 
-  const tx = b.x + ART_BOX.x + ART_BOX.w + 8;
+  const tx = b.x + TOWER_BOX.x + TOWER_BOX.w + 8;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
   ctx.font = '700 12px system-ui, sans-serif';
-  ctx.fillText(e.title, tx, b.y + 17);
+  ctx.fillText(e.title, tx, b.y + 16);
 
   ctx.fillStyle = INK_MUTED;
   ctx.font = '600 11px system-ui, sans-serif';
-  ctx.fillText(e.occupier, tx, b.y + 34);
+  ctx.fillText(e.occupier, tx, b.y + 33);
 
   // Price on the left of the row, refund on the right and in the green the game
   // already uses for gold coming back to you — the same colour the refund button
   // prints its own figure in.
-  let x = stat(ctx, 'stat_cost', tx, b.y + 51, String(e.cost), INK);
-  stat(ctx, 'glyph_refund', x + 14, b.y + 51, String(e.refund), INK_GREEN);
+  const x = stat(ctx, 'stat_cost', tx, b.y + 50, String(e.cost), INK);
+  stat(ctx, 'glyph_refund', x + 14, b.y + 50, String(e.refund), INK_GREEN);
 }
 
 function unitCard(ctx, b, e) {
   card(ctx, b);
-  standing(ctx, e.sprite, e.trim, artBox(b),
-    e.trim ? e.trim[2] * SCALE * PORTRAIT_SCALE : 0,
-    e.trim ? e.trim[3] * SCALE * PORTRAIT_SCALE : 0);
+  drawArt(ctx, e.sprite, e.trim, b, e.art);
 
-  const tx = b.x + ART_BOX.x + ART_BOX.w + 8;
+  const tx = b.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
   ctx.font = '700 12px system-ui, sans-serif';
-  ctx.fillText(e.title, tx, b.y + 24);
+  ctx.fillText(e.title, tx, b.y + 22);
 
   let x = tx;
-  if (e.hp !== null) x = stat(ctx, 'stat_health', x, b.y + 45, String(e.hp), INK) + 14;
-  stat(ctx, 'stat_damage', x, b.y + 45, String(e.damage), INK);
+  if (e.hp !== null) x = stat(ctx, 'stat_health', x, b.y + 43, String(e.hp), INK) + 14;
+  stat(ctx, 'stat_damage', x, b.y + 43, String(e.damage), INK);
 }
 
 // One icon and its number, returning the x to carry on from. The icon is drawn
@@ -1913,66 +1920,50 @@ function stat(ctx, key, x, y, text, colour, h = BOOK_ICON_H) {
   return x + w + 4 + ctx.measureText(text).width;
 }
 
-// Page 2: the enemies. Two entries and a whole page, so each gets the two stats
-// a tower card has no room for — what killing it pays, and what letting it past
-// costs. Both are things a player can only otherwise learn by losing.
+// Page 2: the enemies, in the same cards as everything else.
+//
+// Three lines, laid out exactly like a tower's: a name, then two stat rows. What
+// it is worth to kill and what it costs to let through are the two facts a
+// player can otherwise only learn by losing, and they fit because the row above
+// them is icons rather than a sentence.
 function drawEnemyPage(ctx) {
-  heading(ctx, 'Enemy', enemyCards()[0].x);
-
-  // The tallest enemy as it is DRAWN, so both figures stand on one line inside
-  // their slots — see FOE_BOX. Computed rather than typed: a redrawn enemy that
-  // is taller than anything before it moves the line by itself.
-  const foeH = Math.max(...enemyCards().map(c => c.def.spriteTrim[3])) * SCALE * PORTRAIT_SCALE;
+  heading(ctx, 'Enemy', HALVES[0]);
 
   for (const c of enemyCards()) {
     const d = c.def;
     card(ctx, c);
+    drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot));
 
-    const box = { x: c.x + FOE_BOX.x, y: c.y + c.h - 26 - foeH, w: FOE_BOX.w, h: foeH };
-    standing(ctx, d.sprite, d.spriteTrim, box,
-      d.spriteTrim[2] * SCALE * PORTRAIT_SCALE,
-      d.spriteTrim[3] * SCALE * PORTRAIT_SCALE);
-
-    const tx = c.x + FOE_TEXT;
+    const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = INK;
-    ctx.font = '700 24px system-ui, sans-serif';
-    ctx.fillText(d.name, tx, c.y + 48);
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText(d.name, tx, c.y + 16);
 
-    // One row: an icon, a number, and the word it stands for. The words are here
-    // and nowhere else in the game because two of these icons are being asked to
-    // mean something new — the coin is a bounty rather than your purse, and the
-    // heart beside it is a cost rather than what you have left. Without the
-    // labels the row is four pictures and four numbers with no verbs.
-    const cells = [
-      ['stat_health', d.hp, 'Health'],
-      ['stat_damage', d.damage, 'Attack'],
-      ['hud_gold', d.bounty, 'Bounty'],
-      ['hud_life', d.leak, d.leak === 1 ? 'Life lost' : 'Lives lost']
-    ];
+    const hp = stat(ctx, 'stat_health', tx, c.y + 33, String(d.hp), INK);
+    stat(ctx, 'stat_damage', hp + 12, c.y + 33, String(d.damage), INK);
 
-    cells.forEach(([key, value, label], i) => {
-      const cx = tx + i * 180;
-      const cy = c.y + 110;
-      stat(ctx, key, cx, cy, String(value), INK, FOE_ICON_H);
-      ctx.fillStyle = INK_MUTED;
-      ctx.font = '600 12px system-ui, sans-serif';
-      ctx.fillText(label, cx, cy + 22);
-    });
+    // The coin is a BOUNTY here rather than your purse and the heart is a COST
+    // rather than what you have left, which is the one place in the game either
+    // icon means something new. They are readable because of the row above:
+    // health and attack on line 2 set what a heart and a sword mean, so line 3
+    // reads as the other pair of numbers about the same creature.
+    const gold = stat(ctx, 'hud_gold', tx, c.y + 50, String(d.bounty), INK_GREEN);
+    stat(ctx, 'hud_life', gold + 12, c.y + 50, String(d.leak), INK_RED);
   }
 }
 
 function drawBookFooter(ctx, state) {
   bookButton(ctx, BOOK_CLOSE, 'Close', 15);
-  bookButton(ctx, BOOK_PREV, '‹', 22);
-  bookButton(ctx, BOOK_NEXT, '›', 22);
+  bookButton(ctx, BOOK_PREV, '\u2039', 22);
+  bookButton(ctx, BOOK_NEXT, '\u203a', 22);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
   ctx.font = '700 14px system-ui, sans-serif';
-  ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, 480, BOOK_PREV.y + BOOK_PREV.h / 2);
+  ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, FOLD, FOOT_Y + BOOK_PREV.h / 2);
 }
 
 // Dark on the parchment, which is the reverse of the buttons everywhere else in

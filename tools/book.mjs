@@ -33,9 +33,10 @@ import { occupant } from '../src/select.js';
 import { refundValue, REFUND_RATE } from '../src/menu.js';
 import { ui, PORTRAIT_SCALE, BOOK_ICON_H, FOE_ICON_H } from '../src/data/ui.js';
 import {
-  PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry,
-  ART_BOX, FOLD, BOOK_TOWER_SCALE, FOE_BOX, FOE_TEXT,
-  BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_BTN_START, BOOK_BTN_PAUSE
+  PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
+  SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
+  BOOK_TOWER_SCALE, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
+  BOOK_BTN_START, BOOK_BTN_PAUSE
 } from '../src/book.js';
 
 let bad = 0;
@@ -46,11 +47,6 @@ const ok = (cond, label, detail = '') => {
 
 const LADDERS = [archery, barracks, siege];
 const TIERS = LADDERS.flat();
-
-// The parchment sheet, from render.js. Repeated rather than imported because
-// importing render.js into a node tool drags in the whole draw path; it is one
-// rect and the check below is what keeps it honest.
-const SHEET = { x: 8, y: 8, w: 944, h: 524 };
 
 // The device-pixel cap in main.js. Art is crisp iff drawn x MAX_SCALE fits in
 // the source, which is the same rule tools/trim.mjs prints its verdict from.
@@ -137,26 +133,19 @@ console.log('\nWhat fits\n');
 {
   const cards = [];
   for (const { col, row } of shelf()) {
-    cards.push(cardRect(col, row, 0));
-    cards.push(cardRect(col, row, FOLD));
+    for (const half of HALVES) cards.push(cardRect(col, row, half));
   }
+  const all = [...cards, ...enemyCards()];
 
   const inSheet = b =>
     b.x >= SHEET.x && b.y >= SHEET.y &&
     b.x + b.w <= SHEET.x + SHEET.w && b.y + b.h <= SHEET.y + SHEET.h;
 
-  ok(cards.every(inSheet), 'every shelf card sits on the parchment');
-  ok(enemyCards().every(inSheet), 'and so does every enemy card');
-
-  // The footer is drawn over the sheet, so cards must stop above it.
-  const foot = Math.min(BOOK_CLOSE.y, BOOK_PREV.y, BOOK_NEXT.y);
-  ok(cards.every(b => b.y + b.h <= foot) && enemyCards().every(b => b.y + b.h <= foot),
-    'and clear of the footer', `cards end by ${Math.max(...cards.map(b => b.y + b.h))}, footer at ${foot}`);
+  ok(all.every(inSheet), 'every card sits on the parchment');
 
   // Towers on one side of the fold, men on the other.
-  const left = cards.filter(b => b.x < FOLD);
-  ok(left.every(b => b.x + b.w <= FOLD), 'nothing crosses the fold',
-    `fold at ${FOLD}`);
+  ok(cards.filter(b => b.x < FOLD).every(b => b.x + b.w <= FOLD),
+    'nothing crosses the fold', `fold at ${FOLD}`);
 
   const overlap = (a, b) =>
     a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -166,27 +155,116 @@ console.log('\nWhat fits\n');
       if (overlap(cards[i], cards[j])) clashes++;
   ok(clashes === 0, 'and no two cards overlap', `${clashes} clash(es)`);
 
-  // A tower drawn taller than its slot hangs into the card above it. This is
-  // the check that BOOK_TOWER_SCALE is actually derived from the defs rather
-  // than typed in and left behind by a redraw.
+  // EVERY BOX THE SAME SIZE. An enemy is exactly as much "a box description" as
+  // a tower is, and a page whose boxes are three sizes reads as three different
+  // kinds of thing. This is the check that keeps that true when the enemies
+  // page is next given something a shelf card has no room for.
+  const shape = b => `${b.w}x${b.h}`;
+  const sizes = new Set(all.map(shape));
+  ok(sizes.size === 1, 'and every box on both pages is the same size',
+    [...sizes].join(', '));
+}
+
+console.log('\nOne margin, everywhere\n');
+
+{
+  // The complaint this section exists for: cards were 2px inside the sheet, the
+  // Close button was 12, and the footer's bottom edge was flush with the
+  // parchment — three numbers each chosen on its own and each fine on its own.
+  // Every edge below is now measured against the SAME pad.
+  const PAD = 16;
+  const inner = { x: SHEET.x + PAD, y: SHEET.y + PAD,
+                  r: SHEET.x + SHEET.w - PAD, b: SHEET.y + SHEET.h - PAD };
+
+  const cards = [];
+  for (const { col, row } of shelf()) {
+    for (const half of HALVES) cards.push(cardRect(col, row, half));
+  }
+
+  ok(Math.min(...cards.map(b => b.x)) === inner.x,
+    'the first card starts on the left margin', `${Math.min(...cards.map(b => b.x))} of ${inner.x}`);
+  ok(Math.max(...cards.map(b => b.x + b.w)) === inner.r,
+    'and the last one ends on the right margin', `${Math.max(...cards.map(b => b.x + b.w))} of ${inner.r}`);
+
+  ok(BOOK_CLOSE.x === inner.x, 'Close lines up under the first card',
+    `${BOOK_CLOSE.x} of ${inner.x}`);
+  ok(BOOK_CLOSE.y + BOOK_CLOSE.h === inner.b,
+    'and the footer sits on the bottom margin', `${BOOK_CLOSE.y + BOOK_CLOSE.h} of ${inner.b}`);
+
+  // All three footer controls on one line, so no button is a pixel proud of its
+  // neighbours.
+  const feet = [BOOK_CLOSE, BOOK_PREV, BOOK_NEXT];
+  ok(feet.every(b => b.y === FOOT_Y && b.h === BOOK_CLOSE.h),
+    'and all three footer buttons share a baseline', `y ${FOOT_Y}`);
+
+  // The two arrows equidistant from the fold, so "Page 1 / 2" is centred in a
+  // gap of the same width on both sides rather than looking centred.
+  ok(FOLD - (BOOK_PREV.x + BOOK_PREV.w) === BOOK_NEXT.x - FOLD,
+    'and the two arrows are equidistant from the fold',
+    `${FOLD - (BOOK_PREV.x + BOOK_PREV.w)}px each side`);
+
+  const bottom = Math.max(...cards.map(b => b.y + b.h));
+  ok(FOOT_Y - bottom === PAD, 'the gap above the footer is the outer margin',
+    `${FOOT_Y - bottom} of ${PAD}`);
+
+  ok(TITLE_Y > inner.y && HEAD_Y > TITLE_Y && Math.min(...cards.map(b => b.y)) > HEAD_Y,
+    'and the two headings sit above the grid in order',
+    `title ${TITLE_Y}, heading ${HEAD_Y}, cards ${Math.min(...cards.map(b => b.y))}`);
+}
+
+console.log('\nEverything stands on its shadow\n');
+
+{
+  // A bounding box is not where a thing is. Both slots are sized from the
+  // SHADOW-ANCHORED span, so this is the check that a redrawn building or a man
+  // carrying something longer has not quietly started hanging out of its card.
   const k = BOOK_TOWER_SCALE / SCALE;
-  const fits = TIERS.every(d => d.w * k <= ART_BOX.w + 0.01 && d.h * k <= ART_BOX.h + 0.01);
-  ok(fits, 'every building fits its picture slot',
-    `${k.toFixed(3)}x board scale, tallest ${Math.max(...TIERS.map(d => d.h * k)).toFixed(1)} of ${ART_BOX.h}`);
+  const fits = TIERS.every(d => {
+    const a = towerEntry(d, archery).art;
+    const x = a.anchor.x - d.groundFrac[0] * d.w * k;
+    const y = a.anchor.y - d.groundFrac[1] * d.h * k;
+    return x >= TOWER_BOX.x - 0.01 && y >= TOWER_BOX.y - 0.01 &&
+      x + d.w * k <= TOWER_BOX.x + TOWER_BOX.w + 0.01 &&
+      y + d.h * k <= TOWER_BOX.y + TOWER_BOX.h + 0.01;
+  });
+  ok(fits, 'every building fits its slot once anchored on its shadow',
+    `${k.toFixed(3)}x board scale`);
 
-  // One factor for all of them, which is the reason a Militia Camp reads as
-  // bigger than a Catapult here as well as on the board.
-  const biggest = TIERS.reduce((a, d) => (d.h > a.h ? d : a));
-  ok(Math.abs(biggest.h * k - ART_BOX.h) < 0.5 || Math.abs(biggest.w * k - ART_BOX.w) < 0.5,
-    'and the largest one actually fills it', `${biggest.name}`);
+  // The largest one actually filling its slot is what proves the factor is
+  // derived rather than typed and left behind by a redraw.
+  const spanH = Math.max(...TIERS.map(d => d.groundFrac[1] * d.h)) +
+                Math.max(...TIERS.map(d => (1 - d.groundFrac[1]) * d.h));
+  ok(Math.abs(spanH * k - TOWER_BOX.h) < 0.6, 'and the shelf fills the height it is given',
+    `${(spanH * k).toFixed(1)} of ${TOWER_BOX.h}`);
 
-  // Enemy portraits stand on a shared line inside a full-width row.
-  const foeW = Math.max(...Object.values(enemyTypes)
-    .map(d => d.spriteTrim[2] * SCALE * PORTRAIT_SCALE));
-  ok(foeW <= FOE_BOX.w, 'the widest enemy fits its slot',
-    `${foeW.toFixed(1)} of ${FOE_BOX.w}`);
-  ok(FOE_BOX.x + FOE_BOX.w <= FOE_TEXT, 'and the picture never runs into the text',
-    `slot ends ${FOE_BOX.x + FOE_BOX.w}, text at ${FOE_TEXT}`);
+  // Figures are drawn at the FIXED PORTRAIT_SCALE — they never shrink to fit —
+  // so their slot has to be wide enough for the widest man in the game rather
+  // than the other way round.
+  const men = [
+    ...TIERS.map(d => unitEntry(d)),
+    ...Object.values(enemyTypes).map(d => ({ trim: d.spriteTrim, art: figureSlot(d.spriteTrim, d.pivot) }))
+  ];
+  const inBox = men.every(m => {
+    const x = m.art.anchor.x - m.art.a[0] * m.art.w;
+    const y = m.art.anchor.y - m.art.a[1] * m.art.h;
+    return x >= FIGURE_BOX.x - 0.01 && y >= FIGURE_BOX.y - 0.01 &&
+      x + m.art.w <= FIGURE_BOX.x + FIGURE_BOX.w + 0.01 &&
+      y + m.art.h <= FIGURE_BOX.y + FIGURE_BOX.h + 0.01;
+  });
+  ok(inBox, 'every figure fits its slot at the fixed portrait scale',
+    `${FIGURE_BOX.w}x${FIGURE_BOX.h}`);
+
+  // The whole point: one anchor point per slot, so a column lines up. If any
+  // drawing were placed by its box instead, its anchor would land somewhere
+  // else and this would differ.
+  const anchors = new Set(men.map(m => `${m.art.anchor.x.toFixed(2)},${m.art.anchor.y.toFixed(2)}`));
+  ok(anchors.size === 1, 'and every man in a column stands on the same point',
+    [...anchors][0]);
+
+  // Nobody may be missing a pivot: a figure with none would be centred by its
+  // box while the row beside it stood on a line, which is exactly the fault the
+  // catapult crewman had before he was measured.
+  ok(TIERS.every(d => unitEntry(d).art.a), 'and no figure is missing a shadow anchor');
 }
 
 console.log('\nWhat you can hit\n');

@@ -6,8 +6,11 @@
 //   name    the flavour one — Watchtower, Guard Post, Knight's Hall. Nothing
 //           draws it since the menu buttons lost their labels; the TOOLS print
 //           it, so a sim row still says which building it means.
-//   title   what the tier is called plainly: "Barracks Tier II", "Archers Tier
-//           III". It heads that tier's entry in the encyclopedia.
+//   title   what the tier is called plainly: "Barracks Tier II", "Archery Tier
+//           III". It heads that tier's entry in the encyclopedia. It reads
+//           "Archery" rather than "Archers" because the family, the folder and
+//           every file are called that now — the artist renamed the uploads and
+//           the one place the old word survived on screen was here.
 //   unit    the MAN the tier puts on the board, which is what the info box
 //           shows — a Spearman, a Combat Archer, a Trebuchet Engineer.
 //
@@ -458,7 +461,7 @@ const archer3 = {
 // A barracks has always had both: the building is a "Barracks Tier I" and the
 // man it sends out is a "Spearman", and the two names sit in two places. The
 // other two families only had the building's, so the info box — which shows the
-// MAN — was captioning an archer "Archers Tier I" and a catapult crewman
+// MAN — was captioning an archer "Archery Tier I" and a catapult crewman
 // "Artillery Tier I". Now every tier names its occupant, the box reads the
 // occupant's name for all three families, and `title` is left to do the one job
 // it is good at: heading that tier's entry in the encyclopedia.
@@ -467,9 +470,9 @@ const archer3 = {
 // Elite; Catapult, Mangonel, Trebuchet — so nothing is lost by dropping the
 // roman numeral from the box.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archers Tier I',   unit: 'Novice Archer', cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archers Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archers Tier III', unit: 'Elite Archer',  cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -739,6 +742,16 @@ const catapult = {
   // The face for the info box. Never drawn on the board.
   portrait: 'crew_t1',
   portraitTrim: CREW_TRIM,
+  // The centre of his own ground shadow, measured by tools/shadow.mjs — the
+  // same anchor every other figure in the game carries, and it is here for the
+  // same reason theirs are: a figure stands on its shadow.
+  //
+  // He never stands on the BOARD, so this is not a placement number; it is what
+  // the encyclopedia lines him up on. The book anchors every man on his shadow
+  // rather than centring his bounding box, and without this he was the one
+  // figure on the page floating by his box while the row beside him stood on a
+  // line.
+  portraitPivot: [0.628, 0.909],
   shape: 'siege'
 };
 

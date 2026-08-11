@@ -226,9 +226,9 @@ const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 // shafts on several of them — so those get checked, not guessed. See the note at
 // the bottom.
 const SPRITES = [
-  ['assets/towers/archery/Archers_Tower_T1.png',    'watchtower.groundFrac',  towers.archery[0].spriteTrim, towers.archery[0].groundFrac, 'whole'],
-  ['assets/towers/archery/Archers_Tower_T2.png',    'watchtower2.groundFrac', towers.archery[1].spriteTrim, towers.archery[1].groundFrac, 'whole'],
-  ['assets/towers/archery/Archers_Tower_T3.png',    'watchtower3.groundFrac', towers.archery[2].spriteTrim, towers.archery[2].groundFrac, 'whole'],
+  ['assets/towers/archery/Archery_Tower_T1.png',    'watchtower.groundFrac',  towers.archery[0].spriteTrim, towers.archery[0].groundFrac, 'whole'],
+  ['assets/towers/archery/Archery_Tower_T2.png',    'watchtower2.groundFrac', towers.archery[1].spriteTrim, towers.archery[1].groundFrac, 'whole'],
+  ['assets/towers/archery/Archery_Tower_T3.png',    'watchtower3.groundFrac', towers.archery[2].spriteTrim, towers.archery[2].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T1.png',   'camp.groundFrac',        towers.barracks[0].spriteTrim, towers.barracks[0].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],
@@ -245,9 +245,15 @@ const SPRITES = [
   ['assets/towers/artillery/Artillery_Default_T1.png', 'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Reload_T1.png',  'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Fire_T1.png',    'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
-  ['assets/units/Archers_Man_T1.png',       'archer.gunnerPivot',     towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
-  ['assets/units/Archers_Man_T2.png',       'archer2.gunnerPivot',    towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
-  ['assets/units/Archers_Man_T3.png',       'archer3.gunnerPivot',    towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
+  ['assets/units/Archery_Man_T1.png',       'archer.gunnerPivot',     towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
+  ['assets/units/Archery_Man_T2.png',       'archer2.gunnerPivot',    towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
+  ['assets/units/Archery_Man_T3.png',       'archer3.gunnerPivot',    towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
+  // The catapult crewman. He is not drawn on the board — he is already part of
+  // all three machine frames — but the info box and the encyclopedia both stand
+  // him on his own, and a figure standing anywhere in this game stands on its
+  // shadow. Without a pivot he was the one man on the page centred by his
+  // bounding box while everyone beside him was anchored properly.
+  ['assets/units/Artillery_Man_T1.png',     'catapult.portraitPivot', towers.siege[0].portraitTrim, towers.siege[0].portraitPivot],
   ['assets/units/Barracks_Man_T1.png',      'spearman.pivot',         spear.spriteTrim, spear.pivot],
   ['assets/units/Barracks_Man_T2.png',      'spearman2.pivot',        spear2.spriteTrim, spear2.pivot],
   ['assets/units/Barracks_Man_T3.png',      'spearman3.pivot',        spear3.spriteTrim, spear3.pivot],

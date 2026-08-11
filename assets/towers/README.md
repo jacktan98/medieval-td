@@ -10,9 +10,9 @@ in `src/assets.js`.
 
 | file                                   | canvas | drawn as     | used by            |
 |----------------------------------------|--------|--------------|--------------------|
-| `archery/Archers_Tower_T1.png`         | 1024   | 100 x 123 px | Watchtower (1)     |
-| `archery/Archers_Tower_T2.png`         | 1024   | 88 x 153 px  | Archer Post (2)    |
-| `archery/Archers_Tower_T3.png`         | 1024   | 74 x 153 px  | Crossbow Tower (3) |
+| `archery/Archery_Tower_T1.png`         | 1024   | 100 x 123 px | Watchtower (1)     |
+| `archery/Archery_Tower_T2.png`         | 1024   | 88 x 153 px  | Archer Post (2)    |
+| `archery/Archery_Tower_T3.png`         | 1024   | 74 x 153 px  | Crossbow Tower (3) |
 | `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
 | `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
@@ -267,9 +267,9 @@ marker it replaced was standing.
 
 | file                     | shadow centre  | as a fraction of the trim |
 |--------------------------|----------------|---------------------------|
-| `archery/Archers_Tower_T1.png`   | (507.3, 735.6) | `[0.490, 0.871]`   |
-| `archery/Archers_Tower_T2.png` | (545.3, 802.5) | `[0.578, 0.890]`          |
-| `archery/Archers_Tower_T3.png` | (512.3, 802.4) | `[0.501, 0.890]`          |
+| `archery/Archery_Tower_T1.png`   | (507.3, 735.6) | `[0.490, 0.871]`   |
+| `archery/Archery_Tower_T2.png` | (545.3, 802.5) | `[0.578, 0.890]`          |
+| `archery/Archery_Tower_T3.png` | (512.3, 802.4) | `[0.501, 0.890]`          |
 | `barracks/Barracks_Tower_T1.png` | (521.0, 605.4) | `[0.515, 0.678]`          |
 | `barracks/Barracks_Tower_T2.png` | (503.8, 696.9) | `[0.487, 0.793]`          |
 | `barracks/Barracks_Tower_T3.png` | (504.2, 701.8) | `[0.487, 0.806]`          |
