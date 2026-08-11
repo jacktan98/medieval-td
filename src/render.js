@@ -200,10 +200,10 @@ function drawTower(ctx, t) {
   const box = towerBox(t);
 
   // A BUILDING THAT MIRRORS. Only artillery does, and it is the one exception to
-  // the rule that buildings never flip — a catapult that always throws to the
-  // upper left while the enemy is on its right reads as a machine pointing the
-  // wrong way, which is worse than the perspective cost of flipping an isometric
-  // drawing. See buildingFlip in towers.js for which direction, and when.
+  // the rule that buildings never flip — a catapult that always throws the same
+  // way reads as a machine pointing away from the enemy, which is worse than the
+  // perspective cost of flipping an isometric drawing. See buildingFlip in
+  // towers.js for which direction, and when.
   //
   // Mirrored about t.x, the point the machine STANDS on, not about the middle of
   // its box. The two are not the same — the ground shadow sits at 0.582 across

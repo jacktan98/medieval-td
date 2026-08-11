@@ -690,20 +690,29 @@ const catapult = {
   // release point and the muzzle offset is zero.
   mountFrac: [0.358, 0.103],
   muzzle: [0, 0],
-  // WHICH WAY THE MACHINE IS DRAWN THROWING: up and to the LEFT. It is the one
-  // building in the game that mirrors, and the only one that should — a catapult
-  // visibly POINTS, so a machine hurling to the upper left at an enemy on its
-  // right reads as broken in a way a symmetrical tent or tower never could.
+  // WHICH WAY THE MACHINE IS DRAWN THROWING: up and to the RIGHT. So a target on
+  // the right is the UNMIRRORED case and only a target on the left flips it.
   //
-  // The cost is real and was the reason it did not mirror at first: an isometric
-  // drawing reversed is lit from the wrong side and its ground plane recedes the
-  // wrong way. Pointing the right way wins that trade; nothing else in the game
+  // MEASURED, because it was got backwards once by looking at the wrong thing.
+  // The arm's resting position is on the LEFT of the frame, which reads as "this
+  // machine throws left" and is exactly wrong — where the arm sits says nothing,
+  // where it SWINGS is the answer. The sling is the only blob of 54,36,7 above
+  // the deck line in each frame, and between Default and Fire its centre goes
+  // (373.5, 482.0) -> (434.0, 363.5): 60.5px to the RIGHT and 118.5px up. The arm
+  // comes over toward the frame, and the rock leaves going that way.
+  //
+  // It is the one building in the game that mirrors, and the only one that
+  // should — a catapult visibly POINTS, so a machine hurling away from the enemy
+  // reads as broken in a way a symmetrical tent or tower never could. The cost is
+  // real and was the reason it did not mirror at first: an isometric drawing
+  // reversed is lit from the wrong side and its ground plane recedes the wrong
+  // way. Pointing the right way wins that trade, and nothing else in the game
   // needs to make it.
   //
   // NOT `spriteFaces`, which is a different question with a different answer —
   // that one is which way a FIGURE standing on a deck is drawn, and every archery
   // tier carries it for its archer. A building that flips says so here.
-  buildingFaces: -1,
+  buildingFaces: 1,
   ammo: rock,
   // The face for the info box. Never drawn on the board.
   portrait: 'crew_t1',

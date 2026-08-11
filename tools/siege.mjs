@@ -360,20 +360,42 @@ console.log('\nWhich way it faces\n');
 }
 
 {
-  // The picture and the firing origin have to mirror TOGETHER. If only the
-  // drawing flips, the arm swings right and the rock leaves from a sling still
-  // drawn on the left, which reads as a broken projectile rather than a missing
-  // transform.
+  // WHICH SIDE FLIPS, stated as the two concrete cases rather than as a sign.
+  //
+  // This was wrong once and it was wrong in a way that reads perfectly in code:
+  // `buildingFaces` was -1, every mirror mechanism worked, both directions were
+  // used, the latch held — and the machine threw away from the enemy in every
+  // shot. A test that only checks "the far side mirrors" passes either way round,
+  // because either way round has a far side. So the sides are named.
   const s = board();
   const t = catapultAt(SPOT.x, SPOT.y - BACK);
-  const un = muzzlePoint(t);
-  t.face = 1;                       // the far side from the drawn direction
-  const flipped = muzzlePoint(t);
-  ok(buildingFlip(t) === -1, 'facing the far side mirrors the building',
+
+  t.face = 1;
+  ok(buildingFlip(t) === 1, 'a target on the RIGHT draws the machine unmirrored',
      `flip ${buildingFlip(t)}`);
+
+  t.face = -1;
+  ok(buildingFlip(t) === -1, 'and a target on the LEFT mirrors it',
+     `flip ${buildingFlip(t)}`);
+
+  // The picture and the firing origin have to mirror TOGETHER. If only the
+  // drawing flips, the arm swings one way and the rock leaves from a sling still
+  // drawn on the other, which reads as a broken projectile rather than a missing
+  // transform.
+  t.face = 1;
+  const un = muzzlePoint(t);
+  t.face = -1;
+  const flipped = muzzlePoint(t);
   ok(Math.abs((un.x + flipped.x) / 2 - t.x) < 0.01 && un.y === flipped.y,
-     'and mirrors the muzzle about the plot with it',
+     'the muzzle mirrors about the plot with it',
      `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${t.x.toFixed(1)}`);
+
+  // And the drawn direction is not a matter of opinion: it is where the sling
+  // TRAVELS between the resting frame and the firing one. Pinned here so a
+  // redraw that swings the arm the other way fails loudly instead of shipping.
+  ok(def.buildingFaces === 1,
+     'the artwork throws RIGHT — the sling moves +60.5px in x from rest to Fire',
+     `buildingFaces ${def.buildingFaces}`);
 }
 
 // --- the dead zone ------------------------------------------------------------

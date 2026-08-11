@@ -85,13 +85,27 @@ the man.
 Buildings in this game do not flip — an isometric drawing reversed is lit from
 the wrong side and its ground plane recedes the wrong way — and only the figures
 standing on them do. Artillery is the exception, because it is the only building
-that visibly POINTS: a machine hurling to the upper left at an enemy on its right
-reads as broken in a way a symmetrical tent or tower never could. The perspective
-cost is real and it is worth paying here and nowhere else.
+that visibly POINTS: a machine hurling away from the enemy reads as broken in a
+way a symmetrical tent or tower never could. The perspective cost is real and it
+is worth paying here and nowhere else.
 
-`buildingFaces: -1` says the machine is drawn throwing up and to the LEFT. It is
-a different field from `spriteFaces`, which every archery tier also carries and
-which is about the man on the deck.
+`buildingFaces: 1` says the machine is drawn throwing up and to the **RIGHT**, so
+a target on the right is the unmirrored case and only a target on the left flips
+it. It is a different field from `spriteFaces`, which every archery tier also
+carries and which is about the man on the deck.
+
+**That direction is measured, and it was got backwards once.** The arm's RESTING
+position is on the left of the frame, which reads as "this machine throws left"
+and is exactly wrong: where the arm sits says nothing, where it SWINGS is the
+answer. The sling is the only blob of `54,36,7` above the deck line in each
+frame, and between Default and Fire its centre travels
+`(373.5, 482.0) -> (434.0, 363.5)` — 60.5px to the right and 118.5px up.
+
+The wrong sign was invisible in code review: every mechanism worked, both
+directions got used, the latch held, and the machine threw away from the enemy on
+every shot. So `tools/siege.mjs` names the two cases rather than checking for "a
+flip" — a test that only asserts "the far side mirrors" passes either way round,
+because either way round has a far side.
 
 **Mirrored about the point it stands on**, not about the middle of its box. The
 two are not the same — the ground shadow sits 0.582 across rather than 0.5 — and
