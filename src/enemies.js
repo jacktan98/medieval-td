@@ -93,7 +93,13 @@ export function updateEnemies(state, dt) {
       // finding its mark across the map, or a man winning the fight he is in.
       // Sorted here for the same reason the bounty is — this is the only place
       // that sees every death.
-      solo(e.killedBy === 'arrow' ? CUE.arrowKill : CUE.meleeKill);
+      //
+      // A ROCK USES THE ARROW'S CUE, and it is the only honest option available:
+      // the clip is called Arrow_hit_enemy and there is nothing else recorded for
+      // a ranged kill. It is the better of two wrongs — the alternative is a
+      // catapult crushing a man in silence while every arrow in the game speaks.
+      // A rock landing wants its own clip.
+      solo(e.killedBy === 'shot' ? CUE.arrowKill : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and
       // nothing should ever reach it: an enemy cannot die without being hit.

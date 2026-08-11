@@ -118,6 +118,25 @@ you would rather a new tower stayed quiet; it is one line.
 **A giant thug answers with the common thug's line**, there being one enemy
 voice so far. Silence for the giant would read as a bug rather than as a gap.
 
+### The catapult is missing two clips
+
+**Throwing a rock is SILENT**, and deliberately so rather than by oversight. It
+is the one action in the game that makes no noise. The obvious stand-in is
+`Arrow_shot`, and it is the wrong one: that sample is a bowstring, everybody can
+hear that it is a bowstring, and playing it over a swinging timber arm reads as a
+bug where silence reads as a gap. It is one flag — `sound: true` on `rock` in
+`src/data/towers.js` — the day a clip exists.
+
+What it wants is **Category B**, like the bow: a catapult fires every three
+seconds and several of them fire at once, so a shared channel would silence most
+of them. A timber creak and a thump, kept quiet, is the shape of it.
+
+**A rock kill borrows `Arrow_hit_enemy`**, which is the better of two wrongs — a
+catapult crushing a man in silence while every arrow in the game speaks is worse.
+A `Rock_hit_enemy` in **Category A** alongside it would sort that; it is one line
+in `CUE` and one branch in `src/enemies.js`, which already knows which kind of
+projectile landed the blow.
+
 ## What the one-second rule actually costs
 
 The gate holds for as long as the clip is AUDIBLE, plus the second — not for the

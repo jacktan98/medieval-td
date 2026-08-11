@@ -1,11 +1,11 @@
 import { level, levels } from './level.js';
 import { waves } from './data/waves.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
-import { SCALE, EXPORT_PX, BLOOD_SCALE, arrow } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { art } from './assets.js';
-import { towerBox, mountPoint, muzzlePoint, facing, mirror } from './towers.js';
+import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -324,7 +324,13 @@ function shade(hex, amt) {
 // get wired up one tier at a time as art arrives, and a PNG that fails to
 // load falls back to something drawn rather than to an empty plot.
 function drawBuilding(ctx, t, box) {
-  const img = t.def.sprite && art[t.def.sprite];
+  // frameOf, not def.sprite: a catapult is three drawings on a one-second beat
+  // and this is which one it is on. Everything else has a single frame and
+  // answers with it. The three share ONE trim — the union of all three boxes —
+  // so they register pixel-for-pixel and only what the artist moved appears to
+  // move; see CATAPULT_TRIM in data/towers.js.
+  const key = frameOf(t);
+  const img = key && art[key];
   if (img) {
     const [sx, sy, sw, sh] = t.def.spriteTrim;
     ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
@@ -735,14 +741,14 @@ function musterRing(ctx, u) {
 // Arrows are the only sprite that rotates: a projectile has no upright, and it
 // has to point where it is flying. The art is drawn pointing left, so the
 // rotation is the heading plus a half turn.
+// Every shot draws the ammunition it was fired with. Which is not the same
+// picture any more: an arrow and a catapult's rock are in the air at the same
+// time and the shot carries its own, so nothing here has to know which tower
+// threw it.
 function drawShots(ctx, state) {
-  const img = art[arrow.sprite];
-  const [sx, sy, sw, sh] = arrow.trim;
-  const dw = sw * SCALE;
-  const dh = sh * SCALE;
-  const flip = arrow.faces < 0 ? Math.PI : 0;
-
   for (const s of state.shots) {
+    const ammo = s.ammo;
+    const img = art[ammo.sprite];
     const a = s.angle || 0;
 
     if (!img) {
@@ -756,12 +762,19 @@ function drawShots(ctx, state) {
       continue;
     }
 
+    const [sx, sy, sw, sh] = ammo.trim;
+    const dw = sw * SCALE;
+    const dh = sh * SCALE;
+
     ctx.save();
     ctx.translate(s.x, s.y);
-    ctx.rotate(a + flip);
-    // Anchored at the head, so the point sits on the target rather than the
-    // shaft ending there.
-    ctx.drawImage(img, sx, sy, sw, sh, -dw * 0.08, -dh / 2, dw, dh);
+    // `faces` 0 means the drawing has no nose to point anywhere, so it is never
+    // turned. A rock rotated to its heading is a rock at a random angle: all the
+    // spin and none of the meaning, and it reads as a bug in the arrow code.
+    if (ammo.faces) ctx.rotate(a + (ammo.faces < 0 ? Math.PI : 0));
+    // `grip` is which point of the drawing sits on the flight path — the head of
+    // an arrow, the middle of a rock.
+    ctx.drawImage(img, sx, sy, sw, sh, -dw * ammo.grip, -dh / 2, dw, dh);
     ctx.restore();
   }
 }

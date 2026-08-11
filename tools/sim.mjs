@@ -29,6 +29,10 @@ const TIME_LIMIT = 900;   // seconds of game time before a run is called stuck
 // upgraded toward their target tier — roughly how a player spends.
 export const A = (plot, tier = 2) => ({ plot, fam: 'archery', tier });
 export const B = (plot, tier = 2) => ({ plot, fam: 'barracks', tier });
+// Artillery has ONE tier, so its default target is 1 and the upgrade loop finds
+// nothing above it. Written as a default rather than left to the caller so a
+// siege entry reads the same as the other two at the call site.
+export const S = (plot, tier = 1) => ({ plot, fam: 'siege', tier });
 
 function newState() {
   return {
@@ -54,6 +58,10 @@ function build(state, entry) {
     plot, fam, def,
     x: plot.x, y: plot.y,
     aim: 0, cd: 0, recoil: 0,
+    // The animation clock, same as input.js sets on a real build. A catapult
+    // that never leaves beat 0 never fires, and it would fail silently: the sim
+    // would just report that artillery is worthless.
+    beat: 0, beatT: 0,
     spent: def.cost,
     wantTier: entry.tier
   };
@@ -218,6 +226,20 @@ m1: {
   'MIX 4 archery + 2 barracks':     [A(0), A(1), A(4), B(6), B(7), A(8)],
   'MIX 3 archery + 3 barracks':     [A(1), B(3), A(4), B(6), B(7), A(8)],
   'MIX 2 archery + 4 barracks':     [B(0), B(3), A(4), A(6), B(7), B(8)],
+  // Artillery, held to the SAME two rules as the other families: no family
+  // clears the level alone, and five towers behind one blocker is never enough
+  // however good the five are. Both hold with an enormous margin — see the
+  // plateau note above `siege` in src/data/towers.js, where neither loss flips
+  // anywhere between 25 and 55 damage.
+  //
+  // The mixes SWAP ARCHERY for artillery and keep three blockers, because that
+  // is the comparison worth having: a catapult against the tower it competes
+  // with for a plot. Swapping a BARRACKS for one just measures what losing a
+  // blocker on wave 8 costs, which is already known and is fatal for any family.
+  'ALL siege x6    (expect LOSS)':  [S(1), S(3), S(4), S(6), S(7), S(8)],
+  'BEST 5 siege + 1 (expect LOSS)': [S(1), B(3), S(4), S(6), S(7), S(8)],
+  'MIX 2 archery + 3 barracks + 1 siege': [S(1), B(3), A(4), B(6), B(7), A(8)],
+  'MIX 3 siege + 3 barracks':       [S(1), B(3), S(4), B(6), B(7), S(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 },
 
@@ -235,6 +257,10 @@ m2: {
   'MIX 4 archery + 2 barracks':     [A(0), A(2), B(5), B(6), A(7), A(8)],
   'MIX 3 archery + 3 barracks':     [A(2), B(4), A(5), A(6), B(7), B(8)],
   'MIX 2 archery + 4 barracks':     [A(1), B(3), B(4), B(5), B(7), A(8)],
+  'ALL siege x6    (expect LOSS)':  [S(0), S(1), S(2), S(3), S(5), S(6)],
+  'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), B(2), S(3), S(4), S(7)],
+  'MIX 2 archery + 3 barracks + 1 siege': [S(2), B(4), A(5), A(6), B(7), B(8)],
+  'MIX 3 siege + 3 barracks':       [S(2), B(4), S(5), S(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
 }
 };

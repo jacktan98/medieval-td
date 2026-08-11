@@ -83,9 +83,13 @@ export function selectionInfo(state) {
     // A barracks does no damage itself; its men do. Showing the building's own
     // (nonexistent) damage would print "Damage: 0" under a tent full of spears.
     const man = def.soldier;
+    // Three ways a tower names its man, because the three families put him in
+    // three different places: a barracks SENDS him out, an archery tower STANDS
+    // him on the deck, and a catapult has him drawn into the machine itself — so
+    // artillery carries a portrait-only file that exists for this box alone.
     return {
-      sprite: man ? man.sprite : def.gunner,
-      trim: man ? man.spriteTrim : def.gunnerTrim,
+      sprite: man ? man.sprite : def.portrait || def.gunner,
+      trim: man ? man.spriteTrim : def.portraitTrim || def.gunnerTrim,
       title: def.title,
       hp: null,
       maxHp: null,

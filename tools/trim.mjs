@@ -10,8 +10,11 @@
 
 import { readFileSync, readdirSync } from 'fs';
 import { inflateSync } from 'zlib';
-import { join } from 'path';
-import { SCALE, BLOOD_SCALE, archery, barracks } from '../src/data/towers.js';
+import { basename, join } from 'path';
+import { SCALE, BLOOD_SCALE, archery, barracks, siege } from '../src/data/towers.js';
+// Sprite key -> file, so a frame is checked wherever the file actually lives.
+// The paths are URL-encoded for the browser; decode them to read from disk.
+import { paths as ASSET_URLS } from '../src/assets.js';
 import { ui, uiSize, PORTRAIT_SCALE } from '../src/data/ui.js';
 import { HUD_BTN, INFO_BOX } from '../src/render.js';
 
@@ -102,7 +105,31 @@ function trim({ w, h, ch, px }) {
 
 const MAX_DPR = 3;     // MAX_SCALE in src/main.js
 
+const ASSET_PATHS = Object.fromEntries(
+  Object.entries(ASSET_URLS).map(([k, v]) => [k, decodeURIComponent(v)])
+);
+
 const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead', 'effects', 'ui'];
+
+// Walks subfolders, because assets/towers now has one per family — archery,
+// barracks, artillery. A flat readdir silently measured nothing after that move,
+// which is the worst way for this tool to fail: it prints a clean table of the
+// files it CAN see and says nothing about the ones it cannot.
+//
+// Returns paths relative to `assets` so the rest of the loop is unchanged, and
+// the folder-level rules below (`d === 'ui'`) still key off the top-level name.
+function pngsUnder(dir) {
+  let entries;
+  try { entries = readdirSync(join('assets', dir), { withFileTypes: true }); }
+  catch { return []; }
+
+  const here = entries.filter(e => e.isFile() && e.name.endsWith('.png'))
+    .map(e => join(dir, e.name));
+  const below = entries.filter(e => e.isDirectory())
+    .flatMap(e => pngsUnder(join(dir, e.name)));
+
+  return [...here, ...below].sort();
+}
 
 // Which data/ui.js entry a UI file belongs to. assets.js holds the paths, so the
 // filename is matched back through it — that way a renamed upload shows up here
@@ -129,12 +156,9 @@ let soft = 0;
 console.log('sprite                              export   trim                  drawn    3x needs  source  verdict');
 
 for (const d of dirs) {
-  let files;
-  try { files = readdirSync(join('assets', d)).filter(f => f.endsWith('.png')).sort(); }
-  catch { continue; }
-
-  for (const f of files) {
-    const path = join('assets', d, f);
+  for (const rel of pngsUnder(d)) {
+    const path = join('assets', rel);
+    const f = basename(rel);
     const img = decode(readFileSync(path));
     const t = trim(img);
     if (!t) { console.log(`${path.padEnd(35)} fully transparent`); continue; }
@@ -216,6 +240,38 @@ for (const d of dirs) {
   if (bad) {
     console.log('Re-measure the front rects against the new export — see assets/towers/README.md.');
     process.exitCode = 1;
+  }
+}
+
+// An ANIMATED building draws several files into ONE box, so its spriteTrim is
+// the union of its frames' own trims rather than any single measured rect. That
+// is the one trim in the project the table above cannot verify by printing —
+// it will never match a frame — so the union property is checked directly here.
+//
+// What goes wrong without it: a frame whose art reaches outside the shared box
+// is silently CROPPED, and the crop lands on whatever part of the drawing the
+// artist added. On this catapult that is the top of the raised arm, so a redraw
+// that swung it a little higher would quietly saw the bucket off at the moment
+// of firing and nothing anywhere would say so.
+{
+  let bad = 0;
+  for (const def of [...archery, ...barracks, ...siege]) {
+    if (!def.frames) continue;
+    const [tx, ty, tw, th] = def.spriteTrim;
+    for (const key of def.frames) {
+      const file = ASSET_PATHS[key];
+      if (!file) { console.log(`\n${def.name}: frame '${key}' has no path in src/assets.js`); bad++; continue; }
+      const t = trim(decode(readFileSync(file)));
+      if (t[0] >= tx && t[1] >= ty && t[0] + t[2] <= tx + tw && t[1] + t[3] <= ty + th) continue;
+      console.log(`\n${def.name}: frame '${key}' trims to [${t}], outside spriteTrim [${def.spriteTrim}]`);
+      bad++;
+    }
+  }
+  if (bad) {
+    console.log('Widen spriteTrim to the union of every frame — see CATAPULT_TRIM in src/data/towers.js.');
+    process.exitCode = 1;
+  } else {
+    console.log('Every animation frame fits inside its shared trim.');
   }
 }
 

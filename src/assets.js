@@ -6,13 +6,42 @@
 // fallback, so the game still runs and still looks plausible. Check the console
 // before assuming a sprite change did not deploy.
 
-const paths = {
-  archery_t1:  'assets/towers/Archers_Tower_T1.png',
-  archery_t2:  'assets/towers/Archers_Tower_T2.png',
-  archery_t3:  'assets/towers/Archers_Tower_T3.png',
-  barracks_t1: 'assets/towers/Barracks_Tower_T1.png',
-  barracks_t2: 'assets/towers/Barracks_Tower_T2.png',
-  barracks_t3: 'assets/towers/Barracks_Tower_T3.png',
+// ONE FOLDER PER TOWER FAMILY under assets/towers. The buildings used to sit in
+// one flat folder, which was fine at six files and stopped being fine the moment
+// a family arrived with five of its own — three animation frames, a crewman and
+// its ammunition. Anything belonging to a family lives in that family's folder,
+// including the rock, which is why the artillery rock is here rather than beside
+// the arrow in assets/projectiles.
+//
+// The men who STAND on these are still in assets/units and the death poses in
+// assets/dead, because those are shared conventions across families rather than
+// one family's business.
+//
+// EXPORTED so the tools can resolve a sprite key back to a file. tools/trim.mjs
+// needs it to check that every frame of an animated building fits inside the one
+// trim they share; hard-coding those paths in the tool is how a moved file ends
+// up checked in its old location and reported as fine.
+export const paths = {
+  archery_t1:  'assets/towers/archery/Archers_Tower_T1.png',
+  archery_t2:  'assets/towers/archery/Archers_Tower_T2.png',
+  archery_t3:  'assets/towers/archery/Archers_Tower_T3.png',
+  barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
+  barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
+  barracks_t3: 'assets/towers/barracks/Barracks_Tower_T3.png',
+  // Artillery tier 1, and the first building with more than one drawing. The
+  // three frames are one second each and the machine cycles through them while
+  // it has something to shoot at; see `catapult` in data/towers.js.
+  //
+  // The key with no suffix is the RESTING pose, so anything that reads
+  // `def.sprite` without knowing about frames — a fallback, a portrait, a test
+  // page — still gets a sensible picture of a catapult.
+  artillery_t1:        'assets/towers/artillery/Artillery_Default_T1.png',
+  artillery_t1_reload: 'assets/towers/artillery/Artillery_Reload_T1.png',
+  artillery_t1_fire:   'assets/towers/artillery/Artillery_Fire_T1.png',
+  // The crewman, for the info box only — he is already drawn into all three
+  // frames above.
+  crew_t1:     'assets/towers/artillery/Artillery_Man_T1.png',
+  rock_t1:     'assets/towers/artillery/Artillery_Rock_T1.png',
   archer_t1:   'assets/units/Archers_Man_T1.png',
   archer_t2:   'assets/units/Archers_Man_T2.png',
   archer_t3:   'assets/units/Archers_Man_T3.png',

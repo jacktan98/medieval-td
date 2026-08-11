@@ -1,17 +1,91 @@
 # Tower artwork
 
-| file                       | canvas | drawn as     | used by            |
-|----------------------------|--------|--------------|--------------------|
-| `Archers_Tower_T1.png`     | 1024   | 100 x 123 px | Watchtower (1)     |
-| `Archers_Tower_T2.png`     | 1024   | 88 x 153 px  | Archer Post (2)    |
-| `Archers_Tower_T3.png`     | 1024   | 74 x 153 px  | Crossbow Tower (3) |
-| `Barracks_Tower_T1.png`    | 1024   | 125 x 108 px | Militia Camp (1)   |
-| `Barracks_Tower_T2.png`    | 1024   | 128 x 129 px | Guard Post (2)     |
-| `Barracks_Tower_T3.png`    | 1024   | 128 x 127 px | Knight's Hall (3)  |
+**One folder per family.** Upload a family's art into its own folder; put a new
+family in a new one. The paths are written down once, in `src/assets.js`.
 
-**Every tier now has its own building.** Nothing is shared any more, in either
-family — the note that used to be here about tier 3 borrowing tier 2's drawing is
-gone because tier 3 has its own.
+| file                                   | canvas | drawn as     | used by            |
+|----------------------------------------|--------|--------------|--------------------|
+| `archery/Archers_Tower_T1.png`         | 1024   | 100 x 123 px | Watchtower (1)     |
+| `archery/Archers_Tower_T2.png`         | 1024   | 88 x 153 px  | Archer Post (2)    |
+| `archery/Archers_Tower_T3.png`         | 1024   | 74 x 153 px  | Crossbow Tower (3) |
+| `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
+| `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
+| `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
+| `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | Catapult (1), at rest   |
+| `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | Catapult (1), loading   |
+| `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | Catapult (1), throwing  |
+| `artillery/Artillery_Man_T1.png`       | 512    | 19 x 24 px   | the info box only       |
+| `artillery/Artillery_Rock_T1.png`      | 512    | 12 x 10 px   | the rock it throws      |
+
+The men who stand on the archery and barracks buildings are in `assets/units`
+and their death poses in `assets/dead` — those stayed put, because they are
+shared conventions across families rather than one family's business. **The
+artillery rock is the exception that proves the rule**: it is ammunition and
+`assets/projectiles` exists, but nothing else will ever throw it, so it lives
+with the machine. The arrow is still in `assets/projectiles` because all three
+archery tiers share it.
+
+**Every tier has its own building.** Nothing is shared any more, in either of the
+two multi-tier families — the note that used to be here about tier 3 borrowing
+tier 2's drawing is gone because tier 3 has its own.
+
+## The catapult is three drawings, and they share ONE trim
+
+It is the only building in the game that moves. The three frames are one second
+each and the machine cycles Default → Reload → Fire while it has something to
+shoot at, so a shot takes three seconds and the cooldown is derived from the
+animation rather than chosen next to it. At rest it sits on Default with the
+clock stopped.
+
+`spriteTrim` for it is the **union** of the three frames' own boxes,
+`[267, 328, 466, 346]`, and it is the one trim in the project that
+`node tools/trim.mjs` will not print for any single file:
+
+| frame   | its own trim         |
+|---------|----------------------|
+| Default | `[267, 350, 466, 324]` |
+| Reload  | `[291, 350, 442, 324]` |
+| Fire    | `[291, 328, 442, 346]` — the arm is up, so it reaches 22px higher |
+
+All three are on the same 1024 canvas, so drawing the same source rect out of
+each registers them pixel-for-pixel and only what the artist actually moved
+appears to move. Give each frame its own tight box instead and the machine hops
+sideways and upwards every second.
+
+`node tools/trim.mjs` checks the union property directly, and it is not a
+formality: a frame reaching outside the shared box is silently **cropped**, and
+on this drawing the part that would go is the top of the raised arm — so a redraw
+that swung it a little higher would saw the bucket off at the moment of firing
+and nothing would say so.
+
+**After redrawing any frame**, re-run `node tools/trim.mjs`, take the union of
+the three printed rects by hand, and paste it as `CATAPULT_TRIM`.
+
+`node tools/shadow.mjs` checks all three frames against the SAME `groundFrac`,
+which is the other half of the same question: if the three shadows are not in one
+place the catapult hops on its plot. Fire reads about 2 source px high — half a
+game pixel — because the raised arm covers a different part of the ellipse.
+
+**The rock leaves the sling bucket at the top of the raised arm**, source
+`(434.0, 363.5)`, which only exists in the Fire frame. It is measured rather than
+eyeballed: the bucket is painted in `54,36,7` and is the only blob of that colour
+above the deck line. It is held as `mountFrac` with a zero `muzzle`, because
+there is no gunner to measure an offset from — on this machine the building *is*
+the man.
+
+**The catapult never mirrors.** Buildings in this game do not; only the figures
+standing on them do. An isometric drawing flipped left to right is lit from the
+wrong side and recedes the wrong way, which is why the towers never flip either.
+The arm goes up and over and the rock finds its own way down. The visible
+consequence is that the machine always throws to the upper left whatever it is
+aiming at, which reads fine on map 1 because the road runs left to right past
+most plots. If it ever stops reading, the fix is a second set of drawings facing
+the other way, not a flip.
+
+**Still to draw for this family:** a menu icon. `glyph: 'catapult'` has no PNG,
+so the build ring falls back to a vector while the bow and the crossed swords
+beside it are real artwork, and it shows. An `Artillery Icon.png` in `assets/ui`
+sized like the other two is all it needs.
 
 The barracks hall is the biggest building in the game, which is why the plot
 marker was redrawn bigger to hold it. Tier 3 is 128 x 127 against tier 2's
@@ -97,12 +171,13 @@ marker it replaced was standing.
 
 | file                     | shadow centre  | as a fraction of the trim |
 |--------------------------|----------------|---------------------------|
-| `Archers_Tower_T1.png`   | (507.3, 735.6) | `[0.490, 0.871]`          |
-| `Archers_Tower_T2.png`   | (545.3, 802.5) | `[0.578, 0.890]`          |
-| `Archers_Tower_T3.png`   | (512.3, 802.4) | `[0.501, 0.890]`          |
-| `Barracks_Tower_T1.png`  | (521.0, 605.4) | `[0.515, 0.678]`          |
-| `Barracks_Tower_T2.png`  | (503.8, 696.9) | `[0.487, 0.793]`          |
-| `Barracks_Tower_T3.png`  | (504.2, 701.8) | `[0.487, 0.806]`          |
+| `archery/Archers_Tower_T1.png`   | (507.3, 735.6) | `[0.490, 0.871]`   |
+| `archery/Archers_Tower_T2.png` | (545.3, 802.5) | `[0.578, 0.890]`          |
+| `archery/Archers_Tower_T3.png` | (512.3, 802.4) | `[0.501, 0.890]`          |
+| `barracks/Barracks_Tower_T1.png` | (521.0, 605.4) | `[0.515, 0.678]`          |
+| `barracks/Barracks_Tower_T2.png` | (503.8, 696.9) | `[0.487, 0.793]`          |
+| `barracks/Barracks_Tower_T3.png` | (504.2, 701.8) | `[0.487, 0.806]`          |
+| `artillery/Artillery_*_T1.png`   | (538.0, 593.1) | `[0.582, 0.766]` — all three frames |
 
 **The same rule applies to every figure**, not just buildings — `pivot`,
 `gunnerPivot` and `deadPivot` are all the centre of that figure's own shadow.
@@ -297,7 +372,8 @@ is the drawing being honest, not a number to fix.
 
 ## After a redraw
 
-1. `node tools/trim.mjs` — paste the new `spriteTrim`.
+1. `node tools/trim.mjs` — paste the new `spriteTrim`. For an ANIMATED building
+   take the union of its frames' rects; see the catapult section above.
 2. Re-measure `frontTrims`. They are absolute source pixels, like every trim in
    this project, so a re-export at a different size invalidates them. The parts
    are separate groups in the SVG; their bounding boxes are what the rects are
@@ -311,6 +387,9 @@ is the drawing being honest, not a number to fix.
    near post.
 5. `node tools/shadow.mjs` — it re-measures `groundFrac` and every figure anchor
    from the shadow ellipses, and fails if one has drifted off its shadow.
-6. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
+6. `node tools/siege.mjs` if you touched artillery — it checks the beat loop is
+   three one-second beats in that order, that the rock leaves only on the beat
+   the arm is drawn coming over, and that the splash is an ellipse.
+7. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
    a building into the HUD text or off the top of the board, and by how much. A
    taller tower moves that ceiling down for every plot at once.

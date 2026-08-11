@@ -105,6 +105,77 @@ const SPEAR_TRIM = [170, 198, 172, 116];
 const SPEAR2_TRIM = [173, 196, 166, 120];
 const SPEAR3_TRIM = [199, 196, 114, 120];
 
+// THE ONE TRIM IN THIS FILE THAT IS NOT A SINGLE FILE'S MEASURED BOX, and it
+// has to be. The catapult is three drawings, not one, and the box below is the
+// UNION of all three:
+//
+//   Default  [267, 350, 466, 324]
+//   Reload   [291, 350, 442, 324]
+//   Fire     [291, 328, 442, 346]     <- the arm is up, so it reaches higher
+//
+// All three are on the same 1024 canvas, so drawing the SAME source rect from
+// each of them registers them pixel-for-pixel: the wheels, the frame and the
+// shadow land on exactly the same screen pixels in all three frames and only
+// the parts the artist actually moved appear to move. Give each frame its own
+// tight trim instead and the machine jumps sideways and upwards every time the
+// animation advances, because a tight box around a different drawing is a
+// different box — Fire alone is 24px narrower and 22px taller than Default.
+//
+// So `node tools/trim.mjs` will NOT print this rect for any one of the three
+// files, and that is correct rather than drift. tools/trim.mjs checks the union
+// property directly instead: every frame's own trim must sit inside this box.
+const CATAPULT_TRIM = [267, 328, 466, 346];
+
+// The crewman, on his own 512 canvas. He is NOT drawn on the board — he is part
+// of all three catapult drawings already, which is the whole reason the machine
+// animates. This file exists so the info box has a face to put in its portrait
+// slot, the same way a barracks shows its spearman rather than its tent.
+const CREW_TRIM = [208, 196, 94, 116];
+
+const ROCK_TRIM = [226, 232, 60, 48];
+
+// AMMUNITION. What a tower throws, kept beside the tower rather than as one
+// global speed, because the two projectiles in the game now travel at very
+// different rates and that difference is a gameplay fact rather than a detail:
+// an arrow arrives more or less when it is fired and a rock is still in the air
+// long enough for its target to have moved on.
+//
+// `faces` is which way the artwork points, and 0 means it does not point at all.
+// An arrow is drawn lying left and rotates to its heading, because an arrow has
+// a nose. A rock is a rock: rotating it to a heading says nothing, so it is
+// drawn upright and never turned.
+export const arrow = {
+  sprite: 'arrow_t1',
+  trim: [203, 246, 100, 20],
+  faces: -1,
+  // Anchored at the HEAD, so the point lands on the target rather than the
+  // shaft ending there.
+  grip: 0.08,
+  speed: 360,
+  // Whether loosing it makes a noise. The bow release is the game's one
+  // Category B cue — see src/audio.js.
+  sound: true
+};
+
+// Deliberately less than half the arrow's, and it is the number that makes a
+// catapult read as a catapult: you watch the rock travel, and where it lands is
+// where the enemies WERE when the crew let go. Faster and the lob disappears;
+// much slower and the splash lands behind a marching column every time.
+export const rock = {
+  sprite: 'rock_t1',
+  trim: ROCK_TRIM,
+  faces: 0,
+  // Centred, because it is a lump with no nose to put on the target.
+  grip: 0.5,
+  speed: 150,
+  // SILENT, and deliberately so rather than by omission. There is no catapult
+  // clip yet, and the bow release is the wrong sound over a swinging arm — it is
+  // a bowstring, and everyone can hear that it is. Silence reads as "no sound
+  // recorded"; the wrong sound reads as a bug. Flip this the day a creak-and-
+  // thump lands in assets/audio.
+  sound: false
+};
+
 // Every tier has its own drawing now, in both families — nothing is shared.
 // They are all within a few px of each other in size, because scale is fixed by
 // the export: a tier reads as an upgrade from what the building is MADE of and
@@ -242,6 +313,7 @@ const watchtower3 = {
 };
 
 const archer = {
+  ammo: arrow,
   gunner: 'archer_t1',
   gunnerTrim: ARCHER_TRIM,
   // THE CENTRE OF HIS GROUND SHADOW, source (252, 303). Not his feet, not the
@@ -278,6 +350,7 @@ const archer = {
 // shadow and their own bow, and they agree to within a pixel — which is the
 // check that the measurement is real rather than a number carried across.
 const archer2 = {
+  ammo: arrow,
   gunner: 'archer_t2',
   gunnerTrim: ARCHER2_TRIM,
   // The centre of his ground shadow, source (253, 304) — a pixel from tier 1's.
@@ -297,6 +370,7 @@ const archer2 = {
 // own box, which is the whole reason none of these numbers could be carried
 // across: a fraction of a box that changed shape is a different point.
 const archer3 = {
+  ammo: arrow,
   gunner: 'archer_t3',
   gunnerTrim: ARCHER3_TRIM,
   // The centre of his ground shadow, source (253.5, 296.1).
@@ -519,13 +593,122 @@ export const barracks = [
   }
 ];
 
-// Arrow. The only sprite that rotates: it points where it is flying. Drawn
-// pointing left in the source, same as the figures.
-export const arrow = {
-  sprite: 'arrow_t1',
-  trim: [203, 246, 100, 20],
-  faces: -1
+// --- artillery ----------------------------------------------------------------
+//
+// The first building in the game that MOVES. Archery and barracks are one
+// drawing each that sits there while a separate figure does the work; a catapult
+// has no separate figure — its crewman is drawn into all three frames — so the
+// machine itself has to animate or nothing about it moves at all.
+//
+// ONE SECOND A BEAT, three beats a shot: the crew stands with the rock (Default),
+// loads it (Reload), and the arm comes over (Fire). That is the artist's spec and
+// the cooldown is derived from it rather than chosen, which is the right way
+// round — the reload you can see and the reload the rules use are the same three
+// seconds, so the machine can never fire on a frame it is not drawn firing.
+export const BEAT = 1;
+
+const catapult = {
+  sprite: 'artillery_t1',
+  // Beat order, and the index IS the beat. Default is first because it is also
+  // the resting pose: a catapult with nothing to shoot at sits on frames[0].
+  frames: ['artillery_t1', 'artillery_t1_reload', 'artillery_t1_fire'],
+  spriteTrim: CATAPULT_TRIM,
+  w: drawnW(CATAPULT_TRIM), h: drawnH(CATAPULT_TRIM),
+  // Shadow centre, source (538.0, 593.1) in the 1024 canvas — measured by
+  // tools/shadow.mjs off the Default frame, the same dark green every other
+  // building stands on.
+  //
+  // Measured on all three frames and they agree: Default and Reload land on the
+  // same tenth of a pixel and Fire is 2.1 source px higher, which is half a game
+  // pixel and comes from the raised arm covering a different part of the ellipse.
+  // The resting pose is the one that decides.
+  groundFrac: [0.582, 0.766],
+  // Where the rock leaves: the sling bucket at the top of the RAISED arm, source
+  // (434.0, 363.5), which only exists in the Fire frame. It is the same dark
+  // brown the crewman's shadow is painted in, so it is measured rather than
+  // eyeballed — a single blob 47x36 px, and the only one that colour above the
+  // deck line.
+  //
+  // `mountFrac` rather than a `muzzle` offset because there is no gunner to
+  // measure from: on an archery tower the mount is where the man stands and the
+  // muzzle is his bow, and here the machine IS the man. So the mount is the
+  // release point and the muzzle offset is zero.
+  mountFrac: [0.358, 0.103],
+  muzzle: [0, 0],
+  // NO spriteFaces, and it is deliberate: THE CATAPULT NEVER MIRRORS. Buildings
+  // in this game do not — only the figures standing on them do — and an
+  // isometric drawing flipped left-to-right is lit from the wrong side and
+  // recedes the wrong way, which is exactly why the towers never flip either.
+  // The arm goes up and over; where the rock comes down is the rock's business.
+  ammo: rock,
+  // The face for the info box. Never drawn on the board.
+  portrait: 'crew_t1',
+  portraitTrim: CREW_TRIM,
+  shape: 'siege'
 };
+
+// ONE TIER SO FAR. The menu shows "Max" on it, which is what a one-tier family
+// looks like and needs no special case.
+//
+// The numbers, and why they are these:
+//
+// `cooldown` is not a choice — it is three one-second beats of animation. Every
+// other number here is chosen around that three-second cycle.
+//
+// `splash` is what makes this a tower rather than a slow archer, and without it
+// the damage question has no good answer. At the same DPS as archery a
+// three-second single-target machine is strictly worse than a one-second one:
+// same damage over time, three times the lag, and overkill on every 80hp thug.
+// Pushing single-target damage up until it competes just makes a sniper that
+// one-shots militia, which is a worse game. Area damage is what a catapult is
+// FOR, and it gives the family its own job: archery kills one thing reliably,
+// barracks stops things moving, artillery punishes a crowd.
+//
+// SET `splash: 0` TO GET A PURE SINGLE-TARGET CATAPULT. Nothing else has to
+// change; projectiles.js falls back to hitting only what it hit.
+//
+// 40 damage in a 55px patch, every 3s. Against a lone heavy that is 13 DPS,
+// meaningfully worse than two archery towers for the money. Against a late wave
+// spawning every 0.6s at speed 70 — enemies about 42px apart — the patch takes
+// two or three of them at once and it is the best gold in the game. That gap is
+// the point: it is a tower you build BECAUSE of wave 8, not one you open with.
+//
+// `range` 210 against archery tier 1's 190. A catapult outranges a bow, and the
+// three-second cycle needs the extra ground: a target has to still be in the
+// patch when the arm finally comes over. Remember the reach is an ellipse — 210
+// across is only 130 up and down.
+//
+// `cost` 90 against 70. The opening is the tightest part of the curve (220 gold,
+// no bounties yet) and at 70 this would compete with the first archery tower on
+// price alone while being much worse at holding wave 1.
+//
+// THE PLATEAU, swept over damage 25..55 x splash 0..70 on map 1, five seeds each:
+//
+//   - Neither loss scenario flips ANYWHERE in that grid. All-siege and five-siege-
+//     behind-one-blocker lose at every value, including 55 damage in a 70px patch.
+//     The level's rule is held by the blocking mechanic, not by this number, which
+//     is the reassuring answer: artillery cannot break the level by being tuned
+//     badly, only by being useless or dominant, and neither is a cliff.
+//   - `splash: 0` is the one cliff there is. With it, a three-siege mix loses at
+//     EVERY damage from 25 to 55 — 0/5 on all six rows. That is the measurement
+//     behind the paragraph above: area damage is the family, not the flavour.
+//   - Above 40 damage nothing much improves; the median saturates around 10 lives
+//     and 45 and 55 buy nothing 40 does not. Below 40 the mixes go patchy — 35
+//     wins 5/5 and 30 drops to 1/5 at the same splash.
+//
+// So 40 x 55 is the near end of a wide plateau, chosen the same way heavy_inf's
+// hp was: find the band, take its low edge, and do not read the width as
+// permission to stop checking.
+//
+// Where it lands, five seeds a row: on MAP 1 a catapult is slightly BETTER than
+// the archery tower it replaces (2 archery + 3 barracks + 1 siege wins 5/5 with
+// 10 lives where the all-two-family build wins 3/5 with 10), and on MAP 2 it is
+// slightly WORSE (14 lives becomes 12 with one, 7 with three). A real
+// alternative on both, a strict upgrade on neither.
+export const siege = [
+  { ...catapult, tier: 1, name: 'Catapult', title: 'Artillery Tier I',
+    cost: 90, damage: 40, splash: 55, range: 210, cooldown: BEAT * 3, colour: '#7A6A4A' }
+];
 
 // The four quadrants of the build menu, in N/E/S/W order. A family with no
 // tiers yet still takes its quadrant, drawn locked — the layout is the same
@@ -534,8 +717,6 @@ export const arrow = {
 export const families = [
   { id: 'archery',   name: 'Archery',   glyph: 'bow',      tiers: archery },
   { id: 'barracks',  name: 'Barracks',  glyph: 'swords',   tiers: barracks },
-  { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: null },
+  { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: siege },
   { id: 'monastery', name: 'Monastery', glyph: 'cross',    tiers: null }
 ];
-
-export const projectileSpeed = 360;

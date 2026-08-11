@@ -238,6 +238,13 @@ function run(state, item) {
       aim: 0,
       cd: 0,
       recoil: 0,
+      // Which drawing an animated building is showing, and how long is left of
+      // it. Only artillery uses them; every other family has one frame and never
+      // touches these. Set here rather than defaulted in the update, because
+      // `undefined - dt` is NaN and a NaN clock never reaches a beat boundary —
+      // the catapult would stand still forever with no error anywhere.
+      beat: 0,
+      beatT: 0,
       spent: def.cost,
       rally: null
     });

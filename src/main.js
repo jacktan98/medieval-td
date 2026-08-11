@@ -3,7 +3,7 @@ import { loadAudio } from './audio.js';
 import { level } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { updateEnemies } from './enemies.js';
-import { updateTowers } from './towers.js';
+import { updateTowers, frameOf } from './towers.js';
 import { updateUnits } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
@@ -11,7 +11,7 @@ import { updateSplats } from './blood.js';
 import { updateWaves } from './waves.js';
 import { draw } from './render.js';
 import { attachInput } from './input.js';
-import { validate } from './select.js';
+import { validate, selectionInfo } from './select.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -102,6 +102,22 @@ function newGame() {
 
 newGame();
 attachInput(canvas, state, newGame);
+
+// A window onto the live game, for `?debug` only — the same trick as render.js's
+// `?muzzle`, and for the same reason: something has to be checkable from outside
+// without editing a file and redeploying.
+//
+// `state` is deliberately not exported. It is one mutable object the whole game
+// writes to, and a module that can import it is a module that can quietly start
+// depending on a field it has no business reading. A query-string hatch is
+// visible, opt-in, and impossible to reach by accident from inside the game.
+//
+// What it is FOR: driving the browser checks. Reading `towers[0].beat` from a
+// script is how the catapult's three-beat loop was verified to actually be three
+// one-second beats rather than something that merely looked animated.
+if (new URLSearchParams(location.search).has('debug')) {
+  window.__game = { state, level, frameOf, selectionInfo };
+}
 
 let last = performance.now();
 
