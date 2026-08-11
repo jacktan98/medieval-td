@@ -80,14 +80,41 @@ above the deck line. It is held as `mountFrac` with a zero `muzzle`, because
 there is no gunner to measure an offset from — on this machine the building *is*
 the man.
 
-**The catapult never mirrors.** Buildings in this game do not; only the figures
-standing on them do. An isometric drawing flipped left to right is lit from the
-wrong side and recedes the wrong way, which is why the towers never flip either.
-The arm goes up and over and the rock finds its own way down. The visible
-consequence is that the machine always throws to the upper left whatever it is
-aiming at, which reads fine on map 1 because the road runs left to right past
-most plots. If it ever stops reading, the fix is a second set of drawings facing
-the other way, not a flip.
+## The catapult is the one building that MIRRORS
+
+Buildings in this game do not flip — an isometric drawing reversed is lit from
+the wrong side and its ground plane recedes the wrong way — and only the figures
+standing on them do. Artillery is the exception, because it is the only building
+that visibly POINTS: a machine hurling to the upper left at an enemy on its right
+reads as broken in a way a symmetrical tent or tower never could. The perspective
+cost is real and it is worth paying here and nowhere else.
+
+`buildingFaces: -1` says the machine is drawn throwing up and to the LEFT. It is
+a different field from `spriteFaces`, which every archery tier also carries and
+which is about the man on the deck.
+
+**Mirrored about the point it stands on**, not about the middle of its box. The
+two are not the same — the ground shadow sits 0.582 across rather than 0.5 — and
+mirroring about the box centre would slide the machine 8px sideways off its own
+plot every time it turned.
+
+**The muzzle mirrors with the picture.** `mountPoint` applies the same reflection,
+because a machine that swings its arm right while the rock leaves a sling still
+drawn on the left reads as a broken projectile rather than an incomplete
+transform.
+
+**The facing is latched once per cycle, on the LOADING beat**, and held through
+the throw and back to rest. Facing whatever the current target happens to be
+looks wrong in two ways that a still image cannot show: `pickTarget` re-chooses
+every frame, so a machine with enemies on both sides snaps back and forth several
+times a second, and it can turn BETWEEN the reload and the throw — loading one
+way and loosing the other. Latching at the load is also the honest reading of the
+animation: a crew winds a machine pointing somewhere and does not swivel it
+mid-swing. `node tools/siege.mjs` walks a target across a machine and fails if
+the facing ever changes on any other beat.
+
+The tier stars are drawn OUTSIDE the mirror and centred on the plot point, so a
+machine turning round does not swing its own stars about.
 
 ## Artillery reaches furthest and has a hole in the middle
 

@@ -690,11 +690,20 @@ const catapult = {
   // release point and the muzzle offset is zero.
   mountFrac: [0.358, 0.103],
   muzzle: [0, 0],
-  // NO spriteFaces, and it is deliberate: THE CATAPULT NEVER MIRRORS. Buildings
-  // in this game do not — only the figures standing on them do — and an
-  // isometric drawing flipped left-to-right is lit from the wrong side and
-  // recedes the wrong way, which is exactly why the towers never flip either.
-  // The arm goes up and over; where the rock comes down is the rock's business.
+  // WHICH WAY THE MACHINE IS DRAWN THROWING: up and to the LEFT. It is the one
+  // building in the game that mirrors, and the only one that should — a catapult
+  // visibly POINTS, so a machine hurling to the upper left at an enemy on its
+  // right reads as broken in a way a symmetrical tent or tower never could.
+  //
+  // The cost is real and was the reason it did not mirror at first: an isometric
+  // drawing reversed is lit from the wrong side and its ground plane recedes the
+  // wrong way. Pointing the right way wins that trade; nothing else in the game
+  // needs to make it.
+  //
+  // NOT `spriteFaces`, which is a different question with a different answer —
+  // that one is which way a FIGURE standing on a deck is drawn, and every archery
+  // tier carries it for its archer. A building that flips says so here.
+  buildingFaces: -1,
   ammo: rock,
   // The face for the info box. Never drawn on the board.
   portrait: 'crew_t1',
@@ -752,13 +761,39 @@ const catapult = {
 // AN UPGRADE BUYS BLAST, NOT RATE. The cycle stays at three seconds through all
 // three tiers, because it is an animation and the artist has drawn one. So what
 // a tier buys is a bigger rock in a wider patch over more ground — damage
-// 26 -> 38 -> 52 and splash 75 -> 86 -> 98 — which is also what a bigger engine
+// 22 -> 32 -> 44 and splash 75 -> 86 -> 98 — which is also what a bigger engine
 // looks like. Compare archery, where the upgrade is mostly a faster draw.
 //
-// DAMAGE HAS COME DOWN TWICE NOW, 40 -> 30 -> 26, and both cuts paid for reach.
-// It is the same trade each time and it is worth stating plainly: ground covered
-// is worth more than damage per rock, because a tower that watches more road
-// gets more rocks off per wave whatever each one does.
+// DAMAGE HAS COME DOWN THREE TIMES, 40 -> 30 -> 26 -> 22, and the first two cuts
+// paid for reach. It is the same trade each time and it is worth stating plainly:
+// ground covered is worth more than damage per rock, because a tower that watches
+// more road gets more rocks off per wave whatever each one does.
+//
+// THE THIRD CUT IS DIFFERENT — it bought nothing, it was a straight nerf, asked
+// for from play. The measurement agrees with the feel: at 26/38/52 an
+// artillery-heavy build (three catapults, three barracks) cleared map 1 12 times
+// out of 12 with a median of 10 lives, which is BETTER than the same build in
+// archery — 9 of 12 and 10 lives. A third family that is more reliable than the
+// family the level was tuned around is a third family that has taken the level
+// over.
+//
+// x0.85, measured over 12 seeds on both maps rather than 5, because the numbers
+// this had to separate were a life or two apart and 5 seeds could not see them:
+//
+//                      map 1                map 2
+//   3 siege + 3 barracks     x1.00  12/12  10     9/12   5
+//                            x0.85  12/12   8     6/12   2   <- here
+//                            x0.75  11/12   7     6/12   2
+//                            x0.65   9/12   3     0/12  -1
+//
+// x0.85 takes the edge off stacking artillery — it is a live build on map 1 and a
+// risky one on map 2, where before it was safe on both — while a build with ONE
+// catapult in it is untouched at 12/12 and 10 lives. That is the shape to want:
+// a catapult is still worth taking, and three of them are no longer a plan that
+// plays itself. x0.65 goes too far and kills the heavy build on map 2 outright.
+//
+// Both loss rules stay 0/12 at every value tried, as they have through every
+// pass: the level's rule is held by the blocking mechanic, not by this number.
 //
 // The sum, honestly, WITH the hole subtracted: the original reach was a disc of
 // 210, about 85,900 square px at SQUASH. The annulus from 130 to 300 is 142,400
@@ -787,11 +822,11 @@ const catapult = {
 // on neither. `node tools/sim.mjs` prints the rows.
 export const siege = [
   { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',
-    cost: 90,  damage: 26, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
+    cost: 90,  damage: 22, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
   { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',
-    cost: 115, damage: 38, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
+    cost: 115, damage: 32, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
   { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III',
-    cost: 170, damage: 52, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
+    cost: 170, damage: 44, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. A family with no

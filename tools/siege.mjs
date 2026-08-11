@@ -28,7 +28,7 @@
 // over a machine that has already reloaded, which reads as a second catapult
 // somewhere off screen.
 
-import { updateTowers } from '../src/towers.js';
+import { updateTowers, muzzlePoint, buildingFlip } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { siege, arrow, rock, BEATS, DEAD } from '../src/data/towers.js';
@@ -291,6 +291,89 @@ console.log('\nThe lob\n');
      `landed (${shot.x.toFixed(2)}, ${shot.y.toFixed(2)}) for (${to.x}, ${to.y})`);
   ok(Math.abs(peak - 56) < 2, 'having risen to its full arc on the way',
      `peaked ${peak.toFixed(1)}px up, wanted 56`);
+}
+
+// --- which way it faces -------------------------------------------------------
+//
+// The catapult is the only BUILDING in the game that mirrors, and the rule is
+// not "face the target" — it is "face the target you committed to when you
+// started loading, until the rock has gone". Facing per frame looks wrong in two
+// separate ways and both of them are invisible in a still: the machine snaps
+// back and forth several times a second when there are enemies on both sides,
+// and it can turn BETWEEN the reload and the throw, so the crew loads facing one
+// way and looses the other.
+
+console.log('\nWhich way it faces\n');
+
+{
+  const s = board();
+  const t = catapultAt(SPOT.x, SPOT.y - BACK);
+  s.towers.push(t);
+
+  // ONE enemy, WALKING, on a course that takes it under the machine and out the
+  // far side. That is the case the rule exists for and the only one that makes
+  // the machine genuinely change its mind: two stationary enemies either side
+  // would let pickTarget settle on one and the test would pass without a single
+  // turn ever happening.
+  // Walking at 40 rather than the militia's 70, so it spends long enough inside
+  // a 300px reach for several full three-second cycles to run either side of the
+  // crossing. A fixture may slow a figure down; it may not change the rule.
+  const walker = { ...enemyAt(0, 0), def: { ...enemyTypes.light_inf, speed: 40 }, s: AT - 260 };
+  walker.hp = walker.maxHp = 1e6;
+  s.enemies.push(walker);
+
+  // Watch face and beat together, long enough to cross and then some.
+  const log = [];
+  for (let i = 0; i < 60 * 16; i++) {
+    updateEnemies(s, DT);
+    updateTowers(s, DT);
+    s.shots.length = 0;
+    log.push({ beat: t.beat, face: t.face, side: walker.x >= t.x ? 1 : -1 });
+  }
+
+  // It has to have crossed, or the rest of this proves nothing.
+  ok(new Set(log.map(e => e.side)).size === 2, 'the target really does cross the machine',
+     `sides seen ${[...new Set(log.map(e => e.side))]}`);
+
+  // A change of face is only ever allowed on the step the beat becomes LOAD.
+  let stray = 0, turns = 0;
+  for (let i = 1; i < log.length; i++) {
+    if (log[i].face === log[i - 1].face) continue;
+    turns++;
+    const enteredLoad = log[i].beat === 1 && log[i - 1].beat !== 1;
+    if (!enteredLoad) stray++;
+  }
+  ok(stray === 0, 'the facing only ever changes on the loading beat',
+     `${turns} turn(s), ${stray} of them off-beat`);
+
+  // And it really does hold across the two beats after it.
+  const spans = [];
+  for (let i = 1; i < log.length; i++) {
+    if (log[i].beat === 1 && log[i - 1].beat !== 1) spans.push(i);
+  }
+  const held = spans.slice(0, -1).every((start, k) => {
+    const end = spans[k + 1];
+    return log.slice(start, end).every(e => e.face === log[start].face);
+  });
+  ok(spans.length >= 3 && held, 'and holds through Fire and Default to the next load',
+     `${spans.length} cycles seen`);
+}
+
+{
+  // The picture and the firing origin have to mirror TOGETHER. If only the
+  // drawing flips, the arm swings right and the rock leaves from a sling still
+  // drawn on the left, which reads as a broken projectile rather than a missing
+  // transform.
+  const s = board();
+  const t = catapultAt(SPOT.x, SPOT.y - BACK);
+  const un = muzzlePoint(t);
+  t.face = 1;                       // the far side from the drawn direction
+  const flipped = muzzlePoint(t);
+  ok(buildingFlip(t) === -1, 'facing the far side mirrors the building',
+     `flip ${buildingFlip(t)}`);
+  ok(Math.abs((un.x + flipped.x) / 2 - t.x) < 0.01 && un.y === flipped.y,
+     'and mirrors the muzzle about the plot with it',
+     `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${t.x.toFixed(1)}`);
 }
 
 // --- the dead zone ------------------------------------------------------------

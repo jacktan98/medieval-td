@@ -5,7 +5,7 @@ import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { art } from './assets.js';
-import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf } from './towers.js';
+import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -198,12 +198,35 @@ function drawFigures(ctx, state) {
 
 function drawTower(ctx, t) {
   const box = towerBox(t);
+
+  // A BUILDING THAT MIRRORS. Only artillery does, and it is the one exception to
+  // the rule that buildings never flip — a catapult that always throws to the
+  // upper left while the enemy is on its right reads as a machine pointing the
+  // wrong way, which is worse than the perspective cost of flipping an isometric
+  // drawing. See buildingFlip in towers.js for which direction, and when.
+  //
+  // Mirrored about t.x, the point the machine STANDS on, not about the middle of
+  // its box. The two are not the same — the ground shadow sits at 0.582 across
+  // rather than 0.5 — and mirroring about the box centre would slide the machine
+  // 8px sideways off its own plot every time it turned.
+  const flip = buildingFlip(t);
+  if (flip < 0) {
+    ctx.save();
+    ctx.translate(t.x, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-t.x, 0);
+  }
+
   drawBuilding(ctx, t, box);
   if (t.def.gunner) drawGunner(ctx, t);
   drawBuildingFront(ctx, t, box);
+
+  if (flip < 0) ctx.restore();
+
   // Above everything the building draws, including its front layer — the marks
   // are information, and the same rule that puts health bars over the figures
-  // they belong to applies.
+  // they belong to applies. OUTSIDE the mirror, and centred on t.x rather than
+  // on the box, so a machine turning round does not swing its own stars about.
   drawTierMarks(ctx, t, box);
 
   if (DEBUG_MUZZLE) {
@@ -374,7 +397,7 @@ function drawTierMarks(ctx, t, box) {
   if (!n) return;
 
   const cy = box.top - STAR_LIFT;
-  const cx = box.left + box.w / 2 - (n - 1) * STAR_GAP / 2;
+  const cx = t.x - (n - 1) * STAR_GAP / 2;
 
   ctx.save();
   ctx.lineWidth = 2;

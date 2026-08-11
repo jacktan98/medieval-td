@@ -27,13 +27,36 @@ export function towerBox(t) {
   };
 }
 
+// Whether the BUILDING's own artwork is drawn mirrored: -1 if it is, 1 if not.
+//
+// Buildings do not flip in this game — an isometric drawing reversed is lit from
+// the wrong side — and artillery is the one exception, because a catapult is the
+// only building that visibly POINTS. `buildingFaces` is which way the machine is
+// drawn throwing, and it is only present on defs that mirror; everything else
+// answers 1 and is never transformed at all.
+//
+// Note this is a different question from `spriteFaces`, which every archery tier
+// also carries: that one is about the MAN standing on the deck.
+export function buildingFlip(t) {
+  const drawn = t.def.buildingFaces;
+  if (!drawn) return 1;
+  return (t.face || drawn) === drawn ? 1 : -1;
+}
+
 // Where the gunner stands: the centre of the building's platform. Held as a
 // fraction of the box rather than a pixel offset, so it follows w/h when a
 // tier is resized instead of drifting off the deck.
+//
+// A MIRRORED BUILDING MIRRORS ITS MOUNT with it, about the point it stands on —
+// the same transform the renderer applies to the picture. Without this a
+// catapult facing right would swing its arm to the right and drop the rock out
+// of a sling still drawn on its left, which is the sort of thing that reads as
+// the projectile being broken rather than the transform being incomplete.
 export function mountPoint(t) {
   const box = towerBox(t);
+  const x = box.left + box.w * t.def.mountFrac[0];
   return {
-    x: box.left + box.w * t.def.mountFrac[0],
+    x: buildingFlip(t) < 0 ? 2 * t.x - x : x,
     y: box.top + box.h * t.def.mountFrac[1]
   };
 }
@@ -80,6 +103,7 @@ export function frameOf(t) {
 // The three beats of a catapult, in order. The index into `def.frames`, and into
 // BEATS for how long each one holds.
 const REST = 0;      // crew holding the rock — also the pose it idles on
+const LOAD = 1;      // the rock goes in the sling; the crew commits to a side here
 const FIRE = 2;      // the arm comes over, and the rock leaves on this beat
 
 export function updateTowers(state, dt) {
@@ -145,6 +169,22 @@ function stepCrew(state, t, dt, target) {
 
   t.beat = (t.beat + 1) % t.def.frames.length;
   t.beatT = BEATS[t.beat];
+
+  // WHICH WAY THE MACHINE FACES IS DECIDED HERE AND NOWHERE ELSE — once per
+  // cycle, on the beat the crew starts loading, and then held through the throw
+  // and back to rest.
+  //
+  // The alternative is to face wherever the current target happens to be, and it
+  // looks terrible: pickTarget re-chooses every frame, and on a road with
+  // enemies on both sides of a machine the whole thing snaps back and forth
+  // several times a second. Worse, it can turn BETWEEN the reload and the
+  // throw — the crew loads facing left and looses to the right.
+  //
+  // Latching at LOAD is also the honest reading of the animation. A crew winds
+  // and loads a machine pointing somewhere; they do not swivel it mid-swing
+  // because a better target walked past.
+  if (t.beat === LOAD) t.face = target.x >= t.x ? 1 : -1;
+
   if (t.beat === FIRE) shoot(state, t, target);
 }
 

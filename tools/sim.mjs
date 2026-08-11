@@ -58,7 +58,7 @@ function build(state, entry) {
     // The animation clock, same as input.js sets on a real build. A catapult
     // that never leaves beat 0 never fires, and it would fail silently: the sim
     // would just report that artillery is worthless.
-    beat: 0, beatT: 0,
+    beat: 0, beatT: 0, face: 0,
     spent: def.cost,
     wantTier: entry.tier
   };

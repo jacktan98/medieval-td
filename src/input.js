@@ -245,6 +245,10 @@ function run(state, item) {
       // the catapult would stand still forever with no error anywhere.
       beat: 0,
       beatT: 0,
+      // Which way an animated building is drawn facing. Latched once per firing
+      // cycle rather than per frame — see stepCrew — and 0 means "not decided
+      // yet", which reads as the direction the artwork was drawn in.
+      face: 0,
       spent: def.cost,
       rally: null
     });
