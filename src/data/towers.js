@@ -805,13 +805,13 @@ const catapult = {
 // AN UPGRADE BUYS BLAST, NOT RATE. The cycle stays at three seconds through all
 // three tiers, because it is an animation and the artist has drawn one. So what
 // a tier buys is a bigger rock in a wider patch over more ground — damage
-// 22 -> 32 -> 44 and splash 75 -> 86 -> 98 — which is also what a bigger engine
+// 19 -> 27 -> 37 and splash 75 -> 86 -> 98 — which is also what a bigger engine
 // looks like. Compare archery, where the upgrade is mostly a faster draw.
 //
-// DAMAGE HAS COME DOWN THREE TIMES, 40 -> 30 -> 26 -> 22, and the first two cuts
-// paid for reach. It is the same trade each time and it is worth stating plainly:
-// ground covered is worth more than damage per rock, because a tower that watches
-// more road gets more rocks off per wave whatever each one does.
+// DAMAGE HAS COME DOWN FOUR TIMES, 40 -> 30 -> 26 -> 22 -> 19, and the first two
+// cuts paid for reach. It is the same trade each time and it is worth stating
+// plainly: ground covered is worth more than damage per rock, because a tower
+// that watches more road gets more rocks off per wave whatever each one does.
 //
 // THE THIRD CUT IS DIFFERENT — it bought nothing, it was a straight nerf, asked
 // for from play. The measurement agrees with the feel: at 26/38/52 an
@@ -835,6 +835,28 @@ const catapult = {
 // catapult in it is untouched at 12/12 and 10 lives. That is the shape to want:
 // a catapult is still worth taking, and three of them are no longer a plan that
 // plays itself. x0.65 goes too far and kills the heavy build on map 2 outright.
+//
+// THE FOURTH CUT, x0.85 again on top of that, and asked for from play the same
+// way. 22/32/44 -> 19/27/37. The band it lands in is narrow at the bottom and
+// the floor is on map 2, so the numbers are worth keeping:
+//
+//   3 siege + 3 barracks    map 1            map 2
+//                   x1.00   12/12  10 lives   9/12   5
+//                   x0.92    9/12   5         8/12   5
+//                   x0.85    7/12   1         9/12   2   <- here
+//                   x0.78   10/12   3         2/12   0   <- map 2 falls away
+//                   x0.70    8/12   2         0/12  -1
+//
+// x0.78 is the cliff and it is a cliff on ONE map only, which is the thing to
+// notice: map 1's siege-heavy build wanders between 7 and 12 wins across the
+// whole range because it is noise-dominated, while map 2's drops off a shelf
+// between 0.85 and 0.78 and never comes back. Anything below 0.85 is not a
+// nerf to artillery, it is the removal of artillery from map 2.
+//
+// The build that matters is untouched: ONE catapult in a mix still clears both
+// maps 12/12 and 11/12 with 8 to 11 lives. Stacking three of them is now a
+// gamble on either map rather than a plan that plays itself, which is the shape
+// to want from a third family.
 //
 // Both loss rules stay 0/12 at every value tried, as they have through every
 // pass: the level's rule is held by the blocking mechanic, not by this number.
@@ -870,11 +892,11 @@ const catapult = {
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
   { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
-    cost: 90,  damage: 22, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
+    cost: 90,  damage: 19, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
   { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
-    cost: 115, damage: 32, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
+    cost: 115, damage: 27, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
   { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
-    cost: 170, damage: 44, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
+    cost: 170, damage: 37, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. A family with no

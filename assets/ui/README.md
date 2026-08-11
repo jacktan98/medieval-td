@@ -334,7 +334,7 @@ There is **no new art for it** beyond `Cost_Icon.png`. The page is a parchment
 sheet drawn in code, and every picture on it is the board's own — buildings from
 `assets/towers`, men from `assets/units`, enemies from `assets/enemies`.
 
-### One margin, everywhere
+### One margin, everywhere, inside the cards too
 
 The sheet is inset from the board and everything on it is inset from the sheet by
 the same 16px: the first card's left edge, the last card's right edge, the Close
@@ -348,6 +348,18 @@ looked wrong in isolation: cards sat 2px inside the sheet, Close sat 12, and the
 footer's bottom edge was flush with the parchment. Three numbers, each chosen on
 its own, each fine on its own. `tools/book.mjs` now measures every one of those
 edges against the same constant.
+
+The same fault was inside each card: the rows were at +16, +33 and +50 of 60, so
+the last one sat 3px off the floor while the first had 10px of air over it. They
+are **counted and centred** now, the way `drawInfo` already treats the info box's
+own two-or-three rows — three rows on a tower or enemy card, two on a unit card,
+both blocks in the middle of the plate.
+
+And the picture slot gets the **whole** card height rather than a 3px inset. That
+inset was pure loss: it made every building 11% smaller and stood the shared
+ground line 2px higher, which is what made the archery towers look like they were
+floating. There is nothing above or below a picture slot to keep clear of — the
+text sits beside it, not under it.
 
 ### Every box is the same size
 

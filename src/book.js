@@ -175,11 +175,16 @@ const FIGURE_SPAN = anchored(FIGURES);
 // spot he stands on. One slot sized for both would either crop him or waste
 // 30px of every tower card's text.
 //
-// Height is shared, because it is the card that decides it.
-const SLOT_H = CARD_H - 6;
-const SLOT_Y = (CARD_H - SLOT_H) / 2;
-export const TOWER_BOX = { x: 6, y: SLOT_Y, w: 48, h: SLOT_H };
-export const FIGURE_BOX = { x: 6, y: SLOT_Y, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
+// Height is shared, and it is the WHOLE card. The slot used to be inset 3px top
+// and bottom like a margin, and that inset was pure loss: it made every building
+// 11% smaller and stood the shared ground line 2px higher, which showed up as
+// archery towers floating with a gap under them. There is nothing above or below
+// a picture slot to keep clear of — the text sits beside it, not under it — so
+// the art gets the full 60px and the deepest building's stakes reach the card's
+// bottom edge exactly.
+const SLOT_H = CARD_H;
+export const TOWER_BOX = { x: 6, y: 0, w: 48, h: SLOT_H };
+export const FIGURE_BOX = { x: 6, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
 
 // ONE FACTOR FOR EVERY BUILDING, exactly as PORTRAIT_SCALE is one factor for
 // every figure, and for the same reason: fitting each drawing to its own slot
@@ -213,6 +218,24 @@ export function towerArt(def) {
 export function figureSlot(trim, pivot) {
   return { ...figureArt(trim, pivot), k: 1, box: FIGURE_BOX,
            anchor: anchorIn(FIGURE_BOX, FIGURE_SPAN, 1) };
+}
+
+// WHERE A CARD'S ROWS SIT, and the answer is not a list of fixed offsets.
+//
+// They were +16, +33, +50 in a 60px card, which hangs the block from the top and
+// leaves the last row 3px off the bottom edge while the first has 10px of air
+// above it. Nobody types a layout like that on purpose; it is what you get when
+// each row is nudged until it looks right on its own.
+//
+// So the block is measured and CENTRED, exactly the way drawInfo already treats
+// the info box's own two-or-three rows: count the rows first, then place them. A
+// tower card has three and a unit card has two, and both sit in the middle of
+// the plate rather than one of them crowding the floor.
+export const ROW = 17;
+
+export function rowsIn(b, n) {
+  const top = b.y + (b.h - n * ROW) / 2;
+  return Array.from({ length: n }, (_, i) => top + ROW * (i + 0.5));
 }
 
 // --- the enemies page --------------------------------------------------------

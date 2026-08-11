@@ -207,7 +207,10 @@ function play(plan) {
 // PER LEVEL, because a plot index means a different place on each map and a
 // shopping list is only meaningful against the map it was swept on. Run
 // `node tools/sweep.mjs 2` after redrawing map 2 and paste its rows here.
-const byLevel = {
+// EXPORTED so an experiment can run the real scenarios instead of retyping
+// them. Retyping is how a damage sweep spent an afternoon measuring map 2's
+// builds on map 1: the plot indices are per-map and the two lists look alike.
+export const byLevel = {
 m1: {
   'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
   'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],

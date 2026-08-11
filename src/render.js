@@ -13,7 +13,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
          PORTRAIT_SCALE, STAT_ICON_H, STAT_COL, BOOK_ICON_H, FOE_ICON_H } from './data/ui.js';
 import { selectionInfo } from './select.js';
 import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
-         SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
+         SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START, BOOK_BTN_PAUSE } from './book.js';
 
@@ -1867,22 +1867,23 @@ function towerCard(ctx, b, e) {
   drawArt(ctx, e.sprite, e.trim, b, e.art);
 
   const tx = b.x + TOWER_BOX.x + TOWER_BOX.w + 8;
+  const [r1, r2, r3] = rowsIn(b, 3);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
   ctx.font = '700 12px system-ui, sans-serif';
-  ctx.fillText(e.title, tx, b.y + 16);
+  ctx.fillText(e.title, tx, r1);
 
   ctx.fillStyle = INK_MUTED;
   ctx.font = '600 11px system-ui, sans-serif';
-  ctx.fillText(e.occupier, tx, b.y + 33);
+  ctx.fillText(e.occupier, tx, r2);
 
   // Price on the left of the row, refund on the right and in the green the game
   // already uses for gold coming back to you — the same colour the refund button
   // prints its own figure in.
-  const x = stat(ctx, 'stat_cost', tx, b.y + 50, String(e.cost), INK);
-  stat(ctx, 'glyph_refund', x + 14, b.y + 50, String(e.refund), INK_GREEN);
+  const x = stat(ctx, 'stat_cost', tx, r3, String(e.cost), INK);
+  stat(ctx, 'glyph_refund', x + 14, r3, String(e.refund), INK_GREEN);
 }
 
 function unitCard(ctx, b, e) {
@@ -1890,16 +1891,17 @@ function unitCard(ctx, b, e) {
   drawArt(ctx, e.sprite, e.trim, b, e.art);
 
   const tx = b.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
+  const [r1, r2] = rowsIn(b, 2);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
   ctx.font = '700 12px system-ui, sans-serif';
-  ctx.fillText(e.title, tx, b.y + 22);
+  ctx.fillText(e.title, tx, r1);
 
   let x = tx;
-  if (e.hp !== null) x = stat(ctx, 'stat_health', x, b.y + 43, String(e.hp), INK) + 14;
-  stat(ctx, 'stat_damage', x, b.y + 43, String(e.damage), INK);
+  if (e.hp !== null) x = stat(ctx, 'stat_health', x, r2, String(e.hp), INK) + 14;
+  stat(ctx, 'stat_damage', x, r2, String(e.damage), INK);
 }
 
 // One icon and its number, returning the x to carry on from. The icon is drawn
@@ -1935,22 +1937,23 @@ function drawEnemyPage(ctx) {
     drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot));
 
     const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
+    const [r1, r2, r3] = rowsIn(c, 3);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = INK;
     ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText(d.name, tx, c.y + 16);
+    ctx.fillText(d.name, tx, r1);
 
-    const hp = stat(ctx, 'stat_health', tx, c.y + 33, String(d.hp), INK);
-    stat(ctx, 'stat_damage', hp + 12, c.y + 33, String(d.damage), INK);
+    const hp = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK);
+    stat(ctx, 'stat_damage', hp + 12, r2, String(d.damage), INK);
 
     // The coin is a BOUNTY here rather than your purse and the heart is a COST
     // rather than what you have left, which is the one place in the game either
     // icon means something new. They are readable because of the row above:
     // health and attack on line 2 set what a heart and a sword mean, so line 3
     // reads as the other pair of numbers about the same creature.
-    const gold = stat(ctx, 'hud_gold', tx, c.y + 50, String(d.bounty), INK_GREEN);
-    stat(ctx, 'hud_life', gold + 12, c.y + 50, String(d.leak), INK_RED);
+    const gold = stat(ctx, 'hud_gold', tx, r3, String(d.bounty), INK_GREEN);
+    stat(ctx, 'hud_life', gold + 12, r3, String(d.leak), INK_RED);
   }
 }
 

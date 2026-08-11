@@ -35,7 +35,7 @@ import { ui, PORTRAIT_SCALE, BOOK_ICON_H, FOE_ICON_H } from '../src/data/ui.js';
 import {
   PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
   SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
-  BOOK_TOWER_SCALE, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
+  BOOK_TOWER_SCALE, ROW, rowsIn, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
   BOOK_BTN_START, BOOK_BTN_PAUSE
 } from '../src/book.js';
 
@@ -210,6 +210,23 @@ console.log('\nOne margin, everywhere\n');
   ok(TITLE_Y > inner.y && HEAD_Y > TITLE_Y && Math.min(...cards.map(b => b.y)) > HEAD_Y,
     'and the two headings sit above the grid in order',
     `title ${TITLE_Y}, heading ${HEAD_Y}, cards ${Math.min(...cards.map(b => b.y))}`);
+
+  // INSIDE a card too. A tower's three rows and a unit's two are both centred in
+  // the plate, so neither block crowds the floor — which is what the old fixed
+  // offsets did, leaving 10px above the first row and 3 below the last.
+  const b0 = cards[0];
+  for (const n of [2, 3]) {
+    const rows = rowsIn(b0, n);
+    const overhead = rows[0] - ROW / 2 - b0.y;
+    const underfoot = b0.y + b0.h - (rows[n - 1] + ROW / 2);
+    ok(Math.abs(overhead - underfoot) < 0.01,
+      `a ${n}-row card's text is centred in it`,
+      `${overhead.toFixed(1)}px above, ${underfoot.toFixed(1)} below`);
+  }
+
+  // And the rows have to fit: a block taller than the card would be centred and
+  // still hang out of both ends.
+  ok(3 * ROW <= b0.h, 'and three rows fit inside one', `${3 * ROW} of ${b0.h}`);
 }
 
 console.log('\nEverything stands on its shadow\n');
@@ -229,6 +246,12 @@ console.log('\nEverything stands on its shadow\n');
   });
   ok(fits, 'every building fits its slot once anchored on its shadow',
     `${k.toFixed(3)}x board scale`);
+
+  // ONE GROUND LINE for the whole shelf, which is the point of anchoring at all.
+  // A single number, so a redrawn building cannot quietly stand on its own.
+  const lines = new Set(TIERS.map(d => towerEntry(d, archery).art.anchor.y.toFixed(3)));
+  ok(lines.size === 1, 'and every tower stands on the same line',
+    `${[...lines][0]} of ${TOWER_BOX.h}`);
 
   // The largest one actually filling its slot is what proves the factor is
   // derived rather than typed and left behind by a redraw.
