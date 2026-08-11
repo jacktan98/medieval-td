@@ -1,25 +1,27 @@
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
+import { play, LAND } from './audio.js';
 
+// TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
+//
+// An arrow is STEERED. It chases one man, follows him, and dies with him — there
+// is nothing left to aim at.
+//
+// A rock is THROWN. towers.js committed it, at the moment of release, to a patch
+// of ground worked out from where its target would be when it got there; from
+// then on it is a lump on a parabola and nothing can call it back. It lands
+// where it was going whether or not anyone is still standing there. Most of the
+// time the lead is right and a marching column walks into it; sometimes a man
+// gets blocked, or killed, or reaches a bend, and the rock comes down just
+// behind him. That miss is the tower's character, not a bug in it.
 export function updateShots(state, dt) {
   for (const s of state.shots) {
+    if (s.flight) { fly(s, dt); if (s.t >= s.flight) land(state, s); continue; }
+
     const step = s.speed * dt;
+    if (s.target.hp <= 0) { s.dead = true; continue; }
 
-    // A dead target ends an arrow, because an arrow is aimed at ONE man and
-    // there is nothing left to aim at. A rock is not: it is a lump already in
-    // the air over a crowd, and where it comes down is the crowd's problem
-    // whether or not the man it was thrown at is still standing. So a splash
-    // shot carries on to the spot and lands there.
-    if (s.target.hp <= 0) {
-      if (!s.splash) { s.dead = true; continue; }
-      // Its aim point stops moving with the corpse: the target's last position
-      // is the ground the crew was throwing at.
-      s.at = s.at || { x: s.target.x, y: s.target.y };
-    }
-
-    // Homing keeps it simple — no lead prediction until enemies get faster.
-    const aim = s.at || s.target;
-    const ax = aim.x - s.x, ay = aim.y - s.y;
+    const ax = s.target.x - s.x, ay = s.target.y - s.y;
     const adist = Math.hypot(ax, ay);
 
     if (adist <= step) {
@@ -37,6 +39,32 @@ export function updateShots(state, dt) {
   state.hits = state.hits.filter(h => h.life > 0);
 }
 
+// One step of a lob.
+//
+// The rock runs from the sling bucket to the aim point at a constant rate along
+// the straight between them, and the arc is a LIFT added on top: `4h·u(1-u)`, a
+// parabola that is zero at both ends and `h` at the halfway mark. Subtracted
+// from y, because up the screen is negative.
+//
+// That "zero at both ends" is what keeps the sum honest. At u = 1 the lift is
+// exactly nothing, so the rock's drawn position and the ground it was thrown at
+// are the same point — which means the splash can be measured from `s.x, s.y`
+// with no second set of coordinates to keep in step. The one place a projectile
+// is allowed to be above the ground is in the middle of its flight.
+function fly(s, dt) {
+  s.t += dt;
+  const u = Math.min(1, s.t / s.flight);
+  s.x = s.from.x + (s.to.x - s.from.x) * u;
+  // The point on the ground the rock is currently over, kept because the
+  // renderer draws a shadow there. Without it the height is unreadable: a rock
+  // 60px up over a road drawn in perspective is indistinguishable from a rock
+  // 60px further away, and the player cannot tell where it is going to come
+  // down. That matters more here than it would for any other projectile,
+  // because a catapult aims AHEAD and the landing spot is genuinely news.
+  s.groundY = s.from.y + (s.to.y - s.from.y) * u;
+  s.y = s.groundY - 4 * s.lift * u * (1 - u);
+}
+
 // Where the shot arrives. One victim for an arrow, everything standing in a
 // patch of ground for a rock.
 //
@@ -50,8 +78,16 @@ function land(state, s) {
   s.dead = true;
   state.hits.push({ x: s.x, y: s.y, life: 0.12 });
 
+  // Category B, on the ARRIVAL rather than the release — a rock is silent in the
+  // air and announces itself by landing, which is also where the player is
+  // looking. It plays whether or not it hit anybody, because a rock cratering an
+  // empty road is exactly the miss the player needs to hear.
+  if (s.ammo.landSound) play(LAND);
+
   if (!s.splash) {
-    hit(state, s, s.target);
+    // Nothing left to hit: a steered shot cannot arrive at a dead man, but an
+    // unsteered one with no splash can.
+    if (s.target.hp > 0) hit(state, s, s.target);
     return;
   }
 
@@ -86,6 +122,8 @@ function hit(state, s, e) {
   e.struckFrom = s.fromX >= e.x ? 1 : -1;
   // Who to credit if this is the killing blow — see enemies.js, which is the one
   // place that sees every death however it was caused, and so the only place
-  // that can tell a ranged kill from a sword kill.
-  e.killedBy = 'shot';
+  // that can tell an arrow kill from a rock kill from a sword kill. The
+  // ammunition names itself rather than being mapped here, so a third projectile
+  // needs no branch.
+  e.killedBy = s.ammo.kind;
 }

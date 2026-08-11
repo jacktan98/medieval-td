@@ -29,10 +29,7 @@ const TIME_LIMIT = 900;   // seconds of game time before a run is called stuck
 // upgraded toward their target tier — roughly how a player spends.
 export const A = (plot, tier = 2) => ({ plot, fam: 'archery', tier });
 export const B = (plot, tier = 2) => ({ plot, fam: 'barracks', tier });
-// Artillery has ONE tier, so its default target is 1 and the upgrade loop finds
-// nothing above it. Written as a default rather than left to the caller so a
-// siege entry reads the same as the other two at the call site.
-export const S = (plot, tier = 1) => ({ plot, fam: 'siege', tier });
+export const S = (plot, tier = 2) => ({ plot, fam: 'siege', tier });
 
 function newState() {
   return {

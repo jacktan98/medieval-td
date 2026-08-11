@@ -1,5 +1,5 @@
-import { pickTarget } from './enemies.js';
-import { BEAT } from './data/towers.js';
+import { pickTarget, leadPoint } from './enemies.js';
+import { BEATS } from './data/towers.js';
 import { play, SHOT } from './audio.js';
 
 // The building's drawn box in world space. render.js draws the tower from this
@@ -77,7 +77,8 @@ export function frameOf(t) {
   return t.def.frames ? t.def.frames[t.beat || 0] : t.def.sprite;
 }
 
-// The three beats of a catapult, in order. The index into `def.frames`.
+// The three beats of a catapult, in order. The index into `def.frames`, and into
+// BEATS for how long each one holds.
 const REST = 0;      // crew holding the rock — also the pose it idles on
 const FIRE = 2;      // the arm comes over, and the rock leaves on this beat
 
@@ -114,11 +115,15 @@ function stepWeapon(state, t, dt, target) {
 
 // A tower whose reload is ANIMATED, so the rules and the pictures have to agree.
 //
-// The loop is three one-second beats — rest, reload, fire — and the shot happens
-// on the beat the arm is drawn coming over, not on a cooldown that happens to
-// expire somewhere in the middle of it. That is the whole reason this is a
-// separate function rather than a frame index derived from `cd`: the machine
-// must never fire on a frame it is not drawn firing.
+// The loop is three beats — rest, reload, fire — of the lengths in BEATS, and
+// the shot happens on the beat the arm is drawn coming over rather than on a
+// cooldown that expires somewhere in the middle of it. That is the whole reason
+// this is a separate function rather than a frame index derived from `cd`: the
+// machine must never fire on a frame it is not drawn firing.
+//
+// The beats are NOT equal — 0.75, 0.75, 1.5 — so the Fire pose holds long enough
+// for a lobbed rock to land under it. That is why each boundary reads its own
+// length out of BEATS instead of adding a constant.
 //
 // AT REST it sits on beat 0 with the clock stopped, which is what makes an idle
 // catapult a still picture rather than a machine miming a reload at nobody. The
@@ -139,7 +144,7 @@ function stepCrew(state, t, dt, target) {
   }
 
   t.beat = (t.beat + 1) % t.def.frames.length;
-  t.beatT = BEAT;
+  t.beatT = BEATS[t.beat];
   if (t.beat === FIRE) shoot(state, t, target);
 }
 
@@ -147,7 +152,7 @@ function shoot(state, t, target) {
   const m = muzzlePoint(t);
   const ammo = t.def.ammo;
 
-  state.shots.push({
+  const shot = {
     x: m.x,
     y: m.y,
     angle: t.aim,          // so the first frame already points at the target
@@ -162,15 +167,48 @@ function shoot(state, t, target) {
     splash: t.def.splash || 0,
     ammo,
     speed: ammo.speed
-  });
+  };
+
+  if (ammo.arc) aim(shot, m, target);
+  state.shots.push(shot);
 
   // Category B: never skipped, never queued. Every arrow you can see leave a bow
   // makes its own noise, because ten towers firing is ten events the player is
   // watching and a shared channel would silence nine of them.
   //
-  // A CATAPULT MAKES NO SOUND YET — `sound` is false on the rock. There is no
-  // clip for it, and playing the bow release over a swinging arm would be worse
-  // than silence: that sample is pinned to a picture of an arrow leaving a
-  // string. It wants a timber creak and a thump; see assets/audio/README.md.
-  if (ammo.sound) play(SHOT);
+  // The rock's noise is not here — it is in projectiles.js, on the landing. See
+  // `fireSound` / `landSound` in data/towers.js.
+  if (ammo.fireSound) play(SHOT);
+}
+
+// Commit a lobbed shot to a patch of ground, and aim it AHEAD of the target.
+//
+// This is the whole difference between the two projectiles. An arrow is steered
+// and needs no plan; a rock is thrown, and by the time it arrives — up to 1.2s
+// later — a marching enemy has moved 85px, which is more than the splash is
+// wide. Thrown at where the man IS, a catapult would land behind the column
+// every single time and read as broken.
+//
+// The lead is EXACT rather than extrapolated from a heading: an enemy's position
+// is a distance along a known polyline, so where it will be in 1.2 seconds is a
+// lookup rather than a guess. That matters most at the bends, which is exactly
+// where a straight-line extrapolation would throw the rock off the road.
+//
+// Solved by ONE PASS, not iterated. The flight time is measured to where the
+// target is now and the aim point is taken that far ahead — the honest fixed
+// point would re-measure the distance to the new aim and go round again, and it
+// is not worth it: the error is second-order, the splash is 55px or more, and a
+// crew that occasionally leads a fraction long is a crew.
+function aim(shot, from, target) {
+  const dist = Math.hypot(target.x - from.x, target.y - from.y);
+  const flight = dist / shot.speed;
+  const to = leadPoint(target, flight);
+
+  shot.from = { x: from.x, y: from.y };
+  shot.to = to;
+  shot.flight = flight;
+  shot.t = 0;
+  // The top of the arc, as a fraction of how far the rock is actually going —
+  // so a short lob is a low one and the throw always looks like the same engine.
+  shot.lift = Math.hypot(to.x - from.x, to.y - from.y) * shot.ammo.arc;
 }

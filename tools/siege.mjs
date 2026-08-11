@@ -3,16 +3,16 @@
 //
 //   node tools/siege.mjs
 //
-// Two rules are checked here and neither reads wrong on its own in the file it
-// lives in.
+// Three rules are checked here and none of them reads wrong on its own in the
+// file it lives in.
 //
-// THE LOOP. A catapult's reload is ANIMATED — three drawings, one second each,
-// and the rock leaves on the beat the arm is drawn coming over. The rule and the
-// pictures are the same clock in src/towers.js, and the whole point of that is
-// that the machine can never fire on a frame it is not drawn firing. A cooldown
-// that expired half a beat early would still shoot every three seconds and still
-// cycle three frames, and nothing would look wrong until you watched one
-// carefully — the rock would simply leave while the arm was still down.
+// THE LOOP. A catapult's reload is ANIMATED — three drawings of 0.75, 0.75 and
+// 1.5 seconds — and the rock leaves on the beat the arm is drawn coming over.
+// The rule and the pictures are the same clock in src/towers.js, and the whole
+// point of that is that the machine can never fire on a frame it is not drawn
+// firing. A cooldown that expired half a beat early would still shoot every
+// three seconds and still cycle three frames, and nothing would look wrong until
+// you watched one carefully — the rock would simply leave while the arm was down.
 //
 // THE PATCH. A rock damages everything standing in an ellipse, through the same
 // inRange() as every tower's reach, because the board is drawn in perspective
@@ -20,10 +20,18 @@
 // kill men visibly outside it and spare men visibly inside — this game has
 // already paid for that lesson once, with a tower that read as aiming at heads.
 // See src/ground.js.
+//
+// THE LOB. A rock is thrown at a patch of ground, not steered at a man, so it
+// has to be aimed AHEAD — and both halves of that fail quietly. A lead that is
+// wrong lands the rock just behind a marching column, which reads as the splash
+// being too small. A flight that outlasts the Fire pose leaves a rock in the air
+// over a machine that has already reloaded, which reads as a second catapult
+// somewhere off screen.
 
 import { updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
-import { siege, arrow, rock, BEAT } from '../src/data/towers.js';
+import { updateEnemies } from '../src/enemies.js';
+import { siege, arrow, rock, BEATS } from '../src/data/towers.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { SQUASH } from '../src/ground.js';
 import { level } from '../src/level.js';
@@ -55,9 +63,9 @@ function enemyAt(x, y, hp = 1e6) {
            face: 1, route: 0, s: AT, lane: 1, acd: 0, thrust: 0, leaked: false };
 }
 
-function catapultAt(x, y) {
-  return { plot: { x, y }, fam: { id: 'siege', tiers: siege }, def,
-           x, y, aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, spent: def.cost };
+function catapultAt(x, y, d = def) {
+  return { plot: { x, y }, fam: { id: 'siege', tiers: siege }, def: d,
+           x, y, aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, spent: d.cost };
 }
 
 // --- the loop -----------------------------------------------------------------
@@ -105,8 +113,8 @@ console.log('The three-beat loop\n');
   // behaviour to want — a target walking into range gets the full reload beat
   // before the rock comes, so you see it loaded and then you see it thrown.
   const cycle = runs.slice(0, 9);
-  ok(cycle.every(([, n]) => Math.abs(n - BEAT * 60) <= 1),
-     `every beat holds for ${BEAT}s`,
+  ok(cycle.every(([b, n]) => Math.abs(n - BEATS[b] * 60) <= 1),
+     `each beat holds for its own length ${JSON.stringify(BEATS)}`,
      cycle.map(([b, n]) => `${b}:${(n / 60).toFixed(2)}s`).join(' '));
 
   ok(cycle.map(([b]) => b).join('') === '120120120',
@@ -153,6 +161,7 @@ console.log('\nWhere a rock lands\n');
   const above = enemyAt(SPOT.x, SPOT.y - R * 0.9);      // inside a circle of R,
   s.enemies.push(centre, nearSide, farSide, above);      // outside the ellipse
 
+  // Dropped straight onto the spot: no flight, so it lands on the first step.
   s.shots.push({
     x: SPOT.x, y: SPOT.y, angle: 0, fromX: SPOT.x, target: centre,
     damage: def.damage, splash: def.splash, ammo: rock, speed: rock.speed
@@ -186,14 +195,16 @@ console.log('\nWhere a rock lands\n');
 
 {
   // A rock already in the air is not called back because the man it was thrown
-  // at died. It lands where it was going and hits whoever is standing there.
+  // at died. It is committed to a patch of ground and lands on whoever is there.
   const s = board();
   const doomed = enemyAt(SPOT.x, SPOT.y);
   const neighbour = enemyAt(SPOT.x + 20, SPOT.y);
   s.enemies.push(doomed, neighbour);
   s.shots.push({
     x: SPOT.x - 100, y: SPOT.y, angle: 0, fromX: SPOT.x - 100, target: doomed,
-    damage: def.damage, splash: def.splash, ammo: rock, speed: rock.speed
+    damage: def.damage, splash: def.splash, ammo: rock, speed: rock.speed,
+    from: { x: SPOT.x - 100, y: SPOT.y }, to: { x: SPOT.x, y: SPOT.y },
+    flight: 0.5, t: 0, lift: 28
   });
   doomed.hp = 0;                                  // killed by something else
   for (let i = 0; i < 60 * 3; i++) updateShots(s, DT);
@@ -204,6 +215,72 @@ console.log('\nWhere a rock lands\n');
 {
   ok(rock.speed < arrow.speed, 'and a rock flies slower than an arrow',
      `${rock.speed} vs ${arrow.speed} px/s`);
+}
+
+// --- the lob ------------------------------------------------------------------
+//
+// The two things that make a thrown rock different from a steered arrow, and
+// both of them fail QUIETLY. A lead that is wrong lands the rock a few pixels
+// behind a column, which looks like the splash being small. A flight that
+// outlasts the Fire pose puts the rock in the air over a machine that has
+// already reloaded, which looks like a second catapult somewhere off screen.
+
+console.log('\nThe lob\n');
+
+{
+  // The whole point of leading: a WALKING enemy must still be hit. Run the real
+  // thing — a catapult beside the road, an enemy marching past it — and see
+  // whether the rock finds him.
+  const walk = (blocked, label) => {
+    const s = board();
+    const t = catapultAt(SPOT.x, SPOT.y - 70);
+    s.towers.push(t);
+    const e = { ...enemyAt(SPOT.x - 150, SPOT.y), def: enemyTypes.light_inf, s: AT - 150 };
+    e.hp = e.maxHp = 1e6;
+    if (blocked) e.foe = { x: e.x, y: e.y };   // held by a soldier: going nowhere
+    s.enemies.push(e);
+
+    for (let i = 0; i < 60 * 6; i++) {
+      updateEnemies(s, DT);
+      updateTowers(s, DT);
+      updateShots(s, DT);
+      if (e.maxHp - e.hp > 0) break;
+    }
+    ok(e.maxHp - e.hp >= def.damage, label, `took ${e.maxHp - e.hp}`);
+  };
+
+  walk(false, 'a rock lands on a man who is WALKING');
+  walk(true, 'and on one a barracks is holding still');
+}
+
+{
+  // The longest throw in the game has to arrive while the arm is still up.
+  const longest = siege[siege.length - 1].range;
+  const flight = longest / rock.speed;
+  ok(flight < BEATS[2], 'the longest throw lands inside the Fire beat',
+     `${flight.toFixed(2)}s of a ${BEATS[2]}s pose, ${(BEATS[2] - flight).toFixed(2)}s spare`);
+}
+
+{
+  // The arc has to be zero at BOTH ends, or the rock lands above the ground it
+  // was thrown at and the splash is measured somewhere the player cannot see.
+  const s = board();
+  const from = { x: 100, y: 300 }, to = { x: 300, y: 300 };
+  const shot = { ...from, from, to, flight: 1, t: 0, lift: 56, damage: 1, splash: 0,
+                 ammo: rock, speed: rock.speed, fromX: from.x, target: enemyAt(300, 300) };
+  s.enemies.push(shot.target);
+  s.shots.push(shot);
+
+  let peak = 0;
+  for (let i = 0; i < 60; i++) {
+    updateShots(s, DT);
+    peak = Math.max(peak, to.y - shot.y);
+  }
+  ok(Math.abs(shot.x - to.x) < 0.01 && Math.abs(shot.y - to.y) < 0.01,
+     'a lob ends exactly on the ground it was aimed at',
+     `landed (${shot.x.toFixed(2)}, ${shot.y.toFixed(2)}) for (${to.x}, ${to.y})`);
+  ok(Math.abs(peak - 56) < 2, 'having risen to its full arc on the way',
+     `peaked ${peak.toFixed(1)}px up, wanted 56`);
 }
 
 console.log(bad ? `\n${bad} check(s) failed.` : '\nThe catapult behaves.');

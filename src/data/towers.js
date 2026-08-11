@@ -145,6 +145,7 @@ const ROCK_TRIM = [226, 232, 60, 48];
 // a nose. A rock is a rock: rotating it to a heading says nothing, so it is
 // drawn upright and never turned.
 export const arrow = {
+  kind: 'arrow',
   sprite: 'arrow_t1',
   trim: [203, 246, 100, 20],
   faces: -1,
@@ -152,28 +153,53 @@ export const arrow = {
   // shaft ending there.
   grip: 0.08,
   speed: 360,
-  // Whether loosing it makes a noise. The bow release is the game's one
-  // Category B cue — see src/audio.js.
-  sound: true
+  // No `arc`, so an arrow HOMES: it flies at its target and follows it, and a
+  // dead target ends it. See rock below for the other kind.
+  //
+  // WHERE ITS NOISE IS. An arrow announces itself by being loosed and lands
+  // more or less silently; a rock is the other way round. Two flags rather than
+  // one, because "does this make a sound" turned out to be two questions.
+  fireSound: true,
+  landSound: false
 };
 
-// Deliberately less than half the arrow's, and it is the number that makes a
-// catapult read as a catapult: you watch the rock travel, and where it lands is
-// where the enemies WERE when the crew let go. Faster and the lob disappears;
-// much slower and the splash lands behind a marching column every time.
+// A LOB, and the only projectile in the game that is not steered.
+//
+// `arc` is what makes it one: the rock is thrown at a PATCH OF GROUND on a fixed
+// flight, rises to `arc` of the throw's length at the top and comes down where
+// it was aimed, whatever the man it was aimed at does in the meantime. An arrow
+// chases; a rock is committed the moment it leaves the sling.
+//
+// That is why the crew AIMS AHEAD. Being unsteered against a target walking at
+// 70px/s for the better part of a second would mean landing behind the column
+// every single time — so the shot is aimed at where the target WILL be when it
+// arrives, worked out exactly from the road rather than guessed from a heading
+// (see leadPoint in src/enemies.js). It can still miss, and the interesting
+// cases are the honest ones: a man who gets blocked, or killed, or reaches a
+// bend, is a man the rock now lands slightly behind.
+//
+// 0.28 puts the top of the arc at about 56px on a 200px throw — high enough to
+// read as thrown rather than slid, low enough to stay under the dashboard.
+//
+// `speed` is the HORIZONTAL rate, and it sets the flight time: 240 crosses the
+// tier 3 reach of 290 in 1.21s, which has to stay inside the 1.5s the Fire pose
+// holds for. A rock still in the air when the arm has already come back down
+// looks like two different machines.
 export const rock = {
+  kind: 'rock',
   sprite: 'rock_t1',
   trim: ROCK_TRIM,
   faces: 0,
   // Centred, because it is a lump with no nose to put on the target.
   grip: 0.5,
-  speed: 150,
-  // SILENT, and deliberately so rather than by omission. There is no catapult
-  // clip yet, and the bow release is the wrong sound over a swinging arm — it is
-  // a bowstring, and everyone can hear that it is. Silence reads as "no sound
-  // recorded"; the wrong sound reads as a bug. Flip this the day a creak-and-
-  // thump lands in assets/audio.
-  sound: false
+  speed: 240,
+  arc: 0.28,
+  // SILENT IN THE AIR, and loud when it arrives. Nothing plays when the arm
+  // comes over: the release is not the moment the player is looking at, and a
+  // creak nobody can place among ten towers is noise. The landing is the event —
+  // it is where the damage happens and where the eye already is.
+  fireSound: false,
+  landSound: true
 };
 
 // Every tier has its own drawing now, in both families — nothing is shared.
@@ -600,12 +626,26 @@ export const barracks = [
 // has no separate figure — its crewman is drawn into all three frames — so the
 // machine itself has to animate or nothing about it moves at all.
 //
-// ONE SECOND A BEAT, three beats a shot: the crew stands with the rock (Default),
-// loads it (Reload), and the arm comes over (Fire). That is the artist's spec and
-// the cooldown is derived from it rather than chosen, which is the right way
-// round — the reload you can see and the reload the rules use are the same three
-// seconds, so the machine can never fire on a frame it is not drawn firing.
-export const BEAT = 1;
+// THREE BEATS A SHOT, and they are no longer the same length: the crew stands
+// with the rock (Default, 0.75s), loads it (Reload, 0.75s), and the arm comes
+// over (Fire, 1.5s). Indexed by beat, so `BEATS[2]` is how long the Fire pose
+// holds.
+//
+// The Fire beat is double the other two ON PURPOSE, and it is the number the
+// projectile depends on: a rock is a lob with a real flight time, and the arm
+// has to stay up until it lands or the machine looks like it threw nothing. The
+// longest throw in the game — tier 3's reach of 290 at 240px/s — is 1.21s, which
+// leaves about a quarter second in hand. SHORTEN THIS AND ROCKS LAND AFTER THE
+// ARM HAS COME BACK DOWN; tools/siege.mjs checks the margin.
+//
+// The two setup beats came down from a second each to keep the whole cycle at
+// three seconds, so the cooldown did not move and the balance below still holds.
+// The cooldown is derived from these rather than chosen beside them, which is
+// the right way round: the reload you can see and the reload the rules use are
+// the same clock, so the machine can never fire on a frame it is not drawn
+// firing.
+export const BEATS = [0.75, 0.75, 1.5];
+const CYCLE = BEATS.reduce((a, b) => a + b, 0);
 
 const catapult = {
   sprite: 'artillery_t1',
@@ -647,12 +687,15 @@ const catapult = {
   shape: 'siege'
 };
 
-// ONE TIER SO FAR. The menu shows "Max" on it, which is what a one-tier family
-// looks like and needs no special case.
+// THREE TIERS, ALL DRAWN WITH TIER 1'S MACHINE. That is temporary and the code
+// knows it: render.js marks a tower with stars whenever more than one tier in
+// its family shares a sprite key, so the stars appear here and nowhere else, and
+// they will disappear on their own the day tiers 2 and 3 get their own frames.
+// Nothing has to be remembered or removed.
 //
 // The numbers, and why they are these:
 //
-// `cooldown` is not a choice — it is three one-second beats of animation. Every
+// `cooldown` is not a choice — it is the three animation beats added up. Every
 // other number here is chosen around that three-second cycle.
 //
 // `splash` is what makes this a tower rather than a slow archer, and without it
@@ -667,47 +710,57 @@ const catapult = {
 // SET `splash: 0` TO GET A PURE SINGLE-TARGET CATAPULT. Nothing else has to
 // change; projectiles.js falls back to hitting only what it hit.
 //
-// 40 damage in a 55px patch, every 3s. Against a lone heavy that is 13 DPS,
-// meaningfully worse than two archery towers for the money. Against a late wave
-// spawning every 0.6s at speed 70 — enemies about 42px apart — the patch takes
-// two or three of them at once and it is the best gold in the game. That gap is
-// the point: it is a tower you build BECAUSE of wave 8, not one you open with.
+// `range` IS THE LONGEST IN THE GAME AT EVERY TIER — 240/265/290 against
+// archery's 190/210/230 — which is the point of the family and was asked for
+// directly. A catapult sits at the back and reaches. Remember the reach is an
+// ellipse: 240 across is only 149 up and down.
 //
-// `range` 210 against archery tier 1's 190. A catapult outranges a bow, and the
-// three-second cycle needs the extra ground: a target has to still be in the
-// patch when the arm finally comes over. Remember the reach is an ellipse — 210
-// across is only 130 up and down.
+// AN UPGRADE HERE BUYS BLAST, NOT RATE. The cycle stays at three seconds through
+// all three tiers, because it is an animation and the artist has drawn one. So
+// what a tier buys is a bigger rock in a wider patch over more ground — damage
+// 30 -> 44 -> 60 and splash 55 -> 64 -> 74 — which is also what a bigger engine
+// looks like. Compare archery, where the upgrade is mostly a faster draw.
 //
-// `cost` 90 against 70. The opening is the tightest part of the curve (220 gold,
-// no bounties yet) and at 70 this would compete with the first archery tower on
-// price alone while being much worse at holding wave 1.
+// DAMAGE CAME DOWN FROM 40 TO PAY FOR THE RANGE. 40 at reach 210 and 30 at reach
+// 240 measure out the same on both maps, which is the trade being made honestly:
+// +14% radius is +30% ground covered, and a tower that covers more road gets
+// more shots off per wave whatever each one does.
 //
-// THE PLATEAU, swept over damage 25..55 x splash 0..70 on map 1, five seeds each:
+// `cost` 90/115/170 against archery's 70/90/140. The opening is the tightest
+// part of the curve (220 gold, no bounties yet) and at 70 a catapult would
+// compete with the first archery tower on price alone while being much worse at
+// holding wave 1.
 //
-//   - Neither loss scenario flips ANYWHERE in that grid. All-siege and five-siege-
-//     behind-one-blocker lose at every value, including 55 damage in a 70px patch.
-//     The level's rule is held by the blocking mechanic, not by this number, which
-//     is the reassuring answer: artillery cannot break the level by being tuned
-//     badly, only by being useless or dominant, and neither is a cliff.
-//   - `splash: 0` is the one cliff there is. With it, a three-siege mix loses at
-//     EVERY damage from 25 to 55 — 0/5 on all six rows. That is the measurement
-//     behind the paragraph above: area damage is the family, not the flavour.
-//   - Above 40 damage nothing much improves; the median saturates around 10 lives
-//     and 45 and 55 buy nothing 40 does not. Below 40 the mixes go patchy — 35
-//     wins 5/5 and 30 drops to 1/5 at the same splash.
+// THE SWEEP, over damage x splash as multiples of the numbers below, all three
+// tiers scaled together, map 1, five seeds a cell:
 //
-// So 40 x 55 is the near end of a wide plateau, chosen the same way heavy_inf's
-// hp was: find the band, take its low edge, and do not read the width as
-// permission to stop checking.
+//   - `splash: 0` IS A CLIFF, and it is the measurement the family rests on.
+//     A three-siege mix loses 0/5 with no splash at 0.6x, 0.8x, 1.0x AND 1.3x
+//     damage, and only starts winning at 1.8x — which is 54/79/108 a shot.
+//     Area damage is the family, not the flavour.
+//   - x1.0 is the knee. At x0.8 the three-siege mix falls to a median of 3 lives
+//     and at x1.3 it climbs to 14, well outside the 4-to-10 the level is meant
+//     to be won by. Both are wrong in their own direction and x1.0 is between
+//     them, not at the edge of a plateau — the reach increase used the slack the
+//     old numbers had.
+//   - THE LOSS RULES CAN BE BROKEN NOW, which they could not at the old reach of
+//     210. At x1.8 damage, five catapults behind one blocker win 4/5, and with
+//     x1.3 splash on top, artillery clears the level with no blockers at all.
+//     That is 80% above where these numbers sit and nothing is near it, but the
+//     headroom is finite where it used to be unbounded: a longer reach is worth
+//     more than it looks, and this is where that shows. RE-RUN `node
+//     tools/sim.mjs` AFTER ANY CHANGE HERE rather than trusting a band.
 //
-// Where it lands, five seeds a row: on MAP 1 a catapult is slightly BETTER than
-// the archery tower it replaces (2 archery + 3 barracks + 1 siege wins 5/5 with
-// 10 lives where the all-two-family build wins 3/5 with 10), and on MAP 2 it is
-// slightly WORSE (14 lives becomes 12 with one, 7 with three). A real
-// alternative on both, a strict upgrade on neither.
+// Where it lands, five seeds a row: a catapult is a real alternative to the
+// archery tower it competes with for a plot on both maps, and a strict upgrade
+// on neither. `node tools/sim.mjs` prints the rows.
 export const siege = [
-  { ...catapult, tier: 1, name: 'Catapult', title: 'Artillery Tier I',
-    cost: 90, damage: 40, splash: 55, range: 210, cooldown: BEAT * 3, colour: '#7A6A4A' }
+  { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',
+    cost: 90,  damage: 30, splash: 55, range: 240, cooldown: CYCLE, colour: '#7A6A4A' },
+  { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',
+    cost: 115, damage: 44, splash: 64, range: 265, cooldown: CYCLE, colour: '#6E6042' },
+  { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III',
+    cost: 170, damage: 60, splash: 74, range: 290, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. A family with no

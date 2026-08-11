@@ -9,7 +9,7 @@ import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateSplats } from './blood.js';
 import { updateWaves } from './waves.js';
-import { draw } from './render.js';
+import { draw, tierMarks } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 
@@ -113,10 +113,12 @@ attachInput(canvas, state, newGame);
 // visible, opt-in, and impossible to reach by accident from inside the game.
 //
 // What it is FOR: driving the browser checks. Reading `towers[0].beat` from a
-// script is how the catapult's three-beat loop was verified to actually be three
-// one-second beats rather than something that merely looked animated.
+// script is how the catapult's beat loop was verified to hold its poses for the
+// lengths it claims — and how every rock was confirmed to LAND while the Fire
+// pose is still up, which is the one thing about the lob that cannot be seen by
+// watching it once.
 if (new URLSearchParams(location.search).has('debug')) {
-  window.__game = { state, level, frameOf, selectionInfo };
+  window.__game = { state, level, frameOf, selectionInfo, tierMarks };
 }
 
 let last = performance.now();

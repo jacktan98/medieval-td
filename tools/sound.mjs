@@ -351,7 +351,11 @@ check('a barracks answers',
 check('a barracks man answers', selectionCue({ kind: 'unit', ref: {} }), CUE.barracks);
 check('an enemy answers', selectionCue({ kind: 'enemy', ref: {} }), CUE.thug);
 check('bare ground says nothing', selectionCue(null), null);
-check('a family with no voice says nothing', familyCue('siege'), null);
+check('an artillery tower answers', familyCue('siege'), CUE.artillery);
+// The monastery is the last family with nothing recorded, and this is the check
+// that a family with no voice returns null rather than crashing a lookup — it
+// used to be siege's job and siege has lines now.
+check('a family with no voice says nothing', familyCue('monastery'), null);
 
 // A cue with nothing loaded must not close the channel on everything else.
 //

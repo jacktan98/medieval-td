@@ -25,7 +25,7 @@
 
 import { level } from '../src/level.js';
 import { families } from '../src/data/towers.js';
-import { HUD_BTN, INFO_BOX } from '../src/render.js';
+import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks } from '../src/render.js';
 
 // Where drawHud puts its text. textBaseline is 'middle' at y=21, the biggest
 // font is 20px, so the ink runs from about 11 to 31.
@@ -38,11 +38,11 @@ import { HUD_BTN, INFO_BOX } from '../src/render.js';
 //   reaching above TEXT_BOTTOM  -> reported, because it is worth knowing
 //   reaching above TEXT_TOP     -> a failure, the text is inside the building
 //
-// There used to be a third band here for a tower's tier stars, which floated
-// above the roof and were excluded from the failing measure because they were
-// small and sat in the gaps between words. The stars have been removed from the
-// game — the info box says the tier in words now — so ink top and box top are
-// the same number and the distinction is gone with them.
+// A tower's TIER STARS float above its roof and are counted as ink. They were
+// gone for a while — the info box says the tier in words — and came back for the
+// one case the artwork cannot cover: a family whose tiers share a drawing, which
+// today is artillery and will be nobody once its tiers are drawn. So ink top and
+// box top differ again, but only on the towers that actually carry marks.
 //
 // The runs are measured from the layout drawHud actually produces: the gold icon
 // is 24 tall and 50 wide at its aspect, the lives icon 30, the gaps are 7 after
@@ -72,11 +72,16 @@ const PANELS = [...Object.entries(HUD_BTN), ['info', INFO_BOX]]
   .map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
 
 // Same geometry as towerBox(): a building hangs off its ground shadow, whose
-// centre sits on the plot point. Nothing is drawn above the box any more, so the
-// topmost ink IS the box — the two used to differ by the 11px the tier stars and
-// their radius reached, and that allowance came out with the stars.
+// centre sits on the plot point.
 const boxTop = (plot, def) => plot.y - def.groundFrac[1] * def.h;
-const inkTop = boxTop;
+
+// The topmost ink, which is the box unless the tower wears tier stars — those
+// sit STAR_LIFT above it and reach STAR_R further up again. Asked of the same
+// function the renderer uses, so a family that stops sharing artwork stops being
+// allowed the headroom on the same day it stops drawing them.
+const marks = (fam, def) => tierMarks({ fam, def });
+const inkTop = (plot, fam, def) =>
+  boxTop(plot, def) - (marks(fam, def) ? STAR_LIFT + STAR_R : 0);
 
 let bad = 0, noted = 0;
 console.log('plot            tallest tower   ink top  box top  verdict');
@@ -89,7 +94,7 @@ for (let i = 0; i < level.plots.length; i++) {
   let worst = null;
   for (const f of families) {
     for (const def of f.tiers || []) {
-      const top = inkTop(p, def);
+      const top = inkTop(p, f, def);
       if (!worst || top < worst.top) worst = { top, box: boxTop(p, def), def, fam: f.name };
     }
   }

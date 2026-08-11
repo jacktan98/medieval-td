@@ -175,6 +175,11 @@ const MEMORY_S = 20;
 const paths = {
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   arrow_hit_enemy: 'assets/audio/sfx/Arrow_hit_enemy.mp3',
+  // The catapult. Nothing plays when the arm comes over — the rock is silent in
+  // the air and announces itself by LANDING, which is also the moment the player
+  // is looking at. See the artillery section in assets/audio/README.md.
+  rock_hit_ground: 'assets/audio/sfx/Rock_hit_ground.mp3',
+  rock_hit_enemy:  'assets/audio/sfx/Rock_hit_enemy.mp3',
   thug_dies:       'assets/audio/sfx/Thug_dies.mp3',
   soldier_dies:    'assets/audio/sfx/Soldier_dies.mp3',
   attack_1:        'assets/audio/sfx/Attack_1.mp3',
@@ -190,8 +195,25 @@ const paths = {
   barracks_3:      'assets/audio/voice/Barracks_3.mp3',
   barracks_4:      'assets/audio/voice/Barracks_4.mp3',
   barracks_5:      'assets/audio/voice/Barracks_5.mp3',
-  thug_1:          'assets/audio/voice/Thug_1.mp3'
+  thug_1:          'assets/audio/voice/Thug_1.mp3',
+  // NOT RECORDED YET. Wired ahead of the files so the day they land they play
+  // with no code change — the same way the game was wired for death poses
+  // before they existed. Listed in AWAITED below so five misses do not fill the
+  // console, because a console you have learned to ignore is how a REAL missing
+  // clip goes unnoticed.
+  artillery_1:     'assets/audio/voice/Artillery_1.mp3',
+  artillery_2:     'assets/audio/voice/Artillery_2.mp3',
+  artillery_3:     'assets/audio/voice/Artillery_3.mp3',
+  artillery_4:     'assets/audio/voice/Artillery_4.mp3',
+  artillery_5:     'assets/audio/voice/Artillery_5.mp3'
 };
+
+// Clips the game is wired for but does not have yet. A miss on one of these is
+// expected, so it is reported once and quietly rather than as a warning per
+// file. Empty this as the recordings arrive.
+const AWAITED = new Set([
+  'artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'
+]);
 
 // Deliberate exceptions to the automatic levelling, applied on top of it.
 // Anything not listed plays at the common loudness.
@@ -210,8 +232,14 @@ const GAIN = {};
 export const CUE = {
   archery:      ['archers_1', 'archers_2', 'archers_3', 'archers_4', 'archers_5'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
+  artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_hit_enemy'],
+  // A rock killing a man is its own event with its own clip now — it used to
+  // borrow the arrow's, which was the better of two wrongs while nothing else
+  // existed. The two are different enough to be worth telling apart by ear: an
+  // arrow finding one man across the map, and a rock landing on several.
+  rockKill:     ['rock_hit_enemy'],
   meleeKill:    ['thug_dies'],
   soldierDeath: ['soldier_dies']
 };
@@ -219,6 +247,10 @@ export const CUE = {
 // Category B — the battle underneath, on its own bus, every time it happens.
 export const SHOT = ['arrow_shot'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
+// A rock arriving. Category B because a catapult's noise is the IMPACT, not the
+// release: several machines land rocks at once and a shared channel would
+// silence all but one of them, which is the same reason the bow is down here.
+export const LAND = ['rock_hit_ground'];
 
 let ctx = null;
 
@@ -277,15 +309,20 @@ export function loadAudio() {
   busB.gain.value = BG_LEVEL;
   busB.connect(master);
 
+  const absent = [];
+
   const jobs = Object.entries(paths).map(([key, src]) =>
     fetch(src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
       .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1); })
-      .catch(() => console.warn('Missing or unreadable audio:', src))
+      .catch(() => { if (AWAITED.has(key)) absent.push(src); else console.warn('Missing or unreadable audio:', src); })
   );
 
-  return Promise.all(jobs).then(report);
+  return Promise.all(jobs).then(() => {
+    if (absent.length) console.info('Not recorded yet:', absent.join(', '));
+    report();
+  });
 }
 
 // Everything the mix needs to know about a clip, worked out from the audio
@@ -497,12 +534,17 @@ export function solo(cue) {
   gateUntil = now + seconds + GAP;
 }
 
-// A tower family's voice, or null for one with nothing recorded. Siege and the
-// monastery have no tiers yet, let alone lines, and a lookup that returns null
-// is how a family with no art already gets a button rather than a blank.
+// A tower family's voice, or null for one with nothing recorded. The monastery
+// has no tiers yet, let alone lines, and a lookup that returns null is how a
+// family with no art already gets a button rather than a blank.
+//
+// Artillery's five lines are wired but not yet recorded, which needs nothing
+// special here: solo() skips a cue whose clips have not loaded and leaves the
+// channel open for whatever asks next.
 export function familyCue(famId) {
   return famId === 'archery' ? CUE.archery
        : famId === 'barracks' ? CUE.barracks
+       : famId === 'siege' ? CUE.artillery
        : null;
 }
 

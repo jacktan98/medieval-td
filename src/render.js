@@ -7,7 +7,7 @@ import { SPLAT_FADE } from './blood.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
-import { ringPath, clampToRange } from './ground.js';
+import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          PORTRAIT_SCALE, STAT_ICON_H, STAT_COL } from './data/ui.js';
 import { selectionInfo } from './select.js';
@@ -201,6 +201,10 @@ function drawTower(ctx, t) {
   drawBuilding(ctx, t, box);
   if (t.def.gunner) drawGunner(ctx, t);
   drawBuildingFront(ctx, t, box);
+  // Above everything the building draws, including its front layer — the marks
+  // are information, and the same rule that puts health bars over the figures
+  // they belong to applies.
+  drawTierMarks(ctx, t, box);
 
   if (DEBUG_MUZZLE) {
     // Drawn from muzzlePoint itself, so the dot marks where arrows really
@@ -292,22 +296,76 @@ function drawRangeDisc(ctx, t) {
   ctx.stroke();
 }
 
-// THE TIER STARS ARE GONE. They sat over every tower's roof, one per tier, and
-// they were the only thing on the board that said which tier a building was.
+// THE TIER STARS ARE BACK, BUT ONLY WHERE THE ARTWORK CANNOT SAY IT.
 //
-// What replaced them is the info box: selecting a tower says "Barracks Tier II"
-// in words, which is what the stars were approximating. Two indicators for one
-// fact is one too many, and the stars were the worse of the pair — three small
-// shapes above a roof, competing with the flag and the muster rings, and the
-// first thing to be cut off by the top of the board on a high plot.
+// They used to sit over every tower's roof, one per tier, and they came out when
+// the info box learned to say "Barracks Tier II" in words: two indicators for
+// one fact is one too many, and the stars were the worse of the pair — three
+// small shapes competing with the flag and the muster rings, and the first thing
+// cut off by the top of the board on a high plot. That reasoning still holds
+// wherever a tier has a building of its own to be recognised by. Timber becomes
+// stone; you can see it.
 //
-// One consequence to know: tier is now visible only when a tower is SELECTED. A
-// glance across the board no longer tells you which of your towers are upgraded.
-// If that turns out to matter, the answer is something on the building rather
-// than above it — a banner colour, a different roof — not the stars back.
+// Artillery's three tiers are one drawing. Nothing about a Trebuchet on the
+// board distinguishes it from the Catapult it was, so the stars come back for
+// exactly that case and no other. The test is `tierMarks` below, and it reads
+// the DATA rather than a flag someone has to remember to clear: the moment tiers
+// 2 and 3 get frames of their own, their sprite keys differ and the stars stop
+// being drawn. Nothing has to be undone.
 //
-// tools/hud-clear.mjs measured its "ink top" as 11px above the box for the stars
-// and their radius; that allowance came out with them.
+// tools/hud-clear.mjs allows STAR_LIFT + STAR_R above the box for towers that
+// have them, which is how the stars stay out of the dashboard.
+export const STAR_R = 5;        // point radius
+export const STAR_LIFT = 9;     // centre, above the top of the building's box
+const STAR_GAP = 11;            // between stars in the row
+
+// How many stars this tower wants, or 0 for none.
+//
+// A tier gets marked when another tier in the SAME family is drawn with the same
+// artwork — meaning the building on the board cannot tell you which one it is.
+// Tier 1 of such a family is marked too: one star against two is the comparison
+// that carries the information, and an unmarked tier 1 beside a two-starred tier
+// 2 reads as "this one is broken" rather than "this one is tier 1".
+export function tierMarks(t) {
+  const key = t.def.sprite;
+  const shared = t.fam.tiers.filter(d => d.sprite === key).length > 1;
+  return shared ? t.def.tier : 0;
+}
+
+// A row of small stars, centred over the building.
+//
+// Drawn rather than lettered, and outlined rather than plain, because they land
+// on grass, on road and on the top of another building depending on the plot —
+// the same reason the HUD numbers carry a shadow.
+function drawTierMarks(ctx, t, box) {
+  const n = tierMarks(t);
+  if (!n) return;
+
+  const cy = box.top - STAR_LIFT;
+  const cx = box.left + box.w / 2 - (n - 1) * STAR_GAP / 2;
+
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(24,28,20,0.75)';
+  ctx.fillStyle = '#F2C64B';
+
+  for (let i = 0; i < n; i++) {
+    ctx.beginPath();
+    for (let p = 0; p < 10; p++) {
+      // Alternating outer and inner points, starting at the top.
+      const a = -Math.PI / 2 + p * Math.PI / 5;
+      const r = p % 2 ? STAR_R * 0.45 : STAR_R;
+      const x = cx + i * STAR_GAP + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
 const OUTLINE = '#22201C';
 const DECK_H = 7;      // thickness of the platform slab the gunner stands on
@@ -741,11 +799,45 @@ function musterRing(ctx, u) {
 // Arrows are the only sprite that rotates: a projectile has no upright, and it
 // has to point where it is flying. The art is drawn pointing left, so the
 // rotation is the heading plus a half turn.
+// The patch of ground a lobbed rock is currently over.
+//
+// THIS IS WHAT MAKES THE ARC READABLE, and it is not decoration. On a board
+// drawn in perspective, a rock 60px up over the road and a rock 60px further
+// along the road are the same pixels — so without a shadow the height reads as
+// distance and the player cannot tell where the thing is going to land. Every
+// figure in the game has one for exactly this reason; a rock in flight is the
+// only object that leaves the ground, so it is the only one that needs its
+// shadow drawn separately.
+//
+// It earns its keep twice over now that the crew aims AHEAD of its target: the
+// shadow is the only thing on screen that says where the splash is going, in
+// time for the player to watch it happen.
+//
+// Flattened to SQUASH like every other patch of ground, and it fades as the rock
+// rises — the higher the thrower, the softer the shadow, which is the cue that
+// reads as height without needing a size change big enough to be mistaken for
+// the splash radius.
+function rockShadow(ctx, s) {
+  const height = s.groundY - s.y;
+  const fade = Math.max(0, 0.34 - height / 400);
+
+  ctx.save();
+  ctx.fillStyle = `rgba(30,36,26,${fade.toFixed(3)})`;
+  ctx.beginPath();
+  ctx.ellipse(s.x, s.groundY, 5, 5 * SQUASH, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 // Every shot draws the ammunition it was fired with. Which is not the same
 // picture any more: an arrow and a catapult's rock are in the air at the same
 // time and the shot carries its own, so nothing here has to know which tower
 // threw it.
 function drawShots(ctx, state) {
+  // Shadows first, so every one of them is under every rock rather than under
+  // only the rocks drawn after it.
+  for (const s of state.shots) if (s.groundY !== undefined) rockShadow(ctx, s);
+
   for (const s of state.shots) {
     const ammo = s.ammo;
     const img = art[ammo.sprite];

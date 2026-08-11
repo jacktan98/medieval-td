@@ -1,7 +1,12 @@
 # Tower artwork
 
-**One folder per family.** Upload a family's art into its own folder; put a new
-family in a new one. The paths are written down once, in `src/assets.js`.
+**One folder per family, and it holds BUILDINGS only.** Upload a family's
+buildings into its own folder; put a new family in a new one. Everything that is
+not a building goes in the folder for what it IS, whichever family it belongs to
+— figures in `assets/units`, death poses in `assets/dead`, projectiles in
+`assets/projectiles`. So the catapult's crewman stands with the archers and the
+spearmen, and its rock flies beside the arrow. The paths are written down once,
+in `src/assets.js`.
 
 | file                                   | canvas | drawn as     | used by            |
 |----------------------------------------|--------|--------------|--------------------|
@@ -11,31 +16,31 @@ family in a new one. The paths are written down once, in `src/assets.js`.
 | `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
 | `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
-| `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | Catapult (1), at rest   |
-| `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | Catapult (1), loading   |
-| `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | Catapult (1), throwing  |
-| `artillery/Artillery_Man_T1.png`       | 512    | 19 x 24 px   | the info box only       |
-| `artillery/Artillery_Rock_T1.png`      | 512    | 12 x 10 px   | the rock it throws      |
+| `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | ALL THREE artillery tiers, at rest    |
+| `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | ALL THREE artillery tiers, loading    |
+| `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | ALL THREE artillery tiers, throwing   |
 
-The men who stand on the archery and barracks buildings are in `assets/units`
-and their death poses in `assets/dead` — those stayed put, because they are
-shared conventions across families rather than one family's business. **The
-artillery rock is the exception that proves the rule**: it is ammunition and
-`assets/projectiles` exists, but nothing else will ever throw it, so it lives
-with the machine. The arrow is still in `assets/projectiles` because all three
-archery tiers share it.
+Elsewhere, but artillery's: `units/Artillery_Man_T1.png` (the crewman, for the
+info box only — he is drawn into all three frames already) and
+`projectiles/Artillery_Rock_T1.png`.
 
-**Every tier has its own building.** Nothing is shared any more, in either of the
-two multi-tier families — the note that used to be here about tier 3 borrowing
-tier 2's drawing is gone because tier 3 has its own.
+**Archery and barracks have their own building per tier.** Artillery does not
+yet — one machine draws all three — which is why it is the only family in the
+game that wears TIER STARS. See below.
 
 ## The catapult is three drawings, and they share ONE trim
 
-It is the only building in the game that moves. The three frames are one second
-each and the machine cycles Default → Reload → Fire while it has something to
-shoot at, so a shot takes three seconds and the cooldown is derived from the
-animation rather than chosen next to it. At rest it sits on Default with the
-clock stopped.
+It is the only building in the game that moves. The machine cycles
+Default → Reload → Fire while it has something to shoot at, and the beats are
+**0.75s, 0.75s and 1.5s** — the Fire pose holds double, because a rock is a real
+lob with a real flight time and the arm has to still be up when it lands. Total
+three seconds, and the cooldown is derived from those beats rather than chosen
+next to them. At rest the machine sits on Default with the clock stopped.
+
+**Shortening the Fire beat breaks the projectile.** The longest throw in the game
+— tier 3's reach of 290 at 240px/s — is 1.21s, leaving about a quarter second in
+hand. `node tools/siege.mjs` checks that margin and checks that rocks really do
+land while the pose is up.
 
 `spriteTrim` for it is the **union** of the three frames' own boxes,
 `[267, 328, 466, 346]`, and it is the one trim in the project that
@@ -82,10 +87,28 @@ aiming at, which reads fine on map 1 because the road runs left to right past
 most plots. If it ever stops reading, the fix is a second set of drawings facing
 the other way, not a flip.
 
-**Still to draw for this family:** a menu icon. `glyph: 'catapult'` has no PNG,
-so the build ring falls back to a vector while the bow and the crossed swords
-beside it are real artwork, and it shows. An `Artillery Icon.png` in `assets/ui`
-sized like the other two is all it needs.
+## Tier stars, and how they take themselves away
+
+Artillery has three tiers — Catapult, Mangonel, Trebuchet — drawn with one
+machine. Nothing on the board would otherwise tell them apart, so the tier stars
+are back for this family: one, two or three small gold stars above the building.
+
+They came out of the game once, when the info box learned to say "Barracks Tier
+II" in words, and that reasoning still holds wherever a tier has a building of its
+own to be recognised by. Timber becomes stone; you can see it.
+
+**Nothing has to be remembered when the artwork lands.** `tierMarks` in
+`src/render.js` marks a tower whenever another tier in its family shares its
+sprite key — so give tiers 2 and 3 their own frames, point them at their own
+keys, and the stars stop being drawn on the same commit. `node
+tools/hud-clear.mjs` reads the same function, so the headroom they are allowed
+above the roof disappears with them.
+
+**Still to draw for this family:** tier 2 and tier 3 machines (three frames
+each), and a menu icon. `glyph: 'catapult'` has no PNG, so the build ring falls
+back to a vector while the bow and the crossed swords beside it are real artwork,
+and it shows. An `Artillery Icon.png` in `assets/ui` sized like the other two is
+all it needs.
 
 The barracks hall is the biggest building in the game, which is why the plot
 marker was redrawn bigger to hold it. Tier 3 is 128 x 127 against tier 2's

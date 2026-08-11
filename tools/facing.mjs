@@ -23,6 +23,7 @@
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { enemyTypes } from '../src/data/waves.js';
+import { arrow } from '../src/data/towers.js';
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
@@ -56,8 +57,12 @@ function kill(side, walkFace) {
     acd: 0, thrust: 0, leaked: false
   };
   state.enemies.push(e);
+  // `ammo` is not optional furniture: it carries the projectile's speed, its
+  // drawing, and the `kind` stamped on the victim as `killedBy`. A shot in the
+  // game always has one, so a fixture without one is testing something the game
+  // cannot produce.
   state.shots.push({
-    x: SPOT.x + 1, y: SPOT.y, angle: 0,
+    x: SPOT.x + 1, y: SPOT.y, angle: 0, ammo: arrow,
     fromX: SPOT.x + side * 200, target: e, damage: 99, speed: 999
   });
 

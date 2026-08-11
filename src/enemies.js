@@ -37,6 +37,27 @@ export function spawn(state, typeId) {
   });
 }
 
+// Where an enemy will be `t` seconds from now, if nothing interrupts it.
+//
+// EXACT, not extrapolated. An enemy's position is one number — how far it has
+// walked along a known polyline — so "where will it be" is that number plus its
+// speed times the time, looked up on the same road. Extrapolating from its
+// current heading instead would be right on the straights and wrong at exactly
+// the places that matter: on map 1's hairpin a 1.2s lead runs a good 40px off
+// the tarmac, which is where a lobbed rock would land.
+//
+// A HELD ENEMY IS NOT GOING ANYWHERE, so it leads to itself. Without this a
+// catapult throws over the head of every enemy a barracks is holding — which is
+// most of the ones worth hitting, since a blocked crowd is the crowd a splash is
+// for.
+//
+// Only artillery asks. Arrows steer, so they never need to know.
+export function leadPoint(e, t) {
+  const road = laneOf(level.routes[e.route], e.lane);
+  const ahead = e.foe ? 0 : e.def.speed * level.march * t;
+  return pointOn(road, e.s + ahead);
+}
+
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     // Decays wherever the enemy is, so a swing that lands just as its holder
@@ -94,12 +115,16 @@ export function updateEnemies(state, dt) {
       // Sorted here for the same reason the bounty is — this is the only place
       // that sees every death.
       //
-      // A ROCK USES THE ARROW'S CUE, and it is the only honest option available:
-      // the clip is called Arrow_hit_enemy and there is nothing else recorded for
-      // a ranged kill. It is the better of two wrongs — the alternative is a
-      // catapult crushing a man in silence while every arrow in the game speaks.
-      // A rock landing wants its own clip.
-      solo(e.killedBy === 'shot' ? CUE.arrowKill : CUE.meleeKill);
+      // THREE WAYS TO DIE, three clips. An arrow finding one man across the map
+      // and a rock coming down on several are different enough events to be
+      // worth telling apart with your eyes shut, so the rock stopped borrowing
+      // the arrow's line the moment it had one of its own.
+      //
+      // `killedBy` is the ammunition's `kind`, stamped on the victim by whatever
+      // landed the last blow, and absent on a melee kill.
+      solo(e.killedBy === 'arrow' ? CUE.arrowKill
+         : e.killedBy === 'rock' ? CUE.rockKill
+         : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and
       // nothing should ever reach it: an enemy cannot die without being hit.

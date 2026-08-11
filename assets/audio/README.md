@@ -2,11 +2,16 @@
 
 ```
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_hit_enemy,
+                      Rock_hit_ground, Rock_hit_enemy,
                       Thug_dies, Soldier_dies
 assets/audio/voice/   Archers_1..5, Barracks_1..5, Thug_1
+                      Artillery_1..5  <- WIRED, NOT YET RECORDED
 ```
 
-Eighteen clips, all wired. `node tools/audio.mjs` measures them; `node
+Twenty clips recorded and wired, plus five artillery voices the game is already
+asking for. Those five are listed in `AWAITED` in `src/audio.js`, so they are
+reported once as a quiet note rather than as five warnings — drop the files in
+`assets/audio/voice/` and they play with no code change at all. `node tools/audio.mjs` measures them; `node
 tools/sound.mjs` checks the rules below against the real `src/audio.js`.
 
 ## Two categories, and the categories are the design
@@ -91,19 +96,32 @@ and it now means "how long a lull has to be before the game forgets".
 
 | moment | clip |
 |---|---|
-| an archery tower is selected, built or upgraded | `Archers_1..5` |
-| a barracks is selected, built or upgraded | `Barracks_1..5` |
+| an archery tower is **built or upgraded** | `Archers_1..5` |
+| a barracks is **built or upgraded** | `Barracks_1..5` |
+| an artillery tower is **built or upgraded** | `Artillery_1..5` — *not recorded yet* |
 | a rally point is moved | `Barracks_1..5` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
 | an arrow kills an enemy | `Arrow_hit_enemy` |
+| a rock kills an enemy | `Rock_hit_enemy` |
 | a barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a barracks man swings** — Category B | `Attack_1/2/3` |
+| **a rock lands** — Category B | `Rock_hit_ground` |
 
-Everything above the line is Category A and shares the one channel; the two
+Everything above the line is Category A and shares the one channel; the three
 below run on the background bus and play every time.
+
+**SELECTING A TOWER IS SILENT — all three families.** Tapping a building is how
+you read its numbers and it is done constantly: every time you weigh an upgrade,
+every time you check what is already there. A line on each of those taps is the
+same clip several times a minute, which is exactly what the Category A share
+rules exist to prevent, and it was slipping past them by being a different event
+each time. Only BUILDING and UPGRADING speak, and each of those happens once.
+
+Selecting a FIGURE still speaks — a barracks man, a thug — because that is a
+deliberate look at one man rather than a glance at a building you own.
 
 Where a row lists more than one file, one is picked at random each time, so the
 same order twice running is not the same voice twice running. Category B gets a
@@ -118,24 +136,26 @@ you would rather a new tower stayed quiet; it is one line.
 **A giant thug answers with the common thug's line**, there being one enemy
 voice so far. Silence for the giant would read as a bug rather than as a gap.
 
-### The catapult is missing two clips
+### The catapult's noise is where it LANDS
 
-**Throwing a rock is SILENT**, and deliberately so rather than by oversight. It
-is the one action in the game that makes no noise. The obvious stand-in is
-`Arrow_shot`, and it is the wrong one: that sample is a bowstring, everybody can
-hear that it is a bowstring, and playing it over a swinging timber arm reads as a
-bug where silence reads as a gap. It is one flag — `sound: true` on `rock` in
-`src/data/towers.js` — the day a clip exists.
+**Throwing a rock is silent, and that is the design rather than a gap.** The
+release is not the moment anyone is looking at — the arm swings, and a creak
+nobody can place among ten machines is noise. The arrival is the event: it is
+where the damage happens and where the eye already is. So the two flags on the
+ammunition in `src/data/towers.js` are opposites — an arrow has `fireSound` and
+the rock has `landSound`.
 
-What it wants is **Category B**, like the bow: a catapult fires every three
-seconds and several of them fire at once, so a shared channel would silence most
-of them. A timber creak and a thump, kept quiet, is the shape of it.
+**`Rock_hit_ground` is Category B**, like the bow, and for the same reason:
+several catapults land rocks at once and one shared channel would silence all but
+one of them. It plays on **every** landing, hit or miss — a rock cratering an
+empty road is exactly the miss a player needs to hear, given the tower throws
+ahead of its target and can be walked out from under.
 
-**A rock kill borrows `Arrow_hit_enemy`**, which is the better of two wrongs — a
-catapult crushing a man in silence while every arrow in the game speaks is worse.
-A `Rock_hit_enemy` in **Category A** alongside it would sort that; it is one line
-in `CUE` and one branch in `src/enemies.js`, which already knows which kind of
-projectile landed the blow.
+**`Rock_hit_enemy` is Category A**, and it stopped the rock borrowing the arrow's
+line. An arrow finding one man across the map and a rock coming down on several
+are different enough events to be worth telling apart with your eyes shut.
+`killedBy` on the victim is the ammunition's own `kind`, so a third projectile
+would need no branch anywhere.
 
 ## What the one-second rule actually costs
 

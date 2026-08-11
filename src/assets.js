@@ -6,16 +6,14 @@
 // fallback, so the game still runs and still looks plausible. Check the console
 // before assuming a sprite change did not deploy.
 
-// ONE FOLDER PER TOWER FAMILY under assets/towers. The buildings used to sit in
-// one flat folder, which was fine at six files and stopped being fine the moment
-// a family arrived with five of its own — three animation frames, a crewman and
-// its ammunition. Anything belonging to a family lives in that family's folder,
-// including the rock, which is why the artillery rock is here rather than beside
-// the arrow in assets/projectiles.
+// ONE FOLDER PER TOWER FAMILY under assets/towers, and it holds BUILDINGS only.
+// The six buildings used to sit in one flat folder, which was fine until a
+// family arrived with three drawings of its own.
 //
-// The men who STAND on these are still in assets/units and the death poses in
-// assets/dead, because those are shared conventions across families rather than
-// one family's business.
+// Everything that is not a building goes in the folder for what it IS, whichever
+// family it belongs to: every figure in assets/units, every death pose in
+// assets/dead, every projectile in assets/projectiles. So the catapult's crewman
+// stands with the archers and the spearmen, and its rock flies beside the arrow.
 //
 // EXPORTED so the tools can resolve a sprite key back to a file. tools/trim.mjs
 // needs it to check that every frame of an animated building fits inside the one
@@ -38,17 +36,19 @@ export const paths = {
   artillery_t1:        'assets/towers/artillery/Artillery_Default_T1.png',
   artillery_t1_reload: 'assets/towers/artillery/Artillery_Reload_T1.png',
   artillery_t1_fire:   'assets/towers/artillery/Artillery_Fire_T1.png',
-  // The crewman, for the info box only — he is already drawn into all three
-  // frames above.
-  crew_t1:     'assets/towers/artillery/Artillery_Man_T1.png',
-  rock_t1:     'assets/towers/artillery/Artillery_Rock_T1.png',
   archer_t1:   'assets/units/Archers_Man_T1.png',
   archer_t2:   'assets/units/Archers_Man_T2.png',
   archer_t3:   'assets/units/Archers_Man_T3.png',
   soldier_t1:  'assets/units/Barracks_Man_T1.png',
   soldier_t2:  'assets/units/Barracks_Man_T2.png',
   soldier_t3:  'assets/units/Barracks_Man_T3.png',
+  // The catapult crewman, for the info box only — he is already drawn into all
+  // three machine frames, which is the whole reason the machine animates. He
+  // sits with the other men rather than with the machine because that is what he
+  // is: assets/units is every figure in the game.
+  crew_t1:     'assets/units/Artillery_Man_T1.png',
   arrow_t1:    'assets/projectiles/Archers_Arrows_T1.png',
+  rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   // T1a and T1b, not T1 and T2. The artist renamed the heavy from tier 2 to
   // "tier 1b" — it is a bigger militiaman, not the next rank up — so the tier 2
   // enemy slot is still empty and the file that fills it later will be T2.
