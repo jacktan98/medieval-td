@@ -31,11 +31,11 @@
 import { updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
-import { siege, arrow, rock, BEATS } from '../src/data/towers.js';
+import { siege, arrow, rock, BEATS, DEAD } from '../src/data/towers.js';
 import { enemyTypes } from '../src/data/waves.js';
-import { SQUASH } from '../src/ground.js';
-import { level } from '../src/level.js';
-import { at as pointOn, laneOf } from '../src/route.js';
+import { SQUASH, inRange } from '../src/ground.js';
+import { level, levels } from '../src/level.js';
+import { at as pointOn, laneOf, LANES } from '../src/route.js';
 
 const DT = 1 / 60;
 const def = siege[0];
@@ -51,6 +51,16 @@ const ok = (cond, label, detail = '') => {
 // the road rather than a coordinate — see tools/facing.mjs.
 const AT = 400;
 const SPOT = pointOn(laneOf(level.routes[0], 1), AT);
+
+// How far back from the road the fixture stands its machine. It has to clear the
+// DEAD ZONE — a catapult 60px above the road cannot shoot it, which is the whole
+// new mechanic and which silently broke every loop test the first time, because
+// a machine with nothing it may shoot at sits on Default forever.
+//
+// The reach is an ellipse, so vertical distance is measured against r * SQUASH:
+// 130 up clears the 130 dead zone (80.6 tall) and sits well inside tier 1's 300
+// reach (186 tall).
+const BACK = 130;
 
 function board() {
   return { towers: [], enemies: [], units: [], shots: [], hits: [], splats: [], corpses: [], gold: 0, lives: 20 };
@@ -76,7 +86,7 @@ console.log('The three-beat loop\n');
   // Nothing to shoot at: the machine must sit still on its resting pose rather
   // than mime a reload at nobody.
   const s = board();
-  s.towers.push(catapultAt(SPOT.x, SPOT.y - 60));
+  s.towers.push(catapultAt(SPOT.x, SPOT.y - BACK));
   for (let i = 0; i < 60 * 10; i++) updateTowers(s, DT);
   ok(s.towers[0].beat === 0, 'an idle catapult rests on the Default frame',
      `beat ${s.towers[0].beat} after 10s`);
@@ -85,7 +95,7 @@ console.log('The three-beat loop\n');
 
 {
   const s = board();
-  const t = catapultAt(SPOT.x, SPOT.y - 60);
+  const t = catapultAt(SPOT.x, SPOT.y - BACK);
   s.towers.push(t);
   s.enemies.push(enemyAt(SPOT.x, SPOT.y));
 
@@ -132,7 +142,7 @@ console.log('The three-beat loop\n');
 {
   // A target that walks out of reach must not leave the arm stuck in the air.
   const s = board();
-  const t = catapultAt(SPOT.x, SPOT.y - 60);
+  const t = catapultAt(SPOT.x, SPOT.y - BACK);
   s.towers.push(t);
   const e = enemyAt(SPOT.x, SPOT.y);
   s.enemies.push(e);
@@ -233,7 +243,7 @@ console.log('\nThe lob\n');
   // whether the rock finds him.
   const walk = (blocked, label) => {
     const s = board();
-    const t = catapultAt(SPOT.x, SPOT.y - 70);
+    const t = catapultAt(SPOT.x, SPOT.y - BACK);
     s.towers.push(t);
     const e = { ...enemyAt(SPOT.x - 150, SPOT.y), def: enemyTypes.light_inf, s: AT - 150 };
     e.hp = e.maxHp = 1e6;
@@ -281,6 +291,75 @@ console.log('\nThe lob\n');
      `landed (${shot.x.toFixed(2)}, ${shot.y.toFixed(2)}) for (${to.x}, ${to.y})`);
   ok(Math.abs(peak - 56) < 2, 'having risen to its full arc on the way',
      `peaked ${peak.toFixed(1)}px up, wanted 56`);
+}
+
+// --- the dead zone ------------------------------------------------------------
+//
+// A catapult cannot drop a rock on its own feet. That is the price of the
+// longest reach in the game and it is what makes a siege plot a different
+// decision from an archery plot — but it is also the one artillery rule that can
+// silently make a PLOT worthless, which no other tower stat can do.
+
+console.log('\nThe dead zone\n');
+
+{
+  const s = board();
+  const t = catapultAt(SPOT.x, SPOT.y - BACK);
+  s.towers.push(t);
+  // Right under the machine, well inside DEAD.
+  const close = enemyAt(t.x, t.y + 40);
+  s.enemies.push(close);
+  for (let i = 0; i < 60 * 8; i++) updateTowers(s, DT);
+  ok(s.shots.length === 0 && t.beat === 0,
+     `an enemy inside the ${DEAD}px dead zone is never shot at`,
+     `${s.shots.length} shots, beat ${t.beat}`);
+}
+
+{
+  const s = board();
+  const t = catapultAt(SPOT.x, SPOT.y - BACK);
+  s.towers.push(t);
+  // Just outside it sideways: DEAD is the reach ACROSS, so this is the honest
+  // edge rather than a diagonal.
+  s.enemies.push(enemyAt(t.x + DEAD * 1.05, t.y));
+  for (let i = 0; i < 60 * 4; i++) updateTowers(s, DT);
+  ok(s.shots.length > 0, 'and one just outside it is', `${s.shots.length} shots`);
+}
+
+// Per-plot coverage, sampled along every lane of every route on every map. The
+// question is not "is the dead zone big" — it is "does any plot lose so much
+// road that building a catapult there is a mistake the game never warns you
+// about". A plot that keeps under a tenth of the road is smothered.
+{
+  const SAMPLE = 4;
+  const FLOOR = 0.10;
+  let worst = null;
+
+  console.log('\nRoad each plot still covers, tier 1 (dead ground in brackets)\n');
+  for (const lv of levels) {
+    const cells = lv.plots.map((p, i) => {
+      let live = 0, dead = 0, total = 0;
+      for (const r of lv.routes) {
+        for (let li = 0; li < LANES.length; li++) {
+          const road = laneOf(r, li);
+          for (let d = 0; d <= road.total; d += SAMPLE) {
+            const q = pointOn(road, d);
+            total++;
+            if (!inRange(p.x, p.y, q.x, q.y, def.range)) continue;
+            if (inRange(p.x, p.y, q.x, q.y, DEAD)) dead++;
+            else live++;
+          }
+        }
+      }
+      const frac = live / total;
+      if (!worst || frac < worst.frac) worst = { frac, id: lv.id, i };
+      return `${i}:${(frac * 100).toFixed(0)}%${dead ? `(-${(dead / total * 100).toFixed(0)})` : ''}`;
+    });
+    console.log(`  ${lv.id}  ${cells.join('  ')}`);
+  }
+
+  ok(worst.frac >= FLOOR, `every plot keeps at least ${FLOOR * 100}% of the road`,
+     `worst is ${worst.id} plot ${worst.i} at ${(worst.frac * 100).toFixed(0)}%`);
 }
 
 console.log(bad ? `\n${bad} check(s) failed.` : '\nThe catapult behaves.');

@@ -38,9 +38,11 @@ three seconds, and the cooldown is derived from those beats rather than chosen
 next to them. At rest the machine sits on Default with the clock stopped.
 
 **Shortening the Fire beat breaks the projectile.** The longest throw in the game
-— tier 3's reach of 290 at 240px/s — is 1.21s, leaving about a quarter second in
+— tier 3's reach of 360 at 300px/s — is 1.20s, leaving about a quarter second in
 hand. `node tools/siege.mjs` checks that margin and checks that rocks really do
-land while the pose is up.
+land while the pose is up. It has already earned its keep: the range increase to
+360 put the flight at exactly 1.50s against a 1.50s pose, and the rock's speed
+went from 240 to 300 to buy the margin back.
 
 `spriteTrim` for it is the **union** of the three frames' own boxes,
 `[267, 328, 466, 346]`, and it is the one trim in the project that
@@ -87,6 +89,31 @@ aiming at, which reads fine on map 1 because the road runs left to right past
 most plots. If it ever stops reading, the fix is a second set of drawings facing
 the other way, not a flip.
 
+## Artillery reaches furthest and has a hole in the middle
+
+`minRange` is a dead zone: anything within **130px** of the machine is too close
+to drop a rock on and walks past untouched. It is the price of the longest reach
+in the game (300/330/360 against archery's 190/210/230) and it is what stops
+artillery being archery-but-better — the two families want different PLOTS now,
+not the same plot at a different price. A bow wants to be beside the road; a
+machine wants to be back from it.
+
+It is the same 130 at every tier on purpose. A bigger engine really would have a
+longer minimum, but modelling that would make an upgrade take something away —
+the annulus would shift outward and a Trebuchet would stop covering road its
+Catapult did.
+
+130 is measured rather than picked, and `node tools/siege.mjs` prints the table:
+sampled along every lane of every route on both maps, it costs each plot between
+0 and 15% of the road it could otherwise reach, and no plot falls below 16%. The
+tool fails if any plot drops under a tenth, which is the failure mode that
+matters — a dead zone big enough to make a plot a trap the game never warns you
+about.
+
+The reach draws as an **annulus**: pale wash between the two ellipses, a solid
+rim outside and a dashed amber rim inside. The wash means "this tower shoots
+here", so washing over the dead ground would promise reach the tower has not got.
+
 ## Tier stars, and how they take themselves away
 
 Artillery has three tiers — Catapult, Mangonel, Trebuchet — drawn with one
@@ -107,7 +134,7 @@ above the roof disappears with them.
 **Still to draw for this family:** tier 2 and tier 3 machines (three frames
 each), and a menu icon. `glyph: 'catapult'` has no PNG, so the build ring falls
 back to a vector while the bow and the crossed swords beside it are real artwork,
-and it shows. An `Artillery Icon.png` in `assets/ui` sized like the other two is
+and it shows. An `Artillery_Icon.png` in `assets/ui` sized like the other two is
 all it needs.
 
 The barracks hall is the biggest building in the game, which is why the plot
@@ -130,7 +157,7 @@ size they were.
 The thing that proves 1024-at-`SCALE` is the right reading, rather than the
 towers needing half of it, is **the plot marker**. It is on 1024 too, and its
 true game size is independently known — the same marker is painted into
-`Map.svg`, which is authored at the board's own scale, so there is no
+`Map_1.svg`, which is authored at the board's own scale, so there is no
 ambiguity about how big it is meant to be. At the shared `SCALE` the 1024 file
 lands within 2.5% of the painted one. `node tools/split-map.mjs` prints that
 comparison every run; it is the check that the two canvases still agree.

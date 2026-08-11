@@ -169,17 +169,17 @@ const MAX_REPEATS = 2;
 // than never.
 const MEMORY_S = 20;
 
-// Every clip, by the name the game calls it. No %20 anywhere here, unlike
-// assets.js — the one file that had a space in its name has been renamed, so
-// every path is a plain URL. Keep it that way.
+// Every clip, by the name the game calls it. Every path is a plain URL — the
+// project has no filenames with spaces left in it. Keep it that way; if one
+// arrives, encode the space as %20 here rather than renaming the artist's file.
 const paths = {
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
-  arrow_hit_enemy: 'assets/audio/sfx/Arrow_hit_enemy.mp3',
+  arrow_kill_enemy: 'assets/audio/sfx/Arrow_kill_enemy.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
   // the air and announces itself by LANDING, which is also the moment the player
   // is looking at. See the artillery section in assets/audio/README.md.
   rock_hit_ground: 'assets/audio/sfx/Rock_hit_ground.mp3',
-  rock_hit_enemy:  'assets/audio/sfx/Rock_hit_enemy.mp3',
+  rock_kill_enemy:  'assets/audio/sfx/Rock_kill_enemy.mp3',
   thug_dies:       'assets/audio/sfx/Thug_dies.mp3',
   soldier_dies:    'assets/audio/sfx/Soldier_dies.mp3',
   attack_1:        'assets/audio/sfx/Attack_1.mp3',
@@ -223,7 +223,35 @@ const AWAITED = new Set();
 // a common thug, a line that should sound distant. Reaching for it because
 // something "sounds wrong" is usually a sign the analysis is being fought
 // rather than helped.
-const GAIN = {};
+// Both entries are the catapult's, both were asked for by ear, and the
+// measurement says they are the same complaint from opposite directions.
+//
+// THE LEVELLER MATCHES THE LOUDEST 0.3 SECONDS OF A CLIP, not its average. That
+// is the right rule for a bark or a twang, where the loud moment IS the sound.
+// It under-serves anything with a long tail: a clip whose peak window matches
+// everything else can still spend two more seconds well below it.
+//
+//   Rock_hit_ground   raw 0.324, auto x0.28, audible 1.34s
+//   Rock_kill_enemy   raw 0.820, auto x0.11, audible 2.89s
+//
+// `rock_hit_ground` reads SOFT because it is a long rumble on the BACKGROUND
+// bus, which already sits 7dB under Category A and drops another 9dB whenever a
+// line is speaking — so its sustained part is being asked to carry through two
+// separate cuts. +4dB.
+//
+// `rock_kill_enemy` reads LOUD for the opposite reason: it is the loudest raw
+// file in the set by a factor of 2.5 and it is DENSE — 2.89 seconds at close to
+// its peak, on the full-level channel, where the arrow's kill is 0.3s. The
+// leveller had already cut it to x0.11, a whisker off the x0.1 floor, which is
+// the tool telling us the recording is hot. -3dB on top.
+//
+// One thing no gain here can fix: `Rock_kill_enemy` peaks at 1.011, meaning the
+// summed channels clip. Only a re-record helps that, and it is the same note
+// Thug_1 and Attack_1 already have against them.
+const GAIN = {
+  rock_hit_ground: 1.6,
+  rock_kill_enemy: 0.7
+};
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
 // file: `solo(CUE.barracks)` picks one of the three at random, so the same
@@ -235,12 +263,12 @@ export const CUE = {
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   thug:         ['thug_1'],
-  arrowKill:    ['arrow_hit_enemy'],
+  arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
   // borrow the arrow's, which was the better of two wrongs while nothing else
   // existed. The two are different enough to be worth telling apart by ear: an
   // arrow finding one man across the map, and a rock landing on several.
-  rockKill:     ['rock_hit_enemy'],
+  rockKill:     ['rock_kill_enemy'],
   meleeKill:    ['thug_dies'],
   soldierDeath: ['soldier_dies']
 };

@@ -335,7 +335,7 @@ check('no clip exceeds 2 of any 5 heard', overrun, 0);
 
 const share = {};
 for (const k of log) share[k] = (share[k] || 0) + 1;
-const topShare = (share['Arrow_hit_enemy'] || 0) / log.length;
+const topShare = (share['Arrow_kill_enemy'] || 0) / log.length;
 check('the most frequent is capped at 2/5 of the mix', topShare <= 0.4, true);
 console.log(`        (it took ${(topShare * 100).toFixed(0)}% of ${log.length} plays: ` +
   Object.entries(share).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ') + ')');

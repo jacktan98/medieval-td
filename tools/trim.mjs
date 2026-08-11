@@ -135,20 +135,20 @@ function pngsUnder(dir) {
 // filename is matched back through it — that way a renamed upload shows up here
 // as "not referenced" instead of being silently skipped.
 const UI_FILES = {
-  'Speed Box.png': 'plate_speed',
-  'Next Wave Box.png': 'plate_wave',
-  'Description Box.png': 'plate_info',
-  'Damage Icon.png': 'stat_damage',
-  'Health Icon.png': 'stat_health',
-  'Gold Icon.png': 'hud_gold',
-  'Life Icon.png': 'hud_life',
-  'Button Plate Icon.png': 'btn_plate',
-  'Cancel Button Icon.png': 'btn_cancel',
-  'Archers Icon.png': 'glyph_bow',
-  'Barracks Icon.png': 'glyph_swords',
-  'Upgrade Icon.png': 'glyph_up',
-  'Sell Icon.png': 'glyph_coin',
-  'Rally Point Icon.png': 'glyph_flag'
+  'Speed_Box.png': 'plate_speed',
+  'Next_Wave_Box.png': 'plate_wave',
+  'Description_Box.png': 'plate_info',
+  'Damage_Icon.png': 'stat_damage',
+  'Health_Icon.png': 'stat_health',
+  'Gold_Icon.png': 'hud_gold',
+  'Life_Icon.png': 'hud_life',
+  'Button_Plate_Icon.png': 'btn_plate',
+  'Cancel_Button_Icon.png': 'btn_cancel',
+  'Archers_Icon.png': 'glyph_bow',
+  'Barracks_Icon.png': 'glyph_swords',
+  'Upgrade_Icon.png': 'glyph_up',
+  'Sell_Icon.png': 'glyph_coin',
+  'Rally_Point_Icon.png': 'glyph_flag'
 };
 const uiKey = f => UI_FILES[f];
 let soft = 0;

@@ -2,20 +2,20 @@
 
 Hand-drawn files live here, all authored, never generated:
 
-- **`Map.svg`** — the first board at 1920 x 1080: sky strip, grass, road,
+- **`Map_1.svg`** — the first board at 1920 x 1080: sky strip, grass, road,
   scenery, and a marker on each of the nine build plots. It was `Map_1.svg`
   until an early upload; the tool follows the artist's filename rather than the
   other way round.
 - **`Map_2.svg`** — the second stage, the same size and the same conventions.
   Two roads come in from the west and merge before the keep, and it has nine
   markers of its own.
-- **`Plot Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
+- **`Plot_Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
   of the last redraw. The space in the name is fine; `src/assets.js` asks for it
-  as `Plot%20Marker.svg`, because a raw space is illegal in a URL.
+  as `Plot_Marker.svg`, because a raw space is illegal in a URL.
 
   This file is quietly the most useful one in the project, because it is the only
   asset whose correct game size is known independently: the same marker is
-  painted into `Map.svg`, which is authored at the board's own scale. When the
+  painted into `Map_1.svg`, which is authored at the board's own scale. When the
   towers moved to a 1024 canvas and it was not obvious whether they should be
   read at the shared `SCALE` or half of it, this is what settled it — at the
   shared `SCALE` the standalone marker lands within 2.5% of the painted one, so
@@ -26,14 +26,14 @@ Hand-drawn files live here, all authored, never generated:
 
 One derived file per board is generated from them and committed:
 
-- **`Map_base.svg`**, **`Map_2_base.svg`** — the board with its markers cut out.
+- **`Map_1_base.svg`**, **`Map_2_base.svg`** — the board with its markers cut out.
 
 `node tools/split-map.mjs assets/map/Map_2.svg` writes one, and never touches the
 hand-drawn files. With no argument it does map 1. The tool finds which level a
 file belongs to by matching the `src` recorded in `src/data/level*.js`, so a new
 map needs its level file to exist first, even with an empty plot list.
 
-> **THE GAME DRAWS `Map_base.svg`, NOT `Map.svg`** — and `Map_2_base.svg`, not
+> **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`** — and `Map_2_base.svg`, not
 > `Map_2.svg`. Uploading a redrawn
 > board changes nothing on screen until that command is run. This has caught us
 > out on four of the last five map uploads — three times because the upload
@@ -58,7 +58,7 @@ The game draws in a fixed 960 x 540 space, and the canvas backing store is sized
 to real device pixels up to 3x (`MAX_SCALE` in `src/main.js`). So:
 
 - **Map: 2880 x 1620** preferred, 1920 x 1080 acceptable. An SVG is better than
-  either — it has no fixed resolution. `Map.svg` is 1920 x 1080 with a
+  either — it has no fixed resolution. `Map_1.svg` is 1920 x 1080 with a
   matching `viewBox`, which is exactly right.
 - **Sprites: 512 x 512.** This is the one that bit us, and it is settled now.
   At 200 x 200 the tallest sprite had 185 source pixels and needed 291 on a 3x
@@ -97,7 +97,7 @@ positions in road order, ready to paste into `src/data/level01.js`.
 ## Two things that will break if the artwork ignores them
 
 **The top of the board is the HUD, and there is nothing behind it any more.**
-`Map.svg` used to paint a sky-blue strip across the top — 126 map units, 63 game
+`Map_1.svg` used to paint a sky-blue strip across the top — 126 map units, 63 game
 px — with the gold/lives/wave text drawn onto it. That strip has been removed and
 the board is grass to the top edge, so the readouts and the two controls now sit
 directly on grass and road.

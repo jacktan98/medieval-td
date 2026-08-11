@@ -49,10 +49,12 @@ ink the eye weights is not where the bounding box says the middle is, and box-
 centring reads as the flag sitting slightly left. Only asymmetric art needs this;
 nothing else here has it.
 
-Trims and drawn boxes are in `src/data/ui.js`; paths in `src/assets.js`. The
-filenames have spaces, so `assets.js` encodes them as `%20` for the same reason
-`Plot%20Marker.svg` does — a raw space is not legal in a URL, and the artist's
-names are left alone.
+Trims and drawn boxes are in `src/data/ui.js`; paths in `src/assets.js`. These
+filenames used to have spaces and `assets.js` encoded them as `%20`, because a
+raw space is not legal in a URL. They are underscored now and there is no `%20`
+left anywhere in the project. The rule that produced the encoding still stands
+for the next upload: bend the code to the artist's filenames rather than renaming
+their files.
 
 ## The one rule that makes this folder different
 
@@ -83,7 +85,7 @@ Transparent background, no baked-in shadow that assumes a particular backdrop.
 
 ### Top dashboard
 
-The header strip itself is painted in `Map.svg` (126 map units, 63 game px) and
+The header strip itself is painted in `Map_1.svg` (126 map units, 63 game px) and
 the code deliberately paints no bar of its own. See the trap below before drawing
 a panel.
 
@@ -189,7 +191,7 @@ and buys nothing.
 names are auto-shrunk to fit their button. The art is plates and pictures only.
 
 **Nothing owns the dashboard background at the moment.** The blue header strip
-was removed from `Map.svg` and no panel replaced it, so the readouts and the two
+was removed from `Map_1.svg` and no panel replaced it, so the readouts and the two
 controls now sit straight on grass and road. They survive it — the text carries a
 drop shadow for exactly this reason, and `node tools/hud-clear.mjs` checks no
 tower can push a building up behind a number — but "survives" is not "designed".

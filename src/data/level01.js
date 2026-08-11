@@ -2,8 +2,8 @@
 // space (960x540), and the first and last points sit off-canvas so enemies
 // enter and leave unseen.
 //
-// TRACED FROM THE ARTWORK by `node tools/trace-road.mjs assets/map/Map.svg`.
-// The road in assets/map/Map.svg is the level; this is its centreline. Redraw
+// TRACED FROM THE ARTWORK by `node tools/trace-road.mjs assets/map/Map_1.svg`.
+// The road in assets/map/Map_1.svg is the level; this is its centreline. Redraw
 // and re-run rather than nudging numbers here.
 //
 // IT USED TO BE HAND-TUNED, and that is what had to go. The old polyline was
@@ -16,7 +16,7 @@
 // line that is actually down the middle — this one has 32px of road either side
 // at its narrowest, which fits every lane with room to spare.
 //
-// `node tools/trace-road.mjs assets/map/Map.svg` checks that, at the end of its
+// `node tools/trace-road.mjs assets/map/Map_1.svg` checks that, at the end of its
 // output, against the routes the game actually loads.
 const route1 = [
   { x: -39, y: 198 },
@@ -125,7 +125,7 @@ export const level01 = {
   id: 'm1',
   name: 'The Bend',
   art: 'map01',
-  src: 'assets/map/Map.svg',
+  src: 'assets/map/Map_1.svg',
   routes: [route1],
   plots: plots1,
   march: 1,

@@ -181,10 +181,21 @@ export const arrow = {
 // 0.28 puts the top of the arc at about 56px on a 200px throw — high enough to
 // read as thrown rather than slid, low enough to stay under the dashboard.
 //
-// `speed` is the HORIZONTAL rate, and it sets the flight time: 240 crosses the
-// tier 3 reach of 290 in 1.21s, which has to stay inside the 1.5s the Fire pose
+// `speed` is the HORIZONTAL rate, and it sets the flight time: 300 crosses the
+// tier 3 reach of 360 in 1.20s, which has to stay inside the 1.5s the Fire pose
 // holds for. A rock still in the air when the arm has already come back down
 // looks like two different machines.
+//
+// IT WENT UP WITH THE REACH, 240 -> 300, and it had to: at 240 the longest throw
+// took exactly 1.50s against a 1.50s pose, which tools/siege.mjs failed on the
+// first run after the range change. Still comfortably slower than an arrow's
+// 360, which is the rule that matters — you watch a rock travel.
+//
+// `arc` came DOWN as the reach went up, 0.28 -> 0.22, for a different reason:
+// the peak is a fraction of the throw, so a 360px lob at 0.28 would rise 100px
+// and a rock thrown upward from a high plot would disappear behind the
+// dashboard. At 0.22 the longest throw peaks at 79px and the shortest useful one
+// (130, the edge of the dead zone) still rises 29px, which reads.
 export const rock = {
   kind: 'rock',
   sprite: 'rock_t1',
@@ -192,8 +203,8 @@ export const rock = {
   faces: 0,
   // Centred, because it is a lump with no nose to put on the target.
   grip: 0.5,
-  speed: 240,
-  arc: 0.28,
+  speed: 300,
+  arc: 0.22,
   // SILENT IN THE AIR, and loud when it arrives. Nothing plays when the arm
   // comes over: the release is not the moment the player is looking at, and a
   // creak nobody can place among ten towers is noise. The landing is the event —
@@ -645,6 +656,10 @@ export const barracks = [
 // the same clock, so the machine can never fire on a frame it is not drawn
 // firing.
 export const BEATS = [0.75, 0.75, 1.5];
+
+// The dead zone every artillery tier carries. Exported because tools/siege.mjs
+// measures the road each plot keeps outside it.
+export const DEAD = 130;
 const CYCLE = BEATS.reduce((a, b) => a + b, 0);
 
 const catapult = {
@@ -710,21 +725,45 @@ const catapult = {
 // SET `splash: 0` TO GET A PURE SINGLE-TARGET CATAPULT. Nothing else has to
 // change; projectiles.js falls back to hitting only what it hit.
 //
-// `range` IS THE LONGEST IN THE GAME AT EVERY TIER — 240/265/290 against
-// archery's 190/210/230 — which is the point of the family and was asked for
-// directly. A catapult sits at the back and reaches. Remember the reach is an
-// ellipse: 240 across is only 149 up and down.
+// `range` IS THE LONGEST IN THE GAME AT EVERY TIER by a distance — 300/330/360
+// against archery's 190/210/230 — which is the point of the family. A catapult
+// sits at the back and reaches. Remember the reach is an ellipse: 300 across is
+// only 186 up and down.
 //
-// AN UPGRADE HERE BUYS BLAST, NOT RATE. The cycle stays at three seconds through
-// all three tiers, because it is an animation and the artist has drawn one. So
-// what a tier buys is a bigger rock in a wider patch over more ground — damage
-// 30 -> 44 -> 60 and splash 55 -> 64 -> 74 — which is also what a bigger engine
+// AND IT HAS A HOLE IN IT. `minRange` is a dead zone: anything within 130 of the
+// machine is too close to drop a rock on and walks past untouched. That is the
+// price of the reach, and it is what stops artillery being archery-but-better —
+// the two families now want different PLOTS rather than the same plot at
+// different prices. A bow wants to be beside the road; a machine wants to be
+// back from it, with the road it defends out in the annulus.
+//
+// 130 is measured rather than picked. Sampled along every lane of every route on
+// both maps, it costs each plot between 0 and 15% of the road it could otherwise
+// reach, and takes no plot below what it covered before the range went up. At 90
+// it costs 0-3%, which is not a mechanic, it is a rounding error; at 130 the
+// dead ground beside a machine is something you can see and have to plan around.
+// tools/siege.mjs prints the per-plot table and fails if any plot is smothered.
+//
+// THE SAME 130 AT EVERY TIER, deliberately. A bigger engine really would have a
+// longer minimum, and modelling that would make an upgrade take something away —
+// the annulus would shift outward and a Trebuchet would stop covering road its
+// Catapult did. An upgrade should cost gold and nothing else.
+//
+// AN UPGRADE BUYS BLAST, NOT RATE. The cycle stays at three seconds through all
+// three tiers, because it is an animation and the artist has drawn one. So what
+// a tier buys is a bigger rock in a wider patch over more ground — damage
+// 26 -> 38 -> 52 and splash 75 -> 86 -> 98 — which is also what a bigger engine
 // looks like. Compare archery, where the upgrade is mostly a faster draw.
 //
-// DAMAGE CAME DOWN FROM 40 TO PAY FOR THE RANGE. 40 at reach 210 and 30 at reach
-// 240 measure out the same on both maps, which is the trade being made honestly:
-// +14% radius is +30% ground covered, and a tower that covers more road gets
-// more shots off per wave whatever each one does.
+// DAMAGE HAS COME DOWN TWICE NOW, 40 -> 30 -> 26, and both cuts paid for reach.
+// It is the same trade each time and it is worth stating plainly: ground covered
+// is worth more than damage per rock, because a tower that watches more road
+// gets more rocks off per wave whatever each one does.
+//
+// The sum, honestly, WITH the hole subtracted: the original reach was a disc of
+// 210, about 85,900 square px at SQUASH. The annulus from 130 to 300 is 142,400
+// — 1.66x the ground, not the 2.04x the outer radius alone would suggest. The
+// splash went up 36% on top of that.
 //
 // `cost` 90/115/170 against archery's 70/90/140. The opening is the tightest
 // part of the curve (220 gold, no bounties yet) and at 70 a catapult would
@@ -735,32 +774,24 @@ const catapult = {
 // tiers scaled together, map 1, five seeds a cell:
 //
 //   - `splash: 0` IS A CLIFF, and it is the measurement the family rests on.
-//     A three-siege mix loses 0/5 with no splash at 0.6x, 0.8x, 1.0x AND 1.3x
-//     damage, and only starts winning at 1.8x — which is 54/79/108 a shot.
-//     Area damage is the family, not the flavour.
-//   - x1.0 is the knee. At x0.8 the three-siege mix falls to a median of 3 lives
-//     and at x1.3 it climbs to 14, well outside the 4-to-10 the level is meant
-//     to be won by. Both are wrong in their own direction and x1.0 is between
-//     them, not at the edge of a plateau — the reach increase used the slack the
-//     old numbers had.
-//   - THE LOSS RULES CAN BE BROKEN NOW, which they could not at the old reach of
-//     210. At x1.8 damage, five catapults behind one blocker win 4/5, and with
-//     x1.3 splash on top, artillery clears the level with no blockers at all.
-//     That is 80% above where these numbers sit and nothing is near it, but the
-//     headroom is finite where it used to be unbounded: a longer reach is worth
-//     more than it looks, and this is where that shows. RE-RUN `node
-//     tools/sim.mjs` AFTER ANY CHANGE HERE rather than trusting a band.
+//     A three-siege mix loses with no splash at every damage tried short of
+//     absurd. Area damage is the family, not the flavour.
+//   - THE LOSS RULES CAN BE BROKEN by big enough numbers — five catapults behind
+//     one blocker start winning somewhere above x1.5 — and that headroom shrank
+//     when the reach went up. It was unbounded at the original 210. Nothing is
+//     near it, but RE-RUN `node tools/sim.mjs` AFTER ANY CHANGE HERE rather than
+//     trusting a band.
 //
 // Where it lands, five seeds a row: a catapult is a real alternative to the
 // archery tower it competes with for a plot on both maps, and a strict upgrade
 // on neither. `node tools/sim.mjs` prints the rows.
 export const siege = [
   { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',
-    cost: 90,  damage: 30, splash: 55, range: 240, cooldown: CYCLE, colour: '#7A6A4A' },
+    cost: 90,  damage: 26, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
   { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',
-    cost: 115, damage: 44, splash: 64, range: 265, cooldown: CYCLE, colour: '#6E6042' },
+    cost: 115, damage: 38, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
   { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III',
-    cost: 170, damage: 60, splash: 74, range: 290, cooldown: CYCLE, colour: '#8A7A56' }
+    cost: 170, damage: 52, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. A family with no

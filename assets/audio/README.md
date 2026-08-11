@@ -1,8 +1,8 @@
 # Audio
 
 ```
-assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_hit_enemy,
-                      Rock_hit_ground, Rock_hit_enemy,
+assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
+                      Rock_hit_ground, Rock_kill_enemy,
                       Thug_dies, Soldier_dies
 assets/audio/voice/   Archers_1..5, Barracks_1..5, Artillery_1..5, Thug_1
 ```
@@ -107,8 +107,8 @@ and it now means "how long a lull has to be before the game forgets".
 | a rally point is moved | `Barracks_1..5` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
-| an arrow kills an enemy | `Arrow_hit_enemy` |
-| a rock kills an enemy | `Rock_hit_enemy` |
+| an arrow kills an enemy | `Arrow_kill_enemy` |
+| a rock kills an enemy | `Rock_kill_enemy` |
 | a barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
 | **an archer looses** — Category B | `Arrow_shot` |
@@ -152,7 +152,7 @@ one of them. It plays on **every** landing, hit or miss — a rock cratering an
 empty road is exactly the miss a player needs to hear, given the tower throws
 ahead of its target and can be walked out from under.
 
-**`Rock_hit_enemy` is Category A**, and it stopped the rock borrowing the arrow's
+**`Rock_kill_enemy` is Category A**, and it stopped the rock borrowing the arrow's
 line. An arrow finding one man across the map and a rock coming down on several
 are different enough events to be worth telling apart with your eyes shut.
 `killedBy` on the victim is the ammunition's own `kind`, so a third projectile
@@ -172,9 +172,9 @@ here, most of a second on some clips:
 | `Thug_dies` | 1.34s | 1.04s | 2.04s |
 | `Archers_1` | 1.44s | 0.77s | 1.77s |
 | `Soldier_dies` | 0.70s | 0.48s | 1.48s |
-| `Arrow_hit_enemy` | 1.05s | 0.30s | 1.30s |
+| `Arrow_kill_enemy` | 1.05s | 0.30s | 1.30s |
 
-`Arrow_hit_enemy` is the striking one: a 1.05s file with 0.30s of sound in it,
+`Arrow_kill_enemy` is the striking one: a 1.05s file with 0.30s of sound in it,
 so it used to hold the channel for two seconds to say something that took a
 third of one.
 
@@ -256,7 +256,7 @@ downloads faster — but nothing depends on it any more.
 bytes to store the same sound twice, and nothing here is positioned in the
 stereo field. Keep effects short.
 
-Every filename is now a plain URL — no `%20` anywhere, unlike `assets/ui`. Keep
+Every filename is now a plain URL — no `%20` anywhere in the project. Keep
 it that way and the paths in `src/audio.js` stay readable.
 
 `node tools/audio.mjs` reports length, size, bitrate and channels for every

@@ -79,46 +79,44 @@ export const paths = {
   // by the shared SCALE, because a button is as big as a thumb needs and an icon
   // is as big as the number beside it. Trims and drawn boxes are in data/ui.js.
   //
-  // The filenames have spaces in them, so they are encoded here for the same
-  // reason 'Plot%20Marker.svg' is: a raw space is not legal in a URL. The names
-  // are the artist's and the code bends to them.
-  hud_gold:        'assets/ui/Gold%20Icon.png',
-  hud_life:        'assets/ui/Life%20Icon.png',
-  btn_plate:       'assets/ui/Button%20Plate%20Icon.png',
-  btn_cancel:      'assets/ui/Cancel%20Button%20Icon.png',
-  glyph_bow:       'assets/ui/Archers%20Icon.png',
-  glyph_swords:    'assets/ui/Barracks%20Icon.png',
-  glyph_up:        'assets/ui/Upgrade%20Icon.png',
-  glyph_coin:      'assets/ui/Sell%20Icon.png',
-  glyph_flag:      'assets/ui/Rally%20Point%20Icon.png',
+  // NO ESCAPING ANY MORE. Every one of these used to be written '%20' because
+  // the files had spaces in their names and a raw space is not legal in a URL;
+  // the artist renamed them all to underscores and the encoding came out with
+  // the spaces. If a file with a space ever arrives again, encode it here rather
+  // than renaming it — the code bends to the artist's filenames.
+  hud_gold:        'assets/ui/Gold_Icon.png',
+  hud_life:        'assets/ui/Life_Icon.png',
+  btn_plate:       'assets/ui/Button_Plate_Icon.png',
+  btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
+  glyph_bow:       'assets/ui/Archers_Icon.png',
+  glyph_swords:    'assets/ui/Barracks_Icon.png',
+  glyph_up:        'assets/ui/Upgrade_Icon.png',
+  glyph_coin:      'assets/ui/Sell_Icon.png',
+  glyph_flag:      'assets/ui/Rally_Point_Icon.png',
   // The three plates, and the two stat icons that replaced the words "Health:"
   // and "Damage:" in the info box.
-  plate_speed:     'assets/ui/Speed%20Box.png',
-  plate_wave:      'assets/ui/Next%20Wave%20Box.png',
-  plate_info:      'assets/ui/Description%20Box.png',
-  stat_damage:     'assets/ui/Damage%20Icon.png',
+  plate_speed:     'assets/ui/Speed_Box.png',
+  plate_wave:      'assets/ui/Next_Wave_Box.png',
+  plate_info:      'assets/ui/Description_Box.png',
+  stat_damage:     'assets/ui/Damage_Icon.png',
   // A heart of its own for the info box. It is NOT hud_life: the dashboard's
   // heart is the keep's lives and this one is a figure's health, and the artist
   // drew them as two files, so they are two keys.
-  stat_health:     'assets/ui/Health%20Icon.png',
-  // The board and the plot marker, split out of the artist's Map.svg by
+  stat_health:     'assets/ui/Health_Icon.png',
+  // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is
   // built on that plot. Both are SVG, so unlike the sprites they stay sharp at
   // any device pixel ratio.
   //
-  // Map_base.svg is DERIVED and committed — there is no build step, so the
+  // Map_1_base.svg is DERIVED and committed — there is no build step, so the
   // artist's upload alone is not enough. Re-run tools/split-map.mjs after every
   // map redraw or the board keeps the old road and the old markers.
-  map01:       'assets/map/Map_base.svg',
+  map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.
   map02:       'assets/map/Map_2_base.svg',
-  // Space encoded as %20. The file really is called "Plot Marker.svg" and the
-  // name is left alone on purpose — it is what comes out of the artist's export,
-  // and renaming it here would only mean renaming it again after every upload.
-  // A raw space in a URL is what breaks, not a space in a filename.
-  plot_marker: 'assets/map/Plot%20Marker.svg'
+  plot_marker: 'assets/map/Plot_Marker.svg'
 };
 
 // Art the game is wired for but does not have yet. A miss here is expected, so

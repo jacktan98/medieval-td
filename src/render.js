@@ -281,9 +281,22 @@ function drawRangeDisc(ctx, t) {
     ctx.restore();
   }
 
+  // ARTILLERY HAS A HOLE IN IT. A catapult cannot drop a rock on its own feet,
+  // so the ground inside `minRange` is dead and anything walking through it is
+  // safe. The fill is an ANNULUS rather than a disc, which is the only honest
+  // picture: the pale wash means "this tower shoots here", and washing over the
+  // dead zone would promise reach the tower does not have.
+  //
+  // Two ellipses in one path with an even-odd fill. Drawing the hole as a second
+  // shape on top would need a colour that matches the ground under it, and the
+  // ground is grass, road, dirt and other buildings depending on the plot.
+  const min = t.def.minRange || 0;
+
   ctx.fillStyle = 'rgba(240,230,210,0.10)';
-  ringPath(ctx, t.x, t.y, r);
-  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y, r, r * SQUASH, 0, 0, Math.PI * 2);
+  if (min) ctx.ellipse(t.x, t.y, min, min * SQUASH, 0, 0, Math.PI * 2);
+  ctx.fill('evenodd');
 
   ctx.strokeStyle = 'rgba(24,26,20,0.40)';
   ctx.lineWidth = 3;
@@ -294,6 +307,25 @@ function drawRangeDisc(ctx, t) {
   ctx.lineWidth = 2;
   ringPath(ctx, t.x, t.y, r);
   ctx.stroke();
+
+  // The inner rim, dashed and warmer than the outer one. Dashed because it is a
+  // limit rather than a reach — the same visual grammar the upgrade preview uses
+  // — and warmer because the two rims mean opposite things and a player glancing
+  // at a plot should not have to work out which ellipse is which.
+  if (min) {
+    ctx.save();
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = 'rgba(24,26,20,0.40)';
+    ctx.lineWidth = 3;
+    ringPath(ctx, t.x, t.y, min, 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,190,120,0.85)';
+    ctx.lineWidth = 2;
+    ringPath(ctx, t.x, t.y, min);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 // THE TIER STARS ARE BACK, BUT ONLY WHERE THE ARTWORK CANNOT SAY IT.

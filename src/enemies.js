@@ -144,7 +144,17 @@ export function updateEnemies(state, dt) {
 // same ordering on a single road and the only meaningful one on a forked map:
 // the two roads into map 2 are not the same length, so "further along" says
 // nothing about which enemy is nearer the keep.
-export function pickTarget(enemies, x, y, range) {
+//
+// `min` is a DEAD ZONE, and only artillery has one: a catapult cannot drop a
+// rock on its own feet, so anything close enough walks past untouched. It is the
+// price of the longest reach in the game, and it is what makes a siege plot a
+// different decision from an archery plot — a machine wants to be BACK from the
+// road, where a bow wants to be beside it.
+//
+// Two ellipses rather than two radii, through the same inRange as everything
+// else: the board is drawn in perspective and both edges of an annulus are
+// patches of ground. See src/ground.js.
+export function pickTarget(enemies, x, y, range, min = 0) {
   let best = null;
   let least = Infinity;
 
@@ -152,6 +162,7 @@ export function pickTarget(enemies, x, y, range) {
     // Measured from the enemy's ground anchor — its shadow — because that is
     // where the figure IS. Its head is drawn well above that and never counts.
     if (!inRange(x, y, e.x, e.y, range)) continue;
+    if (min && inRange(x, y, e.x, e.y, min)) continue;
     const left = remaining(laneOf(level.routes[e.route], e.lane), e.s);
     if (left < least) {
       least = left;

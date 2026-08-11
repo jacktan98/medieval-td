@@ -12,7 +12,7 @@
 //
 //   Map_base.svg      the map with the markers removed
 //
-// render.js draws the base once and stamps the artist's own `Plot Marker.svg`
+// render.js draws the base once and stamps the artist's own `Plot_Marker.svg`
 // on each EMPTY plot, which is what makes "occupied" a thing the renderer can
 // express at all. That marker is hand-drawn now rather than cut out of the map,
 // so this only measures it and prints how to draw it.
@@ -31,9 +31,9 @@ import { allGroups, bounds } from './svg.mjs';
 
 // Which map to split. Every level records the file it was drawn from, so the
 // tool finds its own level rather than being told twice.
-const SRC = process.argv[2] || 'assets/map/Map.svg';
+const SRC = process.argv[2] || 'assets/map/Map_1.svg';
 const BASE = SRC.replace(/\.svg$/, '_base.svg');
-const MARKER = 'assets/map/Plot Marker.svg';
+const MARKER = 'assets/map/Plot_Marker.svg';
 
 const level = levels.find(l => l.src === SRC);
 if (!level) {
@@ -128,7 +128,7 @@ console.log(`wrote ${BASE}`);
 // --- the artist's plot marker, measured --------------------------------------
 //
 // The marker used to be derived here, cut out of the map and re-based. It is a
-// hand-drawn file now — `Plot Marker.svg`, on the same 512 square canvas as
+// hand-drawn file now — `Plot_Marker.svg`, on the same 512 square canvas as
 // every sprite — so this only has to measure it and say how to draw it.
 //
 // The ellipse is the ground patch, the widest sub-path, and it is what lands on
