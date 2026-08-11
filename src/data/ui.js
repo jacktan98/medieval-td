@@ -68,17 +68,18 @@ export const STAT_ICON_H = 16;
 // widest of the pair is the heart at 19.8 drawn, so 22 clears it.
 export const STAT_COL = 22;
 
-// The encyclopedia's two icon sizes. Its shelf rows are 65px deep and hold three
-// lines, so they get the smaller of the two; the enemies page has one row of
-// four stats across a full-width card and can afford the bigger.
+// The encyclopedia's icon height. ONE size, because there is one card: a row is
+// 17px deep and holds a 14px icon beside a 12px number, on a tower card and an
+// enemy card alike. There used to be a second, bigger size for an enemies page
+// that had full-width rows of its own; the page uses the same box as everything
+// else now, so the second size went with it.
 //
-// Both live here rather than in render.js because this is where an icon's drawn
-// size is decided, and because tools/book.mjs checks them against the source
+// It lives here rather than in render.js because this is where an icon's drawn
+// size is decided, and because tools/book.mjs checks it against the source
 // files: an icon is sharp while its drawn height times the 3x device-pixel cap
-// fits in its trim, so 18 needs 54 source px and every file in the book has at
-// least 97. Raise either of these and run the tool.
+// fits in its trim, so 14 needs 42 source px and every file in the book has at
+// least 97. Raise this and run the tool.
 export const BOOK_ICON_H = 14;
-export const FOE_ICON_H = 18;
 
 export const ui = {
   // Dashboard. `h` rather than `fit`: these are sized by HEIGHT, because they
@@ -111,12 +112,18 @@ export const ui = {
   stat_health:  { trim: [157, 176, 198, 160], h: STAT_ICON_H },
   stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
 
-  // The encyclopedia's price row: what a tier costs, and what it gives back.
-  // The refund entry is the SAME trim as the menu glyph above, because it is the
-  // same file drawn at two sizes — 26 on a button, STAT_ICON_H in a book row —
-  // which is exactly the case uiSize's { h } override exists for. Two entries
-  // would mean two rects to re-paste after a re-export.
-  stat_cost:    { trim: [114, 187, 284, 138], h: STAT_ICON_H },
+  // The encyclopedia's two costs: gold to build a tier, and lives when an enemy
+  // gets past. They are drawn as a stack of coins and a BROKEN heart, which is
+  // what lets them sit beside the dashboard's own gold and lives without being
+  // read as the same fact — see the note in src/assets.js.
+  //
+  // The refund figure beside the gold one has no entry here: it is the menu's
+  // `glyph_refund`, the same file drawn at two sizes — 26 on a button,
+  // STAT_ICON_H in a book row — which is exactly the case uiSize's { h }
+  // override exists for. A second entry would be a second rect to re-paste after
+  // a re-export.
+  stat_gold_cost: { trim: [116, 189, 280, 134], h: STAT_ICON_H },
+  stat_life_cost: { trim: [157, 176, 198, 160], h: STAT_ICON_H },
 
   // The three plates. These are drawn to a RECT rather than fitted to a box, so
   // the entry carries no size: the rect comes from HUD_BTN and INFO_BOX in

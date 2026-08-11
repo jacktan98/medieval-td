@@ -10,7 +10,7 @@ import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFli
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
-         PORTRAIT_SCALE, STAT_ICON_H, STAT_COL, BOOK_ICON_H, FOE_ICON_H } from './data/ui.js';
+         PORTRAIT_SCALE, STAT_ICON_H, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo } from './select.js';
 import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
          SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
@@ -1600,7 +1600,15 @@ function drawInfo(ctx, state) {
       dw, dh);
   }
 
-  const tx = x + 12 + PORTRAIT.w + 10;
+  // THE TEXT COLUMN, and it was 4px further right until the names got longer.
+  //
+  // Every tower used to be captioned with its tier — "Archers Tier I" — and the
+  // longest of those is 18px shorter than "Trebuchet Engineer". Naming the MAN
+  // instead was the right call, but it pushed the widest caption in the game
+  // from 125px to 143 against a column that only has 134, so the longest names
+  // ran off the plate. Tightening both gutters buys 4 of the 9px back; the font
+  // below buys the rest.
+  const tx = x + 10 + PORTRAIT.w + 8;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
@@ -1611,15 +1619,26 @@ function drawInfo(ctx, state) {
   const rows = info.hp !== null ? 2 : 1;
   const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
 
+  // 11.5 rather than 13, and the half is not fussiness — it is the largest size
+  // at which the longest name in the game fits the plate. Measured, at 700
+  // weight in system-ui: "Trebuchet Engineer" is 142.9px at 13, 131.9 at 12 and
+  // 126.4 at 11.5, against a column 134 wide whose drawn border eats about 4.
+  // 12 misses by 2px and 13 by 13. Everything shorter simply has more air.
+  //
+  // The check on this is the browser and not a tool: node has no canvas, so
+  // there is nothing here that can measure a font. If a name longer than
+  // "Trebuchet Engineer" is ever added, look at the box.
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
-  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.font = '700 11.5px system-ui, sans-serif';
   ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
   // The rows are ICONS, not the words "Health:" and "Damage:". Both sit in a
   // column STAT_COL wide so the numbers beside them line up whether the row
   // above is there or not — a tower has no health row, and a damage figure that
   // shifted left on towers and right on units would read as two layouts.
-  ctx.font = '700 12px system-ui, sans-serif';
+  // Down a point with the title, so the panel still reads as a heading over two
+  // stat rows rather than as three lines of the same weight.
+  ctx.font = '700 11px system-ui, sans-serif';
   let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
   if (info.hp !== null) {
@@ -1767,6 +1786,13 @@ function drawStart(ctx, state) {
 
 // Parchment, and the ink that reads on it. Deliberately the same INK family the
 // dashboard plates use, so the book and the box do not look like two games.
+// A CARD TITLE, and it is 11 for the same reason the info box's is 11.5: the
+// longest name has to fit. A unit card's text column is 125px wide once the
+// figure slot is taken out, and "Trebuchet Engineer" measures 131.9px at 12 and
+// 121.0 at 11. At 12 it was landing within a pixel of the card's right edge —
+// which looked fine only because no name in the game is longer.
+const CARD_TITLE = 11;
+
 const SHEET_FILL = '#EFE4C8';
 const SHEET_EDGE = '#8A7A56';
 const CARD_FILL = 'rgba(58,48,38,0.06)';
@@ -1872,7 +1898,7 @@ function towerCard(ctx, b, e) {
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
-  ctx.font = '700 12px system-ui, sans-serif';
+  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
   ctx.fillText(e.title, tx, r1);
 
   ctx.fillStyle = INK_MUTED;
@@ -1882,7 +1908,7 @@ function towerCard(ctx, b, e) {
   // Price on the left of the row, refund on the right and in the green the game
   // already uses for gold coming back to you — the same colour the refund button
   // prints its own figure in.
-  const x = stat(ctx, 'stat_cost', tx, r3, String(e.cost), INK);
+  const x = stat(ctx, 'stat_gold_cost', tx, r3, String(e.cost), INK);
   stat(ctx, 'glyph_refund', x + 14, r3, String(e.refund), INK_GREEN);
 }
 
@@ -1896,7 +1922,7 @@ function unitCard(ctx, b, e) {
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
-  ctx.font = '700 12px system-ui, sans-serif';
+  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
   ctx.fillText(e.title, tx, r1);
 
   let x = tx;
@@ -1941,19 +1967,20 @@ function drawEnemyPage(ctx) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = INK;
-    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
     ctx.fillText(d.name, tx, r1);
 
     const hp = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK);
     stat(ctx, 'stat_damage', hp + 12, r2, String(d.damage), INK);
 
-    // The coin is a BOUNTY here rather than your purse and the heart is a COST
-    // rather than what you have left, which is the one place in the game either
-    // icon means something new. They are readable because of the row above:
-    // health and attack on line 2 set what a heart and a sword mean, so line 3
-    // reads as the other pair of numbers about the same creature.
-    const gold = stat(ctx, 'hud_gold', tx, r3, String(d.bounty), INK_GREEN);
-    stat(ctx, 'hud_life', gold + 12, r3, String(d.leak), INK_RED);
+    // THE BOOK'S OWN COST ICONS, not the dashboard's gold and lives. On an enemy
+    // card the coin means a bounty you are paid and the heart means damage to the
+    // keep — the opposite sense from the same two pictures at the top of the
+    // screen, where they are what you HAVE. The broken heart carries that
+    // difference without a caption, and it is the same coin the tower cards
+    // charge you with on the page opposite.
+    const gold = stat(ctx, 'stat_gold_cost', tx, r3, String(d.bounty), INK_GREEN);
+    stat(ctx, 'stat_life_cost', gold + 12, r3, String(d.leak), INK_RED);
   }
 }
 

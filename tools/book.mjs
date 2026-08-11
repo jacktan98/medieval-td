@@ -31,11 +31,11 @@ import { archery, barracks, siege, SCALE } from '../src/data/towers.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { occupant } from '../src/select.js';
 import { refundValue, REFUND_RATE } from '../src/menu.js';
-import { ui, PORTRAIT_SCALE, BOOK_ICON_H, FOE_ICON_H } from '../src/data/ui.js';
+import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
 import {
   PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
   SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
-  BOOK_TOWER_SCALE, ROW, rowsIn, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
+  BOOK_TOWER_SCALE, AIR, ROW, rowsIn, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
   BOOK_BTN_START, BOOK_BTN_PAUSE
 } from '../src/book.js';
 
@@ -253,12 +253,14 @@ console.log('\nEverything stands on its shadow\n');
   ok(lines.size === 1, 'and every tower stands on the same line',
     `${[...lines][0]} of ${TOWER_BOX.h}`);
 
-  // The largest one actually filling its slot is what proves the factor is
-  // derived rather than typed and left behind by a redraw.
+  // The largest one filling its slot to within AIR of the edges is what proves
+  // the factor is derived rather than typed and left behind by a redraw — and
+  // that the clearance the archery flag was given is the clearance it still has.
   const spanH = Math.max(...TIERS.map(d => d.groundFrac[1] * d.h)) +
                 Math.max(...TIERS.map(d => (1 - d.groundFrac[1]) * d.h));
-  ok(Math.abs(spanH * k - TOWER_BOX.h) < 0.6, 'and the shelf fills the height it is given',
-    `${(spanH * k).toFixed(1)} of ${TOWER_BOX.h}`);
+  const air = (TOWER_BOX.h - spanH * k) / 2;
+  ok(Math.abs(air - AIR) < 0.6, 'and keeps its air at the top and bottom',
+    `${air.toFixed(1)}px each end, wanted ${AIR}`);
 
   // Figures are drawn at the FIXED PORTRAIT_SCALE — they never shrink to fit —
   // so their slot has to be wide enough for the widest man in the game rather
@@ -342,10 +344,9 @@ console.log('\nWhat stays sharp at 3x\n');
   // because the number beside it is 12. So each one is checked against its own
   // source height.
   const icons = [
-    ['stat_cost', BOOK_ICON_H], ['glyph_refund', BOOK_ICON_H],
+    ['stat_gold_cost', BOOK_ICON_H], ['glyph_refund', BOOK_ICON_H],
     ['stat_health', BOOK_ICON_H], ['stat_damage', BOOK_ICON_H],
-    ['stat_health', FOE_ICON_H], ['stat_damage', FOE_ICON_H],
-    ['hud_gold', FOE_ICON_H], ['hud_life', FOE_ICON_H]
+    ['stat_life_cost', BOOK_ICON_H]
   ];
 
   let soft = 0;
@@ -353,7 +354,7 @@ console.log('\nWhat stays sharp at 3x\n');
     const src = ui[key].trim[3];
     if (h * MAX_SCALE > src) { soft++; console.log(`      ${key} at ${h}px needs ${h * MAX_SCALE} source px, has ${src}`); }
   }
-  ok(soft === 0, 'every icon on the page', `${icons.length} checked at ${BOOK_ICON_H}px and ${FOE_ICON_H}px`);
+  ok(soft === 0, 'every icon on the page', `${icons.length} checked at ${BOOK_ICON_H}px`);
 }
 
 console.log(bad ? `\n${bad} problem(s) with the encyclopedia.` : '\nThe encyclopedia holds together.');

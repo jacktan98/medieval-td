@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Sixteen files in, three still vector.** Everything below that is not in the table
+**Seventeen files in, three still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -24,7 +24,8 @@ usable button rather than a blank disc.
 | `Description_Box.png`    | the info panel    | 220 x 76     |
 | `Damage_Icon.png`        | the word "Damage" | 16 tall      |
 | `Health_Icon.png`        | the word "Health" | 16 tall      |
-| `Cost_Icon.png`          | a tier's price in the book | 14 tall |
+| `Gold_Cost_Icon.png`     | a tier's price, and an enemy's bounty | 14 tall |
+| `Life_Cost_Icon.png`     | lives an enemy costs if it gets past | 14 tall |
 
 `Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
 down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
@@ -32,10 +33,19 @@ down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
 which named the picture; `glyph_refund` names the job, and the job is the thing
 that can now change without the drawing being redrawn.
 
-`Cost_Icon.png` is new and is used **only in the encyclopedia**, beside what a
-tier costs, with the refund icon beside what it gives back. The two sit in one
-row so the pair reads as a price and a resale value rather than as two unrelated
-figures.
+The two **cost** icons are used only in the encyclopedia, and they are a pair on
+purpose: a stack of coins for what a tier costs to build, and a **broken heart**
+for what letting an enemy past costs the keep.
+
+The broken heart is the reason they exist rather than reusing the dashboard's
+`Gold_Icon` and `Life_Icon`. On an enemy card the coin means a bounty you are
+paid and the heart means damage done to you — the opposite sense from the same
+two pictures at the top of the screen, where they are what you HAVE. Two drawings
+that say *cost* carry that without a caption, and the enemy page used to need one.
+
+`Gold_Cost_Icon.png` is `Cost_Icon.png` renamed. It does double duty: a tier's
+price on the tower cards, paired with the refund icon beside what that tier gives
+back, and an enemy's bounty on the facing page.
 
 Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
 **`max`** — the chevrons on a tower with nothing left to buy. Siege and the
@@ -245,7 +255,19 @@ enough.
 ## The info box is not made of UI art
 
 **Top right**, when a tower, a soldier or an enemy is selected: a portrait, a
-name, live health and damage per hit. `src/select.js` decides what it says and
+name, live health and damage per hit.
+
+**The name is 11.5px and the stat rows are 11**, down from 13 and 12, and the
+half-pixel is not fussiness. Every tower used to be captioned with its tier —
+"Archers Tier I" — and naming the MAN instead pushed the widest caption in the
+game from 125px to 143 against a text column that only has 134. At 700 weight in
+system-ui, "Trebuchet Engineer" measures 142.9px at 13, 131.9 at 12 and 126.4 at
+11.5; 11.5 is the largest size it fits at. Tightening the two gutters either side
+of the portrait bought the other 4px.
+
+There is no tool for this and there cannot easily be one — node has no canvas, so
+nothing outside a browser can measure a font. If a name longer than "Trebuchet
+Engineer" is ever added, look at the box. `src/select.js` decides what it says and
 `drawInfo` in `render.js` lays it out. It was bottom-right, which put it over
 plot 5's marker; up here it sits beside the readouts and no plot is near it.
 
@@ -334,7 +356,7 @@ There is **no new art for it** beyond `Cost_Icon.png`. The page is a parchment
 sheet drawn in code, and every picture on it is the board's own — buildings from
 `assets/towers`, men from `assets/units`, enemies from `assets/enemies`.
 
-### One margin, everywhere, inside the cards too
+### One margin, everywhere — inside the cards, and around the pictures
 
 The sheet is inset from the board and everything on it is inset from the sheet by
 the same 16px: the first card's left edge, the last card's right edge, the Close

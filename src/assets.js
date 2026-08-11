@@ -114,10 +114,20 @@ export const paths = {
   // heart is the keep's lives and this one is a figure's health, and the artist
   // drew them as two files, so they are two keys.
   stat_health:     'assets/ui/Health_Icon.png',
-  // The encyclopedia's price row. A stack of coins for what a tier costs, and
-  // the refund button's own drawing for what it gives back — so the number in
-  // the book and the number on the button you press are the same picture twice.
-  stat_cost:       'assets/ui/Cost_Icon.png',
+  // The encyclopedia's two COST icons, and they are costs in two currencies.
+  //
+  // A stack of coins for what a tier costs to build — paired on its row with the
+  // refund button's own drawing for what it gives back, so the number in the
+  // book and the number on the button you press are the same picture twice. A
+  // BROKEN heart for what letting an enemy past costs you.
+  //
+  // The broken heart is the reason this pair exists rather than reusing the
+  // dashboard's gold and lives. On an enemy card the coin means a bounty and the
+  // heart means damage to the keep — the opposite sense from the same two icons
+  // in the dashboard, where they are what you HAVE. Two drawings that say "cost"
+  // carry that without a caption.
+  stat_gold_cost:  'assets/ui/Gold_Cost_Icon.png',
+  stat_life_cost:  'assets/ui/Life_Cost_Icon.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is

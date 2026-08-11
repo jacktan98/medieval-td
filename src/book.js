@@ -165,6 +165,23 @@ const FIGURES = [
   ...Object.values(enemyTypes).map(d => figureArt(d.spriteTrim, d.pivot))
 ];
 
+// How much clear card a building keeps above and below itself. The span is
+// fitted to the slot MINUS this, and anchorIn centres it, so the air comes out
+// evenly at both ends.
+//
+// It is here because of the archery flag. The tallest thing on the shelf is a
+// watchtower's pennant, and with the span filling the slot edge to edge that
+// pennant touched the card's outline — a spike of blue ink resting on the
+// border, which reads as the drawing being too big for its box rather than as a
+// tower being tall.
+//
+// The cost is real and worth stating: this is a 13% cut to every building on the
+// page, not just archery, because there is ONE factor for all of them and that
+// is the point of it. A Militia Camp is bigger than a Catapult here because it
+// is bigger on the board, and shrinking only the family that happens to have the
+// tallest spike would throw that away to save 4px.
+export const AIR = 4;
+
 const TOWER_SPAN = anchored(TIERS.map(buildingOf));
 const FIGURE_SPAN = anchored(FIGURES);
 
@@ -200,7 +217,7 @@ export const FIGURE_BOX = { x: 6, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT
 // at 1x; the crispness question PORTRAIT_SCALE has to answer carefully does not
 // arise on this side of the page.
 export const BOOK_TOWER_SCALE =
-  SCALE * Math.min(TOWER_BOX.w / TOWER_SPAN.w, TOWER_BOX.h / TOWER_SPAN.h);
+  SCALE * Math.min(TOWER_BOX.w / TOWER_SPAN.w, (TOWER_BOX.h - 2 * AIR) / TOWER_SPAN.h);
 
 // Where the shared anchor sits inside a slot: the span centred, with the anchor
 // at its own offset within that. Returned as a function of the box so render.js
