@@ -4,15 +4,20 @@
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_hit_enemy,
                       Rock_hit_ground, Rock_hit_enemy,
                       Thug_dies, Soldier_dies
-assets/audio/voice/   Archers_1..5, Barracks_1..5, Thug_1
-                      Artillery_1..5  <- WIRED, NOT YET RECORDED
+assets/audio/voice/   Archers_1..5, Barracks_1..5, Artillery_1..5, Thug_1
 ```
 
-Twenty clips recorded and wired, plus five artillery voices the game is already
-asking for. Those five are listed in `AWAITED` in `src/audio.js`, so they are
-reported once as a quiet note rather than as five warnings — drop the files in
-`assets/audio/voice/` and they play with no code change at all. `node tools/audio.mjs` measures them; `node
-tools/sound.mjs` checks the rules below against the real `src/audio.js`.
+Twenty-five clips, all recorded and all wired. `node tools/audio.mjs` measures
+them; `node tools/sound.mjs` checks the rules below against the real
+`src/audio.js`.
+
+**Wire a cue before the files exist.** The artillery voices were in `paths` and
+in `CUE` a commit before they were recorded, and they played the moment they
+landed with no code change at all. While a file is missing, list its key in
+`AWAITED` in `src/audio.js` — misses there are reported once as a quiet note
+instead of one warning per file. **Empty `AWAITED` as recordings arrive**: a key
+left in it after its file lands means a genuinely broken upload gets reported as
+an expected absence.
 
 ## Two categories, and the categories are the design
 
@@ -98,7 +103,7 @@ and it now means "how long a lull has to be before the game forgets".
 |---|---|
 | an archery tower is **built or upgraded** | `Archers_1..5` |
 | a barracks is **built or upgraded** | `Barracks_1..5` |
-| an artillery tower is **built or upgraded** | `Artillery_1..5` — *not recorded yet* |
+| an artillery tower is **built or upgraded** | `Artillery_1..5` |
 | a rally point is moved | `Barracks_1..5` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
@@ -128,10 +133,6 @@ same order twice running is not the same voice twice running. Category B gets a
 cut-down version of the same courtesy — no share rules, but never the same take
 twice running, because a sword making one identical noise forty times a wave is
 the machine-gun problem all over again.
-
-**Building a tower counts as selecting it** — the build already fills the info
-box with what you just bought, and the voice follows the selection. Say so if
-you would rather a new tower stayed quiet; it is one line.
 
 **A giant thug answers with the common thug's line**, there being one enemy
 voice so far. Silence for the giant would read as a bug rather than as a gap.

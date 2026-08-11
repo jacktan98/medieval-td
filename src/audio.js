@@ -196,11 +196,9 @@ const paths = {
   barracks_4:      'assets/audio/voice/Barracks_4.mp3',
   barracks_5:      'assets/audio/voice/Barracks_5.mp3',
   thug_1:          'assets/audio/voice/Thug_1.mp3',
-  // NOT RECORDED YET. Wired ahead of the files so the day they land they play
-  // with no code change — the same way the game was wired for death poses
-  // before they existed. Listed in AWAITED below so five misses do not fill the
-  // console, because a console you have learned to ignore is how a REAL missing
-  // clip goes unnoticed.
+  // Recorded. These were wired a commit before the files existed and played the
+  // moment they landed, with no code change — which is the whole reason to wire
+  // ahead rather than wait.
   artillery_1:     'assets/audio/voice/Artillery_1.mp3',
   artillery_2:     'assets/audio/voice/Artillery_2.mp3',
   artillery_3:     'assets/audio/voice/Artillery_3.mp3',
@@ -210,10 +208,13 @@ const paths = {
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
 // expected, so it is reported once and quietly rather than as a warning per
-// file. Empty this as the recordings arrive.
-const AWAITED = new Set([
-  'artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'
-]);
+// file — a console you have learned to ignore is how a REAL missing clip goes
+// unnoticed.
+//
+// EMPTY, and it should be emptied as recordings land rather than left populated:
+// a key sitting in here after its file arrives means a genuinely broken upload
+// would be reported as an expected absence.
+const AWAITED = new Set();
 
 // Deliberate exceptions to the automatic levelling, applied on top of it.
 // Anything not listed plays at the common loudness.
