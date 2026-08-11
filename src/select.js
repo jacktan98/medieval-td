@@ -71,6 +71,36 @@ export function validate(state) {
   if (!list.includes(s.ref)) state.selected = null;
 }
 
+// WHO A TOWER PUTS ON THE BOARD, in one shape, whichever family it belongs to.
+//
+// The three families hide their man in three different places: a barracks SENDS
+// him out and keeps his whole stat block under `def.soldier`, an archery tower
+// STANDS him on the deck as a `gunner`, and a catapult has him drawn into all
+// three machine frames and carries a `portrait` file that exists only to be
+// looked at. Nothing downstream should have to know that, so it is untangled
+// once, here.
+//
+// Two callers, and they are the reason this is exported rather than inlined: the
+// info box captions the selected tower with it, and the encyclopedia lists every
+// tier's occupant with it. A book that disagreed with the box about what a tower
+// contains would be worse than no book.
+//
+// `count` is how many men the tower is worth — a squad for a barracks, one for
+// everyone else — and `hp` is null for anybody who cannot be reached to be hurt.
+export function occupant(def) {
+  const man = def.soldier;
+  return {
+    name: man ? man.name : def.unit,
+    count: man ? man.count : 1,
+    sprite: man ? man.sprite : def.portrait || def.gunner,
+    trim: man ? man.spriteTrim : def.portraitTrim || def.gunnerTrim,
+    hp: man ? man.hp : null,
+    // A barracks does no damage itself; its men do. Reading the building's own
+    // (nonexistent) damage would print a 0 under a tent full of spears.
+    damage: man ? man.damage : def.damage
+  };
+}
+
 // Everything the info box draws, or null when there is nothing selected. Shaped
 // here rather than in render.js so the three kinds are reconciled in one place
 // and the drawing is just a layout.
@@ -79,21 +109,20 @@ export function selectionInfo(state) {
   if (!s) return null;
 
   if (s.kind === 'tower') {
-    const def = s.ref.def;
-    // A barracks does no damage itself; its men do. Showing the building's own
-    // (nonexistent) damage would print "Damage: 0" under a tent full of spears.
-    const man = def.soldier;
-    // Three ways a tower names its man, because the three families put him in
-    // three different places: a barracks SENDS him out, an archery tower STANDS
-    // him on the deck, and a catapult has him drawn into the machine itself — so
-    // artillery carries a portrait-only file that exists for this box alone.
+    const man = occupant(s.ref.def);
     return {
-      sprite: man ? man.sprite : def.portrait || def.gunner,
-      trim: man ? man.spriteTrim : def.portraitTrim || def.gunnerTrim,
-      title: def.title,
+      sprite: man.sprite,
+      trim: man.trim,
+      title: man.name,
+      // A TOWER HAS NO HEALTH — nothing in the game can hurt a building — so the
+      // box shows one stat row rather than two. That is true even of the men in
+      // it: an archer on his deck and a crewman behind his machine cannot be
+      // reached either, and only a barracks sends anybody out to be hit. Their
+      // health belongs to the soldier standing on the road, which is a selection
+      // of its own.
       hp: null,
       maxHp: null,
-      damage: man ? man.damage : def.damage
+      damage: man.damage
     };
   }
 

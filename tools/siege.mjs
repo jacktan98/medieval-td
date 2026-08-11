@@ -63,7 +63,7 @@ const SPOT = pointOn(laneOf(level.routes[0], 1), AT);
 const BACK = 130;
 
 function board() {
-  return { towers: [], enemies: [], units: [], shots: [], hits: [], splats: [], corpses: [], gold: 0, lives: 20 };
+  return { towers: [], enemies: [], units: [], shots: [], hits: [], splats: [], impacts: [], corpses: [], gold: 0, lives: 20 };
 }
 
 // Standing still, and far too tough to die — this test is about where damage

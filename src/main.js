@@ -8,6 +8,7 @@ import { updateUnits } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateSplats } from './blood.js';
+import { updateImpacts } from './impacts.js';
 import { updateWaves } from './waves.js';
 import { draw, tierMarks } from './render.js';
 import { attachInput } from './input.js';
@@ -66,6 +67,10 @@ function newGame() {
     // battlefield. The pools are not here: each one belongs to a corpse.
     corpses: [],
     splats: [],
+    // Earth thrown up where a rock landed. A separate list from the blood rather
+    // than a flag on it: the two are different pictures at different scales with
+    // different lifetimes, and the only thing they share is being decoration.
+    impacts: [],
     waveIndex: 0,
     spawned: 0,
     timer: openingDelay,
@@ -93,6 +98,13 @@ function newGame() {
     ghost: null,
     // The barracks waiting for its rally point to be tapped.
     placing: null,
+    // Which page of the encyclopedia is open, or null for closed. It is a mode
+    // rather than a screen: while it is set, every tap on the board goes to the
+    // book and nothing else answers. See src/book.js.
+    //
+    // Reset with everything else, so a book left open on the title screen is not
+    // still up when a map switch rebuilds the game underneath it.
+    book: null,
     // What the info box is describing: { kind, ref } or null. A direct reference
     // to the live enemy, soldier or tower, which is what makes the health in the
     // box the same number the health bar over its head is reading.
@@ -157,6 +169,7 @@ function step(state, dt) {
   // being aged by the frame that created them.
   updateCorpses(state, dt);
   updateSplats(state, dt);
+  updateImpacts(state, dt);
   if (state.lives <= 0) state.result = 'lost';
 }
 

@@ -161,9 +161,14 @@ Artillery has three tiers — Catapult, Mangonel, Trebuchet — drawn with one
 machine. Nothing on the board would otherwise tell them apart, so the tier stars
 are back for this family: one, two or three small gold stars above the building.
 
-They came out of the game once, when the info box learned to say "Barracks Tier
-II" in words, and that reasoning still holds wherever a tier has a building of its
-own to be recognised by. Timber becomes stone; you can see it.
+They came out of the game once, when every tier got a drawing of its own, and
+that reasoning still holds wherever a tier has a building to be recognised by.
+Timber becomes stone; you can see it.
+
+(The info box no longer says "Barracks Tier II" either — it names the MAN, so it
+reads "Spearman", "Combat Archer", "Trebuchet Engineer". The tier titles moved to
+the encyclopedia, which is where a tier is compared against the tier above it.
+See `unit` in `src/data/towers.js`.)
 
 **Nothing has to be remembered when the artwork lands.** `tierMarks` in
 `src/render.js` marks a tower whenever another tier in its family shares its

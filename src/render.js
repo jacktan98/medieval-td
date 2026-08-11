@@ -4,13 +4,17 @@ import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
+import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE } from './impacts.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
-         PORTRAIT_SCALE, STAT_ICON_H, STAT_COL } from './data/ui.js';
+         PORTRAIT_SCALE, STAT_ICON_H, STAT_COL, BOOK_ICON_H, FOE_ICON_H } from './data/ui.js';
 import { selectionInfo } from './select.js';
+import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, ART_BOX, FOLD,
+         FOE_BOX, FOE_TEXT, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
+         BOOK_BTN_START, BOOK_BTN_PAUSE } from './book.js';
 
 const PLOT_R = 30;
 
@@ -53,6 +57,11 @@ export function draw(ctx, state) {
   // is said.
   if (!state.started) drawStart(ctx, state);
   else if (state.result) drawResult(ctx, state);
+
+  // Over even those. The encyclopedia is opened FROM the title screen and from a
+  // paused game, so it has to cover the thing that offered it — and while it is
+  // up it owns every tap on the board, which is the other half of the same fact.
+  if (state.book !== null) drawBook(ctx, state);
 }
 
 // The painted board. The road, the ground and the plot markers all live in this
@@ -190,6 +199,13 @@ function drawFigures(ctx, state) {
   // after this one, and painted red dots on the barracks roof.
   for (const s of state.splats) {
     add(s.groundY ?? s.y, 2, () => drawBlood(ctx, s.img, s.x, s.y, Math.min(1, s.life / SPLAT_FADE)));
+  }
+  // A rock's earth sorts in this pass too, and for the same reason the spatter
+  // does: it belongs to a place on the board. Its `y` IS its ground line — a
+  // lobbed rock's landing point is on the ground by construction, which is what
+  // the parabola's zero lift at u = 1 buys — so there is no second anchor here.
+  for (const i of state.impacts) {
+    add(i.y, 2, () => drawImpact(ctx, i));
   }
 
   items.sort((a, b) => a.y - b.y || a.rank - b.rank);
@@ -657,6 +673,24 @@ function drawBlood(ctx, key, x, y, alpha) {
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.drawImage(img, sx, sy, sw, sh, x - dw / 2, y - dh / 2, dw, dh);
+  ctx.restore();
+}
+
+// The earth a rock throws up. Anchored at the BOTTOM of its trim rather than the
+// middle, which is the whole difference between this and a splash of blood: the
+// artist drew a clump of soil sitting on a line with specks flying above it, so
+// the bottom edge of the drawing is the ground and the picture hangs up from the
+// point of impact. Centre it instead and half the spray is drawn underground.
+function drawImpact(ctx, i) {
+  const img = art[i.img];
+  if (!img) return;
+  const [sx, sy, sw, sh] = IMPACT_TRIM[i.img];
+  const dw = sw * IMPACT_SCALE;
+  const dh = sh * IMPACT_SCALE;
+
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, i.life / IMPACT_FADE);
+  ctx.drawImage(img, sx, sy, sw, sh, i.x - dw / 2, i.y - dh, dw, dh);
   ctx.restore();
 }
 
@@ -1319,6 +1353,12 @@ function drawHud(ctx, state) {
     ctx.fillStyle = '#F0E6D2';
     ctx.fillText('Paused', 480, 78);
     ctx.restore();
+
+    // The other place the book opens from, and the more useful of the two: this
+    // is where a player stops mid-wave to work out whether the Mangonel is worth
+    // 115 gold, and neither it nor the tier below it is selected — so the info
+    // box cannot answer and the radial menu only quotes a price.
+    drawBookButton(ctx, BOOK_BTN_PAUSE, 15);
   }
 
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
@@ -1378,7 +1418,7 @@ function drawCancel(ctx, menu) {
 
 // A menu button: a plate, a picture, and a price. NO WORDS.
 //
-// The names came out — "Barracks", "Sell", "Upgrade", the "T1" in front of every
+// The names came out — "Barracks", "Refund", "Upgrade", the "T1" in front of every
 // cost. What is left is the glyph and the gold, which is the whole decision: a
 // button says what it builds by showing it and what it costs by saying it. The
 // text that remains is the one part a picture cannot carry.
@@ -1500,7 +1540,7 @@ function drawGlyph(ctx, kind) {
     ctx.moveTo(-5, -9); ctx.lineTo(8, -5); ctx.lineTo(-5, -1);
     ctx.closePath();
     ctx.fill();
-  } else if (kind === 'coin') {
+  } else if (kind === 'refund') {
     ctx.arc(0, 0, 8, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
@@ -1699,8 +1739,280 @@ function drawStart(ctx, state) {
   ctx.font = '700 24px system-ui, sans-serif';
   ctx.fillText('Start', b.x + b.w / 2, b.y + b.h / 2 + 1);
 
+  // Under Start rather than beside it. This is the one screen where a player has
+  // time to read, and the whole reason the book exists is the decision they are
+  // about to make with 220 gold — but Start is still what they came for, so it
+  // keeps the middle of the panel and this sits below.
+  drawBookButton(ctx, BOOK_BTN_START, 19);
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// --- the encyclopedia --------------------------------------------------------
+//
+// A parchment sheet over a darkened board, ruled down the middle like an open
+// book. Geometry comes from src/book.js so input.js hit-tests the rects that
+// actually get drawn; everything below is layout.
+//
+// NOTHING HERE IS STRETCHED TO FIT. Every building is drawn at one shared
+// factor and every figure at another, so the sizes on the page mean the same
+// thing they mean on the board — a Militia Camp really is bigger than a
+// Catapult, and a Giant Thug really is bigger than a Thug. That is also what
+// keeps the page sharp: both factors are downscales of art that is already
+// crisp at 1x, so nothing on the page is ever upscaled. tools/book.mjs checks it.
+const SHEET = { x: 8, y: 8, w: 944, h: 524 };
+
+// Parchment, and the ink that reads on it. Deliberately the same INK family the
+// dashboard plates use, so the book and the box do not look like two games.
+const SHEET_FILL = '#EFE4C8';
+const SHEET_EDGE = '#8A7A56';
+const CARD_FILL = 'rgba(58,48,38,0.06)';
+const CARD_EDGE = 'rgba(58,48,38,0.20)';
+const INK_MUTED = 'rgba(58,48,38,0.62)';
+
+function drawBook(ctx, state) {
+  ctx.fillStyle = 'rgba(20,22,18,0.88)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  ctx.fillStyle = SHEET_FILL;
+  ctx.beginPath();
+  ctx.roundRect(SHEET.x, SHEET.y, SHEET.w, SHEET.h, 12);
+  ctx.fill();
+  ctx.strokeStyle = SHEET_EDGE;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.fillText('Encyclopedia', 480, 30);
+
+  if (state.book === 0) drawShelfPage(ctx);
+  else drawEnemyPage(ctx);
+
+  drawBookFooter(ctx, state);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+// Page 1: towers on the left, the men they put on the board on the right.
+function drawShelfPage(ctx) {
+  // The gutter. It is what says "two halves of one spread" rather than "four
+  // columns", which is the difference between the layout being read as towers
+  // beside their men and being read as an undifferentiated grid.
+  ctx.strokeStyle = 'rgba(58,48,38,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(FOLD, 48);
+  ctx.lineTo(FOLD, 488);
+  ctx.stroke();
+
+  heading(ctx, 'Tower', cardRect(0, 0, 0).x);
+  heading(ctx, 'Unit', cardRect(0, 0, FOLD).x);
+
+  for (const { def, tiers, col, row } of shelf()) {
+    towerCard(ctx, cardRect(col, row, 0), towerEntry(def, tiers));
+    unitCard(ctx, cardRect(col, row, FOLD), unitEntry(def));
+  }
+}
+
+function heading(ctx, text, x) {
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.fillText(text, x, 56);
+}
+
+function card(ctx, b) {
+  ctx.fillStyle = CARD_FILL;
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = CARD_EDGE;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// A drawing standing on the bottom of the picture slot, centred across it.
+// Buildings and figures are both anchored at their feet on the board, so they
+// are anchored at their feet here — a row of thumbnails hung from their tops
+// would put a tall tower's base halfway up the card.
+function standing(ctx, sprite, trim, box, dw, dh) {
+  const img = sprite && art[sprite];
+  if (!img || !trim) return;
+  const [sx, sy, sw, sh] = trim;
+  ctx.drawImage(img, sx, sy, sw, sh,
+    box.x + (box.w - dw) / 2, box.y + box.h - dh, dw, dh);
+}
+
+function artBox(b) {
+  return { x: b.x + ART_BOX.x, y: b.y + (b.h - ART_BOX.h) / 2, w: ART_BOX.w, h: ART_BOX.h };
+}
+
+function towerCard(ctx, b, e) {
+  card(ctx, b);
+  standing(ctx, e.sprite, e.trim, artBox(b), e.w, e.h);
+
+  const tx = b.x + ART_BOX.x + ART_BOX.w + 8;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = INK;
+  ctx.font = '700 12px system-ui, sans-serif';
+  ctx.fillText(e.title, tx, b.y + 17);
+
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.fillText(e.occupier, tx, b.y + 34);
+
+  // Price on the left of the row, refund on the right and in the green the game
+  // already uses for gold coming back to you — the same colour the refund button
+  // prints its own figure in.
+  let x = stat(ctx, 'stat_cost', tx, b.y + 51, String(e.cost), INK);
+  stat(ctx, 'glyph_refund', x + 14, b.y + 51, String(e.refund), INK_GREEN);
+}
+
+function unitCard(ctx, b, e) {
+  card(ctx, b);
+  standing(ctx, e.sprite, e.trim, artBox(b),
+    e.trim ? e.trim[2] * SCALE * PORTRAIT_SCALE : 0,
+    e.trim ? e.trim[3] * SCALE * PORTRAIT_SCALE : 0);
+
+  const tx = b.x + ART_BOX.x + ART_BOX.w + 8;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillStyle = INK;
+  ctx.font = '700 12px system-ui, sans-serif';
+  ctx.fillText(e.title, tx, b.y + 24);
+
+  let x = tx;
+  if (e.hp !== null) x = stat(ctx, 'stat_health', x, b.y + 45, String(e.hp), INK) + 14;
+  stat(ctx, 'stat_damage', x, b.y + 45, String(e.damage), INK);
+}
+
+// One icon and its number, returning the x to carry on from. The icon is drawn
+// through the same uiSize/drawUi path as the dashboard's, so a re-exported file
+// of a different shape lands on its baseline here too instead of being squashed.
+//
+// Falls back to nothing at all rather than to a word: an icon that failed to
+// load leaves its number, which still reads, where a stray "Cost:" in a row
+// designed without room for it would push the next figure off the card.
+function stat(ctx, key, x, y, text, colour, h = BOOK_ICON_H) {
+  const { w } = uiSize(key, { h });
+  drawUi(ctx, key, x + w / 2, y, { h });
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = colour;
+  ctx.font = `700 ${h - 2}px system-ui, sans-serif`;
+  ctx.fillText(text, x + w + 4, y);
+  return x + w + 4 + ctx.measureText(text).width;
+}
+
+// Page 2: the enemies. Two entries and a whole page, so each gets the two stats
+// a tower card has no room for — what killing it pays, and what letting it past
+// costs. Both are things a player can only otherwise learn by losing.
+function drawEnemyPage(ctx) {
+  heading(ctx, 'Enemy', enemyCards()[0].x);
+
+  // The tallest enemy as it is DRAWN, so both figures stand on one line inside
+  // their slots — see FOE_BOX. Computed rather than typed: a redrawn enemy that
+  // is taller than anything before it moves the line by itself.
+  const foeH = Math.max(...enemyCards().map(c => c.def.spriteTrim[3])) * SCALE * PORTRAIT_SCALE;
+
+  for (const c of enemyCards()) {
+    const d = c.def;
+    card(ctx, c);
+
+    const box = { x: c.x + FOE_BOX.x, y: c.y + c.h - 26 - foeH, w: FOE_BOX.w, h: foeH };
+    standing(ctx, d.sprite, d.spriteTrim, box,
+      d.spriteTrim[2] * SCALE * PORTRAIT_SCALE,
+      d.spriteTrim[3] * SCALE * PORTRAIT_SCALE);
+
+    const tx = c.x + FOE_TEXT;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = INK;
+    ctx.font = '700 24px system-ui, sans-serif';
+    ctx.fillText(d.name, tx, c.y + 48);
+
+    // One row: an icon, a number, and the word it stands for. The words are here
+    // and nowhere else in the game because two of these icons are being asked to
+    // mean something new — the coin is a bounty rather than your purse, and the
+    // heart beside it is a cost rather than what you have left. Without the
+    // labels the row is four pictures and four numbers with no verbs.
+    const cells = [
+      ['stat_health', d.hp, 'Health'],
+      ['stat_damage', d.damage, 'Attack'],
+      ['hud_gold', d.bounty, 'Bounty'],
+      ['hud_life', d.leak, d.leak === 1 ? 'Life lost' : 'Lives lost']
+    ];
+
+    cells.forEach(([key, value, label], i) => {
+      const cx = tx + i * 180;
+      const cy = c.y + 110;
+      stat(ctx, key, cx, cy, String(value), INK, FOE_ICON_H);
+      ctx.fillStyle = INK_MUTED;
+      ctx.font = '600 12px system-ui, sans-serif';
+      ctx.fillText(label, cx, cy + 22);
+    });
+  }
+}
+
+function drawBookFooter(ctx, state) {
+  bookButton(ctx, BOOK_CLOSE, 'Close', 15);
+  bookButton(ctx, BOOK_PREV, '‹', 22);
+  bookButton(ctx, BOOK_NEXT, '›', 22);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, 480, BOOK_PREV.y + BOOK_PREV.h / 2);
+}
+
+// Dark on the parchment, which is the reverse of the buttons everywhere else in
+// the game — those sit on grass. Same shape and the same cream lettering, so
+// they still read as the same kind of control.
+function bookButton(ctx, b, label, size) {
+  ctx.fillStyle = 'rgba(40,36,28,0.88)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = SHEET_EDGE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
+}
+
+// The button that opens it, drawn in two places and in two styles. On the title
+// screen it is a full-sized panel button beside Start; on a paused game it is a
+// small plate under the "Paused" label, because a paused board is being studied
+// and a big control in the middle of it would be covering the thing you paused
+// to look at.
+function drawBookButton(ctx, b, size) {
+  ctx.fillStyle = 'rgba(28,32,24,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 9);
+  ctx.fill();
+  ctx.strokeStyle = '#C4A574';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.fillText('Encyclopedia', b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
 function drawResult(ctx, state) {

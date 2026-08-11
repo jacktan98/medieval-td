@@ -40,7 +40,7 @@ const SPOT = pointOn(laneOf(level.routes[0], 1), AT);
 // Everything else about the enemy is the minimum updateEnemies will accept.
 function kill(side, walkFace) {
   const state = {
-    enemies: [], corpses: [], shots: [], hits: [], splats: [], units: [],
+    enemies: [], corpses: [], shots: [], hits: [], splats: [], impacts: [], units: [],
     gold: 0, lives: 20
   };
   // `route` and `s` are how an enemy knows where it is now — a road index and a

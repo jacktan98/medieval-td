@@ -1,15 +1,19 @@
 // Archery and barracks families. Tier 1 is built on an empty plot; tapping an
 // existing tower upgrades it. Costs are cumulative spend, not refundable.
 //
-// TWO NAMES PER TIER, on purpose. `name` is the flavour one — Watchtower, Guard
-// Post, Knight's Hall — and it is what the tools print, so a sim row still says
-// which building it means. `title` is what the game SHOWS in the info box, and
-// the player asked for it plainly: "Barracks Tier II", "Archers Tier III". The
-// flavour names are not drawn anywhere on screen since the menu buttons lost
-// their labels, so the two never disagree in front of anybody.
+// THREE NAMES PER TIER, on purpose, because a tier is three things.
 //
-// A soldier has a name of his own — Spearman, Pikeman, Swordsman — because you
-// can select one individually and he is not the building he came from.
+//   name    the flavour one — Watchtower, Guard Post, Knight's Hall. Nothing
+//           draws it since the menu buttons lost their labels; the TOOLS print
+//           it, so a sim row still says which building it means.
+//   title   what the tier is called plainly: "Barracks Tier II", "Archers Tier
+//           III". It heads that tier's entry in the encyclopedia.
+//   unit    the MAN the tier puts on the board, which is what the info box
+//           shows — a Spearman, a Combat Archer, a Trebuchet Engineer.
+//
+// The last of those is a barracks' `soldier.name` generalised to the other two
+// families: see the note above `archery`. Every tower shows a man in the info
+// box, so every tower has to be able to name one.
 //
 // Every figure in this file is drawn standing upright and is never rotated.
 // Aiming mirrors it left or right and nothing else: rotating a standing figure
@@ -210,7 +214,12 @@ export const rock = {
   // creak nobody can place among ten towers is noise. The landing is the event —
   // it is where the damage happens and where the eye already is.
   fireSound: false,
-  landSound: true
+  landSound: true,
+  // And it throws up earth where it comes down. A third flag beside the two
+  // sound ones, and a third flag for the same reason they are two: "what does
+  // arriving look like" turned out to be a separate question from "what does it
+  // sound like", and an arrow answers all three differently. See src/impacts.js.
+  impact: true
 };
 
 // Every tier has its own drawing now, in both families — nothing is shared.
@@ -444,10 +453,23 @@ const archer3 = {
 // from it, so a plot beside a straight is worth more than it was and a plot
 // above a bend is worth less. Plot 0 went from being in none of the winning
 // builds to being in three of the four.
+// `unit` IS THE MAN, and it is a different question from `title`.
+//
+// A barracks has always had both: the building is a "Barracks Tier I" and the
+// man it sends out is a "Spearman", and the two names sit in two places. The
+// other two families only had the building's, so the info box — which shows the
+// MAN — was captioning an archer "Archers Tier I" and a catapult crewman
+// "Artillery Tier I". Now every tier names its occupant, the box reads the
+// occupant's name for all three families, and `title` is left to do the one job
+// it is good at: heading that tier's entry in the encyclopedia.
+//
+// The names carry the tier the way the barracks' always have — Novice, Combat,
+// Elite; Catapult, Mangonel, Trebuchet — so nothing is lost by dropping the
+// roman numeral from the box.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archers Tier I',   cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archers Tier II',  cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archers Tier III', cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archers Tier I',   unit: 'Novice Archer', cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archers Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archers Tier III', unit: 'Elite Archer',  cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -829,12 +851,16 @@ const catapult = {
 // Where it lands, five seeds a row: a catapult is a real alternative to the
 // archery tower it competes with for a plot on both maps, and a strict upgrade
 // on neither. `node tools/sim.mjs` prints the rows.
+// `unit` is the crewman, named for the machine he works — see the note above
+// `archery` for why the man's name and the tier's title are two fields. There is
+// one of him rather than a squad, which is what the book prints: a barracks
+// entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
-  { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',
+  { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
     cost: 90,  damage: 22, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
-  { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',
+  { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
     cost: 115, damage: 32, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
-  { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III',
+  { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
     cost: 170, damage: 44, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 

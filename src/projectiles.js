@@ -1,4 +1,5 @@
 import { splat } from './blood.js';
+import { impact } from './impacts.js';
 import { inRange } from './ground.js';
 import { play, LAND } from './audio.js';
 
@@ -76,7 +77,19 @@ function fly(s, dt) {
 // paid for that lesson once, with a tower that read as aiming at heads.
 function land(state, s) {
   s.dead = true;
-  state.hits.push({ x: s.x, y: s.y, life: 0.12 });
+
+  // WHAT ARRIVING LOOKS LIKE, and the two projectiles no longer share an answer.
+  //
+  // A rock throws up earth: real artwork, at the point it came down, and it goes
+  // in whether or not it hit anybody — a rock cratering an empty road is the
+  // miss the player needs to SEE, the same argument that puts the landing noise
+  // on arrival rather than on release.
+  //
+  // An arrow keeps the white ring, which is what both used to get. It is a
+  // placeholder and it is honest about being one: an arrow lands inside a man
+  // and there is nothing drawn for that yet.
+  if (s.ammo.impact) impact(state, s.x, s.y);
+  else state.hits.push({ x: s.x, y: s.y, life: 0.12 });
 
   // Category B, on the ARRIVAL rather than the release — a rock is silent in the
   // air and announces itself by landing, which is also where the player is

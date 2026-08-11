@@ -35,7 +35,7 @@ function newState() {
   return {
     gold: level.startGold,
     lives: level.startLives,
-    towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [],
+    towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [],
     waveIndex: 0, spawned: 0, timer: openingDelay,
     // Set explicitly rather than left undefined: the game holds everything until
     // the player presses Start, and a headless run has no player. If this is ever

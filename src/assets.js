@@ -75,6 +75,12 @@ export const paths = {
   blood_2:         'assets/effects/Blood_2.png',
   blood_dead_1:    'assets/effects/Blood_Dead_1.png',
   blood_dead_2:    'assets/effects/Blood_Dead_2.png',
+  // Earth thrown up where a rock lands, and two of them for the same reason
+  // there are two of every blood file: a catapult fires every three seconds at
+  // the same stretch of road, and one picture repeated is a stamp rather than an
+  // event. See src/impacts.js.
+  impact_1:        'assets/effects/Artillery_Impact_1.png',
+  impact_2:        'assets/effects/Artillery_Impact_2.png',
   // UI: the dashboard and the radial menu. NOT world art — none of it is sized
   // by the shared SCALE, because a button is as big as a thumb needs and an icon
   // is as big as the number beside it. Trims and drawn boxes are in data/ui.js.
@@ -91,7 +97,12 @@ export const paths = {
   glyph_bow:       'assets/ui/Archers_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',
   glyph_up:        'assets/ui/Upgrade_Icon.png',
-  glyph_coin:      'assets/ui/Sell_Icon.png',
+  // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
+  // `glyph_coin` said what the picture was, `glyph_refund` says what the button
+  // does, and the button is now the thing that can change without the drawing
+  // being redrawn. The menu act, the rate and the helper were renamed in step;
+  // see src/menu.js.
+  glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
   // The three plates, and the two stat icons that replaced the words "Health:"
   // and "Damage:" in the info box.
@@ -103,6 +114,10 @@ export const paths = {
   // heart is the keep's lives and this one is a figure's health, and the artist
   // drew them as two files, so they are two keys.
   stat_health:     'assets/ui/Health_Icon.png',
+  // The encyclopedia's price row. A stack of coins for what a tier costs, and
+  // the refund button's own drawing for what it gives back — so the number in
+  // the book and the number on the button you press are the same picture twice.
+  stat_cost:       'assets/ui/Cost_Icon.png',
   // The board and the plot marker, split out of the artist's Map_1.svg by
   // tools/split-map.mjs. They are separate because a marker painted into the
   // background can never be taken away, and it has to vanish when a tower is

@@ -131,25 +131,21 @@ function pngsUnder(dir) {
   return [...here, ...below].sort();
 }
 
-// Which data/ui.js entry a UI file belongs to. assets.js holds the paths, so the
-// filename is matched back through it — that way a renamed upload shows up here
-// as "not referenced" instead of being silently skipped.
-const UI_FILES = {
-  'Speed_Box.png': 'plate_speed',
-  'Next_Wave_Box.png': 'plate_wave',
-  'Description_Box.png': 'plate_info',
-  'Damage_Icon.png': 'stat_damage',
-  'Health_Icon.png': 'stat_health',
-  'Gold_Icon.png': 'hud_gold',
-  'Life_Icon.png': 'hud_life',
-  'Button_Plate_Icon.png': 'btn_plate',
-  'Cancel_Button_Icon.png': 'btn_cancel',
-  'Archers_Icon.png': 'glyph_bow',
-  'Barracks_Icon.png': 'glyph_swords',
-  'Upgrade_Icon.png': 'glyph_up',
-  'Sell_Icon.png': 'glyph_coin',
-  'Rally_Point_Icon.png': 'glyph_flag'
-};
+// Which data/ui.js entry a UI file belongs to, DERIVED from assets.js rather
+// than listed here. This used to be a hand-written filename -> key map beside a
+// comment claiming the paths came from assets.js, and the gap between the two
+// cost a measurement: Cost_Icon.png landed, was wired up in assets.js and
+// data/ui.js, and this tool still reported it "not referenced" because the map
+// had never heard of it. A tool that has to be edited before it can see a new
+// file is a tool that quietly under-reports.
+//
+// Keys with no data/ui.js entry are left out on purpose, so a file wired into
+// assets.js but never given a box still reports as unreferenced.
+const UI_FILES = Object.fromEntries(
+  Object.entries(ASSET_URLS)
+    .filter(([key, src]) => src.startsWith('assets/ui/') && ui[key])
+    .map(([key, src]) => [basename(src), key])
+);
 const uiKey = f => UI_FILES[f];
 let soft = 0;
 

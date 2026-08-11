@@ -68,6 +68,18 @@ export const STAT_ICON_H = 16;
 // widest of the pair is the heart at 19.8 drawn, so 22 clears it.
 export const STAT_COL = 22;
 
+// The encyclopedia's two icon sizes. Its shelf rows are 65px deep and hold three
+// lines, so they get the smaller of the two; the enemies page has one row of
+// four stats across a full-width card and can afford the bigger.
+//
+// Both live here rather than in render.js because this is where an icon's drawn
+// size is decided, and because tools/book.mjs checks them against the source
+// files: an icon is sharp while its drawn height times the 3x device-pixel cap
+// fits in its trim, so 18 needs 54 source px and every file in the book has at
+// least 97. Raise either of these and run the tool.
+export const BOOK_ICON_H = 14;
+export const FOE_ICON_H = 18;
+
 export const ui = {
   // Dashboard. `h` rather than `fit`: these are sized by HEIGHT, because they
   // sit on a text baseline. The gold icon is 2.11 wide to 1 tall, and fitting
@@ -86,7 +98,7 @@ export const ui = {
   glyph_bow:    { trim: [208, 200, 96, 112], fit: GLYPH_BOX },
   glyph_swords: { trim: [210, 212, 92, 88],  fit: GLYPH_BOX },
   glyph_up:     { trim: [223, 212, 66, 88],  fit: GLYPH_BOX },
-  glyph_coin:   { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
+  glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72
   // and the pennant is a pale triangle filling the rest, so the ink the eye
   // weights is not where the bounding box says the middle is — centring the box
@@ -98,6 +110,13 @@ export const ui = {
   // The heart and the sword that replaced the words "Health:" and "Damage:".
   stat_health:  { trim: [157, 176, 198, 160], h: STAT_ICON_H },
   stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
+
+  // The encyclopedia's price row: what a tier costs, and what it gives back.
+  // The refund entry is the SAME trim as the menu glyph above, because it is the
+  // same file drawn at two sizes — 26 on a button, STAT_ICON_H in a book row —
+  // which is exactly the case uiSize's { h } override exists for. Two entries
+  // would mean two rects to re-paste after a re-export.
+  stat_cost:    { trim: [114, 187, 284, 138], h: STAT_ICON_H },
 
   // The three plates. These are drawn to a RECT rather than fitted to a box, so
   // the entry carries no size: the rect comes from HUD_BTN and INFO_BOX in
@@ -140,7 +159,7 @@ export const GLYPH_ART = {
   bow: 'glyph_bow',
   swords: 'glyph_swords',
   up: 'glyph_up',
-  coin: 'glyph_coin',
+  refund: 'glyph_refund',
   flag: 'glyph_flag'
 };
 

@@ -1,7 +1,7 @@
 import { families } from './data/towers.js';
 
 // Radial menu around the tapped plot. Four families map to four quadrants;
-// a built tower shows upgrade and sell in two of them.
+// a built tower shows upgrade and refund in two of them.
 //
 // Sized for touch AND for text: a button is BTN_R * 2 = 60 logical px, which a
 // 960-wide canvas shows at about 50 real px on a landscape phone — comfortably
@@ -20,13 +20,27 @@ export const CANCEL_R = 18; // drawn size of the centre cancel target
 const MARGIN = RING_R + BTN_R;
 const HUD_H = 40;
 
-// Fraction of everything spent on a tower that selling gives back. Low enough
-// that repositioning costs something: a tier 3 archery tower is 300 spent,
-// so it refunds 180 and rebuilding elsewhere is 120 out of pocket.
-export const SELL_RATE = 0.6;
+// Fraction of everything spent on a tower that taking it down gives back. Low
+// enough that repositioning costs something: a tier 3 archery tower is 300
+// spent, so it refunds 180 and rebuilding elsewhere is 120 out of pocket.
+//
+// SPENT, NOT LISTED. `t.spent` is the cumulative price of the whole ladder that
+// got the tower here — 70 + 90 + 140 for a tier 3 archery tower — so upgrading
+// never loses you the earlier tiers' money. The encyclopedia has to work that
+// sum out for a tier nobody has built yet, which is what refundOf below is for.
+export const REFUND_RATE = 0.6;
 
-export function sellValue(t) {
-  return Math.floor(t.spent * SELL_RATE);
+export function refundValue(t) {
+  return Math.floor(t.spent * REFUND_RATE);
+}
+
+// What a tier refunds when it was reached the normal way: by buying every tier
+// below it. The book quotes this beside the tier's own price, so the two numbers
+// answer the two questions a player actually has — what does the next step cost,
+// and what do I get back if I change my mind.
+export function refundOf(tiers, tier) {
+  const spent = tiers.slice(0, tier).reduce((sum, d) => sum + d.cost, 0);
+  return Math.floor(spent * REFUND_RATE);
 }
 
 const N = -Math.PI / 2;
@@ -101,7 +115,7 @@ function buildItems() {
   });
 }
 
-// Upgrade and sell sit on the horizontal axis, not the vertical. Towers are
+// Upgrade and refund sit on the horizontal axis, not the vertical. Towers are
 // 44px wide and 68 tall, so N/S buttons bury the building and its gunner —
 // exactly what you want to look at while deciding whether to upgrade it.
 //
@@ -123,12 +137,12 @@ function towerItems(t) {
     },
     {
       angle: W,
-      act: 'sell',
-      glyph: 'coin',
-      label: 'Sell',
+      act: 'refund',
+      glyph: 'refund',
+      label: 'Refund',
       tier: null,
       cost: null,
-      gain: sellValue(t),
+      gain: refundValue(t),
       available: true
     }
   ];

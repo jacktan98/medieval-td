@@ -16,7 +16,7 @@ const DT = 1 / 60;
 const barracks = families.find(f => f.id === 'barracks');
 
 function board(tier = 0) {
-  const state = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [] };
+  const state = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
   const plot = level.plots[3];
   const t = { plot, fam: barracks, def: barracks.tiers[tier], x: plot.x, y: plot.y, rally: null };
   state.towers.push(t);

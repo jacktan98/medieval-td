@@ -3,27 +3,39 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Fourteen files in, three still vector.** Everything below that is not in the table
+**Sixteen files in, three still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
 
 | file                     | replaces          | drawn        |
 |--------------------------|-------------------|--------------|
-| `Gold Icon.png`          | the gold icon     | 51 x 24      |
-| `Life Icon.png`          | the lives icon    | 30 x 24      |
-| `Button Plate Icon.png`  | the menu disc     | 60 diameter  |
-| `Cancel Button Icon.png` | the centre cancel | 36 diameter  |
-| `Archers Icon.png`       | `bow`             | 27 x 32 box  |
-| `Barracks Icon.png`      | `swords`          | 26 box       |
-| `Upgrade Icon.png`       | `up`              | 26 box       |
-| `Sell Icon.png`          | `coin`            | 26 box       |
-| `Rally Point Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
-| `Speed Box.png`          | the 1x plate      | 54 x 24      |
-| `Next Wave Box.png`      | the wave plate    | 127 x 24     |
-| `Description Box.png`    | the info panel    | 220 x 76     |
-| `Damage Icon.png`        | the word "Damage" | 16 tall      |
-| `Health Icon.png`        | the word "Health" | 16 tall      |
+| `Gold_Icon.png`          | the gold icon     | 51 x 24      |
+| `Life_Icon.png`          | the lives icon    | 30 x 24      |
+| `Button_Plate_Icon.png`  | the menu disc     | 60 diameter  |
+| `Cancel_Button_Icon.png` | the centre cancel | 36 diameter  |
+| `Archers_Icon.png`       | `bow`             | 27 x 32 box  |
+| `Barracks_Icon.png`      | `swords`          | 26 box       |
+| `Upgrade_Icon.png`       | `up`              | 26 box       |
+| `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
+| `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
+| `Speed_Box.png`          | the 1x plate      | 54 x 24      |
+| `Next_Wave_Box.png`      | the wave plate    | 127 x 24     |
+| `Description_Box.png`    | the info panel    | 220 x 76     |
+| `Damage_Icon.png`        | the word "Damage" | 16 tall      |
+| `Health_Icon.png`        | the word "Health" | 16 tall      |
+| `Cost_Icon.png`          | a tier's price in the book | 14 tall |
+
+`Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
+down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
+`refundValue()` and the rate is `REFUND_RATE`. The key used to be `glyph_coin`,
+which named the picture; `glyph_refund` names the job, and the job is the thing
+that can now change without the drawing being redrawn.
+
+`Cost_Icon.png` is new and is used **only in the encyclopedia**, beside what a
+tier costs, with the refund icon beside what it gives back. The two sit in one
+row so the pair reads as a price and a resale value rather than as two unrelated
+figures.
 
 Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
 **`max`** — the chevrons on a tower with nothing left to buy. Siege and the
@@ -152,9 +164,9 @@ a cancel target in the middle. Geometry is in `src/menu.js` — `BTN_R`, `RING_R
 `CANCEL_R` — and `input.js` hit-tests those same constants, so the drawn size and
 the tappable size are related but not equal.
 
-**There are no words on these buttons.** "Barracks", "Sell", "Upgrade" and the
+**There are no words on these buttons.** "Barracks", "Refund", "Upgrade" and the
 `T1` in front of every price all came out. What is left is the glyph and the
-gold — `70g` to build, `90g` to upgrade, `+42g` to sell — which is the whole
+gold — `70g` to build, `90g` to upgrade, `+42g` to refund — which is the whole
 decision: the picture says what it is and the number says what it costs. A
 button with nothing to say (rally, and a tower already at tier 3) carries no text
 at all and draws its glyph bigger to fill the space the price would have used.
@@ -176,7 +188,7 @@ The eight glyphs, with the code names they replace:
 | `up`       | upgrade this tower                     |
 | `max`      | already at tier 3, nothing to buy      |
 | `flag`     | move the barracks rally point          |
-| `coin`     | sell                                   |
+| `refund`   | take the tower down for gold           |
 
 ## Four things that will cost you a redraw if ignored
 
@@ -300,19 +312,35 @@ The panel is `Description Box.png`, 220 x 76. The rounded rectangle it replaced 
 still in the code as the fallback, for the same reason every other file here has
 one: a UI PNG that fails to load must leave a readable panel, not a hole.
 
-## The tier stars are gone
+## The tier stars came back, but only where the artwork cannot say it
 
-Every tower used to carry one small star per tier over its roof, and they were
-the only thing on the board that said which tier a building was. The info box
-says it in words now, and two indicators for one fact is one too many.
+Every tower used to carry one small star per tier over its roof. They came out
+when every tier got a drawing of its own: timber becomes stone, so the building
+says its own tier and two indicators for one fact was one too many.
 
-The stars were the worse of the pair: three shapes above a roof competing with
-the flag and the muster rings, and the first thing cut off by the top of the
-board on a high plot. Removing them gave every plot 11px more headroom —
-`tools/hud-clear.mjs` measured "ink top" as 11px above the building box purely to
-allow for them, and that allowance came out with them.
+Artillery's three tiers are **one drawing**, so nothing about a Trebuchet on the
+board distinguishes it from a Catapult. Those tiers get their stars back and
+nothing else does — `tierMarks` in `render.js` asks whether another tier in the
+same family shares this sprite, so the stars **remove themselves** the moment the
+tier 2 and tier 3 machines are drawn. Nothing has to be deleted.
 
-One consequence worth knowing: **tier is now visible only when a tower is
-selected.** A glance across the board no longer says which of your towers are
-upgraded. If that turns out to matter, the fix is something ON the building — a
-banner colour, a different roof — rather than the stars back.
+## The encyclopedia
+
+Two pages behind an **Encyclopedia** button on the title screen and under the
+"Paused" label, holding every box description in the game at once. Geometry is in
+`src/book.js`, drawing in `render.js`, and `node tools/book.mjs` checks it.
+
+There is **no new art for it** beyond `Cost_Icon.png`. The page is a parchment
+sheet drawn in code, and every picture on it is the board's own — buildings from
+`assets/towers`, men from `assets/units`, enemies from `assets/enemies`.
+
+Both scale factors on the page are chosen the way `PORTRAIT_SCALE` is, and for
+the same reason: **one factor per kind, never fitted per item**. Figures use
+`PORTRAIT_SCALE` itself, so a man is the same size in the book as in the info
+box; buildings use `BOOK_TOWER_SCALE`, derived from the defs so the tallest tower
+exactly fills its slot and every other building comes out in proportion to it. A
+Militia Camp reads as bigger than a Catapult on the page because it is bigger on
+the board.
+
+If a redrawn tower is taller than anything before it, that factor shrinks by
+itself and the whole shelf follows. Nothing here needs re-typing after a redraw.

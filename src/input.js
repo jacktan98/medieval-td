@@ -1,11 +1,12 @@
 import { level, useLevel } from './level.js';
 import { PLOT_R, hitHudButton, hitStart, hitMapButton } from './render.js';
-import { openMenu, closeMenu, hitMenu, hitCancel, canUse, sellValue, RING_R } from './menu.js';
+import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { solo, unlock, selectionCue, familyCue, CUE } from './audio.js';
+import { hitBookButton, openBook, tapBook } from './book.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
@@ -33,9 +34,16 @@ export function attachInput(canvas, state, restart) {
     // Start button is itself the tap that unlocks.
     unlock();
 
+    // THE BOOK SWALLOWS EVERYTHING while it is open, and it is tested before the
+    // title screen because it can be opened from there — a Close button drawn
+    // over the map buttons must not be answered by the map buttons underneath.
+    // Its own footer is the only thing on screen that acts on a tap.
+    if (state.book !== null) { tapBook(state, x, y); return; }
+
     // The title screen owns the whole board: nothing under it may act on a tap,
     // including a plot the Start button happens to be sitting over.
     if (!state.started) {
+      if (hitBookButton(state, x, y)) { openBook(state); return; }
       const pick = hitMapButton(state, x, y);
       if (pick !== null) {
         // Switching maps rebuilds the game rather than just remembering the
@@ -66,8 +74,14 @@ export function attachInput(canvas, state, restart) {
     // thinking time with the shop open.
     //
     // Only the button that undoes it still answers, which is why it is tested
-    // first.
-    if (state.paused) return;
+    // first — and now the one that opens the encyclopedia, which is the other
+    // thing a stopped game is for. Reading is not playing: the book spends no
+    // gold, moves nothing and starts no wave, so letting it through the pause
+    // takes nothing back from what the pause is protecting.
+    if (state.paused) {
+      if (hitBookButton(state, x, y)) openBook(state);
+      return;
+    }
 
     if (hud === 'speed') { toggleSpeed(state); return; }
     if (hud === 'wave') { callWaveEarly(state); return; }
@@ -147,10 +161,16 @@ export function attachInput(canvas, state, restart) {
   canvas.addEventListener('pointermove', e => {
     if (e.pointerType !== 'mouse') return;
 
-    // A paused game does not follow the mouse either. Hovering an empty plot
-    // opens its build menu on desktop, so without this the one input that needs
-    // no tap at all would walk straight through the pause.
-    if (state.paused) { state.hoverTower = null; state.ghost = null; return; }
+    // A paused game does not follow the mouse either, and neither does one with
+    // the book open. Hovering an empty plot opens its build menu on desktop, so
+    // without this the one input that needs no tap at all would walk straight
+    // through both — and a radial menu opening itself behind the encyclopedia is
+    // a menu the player cannot see and did not ask for.
+    if (state.paused || state.book !== null) {
+      state.hoverTower = null;
+      state.ghost = null;
+      return;
+    }
 
     const { x, y } = at(e);
 
@@ -273,9 +293,9 @@ function run(state, item) {
     solo(familyCue(t.fam.id));
   }
 
-  if (item.act === 'sell') {
+  if (item.act === 'refund') {
     const t = menu.tower;
-    state.gold += sellValue(t);
+    state.gold += refundValue(t);
     removeUnits(state, t);
     state.towers = state.towers.filter(other => other !== t);
     if (state.hoverTower === t) state.hoverTower = null;
