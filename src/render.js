@@ -10,12 +10,12 @@ import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFli
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
-         PORTRAIT_SCALE, STAT_ICON_H, STAT_COL, BOOK_ICON_H } from './data/ui.js';
+         INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo } from './select.js';
 import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
          SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-         BOOK_BTN_START, BOOK_BTN_PAUSE } from './book.js';
+         BOOK_BTN_START } from './book.js';
 
 const PLOT_R = 30;
 
@@ -1355,11 +1355,7 @@ function drawHud(ctx, state) {
     ctx.fillText('Paused', 480, 78);
     ctx.restore();
 
-    // The other place the book opens from, and the more useful of the two: this
-    // is where a player stops mid-wave to work out whether the Mangonel is worth
-    // 115 gold, and neither it nor the tier below it is selected — so the info
-    // box cannot answer and the radial menu only quotes a price.
-    drawBookButton(ctx, BOOK_BTN_PAUSE, 15);
+    drawPauseRow(ctx, state);
   }
 
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
@@ -1559,15 +1555,28 @@ function drawGlyph(ctx, kind) {
 // Same rule as the dashboard plates: the HEIGHT is chosen — 76 holds a title and
 // two stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
 // own proportions. 678x234 at 76 tall is 220.
-const INFO_H = 76;
+const INFO_H = Math.round(76 * INFO_SCALE);
 const INFO_W = Math.round(INFO_H * aspect('plate_info'));
 export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art: 'plate_info' };
 
 // The portrait slot, sized to the BIGGEST figure rather than the other way
-// round. Every portrait is drawn at PORTRAIT_SCALE * SCALE — one factor, so a
+// round. Every portrait is drawn at INFO_PORTRAIT * SCALE — one factor, so a
 // Giant Thug is genuinely bigger than a Thug — and the largest of them is the
 // heavy at 186 x 162 source, which lands at 61 x 53. 64 x 56 holds it.
-const PORTRAIT = { w: 64, h: 56 };
+const PORTRAIT = { w: 58, h: 50 };
+
+// Everything inside the panel, at the size it came down to. These are written
+// out rather than multiplied by INFO_SCALE, because a font is not a length: 11.5
+// x 0.9 is 10.35, and the size that actually fits is a measurement.
+//
+// The binding one is the TITLE, and the string that binds it is "Trebuchet
+// Engineer" — the longest name the box can be asked to show. At 700 weight in
+// system-ui it measures 142.9px at 13, 115.4 at 10.5 and 110.0 at 10, against a
+// text column that is now 118 wide once the portrait and the plate's own border
+// are taken out. 10.5 fits with 2.6px to spare and 11 does not fit at all.
+const INFO_TITLE = 10.5;
+const INFO_ROW = 10;
+const INFO_ICON = 14;
 
 function drawInfo(ctx, state) {
   const info = selectionInfo(state);
@@ -1592,23 +1601,20 @@ function drawInfo(ctx, state) {
   const img = info.sprite && art[info.sprite];
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
-    const dw = sw * SCALE * PORTRAIT_SCALE;
-    const dh = sh * SCALE * PORTRAIT_SCALE;
+    const dw = sw * SCALE * INFO_PORTRAIT;
+    const dh = sh * SCALE * INFO_PORTRAIT;
     ctx.drawImage(img, sx, sy, sw, sh,
-      x + 12 + (PORTRAIT.w - dw) / 2,
+      x + 10 + (PORTRAIT.w - dw) / 2,
       y + h / 2 - dh / 2,
       dw, dh);
   }
 
-  // THE TEXT COLUMN, and it was 4px further right until the names got longer.
-  //
-  // Every tower used to be captioned with its tier — "Archers Tier I" — and the
-  // longest of those is 18px shorter than "Trebuchet Engineer". Naming the MAN
-  // instead was the right call, but it pushed the widest caption in the game
-  // from 125px to 143 against a column that only has 134, so the longest names
-  // ran off the plate. Tightening both gutters buys 4 of the 9px back; the font
-  // below buys the rest.
-  const tx = x + 10 + PORTRAIT.w + 8;
+  // THE TEXT COLUMN. Every tower used to be captioned with its tier — "Archers
+  // Tier I" — and the longest of those is 18px shorter than "Trebuchet
+  // Engineer". Naming the MAN instead was the right call and it is what put this
+  // column under pressure; the gutters either side of the portrait are as tight
+  // as they read at, and the font does the rest.
+  const tx = x + 10 + PORTRAIT.w + 7;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
@@ -1619,30 +1625,26 @@ function drawInfo(ctx, state) {
   const rows = info.hp !== null ? 2 : 1;
   const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
 
-  // 11.5 rather than 13, and the half is not fussiness — it is the largest size
-  // at which the longest name in the game fits the plate. Measured, at 700
-  // weight in system-ui: "Trebuchet Engineer" is 142.9px at 13, 131.9 at 12 and
-  // 126.4 at 11.5, against a column 134 wide whose drawn border eats about 4.
-  // 12 misses by 2px and 13 by 13. Everything shorter simply has more air.
+  // See INFO_TITLE for why it is 10.5 and not a round number.
   //
-  // The check on this is the browser and not a tool: node has no canvas, so
-  // there is nothing here that can measure a font. If a name longer than
+  // The check on it is the browser and not a tool: node has no canvas, so there
+  // is nothing outside one that can measure a font. If a name longer than
   // "Trebuchet Engineer" is ever added, look at the box.
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
-  ctx.font = '700 11.5px system-ui, sans-serif';
+  ctx.font = `700 ${INFO_TITLE}px system-ui, sans-serif`;
   ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
   // The rows are ICONS, not the words "Health:" and "Damage:". Both sit in a
   // column STAT_COL wide so the numbers beside them line up whether the row
   // above is there or not — a tower has no health row, and a damage figure that
   // shifted left on towers and right on units would read as two layouts.
-  // Down a point with the title, so the panel still reads as a heading over two
-  // stat rows rather than as three lines of the same weight.
-  ctx.font = '700 11px system-ui, sans-serif';
+  // Down with the title, so the panel still reads as a heading over two stat
+  // rows rather than as three lines of the same weight.
+  ctx.font = `700 ${INFO_ROW}px system-ui, sans-serif`;
   let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
   if (info.hp !== null) {
-    drawUi(ctx, 'stat_health', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
+    drawUi(ctx, 'stat_health', tx + STAT_COL / 2, ty, { h: INFO_ICON });
     // Reddens as it drops, on the same thresholds as the health bars over their
     // heads, so the two readings agree at a glance.
     const frac = info.maxHp ? info.hp / info.maxHp : 1;
@@ -1652,16 +1654,16 @@ function drawInfo(ctx, state) {
     ty += ROW_PITCH;
   }
 
-  drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: STAT_ICON_H });
+  drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: INFO_ICON });
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
   ctx.fillText(String(info.damage), tx + STAT_COL + 6, ty);
 }
 
-// How much vertical room the title takes, and the pitch between stat rows. 20 is
-// a 16px icon with 4 of air, which is the tightest the two hearts and swords can
-// sit without touching.
-const TITLE_BAND = 22;
-const ROW_PITCH = 20;
+// How much vertical room the title takes, and the pitch between stat rows. 18 is
+// a 14px icon with 4 of air, which is the tightest the hearts and swords can sit
+// without touching. Both came down with the panel.
+const TITLE_BAND = 20;
+const ROW_PITCH = 18;
 
 // The title screen, and the reason it exists.
 //
@@ -2015,11 +2017,79 @@ function bookButton(ctx, b, label, size) {
   ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
-// The button that opens it, drawn in two places and in two styles. On the title
-// screen it is a full-sized panel button beside Start; on a paused game it is a
-// small plate under the "Paused" label, because a paused board is being studied
-// and a big control in the middle of it would be covering the thing you paused
-// to look at.
+// --- what a paused game puts on the board -------------------------------------
+//
+// Two controls under the "Paused" label, and no dimming veil: the whole point of
+// pausing here is to STUDY the board, and a game that greys out the thing you
+// paused to look at has answered the wrong question. So the row sits in the
+// strip the dashboard already owns rather than over the middle of the map.
+//
+// THE GAP BETWEEN THEM IS THE POINT. Quit is the one control in the game that
+// throws work away, and it sits beside the button a player presses to read
+// something — so the two padded tap boxes must not touch. 30px of drawn gap puts
+// 4px of clear air between them at PAUSE_PAD each side; at the 12 that looked
+// right on screen they overlapped by 14 and the loop would have handed the
+// overlap to whichever came first.
+const PAUSE_ROW_Y = 94;
+const PAUSE_H = 38;
+const PAUSE_GAP = 30;
+const PAUSE_BOOK_W = 170;
+const PAUSE_QUIT_W = 110;
+const PAUSE_ROW_X =
+  Math.round(480 - (PAUSE_BOOK_W + PAUSE_GAP + PAUSE_QUIT_W) / 2);
+
+export const PAUSE_ROW = {
+  book: { x: PAUSE_ROW_X, y: PAUSE_ROW_Y, w: PAUSE_BOOK_W, h: PAUSE_H },
+  quit: { x: PAUSE_ROW_X + PAUSE_BOOK_W + PAUSE_GAP, y: PAUSE_ROW_Y, w: PAUSE_QUIT_W, h: PAUSE_H }
+};
+
+// Drawn 38 deep, tapped 64, the same trick every other control in the game uses:
+// 64 logical px is 44 real ones on the narrowest canvas this game targets.
+const PAUSE_PAD = 13;
+
+export function hitPauseButton(state, x, y) {
+  for (const [id, b] of Object.entries(PAUSE_ROW)) {
+    if (x >= b.x - PAUSE_PAD && x <= b.x + b.w + PAUSE_PAD &&
+        y >= b.y - PAUSE_PAD && y <= b.y + b.h + PAUSE_PAD) return id;
+  }
+  return null;
+}
+
+function drawPauseRow(ctx, state) {
+  // The other place the book opens from, and the more useful of the two: this is
+  // where a player stops mid-wave to work out whether the Mangonel is worth 115
+  // gold, and neither it nor the tier below it is selected — so the info box
+  // cannot answer and the radial menu only quotes a price.
+  drawBookButton(ctx, PAUSE_ROW.book, 15);
+
+  // ARMED OR NOT, and the label is the only thing that says which. A quit
+  // throws away a board that may be half an hour old, so the first tap asks and
+  // the second does it — see tapPaused in input.js. Amber while it waits,
+  // because the button is now a question rather than a label.
+  const armed = state.quitArmed && performance.now() < state.quitArmed;
+
+  ctx.fillStyle = 'rgba(28,32,24,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(PAUSE_ROW.quit.x, PAUSE_ROW.quit.y, PAUSE_ROW.quit.w, PAUSE_ROW.quit.h, 9);
+  ctx.fill();
+  ctx.strokeStyle = armed ? '#E0B24C' : '#C4A574';
+  ctx.lineWidth = armed ? 2.5 : 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = armed ? '#E0B24C' : '#F0E6D2';
+  // Smaller when armed, because the question is three times the word. Measured:
+  // "Quit — sure?" is about 86px at 13 against a 110px plate, where at 15 it
+  // would be 99 and crowd both ends.
+  ctx.font = armed ? '700 13px system-ui, sans-serif' : '700 15px system-ui, sans-serif';
+  ctx.fillText(armed ? 'Quit — sure?' : 'Quit',
+    PAUSE_ROW.quit.x + PAUSE_ROW.quit.w / 2, PAUSE_ROW.quit.y + PAUSE_ROW.quit.h / 2 + 1);
+}
+
+// The button that opens the book, drawn in two places and in two styles. On the
+// title screen it is a full-sized panel button beside Start; on a paused game it
+// is a small plate in the row above.
 function drawBookButton(ctx, b, size) {
   ctx.fillStyle = 'rgba(28,32,24,0.85)';
   ctx.beginPath();

@@ -1,11 +1,11 @@
 import { level, useLevel } from './level.js';
-import { PLOT_R, hitHudButton, hitStart, hitMapButton } from './render.js';
+import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitPauseButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
-import { solo, unlock, selectionCue, familyCue, CUE } from './audio.js';
+import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
@@ -34,117 +34,19 @@ export function attachInput(canvas, state, restart) {
     // Start button is itself the tap that unlocks.
     unlock();
 
-    // THE BOOK SWALLOWS EVERYTHING while it is open, and it is tested before the
-    // title screen because it can be opened from there — a Close button drawn
-    // over the map buttons must not be answered by the map buttons underneath.
-    // Its own footer is the only thing on screen that acts on a tap.
-    if (state.book !== null) { tapBook(state, x, y); return; }
-
-    // The title screen owns the whole board: nothing under it may act on a tap,
-    // including a plot the Start button happens to be sitting over.
-    if (!state.started) {
-      if (hitBookButton(state, x, y)) { openBook(state); return; }
-      const pick = hitMapButton(state, x, y);
-      if (pick !== null) {
-        // Switching maps rebuilds the game rather than just remembering the
-        // choice, because the board behind the title screen is the chosen map:
-        // its roads, its plots, its purse. Anything already placed belonged to
-        // the other map's plots and cannot come along.
-        state.levelIndex = pick;
-        useLevel(pick);
-        restart();
-        return;
-      }
-      if (hitStart(state, x, y)) state.started = true;
-      return;
-    }
-
-    if (state.result) { restart(); return; }
-
-    // The HUD sits above everything and is not part of the board, so it is
-    // asked first — otherwise a button that happens to overlap a plot's menu
-    // would lose to it.
-    const hud = hitHudButton(state, x, y);
-    if (hud === 'pause') { togglePause(state); return; }
-
-    // PAUSED SWALLOWS EVERYTHING ELSE. Not just the board — the speed toggle and
-    // the early wave call go too, because "paused" has to mean the game is not
-    // moving in any respect. Half a pause, where you can still queue the next
-    // wave or spend gold with the clock stopped, is not a pause; it is free
-    // thinking time with the shop open.
+    // ONE CLICK, AT ONE PLACE, and only when the tap did something.
     //
-    // Only the button that undoes it still answers, which is why it is tested
-    // first — and now the one that opens the encyclopedia, which is the other
-    // thing a stopped game is for. Reading is not playing: the book spends no
-    // gold, moves nothing and starts no wave, so letting it through the pause
-    // takes nothing back from what the pause is protecting.
-    if (state.paused) {
-      if (hitBookButton(state, x, y)) openBook(state);
-      return;
-    }
-
-    if (hud === 'speed') { toggleSpeed(state); return; }
-    if (hud === 'wave') { callWaveEarly(state); return; }
-
-    // Placing a rally point swallows the tap: the whole board is the target,
-    // so nothing underneath may act on it.
-    if (state.placing) {
-      setRally(state, state.placing, x, y);
-      state.placing = null;
-      return;
-    }
-
-    // A menu button wins over anything underneath it, including the plot ring
-    // the menu is anchored to.
-    const item = hitMenu(state, x, y);
-    if (item) {
-      if (canUse(state, item)) run(state, item);
-      return;   // an unaffordable button absorbs the tap rather than closing
-    }
-
-    // Clicking the plot whose menu opened itself on hover PINS that menu rather
-    // than dismissing it. Without this, the most natural thing a mouse user does
-    // — point at a plot, then click it — lands in the cancel hole at the middle
-    // of the ring and closes the menu the hover just opened, so the game looks
-    // like it ignored the click.
-    if (state.menu && state.menu.viaHover &&
-        Math.hypot(state.menu.plot.x - x, state.menu.plot.y - y) <= PLOT_R + 8) {
-      state.menu.viaHover = false;
-      return;
-    }
-
-    if (hitCancel(state, x, y)) { closeMenu(state); return; }
-
-    const plot = level.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
-    if (plot) {
-      const tower = state.towers.find(t => t.plot === plot) || null;
-      openMenu(state, plot, tower);
-      // Opened deliberately, so moving the mouse away must not take it back.
-      state.menu.viaHover = false;
-      // A built tower fills the info box the moment its menu opens: you are
-      // deciding whether to upgrade it, which is the one moment its numbers
-      // matter. An empty plot has nothing to describe.
-      //
-      // AND IT DOES SO SILENTLY. Selecting a tower is how you read its numbers,
-      // and it is done constantly — every time you weigh an upgrade, every time
-      // you check what is already there. A line on each of those taps is the
-      // same clip several times a minute, which is exactly what the Category A
-      // share rules exist to stop, and this was slipping past them by being a
-      // different event each time. Building and upgrading still speak; those
-      // happen once each.
-      state.selected = tower ? { kind: 'tower', ref: tower } : null;
-      return;
-    }
-
-    // Nothing to build on here, so this is a look. A figure under the tap gets
-    // selected; bare ground clears whatever was.
+    // The alternative is a play(SELECT) in each of the dozen branches below, and
+    // the alternative is how a control quietly ends up silent: a branch added
+    // later simply forgets. Every branch answers the same question instead —
+    // did this tap act? — and the click is the answer to it.
     //
-    // AFTER the plot check, deliberately: soldiers stand on the road and plots
-    // sit off it, so the two rarely overlap — but where they do, building is the
-    // action and looking is the fallback.
-    closeMenu(state);
-    state.selected = pickFigure(state, x, y);
-    solo(selectionCue(state.selected));
+    // A tap that does NOTHING stays silent, and that is the useful half of the
+    // rule. An unaffordable button absorbs its tap rather than acting, a paused
+    // board refuses everything but two controls, and bare ground with nothing
+    // selected has nothing to say. Clicking at those would teach the player that
+    // the click means "heard you" rather than "done".
+    if (tap(state, x, y, restart)) play(SELECT);
   });
 
   // --- desktop hover ---------------------------------------------------------
@@ -206,6 +108,170 @@ export function attachInput(canvas, state, restart) {
   });
 }
 
+// WHAT A TAP DOES, and whether it did anything. Every branch returns true when
+// it acted and false when it declined, which is what the click above is keyed
+// to — see the note there for why that is one question rather than twelve.
+//
+// The ORDER is the whole design. Each layer that is up owns the whole screen
+// while it is: the book covers the board, the title screen covers the board, the
+// HUD sits over both the board and any menu on it. A tap is offered to them in
+// that order and the first one that wants it keeps it.
+function tap(state, x, y, restart) {
+  // THE BOOK SWALLOWS EVERYTHING while it is open, and it is tested before the
+  // title screen because it can be opened from there — a Close button drawn
+  // over the map buttons must not be answered by the map buttons underneath.
+  // Its own footer is the only thing on screen that acts on a tap.
+  if (state.book !== null) return tapBook(state, x, y);
+
+  // The title screen owns the whole board: nothing under it may act on a tap,
+  // including a plot the Start button happens to be sitting over.
+  if (!state.started) {
+    if (hitBookButton(state, x, y)) { openBook(state); return true; }
+
+    const pick = hitMapButton(state, x, y);
+    if (pick !== null) {
+      // Switching maps rebuilds the game rather than just remembering the
+      // choice, because the board behind the title screen is the chosen map:
+      // its roads, its plots, its purse. Anything already placed belonged to
+      // the other map's plots and cannot come along.
+      state.levelIndex = pick;
+      useLevel(pick);
+      restart();
+      return true;
+    }
+
+    if (hitStart(state, x, y)) { state.started = true; return true; }
+    return false;
+  }
+
+  if (state.result) { restart(); return true; }
+
+  // The HUD sits above everything and is not part of the board, so it is
+  // asked first — otherwise a button that happens to overlap a plot's menu
+  // would lose to it.
+  const hud = hitHudButton(state, x, y);
+  if (hud === 'pause') { togglePause(state); return true; }
+
+  // PAUSED SWALLOWS EVERYTHING ELSE. Not just the board — the speed toggle and
+  // the early wave call go too, because "paused" has to mean the game is not
+  // moving in any respect. Half a pause, where you can still queue the next
+  // wave or spend gold with the clock stopped, is not a pause; it is free
+  // thinking time with the shop open.
+  //
+  // Only the button that undoes it still answers, which is why it is tested
+  // first — and the two the pause itself puts on screen. Reading is not playing
+  // and neither is leaving: the book spends no gold and starts no wave, and
+  // quitting ends the game rather than advancing it.
+  if (state.paused) return tapPaused(state, x, y, restart);
+
+  if (hud === 'speed') { toggleSpeed(state); return true; }
+  if (hud === 'wave') { callWaveEarly(state); return true; }
+
+  // Placing a rally point swallows the tap: the whole board is the target,
+  // so nothing underneath may act on it.
+  if (state.placing) {
+    setRally(state, state.placing, x, y);
+    state.placing = null;
+    return true;
+  }
+
+  // A menu button wins over anything underneath it, including the plot ring
+  // the menu is anchored to.
+  const item = hitMenu(state, x, y);
+  if (item) {
+    // An unaffordable button absorbs the tap rather than closing — and answers
+    // with nothing, because nothing happened.
+    if (!canUse(state, item)) return false;
+    run(state, item);
+    return true;
+  }
+
+  // Clicking the plot whose menu opened itself on hover PINS that menu rather
+  // than dismissing it. Without this, the most natural thing a mouse user does
+  // — point at a plot, then click it — lands in the cancel hole at the middle
+  // of the ring and closes the menu the hover just opened, so the game looks
+  // like it ignored the click.
+  if (state.menu && state.menu.viaHover &&
+      Math.hypot(state.menu.plot.x - x, state.menu.plot.y - y) <= PLOT_R + 8) {
+    state.menu.viaHover = false;
+    return true;
+  }
+
+  if (hitCancel(state, x, y)) { closeMenu(state); return true; }
+
+  const plot = level.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
+  if (plot) {
+    const tower = state.towers.find(t => t.plot === plot) || null;
+    openMenu(state, plot, tower);
+    // Opened deliberately, so moving the mouse away must not take it back.
+    state.menu.viaHover = false;
+    // A built tower fills the info box the moment its menu opens: you are
+    // deciding whether to upgrade it, which is the one moment its numbers
+    // matter. An empty plot has nothing to describe.
+    //
+    // AND IT DOES SO WITHOUT A VOICE. Selecting a tower is how you read its
+    // numbers, and it is done constantly — every time you weigh an upgrade,
+    // every time you check what is already there. A line on each of those taps
+    // is the same clip several times a minute, which is exactly what the
+    // Category A share rules exist to stop, and this was slipping past them by
+    // being a different event each time. Building and upgrading still speak;
+    // those happen once each. The tap's own click is not a voice and is not
+    // subject to any of that.
+    state.selected = tower ? { kind: 'tower', ref: tower } : null;
+    return true;
+  }
+
+  // Nothing to build on here, so this is a look. A figure under the tap gets
+  // selected; bare ground clears whatever was.
+  //
+  // AFTER the plot check, deliberately: soldiers stand on the road and plots
+  // sit off it, so the two rarely overlap — but where they do, building is the
+  // action and looking is the fallback.
+  const had = state.selected;
+  closeMenu(state);
+  state.selected = pickFigure(state, x, y);
+  solo(selectionCue(state.selected));
+  // Picking somebody up is an action and so is putting them down; tapping bare
+  // ground twice is not.
+  return !!(state.selected || had);
+}
+
+// The two controls a paused game puts on the board, and nothing else answers.
+//
+// QUITTING ASKS TWICE. It is the one control in the game that throws away work —
+// a wave 7 board is half an hour — and it sits next to the button a player
+// presses to read something, which is the mis-tap that would hurt. So the first
+// tap ARMS it and the label says so; the second, within a few seconds, does it.
+//
+// The arming is cleared by anything else that happens, including unpausing, so a
+// half-pressed quit can never wait around to catch a later tap.
+function tapPaused(state, x, y, restart) {
+  const hit = hitPauseButton(state, x, y);
+
+  if (hit === 'book') { state.quitArmed = 0; openBook(state); return true; }
+
+  if (hit === 'quit') {
+    const now = performance.now();
+    if (state.quitArmed && now < state.quitArmed) {
+      // Back to the title screen with the map still chosen — newGame() keeps
+      // levelIndex, because which map you are playing is a menu setting rather
+      // than part of the game being thrown away.
+      restart();
+      return true;
+    }
+    state.quitArmed = now + QUIT_WINDOW;
+    return true;
+  }
+
+  state.quitArmed = 0;
+  return false;
+}
+
+// How long a half-pressed quit stays armed, in ms. Long enough to read the
+// changed label and press again, short enough that it is never still waiting
+// when a thumb comes back to the screen.
+const QUIT_WINDOW = 3000;
+
 // Stopping the game also puts away anything the player was in the middle of.
 //
 // A radial menu left open across a pause is the worst of both: it is the one
@@ -215,6 +281,10 @@ export function attachInput(canvas, state, restart) {
 // nothing that invites an action it will refuse.
 function togglePause(state) {
   state.paused = !state.paused;
+  // A half-pressed Quit never survives the pause it was pressed in, in either
+  // direction. Unpausing takes the button off the screen, and pausing again is a
+  // new decision rather than the second half of an old one.
+  state.quitArmed = 0;
   if (!state.paused) return;
   closeMenu(state);
   state.placing = null;
@@ -277,7 +347,12 @@ function run(state, item) {
     // Show what you just bought. The menu closes on a build, so without this the
     // one moment you most want its numbers is the one moment nothing is selected.
     state.selected = { kind: 'tower', ref: built };
-    solo(selectionCue(state.selected));
+    // PRIORITY, for the same reason an upgrade has it: this is a button the
+    // player pressed and gold they spent. Building and upgrading are the two
+    // moments a family speaks, and both are deliberate purchases — a swing or a
+    // death cry holding either of them off is the channel getting the priority
+    // exactly backwards.
+    solo(selectionCue(state.selected), true);
   }
 
   if (item.act === 'upgrade') {

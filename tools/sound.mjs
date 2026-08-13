@@ -18,6 +18,7 @@
 
 const DUR = {
   'assets/audio/sfx/Arrow_shot.mp3': 0.5,
+  'assets/audio/sfx/Select_Sound.mp3': 0.5,
   'assets/audio/voice/Thug_1.mp3': 2
 };
 const DEFAULT_DUR = 0.5;
@@ -128,7 +129,7 @@ const ctx = {
 globalThis.AudioContext = function () { return ctx; };
 globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(path) });
 
-const { loadAudio, play, solo, CUE, SHOT, ATTACK, selectionCue, familyCue } =
+const { loadAudio, play, solo, CUE, SHOT, ATTACK, SELECT, selectionCue, familyCue } =
   await import('../src/audio.js');
 
 // Load with console.info muted. The module reports anything it had to move a
@@ -195,6 +196,33 @@ ctx.currentTime = 200;
 played = [];
 for (let i = 0; i < 9; i++) solo(CUE.arrowKill);
 check('nine at the same instant come out as one', played.length, 1);
+
+// --- the tap click ------------------------------------------------------------
+//
+// The UI's one sound, and it is Category B for a reason that has nothing to do
+// with the battle: it answers the player's FINGER. A reply that is sometimes
+// dropped is worse than no reply at all — a button whose click depends on
+// whether a thug happens to be shouting reads as a button that sometimes misses
+// the tap.
+
+console.log('\nThe tap click');
+
+ctx.currentTime = 240;
+played = [];
+solo(CUE.thug);                                    // holds the voice channel
+check('a click sounds while a voice is speaking', at(241, () => play(SELECT)), 1);
+check('and again a moment later', at(241.5, () => play(SELECT)), 1);
+
+routes = [];
+at(242, () => play(SELECT));
+check('on the background bus, not the voice one', routes[0] && routes[0].bus, 'busB');
+
+// It de-dupes on the same millisecond like everything else in the category —
+// two pointer events for one tap must not double it.
+ctx.currentTime = 243;
+played = [];
+play(SELECT); play(SELECT);
+check('two on the same instant come out as one', played.length, 1);
 
 // --- priority: the one thing that may interrupt --------------------------------
 //

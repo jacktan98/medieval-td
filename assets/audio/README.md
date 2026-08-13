@@ -183,6 +183,27 @@ on underneath throughout, so it is not silence exactly — nothing else gets
 announced. Trimming `Thug_1` would take it under 2s if that ever reads wrong in
 play.
 
+## The UI has one sound of its own
+
+`Select_Sound.mp3` — **Category B**, and for a reason that has nothing to do with
+the battle: it answers the player's FINGER. A reply that is sometimes dropped is
+worse than no reply at all, because a button whose click depends on whether a
+thug happens to be shouting reads as a button that sometimes misses the tap. So
+it never queues, is never chosen over, and never waits for the voice channel. It
+ducks under a voice line like everything else on that bus, which is right — the
+line is the more important of the two and the click still comes through under it.
+
+**It plays once, from one place, and only when the tap DID something.** There is
+a single `play(SELECT)` in `src/input.js`, on the answer to one question every
+branch of the tap handler returns: did this act? The alternative — a call in each
+of a dozen branches — is how a control quietly ends up silent, because the branch
+added next simply forgets.
+
+The silent half is the useful half. An unaffordable button absorbs its tap
+without acting, a paused board refuses everything but its two controls, and bare
+ground with nothing selected has nothing to say. Clicking at those would teach
+the player that the click means "heard you" rather than "done".
+
 ## One thing may interrupt: buying an upgrade
 
 The gate is right about almost everything it holds off. A swing, a death, a
@@ -194,10 +215,11 @@ spending gold, and the reply has to arrive or the button feels dead. It used to
 be dropped like anything else — invisible in a quiet game and constant in a busy
 one, which is exactly when an upgrade is most likely to be bought.
 
-So `solo(cue, true)` takes the channel off whatever is speaking, and **one call
-site uses it**: the upgrade branch in `src/input.js`. Building does not, because
-a build happens on a plot you have just tapped and the channel is almost always
-free; selection does not, and deliberately — it happens constantly and its
+So `solo(cue, true)` takes the channel off whatever is speaking, and **two call
+sites use it**: building and upgrading, both in `src/input.js`. They are the two
+moments a family speaks and both are deliberate purchases — a swing or a death
+cry holding either of them off is the channel getting its priorities exactly
+backwards. Selection does not, and deliberately: it happens constantly and its
 silence is a feature, not a fault.
 
 Two details worth knowing:

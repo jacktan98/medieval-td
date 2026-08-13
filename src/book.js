@@ -315,19 +315,13 @@ const inside = (b, x, y) =>
   x >= b.x - BOOK_PAD && x <= b.x + b.w + BOOK_PAD &&
   y >= b.y - BOOK_PAD && y <= b.y + b.h + BOOK_PAD;
 
-// Where the book is opened from. Two places, because there are two moments a
-// player wants it: before the first tower goes down, and in the middle of a wave
-// when the next upgrade has to be chosen.
+// Where the book is opened from on the TITLE SCREEN. There is a second way in,
+// from a paused game, and that button does not live here: it shares a row with
+// Quit, so the row owns both and render.js lays it out. See PAUSE_ROW there.
 export const BOOK_BTN_START = { x: 380, y: 414, w: 200, h: 46 };
 
-// Under the "Paused" label rather than over the board. A paused game is paused
-// to be LOOKED at — that is why nothing dims — so the one control it adds sits
-// in the strip the dashboard already owns.
-export const BOOK_BTN_PAUSE = { x: 395, y: 94, w: 170, h: 38 };
-
 export function hitBookButton(state, x, y) {
-  const b = state.started ? BOOK_BTN_PAUSE : BOOK_BTN_START;
-  return inside(b, x, y);
+  return inside(BOOK_BTN_START, x, y);
 }
 
 export function openBook(state) {
@@ -340,12 +334,14 @@ export function openBook(state) {
 // A tap that hits none of the three controls does nothing, which is the right
 // answer for a page you are reading.
 export function tapBook(state, x, y) {
-  if (inside(BOOK_CLOSE, x, y)) { state.book = null; return; }
+  if (inside(BOOK_CLOSE, x, y)) { state.book = null; return true; }
   // BOTH ARROWS ALWAYS WORK, wrapping round. With two pages a disabled arrow
   // would be dead half the time it is on screen, and a control that does nothing
   // when you press it reads as the game having stopped listening.
   if (inside(BOOK_PREV, x, y)) state.book = (state.book + PAGES - 1) % PAGES;
   else if (inside(BOOK_NEXT, x, y)) state.book = (state.book + 1) % PAGES;
+  else return false;
+  return true;
 }
 
 // --- what a card says --------------------------------------------------------

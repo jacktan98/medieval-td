@@ -52,10 +52,16 @@ export const RALLY_FLAG_H = 20;
 // the bottom row of the art, where the pole spans x 2..14 of 72.
 export const FLAG_FOOT = [0.111, 1];
 
-// The two stat icons in the info box, which replaced the words "Health:" and
-// "Damage:". 16 tall against the 11px rows beside them — bigger than the text,
-// because a picture standing in for a word has to be read at a glance and has no
-// cap height to sit on.
+// The size the two stat icons are MEASURED at, which is no longer the size the
+// info box draws them: the panel shrank and `INFO_ICON` in render.js is 14 now.
+// This is what the `h` on each entry below means — the default drawn height for
+// a caller that does not override it — and `uiSize(key, { h })` is how the two
+// places that do ask for their own.
+//
+// It stays 16 because the trims below are keyed to it and a redraw at a
+// different shape should land against something stable. A picture standing in
+// for a word has to be read at a glance and has no cap height to sit on, which
+// is why it is bigger than the text beside it in both places.
 //
 // Health has a heart of its own now — `Health Icon.png`, not the dashboard's
 // `Life Icon.png`. It borrowed the lives icon for one build, on the reasoning
@@ -64,9 +70,13 @@ export const FLAG_FOOT = [0.111, 1];
 // and this is a figure's.
 export const STAT_ICON_H = 16;
 
-// The column the two icons sit in, so the numbers beside them line up. The
-// widest of the pair is the heart at 19.8 drawn, so 22 clears it.
-export const STAT_COL = 22;
+// The column the two icons sit in, so the numbers beside them line up whether
+// the health row is there or not — a tower has no health, and a damage figure
+// that shifted left on towers and right on units would read as two layouts.
+//
+// The widest of the pair is the heart, 17.3 drawn at the panel's 14px icons, so
+// 19 clears it. It was 22 against 16px icons; it came down with the panel.
+export const STAT_COL = 19;
 
 // The encyclopedia's icon height. ONE size, because there is one card: a row is
 // 17px deep and holds a 14px icon beside a 12px number, on a tower card and an
@@ -158,6 +168,22 @@ export const aspect = key => ui[key].trim[2] / ui[key].trim[3];
 // 114px sprite at 68, needing 204 source px it did not have, and every portrait
 // in it was upscaled about 1.2x. That is what "blurry" was.
 export const PORTRAIT_SCALE = 1.6;
+
+// What the INFO BOX draws a figure at, and what the whole panel is scaled by.
+//
+// 0.9 of the reference, which is the same tenth the encyclopedia takes off — so
+// the two agree, and a man is the same size in the corner of the board as he is
+// on the page. That was not planned; it fell out of shrinking the panel by the
+// amount the panel needed and finding the book had already asked for it.
+//
+// The panel's HEIGHT is scaled by this and its width follows from the plate's
+// own aspect, exactly as before. Every number in drawInfo that is not a plate
+// dimension — the portrait slot, the two fonts, the icon height, the row pitch —
+// came down with it and is written out there rather than multiplied here,
+// because a font is not a length you scale: 11.5 x 0.9 is 10.35, and the size
+// that actually fits is a measurement, not a product.
+export const INFO_SCALE = 0.9;
+export const INFO_PORTRAIT = PORTRAIT_SCALE * INFO_SCALE;
 
 // Which drawn glyph replaces which vector one. A glyph with no entry — siege's
 // catapult, the monastery's cross, and the `max` chevrons on a tower that has

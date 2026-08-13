@@ -105,6 +105,9 @@ function newGame() {
     // Reset with everything else, so a book left open on the title screen is not
     // still up when a map switch rebuilds the game underneath it.
     book: null,
+    // A half-pressed Quit, as the ms timestamp its window closes at. 0 for not
+    // armed, which is also what it resets to — a restart cannot inherit one.
+    quitArmed: 0,
     // What the info box is describing: { kind, ref } or null. A direct reference
     // to the live enemy, soldier or tower, which is what makes the health in the
     // box the same number the health bar over its head is reading.

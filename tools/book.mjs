@@ -37,8 +37,11 @@ import {
   SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-  BOOK_BTN_START, BOOK_BTN_PAUSE
+  BOOK_BTN_START
 } from '../src/book.js';
+// The paused game's own row — the book's second entrance and the Quit beside it
+// — belongs to the HUD rather than to the book, so it is checked from there.
+import { PAUSE_ROW } from '../src/render.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -305,7 +308,8 @@ console.log('\nWhat you can hit\n');
 
   const targets = {
     Close: BOOK_CLOSE, Prev: BOOK_PREV, Next: BOOK_NEXT,
-    'open (title)': BOOK_BTN_START, 'open (paused)': BOOK_BTN_PAUSE
+    'open (title)': BOOK_BTN_START,
+    'open (paused)': PAUSE_ROW.book, 'quit (paused)': PAUSE_ROW.quit
   };
 
   for (const [name, b] of Object.entries(targets)) {
@@ -319,6 +323,16 @@ console.log('\nWhat you can hit\n');
   ok(BOOK_PREV.x + BOOK_PREV.w + PAD < BOOK_NEXT.x - PAD,
     'and the two arrows do not share a pixel',
     `${BOOK_NEXT.x - PAD - (BOOK_PREV.x + BOOK_PREV.w + PAD)}px apart`);
+
+  // THE ONE THAT MATTERS MOST, because of what is on either side of it: the
+  // paused row puts Quit — the only control that throws work away — next to the
+  // button a player presses to read something. Their padded boxes touching would
+  // hand a mis-tap to whichever was tested first.
+  const PAUSE_PAD = 13;
+  const gap = (PAUSE_ROW.quit.x - PAUSE_PAD) -
+              (PAUSE_ROW.book.x + PAUSE_ROW.book.w + PAUSE_PAD);
+  ok(gap > 0, 'and Quit does not share a pixel with the book beside it',
+    `${gap}px of clear air`);
 
   // Everything the footer draws has to be on the sheet to be pressed.
   const onSheet = Object.values(targets).slice(0, 3).every(b =>

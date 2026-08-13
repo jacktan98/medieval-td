@@ -173,6 +173,9 @@ const MEMORY_S = 20;
 // project has no filenames with spaces left in it. Keep it that way; if one
 // arrives, encode the space as %20 here rather than renaming the artist's file.
 const paths = {
+  // The one sound the UI makes. Not a battle noise at all — it answers the
+  // player's finger rather than anything happening on the board.
+  select:          'assets/audio/sfx/Select_Sound.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   arrow_kill_enemy: 'assets/audio/sfx/Arrow_kill_enemy.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
@@ -280,6 +283,18 @@ export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // release: several machines land rocks at once and a shared channel would
 // silence all but one of them, which is the same reason the bow is down here.
 export const LAND = ['rock_hit_ground'];
+
+// THE TAP. Every control in the game that does something answers with this, and
+// it is Category B for a reason that has nothing to do with the battle: it is a
+// reply to the player's finger, and a reply that is sometimes dropped is worse
+// than no reply at all. A button whose click depends on whether a thug happens
+// to be shouting reads as a button that sometimes misses the tap.
+//
+// So it never queues, never waits for the voice channel, and is never chosen
+// over — which is exactly what Category B is. It ducks under a voice line like
+// everything else down here, which is right: the line is the more important of
+// the two and the click still comes through under it.
+export const SELECT = ['select'];
 
 let ctx = null;
 

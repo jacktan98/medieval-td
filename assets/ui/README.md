@@ -168,6 +168,27 @@ overlapped and the loop silently gave the overlap to whichever came first.
 The early-call bonus moved from a second line under the label to the same line
 after it, in green, because 24px of height has room for one row of text.
 
+### What a paused game puts on the board
+
+Two buttons under the "Paused" label — **Encyclopedia** and **Quit** — in the
+strip the dashboard already owns rather than over the middle of the map. Nothing
+dims: the whole point of pausing here is to STUDY the board, and a game that
+greys out the thing you paused to look at has answered the wrong question.
+
+**The gap between them is the design.** Quit is the one control in the game that
+throws work away — a wave 7 board is half an hour — and it sits beside the button
+a player presses to read something. Their padded tap boxes must not touch: 30px
+of drawn gap leaves 4px of clear air at 13px of padding each side, where the 12
+that looked right on screen would have overlapped by 14 and handed the mis-tap to
+whichever was tested first. `node tools/book.mjs` checks it.
+
+**Quit asks twice.** The first tap arms it and the label says so — "Quit — sure?"
+in amber — and the second, within three seconds, goes back to the title screen.
+The arming is cleared by anything else, including unpausing, so a half-pressed
+quit can never wait around to catch a later tap. The map you chose survives;
+`newGame()` keeps `levelIndex` because which map you are playing is a menu
+setting rather than part of the game being thrown away.
+
 ### Radial menu
 
 Opens on the tapped plot, up to four buttons on a ring 68px from the centre, with
@@ -258,17 +279,31 @@ enough.
 **Top right**, when a tower, a soldier or an enemy is selected: a portrait, a
 name, live health and damage per hit.
 
-**The name is 11.5px and the stat rows are 11**, down from 13 and 12, and the
-half-pixel is not fussiness. Every tower used to be captioned with its tier —
-"Archers Tier I" — and naming the MAN instead pushed the widest caption in the
-game from 125px to 143 against a text column that only has 134. At 700 weight in
-system-ui, "Trebuchet Engineer" measures 142.9px at 13, 131.9 at 12 and 126.4 at
-11.5; 11.5 is the largest size it fits at. Tightening the two gutters either side
-of the portrait bought the other 4px.
+**The whole panel is 0.9 of what it was** — `INFO_SCALE` in `src/data/ui.js`. The
+height is scaled by it and the width follows from the plate's own aspect, so
+197 x 68 where it was 220 x 76, and the portrait comes down with it to
+`INFO_PORTRAIT` = 1.44.
 
-There is no tool for this and there cannot easily be one — node has no canvas, so
-nothing outside a browser can measure a font. If a name longer than "Trebuchet
-Engineer" is ever added, look at the box. `src/select.js` decides what it says and
+That 1.44 is the same figure scale the encyclopedia uses, and it was not planned:
+the panel was shrunk by the amount the panel needed and the book had already
+asked for the same tenth. A man is now the same size in the corner of the board
+as he is on the page.
+
+**The text did NOT scale — it was measured.** A font is not a length: 11.5 x 0.9
+is 10.35, and the size that fits is a measurement rather than a product. The
+title is **10.5px** and the stat rows **10**, and the string that binds them is
+"Trebuchet Engineer", the longest name the box can be asked to show. At 700
+weight in system-ui it measures 142.9px at 13, 115.4 at 10.5 and 110.0 at 10,
+against a text column that is 118 wide once the portrait and the plate's own
+border are out. 10.5 fits with 2.6px to spare; 11 does not fit at all.
+
+Every tower used to be captioned with its tier — "Archers Tier I" — and naming
+the MAN instead is what put this column under pressure. It was the right call and
+this is its price.
+
+There is no tool for any of it and there cannot easily be one — node has no
+canvas, so nothing outside a browser can measure a font. If a name longer than
+"Trebuchet Engineer" is ever added, look at the box. `src/select.js` decides what it says and
 `drawInfo` in `render.js` lays it out. It was bottom-right, which put it over
 plot 5's marker; up here it sits beside the readouts and no plot is near it.
 
