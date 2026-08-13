@@ -36,6 +36,12 @@ export const paths = {
   artillery_t1:        'assets/towers/artillery/Artillery_Default_T1.png',
   artillery_t1_reload: 'assets/towers/artillery/Artillery_Reload_T1.png',
   artillery_t1_fire:   'assets/towers/artillery/Artillery_Fire_T1.png',
+  artillery_t2:        'assets/towers/artillery/Artillery_Default_T2.png',
+  artillery_t2_reload: 'assets/towers/artillery/Artillery_Reload_T2.png',
+  artillery_t2_fire:   'assets/towers/artillery/Artillery_Fire_T2.png',
+  artillery_t3:        'assets/towers/artillery/Artillery_Default_T3.png',
+  artillery_t3_reload: 'assets/towers/artillery/Artillery_Reload_T3.png',
+  artillery_t3_fire:   'assets/towers/artillery/Artillery_Fire_T3.png',
   archer_t1:   'assets/units/Archery_Man_T1.png',
   archer_t2:   'assets/units/Archery_Man_T2.png',
   archer_t3:   'assets/units/Archery_Man_T3.png',
@@ -47,8 +53,12 @@ export const paths = {
   // sits with the other men rather than with the machine because that is what he
   // is: assets/units is every figure in the game.
   crew_t1:     'assets/units/Artillery_Man_T1.png',
+  crew_t2:     'assets/units/Artillery_Man_T2.png',
+  crew_t3:     'assets/units/Artillery_Man_T3.png',
   arrow_t1:    'assets/projectiles/Archery_Arrows_T1.png',
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
+  rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
+  rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
   // T1a and T1b, not T1 and T2. The artist renamed the heavy from tier 2 to
   // "tier 1b" — it is a bigger militiaman, not the next rank up — so the tier 2
   // enemy slot is still empty and the file that fills it later will be T2.
@@ -96,6 +106,10 @@ export const paths = {
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
   glyph_bow:       'assets/ui/Archery_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',
+  // The siege family's button, and the last vector glyph on a family that has
+  // tiers. Only the monastery's cross and the `max` chevrons are drawn in code
+  // now.
+  glyph_catapult:  'assets/ui/Artillery_Icon.png',
   glyph_up:        'assets/ui/Upgrade_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button

@@ -390,12 +390,70 @@ console.log('\nWhich way it faces\n');
      'the muzzle mirrors about the plot with it',
      `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${t.x.toFixed(1)}`);
 
-  // And the drawn direction is not a matter of opinion: it is where the sling
+  // And the drawn direction is not a matter of opinion: it is where the payload
   // TRAVELS between the resting frame and the firing one. Pinned here so a
   // redraw that swings the arm the other way fails loudly instead of shipping.
-  ok(def.buildingFaces === 1,
-     'the artwork throws RIGHT — the sling moves +60.5px in x from rest to Fire',
-     `buildingFaces ${def.buildingFaces}`);
+  //
+  // ALL THREE TIERS, because all three are separate drawings now and every one
+  // of them could have been drawn facing the other way. Measured payload travel,
+  // rest -> Fire:
+  //
+  //   Catapult   sling  (373.5, 482.0) -> (434.0, 363.5)    +60.5 px
+  //   Mangonel   cup    (395,   365)   -> (474.5, 258.4)    +79.5 px
+  //   Trebuchet  pouch  (240,   480)   -> (600.9, 136.9)   +360.9 px
+  ok(siege.every(d => d.buildingFaces === 1),
+     'and all three machines throw RIGHT',
+     siege.map(d => `${d.name} ${d.buildingFaces}`).join(', '));
+}
+
+// --- every tier animates ------------------------------------------------------
+//
+// Tier 1 was the only artillery drawing for a long time and every check above
+// takes `siege[0]`. Now each tier has three frames of its own, and the ways they
+// can be wrong are the boring ones: a frame key that no file answers to, a union
+// trim that does not hold every frame, an anchor pasted from the tier below.
+//
+// tools/trim.mjs owns the union check because it can read the PNGs. What is left
+// here is the wiring — that every tier names three distinct frames, that the
+// resting one is the sprite everything else falls back to, and that no two tiers
+// share an anchor by accident.
+console.log('\nEvery tier is its own machine\n');
+
+{
+  ok(siege.every(d => d.frames && d.frames.length === BEATS.length),
+     'every tier has one frame per beat',
+     siege.map(d => d.frames.length).join('/'));
+
+  ok(siege.every(d => d.frames[0] === d.sprite),
+     'and rests on the frame that is also its sprite',
+     siege.map(d => d.sprite).join(', '));
+
+  const keys = siege.flatMap(d => d.frames);
+  ok(new Set(keys).size === keys.length,
+     'and no two tiers share a drawing', `${keys.length} frames`);
+
+  // An anchor carried across from the tier below is the classic paste error, and
+  // it is invisible: the machine simply stands a few px off its plot.
+  const anchors = new Set(siege.map(d => `${d.groundFrac}|${d.mountFrac}`));
+  ok(anchors.size === siege.length,
+     'and each was measured rather than copied down',
+     siege.map(d => `${d.name} ${d.groundFrac[1]}`).join(', '));
+
+  // The rock grows with the machine; the FLIGHT does not change, because the
+  // 1.5s Fire pose was chosen against it.
+  const sizes = siege.map(d => d.ammo.trim[2]);
+  ok(sizes.every((v, i) => i === 0 || v > sizes[i - 1]),
+     'the rock gets bigger with every tier', sizes.join(' -> '));
+  ok(new Set(siege.map(d => `${d.ammo.speed}|${d.ammo.arc}`)).size === 1,
+     'and flies exactly the same way',
+     `${siege[0].ammo.speed}px/s, arc ${siege[0].ammo.arc}`);
+
+  // The longest throw in the game still has to land while the arm is up. This
+  // is the check that caught a 1.50s flight against a 1.50s pose once.
+  const far = Math.max(...siege.map(d => d.range));
+  const flight = far / siege[0].ammo.speed;
+  ok(flight < BEATS[2], 'and the longest throw lands before the arm comes down',
+     `${flight.toFixed(2)}s of ${BEATS[2]}s`);
 }
 
 // --- the dead zone ------------------------------------------------------------

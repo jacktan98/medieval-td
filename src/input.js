@@ -290,7 +290,11 @@ function run(state, item) {
     // Rebuilt rather than patched: the new tier has its own soldier stats and
     // a longer reach, so the rally point moves too.
     makeUnits(state, t);
-    solo(familyCue(t.fam.id));
+    // PRIORITY. An upgrade is a button the player pressed and gold they spent,
+    // so the reply has to arrive — a Category A channel busy with a swing or a
+    // death cry used to swallow it, and that is precisely the moment an upgrade
+    // is most likely to be bought. See solo() in audio.js.
+    solo(familyCue(t.fam.id), true);
   }
 
   if (item.act === 'refund') {

@@ -153,9 +153,23 @@ function figureOf(def) {
   return figureArt(man.trim, man.pivot);
 }
 
+// A figure on the page is drawn at 90% of the size the info box draws it.
+//
+// The info box shows ONE man, big, on a plate of his own; the book shows twenty
+// in a grid, and at the box's own scale they crowded their cards — a Giant Thug
+// reached 45px left of where he stands and left the name beside him a column
+// barely wide enough for it. 0.9 is the artist's number, asked for by eye.
+//
+// It is a fraction of PORTRAIT_SCALE rather than a figure of its own so the two
+// stay tied: raise the info box's portraits and the book's follow. And it is
+// still a downscale of art already sharp at 1x, so it cannot cost sharpness —
+// only the ceiling on PORTRAIT_SCALE itself matters, and tools/book.mjs checks
+// that.
+export const BOOK_FIGURE_SCALE = PORTRAIT_SCALE * 0.9;
+
 const figureArt = (trim, pivot) => ({
-  w: trim[2] * SCALE * PORTRAIT_SCALE,
-  h: trim[3] * SCALE * PORTRAIT_SCALE,
+  w: trim[2] * SCALE * BOOK_FIGURE_SCALE,
+  h: trim[3] * SCALE * BOOK_FIGURE_SCALE,
   a: pivot
 });
 

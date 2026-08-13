@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Seventeen files in, three still vector.** Everything below that is not in the table
+**Eighteen files in, two still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -16,6 +16,7 @@ usable button rather than a blank disc.
 | `Cancel_Button_Icon.png` | the centre cancel | 36 diameter  |
 | `Archery_Icon.png`       | `bow`             | 27 x 32 box  |
 | `Barracks_Icon.png`      | `swords`          | 26 box       |
+| `Artillery_Icon.png`     | `catapult`        | 26 box       |
 | `Upgrade_Icon.png`       | `up`              | 26 box       |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
 | `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
@@ -47,9 +48,9 @@ that say *cost* carry that without a caption, and the enemy page used to need on
 price on the tower cards, paired with the refund icon beside what that tier gives
 back, and an enemy's bounty on the facing page.
 
-Still vector, still wanted: **`catapult`** (siege), **`cross`** (monastery) and
-**`max`** — the chevrons on a tower with nothing left to buy. Siege and the
-monastery have no tiers yet, so their buttons are drawn dim in any case.
+Still vector, still wanted: **`cross`** (monastery) and **`max`** — the chevrons
+on a tower with nothing left to buy. The monastery has no tiers yet, so its
+button is drawn dim in any case.
 
 **`Rally Point Icon.png` is the one file here that is also drawn on the board.**
 The flag marking where a squad stands, and the ghost that follows a rally drag,
@@ -193,8 +194,8 @@ The eight glyphs, with the code names they replace:
 |------------|----------------------------------------|
 | `bow`      | Archery, on an empty plot              |
 | `swords`   | Barracks, on an empty plot             |
-| `catapult` | Siege — locked, drawn dim with "soon"  |
-| `cross`    | Monastery — locked, same               |
+| `catapult` | Siege, on an empty plot                |
+| `cross`    | Monastery — locked, drawn dim          |
 | `up`       | upgrade this tower                     |
 | `max`      | already at tier 3, nothing to buy      |
 | `flag`     | move the barracks rally point          |
@@ -410,6 +411,17 @@ standing still.
 This is what needed `catapult.portraitPivot`. The crewman never stands on the
 board, so he had never been given a shadow anchor, and he was the one figure on
 the page floating by his box while the row beside him stood on a line.
+
+### The book's figures are a tenth smaller than the box's
+
+`BOOK_FIGURE_SCALE` is `PORTRAIT_SCALE * 0.9`. The info box shows ONE man, big,
+on a plate of his own; the book shows twenty in a grid, and at the box's own
+scale they crowded their cards. It is written as a fraction of the box's factor
+rather than as a number of its own so the two stay tied — raise the portraits and
+the book's follow.
+
+It cannot cost sharpness: it is a downscale of a downscale, so only the ceiling
+on `PORTRAIT_SCALE` itself matters, and `tools/book.mjs` checks that one.
 
 ### Both scale factors are one-per-kind
 

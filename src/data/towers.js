@@ -133,13 +133,37 @@ const SPEAR3_TRIM = [199, 196, 114, 120];
 // property directly instead: every frame's own trim must sit inside this box.
 const CATAPULT_TRIM = [267, 328, 466, 346];
 
+// The same union, worked out the same way, for the two machines above it. All
+// six frames are on the 1024 canvas like tier 1's three.
+//
+//   Mangonel   Default [263,344,498,336]  Reload [289,323,472,357]  Fire [285,228,476,452]
+//   Trebuchet  Default [161,334,664,399]  Reload [201,292,612,441]  Fire [201,107,563,626]
+//
+// The Fire frame drives the height in both, and by a lot: a trebuchet's arm at
+// the top of its swing reaches 227 source px above where the machine rests, so
+// the union is 626 tall against the resting frame's 399. That is not slack — the
+// box has to hold the tallest frame or the machine jumps down the screen every
+// time it looses.
+const MANGONEL_TRIM = [263, 228, 498, 452];
+const TREBUCHET_TRIM = [161, 107, 664, 626];
+
 // The crewman, on his own 512 canvas. He is NOT drawn on the board — he is part
 // of all three catapult drawings already, which is the whole reason the machine
 // animates. This file exists so the info box has a face to put in its portrait
 // slot, the same way a barracks shows its spearman rather than its tent.
 const CREW_TRIM = [208, 196, 94, 116];
+const CREW2_TRIM = [208, 196, 96, 120];
+const CREW3_TRIM = [201, 196, 110, 120];
 
+// The rock gets bigger with the machine that throws it: 12 x 10 game px, then
+// 15 x 15, then 18 x 18. Nothing about the FLIGHT changes — same speed, same arc,
+// same lead — because those are what the Fire pose's length was chosen against
+// and a heavier-looking rock that also flew slower would put the longest throw
+// back over the 1.5s the arm stays up. The size is the tell; the damage number
+// beside it is the fact.
 const ROCK_TRIM = [226, 232, 60, 48];
+const ROCK2_TRIM = [220, 220, 72, 72];
+const ROCK3_TRIM = [212, 212, 88, 88];
 
 // AMMUNITION. What a tower throws, kept beside the tower rather than as one
 // global speed, because the two projectiles in the game now travel at very
@@ -224,6 +248,14 @@ export const rock = {
   // sound like", and an arrow answers all three differently. See src/impacts.js.
   impact: true
 };
+
+// The same rock, drawn bigger, for the two machines above. ONLY the picture
+// changes — speed, arc, lead, sound and impact all come from `rock` — because
+// the flight is what the Fire pose's 1.5s was chosen against, and a heavier
+// rock that also flew slower would put the longest throw back over it. What a
+// bigger rock does is in the damage number beside it.
+export const rock2 = { ...rock, sprite: 'rock_t2', trim: ROCK2_TRIM };
+export const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
 
 // Every tier has its own drawing now, in both families — nothing is shared.
 // They are all within a few px of each other in size, because scale is fixed by
@@ -755,6 +787,66 @@ const catapult = {
   shape: 'siege'
 };
 
+// TIER 2, A MANGONEL, and tier 3 a TREBUCHET. Three drawings each, the same
+// three-beat loop, and every rule above holds unchanged — which is the point of
+// having written it down there: only the measurements below are new.
+//
+// THEY ALL THROW RIGHT, and that was checked rather than assumed, because the
+// direction is invisible in a still and was got backwards once on tier 1. The
+// test is where the PAYLOAD goes between the resting frame and the Fire frame:
+//
+//   Catapult   sling  (373.5, 482.0) -> (434.0, 363.5)    +60.5 px
+//   Mangonel   cup    (395,   365)   -> (474.5, 258.4)    +79.5 px
+//   Trebuchet  pouch  (240,   480)   -> (600.9, 136.9)   +360.9 px
+//
+// All three positive, so all three keep `buildingFaces: 1` and mirror only for a
+// target on the LEFT. The trebuchet's swing is enormous by comparison — its
+// sling whips past the frame and out the other side — which is exactly why its
+// union trim is 626 source px tall against the catapult's 346.
+const mangonel = {
+  ...catapult,
+  sprite: 'artillery_t2',
+  frames: ['artillery_t2', 'artillery_t2_reload', 'artillery_t2_fire'],
+  spriteTrim: MANGONEL_TRIM,
+  w: drawnW(MANGONEL_TRIM), h: drawnH(MANGONEL_TRIM),
+  // Shadow centre, source (560.9, 598.6). All three frames measure to the same
+  // tenth of a pixel — the raised arm never crosses this machine's shadow, where
+  // tier 1's covers a sliver of it and comes out 2px high on the Fire frame.
+  groundFrac: [0.598, 0.820],
+  // The cup at the top of the raised arm, source (474.5, 258.4) — the centroid
+  // of the ink in the top 12% of the Fire frame, which at this tier is the cup
+  // and nothing else.
+  mountFrac: [0.425, 0.067],
+  ammo: rock2,
+  portrait: 'crew_t2',
+  portraitTrim: CREW2_TRIM,
+  portraitPivot: [0.635, 0.904]
+};
+
+const trebuchet = {
+  ...catapult,
+  sprite: 'artillery_t3',
+  frames: ['artillery_t3', 'artillery_t3_reload', 'artillery_t3_fire'],
+  spriteTrim: TREBUCHET_TRIM,
+  w: drawnW(TREBUCHET_TRIM), h: drawnH(TREBUCHET_TRIM),
+  // Shadow centre, source (563.9, 652.4).
+  groundFrac: [0.607, 0.871],
+  // The sling POUCH at release, source (600.9, 136.9). The top band of this
+  // frame contains the arm tip on the left AND the pouch on the right — a sling
+  // reaches both ways at the top of a swing — so the measurement is taken from
+  // the right-hand blob only. A centroid of the whole band lands between the
+  // two, on empty air.
+  mountFrac: [0.663, 0.048],
+  ammo: rock3,
+  portrait: 'crew_t3',
+  portraitTrim: CREW3_TRIM,
+  // Further right and lower in his box than the two below him, and that is the
+  // drawing rather than a bad reading: this engineer stands beside a boulder
+  // that fills the left of his frame, so his own feet are well right of the box
+  // centre. Measured like every other figure's, off his shadow.
+  portraitPivot: [0.723, 0.944]
+};
+
 // THREE TIERS, ALL DRAWN WITH TIER 1'S MACHINE. That is temporary and the code
 // knows it: render.js marks a tower with stars whenever more than one tier in
 // its family shares a sprite key, so the stars appear here and nowhere else, and
@@ -891,11 +983,11 @@ const catapult = {
 // one of him rather than a squad, which is what the book prints: a barracks
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
-  { ...catapult, tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
+  { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
     cost: 90,  damage: 19, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
-  { ...catapult, tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
+  { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
     cost: 115, damage: 27, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
-  { ...catapult, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
+  { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
     cost: 170, damage: 37, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 

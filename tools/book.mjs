@@ -35,7 +35,8 @@ import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
 import {
   PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
   SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
-  BOOK_TOWER_SCALE, AIR, ROW, rowsIn, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
+  BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
+  BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
   BOOK_BTN_START, BOOK_BTN_PAUSE
 } from '../src/book.js';
 
@@ -331,10 +332,14 @@ console.log('\nWhat you can hit\n');
 console.log('\nWhat stays sharp at 3x\n');
 
 {
-  // Figures, at the same factor the info box uses.
+  // Figures. The book draws them a tenth smaller than the info box, so the box
+  // is the one that has to clear the ceiling — but check both, because the book
+  // is where the sizing is decided and a change there must not overtake it.
   const ceiling = 1 / (MAX_SCALE * SCALE);
-  ok(PORTRAIT_SCALE <= ceiling, 'portraits',
+  ok(PORTRAIT_SCALE <= ceiling, 'portraits, in the info box',
     `${PORTRAIT_SCALE}x board scale, ceiling ${ceiling.toFixed(3)}x`);
+  ok(BOOK_FIGURE_SCALE <= PORTRAIT_SCALE, 'and smaller again in the book',
+    `${BOOK_FIGURE_SCALE.toFixed(3)}x, ${Math.round(100 * BOOK_FIGURE_SCALE / PORTRAIT_SCALE)}% of the box's`);
 
   // Buildings. Always a downscale, so this can only fail if the slot grows.
   const k = BOOK_TOWER_SCALE / SCALE;

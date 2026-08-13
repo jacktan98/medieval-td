@@ -183,6 +183,37 @@ on underneath throughout, so it is not silence exactly — nothing else gets
 announced. Trimming `Thug_1` would take it under 2s if that ever reads wrong in
 play.
 
+## One thing may interrupt: buying an upgrade
+
+The gate is right about almost everything it holds off. A swing, a death, a
+selection are all things the GAME decided to voice, and a busy fight talking over
+itself is what the whole category exists to prevent.
+
+**An upgrade is not one of those.** It is the player pressing a button and
+spending gold, and the reply has to arrive or the button feels dead. It used to
+be dropped like anything else — invisible in a quiet game and constant in a busy
+one, which is exactly when an upgrade is most likely to be bought.
+
+So `solo(cue, true)` takes the channel off whatever is speaking, and **one call
+site uses it**: the upgrade branch in `src/input.js`. Building does not, because
+a build happens on a plot you have just tapped and the channel is almost always
+free; selection does not, and deliberately — it happens constantly and its
+silence is a feature, not a fault.
+
+Two details worth knowing:
+
+- **The clip is faded, not cut.** A buffer source stopped mid-sample is a click,
+  and it is louder and more noticeable than the word it interrupted. The stop is
+  scheduled 60ms out with a ramp to zero in front of it.
+- **Priority is about who gets the channel, not about repeating.** All the share
+  rules below still apply, so a single-take cue interrupted into its own repeat
+  still declines. A family with five takes rotates as it always did.
+
+`node tools/sound.mjs` checks all of that, including that the interrupting clip
+resets the gate to ITS OWN length — a half-second line taking over from a
+two-second one must not hold the channel for two seconds of sound nobody is
+hearing any more.
+
 ## Levelling is automatic — you do not have to normalise
 
 The clips arrived up to **20dB apart**. The voices had never been normalised and

@@ -245,6 +245,12 @@ const SPRITES = [
   ['assets/towers/artillery/Artillery_Default_T1.png', 'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Reload_T1.png',  'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Fire_T1.png',    'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Default_T2.png', 'mangonel.groundFrac',  towers.siege[1].spriteTrim, towers.siege[1].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Reload_T2.png',  'mangonel.groundFrac',  towers.siege[1].spriteTrim, towers.siege[1].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Fire_T2.png',    'mangonel.groundFrac',  towers.siege[1].spriteTrim, towers.siege[1].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Default_T3.png', 'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Reload_T3.png',  'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Fire_T3.png',    'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
   ['assets/units/Archery_Man_T1.png',       'archer.gunnerPivot',     towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
   ['assets/units/Archery_Man_T2.png',       'archer2.gunnerPivot',    towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
   ['assets/units/Archery_Man_T3.png',       'archer3.gunnerPivot',    towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
@@ -254,6 +260,8 @@ const SPRITES = [
   // shadow. Without a pivot he was the one man on the page centred by his
   // bounding box while everyone beside him was anchored properly.
   ['assets/units/Artillery_Man_T1.png',     'catapult.portraitPivot', towers.siege[0].portraitTrim, towers.siege[0].portraitPivot],
+  ['assets/units/Artillery_Man_T2.png',     'mangonel.portraitPivot',  towers.siege[1].portraitTrim, towers.siege[1].portraitPivot],
+  ['assets/units/Artillery_Man_T3.png',     'trebuchet.portraitPivot', towers.siege[2].portraitTrim, towers.siege[2].portraitPivot],
   ['assets/units/Barracks_Man_T1.png',      'spearman.pivot',         spear.spriteTrim, spear.pivot],
   ['assets/units/Barracks_Man_T2.png',      'spearman2.pivot',        spear2.spriteTrim, spear2.pivot],
   ['assets/units/Barracks_Man_T3.png',      'spearman3.pivot',        spear3.spriteTrim, spear3.pivot],

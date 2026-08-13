@@ -446,7 +446,13 @@ export function unlock() {
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
 }
 
-function fire(key, bus) {
+// The Category A voice currently in the air, so a priority cue can take the
+// channel off it. Nothing else needs a handle on a playing source — Category B
+// clips are meant to overlap, and a voice that is simply finishing does not
+// need to be findable.
+let voice = null;
+
+function fire(key, bus, keep = false) {
   const c = clips[key];
   const src = ctx.createBufferSource();
   src.buffer = c.buf;
@@ -458,7 +464,27 @@ function fire(key, bus) {
   // Second argument is WHERE IN THE CLIP to begin. Starting past the dead air
   // is what makes a hit sound land on the hit.
   src.start(0, c.offset);
+  if (keep) voice = { src, g };
   return c.audible;
+}
+
+// Take the channel off whatever is speaking, over 60ms rather than instantly.
+//
+// A buffer source stopped mid-sample is a click — a step from full amplitude to
+// zero is a broad spike, and it is louder and more noticeable than the word it
+// interrupted. Fading first costs a sixteenth of a second and removes it.
+const CUT = 0.06;
+
+function hush(now) {
+  if (!voice) return;
+  const { src, g } = voice;
+  voice = null;
+  try {
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(g.gain.value, now);
+    g.gain.linearRampToValueAtTime(0, now + CUT);
+    src.stop(now + CUT);
+  } catch { /* already ended: nothing to stop */ }
 }
 
 // Get the battle out of the way for the length of a Category A clip, then let
@@ -515,14 +541,30 @@ export function play(cue) {
 // files have not loaded, or because everything in it was heard too recently —
 // leaves the channel open for whatever asks next. That is the whole mechanism
 // by which a swing yields to a death cry.
-export function solo(cue) {
+export function solo(cue, priority = false) {
   // Callers pass the result of a lookup straight in, and plenty of things have
   // nothing to say — bare ground, a siege plot, a family with no voice yet.
   if (!cue) return;
   if (!ctx || ctx.state !== 'running') return;
 
   const now = ctx.currentTime;
-  if (now < gateUntil) return;
+
+  // PRIORITY TAKES THE CHANNEL, and only one thing uses it: buying an upgrade.
+  //
+  // The gate exists to stop the battle talking over itself, and it is right
+  // about almost everything — a swing, a death, a selection are all things the
+  // game decided to say. An upgrade is not: it is the player pressing a button
+  // and spending gold, and the reply to a deliberate action has to arrive or the
+  // button feels dead. Dropping it was invisible in a quiet game and constant in
+  // a busy one, which is exactly when an upgrade is most likely to be bought.
+  //
+  // It does NOT skip the repeat rules below. Priority is about who gets the
+  // channel, not about being allowed to say the same line five times running —
+  // and a family with several takes has alternatives to rotate to anyway.
+  if (now < gateUntil) {
+    if (!priority) return;
+    hush(now);
+  }
 
   // Silence clears the slate; otherwise the last five stand however old they
   // are. Measured from the most recent play, so a busy fight never forgets and
@@ -558,7 +600,7 @@ export function solo(cue) {
   heard.push({ key, t: now });
   if (heard.length > MEMORY_N) heard.shift();
 
-  const seconds = fire(key, busA);
+  const seconds = fire(key, busA, true);
   duck(now, seconds);
   gateUntil = now + seconds + GAP;
 }

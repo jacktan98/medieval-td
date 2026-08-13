@@ -155,33 +155,70 @@ The reach draws as an **annulus**: pale wash between the two ellipses, a solid
 rim outside and a dashed amber rim inside. The wash means "this tower shoots
 here", so washing over the dead ground would promise reach the tower has not got.
 
-## Tier stars, and how they take themselves away
+## The tier stars took themselves away, exactly as designed
 
-Artillery has three tiers — Catapult, Mangonel, Trebuchet — drawn with one
-machine. Nothing on the board would otherwise tell them apart, so the tier stars
-are back for this family: one, two or three small gold stars above the building.
+Artillery had one machine for three tiers, so nothing on the board told a
+Trebuchet from a Catapult and the tier stars came back for that family alone:
+one, two or three small gold stars over the building.
 
-They came out of the game once, when every tier got a drawing of its own, and
-that reasoning still holds wherever a tier has a building to be recognised by.
-Timber becomes stone; you can see it.
+**They are gone again, and nobody deleted them.** `tierMarks` in `src/render.js`
+marks a tower only when another tier in its family shares its sprite key. Tier 2
+and tier 3 arrived with three frames each and their own keys, and the stars
+stopped being drawn on the same commit — as did the headroom `tools/hud-clear.mjs`
+allows for them, because it reads the same function.
 
-(The info box no longer says "Barracks Tier II" either — it names the MAN, so it
+That is the pattern worth copying for the monastery when it lands: a stand-in
+that removes itself when the thing it stands in for arrives beats one that has to
+be remembered.
+
+(The info box does not say "Barracks Tier II" either — it names the MAN, so it
 reads "Spearman", "Combat Archer", "Trebuchet Engineer". The tier titles moved to
 the encyclopedia, which is where a tier is compared against the tier above it.
 See `unit` in `src/data/towers.js`.)
 
-**Nothing has to be remembered when the artwork lands.** `tierMarks` in
-`src/render.js` marks a tower whenever another tier in its family shares its
-sprite key — so give tiers 2 and 3 their own frames, point them at their own
-keys, and the stars stop being drawn on the same commit. `node
-tools/hud-clear.mjs` reads the same function, so the headroom they are allowed
-above the roof disappears with them.
+## All three machines, and which way they throw
 
-**Still to draw for this family:** tier 2 and tier 3 machines (three frames
-each), and a menu icon. `glyph: 'catapult'` has no PNG, so the build ring falls
-back to a vector while the bow and the crossed swords beside it are real artwork,
-and it shows. An `Artillery_Icon.png` in `assets/ui` sized like the other two is
-all it needs.
+Nine frames now: Catapult, Mangonel, Trebuchet, each with Default, Reload and
+Fire, each three registered against **one union trim** for the same reason tier 1
+always was — the same source rect out of every frame is what stops the machine
+jumping when the animation advances.
+
+The unions are much taller than the resting drawings, and that is the Fire frame
+doing it. A trebuchet's arm at the top of its swing reaches 227 source px above
+where the machine rests, so its box is 626 tall against the 399 the resting frame
+would ask for. That is not slack: the box has to hold the tallest frame.
+
+| tier | union trim              | drawn     |
+|------|-------------------------|-----------|
+| 1    | `[267, 328, 466, 346]`  | 96 x 71   |
+| 2    | `[263, 228, 498, 452]`  | 102 x 93  |
+| 3    | `[161, 107, 664, 626]`  | 136 x 128 |
+
+**All three throw RIGHT**, so all three keep `buildingFaces: 1` and mirror only
+for a target on the left. That was measured rather than assumed, because the
+direction is invisible in a still and was got backwards once on tier 1 — where
+the arm SITS says nothing, where the payload TRAVELS is the answer:
+
+| machine   | payload | rest → Fire                        |         |
+|-----------|---------|------------------------------------|---------|
+| Catapult  | sling   | (373.5, 482.0) → (434.0, 363.5)    | +60.5   |
+| Mangonel  | cup     | (395, 365) → (474.5, 258.4)        | +79.5   |
+| Trebuchet | pouch   | (240, 480) → (600.9, 136.9)        | +360.9  |
+
+`node tools/siege.mjs` pins all three, and checks that no two tiers share a
+frame, a shadow anchor or a release point — an anchor pasted down from the tier
+below is the classic error here and it is invisible, because the machine simply
+stands a few pixels off its plot.
+
+**The rock grows with the machine** — 12 x 10 game px, then 15 x 15, then
+18 x 18 — and **the flight does not**. Same speed, same arc, same lead, because
+1.5s of Fire pose was chosen against that flight and a heavier rock that also
+flew slower would put the longest throw back over it. What a bigger rock does is
+the damage number beside it.
+
+**Nothing is left to draw for this family.** `Artillery_Icon.png` filled the last
+vector glyph on a family that has tiers; only the monastery's cross and the `max`
+chevrons are still drawn in code.
 
 The barracks hall is the biggest building in the game, which is why the plot
 marker was redrawn bigger to hold it. Tier 3 is 128 x 127 against tier 2's

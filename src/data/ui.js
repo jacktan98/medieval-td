@@ -98,6 +98,7 @@ export const ui = {
   // rally flag is the only one on a button with nothing to say.
   glyph_bow:    { trim: [208, 200, 96, 112], fit: GLYPH_BOX },
   glyph_swords: { trim: [210, 212, 92, 88],  fit: GLYPH_BOX },
+  glyph_catapult: { trim: [204, 211, 104, 90], fit: GLYPH_BOX },
   glyph_up:     { trim: [223, 212, 66, 88],  fit: GLYPH_BOX },
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72
@@ -165,6 +166,7 @@ export const PORTRAIT_SCALE = 1.6;
 export const GLYPH_ART = {
   bow: 'glyph_bow',
   swords: 'glyph_swords',
+  catapult: 'glyph_catapult',
   up: 'glyph_up',
   refund: 'glyph_refund',
   flag: 'glyph_flag'

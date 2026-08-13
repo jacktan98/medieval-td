@@ -41,6 +41,10 @@ const MEMORY_S = 20;
 let played = [];
 let routes = [];
 let ducks = [];
+// Sources stopped early, and the fades that go with them. Only the priority cut
+// in solo() produces either — everything else in the game lets a clip finish.
+let stops = [];
+let fades = [];
 const gains = [];
 
 const ctx = {
@@ -83,7 +87,12 @@ const ctx = {
       gain: {
         value: 0,
         setTargetAtTime: (target, at) => ducks.push({ bus: name, target, at }),
-        cancelScheduledValues: () => {}
+        cancelScheduledValues: () => {},
+        // Used by the priority cut in solo(): a clip being taken off the channel
+        // is faded rather than stopped dead, because a buffer stopped mid-sample
+        // is a click. Recorded so the check below can see the fade happen.
+        setValueAtTime: () => {},
+        linearRampToValueAtTime: (target, at) => fades.push({ bus: name, target, at })
       },
       connect(t) { g._out = t; return t; }
     };
@@ -107,7 +116,11 @@ const ctx = {
           offset: +Number(offset).toFixed(3),
           gain: +Number(trim.gain.value).toFixed(3)
         });
-      }
+      },
+      // A real BufferSource has one, and the priority cut calls it. Without it
+      // the cut would throw into solo()'s catch and the interruption would look
+      // like it worked while nothing was actually stopped.
+      stop: at => stops.push({ name: buf.name, at })
     };
   }
 };
@@ -182,6 +195,66 @@ ctx.currentTime = 200;
 played = [];
 for (let i = 0; i < 9; i++) solo(CUE.arrowKill);
 check('nine at the same instant come out as one', played.length, 1);
+
+// --- priority: the one thing that may interrupt --------------------------------
+//
+// The gate is right about almost everything the game says: a swing, a death, a
+// selection are all things the GAME decided to voice, and holding them off is
+// the whole point. An upgrade is different — it is the player pressing a button
+// and spending gold — so the reply has to arrive or the button feels dead.
+//
+// The failure it fixes was invisible in a quiet game and constant in a busy one,
+// which is exactly when an upgrade is most likely to be bought.
+//
+// TIMES HERE STAY UNDER 300, deliberately. The gate is a timestamp and the
+// sections below start at 300 and count up, so a block that ran the clock past
+// them would leave the channel shut for every check that follows — which is
+// what happened when this was first written at t=600 and it took six unrelated
+// failures with it.
+
+console.log('\nPriority — an upgrade takes the channel');
+
+ctx.currentTime = 210;
+played = []; stops = []; fades = [];
+solo(CUE.thug);                                    // 2s clip, holds A until 212.9
+check('an ordinary cue is still held off', at(211, () => solo(CUE.barracks)), 0);
+
+played = []; stops = []; fades = [];
+ctx.currentTime = 211.5;
+solo(CUE.archery, true);
+check('a priority cue plays anyway', played.length, 1);
+check('and it stops what was speaking', stops.length, 1);
+
+// Faded, not cut. A buffer stopped mid-sample is a click, and it is louder than
+// the word it interrupted — so the stop is scheduled 60ms out with a ramp to
+// zero in front of it.
+check('after a fade rather than dead', fades.length, 1);
+check('the fade lands where the stop does',
+  fades.length && stops.length && Math.abs(fades[0].at - stops[0].at) < 1e-9, true);
+check('and it is 60ms long',
+  stops.length && +(stops[0].at - 211.5).toFixed(3), 0.06);
+
+// Priority is about WHO GETS THE CHANNEL. It does not buy the right to repeat —
+// a single-take cue has nothing to rotate to and still waits its turn.
+ctx.currentTime = 220;
+played = [];
+solo(CUE.thug, true);
+check('a priority cue with a free channel just plays', played.length, 1);
+ctx.currentTime = 220.5;
+played = [];
+solo(CUE.thug, true);
+check('but it still will not repeat itself', played.length, 0);
+
+// And the gate is reset by the NEW clip rather than left where the old one put
+// it: interrupting a 2s line with a half-second one must not hold the channel
+// for the two seconds that are no longer being played.
+ctx.currentTime = 230;
+solo(CUE.thug);                                    // would hold until 232.9
+ctx.currentTime = 230.5;
+played = [];
+solo(CUE.archery, true);                           // 0.4s audible: holds to 231.9
+check('the interrupting clip sets the gate itself',
+  at(232, () => solo(CUE.barracks)), 1);
 
 // --- Category B: every time ---------------------------------------------------
 
