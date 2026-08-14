@@ -40,8 +40,7 @@ export function spawn(state, typeId) {
     // for anything a catapult might be aiming at, and a missing field there
     // would be a silent `undefined` rather than a false.
     halted: false,   // standing still to throw, so nothing may lead ahead of it
-    tcd: 0,          // throwing cooldown
-    flasks: def.ranged ? def.ranged.flasks : 0
+    tcd: 0           // throwing cooldown
   });
 }
 
@@ -92,13 +91,19 @@ export function updateEnemies(state, dt) {
     }
 
     // THE THROWER. He stops when a soldier comes within range and starts
-    // lobbing; he walks again the moment there is nobody to throw at, or the
-    // basket is empty. Everything below this block is the ordinary walk, and a
-    // halted enemy skips all of it.
-    if (e.def.ranged && e.flasks > 0) {
+    // lobbing, and he walks again the moment there is nobody to throw at OR
+    // nobody left ahead of him to throw from behind. Everything below this block
+    // is the ordinary walk, and a halted enemy skips all of it.
+    //
+    // `screened` is what stops him being a soft-lock now that his flasks never
+    // run out — see the note on plague_inf in data/waves.js. It is checked
+    // SECOND, after the cheaper range test, because most frames have no soldier
+    // near him at all and there is no reason to walk the enemy list to find out
+    // he was going to keep walking anyway.
+    if (e.def.ranged) {
       const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
-      e.halted = !!mark;
-      if (mark) {
+      e.halted = !!mark && screened(state, e);
+      if (e.halted) {
         // He faces what he is throwing at, the same way a held enemy faces the
         // man holding it — this is the only other case where an enemy's heading
         // is decided by something other than the road under it.
@@ -107,7 +112,6 @@ export function updateEnemies(state, dt) {
         if (e.tcd <= 0) {
           throwFlask(state, e, mark);
           e.tcd = e.def.ranged.cd;
-          e.flasks--;
           // Same field the melee lunge uses, so the Attack drawing shows for
           // the throw exactly as long as it shows for a swing.
           e.thrust = 1;
@@ -180,6 +184,32 @@ export function updateEnemies(state, dt) {
     }
     return true;
   });
+}
+
+// Is anything still alive between him and the exit?
+//
+// This is "the back of the enemy line" as a rule rather than as a description,
+// and it is the only thing stopping a thrower with endless flasks from standing
+// on the road forever — see plague_inf in data/waves.js for why that would end
+// the game rather than merely look odd.
+//
+// Measured as distance REMAINING, the same way pickTarget orders its targets and
+// for the same reason: on a forked map the two roads in are different lengths,
+// so "further along" says nothing about which enemy is nearer the keep.
+//
+// A leaked or dead enemy screens nobody. Neither, deliberately, does one on
+// another road — a doctor on the north fork is not behind a column on the south
+// one, whatever the arithmetic says about their distances, and `remaining` is
+// comparable across routes precisely so this comparison is about the keep rather
+// than about the map.
+function screened(state, e) {
+  const mine = remaining(laneOf(level.routes[e.route], e.lane), e.s);
+
+  for (const o of state.enemies) {
+    if (o === e || o.hp <= 0 || o.leaked) continue;
+    if (remaining(laneOf(level.routes[o.route], o.lane), o.s) < mine) return true;
+  }
+  return false;
 }
 
 // The nearest soldier a thrower could reach, or null. Respawning men are not on

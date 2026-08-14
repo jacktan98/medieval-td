@@ -1,7 +1,7 @@
 import { splat } from './blood.js';
 import { impact } from './impacts.js';
 import { inRange } from './ground.js';
-import { play, LAND } from './audio.js';
+import { play, LAND, BREAK } from './audio.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -102,7 +102,11 @@ function land(state, s) {
   // air and announces itself by landing, which is also where the player is
   // looking. It plays whether or not it hit anybody, because a rock cratering an
   // empty road is exactly the miss the player needs to hear.
-  if (s.ammo.landSound) play(LAND);
+  //
+  // Keyed on the ammunition's own name, which it already carries for `killedBy`.
+  // Nothing new had to go on the ammo for the flask to get its own noise: "what
+  // does this sound like landing" has exactly one answer per kind.
+  if (s.ammo.landSound) play(LANDING[s.ammo.kind]);
 
   if (!s.splash) {
     // Nothing left to hit: a steered shot cannot arrive at a dead man, but an
@@ -137,6 +141,10 @@ function land(state, s) {
 // A respawning soldier is skipped by the caller for the same reason nothing may
 // aim at one: he is not on the board, he is a muster ring over a barracks.
 const victims = (state, s) => (s.side === 'enemy' ? state.units : state.enemies);
+
+// What arriving SOUNDS like, by ammunition. An arrow is not here on purpose: it
+// makes its noise leaving the bow, because that is the moment you watch.
+const LANDING = { rock: LAND, flask: BREAK };
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what

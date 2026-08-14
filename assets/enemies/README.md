@@ -35,10 +35,16 @@ Draw it **standing upright and facing left or right**, not top-down. Enemies
 mirror to face the way they are walking and are never rotated — a standing
 figure rotated to face north is a standing figure lying down.
 
-The thug draws 20 x 24 game px, the plague doctor 27 x 27 and the giant 30 x 43
-— though the giant's height is mostly the club he holds over his head. Against a
-spearman's 34 x 24 that reads correctly: a lighter troop, an oddity, and a
-heavier one around your own soldier.
+The thug draws 20 x 24 game px, the plague doctor 27 x 27 and the giant 37 x 37,
+against a spearman's 34 x 24. That reads correctly: a lighter troop, an oddity,
+and a heavier one around your own soldier.
+
+The giant's Default was redrawn shorter after the first animated upload held his
+club straight up and made the box 212 source px tall against a body of about
+160. It cost two things that are worth knowing about because they will happen
+again to the next tall pose: his health bar hung above the club rather than his
+head, and every figure in the encyclopedia had to shrink 4% to keep him inside a
+card. **A weapon raised above the head is charged for twice.**
 
 The heavy was redrawn 1.16x bigger, and its collision radius went 12 -> 14 with
 it rather than being left behind — the hitbox is meant to match the body you can
@@ -59,10 +65,12 @@ Thug's box goes from 148 wide to 232 between them and nothing has to be padded
 to match. `node tools/shadow.mjs` checks every pair and fails if one drifts more
 than 6 source px.
 
-One thing the Giant Thug's raised club does change: his resting box is 212
-source px tall where his body is about 160, and `artHeight` reads that box — so
-his health bar hangs above the club rather than above his head. That is left as
-it is deliberately; see the note on `spriteTrim` in `src/data/waves.js`.
+**Keep the resting pose no taller than the figure.** `artHeight` in render.js
+and select.js reads the Default's trim to place the health bar and the tap box,
+and the encyclopedia sizes every figure on the page so that the tallest still
+fits a 60px card. A pose that sticks a weapon up in the air pays for it in both
+places — see the giant's `spriteTrim` note in `src/data/waves.js`. The Attack
+pose has no such limit: reach as wide as you like.
 
 ## After uploading
 

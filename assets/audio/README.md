@@ -111,12 +111,28 @@ and it now means "how long a lull has to be before the game forgets".
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
+| a tower is **sold** | `Sell_Tower` |
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a barracks man swings** — Category B | `Attack_1/2/3` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
+| **a flask breaks** — Category B | `Flask_Break` |
 
-Everything above the line is Category A and shares the one channel; the three
+Everything above the line is Category A and shares the one channel; the four
 below run on the background bus and play every time.
+
+**The three gold noises all have PRIORITY.** Building, upgrading and selling are
+the things a player does with money, and every one of them is a button pressed
+deliberately — so all three take the Category A channel off whatever the battle
+is saying rather than being dropped by it. A reply to a deliberate action has to
+arrive or the button feels dead, and dropping it is invisible in a quiet game
+and constant in a busy one, which is exactly when a tower is most likely to be
+sold. Selling is the only one of the three that is a noise rather than a voice:
+there is nobody left in the tower to speak.
+
+**`Flask_Break` is Category B**, like the rock it sits beside, and for the same
+two reasons: three plague doctors can be throwing at once and a shared channel
+would silence two of them, and it is the sound that says poison is now on that
+patch of road — information the player needs every time rather than most times.
 
 **SELECTING A TOWER IS SILENT — all three families.** Tapping a building is how
 you read its numbers and it is done constantly: every time you weigh an upgrade,

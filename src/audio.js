@@ -176,6 +176,13 @@ const paths = {
   // The one sound the UI makes. Not a battle noise at all — it answers the
   // player's finger rather than anything happening on the board.
   select:          'assets/audio/sfx/Select_Sound.mp3',
+  // Taking a tower down. The third of the three deliberate money noises, beside
+  // the family lines a build and an upgrade play.
+  sell:            'assets/audio/sfx/Sell_Tower.mp3',
+  // A flask breaking. Its own clip rather than a quieter rock, because the two
+  // land for opposite reasons: a rock is the damage arriving and a flask is the
+  // damage STARTING.
+  flask_break:     'assets/audio/sfx/Flask_Break.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   arrow_kill_enemy: 'assets/audio/sfx/Arrow_kill_enemy.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
@@ -283,7 +290,14 @@ export const CUE = {
   // arrow finding one man across the map, and a rock landing on several.
   rockKill:     ['rock_kill_enemy'],
   meleeKill:    ['thug_dies'],
-  soldierDeath: ['soldier_dies']
+  soldierDeath: ['soldier_dies'],
+  // Selling. Category A and always played with priority, which puts it in the
+  // same bracket as a build and an upgrade rather than with the battle: all
+  // three are the player pressing a button and moving gold, and the reply to a
+  // deliberate action has to arrive or the button feels dead. It is the only
+  // one of the three that is a noise rather than a voice, because there is
+  // nobody left in the tower to say anything.
+  sell:         ['sell']
 };
 
 // Category B — the battle underneath, on its own bus, every time it happens.
@@ -293,6 +307,11 @@ export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // release: several machines land rocks at once and a shared channel would
 // silence all but one of them, which is the same reason the bow is down here.
 export const LAND = ['rock_hit_ground'];
+// A flask breaking, and Category B for the same reason: three doctors can be
+// throwing at once, and a shared channel would silence two of them. It is also
+// the sound that tells the player poison is now on that patch of road, which is
+// information they need every single time rather than most times.
+export const BREAK = ['flask_break'];
 
 // THE TAP. Every control in the game that does something answers with this, and
 // it is Category B for a reason that has nothing to do with the battle: it is a

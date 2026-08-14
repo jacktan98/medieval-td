@@ -33,11 +33,33 @@ export const flask = {
   // fight rather than into it. The number is the height of the arc as a fraction
   // of the throw, so a short lob is a low one.
   arc: 0.22,
-  // How wide the spill catches. The drawing is 31 game px across, so 22 is a
-  // patch a little wider than the picture of it — enough to catch two men of a
-  // wedge that is 40px wide, never the whole squad.
-  splash: 22,
+  // HOW WIDE THE SPILL CATCHES, and the number is measured against the shape of
+  // a squad rather than against the picture of a puddle.
+  //
+  // Counted rather than reasoned about, on the frame each flask lands, across
+  // five plots and three lanes — 130-odd landings per row:
+  //
+  //   splash 22   1.35 men per flask     splash 40   1.96
+  //   splash 30   1.73                   splash 48   2.07
+  //   splash 34   1.84                   splash 55   2.06
+  //
+  // It was 22, and at 22 more than half of all flasks hit exactly one man. The
+  // arithmetic said they should ALWAYS hit one — the wedge in units.js stands
+  // its men 40 to 42px apart and 22 reaches none of them — and the arithmetic
+  // was wrong, because a squad in a fight is not standing in its wedge. That is
+  // worth remembering the next time a radius looks obviously too small on paper.
+  //
+  // 40 is just before the knee: it catches two men most of the time and all
+  // three about a quarter of the time, and everything past 44 buys almost
+  // nothing. Still well under a catapult's 55 to 75 — this is a bottle, not a
+  // boulder — and deliberately close to the formation's own spacing, so
+  // spreading a squad out by moving its rally is a real answer to him.
+  //
+  // It is an ELLIPSE like every other reach in the game, through the same
+  // inRange, so it covers a patch of ground rather than a circle on the screen.
+  splash: 40,
   impact: 'spill',
+  landSound: true,
   poison: {
     // Per second, for this many seconds. 6 x 3 is 18 health, which is a sixth of
     // a spearman and a tenth of a swordsman: one flask is a nuisance and the
@@ -170,20 +192,20 @@ export const enemyTypes = {
   heavy_inf: {
     name: 'Giant Thug',
     sprite: 'giant',
-    // HIS BOX IS THE ONE THAT GREW, and it is the club rather than the man. He
-    // rests with a spiked club shouldered above his head — 212 source px from
-    // the top of it down past his shadow, where the body alone is about 160 —
-    // and swings it out level to strike, which is why the Attack box is 70px
-    // wider and 50px shorter. The man is the same size in both.
+    // He rests with his club shouldered and swings it out level to strike, so
+    // his Attack box is much wider and a little shorter than this one. The man
+    // is the same size in both; only the club moves.
     //
-    // That matters to more than the drawing: `artHeight` in render.js and
-    // select.js reads this rect, so the health bar hangs above the CLUB rather
-    // than above his head. Left that way deliberately. It is the honest reading
-    // of "how tall is this drawing", it is what the tap box should cover, and it
-    // does not move when he swings because it is read off the def rather than
-    // off the pose. He is the only figure in the game it applies to.
-    spriteTrim: [182, 150, 148, 212],
-    pivot: [0.669, 0.931],
+    // REDRAWN SHORTER. The first version of this pose held the club straight up
+    // and made his box 212 source px tall against a body of about 160, which had
+    // two visible consequences and both are gone: `artHeight` reads this rect,
+    // so his health bar hung above the CLUB rather than his head, and the
+    // encyclopedia had to shrink every figure on the page by 4% to keep him
+    // inside a card. At 180 tall he is 37 x 37 game px and neither applies — the
+    // bar sits just over his head like everyone else's, and the book's figure
+    // scale went back to the number it was asked for.
+    spriteTrim: [151, 182, 179, 180],
+    pivot: [0.726, 0.918],
     // Club swung. Shadow at source (281.0, 347.3) in both drawings, to the pixel.
     attack: { sprite: 'giant_attack', trim: [98, 200, 232, 162], pivot: [0.789, 0.909] },
     spriteFaces: -1,
@@ -213,17 +235,32 @@ export const enemyTypes = {
   // A barracks cannot block what will not come to it, so the counter is to shoot
   // him: he is the reason archery towers can now be told what to aim at.
   //
-  // THE BASKET IS FINITE, and that is load-bearing rather than flavour. A wave
-  // only ends when the field is clear (see src/waves.js), so an enemy that
-  // halted out of everyone's reach and never advanced would be a soft-lock — the
-  // player would be left with a board they cannot finish and no gold coming in.
-  // Five flasks and then he walks in and fights like a thug, badly. So the worst
-  // case is always survivable, and killing him early is worth exactly the flasks
-  // he had left.
+  // THE BASKET IS BOTTOMLESS, and something else has to stop him standing there
+  // forever. A wave only ends when the field is clear (see src/waves.js), so an
+  // enemy that halted out of everyone's reach and never advanced would be a
+  // soft-lock: a board the player cannot finish, with no gold coming in.
+  //
+  // A flask count used to be that guard and it is gone. What replaces it is the
+  // sentence that described him in the first place — HE THROWS FROM THE BACK OF
+  // THE LINE — read as a rule instead of as flavour: he only stops while there
+  // is another living enemy further down the road than he is. Behind his own
+  // line he is a thrower; at the front of it he is a man walking towards you.
+  //
+  // That cannot lock, and the reason is worth writing down: the enemy nearest
+  // the exit has nobody ahead of it, so it is never halted, so the line always
+  // drains from the front. When he is the last one left he walks in himself.
+  // Two doctors do not deadlock each other either — only one of them can be the
+  // further back.
+  //
+  // It is also better than the count at what the count was for. Killing his
+  // screen is now a way to make him come to you, so a barracks that clears the
+  // road in front of him gets to fight him; and standing him behind a Giant Thug
+  // that will not die for thirty seconds is exactly when he is most dangerous,
+  // which is the enemy this was meant to be.
   //
   // He is deliberately weak in every other respect: slower than a thug, a third
   // of the melee damage, and dead to about three tier 1 volleys. Everything he
-  // is worth is in the basket.
+  // is worth is in the throwing.
   plague_inf: {
     name: 'Plague Thug',
     sprite: 'plague',
@@ -239,30 +276,31 @@ export const enemyTypes = {
     dead: 'dead_plague',
     deadTrim: [116, 207, 280, 97],
     deadPivot: [0.118, 0.826],
-    // 260 -> 140, and the swap was measured rather than felt. What he costs the
-    // level is almost all in his BODY rather than in his poison: with the flask
-    // set to 0 damage — the spill landing and doing literally nothing — the
-    // mixes still fell from 96 wins in 120 to 75, and the average finish from 6
-    // lives to 3. He is another thing on the road that has to be killed before
-    // the wave can end, and he spends eleven seconds standing still while the
-    // column piles up behind him.
+    // HIS HP BARELY MATTERS, AND THAT IS THE INTERESTING PART. Over 12 seeds,
+    // both maps and every scenario tools/sim.mjs checks, one doctor a wave from
+    // wave 5, against a 96/120 and 6.0 lives baseline with no doctor at all:
     //
-    // So hp is the knob, and there is a cliff in it. Over 12 seeds, both maps
-    // and every scenario tools/sim.mjs checks, one doctor a wave from wave 5:
+    //   hp 140   89/120 mixes   4.9 lives      hp 320   87/120   4.8
+    //   hp 200   86/120         5.0            hp 400   85/120   4.8
+    //   hp 260   80/120         4.6
     //
-    //   no doctor at all   96/120 mixes   6.0 lives
-    //   hp 140             93/120         5.0
-    //   hp 180             82/120         4.4
-    //   hp 220             82/120         4.3
-    //   hp 260             83/120         3.6
+    // Flat, and not even monotonic — 260 dips and 320 comes back, which is the
+    // signature of seed noise rather than of a lever. He costs the level about
+    // seven wins and a life whatever he is made of.
     //
-    // 140 to 180 is a step of 11 wins for 40 hp, and 180 to 260 is worth almost
-    // nothing — so the interesting boundary is between 140 and 180, and it is
-    // very likely "can the archery you have kill him before the basket is
-    // empty". 140 is the near side of it: he costs the level about a life, which
-    // is the right price for a new enemy, and the invariant never broke at any
-    // value here — no pure build won a single seed.
-    hp: 140,
+    // It was NOT flat when he had a finite basket and halted for as long as he
+    // had flasks: then 140 gave 93 wins and 180 gave 82, an eleven-win cliff for
+    // 40hp. What the cliff measured was how long he stood on the road, not how
+    // hard he was to kill — a wave only ends when the field is clear, so an
+    // enemy that will not advance is worth far more than one that will. Bounding
+    // the halt with "is anybody still ahead of me" took that lever away, and
+    // what is left is a body like any other.
+    //
+    // So this number is free, and it is set for how he should FEEL: 200 is two
+    // and a half thugs, which is enough that he has to be focused rather than
+    // brushed aside, and nothing like a Giant Thug. Move it as you like — no
+    // pure build won a single seed anywhere in the range above.
+    hp: 200,
     speed: 60,
     bounty: 30,
     leak: 1,
@@ -287,12 +325,10 @@ export const enemyTypes = {
     // remembered into.
     ranged: {
       // Far enough outside a squad's ASSIST that no soldier will ever wander
-      // into him, and inside a tier 1 archery tower's 165 so a bow placed to
+      // into him, and inside a tier 1 archery tower's 190 so a bow placed to
       // cover the road can always answer.
       range: 130,
-      cd: 2.2,
-      // What he starts with and never gets back. See the note above.
-      flasks: 5
+      cd: 2.2
     }
   }
 };

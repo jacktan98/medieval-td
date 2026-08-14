@@ -383,6 +383,12 @@ function run(state, item) {
     removeUnits(state, t);
     state.towers = state.towers.filter(other => other !== t);
     if (state.hoverTower === t) state.hoverTower = null;
+    // PRIORITY, and it completes the set: building, upgrading and selling are
+    // the three things the player does with gold, and all three now answer
+    // whatever else the battle is saying. This one is a noise rather than a
+    // voice because there is nobody left in the tower to speak — the selection
+    // it would have spoken for has just been taken off the board.
+    solo(CUE.sell, true);
   }
 
   // Arming the placement rather than doing it: the next tap on the board is the
