@@ -219,6 +219,7 @@ const waves = await import('../src/data/waves.js');
 const spear = towers.barracks[0].soldier, spear2 = towers.barracks[1].soldier;
 const spear3 = towers.barracks[2].soldier;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
+const plague = waves.enemyTypes.plague_inf;
 
 // `whole` sprites are the buildings: nothing else in those files is painted the
 // ground colour, so every blob of it is part of one ellipse and they are fitted
@@ -260,8 +261,8 @@ const SPRITES = [
   //
   // The tolerance below is 6 source px, under 1.5 game px. All six pairs are
   // currently inside 0.7.
-  ['assets/units/Soldier_Novice_Archer_Default.png',  'archer.gunnerPivot',       towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
-  ['assets/units/Soldier_Novice_Archer_Attack.png',   'archer.attack.pivot',      towers.archery[0].attack.trim, towers.archery[0].attack.pivot],
+  ['assets/units/Soldiers_Novice_Archer_Default.png',  'archer.gunnerPivot',       towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
+  ['assets/units/Soldiers_Novice_Archer_Attack.png',   'archer.attack.pivot',      towers.archery[0].attack.trim, towers.archery[0].attack.pivot],
   ['assets/units/Soldiers_Combat_Archer_Default.png', 'archer2.gunnerPivot',      towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
   ['assets/units/Soldiers_Combat_Archer_Attack.png',  'archer2.attack.pivot',     towers.archery[1].attack.trim, towers.archery[1].attack.pivot],
   ['assets/units/Soldiers_Elite_Archer_Default.png',  'archer3.gunnerPivot',      towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
@@ -280,13 +281,18 @@ const SPRITES = [
   ['assets/units/Soldiers_Pikeman_Attack.png',        'spearman2.attack.pivot',   spear2.attack.trim, spear2.attack.pivot],
   ['assets/units/Soldiers_Swordsman_Default.png',     'spearman3.pivot',          spear3.spriteTrim, spear3.pivot],
   ['assets/units/Soldiers_Swordsman_Attack.png',      'spearman3.attack.pivot',   spear3.attack.trim, spear3.attack.pivot],
-  ['assets/enemies/Enemies_Man_T1a.png',    'light_inf.pivot',        light.spriteTrim, light.pivot],
-  ['assets/enemies/Enemies_Man_T1b.png',    'heavy_inf.pivot',        heavy.spriteTrim, heavy.pivot],
+  ['assets/enemies/Enemies_Thug_Default.png',        'light_inf.pivot',         light.spriteTrim, light.pivot],
+  ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
+  ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],
+  ['assets/enemies/Enemies_Giant_Thug_Attack.png',   'heavy_inf.attack.pivot',  heavy.attack.trim, heavy.attack.pivot],
+  ['assets/enemies/Enemies_Plague_Thug_Default.png', 'plague_inf.pivot',        plague.spriteTrim, plague.pivot],
+  ['assets/enemies/Enemies_Plague_Thug_Attack.png',  'plague_inf.attack.pivot', plague.attack.trim, plague.attack.pivot],
   ['assets/dead/Soldiers_Spearman_Dead.png',  'spearman.deadPivot',   spear.deadTrim, spear.deadPivot],
   ['assets/dead/Soldiers_Pikeman_Dead.png',   'spearman2.deadPivot',  spear2.deadTrim, spear2.deadPivot],
   ['assets/dead/Soldiers_Swordsman_Dead.png', 'spearman3.deadPivot',  spear3.deadTrim, spear3.deadPivot],
-  ['assets/dead/Enemies_Man_Dead_T1a.png',  'light_inf.deadPivot',    light.deadTrim, light.deadPivot],
-  ['assets/dead/Enemies_Man_Dead_T1b.png',  'heavy_inf.deadPivot',    heavy.deadTrim, heavy.deadPivot]
+  ['assets/dead/Enemies_Thug_Dead.png',        'light_inf.deadPivot',  light.deadTrim, light.deadPivot],
+  ['assets/dead/Enemies_Giant_Thug_Dead.png',  'heavy_inf.deadPivot',  heavy.deadTrim, heavy.deadPivot],
+  ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot]
 ];
 
 // How far the held anchor may sit from the measured centre before it is wrong,

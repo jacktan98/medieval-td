@@ -1,9 +1,10 @@
 import { level, remaining } from './level.js';
 import { at as pointOn, laneOf, randomLane } from './route.js';
-import { enemyTypes } from './data/waves.js';
+import { enemyTypes, flask } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { unhook } from './units.js';
 import { inRange } from './ground.js';
+import { SCALE } from './data/towers.js';
 import { solo, CUE } from './audio.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -33,7 +34,14 @@ export function spawn(state, typeId) {
     face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
     foe: null,       // the barracks soldier holding it, if any
     acd: 0,          // melee cooldown, only ticks while held
-    thrust: 0        // 1 on the swing, decays; drives the lunge in render.js
+    thrust: 0,       // 1 on the swing, decays; drives the lunge in render.js
+    // A thrower's own state, and it is set on every enemy rather than only on
+    // the ones that throw. `halted` is read by leadPoint, which has to answer
+    // for anything a catapult might be aiming at, and a missing field there
+    // would be a silent `undefined` rather than a false.
+    halted: false,   // standing still to throw, so nothing may lead ahead of it
+    tcd: 0,          // throwing cooldown
+    flasks: def.ranged ? def.ranged.flasks : 0
   });
 }
 
@@ -54,7 +62,12 @@ export function spawn(state, typeId) {
 // Only artillery asks. Arrows steer, so they never need to know.
 export function leadPoint(e, t) {
   const road = laneOf(level.routes[e.route], e.lane);
-  const ahead = e.foe ? 0 : e.def.speed * level.march * t;
+  // A HELD ENEMY IS NOT GOING ANYWHERE, and neither is one that has stopped to
+  // throw. Both lead to themselves. The second case is easy to forget and hard
+  // to see when it is wrong: a catapult would throw 130px up the road past a
+  // plague doctor standing perfectly still, and it would look like the machine
+  // simply could not hit him.
+  const ahead = e.foe || e.halted ? 0 : e.def.speed * level.march * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -71,7 +84,38 @@ export function updateEnemies(state, dt) {
     if (e.foe) {
       // Turn to fight whoever is holding it, so the two face each other.
       if (e.foe.x !== e.x) e.face = e.foe.x > e.x ? 1 : -1;
+      // A doctor who has been caught fights with his hands, not his basket. He
+      // is unhalted here rather than left alone so that killing his blocker
+      // puts him straight back to throwing.
+      e.halted = false;
       continue;
+    }
+
+    // THE THROWER. He stops when a soldier comes within range and starts
+    // lobbing; he walks again the moment there is nobody to throw at, or the
+    // basket is empty. Everything below this block is the ordinary walk, and a
+    // halted enemy skips all of it.
+    if (e.def.ranged && e.flasks > 0) {
+      const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
+      e.halted = !!mark;
+      if (mark) {
+        // He faces what he is throwing at, the same way a held enemy faces the
+        // man holding it — this is the only other case where an enemy's heading
+        // is decided by something other than the road under it.
+        if (mark.x !== e.x) e.face = mark.x > e.x ? 1 : -1;
+        e.tcd -= dt;
+        if (e.tcd <= 0) {
+          throwFlask(state, e, mark);
+          e.tcd = e.def.ranged.cd;
+          e.flasks--;
+          // Same field the melee lunge uses, so the Attack drawing shows for
+          // the throw exactly as long as it shows for a swing.
+          e.thrust = 1;
+        }
+        continue;
+      }
+    } else {
+      e.halted = false;
     }
 
     // One number forward along the road, then the position is looked up. The
@@ -138,6 +182,69 @@ export function updateEnemies(state, dt) {
   });
 }
 
+// The nearest soldier a thrower could reach, or null. Respawning men are not on
+// the board — they are a muster ring over a barracks — so nothing may aim at
+// them, the same rule pickFigure uses for taps.
+//
+// Through inRange like every other reach in the game, because the board is drawn
+// in perspective and a round patch of ground is drawn squashed. A thrower using
+// a plain radius would stand off further up the screen than down it, which reads
+// as him being nervous of some men and not others.
+function nearestUnit(state, x, y, range) {
+  let best = null;
+  let least = Infinity;
+
+  for (const u of state.units) {
+    if (u.respawn > 0 || u.hp <= 0) continue;
+    if (!inRange(x, y, u.x, u.y, range)) continue;
+    const d = Math.hypot(u.x - x, u.y - y);
+    if (d < least) { least = d; best = u; }
+  }
+  return best;
+}
+
+// A flask leaves the doctor's hand and comes down on the ground a soldier is
+// standing on.
+//
+// COMMITTED TO THE GROUND, like a rock and unlike an arrow — see the two kinds
+// in projectiles.js. It is thrown at where the man is NOW rather than where he
+// will be, and that is a decision rather than an omission: a soldier at his post
+// is not going anywhere, and one who has just been pulled into a fight is going
+// somewhere a lead could not predict. Throwing at the ground he is on means the
+// flask lands where you saw it aimed, and a man who steps out of it has dodged
+// something rather than been missed by a bug.
+function throwFlask(state, e, mark) {
+  // The hand, derived from his own drawing rather than typed: the height of the
+  // figure above the shadow it stands on, a little over half way up. Nothing to
+  // re-measure when the artist redraws him.
+  const up = e.def.spriteTrim[3] * e.def.pivot[1] * SCALE * 0.55;
+  const from = { x: e.x, y: e.y - up };
+  const to = { x: mark.x, y: mark.y };
+  const dist = Math.hypot(to.x - from.x, to.y - from.y);
+  const flight = dist / flask.speed;
+
+  state.shots.push({
+    x: from.x,
+    y: from.y,
+    angle: Math.atan2(to.y - from.y, to.x - from.x),
+    fromX: e.x,
+    // Whose side it is on, and the only thing projectiles.js needs to know to
+    // point the same landing code at the other army. Absent on every tower's
+    // shot, which reads as the player's side.
+    side: 'enemy',
+    target: mark,
+    damage: 0,
+    splash: flask.splash,
+    ammo: flask,
+    speed: flask.speed,
+    from,
+    to,
+    flight,
+    t: 0,
+    lift: dist * flask.arc
+  });
+}
+
 // Closest to leaking, so towers focus whatever is about to cost a life.
 //
 // Measured as distance REMAINING rather than distance travelled, which is the
@@ -154,9 +261,19 @@ export function updateEnemies(state, dt) {
 // Two ellipses rather than two radii, through the same inRange as everything
 // else: the board is drawn in perspective and both edges of an annulus are
 // patches of ground. See src/ground.js.
-export function pickTarget(enemies, x, y, range, min = 0) {
+// `mode` is an index into AIM_MODES, and it changes WHICH of the enemies in
+// reach is picked without changing what "in reach" means. It is a preference
+// with a tiebreak rather than a filter: a tower told to shoot throwers first and
+// offered nothing but militia shoots the militia. A mode that could leave a
+// tower idle with a target in front of it would be a trap, and the player would
+// have to remember to unset it.
+//
+// Distance-to-the-exit is the tiebreak in every mode, which is what makes mode 0
+// fall out as the special case where the preference is flat.
+export function pickTarget(enemies, x, y, range, min = 0, mode = 0) {
   let best = null;
   let least = Infinity;
+  let bestRank = Infinity;
 
   for (const e of enemies) {
     // Measured from the enemy's ground anchor — its shadow — because that is
@@ -164,7 +281,14 @@ export function pickTarget(enemies, x, y, range, min = 0) {
     if (!inRange(x, y, e.x, e.y, range)) continue;
     if (min && inRange(x, y, e.x, e.y, min)) continue;
     const left = remaining(laneOf(level.routes[e.route], e.lane), e.s);
-    if (left < least) {
+    // Lower wins. Negated hp for mode 1 so "most health" sorts the same
+    // direction as everything else; `ranged` is a 0/1 flag for mode 2, which
+    // makes the whole preference a single comparable number in every mode.
+    const rank = mode === 1 ? -e.hp
+               : mode === 2 ? (e.def.ranged ? 0 : 1)
+               : 0;
+    if (rank < bestRank || (rank === bestRank && left < least)) {
+      bestRank = rank;
       least = left;
       best = e;
     }

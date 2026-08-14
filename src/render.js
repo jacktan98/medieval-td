@@ -4,14 +4,14 @@ import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
-import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE } from './impacts.js';
+import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
-import { selectionInfo } from './select.js';
+import { selectionInfo, shownDamage } from './select.js';
 import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
          SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
@@ -716,8 +716,12 @@ function drawImpact(ctx, i) {
   const dh = sh * IMPACT_SCALE;
 
   ctx.save();
-  ctx.globalAlpha = Math.min(1, i.life / IMPACT_FADE);
-  ctx.drawImage(img, sx, sy, sw, sh, i.x - dw / 2, i.y - dh, dw, dh);
+  ctx.globalAlpha = Math.min(1, i.life / (i.fade || IMPACT_FADE));
+  // A spill LIES on the ground it landed on, so it is centred like a pool of
+  // blood; earth hangs above the point of impact and is anchored at its foot.
+  // See IMPACT_LIE in impacts.js for which is which and why.
+  ctx.drawImage(img, sx, sy, sw, sh,
+    i.x - dw / 2, IMPACT_LIE[i.img] ? i.y - dh / 2 : i.y - dh, dw, dh);
   ctx.restore();
 }
 
@@ -818,7 +822,15 @@ function drawEnemy(ctx, e) {
     return;
   }
 
-  const [sx, sy, sw, sh] = e.def.spriteTrim;
+  // The swing, the stab, or the throw — one field for all three, because they
+  // are the same event to an enemy: the moment it does the thing it does. A
+  // plague doctor's `thrust` is set by the flask leaving his hand rather than by
+  // a blow landing, and he gets the lunge with it, which is exactly right for a
+  // man putting his shoulder into a throw.
+  const [frame, trim, pivot] = pose(e.def.attack, e.thrust > 0, img,
+    e.def.spriteTrim, e.def.pivot);
+
+  const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
   const dh = sh * SCALE;
   const dir = e.face;
@@ -828,7 +840,7 @@ function drawEnemy(ctx, e) {
   // melee reads as two figures trading blows rather than one animated one.
   ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y);
   ctx.scale(mirror(e.def, dir), 1);
-  ctx.drawImage(img, sx, sy, sw, sh, -e.def.pivot[0] * dw, -e.def.pivot[1] * dh, dw, dh);
+  ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   ctx.restore();
 }
 
@@ -1574,6 +1586,38 @@ function drawGlyph(ctx, kind) {
     ctx.beginPath();
     ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
     ctx.stroke();
+
+  // THE THREE STANDING ORDERS. Vector, like the monastery's cross and the `max`
+  // chevrons, and for the same reason: there is no artwork for them yet. They
+  // have to be told apart at 26px on a phone with a thumb over half of them, so
+  // each one is a different SHAPE rather than a different detail — a line, a
+  // stack and an arc.
+  //
+  // An arrow running into a wall: the enemy closest to getting out.
+  } else if (kind === 'aim_exit') {
+    ctx.moveTo(-9, 0); ctx.lineTo(4, 0);
+    ctx.moveTo(0, -5); ctx.lineTo(5, 0); ctx.lineTo(0, 5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(8, -9); ctx.lineTo(8, 9);
+    ctx.stroke();
+  // Three bars, and the tallest is filled in: the one with the most left in it.
+  } else if (kind === 'aim_tough') {
+    ctx.moveTo(-8, 9); ctx.lineTo(-8, 2);
+    ctx.moveTo(0, 9); ctx.lineTo(0, -2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.rect(5, -9, 6, 18);
+    ctx.fill();
+  // A lobbed flask on its arc, with the bottle at the top of it: the one doing
+  // the throwing.
+  } else if (kind === 'aim_ranged') {
+    ctx.moveTo(-9, 8);
+    ctx.quadraticCurveTo(0, -10, 9, 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(9, 4, 2.5, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
@@ -2004,7 +2048,7 @@ function drawEnemyPage(ctx) {
     ctx.fillText(d.name, tx, r1);
 
     const hp = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK);
-    stat(ctx, 'stat_damage', hp + 12, r2, String(d.damage), INK);
+    stat(ctx, 'stat_damage', hp + 12, r2, String(shownDamage(d)), INK);
 
     // THE BOOK'S OWN COST ICONS, not the dashboard's gold and lives. On an enemy
     // card the coin means a bounty you are paid and the heart means damage to the

@@ -18,6 +18,7 @@ import { updateWaves } from '../src/waves.js';
 import { updateUnits, makeUnits } from '../src/units.js';
 import { updateCorpses } from '../src/corpses.js';
 import { updateSplats } from '../src/blood.js';
+import { updateImpacts } from '../src/impacts.js';
 import { families } from '../src/data/towers.js';
 import { level, levels, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
@@ -134,6 +135,11 @@ function play(plan) {
     updateShots(state, DT);
     updateCorpses(state, DT);    // decoration, but kept so this stays the game
     updateSplats(state, DT);
+    // Decoration too, and kept for the same reason: a plague doctor's spill is
+    // pushed onto state.impacts by the same land() the sim runs for real, so
+    // without this the list grows for the whole run and the sim stops being the
+    // game it claims to be.
+    updateImpacts(state, DT);
     if (state.lives <= 0) state.result = 'lost';
     time += DT;
   }

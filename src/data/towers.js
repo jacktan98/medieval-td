@@ -543,10 +543,31 @@ const archer3 = {
 // The names carry the tier the way the barracks' always have — Novice, Combat,
 // Elite; Catapult, Mangonel, Trebuchet — so nothing is lost by dropping the
 // roman numeral from the box.
+// WHAT A TOWER MAY BE TOLD TO SHOOT AT, in the order the button cycles them.
+//
+// Only archery carries `targeting` for now, and the flag is on the tier rather
+// than on the family so a future machine can opt in without this list moving.
+// A catapult deliberately does not have it: its whole character is that it
+// commits a rock to a patch of ground a second before it lands, and a machine
+// that could be re-pointed at whatever you liked would be an archery tower with
+// a bigger number.
+//
+// The order is the argument. `exit` is what every tower did before this button
+// existed and is what most towers should keep doing — it is the only mode that
+// is directly about not losing lives. The other two are answers to a specific
+// problem on the board: something too fat to kill in transit, or something
+// standing off out of a soldier's reach. A player who never presses the button
+// gets the game they had.
+export const AIM_MODES = [
+  { id: 'exit',   glyph: 'aim_exit',   label: 'Nearest the exit' },
+  { id: 'tough',  glyph: 'aim_tough',  label: 'Most health' },
+  { id: 'ranged', glyph: 'aim_ranged', label: 'Throwers first' }
+];
+
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248' },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230' },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4' }
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally

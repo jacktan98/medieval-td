@@ -133,7 +133,11 @@ export function makeUnits(state, tower) {
       holds: false,   // true only if he is the one BLOCKING his foe
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
-      respawn: 0
+      respawn: 0,
+      // { dps, left } while a flask is working on him, null otherwise. Set here
+      // rather than left undefined so the shape of a unit is written down in one
+      // place — see the same argument for `halted` on an enemy.
+      poison: null
     });
   }
 }
@@ -316,15 +320,32 @@ export function updateUnits(state, dt) {
       }
     }
 
-    // Regen only out of combat, so a barracks recovers between waves without
-    // making a soldier unkillable inside one.
-    if (!u.foe && u.hp < u.maxHp) {
+    // PLAGUE. A flask leaves no wound and does no damage when it lands; it
+    // leaves a patch of ground, and this is where the ground does its work.
+    //
+    // It suppresses the regen below rather than racing it, and that is the whole
+    // reason the numbers are small enough to look harmless. A spearman regrows 4
+    // health a second out of combat, so a 6-a-second poison that let him heal
+    // through it would be a 2-a-second poison — and the tier 3 knight, at 6
+    // regen, would take literally nothing. "Slowly trickling his health" has to
+    // mean the trickle is the only thing happening.
+    if (u.poison) {
+      u.hp -= u.poison.dps * dt;
+      u.poison.left -= dt;
+      if (u.poison.left <= 0) u.poison = null;
+    } else if (!u.foe && u.hp < u.maxHp) {
+      // Regen only out of combat, so a barracks recovers between waves without
+      // making a soldier unkillable inside one.
       u.hp = Math.min(u.maxHp, u.hp + u.def.regen * dt);
     }
 
     if (u.hp <= 0) {
       release(u);
       u.respawn = u.def.respawn;
+      // The plague dies with him. Without this he musters again at full health
+      // with the clock still running and walks straight back out to finish
+      // dying of a flask thrown at a man who is already dead.
+      u.poison = null;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
       solo(CUE.soldierDeath);
       // He falls facing whatever killed him. The fallback is his own facing —

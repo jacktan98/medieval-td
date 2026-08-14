@@ -1,23 +1,23 @@
 # Enemy artwork
 
-One file per entry in `enemyTypes` in `src/data/waves.js`:
+**Two drawings per enemy**, exactly like the soldiers they fight — a Default
+they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 
-| file                    | type key    | notes                                    |
-|-------------------------|-------------|------------------------------------------|
-| `Enemies_Man_T1a.png`   | `light_inf` | the militia, in all 8 waves              |
-| `Enemies_Man_T1b.png`   | `heavy_inf` | the heavy, waves 4-8, in growing packs   |
+| Default                            | Attack                            | type key     | notes                                  |
+|------------------------------------|-----------------------------------|--------------|----------------------------------------|
+| `Enemies_Thug_Default.png`         | `Enemies_Thug_Attack.png`         | `light_inf`  | the militia, in all 8 waves            |
+| `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
+| `Enemies_Plague_Thug_Default.png`  | `Enemies_Plague_Thug_Attack.png`  | `plague_inf` | the thrower, waves 5-8                 |
 
-**T1a and T1b, not T1 and T2**, since the last upload. The heavy is a bigger
-militiaman rather than the next rank up, so the tier 2 slot is still empty and
-whatever fills it later gets the T2 name. The `art` keys in `src/assets.js`
-followed the rename; the type keys above did not, because what these enemies DO
-did not change and `heavy_inf` is what the rules call it.
+**The tiers are gone from these names.** They were `Enemies_Man_T1a` and `T1b`,
+from an upload that numbered them; each is now named after what it is, and the
+`art` keys in `src/assets.js` followed. The type keys above did not, because
+what these enemies DO did not change and `heavy_inf` is what the rules call it.
 
-Adding a new enemy means adding both the file and the `enemyTypes` entry, so
+Adding a new enemy means adding both the files and the `enemyTypes` entry, so
 tell me the intended hp / speed / bounty when you upload one and I will wire it
 and re-run `tools/sim.mjs` to see what it does to the balance. Expect that to
-move other numbers: the heavy's hp is the single knob the level's difficulty
-invariant is held with, and a third enemy type will take some of that job over.
+move other numbers — adding the plague doctor did.
 
 Their **death poses** live in `assets/dead/`, one per type, and that folder's
 README has the drawing rules. They are separate files because a body is a
@@ -35,9 +35,10 @@ Draw it **standing upright and facing left or right**, not top-down. Enemies
 mirror to face the way they are walking and are never rotated — a standing
 figure rotated to face north is a standing figure lying down.
 
-`Enemies_Man_T1a.png` draws 20 x 23 game px and `Enemies_Man_T1b.png` draws
-38 x 33, against a spearman's 35 x 24. That reads correctly: a lighter troop and
-a heavier one either side of your own soldier.
+The thug draws 20 x 24 game px, the plague doctor 27 x 27 and the giant 30 x 43
+— though the giant's height is mostly the club he holds over his head. Against a
+spearman's 34 x 24 that reads correctly: a lighter troop, an oddity, and a
+heavier one around your own soldier.
 
 The heavy was redrawn 1.16x bigger, and its collision radius went 12 -> 14 with
 it rather than being left behind — the hitbox is meant to match the body you can
@@ -45,13 +46,23 @@ see. That was checked before the change, not after: the whole sim comes out
 identical either way, so it is a picture change and not a balance one. Do not
 assume the next size change is free; run `node tools/sim.mjs` and look.
 
-## Attacking is not a drawing
+## The two poses
 
-An enemy that has been stopped by a spearman lunges 6 game px toward him on each
-swing and settles back, in code — the same distance the spearman lunges, so both
-sides of a melee move alike. There is no attack frame to draw, and adding one
-would mean replacing that movement with a frame system. The same is true of the
-walk — enemies bob as they move rather than cycling through poses.
+The Attack drawing shows for a quarter of a second each time the enemy lands a
+blow, on top of the 6px lunge it already had — the movement and the pose are one
+gesture. On the plague doctor the same field is set by a flask leaving his hand,
+so he lunges into his throw.
+
+**Only the shadow has to line up between the two.** Everything else may differ
+freely, because each pose carries its own trim and its own pivot; the Giant
+Thug's box goes from 148 wide to 232 between them and nothing has to be padded
+to match. `node tools/shadow.mjs` checks every pair and fails if one drifts more
+than 6 source px.
+
+One thing the Giant Thug's raised club does change: his resting box is 212
+source px tall where his body is about 160, and `artHeight` reads that box — so
+his health bar hangs above the club rather than above his head. That is left as
+it is deliberately; see the note on `spriteTrim` in `src/data/waves.js`.
 
 ## After uploading
 

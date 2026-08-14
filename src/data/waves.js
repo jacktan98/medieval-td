@@ -3,15 +3,67 @@
 // scaled by the same SCALE, so an enemy is sized against a spearman by the art
 // rather than by a number picked here. `r` stays the collision radius and is
 // deliberately smaller than the drawn sprite — it is the body, not the outline.
+
+// The flask, and the only ammunition in the game that belongs to an enemy.
+//
+// FIRST IN THE FILE because the plague doctor's card quotes its poison, and a
+// def cannot read a constant declared under it.
+//
+// Shaped exactly like the tower ammunition in data/towers.js — `kind`, `speed`,
+// `arc`, `impact` — because projectiles.js reads all of them the same way. What
+// is different is `poison` instead of a damage number, and that difference is
+// the whole design: a flask does nothing on impact. It leaves a patch of ground
+// that trickles health out of everyone who was standing in it.
+export const flask = {
+  kind: 'flask',
+  sprite: 'flask',
+  trim: [236, 232, 41, 48],
+  // A bottle has no nose to put on the target, so it is never turned and it
+  // flies by its middle — the same two answers a rock gives, for the same
+  // reason. Rotating it to its heading would be all the spin and none of the
+  // meaning.
+  faces: 0,
+  grip: 0.5,
+  // Slower than a rock's 300 and half an arrow's, because he is a man lobbing a
+  // bottle underarm over a fight rather than a machine throwing one. It is also
+  // the reaction time the player is being sold: you can see a flask coming and
+  // there is time to decide it matters.
+  speed: 150,
+  // Lobbed, like a rock, and for the same reason: he is throwing it over the
+  // fight rather than into it. The number is the height of the arc as a fraction
+  // of the throw, so a short lob is a low one.
+  arc: 0.22,
+  // How wide the spill catches. The drawing is 31 game px across, so 22 is a
+  // patch a little wider than the picture of it — enough to catch two men of a
+  // wedge that is 40px wide, never the whole squad.
+  splash: 22,
+  impact: 'spill',
+  poison: {
+    // Per second, for this many seconds. 6 x 3 is 18 health, which is a sixth of
+    // a spearman and a tenth of a swordsman: one flask is a nuisance and the
+    // basket is a problem, which is the shape this enemy should have.
+    dps: 6,
+    seconds: 3
+  }
+};
+
 export const enemyTypes = {
   light_inf: {
     // What the info box calls him. The gameplay key stays light_inf: what he is
     // called and what he does are different questions, and the balance files
     // read the second one.
     name: 'Thug',
-    sprite: 'enemy_t1a',
-    spriteTrim: [208, 199, 96, 114],   // source px, re-paste from tools/trim.mjs
-    pivot: [0.594, 0.908],   // the centre of his ground shadow
+    sprite: 'thug',
+    spriteTrim: [208, 198, 96, 116],   // source px, re-paste from tools/trim.mjs
+    pivot: [0.635, 0.903],   // the centre of his ground shadow
+    // Knife thrust. Every enemy has two drawings now, exactly like the soldiers
+    // they fight — see the trim block in data/towers.js for why the two poses
+    // keep their own trims instead of sharing a union, and assets/units/README.md
+    // for what has to line up between them.
+    //
+    // His shadow is at source (269.0, 302.8) in BOTH drawings, to the pixel, so
+    // the arm straightens and nothing else moves.
+    attack: { sprite: 'thug_attack', trim: [175, 198, 129, 116], pivot: [0.729, 0.903] },
     spriteFaces: -1,
     // The dead pose, left on the road for two seconds.
     //
@@ -24,9 +76,9 @@ export const enemyTypes = {
     // about its outline said where it lay. That coupled the two exports: redraw
     // either one and the number had to be recomputed from both. Now each drawing
     // carries its own answer, and a body lies where its shadow is.
-    dead: 'dead_enemy_t1a',
-    deadTrim: [193, 211, 126, 90],
-    deadPivot: [0.163, 0.753],
+    dead: 'dead_thug',
+    deadTrim: [180, 217, 152, 78],
+    deadPivot: [0.207, 0.901],
     hp: 80,
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit
@@ -117,17 +169,27 @@ export const enemyTypes = {
   // wide because of a mechanic, and a mechanic can be tuned away again.
   heavy_inf: {
     name: 'Giant Thug',
-    sprite: 'enemy_t1b',
-    // Redrawn 1.16x bigger. Both anchors below were carried across rather than
-    // re-eyeballed: the new art is the old art scaled 1.16 about (256, 310) and
-    // shifted (-28, +17), which is the transform that best overlays the two
-    // silhouettes (IoU 0.98). Put the old feet through it and they land here.
-    spriteTrim: [163, 175, 186, 162],
-    pivot: [0.737, 0.904],
+    sprite: 'giant',
+    // HIS BOX IS THE ONE THAT GREW, and it is the club rather than the man. He
+    // rests with a spiked club shouldered above his head — 212 source px from
+    // the top of it down past his shadow, where the body alone is about 160 —
+    // and swings it out level to strike, which is why the Attack box is 70px
+    // wider and 50px shorter. The man is the same size in both.
+    //
+    // That matters to more than the drawing: `artHeight` in render.js and
+    // select.js reads this rect, so the health bar hangs above the CLUB rather
+    // than above his head. Left that way deliberately. It is the honest reading
+    // of "how tall is this drawing", it is what the tap box should cover, and it
+    // does not move when he swings because it is read off the def rather than
+    // off the pose. He is the only figure in the game it applies to.
+    spriteTrim: [182, 150, 148, 212],
+    pivot: [0.669, 0.931],
+    // Club swung. Shadow at source (281.0, 347.3) in both drawings, to the pixel.
+    attack: { sprite: 'giant_attack', trim: [98, 200, 232, 162], pivot: [0.789, 0.909] },
     spriteFaces: -1,
-    dead: 'dead_enemy_t1b',
-    deadTrim: [125, 182, 241, 148],
-    deadPivot: [0.135, 0.644],
+    dead: 'dead_giant',
+    deadTrim: [117, 195, 278, 122],
+    deadPivot: [0.171, 0.783],
     hp: 1500,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
@@ -140,9 +202,100 @@ export const enemyTypes = {
     // every scenario — so this is a picture change and not a balance one.
     r: 14,
     colour: '#8A6A4A'
+  },
+
+  // THE FIRST ENEMY THAT DOES NOT WALK INTO THE FIGHT.
+  //
+  // A plague doctor with a basket of flasks on his back. He follows the road
+  // like everyone else until one of your soldiers comes within throwing range,
+  // then he STOPS and lobs flasks at him from further than a soldier will ever
+  // walk to meet him — ENGAGE is 30 and ASSIST is 70, and he stands off at 130.
+  // A barracks cannot block what will not come to it, so the counter is to shoot
+  // him: he is the reason archery towers can now be told what to aim at.
+  //
+  // THE BASKET IS FINITE, and that is load-bearing rather than flavour. A wave
+  // only ends when the field is clear (see src/waves.js), so an enemy that
+  // halted out of everyone's reach and never advanced would be a soft-lock — the
+  // player would be left with a board they cannot finish and no gold coming in.
+  // Five flasks and then he walks in and fights like a thug, badly. So the worst
+  // case is always survivable, and killing him early is worth exactly the flasks
+  // he had left.
+  //
+  // He is deliberately weak in every other respect: slower than a thug, a third
+  // of the melee damage, and dead to about three tier 1 volleys. Everything he
+  // is worth is in the basket.
+  plague_inf: {
+    name: 'Plague Thug',
+    sprite: 'plague',
+    // Both poses are drawn in the SAME box — the only figure in the game where
+    // that is true. He raises one arm to throw and the arm stays inside the
+    // silhouette his hat and his basket already make, so the trim does not move.
+    // The pivot is measured from each drawing anyway rather than shared: two
+    // measurements that agree are the check, and one number used twice is not.
+    spriteTrim: [191, 189, 130, 134],
+    pivot: [0.385, 0.916],
+    attack: { sprite: 'plague_attack', trim: [191, 189, 130, 134], pivot: [0.385, 0.916] },
+    spriteFaces: -1,
+    dead: 'dead_plague',
+    deadTrim: [116, 207, 280, 97],
+    deadPivot: [0.118, 0.826],
+    // 260 -> 140, and the swap was measured rather than felt. What he costs the
+    // level is almost all in his BODY rather than in his poison: with the flask
+    // set to 0 damage — the spill landing and doing literally nothing — the
+    // mixes still fell from 96 wins in 120 to 75, and the average finish from 6
+    // lives to 3. He is another thing on the road that has to be killed before
+    // the wave can end, and he spends eleven seconds standing still while the
+    // column piles up behind him.
+    //
+    // So hp is the knob, and there is a cliff in it. Over 12 seeds, both maps
+    // and every scenario tools/sim.mjs checks, one doctor a wave from wave 5:
+    //
+    //   no doctor at all   96/120 mixes   6.0 lives
+    //   hp 140             93/120         5.0
+    //   hp 180             82/120         4.4
+    //   hp 220             82/120         4.3
+    //   hp 260             83/120         3.6
+    //
+    // 140 to 180 is a step of 11 wins for 40 hp, and 180 to 260 is worth almost
+    // nothing — so the interesting boundary is between 140 and 180, and it is
+    // very likely "can the archery you have kill him before the basket is
+    // empty". 140 is the near side of it: he costs the level about a life, which
+    // is the right price for a new enemy, and the invariant never broke at any
+    // value here — no pure build won a single seed.
+    hp: 140,
+    speed: 60,
+    bounty: 30,
+    leak: 1,
+    damage: 6,
+    atkCd: 1.2,
+    // WHAT THE BOOK AND THE INFO BOX PRINT FOR HIM, and it is not `damage`.
+    //
+    // 6 is his melee, and it is what units.js uses on the rare occasion somebody
+    // catches him. It is also the least interesting thing about him: a card
+    // reading "6" next to a doctor whose flask takes 18 off a spearman would be
+    // the more misleading of the two numbers, not the safer one.
+    //
+    // Derived from the flask rather than typed, so retuning the poison retunes
+    // the card. Everything else in the game leaves this out and falls through to
+    // `damage` — see shownDamage() in select.js.
+    listedDamage: flask.poison.dps * flask.poison.seconds,
+    r: 9,
+    colour: '#4A5A3A',
+    // WHAT MAKES HIM RANGED. The presence of this block is also the flag the
+    // archery targeting mode reads — "ranged" means "has one of these" rather
+    // than a hand-kept list of type names that a fourth enemy would have to be
+    // remembered into.
+    ranged: {
+      // Far enough outside a squad's ASSIST that no soldier will ever wander
+      // into him, and inside a tier 1 archery tower's 165 so a bow placed to
+      // cover the road can always answer.
+      range: 130,
+      cd: 2.2,
+      // What he starts with and never gets back. See the note above.
+      flasks: 5
+    }
   }
 };
-
 // A wave is a list of groups spawned in order, so one wave can send militia and
 // then heavies without needing a second wave slot. `gap` is the pause between
 // spawns inside a group, and `rest` is the breather after the whole wave clears.
@@ -164,21 +317,42 @@ export const waves = [
       { type: 'light_inf', count: 10, gap: 1.00 },
       { type: 'heavy_inf', count: 1, gap: 2.00 }
     ] },
+  // Wave 5 is where the plague doctor arrives, and he arrives ALONE and LAST —
+  // behind the militia and behind the heavy, so the first one the player ever
+  // sees walks up to a squad that is already fighting, stops short of it, and
+  // starts throwing. That is the whole lesson, taught once, with nothing else
+  // new on the board to confuse it.
+  //
+  // He is always the last group in a wave. It is not only for the introduction:
+  // "at the back of the enemy line" is a position, and the spawn order is what
+  // puts him there. Sent first he would arrive at an unblocked road, walk to the
+  // end and leak without ever throwing anything.
+  //
+  // ONE PER WAVE, and it stays one. Ramping him the way the other two ramp — 1,
+  // 1, 2, 3 — was tried and measured, and it cost the level 12 more of 120 mixed
+  // wins than a flat one does (81 against 93). He is not a body you add more of;
+  // his effect is that the road stops while he throws, and two of those on the
+  // same road is the same delay twice rather than a harder wave. Make him
+  // nastier by giving him more flasks, not by sending more of him.
   { rest: 9, groups: [
       { type: 'light_inf', count: 14, gap: 0.90 },
-      { type: 'heavy_inf', count: 2, gap: 2.00 }
+      { type: 'heavy_inf', count: 2, gap: 2.00 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 18, gap: 0.80 },
-      { type: 'heavy_inf', count: 3, gap: 1.80 }
+      { type: 'heavy_inf', count: 3, gap: 1.80 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 24, gap: 0.70 },
-      { type: 'heavy_inf', count: 4, gap: 1.60 }
+      { type: 'heavy_inf', count: 4, gap: 1.60 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 34, gap: 0.60 },
-      { type: 'heavy_inf', count: 6, gap: 1.40 }
+      { type: 'heavy_inf', count: 6, gap: 1.40 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
     ] }
 ];
 

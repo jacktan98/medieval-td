@@ -7,6 +7,7 @@ import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
+import { AIM_MODES } from './data/towers.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
@@ -340,7 +341,11 @@ function run(state, item) {
       // yet", which reads as the direction the artwork was drawn in.
       face: 0,
       spent: def.cost,
-      rally: null
+      rally: null,
+      // The archer's standing order, and it survives an upgrade for the same
+      // reason the rally point does: it is an instruction the player gave, not a
+      // property of the tier they gave it to. See AIM_MODES in data/towers.js.
+      aimMode: 0
     });
     const built = state.towers[state.towers.length - 1];
     makeUnits(state, built);
@@ -384,6 +389,19 @@ function run(state, item) {
   // rally point. render.js draws the reach and a ghost flag while this is set.
   if (item.act === 'rally') {
     state.placing = menu.tower;
+  }
+
+  // THE ONE BUTTON THAT LEAVES THE MENU OPEN, and it has to: it is a three-way
+  // switch, so the second and third settings are one more tap rather than
+  // another trip through the ring. The item is rebuilt so the glyph under the
+  // finger is the order that is now in force.
+  if (item.act === 'target') {
+    const t = menu.tower;
+    t.aimMode = ((t.aimMode || 0) + 1) % AIM_MODES.length;
+    const mode = AIM_MODES[t.aimMode];
+    item.glyph = mode.glyph;
+    item.label = mode.label;
+    return;
   }
 
   closeMenu(state);

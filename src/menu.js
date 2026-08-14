@@ -1,4 +1,4 @@
-import { families } from './data/towers.js';
+import { families, AIM_MODES } from './data/towers.js';
 
 // Radial menu around the tapped plot. Four families map to four quadrants;
 // a built tower shows upgrade and refund in two of them.
@@ -153,6 +153,27 @@ function towerItems(t) {
       act: 'rally',
       glyph: 'flag',
       label: 'Rally',
+      tier: null,
+      cost: null,
+      gain: null,
+      available: true
+    });
+  }
+
+  // The archer's standing order, in the slot a barracks uses for its flag. No
+  // family has both, so the south button means one thing per family.
+  //
+  // THE GLYPH IS THE STATE. This is the only button in the game that changes
+  // what it does to itself, and menu buttons carry no words — so the picture on
+  // it has to be the current order rather than a label for the act. Tapping
+  // cycles, the drawing changes under your finger, and the ring stays open so
+  // three taps is three taps rather than three trips through the menu.
+  if (t.def.targeting) {
+    items.push({
+      angle: S,
+      act: 'target',
+      glyph: AIM_MODES[t.aimMode || 0].glyph,
+      label: AIM_MODES[t.aimMode || 0].label,
       tier: null,
       cost: null,
       gain: null,

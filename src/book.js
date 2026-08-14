@@ -153,19 +153,49 @@ function figureOf(def) {
   return figureArt(man.trim, man.pivot);
 }
 
-// A figure on the page is drawn at 90% of the size the info box draws it.
+// A figure on the page is drawn at 90% of the size the info box draws it —
+// OR AS MUCH LESS AS IT TAKES TO FIT, which is the second half and it is new.
 //
 // The info box shows ONE man, big, on a plate of his own; the book shows twenty
 // in a grid, and at the box's own scale they crowded their cards — a Giant Thug
 // reached 45px left of where he stands and left the name beside him a column
 // barely wide enough for it. 0.9 is the artist's number, asked for by eye.
 //
-// It is a fraction of PORTRAIT_SCALE rather than a figure of its own so the two
-// stay tied: raise the info box's portraits and the book's follow. And it is
-// still a downscale of art already sharp at 1x, so it cannot cost sharpness —
-// only the ceiling on PORTRAIT_SCALE itself matters, and tools/book.mjs checks
-// that.
-export const BOOK_FIGURE_SCALE = PORTRAIT_SCALE * 0.9;
+// The cap exists because that eye was looking at a drawing that has since been
+// redrawn. The Giant Thug now rests with his club shouldered above his head, and
+// his box went from 162 source px to 212 — at a flat 0.9 he is 62.6px tall in a
+// 60px card and his club is sawn off by the outline. So the factor is the
+// artist's number OR whatever fits, whichever is smaller, exactly as
+// BOOK_TOWER_SCALE is already derived from the buildings' own span rather than
+// typed. The number nobody has to remember to change is the one that is right
+// after the next upload.
+//
+// Fitted to the SHADOW-ANCHORED span, not to the tallest single box: the men all
+// stand on one line, so what has to fit in the card is the tallest reach above
+// that line plus the deepest below it, and no one figure has both.
+//
+// It stays a fraction of PORTRAIT_SCALE so the two remain tied: raise the info
+// box's portraits and the book's follow. And it is still a downscale of art
+// already sharp at 1x, so it cannot cost sharpness — only the ceiling on
+// PORTRAIT_SCALE itself matters, and tools/book.mjs checks that.
+const FIGURE_WANT = PORTRAIT_SCALE * 0.9;
+
+const TIERS = LADDERS.flat();
+
+// Every figure at the plain board scale, which is what the fit has to be
+// measured against — the factor cannot be derived from a span that already has
+// the factor in it.
+const figureAtBoard = (trim, pivot) => ({
+  w: trim[2] * SCALE,
+  h: trim[3] * SCALE,
+  a: pivot
+});
+const BOARD_SPAN = anchored([
+  ...TIERS.map(d => { const m = occupant(d); return figureAtBoard(m.trim, m.pivot); }),
+  ...Object.values(enemyTypes).map(d => figureAtBoard(d.spriteTrim, d.pivot))
+]);
+
+export const BOOK_FIGURE_SCALE = Math.min(FIGURE_WANT, CARD_H / BOARD_SPAN.h);
 
 const figureArt = (trim, pivot) => ({
   w: trim[2] * SCALE * BOOK_FIGURE_SCALE,
@@ -173,7 +203,6 @@ const figureArt = (trim, pivot) => ({
   a: pivot
 });
 
-const TIERS = LADDERS.flat();
 const FIGURES = [
   ...TIERS.map(figureOf),
   ...Object.values(enemyTypes).map(d => figureArt(d.spriteTrim, d.pivot))

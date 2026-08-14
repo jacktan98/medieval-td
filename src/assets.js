@@ -54,11 +54,8 @@ export const paths = {
   // he was recruited. The keys stay tiered because the code reaches them through
   // a tier — `barracks[2].soldier` — and renaming those would touch every tool.
   //
-  // Note the singular "Soldier_" on the novice archer alone. It is a typo in the
-  // upload and it is reproduced here on purpose: renaming the file only means
-  // renaming it again after the next export.
-  archer_t1:          'assets/units/Soldier_Novice_Archer_Default.png',
-  archer_t1_attack:   'assets/units/Soldier_Novice_Archer_Attack.png',
+  archer_t1:          'assets/units/Soldiers_Novice_Archer_Default.png',
+  archer_t1_attack:   'assets/units/Soldiers_Novice_Archer_Attack.png',
   archer_t2:          'assets/units/Soldiers_Combat_Archer_Default.png',
   archer_t2_attack:   'assets/units/Soldiers_Combat_Archer_Attack.png',
   archer_t3:          'assets/units/Soldiers_Elite_Archer_Default.png',
@@ -80,21 +77,32 @@ export const paths = {
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
-  // T1a and T1b, not T1 and T2. The artist renamed the heavy from tier 2 to
-  // "tier 1b" — it is a bigger militiaman, not the next rank up — so the tier 2
-  // enemy slot is still empty and the file that fills it later will be T2.
-  // These keys follow the filenames; the gameplay names (light_inf, heavy_inf,
-  // in data/waves.js) are unchanged, because what the enemy DOES did not.
-  enemy_t1a:   'assets/enemies/Enemies_Man_T1a.png',
-  enemy_t1b:   'assets/enemies/Enemies_Man_T1b.png',
+  // The plague doctor's flask, and the only projectile in the game thrown AT
+  // the player's men rather than by them.
+  flask:       'assets/projectiles/Enemies_Plague_Thug_Flask.png',
+  // THE ENEMIES LOST THEIR TIERS. They were enemy_t1a and enemy_t1b, from an
+  // upload that numbered them; the artist now names each one after what it is,
+  // and the keys followed because the old ones had stopped being true — "t1a"
+  // said the militia was the first of a ladder, and there is no ladder. A thug,
+  // a giant thug and a plague thug are three creatures, not three ranks.
+  //
+  // Each has a Default and an Attack for the same reason the soldiers do; see
+  // the note over the units above for which is which.
+  thug:            'assets/enemies/Enemies_Thug_Default.png',
+  thug_attack:     'assets/enemies/Enemies_Thug_Attack.png',
+  giant:           'assets/enemies/Enemies_Giant_Thug_Default.png',
+  giant_attack:    'assets/enemies/Enemies_Giant_Thug_Attack.png',
+  plague:          'assets/enemies/Enemies_Plague_Thug_Default.png',
+  plague_attack:   'assets/enemies/Enemies_Plague_Thug_Attack.png',
   // Death poses. See assets/dead/README.md.
   //
   // The tier comes LAST in these names — Man_Dead_T1, not Man_T1_Dead — because
   // that is how they were exported. The code bends to the artist's filenames
   // rather than the other way round: renaming an upload only means renaming it
   // again after the next one.
-  dead_enemy_t1a:  'assets/dead/Enemies_Man_Dead_T1a.png',
-  dead_enemy_t1b:  'assets/dead/Enemies_Man_Dead_T1b.png',
+  dead_thug:       'assets/dead/Enemies_Thug_Dead.png',
+  dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
+  dead_plague:     'assets/dead/Enemies_Plague_Thug_Dead.png',
   // The three soldiers' bodies, renamed by the artist to match their living
   // drawings — Soldiers_Spearman_Dead beside Soldiers_Spearman_Default — and
   // redrawn in the same upload, so every deadTrim and deadPivot below was
@@ -116,6 +124,10 @@ export const paths = {
   // event. See src/impacts.js.
   impact_1:        'assets/effects/Artillery_Impact_1.png',
   impact_2:        'assets/effects/Artillery_Impact_2.png',
+  // What a flask leaves behind. It sits with the earth a rock throws up because
+  // it is the same kind of thing — the mark a projectile makes where it landed —
+  // even though one hangs in the air and this one lies flat. See src/impacts.js.
+  spill:           'assets/effects/Enemies_Plague_Thug_Spill.png',
   // UI: the dashboard and the radial menu. NOT world art — none of it is sized
   // by the shared SCALE, because a button is as big as a thumb needs and an icon
   // is as big as the number beside it. Trims and drawn boxes are in data/ui.js.

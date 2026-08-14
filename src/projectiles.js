@@ -88,8 +88,15 @@ function land(state, s) {
   // An arrow keeps the white ring, which is what both used to get. It is a
   // placeholder and it is honest about being one: an arrow lands inside a man
   // and there is nothing drawn for that yet.
-  if (s.ammo.impact) impact(state, s.x, s.y);
-  else state.hits.push({ x: s.x, y: s.y, life: 0.12 });
+  //
+  // A flask leaves the third kind: a spill that lies flat and stays for exactly
+  // as long as its poison works.
+  if (s.ammo.impact) {
+    impact(state, s.x, s.y, s.ammo.impact === true ? null : s.ammo.impact,
+      s.ammo.poison ? s.ammo.poison.seconds : undefined);
+  } else {
+    state.hits.push({ x: s.x, y: s.y, life: 0.12 });
+  }
 
   // Category B, on the ARRIVAL rather than the release — a rock is silent in the
   // air and announces itself by landing, which is also where the player is
@@ -112,31 +119,55 @@ function land(state, s) {
   // Measured from where the rock actually landed rather than from the target,
   // so a shot that arrives after its man has walked on hits the ground it was
   // thrown at and whoever is standing there now.
-  for (const e of state.enemies) {
-    if (e.hp <= 0) continue;
-    if (!inRange(s.x, s.y, e.x, e.y, s.splash)) continue;
-    hit(state, s, e);
+  for (const v of victims(state, s)) {
+    if (v.hp <= 0 || v.respawn > 0) continue;
+    if (!inRange(s.x, s.y, v.x, v.y, s.splash)) continue;
+    hit(state, s, v);
   }
 }
 
-function hit(state, s, e) {
-  // Damage only — the bounty and the kill FX are paid out in enemies.js, which
-  // is the one place that sees every death however it was caused.
-  e.hp -= s.damage;
-  // On the man, not on the projectile. An arrow is inside its target by the time
-  // it lands so the two are the same point, but a rock has a patch of victims
-  // and blood belongs on each of them rather than in a heap at the impact.
-  splat(state, e.x, e.y, e.y);
-  // Which side the blow came from, so the body ends up facing it. The TOWER's
+// WHO A SHOT CAN HURT. One line, and it is the whole of what it took to point
+// this file at both armies.
+//
+// Everything a tower fires leaves `side` unset, which reads as the player's, and
+// looks for enemies. A plague doctor's flask says `side: 'enemy'` and looks for
+// soldiers instead. Nothing else in the flight, the arc, the landing or the
+// splash test cares which way round it is — a projectile is a projectile.
+//
+// A respawning soldier is skipped by the caller for the same reason nothing may
+// aim at one: he is not on the board, he is a muster ring over a barracks.
+const victims = (state, s) => (s.side === 'enemy' ? state.units : state.enemies);
+
+function hit(state, s, v) {
+  // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what
+  // it leaves is a patch of ground that trickles health out of whoever was
+  // standing in it — and that is the difference between this and every other
+  // projectile in the game rather than a variation on it.
+  //
+  // It REFRESHES rather than stacks: a second flask on the same man restarts the
+  // clock at the same rate. Stacking reads as a bug the first time three doctors
+  // delete a squad in a second, and "how long since the last flask" is a thing
+  // the player can see, where "how many are on him" is not.
+  if (s.ammo.poison) {
+    v.poison = { dps: s.ammo.poison.dps, left: s.ammo.poison.seconds };
+  } else {
+    v.hp -= s.damage;
+    // On the man, not on the projectile. An arrow is inside its target by the
+    // time it lands so the two are the same point, but a rock has a patch of
+    // victims and blood belongs on each of them rather than in a heap at the
+    // impact. Poison draws no blood: nothing has broken the skin.
+    splat(state, v.x, v.y, v.y);
+  }
+  // Which side the blow came from, so the body ends up facing it. The THROWER's
   // x, not the projectile's: at the moment of impact the projectile is on top of
   // the target, so its own position says nothing about where it was shot from.
   // Overwritten by every hit, so the last blow is the one that counts, which is
   // the one that killed him.
-  e.struckFrom = s.fromX >= e.x ? 1 : -1;
+  v.struckFrom = s.fromX >= v.x ? 1 : -1;
   // Who to credit if this is the killing blow — see enemies.js, which is the one
   // place that sees every death however it was caused, and so the only place
   // that can tell an arrow kill from a rock kill from a sword kill. The
   // ammunition names itself rather than being mapped here, so a third projectile
   // needs no branch.
-  e.killedBy = s.ammo.kind;
+  v.killedBy = s.ammo.kind;
 }

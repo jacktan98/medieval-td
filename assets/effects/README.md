@@ -1,19 +1,39 @@
 # Effects artwork
 
 Things that are neither a figure nor a building: marks the fight leaves on the
-ground. Six files, all 512 x 512 with a transparent background like every other
-sprite.
+ground. Seven files, all 512 x 512 with a transparent background like every
+other sprite.
 
 | file                                 | when                     | lasts         |
 |--------------------------------------|--------------------------|---------------|
 | `Blood_1.png`, `Blood_2.png`         | every hit that lands     | 0.35s         |
 | `Blood_Dead_1.png`, `_2.png`         | the pool a body lies in  | with the body |
 | `Artillery_Impact_1.png`, `_2.png`   | every rock that lands    | 0.45s         |
+| `Enemies_Plague_Thug_Spill.png`      | every flask that breaks  | 3s            |
 
-One of each pair is picked at random, so no two hits, no two deaths and no two
+One of each PAIR is picked at random, so no two hits, no two deaths and no two
 rocks are the same picture. Three pairs, three reasons to have two: a catapult
 fires at the same bend every three seconds, and one drawing repeated on that
 cadence reads as a stamp rather than an event.
+
+The spill is the exception and is a single file, because a plague doctor throws
+five flasks in his whole life and no two of them land in the same place. Give it
+a second drawing if that ever stops being true.
+
+## The spill lies flat
+
+It is the only mark in this folder anchored at its MIDDLE rather than at the
+bottom of its trim. Earth thrown up by a rock is in the air above the point of
+impact, so it hangs upward from it; a spill of plague is on the ground the
+bottle broke on, like a pool of blood. `IMPACT_LIE` in `src/impacts.js` is which
+is which.
+
+**It lasts exactly as long as its poison does — three seconds — and that is not
+a look, it is the contract.** While there is plague on the road it is still
+working, and when it stops working it is gone. A puddle that outlived its effect
+would be a patch of ground that looks dangerous and is not, and the player would
+learn to walk their squad around nothing. If the poison duration in
+`src/data/waves.js` changes, this changes with it automatically; do not pin it.
 
 These used to be split across two folders — the spatters in `assets/projectiles`
 with the arrows, the pools in `assets/dead` with the corpses — because that is

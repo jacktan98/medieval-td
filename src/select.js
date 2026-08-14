@@ -71,6 +71,19 @@ export function validate(state) {
   if (!list.includes(s.ref)) state.selected = null;
 }
 
+// THE ATTACK NUMBER A CARD SHOWS, which is not always the one the rules use.
+//
+// Almost everything in the game does one kind of damage and `damage` is it. The
+// plague doctor does two — a feeble melee if he is caught, and a flask that
+// poisons — and the melee is the one the rules read while the flask is the one
+// the player needs to know about. `listedDamage` is how a def says so, and it is
+// derived from the ammunition rather than typed, so the two cannot drift.
+//
+// Here rather than in render.js because this file already owns the question of
+// what the UI should say about a thing, and the book and the info box must not
+// answer it differently.
+export const shownDamage = def => def.listedDamage ?? def.damage;
+
 // WHO A TOWER PUTS ON THE BOARD, in one shape, whichever family it belongs to.
 //
 // The three families hide their man in three different places: a barracks SENDS
@@ -103,7 +116,7 @@ export function occupant(def) {
     hp: man ? man.hp : null,
     // A barracks does no damage itself; its men do. Reading the building's own
     // (nonexistent) damage would print a 0 under a tent full of spears.
-    damage: man ? man.damage : def.damage
+    damage: man ? man.damage : shownDamage(def)
   };
 }
 
@@ -141,6 +154,6 @@ export function selectionInfo(state) {
     // box reading "82.4/105" is noise where "82/105" is information.
     hp: Math.max(0, Math.round(f.hp)),
     maxHp: f.maxHp,
-    damage: f.def.damage
+    damage: shownDamage(f.def)
   };
 }

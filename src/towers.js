@@ -112,7 +112,7 @@ export function updateTowers(state, dt) {
     // and they carry no mount or muzzle to aim with.
     if (!t.def.cooldown) continue;
 
-    const target = pickTarget(state.enemies, t.x, t.y, t.def.range, t.def.minRange);
+    const target = pickTarget(state.enemies, t.x, t.y, t.def.range, t.def.minRange, t.aimMode);
     if (target) t.aim = Math.atan2(target.y - t.y, target.x - t.x);
 
     if (t.def.frames) stepCrew(state, t, dt, target);
