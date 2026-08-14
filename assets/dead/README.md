@@ -7,15 +7,24 @@ drawing each of them needs — see "Why only one file" below. All three are in:
 |-----------------------------|--------------------------------|-------------|
 | `Enemies_Man_Dead_T1a.png`  | the militia, every wave        | 26 x 18 px  |
 | `Enemies_Man_Dead_T1b.png`  | the heavy, waves 4-8           | 49 x 30 px  |
-| `Barracks_Man_Dead_T1.png`  | your spearman, tier 1          | 42 x 21 px  |
-| `Barracks_Man_Dead_T2.png`  | your spearman, tier 2          | 40 x 24 px  |
-| `Barracks_Man_Dead_T3.png`  | your knight, tier 3            | 36 x 18 px  |
+| `Soldiers_Spearman_Dead.png`| your spearman, tier 1          | 49 x 17 px  |
+| `Soldiers_Pikeman_Dead.png` | your pikeman, tier 2           | 49 x 16 px  |
+| `Soldiers_Swordsman_Dead.png`| your swordsman, tier 3        | 40 x 18 px  |
 
-The tier comes last in these names, matching how they were exported, and the
-heavy's files are T1b rather than T2 because the artist renamed that enemy — it
-is a bigger militiaman, not the next rank up. `assets.js` was changed to suit
-both times rather than the files being renamed: renaming an upload only means
-renaming it again after the next one.
+The three soldiers are named after the MAN now, matching their living drawings
+in `assets/units` — `Soldiers_Spearman_Dead` beside `Soldiers_Spearman_Default`.
+The enemies still carry a tier, and it comes last in the name; the heavy's files
+are T1b rather than T2 because the artist renamed that enemy — it is a bigger
+militiaman, not the next rank up. `assets.js` was changed to suit every time
+rather than the files being renamed: renaming an upload only means renaming it
+again after the next one.
+
+## One body per man, still
+
+Every soldier has two LIVING drawings now — a Default and an Attack — but only
+one dead pose, and that is right. A body is a body; what he was doing a moment
+before he fell is not visible in it. Nothing in this folder needs to grow when a
+new pose lands in `assets/units`.
 
 ## Blood lives in `assets/effects` now
 
@@ -157,11 +166,11 @@ and paste the rect in as `deadTrim`. As shipped:
 
 | file                       | `deadTrim`            | `deadPivot`      |
 |----------------------------|-----------------------|------------------|
-| `Enemies_Man_Dead_T1a.png` | `[193, 211, 126, 90]` | `[0.163, 0.753]` |
-| `Enemies_Man_Dead_T1b.png` | `[125, 182, 241, 148]`| `[0.135, 0.644]` |
-| `Barracks_Man_Dead_T1.png` | `[153, 206, 206, 100]`| `[0.078, 0.697]` |
-| `Barracks_Man_Dead_T2.png` | `[158, 198, 195, 116]`| `[0.131, 0.583]` |
-| `Barracks_Man_Dead_T3.png` | `[168, 211, 176, 90]` | `[0.168, 0.759]` |
+| `Enemies_Man_Dead_T1a.png`   | `[193, 211, 126, 90]` | `[0.163, 0.753]` |
+| `Enemies_Man_Dead_T1b.png`   | `[125, 182, 241, 148]`| `[0.135, 0.644]` |
+| `Soldiers_Spearman_Dead.png` | `[135, 215, 241, 82]` | `[0.118, 0.841]` |
+| `Soldiers_Pikeman_Dead.png`  | `[138, 217, 237, 77]` | `[0.120, 0.896]` |
+| `Soldiers_Swordsman_Dead.png`| `[159, 211, 193, 90]` | `[0.148, 0.770]` |
 
 `deadPivot` is **the centre of the corpse's own shadow**, from
 `node tools/shadow.mjs`. Both numbers now come from this file and nothing else.

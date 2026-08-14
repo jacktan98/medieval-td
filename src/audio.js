@@ -253,7 +253,17 @@ const AWAITED = new Set();
 // Thug_1 and Attack_1 already have against them.
 const GAIN = {
   rock_hit_ground: 1.6,
-  rock_kill_enemy: 0.7
+  rock_kill_enemy: 0.7,
+  // The click, at half — asked for by ear, and the measurement says why the ear
+  // was right. The recording is quiet, so the leveller was pushing it +5.3dB to
+  // bring it up to everything else, and that is the one cue where matching
+  // everything else is the wrong target: TARGET_LOUD exists so that clips of the
+  // BATTLE arrive at a common loudness, and the tap is not in the battle. It
+  // answers a finger, it lands on a quiet board as often as a busy one, and it
+  // only has to be heard, not noticed. -6dB puts it at -0.7dB net, which is why
+  // it drops back out of the levelling report: it is no longer being moved far
+  // enough to be worth mentioning.
+  select: 0.5
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

@@ -251,9 +251,21 @@ const SPRITES = [
   ['assets/towers/artillery/Artillery_Default_T3.png', 'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Reload_T3.png',  'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Fire_T3.png',    'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
-  ['assets/units/Archery_Man_T1.png',       'archer.gunnerPivot',     towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
-  ['assets/units/Archery_Man_T2.png',       'archer2.gunnerPivot',    towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
-  ['assets/units/Archery_Man_T3.png',       'archer3.gunnerPivot',    towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
+  // BOTH POSES OF EVERY FIGHTING MAN, and the pairs are the check rather than a
+  // repetition of it. A figure swaps between his Default and his Attack drawing
+  // in place, and each pose carries its OWN trim and its OWN pivot — so what
+  // holds them together is that the artist drew the shadow at the same source
+  // pixel in both. If he ever does not, the man will jump sideways at the moment
+  // he swings, and this is the only thing that would say so.
+  //
+  // The tolerance below is 6 source px, under 1.5 game px. All six pairs are
+  // currently inside 0.7.
+  ['assets/units/Soldier_Novice_Archer_Default.png',  'archer.gunnerPivot',       towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
+  ['assets/units/Soldier_Novice_Archer_Attack.png',   'archer.attack.pivot',      towers.archery[0].attack.trim, towers.archery[0].attack.pivot],
+  ['assets/units/Soldiers_Combat_Archer_Default.png', 'archer2.gunnerPivot',      towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
+  ['assets/units/Soldiers_Combat_Archer_Attack.png',  'archer2.attack.pivot',     towers.archery[1].attack.trim, towers.archery[1].attack.pivot],
+  ['assets/units/Soldiers_Elite_Archer_Default.png',  'archer3.gunnerPivot',      towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
+  ['assets/units/Soldiers_Elite_Archer_Attack.png',   'archer3.attack.pivot',     towers.archery[2].attack.trim, towers.archery[2].attack.pivot],
   // The catapult crewman. He is not drawn on the board — he is already part of
   // all three machine frames — but the info box and the encyclopedia both stand
   // him on his own, and a figure standing anywhere in this game stands on its
@@ -262,14 +274,17 @@ const SPRITES = [
   ['assets/units/Artillery_Man_T1.png',     'catapult.portraitPivot', towers.siege[0].portraitTrim, towers.siege[0].portraitPivot],
   ['assets/units/Artillery_Man_T2.png',     'mangonel.portraitPivot',  towers.siege[1].portraitTrim, towers.siege[1].portraitPivot],
   ['assets/units/Artillery_Man_T3.png',     'trebuchet.portraitPivot', towers.siege[2].portraitTrim, towers.siege[2].portraitPivot],
-  ['assets/units/Barracks_Man_T1.png',      'spearman.pivot',         spear.spriteTrim, spear.pivot],
-  ['assets/units/Barracks_Man_T2.png',      'spearman2.pivot',        spear2.spriteTrim, spear2.pivot],
-  ['assets/units/Barracks_Man_T3.png',      'spearman3.pivot',        spear3.spriteTrim, spear3.pivot],
+  ['assets/units/Soldiers_Spearman_Default.png',      'spearman.pivot',           spear.spriteTrim, spear.pivot],
+  ['assets/units/Soldiers_Spearman_Attack.png',       'spearman.attack.pivot',    spear.attack.trim, spear.attack.pivot],
+  ['assets/units/Soldiers_Pikeman_Default.png',       'spearman2.pivot',          spear2.spriteTrim, spear2.pivot],
+  ['assets/units/Soldiers_Pikeman_Attack.png',        'spearman2.attack.pivot',   spear2.attack.trim, spear2.attack.pivot],
+  ['assets/units/Soldiers_Swordsman_Default.png',     'spearman3.pivot',          spear3.spriteTrim, spear3.pivot],
+  ['assets/units/Soldiers_Swordsman_Attack.png',      'spearman3.attack.pivot',   spear3.attack.trim, spear3.attack.pivot],
   ['assets/enemies/Enemies_Man_T1a.png',    'light_inf.pivot',        light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Man_T1b.png',    'heavy_inf.pivot',        heavy.spriteTrim, heavy.pivot],
-  ['assets/dead/Barracks_Man_Dead_T1.png',  'spearman.deadPivot',     spear.deadTrim, spear.deadPivot],
-  ['assets/dead/Barracks_Man_Dead_T2.png',  'spearman2.deadPivot',    spear2.deadTrim, spear2.deadPivot],
-  ['assets/dead/Barracks_Man_Dead_T3.png',  'spearman3.deadPivot',    spear3.deadTrim, spear3.deadPivot],
+  ['assets/dead/Soldiers_Spearman_Dead.png',  'spearman.deadPivot',   spear.deadTrim, spear.deadPivot],
+  ['assets/dead/Soldiers_Pikeman_Dead.png',   'spearman2.deadPivot',  spear2.deadTrim, spear2.deadPivot],
+  ['assets/dead/Soldiers_Swordsman_Dead.png', 'spearman3.deadPivot',  spear3.deadTrim, spear3.deadPivot],
   ['assets/dead/Enemies_Man_Dead_T1a.png',  'light_inf.deadPivot',    light.deadTrim, light.deadPivot],
   ['assets/dead/Enemies_Man_Dead_T1b.png',  'heavy_inf.deadPivot',    heavy.deadTrim, heavy.deadPivot]
 ];

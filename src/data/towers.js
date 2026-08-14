@@ -102,15 +102,36 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 const TOWER_TRIM = [267, 211, 490, 602];
 const TOWER2_TRIM = [298, 140, 428, 744];
 const TOWER3_TRIM = [331, 140, 362, 744];
-const ARCHER_TRIM = [184, 197, 144, 119];
-const ARCHER2_TRIM = [184, 195, 144, 122];
-const ARCHER3_TRIM = [186, 186, 141, 121];
+// EVERY FIGHTING MAN IS TWO DRAWINGS, so every one of them has two trims.
+//
+// The two are NOT unioned into one box the way the catapult's three frames are,
+// and the difference is worth stating because it looks like an inconsistency.
+// A building is anchored by `groundFrac`, a fraction of ONE trim, so its frames
+// must share that trim or the building hops on its plot. A figure is anchored by
+// a pivot on its own shadow — and `tools/shadow.mjs` reports that the shadow is
+// drawn at the SAME source pixel in both poses of all six men, to within 0.7px
+// on the archers and exactly on the soldiers. So each pose carries its own trim
+// and its own pivot, and the two register by construction.
+//
+// That matters beyond tidiness: the union boxes would have been up to 39px wider
+// than the Default, and a soldier's collision radius is derived from his trim.
+// Unioning would have widened the hitbox of every man in the game to fit a spear
+// he only holds out for a quarter of a second.
+const ARCHER_TRIM = [175, 196, 162, 120];
+const ARCHER_ATK_TRIM = [195, 196, 142, 120];
+const ARCHER2_TRIM = [175, 195, 162, 122];
+const ARCHER2_ATK_TRIM = [195, 195, 142, 122];
+const ARCHER3_TRIM = [175, 195, 162, 122];
+const ARCHER3_ATK_TRIM = [195, 195, 142, 122];
 const CAMP_TRIM = [207, 249, 610, 526];
 const CAMP2_TRIM = [200, 197, 624, 630];
 const CAMP3_TRIM = [200, 201, 624, 621];
-const SPEAR_TRIM = [170, 198, 172, 116];
-const SPEAR2_TRIM = [173, 196, 166, 120];
-const SPEAR3_TRIM = [199, 196, 114, 120];
+const SPEAR_TRIM = [172, 198, 168, 116];
+const SPEAR_ATK_TRIM = [133, 198, 196, 116];
+const SPEAR2_TRIM = [174, 196, 163, 120];
+const SPEAR2_ATK_TRIM = [155, 196, 181, 120];
+const SPEAR3_TRIM = [201, 196, 110, 120];
+const SPEAR3_ATK_TRIM = [166, 196, 145, 120];
 
 // THE ONE TRIM IN THIS FILE THAT IS NOT A SINGLE FILE'S MEASURED BOX, and it
 // has to be. The catapult is three drawings, not one, and the box below is the
@@ -393,12 +414,21 @@ const watchtower3 = {
   shape: 'tower'
 };
 
+// WHICH POSE IS WHICH, because the names read backwards until you look at the
+// drawings. Default is the archer with an arrow NOCKED, the head of it sticking
+// out past the bow. Attack is the bow EMPTY, string snapped back — the instant
+// after the arrow has gone. That is the right way round: the arrow becomes a
+// projectile on the board at that moment, and a man who still had one on his
+// bow while it flew would be holding two.
+//
+// So the sequence a player sees is: stand ready with an arrow on the string,
+// loose it, empty bow for as long as the recoil lasts, then nocked again.
 const archer = {
   ammo: arrow,
   gunner: 'archer_t1',
   gunnerTrim: ARCHER_TRIM,
-  // THE CENTRE OF HIS GROUND SHADOW, source (252, 303). Not his feet, not the
-  // middle of his box: the artist now draws a grey ellipse under every figure,
+  // THE CENTRE OF HIS GROUND SHADOW, source (263.5, 304.5). Not his feet, not
+  // the middle of his box: the artist draws a grey ellipse under every figure,
   // and that ellipse is where the figure stands. `node tools/shadow.mjs` reads
   // it straight out of the PNG.
   //
@@ -409,18 +439,29 @@ const archer = {
   //
   // A gunner also mirrors about this point, so it has to be the body's middle or
   // he jumps sideways when he turns. The shadow's centre is exactly that.
-  gunnerPivot: [0.472, 0.891],
+  gunnerPivot: [0.546, 0.904],
+  // The empty bow. Its own trim and its own pivot, both measured — the shadow is
+  // at source (263.0, 303.8), half a pixel from the Default's, which is what
+  // lets the two poses swap without the man stepping sideways.
+  attack: { sprite: 'archer_t1_attack', trim: ARCHER_ATK_TRIM, pivot: [0.479, 0.898] },
   spriteFaces: -1,
   // Where the arrow leaves the bow, as an offset from the anchor above. The bow
-  // is the brown arc in front of him and it bulges forward, so its grip — the
-  // point an arrow rests on — is the arc's frontmost pixel at its vertical
-  // middle: source (190, 255), which is 62 in front of the anchor and 48 above.
+  // is the arc in front of him and it bulges forward, so its grip — the point an
+  // arrow rests on — is the arc's frontmost pixel at its vertical middle, taken
+  // 5px inside the outline because the wood, not the black edge, is the face the
+  // arrow lies against. The colour runs say the outline is x 195..199 and the
+  // wood x 200..205 on all three tiers, so the grip is source (200, 254.5) —
+  // 63.5 in front of the anchor and 50 above.
+  //
+  // MEASURED ON THE ATTACK POSE, which is the one drawing with nothing in front
+  // of the bow to be mistaken for it. On the Default the nocked arrowhead
+  // reaches 24px further forward and is the leftmost thing in the picture.
   //
   // Kept as fractions of the trim, not source pixels. Written as pixels it was
   // 14.2 and 22.6 against a 200px export, and a 512px re-export left those
   // numbers looking fine while silently moving the arrow's origin to a third of
   // the way up the archer's shin.
-  muzzle: [Math.round(0.431 * ARCHER_TRIM[2] * SCALE), -Math.round(0.403 * ARCHER_TRIM[3] * SCALE)]
+  muzzle: [Math.round(0.392 * ARCHER_TRIM[2] * SCALE), -Math.round(0.417 * ARCHER_TRIM[3] * SCALE)]
 };
 
 // Tier 2's archer: helmet instead of a hat, and a slightly different box. Every
@@ -434,38 +475,39 @@ const archer2 = {
   ammo: arrow,
   gunner: 'archer_t2',
   gunnerTrim: ARCHER2_TRIM,
-  // The centre of his ground shadow, source (253, 304) — a pixel from tier 1's.
-  gunnerPivot: [0.476, 0.892],
+  // The centre of his ground shadow, source (263.5, 305.5) — a pixel below tier
+  // 1's, in a box that starts a pixel higher.
+  gunnerPivot: [0.546, 0.906],
+  attack: { sprite: 'archer_t2_attack', trim: ARCHER2_ATK_TRIM, pivot: [0.479, 0.900] },
   spriteFaces: -1,
-  // Same bow, grip at source (190, 256.5): 63 in front of the anchor and 47.5
-  // above. Different fractions from tier 1 because the box differs, and they
-  // round to exactly tier 1's [13, -10] — two measurements describing one bow.
-  muzzle: [Math.round(0.438 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.389 * ARCHER2_TRIM[3] * SCALE)]
+  // Same bow, same wooden face, grip at source (200, 256): 63.5 in front of the
+  // anchor and 49.5 above. Different fractions from tier 1 because the box
+  // differs, and they round to exactly tier 1's [13, -10] — two measurements
+  // describing one bow.
+  muzzle: [Math.round(0.392 * ARCHER2_TRIM[2] * SCALE), -Math.round(0.406 * ARCHER2_TRIM[3] * SCALE)]
 };
 
-// Tier 3's archer, and the first one tier 3 has had of its own — it borrowed
-// tier 2's man for as long as it borrowed tier 2's tower. The tower is still
-// borrowed; only the man on it is new.
+// Tier 3's archer: plate armour, and a bow of steel rather than wood — the only
+// thing that distinguishes his numbers from tier 2's is that nothing does. He
+// is drawn in the same box, standing on the same shadow, holding the same bow
+// in the same place, so all three fractions below are tier 2's exactly.
 //
-// Plate armour instead of a leather jerkin, and he stands a little higher in his
-// own box, which is the whole reason none of these numbers could be carried
-// across: a fraction of a box that changed shape is a different point.
+// That is a finding, not a shortcut: the previous export had him a box of his
+// own and 8px higher in it, and carrying tier 2's numbers across would have been
+// wrong then. They are re-measured every upload for that reason, and this time
+// they came back equal.
 const archer3 = {
   ammo: arrow,
   gunner: 'archer_t3',
   gunnerTrim: ARCHER3_TRIM,
-  // The centre of his ground shadow, source (253.5, 296.1).
-  gunnerPivot: [0.479, 0.910],
+  // The centre of his ground shadow, source (263.5, 305.5).
+  gunnerPivot: [0.546, 0.906],
+  attack: { sprite: 'archer_t3_attack', trim: ARCHER3_ATK_TRIM, pivot: [0.479, 0.900] },
   spriteFaces: -1,
-  // Same bow, measured the same way: the arc's frontmost pixel at its vertical
-  // middle, taken 5px inside the outline because that is the face the arrow
-  // rests on. Source (191, 244), which is 62.5 in front of the anchor and 52.1
-  // above.
-  //
-  // The sideways figure rounds to 13 like both tiers below it — three drawings
-  // of one bow — but the height is 11 rather than 10, and that is real: this
-  // archer carries the bow higher relative to where he stands.
-  muzzle: [Math.round(0.443 * ARCHER3_TRIM[2] * SCALE), -Math.round(0.431 * ARCHER3_TRIM[3] * SCALE)]
+  // The steel bow's face is grey where the other two are wood, and it is at the
+  // same x: source (200, 256). The height rounds to 10 now — it was 11 on the
+  // old drawing, where this archer carried the bow higher relative to his feet.
+  muzzle: [Math.round(0.392 * ARCHER3_TRIM[2] * SCALE), -Math.round(0.406 * ARCHER3_TRIM[3] * SCALE)]
 };
 
 // Range up across the board and cooldown down with it. The reach is what makes
@@ -586,15 +628,28 @@ const camp3 = {
 
 // The soldier's collision radius is DERIVED from the drawn art, not chosen, so
 // the formation and tools/formation.mjs always agree with what you can see.
+//
+// bodyFrac is a fraction of the trim, and the trim changes with every re-export,
+// so what is actually being held constant is the SOURCE WIDTH of the body: 59px
+// on all three men, which is also exactly how wide the artist draws each one's
+// ground shadow. Divide that by the new trim and the radius comes out at 6 for
+// all three tiers — the same 6 they have always had, so the formation, the
+// blocking and every balance number resting on them are untouched by the redraw.
+// That is worth re-checking rather than assuming each time: the radius is
+// derived from the drawing, so a redraw can move it without anyone deciding to.
 const SPEAR_W = drawnW(SPEAR_TRIM);
-const SPEAR_BODY = 0.341;
+const SPEAR_BODY = 0.351;   // 59 / 168
 
 const spearman = {
   sprite: 'soldier_t1',
   spriteTrim: SPEAR_TRIM,
-  // Feet on the anchor, standing axis of the legs across — the same convention
+  // The centre of his ground shadow, source (293.0, 303.0) — the same convention
   // as the archer's gunnerPivot, so "where a figure is" means one thing.
-  pivot: [0.657, 0.903],
+  pivot: [0.720, 0.905],
+  // Spear thrust forward. His shadow is at source (293.0, 303.0) in this drawing
+  // too — not close, IDENTICAL, on all three soldiers — so the two poses swap
+  // with the man's feet nailed to the spot and only the spear moving.
+  attack: { sprite: 'soldier_t1_attack', trim: SPEAR_ATK_TRIM, pivot: [0.816, 0.905] },
   bodyFrac: SPEAR_BODY,
   spriteFaces: -1,
   // A spearman leaves a body too, then musters again from the barracks once his
@@ -606,68 +661,62 @@ const spearman = {
   // tools/shadow.mjs — not derived from the living figure any more; see the note
   // in data/waves.js for what that used to cost.
   dead: 'dead_soldier_t1',
-  deadTrim: [153, 206, 206, 100],
-  deadPivot: [0.078, 0.697],
+  deadTrim: [135, 215, 241, 82],
+  // The centre of the corpse's own shadow, source (163.5, 284.0).
+  deadPivot: [0.118, 0.841],
   r: Math.round(SPEAR_W * SPEAR_BODY / 2),
   lunge: 6            // px thrust when the spear goes in
 };
 
-// Tier 2's spearman: helmet instead of a hat, and the artist drew him 17px right
-// and 19px down the same canvas. Same body, different box, so every fraction
-// below had to be re-derived even though nothing about the man changed.
+// Tier 2's pikeman: helmet instead of a hat, and a box of his own. Same body,
+// different box, so every fraction below had to be re-derived even though
+// nothing about the man changed.
 //
 // Tiers 2 and 3 no longer share a drawing — tier 3 has its own knight below.
-//
-// The 17/19 is measured, not eyeballed: it is the shift that best overlays the
-// two silhouettes (IoU 0.80). It is the BODY that agrees at that shift, not the
-// spear — the spear is drawn a little differently, which is also why the trim
-// did not simply move with the figure. The body is the right thing to match: a
-// man stands where his body is.
 const SPEAR2_W = drawnW(SPEAR2_TRIM);
-// The same 59 source px of torso as tier 1, over a 166-wide box instead of 172.
-// Both come out at r = 6, so the collision radius — and the formation, and the
-// balance that rests on it — is unchanged by the new artwork.
-const SPEAR2_BODY = 0.354;
+const SPEAR2_BODY = 0.362;   // 59 / 163
 
 const spearman2 = {
   sprite: 'soldier_t2',
   spriteTrim: SPEAR2_TRIM,
-  // Tier 1's feet plus (17, 19): source (281.0, 313.4).
-  pivot: [0.753, 0.908],
+  // The centre of his ground shadow, source (301.0, 305.3).
+  pivot: [0.779, 0.911],
+  // Pike thrust. Same shadow, source (301.0, 305.3), to the pixel.
+  attack: { sprite: 'soldier_t2_attack', trim: SPEAR2_ATK_TRIM, pivot: [0.807, 0.911] },
   bodyFrac: SPEAR2_BODY,
   spriteFaces: -1,
   dead: 'dead_soldier_t2',
-  deadTrim: [158, 198, 195, 116],
-  // The centre of this corpse's own shadow.
-  deadPivot: [0.131, 0.583],
+  deadTrim: [138, 217, 237, 77],
+  // The centre of this corpse's own shadow, source (166.5, 286.0).
+  deadPivot: [0.120, 0.896],
   r: Math.round(SPEAR2_W * SPEAR2_BODY / 2),
   lunge: 6
 };
 
 // Tier 3's soldier: a knight in plate with a sword, and the narrowest box of the
 // three because a sword held across the chest reaches nowhere near as far as a
-// spear does. 114 wide against 172 and 166 — which is exactly why bodyFrac has
+// spear does. 110 wide against 168 and 163 — which is exactly why bodyFrac has
 // to be re-measured rather than carried across. The same fraction on a box that
 // lost a third of its width would make a wider man, not a narrower box.
+//
+// He is also the man the two poses differ most for: the sword goes from held
+// across the chest to swung out in front, and the box grows from 110 to 145.
 const SPEAR3_W = drawnW(SPEAR3_TRIM);
-// 59 source px of torso again, over a 114-wide box. All three tiers come out at
-// r = 6, so the collision radius — and the formation, and the balance resting on
-// it — is untouched by the new artwork. That is worth checking rather than
-// assuming every time: the radius is derived from the drawing, so a redraw can
-// move it without anyone deciding to.
-const SPEAR3_BODY = 0.518;
+const SPEAR3_BODY = 0.536;   // 59 / 110
 
 const spearman3 = {
   sprite: 'soldier_t3',
   spriteTrim: SPEAR3_TRIM,
-  // The centre of his ground shadow, source (278.0, 304.3).
-  pivot: [0.693, 0.903],
+  // The centre of his ground shadow, source (275.0, 305.3).
+  pivot: [0.673, 0.911],
+  // Sword swung. Same shadow, source (275.0, 305.3), to the pixel.
+  attack: { sprite: 'soldier_t3_attack', trim: SPEAR3_ATK_TRIM, pivot: [0.752, 0.911] },
   bodyFrac: SPEAR3_BODY,
   spriteFaces: -1,
   dead: 'dead_soldier_t3',
-  deadTrim: [168, 211, 176, 90],
-  // The centre of this corpse's own shadow, source (197.5, 279.3).
-  deadPivot: [0.168, 0.759],
+  deadTrim: [159, 211, 193, 90],
+  // The centre of this corpse's own shadow, source (187.5, 280.3).
+  deadPivot: [0.148, 0.770],
   r: Math.round(SPEAR3_W * SPEAR3_BODY / 2),
   lunge: 6
 };

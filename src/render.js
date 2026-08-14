@@ -639,7 +639,12 @@ function drawGunner(ctx, t) {
     return;
   }
 
-  const [sx, sy, sw, sh] = d.gunnerTrim;
+  // The empty bow for as long as the recoil lasts, the nocked arrow the rest of
+  // the time. One state drives both, which is the point: the kick backward and
+  // the arrow leaving the string are the same event, so they cannot drift apart.
+  const [frame, trim, pivot] = pose(d.attack, t.recoil > 0, img, d.gunnerTrim, d.gunnerPivot);
+
+  const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
   const dh = sh * SCALE;
 
@@ -647,8 +652,29 @@ function drawGunner(ctx, t) {
   ctx.translate(m.x, m.y);
   ctx.scale(mirror(d, facing(t)), 1);
   ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
-  ctx.drawImage(img, sx, sy, sw, sh, -d.gunnerPivot[0] * dw, -d.gunnerPivot[1] * dh, dw, dh);
+  ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   ctx.restore();
+}
+
+// WHICH OF A FIGHTING MAN'S TWO DRAWINGS TO USE.
+//
+// Every archer and every soldier is a Default he stands, walks and is portrayed
+// in, and an Attack he swings or looses in. This picks between them and hands
+// back the three things a draw needs — the image, the window into it, and the
+// anchor — because all three change together and using one pose's trim with
+// another's pivot would put the man in the wrong place.
+//
+// The two poses are NOT unioned into one box the way an animated building's
+// frames are; they do not need to be, because a figure is anchored on its own
+// shadow and the artist draws that shadow at the same source pixel in both. See
+// the trim block in data/towers.js.
+//
+// A def with no `attack` — every enemy, for now — falls through to its Default
+// and nothing else changes, so a family can get its second drawing whenever the
+// artist gets to it.
+function pose(attack, attacking, img, trim, pivot) {
+  const alt = attacking && attack && art[attack.sprite];
+  return alt ? [alt, attack.trim, attack.pivot] : [img, trim, pivot];
 }
 
 // Blood. Measured by tools/trim.mjs like everything else, but drawn at
@@ -845,7 +871,12 @@ function drawSoldier(ctx, u) {
     return;
   }
 
-  const [sx, sy, sw, sh] = s.spriteTrim;
+  // The swing for exactly as long as the lunge lasts. `thrust` is set to 1 on
+  // the blow and decays over a quarter second, so the pose and the movement are
+  // one gesture — he steps in holding the spear out, not one then the other.
+  const [frame, trim, pivot] = pose(s.attack, u.thrust > 0, img, s.spriteTrim, s.pivot);
+
+  const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
   const dh = sh * SCALE;
   const dir = Math.cos(u.face) >= 0 ? 1 : -1;
@@ -854,7 +885,7 @@ function drawSoldier(ctx, u) {
   // Lunge toward the foe on the swing, so a spear thrust reads as a thrust.
   ctx.translate(u.x + dir * u.thrust * s.lunge, u.y);
   ctx.scale(mirror(s, dir), 1);
-  ctx.drawImage(img, sx, sy, sw, sh, -s.pivot[0] * dw, -s.pivot[1] * dh, dw, dh);
+  ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   ctx.restore();
 }
 

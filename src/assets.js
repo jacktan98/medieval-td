@@ -42,12 +42,33 @@ export const paths = {
   artillery_t3:        'assets/towers/artillery/Artillery_Default_T3.png',
   artillery_t3_reload: 'assets/towers/artillery/Artillery_Reload_T3.png',
   artillery_t3_fire:   'assets/towers/artillery/Artillery_Fire_T3.png',
-  archer_t1:   'assets/units/Archery_Man_T1.png',
-  archer_t2:   'assets/units/Archery_Man_T2.png',
-  archer_t3:   'assets/units/Archery_Man_T3.png',
-  soldier_t1:  'assets/units/Barracks_Man_T1.png',
-  soldier_t2:  'assets/units/Barracks_Man_T2.png',
-  soldier_t3:  'assets/units/Barracks_Man_T3.png',
+  // EVERY FIGHTING MAN IS TWO DRAWINGS NOW: a Default he stands and walks in,
+  // and an Attack he swings or looses an arrow in. Same suffix rule as the
+  // artillery frames above — the bare key is the resting pose, so the info box,
+  // the encyclopedia and any fallback that reads `def.sprite` without knowing
+  // about frames still get a man standing still rather than mid-swing.
+  //
+  // The files are named by the MAN rather than by his tier. That is the artist's
+  // naming and the code follows it, but it is also the better name: "Swordsman"
+  // is what the game calls him on screen, and "Barracks_Man_T3" only said where
+  // he was recruited. The keys stay tiered because the code reaches them through
+  // a tier — `barracks[2].soldier` — and renaming those would touch every tool.
+  //
+  // Note the singular "Soldier_" on the novice archer alone. It is a typo in the
+  // upload and it is reproduced here on purpose: renaming the file only means
+  // renaming it again after the next export.
+  archer_t1:          'assets/units/Soldier_Novice_Archer_Default.png',
+  archer_t1_attack:   'assets/units/Soldier_Novice_Archer_Attack.png',
+  archer_t2:          'assets/units/Soldiers_Combat_Archer_Default.png',
+  archer_t2_attack:   'assets/units/Soldiers_Combat_Archer_Attack.png',
+  archer_t3:          'assets/units/Soldiers_Elite_Archer_Default.png',
+  archer_t3_attack:   'assets/units/Soldiers_Elite_Archer_Attack.png',
+  soldier_t1:         'assets/units/Soldiers_Spearman_Default.png',
+  soldier_t1_attack:  'assets/units/Soldiers_Spearman_Attack.png',
+  soldier_t2:         'assets/units/Soldiers_Pikeman_Default.png',
+  soldier_t2_attack:  'assets/units/Soldiers_Pikeman_Attack.png',
+  soldier_t3:         'assets/units/Soldiers_Swordsman_Default.png',
+  soldier_t3_attack:  'assets/units/Soldiers_Swordsman_Attack.png',
   // The catapult crewman, for the info box only — he is already drawn into all
   // three machine frames, which is the whole reason the machine animates. He
   // sits with the other men rather than with the machine because that is what he
@@ -74,9 +95,13 @@ export const paths = {
   // again after the next one.
   dead_enemy_t1a:  'assets/dead/Enemies_Man_Dead_T1a.png',
   dead_enemy_t1b:  'assets/dead/Enemies_Man_Dead_T1b.png',
-  dead_soldier_t1: 'assets/dead/Barracks_Man_Dead_T1.png',
-  dead_soldier_t2: 'assets/dead/Barracks_Man_Dead_T2.png',
-  dead_soldier_t3: 'assets/dead/Barracks_Man_Dead_T3.png',
+  // The three soldiers' bodies, renamed by the artist to match their living
+  // drawings — Soldiers_Spearman_Dead beside Soldiers_Spearman_Default — and
+  // redrawn in the same upload, so every deadTrim and deadPivot below was
+  // re-measured rather than carried across.
+  dead_soldier_t1: 'assets/dead/Soldiers_Spearman_Dead.png',
+  dead_soldier_t2: 'assets/dead/Soldiers_Pikeman_Dead.png',
+  dead_soldier_t3: 'assets/dead/Soldiers_Swordsman_Dead.png',
   // Blood, two of each so a hit or a death is never the same picture twice in a
   // row. All four in assets/effects now — the spatter used to sit with the arrows
   // and the pools with the corpses, which is where they happened to be uploaded.
