@@ -124,19 +124,9 @@ export const level03 = {
   // extra 40 is worth about 15 points of win rate: 29% at 220, 44% at 260, 54%
   // at 300.
   //
-  // WHERE THIS MAP SITS IS STILL AN OPEN QUESTION and the two measurements of it
-  // disagree, which is worth writing down rather than picking the flattering
-  // one. Against hand-made builds it is HARDER than maps 1 and 2, which run at
-  // 62% and 70%. Against the exhaustive sweep's own best builds it is EASIER:
-  // 277 of 1024 builds clear it where map 1 manages 24 of 448, and its best mix
-  // finishes on 19 lives of 20 where map 1's best finishes on 10.
-  //
-  // Both are true and they are measuring different things. The gap between them
-  // is the map itself: ten plots across two roads is a much wider spread of
-  // good and bad builds than nine plots on one, so a build that thinks about
-  // both roads is rewarded far more here than a good build is anywhere else.
-  // The invariant holds at every setting tried — no single family has ever
-  // cleared it — so what is left is calibration rather than correctness.
+  // The waves were then tuned around this purse rather than the other way about,
+  // because the purse is the map's character and the waves are a dial. See
+  // wavesLong in data/waves.js for the whole search.
   startGold: 260,
   startLives: 20
 };

@@ -414,11 +414,31 @@ export const waves = [
 // other seven cover one. So the honest comparison is per road, and per road this
 // map fields about half of what map 1 does.
 //
-// 145 enemies over ten waves against map 1's 142 over eight, and the heavies —
-// which is what a split defence really struggles with — run 1,1,2,2,3,4 where
-// map 1 ends on six in one wave. Measured over 12 seeds, the heavies are the
-// number that matters: at 1,2,3,4,5,6 nothing cleared the map at all, and at
-// 0,1,1,2,2,3 every build did.
+// So the OPENING is gentler than map 1's and the ENDGAME is not. Waves 1-6 sit
+// below the eight-wave table because the player is buying twice as much board
+// with the same purse; waves 7-10 run 3, 4, 5 and 6 heavies, which is map 1's
+// ramp arriving two waves later.
+//
+// 172 enemies over ten waves against map 1's 142 over eight. Every number here
+// was found by exhaustively searching all 1024 ways of assigning two families to
+// the ten plots — the same yardstick the other maps are held to, where the
+// measure is what share of ALL builds clear the level:
+//
+//   gentle open, heavies 1,1,2,2,3,4, 260 gold    277/1024 = 27%
+//   the same at 220 gold                          219/1024 = 21%
+//   heavies 1,1,2,3,4,5, more militia, 260        179/1024 = 17%
+//   the same at 220 gold                          115/1024 = 11%
+//   THIS TABLE (heavies 1,2,3,4,5,6), 260 gold     43/1024 =  4%
+//                                     map 1        24/448  =  5%
+//
+// ONE NUMBER REFUSED TO MOVE and it is worth knowing about before retuning this:
+// the BEST mix finishes on 18 or 19 lives of 20 at every setting above, where
+// map 1's best finishes on 10. Harder waves cut the share of builds that win
+// without touching the ceiling at all. That is this map's shape rather than a
+// failure to tune it — ten plots across two roads, three of which cover both,
+// is a far wider spread between a build that thinks about both roads and one
+// that does not than nine plots on one road can produce. Waves hard enough to
+// bring the ceiling down to map 1's would leave almost nothing winnable.
 //
 // Waves 1-4 are militia only and teach the map, which takes a wave longer here
 // than elsewhere: the lesson is not "enemies walk down a road", it is "there are
@@ -435,28 +455,28 @@ export const wavesLong = [
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 12, gap: 0.95 },
-      { type: 'heavy_inf', count: 1, gap: 1.90 }
+      { type: 'heavy_inf', count: 2, gap: 1.90 }
     ] },
   // And the first doctor, a wave after the first heavy rather than beside it —
   // two new things in one wave is one of them unnoticed.
   { rest: 9, groups: [
-      { type: 'light_inf', count: 14, gap: 0.85 },
-      { type: 'heavy_inf', count: 2, gap: 1.90 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 17, gap: 0.78 },
-      { type: 'heavy_inf', count: 2, gap: 1.90 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 20, gap: 0.70 },
+      { type: 'light_inf', count: 16, gap: 0.85 },
       { type: 'heavy_inf', count: 3, gap: 1.90 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
-  { rest: 0, groups: [
-      { type: 'light_inf', count: 24, gap: 0.62 },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 20, gap: 0.78 },
       { type: 'heavy_inf', count: 4, gap: 1.90 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 26, gap: 0.70 },
+      { type: 'heavy_inf', count: 5, gap: 1.90 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 0, groups: [
+      { type: 'light_inf', count: 32, gap: 0.62 },
+      { type: 'heavy_inf', count: 6, gap: 1.90 },
       { type: 'plague_inf', count: 2, gap: 2.00 }
     ] }
 ];
