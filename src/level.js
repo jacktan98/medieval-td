@@ -12,11 +12,12 @@
 
 import { level01 } from './data/level01.js';
 import { level02 } from './data/level02.js';
+import { level03 } from './data/level03.js';
 import { prepare } from './route.js';
 
 // In the order they are offered on the title screen, which is the order they
 // are meant to be played.
-export const levels = [level01, level02];
+export const levels = [level01, level02, level03];
 
 // Measure every route once, at load. `routes` holds prepared routes from here
 // on — the raw polyline is `route.pts` — so nothing has to remember whether it

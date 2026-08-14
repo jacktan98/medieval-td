@@ -1,5 +1,4 @@
 import { level, levels } from './level.js';
-import { waves } from './data/waves.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
@@ -1363,7 +1362,10 @@ function drawHud(ctx, state) {
   let x = 16;
   x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold'), state.gold);
   x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives'), state.lives);
-  ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, waves.length)} / ${waves.length}`, x + 26, 21);
+  // The map's own count, not a shared one: map 3 runs ten where the other
+  // two run eight.
+  const n = level.waves.length;
+  ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`, x + 26, 21);
 
   // The shadow ends here. It exists because the readouts sit straight on grass
   // and road with nothing behind them; the two controls have a cream plate behind

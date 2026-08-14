@@ -235,28 +235,28 @@ export const enemyTypes = {
   // A barracks cannot block what will not come to it, so the counter is to shoot
   // him: he is the reason archery towers can now be told what to aim at.
   //
-  // THE BASKET IS BOTTOMLESS, and something else has to stop him standing there
-  // forever. A wave only ends when the field is clear (see src/waves.js), so an
-  // enemy that halted out of everyone's reach and never advanced would be a
-  // soft-lock: a board the player cannot finish, with no gold coming in.
+  // THE BASKET IS BOTTOMLESS AND HE NEVER STOPS WALKING, and the second half is
+  // what makes the first half safe. He has been through two designs to get here
+  // and both are worth knowing about, because both looked right on paper:
   //
-  // A flask count used to be that guard and it is gone. What replaces it is the
-  // sentence that described him in the first place — HE THROWS FROM THE BACK OF
-  // THE LINE — read as a rule instead of as flavour: he only stops while there
-  // is another living enemy further down the road than he is. Behind his own
-  // line he is a thrower; at the front of it he is a man walking towards you.
+  //   A FINITE BASKET. Five flasks and then he walks in. Simple, and it made his
+  //   hp an eleven-win cliff — not because he was hard to kill but because every
+  //   second he stood still was a second the wave could not end.
   //
-  // That cannot lock, and the reason is worth writing down: the enemy nearest
-  // the exit has nobody ahead of it, so it is never halted, so the line always
-  // drains from the front. When he is the last one left he walks in himself.
-  // Two doctors do not deadlock each other either — only one of them can be the
-  // further back.
+  //   HALT ONLY BEHIND A SCREEN. He stops while another enemy is further down
+  //   the road than he is. Elegant, provably could not deadlock, and it still
+  //   spent his whole character on a rule whose real job was to stop him being
+  //   a soft-lock.
   //
-  // It is also better than the count at what the count was for. Killing his
-  // screen is now a way to make him come to you, so a barracks that clears the
-  // road in front of him gets to fight him; and standing him behind a Giant Thug
-  // that will not die for thirty seconds is exactly when he is most dangerous,
-  // which is the enemy this was meant to be.
+  // Neither survives. He walks the road like everything else and throws as he
+  // comes, so there is nothing to stall and no guard to need: the flasks start
+  // landing while he is a long way off and keep landing all the way in.
+  //
+  // AND HE THROWS WHILE HE IS BEING HELD. Pinning him with a soldier stops him
+  // moving and starts a melee he is bad at, but it does not switch the basket
+  // off — the man holding him is standing in the spill. Blocking him is a way to
+  // stop him ARRIVING, not a way to make him harmless, which is the difference
+  // between this enemy and every other one on the road.
   //
   // He is deliberately weak in every other respect: slower than a thug, a third
   // of the melee damage, and dead to about three tier 1 volleys. Everything he
@@ -332,6 +332,13 @@ export const enemyTypes = {
     }
   }
 };
+// A WAVE TABLE BELONGS TO A LEVEL, and there are two of them now.
+//
+// Maps 1 and 2 share the eight below; map 3 has ten of its own further down.
+// Each level names which one it runs, so the tables live here beside the enemy
+// stats the difficulty is actually held with rather than being scattered across
+// three level files.
+//
 // A wave is a list of groups spawned in order, so one wave can send militia and
 // then heavies without needing a second wave slot. `gap` is the pause between
 // spawns inside a group, and `rest` is the breather after the whole wave clears.
@@ -389,6 +396,68 @@ export const waves = [
       { type: 'light_inf', count: 34, gap: 0.60 },
       { type: 'heavy_inf', count: 6, gap: 1.40 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] }
+];
+
+// MAP 3'S TEN, AND THEY ARE SMALLER THAN THE EIGHT ABOVE, NOT BIGGER.
+//
+// That is the opposite of where this table started, and the wrong version is
+// worth recording because the reasoning behind it sounds right. Map 3's roads
+// never meet, so a wave of twenty arrives as two tens — half the pressure in any
+// one place — and it has ten plots to the others' nine. Both true, and the
+// conclusion drawn from them, that the waves should be a third BIGGER, was
+// exactly backwards. Every build died on wave 4.
+//
+// What the split actually costs is the DEFENCE, not the attack. Six towers on
+// map 1 all shoot at the one road; ten towers here are five per road at best,
+// and three of the ten plots sit between the roads and cover both while the
+// other seven cover one. So the honest comparison is per road, and per road this
+// map fields about half of what map 1 does.
+//
+// 145 enemies over ten waves against map 1's 142 over eight, and the heavies —
+// which is what a split defence really struggles with — run 1,1,2,2,3,4 where
+// map 1 ends on six in one wave. Measured over 12 seeds, the heavies are the
+// number that matters: at 1,2,3,4,5,6 nothing cleared the map at all, and at
+// 0,1,1,2,2,3 every build did.
+//
+// Waves 1-4 are militia only and teach the map, which takes a wave longer here
+// than elsewhere: the lesson is not "enemies walk down a road", it is "there are
+// two roads and you cannot cover both yet".
+export const wavesLong = [
+  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 9, gap: 1.20 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 11, gap: 1.05 }] },
+  // The first heavy, alone and last, exactly as it arrives on the other maps.
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 10, gap: 1.00 },
+      { type: 'heavy_inf', count: 1, gap: 1.90 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 12, gap: 0.95 },
+      { type: 'heavy_inf', count: 1, gap: 1.90 }
+    ] },
+  // And the first doctor, a wave after the first heavy rather than beside it —
+  // two new things in one wave is one of them unnoticed.
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 14, gap: 0.85 },
+      { type: 'heavy_inf', count: 2, gap: 1.90 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 17, gap: 0.78 },
+      { type: 'heavy_inf', count: 2, gap: 1.90 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 20, gap: 0.70 },
+      { type: 'heavy_inf', count: 3, gap: 1.90 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 0, groups: [
+      { type: 'light_inf', count: 24, gap: 0.62 },
+      { type: 'heavy_inf', count: 4, gap: 1.90 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] }
 ];
 

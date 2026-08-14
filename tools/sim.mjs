@@ -24,7 +24,15 @@ import { level, levels, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
 
 const DT = 1 / 60;
-const TIME_LIMIT = 900;   // seconds of game time before a run is called stuck
+
+// Seconds of game time before a run is called stuck, PER WAVE rather than in
+// total. 900 was right for an eight-wave map and is 112 a wave; map 3 runs ten,
+// so a flat 900 called its slowest builds stuck for the crime of having two more
+// waves to get through. `stuck` is not a loss and not a win — it drops out of
+// both counts — so a limit that bites unevenly quietly understates the win rate
+// of exactly the grindy, blocker-heavy builds that take longest.
+const PER_WAVE = 112;
+const timeLimit = () => PER_WAVE * level.waves.length;
 
 // A plan is a shopping list. Towers are bought in order as gold allows, then
 // upgraded toward their target tier — roughly how a player spends.
@@ -121,7 +129,8 @@ function play(plan) {
   const pending = [...plan];
   let time = 0;
 
-  while (!state.result && time < TIME_LIMIT) {
+  const limit = timeLimit();
+  while (!state.result && time < limit) {
     // Upgrade before expanding. Spending everything on tier 1s and only then
     // improving them is a strategy no one plays, and modelling it that way made
     // the economy, not the towers, decide the outcome.

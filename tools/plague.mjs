@@ -8,12 +8,12 @@
 // should catch three, or who stood on the road until the clock ran out, all look
 // the same from there: a slightly different number of lives.
 //
-// THE THIRD CHECK IS THE IMPORTANT ONE. A wave only ends when the field is
-// clear, and his flasks never run out, so the single thing standing between this
-// enemy and a game that cannot be finished is that he walks when there is nobody
-// ahead of him. That rule lives in one `if` in enemies.js and nothing about the
-// game would look wrong the day somebody deleted it — until a board somewhere
-// stopped ending.
+// THE LAST TWO CHECKS ARE THE IMPORTANT ONES. His flasks never run out and a
+// wave only ends when the field is clear, so the single thing standing between
+// this enemy and a game that cannot be finished is that he never stops walking.
+// He has already had two designs that stopped him walking — a finite basket and
+// a rule about screens — and both looked right; what would have caught either
+// going wrong is a board that never empties, which is check 5.
 
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
@@ -102,10 +102,13 @@ console.log('The flask\n');
   const doc = state.enemies[0];
   place(doc, Math.max(0, stand - 110));
 
-  // A screen, so he stops and throws rather than walking on — see check 3.
+  // A thug on top of the squad, unkillable, to hold the soldiers in a fight so
+  // they stay in their wedge while the flasks come down. Without it they wander
+  // off to meet the doctor and the thing being measured — how many men of a
+  // FORMATION one flask catches — stops being what is on the board.
   spawn(state, 'light_inf');
   place(state.enemies[1], stand - 20);
-  state.enemies[1].hp = 1e6;            // it must not die and un-screen him
+  state.enemies[1].hp = 1e6;
 
   // COUNTED PER LANDING, which is the only way to ask this question. Counting
   // how many men are poisoned at any one moment measures something else
@@ -157,11 +160,12 @@ console.log('The flask\n');
   check(u.poison === null, 'and then it wears off and the regen comes back');
 }
 
-console.log('\nThe back of the line\n');
+console.log('\nHe keeps coming\n');
 
-// --- 3. he halts behind a screen and walks without one -----------------------
+// --- 3. he throws without stopping ------------------------------------------
 //
-// This is the soft-lock check. See the note at the top of the file.
+// The rule that replaced both of the earlier soft-lock guards. He is a walking
+// enemy that happens to throw, not a siege engine that happens to walk.
 {
   const state = board();
   withSquad(state);
@@ -169,49 +173,58 @@ console.log('\nThe back of the line\n');
 
   spawn(state, 'plague_inf');
   const doc = state.enemies[0];
-  place(doc, Math.max(0, stand - 110));
+  // Just inside his throwing range and well outside a soldier's ENGAGE, so the
+  // whole window is him walking in under his own power rather than him being
+  // caught. Measured before anybody reaches him: check 4 is the held case.
+  place(doc, Math.max(0, stand - 125));
 
-  spawn(state, 'light_inf');
-  const screen = state.enemies[1];
-  place(screen, stand - 20);
-  screen.hp = 1e6;
+  const from = doc.s;
+  let threw = 0, caught = false;
+  for (let i = 0; i < 3 / DT && !caught; i++) {
+    updateUnits(state, DT);
+    updateEnemies(state, DT);
+    const before = state.shots.length;
+    updateShots(state, DT);
+    if (state.shots.length < before) threw++;
+    caught = !!doc.foe;
+    updateImpacts(state, DT);
+  }
+  const walked = doc.s - from;
 
-  step(state, 2);
-  const heldAt = doc.s;
-  check(doc.halted, 'a doctor with somebody ahead of him stops', `s = ${doc.s.toFixed(0)}`);
-
-  step(state, 3);
-  check(Math.abs(doc.s - heldAt) < 0.01, 'and stays stopped while the screen lives',
-    `moved ${(doc.s - heldAt).toFixed(2)}px in 3s`);
-
-  // Take the screen away. He is now the front of the line and must come on.
-  screen.hp = 0;
-  step(state, 3);
-  check(!doc.halted, 'the moment nothing is ahead of him he walks');
-  check(doc.s > heldAt + 20, 'and he really covers ground',
-    `${(doc.s - heldAt).toFixed(0)}px in 3s at ${doc.def.speed}px/s`);
+  check(threw > 0, 'he throws at a squad in reach', `${threw} flasks`);
+  check(walked > 60, 'and never stops walking to do it',
+    `${walked.toFixed(0)}px covered, ${caught ? 'then pinned' : 'still free'}`);
 }
 
-// --- 4. two of them do not deadlock each other -------------------------------
+// --- 4. pinning him does not switch the basket off ---------------------------
 //
-// Each is behind something, so the naive reading is that both stand still. They
-// cannot: only one can be the further back, so the leader always advances.
+// The thing a barracks player will try first, and the reason it must not work:
+// an enemy whose whole character is thrown poison cannot have that character
+// removed by the family it is meant to punish.
 {
   const state = board();
   withSquad(state);
   const stand = squadAt(state);
 
   spawn(state, 'plague_inf');
-  spawn(state, 'plague_inf');
-  const [a, b] = state.enemies;
-  a.route = b.route; a.lane = b.lane;   // same road, so one is plainly ahead
-  place(a, Math.max(0, stand - 100));
-  place(b, Math.max(0, stand - 140));
+  const doc = state.enemies[0];
+  doc.hp = 1e6;                        // he must be pinned, not killed
+  place(doc, stand);                   // right on top of the squad
 
-  const startA = a.s;
-  step(state, 4);
-  check(a.s > startA + 20, 'of two doctors the front one still comes on',
-    `front moved ${(a.s - startA).toFixed(0)}px`);
+  let threw = 0, everHeld = false;
+  for (let i = 0; i < 8 / DT; i++) {
+    updateUnits(state, DT);
+    updateEnemies(state, DT);
+    const before = state.shots.length;
+    updateShots(state, DT);
+    if (state.shots.length < before) threw++;
+    if (doc.foe) everHeld = true;
+    updateImpacts(state, DT);
+  }
+
+  check(everHeld, 'a soldier walks out and locks him down');
+  check(threw > 0, 'and he throws anyway, from inside the melee',
+    `${threw} flasks while held`);
 }
 
 // --- 5. a board with only doctors on it still empties -------------------------
@@ -233,6 +246,8 @@ console.log('\nThe back of the line\n');
 
   check(state.enemies.length === 0, 'a road of nothing but doctors clears itself',
     `${secs}s, ${state.enemies.length} left`);
+  check(secs < 120, 'and does it in a sane time rather than eventually',
+    `${secs}s`);
 }
 
 console.log(bad

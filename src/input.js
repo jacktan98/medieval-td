@@ -407,6 +407,17 @@ function run(state, item) {
     const mode = AIM_MODES[t.aimMode];
     item.glyph = mode.glyph;
     item.label = mode.label;
+    // The archers answer, and with PRIORITY. It is the same argument as the
+    // three gold buttons: this is an order the player gave, and an order that is
+    // sometimes acknowledged and sometimes not reads as a button that sometimes
+    // misses. It is also the only feedback that the order LANDED on men rather
+    // than on a menu — the glyph changes under a thumb that is covering it.
+    //
+    // Unlike a build or an upgrade it can be pressed three times in a row, which
+    // is exactly what the share rules in audio.js are for: five takes, never the
+    // same one twice running, so cycling through all three modes is three
+    // different archers answering rather than one line stuttering.
+    solo(familyCue(t.fam.id), true);
     return;
   }
 

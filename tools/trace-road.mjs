@@ -221,11 +221,43 @@ function costField(goal) {
   return { dist, from };
 }
 
-const { dist, from } = costField(mid(GW - 1, exits[0]));
+// WHICH EXIT EACH ENTRY IS TRYING TO REACH.
+//
+// Maps 1 and 2 have one exit between them all: map 1 is a single road and map 2
+// is two roads that merge, so every entry ends at the same place and one cost
+// field serves all of them.
+//
+// Map 3 is two roads that never touch, each with its own exit. A field grown
+// from one of those exits cannot reach the other road AT ALL — the flood simply
+// stops at the grass — so the single-field version threw "an entry cannot reach
+// the exit" on a map whose roads are both perfectly connected.
+//
+// The pairing is by vertical order, and it is exact rather than a heuristic:
+// two roads that do not cross cannot swap which is the upper one, so the nth
+// entry from the top belongs to the nth exit from the top. If a future map has
+// roads that DO cross, this is the thing that will be wrong, and it will be
+// wrong loudly — the field will not reach and the error above will say so.
+const pairs = exits.length === 1
+  ? entries.map(run => [run, exits[0]])
+  : entries.length === exits.length
+    ? entries.map((run, i) => [run, exits[i]])
+    : null;
 
-function routeFrom(start) {
+if (!pairs) {
+  throw new Error(`${entries.length} entries and ${exits.length} exits: either ` +
+    `one exit for all of them, or one each. Pair them by hand if a map ever needs it.`);
+}
+
+const fields = new Map();
+function fieldFor(exit) {
+  if (!fields.has(exit)) fields.set(exit, costField(mid(GW - 1, exit)));
+  return fields.get(exit);
+}
+
+function routeFrom(start, exit) {
+  const { dist, from } = fieldFor(exit);
   let i = start[1] * GW + start[0];
-  if (!isFinite(dist[i])) throw new Error('an entry cannot reach the exit — is the road connected?');
+  if (!isFinite(dist[i])) throw new Error('an entry cannot reach its exit — is the road connected?');
   const pts = [];
   while (i >= 0) {
     pts.push([(i % GW) * STEP + STEP / 2, ((i / GW) | 0) * STEP + STEP / 2]);
@@ -283,11 +315,11 @@ function extend(pts, howFar) {
 
 console.log(`\nroutes for ${SRC} — paste into the level's \`routes\`:`);
 
-entries.forEach((run, n) => {
+pairs.forEach(([run, exit], n) => {
   // Already entry -> exit: the search ran FROM the exit, so following `from`
   // out of an entry walks toward it. Reversing here was the first version's
   // bug and produced routes that ran backwards into the spawn.
-  const raw = routeFrom(mid(0, run));
+  const raw = routeFrom(mid(0, run), exit);
   const line = simplify(smooth(raw, SMOOTH), TOLERANCE).map(p => [Math.round(p[0]), Math.round(p[1])]);
 
   const head = extend(line, 40);
@@ -310,6 +342,8 @@ entries.forEach((run, n) => {
     const c = clear[gy * GW + gx];
     if (isFinite(c)) narrow = Math.min(narrow, c * STEP);
   }
+  console.log(`\n  // entry at y ${Math.round((run.a + run.b) / 2 * STEP)} -> ` +
+    `exit at y ${Math.round((exit.a + exit.b) / 2 * STEP)}`);
 
   console.log(`\n  // route ${n} — ${full.length} points, ${Math.round(len)}px long, ` +
     `${Math.round(narrow)}px of road either side at its narrowest`);

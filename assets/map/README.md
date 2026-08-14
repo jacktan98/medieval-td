@@ -7,6 +7,9 @@ Hand-drawn files live here, all authored, never generated:
   until an early upload; the tool follows the artist's filename rather than the
   other way round.
 - **`Map_2.svg`** — the second stage, the same size and the same conventions.
+- **`Map_3.svg`** — the third: **two roads that never meet**, each with its own
+  entry on the left and its own exit on the right, and ten markers. Six ways in
+  altogether, three lanes on each road.
   Two roads come in from the west and merge before the keep, and it has nine
   markers of its own.
 - **`Plot_Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
@@ -26,7 +29,8 @@ Hand-drawn files live here, all authored, never generated:
 
 One derived file per board is generated from them and committed:
 
-- **`Map_1_base.svg`**, **`Map_2_base.svg`** — the board with its markers cut out.
+- **`Map_1_base.svg`**, **`Map_2_base.svg`**, **`Map_3_base.svg`** — the board
+  with its markers cut out.
 
 `node tools/split-map.mjs assets/map/Map_2.svg` writes one, and never touches the
 hand-drawn files. With no argument it does map 1. The tool finds which level a
@@ -309,3 +313,48 @@ from 220 up to 620 and never bought a single win. The shortfall is time under
 fire, not towers. Map 2 marches at 0.62, measured against map 1's best build at
 each family split. Any new map wants the same treatment: trace it, sweep it with
 `node tools/sweep.mjs <n>`, and set `march` until the table matches.
+
+
+## A map with separate roads
+
+Map 3 is the first with two roads that do not join. Almost nothing in the code
+needed to know — a route is a list of waypoints and the game already had a list
+of routes — but two tools did:
+
+**`tools/trace-road.mjs` pairs each entry with its own exit.** It used to grow
+one cost field from `exits[0]` and walk every entry down to it, which is right
+for a single road and right for two that merge. On two roads that never touch,
+a field grown from one road's exit cannot reach the other road at all, and the
+tool reported "an entry cannot reach the exit" on a map whose roads are both
+perfectly connected. The pairing is by vertical order and it is exact rather
+than a guess: two roads that do not cross cannot swap which one is the upper.
+**If a map ever has roads that DO cross, this is what will be wrong**, and it
+will say so rather than trace something plausible.
+
+**`tools/formation.mjs` reads the road out of this file now.** It used to
+compare each soldier's distance from `routes[0]` against a `ROAD_W / 2` constant
+in render.js — a fossil from when the road was drawn in code. That number is map
+1's width, so maps 2 and 3 were being checked against the wrong road and only
+ever against the first of them. It tests the artwork directly now, with the same
+point-in-polygon `trace-road.mjs` uses, over every map and every route.
+
+Keep the roads the same **colour** (`#ffde9e`) whatever their shape: both tools
+find the road by that fill and neither guesses.
+
+## Markers have a ceiling, and map 3 has three at it
+
+Three of map 3's ten markers were painted at y 159 to 163 in game space, which is
+8 to 12px above the highest marker on either other map — and map 1's highest
+already clears the HUD by exactly one pixel. A tier 2 archery tower on any of
+them reaches up behind a HUD control.
+
+`node tools/hud-clear.mjs` checks every plot of every map and prints the minimum
+y each one needs. Two of the three were nudged down 11px and 7px in
+`src/data/level03.js`, which is invisible on the board. The third, at (804, 163),
+**cannot be fixed in the data** — it needs y >= 214 to clear the description
+panel and 214 is on the tarmac, and every sideways move either stays under the
+panel or lands within a marker's width of its neighbour.
+
+**So keep new markers at y >= 170**, and further down still if they sit under the
+description panel in the top right — that one needs y >= 214. It is worth
+re-running `hud-clear.mjs` after any map redraw for exactly this reason.

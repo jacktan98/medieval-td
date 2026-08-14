@@ -35,12 +35,9 @@ export function spawn(state, typeId) {
     foe: null,       // the barracks soldier holding it, if any
     acd: 0,          // melee cooldown, only ticks while held
     thrust: 0,       // 1 on the swing, decays; drives the lunge in render.js
-    // A thrower's own state, and it is set on every enemy rather than only on
-    // the ones that throw. `halted` is read by leadPoint, which has to answer
-    // for anything a catapult might be aiming at, and a missing field there
-    // would be a silent `undefined` rather than a false.
-    halted: false,   // standing still to throw, so nothing may lead ahead of it
-    tcd: 0           // throwing cooldown
+    // A thrower's own clock, set on every enemy rather than only on the ones
+    // that throw, so the shape of an enemy is written down in one place.
+    tcd: 0           // seconds until the next flask
   });
 }
 
@@ -61,12 +58,10 @@ export function spawn(state, typeId) {
 // Only artillery asks. Arrows steer, so they never need to know.
 export function leadPoint(e, t) {
   const road = laneOf(level.routes[e.route], e.lane);
-  // A HELD ENEMY IS NOT GOING ANYWHERE, and neither is one that has stopped to
-  // throw. Both lead to themselves. The second case is easy to forget and hard
-  // to see when it is wrong: a catapult would throw 130px up the road past a
-  // plague doctor standing perfectly still, and it would look like the machine
-  // simply could not hit him.
-  const ahead = e.foe || e.halted ? 0 : e.def.speed * level.march * t;
+  // Being held is the ONLY way to stand still. The plague doctor threw from a
+  // standstill for a while and needed a second case here; he walks now, so this
+  // is back to one.
+  const ahead = e.foe ? 0 : e.def.speed * level.march * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -77,49 +72,45 @@ export function updateEnemies(state, dt) {
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
     e.thrust = Math.max(0, e.thrust - dt * 4);
 
+    // THE THROWER, and he never stops walking to do it.
+    //
+    // He used to halt at throwing range and camp there, which needed a rule
+    // about whether anyone was still ahead of him to stop him camping forever —
+    // a wave only ends when the field is clear, so a thrower who would not
+    // advance was a board that could not be finished. Both are gone. He walks
+    // the road like everything else and throws on his own clock as he comes,
+    // which is simpler, has no way to stall, and plays better: the flasks start
+    // landing while he is still a long way off and keep landing all the way in.
+    //
+    // AND HE THROWS WHILE HE IS BEING HELD. This is before the melee branch
+    // rather than after it on purpose. A soldier who walks out to pin him has
+    // stopped him moving and is trading blows with him, and that used to also
+    // switch the basket off — which made blocking him a complete answer to an
+    // enemy who is supposed to be dangerous in exactly that situation. Now
+    // pinning him costs you a man standing in the spill he is still throwing.
+    if (e.def.ranged) {
+      const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
+      e.tcd -= dt;
+      if (mark && e.tcd <= 0) {
+        throwFlask(state, e, mark);
+        e.tcd = e.def.ranged.cd;
+        // Same field the melee lunge uses, so the Attack drawing shows for the
+        // throw exactly as long as it shows for a swing. It is also what makes
+        // a doctor in close combat read correctly: he lunges as he throws, and
+        // the man holding him lunges back on his own clock.
+        e.thrust = 1;
+      }
+    }
+
     // Held in melee by a soldier. Blocked enemies stop dead rather than
     // sliding past — this is the whole point of the barracks family, and the
     // one case where an enemy is not a pure path-follower.
     if (e.foe) {
-      // Turn to fight whoever is holding it, so the two face each other.
+      // Turn to fight whoever is holding it, so the two face each other. A
+      // doctor faces his captor rather than his mark: the man with a spear in
+      // him is the more pressing of the two.
       if (e.foe.x !== e.x) e.face = e.foe.x > e.x ? 1 : -1;
-      // A doctor who has been caught fights with his hands, not his basket. He
-      // is unhalted here rather than left alone so that killing his blocker
-      // puts him straight back to throwing.
-      e.halted = false;
       continue;
-    }
-
-    // THE THROWER. He stops when a soldier comes within range and starts
-    // lobbing, and he walks again the moment there is nobody to throw at OR
-    // nobody left ahead of him to throw from behind. Everything below this block
-    // is the ordinary walk, and a halted enemy skips all of it.
-    //
-    // `screened` is what stops him being a soft-lock now that his flasks never
-    // run out — see the note on plague_inf in data/waves.js. It is checked
-    // SECOND, after the cheaper range test, because most frames have no soldier
-    // near him at all and there is no reason to walk the enemy list to find out
-    // he was going to keep walking anyway.
-    if (e.def.ranged) {
-      const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
-      e.halted = !!mark && screened(state, e);
-      if (e.halted) {
-        // He faces what he is throwing at, the same way a held enemy faces the
-        // man holding it — this is the only other case where an enemy's heading
-        // is decided by something other than the road under it.
-        if (mark.x !== e.x) e.face = mark.x > e.x ? 1 : -1;
-        e.tcd -= dt;
-        if (e.tcd <= 0) {
-          throwFlask(state, e, mark);
-          e.tcd = e.def.ranged.cd;
-          // Same field the melee lunge uses, so the Attack drawing shows for
-          // the throw exactly as long as it shows for a swing.
-          e.thrust = 1;
-        }
-        continue;
-      }
-    } else {
-      e.halted = false;
     }
 
     // One number forward along the road, then the position is looked up. The
@@ -184,32 +175,6 @@ export function updateEnemies(state, dt) {
     }
     return true;
   });
-}
-
-// Is anything still alive between him and the exit?
-//
-// This is "the back of the enemy line" as a rule rather than as a description,
-// and it is the only thing stopping a thrower with endless flasks from standing
-// on the road forever — see plague_inf in data/waves.js for why that would end
-// the game rather than merely look odd.
-//
-// Measured as distance REMAINING, the same way pickTarget orders its targets and
-// for the same reason: on a forked map the two roads in are different lengths,
-// so "further along" says nothing about which enemy is nearer the keep.
-//
-// A leaked or dead enemy screens nobody. Neither, deliberately, does one on
-// another road — a doctor on the north fork is not behind a column on the south
-// one, whatever the arithmetic says about their distances, and `remaining` is
-// comparable across routes precisely so this comparison is about the keep rather
-// than about the map.
-function screened(state, e) {
-  const mine = remaining(laneOf(level.routes[e.route], e.lane), e.s);
-
-  for (const o of state.enemies) {
-    if (o === e || o.hp <= 0 || o.leaked) continue;
-    if (remaining(laneOf(level.routes[o.route], o.lane), o.s) < mine) return true;
-  }
-  return false;
 }
 
 // The nearest soldier a thrower could reach, or null. Respawning men are not on

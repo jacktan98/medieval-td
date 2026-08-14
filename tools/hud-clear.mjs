@@ -23,7 +23,7 @@
 // written for failed two of the three at once, and fixing the smaller one first
 // would have meant moving the same marker twice.
 
-import { level } from '../src/level.js';
+import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
 import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks } from '../src/render.js';
 
@@ -84,10 +84,19 @@ const inkTop = (plot, fam, def) =>
   boxTop(plot, def) - (marks(fam, def) ? STAR_LIFT + STAR_R : 0);
 
 let bad = 0, noted = 0;
-console.log('plot            tallest tower   ink top  box top  verdict');
 
-for (let i = 0; i < level.plots.length; i++) {
-  const p = level.plots[i];
+// EVERY MAP, not just the one that happens to be loaded. This used to read the
+// module's `level`, which is map 1 until something switches it — so map 2's
+// plots and map 3's had never been checked, and map 3 is the one that needed it:
+// its highest markers sit 8 to 12px above map 1's highest, and map 1's highest
+// clears the HUD by a single pixel.
+for (const [li, lv] of levels.entries()) {
+  useLevel(li);
+  console.log(`\n${lv.id} ${lv.name}`);
+  console.log('plot            tallest tower   ink top  box top  verdict');
+
+for (let i = 0; i < lv.plots.length; i++) {
+  const p = lv.plots[i];
 
   // The worst case across every family and tier, so this does not go stale when
   // a taller tier-3 building arrives.
@@ -149,6 +158,7 @@ for (let i = 0; i < level.plots.length; i++) {
         ? `reaches the text band, but beside every readout — ok`
         : `clear by ${Math.round(worst.top - TEXT_BOTTOM)}px`)
   );
+}
 }
 
 if (bad) console.log(`\n${bad} plot(s) cut a building off, or put it under a HUD button or the HUD text.`);

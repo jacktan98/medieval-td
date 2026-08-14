@@ -8,8 +8,20 @@
 // both times the old list looked like a balance collapse when it was really a
 // stale shopping list.
 //
-// It runs every combination of six of the seven usable plots and all 64 ways of
-// assigning the two families to them: 448 runs, about 20 seconds.
+// It runs every combination of the usable plots at the map's own BUILD SIZE, and
+// every way of assigning the two families to them: 448 runs on map 1, about 20
+// seconds.
+//
+// SIX IS NOT A UNIVERSAL BUILD SIZE. It is what maps 1 and 2 support — nine
+// plots and an economy that funds about six towers over eight waves. Map 3 has
+// ten plots, ten waves and a bigger purse, and it needs every one of them:
+// six towers there is three per road, which is half a defence against each, and
+// the first pass at that map's waves was tuned against six-tower builds and came
+// out savage. The size is derived from the plot count now rather than typed.
+//
+// A plan longer than the money allows is not a problem: run() builds `pending`
+// in order as gold arrives and simply never reaches the end of a list it cannot
+// afford. The size is an upper bound on ambition, not a promise.
 //
 // The output is the best build at each family split. Paste the rows you want
 // into the scenarios in tools/sim.mjs — IN THE ORDER PRINTED, which is plot
@@ -36,10 +48,17 @@ console.log(`level ${WHICH}: ${level.name}`);
 // in the ALL archery x8 scenario in sim.mjs, which is the "even with
 // everything" case.
 //
-// Map 2 has no dead plots at all: every one of its nine sits 79 to 91px off the
-// road. So there is nothing to exclude, and the sweep is over all nine rather
-// than seven — which is 9 choose 6 times 64, four times as many runs.
-const USABLE = WHICH === 1 ? [0, 1, 3, 4, 6, 7, 8] : [0, 1, 2, 3, 4, 5, 6, 7, 8];
+// Every other map's plots are all usable, so the list is DERIVED from the level
+// rather than typed. Map 2's nine sit 79 to 91px off the road and map 3's ten
+// sit 70 to 87 — none of them is a dead plot, and hard-coding nine indices
+// quietly measured only nine of map 3's ten.
+const DEAD = { 1: [2, 5] };
+const USABLE = level.plots
+  .map((_, i) => i)
+  .filter(i => !(DEAD[WHICH] || []).includes(i));
+
+console.log(`  ${USABLE.length} usable plots of ${level.plots.length}, ` +
+  `${level.routes.length} road(s), ${level.waves.length} waves`);
 
 // Every way of leaving out (USABLE.length - 6) of them.
 function combinations(list, k) {
@@ -49,8 +68,12 @@ function combinations(list, k) {
   return [...combinations(rest, k - 1).map(c => [head, ...c]), ...combinations(rest, k)];
 }
 
+// How many towers a build on this map is allowed to reach for.
+const SIZE = Number(process.env.SIZE || (level.plots.length > 9 ? 10 : 6));
+console.log(`  builds of up to ${SIZE} towers`);
+
 const results = [];
-for (const combo of combinations(USABLE, 6)) {
+for (const combo of combinations(USABLE, SIZE)) {
   for (let mask = 0; mask < 1 << combo.length; mask++) {
     const plan = combo.map((plot, i) => ((mask >> i) & 1 ? B(plot) : A(plot)));
     results.push({ plan, archers: plan.filter(e => e.fam === 'archery').length, r: run(plan) });
@@ -71,7 +94,7 @@ console.log(`${results.length} builds\n`);
 for (const n of [...byFamily.keys()].sort((a, b) => b - a)) {
   const o = byFamily.get(n);
   console.log(
-    `${n} archery + ${6 - n} barracks   ${o.r.result.padEnd(5)} ` +
+    `${n} archery + ${SIZE - n} barracks   ${o.r.result.padEnd(5)} ` +
     `lives ${String(o.r.lives).padStart(3)}  wave ${o.r.wave}   [${label(o)}]`
   );
 }
@@ -79,7 +102,7 @@ for (const n of [...byFamily.keys()].sort((a, b) => b - a)) {
 const wins = results.filter(o => o.r.result === 'won');
 console.log(`\n${wins.length} of ${results.length} builds win.`);
 
-const pure = [...byFamily.entries()].filter(([n]) => n === 6 || n === 0);
+const pure = [...byFamily.entries()].filter(([n]) => n === SIZE || n === 0);
 const broken = pure.filter(([, o]) => o.r.result === 'won');
 if (broken.length) {
   console.log('INVARIANT BROKEN: a single family clears the level on its own.');

@@ -192,6 +192,10 @@ export const paths = {
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.
   map02:       'assets/map/Map_2_base.svg',
+  // The third, and the first with two roads that never meet. Same pipeline
+  // again — there is nothing special about a map with more than one road in
+  // this file, because a route is just a list of waypoints.
+  map03:       'assets/map/Map_3_base.svg',
   plot_marker: 'assets/map/Plot_Marker.svg'
 };
 

@@ -1,4 +1,11 @@
-import { waves, waveClearBonus, earlyCallRate, waveSize } from './data/waves.js';
+import { waveClearBonus, earlyCallRate, waveSize } from './data/waves.js';
+import { level } from './level.js';
+
+// THE WAVES OF THE MAP BEING PLAYED, read at the point of use rather than
+// destructured at import time — see the note at the top of level.js. Capturing
+// `level.waves` in a module constant would pin the game to map 1's eight for
+// the whole session, which is the exact trap that comment exists to warn about.
+const table = () => level.waves;
 import { spawn } from './enemies.js';
 
 // state.spawned counts enemies spawned in the CURRENT wave, across all of its
@@ -15,6 +22,7 @@ function groupAt(wave, spawned) {
 }
 
 export function updateWaves(state, dt) {
+  const waves = table();
   if (state.waveIndex >= waves.length) {
     if (state.enemies.length === 0 && state.result === null) state.result = 'won';
     return;
@@ -57,7 +65,7 @@ export function updateWaves(state, dt) {
 // calling then would stack two waves on the road, which is a different game and
 // not one this level is balanced for.
 export function canCallWave(state) {
-  if (state.result || state.waveIndex >= waves.length || state.timer <= 0) return false;
+  if (state.result || state.waveIndex >= table().length || state.timer <= 0) return false;
   const opening = state.waveIndex === 0 && state.spawned === 0;
   return state.resting || opening;
 }
