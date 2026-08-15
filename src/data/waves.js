@@ -412,17 +412,25 @@ export const waves = [
 // exhaustively over all 5376 ways of putting six towers of two families on nine
 // plots, as the share that clears the map, against map 1's 24 of 448 = 5%:
 //
-//   map 1's heavies, militia x0.9    62/5376 = 1%
-//   map 1's heavies, militia x0.8   106/5376 = 2%
-//   map 1's heavies, militia x0.7   116/5376 = 2%, and a pure build won
-//   THIS TABLE                      294/5376 = 5%
+//   heavies                 militia x0.9      x0.8            x0.7
+//   map 1's, 1,2,3,4,6         62 =  1%      106 =  2%    116 =  2%  BROKE
+//   one step down, 1,1,2,3,5  294 =  5%      448 =  8%    589 = 11%  BROKE
+//   two steps down, 1,1,2,3,4  354 =  7%      574 = 11%    830 = 15%  BROKE
 //
-// CUTTING MILITIA DOES NOT WORK — it plateaus at 2% and then breaks the
-// invariant, because thinning the screen lets a pure-barracks build hold the
-// junction alone. What a short road actually cannot absorb is HEAVIES: they are
-// slow, so on map 1 they spend 34 seconds under fire and here only 20. So the
-// ramp comes down a step — 1,1,2,3,5 where map 1 runs 1,2,3,4,6 — and the
-// militia only 10%.
+// THIS TABLE IS THE 294. Only four of the nine hold the invariant at all, and
+// of those four this is the one nearest map 1's 5% — 1% and 2% are a harder map
+// than map 1, and 7% an easier one.
+//
+// TWO THINGS THE GRID SAYS, and the second is the one to remember:
+//
+// Cutting militia does not work. Every single x0.8 and x0.7 column breaks the
+// invariant whatever the heavies do, because thinning the screen is what lets a
+// pure-barracks build hold the junction alone — the blockers stop being
+// overwhelmed and the map stops needing anything else.
+//
+// What a short road cannot absorb is HEAVIES. They are slow, so map 1 gives them
+// 34 seconds under fire and this map 20, and one step off the ramp is worth more
+// than a fifth off every militia group: 62 to 294 wins against 62 to 106.
 //
 // Map 3 needed the same correction for the same reason. Two maps in a row have
 // said it now: on a short road, tune the heavies.
