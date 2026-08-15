@@ -23,12 +23,21 @@ export const DIFFICULTIES = [
   {
     id: 'normal',
     name: 'Normal',
-    // A fifth fewer enemies, and a fifth more gold to meet them with. The gold
-    // does two jobs: it replaces the bounties the missing enemies would have
-    // paid, and it buys the fourth tower earlier, which is what actually makes
-    // an opening feel survivable.
-    count: 0.8,
-    gold: 1.2
+    // NOT AS GENEROUS AS IT WANTED TO BE, and the limit is the invariant rather
+    // than taste. At 0.8 / 1.2 the best five-siege-plus-one build cleared map 1
+    // two seeds in five, and at 0.85 / 1.15 pure barracks cleared map 2 — which
+    // would teach a Normal player that one family is a strategy and then take it
+    // away the moment they pressed Hard.
+    //
+    // 0.85 / 1.10 is the most generous pair that holds it on all three maps over
+    // 12 seeds and every scenario in tools/sim.mjs, and it is a real easing:
+    // map 1's mixes go from 68% of runs cleared to 93%.
+    //
+    // Do not tune this at 5 seeds. The search that proposed these numbers broke
+    // at 0.9 / 1.05 and held at the strictly more generous 0.9 / 1.10, which is
+    // backwards and was the tell that a single-seed flip means nothing here.
+    count: 0.85,
+    gold: 1.1
   },
   {
     id: 'hard',
