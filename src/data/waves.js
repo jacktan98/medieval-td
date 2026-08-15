@@ -235,9 +235,9 @@ export const enemyTypes = {
   // A barracks cannot block what will not come to it, so the counter is to shoot
   // him: he is the reason archery towers can now be told what to aim at.
   //
-  // THE BASKET IS BOTTOMLESS AND HE NEVER STOPS WALKING, and the second half is
-  // what makes the first half safe. He has been through two designs to get here
-  // and both are worth knowing about, because both looked right on paper:
+  // THE BASKET IS BOTTOMLESS AND HIS PATIENCE IS NOT, and that split is the
+  // whole design. He has been through three shapes to get here and the first two
+  // are worth knowing about, because both looked right on paper:
   //
   //   A FINITE BASKET. Five flasks and then he walks in. Simple, and it made his
   //   hp an eleven-win cliff — not because he was hard to kill but because every
@@ -248,9 +248,16 @@ export const enemyTypes = {
   //   spent his whole character on a rule whose real job was to stop him being
   //   a soft-lock.
   //
-  // Neither survives. He walks the road like everything else and throws as he
-  // comes, so there is nothing to stall and no guard to need: the flasks start
-  // landing while he is a long way off and keep landing all the way in.
+  // Then he simply walked and threw as he came, which could not stall and was
+  // not this enemy: a thrower who closes to melee is a thug with a longer reach,
+  // and the man he is supposed to be dangerous to walked out and pinned him.
+  //
+  // He stands off again now, and what is bounded is the RIGHT thing. Both of the
+  // designs above bounded the flasks; the game does not care about flasks, it
+  // cares that a wave ends when the field is clear. So the flasks are unlimited,
+  // he throws walking and pinned as well as standing, and the one thing he is
+  // rationed on is TIME NOT ADVANCING — `standoff` below, spent once. When it is
+  // gone he walks into the fight and goes on throwing from inside it.
   //
   // AND HE THROWS WHILE HE IS BEING HELD. Pinning him with a soldier stops him
   // moving and starts a melee he is bad at, but it does not switch the basket
@@ -305,19 +312,29 @@ export const enemyTypes = {
     //
     // He was added to punish a line of soldiers, and he does — from range, over
     // the fight, poisoning men who cannot reach him. But ADDING MORE OF HIM TO A
-    // WAVE MAKES A WALL OF BARRACKS STRONGER, not weaker. Map 3's grid, pure
-    // barracks over five seeds: 2 wins as the table stands, 3 with the doctors
-    // roughly doubled.
+    // WAVE MAKES A WALL OF BARRACKS STRONGER, not weaker, and so does making him
+    // better at what he is for. Map 3's pure-barracks build goes from 4 wins in
+    // 20 seeds to 8 when he learns to stand off.
     //
-    // The reason is that he stops to throw and a blocker pins him where he
-    // stands, so he never reaches the keep. He costs no lives and pays a 30
-    // bounty — the largest in the game — which is a gift to the family that can
+    // Two reasons, and the second is the one that keeps being underestimated.
+    //
+    // HE NEVER ARRIVES. He stops to throw, a blocker pins him where he stands,
+    // and he pays a 30 bounty — the largest in the game — to the family that can
     // hold him all day. He punishes a THIN line, where his poison outpaces the
     // regen of the two or three men actually holding the road, and he feeds a
     // deep one.
     //
-    // So he is not the lever for "barracks are too strong on this map". That
-    // lever is arrival rate; see the grid over wavesLong.
+    // AND HE STRINGS THE WAVE OUT. A wave ends when the field is clear, so every
+    // second he spends not advancing is a second the line behind him gets to
+    // regenerate and re-muster. That is arrival rate — the one lever that beats a
+    // wall of blockers — being given back, and it is worth more than his poison
+    // takes. Raising the poison from 6 to 8 dps changes the pure-barracks rate
+    // not at all: 16 health a second into a squad regenerating 12 is not the
+    // difference between winning and losing.
+    //
+    // So he is not the lever for "barracks are too strong on this map", and
+    // making him nastier moves it the wrong way. That lever is arrival rate; see
+    // the grid over wavesLong.
     speed: 60,
     bounty: 30,
     leak: 1,
@@ -345,7 +362,30 @@ export const enemyTypes = {
       // into him, and inside a tier 1 archery tower's 190 so a bow placed to
       // cover the road can always answer.
       range: 130,
-      cd: 2.2
+      cd: 2.2,
+      // HOW LONG HE WILL STAND THERE, in seconds, once in his life. At a 2.2s
+      // cooldown this is six flasks thrown from outside anything a barracks can
+      // reach, which is enough for the standoff to be the thing you remember
+      // about him rather than a moment before the real fight.
+      //
+      // It is a BUDGET rather than a rule, and src/enemies.js has the long
+      // version of why: a wave ends when the field is clear, so an enemy with no
+      // bound on standing still is a game that can hang. Everything else about
+      // him is unbounded — the basket never empties and he throws while walking
+      // and while pinned — and this one number is what makes that safe.
+      //
+      // THE LENGTH IS FREE, WHICH IS NOT WHAT WAS EXPECTED. Pure barracks on
+      // map 3 over twenty seeds: 7/20 at a 6-second standoff, 10/20 at 10,
+      // 8/20 at 14. That is flat inside the noise, and map 2 says the same
+      // (6/20, 8/20, 8/20). What costs the defence-breaking is standing off AT
+      // ALL — an enemy 130px short of the line is one not standing in a
+      // blocker's face while the militia arrive — and how long he does it for
+      // barely registers on top of that. See the grid over wavesLong.
+      //
+      // So this is chosen for how it reads rather than for what it measures:
+      // six flasks is enough to be the thing you remember about him, and short
+      // enough that a wave is not visibly waiting for one man.
+      standoff: 14
     }
   }
 };
@@ -460,6 +500,14 @@ export const waves = [
 //
 // Map 3 needed the same correction for the same reason. Two maps in a row have
 // said it now: on a short road, tune the heavies.
+//
+// THIS MAP'S INVARIANT DOES NOT HOLD EITHER, and the true figure is worse than
+// the one it was left at. Pure barracks clears the junction on 1 seed in 20 as
+// the table shipped, and on 8 in 20 now that the plague doctor stands off rather
+// than walking into the line — the same doubling map 3 shows, for the same
+// reason, and see the grid over wavesLong for the mechanism. The grid above is
+// still the right search; what it is missing is that every one of its `BROKE`
+// judgements came from five seeds. `node tools/sweep.mjs 2` runs twenty now.
 export const wavesFork = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 5, gap: 1.40 }] },
@@ -602,8 +650,42 @@ export const wavesFork = [
 // all reach the road, and it is a level-design fact rather than a tuning one:
 // the honest choices on this board are a hard map or a broken one.
 //
-// The shape is still right — pure loses, 6+4 loses, 5+5 through 1+9 win, best
-// mix on 17 lives — so it is a hard map rather than a broken one.
+// ---------------------------------------------------------------------------
+// AND THEN THE GRID ABOVE TURNED OUT TO BE MEASURED WITH A RULER THAT IS TOO
+// SHORT. Every `pure B` figure in it is out of FIVE seeds, and five is not
+// enough to tell 5% from 40% on this map. Re-measured over twenty:
+//
+//                                        pure B (of 20)
+//   this table, as it shipped                4/20   <- called 0/5 at the time
+//   the same, with the doctor standing off   8/20   <- this
+//   gaps x0.90 on top                        3/20
+//   gaps x0.80 on top                        2/20
+//   flask poison 6 -> 8 dps                  8/20
+//   standoff 14s -> 6s                       7/20
+//   shorter rests                            9/20
+//
+// SO IT NEVER HELD. "gaps x0.65 -> 0/5" was five seeds of luck, and the level
+// has been a coin-flip for a pure-barracks build since the redraw. The `stuck`
+// bug hid this once and a small sample hid it again; tools/sweep.mjs now runs
+// twenty seeds and prints the rate rather than a verdict alone.
+//
+// The doctor's standoff doubles it, and the reason is not his poison. An enemy
+// that stops 130px short is an enemy NOT standing in a blocker's face during the
+// crunch, and the wave behind him ends up to 14 seconds more strung out — which
+// is arrival rate, this map's one real lever, being handed back. Note what the
+// grid says about the alternatives: poison does nothing to a wall (16hp/s into a
+// squad regenerating 12 is not the difference between winning and losing), and a
+// shorter standoff barely helps, because the cost is in standing off at all.
+//
+// WHAT WOULD FIX IT is more of the same lever — gaps x0.80 on top of the 0.65
+// already there takes it to 2/20 and map 2 to 1/20 — and that is a real
+// difficulty change to two maps, made while the owner is play-testing one of
+// them. It is not applied here. This note is the measurement; the decision is
+// the owner's.
+//
+// The shape is otherwise still right — 6+4 loses, 5+5 through 1+9 win, best mix
+// on 15 lives — so it is a hard map with one family able to cheat it, rather
+// than a broken one.
 //
 // ONE NUMBER BARELY MOVES and it is worth knowing about before retuning this:
 // the BEST mix finishes on 17 to 19 lives of 20 at every setting above, where

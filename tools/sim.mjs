@@ -252,20 +252,20 @@ function play(plan, patience = 1) {
 // builds on map 1: the plot indices are per-map and the two lists look alike.
 export const byLevel = {
 m1: {
-  'ALL archery x6  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8)],
-  'ALL archery x8  (expect LOSS)':  [A(1), A(3), A(4), A(6), A(7), A(8), A(2), A(5)],
-  'ALL barracks x6 (expect LOSS)':  [B(1), B(3), B(4), B(6), B(7), B(8)],
+  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(4), A(6), A(7), A(8)],
+  'ALL archery x8  (expect LOSS)':  [A(0), A(1), A(4), A(6), A(7), A(8), A(2), A(5)],
+  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(3), B(4), B(6), B(7)],
   // The best 5+1 build there is, and it loses. One blocker is no longer enough
   // to hold wave 8 now that the heavy has 1500hp, which is what makes the two
   // families need each other properly rather than nominally.
-  'BEST 5 archery + 1 (expect LOSS)': [A(1), B(3), A(4), A(6), A(7), A(8)],
+  'BEST 5 archery + 1 (expect LOSS)': [A(0), A(1), B(3), A(4), A(6), A(7)],
   // Listed in plot order, which is also BUILD order: the plan is a shopping list
   // spent as gold arrives, so moving a barracks to the end of the line is a
   // different build, not the same one written differently. Sorting these lists
   // "tidily" by family turned a 4+2 win into a wave 7 loss once already.
   'MIX 4 archery + 2 barracks':     [A(0), A(1), A(4), B(6), B(7), A(8)],
-  'MIX 3 archery + 3 barracks':     [A(1), B(3), A(4), B(6), B(7), A(8)],
-  'MIX 2 archery + 4 barracks':     [B(0), B(3), A(4), A(6), B(7), B(8)],
+  'MIX 3 archery + 3 barracks':     [A(0), B(1), A(4), B(6), B(7), A(8)],
+  'MIX 2 archery + 4 barracks':     [A(1), B(3), B(4), B(6), B(7), A(8)],
   // Artillery, held to the SAME two rules as the other families: no family
   // clears the level alone, and five towers behind one blocker is never enough
   // however good the five are. Both hold with an enormous margin — see the
@@ -276,10 +276,10 @@ m1: {
   // is the comparison worth having: a catapult against the tower it competes
   // with for a plot. Swapping a BARRACKS for one just measures what losing a
   // blocker on wave 8 costs, which is already known and is fatal for any family.
-  'ALL siege x6    (expect LOSS)':  [S(1), S(3), S(4), S(6), S(7), S(8)],
-  'BEST 5 siege + 1 (expect LOSS)': [S(1), B(3), S(4), S(6), S(7), S(8)],
-  'MIX 2 archery + 3 barracks + 1 siege': [S(1), B(3), A(4), B(6), B(7), A(8)],
-  'MIX 3 siege + 3 barracks':       [S(1), B(3), S(4), B(6), B(7), S(8)],
+  'ALL siege x6    (expect LOSS)':  [S(0), S(1), S(4), S(6), S(7), S(8)],
+  'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), B(3), S(4), S(6), S(7)],
+  'MIX 2 archery + 3 barracks + 1 siege': [S(0), B(1), A(4), B(6), B(7), A(8)],
+  'MIX 3 siege + 3 barracks':       [S(0), B(1), S(4), B(6), B(7), S(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 },
 
@@ -299,13 +299,13 @@ m2: {
   'ALL archery x6  (expect LOSS)':  [A(0), A(2), A(5), A(6), A(7), A(8)],
   'ALL barracks x6 (expect LOSS)':  [B(2), B(3), B(5), B(6), B(7), B(8)],
   'BEST 5 archery + 1 (expect LOSS)': [A(0), A(1), A(2), B(5), A(6), A(7)],
-  'MIX 4 archery + 2 barracks':     [A(1), A(2), A(3), B(5), A(6), B(7)],
-  'MIX 3 archery + 3 barracks':     [A(1), B(3), B(5), A(6), B(7), A(8)],
-  'MIX 2 archery + 4 barracks':     [A(1), B(2), B(4), A(6), B(7), B(8)],
+  'MIX 4 archery + 2 barracks':     [A(1), A(2), B(5), A(6), B(7), A(8)],
+  'MIX 3 archery + 3 barracks':     [A(1), A(2), B(5), B(6), A(7), B(8)],
+  'MIX 2 archery + 4 barracks':     [A(1), A(2), B(3), B(5), B(6), B(7)],
   'ALL siege x6    (expect LOSS)':  [S(0), S(2), S(5), S(6), S(7), S(8)],
   'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), S(2), B(5), S(6), S(7)],
-  'MIX 2 archery + 3 barracks + 1 siege': [A(1), B(3), S(5), A(6), B(7), B(8)],
-  'MIX 3 siege + 3 barracks':       [S(1), B(3), S(5), S(6), B(7), B(8)],
+  'MIX 2 archery + 3 barracks + 1 siege': [A(1), S(2), B(5), B(6), A(7), B(8)],
+  'MIX 3 siege + 3 barracks':       [S(1), S(2), B(5), B(6), S(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 
@@ -316,8 +316,8 @@ m2: {
 // on wave 4 — see wavesLong in src/data/waves.js.
 //
 // The pure builds still lose and a mix still wins, which is the invariant; what
-// is different is how WIDE the spread is. Plots 0, 2, 5 and 9 sit between the
-// two roads and cover both, and 3, 6 and 8 watch only the north while 1, 4 and 7
+// is different is how WIDE the spread is. Plots 0, 2, 6 and 9 sit between the
+// two roads and cover both, and 3, 5 and 8 watch only the north while 1, 4 and 7
 // watch only the south — so a build that ignores half the map loses to half of
 // every wave, and one that does not is very comfortable indeed.
 //
@@ -327,6 +327,17 @@ m2: {
 // than they did. The old list was not wrong about the game, it was wrong about
 // where plot 6 is — and two of its mixes lost outright, which reads exactly
 // like a balance collapse and was not one.
+//
+// RE-SWEPT AGAIN when the plague doctor learned to stand off rather than walk
+// into the line. That is a rule change and not a map change, and it moved these
+// lists on all three maps — which is the point of re-running rather than
+// trusting them.
+//
+// THE INVARIANT DOES NOT HOLD ON THIS MAP and the note is here rather than
+// buried, because everything below reads better than the level is. Pure barracks
+// clears it on 8 seeds in 20. It was 4 in 20 before the standoff and it has
+// never been zero; the 0/5 this file used to be checked against was five seeds
+// of luck. See the pure-build re-check in tools/sweep.mjs, which now runs twenty.
 //
 // A stale scenario list is worse than no list. Re-run `node tools/sweep.mjs 3`
 // and paste after any redraw, not just after a rule change.
@@ -338,10 +349,10 @@ m3: {
   // behind them are, now that the late waves arrive at 0.65 of their old
   // spacing: what beats a wall of blockers is enemies arriving faster than the
   // wall can re-engage, and four squads is a thin wall.
-  'BEST 6 archery + 4 (expect LOSS)': [A(0), B(1), B(2), A(3), A(4), A(5), B(6), B(7), A(8), A(9)],
-  'MIX 5 archery + 5 barracks':     [B(0), A(1), B(2), B(3), A(4), A(5), A(6), A(7), B(8), B(9)],
-  'MIX 4 archery + 6 barracks':     [B(0), A(1), B(2), A(3), A(4), B(5), A(6), B(7), B(8), B(9)],
-  'MIX 3 archery + 7 barracks':     [A(0), B(1), B(2), B(3), A(4), B(5), B(6), B(7), B(8), A(9)],
+  'BEST 6 archery + 4 (expect LOSS)': [A(0), B(1), A(2), A(3), A(4), A(5), B(6), A(7), B(8), B(9)],
+  'MIX 5 archery + 5 barracks':     [A(0), B(1), B(2), A(3), A(4), A(5), B(6), B(7), A(8), B(9)],
+  'MIX 4 archery + 6 barracks':     [B(0), A(1), B(2), A(3), A(4), A(5), B(6), B(7), B(8), B(9)],
+  'MIX 3 archery + 7 barracks':     [B(0), B(1), A(2), B(3), B(4), B(5), A(6), A(7), B(8), B(9)],
   // Artillery held to the same two rules as everywhere else, and compared the
   // same way map 1 compares it: take the winning archery mix and SWAP THE BOWS
   // FOR MACHINES, keeping every blocker where it was. That measures a catapult
@@ -349,14 +360,14 @@ m3: {
   // losing a blocker costs — which is already known and is fatal for anyone.
   //
   // So this is `MIX 3 archery + 7 barracks` above with its three bow plots
-  // turned into artillery — and it wins 4 of 5 seeds where the bow version wins
-  // 1. That gap is bigger than it is on either other map and it is the arrival
-  // rate that opens it: the late waves come in tight now, and a weapon that
-  // hits a patch of ground is worth much more against a column packed close
-  // together than against a strung-out one. The machines are the answer to this
-  // map's endgame in a way they are not elsewhere.
+  // turned into artillery, and the two now measure the same — 3 seeds of 5
+  // each. They did not: the machines won 4 where the bows won 1, and the gap
+  // closed when the doctor started standing off, because a wave that arrives
+  // 14 seconds more strung out is exactly the wave a splash weapon is worst
+  // against. The late waves still come in tighter here than anywhere else, so
+  // artillery is still worth taking; it is no longer the obvious answer.
   'ALL siege x10   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9)],
-  'MIX 3 siege + 7 barracks':       [S(0), B(1), B(2), B(3), S(4), B(5), B(6), B(7), B(8), S(9)],
+  'MIX 3 siege + 7 barracks':       [B(0), B(1), S(2), B(3), B(4), B(5), S(6), S(7), B(8), B(9)],
   'under-built     (expect LOSS)':  [A(0, 0)]
 }
 };

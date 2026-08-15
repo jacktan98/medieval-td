@@ -118,24 +118,38 @@ console.log(`\n${wins.length} of ${results.length} builds win.`);
 // and the real game has no clock at all. A player who would sit through a very
 // long wave 8 gets the win the sim was throwing away.
 //
-// So the two pure builds are re-run over five seeds with thirteen times the
-// patience, which is enough for every one of them to reach a real verdict. It
-// costs ten runs on top of a sweep of a thousand.
+// So the two pure builds are re-run with thirteen times the patience, which is
+// enough for every one of them to reach a real verdict.
+//
+// TWENTY SEEDS, AND FIVE WAS NOT ENOUGH. This is the second thing about this
+// check that was quietly wrong, and it hid the same failure the `stuck` bug hid.
+// A pure-barracks build on map 3 wins about one game in five, so at five seeds
+// the answer it gives is a coin: the same level measured 0/5 the day it was
+// declared sound and 4/20 a batch later with nothing about it changed. Every
+// candidate lever tried against a 5-seed check came back "1/5" on a different
+// seed each time, which is what noise looks like when you are hoping it is a
+// signal.
+//
+// Twenty is enough to tell 5% from 40%, which is the distinction that matters
+// here, and it costs forty runs on top of a sweep of a thousand. The verdict is
+// still "any win is a break" — but the RATE is printed too, because "1/20" and
+// "8/20" are different problems and the old output could not tell them apart.
 const PATIENCE = 13;
-const SEEDS = [1, 2, 3, 4, 5];
+const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);
 
 const pure = [...byFamily.entries()].filter(([n]) => n === SIZE || n === 0);
 const broken = [];
 console.log('\npure builds, re-run with the clock taken off:');
 for (const [n, o] of pure) {
   const rs = SEEDS.map(s => run(o.plan, s, PATIENCE));
-  const won = rs.filter(r => r.result === 'won').length;
+  const wins = rs.map((r, i) => [r, i]).filter(([r]) => r.result === 'won');
   const name = n === SIZE ? 'archery' : 'barracks';
   console.log(
-    `  ${SIZE} ${name.padEnd(9)}  wins ${won}/${SEEDS.length}   ` +
-    rs.map(r => `${r.result}:${r.lives}`).join('  ')
+    `  ${SIZE} ${name.padEnd(9)}  wins ${String(wins.length).padStart(2)}/${SEEDS.length}` +
+    `  (${Math.round(100 * wins.length / SEEDS.length)}%)   ` +
+    (wins.length ? wins.map(([r, i]) => `#${SEEDS[i]}:${r.lives}`).join(' ') : 'never')
   );
-  if (won) broken.push(name);
+  if (wins.length) broken.push(`${name} ${wins.length}/${SEEDS.length}`);
 }
 
 if (broken.length) {

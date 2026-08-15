@@ -8,12 +8,18 @@
 // should catch three, or who stood on the road until the clock ran out, all look
 // the same from there: a slightly different number of lives.
 //
-// THE LAST TWO CHECKS ARE THE IMPORTANT ONES. His flasks never run out and a
-// wave only ends when the field is clear, so the single thing standing between
-// this enemy and a game that cannot be finished is that he never stops walking.
-// He has already had two designs that stopped him walking — a finite basket and
-// a rule about screens — and both looked right; what would have caught either
-// going wrong is a board that never empties, which is check 5.
+// THE LAST TWO CHECKS ARE THE IMPORTANT ONES, and they are the reason he is
+// allowed to stand still at all. His flasks never run out and a wave only ends
+// when the field is clear, so an enemy with no bound on standing still is a game
+// that can hang. The bound is `standoff` — seconds of not advancing, spent once
+// — and checks 5 and 6 are what say it works: 5 puts three of him in front of a
+// squad and waits for the board to empty, and 6 does the same against soldiers
+// his poison can never kill, which is the case that soft-locks if the budget is
+// ever removed or made conditional.
+//
+// He has had two earlier designs that stopped him walking — a finite basket and
+// a rule about screens — and both looked right on paper. Both bounded the
+// FLASKS. Neither bounded the time.
 
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
@@ -160,12 +166,14 @@ console.log('The flask\n');
   check(u.poison === null, 'and then it wears off and the regen comes back');
 }
 
-console.log('\nHe keeps coming\n');
+console.log('\nHe stands off\n');
 
-// --- 3. he throws without stopping ------------------------------------------
+// --- 3. he stops at throwing range, and moves on when his patience runs out --
 //
-// The rule that replaced both of the earlier soft-lock guards. He is a walking
-// enemy that happens to throw, not a siege engine that happens to walk.
+// The behaviour this enemy exists for, and the one that can hang the game, so
+// both halves are asserted in the same run: he must STOP while men screen the
+// road ahead of him, and he must START AGAIN once `standoff` is spent, without
+// anything having changed on the board in between.
 {
   const state = board();
   withSquad(state);
@@ -173,9 +181,9 @@ console.log('\nHe keeps coming\n');
 
   spawn(state, 'plague_inf');
   const doc = state.enemies[0];
-  // Just inside his throwing range and well outside a soldier's ENGAGE, so the
-  // whole window is him walking in under his own power rather than him being
-  // caught. Measured before anybody reaches him: check 4 is the held case.
+  // Just inside his throwing range and well outside a soldier's ENGAGE, so what
+  // is measured is his own decision rather than him being caught. Check 4 is the
+  // held case.
   place(doc, Math.max(0, stand - 125));
 
   const from = doc.s;
@@ -189,11 +197,24 @@ console.log('\nHe keeps coming\n');
     caught = !!doc.foe;
     updateImpacts(state, DT);
   }
-  const walked = doc.s - from;
+  const held = doc.s - from;
 
   check(threw > 0, 'he throws at a squad in reach', `${threw} flasks`);
-  check(walked > 60, 'and never stops walking to do it',
-    `${walked.toFixed(0)}px covered, ${caught ? 'then pinned' : 'still free'}`);
+  check(held < 2 && doc.halted, 'and stops rather than walking into it',
+    `${held.toFixed(0)}px covered in 3s, ${caught ? 'then pinned' : 'still free'}`);
+
+  // Past the budget. The soldiers are still there and still alive, so nothing
+  // about the board has changed — only his patience.
+  const before = doc.s;
+  for (let i = 0; i < (enemyTypes.plague_inf.ranged.standoff + 2) / DT && !doc.foe; i++) {
+    updateUnits(state, DT);
+    updateEnemies(state, DT);
+    updateShots(state, DT);
+    updateImpacts(state, DT);
+  }
+
+  check(doc.s > before + 2 || doc.foe, 'and walks in once his patience is spent',
+    `${(doc.s - before).toFixed(0)}px after the standoff, ${doc.foe ? 'then pinned' : 'free'}`);
 }
 
 // --- 4. pinning him does not switch the basket off ---------------------------
@@ -246,8 +267,38 @@ console.log('\nHe keeps coming\n');
 
   check(state.enemies.length === 0, 'a road of nothing but doctors clears itself',
     `${secs}s, ${state.enemies.length} left`);
-  check(secs < 120, 'and does it in a sane time rather than eventually',
+  check(secs < 150, 'and does it in a sane time rather than eventually',
     `${secs}s`);
+}
+
+// --- 6. the soft-lock case, run on purpose ------------------------------------
+//
+// THIS IS THE CHECK THE STANDOFF EXISTS TO PASS. Check 5 clears because the
+// poison eventually kills the squad screening the road, and that is the happy
+// path rather than the guarantee: a deeper line, a tier 3 squad, or two barracks
+// covering the same stretch all regenerate faster than one doctor can grind, and
+// then "he stops while men are in front of him" means he stops forever.
+//
+// So the men here are simply unkillable. No amount of poison thins them, nothing
+// he does changes the board, and the only reason he can ever move again is that
+// he runs out of patience. If somebody makes the halt conditional on something
+// cleverer later, this is the check that fails.
+{
+  const state = board();
+  withSquad(state);
+  const stand = squadAt(state);
+  for (const u of state.units) { u.maxHp = 1e9; u.hp = 1e9; }
+
+  for (let i = 0; i < 3; i++) {
+    spawn(state, 'plague_inf');
+    place(state.enemies[i], Math.max(0, stand - 100 - i * 30));
+  }
+
+  let secs = 0;
+  while (state.enemies.length && secs < 240) { step(state, 1); secs++; }
+
+  check(state.enemies.length === 0, 'and clears even against men his poison cannot kill',
+    `${secs}s, ${state.enemies.length} left`);
 }
 
 console.log(bad

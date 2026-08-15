@@ -1,5 +1,5 @@
 import { level, remaining } from './level.js';
-import { at as pointOn, laneOf, randomLane } from './route.js';
+import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
 import { enemyTypes, flask } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { unhook } from './units.js';
@@ -37,7 +37,16 @@ export function spawn(state, typeId) {
     thrust: 0,       // 1 on the swing, decays; drives the lunge in render.js
     // A thrower's own clock, set on every enemy rather than only on the ones
     // that throw, so the shape of an enemy is written down in one place.
-    tcd: 0           // seconds until the next flask
+    tcd: 0,          // seconds until the next flask
+    // Standing off to throw rather than walking on: true only while it is
+    // happening, and read by leadPoint, which has to know that this figure is
+    // not going anywhere.
+    halted: false,
+    // How much longer he is WILLING to stand off, in seconds, counted down only
+    // while he actually is. Set from the def so a non-thrower carries a 0 and
+    // can never halt — see the standoff block in updateEnemies for why the
+    // budget exists at all.
+    stand: (def.ranged && def.ranged.standoff) || 0
   });
 }
 
@@ -58,10 +67,11 @@ export function spawn(state, typeId) {
 // Only artillery asks. Arrows steer, so they never need to know.
 export function leadPoint(e, t) {
   const road = laneOf(level.routes[e.route], e.lane);
-  // Being held is the ONLY way to stand still. The plague doctor threw from a
-  // standstill for a while and needed a second case here; he walks now, so this
-  // is back to one.
-  const ahead = e.foe ? 0 : e.def.speed * t;
+  // TWO WAYS TO STAND STILL, and both of them have to be here or a catapult
+  // throws over the head of the one enemy on the board it can most easily hit.
+  // Being held is one. Standing off to throw is the other — see the standoff
+  // block in updateEnemies.
+  const ahead = e.foe || e.halted ? 0 : e.def.speed * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -72,15 +82,7 @@ export function updateEnemies(state, dt) {
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
     e.thrust = Math.max(0, e.thrust - dt * 4);
 
-    // THE THROWER, and he never stops walking to do it.
-    //
-    // He used to halt at throwing range and camp there, which needed a rule
-    // about whether anyone was still ahead of him to stop him camping forever —
-    // a wave only ends when the field is clear, so a thrower who would not
-    // advance was a board that could not be finished. Both are gone. He walks
-    // the road like everything else and throws on his own clock as he comes,
-    // which is simpler, has no way to stall, and plays better: the flasks start
-    // landing while he is still a long way off and keep landing all the way in.
+    // THE THROWER, and the basket is bottomless.
     //
     // AND HE THROWS WHILE HE IS BEING HELD. This is before the melee branch
     // rather than after it on purpose. A soldier who walks out to pin him has
@@ -106,10 +108,63 @@ export function updateEnemies(state, dt) {
     // sliding past — this is the whole point of the barracks family, and the
     // one case where an enemy is not a pure path-follower.
     if (e.foe) {
+      e.halted = false;   // stopped by somebody else, which is a different thing
       // Turn to fight whoever is holding it, so the two face each other. A
       // doctor faces his captor rather than his mark: the man with a spear in
       // him is the more pressing of the two.
       if (e.foe.x !== e.x) e.face = e.foe.x > e.x ? 1 : -1;
+      continue;
+    }
+
+    // THE STANDOFF. He stops rather than walking into the men he is throwing at.
+    //
+    // This is what the enemy is FOR. A thrower who closes to melee is a thug
+    // with a longer reach; a thrower who stands where nothing can reach him and
+    // works on the line from there is a problem the barracks family cannot
+    // answer on its own, which is the whole reason he exists and the reason
+    // archery towers can be told what to aim at.
+    //
+    // WHAT COUNTS AS A REASON TO STOP is a soldier who is IN FRONT: alive, on
+    // the board, inside throwing range, and further down this figure's own lane
+    // than he is. Three parts of that matter and each was got wrong once:
+    //
+    //   ON HIS OWN LANE, projected. Comparing arc lengths on whichever route a
+    //   soldier happens to be nearest breaks in both directions — map 2's roads
+    //   merge, so a blocker standing in his path can resolve to the OTHER route,
+    //   and map 3's never meet, so a squad on the far road is not in his way at
+    //   all however close it looks on screen. Projecting onto the lane he is
+    //   actually walking answers both with one question.
+    //
+    //   IN FRONT, not just near. A squad he has already walked past is behind
+    //   him and stops nothing; halting for it would leave him standing in the
+    //   road with his back to a fight he has won.
+    //
+    //   AND NOT RESPAWNING. A dead man is a ring over a barracks, not a screen.
+    //   This is the same rule nearestUnit uses to pick a mark, and it has to be,
+    //   or he would stand off from men he cannot throw at.
+    //
+    // THE BUDGET IS WHAT MAKES THIS SAFE, and without it this enemy cannot ship.
+    // A wave only ends when the field is clear (see updateWaves), so a figure
+    // that will not advance can hang a game up forever — and the soft-lock is
+    // not theoretical: soldiers respawn for nothing, so a doctor whose poison
+    // cannot out-pace two barracks' worth of regen would stand in the road until
+    // the player closed the tab. This enemy has had the halt taken off him twice
+    // before for exactly that, once as a finite basket and once as a rule about
+    // being screened by other enemies. Neither of those bounded the thing that
+    // actually needs bounding, which is TIME SPENT NOT ADVANCING.
+    //
+    // So he has a patience rather than a rule: `standoff` seconds of standing
+    // still, spent once, counted only while he is actually stopped. When it runs
+    // out he walks in — and being walked into is what a barracks is for, so he
+    // gets pinned, and goes on throwing from inside the fight. Every enemy
+    // reaches the exit or dies in bounded time, which is the property the wave
+    // loop needs, and the standoff is still long enough to be his whole
+    // character: see `standoff` in data/waves.js for how long, and why.
+    const road = laneOf(level.routes[e.route], e.lane);
+
+    e.halted = e.stand > 0 && e.def.ranged && screened(state, e, road);
+    if (e.halted) {
+      e.stand -= dt;
       continue;
     }
 
@@ -120,7 +175,6 @@ export function updateEnemies(state, dt) {
     // The lane's own road, not the centreline. Walking the centreline and
     // drawing the figure offset from it makes speed depend on which way the
     // road is bending — see route.js.
-    const road = laneOf(level.routes[e.route], e.lane);
     e.s += e.def.speed * dt;
 
     const p = pointOn(road, e.s);
@@ -175,6 +229,32 @@ export function updateEnemies(state, dt) {
     }
     return true;
   });
+}
+
+// How near a soldier has to be to a thrower's lane to count as standing in his
+// way. The road is 34px either side of its centreline at its narrowest and the
+// lanes sit 16 off it, so 45 covers a man anywhere on the tarmac and a little
+// past the kerb — a squad is clamped to the road by stations() and only leaves
+// it to close on somebody. It is NOT a blocking radius: the barracks' own ENGAGE
+// is 30 and lives in units.js. This only answers "is that man in the road ahead
+// of me", and the answer wants to be yes for a wedge sat slightly wide.
+const BLOCK_REACH = 45;
+
+// Is there a live soldier standing in this thrower's way? See the standoff block
+// in updateEnemies for what it is for.
+//
+// `road` is the figure's OWN lane, and everything is measured against that one
+// polyline: how far off it a man is standing, and how far along it. That is the
+// only comparison that means the same thing on all three maps — see the note at
+// the call site about roads that merge and roads that never meet.
+function screened(state, e, road) {
+  for (const u of state.units) {
+    if (u.respawn > 0 || u.hp <= 0) continue;
+    if (!inRange(e.x, e.y, u.x, u.y, e.def.ranged.range)) continue;
+    const on = nearestOn([road], u.x, u.y);
+    if (on.d <= BLOCK_REACH && on.s > e.s) return true;
+  }
+  return false;
 }
 
 // The nearest soldier a thrower could reach, or null. Respawning men are not on
