@@ -301,6 +301,23 @@ export const enemyTypes = {
     // brushed aside, and nothing like a Giant Thug. Move it as you like — no
     // pure build won a single seed anywhere in the range above.
     hp: 200,
+    // WHAT HE IS A COUNTER TO, because it is the opposite of what it looks like.
+    //
+    // He was added to punish a line of soldiers, and he does — from range, over
+    // the fight, poisoning men who cannot reach him. But ADDING MORE OF HIM TO A
+    // WAVE MAKES A WALL OF BARRACKS STRONGER, not weaker. Map 3's grid, pure
+    // barracks over five seeds: 2 wins as the table stands, 3 with the doctors
+    // roughly doubled.
+    //
+    // The reason is that he stops to throw and a blocker pins him where he
+    // stands, so he never reaches the keep. He costs no lives and pays a 30
+    // bounty — the largest in the game — which is a gift to the family that can
+    // hold him all day. He punishes a THIN line, where his poison outpaces the
+    // regen of the two or three men actually holding the road, and he feeds a
+    // deep one.
+    //
+    // So he is not the lever for "barracks are too strong on this map". That
+    // lever is arrival rate; see the grid over wavesLong.
     speed: 60,
     bounty: 30,
     leak: 1,
@@ -490,11 +507,13 @@ export const wavesFork = [
 //
 // So the OPENING is gentler than map 1's and the ENDGAME is not. Waves 1-6 sit
 // below the eight-wave table because the player is buying twice as much board
-// with the same purse; waves 7-10 run 4, 5, 6 and 7 heavies, which is map 1's
-// ramp arriving two waves later and then going one step past it.
+// with the same purse; waves 7-10 run 3, 4, 5 and 6 heavies, which is map 1's
+// ramp arriving two waves later.
 //
-// 176 enemies over ten waves against map 1's 142 over eight — and 25 of them
-// are heavies against map 1's 16, which is where this map's weight sits now.
+// 172 enemies over ten waves against map 1's 142 over eight. What is different
+// about the late waves is not how many arrive but HOW FAST — every gap from
+// wave 5 on is 0.65 of what it reads like elsewhere, and that is the number
+// holding the level invariant up. See the grid further down before touching it.
 //
 // Every number here was found by exhaustively searching all 1024 ways of
 // assigning two families to the ten plots — the same yardstick the other maps
@@ -508,7 +527,7 @@ export const wavesFork = [
 //   the same at 220 gold                          115/1024 = 11%
 //   the one that shipped (heavies 1,2,3,4,5,6), 260 43/1024 =  4%
 //
-// (Heavies 1,2,4,5,6,7 today — the redraw moved it. See further down.)
+// (Same heavies today. What the redraw moved was the GAPS — see further down.)
 //
 // AND THE SHIPPED TABLE RE-MEASURED AFTERWARDS: 107/1024 = 10%, against map 1's
 // 24/448 = 5%. The five rows above were run under sim.mjs's old flat 900-second
@@ -523,48 +542,71 @@ export const wavesFork = [
 // is the right side to miss on for the map with the most going on.
 //
 // ---------------------------------------------------------------------------
-// THEN THE MAP WAS REDRAWN, AND 10% BECAME 18%.
+// THEN THE MAP WAS REDRAWN, AND THE SHARE WAS THE SMALLER PROBLEM.
 //
 // The artist moved eight of the ten plot markers and adjusted both roads. The
 // roads came out the same length, so the pace is unchanged — but several
 // markers ended up much nearer the tarmac, and a tower that stands closer
 // covers more road. Nothing in the code changed; the board got easier.
 //
-// It is worth being sure of that before tuning against it, because "the number
-// moved" and "the number means something different now" look identical. Two
-// controls, both under current code:
+// The share went from 107/1024 = 10% to 189 = 18%, and the old artwork still
+// measures 107 under current code, so the redraw was the whole cause. But
+// chasing that number back is not what this table is for now. THE REDRAW BROKE
+// THE INVARIANT: a pure-barracks build clears the map on its own.
 //
-//   old artwork, this table    107/1024 = 10%   <- reproduces the shipped figure
-//   new artwork, this table    189/1024 = 18%
+// It had been broken for a while before anyone could see it, because
+// tools/sweep.mjs was reading `stuck` as `lost` — and pure barracks is the
+// build that stalls, so it was the build that verdict flattered. See the
+// pure-build re-check at the end of sweep.mjs. Ten plots, all now within reach
+// of two roads, is thirty renewable blockers covering the whole board.
 //
-// The first is the number recorded above, to the build. So the yardstick is
-// intact and the redraw is the whole cause.
+// EVERY LEVER, MEASURED. Share is builds-that-win of 1024; `pure B` is how many
+// of five seeds a pure-barracks build clears with the clock taken off.
 //
-// WHAT IT COST TO PUT BACK, measured the same way, one lever at a time:
+//                                        share   pure B
+//   old artwork, old table                 10%     0/5   <- what it was
+//   new artwork, old table                 18%     3/5
+//   +1 heavy in the last four waves        10%     2/5
+//   +1 heavy in every wave from 4           5%     -
+//   start gold 260 -> 220                  12%     -
+//   militia x1.5 from wave 5                -      1/5
+//   militia x1.8 from wave 5                -      0/5
+//   more plague doctors                     -      3/5   <- WORSE
+//   gaps x0.70 from wave 5                  4%     1/5
+//   gaps x0.65 from wave 5                  3%     0/5   <- this
+//   gaps x0.65 + gold 300                  11%     2/5
+//   gaps x0.65 + gold 360                  14%     1/5
 //
-//   start gold 260 -> 230                     144 = 14%
-//   start gold 260 -> 220                     124 = 12%
-//   +1 heavy in wave 4 only                   172 = 17%
-//   +1 heavy in every wave from 4             47 =  5%
-//   +1 heavy in the last four waves only     101 = 10%   <- this
+// FOUR THINGS THAT GRID SAYS, and none of them was the expected answer:
 //
-// THE PURSE IS A BAD LEVER HERE and the grid says so plainly: 40 gold is worth
-// 6 points, and it would have taken the map below the other two maps' starting
-// purse to reach 10% — undoing the one thing this level's startGold note exists
-// to explain. An early heavy is worth almost nothing (17%). The last four waves
-// are worth everything.
+// Heavies do not fix it. They were the right lever for the SHARE and they are
+// the wrong one for the wall — 1500hp arriving one at a time is what a line of
+// blockers is for.
 //
-// That is the same answer map 2's grid gave and for the same reason, now said a
-// third time: on a short road the heavies are the lever, because they are the
-// part of a wave a short road gives you the least time to shoot at.
+// MORE PLAGUE DOCTORS MAKES IT WORSE, which is the most useful thing here. A
+// doctor stops to throw and a blocker pins him, so he never reaches the keep:
+// he pays his bounty and applies no pressure. Against a wall of blockers he is
+// free money. He is a counter to a THIN line, not a deep one.
 //
-// So waves 7-10 run 4, 5, 6, 7 heavies where they ran 3, 4, 5, 6. The militia,
-// the doctors, the gaps, the opening six waves and the purse are all untouched,
-// and the map is back to the 10% it shipped at, holding the invariant with the
-// best mix on 16 lives.
+// Gold cannot buy the share back, because gold buys towers and a pure-barracks
+// build spends it on more blockers. Both gold rows re-break the invariant.
+//
+// What works is ARRIVAL RATE. Thirty blockers hold anything that arrives one at
+// a time and nothing that arrives faster than they can re-engage, and the edge
+// is sharp: 0.70 breaks, 0.65 holds. So the gaps from wave 5 on are multiplied
+// by 0.65 — same enemies, same counts, arriving closer together.
+//
+// IT COSTS THE SHARE AND THERE IS NO WAY ROUND IT. 34/1024 = 3% against map 1's
+// 5%, and every attempt to buy it back above re-broke the wall. What overwhelms
+// thirty blockers overwhelms everyone. That is the real cost of ten plots that
+// all reach the road, and it is a level-design fact rather than a tuning one:
+// the honest choices on this board are a hard map or a broken one.
+//
+// The shape is still right — pure loses, 6+4 loses, 5+5 through 1+9 win, best
+// mix on 17 lives — so it is a hard map rather than a broken one.
 //
 // ONE NUMBER BARELY MOVES and it is worth knowing about before retuning this:
-// the BEST mix finishes on 16 to 19 lives of 20 at every setting above, where
+// the BEST mix finishes on 17 to 19 lives of 20 at every setting above, where
 // map 1's best finishes on 10. Harder waves cut the share of builds that win
 // while hardly touching the ceiling. That is this map's shape rather than a
 // failure to tune it — ten plots across two roads, four of which cover both,
@@ -572,9 +614,11 @@ export const wavesFork = [
 // that does not than nine plots on one road can produce. Waves hard enough to
 // bring the ceiling down to map 1's would leave almost nothing winnable.
 //
-// The redraw did not change that either: it moved the SHARE from 10% to 18% and
-// left the ceiling where it was, and putting the share back took the ceiling
-// from 18 to 16. Nine points of win rate, three lives of headroom.
+// The redraw did not change that either. It moved the share from 10% to 18%,
+// tightening the gaps moved it to 3%, and through all of it the best mix has
+// finished on 17 to 19 lives. Fifteen points of win rate, two lives of ceiling.
+// If this map ever needs to feel less punishing, the ceiling is not where the
+// room is — the room is in how many builds reach it.
 //
 // Waves 1-4 are militia only and teach the map, which takes a wave longer here
 // than elsewhere: the lesson is not "enemies walk down a road", it is "there are
@@ -586,34 +630,34 @@ export const wavesLong = [
   { rest: 9, groups: [{ type: 'light_inf', count: 11, gap: 1.05 }] },
   // The first heavy, alone and last, exactly as it arrives on the other maps.
   { rest: 9, groups: [
-      { type: 'light_inf', count: 10, gap: 1.00 },
-      { type: 'heavy_inf', count: 1, gap: 1.90 }
+      { type: 'light_inf', count: 10, gap: 0.65 },
+      { type: 'heavy_inf', count: 1, gap: 1.23 }
     ] },
   { rest: 9, groups: [
-      { type: 'light_inf', count: 12, gap: 0.95 },
-      { type: 'heavy_inf', count: 2, gap: 1.90 }
+      { type: 'light_inf', count: 12, gap: 0.62 },
+      { type: 'heavy_inf', count: 2, gap: 1.23 }
     ] },
   // And the first doctor, a wave after the first heavy rather than beside it —
   // two new things in one wave is one of them unnoticed.
   { rest: 9, groups: [
-      { type: 'light_inf', count: 16, gap: 0.85 },
-      { type: 'heavy_inf', count: 4, gap: 1.90 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'light_inf', count: 16, gap: 0.55 },
+      { type: 'heavy_inf', count: 3, gap: 1.23 },
+      { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 9, groups: [
-      { type: 'light_inf', count: 20, gap: 0.78 },
-      { type: 'heavy_inf', count: 5, gap: 1.90 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'light_inf', count: 20, gap: 0.51 },
+      { type: 'heavy_inf', count: 4, gap: 1.23 },
+      { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 9, groups: [
-      { type: 'light_inf', count: 26, gap: 0.70 },
-      { type: 'heavy_inf', count: 6, gap: 1.90 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'light_inf', count: 26, gap: 0.45 },
+      { type: 'heavy_inf', count: 5, gap: 1.23 },
+      { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 0, groups: [
-      { type: 'light_inf', count: 32, gap: 0.62 },
-      { type: 'heavy_inf', count: 7, gap: 1.90 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
+      { type: 'light_inf', count: 32, gap: 0.40 },
+      { type: 'heavy_inf', count: 6, gap: 1.23 },
+      { type: 'plague_inf', count: 2, gap: 1.30 }
     ] }
 ];
 

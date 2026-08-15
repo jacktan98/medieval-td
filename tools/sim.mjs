@@ -333,25 +333,30 @@ m2: {
 m3: {
   'ALL archery x10 (expect LOSS)':  [A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9)],
   'ALL barracks x10 (expect LOSS)': [B(0), B(1), B(2), B(3), B(4), B(5), B(6), B(7), B(8), B(9)],
-  // The best 7+3 there is, and it loses. Three blockers is not enough to hold
-  // two roads however good the seven bows behind them are.
-  'BEST 7 archery + 3 (expect LOSS)': [A(0), B(1), B(2), B(3), A(4), A(5), A(6), A(7), A(8), A(9)],
-  'MIX 6 archery + 4 barracks':     [A(0), B(1), B(2), A(3), B(4), A(5), A(6), B(7), A(8), A(9)],
-  'MIX 5 archery + 5 barracks':     [A(0), B(1), B(2), A(3), A(4), B(5), B(6), B(7), A(8), A(9)],
-  'MIX 3 archery + 7 barracks':     [A(0), B(1), B(2), B(3), A(4), B(5), A(6), B(7), B(8), B(9)],
+  // The best 6+4 there is, and it loses — the line used to be drawn at 7+3.
+  // Four blockers is not enough to hold two roads however good the six bows
+  // behind them are, now that the late waves arrive at 0.65 of their old
+  // spacing: what beats a wall of blockers is enemies arriving faster than the
+  // wall can re-engage, and four squads is a thin wall.
+  'BEST 6 archery + 4 (expect LOSS)': [A(0), B(1), B(2), A(3), A(4), A(5), B(6), B(7), A(8), A(9)],
+  'MIX 5 archery + 5 barracks':     [B(0), A(1), B(2), B(3), A(4), A(5), A(6), A(7), B(8), B(9)],
+  'MIX 4 archery + 6 barracks':     [B(0), A(1), B(2), A(3), A(4), B(5), A(6), B(7), B(8), B(9)],
+  'MIX 3 archery + 7 barracks':     [A(0), B(1), B(2), B(3), A(4), B(5), B(6), B(7), B(8), A(9)],
   // Artillery held to the same two rules as everywhere else, and compared the
   // same way map 1 compares it: take the winning archery mix and SWAP THE BOWS
   // FOR MACHINES, keeping every blocker where it was. That measures a catapult
   // against the tower it competes with for a plot, rather than measuring what
   // losing a blocker costs — which is already known and is fatal for anyone.
   //
-  // So this is `MIX 3 archery + 7 barracks` above with plots 0, 4 and 6 turned
-  // into artillery, and it wins on the same 4 of 5 seeds. Swapping only one or
-  // two of the three wins on all five, which is the artillery plateau showing up
-  // here as well: on this map the machines are not worse than bows, they are
-  // slightly better, and it is the BLOCKERS that decide whether either works.
+  // So this is `MIX 3 archery + 7 barracks` above with its three bow plots
+  // turned into artillery — and it wins 4 of 5 seeds where the bow version wins
+  // 1. That gap is bigger than it is on either other map and it is the arrival
+  // rate that opens it: the late waves come in tight now, and a weapon that
+  // hits a patch of ground is worth much more against a column packed close
+  // together than against a strung-out one. The machines are the answer to this
+  // map's endgame in a way they are not elsewhere.
   'ALL siege x10   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9)],
-  'MIX 3 siege + 7 barracks':       [S(0), B(1), B(2), B(3), S(4), B(5), S(6), B(7), B(8), B(9)],
+  'MIX 3 siege + 7 barracks':       [S(0), B(1), B(2), B(3), S(4), B(5), B(6), B(7), B(8), S(9)],
   'under-built     (expect LOSS)':  [A(0, 0)]
 }
 };
