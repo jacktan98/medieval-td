@@ -9,8 +9,8 @@
 // bad number, which is a slow thing to chase.
 
 import { readFileSync, readdirSync } from 'fs';
-import { inflateSync } from 'zlib';
 import { basename, join } from 'path';
+import { decode } from './png.mjs';
 import { SCALE, BLOOD_SCALE, archery, barracks, siege } from '../src/data/towers.js';
 // Sprite key -> file, so a frame is checked wherever the file actually lives.
 // The paths are URL-encoded for the browser; decode them to read from disk.
@@ -36,52 +36,6 @@ const PLATES = {
 // blood files into assets/effects changed nothing here. Worth keeping that way:
 // the folder is where a thing was uploaded and the name is what it is.
 const scaleFor = file => /Blood/i.test(file) ? BLOOD_SCALE : SCALE;
-
-// Decode enough PNG to reach the alpha channel: 8-bit RGBA or grey+alpha, which
-// is what every export tool produces for transparent art.
-function decode(buf) {
-  let i = 8, idat = [], w = 0, h = 0, depth = 0, colour = 0;
-  while (i < buf.length) {
-    const len = buf.readUInt32BE(i);
-    const type = buf.toString('ascii', i + 4, i + 8);
-    if (type === 'IHDR') {
-      w = buf.readUInt32BE(i + 8); h = buf.readUInt32BE(i + 12);
-      depth = buf[i + 16]; colour = buf[i + 17];
-    } else if (type === 'IDAT') idat.push(buf.subarray(i + 8, i + 8 + len));
-    else if (type === 'IEND') break;
-    i += 12 + len;
-  }
-  if (depth !== 8) throw new Error(`bit depth ${depth} unsupported`);
-  const ch = { 0: 1, 2: 3, 4: 2, 6: 4 }[colour];
-  if (!ch) throw new Error(`colour type ${colour} unsupported (needs an alpha channel)`);
-
-  const raw = inflateSync(Buffer.concat(idat));
-  const stride = w * ch;
-  const px = Buffer.alloc(stride * h);
-  let prev = Buffer.alloc(stride), pos = 0;
-
-  for (let y = 0; y < h; y++) {
-    const f = raw[pos++];
-    const line = Buffer.from(raw.subarray(pos, pos + stride));
-    pos += stride;
-    for (let x = 0; x < stride; x++) {
-      const a = x >= ch ? line[x - ch] : 0;
-      const b = prev[x];
-      const c = x >= ch ? prev[x - ch] : 0;
-      if (f === 1) line[x] = (line[x] + a) & 255;
-      else if (f === 2) line[x] = (line[x] + b) & 255;
-      else if (f === 3) line[x] = (line[x] + ((a + b) >> 1)) & 255;
-      else if (f === 4) {
-        const p = a + b - c;
-        const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
-        line[x] = (line[x] + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c)) & 255;
-      }
-    }
-    line.copy(px, y * stride);
-    prev = line;
-  }
-  return { w, h, ch, px };
-}
 
 // Ignore near-transparent pixels: anti-aliased edges otherwise pad every trim
 // by a pixel or two, which reads as the art having shifted.

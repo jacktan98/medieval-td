@@ -526,3 +526,26 @@ is the drawing being honest, not a number to fix.
 7. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
    a building into the HUD text or off the top of the board, and by how much. A
    taller tower moves that ceiling down for every plot at once.
+8. `node tools/flag.mjs` if you touched a BARRACKS — paste the new `flagFrac`.
+   The muster rings hang under the pennant, so where the pennant is drawn is a
+   number the game reads; move the flag and the rings have to follow it.
+
+## The muster rings hang under the flag, so the flag is a measurement
+
+A barracks draws a small countdown ring for each of its men who is dead and
+walking back. They are hung from the bottom of the pennant, and the pennant is
+in a different place on all three tiers — the tent flies one from a pole
+standing beside it, and the two huts fly theirs off the ridge of the roof.
+
+So `flagFrac` is measured from the artwork rather than guessed from the box,
+exactly like `groundFrac`. `node tools/flag.mjs` finds the cloth by its colour —
+one flat blue, `5,93,171`, about 3,300 pixels of it in each file — and prints
+the bottom centre of it as a fraction of that sprite's trim. **If the artist
+recolours the pennant the tool fails rather than measuring something else**,
+which is the same rule `tools/shadow.mjs` uses on the grey under a building.
+
+They used to float off the building's top-LEFT corner, out in the grass, to keep
+clear of that pennant. That reads as status, which was the point, and it does not
+stay on the board: the offset is a whole ring stack outside the box, and map 3's
+plot 0 sits at x 79, which put the rings at x 3 and clipped them on the canvas
+edge. Inside the box there is nothing left to fall off.

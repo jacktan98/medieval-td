@@ -613,6 +613,12 @@ const camp = {
   // tent reach 68 source px below the shadow, and the box pinned THEM to the
   // ground, standing the whole tent 22px too high on its plot.
   groundFrac: [0.515, 0.678],
+  // WHERE THE PENNANT ENDS, as a fraction of the trim — the bottom of the cloth,
+  // measured by `node tools/flag.mjs`. The muster rings hang under it, so this is
+  // a position in the artwork rather than a corner of a box: the tent flies its
+  // flag from a pole standing beside it and both huts fly theirs off the ridge,
+  // and one shared offset would be right for at most one of the three.
+  flagFrac: [0.911, 0.116],
   shape: 'camp'
 };
 
@@ -630,6 +636,7 @@ const camp2 = {
   w: drawnW(CAMP2_TRIM), h: drawnH(CAMP2_TRIM),
   // Shadow centre, source (503.8, 696.8).
   groundFrac: [0.487, 0.793],
+  flagFrac: [0.917, 0.097],
   shape: 'camp'
 };
 
@@ -644,6 +651,7 @@ const camp3 = {
   // there is no SVG to check it against, and none is needed: nothing in a
   // barracks has to be drawn in front of anything, because it has no gunner.
   groundFrac: [0.487, 0.806],
+  flagFrac: [0.917, 0.098],
   shape: 'camp'
 };
 

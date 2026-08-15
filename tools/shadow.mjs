@@ -15,7 +15,7 @@
 // deliberate — see below.
 
 import { readFileSync } from 'fs';
-import { inflateSync } from 'zlib';
+import { decodeRGBA as decode } from './png.mjs';
 
 // Exactly these, and there are two of them because the artist paints a building
 // onto grass and a figure onto whatever it is standing on. Not tolerance ranges
@@ -29,45 +29,6 @@ import { inflateSync } from 'zlib';
 // measuring a spearhead; the check below is what catches it.
 const GROUND = [55, 66, 47];    // under a building: dark green, drawn on grass
 const FIGURE = [54, 36, 7];     // under a figure: dark brown
-
-// --- minimal PNG reader (no dependencies, same rules as tools/trim.mjs) -------
-
-function decode(buf) {
-  let p = 8, w = 0, h = 0, bits = 0, colour = 0;
-  const idat = [];
-  while (p < buf.length) {
-    const len = buf.readUInt32BE(p);
-    const type = buf.toString('ascii', p + 4, p + 8);
-    const data = buf.subarray(p + 8, p + 8 + len);
-    if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); bits = data[8]; colour = data[9]; }
-    else if (type === 'IDAT') idat.push(data);
-    else if (type === 'IEND') break;
-    p += len + 12;
-  }
-  if (bits !== 8 || colour !== 6) throw new Error(`expected 8-bit RGBA, got bits=${bits} colour=${colour}`);
-  const raw = inflateSync(Buffer.concat(idat));
-  const px = Buffer.alloc(w * h * 4);
-  const stride = w * 4;
-  for (let y = 0; y < h; y++) {
-    const filter = raw[y * (stride + 1)];
-    const line = raw.subarray(y * (stride + 1) + 1, y * (stride + 1) + 1 + stride);
-    for (let x = 0; x < stride; x++) {
-      const a = x >= 4 ? px[y * stride + x - 4] : 0;
-      const b = y > 0 ? px[(y - 1) * stride + x] : 0;
-      const c = x >= 4 && y > 0 ? px[(y - 1) * stride + x - 4] : 0;
-      let v = line[x];
-      if (filter === 1) v += a;
-      else if (filter === 2) v += b;
-      else if (filter === 3) v += (a + b) >> 1;
-      else if (filter === 4) {
-        const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
-        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-      }
-      px[y * stride + x] = v & 255;
-    }
-  }
-  return { w, h, px };
-}
 
 // --- grey blobs ---------------------------------------------------------------
 

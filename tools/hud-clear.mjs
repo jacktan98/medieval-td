@@ -74,18 +74,33 @@ const RUNS = [
   [231, 160, 'Wave']
 ];
 
-// The two HUD BUTTONS are a different problem from the text, and they sit on the
-// right where the text runs do not. Their panels are translucent, so a building
-// behind one is dimmed rather than erased — but it is still a building standing
-// inside a control the player taps, with the button's border drawn across it,
-// and there is no reading of that which looks intended. Taken from render.js
-// rather than copied, because a button that moves must move here too.
-// The info box counts too. It is only drawn when something is selected, which
-// makes it easier to forget than the buttons and no less in the way — it is
-// 224px of opaque panel in the top-right corner, and a tower reaching into it
-// would be behind the thing describing it.
-const PANELS = [...Object.entries(HUD_BTN), ['info', INFO_BOX]]
-  .map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
+// The three HUD BUTTONS are a different problem from the text, and they sit on
+// the right where the text runs do not. Their panels are translucent, so a
+// building behind one is dimmed rather than erased — but it is still a building
+// standing inside a control the player taps, with the button's border drawn
+// across it, and there is no reading of that which looks intended. Taken from
+// render.js rather than copied, because a button that moves must move here too.
+const CONTROLS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
+
+// THE INFO PANEL IS NOT A CONTROL, and that distinction is the whole reason it
+// sits in its own list. Nothing is tapped on it; it is 197px of opaque plate in
+// the top-right corner that appears while something is selected and is gone the
+// rest of the time. A tower behind it loses the top of its roof for as long as
+// the panel is up, which is worth knowing and is not worth moving a marker for.
+//
+// It USED to be a failure, on the reasoning that a tower reaching into it would
+// be behind the thing describing it. That reasoning is fine and the verdict was
+// wrong, because of what the only fix costs. The panel is in the corner and the
+// board is 960 wide: a plot under it cannot be cleared by moving the panel, only
+// by moving the plot down the board — and the plot is where the ARTIST painted a
+// marker. Map 3's plot 8 was pushed 14px for this, which put its dirt patch on
+// the road's kerb, and that was reported from a screenshot before anybody
+// noticed a roof behind a panel. The picture on the board beats the picture over
+// it.
+//
+// Reported rather than silent, so a plot that ends up half a building deep is
+// still visible here. A CONTROL is still a failure — see above.
+const PANELS = [['info', INFO_BOX]].map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
 
 // Same geometry as towerBox(): a building hangs off its ground shadow, whose
 // centre sits on the plot point.
@@ -126,9 +141,12 @@ for (let i = 0; i < lv.plots.length; i++) {
 
   const left = p.x - worst.def.w / 2;
   const right = p.x + worst.def.w / 2;
-  const hits = RUNS.filter(([rx, rw]) => right > rx && left < rx + rw).map(r => r[2]);
-  const under = PANELS.filter(([bx, bw, bBottom]) =>
+  const overlaps = list => list.filter(([bx, bw, bBottom]) =>
     right > bx && left < bx + bw && worst.box < bBottom);
+
+  const hits = RUNS.filter(([rx, rw]) => right > rx && left < rx + rw).map(r => r[2]);
+  const under = overlaps(CONTROLS);
+  const behindPanel = overlaps(PANELS);
 
   // Two ways a high plot goes wrong that the text rule below does not see.
   //
@@ -159,8 +177,12 @@ for (let i = 0; i < lv.plots.length; i++) {
   }
   faults.sort((a, b) => b[0] - a[0]);
 
+  // How deep the panel sits over the roof, in px, so "reported rather than
+  // failed" still comes with the number to argue about.
+  const buried = behindPanel.length ? Math.round(behindPanel[0][2] - worst.box) : 0;
+
   const behind = !faults.length && hits.length && worst.top < TEXT_BOTTOM;
-  if (faults.length) bad++; else if (behind) noted++;
+  if (faults.length) bad++; else if (behind || buried) noted++;
 
   console.log(
     `${i} (${String(p.x).padStart(3)}, ${String(p.y).padStart(3)})  ` +
@@ -169,6 +191,8 @@ for (let i = 0; i < lv.plots.length; i++) {
     `${String(Math.round(worst.box)).padStart(6)}  ` +
     (faults.length
       ? `${faults.map(f => f[1]).join('; ')} — needs y >= ${Math.ceil(faults[0][0])}`
+      : buried
+        ? `${buried}px of roof behind the ${behindPanel.map(u => u[3]).join('/')} panel while it is up`
       : behind ? `behind ${hits.join('/')} — the text is drawn over it, ok`
       : worst.top < TEXT_BOTTOM
         ? `reaches the text band, but beside every readout — ok`
@@ -178,6 +202,6 @@ for (let i = 0; i < lv.plots.length; i++) {
 }
 
 if (bad) console.log(`\n${bad} plot(s) cut a building off, or put it under a HUD button or the HUD text.`);
-else if (noted) console.log(`\n${noted} plot(s) reach the text band, which the drop shadow carries.`);
+else if (noted) console.log(`\n${noted} plot(s) reach the text band or the info panel, neither of which erases a roof for long.`);
 else console.log('\nEvery plot keeps its tallest tower on the board and clear of the HUD.');
 process.exit(bad ? 1 : 0);

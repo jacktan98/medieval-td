@@ -177,8 +177,24 @@ first would have meant moving the same marker twice.
 
 Below the ceiling, a plot high enough to reach the HUD **text** is a much
 smaller problem — the header is part of the map, so a tall tower stands in front
-of it, and the text carries a shadow. `node tools/hud-clear.mjs` reports both
-kinds and says by how much: cut-off is a failure, behind-the-text is a note.
+of it, and the text carries a shadow.
+
+**A control is a failure; a panel is a note.** Those are the two kinds of HUD a
+tall tower can reach, and they are not the same problem. The pause, speed and
+wave plates are things the player taps, and a building standing inside one with
+its border drawn across it has no reading that looks intended. The info panel is
+not tapped: it appears while something is selected, describes it, and goes away.
+So `node tools/hud-clear.mjs` fails on the first and reports the second with the
+depth in pixels.
+
+That line was drawn where it is because of what the alternative costs. **A marker
+is where the artist painted it, and the game does not get to nudge it.** Map 3's
+plot 8 was pushed 14px down the board to keep a watchtower's roof out of the info
+panel; the marker's dirt patch is 46px deep, so 14px put its lower edge on the
+road's kerb, and that was reported from a screenshot within a day — where nobody
+had ever mentioned a roof behind a panel. Where the HUD *can* move it moves
+instead: the button row now starts at 415 rather than 405, which is what let map
+3's plot 3 go back to its painted y as well.
 
 ## Re-tracing after a redraw
 

@@ -331,7 +331,7 @@ it that way and the paths in `src/audio.js` stay readable.
 `node tools/audio.mjs` reports length, size, bitrate and channels for every
 file, and flags anything long, heavy or stereo. It parses the MP3 frames itself
 — there is no ffmpeg here and no npm to install one, the same constraint that
-makes `tools/trim.mjs` decode PNGs by hand.
+makes `tools/png.mjs` decode PNGs by hand.
 
 The three swings are now within reach of each other — `Attack_1` 1.10s,
 `Attack_2` 0.84s, `Attack_3` 0.98s — after the first `Attack_1` came in at

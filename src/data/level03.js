@@ -83,21 +83,28 @@ const south = [
 // The ten markers painted into the map, in road order — the order the splitter
 // prints them in, which is the order a player meets them.
 //
-// TWO ARE STILL NUDGED, and they are the only hand-edited numbers here. The
-// redraw moved eight of the ten, and it moved both problem markers down — plot
-// 3 from y 159 to 166 and plot 8 from y 163 to 200 — but `node
-// tools/hud-clear.mjs` still wants 170 and 214, so they are 4px and 14px short
-// rather than 11 and 51. They are moved to exactly what it asks and no further.
+// NOT ONE OF THEM IS NUDGED. Every pair below is exactly what `node
+// tools/split-map.mjs assets/map/Map_3.svg` prints, and that is the point: the
+// artist looks at the board and compares it with the file they drew, so a marker
+// the game puts anywhere else is a bug in the game however good the reason was.
 //
-// WHAT CHANGED IS THAT PLOT 8 CAN NOW BE FIXED AT ALL. It was left broken last
-// time with a note saying only the artwork could help: it needed y >= 214 then
-// too, and 214 was tarmac, so there was nowhere to put it. The north road falls
-// away in the redraw and the tarmac under that marker starts at y 237 — the
-// dirt patch of a marker at 214 ends at 237, flush with the kerb and not over
-// it. A 51px problem with no legal answer became a 14px one with an exact answer
-// because the road moved, not because the marker did.
+// TWO OF THEM USED TO BE, and it is worth knowing what it cost, because the
+// reasons were real. Plot 3 was pushed 4px down to keep a watchtower's roof out
+// of the pause plate, and plot 8 was pushed 14px down to keep one out of the
+// info panel. 4px is invisible. 14px is not: the marker's dirt patch is 46px
+// deep, so shifting its centre 14 put its lower edge on the north road's kerb at
+// y 237, and on screen the plot looked like it was sitting in the road. That was
+// reported from a screenshot within a day.
 //
-// Re-running the splitter will print 166 and 200 and quietly undo both.
+// So the HUD moved instead, as far as it could. The button row now starts at 415
+// rather than 405 — see HUD_LEAD in render.js — which is enough for plot 3 and
+// costs nothing, since the row had 46px of slack before the info panel. Plot 8
+// has no such answer: the panel is in the corner, it is 197 wide, and a tower on
+// that marker is inside it whatever either of them does. So the tallest tower
+// there — an Archery Tier II, 153px of it — loses the top 13px of its roof
+// behind the panel WHILE SOMETHING IS SELECTED, and nothing at all the rest of
+// the time. tools/hud-clear.mjs reports it rather than failing on it; see the
+// note there about controls and panels being different problems.
 //
 // They sit 68 to 86px off the nearest road's CENTRELINE, which is what decides
 // whether a tower reaches: a tier 1 barracks has 165 of range and the board is
@@ -106,23 +113,29 @@ const south = [
 // 87) because it measures to the kerb, and the kerb is up to 45px nearer than
 // the lane the enemies actually walk in.
 //
-// FOUR OF THE TEN LIE BETWEEN THE TWO ROADS — 0, 2, 5 and 9 — and those are the
+// FOUR OF THE TEN LIE BETWEEN THE TWO ROADS — 0, 2, 6 and 9 — and those are the
 // interesting ones: an archery tower there covers both roads at once, while a
 // barracks there has to choose which one to stand its squad on. Of the rest, 3,
-// 6 and 8 watch only the north road and 1, 4 and 7 only the south. The redraw
+// 5 and 8 watch only the north road and 1, 4 and 7 only the south. The redraw
 // shuffled which index is which but not the split itself: four in the middle and
 // three on each side, before and after. That split is the whole map — a build
 // that ignores half of it loses to half of every wave.
+//
+// 5 AND 6 ARE A HAIR APART AND THE ORDER IS NOT ARBITRARY. 682,190 has 328 of
+// road still to walk and 679,333 has 320, so the north one is met first and goes
+// first. They were pasted the other way round once. Nothing on the board looks
+// any different, and every plot index in tools/sim.mjs quietly points at the
+// other tower — which is the same trap the redraw sprang, from the other side.
 const plots3 = [
   { x: 79,  y: 304 },   // between the roads — 83 from both, the truest middle
   { x: 91,  y: 457 },   // south of the south road,  70 off
   { x: 329, y: 317 },   // between the roads,  78 north / 83 south
-  { x: 369, y: 170 },   // north — painted at 166, moved 4 to clear the pause button
+  { x: 369, y: 166 },   // north,  73 off
   { x: 513, y: 432 },   // south,  86 off
-  { x: 679, y: 333 },   // between the roads,  74 north / 73 south
   { x: 682, y: 190 },   // north,  68 off
+  { x: 679, y: 333 },   // between the roads,  74 north / 73 south
   { x: 727, y: 475 },   // south,  70 off
-  { x: 853, y: 214 },   // north — painted at 200, moved 14 to clear the info box
+  { x: 853, y: 200 },   // north,  69 off — the one the info panel overlaps
   { x: 864, y: 342 }    // between the roads,  73 north / 76 south
 ];
 

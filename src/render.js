@@ -906,33 +906,48 @@ function drawSoldier(ctx, u) {
 const RING_R0 = 4;
 const RING_STEP = 3;
 
-// Countdown ring for a soldier that is dead and coming back, floating off the
-// barracks' top-left corner rather than centred on the building.
+// How much air there is between the bottom of the pennant and the top of the
+// widest ring. Small on purpose: the point of hanging them here is that they
+// belong to the flag, and a gap big enough to read as a separate object undoes
+// that.
+const RING_DROP = 3;
+
+// Countdown ring for a soldier that is dead and coming back, hung UNDER THE
+// BARRACKS' FLAG.
 //
-// Centred, the rings sat behind the roof and read as part of the building. Out
-// in the air beside it they read as status. They are anchored to the drawn box
-// rather than to tower.x/y so they follow the roofline of whatever art a tier
-// has, and they hug the corner tightly: at the highest plot the box top is only
-// 51px down, and the 40px HUD is waiting just above it.
+// It has been in three places now and the reasoning is worth keeping, because
+// each move fixed the last one's problem and introduced its own:
+//
+//   CENTRED ON THE BUILDING. Behind the roof, reading as part of the artwork
+//   rather than as status.
+//
+//   OFF THE TOP-LEFT CORNER, out in the air beside it. That reads as status,
+//   and it was chosen to keep clear of the pennant every tier flies from its
+//   top RIGHT. What it does not do is stay on the board: the offset is a whole
+//   ring stack outside the box, and map 3's plot 0 puts a tent's left edge at
+//   x 15, so the rings were drawn at x 3 and clipped by the canvas.
+//
+//   UNDER THE FLAG, which is this. The flag is the thing on a barracks that
+//   already means "this building, and it is mine", so the countdown reads as
+//   belonging to it — and it is INSIDE the box, which is the property the
+//   corner version lacked. Nothing can push it off an edge that the building
+//   itself is not already falling off, and tools/hud-clear.mjs already checks
+//   that for every plot on every map.
+//
+// The flag's position is measured per tier — `node tools/flag.mjs` — rather than
+// assumed from the box, because the tent flies its pennant from a pole beside it
+// and the two huts fly theirs off the roof ridge.
 function musterRing(ctx, u) {
   const box = towerBox(u.tower);
   const r = RING_R0 + u.slot * RING_STEP;   // nested, so three read as three
 
-  // THE TOP LEFT, and it used to be the top right. Every barracks flies a
-  // pennant from its top right corner — measured, x 0.85 to 0.99 of the box on
-  // all three tiers — and the rings were drawn 2px outside that corner with a
-  // radius of up to 10, so the outer ring reached 8px back INTO the flag. On
-  // tier 1 it read as clutter and on the taller tiers 2 and 3 it sat right on
-  // the pennant.
-  //
-  // Pushed fully clear of the box rather than nudged: the offset is the biggest
-  // ring this squad will draw, so no ring can ever re-enter the building
-  // whatever the count or the artwork becomes. It stays OUTSIDE for the same
-  // reason it was outside before — centred on the roof the rings read as part
-  // of the building instead of as status.
+  // Hung from the widest ring this squad will ever draw, not from this one, so
+  // a three-man barracks and a one-man one put their stacks in the same place
+  // and the rings do not shuffle upward as men come back.
   const widest = RING_R0 + (u.tower.def.soldier.count - 1) * RING_STEP;
-  const cx = box.left - widest - 2;
-  const cy = box.top + 8;
+  const flag = u.tower.def.flagFrac || [0.9, 0.1];
+  const cx = box.left + flag[0] * box.w;
+  const cy = box.top + flag[1] * box.h + RING_DROP + widest;
   const done = 1 - u.respawn / u.def.respawn;
 
   ctx.strokeStyle = 'rgba(20,22,16,0.30)';
@@ -1179,8 +1194,8 @@ function flag(ctx, x, y, alpha) {
 //
 // Four digits of gold is the ceiling in practice — map 3 pays out about 3000
 // across all ten waves from a 286 purse — and a fifth would cost 14 more, which
-// the 83px of slack between the row's new right edge (668) and the info box
-// (751) absorbs without this number needing to change.
+// the 73px of slack between the row's right edge (678) and the info box (751)
+// absorbs without this number needing to change.
 //
 // RE-MEASURE THIS if the dashboard font, the icons, or the wave-counter wording
 // change. It is a fixed number rather than a live measurement because
@@ -1193,8 +1208,27 @@ function flag(ctx, x, y, alpha) {
 // to be added to data/ui.js and named here — the width comes off its own aspect,
 // so a differently proportioned plate re-centres the row rather than being
 // squashed into this one's slot.
+//
+// HUD_LEAD is the air between the readouts and the first button, and it is
+// deliberately wider than the gap between the buttons themselves. Two reasons,
+// and both of them are good enough on their own:
+//
+//   The readouts and the buttons are different things — one is what the game is
+//   telling you and the other is what you can press it about. At 14 they read as
+//   one run of five items; at 24 they read as two groups.
+//
+//   It is also ten pixels of somebody's roof. Map 3's highest north marker is
+//   painted at
+//   x 369, and a watchtower there is 88 wide, so its right edge is 413 — eight
+//   pixels under a pause plate starting at 405. The plot used to be nudged 4px
+//   down the board to fix that, and a nudged plot is a plot that no longer
+//   matches the artwork the artist compares it against. The row had 83px of
+//   slack before the info panel and now has 73, so this is the cheap side of
+//   that trade by a wide margin. tools/hud-clear.mjs is what notices if it stops
+//   being enough.
 const PLATE_H = 24;
 const HUD_GAP = 14;
+const HUD_LEAD = 24;
 const PAUSE_W = Math.round(PLATE_H * aspect('plate_speed'));
 const SPEED_W = Math.round(PLATE_H * aspect('plate_speed'));
 const WAVE_W = Math.round(PLATE_H * aspect('plate_wave'));
@@ -1202,7 +1236,7 @@ const HUD_ROW_W = PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP + WAVE_W;
 const READOUT_END = 391;
 const HUD_X = Math.max(
   Math.round(480 - HUD_ROW_W / 2),
-  Math.ceil(READOUT_END) + HUD_GAP
+  Math.ceil(READOUT_END) + HUD_LEAD
 );
 
 export const HUD_BTN = {
