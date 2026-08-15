@@ -399,6 +399,63 @@ export const waves = [
     ] }
 ];
 
+// MAP 2'S EIGHT. It ran the table above until the `march` multiplier came out.
+//
+// `march` was a per-level factor on every enemy's speed, and map 2 carried 0.62:
+// its road is 1060px against map 1's 1768, so the same wave got 60% as long
+// under fire, and slowing the column was how the second map was made as hard as
+// the first while both shared one table. Waves are per-level now, so the map can
+// be balanced by what it sends instead of by how fast a Thug walks — and a Thug
+// walks at 70px/s everywhere, which is what it should always have been.
+//
+// The shortfall is real and has to be paid for here instead. Searched
+// exhaustively over all 5376 ways of putting six towers of two families on nine
+// plots, as the share that clears the map, against map 1's 24 of 448 = 5%:
+//
+//   map 1's heavies, militia x0.9    62/5376 = 1%
+//   map 1's heavies, militia x0.8   106/5376 = 2%
+//   map 1's heavies, militia x0.7   116/5376 = 2%, and a pure build won
+//   THIS TABLE                      294/5376 = 5%
+//
+// CUTTING MILITIA DOES NOT WORK — it plateaus at 2% and then breaks the
+// invariant, because thinning the screen lets a pure-barracks build hold the
+// junction alone. What a short road actually cannot absorb is HEAVIES: they are
+// slow, so on map 1 they spend 34 seconds under fire and here only 20. So the
+// ramp comes down a step — 1,1,2,3,5 where map 1 runs 1,2,3,4,6 — and the
+// militia only 10%.
+//
+// Map 3 needed the same correction for the same reason. Two maps in a row have
+// said it now: on a short road, tune the heavies.
+export const wavesFork = [
+  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 5, gap: 1.40 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 11, gap: 1.10 }] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 9, gap: 1.00 },
+      { type: 'heavy_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 13, gap: 0.90 },
+      { type: 'heavy_inf', count: 1, gap: 2.00 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 16, gap: 0.80 },
+      { type: 'heavy_inf', count: 2, gap: 1.80 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 22, gap: 0.70 },
+      { type: 'heavy_inf', count: 3, gap: 1.60 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 0, groups: [
+      { type: 'light_inf', count: 31, gap: 0.60 },
+      { type: 'heavy_inf', count: 5, gap: 1.40 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] }
+];
+
 // MAP 3'S TEN, AND THEY ARE SMALLER THAN THE EIGHT ABOVE, NOT BIGGER.
 //
 // That is the opposite of where this table started, and the wrong version is

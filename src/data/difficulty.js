@@ -42,11 +42,29 @@ export const DIFFICULTIES = [
   {
     id: 'hard',
     name: 'Hard',
-    // A fifth more enemies on a slightly thinner purse. Not symmetrical with
-    // Normal on purpose: the extra bodies already pay their own bounties, so
-    // taking a fifth of the gold away as well would be two cuts rather than one.
-    count: 1.2,
-    gold: 0.9
+    // A TENTH MORE ENEMIES AND THE SAME PURSE. Hard is one lever, not two: the
+    // extra bodies already pay their own bounties, so cutting the gold as well
+    // compounds rather than adds, and it compounds hardest on the map that is
+    // already hardest.
+    //
+    // Over 12 seeds and every scenario in tools/sim.mjs, as a share of mixed
+    // builds that clear the map:
+    //
+    //                    map 1   map 3      (map 2 has no table of its own yet)
+    //   as tuned          68%     30%
+    //   count 1.10        48%     17%   <- this
+    //   count 1.15/0.95   22%      2%
+    //   count 1.20/0.90    7%      2%
+    //
+    // 1.15 and 1.20 are not Hard, they are unwinnable-except-by-one-build, and
+    // the reason is in the third column: MAP 3 IS FAR MORE SENSITIVE TO COUNT
+    // than map 1. Ten plots across two roads means a build either covers both
+    // roads or loses, and more enemies pushes a marginal build over that line
+    // much faster than it does on a single road. One multiplier for every map is
+    // the price of a difficulty the player picks once; 1.10 is the value at
+    // which the price is still fair on the map it costs the most.
+    count: 1.1,
+    gold: 1
   }
 ];
 

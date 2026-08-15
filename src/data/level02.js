@@ -14,7 +14,7 @@
 // the end, and two routes agreeing about the last third is exactly what "the
 // roads have merged" means on the screen. A junction that had to be modelled as
 // a decision would be a different feature.
-import { waves } from './waves.js';
+import { wavesFork } from './waves.js';
 
 const north = [
   { x: -39, y: 188 },
@@ -75,9 +75,10 @@ export const level02 = {
   plots,
   // Untouched, and that is the point: the purse and the keep are map 1's, so the
   // two stages are the same game on different ground.
-  // The same eight waves map 1 runs. A level names its own table so the
-  // difficulty of a map is a property of the map. See data/waves.js.
-  waves,
+  // ITS OWN EIGHT, not map 1's. It shared them until the `march` multiplier came
+  // out and its enemies went from 62% speed to full — see wavesFork in
+  // data/waves.js for what that cost and how it was paid back.
+  waves: wavesFork,
   startGold: 220,
   startLives: 20
 };
