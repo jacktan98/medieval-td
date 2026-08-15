@@ -303,16 +303,24 @@ first thing to check.
 
 ## A shorter road is a much easier map, and it has to be paid for
 
-Map 1's road is 1804px long. Map 2's are about 1060 each. Waves are shared
-between the maps, so the same enemy is under fire for 59% as long on map 2, and
-the six towers that hold map 1 lose map 2 by wave 4.
+Map 1's road is 1804px long. Map 2's are about 1060 each and map 3's about 1060
+too. The same enemy is under fire for 59% as long on the short maps, and the six
+towers that hold map 1 lose map 2 by wave 4.
 
-That is settled by `march` in the level file — how fast the column walks, as a
-multiple of each enemy's own speed — and NOT by starting gold, which was tried
-from 220 up to 620 and never bought a single win. The shortfall is time under
-fire, not towers. Map 2 marches at 0.62, measured against map 1's best build at
-each family split. Any new map wants the same treatment: trace it, sweep it with
-`node tools/sweep.mjs <n>`, and set `march` until the table matches.
+**This used to be settled by `march`** — a per-level multiplier on every enemy's
+speed, which map 2 carried at 0.62 so that one shared wave table could serve two
+maps. `march` is gone. A Thug walks at 70px/s on every map now, because a unit's
+speed should be a fact about the unit, and each map carries **its own wave
+table** in `src/data/waves.js` instead: `waves`, `wavesFork`, `wavesLong`.
+
+So the treatment for a new map is: trace it, sweep it with
+`node tools/sweep.mjs <n>`, and tune **its own table** until the share of builds
+that clear it matches the others. Not starting gold, which was tried from 220 up
+to 620 on map 2 and never bought a single win — and on map 3 moves the share by
+only 6 points across a 40-gold swing. The lever that works on a short road is
+the HEAVIES: they are slow, so they are the part of a wave that a short road
+gives the least time to shoot at, and one step on the heavy ramp is worth more
+than a fifth off every militia group. Both short maps have now said so.
 
 
 ## A map with separate roads
@@ -341,7 +349,7 @@ point-in-polygon `trace-road.mjs` uses, over every map and every route.
 Keep the roads the same **colour** (`#ffde9e`) whatever their shape: both tools
 find the road by that fill and neither guesses.
 
-## Markers have a ceiling, and map 3 has three at it
+## Markers have a ceiling, and map 3 had three at it
 
 Three of map 3's ten markers were painted at y 159 to 163 in game space, which is
 8 to 12px above the highest marker on either other map — and map 1's highest
@@ -349,12 +357,35 @@ already clears the HUD by exactly one pixel. A tier 2 archery tower on any of
 them reaches up behind a HUD control.
 
 `node tools/hud-clear.mjs` checks every plot of every map and prints the minimum
-y each one needs. Two of the three were nudged down 11px and 7px in
-`src/data/level03.js`, which is invisible on the board. The third, at (804, 163),
-**cannot be fixed in the data** — it needs y >= 214 to clear the description
-panel and 214 is on the tarmac, and every sideways move either stays under the
-panel or lands within a marker's width of its neighbour.
+y each one needs. Two were nudged down 11px and 7px in `src/data/level03.js`,
+which is invisible on the board. The third, at (804, 163), **could not be fixed
+in the data at all**: it needed y >= 214 to clear the description panel, 214 was
+tarmac, and every sideways move either stayed under the panel or landed within a
+marker's width of its neighbour.
+
+**The redraw fixed it, and how is the useful part.** The marker itself only
+moved to (853, 200), which is still 14px short. What made it fixable is that the
+NORTH ROAD MOVED OUT FROM UNDER IT — the tarmac at that column now starts at
+y 237 instead of around 190 — so y 214 is grass with the marker's dirt patch
+ending flush against the kerb. When a marker is boxed in near the HUD, moving
+the road can be the easier fix than moving the marker.
 
 **So keep new markers at y >= 170**, and further down still if they sit under the
-description panel in the top right — that one needs y >= 214. It is worth
-re-running `hud-clear.mjs` after any map redraw for exactly this reason.
+description panel in the top right — that one needs y >= 214, which also means
+leaving that column of road low enough to make room. It is worth re-running
+`hud-clear.mjs` after any map redraw for exactly this reason.
+
+## Re-running the splitter is not optional after a redraw
+
+`assets/map/Map_N.svg` is the artist's file, markers and all.
+`assets/map/Map_N_base.svg` is what the game draws — the same picture with the
+plot markers removed — and it is **generated**, by
+`node tools/split-map.mjs assets/map/Map_N.svg`.
+
+Uploading a new `Map_N.svg` without re-running the splitter leaves the game
+drawing the old board. Deleting `Map_N_base.svg` without re-running it leaves the
+game drawing **nothing**: `src/assets.js` points at the base file, and a missing
+map falls back to flat green.
+
+The same command prints the plot positions to paste into the level file, so
+there is no version of "redraw a map" that does not start here.

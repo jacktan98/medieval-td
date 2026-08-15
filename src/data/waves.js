@@ -421,6 +421,15 @@ export const waves = [
 // of those four this is the one nearest map 1's 5% — 1% and 2% are a harder map
 // than map 1, and 7% an easier one.
 //
+// AND THE SHIPPED TABLE RE-MEASURED AFTERWARDS: 212/5376 = 4%. The grid rows are
+// a search over MULTIPLIED tables — militia x0.9 of map 1's, rounded by the
+// search — and the counts below are the hand-written version of that row, which
+// is not the same integers. The grid is what picked the row; 4% is what the map
+// actually is, and it is still the nearest of the four to map 1's 5%.
+//
+// Map 3's note below draws the same distinction and it is worth stating once
+// for both: a grid row is a candidate, not a measurement of what shipped.
+//
 // TWO THINGS THE GRID SAYS, and the second is the one to remember:
 //
 // Cutting militia does not work. Every single x0.8 and x0.7 column breaks the
