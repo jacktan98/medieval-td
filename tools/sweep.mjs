@@ -50,7 +50,7 @@ console.log(`level ${WHICH}: ${level.name}`);
 //
 // Every other map's plots are all usable, so the list is DERIVED from the level
 // rather than typed. Map 2's nine sit 79 to 91px off the road and map 3's ten
-// sit 70 to 87 — none of them is a dead plot, and hard-coding nine indices
+// sit 68 to 86 — none of them is a dead plot, and hard-coding nine indices
 // quietly measured only nine of map 3's ten.
 const DEAD = { 1: [2, 5] };
 const USABLE = level.plots

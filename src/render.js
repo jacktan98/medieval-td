@@ -1153,8 +1153,40 @@ function flag(ctx, x, y, alpha) {
 // squashing a plate to a width picked before it was drawn is the one thing this
 // project never does to art. 174x78 and 414x78 at 24 tall come out 54 and 127.
 //
-// Centred as a ROW: 54 + 14 + 54 + 14 + 127 = 263, so 349..612 puts the middle
-// on 480. The readouts end around x=324 and the info box starts at 728.
+// As a ROW: 54 + 14 + 54 + 14 + 127 = 263 wide, and it wants to be centred on
+// 480, which would put it at 349..612.
+//
+// IT CANNOT ALWAYS BE CENTRED, because the readouts to its left grow. "The
+// readouts end around x=324" is what this comment used to say and it was never
+// measured: they end at 349.1 on map 1 with three digits of gold, which is the
+// pause plate's left edge exactly, and the plate is drawn AFTER the text — so
+// the readouts have always been one gold digit away from being covered up by a
+// button, on every map.
+//
+// Map 3 is where it stopped being a lurking bug and became a visible one. Ten
+// waves makes the string "Wave 1 / 10" instead of "Wave 1 / 8", and the extra
+// character pushed the last digit under the pause plate from the first frame of
+// the map: the counter read "Wave 1 / 1".
+//
+// So the row is centred OR pushed right, whichever clears. READOUT_END is the
+// far edge of the widest dashboard this game can produce, measured in a browser
+// because node has no canvas to measure a font with:
+//
+//   gold  286, lives 20, "Wave 1 / 8"      349.1   <- map 1 today, touching
+//   gold  286, lives 20, "Wave 1 / 10"     363.1   <- map 3's first frame
+//   gold  286, lives 20, "Wave 10 / 10"    377.0
+//   gold 1000, lives 20, "Wave 10 / 10"    390.9   <- this
+//
+// Four digits of gold is the ceiling in practice — map 3 pays out about 3000
+// across all ten waves from a 286 purse — and a fifth would cost 14 more, which
+// the 83px of slack between the row's new right edge (668) and the info box
+// (751) absorbs without this number needing to change.
+//
+// RE-MEASURE THIS if the dashboard font, the icons, or the wave-counter wording
+// change. It is a fixed number rather than a live measurement because
+// tools/hud-clear.mjs imports HUD_BTN in node, where there is no canvas, and a
+// button whose position only exists in the browser is a button that tool cannot
+// check plots against.
 //
 // Pause borrows the speed plate's artwork, because it is the same size and shape
 // of control and there is no third plate drawn yet. When one arrives it only has
@@ -1166,7 +1198,12 @@ const HUD_GAP = 14;
 const PAUSE_W = Math.round(PLATE_H * aspect('plate_speed'));
 const SPEED_W = Math.round(PLATE_H * aspect('plate_speed'));
 const WAVE_W = Math.round(PLATE_H * aspect('plate_wave'));
-const HUD_X = Math.round(480 - (PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP + WAVE_W) / 2);
+const HUD_ROW_W = PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP + WAVE_W;
+const READOUT_END = 391;
+const HUD_X = Math.max(
+  Math.round(480 - HUD_ROW_W / 2),
+  Math.ceil(READOUT_END) + HUD_GAP
+);
 
 export const HUD_BTN = {
   pause: { x: HUD_X, y: 9, w: PAUSE_W, h: PLATE_H, art: 'plate_speed' },
@@ -1610,11 +1647,15 @@ function drawGlyph(ctx, kind) {
     ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
     ctx.stroke();
 
-  // THE THREE STANDING ORDERS. Vector, like the monastery's cross and the `max`
-  // chevrons, and for the same reason: there is no artwork for them yet. They
-  // have to be told apart at 26px on a phone with a thumb over half of them, so
-  // each one is a different SHAPE rather than a different detail — a line, a
-  // stack and an arc.
+  // THE THREE STANDING ORDERS. All three have artwork now, so these three are
+  // the fallback above rather than what a player sees — the frame before the
+  // PNG has decoded, and whatever a browser does when it cannot decode it at
+  // all. They are kept for that, and because a vector costs nothing to keep.
+  //
+  // Each one is a different SHAPE rather than a different detail — a line, a
+  // stack and an arc — which is what it took to tell them apart at 26px on a
+  // phone with a thumb over half of them. The drawn icons follow the same three
+  // shapes, so the fallback is not a different set of pictures.
   //
   // An arrow running into a wall: the enemy closest to getting out.
   } else if (kind === 'aim_exit') {

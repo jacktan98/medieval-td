@@ -44,18 +44,34 @@ import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks } from '../src/render.j
 // today is artillery and will be nobody once its tiers are drawn. So ink top and
 // box top differ again, but only on the towers that actually carry marks.
 //
-// The runs are measured from the layout drawHud actually produces: the gold icon
-// is 24 tall and 50 wide at its aspect, the lives icon 30, the gaps are 7 after
-// an icon and 26 between readouts, and "Wave 1 / 8" is about 105 at 20px. The
-// fourth run used to be the "Tap a plot to build" hint, which was deleted when
-// the dashboard controls arrived; it was still listed here and was reporting a
-// plot as sitting behind text that had not been drawn for weeks.
+// The runs are measured from the layout drawHud actually produces, in a browser,
+// because node has no canvas to measure a font with. The gaps are 7 after an
+// icon and 26 between readouts; the icon widths come from uiSize.
+//
+// EACH RUN IS THE UNION ACROSS THE WHOLE GAME, not one frame. The readouts are
+// laid out left to right, so a fourth digit of gold shifts Lives and Wave 14px
+// right for the rest of the run, and "Wave 10 / 10" is 28 wider than
+// "Wave 1 / 8". A run measured at one moment would leave a plot passing here and
+// failing on screen an hour into the same game. So each is min-start to
+// max-end over 3 and 4 digit gold and over every wave string:
+//
+//   Gold    16..130
+//   Lives  141..220
+//   Wave   231..391
+//
+// The old table said Wave was 215..330 and had never been measured; the real
+// right edge is 391, which is past where the pause button used to start. That is
+// the same mismeasurement HUD_X was centred against — see render.js.
+//
+// The fourth run used to be the "Tap a plot to build" hint, which was deleted
+// when the dashboard controls arrived; it was still listed here and was
+// reporting a plot as sitting behind text that had not been drawn for weeks.
 const TEXT_TOP = 11;
 const TEXT_BOTTOM = 34;
 const RUNS = [
-  [16, 100, 'Gold'],
-  [130, 70, 'Lives'],
-  [215, 115, 'Wave']
+  [16, 114, 'Gold'],
+  [141, 79, 'Lives'],
+  [231, 160, 'Wave']
 ];
 
 // The two HUD BUTTONS are a different problem from the text, and they sit on the

@@ -119,18 +119,23 @@ export const ui = {
   // This is the only glyph that needs it, because it is the only asymmetric one.
   glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] },
 
-  // Two of the archer's three standing orders, on the same bare box as the flag:
-  // they sit on a button with nothing to buy, so they get the bigger glyph.
-  // Wider than they are tall, unlike every other glyph, so 30 lands them at
-  // 30x16 — that is the shape they were drawn, not a squash.
+  // The archer's three standing orders, on the same bare box as the flag: they
+  // sit on a button with nothing to buy, so they get the bigger glyph. Wider
+  // than they are tall, unlike every other glyph, so 30 lands them at 30x16 —
+  // that is the shape they were drawn, not a squash.
   //
-  // AIM_MOST_HEALTH IS MISSING ON PURPOSE. Its PNG is 100% opaque — a white
-  // background where every other icon in this folder has a transparent one — so
-  // drawing it would put a white card on a cream plate. It keeps its vector in
-  // render.js until the file is re-exported; adding the entry here and the line
-  // in GLYPH_ART below is all it needs then. tools/trim.mjs fails on an opaque
-  // UI icon now, so this cannot pass unnoticed again.
+  // `aim_tough` was missing here for one upload: its first PNG came in 100%
+  // opaque, a white card that would have been drawn on the cream plate, so it
+  // kept its vector while the other two were art. The re-export is transparent
+  // (1.1% of the canvas is ink) and it joins them. tools/trim.mjs fails on an
+  // opaque UI icon now, so the gap cannot open again unnoticed.
+  //
+  // It is the tallest of the three — 113x70 against 107x57 and 107x52 — so at
+  // the same box it lands 30x19 rather than 30x16. That is the drawing, not a
+  // mistake: the box fits the longer side, and all three still sit inside the
+  // button with room.
   glyph_aim_exit:   { trim: [202, 227, 107, 57], fit: GLYPH_BOX_BARE },
+  glyph_aim_tough:  { trim: [202, 220, 113, 70], fit: GLYPH_BOX_BARE },
   glyph_aim_ranged: { trim: [205, 230, 107, 52], fit: GLYPH_BOX_BARE },
 
   // The heart and the sword that replaced the words "Health:" and "Damage:".
@@ -211,6 +216,7 @@ export const GLYPH_ART = {
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',
+  aim_tough: 'glyph_aim_tough',
   aim_ranged: 'glyph_aim_ranged'
 };
 
