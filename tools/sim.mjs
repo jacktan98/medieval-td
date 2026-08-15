@@ -129,22 +129,32 @@ function mulberry32(seed) {
   };
 }
 
-export function run(plan, seed = 1) {
+// `patience` multiplies the stuck threshold for this one run.
+//
+// It exists because `stuck` is not a verdict, it is the absence of one, and
+// there is exactly one question where that difference decides whether the game
+// is broken: does a single family clear a map ON ITS OWN? A pure-barracks build
+// holds enemies alive on the road instead of killing them quickly, so it is the
+// build most likely to run out of clock — and for a long time the sweep read
+// its `stuck` as "did not win" and passed the invariant. Given 13x the time, it
+// wins outright on two maps. See the pure-build re-check at the end of
+// tools/sweep.mjs, which is the only caller that raises this.
+export function run(plan, seed = 1, patience = 1) {
   const realRandom = Math.random;
   Math.random = mulberry32(seed);
   try {
-    return play(plan);
+    return play(plan, patience);
   } finally {
     Math.random = realRandom;
   }
 }
 
-function play(plan) {
+function play(plan, patience = 1) {
   const state = newState();
   const pending = [...plan];
   let time = 0;
 
-  const limit = timeLimit();
+  const limit = timeLimit() * patience;
   while (!state.result && time < limit) {
     // Upgrade before expanding. Spending everything on tier 1s and only then
     // improving them is a strategy no one plays, and modelling it that way made

@@ -102,10 +102,46 @@ for (const n of [...byFamily.keys()].sort((a, b) => b - a)) {
 const wins = results.filter(o => o.r.result === 'won');
 console.log(`\n${wins.length} of ${results.length} builds win.`);
 
+// THE PURE BUILDS GET A SECOND, SLOWER LOOK, and it is not a formality — it is
+// the check that caught the two maps where this file used to print "invariant
+// holds" over a broken level.
+//
+// `stuck` means the run hit the time limit with lives left. It is neither a win
+// nor a loss, and the row above prints it honestly. The bug was down here: this
+// test only failed on `won`, so a pure build that ended `stuck` was quietly
+// counted as not-a-threat.
+//
+// That is exactly backwards for the family most likely to stall. A barracks
+// blocks: it holds an enemy on the road and grinds it down, where archery
+// either kills things on the way past or leaks them. So the pure-barracks run
+// is the SLOWEST build on the board, and the one whose clock runs out first —
+// and the real game has no clock at all. A player who would sit through a very
+// long wave 8 gets the win the sim was throwing away.
+//
+// So the two pure builds are re-run over five seeds with thirteen times the
+// patience, which is enough for every one of them to reach a real verdict. It
+// costs ten runs on top of a sweep of a thousand.
+const PATIENCE = 13;
+const SEEDS = [1, 2, 3, 4, 5];
+
 const pure = [...byFamily.entries()].filter(([n]) => n === SIZE || n === 0);
-const broken = pure.filter(([, o]) => o.r.result === 'won');
+const broken = [];
+console.log('\npure builds, re-run with the clock taken off:');
+for (const [n, o] of pure) {
+  const rs = SEEDS.map(s => run(o.plan, s, PATIENCE));
+  const won = rs.filter(r => r.result === 'won').length;
+  const name = n === SIZE ? 'archery' : 'barracks';
+  console.log(
+    `  ${SIZE} ${name.padEnd(9)}  wins ${won}/${SEEDS.length}   ` +
+    rs.map(r => `${r.result}:${r.lives}`).join('  ')
+  );
+  if (won) broken.push(name);
+}
+
 if (broken.length) {
-  console.log('INVARIANT BROKEN: a single family clears the level on its own.');
+  console.log(
+    `INVARIANT BROKEN: pure ${broken.join(' and ')} clears the level on its own.`
+  );
 } else if (!wins.length) {
   console.log('INVARIANT BROKEN: nothing clears the level.');
 } else {
