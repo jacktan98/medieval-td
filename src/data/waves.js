@@ -422,14 +422,27 @@ export const waves = [
 // 172 enemies over ten waves against map 1's 142 over eight. Every number here
 // was found by exhaustively searching all 1024 ways of assigning two families to
 // the ten plots — the same yardstick the other maps are held to, where the
-// measure is what share of ALL builds clear the level:
+// measure is what share of ALL builds clear the level.
+//
+// The search, which picked this table:
 //
 //   gentle open, heavies 1,1,2,2,3,4, 260 gold    277/1024 = 27%
 //   the same at 220 gold                          219/1024 = 21%
 //   heavies 1,1,2,3,4,5, more militia, 260        179/1024 = 17%
 //   the same at 220 gold                          115/1024 = 11%
-//   THIS TABLE (heavies 1,2,3,4,5,6), 260 gold     43/1024 =  4%
-//                                     map 1        24/448  =  5%
+//   this table (heavies 1,2,3,4,5,6), 260 gold     43/1024 =  4%
+//
+// AND THE SHIPPED TABLE RE-MEASURED AFTERWARDS: 107/1024 = 10%, against map 1's
+// 24/448 = 5%. The five rows above were run under sim.mjs's old flat 900-second
+// stuck threshold and are comparable with each other; 900 is right for eight
+// waves and cuts ten short, so it was counting map 3's slowest winners as
+// neither wins nor losses. The threshold is per-wave now and 10% is the honest
+// figure. Map 1's own number did not move — eight waves at 112 each is 896.
+//
+// Twice map 1's share rather than equal to it, and left there: the step from
+// this table to the next one down was 27% to 4% under the old measure, so there
+// is no setting in between to reach for, and of the two the more forgiving one
+// is the right side to miss on for the map with the most going on.
 //
 // ONE NUMBER REFUSED TO MOVE and it is worth knowing about before retuning this:
 // the BEST mix finishes on 18 or 19 lives of 20 at every setting above, where

@@ -69,10 +69,13 @@ const south = [
 // prints them in, which is the order a player meets them.
 //
 // They sit 70 to 87px off the nearest road, which is the band map 2's nine sit
-// in too, so a tier 1 barracks can reach the tarmac from any of them. Three lie
-// between the two roads — plots 2, 4 and 6 below — and those are the interesting
-// ones: an archery tower there covers both roads at once, and a barracks there
-// has to choose which one to stand its squad on.
+// in too, so a tier 1 barracks can reach the tarmac from any of them.
+//
+// FOUR OF THE TEN LIE BETWEEN THE TWO ROADS — 0, 2, 6 and 9 — and those are the
+// interesting ones: an archery tower there covers both roads at once, while a
+// barracks there has to choose which one to stand its squad on. Of the rest, 3,
+// 5 and 8 watch only the north road and 1, 4 and 7 only the south. That split is
+// the whole map: a build that ignores half of it loses to half of every wave.
 //
 // TWO OF THESE ARE NOT WHAT THE SPLITTER PRINTED, and they are the only
 // hand-edited numbers in this file. Plots 3 and 5 were painted at y 159 and 163,
