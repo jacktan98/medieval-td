@@ -273,24 +273,29 @@ m1: {
   'under-built     (expect LOSS)':  [A(1, 0)]
 },
 
-// Map 2, from `node tools/sweep.mjs 2`. Its plots are all live — none of them is
-// more than 91px off the road — so there is no dead-plot scenario to write.
+// Map 2, RE-SWEPT after `march` came out. Its plots are all live — none of them
+// is more than 91px off the road — so there is no dead-plot scenario to write.
+//
+// These are not the builds that were here before, and that is the point of
+// re-running the sweep rather than keeping the list: the old ones were the best
+// builds on a map whose enemies walked at 62% speed, and two of them lose
+// outright now. A stale scenario list looks exactly like a balance collapse.
 //
 // The two roads are why the mixes look the way they do: plots 0 and 4 watch the
 // northern road only, 1, 2 and 3 the southern, and 5 to 8 sit past the junction
 // where everything funnels together. A build that ignores one arm loses to the
 // half of every wave that walks up it.
 m2: {
-  'ALL archery x6  (expect LOSS)':  [A(0), A(1), A(2), A(3), A(5), A(6)],
-  'ALL barracks x6 (expect LOSS)':  [B(2), B(3), B(4), B(5), B(7), B(8)],
-  'BEST 5 archery + 1 (expect LOSS)': [A(0), A(1), B(2), A(3), A(4), A(7)],
-  'MIX 4 archery + 2 barracks':     [A(0), A(2), B(5), B(6), A(7), A(8)],
-  'MIX 3 archery + 3 barracks':     [A(2), B(4), A(5), A(6), B(7), B(8)],
-  'MIX 2 archery + 4 barracks':     [A(1), B(3), B(4), B(5), B(7), A(8)],
-  'ALL siege x6    (expect LOSS)':  [S(0), S(1), S(2), S(3), S(5), S(6)],
-  'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), B(2), S(3), S(4), S(7)],
-  'MIX 2 archery + 3 barracks + 1 siege': [S(2), B(4), A(5), A(6), B(7), B(8)],
-  'MIX 3 siege + 3 barracks':       [S(2), B(4), S(5), S(6), B(7), B(8)],
+  'ALL archery x6  (expect LOSS)':  [A(0), A(2), A(5), A(6), A(7), A(8)],
+  'ALL barracks x6 (expect LOSS)':  [B(2), B(3), B(5), B(6), B(7), B(8)],
+  'BEST 5 archery + 1 (expect LOSS)': [A(0), A(1), A(2), B(5), A(6), A(7)],
+  'MIX 4 archery + 2 barracks':     [A(1), A(2), A(3), B(5), A(6), B(7)],
+  'MIX 3 archery + 3 barracks':     [A(1), B(3), B(5), A(6), B(7), A(8)],
+  'MIX 2 archery + 4 barracks':     [A(1), B(2), B(4), A(6), B(7), B(8)],
+  'ALL siege x6    (expect LOSS)':  [S(0), S(2), S(5), S(6), S(7), S(8)],
+  'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), S(2), B(5), S(6), S(7)],
+  'MIX 2 archery + 3 barracks + 1 siege': [A(1), B(3), S(5), A(6), B(7), B(8)],
+  'MIX 3 siege + 3 barracks':       [S(1), B(3), S(5), S(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 
