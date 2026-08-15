@@ -299,30 +299,49 @@ m2: {
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 
-// Map 3, from `node SIZE=10 tools/sweep.mjs 3`. TEN TOWERS, not six, and that is
+// Map 3, from `node tools/sweep.mjs 3`. TEN TOWERS, not six, and that is
 // the map rather than a change of convention: its roads never meet, so six here
 // is three per road where six on map 1 all shoot at the one road. Tuning this
 // map's waves against six-tower builds produced a table that killed everything
 // on wave 4 — see wavesLong in src/data/waves.js.
 //
 // The pure builds still lose and a mix still wins, which is the invariant; what
-// is different is how WIDE the spread is. Plots 0, 2, 6 and 9 sit between the
-// two roads and cover both, and 3, 5 and 8 watch only the north while 1, 4 and 7
+// is different is how WIDE the spread is. Plots 0, 2, 5 and 9 sit between the
+// two roads and cover both, and 3, 6 and 8 watch only the north while 1, 4 and 7
 // watch only the south — so a build that ignores half the map loses to half of
 // every wave, and one that does not is very comfortable indeed.
+//
+// RE-SWEPT AFTER THE MAP WAS REDRAWN, for the same reason map 2's list was
+// re-swept after `march` came out, and it is the same trap: the artist moved
+// eight of the ten markers, so these plot INDICES point at different ground
+// than they did. The old list was not wrong about the game, it was wrong about
+// where plot 6 is — and two of its mixes lost outright, which reads exactly
+// like a balance collapse and was not one.
+//
+// A stale scenario list is worse than no list. Re-run `node tools/sweep.mjs 3`
+// and paste after any redraw, not just after a rule change.
 m3: {
   'ALL archery x10 (expect LOSS)':  [A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9)],
   'ALL barracks x10 (expect LOSS)': [B(0), B(1), B(2), B(3), B(4), B(5), B(6), B(7), B(8), B(9)],
   // The best 7+3 there is, and it loses. Three blockers is not enough to hold
   // two roads however good the seven bows behind them are.
-  'BEST 7 archery + 3 (expect LOSS)': [A(0), B(1), A(2), B(3), A(4), B(5), A(6), A(7), A(8), A(9)],
-  'MIX 6 archery + 4 barracks':     [A(0), A(1), A(2), B(3), B(4), B(5), A(6), B(7), A(8), A(9)],
-  'MIX 5 archery + 5 barracks':     [A(0), A(1), A(2), B(3), B(4), A(5), B(6), B(7), B(8), A(9)],
-  'MIX 3 archery + 7 barracks':     [B(0), A(1), A(2), B(3), B(4), B(5), B(6), B(7), A(8), B(9)],
-  // Artillery held to the same two rules as everywhere else. The machines take
-  // the between-the-roads plots, which is where a long reach is worth most.
+  'BEST 7 archery + 3 (expect LOSS)': [A(0), B(1), B(2), B(3), A(4), A(5), A(6), A(7), A(8), A(9)],
+  'MIX 6 archery + 4 barracks':     [A(0), B(1), B(2), A(3), B(4), A(5), A(6), B(7), A(8), A(9)],
+  'MIX 5 archery + 5 barracks':     [A(0), B(1), B(2), A(3), A(4), B(5), B(6), B(7), A(8), A(9)],
+  'MIX 3 archery + 7 barracks':     [A(0), B(1), B(2), B(3), A(4), B(5), A(6), B(7), B(8), B(9)],
+  // Artillery held to the same two rules as everywhere else, and compared the
+  // same way map 1 compares it: take the winning archery mix and SWAP THE BOWS
+  // FOR MACHINES, keeping every blocker where it was. That measures a catapult
+  // against the tower it competes with for a plot, rather than measuring what
+  // losing a blocker costs — which is already known and is fatal for anyone.
+  //
+  // So this is `MIX 3 archery + 7 barracks` above with plots 0, 4 and 6 turned
+  // into artillery, and it wins on the same 4 of 5 seeds. Swapping only one or
+  // two of the three wins on all five, which is the artillery plateau showing up
+  // here as well: on this map the machines are not worse than bows, they are
+  // slightly better, and it is the BLOCKERS that decide whether either works.
   'ALL siege x10   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9)],
-  'MIX 3 siege + 5 barracks + 2 archery': [S(0), B(1), S(2), B(3), B(4), A(5), S(6), B(7), A(8), B(9)],
+  'MIX 3 siege + 7 barracks':       [S(0), B(1), B(2), B(3), S(4), B(5), S(6), B(7), B(8), B(9)],
   'under-built     (expect LOSS)':  [A(0, 0)]
 }
 };

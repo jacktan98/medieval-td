@@ -490,13 +490,15 @@ export const wavesFork = [
 //
 // So the OPENING is gentler than map 1's and the ENDGAME is not. Waves 1-6 sit
 // below the eight-wave table because the player is buying twice as much board
-// with the same purse; waves 7-10 run 3, 4, 5 and 6 heavies, which is map 1's
-// ramp arriving two waves later.
+// with the same purse; waves 7-10 run 4, 5, 6 and 7 heavies, which is map 1's
+// ramp arriving two waves later and then going one step past it.
 //
-// 172 enemies over ten waves against map 1's 142 over eight. Every number here
-// was found by exhaustively searching all 1024 ways of assigning two families to
-// the ten plots — the same yardstick the other maps are held to, where the
-// measure is what share of ALL builds clear the level.
+// 176 enemies over ten waves against map 1's 142 over eight — and 25 of them
+// are heavies against map 1's 16, which is where this map's weight sits now.
+//
+// Every number here was found by exhaustively searching all 1024 ways of
+// assigning two families to the ten plots — the same yardstick the other maps
+// are held to, where the measure is what share of ALL builds clear the level.
 //
 // The search, which picked this table:
 //
@@ -504,7 +506,9 @@ export const wavesFork = [
 //   the same at 220 gold                          219/1024 = 21%
 //   heavies 1,1,2,3,4,5, more militia, 260        179/1024 = 17%
 //   the same at 220 gold                          115/1024 = 11%
-//   this table (heavies 1,2,3,4,5,6), 260 gold     43/1024 =  4%
+//   the one that shipped (heavies 1,2,3,4,5,6), 260 43/1024 =  4%
+//
+// (Heavies 1,2,4,5,6,7 today — the redraw moved it. See further down.)
 //
 // AND THE SHIPPED TABLE RE-MEASURED AFTERWARDS: 107/1024 = 10%, against map 1's
 // 24/448 = 5%. The five rows above were run under sim.mjs's old flat 900-second
@@ -518,14 +522,59 @@ export const wavesFork = [
 // is no setting in between to reach for, and of the two the more forgiving one
 // is the right side to miss on for the map with the most going on.
 //
-// ONE NUMBER REFUSED TO MOVE and it is worth knowing about before retuning this:
-// the BEST mix finishes on 18 or 19 lives of 20 at every setting above, where
+// ---------------------------------------------------------------------------
+// THEN THE MAP WAS REDRAWN, AND 10% BECAME 18%.
+//
+// The artist moved eight of the ten plot markers and adjusted both roads. The
+// roads came out the same length, so the pace is unchanged — but several
+// markers ended up much nearer the tarmac, and a tower that stands closer
+// covers more road. Nothing in the code changed; the board got easier.
+//
+// It is worth being sure of that before tuning against it, because "the number
+// moved" and "the number means something different now" look identical. Two
+// controls, both under current code:
+//
+//   old artwork, this table    107/1024 = 10%   <- reproduces the shipped figure
+//   new artwork, this table    189/1024 = 18%
+//
+// The first is the number recorded above, to the build. So the yardstick is
+// intact and the redraw is the whole cause.
+//
+// WHAT IT COST TO PUT BACK, measured the same way, one lever at a time:
+//
+//   start gold 260 -> 230                     144 = 14%
+//   start gold 260 -> 220                     124 = 12%
+//   +1 heavy in wave 4 only                   172 = 17%
+//   +1 heavy in every wave from 4             47 =  5%
+//   +1 heavy in the last four waves only     101 = 10%   <- this
+//
+// THE PURSE IS A BAD LEVER HERE and the grid says so plainly: 40 gold is worth
+// 6 points, and it would have taken the map below the other two maps' starting
+// purse to reach 10% — undoing the one thing this level's startGold note exists
+// to explain. An early heavy is worth almost nothing (17%). The last four waves
+// are worth everything.
+//
+// That is the same answer map 2's grid gave and for the same reason, now said a
+// third time: on a short road the heavies are the lever, because they are the
+// part of a wave a short road gives you the least time to shoot at.
+//
+// So waves 7-10 run 4, 5, 6, 7 heavies where they ran 3, 4, 5, 6. The militia,
+// the doctors, the gaps, the opening six waves and the purse are all untouched,
+// and the map is back to the 10% it shipped at, holding the invariant with the
+// best mix on 16 lives.
+//
+// ONE NUMBER BARELY MOVES and it is worth knowing about before retuning this:
+// the BEST mix finishes on 16 to 19 lives of 20 at every setting above, where
 // map 1's best finishes on 10. Harder waves cut the share of builds that win
-// without touching the ceiling at all. That is this map's shape rather than a
-// failure to tune it — ten plots across two roads, three of which cover both,
+// while hardly touching the ceiling. That is this map's shape rather than a
+// failure to tune it — ten plots across two roads, four of which cover both,
 // is a far wider spread between a build that thinks about both roads and one
 // that does not than nine plots on one road can produce. Waves hard enough to
 // bring the ceiling down to map 1's would leave almost nothing winnable.
+//
+// The redraw did not change that either: it moved the SHARE from 10% to 18% and
+// left the ceiling where it was, and putting the share back took the ceiling
+// from 18 to 16. Nine points of win rate, three lives of headroom.
 //
 // Waves 1-4 are militia only and teach the map, which takes a wave longer here
 // than elsewhere: the lesson is not "enemies walk down a road", it is "there are
@@ -548,22 +597,22 @@ export const wavesLong = [
   // two new things in one wave is one of them unnoticed.
   { rest: 9, groups: [
       { type: 'light_inf', count: 16, gap: 0.85 },
-      { type: 'heavy_inf', count: 3, gap: 1.90 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 20, gap: 0.78 },
       { type: 'heavy_inf', count: 4, gap: 1.90 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
-      { type: 'light_inf', count: 26, gap: 0.70 },
+      { type: 'light_inf', count: 20, gap: 0.78 },
       { type: 'heavy_inf', count: 5, gap: 1.90 },
+      { type: 'plague_inf', count: 1, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 26, gap: 0.70 },
+      { type: 'heavy_inf', count: 6, gap: 1.90 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 32, gap: 0.62 },
-      { type: 'heavy_inf', count: 6, gap: 1.90 },
+      { type: 'heavy_inf', count: 7, gap: 1.90 },
       { type: 'plague_inf', count: 2, gap: 2.00 }
     ] }
 ];
