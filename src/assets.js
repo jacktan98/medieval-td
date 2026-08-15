@@ -155,6 +155,12 @@ export const paths = {
   // see src/menu.js.
   glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
+  // The archer's three standing orders. They were vector glyphs drawn in
+  // render.js — the last family button that had no artwork — and the vectors are
+  // still there as the fallback every glyph has.
+  glyph_aim_exit:   'assets/ui/Aim_Near_Exit_Icon.png',
+  glyph_aim_tough:  'assets/ui/Aim_Most_Health_Icon.png',
+  glyph_aim_ranged: 'assets/ui/Aim_Ranged_Enemies_Icon.png',
   // The three plates, and the two stat icons that replaced the words "Health:"
   // and "Damage:" in the info box.
   plate_speed:     'assets/ui/Speed_Box.png',

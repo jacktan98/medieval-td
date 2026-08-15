@@ -1,11 +1,12 @@
 import { waveClearBonus, earlyCallRate, waveSize } from './data/waves.js';
-import { level } from './level.js';
 
-// THE WAVES OF THE MAP BEING PLAYED, read at the point of use rather than
-// destructured at import time — see the note at the top of level.js. Capturing
-// `level.waves` in a module constant would pin the game to map 1's eight for
-// the whole session, which is the exact trap that comment exists to warn about.
-const table = () => level.waves;
+// THE WAVES THIS GAME IS SENDING live on the state, not on the level.
+//
+// They are the level's own table with the chosen difficulty already applied —
+// see scaleWaves in data/difficulty.js — and they are built once, when the game
+// starts. Reading them off the state rather than off `level` also sidesteps the
+// live-binding trap at the top of level.js entirely: there is nothing to capture
+// at import time and nothing to remember to re-read.
 import { spawn } from './enemies.js';
 
 // state.spawned counts enemies spawned in the CURRENT wave, across all of its
@@ -22,7 +23,7 @@ function groupAt(wave, spawned) {
 }
 
 export function updateWaves(state, dt) {
-  const waves = table();
+  const waves = state.waves;
   if (state.waveIndex >= waves.length) {
     if (state.enemies.length === 0 && state.result === null) state.result = 'won';
     return;
@@ -65,7 +66,7 @@ export function updateWaves(state, dt) {
 // calling then would stack two waves on the road, which is a different game and
 // not one this level is balanced for.
 export function canCallWave(state) {
-  if (state.result || state.waveIndex >= table().length || state.timer <= 0) return false;
+  if (state.result || state.waveIndex >= state.waves.length || state.timer <= 0) return false;
   const opening = state.waveIndex === 0 && state.spawned === 0;
   return state.resting || opening;
 }

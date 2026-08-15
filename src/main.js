@@ -2,6 +2,7 @@ import { loadArt } from './assets.js';
 import { loadAudio } from './audio.js';
 import { level } from './level.js';
 import { openingDelay } from './data/waves.js';
+import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf } from './towers.js';
 import { updateUnits } from './units.js';
@@ -52,10 +53,20 @@ function newGame() {
   // the game being reset. Without this, switching to map 2 on the title screen
   // would bounce straight back to map 1, and so would losing a game on it.
   const levelIndex = state.levelIndex ?? 0;
+  // Survives the reset for the same reason the map does: it is a menu setting
+  // rather than part of the game being reset.
+  const difficultyIndex = state.difficultyIndex ?? DEFAULT_DIFFICULTY;
+  const difficulty = DIFFICULTIES[difficultyIndex];
 
   Object.assign(state, {
     levelIndex,
-    gold: level.startGold,
+    difficultyIndex,
+    // THE WAVES THIS GAME WILL ACTUALLY SEND, scaled once here rather than read
+    // through the level every frame. Two things depend on that: `waveSize` and
+    // the spawn loop have to agree exactly about how many enemies a group holds,
+    // and they cannot if each of them rounds a multiplication separately.
+    waves: scaleWaves(level.waves, difficulty),
+    gold: startingGold(level, difficulty),
     lives: level.startLives,
     towers: [],
     enemies: [],

@@ -347,7 +347,13 @@ const inside = (b, x, y) =>
 // Where the book is opened from on the TITLE SCREEN. There is a second way in,
 // from a paused game, and that button does not live here: it shares a row with
 // Quit, so the row owns both and render.js lays it out. See PAUSE_ROW there.
-export const BOOK_BTN_START = { x: 380, y: 414, w: 200, h: 46 };
+// UNDER the Start button, and it moved down 46px when the difficulty row was
+// added between the maps and Start. It used to sit at y 414 against a Start
+// button at 344; Start is at 390 now and the two overlapped by 24px — with the
+// book tested first in input.js, every tap on Start opened the encyclopedia
+// instead. The title column reads, top to bottom: title, hint, maps at 272,
+// difficulty at 328, Start at 390, this at 460.
+export const BOOK_BTN_START = { x: 380, y: 460, w: 200, h: 46 };
 
 export function hitBookButton(state, x, y) {
   return inside(BOOK_BTN_START, x, y);

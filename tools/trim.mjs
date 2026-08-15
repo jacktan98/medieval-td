@@ -271,6 +271,35 @@ for (const d of dirs) {
   }
 }
 
+// A UI ICON WITH AN OPAQUE BACKGROUND IS ALWAYS A MISTAKE. Every one of them is
+// drawn on top of the cream button plate or beside a HUD number, so a background
+// is a card the artist did not mean to draw — and it is invisible in the export,
+// because a white rectangle on a white canvas looks like nothing at all.
+//
+// It cost an upload: Aim_Most_Health_Icon came in 100% opaque and trimmed to the
+// whole 512 square, which reported as a comfortably sharp 30x30 glyph rather
+// than as broken. The trim table above cannot show it — a full-canvas trim looks
+// like a big drawing.
+{
+  let solid = 0;
+  for (const [key, src] of Object.entries(ASSET_URLS)) {
+    if (!src.startsWith('assets/ui/') || !ui[key]) continue;
+    const img = decode(readFileSync(src));
+    let opaque = 0;
+    for (let p = 0; p < img.w * img.h; p++) if (img.px[p * img.ch + img.ch - 1] > 200) opaque++;
+    const share = opaque / (img.w * img.h);
+    if (share < 0.9) continue;
+    console.log(`\n${src} is ${(100 * share).toFixed(0)}% opaque — it has a background.`);
+    solid++;
+  }
+  if (solid) {
+    console.log('Re-export with a transparent background: these are drawn over a plate.');
+    process.exitCode = 1;
+  } else {
+    console.log('Every wired UI icon has a transparent background.');
+  }
+}
+
 if (soft) {
   console.log(
     `\n${soft} sprite(s) get upscaled at 3x device pixels, which is why they` +

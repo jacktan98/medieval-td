@@ -130,7 +130,6 @@ export const level01 = {
   src: 'assets/map/Map_1.svg',
   routes: [route1],
   plots: plots1,
-  march: 1,
   // The shared eight-wave table, which map 2 runs too. A level names its own table so the
   // difficulty of a map is a property of the map. See data/waves.js.
   waves,

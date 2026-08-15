@@ -115,7 +115,6 @@ export const level03 = {
   src: 'assets/map/Map_3.svg',
   routes: [north, south],
   plots: plots3,
-  march: 1,
   // TEN, where the other two run eight. More board to cover and more time to
   // cover it in — see wavesLong in data/waves.js for why they are bigger as
   // well as more numerous.

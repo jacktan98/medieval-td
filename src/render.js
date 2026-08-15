@@ -1,4 +1,5 @@
 import { level, levels } from './level.js';
+import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
@@ -900,8 +901,13 @@ function drawSoldier(ctx, u) {
   ctx.restore();
 }
 
+// How the muster rings nest: the innermost radius, and how much each slot adds.
+// Named because musterRing has to reason about the WIDEST one to place them.
+const RING_R0 = 4;
+const RING_STEP = 3;
+
 // Countdown ring for a soldier that is dead and coming back, floating off the
-// barracks' top-right corner rather than centred on the building.
+// barracks' top-left corner rather than centred on the building.
 //
 // Centred, the rings sat behind the roof and read as part of the building. Out
 // in the air beside it they read as status. They are anchored to the drawn box
@@ -910,9 +916,23 @@ function drawSoldier(ctx, u) {
 // 51px down, and the 40px HUD is waiting just above it.
 function musterRing(ctx, u) {
   const box = towerBox(u.tower);
-  const cx = box.left + box.w + 2;
+  const r = RING_R0 + u.slot * RING_STEP;   // nested, so three read as three
+
+  // THE TOP LEFT, and it used to be the top right. Every barracks flies a
+  // pennant from its top right corner — measured, x 0.85 to 0.99 of the box on
+  // all three tiers — and the rings were drawn 2px outside that corner with a
+  // radius of up to 10, so the outer ring reached 8px back INTO the flag. On
+  // tier 1 it read as clutter and on the taller tiers 2 and 3 it sat right on
+  // the pennant.
+  //
+  // Pushed fully clear of the box rather than nudged: the offset is the biggest
+  // ring this squad will draw, so no ring can ever re-enter the building
+  // whatever the count or the artwork becomes. It stays OUTSIDE for the same
+  // reason it was outside before — centred on the roof the rings read as part
+  // of the building instead of as status.
+  const widest = RING_R0 + (u.tower.def.soldier.count - 1) * RING_STEP;
+  const cx = box.left - widest - 2;
   const cy = box.top + 8;
-  const r = 4 + u.slot * 3;      // one ring per slot, nested, so three read as three
   const done = 1 - u.respawn / u.def.respawn;
 
   ctx.strokeStyle = 'rgba(20,22,16,0.30)';
@@ -1362,9 +1382,10 @@ function drawHud(ctx, state) {
   let x = 16;
   x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold'), state.gold);
   x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives'), state.lives);
-  // The map's own count, not a shared one: map 3 runs ten where the other
-  // two run eight.
-  const n = level.waves.length;
+  // This game's own count, not a shared one: map 3 runs ten where the other two
+  // run eight, and it is read off the state because that is where the waves the
+  // player is actually facing live.
+  const n = state.waves.length;
   ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`, x + 26, 21);
 
   // The shadow ends here. It exists because the readouts sit straight on grass
@@ -1754,7 +1775,7 @@ const ROW_PITCH = 18;
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 344, w: 160, h: 54 };
+export const START_BTN = { x: 400, y: 390, w: 160, h: 54 };
 
 // One button per level, side by side above Start. Sized for a thumb like
 // everything else — 150 x 46 is well over the 44px minimum — and laid out from
@@ -1778,6 +1799,35 @@ export function mapButtons() {
 // screen; input.js asks before it asks about Start.
 export function hitMapButton(state, x, y) {
   for (const b of mapButtons()) {
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.i;
+  }
+  return null;
+}
+
+// The difficulty row, under the maps. Narrower buttons than the map ones and
+// laid out from the middle the same way, so a third setting would need no
+// numbers re-typed here either.
+//
+// UNDER rather than beside: the two choices are not the same kind of thing. The
+// map is what you are playing and the difficulty is how hard it will be, and a
+// single row of five buttons reads as five maps.
+const DIFF_BTN_W = 116, DIFF_BTN_H = 38, DIFF_GAP = 14;
+
+export function difficultyButtons() {
+  const n = DIFFICULTIES.length;
+  const total = n * DIFF_BTN_W + (n - 1) * DIFF_GAP;
+  return DIFFICULTIES.map((d, i) => ({
+    i,
+    name: d.name,
+    x: Math.round(480 - total / 2 + i * (DIFF_BTN_W + DIFF_GAP)),
+    y: 328,
+    w: DIFF_BTN_W,
+    h: DIFF_BTN_H
+  }));
+}
+
+export function hitDifficultyButton(state, x, y) {
+  for (const b of difficultyButtons()) {
     if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.i;
   }
   return null;
@@ -1823,6 +1873,23 @@ function drawStart(ctx, state) {
     ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
     ctx.font = '700 18px system-ui, sans-serif';
     ctx.fillText(m.name, m.x + m.w / 2, m.y + m.h / 2 + 1);
+  }
+
+  // The difficulty row. Same treatment as the maps above it so the two read as
+  // one panel of choices, at a smaller size because it is the lesser of the two.
+  for (const d of difficultyButtons()) {
+    const on = d.i === (state.difficultyIndex ?? 0);
+    ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
+    ctx.beginPath();
+    ctx.roundRect(d.x, d.y, d.w, d.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = on ? '#F0E6D2' : 'rgba(196,165,116,0.55)';
+    ctx.lineWidth = on ? 2.5 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(d.name, d.x + d.w / 2, d.y + d.h / 2 + 1);
   }
 
   const b = START_BTN;

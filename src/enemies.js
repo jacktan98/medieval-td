@@ -61,7 +61,7 @@ export function leadPoint(e, t) {
   // Being held is the ONLY way to stand still. The plague doctor threw from a
   // standstill for a while and needed a second case here; he walks now, so this
   // is back to one.
-  const ahead = e.foe ? 0 : e.def.speed * level.march * t;
+  const ahead = e.foe ? 0 : e.def.speed * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -121,7 +121,7 @@ export function updateEnemies(state, dt) {
     // drawing the figure offset from it makes speed depend on which way the
     // road is bending — see route.js.
     const road = laneOf(level.routes[e.route], e.lane);
-    e.s += e.def.speed * level.march * dt;
+    e.s += e.def.speed * dt;
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should

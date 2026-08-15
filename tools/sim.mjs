@@ -22,6 +22,16 @@ import { updateImpacts } from '../src/impacts.js';
 import { families } from '../src/data/towers.js';
 import { level, levels, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
+import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from '../src/data/difficulty.js';
+
+// WHICH DIFFICULTY THE SIM IS MEASURING. Every balance note in data/waves.js was
+// written before difficulty existed, so the tables are the middle and the sim
+// keeps measuring exactly that unless it is told otherwise: `DIFF=hard node
+// tools/sim.mjs 2`. Multipliers of 1 are the tables as written.
+const NEUTRAL = { id: 'tuned', name: 'As tuned', count: 1, gold: 1 };
+export const difficulty = process.env.DIFF
+  ? (DIFFICULTIES.find(d => d.id === process.env.DIFF) || NEUTRAL)
+  : NEUTRAL;
 
 const DT = 1 / 60;
 
@@ -42,7 +52,12 @@ export const S = (plot, tier = 2) => ({ plot, fam: 'siege', tier });
 
 function newState() {
   return {
-    gold: level.startGold,
+    // The same two things newGame() in main.js builds, through the same two
+    // helpers, so the sim cannot drift from the game about what a difficulty
+    // does. The waves are scaled ONCE here for the same reason they are there:
+    // waveSize and the spawn loop must agree exactly on how big a group is.
+    waves: scaleWaves(level.waves, difficulty),
+    gold: startingGold(level, difficulty),
     lives: level.startLives,
     towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [],
     waveIndex: 0, spawned: 0, timer: openingDelay,

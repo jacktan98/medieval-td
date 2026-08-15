@@ -119,6 +119,20 @@ export const ui = {
   // This is the only glyph that needs it, because it is the only asymmetric one.
   glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] },
 
+  // Two of the archer's three standing orders, on the same bare box as the flag:
+  // they sit on a button with nothing to buy, so they get the bigger glyph.
+  // Wider than they are tall, unlike every other glyph, so 30 lands them at
+  // 30x16 — that is the shape they were drawn, not a squash.
+  //
+  // AIM_MOST_HEALTH IS MISSING ON PURPOSE. Its PNG is 100% opaque — a white
+  // background where every other icon in this folder has a transparent one — so
+  // drawing it would put a white card on a cream plate. It keeps its vector in
+  // render.js until the file is re-exported; adding the entry here and the line
+  // in GLYPH_ART below is all it needs then. tools/trim.mjs fails on an opaque
+  // UI icon now, so this cannot pass unnoticed again.
+  glyph_aim_exit:   { trim: [202, 227, 107, 57], fit: GLYPH_BOX_BARE },
+  glyph_aim_ranged: { trim: [205, 230, 107, 52], fit: GLYPH_BOX_BARE },
+
   // The heart and the sword that replaced the words "Health:" and "Damage:".
   stat_health:  { trim: [157, 176, 198, 160], h: STAT_ICON_H },
   stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
@@ -195,7 +209,9 @@ export const GLYPH_ART = {
   catapult: 'glyph_catapult',
   up: 'glyph_up',
   refund: 'glyph_refund',
-  flag: 'glyph_flag'
+  flag: 'glyph_flag',
+  aim_exit: 'glyph_aim_exit',
+  aim_ranged: 'glyph_aim_ranged'
 };
 
 // Drawn size in game px, aspect always preserved. Three ways to ask:

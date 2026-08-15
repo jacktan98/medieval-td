@@ -1,5 +1,5 @@
 import { level, useLevel } from './level.js';
-import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitPauseButton } from './render.js';
+import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitDifficultyButton, hitPauseButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { clampToRange } from './ground.js';
@@ -137,6 +137,17 @@ function tap(state, x, y, restart) {
       // the other map's plots and cannot come along.
       state.levelIndex = pick;
       useLevel(pick);
+      restart();
+      return true;
+    }
+
+    // Same treatment as the map: a difficulty is a property of the game about
+    // to be played, so changing it rebuilds rather than being remembered for
+    // later. It scales the wave table and the purse, both of which are read
+    // once at newGame.
+    const harder = hitDifficultyButton(state, x, y);
+    if (harder !== null) {
+      state.difficultyIndex = harder;
       restart();
       return true;
     }
