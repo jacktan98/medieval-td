@@ -46,9 +46,22 @@ export function spawn(state, typeId) {
     // while he actually is. Set from the def so a non-thrower carries a 0 and
     // can never halt — see the standoff block in updateEnemies for why the
     // budget exists at all.
-    stand: (def.ranged && def.ranged.standoff) || 0
+    stand: (def.ranged && def.ranged.standoff) || 0,
+    // { factor, left } while an arcane missile is working on it, null otherwise.
+    // Set here rather than left undefined so the shape of an enemy is written
+    // down in one place — the same argument as `halted` above and `poison` on a
+    // soldier.
+    slow: null
   });
 }
+
+// How fast this figure is actually walking, which is not `def.speed` any more.
+//
+// ONE PLACE, and it has to be one place: the movement step and leadPoint must
+// agree exactly or a catapult leads a slowed enemy as though it were marching and
+// drops every rock in front of it. That is the same bug the `halted` check in
+// leadPoint was written to fix, from the other direction.
+export const speedOf = e => e.def.speed * (e.slow ? e.slow.factor : 1);
 
 // Where an enemy will be `t` seconds from now, if nothing interrupts it.
 //
@@ -71,7 +84,7 @@ export function leadPoint(e, t) {
   // throws over the head of the one enemy on the board it can most easily hit.
   // Being held is one. Standing off to throw is the other — see the standoff
   // block in updateEnemies.
-  const ahead = e.foe || e.halted ? 0 : e.def.speed * t;
+  const ahead = e.foe || e.halted ? 0 : speedOf(e) * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -81,6 +94,15 @@ export function updateEnemies(state, dt) {
     // dies still plays out instead of freezing mid-lunge. Same rate as the
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
     e.thrust = Math.max(0, e.thrust - dt * 4);
+
+    // The monastery's work, and it runs wherever the figure is — held, standing
+    // off, or marching. A slow is a thing done TO the enemy rather than a thing
+    // the enemy is doing, so it keeps its own clock and expires on time whatever
+    // else is happening to it.
+    if (e.slow) {
+      e.slow.left -= dt;
+      if (e.slow.left <= 0) e.slow = null;
+    }
 
     // THE THROWER, and the basket is bottomless.
     //
@@ -175,7 +197,7 @@ export function updateEnemies(state, dt) {
     // The lane's own road, not the centreline. Walking the centreline and
     // drawing the figure offset from it makes speed depend on which way the
     // road is bending — see route.js.
-    e.s += e.def.speed * dt;
+    e.s += speedOf(e) * dt;
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should

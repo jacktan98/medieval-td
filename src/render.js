@@ -16,6 +16,12 @@ import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
          SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
+import { MAX_STARS, bestStars, starCuts } from './score.js';
+import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
+         CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
+         groupRows, unitRows, unitPages, stepper, keys, PIN_DOTS, PIN_CANCEL,
+         waveCount, shipped, touched, statStep, COLS } from './admin.js';
+import { enemyTypes } from './data/waves.js';
 
 const PLOT_R = 30;
 
@@ -63,6 +69,10 @@ export function draw(ctx, state) {
   // paused game, so it has to cover the thing that offered it — and while it is
   // up it owns every tap on the board, which is the other half of the same fact.
   if (state.book !== null) drawBook(ctx, state);
+
+  // And the dashboard over everything, on the same terms: it is opened from the
+  // title screen, it covers the board, and it owns every tap while it is up.
+  if (state.admin) drawAdmin(ctx, state);
 }
 
 // The painted board. The road, the ground and the plot markers all live in this
@@ -263,6 +273,9 @@ function drawTower(ctx, t) {
 // take away.
 function drawStatus(ctx, state) {
   for (const e of state.enemies) {
+    // Under the health bar and before it, because it lies on the GROUND — it is
+    // the one piece of status in the game that is a patch rather than a label.
+    if (e.slow) slowMark(ctx, e);
     healthBar(ctx, e.x, e.y - artHeight(e.def) - 4, e.def.r, e.hp / e.maxHp);
   }
   for (const u of state.units) {
@@ -850,6 +863,44 @@ function drawEnemy(ctx, e) {
 // tier 2 enemy — 28px of art over a 12px body — made that obvious.
 const artHeight = def => def.spriteTrim ? def.spriteTrim[3] * SCALE : def.r * 2;
 
+// AN ENEMY AN ARCANE MISSILE HAS CAUGHT, and it is the only way to see that the
+// monastery is doing anything at all.
+//
+// The family's whole output is a number nothing on screen shows: the tower fires
+// slowly, does very little damage, and what it actually buys is time under
+// everybody else's towers. Without a mark, a player who builds one sees a tower
+// that seems to miss. With one, they see the thing they paid for.
+//
+// A RING ON THE GROUND rather than a tint on the sprite. Two reasons and both
+// are practical: a canvas tint means an offscreen buffer per figure per frame,
+// and these figures are 20px tall — a colour wash over one is a smudge, where a
+// ring around its feet is a shape. Flattened to SQUASH like every other patch of
+// ground in the game, so it lies down rather than standing up.
+//
+// It SHRINKS as the slow runs out, which is the countdown: the ring closes in on
+// the figure and is gone at the moment it walks off again. Same idea as the
+// muster ring's sweep, in the one dimension a flat ellipse has to spare.
+const SLOW_R = 7;
+
+function slowMark(ctx, e) {
+  const left = Math.min(1, e.slow.left / 3);
+  const r = e.def.r + SLOW_R * left;
+
+  ctx.save();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = 'rgba(20,26,38,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(e.x, e.y, r, r * SQUASH, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(150,200,240,0.85)';
+  ctx.beginPath();
+  ctx.ellipse(e.x, e.y, r, r * SQUASH, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
 // over 12px soldiers read as a wall of stripes and hide the fight underneath.
 function healthBar(ctx, x, y, r, pct) {
@@ -907,10 +958,19 @@ const RING_R0 = 4;
 const RING_STEP = 3;
 
 // How much air there is between the bottom of the pennant and the top of the
-// widest ring. Small on purpose: the point of hanging them here is that they
-// belong to the flag, and a gap big enough to read as a separate object undoes
-// that.
-const RING_DROP = 3;
+// widest ring.
+//
+// 3 -> 10, asked for from play. 3 was chosen on the reasoning that the rings
+// belong to the flag and a big gap would undo that, and the reasoning is fine —
+// what it missed is that `flagFrac` is the bottom of the CLOTH and the POLE goes
+// on down past it. So at 3 the stack was not sitting under the flag, it was
+// sitting on the pole, and two dark rings crossing a dark pole read as one
+// smudge rather than as a countdown.
+//
+// 10 clears the ring stack of the pennant by a visible margin on all three tiers
+// while keeping it well inside the building's box — which is the property the
+// old top-left-corner version lacked, and the reason these are hung here at all.
+const RING_DROP = 10;
 
 // Countdown ring for a soldier that is dead and coming back, hung UNDER THE
 // BARRACKS' FLAG.
@@ -1853,9 +1913,17 @@ const ROW_PITCH = 18;
 export const START_BTN = { x: 400, y: 390, w: 160, h: 54 };
 
 // One button per level, side by side above Start. Sized for a thumb like
-// everything else — 150 x 46 is well over the 44px minimum — and laid out from
+// everything else — 150 x 60 is well over the 44px minimum — and laid out from
 // the middle so a third map would not need the numbers re-typed.
-const MAP_BTN_W = 150, MAP_BTN_H = 46, MAP_GAP = 16;
+//
+// IT GREW 46 -> 60 TO HOLD THE STARS, and inside rather than under. Hanging them
+// below the button was the first attempt and it put them straight through the
+// difficulty row: this column is full, and the only spare space on the title
+// screen is inside things. It also reads better — a rating printed on the map's
+// own plate belongs to that map in a way a detached row of stars under it does
+// not — and it costs nothing, because the button was 46px of plate holding one
+// 18px word.
+const MAP_BTN_W = 150, MAP_BTN_H = 60, MAP_GAP = 16;
 
 export function mapButtons() {
   const n = levels.length;
@@ -1864,7 +1932,7 @@ export function mapButtons() {
     i,
     name: l.name,
     x: Math.round(480 - total / 2 + i * (MAP_BTN_W + MAP_GAP)),
-    y: 272,
+    y: 262,
     w: MAP_BTN_W,
     h: MAP_BTN_H
   }));
@@ -1895,7 +1963,7 @@ export function difficultyButtons() {
     i,
     name: d.name,
     x: Math.round(480 - total / 2 + i * (DIFF_BTN_W + DIFF_GAP)),
-    y: 328,
+    y: 332,
     w: DIFF_BTN_W,
     h: DIFF_BTN_H
   }));
@@ -1931,10 +1999,18 @@ function drawStart(ctx, state) {
 
   ctx.font = '17px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(240,230,210,0.72)';
-  ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 252);
+  ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 246);
 
   // The board behind this overlay is already the chosen map, so picking one is
   // its own preview: the roads and the plots change under the panel as you tap.
+  //
+  // EACH MAP CARRIES ITS BEST RESULT, as a row of three stars under the name.
+  // This is where progress belongs: it is the screen a player is on when they
+  // decide which map to play next, and the whole reason to know how a map went
+  // last time is to choose. It is read for the difficulty CURRENTLY SELECTED, so
+  // the rows change as you tap between Normal and Hard — which is also the
+  // clearest way to say that they are two separate ladders.
+  const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
   for (const m of mapButtons()) {
     const on = m.i === (state.levelIndex ?? 0);
     ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
@@ -1947,7 +2023,9 @@ function drawStart(ctx, state) {
 
     ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
     ctx.font = '700 18px system-ui, sans-serif';
-    ctx.fillText(m.name, m.x + m.w / 2, m.y + m.h / 2 + 1);
+    ctx.fillText(m.name, m.x + m.w / 2, m.y + 21);
+
+    starRow(ctx, m.x + m.w / 2, m.y + 44, 7, bestStars(levels[m.i].id, diff.id), on);
   }
 
   // The difficulty row. Same treatment as the maps above it so the two read as
@@ -1986,8 +2064,58 @@ function drawStart(ctx, state) {
   // keeps the middle of the panel and this sits below.
   drawBookButton(ctx, BOOK_BTN_START, 19);
 
+  // The dashboard's door, in the bottom-right corner. Drawn quiet — a thin
+  // outline and a muted label rather than the cream plate every other button on
+  // this screen wears — because it is not part of the game and should not read as
+  // a third thing to press before starting.
+  ctx.strokeStyle = 'rgba(196,165,116,0.45)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(ADMIN_BTN.x, ADMIN_BTN.y, ADMIN_BTN.w, ADMIN_BTN.h, 8);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(240,230,210,0.55)';
+  ctx.font = '600 14px system-ui, sans-serif';
+  ctx.fillText('Admin', ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// A row of up to MAX_STARS stars, `filled` of them lit. Used in two places and
+// at two sizes — small under each map button on the title screen, large in the
+// end-of-game summary — so the size is a parameter and nothing else is.
+//
+// EVERY SLOT IS DRAWN, lit or not, which is what makes it a score rather than a
+// decoration: two stars only means something beside the third one you did not
+// get. An unearned star is the same outline with nothing in it.
+function starRow(ctx, cx, cy, r, filled, lit = true) {
+  const gap = r * 2.5;
+  const left = cx - (MAX_STARS - 1) * gap / 2;
+
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+
+  for (let i = 0; i < MAX_STARS; i++) {
+    ctx.beginPath();
+    for (let p = 0; p < 10; p++) {
+      const a = -Math.PI / 2 + p * Math.PI / 5;
+      const rr = p % 2 ? r * 0.45 : r;
+      const x = left + i * gap + Math.cos(a) * rr;
+      const y = cy + Math.sin(a) * rr;
+      p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+    if (i < filled) {
+      ctx.fillStyle = '#F2C64B';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(24,28,20,0.7)';
+    } else {
+      ctx.strokeStyle = lit ? 'rgba(24,28,20,0.45)' : 'rgba(240,230,210,0.35)';
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // --- the encyclopedia --------------------------------------------------------
@@ -2325,17 +2453,327 @@ function drawBookButton(ctx, b, size) {
   ctx.fillText('Encyclopedia', b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
+// The end-of-game summary.
+//
+// It used to be a headline and "Tap to play again", which answered the one
+// question a player already knew the answer to and none of the others. What is
+// here now is the run: what it was rated, what that rating cost, and where it
+// sits against the best you have managed on this map at this difficulty.
+//
+// THE THRESHOLDS ARE PRINTED, and that is the part that earns its space. A star
+// rating nobody can see the rules of is a number that happens to you; "18 lives
+// for three stars" is a target to play for next time, and it is the reason the
+// panel says how many lives were left rather than only how many stars they were
+// worth. The two figures come from starCuts() rather than being typed, so they
+// cannot drift from the ones score.js actually applies.
 function drawResult(ctx, state) {
-  ctx.fillStyle = 'rgba(34,32,28,0.82)';
+  const s = state.summary;
+
+  ctx.fillStyle = 'rgba(34,32,28,0.86)';
   ctx.fillRect(0, 0, 960, 540);
-  ctx.fillStyle = '#F0E6D2';
-  ctx.font = '700 52px system-ui, sans-serif';
+
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(state.result === 'won' ? 'Waves cleared' : 'The keep has fallen', 480, 250);
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '700 44px system-ui, sans-serif';
+  ctx.fillText(state.result === 'won' ? 'Waves cleared' : 'The keep has fallen', 480, 148);
+
+  if (!s) {
+    ctx.font = '20px system-ui, sans-serif';
+    ctx.fillText('Tap to play again', 480, 300);
+    ctx.textAlign = 'left';
+    return;
+  }
+
+  ctx.font = '17px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(240,230,210,0.66)';
+  ctx.fillText(`${s.map}  ·  ${s.difficulty}`, 480, 186);
+
+  starRow(ctx, 480, 244, 26, s.stars);
+
+  // What the rating was earned with, and what the next one up would take. The
+  // second line is only worth saying while there is a rating left to reach.
+  const [three, two] = starCuts(s.startLives);
+  ctx.font = '700 21px system-ui, sans-serif';
+  ctx.fillStyle = '#F0E6D2';
+  ctx.fillText(
+    s.won
+      ? `${s.lives} of ${s.startLives} lives held  ·  ${s.ofWaves} waves`
+      : `The keep fell on wave ${s.waves + 1} of ${s.ofWaves}`,
+    480, 314);
+
+  // WHAT THE NEXT RATING WOULD TAKE, and a loss is not a thin version of a win:
+  // there is no number of lives that earns a star on a run that did not finish,
+  // so the line says the thing that actually stands between them and one.
+  ctx.font = '16px system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(240,230,210,0.62)';
+  const want = s.stars === 1 ? two : s.stars === 2 ? three : null;
+  ctx.fillText(
+    !s.won ? `Hold the keep to the end of wave ${s.ofWaves} for a star.`
+      : want === null ? 'Nothing left to prove on this one.'
+      : `${want} lives for ${s.stars === 2 ? 'three' : 'two'} stars.`,
+    480, 348);
+
+  // The record line. "You beat it" is worth its own colour; matching it or
+  // falling short both just report where the bar is.
+  ctx.font = '700 17px system-ui, sans-serif';
+  ctx.fillStyle = s.beat ? '#E0B24C' : 'rgba(240,230,210,0.62)';
+  ctx.fillText(
+    s.beat ? 'A new best on this map.'
+           : `Best here: ${s.best} of ${MAX_STARS} stars.`,
+    480, 386);
+
   ctx.font = '20px system-ui, sans-serif';
-  ctx.fillText('Tap to play again', 480, 306);
+  ctx.fillStyle = '#F0E6D2';
+  ctx.fillText('Tap to play again', 480, 440);
   ctx.textAlign = 'left';
+}
+
+// --- the admin dashboard -------------------------------------------------------
+//
+// Geometry comes from src/admin.js so input.js hit-tests the rects that actually
+// get drawn — the same split as the radial menu and the encyclopedia, and for the
+// same reason.
+//
+// It is drawn in the game's own palette rather than as a settings screen, because
+// it is opened over the title screen and a grey form dropped on a parchment game
+// reads as a different application.
+const ADMIN_INK = '#F0E6D2';
+const ADMIN_DIM = 'rgba(240,230,210,0.55)';
+const ADMIN_EDGE = 'rgba(196,165,116,0.55)';
+
+function panelButton(ctx, b, label, { on = false, live = true, size = 15, r = 8 } = {}) {
+  ctx.save();
+  ctx.globalAlpha = live ? 1 : 0.35;
+  ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, r);
+  ctx.fill();
+  ctx.strokeStyle = on ? ADMIN_INK : ADMIN_EDGE;
+  ctx.lineWidth = on ? 2.5 : 1.5;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = on ? '#241F17' : ADMIN_INK;
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.restore();
+}
+
+// One editable number: [-] value [+].
+//
+// THE VALUE IS COLOURED WHEN IT HAS BEEN CHANGED, amber against cream, and the
+// shipped figure is printed under it. That is the whole reason this panel is
+// usable at all — without it there is no way to tell a number somebody set from a
+// number the game came with, and no way back to the second one except by
+// remembering it.
+// SAVE AND RESTORE, and it is not tidiness. This centres its text, and the row
+// labels beside it are drawn left-aligned in a loop — so without the restore
+// every row after the first drew its name centred on the left margin and half of
+// it fell off the panel. Two rows of "nt Thug" on the first screenshot.
+function stepperRow(ctx, s, value, base) {
+  const moved = value !== base;
+
+  panelButton(ctx, s.minus, '−', { size: 22, r: 7 });
+  panelButton(ctx, s.plus, '+', { size: 22, r: 7 });
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = moved ? '#E0B24C' : ADMIN_INK;
+  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.fillText(String(value), s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 - (moved ? 5 : 0));
+
+  if (moved) {
+    ctx.fillStyle = ADMIN_DIM;
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText(`was ${base}`, s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 + 12);
+  }
+  ctx.restore();
+}
+
+function columnHead(ctx, x, w, label) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ADMIN_DIM;
+  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.fillText(label, x + w / 2, ADMIN_PANEL.y + 78);
+  ctx.restore();
+}
+
+function drawAdmin(ctx, state) {
+  const a = state.admin;
+
+  ctx.fillStyle = 'rgba(20,22,18,0.92)';
+  ctx.fillRect(0, 0, 960, 540);
+  ctx.fillStyle = 'rgba(36,40,32,0.96)';
+  ctx.beginPath();
+  ctx.roundRect(ADMIN_PANEL.x, ADMIN_PANEL.y, ADMIN_PANEL.w, ADMIN_PANEL.h, 12);
+  ctx.fill();
+  ctx.strokeStyle = ADMIN_EDGE;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if (a.stage === 'pin') { drawPinPad(ctx, a); return; }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ADMIN_INK;
+  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.fillText(a.tab === 'waves' ? 'Admin — enemies per wave' : 'Admin — unit stats',
+    ADMIN_PANEL.x + 16, ADMIN_TITLE_Y);
+
+  for (const t of ADMIN_TABS) panelButton(ctx, t, t.label, { on: a.tab === t.id });
+  panelButton(ctx, ADMIN_CLOSE, 'Close');
+
+  if (a.tab === 'waves') drawAdminWaves(ctx, a);
+  else drawAdminUnits(ctx, a);
+
+  // Reset is the one control here that throws work away, so it is drawn dead
+  // when there is nothing to throw — a button that does nothing when you press
+  // it reads as the panel having stopped listening.
+  panelButton(ctx, RESET_BTN, 'Reset all', { live: touched() });
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+function drawAdminWaves(ctx, a) {
+  const lv = levels[a.map];
+
+  for (const m of mapTabs()) panelButton(ctx, m, m.label, { on: m.i === a.map });
+  for (const w of waveTabs(a.map)) {
+    panelButton(ctx, w, String(w.i + 1), { on: w.i === a.wave, r: 7 });
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  const rows = groupRows(a.map, a.wave);
+  let total = 0;
+
+  for (const r of rows) {
+    const count = waveCount(lv.id, a.wave, r.j);
+    total += count;
+
+    ctx.fillStyle = ADMIN_INK;
+    ctx.font = '700 19px system-ui, sans-serif';
+    ctx.fillText(enemyTypes[r.group.type].name, ADMIN_PANEL.x + 16, r.y + 16);
+
+    ctx.fillStyle = ADMIN_DIM;
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillText(`one every ${r.group.gap.toFixed(2)}s`, ADMIN_PANEL.x + 16, r.y + 34);
+
+    stepperRow(ctx, stepper('damage', r.y, 'count'), count,
+      shipped(`${lv.id}|${a.wave}|${r.j}`));
+  }
+
+  // The total, because the count that matters to a player is the wave's, and it
+  // is the one number in this panel nobody can work out at a glance once a wave
+  // has three groups in it.
+  ctx.textAlign = 'left';
+  ctx.fillStyle = ADMIN_DIM;
+  ctx.font = '15px system-ui, sans-serif';
+  ctx.fillText(
+    `Wave ${a.wave + 1} of ${lv.waves.length} on ${lv.name} — ${total} enemies` +
+    `${a.wave === lv.waves.length - 1 ? ', the last one' : ''}`,
+    ADMIN_PANEL.x + 16, rows[rows.length - 1].y + 84);
+
+  ctx.fillStyle = 'rgba(240,230,210,0.40)';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillText('Difficulty is applied on top of these: Normal thins a wave, Hard swells it.',
+    ADMIN_PANEL.x + 16, rows[rows.length - 1].y + 106);
+}
+
+function drawAdminUnits(ctx, a) {
+  const rows = unitRows(a.page);
+  const pages = unitPages();
+
+  columnHead(ctx, COLS.hp, 200, 'HEALTH');
+  columnHead(ctx, COLS.damage, 200, 'ATTACK DAMAGE');
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  for (const u of rows) {
+    ctx.fillStyle = ADMIN_INK;
+    ctx.font = '700 19px system-ui, sans-serif';
+    ctx.fillText(u.name, ADMIN_PANEL.x + 16, u.y + 16);
+
+    ctx.fillStyle = ADMIN_DIM;
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillText(u.of, ADMIN_PANEL.x + 16, u.y + 34);
+
+    if (u.hp) {
+      stepperRow(ctx, stepper('hp', u.y, 'hp'), u.def.hp, shipped(`${u.id}|hp`));
+    } else {
+      // A tower's man cannot be hurt, so there is no health to edit — said in
+      // words rather than left blank, because an empty column reads as a bug.
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(240,230,210,0.28)';
+      ctx.font = '14px system-ui, sans-serif';
+      ctx.fillText('out of reach', COLS.hp + 100, u.y + 20);
+      ctx.restore();
+    }
+
+    stepperRow(ctx, stepper('damage', u.y, 'damage'), u.def.damage, shipped(`${u.id}|damage`));
+  }
+
+  // How far one tap moves a number, said once for the page rather than on every
+  // row. It is worth saying at all because the step is PROPORTIONAL — a tap on
+  // the giant's health moves 75 and a tap on a spearman's damage moves 1 — and a
+  // panel whose buttons do different things on different rows without saying so
+  // reads as broken.
+  ctx.fillStyle = 'rgba(240,230,210,0.40)';
+  ctx.font = '13px system-ui, sans-serif';
+  ctx.fillText('Each tap moves a stat by about a twentieth of where it already is.',
+    ADMIN_PANEL.x + 16, FOOT_Y - 14);
+
+  panelButton(ctx, PREV_BTN, '◀', { size: 16 });
+  panelButton(ctx, NEXT_BTN, '▶', { size: 16 });
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = ADMIN_DIM;
+  ctx.font = '15px system-ui, sans-serif';
+  ctx.fillText(`Page ${a.page + 1} / ${pages}`,
+    (PREV_BTN.x + PREV_BTN.w + NEXT_BTN.x) / 2, PREV_BTN.y + PREV_BTN.h / 2 + 1);
+  ctx.textAlign = 'left';
+}
+
+// The keypad. Four rings for the digits, twelve keys, and no submit — the code is
+// checked the moment the fourth digit lands, so a correct PIN is exactly four
+// taps and a wrong one says so and empties itself.
+function drawPinPad(ctx, a) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ADMIN_INK;
+  ctx.font = '700 26px system-ui, sans-serif';
+  ctx.fillText('Admin', 480, 78);
+
+  ctx.font = '15px system-ui, sans-serif';
+  ctx.fillStyle = a.wrong ? '#D4453A' : ADMIN_DIM;
+  ctx.fillText(a.wrong ? 'Wrong code.' : `Enter the ${PIN.length}-digit code.`, 480, 108);
+
+  const left = 480 - (PIN.length - 1) * PIN_DOTS.gap / 2;
+  for (let i = 0; i < PIN.length; i++) {
+    ctx.beginPath();
+    ctx.arc(left + i * PIN_DOTS.gap, PIN_DOTS.y, PIN_DOTS.r, 0, Math.PI * 2);
+    if (i < a.typed.length) { ctx.fillStyle = '#E0B24C'; ctx.fill(); }
+    ctx.strokeStyle = ADMIN_EDGE;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  for (const k of keys()) {
+    const label = k.k === 'clear' ? 'C' : k.k === 'back' ? '⌫' : k.k;
+    panelButton(ctx, k, label, { size: k.k.length > 1 ? 20 : 24, r: 9 });
+  }
+
+  panelButton(ctx, PIN_CANCEL, 'Cancel');
 }
 
 export { PLOT_R };

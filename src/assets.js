@@ -42,6 +42,17 @@ export const paths = {
   artillery_t3:        'assets/towers/artillery/Artillery_Default_T3.png',
   artillery_t3_reload: 'assets/towers/artillery/Artillery_Reload_T3.png',
   artillery_t3_fire:   'assets/towers/artillery/Artillery_Fire_T3.png',
+  // The monastery, in a folder of its own like every other family. The artist
+  // uploaded these loose into assets/towers beside the three family folders, and
+  // they were moved rather than wired where they landed — a building lives with
+  // its family, which is the rule the artillery reorganisation set.
+  //
+  // Tiers 2 and 3 are the same building in timber and in stone, so their trims
+  // and their shadows are identical; they are still two files and two keys, and
+  // the tier stars stay off because the drawings differ.
+  monastery_t1: 'assets/towers/monastery/Monastery_Tower_T1.png',
+  monastery_t2: 'assets/towers/monastery/Monastery_Tower_T2.png',
+  monastery_t3: 'assets/towers/monastery/Monastery_Tower_T3.png',
   // EVERY FIGHTING MAN IS TWO DRAWINGS NOW: a Default he stands and walks in,
   // and an Attack he swings or looses an arrow in. Same suffix rule as the
   // artillery frames above — the bare key is the resting pose, so the info box,
@@ -66,6 +77,16 @@ export const paths = {
   soldier_t2_attack:  'assets/units/Soldiers_Pikeman_Attack.png',
   soldier_t3:         'assets/units/Soldiers_Swordsman_Default.png',
   soldier_t3_attack:  'assets/units/Soldiers_Swordsman_Attack.png',
+  // The monastery's three churchmen, who stand on their decks exactly as the
+  // archers do. The keys stay tiered — the code reaches them through
+  // `monastery[1].gunner` — while the files are named for the man, which is the
+  // same split every other family already has.
+  priest_t1:          'assets/units/Soldiers_Priest_Default.png',
+  priest_t1_attack:   'assets/units/Soldiers_Priest_Attack.png',
+  priest_t2:          'assets/units/Soldiers_Bishop_Default.png',
+  priest_t2_attack:   'assets/units/Soldiers_Bishop_Attack.png',
+  priest_t3:          'assets/units/Soldiers_Cardinal_Default.png',
+  priest_t3_attack:   'assets/units/Soldiers_Cardinal_Attack.png',
   // The catapult crewman, for the info box only — he is already drawn into all
   // three machine frames, which is the whole reason the machine animates. He
   // sits with the other men rather than with the machine because that is what he
@@ -77,6 +98,14 @@ export const paths = {
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
+  // The arcane missile, one per tier. Named for the man who throws it, like the
+  // figures above and unlike the rocks, because that is how the artist exported
+  // them — including the spelling of "Missle", which is left alone: the code
+  // bends to the artist's filenames, and renaming an upload only means renaming
+  // it again after the next one.
+  missile_t1:  'assets/projectiles/Soldiers_Priest_Arcane_Missle.png',
+  missile_t2:  'assets/projectiles/Soldiers_Bishop_Arcane_Missle.png',
+  missile_t3:  'assets/projectiles/Soldiers_Cardinal_Arcane_Missle.png',
   // The plague doctor's flask, and the only projectile in the game thrown AT
   // the player's men rather than by them.
   flask:       'assets/projectiles/Enemies_Plague_Thug_Flask.png',
@@ -143,10 +172,11 @@ export const paths = {
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
   glyph_bow:       'assets/ui/Archery_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',
-  // The siege family's button, and the last vector glyph on a family that has
-  // tiers. Only the monastery's cross and the `max` chevrons are drawn in code
-  // now.
   glyph_catapult:  'assets/ui/Artillery_Icon.png',
+  // The monastery's button. Every family that has tiers now has a drawing, so
+  // the `max` chevrons are the only vector glyph left that a player can actually
+  // see — the rest are the fallback for a PNG that failed to decode.
+  glyph_cross:     'assets/ui/Monastery_Icon.png',
   glyph_up:        'assets/ui/Upgrade_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button

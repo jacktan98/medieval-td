@@ -11,7 +11,7 @@
 import { readFileSync, readdirSync } from 'fs';
 import { basename, join } from 'path';
 import { decode } from './png.mjs';
-import { SCALE, BLOOD_SCALE, archery, barracks, siege } from '../src/data/towers.js';
+import { SCALE, BLOOD_SCALE, archery, barracks, siege, monastery } from '../src/data/towers.js';
 // Sprite key -> file, so a frame is checked wherever the file actually lives.
 // The paths are URL-encoded for the browser; decode them to read from disk.
 import { paths as ASSET_URLS } from '../src/assets.js';
@@ -178,7 +178,7 @@ for (const d of dirs) {
 // and it looks like a bad mount rather than a stale number. Catch it here.
 {
   let bad = 0;
-  for (const def of [...archery, ...barracks]) {
+  for (const def of [...archery, ...barracks, ...monastery]) {
     if (!def.frontTrims) continue;
     const [tx, ty, tw, th] = def.spriteTrim;
     for (const r of def.frontTrims) {
@@ -205,7 +205,7 @@ for (const d of dirs) {
 // of firing and nothing anywhere would say so.
 {
   let bad = 0;
-  for (const def of [...archery, ...barracks, ...siege]) {
+  for (const def of [...archery, ...barracks, ...siege, ...monastery]) {
     if (!def.frames) continue;
     const [tx, ty, tw, th] = def.spriteTrim;
     for (const key of def.frames) {

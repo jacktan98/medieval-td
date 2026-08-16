@@ -19,14 +19,28 @@ in `src/assets.js`.
 | `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | ALL THREE artillery tiers, at rest    |
 | `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | ALL THREE artillery tiers, loading    |
 | `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | ALL THREE artillery tiers, throwing   |
+| `monastery/Monastery_Tower_T1.png`     | 1024   | 103 x 129 px | Wayside Shrine (1) |
+| `monastery/Monastery_Tower_T2.png`     | 1024   | 88 x 158 px  | Chapel (2)         |
+| `monastery/Monastery_Tower_T3.png`     | 1024   | 88 x 158 px  | Abbey (3)          |
 
 Elsewhere, but artillery's: `units/Artillery_Man_T1.png` (the crewman, for the
 info box only — he is drawn into all three frames already) and
 `projectiles/Artillery_Rock_T1.png`.
 
-**Archery and barracks have their own building per tier.** Artillery does not
-yet — one machine draws all three — which is why it is the only family in the
-game that wears TIER STARS. See below.
+Elsewhere, but the monastery's: `units/Soldiers_Priest_Default.png` and
+`_Attack` (and the Bishop's and the Cardinal's), and
+`projectiles/Soldiers_Priest_Arcane_Missle.png` for each of the three.
+
+**Archery, barracks and the monastery have their own building per tier.**
+Artillery does not yet — one machine draws all three — which is why it is the
+only family in the game that wears TIER STARS. See below.
+
+**The monastery's tiers 2 and 3 trim to the same rect and stand on the same
+shadow, and they still get no stars.** That is right rather than an oversight:
+the stars appear when two tiers SHARE A SPRITE KEY, meaning the building on the
+board cannot tell you which tier it is, and these are two different drawings —
+an abbey is visibly stone where a chapel is timber. Same frame, different
+building.
 
 ## The catapult is three drawings, and they share ONE trim
 
@@ -529,6 +543,8 @@ is the drawing being honest, not a number to fix.
 8. `node tools/flag.mjs` if you touched a BARRACKS — paste the new `flagFrac`.
    The muster rings hang under the pennant, so where the pennant is drawn is a
    number the game reads; move the flag and the rings have to follow it.
+9. `node tools/book.mjs` if you added or removed a TIER — the encyclopedia flows
+   its ladders into two columns of six, and twelve tiers fill them exactly.
 
 ## The muster rings hang under the flag, so the flag is a measurement
 
@@ -549,3 +565,42 @@ clear of that pennant. That reads as status, which was the point, and it does no
 stay on the board: the offset is a whole ring stack outside the box, and map 3's
 plot 0 sits at x 79, which put the rings at x 3 and clipped them on the canvas
 edge. Inside the box there is nothing left to fall off.
+
+## The monastery is archery again, structurally
+
+A timber deck on legs with a man standing on it, a roof from tier 2, stone from
+tier 3. Every anchor is measured the same way an archery tower's is and the
+renderer needed nothing new: `mountFrac` is the middle of the deck, `groundFrac`
+is the centre of the shadow ellipse, `frontTrims` is the near corner post, and
+the priest is a Default and an Attack registered on one shadow.
+
+Three things about it are worth knowing before the next redraw.
+
+**The deck is not a parallelogram on any tier.** Tiers 1 and 2 archery find their
+mount where the diagonals of the four leg-tops cross; that is not defined on a
+face whose diagonals miss each other, and on the shrine they miss by 10.4px. All
+three monastery mounts are the AREA CENTROID of the deck polygon, which is the
+same point on a true parallelogram and the right one here. Tier 3 archery already
+had to do this.
+
+**The priest's shadow is cut in two by his own staff.** He plants it through the
+middle of the ellipse, so `tools/shadow.mjs` finds two brown blobs rather than
+one, and either half on its own puts the anchor 7.5px out. The tool now puts a
+split shadow back together — but only when the two pieces are SIDE BY SIDE across
+a seam of at most 4px and lie in the same height band. That narrowness is
+load-bearing: a thug's robe is the same brown as his shadow and sits directly
+above it, and a looser rule swallowed the whole figure and moved two anchors.
+
+**The near post barely reaches him.** He is 80 source px wide against an archer's
+162, so the post at the deck's near corner only crosses him when he is mirrored
+to face right. The rect is there anyway, tight to the post, because a building
+part in front of a man is in front of him at every facing.
+
+## The monastery is a SLOW, and the picture has to say so
+
+Its whole output is a number nothing on the board would otherwise show: the
+tower fires every 2.4 seconds, does five damage, and buys its keep by holding
+what it hits under everybody else's towers. So an enemy an arcane missile has
+caught wears a pale blue ring on the ground at its feet, and the ring SHRINKS as
+the slow runs out. Without it a player who builds one sees a tower that appears
+to miss.

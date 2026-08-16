@@ -109,6 +109,10 @@ export const ui = {
   glyph_bow:    { trim: [208, 200, 96, 112], fit: GLYPH_BOX },
   glyph_swords: { trim: [210, 212, 92, 88],  fit: GLYPH_BOX },
   glyph_catapult: { trim: [204, 211, 104, 90], fit: GLYPH_BOX },
+  // The monastery's, and the only glyph in the set that is taller than it is
+  // wide — 76 x 104 source, so at the 26px box it lands 19 x 26 rather than
+  // filling it. That is the drawing (a standing cross), not a squash.
+  glyph_cross:  { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
   glyph_up:     { trim: [223, 212, 66, 88],  fit: GLYPH_BOX },
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72
@@ -204,14 +208,15 @@ export const PORTRAIT_SCALE = 1.6;
 export const INFO_SCALE = 0.9;
 export const INFO_PORTRAIT = PORTRAIT_SCALE * INFO_SCALE;
 
-// Which drawn glyph replaces which vector one. A glyph with no entry — siege's
-// catapult, the monastery's cross, and the `max` chevrons on a tower that has
-// nothing left to buy — keeps the vector in render.js, so a family with no art
-// still gets a button rather than a blank disc.
+// Which drawn glyph replaces which vector one. A glyph with no entry — today
+// only the `max` chevrons on a tower that has nothing left to buy — keeps the
+// vector in render.js, so a button with no art still gets a picture rather than
+// a blank disc.
 export const GLYPH_ART = {
   bow: 'glyph_bow',
   swords: 'glyph_swords',
   catapult: 'glyph_catapult',
+  cross: 'glyph_cross',
   up: 'glyph_up',
   refund: 'glyph_refund',
   flag: 'glyph_flag',

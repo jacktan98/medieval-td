@@ -15,6 +15,9 @@ nothing else.
 | Spearman           | `Soldiers_Spearman_Default`        | `Soldiers_Spearman_Attack`        |
 | Pikeman            | `Soldiers_Pikeman_Default`         | `Soldiers_Pikeman_Attack`         |
 | Swordsman          | `Soldiers_Swordsman_Default`       | `Soldiers_Swordsman_Attack`       |
+| Priest             | `Soldiers_Priest_Default`          | `Soldiers_Priest_Attack`          |
+| Bishop             | `Soldiers_Bishop_Default`          | `Soldiers_Bishop_Attack`          |
+| Cardinal           | `Soldiers_Cardinal_Default`        | `Soldiers_Cardinal_Attack`        |
 
 **Default is the man at rest**, and it is the drawing used almost everywhere: he
 walks in it, stands in his slot in it, and it is the picture the encyclopedia and
@@ -25,9 +28,22 @@ the in-game description box show. An archer's Default has an arrow **nocked**.
 each time he lands a hit, and for the archer that is the instant after the arrow
 has gone, which is why his bow has nothing on it: the arrow is on the board now.
 
+**A churchman's Default has his staff upright** beside him and his Attack has it
+swung down and out in front, which is the moment the arcane missile leaves it.
+His Default is the tallest figure in the game at 154 source px — an archer's is
+120 — and it is the staff that does it, not the man.
+
 The three artillery engineers have one drawing each. They are never seen
 fighting — the crewman is painted into all three frames of his machine, and the
 file here exists only so the info box and the book have a portrait.
+
+**Watch where a figure's own gear crosses his shadow.** All three churchmen plant
+the staff through the middle of theirs, which splits the ellipse into two blobs;
+`tools/shadow.mjs` puts those back together, but only across a seam of a few
+pixels between pieces sitting side by side at the same height. Anything wider
+than a shaft — a boot, a hem, a club resting on the ground — has to stay OFF the
+shadow, or the anchor for that figure will be measured somewhere it does not
+stand. See the note in `assets/towers/README.md`.
 
 ## What must line up between the two poses
 

@@ -49,6 +49,14 @@ const timeLimit = () => PER_WAVE * level.waves.length;
 export const A = (plot, tier = 2) => ({ plot, fam: 'archery', tier });
 export const B = (plot, tier = 2) => ({ plot, fam: 'barracks', tier });
 export const S = (plot, tier = 2) => ({ plot, fam: 'siege', tier });
+// The monastery. It is NOT in tools/sweep.mjs and that is deliberate: the sweep
+// crosses every plot with every ASSIGNMENT of two families, which is 2^n, and a
+// third or fourth family makes it 3^n and 4^n — 4 million builds on map 3 rather
+// than two thousand. The invariant the sweep exists to guard is a claim about
+// archery and barracks, so the sweep still asks exactly that question, and the
+// other two families are held to the same rule here, by hand, in the scenarios
+// below: a pure build of one must lose.
+export const M = (plot, tier = 2) => ({ plot, fam: 'monastery', tier });
 
 function newState() {
   return {
@@ -280,6 +288,19 @@ m1: {
   'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), B(3), S(4), S(6), S(7)],
   'MIX 2 archery + 3 barracks + 1 siege': [S(0), B(1), A(4), B(6), B(7), A(8)],
   'MIX 3 siege + 3 barracks':       [S(0), B(1), S(4), B(6), B(7), S(8)],
+  // THE MONASTERY, held to the same two rules and compared the same way. A pure
+  // build of it must lose — it does, and not narrowly: five damage a shot every
+  // 2.4 seconds does not kill a wave however long you slow it down — and the mix
+  // SWAPS AN ARCHERY TOWER for one, which is the comparison worth having,
+  // because a monastery and a watchtower want the same plot.
+  //
+  // What the swap measures is the family's whole argument: a shrine does about a
+  // third of the damage the bow it replaced was doing, and pays for it by keeping
+  // everything it touches under the other five towers for longer. On a
+  // SIX-TOWER map that trade is a hard sell — see the note under m3, where there
+  // is room for eleven and the same swap reads very differently.
+  'ALL monastery x6 (expect LOSS)': [M(0), M(1), M(4), M(6), M(7), M(8)],
+  'MIX 2 archery + 3 barracks + 1 monastery': [M(0), B(1), A(4), B(6), B(7), A(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 },
 
@@ -306,27 +327,30 @@ m2: {
   'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), S(2), B(5), S(6), S(7)],
   'MIX 2 archery + 3 barracks + 1 siege': [A(1), S(2), B(5), B(6), A(7), B(8)],
   'MIX 3 siege + 3 barracks':       [S(1), S(2), B(5), B(6), S(7), B(8)],
+  'ALL monastery x6 (expect LOSS)': [M(0), M(2), M(5), M(6), M(7), M(8)],
+  'MIX 2 archery + 3 barracks + 1 monastery': [M(1), A(2), B(5), B(6), A(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 
-// Map 3, from `node tools/sweep.mjs 3`. TEN TOWERS, not six, and that is
-// the map rather than a change of convention: its roads never meet, so six here
-// is three per road where six on map 1 all shoot at the one road. Tuning this
+// Map 3, from `node tools/sweep.mjs 3`. ELEVEN TOWERS, not six, and that is the
+// map rather than a change of convention: its roads never meet, so six here is
+// three per road where six on map 1 all shoot at the one road. The sweep now
+// uses every plot the map has rather than a fixed ten — see SIZE there. Tuning this
 // map's waves against six-tower builds produced a table that killed everything
 // on wave 4 — see wavesLong in src/data/waves.js.
 //
-// The pure builds still lose and a mix still wins, which is the invariant; what
-// is different is how WIDE the spread is. Plots 0, 2, 6 and 9 sit between the
-// two roads and cover both, and 3, 5 and 8 watch only the north while 1, 4 and 7
-// watch only the south — so a build that ignores half the map loses to half of
-// every wave, and one that does not is very comfortable indeed.
+// Plots 0, 2, 3, 7 and 10 sit between the two roads and cover both, and 4, 6 and
+// 9 watch only the north while 1, 5 and 8 watch only the south — so a build that
+// ignores half the map loses to half of every wave, and one that does not is very
+// comfortable indeed.
 //
-// RE-SWEPT AFTER THE MAP WAS REDRAWN, for the same reason map 2's list was
-// re-swept after `march` came out, and it is the same trap: the artist moved
-// eight of the ten markers, so these plot INDICES point at different ground
-// than they did. The old list was not wrong about the game, it was wrong about
-// where plot 6 is — and two of its mixes lost outright, which reads exactly
-// like a balance collapse and was not one.
+// RE-SWEPT AFTER EVERY REDRAW, for the same reason map 2's list was re-swept
+// after `march` came out, and it is the same trap every time: the artist moves
+// markers, so these plot INDICES point at different ground than they did. The
+// latest upload ADDED one at index 2 and pushed eight of the other ten down a
+// place. An old list is not wrong about the game, it is wrong about where plot 6
+// is — and its mixes lose outright, which reads exactly like a balance collapse
+// and is not one.
 //
 // RE-SWEPT AGAIN when the plague doctor learned to stand off rather than walk
 // into the line. That is a rule change and not a map change, and it moved these
@@ -335,39 +359,53 @@ m2: {
 //
 // THE INVARIANT DOES NOT HOLD ON THIS MAP and the note is here rather than
 // buried, because everything below reads better than the level is. Pure barracks
-// clears it on 8 seeds in 20. It was 4 in 20 before the standoff and it has
-// never been zero; the 0/5 this file used to be checked against was five seeds
-// of luck. See the pure-build re-check in tools/sweep.mjs, which now runs twenty.
+// clears it on ELEVEN seeds in 20, which is 55%.
+//
+// It has gone 4/20, then 8/20 when the plague doctor learned to stand off, and
+// now 11/20 — and the last jump is the ELEVENTH PLOT and nothing else. No rule
+// changed between the two measurements. That is the cleanest demonstration this
+// project has of what a marker is worth on this particular map: it is held by
+// blockers, and a blocker-held map given one more blocker gets easier faster
+// than it gets anything else. Adding a plot to map 1 would not do this.
+//
+// It is NOT fixed here, deliberately. The artist asked for the eleventh marker
+// and asked for the waves and the difficulty to be left alone in the same
+// breath, so the honest thing is to measure it, say so, and leave the lever
+// where they can reach it — which is now the admin dashboard, whose whole first
+// tab is the number of enemies in each wave of this map.
+//
+// See the pure-build re-check in tools/sweep.mjs, which runs twenty seeds.
 //
 // A stale scenario list is worse than no list. Re-run `node tools/sweep.mjs 3`
 // and paste after any redraw, not just after a rule change.
 m3: {
-  'ALL archery x10 (expect LOSS)':  [A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9)],
-  'ALL barracks x10 (expect LOSS)': [B(0), B(1), B(2), B(3), B(4), B(5), B(6), B(7), B(8), B(9)],
-  // The best 6+4 there is, and it loses — the line used to be drawn at 7+3.
-  // Four blockers is not enough to hold two roads however good the six bows
-  // behind them are, now that the late waves arrive at 0.65 of their old
-  // spacing: what beats a wall of blockers is enemies arriving faster than the
-  // wall can re-engage, and four squads is a thin wall.
-  'BEST 6 archery + 4 (expect LOSS)': [A(0), B(1), A(2), A(3), A(4), A(5), B(6), A(7), B(8), B(9)],
-  'MIX 5 archery + 5 barracks':     [A(0), B(1), B(2), A(3), A(4), A(5), B(6), B(7), A(8), B(9)],
-  'MIX 4 archery + 6 barracks':     [B(0), A(1), B(2), A(3), A(4), A(5), B(6), B(7), B(8), B(9)],
-  'MIX 3 archery + 7 barracks':     [B(0), B(1), A(2), B(3), B(4), B(5), A(6), A(7), B(8), B(9)],
+  'ALL archery x11 (expect LOSS)':  [A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10)],
+  'ALL barracks x11 (expect LOSS)': [B(0), B(1), B(2), B(3), B(4), B(5), B(6), B(7), B(8), B(9), B(10)],
+  // The best 8+3 there is, and it loses. The line has moved twice: it was 7+3,
+  // then 6+4, and it is 8+3 now that there are eleven plots to spread over. What
+  // beats a wall of blockers is enemies arriving faster than the wall can
+  // re-engage, and three squads across TWO ROADS is a squad and a half each.
+  'BEST 8 archery + 3 (expect LOSS)': [A(0), B(1), B(2), A(3), A(4), B(5), A(6), A(7), A(8), A(9), A(10)],
+  'MIX 7 archery + 4 barracks':     [A(0), A(1), B(2), A(3), B(4), A(5), A(6), B(7), B(8), A(9), A(10)],
+  'MIX 5 archery + 6 barracks':     [A(0), B(1), B(2), A(3), A(4), B(5), A(6), B(7), A(8), B(9), B(10)],
+  'MIX 3 archery + 8 barracks':     [B(0), B(1), B(2), A(3), A(4), B(5), A(6), B(7), B(8), B(9), B(10)],
   // Artillery held to the same two rules as everywhere else, and compared the
   // same way map 1 compares it: take the winning archery mix and SWAP THE BOWS
   // FOR MACHINES, keeping every blocker where it was. That measures a catapult
   // against the tower it competes with for a plot, rather than measuring what
   // losing a blocker costs — which is already known and is fatal for anyone.
+  'ALL siege x11   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9), S(10)],
+  'MIX 3 siege + 8 barracks':       [B(0), B(1), B(2), S(3), S(4), B(5), S(6), B(7), B(8), B(9), B(10)],
+  // THE MONASTERY, and THIS is the map it was built for. Map 1 and map 2 give a
+  // build six plots, so a slot spent on support is a slot not killing anything
+  // and the swap costs about half the wins. Here there are eleven, two roads to
+  // cover and ten waves to survive — the exact conditions under which holding
+  // everything under everybody else's towers for longer is worth a plot.
   //
-  // So this is `MIX 3 archery + 7 barracks` above with its three bow plots
-  // turned into artillery, and the two now measure the same — 3 seeds of 5
-  // each. They did not: the machines won 4 where the bows won 1, and the gap
-  // closed when the doctor started standing off, because a wave that arrives
-  // 14 seconds more strung out is exactly the wave a splash weapon is worst
-  // against. The late waves still come in tighter here than anywhere else, so
-  // artillery is still worth taking; it is no longer the obvious answer.
-  'ALL siege x10   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9)],
-  'MIX 3 siege + 7 barracks':       [B(0), B(1), S(2), B(3), B(4), B(5), S(6), S(7), B(8), B(9)],
+  // Swapping TWO of the five bows rather than one, because at eleven towers one
+  // of anything is inside the noise.
+  'ALL monastery x11 (expect LOSS)': [M(0), M(1), M(2), M(3), M(4), M(5), M(6), M(7), M(8), M(9), M(10)],
+  'MIX 3 archery + 6 barracks + 2 monastery': [M(0), B(1), B(2), A(3), A(4), B(5), M(6), B(7), A(8), B(9), B(10)],
   'under-built     (expect LOSS)':  [A(0, 0)]
 }
 };

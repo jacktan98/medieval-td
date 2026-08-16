@@ -69,7 +69,20 @@ function combinations(list, k) {
 }
 
 // How many towers a build on this map is allowed to reach for.
-const SIZE = Number(process.env.SIZE || (level.plots.length > 9 ? 10 : 6));
+//
+// SIX on maps 1 and 2, and EVERY PLOT on a map that has more than nine — which
+// is map 3, and it now has eleven. It used to be a flat 10 for a big map, and
+// that stopped being either principled or cheap the moment the artist added a
+// marker: ten of eleven means C(11,10) = 11 combinations times 2^10 assignments,
+// which is 11264 runs, where "all eleven" is one combination times 2^11, which is
+// 2048. Fewer runs AND the question you actually want answered on a map whose
+// whole problem is covering two roads.
+//
+// It costs nothing in realism. A plan longer than the money allows is not a
+// problem — run() builds `pending` in order as gold arrives and simply never
+// reaches the end of a list it cannot afford — so the size is an upper bound on
+// ambition rather than a promise that eleven towers get built.
+const SIZE = Number(process.env.SIZE || (level.plots.length > 9 ? level.plots.length : 6));
 console.log(`  builds of up to ${SIZE} towers`);
 
 const results = [];

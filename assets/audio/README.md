@@ -104,6 +104,7 @@ and it now means "how long a lull has to be before the game forgets".
 | an archery tower is **built or upgraded** | `Archery_1..5` |
 | a barracks is **built or upgraded** | `Barracks_1..5` |
 | an artillery tower is **built or upgraded** | `Artillery_1..5` |
+| a monastery is **built or upgraded** | `Monastery_1..5` |
 | a rally point is moved | `Barracks_1..5` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
@@ -116,6 +117,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a barracks man swings** — Category B | `Attack_1/2/3` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
+| **a priest looses a missile** — Category B | `Arcane_shot` |
 
 Everything above the line is Category A and shares the one channel; the four
 below run on the background bus and play every time.
@@ -152,6 +154,25 @@ the machine-gun problem all over again.
 
 **A giant thug answers with the common thug's line**, there being one enemy
 voice so far. Silence for the giant would read as a bug rather than as a gap.
+
+**All four families have voices now.** `familyCue()` still has a null branch, and
+it is worth keeping: what it guards is that a lookup for a family with nothing
+recorded answers "nothing to say" rather than throwing, which is what lets the
+next family be wired up a commit before its recordings land. That is exactly how
+artillery's and the monastery's were done.
+
+### The arcane missile announces itself LEAVING
+
+The opposite of the rock, and the same way round as the arrow: `Arcane_shot`
+plays on release, because a missile that crawls across the board at 130px/s is a
+thing you watch go, and it arrives with a slow rather than a bang. It is
+Category B for the usual reason — three shrines can fire at once and one channel
+would silence two of them.
+
+**Which sound a shot makes is now a table rather than a branch.** `FIRING` in
+`src/towers.js` maps an ammunition's `kind` to its cue, exactly as `LANDING` in
+`src/projectiles.js` already did for arrivals. A fifth projectile that makes a
+noise needs a row in one of those two and nothing else.
 
 ### The catapult's noise is where it LANDS
 

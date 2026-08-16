@@ -7,12 +7,22 @@ import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
+import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { AIM_MODES } from './data/towers.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
 // a button's edge is enough to make the menu flicker as you cross it.
 const HOVER_SLACK = 26;
+
+// A padded hit test for the title screen's own small controls. 10px each side
+// takes the 84x38 admin button to 104x58 tapped — the same trick the book footer
+// and the pause row use, and for the same reason: shrinking the picture must
+// never shrink the target.
+const CORNER_PAD = 10;
+const inside = (b, x, y) =>
+  x >= b.x - CORNER_PAD && x <= b.x + b.w + CORNER_PAD &&
+  y >= b.y - CORNER_PAD && y <= b.y + b.h + CORNER_PAD;
 
 export function attachInput(canvas, state, restart) {
   const at = e => {
@@ -69,7 +79,7 @@ export function attachInput(canvas, state, restart) {
     // without this the one input that needs no tap at all would walk straight
     // through both — and a radial menu opening itself behind the encyclopedia is
     // a menu the player cannot see and did not ask for.
-    if (state.paused || state.book !== null) {
+    if (state.paused || state.book !== null || state.admin) {
       state.hoverTower = null;
       state.ghost = null;
       return;
@@ -118,16 +128,24 @@ export function attachInput(canvas, state, restart) {
 // HUD sits over both the board and any menu on it. A tap is offered to them in
 // that order and the first one that wants it keeps it.
 function tap(state, x, y, restart) {
-  // THE BOOK SWALLOWS EVERYTHING while it is open, and it is tested before the
-  // title screen because it can be opened from there — a Close button drawn
-  // over the map buttons must not be answered by the map buttons underneath.
-  // Its own footer is the only thing on screen that acts on a tap.
+  // THE ADMIN DASHBOARD SWALLOWS EVERYTHING, and it is tested first because it
+  // covers the whole board AND is opened from the title screen — so its keypad
+  // sits on top of the map buttons, and a digit key must not be answered by the
+  // map underneath it.
+  if (state.admin) return tapAdmin(state, x, y, restart);
+
+  // THE BOOK SWALLOWS EVERYTHING while it is open, for the same reason and on
+  // the same terms. Its own footer is the only thing on screen that acts.
   if (state.book !== null) return tapBook(state, x, y);
 
   // The title screen owns the whole board: nothing under it may act on a tap,
   // including a plot the Start button happens to be sitting over.
   if (!state.started) {
     if (hitBookButton(state, x, y)) { openBook(state); return true; }
+
+    // The corner button, and the only way into the dashboard. Tested before the
+    // map row for the usual reason — it is drawn on top, so it answers first.
+    if (inside(ADMIN_BTN, x, y)) { openAdmin(state); return true; }
 
     const pick = hitMapButton(state, x, y);
     if (pick !== null) {

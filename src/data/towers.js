@@ -133,6 +133,39 @@ const SPEAR2_ATK_TRIM = [155, 196, 181, 120];
 const SPEAR3_TRIM = [201, 196, 110, 120];
 const SPEAR3_ATK_TRIM = [166, 196, 145, 120];
 
+// THE MONASTERY, on the same 1024 canvas as the other three buildings and the
+// same 512 as every figure.
+//
+// Tiers 2 and 3 trim to exactly the same rect, and that is the drawing rather
+// than a copied number: the abbey is the chapel rebuilt in stone inside the same
+// timber frame, so its roof, its posts and its stair are at the same source
+// pixels and only the walls change. Both shadow paths are byte-identical in the
+// two SVGs as well. Tier 1 is a different building — an open deck with no roof —
+// and trims to a box of its own.
+const MON_TRIM = [262, 197, 500, 630];
+const MON2_TRIM = [296, 128, 431, 768];
+const MON3_TRIM = [296, 128, 431, 768];
+
+// The three churchmen. All six drawings share ONE pair of boxes, which is the
+// same finding the elite archer gave: the artist re-robed one figure rather than
+// redrawing him, so the Priest, the Bishop and the Cardinal stand in the same
+// place and hold the same staff. The Cardinal's Attack is the one exception and
+// it is 2px wider on the left — his staff head is bigger.
+//
+// HE IS THE TALLEST FIGURE IN THE GAME and it is the staff that does it: 154
+// source px against an archer's 120, because in the Default pose he holds it
+// upright beside him. In the Attack pose it comes down across his body and the
+// box goes the other way — 135 tall and 108 wide, against the Default's 80.
+const PRIEST_TRIM = [216, 179, 80, 154];
+const PRIEST_ATK_TRIM = [190, 198, 108, 135];
+const BISHOP_TRIM = [216, 179, 80, 154];
+const BISHOP_ATK_TRIM = [190, 198, 108, 135];
+const CARDINAL_TRIM = [216, 179, 80, 154];
+const CARDINAL_ATK_TRIM = [188, 196, 108, 137];
+
+// The arcane missile, one drawing per tier and all three the same shape.
+const MISSILE_TRIM = [210, 246, 92, 20];
+
 // THE ONE TRIM IN THIS FILE THAT IS NOT A SINGLE FILE'S MEASURED BOX, and it
 // has to be. The catapult is three drawings, not one, and the box below is the
 // UNION of all three:
@@ -277,6 +310,74 @@ export const rock = {
 // bigger rock does is in the damage number beside it.
 export const rock2 = { ...rock, sprite: 'rock_t2', trim: ROCK2_TRIM };
 export const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
+
+// THE ARCANE MISSILE, and the first projectile in the game whose job is not
+// damage.
+//
+// It is STEERED like an arrow — no `arc` — so it chases the man it was aimed at
+// and dies with him. What it does on arrival is take a bite out of his health and
+// then SLOW HIM DOWN, and the second half is the whole family: a monastery does
+// not kill things, it holds them under everybody else's towers for longer.
+//
+// `speed` 130 against an arrow's 360, which is the slowest thing in the air in
+// this game — slower even than a lobbed rock's 300 horizontal — and it is meant
+// to be watched. At tier 1's reach of 175 the longest flight is 1.35s, so a
+// missile fired at a marching thug arrives about 85px behind where it was aimed
+// and follows him there. That lag is the tower's character: a monastery is
+// always working on where the enemy WAS, which is why it is a support weapon and
+// not a sniper.
+//
+// It is STEERED and it also has a SPLASH, which no other projectile in the game
+// combines — an arrow chases one man and hits him alone, a rock is committed to a
+// patch of ground. This one chases a man and then catches whoever is standing
+// round him when it arrives. That pairing is the family: it is aimed at somebody,
+// and what it does lands on everybody.
+//
+// `slow` is { factor, seconds }: the enemy walks at `factor` of its own speed
+// for that long. It REFRESHES rather than stacks, and the STRONGER factor wins
+// while both are running — see hit() in projectiles.js. Stacking would let three
+// shrines multiply into a stop, and "how long since the last missile" is a thing
+// the player can see where "how many are on him" is not.
+//
+// 0.50 / 0.42 / 0.35, and the duration is a hair over the reload at every tier —
+// 2.2s against 1.45, 2.6 against 1.25, 3.0 against 1.05 — so a monastery working
+// on the same stretch of road keeps it slowed continuously rather than in
+// pulses. That overlap is the whole reason the two numbers move together when
+// the family is retuned.
+export const missile = {
+  kind: 'arcane',
+  sprite: 'missile_t1',
+  trim: MISSILE_TRIM,
+  // Drawn lying to the LEFT, like the arrow, and rotated to its heading. The
+  // bulb is the head: the art runs from a rounded 20px cap on the left to a fine
+  // point 70px to the right of it, which reads as a comet rather than a dart.
+  faces: -1,
+  // Just inside the bulb, so the glowing end sits on the man rather than the
+  // tail passing through him. The arrow's 0.08 is its point; this is 0.15
+  // because the head of this drawing has width.
+  grip: 0.15,
+  speed: 130,
+  slow: { factor: 0.50, seconds: 2.2 },
+  // It announces itself leaving the staff and arrives quietly, the same way an
+  // arrow does — see the two flags on `arrow`.
+  fireSound: true,
+  landSound: false
+};
+
+// The same missile, drawn from each tier's own file and carrying that tier's
+// slow. ONLY the picture and the two slow numbers change: the speed and the grip
+// are what the flight was chosen against, and a tier 3 missile that also flew
+// faster would stop being the thing you watch.
+export const missile2 = {
+  ...missile,
+  sprite: 'missile_t2',
+  slow: { factor: 0.42, seconds: 2.6 }
+};
+export const missile3 = {
+  ...missile,
+  sprite: 'missile_t3',
+  slow: { factor: 0.35, seconds: 3.0 }
+};
 
 // Every tier has its own drawing now, in both families — nothing is shared.
 // They are all within a few px of each other in size, because scale is fixed by
@@ -1069,13 +1170,261 @@ export const siege = [
     cost: 170, damage: 37, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 
-// The four quadrants of the build menu, in N/E/S/W order. A family with no
-// tiers yet still takes its quadrant, drawn locked — the layout is the same
-// on day one as it will be when all four are in, so nothing moves under the
-// player's thumb as families land.
+// --- monastery -----------------------------------------------------------------
+//
+// THE FOURTH FAMILY, and the first one whose point is not damage.
+//
+// Structurally it is archery again — a timber deck on legs with a man standing on
+// it, a roof from tier 2, stone from tier 3 — and every anchor below is measured
+// the same way an archery tower's is, so nothing in the renderer had to learn
+// anything new. What is different is what the man throws.
+//
+// A monastery is SLOW AT EVERY LEVEL, deliberately and three times over: it
+// reloads slower than a bow, its missile is the slowest thing in the air, and
+// what the missile does is take speed off everything it lands among. The damage
+// is real but it is not the point — 5, 8 and 12 against archery's 9, 15 and 24,
+// so a shrine kills a militiaman in seven shots and a giant never.
+//
+// WHY IT IS WORTH BUILDING ANYWAY. Every other tower's output is capped by how
+// long an enemy stays in reach, and that is the one number a monastery moves.
+// A thug held at 0.48 of its speed spends twice as long under every bow, every
+// catapult and every spear on the board — so a monastery is worth exactly as much
+// as the towers around it, which is a different question from "how much damage
+// does it do" and the reason the family exists.
+const shrine = {
+  sprite: 'monastery_t1',
+  spriteTrim: MON_TRIM,
+  w: drawnW(MON_TRIM), h: drawnH(MON_TRIM),
+  // The MIDDLE of the deck, source pixel (512.6, 421.1) in the 1024 canvas.
+  //
+  // Found the way tier 3 archery's is rather than the way tiers 1 and 2 are: the
+  // deck is one <path> in the SVG with corners (470, 364), (663, 394), (559, 484)
+  // and (354, 437), and it is NOT a parallelogram — its two diagonals cross
+  // 10.4px apart at their midpoints, so "where the diagonals cross" is not
+  // defined on it. This is the polygon's AREA CENTROID, which is the same point
+  // on a true parallelogram and the right one here.
+  mountFrac: [0.501, 0.356],
+  // Where the building meets the ground: the centre of its shadow ellipse,
+  // source (473.9, 727.0). The SVG stores that shadow as a single #37422f path
+  // spanning 265..683 by 637..817, whose centre is (473.85, 726.98); the ellipse
+  // fit in tools/shadow.mjs reads (473.3, 726.5) out of the PNG without being
+  // shown the SVG, which is the check.
+  //
+  // NOT 0.5 across, and by a long way. The flagpole and its pennant hang off the
+  // right of this drawing and the stair runs off the left, so the box centre is
+  // 39 source px right of where the building actually stands.
+  groundFrac: [0.424, 0.841],
+  // The post on the deck's NEAREST corner — source x 552..565, from the deck rail
+  // at y 385 down to the floor at 484 — which crosses the priest whenever he is
+  // mirrored to face right. Padded 2px for the black stroke the PNG draws around
+  // a shape the SVG stores without one.
+  //
+  // The far post at x 464..478 is the usual trap: it is inside the priest's span
+  // and BEHIND him, so the rect stays tight to the near one.
+  frontTrims: [[550, 383, 18, 104]],
+  // NO frontPolys, and that is measured rather than forgotten. The near-left rail
+  // is source (362,410) (560,453) (558,461) (360,419) — a real rail in the right
+  // place — and it passes UNDER him: across his span it runs y 433 to 450, and
+  // his shadow is at 433. It is the deck's near edge board, exactly as tier 3
+  // archery's is.
+  shape: 'tower'
+};
+
+// Tier 2: a roof goes on, and the legs get stone footings. Same frame, so the
+// deck is in nearly the same place — but re-measured rather than carried across,
+// because the whole drawing sits in a different box.
+const chapel = {
+  sprite: 'monastery_t2',
+  spriteTrim: MON2_TRIM,
+  w: drawnW(MON2_TRIM), h: drawnH(MON2_TRIM),
+  // The deck's area centroid, source (547.4, 491.0), from the face with corners
+  // (505, 434), (698, 464), (594, 554) and (388, 506).
+  mountFrac: [0.583, 0.473],
+  // Shadow centre, source (512.0, 795.0) — the SVG path spans 38.54..208.61 by
+  // 259.48..332.60 under a 2.5x scale and a (203.06, 54.91) offset, and the PNG
+  // fit reads (511.4, 794.5).
+  groundFrac: [0.501, 0.868],
+  // The near corner post, source x 587..600 from the roof plate at y 362 down to
+  // the deck at 551. Taller than tier 1's for the same reason tier 2 archery's
+  // is: there is a roof above the deck now, and the post runs the whole way up to
+  // carry it.
+  frontTrims: [[585, 360, 18, 194]],
+  shape: 'tower'
+};
+
+// Tier 3: the timber box becomes a stone one. IDENTICAL ENVELOPE to tier 2 —
+// same trim, same shadow path to the byte — because the artist rebuilt the walls
+// inside the same frame and left the roof, the posts and the stair where they
+// were. Every number is still measured from tier 3's own file; they simply come
+// back the same, which is the finding rather than a shortcut.
+const abbey = {
+  sprite: 'monastery_t3',
+  spriteTrim: MON3_TRIM,
+  w: drawnW(MON3_TRIM), h: drawnH(MON3_TRIM),
+  // The deck, now the top course of the stonework: (505, 435), (697, 464),
+  // (593, 555), (388, 507), centroid (546.6, 492.0). One pixel from tier 2's,
+  // which is what "the same frame" looks like in numbers.
+  mountFrac: [0.581, 0.474],
+  groundFrac: [0.501, 0.868],
+  // The same near post at the same source pixels, x 587..600, y 362..551.
+  frontTrims: [[585, 360, 18, 194]],
+  shape: 'tower'
+};
+
+// WHICH POSE IS WHICH, and unlike the archer's it reads the way it is written.
+// Default is the priest at rest with his staff upright beside him; Attack is the
+// staff swung down and out in front, which is the moment the missile leaves it.
+// He holds that pose for as long as the recoil lasts, exactly as an archer holds
+// an empty bow.
+const priest = {
+  ammo: missile,
+  gunner: 'priest_t1',
+  gunnerTrim: PRIEST_TRIM,
+  // THE CENTRE OF HIS GROUND SHADOW, source (261.0, 321.5).
+  //
+  // MEASURED ACROSS TWO BLOBS, which is new and is the artwork's doing: the foot
+  // of his staff is planted through the middle of the ellipse and splits it into
+  // x 232..275 and x 277..290. Either half on its own has its centre in the wrong
+  // place — the left one is 7.5px off — so tools/shadow.mjs learned to put a
+  // split shadow back together rather than this carrying a number the tool would
+  // then disagree with.
+  gunnerPivot: [0.563, 0.925],
+  // The staff swung out. His own trim and his own pivot, both measured: the
+  // shadow is at source (261.0, 322.0), half a pixel from the Default's, which is
+  // what lets the two poses swap without the man stepping sideways.
+  attack: { sprite: 'priest_t1_attack', trim: PRIEST_ATK_TRIM, pivot: [0.657, 0.919] },
+  spriteFaces: -1,
+  // Where the missile leaves the staff: the flared head at the top of the swing,
+  // source (201.9, 207.1), which is 59.1 in FRONT of the anchor and 114.4 above
+  // it. Kept as fractions of the Default trim exactly as the archers' are, so a
+  // re-export at another size carries over untouched.
+  //
+  // MEASURED ON THE ATTACK POSE, like the bow's grip and for the same reason: it
+  // is the one drawing where the staff head is the extreme thing in the picture
+  // rather than one of two candidates.
+  muzzle: [Math.round(0.739 * PRIEST_TRIM[2] * SCALE), -Math.round(0.743 * PRIEST_TRIM[3] * SCALE)]
+};
+
+// Tier 2's bishop: a mitre and a heavier robe, in the same box, standing on the
+// same shadow, holding the same staff in the same place. Every fraction here is
+// tier 1's exactly, and that is a measurement rather than a copy — all six files
+// were run through tools/shadow.mjs and the two tiers came back equal.
+const bishop = {
+  ...priest,
+  ammo: missile2,
+  gunner: 'priest_t2',
+  gunnerTrim: BISHOP_TRIM,
+  attack: { sprite: 'priest_t2_attack', trim: BISHOP_ATK_TRIM, pivot: [0.657, 0.919] },
+  muzzle: [Math.round(0.739 * BISHOP_TRIM[2] * SCALE), -Math.round(0.743 * BISHOP_TRIM[3] * SCALE)]
+};
+
+// Tier 3's cardinal: the one of the three whose Attack drawing is its own. His
+// staff head is bigger, so it reaches 4 source px further forward and his box is
+// 2 wider and 2 taller — which is exactly why the muzzle is re-derived rather
+// than shared. The same fraction on a different box is a different point.
+const cardinal = {
+  ...priest,
+  ammo: missile3,
+  gunner: 'priest_t3',
+  gunnerTrim: CARDINAL_TRIM,
+  // The shadow of this Attack pose is at source (261.0, 321.5) — the Default's to
+  // the tenth of a pixel.
+  attack: { sprite: 'priest_t3_attack', trim: CARDINAL_ATK_TRIM, pivot: [0.676, 0.916] },
+  // Staff head at source (198.0, 207.3): 63.0 in front of the anchor and 114.2
+  // above it.
+  muzzle: [Math.round(0.788 * CARDINAL_TRIM[2] * SCALE), -Math.round(0.742 * CARDINAL_TRIM[3] * SCALE)]
+};
+
+// THE NUMBERS, and what each of them is for.
+//
+// `cooldown` 1.45 / 1.25 / 1.05 against archery's 1.00 / 0.90 / 0.80. Slower than
+// a bow at every tier, which is the artist's first instruction — "the attack rate
+// is slow" — and it started at 2.40 / 2.10 / 1.80, which was slower still and was
+// too slow to matter. See the measurements below.
+//
+// `damage` 5 / 8 / 12, a little over half archery's at every tier and explicitly
+// not the priority. What an upgrade actually buys here is the SLOW: 0.50 for 2.2
+// seconds becomes 0.35 for 3.0, which is the difference between an enemy that is
+// dawdling and one that is wading. Compare artillery, where an upgrade buys
+// blast, and archery, where it buys rate.
+//
+// `range` 175 / 195 / 215, a notch under archery's 190 / 210 / 230 and elliptical
+// like every reach in the game. It is shorter on purpose: this tower wants to sit
+// where the road is about to pass a killing ground, not where it can see the most
+// of it, and giving it archery's reach would make "build a monastery first"
+// correct on every plot.
+//
+// `cost` 80 / 105 / 155 against archery's 70 / 90 / 140. Ten to fifteen gold more
+// at every rung, which is what stops a shrine being the cheapest way to hold wave
+// 1 — it is worse at that than either of the two towers it costs the same as, and
+// it should be.
+//
+// `splash` 55 / 65 / 75, AND IT IS WHAT MAKES THE FAMILY WORK AT ALL. It was not
+// in the first version and the first version was worthless — measured, not
+// guessed: swapping one archery tower for a monastery in the best mixed build
+// took map 1 from 8 wins in 8 to 0 in 8, and map 2 from 7 to 0.
+//
+// The reason is arithmetic rather than tuning. A single-target slow that lands
+// every second or two catches ONE enemy, and the waves this game sends are 14,
+// 18, 24, 34 militia deep — so a shrine spent its whole life making one man in
+// thirty walk slower while the plot it stood on stopped shooting. "It will slow
+// down enemies" is plural, and a tower that can only ever slow one of them is not
+// doing the thing it was asked to do.
+//
+// So the missile leaves a PATCH, exactly as a rock does, and everything standing
+// in it takes the damage and the slow together. Nothing new was needed for it:
+// land() in projectiles.js already walks the victims of any shot with a `splash`,
+// and the slow rides along with the hit. It stays under a catapult's 75 / 86 / 98
+// at every tier, which is the line that keeps the two families apart: artillery is
+// a blast that happens to cover ground, and this is a chill that happens to sting.
+//
+// WHERE IT ALL LANDS, at TWENTY SEEDS. The build is the map's best mix with one
+// archery tower swapped for a monastery — the comparison worth having, because a
+// shrine and a watchtower want the same plot — and a siege swap beside it for
+// scale. Map 3 swaps two of eleven rather than one of six.
+//
+//                                      wins      median lives
+//   map 1  3 archery + 3 barracks      19/20      4
+//            one swapped for a shrine   7/20      3
+//            one swapped for a siege   19/20      4
+//   map 2  3 archery + 3 barracks      13/20      2
+//            one swapped for a shrine  12/20      6
+//            one swapped for a siege   20/20     13
+//   map 3  5 archery + 6 barracks      11/20      1
+//            two swapped for shrines    9/20      2
+//            two swapped for siege     11/20      2
+//
+// READ THAT HONESTLY. On maps 2 and 3 a monastery is about a wash — it wins as
+// often as the bow it replaced and holds MORE lives when it wins, which is what a
+// slow is supposed to buy. On map 1 it is a mistake, and that is the map with six
+// plots, the densest waves per yard of road, and no second road to cover. A
+// family that is right on two maps and wrong on the third is the same shape
+// artillery already has, in the other direction.
+//
+// Eight seeds said 3/8 and 6/8 for the same two numbers, which is why they are
+// not the numbers quoted. A build sitting on the win/loss boundary needs twenty.
+//
+// NO `targeting`. An archery tower can be told what to shoot at because it kills
+// things and the player has an opinion about which thing; a monastery's answer is
+// almost always "whatever is nearest the exit", which is what a tower with no
+// button already does. It is the obvious thing to add if the family turns out to
+// want it — the flag is per TIER, so it costs one word per row.
+export const monastery = [
+  { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
+    cost: 80,  damage: 5,  splash: 55, range: 175, cooldown: 1.45, colour: '#8C7A5C' },
+  { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
+    cost: 105, damage: 8,  splash: 65, range: 195, cooldown: 1.25, colour: '#7E6E52' },
+  { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
+    cost: 155, damage: 12, splash: 75, range: 215, cooldown: 1.05, colour: '#9A948A' }
+];
+
+// The four quadrants of the build menu, in N/E/S/W order. All four have tiers
+// now, so nothing in the ring is drawn locked — but the layout was laid out for
+// four from the first day precisely so that nothing moved under the player's
+// thumb when the monastery landed, and nothing did.
 export const families = [
   { id: 'archery',   name: 'Archery',   glyph: 'bow',      tiers: archery },
   { id: 'barracks',  name: 'Barracks',  glyph: 'swords',   tiers: barracks },
   { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: siege },
-  { id: 'monastery', name: 'Monastery', glyph: 'cross',    tiers: null }
+  { id: 'monastery', name: 'Monastery', glyph: 'cross',    tiers: monastery }
 ];

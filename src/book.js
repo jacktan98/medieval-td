@@ -18,7 +18,7 @@
 // menu.js — so input.js hit-tests exactly the rects that get drawn. Two copies of
 // a button's position is how a tap target drifts off the picture it belongs to.
 
-import { archery, barracks, siege, SCALE } from './data/towers.js';
+import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
 import { occupant } from './select.js';
@@ -31,13 +31,13 @@ export const PAGES = 2;
 // The tower ladders, in build-menu order. Read from the same arrays the game
 // builds from, so a tier whose cost or damage changes changes here too and there
 // is no second table to forget.
-const LADDERS = [archery, barracks, siege];
+const LADDERS = [archery, barracks, siege, monastery];
 
 // Which cell each tier sits in. Families are kept WHOLE — a ladder never
 // straddles two columns — so archery and barracks fill the first column exactly
-// and siege starts the second. A monastery family would land under it without
-// this needing a line changed, which is the point of flowing rather than
-// hand-placing: the layout survives the family that has not been drawn yet.
+// and siege and the monastery fill the second. That happened without a line
+// being changed when the monastery landed, which is what flowing rather than
+// hand-placing was for: twelve tiers in two columns of six, exactly full.
 export function shelf() {
   const out = [];
   let col = 0, row = 0;

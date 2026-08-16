@@ -477,3 +477,71 @@ fit, so it can have a narrow one; a figure is drawn at a fixed scale and its slo
 has to hold the widest man in the game — the Giant Thug, whose club reaches 45px
 left of the spot he stands on. One slot sized for both would either crop him or
 waste 30px of every tower card's text.
+
+## Stars, and where progress lives
+
+A finished game is rated out of three: **18 of 20 lives for three, 10 of 20 for
+two, any win below that for one, and a loss is none.** The two cut-offs are
+stored in `src/score.js` as fractions of the map's own `startLives` — 0.9 and
+0.5 — which reproduce 18 and 10 exactly today and still mean "nearly untouched"
+and "half of it left" if a map ever starts with a different garrison.
+
+**The best rating per map per difficulty is kept**, in `localStorage`, and
+nothing else is: not the last result, not a history. What a player wants on the
+screen where they pick a map is the high-water mark, and a bad run must never
+take a star away from a good one.
+
+**It is per DIFFICULTY on purpose.** Three stars on Normal is a real thing and it
+is not three stars on Hard. The title screen shows the row for whichever
+difficulty is currently selected, so the stars change under the map buttons as
+you tap between Normal and Hard — which is also the clearest way to say they are
+two separate ladders.
+
+**The map buttons grew from 46px to 60px to hold them, and the stars went
+INSIDE.** Hanging them under the button was the first attempt and it put them
+straight through the difficulty row: the title column is full, and the only spare
+room on that screen is inside things. It reads better anyway — a rating printed
+on the map's own plate belongs to that map in a way a detached row under it does
+not.
+
+**Every slot is drawn, lit or not.** Two stars only means something beside the
+third one you did not get.
+
+## The admin dashboard
+
+A quiet outlined button in the bottom-right corner of the title screen, a
+four-digit PIN on a drawn keypad, and behind it two tabs: **the number of enemies
+in every group of every wave of every map**, and **the health and attack damage
+of every fighting figure in the game**.
+
+**The keypad is a keypad because this game takes no keyboard input.** It is
+played with a thumb in landscape, and a text field that summoned a phone keyboard
+over the board would be the only one of its kind. Four taps and it checks itself;
+there is no submit key.
+
+**The PIN is not security and must not be treated as any.** The game is static
+files served to a browser, so the code is in JavaScript anybody can read and
+there is no server to check it against. What it buys is that a player poking at
+the title screen cannot wander into the tuning panel by accident. To change it,
+change `PIN` at the top of `src/admin.js`.
+
+**Only the OVERRIDES are stored.** Setting a number back to what it shipped as
+removes the entry rather than saving it, so a dashboard nobody has touched leaves
+nothing behind — and a retune in the data files is never silently overwritten by
+a year-old snapshot in somebody's browser. Every changed value is drawn in amber
+with `was N` under it, which is the only way to tell a number somebody set from a
+number the game came with.
+
+**A tap moves a count by one and a stat by a twentieth of where it already is.**
+Health in this game runs from 3 to 1500; a fixed step is either 500 taps across
+the giant or one that cannot express a spearman's damage at all. Five per cent is
+about fourteen taps to double or halve anything, whatever it started at.
+
+**Difficulty is applied ON TOP of the dashboard's numbers**, not instead of them
+— the panel edits the wave table, it does not sit outside it. A wave set to 20 is
+17 on Normal and 22 on Hard, exactly as a 20 typed into `src/data/waves.js` would
+be.
+
+**The list of editable units is DERIVED from the game's own data.** The monastery
+landed with four tiers of nothing and appeared in the panel without a line being
+changed. A hand-written list is a list that silently misses the next family.

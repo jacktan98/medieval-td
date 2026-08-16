@@ -3,6 +3,8 @@ import { loadAudio } from './audio.js';
 import { level } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
+import { adminWaves } from './admin.js';
+import { finish } from './score.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf } from './towers.js';
 import { updateUnits } from './units.js';
@@ -65,7 +67,13 @@ function newGame() {
     // through the level every frame. Two things depend on that: `waveSize` and
     // the spawn loop have to agree exactly about how many enemies a group holds,
     // and they cannot if each of them rounds a multiplication separately.
-    waves: scaleWaves(level.waves, difficulty),
+    //
+    // TWO LAYERS, in this order, and the order is the design: the admin
+    // dashboard replaces the level's own counts, and THEN the difficulty scales
+    // whatever it finds. So a wave the owner sets to 20 is 17 on Normal and 22 on
+    // Hard, exactly as a wave the data file sets to 20 would be — the dashboard
+    // edits the table, it does not sit outside the difficulty.
+    waves: scaleWaves(adminWaves(level), difficulty),
     gold: startingGold(level, difficulty),
     lives: level.startLives,
     towers: [],
@@ -119,6 +127,14 @@ function newGame() {
     // A half-pressed Quit, as the ms timestamp its window closes at. 0 for not
     // armed, which is also what it resets to — a restart cannot inherit one.
     quitArmed: 0,
+    // The admin dashboard, or null for closed. Cleared with everything else for
+    // the same reason the book is: a panel left open across a rebuild would be
+    // sitting on top of a game it no longer describes.
+    admin: null,
+    // What the end-of-game panel shows, built ONCE at the moment the game ends —
+    // see finish() in score.js, which also writes the star record. Null until
+    // then, and null again on a restart.
+    summary: null,
     // What the info box is describing: { kind, ref } or null. A direct reference
     // to the live enemy, soldier or tower, which is what makes the health in the
     // box the same number the health bar over its head is reading.
@@ -161,6 +177,18 @@ function frame(now) {
 
   if (state.started && !state.paused && !state.result) {
     for (let i = 0; i < state.speed; i++) step(state, real);
+  }
+
+  // The moment a game ends, once. Outside the step because a result can be set
+  // by either of two places — updateWaves for a win, the lives check for a loss —
+  // and this is the one line both of them pass through afterwards.
+  //
+  // It has a side effect: it writes the star record. That is why it is guarded on
+  // `summary` being null rather than rebuilt each frame — "did this run beat your
+  // best" is true exactly once, and a summary recomputed every frame would say so
+  // for one frame and then contradict itself for the rest of the panel's life.
+  if (state.result && !state.summary) {
+    state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex]);
   }
 
   // Outside the step, so a selection is dropped even while the game is paused at

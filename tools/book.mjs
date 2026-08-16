@@ -27,7 +27,7 @@
 // its source pixels; the book has two scale factors and two icon heights, and
 // any of the four can be nudged past that line without looking wrong on a laptop.
 
-import { archery, barracks, siege, SCALE } from '../src/data/towers.js';
+import { archery, barracks, siege, monastery, SCALE } from '../src/data/towers.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { occupant } from '../src/select.js';
 import { refundValue, REFUND_RATE } from '../src/menu.js';
@@ -49,7 +49,7 @@ const ok = (cond, label, detail = '') => {
   if (!cond) bad++;
 };
 
-const LADDERS = [archery, barracks, siege];
+const LADDERS = [archery, barracks, siege, monastery];
 const TIERS = LADDERS.flat();
 
 // The device-pixel cap in main.js. Art is crisp iff drawn x MAX_SCALE fits in

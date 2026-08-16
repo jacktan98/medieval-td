@@ -8,8 +8,8 @@ Hand-drawn files live here, all authored, never generated:
   other way round.
 - **`Map_2.svg`** — the second stage, the same size and the same conventions.
 - **`Map_3.svg`** — the third: **two roads that never meet**, each with its own
-  entry on the left and its own exit on the right, and ten markers. Six ways in
-  altogether, three lanes on each road.
+  entry on the left and its own exit on the right, and **eleven markers** as of
+  the latest upload. Six ways in altogether, three lanes on each road.
   Two roads come in from the west and merge before the keep, and it has nine
   markers of its own.
 - **`Plot_Marker.svg`** — one plot marker on its own, on a 1024 square canvas as
@@ -367,7 +367,7 @@ find the road by that fill and neither guesses.
 
 ## Markers have a ceiling, and map 3 had three at it
 
-Three of map 3's ten markers were painted at y 159 to 163 in game space, which is
+Three of map 3's markers were painted at y 159 to 163 in game space, which is
 8 to 12px above the highest marker on either other map — and map 1's highest
 already clears the HUD by exactly one pixel. A tier 2 archery tower on any of
 them reaches up behind a HUD control.
@@ -405,3 +405,29 @@ map falls back to flat green.
 
 The same command prints the plot positions to paste into the level file, so
 there is no version of "redraw a map" that does not start here.
+
+## A marker added or removed is a re-extraction, not an edit
+
+`tools/split-map.mjs` refuses to run when the number of repeated shapes in the
+artwork does not match the number of plots in the level file. That is deliberate
+and it is the right way round: the artwork is the source of truth, so a mismatch
+means the DATA is stale, and the tool would rather stop than write a base map
+whose markers do not line up with the game's plot list.
+
+So the order for an upload that gains or loses a marker is:
+
+1. Put a placeholder into the level's `plots` array so the counts agree — any
+   coordinates at all; they are about to be overwritten.
+2. `node tools/split-map.mjs assets/map/Map_N.svg`. It rewrites `Map_N_base.svg`
+   and prints every plot in ROAD ORDER, ready to paste.
+3. Paste the whole list. **Do not merge it into the old one by hand.** Plots are
+   stored in road order, so a marker inserted in the middle shifts every index
+   after it — the eleventh marker went in at index 2 and moved eight of the other
+   ten down one. Every plot index in `tools/sim.mjs` points somewhere else after
+   that, which reads exactly like a balance collapse and is not one.
+4. `node tools/trace-road.mjs` too, if the roads moved. On the eleven-marker
+   upload they had not: 1049 and 1068px against 1049 and 1069 before it.
+5. `node tools/hud-clear.mjs`, `node tools/formation.mjs`, `node tools/siege.mjs`
+   — all three walk every plot of every map and all three answer questions a new
+   marker can break.
+6. Re-sweep and re-paste `tools/sim.mjs`'s scenario list for that map.

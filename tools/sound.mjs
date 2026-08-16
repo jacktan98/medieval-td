@@ -453,10 +453,14 @@ check('a barracks man answers', selectionCue({ kind: 'unit', ref: {} }), CUE.bar
 check('an enemy answers', selectionCue({ kind: 'enemy', ref: {} }), CUE.thug);
 check('bare ground says nothing', selectionCue(null), null);
 check('an artillery tower answers', familyCue('siege'), CUE.artillery);
-// The monastery is the last family with nothing recorded, and this is the check
-// that a family with no voice returns null rather than crashing a lookup — it
-// used to be siege's job and siege has lines now.
-check('a family with no voice says nothing', familyCue('monastery'), null);
+check('a monastery answers', familyCue('monastery'), CUE.monastery);
+// EVERY family has lines now, so the "no voice" case is asked of a family that
+// does not exist rather than of the one that had not been recorded yet. The
+// check is worth keeping either way: what it actually guards is that a lookup
+// miss answers null instead of throwing, which is what lets the next family be
+// wired up before its recordings land. It has been siege's job, then the
+// monastery's, and it is nobody's now.
+check('a family with no voice says nothing', familyCue('alchemy'), null);
 
 // A cue with nothing loaded must not close the channel on everything else.
 //

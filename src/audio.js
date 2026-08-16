@@ -184,6 +184,11 @@ const paths = {
   // damage STARTING.
   flask_break:     'assets/audio/sfx/Flask_Break.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
+  // The monastery. A missile leaving a staff, and it announces itself on the way
+  // out exactly as an arrow does — see the two flags on every ammunition in
+  // data/towers.js. Category B, because several shrines can fire at once and a
+  // shared channel would silence all but one of them.
+  arcane_shot:     'assets/audio/sfx/Arcane_shot.mp3',
   arrow_kill_enemy: 'assets/audio/sfx/Arrow_kill_enemy.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
   // the air and announces itself by LANDING, which is also the moment the player
@@ -213,7 +218,15 @@ const paths = {
   artillery_2:     'assets/audio/voice/Artillery_2.mp3',
   artillery_3:     'assets/audio/voice/Artillery_3.mp3',
   artillery_4:     'assets/audio/voice/Artillery_4.mp3',
-  artillery_5:     'assets/audio/voice/Artillery_5.mp3'
+  artillery_5:     'assets/audio/voice/Artillery_5.mp3',
+  // The monastery's five, on the same terms as the other three families:
+  // Category A, one at a time, and rotated by the share rules below so building
+  // three shrines in a row is three different voices.
+  monastery_1:     'assets/audio/voice/Monastery_1.mp3',
+  monastery_2:     'assets/audio/voice/Monastery_2.mp3',
+  monastery_3:     'assets/audio/voice/Monastery_3.mp3',
+  monastery_4:     'assets/audio/voice/Monastery_4.mp3',
+  monastery_5:     'assets/audio/voice/Monastery_5.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -282,6 +295,7 @@ export const CUE = {
   archery:      ['archery_1', 'archery_2', 'archery_3', 'archery_4', 'archery_5'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
+  monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -302,6 +316,10 @@ export const CUE = {
 
 // Category B — the battle underneath, on its own bus, every time it happens.
 export const SHOT = ['arrow_shot'];
+// A missile leaving a staff. Category B beside the bow and for the same reason:
+// several monasteries firing is several events the player is watching, and one
+// channel would silence all but the first.
+export const ARCANE = ['arcane_shot'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // A rock arriving. Category B because a catapult's noise is the IMPACT, not the
 // release: several machines land rocks at once and a shared channel would
@@ -649,17 +667,15 @@ export function solo(cue, priority = false) {
   gateUntil = now + seconds + GAP;
 }
 
-// A tower family's voice, or null for one with nothing recorded. The monastery
-// has no tiers yet, let alone lines, and a lookup that returns null is how a
-// family with no art already gets a button rather than a blank.
-//
-// Artillery's five lines are wired but not yet recorded, which needs nothing
-// special here: solo() skips a cue whose clips have not loaded and leaves the
-// channel open for whatever asks next.
+// A tower family's voice, or null for one with nothing recorded. All four have
+// five lines each now; the null branch is kept because a lookup that answers
+// "nothing to say" is how a family gets wired before its recordings land, and
+// solo() already skips a cue whose clips have not loaded.
 export function familyCue(famId) {
   return famId === 'archery' ? CUE.archery
        : famId === 'barracks' ? CUE.barracks
        : famId === 'siege' ? CUE.artillery
+       : famId === 'monastery' ? CUE.monastery
        : null;
 }
 

@@ -1,6 +1,15 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS } from './data/towers.js';
-import { play, SHOT } from './audio.js';
+import { play, SHOT, ARCANE } from './audio.js';
+
+// What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
+// projectiles.js, and it is a table for the same reason that one is: "what does
+// this sound like" has exactly one answer per kind, so a third projectile that
+// announces itself needs a row rather than a branch.
+//
+// A rock is not here on purpose. It is silent in the air and announces itself by
+// arriving, which is where the player is already looking.
+const FIRING = { arrow: SHOT, arcane: ARCANE };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
@@ -218,7 +227,7 @@ function shoot(state, t, target) {
   //
   // The rock's noise is not here — it is in projectiles.js, on the landing. See
   // `fireSound` / `landSound` in data/towers.js.
-  if (ammo.fireSound) play(SHOT);
+  if (ammo.fireSound) play(FIRING[ammo.kind]);
 }
 
 // Commit a lobbed shot to a patch of ground, and aim it AHEAD of the target.

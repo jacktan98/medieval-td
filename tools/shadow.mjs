@@ -179,6 +179,7 @@ const towers = await import('../src/data/towers.js');
 const waves = await import('../src/data/waves.js');
 const spear = towers.barracks[0].soldier, spear2 = towers.barracks[1].soldier;
 const spear3 = towers.barracks[2].soldier;
+const mon = towers.monastery;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const plague = waves.enemyTypes.plague_inf;
 
@@ -222,6 +223,16 @@ const SPRITES = [
   //
   // The tolerance below is 6 source px, under 1.5 game px. All six pairs are
   // currently inside 0.7.
+  // The monastery, on the same terms as archery: three buildings measured by the
+  // ellipse fit, and the six churchmen by the tip rule.
+  //
+  // Tiers 2 and 3 hold the SAME fraction against the SAME trim, and it is not a
+  // shared constant — the two files are separate drawings of the same frame in
+  // timber and in stone, and the two rows below measure them separately and come
+  // back equal. If a redraw ever moves one of them, this is what says so.
+  ['assets/towers/monastery/Monastery_Tower_T1.png', 'shrine.groundFrac', mon[0].spriteTrim, mon[0].groundFrac, 'whole'],
+  ['assets/towers/monastery/Monastery_Tower_T2.png', 'chapel.groundFrac', mon[1].spriteTrim, mon[1].groundFrac, 'whole'],
+  ['assets/towers/monastery/Monastery_Tower_T3.png', 'abbey.groundFrac',  mon[2].spriteTrim, mon[2].groundFrac, 'whole'],
   ['assets/units/Soldiers_Novice_Archer_Default.png',  'archer.gunnerPivot',       towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
   ['assets/units/Soldiers_Novice_Archer_Attack.png',   'archer.attack.pivot',      towers.archery[0].attack.trim, towers.archery[0].attack.pivot],
   ['assets/units/Soldiers_Combat_Archer_Default.png', 'archer2.gunnerPivot',      towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
@@ -233,6 +244,16 @@ const SPRITES = [
   // him on his own, and a figure standing anywhere in this game stands on its
   // shadow. Without a pivot he was the one man on the page centred by his
   // bounding box while everyone beside him was anchored properly.
+  // The three churchmen, and the pair rule applies to them as it does to the
+  // archers — each pose carries its own trim and its own pivot, and what holds
+  // them together is that the artist drew the shadow at the same source pixel in
+  // both. All three pairs are inside 0.5px.
+  ['assets/units/Soldiers_Priest_Default.png',   'priest.gunnerPivot',    mon[0].gunnerTrim, mon[0].gunnerPivot],
+  ['assets/units/Soldiers_Priest_Attack.png',    'priest.attack.pivot',   mon[0].attack.trim, mon[0].attack.pivot],
+  ['assets/units/Soldiers_Bishop_Default.png',   'bishop.gunnerPivot',    mon[1].gunnerTrim, mon[1].gunnerPivot],
+  ['assets/units/Soldiers_Bishop_Attack.png',    'bishop.attack.pivot',   mon[1].attack.trim, mon[1].attack.pivot],
+  ['assets/units/Soldiers_Cardinal_Default.png', 'cardinal.gunnerPivot',  mon[2].gunnerTrim, mon[2].gunnerPivot],
+  ['assets/units/Soldiers_Cardinal_Attack.png',  'cardinal.attack.pivot', mon[2].attack.trim, mon[2].attack.pivot],
   ['assets/units/Artillery_Man_T1.png',     'catapult.portraitPivot', towers.siege[0].portraitTrim, towers.siege[0].portraitPivot],
   ['assets/units/Artillery_Man_T2.png',     'mangonel.portraitPivot',  towers.siege[1].portraitTrim, towers.siege[1].portraitPivot],
   ['assets/units/Artillery_Man_T3.png',     'trebuchet.portraitPivot', towers.siege[2].portraitTrim, towers.siege[2].portraitPivot],
@@ -262,6 +283,12 @@ const SPRITES = [
 // that moved a figure inside its canvas.
 const TOLERANCE = 6;
 
+// How wide a gap two blobs may have between them and still be one shadow the
+// figure standing on it has split. 4 source px is about the width of a staff
+// shaft plus its outline, and it is under a game pixel — wide enough for the
+// case that exists, far too narrow to swallow a boot.
+const SEAM = 4;
+
 let bad = 0;
 console.log('sprite                          holds                     measured centre   held        off');
 console.log('-'.repeat(100));
@@ -286,6 +313,41 @@ for (const [file, holder, trim, held, mode] of SPRITES) {
     parts = found.filter(b =>
       heldPt.x >= b.minX && heldPt.x <= b.maxX &&
       heldPt.y >= b.minY && heldPt.y <= b.maxY);
+    // A SHADOW THE FIGURE HAS CUT IN HALF still has to be measured whole, and the
+    // monastery's three churchmen are why. Each of them stands his staff through
+    // the middle of his own ellipse, so what the flood fill finds is two blobs
+    // either side of the shaft — and the tip rule run on either half alone puts
+    // the centre 7.5px out, which is over the tolerance and in the wrong
+    // direction.
+    //
+    // So the chosen blob absorbs anything that is plainly the OTHER HALF of it,
+    // and the test is three things at once rather than "nearby":
+    //
+    //   SIDE BY SIDE. The two x-ranges must not overlap at all — a shaft cuts an
+    //   ellipse into a left piece and a right piece, so the halves sit beside
+    //   each other. This is the clause that does the work: the thug's robe and
+    //   the plague doctor's coat are the same brown as their shadows and sit
+    //   DIRECTLY ABOVE them at exactly the same x, so a rule that only asked
+    //   about distance swallowed the whole figure and moved both anchors 7 and
+    //   9px. That was caught by this file failing, which is what it is for.
+    //
+    //   ACROSS A SEAM, not a gap. At most SEAM px between them.
+    //
+    //   AT THE SAME HEIGHT. Their y-ranges must overlap by most of the shorter
+    //   one, because two halves of one flat ellipse lie in the same band.
+    //
+    // Every anchor that passed before this was added still measures to the same
+    // tenth of a pixel, which is the check that the rule is narrow enough.
+    for (const b of found) {
+      if (parts.includes(b)) continue;
+      const near = parts.some(p => {
+        const gapX = Math.max(b.minX - p.maxX, p.minX - b.maxX);
+        const overlapY = Math.min(b.maxY, p.maxY) - Math.max(b.minY, p.minY);
+        const shorter = Math.min(b.maxY - b.minY, p.maxY - p.minY);
+        return gapX > 0 && gapX <= SEAM && overlapY >= shorter * 0.6;
+      });
+      if (near) parts.push(b);
+    }
   }
 
   if (!parts.length) {
