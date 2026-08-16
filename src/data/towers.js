@@ -311,39 +311,27 @@ export const rock = {
 export const rock2 = { ...rock, sprite: 'rock_t2', trim: ROCK2_TRIM };
 export const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
 
-// THE ARCANE MISSILE, and the first projectile in the game whose job is not
-// damage.
+// THE ARCANE MISSILE, and the hardest single blow in the game.
 //
 // It is STEERED like an arrow — no `arc` — so it chases the man it was aimed at
-// and dies with him. What it does on arrival is take a bite out of his health and
-// then SLOW HIM DOWN, and the second half is the whole family: a monastery does
-// not kill things, it holds them under everybody else's towers for longer.
+// and dies with him, and what it does on arrival is take an enormous bite out of
+// one enemy. Nothing else about it lands on anybody standing nearby: this is a
+// SINGLE-TARGET weapon, deliberately, because splash is artillery's answer and a
+// family needs a question of its own.
+//
+// IT USED TO SLOW ITS TARGET INSTEAD, and the slow is gone rather than reduced —
+// no field on the ammunition, no clock on the enemy, no ring on the ground. Half
+// a mechanic left behind is worse than none: it is a number nothing reads and a
+// branch nobody tests. The family kept the picture, the flight and the voice; it
+// swapped what arriving MEANS.
 //
 // `speed` 130 against an arrow's 360, which is the slowest thing in the air in
 // this game — slower even than a lobbed rock's 300 horizontal — and it is meant
 // to be watched. At tier 1's reach of 175 the longest flight is 1.35s, so a
 // missile fired at a marching thug arrives about 85px behind where it was aimed
-// and follows him there. That lag is the tower's character: a monastery is
-// always working on where the enemy WAS, which is why it is a support weapon and
-// not a sniper.
-//
-// It is STEERED and it also has a SPLASH, which no other projectile in the game
-// combines — an arrow chases one man and hits him alone, a rock is committed to a
-// patch of ground. This one chases a man and then catches whoever is standing
-// round him when it arrives. That pairing is the family: it is aimed at somebody,
-// and what it does lands on everybody.
-//
-// `slow` is { factor, seconds }: the enemy walks at `factor` of its own speed
-// for that long. It REFRESHES rather than stacks, and the STRONGER factor wins
-// while both are running — see hit() in projectiles.js. Stacking would let three
-// shrines multiply into a stop, and "how long since the last missile" is a thing
-// the player can see where "how many are on him" is not.
-//
-// 0.50 / 0.42 / 0.35, and the duration is a hair over the reload at every tier —
-// 2.2s against 1.45, 2.6 against 1.25, 3.0 against 1.05 — so a monastery working
-// on the same stretch of road keeps it slowed continuously rather than in
-// pulses. That overlap is the whole reason the two numbers move together when
-// the family is retuned.
+// and follows him there. That lag was the support tower's character and it is the
+// sniper's too: you watch the shot travel, and by the time it lands you already
+// know whether it was worth firing.
 export const missile = {
   kind: 'arcane',
   sprite: 'missile_t1',
@@ -357,27 +345,19 @@ export const missile = {
   // because the head of this drawing has width.
   grip: 0.15,
   speed: 130,
-  slow: { factor: 0.50, seconds: 2.2 },
   // It announces itself leaving the staff and arrives quietly, the same way an
   // arrow does — see the two flags on `arrow`.
   fireSound: true,
   landSound: false
 };
 
-// The same missile, drawn from each tier's own file and carrying that tier's
-// slow. ONLY the picture and the two slow numbers change: the speed and the grip
-// are what the flight was chosen against, and a tier 3 missile that also flew
-// faster would stop being the thing you watch.
-export const missile2 = {
-  ...missile,
-  sprite: 'missile_t2',
-  slow: { factor: 0.42, seconds: 2.6 }
-};
-export const missile3 = {
-  ...missile,
-  sprite: 'missile_t3',
-  slow: { factor: 0.35, seconds: 3.0 }
-};
+// The same missile, drawn from each tier's own file. ONLY the picture changes:
+// how hard it hits is on the tier, not on the ammunition, exactly as an archery
+// tower's damage is. The speed and the grip are what the flight was chosen
+// against, and a tier 3 missile that also flew faster would stop being the thing
+// you watch.
+export const missile2 = { ...missile, sprite: 'missile_t2' };
+export const missile3 = { ...missile, sprite: 'missile_t3' };
 
 // Every tier has its own drawing now, in both families — nothing is shared.
 // They are all within a few px of each other in size, because scale is fixed by
@@ -705,6 +685,27 @@ export const archery = [
 // all-barracks build from losing on wave 3 to winning with 9 lives out of 20 —
 // which breaks the one rule the level has. The assist is what was asked for and
 // it stayed; its price was one point off each tier's damage.
+//
+// soldier.hp went 105/145/195 -> 95/130/175, a tenth off every tier, asked for
+// from play — and it turns out to be the fix for something this project had
+// already measured and left standing. A blocker-held map gets easier the more
+// blocker-seconds it has, and map 3 gained an eleventh plot: pure barracks was
+// clearing it 11 times in 20, and map 2's was clearing 7. A tenth off puts both
+// back where the rule says they belong.
+//
+// The whole table, twenty seeds, with `stuck` given thirteen times the clock so
+// the slowest build in the game reaches a real verdict:
+//
+//                        map 1 mix   map 1 pure   map 2 mix   map 2 pure   map 3 mix   map 3 pure
+//   105/145/195            19/20        0/20        13/20        7/20        11/20       11/20
+//   95/130/175  <- this    15/20        0/20        12/20        1/20        10/20        4/20
+//   90/125/168             16/20        0/20         8/20        0/20         1/20        0/20
+//   84/116/156             13/20        0/20         7/20        0/20         3/20        0/20
+//
+// A TENTH IS THE WHOLE BAND. At a seventh off, map 3's best mixed build collapses
+// from 10 wins in 20 to 1 — the men stop being able to hold two roads at all, and
+// the map goes from hard to impossible in one step. Do not take more off this
+// number without re-running that column; it is the steepest cliff in the game.
 const camp = {
   sprite: 'barracks_t1',
   spriteTrim: CAMP_TRIM,
@@ -854,15 +855,15 @@ const spearman3 = {
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
-    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 105, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
+    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 95, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
     ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
-    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 145, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
+    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 130, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
-    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 195, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 175, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
   }
 ];
 
@@ -1179,18 +1180,24 @@ export const siege = [
 // the same way an archery tower's is, so nothing in the renderer had to learn
 // anything new. What is different is what the man throws.
 //
-// A monastery is SLOW AT EVERY LEVEL, deliberately and three times over: it
-// reloads slower than a bow, its missile is the slowest thing in the air, and
-// what the missile does is take speed off everything it lands among. The damage
-// is real but it is not the point — 5, 8 and 12 against archery's 9, 15 and 24,
-// so a shrine kills a militiaman in seven shots and a giant never.
+// A monastery is SLOW AT EVERY LEVEL, deliberately and twice over: it reloads
+// every 4.5 seconds, which is the longest wait in the game, and its missile is
+// the slowest thing in the air. What arrives at the end of that wait is the
+// hardest single blow anything in this game can land — 30, 60 and 105 against
+// archery's 9, 15 and 24, and against the trebuchet's 37, which held the record.
 //
-// WHY IT IS WORTH BUILDING ANYWAY. Every other tower's output is capped by how
-// long an enemy stays in reach, and that is the one number a monastery moves.
-// A thug held at 0.48 of its speed spends twice as long under every bow, every
-// catapult and every spear on the board — so a monastery is worth exactly as much
-// as the towers around it, which is a different question from "how much damage
-// does it do" and the reason the family exists.
+// IT USED TO BE A SLOW RATHER THAN A BLOW. The first version of this family took
+// speed off whatever it hit and did almost no damage, and it is worth writing
+// down what changed rather than quietly rewriting history: the artist played it
+// and asked for the other thing. The slow is GONE rather than reduced — no field
+// on the ammunition, no clock on the enemy, no ring on the ground — because half
+// a mechanic left behind is a number nothing reads and a branch nobody tests.
+//
+// WHAT THE FAMILY IS FOR NOW. Its damage per SECOND is the lowest of the three
+// shooting families and its damage per SHOT is by far the highest, so it is the
+// tower that does not care how much health a thing has. Everything else on the
+// board struggles with the giant and eats militia comfortably; a monastery is
+// the other way round, and that is the question it answers.
 const shrine = {
   sprite: 'monastery_t1',
   spriteTrim: MON_TRIM,
@@ -1230,6 +1237,36 @@ const shrine = {
   shape: 'tower'
 };
 
+// THE ROOF, AND IT HAS TO BE DRAWN OVER THE PRIEST.
+//
+// He is the tallest figure in the game — 154 source px of him, and it is the
+// staff rather than the man — so on both roofed tiers the top of that staff rises
+// past the near eave and stands in front of a roof it is physically under. That
+// reads as the staff growing through the tiles, and it was reported from a
+// screenshot the day the family shipped.
+//
+// A rect cannot fix it. The roof is a slanted plane, so any box around it takes
+// the sky beside it and, worse, the deck below it — and painting the deck over
+// the priest erases his legs. So it is a POLYGON, the same mechanism the archery
+// rails use: clip the canvas to this shape and redraw the sprite through the
+// hole, which paints exactly what the artist put there, transparency included.
+//
+// Traced from three shapes in the SVG rather than one, because the roof is drawn
+// as a plane and two edge boards: the plane (453,214) (687,224) (613,380)
+// (374,341), the near-left fascia hanging to (381,350) (618,388), and the
+// near-right fascia out to (691,232). Their union is the six corners below,
+// padded 3px for the black stroke the PNG draws around shapes the SVG stores
+// without one.
+//
+// TIERS 2 AND 3 SHARE IT because they share the roof to the pixel — the abbey is
+// the chapel rebuilt in stone inside the same timber frame, which the identical
+// trims and the identical shadow paths already said. One constant rather than two
+// copies, so a redraw that moves the roof cannot move it on one tier only.
+//
+// Tier 1 has no roof at all — it is an open deck — so it has no entry here and
+// wants none.
+const ROOF = [[450, 211], [690, 221], [694, 232], [621, 392], [378, 353], [371, 338]];
+
 // Tier 2: a roof goes on, and the legs get stone footings. Same frame, so the
 // deck is in nearly the same place — but re-measured rather than carried across,
 // because the whole drawing sits in a different box.
@@ -1249,6 +1286,7 @@ const chapel = {
   // is: there is a roof above the deck now, and the post runs the whole way up to
   // carry it.
   frontTrims: [[585, 360, 18, 194]],
+  frontPolys: [ROOF],
   shape: 'tower'
 };
 
@@ -1268,6 +1306,7 @@ const abbey = {
   groundFrac: [0.501, 0.868],
   // The same near post at the same source pixels, x 587..600, y 362..551.
   frontTrims: [[585, 360, 18, 194]],
+  frontPolys: [ROOF],
   shape: 'tower'
 };
 
@@ -1337,85 +1376,73 @@ const cardinal = {
 
 // THE NUMBERS, and what each of them is for.
 //
-// `cooldown` 1.45 / 1.25 / 1.05 against archery's 1.00 / 0.90 / 0.80. Slower than
-// a bow at every tier, which is the artist's first instruction — "the attack rate
-// is slow" — and it started at 2.40 / 2.10 / 1.80, which was slower still and was
-// too slow to matter. See the measurements below.
+// ONE BLOW, AS HARD AS THE GAME GETS, AS SELDOM AS THE GAME GETS.
 //
-// `damage` 5 / 8 / 12, a little over half archery's at every tier and explicitly
-// not the priority. What an upgrade actually buys here is the SLOW: 0.50 for 2.2
-// seconds becomes 0.35 for 3.0, which is the difference between an enemy that is
-// dawdling and one that is wading. Compare artillery, where an upgrade buys
-// blast, and archery, where it buys rate.
+// `damage` 30 / 60 / 105. The biggest single hit in the game by a distance — the
+// trebuchet, which held the record, does 37 — and it is the family's whole
+// point. A Cardinal's missile kills a militiaman with 25 to spare, a plague
+// doctor in one, and takes a fourteenth off a giant.
 //
-// `range` 175 / 195 / 215, a notch under archery's 190 / 210 / 230 and elliptical
-// like every reach in the game. It is shorter on purpose: this tower wants to sit
-// where the road is about to pass a killing ground, not where it can see the most
-// of it, and giving it archery's reach would make "build a monastery first"
-// correct on every plot.
+// `cooldown` 4.5 AT EVERY TIER, against archery's 1.00 / 0.90 / 0.80 and
+// artillery's 3.0. The slowest weapon in the game, and FLAT on purpose: an
+// upgrade here buys a bigger blow and nothing else, exactly as an artillery
+// upgrade buys blast and an archery upgrade buys rate. "Very slow attack rate"
+// is the family's character rather than a starting handicap it grows out of.
 //
-// `cost` 80 / 105 / 155 against archery's 70 / 90 / 140. Ten to fifteen gold more
-// at every rung, which is what stops a shrine being the cheapest way to hold wave
-// 1 — it is worse at that than either of the two towers it costs the same as, and
-// it should be.
+// WHICH MEANS ITS DPS IS THE LOWEST OF THE THREE SHOOTING FAMILIES: 6.7 / 13.3 /
+// 23.3 against archery's 9.0 / 16.7 / 30.0. That is the honest way to read it —
+// a monastery does LESS damage per second and far more per shot, so every
+// militiaman it kills is 25 to 80 points of it thrown away, and every giant it
+// works on is the one thing on the board that wastes none of it.
 //
-// `splash` 55 / 65 / 75, AND IT IS WHAT MAKES THE FAMILY WORK AT ALL. It was not
-// in the first version and the first version was worthless — measured, not
-// guessed: swapping one archery tower for a monastery in the best mixed build
-// took map 1 from 8 wins in 8 to 0 in 8, and map 2 from 7 to 0.
+// `range` 175 / 195 / 215, a notch under archery's and elliptical like every
+// reach in the game.
 //
-// The reason is arithmetic rather than tuning. A single-target slow that lands
-// every second or two catches ONE enemy, and the waves this game sends are 14,
-// 18, 24, 34 militia deep — so a shrine spent its whole life making one man in
-// thirty walk slower while the plot it stood on stopped shooting. "It will slow
-// down enemies" is plural, and a tower that can only ever slow one of them is not
-// doing the thing it was asked to do.
+// `cost` 80 / 105 / 155 against archery's 70 / 90 / 140.
 //
-// So the missile leaves a PATCH, exactly as a rock does, and everything standing
-// in it takes the damage and the slow together. Nothing new was needed for it:
-// land() in projectiles.js already walks the victims of any shot with a `splash`,
-// and the slow rides along with the hit. It stays under a catapult's 75 / 86 / 98
-// at every tier, which is the line that keeps the two families apart: artillery is
-// a blast that happens to cover ground, and this is a chill that happens to sting.
+// NO SPLASH, and it went out with the slow. A missile that also caught everyone
+// standing nearby would be a catapult with a bigger number, and artillery is the
+// family whose answer is area. This one hits one man very hard.
 //
-// WHERE IT ALL LANDS, at TWENTY SEEDS. The build is the map's best mix with one
-// archery tower swapped for a monastery — the comparison worth having, because a
-// shrine and a watchtower want the same plot — and a siege swap beside it for
-// scale. Map 3 swaps two of eleven rather than one of six.
+// WHERE IT LANDS, TWENTY SEEDS, against the barracks men's reduced health. The
+// build is the map's best mix with one archery tower swapped for a monastery,
+// which is the comparison worth having because they want the same plot; on map 3
+// it is two of eleven rather than one of six.
 //
-//                                      wins      median lives
-//   map 1  3 archery + 3 barracks      19/20      4
-//            one swapped for a shrine   7/20      3
-//            one swapped for a siege   19/20      4
-//   map 2  3 archery + 3 barracks      13/20      2
-//            one swapped for a shrine  12/20      6
-//            one swapped for a siege   20/20     13
-//   map 3  5 archery + 6 barracks      11/20      1
-//            two swapped for shrines    9/20      2
-//            two swapped for siege     11/20      2
+//                              without one    with        pure monastery
+//   map 1  3 archery + 3 B       15/20         17/20        0/20
+//   map 2  3 archery + 3 B       12/20         19/20        0/20
+//   map 3  5 archery + 6 B       10/20         11/20        0/20
 //
-// READ THAT HONESTLY. On maps 2 and 3 a monastery is about a wash — it wins as
-// often as the bow it replaced and holds MORE lives when it wins, which is what a
-// slow is supposed to buy. On map 1 it is a mistake, and that is the map with six
-// plots, the densest waves per yard of road, and no second road to cover. A
-// family that is right on two maps and wrong on the third is the same shape
-// artillery already has, in the other direction.
+// So it is worth its plot on all three maps now, clearly so on map 2, and it
+// still cannot clear a map on its own — which is the rule every family is held
+// to. Four other pairs were measured and are worth keeping as the shape of the
+// dial:
 //
-// Eight seeds said 3/8 and 6/8 for the same two numbers, which is why they are
-// not the numbers quoted. A build sitting on the win/loss boundary needs twenty.
+//                                     map 1   map 2   map 3
+//   30/60/105 @ 4.5 flat  (this)      17/20   19/20   11/20
+//   30/60/105 @ 4.5/4.0/3.5           17/20   19/20    8/20
+//   26/52/ 92 @ 4.5 flat              17/20   18/20    3/20
+//   34/68/120 @ 4.5 flat              20/20   18/20   13/20
+//
+// The last one is where it stops being a choice and starts being the answer, and
+// the third is where map 3 falls off a cliff. The band between them is narrow,
+// which is worth knowing before anybody reaches for the damage figure in the
+// admin dashboard: this is the number the family is most sensitive to.
 //
 // NO `targeting`. An archery tower can be told what to shoot at because it kills
-// things and the player has an opinion about which thing; a monastery's answer is
-// almost always "whatever is nearest the exit", which is what a tower with no
-// button already does. It is the obvious thing to add if the family turns out to
-// want it — the flag is per TIER, so it costs one word per row.
+// things and the player has an opinion about which thing; a monastery firing once
+// every four and a half seconds has a much stronger case for one — "most health"
+// is exactly where a 105-damage blow belongs — and it is the first thing to try
+// if the family reads as wasteful. The flag is per TIER, so it costs one word per
+// row.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 5,  splash: 55, range: 175, cooldown: 1.45, colour: '#8C7A5C' },
+    cost: 80,  damage: 30,  range: 175, cooldown: 4.5, colour: '#8C7A5C' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 105, damage: 8,  splash: 65, range: 195, cooldown: 1.25, colour: '#7E6E52' },
+    cost: 105, damage: 60,  range: 195, cooldown: 4.5, colour: '#7E6E52' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 155, damage: 12, splash: 75, range: 215, cooldown: 1.05, colour: '#9A948A' }
+    cost: 155, damage: 105, range: 215, cooldown: 4.5, colour: '#9A948A' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

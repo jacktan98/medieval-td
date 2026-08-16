@@ -596,11 +596,33 @@ above it, and a looser rule swallowed the whole figure and moved two anchors.
 to face right. The rect is there anyway, tight to the post, because a building
 part in front of a man is in front of him at every facing.
 
-## The monastery is a SLOW, and the picture has to say so
+## The roof has to be drawn over the priest
 
-Its whole output is a number nothing on the board would otherwise show: the
-tower fires every 2.4 seconds, does five damage, and buys its keep by holding
-what it hits under everybody else's towers. So an enemy an arcane missile has
-caught wears a pale blue ring on the ground at its feet, and the ring SHRINKS as
-the slow runs out. Without it a player who builds one sees a tower that appears
-to miss.
+He is the tallest figure in the game — 154 source px, and it is the staff rather
+than the man — so on both roofed tiers the top of that staff rises past the near
+eave and stands in front of a roof it is physically under. It reads as the staff
+growing through the tiles.
+
+A rect cannot fix it: the roof is a slanted plane, so any box around it takes the
+sky beside it and the deck below it, and painting the deck over the priest erases
+his legs. So it is a POLYGON in `frontPolys`, the same mechanism the archery
+rails use — clip the canvas to the shape and redraw the sprite through it, which
+paints exactly what the artist put there, transparency included.
+
+It is traced from THREE shapes in the SVG rather than one, because the roof is
+drawn as a plane and two edge boards. Tiers 2 and 3 share the constant, because
+they share the roof to the pixel. **If a redraw moves the roof, re-trace all
+three shapes and take their union again** — the plane alone leaves the fascia
+sticking out under the staff.
+
+## The monastery hits once, very hard, very seldom
+
+It fires every 4.5 seconds, which is the longest wait in the game, and lands 30,
+60 or 105 damage in one blow against a trebuchet's 37. Its damage per SECOND is
+the lowest of the three shooting families and its damage per SHOT is by far the
+highest, so it is the tower that does not care how much health a thing has.
+
+**It used to be a slow instead**, and the artwork is unchanged by the swap: same
+buildings, same churchmen, same missile, same voice. What changed is what
+arriving means. The pale blue ring that used to mark a slowed enemy is gone with
+the mechanic — there is nothing left for it to say.

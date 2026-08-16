@@ -289,16 +289,15 @@ m1: {
   'MIX 2 archery + 3 barracks + 1 siege': [S(0), B(1), A(4), B(6), B(7), A(8)],
   'MIX 3 siege + 3 barracks':       [S(0), B(1), S(4), B(6), B(7), S(8)],
   // THE MONASTERY, held to the same two rules and compared the same way. A pure
-  // build of it must lose — it does, and not narrowly: five damage a shot every
-  // 2.4 seconds does not kill a wave however long you slow it down — and the mix
-  // SWAPS AN ARCHERY TOWER for one, which is the comparison worth having,
+  // build of it must lose — it does, 0 in 20 on every map, because one blow every
+  // 4.5 seconds cannot clear a wave of thirty however hard the blow is — and the
+  // mix SWAPS AN ARCHERY TOWER for one, which is the comparison worth having,
   // because a monastery and a watchtower want the same plot.
   //
-  // What the swap measures is the family's whole argument: a shrine does about a
-  // third of the damage the bow it replaced was doing, and pays for it by keeping
-  // everything it touches under the other five towers for longer. On a
-  // SIX-TOWER map that trade is a hard sell — see the note under m3, where there
-  // is room for eleven and the same swap reads very differently.
+  // What the swap measures is the family's whole argument: less damage per
+  // SECOND than the bow it replaced, far more per SHOT. It wins where the thing
+  // that kills you has a lot of health and loses where the thing that kills you
+  // is thirty of something small.
   'ALL monastery x6 (expect LOSS)': [M(0), M(1), M(4), M(6), M(7), M(8)],
   'MIX 2 archery + 3 barracks + 1 monastery': [M(0), B(1), A(4), B(6), B(7), A(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
@@ -357,22 +356,22 @@ m2: {
 // lists on all three maps — which is the point of re-running rather than
 // trusting them.
 //
-// THE INVARIANT DOES NOT HOLD ON THIS MAP and the note is here rather than
-// buried, because everything below reads better than the level is. Pure barracks
-// clears it on ELEVEN seeds in 20, which is 55%.
+// THE INVARIANT ON THIS MAP HAS BEEN BROKEN AND IS BEING REPAIRED, and the note
+// is here rather than buried because it is the one thing about map 3 that a
+// stale reading would flatter.
 //
-// It has gone 4/20, then 8/20 when the plague doctor learned to stand off, and
-// now 11/20 — and the last jump is the ELEVENTH PLOT and nothing else. No rule
-// changed between the two measurements. That is the cleanest demonstration this
-// project has of what a marker is worth on this particular map: it is held by
-// blockers, and a blocker-held map given one more blocker gets easier faster
-// than it gets anything else. Adding a plot to map 1 would not do this.
+// Pure barracks has cleared it 4 seeds in 20, then 8 when the plague doctor
+// learned to stand off, then 11 when the artist added an eleventh plot — no rule
+// changed between those last two, which is the cleanest demonstration this
+// project has of what a marker is worth on a map that is HELD BY BLOCKERS. Give
+// one more blocker to a map won by blocking and it gets easier faster than it
+// gets anything else.
 //
-// It is NOT fixed here, deliberately. The artist asked for the eleventh marker
-// and asked for the waves and the difficulty to be left alone in the same
-// breath, so the honest thing is to measure it, say so, and leave the lever
-// where they can reach it — which is now the admin dashboard, whose whole first
-// tab is the number of enemies in each wave of this map.
+// Taking a tenth off the barracks men's health puts it back to 4 in 20. That is
+// the same build measured the same way at twenty seeds, and it is a build rather
+// than a sweep — `node tools/sweep.mjs 3` is what finds the BEST pure build under
+// the new numbers, and it is the figure to trust. Re-run it before quoting any
+// number here.
 //
 // See the pure-build re-check in tools/sweep.mjs, which runs twenty seeds.
 //
@@ -396,14 +395,14 @@ m3: {
   // losing a blocker costs — which is already known and is fatal for anyone.
   'ALL siege x11   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9), S(10)],
   'MIX 3 siege + 8 barracks':       [B(0), B(1), B(2), S(3), S(4), B(5), S(6), B(7), B(8), B(9), B(10)],
-  // THE MONASTERY, and THIS is the map it was built for. Map 1 and map 2 give a
-  // build six plots, so a slot spent on support is a slot not killing anything
-  // and the swap costs about half the wins. Here there are eleven, two roads to
-  // cover and ten waves to survive — the exact conditions under which holding
-  // everything under everybody else's towers for longer is worth a plot.
+  // THE MONASTERY, swapping TWO of the five bows rather than one, because at
+  // eleven towers one of anything is inside the noise.
   //
-  // Swapping TWO of the five bows rather than one, because at eleven towers one
-  // of anything is inside the noise.
+  // This is the map where it matters least — 11/20 against 10/20 without it —
+  // and the reason is the shape of the map rather than the shape of the family:
+  // two roads and ten waves means the thing that beats you is volume, and volume
+  // is exactly what a tower that fires once every 4.5 seconds is worst against.
+  // It is worth its plot here. It is worth much more on map 2.
   'ALL monastery x11 (expect LOSS)': [M(0), M(1), M(2), M(3), M(4), M(5), M(6), M(7), M(8), M(9), M(10)],
   'MIX 3 archery + 6 barracks + 2 monastery': [M(0), B(1), B(2), A(3), A(4), B(5), M(6), B(7), A(8), B(9), B(10)],
   'under-built     (expect LOSS)':  [A(0, 0)]

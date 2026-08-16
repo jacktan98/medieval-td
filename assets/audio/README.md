@@ -165,9 +165,10 @@ artillery's and the monastery's were done.
 
 The opposite of the rock, and the same way round as the arrow: `Arcane_shot`
 plays on release, because a missile that crawls across the board at 130px/s is a
-thing you watch go, and it arrives with a slow rather than a bang. It is
-Category B for the usual reason — three shrines can fire at once and one channel
-would silence two of them.
+thing you watch go — and a monastery fires once every four and a half seconds, so
+the release is a rarer and more deliberate event than any other shot in the game.
+It is Category B for the usual reason — three shrines can fire at once and one
+channel would silence two of them.
 
 **Which sound a shot makes is now a table rather than a branch.** `FIRING` in
 `src/towers.js` maps an ammunition's `kind` to its cue, exactly as `LANDING` in

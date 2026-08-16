@@ -273,9 +273,6 @@ function drawTower(ctx, t) {
 // take away.
 function drawStatus(ctx, state) {
   for (const e of state.enemies) {
-    // Under the health bar and before it, because it lies on the GROUND — it is
-    // the one piece of status in the game that is a patch rather than a label.
-    if (e.slow) slowMark(ctx, e);
     healthBar(ctx, e.x, e.y - artHeight(e.def) - 4, e.def.r, e.hp / e.maxHp);
   }
   for (const u of state.units) {
@@ -862,44 +859,6 @@ function drawEnemy(ctx, e) {
 // a bar sat across the chest of anything drawn taller than its hitbox, and the
 // tier 2 enemy — 28px of art over a 12px body — made that obvious.
 const artHeight = def => def.spriteTrim ? def.spriteTrim[3] * SCALE : def.r * 2;
-
-// AN ENEMY AN ARCANE MISSILE HAS CAUGHT, and it is the only way to see that the
-// monastery is doing anything at all.
-//
-// The family's whole output is a number nothing on screen shows: the tower fires
-// slowly, does very little damage, and what it actually buys is time under
-// everybody else's towers. Without a mark, a player who builds one sees a tower
-// that seems to miss. With one, they see the thing they paid for.
-//
-// A RING ON THE GROUND rather than a tint on the sprite. Two reasons and both
-// are practical: a canvas tint means an offscreen buffer per figure per frame,
-// and these figures are 20px tall — a colour wash over one is a smudge, where a
-// ring around its feet is a shape. Flattened to SQUASH like every other patch of
-// ground in the game, so it lies down rather than standing up.
-//
-// It SHRINKS as the slow runs out, which is the countdown: the ring closes in on
-// the figure and is gone at the moment it walks off again. Same idea as the
-// muster ring's sweep, in the one dimension a flat ellipse has to spare.
-const SLOW_R = 7;
-
-function slowMark(ctx, e) {
-  const left = Math.min(1, e.slow.left / 3);
-  const r = e.def.r + SLOW_R * left;
-
-  ctx.save();
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = 'rgba(20,26,38,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(e.x, e.y, r, r * SQUASH, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = 'rgba(150,200,240,0.85)';
-  ctx.beginPath();
-  ctx.ellipse(e.x, e.y, r, r * SQUASH, 0, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-}
 
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
 // over 12px soldiers read as a wall of stripes and hide the fight underneath.

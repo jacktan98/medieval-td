@@ -160,20 +160,6 @@ function hit(state, s, v) {
     v.poison = { dps: s.ammo.poison.dps, left: s.ammo.poison.seconds };
   } else {
     v.hp -= s.damage;
-    // SLOW AND DAMAGE TOGETHER, which is the other way round from the flask
-    // above. An arcane missile is a real hit that also takes the legs off what it
-    // hit; a flask is only ever the ground it leaves behind.
-    //
-    // It REFRESHES the clock and keeps the STRONGER factor, which is not the same
-    // rule as the poison's plain refresh and the difference matters: a Wayside
-    // Shrine firing into an enemy an Abbey has already caught would otherwise
-    // hand it most of its speed back. Strongest-wins means an upgrade can never
-    // be undone by the tier below it, and refreshing means the slow lasts as long
-    // as somebody keeps working on it rather than stacking into a stop.
-    if (s.ammo.slow) {
-      const held = v.slow && v.slow.left > 0 ? v.slow.factor : 1;
-      v.slow = { factor: Math.min(held, s.ammo.slow.factor), left: s.ammo.slow.seconds };
-    }
     // On the man, not on the projectile. An arrow is inside its target by the
     // time it lands so the two are the same point, but a rock has a patch of
     // victims and blood belongs on each of them rather than in a heap at the
