@@ -1183,7 +1183,7 @@ export const siege = [
 // A monastery is SLOW AT EVERY LEVEL, deliberately and twice over: it reloads
 // every 4.5 seconds, which is the longest wait in the game, and its missile is
 // the slowest thing in the air. What arrives at the end of that wait is the
-// hardest single blow anything in this game can land — 30, 60 and 105 against
+// hardest single blow anything in this game can land — 55, 110 and 190 against
 // archery's 9, 15 and 24, and against the trebuchet's 37, which held the record.
 //
 // IT USED TO BE A SLOW RATHER THAN A BLOW. The first version of this family took
@@ -1378,10 +1378,10 @@ const cardinal = {
 //
 // ONE BLOW, AS HARD AS THE GAME GETS, AS SELDOM AS THE GAME GETS.
 //
-// `damage` 30 / 60 / 105. The biggest single hit in the game by a distance — the
-// trebuchet, which held the record, does 37 — and it is the family's whole
-// point. A Cardinal's missile kills a militiaman with 25 to spare, a plague
-// doctor in one, and takes a fourteenth off a giant.
+// `damage` 55 / 110 / 190. The biggest single hit in the game by five times over
+// — the trebuchet, which held the record, does 37 — and it is the family's whole
+// point. A Cardinal's missile kills a militiaman twice over, a plague doctor
+// outright, and takes an eighth off a giant.
 //
 // `cooldown` 4.5 AT EVERY TIER, against archery's 1.00 / 0.90 / 0.80 and
 // artillery's 3.0. The slowest weapon in the game, and FLAT on purpose: an
@@ -1389,60 +1389,71 @@ const cardinal = {
 // upgrade buys blast and an archery upgrade buys rate. "Very slow attack rate"
 // is the family's character rather than a starting handicap it grows out of.
 //
-// WHICH MEANS ITS DPS IS THE LOWEST OF THE THREE SHOOTING FAMILIES: 6.7 / 13.3 /
-// 23.3 against archery's 9.0 / 16.7 / 30.0. That is the honest way to read it —
-// a monastery does LESS damage per second and far more per shot, so every
-// militiaman it kills is 25 to 80 points of it thrown away, and every giant it
-// works on is the one thing on the board that wastes none of it.
+// NO SPLASH, and that is the constraint the damage had to be found under. Area
+// is artillery's answer; a missile that also caught everyone standing nearby
+// would be a catapult with a bigger number. So this hits one man, very hard.
 //
-// `range` 175 / 195 / 215, a notch under archery's and elliptical like every
-// reach in the game.
-//
-// `cost` 80 / 105 / 155 against archery's 70 / 90 / 140.
-//
-// NO SPLASH, and it went out with the slow. A missile that also caught everyone
-// standing nearby would be a catapult with a bigger number, and artillery is the
-// family whose answer is area. This one hits one man very hard.
+// WHAT SINGLE-TARGET COSTS, because it is most of the story. The waves this game
+// sends are 14, 18, 24, 34 militia deep, and a tower that fires once every 4.5
+// seconds kills at most one of them per shot however big the number is — so
+// every militiaman it kills wastes 110 points of the blow, and the giant is the
+// one thing on the board that wastes none of it. That is why the damage figure
+// has to be so large: it is not buying dps, it is buying the RIGHT to be useless
+// against most of what walks past.
 //
 // WHERE IT LANDS, TWENTY SEEDS, against the barracks men's reduced health. The
-// build is the map's best mix with one archery tower swapped for a monastery,
-// which is the comparison worth having because they want the same plot; on map 3
-// it is two of eleven rather than one of six.
+// build is the map's best mix with one archery tower swapped for a monastery —
+// the comparison worth having, because they want the same plot — and a catapult
+// swapped into the same slot beside it for scale. Map 3 swaps two of eleven.
 //
-//                              without one    with        pure monastery
-//   map 1  3 archery + 3 B       15/20         17/20        0/20
-//   map 2  3 archery + 3 B       12/20         19/20        0/20
-//   map 3  5 archery + 6 B       10/20         11/20        0/20
+//                            no swap   monastery   catapult   pure monastery
+//   map 1  3 archery + 3 B    15/20      13/20       16/20        0/20
+//   map 2  3 archery + 3 B    12/20      16/20       20/20        0/20
+//   map 3  5 archery + 6 B    10/20       4/20        4/20        0/20
 //
-// So it is worth its plot on all three maps now, clearly so on map 2, and it
-// still cannot clear a map on its own — which is the rule every family is held
-// to. Four other pairs were measured and are worth keeping as the shape of the
-// dial:
+// It is a real alternative to a catapult on every map — under it on map 1, under
+// it on map 2, level with it on map 3, where swapping ANY two bows out of that
+// build costs the same six wins whatever you put back. And it still cannot clear
+// a map alone: 0 in 20 on all three, furthest wave 6 of 8 with eleven of them.
 //
-//                                     map 1   map 2   map 3
-//   30/60/105 @ 4.5 flat  (this)      17/20   19/20   11/20
-//   30/60/105 @ 4.5/4.0/3.5           17/20   19/20    8/20
-//   26/52/ 92 @ 4.5 flat              17/20   18/20    3/20
-//   34/68/120 @ 4.5 flat              20/20   18/20   13/20
+// THE GRID IT CAME FROM, maps 1 and 2, no splash, twenty seeds a cell:
 //
-// The last one is where it stops being a choice and starts being the answer, and
-// the third is where map 3 falls off a cliff. The band between them is narrow,
-// which is worth knowing before anybody reaches for the damage figure in the
-// admin dashboard: this is the number the family is most sensitive to.
+//                        map 1   map 2       (baselines 15/20 and 12/20)
+//   30/ 60/105 @ 4.5      9/20   10/20
+//   40/ 80/140 @ 4.5      9/20   13/20
+//   55/110/190 @ 4.5     13/20   16/20   <- here
+//   30/ 60/105 @ 3.5     13/20   11/20
+//   40/ 80/140 @ 3.5     13/20   18/20
+//   55/110/190 @ 3.5     16/20   20/20
+//   40/ 80/140 @ 2.8     17/20   20/20
+//   55/110/190 @ 2.8     18/20   20/20
+//
+// The bottom three rows are where it stops being a choice and becomes the answer,
+// and every one of them buys that by firing faster — which is the one thing this
+// family was asked not to do. 4.5 is held and the damage is what moves.
+//
+// AN EARLIER VERSION OF THIS TABLE WAS WRONG and the reason is worth keeping: it
+// was measured while `splash` was still on these tiers, so every figure in it
+// described a different tower and said 17/20 where the shipped one says 9/20. If
+// a grid here disagrees with the game, check what else was on the def when it
+// ran.
+//
+// `range` 175 / 195 / 215, a notch under archery's and elliptical like every
+// reach in the game. `cost` 80 / 105 / 155 against archery's 70 / 90 / 140.
 //
 // NO `targeting`. An archery tower can be told what to shoot at because it kills
 // things and the player has an opinion about which thing; a monastery firing once
 // every four and a half seconds has a much stronger case for one — "most health"
-// is exactly where a 105-damage blow belongs — and it is the first thing to try
+// is exactly where a 190-damage blow belongs — and it is the first thing to try
 // if the family reads as wasteful. The flag is per TIER, so it costs one word per
 // row.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 30,  range: 175, cooldown: 4.5, colour: '#8C7A5C' },
+    cost: 80,  damage: 55,  range: 175, cooldown: 4.5, colour: '#8C7A5C' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 105, damage: 60,  range: 195, cooldown: 4.5, colour: '#7E6E52' },
+    cost: 105, damage: 110, range: 195, cooldown: 4.5, colour: '#7E6E52' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 155, damage: 105, range: 215, cooldown: 4.5, colour: '#9A948A' }
+    cost: 155, damage: 190, range: 215, cooldown: 4.5, colour: '#9A948A' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

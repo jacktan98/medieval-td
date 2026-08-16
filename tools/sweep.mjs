@@ -29,6 +29,21 @@
 // gold arrives. Sorting a list "tidily" by family is a different build and has
 // turned a win into a wave 7 loss before.
 //
+// THE RANKING IS ONE SEED, AND THAT IS THIS TOOL'S ONE BLIND SPOT. Every build in
+// the table above is played ONCE, on seed 1, because 2048 builds times twenty
+// seeds is an hour rather than three minutes. A single run is a single battle —
+// the note on mulberry32 in sim.mjs says so at length — so "best" here means
+// "won that particular battle by the most", not "wins most often".
+//
+// It bites when the rows are pasted straight into sim.mjs. Map 1's top-ranked
+// 3+3 build came back "won with 10 lives" and measures 2 wins in 20; the build it
+// replaced measures 15. Nothing was wrong with either the sweep or the paste —
+// the sweep answered the question it was asked.
+//
+// SO: re-check a row over twenty seeds before it replaces a scenario, and keep
+// whichever build actually wins more. The pure-build check at the bottom of this
+// file already runs twenty for exactly this reason; the table above does not.
+//
 // What it is for is the invariant: the best all-archery build must LOSE, the
 // best all-barracks build must LOSE, and the best mix must WIN. If the top line
 // says archery alone wins, the level is an archery level and needs a lever

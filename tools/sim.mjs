@@ -317,17 +317,17 @@ m1: {
 // half of every wave that walks up it.
 m2: {
   'ALL archery x6  (expect LOSS)':  [A(0), A(2), A(5), A(6), A(7), A(8)],
-  'ALL barracks x6 (expect LOSS)':  [B(2), B(3), B(5), B(6), B(7), B(8)],
+  'ALL barracks x6 (expect LOSS)':  [B(0), B(1), B(2), B(3), B(5), B(6)],
   'BEST 5 archery + 1 (expect LOSS)': [A(0), A(1), A(2), B(5), A(6), A(7)],
   'MIX 4 archery + 2 barracks':     [A(1), A(2), B(5), A(6), B(7), A(8)],
-  'MIX 3 archery + 3 barracks':     [A(1), A(2), B(5), B(6), A(7), B(8)],
+  'MIX 3 archery + 3 barracks':     [A(0), A(2), B(5), A(6), B(7), B(8)],
   'MIX 2 archery + 4 barracks':     [A(1), A(2), B(3), B(5), B(6), B(7)],
   'ALL siege x6    (expect LOSS)':  [S(0), S(2), S(5), S(6), S(7), S(8)],
   'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), S(2), B(5), S(6), S(7)],
   'MIX 2 archery + 3 barracks + 1 siege': [A(1), S(2), B(5), B(6), A(7), B(8)],
   'MIX 3 siege + 3 barracks':       [S(1), S(2), B(5), B(6), S(7), B(8)],
   'ALL monastery x6 (expect LOSS)': [M(0), M(2), M(5), M(6), M(7), M(8)],
-  'MIX 2 archery + 3 barracks + 1 monastery': [M(1), A(2), B(5), B(6), A(7), B(8)],
+  'MIX 2 archery + 3 barracks + 1 monastery': [M(0), A(2), B(5), A(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 
@@ -367,11 +367,16 @@ m2: {
 // one more blocker to a map won by blocking and it gets easier faster than it
 // gets anything else.
 //
-// Taking a tenth off the barracks men's health puts it back to 4 in 20. That is
-// the same build measured the same way at twenty seeds, and it is a build rather
-// than a sweep — `node tools/sweep.mjs 3` is what finds the BEST pure build under
-// the new numbers, and it is the figure to trust. Re-run it before quoting any
-// number here.
+// Taking a tenth off the barracks men's health puts it back to 4 in 20, and that
+// figure is the SWEPT one: the best of all 2048 builds, re-run over twenty seeds
+// with thirteen times the clock. It is not fixed, it is much less broken — and
+// map 1 and map 2 both went to a clean 0 in 20 in the same change, so this map
+// is now the only one where the rule does not hold.
+//
+// It is left standing rather than tuned away, because the same message that
+// asked for the eleventh marker asked for the waves and the difficulty to be
+// left alone. The lever is in the owner's hands: the admin dashboard's first tab
+// is the number of enemies in every wave of this map.
 //
 // See the pure-build re-check in tools/sweep.mjs, which runs twenty seeds.
 //
@@ -384,17 +389,17 @@ m3: {
   // then 6+4, and it is 8+3 now that there are eleven plots to spread over. What
   // beats a wall of blockers is enemies arriving faster than the wall can
   // re-engage, and three squads across TWO ROADS is a squad and a half each.
-  'BEST 8 archery + 3 (expect LOSS)': [A(0), B(1), B(2), A(3), A(4), B(5), A(6), A(7), A(8), A(9), A(10)],
-  'MIX 7 archery + 4 barracks':     [A(0), A(1), B(2), A(3), B(4), A(5), A(6), B(7), B(8), A(9), A(10)],
-  'MIX 5 archery + 6 barracks':     [A(0), B(1), B(2), A(3), A(4), B(5), A(6), B(7), A(8), B(9), B(10)],
-  'MIX 3 archery + 8 barracks':     [B(0), B(1), B(2), A(3), A(4), B(5), A(6), B(7), B(8), B(9), B(10)],
+  'BEST 7 archery + 4 (expect LOSS)': [A(0), A(1), B(2), A(3), A(4), B(5), B(6), B(7), A(8), A(9), A(10)],
+  'MIX 6 archery + 5 barracks':     [A(0), A(1), B(2), A(3), B(4), B(5), A(6), B(7), A(8), B(9), A(10)],
+  'MIX 4 archery + 7 barracks':     [B(0), A(1), A(2), B(3), B(4), A(5), A(6), B(7), B(8), B(9), B(10)],
+  'MIX 2 archery + 9 barracks':     [B(0), B(1), B(2), B(3), A(4), B(5), B(6), A(7), B(8), B(9), B(10)],
   // Artillery held to the same two rules as everywhere else, and compared the
   // same way map 1 compares it: take the winning archery mix and SWAP THE BOWS
   // FOR MACHINES, keeping every blocker where it was. That measures a catapult
   // against the tower it competes with for a plot, rather than measuring what
   // losing a blocker costs — which is already known and is fatal for anyone.
   'ALL siege x11   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9), S(10)],
-  'MIX 3 siege + 8 barracks':       [B(0), B(1), B(2), S(3), S(4), B(5), S(6), B(7), B(8), B(9), B(10)],
+  'MIX 4 siege + 7 barracks':       [B(0), S(1), S(2), B(3), B(4), S(5), S(6), B(7), B(8), B(9), B(10)],
   // THE MONASTERY, swapping TWO of the five bows rather than one, because at
   // eleven towers one of anything is inside the noise.
   //
@@ -404,7 +409,7 @@ m3: {
   // is exactly what a tower that fires once every 4.5 seconds is worst against.
   // It is worth its plot here. It is worth much more on map 2.
   'ALL monastery x11 (expect LOSS)': [M(0), M(1), M(2), M(3), M(4), M(5), M(6), M(7), M(8), M(9), M(10)],
-  'MIX 3 archery + 6 barracks + 2 monastery': [M(0), B(1), B(2), A(3), A(4), B(5), M(6), B(7), A(8), B(9), B(10)],
+  'MIX 2 archery + 7 barracks + 2 monastery': [B(0), M(1), A(2), B(3), B(4), A(5), M(6), B(7), B(8), B(9), B(10)],
   'under-built     (expect LOSS)':  [A(0, 0)]
 }
 };
