@@ -145,9 +145,27 @@ console.log('\nWhat the shape costs, per second\n');
     console.log(`  ${t + 1}      ${dps('Archery').padStart(7)}   ${dps('Monastery').padStart(9)}` +
       `   ${dps('Artillery').padStart(9)}${siege[t].splash ? ' + blast' : ''}`);
   }
-  console.log('\n  Archery and the monastery come out level to a tenth at all three tiers,');
-  console.log('  which is the point of the table rather than a coincidence: the same');
-  console.log('  output in two shapes. Artillery trades raw rate for reach and blast.');
+  console.log('\n  The monastery runs about a tenth ahead of archery, which is what its');
+  console.log('  shorter reach and its higher price are buying — they were exactly level');
+  console.log('  for one commit and that made one of them strictly worse. Artillery');
+  console.log('  trades raw output for reach and blast.');
+}
+
+// The one claim in this file that is not in the artist's table, and it earns its
+// place: the two single-target families are the pair a player picks between on
+// the same plot, so the more expensive, shorter-ranged one has to be doing MORE
+// per second. They were exactly level for one commit and nothing caught it,
+// because every claim above was still true.
+console.log('');
+{
+  const dps = (f, t) => FAM[f][t].damage / FAM[f][t].cooldown;
+  const ahead = [0, 1, 2].every(t => dps('Monastery', t) > dps('Archery', t));
+  ok(ahead, 'and the monastery is ahead of archery at every tier',
+    [0, 1, 2].map(t => `+${((dps('Monastery', t) / dps('Archery', t) - 1) * 100).toFixed(0)}%`).join('  '));
+
+  const dearer = [0, 1, 2].every(t => monastery[t].cost > archery[t].cost);
+  ok(dearer, 'which is what its higher price buys',
+    [0, 1, 2].map(t => `+${monastery[t].cost - archery[t].cost}g`).join('  '));
 }
 
 console.log(bad

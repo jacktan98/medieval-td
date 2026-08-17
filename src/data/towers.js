@@ -1178,7 +1178,7 @@ export const siege = [
   { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
     cost: 90,  damage: 18, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
   { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
-    cost: 115, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
+    cost: 120, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
   { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
     cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
@@ -1404,25 +1404,34 @@ const cardinal = {
 //
 // So, in order:
 //
-// `cooldown` 2.00 / 1.80 / 1.60. Slower than archery's 1.00 / 0.90 / 0.80 and
+// `cooldown` 1.82 / 1.64 / 1.45. Slower than archery's 1.00 / 0.90 / 0.80 and
 // faster than artillery's flat 3.0, which is the middle column of the table.
 //
 // `damage` 20 / 30 / 50, the highest in the game at every tier — against
 // archery's 10 / 15 / 25 and artillery's 18 / 24 / 36.
 //
-// WHICH PUTS ITS DPS EXACTLY ON ARCHERY'S: 10.0, 16.7 and 31.3 at the three
-// tiers, to a tenth, for both families. That is not a coincidence anybody
-// engineered and it is worth keeping — it means the two towers are the same
-// output in two shapes, and everything that separates them is SHAPE:
+// TEN PER CENT MORE OUTPUT THAN ARCHERY, and the ten per cent is the point.
 //
-//   a monastery lands it in half as many, twice as big
-//   an archery tower reaches 30px further at every tier
+// The cooldowns were 2.00 / 1.80 / 1.60, which put the two families at EXACTLY
+// the same damage per second — 10.0, 16.7 and 31.3 for both, to a tenth. That
+// was pleasing and it was wrong, and the artist said why in one line: a
+// monastery costs more and reaches less, so it cannot also do the same work.
+// Two towers where one is strictly worse is not a choice.
+//
+// So the reload came down a tenth and nothing else moved. 11.0, 18.3 and 34.5
+// against archery's 10.0, 16.7 and 31.3 — the premium a shorter reach and a
+// bigger bill have to buy.
+//
+// EVERYTHING ELSE THAT SEPARATES THEM IS SHAPE:
+//
+//   a monastery lands its output in half as many pieces, twice as big
+//   an archery tower reaches 30px further at every tier, and costs 10 to 20 less
 //
 // A big lump is worth more against a giant, which has 1000 health and eats
 // whatever you send, and worth less against a militiaman, who has 80 and wastes
 // the rest. Reach is worth more on a bend and less on a straight. Neither
 // dominates, and the player choosing between them on a plot is choosing between
-// those two facts rather than between two numbers.
+// those facts rather than between two numbers.
 //
 // `range` 160 / 175 / 190, the lowest in the game — under archery's 190 / 210 /
 // 230 at every tier, which is the table's fourth column. It was 175 / 195 / 215
@@ -1436,7 +1445,25 @@ const cardinal = {
 // NO SPLASH. Area is artillery's answer and the table says so — a missile that
 // also caught everyone standing nearby would be a catapult with a bigger number.
 //
-// `cost` 80 / 105 / 155 against archery's 70 / 90 / 140.
+// `cost` 80 / 110 / 160 against archery's 70 / 90 / 140 — ten to twenty more at
+// every rung, and the other half of what the faster reload is paying for.
+//
+// WHERE IT LANDS, twenty seeds, the map's best mix with one archery tower
+// swapped for a monastery — the comparison worth having, because they want the
+// same plot. Two of eleven on map 3. A catapult in the same slot is beside it
+// for scale.
+//
+//                        no swap   monastery   catapult
+//   map 1  3A + 3B        17/20       9/20       19/20
+//   map 2  3A + 3B        19/20      17/20       14/20
+//   map 3  4A + 7B         7/20      11/20        6/20
+//
+// The tenth of a reload changed this more than it looks. Before it, the same
+// three rows read 13, 16 and 0 — the monastery could not pay for a plot on map 3
+// at all, and now it is the best thing to put there. Map 1 is the one map where
+// it is still a mistake: six plots, the densest waves in the game per yard of
+// road, and no second road to cover. A family that is right on two maps and
+// wrong on the third is the shape artillery already has, in the other direction.
 //
 // NO `targeting`. An archery tower can be told what to shoot at because it kills
 // things and the player has an opinion about which thing; a monastery has a
@@ -1446,11 +1473,11 @@ const cardinal = {
 // wasteful, and the flag is per TIER, so it costs one word per row.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 20, range: 160, cooldown: 2.00, colour: '#8C7A5C' },
+    cost: 80,  damage: 20, range: 160, cooldown: 1.82, colour: '#8C7A5C' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 105, damage: 30, range: 175, cooldown: 1.80, colour: '#7E6E52' },
+    cost: 110, damage: 30, range: 175, cooldown: 1.64, colour: '#7E6E52' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 155, damage: 50, range: 190, cooldown: 1.60, colour: '#9A948A' }
+    cost: 160, damage: 50, range: 190, cooldown: 1.45, colour: '#9A948A' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

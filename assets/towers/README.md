@@ -634,12 +634,16 @@ winnable for a long time afterwards. The monastery's damage has been 5, 30, 55,
 190 and 20 inside two days — every one of those moves was judged against a win
 rate, and the table is the thing that says whether the family still exists.
 
-Archery and the monastery come out at **identical damage per second** at all
-three tiers — 10.0, 16.7, 31.3. That is the point rather than a coincidence: the
-same output in two shapes, one in many small pieces with more reach, one in half
-as many twice as big from 30px closer in. A big lump is worth more against a
-giant with 1000 health and worth less against a militiaman with 80, who wastes
-the rest.
+The monastery does about **ten per cent more damage per second than archery** —
+11.0, 18.3, 34.5 against 10.0, 16.7, 31.3 — and that margin is deliberate. The
+two were exactly level for one commit, which was pleasing and wrong: a monastery
+costs 10 to 20 more per tier and reaches 30px less, so it cannot also do the same
+work. Two towers where one is strictly worse is not a choice.
+
+Everything else between them is shape. One lands its output in many small pieces
+with more reach, the other in half as many, twice as big, from closer in. A big
+lump is worth more against a giant with 1000 health and worth less against a
+militiaman with 80, who wastes the rest.
 
 **The monastery used to be a slow**, and the artwork is unchanged by two swaps
 since: same buildings, same churchmen, same missile, same voice. What changed is

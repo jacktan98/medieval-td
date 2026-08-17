@@ -153,6 +153,11 @@ export const paths = {
   // event. See src/impacts.js.
   impact_1:        'assets/effects/Artillery_Impact_1.png',
   impact_2:        'assets/effects/Artillery_Impact_2.png',
+  // The dust a plot throws up when something is built, upgraded or sold. It sits
+  // with the other effects because that is what it is — a picture that fades —
+  // and on the 1024 canvas the BUILDINGS use rather than the 512 the rest of this
+  // folder uses, because it is sized against a building.
+  build_smoke:     'assets/effects/Construction_Smoke.png',
   // What a flask leaves behind. It sits with the earth a rock throws up because
   // it is the same kind of thing — the mark a projectile makes where it landed —
   // even though one hangs in the air and this one lies flat. See src/impacts.js.

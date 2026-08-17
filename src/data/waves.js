@@ -124,7 +124,7 @@ export const enemyTypes = {
     // archery cooldown; the difficulty that speed used to provide now comes
     // from the heavies below and from the later waves being bigger.
     speed: 70,      // logical px per second
-    bounty: 14,
+    bounty: 15,
     leak: 1,        // lives lost if it reaches the keep
     damage: 10,     // per swing, once a barracks soldier has stopped it
     // 9 -> 10, and it lands on the family it is aimed at: a militiaman's swing

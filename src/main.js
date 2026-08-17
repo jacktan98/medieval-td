@@ -12,6 +12,7 @@ import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateSplats } from './blood.js';
 import { updateImpacts } from './impacts.js';
+import { updateSmoke } from './smoke.js';
 import { updateWaves } from './waves.js';
 import { draw, tierMarks } from './render.js';
 import { attachInput } from './input.js';
@@ -90,6 +91,9 @@ function newGame() {
     // than a flag on it: the two are different pictures at different scales with
     // different lifetimes, and the only thing they share is being decoration.
     impacts: [],
+    // The dust over a plot that has just been built on, upgraded or cleared.
+    // Cleared with everything else, so a restart never inherits a cloud.
+    smoke: [],
     waveIndex: 0,
     spawned: 0,
     timer: openingDelay,
@@ -212,6 +216,7 @@ function step(state, dt) {
   updateCorpses(state, dt);
   updateSplats(state, dt);
   updateImpacts(state, dt);
+  updateSmoke(state, dt);
   if (state.lives <= 0) state.result = 'lost';
 }
 

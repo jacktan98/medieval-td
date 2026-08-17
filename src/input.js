@@ -2,6 +2,8 @@ import { level, useLevel } from './level.js';
 import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitDifficultyButton, hitPauseButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
+import { towerBox } from './towers.js';
+import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
@@ -378,6 +380,9 @@ function run(state, item) {
     });
     const built = state.towers[state.towers.length - 1];
     makeUnits(state, built);
+    // The dust. All three money buttons raise one — see smoke.js for why the
+    // BOX is passed rather than the tower.
+    puff(state, built.x, built.y, towerBox(built));
     // Show what you just bought. The menu closes on a build, so without this the
     // one moment you most want its numbers is the one moment nothing is selected.
     state.selected = { kind: 'tower', ref: built };
@@ -396,6 +401,11 @@ function run(state, item) {
     t.def = next;
     t.spent += next.cost;
     t.cd = 0;
+    // AFTER the def is swapped, so the cloud is sized to the building that is
+    // arriving rather than the one that just left. On the monastery that is a
+    // 29px difference in height between tiers 1 and 2, which is the difference
+    // between covering the new roof and not.
+    puff(state, t.x, t.y, towerBox(t));
     // Rebuilt rather than patched: the new tier has its own soldier stats and
     // a longer reach, so the rally point moves too.
     makeUnits(state, t);
@@ -408,6 +418,10 @@ function run(state, item) {
 
   if (item.act === 'refund') {
     const t = menu.tower;
+    // BEFORE the tower is taken off the board, because the box is measured from
+    // its def and there will not be one in a moment. puff() copies what it needs
+    // rather than holding the tower, so the cloud outlives it safely.
+    puff(state, t.x, t.y, towerBox(t));
     state.gold += refundValue(t);
     removeUnits(state, t);
     state.towers = state.towers.filter(other => other !== t);

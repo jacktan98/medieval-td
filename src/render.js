@@ -17,6 +17,7 @@ import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
+import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, keys, PIN_DOTS, PIN_CANCEL,
@@ -217,6 +218,17 @@ function drawFigures(ctx, state) {
   // the parabola's zero lift at u = 1 buys — so there is no second anchor here.
   for (const i of state.impacts) {
     add(i.y, 2, () => drawImpact(ctx, i));
+  }
+  // The dust over a plot something was just built on, and it sorts in this pass
+  // like everything else rather than being painted on top afterwards.
+  //
+  // RANK 3, the highest there is, so at its own depth it is drawn after the
+  // building it is hiding — which is the whole job. Anything NEARER the camera
+  // still draws over it, because a soldier standing in front of a plot is in
+  // front of the dust too. Painting it after the pass would have put it over that
+  // soldier, which is the mistake the blood spatter made before it moved in here.
+  for (const p of state.smoke || []) {
+    add(p.y, 3, () => drawSmoke(ctx, p));
   }
 
   items.sort((a, b) => a.y - b.y || a.rank - b.rank);
@@ -685,6 +697,31 @@ function drawGunner(ctx, t) {
 function pose(attack, attacking, img, trim, pivot) {
   const alt = attacking && attack && art[attack.sprite];
   return alt ? [alt, attack.trim, attack.pivot] : [img, trim, pivot];
+}
+
+// The construction dust. Anchored at the BOTTOM of its box rather than the
+// middle, because smoke rises from a place on the ground — see FOOT in smoke.js,
+// which is where the size and the anchor are both worked out. This only draws it.
+//
+// It fades over its whole life rather than holding and vanishing. A cloud that
+// disappeared between two frames would need the same excuse the instant tower
+// swap needed, which is the thing it was added to cover.
+//
+// The alpha curve is deliberately not linear. `life / SMOKE_LIFE` squared keeps
+// the cloud near-solid for the first half and thins it fast at the end, so the
+// building underneath is properly hidden while the swap happens and then arrives
+// rather than being revealed through a haze the whole time.
+function drawSmoke(ctx, p) {
+  const img = art.build_smoke;
+  if (!img) return;
+
+  const u = Math.max(0, Math.min(1, p.life / SMOKE_LIFE));
+  const [sx, sy, sw, sh] = SMOKE_TRIM;
+
+  ctx.save();
+  ctx.globalAlpha = u * u;
+  ctx.drawImage(img, sx, sy, sw, sh, p.x - p.w / 2, p.y - p.h, p.w, p.h);
+  ctx.restore();
 }
 
 // Blood. Measured by tools/trim.mjs like everything else, but drawn at
