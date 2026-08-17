@@ -577,17 +577,31 @@ const post = {
   // THE NEAR MERLON, and it is the only piece of this tower in front of the man.
   //
   // The battlement has four blocks, one at each corner of the deck. Three are
-  // behind him or beside him; the one at the deck's NEAREST corner — source x
-  // 520..581, y 293..363 — stands between him and the camera, and its top at y 293
-  // is 7px above the deck he is standing on. So it covers his boots and the bottom
-  // of the musket's stock, which is what a man standing behind a parapet looks
-  // like. Padded 2px for the black stroke the PNG draws around a shape the SVG
-  // stores without one.
+  // behind him or beside him; the one at the deck's NEAREST corner stands between
+  // him and the camera, and its top is 7px above the floor he is standing on — so
+  // it covers his boots and the bottom of the musket's stock, which is what a man
+  // behind a parapet looks like.
+  //
+  // A RECT CANNOT DO THIS, and shipping one was a visible bug: the merlon sits ON
+  // the banner draped over the deck, so [518, 291, 65, 74] — the tight box round the
+  // stone — also took a wedge of blue cloth beside it and painted that over the
+  // musketeer's breeches and his shadow. It was reported from a screenshot the day
+  // it shipped, and it is the same lesson the monastery's old roof taught: a box
+  // around a shape drawn in perspective takes whatever else is in the box.
+  //
+  // So it is a POLYGON, traced from the merlon's three faces in the SVG — the top
+  // (545.8, 293.4) (580.8, 299.8) (555.4, 319.4) (520.4, 312.3), and the two side
+  // faces hanging from it to (580.8, 340.9), (555.2, 363.4) and (520.3, 355.3).
+  // Their union is the six corners below, padded 2px for the black stroke the PNG
+  // draws around shapes the SVG stores without one. 2 rather than 3: the pad on the
+  // upper-left edge is over cloth, so every pixel of it is blue.
   //
   // The left-corner merlon at x 350..412 is the usual trap in reverse: it IS
   // nearer the camera than the deck's centre, but it is 20px clear of his widest
-  // pose, so a rect around it would paint stone over nothing.
-  frontTrims: [[518, 291, 65, 74]],
+  // pose, so anything drawn round it would paint stone over nothing.
+  frontPolys: [
+    [[546, 291], [583, 298], [583, 342], [555, 366], [518, 357], [518, 311]]
+  ],
   shape: 'tower'
 };
 
@@ -812,7 +826,13 @@ export const archery = [
   { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 10, range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
   { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true },
-  { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Archery Tier IV', unit: 'Musketeer',
+  // `title` IS THE TOWER'S NAME ON THIS RUNG, not "Archery Tier IV", and it is the
+  // first tier where those differ. The field heads the tier's entry in the
+  // encyclopedia, and a tier 4 is a named building rather than a rung — the artist
+  // asked for the card to read Musketeer Post, which is also what the upgrade
+  // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
+  // and the column they sit in is what names the family.
+  { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
     cost: 200, damage: 50, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
     // The upgrade button's picture when this is what the button buys. Every other
     // tier uses the generic arrow; this one has an icon of its own, so the tap
