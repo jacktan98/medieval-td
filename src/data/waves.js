@@ -64,8 +64,20 @@ export const flask = {
     // Per second, for this many seconds. 6 x 3 is 18 health, which is a sixth of
     // a spearman and a tenth of a swordsman: one flask is a nuisance and the
     // basket is a problem, which is the shape this enemy should have.
-    dps: 6,
-    seconds: 3
+    // Per second, for this many seconds. 5 x 4 is 20 health — a fifth of a
+    // spearman and an eighth of a swordsman.
+    //
+    // IT WAS 6 x 3, WHICH IS 18, and the total is the number that was asked to
+    // move rather than either factor. 5 x 4 is the pair that hits 20 exactly
+    // while keeping the shape: a trickle a man can walk out of, rather than a
+    // hit. 10 x 2 reaches 20 too and would make it a blow, and 6.67 x 3 reaches
+    // it while printing 20.000000000000004 on the enemy's card.
+    //
+    // The extra second is not free and is worth knowing about: the spill on the
+    // ground lasts exactly as long as the poison does, so the patch he leaves is
+    // now dangerous a third longer as well as adding up to more.
+    dps: 5,
+    seconds: 4
   }
 };
 
@@ -114,7 +126,12 @@ export const enemyTypes = {
     speed: 70,      // logical px per second
     bounty: 14,
     leak: 1,        // lives lost if it reaches the keep
-    damage: 9,      // per swing, once a barracks soldier has stopped it
+    damage: 10,     // per swing, once a barracks soldier has stopped it
+    // 9 -> 10, and it lands on the family it is aimed at: a militiaman's swing
+    // is the thing that kills blockers, and blockers are what maps 2 and 3 are
+    // held by. One point on a 1.0s clock is a tenth more pressure on every squad
+    // in the game, which is a bigger change than it looks beside a 100hp
+    // spearman.
     atkCd: 1.0,
     r: 8,
     colour: '#B98B5E'
@@ -212,11 +229,23 @@ export const enemyTypes = {
     dead: 'dead_giant',
     deadTrim: [117, 195, 278, 122],
     deadPivot: [0.171, 0.783],
-    hp: 1500,
+    // 1500 -> 1000, and 18 -> 30 damage in the same pass. That pair is the
+    // single biggest change this file has taken, and it is worth being explicit
+    // that the two halves pull in OPPOSITE directions: a third less health makes
+    // him easier to kill, and two-thirds more damage makes him far worse to
+    // leave alive. He has gone from a wall you grind down to a thing that kills
+    // the man holding him.
+    //
+    // A tier 1 spearman has 100 health and 30 damage a swing on a 1.2s clock
+    // kills him in four — under five seconds, against a respawn of eight. One
+    // giant now beats one squad outright, where before it was the other way
+    // round given long enough. What answers him is a tower rather than a wall,
+    // which is the shape the change asks for.
+    hp: 1000,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
-    damage: 18,
+    damage: 30,
     atkCd: 1.2,
     // 12 -> 14, moved with the art rather than left behind, so the hitbox still
     // matches the body you can see. Checked before changing it, not after: the
@@ -307,7 +336,10 @@ export const enemyTypes = {
     // and a half thugs, which is enough that he has to be focused rather than
     // brushed aside, and nothing like a Giant Thug. Move it as you like — no
     // pure build won a single seed anywhere in the range above.
-    hp: 200,
+    // 200 -> 150. He was the second-toughest thing on the road and he is the one
+    // enemy whose whole job is to be difficult to reach, which is a fair amount
+    // of both. The standoff is what makes him dangerous, not his health.
+    hp: 150,
     // WHAT HE IS A COUNTER TO, because it is the opposite of what it looks like.
     //
     // He was added to punish a line of soldiers, and he does — from range, over
@@ -338,7 +370,7 @@ export const enemyTypes = {
     speed: 60,
     bounty: 30,
     leak: 1,
-    damage: 6,
+    damage: 5,
     atkCd: 1.2,
     // WHAT THE BOOK AND THE INFO BOX PRINT FOR HIM, and it is not `damage`.
     //

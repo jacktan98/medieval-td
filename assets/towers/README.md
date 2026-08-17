@@ -615,14 +615,33 @@ they share the roof to the pixel. **If a redraw moves the roof, re-trace all
 three shapes and take their union again** — the plane alone leaves the fascia
 sticking out under the staff.
 
-## The monastery hits once, very hard, very seldom
+## The three shooting families are one design with three columns
 
-It fires every 4.5 seconds, which is the longest wait in the game, and lands 30,
-60 or 105 damage in one blow against a trebuchet's 37. Its damage per SECOND is
-the lowest of the three shooting families and its damage per SHOT is by far the
-highest, so it is the tower that does not care how much health a thing has.
+|           | rate    | projectile | damage  | range   | other |
+|-----------|---------|------------|---------|---------|-------|
+| Archery   | HIGHEST | HIGHEST    | decent  | decent  | — |
+| Monastery | decent  | decent     | HIGHEST | LOWEST  | — |
+| Artillery | LOWEST  | LOWEST     | decent  | HIGHEST | blast radius |
 
-**It used to be a slow instead**, and the artwork is unchanged by the swap: same
-buildings, same churchmen, same missile, same voice. What changed is what
-arriving means. The pale blue ring that used to mark a slowed enemy is gone with
-the mechanic — there is nothing left for it to say.
+**"Decent" means BETWEEN THE OTHER TWO.** With exactly three families that is a
+claim rather than a vibe, and `node tools/families.mjs` checks all nine of them,
+per tier, and fails if one stops holding.
+
+Run it after touching any of the nine numbers. Nothing else in the project can
+catch this: `tools/sim.mjs` measures whether a build wins, and a game whose three
+towers have quietly become the same tower at different prices goes on being
+winnable for a long time afterwards. The monastery's damage has been 5, 30, 55,
+190 and 20 inside two days — every one of those moves was judged against a win
+rate, and the table is the thing that says whether the family still exists.
+
+Archery and the monastery come out at **identical damage per second** at all
+three tiers — 10.0, 16.7, 31.3. That is the point rather than a coincidence: the
+same output in two shapes, one in many small pieces with more reach, one in half
+as many twice as big from 30px closer in. A big lump is worth more against a
+giant with 1000 health and worth less against a militiaman with 80, who wastes
+the rest.
+
+**The monastery used to be a slow**, and the artwork is unchanged by two swaps
+since: same buildings, same churchmen, same missile, same voice. What changed is
+what arriving means. The pale blue ring that used to mark a slowed enemy is gone
+with the mechanic — there is nothing left for it to say.

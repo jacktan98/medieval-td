@@ -344,7 +344,7 @@ export const missile = {
   // tail passing through him. The arrow's 0.08 is its point; this is 0.15
   // because the head of this drawing has width.
   grip: 0.15,
-  speed: 130,
+  speed: 330,
   // It announces itself leaving the staff and arrives quietly, the same way an
   // arrow does — see the two flags on `arrow`.
   fireSound: true,
@@ -646,9 +646,9 @@ export const AIM_MODES = [
 ];
 
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 9,  range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 10, range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 24, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true }
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -686,9 +686,14 @@ export const archery = [
 // which breaks the one rule the level has. The assist is what was asked for and
 // it stayed; its price was one point off each tier's damage.
 //
-// soldier.hp went 105/145/195 -> 95/130/175, a tenth off every tier, asked for
-// from play — and it turns out to be the fix for something this project had
-// already measured and left standing. A blocker-held map gets easier the more
+// soldier.hp is 100/125/175. It went 105/145/195 -> 95/130/175 -> here, and the
+// second move is the artist's own trim on the first: the spearman got 5 back and
+// the pikeman lost 5 more. The measurements below are for the 95/130/175 pass and
+// still describe the shape of the dial; the numbers themselves have moved a few
+// points since.
+//
+// The first cut is the interesting one, and it was the fix for something this
+// project had already measured and left standing. A blocker-held map gets easier the more
 // blocker-seconds it has, and map 3 gained an eleventh plot: pure barracks was
 // clearing it 11 times in 20, and map 2's was clearing 7. A tenth off puts both
 // back where the rule says they belong.
@@ -706,6 +711,13 @@ export const archery = [
 // from 10 wins in 20 to 1 — the men stop being able to hold two roads at all, and
 // the map goes from hard to impossible in one step. Do not take more off this
 // number without re-running that column; it is the steepest cliff in the game.
+//
+// AND THE ENEMIES' SWING IS THE OTHER HALF OF IT. These men were given back a few
+// points in the same pass that took the thug's swing from 9 to 10 and the giant's
+// from 18 to 30, and the second of those is far larger than anything on this line:
+// 30 damage on a 1.2s clock kills a tier 1 spearman in four swings. A blocker's
+// health and what hits it are one number in two files — see heavy_inf in
+// data/waves.js — and neither can be read without the other.
 const camp = {
   sprite: 'barracks_t1',
   spriteTrim: CAMP_TRIM,
@@ -855,11 +867,11 @@ const spearman3 = {
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
-    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 95, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
+    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
   },
   {
     ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
-    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 130, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
+    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 125, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
   },
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
@@ -1164,11 +1176,11 @@ const trebuchet = {
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
   { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
-    cost: 90,  damage: 19, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
+    cost: 90,  damage: 18, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
   { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
-    cost: 115, damage: 27, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
+    cost: 115, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
   { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
-    cost: 170, damage: 37, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
+    cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
 ];
 
 // --- monastery -----------------------------------------------------------------
@@ -1180,24 +1192,24 @@ export const siege = [
 // the same way an archery tower's is, so nothing in the renderer had to learn
 // anything new. What is different is what the man throws.
 //
-// A monastery is SLOW AT EVERY LEVEL, deliberately and twice over: it reloads
-// every 4.5 seconds, which is the longest wait in the game, and its missile is
-// the slowest thing in the air. What arrives at the end of that wait is the
-// hardest single blow anything in this game can land — 55, 110 and 190 against
-// archery's 9, 15 and 24, and against the trebuchet's 37, which held the record.
+// A monastery hits HARDEST and reaches LEAST. 20, 30 and 50 damage a shot
+// against archery's 10, 15 and 25 and a trebuchet's 36 — the biggest number in
+// the game at every tier — delivered from the shortest reach in the game, on a
+// reload that sits between the other two families.
 //
-// IT USED TO BE A SLOW RATHER THAN A BLOW. The first version of this family took
-// speed off whatever it hit and did almost no damage, and it is worth writing
-// down what changed rather than quietly rewriting history: the artist played it
-// and asked for the other thing. The slow is GONE rather than reduced — no field
-// on the ammunition, no clock on the enemy, no ring on the ground — because half
-// a mechanic left behind is a number nothing reads and a branch nobody tests.
+// IT USED TO BE A SLOW RATHER THAN A BLOW. The first version took speed off
+// whatever it hit and did almost no damage, and it is worth writing down what
+// changed rather than quietly rewriting history: the artist played it and asked
+// for the other thing. The slow is GONE rather than reduced — no field on the
+// ammunition, no clock on the enemy, no ring on the ground — because half a
+// mechanic left behind is a number nothing reads and a branch nobody tests.
 //
-// WHAT THE FAMILY IS FOR NOW. Its damage per SECOND is the lowest of the three
-// shooting families and its damage per SHOT is by far the highest, so it is the
-// tower that does not care how much health a thing has. Everything else on the
-// board struggles with the giant and eats militia comfortably; a monastery is
-// the other way round, and that is the question it answers.
+// THE SECOND VERSION OVERSHOT, and that is worth keeping too. It fired every 4.5
+// seconds for 190 damage, which is a sniper rather than a shooting tower, and it
+// spent most of its life throwing 110 points of a blow away on an 80-health
+// militiaman. The family it settled into is the one in the table below: the same
+// output per second as an archery tower, in half as many pieces, twice as big,
+// from 30px closer in.
 const shrine = {
   sprite: 'monastery_t1',
   spriteTrim: MON_TRIM,
@@ -1376,84 +1388,69 @@ const cardinal = {
 
 // THE NUMBERS, and what each of them is for.
 //
-// ONE BLOW, AS HARD AS THE GAME GETS, AS SELDOM AS THE GAME GETS.
+// THE THREE SHOOTING FAMILIES ARE ONE DESIGN, and it is the artist's, stated
+// plainly enough to be worth writing down as a table rather than paraphrasing:
 //
-// `damage` 55 / 110 / 190. The biggest single hit in the game by five times over
-// — the trebuchet, which held the record, does 37 — and it is the family's whole
-// point. A Cardinal's missile kills a militiaman twice over, a plague doctor
-// outright, and takes an eighth off a giant.
+//                 rate      projectile   damage    range     other
+//   Archery       HIGHEST   HIGHEST      decent    decent    —
+//   Monastery     decent    decent       HIGHEST   LOWEST    —
+//   Artillery     LOWEST    LOWEST       decent    HIGHEST   blast radius
 //
-// `cooldown` 4.5 AT EVERY TIER, against archery's 1.00 / 0.90 / 0.80 and
-// artillery's 3.0. The slowest weapon in the game, and FLAT on purpose: an
-// upgrade here buys a bigger blow and nothing else, exactly as an artillery
-// upgrade buys blast and an archery upgrade buys rate. "Very slow attack rate"
-// is the family's character rather than a starting handicap it grows out of.
+// Every number below is chosen to make a column of that table true, and the
+// table is checked by `node tools/families.mjs`, which fails if any of the nine
+// claims stops holding. Do not tune one of these families without reading the
+// other two rows: "decent" is not a free parameter, it means BETWEEN the other
+// two, and there are only three of them.
 //
-// NO SPLASH, and that is the constraint the damage had to be found under. Area
-// is artillery's answer; a missile that also caught everyone standing nearby
-// would be a catapult with a bigger number. So this hits one man, very hard.
+// So, in order:
 //
-// WHAT SINGLE-TARGET COSTS, because it is most of the story. The waves this game
-// sends are 14, 18, 24, 34 militia deep, and a tower that fires once every 4.5
-// seconds kills at most one of them per shot however big the number is — so
-// every militiaman it kills wastes 110 points of the blow, and the giant is the
-// one thing on the board that wastes none of it. That is why the damage figure
-// has to be so large: it is not buying dps, it is buying the RIGHT to be useless
-// against most of what walks past.
+// `cooldown` 2.00 / 1.80 / 1.60. Slower than archery's 1.00 / 0.90 / 0.80 and
+// faster than artillery's flat 3.0, which is the middle column of the table.
 //
-// WHERE IT LANDS, TWENTY SEEDS, against the barracks men's reduced health. The
-// build is the map's best mix with one archery tower swapped for a monastery —
-// the comparison worth having, because they want the same plot — and a catapult
-// swapped into the same slot beside it for scale. Map 3 swaps two of eleven.
+// `damage` 20 / 30 / 50, the highest in the game at every tier — against
+// archery's 10 / 15 / 25 and artillery's 18 / 24 / 36.
 //
-//                            no swap   monastery   catapult   pure monastery
-//   map 1  3 archery + 3 B    15/20      13/20       16/20        0/20
-//   map 2  3 archery + 3 B    12/20      16/20       20/20        0/20
-//   map 3  5 archery + 6 B    10/20       4/20        4/20        0/20
+// WHICH PUTS ITS DPS EXACTLY ON ARCHERY'S: 10.0, 16.7 and 31.3 at the three
+// tiers, to a tenth, for both families. That is not a coincidence anybody
+// engineered and it is worth keeping — it means the two towers are the same
+// output in two shapes, and everything that separates them is SHAPE:
 //
-// It is a real alternative to a catapult on every map — under it on map 1, under
-// it on map 2, level with it on map 3, where swapping ANY two bows out of that
-// build costs the same six wins whatever you put back. And it still cannot clear
-// a map alone: 0 in 20 on all three, furthest wave 6 of 8 with eleven of them.
+//   a monastery lands it in half as many, twice as big
+//   an archery tower reaches 30px further at every tier
 //
-// THE GRID IT CAME FROM, maps 1 and 2, no splash, twenty seeds a cell:
+// A big lump is worth more against a giant, which has 1000 health and eats
+// whatever you send, and worth less against a militiaman, who has 80 and wastes
+// the rest. Reach is worth more on a bend and less on a straight. Neither
+// dominates, and the player choosing between them on a plot is choosing between
+// those two facts rather than between two numbers.
 //
-//                        map 1   map 2       (baselines 15/20 and 12/20)
-//   30/ 60/105 @ 4.5      9/20   10/20
-//   40/ 80/140 @ 4.5      9/20   13/20
-//   55/110/190 @ 4.5     13/20   16/20   <- here
-//   30/ 60/105 @ 3.5     13/20   11/20
-//   40/ 80/140 @ 3.5     13/20   18/20
-//   55/110/190 @ 3.5     16/20   20/20
-//   40/ 80/140 @ 2.8     17/20   20/20
-//   55/110/190 @ 2.8     18/20   20/20
+// `range` 160 / 175 / 190, the lowest in the game — under archery's 190 / 210 /
+// 230 at every tier, which is the table's fourth column. It was 175 / 195 / 215
+// and came down when the family became a damage tower: a weapon that hits this
+// hard should have to be placed where the road actually is.
 //
-// The bottom three rows are where it stops being a choice and becomes the answer,
-// and every one of them buys that by firing faster — which is the one thing this
-// family was asked not to do. 4.5 is held and the damage is what moves.
+// `speed` on the missile is 330, between the rock's 300 and the arrow's 360. It
+// was 130, which was chosen when this was a support weapon you watched crawl;
+// a 50-damage blow should arrive.
 //
-// AN EARLIER VERSION OF THIS TABLE WAS WRONG and the reason is worth keeping: it
-// was measured while `splash` was still on these tiers, so every figure in it
-// described a different tower and said 17/20 where the shipped one says 9/20. If
-// a grid here disagrees with the game, check what else was on the def when it
-// ran.
+// NO SPLASH. Area is artillery's answer and the table says so — a missile that
+// also caught everyone standing nearby would be a catapult with a bigger number.
 //
-// `range` 175 / 195 / 215, a notch under archery's and elliptical like every
-// reach in the game. `cost` 80 / 105 / 155 against archery's 70 / 90 / 140.
+// `cost` 80 / 105 / 155 against archery's 70 / 90 / 140.
 //
 // NO `targeting`. An archery tower can be told what to shoot at because it kills
-// things and the player has an opinion about which thing; a monastery firing once
-// every four and a half seconds has a much stronger case for one — "most health"
-// is exactly where a 190-damage blow belongs — and it is the first thing to try
-// if the family reads as wasteful. The flag is per TIER, so it costs one word per
-// row.
+// things and the player has an opinion about which thing; a monastery has a
+// stronger case for one than it used to — "most health" is exactly where a
+// 50-damage blow belongs, and it is the shot most likely to be wasted on a
+// militiaman otherwise. It is the first thing to try if the family reads as
+// wasteful, and the flag is per TIER, so it costs one word per row.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 55,  range: 175, cooldown: 4.5, colour: '#8C7A5C' },
+    cost: 80,  damage: 20, range: 160, cooldown: 2.00, colour: '#8C7A5C' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 105, damage: 110, range: 195, cooldown: 4.5, colour: '#7E6E52' },
+    cost: 105, damage: 30, range: 175, cooldown: 1.80, colour: '#7E6E52' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 155, damage: 190, range: 215, cooldown: 4.5, colour: '#9A948A' }
+    cost: 155, damage: 50, range: 190, cooldown: 1.60, colour: '#9A948A' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers
