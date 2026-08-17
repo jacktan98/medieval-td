@@ -233,12 +233,21 @@ const SPRITES = [
   ['assets/towers/monastery/Monastery_Tower_T1.png', 'shrine.groundFrac', mon[0].spriteTrim, mon[0].groundFrac, 'whole'],
   ['assets/towers/monastery/Monastery_Tower_T2.png', 'chapel.groundFrac', mon[1].spriteTrim, mon[1].groundFrac, 'whole'],
   ['assets/towers/monastery/Monastery_Tower_T3.png', 'abbey.groundFrac',  mon[2].spriteTrim, mon[2].groundFrac, 'whole'],
+  // Tier 4, the Musketeer Post. Same ellipse fit as the three archery towers
+  // below it: the artist paints one #37422f patch of shaded grass under the
+  // turret and its centre is the plot point.
+  ['assets/towers/archery/Musketeer_Post.png', 'post.groundFrac', towers.archery[3].spriteTrim, towers.archery[3].groundFrac, 'whole'],
   ['assets/units/Soldiers_Novice_Archer_Default.png',  'archer.gunnerPivot',       towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
   ['assets/units/Soldiers_Novice_Archer_Attack.png',   'archer.attack.pivot',      towers.archery[0].attack.trim, towers.archery[0].attack.pivot],
   ['assets/units/Soldiers_Combat_Archer_Default.png', 'archer2.gunnerPivot',      towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
   ['assets/units/Soldiers_Combat_Archer_Attack.png',  'archer2.attack.pivot',     towers.archery[1].attack.trim, towers.archery[1].attack.pivot],
   ['assets/units/Soldiers_Elite_Archer_Default.png',  'archer3.gunnerPivot',      towers.archery[2].gunnerTrim, towers.archery[2].gunnerPivot],
   ['assets/units/Soldiers_Elite_Archer_Attack.png',   'archer3.attack.pivot',     towers.archery[2].attack.trim, towers.archery[2].attack.pivot],
+  // The musketeer, and the pair rule matters more on him than on anybody: his two
+  // drawings are the same figure with smoke added, so if the shadows disagree he
+  // will step sideways every time he fires.
+  ['assets/units/Musketeer_Default.png', 'musketeer.gunnerPivot',  towers.archery[3].gunnerTrim, towers.archery[3].gunnerPivot],
+  ['assets/units/Musketeer_Attack.png',  'musketeer.attack.pivot', towers.archery[3].attack.trim, towers.archery[3].attack.pivot],
   // The catapult crewman. He is not drawn on the board — he is already part of
   // all three machine frames — but the info box and the encyclopedia both stand
   // him on his own, and a figure standing anywhere in this game stands on its

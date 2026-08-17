@@ -131,6 +131,10 @@ globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promis
 
 const { loadAudio, play, solo, CUE, SHOT, ATTACK, SELECT, selectionCue, familyCue } =
   await import('../src/audio.js');
+// The archery ladder, for the tier-4 voice checks below. Imported here rather than
+// at the top because everything above has to run after the fake AudioContext is in
+// place, and this file keeps its imports in one order for that reason.
+const { archery } = await import('../src/data/towers.js');
 
 // Load with console.info muted. The module reports anything it had to move a
 // long way, which is useful in a browser and pure noise here — every fake clip
@@ -461,6 +465,20 @@ check('a monastery answers', familyCue('monastery'), CUE.monastery);
 // wired up before its recordings land. It has been siege's job, then the
 // monastery's, and it is nobody's now.
 check('a family with no voice says nothing', familyCue('alchemy'), null);
+
+// A TIER MAY SPEAK FOR ITSELF, which the Musketeer Post is the first to do. Three
+// things have to hold together for that: the tier's own lines answer instead of
+// its family's, every OTHER tier of the same family still answers with the
+// family's, and a def carrying a voice nobody recorded falls back rather than
+// going silent.
+check('the Musketeer Post answers with its own voice',
+  familyCue('archery', archery[3]), CUE.musketeer);
+check('and the tiers below it still answer for archery',
+  familyCue('archery', archery[0]), CUE.archery);
+check('and an unrecorded voice falls back to the family',
+  familyCue('archery', { voice: 'nobody' }), CUE.archery);
+check('and selecting one picks the same lines',
+  selectionCue({ kind: 'tower', ref: { fam: { id: 'archery' }, def: archery[3] } }), CUE.musketeer);
 
 // A cue with nothing loaded must not close the channel on everything else.
 //

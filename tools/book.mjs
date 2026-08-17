@@ -33,7 +33,7 @@ import { occupant } from '../src/select.js';
 import { refundValue, REFUND_RATE } from '../src/menu.js';
 import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
 import {
-  PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
+  PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, towerEntry, unitEntry, figureSlot,
   SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
@@ -135,11 +135,22 @@ console.log('\nWhat the cards say\n');
 console.log('\nWhat fits\n');
 
 {
-  const cards = [];
-  for (const { col, row } of shelf()) {
-    for (const half of HALVES) cards.push(cardRect(col, row, half));
-  }
+  // ONE CARD PER TIER now, not one per tier per half: the towers have a whole
+  // spread and their men have the page after it, so a shelf cell is one rect
+  // rather than two. Both pages draw the same cells, so checking them once is
+  // checking both.
+  const cards = shelf().map(({ col, row }) => shelfRect(col, row));
   const all = [...cards, ...enemyCards()];
+
+  // THE OVERFLOW CHECK, and it is here because the shelf has silently run off the
+  // page once: twelve tiers exactly filled the two columns one half of a spread
+  // holds, and the thirteenth had nowhere to go and was flowed into a column that
+  // does not exist. Nothing complained — the card was simply drawn off the
+  // parchment. Ask the question directly rather than hoping a margin check catches
+  // it sideways.
+  const placed = shelf().every(({ col, row }) => col < COLUMNS && row < ROWS);
+  ok(placed, 'every tier has a cell on the page',
+    `${shelf().length} tiers in ${COLUMNS} columns of ${ROWS}`);
 
   const inSheet = b =>
     b.x >= SHEET.x && b.y >= SHEET.y &&
@@ -147,8 +158,10 @@ console.log('\nWhat fits\n');
 
   ok(all.every(inSheet), 'every card sits on the parchment');
 
-  // Towers on one side of the fold, men on the other.
-  ok(cards.filter(b => b.x < FOLD).every(b => b.x + b.w <= FOLD),
+  // The fold is a gutter, not a divider, now that one list flows across both
+  // halves — but nothing may sit ON it: a card that straddles the fold reads as
+  // the page being folded through the middle of a box.
+  ok(cards.every(b => b.x + b.w <= FOLD || b.x >= FOLD),
     'nothing crosses the fold', `fold at ${FOLD}`);
 
   const overlap = (a, b) =>
@@ -180,15 +193,17 @@ console.log('\nOne margin, everywhere\n');
   const inner = { x: SHEET.x + PAD, y: SHEET.y + PAD,
                   r: SHEET.x + SHEET.w - PAD, b: SHEET.y + SHEET.h - PAD };
 
-  const cards = [];
-  for (const { col, row } of shelf()) {
-    for (const half of HALVES) cards.push(cardRect(col, row, half));
-  }
+  const cards = shelf().map(({ col, row }) => shelfRect(col, row));
+  // The GRID's own outer corners, which is what the margins are about — the last
+  // column and the last row exist whether or not a tier is sitting in them.
+  const grid = [];
+  for (let col = 0; col < COLUMNS; col++)
+    for (let row = 0; row < ROWS; row++) grid.push(shelfRect(col, row));
 
   ok(Math.min(...cards.map(b => b.x)) === inner.x,
     'the first card starts on the left margin', `${Math.min(...cards.map(b => b.x))} of ${inner.x}`);
-  ok(Math.max(...cards.map(b => b.x + b.w)) === inner.r,
-    'and the last one ends on the right margin', `${Math.max(...cards.map(b => b.x + b.w))} of ${inner.r}`);
+  ok(Math.max(...grid.map(b => b.x + b.w)) === inner.r,
+    'and the last column ends on the right margin', `${Math.max(...grid.map(b => b.x + b.w))} of ${inner.r}`);
 
   ok(BOOK_CLOSE.x === inner.x, 'Close lines up under the first card',
     `${BOOK_CLOSE.x} of ${inner.x}`);
@@ -207,7 +222,7 @@ console.log('\nOne margin, everywhere\n');
     'and the two arrows are equidistant from the fold',
     `${FOLD - (BOOK_PREV.x + BOOK_PREV.w)}px each side`);
 
-  const bottom = Math.max(...cards.map(b => b.y + b.h));
+  const bottom = Math.max(...grid.map(b => b.y + b.h));
   ok(FOOT_Y - bottom === PAD, 'the gap above the footer is the outer margin',
     `${FOOT_Y - bottom} of ${PAD}`);
 

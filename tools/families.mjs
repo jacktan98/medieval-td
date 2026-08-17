@@ -168,6 +168,41 @@ console.log('');
     [0, 1, 2].map(t => `+${monastery[t].cost - archery[t].cost}g`).join('  '));
 }
 
+// --- tier 4, on its own terms ----------------------------------------------------
+//
+// The three claims above are about the three FAMILIES and they compare tier for
+// tier, so they stop at 3 — a musketeer has nothing to be compared with in the
+// other two ladders. What the tier 4 tower claims is different in kind, and it is
+// worth checking because the whole point of the tower is a trade rather than an
+// improvement: it sees the whole board and it does LESS per second than the rung
+// below it. Get that backwards and the top of the ladder is simply strictly
+// better, which is the thing every other check here exists to prevent.
+console.log('\nTier 4 — reach instead of output\n');
+{
+  const t4 = archery[3];
+  const t3 = archery[2];
+  const dps = d => d.damage / d.cooldown;
+
+  const longest = [...archery, ...monastery, ...siege].every(d => d === t4 || d.range < t4.range);
+  ok(longest, 'the Musketeer Post reaches further than anything else',
+    `${t4.range} against a trebuchet's ${siege[2].range}`);
+
+  // 960x540 board, and reach is an ellipse squashed to SQUASH — see src/ground.js.
+  // A tower on a middling plot has to cover the width of the board for "the whole
+  // map" to mean anything.
+  ok(t4.range * 2 >= 960, 'and covers the board across',
+    `${t4.range * 2}px of 960`);
+
+  ok(dps(t4) < dps(t3), 'and pays for it in output per second',
+    `${dps(t4).toFixed(1)} against tier 3's ${dps(t3).toFixed(1)}`);
+
+  ok(t4.cost > t3.cost, 'and in gold', `${t4.cost}g against ${t3.cost}g`);
+
+  // Everything on this ladder can be told what to shoot at, and the tier that can
+  // see the whole board is the one where the order matters most.
+  ok(archery.every(d => d.targeting), 'and every archery tier still takes an order');
+}
+
 console.log(bad
   ? `\n${bad} of the design's claims no longer holds.`
   : '\nAll three families are still the towers the design says they are.');

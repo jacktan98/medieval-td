@@ -2,12 +2,15 @@
 
 ```
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
-                      Rock_hit_ground, Rock_kill_enemy,
+                      Rock_hit_ground, Rock_kill_enemy, Arcane_shot,
+                      Musketeer_shot, Musketeer_kill_enemy,
+                      Flask_Break, Sell_Tower, Select_Sound,
                       Thug_dies, Soldier_dies
-assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5, Thug_1
+assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5,
+                      Monastery_1..5, Musketeer_1..2, Thug_1
 ```
 
-Twenty-five clips, all recorded and all wired. `node tools/audio.mjs` measures
+All recorded and all wired. `node tools/audio.mjs` measures
 them; `node tools/sound.mjs` checks the rules below against the real
 `src/audio.js`.
 
@@ -105,11 +108,13 @@ and it now means "how long a lull has to be before the game forgets".
 | a barracks is **built or upgraded** | `Barracks_1..5` |
 | an artillery tower is **built or upgraded** | `Artillery_1..5` |
 | a monastery is **built or upgraded** | `Monastery_1..5` |
+| a **Musketeer Post** is built, upgraded to, or given an order | `Musketeer_1..2` |
 | a rally point is moved | `Barracks_1..5` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
 | an arrow kills an enemy | `Arrow_kill_enemy` |
 | a rock kills an enemy | `Rock_kill_enemy` |
+| a musket ball kills an enemy | `Musketeer_kill_enemy` |
 | a barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
 | a tower is **sold** | `Sell_Tower` |
@@ -118,6 +123,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
+| **a musketeer fires** — Category B | `Musketeer_shot` |
 
 Everything above the line is Category A and shares the one channel; the four
 below run on the background bus and play every time.
@@ -154,6 +160,18 @@ the machine-gun problem all over again.
 
 **A giant thug answers with the common thug's line**, there being one enemy
 voice so far. Silence for the giant would read as a bug rather than as a gap.
+
+**A TIER CAN HAVE ITS OWN VOICE, and the Musketeer Post is the first.** It is an
+archery tower, so by family it would speak with the archers — but it is a named
+tower at the top of the ladder with two lines of its own, so the tier carries a
+`voice` field and `familyCue()` prefers it. Everything else about it is unchanged:
+Category A, priority on a build or an order, and the same share rules. Two lines
+rather than five simply means they alternate more often.
+
+A `voice` naming a cue with no clips loaded falls back to the family's, which is the
+same wire-ahead trick the table above is built on — and `node tools/sound.mjs`
+checks all four cases: the tier speaks, its siblings do not, an unrecorded voice
+falls back, and selecting one picks the same lines.
 
 **All four families have voices now.** `familyCue()` still has a null branch, and
 it is worth keeping: what it guards is that a lookup for a family with nothing

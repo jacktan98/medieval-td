@@ -190,6 +190,12 @@ const paths = {
   // shared channel would silence all but one of them.
   arcane_shot:     'assets/audio/sfx/Arcane_shot.mp3',
   arrow_kill_enemy: 'assets/audio/sfx/Arrow_kill_enemy.mp3',
+  // The musket. Two clips, and they are the same pair the bow has: the crack of
+  // the shot every time one is fired, and a separate line for a musketeer taking a
+  // man down. A musket ball arriving is silent — see the two flags on `bullet` in
+  // data/towers.js — so there is no third.
+  musketeer_shot:   'assets/audio/sfx/Musketeer_shot.mp3',
+  musketeer_kill_enemy: 'assets/audio/sfx/Musketeer_kill_enemy.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
   // the air and announces itself by LANDING, which is also the moment the player
   // is looking at. See the artillery section in assets/audio/README.md.
@@ -226,7 +232,17 @@ const paths = {
   monastery_2:     'assets/audio/voice/Monastery_2.mp3',
   monastery_3:     'assets/audio/voice/Monastery_3.mp3',
   monastery_4:     'assets/audio/voice/Monastery_4.mp3',
-  monastery_5:     'assets/audio/voice/Monastery_5.mp3'
+  monastery_5:     'assets/audio/voice/Monastery_5.mp3',
+  // THE MUSKETEER POST'S OWN TWO, and it is the first TIER with a voice rather
+  // than a family. It is a named tower at the top of the archery ladder, so it
+  // answers for itself when it is built and when its standing order changes
+  // instead of borrowing an archer's line.
+  //
+  // Two rather than five, which the share rules below handle without a special
+  // case: they rotate over whatever a cue holds, so two lines simply alternate
+  // more often than five do. See NO_REPEAT.
+  musketeer_1:     'assets/audio/voice/Musketeer_1.mp3',
+  musketeer_2:     'assets/audio/voice/Musketeer_2.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -296,6 +312,9 @@ export const CUE = {
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
+  // The Musketeer Post's, keyed by the `voice` field on its tier rather than by a
+  // family id — see familyCue below.
+  musketeer:    ['musketeer_1', 'musketeer_2'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -303,6 +322,10 @@ export const CUE = {
   // existed. The two are different enough to be worth telling apart by ear: an
   // arrow finding one man across the map, and a rock landing on several.
   rockKill:     ['rock_kill_enemy'],
+  // A musket ball killing a man. Its own clip for the same reason the rock has
+  // one: it is a different event to watch — a single shot from clear across the
+  // board — and telling the three apart by ear is most of what these are for.
+  musketKill:   ['musketeer_kill_enemy'],
   meleeKill:    ['thug_dies'],
   soldierDeath: ['soldier_dies'],
   // Selling. Category A and always played with priority, which puts it in the
@@ -320,6 +343,10 @@ export const SHOT = ['arrow_shot'];
 // several monasteries firing is several events the player is watching, and one
 // channel would silence all but the first.
 export const ARCANE = ['arcane_shot'];
+// A musket going off. Category B beside the bow and the staff, and for the same
+// reason: it is a thing that happens rather than a thing announced, and two posts
+// firing at once are two events the player is watching.
+export const MUSKET = ['musketeer_shot'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // A rock arriving. Category B because a catapult's noise is the IMPACT, not the
 // release: several machines land rocks at once and a shared channel would
@@ -671,7 +698,12 @@ export function solo(cue, priority = false) {
 // five lines each now; the null branch is kept because a lookup that answers
 // "nothing to say" is how a family gets wired before its recordings land, and
 // solo() already skips a cue whose clips have not loaded.
-export function familyCue(famId) {
+// A TIER MAY OVERRIDE ITS FAMILY, which is what `def` is for. The Musketeer Post
+// has two lines of its own and is still an archery tower, so the tier says which
+// cue it wants and everything else falls through to the family it belongs to. A
+// def with no `voice`, or a voice with no clips wired, behaves exactly as before.
+export function familyCue(famId, def) {
+  if (def && def.voice && CUE[def.voice]) return CUE[def.voice];
   return famId === 'archery' ? CUE.archery
        : famId === 'barracks' ? CUE.barracks
        : famId === 'siege' ? CUE.artillery
@@ -692,5 +724,5 @@ export function selectionCue(sel) {
   if (!sel) return null;
   if (sel.kind === 'enemy') return CUE.thug;
   if (sel.kind === 'unit') return CUE.barracks;
-  return familyCue(sel.ref.fam.id);
+  return familyCue(sel.ref.fam.id, sel.ref.def);
 }

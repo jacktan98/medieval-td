@@ -18,6 +18,7 @@ nothing else.
 | Priest             | `Soldiers_Priest_Default`          | `Soldiers_Priest_Attack`          |
 | Bishop             | `Soldiers_Bishop_Default`          | `Soldiers_Bishop_Attack`          |
 | Cardinal           | `Soldiers_Cardinal_Default`        | `Soldiers_Cardinal_Attack`        |
+| Musketeer          | `Musketeer_Default`                | `Musketeer_Attack`                |
 
 **Default is the man at rest**, and it is the drawing used almost everywhere: he
 walks in it, stands in his slot in it, and it is the picture the encyclopedia and
@@ -32,6 +33,14 @@ has gone, which is why his bow has nothing on it: the arrow is on the board now.
 swung down and out in front, which is the moment the arcane missile leaves it.
 His Default is the tallest figure in the game at 154 source px — an archer's is
 120 — and it is the staff that does it, not the man.
+
+**The musketeer's Attack is his Default plus SMOKE.** He is the one man in the
+game whose two drawings are the same figure in the same place: the musket stays
+levelled and a puff appears at the muzzle, which is the moment the ball becomes a
+projectile on the board. His two shadows measure to the same source pixel exactly —
+not within a pixel, the same one — so the swap cannot move him. He is also the only
+figure named without a family prefix, because the artist uploaded him that way and
+the file is named for the man the game calls him.
 
 The three artillery engineers have one drawing each. They are never seen
 fighting — the crewman is painted into all three frames of his machine, and the

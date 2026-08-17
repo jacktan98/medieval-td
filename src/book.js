@@ -1,18 +1,26 @@
-// The encyclopedia: every box description in the game, gathered onto two pages.
+// The encyclopedia: every box description in the game, gathered onto three pages.
 //
 // It exists because the info box can only ever describe ONE thing, and only
 // while that thing is in front of you. A player deciding between a Guard Post
 // and a Mangonel cannot select either — neither is built yet — so the numbers
 // they need to compare are the one set of numbers the game had no way to show.
 //
-// Two pages, flipped at the bottom:
+// Three pages, flipped at the bottom:
 //
-//   0   TOWERS on the left half, the MAN each one puts on the board on the
-//       right, row for row. Row 3 of the left column is a Barracks Tier I and
-//       row 3 of the right is the Spearman it musters, which is the whole reason
-//       the two halves share a grid rather than being two independent lists.
-//   1   ENEMIES, with room for the two stats a tower entry has no space for:
+//   0   TOWERS, every tier of every family, across the whole spread.
+//   1   UNITS: the MAN each of those towers puts on the board, in the SAME CELL
+//       as his tower on page 1. Third card down the first column is a Barracks
+//       Tier I there and the Spearman it musters here.
+//   2   ENEMIES, with room for the two stats a tower entry has no space for:
 //       what a kill pays and what a leak costs.
+//
+// IT WAS TWO PAGES, towers on the left half of a spread and their men on the
+// right. The tier 4 Musketeer Post is what ended that: thirteen tiers do not fit
+// in the six rows by two columns that one half of a spread holds, and the shelf
+// silently ran off the page when it was twelve. Giving the towers a whole spread
+// and their men the next one has room for two more tier 4s before the same
+// question comes back, and the "same cell on both pages" rule keeps what the old
+// side-by-side layout was for.
 //
 // The geometry lives here and the drawing lives in render.js, the same split as
 // menu.js — so input.js hit-tests exactly the rects that get drawn. Two copies of
@@ -24,7 +32,7 @@ import { refundOf } from './menu.js';
 import { occupant } from './select.js';
 import { PORTRAIT_SCALE } from './data/ui.js';
 
-export const PAGES = 2;
+export const PAGES = 3;
 
 // --- the shelf ---------------------------------------------------------------
 
@@ -33,17 +41,27 @@ export const PAGES = 2;
 // is no second table to forget.
 const LADDERS = [archery, barracks, siege, monastery];
 
-// Which cell each tier sits in. Families are kept WHOLE — a ladder never
-// straddles two columns — so archery and barracks fill the first column exactly
-// and siege and the monastery fill the second. That happened without a line
-// being changed when the monastery landed, which is what flowing rather than
-// hand-placing was for: twelve tiers in two columns of six, exactly full.
+// Which cell each tier sits in, across the FOUR columns of the spread — two per
+// half. `col` counts 0..3 straight through; shelfRect turns it back into a column
+// within a half.
+//
+// ONE FAMILY PER COLUMN while the spread has a column for each of them, which is
+// what the page wants to say: a column IS a ladder, read top to bottom, and the
+// four sit side by side to be compared rung for rung. Four families, four columns,
+// and six rows of room for a ladder that is currently four tiers at its longest.
+//
+// The flow rule underneath is the fallback for a FIFTH family: families stay whole
+// and a ladder that does not fit in what is left of a column starts the next one.
+// That was the only rule before, and it is what quietly overflowed when a
+// thirteenth tier landed — tools/book.mjs now fails if any card falls off the
+// page, so the next family will say so rather than vanish.
 export function shelf() {
   const out = [];
+  const perColumn = LADDERS.length <= COLUMNS;
   let col = 0, row = 0;
 
   for (const tiers of LADDERS) {
-    if (row + tiers.length > ROWS) { col++; row = 0; }
+    if (row > 0 && (perColumn || row + tiers.length > ROWS)) { col++; row = 0; }
     for (const def of tiers) {
       out.push({ def, tiers, col, row });
       row++;
@@ -51,6 +69,11 @@ export function shelf() {
   }
 
   return out;
+}
+
+// A shelf cell as a rect: which half of the spread, then which column inside it.
+export function shelfRect(col, row) {
+  return cardRect(col % COLS, row, HALVES[Math.floor(col / COLS)]);
 }
 
 // --- page geometry -----------------------------------------------------------
@@ -89,7 +112,11 @@ export const FOOT_Y = INNER.b - FOOT_H;
 // footer rather than chosen, so the margins are the fixed thing and the cards
 // give way — which is the right way round when the complaint is about gaps.
 const TOP = INNER.y + 58;
-const ROWS = 6;               // per column, per half
+// Exported for tools/book.mjs, which checks the GRID rather than the cards that
+// happen to be in it: the shelf no longer fills every cell — thirteen tiers in
+// twenty-four — so "the bottom card sits on the margin" has to be asked of the
+// last row that exists rather than of the last one used.
+export const ROWS = 6;        // per column, per half
 const COLS = 2;               // per half
 const CARD_GAP = 4;
 const CARD_H = Math.floor((FOOT_Y - PAD - TOP - (ROWS - 1) * CARD_GAP) / ROWS);
@@ -105,6 +132,11 @@ const CARD_W = Math.floor((HALF_W - (COLS - 1) * COL_GAP) / COLS);
 // fold rather than measured from the left, so the two margins are equal by
 // construction.
 export const HALVES = [INNER.x, FOLD + GUTTER];
+
+// How many card columns the whole spread has: two per half. Both the shelf and
+// the enemy page flow across all of them, so the number belongs here rather than
+// being multiplied out at each call site.
+export const COLUMNS = COLS * HALVES.length;
 
 export function cardRect(col, row, fold) {
   return {
@@ -310,11 +342,9 @@ export function rowsIn(b, n) {
 // They flow across all four columns of the spread and then down, so a third and
 // fourth enemy fill the row before anything starts a second one.
 export function enemyCards() {
-  return Object.values(enemyTypes).map((def, i) => {
-    const across = i % (COLS * HALVES.length);
-    const row = Math.floor(i / (COLS * HALVES.length));
-    return { def, ...cardRect(across % COLS, row, HALVES[Math.floor(across / COLS)]) };
-  });
+  return Object.values(enemyTypes).map((def, i) => ({
+    def, ...shelfRect(i % COLUMNS, Math.floor(i / COLUMNS))
+  }));
 }
 
 // --- controls ----------------------------------------------------------------

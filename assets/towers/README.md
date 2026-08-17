@@ -13,15 +13,16 @@ in `src/assets.js`.
 | `archery/Archery_Tower_T1.png`         | 1024   | 100 x 123 px | Watchtower (1)     |
 | `archery/Archery_Tower_T2.png`         | 1024   | 88 x 153 px  | Archer Post (2)    |
 | `archery/Archery_Tower_T3.png`         | 1024   | 74 x 153 px  | Crossbow Tower (3) |
+| `archery/Musketeer_Post.png`           | 1024   | 74 x 126 px  | Musketeer Post (4) |
 | `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
 | `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
 | `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | ALL THREE artillery tiers, at rest    |
 | `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | ALL THREE artillery tiers, loading    |
 | `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | ALL THREE artillery tiers, throwing   |
-| `monastery/Monastery_Tower_T1.png`     | 1024   | 103 x 129 px | Wayside Shrine (1) |
-| `monastery/Monastery_Tower_T2.png`     | 1024   | 88 x 158 px  | Chapel (2)         |
-| `monastery/Monastery_Tower_T3.png`     | 1024   | 88 x 158 px  | Abbey (3)          |
+| `monastery/Monastery_Tower_T1.png`     | 1024   | 111 x 116 px | Wayside Shrine (1) |
+| `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
+| `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
 
 Elsewhere, but artillery's: `units/Artillery_Man_T1.png` (the crewman, for the
 info box only — he is drawn into all three frames already) and
@@ -31,16 +32,33 @@ Elsewhere, but the monastery's: `units/Soldiers_Priest_Default.png` and
 `_Attack` (and the Bishop's and the Cardinal's), and
 `projectiles/Soldiers_Priest_Arcane_Missle.png` for each of the three.
 
+Elsewhere, but the Musketeer Post's: `units/Musketeer_Default.png` and
+`_Attack`, `projectiles/Musketeer_Bullet.png`, `ui/Musketeer_Post_Icon.png` (the
+one upgrade button in the game that shows what it buys rather than an arrow), and
+four clips — `audio/sfx/Musketeer_shot.mp3`, `audio/sfx/Musketeer_kill_enemy.mp3`
+and two voice lines.
+
+**A TIER 4 FILE IS NAMED FOR THE TOWER, NOT THE RUNG.** `Musketeer_Post.png` sits
+in the archery folder with `Archery_Tower_T1..T3` because it is an archery
+building, and the code reaches it as `archery[3].sprite` either way. Keep uploading
+whichever name the tower actually has; `src/assets.js` is where the two meet.
+
 **Archery, barracks and the monastery have their own building per tier.**
 Artillery does not yet — one machine draws all three — which is why it is the
 only family in the game that wears TIER STARS. See below.
 
-**The monastery's tiers 2 and 3 trim to the same rect and stand on the same
-shadow, and they still get no stars.** That is right rather than an oversight:
-the stars appear when two tiers SHARE A SPRITE KEY, meaning the building on the
-board cannot tell you which tier it is, and these are two different drawings —
-an abbey is visibly stone where a chapel is timber. Same frame, different
-building.
+**The monastery was redrawn, and it is a different building now.** The old family
+was a walled cell that grew a roof; the new one is an open timber deck on legs with
+a rail round it — archery's shape in the monastery's materials — with a cross on a
+post at tier 1, a roof at tier 2 and the whole platform rebuilt in stone at tier 3.
+The old folder was deleted and the set re-uploaded, so every trim, mount and shadow
+anchor in `src/data/towers.js` was measured again from these files and none of the
+old numbers carried across.
+
+Two things came out of that redraw and both are recorded in the code: the deck is
+the SAME polygon on all three tiers, 31945 square source px to the pixel, and the
+roof no longer needs drawing over the priest — the eaves clear the top of his staff
+by 33px, where on the old art they cut through it and needed a traced polygon.
 
 ## The catapult is three drawings, and they share ONE trim
 

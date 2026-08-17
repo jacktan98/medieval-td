@@ -102,6 +102,11 @@ const drawnH = trim => Math.round(trim[3] * SCALE);
 const TOWER_TRIM = [267, 211, 490, 602];
 const TOWER2_TRIM = [298, 140, 428, 744];
 const TOWER3_TRIM = [331, 140, 362, 744];
+// THE FOURTH RUNG OF THE ARCHERY LADDER, and the first tier 4 in the game. A
+// stone turret with battlements, a banner down its front and a rack of muskets on
+// the deck. Narrower than any of the three below it — 360 source px against 490,
+// 428 and 362 — because it is a tower rather than a platform on splayed legs.
+const TOWER4_TRIM = [332, 205, 360, 614];
 // EVERY FIGHTING MAN IS TWO DRAWINGS, so every one of them has two trims.
 //
 // The two are NOT unioned into one box the way the catapult's three frames are,
@@ -123,6 +128,12 @@ const ARCHER2_TRIM = [175, 195, 162, 122];
 const ARCHER2_ATK_TRIM = [195, 195, 142, 122];
 const ARCHER3_TRIM = [175, 195, 162, 122];
 const ARCHER3_ATK_TRIM = [195, 195, 142, 122];
+// The musketeer, and he is the widest man in the game for his height: 152x124
+// against an archer's 162x120, nearly all of it musket. The Attack pose is 7px
+// wider and starts 7px further left, which is the puff of smoke at the barrel —
+// the two drawings are otherwise the same figure in the same place.
+const MUSKET_TRIM = [180, 194, 152, 124];
+const MUSKET_ATK_TRIM = [173, 194, 159, 124];
 const CAMP_TRIM = [207, 249, 610, 526];
 const CAMP2_TRIM = [200, 197, 624, 630];
 const CAMP3_TRIM = [200, 201, 624, 621];
@@ -136,15 +147,19 @@ const SPEAR3_ATK_TRIM = [166, 196, 145, 120];
 // THE MONASTERY, on the same 1024 canvas as the other three buildings and the
 // same 512 as every figure.
 //
-// Tiers 2 and 3 trim to exactly the same rect, and that is the drawing rather
-// than a copied number: the abbey is the chapel rebuilt in stone inside the same
-// timber frame, so its roof, its posts and its stair are at the same source
-// pixels and only the walls change. Both shadow paths are byte-identical in the
-// two SVGs as well. Tier 1 is a different building — an open deck with no roof —
-// and trims to a box of its own.
-const MON_TRIM = [262, 197, 500, 630];
-const MON2_TRIM = [296, 128, 431, 768];
-const MON3_TRIM = [296, 128, 431, 768];
+// REDRAWN, ALL THREE TIERS, and the family is a different building now: the old
+// one was a walled cell that grew a roof, and these are open timber decks on
+// legs with a rail round them — the archery tower's shape, in the monastery's
+// materials. The artist deleted the old folder and uploaded the new set, so every
+// number below is measured from scratch and none of it carries across.
+//
+// Tiers 2 and 3 no longer share a trim. They are within 7px of each other and
+// stand on the same frame — tier 3 is tier 2's platform rebuilt in stone — but
+// the stonework is a different width, so each carries its own rect and its own
+// anchors. Tier 1 is the same deck with no roof and a cross on a post.
+const MON_TRIM = [241, 228, 542, 568];
+const MON2_TRIM = [274, 165, 476, 694];
+const MON3_TRIM = [277, 165, 469, 694];
 
 // The three churchmen. All six drawings share ONE pair of boxes, which is the
 // same finding the elite archer gave: the artist re-robed one figure rather than
@@ -165,6 +180,10 @@ const CARDINAL_ATK_TRIM = [188, 196, 108, 137];
 
 // The arcane missile, one drawing per tier and all three the same shape.
 const MISSILE_TRIM = [210, 246, 92, 20];
+
+// The musket ball. The smallest sprite in the game by a wide margin — an arrow is
+// 100x20 and this is 20x14, which is 4x3 once drawn.
+const BULLET_TRIM = [246, 249, 20, 14];
 
 // THE ONE TRIM IN THIS FILE THAT IS NOT A SINGLE FILE'S MEASURED BOX, and it
 // has to be. The catapult is three drawings, not one, and the box below is the
@@ -244,6 +263,35 @@ export const arrow = {
   // WHERE ITS NOISE IS. An arrow announces itself by being loosed and lands
   // more or less silently; a rock is the other way round. Two flags rather than
   // one, because "does this make a sound" turned out to be two questions.
+  fireSound: true,
+  landSound: false
+};
+
+// A BALL OF LEAD, and the smallest thing on the board: 20x14 source px, drawn
+// 4x3. It is the arrow's shape of projectile — steered, nose-first, silent on
+// arrival — and everything that differs is a consequence of the musket rather
+// than a choice.
+//
+// FAST, and it is the fastest thing in the game at 520 against an arrow's 360.
+// That is the whole character of the weapon: a bow arcs a shaft across the board
+// and you watch it go, a musket cracks and the thing is already there. It also
+// has to be, because this tower shoots across the whole map — at 360 a shot at
+// something 450px away would spend a second and a quarter in the air, which on a
+// 2.4s reload means the tower is holding a shot in flight half the time it is
+// working.
+//
+// `grip` 0.12, a shade behind the arrow's 0.08: the ball is drawn with a rounded
+// nose on the left and a flat base on the right, so its point is not quite the
+// edge of the trim the way an arrowhead is.
+export const bullet = {
+  kind: 'bullet',
+  sprite: 'bullet',
+  trim: BULLET_TRIM,
+  faces: -1,
+  grip: 0.12,
+  speed: 520,
+  // Loud leaving the barrel and silent arriving, the same split as the arrow and
+  // the arcane missile. A musket IS its report.
   fireSound: true,
   landSound: false
 };
@@ -495,6 +543,54 @@ const watchtower3 = {
   shape: 'tower'
 };
 
+// TIER 4, AND THE FIRST OF THEM IN THE GAME. A stone turret, twice as tall as it
+// is wide, with a banner down the front face and a rack of muskets on the deck.
+//
+// It is the shortest building on this ladder by drawn height — 126px against tier
+// 2 and 3's 153 — and much the narrowest at 74px. That is the drawing rather than
+// an accident of trimming: tiers 1 to 3 are platforms on splayed legs and spread
+// out at the bottom, and this one is a column.
+const post = {
+  sprite: 'archery_t4',
+  spriteTrim: TOWER4_TRIM,
+  w: drawnW(TOWER4_TRIM), h: drawnH(TOWER4_TRIM),
+  // The MIDDLE of the deck, source pixel (508.8, 300.5) in the 1024 canvas.
+  //
+  // The deck here is the TOP FACE of the turret — one #969696 path with corners
+  // (466.5, 243.5), (659.1, 273.2), (555.2, 363.4) and (349.8, 316.0) — so it is
+  // found the way tier 3's is rather than from four leg tops. Not a parallelogram
+  // either: the two long edges differ by 13px in run, so this is the polygon's
+  // AREA CENTROID.
+  //
+  // The check that it is the right face is the blue cloth: the artist drapes a
+  // banner over the deck and down the front wall, and the draped part is a second
+  // path inset within these four corners, centred (506.2, 300.3) — 2.6px from the
+  // face's own centroid. The man stands on the cloth.
+  mountFrac: [0.491, 0.156],
+  // Shadow centre, source (511.4, 737.4) from the ellipse fit. The SVG stores that
+  // shadow as a single #37422f path spanning 335..689 by 659..816, whose own centre
+  // is (512.0, 737.5) — within a pixel, measured two independent ways.
+  //
+  // Almost exactly 0.5 across, which is the first building in the game to be: this
+  // drawing has no flagpole leaning out of it and no stair running off it.
+  groundFrac: [0.498, 0.867],
+  // THE NEAR MERLON, and it is the only piece of this tower in front of the man.
+  //
+  // The battlement has four blocks, one at each corner of the deck. Three are
+  // behind him or beside him; the one at the deck's NEAREST corner — source x
+  // 520..581, y 293..363 — stands between him and the camera, and its top at y 293
+  // is 7px above the deck he is standing on. So it covers his boots and the bottom
+  // of the musket's stock, which is what a man standing behind a parapet looks
+  // like. Padded 2px for the black stroke the PNG draws around a shape the SVG
+  // stores without one.
+  //
+  // The left-corner merlon at x 350..412 is the usual trap in reverse: it IS
+  // nearer the camera than the deck's centre, but it is 20px clear of his widest
+  // pose, so a rect around it would paint stone over nothing.
+  frontTrims: [[518, 291, 65, 74]],
+  shape: 'tower'
+};
+
 // WHICH POSE IS WHICH, because the names read backwards until you look at the
 // drawings. Default is the archer with an arrow NOCKED, the head of it sticking
 // out past the bow. Attack is the bow EMPTY, string snapped back — the instant
@@ -591,6 +687,43 @@ const archer3 = {
   muzzle: [Math.round(0.392 * ARCHER3_TRIM[2] * SCALE), -Math.round(0.406 * ARCHER3_TRIM[3] * SCALE)]
 };
 
+// THE MUSKETEER, and he is the only man on this ladder who does not draw a bow.
+//
+// Default is the musket LEVELLED, ready and unfired; Attack is the same figure
+// with a puff of smoke at the muzzle. The right way round, and the same convention
+// as the archer's two poses: the moment the ball becomes a projectile on the board
+// is the moment the smoke appears, and it hangs there for as long as the recoil
+// lasts.
+const musketeer = {
+  ammo: bullet,
+  gunner: 'musketeer',
+  gunnerTrim: MUSKET_TRIM,
+  // THE CENTRE OF HIS GROUND SHADOW, source (292.0, 307.3), read out of the PNG by
+  // tools/shadow.mjs like every other figure's anchor. Both poses measure to the
+  // SAME source pixel — not within a pixel, exactly the same one — so the swap when
+  // he fires cannot move him.
+  //
+  // Well right of centre in his box, and that is the musket: the barrel runs a
+  // long way out in front of him and the box has to hold it, so his body — the
+  // thing he mirrors about when he turns to shoot the other way — sits at 0.73 of
+  // the width rather than near the middle.
+  gunnerPivot: [0.737, 0.913],
+  attack: { sprite: 'musketeer_attack', trim: MUSKET_ATK_TRIM, pivot: [0.748, 0.913] },
+  spriteFaces: -1,
+  // Where the ball leaves the barrel, as an offset from the anchor above.
+  //
+  // MEASURED ON THE ATTACK POSE, which is the drawing that says where the muzzle
+  // is: the smoke starts at source x 178 and the barrel's black outline is at 182,
+  // so the metal face is at 186 and the barrel's middle is y 242. That is 106px in
+  // front of the anchor and 65 above it — the same "5px inside the outline, at the
+  // weapon's vertical middle" rule the archer's bow grip is taken with.
+  //
+  // Kept as fractions of the DEFAULT trim, exactly as the archer's and the
+  // priest's are, so a re-export at another size moves the origin with the art
+  // rather than leaving it a third of the way down his boot.
+  muzzle: [Math.round(0.697 * MUSKET_TRIM[2] * SCALE), -Math.round(0.527 * MUSKET_TRIM[3] * SCALE)]
+};
+
 // Range up across the board and cooldown down with it. The reach is what makes
 // a tower feel useful in the first three waves, when there is only one or two of
 // them on the map; the slower draw is what stops that reach turning archery into
@@ -646,10 +779,51 @@ export const AIM_MODES = [
   { id: 'ranged', glyph: 'aim_ranged', label: 'Throwers first' }
 ];
 
+// TIER 4 IS A FIRST GUESS, and it is written down as one. The artist asked for a
+// tower that covers the whole map, hits for 50 and reloads slowly, at 200 gold,
+// and said to sweep it later — so these four numbers are reasoned rather than
+// measured, and `node tools/sweep.mjs` has not seen them.
+//
+// `range` 480, and the number is the board rather than a feel. "Covers the whole
+// map" is a measurable claim: the board is 960x540 and reach is an ellipse at
+// SQUASH 0.62, so 480 spans 960 across and 595 down — the full width and more than
+// the full height, from a plot near the middle. 460 was the first guess and it came
+// up 40px short across, which tools/families.mjs failed on. Nothing else comes
+// near it: the longest reach in the game before this was a trebuchet's 360.
+//
+// `damage` 50, tying the Abbey for the biggest single blow in the game.
+//
+// `cooldown` 2.40, and it is the number holding the tower down. 50 every 2.4s is
+// 20.8 damage a second, which is LESS than an Elite Archer's 31.3 and less than a
+// Cardinal's 34.5 — this is deliberately not an upgrade in output. What it buys is
+// UPTIME: a bow covers about a fifth of a map's road and spends the rest of the
+// wave idle, and this covers all of it, so 20.8 a second everywhere can beat 31.3
+// a second somewhere. That is the trade to check when the sweep runs, and the
+// reload is the dial to turn if it wins too easily.
+//
+// `cost` 200, which is 500 gold of cumulative spend on one plot — more than any
+// two other towers together. It also has to be worth pressing over a second bow
+// somewhere else, which is the comparison the sweep will actually make.
+//
+// It keeps `targeting`, and it is the tier that most wants it: a tower that can
+// see the whole board is a tower whose choice of target is the only thing left to
+// decide, and 50 damage into an 80-health militiaman is most of a reload wasted.
 export const archery = [
   { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 10, range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true }
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true },
+  { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Archery Tier IV', unit: 'Musketeer',
+    cost: 200, damage: 50, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    // The upgrade button's picture when this is what the button buys. Every other
+    // tier uses the generic arrow; this one has an icon of its own, so the tap
+    // that turns a Crossbow Tower into a Musketeer Post shows what it is buying.
+    // See towerItems in src/menu.js — a tier with no `glyph` still gets the arrow.
+    glyph: 'musket',
+    // WHOSE VOICE ANSWERS, and it is not the archers'. Two lines were recorded for
+    // this tower specifically, so a Musketeer Post speaks for itself when it is
+    // built and when its standing order changes. See familyCue in src/audio.js:
+    // a tier with no `voice` falls through to its family's.
+    voice: 'musketeer' }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -1215,111 +1389,87 @@ const shrine = {
   sprite: 'monastery_t1',
   spriteTrim: MON_TRIM,
   w: drawnW(MON_TRIM), h: drawnH(MON_TRIM),
-  // The MIDDLE of the deck, source pixel (512.6, 421.1) in the 1024 canvas.
+  // The MIDDLE of the deck, source pixel (495.9, 571.3) in the 1024 canvas.
   //
-  // Found the way tier 3 archery's is rather than the way tiers 1 and 2 are: the
-  // deck is one <path> in the SVG with corners (470, 364), (663, 394), (559, 484)
-  // and (354, 437), and it is NOT a parallelogram — its two diagonals cross
-  // 10.4px apart at their midpoints, so "where the diagonals cross" is not
-  // defined on it. This is the polygon's AREA CENTROID, which is the same point
-  // on a true parallelogram and the right one here.
-  mountFrac: [0.501, 0.356],
+  // The deck is one #735a31 path in the SVG with corners (443.0, 500.1),
+  // (683.9, 537.1), (553.9, 649.9) and (297.1, 590.7), and it is NOT a
+  // parallelogram — the two long edges differ by 22px in run — so "where the
+  // diagonals cross" is not defined on it. This is the polygon's AREA CENTROID,
+  // which is the same point on a true parallelogram and the right one here.
+  //
+  // The same path, to the square pixel of area, is the deck on all three tiers:
+  // 31945 on each. The artist is drawing one platform and building on top of it.
+  mountFrac: [0.470, 0.604],
   // Where the building meets the ground: the centre of its shadow ellipse,
-  // source (473.9, 727.0). The SVG stores that shadow as a single #37422f path
-  // spanning 265..683 by 637..817, whose centre is (473.85, 726.98); the ellipse
-  // fit in tools/shadow.mjs reads (473.3, 726.5) out of the PNG without being
-  // shown the SVG, which is the check.
+  // source (476.9, 681.1). The SVG stores it as a single #37422f path spanning
+  // 244..704 by 582..780, centre (474.1, 681.0) — the PNG fit reads within 3px of
+  // that without being shown the SVG, which is the check.
   //
-  // NOT 0.5 across, and by a long way. The flagpole and its pennant hang off the
-  // right of this drawing and the stair runs off the left, so the box centre is
-  // 39 source px right of where the building actually stands.
-  groundFrac: [0.424, 0.841],
-  // The post on the deck's NEAREST corner — source x 552..565, from the deck rail
-  // at y 385 down to the floor at 484 — which crosses the priest whenever he is
-  // mirrored to face right. Padded 2px for the black stroke the PNG draws around
-  // a shape the SVG stores without one.
+  // NOT 0.5 across. The flag hangs off the right of this drawing and the stair
+  // runs off the left and further, so the box centre is 35 source px right of
+  // where the building actually stands.
+  groundFrac: [0.435, 0.798],
+  // NO front art on this tier, and it is measured rather than forgotten.
   //
-  // The far post at x 464..478 is the usual trap: it is inside the priest's span
-  // and BEHIND him, so the rect stays tight to the near one.
-  frontTrims: [[550, 383, 18, 104]],
-  // NO frontPolys, and that is measured rather than forgotten. The near-left rail
-  // is source (362,410) (560,453) (558,461) (360,419) — a real rail in the right
-  // place — and it passes UNDER him: across his span it runs y 433 to 450, and
-  // his shadow is at 433. It is the deck's near edge board, exactly as tier 3
-  // archery's is.
+  // The near-corner post is source x 546.6..560.7 and the priest's widest pose
+  // reaches x 532.9 from a mount at 495.9 — 14px clear of it. Both near rails
+  // (312.7..439.0 and 560.7..683.9) end outside his span too. He stands in the
+  // middle of an open deck on this tier with nothing between him and the camera,
+  // which is what the drawing shows.
   shape: 'tower'
 };
 
-// THE ROOF, AND IT HAS TO BE DRAWN OVER THE PRIEST.
+// THE ROOF DOES NOT NEED DRAWING OVER THE PRIEST ANY MORE, and that is the one
+// thing the redraw changed about the renderer's job.
 //
-// He is the tallest figure in the game — 154 source px of him, and it is the
-// staff rather than the man — so on both roofed tiers the top of that staff rises
-// past the near eave and stands in front of a roof it is physically under. That
-// reads as the staff growing through the tiles, and it was reported from a
-// screenshot the day the family shipped.
+// It did on the old art, and the reason is worth keeping: he is the tallest
+// figure in the game — 154 source px, and it is the staff rather than the man —
+// so on both roofed tiers the top of that staff rose past the near eave and stood
+// in front of a roof it is physically under. That needed a POLYGON rather than a
+// rect, because a roof is a slanted plane and any box round it takes the deck
+// below as well, and painting the deck over the priest erases his legs.
 //
-// A rect cannot fix it. The roof is a slanted plane, so any box around it takes
-// the sky beside it and, worse, the deck below it — and painting the deck over
-// the priest erases his legs. So it is a POLYGON, the same mechanism the archery
-// rails use: clip the canvas to this shape and redraw the sprite through the
-// hole, which paints exactly what the artist put there, transparency included.
-//
-// Traced from three shapes in the SVG rather than one, because the roof is drawn
-// as a plane and two edge boards: the plane (453,214) (687,224) (613,380)
-// (374,341), the near-left fascia hanging to (381,350) (618,388), and the
-// near-right fascia out to (691,232). Their union is the six corners below,
-// padded 3px for the black stroke the PNG draws around shapes the SVG stores
-// without one.
-//
-// TIERS 2 AND 3 SHARE IT because they share the roof to the pixel — the abbey is
-// the chapel rebuilt in stone inside the same timber frame, which the identical
-// trims and the identical shadow paths already said. One constant rather than two
-// copies, so a redraw that moves the roof cannot move it on one tier only.
-//
-// Tier 1 has no roof at all — it is an open deck — so it has no entry here and
-// wants none.
-const ROOF = [[450, 211], [690, 221], [694, 232], [621, 392], [378, 353], [371, 338]];
+// On these drawings the roof is higher and the deck is lower. The priest's mount
+// is source y 634 on both roofed tiers and his drawing reaches 143px above it, to
+// y 492; the lowest pixel of the roof — the near fascia board — is y 459. Thirty
+// three pixels of clear air, so there is nothing to clip and the ROOF polygon is
+// gone rather than kept "just in case". If a later upload lowers the eaves, the
+// symptom is a staff growing through the tiles and the fix is to trace the plane
+// and its two fascias again.
 
-// Tier 2: a roof goes on, and the legs get stone footings. Same frame, so the
-// deck is in nearly the same place — but re-measured rather than carried across,
-// because the whole drawing sits in a different box.
+// Tier 2: a roof over the same deck, and the legs get stone footings.
 const chapel = {
   sprite: 'monastery_t2',
   spriteTrim: MON2_TRIM,
   w: drawnW(MON2_TRIM), h: drawnH(MON2_TRIM),
-  // The deck's area centroid, source (547.4, 491.0), from the face with corners
-  // (505, 434), (698, 464), (594, 554) and (388, 506).
-  mountFrac: [0.583, 0.473],
-  // Shadow centre, source (512.0, 795.0) — the SVG path spans 38.54..208.61 by
-  // 259.48..332.60 under a 2.5x scale and a (203.06, 54.91) offset, and the PNG
-  // fit reads (511.4, 794.5).
-  groundFrac: [0.501, 0.868],
-  // The near corner post, source x 587..600 from the roof plate at y 362 down to
-  // the deck at 551. Taller than tier 1's for the same reason tier 2 archery's
-  // is: there is a roof above the deck now, and the post runs the whole way up to
-  // carry it.
-  frontTrims: [[585, 360, 18, 194]],
-  frontPolys: [ROOF],
+  // The deck's area centroid, source (533.9, 634.3), from the same platform path
+  // as tier 1's: (443.0, 563.1), (683.9, 600.1), (553.9, 712.9), (297.1, 653.7)
+  // shifted into this box — 31945 square px of it, the same area to the pixel.
+  mountFrac: [0.546, 0.676],
+  // Shadow centre, source (517.8, 747.7). The SVG path spans 288..747 by 649..847,
+  // centre (517.5, 747.9), and the PNG fit lands within half a pixel of it.
+  groundFrac: [0.512, 0.840],
+  // NO front art, for the same reasons tier 1 has none: the near post is at source
+  // x 585..599 and the priest's widest pose reaches 570.9, and the near-left rail
+  // (351..474) stops 11px short of the same pose's staff. See the note on the roof
+  // above for the piece that used to be here and why it is not needed.
   shape: 'tower'
 };
 
-// Tier 3: the timber box becomes a stone one. IDENTICAL ENVELOPE to tier 2 —
-// same trim, same shadow path to the byte — because the artist rebuilt the walls
-// inside the same frame and left the roof, the posts and the stair where they
-// were. Every number is still measured from tier 3's own file; they simply come
-// back the same, which is the finding rather than a shortcut.
+// Tier 3: the timber platform becomes a stone one, with the same roof on the same
+// posts above it. Not the same trim as tier 2 — the stonework is 7px narrower than
+// the timber it replaces — so every number here is measured from tier 3's own file
+// and only the deck's shape comes back identical.
 const abbey = {
   sprite: 'monastery_t3',
   spriteTrim: MON3_TRIM,
   w: drawnW(MON3_TRIM), h: drawnH(MON3_TRIM),
-  // The deck, now the top course of the stonework: (505, 435), (697, 464),
-  // (593, 555), (388, 507), centroid (546.6, 492.0). One pixel from tier 2's,
-  // which is what "the same frame" looks like in numbers.
-  mountFrac: [0.581, 0.474],
-  groundFrac: [0.501, 0.868],
-  // The same near post at the same source pixels, x 587..600, y 362..551.
-  frontTrims: [[585, 360, 18, 194]],
-  frontPolys: [ROOF],
+  // The deck, now the top course of the stonework: area centroid (530.0, 634.3).
+  // The same 31945 square px, at the same height in the drawing as tier 2's, which
+  // is what "the same platform in stone" looks like in numbers.
+  mountFrac: [0.539, 0.676],
+  // Shadow centre, source (513.0, 743.4) against the SVG's (513.7, 743.9).
+  groundFrac: [0.503, 0.833],
   shape: 'tower'
 };
 

@@ -1,6 +1,6 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS } from './data/towers.js';
-import { play, SHOT, ARCANE } from './audio.js';
+import { play, SHOT, ARCANE, MUSKET } from './audio.js';
 
 // What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
 // projectiles.js, and it is a table for the same reason that one is: "what does
@@ -9,7 +9,7 @@ import { play, SHOT, ARCANE } from './audio.js';
 //
 // A rock is not here on purpose. It is silent in the air and announces itself by
 // arriving, which is where the player is already looking.
-const FIRING = { arrow: SHOT, arcane: ARCANE };
+const FIRING = { arrow: SHOT, arcane: ARCANE, bullet: MUSKET };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the

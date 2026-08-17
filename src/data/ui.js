@@ -114,6 +114,12 @@ export const ui = {
   // filling it. That is the drawing (a standing cross), not a squash.
   glyph_cross:  { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
   glyph_up:     { trim: [223, 212, 66, 88],  fit: GLYPH_BOX },
+  // The Musketeer Post's icon, which replaces the arrow on the one upgrade button
+  // that buys a named tower rather than a rung. It sits on a button showing a
+  // price, so it takes the smaller box like the four family glyphs — and it is by
+  // far the widest glyph in the set at 126x42 source, so at the 26px box it lands
+  // 26x9. That is a musket lying flat: long and thin is the drawing.
+  glyph_musket: { trim: [193, 235, 126, 42], fit: GLYPH_BOX },
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72
   // and the pennant is a pale triangle filling the rest, so the ink the eye
@@ -218,6 +224,7 @@ export const GLYPH_ART = {
   catapult: 'glyph_catapult',
   cross: 'glyph_cross',
   up: 'glyph_up',
+  musket: 'glyph_musket',
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',

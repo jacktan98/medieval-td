@@ -12,7 +12,7 @@ import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage } from './select.js';
-import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
+import { PAGES, shelf, shelfRect, enemyCards, towerEntry, unitEntry, figureSlot,
          SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
@@ -2157,7 +2157,8 @@ function drawBook(ctx, state) {
   ctx.font = '700 22px system-ui, sans-serif';
   ctx.fillText('Encyclopedia', 480, TITLE_Y);
 
-  if (state.book === 0) drawShelfPage(ctx);
+  if (state.book === 0) drawTowerPage(ctx);
+  else if (state.book === 1) drawUnitPage(ctx);
   else drawEnemyPage(ctx);
 
   drawBookFooter(ctx, state);
@@ -2166,27 +2167,30 @@ function drawBook(ctx, state) {
   ctx.textBaseline = 'middle';
 }
 
-// Page 1: towers on the left, the men they put on the board on the right.
-function drawShelfPage(ctx) {
-  // The gutter. It is what says "two halves of one spread" rather than "four
-  // columns", which is the difference between the layout being read as towers
-  // beside their men and being read as an undifferentiated grid.
-  //
-  // Only on this page: page 2 is one list, and a rule down the middle of it
-  // would divide something that is not divided.
-  ctx.strokeStyle = 'rgba(58,48,38,0.22)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(FOLD, HEAD_Y - 12);
-  ctx.lineTo(FOLD, FOOT_Y - 16);
-  ctx.stroke();
-
+// Page 1: every tower in the game, one family per column across the spread.
+//
+// NO GUTTER RULE, and it went with the layout change. A line down the fold used to
+// say "towers on this side, their men on that" — two halves of one spread. The
+// towers now have the whole spread and their men have the next page, so a rule
+// through the middle of one list would divide something that is not divided. The
+// enemy page has never had one, for the same reason.
+function drawTowerPage(ctx) {
   heading(ctx, 'Tower', HALVES[0]);
-  heading(ctx, 'Unit', HALVES[1]);
 
   for (const { def, tiers, col, row } of shelf()) {
-    towerCard(ctx, cardRect(col, row, HALVES[0]), towerEntry(def, tiers));
-    unitCard(ctx, cardRect(col, row, HALVES[1]), unitEntry(def));
+    towerCard(ctx, shelfRect(col, row), towerEntry(def, tiers));
+  }
+}
+
+// Page 2: the man each of those towers puts on the board, IN THE SAME CELL as his
+// tower on page 1. That is the whole trick of splitting them: flipping the page
+// keeps your place, so the third card down the first column is a Crossbow Tower on
+// one page and the Elite Archer inside it on the next.
+function drawUnitPage(ctx) {
+  heading(ctx, 'Unit', HALVES[0]);
+
+  for (const { def, col, row } of shelf()) {
+    unitCard(ctx, shelfRect(col, row), unitEntry(def));
   }
 }
 

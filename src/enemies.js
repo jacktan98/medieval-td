@@ -221,6 +221,7 @@ export function updateEnemies(state, dt) {
       // landed the last blow, and absent on a melee kill.
       solo(e.killedBy === 'arrow' ? CUE.arrowKill
          : e.killedBy === 'rock' ? CUE.rockKill
+         : e.killedBy === 'bullet' ? CUE.musketKill
          : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and

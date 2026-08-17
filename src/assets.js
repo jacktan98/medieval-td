@@ -23,6 +23,11 @@ export const paths = {
   archery_t1:  'assets/towers/archery/Archery_Tower_T1.png',
   archery_t2:  'assets/towers/archery/Archery_Tower_T2.png',
   archery_t3:  'assets/towers/archery/Archery_Tower_T3.png',
+  // Tier 4, and the file is named for the tower rather than for the ladder: the
+  // artist uploaded it as Musketeer_Post and it was filed into the archery folder
+  // with the other three. The KEY stays tiered because the code reaches it through
+  // a tier — `archery[3].sprite` — which is the same split every unit file has.
+  archery_t4:  'assets/towers/archery/Musketeer_Post.png',
   barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
   barracks_t3: 'assets/towers/barracks/Barracks_Tower_T3.png',
@@ -71,6 +76,10 @@ export const paths = {
   archer_t2_attack:   'assets/units/Soldiers_Combat_Archer_Attack.png',
   archer_t3:          'assets/units/Soldiers_Elite_Archer_Default.png',
   archer_t3_attack:   'assets/units/Soldiers_Elite_Archer_Attack.png',
+  // Tier 4's man. Not `archer_t4`: he does not draw a bow, and the info box and
+  // the encyclopedia both print his name rather than his tier.
+  musketeer:          'assets/units/Musketeer_Default.png',
+  musketeer_attack:   'assets/units/Musketeer_Attack.png',
   soldier_t1:         'assets/units/Soldiers_Spearman_Default.png',
   soldier_t1_attack:  'assets/units/Soldiers_Spearman_Attack.png',
   soldier_t2:         'assets/units/Soldiers_Pikeman_Default.png',
@@ -95,6 +104,10 @@ export const paths = {
   crew_t2:     'assets/units/Artillery_Man_T2.png',
   crew_t3:     'assets/units/Artillery_Man_T3.png',
   arrow_t1:    'assets/projectiles/Archery_Arrows_T1.png',
+  // The musket ball. One drawing for the one tier that fires it, so the key
+  // carries no tier number — unlike the rocks and the missiles, which have three
+  // each.
+  bullet:      'assets/projectiles/Musketeer_Bullet.png',
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
@@ -183,6 +196,10 @@ export const paths = {
   // see — the rest are the fallback for a PNG that failed to decode.
   glyph_cross:     'assets/ui/Monastery_Icon.png',
   glyph_up:        'assets/ui/Upgrade_Icon.png',
+  // The Musketeer Post's own icon, on the upgrade button of a Crossbow Tower. The
+  // only tier in the game whose upgrade shows what it buys rather than an arrow —
+  // see the `glyph` field on archery tier 4 in data/towers.js.
+  glyph_musket:    'assets/ui/Musketeer_Post_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button
   // does, and the button is now the thing that can change without the drawing

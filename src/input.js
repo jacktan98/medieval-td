@@ -413,7 +413,7 @@ function run(state, item) {
     // so the reply has to arrive — a Category A channel busy with a swing or a
     // death cry used to swallow it, and that is precisely the moment an upgrade
     // is most likely to be bought. See solo() in audio.js.
-    solo(familyCue(t.fam.id), true);
+    solo(familyCue(t.fam.id, t.def), true);
   }
 
   if (item.act === 'refund') {
@@ -460,7 +460,7 @@ function run(state, item) {
     // is exactly what the share rules in audio.js are for: five takes, never the
     // same one twice running, so cycling through all three modes is three
     // different archers answering rather than one line stuttering.
-    solo(familyCue(t.fam.id), true);
+    solo(familyCue(t.fam.id, t.def), true);
     return;
   }
 

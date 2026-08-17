@@ -128,7 +128,12 @@ function towerItems(t) {
     {
       angle: E,
       act: 'upgrade',
-      glyph: next ? 'up' : 'max',
+      // A TIER MAY BRING ITS OWN PICTURE, which is what `glyph` on a def is for.
+      // Every rung of every ladder uses the generic arrow, because "one better
+      // than what you have" is what the button means — except the Musketeer Post,
+      // which is a named tower rather than a rung and has an icon of its own. The
+      // fallback keeps that a one-word opt-in per tier.
+      glyph: next ? (next.glyph || 'up') : 'max',
       label: next ? 'Upgrade' : 'Max',
       cost: next ? next.cost : null,
       tier: next ? next.tier : null,
