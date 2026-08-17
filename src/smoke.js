@@ -1,5 +1,6 @@
 // The puff of dust a plot throws up when something is built, upgraded or taken
-// down. Two seconds over the top of the building: one holding, one thinning out.
+// down. A second and a half over the top of the building: half of it holding
+// solid, then a full second thinning out.
 //
 // WHAT IT IS FOR, and it is not decoration. All three of those actions used to
 // happen between one frame and the next: a tent appears, or becomes a hut, or
@@ -28,12 +29,12 @@
 // cloud that vanished between two frames would need the same excuse the instant
 // tower swap needed, which is the thing this was added to cover.
 //
-// A second of each is long enough that the dust is an event you watch rather
-// than a flicker you half-catch. It costs the plot's first shot or two: the
-// building is behind solid dust for longer than any tower's cooldown now, so a
-// tower bought in front of a live wave will fire its opening arrows out of the
-// cloud. That is the trade the length buys, and it is the artist's call.
-export const SMOKE_HOLD = 1;
+// Half a second of cover and a full second of leaving. The short hold is
+// deliberate: it is about as long as the fastest tower's reload, so a tower
+// bought in front of a live wave is not firing blind out of solid dust — and
+// the long fade carries the moment past it, since a cloud that has started to
+// thin is something to watch through rather than something in the way.
+export const SMOKE_HOLD = 0.5;
 export const SMOKE_FADE = 1;
 export const SMOKE_LIFE = SMOKE_HOLD + SMOKE_FADE;
 
