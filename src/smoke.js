@@ -1,5 +1,5 @@
 // The puff of dust a plot throws up when something is built, upgraded or taken
-// down. A second and a half over the top of the building, thinning the whole way.
+// down. A second over the top of the building, thinning the whole way.
 //
 // WHAT IT IS FOR, and it is not decoration. All three of those actions used to
 // happen between one frame and the next: a tent appears, or becomes a hut, or
@@ -28,9 +28,9 @@
 // covers has already happened by the time the second frame is drawn. Fading from
 // full does that job on frame one and then gets progressively out of the way.
 //
-// A second and a half is long enough to read as an event and short enough that a
-// player buying six towers during a rest is never waiting for the board to clear.
-export const SMOKE_LIFE = 1.5;
+// A second is long enough to read as an event and short enough that a player
+// buying six towers during a rest is never waiting for the board to clear.
+export const SMOKE_LIFE = 1;
 
 // Measured by `node tools/trim.mjs`, on the 1024 canvas the buildings use.
 export const SMOKE_TRIM = [242, 254, 540, 516];
