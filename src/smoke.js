@@ -1,6 +1,5 @@
 // The puff of dust a plot throws up when something is built, upgraded or taken
-// down. A second and a half over the top of the building: half of it holding
-// solid, then a full second thinning out.
+// down. A second and a half over the top of the building, thinning the whole way.
 //
 // WHAT IT IS FOR, and it is not decoration. All three of those actions used to
 // happen between one frame and the next: a tent appears, or becomes a hut, or
@@ -20,23 +19,18 @@
 // the BUILDING it covers and centred on it. One list with a `kind` on each entry
 // would be three sets of rules behind one name.
 
-// How long it hangs about, in seconds, in two parts. The artist's numbers.
+// How long it hangs about, in seconds. The artist's number.
 //
-// TWO PARTS RATHER THAN ONE because they do different jobs. The HOLD is the
-// cover: for its whole length the cloud is solid and the plot underneath is
-// simply not visible, which is what lets a tent become a hut without the two
-// ever sharing a frame. The FADE is the exit, and it is long on purpose — a
-// cloud that vanished between two frames would need the same excuse the instant
-// tower swap needed, which is the thing this was added to cover.
+// ONE NUMBER, and no hold in front of it: the cloud starts solid and is thinning
+// from the first frame, all the way out. It went through a version with a
+// separate hold and fade, and the hold was the wrong tool — it bought opacity at
+// the moment the tower underneath was least worth hiding, since the swap it
+// covers has already happened by the time the second frame is drawn. Fading from
+// full does that job on frame one and then gets progressively out of the way.
 //
-// Half a second of cover and a full second of leaving. The short hold is
-// deliberate: it is about as long as the fastest tower's reload, so a tower
-// bought in front of a live wave is not firing blind out of solid dust — and
-// the long fade carries the moment past it, since a cloud that has started to
-// thin is something to watch through rather than something in the way.
-export const SMOKE_HOLD = 0.5;
-export const SMOKE_FADE = 1;
-export const SMOKE_LIFE = SMOKE_HOLD + SMOKE_FADE;
+// A second and a half is long enough to read as an event and short enough that a
+// player buying six towers during a rest is never waiting for the board to clear.
+export const SMOKE_LIFE = 1.5;
 
 // Measured by `node tools/trim.mjs`, on the 1024 canvas the buildings use.
 export const SMOKE_TRIM = [242, 254, 540, 516];
