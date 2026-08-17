@@ -40,9 +40,23 @@
 // replaced measures 15. Nothing was wrong with either the sweep or the paste —
 // the sweep answered the question it was asked.
 //
-// SO: re-check a row over twenty seeds before it replaces a scenario, and keep
-// whichever build actually wins more. The pure-build check at the bottom of this
-// file already runs twenty for exactly this reason; the table above does not.
+// MAP 3 SHOWED IT WORSE, and the numbers are worth carrying because they are not
+// noise around a true ranking, they are very nearly its reverse:
+//
+//   swept 5A+6B   seed 1: won with 16 lives   ->   2 wins in 20
+//   swept 7A+4B   seed 1: won with  3 lives   ->   1 win  in 20
+//   swept 6A+5B   seed 1: won with  7 lives   ->   8 wins in 20   <- the real best
+//
+// The build the table crowned is third of three, and the one worth keeping was
+// ranked in the middle. On a map with two roads and six ways in, one battle is a
+// very small sample of a build.
+//
+// SO: re-check every row over twenty seeds before it replaces a scenario, and
+// keep whichever build actually wins more. Reading the table as a shortlist of
+// candidates is what it is good for.
+//
+// The pure-build check at the bottom of this file already runs twenty for exactly
+// this reason; the table above does not.
 //
 // What it is for is the invariant: the best all-archery build must LOSE, the
 // best all-barracks build must LOSE, and the best mix must WIN. If the top line

@@ -367,11 +367,16 @@ m2: {
 // one more blocker to a map won by blocking and it gets easier faster than it
 // gets anything else.
 //
-// Taking a tenth off the barracks men's health puts it back to 4 in 20, and that
-// figure is the SWEPT one: the best of all 2048 builds, re-run over twenty seeds
-// with thirteen times the clock. It is not fixed, it is much less broken — and
-// map 1 and map 2 both went to a clean 0 in 20 in the same change, so this map
-// is now the only one where the rule does not hold.
+// It is 1 in 20 now, which is as close to fixed as this map has been: 11, then 4
+// once the barracks men lost a tenth of their health, then 1 after the artist's
+// balance pass gave the thug and the giant a harder swing. Maps 1 and 2 are both
+// a clean 0 in 20, so this is the only map where the rule does not quite hold,
+// and it is holding by a single seed rather than by design.
+//
+// WHAT THE SAME PASS DID TO THE MAP AS A WHOLE is the more interesting number:
+// 40 builds of 2048 clear it, against 198 before. Two roads, ten waves, and a
+// giant that kills a tier 1 squad outright is a hard combination — the best mixed
+// build there is wins 8 times in 20.
 //
 // It is left standing rather than tuned away, because the same message that
 // asked for the eleventh marker asked for the waves and the difficulty to be
@@ -389,27 +394,27 @@ m3: {
   // then 6+4, and it is 8+3 now that there are eleven plots to spread over. What
   // beats a wall of blockers is enemies arriving faster than the wall can
   // re-engage, and three squads across TWO ROADS is a squad and a half each.
-  'BEST 7 archery + 4 (expect LOSS)': [A(0), A(1), B(2), A(3), A(4), B(5), B(6), B(7), A(8), A(9), A(10)],
-  'MIX 6 archery + 5 barracks':     [A(0), A(1), B(2), A(3), B(4), B(5), A(6), B(7), A(8), B(9), A(10)],
+  'BEST 8 archery + 3 (expect LOSS)': [A(0), A(1), B(2), A(3), A(4), A(5), A(6), B(7), B(8), A(9), A(10)],
+  'MIX 6 archery + 5 barracks':     [A(0), A(1), A(2), A(3), A(4), B(5), A(6), B(7), B(8), B(9), B(10)],
   'MIX 4 archery + 7 barracks':     [B(0), A(1), A(2), B(3), B(4), A(5), A(6), B(7), B(8), B(9), B(10)],
-  'MIX 2 archery + 9 barracks':     [B(0), B(1), B(2), B(3), A(4), B(5), B(6), A(7), B(8), B(9), B(10)],
+  'MIX 3 archery + 8 barracks':     [B(0), A(1), B(2), A(3), A(4), B(5), B(6), B(7), B(8), B(9), B(10)],
   // Artillery held to the same two rules as everywhere else, and compared the
   // same way map 1 compares it: take the winning archery mix and SWAP THE BOWS
   // FOR MACHINES, keeping every blocker where it was. That measures a catapult
   // against the tower it competes with for a plot, rather than measuring what
   // losing a blocker costs — which is already known and is fatal for anyone.
   'ALL siege x11   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9), S(10)],
-  'MIX 4 siege + 7 barracks':       [B(0), S(1), S(2), B(3), B(4), S(5), S(6), B(7), B(8), B(9), B(10)],
-  // THE MONASTERY, swapping TWO of the five bows rather than one, because at
-  // eleven towers one of anything is inside the noise.
+  'MIX 4 archery + 5 barracks + 2 siege': [S(0), A(1), A(2), A(3), S(4), B(5), A(6), B(7), B(8), B(9), B(10)],
+  // TWO OF THE SIX BOWS SWAPPED, because at eleven towers one of anything is
+  // inside the noise — and the two rows below are the same swap for the two
+  // families, which is what makes them worth reading together.
   //
-  // This is the map where it matters least — 11/20 against 10/20 without it —
-  // and the reason is the shape of the map rather than the shape of the family:
-  // two roads and ten waves means the thing that beats you is volume, and volume
-  // is exactly what a tower that fires once every 4.5 seconds is worst against.
-  // It is worth its plot here. It is worth much more on map 2.
+  // BOTH GO TO 0 IN 20 from the mix's 8, and that is the map rather than either
+  // family: this build wins by covering two roads with bows and holding both with
+  // blockers, and it has no slack anywhere. Trading reach for anything at all
+  // breaks it. Compare map 2, where the same swap costs nothing.
   'ALL monastery x11 (expect LOSS)': [M(0), M(1), M(2), M(3), M(4), M(5), M(6), M(7), M(8), M(9), M(10)],
-  'MIX 2 archery + 7 barracks + 2 monastery': [B(0), M(1), A(2), B(3), B(4), A(5), M(6), B(7), B(8), B(9), B(10)],
+  'MIX 4 archery + 5 barracks + 2 monastery': [M(0), A(1), A(2), A(3), M(4), B(5), A(6), B(7), B(8), B(9), B(10)],
   'under-built     (expect LOSS)':  [A(0, 0)]
 }
 };
