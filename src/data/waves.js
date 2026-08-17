@@ -259,14 +259,14 @@ export const enemyTypes = {
   //
   // A plague doctor with a basket of flasks on his back. He follows the road
   // like everyone else until one of your soldiers comes within throwing range,
-  // then he STOPS and lobs flasks at him from further than a soldier will ever
-  // walk to meet him — ENGAGE is 30 and ASSIST is 70, and he stands off at 130.
-  // A barracks cannot block what will not come to it, so the counter is to shoot
-  // him: he is the reason archery towers can now be told what to aim at.
+  // then he STOPS and lobs flasks at him from outside anything a squad reaches by
+  // standing still — ENGAGE is 30 and ASSIST is 70, and he stands off at 130. The
+  // counter is to shoot him: he is the reason archery towers can be told what to
+  // aim at, and the monastery has the same button now.
   //
-  // THE BASKET IS BOTTOMLESS AND HIS PATIENCE IS NOT, and that split is the
-  // whole design. He has been through three shapes to get here and the first two
-  // are worth knowing about, because both looked right on paper:
+  // NOTHING ABOUT HIM IS RATIONED, and that is the current shape. The basket
+  // never empties, he throws walking, standing and pinned, and he does not
+  // advance for as long as there are men in front of him. It took four goes:
   //
   //   A FINITE BASKET. Five flasks and then he walks in. Simple, and it made his
   //   hp an eleven-win cliff — not because he was hard to kill but because every
@@ -277,16 +277,21 @@ export const enemyTypes = {
   //   spent his whole character on a rule whose real job was to stop him being
   //   a soft-lock.
   //
-  // Then he simply walked and threw as he came, which could not stall and was
-  // not this enemy: a thrower who closes to melee is a thug with a longer reach,
-  // and the man he is supposed to be dangerous to walked out and pinned him.
+  //   A PATIENCE. Fourteen seconds of standing still, spent once, and then he
+  //   walked into the line whatever was in it. It worked, and it read as a man
+  //   losing his nerve on a timer — the one thing he does that the player can see
+  //   was governed by a number nobody could see.
   //
-  // He stands off again now, and what is bounded is the RIGHT thing. Both of the
-  // designs above bounded the flasks; the game does not care about flasks, it
-  // cares that a wave ends when the field is clear. So the flasks are unlimited,
-  // he throws walking and pinned as well as standing, and the one thing he is
-  // rationed on is TIME NOT ADVANCING — `standoff` below, spent once. When it is
-  // gone he walks into the fight and goes on throwing from inside it.
+  // In between those he simply walked and threw as he came, which could not stall
+  // and was not this enemy: a thrower who closes to melee is a thug with a longer
+  // reach, and the man he is supposed to be dangerous to walked out and pinned
+  // him.
+  //
+  // NOW THE BOUND IS THE OTHER ARMY, which is where it belonged. A soldier with
+  // nothing else to do walks out to a thrower who will not come to him — one man,
+  // the rest hold the line, see the closing pass in units.js — and being pinned is
+  // a fight the doctor loses, because enemies do not heal. So a wave still always
+  // ends, and what ends the standoff is something you can watch happen.
   //
   // AND HE THROWS WHILE HE IS BEING HELD. Pinning him with a soldier stops him
   // moving and starts a melee he is bad at, but it does not switch the basket
@@ -395,29 +400,30 @@ export const enemyTypes = {
       // cover the road can always answer.
       range: 130,
       cd: 2.2,
-      // HOW LONG HE WILL STAND THERE, in seconds, once in his life. At a 2.2s
-      // cooldown this is six flasks thrown from outside anything a barracks can
-      // reach, which is enough for the standoff to be the thing you remember
-      // about him rather than a moment before the real fight.
+      // NO `standoff` ANY MORE, and its absence is a design decision rather than
+      // a tidy-up. It was a patience: 14 seconds of not advancing, spent once,
+      // after which he walked into the line whatever was standing in it. The
+      // basket was unlimited and the TIME was rationed, because a wave ends when
+      // the field is clear and an enemy who will not advance can hang a game.
       //
-      // It is a BUDGET rather than a rule, and src/enemies.js has the long
-      // version of why: a wave ends when the field is clear, so an enemy with no
-      // bound on standing still is a game that can hang. Everything else about
-      // him is unbounded — the basket never empties and he throws while walking
-      // and while pinned — and this one number is what makes that safe.
+      // Now nothing about him is rationed. He stands off for as long as there are
+      // men in front of him, and what ends it is the other army: a soldier with
+      // nothing better to do walks out to a thrower who will not come to him, and
+      // once he is pinned he is in a fight he loses, because enemies do not heal.
+      // The bound moved from a number he carries to a rule about the two sides —
+      // src/enemies.js has the argument in full, and src/units.js has the pass.
       //
-      // THE LENGTH IS FREE, WHICH IS NOT WHAT WAS EXPECTED. Pure barracks on
-      // map 3 over twenty seeds: 7/20 at a 6-second standoff, 10/20 at 10,
-      // 8/20 at 14. That is flat inside the noise, and map 2 says the same
-      // (6/20, 8/20, 8/20). What costs the defence-breaking is standing off AT
-      // ALL — an enemy 130px short of the line is one not standing in a
-      // blocker's face while the militia arrive — and how long he does it for
-      // barely registers on top of that. See the grid over wavesLong.
+      // WHAT THIS COSTS THE PLAYER is the standoff being answerable by the family
+      // it was written to punish, which is the point of the change: pinning him
+      // is now something you do rather than something you wait for. It still
+      // costs a man off the road for as long as the walk takes, and he still
+      // throws the whole way there and from inside the melee afterwards.
       //
-      // So this is chosen for how it reads rather than for what it measures:
-      // six flasks is enough to be the thing you remember about him, and short
-      // enough that a wave is not visibly waiting for one man.
-      standoff: 14
+      // THE OLD LENGTH MEASURED AS NOTHING, which is worth keeping in view before
+      // anyone reintroduces a timer. Pure barracks on map 3 over twenty seeds:
+      // 7/20 at a 6-second standoff, 10/20 at 10, 8/20 at 14 — flat inside the
+      // noise, and map 2 said the same (6, 8, 8). What costs the defence-breaking
+      // is standing off AT ALL, not how long for.
     }
   }
 };
@@ -703,11 +709,16 @@ export const wavesFork = [
 //
 // The doctor's standoff doubles it, and the reason is not his poison. An enemy
 // that stops 130px short is an enemy NOT standing in a blocker's face during the
-// crunch, and the wave behind him ends up to 14 seconds more strung out — which
-// is arrival rate, this map's one real lever, being handed back. Note what the
-// grid says about the alternatives: poison does nothing to a wall (16hp/s into a
-// squad regenerating 12 is not the difference between winning and losing), and a
-// shorter standoff barely helps, because the cost is in standing off at all.
+// crunch, and the wave behind him arrives more strung out — which is arrival rate,
+// this map's one real lever, being handed back. Note what the grid says about the
+// alternatives: poison does nothing to a wall (16hp/s into a squad regenerating 12
+// is not the difference between winning and losing), and a shorter standoff barely
+// helps, because the cost is in standing off at all.
+//
+// The rows above were measured when the standoff was a 14-second budget. It is
+// now open-ended and ended by a soldier walking out to him instead, which cuts the
+// stall to about the length of that walk — so the "standing off at all" cost is
+// still there and the strung-out wave behind it is smaller than these rows say.
 //
 // WHAT WOULD FIX IT is more of the same lever — gaps x0.80 on top of the 0.65
 // already there takes it to 2/20 and map 2 to 1/20 — and that is a real

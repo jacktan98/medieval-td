@@ -40,13 +40,9 @@ export function spawn(state, typeId) {
     tcd: 0,          // seconds until the next flask
     // Standing off to throw rather than walking on: true only while it is
     // happening, and read by leadPoint, which has to know that this figure is
-    // not going anywhere.
-    halted: false,
-    // How much longer he is WILLING to stand off, in seconds, counted down only
-    // while he actually is. Set from the def so a non-thrower carries a 0 and
-    // can never halt — see the standoff block in updateEnemies for why the
-    // budget exists at all.
-    stand: (def.ranged && def.ranged.standoff) || 0
+    // not going anywhere. There is no budget beside it any more — see the
+    // standoff block in updateEnemies.
+    halted: false
   });
 }
 
@@ -143,30 +139,38 @@ export function updateEnemies(state, dt) {
     //   This is the same rule nearestUnit uses to pick a mark, and it has to be,
     //   or he would stand off from men he cannot throw at.
     //
-    // THE BUDGET IS WHAT MAKES THIS SAFE, and without it this enemy cannot ship.
-    // A wave only ends when the field is clear (see updateWaves), so a figure
-    // that will not advance can hang a game up forever — and the soft-lock is
-    // not theoretical: soldiers respawn for nothing, so a doctor whose poison
-    // cannot out-pace two barracks' worth of regen would stand in the road until
-    // the player closed the tab. This enemy has had the halt taken off him twice
-    // before for exactly that, once as a finite basket and once as a rule about
-    // being screened by other enemies. Neither of those bounded the thing that
-    // actually needs bounding, which is TIME SPENT NOT ADVANCING.
+    // HE STANDS THERE AS LONG AS THEY DO, and there is no patience beside the
+    // rule any more. He used to carry a budget — `standoff` seconds of not
+    // advancing, spent once, and then he walked in whatever was in front of him —
+    // because a wave only ends when the field is clear (see updateWaves) and a
+    // figure that will not advance can hang a game up forever. The halt had
+    // already been taken off him twice for exactly that, once as a finite basket
+    // and once as a rule about being screened by other enemies.
     //
-    // So he has a patience rather than a rule: `standoff` seconds of standing
-    // still, spent once, counted only while he is actually stopped. When it runs
-    // out he walks in — and being walked into is what a barracks is for, so he
-    // gets pinned, and goes on throwing from inside the fight. Every enemy
-    // reaches the exit or dies in bounded time, which is the property the wave
-    // loop needs, and the standoff is still long enough to be his whole
-    // character: see `standoff` in data/waves.js for how long, and why.
+    // WHAT MAKES IT SAFE NOW IS THE OTHER ARMY, which is where the bound belonged
+    // all along. A soldier with nothing better to do WALKS OUT to a thrower who
+    // will not come to him — see the closing pass in units.js — so being stood
+    // off from is no longer something a squad has to put up with. That closes the
+    // loop the budget was papering over:
+    //
+    //   he halts only while a live soldier is in front of him inside his own
+    //   throwing range, and reach is symmetric, so any soldier who can be thrown
+    //   at can also walk to him;
+    //
+    //   the soldiers blocking other enemies are freed in bounded time, because
+    //   those enemies are advancing, dying or leaking;
+    //
+    //   so somebody reaches him, and once he is pinned he is in a fight he loses:
+    //   an enemy has no regeneration, so his health only ever goes down.
+    //
+    // Every thrower therefore dies or reaches the exit, which is the property the
+    // wave loop needs — and it is now a consequence of the two armies' rules
+    // rather than of a number he carries. tools/plague.mjs runs the case that
+    // would hang: three of him against men his poison cannot kill.
     const road = laneOf(level.routes[e.route], e.lane);
 
-    e.halted = e.stand > 0 && e.def.ranged && screened(state, e, road);
-    if (e.halted) {
-      e.stand -= dt;
-      continue;
-    }
+    e.halted = !!e.def.ranged && screened(state, e, road);
+    if (e.halted) continue;
 
     // One number forward along the road, then the position is looked up. The
     // old loop walked from waypoint to waypoint consuming the frame's movement,

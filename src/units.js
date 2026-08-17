@@ -2,7 +2,7 @@ import { level } from './level.js';
 import { at as pointOn, nearestOn } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
-import { clampToRange } from './ground.js';
+import { clampToRange, inRange } from './ground.js';
 import { solo, play, CUE, ATTACK } from './audio.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
@@ -211,19 +211,56 @@ export function updateUnits(state, dt) {
 
     if (u.foe && (u.foe.hp <= 0 || u.foe.leaked)) release(u);
 
-    // Three passes, in this order, and the order is the design.
+    // Four passes, in this order, and the order is the design.
     //
     // BLOCKING is still strictly one soldier per enemy — that is what the whole
     // family does, and three militiamen must stall exactly three enemies. What
     // changed is what a soldier does with the time left over. He used to stand
     // in his slot watching a squadmate fight and die two paces away, because the
     // only enemy nearby was already somebody's and he had no other instruction.
-    // Now he goes and helps.
+    // Now he goes and helps — and if there is nothing at all to help with, he
+    // goes and fetches the thrower standing off poisoning him.
+    //
+    // ASSISTING OUTRANKS CLOSING, and that was the other way round for one
+    // version. Fetching a doctor is the LAST thing a soldier does, after blocking
+    // and after helping, and the reason is what happens during a crunch: with it
+    // ahead of assisting, a doctor halting 130px short pulled the spare men out of
+    // the fight the wave was busy losing, and a squad that breaks formation while
+    // three militiamen are on it is a squad that dies. So he stays dangerous
+    // exactly while the line is busy — which is his whole character — and gets
+    // dealt with in the lull, which every wave has.
 
     // 1. Take over. His enemy has lost its blocker — the man holding it fell —
     //    so the assistant already standing there becomes the block. Without
     //    this the squad lets go of an enemy at the exact moment it is winning.
-    if (u.foe && !u.foe.foe) { u.foe.foe = u; u.holds = true; }
+    //
+    //    ONLY WHAT HE CAN REACH, which used to go without saying and does not any
+    //    more. Every soldier with a foe was within ASSIST of it, because the only
+    //    way to have one was to block it or to help with it — so "take over" was
+    //    always a man standing at the fight. The closing pass below breaks that:
+    //    it hands him a target 130px away, and without this radius he would hook
+    //    it on the very next frame and stand there "holding" an enemy he has not
+    //    reached, ignoring anything that walks past him on the way.
+    if (u.foe && !u.foe.foe && Math.hypot(u.foe.x - u.x, u.foe.y - u.y) <= ENGAGE) {
+      u.foe.foe = u;
+      u.holds = true;
+    }
+
+    // 1b. Give up on a thrower who has started walking again, and go back to the
+    //     post. The only place a soldier drops a target without a fight ending,
+    //     and it is what keeps the closing pass below from becoming a chase
+    //     across the map: a doctor un-halts the moment nobody is in front of him,
+    //     and a man 130px out with no orders would otherwise trail him the whole
+    //     length of the road at 62 against his 60 — permanently off the stretch
+    //     he was posted to hold, for an enemy now walking into the line anyway.
+    //
+    //     Three things have to be true together, and each rules out a case this
+    //     must not touch: he does not HOLD his target, so a block is never
+    //     dropped; nobody else holds it either, so he is not walking away from a
+    //     fight he was helping with; and it is not standing off any more, so the
+    //     reason he set out has actually gone. After pass 1 rather than before it,
+    //     or it would release the assistant that pass is about to promote.
+    if (u.foe && !u.holds && !u.foe.foe && !u.foe.halted) release(u);
 
     // 2. Block. Any soldier not currently holding someone — free OR merely
     //    assisting — grabs the nearest unheld enemy inside ENGAGE. Assisting
@@ -255,6 +292,48 @@ export function updateUnits(state, dt) {
       let bestD = ASSIST;
       for (const e of state.enemies) {
         if (!e.foe || e.hp <= 0) continue;
+        const d = Math.hypot(e.x - u.x, e.y - u.y);
+        if (d < bestD) { bestD = d; best = e; }
+      }
+      if (best) { u.foe = best; u.holds = false; }
+    }
+
+    // 4. Close on a thrower who will not come to him. A plague doctor stops out
+    //    at 130 and works on the line from there, which is further than any of
+    //    the numbers above: a squad used to have no answer to him at all, and he
+    //    only ever ended up in melee because he ran out of patience and walked
+    //    in. That patience is gone — he now stands there as long as men are in
+    //    front of him — so this pass is what makes "pin him" a thing a barracks
+    //    can actually do, and it is what keeps the board from stalling. See the
+    //    standoff block in enemies.js for the full argument.
+    //
+    //    THE REACH IS HIS, NOT OURS, and that symmetry is the whole rule: if he
+    //    is close enough to throw at this man, this man is close enough to walk
+    //    at him. Nothing else in the squad reaches this far, and nothing else
+    //    needs to — it applies only to an enemy who has STOPPED, so a soldier is
+    //    never lured up the road by something that was going to arrive anyway.
+    //
+    //    He does not hook the enemy here, the same as assisting: the grip is
+    //    taken by the block pass above once he is close enough, which is what
+    //    keeps "one blocker per enemy" true and lets him drop the walk the
+    //    instant a live enemy comes within ENGAGE of him.
+    //
+    //    ONE MAN PER THROWER, and that cap is what stops this being an exploit.
+    //    Without it a single doctor halting 130px short pulls a whole squad off
+    //    the road at once and the wave behind him strolls through the gap he
+    //    made — he would be bait rather than a target. One man goes, the rest
+    //    hold the line, which is also how it reads: you send somebody to deal
+    //    with him.
+    if (!u.foe) {
+      let best = null;
+      let bestD = Infinity;
+      for (const e of state.enemies) {
+        if (e.foe || e.hp <= 0 || !e.halted) continue;
+        if (!inRange(e.x, e.y, u.x, u.y, e.def.ranged.range)) continue;
+        // Somebody is already on his way. An assisting soldier cannot be
+        // confused for one: assisting only ever targets an enemy that HAS a
+        // blocker, and this enemy has none.
+        if (state.units.some(o => o !== u && o.foe === e && !o.holds)) continue;
         const d = Math.hypot(e.x - u.x, e.y - u.y);
         if (d < bestD) { bestD = d; best = e; }
       }

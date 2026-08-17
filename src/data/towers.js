@@ -626,8 +626,9 @@ const archer3 = {
 // roman numeral from the box.
 // WHAT A TOWER MAY BE TOLD TO SHOOT AT, in the order the button cycles them.
 //
-// Only archery carries `targeting` for now, and the flag is on the tier rather
-// than on the family so a future machine can opt in without this list moving.
+// Archery and the monastery carry `targeting`; the flag is on the tier rather
+// than on the family, which is what let the second family opt in without this
+// list moving or a line of it being written twice.
 // A catapult deliberately does not have it: its whole character is that it
 // commits a rock to a patch of ground a second before it lands, and a machine
 // that could be re-pointed at whatever you liked would be an archery tower with
@@ -1433,10 +1434,42 @@ const cardinal = {
 // dominates, and the player choosing between them on a plot is choosing between
 // those facts rather than between two numbers.
 //
-// `range` 160 / 175 / 190, the lowest in the game — under archery's 190 / 210 /
-// 230 at every tier, which is the table's fourth column. It was 175 / 195 / 215
-// and came down when the family became a damage tower: a weapon that hits this
-// hard should have to be placed where the road actually is.
+// `range` 150 / 165 / 180, the lowest in the game — under archery's 190 / 210 /
+// 230 at every tier, which is the table's fourth column. It was 175 / 195 / 215,
+// then 160 / 175 / 190, and it has come down twice for the same reason: a weapon
+// that hits this hard should have to be placed where the road actually is.
+//
+// WHAT THE SECOND TEN COST, measured as the share of the road a monastery on an
+// average plot can reach, at tier 1 / 2 / 3:
+//
+//   map 1   13.9 / 16.5 / 19.2  ->  12.4 / 14.9 / 17.4
+//   map 2   13.5 / 17.1 / 20.4  ->   9.9 / 14.8 / 18.0
+//   map 3   15.1 / 18.0 / 20.5  ->  12.8 / 16.2 / 18.9
+//
+// Map 2 loses the most, and that is a fact about the map rather than about the
+// number: its plots sit further back from the tarmac than either other map's, so
+// the tier 1 ring is the first thing to stop touching it.
+//
+// WHAT IT COST IN WINS, twenty seeds, the sim's two-monastery scenario against
+// the same map's best archery-and-barracks mix — 6/20 against 17 on map 1, 14/20
+// against 19 on map 2, 3/20 against 9 on map 3. Before the cut the monastery rows
+// read 9, 17 and 7. So it is a real nerf on all three maps and worth about three
+// wins each, and the family is still nowhere near unusable on the two maps that
+// suit it.
+//
+// Two things that grid does NOT include, both of which push the other way: the
+// sim never presses the targeting button, so it plays every monastery on "nearest
+// the exit" and none of what the standing order buys shows up here; and it never
+// moves a rally point either, so the plots it puts blockers on are not the plots a
+// player would.
+//
+// THE FLOOR IS 145, and it is not a matter of taste. The smallest range that
+// touches the road at all is 143 on map 1's plot 2 and 142 on its plot 5, so a
+// ladder starting under 145 would sell a tier 1 building that literally cannot
+// shoot from two of that map's nine plots. Plot 2 is already past that line —
+// it was at 160 too — and plot 5 joins it at 150 with about a percent of road in
+// reach, which is the same thing in practice. Both are still fine to upgrade
+// into. Do not take this ladder below 145 without moving those two markers.
 //
 // `speed` on the missile is 330, between the rock's 300 and the arrow's 360. It
 // was 130, which was chosen when this was a support weapon you watched crawl;
@@ -1465,19 +1498,30 @@ const cardinal = {
 // road, and no second road to cover. A family that is right on two maps and
 // wrong on the third is the shape artillery already has, in the other direction.
 //
-// NO `targeting`. An archery tower can be told what to shoot at because it kills
-// things and the player has an opinion about which thing; a monastery has a
-// stronger case for one than it used to — "most health" is exactly where a
-// 50-damage blow belongs, and it is the shot most likely to be wasted on a
-// militiaman otherwise. It is the first thing to try if the family reads as
-// wasteful, and the flag is per TIER, so it costs one word per row.
+// `targeting`, ON ALL THREE TIERS, which makes this the second family that can
+// be told what to shoot at.
+//
+// It is the family with the strongest case for it after archery, and the case is
+// the size of the blow rather than the reach: 50 damage into a militiaman with 80
+// health throws most of a 1.45s reload away, and "most health" is exactly where
+// that blow belongs. A bow wasting 10 on the same man has wasted a tenth as much.
+//
+// It also fits what the family has become. The button is a preference and never a
+// filter — see pickTarget — so a monastery told to shoot throwers first and
+// offered nothing but militia still shoots the militia, and a player who never
+// presses it gets the tower they had.
+//
+// Artillery still deliberately does not have it: its whole character is that it
+// commits a rock to a patch of ground a second before the rock lands, and a
+// machine that could be re-pointed at whatever you liked would be an archery
+// tower with a bigger number. Two of four families, not three.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 20, range: 160, cooldown: 1.82, colour: '#8C7A5C' },
+    cost: 80,  damage: 20, range: 150, cooldown: 1.82, colour: '#8C7A5C', targeting: true },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 110, damage: 30, range: 175, cooldown: 1.64, colour: '#7E6E52' },
+    cost: 110, damage: 30, range: 165, cooldown: 1.64, colour: '#7E6E52', targeting: true },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 160, damage: 50, range: 190, cooldown: 1.45, colour: '#9A948A' }
+    cost: 160, damage: 50, range: 180, cooldown: 1.45, colour: '#9A948A', targeting: true }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers
