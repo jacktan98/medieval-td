@@ -17,7 +17,7 @@ import { PAGES, shelf, cardRect, enemyCards, towerEntry, unitEntry, figureSlot,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
-import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
+import { SMOKE_TRIM, SMOKE_FADE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, keys, PIN_DOTS, PIN_CANCEL,
@@ -703,23 +703,24 @@ function pose(attack, attacking, img, trim, pivot) {
 // middle, because smoke rises from a place on the ground — see FOOT in smoke.js,
 // which is where the size and the anchor are both worked out. This only draws it.
 //
-// It fades over its whole life rather than holding and vanishing. A cloud that
-// disappeared between two frames would need the same excuse the instant tower
-// swap needed, which is the thing it was added to cover.
+// TWO PHASES, and the split is the whole design of the effect — see SMOKE_HOLD
+// and SMOKE_FADE in smoke.js. While there is more than a fade's worth of life
+// left the cloud is drawn solid, so the swap underneath happens behind something
+// opaque; after that it thins to nothing, so it leaves rather than blinking out.
 //
-// The alpha curve is deliberately not linear. `life / SMOKE_LIFE` squared keeps
-// the cloud near-solid for the first half and thins it fast at the end, so the
-// building underneath is properly hidden while the swap happens and then arrives
-// rather than being revealed through a haze the whole time.
+// The ramp is linear now that the hold exists. It used to be squared, which was
+// a way of faking a hold out of a single half-second decay — with a real one in
+// front of it, squaring only makes the tail disappear early and then linger as a
+// haze, which is the look the hold was there to avoid.
 function drawSmoke(ctx, p) {
   const img = art.build_smoke;
   if (!img) return;
 
-  const u = Math.max(0, Math.min(1, p.life / SMOKE_LIFE));
+  const u = Math.max(0, Math.min(1, p.life / SMOKE_FADE));
   const [sx, sy, sw, sh] = SMOKE_TRIM;
 
   ctx.save();
-  ctx.globalAlpha = u * u;
+  ctx.globalAlpha = u;
   ctx.drawImage(img, sx, sy, sw, sh, p.x - p.w / 2, p.y - p.h, p.w, p.h);
   ctx.restore();
 }

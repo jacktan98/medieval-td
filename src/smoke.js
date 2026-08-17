@@ -1,5 +1,5 @@
 // The puff of dust a plot throws up when something is built, upgraded or taken
-// down. Half a second, over the top of the building, and then gone.
+// down. Two seconds over the top of the building: one holding, one thinning out.
 //
 // WHAT IT IS FOR, and it is not decoration. All three of those actions used to
 // happen between one frame and the next: a tent appears, or becomes a hut, or
@@ -19,13 +19,23 @@
 // the BUILDING it covers and centred on it. One list with a `kind` on each entry
 // would be three sets of rules behind one name.
 
-// How long it hangs about, in seconds. The artist's number.
+// How long it hangs about, in seconds, in two parts. The artist's numbers.
 //
-// Long enough to read as an event and short enough that a player buying six
-// towers in a rest is never waiting for the board to clear. It is also under the
-// shortest tower cooldown in the game, so a tower that is built and immediately
-// has something to shoot at is not seen firing through its own dust for long.
-export const SMOKE_LIFE = 0.5;
+// TWO PARTS RATHER THAN ONE because they do different jobs. The HOLD is the
+// cover: for its whole length the cloud is solid and the plot underneath is
+// simply not visible, which is what lets a tent become a hut without the two
+// ever sharing a frame. The FADE is the exit, and it is long on purpose — a
+// cloud that vanished between two frames would need the same excuse the instant
+// tower swap needed, which is the thing this was added to cover.
+//
+// A second of each is long enough that the dust is an event you watch rather
+// than a flicker you half-catch. It costs the plot's first shot or two: the
+// building is behind solid dust for longer than any tower's cooldown now, so a
+// tower bought in front of a live wave will fire its opening arrows out of the
+// cloud. That is the trade the length buys, and it is the artist's call.
+export const SMOKE_HOLD = 1;
+export const SMOKE_FADE = 1;
+export const SMOKE_LIFE = SMOKE_HOLD + SMOKE_FADE;
 
 // Measured by `node tools/trim.mjs`, on the 1024 canvas the buildings use.
 export const SMOKE_TRIM = [242, 254, 540, 516];
