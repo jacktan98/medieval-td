@@ -13,7 +13,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, towerEntry, unitEntry, figureSlot,
-         SHEET, FOLD, PAGE_X, popScale, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
+         SHEET, FOLD, PAGE_X, POP, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
@@ -197,7 +197,13 @@ function drawFigures(ctx, state) {
   // A building is anchored by its ground shadow, whose centre sits on the plot
   // point — so the plot point IS the building's ground line, the same way a
   // figure's feet are its own.
-  for (const t of state.towers) add(t.y, 1, () => drawTower(ctx, t));
+  // A tower draws the figures it is standing in front of straight back over
+  // itself, at half alpha — see ghostBehind. It happens HERE, inside the pass and
+  // immediately after the building, rather than afterwards: anything nearer the
+  // camera than this tower is drawn later and covers the ghost, which is what
+  // stops a man walking in front of a barracks from having a thug show through
+  // him.
+  for (const t of state.towers) add(t.y, 1, () => { drawTower(ctx, t); ghostBehind(ctx, state, t); });
   // Bodies are flat on the ground, so at equal depth they go under a figure
   // standing at the same spot rather than over its feet.
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
@@ -940,6 +946,81 @@ function drawSoldier(ctx, u) {
   ctx.translate(u.x + dir * u.thrust * s.lunge, u.y);
   ctx.scale(mirror(s, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
+  ctx.restore();
+}
+
+// --- seeing through a tower ---------------------------------------------------
+
+// How much of a hidden figure shows through the building in front of it.
+//
+// 0.5, and the arithmetic is why it is done this way round. What is wanted is the
+// TOWER at half alpha over the figure; what is drawn is the FIGURE at half alpha
+// over the tower, and the two composite to the same thing — 0.5 x figure plus
+// 0.5 x tower either way. Drawing the figure again is enormously simpler: it
+// needs no second pass over the building, no inverse clip, and above all no hard
+// rectangular edge where the tower's transparency changes. A ghost is shaped like
+// the man it is a ghost of.
+//
+// EXPERIMENTAL, at the artist's request. The towers get taller up every ladder
+// and a tier 3 or 4 standing between the camera and the road hides the fight
+// going on behind it. If half turns out to be too much or too little, this is the
+// number; if the whole idea reads badly, the two call sites are this function and
+// the one line that runs it in drawFigures.
+const GHOST = 0.5;
+
+// The rectangle a figure's art covers. Symmetric about the point it stands on, so
+// it is the same box whichever way the sprite happens to be mirrored, and drawn
+// from the RESTING trim — a lunge moves a man a few pixels and this is a test for
+// "is any of him behind that building", not a hitbox.
+function figureSpan(def, x, y) {
+  const t = def.spriteTrim;
+  // The fallback disc, for a def wired up before its art has landed — the same
+  // case drawEnemy and drawSoldier both answer with a coloured circle.
+  if (!t || !def.pivot) return { left: x - def.r, top: y - def.r, right: x + def.r, bottom: y };
+  const dw = t[2] * SCALE;
+  const dh = t[3] * SCALE;
+  const out = Math.max(def.pivot[0], 1 - def.pivot[0]) * dw;
+  return { left: x - out, right: x + out,
+           top: y - def.pivot[1] * dh, bottom: y + (1 - def.pivot[1]) * dh };
+}
+
+const spanHits = (s, box) =>
+  s.right > box.left && s.left < box.left + box.w &&
+  s.bottom > box.top && s.top < box.top + box.h;
+
+// Redraw, at GHOST alpha and clipped to this building, every figure the building
+// is standing in front of.
+//
+// BEHIND is `y < t.y` and nothing else, because that is exactly the test the depth
+// sort just used: a figure at the same depth as a tower is drawn after it, so it
+// is already in front and has nothing to show through. The clip is the tower's own
+// box, so the ghost cannot appear anywhere the building is not — and inside the
+// box, where the building's art is transparent, redrawing a figure at half alpha
+// on top of itself changes nothing.
+//
+// Two towers overlapping and hiding the same man will each ghost him, so the
+// sliver where their boxes cross ends up 0.75 figure rather than 0.5. Two plots
+// close enough for that is rare and the difference is a shade.
+function ghostBehind(ctx, state, t) {
+  const box = towerBox(t);
+  const hidden = [];
+
+  for (const e of state.enemies) {
+    if (e.y < t.y && spanHits(figureSpan(e.def, e.x, e.y), box)) hidden.push(() => drawEnemy(ctx, e));
+  }
+  for (const u of state.units) {
+    if (u.respawn <= 0 && u.y < t.y && spanHits(figureSpan(u.def, u.x, u.y), box)) {
+      hidden.push(() => drawSoldier(ctx, u));
+    }
+  }
+  if (!hidden.length) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(box.left, box.top, box.w, box.h);
+  ctx.clip();
+  ctx.globalAlpha = GHOST;
+  for (const run of hidden) run();
   ctx.restore();
 }
 
@@ -2207,15 +2288,23 @@ function drawBook(ctx, state) {
 const POP_PAD = 22;
 const POP_TITLE = 30;
 
+// Clear air between the name and the picture, asked for by the artist. The title
+// band is only as deep as its own line, so without this the drawing starts on the
+// text's descenders and the two read as one block.
+const POP_GAP = 14;
+
 function drawZoom(ctx, z) {
   const [sx, sy, sw, sh] = z.trim;
-  const k = popScale(z.trim);
-  const w = sw * k;
-  const h = sh * k;
+  // The SLOT is the same for every drawing of this kind — see POP in book.js —
+  // and the drawing is placed inside it rather than the plate being fitted to the
+  // drawing. That is what keeps every tower's box the same size as every other's.
+  const slot = POP[z.kind] || POP.figure;
+  const w = sw * slot.k;
+  const h = sh * slot.k;
 
   // Wide enough for the longest title over the narrowest drawing in the game.
-  const pw = Math.max(w + POP_PAD * 2, 240);
-  const ph = POP_PAD * 2 + POP_TITLE + h;
+  const pw = Math.max(slot.w + POP_PAD * 2, 240);
+  const ph = POP_PAD * 2 + POP_TITLE + POP_GAP + slot.h;
   const px = 480 - pw / 2;
   const py = 270 - ph / 2;
 
@@ -2236,8 +2325,11 @@ function drawZoom(ctx, z) {
   ctx.font = '700 18px system-ui, sans-serif';
   ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
 
+  // Centred in the slot both ways, so a short wide tent and a tall thin turret sit
+  // in the middle of the same frame instead of one of them hugging an edge.
   const img = z.sprite && art[z.sprite];
-  if (img) ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, py + POP_PAD + POP_TITLE, w, h);
+  const top = py + POP_PAD + POP_TITLE + POP_GAP + (slot.h - h) / 2;
+  if (img) ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, top, w, h);
 }
 
 // Page 1: every tower in the game, one family per column across the spread.

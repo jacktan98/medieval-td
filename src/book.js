@@ -452,7 +452,7 @@ function artAt(state, x, y) {
   if (state.book === 2) {
     for (const c of enemyCards()) {
       if (within(cell(c), x, y)) {
-        return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name };
+        return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name, kind: 'figure' };
       }
     }
     return null;
@@ -461,40 +461,67 @@ function artAt(state, x, y) {
   for (const { def, tiers, col, row } of shelf()) {
     if (!within(cell(shelfRect(col, row)), x, y)) continue;
     const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
-    return { sprite: e.sprite, trim: e.trim, title: e.title };
+    return { sprite: e.sprite, trim: e.trim, title: e.title,
+             kind: state.book === 0 ? 'tower' : 'figure' };
   }
   return null;
 }
 
-// The box the drawing gets, inside the pop-up's own plate. 400 deep leaves the
-// plate 22px clear of the top and bottom of the board once the title band, the
-// hint line and the padding are added — the same air the sheet keeps.
+// The most room a pop-up may take on the board, which is a CEILING rather than a
+// size — see POP. 400 deep leaves the plate 22px clear of the top and bottom of
+// the board once the title band, the gap and the padding are added, which is the
+// same air the sheet keeps.
 const POP_BOX = { w: 720, h: 400 };
 
-// HOW BIG A TAPPED DRAWING IS SHOWN. ONE SOURCE PIXEL PER GAME PIXEL, or as much
-// less as it takes to fit the box.
+// ONE PLATE PER KIND, AND ONE FACTOR INSIDE IT.
 //
-// That first term is what "full resolution" means here, and it is worth being
-// exact about because the number the rest of the codebase uses is a different
-// one. Everywhere else a sprite is held to drawn x 3 <= source, so it stays crisp
-// on the densest display this game targets; the book's own thumbnails sit at
-// 1.44x board scale against a 1.625x ceiling for exactly that reason.
+// A pop-up used to be sized to the picture it held, so every tower opened a
+// different plate — a tall monastery got a tall one, a wide tent a wide one, and
+// tapping down a column of cards made the box jump about. It is a reference page:
+// the frame should be the constant and the drawing the variable.
 //
-// A viewer opened BY TAPPING A PICTURE is the one place that rule is the wrong
-// one. At the ceiling a musketeer would be shown 51px wide against the 45px
-// thumbnail he was tapped on — a pop-up that answers "look closer" with 13% more
-// picture, which is worse than not having it. At 1:1 he is 152px, three and a
-// half times the thumbnail, and the cost is that a phone at 3x device pixels
-// draws him at 3x rather than 1x. Flat art with heavy outlines carries that; a
-// picture too small to read carries nothing.
+// So each KIND gets one plate, big enough for the largest drawing in it, and every
+// member of the kind is drawn at the SAME factor inside it. That second half is
+// the part worth stating, because fitting each drawing to the plate on its own
+// would show a Militia Camp and a Watchtower at the same size, which is a lie
+// about the two buildings a player is choosing between — the same reason
+// BOOK_TOWER_SCALE is one number for the whole shelf.
 //
-// It is never an UPSCALE of the file: the drawing is shown at the size the artist
-// exported it, and every pixel on the screen is one they drew. The tall buildings
-// come out at the box instead — a 694px monastery lands 400 — so the deepest art
-// in the game is the art that fills the plate, which is the right way round.
-export function popScale(trim) {
-  return Math.min(1, POP_BOX.w / trim[2], POP_BOX.h / trim[3]);
+// Two kinds, because a building and a man are not the same question. Towers run to
+// 664x744 source and figures to 179x180, and one plate covering both would open a
+// 286x320 frame around a 25px archer.
+//
+// TOWERS TAKE 0.8 OF WHAT THEY FIT, at the artist's request. Nothing else does:
+// the figures are shown at 1:1 and the shrink is a per-kind number rather than a
+// global one for exactly that reason.
+//
+// The factor is capped at 1 before the shrink, so a drawing is never blown up past
+// the size the artist exported it — every pixel on the screen is one they drew.
+// That is what "full resolution" means here, and it is deliberately NOT the rule
+// the rest of the codebase uses: everywhere else a sprite is held to
+// drawn x 3 <= source so it stays crisp on the densest display, and at that
+// ceiling a musketeer would open at 51px against the 45px thumbnail he was tapped
+// on. A viewer that answers "look closer" with 13% more picture is worse than no
+// viewer. The cost is that a phone at 3x device pixels draws these at 3x; flat art
+// with heavy outlines carries it.
+const POP_SHRINK = { tower: 0.8, figure: 1 };
+
+function popGroup(trims, shrink) {
+  const w = Math.max(...trims.map(t => t[2]));
+  const h = Math.max(...trims.map(t => t[3]));
+  const k = Math.min(1, POP_BOX.w / w, POP_BOX.h / h) * shrink;
+  return { k, w: w * k, h: h * k };
 }
+
+export const POP = {
+  tower: popGroup(TIERS.map(d => d.spriteTrim), POP_SHRINK.tower),
+  // The men and the enemies together. They are the same kind of drawing at the
+  // same scale, and the enemies page is as much a card of figures as the units
+  // page is — a thug opening a different-sized plate from a spearman would read as
+  // two different kinds of thing.
+  figure: popGroup([...TIERS.map(d => occupant(d).trim),
+                    ...Object.values(enemyTypes).map(d => d.spriteTrim)], POP_SHRINK.figure)
+};
 
 // --- what a card says --------------------------------------------------------
 

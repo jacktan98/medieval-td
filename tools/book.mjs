@@ -37,7 +37,7 @@ import {
   SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-  BOOK_BTN_START
+  BOOK_BTN_START, POP
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
@@ -376,6 +376,49 @@ console.log('\nWhat you can hit\n');
   ok(onSheet, 'and the footer is inside the page it belongs to');
 
   ok(PAGES >= 2, 'there is more than one page to flip between', `${PAGES}`);
+}
+
+console.log('\nThe picture pop-up\n');
+
+{
+  const towers = TIERS.map(d => d.spriteTrim);
+  const figures = [...TIERS.map(d => occupant(d).trim),
+                   ...Object.values(enemyTypes).map(d => d.spriteTrim)];
+
+  // ONE PLATE PER KIND. The pop-up used to be sized to whatever it held, so every
+  // tower opened a different box and tapping down a column made the frame jump
+  // about. This is the check for the fix, and it is the strong form: not "the
+  // plates are similar" but "every drawing of a kind fits the one plate that kind
+  // has", which is what makes them identical rather than merely close.
+  const fits = (trims, slot) => trims.every(t =>
+    t[2] * slot.k <= slot.w + 0.001 && t[3] * slot.k <= slot.h + 0.001);
+
+  ok(fits(towers, POP.tower), 'every tower fits the one tower plate',
+    `${POP.tower.w.toFixed(0)}x${POP.tower.h.toFixed(0)} at ${POP.tower.k.toFixed(3)}x`);
+  ok(fits(figures, POP.figure), 'and every figure fits the one figure plate',
+    `${POP.figure.w.toFixed(0)}x${POP.figure.h.toFixed(0)} at ${POP.figure.k.toFixed(3)}x`);
+
+  // The plate is sized to the LARGEST drawing of its kind, so at least one member
+  // has to reach an edge of it. A plate bigger than everything in it is a frame
+  // with a permanent margin nobody chose.
+  const touches = (trims, slot) =>
+    trims.some(t => Math.abs(t[2] * slot.k - slot.w) < 0.001) &&
+    trims.some(t => Math.abs(t[3] * slot.k - slot.h) < 0.001);
+  ok(touches(towers, POP.tower) && touches(figures, POP.figure),
+    'and each plate is sized to the biggest thing in it');
+
+  // NEVER AN UPSCALE. The pop-up shows the art at the size the artist exported it
+  // or smaller — see the note on POP in src/book.js for why this rule is not the
+  // 3x one every other drawing in the game is held to.
+  ok(POP.tower.k <= 1 && POP.figure.k <= 1,
+    'and neither blows the art up past what the artist drew',
+    `towers ${POP.tower.k.toFixed(3)}x, figures ${POP.figure.k.toFixed(3)}x`);
+
+  // The whole thing has to sit on the board with air around it. 22 is the padding
+  // drawZoom uses at each end, 30 the title band and 14 the gap under it.
+  const deepest = 22 * 2 + 30 + 14 + Math.max(POP.tower.h, POP.figure.h);
+  ok(deepest <= 540 - 2 * 22, 'and the deepest plate leaves a margin on the board',
+    `${deepest.toFixed(0)}px of 540`);
 }
 
 console.log('\nWhat stays sharp at 3x\n');
