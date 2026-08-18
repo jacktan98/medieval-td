@@ -941,12 +941,15 @@ const camp = {
   // tent reach 68 source px below the shadow, and the box pinned THEM to the
   // ground, standing the whole tent 22px too high on its plot.
   groundFrac: [0.515, 0.678],
-  // WHERE THE PENNANT ENDS, as a fraction of the trim — the bottom of the cloth,
-  // measured by `node tools/flag.mjs`. The muster rings hang under it, so this is
-  // a position in the artwork rather than a corner of a box: the tent flies its
-  // flag from a pole standing beside it and both huts fly theirs off the ridge,
-  // and one shared offset would be right for at most one of the three.
-  flagFrac: [0.911, 0.116],
+  // WHERE THE MUSTER RINGS SIT, as a fraction of the trim's height: the topmost
+  // ink in the band the ring stack covers, over the column the building stands
+  // on. Measured by `node tools/roof.mjs`.
+  //
+  // It is not the top of the box, and the tent is why: the pennant flies from a
+  // pole standing to one side, so the box top is 20 game px above the tent's own
+  // ridge and rings hung off it float in empty sky with the tent well below.
+  // 0.177 is the canvas itself.
+  roofFrac: 0.177,
   shape: 'camp'
 };
 
@@ -964,7 +967,8 @@ const camp2 = {
   w: drawnW(CAMP2_TRIM), h: drawnH(CAMP2_TRIM),
   // Shadow centre, source (503.8, 696.8).
   groundFrac: [0.487, 0.793],
-  flagFrac: [0.917, 0.097],
+  // The roof ridge over the shadow's column — `node tools/roof.mjs`.
+  roofFrac: 0.067,
   shape: 'camp'
 };
 
@@ -979,7 +983,8 @@ const camp3 = {
   // there is no SVG to check it against, and none is needed: nothing in a
   // barracks has to be drawn in front of anything, because it has no gunner.
   groundFrac: [0.487, 0.806],
-  flagFrac: [0.917, 0.098],
+  // The roof ridge over the shadow's column — `node tools/roof.mjs`.
+  roofFrac: 0.069,
   shape: 'camp'
 };
 
@@ -1091,21 +1096,10 @@ const camp4 = {
   // PNG-only like the other three, and for the same reason: nothing in a barracks
   // has to be drawn in front of anything, because it has no gunner standing on it.
   groundFrac: [0.508, 0.823],
-  // WHERE THE MUSTER RINGS HANG, and this is the one tier whose number is measured
-  // by hand rather than read off `node tools/flag.mjs`.
-  //
-  // The tool finds the pennant by its blue, which is exactly right on the three
-  // tiers below: their blue IS a small pennant on a pole and nothing else in the
-  // drawing is that colour. The keep has no pennant. It has a BANNER hung down the
-  // front wall and a blue-painted deck, both the same blue and joined along the
-  // parapet — so the tool sees one region 337x447 and reports its bottom corner,
-  // which is the tip of the banner's right tail.
-  //
-  // The cloth itself is x 328..509 of the source and its chevron shoulders are at
-  // y 659, so the bottom-centre of the banner is (418.5, 659) — the same thing
-  // `flagFrac` means on every other tier, found by reading the rows rather than the
-  // box. tools/flag.mjs checks it lands on the cloth.
-  flagFrac: [0.320, 0.726],
+  // The battlement over the shadow's column — `node tools/roof.mjs`. Near enough
+  // to zero because a keep is the one barracks building with nothing sticking up
+  // to one side: its box top IS its merlons.
+  roofFrac: 0.002,
   shape: 'camp'
 };
 

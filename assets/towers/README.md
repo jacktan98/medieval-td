@@ -570,31 +570,41 @@ is the drawing being honest, not a number to fix.
 7. `node tools/hud-clear.mjs` if the tower got taller — it says which plots push
    a building into the HUD text or off the top of the board, and by how much. A
    taller tower moves that ceiling down for every plot at once.
-8. `node tools/flag.mjs` if you touched a BARRACKS — paste the new `flagFrac`.
-   The muster rings hang under the pennant, so where the pennant is drawn is a
-   number the game reads; move the flag and the rings have to follow it.
+8. `node tools/roof.mjs` if you touched a BARRACKS — paste the new `roofFrac`.
+   The muster rings sit on the roof, so where the roof is drawn is a number the
+   game reads.
 9. `node tools/book.mjs` if you added or removed a TIER — the encyclopedia flows
-   its ladders into two columns of six, and twelve tiers fill them exactly.
+   its ladders into four columns of six, and fourteen tiers sit in them.
 
-## The muster rings hang under the flag, so the flag is a measurement
+## The muster rings sit on the roof, so the roof is a measurement
 
 A barracks draws a small countdown ring for each of its men who is dead and
-walking back. They are hung from the bottom of the pennant, and the pennant is
-in a different place on all three tiers — the tent flies one from a pole
-standing beside it, and the two huts fly theirs off the ridge of the roof.
+walking back. They stack in the air directly over the building: the COLUMN is the
+tower's own x — the centre of the shadow it stands on, because that is what
+`groundFrac` anchors a building by — and the ROW is `roofFrac`, the topmost ink in
+the band the stack covers.
 
-So `flagFrac` is measured from the artwork rather than guessed from the box,
-exactly like `groundFrac`. `node tools/flag.mjs` finds the cloth by its colour —
-one flat blue, `5,93,171`, about 3,300 pixels of it in each file — and prints
-the bottom centre of it as a fraction of that sprite's trim. **If the artist
-recolours the pennant the tool fails rather than measuring something else**,
-which is the same rule `tools/shadow.mjs` uses on the grey under a building.
+`roofFrac` is measured rather than taken from the top of the sprite's box, and the
+tent is why: it flies its pennant from a pole standing to one side, so the box top
+is 20 game px above the tent's own ridge and rings hung there float in empty sky.
+The keep is the other end of the spread at 0.002 — a battlement has nothing
+sticking up beside it. `node tools/roof.mjs` finds the row by ALPHA, which is the
+one thing in a drawing that cannot be recoloured, and checks the fraction each def
+is holding still lands on it.
 
-They used to float off the building's top-LEFT corner, out in the grass, to keep
-clear of that pennant. That reads as status, which was the point, and it does not
-stay on the board: the offset is a whole ring stack outside the box, and map 3's
-plot 0 sits at x 79, which put the rings at x 3 and clipped them on the canvas
-edge. Inside the box there is nothing left to fall off.
+That is the fourth place these rings have been, and the first that is the same
+place on every tier. They were centred ON the building (read as artwork), then
+floating off its top-LEFT corner (read as status, but map 3's plot 0 clipped them
+on the canvas edge), then hung under the PENNANT — measured off the cloth's flat
+blue, which put them beside the tent's pole, on the huts' ridge, and down on the
+front wall of the Paladin Keep, whose heraldry is a banner in that same blue rather
+than a pennant. Three tiers agreeing was luck; the fourth did not. `flagFrac` and
+`tools/flag.mjs` went with that change and are in the history if a flag anchor is
+ever wanted again.
+
+Re-run `node tools/hud-clear.mjs` with it: the stack is ink ABOVE the roof, so it
+counts against the plots nearest the HUD, and the tool measures it through
+`ringLift` in render.js.
 
 ## The monastery is archery again, structurally
 

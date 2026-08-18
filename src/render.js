@@ -944,30 +944,38 @@ function drawSoldier(ctx, u) {
 }
 
 // How the muster rings nest: the innermost radius, and how much each slot adds.
-// Named because musterRing has to reason about the WIDEST one to place them.
-const RING_R0 = 4;
-const RING_STEP = 3;
+// Exported because musterRing has to reason about the WIDEST one to place them,
+// and tools/hud-clear.mjs has to know how far above a roof the stack reaches.
+export const RING_R0 = 4;
+export const RING_STEP = 3;
 
-// How much air there is between the bottom of the pennant and the top of the
-// widest ring.
+// The clear air between the top of the building and the top of the widest ring.
 //
-// 3 -> 10, asked for from play. 3 was chosen on the reasoning that the rings
-// belong to the flag and a big gap would undo that, and the reasoning is fine —
-// what it missed is that `flagFrac` is the bottom of the CLOTH and the POLE goes
-// on down past it. So at 3 the stack was not sitting under the flag, it was
-// sitting on the pole, and two dark rings crossing a dark pole read as one
-// smudge rather than as a countdown.
-//
-// 10 clears the ring stack of the pennant by a visible margin on all three tiers
-// while keeping it well inside the building's box — which is the property the
-// old top-left-corner version lacked, and the reason these are hung here at all.
-const RING_DROP = 10;
+// 6, and it is doing one job: saying the rings are not part of the drawing. Less
+// and the stack touches a roofline, which reads as a finial the artist put there;
+// much more and it floats free of the building it belongs to. Six is about half a
+// ring, which is enough of a break to see and small enough to still be attached.
+export const RING_GAP = 6;
 
-// Countdown ring for a soldier that is dead and coming back, hung UNDER THE
-// BARRACKS' FLAG.
+// How far the muster rings reach above the top of a tower's box, or 0 for a tower
+// that musters nobody. The roof is BELOW the box top by `roofFrac` — see the note
+// on musterRing — so what the stack costs in headroom is the gap plus the whole
+// diameter of the widest ring plus half the 3px stroke, less that drop.
 //
-// It has been in three places now and the reasoning is worth keeping, because
-// each move fixed the last one's problem and introduced its own:
+// Exported for tools/hud-clear.mjs, which asks the same question of the tier
+// stars: what is the topmost INK this tower can put on the board, so a plot near
+// the HUD can be checked against it.
+export function ringLift(def) {
+  if (!def.soldier) return 0;
+  const widest = RING_R0 + (def.soldier.count - 1) * RING_STEP;
+  return Math.max(0, RING_GAP + 2 * widest + 1.5 - (def.roofFrac || 0) * def.h);
+}
+
+// Countdown ring for a soldier that is dead and coming back, stacked DIRECTLY
+// OVER THE BARRACKS.
+//
+// It has been in four places now and the reasoning is worth keeping, because each
+// move fixed the last one's problem and introduced its own:
 //
 //   CENTRED ON THE BUILDING. Behind the roof, reading as part of the artwork
 //   rather than as status.
@@ -978,27 +986,39 @@ const RING_DROP = 10;
 //   ring stack outside the box, and map 3's plot 0 puts a tent's left edge at
 //   x 15, so the rings were drawn at x 3 and clipped by the canvas.
 //
-//   UNDER THE FLAG, which is this. The flag is the thing on a barracks that
-//   already means "this building, and it is mine", so the countdown reads as
-//   belonging to it — and it is INSIDE the box, which is the property the
-//   corner version lacked. Nothing can push it off an edge that the building
-//   itself is not already falling off, and tools/hud-clear.mjs already checks
-//   that for every plot on every map.
+//   UNDER THE FLAG. Measured per tier off the pennant's own cloth, which put the
+//   stack somewhere different on each building — beside the tent's pole, on the
+//   huts' ridge, and down on the keep's front wall once a tier 4 arrived with a
+//   banner instead of a pennant. Three tiers agreeing was luck; four did not.
 //
-// The flag's position is measured per tier — `node tools/flag.mjs` — rather than
-// assumed from the box, because the tent flies its pennant from a pole beside it
-// and the two huts fly theirs off the roof ridge.
+//   OVER THE BUILDING, which is this, and it is the first position that is the
+//   SAME PLACE on every tier: dead centre, in the air above the roof.
+//
+// Both numbers come off the artwork rather than out of the air. The column is the
+// tower's own x — which IS the centre of the shadow it stands on, because that is
+// what `groundFrac` anchors the building by, so the stack is over the middle of
+// the building for the same reason the building is over the middle of the plot.
+// The row is `roofFrac`, the topmost ink in the band the stack covers, measured by
+// `node tools/roof.mjs`.
+//
+// roofFrac rather than the box top, and the tent is why: it flies its pennant from
+// a pole standing to one side, so the top of its box is 20 game px above its own
+// ridge and a stack hung there floats in empty sky with the tent well below it.
+// The keep's is 0.002 — a battlement has nothing sticking up beside it — and that
+// spread between the two is the whole reason this is measured.
+//
+// Nothing can push it off an edge the building is not already falling off, except
+// upward — and tools/hud-clear.mjs counts the stack as ink for exactly that.
 function musterRing(ctx, u) {
   const box = towerBox(u.tower);
   const r = RING_R0 + u.slot * RING_STEP;   // nested, so three read as three
 
   // Hung from the widest ring this squad will ever draw, not from this one, so
   // a three-man barracks and a one-man one put their stacks in the same place
-  // and the rings do not shuffle upward as men come back.
+  // and the rings do not shuffle downward as men come back.
   const widest = RING_R0 + (u.tower.def.soldier.count - 1) * RING_STEP;
-  const flag = u.tower.def.flagFrac || [0.9, 0.1];
-  const cx = box.left + flag[0] * box.w;
-  const cy = box.top + flag[1] * box.h + RING_DROP + widest;
+  const cx = u.tower.x;
+  const cy = box.top + (u.tower.def.roofFrac || 0) * box.h - RING_GAP - widest;
   const done = 1 - u.respawn / u.def.respawn;
 
   ctx.strokeStyle = 'rgba(20,22,16,0.30)';
@@ -2179,9 +2199,13 @@ function drawBook(ctx, state) {
 // The plate is sized to the picture rather than the other way round — a tall
 // building gets a tall plate and a wide one a wide plate — because the alternative
 // is one fixed frame with a musketeer stranded in the middle of it.
+//
+// NO CAPTION. It carried a "Tap anywhere to close" line for one build, on the
+// reasoning that nothing else on the page opens something that has to be closed.
+// The artist took it out, and the page is better for it: a picture with a
+// sentence under it reads as a diagram with a label, and this is neither.
 const POP_PAD = 22;
 const POP_TITLE = 30;
-const POP_HINT = 22;
 
 function drawZoom(ctx, z) {
   const [sx, sy, sw, sh] = z.trim;
@@ -2189,9 +2213,9 @@ function drawZoom(ctx, z) {
   const w = sw * k;
   const h = sh * k;
 
-  // Wide enough for the hint line under the narrowest drawing in the game.
+  // Wide enough for the longest title over the narrowest drawing in the game.
   const pw = Math.max(w + POP_PAD * 2, 240);
-  const ph = POP_PAD * 2 + POP_TITLE + h + POP_HINT;
+  const ph = POP_PAD * 2 + POP_TITLE + h;
   const px = 480 - pw / 2;
   const py = 270 - ph / 2;
 
@@ -2214,13 +2238,6 @@ function drawZoom(ctx, z) {
 
   const img = z.sprite && art[z.sprite];
   if (img) ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, py + POP_PAD + POP_TITLE, w, h);
-
-  // The one caption in the book, and it earns its place: nothing else on the page
-  // opens something that has to be closed, so a player who taps a card has no
-  // reason to know that tapping again is what gets them back.
-  ctx.fillStyle = INK_MUTED;
-  ctx.font = '600 12px system-ui, sans-serif';
-  ctx.fillText('Tap anywhere to close', 480, py + ph - POP_PAD - POP_HINT / 2);
 }
 
 // Page 1: every tower in the game, one family per column across the spread.

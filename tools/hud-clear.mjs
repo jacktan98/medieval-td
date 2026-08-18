@@ -25,7 +25,7 @@
 
 import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
-import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks } from '../src/render.js';
+import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks, ringLift } from '../src/render.js';
 
 // Where drawHud puts its text. textBaseline is 'middle' at y=21, the biggest
 // font is 20px, so the ink runs from about 11 to 31.
@@ -43,6 +43,17 @@ import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks } from '../src/render.j
 // one case the artwork cannot cover: a family whose tiers share a drawing, which
 // today is artillery and will be nobody once its tiers are drawn. So ink top and
 // box top differ again, but only on the towers that actually carry marks.
+//
+// A BARRACKS' MUSTER RINGS are the second thing above a roof, and they arrived
+// there when the rings moved off the pennant. They are only drawn while a man is
+// dead and walking back, which is most of a wave on the map that needs them, and
+// they are the countdown — status the player is reading, not decoration. So they
+// count as ink on the same terms the stars do, and `ringLift` is asked of
+// render.js rather than worked out here, for the same reason `tierMarks` is.
+//
+// Nothing carries both today: artillery wears the stars and musters nobody, and a
+// barracks has a drawing per tier. The max below is what keeps that an
+// observation rather than an assumption.
 //
 // The runs are measured from the layout drawHud actually produces, in a browser,
 // because node has no canvas to measure a font with. The gaps are 7 after an
@@ -111,8 +122,9 @@ const boxTop = (plot, def) => plot.y - def.groundFrac[1] * def.h;
 // function the renderer uses, so a family that stops sharing artwork stops being
 // allowed the headroom on the same day it stops drawing them.
 const marks = (fam, def) => tierMarks({ fam, def });
-const inkTop = (plot, fam, def) =>
-  boxTop(plot, def) - (marks(fam, def) ? STAR_LIFT + STAR_R : 0);
+const lift = (fam, def) =>
+  Math.max(marks(fam, def) ? STAR_LIFT + STAR_R : 0, ringLift(def));
+const inkTop = (plot, fam, def) => boxTop(plot, def) - lift(fam, def);
 
 let bad = 0, noted = 0;
 
