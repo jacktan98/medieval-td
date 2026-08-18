@@ -3,7 +3,7 @@ import { loadAudio } from './audio.js';
 import { level } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
-import { adminWaves } from './admin.js';
+import { adminWaves, adminGold } from './admin.js';
 import { finish } from './score.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf } from './towers.js';
@@ -75,7 +75,10 @@ function newGame() {
     // Hard, exactly as a wave the data file sets to 20 would be — the dashboard
     // edits the table, it does not sit outside the difficulty.
     waves: scaleWaves(adminWaves(level), difficulty),
-    gold: startingGold(level, difficulty),
+    // The same two layers the wave table above has, in the same order: the
+    // dashboard replaces the map's own purse, and the difficulty scales what it
+    // finds. A purse dialled to 2000 for testing is still 2200 on Easy.
+    gold: startingGold(adminGold(level), difficulty),
     lives: level.startLives,
     towers: [],
     enemies: [],

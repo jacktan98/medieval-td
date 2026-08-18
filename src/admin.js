@@ -1,10 +1,19 @@
 // The admin dashboard: the owner's own way to retune the game without editing a
 // file, and the state and geometry behind it.
 //
-// Two things can be changed from here, and they are the two the artist asked for:
+// Three things can be changed from here, and they are the three the artist asked
+// for:
 //
 //   HOW MANY ENEMIES each group of each wave of each map sends.
+//   HOW MUCH GOLD each map starts you with.
 //   HOW MUCH HEALTH AND DAMAGE every fighting figure in the game has.
+//
+// The purse is the newest and it is a TESTING control before it is a tuning one:
+// a Musketeer Post is 500 gold of ladder and 300 more in abilities, which is most
+// of a map's income, so seeing one in the state it is meant to be judged in used
+// to mean playing eight waves first. It sits on the Waves tab because it belongs
+// to a map rather than to a figure, and it sits on the map row because that is the
+// row that says which map.
 //
 // The drawing lives in render.js and the geometry lives here, which is the same
 // split menu.js and book.js already use — input.js hit-tests exactly the rects
@@ -47,6 +56,7 @@ import { families } from './data/towers.js';
 // Keys are strings so the whole thing is one flat JSON object:
 //
 //   waves   "m3|4|1"          level id, wave index, group index   -> count
+//   gold    "m3"              level id                            -> starting purse
 //   units   "barracks/2|hp"   unit id, field                      -> number
 const KEY = 'medieval-td/admin';
 
@@ -54,13 +64,16 @@ const store = () => {
   try { return globalThis.localStorage || null; } catch { return null; }
 };
 
+// A bag that is absent from an older saved blob reads as empty rather than
+// undefined, which is what lets `gold` be added without anybody's stored edits
+// being thrown away.
 function load() {
   const s = store();
-  if (!s) return { waves: {}, units: {} };
+  if (!s) return { waves: {}, gold: {}, units: {} };
   try {
     const held = JSON.parse(s.getItem(KEY)) || {};
-    return { waves: held.waves || {}, units: held.units || {} };
-  } catch { return { waves: {}, units: {} }; }
+    return { waves: held.waves || {}, gold: held.gold || {}, units: held.units || {} };
+  } catch { return { waves: {}, gold: {}, units: {} }; }
 }
 
 function persist() {
@@ -128,6 +141,10 @@ for (const l of levels) {
   l.waves.forEach((w, i) => w.groups.forEach((g, j) => {
     SHIPPED.set(`${l.id}|${i}|${j}`, g.count);
   }));
+  // The purse, keyed on the level id alone — there is one per map, so there is
+  // nothing to index it by. It cannot collide with a wave key above, which always
+  // carries two more fields.
+  SHIPPED.set(`${l.id}|gold`, l.startGold);
 }
 
 export const shipped = key => SHIPPED.get(key);
@@ -140,10 +157,20 @@ export const waveCount = (levelId, wave, group) =>
 export const unitStat = (unitId, field, def) =>
   edits.units[`${unitId}|${field}`] ?? def[field];
 
+// What a map starts you with, override or shipped. Read by main.js instead of
+// `level.startGold`, and the mirror of adminWaves below: the dashboard edits the
+// level's own number, and the DIFFICULTY still scales whatever it finds — so a
+// purse set to 2000 is 2200 on Easy and 2000 on Hard, exactly as a purse the data
+// file set to 2000 would be.
+export const adminGold = level =>
+  edits.gold[level.id] ?? SHIPPED.get(`${level.id}|gold`);
+
 // Whether anything at all has been changed, so the dashboard can say so and the
 // Reset button can be drawn dead when there is nothing to reset.
 export const touched = () =>
-  Object.keys(edits.waves).length + Object.keys(edits.units).length > 0;
+  Object.keys(edits.waves).length +
+  Object.keys(edits.gold).length +
+  Object.keys(edits.units).length > 0;
 
 function put(bag, key, value, base) {
   if (value === base) delete bag[key];
@@ -162,12 +189,30 @@ function put(bag, key, value, base) {
 // that cannot express a spearman's damage at all. Five per cent is about fourteen
 // taps to double or halve anything, whatever it started at, and it never lands on
 // zero because the step has a floor of one.
+// GOLD GOES BY A TENTH, rounded to a round number, and it is the coarsest of the
+// three on purpose. The shipped purses are 220 to 260 and the reason this control
+// exists is to reach the four figures a tier 4 tower with both abilities costs —
+// a fixed step fine enough to dial 240 exactly would be sixty taps to reach 2000.
+// A tenth is about eight taps to double whatever is showing, so 220 to 2000 is
+// twenty-three, and the rounding keeps the readout on numbers a person would
+// choose: 220, 240, 260, 290, 320.
 export const countStep = () => 1;
 export const statStep = value => Math.max(1, Math.round(Math.abs(value) * 0.05));
+export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 / 10) * 10);
 
 export function setWaveCount(levelId, wave, group, count) {
   const key = `${levelId}|${wave}|${group}`;
   put(edits.waves, key, Math.max(1, Math.min(99, Math.round(count))), SHIPPED.get(key));
+}
+
+// Zero IS allowed, unlike a wave of no enemies or a figure with no health: a map
+// you have to earn every coin on is a real thing to want to test, and nothing
+// breaks — the build menu simply refuses every button until the first kill pays.
+// The ceiling keeps the readout to four digits, which is what the column is drawn
+// for.
+export function setStartGold(levelId, gold) {
+  const held = Math.max(0, Math.min(9990, Math.round(gold)));
+  put(edits.gold, levelId, held, SHIPPED.get(`${levelId}|gold`));
 }
 
 // Damage may be taken to zero — a figure that does nothing but soak is a real
@@ -183,6 +228,7 @@ export function setUnitStat(unitId, field, value) {
 
 export function reset() {
   edits.waves = {};
+  edits.gold = {};
   edits.units = {};
   persist();
   apply();
@@ -259,15 +305,26 @@ export const TABS = [
 // The map row on the Waves tab, laid out from the left margin rather than
 // centred: it is a filter on the list below it, not a headline.
 const MAP_W = 148, MAP_H = 40, MAP_GAP = 10;
+const MAP_Y = INNER.y + 54;
 export const mapTabs = () => levels.map((l, i) => ({
   i,
   id: l.id,
   label: l.name,
   x: INNER.x + i * (MAP_W + MAP_GAP),
-  y: INNER.y + 54,
+  y: MAP_Y,
   w: MAP_W,
   h: MAP_H
 }));
+
+// The starting purse, on the map row and hard against the right margin.
+//
+// SAME ROW AS THE MAPS because it is a property of the map, not of the wave: the
+// tabs on the left say which map and this says what it hands you, and putting it
+// on a row of its own below would have said it belonged to the wave underneath it.
+// There is room — three tabs end at x 494 and the stepper group starts at 736 —
+// and the stepper is 40 tall, which is the map buttons' own height.
+export const GOLD_ROW_Y = MAP_Y;
+export const goldStepper = () => stepper('damage', GOLD_ROW_Y, 'gold');
 
 // One button per wave. Sized so ten of them fit the page width with room —
 // map 3 runs ten and is the binding case, and a row that had to reflow for it
@@ -431,6 +488,17 @@ export function tapAdmin(state, x, y, restart) {
   }
 
   if (a.tab === 'waves') {
+    // Before the map tabs, because it shares their row: the stepper is drawn on
+    // top of nothing, but a tap that misses a map button by a few pixels to the
+    // right must not be answered by the map row's hit box growing into it.
+    {
+      const s = goldStepper();
+      const levelId = levels[a.map].id;
+      const now = adminGold(levels[a.map]);
+      if (on(s.minus)) { setStartGold(levelId, now - goldStep(now)); return true; }
+      if (on(s.plus)) { setStartGold(levelId, now + goldStep(now)); return true; }
+    }
+
     for (const m of mapTabs()) {
       if (!on(m)) continue;
       a.map = m.i;

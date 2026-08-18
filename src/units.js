@@ -3,7 +3,8 @@ import { at as pointOn, nearestOn } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { clampToRange, inRange } from './ground.js';
-import { solo, play, CUE, blowCue } from './audio.js';
+import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
+import { abilityById, owns } from './data/abilities.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -134,6 +135,22 @@ export function makeUnits(state, tower) {
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       respawn: 0,
+      // --- what an ability leaves on a man -------------------------------------
+      //
+      // All four fields are set here rather than sprouting on the first paladin
+      // who swings, for the same reason `poison` below is: the shape of a unit is
+      // written down in one place, and a spearman carries them at zero forever
+      // without anything having to ask whether his tower has abilities.
+      //
+      // The counters are the MAN's, not the tower's, which is the whole difference
+      // from the musketeer's. A Keep musters three paladins and each of them is
+      // counting his own blows towards his own tenth — three men swinging in step
+      // would land three Holy Slashes on the same frame.
+      blows: 0,       // how many he has landed, for Holy Slash's tenth
+      hold: 0,        // seconds committed to a special pose: no swing, no step
+      holdArt: null,  // the drawing to show while holding, or his own Attack pose
+      healing: 0,     // health a second while Holy Light is up, 0 the rest of the time
+      healCd: 0,      // seconds until Holy Light may be called again
       // { dps, left } while a flask is working on him, null otherwise. Set here
       // rather than left undefined so the shape of a unit is written down in one
       // place — see the same argument for `halted` on an enemy.
@@ -196,8 +213,23 @@ export function unhook(e) {
   e.foe = null;
 }
 
+// The ability a soldier's TOWER has bought, by id, or nothing. The tower is where
+// abilities are owned — see the note on `abilities` on barracks tier 4 — so this
+// is the one hop between the man swinging and the gold that was spent.
+//
+// Ownership is asked FIRST and the lookup only happens if the answer is yes, which
+// matters because this runs twice per soldier per frame: `owns` is a check on a
+// short array that is empty for every man in the game except a paladin, so a
+// spearman leaves this function without touching the ability table at all.
+const ability = (u, id) => (owns(u.tower, id) ? abilityById(id) : null);
+
 export function updateUnits(state, dt) {
   for (const u of state.units) {
+    // Holy Light's twenty seconds run whether he is alive, dead or fighting. It is
+    // the ABILITY recharging, not the man resting — so a paladin who is cut down
+    // and musters again does not come back with it ready.
+    if (u.healCd > 0) u.healCd -= dt;
+
     if (u.respawn > 0) {
       u.respawn -= dt;
       if (u.respawn <= 0) {
@@ -340,6 +372,36 @@ export function updateUnits(state, dt) {
       if (best) { u.foe = best; u.holds = false; }
     }
 
+    // HOLY LIGHT. The one ability in the game that is a REACTION rather than a
+    // rhythm: he calls it when he is nearly dead, not on a count.
+    //
+    // Checked before the swing below and before the step, because for the next two
+    // seconds it replaces both. He keeps his grip on the enemy the whole time —
+    // `u.holds` is untouched — so the enemy stays stopped and goes on hitting him,
+    // which is the artist's own condition and is what stops this being a free
+    // reset: 200 health back is only worth having if the road behind you is still
+    // being held while you take it.
+    const light = ability(u, 'light');
+    if (light && u.hold <= 0 && u.healCd <= 0 && u.hp < light.below * u.maxHp) {
+      u.hold = light.seconds;
+      u.holdArt = light.pose;
+      u.healing = light.heals / light.seconds;
+      u.healCd = light.refresh;
+      // Category B: it is a thing that happens on the board, and three paladins in
+      // one squad can be in trouble at once.
+      play(abilityCue(light.cue));
+    }
+
+    // The committed second after a special, and the two seconds of the light. It
+    // stops the swing below and the step further down — "he stays in that
+    // position" — and it is the same field for both abilities, so a man can only
+    // ever be doing one of them.
+    if (u.hold > 0) {
+      u.hold -= dt;
+      if (u.healing) u.hp = Math.min(u.maxHp, u.hp + u.healing * dt);
+      if (u.hold <= 0) { u.holdArt = null; u.healing = 0; }
+    }
+
     const tx = u.foe ? u.foe.x : u.rx;
     const ty = u.foe ? u.foe.y : u.ry;
     const d = Math.hypot(tx - u.x, ty - u.y);
@@ -348,7 +410,7 @@ export function updateUnits(state, dt) {
     else if (d > SETTLE) u.face = Math.atan2(ty - u.y, tx - u.x);
     else u.face = u.faceIdle;
 
-    if (d > SETTLE) {
+    if (d > SETTLE && u.hold <= 0) {
       const step = Math.min(u.def.speed * dt, d);
       u.x += ((tx - u.x) / d) * step;
       u.y += ((ty - u.y) / d) * step;
@@ -360,8 +422,20 @@ export function updateUnits(state, dt) {
     if (u.foe && d <= REACH) {
       // Each side spatters the one it HITS, so a melee throws blood both ways
       // and you can see which of the two is currently landing blows.
-      if (u.cd <= 0) {
-        u.foe.hp -= u.def.damage;
+      // `u.hold` is the second half of the guard, and it is what a held pose
+      // actually costs. On a paladin the swing is 0.80s and the hold is 1, so
+      // Holy Slash delays the next blow by a fifth of a second — the musketeer's
+      // 2.4s reload swallows the same second whole. One rule, two answers, both
+      // from the man's own rate of work.
+      if (u.cd <= 0 && u.hold <= 0) {
+        // HOLY SLASH: the tenth blow, and only the tenth. `blows` counts this one,
+        // so `every: 10` means nine ordinary swings and then the strike — read the
+        // field as the length of the cycle, exactly as the musketeer's 6 is.
+        const slash = ability(u, 'slash');
+        const special = slash && (u.blows + 1) % slash.every === 0 ? slash : null;
+
+        u.foe.hp -= special ? special.damage : u.def.damage;
+        u.blows++;
         u.cd = u.def.cd;
         u.thrust = 1;
         splat(state, u.foe.x, u.foe.y - u.foe.def.r, u.foe.y);
@@ -378,7 +452,17 @@ export function updateUnits(state, dt) {
         // Every swing lands its own blow, so every swing makes its own noise —
         // it is mixed low and ducks under anything in Category A, which is what
         // lets it fire freely without burying the cries.
-        play(blowCue(u.def));
+        //
+        // The tenth blow makes its OWN noise instead of his sword's, and commits
+        // him to the pose the artist drew for it. A kill by that blow still cries
+        // as a paladin's — `killedBy` above is the man, not the swing.
+        if (special) {
+          u.hold = special.hold;
+          u.holdArt = special.pose;
+          play(abilityCue(special.cue));
+        } else {
+          play(blowCue(u.def));
+        }
       }
       // The enemy swings back at the man BLOCKING it and nobody else. It is
       // already committed to him; the others are flanking it. So a squad that
@@ -429,6 +513,16 @@ export function updateUnits(state, dt) {
       // with the clock still running and walks straight back out to finish
       // dying of a flask thrown at a man who is already dead.
       u.poison = null;
+      // And so does everything an ability left on him. A man who musters again is
+      // a new man: he is not still holding a pose he struck before he died, he is
+      // not still being healed, and his count towards the next Holy Slash starts
+      // over. `healCd` is the one thing that does NOT reset — the ability is
+      // recharging, not the man — and it is ticked at the top of the loop for
+      // exactly that reason.
+      u.hold = 0;
+      u.holdArt = null;
+      u.healing = 0;
+      u.blows = 0;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
       solo(CUE.soldierDeath);
       // He falls facing whatever killed him. The fallback is his own facing —

@@ -31,7 +31,8 @@ import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
 import {
   units, shipped, waveCount, setWaveCount, setUnitStat, touched, reset,
-  adminWaves, statStep, countStep, PIN, ADMIN_BTN, mapTabs, waveTabs,
+  adminWaves, adminGold, setStartGold, goldStep, goldStepper,
+  statStep, countStep, PIN, ADMIN_BTN, mapTabs, waveTabs,
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H
 } from '../src/admin.js';
@@ -256,6 +257,75 @@ console.log('\nWhat fits, and what you can hit\n');
   ok(s2.plus.x + s2.plus.w <= PANEL.x + PANEL.w, 'and the right-hand one stays on the panel');
 
   ok(mapTabs().length === levels.length, 'there is a tab per map', `${levels.length}`);
+
+  // THE PURSE SHARES THE MAP ROW, so the one thing that can go wrong there is the
+  // one thing this checks: a map tab and the stepper beside it must not touch, or
+  // a thumb aiming at the third map lands on "less gold".
+  const purse = goldStepper();
+  const lastTab = mapTabs()[mapTabs().length - 1];
+  ok(lastTab.x + lastTab.w < purse.minus.x, 'and the purse keeps clear of the last of them',
+    `${purse.minus.x - (lastTab.x + lastTab.w)}px apart`);
+  ok(purse.plus.x + purse.plus.w <= PANEL.x + PANEL.w, 'and stays on the panel');
+  ok(purse.minus.y === lastTab.y && purse.minus.h === lastTab.h,
+    'and sits on their own line', `y ${purse.minus.y}, ${purse.minus.h} tall`);
+}
+
+// --- the starting purse --------------------------------------------------------
+
+console.log('\nThe starting purse\n');
+
+{
+  reset();
+  const m1 = levels[0];
+
+  ok(adminGold(m1) === m1.startGold, "an untouched map hands out what it shipped with",
+    `${adminGold(m1)}`);
+
+  // THE STEP IS PROPORTIONAL, a tenth rounded to tens, and the property that
+  // matters is the one a proportional step has: the same number of taps doubles
+  // the number wherever you started. That is what makes one control serve both
+  // jobs — nudging a shipped 220 by 20 to see what a tighter opening feels like,
+  // and running it up to the four figures a Musketeer Post with both abilities
+  // costs without sixty taps.
+  //
+  // Checked at both ends of the range rather than at one, because a fixed step
+  // would pass at whichever end it was chosen for.
+  const doubling = from => {
+    let gold = from, taps = 0;
+    while (gold < from * 2 && taps < 200) { gold += goldStep(gold); taps++; }
+    return taps;
+  };
+  const low = doubling(m1.startGold);
+  const high = doubling(2000);
+  ok(low <= 9 && high <= 9 && Math.abs(low - high) <= 2,
+    'and the same handful of taps doubles it wherever it is',
+    `${low} taps from ${m1.startGold}, ${high} from 2000`);
+
+  setStartGold(m1.id, 2000);
+  ok(adminGold(m1) === 2000, 'an override replaces it', `${adminGold(m1)}`);
+  ok(touched(), 'and the panel knows something was changed');
+
+  // Zero is allowed where a wave of nothing and a figure with no health are not:
+  // a map you have to earn every coin on is a real thing to try.
+  setStartGold(m1.id, -50);
+  ok(adminGold(m1) === 0, 'it may be taken to nothing', `${adminGold(m1)}`);
+  setStartGold(m1.id, 99999);
+  ok(adminGold(m1) === 9990, 'and is capped so the readout stays four digits',
+    `${adminGold(m1)}`);
+
+  // AN OVERRIDE THAT EQUALS THE SHIPPED VALUE IS NOT AN OVERRIDE, the same rule
+  // the wave counts follow: setting it back removes the entry rather than storing
+  // it, so a panel nobody has touched leaves nothing behind.
+  setStartGold(m1.id, m1.startGold);
+  ok(!touched(), 'setting it back to the shipped figure clears the edit');
+
+  // One map at a time. The key is the level id, so dialling map 1 up must not
+  // hand map 2 the same purse.
+  setStartGold(m1.id, 1500);
+  ok(adminGold(levels[1]) === levels[1].startGold, 'and each map keeps its own',
+    `${adminGold(m1)} vs ${adminGold(levels[1])}`);
+  reset();
+  ok(adminGold(m1) === m1.startGold, 'and Reset puts it back', `${adminGold(m1)}`);
 }
 
 console.log(bad

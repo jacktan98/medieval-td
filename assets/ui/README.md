@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Eighteen files in, two still vector.** Everything below that is not in the table
+**Twenty-two files in, two still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -29,6 +29,10 @@ usable button rather than a blank disc.
 | `Health_Icon.png`        | the word "Health" | 16 tall      |
 | `Gold_Cost_Icon.png`     | a tier's price, and an enemy's bounty | 14 tall |
 | `Life_Cost_Icon.png`     | lives an enemy costs if it gets past | 14 tall |
+| `Musketeer_Burst_Fire_Icon.png` | the Burst Fire button, plate and all | 60 diameter |
+| `Musketeer_Deadeye_Icon.png`    | the Deadeye button, plate and all    | 60 diameter |
+| `Paladin_Holy_Light_Icon.png`   | the Holy Light button, plate and all | 60 diameter |
+| `Paladin_Holy_Slash_Icon.png`   | the Holy Slash button, plate and all | 60 diameter |
 
 `Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
 down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
@@ -105,6 +109,33 @@ drawn N logical px wide is rasterised at up to 3N. The widest item below is the
 "Next wave" plate at 168 px drawn — 504 at 3x — which fits 512 with 8 to spare.
 
 Transparent background, no baked-in shadow that assumes a particular backdrop.
+
+## The four ability buttons are the exception, and they are a whole button
+
+Everything else in this folder is a **mark** that gets drawn on top of
+`Button_Plate_Icon.png`. The four ability icons are not: the artist drew each one
+on a blue disc, so the file **is** the button, and `src/render.js` draws it
+*instead of* the cream plate rather than over it.
+
+That is fine, and it is what `plate: true` says on those four entries in
+`src/data/ui.js`. It comes with two conditions, and both are checked by
+`node tools/trim.mjs`:
+
+**The disc must be the same disc.** All four measure `[163, 163, 186, 186]` — the
+plate's own trim, to the pixel — so an ability button is exactly the size of every
+other button in the ring and lands in the same place. A re-export at a different
+size would be a button that does not match the ones beside it.
+
+**It must be square, centred and round.** These files have an **opaque white
+background** outside the disc, which is the one thing the transparency rule below
+would normally reject. The renderer copes by clipping them to a circle of the
+button's radius — so the white corners never reach the screen — and that clip only
+lands correctly while the disc fills a centred square. Off-centre, oblong, or
+smaller than its box, and the clip either eats the drawing or leaves white on the
+grass.
+
+Everything else here still needs a transparent background, and `tools/trim.mjs`
+still fails on one that does not have it.
 
 ## What to draw
 
@@ -198,6 +229,17 @@ a cancel target in the middle. Geometry is in `src/menu.js` — `BTN_R`, `RING_R
 `CANCEL_R` — and `input.js` hit-tests those same constants, so the drawn size and
 the tappable size are related but not equal.
 
+**A tier 4 tower gets a second, wider arc.** The four compass points are already
+spoken for — upgrade east, refund west, rally or standing order south — so the two
+ability buttons go up and out on the diagonals at `ABILITY_R`, 96 from the centre.
+That is a number rather than a taste: it puts an ability button 67.9px from the
+button beside it, which clears the 60px discs with 8px to spare and is a hair over
+the 68 that two 34px tap circles would need to touch. Eight buttons on the one ring
+would sit 52 apart and overlap.
+
+Menus with abilities on them are clamped further from the board's edges to keep the
+wider arc on screen; every other menu keeps exactly the margin it had.
+
 **There are no words on these buttons.** "Barracks", "Refund", "Upgrade" and the
 `T1` in front of every price all came out. What is left is the glyph and the
 gold — `70g` to build, `90g` to upgrade, `+42g` to refund — which is the whole
@@ -223,6 +265,13 @@ The eight glyphs, with the code names they replace:
 | `max`      | already at tier 3, nothing to buy      |
 | `flag`     | move the barracks rally point          |
 | `refund`   | take the tower down for gold           |
+
+And the four ability buttons, which are whole buttons rather than glyphs — see the
+section above. They carry `150g` until they are bought and a **gold ring** round
+the disc afterwards, drawn 2.5px outside it so the stroke lands on the grass rather
+than half under the artist's own black outline. An owned button is not dimmed: it
+is on the ring to say what this tower does, and greying it would read as *you
+cannot have this* when the answer is *you already do*.
 
 ## Four things that will cost you a redraw if ignored
 
@@ -386,13 +435,27 @@ tier 2 and tier 3 machines are drawn. Nothing has to be deleted.
 
 ## The encyclopedia
 
-Two pages behind an **Encyclopedia** button on the title screen and under the
-"Paused" label, holding every box description in the game at once. Geometry is in
-`src/book.js`, drawing in `render.js`, and `node tools/book.mjs` checks it.
+Four pages behind an **Encyclopedia** button on the title screen and under the
+"Paused" label, holding every box description in the game at once: towers, the man
+each of them puts on the board, enemies, and — on the last page — the abilities a
+tier 4 tower can be taught. Geometry is in `src/book.js`, drawing in `render.js`,
+and `node tools/book.mjs` checks it.
 
 There is **no new art for it** beyond `Cost_Icon.png`. The page is a parchment
 sheet drawn in code, and every picture on it is the board's own — buildings from
-`assets/towers`, men from `assets/units`, enemies from `assets/enemies`.
+`assets/towers`, men from `assets/units`, enemies from `assets/enemies`, and on the
+last page the ability buttons from this folder.
+
+**The abilities page is the one with prose on it**, and that is the only thing
+about it that differs. Same cards, same grid, same one 4px gap both ways; but an
+ability has no health and no damage to put in a row of icons, it has a sentence.
+So the two stat rows are replaced by two lines at 9px on a 12px pitch, against the
+11px the names are set in — a sentence at the names' size runs off a 155px column
+after about fourteen characters. `tools/book.mjs` measures the longest line in the
+game against that column rather than trusting the eye.
+
+Its pictures are clipped to a circle, for the same reason the menu buttons are: the
+files carry an opaque white background outside the disc.
 
 ### One margin, everywhere — inside the cards, and around the pictures
 
@@ -513,8 +576,14 @@ third one you did not get.
 
 A quiet outlined button in the bottom-right corner of the title screen, a
 four-digit PIN on a drawn keypad, and behind it two tabs: **the number of enemies
-in every group of every wave of every map**, and **the health and attack damage
-of every fighting figure in the game**.
+in every group of every wave of every map** and **the gold that map starts you
+with**, and **the health and attack damage of every fighting figure in the game**.
+
+**The purse is a testing control before it is a tuning one.** A Musketeer Post is
+500 gold of ladder and 300 more in abilities, which is most of a map's income — so
+seeing one in the state it is meant to be judged in used to mean playing eight
+waves first. It sits on the map row of the Waves tab, hard against the right
+margin: the tabs on the left say which map, and this says what that map hands you.
 
 **The keypad is a keypad because this game takes no keyboard input.** It is
 played with a thumb in landscape, and a text field that summoned a phone keyboard
@@ -534,10 +603,18 @@ a year-old snapshot in somebody's browser. Every changed value is drawn in amber
 with `was N` under it, which is the only way to tell a number somebody set from a
 number the game came with.
 
-**A tap moves a count by one and a stat by a twentieth of where it already is.**
-Health in this game runs from 3 to 1500; a fixed step is either 500 taps across
-the giant or one that cannot express a spearman's damage at all. Five per cent is
-about fourteen taps to double or halve anything, whatever it started at.
+**A tap moves a count by one, a stat by a twentieth of where it already is, and
+the purse by a tenth rounded to tens.** Health in this game runs from 3 to 1500; a
+fixed step is either 500 taps across the giant or one that cannot express a
+spearman's damage at all. Five per cent is about fourteen taps to double or halve
+anything, whatever it started at, and a tenth is eight — which is what makes one
+gold control serve both jobs, nudging a shipped 220 by 20 and running it to four
+figures without sixty taps. `tools/admin.mjs` measures the doubling at both ends of
+the range, because a fixed step would pass at whichever end it was chosen for.
+
+The purse is the one number here that **may be taken to zero**. A wave of no
+enemies and a figure with no health are both broken; a map you have to earn every
+coin on is a real thing to try.
 
 **Difficulty is applied ON TOP of the dashboard's numbers**, not instead of them
 — the panel edits the wave table, it does not sit outside it. A wave set to 20 is

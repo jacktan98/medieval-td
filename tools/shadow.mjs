@@ -177,6 +177,10 @@ function centre(parts) {
 
 const towers = await import('../src/data/towers.js');
 const waves = await import('../src/data/waves.js');
+// The ability poses, by id, so the three rows below read from the same objects the
+// game draws rather than from numbers copied here.
+const abil = await import('../src/data/abilities.js');
+const pose = id => abil.abilityById(id).pose;
 const spear = towers.barracks[0].soldier, spear2 = towers.barracks[1].soldier;
 const spear3 = towers.barracks[2].soldier;
 const pal = towers.barracks[3].soldier;
@@ -251,6 +255,12 @@ const SPRITES = [
   // will step sideways every time he fires.
   ['assets/units/Musketeer_Default.png', 'musketeer.gunnerPivot',  towers.archery[3].gunnerTrim, towers.archery[3].gunnerPivot],
   ['assets/units/Musketeer_Attack.png',  'musketeer.attack.pivot', towers.archery[3].attack.trim, towers.archery[3].attack.pivot],
+  // AND HIS THIRD POSE, the one Deadeye buys. It is in the pair rule for exactly
+  // the same reason the other two are, and the reason is stronger here: this pose
+  // is swapped in for a whole second at a time, so a shadow half a pixel out would
+  // read as the man shuffling every sixth shot. It measures to source (292.0,
+  // 307.3), which is the same pixel his Default and his Attack land on.
+  ['assets/units/Musketeer_Deadeye.png', 'deadeye.pose.pivot', pose('deadeye').trim, pose('deadeye').pivot],
   // The catapult crewman. He is not drawn on the board — he is already part of
   // all three machine frames — but the info box and the encyclopedia both stand
   // him on his own, and a figure standing anywhere in this game stands on its
@@ -281,6 +291,14 @@ const SPRITES = [
   // down. They are at the same source pixel to within nothing.
   ['assets/units/Paladin_Default.png',                'paladin.pivot',            pal.spriteTrim, pal.pivot],
   ['assets/units/Paladin_Attack.png',                 'paladin.attack.pivot',     pal.attack.trim, pal.attack.pivot],
+  // His two ability poses, in the same pair rule. Holy Light is the widest spread
+  // of them all — 133x193 against his resting 123x140, because the glow rises well
+  // above his head — and its shadow is still on his own pixel, source (277.0,
+  // 317.3). Holy Slash comes back in the Attack pose's box exactly, which is the
+  // artist re-lighting one swing rather than drawing a second: same trim, same
+  // pivot to three places, measured here per file rather than assumed.
+  ['assets/units/Paladin_Holy_Light.png', 'light.pose.pivot', pose('light').trim, pose('light').pivot],
+  ['assets/units/Paladin_Holy_Slash.png', 'slash.pose.pivot', pose('slash').trim, pose('slash').pivot],
   ['assets/enemies/Enemies_Thug_Default.png',        'light_inf.pivot',         light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],

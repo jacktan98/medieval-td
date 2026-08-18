@@ -65,7 +65,7 @@ function newState() {
     // does. The waves are scaled ONCE here for the same reason they are there:
     // waveSize and the spawn loop must agree exactly on how big a group is.
     waves: scaleWaves(level.waves, difficulty),
-    gold: startingGold(level, difficulty),
+    gold: startingGold(level.startGold, difficulty),
     lives: level.startLives,
     towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [],
     waveIndex: 0, spawned: 0, timer: openingDelay,
@@ -91,6 +91,12 @@ function build(state, entry) {
     // that never leaves beat 0 never fires, and it would fail silently: the sim
     // would just report that artillery is worthless.
     beat: 0, beatT: 0, face: 0,
+    // The ability fields input.js sets on a real build. Nothing here buys one —
+    // the sim measures the game as it is sold, and an ability is 150 gold the
+    // player chooses to spend — but a tower without them is a shape the fight
+    // code has never seen, and the point of this file is that it runs the real
+    // modules on the real objects.
+    abilities: [], shots: 0, special: null, burst: 0, burstT: 0, hold: 0,
     spent: def.cost,
     wantTier: entry.tier
   };

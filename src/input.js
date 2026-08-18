@@ -380,7 +380,24 @@ function run(state, item) {
       // The archer's standing order, and it survives an upgrade for the same
       // reason the rally point does: it is an instruction the player gave, not a
       // property of the tier they gave it to. See AIM_MODES in data/towers.js.
-      aimMode: 0
+      aimMode: 0,
+      // --- abilities ---------------------------------------------------------
+      //
+      // What this tower has been taught, by id, and the counters the teaching
+      // needs. All five are set here rather than appearing on the first tier 4
+      // that buys something, for the same reason `beat` and `beatT` are: a field
+      // that springs into existence is a field that is `undefined - dt` on the
+      // frame before, and a NaN clock never reaches a boundary.
+      //
+      // They survive an upgrade, exactly as the rally point and the standing order
+      // do — though nothing in the game can upgrade INTO an ability today, since
+      // only tier 4 offers any and tier 4 is the top of every ladder.
+      abilities: [],
+      shots: 0,       // ordinary and special alike, for whose turn it is
+      special: null,  // the ability currently being fired or held
+      burst: 0,       // balls still to leave in this burst
+      burstT: 0,
+      hold: 0         // seconds committed to a special pose: no shot, no swap
     });
     const built = state.towers[state.towers.length - 1];
     makeUnits(state, built);
@@ -444,7 +461,40 @@ function run(state, item) {
     state.placing = menu.tower;
   }
 
-  // THE ONE BUTTON THAT LEAVES THE MENU OPEN, and it has to: it is a three-way
+  // TEACHING THE TOWER SOMETHING. The fourth thing gold buys, beside building,
+  // upgrading and selling, and it answers in the same voice as the first two — the
+  // artist asked for the build-and-upgrade line, and it is the right one: this is
+  // the tower's own men being given something, so the tower is who should speak.
+  //
+  // ADDED TO `spent`, which is what makes the refund honest. Taking down a
+  // Musketeer Post that has been taught Deadeye gives back 60% of 650 rather than
+  // of 500 — the same rule that stops an upgrade losing you the tiers under it.
+  //
+  // It LEAVES THE MENU OPEN, like the targeting button and for the same reason:
+  // there are two of these side by side, and buying both should be two taps rather
+  // than two trips through the ring. The item is rebuilt in place so the price
+  // comes off the button under the finger that just paid it.
+  if (item.act === 'ability') {
+    const t = menu.tower;
+    t.abilities.push(item.ability.id);
+    state.gold -= item.cost;
+    t.spent += item.cost;
+    item.owned = true;
+    item.available = false;
+    item.cost = null;
+    // AND THE REFUND BUTTON BESIDE IT, because this menu stays open and that
+    // button is quoting a figure that has just changed. It is worked out once when
+    // the ring is built — see towerItems — which is right for every other button
+    // there, and wrong for this one moment: buying an ability raises `spent` by
+    // 150, so the Refund button would go on offering 60% of the old total until
+    // the player closed the ring and opened it again.
+    const back = menu.items.find(other => other.act === 'refund');
+    if (back) back.gain = refundValue(t);
+    solo(familyCue(t.fam.id, t.def), true);
+    return;
+  }
+
+  // THE OTHER BUTTON THAT LEAVES THE MENU OPEN, and it has to: it is a three-way
   // switch, so the second and third settings are one more tap rather than
   // another trip through the ring. The item is rebuilt so the glyph under the
   // finger is the order that is now in force.

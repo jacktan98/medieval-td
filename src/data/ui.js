@@ -135,6 +135,31 @@ export const ui = {
   // neither a size of its own nor a nudge. The musket above is the exception here,
   // not the pattern a tier 4 icon follows.
   glyph_keep:   { trim: [215, 214, 82, 84], fit: GLYPH_BOX },
+  // THE FOUR ABILITY BUTTONS, and they are the only entries here that are a whole
+  // BUTTON rather than a mark to put on one.
+  //
+  // The artist drew each of these on a blue disc, and the disc measures
+  // [163, 163, 186, 186] in all four files — which is `btn_plate`'s own trim, to
+  // the pixel. They are drawn INSTEAD of the plate, at the same `fit: 60`, so an
+  // ability button is the same size and in the same place as every other button in
+  // the ring.
+  //
+  // `plate: true` is what says so, and it carries a second fact with it: these
+  // files have an OPAQUE WHITE background outside the disc, so the trim above is
+  // not the alpha bounds — it is the bounds of the ink, found by colour. Drawn as a
+  // plain rect they would put four white corners on the grass, so render.js clips
+  // them to a circle of the button's own radius. The disc fills its box exactly, so
+  // the clip lands on the drawn outline rather than inside it.
+  //
+  // tools/trim.mjs knows about the flag: it exempts these from the transparency
+  // rule every other UI icon is held to, and checks instead that each is a centred
+  // square the size of the plate — which is the property the circular clip depends
+  // on.
+  ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_slash:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72
   // and the pennant is a pale triangle filling the rest, so the ink the eye

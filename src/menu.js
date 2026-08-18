@@ -1,4 +1,5 @@
 import { families, AIM_MODES } from './data/towers.js';
+import { abilitiesOf, owns } from './data/abilities.js';
 
 // Radial menu around the tapped plot. Four families map to four quadrants;
 // a built tower shows upgrade and refund in two of them.
@@ -17,7 +18,28 @@ export const RING_R = 68;   // plot centre to button centre; buttons sit 96 apar
 export const HIT_R = 34;    // forgiving tap radius
 export const CANCEL_R = 18; // drawn size of the centre cancel target
 
-const MARGIN = RING_R + BTN_R;
+// A SECOND, WIDER ARC, for the ability buttons and only for them.
+//
+// The four compass points are taken: upgrade east, refund west, and rally or
+// standing order south. A tier 4 tower brings two more buttons and there is no
+// room for them on the ring — eight buttons at 68 would sit 52 apart and the discs
+// are 60 across, so they would overlap.
+//
+// So the two go up and out, on the diagonals, at a radius chosen rather than
+// picked: 96 puts an ability button 67.9px from the upgrade or refund button
+// beside it, which clears the 60px discs with room and is a hair over the 68 that
+// two 34px tap circles would need to touch. 88 is the tightest that works at all
+// and leaves 2px; 96 leaves 8.
+//
+// The cost is a wider clamp — see centre() — and it is paid only by the towers
+// that have abilities. Everything else keeps exactly the ring it had.
+export const ABILITY_R = 96;
+
+// North-west and north-east. North itself is left empty on purpose: on a clamped
+// menu it is the direction the plot is most likely to be under, and a button
+// sitting on the plot it acts on is the thing the leader line exists to avoid.
+const ABILITY_ANGLES = [-3 * Math.PI / 4, -Math.PI / 4];
+
 const HUD_H = 40;
 
 // Fraction of everything spent on a tower that taking it down gives back. Low
@@ -51,20 +73,28 @@ const W = Math.PI;
 // Plots near an edge would push buttons off-canvas or under the HUD — (332,54)
 // sits 14px clear of the HUD and (596,476) is 64px off the bottom. Anchor the
 // menu at a clamped point instead and let render.js draw a leader to the plot.
-function centre(plot) {
+//
+// `margin` is passed in rather than fixed, because the menu is no longer one size:
+// a ring with ability buttons on it reaches 96 from the middle instead of 68, and
+// clamping every menu by the widest one would drag ordinary build menus 28px
+// further from their own plots for nothing.
+function centre(plot, margin) {
   return {
-    cx: Math.min(Math.max(plot.x, MARGIN), 960 - MARGIN),
-    cy: Math.min(Math.max(plot.y, HUD_H + MARGIN), 540 - MARGIN)
+    cx: Math.min(Math.max(plot.x, margin), 960 - margin),
+    cy: Math.min(Math.max(plot.y, HUD_H + margin), 540 - margin)
   };
 }
 
 export function openMenu(state, plot, tower) {
-  const { cx, cy } = centre(plot);
+  // The items first, because how far this menu reaches depends on what is in it.
   const items = tower ? towerItems(tower) : buildItems();
+  const reach = Math.max(...items.map(it => it.ring || RING_R)) + BTN_R;
+  const { cx, cy } = centre(plot, reach);
 
   for (const it of items) {
-    it.x = cx + Math.cos(it.angle) * RING_R;
-    it.y = cy + Math.sin(it.angle) * RING_R;
+    const r = it.ring || RING_R;
+    it.x = cx + Math.cos(it.angle) * r;
+    it.y = cy + Math.sin(it.angle) * r;
   }
 
   state.menu = { plot, tower, cx, cy, items };
@@ -185,6 +215,37 @@ function towerItems(t) {
       available: true
     });
   }
+
+  // WHAT THIS TOWER CAN STILL BE TAUGHT, on the wider arc above the ring. Empty
+  // for every tier that offers nothing, which is every tier below 4 — so the menu
+  // is the same menu it always was until a ladder is topped out, and then it grows
+  // two buttons at the moment the Upgrade button goes dead.
+  //
+  // ONE BUTTON PER ABILITY, OWNED OR NOT, rather than a list of what is left to
+  // buy. A ring whose buttons moved as you bought them would put the second
+  // ability where the first one used to be, under a thumb that is already coming
+  // down — and an ability you have paid for should still be on the menu, because
+  // "what is this tower doing" is a question the ring is the natural place to
+  // answer.
+  abilitiesOf(t.def).forEach((a, i) => {
+    const has = owns(t, a.id);
+    items.push({
+      angle: ABILITY_ANGLES[i % ABILITY_ANGLES.length],
+      ring: ABILITY_R,
+      act: 'ability',
+      ability: a,
+      // The whole button, not a mark to put on one — see the `plate` entries in
+      // data/ui.js. drawButton draws it instead of the cream disc.
+      face: a.icon,
+      label: a.name,
+      tier: null,
+      // An owned ability quotes no price, because there is nothing left to pay.
+      cost: has ? null : a.cost,
+      gain: null,
+      owned: has,
+      available: !has
+    });
+  });
 
   return items;
 }

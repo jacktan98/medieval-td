@@ -84,6 +84,12 @@ export const paths = {
   // the encyclopedia both print his name rather than his tier.
   musketeer:          'assets/units/Musketeer_Default.png',
   musketeer_attack:   'assets/units/Musketeer_Attack.png',
+  // The Deadeye pose, and the first drawing in the game that belongs to an ABILITY
+  // rather than to a man or a machine. It is a third pose of the same musketeer —
+  // measured on the same shadow, so he does not step sideways when he swaps to it —
+  // and it is only ever drawn by a Post that has bought Deadeye. See
+  // src/data/abilities.js.
+  musketeer_deadeye:  'assets/units/Musketeer_Deadeye.png',
   soldier_t1:         'assets/units/Soldiers_Spearman_Default.png',
   soldier_t1_attack:  'assets/units/Soldiers_Spearman_Attack.png',
   soldier_t2:         'assets/units/Soldiers_Pikeman_Default.png',
@@ -94,6 +100,11 @@ export const paths = {
   // the info box and the encyclopedia print "Paladin", not "Barracks Tier IV".
   paladin:            'assets/units/Paladin_Default.png',
   paladin_attack:     'assets/units/Paladin_Attack.png',
+  // His two ability poses, on the same terms as the musketeer's Deadeye above: a
+  // paladin only ever shows these if his Keep has bought the ability they belong
+  // to. Holy Light is the kneel-and-heal; Holy Slash is the tenth blow.
+  paladin_holy_light: 'assets/units/Paladin_Holy_Light.png',
+  paladin_holy_slash: 'assets/units/Paladin_Holy_Slash.png',
   // The monastery's three churchmen, who stand on their decks exactly as the
   // archers do. The keys stay tiered — the code reaches them through
   // `monastery[1].gunner` — while the files are named for the man, which is the
@@ -116,6 +127,11 @@ export const paths = {
   // carries no tier number — unlike the rocks and the missiles, which have three
   // each.
   bullet:      'assets/projectiles/Musketeer_Bullet.png',
+  // Deadeye's ball: the same lead, drawn four times the size with a flame behind
+  // it. A second file rather than the first one scaled up, because it is a
+  // different drawing and not a bigger one — see `deadeyeBall` in
+  // src/data/abilities.js.
+  deadeye_bullet: 'assets/projectiles/Musketeer_Deadeye_Bullet.png',
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
@@ -220,6 +236,15 @@ export const paths = {
   // does, and the button is now the thing that can change without the drawing
   // being redrawn. The menu act, the rate and the helper were renamed in step;
   // see src/menu.js.
+  // THE FOUR ABILITY BUTTONS, and they are not glyphs. Every other icon in this
+  // folder is a transparent mark drawn ON TOP of `btn_plate`; these four arrive as
+  // the whole button — the artist drew each one on a blue disc of exactly the
+  // plate's own size — so they are drawn INSTEAD of the plate rather than over it.
+  // See the `plate` entries in src/data/ui.js for what that costs at the corners.
+  ability_burst:   'assets/ui/Musketeer_Burst_Fire_Icon.png',
+  ability_deadeye: 'assets/ui/Musketeer_Deadeye_Icon.png',
+  ability_light:   'assets/ui/Paladin_Holy_Light_Icon.png',
+  ability_slash:   'assets/ui/Paladin_Holy_Slash_Icon.png',
   glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
   // The archer's three standing orders. They were vector glyphs drawn in

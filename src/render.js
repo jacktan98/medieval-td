@@ -12,7 +12,8 @@ import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage } from './select.js';
-import { PAGES, shelf, shelfRect, enemyCards, towerEntry, unitEntry, figureSlot,
+import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
+         abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, POP, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
@@ -20,7 +21,8 @@ import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
-         groupRows, unitRows, unitPages, stepper, keys, PIN_DOTS, PIN_CANCEL,
+         groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
+         PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, statStep, COLS } from './admin.js';
 import { enemyTypes } from './data/waves.js';
 
@@ -670,7 +672,14 @@ function drawGunner(ctx, t) {
   // The empty bow for as long as the recoil lasts, the nocked arrow the rest of
   // the time. One state drives both, which is the point: the kick backward and
   // the arrow leaving the string are the same event, so they cannot drift apart.
-  const [frame, trim, pivot] = pose(d.attack, t.recoil > 0, img, d.gunnerTrim, d.gunnerPivot);
+  // The empty barrel while the recoil lasts, and the whole time an ability is
+  // holding him in place afterwards — `t.hold` is the second the artist asked a
+  // special to stay up for. Deadeye brings a drawing of its own and hands it in as
+  // the third argument; Burst Fire brings none, so the Attack pose is what stays
+  // up, which is exactly what "use the Attack image" asked for.
+  const held = t.hold > 0 && t.special ? t.special.pose : null;
+  const [frame, trim, pivot] =
+    pose(d.attack, t.recoil > 0 || t.hold > 0, img, d.gunnerTrim, d.gunnerPivot, held);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -700,7 +709,18 @@ function drawGunner(ctx, t) {
 // A def with no `attack` — every enemy, for now — falls through to its Default
 // and nothing else changes, so a family can get its second drawing whenever the
 // artist gets to it.
-function pose(attack, attacking, img, trim, pivot) {
+// `special` is a THIRD drawing, and it wins over both. An ability that carries a
+// pose — Deadeye, Holy Light, Holy Slash — hands it in here, and it is shaped like
+// `attack` so nothing below has to know which it got. An ability with no pose of
+// its own hands in nothing and falls back to the Attack pose, which is what Burst
+// Fire wants: the artist asked for the pictures the man already has.
+//
+// It is registered on the same shadow as the other two — tools/shadow.mjs measures
+// all three of the ability poses against their own man's anchor — so swapping to it
+// cannot move him.
+function pose(attack, attacking, img, trim, pivot, special) {
+  const held = special && art[special.sprite];
+  if (held) return [held, special.trim, special.pivot];
   const alt = attacking && attack && art[attack.sprite];
   return alt ? [alt, attack.trim, attack.pivot] : [img, trim, pivot];
 }
@@ -934,7 +954,12 @@ function drawSoldier(ctx, u) {
   // The swing for exactly as long as the lunge lasts. `thrust` is set to 1 on
   // the blow and decays over a quarter second, so the pose and the movement are
   // one gesture — he steps in holding the spear out, not one then the other.
-  const [frame, trim, pivot] = pose(s.attack, u.thrust > 0, img, s.spriteTrim, s.pivot);
+  // `holdArt` is whatever an ability has committed him to — the kneel of Holy
+  // Light or the follow-through of Holy Slash — and it stays up for as long as
+  // `hold` does. A spearman carries both at zero forever and draws exactly as he
+  // always did.
+  const [frame, trim, pivot] =
+    pose(s.attack, u.thrust > 0 || u.hold > 0, img, s.spriteTrim, s.pivot, u.holdArt);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -1722,7 +1747,23 @@ function drawButton(ctx, state, it) {
                 : '';
 
   ctx.save();
-  ctx.globalAlpha = on ? 1 : 0.45;
+  // THREE STATES, NOT TWO, and the third is what abilities needed. A button you
+  // cannot afford is dimmed; a button you have already BOUGHT is not — it is on
+  // the ring to say what this tower does, and greying it would read as "you cannot
+  // have this" when the answer is "you already do". What tells them apart on the
+  // screen is the gold ring below and the price being gone.
+  ctx.globalAlpha = it.owned || on ? 1 : 0.45;
+
+  // AN ABILITY BUTTON IS ONE PICTURE, plate and all: the artist drew these four on
+  // a blue disc of exactly the cream plate's size, so there is nothing to lay a
+  // glyph over. See the `plate` entries in data/ui.js — including why the drawing
+  // has to be clipped to a circle before it goes down.
+  if (it.face && plateFace(ctx, it)) {
+    if (it.owned) ownedRing(ctx, it);
+    if (caption) buttonPrice(ctx, it, caption);
+    ctx.restore();
+    return;
+  }
 
   if (!drawUi(ctx, 'btn_plate', it.x, it.y)) {
     ctx.fillStyle = 'rgba(34,32,28,0.94)';
@@ -1755,21 +1796,78 @@ function drawButton(ctx, state, it) {
     ctx.restore();
   }
 
-  if (caption) {
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    // Dark on the cream plate, and green when it is gold coming back to you.
-    ctx.fillStyle = it.gain !== null ? '#2F6B27' : '#3A3026';
-    // 10px. The glyphs grew when the labels came out, and the price is the
-    // smaller half of the button's job — what it IS reads first, what it costs
-    // second. 12 -> 11 -> 10 over two passes, each time to give the glyph more
-    // of the disc.
-    ctx.font = '700 10px system-ui, sans-serif';
-    ctx.fillText(caption, it.x, it.y + 16);
-    ctx.textAlign = 'left';
-  }
+  if (caption) buttonPrice(ctx, it, caption);
 
   ctx.restore();
+}
+
+// The price under a button's picture.
+//
+// 10px. The glyphs grew when the labels came out, and the price is the smaller
+// half of the button's job — what it IS reads first, what it costs second.
+// 12 -> 11 -> 10 over two passes, each time to give the glyph more of the disc.
+//
+// TWO INKS, and now two backgrounds. Dark on the cream plate and green when it is
+// gold coming back to you; on an ability's blue disc neither reads, so the price
+// goes down in the cream the rest of the game's buttons are made of, with the same
+// dark drop behind it that the HUD uses over grass.
+function buttonPrice(ctx, it, caption) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 10px system-ui, sans-serif';
+
+  if (it.face) {
+    ctx.fillStyle = 'rgba(20,22,18,0.72)';
+    const w = ctx.measureText(caption).width + 10;
+    ctx.beginPath();
+    ctx.roundRect(it.x - w / 2, it.y + 10, w, 14, 7);
+    ctx.fill();
+    ctx.fillStyle = '#F0E6D2';
+  } else {
+    ctx.fillStyle = it.gain !== null ? '#2F6B27' : '#3A3026';
+  }
+
+  ctx.fillText(caption, it.x, it.y + 16 + (it.face ? 1 : 0));
+  ctx.textAlign = 'left';
+}
+
+// A button whose ARTWORK IS THE WHOLE BUTTON, clipped to a circle.
+//
+// The clip is not decoration. These four files have an opaque white background
+// outside the disc, so drawn as a plain rect they would put four white corners on
+// the grass. The disc fills its measured box exactly — [163, 163, 186, 186] in all
+// four, which is `btn_plate`'s own trim — so a circle of the button's radius lands
+// on the drawn outline rather than inside it, and the corners go.
+//
+// Returns false if the file has not loaded, so the caller falls back to the cream
+// plate and the vector glyph like every other button.
+function plateFace(ctx, it) {
+  const key = it.face;
+  if (!art[key] || !ui[key]) return false;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
+  ctx.clip();
+  drawUi(ctx, key, it.x, it.y, ui[key].fit);
+  ctx.restore();
+  return true;
+}
+
+// What "you already own this" looks like: a gold ring just outside the disc, in
+// the same #C4A574 the vector button plate is edged with. No new artwork, nothing
+// covering the picture, and it reads at a glance beside an unbought one.
+function ownedRing(ctx, it) {
+  ctx.strokeStyle = '#C4A574';
+  ctx.lineWidth = 3;
+  // OUTSIDE the disc, not on it. Drawn at the button's own radius the ring lands
+  // half under the artist's black outline and half over it, and against a dark
+  // blue plate that reads as nothing at all — it was on the first build and could
+  // not be told from an unbought button at a glance. 2.5 out clears the outline
+  // entirely, so the whole stroke is on the grass where it shows.
+  ctx.beginPath();
+  ctx.arc(it.x, it.y, BTN_R + 2.5, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 // Vector glyphs, now the FALLBACK rather than the design. Five of the eight have
@@ -2260,7 +2358,8 @@ function drawBook(ctx, state) {
 
   if (state.book === 0) drawTowerPage(ctx);
   else if (state.book === 1) drawUnitPage(ctx);
-  else drawEnemyPage(ctx);
+  else if (state.book === 2) drawEnemyPage(ctx);
+  else drawAbilityPage(ctx);
 
   drawBookFooter(ctx, state);
   if (state.zoom) drawZoom(ctx, state.zoom);
@@ -2329,7 +2428,20 @@ function drawZoom(ctx, z) {
   // in the middle of the same frame instead of one of them hugging an edge.
   const img = z.sprite && art[z.sprite];
   const top = py + POP_PAD + POP_TITLE + POP_GAP + (slot.h - h) / 2;
-  if (img) ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, top, w, h);
+  if (!img) return;
+
+  // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. Their
+  // files carry an opaque white background outside the disc, so shown as a plain
+  // rect they would put four white corners on the parchment — the same clip the
+  // menu button uses, for the same reason. See plateFace().
+  ctx.save();
+  if (z.round) {
+    ctx.beginPath();
+    ctx.arc(480, top + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+    ctx.clip();
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, top, w, h);
+  ctx.restore();
 }
 
 // Page 1: every tower in the game, one family per column across the spread.
@@ -2491,6 +2603,76 @@ function drawEnemyPage(ctx) {
     const gold = stat(ctx, 'stat_gold_cost', tx, r3, String(d.bounty), INK_GREEN);
     stat(ctx, 'stat_life_cost', gold + 12, r3, String(d.leak), INK_RED);
   }
+}
+
+// Page 4: what a topped-out tier 4 can be taught.
+//
+// THE ONE PAGE WITH PROSE ON IT, and the sizes below are what that costs. Every
+// other card in the book is a name and rows of icons, which fit the 11px face the
+// names are set in; a sentence at 11px runs off a 165px text column after about
+// fourteen characters. So the description gets its own smaller face and its own
+// tighter line pitch, which is what the artist asked for when they asked for the
+// description.
+//
+// 9px and a 12px pitch: two lines and the name and the price all fit the same
+// 60px card every other page uses, with the block centred in it exactly as
+// rowsIn centres the others. Nothing about the GRID changes — same cards, same
+// one 4px gap both ways — because the complaint the grid answers is about the
+// page, and this page is part of it.
+const ABILITY_TEXT = 9;
+const ABILITY_LINE = 12;
+
+function drawAbilityPage(ctx) {
+  heading(ctx, 'Ability', PAGE_X);
+
+  for (const c of abilityCards()) {
+    abilityCard(ctx, c, abilityEntry(c.def));
+  }
+}
+
+function abilityCard(ctx, b, e) {
+  card(ctx, b);
+  drawRound(ctx, e.sprite, b.x + ICON_BOX.x + ICON_BOX.w / 2, b.y + b.h / 2, ABILITY_ICON);
+
+  const tx = b.x + ICON_BOX.x + ICON_BOX.w + 8;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  // The name on the top line with the price hard against the card's right edge,
+  // rather than the price on a row of its own. There is only one number on this
+  // card and two lines of sentence to make room for, so it shares the line it is
+  // most useful on — beside what it buys.
+  const top = b.y + (b.h - (ABILITY_LINE * (e.lines.length + 1))) / 2 + ABILITY_LINE / 2;
+
+  ctx.fillStyle = INK;
+  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
+  ctx.fillText(e.title, tx, top);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = `700 ${ABILITY_TEXT}px system-ui, sans-serif`;
+  ctx.fillText(`${e.cost}g`, b.x + b.w - 8, top);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = `600 ${ABILITY_TEXT}px system-ui, sans-serif`;
+  e.lines.forEach((line, i) => {
+    ctx.fillText(line, tx, top + ABILITY_LINE * (i + 1));
+  });
+}
+
+// A UI disc drawn to a diameter and clipped to a circle. The four ability files
+// carry an opaque white background outside the disc — see plateFace() for the
+// whole story — so they are the only pictures in the book that cannot simply be
+// drawn to a rect.
+function drawRound(ctx, key, cx, cy, d) {
+  if (!art[key] || !ui[key]) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, d / 2, 0, Math.PI * 2);
+  ctx.clip();
+  drawUi(ctx, key, cx, cy, d);
+  ctx.restore();
 }
 
 function drawBookFooter(ctx, state) {
@@ -2782,7 +2964,7 @@ function drawAdmin(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_INK;
   ctx.font = '700 22px system-ui, sans-serif';
-  ctx.fillText(a.tab === 'waves' ? 'Admin — enemies per wave' : 'Admin — unit stats',
+  ctx.fillText(a.tab === 'waves' ? 'Admin — waves and gold' : 'Admin — unit stats',
     ADMIN_PANEL.x + 16, ADMIN_TITLE_Y);
 
   for (const t of ADMIN_TABS) panelButton(ctx, t, t.label, { on: a.tab === t.id });
@@ -2807,6 +2989,18 @@ function drawAdminWaves(ctx, a) {
   for (const w of waveTabs(a.map)) {
     panelButton(ctx, w, String(w.i + 1), { on: w.i === a.wave, r: 7 });
   }
+
+  // The chosen map's starting purse, on the map row's own line. Labelled, unlike
+  // every other stepper in this panel: the rows below all sit under a column head
+  // that says what they are, and this one is out on its own beside three buttons
+  // with map names on them.
+  const purse = goldStepper();
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ADMIN_DIM;
+  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.fillText('Start gold', purse.minus.x - 14, purse.minus.y + purse.minus.h / 2);
+  stepperRow(ctx, purse, adminGold(lv), shipped(`${lv.id}|gold`));
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';

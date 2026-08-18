@@ -21,6 +21,35 @@ nothing else.
 | Musketeer          | `Musketeer_Default`                | `Musketeer_Attack`                |
 | Paladin            | `Paladin_Default`                  | `Paladin_Attack`                  |
 
+### And a third drawing where an ability needs one
+
+Three men carry an extra pose that only appears if the player has bought the
+ability it belongs to. They are figures like any other — same 512 canvas, same
+shadow, measured by the same tools — and they are listed apart only because
+nothing shows them until 150 gold has been spent.
+
+| pose                    | file                     | shown while                          |
+|-------------------------|--------------------------|--------------------------------------|
+| Musketeer, Deadeye      | `Musketeer_Deadeye`      | the heavy ball leaves, and 1s after  |
+| Paladin, Holy Light     | `Paladin_Holy_Light`     | he kneels and heals, 2s              |
+| Paladin, Holy Slash     | `Paladin_Holy_Slash`     | the tenth blow lands, and 1s after   |
+
+**Burst Fire has none, deliberately.** The artist asked for it to use the pictures
+the Musketeer Post already has, so it holds his ordinary Attack pose and fires his
+ordinary ball.
+
+All three register on their own man's shadow to **0.0 source px** — `node
+tools/shadow.mjs` checks each of them — which matters more here than on an ordinary
+Attack pose: these are held for a whole second or two at a time, so an anchor half
+a pixel out would read as the man shuffling every time the ability fired.
+
+`Paladin_Holy_Slash` comes back in the Attack pose's box **exactly**,
+`[135, 212, 178, 116]`, because it is the same swing re-lit rather than a second
+drawing. That is a measured finding, not a copy: both are measured per file and
+came back equal. `Paladin_Holy_Light` is the widest spread of any of his poses —
+133 x 193 against his resting 123 x 140 — because the glow rises well above his
+head.
+
 **Default is the man at rest**, and it is the drawing used almost everywhere: he
 walks in it, stands in his slot in it, and it is the picture the encyclopedia and
 the in-game description box show. An archer's Default has an arrow **nocked**.

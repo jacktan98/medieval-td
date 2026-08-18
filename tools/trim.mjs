@@ -41,12 +41,21 @@ const scaleFor = file => /Blood/i.test(file) ? BLOOD_SCALE : SCALE;
 // by a pixel or two, which reads as the art having shifted.
 const ALPHA = 8;
 
-function trim({ w, h, ch, px }) {
+function trim({ w, h, ch, px }, byInk = false) {
   let x0 = w, y0 = h, x1 = -1, y1 = -1;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const a = px[(y * w + x) * ch + ch - 1];
-      if (a > ALPHA) {
+      const i = (y * w + x) * ch;
+      const a = px[i + ch - 1];
+      // BY ALPHA normally, and BY INK for the four ability buttons — see the
+      // `plate` entries in src/data/ui.js. Those arrive as a coloured disc on an
+      // OPAQUE WHITE square, so every pixel of the canvas passes the alpha test
+      // and the box comes back as the whole 512. What is actually drawn is the
+      // disc, and the disc is what is not white.
+      const lit = byInk
+        ? a > ALPHA && (px[i] < 250 || px[i + 1] < 250 || px[i + 2] < 250)
+        : a > ALPHA;
+      if (lit) {
         if (x < x0) x0 = x;
         if (x > x1) x1 = x;
         if (y < y0) y0 = y;
@@ -110,7 +119,8 @@ for (const d of dirs) {
     const path = join('assets', rel);
     const f = basename(rel);
     const img = decode(readFileSync(path));
-    const t = trim(img);
+    // A full-plate button is measured by its ink rather than its alpha; see trim().
+    const t = trim(img, d === 'ui' && !!(ui[uiKey(f)] || {}).plate);
     if (!t) { console.log(`${path.padEnd(35)} fully transparent`); continue; }
 
     // UI is the one folder where the drawn size does NOT come from a scale
@@ -238,6 +248,13 @@ for (const d of dirs) {
   let solid = 0;
   for (const [key, src] of Object.entries(ASSET_URLS)) {
     if (!src.startsWith('assets/ui/') || !ui[key]) continue;
+    // EXCEPT A FULL-PLATE BUTTON, which is opaque on purpose. The four ability
+    // icons are not marks laid over the cream plate — each one IS the plate, drawn
+    // as a coloured disc, so there is nothing underneath for a background to
+    // obscure. The rule they are held to instead is the block below, and it is the
+    // one their drawing actually has to satisfy: the disc must be a centred square
+    // the size of the button, because render.js clips it to a circle.
+    if (ui[key].plate) continue;
     const img = decode(readFileSync(src));
     let opaque = 0;
     for (let p = 0; p < img.w * img.h; p++) if (img.px[p * img.ch + img.ch - 1] > 200) opaque++;
@@ -250,7 +267,43 @@ for (const d of dirs) {
     console.log('Re-export with a transparent background: these are drawn over a plate.');
     process.exitCode = 1;
   } else {
-    console.log('Every wired UI icon has a transparent background.');
+    console.log('Every wired UI icon that sits ON a plate has a transparent background.');
+  }
+}
+
+// AND EVERY ICON THAT IS A PLATE IS A CENTRED SQUARE THE SIZE OF ONE.
+//
+// This is the check the four ability buttons get instead of the transparency rule
+// above, and it is not a formality — it is the property the drawing code depends
+// on. render.js clips these to a circle of the button's own radius, centred on the
+// button, because the file carries an opaque white background outside the disc. A
+// re-export whose disc was smaller, off-centre, or not round would either lose ink
+// to the clip or leave white corners on the grass, and both would look like a
+// rendering bug rather than an art one.
+//
+// Measured against `btn_plate`, not against a number typed here: the cream plate
+// and these four are the same button at the same size, and if the artist ever
+// redraws the plate the ability faces have to follow it.
+{
+  const want = ui.btn_plate.trim;
+  let wrong = 0;
+  for (const [key, src] of Object.entries(ASSET_URLS)) {
+    if (!src.startsWith('assets/ui/') || !ui[key] || !ui[key].plate) continue;
+    const img = decode(readFileSync(src));
+    const t = trim(img, true);
+    const square = t[2] === t[3];
+    const centred = Math.abs(t[0] + t[2] / 2 - img.w / 2) < 1 &&
+                    Math.abs(t[1] + t[3] / 2 - img.h / 2) < 1;
+    const sized = t[2] === want[2] && t[3] === want[3];
+    if (square && centred && sized) continue;
+    console.log(`\n${src} draws [${t}] — the plate is [${want}], centred and square.`);
+    wrong++;
+  }
+  if (wrong) {
+    console.log('A full-plate button IS the button: same disc, same size, dead centre.');
+    process.exitCode = 1;
+  } else {
+    console.log("Every full-plate button matches btn_plate's own disc.");
   }
 }
 

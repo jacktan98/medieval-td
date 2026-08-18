@@ -37,12 +37,24 @@ Elsewhere, but the Musketeer Post's: `units/Musketeer_Default.png` and
 `_Attack`, `projectiles/Musketeer_Bullet.png`, `ui/Musketeer_Post_Icon.png` (the
 one upgrade button in the game that shows what it buys rather than an arrow), and
 four clips — `audio/sfx/Musketeer_shot.mp3`, `audio/sfx/Musketeer_kill_enemy.mp3`
-and two voice lines.
+and two voice lines. Plus its two abilities: `units/Musketeer_Deadeye.png`,
+`projectiles/Musketeer_Deadeye_Bullet.png`, `audio/sfx/Musketeer_Deadeye.mp3` and
+the two button faces `ui/Musketeer_Burst_Fire_Icon.png` and
+`ui/Musketeer_Deadeye_Icon.png`.
 
 Elsewhere, but the Paladin Keep's: `units/Paladin_Default.png` and `_Attack`,
 `dead/Paladin_Dead.png`, `ui/Paladin_Keep_Icon.png`, and four clips —
 `audio/sfx/Paladin_attack.mp3`, `audio/sfx/Paladin_kill_enemy.mp3` and two voice
-lines. It has no projectile: it is a barracks, and its men do the fighting.
+lines. It has no projectile: it is a barracks, and its men do the fighting. Plus
+its two abilities: `units/Paladin_Holy_Light.png`, `units/Paladin_Holy_Slash.png`,
+`audio/sfx/Paladin_Holy_Light.mp3`, `audio/sfx/Paladin_Holy_Slash.mp3` and the two
+button faces `ui/Paladin_Holy_Light_Icon.png` and `ui/Paladin_Holy_Slash_Icon.png`.
+
+**ONLY A TIER 4 HAS ABILITIES**, and that is what the tier is for once its ladder
+is finished: the Upgrade button goes dead and 150 gold buys a change to how the
+tower fights instead of a rung. The rules and the numbers are in
+`src/data/abilities.js`, a tier names only the ids it offers, and
+`node tools/abilities.mjs` drives all four through the real fight code.
 
 **A TIER 4 FILE IS NAMED FOR THE TOWER, NOT THE RUNG.** `Musketeer_Post.png` sits
 in the archery folder with `Archery_Tower_T1..T3` and `Paladin_Keep.png` with

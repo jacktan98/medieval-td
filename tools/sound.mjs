@@ -130,12 +130,14 @@ globalThis.AudioContext = function () { return ctx; };
 globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(path) });
 
 const { loadAudio, play, solo, CUE, SHOT, ATTACK, PALADIN, SELECT,
-        selectionCue, familyCue, blowCue } = await import('../src/audio.js');
+        DEADEYE, HOLY_LIGHT, HOLY_SLASH,
+        selectionCue, familyCue, blowCue, abilityCue } = await import('../src/audio.js');
 // The two ladders with a tier 4 on them, for the voice and blow checks below.
 // Imported here rather than at the top because everything above has to run after
 // the fake AudioContext is in place, and this file keeps its imports in one order
 // for that reason.
 const { archery, barracks } = await import('../src/data/towers.js');
+const { ABILITIES, abilityById } = await import('../src/data/abilities.js');
 
 // Load with console.info muted. The module reports anything it had to move a
 // long way, which is useful in a browser and pure noise here — every fake clip
@@ -503,6 +505,52 @@ check('and a def with no blow falls back rather than going silent',
   blowCue({}), ATTACK);
 check('and so does one with a blow nobody recorded',
   blowCue({ blow: 'nobody' }), ATTACK);
+
+// AN ABILITY'S NOISE, the third one-word opt-in in audio.js after a tier's `voice`
+// and a soldier's `blow`. Same three questions as the other two, and one more that
+// is particular to these: an ability may legitimately be SILENT, and the two that
+// are silent must be silent for a reason rather than by a typo.
+console.log('\nWhat an ability sounds like\n');
+check('Holy Light calls the light down in its own voice',
+  abilityCue(abilityById('light').cue), HOLY_LIGHT);
+check('and Holy Slash lands in its own',
+  abilityCue(abilityById('slash').cue), HOLY_SLASH);
+check('Deadeye speaks through its ammunition instead',
+  abilityById('deadeye').cue, undefined);
+check('and that ammunition is loud',
+  abilityById('deadeye').ammo.fireSound, true);
+check('and it is the one clip nothing else uses',
+  DEADEYE.length === 1 && DEADEYE[0] === 'musketeer_deadeye', true);
+check('Burst Fire is silent, and fires the ordinary ball to be so',
+  !abilityById('burst').cue && !abilityById('burst').ammo, true);
+check('and an ability nobody recorded falls to nothing rather than to undefined',
+  abilityCue('nobody'), null);
+// Every ability either has a cue this file can answer or fires something. An
+// ability with neither would be a change that landed with no sound at all, which
+// is exactly the failure that is hardest to notice.
+check('and every ability is either heard or fires something heard',
+  ABILITIES.every(a => abilityCue(a.cue) || a.ammo || !a.pose), true);
+
+// The three ability clips are Category B, which means every one of them plays
+// every time — three paladins in trouble at once is three calls for the light, and
+// a shared channel would silence two of them.
+console.log('\nAbility sounds are Category B');
+// 8600 is chosen rather than round: the clock in this file only ever goes forward,
+// the busy-fight loop above runs to 8398 and the two sections below are keyed to
+// 9000 and 9100. It is also far enough past 8398 for the share memory to have been
+// wiped by silence, so the voice check at the end is asking about the gate rather
+// than about who spoke last.
+//
+// THREE DIFFERENT CLIPS, not one played three times. Two identical buffers on the
+// same millisecond are deliberately collapsed — see SAME_CLIP_GAP in audio.js,
+// which exists because two copies of one waveform add up to one loud click rather
+// than to two sounds — so a test of "several at once" has to use several.
+ctx.currentTime = 8600;
+played = [];
+play(HOLY_LIGHT); play(HOLY_SLASH); play(DEADEYE);
+check('three ability sounds on one frame are three sounds', played.length, 3);
+check('and none of them shut the voice channel',
+  at(8600.01, () => solo(CUE.paladin)), 1);
 
 // A cue with nothing loaded must not close the channel on everything else.
 //

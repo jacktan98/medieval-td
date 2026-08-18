@@ -862,7 +862,12 @@ export const archery = [
     // this tower specifically, so a Musketeer Post speaks for itself when it is
     // built and when its standing order changes. See familyCue in src/audio.js:
     // a tier with no `voice` falls through to its family's.
-    voice: 'musketeer' }
+    voice: 'musketeer',
+    // WHAT THIS POST CAN BE TAUGHT, once it is standing and there is nothing left
+    // to upgrade it into. Ids into src/data/abilities.js, where the rules and the
+    // numbers are — see the note at the top of that file for why a tier carries
+    // only the list.
+    abilities: ['burst', 'deadeye'] }
 ];
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
@@ -1179,6 +1184,15 @@ export const barracks = [
     // than a rung, so it answers for itself when it is built and when it is given
     // a rally point instead of borrowing a barracks line.
     voice: 'paladin',
+    // WHAT THIS KEEP CAN BE TAUGHT. Ids into src/data/abilities.js, which is where
+    // the rules and the numbers live — a tier says which ones it offers and
+    // nothing else, so an ability can be retuned without this file being touched.
+    //
+    // They are on the tier rather than on the soldier even though it is the men
+    // who use them, and that is deliberate: gold buys a thing on a plot, and the
+    // squad is replaced every time one of them falls. A paladin who died would
+    // otherwise muster again having forgotten what you paid for.
+    abilities: ['light', 'slash'],
     soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 300, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
   }
 ];

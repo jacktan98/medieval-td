@@ -129,6 +129,10 @@ and it now means "how long a lull has to be before the game forgets".
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
+| **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
+| **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
+| **a paladin's tenth blow lands** — Category B | `Paladin_Holy_Slash` |
+| an ability is **unlocked** | that tower's own voice — `Musketeer_1..2` or `Paladin_1..2` |
 
 Everything above the line is Category A and shares the one channel; the ones
 below run on the background bus and play every time.
@@ -356,6 +360,41 @@ quiet to rescue.
 
 `GAIN` in `src/audio.js` overrides the analysis per clip, and it is for INTENT
 — a giant that should be louder than a common thug — not for correction.
+
+### The three ability sounds
+
+All three are **Category B**, and for the reason everything else down there is: they
+are things that happen on the board rather than things announced, and several can
+happen at once — three paladins in one squad can be in trouble together, and two
+Musketeer Posts can fire on the same frame. One channel would silence all but the
+first.
+
+**Burst Fire has no clip and that is not an omission.** It fires the ordinary ball
+three times in half a second, so it already makes `Musketeer_shot` three times, and
+three cracks in half a second is what a burst sounds like.
+
+**Deadeye's noise comes from its AMMUNITION, not from the ability.** The heavy ball
+is its own kind of projectile, so it gets a row in the firing table beside the
+arrow, the arcane missile and the ordinary ball — "what does this sound like
+leaving" has exactly one answer per kind, and an ability that fires something
+announces itself by firing it. The paladin's two are the ones that carry a `cue` of
+their own, because neither of them fires anything.
+
+**Unlocking an ability speaks in the tower's own voice** — the same line a build or
+an upgrade plays, at the artist's request, and with the same priority. All four
+things gold buys now answer: build, upgrade, sell, and teach.
+
+The three arrived well balanced against each other and against what was already
+here, so **none of them needed a `GAIN` override**. Measured at load:
+`Musketeer_Deadeye` −11.8dB (against `Musketeer_shot`'s −9.9 and `Arcane_shot`'s
+−13.0), `Paladin_Holy_Slash` −8.5dB (against `Thug_dies`'s −8.6), and
+`Paladin_Holy_Light` inside ±3dB and not reported at all. Nothing is near the
+clamp; the leveller did the whole job.
+
+One note for the next re-record, on the same terms as the three below:
+`Musketeer_Deadeye` peaks at **1.000**, so its summed channels are right on the
+ceiling. It is no worse than `Musketeer_shot`, which peaks at 1.196 and has been
+there since it landed, and no gain here can fix either — only a re-record can.
 
 ## Dead air at the front is skipped, also automatically
 

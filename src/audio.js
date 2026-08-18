@@ -196,6 +196,17 @@ const paths = {
   // data/towers.js — so there is no third.
   musketeer_shot:   'assets/audio/sfx/Musketeer_shot.mp3',
   musketeer_kill_enemy: 'assets/audio/sfx/Musketeer_kill_enemy.mp3',
+  // THE THREE ABILITY SOUNDS, all Category B and all for the same reason the shots
+  // and the swings are: they are things that HAPPEN, several can happen at once —
+  // three paladins in one squad, two Posts on one map — and a shared channel would
+  // silence all but the first.
+  //
+  // Burst Fire has none, and that is right rather than missing: it fires the
+  // musket's own ball three times, so it already makes the musket's own noise three
+  // times. Three cracks in half a second IS what a burst sounds like.
+  musketeer_deadeye:  'assets/audio/sfx/Musketeer_Deadeye.mp3',
+  paladin_holy_light: 'assets/audio/sfx/Paladin_Holy_Light.mp3',
+  paladin_holy_slash: 'assets/audio/sfx/Paladin_Holy_Slash.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
   // the air and announces itself by LANDING, which is also the moment the player
   // is looking at. See the artillery section in assets/audio/README.md.
@@ -364,6 +375,13 @@ export const ARCANE = ['arcane_shot'];
 // reason: it is a thing that happens rather than a thing announced, and two posts
 // firing at once are two events the player is watching.
 export const MUSKET = ['musketeer_shot'];
+// The three ability sounds, and all three are Category B beside the weapons they
+// belong to. A heavy ball leaving the barrel, a paladin calling the light down on
+// himself, and a paladin's tenth blow. See abilityCue below for how an ability
+// asks for one.
+export const DEADEYE = ['musketeer_deadeye'];
+export const HOLY_LIGHT = ['paladin_holy_light'];
+export const HOLY_SLASH = ['paladin_holy_slash'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // A longsword landing on plate. Category B beside the three generic takes and
 // chosen instead of them for one man — see blowCue below.
@@ -742,6 +760,23 @@ export function familyCue(famId, def) {
 const BLOWS = { paladin: PALADIN };
 
 export const blowCue = def => (def && BLOWS[def.blow]) || ATTACK;
+
+// WHAT AN ABILITY SOUNDS LIKE, keyed off the `cue` field on its def in
+// data/abilities.js — the third one-word opt-in in this file, beside `voice` on a
+// tier and `blow` on a soldier, and it works the same way: an ability with no `cue`
+// makes no noise of its own.
+//
+// TWO ENTRIES, NOT THREE, and Deadeye's absence is the point: it fires something,
+// so its noise is its AMMUNITION's — see FIRING in src/towers.js, where every
+// projectile's report is looked up by kind. Burst Fire is the one that is genuinely
+// quiet, and deliberately: it fires the ordinary ball, so it already makes the
+// ordinary crack, three times.
+const ABILITY_CUES = {
+  holyLight: HOLY_LIGHT,
+  holySlash: HOLY_SLASH
+};
+
+export const abilityCue = key => ABILITY_CUES[key] || null;
 
 // The cue for whatever the player just selected, or null for nothing that
 // speaks. Here rather than in input.js because selection happens at three call

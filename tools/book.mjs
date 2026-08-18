@@ -32,8 +32,10 @@ import { enemyTypes } from '../src/data/waves.js';
 import { occupant } from '../src/select.js';
 import { refundValue, REFUND_RATE } from '../src/menu.js';
 import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
+import { ABILITIES } from '../src/data/abilities.js';
 import {
-  PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, towerEntry, unitEntry, figureSlot,
+  PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, abilityCards,
+  towerEntry, unitEntry, abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
   SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
@@ -86,6 +88,18 @@ console.log('\nWhat is on the pages\n');
 
   ok(enemyCards().length === Object.keys(enemyTypes).length,
     'every enemy has a card', `${enemyCards().length}`);
+
+  ok(abilityCards().length === ABILITIES.length,
+    'and every ability has one', `${abilityCards().length}`);
+
+  // EVERY ABILITY A TIER OFFERS IS ON THE PAGE, and nothing on the page is
+  // offered by nobody. Both halves matter: an ability wired to a tower and left
+  // out of the book is undiscoverable, and one in the book that no tower teaches
+  // is a promise the game does not keep.
+  const offered = new Set(TIERS.flatMap(d => d.abilities || []));
+  ok(ABILITIES.every(a => offered.has(a.id)) && offered.size === ABILITIES.length,
+    'and the page lists exactly what the towers offer',
+    `${offered.size} offered, ${ABILITIES.length} listed`);
 }
 
 console.log('\nWhat the cards say\n');
@@ -140,7 +154,7 @@ console.log('\nWhat fits\n');
   // rather than two. Both pages draw the same cells, so checking them once is
   // checking both.
   const cards = shelf().map(({ col, row }) => shelfRect(col, row));
-  const all = [...cards, ...enemyCards()];
+  const all = [...cards, ...enemyCards(), ...abilityCards()];
 
   // THE OVERFLOW CHECK, and it is here because the shelf has silently run off the
   // page once: twelve tiers exactly filled the two columns one half of a spread
@@ -198,8 +212,35 @@ console.log('\nWhat fits\n');
   // page is next given something a shelf card has no room for.
   const shape = b => `${b.w}x${b.h}`;
   const sizes = new Set(all.map(shape));
-  ok(sizes.size === 1, 'and every box on both pages is the same size',
+  ok(sizes.size === 1, 'and every box on all four pages is the same size',
     [...sizes].join(', '));
+
+  // THE ABILITY PAGE IS THE ONE WITH PROSE ON IT, so the two things that can go
+  // wrong there are its own: the disc has to fit the card's height, and the
+  // description has to fit the column left beside it.
+  //
+  // The text is measured rather than eyeballed, at the 9px face render.js sets it
+  // in. There is no canvas in Node, so the width comes from a per-character
+  // average that errs HIGH — 0.52em against system-ui's real 0.48 for lower case —
+  // which is the safe direction for a fits-on-the-card check.
+  const EM = 0.52 * 9;
+  const column = shelfRect(0, 0).w - (ICON_BOX.x + ICON_BOX.w + 8) - 8;
+
+  ok(ABILITY_ICON <= shelfRect(0, 0).h,
+    'the ability disc fits the card it sits in',
+    `${ABILITY_ICON}px in ${shelfRect(0, 0).h}`);
+
+  const longest = ABILITIES
+    .flatMap(a => abilityEntry(a).lines)
+    .reduce((a, b) => (a.length > b.length ? a : b));
+  ok(longest.length * EM <= column,
+    'and the longest line of description fits beside it',
+    `"${longest}" is ${(longest.length * EM).toFixed(0)}px of ${column}`);
+
+  // Two lines each, and the same two everywhere: a card with three would push its
+  // block out of the plate, and one with none would be a card that says nothing.
+  ok(ABILITIES.every(a => a.lines.length === 2),
+    'and every ability says its piece in two lines');
 }
 
 console.log('\nOne margin, everywhere\n');
@@ -384,6 +425,7 @@ console.log('\nThe picture pop-up\n');
   const towers = TIERS.map(d => d.spriteTrim);
   const figures = [...TIERS.map(d => occupant(d).trim),
                    ...Object.values(enemyTypes).map(d => d.spriteTrim)];
+  const abilities = ABILITIES.map(a => ui[a.icon].trim);
 
   // ONE PLATE PER KIND. The pop-up used to be sized to whatever it held, so every
   // tower opened a different box and tapping down a column made the frame jump
@@ -397,6 +439,8 @@ console.log('\nThe picture pop-up\n');
     `${POP.tower.w.toFixed(0)}x${POP.tower.h.toFixed(0)} at ${POP.tower.k.toFixed(3)}x`);
   ok(fits(figures, POP.figure), 'and every figure fits the one figure plate',
     `${POP.figure.w.toFixed(0)}x${POP.figure.h.toFixed(0)} at ${POP.figure.k.toFixed(3)}x`);
+  ok(fits(abilities, POP.ability), 'and every ability fits the one ability plate',
+    `${POP.ability.w.toFixed(0)}x${POP.ability.h.toFixed(0)} at ${POP.ability.k.toFixed(3)}x`);
 
   // The plate is sized to the LARGEST drawing of its kind, so at least one member
   // has to reach an edge of it. A plate bigger than everything in it is a frame
@@ -404,19 +448,30 @@ console.log('\nThe picture pop-up\n');
   const touches = (trims, slot) =>
     trims.some(t => Math.abs(t[2] * slot.k - slot.w) < 0.001) &&
     trims.some(t => Math.abs(t[3] * slot.k - slot.h) < 0.001);
-  ok(touches(towers, POP.tower) && touches(figures, POP.figure),
+  ok(touches(towers, POP.tower) && touches(figures, POP.figure) &&
+     touches(abilities, POP.ability),
     'and each plate is sized to the biggest thing in it');
 
   // NEVER AN UPSCALE. The pop-up shows the art at the size the artist exported it
   // or smaller — see the note on POP in src/book.js for why this rule is not the
   // 3x one every other drawing in the game is held to.
-  ok(POP.tower.k <= 1 && POP.figure.k <= 1,
-    'and neither blows the art up past what the artist drew',
-    `towers ${POP.tower.k.toFixed(3)}x, figures ${POP.figure.k.toFixed(3)}x`);
+  ok(POP.tower.k <= 1 && POP.figure.k <= 1 && POP.ability.k <= 1,
+    'and none of them blows the art up past what the artist drew',
+    `towers ${POP.tower.k.toFixed(3)}x, figures ${POP.figure.k.toFixed(3)}x, ` +
+    `abilities ${POP.ability.k.toFixed(3)}x`);
+
+  // THE ABILITY BUTTONS ARE A CIRCLE IN A SQUARE, and the pop-up clips them to
+  // one because their files carry an opaque white background. That only works
+  // while the plate is square: a rectangular plate would clip to the shorter side
+  // and eat the disc. tools/trim.mjs checks the FILES are square; this checks the
+  // plate they are shown in is.
+  ok(Math.abs(POP.ability.w - POP.ability.h) < 0.001,
+    'and the ability plate is square, so its clip is a circle',
+    `${POP.ability.w.toFixed(0)}x${POP.ability.h.toFixed(0)}`);
 
   // The whole thing has to sit on the board with air around it. 22 is the padding
   // drawZoom uses at each end, 30 the title band and 14 the gap under it.
-  const deepest = 22 * 2 + 30 + 14 + Math.max(POP.tower.h, POP.figure.h);
+  const deepest = 22 * 2 + 30 + 14 + Math.max(POP.tower.h, POP.figure.h, POP.ability.h);
   ok(deepest <= 540 - 2 * 22, 'and the deepest plate leaves a margin on the board',
     `${deepest.toFixed(0)}px of 540`);
 }

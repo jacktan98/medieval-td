@@ -1,6 +1,7 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS } from './data/towers.js';
-import { play, SHOT, ARCANE, MUSKET } from './audio.js';
+import { abilitiesOf, owns } from './data/abilities.js';
+import { play, SHOT, ARCANE, MUSKET, DEADEYE } from './audio.js';
 
 // What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
 // projectiles.js, and it is a table for the same reason that one is: "what does
@@ -9,7 +10,11 @@ import { play, SHOT, ARCANE, MUSKET } from './audio.js';
 //
 // A rock is not here on purpose. It is silent in the air and announces itself by
 // arriving, which is where the player is already looking.
-const FIRING = { arrow: SHOT, arcane: ARCANE, bullet: MUSKET };
+//
+// `deadeye` is the fourth row and it is why the table earns its keep: an ability
+// arrived with a projectile of its own, and giving it a voice was one line here
+// rather than a branch in shoot().
+const FIRING = { arrow: SHOT, arcane: ARCANE, bullet: MUSKET, deadeye: DEADEYE };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
@@ -139,11 +144,86 @@ export function updateTowers(state, dt) {
 function stepWeapon(state, t, dt, target) {
   t.recoil = Math.max(0, t.recoil - dt * 5);
   t.cd -= dt;
+
+  // THE REST OF A BURST, on its own little clock rather than on the reload. Once
+  // the trigger has been squeezed the three balls are going, and they go at
+  // whoever is in front of the tower NOW: a target that dies between the first and
+  // the second is not a reason to stop halfway through a burst, and re-aiming
+  // between them is what the tower would do anyway.
+  //
+  // Ahead of the hold below, because the hold does not start until the last ball
+  // has left.
+  if (t.burst > 0) {
+    t.burstT -= dt;
+    if (t.burstT > 0 || !target) return;
+    shoot(state, t, target, t.special);
+    t.recoil = 1;
+    t.burst--;
+    t.burstT = t.special.gap;
+    if (t.burst === 0) t.hold = t.special.hold;
+    return;
+  }
+
+  // THE HELD POSE AFTER A SPECIAL, and it blocks the next shot as well as showing.
+  // One rule for all four abilities — see `hold` in data/abilities.js — and on this
+  // tower it is invisible: the reload is 2.4s and the hold is 1, so the pose is
+  // over long before the musket is loaded again. It is the paladin, whose swing is
+  // 0.80s, that the second actually costs anything.
+  if (t.hold > 0) {
+    t.hold -= dt;
+    if (t.hold > 0) return;
+    t.special = null;
+  }
+
   if (!target || t.cd > 0) return;
 
-  shoot(state, t, target);
+  t.shots = (t.shots || 0) + 1;
   t.cd = t.def.cooldown;
   t.recoil = 1;
+
+  const special = nextSpecial(t);
+  if (!special) { shoot(state, t, target); return; }
+
+  // The first ball of a burst leaves on this frame, exactly as an ordinary shot
+  // would; the other two are queued above. Deadeye is `shots: 1`, so for it the
+  // queue is empty and the hold starts here.
+  t.special = special;
+  shoot(state, t, target, special);
+  t.burst = special.shots - 1;
+  t.burstT = special.gap || 0;
+  if (t.burst === 0) t.hold = special.hold;
+}
+
+// The abilities a tower has BOUGHT that change how it shoots. Holy Light is not
+// one of them anywhere — it has no `every` — which is what keeps a paladin's heal
+// out of a musketeer's trigger without either of them knowing about the other.
+const firingAbilities = t =>
+  abilitiesOf(t.def).filter(a => a.every && owns(t, a.id));
+
+// WHICH SPECIAL, IF ANY, THIS SHOT IS. One counter on the tower, one special per
+// turn of it.
+//
+// The interesting case is a Post that has bought BOTH, and the rule has to make
+// the second purchase worth the same as the first. Two abilities that each
+// wanted "every sixth shot" would collide on the same shot; two that took strict
+// turns would leave the tower firing exactly as many specials as it did with one,
+// so the second 150 gold would buy nothing at all.
+//
+// So the GAP is divided by how many are owned, and they take turns inside it: one
+// ability bursts every sixth shot; two means a special every third, alternating.
+// Each ability then adds the same 180 damage per six shots however many are
+// owned — 25.0 damage a second becomes 33.3 with one and 41.7 with both.
+function nextSpecial(t) {
+  const fire = firingAbilities(t);
+  if (!fire.length) return null;
+
+  // The shortest cycle any of them asks for, shared out. All of a tier's firing
+  // abilities are expected to want the same cycle — both of the musketeer's want
+  // six — and tools/abilities.mjs fails if a tier ever offers two that disagree,
+  // because then this number would be one of them and not the other.
+  const period = Math.max(1, Math.round(Math.min(...fire.map(a => a.every)) / fire.length));
+  if (t.shots % period !== 0) return null;
+  return fire[(t.shots / period - 1) % fire.length];
 }
 
 // A tower whose reload is ANIMATED, so the rules and the pictures have to agree.
@@ -197,9 +277,13 @@ function stepCrew(state, t, dt, target) {
   if (t.beat === FIRE) shoot(state, t, target);
 }
 
-function shoot(state, t, target) {
+// `special` is the ability this shot belongs to, or nothing for an ordinary one.
+// It may swap the AMMUNITION and the DAMAGE and nothing else — the muzzle, the
+// aim, the lead and the noise all come out of the tower and the ammo exactly as
+// they did before, which is why Deadeye needed no branch anywhere below.
+function shoot(state, t, target, special) {
   const m = muzzlePoint(t);
-  const ammo = t.def.ammo;
+  const ammo = (special && special.ammo) || t.def.ammo;
 
   const shot = {
     x: m.x,
@@ -210,7 +294,7 @@ function shoot(state, t, target) {
     // only record of which side the blow was on.
     fromX: t.x,
     target,
-    damage: t.def.damage,
+    damage: (special && special.damage) || t.def.damage,
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
     splash: t.def.splash || 0,

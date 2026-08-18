@@ -87,5 +87,13 @@ export function scaleWaves(waves, difficulty) {
   }));
 }
 
-export const startingGold = (level, difficulty) =>
-  Math.round(level.startGold * difficulty.gold);
+// THE PURSE THE GAME OPENS WITH, given a base and a difficulty.
+//
+// It takes the NUMBER rather than the level, and that is not a tidy-up: the base
+// is no longer always `level.startGold`, because the admin dashboard can replace
+// it. Passing the level would have made this function reach for a field the caller
+// had already decided not to use — see `adminGold` in src/admin.js, and the same
+// argument the wave table's two layers are built on: the dashboard edits the
+// level's own number, and the difficulty then scales whatever it finds.
+export const startingGold = (startGold, difficulty) =>
+  Math.round(startGold * difficulty.gold);

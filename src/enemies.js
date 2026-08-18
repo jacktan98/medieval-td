@@ -222,7 +222,12 @@ export function updateEnemies(state, dt) {
       // who share the generic swing, 'paladin' for the one who does not.
       solo(e.killedBy === 'arrow' ? CUE.arrowKill
          : e.killedBy === 'rock' ? CUE.rockKill
-         : e.killedBy === 'bullet' ? CUE.musketKill
+         // Both balls the Musketeer Post fires answer with the same line. The
+         // ordinary one and Deadeye's are separate ammunition — they leave the
+         // barrel with different reports — but a man shot dead is a man shot dead,
+         // and a second kill cry for the same weapon would be telling the player
+         // apart two things that look identical on the board.
+         : e.killedBy === 'bullet' || e.killedBy === 'deadeye' ? CUE.musketKill
          : e.killedBy === 'paladin' ? CUE.paladinKill
          : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the

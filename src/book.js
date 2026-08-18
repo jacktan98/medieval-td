@@ -13,6 +13,8 @@
 //       Tier I there and the Spearman it musters here.
 //   2   ENEMIES, with room for the two stats a tower entry has no space for:
 //       what a kill pays and what a leak costs.
+//   3   ABILITIES, the last page: what a topped-out tier 4 can be taught, its
+//       button, its price and a sentence about what it does.
 //
 // IT WAS TWO PAGES, towers on the left half of a spread and their men on the
 // right. The tier 4 Musketeer Post is what ended that: thirteen tiers do not fit
@@ -27,12 +29,13 @@
 // a button's position is how a tap target drifts off the picture it belongs to.
 
 import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
+import { ABILITIES } from './data/abilities.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
 import { occupant } from './select.js';
-import { PORTRAIT_SCALE } from './data/ui.js';
+import { PORTRAIT_SCALE, ui } from './data/ui.js';
 
-export const PAGES = 3;
+export const PAGES = 4;
 
 // --- the shelf ---------------------------------------------------------------
 
@@ -357,6 +360,34 @@ export function enemyCards() {
   }));
 }
 
+// --- the abilities page -------------------------------------------------------
+
+// THE SAME CARD AGAIN, in the same grid, flowing across the columns exactly as
+// the enemies do. Four abilities today, so one row of four; a fifth would start
+// the second row without anything here changing.
+//
+// What is inside the card is not the same, and it is the one page where that is
+// true: an ability has no health and no damage to put in a row of icons, it has a
+// SENTENCE. So the two stat rows are replaced by two lines of prose in a smaller
+// face — the artist asked for the smaller size along with the description, which
+// is the right pairing: a sentence at the stat rows' 11px would not fit the card
+// and would read as a heading.
+export function abilityCards() {
+  return ABILITIES.map((def, i) => ({
+    def, ...shelfRect(i % COLUMNS, Math.floor(i / COLUMNS))
+  }));
+}
+
+// The picture slot on an ability card. A button rather than a figure or a
+// building, so it is neither anchored on a shadow nor scaled against anything —
+// it is a disc, and a disc is drawn at a size and centred.
+//
+// 44 against the card's 60 leaves 8px of air above and below, which is the same
+// air AIR keeps around a building on the towers page. It sits in a box the width
+// of TOWER_BOX so the text column starts in the same place on both pages.
+export const ABILITY_ICON = 44;
+export const ICON_BOX = { x: 6, y: 0, w: 48, h: SLOT_H };
+
 // --- controls ----------------------------------------------------------------
 
 // The footer. Close on the left where a thumb rests, the flip in the middle.
@@ -449,6 +480,20 @@ const within = (b, x, y) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y +
 // builders the cards themselves draw from, so the picture in the pop-up cannot
 // be a different drawing from the picture that was tapped.
 function artAt(state, x, y) {
+  if (state.book === 3) {
+    for (const c of abilityCards()) {
+      if (within(cell(c), x, y)) {
+        // `round` is the one thing an ability's picture needs that nothing else
+        // does: the file is an opaque disc on an opaque white square, so the
+        // pop-up has to clip it exactly as the menu button does. See the `plate`
+        // entries in data/ui.js.
+        return { sprite: c.def.icon, trim: ui[c.def.icon].trim,
+                 title: c.def.name, kind: 'ability', round: true };
+      }
+    }
+    return null;
+  }
+
   if (state.book === 2) {
     for (const c of enemyCards()) {
       if (within(cell(c), x, y)) {
@@ -504,7 +549,15 @@ const POP_BOX = { w: 720, h: 400 };
 // on. A viewer that answers "look closer" with 13% more picture is worse than no
 // viewer. The cost is that a phone at 3x device pixels draws these at 3x; flat art
 // with heavy outlines carries it.
-const POP_SHRINK = { tower: 0.8, figure: 1 };
+//
+// THREE KINDS NOW. The abilities are the third, and they need one for the reason
+// this whole mechanism exists: all four are exactly 186x186, so a plate fitted to
+// each picture would be the same size four times over anyway — but sizing them
+// with the figures would open a 179px frame around a 186px disc and crop it, and
+// sizing them with the towers would open a 286x320 one around it. A kind is a
+// group of drawings that answer the same question, and "what does this button
+// mean" is not "what does this man look like".
+const POP_SHRINK = { tower: 0.8, figure: 1, ability: 1 };
 
 function popGroup(trims, shrink) {
   const w = Math.max(...trims.map(t => t[2]));
@@ -520,7 +573,8 @@ export const POP = {
   // page is — a thug opening a different-sized plate from a spearman would read as
   // two different kinds of thing.
   figure: popGroup([...TIERS.map(d => occupant(d).trim),
-                    ...Object.values(enemyTypes).map(d => d.spriteTrim)], POP_SHRINK.figure)
+                    ...Object.values(enemyTypes).map(d => d.spriteTrim)], POP_SHRINK.figure),
+  ability: popGroup(ABILITIES.map(a => ui[a.icon].trim), POP_SHRINK.ability)
 };
 
 // --- what a card says --------------------------------------------------------
@@ -563,5 +617,23 @@ export function unitEntry(def) {
     art: figureSlot(man.trim, man.pivot),
     hp: man.hp,
     damage: man.damage
+  };
+}
+
+// An ability's entry: its button, its name, which tower teaches it, what it costs
+// and the two lines that say what it does.
+//
+// NO REFUND FIGURE beside the price, unlike a tower's. An ability is folded into
+// the tower's own `spent` when it is bought, so it comes back at the same 60% —
+// but only by taking the tower down, and quoting a refund on a line of its own
+// would read as something you can sell separately.
+export function abilityEntry(def) {
+  return {
+    title: def.name,
+    sprite: def.icon,
+    trim: ui[def.icon].trim,
+    of: def.of,
+    cost: def.cost,
+    lines: def.lines
   };
 }
