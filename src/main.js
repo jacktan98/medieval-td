@@ -128,6 +128,11 @@ function newGame() {
     // Reset with everything else, so a book left open on the title screen is not
     // still up when a map switch rebuilds the game underneath it.
     book: null,
+    // The encyclopedia's picture pop-up: the drawing a card was tapped to open,
+    // or null. A mode inside a mode — while it is set the book's own footer stops
+    // answering and any tap closes it. Only ever set while `book` is, and cleared
+    // whenever the book is opened, so a restart cannot inherit one.
+    zoom: null,
     // A half-pressed Quit, as the ms timestamp its window closes at. 0 for not
     // armed, which is also what it resets to — a restart cannot inherit one.
     quitArmed: 0,

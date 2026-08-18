@@ -7,7 +7,7 @@
 //
 // Three pages, flipped at the bottom:
 //
-//   0   TOWERS, every tier of every family, across the whole spread.
+//   0   TOWERS, every tier of every family, across the whole page.
 //   1   UNITS: the MAN each of those towers puts on the board, in the SAME CELL
 //       as his tower on page 1. Third card down the first column is a Barracks
 //       Tier I there and the Spearman it musters here.
@@ -16,8 +16,8 @@
 //
 // IT WAS TWO PAGES, towers on the left half of a spread and their men on the
 // right. The tier 4 Musketeer Post is what ended that: thirteen tiers do not fit
-// in the six rows by two columns that one half of a spread holds, and the shelf
-// silently ran off the page when it was twelve. Giving the towers a whole spread
+// in the six rows by two columns that one half of a spread held, and the shelf
+// silently ran off the page when it was twelve. Giving the towers a whole page
 // and their men the next one has room for two more tier 4s before the same
 // question comes back, and the "same cell on both pages" rule keeps what the old
 // side-by-side layout was for.
@@ -41,11 +41,9 @@ export const PAGES = 3;
 // is no second table to forget.
 const LADDERS = [archery, barracks, siege, monastery];
 
-// Which cell each tier sits in, across the FOUR columns of the spread — two per
-// half. `col` counts 0..3 straight through; shelfRect turns it back into a column
-// within a half.
+// Which cell each tier sits in, across the FOUR columns of the page.
 //
-// ONE FAMILY PER COLUMN while the spread has a column for each of them, which is
+// ONE FAMILY PER COLUMN while the page has a column for each of them, which is
 // what the page wants to say: a column IS a ladder, read top to bottom, and the
 // four sit side by side to be compared rung for rung. Four families, four columns,
 // and six rows of room for a ladder that is currently four tiers at its longest.
@@ -71,9 +69,15 @@ export function shelf() {
   return out;
 }
 
-// A shelf cell as a rect: which half of the spread, then which column inside it.
+// A shelf cell as a rect. One grid across the whole page — see `GAP` below for
+// why there is no longer a half to pick first.
 export function shelfRect(col, row) {
-  return cardRect(col % COLS, row, HALVES[Math.floor(col / COLS)]);
+  return {
+    x: PAGE_X + col * (CARD_W + GAP),
+    y: TOP + row * (CARD_H + GAP),
+    w: CARD_W,
+    h: CARD_H
+  };
 }
 
 // --- page geometry -----------------------------------------------------------
@@ -108,44 +112,50 @@ export const HEAD_Y = INNER.y + 48;
 const FOOT_H = 38;
 export const FOOT_Y = INNER.b - FOOT_H;
 
-// The grid. Rows are DERIVED from what is left between the heading and the
-// footer rather than chosen, so the margins are the fixed thing and the cards
-// give way — which is the right way round when the complaint is about gaps.
+// The grid. Both card sizes are DERIVED from what is left inside the margins
+// rather than chosen, so the margins are the fixed thing and the cards give way —
+// which is the right way round when the complaint is about gaps.
 const TOP = INNER.y + 58;
+
 // Exported for tools/book.mjs, which checks the GRID rather than the cards that
 // happen to be in it: the shelf no longer fills every cell — thirteen tiers in
 // twenty-four — so "the bottom card sits on the margin" has to be asked of the
 // last row that exists rather than of the last one used.
-export const ROWS = 6;        // per column, per half
-const COLS = 2;               // per half
-const CARD_GAP = 4;
-const CARD_H = Math.floor((FOOT_Y - PAD - TOP - (ROWS - 1) * CARD_GAP) / ROWS);
+export const ROWS = 6;
+export const COLUMNS = 4;
 
-// The fold, with a gutter of its own so the two halves do not touch it.
+// Where the grid starts across. The name is not `HALVES[0]` any more, and the
+// reason is the whole of the note below.
+export const PAGE_X = INNER.x;
+
+// ONE GAP, BOTH WAYS, AND THE SAME GAP EVERYWHERE ACROSS.
+//
+// This used to be a spread: two halves of two columns each, with a 12px gutter
+// held clear on either side of the fold so the halves did not touch it. The
+// arithmetic was fine and the page was not. A reader looking at four columns of
+// tower cards sees three gaps between them, and they were 6, 24 and 6 — so the
+// middle pair read as belonging to different lists, which is exactly the thing
+// the fold used to mean and no longer does. The towers took the whole spread
+// when their men moved to a page of their own; the gutter was the last piece of
+// the old two-sided layout still being drawn, and nothing was left for it to
+// separate.
+//
+// So: one grid of four columns on one gap, and the same number down the page, so
+// no gap on the sheet is bigger than any other. 4 is the number that also DIVIDES
+// — 912px of usable width across four columns and three gaps is 225 exactly, and
+// 380px of height across six rows and five gaps is 60 exactly. The floors below
+// are therefore no-ops today and a tripwire tomorrow: change a margin so the
+// division stops coming out whole and tools/book.mjs fails on the margin the
+// remainder eats, rather than the page quietly drifting a pixel off its edge.
+const GAP = 4;
+const CARD_W = Math.floor((INNER.r - PAGE_X - (COLUMNS - 1) * GAP) / COLUMNS);
+const CARD_H = Math.floor((FOOT_Y - PAD - TOP - (ROWS - 1) * GAP) / ROWS);
+
+// The centre-line of the sheet. It is no longer a fold in the layout sense —
+// nothing is divided by it — but the footer is still built symmetrically about
+// it, and a card must not sit ON it: with a 4px gap between columns 2 and 3 the
+// line falls in that gap, which tools/book.mjs checks.
 export const FOLD = 480;
-const GUTTER = 12;
-const HALF_W = FOLD - GUTTER - INNER.x;
-const COL_GAP = 6;
-const CARD_W = Math.floor((HALF_W - (COLS - 1) * COL_GAP) / COLS);
-
-// Where each half's first column starts. The right half is mirrored about the
-// fold rather than measured from the left, so the two margins are equal by
-// construction.
-export const HALVES = [INNER.x, FOLD + GUTTER];
-
-// How many card columns the whole spread has: two per half. Both the shelf and
-// the enemy page flow across all of them, so the number belongs here rather than
-// being multiplied out at each call site.
-export const COLUMNS = COLS * HALVES.length;
-
-export function cardRect(col, row, fold) {
-  return {
-    x: fold + col * (CARD_W + COL_GAP),
-    y: TOP + row * (CARD_H + CARD_GAP),
-    w: CARD_W,
-    h: CARD_H
-  };
-}
 
 // --- what goes in a card's picture slot --------------------------------------
 
@@ -339,7 +349,7 @@ export function rowsIn(b, n) {
 // description" as a tower is. Empty space on a short page is fine; boxes that do
 // not match are not.
 //
-// They flow across all four columns of the spread and then down, so a third and
+// They flow across all four columns of the page and then down, so a third and
 // fourth enemy fill the row before anything starts a second one.
 export function enemyCards() {
   return Object.values(enemyTypes).map((def, i) => ({
@@ -391,22 +401,99 @@ export function hitBookButton(state, x, y) {
 
 export function openBook(state) {
   state.book = 0;
+  state.zoom = null;
 }
 
 // Tapping the book's own controls. Every tap while the book is open comes here
 // and none of them go anywhere else: the page covers the whole board, so nothing
 // underneath may act on one — including the plot a card happens to be drawn over.
-// A tap that hits none of the three controls does nothing, which is the right
-// answer for a page you are reading.
+// A tap that hits none of the controls does nothing, which is the right answer
+// for a page you are reading.
 export function tapBook(state, x, y) {
+  // THE POP-UP SWALLOWS EVERYTHING while it is up, on the same terms the book
+  // itself swallows the board — and ANY tap dismisses it, including one that
+  // lands on the Close button underneath. A picture you opened by tapping is a
+  // picture you expect to close by tapping, and a first tap that flipped the page
+  // behind the thing you are looking at would be the worst of both.
+  if (state.zoom) { state.zoom = null; return true; }
+
   if (inside(BOOK_CLOSE, x, y)) { state.book = null; return true; }
   // BOTH ARROWS ALWAYS WORK, wrapping round. With two pages a disabled arrow
   // would be dead half the time it is on screen, and a control that does nothing
   // when you press it reads as the game having stopped listening.
-  if (inside(BOOK_PREV, x, y)) state.book = (state.book + PAGES - 1) % PAGES;
-  else if (inside(BOOK_NEXT, x, y)) state.book = (state.book + 1) % PAGES;
-  else return false;
-  return true;
+  if (inside(BOOK_PREV, x, y)) { state.book = (state.book + PAGES - 1) % PAGES; return true; }
+  if (inside(BOOK_NEXT, x, y)) { state.book = (state.book + 1) % PAGES; return true; }
+
+  const art = artAt(state, x, y);
+  if (art) { state.zoom = art; return true; }
+  return false;
+}
+
+// --- the picture pop-up -------------------------------------------------------
+
+// THE WHOLE CELL OPENS THE PICTURE, not just the 48px slot the drawing sits in.
+//
+// The ask was "tapping an image shows it big", and the image is a thumbnail 48
+// wide — under the 44 real px this game holds every target to, and a miss on it
+// lands on the card's own text, which does nothing. So the target is the CELL:
+// the card grown by half a gap on every side, which tiles the grid exactly and
+// makes the whole entry the handle for its own drawing. 229x64 is a thumb-sized
+// target, and a tap that misses one card hits its neighbour rather than nothing.
+const half = GAP / 2;
+const cell = b => ({ x: b.x - half, y: b.y - half, w: b.w + GAP, h: b.h + GAP });
+
+const within = (b, x, y) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+
+// What a tap on the open page is pointing at, as the pop-up wants it: a sprite,
+// the rect of it to show, and what it is called. Read from the same entry
+// builders the cards themselves draw from, so the picture in the pop-up cannot
+// be a different drawing from the picture that was tapped.
+function artAt(state, x, y) {
+  if (state.book === 2) {
+    for (const c of enemyCards()) {
+      if (within(cell(c), x, y)) {
+        return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name };
+      }
+    }
+    return null;
+  }
+
+  for (const { def, tiers, col, row } of shelf()) {
+    if (!within(cell(shelfRect(col, row)), x, y)) continue;
+    const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
+    return { sprite: e.sprite, trim: e.trim, title: e.title };
+  }
+  return null;
+}
+
+// The box the drawing gets, inside the pop-up's own plate. 400 deep leaves the
+// plate 22px clear of the top and bottom of the board once the title band, the
+// hint line and the padding are added — the same air the sheet keeps.
+const POP_BOX = { w: 720, h: 400 };
+
+// HOW BIG A TAPPED DRAWING IS SHOWN. ONE SOURCE PIXEL PER GAME PIXEL, or as much
+// less as it takes to fit the box.
+//
+// That first term is what "full resolution" means here, and it is worth being
+// exact about because the number the rest of the codebase uses is a different
+// one. Everywhere else a sprite is held to drawn x 3 <= source, so it stays crisp
+// on the densest display this game targets; the book's own thumbnails sit at
+// 1.44x board scale against a 1.625x ceiling for exactly that reason.
+//
+// A viewer opened BY TAPPING A PICTURE is the one place that rule is the wrong
+// one. At the ceiling a musketeer would be shown 51px wide against the 45px
+// thumbnail he was tapped on — a pop-up that answers "look closer" with 13% more
+// picture, which is worse than not having it. At 1:1 he is 152px, three and a
+// half times the thumbnail, and the cost is that a phone at 3x device pixels
+// draws him at 3x rather than 1x. Flat art with heavy outlines carries that; a
+// picture too small to read carries nothing.
+//
+// It is never an UPSCALE of the file: the drawing is shown at the size the artist
+// exported it, and every pixel on the screen is one they drew. The tall buildings
+// come out at the box instead — a 694px monastery lands 400 — so the deepest art
+// in the game is the art that fills the plate, which is the right way round.
+export function popScale(trim) {
+  return Math.min(1, POP_BOX.w / trim[2], POP_BOX.h / trim[3]);
 }
 
 // --- what a card says --------------------------------------------------------

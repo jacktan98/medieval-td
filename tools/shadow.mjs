@@ -179,6 +179,7 @@ const towers = await import('../src/data/towers.js');
 const waves = await import('../src/data/waves.js');
 const spear = towers.barracks[0].soldier, spear2 = towers.barracks[1].soldier;
 const spear3 = towers.barracks[2].soldier;
+const pal = towers.barracks[3].soldier;
 const mon = towers.monastery;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const plague = waves.enemyTypes.plague_inf;
@@ -195,6 +196,8 @@ const SPRITES = [
   ['assets/towers/barracks/Barracks_Tower_T1.png',   'camp.groundFrac',        towers.barracks[0].spriteTrim, towers.barracks[0].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],
+  // Tier 4, the Paladin Keep. Same ellipse fit as the three huts below it.
+  ['assets/towers/barracks/Paladin_Keep.png',        'camp4.groundFrac',       towers.barracks[3].spriteTrim, towers.barracks[3].groundFrac, 'whole'],
   // ALL THREE CATAPULT FRAMES, against the SAME trim and the SAME anchor, and
   // that is the check rather than a repetition of it. The machine animates by
   // swapping which file is drawn into one unchanging box, so if the three
@@ -272,6 +275,12 @@ const SPRITES = [
   ['assets/units/Soldiers_Pikeman_Attack.png',        'spearman2.attack.pivot',   spear2.attack.trim, spear2.attack.pivot],
   ['assets/units/Soldiers_Swordsman_Default.png',     'spearman3.pivot',          spear3.spriteTrim, spear3.pivot],
   ['assets/units/Soldiers_Swordsman_Attack.png',      'spearman3.attack.pivot',   spear3.attack.trim, spear3.attack.pivot],
+  // The paladin, whose two poses differ more than anybody's — 123 wide at rest and
+  // 178 swinging — which makes the pair rule worth more on him than on the rest:
+  // if the two shadows disagreed he would step sideways every time the sword came
+  // down. They are at the same source pixel to within nothing.
+  ['assets/units/Paladin_Default.png',                'paladin.pivot',            pal.spriteTrim, pal.pivot],
+  ['assets/units/Paladin_Attack.png',                 'paladin.attack.pivot',     pal.attack.trim, pal.attack.pivot],
   ['assets/enemies/Enemies_Thug_Default.png',        'light_inf.pivot',         light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],
@@ -281,6 +290,7 @@ const SPRITES = [
   ['assets/dead/Soldiers_Spearman_Dead.png',  'spearman.deadPivot',   spear.deadTrim, spear.deadPivot],
   ['assets/dead/Soldiers_Pikeman_Dead.png',   'spearman2.deadPivot',  spear2.deadTrim, spear2.deadPivot],
   ['assets/dead/Soldiers_Swordsman_Dead.png', 'spearman3.deadPivot',  spear3.deadTrim, spear3.deadPivot],
+  ['assets/dead/Paladin_Dead.png',            'paladin.deadPivot',    pal.deadTrim, pal.deadPivot],
   ['assets/dead/Enemies_Thug_Dead.png',        'light_inf.deadPivot',  light.deadTrim, light.deadPivot],
   ['assets/dead/Enemies_Giant_Thug_Dead.png',  'heavy_inf.deadPivot',  heavy.deadTrim, heavy.deadPivot],
   ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot]

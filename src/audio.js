@@ -203,6 +203,11 @@ const paths = {
   rock_kill_enemy:  'assets/audio/sfx/Rock_kill_enemy.mp3',
   thug_dies:       'assets/audio/sfx/Thug_dies.mp3',
   soldier_dies:    'assets/audio/sfx/Soldier_dies.mp3',
+  // A paladin's sword. His own blow rather than one of the three generic takes,
+  // because a tier 4 squad should be audibly the one doing the fighting — and
+  // Category B beside them, for the same reason: every swing lands its own blow.
+  paladin_attack:  'assets/audio/sfx/Paladin_attack.mp3',
+  paladin_kill_enemy: 'assets/audio/sfx/Paladin_kill_enemy.mp3',
   attack_1:        'assets/audio/sfx/Attack_1.mp3',
   attack_2:        'assets/audio/sfx/Attack_2.mp3',
   attack_3:        'assets/audio/sfx/Attack_3.mp3',
@@ -242,7 +247,12 @@ const paths = {
   // case: they rotate over whatever a cue holds, so two lines simply alternate
   // more often than five do. See NO_REPEAT.
   musketeer_1:     'assets/audio/voice/Musketeer_1.mp3',
-  musketeer_2:     'assets/audio/voice/Musketeer_2.mp3'
+  musketeer_2:     'assets/audio/voice/Musketeer_2.mp3',
+  // The Paladin Keep's own two, on exactly the same terms: a named tier 4 at the
+  // top of the barracks ladder, answering when it is built and when it is given a
+  // rally point rather than borrowing a barracks line.
+  paladin_1:       'assets/audio/voice/Paladin_1.mp3',
+  paladin_2:       'assets/audio/voice/Paladin_2.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -315,6 +325,8 @@ export const CUE = {
   // The Musketeer Post's, keyed by the `voice` field on its tier rather than by a
   // family id — see familyCue below.
   musketeer:    ['musketeer_1', 'musketeer_2'],
+  // The Paladin Keep's, keyed the same way off the `voice` field on its tier.
+  paladin:      ['paladin_1', 'paladin_2'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -327,6 +339,11 @@ export const CUE = {
   // board — and telling the three apart by ear is most of what these are for.
   musketKill:   ['musketeer_kill_enemy'],
   meleeKill:    ['thug_dies'],
+  // A PALADIN finishing a man, split out of meleeKill for the same reason the rock
+  // and the ball were split out of the arrow's: it is a different event to watch.
+  // Every other melee kill in the game is a spearman, a pikeman or a knight and
+  // they share one line; the tier 4 squad has its own.
+  paladinKill:  ['paladin_kill_enemy'],
   soldierDeath: ['soldier_dies'],
   // Selling. Category A and always played with priority, which puts it in the
   // same bracket as a build and an upgrade rather than with the battle: all
@@ -348,6 +365,9 @@ export const ARCANE = ['arcane_shot'];
 // firing at once are two events the player is watching.
 export const MUSKET = ['musketeer_shot'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
+// A longsword landing on plate. Category B beside the three generic takes and
+// chosen instead of them for one man — see blowCue below.
+export const PALADIN = ['paladin_attack'];
 // A rock arriving. Category B because a catapult's noise is the IMPACT, not the
 // release: several machines land rocks at once and a shared channel would
 // silence all but one of them, which is the same reason the bow is down here.
@@ -710,6 +730,18 @@ export function familyCue(famId, def) {
        : famId === 'monastery' ? CUE.monastery
        : null;
 }
+
+// WHAT A SOLDIER'S BLOW SOUNDS LIKE, keyed off the `blow` field on his own def in
+// data/towers.js — the same one-word opt-in `voice` is on a tier.
+//
+// Three of the four men a barracks musters share the generic takes, and that is
+// right: a spear, a pike and a sword landing are the same event with a different
+// blade on it. The paladin is the one the player is meant to hear, because his
+// squad is the one they spent 530 gold on, and steel on plate is a different
+// noise rather than a louder one. A def with no `blow` behaves exactly as before.
+const BLOWS = { paladin: PALADIN };
+
+export const blowCue = def => (def && BLOWS[def.blow]) || ATTACK;
 
 // The cue for whatever the player just selected, or null for nothing that
 // speaks. Here rather than in input.js because selection happens at three call

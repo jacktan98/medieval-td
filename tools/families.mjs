@@ -24,11 +24,15 @@
 // and for two families to become the same tower at different prices, and the
 // only symptom is that the game slowly stops having a reason to offer both.
 //
-// A BARRACKS IS NOT IN HERE. It shoots nothing, its `range` is the leash on a
+// A BARRACKS IS NOT IN THE TABLE. It shoots nothing, its `range` is the leash on a
 // rally point rather than a weapon's reach, and comparing that to a bow's range
-// would be comparing two different things that share a field name.
+// would be comparing two different things that share a field name. It gets a
+// section of its own at the bottom, where the questions are about a wall.
 
-import { archery, monastery, siege } from '../src/data/towers.js';
+// The barracks IS imported, for one section at the bottom — its tier 4 makes a
+// claim of its own shape that nothing above can ask. It still takes no part in the
+// three-column table.
+import { archery, barracks, monastery, siege } from '../src/data/towers.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -203,7 +207,66 @@ console.log('\nTier 4 — reach instead of output\n');
   ok(archery.every(d => d.targeting), 'and every archery tier still takes an order');
 }
 
+// --- the barracks' tier 4, on its own terms --------------------------------------
+//
+// The barracks is not in the table above and the note at the top says why: it
+// shoots nothing, and its `range` is the leash on a rally point rather than a
+// weapon's reach. But its tier 4 makes a claim of the same SHAPE as the Musketeer
+// Post's — a trade rather than an improvement — and that claim is checkable
+// without comparing it to anything in another family.
+//
+// The artist's words were "not really an attacker but a blocker". So: the health
+// has to grow faster than the output, or the rung is simply a better tower and the
+// sentence was decoration.
+console.log('\nBarracks tier 4 — a wall, not a weapon\n');
+{
+  const t4 = barracks[3].soldier;
+  const t3 = barracks[2].soldier;
+  const dps = m => (m.damage / m.cd) * m.count;
+  const wall = m => m.hp * m.count;
+
+  const hpUp = wall(t4) / wall(t3) - 1;
+  const dpsUp = dps(t4) / dps(t3) - 1;
+
+  ok(hpUp > dpsUp, 'the Paladin Keep gains more wall than weapon',
+    `+${(hpUp * 100).toFixed(0)}% health against +${(dpsUp * 100).toFixed(0)}% damage a second`);
+
+  // Per gold SPENT, which for a ladder means the whole ladder: a tier 4 costs you
+  // the three rungs under it as well. A rung that is worse per gold than the one
+  // below it would never be worth pressing; one that is far better makes the
+  // choice between plots meaningless. "A little ahead" is the target.
+  const spend = t => barracks.slice(0, t + 1).reduce((sum, d) => sum + d.cost, 0);
+  const per = t => wall(barracks[t].soldier) / spend(t);
+  const gain = per(3) / per(2) - 1;
+  ok(gain > 0 && gain < 0.15, 'and is a little more wall per gold, not a lot',
+    `${per(3).toFixed(2)} against ${per(2).toFixed(2)} per gold, +${(gain * 100).toFixed(0)}%`);
+
+  // Every rung of this ladder musters the same squad. The muster rings, the
+  // formation and tools/formation.mjs are all drawn for three men, and a tier that
+  // quietly changed the number would be a different tower rather than a stronger
+  // one — see the note on the tier in data/towers.js.
+  ok(barracks.every(d => d.soldier.count === barracks[0].soldier.count),
+    'and still musters the squad every other rung does',
+    `${barracks[0].soldier.count} men`);
+
+  // The ladder's own five dials, each one continuing rather than reversing. This
+  // is what "the same tower one rung further up" means, and it is the check that
+  // a later tune of one number did not put a tier 4 paladin behind a tier 3 knight
+  // at something.
+  const climbs = [
+    ['health', m => m.hp, 1], ['damage', m => m.damage, 1],
+    ['reload', m => m.cd, -1], ['speed', m => m.speed, 1],
+    ['respawn', m => m.respawn, -1], ['regen', m => m.regen, 1]
+  ];
+  const men = barracks.map(d => d.soldier);
+  for (const [name, pick, dir] of climbs) {
+    const rising = men.every((m, i) => i === 0 || (pick(m) - pick(men[i - 1])) * dir > 0);
+    ok(rising, `and its ${name} carries on up the ladder`,
+      men.map(pick).join(' / '));
+  }
+}
+
 console.log(bad
   ? `\n${bad} of the design's claims no longer holds.`
-  : '\nAll three families are still the towers the design says they are.');
+  : '\nEvery family is still the tower the design says it is.');
 process.exit(bad ? 1 : 0);

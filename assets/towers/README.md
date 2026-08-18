@@ -17,6 +17,7 @@ in `src/assets.js`.
 | `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
 | `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
+| `barracks/Paladin_Keep.png`            | 1024   | 107 x 133 px | Paladin Keep (4)   |
 | `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | ALL THREE artillery tiers, at rest    |
 | `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | ALL THREE artillery tiers, loading    |
 | `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | ALL THREE artillery tiers, throwing   |
@@ -38,10 +39,21 @@ one upgrade button in the game that shows what it buys rather than an arrow), an
 four clips — `audio/sfx/Musketeer_shot.mp3`, `audio/sfx/Musketeer_kill_enemy.mp3`
 and two voice lines.
 
+Elsewhere, but the Paladin Keep's: `units/Paladin_Default.png` and `_Attack`,
+`dead/Paladin_Dead.png`, `ui/Paladin_Keep_Icon.png`, and four clips —
+`audio/sfx/Paladin_attack.mp3`, `audio/sfx/Paladin_kill_enemy.mp3` and two voice
+lines. It has no projectile: it is a barracks, and its men do the fighting.
+
 **A TIER 4 FILE IS NAMED FOR THE TOWER, NOT THE RUNG.** `Musketeer_Post.png` sits
-in the archery folder with `Archery_Tower_T1..T3` because it is an archery
-building, and the code reaches it as `archery[3].sprite` either way. Keep uploading
-whichever name the tower actually has; `src/assets.js` is where the two meet.
+in the archery folder with `Archery_Tower_T1..T3` and `Paladin_Keep.png` with
+`Barracks_Tower_T1..T3`, because that is the family each belongs to, and the code
+reaches them as `archery[3].sprite` and `barracks[3].sprite` either way. Keep
+uploading whichever name the tower actually has; `src/assets.js` is where the two
+meet.
+
+**The keep is the first barracks building that grew UPWARDS.** 107 x 133 against
+the hall's 128 x 127 — narrower and taller, which is what a keep is next to a
+hall, and it means the plot marker drawn to hold a 128-wide hut still holds it.
 
 **Archery, barracks and the monastery have their own building per tier.**
 Artillery does not yet — one machine draws all three — which is why it is the

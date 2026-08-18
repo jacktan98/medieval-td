@@ -217,11 +217,13 @@ export function updateEnemies(state, dt) {
       // worth telling apart with your eyes shut, so the rock stopped borrowing
       // the arrow's line the moment it had one of its own.
       //
-      // `killedBy` is the ammunition's `kind`, stamped on the victim by whatever
-      // landed the last blow, and absent on a melee kill.
+      // `killedBy` is the ammunition's `kind` when a shot landed the last blow,
+      // and the soldier's own `blow` key when a man did — 'melee' for the three
+      // who share the generic swing, 'paladin' for the one who does not.
       solo(e.killedBy === 'arrow' ? CUE.arrowKill
          : e.killedBy === 'rock' ? CUE.rockKill
          : e.killedBy === 'bullet' ? CUE.musketKill
+         : e.killedBy === 'paladin' ? CUE.paladinKill
          : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and

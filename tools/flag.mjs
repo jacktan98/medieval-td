@@ -18,6 +18,18 @@
 // uses on the grey under a building. It is exact rather than a tolerance range
 // on purpose: if the artist recolours the flag this fails loudly instead of
 // quietly measuring a patch of sky-coloured something else.
+//
+// TIER 4 IS NOT A PENNANT AND THE SUGGESTION BELOW IS WRONG FOR IT. The Paladin
+// Keep has a banner hung down its front wall and a blue-painted deck, both this
+// same blue and joined along the parapet, so the bounding box of "the blue" is
+// both of them together and its bottom corner is the tip of the banner's right
+// tail. Its `flagFrac` is measured off the cloth's own rows instead — see the note
+// on `camp4` in data/towers.js.
+//
+// Which is why this tool CHECKS as well as suggests. The suggestion is right for a
+// pennant and only for a pennant; the check — the held anchor lands inside the
+// cloth — is right for both, and it is the thing that would notice an artist
+// moving the heraldry in a redraw.
 
 import { readFileSync } from 'fs';
 import { decodeRGBA } from './png.mjs';
@@ -69,18 +81,34 @@ for (const def of barracks) {
 
   // A pennant outside the trim means the two were measured from different
   // files, which is the one way this can be confidently wrong.
-  if (fx < 0 || fx > 1 || fy < 0 || fy > 1) { bad++; }
+  const outside = fx < 0 || fx > 1 || fy < 0 || fy > 1;
+
+  // THE CHECK, as opposed to the suggestion: whatever the def is actually holding
+  // has to land on the cloth. The bounding box of the blue rather than a blue
+  // pixel, because the anchor is the BOTTOM of the cloth and a chevron's notch
+  // means the bottom row of the cloth's own box need not be blue at its centre.
+  const held = def.flagFrac;
+  const hx = tx + held[0] * tw;
+  const hy = ty + held[1] * th;
+  // PAD, and 3 source px is the right amount: the anchor is the bottom EDGE of the
+  // cloth and the fraction in the def is rounded to three places, which on a 526px
+  // trim is worth a fifth of a pixel either way — enough to land just outside a box
+  // it is supposed to sit on the rim of.
+  const PAD = 3;
+  const on = hx >= f.x0 - PAD && hx <= f.x1 + PAD && hy >= f.y0 - PAD && hy <= f.y1 + PAD;
+  if (outside || !on) bad++;
 
   console.log(
     `${def.tier}     ${def.sprite.padEnd(16)}  ` +
     `${String(f.x0).padStart(4)},${String(f.y0).padStart(4)} ` +
     `${String(f.x1 - f.x0 + 1).padStart(3)}x${String(f.y1 - f.y0 + 1).padStart(3)}  ` +
     `${String(f.n).padStart(5)}px   ` +
-    `[${fx.toFixed(3)}, ${fy.toFixed(3)}]` +
-    (fx < 0 || fx > 1 || fy < 0 || fy > 1 ? '   OUTSIDE THE TRIM' : '')
+    `[${fx.toFixed(3)}, ${fy.toFixed(3)}]   ` +
+    `held [${held.join(', ')}] ` +
+    (outside ? '  SUGGESTION OUTSIDE THE TRIM' : on ? 'on the cloth' : '  HELD ANCHOR IS OFF THE CLOTH')
   );
 }
 
-if (bad) console.log(`\n${bad} pennant(s) fall outside their sprite's trim — re-run tools/trim.mjs first.`);
-else console.log('\nEvery pennant sits inside its sprite trim. Paste flagFrac into the camp defs.');
+if (bad) console.log(`\n${bad} tier(s) have a flag anchor that no longer holds.`);
+else console.log('\nEvery muster ring hangs off its tier\'s own cloth.');
 process.exit(bad ? 1 : 0);

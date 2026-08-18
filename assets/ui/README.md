@@ -18,7 +18,8 @@ usable button rather than a blank disc.
 | `Barracks_Icon.png`      | `swords`          | 26 box       |
 | `Artillery_Icon.png`     | `catapult`        | 26 box       |
 | `Upgrade_Icon.png`       | `up`              | 26 box       |
-| `Musketeer_Post_Icon.png`| `musket`          | 26 box       |
+| `Musketeer_Post_Icon.png`| `musket`          | 34 box       |
+| `Paladin_Keep_Icon.png`  | `keep`            | 26 box       |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
 | `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
 | `Speed_Box.png`          | the 1x plate      | 54 x 24      |

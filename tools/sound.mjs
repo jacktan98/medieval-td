@@ -129,12 +129,13 @@ const ctx = {
 globalThis.AudioContext = function () { return ctx; };
 globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(path) });
 
-const { loadAudio, play, solo, CUE, SHOT, ATTACK, SELECT, selectionCue, familyCue } =
-  await import('../src/audio.js');
-// The archery ladder, for the tier-4 voice checks below. Imported here rather than
-// at the top because everything above has to run after the fake AudioContext is in
-// place, and this file keeps its imports in one order for that reason.
-const { archery } = await import('../src/data/towers.js');
+const { loadAudio, play, solo, CUE, SHOT, ATTACK, PALADIN, SELECT,
+        selectionCue, familyCue, blowCue } = await import('../src/audio.js');
+// The two ladders with a tier 4 on them, for the voice and blow checks below.
+// Imported here rather than at the top because everything above has to run after
+// the fake AudioContext is in place, and this file keeps its imports in one order
+// for that reason.
+const { archery, barracks } = await import('../src/data/towers.js');
 
 // Load with console.info muted. The module reports anything it had to move a
 // long way, which is useful in a browser and pure noise here — every fake clip
@@ -479,6 +480,29 @@ check('and an unrecorded voice falls back to the family',
   familyCue('archery', { voice: 'nobody' }), CUE.archery);
 check('and selecting one picks the same lines',
   selectionCue({ kind: 'tower', ref: { fam: { id: 'archery' }, def: archery[3] } }), CUE.musketeer);
+
+// The same three things again for the SECOND tier 4, which is the point of asking
+// twice: the first one could have been wired by a special case for archery, and
+// this is what says it was not.
+check('the Paladin Keep answers with its own voice',
+  familyCue('barracks', barracks[3]), CUE.paladin);
+check('and the tiers below it still answer for barracks',
+  familyCue('barracks', barracks[0]), CUE.barracks);
+check('and selecting one picks the same lines',
+  selectionCue({ kind: 'tower', ref: { fam: { id: 'barracks' }, def: barracks[3] } }), CUE.paladin);
+
+// A MAN'S BLOW, on the same one-word opt-in as a tier's voice and with the same
+// three questions. `blowCue` is read once per swing in units.js, so a fallback
+// that returned undefined would silence three quarters of the melee in the game.
+console.log('\nWhose swing is it\n');
+check('a paladin swings with his own sound',
+  blowCue(barracks[3].soldier), PALADIN);
+check('and the three men below him share the generic takes',
+  barracks.slice(0, 3).every(d => blowCue(d.soldier) === ATTACK), true);
+check('and a def with no blow falls back rather than going silent',
+  blowCue({}), ATTACK);
+check('and so does one with a blow nobody recorded',
+  blowCue({ blow: 'nobody' }), ATTACK);
 
 // A cue with nothing loaded must not close the channel on everything else.
 //

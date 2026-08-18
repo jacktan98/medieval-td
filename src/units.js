@@ -3,7 +3,7 @@ import { at as pointOn, nearestOn } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { clampToRange, inRange } from './ground.js';
-import { solo, play, CUE, ATTACK } from './audio.js';
+import { solo, play, CUE, blowCue } from './audio.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -369,12 +369,16 @@ export function updateUnits(state, dt) {
         // Which family gets the credit if this is the blow that kills it.
         // Overwritten by every hit exactly like struckFrom above, and for the
         // same reason: the last blow is the one that counts.
-        u.foe.killedBy = 'melee';
+        //
+        // `blow` is the man's own sound key and doubles as the kill's: a paladin
+        // stamps 'paladin' where everybody else stamps 'melee', and enemies.js
+        // sorts the cry out of that one field rather than a second one.
+        u.foe.killedBy = u.def.blow || 'melee';
         // Category B: part of the battle bed rather than a thing announced.
         // Every swing lands its own blow, so every swing makes its own noise —
         // it is mixed low and ducks under anything in Category A, which is what
         // lets it fire freely without burying the cries.
-        play(ATTACK);
+        play(blowCue(u.def));
       }
       // The enemy swings back at the man BLOCKING it and nobody else. It is
       // already committed to him; the others are flanking it. So a squad that

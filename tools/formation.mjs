@@ -94,7 +94,8 @@ for (const [i, l] of levels.entries()) {
     }
   }
 
-  console.log(`${l.id} ${l.name.padEnd(12)} ${l.plots.length} plots x 3 tiers x 3 men` +
+  console.log(`${l.id} ${l.name.padEnd(12)} ${l.plots.length} plots x ${barracks.length} tiers ` +
+    `x ${barracks[0].soldier.count} men` +
     `${bad ? `   ${bad} OFF THE ROAD` : '   all on the road'}`);
 }
 

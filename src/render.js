@@ -13,7 +13,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, towerEntry, unitEntry, figureSlot,
-         SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
+         SHEET, FOLD, PAGE_X, popScale, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
@@ -2162,9 +2162,65 @@ function drawBook(ctx, state) {
   else drawEnemyPage(ctx);
 
   drawBookFooter(ctx, state);
+  if (state.zoom) drawZoom(ctx, state.zoom);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// The picture pop-up: one drawing, as the artist drew it, in the middle of the
+// board. Opened by tapping a card, closed by tapping anything.
+//
+// It is drawn LAST and over its own scrim, so the page it came from is still
+// visible behind it and still plainly not the thing you are looking at. A second
+// dimming over an already-dimmed board is what makes the plate read as being in
+// front of the parchment rather than cut out of it.
+//
+// The plate is sized to the picture rather than the other way round — a tall
+// building gets a tall plate and a wide one a wide plate — because the alternative
+// is one fixed frame with a musketeer stranded in the middle of it.
+const POP_PAD = 22;
+const POP_TITLE = 30;
+const POP_HINT = 22;
+
+function drawZoom(ctx, z) {
+  const [sx, sy, sw, sh] = z.trim;
+  const k = popScale(z.trim);
+  const w = sw * k;
+  const h = sh * k;
+
+  // Wide enough for the hint line under the narrowest drawing in the game.
+  const pw = Math.max(w + POP_PAD * 2, 240);
+  const ph = POP_PAD * 2 + POP_TITLE + h + POP_HINT;
+  const px = 480 - pw / 2;
+  const py = 270 - ph / 2;
+
+  ctx.fillStyle = 'rgba(20,22,18,0.78)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  ctx.fillStyle = SHEET_FILL;
+  ctx.beginPath();
+  ctx.roundRect(px, py, pw, ph, 12);
+  ctx.fill();
+  ctx.strokeStyle = SHEET_EDGE;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = '700 18px system-ui, sans-serif';
+  ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
+
+  const img = z.sprite && art[z.sprite];
+  if (img) ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, py + POP_PAD + POP_TITLE, w, h);
+
+  // The one caption in the book, and it earns its place: nothing else on the page
+  // opens something that has to be closed, so a player who taps a card has no
+  // reason to know that tapping again is what gets them back.
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.fillText('Tap anywhere to close', 480, py + ph - POP_PAD - POP_HINT / 2);
 }
 
 // Page 1: every tower in the game, one family per column across the spread.
@@ -2175,7 +2231,7 @@ function drawBook(ctx, state) {
 // through the middle of one list would divide something that is not divided. The
 // enemy page has never had one, for the same reason.
 function drawTowerPage(ctx) {
-  heading(ctx, 'Tower', HALVES[0]);
+  heading(ctx, 'Tower', PAGE_X);
 
   for (const { def, tiers, col, row } of shelf()) {
     towerCard(ctx, shelfRect(col, row), towerEntry(def, tiers));
@@ -2187,7 +2243,7 @@ function drawTowerPage(ctx) {
 // keeps your place, so the third card down the first column is a Crossbow Tower on
 // one page and the Elite Archer inside it on the next.
 function drawUnitPage(ctx) {
-  heading(ctx, 'Unit', HALVES[0]);
+  heading(ctx, 'Unit', PAGE_X);
 
   for (const { def, col, row } of shelf()) {
     unitCard(ctx, shelfRect(col, row), unitEntry(def));
@@ -2299,7 +2355,7 @@ function stat(ctx, key, x, y, text, colour, h = BOOK_ICON_H) {
 // player can otherwise only learn by losing, and they fit because the row above
 // them is icons rather than a sentence.
 function drawEnemyPage(ctx) {
-  heading(ctx, 'Enemy', HALVES[0]);
+  heading(ctx, 'Enemy', PAGE_X);
 
   for (const c of enemyCards()) {
     const d = c.def;

@@ -14,6 +14,8 @@
 // A LOSS IS ZERO STARS AND NOT ONE. The game only ends `won` when every wave is
 // cleared and only ends `lost` when lives reach zero, so a win always has at
 // least one life and a loss always has none — the two never meet in the middle.
+import { DIFFICULTIES } from './data/difficulty.js';
+
 const STAR_HIGH = 0.9;
 const STAR_MID = 0.5;
 
@@ -47,6 +49,9 @@ export const starCuts = startLives => [
 // so the stars change under the map buttons as you tap between them — which is
 // also the clearest way to say that they are two different ladders.
 //
+// It does run DOWNWARDS, though — a Hard result fills in the Normal one. See
+// recordStars, where the asymmetry is the whole of the argument.
+//
 // localStorage is wrapped in try/catch at every touch. It throws in private
 // browsing on some phones and it does not exist at all in Node, where the tools
 // import this file through render.js; a game that cannot save progress should
@@ -75,14 +80,43 @@ const slot = (levelId, difficultyId) => `${levelId}/${difficultyId}`;
 
 export const bestStars = (levelId, difficultyId) => table[slot(levelId, difficultyId)] || 0;
 
-// Returns true only when this run BEAT the record, which is what the summary
-// uses to say so. A run that merely matches it is not news.
+// The settings that are strictly easier than a given one. DIFFICULTIES is listed
+// on the title screen in the order it is written, easiest first, and that order IS
+// the ranking — there is one lever between the two entries and Hard turns it up.
+// A third setting inserted in the right place therefore needs no code here.
+function easierThan(difficultyId) {
+  const i = DIFFICULTIES.findIndex(d => d.id === difficultyId);
+  return i <= 0 ? [] : DIFFICULTIES.slice(0, i).map(d => d.id);
+}
+
+// Returns true only when this run BEAT the record AT THE SETTING IT WAS PLAYED
+// ON, which is what the summary uses to say so. A run that merely matches it is
+// not news, and neither is a record filled in below it by the rule that follows.
+//
+// THREE STARS ON HARD IS THREE STARS ON NORMAL, and on anything else below it.
+// The two ladders are still two ladders — that is what the note above is about,
+// and the easier setting must never light up the harder one — but the implication
+// runs one way and it is not symmetric. Hard sends a tenth more enemies through
+// the same map with the same purse, so a keep that finished it nearly untouched
+// has, by any reading a player would accept, done the Normal run as well. Making
+// them go back and prove it on the easier setting is book-keeping, not an
+// achievement.
+//
+// It fills in rather than overwrites: `stars >` at each rung, so a better Normal
+// record already standing is left alone.
 export function recordStars(levelId, difficultyId, stars) {
   const key = slot(levelId, difficultyId);
-  if (stars <= (table[key] || 0)) return false;
-  table[key] = stars;
-  persist(table);
-  return true;
+  const beat = stars > (table[key] || 0);
+  if (beat) table[key] = stars;
+
+  let filled = false;
+  for (const id of easierThan(difficultyId)) {
+    const below = slot(levelId, id);
+    if (stars > (table[below] || 0)) { table[below] = stars; filled = true; }
+  }
+
+  if (beat || filled) persist(table);
+  return beat;
 }
 
 export function clearStars() {

@@ -143,6 +143,23 @@ const SPEAR2_TRIM = [174, 196, 163, 120];
 const SPEAR2_ATK_TRIM = [155, 196, 181, 120];
 const SPEAR3_TRIM = [201, 196, 110, 120];
 const SPEAR3_ATK_TRIM = [166, 196, 145, 120];
+// THE FOURTH RUNG OF THE BARRACKS LADDER, and the second tier 4 in the game. A
+// square stone keep with a pitched roof and a banner, on the same 1024 canvas as
+// the other three buildings. 520x650 against the log hut's 624x621 — TALLER AND
+// NARROWER, which is what a keep is next to a hall, and it is the first barracks
+// building that is not wider than it is high.
+const CAMP4_TRIM = [252, 187, 520, 650];
+// The paladin: full plate, a kite shield and a longsword. Narrow and TALL —
+// 123x140 against the swordsman's 110x120 and the spearman's 168x116 — because he
+// rests with the sword UPRIGHT over his shoulder, which makes him the tallest of
+// the four men a barracks musters.
+//
+// His two poses differ more than anyone's, and in both directions: the sword comes
+// down and levels out, so the box goes from 123x140 to 178x116 — 45px wider and
+// 24 shorter. That is why each pose carries its own trim and its own pivot rather
+// than sharing one box; see the note above the archers for the rule.
+const PAL_TRIM = [193, 188, 123, 140];
+const PAL_ATK_TRIM = [135, 212, 178, 116];
 
 // THE MONASTERY, on the same 1024 canvas as the other three buildings and the
 // same 512 as every figure.
@@ -794,8 +811,8 @@ export const AIM_MODES = [
 ];
 
 // TIER 4 IS A FIRST GUESS, and it is written down as one. The artist asked for a
-// tower that covers the whole map, hits for 50 and reloads slowly, at 200 gold,
-// and said to sweep it later — so these four numbers are reasoned rather than
+// tower that covers the whole map, hits hard and reloads slowly, at 200 gold, and
+// said to sweep it later — so these four numbers are reasoned rather than
 // measured, and `node tools/sweep.mjs` has not seen them.
 //
 // `range` 480, and the number is the board rather than a feel. "Covers the whole
@@ -805,13 +822,15 @@ export const AIM_MODES = [
 // up 40px short across, which tools/families.mjs failed on. Nothing else comes
 // near it: the longest reach in the game before this was a trebuchet's 360.
 //
-// `damage` 50, tying the Abbey for the biggest single blow in the game.
+// `damage` 60, the biggest single blow in the game — ten clear of the Abbey's 50,
+// which is what makes the ball worth waiting for. It was 50 for one build, level
+// with the Abbey; the artist raised it, and the reload is what pays for it.
 //
-// `cooldown` 2.40, and it is the number holding the tower down. 50 every 2.4s is
-// 20.8 damage a second, which is LESS than an Elite Archer's 31.3 and less than a
+// `cooldown` 2.40, and it is the number holding the tower down. 60 every 2.4s is
+// 25.0 damage a second, which is LESS than an Elite Archer's 31.3 and less than a
 // Cardinal's 34.5 — this is deliberately not an upgrade in output. What it buys is
 // UPTIME: a bow covers about a fifth of a map's road and spends the rest of the
-// wave idle, and this covers all of it, so 20.8 a second everywhere can beat 31.3
+// wave idle, and this covers all of it, so 25.0 a second everywhere can beat 31.3
 // a second somewhere. That is the trade to check when the sweep runs, and the
 // reload is the dial to turn if it wins too easily.
 //
@@ -821,7 +840,7 @@ export const AIM_MODES = [
 //
 // It keeps `targeting`, and it is the tier that most wants it: a tower that can
 // see the whole board is a tower whose choice of target is the only thing left to
-// decide, and 50 damage into an 80-health militiaman is most of a reload wasted.
+// decide, and 60 damage into an 80-health militiaman is most of a reload wasted.
 export const archery = [
   { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 10, range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
@@ -833,7 +852,7 @@ export const archery = [
   // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
   // and the column they sit in is what names the family.
   { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
-    cost: 200, damage: 50, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    cost: 200, damage: 60, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
     // The upgrade button's picture when this is what the button buys. Every other
     // tier uses the generic arrow; this one has an icon of its own, so the tap
     // that turns a Crossbow Tower into a Musketeer Post shows what it is buying.
@@ -1059,6 +1078,68 @@ const spearman3 = {
   lunge: 6
 };
 
+// Tier 4's barracks: a square stone keep with a pitched roof and a banner. 107x133
+// against tier 3's 128x127 — 21px NARROWER and 6 taller, and it is the first
+// building on this ladder that grew upwards rather than outwards. That matters for
+// one reason only: the plot marker was redrawn to hold a 128-wide hut, so a
+// narrower building still sits inside it, and the HUD ceiling has not moved.
+const camp4 = {
+  sprite: 'barracks_t4',
+  spriteTrim: CAMP4_TRIM,
+  w: drawnW(CAMP4_TRIM), h: drawnH(CAMP4_TRIM),
+  // Shadow centre, source (515.9, 722.2), by the ellipse fit in tools/shadow.mjs.
+  // PNG-only like the other three, and for the same reason: nothing in a barracks
+  // has to be drawn in front of anything, because it has no gunner standing on it.
+  groundFrac: [0.508, 0.823],
+  // WHERE THE MUSTER RINGS HANG, and this is the one tier whose number is measured
+  // by hand rather than read off `node tools/flag.mjs`.
+  //
+  // The tool finds the pennant by its blue, which is exactly right on the three
+  // tiers below: their blue IS a small pennant on a pole and nothing else in the
+  // drawing is that colour. The keep has no pennant. It has a BANNER hung down the
+  // front wall and a blue-painted deck, both the same blue and joined along the
+  // parapet — so the tool sees one region 337x447 and reports its bottom corner,
+  // which is the tip of the banner's right tail.
+  //
+  // The cloth itself is x 328..509 of the source and its chevron shoulders are at
+  // y 659, so the bottom-centre of the banner is (418.5, 659) — the same thing
+  // `flagFrac` means on every other tier, found by reading the rows rather than the
+  // box. tools/flag.mjs checks it lands on the cloth.
+  flagFrac: [0.320, 0.726],
+  shape: 'camp'
+};
+
+// Tier 4's soldier: a paladin in full plate with a longsword and a shield. The body is
+// 59 source px wide, exactly as it is on the other three — the artist draws every
+// man's ground shadow at that width — so the radius comes out at 6 again and the
+// formation, the blocking and every number resting on them are untouched.
+const PAL_W = drawnW(PAL_TRIM);
+const PAL_BODY = 0.480;   // 59 / 123
+
+const paladin = {
+  sprite: 'paladin',
+  spriteTrim: PAL_TRIM,
+  // The centre of his ground shadow, source (277.0, 317.3).
+  pivot: [0.683, 0.923],
+  // Sword levelled. Same shadow, source (277.0, 317.0) — a third of a pixel from the
+  // resting pose's, so the two swap with his feet nailed to the spot and only the
+  // sword moving.
+  attack: { sprite: 'paladin_attack', trim: PAL_ATK_TRIM, pivot: [0.798, 0.905] },
+  bodyFrac: PAL_BODY,
+  spriteFaces: -1,
+  dead: 'dead_paladin',
+  deadTrim: [153, 214, 206, 84],
+  // The centre of this corpse's own shadow, source (186.0, 287.5).
+  deadPivot: [0.160, 0.875],
+  r: Math.round(PAL_W * PAL_BODY / 2),
+  lunge: 6,
+  // WHAT HIS BLOW SOUNDS LIKE, and he is the only man with an answer of his own.
+  // The other three share the three generic `Attack_n` takes; a longsword swung by
+  // a man in plate is a different noise, and it is what tells you which of your
+  // squads is the one currently fighting. See blowCue in src/audio.js.
+  blow: 'paladin'
+};
+
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
@@ -1071,6 +1152,40 @@ export const barracks = [
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
     soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 175, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+  },
+  // TIER 4 IS A FIRST GUESS, exactly as the Musketeer Post's numbers are, and it is
+  // written down as one: the artist asked for a blocker at 210 gold with 300 health
+  // and 7 damage, and said to sweep it afterwards. `node tools/sweep.mjs` has not
+  // seen it.
+  //
+  // The three numbers the artist did not give follow the ladder they are on, which
+  // is the honest way to guess: `cd` 0.80 continues 0.95 / 0.90 / 0.85, `speed` 74
+  // continues 62 / 66 / 70, `respawn` 5 continues 8 / 7 / 6, `regen` 7 continues
+  // 4 / 5 / 6 and `range` 210 continues 165 / 180 / 195. Nothing here is a new idea;
+  // it is the same tower one rung further up.
+  //
+  // WHAT THE TIER IS FOR, in the artist's words, is a blocker rather than an
+  // attacker, and the numbers say it: 300 health each is a squad of 900, up 71% on
+  // the knights' 525, while 7 damage at 0.80 is 26.3 a second against their 17.6 —
+  // up 49%, which is the smaller of the two jumps. Per gold spent it is barely
+  // ahead of tier 3 (1.70 squad health per gold against 1.64), and that is
+  // deliberate: what 530 gold on one plot buys is a wall in ONE PLACE, and the
+  // thing it cannot do is be somewhere else.
+  //
+  // The dial if it turns out too strong is `count`, not health. Three men is what
+  // every rung of this ladder musters and what tools/formation.mjs and the muster
+  // rings are drawn for; a squad of two 300s would be a different tower, not a
+  // weaker one, so try the health and the respawn first.
+  {
+    ...camp4, tier: 4, name: 'Paladin Keep', title: 'Paladin Keep', cost: 210, range: 210, colour: '#9A9488',
+    // The upgrade button's picture when this is what the button buys, on the same
+    // one-word opt-in the Musketeer Post uses — see the note on its `glyph`.
+    glyph: 'keep',
+    // And its own voice, for the same reason: a tier 4 is a named building rather
+    // than a rung, so it answers for itself when it is built and when it is given
+    // a rally point instead of borrowing a barracks line.
+    voice: 'paladin',
+    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 300, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
   }
 ];
 

@@ -342,7 +342,11 @@ function setRally(state, tower, x, y) {
   // The squad answering the order. Here rather than on the menu button, because
   // the button only arms the placement — this is the tap that actually moves
   // them, and a voice on the earlier tap would answer an order not yet given.
-  solo(CUE.barracks);
+  //
+  // Through familyCue rather than CUE.barracks directly, so the tier that has a
+  // voice of its own uses it: a Paladin Keep answers a rally point in the same
+  // voice it was built in, and every rung below it still answers for the barracks.
+  solo(familyCue(tower.fam.id, tower.def));
 }
 
 function run(state, item) {

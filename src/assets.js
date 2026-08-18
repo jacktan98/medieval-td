@@ -31,6 +31,10 @@ export const paths = {
   barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
   barracks_t3: 'assets/towers/barracks/Barracks_Tower_T3.png',
+  // Tier 4, on the same terms as the archery ladder's: the artist uploaded it as
+  // Paladin_Keep and it was filed with the other three barracks buildings, while
+  // the KEY stays tiered because the code reaches it through `barracks[3].sprite`.
+  barracks_t4: 'assets/towers/barracks/Paladin_Keep.png',
   // Artillery tier 1, and the first building with more than one drawing. The
   // three frames are one second each and the machine cycles through them while
   // it has something to shoot at; see `catapult` in data/towers.js.
@@ -86,6 +90,10 @@ export const paths = {
   soldier_t2_attack:  'assets/units/Soldiers_Pikeman_Attack.png',
   soldier_t3:         'assets/units/Soldiers_Swordsman_Default.png',
   soldier_t3_attack:  'assets/units/Soldiers_Swordsman_Attack.png',
+  // Tier 4's man, named rather than tiered for the same reason the musketeer is:
+  // the info box and the encyclopedia print "Paladin", not "Barracks Tier IV".
+  paladin:            'assets/units/Paladin_Default.png',
+  paladin_attack:     'assets/units/Paladin_Attack.png',
   // The monastery's three churchmen, who stand on their decks exactly as the
   // archers do. The keys stay tiered — the code reaches them through
   // `monastery[1].gunner` — while the files are named for the man, which is the
@@ -152,6 +160,9 @@ export const paths = {
   dead_soldier_t1: 'assets/dead/Soldiers_Spearman_Dead.png',
   dead_soldier_t2: 'assets/dead/Soldiers_Pikeman_Dead.png',
   dead_soldier_t3: 'assets/dead/Soldiers_Swordsman_Dead.png',
+  // And the paladin's body. A tier 4 leaves a corpse like everybody else — the
+  // artist drew it in the same upload as his two living poses.
+  dead_paladin:    'assets/dead/Paladin_Dead.png',
   // Blood, two of each so a hit or a death is never the same picture twice in a
   // row. All four in assets/effects now — the spatter used to sit with the arrows
   // and the pools with the corpses, which is where they happened to be uploaded.
@@ -200,6 +211,10 @@ export const paths = {
   // only tier in the game whose upgrade shows what it buys rather than an arrow —
   // see the `glyph` field on archery tier 4 in data/towers.js.
   glyph_musket:    'assets/ui/Musketeer_Post_Icon.png',
+  // The Paladin Keep's, on the upgrade button of a Knight's Hall. The second tier
+  // to bring its own picture, and the same one-word opt-in — see the `glyph` field
+  // on barracks tier 4 in data/towers.js.
+  glyph_keep:      'assets/ui/Paladin_Keep_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button
   // does, and the button is now the thing that can change without the drawing

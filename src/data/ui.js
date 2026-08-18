@@ -104,8 +104,9 @@ export const ui = {
   btn_plate:    { trim: [163, 163, 186, 186], fit: 60 },
   btn_cancel:   { trim: [199, 199, 114, 114], fit: 36 },
 
-  // Glyphs. Four sit on buttons that show a price and get the smaller box; the
-  // rally flag is the only one on a button with nothing to say.
+  // Glyphs. Six sit on buttons that show a price and get the smaller box; the
+  // rally flag is the only one on a button with nothing to say. The musket has a
+  // box of its own — see its note.
   glyph_bow:    { trim: [208, 200, 96, 112], fit: GLYPH_BOX },
   glyph_swords: { trim: [210, 212, 92, 88],  fit: GLYPH_BOX },
   glyph_catapult: { trim: [204, 211, 104, 90], fit: GLYPH_BOX },
@@ -115,11 +116,25 @@ export const ui = {
   glyph_cross:  { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
   glyph_up:     { trim: [223, 212, 66, 88],  fit: GLYPH_BOX },
   // The Musketeer Post's icon, which replaces the arrow on the one upgrade button
-  // that buys a named tower rather than a rung. It sits on a button showing a
-  // price, so it takes the smaller box like the four family glyphs — and it is by
-  // far the widest glyph in the set at 126x42 source, so at the 26px box it lands
-  // 26x9. That is a musket lying flat: long and thin is the drawing.
-  glyph_musket: { trim: [193, 235, 126, 42], fit: GLYPH_BOX },
+  // that buys a named tower rather than a rung.
+  //
+  // THE ONE GLYPH WITH A BOX OF ITS OWN, because it is the one glyph that is
+  // nearly flat: 126x42 source, so a box fits it by its WIDTH and the height it
+  // lands at is whatever the drawing's aspect gives. At the shared 26 that was
+  // 26x9 — a third of the ink every other button carries, floating in the top
+  // half of a 60px disc. 34 lands it 34x11, which is still inside the sharpness
+  // ceiling: 34 drawn x 3 device pixels is 102 of the 126 it has.
+  //
+  // And 3px down with it. A 9px-tall picture centred in the glyph zone is
+  // correct arithmetic and looks wrong — the eye centres a small mark against
+  // the whole plate, not against the band the taller glyphs fill — so it sits
+  // between the two, level with the refund coin beside it in the ring.
+  glyph_musket: { trim: [193, 235, 126, 42], fit: 34, nudge: [0, 3] },
+  // The Paladin Keep's, the second tier icon and an ordinary one: 82x84 source is
+  // as near square as anything in the set, so it takes the shared box and needs
+  // neither a size of its own nor a nudge. The musket above is the exception here,
+  // not the pattern a tier 4 icon follows.
+  glyph_keep:   { trim: [215, 214, 82, 84], fit: GLYPH_BOX },
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72
   // and the pennant is a pale triangle filling the rest, so the ink the eye
@@ -225,6 +240,7 @@ export const GLYPH_ART = {
   cross: 'glyph_cross',
   up: 'glyph_up',
   musket: 'glyph_musket',
+  keep: 'glyph_keep',
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',

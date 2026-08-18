@@ -34,7 +34,7 @@ import { refundValue, REFUND_RATE } from '../src/menu.js';
 import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
 import {
   PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, towerEntry, unitEntry, figureSlot,
-  SHEET, FOLD, HALVES, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
+  SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
   BOOK_BTN_START
@@ -171,6 +171,26 @@ console.log('\nWhat fits\n');
     for (let j = i + 1; j < cards.length; j++)
       if (overlap(cards[i], cards[j])) clashes++;
   ok(clashes === 0, 'and no two cards overlap', `${clashes} clash(es)`);
+
+  // EVERY GAP THE SAME, and this is the check the layout change was made for.
+  // The four columns used to be two halves of two, with a 12px gutter either side
+  // of the fold — so the three gaps across the page were 6, 24 and 6, and the
+  // middle pair of columns read as two separate lists. Measure the gaps rather
+  // than the constants: a gutter reintroduced anywhere, by any means, shows up
+  // here as a second number.
+  const grid = [];
+  for (let col = 0; col < COLUMNS; col++)
+    for (let row = 0; row < ROWS; row++) grid.push({ col, row, ...shelfRect(col, row) });
+
+  const at = (c, r) => grid.find(b => b.col === c && b.row === r);
+  const across = [];
+  for (let c = 1; c < COLUMNS; c++) across.push(at(c, 0).x - (at(c - 1, 0).x + at(c - 1, 0).w));
+  const down = [];
+  for (let r = 1; r < ROWS; r++) down.push(at(0, r).y - (at(0, r - 1).y + at(0, r - 1).h));
+
+  const gaps = new Set([...across, ...down]);
+  ok(gaps.size === 1, 'and every gap between cards is the same',
+    `across ${across.join('/')}, down ${down.join('/')}`);
 
   // EVERY BOX THE SAME SIZE. An enemy is exactly as much "a box description" as
   // a tower is, and a page whose boxes are three sizes reads as three different

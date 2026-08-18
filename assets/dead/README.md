@@ -1,23 +1,23 @@
 # Death artwork
 
 One dead-pose PNG per man who can die on the road, and that is the only new
-drawing each of them needs — see "Why only one file" below. All three are in:
+drawing each of them needs — see "Why only one file" below:
 
-| file                        | who dies                       | drawn as    |
-|-----------------------------|--------------------------------|-------------|
-| `Enemies_Man_Dead_T1a.png`  | the militia, every wave        | 26 x 18 px  |
-| `Enemies_Man_Dead_T1b.png`  | the heavy, waves 4-8           | 49 x 30 px  |
-| `Soldiers_Spearman_Dead.png`| your spearman, tier 1          | 49 x 17 px  |
-| `Soldiers_Pikeman_Dead.png` | your pikeman, tier 2           | 49 x 16 px  |
-| `Soldiers_Swordsman_Dead.png`| your swordsman, tier 3        | 40 x 18 px  |
+| file                          | who dies                     | drawn as    |
+|-------------------------------|------------------------------|-------------|
+| `Enemies_Thug_Dead.png`       | the thug, every wave         | 31 x 16 px  |
+| `Enemies_Giant_Thug_Dead.png` | the giant                    | 57 x 25 px  |
+| `Enemies_Plague_Thug_Dead.png`| the plague thug              | 57 x 20 px  |
+| `Soldiers_Spearman_Dead.png`  | your spearman, tier 1        | 49 x 17 px  |
+| `Soldiers_Pikeman_Dead.png`   | your pikeman, tier 2         | 49 x 16 px  |
+| `Soldiers_Swordsman_Dead.png` | your swordsman, tier 3       | 40 x 18 px  |
+| `Paladin_Dead.png`            | your paladin, tier 4         | 42 x 17 px  |
 
-The three soldiers are named after the MAN now, matching their living drawings
-in `assets/units` — `Soldiers_Spearman_Dead` beside `Soldiers_Spearman_Default`.
-The enemies still carry a tier, and it comes last in the name; the heavy's files
-are T1b rather than T2 because the artist renamed that enemy — it is a bigger
-militiaman, not the next rank up. `assets.js` was changed to suit every time
-rather than the files being renamed: renaming an upload only means renaming it
-again after the next one.
+Every file is named after the MAN, matching his living drawings in
+`assets/units` — `Soldiers_Spearman_Dead` beside `Soldiers_Spearman_Default`,
+`Paladin_Dead` beside `Paladin_Default`. `assets.js` is where a name and a key
+meet, and it is changed to suit each upload rather than the files being renamed:
+renaming an upload only means renaming it again after the next one.
 
 ## One body per man, still
 

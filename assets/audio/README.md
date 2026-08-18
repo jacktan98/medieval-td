@@ -4,10 +4,12 @@
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
                       Rock_hit_ground, Rock_kill_enemy, Arcane_shot,
                       Musketeer_shot, Musketeer_kill_enemy,
+                      Paladin_attack, Paladin_kill_enemy,
                       Flask_Break, Sell_Tower, Select_Sound,
                       Thug_dies, Soldier_dies
 assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5,
-                      Monastery_1..5, Musketeer_1..2, Thug_1
+                      Monastery_1..5, Musketeer_1..2, Paladin_1..2,
+                      Thug_1
 ```
 
 All recorded and all wired. `node tools/audio.mjs` measures
@@ -109,23 +111,26 @@ and it now means "how long a lull has to be before the game forgets".
 | an artillery tower is **built or upgraded** | `Artillery_1..5` |
 | a monastery is **built or upgraded** | `Monastery_1..5` |
 | a **Musketeer Post** is built, upgraded to, or given an order | `Musketeer_1..2` |
-| a rally point is moved | `Barracks_1..5` |
+| a **Paladin Keep** is built, upgraded to, or given a rally point | `Paladin_1..2` |
+| a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..2` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
 | an arrow kills an enemy | `Arrow_kill_enemy` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |
-| a barracks man kills an enemy | `Thug_dies` |
+| a **paladin** kills an enemy | `Paladin_kill_enemy` |
+| any other barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
 | a tower is **sold** | `Sell_Tower` |
 | **an archer looses** — Category B | `Arrow_shot` |
-| **a barracks man swings** — Category B | `Attack_1/2/3` |
+| **a spearman, pikeman or swordsman swings** — Category B | `Attack_1/2/3` |
+| **a paladin swings** — Category B | `Paladin_attack` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 
-Everything above the line is Category A and shares the one channel; the four
+Everything above the line is Category A and shares the one channel; the ones
 below run on the background bus and play every time.
 
 **The three gold noises all have PRIORITY.** Building, upgrading and selling are
@@ -168,10 +173,21 @@ tower at the top of the ladder with two lines of its own, so the tier carries a
 Category A, priority on a build or an order, and the same share rules. Two lines
 rather than five simply means they alternate more often.
 
+**The Paladin Keep is the second**, on exactly the same terms, and asking the same
+questions of both is the point: the first one could have been wired by a special
+case for archery, and the second is what says it was not.
+
 A `voice` naming a cue with no clips loaded falls back to the family's, which is the
 same wire-ahead trick the table above is built on — and `node tools/sound.mjs`
 checks all four cases: the tier speaks, its siblings do not, an unrecorded voice
 falls back, and selecting one picks the same lines.
+
+**A MAN CAN HAVE HIS OWN BLOW, and the paladin is the only one.** Three of the four
+men a barracks musters share the generic `Attack_1..3` takes, which is right — a
+spear, a pike and a sword landing are the same event with a different blade on it.
+The paladin's def carries a `blow` field naming his own clip, on the same one-word
+opt-in a tier's `voice` uses, and `blowCue()` falls back to the generic takes for
+anybody without one. He is the squad you are meant to be able to hear.
 
 **All four families have voices now.** `familyCue()` still has a null branch, and
 it is worth keeping: what it guards is that a lookup for a family with nothing

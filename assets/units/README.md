@@ -19,6 +19,7 @@ nothing else.
 | Bishop             | `Soldiers_Bishop_Default`          | `Soldiers_Bishop_Attack`          |
 | Cardinal           | `Soldiers_Cardinal_Default`        | `Soldiers_Cardinal_Attack`        |
 | Musketeer          | `Musketeer_Default`                | `Musketeer_Attack`                |
+| Paladin            | `Paladin_Default`                  | `Paladin_Attack`                  |
 
 **Default is the man at rest**, and it is the drawing used almost everywhere: he
 walks in it, stands in his slot in it, and it is the picture the encyclopedia and
@@ -40,7 +41,16 @@ levelled and a puff appears at the muzzle, which is the moment the ball becomes 
 projectile on the board. His two shadows measure to the same source pixel exactly —
 not within a pixel, the same one — so the swap cannot move him. He is also the only
 figure named without a family prefix, because the artist uploaded him that way and
-the file is named for the man the game calls him.
+the file is named for the man the game calls him. The paladin is named the same
+way, and both for the same reason: a tier 4 is a named tower with a named man in
+it rather than a rung with a number.
+
+**The paladin rests with his sword UPRIGHT** over his shoulder and swings it down
+and level, so his box changes shape in both directions between the two poses —
+123 x 140 standing, 178 x 116 striking. That is the biggest difference between any
+man's two drawings in the game and it is the reason each pose carries its own trim:
+a single box covering both would be mostly empty for both. His two shadows are on
+the same source pixel, which is what actually holds the swap still.
 
 The three artillery engineers have one drawing each. They are never seen
 fighting — the crewman is painted into all three frames of his machine, and the
