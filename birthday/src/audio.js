@@ -81,13 +81,23 @@ const MEMORY_S = 20;
 // for INTENT rather than correction: reaching for it because something "sounds
 // wrong" usually means the analysis is being fought rather than helped.
 //
-// ONE ENTRY, and it is the big game's, arrived at there by ear and carried across
-// with the file. TARGET_LOUD exists so that clips of the FIGHT arrive at a common
+// TWO ENTRIES, both -6dB, both for the same shape of reason: the leveller matches
+// the loudest third of a second of a clip, which is the right rule for a bark or
+// a blade and the wrong one for a sound that is neither.
+//
+// `select` is the big game's, arrived at there by ear and carried across with the
+// file. TARGET_LOUD exists so that clips of the FIGHT arrive at a common
 // loudness, and the tap is not in the fight. It answers a finger, it lands on a
 // quiet board as often as a busy one, and it only has to be heard rather than
 // noticed. The recording is quiet, so the leveller was pushing it up to meet the
-// swords; -6dB puts it back.
-const GAIN = { select: 0.5 };
+// swords.
+//
+// `rei_attack` is the opposite complaint from the same cause. Every other clip
+// down here is an EVENT — a blade, a shot, a fist — over in a second. His is 7.7
+// seconds of continuous baby, so a peak matched to everything else means seven
+// seconds spent at that level while the swords are spending a fraction of one.
+// Matched by its loudest moment it is correct and still far too much of the mix.
+const GAIN = { select: 0.5, rei_attack: 0.5 };
 
 // --- the files -------------------------------------------------------------------
 

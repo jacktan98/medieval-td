@@ -201,13 +201,20 @@ a bus of its own that sits under Category A and ducks further while a line is in
 the air, so a voice cuts through the fight instead of competing with it.
 
 Rei is the odd one out: he has no cooldown to hang a noise on, so his sound
-repeats on a clock while there is somebody in the smell with him — and **the
-interval is the clip's own length**, asked of the audio rather than typed here.
-That was a flat 1.6 seconds until the recording was measured at 7.7 seconds of
-audible baby, which meant five copies of it overlapping continuously. Asking the
-sound how long it lasts makes it a loop instead, and it stays right the day a
-shorter one is recorded. 1.6s survives as a floor, for a clip that has not loaded
-or a future one that is very short.
+repeats on a clock while there is somebody in the smell with him. It **plays its
+whole length and then rests** — the clip's own length, asked of the audio rather
+than typed here, plus **10 seconds of silence** before he may start again. It is
+never interrupted to be restarted, because nothing asks again until it has
+finished.
+
+Both halves were needed. The interval was a flat 1.6 seconds until the recording
+was measured at 7.7 seconds of audible baby, which meant five copies overlapping
+continuously; asking the sound how long it lasts fixed that and stays right the
+day a shorter one is recorded. The rest is what stops him being a drone — a
+continuous smell playing back to back for a whole wave is the one sound in the
+game with no event behind it, and it wears out fastest. 1.6s survives as a floor
+for the clip's part, for a take that has not loaded or a future one that is very
+short.
 
 **Every clip is levelled by measurement, not by a table.** Each one is analysed
 once at load and given the gain that brings it to a common loudness, and anything
@@ -216,6 +223,13 @@ different days and they arrive about 22dB apart — Papa's takes needed +4.6 to
 +9.6dB and Rei's line −12.1dB — and a hand-written table of trims would be
 silently wrong the first time one was re-recorded. Nothing in the set reaches
 either clamp, and nothing clips once its gain is applied.
+
+**Two clips are moved on top of that, both −6dB**, and both because the leveller
+matches the loudest third of a second — the right rule for a bark or a blade and
+the wrong one for a sound that is neither. The tap is not in the fight at all,
+and Rei's smell is 7.7 continuous seconds where every other Category B clip is an
+event over in one: matched by its loudest moment it is correct and still far too
+much of the mix.
 
 **The tap.** `Select_Sound.mp3` — the big game's own file, byte for byte — plays
 whenever a control does something: a map, a family card, Start, the dashboard
