@@ -86,7 +86,13 @@ Olivia's slime leaves a thug at 55% speed for 2 seconds. Mommy's blast reaches
 Mommy is the cheaper blocker who is worth more the busier the road is.
 
 The purse starts at **300** and a cleared wave pays **85 + 22 per wave** on top of
-the bounties.
+the bounties. Calling a wave early pays **7 gold a second** of the wait given up —
+up to 84 for the long look before the first wave and up to 70 for a rest. It is a
+trade rather than free money: the gold arrives now and so do the thugs.
+
+The sim below never presses that button, so every number it reports is for
+somebody who takes the full rest. A player who rushes has more gold and less time
+to spend it.
 
 ### They were tuned with the sim, not by eye
 
@@ -141,6 +147,24 @@ reported instead of swallowed.
 Sound is not wired at all yet. When the voices and effects exist, the smallest
 thing that works is a `<audio>`-free copy of the big game's approach; ask for it
 then rather than building it now.
+
+## The controls
+
+Along the top, right of the gold and lives:
+
+- **The family** — reopens the four descriptions at any time, for anyone who
+  pressed Start too fast. It stops the clock while it is up, because reading is
+  not playing.
+- **Pause** — stops the fight and puts **Resume / Restart / Quit** under the
+  dashboard. No veil over the board: the reason to pause this game is to look at
+  what is happening. Restart replays this map from the beginning; Quit goes back
+  to the three maps.
+- **Wave now** — calls the next wave early and says what it pays. Dead while a
+  wave is walking.
+
+A finished game offers **Play again** on the same map and **Another map**. Neither
+Restart nor Play again makes you sit through the family introduction a second
+time; choosing a map from the picker still shows it.
 
 ## What it does not have
 

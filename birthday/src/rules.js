@@ -57,6 +57,37 @@ export function clampReach(ax, ay, x, y, r) {
 const OPENING = 12;
 const REST = 10;
 
+// WHAT CALLING A WAVE EARLY PAYS, per second of waiting given up.
+//
+// The trade is the point: the gold arrives now and so do the thugs, so it is a
+// choice rather than free money — and it cannot be farmed, because the only way to
+// earn it is to shorten the rest you were going to spend building anyway.
+//
+// 7 a second is up to 84 for the opening twelve seconds and up to 70 for a rest,
+// which is most of an Olivia. Big enough to be worth pressing, small enough that
+// missing it is not a mistake.
+const EARLY_GOLD = 7;
+
+// WHEN THE BUTTON IS LIVE: while a clock is running and nothing is due to walk
+// out. That is the rest between waves, and the long look at the board before the
+// first one.
+export const canCallWave = state =>
+  !state.result && state.timer > 0 &&
+  (state.resting || (state.waveIndex === 0 && state.spawned === 0));
+
+export const earlyBonus = state =>
+  canCallWave(state) ? Math.round(state.timer * EARLY_GOLD) : 0;
+
+// Take the money and start the wave. `timer` going to zero is all it takes —
+// updateWaves does the rest on the next step, so there is one place that knows how
+// a wave begins.
+export function callWaveEarly(state) {
+  if (!canCallWave(state)) return false;
+  state.gold += earlyBonus(state);
+  state.timer = 0;
+  return true;
+}
+
 // Wave tables are the map's own — the big game's, untouched. This is only how they
 // are read.
 export function newGame(mapIndex) {
@@ -82,6 +113,13 @@ export function newGame(mapIndex) {
     // The screens: 'maps' to choose one, 'family' for the pop-up that introduces
     // the four of them, 'play', and then 'won' or 'lost'.
     screen: 'family',
+    // Whether the family pop-up has been through once. It is the same screen
+    // whether it is the introduction or somebody going back for a reminder, and
+    // this is what tells its button whether to say Start or Back.
+    begun: false,
+    // Stopped by the player. Separate from the screens because the board stays on
+    // show underneath — the whole point of pausing here is to look at it.
+    paused: false,
     // Which family card the pop-up has open, or null for the list.
     reading: null,
     menu: null,

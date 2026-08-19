@@ -34,8 +34,13 @@ function fit() {
 let state = newGame(0);
 state.screen = 'maps';
 
-function restart(mapIndex) {
+// `skipIntro` is what Restart and Play again pass: the family have already read
+// the four descriptions and making them press Start again is a tap for nothing.
+// Choosing a map from the picker does not pass it, so the introduction still comes
+// up the first time each map is played.
+function restart(mapIndex, skipIntro = false) {
   const next = newGame(mapIndex ?? state.mapIndex);
+  if (skipIntro) { next.screen = 'play'; next.begun = true; }
   Object.keys(state).forEach(k => delete state[k]);
   Object.assign(state, next);
 }
@@ -51,7 +56,11 @@ function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
 
-  if (state.screen === 'play') step(state, dt);
+  // Two ways the fight stops, and they are different things. `paused` is the
+  // player pressing pause and leaves the board on show; any screen other than
+  // 'play' is a panel over the top of it — the family pop-up is a pause in its own
+  // right, which is what makes going back for a reminder safe mid-wave.
+  if (state.screen === 'play' && !state.paused) step(state, dt);
   draw(ctx, state);
   requestAnimationFrame(frame);
 }

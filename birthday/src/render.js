@@ -7,8 +7,8 @@
 // like something waiting to be replaced, because it is.
 
 import { art } from './assets.js';
-import { family, maps, inReach, SQUASH, levelOf, refundValue, refundOf, waveSize }
-  from './rules.js';
+import { family, maps, inReach, SQUASH, levelOf, refundValue, refundOf, waveSize,
+         canCallWave, earlyBonus } from './rules.js';
 
 const W = 960, H = 540;
 
@@ -35,6 +35,10 @@ export function draw(ctx, state) {
   drawHud(ctx, state);
   drawMenu(ctx, state);
 
+  // NO VEIL OVER A PAUSED BOARD, and that is on purpose — the reason to pause this
+  // game is to look at what is happening, and greying out the thing you paused to
+  // study answers the wrong question. The menu sits in the strip above it instead.
+  if (state.paused) drawPauseMenu(ctx, state);
   if (state.screen === 'family') drawFamilyBook(ctx, state);
   if (state.screen === 'won' || state.screen === 'lost') drawResult(ctx, state);
 }
@@ -304,25 +308,114 @@ function bar(ctx, x, y, w, pct, colour) {
 
 // --- the dashboard --------------------------------------------------------------
 
+export const HUD_H = 40;
+
+// The three controls in the strip, right to left: the wave call, pause, and the
+// way back to the four descriptions.
+//
+// 34 DRAWN AND 46 TAPPED. This is played on a phone by a five-year-old, so every
+// one of them is padded out in the hit test — the same trick the big game uses
+// everywhere, and the reason the boxes here are smaller than they feel.
+export const HUD_BTN = {
+  chars: { x: 606, y: 3, w: 104, h: 34 },
+  pause: { x: 716, y: 3, w: 62, h: 34 },
+  wave: { x: 784, y: 3, w: 164, h: 34 }
+};
+
 function drawHud(ctx, state) {
   ctx.save();
   ctx.fillStyle = 'rgba(34,32,28,0.72)';
-  ctx.fillRect(0, 0, W, 34);
+  ctx.fillRect(0, 0, W, HUD_H);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = CREAM;
   ctx.font = '700 18px system-ui, sans-serif';
-  ctx.fillText(`${state.gold}g`, 16, 17);
-  ctx.fillText(`${state.lives} lives`, 100, 17);
-  ctx.fillText(`Wave ${state.waveIndex + 1} / ${state.map.waves.length}`, 210, 17);
+  ctx.fillText(`${state.gold}g`, 16, HUD_H / 2);
+  ctx.fillText(`${state.lives} lives`, 118, HUD_H / 2);
+  ctx.fillText(`Wave ${state.waveIndex + 1} / ${state.map.waves.length}`, 236, HUD_H / 2);
 
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(240,230,210,0.75)';
-  ctx.font = '600 14px system-ui, sans-serif';
-  ctx.fillText(state.resting ? `Next wave in ${Math.ceil(state.timer)}s`
-             : `${waveSize(state.map.waves[state.waveIndex])} thugs this wave`, W - 16, 17);
+  hudButton(ctx, HUD_BTN.chars, 'The family', true);
+  hudButton(ctx, HUD_BTN.pause, '', true);
+  transportGlyph(ctx, HUD_BTN.pause, state.paused);
+
+  // THE WAVE BUTTON SAYS WHAT IT PAYS, which is the whole reason to press it. While
+  // the clock is not running it goes dead and reports what the board is doing
+  // instead, so the same slot is never blank.
+  const live = canCallWave(state);
+  const bonus = earlyBonus(state);
+  hudButton(ctx, HUD_BTN.wave,
+    live ? `Wave now  +${bonus}g` : `${waveSize(state.map.waves[state.waveIndex])} thugs`,
+    live, 14, live ? '#8FD07F' : null);
   ctx.restore();
+}
+
+// The two bars and the triangle, DRAWN rather than typed. U+23F8 and U+25B6 look
+// like a pause and a play in a font that has them and like a tofu box or a stray
+// vertical bar in one that does not — and which fonts a phone has is not something
+// this game gets to decide. Two rects and a path always work.
+function transportGlyph(ctx, b, paused) {
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  ctx.save();
+  ctx.fillStyle = CREAM;
+  if (paused) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy - 8);
+    ctx.lineTo(cx + 8, cy);
+    ctx.lineTo(cx - 5, cy + 8);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.fillRect(cx - 6, cy - 8, 4, 16);
+    ctx.fillRect(cx + 2, cy - 8, 4, 16);
+  }
+  ctx.restore();
+}
+
+function hudButton(ctx, b, label, on, size = 14, ink = null) {
+  ctx.save();
+  ctx.globalAlpha = on ? 1 : 0.4;
+  ctx.fillStyle = 'rgba(240,230,210,0.14)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(240,230,210,0.45)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = ink || CREAM;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.restore();
+}
+
+// --- paused -----------------------------------------------------------------------
+//
+// Three buttons in a row under the dashboard, in the strip the HUD already owns.
+// Restart plays this map again from the beginning; Quit goes back to the three
+// maps. Neither asks twice: this is a birthday game with nothing to lose but a
+// few minutes, and the big game's armed-Quit ceremony would be silly here.
+
+export const PAUSE_ROW = {
+  resume: { x: 300, y: 62, w: 110, h: 42 },
+  restart: { x: 424, y: 62, w: 118, h: 42 },
+  quit: { x: 556, y: 62, w: 118, h: 42 }
+};
+
+function drawPauseMenu(ctx, state) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = CREAM;
+  ctx.font = '700 20px system-ui, sans-serif';
+  ctx.fillText('Paused', W / 2, 52);
+  ctx.restore();
+
+  button(ctx, PAUSE_ROW.resume, 'Resume', true);
+  button(ctx, PAUSE_ROW.restart, 'Restart', true);
+  button(ctx, PAUSE_ROW.quit, 'Quit', true);
 }
 
 // --- the ring on a plot ----------------------------------------------------------
@@ -449,7 +542,7 @@ function drawMapPick(ctx, state) {
 // for — and tapping one opens the longer version in the same panel.
 export const BOOK = { x: 60, y: 44, w: 840, h: 452 };
 export const BOOK_ROW = i => ({ x: BOOK.x + 22, y: BOOK.y + 74 + i * 88, w: 300, h: 78 });
-export const BOOK_START = { x: BOOK.x + BOOK.w - 190, y: BOOK.y + BOOK.h - 60, w: 168, h: 42 };
+export const BOOK_START = { x: BOOK.x + BOOK.w - 212, y: BOOK.y + BOOK.h - 60, w: 190, h: 42 };
 // Back sits under the TEXT column, not under the four cards — the fourth card
 // reaches to within 8px of the panel's floor, and a button on the left overlapped
 // Rei Rei on the first build.
@@ -534,8 +627,10 @@ function drawFamilyBook(ctx, state) {
     }
   }
 
-  button(ctx, BOOK_START, state.screen === 'family' ? 'Start' : 'Start', true);
-  if (open) button(ctx, BOOK_BACK, 'Back', true);
+  // The same panel is the introduction and the reminder, so the button that leaves
+  // it says which one this is. `begun` is set the first time it is pressed.
+  button(ctx, BOOK_START, state.begun ? 'Back to the game' : 'Start', true);
+  if (open) button(ctx, BOOK_BACK, 'All four', true);
 }
 
 const role = m =>
@@ -574,7 +669,12 @@ function paragraphs(ctx, text, x, y, w, lead) {
   return y;
 }
 
-export const RESULT_BTN = { x: W / 2 - 90, y: 330, w: 180, h: 46 };
+// TWO WAYS ON from a finished game, because they are two different intentions:
+// have another go at this map, or go and pick a different one. The big game makes
+// you go back through the title screen for both; a five-year-old who has just lost
+// The Bend wants the left-hand button.
+export const RESULT_AGAIN = { x: W / 2 - 200, y: 330, w: 180, h: 48 };
+export const RESULT_MAPS = { x: W / 2 + 20, y: 330, w: 180, h: 48 };
 
 function drawResult(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.85)';
@@ -589,7 +689,8 @@ function drawResult(ctx, state) {
   ctx.fillText(state.result === 'won'
     ? `All ${state.map.waves.length} waves held, with ${state.lives} lives left`
     : `They got through on wave ${state.waveIndex + 1}`, W / 2, 268);
-  button(ctx, RESULT_BTN, 'Play again', true, true);
+  button(ctx, RESULT_AGAIN, 'Play again', true, true);
+  button(ctx, RESULT_MAPS, 'Another map', true);
 }
 
 function button(ctx, b, label, on, dark = false) {
