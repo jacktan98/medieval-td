@@ -53,9 +53,31 @@ const BG_DUCKED = 0.15;
 const DUCK_IN = 0.04;
 const DUCK_OUT = 0.25;
 
-// How loud the party is. Low, and lower than anything in the big game, because
-// this is the one sound in the mix that is not telling the player anything.
-const MUSIC_LEVEL = 0.18;
+// HOW LOUD THE PARTY IS, and 0.18 was far too loud — it buried the voices and
+// the effects, which is the one thing this sound must never do.
+//
+// The arithmetic is written down because "turn it down a bit" is how a number
+// like this gets set wrong twice. Everything in the graph above is levelled to
+// TARGET_LOUD, so what a clip does at the speakers is known rather than guessed:
+//
+//   a Category A line   0.09 x MASTER              = 0.081
+//   a Category B noise  0.09 x BG_LEVEL x MASTER   = 0.036
+//
+// The songs are commercial masters and nothing here levels them. Measured, whole
+// clip RMS: Circus 0.212, The Night Is Still Young 0.132, Rocketeer 0.276. At
+// 0.18 that put the music at 0.024 to 0.050 — level with every sound effect in
+// the game and over half the voices. No amount of ducking rescues that; the
+// number was simply wrong.
+//
+// 0.04 is set against the LOUDEST of the three, which is the safe way round: it
+// puts Rocketeer at 0.011, about 10dB under the fighting and 17dB under a line,
+// and the other two land quieter still. A song being too quiet is never the
+// complaint. Present in the room, and never the reason a word is missed.
+//
+// To re-measure after a song is swapped: decode it and take the RMS of the whole
+// file — the loudest-window rule the clips use is the wrong one here, because a
+// three-minute song is loud all the way through and a bark is not.
+const MUSIC_LEVEL = 0.04;
 
 // The quiet after a Category A line, and the shortest gap between two plays of
 // the same Category B clip. The second is not a throttle: two identical buffers

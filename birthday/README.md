@@ -215,6 +215,14 @@ nothing here needs a song to start with sub-millisecond accuracy. They are mixed
 **well under everything else**: the voices and the fighting are what the game is
 saying, and the songs are what the room sounds like.
 
+That level is set by arithmetic rather than by ear, and the comment on
+`MUSIC_LEVEL` shows the working. Every clip in the graph is levelled to a known
+loudness, so a Category A line lands at 0.081 and a Category B noise at 0.036;
+the songs are commercial masters that nothing here levels, measuring 0.132 to
+0.276 RMS. The first attempt at 0.18 put the music level with every sound effect
+in the game, which is exactly how it sounded. 0.04 is set against the loudest of
+the three and puts it about 10dB under the fighting and 17dB under a voice.
+
 Nothing can be heard until the first tap on the page — phones refuse audio that
 starts on its own — and `unlock()` runs on *every* tap, because a phone locking or
 a call arriving suspends the context again.
