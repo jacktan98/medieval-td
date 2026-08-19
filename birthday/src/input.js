@@ -6,7 +6,7 @@ import { PLOT_R, BTN_R, menuItems, MAP_BTN, BOOK_ROW, BOOK_START, BOOK_BACK,
          RESULT_AGAIN, RESULT_MAPS, HUD_H, HUD_BTN, PAUSE_ROW } from './render.js';
 import { family, maps, build, upgrade, sell, towerAt, moveUnit, clampReach, newGame,
          callWaveEarly, pickFigure } from './rules.js';
-import { unlock, solo, voiceCue } from './audio.js';
+import { unlock, play, solo, voiceCue, SELECT } from './audio.js';
 
 // Every box in this file is padded before it is tested. The drawn controls are
 // small — this is a 960-unit board on a phone — and shrinking the picture must
@@ -18,27 +18,46 @@ export function attach(canvas, state, restart) {
   canvas.addEventListener('pointerdown', e => {
     // EVERY TAP, not just the first. A phone locking, a call arriving or the tab
     // going to the background all suspend the audio context again, and without
-    // this the game comes back mute. It is also what starts the music, which
-    // cannot begin before a real touch however much the page would like it to.
+    // this the game comes back mute.
     unlock();
+
     const r = canvas.getBoundingClientRect();
-    tap(state, (e.clientX - r.left) * (960 / r.width), (e.clientY - r.top) * (540 / r.height),
-        restart);
+    const x = (e.clientX - r.left) * (960 / r.width);
+    const y = (e.clientY - r.top) * (540 / r.height);
+
+    // ONE CLICK, AT ONE PLACE, AND ONLY WHEN THE TAP DID SOMETHING. Straight out
+    // of the big game, along with the file that makes the noise.
+    //
+    // The alternative is a play(SELECT) in each of the fifteen branches below,
+    // and that is how a control quietly ends up silent: a branch added later
+    // simply forgets. Every branch answers the same question instead — did this
+    // tap act? — and the click is the answer to it.
+    //
+    // A tap that does NOTHING stays silent, and that is the useful half of the
+    // rule. An unaffordable button absorbs its tap rather than acting, a paused
+    // board refuses everything but its three controls, and bare ground with
+    // nothing open has nothing to say. Clicking at those would teach the player
+    // that the click means "heard you" rather than "done".
+    if (tap(state, x, y, restart)) play(SELECT);
   });
 }
 
+// Returns whether the tap DID anything. See the note above for why that is the
+// return value rather than nothing.
 function tap(state, x, y, restart) {
   if (state.screen === 'maps') {
-    maps.forEach((m, i) => { if (inside(MAP_BTN(i), x, y)) restart(i); });
-    return;
+    const i = maps.findIndex((_, n) => inside(MAP_BTN(n), x, y));
+    if (i < 0) return false;
+    restart(i);
+    return true;
   }
 
   if (state.screen === 'won' || state.screen === 'lost') {
     // Straight back into the same map rather than through the picker, which is
     // what somebody who has just lost actually wants.
-    if (inside(RESULT_AGAIN, x, y)) { restart(state.mapIndex, true); return; }
-    if (inside(RESULT_MAPS, x, y)) state.screen = 'maps';
-    return;
+    if (inside(RESULT_AGAIN, x, y)) { restart(state.mapIndex, true); return true; }
+    if (inside(RESULT_MAPS, x, y)) { state.screen = 'maps'; return true; }
+    return false;
   }
 
   // THE FAMILY POP-UP SWALLOWS EVERYTHING while it is up, and it is a pause in
@@ -49,17 +68,19 @@ function tap(state, x, y, restart) {
       state.screen = 'play';
       state.begun = true;
       state.reading = null;
-      return;
+      return true;
     }
-    if (state.reading && inside(BOOK_BACK, x, y)) { state.reading = null; return; }
-    family.forEach((m, i) => { if (inside(BOOK_ROW(i), x, y)) state.reading = m; });
-    return;
+    if (state.reading && inside(BOOK_BACK, x, y)) { state.reading = null; return true; }
+    const m = family.find((_, i) => inside(BOOK_ROW(i), x, y));
+    if (!m || m === state.reading) return false;
+    state.reading = m;
+    return true;
   }
 
   // THE DASHBOARD IS ABOVE THE BOARD, so it is asked first — otherwise a button
   // that happens to sit over a plot's menu would lose to it. 14px of padding takes
-  // the 34px-tall controls to 62 tapped.
-  if (inside(HUD_BTN.pause, x, y, 14)) { state.paused = !state.paused; return; }
+  // the 36px-tall controls to 64 tapped.
+  if (inside(HUD_BTN.pause, x, y, 14)) { state.paused = !state.paused; return true; }
   if (inside(HUD_BTN.chars, x, y, 14)) {
     // Reading is not playing. Going back for a reminder stops the clock, which is
     // the whole reason the pop-up is a screen rather than an overlay.
@@ -67,18 +88,24 @@ function tap(state, x, y, restart) {
     state.reading = null;
     state.menu = null;
     state.placing = null;
-    return;
+    return true;
   }
-  if (inside(HUD_BTN.wave, x, y, 14)) { callWaveEarly(state); return; }
+  // The one control that can be pressed and refuse: the button goes dead while a
+  // wave is walking, and callWaveEarly says so. A dead button makes no noise.
+  if (inside(HUD_BTN.wave, x, y, 14)) return callWaveEarly(state);
 
   // PAUSED SWALLOWS THE BOARD. Only the three buttons it puts on screen answer, so
   // a paused game cannot be built on, sold from or ordered about — "paused" has to
   // mean the game is not moving in any respect, not just that the thugs are still.
   if (state.paused) {
-    if (inside(PAUSE_ROW.resume, x, y)) { state.paused = false; return; }
-    if (inside(PAUSE_ROW.restart, x, y)) { restart(state.mapIndex, true); return; }
-    if (inside(PAUSE_ROW.quit, x, y)) { restart(state.mapIndex); state.screen = 'maps'; }
-    return;
+    if (inside(PAUSE_ROW.resume, x, y)) { state.paused = false; return true; }
+    if (inside(PAUSE_ROW.restart, x, y)) { restart(state.mapIndex, true); return true; }
+    if (inside(PAUSE_ROW.quit, x, y)) {
+      restart(state.mapIndex);
+      state.screen = 'maps';
+      return true;
+    }
+    return false;
   }
 
   // Sending Papa or Mommy somewhere: the whole board is the target, so the tap
@@ -88,18 +115,22 @@ function tap(state, x, y, restart) {
     t.rally = clampReach(t.x, t.y, x, y, t.level.range);
     moveUnit(state, t);
     state.placing = null;
-    return;
+    return true;
   }
 
   if (state.menu) {
     for (const it of menuItems(state, state.menu)) {
       if (Math.hypot(it.x - x, it.y - y) > BTN_R + 4) continue;
-      if (!it.on) return;
-      run(state, it);
-      return;
+      // An unaffordable button ABSORBS the tap rather than acting on it, which is
+      // why this returns false rather than falling through to the board.
+      if (!it.on) return false;
+      return run(state, it);
     }
     // The hole in the middle closes it, the same as the big game's.
-    if (Math.hypot(state.menu.cx - x, state.menu.cy - y) <= 40) { state.menu = null; return; }
+    if (Math.hypot(state.menu.cx - x, state.menu.cy - y) <= 40) {
+      state.menu = null;
+      return true;
+    }
   }
 
   const plot = state.map.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
@@ -110,7 +141,7 @@ function tap(state, x, y, restart) {
     // empty one clears it, because four build buttons are open at once there and
     // the panel can only describe one of them.
     select(state, tower ? { kind: 'tower', ref: tower } : null);
-    return;
+    return true;
   }
 
   // THE PLOTS ARE ASKED FIRST and the figures second, which is the right way
@@ -120,11 +151,16 @@ function tap(state, x, y, restart) {
   if (figure) {
     state.menu = null;
     select(state, figure);
-    return;
+    return true;
   }
 
+  // Bare ground. It clears whatever was open, and it is only an ACTION if there
+  // was something to clear — tapping empty grass on an empty board does nothing
+  // and should sound like nothing.
+  const had = !!(state.menu || state.selected);
   state.menu = null;
   select(state, null);
+  return had;
 }
 
 // Put somebody in the panel, and let them say so. The voice is the big game's
@@ -149,6 +185,7 @@ function select(state, sel) {
 // a gap to explain.
 const clampY = y => Math.max(HUD_H + 74 + BTN_R, Math.min(540 - 74 - BTN_R, y));
 
+// What a ring button does, and whether it did it.
 function run(state, it) {
   const menu = state.menu;
 
@@ -157,24 +194,29 @@ function run(state, it) {
   // already play their own line inside rules.js, which is why neither goes
   // through select() — it would be the same voice twice.
   if (it.act === 'build') {
-    if (!build(state, menu.plot, it.member)) return;
+    if (!build(state, menu.plot, it.member)) return false;
     state.selected = { kind: 'tower', ref: towerAt(state, menu.plot) };
     state.menu = null;
-    return;
+    return true;
   }
   if (it.act === 'upgrade') {
-    upgrade(state, menu.tower);
+    if (!upgrade(state, menu.tower)) return false;
     state.selected = { kind: 'tower', ref: menu.tower };
     state.menu = null;
-    return;
+    return true;
   }
   if (it.act === 'sell') {
     sell(state, menu.tower);
     state.selected = null;
     state.menu = null;
-    return;
+    return true;
   }
-  if (it.act === 'rally') { state.placing = menu.tower; state.menu = null; }
+  if (it.act === 'rally') {
+    state.placing = menu.tower;
+    state.menu = null;
+    return true;
+  }
+  return false;
 }
 
 export { newGame };

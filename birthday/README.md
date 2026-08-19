@@ -207,21 +207,30 @@ moved more than 3dB is named in the console. These are home recordings made on
 different days and they arrive up to 17dB apart; a hand-written table of trims
 would be silently wrong the first time one was re-recorded.
 
-**Three songs**, one at a time, chosen at random and never the same one twice
-running, playing from the moment the first tap unlocks the audio — including on
-the map picker. They go through a plain `<audio>` element rather than the graph
-above, because a four-minute song decoded into a buffer is tens of megabytes and
-nothing here needs a song to start with sub-millisecond accuracy. They are mixed
-**well under everything else**: the voices and the fighting are what the game is
-saying, and the songs are what the room sounds like.
+**The tap.** `Select_Sound.mp3` — the big game's own file, byte for byte — plays
+whenever a control does something: a map, a family card, Start, the dashboard
+buttons, the pause row, a ring button, picking somebody on the board. It is
+Category B, because a reply to the player's finger that is sometimes dropped is
+worse than no reply at all.
 
-That level is set by arithmetic rather than by ear, and the comment on
-`MUSIC_LEVEL` shows the working. Every clip in the graph is levelled to a known
-loudness, so a Category A line lands at 0.081 and a Category B noise at 0.036;
-the songs are commercial masters that nothing here levels, measuring 0.132 to
-0.276 RMS. The first attempt at 0.18 put the music level with every sound effect
-in the game, which is exactly how it sounded. 0.04 is set against the loudest of
-the three and puts it about 10dB under the fighting and 17dB under a voice.
+It is played from **one place**, `attach()` in `input.js`, and only when the tap
+acted: every branch of `tap()` returns whether it did anything and the click is
+the answer to that. A `play(SELECT)` in each of the fifteen branches is how a
+control quietly ends up silent when a sixteenth is added. A tap that does nothing
+stays silent — an unaffordable button absorbs its tap, a paused board refuses
+everything but its three controls, and bare grass with nothing open has nothing
+to say.
+
+It is also the **one exception to the automatic levelling**, at −6dB, and that
+came across with the file: the levelling exists so that clips of the *fight*
+arrive at a common loudness, and the tap is not in the fight. It answers a finger,
+it lands on a quiet board as often as a busy one, and it only has to be heard
+rather than noticed.
+
+**There is no music.** Three songs played under all of this for two days and were
+then deleted from the repository; the machinery that played them went with them
+rather than being left pointing at nothing. If they ever come back it was about
+twenty lines — see the note at the top of `src/audio.js`.
 
 Nothing can be heard until the first tap on the page — phones refuse audio that
 starts on its own — and `unlock()` runs on *every* tap, because a phone locking or

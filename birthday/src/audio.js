@@ -1,13 +1,12 @@
-// Sound. The big game's two rules, kept, and a third thing it does not have.
+// Sound. The big game's two rules, kept.
 //
 //   play(cue)    Category B — every time, however many at once.
 //   solo(cue)    Category A — one at a time, then a moment of quiet.
-//   music()      the party, underneath all of it.
 //
 // WHY THIS IS NOT `../../src/audio.js`. That file is the same design and a much
 // better implementation of it, and it cannot be used here for one dull reason:
 // every path in it is relative to the page, and this page is one folder down. It
-// would load fifteen files from `birthday/assets/audio/` and find none of them.
+// would look for every clip under `birthday/assets/audio/` and find none of them.
 // Everything else about it — the shared channel, the ducking bus, the measured
 // levelling — is worth having, so it is here in short form. If a rule below
 // disagrees with the big game's, the big game's is the considered one.
@@ -20,19 +19,18 @@
 //
 // CATEGORY B is the fighting itself — Papa's swords, Mommy's gun, Ella's throw,
 // Rei's smell, and a thug landing a blow. Every one of those is a thing on
-// screen, so every one of them makes its noise.
+// screen, so every one of them makes its noise. THE TAP IS DOWN HERE TOO, for a
+// reason that has nothing to do with the fight — see SELECT.
 //
-// --- and the music -----------------------------------------------------------
+// --- there was music, and there is not ----------------------------------------
 //
-// Three songs, one at a time, chosen at random and never the same one twice
-// running. It plays through a plain <audio> element rather than the graph above,
-// which is the right tool for the job: a four-minute song decoded into a buffer
-// is forty megabytes of float per channel, and nothing here needs a song to
-// start with sub-millisecond accuracy.
-//
-// It is mixed WELL under everything, because the artist asked for it: the voices
-// and the fighting are what the game is saying, and the songs are what the room
-// sounds like.
+// Three songs played under all of this for two days. The owner deleted them from
+// the repository, so the machinery that played them went with them rather than
+// being left behind pointing at nothing. If songs ever come back it was about
+// twenty lines: a plain <audio> element started from unlock(), a random pick that
+// never repeats itself, and `ended` choosing the next one. A song decoded into a
+// buffer like the clips below would be tens of megabytes, which is why it was
+// never part of this graph.
 //
 // --- importable in Node ------------------------------------------------------
 //
@@ -52,32 +50,6 @@ const BG_LEVEL = 0.45;
 const BG_DUCKED = 0.15;
 const DUCK_IN = 0.04;
 const DUCK_OUT = 0.25;
-
-// HOW LOUD THE PARTY IS, and 0.18 was far too loud — it buried the voices and
-// the effects, which is the one thing this sound must never do.
-//
-// The arithmetic is written down because "turn it down a bit" is how a number
-// like this gets set wrong twice. Everything in the graph above is levelled to
-// TARGET_LOUD, so what a clip does at the speakers is known rather than guessed:
-//
-//   a Category A line   0.09 x MASTER              = 0.081
-//   a Category B noise  0.09 x BG_LEVEL x MASTER   = 0.036
-//
-// The songs are commercial masters and nothing here levels them. Measured, whole
-// clip RMS: Circus 0.212, The Night Is Still Young 0.132, Rocketeer 0.276. At
-// 0.18 that put the music at 0.024 to 0.050 — level with every sound effect in
-// the game and over half the voices. No amount of ducking rescues that; the
-// number was simply wrong.
-//
-// 0.04 is set against the LOUDEST of the three, which is the safe way round: it
-// puts Rocketeer at 0.011, about 10dB under the fighting and 17dB under a line,
-// and the other two land quieter still. A song being too quiet is never the
-// complaint. Present in the room, and never the reason a word is missed.
-//
-// To re-measure after a song is swapped: decode it and take the RMS of the whole
-// file — the loudest-window rule the clips use is the wrong one here, because a
-// three-minute song is loud all the way through and a bark is not.
-const MUSIC_LEVEL = 0.04;
 
 // The quiet after a Category A line, and the shortest gap between two plays of
 // the same Category B clip. The second is not a throttle: two identical buffers
@@ -105,11 +77,20 @@ const MEMORY_N = 5;
 const MAX_REPEATS = 2;
 const MEMORY_S = 20;
 
-// --- the files -------------------------------------------------------------------
+// Deliberate exceptions to the automatic levelling, applied on top of it. This is
+// for INTENT rather than correction: reaching for it because something "sounds
+// wrong" usually means the analysis is being fought rather than helped.
 //
-// SPACES ARE ENCODED, NOT RENAMED. Three of these are songs with the artist's
-// names on them, and the artist's filename is the artist's filename — %20 costs
-// nothing and a rename is a thing to remember.
+// ONE ENTRY, and it is the big game's, arrived at there by ear and carried across
+// with the file. TARGET_LOUD exists so that clips of the FIGHT arrive at a common
+// loudness, and the tap is not in the fight. It answers a finger, it lands on a
+// quiet board as often as a busy one, and it only has to be heard rather than
+// noticed. The recording is quiet, so the leveller was pushing it up to meet the
+// swords; -6dB puts it back.
+const GAIN = { select: 0.5 };
+
+// --- the files -------------------------------------------------------------------
+
 const DIR = 'assets/family/';
 
 const paths = {
@@ -138,15 +119,13 @@ const paths = {
   mommy_attack: `${DIR}Mommy_attack.mp3`,
   ella_attack: `${DIR}Ella_attack.mp3`,
   rei_attack: `${DIR}Rei_attack.mp3`,
-  enemy_attack: `${DIR}Enemy_attack.mp3`
-};
+  enemy_attack: `${DIR}Enemy_attack.mp3`,
 
-// The party. Not in `paths` above and not decoded — see the note at the top.
-const SONGS = [
-  `${DIR}Britney%20Spears%20-%20Circus.mp3`,
-  `${DIR}Nicki%20Minaj%20-%20The%20Night%20Is%20Still%20Young.mp3`,
-  `${DIR}Ryan%20Tedder%20-%20Rocketeer.mp3`
-];
+  // The one sound the UI makes, and it is the big game's own file byte for byte.
+  // Not a battle noise at all — it answers the player's finger rather than
+  // anything happening on the board.
+  select: `${DIR}Select_Sound.mp3`
+};
 
 // --- the cues ---------------------------------------------------------------------
 //
@@ -181,6 +160,18 @@ const BLOW = {
 
 export const ENEMY_BLOW = ['enemy_attack'];
 
+// THE TAP. Every control in this game that does something answers with this, and
+// it is Category B for a reason that has nothing to do with the fighting: it is a
+// reply to the player's finger, and a reply that is sometimes dropped is worse
+// than no reply at all. A button whose click depends on whether Papa happens to
+// be shouting reads as a button that sometimes misses the tap.
+//
+// So it never queues, never waits for the voice channel, and is never passed over
+// — which is exactly what Category B is. It ducks under a line like everything
+// else down here, which is right: the line is the more important of the two and
+// the click still comes through under it.
+export const SELECT = ['select'];
+
 export const voiceCue = id => VOICE[id] || null;
 export const killCue = id => KILL[id] || null;
 export const blowCue = id => BLOW[id] || null;
@@ -198,9 +189,6 @@ let gateUntil = 0;
 let heard = [];
 const lastStart = {};
 const lastB = new WeakMap();
-
-let song = null;      // the <audio> element currently playing
-let songIndex = -1;
 
 // Kick off loading. Not awaited by main.js, on purpose: the game is playable in
 // silence and a megabyte of mp3 should never be why somebody is looking at a
@@ -226,7 +214,7 @@ export function loadAudio() {
     fetch(src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { clips[key] = analyse(buf); })
+      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1); })
       .catch(() => console.warn('Birthday: missing or unreadable audio', src))
   );
 
@@ -235,7 +223,7 @@ export function loadAudio() {
 
 // Everything the mix needs to know about a clip, worked out from the audio
 // itself: how loud it is, and where in the file the sound actually starts.
-function analyse(buf) {
+function analyse(buf, trim) {
   const n = buf.length;
   const mix = new Float32Array(n);
   for (let c = 0; c < buf.numberOfChannels; c++) {
@@ -264,7 +252,8 @@ function analyse(buf) {
 
   return {
     buf,
-    gain: silent ? 1 : Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD / loud)),
+    gain: silent ? trim
+      : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD / loud)),
     // Playback starts here, past the dead air at the front. This is the whole
     // fix for a swing that lands a quarter of a second after the blow: it is
     // real time removed from the sound, not a delay compensated for elsewhere.
@@ -288,41 +277,16 @@ function report() {
   if (notes.length) console.info('Birthday audio levelled:', notes.join(' | '));
 }
 
-// Let sound out, and start the party if it is not going. Must be called from
-// inside a real touch or click handler — phones ignore audio that starts on its
-// own, and a context resumed anywhere else stays suspended without saying so.
+// Let sound out. Must be called from inside a real touch or click handler —
+// phones ignore audio that starts on its own, and a context resumed anywhere else
+// stays suspended without saying so.
 //
 // input.js calls this on EVERY tap, which is not redundant: a phone locking, a
-// call arriving or a tab going to the background all suspend the context again.
+// call arriving or a tab going to the background all suspend the context again,
+// and without this the game comes back mute.
 export function unlock() {
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
-  if (!song) nextSong();
 }
-
-// --- the party ----------------------------------------------------------------------
-//
-// One song at a time, never the same one twice running, and the next one starts
-// when this one ends. There is no fading and no crossfade: three songs and a
-// birthday do not need a mixing desk.
-function nextSong() {
-  if (typeof Audio === 'undefined') return;
-
-  let i = (Math.random() * SONGS.length) | 0;
-  if (SONGS.length > 1 && i === songIndex) i = (i + 1) % SONGS.length;
-  songIndex = i;
-
-  song = new Audio(SONGS[i]);
-  song.volume = MUSIC_LEVEL;
-  song.addEventListener('ended', nextSong);
-  // A song that will not play is not worth reporting twice: the catch keeps the
-  // promise rejection off the console, and the next tap tries again.
-  song.play().catch(() => { song = null; });
-}
-
-// NOTHING STOPS THE MUSIC, on purpose. Quitting to the map picker, restarting and
-// finishing a map all keep the same song going — it is the room this game is
-// played in rather than part of any one map, and cutting it at every screen
-// change would make the party feel like a menu.
 
 // --- playing ---------------------------------------------------------------------
 
