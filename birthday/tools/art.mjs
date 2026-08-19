@@ -35,7 +35,8 @@ const FIGURES = [
   'Papa_Default', 'Papa_Attack', 'Mommy_Default', 'Mommy_Attack',
   'Ella_Default', 'Ella_Attack', 'Rei_Default', 'Rei_Attack'
 ];
-const FLAT = ['Papa_Plot', 'Mommy_Plot', 'Ella_Plot', 'Rei_Plot', 'Ella_Slime', 'Rei_Smell'];
+const FLAT = ['Papa_Plot', 'Mommy_Plot', 'Ella_Plot', 'Rei_Plot',
+              'Ella_Slime', 'Mommy_Bullet', 'Rei_Smell'];
 
 function read(name) {
   return decodeRGBA(readFileSync(new URL(`${name}.png`, DIR)));
@@ -155,15 +156,26 @@ for (const name of FLAT) {
 // How big each one lands on the board, and whether it survives it. The big game
 // draws its figures at 105/512 of source and this folder uses the same scale, so
 // a drawing is crisp while its drawn size times the 3x device-pixel cap fits
-// inside its trim — which every one of these does with room to spare.
+// inside its trim.
+//
+// TWO FILES ARE NOT DRAWN AT THAT SCALE and this table has to know, because
+// without it the verdict lies in the most dangerous direction: it would report a
+// comfortably sharp pellet that the game actually draws 60% bigger. Both are
+// projectiles, both are tiny, and both are enlarged for the same reason — a
+// 20-pixel pellet measured honestly is four pixels long and invisible to
+// somebody who is five. The numbers are the `k` on each `shot` in src/data.js
+// and have to be kept in step with it by hand; there are two of them.
 const SCALE = 105 / 512;
+const ZOOM = { Ella_Slime: 1.4, Mommy_Bullet: 1.6 };
 const MAX = 3;
 console.log('\nSHARPNESS at 105/512, capped at 3x device pixels\n');
 for (const name of [...FIGURES, ...FLAT]) {
   const [, , w, h] = trim(read(name));
-  const dw = w * SCALE, dh = h * SCALE;
+  const k = SCALE * (ZOOM[name] || 1);
+  const dw = w * k, dh = h * k;
   const need = Math.max(dw * MAX, dh * MAX);
   const have = Math.max(w, h);
-  console.log(`${name.padEnd(16)} drawn ${dw.toFixed(1)} x ${dh.toFixed(1)} ` +
+  const note = ZOOM[name] ? ` (x${ZOOM[name]})` : '';
+  console.log(`${name.padEnd(16)} drawn ${dw.toFixed(1)} x ${dh.toFixed(1)}${note} ` +
               `— needs ${need.toFixed(0)} source px, has ${have} ${need <= have ? 'ok' : 'SOFT'}`);
 }

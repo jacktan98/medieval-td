@@ -34,6 +34,16 @@ export const START_LIVES = 20;
 
 export const maps = [level01, level02, level03];
 
+// EVERYTHING ON THE BOARD IS DRAWN AT THIS, 105/512 of the source file, and it
+// is the big game's own number rather than a coincidence: the thugs on this
+// board ARE the big game's thugs, so anything standing next to one has to be
+// measured with the same ruler or the family come out as giants.
+//
+// It lives here rather than in render.js because two files need it now — the
+// drawing, and the rule that decides which figure a tap landed on, which has to
+// use the box the picture actually occupies.
+export const SCALE = 105 / 512;
+
 // --- the family ---------------------------------------------------------------
 //
 // FOUR CHARACTERS, THREE LEVELS EACH. The levels are the same person with better
@@ -47,7 +57,9 @@ export const maps = [level01, level02, level03];
 // split the artist asked for and it is also what makes the four of them a team:
 //
 //   Papa    one man, two swords. Stops a thug dead and cuts it down.
-//   Mommy   one woman, a shotgun. Stops a thug and sprays whatever is behind it.
+//   Mommy   one woman, a shotgun. Stands on the road like Papa and SHOOTS —
+//           a short-ranged blast that puts a bullet into everything near
+//           whatever she aimed at.
 //   Ella    throws slime from her plot. Little damage; it is the SLOW that
 //           matters, because it doubles the time everybody else gets.
 //   Rei     sits on his plot and stinks. Every thug inside the smell loses
@@ -108,9 +120,8 @@ const PAPA = {
     attack: { sprite: 'papa_attack', trim: [115, 198, 213, 142], pivot: [0.803, 0.910] },
     plate:  { sprite: 'papa_plot',   trim: [133, 208, 246, 96],  pivot: FLAT }
   },
-  blurb: 'Papa plants himself on the road with a sword in each hand. ' +
-         'Nothing gets past him while he is standing, and he hits harder than ' +
-         'anyone in the family.',
+  blurb: 'Two swords, and he plants himself on the road. Nothing gets past him ' +
+         'while he is standing.',
   detail: 'He blocks ONE thug at a time and fights it until one of them falls. ' +
           'That is the whole trick of him: a blocked thug is not walking, ' +
           'whatever its speed, so a giant is stopped as easily as a small one.\n\n' +
@@ -137,22 +148,38 @@ const MOMMY = {
     attack: { sprite: 'mommy_attack', trim: [141, 179, 221, 154], pivot: [0.670, 0.917] },
     plate:  { sprite: 'mommy_plot',   trim: [89, 196, 334, 120],  pivot: FLAT }
   },
-  blurb: 'Mommy holds the road with a shotgun. She stops a thug like Papa does, ' +
-         'but every shot also catches whatever is crowding in behind it.',
-  detail: 'She blocks one thug and shoots it — and the same blast hits up to two ' +
-          'more thugs standing near it. Against one enemy she does less than ' +
-          'Papa; against a queue of them she does far more.\n\n' +
-          'She is lighter than he is, so she is best put where the road is busy ' +
-          'rather than where the giants come through.',
-  // `splash` is how far from her target the spray reaches, `extra` how many more
-  // it may catch.
-  splash: 80,
+  blurb: 'A shotgun on the road. She shoots thugs before they reach her, and ' +
+         'the blast catches whatever is beside them.',
+  detail: 'She stands on the road like Papa and stops what walks into her — but ' +
+          'she does not wait for it. Anything within a short reach is shot, and ' +
+          'the blast puts a bullet into up to two more thugs standing near ' +
+          'whatever she aimed at.\n\n' +
+          'Against one enemy she does less than Papa; against a queue of them she ' +
+          'does far more. She is lighter than he is, so she is best put where the ' +
+          'road is busy rather than where the giants come through.',
+  // HER GUN, and it is a different reach from `range` on a level below. `range`
+  // is how far from her plot the player may send her; `gun` is how far she can
+  // shoot from wherever she is standing. Short on purpose — the artist asked for
+  // "ranged but not too far" — so she is still a road character who happens to
+  // fire rather than a second tower.
+  //
+  // `splash` is how far from whatever she aimed at the blast reaches, and `extra`
+  // how many more thugs it may catch. Every one of them gets its own bullet
+  // drawn, which is the whole picture of a shotgun: one trigger pull, several
+  // things hit at once.
+  gun: 130,
+  splash: 70,
   extra: 2,
+  // The pellets. Drawn pointing LEFT, like she is, and turned to face wherever
+  // they are flying — see `faces` and the rotation in render.js.
+  shot: { sprite: 'bullet', trim: [246, 249, 20, 14], pivot: [0.5, 0.5], faces: -1, k: 1.6 },
   levels: [
-    { cost: 150, range: 190, hp: 250, damage: 11, cd: 0.95, speed: 78, respawn: 7, regen: 6 },
-    { cost: 140, range: 205, hp: 360, damage: 16, cd: 0.90, speed: 82, respawn: 6, regen: 8 },
-    { cost: 200, range: 220, hp: 500, damage: 23, cd: 0.85, speed: 86, respawn: 5, regen: 10 }
-  ]
+    { cost: 150, range: 190, hp: 250, damage: 10, cd: 1.00, speed: 78, respawn: 7, regen: 6 },
+    { cost: 140, range: 205, hp: 360, damage: 15, cd: 0.95, speed: 82, respawn: 6, regen: 8 },
+    { cost: 200, range: 220, hp: 500, damage: 21, cd: 0.90, speed: 86, respawn: 5, regen: 10 }
+  ],
+  // How fast a pellet flies. Fast enough to read as a shot rather than a throw.
+  speed: 620
 };
 
 // A plot that throws. The slime is the point rather than the damage.
@@ -166,11 +193,13 @@ const ELLA = {
     attack: { sprite: 'ella_attack', trim: [219, 203, 74, 106], pivot: [0.534, 0.913] },
     plate:  { sprite: 'ella_plot',   trim: [135, 209, 242, 94], pivot: FLAT }
   },
-  // The slime in flight. Drawn a little larger than the board's scale would put
-  // it — see SHOT_SCALE in render.js.
-  shot: { sprite: 'slime', trim: [231, 244, 50, 25], pivot: FLAT },
-  blurb: 'Ella throws slime from her plot. It does not hurt much — but ' +
-         'anything it lands on is stuck to the road and crawls for a while.',
+  // The slime in flight. `k` is how much bigger than the board's scale it is
+  // drawn: 50 source pixels across lands as a 10px blob, which is too small to
+  // see coming on a phone held by somebody who is five. It carries no `faces`,
+  // because a blob has no front and is not turned.
+  shot: { sprite: 'slime', trim: [231, 244, 50, 25], pivot: FLAT, k: 1.4 },
+  blurb: 'Slime from her plot. It barely hurts — but anything it lands on is ' +
+         'stuck to the road for a while.',
   detail: 'Every hit slows a thug to about half speed for two seconds. That is ' +
           'worth more than it sounds: everything else in the family is measured ' +
           'in damage a second, so a thug that spends twice as long on the road ' +
@@ -204,18 +233,24 @@ const REI = {
   // The smell where it lands, which is ON THE ROAD rather than around him — see
   // smellSpots in rules.js for how few of them there are and why.
   cloud: { sprite: 'smell', trim: [223, 226, 66, 60], pivot: FLAT },
-  blurb: 'Rei does what babies do, and it is unbearable. Every thug inside ' +
-         'the smell loses health the whole time it is in there.',
+  blurb: 'He does what babies do, and it is unbearable. Every thug inside the ' +
+         'smell loses health the whole time.',
   detail: 'He hits EVERYTHING in range at once and never has to aim. Against one ' +
           'giant that is not very much; against a wave of twenty thugs it is ' +
           'twenty times as much, which makes him the answer to a crowd and ' +
           'useless against a single big thing.\n\n' +
           'His reach is the shortest in the family, so he wants a plot right ' +
           'against the road — ideally a bend, where thugs spend longest inside it.',
+  // DOWN FROM 13/22/35, asked for after the first play. He was the best gold in
+  // the game and it was not close: damage a second against EVERYTHING in reach
+  // is worth its face value times however many thugs are in there, and a wave of
+  // twenty walking through a level 3 smell was 700 damage a second for 400 gold.
+  // A third off puts him level with the others against a crowd instead of ahead
+  // of them, and leaves him where he belongs against one big thing: useless.
   levels: [
-    { cost: 120, range: 150, damage: 13 },
-    { cost: 110, range: 168, damage: 22 },
-    { cost: 170, range: 186, damage: 35 }
+    { cost: 120, range: 150, damage: 9 },
+    { cost: 110, range: 168, damage: 15 },
+    { cost: 170, range: 186, damage: 24 }
   ]
 };
 

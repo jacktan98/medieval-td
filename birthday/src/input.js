@@ -2,10 +2,11 @@
 // the big game's input follows, and for the same reason: a panel covering the
 // board must not let the board answer.
 
-import { PLOT_R, BTN_R, menuItems, MAP_BTN, BOOK, BOOK_ROW, BOOK_START, BOOK_BACK,
+import { PLOT_R, BTN_R, menuItems, MAP_BTN, BOOK_ROW, BOOK_START, BOOK_BACK,
          RESULT_AGAIN, RESULT_MAPS, HUD_H, HUD_BTN, PAUSE_ROW } from './render.js';
 import { family, maps, build, upgrade, sell, towerAt, moveUnit, clampReach, newGame,
-         callWaveEarly } from './rules.js';
+         callWaveEarly, pickFigure } from './rules.js';
+import { unlock, solo, voiceCue } from './audio.js';
 
 // Every box in this file is padded before it is tested. The drawn controls are
 // small — this is a 960-unit board on a phone — and shrinking the picture must
@@ -15,6 +16,11 @@ const inside = (b, x, y, pad = 8) =>
 
 export function attach(canvas, state, restart) {
   canvas.addEventListener('pointerdown', e => {
+    // EVERY TAP, not just the first. A phone locking, a call arriving or the tab
+    // going to the background all suspend the audio context again, and without
+    // this the game comes back mute. It is also what starts the music, which
+    // cannot begin before a real touch however much the page would like it to.
+    unlock();
     const r = canvas.getBoundingClientRect();
     tap(state, (e.clientX - r.left) * (960 / r.width), (e.clientY - r.top) * (540 / r.height),
         restart);
@@ -100,10 +106,41 @@ function tap(state, x, y, restart) {
   if (plot) {
     const tower = towerAt(state, plot);
     state.menu = { plot, tower, cx: plot.x, cy: clampY(plot.y) };
+    // A plot with somebody on it fills the panel as well as opening the ring; an
+    // empty one clears it, because four build buttons are open at once there and
+    // the panel can only describe one of them.
+    select(state, tower ? { kind: 'tower', ref: tower } : null);
+    return;
+  }
+
+  // THE PLOTS ARE ASKED FIRST and the figures second, which is the right way
+  // round: a plot is a control and a figure is a thing to look at, and Papa
+  // standing over his own plot must not swallow the ring that sells him.
+  const figure = pickFigure(state, x, y);
+  if (figure) {
+    state.menu = null;
+    select(state, figure);
     return;
   }
 
   state.menu = null;
+  select(state, null);
+}
+
+// Put somebody in the panel, and let them say so. The voice is the big game's
+// habit and worth keeping: tapping one of the four should answer, and Category A
+// means four taps in a row are four lines rather than four at once.
+//
+// Only a FAMILY member speaks. A thug has no line recorded, and `voiceCue`
+// answering null for anything it does not know is what keeps that from being a
+// branch here.
+function select(state, sel) {
+  const same = state.selected && sel && state.selected.ref === sel.ref;
+  state.selected = sel;
+  if (!sel || same) return;
+  // A plot and the person it sent out both carry `member`; a thug carries `def`
+  // and has no line recorded.
+  if (sel.kind !== 'enemy') solo(voiceCue(sel.ref.member.id));
 }
 
 // Keep the ring off the dashboard and off the bottom edge. The plot itself stays
@@ -115,12 +152,28 @@ const clampY = y => Math.max(HUD_H + 74 + BTN_R, Math.min(540 - 74 - BTN_R, y));
 function run(state, it) {
   const menu = state.menu;
 
+  // Building and upgrading select what they just paid for, so the numbers the
+  // player was choosing between are still on screen once they have chosen. Both
+  // already play their own line inside rules.js, which is why neither goes
+  // through select() — it would be the same voice twice.
   if (it.act === 'build') {
-    if (build(state, menu.plot, it.member)) state.menu = null;
+    if (!build(state, menu.plot, it.member)) return;
+    state.selected = { kind: 'tower', ref: towerAt(state, menu.plot) };
+    state.menu = null;
     return;
   }
-  if (it.act === 'upgrade') { upgrade(state, menu.tower); state.menu = null; return; }
-  if (it.act === 'sell') { sell(state, menu.tower); state.menu = null; return; }
+  if (it.act === 'upgrade') {
+    upgrade(state, menu.tower);
+    state.selected = { kind: 'tower', ref: menu.tower };
+    state.menu = null;
+    return;
+  }
+  if (it.act === 'sell') {
+    sell(state, menu.tower);
+    state.selected = null;
+    state.menu = null;
+    return;
+  }
   if (it.act === 'rally') { state.placing = menu.tower; state.menu = null; }
 }
 

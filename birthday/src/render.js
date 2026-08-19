@@ -11,11 +11,13 @@
 // and a game that draws a plain disc is a game that can still be played.
 
 import { art } from './assets.js';
-// The four borrowed icons' trims, read from the big game's own table rather than
-// copied — see the note in assets.js.
-import { ui } from '../../src/data/ui.js';
-import { family, maps, inReach, SQUASH, levelOf, refundValue, refundOf, waveSize,
-         canCallWave, earlyBonus } from './rules.js';
+// The borrowed icons' trims, read from the big game's own table rather than
+// copied — see the note in assets.js. RALLY_FLAG_H and FLAG_FOOT come with the
+// flag because a planted flag is drawn by its POLE FOOT, and that measurement
+// belongs beside the picture it was taken from.
+import { ui, RALLY_FLAG_H, FLAG_FOOT } from '../../src/data/ui.js';
+import { family, enemyTypes, maps, inReach, SQUASH, SCALE, levelOf, refundValue, refundOf,
+         waveSize, canCallWave, earlyBonus, selectionInfo } from './rules.js';
 
 const W = 960, H = 540;
 
@@ -27,13 +29,6 @@ const CREAM = '#F0E6D2';
 
 export const PLOT_R = 30;
 
-// The board's scale, and the shot's. The slime is 50 source pixels across, which
-// at the board scale is a 10px blob — too small to see coming on a phone held by
-// somebody who is five. 1.4x puts it at 14, which still has source pixels to
-// spare at the 3x device cap (see birthday/tools/art.mjs).
-const SCALE = 105 / 512;
-const SHOT_SCALE = SCALE * 1.4;
-
 // --- the board ------------------------------------------------------------------
 
 export function draw(ctx, state) {
@@ -43,7 +38,12 @@ export function draw(ctx, state) {
 
   drawGround(ctx, state);
   drawPlots(ctx, state);
-  if (state.menu) drawReach(ctx, state.menu.tower);
+  // The reach of whoever is being looked at or ordered about — and the flag
+  // showing where the order last landed. While `placing` is on, the ring is the
+  // only thing telling the player how far they may send somebody, so it has to
+  // be up then too rather than only while the menu is.
+  const showing = state.placing || (state.menu && state.menu.tower);
+  if (showing) { drawReach(ctx, showing); drawPost(ctx, state, showing); }
   drawShots(ctx, state);
   drawFigures(ctx, state);
   drawHud(ctx, state);
@@ -108,10 +108,13 @@ function drawReach(ctx, t) {
 // point is the ground, not the middle of the picture. `dir` of -1 mirrors it.
 //
 // Returns false if the file is not loaded, so the caller can fall back.
-function pose(ctx, p, x, y, dir = 1, k = SCALE) {
+// `k` on the pose is how much bigger than the board's scale it is drawn, and only
+// the two projectiles carry one — a pellet measured honestly is four pixels long.
+function pose(ctx, p, x, y, dir = 1) {
   const img = p && art[p.sprite];
   if (!img) return false;
   const [sx, sy, sw, sh] = p.trim;
+  const k = SCALE * (p.k || 1);
   const dw = sw * k, dh = sh * k;
   ctx.save();
   ctx.translate(x, y);
@@ -121,10 +124,84 @@ function pose(ctx, p, x, y, dir = 1, k = SCALE) {
   return true;
 }
 
+// A projectile, POINTED WHERE IT IS GOING. Its `faces` says which way the drawing
+// already points, so Mommy's pellet — drawn facing left, like she is — is turned
+// half a turn further than one drawn facing right. Ella's slime carries no
+// `faces` at all, because a blob has no front and turning it would be motion
+// nobody asked for.
+function flying(ctx, p, x, y, angle) {
+  const img = p && art[p.sprite];
+  if (!img) return false;
+  const [sx, sy, sw, sh] = p.trim;
+  const k = SCALE * (p.k || 1);
+  const dw = sw * k, dh = sh * k;
+  ctx.save();
+  ctx.translate(x, y);
+  if (p.faces) ctx.rotate(angle + (p.faces < 0 ? Math.PI : 0));
+  ctx.drawImage(img, sx, sy, sw, sh, -p.pivot[0] * dw, -p.pivot[1] * dh, dw, dh);
+  ctx.restore();
+  return true;
+}
+
+// A drawing on a CARD or in a PANEL rather than on the board, and the difference
+// is the anchor. On the board Papa has to stand where Papa stands, so he is drawn
+// from his shadow; off it he has to sit in the middle of a column beside his
+// name, and anchoring by the pivot hung his swords over the card's left edge —
+// the pivot is under his feet and his feet are nowhere near the middle of a man
+// holding two swords out to one side. So this centres the BOX and stands it on a
+// baseline.
+function standing(ctx, p, cx, groundY, k) {
+  const img = p && art[p.sprite];
+  if (!img) return false;
+  const [sx, sy, sw, sh] = p.trim;
+  ctx.drawImage(img, sx, sy, sw, sh, cx - (sw * k) / 2, groundY - sh * k, sw * k, sh * k);
+  return true;
+}
+
+// The biggest box in a set of poses, so a slot can be sized from the art rather
+// than from a number somebody typed and stopped checking.
+const widest = poses => Math.max(...poses.map(p => p.trim[2]));
+const tallest = poses => Math.max(...poses.map(p => p.trim[3]));
+
 // Which way a drawing has to be turned to be looking at `look` (+1 right, -1
 // left). A member with no `faces` is drawn facing the camera and never turns.
 const turn = (member, look) =>
   member.art.faces && look !== member.art.faces ? -1 : 1;
+
+// --- the rally flag ---------------------------------------------------------------
+//
+// The big game's own picture, doing both of its jobs: the button that gives the
+// order, and the marker showing where the order landed. It is PLANTED rather
+// than centred — FLAG_FOOT puts the bottom of the pole on the point, because the
+// point is what is being marked, not the middle of the drawing.
+function flag(ctx, x, y, h = RALLY_FLAG_H) {
+  const img = art.icon_flag;
+  if (!img) return false;
+  const [sx, sy, sw, sh] = ui.glyph_flag.trim;
+  const w = (sw / sh) * h;
+  ctx.drawImage(img, sx, sy, sw, sh, x - FLAG_FOOT[0] * w, y - FLAG_FOOT[1] * h, w, h);
+  return true;
+}
+
+// Where a road character has been told to stand. Only Papa and Mommy have one,
+// and it is only up while they are selected or being sent somewhere — a flag on
+// every filled plot all game would be four more things on a board that already
+// has thugs walking through it.
+function drawPost(ctx, state, t) {
+  if (t.member.kind !== 'road') return;
+  const u = state.units.find(other => other.tower === t);
+  if (!u) return;
+  if (!flag(ctx, u.rx, u.ry)) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(240,230,210,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(u.rx, u.ry);
+    ctx.lineTo(u.rx, u.ry - 16);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
 
 // --- everybody on the board -----------------------------------------------------
 
@@ -278,7 +355,7 @@ function drawEnemy(ctx, e) {
 
 function drawShots(ctx, state) {
   for (const s of state.shots) {
-    if (pose(ctx, s.art, s.x, s.y, 1, SHOT_SCALE)) continue;
+    if (flying(ctx, s.art, s.x, s.y, s.angle || 0)) continue;
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.rotate(s.spin);
@@ -461,59 +538,96 @@ function hudButton(ctx, b, label, on, size = 14, ink = null) {
   ctx.restore();
 }
 
-// --- what the selected person is worth ---------------------------------------------
+// --- what you are looking at ---------------------------------------------------------
 //
-// The ring on a plot says what you can DO — build, upgrade, sell, send. It has no
-// room to say what you would be getting, and a five-year-old choosing between
-// Ella and Rei has no way to find out otherwise. So selecting somebody puts their
-// numbers in the top right, out of the way of the road, and it stays up as long as
-// the ring does.
+// The panel in the top right, and it is the big game's info box in miniature: a
+// picture of whoever is selected with their numbers beside it, out of the way of
+// the road, live for as long as the selection is.
 //
-// AN EMPTY PLOT SHOWS NOTHING, deliberately: four buttons are open at once there
-// and a panel can only describe one of them. The four descriptions are what The
-// Family button is for.
-const STAT_BOX = { x: W - HUD_PAD - 196, y: HUD_H + 12, w: 196 };
+// FOUR THINGS CAN PUT SOMETHING IN IT — a plot with somebody on it, Papa or Mommy
+// standing on the road, and a thug. That is what the artist asked for, and it is
+// also the only way a five-year-old choosing between Ella and Rei can find out
+// what the difference is without leaving the board.
+//
+// An EMPTY plot still shows nothing, deliberately: four build buttons are open at
+// once there and a panel can only describe one of them. The four descriptions are
+// what The Family button is for.
+//
+// What it says is decided in rules.js by selectionInfo(); this is only a layout.
+const STAT_BOX = { x: W - HUD_PAD - 238, y: HUD_H + 12, w: 238 };
+
+// The portrait slot, and ONE factor for everything that can appear in it — the
+// four of them and the three thugs alike. Worked out from the art rather than
+// typed, so a Giant Thug is genuinely bigger than a Thug and Rei is genuinely
+// smaller than Papa, and a re-export cannot silently overflow the box.
+const PANEL_SLOT = { w: 64, h: 54 };
+const PANEL_ART = [
+  ...family.map(m => m.art.idle),
+  ...Object.values(enemyTypes).map(d => ({ trim: d.spriteTrim }))
+];
+const PANEL_K = Math.min(PANEL_SLOT.w / widest(PANEL_ART), PANEL_SLOT.h / tallest(PANEL_ART));
+
+// The bands inside the panel: a title, then icon rows, then the small print.
+const PANEL_TITLE = 24;
+const PANEL_ROW = 21;
+const PANEL_NOTE = 15;
 
 function drawStats(ctx, state) {
-  const t = state.menu && state.menu.tower;
-  if (!t) return;
+  const info = selectionInfo(state);
+  if (!info) return;
 
-  const lv = t.level;
   const rows = [];
-  if (lv.hp) rows.push(['icon_health', 'stat_health', `${lv.hp}`]);
-  rows.push(['icon_damage', 'stat_damage',
-    t.member.kind === 'aura' ? `${lv.damage} a second` : `${lv.damage} every ${lv.cd}s`]);
+  if (info.hp !== null) rows.push(['icon_health', 'stat_health', `${info.hp}/${info.maxHp}`]);
+  rows.push(['icon_damage', 'stat_damage', info.damage]);
 
-  const h = 46 + rows.length * 22 + 26;
+  const { x, y, w } = STAT_BOX;
+  const text = PANEL_TITLE + rows.length * PANEL_ROW + info.notes.length * PANEL_NOTE;
+  const h = Math.max(text + 22, PANEL_SLOT.h + 20);
+
   ctx.save();
   ctx.fillStyle = 'rgba(34,32,28,0.86)';
   ctx.beginPath();
-  ctx.roundRect(STAT_BOX.x, STAT_BOX.y, STAT_BOX.w, h, 10);
+  ctx.roundRect(x, y, w, h, 10);
   ctx.fill();
-  ctx.strokeStyle = t.member.colour;
+  ctx.strokeStyle = info.colour;
   ctx.lineWidth = 2;
   ctx.stroke();
+
+  // The picture, standing on the floor of its own slot rather than on the floor
+  // of the panel, so a tall Papa and a tiny Rei share a baseline.
+  standing(ctx, info.pose, x + 12 + PANEL_SLOT.w / 2, y + h / 2 + PANEL_SLOT.h / 2, PANEL_K);
+
+  const tx = x + 12 + PANEL_SLOT.w + 12;
+  let ty = y + (h - text) / 2 + PANEL_TITLE / 2;
 
   ctx.fillStyle = CREAM;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 16px system-ui, sans-serif';
-  ctx.fillText(t.member.name, STAT_BOX.x + 14, STAT_BOX.y + 22);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#E0B24C';
-  ctx.font = '700 13px system-ui, sans-serif';
-  ctx.fillText(`Lv ${t.tier}`, STAT_BOX.x + STAT_BOX.w - 14, STAT_BOX.y + 22);
+  ctx.font = '700 15px system-ui, sans-serif';
+  ctx.fillText(info.name, tx, ty);
+  // The level badge, and only a family member has one — a thug is a thug.
+  if (info.tier) {
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#E0B24C';
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText(`Lv ${info.tier}`, x + w - 12, ty);
+  }
 
+  ty += PANEL_TITLE / 2;
   ctx.fillStyle = CREAM;
-  ctx.font = '600 13px system-ui, sans-serif';
-  rows.forEach(([key, slot, text], i) => {
-    reading(ctx, key, slot, STAT_BOX.x + 14, STAT_BOX.y + 46 + i * 22, 16, text);
-  });
+  ctx.font = '600 12px system-ui, sans-serif';
+  for (const [key, slot, label] of rows) {
+    reading(ctx, key, slot, tx, ty + PANEL_ROW / 2, 15, label, 6);
+    ty += PANEL_ROW;
+  }
 
   ctx.fillStyle = 'rgba(240,230,210,0.62)';
-  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.font = '600 11px system-ui, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`Reach ${lv.range}`, STAT_BOX.x + 14, STAT_BOX.y + 46 + rows.length * 22 + 6);
+  for (const note of info.notes) {
+    ctx.fillText(note, tx, ty + PANEL_NOTE / 2);
+    ty += PANEL_NOTE;
+  }
   ctx.restore();
 }
 
@@ -584,7 +698,11 @@ export function menuItems(state, menu) {
     : { act: 'max', cost: null, label: 'Max', colour: '#6A6458', on: false });
   put(Math.PI, { act: 'sell', gain: refundValue(t), label: 'Sell', colour: '#2F6B27', on: true });
   if (t.member.kind === 'road') {
-    put(Math.PI / 2, { act: 'rally', cost: null, label: 'Go', colour: '#3A6EA8', on: true });
+    // THE FLAG RATHER THAN THE WORD "GO". It is the big game's own rally icon, and
+    // the button now looks like the marker it plants — which is the whole reason
+    // to borrow a picture instead of drawing a second one.
+    put(Math.PI / 2,
+      { act: 'rally', cost: null, label: 'Go', icon: 'flag', colour: '#3A6EA8', on: true });
   }
   return items;
 }
@@ -609,6 +727,11 @@ function drawMenu(ctx, state) {
     ctx.strokeStyle = it.colour;
     ctx.lineWidth = 3;
     ctx.stroke();
+
+    // A button with a picture on it says nothing: the flag IS the label. It falls
+    // back to the word if the file has not loaded, which is the same bargain
+    // every other drawing in this folder makes.
+    if (it.icon === 'flag' && flag(ctx, it.x, it.y + 15, 30)) continue;
 
     ctx.fillStyle = CREAM;
     ctx.textAlign = 'center';
@@ -720,18 +843,22 @@ function drawFamilyBook(ctx, state) {
     ctx.lineWidth = open === m ? 2.5 : 1;
     ctx.stroke();
 
-    portrait(ctx, m, b.x + 42, b.y + b.h - 10);
+    // The column is CARD.w wide and Mommy's shotgun fills every pixel of it, so
+    // the text starts clear of the whole slot rather than clear of the average
+    // card.
+    portrait(ctx, m, b.x + 10 + CARD.w / 2, b.y + b.h - 10);
+    const tx = b.x + 10 + CARD.w + 12;
 
     ctx.textAlign = 'left';
     ctx.fillStyle = INK;
     ctx.font = '700 17px system-ui, sans-serif';
-    ctx.fillText(m.name, b.x + 82, b.y + 24);
+    ctx.fillText(m.name, tx, b.y + 24);
 
     ctx.fillStyle = INK_MUTED;
     ctx.font = '600 12px system-ui, sans-serif';
     const lv = levelOf(m, 1);
-    ctx.fillText(role(m), b.x + 82, b.y + 45);
-    ctx.fillText(`${lv.cost}g`, b.x + 82, b.y + 63);
+    ctx.fillText(role(m), tx, b.y + 45);
+    ctx.fillText(`${lv.cost}g`, tx, b.y + 63);
     ctx.restore();
   });
 
@@ -752,16 +879,22 @@ function drawFamilyBook(ctx, state) {
     ctx.font = '600 13px system-ui, sans-serif';
     stats(ctx, open, tx, BOOK_STATS_Y);
   } else {
+    // FOUR NAMES AND FOUR SHORT PARAGRAPHS, and the column has to end above the
+    // two buttons in the corner. At two lines each this finishes about 27px clear
+    // of them, which is the slack that lets one of the four run to three lines
+    // without the last sentence disappearing under Start — which is exactly what
+    // happened when the blurbs were first written to whatever length they wanted.
+    // The long version is one tap away; a list is meant to be skimmed.
     ctx.fillStyle = INK_MUTED;
     ctx.font = '500 13px system-ui, sans-serif';
-    let y = BOOK.y + 84;
+    let y = BOOK.y + 80;
     for (const m of family) {
       ctx.fillStyle = m.colour;
       ctx.font = '700 14px system-ui, sans-serif';
       ctx.fillText(m.name, tx, y);
       ctx.fillStyle = INK_MUTED;
       ctx.font = '500 13px system-ui, sans-serif';
-      y = paragraphs(ctx, m.blurb, tx, y + 20, tw, 18) + 14;
+      y = paragraphs(ctx, m.blurb, tx, y + 18, tw, 18) + 10;
     }
   }
 
@@ -771,32 +904,31 @@ function drawFamilyBook(ctx, state) {
   if (open) button(ctx, BOOK_BACK, 'All', true);
 }
 
-// A card's picture, and it is the one place a drawing is NOT anchored to its
-// shadow. On the board Papa has to stand where Papa stands; on a card he has to
-// sit in the middle of a 64px column beside his name, and anchoring by the pivot
-// hung his swords over the card's left edge — the pivot is under his feet, and his
-// feet are nowhere near the middle of a man holding two swords out to one side.
-// So the card centres the BOX and stands it on a baseline.
+// A CARD'S PICTURE, AND ALL FOUR AT ONE SCALE.
 //
-// Fitted rather than drawn at the board's scale, too: Rei is a baby and Papa is a
-// man, and at the board's scale one card would be a third the size of the other.
-// The cost is that Rei — 71 source pixels tall — is upscaled about twice on a very
-// wide monitor, which flat art with a heavy outline carries and a photograph
-// would not.
-const CARD_W = 64;
-const CARD_H = 58;
+// This is the fix for the thing that was wrong with the first set of cards: each
+// drawing was fitted to its column, so Rei — a baby 71 source pixels tall — came
+// out exactly as big as Papa, and four people of wildly different sizes read as
+// four adults of the same height. The factor is worked out ONCE, from the widest
+// and the tallest of the four, and every card is drawn at it. Rei ends up about
+// two fifths of Papa's height, because he is.
+//
+// Derived rather than typed so a redrawn Papa resizes the whole set instead of
+// silently overflowing his column. See `standing` for why a card is anchored by
+// its box rather than by its shadow.
+const CARD = { w: 76, h: 62 };
+const CARD_ART = family.map(m => m.art.idle);
+const CARD_K = Math.min(CARD.w / widest(CARD_ART), CARD.h / tallest(CARD_ART));
 
 function portrait(ctx, m, cx, groundY) {
-  const p = m.art.idle;
-  const img = art[p.sprite];
-  const [sx, sy, sw, sh] = p.trim;
-  if (!img) { placeholder(ctx, m, cx, groundY, CARD_H); return; }
-  const k = Math.min(CARD_W / sw, CARD_H / sh);
-  ctx.drawImage(img, sx, sy, sw, sh, cx - (sw * k) / 2, groundY - sh * k, sw * k, sh * k);
+  if (!standing(ctx, m.art.idle, cx, groundY, CARD_K)) {
+    placeholder(ctx, m, cx, groundY, m.art.idle.trim[3] * CARD_K);
+  }
 }
 
 const role = m =>
-  m.kind === 'road' ? 'Stands on the road'
+  m.gun ? 'Shoots from the road'
+  : m.kind === 'road' ? 'Stands on the road'
   : m.kind === 'aura' ? 'Works from the plot, no aiming'
   : 'Throws from the plot';
 
@@ -813,7 +945,9 @@ function stats(ctx, m, x, y) {
   reading(ctx, 'icon_damage', 'stat_damage', x, row, 16,
     m.kind === 'aura' ? `${lv.damage} a second, to everything in reach`
                       : `${lv.damage} every ${lv.cd}s`);
-  ctx.fillText(`Reach ${lv.range}`, x, row + 26);
+  ctx.fillText(m.gun ? `Shoots ${m.gun}, and sent up to ${lv.range}`
+             : m.kind === 'road' ? `Sent up to ${lv.range}`
+             : `Reach ${lv.range}`, x, row + 26);
 }
 
 // Wrap a string of paragraphs into `w`, returning the y it finished at. Blank

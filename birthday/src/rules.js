@@ -25,8 +25,9 @@
 // present.
 
 import { prepare, at as pointOn, laneOf, nearestOn, randomLane } from '../../src/route.js';
-import { enemyTypes, maps, family, memberById, START_GOLD, START_LIVES, REFUND_RATE, spentTo }
-  from './data.js';
+import { enemyTypes, maps, family, memberById, START_GOLD, START_LIVES, REFUND_RATE, spentTo,
+         SCALE } from './data.js';
+import { play, solo, voiceCue, killCue, blowCue, ENEMY_BLOW } from './audio.js';
 
 // Reach is an ELLIPSE, flattened by this, for the same reason the big game's is:
 // the board is drawn in perspective, so a patch of ground is wider than it is
@@ -122,6 +123,13 @@ export function newGame(mapIndex) {
     paused: false,
     // Which family card the pop-up has open, or null for the list.
     reading: null,
+    // WHO THE PANEL IN THE TOP RIGHT IS ABOUT, as { kind, ref } — a direct
+    // reference to the live thing rather than an index, which is what makes the
+    // health readout live: the panel re-reads `hp` off the same object the fight
+    // is damaging, every frame, with nothing to keep in step. The cost of a
+    // direct reference is that it can outlive what it points at, which is what
+    // validate() is for.
+    selected: null,
     menu: null,
     placing: null,
     speed: 1,
@@ -189,7 +197,19 @@ export function updateWaves(state, dt) {
   // touching anybody's damage — it lifts or drops every build equally and so does
   // not change which of the four is worth having. `node birthday/tools/sim.mjs`
   // says what it did.
-  state.gold += 85 + state.waveIndex * 22;
+  //
+  // 85 + 22 -> 95 + 26, and it is a CORRECTION rather than a decision: Rei's
+  // damage came down by a third at the owner's request, and a one-of-each build
+  // that used to scrape Two Rivers stopped finishing it. The money is the lever
+  // that puts that back without arguing with the request — it hands every build
+  // the same extra plot, so the nerf still lands where it was aimed.
+  //
+  // It was tried at 105 + 30 as well, and that bought nothing: Two Rivers is not
+  // short of money, it is short of BLOCKERS — it has two roads and the sim never
+  // rallies anybody, so a build cycling all four leaves half the traffic to walk
+  // past. That is a fact about the sim rather than about the map, which is why
+  // "no papa" sails through it and "papa only" does not.
+  state.gold += 95 + state.waveIndex * 26;
 }
 
 function spawn(state, type) {
@@ -214,6 +234,22 @@ function spawn(state, type) {
 
 // --- the thugs -----------------------------------------------------------------
 
+// WHO GETS THE LINE OVER THE BODY. Every point of damage in this game goes
+// through here, for one reason: the member who takes the last of a thug's health
+// is the one who says something about it, and that has to be recorded on the way
+// DOWN. By the time the sweep below runs, whatever hit it is long gone — a
+// bullet has been swept up, a smell has no shooter, and a blow is a number that
+// was subtracted three frames ago.
+//
+// The guard on the front matters too. Two bullets from the same blast can arrive
+// on the same frame, and without it the second one would take the kill off the
+// first — and, worse, pay the bounty for a thug that was already dead.
+function hurt(e, amount, by) {
+  if (e.hp <= 0 || e.leaked) return;
+  e.hp -= amount;
+  if (e.hp <= 0) e.killedBy = by;
+}
+
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     e.thrust = Math.max(0, e.thrust - dt * 4);
@@ -232,6 +268,9 @@ export function updateEnemies(state, dt) {
           e.foe.hp -= e.def.damage;
           e.acd = e.def.atkCd;
           e.thrust = 1;
+          // Category B, beside the family's own four: a fist landing is a thing
+          // on the screen, and several thugs can be landing one at once.
+          play(ENEMY_BLOW);
         }
         continue;
       }
@@ -253,9 +292,15 @@ export function updateEnemies(state, dt) {
   }
 
   // Pay for the dead, then sweep. One pass, so a thug killed by two things at once
-  // is still paid for once.
+  // is still paid for once — and the same pass is where whoever finished it gets
+  // to say so. `killCue` answers null for Rei, and solo() does nothing with a
+  // null cue, which is the whole of "the baby does not gloat".
   for (const e of state.enemies) {
-    if (e.hp <= 0 && !e.leaked && !e.paid) { e.paid = true; state.gold += e.def.bounty; }
+    if (e.hp <= 0 && !e.leaked && !e.paid) {
+      e.paid = true;
+      state.gold += e.def.bounty;
+      solo(killCue(e.killedBy));
+    }
   }
   state.enemies = state.enemies.filter(e => {
     const gone = e.leaked || e.hp <= 0;
@@ -366,8 +411,12 @@ export function updateUnits(state, dt) {
     u.cd -= dt;
     u.thrust = Math.max(0, u.thrust - dt * 4);
 
-    if (u.foe && d <= REACH && u.cd <= 0) {
-      strike(state, u);
+    const at = quarry(state, u, d);
+    if (at && u.cd <= 0) {
+      // She turns to shoot whatever she is shooting, which is not always the
+      // thing she is blocking. Papa's target is already what he is facing.
+      if (at !== u.foe) u.face = Math.atan2(at.y - u.y, at.x - u.x);
+      strike(state, u, at);
       u.cd = u.tower.level.cd;
       u.thrust = 1;
     }
@@ -381,22 +430,69 @@ export function updateUnits(state, dt) {
   }
 }
 
-// What a blow does. Papa's lands on one thug; Mommy's sprays.
-function strike(state, u) {
+// WHAT A ROAD CHARACTER IS ABOUT TO HIT, and the two of them answer differently.
+//
+// PAPA REACHES. His target is the thug in his hands and nothing else, and `d` is
+// already the distance to it — so a thug he has stopped but which has not closed
+// on him yet is not hittable, which is what makes his blows land where he is.
+//
+// MOMMY SHOOTS. Her `gun` is a reach of its own and it does not need anything
+// blocked at all, so she takes whatever is nearest inside it: usually the thug
+// she has stopped, sometimes the one walking up behind it, and often something
+// she has not been touched by at all. Short on purpose — she is a woman standing
+// on the road who fires, not a second tower.
+function quarry(state, u, d) {
+  const gun = u.member.gun;
+  if (!gun) return u.foe && d <= REACH ? u.foe : null;
+
+  let best = null, least = gun;
+  for (const e of state.enemies) {
+    if (e.hp <= 0 || e.leaked) continue;
+    const r = Math.hypot(e.x - u.x, e.y - u.y);
+    if (r < least) { least = r; best = e; }
+  }
+  return best;
+}
+
+// What a blow does. Papa's lands where he is standing; Mommy's leaves the barrel.
+function strike(state, u, at) {
   const dmg = u.tower.level.damage;
-  u.foe.hp -= dmg;
+  play(blowCue(u.member.id));
 
-  const spread = u.member.splash;
-  if (!spread) return;
+  if (!u.member.gun) { hurt(at, dmg, u.member.id); return; }
 
+  // ONE TRIGGER PULL, A BULLET DRAWN PER THUG IT CATCHES. That is the picture the
+  // artist asked for and it is also the honest one: the blast is measured from
+  // whatever she AIMED at rather than from her, so a queue standing on top of
+  // each other is worth far more to her than the same thugs spread down the road.
+  const from = { x: u.x, y: u.y - 20 };
+  for (const e of blast(state, u, at)) {
+    state.shots.push({
+      x: from.x, y: from.y, target: e,
+      damage: dmg,
+      speed: u.member.speed,
+      by: u.member.id,
+      colour: u.member.colour,
+      art: u.member.shot,
+      angle: Math.atan2(e.y - from.y, e.x - from.x),
+      spin: 0
+    });
+  }
+}
+
+// Whatever one shot catches: the thing aimed at, plus up to `extra` more inside
+// `splash` of it.
+function blast(state, u, at) {
+  const out = [at];
   let left = u.member.extra;
   for (const e of state.enemies) {
     if (left <= 0) break;
-    if (e === u.foe || e.hp <= 0) continue;
-    if (Math.hypot(e.x - u.foe.x, e.y - u.foe.y) > spread) continue;
-    e.hp -= dmg;
+    if (e === at || e.hp <= 0 || e.leaked) continue;
+    if (Math.hypot(e.x - at.x, e.y - at.y) > u.member.splash) continue;
+    out.push(e);
     left--;
   }
+  return out;
 }
 
 // --- the two on their towers ----------------------------------------------------
@@ -421,12 +517,14 @@ function stepThrower(state, t, dt) {
   t.cd = t.level.cd;
   t.recoil = 1;
   t.aim = Math.atan2(target.y - t.y, target.x - t.x);
+  play(blowCue(t.member.id));
   state.shots.push({
     x: t.x, y: t.y - 26, target,
     damage: t.level.damage,
     speed: t.member.speed,
     slow: t.member.slow,
     slowFor: t.member.slowFor,
+    by: t.member.id,
     colour: t.member.colour,
     // The drawing travels with the shot rather than being looked up by the
     // renderer, so a second thrower with different ammunition would need nothing
@@ -445,13 +543,26 @@ function stepAura(state, t, dt) {
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
     if (!inReach(t.x, t.y, e.x, e.y, t.level.range)) continue;
-    e.hp -= t.level.damage * dt;
+    hurt(e, t.level.damage * dt, t.member.id);
     any = true;
   }
   // Which pose he is in. He has no cooldown to animate, so the drawing follows
   // the only fact there is: whether anything is currently in there with him.
   t.stinking = any;
+
+  // HIS NOISE IS ON A CLOCK OF ITS OWN, because he is the one member with no
+  // cooldown to hang it on. Everybody else makes their sound when they swing or
+  // fire; he is simply always doing it, and "always" is not a thing that can be
+  // played. So it is REEK seconds apart while there is somebody in there with
+  // him — often enough to be his, far enough apart not to become a drone.
+  //
+  // The clock keeps running while the reach is empty rather than being reset, so
+  // the first thug to walk in is greeted immediately instead of after a wait.
+  t.reek = (t.reek || 0) - dt;
+  if (any && t.reek <= 0) { play(blowCue(t.member.id)); t.reek = REEK; }
 }
+
+const REEK = 1.6;
 
 // WHERE THE SMELL IS DRAWN, and it is on the ROAD rather than around him.
 //
@@ -515,13 +626,20 @@ export function updateShots(state, dt) {
     const step = s.speed * dt;
 
     if (d <= step) {
-      s.target.hp -= s.damage;
-      s.target.slow = s.slow;
-      s.target.slowFor = s.slowFor;
+      hurt(s.target, s.damage, s.by);
+      // Only Ella's slime carries a slow. A pellet has nothing to leave behind,
+      // and copying `undefined` onto the thug would clear whatever slime was
+      // already on it — a shotgun that cured the slow would be a strange bug to
+      // find by eye.
+      if (s.slowFor) { s.target.slow = s.slow; s.target.slowFor = s.slowFor; }
       s.done = true;
       continue;
     }
 
+    // Which way it is pointing. Recomputed as it flies rather than kept from the
+    // muzzle, because these are steered — a pellet chasing a thug that walks
+    // across it should turn with it.
+    s.angle = Math.atan2(dy, dx);
     s.x += (dx / d) * step;
     s.y += (dy / d) * step;
   }
@@ -548,6 +666,10 @@ export function build(state, plot, member) {
   state.towers.push(t);
   if (t.member.kind === 'aura') t.smell = smellSpots(state, t);
   makeUnit(state, t);
+  // They answer for themselves when they arrive, the same as the big game's four
+  // families do. Category A, so building three in a row is three lines rather
+  // than three at once.
+  solo(voiceCue(member.id));
   return true;
 }
 
@@ -573,6 +695,7 @@ export function upgrade(state, t) {
   } else {
     makeUnit(state, t);
   }
+  solo(voiceCue(t.member.id));
   return true;
 }
 
@@ -589,6 +712,112 @@ export function towerAt(state, plot) {
   return state.towers.find(t => t.plot === plot) || null;
 }
 
+// --- who you are looking at --------------------------------------------------------
+//
+// THREE THINGS CAN BE SELECTED and they are not symmetrical:
+//
+//   a plot     stands there              name, level, damage, reach
+//   a unit     walks, fights, respawns   the same, plus LIVE health
+//   a thug     walks, fights, dies       name, live health, damage, speed
+//
+// The panel that shows them is in render.js; everything about WHAT it shows is
+// here, so the three kinds are reconciled in one place and the drawing is only a
+// layout. That is the big game's split — src/select.js against src/render.js —
+// and it is worth keeping at this size too.
+
+// Slack around a figure's drawn box, in board px. Papa is 30px tall and 15
+// across; without the padding he is a target about 4mm square on a phone, which
+// is well under the 44px minimum. It does not have to be exact — this is a
+// look-at, not a fire button — so it errs generous.
+const PICK_PAD = 12;
+
+// The figure under a tap, or null. NEAREST THE CAMERA WINS: `y` is the ground a
+// figure stands on, so the largest y is the one drawn last and therefore on top,
+// which is the one the player believes they tapped.
+export function pickFigure(state, x, y) {
+  let best = null;
+
+  for (const [kind, list] of [['unit', state.units], ['enemy', state.enemies]]) {
+    for (const f of list) {
+      // Somebody waiting to get up is a ring, not a person. There is nothing on
+      // the board to have tapped.
+      if (kind === 'unit' && f.down > 0) continue;
+      if (kind === 'enemy' && (f.hp <= 0 || f.leaked)) continue;
+
+      const [, , bw, bh] = kind === 'unit' ? f.member.art.idle.trim : f.def.spriteTrim;
+      const half = (bw * SCALE) / 2 + PICK_PAD;
+      const top = f.y - bh * SCALE - PICK_PAD;
+      if (x < f.x - half || x > f.x + half || y < top || y > f.y + PICK_PAD) continue;
+      if (!best || f.y > best.ref.y) best = { kind, ref: f };
+    }
+  }
+
+  return best;
+}
+
+// Drop a selection whose subject has left the game — a thug killed, a plot sold,
+// a family member cut down. Called once a frame from main.js rather than from
+// the draw, so the renderer stays a pure reader of state.
+//
+// A unit who is merely DOWN stays selected: they respawn into the same object,
+// so the panel keeps their slot and shows them coming back. It is only removal
+// from the list that ends a selection.
+export function validate(state) {
+  const s = state.selected;
+  if (!s) return;
+
+  const list = s.kind === 'unit' ? state.units
+             : s.kind === 'enemy' ? state.enemies
+             : state.towers;
+
+  if (!list.includes(s.ref)) state.selected = null;
+}
+
+// Everything the panel draws, or null when nothing is selected.
+export function selectionInfo(state) {
+  const s = state.selected;
+  if (!s) return null;
+
+  if (s.kind === 'enemy') {
+    const e = s.ref;
+    return {
+      name: e.def.name,
+      colour: e.def.colour,
+      pose: { sprite: e.def.sprite, trim: e.def.spriteTrim, pivot: e.def.pivot },
+      hp: Math.max(0, Math.round(e.hp)),
+      maxHp: e.maxHp,
+      damage: `${e.def.damage} every ${e.def.atkCd}s`,
+      notes: [`Walks at ${e.def.speed}`]
+    };
+  }
+
+  // A plot and the person it put on the road are the same selection wearing two
+  // hats: tapping the plot says what it is worth, tapping the figure says how
+  // they are doing. Both read their numbers off the plot's current level.
+  const t = s.kind === 'unit' ? s.ref.tower : s.ref;
+  const u = s.kind === 'unit' ? s.ref : state.units.find(other => other.tower === t);
+  const m = t.member;
+  const lv = t.level;
+
+  const notes = [];
+  if (m.gun) notes.push(`Shoots ${m.gun}`);
+  notes.push(m.kind === 'road' ? `Sent up to ${lv.range}` : `Reach ${lv.range}`);
+  if (m.slowFor) notes.push(`Slows for ${m.slowFor}s`);
+
+  return {
+    name: m.name,
+    colour: m.colour,
+    pose: m.art.idle,
+    tier: t.tier,
+    // NULL RATHER THAN ZERO for the two on their plots. Nothing in this game can
+    // reach Ella or Rei, so a health row would be a number that never moves.
+    hp: u ? Math.max(0, Math.round(u.hp)) : null,
+    maxHp: u ? u.maxHp : null,
+    damage: m.kind === 'aura' ? `${lv.damage} a second` : `${lv.damage} every ${lv.cd}s`,
+    notes
+  };
+}
+
 export function step(state, dt) {
   updateWaves(state, dt);
   updateTowers(state, dt);
@@ -597,4 +826,4 @@ export function step(state, dt) {
   updateEnemies(state, dt);
 }
 
-export { family, memberById, maps, enemyTypes, START_GOLD, START_LIVES };
+export { family, memberById, maps, enemyTypes, START_GOLD, START_LIVES, SCALE };

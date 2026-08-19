@@ -5,7 +5,8 @@
 // which is the right one because that is exactly what it is.
 
 import { loadArt } from './assets.js';
-import { newGame, step } from './rules.js';
+import { loadAudio } from './audio.js';
+import { newGame, step, validate } from './rules.js';
 import { draw } from './render.js';
 import { attach } from './input.js';
 
@@ -66,8 +67,17 @@ function frame(now) {
   // 'play' is a panel over the top of it — the family pop-up is a pause in its own
   // right, which is what makes going back for a reminder safe mid-wave.
   if (state.screen === 'play' && !state.paused) step(state, dt);
+  // Drop a selection whose subject has left the game. Here rather than inside
+  // draw(), so the renderer stays a pure reader of state — and unconditionally,
+  // because a thug can be swept up on the frame the player pauses.
+  validate(state);
   draw(ctx, state);
   requestAnimationFrame(frame);
 }
 
+// THE SOUND IS NOT WAITED FOR. The game is playable in silence and a few
+// megabytes of mp3 should never be the reason somebody is looking at a blank
+// screen; clips light up as they arrive. Nothing can be heard until the first
+// tap in any case — see unlock() in audio.js.
+loadAudio();
 loadArt().then(() => requestAnimationFrame(frame));

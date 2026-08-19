@@ -40,7 +40,7 @@ meant to.
 | | what they are | where they work |
 |---|---|---|
 | **Papa** | two swords, blocks one thug and cuts it down | on the road |
-| **Mommy** | a shotgun; blocks, and the blast catches two more behind | on the road |
+| **Mommy** | a shotgun; shoots at short range, and the blast catches two more | on the road |
 | **Ella** | throws slime; little damage, but it halves their speed | from her plot |
 | **Rei** | stinks; everything inside the smell loses health, all at once | from his plot |
 
@@ -71,22 +71,37 @@ stopping ignores how hard the thing hits.
 | Papa Lv1 | 180 | 320 | 12 | 0.55s | 190 | 21.8 |
 | Papa Lv2 | +170 | 460 | 18 | 0.50s | 205 | 36.0 |
 | Papa Lv3 | +230 | 650 | 26 | 0.45s | 220 | 57.8 |
-| Mommy Lv1 | 150 | 250 | 11 (up to x3) | 0.95s | 190 | 11.6 |
-| Mommy Lv2 | +140 | 360 | 16 (up to x3) | 0.90s | 205 | 17.8 |
-| Mommy Lv3 | +200 | 500 | 23 (up to x3) | 0.85s | 220 | 27.1 |
+| Mommy Lv1 | 150 | 250 | 10 (up to x3) | 1.00s | 190 | 10.0 |
+| Mommy Lv2 | +140 | 360 | 15 (up to x3) | 0.95s | 205 | 15.8 |
+| Mommy Lv3 | +200 | 500 | 21 (up to x3) | 0.90s | 220 | 23.3 |
 | Ella Lv1 | 110 | — | 11 + slow | 0.85s | 210 | 12.9 |
 | Ella Lv2 | +110 | — | 18 + slow | 0.75s | 225 | 24.0 |
 | Ella Lv3 | +160 | — | 27 + slow | 0.68s | 240 | 39.7 |
-| Rei Lv1 | 120 | — | 13, to everything in reach | — | 150 | 13.0 |
-| Rei Lv2 | +110 | — | 22, to everything in reach | — | 168 | 22.0 |
-| Rei Lv3 | +170 | — | 35, to everything in reach | — | 186 | 35.0 |
+| Rei Lv1 | 120 | — | 9, to everything in reach | — | 150 | 9.0 |
+| Rei Lv2 | +110 | — | 15, to everything in reach | — | 168 | 15.0 |
+| Rei Lv3 | +170 | — | 24, to everything in reach | — | 186 | 24.0 |
 
-Ella's slime leaves a thug at 55% speed for 2 seconds. Mommy's blast reaches
-80px from her target and catches up to 2 more. Papa is dearest and hits hardest;
-Mommy is the cheaper blocker who is worth more the busier the road is.
+Ella's slime leaves a thug at 55% speed for 2 seconds.
 
-The purse starts at **300** and a cleared wave pays **85 + 22 per wave** on top of
-the bounties. Calling a wave early pays **7 gold a second** of the wait given up —
+**Mommy shoots.** She stands on the road and stops what walks into her like Papa
+does, but she does not wait for it: anything within **130** of her is fired at,
+and the blast puts a bullet into up to **2** more thugs within **70** of whatever
+she aimed at. Every one of them gets its own pellet drawn, which is the whole
+picture of a shotgun — one trigger pull, several things hit. The reach is short
+on purpose: she is a woman on the road who fires, not a second tower.
+
+**Rei's damage came down by a third** at the owner's request — 13/22/35 to
+9/15/24. Damage a second against *everything* in reach is worth its face value
+times however many thugs are in there, and a wave of twenty walking through a
+level 3 smell was the best gold in the game by a distance.
+
+Papa is dearest and hits hardest; Mommy is the cheaper blocker who is worth more
+the busier the road is.
+
+The purse starts at **300** and a cleared wave pays **95 + 26 per wave** on top of
+the bounties. That was 85 + 22 and went up with Rei's nerf: it is the lever that
+lifts every build equally, so it puts a one-of-each build back where it was
+without arguing with the change it is compensating for. Calling a wave early pays **7 gold a second** of the wait given up —
 up to 84 for the long look before the first wave and up to 70 for a rest. It is a
 trade rather than free money: the gold arrives now and so do the thugs.
 
@@ -123,7 +138,7 @@ between runs is worse than a number on a page.
 ## The art
 
 All of it is in `birthday/assets/family/`, drawn for this game and used nowhere
-else. Fourteen files, 512 x 512, transparent:
+else. Fifteen files, 512 x 512, transparent:
 
 | file | what it is |
 |---|---|
@@ -133,6 +148,7 @@ else. Fourteen files, 512 x 512, transparent:
 | `Rei_Default.png` / `Rei_Attack.png` | Rei sitting, Rei stinking |
 | `*_Plot.png` (four) | the nameplate on each plot |
 | `Ella_Slime.png` | the slime in the air |
+| `Mommy_Bullet.png` | a shotgun pellet, turned to face wherever it is flying |
 | `Rei_Smell.png` | the stink where it lands on the road |
 
 **Everything is measured, not guessed.** `node birthday/tools/art.mjs` prints
@@ -164,9 +180,44 @@ beside a bend is worth more than one beside a straight. Four of them at most,
 If a file ever goes missing the game still plays: every drawing falls back to a
 coloured disc with an initial on it.
 
-Sound is not wired at all yet. When the voices and effects exist, the smallest
-thing that works is a `<audio>`-free copy of the big game's approach; ask for it
-then rather than building it now.
+## The sound
+
+`birthday/src/audio.js` is the big game's design in short form, and it is a
+separate file for one dull reason: every path in `../../src/audio.js` is relative
+to the page, and this page is one folder down. The two rules are the same ones.
+
+**Category A — one at a time, then a moment of quiet.** The four of them speaking:
+a line when they are built, upgraded or tapped, and a line over a thug they just
+finished. Three of them have two lines; **Rei has one**, and **Rei has no kill
+line at all** — he never means to hurt anybody. A cue with alternatives rotates
+between them, and a single-take cue simply comes up less often.
+
+**Category B — every time, however many at once.** The fighting: Papa's swords,
+Mommy's shotgun, Ella's throw, Rei's smell, and a thug landing a blow. It runs on
+a bus of its own that sits under Category A and ducks further while a line is in
+the air, so a voice cuts through the fight instead of competing with it.
+
+Rei is the odd one out: he has no cooldown to hang a noise on, so his sound is on
+a **1.6 second clock** that runs only while there is somebody in the smell with
+him. Often enough to be his, far enough apart not to become a drone.
+
+**Every clip is levelled by measurement, not by a table.** Each one is analysed
+once at load and given the gain that brings it to a common loudness, and anything
+moved more than 3dB is named in the console. These are home recordings made on
+different days and they arrive up to 17dB apart; a hand-written table of trims
+would be silently wrong the first time one was re-recorded.
+
+**Three songs**, one at a time, chosen at random and never the same one twice
+running, playing from the moment the first tap unlocks the audio — including on
+the map picker. They go through a plain `<audio>` element rather than the graph
+above, because a four-minute song decoded into a buffer is tens of megabytes and
+nothing here needs a song to start with sub-millisecond accuracy. They are mixed
+**well under everything else**: the voices and the fighting are what the game is
+saying, and the songs are what the room sounds like.
+
+Nothing can be heard until the first tap on the page — phones refuse audio that
+starts on its own — and `unlock()` runs on *every* tap, because a phone locking or
+a call arriving suspends the context again.
 
 ## The controls
 
@@ -188,14 +239,24 @@ A finished game offers **Play again** on the same map and **Another map**. Neith
 Restart nor Play again makes you sit through the family introduction a second
 time; choosing a map from the picker still shows it.
 
-Tapping a plot that somebody is already on puts their **numbers in the top right**
-— name, level, health, damage and reach, with the big game's heart and sword
-standing in for the words. An empty plot shows nothing there on purpose: four
-build buttons are open at once and a panel can only describe one of them, which
-is what The Family button is for.
+**Tap anybody to look at them.** A plot with somebody on it, Papa or Mommy
+standing on the road, or a thug — each puts a **picture and the numbers in the top
+right**: name, level, live health, damage and reach, with the big game's heart and
+sword standing in for the words. The health is read off the live object every
+frame, so the bar over their head and the number in the panel are the same fact
+twice. Building or upgrading selects what you just paid for, so the numbers you
+were choosing between are still on screen once you have chosen.
+
+An empty plot shows nothing there on purpose: four build buttons are open at once
+and a panel can only describe one of them, which is what The Family button is for.
+
+Sending Papa or Mommy somewhere uses the big game's own **rally flag** — as the
+button that gives the order and as the marker showing where it landed, so the
+button and the thing it does look like each other. The marker is only up while
+that person is selected or being sent.
 
 ## What it does not have
 
-No sound, no standing orders, no encyclopedia, no stars, no difficulty, no admin,
-no corpses and no blood. It is a birthday present that will
+No standing orders, no encyclopedia, no stars, no difficulty, no admin, no
+corpses and no blood. It is a birthday present that will
 probably be played a few times and then left alone, and it is built accordingly.

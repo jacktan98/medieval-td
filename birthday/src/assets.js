@@ -34,6 +34,13 @@ export const paths = {
   icon_damage: '../assets/ui/Damage_Icon.png',
   icon_health: '../assets/ui/Health_Icon.png',
 
+  // The big game's rally flag, borrowed whole. It is the one UI file that is
+  // also drawn ON the board over there — as the button that gives the order and
+  // as the marker showing where the order was given — and it does both jobs here
+  // for the same reason: the button and the thing the button does should look
+  // like each other.
+  icon_flag: '../assets/ui/Rally_Point_Icon.png',
+
   // --- the family --------------------------------------------------------------
   //
   // THREE FILES EACH. A resting pose, an attacking pose, and a NAMEPLATE — a flat
@@ -56,8 +63,10 @@ export const paths = {
   rei_attack: 'assets/family/Rei_Attack.png',
   rei_plot: 'assets/family/Rei_Plot.png',
 
-  // What the two on their towers put on the board.
+  // What three of them put on the board: Ella's slime, Mommy's pellets, and the
+  // smell where it lands.
   slime: 'assets/family/Ella_Slime.png',
+  bullet: 'assets/family/Mommy_Bullet.png',
   smell: 'assets/family/Rei_Smell.png'
 };
 
