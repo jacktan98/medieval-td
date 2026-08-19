@@ -188,24 +188,34 @@ to the page, and this page is one folder down. The two rules are the same ones.
 
 **Category A — one at a time, then a moment of quiet.** The four of them speaking:
 a line when they are built, upgraded or tapped, and a line over a thug they just
-finished. Three of them have two lines; **Rei has one**, and **Rei has no kill
-line at all** — he never means to hurt anybody. A cue with alternatives rotates
-between them, and a single-take cue simply comes up less often.
+finished. Papa, Mommy and Ella have **four takes each and two kill lines each**;
+**Rei has one line and no kill line at all** — he is a baby, and he never means to
+hurt anybody. A cue with alternatives rotates between them under two rules —
+never the same clip twice running, never more than twice in the last five — so
+building three Papas in a row is three different lines. A single-take cue needs
+no special case; it simply comes up less often.
 
 **Category B — every time, however many at once.** The fighting: Papa's swords,
 Mommy's shotgun, Ella's throw, Rei's smell, and a thug landing a blow. It runs on
 a bus of its own that sits under Category A and ducks further while a line is in
 the air, so a voice cuts through the fight instead of competing with it.
 
-Rei is the odd one out: he has no cooldown to hang a noise on, so his sound is on
-a **1.6 second clock** that runs only while there is somebody in the smell with
-him. Often enough to be his, far enough apart not to become a drone.
+Rei is the odd one out: he has no cooldown to hang a noise on, so his sound
+repeats on a clock while there is somebody in the smell with him — and **the
+interval is the clip's own length**, asked of the audio rather than typed here.
+That was a flat 1.6 seconds until the recording was measured at 7.7 seconds of
+audible baby, which meant five copies of it overlapping continuously. Asking the
+sound how long it lasts makes it a loop instead, and it stays right the day a
+shorter one is recorded. 1.6s survives as a floor, for a clip that has not loaded
+or a future one that is very short.
 
 **Every clip is levelled by measurement, not by a table.** Each one is analysed
 once at load and given the gain that brings it to a common loudness, and anything
 moved more than 3dB is named in the console. These are home recordings made on
-different days and they arrive up to 17dB apart; a hand-written table of trims
-would be silently wrong the first time one was re-recorded.
+different days and they arrive about 22dB apart — Papa's takes needed +4.6 to
++9.6dB and Rei's line −12.1dB — and a hand-written table of trims would be
+silently wrong the first time one was re-recorded. Nothing in the set reaches
+either clamp, and nothing clips once its gain is applied.
 
 **The tap.** `Select_Sound.mp3` — the big game's own file, byte for byte — plays
 whenever a control does something: a map, a family card, Start, the dashboard

@@ -93,32 +93,45 @@ const GAIN = { select: 0.5 };
 
 const DIR = 'assets/family/';
 
+// GROUPED BY PERSON rather than by category, which it was not when three of them
+// had two clips each. Four takes and two kill lines apiece is enough that the
+// interesting question about any row is "whose is it", and it puts Rei's
+// asymmetry where it can be seen rather than spread over three lists.
 const paths = {
-  // Category A. Two lines each for three of them and ONE for Rei, which is not
-  // an omission — he is a baby, he has one noise, and the share rules below
-  // handle a single-take cue without a special case: it simply comes up less
-  // often than a pair does.
+  // Category A: what he says when he arrives, is upgraded or is tapped, and what
+  // he says over a thug he just finished. Category B: his swords landing.
   papa_1: `${DIR}Papa_1.mp3`,
   papa_2: `${DIR}Papa_2.mp3`,
+  papa_3: `${DIR}Papa_3.mp3`,
+  papa_4: `${DIR}Papa_4.mp3`,
+  papa_kill_1: `${DIR}Papa_kill_enemy.mp3`,
+  papa_kill_2: `${DIR}Papa_kill_enemy_2.mp3`,
+  papa_attack: `${DIR}Papa_attack.mp3`,
+
   mommy_1: `${DIR}Mommy_1.mp3`,
   mommy_2: `${DIR}Mommy_2.mp3`,
+  mommy_3: `${DIR}Mommy_3.mp3`,
+  mommy_4: `${DIR}Mommy_4.mp3`,
+  mommy_kill_1: `${DIR}Mommy_kill_enemy.mp3`,
+  mommy_kill_2: `${DIR}Mommy_kill_enemy_2.mp3`,
+  mommy_attack: `${DIR}Mommy_attack.mp3`,
+
   ella_1: `${DIR}Ella_1.mp3`,
   ella_2: `${DIR}Ella_2.mp3`,
-  rei_1: `${DIR}Rei_1.mp3`,
-
-  // Category A, and the second half of the same idea: what they say when they
-  // are the one who finishes a thug off. THREE, not four. Rei has none, and that
-  // is deliberate rather than missing — he never means to kill anybody.
-  papa_kill: `${DIR}Papa_kill_enemy.mp3`,
-  mommy_kill: `${DIR}Mommy_kill_enemy.mp3`,
-  ella_kill: `${DIR}Ella_kill_enemy.mp3`,
-
-  // Category B. The fighting: two swords, a shotgun, a slime leaving a hand, a
-  // smell arriving, and a thug's fist landing.
-  papa_attack: `${DIR}Papa_attack.mp3`,
-  mommy_attack: `${DIR}Mommy_attack.mp3`,
+  ella_3: `${DIR}Ella_3.mp3`,
+  ella_4: `${DIR}Ella_4.mp3`,
+  ella_kill_1: `${DIR}Ella_kill_enemy.mp3`,
+  ella_kill_2: `${DIR}Ella_kill_enemy_2.mp3`,
   ella_attack: `${DIR}Ella_attack.mp3`,
+
+  // REI IS THE ODD ONE OUT and stays that way: ONE line and NO kill line, both
+  // at the owner's asking. He is a baby, he has one noise, and he never means to
+  // hurt anybody. The share rules below handle a single-take cue without a
+  // special case — it simply comes up less often than a set of four does.
+  rei_1: `${DIR}Rei_1.mp3`,
   rei_attack: `${DIR}Rei_attack.mp3`,
+
+  // A thug's fist landing. Category B beside the family's own four.
   enemy_attack: `${DIR}Enemy_attack.mp3`,
 
   // The one sound the UI makes, and it is the big game's own file byte for byte.
@@ -133,11 +146,17 @@ const paths = {
 // two Papas built in a row are two different lines.
 
 // Category A, keyed by the member's id — what they say when they arrive, are
-// upgraded, or are tapped.
+// upgraded, or are tapped. FOUR TAKES EACH for three of them, one for Rei.
+//
+// The share rules below get more useful the longer these lists are, and they
+// were written for exactly this: never the same clip twice running, never more
+// than twice in the last five. With two takes that was an alternation; with four
+// it is a genuine rotation, and building three Papas in a row is three different
+// lines rather than the same two swapping.
 const VOICE = {
-  papa: ['papa_1', 'papa_2'],
-  mommy: ['mommy_1', 'mommy_2'],
-  ella: ['ella_1', 'ella_2'],
+  papa: ['papa_1', 'papa_2', 'papa_3', 'papa_4'],
+  mommy: ['mommy_1', 'mommy_2', 'mommy_3', 'mommy_4'],
+  ella: ['ella_1', 'ella_2', 'ella_3', 'ella_4'],
   rei: ['rei_1']
 };
 
@@ -145,9 +164,9 @@ const VOICE = {
 // REI IS ABSENT, and `killCue` returning null is how that is expressed: solo()
 // already does nothing with a null cue, so there is no branch anywhere else.
 const KILL = {
-  papa: ['papa_kill'],
-  mommy: ['mommy_kill'],
-  ella: ['ella_kill']
+  papa: ['papa_kill_1', 'papa_kill_2'],
+  mommy: ['mommy_kill_1', 'mommy_kill_2'],
+  ella: ['ella_kill_1', 'ella_kill_2']
 };
 
 // Category B, keyed the same way again.
@@ -320,22 +339,26 @@ function duck(now, seconds) {
 }
 
 // Category B. Every time it happens, however many at once.
+// Returns HOW LONG THE CLIP WILL SOUND FOR, in seconds, or 0 if nothing played.
+// Almost every caller ignores it; the one that does not is Rei's smell, which has
+// no cooldown of its own and uses the length of its own noise as the interval
+// between repeats. See stepAura in rules.js.
 export function play(cue) {
-  if (!cue || !ctx || ctx.state !== 'running') return;
+  if (!cue || !ctx || ctx.state !== 'running') return 0;
 
   const ready = cue.filter(key => clips[key]);
-  if (!ready.length) return;
+  if (!ready.length) return 0;
 
   const prev = lastB.get(cue);
   const choices = ready.length > 1 ? ready.filter(key => key !== prev) : ready;
   const key = choices[(Math.random() * choices.length) | 0];
 
   const now = ctx.currentTime;
-  if (now - (lastStart[key] ?? -Infinity) < SAME_CLIP_GAP) return;
+  if (now - (lastStart[key] ?? -Infinity) < SAME_CLIP_GAP) return 0;
   lastStart[key] = now;
   lastB.set(cue, key);
 
-  fire(key, busB);
+  return fire(key, busB);
 }
 
 // Category A. One at a time, then a moment of quiet — and never the same clip

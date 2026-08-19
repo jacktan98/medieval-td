@@ -553,13 +553,24 @@ function stepAura(state, t, dt) {
   // HIS NOISE IS ON A CLOCK OF ITS OWN, because he is the one member with no
   // cooldown to hang it on. Everybody else makes their sound when they swing or
   // fire; he is simply always doing it, and "always" is not a thing that can be
-  // played. So it is REEK seconds apart while there is somebody in there with
-  // him — often enough to be his, far enough apart not to become a drone.
+  // played. So it repeats while there is somebody in there with him.
+  //
+  // THE INTERVAL IS THE CLIP'S OWN LENGTH, which is the fix for a real mess: it
+  // was a flat 1.6 seconds, and the recording that arrived is 7.7 seconds of
+  // audible baby. Five copies of it were overlapping at all times, continuously,
+  // for as long as anything was in his reach. Asking the sound how long it lasts
+  // and waiting that long makes it a loop instead — and it costs nothing the day
+  // a shorter one is recorded, because the number comes from the file rather than
+  // from here.
+  //
+  // REEK is only a FLOOR now: the interval if the clip has not loaded, if the
+  // page is muted, or if a future recording is very short. Without it a
+  // half-second clip would come back to being a drone.
   //
   // The clock keeps running while the reach is empty rather than being reset, so
   // the first thug to walk in is greeted immediately instead of after a wait.
   t.reek = (t.reek || 0) - dt;
-  if (any && t.reek <= 0) { play(blowCue(t.member.id)); t.reek = REEK; }
+  if (any && t.reek <= 0) t.reek = Math.max(REEK, play(blowCue(t.member.id)));
 }
 
 const REEK = 1.6;
