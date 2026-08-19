@@ -189,8 +189,14 @@ function drawTower(ctx, t) {
   // Stood on the plate rather than in the middle of it: the sign lies flat and
   // the person is at the back of it, which is what stops the name being covered.
   figure(ctx, t.member, swing, t.x, t.y - 4 - kick, 1);
-  tierPips(ctx, t.x, t.y - 44, t.tier);
+  // The pips go over the head, and how high the head is depends on who it is —
+  // Rei is a baby 13px tall and Ella is nearly twice that. A fixed height left
+  // his pips floating in the air well above him.
+  tierPips(ctx, t.x, t.y - 12 - headroom(t.member), t.tier);
 }
+
+// How far above the ground a member's resting pose reaches.
+const headroom = m => m.art.idle.trim[3] * SCALE * m.art.idle.pivot[1];
 
 // The nameplate's stand-in, for the day a plate file goes missing: a flat disc in
 // their colour with their initial.
