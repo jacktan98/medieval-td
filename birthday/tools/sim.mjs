@@ -37,7 +37,7 @@ const LIMIT = 1500;
 // plays.
 //
 // The order matters more than it looks. Filling plots in the order the level file
-// lists them buries Rei Rei — whose reach is the shortest in the family — on
+// lists them buries Rei — whose reach is the shortest in the family — on
 // whichever plot happens to be furthest from the road, where he does nothing at
 // all. That is a fact about this file, not about the game, and it made the mixed
 // build look like a coin toss when the real thing is comfortable. A player looks
@@ -79,14 +79,14 @@ const best = (mapIndex, plan) => {
 };
 
 const PLANS = [
-  ['MIXED', ['papa', 'olivia', 'rei', 'mommy']],
+  ['MIXED', ['papa', 'ella', 'rei', 'mommy']],
   ['papa only', ['papa']],
   ['mommy only', ['mommy']],
-  ['olivia only', ['olivia']],
+  ['ella only', ['ella']],
   ['rei only', ['rei']],
-  ['no papa', ['mommy', 'olivia', 'rei']],
+  ['no papa', ['mommy', 'ella', 'rei']],
   ['blockers', ['papa', 'mommy']],
-  ['towers', ['olivia', 'rei']]
+  ['towers', ['ella', 'rei']]
 ];
 
 let bad = 0;
@@ -138,7 +138,7 @@ console.log(`  --    alone, out of ${maps.length} maps:               ${solo}`);
 // What to read them for: every one of the four should appear on a winning team
 // somewhere. If a pair is on nought across several runs of this file, one of those
 // two is dead weight and their cost is the number to look at.
-const pairs = [['Papa + Mommy', 'blockers'], ['Olivia + Rei Rei', 'towers'],
+const pairs = [['Papa + Mommy', 'blockers'], ['Ella + Rei', 'towers'],
                ['without Papa', 'no papa']];
 console.log(`  --    in pairs:                              ` +
   pairs.map(([label, key]) => `${label} ${won[key] || 0}`).join(', '));

@@ -46,12 +46,12 @@ export const maps = [level01, level02, level03];
 // TWO OF THEM STAND ON THE ROAD and two of them work from a plot, which is the
 // split the artist asked for and it is also what makes the four of them a team:
 //
-//   Papa      one man, two swords. Stops a thug dead and cuts it down.
-//   Mommy     one woman, a shotgun. Stops a thug and sprays whatever is behind it.
-//   Olivia    throws slime from her tower. Little damage; it is the SLOW that
-//             matters, because it doubles the time everybody else gets.
-//   Rei Rei   sits on his tower and stinks. Every thug inside the smell loses
-//             health continuously, all of them at once, with no aiming at all.
+//   Papa    one man, two swords. Stops a thug dead and cuts it down.
+//   Mommy   one woman, a shotgun. Stops a thug and sprays whatever is behind it.
+//   Ella    throws slime from her plot. Little damage; it is the SLOW that
+//           matters, because it doubles the time everybody else gets.
+//   Rei     sits on his plot and stinks. Every thug inside the smell loses
+//           health continuously, all of them at once, with no aiming at all.
 //
 // --- where the numbers come from -----------------------------------------------
 //
@@ -70,6 +70,29 @@ export const maps = [level01, level02, level03];
 //
 // THEY ARE A FIRST GUESS and are meant to be played rather than trusted. Every
 // number is on one line here; change it, reload, see.
+//
+// --- the drawings ---------------------------------------------------------------
+//
+// Every `art` block below is MEASURED, by `node birthday/tools/art.mjs`, and
+// pasted. Two numbers per pose:
+//
+//   trim    the box of the 512x512 export that actually has ink on it.
+//   pivot   where inside that box the drawing meets the ground, as a fraction.
+//           It is the centre of the flat brown ellipse the artist paints under
+//           each of them, NOT the bottom of the box — Papa holding his swords out
+//           has a box 26px taller than Papa holding them up, and anchoring to the
+//           box would make him bob every time he swings.
+//
+// `faces` is which way a drawing looks, and only the two on the road have one:
+// Papa's swords and Mommy's shotgun point LEFT, so the sprite is mirrored when
+// they turn. Ella and Rei face the camera from their plots and never turn, so
+// there is nothing to mirror and they carry no `faces` at all.
+//
+// `plate` is the NAMEPLATE — a flat sign lying on the plot with the person's
+// name on it. All four have one and it is drawn the same way for all four; what
+// differs is what stands on it. It lies on the ground rather than standing on
+// it, so its anchor is simply the middle of the box.
+const FLAT = [0.5, 0.5];
 
 // A blocker on the road. `hp`, `damage`, `cd` are his; `respawn` is how long he
 // takes to walk back after being cut down, `regen` is health a second out of
@@ -79,7 +102,12 @@ const PAPA = {
   name: 'Papa',
   kind: 'road',
   colour: '#3E6BA8',
-  art: 'papa',
+  art: {
+    faces: -1,
+    idle:   { sprite: 'papa',        trim: [184, 172, 144, 168], pivot: [0.708, 0.924] },
+    attack: { sprite: 'papa_attack', trim: [115, 198, 213, 142], pivot: [0.803, 0.910] },
+    plate:  { sprite: 'papa_plot',   trim: [133, 208, 246, 96],  pivot: FLAT }
+  },
   blurb: 'Papa plants himself on the road with a sword in each hand. ' +
          'Nothing gets past him while he is standing, and he hits harder than ' +
          'anyone in the family.',
@@ -103,7 +131,12 @@ const MOMMY = {
   name: 'Mommy',
   kind: 'road',
   colour: '#A8436B',
-  art: 'mommy',
+  art: {
+    faces: -1,
+    idle:   { sprite: 'mommy',        trim: [150, 179, 212, 154], pivot: [0.656, 0.917] },
+    attack: { sprite: 'mommy_attack', trim: [141, 179, 221, 154], pivot: [0.670, 0.917] },
+    plate:  { sprite: 'mommy_plot',   trim: [89, 196, 334, 120],  pivot: FLAT }
+  },
   blurb: 'Mommy holds the road with a shotgun. She stops a thug like Papa does, ' +
          'but every shot also catches whatever is crowding in behind it.',
   detail: 'She blocks one thug and shoots it — and the same blast hits up to two ' +
@@ -122,20 +155,27 @@ const MOMMY = {
   ]
 };
 
-// A tower that throws. The slime is the point rather than the damage.
-const OLIVIA = {
-  id: 'olivia',
-  name: 'Olivia',
+// A plot that throws. The slime is the point rather than the damage.
+const ELLA = {
+  id: 'ella',
+  name: 'Ella',
   kind: 'thrower',
   colour: '#4FA85A',
-  art: 'olivia',
-  blurb: 'Olivia throws slime from her tower. It does not hurt much — but ' +
+  art: {
+    idle:   { sprite: 'ella',        trim: [219, 203, 74, 106], pivot: [0.534, 0.913] },
+    attack: { sprite: 'ella_attack', trim: [219, 203, 74, 106], pivot: [0.534, 0.913] },
+    plate:  { sprite: 'ella_plot',   trim: [135, 209, 242, 94], pivot: FLAT }
+  },
+  // The slime in flight. Drawn a little larger than the board's scale would put
+  // it — see SHOT_SCALE in render.js.
+  shot: { sprite: 'slime', trim: [231, 244, 50, 25], pivot: FLAT },
+  blurb: 'Ella throws slime from her plot. It does not hurt much — but ' +
          'anything it lands on is stuck to the road and crawls for a while.',
   detail: 'Every hit slows a thug to about half speed for two seconds. That is ' +
           'worth more than it sounds: everything else in the family is measured ' +
           'in damage a second, so a thug that spends twice as long on the road ' +
           'takes twice as much of it.\n\n' +
-          'Put her where the road is long and straight, and put Rei Rei where ' +
+          'Put her where the road is long and straight, and put Rei where ' +
           'her slime has already done its work.',
   // What a hit does besides damage: `slow` is the fraction of its speed the thug
   // keeps, `slowFor` how many seconds it keeps it.
@@ -153,11 +193,18 @@ const OLIVIA = {
 // simply loses health.
 const REI = {
   id: 'rei',
-  name: 'Rei Rei',
+  name: 'Rei',
   kind: 'aura',
   colour: '#B98B2E',
-  art: 'rei',
-  blurb: 'Rei Rei does what babies do, and it is unbearable. Every thug inside ' +
+  art: {
+    idle:   { sprite: 'rei',        trim: [232, 221, 48, 71],  pivot: [0.490, 0.894] },
+    attack: { sprite: 'rei_attack', trim: [197, 200, 118, 91], pivot: [0.496, 0.926] },
+    plate:  { sprite: 'rei_plot',   trim: [160, 216, 192, 80], pivot: FLAT }
+  },
+  // The smell where it lands, which is ON THE ROAD rather than around him — see
+  // smellSpots in rules.js for how few of them there are and why.
+  cloud: { sprite: 'smell', trim: [223, 226, 66, 60], pivot: FLAT },
+  blurb: 'Rei does what babies do, and it is unbearable. Every thug inside ' +
          'the smell loses health the whole time it is in there.',
   detail: 'He hits EVERYTHING in range at once and never has to aim. Against one ' +
           'giant that is not very much; against a wave of twenty thugs it is ' +
@@ -172,7 +219,7 @@ const REI = {
   ]
 };
 
-export const family = [PAPA, MOMMY, OLIVIA, REI];
+export const family = [PAPA, MOMMY, ELLA, REI];
 
 export const memberById = id => family.find(f => f.id === id);
 

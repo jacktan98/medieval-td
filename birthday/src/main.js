@@ -47,6 +47,11 @@ function restart(mapIndex, skipIntro = false) {
 
 attach(canvas, state, restart);
 
+// The same door the big game opens on `?debug`, for the same reason: a browser
+// driving this page needs somewhere to read the board from. It is behind the
+// query string, so nothing is exposed to somebody playing it.
+if (location.search.includes('debug')) window.__birthday = state;
+
 let last = performance.now();
 
 function frame(now) {

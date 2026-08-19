@@ -3,20 +3,15 @@
 // sprite is a plain-looking game rather than a broken one.
 //
 // TWO KINDS OF PATH IN HERE. Anything reached with `../assets/` is the big game's
-// own artwork, borrowed and never written to — the three maps and the three thugs,
-// which the artist asked to keep. Anything under `assets/` is this folder's, and
-// today all of it is MISSING ON PURPOSE.
+// own artwork, borrowed and never written to — the three maps, the three thugs
+// and the four dashboard icons. Anything under `assets/` is this folder's: the
+// family, drawn for this game and used nowhere else.
 //
-// --- the placeholders ----------------------------------------------------------
-//
-// The four family members have no drawings yet; the artist is making them. Every
-// one of them is listed below anyway, so the moment a file lands under
-// `birthday/assets/family/` with the name in this table it appears in the game
-// with nothing else changed.
-//
-// Until then each of them draws as a coloured disc with an initial on it — see
-// `placeholder` in render.js — which is deliberately ugly. A placeholder that
-// looked finished is a placeholder nobody replaces.
+// The four borrowed ICONS are worth a word, because they are the one place this
+// game reads the big game's numbers as well as its files. Their trims live in
+// `../../src/data/ui.js` and render.js imports them from there rather than
+// copying them here — the artist re-exports those four files for the big game,
+// and a copy would go stale silently the first time one of them is redrawn.
 
 export const paths = {
   // --- borrowed from medieval-td, read-only ------------------------------------
@@ -32,48 +27,52 @@ export const paths = {
   plague: '../assets/enemies/Enemies_Plague_Thug_Default.png',
   plague_attack: '../assets/enemies/Enemies_Plague_Thug_Attack.png',
 
-  // --- this folder's, and not drawn yet ----------------------------------------
+  // The dashboard's purse and lives, and the sword and heart that stand in for
+  // the words "Damage" and "Health" on the stats panel.
+  icon_gold: '../assets/ui/Gold_Icon.png',
+  icon_life: '../assets/ui/Life_Icon.png',
+  icon_damage: '../assets/ui/Damage_Icon.png',
+  icon_health: '../assets/ui/Health_Icon.png',
+
+  // --- the family --------------------------------------------------------------
   //
-  // Two poses each for the two who stand on the road, because they visibly swing;
-  // one each for the two on their towers. Same convention as the big game — the
-  // bare key is the resting pose — so if the artist wants a second drawing for
-  // Olivia or Rei Rei later it is one more line here and one more field in data.js.
+  // THREE FILES EACH. A resting pose, an attacking pose, and a NAMEPLATE — a flat
+  // sign lying on the plot with the person's name on it. The plate is what makes
+  // the two halves of this game read the same way: Ella and Rei stand on theirs,
+  // Papa and Mommy walk off theirs and it stays behind saying whose plot it is.
   papa: 'assets/family/Papa_Default.png',
   papa_attack: 'assets/family/Papa_Attack.png',
+  papa_plot: 'assets/family/Papa_Plot.png',
+
   mommy: 'assets/family/Mommy_Default.png',
   mommy_attack: 'assets/family/Mommy_Attack.png',
-  olivia: 'assets/family/Olivia_Default.png',
+  mommy_plot: 'assets/family/Mommy_Plot.png',
+
+  ella: 'assets/family/Ella_Default.png',
+  ella_attack: 'assets/family/Ella_Attack.png',
+  ella_plot: 'assets/family/Ella_Plot.png',
+
   rei: 'assets/family/Rei_Default.png',
+  rei_attack: 'assets/family/Rei_Attack.png',
+  rei_plot: 'assets/family/Rei_Plot.png',
 
-  // What the two tower-sitters put on the board, and the house being defended.
-  slime: 'assets/family/Olivia_Slime.png',
-  house: 'assets/family/House.png'
+  // What the two on their towers put on the board.
+  slime: 'assets/family/Ella_Slime.png',
+  smell: 'assets/family/Rei_Smell.png'
 };
-
-// Which keys are allowed to be missing without a warning. Everything this folder
-// owns, because none of it exists yet — the day a drawing lands, take its key out
-// of here so a typo in its filename is reported again rather than swallowed.
-const COMING = new Set([
-  'papa', 'papa_attack', 'mommy', 'mommy_attack', 'olivia', 'rei', 'slime', 'house'
-]);
 
 export const art = {};
 
 export function loadArt() {
-  const absent = [];
-
   const jobs = Object.entries(paths).map(([key, src]) => new Promise(resolve => {
     const img = new Image();
     img.onload = () => { art[key] = img; resolve(); };
-    img.onerror = () => {
-      if (COMING.has(key)) absent.push(src);
-      else console.warn('Birthday: missing picture', src);
-      resolve();
-    };
+    // EVERY FILE IS DRAWN NOW, so a miss is a mistake rather than a thing still
+    // coming. There used to be a list of expected absences here; it went the day
+    // the artist delivered, which is the only sensible life for such a list.
+    img.onerror = () => { console.warn('Birthday: missing picture', src); resolve(); };
     img.src = src;
   }));
 
-  return Promise.all(jobs).then(() => {
-    if (absent.length) console.info('Birthday: still to be drawn —', absent.join(', '));
-  });
+  return Promise.all(jobs);
 }

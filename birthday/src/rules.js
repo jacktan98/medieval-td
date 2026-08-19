@@ -17,7 +17,7 @@
 // each plot puts out exactly one person, because there is exactly one of each of
 // them.
 //
-// ONE OF THEM NEVER AIMS. Rei Rei has no target and no cooldown — he damages
+// ONE OF THEM NEVER AIMS. Rei has no target and no cooldown — he damages
 // every thug inside his reach, continuously, which is a shape the big game has
 // nothing like.
 //
@@ -64,7 +64,7 @@ const REST = 10;
 // earn it is to shorten the rest you were going to spend building anyway.
 //
 // 7 a second is up to 84 for the opening twelve seconds and up to 70 for a rest,
-// which is most of an Olivia. Big enough to be worth pressing, small enough that
+// which is most of an Ella. Big enough to be worth pressing, small enough that
 // missing it is not a mistake.
 const EARLY_GOLD = 7;
 
@@ -207,7 +207,7 @@ function spawn(state, type) {
     foe: null,        // the family member blocking it, or null
     acd: def.atkCd,
     thrust: 0,
-    // How much of its speed it keeps, and for how long. Olivia's slime.
+    // How much of its speed it keeps, and for how long. Ella's slime.
     slow: 1, slowFor: 0
   });
 }
@@ -408,7 +408,7 @@ export function updateTowers(state, dt) {
   }
 }
 
-// Olivia. Picks whatever is nearest the end of the road, throws, and the slime
+// Ella. Picks whatever is nearest the end of the road, throws, and the slime
 // slows what it lands on.
 function stepThrower(state, t, dt) {
   t.recoil = Math.max(0, (t.recoil || 0) - dt * 4);
@@ -428,20 +428,65 @@ function stepThrower(state, t, dt) {
     slow: t.member.slow,
     slowFor: t.member.slowFor,
     colour: t.member.colour,
+    // The drawing travels with the shot rather than being looked up by the
+    // renderer, so a second thrower with different ammunition would need nothing
+    // added to render.js.
+    art: t.member.shot,
     spin: 0
   });
 }
 
-// Rei Rei. No target, no cooldown, no projectile: everything in the smell loses
+// Rei. No target, no cooldown, no projectile: everything in the smell loses
 // health for as long as it is in there. Damage is per SECOND, so it is multiplied
 // by dt rather than applied whole — which is also what makes it fair at 2x speed.
 function stepAura(state, t, dt) {
   t.stink = ((t.stink || 0) + dt) % 1;
+  let any = false;
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
     if (!inReach(t.x, t.y, e.x, e.y, t.level.range)) continue;
     e.hp -= t.level.damage * dt;
+    any = true;
   }
+  // Which pose he is in. He has no cooldown to animate, so the drawing follows
+  // the only fact there is: whether anything is currently in there with him.
+  t.stinking = any;
+}
+
+// WHERE THE SMELL IS DRAWN, and it is on the ROAD rather than around him.
+//
+// The reach is already shown as a ring; what the stink marks say is the thing the
+// ring does not — that the road itself is the part that matters, so a plot beside
+// a bend is worth more than one beside a straight. They are placed once, when he
+// is built or upgraded, because the road does not move.
+//
+// FOUR OF THEM AT MOST, spaced 80 apart. The artist asked for these not to be
+// overused and was right to: they are three black squiggles, and a dozen of them
+// along a bend stops reading as a smell and starts reading as damage to the map.
+const SMELL_STEP = 12;
+const SMELL_GAP = 80;
+const SMELL_MAX = 4;
+
+export function smellSpots(state, t) {
+  const out = [];
+  for (const route of state.map.routes) {
+    // Lane 1 is the centreline — see LANES in ../../src/route.js. The thugs walk
+    // one of three, and the smell belongs on the road rather than on a lane.
+    const road = laneOf(route, 1);
+    let since = SMELL_GAP;
+    for (let s = 0; s < road.total; s += SMELL_STEP) {
+      const p = pointOn(road, s);
+      if (!inReach(t.x, t.y, p.x, p.y, t.level.range)) { since = SMELL_GAP; continue; }
+      since += SMELL_STEP;
+      if (since < SMELL_GAP) continue;
+      since = 0;
+      out.push({ x: p.x, y: p.y });
+    }
+  }
+  // Thinned from the middle out if a long road through a wide reach offers more
+  // than four, so what survives is spread rather than the first four.
+  while (out.length > SMELL_MAX) out.splice(Math.floor(out.length / 2), 1);
+  return out;
 }
 
 // Nearest the exit, which is the only standing order this game has. The big game
@@ -496,10 +541,12 @@ export function build(state, plot, member) {
     plot, member, level, tier: 1,
     x: plot.x, y: plot.y,
     spent: level.cost,
-    cd: 0, recoil: 0, aim: 0, stink: 0,
-    rally: null
+    cd: 0, recoil: 0, aim: 0, stink: 0, stinking: false,
+    rally: null,
+    smell: null
   };
   state.towers.push(t);
+  if (t.member.kind === 'aura') t.smell = smellSpots(state, t);
   makeUnit(state, t);
   return true;
 }
@@ -513,6 +560,8 @@ export function upgrade(state, t) {
   t.level = next;
   t.spent += next.cost;
   t.cd = 0;
+  // His reach grew, so the road inside it did too.
+  if (t.member.kind === 'aura') t.smell = smellSpots(state, t);
   // The person is the same person, so they are not replaced — they are just
   // stronger. Their health goes up by the difference rather than being refilled,
   // so upgrading mid-fight is not a heal.

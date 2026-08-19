@@ -1,12 +1,19 @@
-// Drawing. One file, no depth sorting, no ghosting, no blood — this game shows a
-// map, four people, some thugs and four screens.
+// Drawing. One file, no depth sorting beyond a y-sort, no ghosting, no blood —
+// this game shows a map, four people, some thugs and four screens.
 //
-// EVERY FAMILY MEMBER FALLS BACK TO A PLACEHOLDER, and today every one of them
-// takes that path because the drawings do not exist yet. The placeholder is a
-// coloured disc with an initial on it and it is deliberately plain: it should look
-// like something waiting to be replaced, because it is.
+// EVERYTHING IS DRAWN AT THE BIG GAME'S SCALE, 105/512 of the source file. That
+// is not a coincidence or a copied constant: the thugs on this board ARE the big
+// game's thugs, so anything standing next to one has to be measured with the same
+// ruler or the family come out as giants.
+//
+// The vector placeholders are still here, under every drawing, and they are worth
+// keeping now that the art has landed: they are what a missing file looks like,
+// and a game that draws a plain disc is a game that can still be played.
 
 import { art } from './assets.js';
+// The four borrowed icons' trims, read from the big game's own table rather than
+// copied — see the note in assets.js.
+import { ui } from '../../src/data/ui.js';
 import { family, maps, inReach, SQUASH, levelOf, refundValue, refundOf, waveSize,
          canCallWave, earlyBonus } from './rules.js';
 
@@ -19,6 +26,13 @@ const EDGE = '#8A7A56';
 const CREAM = '#F0E6D2';
 
 export const PLOT_R = 30;
+
+// The board's scale, and the shot's. The slime is 50 source pixels across, which
+// at the board scale is a 10px blob — too small to see coming on a phone held by
+// somebody who is five. 1.4x puts it at 14, which still has source pixels to
+// spare at the 3x device cap (see birthday/tools/art.mjs).
+const SCALE = 105 / 512;
+const SHOT_SCALE = SCALE * 1.4;
 
 // --- the board ------------------------------------------------------------------
 
@@ -34,6 +48,10 @@ export function draw(ctx, state) {
   drawFigures(ctx, state);
   drawHud(ctx, state);
   drawMenu(ctx, state);
+  // AFTER the menu, because the ring can be opened on a plot in the top right and
+  // a panel half under it says nothing. The ring is the control; this is the
+  // reading, and the reading wins.
+  drawStats(ctx, state);
 
   // NO VEIL OVER A PAUSED BOARD, and that is on purpose — the reason to pause this
   // game is to look at what is happening, and greying out the thing you paused to
@@ -83,11 +101,36 @@ function drawReach(ctx, t) {
   ctx.restore();
 }
 
+// --- one way to put a drawing on the board ----------------------------------------
+//
+// A pose is `{ sprite, trim, pivot }` out of data.js. It is drawn STANDING ON the
+// point given: the pivot is the middle of the shadow the artist painted, so the
+// point is the ground, not the middle of the picture. `dir` of -1 mirrors it.
+//
+// Returns false if the file is not loaded, so the caller can fall back.
+function pose(ctx, p, x, y, dir = 1, k = SCALE) {
+  const img = p && art[p.sprite];
+  if (!img) return false;
+  const [sx, sy, sw, sh] = p.trim;
+  const dw = sw * k, dh = sh * k;
+  ctx.save();
+  ctx.translate(x, y);
+  if (dir < 0) ctx.scale(-1, 1);
+  ctx.drawImage(img, sx, sy, sw, sh, -p.pivot[0] * dw, -p.pivot[1] * dh, dw, dh);
+  ctx.restore();
+  return true;
+}
+
+// Which way a drawing has to be turned to be looking at `look` (+1 right, -1
+// left). A member with no `faces` is drawn facing the camera and never turns.
+const turn = (member, look) =>
+  member.art.faces && look !== member.art.faces ? -1 : 1;
+
 // --- everybody on the board -----------------------------------------------------
 
 function drawFigures(ctx, state) {
-  // Rei Rei's smell, under everything, so figures walk through it rather than
-  // behind it.
+  // Rei's smell, under everything, so figures walk through it rather than behind
+  // it.
   for (const t of state.towers) if (t.member.kind === 'aura') drawStink(ctx, t);
 
   const all = [
@@ -101,42 +144,56 @@ function drawFigures(ctx, state) {
   for (const u of state.units) if (u.down > 0) drawDown(ctx, u);
 }
 
-// A soft ring that breathes, so the aura reads as doing something even when
-// nothing is in it.
+// A soft ring that breathes, so the reach reads as doing something even when
+// nothing is in it — and up to four stink marks ON THE ROAD inside it, which is
+// where the smell actually matters. rules.js decides where those go.
 function drawStink(ctx, t) {
   const pulse = 0.5 + 0.5 * Math.sin((t.stink || 0) * Math.PI * 2);
   ctx.save();
-  ctx.fillStyle = `rgba(150,170,60,${0.10 + 0.05 * pulse})`;
+  ctx.fillStyle = `rgba(150,170,60,${0.09 + 0.04 * pulse})`;
   ctx.beginPath();
   ctx.ellipse(t.x, t.y, t.level.range, t.level.range * SQUASH, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = `rgba(150,170,60,${0.35 + 0.2 * pulse})`;
+  ctx.strokeStyle = `rgba(150,170,60,${0.30 + 0.15 * pulse})`;
   ctx.lineWidth = 2;
   ctx.stroke();
+
+  // The marks rise and fade on the same beat as the ring, offset a little each so
+  // they are not one flashing row.
+  for (let i = 0; i < (t.smell || []).length; i++) {
+    const s = t.smell[i];
+    const beat = ((t.stink || 0) + i * 0.25) % 1;
+    ctx.globalAlpha = 0.20 + 0.45 * Math.sin(beat * Math.PI);
+    pose(ctx, t.member.cloud, s.x, s.y - 10 - beat * 8, 1);
+  }
   ctx.restore();
 }
 
-// What a plot shows, and it is two different things.
+// What a plot shows, and it is two things stacked.
 //
-// OLIVIA AND REI REI ARE THE TOWER. They stand on their plot and work from it, so
-// the plot draws the person.
+// THE NAMEPLATE IS ALWAYS THERE. A flat sign on the ground with the person's
+// name, drawn for all four, so a plot says whose it is whether or not anybody is
+// standing on it.
 //
-// PAPA AND MOMMY ARE NOT THERE. They walk out to the road, and drawing them on the
-// plot as well put two of each of them on the board — which was the first thing
-// wrong with the first build. Their plot gets a NAMEPLATE instead: a flat disc in
-// their colour with their initial, low on the ground, saying whose plot it is
-// without pretending they are standing on it.
+// ELLA AND REI STAND ON THEIRS and work from there, so the plot draws them too.
+// PAPA AND MOMMY DO NOT: they walk out to the road, and drawing them here as well
+// put two of each of them on the board, which was the first thing wrong with the
+// first build. Their plate stands alone, which is exactly what it is for.
 function drawTower(ctx, t) {
-  if (t.member.kind === 'road') {
-    homePlate(ctx, t);
-    tierPips(ctx, t.x, t.y - 22, t.tier);
-    return;
-  }
+  if (!pose(ctx, t.member.art.plate, t.x, t.y, 1)) homePlate(ctx, t);
+
+  if (t.member.kind === 'road') { tierPips(ctx, t.x, t.y - 22, t.tier); return; }
+
+  const swing = t.member.kind === 'aura' ? t.stinking : (t.recoil || 0) > 0;
   const kick = t.member.kind === 'thrower' ? (t.recoil || 0) * 3 : 0;
-  figure(ctx, t.member, t.x, t.y - kick, 34, 1);
+  // Stood on the plate rather than in the middle of it: the sign lies flat and
+  // the person is at the back of it, which is what stops the name being covered.
+  figure(ctx, t.member, swing, t.x, t.y - 4 - kick, 1);
   tierPips(ctx, t.x, t.y - 44, t.tier);
 }
 
+// The nameplate's stand-in, for the day a plate file goes missing: a flat disc in
+// their colour with their initial.
 function homePlate(ctx, t) {
   ctx.save();
   ctx.fillStyle = 'rgba(30,34,24,0.30)';
@@ -163,9 +220,12 @@ function homePlate(ctx, t) {
 }
 
 function drawUnit(ctx, u) {
-  const dir = Math.cos(u.face) >= 0 ? 1 : -1;
-  const lunge = dir * u.thrust * 5;
-  figure(ctx, u.member, u.x + lunge, u.y, 30, dir);
+  const look = Math.cos(u.face) >= 0 ? 1 : -1;
+  const dir = turn(u.member, look);
+  // The lunge goes the way they are looking rather than the way the drawing does,
+  // so a mirrored Papa still steps into his swing.
+  const lunge = look * u.thrust * 4;
+  figure(ctx, u.member, u.thrust > 0, u.x + lunge, u.y, dir);
   bar(ctx, u.x, u.y - 40, 26, u.hp / u.maxHp, '#6BBF59');
 }
 
@@ -187,22 +247,12 @@ function drawDown(ctx, u) {
 }
 
 function drawEnemy(ctx, e) {
-  const key = e.thrust > 0 && e.def.attack ? e.def.attack.sprite : e.def.sprite;
-  const img = art[key];
-  const trim = e.thrust > 0 && e.def.attack ? e.def.attack.trim : e.def.spriteTrim;
-  const pivot = e.thrust > 0 && e.def.attack ? e.def.attack.pivot : e.def.pivot;
+  const hit = e.thrust > 0 && e.def.attack;
+  const p = hit
+    ? { sprite: e.def.attack.sprite, trim: e.def.attack.trim, pivot: e.def.attack.pivot }
+    : { sprite: e.def.sprite, trim: e.def.spriteTrim, pivot: e.def.pivot };
 
-  if (img) {
-    // The big game's own sprite scale: its art is drawn at 105/512 of source.
-    const SCALE = 105 / 512;
-    const [sx, sy, sw, sh] = trim;
-    const dw = sw * SCALE, dh = sh * SCALE;
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.scale(e.face === e.def.spriteFaces ? 1 : -1, 1);
-    ctx.drawImage(img, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
-    ctx.restore();
-  } else {
+  if (!pose(ctx, p, e.x, e.y, e.face === e.def.spriteFaces ? 1 : -1)) {
     ctx.fillStyle = e.def.colour;
     ctx.beginPath();
     ctx.arc(e.x, e.y - e.def.r, e.def.r, 0, Math.PI * 2);
@@ -222,8 +272,7 @@ function drawEnemy(ctx, e) {
 
 function drawShots(ctx, state) {
   for (const s of state.shots) {
-    const img = art.slime;
-    if (img) { ctx.drawImage(img, s.x - 6, s.y - 6, 12, 12); continue; }
+    if (pose(ctx, s.art, s.x, s.y, 1, SHOT_SCALE)) continue;
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.rotate(s.spin);
@@ -238,33 +287,20 @@ function drawShots(ctx, state) {
   }
 }
 
-// THE PLACEHOLDER, and the one function to delete when the drawings arrive.
-//
-// A coloured disc with an initial, at the size the real sprite will be drawn, so
-// the layout is already right and only the picture changes. It is drawn standing
-// ON the point rather than centred on it, like every figure in the big game — a
-// figure's y is the ground it is on.
-function figure(ctx, member, x, y, size, dir) {
-  const img = art[member.art];
-  if (img) {
-    const w = size, h = size;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(dir, 1);
-    ctx.drawImage(img, -w / 2, -h, w, h);
-    ctx.restore();
-    return;
-  }
-
-  placeholder(ctx, member, x, y, size);
+// A family member on the board, in whichever of their two poses fits.
+function figure(ctx, member, swinging, x, y, dir) {
+  const p = swinging ? member.art.attack : member.art.idle;
+  if (pose(ctx, p, x, y, dir)) return;
+  placeholder(ctx, member, x, y, 32);
 }
 
+// What a missing file looks like: a coloured disc with an initial, standing ON
+// the point like everything else.
 function placeholder(ctx, member, x, y, size) {
   const r = size * 0.38;
   const cy = y - r - 4;
 
   ctx.save();
-  // The shadow it stands on, so it sits on the ground like everything else.
   ctx.fillStyle = 'rgba(30,34,24,0.28)';
   ctx.beginPath();
   ctx.ellipse(x, y, r * 0.9, r * 0.36, 0, 0, Math.PI * 2);
@@ -306,20 +342,49 @@ function bar(ctx, x, y, w, pct, colour) {
   ctx.fillRect(x - w / 2 + 1, y + 1, (w - 2) * Math.max(0, Math.min(1, pct)), 2);
 }
 
+// --- the borrowed icons -----------------------------------------------------------
+//
+// Four pictures standing in for four words. `key` is this folder's asset key and
+// `slot` is the big game's entry in data/ui.js, which is where the trim lives.
+// Drawn to a HEIGHT, because they sit beside text on a baseline and the gold coins
+// are twice as wide as they are tall — fitting that into a square would draw it a
+// third of the size of the heart next to it.
+function icon(ctx, key, slot, x, cy, h) {
+  const img = art[key];
+  const [sx, sy, sw, sh] = ui[slot].trim;
+  const w = (sw / sh) * h;
+  if (img) ctx.drawImage(img, sx, sy, sw, sh, x, cy - h / 2, w, h);
+  return w;
+}
+
+// An icon and a number, left to right, returning where it ended.
+function reading(ctx, key, slot, x, cy, h, text, gap = 7) {
+  const w = icon(ctx, key, slot, x, cy, h);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + w + gap, cy + 1);
+  return x + w + gap + ctx.measureText(text).width;
+}
+
 // --- the dashboard --------------------------------------------------------------
 
-export const HUD_H = 40;
+export const HUD_H = 48;
+
+// How far anything in the strip stays off the edge of the screen. The board is
+// 960 wide and phones round their corners; a control flush against the glass is
+// one a thumb has to be careful about.
+const HUD_PAD = 18;
 
 // The three controls in the strip, right to left: the wave call, pause, and the
 // way back to the four descriptions.
 //
-// 34 DRAWN AND 46 TAPPED. This is played on a phone by a five-year-old, so every
+// 36 DRAWN AND 64 TAPPED. This is played on a phone by a five-year-old, so every
 // one of them is padded out in the hit test — the same trick the big game uses
 // everywhere, and the reason the boxes here are smaller than they feel.
 export const HUD_BTN = {
-  chars: { x: 606, y: 3, w: 104, h: 34 },
-  pause: { x: 716, y: 3, w: 62, h: 34 },
-  wave: { x: 784, y: 3, w: 164, h: 34 }
+  chars: { x: 584, y: 6, w: 108, h: 36 },
+  pause: { x: 702, y: 6, w: 62, h: 36 },
+  wave: { x: 774, y: 6, w: 168, h: 36 }
 };
 
 function drawHud(ctx, state) {
@@ -327,15 +392,14 @@ function drawHud(ctx, state) {
   ctx.fillStyle = 'rgba(34,32,28,0.72)';
   ctx.fillRect(0, 0, W, HUD_H);
 
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
+  const mid = HUD_H / 2;
   ctx.fillStyle = CREAM;
   ctx.font = '700 18px system-ui, sans-serif';
-  ctx.fillText(`${state.gold}g`, 16, HUD_H / 2);
-  ctx.fillText(`${state.lives} lives`, 118, HUD_H / 2);
-  ctx.fillText(`Wave ${state.waveIndex + 1} / ${state.map.waves.length}`, 236, HUD_H / 2);
+  reading(ctx, 'icon_gold', 'hud_gold', HUD_PAD, mid, 20, `${state.gold}`);
+  reading(ctx, 'icon_life', 'hud_life', HUD_PAD + 118, mid, 22, `${state.lives}`);
+  ctx.fillText(`Wave ${state.waveIndex + 1} / ${state.map.waves.length}`, HUD_PAD + 222, mid + 1);
 
-  hudButton(ctx, HUD_BTN.chars, 'The family', true);
+  hudButton(ctx, HUD_BTN.chars, 'The Family', true);
   hudButton(ctx, HUD_BTN.pause, '', true);
   transportGlyph(ctx, HUD_BTN.pause, state.paused);
 
@@ -391,17 +455,79 @@ function hudButton(ctx, b, label, on, size = 14, ink = null) {
   ctx.restore();
 }
 
+// --- what the selected person is worth ---------------------------------------------
+//
+// The ring on a plot says what you can DO — build, upgrade, sell, send. It has no
+// room to say what you would be getting, and a five-year-old choosing between
+// Ella and Rei has no way to find out otherwise. So selecting somebody puts their
+// numbers in the top right, out of the way of the road, and it stays up as long as
+// the ring does.
+//
+// AN EMPTY PLOT SHOWS NOTHING, deliberately: four buttons are open at once there
+// and a panel can only describe one of them. The four descriptions are what The
+// Family button is for.
+const STAT_BOX = { x: W - HUD_PAD - 196, y: HUD_H + 12, w: 196 };
+
+function drawStats(ctx, state) {
+  const t = state.menu && state.menu.tower;
+  if (!t) return;
+
+  const lv = t.level;
+  const rows = [];
+  if (lv.hp) rows.push(['icon_health', 'stat_health', `${lv.hp}`]);
+  rows.push(['icon_damage', 'stat_damage',
+    t.member.kind === 'aura' ? `${lv.damage} a second` : `${lv.damage} every ${lv.cd}s`]);
+
+  const h = 46 + rows.length * 22 + 26;
+  ctx.save();
+  ctx.fillStyle = 'rgba(34,32,28,0.86)';
+  ctx.beginPath();
+  ctx.roundRect(STAT_BOX.x, STAT_BOX.y, STAT_BOX.w, h, 10);
+  ctx.fill();
+  ctx.strokeStyle = t.member.colour;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = CREAM;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 16px system-ui, sans-serif';
+  ctx.fillText(t.member.name, STAT_BOX.x + 14, STAT_BOX.y + 22);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#E0B24C';
+  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.fillText(`Lv ${t.tier}`, STAT_BOX.x + STAT_BOX.w - 14, STAT_BOX.y + 22);
+
+  ctx.fillStyle = CREAM;
+  ctx.font = '600 13px system-ui, sans-serif';
+  rows.forEach(([key, slot, text], i) => {
+    reading(ctx, key, slot, STAT_BOX.x + 14, STAT_BOX.y + 46 + i * 22, 16, text);
+  });
+
+  ctx.fillStyle = 'rgba(240,230,210,0.62)';
+  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Reach ${lv.range}`, STAT_BOX.x + 14, STAT_BOX.y + 46 + rows.length * 22 + 6);
+  ctx.restore();
+}
+
 // --- paused -----------------------------------------------------------------------
 //
-// Three buttons in a row under the dashboard, in the strip the HUD already owns.
-// Restart plays this map again from the beginning; Quit goes back to the three
-// maps. Neither asks twice: this is a birthday game with nothing to lose but a
-// few minutes, and the big game's armed-Quit ceremony would be silly here.
+// Three buttons in a row under the dashboard. Restart plays this map again from
+// the beginning; Quit goes back to the three maps. Neither asks twice: this is a
+// birthday game with nothing to lose but a few minutes, and the big game's
+// armed-Quit ceremony would be silly here.
+//
+// THE ROW STANDS CLEAR OF THE STRIP. It used to start 14px under it and the two
+// read as one crowded block of controls, which on a paused board is the only thing
+// on screen asking to be pressed. 40 is enough to see it as its own thing.
+const PAUSE_LABEL_Y = HUD_H + 24;
+const PAUSE_ROW_Y = HUD_H + 42;
 
 export const PAUSE_ROW = {
-  resume: { x: 300, y: 62, w: 110, h: 42 },
-  restart: { x: 424, y: 62, w: 118, h: 42 },
-  quit: { x: 556, y: 62, w: 118, h: 42 }
+  resume: { x: 293, y: PAUSE_ROW_Y, w: 110, h: 44 },
+  restart: { x: 417, y: PAUSE_ROW_Y, w: 118, h: 44 },
+  quit: { x: 549, y: PAUSE_ROW_Y, w: 118, h: 44 }
 };
 
 function drawPauseMenu(ctx, state) {
@@ -410,7 +536,7 @@ function drawPauseMenu(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = CREAM;
   ctx.font = '700 20px system-ui, sans-serif';
-  ctx.fillText('Paused', W / 2, 52);
+  ctx.fillText('Paused', W / 2, PAUSE_LABEL_Y);
   ctx.restore();
 
   button(ctx, PAUSE_ROW.resume, 'Resume', true);
@@ -543,10 +669,16 @@ function drawMapPick(ctx, state) {
 export const BOOK = { x: 60, y: 44, w: 840, h: 452 };
 export const BOOK_ROW = i => ({ x: BOOK.x + 22, y: BOOK.y + 74 + i * 88, w: 300, h: 78 });
 export const BOOK_START = { x: BOOK.x + BOOK.w - 212, y: BOOK.y + BOOK.h - 60, w: 190, h: 42 };
-// Back sits under the TEXT column, not under the four cards — the fourth card
-// reaches to within 8px of the panel's floor, and a button on the left overlapped
-// Rei Rei on the first build.
-export const BOOK_BACK = { x: BOOK.x + 350, y: BOOK.y + BOOK.h - 60, w: 120, h: 42 };
+// BOTH BUTTONS SIT IN THE BOTTOM RIGHT, side by side, and that is the second time
+// this one has moved. Under the four cards it covered Rei; under the text column
+// it covered the last line of the description it was there to leave. The corner is
+// the only part of the panel nothing is written in.
+export const BOOK_BACK = { x: BOOK_START.x - 116, y: BOOK_START.y, w: 104, h: 42 };
+
+// Where the reading stops. The stats sit above the two buttons with a clear gap,
+// and the description above them.
+const BOOK_TEXT_Y = BOOK.y + 116;
+const BOOK_STATS_Y = BOOK.y + BOOK.h - 122;
 
 function drawFamilyBook(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.86)';
@@ -564,7 +696,7 @@ function drawFamilyBook(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
   ctx.font = '700 24px system-ui, sans-serif';
-  ctx.fillText('The family', W / 2, BOOK.y + 36);
+  ctx.fillText('The Family', W / 2, BOOK.y + 36);
 
   const open = state.reading;
 
@@ -582,7 +714,7 @@ function drawFamilyBook(ctx, state) {
     ctx.lineWidth = open === m ? 2.5 : 1;
     ctx.stroke();
 
-    figure(ctx, m, b.x + 42, b.y + b.h - 12, 52, 1);
+    portrait(ctx, m, b.x + 42, b.y + b.h - 10);
 
     ctx.textAlign = 'left';
     ctx.fillStyle = INK;
@@ -609,10 +741,10 @@ function drawFamilyBook(ctx, state) {
     ctx.fillText(open.name, tx, BOOK.y + 84);
     ctx.fillStyle = INK_MUTED;
     ctx.font = '500 13px system-ui, sans-serif';
-    paragraphs(ctx, open.detail, tx, BOOK.y + 116, tw, 19);
+    paragraphs(ctx, open.detail, tx, BOOK_TEXT_Y, tw, 19);
     ctx.fillStyle = INK;
     ctx.font = '600 13px system-ui, sans-serif';
-    stats(ctx, open, tx, BOOK.y + BOOK.h - 96);
+    stats(ctx, open, tx, BOOK_STATS_Y);
   } else {
     ctx.fillStyle = INK_MUTED;
     ctx.font = '500 13px system-ui, sans-serif';
@@ -630,24 +762,52 @@ function drawFamilyBook(ctx, state) {
   // The same panel is the introduction and the reminder, so the button that leaves
   // it says which one this is. `begun` is set the first time it is pressed.
   button(ctx, BOOK_START, state.begun ? 'Back to the game' : 'Start', true);
-  if (open) button(ctx, BOOK_BACK, 'All four', true);
+  if (open) button(ctx, BOOK_BACK, 'All', true);
+}
+
+// A card's picture, and it is the one place a drawing is NOT anchored to its
+// shadow. On the board Papa has to stand where Papa stands; on a card he has to
+// sit in the middle of a 64px column beside his name, and anchoring by the pivot
+// hung his swords over the card's left edge — the pivot is under his feet, and his
+// feet are nowhere near the middle of a man holding two swords out to one side.
+// So the card centres the BOX and stands it on a baseline.
+//
+// Fitted rather than drawn at the board's scale, too: Rei is a baby and Papa is a
+// man, and at the board's scale one card would be a third the size of the other.
+// The cost is that Rei — 71 source pixels tall — is upscaled about twice on a very
+// wide monitor, which flat art with a heavy outline carries and a photograph
+// would not.
+const CARD_W = 64;
+const CARD_H = 58;
+
+function portrait(ctx, m, cx, groundY) {
+  const p = m.art.idle;
+  const img = art[p.sprite];
+  const [sx, sy, sw, sh] = p.trim;
+  if (!img) { placeholder(ctx, m, cx, groundY, CARD_H); return; }
+  const k = Math.min(CARD_W / sw, CARD_H / sh);
+  ctx.drawImage(img, sx, sy, sw, sh, cx - (sw * k) / 2, groundY - sh * k, sw * k, sh * k);
 }
 
 const role = m =>
   m.kind === 'road' ? 'Stands on the road'
-  : m.kind === 'aura' ? 'Works from the tower, no aiming'
-  : 'Throws from the tower';
+  : m.kind === 'aura' ? 'Works from the plot, no aiming'
+  : 'Throws from the plot';
 
-// The three numbers that matter, in one line each. Health only for the two who
-// can be hurt: nothing in this game can reach Olivia or Rei Rei on their towers.
+// The numbers that matter, with the big game's own heart and sword standing in for
+// the words. Health only for the two who can be hurt: nothing in this game can
+// reach Ella or Rei on their plots.
 function stats(ctx, m, x, y) {
   const lv = levelOf(m, 1);
-  const rows = [];
-  if (lv.hp) rows.push(`Health ${lv.hp}`);
-  if (m.kind === 'aura') rows.push(`${lv.damage} damage a second, to everything in reach`);
-  else rows.push(`${lv.damage} damage every ${lv.cd}s`);
-  rows.push(`Reach ${lv.range}`);
-  rows.forEach((r, i) => ctx.fillText(r, x, y + i * 18));
+  let row = y;
+  if (lv.hp) {
+    reading(ctx, 'icon_health', 'stat_health', x, row, 16, `${lv.hp}`);
+    row += 22;
+  }
+  reading(ctx, 'icon_damage', 'stat_damage', x, row, 16,
+    m.kind === 'aura' ? `${lv.damage} a second, to everything in reach`
+                      : `${lv.damage} every ${lv.cd}s`);
+  ctx.fillText(`Reach ${lv.range}`, x, row + 26);
 }
 
 // Wrap a string of paragraphs into `w`, returning the y it finished at. Blank

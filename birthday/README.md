@@ -41,8 +41,8 @@ meant to.
 |---|---|---|
 | **Papa** | two swords, blocks one thug and cuts it down | on the road |
 | **Mommy** | a shotgun; blocks, and the blast catches two more behind | on the road |
-| **Olivia** | throws slime; little damage, but it halves their speed | from her plot |
-| **Rei Rei** | stinks; everything inside the smell loses health, all at once | from his plot |
+| **Ella** | throws slime; little damage, but it halves their speed | from her plot |
+| **Rei** | stinks; everything inside the smell loses health, all at once | from his plot |
 
 Three levels each, the same person with better numbers. Any of them can be built
 on any number of plots — the wave tables are the big game's, and they were
@@ -74,14 +74,14 @@ stopping ignores how hard the thing hits.
 | Mommy Lv1 | 150 | 250 | 11 (up to x3) | 0.95s | 190 | 11.6 |
 | Mommy Lv2 | +140 | 360 | 16 (up to x3) | 0.90s | 205 | 17.8 |
 | Mommy Lv3 | +200 | 500 | 23 (up to x3) | 0.85s | 220 | 27.1 |
-| Olivia Lv1 | 110 | — | 11 + slow | 0.85s | 210 | 12.9 |
-| Olivia Lv2 | +110 | — | 18 + slow | 0.75s | 225 | 24.0 |
-| Olivia Lv3 | +160 | — | 27 + slow | 0.68s | 240 | 39.7 |
-| Rei Rei Lv1 | 120 | — | 13, to everything in reach | — | 150 | 13.0 |
-| Rei Rei Lv2 | +110 | — | 22, to everything in reach | — | 168 | 22.0 |
-| Rei Rei Lv3 | +170 | — | 35, to everything in reach | — | 186 | 35.0 |
+| Ella Lv1 | 110 | — | 11 + slow | 0.85s | 210 | 12.9 |
+| Ella Lv2 | +110 | — | 18 + slow | 0.75s | 225 | 24.0 |
+| Ella Lv3 | +160 | — | 27 + slow | 0.68s | 240 | 39.7 |
+| Rei Lv1 | 120 | — | 13, to everything in reach | — | 150 | 13.0 |
+| Rei Lv2 | +110 | — | 22, to everything in reach | — | 168 | 22.0 |
+| Rei Lv3 | +170 | — | 35, to everything in reach | — | 186 | 35.0 |
 
-Olivia's slime leaves a thug at 55% speed for 2 seconds. Mommy's blast reaches
+Ella's slime leaves a thug at 55% speed for 2 seconds. Mommy's blast reaches
 80px from her target and catches up to 2 more. Papa is dearest and hits hardest;
 Mommy is the cheaper blocker who is worth more the busier the road is.
 
@@ -120,29 +120,49 @@ rest for a person to read. The big game holds a real invariant with twenty seeds
 and an exhaustive sweep; this is a birthday present, and a check that flips
 between runs is worse than a number on a page.
 
-## The art that is still to come
+## The art
 
-Nothing in `birthday/assets/` exists yet. Every family member draws as a
-**coloured disc with their initial on it**, which is deliberately plain — a
-placeholder that looked finished is a placeholder nobody replaces.
-
-Drop a file in with the name below and it appears, with no other change:
+All of it is in `birthday/assets/family/`, drawn for this game and used nowhere
+else. Fourteen files, 512 x 512, transparent:
 
 | file | what it is |
 |---|---|
-| `assets/family/Papa_Default.png` | Papa standing |
-| `assets/family/Papa_Attack.png` | Papa swinging |
-| `assets/family/Mommy_Default.png` | Mommy standing |
-| `assets/family/Mommy_Attack.png` | Mommy firing |
-| `assets/family/Olivia_Default.png` | Olivia on her tower |
-| `assets/family/Rei_Default.png` | Rei Rei on his tower |
-| `assets/family/Olivia_Slime.png` | the slime in the air |
-| `assets/family/House.png` | the house being defended |
+| `Papa_Default.png` / `Papa_Attack.png` | Papa standing, Papa swinging |
+| `Mommy_Default.png` / `Mommy_Attack.png` | Mommy standing, Mommy firing |
+| `Ella_Default.png` / `Ella_Attack.png` | Ella holding a slime, Ella having thrown it |
+| `Rei_Default.png` / `Rei_Attack.png` | Rei sitting, Rei stinking |
+| `*_Plot.png` (four) | the nameplate on each plot |
+| `Ella_Slime.png` | the slime in the air |
+| `Rei_Smell.png` | the stink where it lands on the road |
 
-Export them 512 x 512 with a transparent background, the figure standing on the
-bottom of the frame — that is where the code puts their feet. When one lands,
-take its key out of `COMING` in `src/assets.js` so a typo in the next filename is
-reported instead of swallowed.
+**Everything is measured, not guessed.** `node birthday/tools/art.mjs` prints
+each file's trim box and its **pivot** — the centre of the flat brown ellipse the
+artist paints under a figure, which is where they stand. Anchoring to the bottom
+of the box instead would make Papa bob every time he swung, because his box is
+26px shorter with his swords out. The numbers in `src/data.js` are pasted from
+that tool; re-export a drawing, re-run it, re-paste.
+
+Everything is drawn at **105/512** of source, the big game's own scale — the thugs
+on this board *are* the big game's thugs, so anything standing next to one has to
+be measured with the same ruler. The tool also reports whether each file has the
+source pixels to stay crisp at the 3x device cap. They all do.
+
+Two of the four never turn: Papa and Mommy are drawn facing left and are mirrored
+when they walk the other way, Ella and Rei face the camera from their plots. That
+is the `faces` field, and its absence.
+
+The **nameplate** is what makes both halves of the game read the same way. Ella
+and Rei stand on theirs; Papa and Mommy walk off theirs and it stays behind saying
+whose plot it is. Drawing them on the plot as well put two of each of them on the
+board, which was the first thing wrong with the first build.
+
+Rei's smell goes **on the road**, not around him — the ring already shows his
+reach, and what the stink marks say is the thing the ring does not: that a plot
+beside a bend is worth more than one beside a straight. Four of them at most,
+80px apart, placed once when he is built (see `smellSpots` in `src/rules.js`).
+
+If a file ever goes missing the game still plays: every drawing falls back to a
+coloured disc with an initial on it.
 
 Sound is not wired at all yet. When the voices and effects exist, the smallest
 thing that works is a `<audio>`-free copy of the big game's approach; ask for it
@@ -150,9 +170,11 @@ then rather than building it now.
 
 ## The controls
 
-Along the top, right of the gold and lives:
+Along the top, right of the gold and lives — which are the big game's own coin
+and heart icons, read straight out of `../../src/data/ui.js` so a redraw arrives
+here too:
 
-- **The family** — reopens the four descriptions at any time, for anyone who
+- **The Family** — reopens the four descriptions at any time, for anyone who
   pressed Start too fast. It stops the clock while it is up, because reading is
   not playing.
 - **Pause** — stops the fight and puts **Resume / Restart / Quit** under the
@@ -166,8 +188,14 @@ A finished game offers **Play again** on the same map and **Another map**. Neith
 Restart nor Play again makes you sit through the family introduction a second
 time; choosing a map from the picker still shows it.
 
+Tapping a plot that somebody is already on puts their **numbers in the top right**
+— name, level, health, damage and reach, with the big game's heart and sword
+standing in for the words. An empty plot shows nothing there on purpose: four
+build buttons are open at once and a panel can only describe one of them, which
+is what The Family button is for.
+
 ## What it does not have
 
-No sound, no upgrade previews, no standing orders, no encyclopedia, no stars, no
-difficulty, no admin, no corpses and no blood. It is a birthday present that will
+No sound, no standing orders, no encyclopedia, no stars, no difficulty, no admin,
+no corpses and no blood. It is a birthday present that will
 probably be played a few times and then left alone, and it is built accordingly.
