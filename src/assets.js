@@ -202,6 +202,12 @@ export const paths = {
   // it is the same kind of thing — the mark a projectile makes where it landed —
   // even though one hangs in the air and this one lies flat. See src/impacts.js.
   spill:           'assets/effects/Enemies_Plague_Thug_Spill.png',
+  // THE MARK DEADEYE PAINTS. It sits with the effects rather than in assets/ui
+  // because it is drawn ON THE BOARD, over an enemy's head, at the board's own
+  // SCALE — the rally flag is the only file that crosses the other way, and this
+  // one never appears in a panel or on a button. It goes up a second before the
+  // heavy ball is fired and comes down when the ball lands.
+  target_lock:     'assets/effects/Musketeer_Target_Locked.png',
   // UI: the dashboard and the radial menu. NOT world art — none of it is sized
   // by the shared SCALE, because a button is as big as a thumb needs and an icon
   // is as big as the number beside it. Trims and drawn boxes are in data/ui.js.

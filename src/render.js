@@ -14,7 +14,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
 import { selectionInfo, shownDamage } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
          abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
-         SHEET, FOLD, PAGE_X, POP, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
+         SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
@@ -55,6 +55,9 @@ export function draw(ctx, state) {
   // Health bars and muster rings after that, so status is never hidden by a
   // figure standing in front of the thing it belongs to.
   drawStatus(ctx, state);
+  // And the mark Deadeye paints, above even those: it is a warning, and a warning
+  // that can be stood in front of is not one.
+  drawMarks(ctx, state);
   drawShots(ctx, state);
   drawHits(ctx, state);
   drawRally(ctx, state);
@@ -299,6 +302,62 @@ function drawStatus(ctx, state) {
     if (u.respawn > 0) musterRing(ctx, u);
     else healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
   }
+}
+
+// --- the mark Deadeye paints --------------------------------------------------
+//
+// The crosshair over the head of the man a Musketeer Post has chosen. It goes up
+// a second before the heavy ball is fired and comes down when the ball lands —
+// see `lock` in data/abilities.js for why the hardest blow in the game announces
+// itself, and the wind-up in src/towers.js for how the choice is made once and
+// then held.
+//
+// TWO SOURCES, ONE MARK, and they hand over cleanly. While the tower is winding
+// up, `t.locked` is the man; the instant the shot leaves, the lock is dropped and
+// the SHOT carries the mark instead. So the crosshair never blinks between the two
+// halves, and it needs no lifetime of its own: a shot that lands is a shot off
+// state.shots, and the mark goes with it.
+const MARK_TRIM = [211, 211, 90, 90];
+const MARK = Math.round(MARK_TRIM[2] * SCALE);
+
+// How far the crosshair floats above the drawn top of the figure. 12 clears the
+// health bar that sits at 4 above the head and is 4 deep, with room to spare, so
+// the mark does not move when a man takes his first wound.
+const MARK_LIFT = 12;
+
+function drawMarks(ctx, state) {
+  for (const t of state.towers) if (t.locked) mark(ctx, t.locked);
+  for (const s of state.shots) {
+    // A target that died or reached the keep while the ball was in the air is off
+    // the board, and a crosshair left hanging where it used to be would read as
+    // the mark having come loose.
+    if (s.marked && s.target && s.target.hp > 0 && !s.target.leaked) mark(ctx, s.target);
+  }
+}
+
+function mark(ctx, e) {
+  const img = art.target_lock;
+  const cy = e.y - artHeight(e.def) - MARK_LIFT - MARK / 2;
+
+  if (!img) {
+    // The vector fallback every drawn thing in this game has: a ring and a cross,
+    // in the red the artwork uses, so a file that failed to load still warns.
+    ctx.save();
+    ctx.strokeStyle = '#D40000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(e.x, cy, MARK / 2 - 2, 0, Math.PI * 2);
+    ctx.moveTo(e.x - MARK / 2, cy);
+    ctx.lineTo(e.x + MARK / 2, cy);
+    ctx.moveTo(e.x, cy - MARK / 2);
+    ctx.lineTo(e.x, cy + MARK / 2);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  const [sx, sy, sw, sh] = MARK_TRIM;
+  ctx.drawImage(img, sx, sy, sw, sh, e.x - MARK / 2, cy - MARK / 2, MARK, MARK);
 }
 
 // The tower's reach: a translucent fill so you can see which stretch of road it
@@ -978,20 +1037,19 @@ function drawSoldier(ctx, u) {
 
 // How much of a hidden figure shows through the building in front of it.
 //
-// 0.5, and the arithmetic is why it is done this way round. What is wanted is the
-// TOWER at half alpha over the figure; what is drawn is the FIGURE at half alpha
-// over the tower, and the two composite to the same thing — 0.5 x figure plus
-// 0.5 x tower either way. Drawing the figure again is enormously simpler: it
-// needs no second pass over the building, no inverse clip, and above all no hard
-// rectangular edge where the tower's transparency changes. A ghost is shaped like
-// the man it is a ghost of.
+// 0.3, and the arithmetic is why it is done this way round. What is wanted is the
+// TOWER at 70% over the figure; what is drawn is the FIGURE at 30% over the
+// tower, and the two composite to the same thing — 0.3 x figure plus 0.7 x tower
+// either way. Drawing the figure again is enormously simpler: it needs no second
+// pass over the building, no inverse clip, and above all no hard rectangular edge
+// where the tower's transparency changes. A ghost is shaped like the man it is a
+// ghost of.
 //
-// EXPERIMENTAL, at the artist's request. The towers get taller up every ladder
-// and a tier 3 or 4 standing between the camera and the road hides the fight
-// going on behind it. If half turns out to be too much or too little, this is the
-// number; if the whole idea reads badly, the two call sites are this function and
-// the one line that runs it in drawFigures.
-const GHOST = 0.5;
+// It shipped at 0.5 and the artist called it too strong: at half, a man behind a
+// tower reads almost as solidly as one in front of it, and the building stops
+// looking like a building. 0.3 is enough to follow a fight through the stonework
+// and not enough to argue with what is standing in front of you.
+const GHOST = 0.3;
 
 // The rectangle a figure's art covers. Symmetric about the point it stands on, so
 // it is the same box whichever way the sprite happens to be mirrored, and drawn
@@ -1807,27 +1865,22 @@ function drawButton(ctx, state, it) {
 // half of the button's job — what it IS reads first, what it costs second.
 // 12 -> 11 -> 10 over two passes, each time to give the glyph more of the disc.
 //
-// TWO INKS, and now two backgrounds. Dark on the cream plate and green when it is
-// gold coming back to you; on an ability's blue disc neither reads, so the price
-// goes down in the cream the rest of the game's buttons are made of, with the same
-// dark drop behind it that the HUD uses over grass.
+// TWO INKS. Dark on the cream plate and green when it is gold coming back to you;
+// white on an ability's coloured disc, where neither of the dark ones reads.
+//
+// The white sat on a dark rounded plate of its own for one build, on the reasoning
+// that text over artwork needs something behind it. The artist took it off: the
+// disc is already a flat, dark, even blue, so the plate was solving a problem the
+// drawing does not have and it read as a label stuck on the button rather than as
+// part of it.
 function buttonPrice(ctx, it, caption) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '700 10px system-ui, sans-serif';
-
-  if (it.face) {
-    ctx.fillStyle = 'rgba(20,22,18,0.72)';
-    const w = ctx.measureText(caption).width + 10;
-    ctx.beginPath();
-    ctx.roundRect(it.x - w / 2, it.y + 10, w, 14, 7);
-    ctx.fill();
-    ctx.fillStyle = '#F0E6D2';
-  } else {
-    ctx.fillStyle = it.gain !== null ? '#2F6B27' : '#3A3026';
-  }
-
-  ctx.fillText(caption, it.x, it.y + 16 + (it.face ? 1 : 0));
+  ctx.fillStyle = it.face ? '#FFFFFF'
+                : it.gain !== null ? '#2F6B27'
+                : '#3A3026';
+  ctx.fillText(caption, it.x, it.y + 16);
   ctx.textAlign = 'left';
 }
 
@@ -2392,18 +2445,61 @@ const POP_TITLE = 30;
 // text's descenders and the two read as one block.
 const POP_GAP = 14;
 
+// --- how big the canvas actually is -------------------------------------------
+//
+// The board is 960x540 logical units and the canvas behind it is drawn at up to
+// three times that — see fitToDisplay in src/main.js, which is the only thing that
+// sets this. One logical pixel is `device` real ones, so a drawing shown at "1:1"
+// in logical units is being blown up `device` times on the glass.
+//
+// It exists for exactly one caller: the pop-up, which is the one place in the game
+// that promises to show art at its own resolution and cannot keep that promise
+// without knowing what the glass is doing. Everything else on the board is
+// deliberately sized in logical units and checked against the worst case of 3.
+//
+// A SETTER RATHER THAN AN IMPORT, and that is the direction that matters: main.js
+// already imports this module, so render.js importing main.js back would be a
+// cycle. The number is pushed in from where it is computed.
+let device = 1;
+export const setDeviceScale = k => { device = Math.max(1, k); };
+
+// The width of the prose column beside an ability's picture, and the type in it.
+// 340 at 12px is about 56 characters a line, which is inside the 45-75 a line of
+// body text wants and leaves the whole plate under 700px wide.
+const POP_TEXT_W = 340;
+const POP_TEXT = 12;
+const POP_LEAD = 17;
+
+// The deepest the prose may run. It is a CEILING rather than a measurement so the
+// plate has a height that can be checked without a canvas — tools/book.mjs
+// estimates the wrap and fails if any `detail` in data/abilities.js would need
+// more than this many lines.
+const POP_LINES = 12;
+const POP_BODY = POP_LINES * POP_LEAD;
+
 function drawZoom(ctx, z) {
   const [sx, sy, sw, sh] = z.trim;
-  // The SLOT is the same for every drawing of this kind — see POP in book.js —
+  // The SLOT is the same for every drawing of this kind — see popSlot in book.js —
   // and the drawing is placed inside it rather than the plate being fitted to the
   // drawing. That is what keeps every tower's box the same size as every other's.
-  const slot = POP[z.kind] || POP.figure;
+  //
+  // 1 / device is the cap that keeps it crisp: at most one source pixel per screen
+  // pixel, whatever the canvas is being drawn at. On a laptop at 1x this is the
+  // 1:1 it always was; on a wide monitor the plate comes in so that nothing is
+  // invented. See the note on popSlot for what that costs.
+  const slot = popSlot(z.kind, 1 / device);
   const w = sw * slot.k;
   const h = sh * slot.k;
 
-  // Wide enough for the longest title over the narrowest drawing in the game.
-  const pw = Math.max(slot.w + POP_PAD * 2, 240);
-  const ph = POP_PAD * 2 + POP_TITLE + POP_GAP + slot.h;
+  // Two shapes of plate. An ability opens with its description beside the picture
+  // — it is a rule rather than a thing, so a picture of it says almost nothing on
+  // its own — and everything else opens as the picture alone.
+  const lines = z.detail ? wrapped(ctx, z.detail, POP_TEXT_W) : null;
+  const bodyH = lines ? Math.max(slot.h, POP_BODY) : slot.h;
+  const pw = lines
+    ? POP_PAD * 2 + slot.w + POP_GAP + POP_TEXT_W
+    : Math.max(slot.w + POP_PAD * 2, 240);
+  const ph = POP_PAD * 2 + POP_TITLE + POP_GAP + bodyH;
   const px = 480 - pw / 2;
   const py = 270 - ph / 2;
 
@@ -2424,24 +2520,70 @@ function drawZoom(ctx, z) {
   ctx.font = '700 18px system-ui, sans-serif';
   ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
 
-  // Centred in the slot both ways, so a short wide tent and a tall thin turret sit
-  // in the middle of the same frame instead of one of them hugging an edge.
-  const img = z.sprite && art[z.sprite];
-  const top = py + POP_PAD + POP_TITLE + POP_GAP + (slot.h - h) / 2;
-  if (!img) return;
+  const bodyY = py + POP_PAD + POP_TITLE + POP_GAP;
+  // The picture's own column: the middle of the plate when it is alone, and the
+  // left of it when there is prose to its right.
+  const cx = lines ? px + POP_PAD + slot.w / 2 : 480;
 
-  // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. Their
-  // files carry an opaque white background outside the disc, so shown as a plain
-  // rect they would put four white corners on the parchment — the same clip the
-  // menu button uses, for the same reason. See plateFace().
-  ctx.save();
-  if (z.round) {
-    ctx.beginPath();
-    ctx.arc(480, top + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
-    ctx.clip();
+  const img = z.sprite && art[z.sprite];
+  if (img) {
+    // Centred in the slot both ways, so a short wide tent and a tall thin turret
+    // sit in the middle of the same frame instead of one of them hugging an edge.
+    const top = bodyY + (bodyH - h) / 2;
+
+    // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. Their
+    // files carry an opaque white background outside the disc, so shown as a plain
+    // rect they would put four white corners on the parchment — the same clip the
+    // menu button uses, for the same reason. See plateFace().
+    ctx.save();
+    if (z.round) {
+      ctx.beginPath();
+      ctx.arc(cx, top + h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+      ctx.clip();
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, cx - w / 2, top, w, h);
+    ctx.restore();
   }
-  ctx.drawImage(img, sx, sy, sw, sh, 480 - w / 2, top, w, h);
-  ctx.restore();
+
+  if (!lines) return;
+
+  // The prose, top-aligned rather than centred against the picture: a block of
+  // text hung off the middle of a disc drifts up and down as the text changes
+  // length, and the eye reads a paragraph from its first line.
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
+  const tx = px + POP_PAD + slot.w + POP_GAP;
+  lines.forEach((line, i) => {
+    if (line) ctx.fillText(line, tx, bodyY + POP_LEAD * (i + 0.5));
+  });
+}
+
+// Break a paragraph into lines that fit `width`, measured in the font the caller
+// has already set on the context.
+//
+// A BLANK LINE IS A PARAGRAPH BREAK and survives as an empty entry, so the gap
+// between two paragraphs is one line of leading rather than a second constant. A
+// word longer than the column is left on a line of its own and allowed to overrun
+// rather than being cut — there are none, and silently losing characters is the
+// worse failure of the two.
+function wrapped(ctx, text, width) {
+  ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
+  const out = [];
+
+  for (const para of text.split('\n\n')) {
+    if (out.length) out.push('');
+    let line = '';
+    for (const word of para.split(/\s+/)) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(next).width > width) { out.push(line); line = word; }
+      else line = next;
+    }
+    if (line) out.push(line);
+  }
+
+  return out;
 }
 
 // Page 1: every tower in the game, one family per column across the spread.
@@ -2607,21 +2749,15 @@ function drawEnemyPage(ctx) {
 
 // Page 4: what a topped-out tier 4 can be taught.
 //
-// THE ONE PAGE WITH PROSE ON IT, and the sizes below are what that costs. Every
-// other card in the book is a name and rows of icons, which fit the 11px face the
-// names are set in; a sentence at 11px runs off a 165px text column after about
-// fourteen characters. So the description gets its own smaller face and its own
-// tighter line pitch, which is what the artist asked for when they asked for the
-// description.
+// THE SAME CARD AS A TOWER'S, and that is the change the artist asked for. It
+// carried two lines of prose in a smaller face for one build, which was the one
+// card in the book laid out differently from the rest — and a reference page whose
+// boxes are two shapes reads as two kinds of thing however well the grid lines up.
 //
-// 9px and a 12px pitch: two lines and the name and the price all fit the same
-// 60px card every other page uses, with the block centred in it exactly as
-// rowsIn centres the others. Nothing about the GRID changes — same cards, same
-// one 4px gap both ways — because the complaint the grid answers is about the
-// page, and this page is part of it.
-const ABILITY_TEXT = 9;
-const ABILITY_LINE = 12;
-
+// So it is a tower card exactly: three rows, centred by rowsIn like every other
+// card, with the name on top, the tower that teaches it underneath in the row a
+// tower gives to the man it musters, and the price on an icon row at the bottom.
+// The explaining moved to the pop-up, where there is room for it.
 function drawAbilityPage(ctx) {
   heading(ctx, 'Ability', PAGE_X);
 
@@ -2635,30 +2771,23 @@ function abilityCard(ctx, b, e) {
   drawRound(ctx, e.sprite, b.x + ICON_BOX.x + ICON_BOX.w / 2, b.y + b.h / 2, ABILITY_ICON);
 
   const tx = b.x + ICON_BOX.x + ICON_BOX.w + 8;
+  const [r1, r2, r3] = rowsIn(b, 3);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  // The name on the top line with the price hard against the card's right edge,
-  // rather than the price on a row of its own. There is only one number on this
-  // card and two lines of sentence to make room for, so it shares the line it is
-  // most useful on — beside what it buys.
-  const top = b.y + (b.h - (ABILITY_LINE * (e.lines.length + 1))) / 2 + ABILITY_LINE / 2;
-
   ctx.fillStyle = INK;
   ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
-  ctx.fillText(e.title, tx, top);
+  ctx.fillText(e.title, tx, r1);
 
-  ctx.textAlign = 'right';
   ctx.fillStyle = INK_MUTED;
-  ctx.font = `700 ${ABILITY_TEXT}px system-ui, sans-serif`;
-  ctx.fillText(`${e.cost}g`, b.x + b.w - 8, top);
+  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.fillText(e.of, tx, r2);
 
-  ctx.textAlign = 'left';
-  ctx.fillStyle = INK_MUTED;
-  ctx.font = `600 ${ABILITY_TEXT}px system-ui, sans-serif`;
-  e.lines.forEach((line, i) => {
-    ctx.fillText(line, tx, top + ABILITY_LINE * (i + 1));
-  });
+  // The price alone, with no refund beside it. An ability is folded into the
+  // tower's own `spent` when it is bought, so it does come back at the same 60% —
+  // but only by taking the whole tower down, and a refund figure on a line of its
+  // own would read as something you can sell separately.
+  stat(ctx, 'stat_gold_cost', tx, r3, String(e.cost), INK);
 }
 
 // A UI disc drawn to a diameter and clipped to a circle. The four ability files

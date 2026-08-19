@@ -39,7 +39,7 @@ import {
   SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-  BOOK_BTN_START, POP
+  BOOK_BTN_START, popSlot
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
@@ -215,32 +215,13 @@ console.log('\nWhat fits\n');
   ok(sizes.size === 1, 'and every box on all four pages is the same size',
     [...sizes].join(', '));
 
-  // THE ABILITY PAGE IS THE ONE WITH PROSE ON IT, so the two things that can go
-  // wrong there are its own: the disc has to fit the card's height, and the
-  // description has to fit the column left beside it.
-  //
-  // The text is measured rather than eyeballed, at the 9px face render.js sets it
-  // in. There is no canvas in Node, so the width comes from a per-character
-  // average that errs HIGH — 0.52em against system-ui's real 0.48 for lower case —
-  // which is the safe direction for a fits-on-the-card check.
-  const EM = 0.52 * 9;
-  const column = shelfRect(0, 0).w - (ICON_BOX.x + ICON_BOX.w + 8) - 8;
-
+  // THE ABILITY PAGE USES THE SAME CARD AS A TOWER'S — a name, the tower that
+  // teaches it, and a price on an icon row — so the only thing left to check about
+  // it here is the one part that is not shared: the disc has to fit the card it
+  // sits in. Its prose moved to the pop-up and is checked there.
   ok(ABILITY_ICON <= shelfRect(0, 0).h,
     'the ability disc fits the card it sits in',
     `${ABILITY_ICON}px in ${shelfRect(0, 0).h}`);
-
-  const longest = ABILITIES
-    .flatMap(a => abilityEntry(a).lines)
-    .reduce((a, b) => (a.length > b.length ? a : b));
-  ok(longest.length * EM <= column,
-    'and the longest line of description fits beside it',
-    `"${longest}" is ${(longest.length * EM).toFixed(0)}px of ${column}`);
-
-  // Two lines each, and the same two everywhere: a card with three would push its
-  // block out of the plate, and one with none would be a card that says nothing.
-  ok(ABILITIES.every(a => a.lines.length === 2),
-    'and every ability says its piece in two lines');
 }
 
 console.log('\nOne margin, everywhere\n');
@@ -427,6 +408,14 @@ console.log('\nThe picture pop-up\n');
                    ...Object.values(enemyTypes).map(d => d.spriteTrim)];
   const abilities = ABILITIES.map(a => ui[a.icon].trim);
 
+  // THE PLATE IS A FUNCTION OF THE DISPLAY NOW, so every check below is asked at
+  // both ends of the range the game can be drawn at: cap 1 is a laptop at one real
+  // pixel per logical one, and 1/3 is the densest canvas fitToDisplay will ever
+  // build. Checking one of them would leave the other free to be wrong, and the
+  // wrong one would be whichever the artist happened not to be sitting at — which
+  // is exactly how this was reported: crisp on a laptop, soft on a big monitor.
+  const CAPS = [['1x', 1], ['3x', 1 / MAX_SCALE]];
+
   // ONE PLATE PER KIND. The pop-up used to be sized to whatever it held, so every
   // tower opened a different box and tapping down a column made the frame jump
   // about. This is the check for the fix, and it is the strong form: not "the
@@ -435,46 +424,82 @@ console.log('\nThe picture pop-up\n');
   const fits = (trims, slot) => trims.every(t =>
     t[2] * slot.k <= slot.w + 0.001 && t[3] * slot.k <= slot.h + 0.001);
 
-  ok(fits(towers, POP.tower), 'every tower fits the one tower plate',
-    `${POP.tower.w.toFixed(0)}x${POP.tower.h.toFixed(0)} at ${POP.tower.k.toFixed(3)}x`);
-  ok(fits(figures, POP.figure), 'and every figure fits the one figure plate',
-    `${POP.figure.w.toFixed(0)}x${POP.figure.h.toFixed(0)} at ${POP.figure.k.toFixed(3)}x`);
-  ok(fits(abilities, POP.ability), 'and every ability fits the one ability plate',
-    `${POP.ability.w.toFixed(0)}x${POP.ability.h.toFixed(0)} at ${POP.ability.k.toFixed(3)}x`);
-
-  // The plate is sized to the LARGEST drawing of its kind, so at least one member
-  // has to reach an edge of it. A plate bigger than everything in it is a frame
-  // with a permanent margin nobody chose.
+  // And the plate is sized to the LARGEST drawing of its kind, so at least one
+  // member has to reach an edge of it. A plate bigger than everything in it is a
+  // frame with a permanent margin nobody chose.
   const touches = (trims, slot) =>
     trims.some(t => Math.abs(t[2] * slot.k - slot.w) < 0.001) &&
     trims.some(t => Math.abs(t[3] * slot.k - slot.h) < 0.001);
-  ok(touches(towers, POP.tower) && touches(figures, POP.figure) &&
-     touches(abilities, POP.ability),
-    'and each plate is sized to the biggest thing in it');
 
-  // NEVER AN UPSCALE. The pop-up shows the art at the size the artist exported it
-  // or smaller — see the note on POP in src/book.js for why this rule is not the
-  // 3x one every other drawing in the game is held to.
-  ok(POP.tower.k <= 1 && POP.figure.k <= 1 && POP.ability.k <= 1,
-    'and none of them blows the art up past what the artist drew',
-    `towers ${POP.tower.k.toFixed(3)}x, figures ${POP.figure.k.toFixed(3)}x, ` +
-    `abilities ${POP.ability.k.toFixed(3)}x`);
+  for (const [label, cap] of CAPS) {
+    const kinds = {
+      tower: [towers, popSlot('tower', cap)],
+      figure: [figures, popSlot('figure', cap)],
+      ability: [abilities, popSlot('ability', cap)]
+    };
+
+    for (const [kind, [trims, slot]] of Object.entries(kinds)) {
+      ok(fits(trims, slot) && touches(trims, slot),
+        `at ${label}, every ${kind} fits its one plate`,
+        `${slot.w.toFixed(0)}x${slot.h.toFixed(0)} at ${slot.k.toFixed(3)}x`);
+    }
+
+    // NOTHING IS EVER INVENTED, and this is the rule the artist reported against.
+    // A drawing shown at 1:1 in logical units is blown up by whatever the canvas
+    // is scaled to, so the cap has to come off the SCREEN rather than off the
+    // board: at 3x the largest honest factor is a third, and no plate may exceed
+    // whatever the display allows.
+    const worst = Math.max(...Object.values(kinds).map(([, slot]) => slot.k));
+    ok(worst <= cap + 0.001, `and nothing at ${label} is bigger than its own pixels`,
+      `worst ${worst.toFixed(3)}x of ${cap.toFixed(3)}x`);
+  }
+
+  // The whole thing has to sit on the board with air around it, at its BIGGEST,
+  // which is a laptop at 1x. 22 is the padding drawZoom uses at each end, 30 the
+  // title band and 14 the gap under it; an ability adds a column of prose beside
+  // its picture, capped at twelve lines of 17.
+  const big = ['tower', 'figure', 'ability'].map(k => popSlot(k, 1).h);
+  const deepest = 22 * 2 + 30 + 14 + Math.max(...big, 12 * 17);
+  ok(deepest <= 540 - 2 * 22, 'and the deepest plate leaves a margin on the board',
+    `${deepest.toFixed(0)}px of 540`);
 
   // THE ABILITY BUTTONS ARE A CIRCLE IN A SQUARE, and the pop-up clips them to
   // one because their files carry an opaque white background. That only works
   // while the plate is square: a rectangular plate would clip to the shorter side
   // and eat the disc. tools/trim.mjs checks the FILES are square; this checks the
   // plate they are shown in is.
-  ok(Math.abs(POP.ability.w - POP.ability.h) < 0.001,
+  const disc = popSlot('ability', 1);
+  ok(Math.abs(disc.w - disc.h) < 0.001,
     'and the ability plate is square, so its clip is a circle',
-    `${POP.ability.w.toFixed(0)}x${POP.ability.h.toFixed(0)}`);
+    `${disc.w.toFixed(0)}x${disc.h.toFixed(0)}`);
 
-  // The whole thing has to sit on the board with air around it. 22 is the padding
-  // drawZoom uses at each end, 30 the title band and 14 the gap under it.
-  const deepest = 22 * 2 + 30 + 14 + Math.max(POP.tower.h, POP.figure.h, POP.ability.h);
-  ok(deepest <= 540 - 2 * 22, 'and the deepest plate leaves a margin on the board',
-    `${deepest.toFixed(0)}px of 540`);
+  // EVERY ABILITY EXPLAINS ITSELF BESIDE ITS PICTURE, and the paragraphs fit the
+  // column the pop-up gives them. There is no canvas in Node, so the wrap is
+  // estimated at 0.5em a character against system-ui's real 0.48 for mixed case —
+  // high, which is the safe direction for a fits-in-the-box check.
+  const COLUMN = 340, EM = 0.5 * 12, CEILING = 12;
+  const wrapLines = text => {
+    let n = 0;
+    for (const para of text.split('\n\n')) {
+      if (n) n++;
+      let line = '';
+      for (const word of para.split(/\s+/)) {
+        const next = line ? `${line} ${word}` : word;
+        if (line && next.length * EM > COLUMN) { n++; line = word; } else line = next;
+      }
+      if (line) n++;
+    }
+    return n;
+  };
+
+  ok(ABILITIES.every(a => a.detail && a.detail.length > 80),
+    'every ability has a description to open',
+    ABILITIES.map(a => (a.detail || '').length).join('/') + ' chars');
+  const longest = Math.max(...ABILITIES.map(a => wrapLines(a.detail)));
+  ok(longest <= CEILING, 'and the longest of them fits the column it is given',
+    `${longest} lines of ${CEILING}`);
 }
+
 
 console.log('\nWhat stays sharp at 3x\n');
 

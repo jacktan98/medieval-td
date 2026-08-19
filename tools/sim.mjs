@@ -96,7 +96,7 @@ function build(state, entry) {
     // player chooses to spend — but a tower without them is a shape the fight
     // code has never seen, and the point of this file is that it runs the real
     // modules on the real objects.
-    abilities: [], shots: 0, special: null, burst: 0, burstT: 0, hold: 0,
+    abilities: [], shots: 0, special: null, burst: 0, burstT: 0, hit: [], locked: null, hold: 0,
     spent: def.cost,
     wantTier: entry.tier
   };

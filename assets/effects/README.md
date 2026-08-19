@@ -1,8 +1,8 @@
 # Effects artwork
 
 Things that are neither a figure nor a building: marks the fight leaves on the
-ground. Seven files, all 512 x 512 with a transparent background like every
-other sprite.
+ground, and one it puts in the air. Nine files, all 512 x 512 with a transparent
+background like every other sprite.
 
 | file                                 | when                     | lasts         |
 |--------------------------------------|--------------------------|---------------|
@@ -10,6 +10,26 @@ other sprite.
 | `Blood_Dead_1.png`, `_2.png`         | the pool a body lies in  | with the body |
 | `Artillery_Impact_1.png`, `_2.png`   | every rock that lands    | 0.45s         |
 | `Enemies_Plague_Thug_Spill.png`      | every flask that breaks  | 3s            |
+| `Construction_Smoke.png`             | a plot is built on, upgraded or cleared | 0.6s |
+| `Musketeer_Target_Locked.png`        | a Post picks its Deadeye man | until the ball lands |
+
+## The target mark is the one that is not a stain
+
+Everything else here is something the fight LEFT. The crosshair is something the
+fight is about to do: a Musketeer Post that has bought Deadeye picks its man a
+second before it fires and paints this over his head, and it stays there until
+the ball arrives. See `lock` in `src/data/abilities.js`.
+
+It is drawn at the board's own `SCALE` — 90 source px lands 18 on screen, sharp
+at 3x with room — and it floats 12px above the drawn top of the figure, which
+clears the health bar that sits at 4 above the head and is 4 deep. It is drawn
+after the health bars rather than before, because a warning that can be stood in
+front of is not one.
+
+Its life needs no timer, which is worth knowing before adding a second effect
+like it: the mark has two owners in turn — the tower during the second of
+wind-up, and then the shot itself — and a shot that lands is a shot off the
+list, so the mark goes with it.
 
 One of each PAIR is picked at random, so no two hits, no two deaths and no two
 rocks are the same picture. Three pairs, three reasons to have two: a catapult

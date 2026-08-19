@@ -20,16 +20,24 @@
 //
 //   `every`      one action in N is the special one. The musketeer's shots and the
 //                paladin's blows are both counted, and the count is per figure.
+//                EACH ABILITY KEEPS ITS OWN CYCLE — Burst Fire's sixth shot and
+//                Deadeye's eleventh are separate rhythms on the same counter, and
+//                on the rare shot where both land the rarer one wins.
 //   `hold`       how long the special POSE stays up afterwards. It blocks the next
 //                action as well as showing, which is invisible on the musketeer —
-//                his reload is 2.4s and the hold is 1 — and real on the paladin,
-//                whose 0.80s swing it delays by a fifth of a second.
+//                his reload is 2.4s and the longest hold is 2 — and real on the
+//                paladin, whose 0.80s swing a 2s hold delays by more than a second.
 //   `pose`       the drawing to show while holding, or nothing to hold the man's
 //                own Attack pose. Burst Fire is the one that holds Attack: the
 //                artist asked for it to use the pictures the tower already has.
 //   `cue`        a Category B sound, played every time the special fires. Three of
 //                the four have one; Burst Fire makes the musket's own noise three
 //                times, which is what a burst sounds like.
+//   `detail`     the paragraphs shown beside the picture when the encyclopedia
+//                card is tapped open. The CARD itself carries no prose — it is a
+//                name, the tower that teaches it and a price, exactly like a tower
+//                card — so this is where the explaining goes. Blank lines separate
+//                paragraphs; render.js wraps it.
 //
 // Holy Light is the one that does not fit that shape, and it is not bent to fit:
 // it is a reaction to being nearly dead rather than a beat in a rhythm, so it
@@ -93,10 +101,11 @@ const HOLY_SLASH_POSE = {
   pivot: [0.798, 0.905]
 };
 
-// How long a special pose stays up. One second, for all four, because that is what
-// the artist asked for each of them in turn — so it is one constant rather than
-// four fields that happen to agree.
+// How long a special pose stays up. The artist asked for one second on Burst Fire
+// and two on the two abilities that hit hardest, so there are two constants rather
+// than a number typed four times — a big blow is worth standing over.
 const HOLD = 1;
+const LONG_HOLD = 2;
 
 export const ABILITIES = [
   {
@@ -119,10 +128,27 @@ export const ABILITIES = [
     shots: 3,
     gap: 0.18,
     hold: HOLD,
+    // THREE DIFFERENT MEN, at the artist's request, and it is what the ability is
+    // FOR. Three balls into one militiaman is 180 damage spent on 80 health; three
+    // balls into three of them is a rank cleared. Each shot of the burst re-picks
+    // through the tower's own standing order, excluding whoever the burst has
+    // already hit — see burstTarget in src/towers.js, including what happens when
+    // there is only one man on the road.
+    spread: true,
     // NO POSE OF ITS OWN and no ammunition of its own, at the artist's request:
     // "use Attack and normal Bullet images". So the man holds the drawing he
     // already fires in and the balls are the balls he already fires.
-    lines: ['Every sixth shot is three,', 'fired as fast as he can load.']
+
+    // The long form, shown beside the picture when the card is tapped open. Two or
+    // three sentences: what it does, then the thing a player would only find out by
+    // watching it for a while.
+    detail: 'After five ordinary shots the musketeer empties three balls into the ' +
+            'road as fast as he can work the lock, a fifth of a second apart, then ' +
+            'holds the smoke for a second before loading again.\n\n' +
+            'Each of the three picks a different man, through whatever standing ' +
+            'order the tower is on. That is the point of it: three balls into one ' +
+            'militiaman is most of them wasted, and three into three of them is a ' +
+            'rank gone. With only one enemy in reach all three go to him.'
   },
   {
     id: 'deadeye',
@@ -130,19 +156,32 @@ export const ABILITIES = [
     of: 'Musketeer Post',
     icon: 'ability_deadeye',
     cost: ABILITY_COST,
-    every: 6,
+    // TEN ORDINARY SHOTS AND THEN THE BALL, so the cycle is eleven — read `every`
+    // the same way Burst Fire's 6 is read. It is nearly twice as rare as the burst
+    // and hits five times as hard, which is the shape the artist asked for: the
+    // burst is a rhythm you stop noticing and this is an event.
+    every: 11,
     shots: 1,
-    hold: HOLD,
-    // 180, AND IT IS THE SAME 180 BURST FIRE ADDS — three ordinary balls at 60
-    // each. That is the whole relationship between the two: one cycle in six is
-    // worth an extra 180 damage either way, so the choice is about WHERE it lands
-    // rather than how much of it there is. Burst Fire spreads it over three
-    // targets and Deadeye puts all of it through one, which is the difference
-    // between a road full of militia and a giant walking down it.
+    // TWO SECONDS of held pose, not one. It is the biggest single blow in the game
+    // and he stands over it. Still free, because the musket takes 2.4s to load
+    // either way.
+    hold: LONG_HOLD,
+    // ONE SECOND OF WARNING before it goes. The tower picks its man while the ball
+    // is still being rammed home and paints a mark over his head, and the mark stays
+    // there until the shot lands — see `t.locked` in src/towers.js and the marker in
+    // render.js. It is the only ability in the game that announces itself before it
+    // happens, and at 300 damage it should: the player gets a second to see where
+    // the shot is going.
+    lock: 1,
+    // 300, and it is the biggest number in the game by a factor of four — the next
+    // hardest single blow is the tower's own 60. Ten ordinary shots plus one of
+    // these is 900 damage over eleven reloads, which is 34.1 a second against a
+    // plain Post's 25.0.
     //
-    // Both take the tower from 25.0 damage a second to 33.3 — five shots at 60
-    // plus 180, over six reloads of 2.4s.
-    damage: 180,
+    // That lands it a shade above Burst Fire's 33.3, and the two are meant to be
+    // close: what separates them is not how much damage they add but WHERE it goes.
+    // The burst clears a rank of militia; this removes one giant.
+    damage: 300,
     ammo: deadeyeBall,
     pose: DEADEYE_POSE,
     // NO `cue`, and it is not silent. Its noise comes from its AMMUNITION, through
@@ -150,7 +189,14 @@ export const ABILITIES = [
     // through — `deadeyeBall` is its own kind, so it gets its own row there. An
     // ability that fires something announces itself by firing it; `cue` is for the
     // two that do not, which are the paladin's.
-    lines: ['Every sixth shot is one heavy', 'ball: 180 instead of 60.']
+
+    detail: 'After ten ordinary shots the musketeer takes a second to aim — a mark ' +
+            'appears over the man he has chosen and stays there until the ball ' +
+            'arrives — and then fires a single round for 300 damage, five times the ' +
+            'Post\'s ordinary shot and the hardest blow in the game.\n\n' +
+            'He holds the pose for two seconds afterwards, which costs nothing: the ' +
+            'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
+            'one thing on the road that has to die and cannot be chipped down.'
   },
   {
     id: 'light',
@@ -163,15 +209,26 @@ export const ABILITIES = [
     // in front of him goes on hitting him the whole time.
     below: 0.30,
     heals: 200,
-    seconds: 2,
+    // THREE SECONDS, not two. The same 200 health arrives more slowly, which is the
+    // whole difference: he is out of the fight for half again as long to get it, so
+    // the enemy in front of him lands about four more blows while he kneels.
+    seconds: 3,
     // Counted from the moment it STARTS, not from when it ends, so the honest
-    // reading of "only refreshes after 20 seconds" is 18 seconds of standing there
-    // unable to do it again. Starting the clock at the end would make the gap 20
-    // on top of the 2, which is a longer cooldown than the number says.
-    refresh: 20,
+    // reading of "refreshes every 30 seconds" is 27 seconds of standing there unable
+    // to do it again. Starting the clock at the end would make the gap 30 on top of
+    // the 3, which is a longer cooldown than the number says.
+    refresh: 30,
     pose: HOLY_LIGHT_POSE,
     cue: 'holyLight',
-    lines: ['Under 30% health he kneels', 'and heals 200. Every 20s.']
+
+    detail: 'The moment a paladin drops under 30% of his health he stops fighting, ' +
+            'kneels, and takes 200 health back over three seconds. He keeps his grip ' +
+            'on the enemy the whole time, so the road stays held — and the enemy ' +
+            'keeps hitting him, so it is a race rather than a free reset.\n\n' +
+            'One paladin in three can be doing this at once; each man calls it for ' +
+            'himself. Thirty seconds before he can call it again, counted from the ' +
+            'moment he kneels, and a paladin who is killed anyway comes back with the ' +
+            'clock still running.'
   },
   {
     id: 'slash',
@@ -185,16 +242,27 @@ export const ABILITIES = [
     // the cycle is the special one.
     every: 10,
     shots: 1,
-    damage: 50,
-    hold: HOLD,
+    // 70, and it is ten times an ordinary blow. Nine swings at 7 plus one at 70 is
+    // 133 where ten swings would be 70 — so the ability nearly doubles what one
+    // paladin does, on the man who starts with the least damage in the game.
+    damage: 70,
+    // TWO SECONDS over it, and unlike the musketeer's this one COSTS something: he
+    // swings every 0.80s, so the second second is a second he is not swinging in.
+    // That is what holds the sum down — 133 damage over 9.2 seconds is 14.5 a
+    // second against a plain paladin's 8.75, rather than the 16.6 it would be if
+    // the pose were free.
+    hold: LONG_HOLD,
     pose: HOLY_SLASH_POSE,
     cue: 'holySlash',
-    // The artist's number, and it is a big one against a paladin's 7: nine blows
-    // at 7 plus one at 50 is 113 where ten blows would be 70. With the second of
-    // held pose on top of the 0.80s swing that is 13.8 damage a second against
-    // 8.75 — the largest proportional jump any of these four buys, on the man who
-    // starts with the least damage in the game. tools/families.mjs prints it.
-    lines: ['Every tenth blow lands for 50', 'instead of 7.']
+
+    detail: 'Nine ordinary blows and then one for 70 — ten times what a paladin ' +
+            'normally does — and he stands over it for two seconds before swinging ' +
+            'again.\n\n' +
+            'Those two seconds are the price. A paladin swings every 0.8 seconds, so ' +
+            'holding the pose costs him more than a swing, and the ability works out ' +
+            'at 14.5 damage a second against a plain paladin\'s 8.75. Each of the ' +
+            'three men counts his own blows, so the strikes land spread out rather ' +
+            'than all at once.'
   }
 ];
 

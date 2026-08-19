@@ -146,17 +146,27 @@ function stepWeapon(state, t, dt, target) {
   t.cd -= dt;
 
   // THE REST OF A BURST, on its own little clock rather than on the reload. Once
-  // the trigger has been squeezed the three balls are going, and they go at
-  // whoever is in front of the tower NOW: a target that dies between the first and
-  // the second is not a reason to stop halfway through a burst, and re-aiming
-  // between them is what the tower would do anyway.
+  // the trigger has been squeezed the three balls are going.
+  //
+  // EACH ONE PICKS ITS OWN MAN. That is the ability, at the artist's request —
+  // three balls into one militiaman is 180 damage spent on 80 health, and three
+  // into three of them is a rank gone — so every ball after the first re-chooses
+  // through the tower's own standing order, excluding whoever the burst has hit
+  // already. See burstTarget below for the case where there is nobody left to
+  // choose.
   //
   // Ahead of the hold below, because the hold does not start until the last ball
   // has left.
   if (t.burst > 0) {
     t.burstT -= dt;
-    if (t.burstT > 0 || !target) return;
-    shoot(state, t, target, t.special);
+    if (t.burstT > 0) return;
+    const next = burstTarget(state, t) || target;
+    if (!next) return;
+    // Turn to the new man before the ball leaves, so the gunner is facing what he
+    // is shooting and the shot's own angle is right on its first frame.
+    t.aim = Math.atan2(next.y - t.y, next.x - t.x);
+    shoot(state, t, next, t.special);
+    t.hit.push(next);
     t.recoil = 1;
     t.burst--;
     t.burstT = t.special.gap;
@@ -166,13 +176,38 @@ function stepWeapon(state, t, dt, target) {
 
   // THE HELD POSE AFTER A SPECIAL, and it blocks the next shot as well as showing.
   // One rule for all four abilities — see `hold` in data/abilities.js — and on this
-  // tower it is invisible: the reload is 2.4s and the hold is 1, so the pose is
-  // over long before the musket is loaded again. It is the paladin, whose swing is
-  // 0.80s, that the second actually costs anything.
+  // tower it is invisible: the reload is 2.4s and the longest hold is 2, so the
+  // pose is over before the musket is loaded again. It is the paladin, whose swing
+  // is 0.80s, that a two-second hold actually costs anything.
   if (t.hold > 0) {
     t.hold -= dt;
     if (t.hold > 0) return;
     t.special = null;
+    // And let go of whoever the burst hit. Nothing reads the list once the burst
+    // is over — it is only consulted while `t.burst` is above zero — but holding
+    // three references to dead enemies until the next burst is three bodies the
+    // collector cannot take.
+    t.hit.length = 0;
+  }
+
+  // THE WIND-UP, and only Deadeye has one. A second before the shot goes the tower
+  // chooses its man and paints a mark over his head — see `lock` in
+  // data/abilities.js for why the hardest blow in the game announces itself.
+  //
+  // The choice is made ONCE and then held: re-picking every frame would slide the
+  // mark from man to man up the road, which is the opposite of what a mark is for.
+  // It is dropped and re-taken only if the man it was on dies or leaks in the
+  // meantime.
+  const coming = specialFor(t, (t.shots || 0) + 1);
+  if (coming && coming.lock && target && t.cd <= coming.lock) {
+    if (!t.locked || t.locked.hp <= 0 || t.locked.leaked) t.locked = target;
+    // And he turns to the man he has chosen for the whole second, rather than
+    // tracking whoever the tower would otherwise be aiming at. That is most of
+    // what makes the warning read as one: the mark goes up, the musketeer swings
+    // round to it, and then the ball.
+    t.aim = Math.atan2(t.locked.y - t.y, t.locked.x - t.x);
+  } else if (t.locked) {
+    t.locked = null;
   }
 
   if (!target || t.cd > 0) return;
@@ -181,49 +216,79 @@ function stepWeapon(state, t, dt, target) {
   t.cd = t.def.cooldown;
   t.recoil = 1;
 
-  const special = nextSpecial(t);
+  const special = specialFor(t, t.shots);
   if (!special) { shoot(state, t, target); return; }
+
+  // A locked shot goes to the man the mark is on, not to whoever the tower would
+  // pick this frame. Without that the mark would be a lie — a second of warning
+  // over one enemy and the ball into another.
+  const at = (special.lock && t.locked && t.locked.hp > 0 && !t.locked.leaked)
+    ? t.locked : target;
+  t.locked = null;
+  if (at !== target) t.aim = Math.atan2(at.y - t.y, at.x - t.x);
 
   // The first ball of a burst leaves on this frame, exactly as an ordinary shot
   // would; the other two are queued above. Deadeye is `shots: 1`, so for it the
   // queue is empty and the hold starts here.
   t.special = special;
-  shoot(state, t, target, special);
+  shoot(state, t, at, special);
+  t.hit = [at];
   t.burst = special.shots - 1;
   t.burstT = special.gap || 0;
   if (t.burst === 0) t.hold = special.hold;
 }
 
+// WHO THE NEXT BALL OF A BURST GOES TO: the tower's own choice again, made over
+// everybody it has not already hit this burst.
+//
+// Through pickTarget rather than "the nearest one left", so the standing order
+// still means what it says — a Post told to shoot the toughest spreads its burst
+// across the three toughest, not across the three nearest.
+//
+// IT FALLS BACK, and the fallback is the interesting half. With one man on the
+// road there is nobody else to spread to, and a burst that refused to fire would
+// read as the ability being broken exactly when the player is watching it. So the
+// caller uses this if it can and the tower's ordinary target if it cannot: three
+// different men when there are three, and three into one when there is one.
+function burstTarget(state, t) {
+  const fresh = state.enemies.filter(e => !t.hit.includes(e));
+  if (!fresh.length) return null;
+  return pickTarget(fresh, t.x, t.y, t.def.range, t.def.minRange, t.aimMode);
+}
+
 // The abilities a tower has BOUGHT that change how it shoots. Holy Light is not
 // one of them anywhere — it has no `every` — which is what keeps a paladin's heal
 // out of a musketeer's trigger without either of them knowing about the other.
+//
+// The empty case is answered without allocating, because this is asked once a
+// frame per tower for the wind-up as well as once per shot, and the answer for
+// every tower on the board except a taught tier 4 is "none".
+const NONE = [];
 const firingAbilities = t =>
-  abilitiesOf(t.def).filter(a => a.every && owns(t, a.id));
+  (t.abilities && t.abilities.length)
+    ? abilitiesOf(t.def).filter(a => a.every && owns(t, a.id))
+    : NONE;
 
-// WHICH SPECIAL, IF ANY, THIS SHOT IS. One counter on the tower, one special per
-// turn of it.
+// WHICH SPECIAL, IF ANY, SHOT NUMBER `n` IS.
 //
-// The interesting case is a Post that has bought BOTH, and the rule has to make
-// the second purchase worth the same as the first. Two abilities that each
-// wanted "every sixth shot" would collide on the same shot; two that took strict
-// turns would leave the tower firing exactly as many specials as it did with one,
-// so the second 150 gold would buy nothing at all.
+// EVERY ABILITY KEEPS ITS OWN CYCLE. Burst Fire wants every sixth shot and Deadeye
+// every eleventh, and they simply both run on the tower's one counter — so a Post
+// that has bought both bursts on 6, 12, 18... and takes the long shot on 11, 22,
+// 33..., and each ability is worth exactly what it is worth alone. An earlier
+// version divided one shared cycle between them, which was written when both
+// wanted the same number and became wrong the moment they did not.
 //
-// So the GAP is divided by how many are owned, and they take turns inside it: one
-// ability bursts every sixth shot; two means a special every third, alternating.
-// Each ability then adds the same 180 damage per six shots however many are
-// owned — 25.0 damage a second becomes 33.3 with one and 41.7 with both.
-function nextSpecial(t) {
-  const fire = firingAbilities(t);
-  if (!fire.length) return null;
-
-  // The shortest cycle any of them asks for, shared out. All of a tier's firing
-  // abilities are expected to want the same cycle — both of the musketeer's want
-  // six — and tools/abilities.mjs fails if a tier ever offers two that disagree,
-  // because then this number would be one of them and not the other.
-  const period = Math.max(1, Math.round(Math.min(...fire.map(a => a.every)) / fire.length));
-  if (t.shots % period !== 0) return null;
-  return fire[(t.shots / period - 1) % fire.length];
+// The two collide only where the cycles meet — shot 66, once every two and a half
+// minutes of continuous firing — and there the RARER one wins, because the rarer
+// one is the bigger event and losing it is the more noticeable of the two.
+//
+// It takes the shot number rather than reading `t.shots` so the same function can
+// answer "what was this shot" and "what will the next one be", which is what the
+// wind-up above needs.
+function specialFor(t, n) {
+  const due = firingAbilities(t).filter(a => n % a.every === 0);
+  if (!due.length) return null;
+  return due.reduce((rarest, a) => (a.every > rarest.every ? a : rarest));
 }
 
 // A tower whose reload is ANIMATED, so the rules and the pictures have to agree.
@@ -298,6 +363,12 @@ function shoot(state, t, target, special) {
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
     splash: t.def.splash || 0,
+    // Whether the mark over the target's head stays up while this is in the air.
+    // Set from the ABILITY rather than from the ammunition, because the mark is
+    // about the announcement — the wind-up above — and not about the ball. It ends
+    // when the shot does: render.js draws it for every marked shot still in flight,
+    // and a shot that lands is a shot off the list.
+    marked: !!(special && special.lock),
     ammo,
     speed: ammo.speed
   };

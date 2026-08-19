@@ -267,11 +267,17 @@ The eight glyphs, with the code names they replace:
 | `refund`   | take the tower down for gold           |
 
 And the four ability buttons, which are whole buttons rather than glyphs — see the
-section above. They carry `150g` until they are bought and a **gold ring** round
-the disc afterwards, drawn 2.5px outside it so the stroke lands on the grass rather
-than half under the artist's own black outline. An owned button is not dimmed: it
-is on the ring to say what this tower does, and greying it would read as *you
-cannot have this* when the answer is *you already do*.
+section above. They carry `150g` in **plain white** until they are bought and a
+**gold ring** round the disc afterwards, drawn 2.5px outside it so the stroke lands
+on the grass rather than half under the artist's own black outline. An owned button
+is not dimmed: it is on the ring to say what this tower does, and greying it would
+read as *you cannot have this* when the answer is *you already do*.
+
+The white price sat on a dark rounded plate of its own for one build, on the
+reasoning that text over artwork needs something behind it. The artist took it off,
+and they were right: the disc is already a flat, dark, even blue, so the plate was
+solving a problem the drawing does not have and read as a label stuck on the button
+rather than as part of it.
 
 ## Four things that will cost you a redraw if ignored
 
@@ -446,16 +452,42 @@ sheet drawn in code, and every picture on it is the board's own — buildings fr
 `assets/towers`, men from `assets/units`, enemies from `assets/enemies`, and on the
 last page the ability buttons from this folder.
 
-**The abilities page is the one with prose on it**, and that is the only thing
-about it that differs. Same cards, same grid, same one 4px gap both ways; but an
-ability has no health and no damage to put in a row of icons, it has a sentence.
-So the two stat rows are replaced by two lines at 9px on a 12px pitch, against the
-11px the names are set in — a sentence at the names' size runs off a 155px column
-after about fourteen characters. `tools/book.mjs` measures the longest line in the
-game against that column rather than trusting the eye.
+**The abilities page uses the same card as everything else**: a name, the tower
+that teaches it underneath, and a price on an icon row — exactly a tower card. It
+carried two lines of prose in a smaller face for one build, which made it the one
+box in the book laid out differently from the rest, and a reference page whose
+boxes are two shapes reads as two kinds of thing however well the grid lines up.
+
+The explaining moved to the **pop-up**, which is where there is room for it: an
+ability opens with two or three paragraphs beside its picture rather than the
+picture alone. That is the right way round for what an ability is — a rule rather
+than a thing, whose drawing says almost nothing on its own — and the text is in
+`detail` on each entry in `src/data/abilities.js`, wrapped at draw time into a
+340px column at 12px on a 17px pitch. `tools/book.mjs` estimates the same wrap and
+fails if any of them would need more than twelve lines.
 
 Its pictures are clipped to a circle, for the same reason the menu buttons are: the
 files carry an opaque white background outside the disc.
+
+### The pop-up is as big as the screen can honestly show
+
+Tapping a card opens the drawing on a plate of its own, one plate per kind, sized
+to the biggest member of that kind. The factor it is drawn at is **capped by the
+display**, and that is the part worth understanding before changing anything here.
+
+The board is 960 x 540 logical units and the canvas behind it is drawn at up to
+three times that — see `fitToDisplay` in `src/main.js`. On a laptop one logical
+pixel is one real one; on a 2560-wide monitor it is 2.67. So a drawing shown at
+"1:1" in logical units is being blown up 2.67 times on the glass, which is exactly
+what was reported: the pop-up looked crisp on a laptop and soft on a big screen,
+and the box was the same size in both.
+
+So the plate now asks how big the canvas actually is and never draws a source pixel
+smaller than a screen pixel. **The cost is real**: on that 2560-wide monitor the cap
+is 0.375, so a figure opens at about 67px rather than 179 and a tower at 177 x 198
+rather than 286 x 320. The art is 512px square with a man filling 180 of it — there
+is no more resolution to show, and the only route to a bigger crisp pop-up is bigger
+source art. `tools/book.mjs` checks every plate at both ends of the range.
 
 ### One margin, everywhere — inside the cards, and around the pictures
 

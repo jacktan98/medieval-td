@@ -38,9 +38,10 @@ Elsewhere, but the Musketeer Post's: `units/Musketeer_Default.png` and
 one upgrade button in the game that shows what it buys rather than an arrow), and
 four clips — `audio/sfx/Musketeer_shot.mp3`, `audio/sfx/Musketeer_kill_enemy.mp3`
 and two voice lines. Plus its two abilities: `units/Musketeer_Deadeye.png`,
-`projectiles/Musketeer_Deadeye_Bullet.png`, `audio/sfx/Musketeer_Deadeye.mp3` and
-the two button faces `ui/Musketeer_Burst_Fire_Icon.png` and
-`ui/Musketeer_Deadeye_Icon.png`.
+`projectiles/Musketeer_Deadeye_Bullet.png`, `audio/sfx/Musketeer_Deadeye.mp3`,
+`effects/Musketeer_Target_Locked.png` (the crosshair Deadeye paints over its man a
+second before it fires) and the two button faces
+`ui/Musketeer_Burst_Fire_Icon.png` and `ui/Musketeer_Deadeye_Icon.png`.
 
 Elsewhere, but the Paladin Keep's: `units/Paladin_Default.png` and `_Attack`,
 `dead/Paladin_Dead.png`, `ui/Paladin_Keep_Icon.png`, and four clips —

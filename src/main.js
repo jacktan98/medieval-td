@@ -14,7 +14,7 @@ import { updateSplats } from './blood.js';
 import { updateImpacts } from './impacts.js';
 import { updateSmoke } from './smoke.js';
 import { updateWaves } from './waves.js';
-import { draw, tierMarks } from './render.js';
+import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 
@@ -47,6 +47,11 @@ function fitToDisplay() {
     canvas.height = h;
   }
   ctx.setTransform(w / 960, 0, 0, h / 540, 0, 0);
+  // Tell the renderer how many real pixels a logical one is worth. Exactly one
+  // thing reads it — the encyclopedia's pop-up, which promises to show art at its
+  // own resolution and cannot keep that promise without knowing. Pushed rather
+  // than imported: this module already imports render.js.
+  setDeviceScale(scale);
 }
 
 const state = {};

@@ -393,10 +393,12 @@ function run(state, item) {
       // do — though nothing in the game can upgrade INTO an ability today, since
       // only tier 4 offers any and tier 4 is the top of every ladder.
       abilities: [],
-      shots: 0,       // ordinary and special alike, for whose turn it is
+      shots: 0,       // ordinary and special alike, for whose cycle is due
       special: null,  // the ability currently being fired or held
       burst: 0,       // balls still to leave in this burst
       burstT: 0,
+      hit: [],        // who this burst has already hit, so the next ball picks somebody else
+      locked: null,   // the man Deadeye has painted, during its second of wind-up
       hold: 0         // seconds committed to a special pose: no shot, no swap
     });
     const built = state.towers[state.towers.length - 1];

@@ -366,12 +366,15 @@ export function enemyCards() {
 // the enemies do. Four abilities today, so one row of four; a fifth would start
 // the second row without anything here changing.
 //
-// What is inside the card is not the same, and it is the one page where that is
-// true: an ability has no health and no damage to put in a row of icons, it has a
-// SENTENCE. So the two stat rows are replaced by two lines of prose in a smaller
-// face — the artist asked for the smaller size along with the description, which
-// is the right pairing: a sentence at the stat rows' 11px would not fit the card
-// and would read as a heading.
+// AND WHAT IS INSIDE IT IS THE SAME SHAPE TOO. It carried two lines of prose for
+// one build and the artist asked for it to match the rest of the book instead, so
+// it is now a tower card exactly: a name, the thing it belongs to underneath, and
+// a price on an icon row. Four pages of one card is the whole point of the layout,
+// and a page whose boxes are laid out differently reads as a different kind of
+// thing however well the grid lines up.
+//
+// The explaining moved to the POP-UP, which is where there is room for it — see
+// `detail` in data/abilities.js.
 export function abilityCards() {
   return ABILITIES.map((def, i) => ({
     def, ...shelfRect(i % COLUMNS, Math.floor(i / COLUMNS))
@@ -384,7 +387,7 @@ export function abilityCards() {
 //
 // 44 against the card's 60 leaves 8px of air above and below, which is the same
 // air AIR keeps around a building on the towers page. It sits in a box the width
-// of TOWER_BOX so the text column starts in the same place on both pages.
+// of TOWER_BOX so the text column starts in the same place on every page.
 export const ABILITY_ICON = 44;
 export const ICON_BOX = { x: 6, y: 0, w: 48, h: SLOT_H };
 
@@ -488,7 +491,12 @@ function artAt(state, x, y) {
         // pop-up has to clip it exactly as the menu button does. See the `plate`
         // entries in data/ui.js.
         return { sprite: c.def.icon, trim: ui[c.def.icon].trim,
-                 title: c.def.name, kind: 'ability', round: true };
+                 title: c.def.name, kind: 'ability', round: true,
+                 // The paragraphs that go beside the picture. An ability is a RULE
+                 // rather than a thing, so its drawing says almost nothing on its
+                 // own — a tower opens as a portrait and this opens as an
+                 // explanation with a badge next to it.
+                 detail: c.def.detail };
       }
     }
     return null;
@@ -559,14 +567,15 @@ const POP_BOX = { w: 720, h: 400 };
 // mean" is not "what does this man look like".
 const POP_SHRINK = { tower: 0.8, figure: 1, ability: 1 };
 
-function popGroup(trims, shrink) {
-  const w = Math.max(...trims.map(t => t[2]));
-  const h = Math.max(...trims.map(t => t[3]));
-  const k = Math.min(1, POP_BOX.w / w, POP_BOX.h / h) * shrink;
-  return { k, w: w * k, h: h * k };
-}
+const popGroup = (trims, shrink) => ({
+  w: Math.max(...trims.map(t => t[2])),
+  h: Math.max(...trims.map(t => t[3])),
+  shrink
+});
 
-export const POP = {
+// The three groups, as the raw source extents of the biggest drawing in each.
+// The FACTOR is not decided here — see popSlot.
+export const POP_GROUPS = {
   tower: popGroup(TIERS.map(d => d.spriteTrim), POP_SHRINK.tower),
   // The men and the enemies together. They are the same kind of drawing at the
   // same scale, and the enemies page is as much a card of figures as the units
@@ -576,6 +585,32 @@ export const POP = {
                     ...Object.values(enemyTypes).map(d => d.spriteTrim)], POP_SHRINK.figure),
   ability: popGroup(ABILITIES.map(a => ui[a.icon].trim), POP_SHRINK.ability)
 };
+
+// THE PLATE FOR A KIND, GIVEN WHAT THE DISPLAY CAN SHOW.
+//
+// `cap` is the largest factor at which one source pixel is still at least one
+// SCREEN pixel, and it is the whole reason this is a function rather than a
+// constant. The board is 960x540 logical units and the canvas behind it is drawn
+// at up to 3x that — see fitToDisplay in src/main.js — so on a wide monitor one
+// logical pixel is two or three real ones, and a drawing shown at "1:1" in logical
+// units is being blown up two or three times on the glass. That is exactly what
+// the artist reported: the pop-up looked crisp on a laptop and soft on a big
+// screen, and the box was the same size in both.
+//
+// So the caller passes 1 / (the canvas scale in force) and the plate is as big as
+// it can be without inventing a pixel. The cost is real and worth stating plainly:
+// on a 2560-wide monitor the canvas runs at 2.67x, so the cap is 0.375 and a
+// figure opens at about 67px rather than 179. The art is 512px square with a man
+// filling 180 of it; there is no more resolution to show, and the only way to a
+// bigger crisp pop-up is bigger source art.
+//
+// Everything else still applies underneath: the ceiling box, the per-kind shrink,
+// and never an upscale past 1:1 even on a display that could take one.
+export function popSlot(kind, cap = 1) {
+  const g = POP_GROUPS[kind] || POP_GROUPS.figure;
+  const k = Math.min(1, cap, POP_BOX.w / g.w, POP_BOX.h / g.h) * g.shrink;
+  return { k, w: g.w * k, h: g.h * k };
+}
 
 // --- what a card says --------------------------------------------------------
 
@@ -632,8 +667,10 @@ export function abilityEntry(def) {
     title: def.name,
     sprite: def.icon,
     trim: ui[def.icon].trim,
+    // The tower that teaches it, in the row a tower card gives to the man it
+    // musters. Same slot, same question: what is this attached to.
     of: def.of,
     cost: def.cost,
-    lines: def.lines
+    detail: def.detail
   };
 }

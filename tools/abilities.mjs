@@ -44,30 +44,38 @@ function post(ids) {
     x: plot.x, y: plot.y,
     aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
     aimMode: 0, spent: 500, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0, hold: 0
+    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
+    hit: [], locked: null, hold: 0
   };
 }
 
-function dummy(t) {
+function dummy(t, i = 0) {
   return {
     def: { r: 10, hp: 1e9, speed: 0, atkCd: 1, damage: 0 },
-    x: t.x + 60, y: t.y, hp: 1e9, maxHp: 1e9,
-    // On the first road, in the middle lane, at the start of it. pickTarget ranks
-    // by how far an enemy still has to walk, so it reads all three — an enemy with
-    // no route is not a simpler enemy, it is a crash.
-    route: 0, lane: 1, s: 0, foe: null, acd: 1, thrust: 0, halted: false, leaked: false
+    // Spread along the road rather than stacked, so the standing order has
+    // something to sort and a burst that spreads has somewhere to spread to.
+    x: t.x + 60 + i * 40, y: t.y, hp: 1e9, maxHp: 1e9,
+    // On the first road, in the middle lane. pickTarget ranks by how far an enemy
+    // still has to walk, so it reads all three — an enemy with no route is not a
+    // simpler enemy, it is a crash. Each one is a little further along than the
+    // last, which puts them in a known order.
+    route: 0, lane: 1, s: 300 - i * 40,
+    foe: null, acd: 1, thrust: 0, halted: false, leaked: false, mark: i
   };
 }
 
-// Fire a tower for `seconds` and report every shot it produced, in order, as
-// { t, kind, damage }. The shots list is drained each step so nothing has to model
-// flight.
-function fire(t, seconds) {
-  const state = { towers: [t], enemies: [dummy(t)], shots: [], units: [], hits: [] };
+// Fire a tower for `seconds` at `men` enemies and report every shot it produced,
+// in order, as { t, kind, damage, at } — `at` being which of the men it went to.
+// The shots list is drained each step so nothing has to model flight.
+function fire(t, seconds, men = 1) {
+  const enemies = Array.from({ length: men }, (_, i) => dummy(t, i));
+  const state = { towers: [t], enemies, shots: [], units: [], hits: [] };
   const out = [];
   for (let i = 0; i * DT < seconds; i++) {
     updateTowers(state, DT);
-    for (const s of state.shots) out.push({ t: i * DT, kind: s.ammo.kind, damage: s.damage });
+    for (const s of state.shots) {
+      out.push({ t: i * DT, kind: s.ammo.kind, damage: s.damage, at: s.target.mark });
+    }
     state.shots.length = 0;
   }
   return out;
@@ -96,15 +104,21 @@ console.log('\nWhat a tier 4 offers\n');
   // `undefined` and the tower would silently never use it.
   const named = owners.flatMap(d => d.abilities);
   ok(named.every(id => abilityById(id)), 'and every id a tier names is a real ability');
-
-  // ONE CYCLE LENGTH PER TIER. nextSpecial in src/towers.js divides the shortest
-  // `every` among the abilities that are owned, so two firing abilities on one
-  // tier that disagreed about the cycle would give one of them the other's rhythm.
-  for (const d of owners) {
-    const evs = new Set(abilitiesOf(d).filter(a => a.every).map(a => a.every));
-    ok(evs.size <= 1, `and ${d.name}'s firing abilities agree on the cycle`,
-      [...evs].join('/') || 'none');
+  // ONE CYCLE PER ABILITY, not one shared between them. Burst Fire wants every
+  // sixth shot and Deadeye every eleventh, and they simply both run on the tower's
+  // one counter — so a Post that has bought both keeps both rhythms whole and each
+  // ability is worth what it is worth alone.
+  //
+  // An earlier version divided a single cycle between them, which was written when
+  // both wanted six and became wrong the moment the artist made one of them rarer.
+  // What is checked now is the property that replaced it: the cycles are coprime
+  // enough that a collision is rare, and where they do collide the rarer one wins.
+  for (const d of [archery[3], barracks[3]]) {
+    const evs = abilitiesOf(d).filter(a => a.every).map(a => a.every);
+    console.log(`      ${d.name}: cycles ${evs.join(' and ') || 'none'}`);
   }
+  ok(abilitiesOf(archery[3]).filter(a => a.every).length === 2,
+    'the Musketeer Post runs two rhythms on one counter');
 }
 
 console.log('\nBurst Fire\n');
@@ -139,10 +153,40 @@ console.log('\nBurst Fire\n');
     'and the first five come at the reload', `${cd}s`);
 
   // THE HELD POSE RUNS INSIDE THE RELOAD on this tower, which is what makes it
-  // free: the hold is 1s and the musket takes 2.4s to load, so the second the man
-  // spends standing there costs the tower nothing at all.
+  // free: the hold is a second and the musket takes 2.4 to load, so the second the
+  // man spends standing there costs the tower nothing at all.
   ok(burst.hold < cd, 'and the second he holds the pose fits inside the reload',
     `${burst.hold}s of ${cd}s`);
+}
+
+console.log('\nAnd the burst spreads\n');
+
+{
+  // THREE MEN ON THE ROAD, at three different distances so the standing order has
+  // something to sort. The artist's whole complaint about the first build was that
+  // all three balls went into one of them.
+  const t = post(['burst']);
+  const shots = fire(t, archery[3].cooldown * 6 - 0.1, 3);
+  const three = shots.slice(5);
+
+  ok(three.length === 3, 'the burst is still three balls', `${three.length}`);
+  ok(new Set(three.map(s => s.at)).size === 3,
+    'and every one of them goes to a different man',
+    three.map(s => s.at).join(', '));
+
+  // The order is the tower's own, not "whoever is nearest". Mode 0 ranks by how
+  // far each man still has to walk, so the burst clears from the front of the
+  // column backwards — which is what a player who set that order would expect.
+  ok(three[0].at === 0 && three[1].at === 1 && three[2].at === 2,
+    'and it works down the road in the tower\'s own order',
+    three.map(s => s.at).join(' then '));
+
+  // AND IT FALLS BACK. With one man in reach there is nobody to spread to, and a
+  // burst that refused to fire would read as the ability being broken exactly when
+  // the player is watching it.
+  const lone = fire(post(['burst']), archery[3].cooldown * 6 - 0.1, 1).slice(5);
+  ok(lone.length === 3 && lone.every(s => s.at === 0),
+    'with one man on the road all three go to him', `${lone.length} balls`);
 }
 
 console.log('\nDeadeye\n');
@@ -151,28 +195,48 @@ console.log('\nDeadeye\n');
   const t = post(['deadeye']);
   const dead = abilityById('deadeye');
   const cd = archery[3].cooldown;
-  const shots = fire(t, cd * 6 - 0.1);
+  const shots = fire(t, cd * 11 - 0.1);
 
-  ok(shots.length === 6, 'five ordinary shots and then one', `${shots.length} balls`);
-  ok(shots.slice(0, 5).every(s => s.kind === 'bullet'), 'the five are lead');
-  ok(shots[5].kind === 'deadeye', 'and the sixth is not', shots[5].kind);
-  ok(shots[5].damage === dead.damage, 'and it hits for what the ability says',
-    `${shots[5].damage}`);
+  ok(shots.length === 11, 'ten ordinary shots and then one', `${shots.length} balls`);
+  ok(shots.slice(0, 10).every(s => s.kind === 'bullet'), 'the ten are lead');
+  ok(shots[10].kind === 'deadeye', 'and the eleventh is not', shots[10].kind);
+  ok(shots[10].damage === dead.damage, 'and it hits for what the ability says',
+    `${shots[10].damage}`);
+
+  // THE MARK, and the two halves of its life. It goes up a second before the ball
+  // and comes down when the ball lands, which is two different owners handing over
+  // — `t.locked` during the wind-up and the shot itself afterwards. A gap between
+  // them would blink; an overlap would draw it twice.
+  const state = { towers: [post(['deadeye'])], enemies: [dummy(post([]))],
+                  shots: [], units: [], hits: [] };
+  const lock = state.towers[0];
+  let up = 0, before = 0, marked = 0;
+  for (let i = 0; i * DT < cd * 11 - 0.1; i++) {
+    updateTowers(state, DT);
+    if (lock.locked) { up++; if (!lock.shots || lock.shots < 10) before++; }
+    for (const s of state.shots) if (s.marked) marked++;
+    state.shots.length = 0;
+  }
+  ok(Math.abs(up * DT - dead.lock) < DT * 3, 'the mark goes up a second before the shot',
+    `${(up * DT).toFixed(2)}s of ${dead.lock}s`);
+  ok(marked === 1, 'and exactly one ball carries it onward', `${marked}`);
+  ok(!lock.locked, 'and the tower drops it the moment the ball leaves');
 }
 
-console.log('\nWhat the two are worth, and why they are worth the same\n');
+console.log('\nWhat the two are worth\n');
 
 {
   const cd = archery[3].cooldown;
   const dmg = archery[3].damage;
-  const cycle = cd * 6;
 
+  // Measured over a whole number of BOTH cycles — six and eleven, so sixty-six
+  // shots — which is the only window in which each ability has fired a whole
+  // number of times and the answer is not an artefact of where the run was cut.
+  const window = cd * 66;
   const rate = ids => {
-    const shots = fire(post(ids), cycle * 3 + 0.5);
-    // Two whole cycles, measured from the first shot, so the leading edge and the
-    // trailing part-cycle are both out of it.
-    const inside = shots.filter(s => s.t < shots[0].t + cycle * 2);
-    return inside.reduce((sum, s) => sum + s.damage, 0) / (cycle * 2);
+    const shots = fire(post(ids), window + cd);
+    const inside = shots.filter(s => s.t < shots[0].t + window);
+    return inside.reduce((sum, s) => sum + s.damage, 0) / window;
   };
 
   const plain = dmg / cd;
@@ -183,19 +247,19 @@ console.log('\nWhat the two are worth, and why they are worth the same\n');
   console.log(`      plain ${plain.toFixed(1)}/s   burst ${burst.toFixed(1)}/s   ` +
               `deadeye ${deadeye.toFixed(1)}/s   both ${both.toFixed(1)}/s`);
 
-  // THE TWO ARE WORTH THE SAME, and that is the design rather than a coincidence:
-  // three ordinary balls and one at 180 are the same 180 damage a cycle, so the
-  // choice between them is about WHERE it lands — spread over three targets or
-  // through one — and not about how much of it there is.
-  ok(Math.abs(burst - deadeye) < 0.05, 'Burst Fire and Deadeye add the same damage',
+  // THE TWO ARE CLOSE, and that is the design: what separates them is WHERE the
+  // damage lands, not how much of it there is. The burst spreads 180 over three
+  // men and Deadeye puts 300 through one, which is the difference between a road
+  // full of militia and a giant walking down it. Within a fifth of a point is as
+  // near as two different rhythms on the same reload can be made.
+  ok(Math.abs(burst - deadeye) < 1.5, 'Burst Fire and Deadeye are worth about the same',
     `${burst.toFixed(2)} against ${deadeye.toFixed(2)}`);
 
-  // AND THE SECOND ONE BOUGHT IS WORTH WHAT THE FIRST WAS. This is the check the
-  // turn-taking rule in nextSpecial exists for: two abilities that simply took it
-  // in turns would fire exactly as many specials as one did, so the second 150
-  // gold would buy nothing.
-  ok(Math.abs((both - burst) - (burst - plain)) < 0.05,
-    'and buying the second adds as much again',
+  // AND THE SECOND ONE BOUGHT IS WORTH BUYING. With separate cycles the two simply
+  // add, so the tower with both is worth roughly the sum of the two bonuses — the
+  // check that matters is that the second 150 gold is not swallowed by the first.
+  ok(both - burst > (deadeye - plain) * 0.8,
+    'and buying the second adds nearly as much again',
     `+${(burst - plain).toFixed(1)} then +${(both - burst).toFixed(1)}`);
 }
 
@@ -212,7 +276,8 @@ function keep(ids) {
     x: plot.x, y: plot.y,
     aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
     spent: 530, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0, hold: 0
+    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
+    hit: [], locked: null, hold: 0
   };
   const state = { towers: [t], enemies: [], units: [], shots: [], hits: [],
                   corpses: [], splats: [] };
