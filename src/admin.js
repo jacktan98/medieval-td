@@ -37,6 +37,17 @@
 // TO CHANGE IT, change this constant. Four digits, as a string.
 export const PIN = '1349';
 
+// A SECOND CODE ON THE SAME KEYPAD, and it is not a second dashboard: it walks out
+// of this game entirely and into `birthday/`, which is a separate page with a
+// separate loop and separate rules that happens to live in the same repository.
+//
+// It is a door and nothing more. Nothing in that folder is imported here, nothing
+// here is imported there, and the whole of this game's involvement is the three
+// lines in tapAdmin that read this constant — so the mini-game can be deleted, or
+// left to rot, without a single other line of this project changing.
+export const PARTY_PIN = '2208';
+export const PARTY_HREF = 'birthday/';
+
 import { levels } from './level.js';
 import { enemyTypes } from './data/waves.js';
 import { families } from './data/towers.js';
@@ -465,6 +476,12 @@ export function tapAdmin(state, x, y, restart) {
 
       if (a.typed.length === PIN.length) {
         if (a.typed === PIN) { a.stage = 'board'; a.typed = ''; }
+        // The door out. Guarded on `location` existing because this module is
+        // imported by tools/admin.mjs, which runs in Node — the same reason the
+        // localStorage access at the top of this file is wrapped.
+        else if (a.typed === PARTY_PIN && typeof location !== 'undefined') {
+          location.href = PARTY_HREF;
+        }
         else { a.wrong = true; a.typed = ''; }
       }
       return true;
