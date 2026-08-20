@@ -1,7 +1,7 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
-import { play, SHOT, ARCANE, MUSKET, DEADEYE } from './audio.js';
+import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT } from './audio.js';
 
 // What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
 // projectiles.js, and it is a table for the same reason that one is: "what does
@@ -14,7 +14,7 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE } from './audio.js';
 // `deadeye` is the fourth row and it is why the table earns its keep: an ability
 // arrived with a projectile of its own, and giving it a voice was one line here
 // rather than a branch in shoot().
-const FIRING = { arrow: SHOT, arcane: ARCANE, bullet: MUSKET, deadeye: DEADEYE };
+const FIRING = { arrow: SHOT, arcane: ARCANE, bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
@@ -57,6 +57,25 @@ export function buildingFlip(t) {
   return (t.face || drawn) === drawn ? 1 : -1;
 }
 
+// WHERE THE MACHINE ON A TURRET IS DRAWN, given the box its base occupies.
+//
+// One helper for two callers that must not disagree: the board draws the turret
+// from towerBox and the encyclopedia draws it into a card slot, and in both the
+// machine has to stand on the same spot of the same roof at the same scale. The
+// box is whatever the base was drawn at, so the machine is scaled by the ratio
+// rather than by SCALE — a card that shrinks the turret shrinks the ballista on
+// top of it by exactly as much.
+//
+// `x` is the machine's standing point, which is also the line it mirrors about.
+export function machineBox(def, box) {
+  const m = def.machine;
+  const x = box.left + box.w * def.mountFrac[0];
+  const y = box.top + box.h * def.mountFrac[1];
+  const w = m.w * (box.w / def.w);
+  const h = m.h * (box.h / def.h);
+  return { x, y, left: x - m.pivot[0] * w, top: y - m.pivot[1] * h, w, h };
+}
+
 // Where the gunner stands: the centre of the building's platform. Held as a
 // fraction of the box rather than a pixel offset, so it follows w/h when a
 // tier is resized instead of drifting off the deck.
@@ -73,6 +92,20 @@ export function mountPoint(t) {
     x: buildingFlip(t) < 0 ? 2 * t.x - x : x,
     y: box.top + box.h * t.def.mountFrac[1]
   };
+}
+
+// Whether the MACHINE on a turret is drawn mirrored: -1 if it is, 1 if not.
+//
+// The same question buildingFlip asks about a whole building, asked about the
+// half of a tier 4 that turns. The stone underneath it never flips — see the
+// note on `ballista` in data/towers.js — so the two cannot be the same call.
+//
+// `t.face` is latched once a cycle in stepCrew, exactly as it is for the
+// catapults, so a machine cannot turn between loading and loosing.
+export function machineFlip(t) {
+  const m = t.def.machine;
+  if (!m) return 1;
+  return (t.face || m.faces) === m.faces ? 1 : -1;
 }
 
 // Which side the target is on: +1 to the right, -1 to the left.
@@ -98,8 +131,19 @@ export function muzzlePoint(t) {
   const m = mountPoint(t);
   const [out, up] = t.def.muzzle;
 
+  // `out` is measured toward the target for a gunner — an archer's bow arm is on
+  // the side he is shooting at, so it simply follows `facing`.
+  //
+  // A MACHINE'S IS MEASURED IN ITS OWN DRAWING, and that is a different sum in
+  // two ways. The ballista's rail tip sits to the RIGHT of the post it stands on
+  // while the machine is drawn shooting LEFT, so the release point is on the far
+  // side from the target; and the machine's direction is LATCHED once a cycle
+  // rather than followed every frame, so it is the mirror that decides and not
+  // where the target has wandered to since. machineFlip answers both at once.
+  const side = t.def.machine ? machineFlip(t) : facing(t);
+
   return {
-    x: m.x + out * facing(t),
+    x: m.x + out * side,
     y: m.y + up
   };
 }
@@ -111,8 +155,19 @@ export function muzzlePoint(t) {
 // out of step with the rule that drives it — there is one clock, `beat`, and the
 // picture is a function of it.
 export function frameOf(t) {
-  return t.def.frames ? t.def.frames[t.beat || 0] : t.def.sprite;
+  const f = framesOf(t.def);
+  return f ? f[t.beat || 0] : t.def.sprite;
 }
+
+// The animation frames a def owns, or null for a building with one picture.
+// Tiers 1 to 3 hold them directly; tier 4 holds them on the MACHINE that stands
+// on its turret, because the turret itself never moves.
+export const framesOf = def => (def.machine ? def.machine.frames : def.frames) || null;
+
+// How long each beat holds, and a tier may have its own. The three catapults
+// share BEATS; the ballista is the same three beats at 60% of the length, which
+// is what "faster reload" is in a family whose cooldown IS its animation.
+export const beatsOf = def => def.beats || BEATS;
 
 // The three beats of a catapult, in order. The index into `def.frames`, and into
 // BEATS for how long each one holds.
@@ -129,7 +184,7 @@ export function updateTowers(state, dt) {
     const target = pickTarget(state.enemies, t.x, t.y, t.def.range, t.def.minRange, t.aimMode);
     if (target) t.aim = Math.atan2(target.y - t.y, target.x - t.x);
 
-    if (t.def.frames) stepCrew(state, t, dt, target);
+    if (framesOf(t.def)) stepCrew(state, t, dt, target);
     else stepWeapon(state, t, dt, target);
   }
 }
@@ -321,8 +376,8 @@ function stepCrew(state, t, dt, target) {
     return;
   }
 
-  t.beat = (t.beat + 1) % t.def.frames.length;
-  t.beatT = BEATS[t.beat];
+  t.beat = (t.beat + 1) % framesOf(t.def).length;
+  t.beatT = beatsOf(t.def)[t.beat];
 
   // WHICH WAY THE MACHINE FACES IS DECIDED HERE AND NOWHERE ELSE — once per
   // cycle, on the beat the crew starts loading, and then held through the throw

@@ -21,6 +21,11 @@ nothing else.
 | Musketeer          | `Musketeer_Default`                | `Musketeer_Attack`                |
 | Paladin            | `Paladin_Default`                  | `Paladin_Attack`                  |
 
+An artillery crewman is the exception to the two-pose rule: he is drawn into all
+three of his machine's frames already, so his file is a PORTRAIT with no Attack
+beside it — `Artillery_Man_T1/2/3` and, for the Ballista Turret, `Ballista_Engineer`.
+The info box and the encyclopedia are the only things that ever draw them.
+
 ### And a third drawing where an ability needs one
 
 Three men carry an extra pose that only appears if the player has bought the

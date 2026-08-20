@@ -135,6 +135,9 @@ export const ui = {
   // neither a size of its own nor a nudge. The musket above is the exception here,
   // not the pattern a tier 4 icon follows.
   glyph_keep:   { trim: [215, 214, 82, 84], fit: GLYPH_BOX },
+  // The Ballista Turret's, the third tier icon and an ordinary one like the
+  // Keep's: 108x110 source is square enough for the shared box.
+  glyph_ballista: { trim: [202, 201, 108, 110], fit: GLYPH_BOX },
   // THE FOUR ABILITY BUTTONS, and they are the only entries here that are a whole
   // BUTTON rather than a mark to put on one.
   //
@@ -266,6 +269,7 @@ export const GLYPH_ART = {
   up: 'glyph_up',
   musket: 'glyph_musket',
   keep: 'glyph_keep',
+  ballista: 'glyph_ballista',
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',

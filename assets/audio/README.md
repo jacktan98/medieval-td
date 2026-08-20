@@ -4,12 +4,13 @@
 assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
                       Rock_hit_ground, Rock_kill_enemy, Arcane_shot,
                       Musketeer_shot, Musketeer_kill_enemy,
+                      Ballista_Bolt_shot, Ballista_kill_enemy,
                       Paladin_attack, Paladin_kill_enemy,
                       Flask_Break, Sell_Tower, Select_Sound,
                       Thug_dies, Soldier_dies
 assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5,
-                      Monastery_1..5, Musketeer_1..2, Paladin_1..2,
-                      Thug_1
+                      Monastery_1..5, Musketeer_1..3, Paladin_1..3,
+                      Ballista_Engineer_1..3, Thug_1
 ```
 
 All recorded and all wired. `node tools/audio.mjs` measures
@@ -110,14 +111,16 @@ and it now means "how long a lull has to be before the game forgets".
 | a barracks is **built or upgraded** | `Barracks_1..5` |
 | an artillery tower is **built or upgraded** | `Artillery_1..5` |
 | a monastery is **built or upgraded** | `Monastery_1..5` |
-| a **Musketeer Post** is built, upgraded to, or given an order | `Musketeer_1..2` |
-| a **Paladin Keep** is built, upgraded to, or given a rally point | `Paladin_1..2` |
-| a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..2` |
+| a **Musketeer Post** is built, upgraded to, or given an order | `Musketeer_1..3` |
+| a **Paladin Keep** is built, upgraded to, or given a rally point | `Paladin_1..3` |
+| a **Ballista Turret** is built or upgraded to | `Ballista_Engineer_1..3` |
+| a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..3` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
 | an arrow kills an enemy | `Arrow_kill_enemy` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |
+| a **bolt** kills an enemy | `Ballista_kill_enemy` |
 | a **paladin** kills an enemy | `Paladin_kill_enemy` |
 | any other barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
@@ -129,10 +132,11 @@ and it now means "how long a lull has to be before the game forgets".
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
+| **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
 | **a paladin's tenth blow lands** — Category B | `Paladin_Holy_Slash` |
-| an ability is **unlocked** | that tower's own voice — `Musketeer_1..2` or `Paladin_1..2` |
+| an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |
 
 Everything above the line is Category A and shares the one channel; the ones
 below run on the background bus and play every time.
@@ -172,14 +176,19 @@ voice so far. Silence for the giant would read as a bug rather than as a gap.
 
 **A TIER CAN HAVE ITS OWN VOICE, and the Musketeer Post is the first.** It is an
 archery tower, so by family it would speak with the archers — but it is a named
-tower at the top of the ladder with two lines of its own, so the tier carries a
+tower at the top of the ladder with lines of its own, so the tier carries a
 `voice` field and `familyCue()` prefers it. Everything else about it is unchanged:
-Category A, priority on a build or an order, and the same share rules. Two lines
+Category A, priority on a build or an order, and the same share rules. Three lines
 rather than five simply means they alternate more often.
 
 **The Paladin Keep is the second**, on exactly the same terms, and asking the same
 questions of both is the point: the first one could have been wired by a special
 case for archery, and the second is what says it was not.
+
+**The Ballista Turret is the third**, at the top of the artillery ladder, and it
+arrived with three lines where the other two arrived with two — which needed no
+code at all, because the share rules rotate over whatever a cue holds. The other
+two are three lines each now as well.
 
 A `voice` naming a cue with no clips loaded falls back to the family's, which is the
 same wire-ahead trick the table above is built on — and `node tools/sound.mjs`

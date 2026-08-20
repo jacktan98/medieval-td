@@ -196,6 +196,12 @@ const paths = {
   // data/towers.js — so there is no third.
   musketeer_shot:   'assets/audio/sfx/Musketeer_shot.mp3',
   musketeer_kill_enemy: 'assets/audio/sfx/Musketeer_kill_enemy.mp3',
+  // The ballista. The same pair again, and the third weapon in the game to have
+  // them: the bolt going off every time one is loosed, and a separate line for
+  // the engineer taking a man down. A bolt arriving is silent — see the two flags
+  // on `bolt` in data/towers.js — so there is no third.
+  ballista_shot:    'assets/audio/sfx/Ballista_Bolt_shot.mp3',
+  ballista_kill_enemy: 'assets/audio/sfx/Ballista_kill_enemy.mp3',
   // THE THREE ABILITY SOUNDS, all Category B and all for the same reason the shots
   // and the swings are: they are things that HAPPEN, several can happen at once —
   // three paladins in one squad, two Posts on one map — and a shared channel would
@@ -259,11 +265,20 @@ const paths = {
   // more often than five do. See NO_REPEAT.
   musketeer_1:     'assets/audio/voice/Musketeer_1.mp3',
   musketeer_2:     'assets/audio/voice/Musketeer_2.mp3',
+  musketeer_3:     'assets/audio/voice/Musketeer_3.mp3',
   // The Paladin Keep's own two, on exactly the same terms: a named tier 4 at the
   // top of the barracks ladder, answering when it is built and when it is given a
   // rally point rather than borrowing a barracks line.
   paladin_1:       'assets/audio/voice/Paladin_1.mp3',
-  paladin_2:       'assets/audio/voice/Paladin_2.mp3'
+  paladin_2:       'assets/audio/voice/Paladin_2.mp3',
+  paladin_3:       'assets/audio/voice/Paladin_3.mp3',
+  // The Ballista Turret's own three, the third tier with a voice of its own and
+  // the first to arrive with three rather than two. Nothing special-cases the
+  // count — the share rules rotate over whatever a cue holds — so three simply
+  // repeat less often than two do.
+  ballista_1:      'assets/audio/voice/Ballista_Engineer_1.mp3',
+  ballista_2:      'assets/audio/voice/Ballista_Engineer_2.mp3',
+  ballista_3:      'assets/audio/voice/Ballista_Engineer_3.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -335,9 +350,12 @@ export const CUE = {
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
   // The Musketeer Post's, keyed by the `voice` field on its tier rather than by a
   // family id — see familyCue below.
-  musketeer:    ['musketeer_1', 'musketeer_2'],
+  musketeer:    ['musketeer_1', 'musketeer_2', 'musketeer_3'],
   // The Paladin Keep's, keyed the same way off the `voice` field on its tier.
-  paladin:      ['paladin_1', 'paladin_2'],
+  paladin:      ['paladin_1', 'paladin_2', 'paladin_3'],
+  // The Ballista Turret's, keyed the same way off the `voice` field on artillery
+  // tier 4.
+  ballista:     ['ballista_1', 'ballista_2', 'ballista_3'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -349,6 +367,11 @@ export const CUE = {
   // one: it is a different event to watch — a single shot from clear across the
   // board — and telling the three apart by ear is most of what these are for.
   musketKill:   ['musketeer_kill_enemy'],
+  // A bolt finishing a man, and the fourth thing in the game with its own kill
+  // line. Same reason as the other three: a ballista bolt going through somebody
+  // at close range is a different event to watch than an arrow finding him
+  // across the map, and telling them apart by ear is most of what these are for.
+  ballistaKill: ['ballista_kill_enemy'],
   meleeKill:    ['thug_dies'],
   // A PALADIN finishing a man, split out of meleeKill for the same reason the rock
   // and the ball were split out of the arrow's: it is a different event to watch.
@@ -375,6 +398,10 @@ export const ARCANE = ['arcane_shot'];
 // reason: it is a thing that happens rather than a thing announced, and two posts
 // firing at once are two events the player is watching.
 export const MUSKET = ['musketeer_shot'];
+// A ballista loosing. Category B beside the bow, the staff and the musket, and
+// for the same reason: it is a thing that happens rather than a thing announced,
+// and two turrets firing at once are two events the player is watching.
+export const BOLT = ['ballista_shot'];
 // The three ability sounds, and all three are Category B beside the weapons they
 // belong to. A heavy ball leaving the barrel, a paladin calling the light down on
 // himself, and a paladin's tenth blow. See abilityCue below for how an ability

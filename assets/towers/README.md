@@ -21,6 +21,10 @@ in `src/assets.js`.
 | `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | ALL THREE artillery tiers, at rest    |
 | `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | ALL THREE artillery tiers, loading    |
 | `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | ALL THREE artillery tiers, throwing   |
+| `artillery/Ballista_Turret_Tower.png`  | 1024   | 106 x 127 px | Ballista Turret (4), the stone alone  |
+| `artillery/Ballista_Turret_Default.png`| 1024   | 70 x 47 px   | its machine, at rest                  |
+| `artillery/Ballista_Turret_Reload.png` | 1024   | 62 x 47 px   | its machine, spanning the bow         |
+| `artillery/Ballista_Turret_Fire.png`   | 1024   | 63 x 47 px   | its machine, loosing                  |
 | `monastery/Monastery_Tower_T1.png`     | 1024   | 111 x 116 px | Wayside Shrine (1) |
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
@@ -42,6 +46,35 @@ and two voice lines. Plus its two abilities: `units/Musketeer_Deadeye.png`,
 `effects/Musketeer_Target_Locked.png` (the crosshair Deadeye paints over its man a
 second before it fires) and the two button faces
 `ui/Musketeer_Burst_Fire_Icon.png` and `ui/Musketeer_Deadeye_Icon.png`.
+
+Elsewhere, but the Ballista Turret's: `units/Ballista_Engineer.png` (the man, for
+the info box and the encyclopedia — he is drawn into all three machine frames
+already), `projectiles/Ballista_Turret_Bolt.png`, `ui/Ballista_Turret_Icon.png`,
+and five clips — `audio/sfx/Ballista_Bolt_shot.mp3`,
+`audio/sfx/Ballista_kill_enemy.mp3` and three voice lines. It has no abilities
+yet.
+
+**IT IS THE FIRST BUILDING DRAWN IN TWO PIECES**, and the reason is worth
+keeping. Every other artillery tier is one drawing per beat with the machine, the
+crew and the ground in it, and the WHOLE picture mirrors when the crew swing
+round. A turret cannot do that — a mirrored turret is lit from the wrong side and
+its stonework recedes the wrong way — so the stone is a still drawing that never
+flips and the machine is a second one that animates and turns on top of it.
+
+Two numbers hold them together, both in `src/data/towers.js`: `mountFrac` is
+where the machine stands on the roof, and the machine's own `pivot` is the point
+of its drawing that lands there. That point is also the line it MIRRORS about, so
+the engineer — drawn 175 source px to the right of the ballista — swings to 175px
+on its left when the machine turns, and both positions have to be on stone. The
+mount was searched for rather than eyeballed: source (532, 407) is the point on
+the deck quad where the machine and both engineer positions sit furthest inside
+it, 16 source px each. Put it in the middle of the deck instead and the engineer
+hangs off the back edge by 29px one way and 50px the other.
+
+The battlement block at the deck's NEAREST corner is a `frontPolys` entry, so the
+machine's foot passes behind it exactly as the Musketeer Post's boots pass behind
+its merlon. `tower-test.html?siege` draws the whole ladder facing both ways,
+which is the page to open after any re-export.
 
 Elsewhere, but the Paladin Keep's: `units/Paladin_Default.png` and `_Attack`,
 `dead/Paladin_Dead.png`, `ui/Paladin_Keep_Icon.png`, and four clips —

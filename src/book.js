@@ -633,6 +633,18 @@ export function towerEntry(def, tiers) {
     // The resting frame for an animated building, which `def.sprite` already is
     // — a catapult in the book is not mid-throw.
     art: towerArt(def),
+    // THE MACHINE ON TOP, for the one tier that is drawn in two pieces. The
+    // owner asked for the card to show the turret and the ballista together,
+    // which is also the only honest picture of it: neither half on its own is
+    // the tower.
+    //
+    // The def travels with it because placing a machine on a roof is arithmetic
+    // machineBox already owns, and the card has to use the same arithmetic the
+    // board does or the two would drift. It is the RESTING frame, like every
+    // other card — an encyclopedia is not mid-shot.
+    machine: def.machine
+      ? { def, sprite: def.machine.frames[0], trim: def.machine.trim }
+      : null,
     occupier: `${man.count} x ${man.name}`,
     cost: def.cost,
     refund: refundOf(tiers, def.tier)

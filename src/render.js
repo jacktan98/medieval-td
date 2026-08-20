@@ -6,7 +6,8 @@ import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art } from './assets.js';
-import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip } from './towers.js';
+import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip,
+         machineBox, machineFlip } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -269,6 +270,11 @@ function drawTower(ctx, t) {
 
   drawBuilding(ctx, t, box);
   if (t.def.gunner) drawGunner(ctx, t);
+  // THE MACHINE ON TOP OF A TURRET, between the stone and the stone's front
+  // layer — exactly where a gunner goes, and for the same reason: it stands on
+  // the deck, so the near merlon is in front of it and everything else is
+  // behind. See `ballista` in data/towers.js for why tier 4 is two drawings.
+  if (t.def.machine) drawMachine(ctx, t, box);
   drawBuildingFront(ctx, t, box);
 
   if (flip < 0) ctx.restore();
@@ -548,7 +554,11 @@ function drawBuilding(ctx, t, box) {
   // answers with it. The three share ONE trim — the union of all three boxes —
   // so they register pixel-for-pixel and only what the artist moved appears to
   // move; see CATAPULT_TRIM in data/towers.js.
-  const key = frameOf(t);
+  //
+  // EXCEPT ON A TURRET, where the beats belong to the machine standing on top
+  // and the BUILDING is the stone underneath — one picture, never animated,
+  // never mirrored. drawMachine draws the other half.
+  const key = t.def.machine ? t.def.sprite : frameOf(t);
   const img = key && art[key];
   if (img) {
     const [sx, sy, sw, sh] = t.def.spriteTrim;
@@ -557,6 +567,33 @@ function drawBuilding(ctx, t, box) {
   }
   if (t.def.shape === 'camp') drawCamp(ctx, t, box);
   else drawStoneTower(ctx, t, box);
+}
+
+// The machine a turret carries, drawn on its deck and mirrored to face its
+// target — the only thing in the game that flips while the building under it
+// stays put.
+//
+// MIRRORED ABOUT ITS OWN STANDING POINT rather than about the tower's, which is
+// the difference between this and buildingFlip's whole-building transform: the
+// machine stands on one spot of the roof and turns on it, so that spot is the
+// axis. Flipping about t.x instead would slide it 6px sideways across the deck
+// every time it turned, and the engineer with it.
+function drawMachine(ctx, t, box) {
+  const m = t.def.machine;
+  const img = art[frameOf(t)];
+  if (!img) return;
+
+  const slot = machineBox(t.def, box);
+  const [sx, sy, sw, sh] = m.trim;
+
+  ctx.save();
+  if (machineFlip(t) < 0) {
+    ctx.translate(slot.x, 0);
+    ctx.scale(-1, 1);
+    ctx.translate(-slot.x, 0);
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, slot.left, slot.top, slot.w, slot.h);
+  ctx.restore();
 }
 
 // The bits of the building that stand between the gunner and the camera: the
@@ -1265,10 +1302,19 @@ function drawShots(ctx, state) {
     // `faces` 0 means the drawing has no nose to point anywhere, so it is never
     // turned. A rock rotated to its heading is a rock at a random angle: all the
     // spin and none of the meaning, and it reads as a bug in the arrow code.
-    if (ammo.faces) ctx.rotate(a + (ammo.faces < 0 ? Math.PI : 0));
-    // `grip` is which point of the drawing sits on the flight path — the head of
-    // an arrow, the middle of a rock.
-    ctx.drawImage(img, sx, sy, sw, sh, -dw * ammo.grip, -dh / 2, dw, dh);
+    //
+    // `drawn` is the angle the artwork's own nose already points at, and it is
+    // the general form of the half-turn `faces` asks for: an arrow lying left is
+    // drawn at pi, so the two agree and only the ballista's bolt — drawn
+    // diagonally across its export at 3/4 pi — needs to say so. Turn the canvas
+    // by the difference and the nose lands on the heading whatever the art does.
+    if (ammo.faces) ctx.rotate(a - (ammo.drawn ?? (ammo.faces < 0 ? Math.PI : 0)));
+    // `hold` is which point of the drawing sits on the flight path, in both
+    // axes. `grip` says the same thing for art drawn lying flat and takes the
+    // middle vertically, which is where a horizontal arrow's shaft is; the head
+    // of a diagonal bolt is in a corner instead.
+    const [hx, hy] = ammo.hold || [ammo.grip, 0.5];
+    ctx.drawImage(img, sx, sy, sw, sh, -dw * hx, -dh * hy, dw, dh);
     ctx.restore();
   }
 }
@@ -2654,6 +2700,7 @@ function drawArt(ctx, sprite, trim, b, slot) {
 function towerCard(ctx, b, e) {
   card(ctx, b);
   drawArt(ctx, e.sprite, e.trim, b, e.art);
+  if (e.machine) drawCardMachine(ctx, b, e);
 
   const tx = b.x + TOWER_BOX.x + TOWER_BOX.w + 8;
   const [r1, r2, r3] = rowsIn(b, 3);
@@ -2673,6 +2720,31 @@ function towerCard(ctx, b, e) {
   // prints its own figure in.
   const x = stat(ctx, 'stat_gold_cost', tx, r3, String(e.cost), INK);
   stat(ctx, 'glyph_refund', x + 14, r3, String(e.refund), INK_GREEN);
+}
+
+// The ballista on its turret, in a card. The base has already been drawn into
+// the slot; this works out the box that drawing occupies and hands it to the
+// same machineBox the board uses, so the machine sits on the same spot of the
+// same roof at whatever scale the page happens to be drawn at.
+//
+// Never mirrored here. A card is a portrait of the tower at rest, and the
+// drawing's own direction is the one the artist chose.
+function drawCardMachine(ctx, b, e) {
+  const img = art[e.machine.sprite];
+  const slot = e.art;
+  if (!img || !slot.a) return;
+
+  const dw = slot.w * slot.k;
+  const dh = slot.h * slot.k;
+  const box = {
+    left: b.x + slot.anchor.x - slot.a[0] * dw,
+    top: b.y + slot.anchor.y - slot.a[1] * dh,
+    w: dw,
+    h: dh
+  };
+  const m = machineBox(e.machine.def, box);
+  const [sx, sy, sw, sh] = e.machine.trim;
+  ctx.drawImage(img, sx, sy, sw, sh, m.left, m.top, m.w, m.h);
 }
 
 function unitCard(ctx, b, e) {

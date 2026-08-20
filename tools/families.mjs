@@ -132,8 +132,25 @@ console.log('\nBlast — the one thing only artillery has\n');
   // The dead zone is artillery's alone as well, and it is the other half of what
   // "highest range" costs. A family that reached furthest AND could shoot its own
   // feet would simply be the best tower.
-  ok(siege.every(d => d.minRange > 0), 'and artillery alone has a hole in the middle',
-    `${siege[0].minRange}px`);
+  //
+  // THE LADDER, not every rung of it. Tier 4 gives the hole up — it fires a bolt
+  // rather than lobbing a rock, so there is no arc to clear — and it pays for
+  // that with the shortest reach in the family, 100px less than the trebuchet it
+  // upgrades from. The claim the game actually rests on is that a machine cannot
+  // have BOTH, so it is checked that way round: everything that reaches further
+  // than archery has a hole, and the one tier without a hole reaches less far
+  // than the tier below it.
+  const lobbers = siege.filter(d => d.minRange > 0);
+  const flat = siege.filter(d => !d.minRange);
+  ok(lobbers.length && lobbers.every(d => d.range > Math.max(...archery.slice(0, 3).map(a => a.range))),
+    'the artillery that lobs has a hole in the middle',
+    `${lobbers.map(d => d.minRange).join('/')}px`);
+  ok(flat.every(d => d.range < Math.min(...lobbers.map(l => l.range))),
+    'and the one that does not, reaches least of the family',
+    flat.map(d => `${d.name} ${d.range}`).join(', ') || 'none');
+  const holed = [...archery, ...monastery].filter(d => d.minRange);
+  ok(!holed.length, 'and no other family has a hole at all',
+    holed.map(d => d.title).join(', ') || 'archery and the monastery shoot their own feet');
 }
 
 // --- what the shape actually buys ------------------------------------------------

@@ -276,9 +276,28 @@ const SPRITES = [
   ['assets/units/Soldiers_Bishop_Attack.png',    'bishop.attack.pivot',   mon[1].attack.trim, mon[1].attack.pivot],
   ['assets/units/Soldiers_Cardinal_Default.png', 'cardinal.gunnerPivot',  mon[2].gunnerTrim, mon[2].gunnerPivot],
   ['assets/units/Soldiers_Cardinal_Attack.png',  'cardinal.attack.pivot', mon[2].attack.trim, mon[2].attack.pivot],
+  // TIER 4 IS TWO DRAWINGS AND SO IS ITS SHADOW CHECK. The turret stands on grass
+  // and has the usual dark-green ellipse under it — most of which is hidden
+  // behind the tower itself, which is exactly the occluded case the fit was
+  // written for: the visible blob's middle is 18px below the true centre.
+  //
+  // The MACHINE on top stands on stone, so its shadow is the dark BROWN one a
+  // figure carries rather than the green one a building does — that is why it is
+  // read in figure mode with the machine's own trim and pivot. All three frames
+  // put it on the same pixel, which is what lets the ballista animate without
+  // wandering across the roof.
+  ['assets/towers/artillery/Ballista_Turret_Tower.png', 'ballista.groundFrac',
+    towers.siege[3].spriteTrim, towers.siege[3].groundFrac, 'whole'],
+  ['assets/towers/artillery/Ballista_Turret_Default.png', 'ballista.machine.pivot',
+    towers.siege[3].machine.trim, towers.siege[3].machine.pivot],
+  ['assets/towers/artillery/Ballista_Turret_Reload.png',  'ballista.machine.pivot',
+    towers.siege[3].machine.trim, towers.siege[3].machine.pivot],
+  ['assets/towers/artillery/Ballista_Turret_Fire.png',    'ballista.machine.pivot',
+    towers.siege[3].machine.trim, towers.siege[3].machine.pivot],
   ['assets/units/Artillery_Man_T1.png',     'catapult.portraitPivot', towers.siege[0].portraitTrim, towers.siege[0].portraitPivot],
   ['assets/units/Artillery_Man_T2.png',     'mangonel.portraitPivot',  towers.siege[1].portraitTrim, towers.siege[1].portraitPivot],
   ['assets/units/Artillery_Man_T3.png',     'trebuchet.portraitPivot', towers.siege[2].portraitTrim, towers.siege[2].portraitPivot],
+  ['assets/units/Ballista_Engineer.png',    'ballista.portraitPivot',  towers.siege[3].portraitTrim, towers.siege[3].portraitPivot],
   ['assets/units/Soldiers_Spearman_Default.png',      'spearman.pivot',           spear.spriteTrim, spear.pivot],
   ['assets/units/Soldiers_Spearman_Attack.png',       'spearman.attack.pivot',    spear.attack.trim, spear.attack.pivot],
   ['assets/units/Soldiers_Pikeman_Default.png',       'spearman2.pivot',          spear2.spriteTrim, spear2.pivot],

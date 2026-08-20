@@ -15,7 +15,16 @@
      how to re-measure them.
 
      The cyan crosshair is the archer's mount. His feet belong on it, and it
-     belongs on the deck. -->
+     belongs on the deck.
+
+     ADD ?siege TO THE URL for the artillery ladder instead. Same two rows —
+     facing right and facing left — because artillery is the family that
+     mirrors. Tiers 1 to 3 flip whole; tier 4 is a stone turret that never moves
+     with a machine on top that does, so what to look at there is that the
+     ballista and its engineer stay ON the roof both ways round, and that the
+     merlon at the deck's nearest corner is drawn in FRONT of the machine's
+     foot. The cyan cross on tier 4 is the machine's own standing point, which
+     is also the line it mirrors about. -->
 <style>body{margin:0;background:#23201c}canvas{display:block}</style>
 </head>
 <body>
@@ -42,10 +51,16 @@
 import { loadArt } from './src/assets.js';
 import { draw } from './src/render.js';
 import { mountPoint } from './src/towers.js';
-import { archery, barracks, families } from './src/data/towers.js';
+import { archery, barracks, siege, families } from './src/data/towers.js';
 
 const archeryFam = families.find(f => f.id === 'archery');
 const barracksFam = families.find(f => f.id === 'barracks');
+const siegeFam = families.find(f => f.id === 'siege');
+
+// Which ladder the page is showing. Artillery is the family that mirrors, so it
+// gets the same two rows the archer does — and it needs them more, because a
+// machine pointing the wrong way is the failure this page exists to catch.
+const SIEGE = location.search.includes('siege');
 
 // One column per tier. Rows 1 and 2 are archery aiming each way — aim is what
 // facing() reads, so 0 points the archer right and PI points him left, the two
@@ -57,20 +72,40 @@ const barracksFam = families.find(f => f.id === 'barracks');
 // The three row heights are chosen so the tallest building in each never
 // reaches the row below: 34..187, 194..347, 388..517 on a 540 canvas.
 const towers = [];
-archery.forEach((def, i) => {
-  const x = 200 + i * 260;
-  towers.push({ plot: null, fam: archeryFam, def, x, y: 170, aim: 0,       cd: 0, recoil: 0, spent: 0, rally: null });
-  towers.push({ plot: null, fam: archeryFam, def, x, y: 330, aim: Math.PI, cd: 0, recoil: 0, spent: 0, rally: null });
-});
-barracks.forEach((def, i) => {
-  towers.push({ plot: null, fam: barracksFam, def, x: 200 + i * 260, y: 490, aim: 0, cd: 0, recoil: 0, spent: 0, rally: null });
-});
+if (SIEGE) {
+  // `face` rather than `aim`: a machine's direction is LATCHED once a cycle by
+  // stepCrew rather than followed from the target, so it is `face` the drawing
+  // reads. `beat` 0 is the resting frame every tier has.
+  siege.forEach((def, i) => {
+    const x = 150 + i * 220;
+    towers.push({ plot: null, fam: siegeFam, def, x, y: 190, aim: 0, face: 1,
+                  cd: 0, recoil: 0, beat: 0, beatT: 0, spent: 0, rally: null });
+    towers.push({ plot: null, fam: siegeFam, def, x, y: 420, aim: Math.PI, face: -1,
+                  cd: 0, recoil: 0, beat: 0, beatT: 0, spent: 0, rally: null });
+  });
+} else {
+  archery.forEach((def, i) => {
+    const x = 200 + i * 260;
+    towers.push({ plot: null, fam: archeryFam, def, x, y: 170, aim: 0,       cd: 0, recoil: 0, spent: 0, rally: null });
+    towers.push({ plot: null, fam: archeryFam, def, x, y: 330, aim: Math.PI, cd: 0, recoil: 0, spent: 0, rally: null });
+  });
+  barracks.forEach((def, i) => {
+    towers.push({ plot: null, fam: barracksFam, def, x: 200 + i * 260, y: 490, aim: 0, cd: 0, recoil: 0, spent: 0, rally: null });
+  });
+}
 
 const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
+  // The dashboard reads the map's own wave table for its "Wave n / m" — an
+  // empty one is honest here, since this page has no map and no waves.
+  waves: [],
+  // Two panels the renderer draws when they are anything but null/false, and
+  // this page wants neither: the encyclopedia and the dashboard both cover the
+  // board they would be checked against.
+  book: null, admin: null,
   started: true,          // no title screen on a test page
   resting: false, menu: null, result: null,
-  towers, shots: [], hits: [], splats: [], corpses: [], enemies: [], units: []
+  towers, shots: [], hits: [], splats: [], impacts: [], smoke: [], corpses: [], enemies: [], units: []
 };
 
 const ctx = document.getElementById('game').getContext('2d');
@@ -90,17 +125,23 @@ for (const t of towers) {
     ctx.moveTo(x, y - 7); ctx.lineTo(x, y + 7);
     ctx.stroke();
   };
-  if (t.def.gunner) { const m = mountPoint(t); cross(m.x, m.y, '#00E5FF'); }
+  if (t.def.gunner || t.def.machine) { const m = mountPoint(t); cross(m.x, m.y, '#00E5FF'); }
   cross(t.x, t.y, '#FF3DDC');
 }
 
 ctx.fillStyle = '#F0E6D2';
 ctx.font = '13px system-ui, sans-serif';
-archery.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 195));
-barracks.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 515));
-ctx.fillText('aiming right', 20, 175);
-ctx.fillText('aiming left', 20, 335);
-ctx.fillText('barracks', 20, 495);
+if (SIEGE) {
+  siege.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 100 + i * 220, 215));
+  ctx.fillText('facing right', 8, 100);
+  ctx.fillText('facing left', 8, 330);
+} else {
+  archery.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 195));
+  barracks.forEach((def, i) => ctx.fillText(`${def.tier}. ${def.name}`, 150 + i * 260, 515));
+  ctx.fillText('aiming right', 20, 175);
+  ctx.fillText('aiming left', 20, 335);
+  ctx.fillText('barracks', 20, 495);
+}
 window.ready = true;
 </script>
 </body>

@@ -216,14 +216,18 @@ for (const d of dirs) {
 {
   let bad = 0;
   for (const def of [...archery, ...barracks, ...siege, ...monastery]) {
-    if (!def.frames) continue;
-    const [tx, ty, tw, th] = def.spriteTrim;
-    for (const key of def.frames) {
+    // A tier 4 turret keeps its frames on the MACHINE that stands on it, with a
+    // trim of its own — the stone underneath is a still picture and has its own
+    // box. Same union property either way; only where it is written down moves.
+    const frames = def.machine ? def.machine.frames : def.frames;
+    if (!frames) continue;
+    const [tx, ty, tw, th] = def.machine ? def.machine.trim : def.spriteTrim;
+    for (const key of frames) {
       const file = ASSET_PATHS[key];
       if (!file) { console.log(`\n${def.name}: frame '${key}' has no path in src/assets.js`); bad++; continue; }
       const t = trim(decode(readFileSync(file)));
       if (t[0] >= tx && t[1] >= ty && t[0] + t[2] <= tx + tw && t[1] + t[3] <= ty + th) continue;
-      console.log(`\n${def.name}: frame '${key}' trims to [${t}], outside spriteTrim [${def.spriteTrim}]`);
+      console.log(`\n${def.name}: frame '${key}' trims to [${t}], outside [${def.machine ? def.machine.trim : def.spriteTrim}]`);
       bad++;
     }
   }

@@ -227,6 +227,7 @@ export function updateEnemies(state, dt) {
          // barrel with different reports — but a man shot dead is a man shot dead,
          // and a second kill cry for the same weapon would be telling the player
          // apart two things that look identical on the board.
+         : e.killedBy === 'bolt' ? CUE.ballistaKill
          : e.killedBy === 'bullet' || e.killedBy === 'deadeye' ? CUE.musketKill
          : e.killedBy === 'paladin' ? CUE.paladinKill
          : CUE.meleeKill);

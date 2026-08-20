@@ -244,6 +244,30 @@ const TREBUCHET_TRIM = [161, 107, 664, 626];
 const CREW_TRIM = [208, 196, 94, 116];
 const CREW2_TRIM = [208, 196, 96, 120];
 const CREW3_TRIM = [201, 196, 110, 120];
+const CREW4_TRIM = [145, 196, 222, 120];
+
+// --- the ballista turret's two pieces ---------------------------------------------
+//
+// TWO TRIMS BECAUSE TIER 4 IS TWO DRAWINGS. Everything below it is one picture
+// per beat with the machine, the crew and the ground all in it; this tier is a
+// stone turret that never moves and a machine that sits on top and turns.
+//
+// The turret. 516 x 618 source, the tallest building in the game after the
+// trebuchet's swing.
+const BALLISTA_TOWER_TRIM = [254, 203, 516, 618];
+
+// The machine, and it is a UNION exactly as the catapult's is — the three frames
+// share an origin and a height and differ only in width, so the widest decides:
+//
+//   Default [361,398,340,228]   Reload [361,398,302,228]   Fire [361,398,309,228]
+//
+// Nothing moves vertically between them at all, which is the artist drawing one
+// machine in three states rather than three machines.
+const BALLISTA_TRIM = [361, 398, 340, 228];
+
+// The bolt in the air. Drawn DIAGONALLY across its export, which no other
+// projectile in the game is — see `bolt` below for what that costs.
+const BOLT_TRIM = [172, 174, 168, 164];
 
 // The rock gets bigger with the machine that throws it: 12 x 10 game px, then
 // 15 x 15, then 18 x 18. Nothing about the FLIGHT changes — same speed, same arc,
@@ -366,6 +390,51 @@ export const rock = {
   // arriving look like" turned out to be a separate question from "what does it
   // sound like", and an arrow answers all three differently. See src/impacts.js.
   impact: true
+};
+
+// THE BALLISTA'S BOLT, and it is artillery's first STEERED shot.
+//
+// Everything above it lobs: a rock is committed to a patch of ground, arcs, and
+// lands where it was aimed whatever the man it was aimed at does. A bolt is a
+// bolt — it goes where it is pointed, fast and flat — so it homes like an arrow
+// and dies with its target. That single difference is most of what makes tier 4
+// feel like a different weapon rather than a fourth catapult, and it is also why
+// this tier has no dead zone: there is no minimum range on a thing that does not
+// have to be thrown up in the air to reach you.
+//
+// `speed` 520, level with the musket ball and the fastest thing in the game.
+// The reach is 260, so the longest flight is exactly half a second — well inside
+// the 0.9s its Fire pose holds for. See `beats` on the tier.
+//
+// DRAWN DIAGONALLY, which no other projectile is, and it needs two fields
+// nothing else uses:
+//
+//   `drawn` is the angle the artwork's own nose points at, in the drawing.
+//   Every other projectile is drawn lying flat — an arrow points left, so
+//   `faces: -1` says "turn it half a turn and then to the heading". This one
+//   points down and to the left at 3/4 pi, and there is no flag for that.
+//
+//   `hold` is which point of the drawing sits on the flight path, as a fraction
+//   of the trim in BOTH axes. `grip` is the same idea for flat art and assumes
+//   the middle vertically, which is where the shaft of a horizontal arrow is;
+//   the head of a diagonal bolt is in a corner.
+//
+// Both are measured: the head is the dark blob at source (188.1, 320.4) in a
+// trim that starts at (172, 174) and runs 168 x 164.
+export const bolt = {
+  kind: 'bolt',
+  sprite: 'bolt',
+  trim: BOLT_TRIM,
+  faces: -1,
+  drawn: (3 * Math.PI) / 4,
+  hold: [0.096, 0.893],
+  grip: 0.096,
+  speed: 520,
+  // Loud leaving the rail, silent arriving — the arrow's split rather than the
+  // rock's. A ballista IS the noise it makes going off; what it does on arrival
+  // is put a bolt through somebody, which the kill line already answers.
+  fireSound: true,
+  landSound: false
 };
 
 // The same rock, drawn bigger, for the two machines above. ONLY the picture
@@ -1357,6 +1426,96 @@ const trebuchet = {
   portraitPivot: [0.723, 0.944]
 };
 
+// TIER 4, THE BALLISTA TURRET, and it is put together differently from every
+// other building in the game: a stone turret that never moves, with a machine
+// standing on top of it that animates and TURNS.
+//
+// WHY IT IS TWO PIECES. Tiers 1 to 3 are one drawing per beat and the whole
+// picture mirrors when the crew swing the machine round — which is fine for a
+// catapult standing in a field and impossible for one standing on a turret,
+// because a mirrored turret is lit from the wrong side and its stonework recedes
+// the wrong way. So the stone is drawn once and left alone, and only the machine
+// on the deck is flipped. `machine` below is that second piece; `mountFrac` is
+// where it stands on the roof.
+//
+// WHERE IT STANDS, and this is the number that took the measuring. The machine
+// is mirrored ABOUT ITS OWN STANDING POINT, so the engineer — who is drawn 175
+// source px to the right of the ballista and 86 above it — swings to 175px on
+// the LEFT when the machine turns. Both of those have to land on stone or he is
+// standing in the sky.
+//
+// The deck's top face is one #969696 path in the artist's SVG with corners
+// (449.8, 242.5), (766.7, 291.2), (595.7, 439.6) and (257.4, 364.7). Searching
+// that quad for the point where the machine AND both engineer positions sit
+// furthest inside it lands on source (532, 407): 16 source px of clearance on
+// all three, which is the most the drawing allows. That is a shade RIGHT of the
+// deck's own centroid (518.9) and well forward of it — put the machine in the
+// middle of the deck instead and the engineer hangs 29px off the back edge one
+// way and 50px off it the other.
+//
+// THE NEAR MERLON GOES IN FRONT, for the same reason the Musketeer Post's does:
+// the battlement block at the deck's nearest corner stands between the machine
+// and the camera, so the machine's foot and the bottom of its arc pass BEHIND
+// it. A rect around that block would take a wedge of deck with it, so it is a
+// polygon traced from the three faces the SVG stores it as — top (579, 375.4),
+// (619.8, 382.6), (595.7, 400.3), (556.7, 392.8) and the two side faces hanging
+// to (619.8, 418.7), (595.7, 439.6) and (557.5, 431.1) — padded 2px for the
+// black stroke the PNG draws and the SVG does not.
+const ballista = {
+  sprite: 'artillery_t4_base',
+  spriteTrim: BALLISTA_TOWER_TRIM,
+  w: drawnW(BALLISTA_TOWER_TRIM), h: drawnH(BALLISTA_TOWER_TRIM),
+  // The shadow ellipse under the turret, source (518.7, 739.5). The SVG stores
+  // it as a single #37422f path — an ellipse centred (518.7, 739.5) with radii
+  // 177 x 78.6 — and the PNG's visible arc fits the same centre. Its TOP is
+  // hidden behind the tower, which is exactly the case a bounding box gets
+  // wrong: the visible blob's middle is 18px low.
+  groundFrac: [0.512, 0.867],
+  frontPolys: [
+    [[577, 373], [622, 381], [622, 420], [596, 442], [555, 433], [554, 391]]
+  ],
+  // THE MACHINE ON TOP. Its own trim, its own drawn size, and its own ground
+  // point — the centre of the little shadow under the ballista's post, source
+  // (452.5, 609) inside a trim that starts at (361, 398) and runs 340 x 228.
+  // All three frames put that shadow on the same pixel, which is what lets the
+  // machine animate without walking about on the roof.
+  //
+  // `faces: -1` because it is drawn shooting up and to the LEFT: the loaded bolt
+  // in the Default frame has its head at source (490, 445), pointing away up the
+  // rail. So a target on the left is the unmirrored case, which is the opposite
+  // of the catapults below — they throw right.
+  machine: {
+    frames: ['artillery_t4', 'artillery_t4_reload', 'artillery_t4_fire'],
+    trim: BALLISTA_TRIM,
+    w: drawnW(BALLISTA_TRIM), h: drawnH(BALLISTA_TRIM),
+    pivot: [0.269, 0.920],
+    faces: -1
+  },
+  mountFrac: [0.539, 0.330],
+  // Where the bolt leaves, measured from the machine's standing point: the head
+  // of the loaded bolt, source (490, 445) against the post at (452.5, 609), which
+  // is +37.5 and -164 source px or +7.7 and -33.6 drawn. The sideways half flips
+  // with the machine — see muzzlePoint in src/towers.js.
+  muzzle: [7.7, -33.6],
+  ammo: bolt,
+  // A FASTER CYCLE THAN THE CATAPULTS, and it is the tier's whole character
+  // beside the damage. 0.45 / 0.45 / 0.9 against 0.75 / 0.75 / 1.5 — the same
+  // shape at 60% of the length, so the machine reads as the same three beats
+  // played quicker rather than as a different animation.
+  //
+  // The Fire beat still has to outlast the shot: 0.9s of pose against a longest
+  // flight of 260 / 520 = 0.50s. tools/siege.mjs checks that margin for every
+  // tier and this one has the most of any of them.
+  beats: [0.45, 0.45, 0.9],
+  portrait: 'crew_t4',
+  portraitTrim: CREW4_TRIM,
+  // The centre of his own ground shadow, source (293.7, 308.5), measured by
+  // tools/shadow.mjs like every other figure's. He is well right of his box's
+  // middle because the spare bolt he is holding runs out to the left of him.
+  portraitPivot: [0.671, 0.912],
+  shape: 'siege'
+};
+
 // THREE TIERS, ALL DRAWN WITH TIER 1'S MACHINE. That is temporary and the code
 // knows it: render.js marks a tower with stars whenever more than one tier in
 // its family shares a sprite key, so the stars appear here and nowhere else, and
@@ -1498,7 +1657,46 @@ export const siege = [
   { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
     cost: 120, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
   { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
-    cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' }
+    cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' },
+  // TIER 4, and it is the opposite tower to the three below it in every way that
+  // matters. They are siege engines that lob: enormous reach, a hole in the
+  // middle they cannot defend, a wide splash and a slow, heavy rhythm. This one
+  // is a wall-mounted crossbow.
+  //
+  // `range` 260, the SHORTEST in the family and 100 less than the trebuchet it
+  // upgrades from. That is the price of everything else here, and it is a real
+  // one: a trebuchet covers most of a map and this covers a corner of it.
+  //
+  // `minRange` 0, and it is the first artillery tower with no dead zone. A bolt
+  // is aimed rather than thrown, so there is no arc to clear and nothing to
+  // explain — the 130px hole every other machine carries around itself is gone,
+  // which makes tier 4 the one artillery tower that can defend its own plot.
+  //
+  // `damage` 60 a bolt, level with the Musketeer Post's ball for the biggest
+  // single blow in the game, and `splash` 55 — a little over half the
+  // trebuchet's 98. It still catches a queue; it no longer clears a wave.
+  //
+  // `cooldown` 1.80 rather than the family's 3.00, because its animation is
+  // faster (see `beats`) and the cooldown IS the animation added up here, as it
+  // is for every artillery tier. 60 every 1.8s is 33.3 damage a second against a
+  // trebuchet's 12.0 — three times the output into a third of the area from
+  // two-thirds of the reach.
+  //
+  // `cost` 230, which is 610 gold of cumulative spend on one plot: the most
+  // expensive ladder in the game, ahead of the Musketeer Post's 500 and the
+  // Paladin Keep's 530. THESE NUMBERS ARE A FIRST GUESS and are meant to be
+  // played before they are trusted — the owner asked for the sweep to come after
+  // this lands, and `tools/families.mjs` is the check that says whether it has
+  // broken the one invariant this game holds to.
+  { ...ballista, tier: 4, name: 'Ballista Turret', title: 'Ballista Turret', unit: 'Ballista Engineer',
+    cost: 230, damage: 60, splash: 55, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
+    // The upgrade button's own picture on a Trebuchet, the third tier 4 to bring
+    // one — see the note on the Musketeer Post's `glyph`.
+    glyph: 'ballista',
+    // Three lines of its own, on the same terms as the Post's and the Keep's: a
+    // named tower at the top of a ladder answers for itself rather than
+    // borrowing the family's. See familyCue in src/audio.js.
+    voice: 'ballista' }
 ];
 
 // --- monastery -----------------------------------------------------------------

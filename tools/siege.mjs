@@ -28,7 +28,8 @@
 // over a machine that has already reloaded, which reads as a second catapult
 // somewhere off screen.
 
-import { updateTowers, muzzlePoint, buildingFlip } from '../src/towers.js';
+import { updateTowers, muzzlePoint, buildingFlip, machineFlip, framesOf, beatsOf,
+         machineBox, towerBox } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { siege, arrow, rock, BEATS, DEAD } from '../src/data/towers.js';
@@ -39,6 +40,19 @@ import { at as pointOn, laneOf, LANES } from '../src/route.js';
 
 const DT = 1 / 60;
 const def = siege[0];
+
+// TWO SHAPES OF ARTILLERY NOW, and most of the checks below are about the first.
+//
+// The LOBBERS are tiers 1 to 3: one drawing per beat with the machine, the crew
+// and the ground in it, a rock thrown at a patch of ground on an arc, and a dead
+// zone they cannot reach into. The BOLTER is tier 4: a turret that never moves
+// with a machine on top that does, a steered bolt, and no dead zone at all.
+//
+// Split by the ammunition rather than by the tier number, because `arc` is the
+// actual difference — a fifth tier that lobs belongs with the first three
+// wherever it lands on the ladder.
+const LOBBERS = siege.filter(d => d.ammo.arc);
+const BOLTERS = siege.filter(d => !d.ammo.arc);
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -264,11 +278,17 @@ console.log('\nThe lob\n');
 }
 
 {
-  // The longest throw in the game has to arrive while the arm is still up.
-  const longest = siege[siege.length - 1].range;
-  const flight = longest / rock.speed;
-  ok(flight < BEATS[2], 'the longest throw lands inside the Fire beat',
-     `${flight.toFixed(2)}s of a ${BEATS[2]}s pose, ${(BEATS[2] - flight).toFixed(2)}s spare`);
+  // EVERY TIER'S longest shot has to arrive while it is still drawn shooting,
+  // and each tier now answers with its own reach, its own ammunition and its own
+  // Fire beat. Tier 4 is the one with a beat of its own — 0.9s against the
+  // catapults' 1.5 — so checking the family against BEATS[2] would have passed
+  // it on the wrong number.
+  for (const d of siege) {
+    const fire = beatsOf(d)[2];
+    const flight = d.range / d.ammo.speed;
+    ok(flight < fire, `${d.name}: its longest shot lands inside the Fire beat`,
+       `${flight.toFixed(2)}s of a ${fire}s pose, ${(fire - flight).toFixed(2)}s spare`);
+  }
 }
 
 {
@@ -401,9 +421,51 @@ console.log('\nWhich way it faces\n');
   //   Catapult   sling  (373.5, 482.0) -> (434.0, 363.5)    +60.5 px
   //   Mangonel   cup    (395,   365)   -> (474.5, 258.4)    +79.5 px
   //   Trebuchet  pouch  (240,   480)   -> (600.9, 136.9)   +360.9 px
-  ok(siege.every(d => d.buildingFaces === 1),
-     'and all three machines throw RIGHT',
-     siege.map(d => `${d.name} ${d.buildingFaces}`).join(', '));
+  ok(LOBBERS.every(d => d.buildingFaces === 1),
+     'and all three lobbers throw RIGHT',
+     LOBBERS.map(d => `${d.name} ${d.buildingFaces}`).join(', '));
+}
+
+// --- the turret's machine ------------------------------------------------------
+//
+// Tier 4 mirrors the OTHER way and mirrors only half of itself, so the two
+// paragraphs above are checked again in its own terms. Naming the sides matters
+// here for the same reason it does above — a machine drawn shooting left and
+// flagged as shooting right passes every "the far side mirrors" test there is.
+if (BOLTERS.length) {
+  console.log('\nThe turret, and the machine standing on it\n');
+
+  for (const d of BOLTERS) {
+    const t = catapultAt(SPOT.x, SPOT.y - BACK, d);
+
+    ok(buildingFlip(t) === 1 && (t.face = 1, buildingFlip(t) === 1) &&
+       (t.face = -1, buildingFlip(t) === 1),
+       `${d.name}: the stone never flips`, 'flip 1 both ways');
+
+    t.face = -1;
+    ok(machineFlip(t) === 1, 'a target on the LEFT draws the machine unmirrored',
+       `flip ${machineFlip(t)}`);
+    t.face = 1;
+    ok(machineFlip(t) === -1, 'and a target on the RIGHT mirrors it',
+       `flip ${machineFlip(t)}`);
+
+    // THE MACHINE MIRRORS ABOUT ITSELF, not about the plot, which is the whole
+    // reason it is a second drawing: the stone under it stays where it is, so
+    // the axis is where the machine stands on the roof rather than where the
+    // turret stands on the ground.
+    const axis = machineBox(d, towerBox(t)).x;
+    t.face = -1;
+    const un = muzzlePoint(t);
+    t.face = 1;
+    const flipped = muzzlePoint(t);
+    ok(Math.abs((un.x + flipped.x) / 2 - axis) < 0.01 && un.y === flipped.y,
+       'and the muzzle mirrors about the machine, not the plot',
+       `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${axis.toFixed(1)}, plot ${t.x.toFixed(1)}`);
+
+    ok(Math.abs(axis - t.x) > 1,
+       'which is a different line from the plot',
+       `${(axis - t.x).toFixed(1)}px apart`);
+  }
 }
 
 // --- every tier animates ------------------------------------------------------
@@ -420,15 +482,23 @@ console.log('\nWhich way it faces\n');
 console.log('\nEvery tier is its own machine\n');
 
 {
-  ok(siege.every(d => d.frames && d.frames.length === BEATS.length),
+  ok(siege.every(d => framesOf(d) && framesOf(d).length === beatsOf(d).length),
      'every tier has one frame per beat',
-     siege.map(d => d.frames.length).join('/'));
+     siege.map(d => `${framesOf(d).length}/${beatsOf(d).length}`).join(' '));
 
-  ok(siege.every(d => d.frames[0] === d.sprite),
-     'and rests on the frame that is also its sprite',
-     siege.map(d => d.sprite).join(', '));
+  // A LOBBER rests on the frame that is also its sprite, so anything reading
+  // `def.sprite` without knowing about beats gets a machine at rest. A TURRET
+  // cannot: its sprite is the stone, and the resting machine is a second
+  // drawing that stands on it.
+  ok(LOBBERS.every(d => d.frames[0] === d.sprite),
+     'and a lobber rests on the frame that is also its sprite',
+     LOBBERS.map(d => d.sprite).join(', '));
 
-  const keys = siege.flatMap(d => d.frames);
+  ok(BOLTERS.every(d => d.machine && !framesOf(d).includes(d.sprite)),
+     'while a turret keeps its stone apart from its machine',
+     BOLTERS.map(d => `${d.sprite} + ${framesOf(d)[0]}`).join(', '));
+
+  const keys = siege.flatMap(d => framesOf(d));
   ok(new Set(keys).size === keys.length,
      'and no two tiers share a drawing', `${keys.length} frames`);
 
@@ -439,19 +509,21 @@ console.log('\nEvery tier is its own machine\n');
      'and each was measured rather than copied down',
      siege.map(d => `${d.name} ${d.groundFrac[1]}`).join(', '));
 
-  // The rock grows with the machine; the FLIGHT does not change, because the
-  // 1.5s Fire pose was chosen against it.
-  const sizes = siege.map(d => d.ammo.trim[2]);
+  // The rock grows with the machine; the FLIGHT does not change across the three
+  // that throw one, because the 1.5s Fire pose was chosen against it. Tier 4 is
+  // not in either check — it fires a bolt, which is the point of it.
+  const sizes = LOBBERS.map(d => d.ammo.trim[2]);
   ok(sizes.every((v, i) => i === 0 || v > sizes[i - 1]),
-     'the rock gets bigger with every tier', sizes.join(' -> '));
-  ok(new Set(siege.map(d => `${d.ammo.speed}|${d.ammo.arc}`)).size === 1,
-     'and flies exactly the same way',
-     `${siege[0].ammo.speed}px/s, arc ${siege[0].ammo.arc}`);
+     'the rock gets bigger with every lobbing tier', sizes.join(' -> '));
+  ok(new Set(LOBBERS.map(d => `${d.ammo.speed}|${d.ammo.arc}`)).size === 1,
+     'and every rock flies exactly the same way',
+     `${LOBBERS[0].ammo.speed}px/s, arc ${LOBBERS[0].ammo.arc}`);
 
-  // The longest throw in the game still has to land while the arm is up. This
-  // is the check that caught a 1.50s flight against a 1.50s pose once.
-  const far = Math.max(...siege.map(d => d.range));
-  const flight = far / siege[0].ammo.speed;
+  // The longest THROW still has to land while the arm is up. This is the check
+  // that caught a 1.50s flight against a 1.50s pose once; the per-tier version
+  // of it, which covers the bolt as well, is up with the loop.
+  const far = Math.max(...LOBBERS.map(d => d.range));
+  const flight = far / LOBBERS[0].ammo.speed;
   ok(flight < BEATS[2], 'and the longest throw lands before the arm comes down',
      `${flight.toFixed(2)}s of ${BEATS[2]}s`);
 }
@@ -487,6 +559,19 @@ console.log('\nThe dead zone\n');
   s.enemies.push(enemyAt(t.x + DEAD * 1.05, t.y));
   for (let i = 0; i < 60 * 4; i++) updateTowers(s, DT);
   ok(s.shots.length > 0, 'and one just outside it is', `${s.shots.length} shots`);
+}
+
+// AND TIER 4 HAS NONE, which is half of what the player is buying. The same
+// enemy standing on the same spot, under a turret instead of a catapult.
+for (const d of BOLTERS) {
+  const s = board();
+  const t = catapultAt(SPOT.x, SPOT.y - BACK, d);
+  s.towers.push(t);
+  s.enemies.push(enemyAt(t.x, t.y + 40));
+  for (let i = 0; i < 60 * 8; i++) updateTowers(s, DT);
+  ok(d.minRange === 0 && s.shots.length > 0,
+     `a ${d.name} shoots the man at its own feet`,
+     `minRange ${d.minRange}, ${s.shots.length} shots`);
 }
 
 // Per-plot coverage, sampled along every lane of every route on every map. The

@@ -51,6 +51,25 @@ export const paths = {
   artillery_t3:        'assets/towers/artillery/Artillery_Default_T3.png',
   artillery_t3_reload: 'assets/towers/artillery/Artillery_Reload_T3.png',
   artillery_t3_fire:   'assets/towers/artillery/Artillery_Fire_T3.png',
+  // TIER 4, THE BALLISTA TURRET, and it is the first building in the game drawn
+  // as TWO SEPARATE PIECES: a stone turret that never moves, and a machine on
+  // top of it that animates on the same three beats as the catapults below and
+  // mirrors to face its target.
+  //
+  // They are two files because they do two different things. Every other
+  // artillery tier is one drawing per beat with the whole machine in it, so the
+  // WHOLE picture mirrors when the crew turns — fine for a catapult standing on
+  // grass, and impossible for one standing on a turret, because a mirrored
+  // turret is lit from the wrong side and its stonework recedes the wrong way.
+  // Splitting the two lets the stone stay put and the machine turn on it.
+  //
+  // `artillery_t4_base` is the turret. `artillery_t4` and its two suffixed
+  // frames are the machine, and the bare key is the resting pose exactly as it
+  // is on tiers 1 to 3.
+  artillery_t4_base:   'assets/towers/artillery/Ballista_Turret_Tower.png',
+  artillery_t4:        'assets/towers/artillery/Ballista_Turret_Default.png',
+  artillery_t4_reload: 'assets/towers/artillery/Ballista_Turret_Reload.png',
+  artillery_t4_fire:   'assets/towers/artillery/Ballista_Turret_Fire.png',
   // The monastery, in a folder of its own like every other family. The artist
   // uploaded these loose into assets/towers beside the three family folders, and
   // they were moved rather than wired where they landed — a building lives with
@@ -122,6 +141,11 @@ export const paths = {
   crew_t1:     'assets/units/Artillery_Man_T1.png',
   crew_t2:     'assets/units/Artillery_Man_T2.png',
   crew_t3:     'assets/units/Artillery_Man_T3.png',
+  // Tier 4's engineer, on the same terms as the three crewmen above: he is
+  // already drawn into all three machine frames, and this is the portrait the
+  // info box and the encyclopedia use. Named for the man rather than the tier,
+  // like the musketeer and the paladin.
+  crew_t4:     'assets/units/Ballista_Engineer.png',
   arrow_t1:    'assets/projectiles/Archery_Arrows_T1.png',
   // The musket ball. One drawing for the one tier that fires it, so the key
   // carries no tier number — unlike the rocks and the missiles, which have three
@@ -132,6 +156,10 @@ export const paths = {
   // different drawing and not a bigger one — see `deadeyeBall` in
   // src/data/abilities.js.
   deadeye_bullet: 'assets/projectiles/Musketeer_Deadeye_Bullet.png',
+  // The ballista's bolt: a shaft with an iron head, drawn lying to the
+  // upper-left and rotated to its heading like the arrow and the missile. One
+  // drawing for the one tier that fires it, so no tier number on the key.
+  bolt:        'assets/projectiles/Ballista_Turret_Bolt.png',
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
@@ -237,6 +265,10 @@ export const paths = {
   // to bring its own picture, and the same one-word opt-in — see the `glyph` field
   // on barracks tier 4 in data/towers.js.
   glyph_keep:      'assets/ui/Paladin_Keep_Icon.png',
+  // The Ballista Turret's, on the upgrade button of a Trebuchet. The third tier 4
+  // to bring its own picture, and the same one-word opt-in — see the `glyph` field
+  // on artillery tier 4 in data/towers.js.
+  glyph_ballista:  'assets/ui/Ballista_Turret_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button
   // does, and the button is now the thing that can change without the drawing
