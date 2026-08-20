@@ -68,6 +68,15 @@ function tap(state, x, y, restart, download) {
     return true;
   }
 
+  // A CHAPTER HAS ONE WAY ON and nothing else answers, which is the whole of it.
+  // Anywhere on the page works as well as the button — a five-year-old reading a
+  // story taps the story — but the button is what says so.
+  if (state.screen === 'story') {
+    state.screen = state.story.then;
+    state.story = null;
+    return true;
+  }
+
   if (state.screen === 'certificate') {
     // The name field is a real HTML input sitting over this box, so a tap inside
     // it never reaches here — the browser takes it. The test is still worth

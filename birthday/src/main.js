@@ -10,6 +10,7 @@ import { newGame, step, validate } from './rules.js';
 import { draw, NAME_BOX } from './render.js';
 import { attach } from './input.js';
 import { save } from './certificate.js';
+import { chapterFor } from './story.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -38,9 +39,10 @@ let state = newGame(0);
 state.screen = 'maps';
 
 // `skipIntro` is what Restart and Play again pass: the family have already read
-// the four descriptions and making them press Start again is a tap for nothing.
-// Choosing a map from the picker does not pass it, so the introduction still comes
-// up the first time each map is played.
+// the chapter and the four descriptions, and making them sit through both again
+// after losing on wave 8 is two taps for nothing. Choosing a map from the picker
+// does not pass it, so entering a map that way always tells its part of the
+// story first and then introduces the four of them.
 function restart(mapIndex, skipIntro = false) {
   // THE NAME OUTLIVES A GAME. Everything else about a state object belongs to one
   // playthrough and is thrown away with it, but somebody who typed their name on
@@ -49,6 +51,13 @@ function restart(mapIndex, skipIntro = false) {
   const keep = { name: state.name || '' };
   const next = newGame(mapIndex ?? state.mapIndex);
   if (skipIntro) { next.screen = 'play'; next.begun = true; }
+  else {
+    // AND THE STORY COMES FIRST, before the four descriptions. Same rule as the
+    // introduction it sits in front of: choosing a map from the picker is
+    // starting it, and going again after losing wave 8 is not.
+    const chapter = chapterFor(next.mapIndex);
+    if (chapter) { next.story = { ...chapter, then: 'family' }; next.screen = 'story'; }
+  }
   Object.keys(state).forEach(k => delete state[k]);
   Object.assign(state, next, keep);
 }

@@ -29,6 +29,7 @@ import { enemyTypes, maps, mapNames, family, memberById, START_LIVES, REFUND_RAT
          spentTo, SCALE } from './data.js';
 import { play, solo, voiceCue, killCue, blowCue, ENEMY_BLOW } from './audio.js';
 import { starsFor, memberOpen, record, opened, stars } from './progress.js';
+import { ENDING } from './story.js';
 
 // Reach is an ELLIPSE, flattened by this, for the same reason the big game's is:
 // the board is drawn in perspective, so a patch of ground is wider than it is
@@ -142,6 +143,10 @@ export function newGame(mapIndex) {
     // The grown-up's keypad on the map screen, or null. It lives on the state
     // rather than in input.js so the renderer can draw it.
     keypad: null,
+    // The chapter on screen, or null. Set by main.js when a map is chosen from
+    // the picker, and by finish() when the last map is held — see story.js for
+    // when each one appears and why it is not remembered between visits.
+    story: null,
     // The certificate's two: the name typed into the HTML field over the canvas,
     // and whether a PDF is being made right now. `name` is carried across a
     // restart by main.js — see the note there.
@@ -320,6 +325,15 @@ function finish(state, how) {
   const before = stars(state.mapIndex);
   state.won = how === 'won' ? opened(state.mapIndex, state.score, before) : null;
   if (how === 'won') record(state.mapIndex, state.score);
+
+  // THE END OF THE STORY GOES BEFORE THE SCORE, not instead of it. Holding the
+  // last map is the moment the whole thing was written towards, and a stars
+  // screen is the wrong place to say so — so the ending is shown first and its
+  // one button opens the result behind it, which still has the stars on it.
+  if (how === 'won' && state.mapIndex === maps.length - 1) {
+    state.story = { ...ENDING, then: 'won' };
+    state.screen = 'story';
+  }
 }
 
 // --- the family ----------------------------------------------------------------
@@ -331,6 +345,21 @@ const LOOK_DEADBAND = 10;
 const ENGAGE = 30;
 const REACH = 22;
 const SETTLE = 14;
+// How far Papa will reach to hit something SOMEBODY ELSE has stopped. See quarry.
+const HELP = 36;
+
+// WHICH WAY SOMEBODY IS LOOKING, remembered between frames and only changed when
+// what they are looking at is CLEARLY to one side. `side` is how far to the right
+// of them it is; anything inside the deadband leaves the last answer alone.
+//
+// All four use this now. It was written for the two on the road — where a blocked
+// thug stands almost on top of whoever stopped it, and a facing taken from that
+// flips several times a second — and Ella and Rei need it for the same reason at
+// a different scale: a thug walking down a north-south stretch of road passes
+// through their column, and without a deadband they would spin as it went by.
+function face(who, side) {
+  if (Math.abs(side) > LOOK_DEADBAND) who.look = side >= 0 ? 1 : -1;
+}
 
 // Where a road character stands: the nearest point of road to their plot, or to
 // wherever the player has sent them, pulled back inside their reach.
@@ -448,8 +477,7 @@ export function updateUnits(state, dt) {
     // or below on a north-south stretch of road — there is no correct answer, and
     // keeping the last one is the only stable one.
     const focus = at || u.foe;
-    const side = (focus ? focus.x : u.rx) - u.x;
-    if (Math.abs(side) > LOOK_DEADBAND) u.look = side >= 0 ? 1 : -1;
+    face(u, (focus ? focus.x : u.rx) - u.x);
 
     if (u.hp <= 0) {
       if (u.foe) { u.foe.foe = null; u.foe = null; }
@@ -473,9 +501,31 @@ export function updateUnits(state, dt) {
 // on the road who fires, not a second tower.
 function quarry(state, u, d) {
   const gun = u.member.gun;
-  if (!gun) return u.foe && d <= REACH ? u.foe : null;
 
-  let best = null, least = gun;
+  if (gun) {
+    let best = null, least = gun;
+    for (const e of state.enemies) {
+      if (e.hp <= 0 || e.leaked) continue;
+      const r = Math.hypot(e.x - u.x, e.y - u.y);
+      if (r < least) { least = r; best = e; }
+    }
+    return best;
+  }
+
+  // The thug in his own hands first, always — it is the one hitting him back.
+  if (u.foe && d <= REACH) return u.foe;
+
+  // AND OTHERWISE HE HELPS, which is what the owner asked for: a Papa with
+  // nobody in his hands swings at whatever is within arm's length even if
+  // somebody else has stopped it. Two of them shoulder to shoulder used to mean
+  // one fighting and one watching, because a blocked thug belongs to whoever
+  // blocked it — which is right for who it hits, and silly for who may hit it.
+  //
+  // A LITTLE FURTHER THAN HIS OWN REACH (36 against 22) for a plain geometric
+  // reason: a thug he has stopped stands on top of him, and a thug somebody else
+  // has stopped is a body's width further away. At 22 he could not have reached
+  // past his own wife.
+  let best = null, least = HELP;
   for (const e of state.enemies) {
     if (e.hp <= 0 || e.leaked) continue;
     const r = Math.hypot(e.x - u.x, e.y - u.y);
@@ -547,6 +597,7 @@ function stepThrower(state, t, dt) {
   t.cd = t.level.cd;
   t.recoil = 1;
   t.aim = Math.atan2(target.y - t.y, target.x - t.x);
+  face(t, target.x - t.x);
   play(blowCue(t.member.id));
   state.shots.push({
     x: t.x, y: t.y - 26, target,
@@ -570,12 +621,18 @@ function stepThrower(state, t, dt) {
 function stepAura(state, t, dt) {
   t.stink = ((t.stink || 0) + dt) % 1;
   let any = false;
+  // WHICH WAY TO TURN, for somebody with no target to turn towards. The middle of
+  // whoever is in the smell with him: one thug on his right turns him right, a
+  // crowd on both sides leaves him where he is, which is the honest answer.
+  let middle = 0;
   for (const e of state.enemies) {
     if (e.hp <= 0) continue;
     if (!inReach(t.x, t.y, e.x, e.y, t.level.range)) continue;
     hurt(e, t.level.damage * dt, t.member.id);
+    middle += e.x - t.x;
     any = true;
   }
+  if (any) face(t, middle);
   // Which pose he is in. He has no cooldown to animate, so the drawing follows
   // the only fact there is: whether anything is currently in there with him.
   t.stinking = any;
@@ -714,6 +771,10 @@ export function build(state, plot, member) {
     x: plot.x, y: plot.y,
     spent: level.cost,
     cd: 0, recoil: 0, aim: 0, stink: 0, stinking: false,
+    // Which way they are facing, remembered between frames — see `face`. It
+    // starts as the way the drawing was made, so nobody is mirrored until there
+    // is something on their right to be mirrored at.
+    look: member.art.faces || 1,
     rally: null,
     smell: null
   };

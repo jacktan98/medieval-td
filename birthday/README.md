@@ -63,8 +63,26 @@ meant to.
 
 ## The story
 
-The game is not three maps in a row. It starts with **one map and two people**,
-and the rest is earned:
+It is told in **four short pieces** — a chapter before each map and an ending
+after the last one is held — and they are all in `src/story.js`, which imports
+nothing and is imported by two lines.
+
+| | |
+|---|---|
+| **Chapter One — The Bend** | the thugs are everywhere, Papa and Rei are missing, and Mommy and Ella are what is left |
+| **Chapter Two — The Fork** | Papa fights his way home. He did not find Rei, and there is no time to look |
+| **Chapter Three — Two Rivers** | Rei is on his pee pad, furious and unspeakable. The last horde is coming |
+| **The house is ours** | it held, and none of the four could have held it alone |
+
+**When a chapter appears**: entering a map **from the picker**, before the family
+panel. Play again on the result screen skips it, and so does Restart — choosing a
+map is choosing to start it, and going again after losing on wave 8 is not.
+Nothing is remembered, so reading the whole thing again is a trip back to the map
+screen. The ending comes up when the last map is won, **before** the stars rather
+than instead of them.
+
+The game is also not three maps in a row. It starts with **one map and two
+people**, and the rest is earned:
 
 | | |
 |---|---|
@@ -203,8 +221,8 @@ harder or easier. Damage last.
 | | opens with | a cleared wave pays | waves | plots |
 |---|---|---|---|---|
 | The Bend | 300 | 95 + 26 per wave | 5 | 9 |
-| The Fork | 340 | 105 + 30 per wave | 8 | 9 |
-| Two Rivers | **560** | **155 + 46 per wave** | 10 | 11 |
+| The Fork | 420 | 105 + 30 per wave | 8 | 9 |
+| Two Rivers | **680** | **155 + 46 per wave** | 10 | 11 |
 
 Per map rather than one number for the game, and finding that out was the most
 useful thing the sim did. **Two Rivers kept failing however much its waves were
@@ -218,10 +236,14 @@ never an endgame problem — it has two roads, and 300 gold covers one of them w
 the first three waves walk down the other. Nearly twice as much to open with fixed
 it outright.
 
-All three purses went **up again** when the bounty was cut by a third. That cut is
-a difficulty change and is meant to be one; what it must not do is put the leaks
-back at the front of a map, where the board is empty and there is nothing the
-player can do about them.
+The purses went **up again** when the bounty was cut by a third, and The Fork's
+and Two Rivers' a **third time** when their finales became walls. Both are the
+same decision, and it looks like softening until you count where the lives went:
+an opening too expensive to cover leaks two or three of them before the player has
+finished their first build, and nothing about that is a decision anybody made.
+Two Rivers leaked 2.3 and 3.1 on waves 1 and 2 with 560 to open on; at 680 it
+leaks 1.9 and 1.3, and the lives it does lose are lost on **waves 9 and 10**,
+where the horde is.
 
 These are the numbers to turn **before** touching anybody's damage: they lift or
 drop every build on one map equally, so they do not change who is worth having
@@ -232,12 +254,18 @@ there.
 | | shape |
 |---|---|
 | **The Bend**, 5 waves | thugs only, 5 up to **50**, **no giants at all** |
-| **The Fork**, 8 waves | giants from wave 4, up to 30 thugs and 3 giants |
-| **Two Rivers**, 10 waves | hordes — up to **44 thugs at 0.52s**, and 4 giants |
+| **The Fork**, 8 waves | giants from wave 4, finishing on **44 thugs and 5 giants** |
+| **Two Rivers**, 10 waves | hordes, finishing on **50 + 5 giants** and then **60 at 0.4s + 6 giants** |
 
 **Normal, not easy**, which is where the second pass took it: every wave is bigger
 or closer together than the first cut, and The Bend's last wave went from 22 thugs
 to 50.
+
+**The finales are walls**, asked for by name. The Fork's last wave costs a fully
+built board about **3.5 lives** — the largest single thing on that map — and Two
+Rivers' last two cost 1.1 and 2.1 between them. That is what "difficult" has to
+mean on maps that must still be passable with the people the story has handed
+over by then.
 
 **The difficulty is in the back half on purpose.** The first attempt at "harder"
 put it in the front half instead and measured worse in every way — with bigger
@@ -286,9 +314,19 @@ on this board *are* the big game's thugs, so anything standing next to one has t
 be measured with the same ruler. The tool also reports whether each file has the
 source pixels to stay crisp at the 3x device cap. They all do.
 
-Two of the four never turn: Papa and Mommy are drawn facing left and are mirrored
-when they walk the other way, Ella and Rei face the camera from their plots. That
-is the `faces` field, and its absence.
+**All four turn.** Every drawing faces left and is mirrored when the person is
+looking at something on their right — that is the `faces` field, and all four
+carry it now. Ella and Rei used to have none, on the reasoning that they face the
+camera from their plots; the owner disagreed, and he is right about Ella at least,
+who holds her slime out to one side.
+
+Which way somebody is looking is **remembered between frames** and only changed
+when what they are looking at is clearly to one side of them (`face` in
+`src/rules.js`, a 10px deadband). Without that, a thug walking down a
+north-south stretch of road passes through their column and they spin as it goes
+by. Ella turns to whatever she last threw at; Rei, who never aims at anything,
+turns to the **middle of whoever is in the smell with him** — one thug on his
+right turns him right, a crowd on both sides leaves him alone.
 
 The **nameplate** is what makes both halves of the game read the same way. Ella
 and Rei stand on theirs; Papa and Mommy walk off theirs and it stays behind saying
@@ -402,11 +440,24 @@ here too:
 A finished game shows its **stars**, and — the first time a map is passed — who
 and what that just unlocked, with their portrait. It offers **Play again** on the
 same map and **Another map**. Neither Restart nor Play again makes you sit through
-the family introduction a second time; choosing a map from the picker still shows
-it.
+the chapter and the family introduction a second time; choosing a map from the
+picker shows both.
 
-**Which way they face** is remembered rather than recomputed each frame. The art
-is drawn facing left and mirrored to face right, and that part was always right —
+**The map screen** says who it is for and who it is from — *Happy Birthday,
+Mommy!* over *Gift from Papa* in Papa's own blue — with the three maps under
+that and *Pick a place to defend!* under **them**, where it reads as a caption on
+the row rather than as a subtitle of the birthday message.
+
+**Papa helps.** A Papa with nobody in his hands swings at whatever is within arm's
+length even if somebody else has stopped it — 36px against the 22 of his own
+reach, because a thug he has stopped stands on top of him and a thug his wife has
+stopped is a body's width further away. Two Papas at one post used to mean one
+fighting and one watching; measured against a Giant Thug they now do **25 damage a
+second between them against 11 for one**.
+
+**Which way they face** is remembered rather than recomputed each frame, and all
+four do it now — see the art section. The art is drawn facing left and mirrored to
+face right, and that part was always right —
 measured over a real fight the mirrored figure agreed with the enemy's side on 349
 samples out of 349. What was wrong is that a blocked thug stands almost exactly on
 top of whoever stopped it: the median horizontal gap is 5px, and more than half of
@@ -417,7 +468,10 @@ to one side — 2 changes in 30 seconds of fighting, against dozens before.
 **Tap anybody to look at them.** A plot with somebody on it, Papa or Mommy
 standing on the road, or a thug — each puts a **picture and the numbers in the top
 right**: name, level, live health, damage and reach, with the big game's heart and
-sword standing in for the words. The health is read off the live object every
+sword standing in for the words. It is drawn on **the same cream sheet The Family
+pop-up uses**, in the same ink: it used to be a near-black panel on a green map,
+and the small print at the bottom of it — the line that says what somebody
+actually does — was the least readable thing in the game. The health is read off the live object every
 frame, so the bar over their head and the number in the panel are the same fact
 twice. Building or upgrading selects what you just paid for, so the numbers you
 were choosing between are still on screen once you have chosen.
@@ -429,6 +483,18 @@ Sending Papa or Mommy somewhere uses the big game's own **rally flag** — as th
 button that gives the order and as the marker showing where it landed, so the
 button and the thing it does look like each other. The marker is only up while
 that person is selected or being sent.
+
+The two are drawn from **different anchors**, which is the fix for a flag that
+looked crooked on its button. Planted on the board it hangs from the foot of its
+pole, at 0.111 of the drawing's width, because the pole is the thing marking the
+spot; on a round button it is centred, because the button is the thing being
+filled. Same picture, one number apart.
+
+**The empty plot markers** are the big game's picture at the big game's size —
+99 x 49 rather than the 68 x 40 they were. They used to be drawn as the whole SVG
+squeezed into a box, which loses twice: the file has transparent margin around the
+mark, so the mark came out smaller than the box, and the box was small to begin
+with.
 
 ## The certificate
 

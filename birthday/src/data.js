@@ -69,13 +69,19 @@ export const enemyTypes = Object.fromEntries(
 // attempt to fix it by thinning the late waves made it worse, because a thug is
 // 10 gold and thinning them starved the board further.
 //
-// ALL THREE WERE RAISED AGAIN when the thugs' bounty was cut by a third. That cut
-// is a difficulty change and it is meant to be one; what it must NOT do is put
-// the leaks back at the front of the map, where the board is empty and the player
-// has nothing to do about them. The opening purse pays for the opening, and the
-// difficulty lives in the last three waves of each table.
+// ALL THREE WERE RAISED AGAIN when the thugs' bounty was cut by a third, and The
+// Fork and Two Rivers a THIRD time when their finales were made walls. Both are
+// the same decision: the opening purse pays for the opening, and the difficulty
+// lives in the last waves.
+//
+// It is worth being blunt about why, because it looks like softening. Counting
+// lives against the wave they were lost on, an opening that is too expensive to
+// cover leaks 2 or 3 of them before the player has finished their first build —
+// and nothing about that is a decision anybody made. Two Rivers leaked 2.3 and
+// 3.1 on waves 1 and 2 with 560 to open on; at 680 it leaks 1.9 and 1.3, and the
+// lives it does lose are lost on waves 9 and 10, where the horde is.
 export const START_LIVES = 20;
-const START_GOLD = [300, 340, 560];
+const START_GOLD = [300, 420, 680];
 
 // --- the waves are THIS GAME'S now ------------------------------------------------
 //
@@ -146,7 +152,12 @@ const forkWaves = [
   { groups: [thugs(17, 0.95), giants(1, 2)] },
   { groups: [thugs(21, 0.85), giants(2, 1.9)] },
   { groups: [thugs(24, 0.78), giants(2, 1.7)] },
-  { groups: [thugs(30, 0.68), giants(3, 1.5)] }
+  // THE LAST ONE IS A WALL, asked for by name. Nearly twice as many thugs as the
+  // wave before it, arriving half as far apart, with FIVE giants of 1500 walking
+  // in among them. It costs a fully built board about three and a half lives —
+  // the largest single thing on the map — which is what "difficult" has to mean
+  // on a map that must still be passable with three people.
+  { groups: [thugs(44, 0.55), giants(5, 1.35)] }
 ];
 
 const riverWaves = [
@@ -158,8 +169,12 @@ const riverWaves = [
   { groups: [thugs(25, 0.80), giants(1, 1.9)] },
   { groups: [thugs(30, 0.70), giants(2, 1.7)] },
   { groups: [thugs(34, 0.62), giants(3, 1.6)] },
-  { groups: [thugs(38, 0.58), giants(3, 1.5)] },
-  { groups: [thugs(44, 0.52), giants(4, 1.5)] }
+  // THE LAST TWO ARE THE HORDE PROPER. Fifty and sixty of them, a body every
+  // half second and then every four tenths, with five and six giants walking in
+  // the middle of it. Nothing but Rei standing in the road answers this — which
+  // is the whole reason the map that unlocks him is the map that ends the story.
+  { groups: [thugs(50, 0.50), giants(5, 1.4)] },
+  { groups: [thugs(60, 0.40), giants(6, 1.3)] }
 ];
 
 // WHAT A CLEARED WAVE PAYS, per map, as `base + step per wave cleared`.
@@ -253,10 +268,12 @@ export const SCALE = 105 / 512;
 //           has a box 26px taller than Papa holding them up, and anchoring to the
 //           box would make him bob every time he swings.
 //
-// `faces` is which way a drawing looks, and only the two on the road have one:
-// Papa's swords and Mommy's shotgun point LEFT, so the sprite is mirrored when
-// they turn. Ella and Rei face the camera from their plots and never turn, so
-// there is nothing to mirror and they carry no `faces` at all.
+// `faces` is which way a drawing looks, and ALL FOUR have one now. Papa's swords
+// and Mommy's shotgun point LEFT, and so does Ella — she holds her slime out to
+// that side — so the sprite is mirrored when any of them turns to something on
+// their right. Rei is very nearly symmetrical and mirrors anyway, because "the
+// baby is the only one who does not look at what he is doing" is a rule nobody
+// would thank us for.
 //
 // `plate` is the NAMEPLATE — a flat sign lying on the plot with the person's
 // name on it. All four have one and it is drawn the same way for all four; what
@@ -347,6 +364,7 @@ const ELLA = {
   kind: 'thrower',
   colour: '#4FA85A',
   art: {
+    faces: -1,
     idle:   { sprite: 'ella',        trim: [219, 203, 74, 106], pivot: [0.534, 0.913] },
     attack: { sprite: 'ella_attack', trim: [219, 203, 74, 106], pivot: [0.534, 0.913] },
     plate:  { sprite: 'ella_plot',   trim: [135, 209, 242, 94], pivot: FLAT }
@@ -384,6 +402,7 @@ const REI = {
   kind: 'aura',
   colour: '#B98B2E',
   art: {
+    faces: -1,
     idle:   { sprite: 'rei',        trim: [232, 221, 48, 71],  pivot: [0.490, 0.894] },
     attack: { sprite: 'rei_attack', trim: [197, 200, 118, 91], pivot: [0.496, 0.926] },
     plate:  { sprite: 'rei_plot',   trim: [160, 216, 192, 80], pivot: FLAT }

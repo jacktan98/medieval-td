@@ -39,6 +39,10 @@ export function draw(ctx, state) {
 
   if (state.screen === 'maps') { drawMapPick(ctx, state); return; }
   if (state.screen === 'certificate') { drawCertificate(ctx, state); return; }
+  // A chapter of the story owns the whole screen, board and all. It is a page out
+  // of a book rather than a panel over a game — and the board behind it has not
+  // started yet in any case.
+  if (state.screen === 'story') { drawStory(ctx, state); return; }
 
   drawGround(ctx, state);
   drawPlots(ctx, state);
@@ -72,13 +76,29 @@ function drawGround(ctx, state) {
   ctx.fillRect(0, 0, W, H);
 }
 
+// THE EMPTY PLOT MARKER, at the big game's own size and measured the same way.
+//
+// It used to be drawn as the whole SVG squeezed into 68x40, which is two
+// mistakes at once: the file has transparent margin around the mark, so the mark
+// itself came out smaller than the box, and the box was smaller than the big
+// game's to begin with. Both numbers below are the big game's — the trim comes
+// out of tools/split-map.mjs and the drawn size is that trim at the board's own
+// SCALE, which lands it at 99 x 49 against the old 68 x 40.
+const MARKER_TRIM = [270, 393, 484, 238];
+const MARKER_PIVOT = [0.500, 0.532];
+const MARKER_W = MARKER_TRIM[2] * SCALE;
+const MARKER_H = MARKER_TRIM[3] * SCALE;
+
 function drawPlots(ctx, state) {
   const marker = art.plot_marker;
   for (const p of state.map.plots) {
     if (state.towers.some(t => t.plot === p)) continue;
     if (marker) {
+      const [sx, sy, sw, sh] = MARKER_TRIM;
       ctx.globalAlpha = 0.9;
-      ctx.drawImage(marker, p.x - 34, p.y - 20, 68, 40);
+      ctx.drawImage(marker, sx, sy, sw, sh,
+        p.x - MARKER_PIVOT[0] * MARKER_W, p.y - MARKER_PIVOT[1] * MARKER_H,
+        MARKER_W, MARKER_H);
       ctx.globalAlpha = 1;
     } else {
       ctx.strokeStyle = 'rgba(240,230,210,0.55)';
@@ -178,12 +198,21 @@ const turn = (member, look) =>
 // order, and the marker showing where the order landed. It is PLANTED rather
 // than centred — FLAG_FOOT puts the bottom of the pole on the point, because the
 // point is what is being marked, not the middle of the drawing.
-function flag(ctx, x, y, h = RALLY_FLAG_H) {
+// ON A BUTTON it is CENTRED instead, and that is the second job needing a
+// different anchor rather than the same one. A planted flag hangs to the right of
+// the point by design — the pole is at 0.111 of the width and the pennant is
+// everything after it — so a button drawn with the planted anchor has its picture
+// sitting off to one side of the circle. On the board that is correct and on a
+// button it just looks crooked, so `foot` is overridable and the ring passes the
+// middle of the drawing.
+const FLAG_MIDDLE = [0.5, 1];
+
+function flag(ctx, x, y, h = RALLY_FLAG_H, foot = FLAG_FOOT) {
   const img = art.icon_flag;
   if (!img) return false;
   const [sx, sy, sw, sh] = ui.glyph_flag.trim;
   const w = (sw / sh) * h;
-  ctx.drawImage(img, sx, sy, sw, sh, x - FLAG_FOOT[0] * w, y - FLAG_FOOT[1] * h, w, h);
+  ctx.drawImage(img, sx, sy, sw, sh, x - foot[0] * w, y - foot[1] * h, w, h);
   return true;
 }
 
@@ -269,7 +298,11 @@ function drawTower(ctx, t) {
   const kick = t.member.kind === 'thrower' ? (t.recoil || 0) * 3 : 0;
   // Stood on the plate rather than in the middle of it: the sign lies flat and
   // the person is at the back of it, which is what stops the name being covered.
-  figure(ctx, t.member, swing, t.x, t.y - 4 - kick, 1);
+  //
+  // THEY TURN NOW, like the two on the road. The plate underneath does not — it
+  // is a sign lying on the ground with a name written on it, and a mirrored name
+  // is a mirrored name.
+  figure(ctx, t.member, swing, t.x, t.y - 4 - kick, turn(t.member, t.look));
   // The pips go over the head, and how high the head is depends on who it is —
   // Rei is a baby 13px tall and Ella is nearly twice that. A fixed height left
   // his pips floating in the air well above him.
@@ -589,8 +622,14 @@ function drawStats(ctx, state) {
   const text = PANEL_TITLE + rows.length * PANEL_ROW + info.notes.length * PANEL_NOTE;
   const h = Math.max(text + 22, PANEL_SLOT.h + 20);
 
+  // THE FAMILY'S OWN PAPER, not a dark box. It used to be a near-black panel with
+  // cream text on it, sitting on a green map, and the small print at the bottom of
+  // it — the line that says what somebody actually DOES — was the least readable
+  // thing in the game. The pop-up behind The Family button had solved that
+  // already: a cream sheet with ink on it. This is the same sheet, so the two
+  // places that describe a person describe them the same way.
   ctx.save();
-  ctx.fillStyle = 'rgba(34,32,28,0.86)';
+  ctx.fillStyle = SHEET;
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 10);
   ctx.fill();
@@ -605,7 +644,7 @@ function drawStats(ctx, state) {
   const tx = x + 12 + PANEL_SLOT.w + 12;
   let ty = y + (h - text) / 2 + PANEL_TITLE / 2;
 
-  ctx.fillStyle = CREAM;
+  ctx.fillStyle = INK;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.font = '700 15px system-ui, sans-serif';
@@ -613,20 +652,20 @@ function drawStats(ctx, state) {
   // The level badge, and only a family member has one — a thug is a thug.
   if (info.tier) {
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#E0B24C';
+    ctx.fillStyle = '#9A6F14';
     ctx.font = '700 12px system-ui, sans-serif';
     ctx.fillText(`Lv ${info.tier}`, x + w - 12, ty);
   }
 
   ty += PANEL_TITLE / 2;
-  ctx.fillStyle = CREAM;
+  ctx.fillStyle = INK;
   ctx.font = '600 12px system-ui, sans-serif';
   for (const [key, slot, label] of rows) {
     reading(ctx, key, slot, tx, ty + PANEL_ROW / 2, 15, label, 6);
     ty += PANEL_ROW;
   }
 
-  ctx.fillStyle = 'rgba(240,230,210,0.62)';
+  ctx.fillStyle = INK_MUTED;
   ctx.font = '600 11px system-ui, sans-serif';
   ctx.textAlign = 'left';
   for (const note of info.notes) {
@@ -742,7 +781,7 @@ function drawMenu(ctx, state) {
     // A button with a picture on it says nothing: the flag IS the label. It falls
     // back to the word if the file has not loaded, which is the same bargain
     // every other drawing in this folder makes.
-    if (it.icon === 'flag' && flag(ctx, it.x, it.y + 15, 30)) continue;
+    if (it.icon === 'flag' && flag(ctx, it.x, it.y + 15, 30, FLAG_MIDDLE)) continue;
 
     ctx.fillStyle = CREAM;
     ctx.textAlign = 'center';
@@ -765,11 +804,14 @@ function drawMenu(ctx, state) {
 
 // --- the screens ------------------------------------------------------------------
 
-export const MAP_BTN = i => ({ x: 120 + i * 250, y: 208, w: 220, h: 150 });
+// THE THREE MAPS, and they sit higher than they used to: the line asking the
+// player to pick one moved from above them to BELOW them, where it reads as a
+// caption on the row rather than as a subtitle of the birthday message.
+export const MAP_BTN = i => ({ x: 120 + i * 250, y: 168, w: 220, h: 150 });
 
 // The certificate, offered on the picker once all three are passed. It is the end
 // of the story, so it sits under the three maps rather than beside them.
-export const CERT_BTN = { x: W / 2 - 150, y: 434, w: 300, h: 44 };
+export const CERT_BTN = { x: W / 2 - 150, y: 440, w: 300, h: 44 };
 
 // THE WAY IN FOR A GROWN-UP, in the bottom right, small and unlabelled. Same
 // manners as the big game's own admin door: a five-year-old should not find it by
@@ -784,10 +826,12 @@ function drawMapPick(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = CREAM;
   ctx.font = '700 32px system-ui, sans-serif';
-  ctx.fillText('Happy Birthday, Mommy', W / 2, 74);
-  ctx.font = '600 16px system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(240,230,210,0.7)';
-  ctx.fillText('Pick a place to defend', W / 2, 112);
+  ctx.fillText('Happy Birthday, Mommy!', W / 2, 66);
+  // WHO IT IS FROM, under the wish and in his own colour. It is a present before
+  // it is a game, and a present with no card on it is a strange present.
+  ctx.font = '600 15px system-ui, sans-serif';
+  ctx.fillStyle = family[0].colour;
+  ctx.fillText('Gift from Papa', W / 2, 98);
 
   maps.forEach((m, i) => {
     const b = MAP_BTN(i);
@@ -828,6 +872,13 @@ function drawMapPick(ctx, state) {
       ctx.fillText(`${PASS} stars on ${mapNames[i - 1]}`, b.x + b.w / 2, b.y + b.h + 50);
     }
   });
+
+  // The instruction, UNDER the row it is about.
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(240,230,210,0.75)';
+  ctx.font = '600 17px system-ui, sans-serif';
+  ctx.fillText('Pick a place to defend!', W / 2, 404);
 
   if (finished()) button(ctx, CERT_BTN, 'Print your certificate', true, true);
 
@@ -905,6 +956,57 @@ function drawCertificate(ctx, state) {
 
   button(ctx, CERT_SAVE, state.saving ? 'Making it...' : 'Download PDF', !state.saving, true);
   button(ctx, CERT_BACK, 'Back', true);
+}
+
+// --- the story --------------------------------------------------------------------
+//
+// One page of a book: a cream sheet, a chapter heading, a few short paragraphs
+// and one way on. The same sheet the family pop-up uses, because they are the
+// same object — the story is what the four of them are for, and it would be odd
+// for the two to look like they came from different games.
+//
+// The text is CENTRED AS A BLOCK and set left, which is how prose is read. The
+// paragraphs are wrapped at draw time by the same helper the descriptions use, so
+// a chapter can be rewritten in story.js without a measurement anywhere.
+const PAGE = { x: 150, y: 40, w: 660, h: 456 };
+export const STORY_GO = { x: W / 2 - 130, y: PAGE.y + PAGE.h - 62, w: 260, h: 46 };
+
+function drawStory(ctx, state) {
+  const s = state.story;
+  if (!s) return;
+
+  ctx.fillStyle = '#2A2E24';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.fillStyle = SHEET;
+  ctx.beginPath();
+  ctx.roundRect(PAGE.x, PAGE.y, PAGE.w, PAGE.h, 14);
+  ctx.fill();
+  ctx.strokeStyle = EDGE;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.fillText(s.title, W / 2, PAGE.y + 44);
+
+  ctx.strokeStyle = 'rgba(58,48,38,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAGE.x + 60, PAGE.y + 70);
+  ctx.lineTo(PAGE.x + PAGE.w - 60, PAGE.y + 70);
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = INK;
+  ctx.font = '600 15px system-ui, sans-serif';
+  paragraphs(ctx, s.lines, PAGE.x + 44, PAGE.y + 104, PAGE.w - 88, 23);
+  ctx.restore();
+
+  button(ctx, STORY_GO, s.go, true, true);
 }
 
 // --- stars ---------------------------------------------------------------------------
