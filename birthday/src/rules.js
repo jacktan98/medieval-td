@@ -25,9 +25,10 @@
 // present.
 
 import { prepare, at as pointOn, laneOf, nearestOn, randomLane } from '../../src/route.js';
-import { enemyTypes, maps, family, memberById, START_GOLD, START_LIVES, REFUND_RATE, spentTo,
-         SCALE } from './data.js';
+import { enemyTypes, maps, mapNames, family, memberById, START_LIVES, REFUND_RATE,
+         spentTo, SCALE } from './data.js';
 import { play, solo, voiceCue, killCue, blowCue, ENEMY_BLOW } from './audio.js';
+import { starsFor, memberOpen, record, opened, stars } from './progress.js';
 
 // Reach is an ELLIPSE, flattened by this, for the same reason the big game's is:
 // the board is drawn in perspective, so a patch of ground is wider than it is
@@ -101,7 +102,7 @@ export function newGame(mapIndex) {
   return {
     mapIndex,
     map,
-    gold: START_GOLD,
+    gold: map.gold,
     lives: START_LIVES,
     towers: [],
     units: [],
@@ -133,7 +134,19 @@ export function newGame(mapIndex) {
     menu: null,
     placing: null,
     speed: 1,
-    result: null
+    result: null,
+    // Filled in by finish(): the stars this game scored, and what passing it
+    // opened, or null.
+    score: 0,
+    won: null,
+    // The grown-up's keypad on the map screen, or null. It lives on the state
+    // rather than in input.js so the renderer can draw it.
+    keypad: null,
+    // The certificate's two: the name typed into the HTML field over the canvas,
+    // and whether a PDF is being made right now. `name` is carried across a
+    // restart by main.js — see the note there.
+    name: '',
+    saving: false
   };
 }
 
@@ -179,37 +192,16 @@ export function updateWaves(state, dt) {
   if (state.enemies.length) { state.timer = 0.4; return; }
 
   if (state.waveIndex >= state.map.waves.length - 1) {
-    state.result = 'won';
-    state.screen = 'won';
+    finish(state, 'won');
     return;
   }
 
   state.waveIndex++;
   state.resting = true;
   state.timer = REST;
-  // WHAT A CLEARED WAVE PAYS, and it is the one lever that moves the whole game at
-  // once. Bounties alone do not fund a board here: the big game's wave tables
-  // assume a plot whose output triples over eight waves, and a family member tops
-  // out at about 500 gold of levels, so the money has to arrive at roughly the rate
-  // the thugs do.
-  //
-  // It is the first number to turn if the game plays too easy or too hard, BEFORE
-  // touching anybody's damage — it lifts or drops every build equally and so does
-  // not change which of the four is worth having. `node birthday/tools/sim.mjs`
-  // says what it did.
-  //
-  // 85 + 22 -> 95 + 26, and it is a CORRECTION rather than a decision: Rei's
-  // damage came down by a third at the owner's request, and a one-of-each build
-  // that used to scrape Two Rivers stopped finishing it. The money is the lever
-  // that puts that back without arguing with the request — it hands every build
-  // the same extra plot, so the nerf still lands where it was aimed.
-  //
-  // It was tried at 105 + 30 as well, and that bought nothing: Two Rivers is not
-  // short of money, it is short of BLOCKERS — it has two roads and the sim never
-  // rallies anybody, so a build cycling all four leaves half the traffic to walk
-  // past. That is a fact about the sim rather than about the map, which is why
-  // "no papa" sails through it and "papa only" does not.
-  state.gold += 95 + state.waveIndex * 26;
+  // What clearing a wave pays. The numbers are the MAP'S — see `purse` in data.js
+  // for why they are per map and what to turn first.
+  state.gold += state.map.purse.base + state.waveIndex * state.map.purse.step;
 }
 
 function spawn(state, type) {
@@ -310,15 +302,32 @@ export function updateEnemies(state, dt) {
 
   if (state.lives <= 0 && !state.result) {
     state.lives = 0;
-    state.result = 'lost';
-    state.screen = 'lost';
+    finish(state, 'lost');
   }
+}
+
+// THE END OF A GAME, and the one place the story moves forward.
+//
+// `score` is what the result screen shows and `won` is what it announces. Both are
+// worked out HERE and kept on the state rather than recomputed while drawing,
+// because both are answers to "what just happened" — asking progress.js again on
+// the next frame would say what is true now, which after `record` is a different
+// question. Replaying a map you have already passed announces nothing.
+function finish(state, how) {
+  state.result = how;
+  state.screen = how;
+  state.score = how === 'won' ? starsFor(state.lives) : 0;
+  const before = stars(state.mapIndex);
+  state.won = how === 'won' ? opened(state.mapIndex, state.score, before) : null;
+  if (how === 'won') record(state.mapIndex, state.score);
 }
 
 // --- the family ----------------------------------------------------------------
 
 // How close a thug has to come to a road character before it is stopped, and how
 // close they stand to trade blows.
+const LOOK_DEADBAND = 10;
+
 const ENGAGE = 30;
 const REACH = 22;
 const SETTLE = 14;
@@ -350,6 +359,9 @@ export function makeUnit(state, t) {
     foe: null,
     cd: 0,
     thrust: 0,
+    // WHICH WAY THEY ARE DRAWN, kept rather than derived. See the note on
+    // LOOK_DEADBAND in updateUnits.
+    look: Math.cos(post.face) >= 0 ? 1 : -1,
     down: 0        // seconds until they are back on their feet
   });
 }
@@ -420,6 +432,24 @@ export function updateUnits(state, dt) {
       u.cd = u.tower.level.cd;
       u.thrust = 1;
     }
+
+    // WHICH WAY THE DRAWING FACES, and it is NOT taken from the angle each frame.
+    //
+    // The art is drawn facing left and mirrored to face right, and that part was
+    // always correct — measured over a real fight the mirrored figure agreed with
+    // the enemy's side on 349 samples out of 349. What was wrong is that a
+    // BLOCKED thug stands almost exactly on top of whoever stopped it: the median
+    // horizontal gap is 5px, and more than half of all samples were inside 5px.
+    // A facing decided by that flips several times a second and reads as somebody
+    // spinning on the spot rather than as somebody fighting.
+    //
+    // So the direction is remembered and only changed when the thing being
+    // attacked is CLEARLY to one side. In the common case — a thug directly above
+    // or below on a north-south stretch of road — there is no correct answer, and
+    // keeping the last one is the only stable one.
+    const focus = at || u.foe;
+    const side = (focus ? focus.x : u.rx) - u.x;
+    if (Math.abs(side) > LOOK_DEADBAND) u.look = side >= 0 ? 1 : -1;
 
     if (u.hp <= 0) {
       if (u.foe) { u.foe.foe = null; u.foe = null; }
@@ -668,6 +698,12 @@ export function updateShots(state, dt) {
 
 export const levelOf = (member, n) => member.levels[n - 1];
 
+// WHO THE PLAYER HAS. The build ring asks this rather than reading `family`, so a
+// character who has not been earned is not a greyed-out button — they are simply
+// not on the ring. The order is the family's own, so Mommy is always where Mommy
+// was.
+export const buildable = () => family.filter(m => memberOpen(m.id));
+
 export function build(state, plot, member) {
   const level = levelOf(member, 1);
   if (state.gold < level.cost) return false;
@@ -844,4 +880,4 @@ export function step(state, dt) {
   updateEnemies(state, dt);
 }
 
-export { family, memberById, maps, enemyTypes, START_GOLD, START_LIVES, SCALE };
+export { family, memberById, maps, mapNames, enemyTypes, START_LIVES, SCALE };

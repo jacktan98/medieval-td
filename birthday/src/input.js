@@ -3,10 +3,12 @@
 // board must not let the board answer.
 
 import { PLOT_R, BTN_R, menuItems, MAP_BTN, BOOK_ROW, BOOK_START, BOOK_BACK,
-         RESULT_AGAIN, RESULT_MAPS, HUD_H, HUD_BTN, PAUSE_ROW } from './render.js';
+         RESULT_AGAIN, RESULT_MAPS, HUD_H, HUD_BTN, PAUSE_ROW, CERT_BTN, ADMIN_DOT,
+         KEY_R, keyAt, KEY_BACK, CERT_SAVE, CERT_BACK, NAME_BOX } from './render.js';
 import { family, maps, build, upgrade, sell, towerAt, moveUnit, clampReach, newGame,
          callWaveEarly, pickFigure } from './rules.js';
 import { unlock, play, solo, voiceCue, SELECT } from './audio.js';
+import { mapOpen, memberOpen, finished, unlockAll, UNLOCK_PIN } from './progress.js';
 
 // Every box in this file is padded before it is tested. The drawn controls are
 // small — this is a 960-unit board on a phone — and shrinking the picture must
@@ -14,7 +16,7 @@ import { unlock, play, solo, voiceCue, SELECT } from './audio.js';
 const inside = (b, x, y, pad = 8) =>
   x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad;
 
-export function attach(canvas, state, restart) {
+export function attach(canvas, state, restart, download) {
   canvas.addEventListener('pointerdown', e => {
     // EVERY TAP, not just the first. A phone locking, a call arriving or the tab
     // going to the background all suspend the audio context again, and without
@@ -38,18 +40,41 @@ export function attach(canvas, state, restart) {
     // board refuses everything but its three controls, and bare ground with
     // nothing open has nothing to say. Clicking at those would teach the player
     // that the click means "heard you" rather than "done".
-    if (tap(state, x, y, restart)) play(SELECT);
+    if (tap(state, x, y, restart, download)) play(SELECT);
   });
 }
 
 // Returns whether the tap DID anything. See the note above for why that is the
 // return value rather than nothing.
-function tap(state, x, y, restart) {
+function tap(state, x, y, restart, download) {
   if (state.screen === 'maps') {
+    // THE KEYPAD OWNS THE SCREEN while it is up, the same rule every panel in this
+    // file follows.
+    if (state.keypad) return keypad(state, x, y);
+
+    if (inside(ADMIN_DOT, x, y, 10)) {
+      state.keypad = { typed: '', wrong: false };
+      return true;
+    }
+    if (finished() && inside(CERT_BTN, x, y)) { state.screen = 'certificate'; return true; }
+
     const i = maps.findIndex((_, n) => inside(MAP_BTN(n), x, y));
-    if (i < 0) return false;
+    // A LOCKED MAP ABSORBS ITS TAP. It is a picture of somewhere you cannot go
+    // yet, and the sentence under it already says why; a click would say "done".
+    if (i < 0 || !mapOpen(i)) return false;
     restart(i);
     return true;
+  }
+
+  if (state.screen === 'certificate') {
+    // The name field is a real HTML input sitting over this box, so a tap inside
+    // it never reaches here — the browser takes it. The test is still worth
+    // having: it stops a tap on the field from being read as a tap on nothing and
+    // clicking, which would be a click the field did not make.
+    if (inside(NAME_BOX, x, y)) return false;
+    if (inside(CERT_SAVE, x, y) && !state.saving) { download(); return true; }
+    if (inside(CERT_BACK, x, y)) { state.screen = 'maps'; return true; }
+    return false;
   }
 
   if (state.screen === 'won' || state.screen === 'lost') {
@@ -72,7 +97,9 @@ function tap(state, x, y, restart) {
     }
     if (state.reading && inside(BOOK_BACK, x, y)) { state.reading = null; return true; }
     const m = family.find((_, i) => inside(BOOK_ROW(i), x, y));
-    if (!m || m === state.reading) return false;
+    // A locked card has no description to open, so its tap does nothing — the
+    // card itself already says what would open it.
+    if (!m || m === state.reading || !memberOpen(m.id)) return false;
     state.reading = m;
     return true;
   }
@@ -161,6 +188,28 @@ function tap(state, x, y, restart) {
   state.menu = null;
   select(state, null);
   return had;
+}
+
+// THE GROWN-UP'S KEYPAD. Four digits, and the only thing it can do is open
+// everything — there is no dashboard behind it and nothing to get wrong.
+function keypad(state, x, y) {
+  const k = state.keypad;
+
+  if (inside(KEY_BACK, x, y, 10)) { state.keypad = null; return true; }
+
+  for (let n = 0; n <= 9; n++) {
+    const p = keyAt(n);
+    if (Math.hypot(p.x - x, p.y - y) > KEY_R + 6) continue;
+    k.typed += String(n);
+    k.wrong = false;
+    if (k.typed.length < UNLOCK_PIN.length) return true;
+    // Four in: right or wrong, the slate is cleared either way, so a wrong guess
+    // cannot be corrected by adding a fifth digit.
+    if (k.typed === UNLOCK_PIN) { unlockAll(); state.keypad = null; }
+    else { k.typed = ''; k.wrong = true; }
+    return true;
+  }
+  return false;
 }
 
 // Put somebody in the panel, and let them say so. The voice is the big game's

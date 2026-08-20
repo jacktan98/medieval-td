@@ -21,18 +21,123 @@ import { enemyTypes } from '../../src/data/waves.js';
 
 export { enemyTypes };
 
-// The three maps, in the order they are offered. Each carries its own road, its
-// own plots and its own wave table — all of it the big game's, all of it
-// untouched — with the PURSE overridden, because this game's towers cost
-// different money and there is no upgrade ladder to spend it on.
+// THE PURSE YOU OPEN WITH, and it is per map for the same reason the wave bonus
+// is: what a board costs to get started on depends on the board.
 //
-// 300 rather than 220: the pop-up introduces four people and it is a nicer
-// birthday present if two of them can be on the board before the first thug
-// arrives.
-export const START_GOLD = 300;
+// 300 rather than the big game's 220 to begin with — the pop-up introduces the
+// family, and it is a nicer birthday present if two of them can be on the board
+// before the first thug arrives.
+//
+// TWO RIVERS OPENS WITH HALF AS MUCH AGAIN, and that is the single most useful
+// thing the sim found. Counting where the lives actually went on that map: waves
+// 1, 2 and 3 leaked 3.1, 4.3 and 5.3 of them, and waves 4 to 10 leaked NOTHING.
+// It was never an endgame problem — it has two roads and eleven plots, so 300
+// gold covers one road and the first three waves walk down the other one. Every
+// attempt to fix it by thinning the late waves made it worse, because a thug is
+// 15 gold and thinning them starved the board further.
 export const START_LIVES = 20;
+const START_GOLD = [300, 300, 450];
 
-export const maps = [level01, level02, level03];
+// --- the waves are THIS GAME'S now ------------------------------------------------
+//
+// They used to be the big game's, imported with the map. They cannot be any more,
+// because the story the owner asked for changes what the player HAS on each map:
+//
+//   The Bend      5 waves, and only Mommy and Ella to hold it
+//   The Fork      8 waves, with Papa unlocked
+//   Two Rivers   10 waves, with Rei unlocked — and hordes, which are his answer
+//
+// A table written for four towers of four tiers on a board of nine plots is the
+// wrong shape for two people, whatever it is scaled by. So each map gets a table
+// written against the roster it is played with, and `node birthday/tools/sim.mjs`
+// is what says whether it landed.
+//
+// THE ROADS, THE PLOTS AND THE THUGS ARE STILL THE BIG GAME'S. Only the tables
+// below are ours — `map.waves` is overridden on the way past, and nothing is
+// written back into the level files.
+//
+// --- the shape of each one ---------------------------------------------------------
+//
+// EASY TO NORMAL, because Ella is five. The big game's map 1 opens with 4 thugs
+// at 1.6s and finishes with 34 thugs and 6 giants; this one opens gentler and
+// finishes well short of that.
+//
+// NO GIANTS AT ALL ON THE BEND. A Giant Thug is 1000 health, and against two
+// people who between them do about 25 damage a second at level 1 it simply walks
+// through — the answer to a giant in this game is Papa standing in front of it,
+// and Papa is not unlocked yet. Putting one on the tutorial map would teach the
+// player that the game is unfair rather than that giants are hard.
+//
+// HORDES ON TWO RIVERS, and that is the whole point of the last map. Rei damages
+// everything in his reach at once, so his value is exactly the number of thugs
+// standing in it; a wave of forty is worth forty times a wave of one to him and
+// nothing at all to anybody else. The counts below climb far faster than the big
+// game's while the giants climb slower.
+const thugs = (count, gap) => ({ type: 'light_inf', count, gap });
+const giants = (count, gap) => ({ type: 'heavy_inf', count, gap });
+const plague = (count, gap) => ({ type: 'plague_inf', count, gap });
+
+const bendWaves = [
+  { groups: [thugs(5, 1.6)] },
+  { groups: [thugs(8, 1.4)] },
+  { groups: [thugs(12, 1.2)] },
+  { groups: [thugs(16, 1.0), plague(1, 2)] },
+  { groups: [thugs(22, 0.85), plague(2, 2)] }
+];
+
+const forkWaves = [
+  { groups: [thugs(4, 1.7)] },
+  { groups: [thugs(6, 1.5)] },
+  { groups: [thugs(9, 1.3)] },
+  { groups: [thugs(11, 1.15), giants(1, 2)] },
+  { groups: [thugs(13, 1.05), giants(1, 2), plague(1, 2)] },
+  { groups: [thugs(16, 0.95), giants(2, 1.9), plague(1, 2)] },
+  { groups: [thugs(20, 0.85), giants(3, 1.7), plague(1, 2)] },
+  { groups: [thugs(26, 0.75), giants(4, 1.5), plague(2, 2)] }
+];
+
+const riverWaves = [
+  { groups: [thugs(5, 1.6)] },
+  { groups: [thugs(8, 1.4)] },
+  { groups: [thugs(12, 1.2)] },
+  { groups: [thugs(15, 1.05)] },
+  { groups: [thugs(18, 0.9), giants(1, 2)] },
+  { groups: [thugs(22, 0.8), giants(1, 1.9), plague(1, 2)] },
+  { groups: [thugs(24, 0.72), giants(1, 1.7), plague(1, 2)] },
+  { groups: [thugs(26, 0.66), giants(1, 1.6), plague(1, 2)] },
+  { groups: [thugs(30, 0.62), giants(2, 1.5), plague(1, 2)] },
+  { groups: [thugs(34, 0.58), giants(2, 1.5), plague(2, 2)] }
+];
+
+// WHAT A CLEARED WAVE PAYS, per map, as `base + step per wave cleared`.
+//
+// It is per map rather than one number for the game, and finding that out was the
+// most useful thing the sim did all evening. Two Rivers kept failing however much
+// its waves were thinned — and thinning them made it WORSE, which is the shape of
+// a money problem rather than a difficulty one. A thug is 15 gold, so cutting
+// thirty of them out of the back half quietly removes 450 gold from a map that
+// has ELEVEN plots to fill and ten waves to fill them in. The board could not be
+// finished, so the last waves met a half-built map.
+//
+// So the money is set against the board rather than against the danger: nine
+// plots over five waves on The Bend, nine over eight on The Fork, eleven over ten
+// on Two Rivers. Turn these BEFORE touching anybody's damage — they lift or drop
+// every build on one map equally, and so do not change which of the four is worth
+// having there.
+const purse = (base, step) => ({ base, step });
+
+// The three maps, in the order they are offered and unlocked. Each is the big
+// game's level object with this game's wave table and purse on it — a shallow
+// copy, so the level files themselves are never touched and the big game cannot
+// notice this folder exists.
+export const maps = [
+  { ...level01, waves: bendWaves, gold: START_GOLD[0], purse: purse(95, 26) },
+  { ...level02, waves: forkWaves, gold: START_GOLD[1], purse: purse(95, 26) },
+  { ...level03, waves: riverWaves, gold: START_GOLD[2], purse: purse(145, 44) }
+];
+
+// Their names, for the screens and for the sentence that says what unlocks what.
+export const mapNames = maps.map(m => m.name);
 
 // EVERYTHING ON THE BOARD IS DRAWN AT THIS, 105/512 of the source file, and it
 // is the big game's own number rather than a coincidence: the thugs on this
@@ -248,9 +353,9 @@ const REI = {
   // A third off puts him level with the others against a crowd instead of ahead
   // of them, and leaves him where he belongs against one big thing: useless.
   levels: [
-    { cost: 120, range: 150, damage: 9 },
-    { cost: 110, range: 168, damage: 15 },
-    { cost: 170, range: 186, damage: 24 }
+    { cost: 90, range: 150, damage: 9 },
+    { cost: 85, range: 168, damage: 15 },
+    { cost: 130, range: 186, damage: 24 }
   ]
 };
 

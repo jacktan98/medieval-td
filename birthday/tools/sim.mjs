@@ -24,6 +24,7 @@
 // birthday present.
 
 import { newGame, step, build, upgrade, family, maps } from '../src/rules.js';
+import { starsFor, PASS } from '../src/progress.js';
 import { nearestOn } from '../../src/route.js';
 
 const DT = 1 / 60;
@@ -64,12 +65,16 @@ function run(mapIndex, plan) {
   return { result: s.result || 'stuck', lives: s.lives, wave: s.waveIndex + 1, t };
 }
 
-// FIVE RUNS OF EACH, and the majority answer. Thugs pick a lane and a road at
+// FIFTEEN RUNS OF EACH, and the median answer. Thugs pick a lane and a road at
 // random when they spawn, so one run of one plan is a coin toss at the margins —
-// and tuning against a coin toss is how an afternoon disappears. Three was not
-// enough: a plan sitting near 50% flipped its verdict between runs of this file,
-// which reads as a balance change that never happened.
-const TRIES = 5;
+// and tuning against a coin toss is how an afternoon disappears.
+//
+// It was three, then five, and neither was enough once the tuning target became
+// LIVES rather than won-or-lost. A star is a threshold on lives, and lives are far
+// noisier than the verdict: the same table was measured at 8 lives and then at 3
+// on the very next run, which reads as a difficulty change that never happened.
+// Fifteen runs settles it, and the whole file still finishes in under ten seconds.
+const TRIES = 15;
 
 const best = (mapIndex, plan) => {
   const runs = Array.from({ length: TRIES }, () => run(mapIndex, plan));
@@ -78,44 +83,89 @@ const best = (mapIndex, plan) => {
   return { ...typical, result: wins * 2 > TRIES ? 'won' : typical.result, wins };
 };
 
+// WHAT THE PLAYER ACTUALLY HAS ON EACH MAP, which is the whole point of this
+// file now. The story gives them two people on The Bend, three on The Fork and
+// four on Two Rivers, so a plan built out of Papa on map 1 is not a build anybody
+// can make — testing it would be testing a game nobody plays.
+//
+// The FIRST plan of each map is the intended one: everybody who is unlocked, in
+// rotation. That is the one the assertions are about. The rest are the ways a
+// player might actually go wrong — one person everywhere, or ignoring somebody —
+// and they are reported for a person to read.
+const ROSTER = [
+  ['mommy', 'ella'],
+  ['papa', 'mommy', 'ella'],
+  ['papa', 'mommy', 'ella', 'rei']
+];
+
 const PLANS = [
-  ['MIXED', ['papa', 'ella', 'rei', 'mommy']],
-  ['papa only', ['papa']],
-  ['mommy only', ['mommy']],
-  ['ella only', ['ella']],
-  ['rei only', ['rei']],
-  ['no papa', ['mommy', 'ella', 'rei']],
-  ['blockers', ['papa', 'mommy']],
-  ['towers', ['ella', 'rei']]
+  [
+    ['everyone', ['mommy', 'ella']],
+    ['mommy only', ['mommy']],
+    ['ella only', ['ella']]
+  ],
+  [
+    ['everyone', ['papa', 'mommy', 'ella']],
+    ['papa only', ['papa']],
+    ['mommy only', ['mommy']],
+    ['ella only', ['ella']],
+    ['no papa', ['mommy', 'ella']]
+  ],
+  [
+    ['everyone', ['papa', 'mommy', 'ella', 'rei']],
+    ['papa only', ['papa']],
+    ['mommy only', ['mommy']],
+    ['ella only', ['ella']],
+    ['rei only', ['rei']],
+    ['no rei', ['papa', 'mommy', 'ella']],
+    ['towers', ['ella', 'rei']]
+  ]
 ];
 
 let bad = 0;
-const won = {};
-
-for (let m = 0; m < maps.length; m++) {
-  console.log(`\n${maps[m].name}\n`);
-  for (const [label, plan] of PLANS) {
-    const r = best(m, plan);
-    won[label] = (won[label] || 0) + (r.result === 'won' ? 1 : 0);
-    console.log(`  ${label.padEnd(12)} ${r.result.padEnd(6)} ` +
-      `${r.wins}/${TRIES}  lives ${String(r.lives).padStart(2)}  wave ${r.wave}`);
-  }
-}
-
-console.log('\nWhat that says\n');
-
-// ONE OF EACH HAS TO BE A WAY TO PLAY. Not the best way — the best way should be
-// whatever suits the map — but a family game where the family build loses every
-// map is a family game where three of them are decoration.
-const mixed = won.MIXED || 0;
 const ok = (cond, label, detail = '') => {
   console.log(`  ${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(46)} ${detail}`);
   if (!cond) bad++;
 };
 
-ok(mixed >= 2, 'one of each wins most maps', `${mixed} of ${maps.length}`);
+const verdicts = [];
 
-// THE SOLO BUILDS ARE REPORTED, NOT ASSERTED, and that is a deliberate line.
+for (let m = 0; m < maps.length; m++) {
+  console.log(`\n${maps[m].name} — ${maps[m].waves.length} waves, with ` +
+              `${ROSTER[m].join(', ')}\n`);
+  for (const [label, plan] of PLANS[m]) {
+    const r = best(m, plan);
+    const got = r.result === 'won' ? starsFor(r.lives) : 0;
+    if (label === 'everyone') verdicts.push({ map: m, ...r, stars: got });
+    console.log(`  ${label.padEnd(12)} ${r.result.padEnd(6)} ` +
+      `${r.wins}/${TRIES}  lives ${String(r.lives).padStart(2)}  ` +
+      `wave ${String(r.wave).padStart(2)}  ${got ? '*'.repeat(got) : '-'}`);
+  }
+}
+
+console.log('\nWhat that says\n');
+
+// THE ONE THING THAT MUST HOLD: the roster you are given has to be enough to pass
+// the map it is given on, because passing it is the only way to get the next one.
+// A map that cannot be two-starred with what the player owns is not hard, it is a
+// dead end — the story stops there and the certificate is unreachable.
+//
+// Two stars rather than a win, because two stars is what the door asks for.
+for (const v of verdicts) {
+  ok(v.result === 'won' && v.stars >= PASS,
+     `${maps[v.map].name}: its own roster passes it`,
+     `${v.stars} star(s), ${v.lives} lives, ${v.wins}/${TRIES} wins`);
+}
+
+// AND IT MUST NOT BE TRIVIAL EITHER. Three stars every time on every map means
+// the difficulty is doing nothing and the stars say nothing; the owner asked for
+// easy-to-normal, not for a walk. This is a soft check and it is meant to be:
+// one map landing on three stars is fine, all three is a flat game.
+ok(verdicts.filter(v => v.stars >= 3).length < 3,
+   'not every map hands out three stars',
+   verdicts.map(v => v.stars).join('/'));
+
+// THE REST IS REPORTED, NOT ASSERTED, and that is a deliberate line.
 //
 // medieval-td holds a real invariant — no single family may clear any map — and it
 // costs twenty seeds, an exhaustive sweep and an afternoon every time a number
@@ -123,25 +173,9 @@ ok(mixed >= 2, 'one of each wins most maps', `${mixed} of ${maps.length}`);
 // runs a plan sitting anywhere near half flips its verdict between runs of this
 // file, so the check reported balance changes that had not happened.
 //
-// So the numbers are printed and a person reads them. If one of the four is
-// winning every map on its own after the family have played it, that is the line
-// to look at — and the fix is that character's cost, which is the only lever that
-// changes who is worth building without changing how hard the game is.
-const solo = PLANS.filter(([l]) => l.endsWith(' only'))
-  .map(([l]) => `${l.replace(' only', '')} ${won[l] || 0}`).join(', ');
-console.log(`  --    alone, out of ${maps.length} maps:               ${solo}`);
-
-// AND THE PAIRS, reported for the same reason the solos are. A pair sitting on one
-// map out of three is exactly the case that flips between runs of this file, so
-// asserting it would be asserting the weather.
-//
-// What to read them for: every one of the four should appear on a winning team
-// somewhere. If a pair is on nought across several runs of this file, one of those
-// two is dead weight and their cost is the number to look at.
-const pairs = [['Papa + Mommy', 'blockers'], ['Ella + Rei', 'towers'],
-               ['without Papa', 'no papa']];
-console.log(`  --    in pairs:                              ` +
-  pairs.map(([label, key]) => `${label} ${won[key] || 0}`).join(', '));
-
+// What to read the solo lines for: if one of the four wins its map alone with
+// three stars, the others are decoration on that map, and the fix is that
+// character's COST — the only lever that changes who is worth building without
+// changing how hard the game is.
 console.log(bad ? `\n${bad} thing(s) to look at.` : '\nThe family game holds together.');
 process.exit(bad ? 1 : 0);

@@ -15,6 +15,19 @@
     user-select: none;
   }
   #wrap { display: grid; place-items: center; height: 100%; }
+  #name {
+    position: fixed;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(240, 230, 210, 0.08);
+    color: #F0E6D2;
+    font: 600 18px system-ui, sans-serif;
+    padding: 0 14px;
+    outline: none;
+  }
+  #name::placeholder { color: rgba(240, 230, 210, 0.35); }
+  #name[hidden] { display: none; }
   canvas {
     display: block;
     width: min(100vw, 177.78vh);
@@ -25,6 +38,17 @@
 </head>
 <body>
   <div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+
+  <!-- THE ONE PIECE OF HTML THE GAME USES, and it is here because a canvas cannot
+       take typing. Everything else in this project is drawn; a name field is the
+       one control where the right answer is the browser's own — it brings up a
+       phone's keyboard, it handles a caret and selection and paste, and none of
+       that is worth reimplementing on a canvas for one line of text.
+
+       It is hidden until the certificate screen is up, and main.js is what
+       positions it over the box the renderer draws. -->
+  <input id="name" type="text" maxlength="28" autocomplete="name"
+         placeholder="Type your name" aria-label="Your name" hidden>
 
   <!-- No import map and no cache busting, unlike the big game's page. This one is
        five modules and is not deployed on its own cadence: it rides along with

@@ -7,11 +7,13 @@
 import { loadArt } from './assets.js';
 import { loadAudio } from './audio.js';
 import { newGame, step, validate } from './rules.js';
-import { draw } from './render.js';
+import { draw, NAME_BOX } from './render.js';
 import { attach } from './input.js';
+import { save } from './certificate.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const nameField = document.getElementById('name');
 
 // Same cap as the big game's, for the same reason: a phone at 3x device pixels is
 // as sharp as this art can be drawn, and anything past it is fill rate spent on
@@ -40,13 +42,47 @@ state.screen = 'maps';
 // Choosing a map from the picker does not pass it, so the introduction still comes
 // up the first time each map is played.
 function restart(mapIndex, skipIntro = false) {
+  // THE NAME OUTLIVES A GAME. Everything else about a state object belongs to one
+  // playthrough and is thrown away with it, but somebody who typed their name on
+  // the certificate, went back for one more go at Two Rivers and came round again
+  // should not have to type it twice.
+  const keep = { name: state.name || '' };
   const next = newGame(mapIndex ?? state.mapIndex);
   if (skipIntro) { next.screen = 'play'; next.begun = true; }
   Object.keys(state).forEach(k => delete state[k]);
-  Object.assign(state, next);
+  Object.assign(state, next, keep);
 }
 
-attach(canvas, state, restart);
+// THE NAME FIELD lives over the canvas rather than in it, and this is everything
+// that takes: keep the typed value on the state, and put the element where the
+// renderer drew its box. Two lines of arithmetic and no framework.
+nameField.addEventListener('input', () => { state.name = nameField.value; });
+
+function placeNameField() {
+  const on = state.screen === 'certificate';
+  nameField.hidden = !on;
+  if (!on) return;
+  const r = canvas.getBoundingClientRect();
+  const kx = r.width / 960;
+  const ky = r.height / 540;
+  nameField.style.left = `${r.left + NAME_BOX.x * kx}px`;
+  nameField.style.top = `${r.top + NAME_BOX.y * ky}px`;
+  nameField.style.width = `${NAME_BOX.w * kx}px`;
+  nameField.style.height = `${NAME_BOX.h * ky}px`;
+  nameField.style.fontSize = `${Math.round(18 * ky)}px`;
+}
+
+// Making the PDF is a couple of hundred milliseconds of JPEG encoding, so the
+// button says so while it happens rather than appearing to do nothing.
+async function download() {
+  if (state.saving) return;
+  state.saving = true;
+  try { await save(state.name || ''); }
+  catch (e) { console.warn('Birthday: could not make the certificate', e); }
+  state.saving = false;
+}
+
+attach(canvas, state, restart, download);
 
 // The same door the big game opens on `?debug`, for the same reason: a browser
 // driving this page needs somewhere to read the board from. It is behind the
@@ -72,6 +108,7 @@ function frame(now) {
   // because a thug can be swept up on the frame the player pauses.
   validate(state);
   draw(ctx, state);
+  placeNameField();
   requestAnimationFrame(frame);
 }
 

@@ -16,8 +16,10 @@ import { art } from './assets.js';
 // flag because a planted flag is drawn by its POLE FOOT, and that measurement
 // belongs beside the picture it was taken from.
 import { ui, RALLY_FLAG_H, FLAG_FOOT } from '../../src/data/ui.js';
-import { family, enemyTypes, maps, inReach, SQUASH, SCALE, levelOf, refundValue, refundOf,
-         waveSize, canCallWave, earlyBonus, selectionInfo } from './rules.js';
+import { family, enemyTypes, maps, mapNames, inReach, SQUASH, SCALE, levelOf, refundValue,
+         refundOf, waveSize, canCallWave, earlyBonus, selectionInfo, buildable } from './rules.js';
+import { stars, mapOpen, memberOpen, howToOpen, finished, PASS } from './progress.js';
+import { render as certificate } from './certificate.js';
 
 const W = 960, H = 540;
 
@@ -35,6 +37,7 @@ export function draw(ctx, state) {
   ctx.clearRect(0, 0, W, H);
 
   if (state.screen === 'maps') { drawMapPick(ctx, state); return; }
+  if (state.screen === 'certificate') { drawCertificate(ctx, state); return; }
 
   drawGround(ctx, state);
   drawPlots(ctx, state);
@@ -303,11 +306,12 @@ function homePlate(ctx, t) {
 }
 
 function drawUnit(ctx, u) {
-  const look = Math.cos(u.face) >= 0 ? 1 : -1;
-  const dir = turn(u.member, look);
+  // `look` is decided in rules.js and REMEMBERED between frames — see the note on
+  // LOOK_DEADBAND there for why it cannot be taken from the angle.
+  const dir = turn(u.member, u.look);
   // The lunge goes the way they are looking rather than the way the drawing does,
   // so a mirrored Papa still steps into his swing.
-  const lunge = look * u.thrust * 4;
+  const lunge = u.look * u.thrust * 4;
   figure(ctx, u.member, u.thrust > 0, u.x + lunge, u.y, dir);
   bar(ctx, u.x, u.y - 40, 26, u.hp / u.maxHp, '#6BBF59');
 }
@@ -679,8 +683,14 @@ export function menuItems(state, menu) {
   };
 
   if (!menu.tower) {
-    const step = Math.PI * 2 / family.length;
-    family.forEach((m, i) => {
+    // ONLY THE PEOPLE WHO HAVE BEEN EARNED, and the ring divides itself between
+    // however many that is: two buttons opposite each other on the first map,
+    // three at the points of a triangle on the second, four at the compass points
+    // on the third. A greyed-out button for somebody who cannot be built would be
+    // a tap that does nothing, four times a plot.
+    const who = buildable();
+    const step = Math.PI * 2 / who.length;
+    who.forEach((m, i) => {
       const lv = levelOf(m, 1);
       put(-Math.PI / 2 + i * step, {
         act: 'build', member: m, cost: lv.cost,
@@ -754,7 +764,16 @@ function drawMenu(ctx, state) {
 
 // --- the screens ------------------------------------------------------------------
 
-export const MAP_BTN = i => ({ x: 120 + i * 250, y: 220, w: 220, h: 150 });
+export const MAP_BTN = i => ({ x: 120 + i * 250, y: 208, w: 220, h: 150 });
+
+// The certificate, offered on the picker once all three are passed. It is the end
+// of the story, so it sits under the three maps rather than beside them.
+export const CERT_BTN = { x: W / 2 - 150, y: 434, w: 300, h: 44 };
+
+// THE WAY IN FOR A GROWN-UP, in the bottom right, small and unlabelled. Same
+// manners as the big game's own admin door: a five-year-old should not find it by
+// wondering what a button does, and the owner knows where it is.
+export const ADMIN_DOT = { x: W - 46, y: H - 46, w: 34, h: 34 };
 
 function drawMapPick(ctx, state) {
   ctx.fillStyle = '#2A2E24';
@@ -763,16 +782,19 @@ function drawMapPick(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = CREAM;
-  ctx.font = '700 34px system-ui, sans-serif';
-  ctx.fillText('Happy Birthday, Mommy', W / 2, 90);
-  ctx.font = '600 17px system-ui, sans-serif';
+  ctx.font = '700 32px system-ui, sans-serif';
+  ctx.fillText('Happy Birthday, Mommy', W / 2, 74);
+  ctx.font = '600 16px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(240,230,210,0.7)';
-  ctx.fillText('Pick a place to defend', W / 2, 132);
+  ctx.fillText('Pick a place to defend', W / 2, 112);
 
   maps.forEach((m, i) => {
     const b = MAP_BTN(i);
+    const open = mapOpen(i);
     const img = art[m.art];
+
     ctx.save();
+    ctx.globalAlpha = open ? 1 : 0.28;
     ctx.beginPath();
     ctx.roundRect(b.x, b.y, b.w, b.h, 10);
     ctx.clip();
@@ -780,16 +802,216 @@ function drawMapPick(ctx, state) {
     else { ctx.fillStyle = '#4E7A46'; ctx.fillRect(b.x, b.y, b.w, b.h); }
     ctx.restore();
 
-    ctx.strokeStyle = EDGE;
+    ctx.save();
+    ctx.strokeStyle = open ? EDGE : 'rgba(138,122,86,0.4)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(b.x, b.y, b.w, b.h, 10);
     ctx.stroke();
+    ctx.restore();
 
-    ctx.fillStyle = CREAM;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = open ? CREAM : 'rgba(240,230,210,0.45)';
     ctx.font = '700 18px system-ui, sans-serif';
-    ctx.fillText(m.name, b.x + b.w / 2, b.y + b.h + 26);
+    ctx.fillText(m.name, b.x + b.w / 2, b.y + b.h + 24);
+
+    if (open) {
+      // What has been earned here, out of three. Drawn hollow for the ones that
+      // have not, so the row always says how many there are to get.
+      starRow(ctx, b.x + b.w / 2, b.y + b.h + 50, stars(i), 11);
+    } else {
+      padlock(ctx, b.x + b.w / 2, b.y + b.h / 2, 26);
+      ctx.fillStyle = 'rgba(240,230,210,0.6)';
+      ctx.font = '600 12px system-ui, sans-serif';
+      ctx.fillText(`${PASS} stars on ${mapNames[i - 1]}`, b.x + b.w / 2, b.y + b.h + 50);
+    }
   });
+
+  if (finished()) button(ctx, CERT_BTN, 'Print your certificate', true, true);
+
+  // The grown-up's door. A ring with three dots in it — no word, because a word
+  // is an invitation.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(240,230,210,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(ADMIN_DOT.x, ADMIN_DOT.y, ADMIN_DOT.w, ADMIN_DOT.h, 8);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(240,230,210,0.3)';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(ADMIN_DOT.x + 10 + i * 7, ADMIN_DOT.y + ADMIN_DOT.h / 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  if (state.keypad) drawKeypad(ctx, state);
+}
+
+// --- the certificate --------------------------------------------------------------
+//
+// The page on the left at whatever size the board can hold, and the controls on
+// the right. The preview is the offscreen A4 canvas scaled down — literally the
+// file, not a second drawing of it, so what is on screen is a promise about what
+// comes out of the printer.
+const CERT_H = 452;
+const CERT_W = Math.round(CERT_H * (8.27 / 11.69));
+const CERT_AT = { x: 64, y: 44 };
+
+export const NAME_BOX = { x: 400, y: 190, w: 470, h: 52 };
+export const CERT_SAVE = { x: 400, y: 292, w: 226, h: 50 };
+export const CERT_BACK = { x: 644, y: 292, w: 160, h: 50 };
+
+function drawCertificate(ctx, state) {
+  ctx.fillStyle = '#2A2E24';
+  ctx.fillRect(0, 0, W, H);
+
+  const page = certificate(state.name || '');
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 6;
+  ctx.drawImage(page, CERT_AT.x, CERT_AT.y, CERT_W, CERT_H);
+  ctx.restore();
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = CREAM;
+  ctx.font = '700 26px system-ui, sans-serif';
+  ctx.fillText('You did it', 400, 88);
+  ctx.fillStyle = 'rgba(240,230,210,0.72)';
+  ctx.font = '600 14px system-ui, sans-serif';
+  ctx.fillText('All three held. Put your name on it and print it out.', 400, 124);
+
+  ctx.fillStyle = 'rgba(240,230,210,0.6)';
+  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.fillText('YOUR NAME', NAME_BOX.x, NAME_BOX.y - 14);
+
+  // The box the HTML field sits over. It is drawn as well as being a real input,
+  // so the layout is right even in the moment before the field is positioned —
+  // and so a browser that refuses to show the field still shows a form.
+  ctx.strokeStyle = 'rgba(240,230,210,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(NAME_BOX.x, NAME_BOX.y, NAME_BOX.w, NAME_BOX.h, 8);
+  ctx.stroke();
+
+  button(ctx, CERT_SAVE, state.saving ? 'Making it...' : 'Download PDF', !state.saving, true);
+  button(ctx, CERT_BACK, 'Back', true);
+}
+
+// --- stars ---------------------------------------------------------------------------
+//
+// One shape, drawn everywhere a score is shown: the picker, the result screen and
+// the certificate. A five-pointed star as a path rather than a character, for the
+// same reason the pause glyph is drawn rather than typed — U+2605 is a box in a
+// font that has not got it, and which fonts a phone has is not this game's call.
+function star(ctx, cx, cy, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const k = i % 2 ? r * 0.44 : r;
+    const x = cx + Math.cos(a) * k;
+    const y = cy + Math.sin(a) * k;
+    if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+}
+
+export function starRow(ctx, cx, cy, got, r, gold = '#E0B24C') {
+  ctx.save();
+  for (let i = 0; i < 3; i++) {
+    star(ctx, cx + (i - 1) * (r * 2.4), cy, r);
+    if (i < got) { ctx.fillStyle = gold; ctx.fill(); }
+    ctx.strokeStyle = i < got ? gold : 'rgba(240,230,210,0.32)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// --- the grown-up's keypad ------------------------------------------------------------
+//
+// Ten digits and a way out, over the map picker. It exists for one stated reason:
+// if Ella cannot finish the game, the owner still wants the certificate to be
+// printable, so there has to be a way to open everything by hand.
+//
+// Deliberately plain, and deliberately not on the game screen — it is a tool, not
+// a feature, and the fewer people who find it the better it works.
+export const KEY_R = 34;
+export const KEY_PAD = { cx: W / 2, cy: 300, gap: 88 };
+
+// 1-9 in a grid with 0 under the middle, which is every phone's keypad and so
+// needs no learning.
+export const keyAt = n => {
+  const col = n === 0 ? 1 : (n - 1) % 3;
+  const row = n === 0 ? 3 : ((n - 1) / 3) | 0;
+  return {
+    x: KEY_PAD.cx + (col - 1) * KEY_PAD.gap,
+    y: KEY_PAD.cy + (row - 1.2) * KEY_PAD.gap
+  };
+};
+
+export const KEY_BACK = { x: W / 2 - 70, y: 470, w: 140, h: 40 };
+
+function drawKeypad(ctx, state) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(20,22,18,0.92)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = CREAM;
+  ctx.font = '700 20px system-ui, sans-serif';
+  ctx.fillText(state.keypad.wrong ? 'Not that one' : 'Code', W / 2, 74);
+
+  // What has been typed, as dots rather than digits — the one thing a keypad
+  // should not do is show the code to whoever is standing behind you.
+  ctx.fillStyle = 'rgba(240,230,210,0.8)';
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.arc(W / 2 - 33 + i * 22, 112, 6, 0, Math.PI * 2);
+    if (i < state.keypad.typed.length) ctx.fill(); else ctx.stroke();
+  }
+
+  ctx.font = '700 22px system-ui, sans-serif';
+  for (let n = 0; n <= 9; n++) {
+    const p = keyAt(n);
+    ctx.fillStyle = 'rgba(240,230,210,0.10)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, KEY_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(240,230,210,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = CREAM;
+    ctx.fillText(String(n), p.x, p.y + 1);
+  }
+  ctx.restore();
+
+  button(ctx, KEY_BACK, 'Back', true);
+}
+
+// A padlock, also drawn rather than typed, and for the same reason. Two of them,
+// because the two panels it appears on are opposite colours and one shape tinted
+// at the call site would need every caller to know that.
+const padlockInk = (ctx, cx, cy, h) => padlockIn(ctx, cx, cy, h, 'rgba(58,48,38,0.5)');
+const padlock = (ctx, cx, cy, h) => padlockIn(ctx, cx, cy, h, 'rgba(240,230,210,0.75)');
+
+function padlockIn(ctx, cx, cy, h, ink) {
+  const w = h * 0.78;
+  ctx.save();
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
+  ctx.lineWidth = h * 0.13;
+  ctx.beginPath();
+  ctx.arc(cx, cy - h * 0.18, w * 0.3, Math.PI, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.roundRect(cx - w / 2, cy - h * 0.18, w, h * 0.55, 3);
+  ctx.fill();
+  ctx.restore();
 }
 
 // The pop-up that introduces the four of them, before a single thug arrives. Four
@@ -831,6 +1053,7 @@ function drawFamilyBook(ctx, state) {
 
   family.forEach((m, i) => {
     const b = BOOK_ROW(i);
+    const got = memberOpen(m.id);
     const lit = !open || open === m;
 
     ctx.save();
@@ -843,13 +1066,31 @@ function drawFamilyBook(ctx, state) {
     ctx.lineWidth = open === m ? 2.5 : 1;
     ctx.stroke();
 
+    const tx = b.x + 10 + CARD.w + 12;
+    ctx.textAlign = 'left';
+
+    // A LOCKED CARD SHOWS NOBODY. Not a greyed portrait and not their name — the
+    // owner asked for Papa and Rei to be a surprise until they are earned, and a
+    // silhouette with a name under it gives away most of the surprise. What it
+    // does say is exactly how to open it, because a locked door with no sign on
+    // it is just a broken door.
+    if (!got) {
+      padlockInk(ctx, b.x + 10 + CARD.w / 2, b.y + b.h / 2, 30);
+      ctx.fillStyle = INK;
+      ctx.font = '700 17px system-ui, sans-serif';
+      ctx.fillText('Locked', tx, b.y + 28);
+      ctx.fillStyle = INK_MUTED;
+      ctx.font = '600 12px system-ui, sans-serif';
+      paragraphs(ctx, howToOpen(m.id, mapNames), tx, b.y + 50, b.w - (tx - b.x) - 14, 15);
+      ctx.restore();
+      return;
+    }
+
     // The column is CARD.w wide and Mommy's shotgun fills every pixel of it, so
     // the text starts clear of the whole slot rather than clear of the average
     // card.
     portrait(ctx, m, b.x + 10 + CARD.w / 2, b.y + b.h - 10);
-    const tx = b.x + 10 + CARD.w + 12;
 
-    ctx.textAlign = 'left';
     ctx.fillStyle = INK;
     ctx.font = '700 17px system-ui, sans-serif';
     ctx.fillText(m.name, tx, b.y + 24);
@@ -889,12 +1130,14 @@ function drawFamilyBook(ctx, state) {
     ctx.font = '500 13px system-ui, sans-serif';
     let y = BOOK.y + 80;
     for (const m of family) {
-      ctx.fillStyle = m.colour;
+      const got = memberOpen(m.id);
+      ctx.fillStyle = got ? m.colour : 'rgba(58,48,38,0.45)';
       ctx.font = '700 14px system-ui, sans-serif';
-      ctx.fillText(m.name, tx, y);
+      ctx.fillText(got ? m.name : 'Still to come', tx, y);
       ctx.fillStyle = INK_MUTED;
       ctx.font = '500 13px system-ui, sans-serif';
-      y = paragraphs(ctx, m.blurb, tx, y + 18, tw, 18) + 10;
+      y = paragraphs(ctx, got ? m.blurb : howToOpen(m.id, mapNames) + '.',
+                     tx, y + 18, tw, 18) + 10;
     }
   }
 
@@ -973,22 +1216,76 @@ function paragraphs(ctx, text, x, y, w, lead) {
 // have another go at this map, or go and pick a different one. The big game makes
 // you go back through the title screen for both; a five-year-old who has just lost
 // The Bend wants the left-hand button.
-export const RESULT_AGAIN = { x: W / 2 - 200, y: 330, w: 180, h: 48 };
-export const RESULT_MAPS = { x: W / 2 + 20, y: 330, w: 180, h: 48 };
+// TWO WAYS ON from a finished game, because they are two different intentions:
+// have another go at this map, or go and pick a different one. The big game makes
+// you go back through the title screen for both; a five-year-old who has just lost
+// The Bend wants the left-hand button.
+export const RESULT_AGAIN = { x: W / 2 - 200, y: 402, w: 180, h: 46 };
+export const RESULT_MAPS = { x: W / 2 + 20, y: 402, w: 180, h: 46 };
 
 function drawResult(ctx, state) {
-  ctx.fillStyle = 'rgba(20,22,18,0.85)';
+  ctx.fillStyle = 'rgba(20,22,18,0.88)';
   ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+
+  const won = state.result === 'won';
   ctx.fillStyle = CREAM;
-  ctx.font = '700 40px system-ui, sans-serif';
-  ctx.fillText(state.result === 'won' ? 'The house is safe!' : 'The thugs got in', W / 2, 220);
-  ctx.font = '600 17px system-ui, sans-serif';
+  ctx.font = '700 36px system-ui, sans-serif';
+  ctx.fillText(won ? 'The house is safe!' : 'The thugs got in', W / 2, 96);
+
+  // THE STARS ARE THE SCORE and they are the biggest thing on the page, because
+  // they are what the next map is bought with. A loss shows three hollow ones
+  // rather than nothing: the shape of what was missed is the point.
+  starRow(ctx, W / 2, 168, state.score || 0, 26);
+
+  ctx.font = '600 16px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(240,230,210,0.75)';
-  ctx.fillText(state.result === 'won'
+  ctx.fillText(won
     ? `All ${state.map.waves.length} waves held, with ${state.lives} lives left`
-    : `They got through on wave ${state.waveIndex + 1}`, W / 2, 268);
+    : `They got through on wave ${state.waveIndex + 1}`, W / 2, 214);
+
+  // WHAT THIS WON, and it is the only place the story moves forward. `state.won`
+  // is set once when the map is finished, so replaying a map you have already
+  // passed does not announce the same unlock again.
+  if (state.won) {
+    const m = family.find(f => f.id === state.won.member);
+    ctx.fillStyle = 'rgba(240,230,210,0.10)';
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - 260, 246, 520, 106, 12);
+    ctx.fill();
+    ctx.strokeStyle = m.colour;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    portrait(ctx, m, W / 2 - 200, 336);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#E0B24C';
+    ctx.font = '700 13px system-ui, sans-serif';
+    ctx.fillText('UNLOCKED', W / 2 - 150, 272);
+    ctx.fillStyle = CREAM;
+    ctx.font = '700 20px system-ui, sans-serif';
+    ctx.fillText(`${m.name} joins the family`, W / 2 - 150, 298);
+    ctx.fillStyle = 'rgba(240,230,210,0.7)';
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillText(`and ${mapNames[state.won.map]} is open`, W / 2 - 150, 322);
+    ctx.textAlign = 'center';
+  } else if (won && state.mapIndex === maps.length - 1 && finished()) {
+    // The last door. Nothing is unlocked by finishing Two Rivers, so what it says
+    // instead is that the certificate is waiting on the map screen.
+    ctx.fillStyle = '#E0B24C';
+    ctx.font = '700 18px system-ui, sans-serif';
+    ctx.fillText('All three held — your certificate is on the map screen', W / 2, 300);
+  } else if (won && state.score < PASS) {
+    // The useful half of a one-star win: it says WHY nothing opened, which is not
+    // obvious when you have just been told the house is safe.
+    ctx.fillStyle = 'rgba(240,230,210,0.7)';
+    ctx.font = '600 15px system-ui, sans-serif';
+    ctx.fillText(`${PASS} stars opens the next one — keep more of your ${20} lives`,
+                 W / 2, 300);
+  }
+
   button(ctx, RESULT_AGAIN, 'Play again', true, true);
   button(ctx, RESULT_MAPS, 'Another map', true);
 }
