@@ -4,10 +4,11 @@
 // --- what is borrowed and what is not -----------------------------------------
 //
 // TWO THINGS COME FROM THE BIG GAME, both read-only and both because the artist
-// asked for them: the three MAPS and the three THUGS. A road is a list of
-// waypoints and a thug is a row of numbers with a picture; copying either would
-// mean two copies to fix the next time a map is redrawn, and there is nothing in
-// them to disagree with.
+// asked for them: the three MAPS and the THUGS. A road is a list of waypoints and
+// a thug is a row of numbers with a picture; copying either would mean two copies
+// to fix the next time a map is redrawn, and there is nothing in them to disagree
+// with. This game keeps its own view of a handful of the thugs' numbers — see the
+// block below — but it never writes any of it back.
 //
 // EVERYTHING ELSE IS THIS FOLDER'S OWN. The towers, the fight, the drawing, the
 // loop, the screens. Nothing in `../src` imports anything from here, so this
@@ -17,9 +18,41 @@
 import { level01 } from '../../src/data/level01.js';
 import { level02 } from '../../src/data/level02.js';
 import { level03 } from '../../src/data/level03.js';
-import { enemyTypes } from '../../src/data/waves.js';
+import { enemyTypes as bigGameEnemies } from '../../src/data/waves.js';
 
-export { enemyTypes };
+// --- the thugs, as THIS game wants them -------------------------------------------
+//
+// The pictures, the speeds and the behaviour are still the big game's — they are
+// imported above and nothing is written back. What is different here is three
+// numbers, and each is a thing the owner asked for after playing it:
+//
+//   NO PLAGUE THUG AT ALL. He is dropped from the roster rather than merely left
+//   out of the wave tables, so nothing in this folder can accidentally bring him
+//   back — and so the stats panel's one portrait scale is worked out from the
+//   thugs that actually turn up.
+//
+//   A THUG PAYS LESS. Gold from bodies is cut by a third across the board. It is
+//   the difficulty lever that costs nothing in fairness: the same thugs arrive at
+//   the same time, and the board fills a little slower behind them. The wave
+//   bonus in `purse` below is untouched, so a player who holds the line still
+//   gets paid for holding it.
+//
+//   A GIANT IS HALF AS TOUGH AGAIN. 1000 to 1500 health. He was the one enemy
+//   the family could burn down about as fast as an ordinary thug once two of them
+//   were levelled, which made "a giant is coming" a sentence with nothing behind
+//   it. He is now what he looks like.
+const BOUNTY = 2 / 3;
+const GIANT_HP = 1.5;
+
+export const enemyTypes = Object.fromEntries(
+  Object.entries(bigGameEnemies)
+    .filter(([type]) => type !== 'plague_inf')
+    .map(([type, def]) => [type, {
+      ...def,
+      bounty: Math.round(def.bounty * BOUNTY),
+      hp: type === 'heavy_inf' ? Math.round(def.hp * GIANT_HP) : def.hp
+    }])
+);
 
 // THE PURSE YOU OPEN WITH, and it is per map for the same reason the wave bonus
 // is: what a board costs to get started on depends on the board.
@@ -28,15 +61,21 @@ export { enemyTypes };
 // family, and it is a nicer birthday present if two of them can be on the board
 // before the first thug arrives.
 //
-// TWO RIVERS OPENS WITH HALF AS MUCH AGAIN, and that is the single most useful
+// TWO RIVERS OPENS WITH NEARLY TWICE AS MUCH, and that is the single most useful
 // thing the sim found. Counting where the lives actually went on that map: waves
 // 1, 2 and 3 leaked 3.1, 4.3 and 5.3 of them, and waves 4 to 10 leaked NOTHING.
 // It was never an endgame problem — it has two roads and eleven plots, so 300
 // gold covers one road and the first three waves walk down the other one. Every
 // attempt to fix it by thinning the late waves made it worse, because a thug is
-// 15 gold and thinning them starved the board further.
+// 10 gold and thinning them starved the board further.
+//
+// ALL THREE WERE RAISED AGAIN when the thugs' bounty was cut by a third. That cut
+// is a difficulty change and it is meant to be one; what it must NOT do is put
+// the leaks back at the front of the map, where the board is empty and the player
+// has nothing to do about them. The opening purse pays for the opening, and the
+// difficulty lives in the last three waves of each table.
 export const START_LIVES = 20;
-const START_GOLD = [300, 300, 450];
+const START_GOLD = [300, 340, 560];
 
 // --- the waves are THIS GAME'S now ------------------------------------------------
 //
@@ -58,11 +97,26 @@ const START_GOLD = [300, 300, 450];
 //
 // --- the shape of each one ---------------------------------------------------------
 //
-// EASY TO NORMAL, because Ella is five. The big game's map 1 opens with 4 thugs
-// at 1.6s and finishes with 34 thugs and 6 giants; this one opens gentler and
-// finishes well short of that.
+// NORMAL, not easy, and that is a change the owner asked for after playing the
+// first cut. Every wave below is bigger or closer together than it was — The
+// Bend's last wave went from 22 thugs to 50 — and it is still two stars to pass
+// rather than three.
 //
-// NO GIANTS AT ALL ON THE BEND. A Giant Thug is 1000 health, and against two
+// THE DIFFICULTY IS IN THE BACK HALF ON PURPOSE, and that is worth stating because
+// the first attempt at "harder" put it in the front half instead and measured
+// worse in every way. Counting lives against the wave they were lost on: with
+// bigger opening waves, The Fork leaked 3.0, 2.4, 1.3 and 2.1 in waves 1 to 4 and
+// NOTHING in waves 5 to 8. That is not a hard map, it is a map that is decided
+// before the player has had a turn — there is nothing to do about wave 1 except
+// have started with more gold. So the openings are gentle, the purses cover them,
+// and the last three waves of each table are where a map is won or lost.
+//
+// TWO KINDS OF THUG NOW, since the Plague Thug is gone. What he took with him was
+// most of each map's ranged pressure, so the counts below carry it instead: more
+// bodies, arriving closer together, which is the pressure this family is built to
+// answer.
+//
+// NO GIANTS AT ALL ON THE BEND. A Giant Thug is 1500 health here, and against two
 // people who between them do about 25 damage a second at level 1 it simply walks
 // through — the answer to a giant in this game is Papa standing in front of it,
 // and Papa is not unlocked yet. Putting one on the tutorial map would teach the
@@ -75,38 +129,37 @@ const START_GOLD = [300, 300, 450];
 // game's while the giants climb slower.
 const thugs = (count, gap) => ({ type: 'light_inf', count, gap });
 const giants = (count, gap) => ({ type: 'heavy_inf', count, gap });
-const plague = (count, gap) => ({ type: 'plague_inf', count, gap });
 
 const bendWaves = [
-  { groups: [thugs(5, 1.6)] },
-  { groups: [thugs(8, 1.4)] },
-  { groups: [thugs(12, 1.2)] },
-  { groups: [thugs(16, 1.0), plague(1, 2)] },
-  { groups: [thugs(22, 0.85), plague(2, 2)] }
+  { groups: [thugs(5, 1.5)] },
+  { groups: [thugs(14, 1.10)] },
+  { groups: [thugs(24, 0.85)] },
+  { groups: [thugs(34, 0.70)] },
+  { groups: [thugs(50, 0.50)] }
 ];
 
 const forkWaves = [
-  { groups: [thugs(4, 1.7)] },
-  { groups: [thugs(6, 1.5)] },
-  { groups: [thugs(9, 1.3)] },
-  { groups: [thugs(11, 1.15), giants(1, 2)] },
-  { groups: [thugs(13, 1.05), giants(1, 2), plague(1, 2)] },
-  { groups: [thugs(16, 0.95), giants(2, 1.9), plague(1, 2)] },
-  { groups: [thugs(20, 0.85), giants(3, 1.7), plague(1, 2)] },
-  { groups: [thugs(26, 0.75), giants(4, 1.5), plague(2, 2)] }
+  { groups: [thugs(4, 1.6)] },
+  { groups: [thugs(7, 1.4)] },
+  { groups: [thugs(10, 1.2)] },
+  { groups: [thugs(13, 1.05), giants(1, 2)] },
+  { groups: [thugs(17, 0.95), giants(1, 2)] },
+  { groups: [thugs(21, 0.85), giants(2, 1.9)] },
+  { groups: [thugs(24, 0.78), giants(2, 1.7)] },
+  { groups: [thugs(30, 0.68), giants(3, 1.5)] }
 ];
 
 const riverWaves = [
-  { groups: [thugs(5, 1.6)] },
-  { groups: [thugs(8, 1.4)] },
-  { groups: [thugs(12, 1.2)] },
-  { groups: [thugs(15, 1.05)] },
-  { groups: [thugs(18, 0.9), giants(1, 2)] },
-  { groups: [thugs(22, 0.8), giants(1, 1.9), plague(1, 2)] },
-  { groups: [thugs(24, 0.72), giants(1, 1.7), plague(1, 2)] },
-  { groups: [thugs(26, 0.66), giants(1, 1.6), plague(1, 2)] },
-  { groups: [thugs(30, 0.62), giants(2, 1.5), plague(1, 2)] },
-  { groups: [thugs(34, 0.58), giants(2, 1.5), plague(2, 2)] }
+  { groups: [thugs(4, 1.5)] },
+  { groups: [thugs(6, 1.35)] },
+  { groups: [thugs(10, 1.15)] },
+  { groups: [thugs(15, 1.00)] },
+  { groups: [thugs(20, 0.90), giants(1, 2)] },
+  { groups: [thugs(25, 0.80), giants(1, 1.9)] },
+  { groups: [thugs(30, 0.70), giants(2, 1.7)] },
+  { groups: [thugs(34, 0.62), giants(3, 1.6)] },
+  { groups: [thugs(38, 0.58), giants(3, 1.5)] },
+  { groups: [thugs(44, 0.52), giants(4, 1.5)] }
 ];
 
 // WHAT A CLEARED WAVE PAYS, per map, as `base + step per wave cleared`.
@@ -114,8 +167,8 @@ const riverWaves = [
 // It is per map rather than one number for the game, and finding that out was the
 // most useful thing the sim did all evening. Two Rivers kept failing however much
 // its waves were thinned — and thinning them made it WORSE, which is the shape of
-// a money problem rather than a difficulty one. A thug is 15 gold, so cutting
-// thirty of them out of the back half quietly removes 450 gold from a map that
+// a money problem rather than a difficulty one. A thug is 10 gold, so cutting
+// thirty of them out of the back half quietly removes 300 gold from a map that
 // has ELEVEN plots to fill and ten waves to fill them in. The board could not be
 // finished, so the last waves met a half-built map.
 //
@@ -132,8 +185,8 @@ const purse = (base, step) => ({ base, step });
 // notice this folder exists.
 export const maps = [
   { ...level01, waves: bendWaves, gold: START_GOLD[0], purse: purse(95, 26) },
-  { ...level02, waves: forkWaves, gold: START_GOLD[1], purse: purse(95, 26) },
-  { ...level03, waves: riverWaves, gold: START_GOLD[2], purse: purse(145, 44) }
+  { ...level02, waves: forkWaves, gold: START_GOLD[1], purse: purse(105, 30) },
+  { ...level03, waves: riverWaves, gold: START_GOLD[2], purse: purse(155, 46) }
 ];
 
 // Their names, for the screens and for the sentence that says what unlocks what.
@@ -172,9 +225,9 @@ export const SCALE = 105 / 512;
 //
 // --- where the numbers come from -----------------------------------------------
 //
-// They are reasoned against the thugs, which are the big game's and are not being
-// retuned. A Thug is 80 health at 70px/s and hits for 10 a second; a Giant Thug is
-// 1000 at 52 and hits for 25; a Plague Thug is 150 and throws from a distance.
+// They are reasoned against the thugs. A Thug is 80 health at 70px/s and hits for
+// 10 a second; a Giant Thug is 1500 here — see the override at the top of this
+// file — at 52, and hits for 25.
 //
 // The reference points are the towers those thugs were balanced against: a
 // Watchtower is 70 gold for 10 damage a second, a Crossbow Tower 140 for 31.3, and
@@ -346,16 +399,19 @@ const REI = {
           'useless against a single big thing.\n\n' +
           'His reach is the shortest in the family, so he wants a plot right ' +
           'against the road — ideally a bend, where thugs spend longest inside it.',
-  // DOWN FROM 13/22/35, asked for after the first play. He was the best gold in
-  // the game and it was not close: damage a second against EVERYTHING in reach
-  // is worth its face value times however many thugs are in there, and a wave of
+  // DOWN FROM 13/22/35, then down again to 8/13/20. He was the best gold in the
+  // game and it was not close: damage a second against EVERYTHING in reach is
+  // worth its face value times however many thugs are in there, and a wave of
   // twenty walking through a level 3 smell was 700 damage a second for 400 gold.
-  // A third off puts him level with the others against a crowd instead of ahead
-  // of them, and leaves him where he belongs against one big thing: useless.
+  //
+  // The second cut is smaller than the first and is aimed at the last map rather
+  // than at him — Two Rivers now sends forty at a time, and each of those forty
+  // multiplies whatever this number is. He is still the answer to a horde; he is
+  // no longer the answer on his own.
   levels: [
-    { cost: 90, range: 150, damage: 9 },
-    { cost: 85, range: 168, damage: 15 },
-    { cost: 130, range: 186, damage: 24 }
+    { cost: 90, range: 150, damage: 8 },
+    { cost: 85, range: 168, damage: 13 },
+    { cost: 130, range: 186, damage: 20 }
   ]
 };
 

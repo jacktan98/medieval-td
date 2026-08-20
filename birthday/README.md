@@ -19,10 +19,23 @@ browser's Back button is the way out.
 top of `../src/admin.js`.
 
 **And a third code, inside this game.** The three dots in the bottom-right of the
-map screen open a keypad; **1349** again — one number for the grown-up to
-remember — and it opens every map, every character and the certificate. It is
-`UNLOCK_PIN` in `src/progress.js` and exists for one stated reason: if Ella
-cannot finish the game, the certificate should still be printable.
+map screen open a keypad; **0605** opens a small panel of four things:
+
+| | |
+|---|---|
+| Unlock all characters | all four buildable on every map |
+| Unlock all maps | all three playable from the start |
+| Allow the certificate | printable without finishing |
+| Reset all progress | the stars and the three switches, wiped |
+
+The first three are **toggles** — anything opened here can be closed again, so
+showing somebody the last map does not have to end the story. The fourth asks a
+second time before it does anything, because it is the only tap in the game that
+destroys something that was earned.
+
+The code is `UNLOCK_PIN` and the switches are `SWITCHES` in `src/progress.js`.
+It exists for one stated reason: if Ella cannot finish the game, the certificate
+should still be printable.
 
 ## What is borrowed and what is not
 
@@ -95,9 +108,12 @@ They started as a reasoned guess and were then **tuned with the sim below**, whi
 is the only reason they are any good. They are all on one screen in `src/data.js`
 — change one, reload, see.
 
-The thugs are the big game's and are not being retuned: a Thug is 80 health at
-70px/s hitting for 10 a second, a Giant Thug 1000 at 52 hitting for 30, a Plague
-Thug 150 at 60 that throws from a distance. The reference points are the towers
+The thugs are the big game's, with **three numbers overridden at the top of
+`src/data.js`** and nothing written back: a Thug is 80 health at 70px/s hitting
+for 10 a second, a Giant Thug **1500** at 52 hitting for 30, and there is **no
+Plague Thug in this game at all** — he is filtered out of the roster rather than
+merely left out of the wave tables. Every bounty is **two thirds** of the big
+game's, so a thug pays 10 and a giant 27. The reference points are the towers
 those thugs were balanced against — a Watchtower is 70 gold for 10 damage a
 second, a Crossbow Tower 140 for 31.3, a Militia Camp 70 for three men of 100
 health doing 9.5 between them.
@@ -118,9 +134,9 @@ stopping ignores how hard the thing hits.
 | Ella Lv1 | 110 | — | 11 + slow | 0.85s | 210 | 12.9 |
 | Ella Lv2 | +110 | — | 18 + slow | 0.75s | 225 | 24.0 |
 | Ella Lv3 | +160 | — | 27 + slow | 0.68s | 240 | 39.7 |
-| Rei Lv1 | 90 | — | 9, to everything in reach | — | 150 | 9.0 |
-| Rei Lv2 | +85 | — | 15, to everything in reach | — | 168 | 15.0 |
-| Rei Lv3 | +130 | — | 24, to everything in reach | — | 186 | 24.0 |
+| Rei Lv1 | 90 | — | 8, to everything in reach | — | 150 | 8.0 |
+| Rei Lv2 | +85 | — | 13, to everything in reach | — | 168 | 13.0 |
+| Rei Lv3 | +130 | — | 20, to everything in reach | — | 186 | 20.0 |
 
 Ella's slime leaves a thug at 55% speed for 2 seconds.
 
@@ -132,11 +148,13 @@ picture of a shotgun — one trigger pull, several things hit. The reach is shor
 on purpose: she is a woman on the road who fires, not a second tower.
 
 **Rei's damage came down by a third** at the owner's request — 13/22/35 to
-9/15/24. Damage a second against *everything* in reach is worth its face value
+9/15/24 — and then by another sixth, to **8/13/20**. Damage a second against *everything* in reach is worth its face value
 times however many thugs are in there, and a wave of twenty walking through a
 level 3 smell was the best gold in the game by a distance. His **cost** came down
 25% with it, which is the other half of the same decision: the nerf was about how
-strong he is, and the cost is about whether he is worth a plot. After both, a
+strong he is, and the cost is about whether he is worth a plot. The second cut was
+aimed at the last map rather than at him: Two Rivers now sends forty at a time,
+and each of those forty multiplies whatever this number is. After all of it, a
 board of Ella and Rei is one of the best builds on Two Rivers rather than one of
 the worst.
 
@@ -185,20 +203,25 @@ harder or easier. Damage last.
 | | opens with | a cleared wave pays | waves | plots |
 |---|---|---|---|---|
 | The Bend | 300 | 95 + 26 per wave | 5 | 9 |
-| The Fork | 300 | 95 + 26 per wave | 8 | 9 |
-| Two Rivers | **450** | **145 + 44 per wave** | 10 | 11 |
+| The Fork | 340 | 105 + 30 per wave | 8 | 9 |
+| Two Rivers | **560** | **155 + 46 per wave** | 10 | 11 |
 
 Per map rather than one number for the game, and finding that out was the most
 useful thing the sim did. **Two Rivers kept failing however much its waves were
 thinned — and thinning them made it worse**, which is the shape of a money problem
-rather than a difficulty one: a thug is 15 gold, so cutting thirty of them out of
-the back half quietly removes 450 gold from a map that has eleven plots to fill.
+rather than a difficulty one: a thug is 10 gold, so cutting thirty of them out of
+the back half quietly removes 300 gold from a map that has eleven plots to fill.
 
 Counting where the lives actually went settled it. On Two Rivers, waves 1, 2 and 3
 leaked 3.1, 4.3 and 5.3 lives, and **waves 4 to 10 leaked nothing at all**. It was
 never an endgame problem — it has two roads, and 300 gold covers one of them while
-the first three waves walk down the other. Half as much again to open with fixed
+the first three waves walk down the other. Nearly twice as much to open with fixed
 it outright.
+
+All three purses went **up again** when the bounty was cut by a third. That cut is
+a difficulty change and is meant to be one; what it must not do is put the leaks
+back at the front of a map, where the board is empty and there is nothing the
+player can do about them.
 
 These are the numbers to turn **before** touching anybody's damage: they lift or
 drop every build on one map equally, so they do not change who is worth having
@@ -208,11 +231,22 @@ there.
 
 | | shape |
 |---|---|
-| **The Bend**, 5 waves | thugs only, 5 to 22, **no giants at all** |
-| **The Fork**, 8 waves | giants from wave 4, up to 26 thugs and 4 giants |
-| **Two Rivers**, 10 waves | hordes — up to 34 thugs at 0.58s, and only 2 giants |
+| **The Bend**, 5 waves | thugs only, 5 up to **50**, **no giants at all** |
+| **The Fork**, 8 waves | giants from wave 4, up to 30 thugs and 3 giants |
+| **Two Rivers**, 10 waves | hordes — up to **44 thugs at 0.52s**, and 4 giants |
 
-**No giants on The Bend**, deliberately. A Giant Thug is 1000 health, and against
+**Normal, not easy**, which is where the second pass took it: every wave is bigger
+or closer together than the first cut, and The Bend's last wave went from 22 thugs
+to 50.
+
+**The difficulty is in the back half on purpose.** The first attempt at "harder"
+put it in the front half instead and measured worse in every way — with bigger
+opening waves The Fork leaked 3.0, 2.4, 1.3 and 2.1 lives in waves 1 to 4 and
+nothing at all in waves 5 to 8. That is not a hard map, it is a map decided before
+the player has had a turn. So the openings are gentle, the purses cover them, and
+the last three waves of each table are where a map is won or lost.
+
+**No giants on The Bend**, deliberately. A Giant Thug is 1500 health here, and against
 two people who do about 25 damage a second between them at level 1 it simply walks
 through. The answer to a giant in this game is Papa standing in front of it, and
 Papa is not unlocked yet; putting one on the tutorial map would teach the player
@@ -426,9 +460,17 @@ positioned over the box the renderer draws. A canvas cannot take typing, and the
 browser's own field brings a phone's keyboard, a caret, selection and paste for
 nothing.
 
-The stars on the certificate are the ones actually **earned**. Opening the game
-with the grown-up's code does not award any, so a page printed that way shows
-empty rows — which is the honest thing for it to say.
+It carries the occasion in gold under the body text — *A Birthday Special, made
+just for this occasion — 22 August 2026*. That line is a constant rather than a
+date calculation: it is the day the game was made for, and it stays the same on a
+certificate printed years later. The date at the foot of the page is whenever it
+was printed, which is a different fact and so a different line.
+
+The stars on the certificate are the ones actually **earned**. Allowing the
+certificate from the grown-up's panel does not award any, so a page printed that
+way shows empty rows — which is the honest thing for it to say, and the screen
+says the same: it reads *Your certificate* rather than *You did it* unless all
+three maps were really passed.
 
 ## What it does not have
 

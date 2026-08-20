@@ -41,6 +41,11 @@ const PAGE_H = Math.round(11.69 * DPI);   // 1754
 const PT_W = 595.28;
 const PT_H = 841.89;
 
+// THE OCCASION. It is a constant rather than a date calculation, because it is
+// not a date the page works out — it is the day the whole game was made for, and
+// it stays the same on a certificate printed years later.
+const OCCASION = 'A Birthday Special, made just for this occasion — 22 August 2026';
+
 const INK = '#3A3026';
 const MUTED = 'rgba(58,48,38,0.62)';
 const SHEET = '#FBF4E2';
@@ -115,6 +120,15 @@ export function render(name) {
   wrap(ctx, 'defended the house against every thug that came down the road, ' +
             'in the company of Papa, Mommy, Ella and Rei',
        PAGE_W / 2, 686, PAGE_W - 340, 48);
+
+  // WHAT THIS IS AND WHAT IT WAS FOR, in one line, and it is the line the owner
+  // asked for: a certificate for a game that exists because of one birthday
+  // should say so on the paper. The occasion is FIXED — the 22nd of August 2026
+  // is the day this was made for — while the date at the foot of the page is
+  // whenever it was printed. Two different facts, so two different lines.
+  ctx.fillStyle = GOLD;
+  ctx.font = `italic 600 ${Math.round(DPI * 0.13)}px Georgia, "Times New Roman", serif`;
+  ctx.fillText(OCCASION, PAGE_W / 2, 792);
 
   // The three maps and what was earned on each. This is the evidence, so it is
   // set out like evidence rather than like a score.

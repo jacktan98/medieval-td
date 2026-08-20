@@ -51,11 +51,25 @@ const START_MEMBERS = ['mommy', 'ella'];
 
 // THE ADMIN WAY IN, on the map screen. The owner asked for it in as many words:
 // if Ella cannot finish the game, he wants to be able to open everything so the
-// certificate can still be printed. Same code as the big game's dashboard, so
-// there is one number to remember rather than three.
-export const UNLOCK_PIN = '1349';
+// certificate can still be printed.
+export const UNLOCK_PIN = '0605';
 
-const blank = () => ({ stars: [0, 0, 0], all: false });
+// WHAT THE GROWN-UP MAY TURN ON, as data rather than as three branches — the
+// keypad's panel is a loop over this list, so a fourth switch is a line here and
+// nothing else. The reset is not in the list because it is not a switch: it is
+// the one thing behind that keypad that destroys something, so it is drawn apart
+// and asks before it does it.
+//
+// THEY ARE TOGGLES, not one-way doors. A grown-up who opens the maps to show
+// somebody the last one should be able to put the story back the way it was
+// without wiping the stars that were honestly earned.
+export const SWITCHES = [
+  { key: 'chars', label: 'Unlock all characters', note: 'All four buildable on every map' },
+  { key: 'maps', label: 'Unlock all maps', note: 'All three playable from the start' },
+  { key: 'cert', label: 'Allow the certificate', note: 'Printable without finishing' }
+];
+
+const blank = () => ({ stars: [0, 0, 0], open: { chars: false, maps: false, cert: false } });
 
 function read() {
   try {
@@ -66,7 +80,19 @@ function read() {
     // Rebuilt field by field rather than trusted: this object survives across
     // versions of the game, and a table that grew a map should not be read back
     // as three undefineds.
-    return { stars: [0, 1, 2].map(i => +stars[i] || 0), all: !!got.all };
+    //
+    // `got.all` is the OLD shape, when the keypad had one switch that opened
+    // everything. Anybody who used it keeps what it gave them.
+    const open = got.open || {};
+    const all = !!got.all;
+    return {
+      stars: [0, 1, 2].map(i => +stars[i] || 0),
+      open: {
+        chars: all || !!open.chars,
+        maps: all || !!open.maps,
+        cert: all || !!open.cert
+      }
+    };
   } catch { return blank(); }
 }
 
@@ -79,7 +105,13 @@ function write(p) {
 let state = read();
 
 export const stars = i => state.stars[i] || 0;
-export const everything = () => state.all;
+
+// The three switches, read and written. `on` is what the keypad's panel ticks.
+export const on = key => !!state.open[key];
+export function setSwitch(key, want) {
+  state.open[key] = !!want;
+  write(state);
+}
 
 // Keep the BEST result, never the latest. Somebody who has three-starred The Bend
 // and then plays it again for fun must not lose the map they opened.
@@ -90,24 +122,21 @@ export function record(mapIndex, got) {
   return true;
 }
 
-export function unlockAll() {
-  state.all = true;
-  write(state);
-}
-
-// Wipe everything and start the story again. Nothing in the game calls this — it
-// is here for the console, because the one thing that is genuinely hard to test
-// by hand is the first visit.
+// Wipe everything and start the story again — the stars, and the three switches
+// with them. It is the fourth thing on the keypad's panel, and it is also what to
+// call from the console, because the one thing that is genuinely hard to test by
+// hand is the first visit.
 export function forget() {
   state = blank();
   write(state);
 }
 
 export const mapOpen = i =>
-  state.all || START_MAPS.includes(i) || OPENS.some((o, n) => o.map === i && stars(n) >= PASS);
+  on('maps') || START_MAPS.includes(i) || OPENS.some((o, n) => o.map === i && stars(n) >= PASS);
 
 export const memberOpen = id =>
-  state.all || START_MEMBERS.includes(id) || OPENS.some((o, n) => o.member === id && stars(n) >= PASS);
+  on('chars') || START_MEMBERS.includes(id) ||
+  OPENS.some((o, n) => o.member === id && stars(n) >= PASS);
 
 // WHICH MAP OPENS A LOCKED THING, as a sentence the panels can print. This is the
 // only place the story is put into words, so the map screen and the family panel
@@ -129,9 +158,12 @@ export function opened(mapIndex, got, before) {
   return o;
 }
 
-// Every map passed. The certificate's one condition — and the admin code counts,
-// which is the whole reason the admin code exists. The owner's words for it were
-// "in case Ella cannot complete the game to earn the certificate"; an override
-// that opened the maps but still withheld the certificate would answer everything
-// about that sentence except the point of it.
-export const finished = () => state.all || [0, 1, 2].every(i => stars(i) >= PASS);
+// Every map passed. The certificate's one condition — and the keypad's third
+// switch counts, which is the whole reason that switch exists. The owner's words
+// for it were "in case Ella cannot complete the game to earn the certificate".
+//
+// It is its OWN switch rather than a side effect of the other two, which is the
+// difference between this panel and the single button it replaced: opening the
+// maps so somebody can see the last one is a different act from declaring the
+// game finished, and a grown-up should be able to do either without the other.
+export const finished = () => on('cert') || [0, 1, 2].every(i => stars(i) >= PASS);

@@ -18,7 +18,8 @@ import { art } from './assets.js';
 import { ui, RALLY_FLAG_H, FLAG_FOOT } from '../../src/data/ui.js';
 import { family, enemyTypes, maps, mapNames, inReach, SQUASH, SCALE, levelOf, refundValue,
          refundOf, waveSize, canCallWave, earlyBonus, selectionInfo, buildable } from './rules.js';
-import { stars, mapOpen, memberOpen, howToOpen, finished, PASS } from './progress.js';
+import { stars, mapOpen, memberOpen, howToOpen, finished, PASS,
+         SWITCHES, on as switchOn } from './progress.js';
 import { render as certificate } from './certificate.js';
 
 const W = 960, H = 540;
@@ -879,10 +880,15 @@ function drawCertificate(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = CREAM;
   ctx.font = '700 26px system-ui, sans-serif';
-  ctx.fillText('You did it', 400, 88);
+  // TWO WAYS TO BE HERE, and the page says which. Three maps passed is "you did
+  // it"; the grown-up's switch is a certificate that has been allowed rather than
+  // won, and it should not congratulate anybody for something they have not done.
+  const earned = [0, 1, 2].every(i => stars(i) >= PASS);
+  ctx.fillText(earned ? 'You did it' : 'Your certificate', 400, 88);
   ctx.fillStyle = 'rgba(240,230,210,0.72)';
   ctx.font = '600 14px system-ui, sans-serif';
-  ctx.fillText('All three held. Put your name on it and print it out.', 400, 124);
+  ctx.fillText(earned ? 'All three held. Put your name on it and print it out.'
+                      : 'Put your name on it and print it out.', 400, 124);
 
   ctx.fillStyle = 'rgba(240,230,210,0.6)';
   ctx.font = '600 12px system-ui, sans-serif';
@@ -933,14 +939,15 @@ export function starRow(ctx, cx, cy, got, r, gold = '#E0B24C') {
 
 // --- the grown-up's keypad ------------------------------------------------------------
 //
-// Ten digits and a way out, over the map picker. It exists for one stated reason:
-// if Ella cannot finish the game, the owner still wants the certificate to be
-// printable, so there has to be a way to open everything by hand.
+// Ten digits and a way out, over the map picker, and a small panel of switches
+// behind them. It exists for one stated reason: if Ella cannot finish the game,
+// the owner still wants the certificate to be printable, so there has to be a way
+// to open things by hand.
 //
 // Deliberately plain, and deliberately not on the game screen — it is a tool, not
 // a feature, and the fewer people who find it the better it works.
 export const KEY_R = 34;
-export const KEY_PAD = { cx: W / 2, cy: 300, gap: 88 };
+export const KEY_PAD = { cx: W / 2, cy: 280, gap: 88 };
 
 // 1-9 in a grid with 0 under the middle, which is every phone's keypad and so
 // needs no learning.
@@ -953,13 +960,110 @@ export const keyAt = n => {
   };
 };
 
-export const KEY_BACK = { x: W / 2 - 70, y: 470, w: 140, h: 40 };
+// Clear of the 0 key BELOW it, which it was not: the pad's bottom row reaches
+// y 472 and this used to start at 470, so the word sat across the key.
+export const KEY_BACK = { x: W / 2 - 70, y: 488, w: 140, h: 40 };
+
+// --- what is behind the code ----------------------------------------------------
+//
+// Four things, and the owner named all four. Three of them are switches over the
+// story's locks and the fourth undoes the story altogether, so the fourth is
+// drawn apart from the others, in a different colour, and asks a second time
+// before it does anything.
+export const ADMIN_ROW = i => ({ x: W / 2 - 214, y: 116 + i * 74, w: 428, h: 58 });
+export const ADMIN_RESET = { x: W / 2 - 214, y: 356, w: 428, h: 52 };
 
 function drawKeypad(ctx, state) {
+  // SOLID, not a wash. At 92% the picker's own title showed through and sat
+  // across this panel's heading — two headings in the same place, one of them a
+  // ghost. A modal that covers the screen should cover it.
   ctx.save();
-  ctx.fillStyle = 'rgba(20,22,18,0.92)';
+  ctx.fillStyle = '#1A1C15';
   ctx.fillRect(0, 0, W, H);
+  ctx.restore();
 
+  if (state.keypad.open) drawAdmin(ctx, state);
+  else drawPad(ctx, state);
+
+  button(ctx, KEY_BACK, state.keypad.open ? 'Done' : 'Back', true);
+}
+
+// The panel the code opens: three switches and a reset.
+function drawAdmin(ctx, state) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = CREAM;
+  ctx.font = '700 20px system-ui, sans-serif';
+  ctx.fillText('For grown-ups', W / 2, 62);
+  ctx.fillStyle = 'rgba(240,230,210,0.55)';
+  ctx.font = '600 13px system-ui, sans-serif';
+  ctx.fillText(state.keypad.said || 'Anything opened here can be closed again',
+               W / 2, 90);
+
+  SWITCHES.forEach((s, i) => {
+    const b = ADMIN_ROW(i);
+    const lit = switchOn(s.key);
+
+    ctx.fillStyle = lit ? 'rgba(224,178,76,0.14)' : 'rgba(240,230,210,0.06)';
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 10);
+    ctx.fill();
+    ctx.strokeStyle = lit ? 'rgba(224,178,76,0.7)' : 'rgba(240,230,210,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = CREAM;
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(s.label, b.x + 18, b.y + 22);
+    ctx.fillStyle = 'rgba(240,230,210,0.5)';
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillText(s.note, b.x + 18, b.y + 41);
+
+    // The tick box on the right. A drawn tick rather than a character, the same
+    // bargain the padlock and the stars make.
+    const cx = b.x + b.w - 34;
+    const cy = b.y + b.h / 2;
+    ctx.beginPath();
+    ctx.roundRect(cx - 13, cy - 13, 26, 26, 6);
+    ctx.fillStyle = lit ? '#E0B24C' : 'rgba(240,230,210,0.08)';
+    ctx.fill();
+    ctx.strokeStyle = lit ? '#E0B24C' : 'rgba(240,230,210,0.35)';
+    ctx.stroke();
+    if (lit) {
+      ctx.strokeStyle = '#241F16';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, cy);
+      ctx.lineTo(cx - 1, cy + 5);
+      ctx.lineTo(cx + 7, cy - 6);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+  });
+
+  // The one destructive thing in the game, so it looks like one and it asks.
+  const asking = state.keypad.confirm;
+  const b = ADMIN_RESET;
+  ctx.fillStyle = asking ? 'rgba(168,67,67,0.35)' : 'rgba(168,67,67,0.14)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = asking ? '#D07C7C' : 'rgba(208,124,124,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = asking ? '#F0D6D6' : 'rgba(240,214,214,0.85)';
+  ctx.font = '700 15px system-ui, sans-serif';
+  ctx.fillText(asking ? 'Tap again to erase everything' : 'Reset all progress',
+               b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.restore();
+}
+
+function drawPad(ctx, state) {
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = CREAM;
@@ -989,8 +1093,6 @@ function drawKeypad(ctx, state) {
     ctx.fillText(String(n), p.x, p.y + 1);
   }
   ctx.restore();
-
-  button(ctx, KEY_BACK, 'Back', true);
 }
 
 // A padlock, also drawn rather than typed, and for the same reason. Two of them,

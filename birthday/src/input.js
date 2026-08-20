@@ -4,11 +4,13 @@
 
 import { PLOT_R, BTN_R, menuItems, MAP_BTN, BOOK_ROW, BOOK_START, BOOK_BACK,
          RESULT_AGAIN, RESULT_MAPS, HUD_H, HUD_BTN, PAUSE_ROW, CERT_BTN, ADMIN_DOT,
-         KEY_R, keyAt, KEY_BACK, CERT_SAVE, CERT_BACK, NAME_BOX } from './render.js';
+         KEY_R, keyAt, KEY_BACK, ADMIN_ROW, ADMIN_RESET,
+         CERT_SAVE, CERT_BACK, NAME_BOX } from './render.js';
 import { family, maps, build, upgrade, sell, towerAt, moveUnit, clampReach, newGame,
          callWaveEarly, pickFigure } from './rules.js';
 import { unlock, play, solo, voiceCue, SELECT } from './audio.js';
-import { mapOpen, memberOpen, finished, unlockAll, UNLOCK_PIN } from './progress.js';
+import { mapOpen, memberOpen, finished, forget, setSwitch, on as switchOn,
+         SWITCHES, UNLOCK_PIN } from './progress.js';
 
 // Every box in this file is padded before it is tested. The drawn controls are
 // small — this is a 960-unit board on a phone — and shrinking the picture must
@@ -53,7 +55,7 @@ function tap(state, x, y, restart, download) {
     if (state.keypad) return keypad(state, x, y);
 
     if (inside(ADMIN_DOT, x, y, 10)) {
-      state.keypad = { typed: '', wrong: false };
+      state.keypad = { typed: '', wrong: false, open: false, confirm: false, said: null };
       return true;
     }
     if (finished() && inside(CERT_BTN, x, y)) { state.screen = 'certificate'; return true; }
@@ -190,12 +192,13 @@ function tap(state, x, y, restart, download) {
   return had;
 }
 
-// THE GROWN-UP'S KEYPAD. Four digits, and the only thing it can do is open
-// everything — there is no dashboard behind it and nothing to get wrong.
+// THE GROWN-UP'S KEYPAD. Four digits, and then a panel of four things — three
+// switches over the story's locks and a reset that undoes the story.
 function keypad(state, x, y) {
   const k = state.keypad;
 
   if (inside(KEY_BACK, x, y, 10)) { state.keypad = null; return true; }
+  if (k.open) return admin(state, k, x, y);
 
   for (let n = 0; n <= 9; n++) {
     const p = keyAt(n);
@@ -205,10 +208,39 @@ function keypad(state, x, y) {
     if (k.typed.length < UNLOCK_PIN.length) return true;
     // Four in: right or wrong, the slate is cleared either way, so a wrong guess
     // cannot be corrected by adding a fifth digit.
-    if (k.typed === UNLOCK_PIN) { unlockAll(); state.keypad = null; }
+    if (k.typed === UNLOCK_PIN) { k.open = true; k.typed = ''; }
     else { k.typed = ''; k.wrong = true; }
     return true;
   }
+  return false;
+}
+
+// The panel behind the code. The three switches toggle and say so; the reset asks
+// once and then does it.
+function admin(state, k, x, y) {
+  const i = SWITCHES.findIndex((_, n) => inside(ADMIN_ROW(n), x, y));
+  if (i >= 0) {
+    const s = SWITCHES[i];
+    const want = !switchOn(s.key);
+    setSwitch(s.key, want);
+    k.confirm = false;
+    k.said = `${s.label} — ${want ? 'on' : 'off'}`;
+    return true;
+  }
+
+  if (inside(ADMIN_RESET, x, y)) {
+    // ASKED TWICE, because it is the only tap in this game that destroys
+    // something somebody earned, and because the row above it is a toggle — a
+    // finger that meant the third switch must not wipe the stars.
+    if (!k.confirm) { k.confirm = true; k.said = 'That erases the stars as well'; return true; }
+    forget();
+    k.confirm = false;
+    k.said = 'Back to the beginning';
+    return true;
+  }
+
+  // Anywhere else on the panel takes back the question rather than answering it.
+  if (k.confirm) { k.confirm = false; k.said = null; return true; }
   return false;
 }
 
