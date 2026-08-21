@@ -85,6 +85,14 @@ an offset first, taken from the loaded bolt — which is drawn well behind the b
 TIP OF THE BOW now, source (365, 526): the machine's leading edge, level with the
 middle of the arc rather than above it.
 
+**And the bolt is pushed one length clear of it**, which is `clear` on the
+ammunition in `src/data/towers.js`. A projectile is anchored by its HEAD, because
+that is the point that has to land on the man — and this one is 42.5 drawn px
+long, more than half the ballista's own width, so a head at the mouth of the bow
+leaves the shaft lying back across the whole machine. One length forward puts the
+tail at the mouth instead. It is clamped against the range in `shoot()`, so a
+thug at the tower's feet is not shot at from behind him.
+
 **The encyclopedia shows both halves too.** A card draws the machine over the
 stone, and so does the pop-up a tapped card opens — that one showed the bare
 turret to begin with, which is not the tower: half of a Ballista Turret is the

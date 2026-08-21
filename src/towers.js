@@ -432,9 +432,21 @@ function shoot(state, t, target, special) {
   const m = muzzlePoint(t);
   const ammo = (special && special.ammo) || t.def.ammo;
 
+  // WHERE THE DRAWING STARTS, which is not always where the weapon is. A
+  // projectile is anchored by its HEAD — that is the point that has to land on
+  // the man — so a long one placed at the muzzle lies backward across whatever
+  // fired it. `clear` pushes the head forward along the shot's own line by the
+  // length of the drawing, which puts the TAIL at the muzzle instead. Only the
+  // ballista's bolt carries one; an arrow is 20px long and has never needed it.
+  //
+  // Clamped to a fraction of the distance so a target at point-blank range is
+  // still shot at from in front of it rather than from behind.
+  const reach = Math.hypot(target.x - m.x, target.y - m.y);
+  const ahead = Math.min(ammo.clear || 0, reach * 0.4);
+
   const shot = {
-    x: m.x,
-    y: m.y,
+    x: m.x + Math.cos(t.aim) * ahead,
+    y: m.y + Math.sin(t.aim) * ahead,
     angle: t.aim,          // so the first frame already points at the target
     // Where it was shot FROM, kept because the projectile's own position at the
     // moment it lands is the target's. A corpse faces the blow, and this is the

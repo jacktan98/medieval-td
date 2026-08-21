@@ -429,6 +429,20 @@ export const bolt = {
   drawn: (3 * Math.PI) / 4,
   hold: [0.096, 0.893],
   grip: 0.096,
+  // HOW FAR FORWARD OF THE MUZZLE IT APPEARS, in drawn pixels, and it is the
+  // bolt's own length: 207.4 source px from the iron head to the end of the
+  // shaft, which is 42.5 drawn.
+  //
+  // Every other projectile in the game is small enough that this question never
+  // came up — an arrow is 20px long and a rock is a lump. A bolt is 42px, which
+  // is more than half the ballista's own width, so a shot anchored by its HEAD at
+  // the mouth of the bow lies back across the whole machine and reads as coming
+  // out of the middle of it. Placed one length forward, the head leads and the
+  // TAIL sits at the mouth, which is the picture the owner drew.
+  //
+  // It is clamped against the range to the target in shoot(), so a thug standing
+  // at the tower's feet is not shot at from behind him.
+  clear: 42.5,
   speed: 520,
   // Loud leaving the rail, silent arriving — the arrow's split rather than the
   // rock's. A ballista IS the noise it makes going off; what it does on arrival
