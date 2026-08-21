@@ -421,7 +421,17 @@ function stepCrew(state, t, dt, target) {
   // because a better target walked past.
   if (t.beat === LOAD) t.face = target.x >= t.x ? 1 : -1;
 
-  if (t.beat === FIRE) shoot(state, t, target);
+  if (t.beat === FIRE) {
+    // COUNTED HERE TOO, so `shots` means "shots this tower has fired" on every
+    // tower rather than on the ones whose clock is a cooldown. Nothing on this
+    // family reads it today — artillery has no firing ability — and that is
+    // exactly the trap: a machine taught one later would have run its cycle off
+    // a counter frozen at zero and simply never triggered it, with no error to
+    // find. It is also what tools/sim.mjs reports as `fired`, which is how a
+    // balance pass tells a tower that did nothing from a plot the road misses.
+    t.shots = (t.shots || 0) + 1;
+    shoot(state, t, target);
+  }
 }
 
 // `special` is the ability this shot belongs to, or nothing for an ordinary one.

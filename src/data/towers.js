@@ -1717,10 +1717,35 @@ export const siege = [
   //
   // `cost` 230, which is 610 gold of cumulative spend on one plot: the most
   // expensive ladder in the game, ahead of the Musketeer Post's 500 and the
-  // Paladin Keep's 530. THESE NUMBERS ARE A FIRST GUESS and are meant to be
-  // played before they are trusted — the owner asked for the sweep to come after
-  // this lands, and `tools/families.mjs` is the check that says whether it has
-  // broken the one invariant this game holds to.
+  // Paladin Keep's 530.
+  //
+  // THE SWEEP, run after this landed, one dial at a time over 20 seeds with
+  // everything else at the numbers above. It is the reason they are still the
+  // numbers above.
+  //
+  //   damage    30 / 45 / 60 / 75 / 90   ->  17 / 17 / 18 / 20 / 20 wins
+  //   reload   0.9 / 1.35 / 1.8 / 2.5 / 3.2s -> 20 / 20 / 18 / 18 / 17
+  //   cost     180 / 205 / 230 / 260 / 300 -> 20 / 19 / 18 / 18 / 17
+  //   range    200 / 230 / 260 / 300 / 360 -> 18 / 19 / 18 / 19 / 19
+  //   blast      0 / 30 / 55 / 80 / 98   ->  18 / 18 / 18 / 20 / 20
+  //
+  // on map 1's three-machine mix. Three of those slopes are real and the tower
+  // sits mid-slope on each: it is worth building and it does not decide the map.
+  // Halving the reload is the one move that runs away with it — 20 wins in 20 and
+  // thirteen lives left rather than six — which is what says 1.80 is the fast end
+  // of the safe range rather than a number picked for feel.
+  //
+  // Range and blast barely register, and that is the tower's own argument rather
+  // than a flat dial: what it kills, it kills whole, so a wider blast or another
+  // 40px of reach has little left to do. Both are pinned by the DESIGN instead —
+  // less reach than the trebuchet, less blast than the trebuchet — and
+  // tools/families.mjs is where those are enforced.
+  //
+  // The invariant holds at the top of the ladder as well as at tier 3: six of
+  // these and nothing else clears no map, 0 in 20, same as six trebuchets. The
+  // mix goes 17 wins to 18 for 690 gold of upgrades. See the tier 4 pair in
+  // tools/sim.mjs' scenarios for maps 1 and 2 — and the note there on why map 3
+  // has no artillery reading at all.
   { ...ballista, tier: 4, name: 'Ballista Turret', title: 'Ballista Turret', unit: 'Ballista Engineer',
     cost: 230, damage: 60, splash: 55, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
     // The upgrade button's own picture on a Trebuchet, the third tier 4 to bring

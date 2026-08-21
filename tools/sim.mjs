@@ -197,7 +197,21 @@ function play(plan, patience = 1) {
     lives: state.lives,
     wave: state.waveIndex,
     gold: state.gold,
-    time: Math.round(time)
+    time: Math.round(time),
+    // WHAT THE PLAN ACTUALLY BECAME, one digit per tower in build order. A tier
+    // in a plan is a target rather than a fact — the ladder is bought as gold
+    // arrives, and a tier 4 is 500 to 610 gold on one plot — so a run can end
+    // with every tower a rung short of what the list asked for. Without this a
+    // balance pass reads "tier 4 changed nothing" and cannot tell a tower that
+    // is no better from one the money never reached.
+    tiers: state.towers.map(t => t.def.tier).join(''),
+    // HOW OFTEN EACH TOWER ACTUALLY FIRED, same order. The companion to `tiers`
+    // and the answer to the other way a balance pass can fool itself: a dial that
+    // does nothing to the win rate usually means the tower is fine at either
+    // setting, but sometimes it means the tower never shot at all — a plot the
+    // road does not come near, or a reach too short to touch it. A row of zeroes
+    // says the sweep was measuring the plot rather than the tower.
+    fired: state.towers.map(t => t.shots || 0).join('/')
   };
 }
 
@@ -294,6 +308,20 @@ m1: {
   'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), B(3), S(4), S(6), S(7)],
   'MIX 2 archery + 3 barracks + 1 siege': [S(0), B(1), A(4), B(6), B(7), A(8)],
   'MIX 3 siege + 3 barracks':       [S(0), B(1), S(4), B(6), B(7), S(8)],
+  // THE SAME TWO BUILDS TAKEN TO TIER 4, which is where the Ballista Turret is.
+  // The scenarios above stop at tier 3 and that was fine while tier 4 was one
+  // tower on one ladder; with three of them the top of a ladder is somewhere a
+  // real game reaches, and the invariant has to hold there too — a family that
+  // cannot clear the map alone at tier 3 and can at tier 4 is a family whose top
+  // rung has quietly become the game.
+  //
+  // It holds with room to spare: the pure build is 0 in 20 at either tier, and
+  // the mix goes from 17 wins to 18 for 690 gold of upgrades. That is the shape a
+  // tier 4 is supposed to have — a trade that is worth making and does not decide
+  // the map. See the note on the tier in data/towers.js for what the sweep
+  // measured on each dial.
+  'ALL siege t4 x6 (expect LOSS)':  [S(0, 3), S(1, 3), S(4, 3), S(6, 3), S(7, 3), S(8, 3)],
+  'MIX 3 siege t4 + 3 barracks':    [S(0, 3), B(1), S(4, 3), B(6), B(7), S(8, 3)],
   // THE MONASTERY, held to the same two rules and compared the same way. A pure
   // build of it must lose — it does, 0 in 20 on every map, because one blow every
   // 4.5 seconds cannot clear a wave of thirty however hard the blow is — and the
@@ -332,6 +360,14 @@ m2: {
   'BEST 5 siege + 1 (expect LOSS)': [S(0), S(1), S(2), B(5), S(6), S(7)],
   'MIX 2 archery + 3 barracks + 1 siege': [A(1), S(2), B(5), B(6), A(7), B(8)],
   'MIX 3 siege + 3 barracks':       [S(1), S(2), B(5), B(6), S(7), B(8)],
+  // Tier 4, for the reason given on map 1's pair. This map is the flatter of the
+  // two: every dial on the Ballista Turret — damage from 30 to 90, reload from
+  // 0.9s to 3.2s, blast from 0 to 98 — leaves both rows exactly where they are,
+  // because what decides The Fork is whether the wall holds two roads, not how
+  // hard the machines hit. A tower that changes nothing here is not a broken
+  // tower; it is a map that is not asking artillery the question.
+  'ALL siege t4 x6 (expect LOSS)':  [S(0, 3), S(2, 3), S(5, 3), S(6, 3), S(7, 3), S(8, 3)],
+  'MIX 3 siege t4 + 3 barracks':    [S(1, 3), S(2, 3), B(5), B(6), S(7, 3), B(8)],
   'ALL monastery x6 (expect LOSS)': [M(0), M(2), M(5), M(6), M(7), M(8)],
   'MIX 2 archery + 3 barracks + 1 monastery': [M(0), A(2), B(5), A(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
@@ -409,6 +445,21 @@ m3: {
   // FOR MACHINES, keeping every blocker where it was. That measures a catapult
   // against the tower it competes with for a plot, rather than measuring what
   // losing a blocker costs — which is already known and is fatal for anyone.
+  //
+  // THESE TWO ROWS DO NOT MEASURE ARTILLERY AND SHOULD NOT BE READ AS IF THEY
+  // DID. They lose at wave 3 with FOUR TOWERS BUILT out of eleven — the `tiers`
+  // and `fired` fields say so — and the reason is the spending model at the top
+  // of this file rather than anything about a catapult. upgrade() runs before
+  // build(), so a plan that opens with a machine puts its first 380 gold into one
+  // plot's ladder while eight plots stand empty, and on a map with two roads and
+  // eleven markers that is not a defence. The same list with bows in those two
+  // slots builds all eleven and wins.
+  //
+  // It is left as it is rather than reordered, because the model is the same for
+  // every family and quietly special-casing the dear ones would make every other
+  // number here incomparable. What it means in practice is that MAP 3 HAS NO
+  // ARTILLERY READING, and that the tier 4 pair on maps 1 and 2 is where the
+  // Ballista Turret was actually measured.
   'ALL siege x11   (expect LOSS)':  [S(0), S(1), S(2), S(3), S(4), S(5), S(6), S(7), S(8), S(9), S(10)],
   'MIX 4 archery + 5 barracks + 2 siege': [S(0), A(1), A(2), A(3), S(4), B(5), A(6), B(7), B(8), B(9), B(10)],
   // TWO OF THE SIX BOWS SWAPPED, because at eleven towers one of anything is

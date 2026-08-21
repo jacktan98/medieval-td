@@ -224,6 +224,70 @@ console.log('\nTier 4 — reach instead of output\n');
   ok(archery.every(d => d.targeting), 'and every archery tier still takes an order');
 }
 
+// --- artillery's tier 4, on its own terms ----------------------------------------
+//
+// The third tier 4 and the third shape of claim. The Musketeer Post pays for
+// reach in output and the Paladin Keep pays for wall in weapon; the Ballista
+// Turret pays for OUTPUT in reach and in area, which is the one direction left
+// and is what the artist asked for in so many words: "less range than artillery
+// but no dead zone, blast radius but smaller, super high damage and a faster
+// reload".
+//
+// Six sentences, all of them checkable, and worth checking because the tower is
+// otherwise strictly better than the rung it upgrades from — more damage, more
+// often, no hole in the middle — and the only things holding that in balance are
+// the two numbers that went DOWN.
+console.log('\nArtillery tier 4 — output instead of reach\n');
+{
+  const t4 = siege[3];
+  const t3 = siege[2];
+  const dps = d => d.damage / d.cooldown;
+
+  ok(siege.every(d => d === t4 || d.range > t4.range), 'the Ballista Turret reaches least in its family',
+    siege.map(d => d.range).join(' / '));
+
+  ok(t4.minRange === 0 && siege.every(d => d === t4 || d.minRange > 0),
+    'and is the only machine with no dead zone',
+    siege.map(d => d.minRange).join(' / '));
+
+  ok(t4.splash > 0 && siege.every(d => d === t4 || d.splash > t4.splash),
+    'and still throws a blast, the smallest of the four',
+    siege.map(d => d.splash).join(' / '));
+
+  // Joint biggest with the Musketeer Post's ball rather than outright biggest,
+  // and the check says so: two tier 4 towers at the top of two ladders are
+  // allowed to hit alike, and neither is allowed to be beaten by a tier 3.
+  const others = [...archery, ...monastery, ...siege].filter(d => d !== t4);
+  ok(others.every(d => d.damage <= t4.damage), 'and hits as hard as anything in the game',
+    `${t4.damage} against the next ${Math.max(...others.map(d => d.damage))}`);
+
+  ok(siege.every(d => d === t4 || d.cooldown > t4.cooldown), 'and reloads fastest in its family',
+    siege.map(d => d.cooldown.toFixed(2)).join(' / '));
+
+  // THE MIRROR. Artillery's clock is its animation — updateTowers fires on the
+  // Fire beat and never looks at `cooldown` — so on this family the field is a
+  // description of `beats` that the menu, the encyclopedia and every check above
+  // read as if it were the truth. Let the two drift and the rate column of the
+  // table at the top of this file becomes fiction. tools/siege.mjs proves the
+  // observed gap between shots matches `cooldown`; this proves the arithmetic,
+  // which is the half that says WHY when that one fails.
+  const beats = d => (d.beats || [0.75, 0.75, 1.5]).reduce((a, b) => a + b, 0);
+  ok(siege.every(d => Math.abs(beats(d) - d.cooldown) < 1e-9),
+    'and its cooldown is still what its animation adds up to',
+    siege.map(d => `${beats(d).toFixed(2)}=${d.cooldown.toFixed(2)}`).join(' '));
+
+  // What all of that costs. Per-second output triples; the area it lands in and
+  // the reach it lands from both fall, and the ladder is the dearest in the game.
+  ok(dps(t4) > dps(t3) && t4.splash * t4.range < t3.splash * t3.range,
+    'and pays for it in ground covered',
+    `${dps(t4).toFixed(1)} a second against ${dps(t3).toFixed(1)}, over ${((t4.splash * t4.range) / (t3.splash * t3.range) * 100).toFixed(0)}% of the reach x blast`);
+
+  const spend = fam => fam.reduce((sum, d) => sum + d.cost, 0);
+  ok(spend(siege) > spend(archery) && spend(siege) > spend(barracks),
+    'and is the dearest ladder there is',
+    `${spend(siege)}g against ${spend(archery)}g and ${spend(barracks)}g`);
+}
+
 // --- the barracks' tier 4, on its own terms --------------------------------------
 //
 // The barracks is not in the table above and the note at the top says why: it
