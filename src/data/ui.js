@@ -147,17 +147,19 @@ export const ui = {
   // ability button is the same size and in the same place as every other button in
   // the ring.
   //
-  // `plate: true` is what says so, and it carries a second fact with it: these
-  // files have an OPAQUE WHITE background outside the disc, so the trim above is
-  // not the alpha bounds — it is the bounds of the ink, found by colour. Drawn as a
-  // plain rect they would put four white corners on the grass, so render.js clips
-  // them to a circle of the button's own radius. The disc fills its box exactly, so
-  // the clip lands on the drawn outline rather than inside it.
+  // `plate: true` is what says so, and what it buys is the check in tools/trim.mjs
+  // that each of the four is a centred square the size of the plate. That is the
+  // property render.js depends on: it clips them to a circle of the button's own
+  // radius, and the disc fills its box exactly, so the clip lands on the drawn
+  // outline rather than inside it.
   //
-  // tools/trim.mjs knows about the flag: it exempts these from the transparency
-  // rule every other UI icon is held to, and checks instead that each is a centred
-  // square the size of the plate — which is the property the circular clip depends
-  // on.
+  // THREE OF THEM ARRIVED ON AN OPAQUE WHITE SQUARE and were re-exported clear.
+  // While that was true the trim above could not be the alpha bounds — every pixel
+  // of the canvas passed — so it was found by colour instead, and the clip was
+  // load-bearing rather than belt-and-braces: without it the buttons put four white
+  // corners on the grass. All four are transparent now, both measurements agree to
+  // the pixel, and the clip stays as the guard that made the white version merely
+  // wrong rather than visibly broken.
   ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true },

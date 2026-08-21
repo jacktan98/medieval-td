@@ -322,29 +322,41 @@ console.log('\nHoly Slash\n');
   const blows = [];
   for (let i = 0; i < 60 * 30; i++) {
     updateUnits(state, DT);
-    if (e.hp !== last) { blows.push({ t: i * DT, hit: last - e.hp }); last = e.hp; }
+    // The pose is recorded ON the frame the blow lands, because it is cleared as
+    // soon as the hold runs out — and this ability's hold is now one swing long, so
+    // by the next blow there is nothing left to look at.
+    if (e.hp !== last) { blows.push({ t: i * DT, hit: last - e.hp, art: u.holdArt }); last = e.hp; }
     if (blows.length >= 12) break;
   }
 
-  ok(blows.length >= 11, 'the paladin keeps swinging', `${blows.length} blows`);
-  ok(blows.slice(0, 9).every(b => b.hit === man.damage),
-    'nine ordinary blows first', `${man.damage} each`);
-  ok(blows[9] && blows[9].hit === slash.damage, 'and the tenth is the strike',
-    blows[9] && `${blows[9].hit}`);
-  ok(blows[10] && blows[10].hit === man.damage, 'then he goes back to ordinary ones');
+  const n = slash.every;   // the strike is the LAST blow of the cycle
+  ok(blows.length >= n + 2, 'the paladin keeps swinging', `${blows.length} blows`);
+  ok(blows.slice(0, n - 1).every(b => b.hit === man.damage),
+    `${n - 1} ordinary blows first`, `${man.damage} each`);
+  ok(blows[n - 1] && blows[n - 1].hit === slash.damage, `and blow ${n} is the strike`,
+    blows[n - 1] && `${blows[n - 1].hit}`);
+  ok(blows[n] && blows[n].hit === man.damage, 'then he goes back to ordinary ones');
 
-  // THE HOLD COSTS HIM SOMETHING HERE, and that is the difference from the
-  // musketeer: a paladin swings every 0.80s and holds the pose for 1, so the blow
-  // after the strike is late by the difference. Checked rather than assumed,
-  // because "the pose blocks the swing" and "the pose is decoration" look the same
-  // on a tower whose reload is longer than the hold.
-  const afterSlash = blows[10].t - blows[9].t;
-  ok(Math.abs(afterSlash - slash.hold) < DT * 2,
-    'and the second he holds it delays the next blow',
+  // AND IT COSTS HIM NOTHING, which is the change the artist asked for and the
+  // opposite of what this checked before. `hold` is null on this ability, so the
+  // pose runs for the man's own 0.80s swing: it is up for a full beat of fighting
+  // and the blow after the strike lands exactly on time.
+  //
+  // Worth a check rather than an assumption in either direction — "the pose blocks
+  // the swing" and "the pose is decoration" look identical from outside, and a
+  // hold a frame longer than the swing would quietly cost a blow every cycle.
+  const afterSlash = blows[n].t - blows[n - 1].t;
+  ok(Math.abs(afterSlash - man.cd) < DT * 2,
+    'and he holds the pose for exactly one swing, so nothing is lost',
     `${afterSlash.toFixed(2)}s against an ordinary ${man.cd}s`);
 
+  // The strike still SHOWS, and that is the other half of "held for a normal
+  // attack time": a hold shortened to nothing would be an ability with no picture.
+  ok(blows[n - 1] && blows[n - 1].art === slash.pose && !blows[n - 2].art,
+    'and the strike is the only blow with a drawing of its own');
+
   const plain = man.damage / man.cd;
-  const armed = (9 * man.damage + slash.damage) / (9 * man.cd + slash.hold);
+  const armed = ((n - 1) * man.damage + slash.damage) / (n * man.cd);
   console.log(`      one paladin: ${plain.toFixed(2)}/s plain, ${armed.toFixed(2)}/s with the slash ` +
               `(x${(armed / plain).toFixed(2)}), and a Keep musters ${man.count}`);
 }
@@ -411,10 +423,9 @@ console.log('\nWhat a dead man forgets\n');
 
 {
   // A paladin who falls musters again as a NEW man: no pose held over, no heal in
-  // progress, and his count towards the next strike started over. The one thing he
-  // does not get back is the light — the ability is recharging, not the man — and
-  // that distinction is the whole reason `healCd` is ticked outside the respawn
-  // branch in updateUnits.
+  // progress, his count towards the next strike started over — and, since the
+  // artist asked, his Holy Light ready again. The clock belongs to the man rather
+  // than to the ability, so it dies with him.
   const state = keep(['slash', 'light']);
   const u = state.units[0];
 
@@ -435,8 +446,8 @@ console.log('\nWhat a dead man forgets\n');
   ok(u.respawn > 0, 'he falls', `${u.respawn.toFixed(1)}s to muster`);
   ok(u.blows === 0 && u.hold === 0 && !u.holdArt && u.healing === 0,
     'and forgets the pose, the heal and his count');
-  ok(u.healCd < 12, 'but the light goes on recharging without him',
-    `${u.healCd.toFixed(2)}s left`);
+  ok(u.healCd === 0, 'and the man who takes his place can call the light at once',
+    `${u.healCd.toFixed(2)}s left of ${abilityById('light').refresh}`);
 }
 
 console.log('\nWhat gold buys\n');

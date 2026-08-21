@@ -1930,11 +1930,14 @@ function buttonPrice(ctx, it, caption) {
 
 // A button whose ARTWORK IS THE WHOLE BUTTON, clipped to a circle.
 //
-// The clip is not decoration. These four files have an opaque white background
-// outside the disc, so drawn as a plain rect they would put four white corners on
-// the grass. The disc fills its measured box exactly — [163, 163, 186, 186] in all
-// four, which is `btn_plate`'s own trim — so a circle of the button's radius lands
-// on the drawn outline rather than inside it, and the corners go.
+// The clip earned its keep before it was a safeguard. Three of these four files
+// shipped with an OPAQUE WHITE background outside the disc, and drawn as a plain
+// rect they would have put four white corners on the grass; the clip is why nobody
+// ever saw them. They are transparent now, so it guards a mistake rather than
+// hiding one — and it still catches the next re-export that brings a background
+// back. The disc fills its measured box exactly — [163, 163, 186, 186] in all four,
+// which is `btn_plate`'s own trim — so a circle of the button's radius lands on the
+// drawn outline rather than inside it.
 //
 // Returns false if the file has not loaded, so the caller falls back to the cream
 // plate and the vector glyph like every other button.
@@ -2575,9 +2578,9 @@ function drawZoom(ctx, z) {
     // sit in the middle of the same frame instead of one of them hugging an edge.
     const top = bodyY + (bodyH - h) / 2;
 
-    // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. Their
-    // files carry an opaque white background outside the disc, so shown as a plain
-    // rect they would put four white corners on the parchment — the same clip the
+    // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. The
+    // artist draws them as a disc, and a disc shown in a square frame wants the
+    // corners taken off whether or not there is ink in them — the same clip the
     // menu button uses, for the same reason. See plateFace().
     ctx.save();
     if (z.round) {
@@ -2871,9 +2874,9 @@ function abilityCard(ctx, b, e) {
 }
 
 // A UI disc drawn to a diameter and clipped to a circle. The four ability files
-// carry an opaque white background outside the disc — see plateFace() for the
-// whole story — so they are the only pictures in the book that cannot simply be
-// drawn to a rect.
+// are drawn as a disc rather than a rectangle — see plateFace() for the whole
+// story, including the white corners this clip used to be hiding — so they are the
+// only pictures in the book that are not simply drawn to a rect.
 function drawRound(ctx, key, cx, cy, d) {
   if (!art[key] || !ui[key]) return;
   ctx.save();

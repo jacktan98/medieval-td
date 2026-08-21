@@ -144,9 +144,9 @@ export function makeUnits(state, tower) {
       //
       // The counters are the MAN's, not the tower's, which is the whole difference
       // from the musketeer's. A Keep musters three paladins and each of them is
-      // counting his own blows towards his own tenth — three men swinging in step
+      // counting his own blows towards his own fifth — three men swinging in step
       // would land three Holy Slashes on the same frame.
-      blows: 0,       // how many he has landed, for Holy Slash's tenth
+      blows: 0,       // how many he has landed, for Holy Slash's fifth
       hold: 0,        // seconds committed to a special pose: no swing, no step
       holdArt: null,  // the drawing to show while holding, or his own Attack pose
       healing: 0,     // health a second while Holy Light is up, 0 the rest of the time
@@ -225,9 +225,14 @@ const ability = (u, id) => (owns(u.tower, id) ? abilityById(id) : null);
 
 export function updateUnits(state, dt) {
   for (const u of state.units) {
-    // Holy Light's twenty seconds run whether he is alive, dead or fighting. It is
-    // the ABILITY recharging, not the man resting — so a paladin who is cut down
-    // and musters again does not come back with it ready.
+    // Holy Light's thirty seconds run whether he is fighting, walking or standing
+    // in his slot — and they are HIS thirty seconds. The clock is cleared when he
+    // dies, down in the death block, so a paladin who is cut down and musters again
+    // comes back able to call the light. It used to survive him.
+    //
+    // Still ticked before the respawn check below rather than after it, which now
+    // only matters for the frame he falls on: `healCd` is zero for the whole of a
+    // respawn either way.
     if (u.healCd > 0) u.healCd -= dt;
 
     if (u.respawn > 0) {
@@ -392,8 +397,8 @@ export function updateUnits(state, dt) {
       play(abilityCue(light.cue));
     }
 
-    // The committed second after a special, and the two seconds of the light. It
-    // stops the swing below and the step further down — "he stays in that
+    // The swing he is committed to after a strike, and the three seconds of the
+    // light. It stops the swing below and the step further down — "he stays in that
     // position" — and it is the same field for both abilities, so a man can only
     // ever be doing one of them.
     if (u.hold > 0) {
@@ -423,13 +428,13 @@ export function updateUnits(state, dt) {
       // Each side spatters the one it HITS, so a melee throws blood both ways
       // and you can see which of the two is currently landing blows.
       // `u.hold` is the second half of the guard, and it is what a held pose
-      // actually costs. On a paladin the swing is 0.80s and the hold is 1, so
-      // Holy Slash delays the next blow by a fifth of a second — the musketeer's
-      // 2.4s reload swallows the same second whole. One rule, two answers, both
-      // from the man's own rate of work.
+      // actually costs. Holy Slash's hold is now the man's OWN swing — see below —
+      // so the two clocks run out on the same frame and the strike costs him
+      // nothing; Holy Light's three seconds are three seconds of not swinging, and
+      // are meant to be.
       if (u.cd <= 0 && u.hold <= 0) {
-        // HOLY SLASH: the tenth blow, and only the tenth. `blows` counts this one,
-        // so `every: 10` means nine ordinary swings and then the strike — read the
+        // HOLY SLASH: the fifth blow, and only the fifth. `blows` counts this one,
+        // so `every: 5` means four ordinary swings and then the strike — read the
         // field as the length of the cycle, exactly as the musketeer's 6 is.
         const slash = ability(u, 'slash');
         const special = slash && (u.blows + 1) % slash.every === 0 ? slash : null;
@@ -453,11 +458,19 @@ export function updateUnits(state, dt) {
         // it is mixed low and ducks under anything in Category A, which is what
         // lets it fire freely without burying the cries.
         //
-        // The tenth blow makes its OWN noise instead of his sword's, and commits
-        // him to the pose the artist drew for it. A kill by that blow still cries
-        // as a paladin's — `killedBy` above is the man, not the swing.
+        // The fifth blow makes its OWN noise instead of his sword's, and holds the
+        // pose the artist drew for it. A kill by that blow still cries as a
+        // paladin's — `killedBy` above is the man, not the swing.
+        //
+        // `?? u.def.cd` is where "held for a normal attack time" lives. An ability
+        // with a number keeps its number; one with none is held for exactly as long
+        // as the man's own swing, which is the only length that costs him nothing —
+        // `hold` and `cd` are set on the same frame and tick down together, so they
+        // expire together and the next blow lands on time. It is resolved here
+        // rather than in the ability, because the ability does not know whose hand
+        // it is in: the same null on a spearman would mean 1.10s.
         if (special) {
-          u.hold = special.hold;
+          u.hold = special.hold ?? u.def.cd;
           u.holdArt = special.pose;
           play(abilityCue(special.cue));
         } else {
@@ -513,15 +526,21 @@ export function updateUnits(state, dt) {
       // with the clock still running and walks straight back out to finish
       // dying of a flask thrown at a man who is already dead.
       u.poison = null;
-      // And so does everything an ability left on him. A man who musters again is
-      // a new man: he is not still holding a pose he struck before he died, he is
-      // not still being healed, and his count towards the next Holy Slash starts
-      // over. `healCd` is the one thing that does NOT reset — the ability is
-      // recharging, not the man — and it is ticked at the top of the loop for
-      // exactly that reason.
+      // And so does everything an ability left on him, `healCd` INCLUDED. A man
+      // who musters again is a new man in every respect: he is not still holding a
+      // pose he struck before he died, he is not still being healed, his count
+      // towards the next Holy Slash starts over, and his thirty seconds of Holy
+      // Light start over too.
+      //
+      // That last one was the other way round until the artist asked — the reading
+      // was that the gold bought a power and the power recharged regardless of who
+      // was carrying it. His reading is the one the board shows: the man kneeling
+      // in the road is the man with the clock, and when he falls the clock falls
+      // with him. See `refresh` in data/abilities.js for what it is worth.
       u.hold = 0;
       u.holdArt = null;
       u.healing = 0;
+      u.healCd = 0;
       u.blows = 0;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
       solo(CUE.soldierDeath);

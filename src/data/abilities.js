@@ -25,8 +25,12 @@
 //                on the rare shot where both land the rarer one wins.
 //   `hold`       how long the special POSE stays up afterwards. It blocks the next
 //                action as well as showing, which is invisible on the musketeer —
-//                his reload is 2.4s and the longest hold is 2 — and real on the
-//                paladin, whose 0.80s swing a 2s hold delays by more than a second.
+//                his reload is 2.4s and the longest hold is 2 — and would be very
+//                visible on the paladin, whose swing is 0.80s. NULL means "his own
+//                attack time", which is the one value that costs him nothing: the
+//                pose is up for exactly one beat of fighting and the next blow
+//                lands on schedule. Only units.js can resolve that, because only
+//                the man knows how fast he swings.
 //   `pose`       the drawing to show while holding, or nothing to hold the man's
 //                own Attack pose. Burst Fire is the one that holds Attack: the
 //                artist asked for it to use the pictures the tower already has.
@@ -101,9 +105,14 @@ const HOLY_SLASH_POSE = {
   pivot: [0.798, 0.905]
 };
 
-// How long a special pose stays up. The artist asked for one second on Burst Fire
-// and two on the two abilities that hit hardest, so there are two constants rather
-// than a number typed four times — a big blow is worth standing over.
+// How long a special pose stays up. One second on Burst Fire and two on Deadeye:
+// a big blow is worth standing over, and both are free on a man who takes 2.4s to
+// load whatever he just fired.
+//
+// HOLY SLASH USED TO TAKE THE LONG ONE and now takes none — see `hold: null`
+// below. The constant stays a constant rather than being folded into Deadeye,
+// because "the long hold" is a decision about the game's pacing that a second
+// ability could want again.
 const HOLD = 1;
 const LONG_HOLD = 2;
 
@@ -217,6 +226,18 @@ export const ABILITIES = [
     // reading of "refreshes every 30 seconds" is 27 seconds of standing there unable
     // to do it again. Starting the clock at the end would make the gap 30 on top of
     // the 3, which is a longer cooldown than the number says.
+    //
+    // AND IT IS THE MAN'S CLOCK, NOT THE ABILITY'S. It used to survive his death —
+    // the reasoning was that the gold bought a power and the power was recharging,
+    // whoever was carrying it — and the artist asked for the other reading: a
+    // paladin who is cut down and musters again is a NEW MAN, and a new man can
+    // call the light. So the timer dies with him, along with everything else an
+    // ability left on him. See the death block in src/units.js.
+    //
+    // It is a real buff and worth naming as one. A paladin who dies at 25 seconds
+    // into the clock used to muster with 5 seconds still to serve; now he comes back
+    // ready. What stops that being free is that he had to die to get it, at the cost
+    // of his respawn and the piece of road he was holding.
     refresh: 30,
     pose: HOLY_LIGHT_POSE,
     cue: 'holyLight',
@@ -225,10 +246,10 @@ export const ABILITIES = [
             'kneels, and takes 200 health back over three seconds. He keeps his grip ' +
             'on the enemy the whole time, so the road stays held — and the enemy ' +
             'keeps hitting him, so it is a race rather than a free reset.\n\n' +
-            'One paladin in three can be doing this at once; each man calls it for ' +
-            'himself. Thirty seconds before he can call it again, counted from the ' +
-            'moment he kneels, and a paladin who is killed anyway comes back with the ' +
-            'clock still running.'
+            'Each of the three calls it for himself and has his own thirty seconds ' +
+            'before he can call it again, counted from the moment he kneels. A paladin ' +
+            'killed anyway takes that clock with him: the man who musters in his place ' +
+            'can call the light at once.'
   },
   {
     id: 'slash',
@@ -236,33 +257,45 @@ export const ABILITIES = [
     of: 'Paladin Keep',
     icon: 'ability_slash',
     cost: ABILITY_COST,
-    // "A powerful strike every 10 attacks", so the tenth blow is the strike and
-    // nine ordinary ones come before it. Read the field the same way as the
-    // musketeer's 6 above: it is the length of the cycle, and the last action of
-    // the cycle is the special one.
-    every: 10,
+    // "A strike every 5 attacks", so the fifth blow is the strike and four
+    // ordinary ones come before it. Read the field the same way as the musketeer's
+    // 6 above: it is the length of the cycle, and the last action of the cycle is
+    // the special one.
+    //
+    // IT WAS EVERY TENTH AT 70 DAMAGE, held for two seconds. Twice as often for
+    // rather more than half as hard is very nearly the same sum — 13.25 damage a
+    // second against the old 13.3 — so what changed is not how much the ability is
+    // worth but what it FEELS like: a rhythm you can see rather than one enormous
+    // blow every eight seconds followed by a paladin standing still.
+    every: 5,
     shots: 1,
-    // 70, and it is ten times an ordinary blow. Nine swings at 7 plus one at 70 is
-    // 133 where ten swings would be 70 — so the ability nearly doubles what one
-    // paladin does, on the man who starts with the least damage in the game.
-    damage: 70,
-    // TWO SECONDS over it, and unlike the musketeer's this one COSTS something: he
-    // swings every 0.80s, so the second second is a second he is not swinging in.
-    // That is what holds the sum down — 133 damage over 9.2 seconds is 14.5 a
-    // second against a plain paladin's 8.75, rather than the 16.6 it would be if
-    // the pose were free.
-    hold: LONG_HOLD,
+    // 25, down from 70, and still three and a half times an ordinary blow. Four
+    // swings at 7 plus one at 25 is 53 where five swings would be 35.
+    damage: 25,
+    // NO PAUSE OVER IT ANY MORE. `hold` is null rather than a number of seconds,
+    // which units.js reads as "the man's own attack time" — 0.80s on a paladin, the
+    // same as the swing it replaces — so the pose is up for exactly one beat of
+    // fighting and the next blow lands on schedule. The artist's words: they hold
+    // that position like normal attack time.
+    //
+    // Null rather than 0.80 typed here, because the paladin's cd is his own number
+    // and this has to follow it. Typing the value would leave a Holy Slash frozen
+    // at a swing rate the man no longer has the day somebody tunes him.
+    //
+    // It also means the whole cost of the ability is now the strike's rarity. The
+    // two seconds used to be the brake — 14.5 a second where a free pose would have
+    // been 16.6 — and taking the brake off is exactly why the damage came down.
+    hold: null,
     pose: HOLY_SLASH_POSE,
     cue: 'holySlash',
 
-    detail: 'Nine ordinary blows and then one for 70 — ten times what a paladin ' +
-            'normally does — and he stands over it for two seconds before swinging ' +
-            'again.\n\n' +
-            'Those two seconds are the price. A paladin swings every 0.8 seconds, so ' +
-            'holding the pose costs him more than a swing, and the ability works out ' +
-            'at 14.5 damage a second against a plain paladin\'s 8.75. Each of the ' +
-            'three men counts his own blows, so the strikes land spread out rather ' +
-            'than all at once.'
+    detail: 'Four ordinary blows and then one for 25 — three and a half times what ' +
+            'a paladin normally does — struck in the time an ordinary swing takes, ' +
+            'so the rhythm never breaks.\n\n' +
+            'It works out at 13.25 damage a second against a plain paladin\'s 8.75, ' +
+            'which is half again as much from the man who starts with the least ' +
+            'damage in the game. Each of the three counts his own blows, so the ' +
+            'strikes land spread out rather than all at once.'
   }
 ];
 

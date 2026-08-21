@@ -135,7 +135,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
-| **a paladin's tenth blow lands** — Category B | `Paladin_Holy_Slash` |
+| **a paladin's fifth blow lands** — Category B | `Paladin_Holy_Slash` |
 | an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |
 
 Everything above the line is Category A and shares the one channel; the ones

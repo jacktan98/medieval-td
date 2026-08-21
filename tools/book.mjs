@@ -464,7 +464,7 @@ console.log('\nThe picture pop-up\n');
     `${deepest.toFixed(0)}px of 540`);
 
   // THE ABILITY BUTTONS ARE A CIRCLE IN A SQUARE, and the pop-up clips them to
-  // one because their files carry an opaque white background. That only works
+  // one because the artist draws them round. That only works
   // while the plate is square: a rectangular plate would clip to the shorter side
   // and eat the disc. tools/trim.mjs checks the FILES are square; this checks the
   // plate they are shown in is.

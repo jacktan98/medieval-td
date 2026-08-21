@@ -404,7 +404,7 @@ export const MUSKET = ['musketeer_shot'];
 export const BOLT = ['ballista_shot'];
 // The three ability sounds, and all three are Category B beside the weapons they
 // belong to. A heavy ball leaving the barrel, a paladin calling the light down on
-// himself, and a paladin's tenth blow. See abilityCue below for how an ability
+// himself, and a paladin's fifth blow. See abilityCue below for how an ability
 // asks for one.
 export const DEADEYE = ['musketeer_deadeye'];
 export const HOLY_LIGHT = ['paladin_holy_light'];

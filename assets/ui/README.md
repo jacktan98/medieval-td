@@ -127,16 +127,19 @@ plate's own trim, to the pixel — so an ability button is exactly the size of e
 other button in the ring and lands in the same place. A re-export at a different
 size would be a button that does not match the ones beside it.
 
-**It must be square, centred and round.** These files have an **opaque white
-background** outside the disc, which is the one thing the transparency rule below
-would normally reject. The renderer copes by clipping them to a circle of the
-button's radius — so the white corners never reach the screen — and that clip only
-lands correctly while the disc fills a centred square. Off-centre, oblong, or
-smaller than its box, and the clip either eats the drawing or leaves white on the
-grass.
+**It must be square, centred and round.** The renderer clips these to a circle of
+the button's radius, and that clip only lands correctly while the disc fills a
+centred square. Off-centre, oblong, or smaller than its box, and the clip either
+eats the drawing or leaves the corners hanging outside it.
 
-Everything else here still needs a transparent background, and `tools/trim.mjs`
-still fails on one that does not have it.
+**And transparent, like everything else here.** Three of the four arrived on an
+**opaque white square** and were re-exported clear. While that was true the clip
+was doing real work — it is what kept four white corners off the grass — and
+`tools/trim.mjs` had to find the disc by colour rather than by alpha, because
+every pixel of the canvas was solid. Both are fixed at the source now: the tool
+measures by alpha, the transparency rule covers all four rather than exempting
+them, and the clip stays as the guard against the next export that brings a
+background back.
 
 ## What to draw
 
@@ -468,7 +471,7 @@ than a thing, whose drawing says almost nothing on its own — and the text is i
 fails if any of them would need more than twelve lines.
 
 Its pictures are clipped to a circle, for the same reason the menu buttons are: the
-files carry an opaque white background outside the disc.
+artist draws them round, and a disc in a square frame wants its corners taken off.
 
 ### The pop-up is as big as the screen can honestly show
 

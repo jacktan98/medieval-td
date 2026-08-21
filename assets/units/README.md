@@ -35,9 +35,9 @@ nothing shows them until 150 gold has been spent.
 
 | pose                    | file                     | shown while                          |
 |-------------------------|--------------------------|--------------------------------------|
-| Musketeer, Deadeye      | `Musketeer_Deadeye`      | the heavy ball leaves, and 1s after  |
-| Paladin, Holy Light     | `Paladin_Holy_Light`     | he kneels and heals, 2s              |
-| Paladin, Holy Slash     | `Paladin_Holy_Slash`     | the tenth blow lands, and 1s after   |
+| Musketeer, Deadeye      | `Musketeer_Deadeye`      | the heavy ball leaves, and 2s after  |
+| Paladin, Holy Light     | `Paladin_Holy_Light`     | he kneels and heals, 3s              |
+| Paladin, Holy Slash     | `Paladin_Holy_Slash`     | the fifth blow lands, one swing      |
 
 **Burst Fire has none, deliberately.** The artist asked for it to use the pictures
 the Musketeer Post already has, so it holds his ordinary Attack pose and fires his

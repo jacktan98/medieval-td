@@ -47,11 +47,16 @@ function trim({ w, h, ch, px }, byInk = false) {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * ch;
       const a = px[i + ch - 1];
-      // BY ALPHA normally, and BY INK for the four ability buttons — see the
-      // `plate` entries in src/data/ui.js. Those arrive as a coloured disc on an
-      // OPAQUE WHITE square, so every pixel of the canvas passes the alpha test
-      // and the box comes back as the whole 512. What is actually drawn is the
-      // disc, and the disc is what is not white.
+      // BY ALPHA normally, and BY INK for a full-plate button that came in OPAQUE —
+      // see the `plate` entries in src/data/ui.js. Three of the four ability icons
+      // arrived as a coloured disc on a white square, and on those every pixel of
+      // the canvas passes the alpha test, so the box comes back as the whole 512.
+      // What is actually drawn is the disc, and the disc is what is not white.
+      //
+      // The artist has since re-exported them clear, and the caller only asks for
+      // ink when a file is still opaque — see `byInk` at the call. Alpha is the
+      // truthful measure when there is alpha to read: ink would quietly drop a
+      // white highlight inside the disc, which is a plausible thing to draw.
       const lit = byInk
         ? a > ALPHA && (px[i] < 250 || px[i + 1] < 250 || px[i + 2] < 250)
         : a > ALPHA;
@@ -65,6 +70,19 @@ function trim({ w, h, ch, px }, byInk = false) {
   }
   return x1 < 0 ? null : [x0, y0, x1 - x0 + 1, y1 - y0 + 1];
 }
+
+// Whether a file has a background: nine tenths of its pixels solid or better.
+//
+// The measure the transparency rule below runs on, hoisted out because the trim
+// above needs the same answer. WHICH FILE IS OPAQUE IS A FACT ABOUT THE FILE, not
+// about how it is used, and asking it per file is what lets one rule cover both
+// versions of an ability icon — the white-square export and the clear one — with
+// nothing to remember to change on the next upload.
+const opaque = img => {
+  let solid = 0;
+  for (let p = 0; p < img.w * img.h; p++) if (img.px[p * img.ch + img.ch - 1] > 200) solid++;
+  return solid / (img.w * img.h) >= 0.9;
+};
 
 const MAX_DPR = 3;     // MAX_SCALE in src/main.js
 
@@ -119,8 +137,10 @@ for (const d of dirs) {
     const path = join('assets', rel);
     const f = basename(rel);
     const img = decode(readFileSync(path));
-    // A full-plate button is measured by its ink rather than its alpha; see trim().
-    const t = trim(img, d === 'ui' && !!(ui[uiKey(f)] || {}).plate);
+    // A full-plate button that is OPAQUE is measured by its ink rather than its
+    // alpha; one with a transparent background is measured like everything else.
+    // See trim(), and `opaque` for why the file decides rather than the flag.
+    const t = trim(img, d === 'ui' && !!(ui[uiKey(f)] || {}).plate && opaque(img));
     if (!t) { console.log(`${path.padEnd(35)} fully transparent`); continue; }
 
     // UI is the one folder where the drawn size does NOT come from a scale
@@ -252,19 +272,21 @@ for (const d of dirs) {
   let solid = 0;
   for (const [key, src] of Object.entries(ASSET_URLS)) {
     if (!src.startsWith('assets/ui/') || !ui[key]) continue;
-    // EXCEPT A FULL-PLATE BUTTON, which is opaque on purpose. The four ability
-    // icons are not marks laid over the cream plate — each one IS the plate, drawn
-    // as a coloured disc, so there is nothing underneath for a background to
-    // obscure. The rule they are held to instead is the block below, and it is the
-    // one their drawing actually has to satisfy: the disc must be a centred square
-    // the size of the button, because render.js clips it to a circle.
-    if (ui[key].plate) continue;
+    // THE FOUR ABILITY BUTTONS ARE HELD TO THIS TOO, and were not always. They are
+    // the one kind of UI file with nothing underneath them — each one IS the plate
+    // rather than a mark laid over it — so a white square behind the disc was
+    // exempted here as harmless, on the grounds that render.js clips it away.
+    //
+    // It was harmless right up until it was not: three of them shipped opaque, the
+    // clip hid it on the button, and the same file drawn anywhere without a circular
+    // clip would have carried its corners along. The artist re-exported them clear
+    // and the exemption went with them. One rule for every icon is worth more than
+    // a special case that happens to be survivable.
     const img = decode(readFileSync(src));
-    let opaque = 0;
-    for (let p = 0; p < img.w * img.h; p++) if (img.px[p * img.ch + img.ch - 1] > 200) opaque++;
-    const share = opaque / (img.w * img.h);
-    if (share < 0.9) continue;
-    console.log(`\n${src} is ${(100 * share).toFixed(0)}% opaque — it has a background.`);
+    if (!opaque(img)) continue;
+    let lit = 0;
+    for (let p = 0; p < img.w * img.h; p++) if (img.px[p * img.ch + img.ch - 1] > 200) lit++;
+    console.log(`\n${src} is ${(100 * lit / (img.w * img.h)).toFixed(0)}% opaque — it has a background.`);
     solid++;
   }
   if (solid) {
@@ -277,13 +299,12 @@ for (const d of dirs) {
 
 // AND EVERY ICON THAT IS A PLATE IS A CENTRED SQUARE THE SIZE OF ONE.
 //
-// This is the check the four ability buttons get instead of the transparency rule
+// This is the check the four ability buttons get ON TOP OF the transparency rule
 // above, and it is not a formality — it is the property the drawing code depends
 // on. render.js clips these to a circle of the button's own radius, centred on the
-// button, because the file carries an opaque white background outside the disc. A
-// re-export whose disc was smaller, off-centre, or not round would either lose ink
-// to the clip or leave white corners on the grass, and both would look like a
-// rendering bug rather than an art one.
+// button. A re-export whose disc was smaller, off-centre, or not round would either
+// lose ink to the clip or leave corners hanging outside it, and both would look
+// like a rendering bug rather than an art one.
 //
 // Measured against `btn_plate`, not against a number typed here: the cream plate
 // and these four are the same button at the same size, and if the artist ever
