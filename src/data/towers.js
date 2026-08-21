@@ -1494,15 +1494,18 @@ const ballista = {
     w: drawnW(BALLISTA_TRIM), h: drawnH(BALLISTA_TRIM),
     pivot: [0.269, 0.920],
     faces: -1,
-    // WHERE THE BOLT LEAVES, as a fraction of the machine's own trim: the mouth
-    // of the bow, at the FRONT of the weapon. It is a point of the DRAWING, so
-    // it mirrors with the drawing and cannot end up on the wrong end of it.
+    // WHERE THE BOLT LEAVES, as a fraction of the machine's own trim: the TIP OF
+    // THE BOW, which is the point the owner drew an arrow from. It is a point of
+    // the DRAWING, so it mirrors with the drawing and cannot end up on the wrong
+    // end of it.
     //
-    // It was measured from the post before, and that was wrong in exactly the
-    // way the owner reported: the loaded bolt is drawn well behind the bow, so
-    // releasing from it put the shot out of the BACK of the machine in both
-    // directions. The bow is the front, and this sits just outside its tip.
-    nose: [0.085, 0.360],
+    // Source (365, 526), which is the outermost column of the bow's crescent —
+    // the machine's leading edge, level with the middle of the arc rather than
+    // above it. Two earlier versions were wrong in the same direction: an offset
+    // from the post to the LOADED BOLT (which is drawn well behind the bow, so
+    // the shot came out of the back), and then a point just above the bow, which
+    // still read as leaving over the top of it rather than out of the mouth.
+    nose: [0.012, 0.561],
     // The line the drawing flips about, as a fraction of the same trim. The
     // middle of it rather than the post — see `axis` in src/towers.js.
     mirror: 0.5

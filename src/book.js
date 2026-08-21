@@ -515,7 +515,13 @@ function artAt(state, x, y) {
     if (!within(cell(shelfRect(col, row)), x, y)) continue;
     const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
     return { sprite: e.sprite, trim: e.trim, title: e.title,
-             kind: state.book === 0 ? 'tower' : 'figure' };
+             kind: state.book === 0 ? 'tower' : 'figure',
+             // AND THE MACHINE ON TOP, for the one tier that is two drawings.
+             // The pop-up opened on the bare stone before this, which is not the
+             // tower — half of a Ballista Turret is the ballista, and the man
+             // standing beside it is the only place in the game he is drawn big
+             // enough to look at.
+             machine: e.machine || null };
   }
   return null;
 }

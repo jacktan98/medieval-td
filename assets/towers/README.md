@@ -81,8 +81,15 @@ against the 16.2 the best post-mirrored placement could manage.
 **And `nose` is a point of the drawing, not an offset from the post**, for the
 same reason `pivot` is: it goes through the same mirror the picture does. It was
 an offset first, taken from the loaded bolt — which is drawn well behind the bow
-— and the shot came out of the BACK of the machine in both directions. The bow is
-the front; `nose` sits just outside its tip.
+— and the shot came out of the BACK of the machine in both directions. It is the
+TIP OF THE BOW now, source (365, 526): the machine's leading edge, level with the
+middle of the arc rather than above it.
+
+**The encyclopedia shows both halves too.** A card draws the machine over the
+stone, and so does the pop-up a tapped card opens — that one showed the bare
+turret to begin with, which is not the tower: half of a Ballista Turret is the
+ballista, and the pop-up is the only place in the game its engineer is drawn big
+enough to look at.
 
 The battlement block at the deck's NEAREST corner is a `frontPolys` entry, so the
 machine's foot passes behind it exactly as the Musketeer Post's boots pass behind

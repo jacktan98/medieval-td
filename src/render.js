@@ -2587,6 +2587,16 @@ function drawZoom(ctx, z) {
     }
     ctx.drawImage(img, sx, sy, sw, sh, cx - w / 2, top, w, h);
     ctx.restore();
+
+    // The machine on a turret, over the stone it stands on and through the same
+    // geometry the board and the cards use — see machineBox. Unmirrored, like
+    // every other picture in the book: this is the tower at rest.
+    const mimg = z.machine && art[z.machine.sprite];
+    if (mimg) {
+      const m = machineBox(z.machine.def, { left: cx - w / 2, top, w, h });
+      const [mx, my, mw, mh] = z.machine.trim;
+      ctx.drawImage(mimg, mx, my, mw, mh, m.left, m.top, m.w, m.h);
+    }
   }
 
   if (!lines) return;
