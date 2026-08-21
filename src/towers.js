@@ -439,15 +439,27 @@ function shoot(state, t, target, special) {
   // length of the drawing, which puts the TAIL at the muzzle instead. Only the
   // ballista's bolt carries one; an arrow is 20px long and has never needed it.
   //
-  // Clamped to a fraction of the distance so a target at point-blank range is
-  // still shot at from in front of it rather than from behind.
-  const reach = Math.hypot(target.x - m.x, target.y - m.y);
-  const ahead = Math.min(ammo.clear || 0, reach * 0.4);
+  // Clamped to the RANGE so the head never starts past the man it is aimed at.
+  // Not to a fraction of it: at anything under a couple of bolt-lengths that put
+  // the head short and left the tail back inside the machine, which is the whole
+  // thing this is here to avoid. At the clamp the bolt simply spans the gap —
+  // tail at the mouth, head on the target — which is what a bolt fired at
+  // somebody standing right there should look like.
+  // FROM THE MUZZLE, not from the plot. `t.aim` is the angle the TOWER makes with
+  // its target and it is what turns the machine; the shot leaves a mouth that is
+  // a couple of dozen pixels off the tower's own centre, so the line it actually
+  // travels is measured from there. On an archery tower the two are the same
+  // angle to within nothing; on a turret they are a few degrees apart, which is
+  // enough to leave the bolt's tail off the mouth it is supposed to sit on.
+  const dx = target.x - m.x;
+  const dy = target.y - m.y;
+  const reach = Math.hypot(dx, dy) || 1;
+  const ahead = Math.min(ammo.clear || 0, reach);
 
   const shot = {
-    x: m.x + Math.cos(t.aim) * ahead,
-    y: m.y + Math.sin(t.aim) * ahead,
-    angle: t.aim,          // so the first frame already points at the target
+    x: m.x + (dx / reach) * ahead,
+    y: m.y + (dy / reach) * ahead,
+    angle: Math.atan2(dy, dx),   // so the first frame already points at the target
     // Where it was shot FROM, kept because the projectile's own position at the
     // moment it lands is the target's. A corpse faces the blow, and this is the
     // only record of which side the blow was on.

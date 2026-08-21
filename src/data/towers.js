@@ -1513,13 +1513,18 @@ const ballista = {
     // the DRAWING, so it mirrors with the drawing and cannot end up on the wrong
     // end of it.
     //
-    // Source (365, 526), which is the outermost column of the bow's crescent —
-    // the machine's leading edge, level with the middle of the arc rather than
-    // above it. Two earlier versions were wrong in the same direction: an offset
-    // from the post to the LOADED BOLT (which is drawn well behind the bow, so
-    // the shot came out of the back), and then a point just above the bow, which
-    // still read as leaving over the top of it rather than out of the mouth.
-    nose: [0.012, 0.561],
+    // Source (412, 566) — THE MOUTH: the point where the rail crosses the bow,
+    // at the arc's lower edge, which is the spot the owner drew every bolt
+    // leaving from. It is where the BACK of the bolt sits at the moment of
+    // firing; the drawing runs forward from there along whatever line the shot
+    // is taking, which is what `clear` on the ammunition is for.
+    //
+    // Three earlier versions were wrong and all in the same direction: an offset
+    // from the post to the LOADED BOLT (drawn well behind the bow, so the shot
+    // came out of the back), a point just above the arc (over the top of it),
+    // and the arc's outer tip (past the mouth, and still with the shaft lying
+    // back across the machine).
+    nose: [0.150, 0.737],
     // The line the drawing flips about, as a fraction of the same trim. The
     // middle of it rather than the post — see `axis` in src/towers.js.
     mirror: 0.5

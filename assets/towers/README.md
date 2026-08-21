@@ -81,17 +81,21 @@ against the 16.2 the best post-mirrored placement could manage.
 **And `nose` is a point of the drawing, not an offset from the post**, for the
 same reason `pivot` is: it goes through the same mirror the picture does. It was
 an offset first, taken from the loaded bolt — which is drawn well behind the bow
-— and the shot came out of the BACK of the machine in both directions. It is the
-TIP OF THE BOW now, source (365, 526): the machine's leading edge, level with the
-middle of the arc rather than above it.
+— and the shot came out of the BACK of the machine in both directions. It is THE
+MOUTH now, source (412, 566): where the rail crosses the bow, which is the point
+the artist drew every bolt leaving from.
 
-**And the bolt is pushed one length clear of it**, which is `clear` on the
-ammunition in `src/data/towers.js`. A projectile is anchored by its HEAD, because
-that is the point that has to land on the man — and this one is 42.5 drawn px
-long, more than half the ballista's own width, so a head at the mouth of the bow
-leaves the shaft lying back across the whole machine. One length forward puts the
-tail at the mouth instead. It is clamped against the range in `shoot()`, so a
-thug at the tower's feet is not shot at from behind him.
+**`nose` is where the BACK of the bolt sits**, not the front, and `clear` on the
+ammunition is what makes that true. A projectile is anchored by its HEAD, because
+the head is what has to land on the man — and a bolt is 42.5 drawn px long, more
+than half the ballista's own width, so a head at the mouth leaves the shaft lying
+back across the whole machine. `clear` pushes the head one bolt-length forward
+along the line the shot is taking, which puts the tail on the mouth and the
+drawing outside the machine, rotated to wherever the enemy is.
+
+It is clamped to the range in `shoot()`: at anything closer than a bolt-length
+the shot simply spans the gap, tail at the mouth and head on the target, rather
+than starting past the man it is aimed at.
 
 **The encyclopedia shows both halves too.** A card draws the machine over the
 stone, and so does the pop-up a tapped card opens — that one showed the bare
