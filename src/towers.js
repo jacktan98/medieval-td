@@ -73,7 +73,34 @@ export function machineBox(def, box) {
   const y = box.top + box.h * def.mountFrac[1];
   const w = m.w * (box.w / def.w);
   const h = m.h * (box.h / def.h);
-  return { x, y, left: x - m.pivot[0] * w, top: y - m.pivot[1] * h, w, h };
+  const left = x - m.pivot[0] * w;
+  return {
+    x, y, left, top: y - m.pivot[1] * h, w, h,
+    // THE LINE IT MIRRORS ABOUT, and it is NOT the post it stands on.
+    //
+    // It was the post for one build and that is the version the owner sent back:
+    // the ballista is drawn with its post near one end and its crew at the
+    // other, so flipping about the post swings the whole machine 175 source px
+    // across the roof and it ends up hanging off one side or the other whichever
+    // way it turns. Flipping about the middle of the DRAWING keeps the same
+    // footprint both ways — the post and the engineer simply swap ends of it —
+    // so a machine centred on the deck stays centred on the deck.
+    axis: left + w * (m.mirror ?? 0.5)
+  };
+}
+
+// Where the bolt leaves a turret's machine, in world space.
+//
+// Held as a fraction of the machine's own trim rather than as an offset from
+// anything, for the same reason `pivot` is: it is a point of the DRAWING, so it
+// survives the machine being resized, and it goes through exactly the same
+// mirror the picture does. An offset measured from the post would have to be
+// re-derived every time the mirror line moved, which is how the first version
+// ended up firing out of the back of the machine.
+export function machineNose(def, box) {
+  const m = machineBox(def, box);
+  const [fx, fy] = def.machine.nose;
+  return { x: m.left + m.w * fx, y: m.top + m.h * fy, axis: m.axis };
 }
 
 // Where the gunner stands: the centre of the building's platform. Held as a
@@ -128,22 +155,22 @@ export function mirror(def, dir) {
 // [sideways, vertical] from the body, and the sideways part flips with the
 // sprite so the arrow always leaves the bow.
 export function muzzlePoint(t) {
+  // A MACHINE'S MUZZLE IS A POINT OF ITS DRAWING, mirrored with the drawing —
+  // see machineNose. Not an offset from the post: the post is not the line the
+  // picture flips about, so an offset from it puts the shot on the wrong end of
+  // the machine in one of the two directions.
+  if (t.def.machine) {
+    const n = machineNose(t.def, towerBox(t));
+    return { x: machineFlip(t) < 0 ? 2 * n.axis - n.x : n.x, y: n.y };
+  }
+
   const m = mountPoint(t);
   const [out, up] = t.def.muzzle;
 
-  // `out` is measured toward the target for a gunner — an archer's bow arm is on
-  // the side he is shooting at, so it simply follows `facing`.
-  //
-  // A MACHINE'S IS MEASURED IN ITS OWN DRAWING, and that is a different sum in
-  // two ways. The ballista's rail tip sits to the RIGHT of the post it stands on
-  // while the machine is drawn shooting LEFT, so the release point is on the far
-  // side from the target; and the machine's direction is LATCHED once a cycle
-  // rather than followed every frame, so it is the mirror that decides and not
-  // where the target has wandered to since. machineFlip answers both at once.
-  const side = t.def.machine ? machineFlip(t) : facing(t);
-
+  // `out` is measured toward the target: an archer's bow arm is on the side he
+  // is shooting at, so it simply follows `facing`.
   return {
-    x: m.x + out * side,
+    x: m.x + out * facing(t),
     y: m.y + up
   };
 }

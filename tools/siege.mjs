@@ -453,7 +453,7 @@ if (BOLTERS.length) {
     // reason it is a second drawing: the stone under it stays where it is, so
     // the axis is where the machine stands on the roof rather than where the
     // turret stands on the ground.
-    const axis = machineBox(d, towerBox(t)).x;
+    const axis = machineBox(d, towerBox(t)).axis;
     t.face = -1;
     const un = muzzlePoint(t);
     t.face = 1;
@@ -462,9 +462,31 @@ if (BOLTERS.length) {
        'and the muzzle mirrors about the machine, not the plot',
        `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${axis.toFixed(1)}, plot ${t.x.toFixed(1)}`);
 
-    ok(Math.abs(axis - t.x) > 1,
-       'which is a different line from the plot',
-       `${(axis - t.x).toFixed(1)}px apart`);
+    // THE MIDDLE OF THE DRAWING, NOT THE POST, and that is the whole of the
+    // second fix: mirroring about the post swings the machine across the roof.
+    // The plot's own line is NOT the thing to check against — the mount was
+    // chosen to put the machine's middle over the middle of the deck, so the two
+    // land within a pixel of each other on purpose.
+    const post = machineBox(d, towerBox(t)).x;
+    ok(Math.abs(axis - post) > 4,
+       'and that line is the middle of the drawing, not the post',
+       `${axis.toFixed(1)} against a post at ${post.toFixed(1)}`);
+
+    // AND THE BOLT LEAVES THE FRONT, which is the other half of the same fix.
+    // "Front" is measurable: the shot's origin has to be on the side of the
+    // machine's own middle that the target is on, both ways round. It was not —
+    // the release was taken from the loaded bolt, which is drawn behind the bow,
+    // so it came out of the back whichever way the machine pointed.
+    t.face = -1;
+    const outLeft = muzzlePoint(t).x;
+    t.face = 1;
+    const outRight = muzzlePoint(t).x;
+    ok(outLeft < machineBox(d, towerBox(t)).axis,
+       'facing LEFT, the bolt leaves the left of the machine',
+       `${outLeft.toFixed(1)} against a middle of ${axis.toFixed(1)}`);
+    ok(outRight > machineBox(d, towerBox(t)).axis,
+       'and facing RIGHT, the right of it',
+       `${outRight.toFixed(1)} against ${axis.toFixed(1)}`);
   }
 }
 

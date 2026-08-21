@@ -1438,20 +1438,24 @@ const trebuchet = {
 // on the deck is flipped. `machine` below is that second piece; `mountFrac` is
 // where it stands on the roof.
 //
-// WHERE IT STANDS, and this is the number that took the measuring. The machine
-// is mirrored ABOUT ITS OWN STANDING POINT, so the engineer — who is drawn 175
-// source px to the right of the ballista and 86 above it — swings to 175px on
-// the LEFT when the machine turns. Both of those have to land on stone or he is
-// standing in the sky.
+// WHERE IT STANDS, AND WHAT IT MIRRORS ABOUT, and the two questions turned out
+// to be one. The ballista is drawn with its post near the left end of its box
+// and its engineer 175 source px to the right of it, so flipping the drawing
+// ABOUT THE POST swings the whole machine that far across the roof: whichever
+// way it turned it sat too far to one side, which is what the owner saw and
+// sent back.
+//
+// It mirrors about the MIDDLE of its own drawing instead. The footprint is then
+// the same both ways — the post and the engineer swap ends of it — so "where
+// does the machine stand" becomes "where does that footprint sit", and the
+// answer is: over the middle of the deck.
 //
 // The deck's top face is one #969696 path in the artist's SVG with corners
-// (449.8, 242.5), (766.7, 291.2), (595.7, 439.6) and (257.4, 364.7). Searching
-// that quad for the point where the machine AND both engineer positions sit
-// furthest inside it lands on source (532, 407): 16 source px of clearance on
-// all three, which is the most the drawing allows. That is a shade RIGHT of the
-// deck's own centroid (518.9) and well forward of it — put the machine in the
-// middle of the deck instead and the engineer hangs 29px off the back edge one
-// way and 50px off it the other.
+// (449.8, 242.5), (766.7, 291.2), (595.7, 439.6) and (257.4, 364.7). With the
+// box centred on it, source (440, 379) is where all FOUR ground points — the
+// post and the engineer, each in both directions — sit furthest inside that
+// quad: between 24.7 and 44.9 source px of clearance, against the 16.2 that the
+// best post-mirrored placement could manage.
 //
 // THE NEAR MERLON GOES IN FRONT, for the same reason the Musketeer Post's does:
 // the battlement block at the deck's nearest corner stands between the machine
@@ -1489,14 +1493,21 @@ const ballista = {
     trim: BALLISTA_TRIM,
     w: drawnW(BALLISTA_TRIM), h: drawnH(BALLISTA_TRIM),
     pivot: [0.269, 0.920],
-    faces: -1
+    faces: -1,
+    // WHERE THE BOLT LEAVES, as a fraction of the machine's own trim: the mouth
+    // of the bow, at the FRONT of the weapon. It is a point of the DRAWING, so
+    // it mirrors with the drawing and cannot end up on the wrong end of it.
+    //
+    // It was measured from the post before, and that was wrong in exactly the
+    // way the owner reported: the loaded bolt is drawn well behind the bow, so
+    // releasing from it put the shot out of the BACK of the machine in both
+    // directions. The bow is the front, and this sits just outside its tip.
+    nose: [0.085, 0.360],
+    // The line the drawing flips about, as a fraction of the same trim. The
+    // middle of it rather than the post — see `axis` in src/towers.js.
+    mirror: 0.5
   },
-  mountFrac: [0.539, 0.330],
-  // Where the bolt leaves, measured from the machine's standing point: the head
-  // of the loaded bolt, source (490, 445) against the post at (452.5, 609), which
-  // is +37.5 and -164 source px or +7.7 and -33.6 drawn. The sideways half flips
-  // with the machine — see muzzlePoint in src/towers.js.
-  muzzle: [7.7, -33.6],
+  mountFrac: [0.360, 0.285],
   ammo: bolt,
   // A FASTER CYCLE THAN THE CATAPULTS, and it is the tier's whole character
   // beside the damage. 0.45 / 0.45 / 0.9 against 0.75 / 0.75 / 1.5 — the same

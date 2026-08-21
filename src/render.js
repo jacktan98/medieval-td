@@ -573,11 +573,9 @@ function drawBuilding(ctx, t, box) {
 // target — the only thing in the game that flips while the building under it
 // stays put.
 //
-// MIRRORED ABOUT ITS OWN STANDING POINT rather than about the tower's, which is
-// the difference between this and buildingFlip's whole-building transform: the
-// machine stands on one spot of the roof and turns on it, so that spot is the
-// axis. Flipping about t.x instead would slide it 6px sideways across the deck
-// every time it turned, and the engineer with it.
+// MIRRORED ABOUT THE MIDDLE OF ITS OWN DRAWING rather than about the tower or
+// about the post it stands on — see `axis` in machineBox for why that is the one
+// line that keeps the machine centred on the roof both ways round.
 function drawMachine(ctx, t, box) {
   const m = t.def.machine;
   const img = art[frameOf(t)];
@@ -588,9 +586,9 @@ function drawMachine(ctx, t, box) {
 
   ctx.save();
   if (machineFlip(t) < 0) {
-    ctx.translate(slot.x, 0);
+    ctx.translate(slot.axis, 0);
     ctx.scale(-1, 1);
-    ctx.translate(-slot.x, 0);
+    ctx.translate(-slot.axis, 0);
   }
   ctx.drawImage(img, sx, sy, sw, sh, slot.left, slot.top, slot.w, slot.h);
   ctx.restore();

@@ -61,15 +61,28 @@ round. A turret cannot do that — a mirrored turret is lit from the wrong side 
 its stonework recedes the wrong way — so the stone is a still drawing that never
 flips and the machine is a second one that animates and turns on top of it.
 
-Two numbers hold them together, both in `src/data/towers.js`: `mountFrac` is
-where the machine stands on the roof, and the machine's own `pivot` is the point
-of its drawing that lands there. That point is also the line it MIRRORS about, so
-the engineer — drawn 175 source px to the right of the ballista — swings to 175px
-on its left when the machine turns, and both positions have to be on stone. The
-mount was searched for rather than eyeballed: source (532, 407) is the point on
-the deck quad where the machine and both engineer positions sit furthest inside
-it, 16 source px each. Put it in the middle of the deck instead and the engineer
-hangs off the back edge by 29px one way and 50px the other.
+Four numbers hold them together, all in `src/data/towers.js`. `mountFrac` is
+where the machine stands on the roof and the machine's own `pivot` is the point
+of its drawing that lands there; `mirror` is the line the drawing FLIPS about,
+and `nose` is where the bolt leaves.
+
+**It mirrors about the middle of its drawing, not about its post.** The post is
+near one end of the machine and the engineer is 175 source px from it at the
+other, so flipping about the post swings the whole thing that far across the
+roof — whichever way it turned it sat too far to one side, which is what the
+first build did and what the owner sent back. Flipping about the middle keeps the
+same footprint both ways: the post and the engineer simply swap ends of it.
+
+With the footprint fixed, the mount is just "where does that footprint sit", and
+source (440, 379) is where all four ground points — post and engineer, each way
+round — sit furthest inside the deck quad: 24.7 to 44.9 source px of clearance,
+against the 16.2 the best post-mirrored placement could manage.
+
+**And `nose` is a point of the drawing, not an offset from the post**, for the
+same reason `pivot` is: it goes through the same mirror the picture does. It was
+an offset first, taken from the loaded bolt — which is drawn well behind the bow
+— and the shot came out of the BACK of the machine in both directions. The bow is
+the front; `nose` sits just outside its tip.
 
 The battlement block at the deck's NEAREST corner is a `frontPolys` entry, so the
 machine's foot passes behind it exactly as the Musketeer Post's boots pass behind
