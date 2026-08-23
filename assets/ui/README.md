@@ -35,6 +35,8 @@ usable button rather than a blank disc.
 | `Musketeer_Deadeye_Icon.png`    | the Deadeye button, plate and all    | 60 diameter |
 | `Paladin_Holy_Light_Icon.png`   | the Holy Light button, plate and all | 60 diameter |
 | `Paladin_Holy_Slash_Icon.png`   | the Holy Slash button, plate and all | 60 diameter |
+| `Ballista_Turret_Far_Shot_Icon.png`   | the Far Shot button, plate and all | 60 diameter |
+| `Ballista_Turret_Heavy_Bolt_Icon.png` | the Heavy Bolt button, plate and all | 60 diameter |
 
 `Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
 down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is

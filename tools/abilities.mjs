@@ -1,4 +1,4 @@
-// What the four tier 4 abilities actually do, driven through the real modules.
+// What the six tier 4 abilities actually do, driven through the real modules.
 // Node only.
 //
 //   node tools/abilities.mjs
@@ -7,19 +7,26 @@
 // that ships — against a tower and a squad built the way input.js builds them.
 // Nothing here is a model of an ability; it is the ability, minus drawing.
 //
-// It exists because all four are RHYTHMS, and a rhythm is the kind of thing that
-// looks right and is wrong. "Every sixth shot" off by one is invisible in play and
-// a 20% error in the tower's damage; a hold that blocks the reload instead of
+// It exists because most of them are RHYTHMS, and a rhythm is the kind of thing
+// that looks right and is wrong. "Every sixth shot" off by one is invisible in play
+// and a 20% error in the tower's damage; a hold that blocks the reload instead of
 // running inside it is a quarter of the Musketeer Post's output gone with nothing
 // on screen to say so. Both are one-line mistakes and neither would be reported.
+//
+// The two that are not rhythms are checked for the opposite failure. Holy Light
+// fires on a threshold and Far Shot fires never — it is bought, and the tower is
+// simply better afterwards — so what can go wrong there is a passive that does not
+// reach everything it should. Far Shot's range has five readers and its pictures
+// two, and a tower that shot 480px while drawn in timber, or drew its ring at 260
+// while shooting further, would be a bug the player sees before any tool does.
 //
 // The arithmetic each ability claims is printed as well as checked, because those
 // numbers are quoted in the comments in data/abilities.js and in the encyclopedia,
 // and a comment that has drifted from the code is worse than no comment.
 
-import { updateTowers } from '../src/towers.js';
+import { updateTowers, rangeOf, framesOf } from '../src/towers.js';
 import { updateUnits, makeUnits } from '../src/units.js';
-import { archery, barracks } from '../src/data/towers.js';
+import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
 import { nearestOnPath } from '../src/units.js';
@@ -44,6 +51,21 @@ function post(ids) {
     x: plot.x, y: plot.y,
     aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
     aimMode: 0, spent: 500, rally: null,
+    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
+    hit: [], locked: null, hold: 0
+  };
+}
+
+// THE BALLISTA TURRET, built the same way, and it needs its own builder for one
+// reason: this family's clock is its animation. `beat` and `beatT` are the fields
+// that matter, and input.js sets them on a real build exactly as they are here.
+function turret(ids) {
+  const plot = level.plots[0];
+  return {
+    plot, fam: { id: 'siege' }, def: siege[3],
+    x: plot.x, y: plot.y,
+    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
+    aimMode: 0, spent: 610, rally: null,
     abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
     hit: [], locked: null, hold: 0
   };
@@ -87,16 +109,21 @@ console.log('\nWhat a tier 4 offers\n');
   ok(ABILITIES.every(a => a.cost === ABILITY_COST),
     'every ability costs the same', `${ABILITY_COST}g`);
 
-  const owners = [archery[3], barracks[3]];
+  const owners = [archery[3], barracks[3], siege[3]];
   ok(owners.every(d => (d.abilities || []).length === 2),
-    'and the two tier 4 towers offer two each',
+    'and every tier 4 tower that has any offers two',
     owners.map(d => `${d.name} ${d.abilities.length}`).join(', '));
+
+  // THE JUDGEMENT TEMPLE HAS NONE YET, and that is a gap rather than a rule — it
+  // is the one tier 4 nobody has been asked to teach anything. Named here so the
+  // list above cannot quietly grow to include it without somebody deciding to.
+  ok(!monastery[3].abilities, 'and the Judgement Temple has none yet');
 
   // TIER 4 ONLY. Nothing below it may carry an ability, because the whole reason
   // an ability exists is that a topped-out ladder has nothing left to buy — a
   // tier 2 tower has an upgrade instead, and an ability on it would be competing
   // with the thing it is meant to replace.
-  const lower = [...archery, ...barracks].filter(d => d.tier < 4);
+  const lower = [...archery, ...barracks, ...siege, ...monastery].filter(d => d.tier < 4);
   ok(lower.every(d => !d.abilities), 'and nothing below tier 4 offers any',
     `${lower.length} lower tiers checked`);
 
@@ -113,7 +140,7 @@ console.log('\nWhat a tier 4 offers\n');
   // both wanted six and became wrong the moment the artist made one of them rarer.
   // What is checked now is the property that replaced it: the cycles are coprime
   // enough that a collision is rare, and where they do collide the rarer one wins.
-  for (const d of [archery[3], barracks[3]]) {
+  for (const d of owners) {
     const evs = abilitiesOf(d).filter(a => a.every).map(a => a.every);
     console.log(`      ${d.name}: cycles ${evs.join(' and ') || 'none'}`);
   }
@@ -450,6 +477,104 @@ console.log('\nWhat a dead man forgets\n');
     `${u.healCd.toFixed(2)}s left of ${abilityById('light').refresh}`);
 }
 
+console.log('\nFar Shot\n');
+
+{
+  const plain = turret([]);
+  const far = turret(['farshot']);
+  const shot = abilityById('farshot');
+
+  ok(rangeOf(plain) === siege[3].range, 'an untaught turret reaches what its tier says',
+    `${rangeOf(plain)}`);
+  ok(rangeOf(far) === shot.range, 'and one that has bought Far Shot reaches further',
+    `${rangeOf(far)} against ${rangeOf(plain)}`);
+  ok(rangeOf(far) === archery[3].range, 'exactly as far as a Musketeer Post',
+    `${archery[3].range}`);
+
+  // THE PICTURE FOLLOWS THE RULE. The iron frames are what says on the board that
+  // the ability is bought, and a tower that reached 480 while still drawn in
+  // timber would be the ring lying about the tower.
+  ok(framesOf(plain.def, plain).join() === siege[3].machine.frames.join(),
+    'an untaught turret is drawn in timber');
+  ok(framesOf(far.def, far).join() === shot.frames.join(),
+    'and a taught one in iron', shot.frames[0]);
+  // A DEF WITHOUT A TOWER still answers with the tier's own pictures, because the
+  // encyclopedia and the tools are asking about the tower as it is sold.
+  ok(framesOf(siege[3]).join() === siege[3].machine.frames.join(),
+    'and the tier itself still ships in timber');
+
+  // IT IS NOT A RHYTHM. Nothing about the shots changes — no count, no heavier
+  // bolt, no pause — which is what makes it the first ability of its kind here.
+  const shots = fire(far, 12);
+  ok(shots.length > 3 && shots.every(s => s.damage === siege[3].damage),
+    'and every bolt it fires is still an ordinary one',
+    `${shots.length} bolts at ${siege[3].damage}`);
+}
+
+console.log('\nHeavy Bolt\n');
+
+{
+  const t = turret(['heavybolt']);
+  const heavy = abilityById('heavybolt');
+  const cycle = siege[3].cooldown * heavy.every;
+
+  // Three cycles of three, less a hair, for the same reason Burst Fire's window is
+  // six reloads less a hair: the next shot lands on the boundary.
+  const shots = fire(t, cycle * 3 - 0.1);
+  ok(shots.length === 9, 'nine bolts in three cycles', `${shots.length}`);
+
+  const heavies = shots.filter(s => s.damage > siege[3].damage);
+  ok(heavies.length === 3, 'and one in three is the heavy one', `${heavies.length}`);
+  ok([2, 5, 8].every(i => shots[i].damage === siege[3].damage * 2),
+    'every third, and double the tower\'s own damage',
+    `${siege[3].damage} then ${siege[3].damage * 2}`);
+
+  // DOUBLE AS A MULTIPLIER, which is the property that survives a retune. The
+  // turret's damage has moved twice already; a number typed into the ability would
+  // have been right on the day and silently wrong after either move.
+  const was = siege[3].damage;
+  siege[3].damage = was + 7;
+  const after = fire(turret(['heavybolt']), cycle - 0.1);
+  ok(after[2].damage === (was + 7) * 2, 'and it stays double when the tier is retuned',
+    `${was + 7} then ${after[2].damage}`);
+  siege[3].damage = was;
+
+  // The bolt that leaves is the artist's burning one, and it is louder. Both ride
+  // on the ammunition rather than on a branch in the firing code.
+  ok(heavy.ammo.sprite === 'heavy_bolt', 'the heavy bolt is its own drawing');
+  ok(heavy.ammo.kind === siege[3].ammo.kind,
+    'and still a ballista bolt, so a kill by it cries as one', heavy.ammo.kind);
+  ok(heavy.ammo.fireGain > 1, 'and leaves louder than an ordinary one',
+    `x${heavy.ammo.fireGain}`);
+  ok(heavy.ammo.clear === siege[3].ammo.clear && heavy.ammo.speed === siege[3].ammo.speed,
+    'and flies exactly as the ordinary one does');
+}
+
+console.log('\nBoth of them, on one turret\n');
+
+{
+  const both = turret(['farshot', 'heavybolt']);
+  const heavy = abilityById('heavybolt');
+
+  // THE OWNER'S OWN CONDITION: buy both and both pictures are used. They are
+  // independent — one changes the machine, the other changes what leaves it — so
+  // the check is that neither swallows the other.
+  ok(rangeOf(both) === abilityById('farshot').range, 'it reaches the far distance',
+    `${rangeOf(both)}`);
+  ok(framesOf(both.def, both).join() === abilityById('farshot').frames.join(),
+    'and is drawn in iron');
+
+  const shots = fire(both, siege[3].cooldown * 3 - 0.1);
+  ok(shots[2].damage === siege[3].damage * 2, 'and its third bolt is still the heavy one',
+    `${shots[2].damage}`);
+
+  const plain = fire(turret([]), siege[3].cooldown * 9 - 0.1).length;
+  const armed = fire(turret(['heavybolt']), siege[3].cooldown * 9 - 0.1);
+  const rate = armed.reduce((sum, s) => sum + s.damage, 0) / (siege[3].cooldown * 9);
+  console.log(`      one turret: ${(siege[3].damage / siege[3].cooldown).toFixed(1)}/s plain, ` +
+              `${rate.toFixed(1)}/s with Heavy Bolt, over ${plain} shots either way`);
+}
+
 console.log('\nWhat gold buys\n');
 
 {
@@ -464,5 +589,5 @@ console.log('\nWhat gold buys\n');
     `${before} then ${t.spent}`);
 }
 
-console.log(bad ? `\n${bad} ability rule(s) broken.` : '\nAll four abilities do what they say.');
+console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);
 process.exit(bad ? 1 : 0);

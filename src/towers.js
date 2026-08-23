@@ -181,6 +181,24 @@ export function muzzlePoint(t) {
   };
 }
 
+// HOW FAR THIS TOWER REACHES, which is the tier's number unless an ability it has
+// bought says otherwise.
+//
+// A HELPER RATHER THAN A FIELD, because reach is asked for in five places — the
+// target picker twice, the ring the player sees, the rally clamp, the leash on a
+// squad — and a tower whose ring and whose targeting disagreed would be the worst
+// kind of bug: the game would be right and the drawing would be lying, or the
+// other way round. Everything that asks a TOWER how far it reaches comes here.
+//
+// `def.range` is still the answer for anything holding a def rather than a tower —
+// the encyclopedia, the upgrade preview, tools/families.mjs — and that is correct:
+// those are questions about the tower as it is SOLD, and an ability is bought
+// afterwards, per tower, with gold.
+export function rangeOf(t) {
+  for (const a of boughtAbilities(t)) if (a.range) return a.range;
+  return t.def.range;
+}
+
 // Which drawing of the building to show. One-frame towers answer with the only
 // picture they have; a catapult answers with the beat it is on.
 //
@@ -188,14 +206,22 @@ export function muzzlePoint(t) {
 // out of step with the rule that drives it — there is one clock, `beat`, and the
 // picture is a function of it.
 export function frameOf(t) {
-  const f = framesOf(t.def);
+  const f = framesOf(t.def, t);
   return f ? f[t.beat || 0] : t.def.sprite;
 }
 
 // The animation frames a def owns, or null for a building with one picture.
 // Tiers 1 to 3 hold them directly; tier 4 holds them on the MACHINE that stands
 // on its turret, because the turret itself never moves.
-export const framesOf = def => (def.machine ? def.machine.frames : def.frames) || null;
+//
+// AN ABILITY MAY REPLACE THE SET, and Far Shot does: it rebuilds the ballista in
+// iron, which is three files with the same three trims. `t` is optional so every
+// caller that only has a def — the encyclopedia, the tools — still gets the
+// pictures the tier ships with, which is what those callers are asking about.
+export const framesOf = (def, t) => {
+  if (t) for (const a of boughtAbilities(t)) if (a.frames) return a.frames;
+  return (def.machine ? def.machine.frames : def.frames) || null;
+};
 
 // How long each beat holds, and a tier may have its own. The three catapults
 // share BEATS; the ballista is the same three beats at 60% of the length, which
@@ -214,10 +240,10 @@ export function updateTowers(state, dt) {
     // and they carry no mount or muzzle to aim with.
     if (!t.def.cooldown) continue;
 
-    const target = pickTarget(state.enemies, t.x, t.y, t.def.range, t.def.minRange, t.aimMode);
+    const target = pickTarget(state.enemies, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode);
     if (target) t.aim = Math.atan2(target.y - t.y, target.x - t.x);
 
-    if (framesOf(t.def)) stepCrew(state, t, dt, target);
+    if (framesOf(t.def, t)) stepCrew(state, t, dt, target);
     else stepWeapon(state, t, dt, target);
   }
 }
@@ -341,7 +367,7 @@ function stepWeapon(state, t, dt, target) {
 function burstTarget(state, t) {
   const fresh = state.enemies.filter(e => !t.hit.includes(e));
   if (!fresh.length) return null;
-  return pickTarget(fresh, t.x, t.y, t.def.range, t.def.minRange, t.aimMode);
+  return pickTarget(fresh, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode);
 }
 
 // The abilities a tower has BOUGHT that change how it shoots. Holy Light is not
@@ -356,6 +382,16 @@ const firingAbilities = t =>
   (t.abilities && t.abilities.length)
     ? abilitiesOf(t.def).filter(a => a.every && owns(t, a.id))
     : NONE;
+
+// EVERYTHING THIS TOWER HAS BOUGHT, whether or not it fires on a count.
+//
+// The two lists are different questions and the difference is Far Shot. The one
+// above answers "what happens on shot number n", so it is filtered to abilities
+// with an `every`; this one answers "what has this tower become", which is what
+// its reach and its pictures are asking. Holy Light is in neither — it belongs to
+// a MAN rather than to the tower, and units.js looks it up for itself.
+const boughtAbilities = t =>
+  (t.abilities && t.abilities.length) ? abilitiesOf(t.def).filter(a => owns(t, a.id)) : NONE;
 
 // WHICH SPECIAL, IF ANY, SHOT NUMBER `n` IS.
 //
@@ -409,7 +445,7 @@ function stepCrew(state, t, dt, target) {
     return;
   }
 
-  t.beat = (t.beat + 1) % framesOf(t.def).length;
+  t.beat = (t.beat + 1) % framesOf(t.def, t).length;
   t.beatT = beatsOf(t.def)[t.beat];
 
   // WHICH WAY THE MACHINE FACES IS DECIDED HERE AND NOWHERE ELSE — once per
@@ -428,15 +464,22 @@ function stepCrew(state, t, dt, target) {
   if (t.beat === LOAD) t.face = target.x >= t.x ? 1 : -1;
 
   if (t.beat === FIRE) {
-    // COUNTED HERE TOO, so `shots` means "shots this tower has fired" on every
-    // tower rather than on the ones whose clock is a cooldown. Nothing on this
-    // family reads it today — artillery has no firing ability — and that is
-    // exactly the trap: a machine taught one later would have run its cycle off
-    // a counter frozen at zero and simply never triggered it, with no error to
-    // find. It is also what tools/sim.mjs reports as `fired`, which is how a
-    // balance pass tells a tower that did nothing from a plot the road misses.
+    // COUNTED HERE, so `shots` means "shots this tower has fired" on every tower
+    // rather than only on the ones whose clock is a cooldown. It was counted here
+    // a while before anything read it, against exactly this day: Heavy Bolt is
+    // every third shot, and a machine counting from a frozen zero would have
+    // fired an ordinary bolt forever with no error to find. It is also what
+    // tools/sim.mjs reports as `fired`.
     t.shots = (t.shots || 0) + 1;
-    shoot(state, t, target);
+
+    // AND THE SPECIAL IS PICKED HERE RATHER THAN IN fire(), because this family
+    // never goes through fire() — its clock is the animation. What it does NOT
+    // need is the rest of what fire() does with a special: no lock (nothing on a
+    // machine announces itself), no burst queue (no artillery ability fires more
+    // than one), and no held pose (a machine has no man to change the drawing of,
+    // and its next shot comes on the next cycle regardless). If one of those ever
+    // arrives on a turret, this is where it goes.
+    shoot(state, t, target, specialFor(t, t.shots));
   }
 }
 
@@ -481,7 +524,14 @@ function shoot(state, t, target, special) {
     // only record of which side the blow was on.
     fromX: t.x,
     target,
-    damage: (special && special.damage) || t.def.damage,
+    // WHAT IT HITS FOR. An ability may name an absolute — Deadeye's 300, Holy
+    // Slash's 35 — or a MULTIPLIER of the tower's own damage, which is what Heavy
+    // Bolt's "double" is. The multiplier is preferred where both exist, and it is
+    // there so that "twice as hard" stays true after the next retune of the number
+    // it is twice OF.
+    damage: special && special.times
+      ? t.def.damage * special.times
+      : (special && special.damage) || t.def.damage,
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
     splash: t.def.splash || 0,

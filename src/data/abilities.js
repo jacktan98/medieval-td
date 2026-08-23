@@ -1,3 +1,5 @@
+import { bolt } from './towers.js';
+
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
 // A ladder ends at tier 4 and the Upgrade button goes dead — so a Musketeer Post
@@ -77,6 +79,40 @@ export const deadeyeBall = {
   speed: 520,
   fireSound: true,
   landSound: false
+};
+
+// HEAVY BOLT'S AMMUNITION: the ordinary bolt with the tail on fire.
+//
+// SPREAD FROM `bolt` rather than written out, because the shaft is the same
+// drawing to the pixel — measured, not assumed: the tan of the shaft runs from
+// source (198, 310) to (333, 180) in both files, and the artist added flames
+// behind it and nothing else. So everything about how it flies is inherited and
+// only the picture, its box and its anchors are restated.
+//
+// `hold` is the SAME SOURCE PIXEL as the plain bolt's, (188.1, 320.5), which is
+// just inside the head — re-expressed against a trim that grew 28px at the back
+// for the flames. That is what makes the two leave the machine from exactly the
+// same place: swap the drawing mid-flight and nothing would move.
+//
+// `clear` is inherited untouched for the same reason. It is the distance from the
+// anchor to the back of the SHAFT, so the shaft's end sits on the mouth and the
+// flames stream back over the bow, which is what a bolt that has just been loosed
+// on fire should look like.
+//
+// `kind` is inherited too, and that is deliberate rather than an oversight: a man
+// killed by this is killed by a ballista, so he gets the ballista's kill line, and
+// the shot uses the ballista's own report. What it does NOT inherit is how loud —
+// see `fireGain`.
+export const heavyBolt = {
+  ...bolt,
+  sprite: 'heavy_bolt',
+  trim: [172, 148, 196, 190],
+  hold: [0.082, 0.908],
+  grip: 0.082,
+  // Louder than an ordinary bolt, at the artist's request, and only for this shot.
+  // The same clip played harder rather than a second recording — see `level` in
+  // play() in src/audio.js, the mechanism the pope's missile brought in.
+  fireGain: 1.4
 };
 
 // The three poses the artist drew for these. Each is registered on the SAME source
@@ -301,6 +337,75 @@ export const ABILITIES = [
             'nearly double, from the man who starts with the least damage in the ' +
             'game. Each of the three counts his own blows, so the strikes land ' +
             'spread out rather than all at once.'
+  },
+  {
+    id: 'farshot',
+    name: 'Far Shot',
+    of: 'Ballista Turret',
+    icon: 'ability_farshot',
+    cost: ABILITY_COST,
+    // THE FIRST ABILITY THAT IS NEITHER A RHYTHM NOR A REACTION. It has no
+    // `every` and no trigger at all: it is bought, and from then on the tower
+    // simply reaches further. Holy Light was the first thing here that did not fit
+    // the `every` shape; this is the second, and the two do not resemble each
+    // other either, which is why the mechanism is a bag of optional fields rather
+    // than one class with four subclasses.
+    //
+    // 480, WHICH IS THE MUSKETEER POST'S OWN REACH, at the owner's request: the
+    // ballista goes from the shortest arm in the artillery family to the longest
+    // in the game, for 150 gold. It does not make the Post's claim in
+    // tools/families.mjs untrue — that is a claim about towers as they are sold,
+    // and this is a thing you buy afterwards — but it is the one place in the game
+    // where another tower can match that reach, and it is worth knowing.
+    //
+    // What it does NOT touch is the dead zone: tier 4 has none to start with, so
+    // Far Shot makes it the one tower in the game that covers everything from its
+    // own feet to 480px out.
+    range: 480,
+    // AND THE MACHINE IS RE-DRAWN IN IRON, which is how the board says the ability
+    // is bought. The artist's three frames are the same machine in steel instead
+    // of timber, measured to the same trims to the pixel, so the swap moves
+    // nothing — see the note beside them in src/assets.js. `frames` is read by
+    // framesOf() in src/towers.js, which prefers what the tower OWNS over what the
+    // tier ships with.
+    frames: ['artillery_t4_far', 'artillery_t4_reload_far', 'artillery_t4_fire_far'],
+
+    detail: 'The engineers rebuild the bow in steel and the turret reaches 480px ' +
+            'instead of 260 — the longest arm in the game, level with a Musketeer ' +
+            'Post, on the one tower that has no dead zone in the middle of it.\n\n' +
+            'Nothing else changes: the same bolt, the same 1.8 second reload, the ' +
+            'same blast. It is the whole board rather than a corner of it, and the ' +
+            'machine is drawn in iron from the moment it is bought.'
+  },
+  {
+    id: 'heavybolt',
+    name: 'Heavy Bolt',
+    of: 'Ballista Turret',
+    icon: 'ability_heavy',
+    cost: ABILITY_COST,
+    // Two ordinary bolts and then the heavy one, so the cycle is three — read
+    // `every` the same way Burst Fire's 6 and Holy Slash's 5 are read. It is the
+    // shortest cycle any ability has: a third of every shot this tower fires.
+    every: 3,
+    shots: 1,
+    // DOUBLE, AS A MULTIPLIER RATHER THAN A NUMBER, and that is the point of the
+    // field. "Twice as hard" is what was asked for, so twice is what is written
+    // down; a 120 typed here would have been correct on the day and quietly wrong
+    // the next time the turret's 60 is retuned — which it has been twice already.
+    // See shoot() in src/towers.js, where `times` beats `damage` when both exist.
+    times: 2,
+    ammo: heavyBolt,
+    // NO POSE and no `hold`. Neither would mean anything on this family: a machine
+    // has no man to change the drawing of, and its clock is the beat loop rather
+    // than a cooldown a pose could delay. The ability announces itself by what
+    // leaves the bow — a bolt with its tail on fire — and by being louder.
+
+    detail: 'Every third bolt comes off the rack burning and hits for twice the ' +
+            'damage. There is no wind-up and no pause: the machine works at its ' +
+            'ordinary rhythm and one shot in three is simply worth two.\n\n' +
+            'It raises the turret from 33.3 damage a second to 44.4, which is the ' +
+            'most any single tower in the game does. You can hear which one it is ' +
+            '— the heavy bolt leaves louder than the others.'
   }
 ];
 

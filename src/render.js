@@ -6,7 +6,7 @@ import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art } from './assets.js';
-import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip,
+import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf,
          machineBox, machineFlip } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
@@ -385,7 +385,11 @@ function mark(ctx, e) {
 // — a tower now covers 62% of the area it used to, and the ranges went up to pay
 // for it. That is the real price of the look, and it has been paid once.
 function drawRangeDisc(ctx, t) {
-  const r = t.def.range;
+  // THROUGH rangeOf, not off the def, so the ring and the targeting cannot
+  // disagree. Far Shot takes the Ballista Turret from 260 to 480 and this is the
+  // drawing that has to say so — a tower shooting further than its own ring reads
+  // as the ring being broken.
+  const r = rangeOf(t);
   const next = t.fam.tiers[t.def.tier];
 
   // The reach the upgrade would buy, as a dotted ring outside the solid one.
@@ -396,7 +400,7 @@ function drawRangeDisc(ctx, t) {
   // trigger is "you are looking at this tower's menu" instead.
   //
   // Drawn first so the current range's rim stays the crisper of the two.
-  if (next && next.range > t.def.range) {
+  if (next && next.range > r) {
     const gx = next.range;
     ctx.save();
     ctx.fillStyle = 'rgba(200,240,255,0.07)';

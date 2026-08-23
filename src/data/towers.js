@@ -1822,7 +1822,13 @@ export const siege = [
     // Three lines of its own, on the same terms as the Post's and the Keep's: a
     // named tower at the top of a ladder answers for itself rather than
     // borrowing the family's. See familyCue in src/audio.js.
-    voice: 'ballista' }
+    voice: 'ballista',
+    // WHAT THIS TURRET CAN BE TAUGHT. Ids into src/data/abilities.js, where the
+    // rules and the pictures live. Far Shot is the first ability in the game that
+    // is neither a rhythm nor a reaction — it is bought and the tower is simply
+    // better afterwards — and Heavy Bolt is the first to double a number rather
+    // than replace it.
+    abilities: ['farshot', 'heavybolt'] }
 ];
 
 // --- monastery -----------------------------------------------------------------

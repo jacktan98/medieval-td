@@ -70,6 +70,12 @@ export const paths = {
   artillery_t4:        'assets/towers/artillery/Ballista_Turret_Default.png',
   artillery_t4_reload: 'assets/towers/artillery/Ballista_Turret_Reload.png',
   artillery_t4_fire:   'assets/towers/artillery/Ballista_Turret_Fire.png',
+  // AND THE SAME THREE IN IRON, which is what Far Shot buys. Only the material
+  // changes — every trim is identical to the timber frame's, to the pixel — so the
+  // ability swaps which three files the beat loop draws and nothing else moves.
+  artillery_t4_far:        'assets/towers/artillery/Ballista_Turret_Default_Far_Shot.png',
+  artillery_t4_reload_far: 'assets/towers/artillery/Ballista_Turret_Reload_Far_Shot.png',
+  artillery_t4_fire_far:   'assets/towers/artillery/Ballista_Turret_Fire_Far_Shot.png',
   // The monastery, in a folder of its own like every other family. The artist
   // uploaded these loose into assets/towers beside the three family folders, and
   // they were moved rather than wired where they landed — a building lives with
@@ -170,6 +176,11 @@ export const paths = {
   // upper-left and rotated to its heading like the arrow and the missile. One
   // drawing for the one tier that fires it, so no tier number on the key.
   bolt:        'assets/projectiles/Ballista_Turret_Bolt.png',
+  // Heavy Bolt's, and the SHAFT is the same drawing to the pixel — the artist
+  // added flames behind it and nothing else — so the two leave the machine from
+  // exactly the same place and only the tail differs. See `heavyBolt` in
+  // data/abilities.js for the anchors that keeps true.
+  heavy_bolt:  'assets/projectiles/Ballista_Turret_Heavy_Bolt.png',
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
@@ -301,6 +312,10 @@ export const paths = {
   ability_deadeye: 'assets/ui/Musketeer_Deadeye_Icon.png',
   ability_light:   'assets/ui/Paladin_Holy_Light_Icon.png',
   ability_slash:   'assets/ui/Paladin_Holy_Slash_Icon.png',
+  // The Ballista Turret's two, on the same terms: the whole button, drawn on the
+  // plate's own disc.
+  ability_farshot: 'assets/ui/Ballista_Turret_Far_Shot_Icon.png',
+  ability_heavy:   'assets/ui/Ballista_Turret_Heavy_Bolt_Icon.png',
   glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
   // The archer's three standing orders. They were vector glyphs drawn in

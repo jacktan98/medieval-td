@@ -136,6 +136,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
+| **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 40% louder |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
 | **a paladin's fifth blow lands** — Category B | `Paladin_Holy_Slash` |
@@ -229,7 +230,13 @@ same clip at the old level. Anything else that ever wants the same trick — a
 bigger version of a noise the game already makes — gets it for one number.
 
 His KILL line is a real file, `Pope_kill_enemy`, and Category A like the other
-four kill cries. The three tiers below him have none and fall through to the
+four kill cries.
+
+**Heavy Bolt uses the same trick**, and it is the second time the field has paid
+for itself: every third bolt a taught Ballista Turret fires is the same
+`Ballista_Bolt_shot` at 1.4, which is how you can hear which one is the heavy one
+without a second recording. The clip is levelled to x0.43, so the loud version
+lands at x0.60 — nowhere near the ceiling, on a file that already peaks at 1.01. The three tiers below him have none and fall through to the
 generic one, which is the same split the barracks has: one line for the family,
 one for its tier 4.
 

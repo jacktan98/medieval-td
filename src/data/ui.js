@@ -170,6 +170,9 @@ export const ui = {
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_slash:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // The Ballista Turret's two, measured to the same disc as the four above.
+  ability_farshot: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
 
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72

@@ -25,6 +25,9 @@ in `src/assets.js`.
 | `artillery/Ballista_Turret_Default.png`| 1024   | 70 x 47 px   | its machine, at rest                  |
 | `artillery/Ballista_Turret_Reload.png` | 1024   | 62 x 47 px   | its machine, spanning the bow         |
 | `artillery/Ballista_Turret_Fire.png`   | 1024   | 63 x 47 px   | its machine, loosing                  |
+| `artillery/Ballista_Turret_Default_Far_Shot.png` | 1024 | 70 x 47 px | the same machine in iron, at rest    |
+| `artillery/Ballista_Turret_Reload_Far_Shot.png`  | 1024 | 62 x 47 px | in iron, spanning the bow            |
+| `artillery/Ballista_Turret_Fire_Far_Shot.png`    | 1024 | 63 x 47 px | in iron, loosing                     |
 | `monastery/Monastery_Tower_T1.png`     | 1024   | 111 x 116 px | Wayside Shrine (1) |
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
@@ -52,8 +55,23 @@ Elsewhere, but the Ballista Turret's: `units/Ballista_Engineer.png` (the man, fo
 the info box and the encyclopedia — he is drawn into all three machine frames
 already), `projectiles/Ballista_Turret_Bolt.png`, `ui/Ballista_Turret_Icon.png`,
 and five clips — `audio/sfx/Ballista_Bolt_shot.mp3`,
-`audio/sfx/Ballista_kill_enemy.mp3` and three voice lines. It has no abilities
-yet.
+`audio/sfx/Ballista_kill_enemy.mp3` and three voice lines. Plus its two
+abilities: the three iron frames above, `projectiles/Ballista_Turret_Heavy_Bolt.png`,
+and the two button faces `ui/Ballista_Turret_Far_Shot_Icon.png` and
+`ui/Ballista_Turret_Heavy_Bolt_Icon.png`.
+
+**THE IRON FRAMES ARE THE SAME MACHINE, RE-MATERIALLED.** Every trim is identical
+to the timber frame's to the pixel, which is what makes Far Shot a swap of three
+filenames and nothing else: the machine stands in the same place, mirrors about
+the same line and fires from the same mouth. Keep it that way on any re-export —
+if the iron ever measures differently from the timber, the ballista will jump on
+its turret the moment the ability is bought.
+
+**And the heavy bolt is the ordinary bolt with flames added.** The shaft is the
+same drawing, pixel for pixel, from source (198, 310) to (333, 180) in both files;
+the trim grew 28px at the back to hold the fire. That is measured rather than
+assumed, and it is what lets both bolts leave the machine from exactly the same
+point — see `heavyBolt` in `src/data/abilities.js`.
 
 Elsewhere, but the Judgement Temple's: `units/Pope_Default.png` and `_Attack`,
 `projectiles/Pope_Arcane_Missle.png`, `ui/Judgement_Temple_Icon.png`, and four
