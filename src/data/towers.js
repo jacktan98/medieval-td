@@ -1758,9 +1758,21 @@ export const siege = [
   // explain — the 130px hole every other machine carries around itself is gone,
   // which makes tier 4 the one artillery tower that can defend its own plot.
   //
-  // `damage` 60 a bolt, level with the Musketeer Post's ball for the biggest
-  // single blow in the game, and `splash` 55 — a little over half the
-  // trebuchet's 98. It still catches a queue; it no longer clears a wave.
+  // `damage` 60 a bolt, level with the Musketeer Post's ball and behind only the
+  // Judgement Temple's missile, and `splash` 70 — a shade over two thirds of the
+  // trebuchet's 98. It catches a queue; it does not clear a wave.
+  //
+  // IT WAS 55 AND WENT UP ON A PLAYED VERDICT, which is what the sweep below was
+  // for: the blast was the one dial the numbers said was nearly free — 0 to 98
+  // moved map 1's three-machine mix by two wins in twenty and did nothing at all
+  // on map 2 — so the owner's eye was the thing to trust, and he asked for more of
+  // it. 70 is worth about a win in twenty at the measured end and reads as a
+  // noticeably wider burst at the played one.
+  //
+  // 74 IS THE CEILING and it is a design one rather than a balance one: the
+  // catapult's blast is 75, and the claim in tools/families.mjs that this is the
+  // smallest of the four fails the moment it is not. Anything above that is a
+  // different tower — see the note on the family's shape at the top of `siege`.
   //
   // `cooldown` 1.80 rather than the family's 3.00, because its animation is
   // faster (see `beats`) and the cooldown IS the animation added up here, as it
@@ -1782,6 +1794,9 @@ export const siege = [
   //   range    200 / 230 / 260 / 300 / 360 -> 18 / 19 / 18 / 19 / 19
   //   blast      0 / 30 / 55 / 80 / 98   ->  18 / 18 / 18 / 20 / 20
   //
+  // The blast row is the one the owner overruled — it ships at 70 now rather than
+  // the 55 those five rows were measured around, on the reading given above.
+  //
   // on map 1's three-machine mix. Three of those slopes are real and the tower
   // sits mid-slope on each: it is worth building and it does not decide the map.
   // Halving the reload is the one move that runs away with it — 20 wins in 20 and
@@ -1800,7 +1815,7 @@ export const siege = [
   // tools/sim.mjs' scenarios for maps 1 and 2 — and the note there on why map 3
   // has no artillery reading at all.
   { ...ballista, tier: 4, name: 'Ballista Turret', title: 'Ballista Turret', unit: 'Ballista Engineer',
-    cost: 230, damage: 60, splash: 55, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
+    cost: 230, damage: 60, splash: 70, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
     // The upgrade button's own picture on a Trebuchet, the third tier 4 to bring
     // one — see the note on the Musketeer Post's `glyph`.
     glyph: 'ballista',
@@ -1974,33 +1989,25 @@ const temple = {
   sprite: 'monastery_t4',
   spriteTrim: MON4_TRIM,
   w: drawnW(MON4_TRIM), h: drawnH(MON4_TRIM),
-  // The belfry floor, source (513.4, 610.1) — AND IT IS NOT THE FLOOR'S CENTRE,
-  // which is the one anchor in this file that had to be chosen by eye rather than
-  // measured. The reason is worth writing down, because the obvious number is
-  // wrong in a way that only shows on the board.
+  // The belfry floor: the area centroid of the white quad the artist paints inside
+  // the four posts, source (505.7, 575.6), whose corners are (494.2, 522.4),
+  // (626.9, 545.4), (520.0, 631.9) and (381.8, 598.9).
   //
-  // The floor is the white quad the artist paints inside the four posts, corners
-  // (494.2, 522.4), (626.9, 545.4), (520.0, 631.9) and (381.8, 598.9), and its
-  // area centroid is (505.7, 575.6). That is where every other tower in the game
-  // stands its man — and it agrees with the stone top face underneath it to 2.7px,
-  // exactly the way the Musketeer Post's deck agrees with the banner draped over
-  // it, so it is a real measurement rather than a quad that happens to be there.
+  // CHECKED AGAINST THE STONE UNDER IT, exactly as the Musketeer Post's deck is
+  // checked against the banner draped over it: the floor is drawn on top of the
+  // stone box's own top face, and that face's centroid is (508.4, 576.2) — 2.7px
+  // away, measured on a different shape. Two shapes agreeing is what says the
+  // mount is the floor rather than a quad that happens to be there.
   //
-  // Stood there, THE POPE HAS NO HEAD. This belfry is short: 143 source px of
-  // clear height at its nearest corner, against a pope who is 145.5 tall from his
-  // shadow to the head of his staff. The artist sized the opening to the man
-  // almost exactly — which is also why the drawing arrived with "be careful that
-  // the roof overlaps the pope" attached to it — and at the floor's CENTRE he is
-  // 56px further back, so the eave crosses him at the eyebrows and takes his mitre
-  // with it. A white robe with no hat on it is not the pope.
-  //
-  // So he stands a little forward of centre, on the floor's own front-to-back
-  // middle line, where the drawing has room for him: mitre clear of the eave by a
-  // couple of pixels, face and robe fully in the opening, and the roof crossing the
-  // STAFF he holds up, which is the overlap the artist was pointing at. His shadow
-  // is still wholly on the floor — 59px wide at (513.4, 610.1), inside the front
-  // edge at every point.
-  mountFrac: [0.504, 0.622],
+  // AND HIS HAT GOES BEHIND THE ROOF, which is a decision rather than an accident.
+  // This belfry is short — 143 source px of clear height at its nearest corner,
+  // against a pope who is 145.5 tall from his shadow to the head of his staff — so
+  // a man standing at the middle of the floor is 56px further back than the eave,
+  // and the roof crosses him just above the eyes. It shipped for a few hours with
+  // him nudged forward to clear it; the owner asked for the middle, hat and all,
+  // and the middle is also the number every other tower in the game uses. The
+  // occlusion is the artist's own warning about this drawing coming true.
+  mountFrac: [0.483, 0.579],
   // Shadow centre, source (512.0, 832.5) from the SVG's own ellipse, which spans
   // 335..689 by 754..911.
   //
@@ -2248,10 +2255,18 @@ export const monastery = [
   // more damage, more range, other than that no stark difference", and it is built
   // exactly that way. What it pays with is GOLD, and nothing else.
   //
-  // `damage` 80, up from 50, and the biggest single blow in the game — past the
+  // `damage` 75, up from 50, and the biggest single blow in the game — past the
   // Musketeer Post's ball and the ballista's bolt at 60. That is the monastery's
   // own column of the table in tools/families.mjs rather than an exception to it:
   // this family hits hardest at every tier, and the top of it hits hardest of all.
+  //
+  // IT SHIPPED AT 80 FOR AN AFTERNOON. The owner asked for 75, and the measurement
+  // is worth keeping beside the number: on map 1's monastery mix those five points
+  // are two wins in twenty, 8 down to 6, because a militiaman has 80 health and 80
+  // damage killed one outright where 75 leaves him standing. Map 2 does not notice
+  // — 15 wins either way, a life better if anything. It is the sharpest five-point
+  // step anywhere in this file, and it is sharp for a reason that will move the day
+  // the militia's health does.
   //
   // `range` 210, up from 180. Still the shortest ladder in the game — an archery
   // tier 3 reaches 230 and a Post 480 — so a tower that hits this hard still has to
@@ -2261,21 +2276,23 @@ export const monastery = [
   //
   // `cooldown` 1.45, THE SAME as the Abbey's, and the one number that deliberately
   // does not move. The ladder's reloads are 1.82 / 1.64 / 1.45 and a fourth step
-  // would have been about 1.30; at 80 damage that is 61.5 a second rather than
-  // 55.2, and the gap between "more powerful" and "the only tower worth building"
+  // would have been about 1.30; at 75 damage that is 57.7 a second rather than
+  // 51.7, and the gap between "more powerful" and "the only tower worth building"
   // is exactly that sort of number. The tier buys the blow and the reach; the
   // rhythm is what still makes it a monastery.
   //
-  // `cost` 240, which is 590 gold of cumulative spend on one plot — dearer than
-  // the Musketeer Post's 500 and the Paladin Keep's 530, and a shade under the
-  // Ballista Turret's 610, which stays the most expensive ladder in the game.
+  // `cost` 220, which is 570 gold of cumulative spend on one plot — dearer than
+  // the Musketeer Post's 500 and the Paladin Keep's 530, and under the Ballista
+  // Turret's 610, which stays the most expensive ladder in the game. It shipped at
+  // 240 and came down with the damage; the sim cannot tell the two prices apart on
+  // either map, so this one is the owner's feel rather than a measured edge.
   //
   // THESE NUMBERS ARE A FIRST GUESS, on the owner's own terms: the sweep comes
   // after this lands, the same way the ballista's did. `tools/families.mjs` is the
   // check that the family still reads the way the design says, and tools/sim.mjs
   // is the check that no family clears a map alone at the top of its ladder.
   { ...temple, ...pope, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple', unit: 'Pope',
-    cost: 240, damage: 80, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
+    cost: 220, damage: 75, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
     // The upgrade button's own picture on an Abbey, and the fourth of four — every
     // family's top rung now shows what it buys rather than a plain arrow. See the
     // note on the Musketeer Post's `glyph`.

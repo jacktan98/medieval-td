@@ -315,11 +315,11 @@ m1: {
   // cannot clear the map alone at tier 3 and can at tier 4 is a family whose top
   // rung has quietly become the game.
   //
-  // It holds with room to spare: the pure build is 0 in 20 at either tier, and
-  // the mix goes from 17 wins to 18 for 690 gold of upgrades. That is the shape a
-  // tier 4 is supposed to have — a trade that is worth making and does not decide
-  // the map. See the note on the tier in data/towers.js for what the sweep
-  // measured on each dial.
+  // It holds with room to spare: the pure build is 0 in 20 at either tier, and the
+  // mix goes from 17 wins to 20 for 690 gold of upgrades. It was 18 before the
+  // owner asked for a wider blast — 55 to 70 is the one change to this tower since
+  // the sweep, and those two wins are what it bought here. See the note on the tier
+  // in data/towers.js for what the sweep measured on each dial.
   'ALL siege t4 x6 (expect LOSS)':  [S(0, 3), S(1, 3), S(4, 3), S(6, 3), S(7, 3), S(8, 3)],
   'MIX 3 siege t4 + 3 barracks':    [S(0, 3), B(1), S(4, 3), B(6), B(7), S(8, 3)],
   // THE MONASTERY, held to the same two rules and compared the same way. A pure
@@ -340,9 +340,14 @@ m1: {
   //
   // It matters more here than anywhere else, because the Judgement Temple is the
   // one tier 4 that gives nothing up — more damage and more reach, no drawback but
-  // its price. Six of them clear no map, 0 in 20, exactly as six Abbeys do; the mix
-  // goes from 6 wins to 8 for 240 gold. A straight upgrade that moves a build two
-  // wins in twenty is what "more powerful, not different" is supposed to look like.
+  // its price. Six of them clear no map, 0 in 20, exactly as six Abbeys do.
+  //
+  // THE MIX DOES NOT MOVE ON THIS MAP, 6 wins in 20 either way, and the reason is
+  // worth knowing before anybody reads it as the tower doing nothing: at 80 damage
+  // it was 8, because a militiaman has 80 health and one missile killed him
+  // outright. The owner asked for 75. Five points of damage are two wins here and
+  // nothing at all on The Fork, which is the sharpest step in the file and is a
+  // fact about the militia rather than about the temple.
   'ALL monastery t4 x6 (expect LOSS)': [M(0, 3), M(1, 3), M(4, 3), M(6, 3), M(7, 3), M(8, 3)],
   'MIX 2A + 3B + 1 monastery t4':   [M(0, 3), B(1), A(4), B(6), B(7), A(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
@@ -382,8 +387,8 @@ m2: {
   'ALL monastery x6 (expect LOSS)': [M(0), M(2), M(5), M(6), M(7), M(8)],
   'MIX 2 archery + 3 barracks + 1 monastery': [M(0), A(2), B(5), A(6), B(7), B(8)],
   // Tier 4, for the reason given on map 1's pair. The Fork is the map that suits
-  // this family and the reading is the same shape: 14 wins to 15, and the pure
-  // build stays at 0.
+  // this family, and it is the map where the temple shows: 14 wins to 15 and a
+  // life or two better, with the pure build still at 0.
   'ALL monastery t4 x6 (expect LOSS)': [M(0, 3), M(2, 3), M(5, 3), M(6, 3), M(7, 3), M(8, 3)],
   'MIX 2A + 3B + 1 monastery t4':   [M(0, 3), A(2), B(5), A(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
