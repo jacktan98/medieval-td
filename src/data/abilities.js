@@ -151,11 +151,11 @@ export const ABILITIES = [
     // The long form, shown beside the picture when the card is tapped open. Two or
     // three sentences: what it does, then the thing a player would only find out by
     // watching it for a while.
-    detail: 'After five ordinary shots the musketeer empties three balls into the ' +
-            'road as fast as he can work the lock, a fifth of a second apart, then ' +
-            'holds the smoke for a second before loading again.\n\n' +
+    detail: 'After five ordinary shots the musketeer empties three bullets into ' +
+            'the road as fast as he can work the lock, a fifth of a second apart, ' +
+            'then holds the smoke for a second before loading again.\n\n' +
             'Each of the three picks a different man, through whatever standing ' +
-            'order the tower is on. That is the point of it: three balls into one ' +
+            'order the tower is on. That is the point of it: three bullets into one ' +
             'militiaman is most of them wasted, and three into three of them is a ' +
             'rank gone. With only one enemy in reach all three go to him.'
   },
@@ -200,7 +200,7 @@ export const ABILITIES = [
     // two that do not, which are the paladin's.
 
     detail: 'After ten ordinary shots the musketeer takes a second to aim — a mark ' +
-            'appears over the man he has chosen and stays there until the ball ' +
+            'appears over the man he has chosen and stays there until the bullet ' +
             'arrives — and then fires a single round for 300 damage, five times the ' +
             'Post\'s ordinary shot and the hardest blow in the game.\n\n' +
             'He holds the pose for two seconds afterwards, which costs nothing: the ' +
@@ -294,13 +294,13 @@ export const ABILITIES = [
     pose: HOLY_SLASH_POSE,
     cue: 'holySlash',
 
-    detail: 'Four ordinary blows and then one for 25 — three and a half times what ' +
-            'a paladin normally does — struck in the time an ordinary swing takes, ' +
-            'so the rhythm never breaks.\n\n' +
-            'It works out at 13.25 damage a second against a plain paladin\'s 8.75, ' +
-            'which is half again as much from the man who starts with the least ' +
-            'damage in the game. Each of the three counts his own blows, so the ' +
-            'strikes land spread out rather than all at once.'
+    detail: 'Four ordinary blows and then one for 35 — five times what a paladin ' +
+            'normally does — struck in the time an ordinary swing takes, so the ' +
+            'rhythm never breaks.\n\n' +
+            'It works out at 15.75 damage a second against a plain paladin\'s 8.75, ' +
+            'nearly double, from the man who starts with the least damage in the ' +
+            'game. Each of the three counts his own blows, so the strikes land ' +
+            'spread out rather than all at once.'
   }
 ];
 

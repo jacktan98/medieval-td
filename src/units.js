@@ -55,6 +55,13 @@ const ASSIST = 70;
 // would leave a gap up the middle; narrowing it lets the kerb lanes through.
 const FORMATION = [[-24, 0, 0], [13, -20, -22], [13, 20, 22]];
 
+// How far the furthest station is from the rally point, derived from the wedge
+// above rather than typed: 24 back down the road for the point man, or 13 forward
+// and 20 across for the rear pair. It is the margin the leash in updateUnits adds
+// to the tower's ring, so a squad posted at the edge of that ring is not leashed
+// tighter than it is posted. Re-derived if the wedge is ever widened.
+const WEDGE = Math.ceil(Math.max(...FORMATION.map(([a, c]) => Math.hypot(a, c))));
+
 // Nearest point on any of the level's roads — the rally point a barracks sends
 // its soldiers to.
 //
@@ -71,8 +78,6 @@ export function nearestOnPath(x, y) {
 // Split out from makeUnits because moving the rally must not create anybody:
 // the standing orders change, the men do not. See moveUnits.
 function stations(tower) {
-  const s = tower.def.soldier;
-
   // Where the player has sent the squad, or the nearest bit of road if they
   // have not sent it anywhere. The rally is stored as a free point rather than
   // a point on the path, so it survives an upgrade and stays where it was put.
@@ -87,7 +92,14 @@ function stations(tower) {
 
   // Re-find the rally on the path after the range clamp, so the slots are laid
   // out from a point that is actually on the road.
-  const base = nearestOnPath(held.x, held.y);
+  return stationsOn(tower, nearestOnPath(held.x, held.y));
+}
+
+// The squad's stations around one point of one road, given as a {route, s} the
+// way nearestOnPath returns it. Split out of stations() so the two-road fallback
+// at the bottom can start again on the other road without repeating any of this.
+function stationsOn(tower, base) {
+  const s = tower.def.soldier;
   const road = level.routes[base.route];
 
   // Where each man would stand, given a point along that road.
@@ -112,38 +124,63 @@ function stations(tower) {
     return out;
   };
 
-  // AND THEN BACK OFF ALONG THE ROAD UNTIL EVERY MAN IS INSIDE THE RING.
+  // AND THEN BACK OFF ALONG THE ROAD UNTIL THE RALLY ITSELF IS INSIDE THE RING.
   //
-  // The clamp above is not enough on its own, and the gap between the two is what
-  // the owner was seeing. It pulls the rally onto the ellipse and then the road is
-  // found again from there — so on a stretch that runs away from the tower, the
-  // snapped point lands back OUTSIDE the ellipse, and the formation is then laid
-  // out ±24px along the road from that. Map 1's plot 7 posted its rear man at 1.41
-  // ring-radii: a flag drawn inside the ring and a squad standing 80px beyond it.
+  // The clamp above is not enough on its own. It pulls the rally onto the ellipse
+  // and then the road is found again from there — so on a stretch that runs away
+  // from the tower, the snapped point lands back OUTSIDE the ellipse, and the men
+  // are posted somewhere the player was never allowed to drag to.
   //
-  // So the road position is bisected between the rally the player asked for and
-  // the piece of road nearest the TOWER, for the furthest one whose whole wedge
-  // fits. Every man inside, not just the flag — the wedge is what the player sees
-  // standing there.
+  // THE RALLY, NOT THE WHOLE WEDGE, and the difference is worth a paragraph
+  // because it shipped the other way round for a few hours and was reported
+  // within the day. Requiring all three men inside sounds stricter and better; what
+  // it actually does is stop the squad 20 to 56px SHORT of the flag on every plot
+  // of map 3, because the formation is 24px deep and the flag is at the edge. The
+  // flag is a promise — the men go where it is — so what has to be inside the ring
+  // is the flag, and the wedge is allowed to spread the width of itself past it,
+  // exactly as it always did. The leash in updateUnits carries the same margin.
   //
-  // If even the nearest piece of road is out of reach the search has nothing to
-  // find, and the answer is the old one: a plot too far from the road cannot post
-  // a squad on it, and pretending otherwise would put the men somewhere arbitrary
-  // instead of somewhere honest. See map 1's plots 2 and 5.
-  const fits = at0 => layout(at0).every(m => inRange(m.rx, m.ry, tower.x, tower.y, tower.def.range));
+  // A LINEAR WALK RATHER THAN A BISECTION, for the same reason: a road bends, so
+  // "inside the ring" is not one contiguous stretch of it, and bisecting between
+  // two ends of a broken interval lands wherever the halving happens to fall.
+  // Stepping back from the point the player asked for takes the first spot that
+  // works, which is the nearest one to the flag they dropped.
+  //
+  // If no part of this road is in reach the walk finds nothing, and the two blocks
+  // at the bottom say what happens then.
+  const fits = at0 => {
+    const q = pointOn(road, at0);
+    return inRange(q.x, q.y, tower.x, tower.y, tower.def.range);
+  };
 
   if (fits(base.s)) return layout(base.s);
 
   const back = nearestOn([road], tower.x, tower.y).s;
-  if (!fits(back)) return layout(base.s);
-
-  let good = back;
-  let bad = base.s;
-  for (let i = 0; i < 24; i++) {
-    const mid = (good + bad) / 2;
-    if (fits(mid)) good = mid; else bad = mid;
+  const step = base.s > back ? -4 : 4;
+  for (let at0 = base.s + step; (at0 - back) * step < 0; at0 += step) {
+    if (fits(at0)) return layout(at0);
   }
-  return layout(good);
+  if (fits(back)) return layout(back);
+
+  // NOTHING ON THIS ROAD IS IN REACH, which on a map with two of them is not the
+  // dead-plot case at all: the player dragged toward the other road, the clamp
+  // landed nearest to it, and the whole of it is out of the tower's ring. Fall
+  // back to the road the TOWER is nearest — where an un-rallied squad stands —
+  // rather than to a point on a road it cannot reach. Map 3 is the only map that
+  // can produce this, and it did: two rallies in 352 posted a Paladin Keep's men
+  // 1.19 ring-radii out.
+  const own = nearestOnPath(tower.x, tower.y);
+  if (own.route !== base.route) return stationsOn(tower, own);
+
+  // AND IF NO PART OF ANY ROAD IS IN REACH, the squad stands on the piece nearest
+  // the tower. That plot cannot post a squad in range at all — map 1's plot 5 is
+  // 146px from the road, which is inside a 165 circle and OUTSIDE the 165 ellipse,
+  // because reach is squashed to 0.79 vertically and that road runs above it — so
+  // there is no right answer, only a stable one. It used to keep whatever the drag
+  // snapped to, which put the men 345px away on a tower that reaches 210: the
+  // further the player dragged, the further from the tower they went, on a plot
+  // where every direction is equally out of range.
+  return layout(back);
 }
 
 export function makeUnits(state, tower) {
@@ -305,8 +342,15 @@ export function updateUnits(state, dt) {
     // MEASURED FROM THE TOWER, not from the man's own post, because that is the
     // ring the player drew: they place the rally, the game clamps it into this
     // ellipse, and the men are expected to be somewhere inside it.
+    //
+    // PLUS THE WIDTH OF THE WEDGE, and that margin is not slack. The rally is
+    // inside the ring and the formation is laid out around it — see stations() —
+    // so a man posted at the far edge stands a little outside it himself. Leashed
+    // to the bare ring he could not help with a fight happening at his own feet,
+    // which is the one place he certainly should. WEDGE is the furthest a station
+    // sits from the flag, so the leash reaches exactly as far as the squad does.
     const home = u.tower;
-    const leashed = (x, y) => inRange(x, y, home.x, home.y, home.def.range);
+    const leashed = (x, y) => inRange(x, y, home.x, home.y, home.def.range + WEDGE);
 
     // Four passes, in this order, and the order is the design.
     //
