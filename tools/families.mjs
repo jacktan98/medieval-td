@@ -361,15 +361,30 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   ok(hpUp > dpsUp, 'the Paladin Keep gains more wall than weapon',
     `+${(hpUp * 100).toFixed(0)}% health against +${(dpsUp * 100).toFixed(0)}% damage a second`);
 
-  // Per gold SPENT, which for a ladder means the whole ladder: a tier 4 costs you
-  // the three rungs under it as well. A rung that is worse per gold than the one
-  // below it would never be worth pressing; one that is far better makes the
-  // choice between plots meaningless. "A little ahead" is the target.
+  // PER PLOT FIRST, because the plot is the scarce thing. A map has nine or eleven
+  // markers and no more; gold comes back every wave. What pressing this button
+  // buys is a bigger wall on ground you already hold, and that is the number that
+  // has to move.
+  ok(wall(t4) > wall(t3) * 1.2, 'and is a much bigger wall on the one plot',
+    `${wall(t4)} against ${wall(t3)}, +${((wall(t4) / wall(t3) - 1) * 100).toFixed(0)}%`);
+
+  // AND PER GOLD IT IS ALLOWED TO BE A LITTLE WORSE, which is a change of claim
+  // rather than a slackened one. It used to have to be a little BETTER, on the
+  // reasoning that a rung worse per gold than the one below would never be worth
+  // pressing — and at 300hp it was, by 4%. The owner took the paladin to 275 and
+  // that flips: 1.56 a gold against a swordsman's 1.64.
+  //
+  // The claim that survives is the honest one. Wall per gold is not what the
+  // button sells, or a player would buy a fourth Militia Camp instead of a Keep
+  // and be right; it sells wall per PLOT, a harder-hitting, faster, quicker-
+  // mustering man, and two abilities nothing below tier 4 can be taught. What it
+  // must not be is FAR behind — a rung that is half as efficient is a trap
+  // whatever else it carries — so the band is 10% either side of the rung below.
   const spend = t => barracks.slice(0, t + 1).reduce((sum, d) => sum + d.cost, 0);
   const per = t => wall(barracks[t].soldier) / spend(t);
   const gain = per(3) / per(2) - 1;
-  ok(gain > 0 && gain < 0.15, 'and is a little more wall per gold, not a lot',
-    `${per(3).toFixed(2)} against ${per(2).toFixed(2)} per gold, +${(gain * 100).toFixed(0)}%`);
+  ok(Math.abs(gain) < 0.10, 'and is within a tenth of it per gold, either way',
+    `${per(3).toFixed(2)} against ${per(2).toFixed(2)} per gold, ${gain >= 0 ? '+' : ''}${(gain * 100).toFixed(0)}%`);
 
   // Every rung of this ladder musters the same squad. The muster rings, the
   // formation and tools/formation.mjs are all drawn for three men, and a tier that

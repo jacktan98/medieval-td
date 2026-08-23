@@ -89,26 +89,61 @@ function stations(tower) {
   // out from a point that is actually on the road.
   const base = nearestOnPath(held.x, held.y);
   const road = level.routes[base.route];
-  const out = [];
 
-  for (let i = 0; i < s.count; i++) {
-    const [along, across, splay] = FORMATION[i % FORMATION.length];
-    // `along` follows the road's curve; `across` steps off the tangent there.
-    // Walking by arc length keeps a squad on a bending road: offsetting along
-    // one segment's straight tangent puts a man 24px "forward" onto the grass
-    // on the outside of a bend, far enough that enemies pass outside ENGAGE
-    // without ever being blocked.
-    const at = pointOn(road, base.s + along);
-    out.push({
-      rx: at.x - at.ty * across,
-      ry: at.y + at.tx * across,
-      // At rest a soldier watches the way the enemies come from, which is back
-      // along the segment they walk. Only the left/right of this is drawn.
-      faceIdle: Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180
-    });
+  // Where each man would stand, given a point along that road.
+  const layout = at0 => {
+    const out = [];
+    for (let i = 0; i < s.count; i++) {
+      const [along, across, splay] = FORMATION[i % FORMATION.length];
+      // `along` follows the road's curve; `across` steps off the tangent there.
+      // Walking by arc length keeps a squad on a bending road: offsetting along
+      // one segment's straight tangent puts a man 24px "forward" onto the grass
+      // on the outside of a bend, far enough that enemies pass outside ENGAGE
+      // without ever being blocked.
+      const at = pointOn(road, at0 + along);
+      out.push({
+        rx: at.x - at.ty * across,
+        ry: at.y + at.tx * across,
+        // At rest a soldier watches the way the enemies come from, which is back
+        // along the segment they walk. Only the left/right of this is drawn.
+        faceIdle: Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180
+      });
+    }
+    return out;
+  };
+
+  // AND THEN BACK OFF ALONG THE ROAD UNTIL EVERY MAN IS INSIDE THE RING.
+  //
+  // The clamp above is not enough on its own, and the gap between the two is what
+  // the owner was seeing. It pulls the rally onto the ellipse and then the road is
+  // found again from there — so on a stretch that runs away from the tower, the
+  // snapped point lands back OUTSIDE the ellipse, and the formation is then laid
+  // out ±24px along the road from that. Map 1's plot 7 posted its rear man at 1.41
+  // ring-radii: a flag drawn inside the ring and a squad standing 80px beyond it.
+  //
+  // So the road position is bisected between the rally the player asked for and
+  // the piece of road nearest the TOWER, for the furthest one whose whole wedge
+  // fits. Every man inside, not just the flag — the wedge is what the player sees
+  // standing there.
+  //
+  // If even the nearest piece of road is out of reach the search has nothing to
+  // find, and the answer is the old one: a plot too far from the road cannot post
+  // a squad on it, and pretending otherwise would put the men somewhere arbitrary
+  // instead of somewhere honest. See map 1's plots 2 and 5.
+  const fits = at0 => layout(at0).every(m => inRange(m.rx, m.ry, tower.x, tower.y, tower.def.range));
+
+  if (fits(base.s)) return layout(base.s);
+
+  const back = nearestOn([road], tower.x, tower.y).s;
+  if (!fits(back)) return layout(base.s);
+
+  let good = back;
+  let bad = base.s;
+  for (let i = 0; i < 24; i++) {
+    const mid = (good + bad) / 2;
+    if (fits(mid)) good = mid; else bad = mid;
   }
-
-  return out;
+  return layout(good);
 }
 
 export function makeUnits(state, tower) {
@@ -248,6 +283,31 @@ export function updateUnits(state, dt) {
 
     if (u.foe && (u.foe.hp <= 0 || u.foe.leaked)) release(u);
 
+    // THE LEASH, and it is the ring the player can already see: the ellipse the
+    // tower draws when it is selected, which is also what the rally point is
+    // clamped to. A squad posted inside it should fight inside it.
+    //
+    // WHAT IT IS FOR. Blocking never took a man far — an enemy has to walk within
+    // ENGAGE of him to be blocked, so a blocker is at most 30px from where he
+    // stands. The two passes that make him TRAVEL had no limit at all: assisting
+    // reaches 70px and fetching a thrower reaches 130, and each fight he joins is a
+    // new place to reach from, so a squad could walk itself down the road one
+    // helpful step at a time. Measured on map 1 that is 90 to 160px from a man's
+    // post, which on a rally placed at the edge of the ring is well outside it.
+    //
+    // WHY IT SHOWED UP ON PALADINS. It is not the abilities, and it is worth
+    // writing that down because it looked exactly like it was: a held pose freezes
+    // a man where he stands for up to three seconds — Holy Light kneels for all
+    // three — so a paladin who was mid-chase when he struck stops out there in
+    // plain sight instead of hurrying back. The abilities made a leash that was
+    // never there visible. Every family had it.
+    //
+    // MEASURED FROM THE TOWER, not from the man's own post, because that is the
+    // ring the player drew: they place the rally, the game clamps it into this
+    // ellipse, and the men are expected to be somewhere inside it.
+    const home = u.tower;
+    const leashed = (x, y) => inRange(x, y, home.x, home.y, home.def.range);
+
     // Four passes, in this order, and the order is the design.
     //
     // BLOCKING is still strictly one soldier per enemy — that is what the whole
@@ -299,6 +359,18 @@ export function updateUnits(state, dt) {
     //     or it would release the assistant that pass is about to promote.
     if (u.foe && !u.holds && !u.foe.foe && !u.foe.halted) release(u);
 
+    // 1c. Come home. He is helping with a fight that is outside his tower's ring,
+    //     or standing over one that drifted out of it, and helping is the part of
+    //     his job the leash takes away first.
+    //
+    //     Three conditions, and each rules out a case this must not touch. He does
+    //     not HOLD his foe, so the wall is never dropped — a blocker who took an
+    //     enemy at the edge of the ring keeps it, because the enemy came to him and
+    //     letting go would open the road. It is not a halted thrower, so the fetch
+    //     pass below is not undone one frame after it fires. And the fight really
+    //     is outside, measured against the same ellipse the player was shown.
+    if (u.foe && !u.holds && !u.foe.halted && !leashed(u.foe.x, u.foe.y)) release(u);
+
     // 2. Block. Any soldier not currently holding someone — free OR merely
     //    assisting — grabs the nearest unheld enemy inside ENGAGE. Assisting
     //    loses to blocking every time, so piling onto one enemy can never let
@@ -329,6 +401,10 @@ export function updateUnits(state, dt) {
       let bestD = ASSIST;
       for (const e of state.enemies) {
         if (!e.foe || e.hp <= 0) continue;
+        // Inside the ring, or it is not his fight. Helping is the optional half of
+        // what a soldier does — somebody is already holding this enemy — so it is
+        // the first thing the leash takes away.
+        if (!leashed(e.x, e.y)) continue;
         const d = Math.hypot(e.x - u.x, e.y - u.y);
         if (d < bestD) { bestD = d; best = e; }
       }
@@ -367,6 +443,20 @@ export function updateUnits(state, dt) {
       for (const e of state.enemies) {
         if (e.foe || e.hp <= 0 || !e.halted) continue;
         if (!inRange(e.x, e.y, u.x, u.y, e.def.ranged.range)) continue;
+        // AND HE IS LEASHED TOO, which is the change the owner asked for and it is
+        // not free — see the note on `leashed` above. A doctor stops at his own
+        // throwing distance from the line, so with the rally at the edge of the
+        // ring he is usually outside it, and this is the pass that used to walk a
+        // man out to him: 1.85 ring-radii on map 1's plot 7, a paladin 378px from
+        // a tower that reaches 210.
+        //
+        // What it costs is that a thrower standing off outside the ring is now
+        // nobody's problem: he throws, the men in reach take it, and nothing goes
+        // out to stop him. That is the same answer a bow gives a man out of range,
+        // and it is the player's to solve — move the rally, or put something else
+        // where it can see him. The alternative is a squad that leaves the ground
+        // it was posted to hold whenever a doctor asks it to.
+        if (!leashed(e.x, e.y)) continue;
         // Somebody is already on his way. An assisting soldier cannot be
         // confused for one: assisting only ever targets an enemy that HAS a
         // blocker, and this enemy has none.

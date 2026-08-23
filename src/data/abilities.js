@@ -269,9 +269,14 @@ export const ABILITIES = [
     // blow every eight seconds followed by a paladin standing still.
     every: 5,
     shots: 1,
-    // 25, down from 70, and still three and a half times an ordinary blow. Four
-    // swings at 7 plus one at 25 is 53 where five swings would be 35.
-    damage: 25,
+    // 35, five times an ordinary blow. Four swings at 7 plus one at 35 is 63 where
+    // five swings would be 35.
+    //
+    // IT WAS 70 EVERY TENTH, THEN 25 EVERY FIFTH, AND IS 35 EVERY FIFTH. The middle
+    // number came down with the hold and this is the owner putting some of it back
+    // now that the pose costs nothing: 15.75 damage a second against a plain
+    // paladin's 8.75, where the original every-tenth version worked out at 13.3.
+    damage: 35,
     // NO PAUSE OVER IT ANY MORE. `hold` is null rather than a number of seconds,
     // which units.js reads as "the man's own attack time" — 0.80s on a paladin, the
     // same as the swing it replaces — so the pose is up for exactly one beat of

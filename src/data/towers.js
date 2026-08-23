@@ -978,9 +978,9 @@ export const AIM_MODES = [
 // see the whole board is a tower whose choice of target is the only thing left to
 // decide, and 60 damage into an 80-health militiaman is most of a reload wasted.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 70,  damage: 10, range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true },
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 60,  damage: 8,  range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 14, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 26, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true },
   // `title` IS THE TOWER'S NAME ON THIS RUNG, not "Archery Tier IV", and it is the
   // first tier where those differ. The field heads the tier's entry in the
   // encyclopedia, and a tier 4 is a named building rather than a rung — the artist
@@ -1329,7 +1329,7 @@ export const barracks = [
     // squad is replaced every time one of them falls. A paladin who died would
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'slash'],
-    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 300, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
+    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 275, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
   }
 ];
 
@@ -2100,9 +2100,9 @@ const cardinal = {
 // faster than artillery's flat 3.0, which is the middle column of the table.
 //
 // `damage` 20 / 30 / 50, the highest in the game at every tier — against
-// archery's 10 / 15 / 25 and artillery's 18 / 24 / 36.
+// archery's 8 / 14 / 26 and artillery's 18 / 24 / 36.
 //
-// TEN PER CENT MORE OUTPUT THAN ARCHERY, and the ten per cent is the point.
+// MORE OUTPUT THAN ARCHERY, AND BY LESS AND LESS AS THE LADDER CLIMBS.
 //
 // The cooldowns were 2.00 / 1.80 / 1.60, which put the two families at EXACTLY
 // the same damage per second — 10.0, 16.7 and 31.3 for both, to a tenth. That
@@ -2110,14 +2110,24 @@ const cardinal = {
 // monastery costs more and reaches less, so it cannot also do the same work.
 // Two towers where one is strictly worse is not a choice.
 //
-// So the reload came down a tenth and nothing else moved. 11.0, 18.3 and 34.5
-// against archery's 10.0, 16.7 and 31.3 — the premium a shorter reach and a
-// bigger bill have to buy.
+// So the reload came down a tenth and nothing else moved: 11.0, 18.3 and 34.5 a
+// second against archery's 10.0, 16.7 and 31.3 — the premium a shorter reach and
+// a bigger bill have to buy.
+//
+// ARCHERY'S SIDE OF IT HAS SINCE MOVED, on the owner's own pass: 8 / 14 / 26 at
+// the same reloads is 8.0, 15.6 and 32.5, so the monastery's premium is +37% at
+// tier 1, +17% at tier 2 and +6% at tier 3. That is a shape rather than a flat
+// tenth, and it is a defensible one — a shrine is much better than a watchtower
+// and an abbey is barely better than a crossbow tower, so the reason to take the
+// monastery is strongest early, which is when its short reach hurts least.
+// Watch tier 3: another point on the elite archer would put the two families
+// level again, which is the exact thing the reload cut was made to prevent.
 //
 // EVERYTHING ELSE THAT SEPARATES THEM IS SHAPE:
 //
 //   a monastery lands its output in half as many pieces, twice as big
-//   an archery tower reaches 30px further at every tier, and costs 10 to 20 less
+//   an archery tower reaches 30px further at every tier, and costs 20 less
+//   at tier 1 and 20 more at tier 3
 //
 // A big lump is worth more against a giant, which has 1000 health and eats
 // whatever you send, and worth less against a militiaman, who has 80 and wastes
@@ -2169,8 +2179,11 @@ const cardinal = {
 // NO SPLASH. Area is artillery's answer and the table says so — a missile that
 // also caught everyone standing nearby would be a catapult with a bigger number.
 //
-// `cost` 80 / 110 / 160 against archery's 70 / 90 / 140 — ten to twenty more at
-// every rung, and the other half of what the faster reload is paying for.
+// `cost` 80 / 110 / 160 against archery's 60 / 90 / 140 — twenty more at tier 1,
+// twenty at tier 2 and twenty at tier 3, and the other half of what the faster
+// reload is paying for. The gap at tier 1 doubled when the owner took a
+// watchtower to 60, which is the same pass that took the novice archer to 8
+// damage: the cheapest tower in the game got cheaper and weaker together.
 //
 // WHERE IT LANDS, twenty seeds, the map's best mix with one archery tower
 // swapped for a monastery — the comparison worth having, because they want the
