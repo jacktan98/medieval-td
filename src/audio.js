@@ -347,7 +347,26 @@ const GAIN = {
   // only has to be heard, not noticed. -6dB puts it at -0.7dB net, which is why
   // it drops back out of the levelling report: it is no longer being moved far
   // enough to be worth mentioning.
-  select: 0.5
+  select: 0.5,
+  // THE BALLISTA'S ORDINARY BOLT, DOWN 4dB, and this one is about the difference
+  // between two sounds rather than about either of them alone.
+  //
+  // A taught turret fires the same clip louder on every third shot — that is what
+  // Heavy Bolt sounds like, and the whole point of it is that you can hear which
+  // bolt is which without looking. At the automatic level the two were x0.43 and
+  // x0.60, which is 2.9dB apart: a real difference, and not one you notice over a
+  // wave with several machines going.
+  //
+  // Taking the ORDINARY shot down rather than pushing the heavy one up is the
+  // right half to move, twice over. The heavy bolt already sits where a weapon
+  // report should sit, so raising it further would make the tower louder than the
+  // rest of the battle to buy contrast it can get for free; and the ordinary bolt
+  // is the sound this tower makes every 1.8 seconds for the whole game, which is
+  // the one in the pair that can afford to be quieter. It lands 4.4dB under the
+  // other weapons' reports and the heavy one lands where it always was, so the gap
+  // between them goes from 2.9dB to 7.2dB — more than double, which is the size of
+  // step an ear reads as "that was a different shot".
+  ballista_shot: 0.6
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

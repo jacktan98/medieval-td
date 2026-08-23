@@ -112,7 +112,15 @@ export const heavyBolt = {
   // Louder than an ordinary bolt, at the artist's request, and only for this shot.
   // The same clip played harder rather than a second recording — see `level` in
   // play() in src/audio.js, the mechanism the pope's missile brought in.
-  fireGain: 1.4
+  //
+  // 2.3 RATHER THAN 1.4, and the change is in the ORDINARY bolt rather than in
+  // this one: `ballista_shot` now carries a GAIN of 0.6 in src/audio.js, so the
+  // plain shot dropped 4.4dB and this multiplier was raised to leave the heavy one
+  // exactly where it was. The pair is 7.2dB apart now instead of 2.9dB, which is
+  // what the owner asked for — the loud one obvious rather than merely louder.
+  // Net x0.59 after levelling, on a file that peaks at 1.01, so there is no
+  // headroom problem: the two numbers move together and always have to.
+  fireGain: 2.3
 };
 
 // The three poses the artist drew for these. Each is registered on the SAME source

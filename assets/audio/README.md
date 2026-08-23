@@ -136,7 +136,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
-| **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 40% louder |
+| **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 7.2dB louder |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
 | **a paladin's fifth blow lands** — Category B | `Paladin_Holy_Slash` |
@@ -234,9 +234,18 @@ four kill cries.
 
 **Heavy Bolt uses the same trick**, and it is the second time the field has paid
 for itself: every third bolt a taught Ballista Turret fires is the same
-`Ballista_Bolt_shot` at 1.4, which is how you can hear which one is the heavy one
-without a second recording. The clip is levelled to x0.43, so the loud version
-lands at x0.60 — nowhere near the ceiling, on a file that already peaks at 1.01. The three tiers below him have none and fall through to the
+`Ballista_Bolt_shot`, played harder, which is how you can hear which one is the
+heavy one without a second recording.
+
+**The pair was widened by making the ORDINARY bolt quieter**, which is the half
+worth moving. At the automatic level the two were 2.9dB apart — a real difference
+and not one you notice over a wave with several machines going. `ballista_shot`
+now carries a `GAIN` of 0.6 and the ability's own multiplier went to 2.3, so the
+plain shot sits 4.4dB under the other weapons' reports, the heavy one lands
+exactly where it was, and the gap is 7.2dB. Raising the heavy one instead would
+have bought the same contrast by making the tower louder than the battle. The two
+numbers move together and always have to: net x0.59 on a file that peaks at 1.01,
+so there is no headroom left to spend. The three tiers below him have none and fall through to the
 generic one, which is the same split the barracks has: one line for the family,
 one for its tier 4.
 
