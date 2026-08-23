@@ -28,6 +28,7 @@ in `src/assets.js`.
 | `monastery/Monastery_Tower_T1.png`     | 1024   | 111 x 116 px | Wayside Shrine (1) |
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
+| `monastery/Judgement_Temple.png`       | 1024   | 74 x 165 px  | Judgement Temple (4) |
 
 Elsewhere, but artillery's: `units/Artillery_Man_T1.png` (the crewman, for the
 info box only — he is drawn into all three frames already) and
@@ -53,6 +54,26 @@ already), `projectiles/Ballista_Turret_Bolt.png`, `ui/Ballista_Turret_Icon.png`,
 and five clips — `audio/sfx/Ballista_Bolt_shot.mp3`,
 `audio/sfx/Ballista_kill_enemy.mp3` and three voice lines. It has no abilities
 yet.
+
+Elsewhere, but the Judgement Temple's: `units/Pope_Default.png` and `_Attack`,
+`projectiles/Pope_Arcane_Missle.png`, `ui/Judgement_Temple_Icon.png`, and four
+clips — `audio/sfx/Pope_kill_enemy.mp3` and three voice lines. It fires the
+monastery's own `Arcane_shot` a quarter louder rather than a fourth recording of
+it, and it has no abilities yet.
+
+**IT IS THE TALLEST BUILDING IN THE GAME**, 165 game px against the 142 of the
+two monastery tiers under it, and the only thing that costs is headroom on the
+plot: the drawing reaches further up the screen than anything else, so a temple
+on a high plot sits closer to the dashboard than a player is used to.
+
+**AND THE ONE WHERE THE MAN BARELY FITS.** Its belfry has 143 source px of clear
+height at its nearest corner and the pope is 145.5 tall from his shadow to the
+head of his staff — the artist sized the opening to the figure, near enough
+exactly. That is why he stands a little forward of the floor's centre rather than
+on it, which is where every other tower in the game puts its man: at the centre
+the eave crosses him at the eyebrows and takes his mitre with it, and a white robe
+with no hat on it is not the pope. See `mountFrac` on `temple` in
+`src/data/towers.js` for the measurement and the reasoning.
 
 **IT IS THE FIRST BUILDING DRAWN IN TWO PIECES**, and the reason is worth
 keeping. Every other artillery tier is one drawing per beat with the machine, the

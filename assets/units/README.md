@@ -20,6 +20,7 @@ nothing else.
 | Cardinal           | `Soldiers_Cardinal_Default`        | `Soldiers_Cardinal_Attack`        |
 | Musketeer          | `Musketeer_Default`                | `Musketeer_Attack`                |
 | Paladin            | `Paladin_Default`                  | `Paladin_Attack`                  |
+| Pope               | `Pope_Default`                     | `Pope_Attack`                     |
 
 An artillery crewman is the exception to the two-pose rule: he is drawn into all
 three of his machine's frames already, so his file is a PORTRAIT with no Attack

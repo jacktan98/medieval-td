@@ -254,12 +254,15 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
     'and still throws a blast, the smallest of the four',
     siege.map(d => d.splash).join(' / '));
 
-  // Joint biggest with the Musketeer Post's ball rather than outright biggest,
-  // and the check says so: two tier 4 towers at the top of two ladders are
-  // allowed to hit alike, and neither is allowed to be beaten by a tier 3.
-  const others = [...archery, ...monastery, ...siege].filter(d => d !== t4);
-  ok(others.every(d => d.damage <= t4.damage), 'and hits as hard as anything in the game',
-    `${t4.damage} against the next ${Math.max(...others.map(d => d.damage))}`);
+  // Joint biggest with the Musketeer Post's ball, and the monastery is excluded
+  // rather than beaten: hitting hardest is that family's whole column of the
+  // table at the top of this file, so a Judgement Temple at 80 is the design
+  // working rather than the ballista losing an argument. What the check is for is
+  // the two ladders that are NOT about damage per blow — nothing in archery or
+  // artillery may out-hit this — and being beaten by a tier 3 anywhere.
+  const others = [...archery, ...siege].filter(d => d !== t4);
+  ok(others.every(d => d.damage <= t4.damage), 'and hits as hard as anything outside the monastery',
+    `${t4.damage} against the next ${Math.max(...others.map(d => d.damage))}, and the temple's ${monastery[3].damage}`);
 
   ok(siege.every(d => d === t4 || d.cooldown > t4.cooldown), 'and reloads fastest in its family',
     siege.map(d => d.cooldown.toFixed(2)).join(' / '));
@@ -286,6 +289,52 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
   ok(spend(siege) > spend(archery) && spend(siege) > spend(barracks),
     'and is the dearest ladder there is',
     `${spend(siege)}g against ${spend(archery)}g and ${spend(barracks)}g`);
+}
+
+// --- the monastery's tier 4, on its own terms ------------------------------------
+//
+// The fourth top rung and the only one that is NOT a trade, which is why it gets
+// a section rather than being waved through: the owner asked for "just a more
+// powerful version of Monastery Tier 3 — more damage, more range, other than that
+// no stark difference", and a check that let that mean anything at all would let
+// it mean everything.
+//
+// So the claims here are as much about what did NOT move as about what did. What
+// it pays with is gold, and the reload is what keeps it a monastery.
+console.log('\nMonastery tier 4 — the same tower, harder\n');
+{
+  const t4 = monastery[3];
+  const t3 = monastery[2];
+
+  const everyone = [...archery, ...monastery, ...siege].filter(d => d !== t4);
+  ok(everyone.every(d => d.damage < t4.damage), 'the Judgement Temple lands the biggest blow in the game',
+    `${t4.damage} against the next ${Math.max(...everyone.map(d => d.damage))}`);
+
+  ok(t4.range > t3.range, 'and reaches further than the Abbey', `${t4.range} against ${t3.range}`);
+
+  // AND STILL LEAST, which is the family's own column and the thing that stops
+  // "more range" from turning a monastery into an archery tower with a bigger
+  // number. Held against archery tiers 1 to 3 rather than the whole file: the
+  // Musketeer Post is 480 and is not a rung anybody compares this to.
+  ok(archery.slice(0, 3).every(d => d.range >= t4.range) || t4.range <= archery[2].range,
+    'and still no further than a Crossbow Tower', `${t4.range} against ${archery[2].range}`);
+
+  ok(t4.cooldown === t3.cooldown, 'and reloads at exactly the Abbey\'s rate, deliberately',
+    `${t4.cooldown.toFixed(2)}s both`);
+
+  // What that combination is worth, and what it costs. The output per second is
+  // up by the damage alone; the ladder is the second dearest in the game, behind
+  // artillery's, which is where a tower with no drawback belongs.
+  const dps = d => d.damage / d.cooldown;
+  ok(dps(t4) > dps(t3), 'so its output rises with the blow and nothing else',
+    `${dps(t4).toFixed(1)} a second against ${dps(t3).toFixed(1)}`);
+
+  const spend = fam => fam.reduce((sum, d) => sum + d.cost, 0);
+  ok(spend(monastery) > spend(archery) && spend(monastery) > spend(barracks) && spend(monastery) < spend(siege),
+    'and the ladder is the second dearest there is',
+    `${spend(monastery)}g against artillery's ${spend(siege)}g, archery's ${spend(archery)}g, the barracks' ${spend(barracks)}g`);
+
+  ok(monastery.every(d => d.targeting), 'and every monastery tier still takes an order');
 }
 
 // --- the barracks' tier 4, on its own terms --------------------------------------

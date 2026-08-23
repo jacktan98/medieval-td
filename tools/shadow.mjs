@@ -240,6 +240,12 @@ const SPRITES = [
   ['assets/towers/monastery/Monastery_Tower_T1.png', 'shrine.groundFrac', mon[0].spriteTrim, mon[0].groundFrac, 'whole'],
   ['assets/towers/monastery/Monastery_Tower_T2.png', 'chapel.groundFrac', mon[1].spriteTrim, mon[1].groundFrac, 'whole'],
   ['assets/towers/monastery/Monastery_Tower_T3.png', 'abbey.groundFrac',  mon[2].spriteTrim, mon[2].groundFrac, 'whole'],
+  // Tier 4, the Judgement Temple, and the drawing that most needs the ellipse
+  // FIT rather than a bounding box: its own stonework covers the back of its
+  // shadow, so the visible blob is a crescent whose box centre sits 18 source px
+  // below the ellipse's. The number in data/towers.js comes from the artist's SVG,
+  // and this is the row that says the fit agrees with it.
+  ['assets/towers/monastery/Judgement_Temple.png', 'temple.groundFrac', mon[3].spriteTrim, mon[3].groundFrac, 'whole'],
   // Tier 4, the Musketeer Post. Same ellipse fit as the three archery towers
   // below it: the artist paints one #37422f patch of shaded grass under the
   // turret and its centre is the plot point.
@@ -276,6 +282,11 @@ const SPRITES = [
   ['assets/units/Soldiers_Bishop_Attack.png',    'bishop.attack.pivot',   mon[1].attack.trim, mon[1].attack.pivot],
   ['assets/units/Soldiers_Cardinal_Default.png', 'cardinal.gunnerPivot',  mon[2].gunnerTrim, mon[2].gunnerPivot],
   ['assets/units/Soldiers_Cardinal_Attack.png',  'cardinal.attack.pivot', mon[2].attack.trim, mon[2].attack.pivot],
+  // The pope, and the pair rule matters more here than on the three below him: he
+  // is the first churchman drawn in boxes of his own rather than re-robed from the
+  // priest, so nothing but this says his two poses share a standing point.
+  ['assets/units/Pope_Default.png', 'pope.gunnerPivot',  mon[3].gunnerTrim, mon[3].gunnerPivot],
+  ['assets/units/Pope_Attack.png',  'pope.attack.pivot', mon[3].attack.trim, mon[3].attack.pivot],
   // TIER 4 IS TWO DRAWINGS AND SO IS ITS SHADOW CHECK. The turret stands on grass
   // and has the usual dark-green ellipse under it — most of which is hidden
   // behind the tower itself, which is exactly the occluded case the fit was

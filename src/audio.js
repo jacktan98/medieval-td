@@ -202,6 +202,12 @@ const paths = {
   // on `bolt` in data/towers.js — so there is no third.
   ballista_shot:    'assets/audio/sfx/Ballista_Bolt_shot.mp3',
   ballista_kill_enemy: 'assets/audio/sfx/Ballista_kill_enemy.mp3',
+  // The pope. HALF a pair, and the missing half is the point: he fires the
+  // monastery's own `arcane_shot` rather than a clip of his own — the artist
+  // asked for the same noise, slightly louder — so the only new file here is the
+  // line for him taking a man down. See `fireGain` on his missile in
+  // data/towers.js for where the "louder" lives.
+  pope_kill_enemy:  'assets/audio/sfx/Pope_kill_enemy.mp3',
   // THE THREE ABILITY SOUNDS, all Category B and all for the same reason the shots
   // and the swings are: they are things that HAPPEN, several can happen at once —
   // three paladins in one squad, two Posts on one map — and a shared channel would
@@ -278,7 +284,13 @@ const paths = {
   // repeat less often than two do.
   ballista_1:      'assets/audio/voice/Ballista_Engineer_1.mp3',
   ballista_2:      'assets/audio/voice/Ballista_Engineer_2.mp3',
-  ballista_3:      'assets/audio/voice/Ballista_Engineer_3.mp3'
+  ballista_3:      'assets/audio/voice/Ballista_Engineer_3.mp3',
+  // The Judgement Temple's own three, and the last family to get a tier 4 voice.
+  // Same terms as the other three: it answers when it is built and when it is
+  // told what to shoot at, rather than borrowing a monastery line.
+  pope_1:          'assets/audio/voice/Pope_1.mp3',
+  pope_2:          'assets/audio/voice/Pope_2.mp3',
+  pope_3:          'assets/audio/voice/Pope_3.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -356,6 +368,9 @@ export const CUE = {
   // The Ballista Turret's, keyed the same way off the `voice` field on artillery
   // tier 4.
   ballista:     ['ballista_1', 'ballista_2', 'ballista_3'],
+  // The Judgement Temple's, keyed the same way off the `voice` field on monastery
+  // tier 4 — the fourth and last tier with lines of its own.
+  pope:         ['pope_1', 'pope_2', 'pope_3'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -372,6 +387,10 @@ export const CUE = {
   // at close range is a different event to watch than an arrow finding him
   // across the map, and telling them apart by ear is most of what these are for.
   ballistaKill: ['ballista_kill_enemy'],
+  // A missile from the temple finishing a man, and the fifth thing with its own
+  // kill line. The other three monastery tiers still share the arrow's, which is
+  // the same split the barracks has: one line for the family, one for its tier 4.
+  popeKill:     ['pope_kill_enemy'],
   meleeKill:    ['thug_dies'],
   // A PALADIN finishing a man, split out of meleeKill for the same reason the rock
   // and the ball were split out of the arrow's: it is a different event to watch.
@@ -606,13 +625,22 @@ export function unlock() {
 // need to be findable.
 let voice = null;
 
-function fire(key, bus, keep = false) {
+// `level` is a per-PLAY multiplier on top of the clip's own levelled gain, and it
+// is the only volume in this file that is not a property of the recording.
+//
+// It exists for one thing: the same clip meaning something slightly bigger. The
+// pope fires the monastery's own missile noise, and the artist asked for it a
+// little louder rather than for a fourth take of it — so the difference belongs
+// to the SHOT, not to the file, and a `GAIN` entry could not express it without
+// making every other monastery louder too. Default 1, so every other caller is
+// unchanged.
+function fire(key, bus, keep = false, level = 1) {
   const c = clips[key];
   const src = ctx.createBufferSource();
   src.buffer = c.buf;
 
   const g = ctx.createGain();
-  g.gain.value = c.gain;
+  g.gain.value = c.gain * level;
 
   src.connect(g).connect(bus);
   // Second argument is WHERE IN THE CLIP to begin. Starting past the dead air
@@ -661,7 +689,10 @@ const lastB = new WeakMap();
 // Category B. Every time it happens, however many at once, on the background
 // bus. No gate and no share rules — this is the battle, and it is mixed low
 // enough not to need them.
-export function play(cue) {
+//
+// `level` rides on top of the clip's own gain for this one play — see fire(). It
+// is how the pope's missile is the monastery's missile, slightly louder.
+export function play(cue, level = 1) {
   if (!ctx || ctx.state !== 'running') return;
 
   const ready = cue.filter(key => clips[key]);
@@ -680,7 +711,7 @@ export function play(cue) {
   lastStart[key] = now;
   lastB.set(cue, key);
 
-  fire(key, busB);
+  fire(key, busB, false, level);
 }
 
 // Category A. One at a time, then a second of quiet — and never the same clip

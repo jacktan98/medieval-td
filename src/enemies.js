@@ -228,6 +228,10 @@ export function updateEnemies(state, dt) {
          // and a second kill cry for the same weapon would be telling the player
          // apart two things that look identical on the board.
          : e.killedBy === 'bolt' ? CUE.ballistaKill
+         // The pope's missile, and only his. The three tiers under him have no
+         // kill line of their own and fall through to the generic one below, the
+         // same way every melee weapon but the paladin's does.
+         : e.killedBy === 'judgement' ? CUE.popeKill
          : e.killedBy === 'bullet' || e.killedBy === 'deadeye' ? CUE.musketKill
          : e.killedBy === 'paladin' ? CUE.paladinKill
          : CUE.meleeKill);

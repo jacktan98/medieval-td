@@ -81,6 +81,11 @@ export const paths = {
   monastery_t1: 'assets/towers/monastery/Monastery_Tower_T1.png',
   monastery_t2: 'assets/towers/monastery/Monastery_Tower_T2.png',
   monastery_t3: 'assets/towers/monastery/Monastery_Tower_T3.png',
+  // Tier 4, the Judgement Temple: the same open belfry in stone, one storey
+  // taller, with a shingled roof over it and a cross on the point. It is the
+  // tallest drawing in the game at 165 game px against the tier 2 and 3 towers'
+  // 142.
+  monastery_t4: 'assets/towers/monastery/Judgement_Temple.png',
   // EVERY FIGHTING MAN IS TWO DRAWINGS NOW: a Default he stands and walks in,
   // and an Attack he swings or looses an arrow in. Same suffix rule as the
   // artillery frames above — the bare key is the resting pose, so the info box,
@@ -134,6 +139,11 @@ export const paths = {
   priest_t2_attack:   'assets/units/Soldiers_Bishop_Attack.png',
   priest_t3:          'assets/units/Soldiers_Cardinal_Default.png',
   priest_t3_attack:   'assets/units/Soldiers_Cardinal_Attack.png',
+  // The pope, tier 4's churchman. Named for the man like the musketeer and the
+  // paladin rather than tiered like the three above him — a tier 4 is a named
+  // tower with a named man in it, and the artist's files say so.
+  pope:               'assets/units/Pope_Default.png',
+  pope_attack:        'assets/units/Pope_Attack.png',
   // The catapult crewman, for the info box only — he is already drawn into all
   // three machine frames, which is the whole reason the machine animates. He
   // sits with the other men rather than with the machine because that is what he
@@ -171,6 +181,10 @@ export const paths = {
   missile_t1:  'assets/projectiles/Soldiers_Priest_Arcane_Missle.png',
   missile_t2:  'assets/projectiles/Soldiers_Bishop_Arcane_Missle.png',
   missile_t3:  'assets/projectiles/Soldiers_Cardinal_Arcane_Missle.png',
+  // The pope's, and the one missile in the family that is a different size: 125
+  // source px against the other three's 92, which is 26 game px of it in the air
+  // against 19.
+  missile_t4:  'assets/projectiles/Pope_Arcane_Missle.png',
   // The plague doctor's flask, and the only projectile in the game thrown AT
   // the player's men rather than by them.
   flask:       'assets/projectiles/Enemies_Plague_Thug_Flask.png',
@@ -269,6 +283,10 @@ export const paths = {
   // to bring its own picture, and the same one-word opt-in — see the `glyph` field
   // on artillery tier 4 in data/towers.js.
   glyph_ballista:  'assets/ui/Ballista_Turret_Icon.png',
+  // The Judgement Temple's, on the upgrade button of an Abbey. The fourth and
+  // last of them — every family's top rung now shows what it buys — and the same
+  // one-word opt-in, on monastery tier 4 in data/towers.js.
+  glyph_temple:    'assets/ui/Judgement_Temple_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button
   // does, and the button is now the thing that can change without the drawing

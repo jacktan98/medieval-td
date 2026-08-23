@@ -177,6 +177,13 @@ const PAL_ATK_TRIM = [135, 212, 178, 116];
 const MON_TRIM = [241, 228, 542, 568];
 const MON2_TRIM = [274, 165, 476, 694];
 const MON3_TRIM = [277, 165, 469, 694];
+// Tier 4, the Judgement Temple. NARROWER AND TALLER than the three below it —
+// 360 x 804 against tier 3's 469 x 694 — and both halves of that are the drawing
+// rather than a scale change: the belfry sits on a storey of stonework instead
+// of on legs, so the building climbs rather than spreads. 165 game px makes it
+// the tallest thing in the game, past the monastery's own 142 and the barracks'
+// 133.
+const MON4_TRIM = [332, 110, 360, 804];
 
 // The three churchmen. All six drawings share ONE pair of boxes, which is the
 // same finding the elite archer gave: the artist re-robed one figure rather than
@@ -195,8 +202,21 @@ const BISHOP_ATK_TRIM = [190, 198, 108, 135];
 const CARDINAL_TRIM = [216, 179, 80, 154];
 const CARDINAL_ATK_TRIM = [188, 196, 108, 137];
 
-// The arcane missile, one drawing per tier and all three the same shape.
+// THE POPE, and he is the first churchman who is not the same figure re-robed:
+// his boxes are his own in both poses. Shorter than the other three in the
+// Default — 156 against their 154 is a wash, but he is 84 wide against 80 — and
+// noticeably wider in the Attack, 115 against 108, because the staff he swings is
+// bigger and so is the head on it.
+const POPE_TRIM = [214, 178, 84, 156];
+const POPE_ATK_TRIM = [183, 198, 115, 136];
+
+// The arcane missile, one drawing per tier and the first three the same shape.
 const MISSILE_TRIM = [210, 246, 92, 20];
+// The pope's, and the one that is not: 125 x 24 against the other three's 92 x
+// 20, which is 26 game px in the air against 19. The artist asked for a bigger
+// missile at the top of the ladder and this is the whole of it — same colours,
+// same shape, a third longer.
+const MISSILE4_TRIM = [193, 244, 125, 24];
 
 // The musket ball. The smallest sprite in the game by a wide margin — an arrow is
 // 100x20 and this is 20x14, which is 4x3 once drawn.
@@ -506,6 +526,39 @@ export const missile = {
 // you watch.
 export const missile2 = { ...missile, sprite: 'missile_t2' };
 export const missile3 = { ...missile, sprite: 'missile_t3' };
+
+// THE POPE'S, and the one missile in the family that is not simply the same
+// drawing from another file.
+//
+// `trim` of its own, because it is a third longer than the other three — see
+// MISSILE4_TRIM. `grip` 0.10 rather than 0.15 for the same reason and it is the
+// same POINT: the anchor sits just inside the bulb, and this bulb is a smaller
+// share of a longer drawing. Both land the glowing head on the man rather than
+// dragging the tail through him.
+//
+// `kind` of its own, and it buys exactly two rows in two tables. FIRING in
+// src/towers.js sends it to the monastery's own `arcane_shot` — the artist asked
+// for the same noise, slightly louder, which is what `fireGain` is — and the kill
+// cue in src/enemies.js sends it to the pope's own line rather than to the
+// arrow's, which is where the other three tiers still go. Sharing `kind` with
+// them would have meant a flag on the ammunition instead, and "what does this
+// sound like" already has exactly one answer per kind.
+//
+// The SPEED is the family's 330, untouched. A tier 4 missile that also flew
+// faster would stop being the thing you watch — the same argument that keeps
+// tiers 2 and 3 at the tier 1 speed.
+export const missile4 = {
+  ...missile,
+  kind: 'judgement',
+  sprite: 'missile_t4',
+  trim: MISSILE4_TRIM,
+  grip: 0.10,
+  // A quarter louder than an abbey's. Not a fourth recording: it is the same clip
+  // played harder, which is what "same sound effect but slightly louder" means and
+  // is the only way to say it that leaves the other three tiers alone. See `level`
+  // in play() in src/audio.js.
+  fireGain: 1.25
+};
 
 // Every tier has its own drawing now, in both families — nothing is shared.
 // They are all within a few px of each other in size, because scale is fixed by
@@ -1910,6 +1963,88 @@ const priest = {
 // same shadow, holding the same staff in the same place. Every fraction here is
 // tier 1's exactly, and that is a measurement rather than a copy — all six files
 // were run through tools/shadow.mjs and the two tiers came back equal.
+// Tier 4: the belfry again, one storey up and roofed. A stone box with an arched
+// door, an open belfry on top of it with four posts and a shingled roof, and a
+// cross on the point.
+//
+// TWO PIECES OF IT STAND IN FRONT OF THE MAN and that is the whole difficulty of
+// this drawing — the artist said so in the message that brought it. See
+// `frontPolys`.
+const temple = {
+  sprite: 'monastery_t4',
+  spriteTrim: MON4_TRIM,
+  w: drawnW(MON4_TRIM), h: drawnH(MON4_TRIM),
+  // The belfry floor, source (513.4, 610.1) — AND IT IS NOT THE FLOOR'S CENTRE,
+  // which is the one anchor in this file that had to be chosen by eye rather than
+  // measured. The reason is worth writing down, because the obvious number is
+  // wrong in a way that only shows on the board.
+  //
+  // The floor is the white quad the artist paints inside the four posts, corners
+  // (494.2, 522.4), (626.9, 545.4), (520.0, 631.9) and (381.8, 598.9), and its
+  // area centroid is (505.7, 575.6). That is where every other tower in the game
+  // stands its man — and it agrees with the stone top face underneath it to 2.7px,
+  // exactly the way the Musketeer Post's deck agrees with the banner draped over
+  // it, so it is a real measurement rather than a quad that happens to be there.
+  //
+  // Stood there, THE POPE HAS NO HEAD. This belfry is short: 143 source px of
+  // clear height at its nearest corner, against a pope who is 145.5 tall from his
+  // shadow to the head of his staff. The artist sized the opening to the man
+  // almost exactly — which is also why the drawing arrived with "be careful that
+  // the roof overlaps the pope" attached to it — and at the floor's CENTRE he is
+  // 56px further back, so the eave crosses him at the eyebrows and takes his mitre
+  // with it. A white robe with no hat on it is not the pope.
+  //
+  // So he stands a little forward of centre, on the floor's own front-to-back
+  // middle line, where the drawing has room for him: mitre clear of the eave by a
+  // couple of pixels, face and robe fully in the opening, and the roof crossing the
+  // STAFF he holds up, which is the overlap the artist was pointing at. His shadow
+  // is still wholly on the floor — 59px wide at (513.4, 610.1), inside the front
+  // edge at every point.
+  mountFrac: [0.504, 0.622],
+  // Shadow centre, source (512.0, 832.5) from the SVG's own ellipse, which spans
+  // 335..689 by 754..911.
+  //
+  // FROM THE SVG RATHER THAN THE PNG, and this is the drawing that shows why the
+  // tool fits an ellipse instead of taking a bounding box: the tower's base
+  // covers the back of its own shadow, so the visible blob in the PNG is a crescent
+  // whose box centre is at y 850.5 — 18px low. tools/shadow.mjs fits the arc and
+  // comes back to the SVG's number.
+  groundFrac: [0.500, 0.899],
+  // THE ROOF AND THE NEAR POST, which are the two things between the pope and the
+  // camera. The artist flagged both when he sent the drawing.
+  //
+  // THE ROOF first. He stands under it, and the front slope crosses his head: his
+  // shoulders reach y 428 in source pixels and the eave hangs down to 489 at its
+  // lowest. The polygon is a band from y 380 down to the eave, traced along it in
+  // five steps — the eave is two near-straight runs meeting at (515, 489), and
+  // every vertex sits within a pixel ABOVE the line rather than on it.
+  //
+  // Above it, not on it, for a reason that is one pixel wide and would have been a
+  // visible bug: three pixels under the eave, at x 460..484, is the BACK post,
+  // which is behind him. A band that overshot by a couple of pixels would paint
+  // that post's outline across his mitre. Everything inside the polygon as drawn
+  // is roof — verified by rasterising the artist's own SVG and counting who owns
+  // each pixel, which reports shapes 62, 63, 64, 70, 71 and 72 and nothing else.
+  //
+  // THE NEAR POST second, at the floor's nearest corner. It is the only one of the
+  // four in front of him — the left and right posts are 80px clear of his widest
+  // pose, and the back one is behind him — and it crosses his right shoulder by
+  // about 12 source px, which is 2 game px of stone over his robe.
+  //
+  // Its six corners are the union of the post's two faces and its cap, taken from
+  // the SVG at (548.6, 455.2), (568.8, 458.7), (569.9, 627.3), (554.9, 640.2),
+  // (535.1, 635.5), (534.7, 464.2), then pushed 2px outward from the shape's own
+  // centre for the black stroke the PNG draws around shapes the SVG stores without
+  // one. The pad ring reads solid black in the PNG at every point checked, which is
+  // what says 2 is the right number rather than 1 or 3.
+  frontPolys: [
+    [[400, 380], [620, 380], [620, 458], [600, 467], [560, 477], [520, 488],
+     [515, 489], [470, 479], [430, 470], [400, 464]],
+    [[549, 453], [569, 457], [570, 629], [555, 642], [535, 637], [534, 462]]
+  ],
+  shape: 'tower'
+};
+
 const bishop = {
   ...priest,
   ammo: missile2,
@@ -2064,13 +2199,91 @@ const cardinal = {
 // commits a rock to a patch of ground a second before the rock lands, and a
 // machine that could be re-pointed at whatever you liked would be an archery
 // tower with a bigger number. Two of four families, not three.
+// The pope. The first churchman with boxes of his own — see POPE_TRIM — and
+// otherwise a priest at the top of his ladder: same staff swung the same way,
+// same shadow rule, a bigger missile leaving it.
+const pope = {
+  ...priest,
+  ammo: missile4,
+  gunner: 'pope',
+  gunnerTrim: POPE_TRIM,
+  // THE CENTRE OF HIS GROUND SHADOW, source (257.0, 323.5), by the tip rule every
+  // other figure's anchor is read with — `node tools/shadow.mjs`. His own number
+  // rather than the priest's inherited one, because his box is his own: the three
+  // below him share a trim and so can share a fraction, and he cannot.
+  gunnerPivot: [0.512, 0.933],
+  // Staff swung out. The shadow is at source (257.0, 323.5) in this drawing too —
+  // not close, the SAME pixel — so the two poses swap with his feet nailed down
+  // and only the staff moving.
+  attack: { sprite: 'pope_attack', trim: POPE_ATK_TRIM, pivot: [0.643, 0.923] },
+  // Where the missile leaves the staff: the flared head at the top of the swing,
+  // source (193.3, 211.6), which is 63.7 in FRONT of the anchor and 111.9 above
+  // it.
+  //
+  // MEASURED ON THE ATTACK POSE like every staff and bow in this file, and taken
+  // at the same point on the head as the cardinal's — a third of the way across
+  // his flare and a third down it, which is where the mouth is on both drawings.
+  //
+  // The numbers are worth reading beside his: 63.0 in front and 114.2 above. The
+  // artist drew a bigger man holding a bigger staff and put its head within a
+  // couple of pixels of where the last one was, so the missile leaves the same
+  // place on the screen and only the thing leaving is different — both round to
+  // an offset of [13, -23] once drawn.
+  muzzle: [Math.round(0.758 * POPE_TRIM[2] * SCALE), -Math.round(0.717 * POPE_TRIM[3] * SCALE)]
+};
+
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
     cost: 80,  damage: 20, range: 150, cooldown: 1.82, colour: '#8C7A5C', targeting: true },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
     cost: 110, damage: 30, range: 165, cooldown: 1.64, colour: '#7E6E52', targeting: true },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 160, damage: 50, range: 180, cooldown: 1.45, colour: '#9A948A', targeting: true }
+    cost: 160, damage: 50, range: 180, cooldown: 1.45, colour: '#9A948A', targeting: true },
+  // TIER 4, AND THE ONE TOP RUNG THAT IS NOT A TRADE.
+  //
+  // The other three tier 4 towers each give something up for what they gain — the
+  // Musketeer Post pays for the whole board in output, the Paladin Keep gains more
+  // wall than weapon, the Ballista Turret pays for its damage in reach and blast.
+  // This one was asked for as "just a more powerful version of Monastery Tier 3:
+  // more damage, more range, other than that no stark difference", and it is built
+  // exactly that way. What it pays with is GOLD, and nothing else.
+  //
+  // `damage` 80, up from 50, and the biggest single blow in the game — past the
+  // Musketeer Post's ball and the ballista's bolt at 60. That is the monastery's
+  // own column of the table in tools/families.mjs rather than an exception to it:
+  // this family hits hardest at every tier, and the top of it hits hardest of all.
+  //
+  // `range` 210, up from 180. Still the shortest ladder in the game — an archery
+  // tier 3 reaches 230 and a Post 480 — so a tower that hits this hard still has to
+  // be placed where the road is, which is the argument the whole family rests on.
+  // Two rungs' worth of the family's own 15px step, which is what "more range"
+  // buys without the tower becoming something else.
+  //
+  // `cooldown` 1.45, THE SAME as the Abbey's, and the one number that deliberately
+  // does not move. The ladder's reloads are 1.82 / 1.64 / 1.45 and a fourth step
+  // would have been about 1.30; at 80 damage that is 61.5 a second rather than
+  // 55.2, and the gap between "more powerful" and "the only tower worth building"
+  // is exactly that sort of number. The tier buys the blow and the reach; the
+  // rhythm is what still makes it a monastery.
+  //
+  // `cost` 240, which is 590 gold of cumulative spend on one plot — dearer than
+  // the Musketeer Post's 500 and the Paladin Keep's 530, and a shade under the
+  // Ballista Turret's 610, which stays the most expensive ladder in the game.
+  //
+  // THESE NUMBERS ARE A FIRST GUESS, on the owner's own terms: the sweep comes
+  // after this lands, the same way the ballista's did. `tools/families.mjs` is the
+  // check that the family still reads the way the design says, and tools/sim.mjs
+  // is the check that no family clears a map alone at the top of its ladder.
+  { ...temple, ...pope, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple', unit: 'Pope',
+    cost: 240, damage: 80, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
+    // The upgrade button's own picture on an Abbey, and the fourth of four — every
+    // family's top rung now shows what it buys rather than a plain arrow. See the
+    // note on the Musketeer Post's `glyph`.
+    glyph: 'temple',
+    // And its own three lines, on the same terms as the other three tier 4s: a
+    // named tower answers for itself when it is built and when it is told what to
+    // shoot at, rather than borrowing the family's. See familyCue in src/audio.js.
+    voice: 'pope' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

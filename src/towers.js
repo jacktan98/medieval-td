@@ -14,7 +14,13 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT } from './audio.js';
 // `deadeye` is the fourth row and it is why the table earns its keep: an ability
 // arrived with a projectile of its own, and giving it a voice was one line here
 // rather than a branch in shoot().
-const FIRING = { arrow: SHOT, arcane: ARCANE, bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT };
+//
+// `judgement` is the fifth row and it points at the SAME cue as `arcane`, which
+// is the other thing this table is good for: the pope fires the monastery's own
+// noise, a quarter louder, so what he needed was a kind of his own for the KILL
+// cry — see src/enemies.js — and no new sound at all. The loudness rides on the
+// ammunition as `fireGain`.
+const FIRING = { arrow: SHOT, arcane: ARCANE, judgement: ARCANE, bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
@@ -498,7 +504,7 @@ function shoot(state, t, target, special) {
   //
   // The rock's noise is not here — it is in projectiles.js, on the landing. See
   // `fireSound` / `landSound` in data/towers.js.
-  if (ammo.fireSound) play(FIRING[ammo.kind]);
+  if (ammo.fireSound) play(FIRING[ammo.kind], ammo.fireGain);
 }
 
 // Commit a lobbed shot to a patch of ground, and aim it AHEAD of the target.

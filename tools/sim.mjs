@@ -334,6 +334,17 @@ m1: {
   // is thirty of something small.
   'ALL monastery x6 (expect LOSS)': [M(0), M(1), M(4), M(6), M(7), M(8)],
   'MIX 2 archery + 3 barracks + 1 monastery': [M(0), B(1), A(4), B(6), B(7), A(8)],
+  // AND THE SAME PAIR AT TIER 4, for the reason the artillery pair above carries:
+  // the top of a ladder is somewhere a real game reaches, so the invariant has to
+  // hold there too.
+  //
+  // It matters more here than anywhere else, because the Judgement Temple is the
+  // one tier 4 that gives nothing up — more damage and more reach, no drawback but
+  // its price. Six of them clear no map, 0 in 20, exactly as six Abbeys do; the mix
+  // goes from 6 wins to 8 for 240 gold. A straight upgrade that moves a build two
+  // wins in twenty is what "more powerful, not different" is supposed to look like.
+  'ALL monastery t4 x6 (expect LOSS)': [M(0, 3), M(1, 3), M(4, 3), M(6, 3), M(7, 3), M(8, 3)],
+  'MIX 2A + 3B + 1 monastery t4':   [M(0, 3), B(1), A(4), B(6), B(7), A(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
 },
 
@@ -370,6 +381,11 @@ m2: {
   'MIX 3 siege t4 + 3 barracks':    [S(1, 3), S(2, 3), B(5), B(6), S(7, 3), B(8)],
   'ALL monastery x6 (expect LOSS)': [M(0), M(2), M(5), M(6), M(7), M(8)],
   'MIX 2 archery + 3 barracks + 1 monastery': [M(0), A(2), B(5), A(6), B(7), B(8)],
+  // Tier 4, for the reason given on map 1's pair. The Fork is the map that suits
+  // this family and the reading is the same shape: 14 wins to 15, and the pure
+  // build stays at 0.
+  'ALL monastery t4 x6 (expect LOSS)': [M(0, 3), M(2, 3), M(5, 3), M(6, 3), M(7, 3), M(8, 3)],
+  'MIX 2A + 3B + 1 monastery t4':   [M(0, 3), A(2), B(5), A(6), B(7), B(8)],
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 

@@ -5,12 +5,12 @@ assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
                       Rock_hit_ground, Rock_kill_enemy, Arcane_shot,
                       Musketeer_shot, Musketeer_kill_enemy,
                       Ballista_Bolt_shot, Ballista_kill_enemy,
-                      Paladin_attack, Paladin_kill_enemy,
+                      Paladin_attack, Paladin_kill_enemy, Pope_kill_enemy,
                       Flask_Break, Sell_Tower, Select_Sound,
                       Thug_dies, Soldier_dies
 assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5,
                       Monastery_1..5, Musketeer_1..3, Paladin_1..3,
-                      Ballista_Engineer_1..3, Thug_1
+                      Ballista_Engineer_1..3, Pope_1..3, Thug_1
 ```
 
 All recorded and all wired. `node tools/audio.mjs` measures
@@ -114,6 +114,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a **Musketeer Post** is built, upgraded to, or given an order | `Musketeer_1..3` |
 | a **Paladin Keep** is built, upgraded to, or given a rally point | `Paladin_1..3` |
 | a **Ballista Turret** is built or upgraded to | `Ballista_Engineer_1..3` |
+| a **Judgement Temple** is built, upgraded to, or given an order | `Pope_1..3` |
 | a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..3` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
@@ -122,6 +123,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |
 | a **bolt** kills an enemy | `Ballista_kill_enemy` |
 | a **paladin** kills an enemy | `Paladin_kill_enemy` |
+| a **pope's** missile kills an enemy | `Pope_kill_enemy` |
 | any other barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
 | a tower is **sold** | `Sell_Tower` |
@@ -131,6 +133,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
+| **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
@@ -190,6 +193,9 @@ arrived with three lines where the other two arrived with two — which needed n
 code at all, because the share rules rotate over whatever a cue holds. The other
 two are three lines each now as well.
 
+**The Judgement Temple is the fourth and last**, at the top of the monastery
+ladder, and every family's top rung now answers for itself.
+
 A `voice` naming a cue with no clips loaded falls back to the family's, which is the
 same wire-ahead trick the table above is built on — and `node tools/sound.mjs`
 checks all four cases: the tier speaks, its siblings do not, an unrecorded voice
@@ -207,6 +213,25 @@ it is worth keeping: what it guards is that a lookup for a family with nothing
 recorded answers "nothing to say" rather than throwing, which is what lets the
 next family be wired up a commit before its recordings land. That is exactly how
 artillery's and the monastery's were done.
+
+### The pope fires the same missile, a quarter louder
+
+**THE ONE SOUND IN THE GAME THAT IS A VOLUME RATHER THAN A FILE.** The artist
+asked for the Judgement Temple to use `Arcane_shot` "but slightly louder", and
+that is exactly what it does: no fourth recording, no second key, and no `GAIN`
+entry — a gain would have made every other monastery louder too, since gain is a
+property of the clip.
+
+Instead `play()` takes an optional level for one play, and the pope's ammunition
+carries `fireGain: 1.25`. The loudness belongs to the SHOT rather than to the
+file, which is the only place it can live if three tiers are to keep firing the
+same clip at the old level. Anything else that ever wants the same trick — a
+bigger version of a noise the game already makes — gets it for one number.
+
+His KILL line is a real file, `Pope_kill_enemy`, and Category A like the other
+four kill cries. The three tiers below him have none and fall through to the
+generic one, which is the same split the barracks has: one line for the family,
+one for its tier 4.
 
 ### The arcane missile announces itself LEAVING
 

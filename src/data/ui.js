@@ -138,6 +138,12 @@ export const ui = {
   // The Ballista Turret's, the third tier icon and an ordinary one like the
   // Keep's: 108x110 source is square enough for the shared box.
   glyph_ballista: { trim: [202, 201, 108, 110], fit: GLYPH_BOX },
+  // The Judgement Temple's, the fourth tier icon and the one TALL one: 76x104
+  // source, half again as high as it is wide, because the drawing is the whole
+  // tower with its roof and cross. `fit` is the shared box like the other two,
+  // which fits the taller side — the same rule every glyph here is drawn by, so a
+  // tall icon comes out narrower rather than cropped.
+  glyph_temple: { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
   // THE FOUR ABILITY BUTTONS, and they are the only entries here that are a whole
   // BUTTON rather than a mark to put on one.
   //
@@ -272,6 +278,7 @@ export const GLYPH_ART = {
   musket: 'glyph_musket',
   keep: 'glyph_keep',
   ballista: 'glyph_ballista',
+  temple: 'glyph_temple',
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',
