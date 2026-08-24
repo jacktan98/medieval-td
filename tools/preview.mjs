@@ -22,7 +22,7 @@
 //   empty row appearing only at the end reads as something having broken
 
 import { updateWaves, upcomingWave } from '../src/waves.js';
-import { enemyTypes, openingDelay } from '../src/data/waves.js';
+import { enemyTypes, openingDelay, MODES, tableFor } from '../src/data/waves.js';
 import { levels, useLevel, level } from '../src/level.js';
 import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
 
@@ -45,9 +45,9 @@ const show = counts => [...counts.entries()]
 // The field is cleared every frame, which is what makes this fast and is also
 // exactly the condition updateWaves is waiting for between waves: no towers, no
 // fight, no walking — the spawner alone, running its own clock.
-function run() {
+function run(modeId = 'normal') {
   const state = {
-    waves: scaleWaves(level.waves, DIFFICULTIES[0]),
+    waves: scaleWaves(tableFor(level, modeId), DIFFICULTIES[0]),
     enemies: [], waveIndex: 0, spawned: 0, timer: openingDelay,
     resting: false, gold: 0, result: null
   };
@@ -95,9 +95,10 @@ for (const [li, lv] of levels.entries()) {
   useLevel(li);
   console.log(`\n${lv.id} ${lv.name}\n`);
 
+  for (const mode of MODES) {
   for (const diff of DIFFICULTIES) {
-    const state = run();
-    state.waves = scaleWaves(level.waves, diff);
+    const state = run(mode.id);
+    state.waves = scaleWaves(tableFor(level, mode.id), diff);
     const { promised, sent } = play(state);
 
     let wrong = 0;
@@ -113,9 +114,17 @@ for (const [li, lv] of levels.entries()) {
       }
     }
 
-    ok(wrong === 0, `${diff.name}: every wave sends exactly what was shown`,
+    ok(wrong === 0, `${mode.name} / ${diff.name}: every wave sends what was shown`,
       `${state.waves.length} waves`);
   }
+  }
+
+  // AND THE LENGTHS ARE THE LENGTHS THE OWNER ASKED FOR: two more waves than the
+  // map's own table, whatever that table is. Checked here rather than typed as 10
+  // and 12, so a map that grows a wave keeps the relationship.
+  ok(tableFor(level, 'extended').length === tableFor(level, 'normal').length + 2,
+    'and Extended is exactly two waves longer',
+    `${tableFor(level, 'normal').length} -> ${tableFor(level, 'extended').length}`);
 
   // THE FIRST WAVE IS PREVIEWED, and it is the one time the row names the wave
   // the HUD is already showing rather than the one after it — nothing has

@@ -25,7 +25,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, statStep, COLS } from './admin.js';
-import { enemyTypes } from './data/waves.js';
+import { enemyTypes, MODES } from './data/waves.js';
 
 const PLOT_R = 30;
 
@@ -2481,7 +2481,7 @@ const ROW_PITCH = 18;
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 390, w: 160, h: 54 };
+export const START_BTN = { x: 400, y: 404, w: 160, h: 48 };
 
 // One button per level, side by side above Start. Sized for a thumb like
 // everything else — 150 x 60 is well over the 44px minimum — and laid out from
@@ -2503,7 +2503,7 @@ export function mapButtons() {
     i,
     name: l.name,
     x: Math.round(480 - total / 2 + i * (MAP_BTN_W + MAP_GAP)),
-    y: 262,
+    y: 250,
     w: MAP_BTN_W,
     h: MAP_BTN_H
   }));
@@ -2518,34 +2518,48 @@ export function hitMapButton(state, x, y) {
   return null;
 }
 
-// The difficulty row, under the maps. Narrower buttons than the map ones and
-// laid out from the middle the same way, so a third setting would need no
-// numbers re-typed here either.
+// The two setting rows, under the maps. Narrower buttons than the map ones and
+// laid out from the middle the same way, so a third entry in either would need no
+// numbers re-typed here.
 //
-// UNDER rather than beside: the two choices are not the same kind of thing. The
-// map is what you are playing and the difficulty is how hard it will be, and a
-// single row of five buttons reads as five maps.
-const DIFF_BTN_W = 116, DIFF_BTN_H = 38, DIFF_GAP = 14;
+// UNDER rather than beside, and one row each: the three choices are not the same
+// kind of thing. The map is WHERE, the length is HOW LONG, the difficulty is HOW
+// HARD — and a single row of seven buttons would read as seven maps. They are
+// stacked in the order the player decides them, which is the order the owner
+// asked for: map, then length, then difficulty.
+//
+// BOTH ROWS ARE CAPTIONED, which the difficulty row managed without until the
+// length arrived beside it. Two rows whose left-hand button both say "Normal" are
+// unreadable without a word saying what each row is choosing.
+const DIFF_BTN_W = 116, DIFF_BTN_H = 34, DIFF_GAP = 14;
 
-export function difficultyButtons() {
-  const n = DIFFICULTIES.length;
-  const total = n * DIFF_BTN_W + (n - 1) * DIFF_GAP;
-  return DIFFICULTIES.map((d, i) => ({
+const settingRow = (items, y) => {
+  const total = items.length * DIFF_BTN_W + (items.length - 1) * DIFF_GAP;
+  return items.map((d, i) => ({
     i,
     name: d.name,
     x: Math.round(480 - total / 2 + i * (DIFF_BTN_W + DIFF_GAP)),
-    y: 332,
+    y,
     w: DIFF_BTN_W,
     h: DIFF_BTN_H
   }));
-}
+};
 
-export function hitDifficultyButton(state, x, y) {
-  for (const b of difficultyButtons()) {
+const MODE_ROW_Y = 320;
+const DIFF_ROW_Y = 364;
+
+export const modeButtons = () => settingRow(MODES, MODE_ROW_Y);
+export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
+
+const hitRow = (row, x, y) => {
+  for (const b of row) {
     if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.i;
   }
   return null;
-}
+};
+
+export const hitModeButton = (state, x, y) => hitRow(modeButtons(), x, y);
+export const hitDifficultyButton = (state, x, y) => hitRow(difficultyButtons(), x, y);
 
 // Generous on a thumb without being a whole-screen tap: a mis-tap on the board
 // should do nothing rather than start a game you were not ready for.
@@ -2558,6 +2572,38 @@ export function hitStart(state, x, y) {
          y >= b.y - START_PAD && y <= b.y + b.h + START_PAD;
 }
 
+// One captioned row of setting buttons. The caption sits BESIDE the row, hard
+// against its left edge, and that is a space decision rather than a taste one:
+// this panel runs from the title at 206 to the encyclopedia button at 508 and
+// there is no room for two more lines of text between the rows — a caption above
+// each row landed inside the plate above it. Beside them it costs nothing, and
+// the rows stay centred on the same middle every other row uses.
+const CAPTION_GAP = 12;
+
+function settingRowUi(ctx, caption, row, chosen) {
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(240,230,210,0.55)';
+  ctx.font = '600 13px system-ui, sans-serif';
+  ctx.fillText(caption, row[0].x - CAPTION_GAP, row[0].y + row[0].h / 2 + 1);
+  ctx.textAlign = 'center';
+
+  for (const b of row) {
+    const on = b.i === chosen;
+    ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = on ? '#F0E6D2' : 'rgba(196,165,116,0.55)';
+    ctx.lineWidth = on ? 2.5 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  }
+}
+
 function drawStart(ctx, state) {
   ctx.fillStyle = 'rgba(34,32,28,0.72)';
   ctx.fillRect(0, 0, 960, 540);
@@ -2566,11 +2612,11 @@ function drawStart(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '700 46px system-ui, sans-serif';
-  ctx.fillText('Medieval TD', 480, 214);
+  ctx.fillText('Medieval TD', 480, 206);
 
   ctx.font = '17px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(240,230,210,0.72)';
-  ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 246);
+  ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 234);
 
   // The board behind this overlay is already the chosen map, so picking one is
   // its own preview: the roads and the plots change under the panel as you tap.
@@ -2596,25 +2642,19 @@ function drawStart(ctx, state) {
     ctx.font = '700 18px system-ui, sans-serif';
     ctx.fillText(m.name, m.x + m.w / 2, m.y + 21);
 
-    starRow(ctx, m.x + m.w / 2, m.y + 44, 7, bestStars(levels[m.i].id, diff.id), on);
+    // The stars are for the map AT THE SETTINGS CURRENTLY CHOSEN — both of them
+    // now. Ten waves cleared is not eight waves cleared, so the rows change as
+    // you tap between the lengths exactly as they already changed between the
+    // difficulties.
+    starRow(ctx, m.x + m.w / 2, m.y + 44, 7,
+      bestStars(levels[m.i].id, diff.id, MODES[state.modeIndex ?? 0].id), on);
   }
 
-  // The difficulty row. Same treatment as the maps above it so the two read as
-  // one panel of choices, at a smaller size because it is the lesser of the two.
-  for (const d of difficultyButtons()) {
-    const on = d.i === (state.difficultyIndex ?? 0);
-    ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
-    ctx.beginPath();
-    ctx.roundRect(d.x, d.y, d.w, d.h, 8);
-    ctx.fill();
-    ctx.strokeStyle = on ? '#F0E6D2' : 'rgba(196,165,116,0.55)';
-    ctx.lineWidth = on ? 2.5 : 1.5;
-    ctx.stroke();
-
-    ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
-    ctx.font = '700 15px system-ui, sans-serif';
-    ctx.fillText(d.name, d.x + d.w / 2, d.y + d.h / 2 + 1);
-  }
+  // The two setting rows. Same treatment as the maps above them so the panel
+  // reads as one set of choices, at a smaller size because they are the lesser
+  // two of the three.
+  settingRowUi(ctx, 'Length', modeButtons(), state.modeIndex ?? 0);
+  settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
 
   const b = START_BTN;
   ctx.fillStyle = 'rgba(28,32,24,0.85)';
@@ -3339,7 +3379,11 @@ function drawResult(ctx, state) {
 
   ctx.font = '17px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(240,230,210,0.66)';
-  ctx.fillText(`${s.map}  ·  ${s.difficulty}`, 480, 186);
+  // The three settings the run was played at, in the order the title screen asks
+  // for them. The length belongs here for the same reason the difficulty does:
+  // two records are kept per map and a panel that named only one of the two
+  // settings would be the same panel for two different achievements.
+  ctx.fillText(`${s.map}  ·  ${s.mode}  ·  ${s.difficulty}`, 480, 186);
 
   starRow(ctx, 480, 244, 26, s.stars);
 

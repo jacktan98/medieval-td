@@ -195,7 +195,7 @@ export const ABILITIES = [
     gap: 0.18,
     hold: HOLD,
     // THREE DIFFERENT MEN, at the artist's request, and it is what the ability is
-    // FOR. Three balls into one militiaman is 180 damage spent on 80 health; three
+    // FOR. Three balls into one militiaman is 195 damage spent on 80 health; three
     // balls into three of them is a rank cleared. Each shot of the burst re-picks
     // through the tower's own standing order, excluding whoever the burst has
     // already hit — see burstTarget in src/towers.js, including what happens when
@@ -210,7 +210,8 @@ export const ABILITIES = [
     // watching it for a while.
     detail: 'After 3 ordinary shots the musketeer empties 3 bullets into the road ' +
             'as fast as he can work the lock, 0.18s apart, then holds the smoke ' +
-            'for 1 second before loading again.\n\n' +
+            'for 1 second before loading again. Each ball is the Post\'s own 65, ' +
+            'so the burst is 195 in under half a second.\n\n' +
             'Each of the 3 picks a different man, through whatever standing order ' +
             'the tower is on. That is the point of it: 3 bullets into 1 militiaman ' +
             'is most of them wasted, and 3 into 3 of them is a rank gone. With ' +
@@ -251,9 +252,13 @@ export const ABILITIES = [
     // was a flat 300 against a 60 damage tower, which was five times — and would
     // have been four times, or eight, after any change to the Post.
     //
-    // 480, the biggest single blow in the game by a factor of eight. Nine ordinary
-    // shots plus one of these is 1020 over ten reloads: 42.5 a second against a
-    // plain Post's 25.0, where Burst Fire is 37.5. Rarer and harder than the burst
+    // 520 NOW THAT THE POST HITS FOR 65, and it moved on its own: eight times the
+    // tower's shot is what is written down, so raising the tower raised this with
+    // no line here to edit. That is the whole reason the magnitudes are multiples.
+    //
+    // The biggest single blow in the game by a factor of eight. Nine ordinary
+    // shots plus one of these is 1105 over ten reloads: 46.0 a second against a
+    // plain Post's 27.1, where Burst Fire is 40.6. Rarer and harder than the burst
     // and a little ahead of it per second, which is the trade — what separates the
     // two is WHERE the damage goes: the burst clears a rank of militia, this
     // removes one giant.
@@ -268,8 +273,8 @@ export const ABILITIES = [
 
     detail: 'After 9 ordinary shots the musketeer takes 1 second to aim — a mark ' +
             'appears over the man he has chosen and stays there until the bullet ' +
-            'arrives — and then fires a single round for 8x the Post\'s own shot, ' +
-            '480 damage, the hardest blow in the game.\n\n' +
+            'arrives — and then fires a single round for 8x the Post\'s own 65, ' +
+            '520 damage, the hardest blow in the game.\n\n' +
             'He holds the pose for 2 seconds afterwards, which costs nothing: the ' +
             'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
             '1 thing on the road that has to die and cannot be chipped down.'

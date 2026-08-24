@@ -202,15 +202,21 @@ export const enemyTypes = {
     // is paid for building the tower that can.
     bounty: 25,
     leak: 1,
-    // His club, which is the least interesting thing about him — the bow is a bad
-    // weapon at arm's length and it should be. It is what `damage` means on every
-    // enemy: the swing a blocker takes once he is pinned.
-    damage: 8,
+    // HIS CLUB HITS FOR WHAT HIS ARROW HITS FOR, at the owner's word: 15 either
+    // way. The first version had him weak at arm's length on the reasoning that a
+    // bow is a bad club, and the owner's rule is the plainer one — an archer thug
+    // does 15, and where he is standing decides only whether it arrives as an
+    // arrow or as a swing.
+    //
+    // It makes him a real threat to a blocker rather than a nuisance: 15 on a
+    // 1.1s clock is 13.6 a second into the man holding him, against a militiaman's
+    // 10 a second. Pinning him is now a decision rather than a free answer.
+    damage: 15,
     atkCd: 1.1,
-    // WHAT THE CARD PRINTS, and it is the arrow rather than the club, for exactly
-    // the reason the doctor's card prints his poison: a player reading "8" beside
-    // an enemy who is taking 15 off a paladin from across the map has been told
-    // the safer-looking of the two numbers and the wrong one.
+    // The card prints 15 and both numbers ARE 15, so this is the one figure it
+    // could print. Kept explicit rather than deleted: `damage` and the arrow are
+    // two different fields that happen to agree, and the day one of them moves the
+    // card should keep saying what the arrow does.
     listedDamage: 15,
     r: 8,
     colour: '#7A6A46',
@@ -491,7 +497,17 @@ export const enemyTypes = {
     speed: 60,
     bounty: 30,
     leak: 1,
-    damage: 5,
+    // HIS MELEE MATCHES HIS FLASK, at the owner's word: 20 either way, where it
+    // used to be 5 against the flask's 20. He is no longer harmless once he is
+    // caught — a squad that pins him is now trading real damage for the poison it
+    // is stopping, which is the trade the owner wants that decision to be.
+    //
+    // AND THE SWING HITS ONE MAN. The flask is the thing with a splash; a club is
+    // a club. That falls out of where the two live rather than from a flag — the
+    // melee is `u.foe.def.damage` applied to the one soldier holding him in
+    // units.js, and the splash belongs to the ammunition — but it is the owner's
+    // condition, so it is written down.
+    damage: 20,
     atkCd: 1.2,
     // WHAT THE BOOK AND THE INFO BOX PRINT FOR HIM, and it is not `damage`.
     //
@@ -596,21 +612,25 @@ export const waves = [
   { rest: 9, groups: [
       { type: 'light_inf', count: 14, gap: 0.90 },
       { type: 'heavy_inf', count: 2, gap: 2.00 },
+      { type: 'archer_inf', count: 1, gap: 1.80 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 18, gap: 0.80 },
       { type: 'heavy_inf', count: 3, gap: 1.80 },
+      { type: 'archer_inf', count: 1, gap: 1.80 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 24, gap: 0.70 },
       { type: 'heavy_inf', count: 4, gap: 1.60 },
+      { type: 'archer_inf', count: 2, gap: 1.70 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 34, gap: 0.60 },
       { type: 'heavy_inf', count: 6, gap: 1.40 },
+      { type: 'archer_inf', count: 2, gap: 1.60 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] }
 ];
@@ -678,21 +698,25 @@ export const wavesFork = [
   { rest: 9, groups: [
       { type: 'light_inf', count: 13, gap: 0.90 },
       { type: 'heavy_inf', count: 1, gap: 2.00 },
+      { type: 'archer_inf', count: 1, gap: 1.80 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 16, gap: 0.80 },
       { type: 'heavy_inf', count: 2, gap: 1.80 },
+      { type: 'archer_inf', count: 1, gap: 1.80 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 22, gap: 0.70 },
       { type: 'heavy_inf', count: 3, gap: 1.60 },
+      { type: 'archer_inf', count: 2, gap: 1.70 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 31, gap: 0.60 },
       { type: 'heavy_inf', count: 5, gap: 1.40 },
+      { type: 'archer_inf', count: 2, gap: 1.60 },
       { type: 'plague_inf', count: 1, gap: 2.00 }
     ] }
 ];
@@ -874,38 +898,146 @@ export const wavesLong = [
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 9, gap: 1.20 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 11, gap: 1.05 }] },
-  // The first heavy, alone and last, exactly as it arrives on the other maps.
+  // WAVE 5 IS WHERE THE BACK RANK ARRIVES, on this map as on the other two: the
+  // first heavy, the first archer and the first doctor together. It used to be
+  // the heavy alone here and the doctor two waves later, on the rule that two new
+  // things in one wave is one of them unnoticed — the owner has since asked for
+  // both throwers from wave 5 everywhere, which is a deliberate step up on the
+  // map they can already finish without losing a life.
   { rest: 9, groups: [
       { type: 'light_inf', count: 10, gap: 0.65 },
-      { type: 'heavy_inf', count: 1, gap: 1.23 }
+      { type: 'heavy_inf', count: 1, gap: 1.23 },
+      { type: 'archer_inf', count: 1, gap: 1.30 },
+      { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 12, gap: 0.62 },
-      { type: 'heavy_inf', count: 2, gap: 1.23 }
+      { type: 'heavy_inf', count: 2, gap: 1.23 },
+      { type: 'archer_inf', count: 1, gap: 1.30 },
+      { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
-  // And the first doctor, a wave after the first heavy rather than beside it —
-  // two new things in one wave is one of them unnoticed.
   { rest: 9, groups: [
       { type: 'light_inf', count: 16, gap: 0.55 },
       { type: 'heavy_inf', count: 3, gap: 1.23 },
+      { type: 'archer_inf', count: 2, gap: 1.30 },
       { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 20, gap: 0.51 },
       { type: 'heavy_inf', count: 4, gap: 1.23 },
+      { type: 'archer_inf', count: 2, gap: 1.30 },
       { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 26, gap: 0.45 },
       { type: 'heavy_inf', count: 5, gap: 1.23 },
+      { type: 'archer_inf', count: 3, gap: 1.30 },
       { type: 'plague_inf', count: 1, gap: 1.30 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 32, gap: 0.40 },
       { type: 'heavy_inf', count: 6, gap: 1.23 },
+      { type: 'archer_inf', count: 3, gap: 1.30 },
       { type: 'plague_inf', count: 2, gap: 1.30 }
     ] }
 ];
+
+// --- THE EXTENDED TABLES -------------------------------------------------------
+//
+// A second length for every map: the shipped table with TWO MORE WAVES on the
+// end, and more of the two throwers throughout. The tables above are what the
+// title screen now calls Normal; this is Extended.
+//
+// DERIVED RATHER THAN WRITTEN OUT, and that is a decision worth defending. Three
+// hand-written tables of ten and twelve waves would be sixty rows of numbers that
+// have to be kept in step with the sixty above them by hand — and every balance
+// note in this file is about the SHAPE of a ramp rather than about one row of it.
+// One rule that continues the ramp keeps a single source of truth: retune wave 7
+// of map 2 and its extended twin follows.
+//
+// What the rule is:
+//
+//   FROM WAVE 5 ON, one more archer and one more doctor than the normal table
+//   sends. That is the owner's "more archer thugs and plague thugs", and it lands
+//   where both of them already exist rather than introducing either earlier.
+//
+//   TWO MORE WAVES, continuing the militia and heavy ramp at the rate the last
+//   two normal waves set rather than at a rate invented here. Map 1's last two
+//   are 24 and 34 militia, so the ramp is x1.42 a wave, and the extended pair
+//   carries on from 34. Heavies use their own ratio the same way. Anything that
+//   ramps by 1 a wave — the throwers — steps by 1.
+//
+//   AND THE OLD LAST WAVE GETS ITS REST BACK. `rest: 0` on the final wave is what
+//   says "nothing follows"; a wave that now has two behind it needs the breather
+//   every other wave has, or the two extra waves arrive on top of it.
+//
+// `node tools/preview.mjs` prints every extended table beside its normal one, so
+// the result of this rule is inspectable rather than something to trust.
+// HOW THE TWO EXTRA WAVES GROW, and these are hand-picked rather than read off
+// the ramp the table already has. Continuing the shipped ratio was the first
+// version and it is far too steep: map 1 goes 24 -> 34 militia and 4 -> 6
+// heavies in its last step, so one more wave at that rate is 48 militia and 9
+// heavies, and the wave after it 68 and 14. Fourteen giants is 14,000 health
+// walking down one road — not a harder wave, a wall.
+//
+// So the extra waves step by a rate a player can meet: a fifth more militia, one
+// more heavy, one more archer each wave, and one more doctor across the two. The
+// last normal wave of every map is already its cliff; these two are meant to be
+// the far side of it, not a different game.
+const MORE_LIGHT = 1.18;
+
+function step(group, n) {
+  const grow = {
+    light_inf: c => Math.round(c * MORE_LIGHT),
+    heavy_inf: c => c + 1,
+    archer_inf: c => c + 1,
+    // Every other wave, so the count that matters most for how long a wave
+    // takes to clear does not double across two waves.
+    plague_inf: c => c + (n === 1 ? 1 : 0)
+  }[group.type];
+  return { ...group, count: Math.max(1, grow ? grow(group.count) : group.count) };
+}
+
+export function extendedOf(table) {
+  const out = table.map((w, i) => ({
+    ...w,
+    groups: w.groups.map(g => {
+      const more = i >= 4 && (g.type === 'archer_inf' || g.type === 'plague_inf');
+      return more ? { ...g, count: g.count + 1 } : { ...g };
+    })
+  }));
+
+  // The old last wave is no longer last.
+  out[out.length - 1] = { ...out[out.length - 1], rest: 9 };
+
+  let last = out[out.length - 1];
+  for (let n = 0; n < 2; n++) {
+    last = { rest: n === 0 ? 9 : 0, groups: last.groups.map(g => step(g, n)) };
+    out.push(last);
+  }
+  return out;
+}
+
+// THE TWO LENGTHS A MAP CAN BE PLAYED AT, in the order the title screen offers
+// them. `id` is what the save file records, so renaming one loses its records —
+// see slot() in src/score.js, where Normal deliberately keeps the key it has
+// always had and only Extended carries a suffix.
+export const MODES = [
+  { id: 'normal', name: 'Normal', label: 'the map as it was tuned' },
+  { id: 'extended', name: 'Extended', label: 'two more waves, and more of the throwers' }
+];
+
+export const wavesExtended = extendedOf(waves);
+export const wavesForkExtended = extendedOf(wavesFork);
+export const wavesLongExtended = extendedOf(wavesLong);
+
+// WHICH TABLE A MAP IS PLAYED WITH, in one place. A level carries both — see
+// `waves` and `wavesExtended` on each level file — and this is what turns the
+// title screen's choice into the array the game steps through. A mode id nothing
+// recognises falls back to the shipped table rather than to nothing at all: an
+// unknown setting should be a map you can play, not a black screen.
+export const tableFor = (level, modeId) =>
+  (modeId === 'extended' && level.wavesExtended) || level.waves;
 
 export const waveClearBonus = 40;
 

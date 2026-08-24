@@ -1,7 +1,7 @@
 import { loadArt } from './assets.js';
 import { loadAudio } from './audio.js';
 import { level } from './level.js';
-import { openingDelay } from './data/waves.js';
+import { openingDelay, MODES, tableFor } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
 import { finish } from './score.js';
@@ -65,10 +65,15 @@ function newGame() {
   // rather than part of the game being reset.
   const difficultyIndex = state.difficultyIndex ?? DEFAULT_DIFFICULTY;
   const difficulty = DIFFICULTIES[difficultyIndex];
+  // WHICH LENGTH, and it survives a reset for the same reason the map and the
+  // difficulty do: it is a menu setting rather than part of the game being reset.
+  const modeIndex = state.modeIndex ?? 0;
+  const mode = MODES[modeIndex];
 
   Object.assign(state, {
     levelIndex,
     difficultyIndex,
+    modeIndex,
     // THE WAVES THIS GAME WILL ACTUALLY SEND, scaled once here rather than read
     // through the level every frame. Two things depend on that: `waveSize` and
     // the spawn loop have to agree exactly about how many enemies a group holds,
@@ -79,7 +84,7 @@ function newGame() {
     // whatever it finds. So a wave the owner sets to 20 is 17 on Normal and 22 on
     // Hard, exactly as a wave the data file sets to 20 would be — the dashboard
     // edits the table, it does not sit outside the difficulty.
-    waves: scaleWaves(adminWaves(level), difficulty),
+    waves: scaleWaves(adminWaves(level, tableFor(level, mode.id)), difficulty),
     // The same two layers the wave table above has, in the same order: the
     // dashboard replaces the map's own purse, and the difficulty scales what it
     // finds. A purse dialled to 2000 for testing is still 2200 on Easy.
@@ -209,7 +214,7 @@ function frame(now) {
   // best" is true exactly once, and a summary recomputed every frame would say so
   // for one frame and then contradict itself for the rest of the panel's life.
   if (state.result && !state.summary) {
-    state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex]);
+    state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex], MODES[state.modeIndex ?? 0]);
   }
 
   // Outside the step, so a selection is dropped even while the game is paused at

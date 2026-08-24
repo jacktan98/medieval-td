@@ -14,7 +14,7 @@
 // the end, and two routes agreeing about the last third is exactly what "the
 // roads have merged" means on the screen. A junction that had to be modelled as
 // a decision would be a different feature.
-import { wavesFork } from './waves.js';
+import { wavesFork, extendedOf } from './waves.js';
 
 const north = [
   { x: -39, y: 188 },
@@ -79,6 +79,7 @@ export const level02 = {
   // out and its enemies went from 62% speed to full — see wavesFork in
   // data/waves.js for what that cost and how it was paid back.
   waves: wavesFork,
+  wavesExtended: extendedOf(wavesFork),
   startGold: 220,
   startLives: 20
 };

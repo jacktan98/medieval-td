@@ -23,6 +23,7 @@ import { families } from '../src/data/towers.js';
 import { level, levels, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
 import { ABILITY_COST } from '../src/data/abilities.js';
+import { MODES, tableFor } from '../src/data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from '../src/data/difficulty.js';
 
 // WHICH DIFFICULTY THE SIM IS MEASURING. Every balance note in data/waves.js was
@@ -34,6 +35,12 @@ export const difficulty = process.env.DIFF
   ? (DIFFICULTIES.find(d => d.id === process.env.DIFF) || NEUTRAL)
   : NEUTRAL;
 
+// WHICH LENGTH IS BEING MEASURED: `MODE=extended node tools/sim.mjs 2`. Normal is
+// the default for the same reason the neutral difficulty is — every balance note
+// in this file was written against the shipped tables, and a sim that quietly
+// measured the longer game would make all of them read as regressions.
+export const mode = MODES.find(m => m.id === process.env.MODE) || MODES[0];
+
 const DT = 1 / 60;
 
 // Seconds of game time before a run is called stuck, PER WAVE rather than in
@@ -43,7 +50,7 @@ const DT = 1 / 60;
 // both counts — so a limit that bites unevenly quietly understates the win rate
 // of exactly the grindy, blocker-heavy builds that take longest.
 const PER_WAVE = 112;
-const timeLimit = () => PER_WAVE * level.waves.length;
+const timeLimit = () => PER_WAVE * tableFor(level, mode.id).length;
 
 // A plan is a shopping list. Towers are bought in order as gold allows, then
 // upgraded toward their target tier — roughly how a player spends.
@@ -71,7 +78,7 @@ function newState() {
     // helpers, so the sim cannot drift from the game about what a difficulty
     // does. The waves are scaled ONCE here for the same reason they are there:
     // waveSize and the spawn loop must agree exactly on how big a group is.
-    waves: scaleWaves(level.waves, difficulty),
+    waves: scaleWaves(tableFor(level, mode.id), difficulty),
     gold: startingGold(level.startGold, difficulty),
     lives: level.startLives,
     towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [],

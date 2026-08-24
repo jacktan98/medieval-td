@@ -76,9 +76,17 @@ function persist(table) {
 
 let table = load();
 
-const slot = (levelId, difficultyId) => `${levelId}/${difficultyId}`;
+// WHERE A RESULT IS FILED, and Normal deliberately keeps the key it has always
+// had. A map has two lengths now, and they are two separate records — clearing
+// eight waves is not clearing ten — so Extended carries a suffix and Normal
+// carries none. Written this way round so that every star already saved on
+// somebody's phone still counts: adding the mode to the key unconditionally would
+// have quietly wiped the board for everyone who had played before today.
+const slot = (levelId, difficultyId, modeId = 'normal') =>
+  `${levelId}${modeId === 'normal' ? '' : '+' + modeId}/${difficultyId}`;
 
-export const bestStars = (levelId, difficultyId) => table[slot(levelId, difficultyId)] || 0;
+export const bestStars = (levelId, difficultyId, modeId) =>
+  table[slot(levelId, difficultyId, modeId)] || 0;
 
 // The settings that are strictly easier than a given one. DIFFICULTIES is listed
 // on the title screen in the order it is written, easiest first, and that order IS
@@ -104,14 +112,18 @@ function easierThan(difficultyId) {
 //
 // It fills in rather than overwrites: `stars >` at each rung, so a better Normal
 // record already standing is left alone.
-export function recordStars(levelId, difficultyId, stars) {
-  const key = slot(levelId, difficultyId);
+export function recordStars(levelId, difficultyId, stars, modeId) {
+  const key = slot(levelId, difficultyId, modeId);
   const beat = stars > (table[key] || 0);
   if (beat) table[key] = stars;
 
+  // THE FILL-IN STAYS INSIDE ONE LENGTH. Three stars on Hard is three stars on
+  // Normal difficulty at the SAME length — an Extended run says nothing about a
+  // Normal one, because it is a different map's worth of waves rather than the
+  // same map turned up.
   let filled = false;
   for (const id of easierThan(difficultyId)) {
-    const below = slot(levelId, id);
+    const below = slot(levelId, id, modeId);
     if (stars > (table[below] || 0)) { table[below] = stars; filled = true; }
   }
 
@@ -131,10 +143,10 @@ export function clearStars() {
 // only for the run that set the record, and a summary rebuilt every frame would
 // answer true on the first frame and false for the rest of the time the panel is
 // on screen. It is also the only place the store is written.
-export function finish(state, level, difficulty) {
+export function finish(state, level, difficulty, mode) {
   const stars = state.result === 'won' ? starsFor(state.lives, level.startLives) : 0;
-  const before = bestStars(level.id, difficulty.id);
-  const beat = recordStars(level.id, difficulty.id, stars);
+  const before = bestStars(level.id, difficulty.id, mode && mode.id);
+  const beat = recordStars(level.id, difficulty.id, stars, mode && mode.id);
 
   return {
     won: state.result === 'won',
@@ -148,6 +160,10 @@ export function finish(state, level, difficulty) {
     waves: Math.min(state.waveIndex, state.waves.length),
     ofWaves: state.waves.length,
     map: level.name,
-    difficulty: difficulty.name
+    difficulty: difficulty.name,
+    // The length, for the summary line. Two records per map per difficulty now,
+    // and a summary that did not say which one this was would be the same panel
+    // for two different achievements.
+    mode: mode ? mode.name : 'Normal'
   };
 }

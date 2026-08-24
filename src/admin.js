@@ -274,10 +274,19 @@ apply();
 // "does the game own this table" depend on the contents of localStorage, and the
 // first thing to write through it would corrupt the shipped data for the rest of
 // the session.
-export function adminWaves(level) {
-  return level.waves.map((w, i) => ({
+// `table` IS THE MODE'S TABLE, not always the level's own. A map has two lengths
+// now — see MODES in data/waves.js — and the dashboard's own list still edits the
+// Normal one, because that is the table it was built to show. The overrides are
+// keyed by wave and group INDEX, so an edit to wave 3 lands on wave 3 of either
+// length; the two extra waves of an Extended run have no shipped entry and simply
+// keep their own counts.
+export function adminWaves(level, table = level.waves) {
+  return table.map((w, i) => ({
     ...w,
-    groups: w.groups.map((g, j) => ({ ...g, count: waveCount(level.id, i, j) }))
+    groups: w.groups.map((g, j) => ({
+      ...g,
+      count: waveCount(level.id, i, j) ?? g.count
+    }))
   }));
 }
 

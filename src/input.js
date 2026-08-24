@@ -1,5 +1,6 @@
 import { level, useLevel } from './level.js';
-import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitDifficultyButton, hitPauseButton } from './render.js';
+import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitModeButton, hitDifficultyButton,
+         hitPauseButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits } from './units.js';
 import { towerBox } from './towers.js';
@@ -161,10 +162,18 @@ function tap(state, x, y, restart) {
       return true;
     }
 
-    // Same treatment as the map: a difficulty is a property of the game about
-    // to be played, so changing it rebuilds rather than being remembered for
-    // later. It scales the wave table and the purse, both of which are read
-    // once at newGame.
+    // Same treatment as the map, and for the same reason: the LENGTH is a
+    // property of the game about to be played. It chooses which of the level's
+    // two wave tables is loaded, and that is read once at newGame.
+    const longer = hitModeButton(state, x, y);
+    if (longer !== null) {
+      state.modeIndex = longer;
+      restart();
+      return true;
+    }
+
+    // Same treatment again: a difficulty scales the wave table and the purse,
+    // both of which are read once at newGame.
     const harder = hitDifficultyButton(state, x, y);
     if (harder !== null) {
       state.difficultyIndex = harder;
