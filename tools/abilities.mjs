@@ -594,6 +594,12 @@ console.log('\nHeavy Bolt\n');
     `x${heavy.ammo.fireGain}`);
   ok(heavy.ammo.clear === siege[3].ammo.clear && heavy.ammo.speed === siege[3].ammo.speed,
     'and flies exactly as the ordinary one does');
+  // AND LANDS LIKE ARTILLERY. An ordinary bolt leaves the white ring every arrow
+  // leaves; this throws up earth the way a catapult's rock does, which is the
+  // artist's own note and the only thing on the board that says a HEAVY one
+  // arrived. `impact` is the flag land() reads — see src/projectiles.js.
+  ok(heavy.ammo.impact === true && !siege[3].ammo.impact,
+    'and kicks up earth where an ordinary bolt does not');
 }
 
 console.log('\nBoth of them, on one turret\n');

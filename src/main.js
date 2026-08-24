@@ -141,9 +141,13 @@ function newGame() {
     // answering and any tap closes it. Only ever set while `book` is, and cleared
     // whenever the book is opened, so a restart cannot inherit one.
     zoom: null,
-    // A half-pressed Quit, as the ms timestamp its window closes at. 0 for not
-    // armed, which is also what it resets to — a restart cannot inherit one.
-    quitArmed: 0,
+    // A half-pressed button in the pause row — Restart or Quit — as its id and the
+    // ms timestamp its window closes at, or null for nothing armed. Both throw a
+    // board away, so both ask twice; one field rather than two because arming
+    // either has to disarm the other.
+    //
+    // Null is also what it resets to: a restart cannot inherit a half-press.
+    armed: null,
     // The admin dashboard, or null for closed. Cleared with everything else for
     // the same reason the book is: a panel left open across a rebuild would be
     // sitting on top of a game it no longer describes.

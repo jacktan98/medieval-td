@@ -109,6 +109,18 @@ export const heavyBolt = {
   trim: [172, 148, 196, 190],
   hold: [0.082, 0.908],
   grip: 0.082,
+  // AND IT THROWS UP EARTH WHERE IT LANDS, which an ordinary bolt does not. The
+  // artist's note: the heavy bolt hits the ground like the tiers below it do. A
+  // catapult's rock has carried `impact` since it arrived — one of two drawings
+  // of kicked-up earth, picked at random so a machine firing at the same stretch
+  // of road is an event rather than a stamp — and this is the same flag on the
+  // same land() branch, so nothing new draws it.
+  //
+  // It is the only thing on the board that says a HEAVY bolt landed. Every other
+  // half of this ability is at the other end of the flight: the burning shaft
+  // leaves the rail, the report is louder, and by the time it arrives the player
+  // is looking at the target rather than at the machine.
+  impact: true,
   // Louder than an ordinary bolt, at the artist's request, and only for this shot.
   // The same clip played harder rather than a second recording — see `level` in
   // play() in src/audio.js, the mechanism the pope's missile brought in.

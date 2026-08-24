@@ -268,41 +268,49 @@ function tap(state, x, y, restart) {
   return !!(state.selected || had);
 }
 
-// The two controls a paused game puts on the board, and nothing else answers.
+// The three controls a paused game puts on the board, and nothing else answers.
 //
-// QUITTING ASKS TWICE. It is the one control in the game that throws away work —
-// a wave 7 board is half an hour — and it sits next to the button a player
-// presses to read something, which is the mis-tap that would hurt. So the first
-// tap ARMS it and the label says so; the second, within a few seconds, does it.
+// TWO OF THEM ASK TWICE. Restart and Quit are the controls that throw away work —
+// a wave 7 board is half an hour — and they sit beside the button a player
+// presses to READ something, which is the mis-tap that would hurt. So the first
+// tap ARMS one and its label says so; the second, within a few seconds, does it.
 //
-// The arming is cleared by anything else that happens, including unpausing, so a
-// half-pressed quit can never wait around to catch a later tap.
+// One armed slot between them, so arming either disarms the other: a player who
+// half-presses Restart and then reaches for Quit is changing their mind, not
+// confirming. The arming is cleared by anything else that happens, including
+// unpausing, so a half-press can never wait around to catch a later tap.
 function tapPaused(state, x, y, restart) {
   const hit = hitPauseButton(state, x, y);
 
-  if (hit === 'book') { state.quitArmed = 0; openBook(state); return true; }
+  if (hit === 'book') { state.armed = null; openBook(state); return true; }
 
-  if (hit === 'quit') {
+  if (hit === 'restart' || hit === 'quit') {
     const now = performance.now();
-    if (state.quitArmed && now < state.quitArmed) {
-      // Back to the title screen with the map still chosen — newGame() keeps
-      // levelIndex, because which map you are playing is a menu setting rather
-      // than part of the game being thrown away.
+    if (state.armed && state.armed.id === hit && now < state.armed.until) {
+      // BOTH GO THROUGH newGame, and the difference is one line: Quit leaves the
+      // game at the title screen and Restart starts it. Which map and which
+      // difficulty survive either, because those are menu settings rather than
+      // part of the board being thrown away.
+      //
+      // Restart skipping the title screen is the whole point of it — a player who
+      // wanted the title screen has Quit right there — and it is why the two are
+      // separate buttons rather than one that guesses.
       restart();
+      if (hit === 'restart') state.started = true;
       return true;
     }
-    state.quitArmed = now + QUIT_WINDOW;
+    state.armed = { id: hit, until: now + ARM_WINDOW };
     return true;
   }
 
-  state.quitArmed = 0;
+  state.armed = null;
   return false;
 }
 
-// How long a half-pressed quit stays armed, in ms. Long enough to read the
-// changed label and press again, short enough that it is never still waiting
+// How long a half-pressed Restart or Quit stays armed, in ms. Long enough to read
+// the changed label and press again, short enough that it is never still waiting
 // when a thumb comes back to the screen.
-const QUIT_WINDOW = 3000;
+const ARM_WINDOW = 3000;
 
 // Stopping the game also puts away anything the player was in the middle of.
 //
@@ -313,10 +321,10 @@ const QUIT_WINDOW = 3000;
 // nothing that invites an action it will refuse.
 function togglePause(state) {
   state.paused = !state.paused;
-  // A half-pressed Quit never survives the pause it was pressed in, in either
-  // direction. Unpausing takes the button off the screen, and pausing again is a
-  // new decision rather than the second half of an old one.
-  state.quitArmed = 0;
+  // A half-pressed Restart or Quit never survives the pause it was pressed in, in
+  // either direction. Unpausing takes the button off the screen, and pausing again
+  // is a new decision rather than the second half of an old one.
+  state.armed = null;
   if (!state.paused) return;
   closeMenu(state);
   state.placing = null;

@@ -3073,28 +3073,37 @@ function bookButton(ctx, b, label, size) {
 
 // --- what a paused game puts on the board -------------------------------------
 //
-// Two controls under the "Paused" label, and no dimming veil: the whole point of
-// pausing here is to STUDY the board, and a game that greys out the thing you
+// Three controls under the "Paused" label, and no dimming veil: the whole point
+// of pausing here is to STUDY the board, and a game that greys out the thing you
 // paused to look at has answered the wrong question. So the row sits in the
 // strip the dashboard already owns rather than over the middle of the map.
 //
-// THE GAP BETWEEN THEM IS THE POINT. Quit is the one control in the game that
-// throws work away, and it sits beside the button a player presses to read
-// something — so the two padded tap boxes must not touch. 30px of drawn gap puts
-// 4px of clear air between them at PAUSE_PAD each side; at the 12 that looked
-// right on screen they overlapped by 14 and the loop would have handed the
-// overlap to whichever came first.
+// THE GAPS BETWEEN THEM ARE THE POINT. Restart and Quit both throw work away, and
+// they sit beside the button a player presses to read something — so no two
+// padded tap boxes may touch. 30px of drawn gap puts 4px of clear air between
+// them at PAUSE_PAD each side; at the 12 that looked right on screen they
+// overlapped by 14 and the loop would have handed the overlap to whichever came
+// first.
+//
+// LEFT TO RIGHT BY WHAT THEY COST YOU: the harmless one first, then the one that
+// throws the board away and gives you another, then the one that just throws it
+// away. A thumb travelling from the Encyclopedia has to pass Restart before it
+// can reach Quit, which is the right order for the mis-tap that would hurt most.
 const PAUSE_ROW_Y = 94;
 const PAUSE_H = 38;
 const PAUSE_GAP = 30;
 const PAUSE_BOOK_W = 170;
+const PAUSE_RESTART_W = 120;
 const PAUSE_QUIT_W = 110;
-const PAUSE_ROW_X =
-  Math.round(480 - (PAUSE_BOOK_W + PAUSE_GAP + PAUSE_QUIT_W) / 2);
+const PAUSE_ROW_W = PAUSE_BOOK_W + PAUSE_GAP + PAUSE_RESTART_W + PAUSE_GAP + PAUSE_QUIT_W;
+const PAUSE_ROW_X = Math.round(480 - PAUSE_ROW_W / 2);
 
 export const PAUSE_ROW = {
   book: { x: PAUSE_ROW_X, y: PAUSE_ROW_Y, w: PAUSE_BOOK_W, h: PAUSE_H },
-  quit: { x: PAUSE_ROW_X + PAUSE_BOOK_W + PAUSE_GAP, y: PAUSE_ROW_Y, w: PAUSE_QUIT_W, h: PAUSE_H }
+  restart: { x: PAUSE_ROW_X + PAUSE_BOOK_W + PAUSE_GAP, y: PAUSE_ROW_Y,
+             w: PAUSE_RESTART_W, h: PAUSE_H },
+  quit: { x: PAUSE_ROW_X + PAUSE_BOOK_W + PAUSE_GAP + PAUSE_RESTART_W + PAUSE_GAP,
+          y: PAUSE_ROW_Y, w: PAUSE_QUIT_W, h: PAUSE_H }
 };
 
 // Drawn 38 deep, tapped 64, the same trick every other control in the game uses:
@@ -3116,15 +3125,27 @@ function drawPauseRow(ctx, state) {
   // cannot answer and the radial menu only quotes a price.
   drawBookButton(ctx, PAUSE_ROW.book, 15);
 
-  // ARMED OR NOT, and the label is the only thing that says which. A quit
-  // throws away a board that may be half an hour old, so the first tap asks and
-  // the second does it — see tapPaused in input.js. Amber while it waits,
-  // because the button is now a question rather than a label.
-  const armed = state.quitArmed && performance.now() < state.quitArmed;
+  // ARMED OR NOT, and the label is the only thing that says which. Both of these
+  // throw away a board that may be half an hour old, so the first tap asks and
+  // the second does it — see tapPaused in input.js. Amber while it waits, because
+  // the button is a question rather than a label for those few seconds.
+  const armed = state.armed && performance.now() < state.armed.until
+    ? state.armed.id : null;
 
+  askButton(ctx, PAUSE_ROW.restart, 'Restart', armed === 'restart');
+  askButton(ctx, PAUSE_ROW.quit, 'Quit', armed === 'quit');
+}
+
+// One of the two buttons that ask before they act, drawn plain or as a question.
+//
+// THE QUESTION IS SMALLER THAN THE WORD, because it is three times as long and
+// the plate does not grow: "Quit — sure?" measures about 86px at 13 against a
+// 110px plate, where at 15 it would be 99 and crowd both ends. "Restart — sure?"
+// is longer again, which is what the wider plate is for.
+function askButton(ctx, b, word, armed) {
   ctx.fillStyle = 'rgba(28,32,24,0.85)';
   ctx.beginPath();
-  ctx.roundRect(PAUSE_ROW.quit.x, PAUSE_ROW.quit.y, PAUSE_ROW.quit.w, PAUSE_ROW.quit.h, 9);
+  ctx.roundRect(b.x, b.y, b.w, b.h, 9);
   ctx.fill();
   ctx.strokeStyle = armed ? '#E0B24C' : '#C4A574';
   ctx.lineWidth = armed ? 2.5 : 2;
@@ -3133,12 +3154,8 @@ function drawPauseRow(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = armed ? '#E0B24C' : '#F0E6D2';
-  // Smaller when armed, because the question is three times the word. Measured:
-  // "Quit — sure?" is about 86px at 13 against a 110px plate, where at 15 it
-  // would be 99 and crowd both ends.
-  ctx.font = armed ? '700 13px system-ui, sans-serif' : '700 15px system-ui, sans-serif';
-  ctx.fillText(armed ? 'Quit — sure?' : 'Quit',
-    PAUSE_ROW.quit.x + PAUSE_ROW.quit.w / 2, PAUSE_ROW.quit.y + PAUSE_ROW.quit.h / 2 + 1);
+  ctx.font = armed ? '700 12px system-ui, sans-serif' : '700 15px system-ui, sans-serif';
+  ctx.fillText(armed ? `${word} — sure?` : word, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
 // The button that opens the book, drawn in two places and in two styles. On the
