@@ -151,13 +151,7 @@ export function selectionInfo(state) {
       // of its own.
       hp: null,
       maxHp: null,
-      damage: Math.round(man.damage * k),
-      // Whether each number on the card is a buffed one, so the box can say so in
-      // gold. A flag rather than a colour: what a buffed number LOOKS like is the
-      // renderer's business, and this file only knows that it is not the plain
-      // number off the def.
-      damageBuff: k !== 1,
-      hpBuff: false
+      damage: Math.round(man.damage * k)
     };
   }
 
@@ -172,7 +166,6 @@ export function selectionInfo(state) {
   // names the shooting families and not the barracks, so what he hits for is what
   // his def says. If that ever changes it changes in units.js first, and this line
   // follows it — the card must never claim a boost the fight is not applying.
-  const buffedHp = s.kind === 'unit' && f.maxHp !== f.def.hp;
   return {
     sprite: f.def.sprite,
     trim: f.def.spriteTrim,
@@ -181,8 +174,6 @@ export function selectionInfo(state) {
     // box reading "82.4/105" is noise where "82/105" is information.
     hp: Math.max(0, Math.round(f.hp)),
     maxHp: f.maxHp,
-    damage: shownDamage(f.def),
-    damageBuff: false,
-    hpBuff: buffedHp
+    damage: shownDamage(f.def)
   };
 }

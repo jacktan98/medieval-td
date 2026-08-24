@@ -450,10 +450,9 @@ export const ABILITIES = [
             'for a tenth more, wherever it stands. The temple does not have to see ' +
             'them and does not fire any differently itself.\n\n' +
             'Barracks men are the exception: their damage belongs to the man rather ' +
-            'than to the tower, and a wall that also hit harder would be a different ' +
-            'game. A sword and an arrow appear over every tower it is working on.\n\n' +
-            'A second temple that has bought it compounds with the first: two are a ' +
-            'tenth on top of a tenth.'
+            'than to the tower. A sword and an arrow appear over every tower it is ' +
+            'working on, and a second temple that has bought it compounds with the ' +
+            'first — a tenth on top of a tenth, marked x2 on the badge.'
   },
   {
     id: 'fortitude',
@@ -480,9 +479,8 @@ export const ABILITIES = [
             'paladin from 275 to 330.\n\n' +
             'It reaches men already standing on the road, not only the next ones to ' +
             'muster, and a wounded man keeps the share of his health he had. A heart ' +
-            'and an arrow appear over every barracks it is working on.\n\n' +
-            'A second temple that has bought it compounds with the first: two are a ' +
-            'fifth on top of a fifth.'
+            'and an arrow appear over every barracks it is working on, and a second ' +
+            'temple compounds with the first — marked x2 on the badge.'
   }
 ];
 

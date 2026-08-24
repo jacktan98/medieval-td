@@ -69,7 +69,7 @@ console.log(bad
 //
 // Helpers that are deliberately called with the state their caller has already
 // set are listed as exceptions rather than being made to set it twice.
-const INHERITS_ON_PURPOSE = new Set(['statValue', 'hudIcon', 'buffText']);
+const INHERITS_ON_PURPOSE = new Set(['statValue', 'hudIcon']);
 
 {
   const src = readFileSync('src/render.js', 'utf8');

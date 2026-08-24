@@ -27,6 +27,7 @@ import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
 import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks, ringLift, badgeTop }
   from '../src/render.js';
+import { crownTop } from '../src/towers.js';
 
 // Where drawHud puts its text. textBaseline is 'middle' at y=21, the biggest
 // font is 20px, so the ink runs from about 11 to 31.
@@ -134,8 +135,13 @@ const lift = (fam, def) =>
 // The badge is asked for its own top rather than for a lift, because it is the
 // one piece of this stack that STOPS: on the highest plots it rests on the roof
 // instead of going off the board. See badgeTop in render.js.
+//
+// And it is measured from the CROWN — the top of the whole drawing, crew
+// included — rather than from the building, because that is where the renderer
+// hangs it. On a Ballista Turret the two are 30px apart.
 const inkTop = (plot, fam, def) =>
-  Math.min(boxTop(plot, def) - lift(fam, def), badgeTop(boxTop(plot, def)));
+  Math.min(boxTop(plot, def) - lift(fam, def),
+           badgeTop(crownTop({ plot, fam, def, x: plot.x, y: plot.y })));
 
 let bad = 0, noted = 0;
 
@@ -222,6 +228,46 @@ for (let i = 0; i < lv.plots.length; i++) {
         : `clear by ${Math.round(worst.top - TEXT_BOTTOM)}px`)
   );
 }
+}
+
+// --- WHAT THE BADGE IS ACTUALLY CLEARING ----------------------------------
+//
+// The gap above a tower is measured from the top of the DRAWING, not of the
+// building, and the two are only the same on the families whose crew is under a
+// roof or drawn into the artwork. This prints the difference per tier so that a
+// re-export which moves a machine or a man shows up as a number here, and it
+// fails if the two tier 4s that visibly carry someone stop clearing their stone.
+
+console.log('\nWhat stands above the stone\n');
+{
+  const p = levels[0].plots[0];
+  useLevel(0);
+  let crewed = 0;
+  for (const f of families) {
+    for (const def of f.tiers) {
+      const t = { plot: p, fam: f, def, x: p.x, y: p.y };
+      const over = boxTop(p, def) - crownTop(t);
+      if (over > 0.05) crewed++;
+      console.log(`  ${(f.name + ' ' + def.name).padEnd(28)} ${over.toFixed(1).padStart(5)}px over its own roof`);
+    }
+  }
+
+  // THE TWO THAT MUST NOT READ ZERO. A Ballista Turret's machine sits on top of
+  // its stone and a Musketeer Post's man stands above his deck, so a badge
+  // measured off the building would land on both. Everything else is a roof over
+  // its own crew — a monastery's pope, an archer under his tiles — and reads 0,
+  // which is correct rather than a bug.
+  const ballista = families.find(f => f.id === 'siege').tiers[3];
+  const post = families.find(f => f.id === 'archery').tiers[3];
+  for (const def of [ballista, post]) {
+    const fam = families.find(f => f.tiers.includes(def));
+    const over = boxTop(p, def) - crownTop({ plot: p, fam, def, x: p.x, y: p.y });
+    if (over <= 0) {
+      console.log(`  ${def.name} no longer crowns above its own building`);
+      bad++;
+    }
+  }
+  console.log(`\n  ${crewed} tier(s) carry something above their own roof.`);
 }
 
 if (bad) console.log(`\n${bad} plot(s) cut a building off, or put it under a HUD button or the HUD text.`);

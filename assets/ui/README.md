@@ -50,6 +50,19 @@ temple or about the shots. The badge is the whole feedback, so it is drawn small
 and without the button's disc behind it, floating over the top of every building
 the aura reaches. See `drawBadges` in src/render.js.
 
+Two things about that badge are worth knowing before either file is redrawn.
+It hangs above the top of the **whole drawing** rather than of the building —
+a Ballista Turret's machine stands 7px above its own stone and a Musketeer 3.6px
+above his deck, which `node tools/hud-clear.mjs` prints per tier — so a taller
+badge eats into that gap rather than into the roof. And when more than one temple
+has bought the same ability, the badge does not double: it takes a **x2** beside
+it, because the two compound into one bigger number rather than into two marks.
+
+The two ability **buttons** are the only icons in this folder drawn on a WHITE
+disc; the other six are blue. The price under a button is white, so on these two
+it disappeared entirely until `pale: true` in src/data/ui.js taught `buttonPrice`
+to print gold there instead. Re-export them on a dark disc and that word can go.
+
 `Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
 down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
 `refundValue()` and the rate is `REFUND_RATE`. The key used to be `glyph_coin`,

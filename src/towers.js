@@ -1,5 +1,5 @@
 import { pickTarget, leadPoint } from './enemies.js';
-import { BEATS } from './data/towers.js';
+import { BEATS, SCALE } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
 import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT } from './audio.js';
 
@@ -45,6 +45,40 @@ export function towerBox(t) {
     w: t.def.w,
     h: t.def.h
   };
+}
+
+// THE TOPMOST INK OF THE WHOLE TOWER, occupant included.
+//
+// towerBox is the BUILDING, and on half the families that is not the top of what
+// the player sees: a Ballista Turret is a squat stone base with a machine sitting
+// on it, and an archer stands a head above his deck. Anything that hangs
+// something over a tower — the aura badges — has to clear the drawing rather than
+// the building, or it lands on the ballista of one family and in clear sky over
+// another.
+//
+// EVERY POSE, not the one being drawn this frame. A man's Attack drawing is a
+// different height from his Default and an ability's pose is different again, so
+// a badge measured off the current frame would bob up and down as he shot. The
+// union is static per tier and the badge holds still.
+//
+// A monastery answers with its own roof and that is correct: the pope stands
+// UNDER it, so the building really is the top of that drawing.
+export function crownTop(t) {
+  const d = t.def;
+  const box = towerBox(t);
+  let top = box.top;
+
+  if (d.gunner) {
+    const m = mountPoint(t);
+    const poses = [[d.gunnerTrim, d.gunnerPivot]];
+    if (d.attack) poses.push([d.attack.trim, d.attack.pivot]);
+    for (const a of abilitiesOf(d)) if (a.pose) poses.push([a.pose.trim, a.pose.pivot]);
+    for (const [trim, pivot] of poses) top = Math.min(top, m.y - pivot[1] * trim[3] * SCALE);
+  }
+
+  if (d.machine) top = Math.min(top, machineBox(d, box).top);
+
+  return top;
 }
 
 // Whether the BUILDING's own artwork is drawn mirrored: -1 if it is, 1 if not.
