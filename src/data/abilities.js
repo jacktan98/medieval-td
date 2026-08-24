@@ -196,13 +196,13 @@ export const ABILITIES = [
     // The long form, shown beside the picture when the card is tapped open. Two or
     // three sentences: what it does, then the thing a player would only find out by
     // watching it for a while.
-    detail: 'After three ordinary shots the musketeer empties three bullets into ' +
-            'the road as fast as he can work the lock, a fifth of a second apart, ' +
-            'then holds the smoke for a second before loading again.\n\n' +
-            'Each of the three picks a different man, through whatever standing ' +
-            'order the tower is on. That is the point of it: three bullets into one ' +
-            'militiaman is most of them wasted, and three into three of them is a ' +
-            'rank gone. With only one enemy in reach all three go to him.'
+    detail: 'After 3 ordinary shots the musketeer empties 3 bullets into the road ' +
+            'as fast as he can work the lock, 0.18s apart, then holds the smoke ' +
+            'for 1 second before loading again.\n\n' +
+            'Each of the 3 picks a different man, through whatever standing order ' +
+            'the tower is on. That is the point of it: 3 bullets into 1 militiaman ' +
+            'is most of them wasted, and 3 into 3 of them is a rank gone. With ' +
+            'only 1 enemy in reach all 3 go to him.'
   },
   {
     id: 'deadeye',
@@ -254,13 +254,13 @@ export const ABILITIES = [
     // ability that fires something announces itself by firing it; `cue` is for the
     // two that do not, which are the paladin's.
 
-    detail: 'After nine ordinary shots the musketeer takes a second to aim — a mark ' +
+    detail: 'After 9 ordinary shots the musketeer takes 1 second to aim — a mark ' +
             'appears over the man he has chosen and stays there until the bullet ' +
-            'arrives — and then fires a single round for eight times the Post\'s own ' +
-            'shot, 480 damage, the hardest blow in the game.\n\n' +
-            'He holds the pose for two seconds afterwards, which costs nothing: the ' +
+            'arrives — and then fires a single round for 8x the Post\'s own shot, ' +
+            '480 damage, the hardest blow in the game.\n\n' +
+            'He holds the pose for 2 seconds afterwards, which costs nothing: the ' +
             'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
-            'one thing on the road that has to die and cannot be chipped down.'
+            '1 thing on the road that has to die and cannot be chipped down.'
   },
   {
     id: 'light',
@@ -298,14 +298,14 @@ export const ABILITIES = [
     cue: 'holyLight',
 
     detail: 'The moment a paladin drops under 30% of his health he stops fighting, ' +
-            'kneels, and takes 80% of his full health back over three seconds — 220 ' +
-            'on a paladin, more under a Divine Fortitude. He keeps his grip ' +
-            'on the enemy the whole time, so the road stays held — and the enemy ' +
-            'keeps hitting him, so it is a race rather than a free reset.\n\n' +
-            'Each of the three calls it for himself and has his own thirty seconds ' +
-            'before he can call it again, counted from the moment he kneels. A paladin ' +
-            'killed anyway takes that clock with him: the man who musters in his place ' +
-            'can call the light at once.'
+            'kneels, and takes 80% of his full health back over 3 seconds — 220 on ' +
+            'a paladin, more under a Divine Fortitude. He keeps his grip on the ' +
+            'enemy the whole time, so the road stays held — and the enemy keeps ' +
+            'hitting him, so it is a race rather than a free reset.\n\n' +
+            'Each of the 3 calls it for himself and has his own 30 seconds before ' +
+            'he can call it again, counted from the moment he kneels. A paladin ' +
+            'killed anyway takes that clock with him: the man who musters in his ' +
+            'place can call the light at once.'
   },
   {
     id: 'slash',
@@ -348,13 +348,13 @@ export const ABILITIES = [
     pose: HOLY_SLASH_POSE,
     cue: 'holySlash',
 
-    detail: 'Three ordinary blows and then one worth five of them — 35 where he ' +
-            'normally does 7 — struck in the time an ordinary swing takes, so the ' +
-            'rhythm never breaks.\n\n' +
+    detail: '3 ordinary blows and then 1 worth 5 of them — 35 where he normally ' +
+            'does 7 — struck in the time an ordinary swing takes, so the rhythm ' +
+            'never breaks.\n\n' +
             'It works out at 17.5 damage a second against a plain paladin\'s 8.75, ' +
-            'exactly double, from the man who starts with the least damage in the ' +
-            'game. Each of the three counts his own blows, so the strikes land ' +
-            'spread out rather than all at once.'
+            'exactly 2x, from the man who starts with the least damage in the ' +
+            'game. Each of the 3 counts his own blows, so the strikes land spread ' +
+            'out rather than all at once.'
   },
   {
     id: 'farshot',
@@ -420,9 +420,9 @@ export const ABILITIES = [
     // than a cooldown a pose could delay. The ability announces itself by what
     // leaves the bow — a bolt with its tail on fire — and by being louder.
 
-    detail: 'Every fourth bolt comes off the rack burning and hits for twice the ' +
+    detail: 'Every 4th bolt comes off the rack burning and hits for 2x the ' +
             'damage. There is no wind-up and no pause: the machine works at its ' +
-            'ordinary rhythm and one shot in four is simply worth two.\n\n' +
+            'ordinary rhythm and 1 shot in 4 is simply worth 2.\n\n' +
             'It raises the turret from 33.3 damage a second to 41.7, on a machine ' +
             'whose every shot already bursts. You can hear which one it is — the ' +
             'heavy bolt leaves louder than the others.'
@@ -461,7 +461,7 @@ export const ABILITIES = [
     },
 
     detail: 'Every archery tower, artillery machine and monastery on the map hits ' +
-            'for a twentieth more, wherever it stands. The temple does not have to see ' +
+            'for 5% more, wherever it stands. The temple does not have to see ' +
             'them and does not fire any differently itself.\n\n' +
             'Barracks men are the exception: their damage belongs to the man rather ' +
             'than to the tower. A sword and an arrow appear over every tower it is ' +
@@ -490,7 +490,7 @@ export const ABILITIES = [
       badge: 'badge_fortitude'
     },
 
-    detail: 'Every man a barracks musters carries a tenth more health, on every ' +
+    detail: 'Every man a barracks musters carries 10% more health, on every ' +
             'tier and anywhere on the map: a spearman goes from 100 to 110 and a ' +
             'paladin from 275 to 303.\n\n' +
             'It reaches men already standing on the road, not only the next ones to ' +
