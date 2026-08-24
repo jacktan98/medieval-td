@@ -303,15 +303,16 @@ console.log('\nWhat the two are worth\n');
   // AND THE SECOND ONE BOUGHT IS STILL WORTH BUYING — but no longer worth the same
   // as the first, and that is a consequence of the numbers rather than a bug.
   //
-  // THE CYCLES SHARE A FACTOR NOW. One in four and one in eight means every Deadeye
-  // slot is also a Burst slot, and where they collide the rarer one wins, so a Post
-  // that has bought both fires half the bursts it would have alone. The cycles were
-  // 6 and 11 — coprime, so they almost never met — and the owner set 4 and 8.
+  // THE CYCLES STILL SHARE A FACTOR, and how much that costs is what this measures.
+  // Where they collide the rarer one wins, so a Post that has bought both loses a
+  // burst to any Deadeye landing on a burst slot. At 4 and 8 that was EVERY Deadeye
+  // and the second ability was worth 60% of its solo value; at 4 and 10 it is every
+  // other one — one burst in twenty shots — and it is worth 86%.
   //
   // What is checked is therefore the thing that matters to a player: the second 150
   // gold still buys most of what it would have bought on its own. If this ever
-  // drops below half, make the rarer cycle odd — 9 rather than 8 — and the two go
-  // back to being independent.
+  // drops below half, make the rarer cycle odd and the two go back to being fully
+  // independent.
   const alone = deadeye - plain;
   const second = both - burst;
   ok(second > alone * 0.5, 'and buying the second still adds most of its own worth',

@@ -210,10 +210,17 @@ export const ABILITIES = [
     of: 'Musketeer Post',
     icon: 'ability_deadeye',
     cost: ABILITY_COST,
-    // ONE SHOT IN EIGHT, against the burst's one in four — twice as rare and six
-    // times as hard, which is the shape the artist asked for: the burst is a
-    // rhythm you stop noticing and this is an event.
-    every: 8,
+    // ONE SHOT IN TEN, against the burst's one in four, and eight times as hard.
+    // That is the shape the artist asked for: the burst is a rhythm you stop
+    // noticing and this is an event.
+    //
+    // TEN RATHER THAN EIGHT ALSO KEEPS THE TWO OUT OF EACH OTHER'S WAY. Where the
+    // cycles collide the rarer one wins, so a Post that has bought both loses a
+    // burst to every Deadeye that lands on one of its slots. At 4 and 8 that was
+    // EVERY Deadeye; at 4 and 10 it is every other one — one burst lost in twenty
+    // shots — and the second 150 gold is worth 86% of what it is worth alone
+    // instead of 60%.
+    every: 10,
     shots: 1,
     // TWO SECONDS of held pose, not one. It is the biggest single blow in the game
     // and he stands over it. Still free, because the musket takes 2.4s to load
@@ -226,18 +233,19 @@ export const ABILITIES = [
     // happens, and at six times the tower's damage it should: the player gets a
     // second to see where the shot is going.
     lock: 1,
-    // SIX TIMES THE TOWER'S OWN SHOT rather than a number of its own, which is the
-    // rule the owner put on every ability here: a magnitude is a multiple of the
-    // stat it changes, so it stays true the next time that stat is retuned. It was
-    // a flat 300 against a 60 damage tower, which was five times — and would have
-    // been four times, or eight, after any change to the Post.
+    // EIGHT TIMES THE TOWER'S OWN SHOT rather than a number of its own, which is
+    // the rule the owner put on every ability here: a magnitude is a multiple of
+    // the stat it changes, so it stays true the next time that stat is retuned. It
+    // was a flat 300 against a 60 damage tower, which was five times — and would
+    // have been four times, or eight, after any change to the Post.
     //
-    // 360, and it is the biggest single blow in the game by a factor of six. Seven
-    // ordinary shots plus one of these is 780 over eight reloads: 40.6 a second
-    // against a plain Post's 25.0, where Burst Fire is 37.5. The two are meant to
-    // be close, and what separates them is not how much they add but WHERE it goes
-    // — the burst clears a rank of militia, this removes one giant.
-    times: 6,
+    // 480, the biggest single blow in the game by a factor of eight. Nine ordinary
+    // shots plus one of these is 1020 over ten reloads: 42.5 a second against a
+    // plain Post's 25.0, where Burst Fire is 37.5. Rarer and harder than the burst
+    // and a little ahead of it per second, which is the trade — what separates the
+    // two is WHERE the damage goes: the burst clears a rank of militia, this
+    // removes one giant.
+    times: 8,
     ammo: deadeyeBall,
     pose: DEADEYE_POSE,
     // NO `cue`, and it is not silent. Its noise comes from its AMMUNITION, through
@@ -246,10 +254,10 @@ export const ABILITIES = [
     // ability that fires something announces itself by firing it; `cue` is for the
     // two that do not, which are the paladin's.
 
-    detail: 'After seven ordinary shots the musketeer takes a second to aim — a mark ' +
+    detail: 'After nine ordinary shots the musketeer takes a second to aim — a mark ' +
             'appears over the man he has chosen and stays there until the bullet ' +
-            'arrives — and then fires a single round for six times the Post\'s own ' +
-            'shot, 360 damage, the hardest blow in the game.\n\n' +
+            'arrives — and then fires a single round for eight times the Post\'s own ' +
+            'shot, 480 damage, the hardest blow in the game.\n\n' +
             'He holds the pose for two seconds afterwards, which costs nothing: the ' +
             'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
             'one thing on the road that has to die and cannot be chipped down.'
