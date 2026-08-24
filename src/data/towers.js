@@ -988,7 +988,7 @@ export const archery = [
   // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
   // and the column they sit in is what names the family.
   { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
-    cost: 200, damage: 60, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    cost: 200, damage: 65, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
     // The upgrade button's picture when this is what the button buys. Every other
     // tier uses the generic arrow; this one has an icon of its own, so the tap
     // that turns a Crossbow Tower into a Musketeer Post shows what it is buying.

@@ -7,7 +7,34 @@ they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 |------------------------------------|-----------------------------------|--------------|----------------------------------------|
 | `Enemies_Thug_Default.png`         | `Enemies_Thug_Attack.png`         | `light_inf`  | the militia, in all 8 waves            |
 | `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
-| `Enemies_Plague_Thug_Default.png`  | `Enemies_Plague_Thug_Attack.png`  | `plague_inf` | the thrower, waves 5-8                 |
+
+## Two enemies fight at both distances, and they carry two pairs
+
+An enemy that shoots and also gets caught needs a drawing for each. The suffixes
+say which is which, and the code reads them as one rule: the **ranged** pair is
+what he walks and works in, the **melee** pair is shown the moment a soldier has
+hold of him — `e.foe`, not "he is nearby".
+
+| Ranged Default                            | Ranged Attack                            | Melee Default                            | Melee Attack                            | type key     |
+|-------------------------------------------|------------------------------------------|------------------------------------------|-----------------------------------------|--------------|
+| `Enemies_Archer_Thug_Ranged_Default.png`  | `Enemies_Archer_Thug_Ranged_Attack.png`  | `Enemies_Archer_Thug_Melee_Default.png`  | `Enemies_Archer_Thug_Melee_Attack.png`  | `archer_inf` |
+| `Enemies_Plague_Thug_Default.png`         | `Enemies_Plague_Thug_Ranged_Attack.png`  | *(shares the one Default)*               | `Enemies_Plague_Thug_Melee_Attack.png`  | `plague_inf` |
+
+**The melee Default is optional and the doctor does without one.** He stands the
+same way whichever he is about to do, so one drawing serves both stances; the
+archer holds a drawn bow one way and a club another, so he has two. A def takes
+only the halves it has — see `melee` in `src/data/waves.js` and `enemyStance` in
+`src/render.js`.
+
+**All four poses must share one ground point.** He swaps between them mid-fight,
+so a pivot out by two pixels makes him hop the instant a soldier reaches him.
+`node tools/shadow.mjs` checks every one of them against its own grey blob, and
+`node tools/facing.mjs` checks that each state resolves to the drawing it should.
+
+One thing to watch when redrawing: the **taller** of the two Defaults decides
+where the health bar floats and how big the tap box is, in both stances — a bar
+that jumped up his body when he was caught would be a bar that moves for a reason
+other than health.
 
 **The tiers are gone from these names.** They were `Enemies_Man_T1a` and `T1b`,
 from an upload that numbered them; each is now named after what it is, and the
@@ -35,8 +62,8 @@ Draw it **standing upright and facing left or right**, not top-down. Enemies
 mirror to face the way they are walking and are never rotated — a standing
 figure rotated to face north is a standing figure lying down.
 
-The thug draws 20 x 24 game px, the plague doctor 27 x 27 and the giant 37 x 37,
-against a spearman's 34 x 24. That reads correctly: a lighter troop, an oddity,
+The thug draws 20 x 24 game px, the archer 33 x 25 with the bow drawn, the
+plague doctor 27 x 27 and the giant 37 x 37, against a spearman's 34 x 24. That reads correctly: a lighter troop, an oddity,
 and a heavier one around your own soldier.
 
 The giant's Default was redrawn shorter after the first animated upload held his

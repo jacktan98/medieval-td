@@ -8,6 +8,7 @@ drawing each of them needs — see "Why only one file" below:
 | `Enemies_Thug_Dead.png`       | the thug, every wave         | 31 x 16 px  |
 | `Enemies_Giant_Thug_Dead.png` | the giant                    | 57 x 25 px  |
 | `Enemies_Plague_Thug_Dead.png`| the plague thug              | 57 x 20 px  |
+| `Enemies_Archer_Thug_Dead.png`| the archer thug              | 44 x 16 px  |
 | `Soldiers_Spearman_Dead.png`  | your spearman, tier 1        | 49 x 17 px  |
 | `Soldiers_Pikeman_Dead.png`   | your pikeman, tier 2         | 49 x 16 px  |
 | `Soldiers_Swordsman_Dead.png` | your swordsman, tier 3       | 40 x 18 px  |

@@ -1,3 +1,5 @@
+import { arrow } from './towers.js';
+
 // Enemies are drawn standing and only mirror, same rule as every other figure:
 // sprite/trim/pivot are read the same way as the soldiers in data/towers.js and
 // scaled by the same SCALE, so an enemy is sized against a spearman by the art
@@ -14,6 +16,20 @@
 // is different is `poison` instead of a damage number, and that difference is
 // the whole design: a flask does nothing on impact. It leaves a patch of ground
 // that trickles health out of everyone who was standing in it.
+// THE ARROW AN ENEMY LOOSES, and it is the tower's arrow to the pixel.
+//
+// Spread from `arrow` in data/towers.js rather than written out, because it IS
+// that drawing: the artist renamed the file from Archery_Arrows_T1 to
+// Archer_Arrows for exactly this reason — one arrow, loosed by both armies. What
+// differs is not the shaft but who it is pointed at, and that is `side` on the
+// shot rather than anything here.
+//
+// It keeps `kind: 'arrow'` with everything else, which costs nothing and is
+// checked: `killedBy` is only read for an ENEMY's death, and no enemy can be
+// killed by this — it is aimed at soldiers and nothing else. The kind is what
+// makes it silent on arrival, the same as the tower's.
+export const enemyArrow = { ...arrow };
+
 export const flask = {
   kind: 'flask',
   sprite: 'flask',
@@ -135,6 +151,95 @@ export const enemyTypes = {
     atkCd: 1.0,
     r: 8,
     colour: '#B98B5E'
+  },
+
+  // THE ARCHER, and he is the first enemy who is dangerous at a distance the
+  // player's own line cannot answer with position alone.
+  //
+  // A plague doctor throws 130px, which is inside a tier 1 bow's 190 — put a
+  // tower on the road and you can always shoot back. This one looses 260, which
+  // is a Ballista Turret's whole reach, so there are stretches of every map where
+  // he is hitting your men and nothing you own is hitting him. What answers him
+  // is a tower placed for HIM rather than for the road, or a squad sent out to
+  // pin him, and that is the decision he exists to force.
+  //
+  // TWO STANCES, and he is the reason the pose model grew one. Every other figure
+  // in this game has a Default it stands in and an Attack it strikes in; he has a
+  // pair of each — bow drawn and loosing at a distance, bow held as a club and
+  // swinging it close. See `melee` below, and drawEnemy in render.js for which is
+  // shown when.
+  archer_inf: {
+    name: 'Archer Thug',
+    // THE RANGED PAIR IS HIS DEFAULT, because it is what he does on the road and
+    // what he should be portrayed as: an archer. The encyclopedia, the info box
+    // and the wave preview all read `sprite` and `spriteTrim`, and a card showing
+    // him clubbing somebody would name the wrong enemy.
+    sprite: 'archer_ready',
+    spriteTrim: [175, 196, 162, 120],
+    pivot: [0.546, 0.904],
+    attack: { sprite: 'archer_loose', trim: [195, 196, 142, 120], pivot: [0.479, 0.898] },
+    // AND THE CLOSE PAIR, shown only while a soldier is holding him. Both halves
+    // are here rather than one: unlike the doctor, this figure stands differently
+    // when the bow is a club, so his Default changes with his Attack.
+    melee: {
+      default: { sprite: 'archer', trim: [207, 164, 130, 152], pivot: [0.392, 0.924] },
+      attack: { sprite: 'archer_attack', trim: [175, 200, 162, 116], pivot: [0.512, 0.901] }
+    },
+    spriteFaces: -1,
+    dead: 'dead_archer',
+    deadTrim: [149, 218, 214, 76],
+    deadPivot: [0.161, 0.875],
+    // LIGHTER THAN THE DOCTOR, at 110 against 150, and for the same reason the
+    // doctor is lighter than a giant: everything he is worth is in the shooting,
+    // and a body that also had to be chewed through would make him the thing a
+    // wave is built around rather than the thing that makes a wave awkward.
+    hp: 110,
+    // Between the militia's 70 and the doctor's 60. He is not a wall and not a
+    // straggler; he walks with the wave and starts working before it arrives.
+    speed: 65,
+    // Above a militiaman's 15 and below the doctor's 30. He is harder to reach
+    // than the first and easier than the second, and the bounty is what a player
+    // is paid for building the tower that can.
+    bounty: 25,
+    leak: 1,
+    // His club, which is the least interesting thing about him — the bow is a bad
+    // weapon at arm's length and it should be. It is what `damage` means on every
+    // enemy: the swing a blocker takes once he is pinned.
+    damage: 8,
+    atkCd: 1.1,
+    // WHAT THE CARD PRINTS, and it is the arrow rather than the club, for exactly
+    // the reason the doctor's card prints his poison: a player reading "8" beside
+    // an enemy who is taking 15 off a paladin from across the map has been told
+    // the safer-looking of the two numbers and the wrong one.
+    listedDamage: 15,
+    r: 8,
+    colour: '#7A6A46',
+    ranged: {
+      // TWICE THE DOCTOR'S 130, at the owner's word, and it is the whole enemy.
+      range: 260,
+      // BUT HE WALKS IN TO 130 BEFORE HE STOPS, and the two numbers being
+      // different is deliberate rather than an oversight.
+      //
+      // `range` is how far he can hit; `stopAt` is how close he insists on being
+      // before he plants himself. If they were both 260 he would stand where no
+      // squad could reach him — a barracks leashes its men to their own tower —
+      // and on any plot where no tower covered that patch of road he would stand
+      // there shooting forever. A wave only ends when the field is clear, so that
+      // is not a hard enemy, it is a hung game.
+      //
+      // At 130 he closes to the doctor's distance before halting, which keeps him
+      // answerable by the family he is aimed at: a soldier can walk out and pin
+      // him. He simply opens fire long before he gets there, which is what
+      // "shoots twice as far" buys.
+      stopAt: 130,
+      cd: 2.0,
+      // 15 a shot at 2 seconds is 7.5 a second on one man, against the doctor's
+      // 6 — and unlike the poison it is damage rather than a debuff, so it stacks
+      // with everything else on the road and a regenerating squad does not shrug
+      // it off.
+      damage: 15,
+      ammo: enemyArrow
+    }
   },
 
   // The heavy. Its artwork is called T1b, not T2, and that rename is the
@@ -312,7 +417,18 @@ export const enemyTypes = {
     // measurements that agree are the check, and one number used twice is not.
     spriteTrim: [191, 189, 130, 134],
     pivot: [0.385, 0.916],
-    attack: { sprite: 'plague_attack', trim: [191, 189, 130, 134], pivot: [0.385, 0.916] },
+    // THE THROW is his `attack`, because throwing is what he does on the road —
+    // the same rule the archer follows, where the ranged pair is the default pair.
+    // It is the drawing that used to be called Attack; the artist renamed the file
+    // to Ranged_Attack when he drew the second one.
+    attack: { sprite: 'plague_throw', trim: [191, 189, 130, 134], pivot: [0.385, 0.916] },
+    // AND THE CLOSE ONE, shown while a soldier is holding him. No `default` here,
+    // unlike the archer's: the artist drew one standing pose that serves both, so
+    // the doctor pinned in a melee stands exactly as he stands throwing and only
+    // his swing is its own drawing.
+    melee: {
+      attack: { sprite: 'plague_attack', trim: [174, 189, 147, 134], pivot: [0.456, 0.916] }
+    },
     spriteFaces: -1,
     dead: 'dead_plague',
     deadTrim: [116, 207, 280, 97],
@@ -400,6 +516,11 @@ export const enemyTypes = {
       // cover the road can always answer.
       range: 130,
       cd: 2.2,
+      // WHAT LEAVES HIS HAND, and it moved here from the throwing code when the
+      // archer arrived: `loose` in src/enemies.js reads the ammunition off the
+      // enemy now, so a second thrower needed no branch. He does no direct damage
+      // and names none — the flask's whole effect is the ground it leaves.
+      ammo: flask,
       // NO `standoff` ANY MORE, and its absence is a design decision rather than
       // a tidy-up. It was a patience: 14 seconds of not advancing, spent once,
       // after which he walked into the line whatever was standing in it. The

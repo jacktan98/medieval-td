@@ -154,5 +154,23 @@ console.log('\nWhat the dashboard changes\n');
     seen && show(new Map(seen.groups.map(g => [g.type, g.count]))));
 }
 
+// EVERY THROWER HAS SOMETHING TO THROW. The ammunition moved from the throwing
+// code onto the enemy when the archer arrived, and a `ranged` block without an
+// `ammo` is a crash the first time that enemy sees a soldier — which is exactly
+// the sort of thing that only shows up in a run, and only for one enemy type.
+console.log('\nWhat each thrower throws\n');
+for (const [id, d] of Object.entries(enemyTypes)) {
+  if (!d.ranged) continue;
+  ok(!!(d.ranged.ammo && d.ranged.ammo.sprite && d.ranged.speed !== null),
+    `${d.name} has ammunition to loose`, d.ranged.ammo && d.ranged.ammo.sprite);
+  // AND HE STOPS SOMEWHERE HIS ENEMY CAN REACH. `stopAt` may be shorter than
+  // `range` but never longer: an enemy that plants himself further out than he
+  // can shoot would stand there doing nothing, and one that stops beyond every
+  // answer on the board hangs the wave instead of ending it.
+  const stop = d.ranged.stopAt ?? d.ranged.range;
+  ok(stop <= d.ranged.range, 'and stops no further out than he can hit',
+    `stops at ${stop}, hits to ${d.ranged.range}`);
+}
+
 console.log(bad ? `\n${bad} preview rule(s) broken.` : '\nThe preview promises what the road delivers.');
 process.exit(bad ? 1 : 0);

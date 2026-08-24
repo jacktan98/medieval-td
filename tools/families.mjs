@@ -254,15 +254,30 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
     'and still throws a blast, the smallest of the four',
     siege.map(d => d.splash).join(' / '));
 
-  // Joint biggest with the Musketeer Post's ball, and the monastery is excluded
-  // rather than beaten: hitting hardest is that family's whole column of the
-  // table at the top of this file, so a Judgement Temple at 80 is the design
-  // working rather than the ballista losing an argument. What the check is for is
-  // the two ladders that are NOT about damage per blow — nothing in archery or
-  // artillery may out-hit this — and being beaten by a tier 3 anywhere.
-  const others = [...archery, ...siege].filter(d => d !== t4);
-  ok(others.every(d => d.damage <= t4.damage), 'and hits as hard as anything outside the monastery',
-    `${t4.damage} against the next ${Math.max(...others.map(d => d.damage))}, and the temple's ${monastery[3].damage}`);
+  // THE HARDEST BLOW IN ITS OWN FAMILY, and it used to be joint hardest of the
+  // two ladders with the Musketeer Post's ball. The owner has since taken the
+  // Post to 65 and this is 60, so the claim that was here — "hits as hard as
+  // anything outside the monastery" — is simply no longer true, and it is
+  // restated rather than propped up.
+  //
+  // WHAT IS WORTH GUARDING is the shape of the ladders rather than which of two
+  // tier 4s wins by five: no tier below 4 may out-hit a tier 4 anywhere, because
+  // that would make an upgrade a downgrade in the one number every card leads
+  // with. The monastery is excluded from nothing here — it hits hardest of all
+  // four families, which is its whole column of the table at the top of this
+  // file.
+  const lower = [...archery, ...siege].filter(d => d.tier < 4);
+  ok(lower.every(d => d.damage < t4.damage), 'and out-hits every tier below 4 in both ladders',
+    `${t4.damage} against the best lower tier's ${Math.max(...lower.map(d => d.damage))}`);
+
+  ok(siege.every(d => d === t4 || d.damage < t4.damage), 'and hits hardest in its own family',
+    siege.map(d => d.damage).join(' / '));
+
+  // And the ranking across the four tier 4s, printed rather than asserted: it is
+  // the owner's to set, and what a check here would freeze is a decision that has
+  // moved three times.
+  console.log(`      tier 4 damage: Post ${archery[3].damage}, Turret ${t4.damage}, ` +
+    `Temple ${monastery[3].damage}, Keep ${barracks[3].soldier.damage} a man`);
 
   ok(siege.every(d => d === t4 || d.cooldown > t4.cooldown), 'and reloads fastest in its family',
     siege.map(d => d.cooldown.toFixed(2)).join(' / '));

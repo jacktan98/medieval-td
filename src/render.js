@@ -1114,6 +1114,31 @@ const ENEMY_LUNGE = 6;
 // with three lanes on the road there are enough of them on screen for the
 // hopping to be the thing you notice. The only movement an enemy has now is
 // along its lane, plus the lunge when it swings.
+// WHICH PAIR OF DRAWINGS AN ENEMY IS SHOWING, for the two that fight at both
+// distances. Exported because it is a RULE rather than a piece of drawing —
+// tools/facing.mjs asks it what each state resolves to, and a rule nothing can
+// ask is a rule nobody can check.
+//
+// A `melee` block on the def is a second Default and a second Attack, and they
+// are shown while a soldier is HOLDING him — `e.foe` — because that is what
+// "face to face" means in this game: not how near he is, but whether somebody
+// has hold of him. An archer with a man on him puts the bow about as a club; a
+// doctor stops throwing at the line and swings at the one in front of him.
+//
+// The pair is not all-or-nothing. `melee.default` is optional, because the artist
+// drew the doctor ONE standing pose that serves both stances and drew the archer
+// two — so a def takes only the halves it actually has, and an enemy with no
+// `melee` at all answers with the one pair it has ever had.
+export function enemyStance(e) {
+  const d = e.def;
+  const close = !!(e.foe && d.melee);
+  const own = { sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot };
+  return {
+    stand: (close && d.melee.default) || own,
+    swing: close ? d.melee.attack : d.attack
+  };
+}
+
 function drawEnemy(ctx, e) {
   const img = e.def.sprite && art[e.def.sprite];
 
@@ -1128,13 +1153,15 @@ function drawEnemy(ctx, e) {
     return;
   }
 
+  const { stand, swing } = enemyStance(e);
+
   // The swing, the stab, or the throw — one field for all three, because they
   // are the same event to an enemy: the moment it does the thing it does. A
   // plague doctor's `thrust` is set by the flask leaving his hand rather than by
   // a blow landing, and he gets the lunge with it, which is exactly right for a
   // man putting his shoulder into a throw.
-  const [frame, trim, pivot] = pose(e.def.attack, e.thrust > 0, img,
-    e.def.spriteTrim, e.def.pivot);
+  const [frame, trim, pivot] = pose(swing, e.thrust > 0,
+    art[stand.sprite] || img, stand.trim, stand.pivot);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -1154,7 +1181,19 @@ function drawEnemy(ctx, e) {
 // collisions. Health bars hang off this: pinned to the collision radius instead,
 // a bar sat across the chest of anything drawn taller than its hitbox, and the
 // tier 2 enemy — 28px of art over a 12px body — made that obvious.
-const artHeight = def => def.spriteTrim ? def.spriteTrim[3] * SCALE : def.r * 2;
+// THE TALLEST DRAWING A FIGURE HAS, not the one it is showing.
+//
+// An archer thug raises his bow overhead when a soldier reaches him, and his
+// close-quarters Default is 152 source px where the one he walks in is 120. A
+// health bar hung off whichever pose was on screen would jump up his body the
+// moment somebody caught him — and a bar that moves for a reason other than
+// health is a bar the player stops trusting. So it is a property of the DEF,
+// answered once and the same in every stance.
+const artHeight = def => {
+  if (!def.spriteTrim) return def.r * 2;
+  const close = def.melee && def.melee.default;
+  return Math.max(def.spriteTrim[3], close ? close.trim[3] : 0) * SCALE;
+};
 
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
 // over 12px soldiers read as a wall of stripes and hide the fight underneath.
@@ -1960,10 +1999,16 @@ const PREVIEW_K = PREVIEW_H /
   Math.max(...Object.values(enemyTypes).map(d => d.spriteTrim[3]));
 
 function drawWavePreview(ctx, state) {
+  // ONLY WHILE THE BUTTON IS LIVE, which is the owner's call after playing with
+  // it: between waves and during the opening delay, when the row is a decision,
+  // and not during the fight, when it is one more thing moving on a screen the
+  // player is already reading. `canCallWave` is asked rather than re-derived, so
+  // the row and the button it explains can never disagree about when they apply.
+  //
   // Nothing before the game starts, nothing once it is over, and nothing on the
-  // last wave — there is no wave after it, and an empty plate that only appears
-  // at the end reads as something having broken.
-  if (!state.started || state.result) return;
+  // last wave — there is no wave after it, and an empty row that only appears at
+  // the end reads as something having broken.
+  if (!state.started || state.result || !canCallWave(state)) return;
   const next = upcomingWave(state);
   if (!next || !next.groups.length) return;
 

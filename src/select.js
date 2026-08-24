@@ -24,7 +24,16 @@ import { boost } from './towers.js';
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
 // radius, the same way render.js does.
-const artHeight = def => (def.spriteTrim ? def.spriteTrim[3] * SCALE : def.r * 2);
+//
+// The tallest drawing the figure has, for the same reason render.js takes the
+// max: an archer thug is a head taller with the bow up, and a tap box that
+// shrank the moment he was caught would be a target that moves while you are
+// reaching for it.
+const artHeight = def => {
+  if (!def.spriteTrim) return def.r * 2;
+  const close = def.melee && def.melee.default;
+  return Math.max(def.spriteTrim[3], close ? close.trim[3] : 0) * SCALE;
+};
 
 // Slack around a figure's drawn box, in game px. A militiaman is 23px tall and
 // 12 across; without the padding he is a target roughly 4mm square on a phone,

@@ -27,6 +27,7 @@ import { arrow } from '../src/data/towers.js';
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
+import { enemyStance } from '../src/render.js';
 
 // Where on the road the test stands its victim. An enemy's position is DERIVED
 // from its route and how far along it has walked — setting x and y directly does
@@ -113,7 +114,58 @@ if (pair[0] !== pair[1]) {
   console.log('\nWRONG: the body still turns with the way it was walking.');
 }
 
+// --- WHICH DRAWING AN ENEMY IS SHOWING ----------------------------------------
+//
+// Two enemies fight at both distances now, and each carries two Defaults and two
+// Attacks — or, for the doctor, one Default and two Attacks. Four states, and
+// the rule that picks between them is one line in render.js that no screenshot
+// would catch getting subtly wrong: a swapped pair reads as "the artist drew him
+// oddly" rather than as a bug.
+//
+// `e.foe` is the whole test. It is not how near the soldier is: it is whether one
+// has hold of him.
+console.log('\nWhich drawing an enemy shows\n');
+{
+  const ok = (cond, label, detail = '') => {
+    console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(56)} ${detail}`);
+    if (!cond) bad++;
+  };
+  const state = (def, foe, thrust) => ({ def, foe, thrust });
+
+  for (const id of ['archer_inf', 'plague_inf']) {
+    const d = enemyTypes[id];
+    const far = enemyStance(state(d, null, 0));
+    const loose = enemyStance(state(d, null, 1));
+    const near = enemyStance(state(d, {}, 0));
+    const swing = enemyStance(state(d, {}, 1));
+
+    console.log(`      ${d.name}: standing ${far.stand.sprite} / ${near.stand.sprite}, ` +
+      `striking ${loose.swing.sprite} / ${swing.swing.sprite}`);
+
+    ok(far.stand.sprite === d.sprite, `${d.name} walks in his own Default`, far.stand.sprite);
+    ok(loose.swing.sprite === d.attack.sprite,
+      'and strikes at a distance with his ranged Attack', loose.swing.sprite);
+    ok(swing.swing.sprite === d.melee.attack.sprite,
+      'and with the close one the moment somebody has hold of him', swing.swing.sprite);
+    // THE DOCTOR SHARES ONE STANDING POSE and the archer does not, which is the
+    // artist's decision rather than the code's — so what is checked is that each
+    // gets what his own def carries.
+    const expect = d.melee.default ? d.melee.default.sprite : d.sprite;
+    ok(near.stand.sprite === expect,
+      d.melee.default ? 'and stands differently while he is held'
+                      : 'and keeps his one standing pose while he is held',
+      near.stand.sprite);
+  }
+
+  // AND NOTHING ELSE CHANGED. An enemy with no `melee` block has one pair and
+  // shows it whatever is happening to him.
+  const thug = enemyTypes.light_inf;
+  const held = enemyStance({ def: thug, foe: {}, thrust: 1 });
+  ok(held.stand.sprite === thug.sprite && held.swing.sprite === thug.attack.sprite,
+    'a thug has one pair and shows it however he is caught', thug.sprite);
+}
+
 console.log(bad
   ? `\n${bad} case(s) wrong.`
-  : '\nEvery body faces the blow and is thrown away from it.');
+  : '\nEvery body faces the blow, and every figure shows the drawing it should.');
 process.exit(bad ? 1 : 0);

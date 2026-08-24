@@ -1,11 +1,11 @@
 import { level, remaining } from './level.js';
 import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
-import { enemyTypes, flask } from './data/waves.js';
+import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { unhook } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, CUE } from './audio.js';
+import { solo, play, CUE, SHOT } from './audio.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -37,7 +37,7 @@ export function spawn(state, typeId) {
     thrust: 0,       // 1 on the swing, decays; drives the lunge in render.js
     // A thrower's own clock, set on every enemy rather than only on the ones
     // that throw, so the shape of an enemy is written down in one place.
-    tcd: 0,          // seconds until the next flask
+    tcd: 0,          // seconds until the next flask or arrow
     // Standing off to throw rather than walking on: true only while it is
     // happening, and read by leadPoint, which has to know that this figure is
     // not going anywhere. There is no budget beside it any more — see the
@@ -90,7 +90,7 @@ export function updateEnemies(state, dt) {
       const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
       e.tcd -= dt;
       if (mark && e.tcd <= 0) {
-        throwFlask(state, e, mark);
+        loose(state, e, mark);
         e.tcd = e.def.ranged.cd;
         // Same field the melee lunge uses, so the Attack drawing shows for the
         // throw exactly as long as it shows for a swing. It is also what makes
@@ -267,7 +267,13 @@ const BLOCK_REACH = 45;
 function screened(state, e, road) {
   for (const u of state.units) {
     if (u.respawn > 0 || u.hp <= 0) continue;
-    if (!inRange(e.x, e.y, u.x, u.y, e.def.ranged.range)) continue;
+    // HOW CLOSE HE INSISTS ON GETTING, which is not always how far he can hit.
+    // `stopAt` is the archer's: he looses 260 and plants himself at 130, so a
+    // squad can still walk out and pin him. Absent — the plague doctor — the two
+    // are the same number and nothing changes. See `ranged` in data/waves.js for
+    // why an enemy that stops beyond every answer is a hung game rather than a
+    // hard one.
+    if (!inRange(e.x, e.y, u.x, u.y, e.def.ranged.stopAt ?? e.def.ranged.range)) continue;
     const on = nearestOn([road], u.x, u.y);
     if (on.d <= BLOCK_REACH && on.s > e.s) return true;
   }
@@ -305,15 +311,26 @@ function nearestUnit(state, x, y, range) {
 // somewhere a lead could not predict. Throwing at the ground he is on means the
 // flask lands where you saw it aimed, and a man who steps out of it has dodged
 // something rather than been missed by a bug.
-function throwFlask(state, e, mark) {
+// WHATEVER THIS ENEMY THROWS OR LOOSES, through one function.
+//
+// It was throwFlask and it knew about the flask: the arc, the speed and the
+// picture were all read from that one ammunition. Now the AMMUNITION is on the
+// enemy — `ranged.ammo` — and this is the same code asking it, so the archer's
+// arrow needed no branch here. An arrow homes and an arc'd flask does not, which
+// is the same `arc` flag the towers' own projectiles answer.
+function loose(state, e, mark) {
   // The hand, derived from his own drawing rather than typed: the height of the
   // figure above the shadow it stands on, a little over half way up. Nothing to
   // re-measure when the artist redraws him.
   const up = e.def.spriteTrim[3] * e.def.pivot[1] * SCALE * 0.55;
   const from = { x: e.x, y: e.y - up };
   const to = { x: mark.x, y: mark.y };
+  const ammo = e.def.ranged.ammo;
   const dist = Math.hypot(to.x - from.x, to.y - from.y);
-  const flight = dist / flask.speed;
+  // A LOB HAS A FLIGHT TIME AND A STEERED SHOT DOES NOT. `flight` and `lift` are
+  // what make projectiles.js run the arc; leaving them off is what makes a shot
+  // home on its man and die with him. See fly() and land() there.
+  const flight = ammo.arc ? dist / ammo.speed : undefined;
 
   state.shots.push({
     x: from.x,
@@ -325,16 +342,26 @@ function throwFlask(state, e, mark) {
     // shot, which reads as the player's side.
     side: 'enemy',
     target: mark,
-    damage: 0,
-    splash: flask.splash,
-    ammo: flask,
-    speed: flask.speed,
+    // WHAT IT HITS FOR, off the enemy rather than off the ammunition, because two
+    // enemies could loose the same arrow for different damage — the same reason a
+    // tower's shot carries its own number. A flask does none: what it does is on
+    // the ground it leaves, and `damage` on a poisoned shot is never read.
+    damage: e.def.ranged.damage || 0,
+    splash: ammo.splash || 0,
+    ammo,
+    speed: ammo.speed,
     from,
     to,
     flight,
     t: 0,
-    lift: dist * flask.arc
+    lift: ammo.arc ? dist * ammo.arc : 0
   });
+
+  // Category B, on the release, and only for ammunition that says it makes a
+  // noise leaving. An arrow does — it is the same `arrow_shot` every bow in the
+  // game uses, which is what the owner asked for and what the shared drawing
+  // already implied. A flask does not: it announces itself by breaking.
+  if (ammo.fireSound) play(SHOT);
 }
 
 // Closest to leaking, so towers focus whatever is about to cost a life.

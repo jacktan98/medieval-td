@@ -162,7 +162,13 @@ export const paths = {
   // info box and the encyclopedia use. Named for the man rather than the tier,
   // like the musketeer and the paladin.
   crew_t4:     'assets/units/Ballista_Engineer.png',
-  arrow_t1:    'assets/projectiles/Archery_Arrows_T1.png',
+  // THE ARROW LOST ITS TIER, because it stopped belonging to one family. The
+  // artist renamed Archery_Arrows_T1 to Archer_Arrows when the Archer Thug
+  // arrived: the same drawing now leaves a tower's bow and an enemy's, and a
+  // name with a tier in it said it was the first of a ladder that does not
+  // exist. The KEY keeps its old spelling — `arrow_t1` is written into three
+  // archery tiers and the ammunition table — and only the path moved.
+  arrow_t1:    'assets/projectiles/Archer_Arrows.png',
   // The musket ball. One drawing for the one tier that fires it, so the key
   // carries no tier number — unlike the rocks and the missiles, which have three
   // each.
@@ -211,8 +217,19 @@ export const paths = {
   thug_attack:     'assets/enemies/Enemies_Thug_Attack.png',
   giant:           'assets/enemies/Enemies_Giant_Thug_Default.png',
   giant_attack:    'assets/enemies/Enemies_Giant_Thug_Attack.png',
+  // TWO ATTACK DRAWINGS EACH for the two enemies that fight at both distances,
+  // and they answer different questions: `_melee` is what he does to the man
+  // holding him, `_ranged` is what he does to the men he cannot reach. The
+  // plague doctor shares ONE Default between the two — the artist drew him
+  // standing the same way whichever he is about to do — and the archer does not,
+  // because a bow held ready to loose and a bow held as a club are two stances.
   plague:          'assets/enemies/Enemies_Plague_Thug_Default.png',
-  plague_attack:   'assets/enemies/Enemies_Plague_Thug_Attack.png',
+  plague_attack:   'assets/enemies/Enemies_Plague_Thug_Melee_Attack.png',
+  plague_throw:    'assets/enemies/Enemies_Plague_Thug_Ranged_Attack.png',
+  archer:          'assets/enemies/Enemies_Archer_Thug_Melee_Default.png',
+  archer_attack:   'assets/enemies/Enemies_Archer_Thug_Melee_Attack.png',
+  archer_ready:    'assets/enemies/Enemies_Archer_Thug_Ranged_Default.png',
+  archer_loose:    'assets/enemies/Enemies_Archer_Thug_Ranged_Attack.png',
   // Death poses. See assets/dead/README.md.
   //
   // The tier comes LAST in these names — Man_Dead_T1, not Man_T1_Dead — because
@@ -222,6 +239,7 @@ export const paths = {
   dead_thug:       'assets/dead/Enemies_Thug_Dead.png',
   dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
   dead_plague:     'assets/dead/Enemies_Plague_Thug_Dead.png',
+  dead_archer:     'assets/dead/Enemies_Archer_Thug_Dead.png',
   // The three soldiers' bodies, renamed by the artist to match their living
   // drawings — Soldiers_Spearman_Dead beside Soldiers_Spearman_Default — and
   // redrawn in the same upload, so every deadTrim and deadPivot below was

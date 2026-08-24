@@ -187,6 +187,7 @@ const pal = towers.barracks[3].soldier;
 const mon = towers.monastery;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const plague = waves.enemyTypes.plague_inf;
+const archer = waves.enemyTypes.archer_inf;
 
 // `whole` sprites are the buildings: nothing else in those files is painted the
 // ground colour, so every blob of it is part of one ellipse and they are fitted
@@ -334,14 +335,29 @@ const SPRITES = [
   ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Attack.png',   'heavy_inf.attack.pivot',  heavy.attack.trim, heavy.attack.pivot],
   ['assets/enemies/Enemies_Plague_Thug_Default.png', 'plague_inf.pivot',        plague.spriteTrim, plague.pivot],
-  ['assets/enemies/Enemies_Plague_Thug_Attack.png',  'plague_inf.attack.pivot', plague.attack.trim, plague.attack.pivot],
+  ['assets/enemies/Enemies_Plague_Thug_Ranged_Attack.png', 'plague_inf.attack.pivot',
+    plague.attack.trim, plague.attack.pivot],
+  ['assets/enemies/Enemies_Plague_Thug_Melee_Attack.png', 'plague_inf.melee.attack.pivot',
+    plague.melee.attack.trim, plague.melee.attack.pivot],
+  // THE ARCHER'S FOUR, and all four have to land on the same pixel of ground: he
+  // swaps between them mid-fight, so a pivot out by two would make him hop the
+  // moment a soldier reached him.
+  ['assets/enemies/Enemies_Archer_Thug_Ranged_Default.png', 'archer_inf.pivot',
+    archer.spriteTrim, archer.pivot],
+  ['assets/enemies/Enemies_Archer_Thug_Ranged_Attack.png', 'archer_inf.attack.pivot',
+    archer.attack.trim, archer.attack.pivot],
+  ['assets/enemies/Enemies_Archer_Thug_Melee_Default.png', 'archer_inf.melee.default.pivot',
+    archer.melee.default.trim, archer.melee.default.pivot],
+  ['assets/enemies/Enemies_Archer_Thug_Melee_Attack.png', 'archer_inf.melee.attack.pivot',
+    archer.melee.attack.trim, archer.melee.attack.pivot],
   ['assets/dead/Soldiers_Spearman_Dead.png',  'spearman.deadPivot',   spear.deadTrim, spear.deadPivot],
   ['assets/dead/Soldiers_Pikeman_Dead.png',   'spearman2.deadPivot',  spear2.deadTrim, spear2.deadPivot],
   ['assets/dead/Soldiers_Swordsman_Dead.png', 'spearman3.deadPivot',  spear3.deadTrim, spear3.deadPivot],
   ['assets/dead/Paladin_Dead.png',            'paladin.deadPivot',    pal.deadTrim, pal.deadPivot],
   ['assets/dead/Enemies_Thug_Dead.png',        'light_inf.deadPivot',  light.deadTrim, light.deadPivot],
   ['assets/dead/Enemies_Giant_Thug_Dead.png',  'heavy_inf.deadPivot',  heavy.deadTrim, heavy.deadPivot],
-  ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot]
+  ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot],
+  ['assets/dead/Enemies_Archer_Thug_Dead.png', 'archer_inf.deadPivot', archer.deadTrim, archer.deadPivot]
 ];
 
 // How far the held anchor may sit from the measured centre before it is wrong,
