@@ -383,6 +383,48 @@ const firingAbilities = t =>
     ? abilitiesOf(t.def).filter(a => a.every && owns(t, a.id))
     : NONE;
 
+// EVERY AURA IN FORCE ON THE MAP, once each.
+//
+// AN AURA IS A STATE OF THE MAP RATHER THAN A THING A TOWER HAS. Everything else
+// in this game is bought per plot and works on the plot it was bought on; these
+// two are bought on one plot and work everywhere, so the question they answer is
+// "is Holy Wrath on this map", not "does this tower have it".
+//
+// THEY DO NOT STACK, and that is a design decision rather than an accident of the
+// loop. Two temples both taught Holy Wrath would otherwise be +21%, three +33%,
+// and the best build in the game would be a row of temples buffing each other —
+// which is the one shape a game with four families and nine plots must not have.
+// Each ABILITY counts once however many towers have paid for it, so a second
+// temple is worth what a second temple does, and nothing more.
+//
+// Rebuilt per call rather than cached on the state: it is asked once per shot and
+// once per frame for the squads, the tower list is never longer than eleven, and a
+// cache would need invalidating on build, sell, upgrade and purchase — four hooks
+// to get wrong in exchange for nothing measurable.
+export function auras(state) {
+  const out = [];
+  for (const t of state.towers || NONE) {
+    for (const a of boughtAbilities(t)) {
+      if (a.aura && !out.includes(a)) out.push(a);
+    }
+  }
+  return out;
+}
+
+// The multiplier an aura puts on one FIELD for one family: 1 when nothing on the
+// map is buffing it, which is the answer almost every call gets.
+//
+// Keyed by family id rather than by a predicate on the def, so what an aura covers
+// can be read out of the data and printed — see the `on` lists in
+// data/abilities.js and the table tools/abilities.mjs prints from them.
+export function boost(state, what, famId) {
+  let k = 1;
+  for (const a of auras(state)) {
+    if (a.aura[what] && a.aura.on.includes(famId)) k *= a.aura[what];
+  }
+  return k;
+}
+
 // EVERYTHING THIS TOWER HAS BOUGHT, whether or not it fires on a count.
 //
 // The two lists are different questions and the difference is Far Shot. The one
@@ -529,9 +571,16 @@ function shoot(state, t, target, special) {
     // Bolt's "double" is. The multiplier is preferred where both exist, and it is
     // there so that "twice as hard" stays true after the next retune of the number
     // it is twice OF.
-    damage: special && special.times
-      ? t.def.damage * special.times
-      : (special && special.damage) || t.def.damage,
+    // AND THE MAP'S OWN BUFF ON TOP, which is Holy Wrath. It multiplies whatever
+    // this shot was going to do, ability included — a Deadeye ball under a Holy
+    // Wrath is 330 rather than 300 — because the aura is a fact about the tower
+    // firing rather than about which shot this is. Rounded, so a health bar never
+    // has to show a fraction of a point.
+    damage: Math.round(
+      (special && special.times
+        ? t.def.damage * special.times
+        : (special && special.damage) || t.def.damage) * boost(state, 'damage', t.fam.id)
+    ),
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
     splash: t.def.splash || 0,

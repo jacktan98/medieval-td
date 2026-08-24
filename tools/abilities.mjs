@@ -24,7 +24,7 @@
 // numbers are quoted in the comments in data/abilities.js and in the encyclopedia,
 // and a comment that has drifted from the code is worse than no comment.
 
-import { updateTowers, rangeOf, framesOf } from '../src/towers.js';
+import { updateTowers, rangeOf, framesOf, auras, boost } from '../src/towers.js';
 import { updateUnits, makeUnits } from '../src/units.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
@@ -109,15 +109,13 @@ console.log('\nWhat a tier 4 offers\n');
   ok(ABILITIES.every(a => a.cost === ABILITY_COST),
     'every ability costs the same', `${ABILITY_COST}g`);
 
-  const owners = [archery[3], barracks[3], siege[3]];
+  // ALL FOUR LADDERS, two each. The Judgement Temple was the last one without any,
+  // and now that it has a pair the list is complete — so the check is no longer
+  // "every tier 4 that has any" but every tier 4 there is.
+  const owners = [archery[3], barracks[3], siege[3], monastery[3]];
   ok(owners.every(d => (d.abilities || []).length === 2),
-    'and every tier 4 tower that has any offers two',
+    'and every tier 4 tower offers two',
     owners.map(d => `${d.name} ${d.abilities.length}`).join(', '));
-
-  // THE JUDGEMENT TEMPLE HAS NONE YET, and that is a gap rather than a rule — it
-  // is the one tier 4 nobody has been asked to teach anything. Named here so the
-  // list above cannot quietly grow to include it without somebody deciding to.
-  ok(!monastery[3].abilities, 'and the Judgement Temple has none yet');
 
   // TIER 4 ONLY. Nothing below it may carry an ability, because the whole reason
   // an ability exists is that a topped-out ladder has nothing left to buy — a
@@ -573,6 +571,104 @@ console.log('\nBoth of them, on one turret\n');
   const rate = armed.reduce((sum, s) => sum + s.damage, 0) / (siege[3].cooldown * 9);
   console.log(`      one turret: ${(siege[3].damage / siege[3].cooldown).toFixed(1)}/s plain, ` +
               `${rate.toFixed(1)}/s with Heavy Bolt, over ${plain} shots either way`);
+}
+
+console.log('\nHoly Wrath and Divine Fortitude\n');
+
+{
+  const wrath = abilityById('wrath');
+  const fort = abilityById('fortitude');
+
+  // WHAT EACH ONE COVERS, read out of the data rather than watched. The `on` list
+  // is a list of family ids exactly so this can be a table rather than an
+  // experiment, and so a family added later is visibly not covered.
+  for (const a of [wrath, fort]) {
+    console.log(`      ${a.name}: ${Object.entries(a.aura)
+      .filter(([k]) => k !== 'on' && k !== 'badge')
+      .map(([k, v]) => `${k} x${v}`).join(', ')} on ${a.aura.on.join(', ')}`);
+  }
+
+  ok(!wrath.aura.on.includes('barracks'),
+    'Holy Wrath does not reach a barracks man', wrath.aura.on.join('/'));
+  ok(fort.aura.on.length === 1 && fort.aura.on[0] === 'barracks',
+    'and Divine Fortitude reaches nothing else');
+
+  // A TOWER OF EVERY FAMILY, so the boost can be asked about each of them at once.
+  const map = fams => ({ towers: fams.map(f => ({ ...turret([]), fam: { id: f } })), units: [] });
+  const bare = map(['archery', 'siege', 'monastery', 'barracks']);
+  ok(auras(bare).length === 0, 'a map with no temple has no aura');
+  for (const f of ['archery', 'siege', 'monastery', 'barracks']) {
+    ok(boost(bare, 'damage', f) === 1 && boost(bare, 'hp', f) === 1,
+      `and nothing is boosted on it (${f})`);
+  }
+
+  // ONE TEMPLE, TAUGHT BOTH.
+  const holy = { towers: [...map(['archery', 'siege', 'monastery', 'barracks']).towers,
+                          { ...turret(['wrath', 'fortitude']), fam: { id: 'monastery' },
+                            def: monastery[3] }], units: [] };
+  ok(auras(holy).length === 2, 'a temple taught both puts two auras on the map');
+  ok(boost(holy, 'damage', 'archery') === wrath.aura.damage &&
+     boost(holy, 'damage', 'siege') === wrath.aura.damage &&
+     boost(holy, 'damage', 'monastery') === wrath.aura.damage,
+    'every shooting family hits harder', `x${wrath.aura.damage}`);
+  ok(boost(holy, 'damage', 'barracks') === 1, 'and the barracks does not');
+  ok(boost(holy, 'hp', 'barracks') === fort.aura.hp, 'the barracks men are tougher',
+    `x${fort.aura.hp}`);
+  ok(boost(holy, 'hp', 'archery') === 1, 'and nothing else is');
+
+  // AND TWO TEMPLES ARE NOT TWICE, which is the property that stops the best build
+  // in the game being a row of temples buffing each other.
+  const two = { towers: [...holy.towers,
+                         { ...turret(['wrath', 'fortitude']), fam: { id: 'monastery' },
+                           def: monastery[3] }], units: [] };
+  ok(auras(two).length === 2, 'a second temple adds no third aura');
+  ok(boost(two, 'damage', 'archery') === wrath.aura.damage, 'and buffs nothing further',
+    `x${boost(two, 'damage', 'archery')}`);
+
+  // WHAT IT IS WORTH ON A SHOT, through the real firing code rather than the
+  // multiplier alone: a Musketeer Post under a Holy Wrath fires for 66 instead of
+  // 60, and Deadeye's own 300 goes with it.
+  const t = post([]);
+  const state = { towers: [t, { ...turret(['wrath']), fam: { id: 'monastery' }, def: monastery[3] }],
+                  enemies: [dummy(t)], shots: [], units: [], hits: [] };
+  let shot = null;
+  for (let i = 0; i * DT < archery[3].cooldown + 0.1 && !shot; i++) {
+    updateTowers(state, DT);
+    if (state.shots.length) shot = state.shots[0];
+    state.shots.length = 0;
+  }
+  ok(shot && shot.damage === Math.round(archery[3].damage * wrath.aura.damage),
+    'and a shot fired under it really does land harder',
+    `${archery[3].damage} becomes ${shot && shot.damage}`);
+
+  // THE HEALTH SIDE, through updateUnits, including the case a hook would have
+  // missed: the ability bought while the men are already standing there.
+  const live = keep([]);
+  const man = live.units[0];
+  updateUnits(live, DT);
+  ok(man.maxHp === barracks[3].soldier.hp, 'a man with no temple carries his own health',
+    `${man.maxHp}`);
+
+  man.hp = man.maxHp / 2;
+  live.towers.push({ ...turret(['fortitude']), fam: { id: 'monastery' }, def: monastery[3] });
+  updateUnits(live, DT);
+  ok(man.maxHp === barracks[3].soldier.hp * fort.aura.hp,
+    'and gains a fifth the moment the temple is taught',
+    `${barracks[3].soldier.hp} becomes ${man.maxHp}`);
+  // WOUNDED EXACTLY AS HE WAS. The aura raises the ceiling and lifts his health
+  // with it, so a man at half stays at half rather than being handed the whole
+  // difference. The slack is the one frame of out-of-combat regen that runs in the
+  // same update — that heals him, the aura does not.
+  const drift = (barracks[3].soldier.regen * DT) / man.maxHp + 1e-9;
+  ok(Math.abs(man.hp / man.maxHp - 0.5) <= drift,
+    'wounded exactly as he was, not healed by it',
+    `${(100 * man.hp / man.maxHp).toFixed(1)}%`);
+
+  live.towers.pop();
+  updateUnits(live, DT);
+  ok(man.maxHp === barracks[3].soldier.hp && man.hp > 0,
+    'and gives it back when the temple is sold, without killing him',
+    `${man.maxHp}, at ${(100 * man.hp / man.maxHp).toFixed(0)}%`);
 }
 
 console.log('\nWhat gold buys\n');

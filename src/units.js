@@ -4,6 +4,7 @@ import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { clampToRange, inRange } from './ground.js';
 import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
+import { boost } from './towers.js';
 import { abilityById, owns } from './data/abilities.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
@@ -296,7 +297,31 @@ export function unhook(e) {
 const ability = (u, id) => (owns(u.tower, id) ? abilityById(id) : null);
 
 export function updateUnits(state, dt) {
+  // DIVINE FORTITUDE, and it is applied here rather than at muster.
+  //
+  // A man's maximum health is his def's times whatever the map's auras say, read
+  // fresh every frame. That one line covers every case a hook would have had to:
+  // the ability bought mid-wave reaches men already standing on the road, the
+  // temple sold takes it back off them, a man who musters afterwards gets it
+  // without anything telling him, and two temples do not stack — see auras() in
+  // src/towers.js. Nothing has to remember to call anything.
+  //
+  // ONCE PER FRAME, not once per man: the lookup walks the tower list, and doing
+  // that for thirty-three men sixty times a second is work for no answer that
+  // could differ.
+  const wall = boost(state, 'hp', 'barracks');
+
   for (const u of state.units) {
+    // A WOUNDED MAN STAYS AS WOUNDED AS HE WAS. Raising the ceiling under him
+    // without moving his health would heal nobody and quietly make him weaker as
+    // a share of it; scaling both keeps the bar where the player last saw it and
+    // is the only reading under which selling the temple cannot kill anybody.
+    const max = u.def.hp * wall;
+    if (u.maxHp !== max) {
+      u.hp = max * (u.hp / u.maxHp);
+      u.maxHp = max;
+    }
+
     // Holy Light's thirty seconds run whether he is fighting, walking or standing
     // in his slot — and they are HIS thirty seconds. The clock is cleared when he
     // dies, down in the death block, so a paladin who is cut down and musters again

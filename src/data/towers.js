@@ -2319,7 +2319,11 @@ export const monastery = [
     // And its own three lines, on the same terms as the other three tier 4s: a
     // named tower answers for itself when it is built and when it is told what to
     // shoot at, rather than borrowing the family's. See familyCue in src/audio.js.
-    voice: 'pope' }
+    voice: 'pope',
+    // WHAT THIS TEMPLE CAN BE TAUGHT, and both of them leave the plot: they change
+    // every other tower on the map rather than this one. Ids into
+    // src/data/abilities.js, where the rules and the badges live.
+    abilities: ['wrath', 'fortitude'] }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

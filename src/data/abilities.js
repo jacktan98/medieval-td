@@ -414,6 +414,68 @@ export const ABILITIES = [
             'It raises the turret from 33.3 damage a second to 44.4, which is the ' +
             'most any single tower in the game does. You can hear which one it is ' +
             '— the heavy bolt leaves louder than the others.'
+  },
+  {
+    id: 'wrath',
+    name: 'Holy Wrath',
+    of: 'Judgement Temple',
+    icon: 'ability_wrath',
+    cost: ABILITY_COST,
+    // THE FIRST ABILITY THAT LEAVES ITS OWN PLOT. Everything before it changed the
+    // tower that bought it — how often it fires, how far, how hard, what it looks
+    // like. This changes every OTHER tower on the map, which is a third shape
+    // again: no `every`, no threshold, and nothing about the temple itself moves.
+    //
+    // `aura` is that shape, and it is deliberately a plain object rather than a
+    // predicate. `on` is a list of family ids, so the rule can be read, printed and
+    // checked without running it — see tools/abilities.mjs, which asks it what it
+    // covers rather than watching what it does.
+    aura: {
+      // A TENTH MORE DAMAGE on every shot fired by a bow, a machine or a staff.
+      // Barracks men are excluded at the owner's word, and it is the right line:
+      // their damage is a field on a MAN rather than on the tower, and a wall that
+      // also hit harder would be the thing this game most carefully does not sell.
+      damage: 1.1,
+      on: ['archery', 'siege', 'monastery'],
+      // What is drawn over each tower it is working on. The badge is the whole
+      // feedback — an aura with no picture is a number the player has to take on
+      // trust — and the artist drew one per ability: a sword and an up arrow.
+      badge: 'badge_wrath'
+    },
+
+    detail: 'Every archery tower, artillery machine and monastery on the map hits ' +
+            'for a tenth more, wherever it stands. The temple does not have to see ' +
+            'them and does not fire any differently itself.\n\n' +
+            'Barracks men are the exception: their damage belongs to the man rather ' +
+            'than to the tower, and a wall that also hit harder would be a different ' +
+            'game. A sword and an arrow appear over every tower it is working on.'
+  },
+  {
+    id: 'fortitude',
+    name: 'Divine Fortitude',
+    of: 'Judgement Temple',
+    icon: 'ability_fortitude',
+    cost: ABILITY_COST,
+    aura: {
+      // A FIFTH MORE HEALTH on every man a barracks musters, of every tier — a
+      // spearman goes 100 to 120 and a paladin 275 to 330.
+      //
+      // It is applied to `maxHp` every frame rather than added once when the
+      // ability is bought, and that is what makes buying it mid-wave, selling the
+      // temple, and mustering a fresh man after either one all behave without a
+      // single hook. A man who is half wounded stays half wounded across the
+      // change — see updateUnits.
+      hp: 1.2,
+      on: ['barracks'],
+      badge: 'badge_fortitude'
+    },
+
+    detail: 'Every man a barracks musters carries a fifth more health, on every ' +
+            'tier and anywhere on the map: a spearman goes from 100 to 120 and a ' +
+            'paladin from 275 to 330.\n\n' +
+            'It reaches men already standing on the road, not only the next ones to ' +
+            'muster, and a wounded man keeps the share of his health he had. A heart ' +
+            'and an arrow appear over every barracks it is working on.'
   }
 ];
 

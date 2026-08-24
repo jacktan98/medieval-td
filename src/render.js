@@ -6,7 +6,7 @@ import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art } from './assets.js';
-import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf,
+import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
@@ -307,6 +307,50 @@ function drawStatus(ctx, state) {
   for (const u of state.units) {
     if (u.respawn > 0) musterRing(ctx, u);
     else healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
+  }
+  drawBadges(ctx, state);
+}
+
+// --- what an aura is doing, over the towers it is doing it to --------------------
+//
+// THE BADGE IS THE WHOLE FEEDBACK. Every other ability in this game announces
+// itself where it happens — a burst of three, a kneeling paladin, a burning bolt,
+// a machine rebuilt in iron. The Judgement Temple's two do their work on OTHER
+// towers and change nothing about themselves or about the shots, so without a
+// mark on the board the player has spent 150 gold on a number they have to take
+// on trust. A sword and an arrow over every tower hitting harder, a heart and an
+// arrow over every barracks whose men are tougher.
+//
+// DRAWN WITH THE STATUS PASS rather than with the buildings, and for the same
+// reason the health bars are: a badge that a tower standing in front could hide
+// is a badge the player cannot rely on. It is under the Deadeye mark, which is a
+// warning and outranks it.
+//
+// How far above the top of the building it floats. The buildings run 108 to 165px
+// tall, so a badge on the drawn top of each one is at a different height on every
+// plot and that is correct — it belongs to the tower it is over, not to a line
+// across the board.
+const BADGE_LIFT = 8;
+
+function drawBadges(ctx, state) {
+  const on = auras(state);
+  if (!on.length) return;
+
+  for (const t of state.towers) {
+    // At most one badge per tower today — the two `on` lists are disjoint, a
+    // shooting tower or a barracks — but they are drawn side by side rather than
+    // on top of each other, so a third aura that overlapped would look crowded
+    // instead of looking like one badge with a rendering bug.
+    const mine = on.filter(a => a.aura.badge && a.aura.on.includes(t.fam.id));
+    if (!mine.length) continue;
+
+    const box = towerBox(t);
+    const y = box.top - BADGE_LIFT;
+    for (const [i, a] of mine.entries()) {
+      const { w } = uiSize(a.aura.badge);
+      const x = t.x + (i - (mine.length - 1) / 2) * (w + 3);
+      drawUi(ctx, a.aura.badge, x, y);
+    }
   }
 }
 

@@ -173,6 +173,18 @@ export const ui = {
   // The Ballista Turret's two, measured to the same disc as the four above.
   ability_farshot: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // The Judgement Temple's two, measured to the same disc again.
+  ability_wrath:     { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_fortitude: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // AND THE TWO BADGES, which are not buttons: they are drawn on the BOARD over
+  // every tower an aura is working on. `h` rather than `fit`, because what has to
+  // match between them is their HEIGHT — a sword-and-arrow and a heart-and-arrow
+  // floating over neighbouring towers at different sizes would read as two
+  // different kinds of thing. 20 is the rally flag's height, which is the only
+  // other piece of UI art drawn out on the board, and it is about as small as a
+  // two-part mark can be and still be read at a glance.
+  badge_wrath:     { trim: [198, 214, 116, 84], h: 20 },
+  badge_fortitude: { trim: [202, 222, 108, 68], h: 20 },
 
   glyph_refund: { trim: [233, 207, 55, 97],  fit: GLYPH_BOX },
   // Nudged right inside its button. The pole is a thin dark bar at x 2..14 of 72

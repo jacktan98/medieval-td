@@ -316,6 +316,15 @@ export const paths = {
   // plate's own disc.
   ability_farshot: 'assets/ui/Ballista_Turret_Far_Shot_Icon.png',
   ability_heavy:   'assets/ui/Ballista_Turret_Heavy_Bolt_Icon.png',
+  // The Judgement Temple's two, and they come in PAIRS: a button face like every
+  // other ability, and a badge drawn on the BOARD over each tower the aura is
+  // working on. The badge is the only feedback an aura has — nothing about the
+  // temple itself changes when one is bought — so it is as much a part of the
+  // ability as the number is.
+  ability_wrath:     'assets/ui/Judgement_Temple_Holy_Wrath_Icon.png',
+  ability_fortitude: 'assets/ui/Judgement_Temple_Divine_Fortitude_Icon.png',
+  badge_wrath:       'assets/ui/Judgement_Temple_Holy_Wrath.png',
+  badge_fortitude:   'assets/ui/Judgement_Temple_Divine_Fortitude.png',
   glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
   // The archer's three standing orders. They were vector glyphs drawn in

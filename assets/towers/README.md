@@ -77,7 +77,12 @@ Elsewhere, but the Judgement Temple's: `units/Pope_Default.png` and `_Attack`,
 `projectiles/Pope_Arcane_Missle.png`, `ui/Judgement_Temple_Icon.png`, and four
 clips — `audio/sfx/Pope_kill_enemy.mp3` and three voice lines. It fires the
 monastery's own `Arcane_shot` a quarter louder rather than a fourth recording of
-it, and it has no abilities yet.
+it. Plus its two abilities, which are drawings only — no new frame of the tower
+and no new sound, because neither of them happens at the temple: the two button
+faces `ui/Judgement_Temple_Holy_Wrath_Icon.png` and
+`ui/Judgement_Temple_Divine_Fortitude_Icon.png`, and the two badges
+`ui/Judgement_Temple_Holy_Wrath.png` and `ui/Judgement_Temple_Divine_Fortitude.png`
+that float over every building the aura reaches.
 
 **IT IS THE TALLEST BUILDING IN THE GAME**, 165 game px against the 142 of the
 two monastery tiers under it, and the only thing that costs is headroom on the
@@ -159,7 +164,8 @@ button faces `ui/Paladin_Holy_Light_Icon.png` and `ui/Paladin_Holy_Slash_Icon.pn
 is finished: the Upgrade button goes dead and 150 gold buys a change to how the
 tower fights instead of a rung. The rules and the numbers are in
 `src/data/abilities.js`, a tier names only the ids it offers, and
-`node tools/abilities.mjs` drives all four through the real fight code.
+`node tools/abilities.mjs` drives all eight — two on each of the four tier 4
+towers — through the real fight code.
 
 **A TIER 4 FILE IS NAMED FOR THE TOWER, NOT THE RUNG.** `Musketeer_Post.png` sits
 in the archery folder with `Archery_Tower_T1..T3` and `Paladin_Keep.png` with

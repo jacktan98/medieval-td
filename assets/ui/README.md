@@ -37,6 +37,18 @@ usable button rather than a blank disc.
 | `Paladin_Holy_Slash_Icon.png`   | the Holy Slash button, plate and all | 60 diameter |
 | `Ballista_Turret_Far_Shot_Icon.png`   | the Far Shot button, plate and all | 60 diameter |
 | `Ballista_Turret_Heavy_Bolt_Icon.png` | the Heavy Bolt button, plate and all | 60 diameter |
+| `Judgement_Temple_Holy_Wrath_Icon.png`       | the Holy Wrath button, plate and all       | 60 diameter |
+| `Judgement_Temple_Divine_Fortitude_Icon.png` | the Divine Fortitude button, plate and all | 60 diameter |
+| `Judgement_Temple_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
+| `Judgement_Temple_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
+
+The Judgement Temple's two abilities are the only ones that need a **second**
+drawing each. Every other ability shows itself where it happens — three balls in
+the air, a kneeling paladin, a machine rebuilt in iron — but Holy Wrath and
+Divine Fortitude do their work on OTHER towers and change nothing about the
+temple or about the shots. The badge is the whole feedback, so it is drawn small
+and without the button's disc behind it, floating over the top of every building
+the aura reaches. See `drawBadges` in src/render.js.
 
 `Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
 down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
