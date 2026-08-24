@@ -22,6 +22,7 @@ import { updateImpacts } from '../src/impacts.js';
 import { families } from '../src/data/towers.js';
 import { level, levels, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
+import { ABILITY_COST } from '../src/data/abilities.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from '../src/data/difficulty.js';
 
 // WHICH DIFFICULTY THE SIM IS MEASURING. Every balance note in data/waves.js was
@@ -46,9 +47,15 @@ const timeLimit = () => PER_WAVE * level.waves.length;
 
 // A plan is a shopping list. Towers are bought in order as gold allows, then
 // upgraded toward their target tier — roughly how a player spends.
-export const A = (plot, tier = 2) => ({ plot, fam: 'archery', tier });
-export const B = (plot, tier = 2) => ({ plot, fam: 'barracks', tier });
-export const S = (plot, tier = 2) => ({ plot, fam: 'siege', tier });
+//
+// `abil` is the fourth thing a player can spend on, and it comes last for the
+// same reason the upgrades come before the expansion: nobody teaches a tower an
+// ability before the ladder under it is paid for. A list of ability ids on an
+// entry means "and then buy these, in this order, as gold arrives"; leave it off
+// and the entry is exactly the shopping list it always was.
+export const A = (plot, tier = 2, abil) => ({ plot, fam: 'archery', tier, abil });
+export const B = (plot, tier = 2, abil) => ({ plot, fam: 'barracks', tier, abil });
+export const S = (plot, tier = 2, abil) => ({ plot, fam: 'siege', tier, abil });
 // The monastery. It is NOT in tools/sweep.mjs and that is deliberate: the sweep
 // crosses every plot with every ASSIGNMENT of two families, which is 2^n, and a
 // third or fourth family makes it 3^n and 4^n — 4 million builds on map 3 rather
@@ -56,7 +63,7 @@ export const S = (plot, tier = 2) => ({ plot, fam: 'siege', tier });
 // archery and barracks, so the sweep still asks exactly that question, and the
 // other two families are held to the same rule here, by hand, in the scenarios
 // below: a pure build of one must lose.
-export const M = (plot, tier = 2) => ({ plot, fam: 'monastery', tier });
+export const M = (plot, tier = 2, abil) => ({ plot, fam: 'monastery', tier, abil });
 
 function newState() {
   return {
@@ -91,14 +98,13 @@ function build(state, entry) {
     // that never leaves beat 0 never fires, and it would fail silently: the sim
     // would just report that artillery is worthless.
     beat: 0, beatT: 0, face: 0,
-    // The ability fields input.js sets on a real build. Nothing here buys one —
-    // the sim measures the game as it is sold, and an ability is 150 gold the
-    // player chooses to spend — but a tower without them is a shape the fight
-    // code has never seen, and the point of this file is that it runs the real
-    // modules on the real objects.
+    // The ability fields input.js sets on a real build. A plan that names none
+    // buys none — the sim measures the game as it is sold — and one that does has
+    // them bought in `upgrade` below, after the ladder is paid for.
     abilities: [], shots: 0, special: null, burst: 0, burstT: 0, hit: [], locked: null, hold: 0,
     spent: def.cost,
-    wantTier: entry.tier
+    wantTier: entry.tier,
+    wantAbil: entry.abil || []
   };
   state.gold -= def.cost;
   state.towers.push(t);
@@ -115,6 +121,18 @@ function upgrade(state) {
       t.def = next;
       t.spent += next.cost;
       makeUnits(state, t);
+    }
+
+    // THEN THE ABILITIES, and only ones the tier standing there actually offers —
+    // a plan that asks a tier 3 for Deadeye is asking for something the menu would
+    // never draw, and buying it anyway would measure a game nobody can play.
+    for (const id of t.wantAbil) {
+      if (t.abilities.includes(id)) continue;
+      if (!(t.def.abilities || []).includes(id)) break;
+      if (state.gold < ABILITY_COST) break;
+      state.gold -= ABILITY_COST;
+      t.spent += ABILITY_COST;
+      t.abilities.push(id);
     }
   }
 }
@@ -211,7 +229,12 @@ function play(plan, patience = 1) {
     // setting, but sometimes it means the tower never shot at all — a plot the
     // road does not come near, or a reach too short to touch it. A row of zeroes
     // says the sweep was measuring the plot rather than the tower.
-    fired: state.towers.map(t => t.shots || 0).join('/')
+    fired: state.towers.map(t => t.shots || 0).join('/'),
+    // AND WHAT IT ENDED UP TEACHING THEM, same order again. An ability is bought
+    // last of all, so a plan that asks for one and never affords it reads exactly
+    // like an ability that does nothing — which is the way an ability sweep fools
+    // itself, and the reason this is here rather than inferred from the gold.
+    abil: state.towers.map(t => t.abilities.join('+') || '-').join('/')
   };
 }
 

@@ -359,17 +359,18 @@ export const ABILITIES = [
     // other either, which is why the mechanism is a bag of optional fields rather
     // than one class with four subclasses.
     //
-    // 480, WHICH IS THE MUSKETEER POST'S OWN REACH, at the owner's request: the
-    // ballista goes from the shortest arm in the artillery family to the longest
-    // in the game, for 150 gold. It does not make the Post's claim in
-    // tools/families.mjs untrue — that is a claim about towers as they are sold,
-    // and this is a thing you buy afterwards — but it is the one place in the game
-    // where another tower can match that reach, and it is worth knowing.
+    // 390. IT WAS THE MUSKETEER POST'S OWN 480 for one build, which put the
+    // ballista level with the longest arm in the game and covered most of a map
+    // from one plot; the owner brought it down. 390 is half again the tower's own
+    // 260 and still the second-longest reach in the game, so it buys a genuinely
+    // different plot without buying the whole board — and the Musketeer Post keeps
+    // the longest arm outright, which is the claim tools/families.mjs makes about
+    // towers as they are sold.
     //
     // What it does NOT touch is the dead zone: tier 4 has none to start with, so
     // Far Shot makes it the one tower in the game that covers everything from its
-    // own feet to 480px out.
-    range: 480,
+    // own feet to 390px out.
+    range: 390,
     // AND THE MACHINE IS RE-DRAWN IN IRON, which is how the board says the ability
     // is bought. The artist's three frames are the same machine in steel instead
     // of timber, measured to the same trims to the pixel, so the swap moves
@@ -378,9 +379,9 @@ export const ABILITIES = [
     // tier ships with.
     frames: ['artillery_t4_far', 'artillery_t4_reload_far', 'artillery_t4_fire_far'],
 
-    detail: 'The engineers rebuild the bow in steel and the turret reaches 480px ' +
-            'instead of 260 — the longest arm in the game, level with a Musketeer ' +
-            'Post, on the one tower that has no dead zone in the middle of it.\n\n' +
+    detail: 'The engineers rebuild the bow in steel and the turret reaches 390px ' +
+            'instead of 260 — the second-longest arm in the game, behind only the ' +
+            'Musketeer Post, on the one tower that has no dead zone in it.\n\n' +
             'Nothing else changes: the same bolt, the same 1.8 second reload, the ' +
             'same blast. It is the whole board rather than a corner of it, and the ' +
             'machine is drawn in iron from the moment it is bought.'

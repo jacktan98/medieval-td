@@ -17,7 +17,7 @@
 // fires on a threshold and Far Shot fires never — it is bought, and the tower is
 // simply better afterwards — so what can go wrong there is a passive that does not
 // reach everything it should. Far Shot's range has five readers and its pictures
-// two, and a tower that shot 480px while drawn in timber, or drew its ring at 260
+// two, and a tower that shot the long range while drawn in timber, or drew its ring at 260
 // while shooting further, would be a bug the player sees before any tool does.
 //
 // The arithmetic each ability claims is printed as well as checked, because those
@@ -490,12 +490,20 @@ console.log('\nFar Shot\n');
     `${rangeOf(plain)}`);
   ok(rangeOf(far) === shot.range, 'and one that has bought Far Shot reaches further',
     `${rangeOf(far)} against ${rangeOf(plain)}`);
-  ok(rangeOf(far) === archery[3].range, 'exactly as far as a Musketeer Post',
-    `${archery[3].range}`);
+  // SECOND-LONGEST IN THE GAME, and no longer level with the Musketeer Post — the
+  // owner brought it down from the Post's own 480. What the check asks is the
+  // shape of that decision rather than the number: further than the turret's own
+  // reach by half again, and still short of the longest arm there is.
+  ok(rangeOf(far) < archery[3].range && rangeOf(far) > siege[3].range,
+    'further than its own tier, shorter than a Musketeer Post',
+    `${siege[3].range} -> ${rangeOf(far)}, Post ${archery[3].range}`);
+  ok(Math.abs(rangeOf(far) / siege[3].range - 1.5) < 0.02,
+    'half again the arm it was sold with',
+    `x${(rangeOf(far) / siege[3].range).toFixed(2)}`);
 
   // THE PICTURE FOLLOWS THE RULE. The iron frames are what says on the board that
-  // the ability is bought, and a tower that reached 480 while still drawn in
-  // timber would be the ring lying about the tower.
+  // the ability is bought, and a tower that reached the long distance while still
+  // drawn in timber would be the ring lying about the tower.
   ok(framesOf(plain.def, plain).join() === siege[3].machine.frames.join(),
     'an untaught turret is drawn in timber');
   ok(framesOf(far.def, far).join() === shot.frames.join(),
