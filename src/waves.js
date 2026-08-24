@@ -1,4 +1,4 @@
-import { waveClearBonus, earlyCallRate, waveSize } from './data/waves.js';
+import { waveClearBonus, earlyCallRate, waveSize, enemyTypes } from './data/waves.js';
 
 // THE WAVES THIS GAME IS SENDING live on the state, not on the level.
 //
@@ -83,6 +83,42 @@ export function callWaveEarly(state) {
 
 export function earlyCallBonus(state) {
   return canCallWave(state) ? Math.round(state.timer * earlyCallRate) : 0;
+}
+
+// WHAT IS COMING, and it is the one thing the dashboard never told anybody.
+//
+// Every nine seconds this game asks the player a question — call the wave in
+// early and take the gold, or take the time — and until now it asked with the
+// composition of that wave hidden. A wave of 24 militia and a wave with 4 giants
+// in it are completely different answers to "am I ready", and both looked like
+// the words "Next wave" on a plate.
+//
+// WHICH WAVE IT IS is the one the Next wave button would summon, so the row and
+// the button agree: the first wave while the opening delay is still running,
+// and the one AFTER the current index at every other moment — during a fight,
+// during the rest, and while the field is clearing. Mid-fight the button is dead
+// and the row is still the right information: it is what you are buying towers
+// for.
+//
+// GROUPED BY TYPE rather than listed as the table writes them. A wave that sends
+// militia, then giants, then more militia is three groups and two pictures, and
+// the player is asking "how many giants", not "in what order".
+//
+// Counts come off `state.waves`, which is the table with the difficulty already
+// applied — so what is shown is what will actually walk down the road, not what
+// the data file says. See newGame in main.js.
+export function upcomingWave(state) {
+  const opening = state.waveIndex === 0 && state.spawned === 0;
+  const i = opening ? 0 : state.waveIndex + 1;
+  if (!state.waves || i >= state.waves.length) return null;
+
+  const total = new Map();
+  for (const g of state.waves[i].groups) total.set(g.type, (total.get(g.type) || 0) + g.count);
+
+  return {
+    index: i,
+    groups: [...total].map(([type, count]) => ({ type, def: enemyTypes[type], count }))
+  };
 }
 
 export { waveSize };

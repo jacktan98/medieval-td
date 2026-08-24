@@ -135,6 +135,19 @@ his Default trim, so check the printed radius is still 6 after a redraw: it feed
 the formation and the blocking, and a redraw can move it without anyone deciding
 to.
 
+## An enemy's Default drawing is also a HUD icon now
+
+The row under the **Next wave** button previews what the wave holds — a face and
+a count per kind — and it draws each enemy from the same `spriteTrim` the board
+does, scaled so the tallest drawing in the game fills 26px and everything else
+comes out in proportion. So the Giant Thug is visibly bigger in that row exactly
+as he is on the road, and a re-export that changes a figure's height changes his
+size in the HUD with no number to update.
+
+What that costs you: an enemy whose Default pose is drawn mid-stride or turned
+away reads badly at 26px. Draw the Default facing the camera enough to be
+recognised small, which every current enemy already is.
+
 ## A new pose for a family that has none
 
 Add `attack: { sprite, trim, pivot }` to that figure's def and nothing else. The

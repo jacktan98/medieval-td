@@ -1,6 +1,6 @@
 import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
-import { canCallWave, earlyCallBonus } from './waves.js';
+import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
@@ -1927,6 +1927,89 @@ function drawHud(ctx, state) {
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
   hudButton(ctx, HUD_BTN.wave, 'Next wave',
     call ? `+${earlyCallBonus(state)}g` : null, call);
+
+  drawWavePreview(ctx, state);
+}
+
+// --- what is coming, under the button that calls it ---------------------------
+//
+// A row of faces with counts: 12 militia, 2 giants, a plague doctor. It hangs
+// directly under the Next wave plate because it is the answer to that button's
+// question — call this in early for the gold, or take the time and build.
+//
+// PICTURES RATHER THAN WORDS. "Wave 6: 18 light infantry, 3 heavy" is a sentence
+// nobody reads mid-fight; three small figures with numbers beside them is a
+// glance. They are the enemies' own board drawings, at their own proportions, so
+// a giant is visibly bigger than a thug in the row exactly as he is on the road.
+//
+// RIGHT-ALIGNED to the plate above it and grown leftwards, so the row cannot
+// creep under the info box on the right however many kinds a wave holds — and so
+// the first thing your eye lands on is the same edge every time.
+const PREVIEW_H = 26;      // how tall the BIGGEST enemy is drawn
+const PREVIEW_Y = 39;      // the top of the row, 6px under the 24px HUD plates
+const PREVIEW_GAP = 5;     // between a number and the next face
+const PREVIEW_TEXT = 4;    // between a face and its own number
+
+// ONE SCALE FOR EVERY ENEMY, exactly as the info box portraits use one — so the
+// giant is drawn bigger than the thug beside him, which is the whole reason the
+// row is pictures. Fitted so the tallest drawing in the game fills PREVIEW_H and
+// the others come out in proportion, and taken across EVERY type rather than the
+// ones in this wave: sized per wave, a thug would grow whenever no giant was
+// coming and the row would breathe between waves for no reason.
+const PREVIEW_K = PREVIEW_H /
+  Math.max(...Object.values(enemyTypes).map(d => d.spriteTrim[3]));
+
+function drawWavePreview(ctx, state) {
+  // Nothing before the game starts, nothing once it is over, and nothing on the
+  // last wave — there is no wave after it, and an empty plate that only appears
+  // at the end reads as something having broken.
+  if (!state.started || state.result) return;
+  const next = upcomingWave(state);
+  if (!next || !next.groups.length) return;
+
+  ctx.save();
+  ctx.font = '700 12px system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+
+  // Measured before anything is drawn, because the row is laid out from its
+  // RIGHT edge and the width is the sum of what is in it.
+  const items = next.groups.map(g => {
+    const [, , sw, sh] = g.def.spriteTrim;
+    const label = `x${g.count}`;
+    return { g, w: sw * PREVIEW_K, h: sh * PREVIEW_K,
+             label, lw: ctx.measureText(label).width };
+  });
+  const total = items.reduce((n, it) => n + it.w + PREVIEW_TEXT + it.lw, 0)
+    + (items.length - 1) * PREVIEW_GAP;
+
+  const right = HUD_BTN.wave.x + HUD_BTN.wave.w;
+  let x = right - total;
+  const mid = PREVIEW_Y + PREVIEW_H / 2;
+
+  for (const it of items) {
+    const img = art[it.g.def.sprite];
+    if (img) {
+      const [sx, sy, sw, sh] = it.g.def.spriteTrim;
+      // Bottom-aligned rather than centred: these are figures standing on a
+      // line, and a shorter one hung from the middle of the row would look like
+      // it was floating while the giant beside it stood.
+      ctx.drawImage(img, sx, sy, sw, sh, x, PREVIEW_Y + PREVIEW_H - it.h, it.w, it.h);
+    }
+    x += it.w + PREVIEW_TEXT;
+
+    // Cream on ink, the same pair the aura badges use, because this row sits on
+    // the board rather than on a plate and the board is grass, road and stone.
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#241E17';
+    ctx.strokeText(it.label, x, mid);
+    ctx.fillStyle = '#F4ECD8';
+    ctx.fillText(it.label, x, mid);
+    x += it.lw + PREVIEW_GAP;
+  }
+
+  ctx.restore();
 }
 
 function drawMenu(ctx, state) {
