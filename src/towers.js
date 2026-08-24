@@ -383,19 +383,21 @@ const firingAbilities = t =>
     ? abilitiesOf(t.def).filter(a => a.every && owns(t, a.id))
     : NONE;
 
-// EVERY AURA IN FORCE ON THE MAP, once each.
+// EVERY AURA IN FORCE ON THE MAP, ONE ENTRY PER TOWER THAT PAID FOR IT.
 //
 // AN AURA IS A STATE OF THE MAP RATHER THAN A THING A TOWER HAS. Everything else
 // in this game is bought per plot and works on the plot it was bought on; these
-// two are bought on one plot and work everywhere, so the question they answer is
-// "is Holy Wrath on this map", not "does this tower have it".
+// two are bought on one plot and work everywhere.
 //
-// THEY DO NOT STACK, and that is a design decision rather than an accident of the
-// loop. Two temples both taught Holy Wrath would otherwise be +21%, three +33%,
-// and the best build in the game would be a row of temples buffing each other —
-// which is the one shape a game with four families and nine plots must not have.
-// Each ABILITY counts once however many towers have paid for it, so a second
-// temple is worth what a second temple does, and nothing more.
+// AND THEY COMPOUND. Two temples both taught Holy Wrath are 1.1 x 1.1 = +21%, and
+// the same for Divine Fortitude, so the second 150 gold buys as much as the first
+// did relative to what is already on the board. The list is therefore the bought
+// COPIES rather than the distinct abilities — a temple that has bought nothing
+// contributes nothing, and a temple that has bought both puts both here.
+//
+// The one thing a caller must not do is treat this as a list of what to draw:
+// two temples are two Holy Wraths and one badge over each tower. See drawBadges
+// in render.js, which reduces it to the distinct badges.
 //
 // Rebuilt per call rather than cached on the state: it is asked once per shot and
 // once per frame for the squads, the tower list is never longer than eleven, and a
@@ -404,9 +406,7 @@ const firingAbilities = t =>
 export function auras(state) {
   const out = [];
   for (const t of state.towers || NONE) {
-    for (const a of boughtAbilities(t)) {
-      if (a.aura && !out.includes(a)) out.push(a);
-    }
+    for (const a of boughtAbilities(t)) if (a.aura) out.push(a);
   }
   return out;
 }

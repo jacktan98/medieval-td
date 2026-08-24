@@ -19,6 +19,7 @@
 // the soldier or the archer it puts on the road.
 
 import { SCALE } from './data/towers.js';
+import { boost } from './towers.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -129,6 +130,15 @@ export function selectionInfo(state) {
 
   if (s.kind === 'tower') {
     const man = occupant(s.ref.def);
+    // WHAT THIS TOWER ACTUALLY HITS FOR, aura included. The card has to agree with
+    // the shot: towers.js multiplies by exactly this when it creates one, and a
+    // player who has bought Holy Wrath and reads 60 here would think it had not
+    // worked. Rounded the same way the shot is, so the two are the same number.
+    //
+    // A barracks reads 1 whatever is on the map — Holy Wrath does not reach its
+    // men — so no special case is needed for the family that shows a soldier's
+    // damage rather than the building's.
+    const k = boost(state, 'damage', s.ref.fam.id);
     return {
       sprite: man.sprite,
       trim: man.trim,
@@ -141,11 +151,28 @@ export function selectionInfo(state) {
       // of its own.
       hp: null,
       maxHp: null,
-      damage: man.damage
+      damage: Math.round(man.damage * k),
+      // Whether each number on the card is a buffed one, so the box can say so in
+      // gold. A flag rather than a colour: what a buffed number LOOKS like is the
+      // renderer's business, and this file only knows that it is not the plain
+      // number off the def.
+      damageBuff: k !== 1,
+      hpBuff: false
     };
   }
 
   const f = s.ref;
+  // A soldier's ceiling is raised by Divine Fortitude, and units.js has already
+  // done it — his `maxHp` IS the buffed number, live, so the card needs no
+  // arithmetic of its own here and only has to know whether to say so. Read off
+  // the man rather than off the map, because a man mustered by a barracks whose
+  // family an aura did not name would be unbuffed while the aura was still up.
+  //
+  // His damage is not buffed by anything today: the one aura that touches damage
+  // names the shooting families and not the barracks, so what he hits for is what
+  // his def says. If that ever changes it changes in units.js first, and this line
+  // follows it — the card must never claim a boost the fight is not applying.
+  const buffedHp = s.kind === 'unit' && f.maxHp !== f.def.hp;
   return {
     sprite: f.def.sprite,
     trim: f.def.spriteTrim,
@@ -154,6 +181,8 @@ export function selectionInfo(state) {
     // box reading "82.4/105" is noise where "82/105" is information.
     hp: Math.max(0, Math.round(f.hp)),
     maxHp: f.maxHp,
-    damage: shownDamage(f.def)
+    damage: shownDamage(f.def),
+    damageBuff: false,
+    hpBuff: buffedHp
   };
 }

@@ -39,6 +39,10 @@ const ok = (cond, label, detail = '') => {
 
 const DT = 1 / 60;
 
+// Two multipliers agree. 1.1 x 1.1 is 1.2100000000000002 in binary floating
+// point, so the compounding checks below cannot ask for equality.
+const near = (a, b) => Math.abs(a - b) < 1e-9;
+
 // --- a tower on a plot, with a target it can always see -------------------------
 //
 // The enemy is parked 60px away and given a million health, so nothing that
@@ -616,14 +620,24 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
     `x${fort.aura.hp}`);
   ok(boost(holy, 'hp', 'archery') === 1, 'and nothing else is');
 
-  // AND TWO TEMPLES ARE NOT TWICE, which is the property that stops the best build
-  // in the game being a row of temples buffing each other.
+  // AND TWO TEMPLES COMPOUND. 1.1 x 1.1 rather than 1.1, so the second temple's
+  // 150 gold buys as much of a step as the first one did — and a temple that has
+  // bought nothing adds nothing, which is what the third state below is for.
   const two = { towers: [...holy.towers,
                          { ...turret(['wrath', 'fortitude']), fam: { id: 'monastery' },
                            def: monastery[3] }], units: [] };
-  ok(auras(two).length === 2, 'a second temple adds no third aura');
-  ok(boost(two, 'damage', 'archery') === wrath.aura.damage, 'and buffs nothing further',
-    `x${boost(two, 'damage', 'archery')}`);
+  ok(auras(two).length === 4, 'a second taught temple puts its own two on the map');
+  ok(near(boost(two, 'damage', 'archery'), wrath.aura.damage ** 2),
+    'and the damage buff compounds', `x${boost(two, 'damage', 'archery').toFixed(2)}`);
+  ok(near(boost(two, 'hp', 'barracks'), fort.aura.hp ** 2),
+    'and so does the health', `x${boost(two, 'hp', 'barracks').toFixed(2)}`);
+
+  const idle = { towers: [...holy.towers,
+                          { ...turret([]), fam: { id: 'monastery' }, def: monastery[3] }],
+                 units: [] };
+  ok(near(boost(idle, 'damage', 'archery'), wrath.aura.damage),
+    'but a second temple that has bought nothing adds nothing',
+    `x${boost(idle, 'damage', 'archery')}`);
 
   // WHAT IT IS WORTH ON A SHOT, through the real firing code rather than the
   // multiplier alone: a Musketeer Post under a Holy Wrath fires for 66 instead of

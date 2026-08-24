@@ -25,7 +25,8 @@
 
 import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
-import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks, ringLift } from '../src/render.js';
+import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks, ringLift, badgeTop }
+  from '../src/render.js';
 
 // Where drawHud puts its text. textBaseline is 'middle' at y=21, the biggest
 // font is 20px, so the ink runs from about 11 to 31.
@@ -51,8 +52,14 @@ import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks, ringLift } from '../sr
 // count as ink on the same terms the stars do, and `ringLift` is asked of
 // render.js rather than worked out here, for the same reason `tierMarks` is.
 //
-// Nothing carries both today: artillery wears the stars and musters nobody, and a
-// barracks has a drawing per tier. The max below is what keeps that an
+// AN AURA BADGE is the third, and it is the one every tower can wear: the
+// Judgement Temple's two work on whole families, so any building on the board can
+// end up with a sword or a heart floating over it once one is bought. It is
+// therefore counted for every tower rather than for the ones that carry it today
+// — `badgeTop` is asked of render.js for the same reason the other two are.
+//
+// Nothing carries all three today: artillery wears the stars and musters nobody,
+// and a barracks has a drawing per tier. The max below is what keeps that an
 // observation rather than an assumption.
 //
 // The runs are measured from the layout drawHud actually produces, in a browser,
@@ -124,7 +131,11 @@ const boxTop = (plot, def) => plot.y - def.groundFrac[1] * def.h;
 const marks = (fam, def) => tierMarks({ fam, def });
 const lift = (fam, def) =>
   Math.max(marks(fam, def) ? STAR_LIFT + STAR_R : 0, ringLift(def));
-const inkTop = (plot, fam, def) => boxTop(plot, def) - lift(fam, def);
+// The badge is asked for its own top rather than for a lift, because it is the
+// one piece of this stack that STOPS: on the highest plots it rests on the roof
+// instead of going off the board. See badgeTop in render.js.
+const inkTop = (plot, fam, def) =>
+  Math.min(boxTop(plot, def) - lift(fam, def), badgeTop(boxTop(plot, def)));
 
 let bad = 0, noted = 0;
 

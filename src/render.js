@@ -326,30 +326,72 @@ function drawStatus(ctx, state) {
 // is a badge the player cannot rely on. It is under the Deadeye mark, which is a
 // warning and outranks it.
 //
-// How far above the top of the building it floats. The buildings run 108 to 165px
-// tall, so a badge on the drawn top of each one is at a different height on every
-// plot and that is correct — it belongs to the tower it is over, not to a line
-// across the board.
-const BADGE_LIFT = 8;
+// CLEAR AIR between the drawn top of the building and the bottom of the badge,
+// which is why the badge hangs from its own bottom edge rather than its middle.
+// Anchored at the middle, half of it is inside the roof and how much of it shows
+// depends on how tall the badge drawing happens to be; anchored at the bottom,
+// this number is the gap, and it stays the gap if the artist redraws either one.
+//
+// The buildings run 108 to 165px tall, so the badges sit at a different height on
+// every plot and that is correct — a badge belongs to the tower it is over, not
+// to a line across the board.
+const BADGE_GAP = 10;
+
+// AND IT NEVER LEAVES THE BOARD. A Judgement Temple is the tallest building in
+// the game, and on the highest plots of all three maps its roof is within 30px of
+// the top edge — badge, gap and all would be off the canvas, which draws a badge
+// sliced in half or not at all. On those plots the badge stops here and rests on
+// the roof instead, because a badge touching a roof is a badge you can read.
+const BADGE_TOP_MIN = 2;
+
+// Hangs the badge above the point given rather than centring it on it.
+const ABOVE = [0.5, 1];
+
+// The topmost ink a badge puts over a building whose drawn top is `boxTop`, for
+// anything that needs to know what is above a roof — tools/hud-clear.mjs, which
+// counts the tier stars and the muster rings on the same terms.
+//
+// The TALLEST badge rather than the one this tower would wear: which badge a plot
+// ends up carrying depends on what the player buys, so the headroom has to be
+// there for either. And it applies to EVERY family, unlike the stars and the
+// rings — an aura works on whole families, so any building on the board can end
+// up under one.
+export function badgeTop(boxTop) {
+  const h = Math.max(uiSize('badge_wrath').h, uiSize('badge_fortitude').h);
+  return Math.max(boxTop - BADGE_GAP - h, BADGE_TOP_MIN);
+}
 
 function drawBadges(ctx, state) {
   const on = auras(state);
   if (!on.length) return;
 
   for (const t of state.towers) {
-    // At most one badge per tower today — the two `on` lists are disjoint, a
-    // shooting tower or a barracks — but they are drawn side by side rather than
-    // on top of each other, so a third aura that overlapped would look crowded
-    // instead of looking like one badge with a rendering bug.
-    const mine = on.filter(a => a.aura.badge && a.aura.on.includes(t.fam.id));
+    // ONE BADGE PER ABILITY, however many temples paid for it. Two Holy Wraths
+    // compound into a bigger number — see `auras` in towers.js — but they are one
+    // fact about this tower and two identical drawings stacked on each other would
+    // read as a rendering bug rather than as twice the buff.
+    //
+    // At most one badge per tower today, since the two `on` lists are disjoint: a
+    // shooting tower or a barracks. They are drawn side by side rather than on top
+    // of each other so that a third aura which overlapped would look crowded
+    // instead of looking broken.
+    const mine = [];
+    for (const a of on) {
+      if (a.aura.badge && a.aura.on.includes(t.fam.id) &&
+          !mine.some(b => b.aura.badge === a.aura.badge)) mine.push(a);
+    }
     if (!mine.length) continue;
 
     const box = towerBox(t);
-    const y = box.top - BADGE_LIFT;
+    // The bottom edge of the row, which is where the badges hang from — and the
+    // tallest of them is what the floor is measured against, so a row of two
+    // different heights still sits on the board whichever is taller.
+    const tall = Math.max(...mine.map(a => uiSize(a.aura.badge).h));
+    const y = Math.max(box.top - BADGE_GAP, BADGE_TOP_MIN + tall);
     for (const [i, a] of mine.entries()) {
       const { w } = uiSize(a.aura.badge);
       const x = t.x + (i - (mine.length - 1) / 2) * (w + 3);
-      drawUi(ctx, a.aura.badge, x, y);
+      drawUi(ctx, a.aura.badge, x, y, undefined, ABOVE);
     }
   }
 }
@@ -1689,6 +1731,17 @@ const INK_GREEN = '#2F6B27';
 const INK_AMBER = '#8A6A12';
 const INK_RED = '#A83A2C';
 
+// GOLD, for a number an aura has raised — the Judgement Temple's two, today. It
+// is the one colour on the plate that is not saying how healthy something is, and
+// that is the point: green, amber and red are a reading of one figure's state,
+// and this says the figure is standing under something.
+//
+// IT IS OUTLINED, unlike every other colour here, because it has to be. #FFD700
+// on the cream plate is barely a colour at all — the two are within a shade of
+// each other at these sizes — and a dark edge is what makes gold read as gold on
+// pale ground rather than as smudged ink. See buffText below.
+const INK_BUFF = '#FFD700';
+
 // A plate drawn to an exact rect rather than fitted to a box. Returns false if
 // the art has not loaded, so the caller can fall back to the vector it replaced.
 //
@@ -2219,15 +2272,36 @@ function drawInfo(ctx, state) {
     // Reddens as it drops, on the same thresholds as the health bars over their
     // heads, so the two readings agree at a glance.
     const frac = info.maxHp ? info.hp / info.maxHp : 1;
-    ctx.fillStyle = !drawn ? '#F0E6D2'
+    // GOLD OUTRANKS THE WOUND COLOURS, and it is the only thing that does. A
+    // buffed man's numbers are gold whether he is whole or nearly down, because
+    // the health BAR over his head still reddens and the two readings would
+    // otherwise be fighting over one line of text. The bar is the wound warning;
+    // this row is what he is worth.
+    ctx.fillStyle = info.hpBuff ? INK_BUFF
+                  : !drawn ? '#F0E6D2'
                   : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED;
-    ctx.fillText(`${info.hp}/${info.maxHp}`, tx + STAT_COL + 6, ty);
+    buffText(ctx, `${info.hp}/${info.maxHp}`, tx + STAT_COL + 6, ty, info.hpBuff);
     ty += ROW_PITCH;
   }
 
   drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: INFO_ICON });
-  ctx.fillStyle = drawn ? INK : '#F0E6D2';
-  ctx.fillText(String(info.damage), tx + STAT_COL + 6, ty);
+  ctx.fillStyle = info.damageBuff ? INK_BUFF : drawn ? INK : '#F0E6D2';
+  buffText(ctx, String(info.damage), tx + STAT_COL + 6, ty, info.damageBuff);
+}
+
+// A stat number, edged in ink when it is a buffed one and drawn plainly when it
+// is not. The caller has already set the fill; this only decides whether there is
+// an outline under it, so an unbuffed row is exactly the drawing it always was.
+function buffText(ctx, s, x, y, buffed) {
+  if (buffed) {
+    ctx.save();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(s, x, y);
+    ctx.restore();
+  }
+  ctx.fillText(s, x, y);
 }
 
 // How much vertical room the title takes, and the pitch between stat rows. 18 is
