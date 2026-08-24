@@ -233,7 +233,7 @@ His KILL line is a real file, `Pope_kill_enemy`, and Category A like the other
 four kill cries.
 
 **Heavy Bolt uses the same trick**, and it is the second time the field has paid
-for itself: every third bolt a taught Ballista Turret fires is the same
+for itself: every fourth bolt a taught Ballista Turret fires is the same
 `Ballista_Bolt_shot`, played harder, which is how you can hear which one is the
 heavy one without a second recording.
 

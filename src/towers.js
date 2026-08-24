@@ -228,9 +228,18 @@ export function muzzlePoint(t) {
 // the encyclopedia, the upgrade preview, tools/families.mjs — and that is correct:
 // those are questions about the tower as it is SOLD, and an ability is bought
 // afterwards, per tower, with gold.
+// A MULTIPLE OF THE TIER'S OWN REACH rather than a distance of its own, which is
+// the rule every ability magnitude in this game now follows: half again as far
+// stays half again as far the next time the turret's 260 is retuned. `rangeTimes`
+// is the only shape here today; a flat `range` is still read, so an ability that
+// genuinely wants a fixed distance can have one.
 export function rangeOf(t) {
-  for (const a of boughtAbilities(t)) if (a.range) return a.range;
-  return t.def.range;
+  let k = 1;
+  for (const a of boughtAbilities(t)) {
+    if (a.range) return a.range;
+    if (a.rangeTimes) k *= a.rangeTimes;
+  }
+  return Math.round(t.def.range * k);
 }
 
 // Which drawing of the building to show. One-frame towers answer with the only

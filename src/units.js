@@ -549,7 +549,11 @@ export function updateUnits(state, dt) {
     if (light && u.hold <= 0 && u.healCd <= 0 && u.hp < light.below * u.maxHp) {
       u.hold = light.seconds;
       u.holdArt = light.pose;
-      u.healing = light.heals / light.seconds;
+      // A SHARE OF HIS OWN MAXIMUM rather than a number of points, so the heal
+      // follows the man it is healing: 220 on a paladin's 275, and 264 under a
+      // Divine Fortitude that raised him to 330. Read off `maxHp` rather than off
+      // the def for exactly that reason — the aura is already in it.
+      u.healing = (light.healFrac * u.maxHp) / light.seconds;
       u.healCd = light.refresh;
       // Category B: it is a thing that happens on the board, and three paladins in
       // one squad can be in trouble at once.
@@ -592,13 +596,19 @@ export function updateUnits(state, dt) {
       // nothing; Holy Light's three seconds are three seconds of not swinging, and
       // are meant to be.
       if (u.cd <= 0 && u.hold <= 0) {
-        // HOLY SLASH: the fifth blow, and only the fifth. `blows` counts this one,
-        // so `every: 5` means four ordinary swings and then the strike — read the
-        // field as the length of the cycle, exactly as the musketeer's 6 is.
+        // HOLY SLASH: the fourth blow, and only the fourth. `blows` counts this
+        // one, so `every: 4` means three ordinary swings and then the strike — read
+        // the field as the length of the cycle, exactly as the musketeer's is.
         const slash = ability(u, 'slash');
         const special = slash && (u.blows + 1) % slash.every === 0 ? slash : null;
 
-        u.foe.hp -= special ? special.damage : u.def.damage;
+        // A MULTIPLE OF HIS OWN BLOW, the same shape shoot() reads on a tower: a
+        // magnitude here is a multiplier of the stat it changes, so it survives the
+        // next retune of that stat. `damage` is still honoured for an ability that
+        // really means an absolute number.
+        u.foe.hp -= special
+          ? (special.times ? u.def.damage * special.times : special.damage)
+          : u.def.damage;
         u.blows++;
         u.cd = u.def.cd;
         u.thrust = 1;

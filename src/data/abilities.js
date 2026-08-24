@@ -170,11 +170,12 @@ export const ABILITIES = [
     of: 'Musketeer Post',
     icon: 'ability_burst',
     cost: ABILITY_COST,
-    // "Shoot 3 times consecutively at a rapid rate every 5 normal shots." Five
-    // ordinary shots and then the burst is a cycle of six, which is what `every`
-    // counts — the sixth trigger of the tower's reload is the one that fires
+    // ONE SHOT IN FOUR is the burst — three ordinary balls and then three at once.
+    // It was one in six; the owner brought every cycle in the game onto the same
+    // reading, which is the one `every` has always counted: the length of the
+    // cycle, so the fourth trigger of the tower's reload is the one that fires
     // three balls instead of one.
-    every: 6,
+    every: 4,
     // The three balls, and the gap between them. 0.18s is a fifth of the fastest
     // reload in the game and about as quick as three distinct cracks can be told
     // apart by ear; faster reads as one noise and one muzzle flash.
@@ -195,7 +196,7 @@ export const ABILITIES = [
     // The long form, shown beside the picture when the card is tapped open. Two or
     // three sentences: what it does, then the thing a player would only find out by
     // watching it for a while.
-    detail: 'After five ordinary shots the musketeer empties three bullets into ' +
+    detail: 'After three ordinary shots the musketeer empties three bullets into ' +
             'the road as fast as he can work the lock, a fifth of a second apart, ' +
             'then holds the smoke for a second before loading again.\n\n' +
             'Each of the three picks a different man, through whatever standing ' +
@@ -209,11 +210,10 @@ export const ABILITIES = [
     of: 'Musketeer Post',
     icon: 'ability_deadeye',
     cost: ABILITY_COST,
-    // TEN ORDINARY SHOTS AND THEN THE BALL, so the cycle is eleven — read `every`
-    // the same way Burst Fire's 6 is read. It is nearly twice as rare as the burst
-    // and hits five times as hard, which is the shape the artist asked for: the
-    // burst is a rhythm you stop noticing and this is an event.
-    every: 11,
+    // ONE SHOT IN EIGHT, against the burst's one in four — twice as rare and six
+    // times as hard, which is the shape the artist asked for: the burst is a
+    // rhythm you stop noticing and this is an event.
+    every: 8,
     shots: 1,
     // TWO SECONDS of held pose, not one. It is the biggest single blow in the game
     // and he stands over it. Still free, because the musket takes 2.4s to load
@@ -223,18 +223,21 @@ export const ABILITIES = [
     // is still being rammed home and paints a mark over his head, and the mark stays
     // there until the shot lands — see `t.locked` in src/towers.js and the marker in
     // render.js. It is the only ability in the game that announces itself before it
-    // happens, and at 300 damage it should: the player gets a second to see where
-    // the shot is going.
+    // happens, and at six times the tower's damage it should: the player gets a
+    // second to see where the shot is going.
     lock: 1,
-    // 300, and it is the biggest number in the game by a factor of four — the next
-    // hardest single blow is the tower's own 60. Ten ordinary shots plus one of
-    // these is 900 damage over eleven reloads, which is 34.1 a second against a
-    // plain Post's 25.0.
+    // SIX TIMES THE TOWER'S OWN SHOT rather than a number of its own, which is the
+    // rule the owner put on every ability here: a magnitude is a multiple of the
+    // stat it changes, so it stays true the next time that stat is retuned. It was
+    // a flat 300 against a 60 damage tower, which was five times — and would have
+    // been four times, or eight, after any change to the Post.
     //
-    // That lands it a shade above Burst Fire's 33.3, and the two are meant to be
-    // close: what separates them is not how much damage they add but WHERE it goes.
-    // The burst clears a rank of militia; this removes one giant.
-    damage: 300,
+    // 360, and it is the biggest single blow in the game by a factor of six. Seven
+    // ordinary shots plus one of these is 780 over eight reloads: 40.6 a second
+    // against a plain Post's 25.0, where Burst Fire is 37.5. The two are meant to
+    // be close, and what separates them is not how much they add but WHERE it goes
+    // — the burst clears a rank of militia, this removes one giant.
+    times: 6,
     ammo: deadeyeBall,
     pose: DEADEYE_POSE,
     // NO `cue`, and it is not silent. Its noise comes from its AMMUNITION, through
@@ -243,10 +246,10 @@ export const ABILITIES = [
     // ability that fires something announces itself by firing it; `cue` is for the
     // two that do not, which are the paladin's.
 
-    detail: 'After ten ordinary shots the musketeer takes a second to aim — a mark ' +
+    detail: 'After seven ordinary shots the musketeer takes a second to aim — a mark ' +
             'appears over the man he has chosen and stays there until the bullet ' +
-            'arrives — and then fires a single round for 300 damage, five times the ' +
-            'Post\'s ordinary shot and the hardest blow in the game.\n\n' +
+            'arrives — and then fires a single round for six times the Post\'s own ' +
+            'shot, 360 damage, the hardest blow in the game.\n\n' +
             'He holds the pose for two seconds afterwards, which costs nothing: the ' +
             'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
             'one thing on the road that has to die and cannot be chipped down.'
@@ -261,7 +264,7 @@ export const ABILITIES = [
     // the fight — it is what a paladin does when he is about to die, and the enemy
     // in front of him goes on hitting him the whole time.
     below: 0.30,
-    heals: 200,
+    healFrac: 0.80,
     // THREE SECONDS, not two. The same 200 health arrives more slowly, which is the
     // whole difference: he is out of the fight for half again as long to get it, so
     // the enemy in front of him lands about four more blows while he kneels.
@@ -287,7 +290,8 @@ export const ABILITIES = [
     cue: 'holyLight',
 
     detail: 'The moment a paladin drops under 30% of his health he stops fighting, ' +
-            'kneels, and takes 200 health back over three seconds. He keeps his grip ' +
+            'kneels, and takes 80% of his full health back over three seconds — 220 ' +
+            'on a paladin, more under a Divine Fortitude. He keeps his grip ' +
             'on the enemy the whole time, so the road stays held — and the enemy ' +
             'keeps hitting him, so it is a race rather than a free reset.\n\n' +
             'Each of the three calls it for himself and has his own thirty seconds ' +
@@ -301,26 +305,24 @@ export const ABILITIES = [
     of: 'Paladin Keep',
     icon: 'ability_slash',
     cost: ABILITY_COST,
-    // "A strike every 5 attacks", so the fifth blow is the strike and four
-    // ordinary ones come before it. Read the field the same way as the musketeer's
-    // 6 above: it is the length of the cycle, and the last action of the cycle is
-    // the special one.
+    // ONE BLOW IN FOUR is the strike, and three ordinary ones come before it. Read
+    // the field the same way as the musketeer's: it is the length of the cycle, and
+    // the last action of the cycle is the special one.
     //
-    // IT WAS EVERY TENTH AT 70 DAMAGE, held for two seconds. Twice as often for
-    // rather more than half as hard is very nearly the same sum — 13.25 damage a
-    // second against the old 13.3 — so what changed is not how much the ability is
-    // worth but what it FEELS like: a rhythm you can see rather than one enormous
-    // blow every eight seconds followed by a paladin standing still.
-    every: 5,
+    // IT WAS EVERY TENTH AT 70 DAMAGE, then every fifth, and is every fourth. More
+    // often for less each time is very nearly the same sum — what changed is what
+    // it FEELS like: a rhythm you can see rather than one enormous blow every eight
+    // seconds followed by a paladin standing still.
+    every: 4,
     shots: 1,
-    // 35, five times an ordinary blow. Four swings at 7 plus one at 35 is 63 where
-    // five swings would be 35.
+    // FIVE TIMES AN ORDINARY BLOW, as a multiplier rather than a number — the rule
+    // the owner put on every ability here, and the reason the 35 that used to be
+    // typed on this line is gone. It was five times the paladin's 7 on the day it
+    // was written and would have been four, or seven, after any change to him.
     //
-    // IT WAS 70 EVERY TENTH, THEN 25 EVERY FIFTH, AND IS 35 EVERY FIFTH. The middle
-    // number came down with the hold and this is the owner putting some of it back
-    // now that the pose costs nothing: 15.75 damage a second against a plain
-    // paladin's 8.75, where the original every-tenth version worked out at 13.3.
-    damage: 35,
+    // Three swings at 7 plus one at 35 is 56 where four swings would be 28: 17.5
+    // damage a second against a plain paladin's 8.75, exactly double.
+    times: 5,
     // NO PAUSE OVER IT ANY MORE. `hold` is null rather than a number of seconds,
     // which units.js reads as "the man's own attack time" — 0.80s on a paladin, the
     // same as the swing it replaces — so the pose is up for exactly one beat of
@@ -338,11 +340,11 @@ export const ABILITIES = [
     pose: HOLY_SLASH_POSE,
     cue: 'holySlash',
 
-    detail: 'Four ordinary blows and then one for 35 — five times what a paladin ' +
-            'normally does — struck in the time an ordinary swing takes, so the ' +
+    detail: 'Three ordinary blows and then one worth five of them — 35 where he ' +
+            'normally does 7 — struck in the time an ordinary swing takes, so the ' +
             'rhythm never breaks.\n\n' +
-            'It works out at 15.75 damage a second against a plain paladin\'s 8.75, ' +
-            'nearly double, from the man who starts with the least damage in the ' +
+            'It works out at 17.5 damage a second against a plain paladin\'s 8.75, ' +
+            'exactly double, from the man who starts with the least damage in the ' +
             'game. Each of the three counts his own blows, so the strikes land ' +
             'spread out rather than all at once.'
   },
@@ -370,7 +372,7 @@ export const ABILITIES = [
     // What it does NOT touch is the dead zone: tier 4 has none to start with, so
     // Far Shot makes it the one tower in the game that covers everything from its
     // own feet to 390px out.
-    range: 390,
+    rangeTimes: 1.5,
     // AND THE MACHINE IS RE-DRAWN IN IRON, which is how the board says the ability
     // is bought. The artist's three frames are the same machine in steel instead
     // of timber, measured to the same trims to the pixel, so the swap moves
@@ -392,10 +394,11 @@ export const ABILITIES = [
     of: 'Ballista Turret',
     icon: 'ability_heavy',
     cost: ABILITY_COST,
-    // Two ordinary bolts and then the heavy one, so the cycle is three — read
-    // `every` the same way Burst Fire's 6 and Holy Slash's 5 are read. It is the
-    // shortest cycle any ability has: a third of every shot this tower fires.
-    every: 3,
+    // ONE BOLT IN FOUR is the heavy one, and three ordinary ones come before it.
+    // It was one in three; the owner brought it down when the sweep put this tower
+    // at the top of the game's output — 44 damage a second WITH a 70px blast, on
+    // the family that already hits groups.
+    every: 4,
     shots: 1,
     // DOUBLE, AS A MULTIPLIER RATHER THAN A NUMBER, and that is the point of the
     // field. "Twice as hard" is what was asked for, so twice is what is written
@@ -409,12 +412,12 @@ export const ABILITIES = [
     // than a cooldown a pose could delay. The ability announces itself by what
     // leaves the bow — a bolt with its tail on fire — and by being louder.
 
-    detail: 'Every third bolt comes off the rack burning and hits for twice the ' +
+    detail: 'Every fourth bolt comes off the rack burning and hits for twice the ' +
             'damage. There is no wind-up and no pause: the machine works at its ' +
-            'ordinary rhythm and one shot in three is simply worth two.\n\n' +
-            'It raises the turret from 33.3 damage a second to 44.4, which is the ' +
-            'most any single tower in the game does. You can hear which one it is ' +
-            '— the heavy bolt leaves louder than the others.'
+            'ordinary rhythm and one shot in four is simply worth two.\n\n' +
+            'It raises the turret from 33.3 damage a second to 41.7, on a machine ' +
+            'whose every shot already bursts. You can hear which one it is — the ' +
+            'heavy bolt leaves louder than the others.'
   },
   {
     id: 'wrath',
@@ -432,14 +435,16 @@ export const ABILITIES = [
     // checked without running it — see tools/abilities.mjs, which asks it what it
     // covers rather than watching what it does.
     aura: {
-      // A TENTH MORE DAMAGE on every shot fired by a bow, a machine or a staff,
-      // and it COMPOUNDS with a second temple that has bought it: 1.1 x 1.1. See
+      // A TWENTIETH MORE DAMAGE on every shot fired by a bow, a machine or a staff,
+      // and it COMPOUNDS with a second temple that has bought it: 1.05 x 1.05. It
+      // was a tenth; the owner halved it once the compounding was in, because four
+      // temples at a tenth each is x1.46 on every tower on the board. See
       // `auras` in src/towers.js, which is the list of bought copies rather than
       // of distinct abilities.
       // Barracks men are excluded at the owner's word, and it is the right line:
       // their damage is a field on a MAN rather than on the tower, and a wall that
       // also hit harder would be the thing this game most carefully does not sell.
-      damage: 1.1,
+      damage: 1.05,
       on: ['archery', 'siege', 'monastery'],
       // What is drawn over each tower it is working on. The badge is the whole
       // feedback — an aura with no picture is a number the player has to take on
@@ -448,12 +453,12 @@ export const ABILITIES = [
     },
 
     detail: 'Every archery tower, artillery machine and monastery on the map hits ' +
-            'for a tenth more, wherever it stands. The temple does not have to see ' +
+            'for a twentieth more, wherever it stands. The temple does not have to see ' +
             'them and does not fire any differently itself.\n\n' +
             'Barracks men are the exception: their damage belongs to the man rather ' +
             'than to the tower. A sword and an arrow appear over every tower it is ' +
             'working on, and a second temple that has bought it compounds with the ' +
-            'first — a tenth on top of a tenth, marked x2 on the badge.'
+            'first — 5% on top of 5%, marked x2 on the badge.'
   },
   {
     id: 'fortitude',
@@ -462,22 +467,24 @@ export const ABILITIES = [
     icon: 'ability_fortitude',
     cost: ABILITY_COST,
     aura: {
-      // A FIFTH MORE HEALTH on every man a barracks musters, of every tier — a
-      // spearman goes 100 to 120 and a paladin 275 to 330.
+      // A TENTH MORE HEALTH on every man a barracks musters, of every tier — a
+      // spearman goes 100 to 110 and a paladin 275 to 303. It was a fifth, halved
+      // with Holy Wrath and for the same reason: these two compound, so what
+      // matters is not what one temple does but what four of them do.
       //
       // It is applied to `maxHp` every frame rather than added once when the
       // ability is bought, and that is what makes buying it mid-wave, selling the
       // temple, and mustering a fresh man after either one all behave without a
       // single hook. A man who is half wounded stays half wounded across the
       // change — see updateUnits.
-      hp: 1.2,
+      hp: 1.10,
       on: ['barracks'],
       badge: 'badge_fortitude'
     },
 
-    detail: 'Every man a barracks musters carries a fifth more health, on every ' +
-            'tier and anywhere on the map: a spearman goes from 100 to 120 and a ' +
-            'paladin from 275 to 330.\n\n' +
+    detail: 'Every man a barracks musters carries a tenth more health, on every ' +
+            'tier and anywhere on the map: a spearman goes from 100 to 110 and a ' +
+            'paladin from 275 to 303.\n\n' +
             'It reaches men already standing on the road, not only the next ones to ' +
             'muster, and a wounded man keeps the share of his health he had. A heart ' +
             'and an arrow appear over every barracks it is working on, and a second ' +

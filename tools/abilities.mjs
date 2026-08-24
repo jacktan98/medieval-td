@@ -157,29 +157,32 @@ console.log('\nBurst Fire\n');
   const burst = abilityById('burst');
   const cd = archery[3].cooldown;
 
-  // EXACTLY ONE CYCLE, and the margin is subtracted rather than added: six reloads
-  // is 14.4s and the seventh slot lands at 14.4 on the nose, so a run of "six
-  // reloads and a bit" catches the first shot of the next cycle and reports seven
-  // ordinary shots where there were five.
-  const shots = fire(t, cd * 6 - 0.1);
+  // EXACTLY ONE CYCLE, read off the ability rather than typed: `every` reloads is
+  // the cycle and the next slot lands on the nose, so the margin is SUBTRACTED —
+  // "one cycle and a bit" would catch the first shot of the next one and report an
+  // extra ordinary shot.
+  const plain = burst.every - 1;              // ordinary shots before the burst
+  const total = plain + burst.shots;
+  const shots = fire(t, cd * burst.every - 0.1);
 
-  ok(shots.length === 8, 'five ordinary shots and then three', `${shots.length} balls`);
+  ok(shots.length === total, `${plain} ordinary shots and then ${burst.shots}`,
+    `${shots.length} balls`);
   ok(shots.every(s => s.kind === 'bullet'),
-    'and all eight are the ordinary ball, as asked');
+    `and all ${total} are the ordinary ball, as asked`);
   ok(shots.every(s => s.damage === archery[3].damage),
     'each doing the tower\'s own damage', `${archery[3].damage}`);
 
   // The three are RAPID. Their spacing is the ability's `gap`, not the reload —
   // that is the whole effect, and it is the thing a wrong clock would break while
   // leaving the count right.
-  const rapid = shots.slice(5).map((s, i, a) => (i ? s.t - a[i - 1].t : 0)).slice(1);
+  const rapid = shots.slice(plain).map((s, i, a) => (i ? s.t - a[i - 1].t : 0)).slice(1);
   ok(rapid.every(g => Math.abs(g - burst.gap) < DT * 1.5),
-    'the last three come at the burst rate, not the reload',
+    `the last ${burst.shots} come at the burst rate, not the reload`,
     `${rapid.map(g => g.toFixed(2)).join('s, ')}s against ${burst.gap}s`);
 
-  const spaced = shots.slice(1, 5).map((s, i) => s.t - shots[i].t);
+  const spaced = shots.slice(1, plain).map((s, i) => s.t - shots[i].t);
   ok(spaced.every(g => Math.abs(g - cd) < DT * 1.5),
-    'and the first five come at the reload', `${cd}s`);
+    `and the first ${plain} come at the reload`, `${cd}s`);
 
   // THE HELD POSE RUNS INSIDE THE RELOAD on this tower, which is what makes it
   // free: the hold is a second and the musket takes 2.4 to load, so the second the
@@ -194,9 +197,10 @@ console.log('\nAnd the burst spreads\n');
   // THREE MEN ON THE ROAD, at three different distances so the standing order has
   // something to sort. The artist's whole complaint about the first build was that
   // all three balls went into one of them.
+  const burst = abilityById('burst');
   const t = post(['burst']);
-  const shots = fire(t, archery[3].cooldown * 6 - 0.1, 3);
-  const three = shots.slice(5);
+  const shots = fire(t, archery[3].cooldown * burst.every - 0.1, 3);
+  const three = shots.slice(burst.every - 1);
 
   ok(three.length === 3, 'the burst is still three balls', `${three.length}`);
   ok(new Set(three.map(s => s.at)).size === 3,
@@ -213,7 +217,8 @@ console.log('\nAnd the burst spreads\n');
   // AND IT FALLS BACK. With one man in reach there is nobody to spread to, and a
   // burst that refused to fire would read as the ability being broken exactly when
   // the player is watching it.
-  const lone = fire(post(['burst']), archery[3].cooldown * 6 - 0.1, 1).slice(5);
+  const lone = fire(post(['burst']), archery[3].cooldown * burst.every - 0.1, 1)
+    .slice(burst.every - 1);
   ok(lone.length === 3 && lone.every(s => s.at === 0),
     'with one man on the road all three go to him', `${lone.length} balls`);
 }
@@ -224,13 +229,19 @@ console.log('\nDeadeye\n');
   const t = post(['deadeye']);
   const dead = abilityById('deadeye');
   const cd = archery[3].cooldown;
-  const shots = fire(t, cd * 11 - 0.1);
+  const plain = dead.every - 1;
+  const shots = fire(t, cd * dead.every - 0.1);
 
-  ok(shots.length === 11, 'ten ordinary shots and then one', `${shots.length} balls`);
-  ok(shots.slice(0, 10).every(s => s.kind === 'bullet'), 'the ten are lead');
-  ok(shots[10].kind === 'deadeye', 'and the eleventh is not', shots[10].kind);
-  ok(shots[10].damage === dead.damage, 'and it hits for what the ability says',
-    `${shots[10].damage}`);
+  ok(shots.length === dead.every, `${plain} ordinary shots and then one`,
+    `${shots.length} balls`);
+  ok(shots.slice(0, plain).every(s => s.kind === 'bullet'), `the ${plain} are lead`);
+  const last = shots[plain];
+  ok(last.kind === 'deadeye', `and number ${dead.every} is not`, last.kind);
+  // A MULTIPLE OF THE TOWER'S OWN SHOT, so the check is the multiplier rather than
+  // a number — the whole point of `times`, which is what the flat 300 became.
+  ok(last.damage === archery[3].damage * dead.times,
+    'and it hits for the multiple the ability claims',
+    `${archery[3].damage} x${dead.times} = ${last.damage}`);
 
   // THE MARK, and the two halves of its life. It goes up a second before the ball
   // and comes down when the ball lands, which is two different owners handing over
@@ -240,7 +251,7 @@ console.log('\nDeadeye\n');
                   shots: [], units: [], hits: [] };
   const lock = state.towers[0];
   let up = 0, before = 0, marked = 0;
-  for (let i = 0; i * DT < cd * 11 - 0.1; i++) {
+  for (let i = 0; i * DT < cd * dead.every - 0.1; i++) {
     updateTowers(state, DT);
     if (lock.locked) { up++; if (!lock.shots || lock.shots < 10) before++; }
     for (const s of state.shots) if (s.marked) marked++;
@@ -277,19 +288,34 @@ console.log('\nWhat the two are worth\n');
               `deadeye ${deadeye.toFixed(1)}/s   both ${both.toFixed(1)}/s`);
 
   // THE TWO ARE CLOSE, and that is the design: what separates them is WHERE the
-  // damage lands, not how much of it there is. The burst spreads 180 over three
-  // men and Deadeye puts 300 through one, which is the difference between a road
-  // full of militia and a giant walking down it. Within a fifth of a point is as
-  // near as two different rhythms on the same reload can be made.
-  ok(Math.abs(burst - deadeye) < 1.5, 'Burst Fire and Deadeye are worth about the same',
+  // damage lands, not how much of it there is. The burst spreads three balls over
+  // three men and Deadeye puts six times one shot through one of them, which is the
+  // difference between a road full of militia and a giant walking down it.
+  //
+  // WITHIN A TENTH OF EACH OTHER rather than within a fifth of a point. The owner
+  // now sets both rhythms directly — one in four and one in eight — so the tolerance
+  // has to be a share of what they are worth rather than an absolute, or it would
+  // fail on the next tuning pass for being 3 points apart out of 40.
+  ok(Math.abs(burst - deadeye) / Math.max(burst, deadeye) < 0.10,
+    'Burst Fire and Deadeye are worth about the same',
     `${burst.toFixed(2)} against ${deadeye.toFixed(2)}`);
 
-  // AND THE SECOND ONE BOUGHT IS WORTH BUYING. With separate cycles the two simply
-  // add, so the tower with both is worth roughly the sum of the two bonuses — the
-  // check that matters is that the second 150 gold is not swallowed by the first.
-  ok(both - burst > (deadeye - plain) * 0.8,
-    'and buying the second adds nearly as much again',
-    `+${(burst - plain).toFixed(1)} then +${(both - burst).toFixed(1)}`);
+  // AND THE SECOND ONE BOUGHT IS STILL WORTH BUYING — but no longer worth the same
+  // as the first, and that is a consequence of the numbers rather than a bug.
+  //
+  // THE CYCLES SHARE A FACTOR NOW. One in four and one in eight means every Deadeye
+  // slot is also a Burst slot, and where they collide the rarer one wins, so a Post
+  // that has bought both fires half the bursts it would have alone. The cycles were
+  // 6 and 11 — coprime, so they almost never met — and the owner set 4 and 8.
+  //
+  // What is checked is therefore the thing that matters to a player: the second 150
+  // gold still buys most of what it would have bought on its own. If this ever
+  // drops below half, make the rarer cycle odd — 9 rather than 8 — and the two go
+  // back to being independent.
+  const alone = deadeye - plain;
+  const second = both - burst;
+  ok(second > alone * 0.5, 'and buying the second still adds most of its own worth',
+    `+${(burst - plain).toFixed(1)} then +${second.toFixed(1)} of ${alone.toFixed(1)}`);
 }
 
 // --- the paladin ----------------------------------------------------------------
@@ -362,8 +388,10 @@ console.log('\nHoly Slash\n');
   ok(blows.length >= n + 2, 'the paladin keeps swinging', `${blows.length} blows`);
   ok(blows.slice(0, n - 1).every(b => b.hit === man.damage),
     `${n - 1} ordinary blows first`, `${man.damage} each`);
-  ok(blows[n - 1] && blows[n - 1].hit === slash.damage, `and blow ${n} is the strike`,
-    blows[n - 1] && `${blows[n - 1].hit}`);
+  // A MULTIPLE OF HIS OWN BLOW, checked as the multiplier rather than as a number.
+  const strike = man.damage * slash.times;
+  ok(blows[n - 1] && blows[n - 1].hit === strike, `and blow ${n} is the strike`,
+    blows[n - 1] && `${blows[n - 1].hit} = ${man.damage} x${slash.times}`);
   ok(blows[n] && blows[n].hit === man.damage, 'then he goes back to ordinary ones');
 
   // AND IT COSTS HIM NOTHING, which is the change the artist asked for and the
@@ -385,7 +413,7 @@ console.log('\nHoly Slash\n');
     'and the strike is the only blow with a drawing of its own');
 
   const plain = man.damage / man.cd;
-  const armed = ((n - 1) * man.damage + slash.damage) / (n * man.cd);
+  const armed = ((n - 1) * man.damage + man.damage * slash.times) / (n * man.cd);
   console.log(`      one paladin: ${plain.toFixed(2)}/s plain, ${armed.toFixed(2)}/s with the slash ` +
               `(x${(armed / plain).toFixed(2)}), and a Keep musters ${man.count}`);
 }
@@ -418,8 +446,12 @@ console.log('\nHoly Light\n');
   let steps = 1;
   while (u.hold > 0 && steps < 60 * 5) { updateUnits(state, DT); steps++; }
   const healed = u.hp - before;
-  ok(Math.abs(healed - light.heals) < 2, 'and comes back up by what it promises',
-    `${healed.toFixed(0)} of ${light.heals}`);
+  // A SHARE OF HIS OWN MAXIMUM, not a number of points — so what is checked is the
+  // fraction, and a paladin standing under a Divine Fortitude heals more without a
+  // line of this file changing.
+  const promised = light.healFrac * u.maxHp;
+  ok(Math.abs(healed - promised) < 2, 'and comes back up by what it promises',
+    `${healed.toFixed(0)} of ${promised.toFixed(0)} (${(100 * light.healFrac).toFixed(0)}% of ${u.maxHp})`);
   ok(Math.abs(steps * DT - light.seconds) < DT * 3, 'over the seconds it promises',
     `${(steps * DT).toFixed(2)}s of ${light.seconds}s`);
 
@@ -488,7 +520,8 @@ console.log('\nFar Shot\n');
 
   ok(rangeOf(plain) === siege[3].range, 'an untaught turret reaches what its tier says',
     `${rangeOf(plain)}`);
-  ok(rangeOf(far) === shot.range, 'and one that has bought Far Shot reaches further',
+  ok(rangeOf(far) === Math.round(siege[3].range * shot.rangeTimes),
+    'and one that has bought Far Shot reaches further',
     `${rangeOf(far)} against ${rangeOf(plain)}`);
   // SECOND-LONGEST IN THE GAME, and no longer level with the Musketeer Post — the
   // owner brought it down from the Post's own 480. What the check asks is the
@@ -497,8 +530,8 @@ console.log('\nFar Shot\n');
   ok(rangeOf(far) < archery[3].range && rangeOf(far) > siege[3].range,
     'further than its own tier, shorter than a Musketeer Post',
     `${siege[3].range} -> ${rangeOf(far)}, Post ${archery[3].range}`);
-  ok(Math.abs(rangeOf(far) / siege[3].range - 1.5) < 0.02,
-    'half again the arm it was sold with',
+  ok(Math.abs(rangeOf(far) / siege[3].range - shot.rangeTimes) < 0.02,
+    'by exactly the multiple it claims',
     `x${(rangeOf(far) / siege[3].range).toFixed(2)}`);
 
   // THE PICTURE FOLLOWS THE RULE. The iron frames are what says on the board that
@@ -528,16 +561,17 @@ console.log('\nHeavy Bolt\n');
   const heavy = abilityById('heavybolt');
   const cycle = siege[3].cooldown * heavy.every;
 
-  // Three cycles of three, less a hair, for the same reason Burst Fire's window is
-  // six reloads less a hair: the next shot lands on the boundary.
+  // Three whole cycles, less a hair, for the same reason Burst Fire's window is a
+  // cycle less a hair: the next shot lands on the boundary.
+  const n = heavy.every;
   const shots = fire(t, cycle * 3 - 0.1);
-  ok(shots.length === 9, 'nine bolts in three cycles', `${shots.length}`);
+  ok(shots.length === n * 3, `${n * 3} bolts in three cycles of ${n}`, `${shots.length}`);
 
   const heavies = shots.filter(s => s.damage > siege[3].damage);
-  ok(heavies.length === 3, 'and one in three is the heavy one', `${heavies.length}`);
-  ok([2, 5, 8].every(i => shots[i].damage === siege[3].damage * 2),
-    'every third, and double the tower\'s own damage',
-    `${siege[3].damage} then ${siege[3].damage * 2}`);
+  ok(heavies.length === 3, `and one in ${n} is the heavy one`, `${heavies.length}`);
+  ok([n - 1, 2 * n - 1, 3 * n - 1].every(i => shots[i].damage === siege[3].damage * heavy.times),
+    `every ${n}th, and ${heavy.times}x the tower's own damage`,
+    `${siege[3].damage} then ${siege[3].damage * heavy.times}`);
 
   // DOUBLE AS A MULTIPLIER, which is the property that survives a retune. The
   // turret's damage has moved twice already; a number typed into the ability would
@@ -545,8 +579,9 @@ console.log('\nHeavy Bolt\n');
   const was = siege[3].damage;
   siege[3].damage = was + 7;
   const after = fire(turret(['heavybolt']), cycle - 0.1);
-  ok(after[2].damage === (was + 7) * 2, 'and it stays double when the tier is retuned',
-    `${was + 7} then ${after[2].damage}`);
+  ok(after[n - 1].damage === (was + 7) * heavy.times,
+    'and it stays a multiple when the tier is retuned',
+    `${was + 7} then ${after[n - 1].damage}`);
   siege[3].damage = was;
 
   // The bolt that leaves is the artist's burning one, and it is louder. Both ride
@@ -569,14 +604,16 @@ console.log('\nBoth of them, on one turret\n');
   // THE OWNER'S OWN CONDITION: buy both and both pictures are used. They are
   // independent — one changes the machine, the other changes what leaves it — so
   // the check is that neither swallows the other.
-  ok(rangeOf(both) === abilityById('farshot').range, 'it reaches the far distance',
+  ok(rangeOf(both) === Math.round(siege[3].range * abilityById('farshot').rangeTimes),
+    'it reaches the far distance',
     `${rangeOf(both)}`);
   ok(framesOf(both.def, both).join() === abilityById('farshot').frames.join(),
     'and is drawn in iron');
 
-  const shots = fire(both, siege[3].cooldown * 3 - 0.1);
-  ok(shots[2].damage === siege[3].damage * 2, 'and its third bolt is still the heavy one',
-    `${shots[2].damage}`);
+  const shots = fire(both, siege[3].cooldown * heavy.every - 0.1);
+  ok(shots[heavy.every - 1].damage === siege[3].damage * heavy.times,
+    `and bolt ${heavy.every} is still the heavy one`,
+    `${shots[heavy.every - 1].damage}`);
 
   const plain = fire(turret([]), siege[3].cooldown * 9 - 0.1).length;
   const armed = fire(turret(['heavybolt']), siege[3].cooldown * 9 - 0.1);
