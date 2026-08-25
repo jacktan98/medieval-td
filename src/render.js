@@ -1844,6 +1844,10 @@ function hudButton(ctx, b, label, sub, on) {
 // if a plate is ever redrawn dark, these all change at once.
 const INK = '#3A3026';
 const INK_GREEN = '#2F6B27';
+// "Owned" on an ability's dark blue disc. INK_GREEN is a parchment ink and goes
+// muddy on that blue; this is the same hue lifted until it reads, and it is used
+// nowhere else.
+const OWNED_GREEN = '#7FD35F';
 const INK_AMBER = '#8A6A12';
 const INK_RED = '#A83A2C';
 
@@ -2145,7 +2149,15 @@ function drawCancel(ctx, menu) {
 // keeps this folder at nine PNGs instead of eighteen.
 function drawButton(ctx, state, it) {
   const on = canUse(state, it);
-  const caption = it.gain !== null ? `+${it.gain}g`
+  // WHAT THE LINE UNDER THE PICTURE SAYS. A price, a refund — or, on an ability
+  // you have already paid for, the word "Owned".
+  //
+  // That slot was simply blank on a bought ability, which is the worst thing a
+  // status line can be: a button with no price under it reads as a button with
+  // nothing to tell you, not as one you have bought. The room was already
+  // reserved and centred, so saying it costs no layout at all.
+  const caption = it.owned ? 'Owned'
+                : it.gain !== null ? `+${it.gain}g`
                 : it.cost !== null ? `${it.cost}g`
                 : '';
 
@@ -2154,7 +2166,7 @@ function drawButton(ctx, state, it) {
   // cannot afford is dimmed; a button you have already BOUGHT is not — it is on
   // the ring to say what this tower does, and greying it would read as "you cannot
   // have this" when the answer is "you already do". What tells them apart on the
-  // screen is the gold ring below and the price being gone.
+  // screen is the caption: a price if it is for sale, "Owned" if it is not.
   ctx.globalAlpha = it.owned || on ? 1 : 0.45;
 
   // AN ABILITY BUTTON IS ONE PICTURE, plate and all: the artist drew these four on
@@ -2162,7 +2174,6 @@ function drawButton(ctx, state, it) {
   // glyph over. See the `plate` entries in data/ui.js — including why the drawing
   // has to be clipped to a circle before it goes down.
   if (it.face && plateFace(ctx, it)) {
-    if (it.owned) ownedRing(ctx, it);
     if (caption) buttonPrice(ctx, it, caption);
     ctx.restore();
     return;
@@ -2204,7 +2215,8 @@ function drawButton(ctx, state, it) {
   ctx.restore();
 }
 
-// The price under a button's picture.
+// The price under a button's picture — or, on an ability you have bought, the
+// word "Owned" in its place.
 //
 // 10px. The glyphs grew when the labels came out, and the price is the smaller
 // half of the button's job — what it IS reads first, what it costs second.
@@ -2212,6 +2224,13 @@ function drawButton(ctx, state, it) {
 //
 // THREE INKS. Dark on the cream plate and green when it is gold coming back to
 // you; white on an ability's coloured disc, where neither of the dark ones reads.
+//
+// AND "OWNED" IS GREEN ON BOTH, which is the whole point of the word: white would
+// put it in exactly the ink the price beside it is printed in, and a status that
+// looks like a price is not a status. Green already means "this is yours" here —
+// it is the refund button's ink — so the pair is the same split as above, just
+// green instead: a bright green that survives the dark blue disc, and the
+// ordinary INK_GREEN on the pale ones, where the bright one would wash out.
 //
 // AND THE PALE DISCS TAKE THE ORDINARY DARK INK — the same colour every tier
 // upgrade in the game prints its price in. They were gold for one build, because
@@ -2230,9 +2249,11 @@ function buttonPrice(ctx, it, caption) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '700 10px system-ui, sans-serif';
-  ctx.fillStyle = it.face && !(ui[it.face] && ui[it.face].pale) ? '#FFFFFF'
-                : it.gain !== null ? '#2F6B27'
-                : '#3A3026';
+  const onDark = it.face && !(ui[it.face] && ui[it.face].pale);
+  ctx.fillStyle = it.owned ? (onDark ? OWNED_GREEN : INK_GREEN)
+                : onDark ? '#FFFFFF'
+                : it.gain !== null ? INK_GREEN
+                : INK;
   ctx.fillText(caption, it.x, it.y + 16);
   ctx.textAlign = 'left';
 }
@@ -2261,22 +2282,6 @@ function plateFace(ctx, it) {
   drawUi(ctx, key, it.x, it.y, ui[key].fit);
   ctx.restore();
   return true;
-}
-
-// What "you already own this" looks like: a gold ring just outside the disc, in
-// the same #C4A574 the vector button plate is edged with. No new artwork, nothing
-// covering the picture, and it reads at a glance beside an unbought one.
-function ownedRing(ctx, it) {
-  ctx.strokeStyle = '#C4A574';
-  ctx.lineWidth = 3;
-  // OUTSIDE the disc, not on it. Drawn at the button's own radius the ring lands
-  // half under the artist's black outline and half over it, and against a dark
-  // blue plate that reads as nothing at all — it was on the first build and could
-  // not be told from an unbought button at a glance. 2.5 out clears the outline
-  // entirely, so the whole stroke is on the grass where it shows.
-  ctx.beginPath();
-  ctx.arc(it.x, it.y, BTN_R + 2.5, 0, Math.PI * 2);
-  ctx.stroke();
 }
 
 // Vector glyphs, now the FALLBACK rather than the design. Every glyph the menu
@@ -2489,41 +2494,52 @@ function drawInfo(ctx, state) {
   let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
   if (info.hp !== null) {
-    drawUi(ctx, 'stat_health', tx + STAT_COL / 2, ty, { h: INFO_ICON });
     // Reddens as it drops, on the same thresholds as the health bars over their
     // heads, so the two readings agree at a glance.
     const frac = info.maxHp ? info.hp / info.maxHp : 1;
-    ctx.fillStyle = !drawn ? '#F0E6D2'
-                  : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED;
-    ctx.fillText(`${info.hp}/${info.maxHp}`, tx + STAT_COL + 6, ty);
+    infoStat(ctx, 'stat_health', tx, ty, `${info.hp}/${info.maxHp}`,
+      !drawn ? '#F0E6D2'
+      : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED);
     ty += ROW_PITCH;
   }
 
-  drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: INFO_ICON });
-  ctx.fillStyle = drawn ? INK : '#F0E6D2';
-  const dx = tx + STAT_COL + 6;
-  ctx.fillText(String(info.damage), dx, ty);
+  const ink = drawn ? INK : '#F0E6D2';
+  const dx = infoStat(ctx, 'stat_damage', tx, ty, String(info.damage), ink);
 
   // AND HOW FAR, BESIDE THE ATTACK rather than under it. It had a line of its own
   // for one build; the owner asked for the pair to read as they do on an
   // encyclopedia card, which is the better answer — attack and reach are the two
   // halves of one question and a player comparing towers reads them together.
   //
-  // Hung off the END OF THE DAMAGE NUMBER rather than at a fixed column of its
-  // own, because the panel has no width to give one: a second column would have
-  // to be as wide as the longest attack figure in the game and every short one
-  // would pay for it.
-  //
   // Measured in the browser rather than by a tool, for the reason INFO_TITLE
   // gives: node has no canvas to set a font in. The widest row today is the
-  // Combat Archer's 14 and 210, which ends 36px inside the plate. If a stat ever
+  // Combat Archer's 14 and 210, which ends 27px inside the plate. If a stat ever
   // reaches four digits, look at the box.
-  if (info.range !== null) {
-    const rx = dx + ctx.measureText(String(info.damage)).width + STAT_GAP;
-    const { w } = uiSize('stat_range', { h: INFO_ICON });
-    drawUi(ctx, 'stat_range', rx + w / 2, ty, { h: INFO_ICON });
-    ctx.fillText(String(info.range), rx + w + 4, ty);
-  }
+  if (info.range !== null) infoStat(ctx, 'stat_range', dx + STAT_GAP, ty, String(info.range), ink);
+}
+
+// ONE ICON AND ITS NUMBER, and the reason it is a function rather than two lines
+// at each call site: the attack and the reach sat at different distances from
+// their icons for a build, because the attack measured its gap from the ALIGNMENT
+// COLUMN and the reach measured it from the icon's own edge. The sword is 12 wide
+// in a 19 column, so the attack's number stood 3.5px further out than the reach's
+// and the pair read as two different spacings on one line.
+//
+// So both go through the same rule now. STAT_COL is what makes the health and
+// attack numbers below one another line up — the heart is wider than the sword,
+// and a number that shifted between the rows would read as two layouts — and the
+// second pair on a line pays the same column for the same reason: the icons
+// differ in width, and hanging the text off them directly would let the spacing
+// wander with whichever icon happened to be there.
+//
+// Returns the x to carry on from, like the encyclopedia's stat() does.
+function infoStat(ctx, key, x, y, text, colour) {
+  drawUi(ctx, key, x + STAT_COL / 2, y, { h: INFO_ICON });
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = colour;
+  ctx.fillText(text, x + STAT_COL + 6, y);
+  return x + STAT_COL + 6 + ctx.measureText(text).width;
 }
 
 // How much vertical room the title takes, and the pitch between stat rows. 18 is
