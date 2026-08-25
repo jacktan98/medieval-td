@@ -1844,9 +1844,10 @@ function hudButton(ctx, b, label, sub, on) {
 // if a plate is ever redrawn dark, these all change at once.
 const INK = '#3A3026';
 const INK_GREEN = '#2F6B27';
-// "Owned" is set a shade smaller than a price — see buttonPrice. 9 against 10:
-// enough to sit off the disc's edge without dropping out of the eye's way.
-const OWNED_SIZE = 9;
+// "Owned" and "Maxed" are set a shade smaller than a price — see buttonPrice.
+// 9 against 10: both are five characters where a price is three or four, and at
+// the price's own size they crowded the disc they sit under.
+const WORD_SIZE = 9;
 const INK_AMBER = '#8A6A12';
 const INK_RED = '#A83A2C';
 
@@ -2148,14 +2149,19 @@ function drawCancel(ctx, menu) {
 // keeps this folder at nine PNGs instead of eighteen.
 function drawButton(ctx, state, it) {
   const on = canUse(state, it);
-  // WHAT THE LINE UNDER THE PICTURE SAYS. A price, a refund — or, on an ability
-  // you have already paid for, the word "Owned".
+  // WHAT THE LINE UNDER THE PICTURE SAYS. A price, a refund — or one of two
+  // words, on the two buttons that have no price because there is nothing left
+  // to pay: an ability you already own, and a tower already at the top of its
+  // ladder.
   //
-  // That slot was simply blank on a bought ability, which is the worst thing a
-  // status line can be: a button with no price under it reads as a button with
-  // nothing to tell you, not as one you have bought. The room was already
-  // reserved and centred, so saying it costs no layout at all.
+  // Both slots were simply blank, which is the worst thing a status line can be:
+  // a button with no price under it reads as a button with nothing to tell you,
+  // not as one that has already answered. The room was reserved and centred
+  // either way, so saying it costs no layout at all — and a caption is also what
+  // moves the glyph up into the two-line arrangement every priced button uses, so
+  // these two stop being the odd ones out on the ring.
   const caption = it.owned ? 'Owned'
+                : it.glyph === 'max' ? 'Maxed'
                 : it.gain !== null ? `+${it.gain}g`
                 : it.cost !== null ? `${it.cost}g`
                 : '';
@@ -2214,8 +2220,8 @@ function drawButton(ctx, state, it) {
   ctx.restore();
 }
 
-// The price under a button's picture — or, on an ability you have bought, the
-// word "Owned" in its place.
+// The price under a button's picture — or "Owned" or "Maxed" in its place, on the
+// two buttons that have nothing left to charge for.
 //
 // 10px. The glyphs grew when the labels came out, and the price is the smaller
 // half of the button's job — what it IS reads first, what it costs second.
@@ -2224,26 +2230,27 @@ function drawButton(ctx, state, it) {
 // THREE INKS. Dark on the cream plate and green when it is gold coming back to
 // you; white on an ability's coloured disc, where neither of the dark ones reads.
 //
-// "OWNED" TAKES THOSE SAME INKS — white on the blue discs, INK_GREEN on the
-// temple's pale ones. It was green on both for a build, on the reasoning that a
-// status printed in the price's own ink reads as a price; the owner looked at it
-// and kept the green only where it earns its keep. On the pale discs green is
-// what separates it from the dark price beside it. On the blue ones white is
-// simply what reads, and the WORD is already doing the separating — no number on
-// the ring is a word.
+// THE WORDS TAKE WHATEVER INK THEIR OWN BUTTON'S PRICE TOOK — that is the rule,
+// and the ink is not asked what the caption says. "Owned" was a green of its own
+// for a build, to keep a status from reading as a price; the owner asked for the
+// consistency instead, and it is the better call. A button does not change colour
+// when you buy it, so the eye has one less thing to account for, and the WORD is
+// already doing the separating: no price on the ring is a word.
 //
-// And it is set SMALLER than a price. "Owned" is five characters where a price is
-// three or four, and at the price's own size it crowded the disc it sits under;
-// it is also the one caption that is not a number, so it does not have to line up
-// in weight with the others.
+// So a bought ability on a blue disc keeps the white its price was in, one on the
+// temple's pale disc keeps the ordinary dark ink, and "Maxed" on a cream plate
+// takes the same dark ink every tier upgrade in the game prints its price in.
 //
-// AND THE PALE DISCS TAKE THE ORDINARY DARK INK — the same colour every tier
-// upgrade in the game prints its price in. They were gold for one build, because
-// white on the artist's white disc was invisible; the owner has since asked for
-// the ordinary colour, which reads on a pale disc for exactly the reason white
-// does not. `pale` in data/ui.js is which discs those are — it belongs to the
-// drawing rather than to the ability, so a re-export on a dark disc fixes it
-// there.
+// They are set SMALLER than a price, though — see WORD_SIZE. That is about the
+// disc having room for five characters, not about the caption meaning something
+// different.
+//
+// AND THE PALE DISCS TAKE THAT ORDINARY DARK INK TOO. They were gold for one
+// build, because white on the artist's white disc was invisible; the owner has
+// since asked for the ordinary colour, which reads on a pale disc for exactly the
+// reason white does not. `pale` in data/ui.js is which discs those are — it
+// belongs to the drawing rather than to the ability, so a re-export on a dark
+// disc fixes it there.
 //
 // The white sat on a dark rounded plate of its own for one build, on the reasoning
 // that text over artwork needs something behind it. The artist took it off: the
@@ -2254,10 +2261,8 @@ function buttonPrice(ctx, it, caption) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const onDark = it.face && !(ui[it.face] && ui[it.face].pale);
-  ctx.font = `700 ${it.owned ? OWNED_SIZE : 10}px system-ui, sans-serif`;
-  ctx.fillStyle = onDark ? '#FFFFFF'
-                : it.owned || it.gain !== null ? INK_GREEN
-                : INK;
+  ctx.font = `700 ${it.cost === null && it.gain === null ? WORD_SIZE : 10}px system-ui, sans-serif`;
+  ctx.fillStyle = onDark ? '#FFFFFF' : it.gain !== null ? INK_GREEN : INK;
   ctx.fillText(caption, it.x, it.y + 16);
   ctx.textAlign = 'left';
 }
