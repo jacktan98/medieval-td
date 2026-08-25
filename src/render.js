@@ -235,8 +235,20 @@ function drawFigures(ctx, state) {
   // blood. A spill LIES on the road for four seconds and men stand IN it, so it
   // goes under them at rank 0, beside the corpses: a puddle painted over a
   // soldier's boots and his shadow reads as a sticker rather than as ground.
+  //
+  // AND A SPILL SORTS BY ITS TOP EDGE, not by its middle. This is what the rank
+  // alone did not fix: the patch is 24px deep and centred on where the flask
+  // broke, so a man standing in the NEAR half of it has feet at a smaller y than
+  // its centre — he drew first and the puddle went over him. Sorted by the top
+  // of the patch, everybody whose feet are anywhere inside it draws afterwards,
+  // which is what "standing in it" should look like from either side.
+  //
+  // Only the spill needs it: earth is meant to be in front of things, and every
+  // other flat mark on the board is small enough that its middle and its top are
+  // the same answer.
   for (const i of state.impacts) {
-    add(i.y, IMPACT_LIE[i.img] ? 0 : 2, () => drawImpact(ctx, i));
+    const lies = IMPACT_LIE[i.img];
+    add(lies ? i.y - impactHeight(i) / 2 : i.y, lies ? 0 : 2, () => drawImpact(ctx, i));
   }
   // The dust over a plot something was just built on, and it sorts in this pass
   // like everything else rather than being painted on top afterwards.
@@ -1021,6 +1033,10 @@ function drawBlood(ctx, key, x, y, alpha) {
 // artist drew a clump of soil sitting on a line with specks flying above it, so
 // the bottom edge of the drawing is the ground and the picture hangs up from the
 // point of impact. Centre it instead and half the spray is drawn underground.
+// How deep a mark is drawn, in board px. Used by the depth pass to sort a spill
+// by its top edge rather than by the point the flask broke on.
+const impactHeight = i => IMPACT_TRIM[i.img][3] * IMPACT_SCALE;
+
 function drawImpact(ctx, i) {
   const img = art[i.img];
   if (!img) return;

@@ -26,6 +26,12 @@ archer holds a drawn bow one way and a club another, so he has two. A def takes
 only the halves it has — see `melee` in `src/data/waves.js` and `enemyStance` in
 `src/render.js`.
 
+**Nothing leaves his hand while he is held.** A pinned thrower fights with what
+he is carrying — the doctor swings the flask, the archer swings the bow — so no
+arrow and no flask appears while the melee pair is on screen. That is why the
+close-quarters damage is worth drawing properly: it is the whole of what he does
+in that state.
+
 **All four poses must share one ground point.** He swaps between them mid-fight,
 so a pivot out by two pixels makes him hop the instant a soldier reaches him.
 `node tools/shadow.mjs` checks every one of them against its own grey blob, and

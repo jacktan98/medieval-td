@@ -627,26 +627,26 @@ export const waves = [
   { rest: 9, groups: [
       { type: 'light_inf', count: 14, gap: 0.90 },
       { type: 'heavy_inf', count: 2, gap: 2.00 },
-      { type: 'archer_inf', count: 1, gap: 1.80 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 2, gap: 1.80 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 18, gap: 0.80 },
       { type: 'heavy_inf', count: 3, gap: 1.80 },
-      { type: 'archer_inf', count: 1, gap: 1.80 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 2, gap: 1.80 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 24, gap: 0.70 },
       { type: 'heavy_inf', count: 4, gap: 1.60 },
-      { type: 'archer_inf', count: 2, gap: 1.70 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 4, gap: 1.70 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 34, gap: 0.60 },
       { type: 'heavy_inf', count: 6, gap: 1.40 },
-      { type: 'archer_inf', count: 2, gap: 1.60 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 4, gap: 1.60 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] }
 ];
 
@@ -713,26 +713,26 @@ export const wavesFork = [
   { rest: 9, groups: [
       { type: 'light_inf', count: 13, gap: 0.90 },
       { type: 'heavy_inf', count: 1, gap: 2.00 },
-      { type: 'archer_inf', count: 1, gap: 1.80 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 2, gap: 1.80 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 16, gap: 0.80 },
       { type: 'heavy_inf', count: 2, gap: 1.80 },
-      { type: 'archer_inf', count: 1, gap: 1.80 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 2, gap: 1.80 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 22, gap: 0.70 },
       { type: 'heavy_inf', count: 3, gap: 1.60 },
-      { type: 'archer_inf', count: 2, gap: 1.70 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 4, gap: 1.70 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 31, gap: 0.60 },
       { type: 'heavy_inf', count: 5, gap: 1.40 },
-      { type: 'archer_inf', count: 2, gap: 1.60 },
-      { type: 'plague_inf', count: 1, gap: 2.00 }
+      { type: 'archer_inf', count: 4, gap: 1.60 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
     ] }
 ];
 
@@ -922,38 +922,38 @@ export const wavesLong = [
   { rest: 9, groups: [
       { type: 'light_inf', count: 10, gap: 0.65 },
       { type: 'heavy_inf', count: 1, gap: 1.23 },
-      { type: 'archer_inf', count: 1, gap: 1.30 },
-      { type: 'plague_inf', count: 1, gap: 1.30 }
+      { type: 'archer_inf', count: 2, gap: 1.30 },
+      { type: 'plague_inf', count: 2, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 12, gap: 0.62 },
       { type: 'heavy_inf', count: 2, gap: 1.23 },
-      { type: 'archer_inf', count: 1, gap: 1.30 },
-      { type: 'plague_inf', count: 1, gap: 1.30 }
+      { type: 'archer_inf', count: 2, gap: 1.30 },
+      { type: 'plague_inf', count: 2, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 16, gap: 0.55 },
       { type: 'heavy_inf', count: 3, gap: 1.23 },
-      { type: 'archer_inf', count: 2, gap: 1.30 },
-      { type: 'plague_inf', count: 1, gap: 1.30 }
+      { type: 'archer_inf', count: 4, gap: 1.30 },
+      { type: 'plague_inf', count: 2, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 20, gap: 0.51 },
       { type: 'heavy_inf', count: 4, gap: 1.23 },
-      { type: 'archer_inf', count: 2, gap: 1.30 },
-      { type: 'plague_inf', count: 1, gap: 1.30 }
+      { type: 'archer_inf', count: 4, gap: 1.30 },
+      { type: 'plague_inf', count: 2, gap: 1.30 }
     ] },
   { rest: 9, groups: [
       { type: 'light_inf', count: 26, gap: 0.45 },
       { type: 'heavy_inf', count: 5, gap: 1.23 },
-      { type: 'archer_inf', count: 3, gap: 1.30 },
-      { type: 'plague_inf', count: 1, gap: 1.30 }
+      { type: 'archer_inf', count: 6, gap: 1.30 },
+      { type: 'plague_inf', count: 2, gap: 1.30 }
     ] },
   { rest: 0, groups: [
       { type: 'light_inf', count: 32, gap: 0.40 },
       { type: 'heavy_inf', count: 6, gap: 1.23 },
-      { type: 'archer_inf', count: 3, gap: 1.30 },
-      { type: 'plague_inf', count: 2, gap: 1.30 }
+      { type: 'archer_inf', count: 6, gap: 1.30 },
+      { type: 'plague_inf', count: 4, gap: 1.30 }
     ] }
 ];
 

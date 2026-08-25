@@ -243,19 +243,29 @@ console.log('\nHe stands off\n');
   doc.hp = 1e6;                        // he must be pinned, not killed
   place(doc, stand);                   // right on top of the squad
 
+  // COUNTED ON THE THROW, not on the landing. The first version counted shots
+  // leaving the list, which is where a flask ARRIVES — and one thrown a frame
+  // before a soldier reached him lands a second later, inside the held window,
+  // and read as a flask thrown from inside the melee. What is being asked is
+  // whether one is created while somebody has hold of him.
   let threw = 0, everHeld = false;
   for (let i = 0; i < 8 / DT; i++) {
     updateUnits(state, DT);
-    updateEnemies(state, DT);
+    const held = !!doc.foe;
     const before = state.shots.length;
+    updateEnemies(state, DT);
+    if (held && state.shots.length > before) threw++;
+    if (held) everHeld = true;
     updateShots(state, DT);
-    if (state.shots.length < before) threw++;
-    if (doc.foe) everHeld = true;
     updateImpacts(state, DT);
   }
 
   check(everHeld, 'a soldier walks out and locks him down');
-  check(threw > 0, 'and he throws anyway, from inside the melee',
+  // AND NOTHING LEAVES HIS HAND WHILE HE IS HELD, which is the reverse of what
+  // this checked before. A pinned thrower swings the flask instead of throwing
+  // it, at the owner's word — what makes pinning him a fight rather than an off
+  // switch is his club, which went from 5 to 20 in the same pass.
+  check(threw === 0, 'and throws nothing at all from inside the melee',
     `${threw} flasks while held`);
 }
 

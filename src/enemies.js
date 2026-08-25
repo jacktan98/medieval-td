@@ -80,13 +80,18 @@ export function updateEnemies(state, dt) {
 
     // THE THROWER, and the basket is bottomless.
     //
-    // AND HE THROWS WHILE HE IS BEING HELD. This is before the melee branch
-    // rather than after it on purpose. A soldier who walks out to pin him has
-    // stopped him moving and is trading blows with him, and that used to also
-    // switch the basket off — which made blocking him a complete answer to an
-    // enemy who is supposed to be dangerous in exactly that situation. Now
-    // pinning him costs you a man standing in the spill he is still throwing.
-    if (e.def.ranged) {
+    // BUT NOT WHILE SOMEBODY HAS HOLD OF HIM. A pinned thrower fights with what
+    // is in his hands — the doctor swings the flask, the archer swings the bow —
+    // and nothing leaves either of them, which is the owner's rule and also the
+    // one the drawings already tell: `melee.attack` is a man hitting the figure
+    // in front of him, and a projectile leaving that pose reads as a bug.
+    //
+    // IT USED TO BE THE OPPOSITE, deliberately: he threw from inside the melee so
+    // that blocking him was not a complete answer. What replaces that is his
+    // club — 20 for the doctor and 15 for the archer, where the doctor's used to
+    // be 5 — so pinning him is still a fight rather than a switch that turns him
+    // off. See `damage` on both in data/waves.js.
+    if (e.def.ranged && !e.foe) {
       const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
       e.tcd -= dt;
       if (mark && e.tcd <= 0) {
