@@ -71,6 +71,20 @@ export function leadPoint(e, t) {
   return pointOn(road, e.s + ahead);
 }
 
+// LOOK AT SOMETHING, given only its x. `face` is a sign and nothing else — the
+// drawings are mirrored, not rotated — so the y never comes into it.
+//
+// EXACTLY ON TOP OF HIM IS NOT A DIRECTION, and that is the whole reason this is
+// a function rather than a line: a figure standing at the same x as its target
+// would flip to +1 on the frame the two crossed, and a man who snaps to face
+// right at the moment somebody walks through him reads worse than one who keeps
+// looking the way he already was. Holding the last heading through the crossing
+// is the right answer, and both callers need it: a mark can walk through a
+// thrower, and a soldier who has hold of one stands on him by definition.
+function turnTo(e, x) {
+  if (x !== e.x) e.face = x > e.x ? 1 : -1;
+}
+
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     // Decays wherever the enemy is, so a swing that lands just as its holder
@@ -103,6 +117,33 @@ export function updateEnemies(state, dt) {
         // the man holding him lunges back on his own clock.
         e.thrust = 1;
       }
+
+      // AND HE TURNS TO SHOOT. Every other figure in the game already faces what
+      // it is fighting — a soldier turns to his foe, and so does an enemy the
+      // moment one takes hold of him — and the thrower was the one who did not.
+      // He faced the ROAD, because the road is the only thing that had ever set
+      // an unheld enemy's heading, and a road is not where the men are:
+      //
+      //   HALTED, he never reaches the movement below at all, so his heading was
+      //   frozen at whatever it was when he stopped walking. He stands off from
+      //   men who are ahead of him ALONG HIS LANE, which on a bend is not the
+      //   same as ahead of him on the screen — so a thrower stopped on a hairpin
+      //   would work on a squad standing behind his own shoulder.
+      //
+      //   WALKING, the road overwrote his heading every frame, and his range
+      //   reaches men he has already passed: nearestUnit asks who is nearest,
+      //   not who is in front. An arrow leaving the back of a man walking away
+      //   is the version of this that gets noticed.
+      //
+      // Facing is also the lunge's direction — render.js shifts the figure by
+      // `face * thrust` — so getting this wrong threw him away from his mark as
+      // well as pointing him the wrong way.
+      //
+      // It is set from the mark rather than from the shot so that he keeps
+      // watching them between arrows, which is the whole of a standoff: he is
+      // stopped BECAUSE they are there, and a man standing still with his back
+      // to the reason he stopped reads as a bug even when nothing is in the air.
+      if (mark) turnTo(e, mark.x);
     }
 
     // Held in melee by a soldier. Blocked enemies stop dead rather than
@@ -112,8 +153,9 @@ export function updateEnemies(state, dt) {
       e.halted = false;   // stopped by somebody else, which is a different thing
       // Turn to fight whoever is holding it, so the two face each other. A
       // doctor faces his captor rather than his mark: the man with a spear in
-      // him is the more pressing of the two.
-      if (e.foe.x !== e.x) e.face = e.foe.x > e.x ? 1 : -1;
+      // him is the more pressing of the two — and this runs after the block
+      // above, so it wins on a figure that could answer either.
+      turnTo(e, e.foe.x);
       continue;
     }
 
@@ -190,7 +232,14 @@ export function updateEnemies(state, dt) {
     // A vertical stretch of road says nothing about which way the figure should
     // look, so keep the last horizontal heading rather than snapping to a
     // default.
-    if (p.tx) e.face = p.tx > 0 ? 1 : -1;
+    //
+    // AND THE ROAD DOES NOT GET TO TURN A MAN MID-SHOT. `thrust` is up for the
+    // quarter second the Attack drawing is on screen, and for that quarter
+    // second the heading belongs to whatever he is shooting at — set above.
+    // Without this a thrower who is walking rather than halted would be turned
+    // straight back down the road on the very next line, and the turn would only
+    // ever be visible on a figure that had stopped.
+    if (p.tx && e.thrust <= 0) e.face = p.tx > 0 ? 1 : -1;
     e.x = p.x;
     e.y = p.y;
 

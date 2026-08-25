@@ -165,7 +165,121 @@ console.log('\nWhich drawing an enemy shows\n');
     'a thug has one pair and shows it however he is caught', thug.sprite);
 }
 
+// --- WHICH WAY A THROWER LOOKS ------------------------------------------------
+//
+// He turns to shoot. The bug this replaces is the one nothing else in the file
+// would have caught, because it is not about the drawing — it is about the sign
+// the drawing is mirrored by:
+//
+//   an unheld enemy's heading came from the ROAD and from nothing else. Halted,
+//   he never reached the line that sets it, so he kept whatever he had when he
+//   stopped walking; walking, the road overwrote it every frame. Either way a
+//   thrower could put an arrow into a man standing behind his own shoulder.
+//
+// So the test stands a soldier on each side of a thrower in turn and asks which
+// way he ends up looking. Both cases matter and they take different paths through
+// updateEnemies: a man far enough down the road blocks him and he HALTS, and a
+// man behind him does not, so he walks on and only turns for the shot.
+console.log('\nWhich way a thrower looks\n');
+{
+  const ok = (cond, label, detail = '') => {
+    console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(56)} ${detail}`);
+    if (!cond) bad++;
+  };
+
+  // The road at AT and a little either side of it, so "in front" and "behind"
+  // are places on his own lane rather than screen coordinates — which is exactly
+  // the distinction the bug turned on.
+  const ROAD = laneOf(level.routes[0], 1);
+  const spotAt = s => pointOn(ROAD, s);
+
+  // One thrower on the road, one soldier at `s` along the same lane, one step.
+  // `face` starts pointing the WRONG way on purpose: if the step leaves it
+  // alone the test fails, which is what the old code did.
+  function look(id, s, startFace) {
+    const d = enemyTypes[id];
+    const here = spotAt(AT);
+    const there = spotAt(s);
+    const e = {
+      def: d, x: here.x, y: here.y, hp: d.hp, maxHp: d.hp,
+      face: startFace, route: 0, s: AT, lane: 1,
+      acd: 0, tcd: 0, thrust: 0, foe: null, halted: false, leaked: false
+    };
+    const u = { x: there.x, y: there.y, hp: 100, maxHp: 100, respawn: 0, def: {} };
+    const state = {
+      enemies: [e], units: [u], corpses: [], shots: [], hits: [],
+      splats: [], impacts: [], gold: 0, lives: 20
+    };
+    updateEnemies(state, 1 / 60);
+    return { face: e.face, halted: e.halted, toward: Math.sign(there.x - here.x) };
+  }
+
+  for (const id of ['archer_inf', 'plague_inf']) {
+    const d = enemyTypes[id];
+    // Inside his reach on both sides. 60px is under the doctor's 130 as well as
+    // the archer's 200, so one offset serves both.
+    const ahead = look(id, AT + 60, -1);
+    const behind = look(id, AT - 60, 1);
+
+    ok(ahead.face === ahead.toward,
+      `${d.name} faces a soldier in front of him`,
+      `${ahead.face > 0 ? 'RIGHT' : 'LEFT '}, halted ${ahead.halted}`);
+    ok(behind.face === behind.toward,
+      'and turns round for one behind him',
+      `${behind.face > 0 ? 'RIGHT' : 'LEFT '}, halted ${behind.halted}`);
+    // The two answers must DIFFER, or the test would pass on a figure that
+    // simply always looked one way.
+    ok(ahead.face !== behind.face, 'and the two are not the same answer',
+      `${ahead.face} vs ${behind.face}`);
+  }
+
+  // AND A MAN WITH NOTHING IN RANGE STILL FOLLOWS THE ROAD. The turn must not
+  // have cost the walk its heading — this is the case that would break if the
+  // road's line were simply deleted rather than yielded on the shot.
+  {
+    const d = enemyTypes.archer_inf;
+    const here = spotAt(AT);
+    const e = {
+      def: d, x: here.x, y: here.y, hp: d.hp, maxHp: d.hp,
+      face: 0, route: 0, s: AT, lane: 1,
+      acd: 0, tcd: 0, thrust: 0, foe: null, halted: false, leaked: false
+    };
+    const state = {
+      enemies: [e], units: [], corpses: [], shots: [], hits: [],
+      splats: [], impacts: [], gold: 0, lives: 20
+    };
+    updateEnemies(state, 1 / 60);
+    const road = Math.sign(pointOn(ROAD, AT).tx);
+    ok(e.face === road, 'and an empty road still sets his heading',
+      `${e.face > 0 ? 'RIGHT' : 'LEFT '}`);
+  }
+
+  // AND A CAPTOR OUTRANKS A MARK. A doctor held from one side while a soldier
+  // stands on the other faces the man with hold of him — the two blocks run in
+  // that order for exactly this reason.
+  {
+    const d = enemyTypes.plague_inf;
+    const here = spotAt(AT);
+    const e = {
+      def: d, x: here.x, y: here.y, hp: d.hp, maxHp: d.hp,
+      face: 0, route: 0, s: AT, lane: 1,
+      acd: 0, tcd: 0, thrust: 0, foe: null, halted: false, leaked: false
+    };
+    const captor = { x: here.x - 10, y: here.y, hp: 100, maxHp: 100, respawn: 0, def: {} };
+    const mark = { x: here.x + 60, y: here.y, hp: 100, maxHp: 100, respawn: 0, def: {} };
+    e.foe = captor;
+    const state = {
+      enemies: [e], units: [captor, mark], corpses: [], shots: [], hits: [],
+      splats: [], impacts: [], gold: 0, lives: 20
+    };
+    updateEnemies(state, 1 / 60);
+    ok(e.face === -1, 'and a captor outranks a mark on the other side',
+      `${e.face > 0 ? 'RIGHT' : 'LEFT '}`);
+  }
+}
+
 console.log(bad
   ? `\n${bad} case(s) wrong.`
-  : '\nEvery body faces the blow, and every figure shows the drawing it should.');
+  : '\nEvery body faces the blow, every thrower faces his mark, ' +
+    'and every figure shows the drawing it should.');
 process.exit(bad ? 1 : 0);
