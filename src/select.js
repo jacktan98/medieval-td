@@ -185,6 +185,13 @@ export function selectionInfo(state) {
       // of its own.
       hp: null,
       maxHp: null,
+      // ROUNDED, NOT CEILED, and this is the one number in the box that does not
+      // follow the health rows. It has to agree with the SHOT: towers.js rounds
+      // by exactly this when it creates one, and a card claiming 28 where the
+      // arrow does 27 is the card lying. Holy Wrath is 5%, so the two differ
+      // wherever a base damage times 1.05 lands past a half — 26 becomes 27.3,
+      // which is 27 fired and would be 28 printed. The health rows have no such
+      // partner to agree with; this one does.
       damage: Math.round(man.damage * k),
       // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
       // the targeting reads, so a tower that has bought Far Shot shows the
@@ -213,10 +220,24 @@ export function selectionInfo(state) {
     sprite: f.def.sprite,
     trim: f.def.spriteTrim,
     title: f.def.name,
-    // Rounded for display only. Soldiers regen fractionally out of combat and a
-    // box reading "82.4/105" is noise where "82/105" is information.
-    hp: Math.max(0, Math.round(f.hp)),
-    maxHp: f.maxHp,
+    // WHOLE NUMBERS, BOTH OF THEM, and rounded UP. Display only — the fight goes
+    // on using the fractions.
+    //
+    // The ceiling is the one that made this necessary. Divine Fortitude is 10%
+    // and a paladin's 275 is not a multiple of 10, so a buffed keep read
+    // "302.5" — and a box quoting a stat to one decimal place is quoting a
+    // number the player cannot do anything with. Soldiers regen fractionally
+    // too, so the live half was already rounded; this makes the pair agree.
+    //
+    // UP RATHER THAN NEAREST, which is the owner's word and is also the right
+    // one twice over: 302.5 becomes 303 as asked, and a man on his last splinter
+    // of health reads 1 rather than 0. A living figure showing 0 health is the
+    // worst thing this box could say.
+    //
+    // THE SAME FUNCTION FOR BOTH or a man at full health reads 302/303. That is
+    // the trap here: it is not two roundings, it is one applied twice.
+    hp: Math.max(0, Math.ceil(f.hp)),
+    maxHp: Math.ceil(f.maxHp),
     damage: shownDamage(f.def),
     // An archer thug's 200 and a plague doctor's 130 are the two numbers that
     // explain why a tower is not answering them; everybody else on the road

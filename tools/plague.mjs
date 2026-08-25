@@ -389,6 +389,48 @@ console.log('\nWhat one flask does to three men\n');
     'and his club, his glass and his card are one number', `${FLASK_HIT}`);
 }
 
+// --- EVERY FLASK, NOT JUST THE FIRST ------------------------------------------
+//
+// The blow is per-throw and the poison is not, and those are two different rules
+// on one bottle — which is exactly the pair that gets conflated. The poison
+// REFRESHES rather than stacks (see hit() in projectiles.js), and it would be an
+// easy mistake to make the blow refresh with it and quietly turn a doctor into a
+// man who hurts you once and then only ever tops the clock up.
+//
+// So: four flasks onto one stationary man, and the blow is asserted on every one
+// of them rather than on the total. The poison is asserted NOT to compound in
+// the same run — same length after the fourth as after the first.
+{
+  const man = { def: { r: 8, name: 'a man who does not move' }, hp: 1000, maxHp: 1000,
+                x: 400, y: 300, rx: 400, ry: 300, respawn: 0, poison: null,
+                hold: 0, healing: 0 };
+  const state = { units: [man], enemies: [], shots: [], hits: [],
+                  impacts: [], splats: [], corpses: [] };
+
+  const blows = [];
+  const doses = [];
+  for (let n = 0; n < 4; n++) {
+    const before = man.hp;
+    state.shots.push({
+      x: 400, y: 260, angle: 0, fromX: 300, side: 'enemy', target: man,
+      damage: enemyTypes.plague_inf.ranged.damage, splash: flask.splash,
+      ammo: flask, speed: flask.speed,
+      from: { x: 300, y: 260 }, to: { x: 400, y: 300 }, flight: 0.2, t: 0, lift: 20
+    });
+    // Just the flight and the landing. updateUnits is deliberately NOT stepped,
+    // so what is measured is the blow alone with no poison tick or regen in it.
+    for (let i = 0; i < 60 && state.shots.length; i++) updateShots(state, DT);
+    blows.push(Math.round(before - man.hp));
+    doses.push(man.poison ? man.poison.left : 0);
+  }
+
+  check(blows.every(d => d === FLASK_HIT), 'every flask lands its full blow, not just the first',
+    blows.join(' + '));
+  check(doses.every(d => Math.abs(d - flask.poison.seconds) < 1e-9),
+    'and the poison refreshes rather than compounding',
+    doses.map(d => d.toFixed(1) + 's').join(' / '));
+}
+
 console.log(bad
   ? `\n${bad} check(s) failed.`
   : '\nThe plague doctor behaves.');
