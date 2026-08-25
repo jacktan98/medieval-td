@@ -128,6 +128,25 @@ function land(state, s) {
     if (!inRange(s.x, s.y, v.x, v.y, s.splash)) continue;
     hit(state, s, v);
   }
+
+  // AND THE MAN IT WAS AIMED AT TAKES THE BLOW ITSELF, on top of what the patch
+  // does to everybody in it. A flask is the only shot in the game with both:
+  // 20 to the one man the glass broke on, and 20 over four seconds to everyone
+  // standing in what it spilled.
+  //
+  // Aimed AT rather than nearest: the doctor picked him, the flight followed him,
+  // and he is the one who wears it. If he has moved out of the patch or died on
+  // the way, nothing lands — a bottle that misses is a bottle that misses, and
+  // the ground it broke on still poisons whoever is on it.
+  if (s.ammo.poison && s.damage > 0) {
+    const mark = s.target;
+    if (mark && mark.hp > 0 && !mark.respawn && inRange(s.x, s.y, mark.x, mark.y, s.splash)) {
+      mark.hp -= s.damage;
+      splat(state, mark.x, mark.y - (mark.def.r || 0), mark.y);
+      mark.struckFrom = s.fromX >= mark.x ? 1 : -1;
+      mark.killedBy = s.ammo.kind;
+    }
+  }
 }
 
 // WHO A SHOT CAN HURT. One line, and it is the whole of what it took to point
@@ -156,6 +175,10 @@ function hit(state, s, v) {
   // clock at the same rate. Stacking reads as a bug the first time three doctors
   // delete a squad in a second, and "how long since the last flask" is a thing
   // the player can see, where "how many are on him" is not.
+  // POISON OR DAMAGE — for everyone the SPLASH catches. The man the flask was
+  // aimed at also takes the blow itself, and that is applied by the caller
+  // rather than here, because it belongs to one man and this runs for every man
+  // in the patch. See land() above.
   if (s.ammo.poison) {
     v.poison = { dps: s.ammo.poison.dps, left: s.ammo.poison.seconds };
   } else {

@@ -30,7 +30,7 @@ import { updateShots } from '../src/projectiles.js';
 import { makeUnits, updateUnits } from '../src/units.js';
 import { updateImpacts } from '../src/impacts.js';
 import { families } from '../src/data/towers.js';
-import { flask } from '../src/data/waves.js';
+import { flask, FLASK_HIT, enemyTypes } from '../src/data/waves.js';
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 
@@ -311,6 +311,52 @@ console.log('\nHe stands off\n');
 
   check(state.enemies.length === 0, 'and clears even against men his poison cannot kill',
     `${secs}s, ${state.enemies.length} left`);
+}
+
+// --- THE BLOW AND THE PATCH ARE TWO DIFFERENT THINGS ---------------------------
+//
+// The flask does both now: it breaks on ONE man for its own damage, and it
+// leaves a spill that poisons everyone standing in it. Getting that wrong in
+// either direction is invisible in play — a blow applied to the whole patch is
+// the doctor quietly doing three times his damage, and a blow applied to nobody
+// is the owner's change silently not shipping.
+//
+// So: three men, one aimed at, one beside him inside the splash, one well clear.
+console.log('\nWhat one flask does to three men\n');
+{
+  const man = (x, name) => ({
+    def: { r: 8, hp: 275, damage: 7, cd: 0.8, name }, hp: 275, maxHp: 275,
+    x, y: 300, rx: x, ry: 300, respawn: 0, poison: null, hold: 0, healing: 0
+  });
+  const aimed = man(400, 'the man it was thrown at');
+  const beside = man(400 + Math.round(flask.splash / 2), 'a man beside him');
+  const clear = man(400 + flask.splash * 4, 'a man well clear');
+  const state = { units: [aimed, beside, clear], enemies: [], shots: [], hits: [],
+                  impacts: [], splats: [], corpses: [] };
+
+  state.shots.push({
+    x: 400, y: 260, angle: 0, fromX: 300, side: 'enemy', target: aimed,
+    damage: FLASK_HIT, splash: flask.splash, ammo: flask, speed: flask.speed,
+    from: { x: 300, y: 260 }, to: { x: 400, y: 300 }, flight: 0.2, t: 0, lift: 20
+  });
+  for (let i = 0; i < 60 && state.shots.length; i++) updateShots(state, 1 / 60);
+
+  const took = u => Math.round(u.maxHp - u.hp);
+  check(took(aimed) === FLASK_HIT && !!aimed.poison,
+    'the man it was thrown at takes the blow AND the poison',
+    `${took(aimed)} and ${flask.poison.dps}/s for ${flask.poison.seconds}s`);
+  check(took(beside) === 0 && !!beside.poison,
+    'a man beside him takes the poison and nothing else', `${took(beside)}`);
+  check(took(clear) === 0 && !clear.poison,
+    'and a man outside the patch takes neither');
+
+  // AND THE TWO HALVES AGREE WITH THE CARD. His club and his glass are the same
+  // number by the owner's rule, and the card prints that number — see
+  // listedDamage in data/waves.js for why the poison is not in it.
+  const doc = enemyTypes.plague_inf;
+  check(doc.damage === FLASK_HIT && doc.ranged.damage === FLASK_HIT &&
+        doc.listedDamage === FLASK_HIT,
+    'and his club, his glass and his card are one number', `${FLASK_HIT}`);
 }
 
 console.log(bad

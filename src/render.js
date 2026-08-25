@@ -228,8 +228,15 @@ function drawFigures(ctx, state) {
   // does: it belongs to a place on the board. Its `y` IS its ground line — a
   // lobbed rock's landing point is on the ground by construction, which is what
   // the parabola's zero lift at u = 1 buys — so there is no second anchor here.
+  //
+  // BUT THE TWO KINDS SIT AT DIFFERENT RANKS, and it is the same distinction
+  // IMPACT_LIE already draws. Earth is thrown UP in front of the impact, so at
+  // equal depth it belongs over the figures standing there — rank 2, beside the
+  // blood. A spill LIES on the road for four seconds and men stand IN it, so it
+  // goes under them at rank 0, beside the corpses: a puddle painted over a
+  // soldier's boots and his shadow reads as a sticker rather than as ground.
   for (const i of state.impacts) {
-    add(i.y, 2, () => drawImpact(ctx, i));
+    add(i.y, IMPACT_LIE[i.img] ? 0 : 2, () => drawImpact(ctx, i));
   }
   // The dust over a plot something was just built on, and it sorts in this pass
   // like everything else rather than being painted on top afterwards.

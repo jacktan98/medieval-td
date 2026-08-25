@@ -30,6 +30,12 @@ import { arrow } from './towers.js';
 // makes it silent on arrival, the same as the tower's.
 export const enemyArrow = { ...arrow };
 
+// WHAT THE GLASS ITSELF DOES, to the one man it was aimed at. Written once here
+// because three places need it to agree: the ammunition's damage, the card the
+// encyclopedia prints, and the doctor's own club — which the owner set to the
+// same number so that what he does no longer depends on where he is standing.
+export const FLASK_HIT = 20;
+
 export const flask = {
   kind: 'flask',
   sprite: 'flask',
@@ -509,17 +515,19 @@ export const enemyTypes = {
     // condition, so it is written down.
     damage: 20,
     atkCd: 1.2,
-    // WHAT THE BOOK AND THE INFO BOX PRINT FOR HIM, and it is not `damage`.
+    // WHAT THE BOOK AND THE INFO BOX PRINT FOR HIM: the blow, which is now the
+    // same number whichever way it arrives — 20 from the club, 20 from the glass.
     //
-    // 6 is his melee, and it is what units.js uses on the rare occasion somebody
-    // catches him. It is also the least interesting thing about him: a card
-    // reading "6" next to a doctor whose flask takes 18 off a spearman would be
-    // the more misleading of the two numbers, not the safer one.
+    // IT LEAVES THE POISON OUT, and that is a choice worth naming. The man he
+    // throws at actually takes 40: the flask itself and then the spill it leaves
+    // under him. But the spill is what everyone standing in the patch takes and
+    // the card is one number, so it prints the blow — the same reading as every
+    // other enemy's card, where the figure is what one hit does.
     //
-    // Derived from the flask rather than typed, so retuning the poison retunes
-    // the card. Everything else in the game leaves this out and falls through to
-    // `damage` — see shownDamage() in select.js.
-    listedDamage: flask.poison.dps * flask.poison.seconds,
+    // It used to print the poison instead, back when the flask did no damage of
+    // its own and 6 beside a doctor who took 18 off a spearman was the more
+    // misleading of the two. Both halves are 20 now and the choice is easier.
+    listedDamage: FLASK_HIT,
     r: 9,
     colour: '#4A5A3A',
     // WHAT MAKES HIM RANGED. The presence of this block is also the flag the
@@ -534,9 +542,16 @@ export const enemyTypes = {
       cd: 2.2,
       // WHAT LEAVES HIS HAND, and it moved here from the throwing code when the
       // archer arrived: `loose` in src/enemies.js reads the ammunition off the
-      // enemy now, so a second thrower needed no branch. He does no direct damage
-      // and names none — the flask's whole effect is the ground it leaves.
+      // enemy now, so a second thrower needed no branch.
       ammo: flask,
+      // AND THE GLASS ITSELF HURTS NOW, at the owner's word: 20 on the man it was
+      // aimed at, and only him, on top of the 20 the spill does over four seconds
+      // to everyone standing in it. It was 0 — the flask was pure poison — and
+      // the doctor's card has always read 20, so this is the throw finally doing
+      // what the card says at the moment it lands as well as over the seconds
+      // after. See land() in src/projectiles.js, where the aimed man is the one
+      // the blow is applied to and the patch is everybody's.
+      damage: FLASK_HIT,
       // NO `standoff` ANY MORE, and its absence is a design decision rather than
       // a tidy-up. It was a patience: 14 seconds of not advancing, spent once,
       // after which he walked into the line whatever was standing in it. The
