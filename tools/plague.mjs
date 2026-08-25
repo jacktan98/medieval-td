@@ -305,7 +305,18 @@ console.log('\nHe stands off\n');
   const state = board();
   withSquad(state);
   const stand = squadAt(state);
-  for (const u of state.units) { u.maxHp = 1e9; u.hp = 1e9; }
+  // UNKILLABLE THROUGH THE DEF, not by writing maxHp. updateUnits recomputes a
+  // man's ceiling from `def.hp` every frame and rescales his health onto it —
+  // that is how Divine Fortitude reaches men already on the road — so a maxHp
+  // written straight onto the unit is undone on the next step and he is back to
+  // 100. This fixture did exactly that and was passing for the wrong reason: the
+  // men were ordinary, and what kept the doctors alive was the flask bug this
+  // run is about. Each man gets his own def so the tier's is not touched.
+  for (const u of state.units) {
+    u.def = { ...u.def, hp: 1e9 };
+    u.maxHp = 1e9;
+    u.hp = 1e9;
+  }
 
   for (let i = 0; i < 3; i++) {
     spawn(state, 'plague_inf');
@@ -426,6 +437,35 @@ console.log('\nWhat one flask does to three men\n');
 
   check(blows.every(d => d === FLASK_HIT), 'every flask lands its full blow, not just the first',
     blows.join(' + '));
+
+  // AND ON A MAN WHO HAS DIED AND MUSTERED AGAIN, which is the case that was
+  // broken in play for a long time. A respawn clock counts DOWN past zero and
+  // used to be left there — about -0.016 — and land() asked `!mark.respawn`
+  // rather than comparing it, so the blow was skipped for every soldier after
+  // his first death. The spill went on catching him, so a doctor's flasks
+  // quietly became poison-only, starting the moment a man came back at full
+  // health. That is why it read as "the damage stopped after he healed".
+  //
+  // The fixture reproduces the state rather than the death: a mustered man is
+  // one whose clock has been run to the bottom, and -0.016 is the number the
+  // subtraction actually lands on.
+  {
+    const back = { ...man, hp: 1000, poison: null, respawn: -0.0163 };
+    const s2 = { units: [back], enemies: [], shots: [], hits: [],
+                 impacts: [], splats: [], corpses: [] };
+    const before = back.hp;
+    s2.shots.push({
+      x: 400, y: 260, angle: 0, fromX: 300, side: 'enemy', target: back,
+      damage: enemyTypes.plague_inf.ranged.damage, splash: flask.splash,
+      ammo: flask, speed: flask.speed,
+      from: { x: 300, y: 260 }, to: { x: 400, y: 300 }, flight: 0.2, t: 0, lift: 20
+    });
+    for (let i = 0; i < 60 && s2.shots.length; i++) updateShots(s2, DT);
+    check(Math.round(before - back.hp) === FLASK_HIT,
+      'and one who has died and mustered again still takes it',
+      `${Math.round(before - back.hp)} with respawn at ${back.respawn}`);
+  }
+
   check(doses.every(d => Math.abs(d - flask.poison.seconds) < 1e-9),
     'and the poison refreshes rather than compounding',
     doses.map(d => d.toFixed(1) + 's').join(' / '));

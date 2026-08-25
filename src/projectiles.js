@@ -138,9 +138,26 @@ function land(state, s) {
   // and he is the one who wears it. If he has moved out of the patch or died on
   // the way, nothing lands — a bottle that misses is a bottle that misses, and
   // the ground it broke on still poisons whoever is on it.
+  // `respawn <= 0` AND NOT `!respawn`, and the difference was a real bug that
+  // survived a long time because it looked like a balance question.
+  //
+  // A respawn clock is counted DOWN past zero and left there — units.js takes dt
+  // off it and finishes on a small negative, historically -0.016 — so the field
+  // is falsy for exactly one value it never actually holds. `!mark.respawn` was
+  // therefore true only until the man's first death, and false for the whole
+  // rest of the game: every soldier who had died once stopped taking the blow.
+  //
+  // The spill went on catching him, because the loop above compares properly. So
+  // the symptom was a doctor whose flasks only ever poisoned — and it started at
+  // the moment a man came back at full health, which is why it reads as "the
+  // damage stopped after he healed".
+  //
+  // Every other respawn test in the game is a comparison; this was the one place
+  // that asked whether the number was zero-ish. units.js now clamps the field to
+  // 0 as well, so neither half of the trap is still set.
   if (s.ammo.poison && s.damage > 0) {
     const mark = s.target;
-    if (mark && mark.hp > 0 && !mark.respawn && inRange(s.x, s.y, mark.x, mark.y, s.splash)) {
+    if (mark && mark.hp > 0 && mark.respawn <= 0 && inRange(s.x, s.y, mark.x, mark.y, s.splash)) {
       mark.hp -= s.damage;
       splat(state, mark.x, mark.y - (mark.def.r || 0), mark.y);
       mark.struckFrom = s.fromX >= mark.x ? 1 : -1;

@@ -335,6 +335,15 @@ export function updateUnits(state, dt) {
     if (u.respawn > 0) {
       u.respawn -= dt;
       if (u.respawn <= 0) {
+        // BACK TO EXACTLY ZERO, not to the small negative the subtraction lands
+        // on. The clock had been left at about -0.016 for the rest of the game,
+        // which is not wrong for anything that COMPARES it — everything here
+        // asks `> 0` or `<= 0` — but it made "has he mustered again" a question
+        // whose honest answer was falsy for one value and truthy for the one it
+        // actually held. projectiles.js asked it the short way and stopped
+        // applying a flask's blow to any man who had ever died. That reader is
+        // fixed too; this is the half that stops the next one being caught.
+        u.respawn = 0;
         u.hp = u.maxHp;
         u.x = u.tower.x;
         u.y = u.tower.y;
