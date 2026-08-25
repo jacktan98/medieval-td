@@ -32,7 +32,7 @@ import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
-import { occupant } from './select.js';
+import { occupant, shownRange } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 
 export const PAGES = 4;
@@ -669,7 +669,11 @@ export function unitEntry(def) {
     trim: man.trim,
     art: figureSlot(man.trim, man.pivot),
     hp: man.hp,
-    damage: man.damage
+    damage: man.damage,
+    // HOW FAR HE SHOOTS, which is his TOWER's reach: the man on the card is the
+    // one standing on that deck, and a bow has no range of its own. Null for a
+    // barracks man, who walks up to what he hits — see shownRange in select.js.
+    range: shownRange(def)
   };
 }
 

@@ -12,7 +12,7 @@ import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
-import { selectionInfo, shownDamage } from './select.js';
+import { selectionInfo, shownDamage, shownRange } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
          abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
@@ -2185,9 +2185,9 @@ function drawButton(ctx, state, it) {
   const nudge = (key && ui[key].nudge) || ZERO;
 
   if (!key || !drawUi(ctx, key, it.x + nudge[0], gy + nudge[1], ui[key] && ui[key].fit)) {
-    // Siege, the monastery and the `max` chevrons have no drawing yet. The
-    // vector is scaled to the same box so a mixed ring does not look like two
-    // different sets of icons, and it is drawn dark because the plate is cream.
+    // A glyph whose art has not arrived, or has not loaded. The vector is
+    // scaled to the same box so a mixed ring does not look like two different
+    // sets of icons, and it is drawn dark because the plate is cream.
     ctx.save();
     ctx.translate(it.x, gy);
     ctx.scale(box / 22, box / 22);
@@ -2385,8 +2385,12 @@ function drawGlyph(ctx, kind) {
 // frame, so a soldier's bar and this number are the same fact twice.
 //
 // Same rule as the dashboard plates: the HEIGHT is chosen — 76 holds a title and
-// two stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
+// three stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
 // own proportions. 678x234 at 76 tall is 220.
+//
+// And this is the constraint the rows are sized against rather than the other way
+// round: raising it to fit another row widens the panel too, and the panel is
+// already 12px from the right edge of the board. See TITLE_BAND.
 const INFO_H = Math.round(76 * INFO_SCALE);
 const INFO_W = Math.round(INFO_H * aspect('plate_info'));
 export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art: 'plate_info' };
@@ -2408,7 +2412,9 @@ const PORTRAIT = { w: 58, h: 50 };
 // are taken out. 10.5 fits with 2.6px to spare and 11 does not fit at all.
 const INFO_TITLE = 10.5;
 const INFO_ROW = 10;
-const INFO_ICON = 14;
+// 12 rather than 14, for the same reason ROW_PITCH came down: a third stat row
+// had to fit in a plate that cannot get any taller. See TITLE_BAND.
+const INFO_ICON = 12;
 
 function drawInfo(ctx, state) {
   const info = selectionInfo(state);
@@ -2451,10 +2457,13 @@ function drawInfo(ctx, state) {
   ctx.textBaseline = 'middle';
 
   // The whole block is CENTRED in the panel rather than hung from the top, so a
-  // tower's two lines and a figure's three both sit in the middle of the plate
-  // instead of the last row crowding the bottom edge. That is why the number of
-  // rows is counted before anything is drawn.
-  const rows = info.hp !== null ? 2 : 1;
+  // swordsman's two rows and an archer thug's three both sit in the middle of the
+  // plate instead of the last one crowding the bottom edge. That is why the rows
+  // are counted before anything is drawn.
+  //
+  // Every selection has an attack figure; health and reach are the two that come
+  // and go. A tower cannot be hurt, and only what shoots has a range.
+  const rows = (info.hp !== null ? 1 : 0) + 1 + (info.range !== null ? 1 : 0);
   const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
 
   // See INFO_TITLE for why it is 10.5 and not a round number.
@@ -2466,12 +2475,13 @@ function drawInfo(ctx, state) {
   ctx.font = `700 ${INFO_TITLE}px system-ui, sans-serif`;
   ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
-  // The rows are ICONS, not the words "Health:" and "Damage:". Both sit in a
-  // column STAT_COL wide so the numbers beside them line up whether the row
-  // above is there or not — a tower has no health row, and a damage figure that
-  // shifted left on towers and right on units would read as two layouts.
-  // Down with the title, so the panel still reads as a heading over two stat
-  // rows rather than as three lines of the same weight.
+  // The rows are ICONS, not the words "Health:", "Damage:" and "Range:". All
+  // three sit in a column STAT_COL wide so the numbers beside them line up
+  // whether the rows above are there or not — a tower has no health row, a
+  // swordsman has no range row, and a damage figure that shifted about between
+  // them would read as three layouts.
+  // Down with the title, so the panel still reads as a heading over its stat
+  // rows rather than as four lines of the same weight.
   ctx.font = `700 ${INFO_ROW}px system-ui, sans-serif`;
   let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
@@ -2489,13 +2499,32 @@ function drawInfo(ctx, state) {
   drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: INFO_ICON });
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
   ctx.fillText(String(info.damage), tx + STAT_COL + 6, ty);
+
+  // AND HOW FAR, under the attack rather than beside it. The box is a column and
+  // the card is a row, and that is the right way round for both: the page has
+  // width to spare and the panel has none, so a third figure on the same line
+  // here would sit where the plate's edge is.
+  if (info.range !== null) {
+    ty += ROW_PITCH;
+    drawUi(ctx, 'stat_range', tx + STAT_COL / 2, ty, { h: INFO_ICON });
+    ctx.fillText(String(info.range), tx + STAT_COL + 6, ty);
+  }
 }
 
-// How much vertical room the title takes, and the pitch between stat rows. 18 is
-// a 14px icon with 4 of air, which is the tightest the hearts and swords can sit
-// without touching. Both came down with the panel.
-const TITLE_BAND = 20;
-const ROW_PITCH = 18;
+// How much vertical room the title takes, and the pitch between stat rows.
+//
+// THREE ROWS NOW, for an archer thug with health, attack and reach, and 20 + 3x18
+// is 74 in a plate 68 tall — the last row would have hung off the bottom. The
+// plate cannot grow: its width follows its height from the drawing's own
+// proportions, so a taller panel is a wider one, and it is already 12px from the
+// right edge of the board.
+//
+// So the rows came down instead: 15 is a 12px icon with 3 of air, and 18 is the
+// title's own line at the size it is set. Three rows and a title are 63 of the
+// 68, which leaves the block the 2px of margin top and bottom that centring it
+// gives it anyway.
+const TITLE_BAND = 18;
+const ROW_PITCH = 15;
 
 // The title screen, and the reason it exists.
 //
@@ -3107,6 +3136,12 @@ function drawCardMachine(ctx, b, e) {
   ctx.drawImage(img, sx, sy, sw, sh, m.left, m.top, m.w, m.h);
 }
 
+// The air between one stat and the next icon. Was 14 when a row held two of
+// them; a third needs the space back and the icons are what separate the
+// numbers anyway, so a narrower gap still reads as three pairs rather than as
+// one run of digits.
+export const STAT_GAP = 10;
+
 function unitCard(ctx, b, e) {
   card(ctx, b);
   drawArt(ctx, e.sprite, e.trim, b, e.art);
@@ -3120,9 +3155,16 @@ function unitCard(ctx, b, e) {
   ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
   ctx.fillText(e.title, tx, r1);
 
+  // Health, attack, reach — in that order, and each one skipped by the men it
+  // does not apply to rather than printed as a blank. An archer on his deck
+  // cannot be reached to be hurt and has no health; a swordsman walks up to
+  // what he hits and has no reach. So every man on the page shows two figures
+  // and none shows three — it is the ENEMIES opposite, who can be hurt AND
+  // shoot, that the third column had to be found for.
   let x = tx;
-  if (e.hp !== null) x = stat(ctx, 'stat_health', x, r2, String(e.hp), INK) + 14;
-  stat(ctx, 'stat_damage', x, r2, String(e.damage), INK);
+  if (e.hp !== null) x = stat(ctx, 'stat_health', x, r2, String(e.hp), INK) + STAT_GAP;
+  x = stat(ctx, 'stat_damage', x, r2, String(e.damage), INK) + STAT_GAP;
+  if (e.range !== null) stat(ctx, 'stat_range', x, r2, String(e.range), INK);
 }
 
 // One icon and its number, returning the x to carry on from. The icon is drawn
@@ -3165,8 +3207,13 @@ function drawEnemyPage(ctx) {
     ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
     ctx.fillText(d.name, tx, r1);
 
-    const hp = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK);
-    stat(ctx, 'stat_damage', hp + 12, r2, String(shownDamage(d)), INK);
+    // Health, attack and — for the two who fight at a distance — how far. The
+    // archer's 200 and the doctor's 130 are the whole difference between them
+    // and everything else on the page, and a player who cannot see the number
+    // learns it by watching a tower fail to answer.
+    let sx = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK) + STAT_GAP;
+    sx = stat(ctx, 'stat_damage', sx, r2, String(shownDamage(d)), INK) + STAT_GAP;
+    if (shownRange(d) !== null) stat(ctx, 'stat_range', sx, r2, String(shownRange(d)), INK);
 
     // THE BOOK'S OWN COST ICONS, not the dashboard's gold and lives. On an enemy
     // card the coin means a bounty you are paid and the heart means damage to the

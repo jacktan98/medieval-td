@@ -43,7 +43,9 @@ import {
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
-import { PAUSE_ROW } from '../src/render.js';
+import { PAUSE_ROW, STAT_GAP } from '../src/render.js';
+import { uiSize } from '../src/data/ui.js';
+import { shownDamage, shownRange } from '../src/select.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -222,6 +224,52 @@ console.log('\nWhat fits\n');
   ok(ABILITY_ICON <= shelfRect(0, 0).h,
     'the ability disc fits the card it sits in',
     `${ABILITY_ICON}px in ${shelfRect(0, 0).h}`);
+
+  // AND THE STAT ROW FITS THE CARD, which is the check the reach figure was
+  // added under. Health, attack and range on one line came to 146px of a 141px
+  // card at the old icon size and the last number ran off the edge — silently,
+  // because a canvas clips nothing. There is no canvas out here to measure a
+  // font with, so the digits are estimated at 0.62em of the row's size, which is
+  // wider than bold system-ui actually sets them: the check is allowed to be
+  // pessimistic, it is not allowed to pass a row that does not fit.
+  const DIGIT = 0.62;
+  const rowWidth = figures => {
+    const size = BOOK_ICON_H - 2;
+    let w = 0;
+    figures.forEach(([key, text], i) => {
+      if (i) w += STAT_GAP;
+      w += uiSize(key, { h: BOOK_ICON_H }).w + 4 + String(text).length * size * DIGIT;
+    });
+    return w;
+  };
+
+  const textRoom = shelfRect(0, 0).w - (FIGURE_BOX.x + FIGURE_BOX.w + 8);
+  const rows = [];
+  for (const { def } of shelf()) {
+    const e = unitEntry(def);
+    const r = [];
+    if (e.hp !== null) r.push(['stat_health', e.hp]);
+    r.push(['stat_damage', e.damage]);
+    if (e.range !== null) r.push(['stat_range', e.range]);
+    rows.push([occupant(def).name, r]);
+  }
+  for (const d of Object.values(enemyTypes)) {
+    const r = [['stat_health', d.hp], ['stat_damage', shownDamage(d)]];
+    if (shownRange(d) !== null) r.push(['stat_range', shownRange(d)]);
+    rows.push([d.name, r]);
+    rows.push([`${d.name} (rewards)`,
+      [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]]]);
+  }
+
+  let over = 0;
+  let widest = 0;
+  for (const [who, r] of rows) {
+    const w = rowWidth(r);
+    if (w > widest) widest = w;
+    if (w > textRoom) { over++; console.log(`      ${who}: ${w.toFixed(1)}px of ${textRoom}`); }
+  }
+  ok(over === 0, 'and every stat row fits the card it is printed in',
+    `widest ${widest.toFixed(1)}px of ${textRoom}`);
 }
 
 console.log('\nOne margin, everywhere\n');
@@ -517,13 +565,13 @@ console.log('\nWhat stays sharp at 3x\n');
   const k = BOOK_TOWER_SCALE / SCALE;
   ok(k <= ceiling, 'building thumbnails', `${k.toFixed(3)}x board scale`);
 
-  // Icons, which are NOT sized by any board scale — a book row's icon is 14px
-  // because the number beside it is 12. So each one is checked against its own
+  // Icons, which are NOT sized by any board scale — a book row's icon is 12px
+  // because the number beside it is 10. So each one is checked against its own
   // source height.
   const icons = [
     ['stat_gold_cost', BOOK_ICON_H], ['glyph_refund', BOOK_ICON_H],
     ['stat_health', BOOK_ICON_H], ['stat_damage', BOOK_ICON_H],
-    ['stat_life_cost', BOOK_ICON_H]
+    ['stat_range', BOOK_ICON_H], ['stat_life_cost', BOOK_ICON_H]
   ];
 
   let soft = 0;

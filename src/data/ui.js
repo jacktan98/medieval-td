@@ -70,16 +70,19 @@ export const FLAG_FOOT = [0.111, 1];
 // and this is a figure's.
 export const STAT_ICON_H = 16;
 
-// The column the two icons sit in, so the numbers beside them line up whether
-// the health row is there or not — a tower has no health, and a damage figure
-// that shifted left on towers and right on units would read as two layouts.
+// The column the three icons sit in, so the numbers beside them line up whether
+// the rows above are there or not — a tower has no health, a swordsman has no
+// reach, and a damage figure that shifted about between them would read as three
+// layouts rather than one.
 //
-// The widest of the pair is the heart, 17.3 drawn at the panel's 14px icons, so
-// 19 clears it. It was 22 against 16px icons; it came down with the panel.
+// The widest of the three is the heart, 14.9 drawn at the panel's 12px icons, so
+// 19 clears it comfortably. It was 22 against 16px icons and 19 against 14; the
+// number is kept where it is because it is a COLUMN, and a narrower one would
+// pull the figures back under the heart's own point.
 export const STAT_COL = 19;
 
 // The encyclopedia's icon height. ONE size, because there is one card: a row is
-// 17px deep and holds a 14px icon beside a 12px number, on a tower card and an
+// 17px deep and holds a 12px icon beside a 10px number, on a tower card and an
 // enemy card alike. There used to be a second, bigger size for an enemies page
 // that had full-width rows of its own; the page uses the same box as everything
 // else now, so the second size went with it.
@@ -87,9 +90,15 @@ export const STAT_COL = 19;
 // It lives here rather than in render.js because this is where an icon's drawn
 // size is decided, and because tools/book.mjs checks it against the source
 // files: an icon is sharp while its drawn height times the 3x device-pixel cap
-// fits in its trim, so 14 needs 42 source px and every file in the book has at
+// fits in its trim, so 12 needs 36 source px and every file in the book has at
 // least 97. Raise this and run the tool.
-export const BOOK_ICON_H = 14;
+//
+// 12 RATHER THAN 14 since a ranged card carries three figures on the same row.
+// Health, attack and reach at the old size came to 146px of a 141px card and the
+// last number ran off the edge; the row is a set of icons read at a glance, not
+// body text, and a couple of px off each of them buys the space back without
+// anything on the page reading as smaller.
+export const BOOK_ICON_H = 12;
 
 export const ui = {
   // Dashboard. `h` rather than `fit`: these are sized by HEIGHT, because they
@@ -144,6 +153,11 @@ export const ui = {
   // which fits the taller side — the same rule every glyph here is drawn by, so a
   // tall icon comes out narrower rather than cropped.
   glyph_temple: { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
+  // THE MAXED BADGE, and the one glyph that is never pressable: it sits on the
+  // upgrade button of a tower at the top of its ladder, dimmed like any button
+  // that cannot be used. 66x90 source, an upright mark like the cross above it,
+  // so it takes the shared box and lands 19x26 rather than filling it.
+  glyph_max:    { trim: [223, 211, 66, 90], fit: GLYPH_BOX },
   // THE FOUR ABILITY BUTTONS, and they are the only entries here that are a whole
   // BUTTON rather than a mark to put on one.
   //
@@ -222,6 +236,11 @@ export const ui = {
 
   // The heart and the sword that replaced the words "Health:" and "Damage:".
   stat_health:  { trim: [157, 176, 198, 160], h: STAT_ICON_H },
+  // THE THIRD STAT ICON, and the first added since the heart and the sword. A
+  // target, square at 168x168 source, so it takes the shared height and comes out
+  // square where the heart is wider than it is tall — see STAT_COL, which is
+  // sized off the widest of the three rather than off any one of them.
+  stat_range:   { trim: [172, 172, 168, 168], h: STAT_ICON_H },
   stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
 
   // The encyclopedia's two costs: gold to build a tier, and lives when an enemy
@@ -286,16 +305,21 @@ export const PORTRAIT_SCALE = 1.6;
 export const INFO_SCALE = 0.9;
 export const INFO_PORTRAIT = PORTRAIT_SCALE * INFO_SCALE;
 
-// Which drawn glyph replaces which vector one. A glyph with no entry — today
-// only the `max` chevrons on a tower that has nothing left to buy — keeps the
+// Which drawn glyph replaces which vector one. A glyph with no entry keeps the
 // vector in render.js, so a button with no art still gets a picture rather than
-// a blank disc.
+// a blank disc. Every glyph the game uses has a drawing now; the fallback stays
+// for the next one added before its art arrives.
 export const GLYPH_ART = {
   bow: 'glyph_bow',
   swords: 'glyph_swords',
   catapult: 'glyph_catapult',
   cross: 'glyph_cross',
   up: 'glyph_up',
+  // The button a tier 4 tower shows where its upgrade would be. It keeps the
+  // dimming it already had — there is nothing to buy and it does not answer a
+  // tap — and the drawing says WHY it is dead rather than showing a greyed-out
+  // arrow that reads as an upgrade you cannot afford yet.
+  max: 'glyph_max',
   musket: 'glyph_musket',
   keep: 'glyph_keep',
   ballista: 'glyph_ballista',

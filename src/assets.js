@@ -343,6 +343,16 @@ export const paths = {
   ability_fortitude: 'assets/ui/Judgement_Temple_Divine_Fortitude_Icon.png',
   badge_wrath:       'assets/ui/Judgement_Temple_Holy_Wrath.png',
   badge_fortitude:   'assets/ui/Judgement_Temple_Divine_Fortitude.png',
+  // THE MAXED BADGE, for the upgrade button of a tower that has none left. It
+  // replaces the vector chevrons that stood in for `max` since the ring was
+  // built — the last glyph in the menu that had never been drawn. Still dimmed
+  // like any unavailable button: the picture says "this is the top of the
+  // ladder" and the dimming says "so there is nothing to press".
+  glyph_max:       'assets/ui/Maxed_Icon.png',
+  // The reach stat, beside the sword on every card that shows one. The first
+  // stat icon added since the heart and the sword, and it goes through the same
+  // `ui` table and the same drawUi they do.
+  stat_range:      'assets/ui/Range_Icon.png',
   glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
   // The archer's three standing orders. They were vector glyphs drawn in

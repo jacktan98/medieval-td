@@ -19,7 +19,7 @@
 // the soldier or the archer it puts on the road.
 
 import { SCALE } from './data/towers.js';
-import { boost } from './towers.js';
+import { boost, rangeOf } from './towers.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -94,6 +94,31 @@ export function validate(state) {
 // answer it differently.
 export const shownDamage = def => def.listedDamage ?? def.damage;
 
+// HOW FAR A CARD SAYS SOMETHING REACHES, or null for anything that fights at
+// arm's length. The three kinds keep their reach in three different places and
+// this is the one question that untangles them, exactly as `occupant` untangles
+// where a tower keeps its man:
+//
+//   an ENEMY who throws or looses    `ranged.range` — the doctor's 130, the
+//                                    archer's 200
+//   a TOWER that fires               its own `range`, which is also the reach of
+//                                    the man standing on it
+//   a BARRACKS                       null, and this is the one worth naming: its
+//                                    `range` is how far its men may be rallied,
+//                                    not how far anything shoots. Printing it
+//                                    beside a swordsman would be a number that
+//                                    means something else entirely.
+//   anybody else                     null: a thug, a giant, a spearman
+//
+// A tower that has bought Far Shot reaches further than its def says — see
+// rangeOf() in towers.js, which the info box asks instead. This is the question
+// about a tier as it is SOLD, which is what the encyclopedia is for.
+export const shownRange = def =>
+  def.ranged ? def.ranged.range
+  : def.soldier ? null
+  : def.cooldown ? def.range
+  : null;
+
 // WHO A TOWER PUTS ON THE BOARD, in one shape, whichever family it belongs to.
 //
 // The three families hide their man in three different places: a barracks SENDS
@@ -160,7 +185,16 @@ export function selectionInfo(state) {
       // of its own.
       hp: null,
       maxHp: null,
-      damage: Math.round(man.damage * k)
+      damage: Math.round(man.damage * k),
+      // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
+      // the targeting reads, so a tower that has bought Far Shot shows the
+      // wider figure here rather than the one it was sold at. The book shows
+      // the sold figure; this box shows THIS tower, and the two differ on
+      // purpose.
+      //
+      // Null for a barracks: shownRange says why, and rangeOf would answer with
+      // its rally radius, which is not a reach at all.
+      range: shownRange(s.ref.def) === null ? null : rangeOf(s.ref)
     };
   }
 
@@ -183,6 +217,10 @@ export function selectionInfo(state) {
     // box reading "82.4/105" is noise where "82/105" is information.
     hp: Math.max(0, Math.round(f.hp)),
     maxHp: f.maxHp,
-    damage: shownDamage(f.def)
+    damage: shownDamage(f.def),
+    // An archer thug's 200 and a plague doctor's 130 are the two numbers that
+    // explain why a tower is not answering them; everybody else on the road
+    // fights at arm's length and gets no row.
+    range: shownRange(f.def)
   };
 }
