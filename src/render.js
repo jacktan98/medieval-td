@@ -1844,10 +1844,9 @@ function hudButton(ctx, b, label, sub, on) {
 // if a plate is ever redrawn dark, these all change at once.
 const INK = '#3A3026';
 const INK_GREEN = '#2F6B27';
-// "Owned" on an ability's dark blue disc. INK_GREEN is a parchment ink and goes
-// muddy on that blue; this is the same hue lifted until it reads, and it is used
-// nowhere else.
-const OWNED_GREEN = '#7FD35F';
+// "Owned" is set a shade smaller than a price — see buttonPrice. 9 against 10:
+// enough to sit off the disc's edge without dropping out of the eye's way.
+const OWNED_SIZE = 9;
 const INK_AMBER = '#8A6A12';
 const INK_RED = '#A83A2C';
 
@@ -2225,12 +2224,18 @@ function drawButton(ctx, state, it) {
 // THREE INKS. Dark on the cream plate and green when it is gold coming back to
 // you; white on an ability's coloured disc, where neither of the dark ones reads.
 //
-// AND "OWNED" IS GREEN ON BOTH, which is the whole point of the word: white would
-// put it in exactly the ink the price beside it is printed in, and a status that
-// looks like a price is not a status. Green already means "this is yours" here —
-// it is the refund button's ink — so the pair is the same split as above, just
-// green instead: a bright green that survives the dark blue disc, and the
-// ordinary INK_GREEN on the pale ones, where the bright one would wash out.
+// "OWNED" TAKES THOSE SAME INKS — white on the blue discs, INK_GREEN on the
+// temple's pale ones. It was green on both for a build, on the reasoning that a
+// status printed in the price's own ink reads as a price; the owner looked at it
+// and kept the green only where it earns its keep. On the pale discs green is
+// what separates it from the dark price beside it. On the blue ones white is
+// simply what reads, and the WORD is already doing the separating — no number on
+// the ring is a word.
+//
+// And it is set SMALLER than a price. "Owned" is five characters where a price is
+// three or four, and at the price's own size it crowded the disc it sits under;
+// it is also the one caption that is not a number, so it does not have to line up
+// in weight with the others.
 //
 // AND THE PALE DISCS TAKE THE ORDINARY DARK INK — the same colour every tier
 // upgrade in the game prints its price in. They were gold for one build, because
@@ -2248,11 +2253,10 @@ function drawButton(ctx, state, it) {
 function buttonPrice(ctx, it, caption) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 10px system-ui, sans-serif';
   const onDark = it.face && !(ui[it.face] && ui[it.face].pale);
-  ctx.fillStyle = it.owned ? (onDark ? OWNED_GREEN : INK_GREEN)
-                : onDark ? '#FFFFFF'
-                : it.gain !== null ? INK_GREEN
+  ctx.font = `700 ${it.owned ? OWNED_SIZE : 10}px system-ui, sans-serif`;
+  ctx.fillStyle = onDark ? '#FFFFFF'
+                : it.owned || it.gain !== null ? INK_GREEN
                 : INK;
   ctx.fillText(caption, it.x, it.y + 16);
   ctx.textAlign = 'left';
@@ -2483,11 +2487,10 @@ function drawInfo(ctx, state) {
   ctx.font = `700 ${INFO_TITLE}px system-ui, sans-serif`;
   ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
-  // The rows are ICONS, not the words "Health:" and "Damage:". Both sit in a
-  // column STAT_COL wide so the numbers beside them line up whether the row
-  // above is there or not — a tower has no health row, and a damage figure that
-  // shifted left on towers and right on units would read as two layouts. Reach
-  // is the exception and hangs off its neighbour instead; see below for why.
+  // The rows are ICONS, not the words "Health:", "Damage:" and "Range:". Each
+  // sits in a column STAT_COL wide so the numbers beside them line up whether the
+  // row above is there or not — a tower has no health row, and a damage figure
+  // that shifted left on towers and right on units would read as two layouts.
   // Down with the title, so the panel still reads as a heading over two stat
   // rows rather than as three lines of the same weight.
   ctx.font = `700 ${INFO_ROW}px system-ui, sans-serif`;
@@ -2513,7 +2516,7 @@ function drawInfo(ctx, state) {
   //
   // Measured in the browser rather than by a tool, for the reason INFO_TITLE
   // gives: node has no canvas to set a font in. The widest row today is the
-  // Combat Archer's 14 and 210, which ends 27px inside the plate. If a stat ever
+  // Combat Archer's 14 and 210, which ends 39px inside the plate. If a stat ever
   // reaches four digits, look at the box.
   if (info.range !== null) infoStat(ctx, 'stat_range', dx + STAT_GAP, ty, String(info.range), ink);
 }
@@ -2521,25 +2524,30 @@ function drawInfo(ctx, state) {
 // ONE ICON AND ITS NUMBER, and the reason it is a function rather than two lines
 // at each call site: the attack and the reach sat at different distances from
 // their icons for a build, because the attack measured its gap from the ALIGNMENT
-// COLUMN and the reach measured it from the icon's own edge. The sword is 12 wide
-// in a 19 column, so the attack's number stood 3.5px further out than the reach's
-// and the pair read as two different spacings on one line.
+// COLUMN and the reach measured it from the icon's own edge. Both go through the
+// same rule now.
 //
-// So both go through the same rule now. STAT_COL is what makes the health and
-// attack numbers below one another line up — the heart is wider than the sword,
-// and a number that shifted between the rows would read as two layouts — and the
-// second pair on a line pays the same column for the same reason: the icons
-// differ in width, and hanging the text off them directly would let the spacing
-// wander with whichever icon happened to be there.
+// AND THE PAIR IS TIGHT, like the encyclopedia's. The panel used to read as an
+// icon and a number that had drifted apart; the two changes that closed it are
+// STAT_COL down to exactly the widest icon — see data/ui.js, that was 3.5px of
+// slack the sword and the target were paying — and this 4, which is the gap the
+// book's stat() uses. Same distance in both places now, so a player reading a
+// card and then tapping the thing on the board sees one layout.
+//
+// The column is still what makes the health and attack numbers below one another
+// line up: the heart is wider than the sword, and a number that shifted between
+// the rows would read as two layouts.
 //
 // Returns the x to carry on from, like the encyclopedia's stat() does.
+const STAT_PAD = 4;
+
 function infoStat(ctx, key, x, y, text, colour) {
   drawUi(ctx, key, x + STAT_COL / 2, y, { h: INFO_ICON });
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = colour;
-  ctx.fillText(text, x + STAT_COL + 6, y);
-  return x + STAT_COL + 6 + ctx.measureText(text).width;
+  ctx.fillText(text, x + STAT_COL + STAT_PAD, y);
+  return x + STAT_COL + STAT_PAD + ctx.measureText(text).width;
 }
 
 // How much vertical room the title takes, and the pitch between stat rows. 18 is

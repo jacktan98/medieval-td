@@ -75,11 +75,18 @@ export const STAT_ICON_H = 16;
 // reach, and a damage figure that shifted about between them would read as three
 // layouts rather than one.
 //
-// The widest of the three is the heart, 14.9 drawn at the panel's 12px icons, so
-// 19 clears it comfortably. It was 22 against 16px icons and 19 against 14; the
-// number is kept where it is because it is a COLUMN, and a narrower one would
-// pull the figures back under the heart's own point.
-export const STAT_COL = 19;
+// EXACTLY THE WIDEST ICON, and not a pixel more. That is the whole change from
+// the 19 it was: a column wider than its contents is air the narrow icons pay
+// for, and the sword — 12 across against the heart's 14.9 — ended 3.5px short of
+// the column edge and then took the gap on top of that. It is why the panel's
+// numbers drifted away from their icons while the encyclopedia's, which measures
+// from the icon itself, sat tight against them. 15 holds the heart at the
+// panel's 12px icons with nothing spare, so the gap after the column is the gap
+// you see.
+//
+// It was 22 against 16px icons and 19 against 14. Re-measure it if INFO_ICON
+// moves again: it is a measurement, not a taste.
+export const STAT_COL = 15;
 
 // The encyclopedia's icon height. ONE size, because there is one card: a row is
 // 17px deep and holds a 12px icon beside a 10px number, on a tower card and an
