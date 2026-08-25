@@ -175,11 +175,11 @@ export const ui = {
   ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Judgement Temple's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
-  // price under an ability button is white, because white is what reads on a
-  // dark blue disc; on these two it disappeared entirely, and the owner had to
-  // ask where the cost had gone. See buttonPrice in render.js, which reads this
-  // and prints gold instead. A property of the ARTWORK rather than of the
-  // ability, so a re-export on a dark disc is one word to delete.
+  // price under an ability button is white, because white is what reads on a dark
+  // blue disc; on these two it disappeared entirely. See buttonPrice in render.js,
+  // which reads this and prints the ordinary dark ink instead — the same colour
+  // every tier upgrade prints its price in. A property of the ARTWORK rather than
+  // of the ability, so a re-export on a dark disc is one word to delete.
   ability_wrath:     { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_fortitude: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // AND THE TWO BADGES, which are not buttons: they are drawn on the BOARD over

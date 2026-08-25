@@ -246,6 +246,15 @@ export const ABILITIES = [
     // happens, and at six times the tower's damage it should: the player gets a
     // second to see where the shot is going.
     lock: 1,
+    // AND IT REACHES THE WHOLE MAP, at the owner's word. Every other shot in the
+    // game is bounded by the tower's ring; this one is not, so a Musketeer Post
+    // can answer the archer thug standing off in a corner no tower covers. It is
+    // the one shot a tower will fire with nothing at all inside its own reach.
+    //
+    // Read by stepWeapon in src/towers.js, which picks the far man through the
+    // tower's own standing order — so "aim at whoever is nearest the exit" still
+    // means that, over the whole board instead of over the ring.
+    global: true,
     // EIGHT TIMES THE TOWER'S OWN SHOT rather than a number of its own, which is
     // the rule the owner put on every ability here: a magnitude is a multiple of
     // the stat it changes, so it stays true the next time that stat is retuned. It
@@ -274,7 +283,8 @@ export const ABILITIES = [
     detail: 'After 9 ordinary shots the musketeer takes 1 second to aim — a mark ' +
             'appears over the man he has chosen and stays there until the bullet ' +
             'arrives — and then fires a single round for 8x the Post\'s own 65, ' +
-            '520 damage, the hardest blow in the game.\n\n' +
+            '520 damage, the hardest blow in the game. It reaches anywhere on the ' +
+            'map: this one shot ignores the tower\'s range ring entirely.\n\n' +
             'He holds the pose for 2 seconds afterwards, which costs nothing: the ' +
             'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
             '1 thing on the road that has to die and cannot be chipped down.'

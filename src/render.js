@@ -2211,10 +2211,15 @@ function drawButton(ctx, state, it) {
 // 12 -> 11 -> 10 over two passes, each time to give the glyph more of the disc.
 //
 // THREE INKS. Dark on the cream plate and green when it is gold coming back to
-// you; white on an ability's coloured disc, where neither of the dark ones reads;
-// and GOLD on the two ability discs the artist drew white, where the white one
-// vanishes into the artwork. `pale` in data/ui.js is which those are — it belongs
-// to the drawing rather than to the ability, so a re-export fixes it there.
+// you; white on an ability's coloured disc, where neither of the dark ones reads.
+//
+// AND THE PALE DISCS TAKE THE ORDINARY DARK INK — the same colour every tier
+// upgrade in the game prints its price in. They were gold for one build, because
+// white on the artist's white disc was invisible; the owner has since asked for
+// the ordinary colour, which reads on a pale disc for exactly the reason white
+// does not. `pale` in data/ui.js is which discs those are — it belongs to the
+// drawing rather than to the ability, so a re-export on a dark disc fixes it
+// there.
 //
 // The white sat on a dark rounded plate of its own for one build, on the reasoning
 // that text over artwork needs something behind it. The artist took it off: the
@@ -2225,7 +2230,7 @@ function buttonPrice(ctx, it, caption) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = '700 10px system-ui, sans-serif';
-  ctx.fillStyle = it.face ? (ui[it.face] && ui[it.face].pale ? '#FFD700' : '#FFFFFF')
+  ctx.fillStyle = it.face && !(ui[it.face] && ui[it.face].pale) ? '#FFFFFF'
                 : it.gain !== null ? '#2F6B27'
                 : '#3A3026';
   ctx.fillText(caption, it.x, it.y + 16);

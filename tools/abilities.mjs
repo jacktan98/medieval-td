@@ -243,6 +243,39 @@ console.log('\nDeadeye\n');
     'and it hits for the multiple the ability claims',
     `${archery[3].damage} x${dead.times} = ${last.damage}`);
 
+  // AND IT REACHES THE WHOLE BOARD. Every other shot in the game is bounded by
+  // the tower's ring; this one is not, so a Post can answer an archer thug
+  // standing off in a corner no tower covers.
+  //
+  // The check needs both kinds of enemy on the board: one inside the ring to keep
+  // the musket working — the count is shots FIRED, so a tower with nothing to
+  // shoot never reaches its tenth — and one outside it that the standing order
+  // prefers. Mode 0 ranks by how far each man still has to walk, so the far one
+  // is put further along the road.
+  {
+    const t2 = post(['deadeye']);
+    const inRing = dummy(t2);
+    const outside = {
+      ...dummy(t2), x: t2.x + 900, y: t2.y + 300, s: 900, mark: 'far'
+    };
+    inRing.mark = 'near';
+    const st = { towers: [t2], enemies: [inRing, outside], shots: [], units: [], hits: [] };
+    const got = [];
+    for (let i = 0; i * DT < cd * dead.every + 0.1; i++) {
+      updateTowers(st, DT);
+      for (const sh of st.shots) got.push({ kind: sh.ammo.kind, at: sh.target.mark });
+      st.shots.length = 0;
+    }
+    const reach = rangeOf(t2);
+    const away = Math.hypot(900, 300);
+    ok(got.slice(0, dead.every - 1).every(g => g.at === 'near'),
+      'every ordinary shot stays inside the ring', `${reach}px`);
+    ok(got[dead.every - 1] && got[dead.every - 1].kind === 'deadeye' &&
+       got[dead.every - 1].at === 'far',
+      'and the Deadeye ball reaches a man outside it',
+      `${Math.round(away)}px away, against a ${reach}px ring`);
+  }
+
   // THE MARK, and the two halves of its life. It goes up a second before the ball
   // and comes down when the ball lands, which is two different owners handing over
   // — `t.locked` during the wind-up and the shot itself afterwards. A gap between

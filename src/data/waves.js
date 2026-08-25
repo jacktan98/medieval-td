@@ -227,23 +227,20 @@ export const enemyTypes = {
     r: 8,
     colour: '#7A6A46',
     ranged: {
-      // TWICE THE DOCTOR'S 130, at the owner's word, and it is the whole enemy.
-      range: 260,
-      // BUT HE WALKS IN TO 130 BEFORE HE STOPS, and the two numbers being
-      // different is deliberate rather than an oversight.
+      // 200, AND HE STOPS THERE. It was 260 with a separate `stopAt` of 130 —
+      // he opened fire early and then walked in to a distance a squad could
+      // reach — because an enemy who plants himself beyond every answer on the
+      // board can stand there shooting until the clock runs out, and a wave only
+      // ends when the field is clear.
       //
-      // `range` is how far he can hit; `stopAt` is how close he insists on being
-      // before he plants himself. If they were both 260 he would stand where no
-      // squad could reach him — a barracks leashes its men to their own tower —
-      // and on any plot where no tower covered that patch of road he would stand
-      // there shooting forever. A wave only ends when the field is clear, so that
-      // is not a hard enemy, it is a hung game.
-      //
-      // At 130 he closes to the doctor's distance before halting, which keeps him
-      // answerable by the family he is aimed at: a soldier can walk out and pin
-      // him. He simply opens fire long before he gets there, which is what
-      // "shoots twice as far" buys.
-      stopAt: 130,
+      // THE OWNER HAS TAKEN THAT RISK DELIBERATELY: "I am okay with him shooting
+      // there forever. Players will find a way to eliminate him so that the game
+      // continues." So there is no `stopAt` any more — he halts at his own reach —
+      // and 200 is the number that makes the answer exist: a tier 1 archery tower
+      // reaches 190 and a Crossbow Tower 220, so a bow placed anywhere near the
+      // road can trade with him, and a Musketeer Post's Deadeye now reaches the
+      // whole map whatever he does.
+      range: 200,
       cd: 2.0,
       // 15 a shot at 2 seconds is 7.5 a second on one man, against the doctor's
       // 6 — and unlike the poison it is damage rather than a debuff, so it stacks

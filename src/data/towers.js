@@ -1815,7 +1815,7 @@ export const siege = [
   // tools/sim.mjs' scenarios for maps 1 and 2 — and the note there on why map 3
   // has no artillery reading at all.
   { ...ballista, tier: 4, name: 'Ballista Turret', title: 'Ballista Turret', unit: 'Ballista Engineer',
-    cost: 230, damage: 60, splash: 70, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
+    cost: 230, damage: 55, splash: 70, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
     // The upgrade button's own picture on a Trebuchet, the third tier 4 to bring
     // one — see the note on the Musketeer Post's `glyph`.
     glyph: 'ballista',

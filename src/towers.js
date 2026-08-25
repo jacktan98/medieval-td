@@ -356,8 +356,22 @@ function stepWeapon(state, t, dt, target) {
   // It is dropped and re-taken only if the man it was on dies or leaks in the
   // meantime.
   const coming = specialFor(t, (t.shots || 0) + 1);
-  if (coming && coming.lock && target && t.cd <= coming.lock) {
-    if (!t.locked || t.locked.hp <= 0 || t.locked.leaked) t.locked = target;
+
+  // A GLOBAL SPECIAL LOOKS OVER THE WHOLE BOARD, which is Deadeye and only
+  // Deadeye. The tower's own reach decides every ordinary shot; this one shot
+  // ignores it and takes the enemy the tower's standing order would pick if the
+  // map were all inside its ring — see `global` in data/abilities.js.
+  //
+  // It is also the one case where a tower with NOTHING in range still fires: the
+  // ball goes to a man on the far side of the map, so "no target" below has to
+  // mean no target ANYWHERE rather than none in the ring.
+  const far = coming && coming.global
+    ? pickTarget(state.enemies, t.x, t.y, Infinity, 0, t.aimMode)
+    : null;
+  const aimAt = far || target;
+
+  if (coming && coming.lock && aimAt && t.cd <= coming.lock) {
+    if (!t.locked || t.locked.hp <= 0 || t.locked.leaked) t.locked = aimAt;
     // And he turns to the man he has chosen for the whole second, rather than
     // tracking whoever the tower would otherwise be aiming at. That is most of
     // what makes the warning read as one: the mark goes up, the musketeer swings
@@ -367,20 +381,26 @@ function stepWeapon(state, t, dt, target) {
     t.locked = null;
   }
 
-  if (!target || t.cd > 0) return;
+  if (t.cd > 0) return;
+
+  // WHAT THIS SHOT CAN BE FIRED AT: the whole board if the special coming up is a
+  // global one, the ring otherwise. An ordinary shot with an empty ring still
+  // waits, exactly as it always has.
+  const shotAt = coming && coming.global ? aimAt : target;
+  if (!shotAt) return;
 
   t.shots = (t.shots || 0) + 1;
   t.cd = t.def.cooldown;
   t.recoil = 1;
 
   const special = specialFor(t, t.shots);
-  if (!special) { shoot(state, t, target); return; }
+  if (!special) { shoot(state, t, shotAt); return; }
 
   // A locked shot goes to the man the mark is on, not to whoever the tower would
   // pick this frame. Without that the mark would be a lie — a second of warning
   // over one enemy and the ball into another.
   const at = (special.lock && t.locked && t.locked.hp > 0 && !t.locked.leaked)
-    ? t.locked : target;
+    ? t.locked : shotAt;
   t.locked = null;
   if (at !== target) t.aim = Math.atan2(at.y - t.y, at.x - t.x);
 
