@@ -412,20 +412,23 @@ export function updateUnits(state, dt) {
       u.holds = true;
     }
 
-    // 1b. Give up on a thrower who has started walking again, and go back to the
-    //     post. The only place a soldier drops a target without a fight ending,
-    //     and it is what keeps the closing pass below from becoming a chase
-    //     across the map: a doctor un-halts the moment nobody is in front of him,
-    //     and a man 130px out with no orders would otherwise trail him the whole
-    //     length of the road at 62 against his 60 — permanently off the stretch
-    //     he was posted to hold, for an enemy now walking into the line anyway.
+    // 1b. Give up on a target that is nobody's fight any more, and go back to
+    //     the post. The only place a soldier drops a target without a fight
+    //     ending: he was helping with a block and the man who had hold of it is
+    //     dead, so there is no fight to help with.
     //
     //     Three things have to be true together, and each rules out a case this
     //     must not touch: he does not HOLD his target, so a block is never
     //     dropped; nobody else holds it either, so he is not walking away from a
-    //     fight he was helping with; and it is not standing off any more, so the
-    //     reason he set out has actually gone. After pass 1 rather than before it,
-    //     or it would release the assistant that pass is about to promote.
+    //     fight still going on; and it is not standing off. After pass 1 rather
+    //     than before it, or it would release the assistant that pass is about
+    //     to promote.
+    //
+    //     THE HALTED TERM IS NOW ALWAYS TRUE and is kept as a statement of the
+    //     rule rather than as a test: nothing gives a soldier a halted thrower
+    //     for a target any more — see "there is no pass 4" below — and a thrower
+    //     somebody has hold of is not halted. It costs a comparison and it is
+    //     what this line means.
     if (u.foe && !u.holds && !u.foe.foe && !u.foe.halted) release(u);
 
     // 1c. Come home. He is helping with a fight that is outside his tower's ring,
@@ -435,9 +438,10 @@ export function updateUnits(state, dt) {
     //     Three conditions, and each rules out a case this must not touch. He does
     //     not HOLD his foe, so the wall is never dropped — a blocker who took an
     //     enemy at the edge of the ring keeps it, because the enemy came to him and
-    //     letting go would open the road. It is not a halted thrower, so the fetch
-    //     pass below is not undone one frame after it fires. And the fight really
-    //     is outside, measured against the same ellipse the player was shown.
+    //     letting go would open the road. It is not a halted thrower, which is
+    //     vacuous now for the reason 1b gives and kept for the same reason. And
+    //     the fight really is outside, measured against the same ellipse the
+    //     player was shown.
     if (u.foe && !u.holds && !u.foe.halted && !leashed(u.foe.x, u.foe.y)) release(u);
 
     // 2. Block. Any soldier not currently holding someone — free OR merely
@@ -480,61 +484,34 @@ export function updateUnits(state, dt) {
       if (best) { u.foe = best; u.holds = false; }
     }
 
-    // 4. Close on a thrower who will not come to him. A plague doctor stops out
-    //    at 130 and works on the line from there, which is further than any of
-    //    the numbers above: a squad used to have no answer to him at all, and he
-    //    only ever ended up in melee because he ran out of patience and walked
-    //    in. That patience is gone — he now stands there as long as men are in
-    //    front of him — so this pass is what makes "pin him" a thing a barracks
-    //    can actually do, and it is what keeps the board from stalling. See the
-    //    standoff block in enemies.js for the full argument.
+    // THERE IS NO PASS 4. A soldier never walks out to a thrower, and the
+    //    absence is deliberate enough to be worth a heading of its own.
     //
-    //    THE REACH IS HIS, NOT OURS, and that symmetry is the whole rule: if he
-    //    is close enough to throw at this man, this man is close enough to walk
-    //    at him. Nothing else in the squad reaches this far, and nothing else
-    //    needs to — it applies only to an enemy who has STOPPED, so a soldier is
-    //    never lured up the road by something that was going to arrive anyway.
+    //    There WAS one. A plague doctor stops out at 130 and an archer at 200,
+    //    both further than anything above, so a squad had no answer to either —
+    //    and the fourth pass sent one man out to close the distance, on the
+    //    reasoning that reach is symmetric: if he is near enough to throw at
+    //    this man, this man is near enough to walk at him.
     //
-    //    He does not hook the enemy here, the same as assisting: the grip is
-    //    taken by the block pass above once he is close enough, which is what
-    //    keeps "one blocker per enemy" true and lets him drop the walk the
-    //    instant a live enemy comes within ENGAGE of him.
+    //    THE OWNER'S RULE IS SIMPLER AND IT WINS. "Soldiers should stay within
+    //    their rally point. It is okay if they are attacked from afar and cannot
+    //    do anything." A rally flag is an order, and a squad that abandons the
+    //    ground it was posted to hold the moment somebody shoots at it is not
+    //    obeying it — it is being led away, which is the same thing a thrower
+    //    would do on purpose if he could.
     //
-    //    ONE MAN PER THROWER, and that cap is what stops this being an exploit.
-    //    Without it a single doctor halting 130px short pulls a whole squad off
-    //    the road at once and the wave behind him strolls through the gap he
-    //    made — he would be bait rather than a target. One man goes, the rest
-    //    hold the line, which is also how it reads: you send somebody to deal
-    //    with him.
-    if (!u.foe) {
-      let best = null;
-      let bestD = Infinity;
-      for (const e of state.enemies) {
-        if (e.foe || e.hp <= 0 || !e.halted) continue;
-        if (!inRange(e.x, e.y, u.x, u.y, e.def.ranged.range)) continue;
-        // AND HE IS LEASHED TOO, which is the change the owner asked for and it is
-        // not free — see the note on `leashed` above. A doctor stops at his own
-        // throwing distance from the line, so with the rally at the edge of the
-        // ring he is usually outside it, and this is the pass that used to walk a
-        // man out to him: 1.85 ring-radii on map 1's plot 7, a paladin 378px from
-        // a tower that reaches 210.
-        //
-        // What it costs is that a thrower standing off outside the ring is now
-        // nobody's problem: he throws, the men in reach take it, and nothing goes
-        // out to stop him. That is the same answer a bow gives a man out of range,
-        // and it is the player's to solve — move the rally, or put something else
-        // where it can see him. The alternative is a squad that leaves the ground
-        // it was posted to hold whenever a doctor asks it to.
-        if (!leashed(e.x, e.y)) continue;
-        // Somebody is already on his way. An assisting soldier cannot be
-        // confused for one: assisting only ever targets an enemy that HAS a
-        // blocker, and this enemy has none.
-        if (state.units.some(o => o !== u && o.foe === e && !o.holds)) continue;
-        const d = Math.hypot(e.x - u.x, e.y - u.y);
-        if (d < bestD) { bestD = d; best = e; }
-      }
-      if (best) { u.foe = best; u.holds = false; }
-    }
+    //    WHAT IT COSTS is that a thrower who stops outside every tower's reach
+    //    is nobody's problem: he works on the line and nothing goes out to stop
+    //    him. That is the answer a bow already gives a man out of range, and it
+    //    is the player's to solve — move the rally, or put something where it
+    //    can see him.
+    //
+    //    AND IT COSTS THE BOARD ITS LIVENESS ARGUMENT, which mattered more and
+    //    is why the wave loop changed with this. This pass was what guaranteed
+    //    every thrower eventually died or reached the exit, and a wave only ends
+    //    when the field is clear — so without it a halted thrower can hold a
+    //    wave open forever. updateWaves no longer takes that promise on trust:
+    //    it times the wave out. See the stall clock there.
 
     // HOLY LIGHT. The one ability in the game that is a REACTION rather than a
     // rhythm: he calls it when he is nearly dead, not on a count.

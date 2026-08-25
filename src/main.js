@@ -123,6 +123,11 @@ function newGame() {
     // and its info box all stay live and a tower can still be bought.
     paused: false,
     resting: false,
+    // Seconds left before the current wave gives up waiting for its stragglers,
+    // or null while it is still spawning them. See stallClock in waves.js — a
+    // wave no longer ends only when the field is clear, because the field is no
+    // longer guaranteed to clear.
+    stall: null,
     menu: null,
     result: null,
     // Dashboard fast-forward. 1 or 2; multiplies the simulation step, so the

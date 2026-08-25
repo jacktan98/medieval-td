@@ -8,27 +8,34 @@
 // should catch three, or who stood on the road until the clock ran out, all look
 // the same from there: a slightly different number of lives.
 //
-// THE LAST TWO CHECKS ARE THE IMPORTANT ONES, and they are the reason he is
-// allowed to stand still at all. His flasks never run out, he now stands off for
-// as long as men are in front of him, and a wave only ends when the field is
-// clear — so an enemy with no bound on standing still is a game that can hang.
+// CHECK 5 IS THE IMPORTANT ONE, and it is the reason he is allowed to stand
+// still at all. His flasks never run out and he stands off for as long as men
+// are in front of him, so an enemy with no bound on standing still is a game
+// that can hang.
 //
-// WHAT BOUNDS IT IS THE OTHER ARMY, not a number on him: a soldier with nothing
-// better to do walks out to a thrower who will not come to him (see the closing
-// pass in units.js), and once he is pinned his health only goes down. Checks 5
-// and 6 are what say that works — 5 puts three of him in front of a squad and
-// waits for the board to empty, 6 does the same against soldiers his poison can
-// never kill, which is the case that soft-locked every earlier design.
+// WHAT BOUNDS IT IS A CLOCK IN THE WAVE LOOP, and getting there took three
+// wrong answers worth writing down. Three designs bounded it on HIM — a finite
+// basket, a rule about screens, then 14 seconds of patience; the first two
+// bounded the flasks and not the time, and the third read as a man losing his
+// nerve on a timer. A fourth bounded it on the OTHER ARMY: a soldier walked out
+// to a thrower who would not come to him. That one worked and the owner has
+// since overruled it — a squad holds the ground it was posted to hold, and
+// takes what is thrown at it.
 //
-// He has had three designs that stopped him walking and each was bounded by
-// something on HIM: a finite basket, a rule about screens, then 14 seconds of
-// patience. The first two bounded the flasks and not the time. The third worked
-// and read as a man losing his nerve on a timer.
+// So the bound is no longer anywhere in the fight. updateWaves measures how long
+// the stragglers would need to walk out unimpeded, adds a grace, and hands over
+// when that passes. Check 5 asserts BOTH halves of that: the board genuinely
+// does not clear, and the wave moves on regardless. It is deliberately the case
+// that soft-locked every earlier design — men his poison can never kill.
 
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
 import { makeUnits, updateUnits } from '../src/units.js';
 import { updateImpacts } from '../src/impacts.js';
+// The wave loop, because it is now the thing that guarantees the board moves on
+// — see check 5. STALL_GRACE comes with it so the test quotes the same number
+// the game uses rather than a copy that can drift.
+import { updateWaves, STALL_GRACE } from '../src/waves.js';
 import { families } from '../src/data/towers.js';
 import { flask, FLASK_HIT, enemyTypes } from '../src/data/waves.js';
 import { level } from '../src/level.js';
@@ -215,17 +222,26 @@ console.log('\nHe stands off\n');
   check(held < 2 && everHalted, 'and stops rather than walking into it',
     `${held.toFixed(0)}px covered in 1s`);
 
-  // Left alone. Nothing about the board changes, nothing kills him, and he has
-  // no patience to run out of — so if he ends up in a fight, a soldier fetched
-  // him.
+  // AND NOBODY COMES OUT TO HIM. This asserted the opposite for one build — a
+  // soldier was sent to fetch him — and the owner has since ruled that a squad
+  // holds its rally point: "It is okay if they are attacked from afar and cannot
+  // do anything." So the check is inverted rather than deleted, because the
+  // inversion is the rule. Left alone he stands there, and the squad stands
+  // where it was posted.
   const before = doc.s;
   let secs = 0;
   for (; secs < 20 && !doc.foe; secs++) step(state, 1);
 
-  check(!!doc.foe, 'and a soldier walks out and fetches him',
-    `pinned after ${secs}s, ${(doc.s - before).toFixed(0)}px advanced`);
-  check(doc.s < before + 2, 'without him having advanced a step to be caught',
+  check(!doc.foe, 'and no soldier leaves the rally point to fetch him',
+    `${secs}s with the squad holding`);
+  check(doc.s < before + 2, 'and he does not advance either',
     `${(doc.s - before).toFixed(0)}px`);
+  // 20 rather than 0: SETTLE in units.js is 16, so a man who has arrived stops
+  // within 16px of his post rather than standing exactly on it. What is being
+  // asserted is that nobody has SET OUT — a fetched man ends up 100px away.
+  check(state.units.every(u => Math.hypot(u.x - u.rx, u.y - u.ry) < 20),
+    'and every man is still on his own station',
+    state.units.map(u => Math.hypot(u.x - u.rx, u.y - u.ry).toFixed(0)).join('/'));
 }
 
 // --- 4. pinning him does not switch the basket off ---------------------------
@@ -269,42 +285,22 @@ console.log('\nHe stands off\n');
     `${threw} flasks while held`);
 }
 
-// --- 5. a board with only doctors on it still empties -------------------------
+// --- 5. the board does NOT empty, and the wave loop is what moves on ----------
 //
-// The end-to-end version of check 3, and the one that would actually have caught
-// a soft-lock: a wave of nothing but throwers, against a squad, left to run.
-{
-  const state = board();
-  withSquad(state);
-  const stand = squadAt(state);
-
-  for (let i = 0; i < 3; i++) {
-    spawn(state, 'plague_inf');
-    place(state.enemies[i], Math.max(0, stand - 100 - i * 30));
-  }
-
-  let secs = 0;
-  while (state.enemies.length && secs < 180) { step(state, 1); secs++; }
-
-  check(state.enemies.length === 0, 'a road of nothing but doctors clears itself',
-    `${secs}s, ${state.enemies.length} left`);
-  check(secs < 150, 'and does it in a sane time rather than eventually',
-    `${secs}s`);
-}
-
-// --- 6. the soft-lock case, run on purpose ------------------------------------
+// THE SOFT-LOCK, RUN ON PURPOSE, and it is no longer a case that resolves. For
+// one build the guarantee was "a soldier walks out and kills him"; the owner has
+// ruled that a squad holds its rally point, so a thrower who halts where nothing
+// reaches him is killed by nothing, advances never and leaks never. That is the
+// truth about the board now, and pretending otherwise in a tool is worse than
+// having no tool.
 //
-// THIS IS THE CHECK THE CLOSING PASS EXISTS TO PASS. Check 5 clears because the
-// poison eventually kills the squad screening the road, and that is the happy
-// path rather than the guarantee: a deeper line, a tier 3 squad, or two barracks
-// covering the same stretch all regenerate faster than one doctor can grind, and
-// then "he stops while men are in front of him" means he stops forever.
+// So this asserts the lock — three doctors against men their poison cannot kill,
+// left to run — and then asserts the thing that actually saves the game from it:
+// updateWaves times the wave out and hands over anyway.
 //
-// So the men here are simply unkillable. No amount of poison thins them, nothing
-// he does changes the board, and he has no patience to run out of — the ONLY way
-// this board empties is soldiers walking out to men who will not come to them and
-// killing them where they stand. If somebody takes that pass out of units.js, or
-// makes it conditional on something cleverer, this is the check that hangs.
+// The men are unkillable on purpose. Check 3 already covers one doctor against a
+// squad that can lose; this is the deeper line, the tier 3 squad, the two
+// barracks covering one stretch — every board where the poison never wins.
 {
   const state = board();
   withSquad(state);
@@ -317,10 +313,34 @@ console.log('\nHe stands off\n');
   }
 
   let secs = 0;
-  while (state.enemies.length && secs < 240) { step(state, 1); secs++; }
+  while (state.enemies.length && secs < 120) { step(state, 1); secs++; }
 
-  check(state.enemies.length === 0, 'and clears even against men his poison cannot kill',
+  check(state.enemies.length === 3, 'three doctors against unkillable men never clear',
     `${secs}s, ${state.enemies.length} left`);
+  check(state.enemies.every(e => e.halted), 'and every one of them is stood off',
+    state.enemies.map(e => e.halted).join('/'));
+
+  // AND THE WAVE HANDS OVER ANYWAY. The wave table is emptied so the loop is
+  // past spawning on the first call, which is the state the clock is set in.
+  // `stall` starts null exactly as newGame leaves it.
+  state.waves = [{ groups: [], rest: 9 }];
+  state.waveIndex = 0;
+  state.spawned = 0;
+  state.resting = false;
+  state.stall = null;
+  state.timer = 0;
+  state.result = null;
+
+  let waited = 0;
+  while (!state.resting && waited < 400) { updateWaves(state, DT); waited += DT; }
+
+  check(state.resting, 'but the wave gives up waiting and rests anyway',
+    `after ${waited.toFixed(0)}s with ${state.enemies.length} still on the road`);
+  // The clock is the walk plus the grace, and with three doctors halfway down a
+  // road the walk is the dominant half — so what is asserted is that it fired,
+  // and that it did not fire so early that a wave still arriving would trip it.
+  check(waited > STALL_GRACE, 'and not before the stragglers could have walked out',
+    `${waited.toFixed(0)}s against a ${STALL_GRACE}s grace`);
 }
 
 // --- THE BLOW AND THE PATCH ARE TWO DIFFERENT THINGS ---------------------------

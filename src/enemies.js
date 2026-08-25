@@ -187,33 +187,33 @@ export function updateEnemies(state, dt) {
     //   or he would stand off from men he cannot throw at.
     //
     // HE STANDS THERE AS LONG AS THEY DO, and there is no patience beside the
-    // rule any more. He used to carry a budget — `standoff` seconds of not
-    // advancing, spent once, and then he walked in whatever was in front of him —
-    // because a wave only ends when the field is clear (see updateWaves) and a
-    // figure that will not advance can hang a game up forever. The halt had
-    // already been taken off him twice for exactly that, once as a finite basket
-    // and once as a rule about being screened by other enemies.
+    // rule. He used to carry a budget — `standoff` seconds of not advancing,
+    // spent once, and then he walked in whatever was in front of him — because a
+    // wave only ends when the field is clear and a figure that will not advance
+    // can hang a game up forever. The halt had already been taken off him twice
+    // for exactly that, once as a finite basket and once as a rule about being
+    // screened by other enemies.
     //
-    // WHAT MAKES IT SAFE NOW IS THE OTHER ARMY, which is where the bound belonged
-    // all along. A soldier with nothing better to do WALKS OUT to a thrower who
-    // will not come to him — see the closing pass in units.js — so being stood
-    // off from is no longer something a squad has to put up with. That closes the
-    // loop the budget was papering over:
+    // AND NOTHING COMES OUT TO HIM ANY MORE. For one build the bound lived in
+    // the other army: a soldier with nothing better to do walked out to a
+    // thrower who would not come to him, on the symmetry that anyone near enough
+    // to be thrown at is near enough to walk at. The owner has since ruled that
+    // a squad holds its rally point and takes it — see "there is no pass 4" in
+    // units.js — so that argument is gone and it is not coming back.
     //
-    //   he halts only while a live soldier is in front of him inside his own
-    //   throwing range, and reach is symmetric, so any soldier who can be thrown
-    //   at can also walk to him;
+    // SO A THROWER CAN HOLD A WAVE OPEN, and this is the honest statement of it:
+    // one who halts where no tower reaches him is killed by nothing, advances
+    // never, and leaks never. The old comment here promised that every thrower
+    // dies or reaches the exit. It is not true and it was the wave loop that was
+    // relying on it.
     //
-    //   the soldiers blocking other enemies are freed in bounded time, because
-    //   those enemies are advancing, dying or leaking;
-    //
-    //   so somebody reaches him, and once he is pinned he is in a fight he loses:
-    //   an enemy has no regeneration, so his health only ever goes down.
-    //
-    // Every thrower therefore dies or reaches the exit, which is the property the
-    // wave loop needs — and it is now a consequence of the two armies' rules
-    // rather than of a number he carries. tools/plague.mjs runs the case that
-    // would hang: three of him against men his poison cannot kill.
+    // WHICH IS WHY THE WAVE LOOP STOPPED RELYING ON IT. updateWaves times a wave
+    // out rather than waiting on a promise this file cannot keep: once the last
+    // enemy has spawned it works out how long the stragglers would need to walk
+    // the rest of the road unimpeded, adds a grace, and moves the game on when
+    // that passes. Liveness belongs to the clock now, not to an argument spread
+    // across two files that a rule change could quietly invalidate — which is
+    // exactly what happened to the last one.
     const road = laneOf(level.routes[e.route], e.lane);
 
     e.halted = !!e.def.ranged && screened(state, e, road);
