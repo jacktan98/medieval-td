@@ -2279,11 +2279,12 @@ function ownedRing(ctx, it) {
   ctx.stroke();
 }
 
-// Vector glyphs, now the FALLBACK rather than the design. Five of the eight have
-// drawings in assets/ui and go through drawUi; these are what siege, the
-// monastery and a maxed-out tower still use, plus what every button falls back to
-// if its PNG fails to load. Each draws centred on the origin in a 22px box, and
-// drawButton scales that to whatever box the drawn glyphs are using.
+// Vector glyphs, now the FALLBACK rather than the design. Every glyph the menu
+// uses has a drawing in assets/ui and goes through drawUi — the maxed button was
+// the last one still on a vector — so these are what a button falls back to only
+// if its PNG fails to load, and what the next glyph added will use until its art
+// arrives. Each draws centred on the origin in a 22px box, and drawButton scales
+// that to whatever box the drawn glyphs are using.
 //
 // The label-shrinking helper that used to live here went with the labels. Buttons
 // carry a glyph and a price now, and a price cannot get long enough to need it.
@@ -2385,11 +2386,11 @@ function drawGlyph(ctx, kind) {
 // frame, so a soldier's bar and this number are the same fact twice.
 //
 // Same rule as the dashboard plates: the HEIGHT is chosen — 76 holds a title and
-// three stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
+// two stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
 // own proportions. 678x234 at 76 tall is 220.
 //
-// And this is the constraint the rows are sized against rather than the other way
-// round: raising it to fit another row widens the panel too, and the panel is
+// And this is the constraint the rows are laid out against rather than the other
+// way round: raising it to fit a third row widens the panel too, and the panel is
 // already 12px from the right edge of the board. See TITLE_BAND.
 const INFO_H = Math.round(76 * INFO_SCALE);
 const INFO_W = Math.round(INFO_H * aspect('plate_info'));
@@ -2412,8 +2413,8 @@ const PORTRAIT = { w: 58, h: 50 };
 // are taken out. 10.5 fits with 2.6px to spare and 11 does not fit at all.
 const INFO_TITLE = 10.5;
 const INFO_ROW = 10;
-// 12 rather than 14, for the same reason ROW_PITCH came down: a third stat row
-// had to fit in a plate that cannot get any taller. See TITLE_BAND.
+// 12 rather than 14: the attack row carries a second icon and a second number
+// now, and the two pairs have to share one line of a panel 197 wide.
 const INFO_ICON = 12;
 
 function drawInfo(ctx, state) {
@@ -2461,9 +2462,11 @@ function drawInfo(ctx, state) {
   // plate instead of the last one crowding the bottom edge. That is why the rows
   // are counted before anything is drawn.
   //
-  // Every selection has an attack figure; health and reach are the two that come
-  // and go. A tower cannot be hurt, and only what shoots has a range.
-  const rows = (info.hp !== null ? 1 : 0) + 1 + (info.range !== null ? 1 : 0);
+  // TWO ROWS AT MOST, because reach shares the attack's line rather than taking
+  // one of its own — the same row the encyclopedia prints it in, which is the
+  // point: a player who learns the layout on the page reads it unchanged on the
+  // board. Health is the only stat that adds a line.
+  const rows = info.hp !== null ? 2 : 1;
   const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
 
   // See INFO_TITLE for why it is 10.5 and not a round number.
@@ -2475,13 +2478,13 @@ function drawInfo(ctx, state) {
   ctx.font = `700 ${INFO_TITLE}px system-ui, sans-serif`;
   ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
-  // The rows are ICONS, not the words "Health:", "Damage:" and "Range:". All
-  // three sit in a column STAT_COL wide so the numbers beside them line up
-  // whether the rows above are there or not — a tower has no health row, a
-  // swordsman has no range row, and a damage figure that shifted about between
-  // them would read as three layouts.
-  // Down with the title, so the panel still reads as a heading over its stat
-  // rows rather than as four lines of the same weight.
+  // The rows are ICONS, not the words "Health:" and "Damage:". Both sit in a
+  // column STAT_COL wide so the numbers beside them line up whether the row
+  // above is there or not — a tower has no health row, and a damage figure that
+  // shifted left on towers and right on units would read as two layouts. Reach
+  // is the exception and hangs off its neighbour instead; see below for why.
+  // Down with the title, so the panel still reads as a heading over two stat
+  // rows rather than as three lines of the same weight.
   ctx.font = `700 ${INFO_ROW}px system-ui, sans-serif`;
   let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
@@ -2498,33 +2501,41 @@ function drawInfo(ctx, state) {
 
   drawUi(ctx, 'stat_damage', tx + STAT_COL / 2, ty, { h: INFO_ICON });
   ctx.fillStyle = drawn ? INK : '#F0E6D2';
-  ctx.fillText(String(info.damage), tx + STAT_COL + 6, ty);
+  const dx = tx + STAT_COL + 6;
+  ctx.fillText(String(info.damage), dx, ty);
 
-  // AND HOW FAR, under the attack rather than beside it. The box is a column and
-  // the card is a row, and that is the right way round for both: the page has
-  // width to spare and the panel has none, so a third figure on the same line
-  // here would sit where the plate's edge is.
+  // AND HOW FAR, BESIDE THE ATTACK rather than under it. It had a line of its own
+  // for one build; the owner asked for the pair to read as they do on an
+  // encyclopedia card, which is the better answer — attack and reach are the two
+  // halves of one question and a player comparing towers reads them together.
+  //
+  // Hung off the END OF THE DAMAGE NUMBER rather than at a fixed column of its
+  // own, because the panel has no width to give one: a second column would have
+  // to be as wide as the longest attack figure in the game and every short one
+  // would pay for it.
+  //
+  // Measured in the browser rather than by a tool, for the reason INFO_TITLE
+  // gives: node has no canvas to set a font in. The widest row today is the
+  // Combat Archer's 14 and 210, which ends 36px inside the plate. If a stat ever
+  // reaches four digits, look at the box.
   if (info.range !== null) {
-    ty += ROW_PITCH;
-    drawUi(ctx, 'stat_range', tx + STAT_COL / 2, ty, { h: INFO_ICON });
-    ctx.fillText(String(info.range), tx + STAT_COL + 6, ty);
+    const rx = dx + ctx.measureText(String(info.damage)).width + STAT_GAP;
+    const { w } = uiSize('stat_range', { h: INFO_ICON });
+    drawUi(ctx, 'stat_range', rx + w / 2, ty, { h: INFO_ICON });
+    ctx.fillText(String(info.range), rx + w + 4, ty);
   }
 }
 
-// How much vertical room the title takes, and the pitch between stat rows.
+// How much vertical room the title takes, and the pitch between stat rows. 18 is
+// a 12px icon with 6 of air, which is the tightest the hearts and swords can sit
+// without touching. Both came down with the panel.
 //
-// THREE ROWS NOW, for an archer thug with health, attack and reach, and 20 + 3x18
-// is 74 in a plate 68 tall — the last row would have hung off the bottom. The
-// plate cannot grow: its width follows its height from the drawing's own
-// proportions, so a taller panel is a wider one, and it is already 12px from the
-// right edge of the board.
-//
-// So the rows came down instead: 15 is a 12px icon with 3 of air, and 18 is the
-// title's own line at the size it is set. Three rows and a title are 63 of the
-// 68, which leaves the block the 2px of margin top and bottom that centring it
-// gives it anyway.
-const TITLE_BAND = 18;
-const ROW_PITCH = 15;
+// STILL TWO ROWS at the most, which is why these are where they were: reach went
+// in beside the attack rather than under it, so the panel never grew a third
+// line. It could not have afforded one — 20 + 3x18 is 74 in a plate 68 tall, and
+// the plate cannot get taller without getting wider. See INFO_H.
+const TITLE_BAND = 20;
+const ROW_PITCH = 18;
 
 // The title screen, and the reason it exists.
 //
