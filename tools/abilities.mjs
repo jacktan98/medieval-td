@@ -838,11 +838,24 @@ console.log('\nThe Crossbow Sentry\'s two\n');
   // than off the ability, so what is checked is the path the shot loop takes.
   ok(cooldownOf(plain) === archery[4].cooldown, 'an untaught sentry reloads at its tier\'s rate',
     `${cooldownOf(plain)}s`);
-  ok(cooldownOf(quick) === abilityById('swift').cooldown,
-    'and Swift Reload sets the rate rather than scaling it',
-    `${cooldownOf(quick)}s against ${cooldownOf(plain)}s`);
-  ok(cooldownOf(quick) < cooldownOf(plain), 'and it is a decrease, not an increase',
-    `${cooldownOf(quick)} < ${cooldownOf(plain)}`);
+  // A MULTIPLIER ON THE SPEED, so the check is the RATIO rather than a number:
+  // retune the tier's reload and this still has to hold. That is the whole reason
+  // the owner moved it off an absolute.
+  const swift = abilityById('swift');
+  ok(Math.abs(cooldownOf(plain) / cooldownOf(quick) - swift.reloadTimes) < 1e-9,
+    'and Swift Reload scales the rate rather than setting it',
+    `${cooldownOf(quick).toFixed(2)}s against ${cooldownOf(plain)}s, x${swift.reloadTimes} faster`);
+  ok(cooldownOf(quick) < cooldownOf(plain), 'so it is a decrease in time, not an increase',
+    `${cooldownOf(quick).toFixed(2)} < ${cooldownOf(plain)}`);
+  // AND IT SURVIVES A RETUNE, which an absolute would not have. Same tower, a
+  // tier reload moved under it, same 1.25x out the other side.
+  {
+    const retuned = sentry(['swift']);
+    retuned.def = { ...archery[4], cooldown: 1.2 };
+    ok(Math.abs(cooldownOf(retuned) - 1.2 / swift.reloadTimes) < 1e-9,
+      'and it still scales when the tier is retuned',
+      `1.2s becomes ${cooldownOf(retuned).toFixed(2)}s`);
+  }
 
   // THEY STACK RATHER THAN COMPETE, which is the claim the prose makes.
   ok(rangeOf(both) === rangeOf(steel) && cooldownOf(both) === cooldownOf(quick),

@@ -246,18 +246,19 @@ export function rangeOf(t) {
 // HOW LONG THIS TOWER TAKES TO RELOAD, which is the tier's number unless an
 // ability it has bought says otherwise. The reload twin of rangeOf above.
 //
-// AN ABSOLUTE, NOT A MULTIPLIER, and Swift Reload is the only thing in the game
-// that hands one out. Every other magnitude is a factor of the stat it changes,
-// so a tower's own number carries through; a reload is the one place the player
-// is asking for a RATE rather than a share of one, and "0.5 seconds" is a thing
-// they can check against the card in a way that "0.625x" is not. rangeOf has
-// taken an absolute the same way since Far Shot.
+// A MULTIPLIER ON THE SPEED, WHICH IS A DIVISOR ON THE TIME, and that is the
+// whole of why this reads backwards from rangeOf. `reloadTimes: 1.25` means the
+// tower reloads a quarter faster, so the cooldown is DIVIDED — a number above 1
+// makes the gap smaller. Written that way round because "reloads 1.25x faster"
+// is the sentence on the card, and a 0.8 that meant the same thing would read as
+// a nerf every time somebody looked at it.
 //
-// FIRST ONE WINS, like rangeOf's `range`. Nothing today gives a tower two, and
-// two that disagreed would be a data mistake rather than a case to average.
+// THEY COMPOUND, like rangeOf's `rangeTimes`, so two of them would be worth the
+// product rather than the better of the pair. Nothing hands out two today.
 export function cooldownOf(t) {
-  for (const a of boughtAbilities(t)) if (a.cooldown) return a.cooldown;
-  return t.def.cooldown;
+  let k = 1;
+  for (const a of boughtAbilities(t)) if (a.reloadTimes) k *= a.reloadTimes;
+  return t.def.cooldown / k;
 }
 
 // WHICH PAIR OF DRAWINGS THE MAN ON THE DECK IS SHOWING, or null for the ones

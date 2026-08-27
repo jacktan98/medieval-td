@@ -322,36 +322,40 @@ export const ABILITIES = [
             'the moment it is bought.'
   },
   {
-    // THE ONLY ABILITY IN THE GAME THAT SETS A NUMBER RATHER THAN SCALING ONE,
-    // and that is the owner's wording: "decrease shooting cooldown to 0.50".
+    // A MULTIPLIER LIKE EVERY OTHER MAGNITUDE HERE, and it was an absolute 0.50
+    // for one build. The owner's call, and the right one: a tower's own stat
+    // should carry through, so a retuned tier moves what its abilities are worth
+    // instead of leaving one of them pinned to a number that no longer relates
+    // to anything.
     //
-    // Every other magnitude here is a multiplier, on the reasoning that a tower's
-    // own stat should carry through — 5% of whatever this tier hits for. A reload
-    // is the one stat where the player is asking for a RATE rather than a
-    // proportion of one, and 0.50 said as 0.625x would be a number nobody can
-    // check against the card. cooldownOf() in src/towers.js reads it the way
-    // rangeOf() reads `range`, which has taken an absolute since Far Shot was
-    // written.
+    // AND IT SCALES THE SPEED, NOT THE COOLDOWN, which is why it is greater than
+    // 1 rather than less. "Reload 1.25x faster" is the sentence a player reads;
+    // dividing is cooldownOf's job in src/towers.js, exactly as multiplying is
+    // rangeOf's. A `cooldownTimes: 0.8` would mean the same thing and read as a
+    // nerf.
     //
-    // WHAT IT BUYS: 30 every 0.5s is 60 a second, against 37.5. That is the
-    // biggest single output jump any ability in the game hands out, and it is on
-    // the tower with the smallest blow — which is the shape of the thing. It
-    // stacks with the range ability rather than competing, so a Sentry with both
-    // is 60 a second at 390.
+    // 1.25 ON 0.80 IS 0.64, and it is worth writing down that the owner asked for
+    // "0.60, as a multiplier of 1.25" — the two do not meet. 0.60 exactly wants
+    // 1.3333, which is not a number anybody wants on a card, so the round
+    // multiplier won and the reload is 0.64. Change this one figure if the 0.04
+    // matters.
+    //
+    // WHAT IT BUYS: 30 every 0.64s is 46.9 a second against 37.5, which is a
+    // quarter more output on the tower with the smallest blow. It stacks with the
+    // range ability rather than competing, so a Sentry with both is 46.9 a second
+    // at 390.
     id: 'swift',
     name: 'Swift Reload',
     of: 'Crossbow Sentry',
     icon: 'ability_swift',
     cost: ABILITY_COST,
-    cooldown: 0.50,
+    reloadTimes: 1.25,
 
-    detail: 'The crossbowman works a windlass instead of a belt hook and looses ' +
-            'every 0.5 seconds instead of every 0.8 — 60 damage a second where ' +
-            'the sentry alone does 37.5.\n\n' +
-            'The largest jump in output any ability buys, on the tower with the ' +
-            'smallest blow. Nothing else changes: the same 30 a quarrel, the same ' +
-            'reach, and it stacks with Reinforced Tension rather than competing ' +
-            'with it.'
+    detail: 'The crossbowman works a windlass instead of a belt hook and reloads ' +
+            '1.25x faster — a quarrel every 0.64 seconds instead of every 0.8, ' +
+            'which is 46.9 damage a second where the sentry alone does 37.5.\n\n' +
+            'Nothing else changes: the same 30 a quarrel and the same reach. It ' +
+            'stacks with Reinforced Tension rather than competing with it.'
   },
   {
     id: 'light',
