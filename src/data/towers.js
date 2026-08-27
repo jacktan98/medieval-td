@@ -1143,23 +1143,24 @@ export const archery = [
   // either of these two, which is why `tier` rather than array index is what
   // decides what follows what — see upgradesFrom below.
   //
-  // THE TOWER IT IS: a quick bow with real reach, against the Musketeer Post's
-  // one enormous shot from clear across the map. 35 a bolt every 0.75s is 46.7 a
+  // THE TOWER IT IS: a steady bow with real reach, against the Musketeer Post's
+  // one enormous shot from clear across the map. 30 a bolt every 0.80s is 37.5 a
   // second where the post is 27.1, and that is the trade — the post reaches 480
-  // and this reaches 330.
+  // and this reaches 300.
   //
-  // The reload is the character and it is the owner's: faster than the Crossbow
-  // Tower under it, which is what "fast reload, smaller damage" has to mean on a
-  // ladder whose tier 3 already reloads in 0.80. 0.75 is the quickest in the
-  // game; nothing else is under 0.80.
+  // THE OWNER'S SECOND PASS, and it is a real trim. The first was 35 at 0.75 over
+  // 330: 46.7 a second, behind only the Judgement Temple's 51.7 and reaching half
+  // the board while it did it. 37.5 still clears the Crossbow Tower under it
+  // (32.5) and the two tier 4s that are not the Temple, without making the fork a
+  // foregone conclusion — and it costs the same 200 as a Musketeer Post now, so
+  // the two are a genuine choice at one price rather than a cheap one and a dear
+  // one. Both paths up this ladder come to 490.
   //
-  // A FIRST PASS AT THE NUMBERS, said plainly because the owner asked for a guess
-  // to test rather than a settled answer. 46.7 a second sits second among the
-  // tier 4s, under the Judgement Temple's 51.7 — and the Temple pays for its
-  // output with a 210 reach where this has 330, which is the part most likely to
-  // want moving after play.
+  // The reload MATCHES the Crossbow Tower's 0.80 rather than beating it, so what
+  // the upgrade buys is the blow and the reach. The two of them are still the
+  // quickest things in the game.
   { ...sentry, ...crossbowman, tier: 4, name: 'Crossbow Sentry', title: 'Crossbow Sentry',
-    unit: 'Crossbowman', cost: 240, damage: 35, range: 330, cooldown: 0.75,
+    unit: 'Crossbowman', cost: 200, damage: 30, range: 300, cooldown: 0.80,
     colour: '#A8A29A', targeting: true,
     // Its own picture on the upgrade button, like the Musketeer Post's — with two
     // of them on the ring, a generic arrow on both would be a coin toss.

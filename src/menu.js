@@ -163,13 +163,25 @@ function buildItems() {
 // A barracks gets a third button, south, for moving its rally point. South
 // rather than north because north is where the roof and the muster rings are.
 
-// The two angles a FORKED upgrade uses, north-east and south-east. East itself is
-// left empty between them, so the pair reads as one direction splitting rather
-// than as two unrelated buttons — upgrade is still east, there are simply two of
-// it. They sit on the ordinary ring, not the ability ring, and the two never
-// appear together: a tower with a choice has no abilities yet, and one with
-// abilities has no choice left.
-const FORK_ANGLES = [-Math.PI / 4, Math.PI / 4];
+// A FORKED UPGRADE SITS WHERE THE ABILITIES SIT — the wider arc above the ring,
+// north-west and north-east — and it is the same two angles and the same radius
+// rather than a pair chosen to look like them.
+//
+// It was north-east and south-east on the ordinary ring for one build, on the
+// reasoning that upgrade is east and a fork is east splitting in two. On the
+// board that put the south-east button hard against the standing-order button
+// due south, which every archery tower carries: two discs overlapping, and the
+// order button drawn over the tower you were trying to buy. The owner asked for
+// the abilities' placement instead, and it is the better answer twice over —
+// the arc above is empty on a tier 3, and a player who has topped out one ladder
+// already knows to look up there for the big choices.
+//
+// THE TWO NEVER APPEAR TOGETHER, which is what makes sharing the angles safe: a
+// tower with a choice left has no abilities yet, and one with abilities has no
+// choice left.
+//
+// `ring: ABILITY_R` widens the menu's clamp on its own — see the reach line in
+// openTower — so nothing else has to know these buttons are further out.
 
 function towerItems(t) {
   // ONE ENTRY, TWO, OR NONE. Archery forks at tier 3 — a Crossbow Tower buys
@@ -181,8 +193,10 @@ function towerItems(t) {
   const items = next.length
     ? next.map((n, i) => ({
         // One button due east while there is only one thing to buy, which is
-        // every ladder but archery and archery below tier 3. The fork splits it.
-        angle: next.length === 1 ? E : FORK_ANGLES[i],
+        // every ladder but archery and archery below tier 3. A fork moves both of
+        // them up to the ability arc instead.
+        angle: next.length === 1 ? E : ABILITY_ANGLES[i],
+        ring: next.length === 1 ? undefined : ABILITY_R,
         act: 'upgrade',
         // WHICH TIER THIS BUTTON BUYS, carried on the item rather than looked up
         // again when it is pressed. With one answer the lookup was harmless; with
