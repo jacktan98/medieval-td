@@ -81,12 +81,30 @@ console.log('\nWhat is on the pages\n');
 
   // Consecutive rows within a family, in tier order. Otherwise tier 3 can sit
   // above tier 1 and the page reads as an unsorted list.
+  //
+  // NON-DECREASING RATHER THAN 1,2,3,4, because archery forks: it runs
+  // 1,2,3,4,4, with the Musketeer Post and the Crossbow Sentry stacked at the
+  // bottom of one column. What has to hold is that a reader going down a column
+  // never goes backwards, and that the rows are consecutive.
   const ordered = LADDERS.every(tiers => {
     const mine = rows.filter(r => tiers.includes(r.def));
-    return mine.every((r, i) =>
-      r.def.tier === i + 1 && (i === 0 || r.row === mine[i - 1].row + 1));
+    return mine[0].def.tier === 1 && mine.every((r, i) =>
+      i === 0 || (r.def.tier >= mine[i - 1].def.tier && r.row === mine[i - 1].row + 1));
   });
-  ok(ordered, 'and each ladder runs tier 1 to 3 down its column');
+  ok(ordered, 'and each ladder runs down its column without going backwards');
+
+  // AND A FORK IS ONLY EVER AT THE TOP, which is load-bearing rather than tidy:
+  // refundOf in menu.js prices a tier by summing every rung BELOW it, and that
+  // sum is only a ladder if there is one rung per tier down there. A family given
+  // a choice at tier 2 would quote a refund that added both branches together.
+  const forkedLow = LADDERS.flatMap(tiers => {
+    const top = Math.max(...tiers.map(d => d.tier));
+    const count = new Map();
+    for (const d of tiers) count.set(d.tier, (count.get(d.tier) || 0) + 1);
+    return [...count].filter(([tier, n]) => n > 1 && tier < top).map(([tier]) => tier);
+  });
+  ok(forkedLow.length === 0, 'and any fork in a ladder is at its top rung',
+    LADDERS.map(t => t.map(d => d.tier).join('')).join(' / '));
 
   ok(enemyCards().length === Object.keys(enemyTypes).length,
     'every enemy has a card', `${enemyCards().length}`);
@@ -118,14 +136,17 @@ console.log('\nWhat the cards say\n');
   // The book quotes what the game would actually pay. Built the way input.js
   // builds one — cumulative spend up the ladder — and refunded the way the
   // radial menu refunds one.
-  const priced = LADDERS.every(tiers => {
-    let spent = 0;
-    return tiers.every(def => {
-      spent += def.cost;
-      const e = towerEntry(def, tiers);
-      return e.cost === def.cost && e.refund === refundValue({ spent });
-    });
-  });
+  //
+  // SUMMED BY TIER, not by walking the array, because a forked ladder's array
+  // order is not a path any player takes: nobody buys a Musketeer Post and then a
+  // Crossbow Sentry. What each one costs to reach is every rung below it plus
+  // itself, which is exactly what refundOf does and what this re-derives
+  // independently.
+  const priced = LADDERS.every(tiers => tiers.every(def => {
+    const spent = tiers.reduce((sum, d) => sum + (d.tier < def.tier ? d.cost : 0), 0) + def.cost;
+    const e = towerEntry(def, tiers);
+    return e.cost === def.cost && e.refund === refundValue({ spent });
+  }));
   ok(priced, 'and its two prices are the ones the game charges and pays',
     `refund rate ${REFUND_RATE}`);
 

@@ -113,13 +113,21 @@ console.log('\nWhat a tier 4 offers\n');
   ok(ABILITIES.every(a => a.cost === ABILITY_COST),
     'every ability costs the same', `${ABILITY_COST}g`);
 
-  // ALL FOUR LADDERS, two each. The Judgement Temple was the last one without any,
-  // and now that it has a pair the list is complete — so the check is no longer
-  // "every tier 4 that has any" but every tier 4 there is.
-  const owners = [archery[3], barracks[3], siege[3], monastery[3]];
-  ok(owners.every(d => (d.abilities || []).length === 2),
-    'and every tier 4 tower offers two',
-    owners.map(d => `${d.name} ${d.abilities.length}`).join(', '));
+  // TWO OR NONE, and the "or none" arrived with the Crossbow Sentry.
+  //
+  // It was "every tier 4 there is offers two", which was true while there were
+  // exactly four of them and each had a pair drawn for it. Archery's second tier
+  // 4 has no abilities, and that is not an oversight to be papered over with two
+  // invented ones: an ability is a button wearing a piece of the artist's
+  // artwork, so a pair the artist has not drawn cannot be added by this file.
+  //
+  // What is still worth holding is the SHAPE — a tower that teaches anything
+  // teaches exactly two, so the ring never has one lonely disc on it or three
+  // fighting for two angles.
+  const owners = [...archery, ...barracks, ...siege, ...monastery].filter(d => d.tier === 4);
+  ok(owners.every(d => !d.abilities || d.abilities.length === 2),
+    'and every tier 4 tower offers two or none',
+    owners.map(d => `${d.name} ${(d.abilities || []).length}`).join(', '));
 
   // TIER 4 ONLY. Nothing below it may carry an ability, because the whole reason
   // an ability exists is that a topped-out ladder has nothing left to buy — a
@@ -131,7 +139,7 @@ console.log('\nWhat a tier 4 offers\n');
 
   // Every id a tier names has to resolve, or the menu would draw a button for
   // `undefined` and the tower would silently never use it.
-  const named = owners.flatMap(d => d.abilities);
+  const named = owners.flatMap(d => d.abilities || []);
   ok(named.every(id => abilityById(id)), 'and every id a tier names is a real ability');
   // ONE CYCLE PER ABILITY, not one shared between them. Burst Fire wants every
   // sixth shot and Deadeye every eleventh, and they simply both run on the tower's

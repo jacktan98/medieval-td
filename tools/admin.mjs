@@ -64,13 +64,21 @@ console.log('\nWhat the dashboard can edit\n');
   // A barracks tier's row must be its SOLDIER, not the building. The building
   // has no hp and no damage at all, so a row pointing at it would edit nothing
   // and read as undefined.
-  const spear = list.find(u => u.id === 'barracks/1');
+    // Found by the tower it belongs to rather than by a typed id: the id is the
+  // tower's name now, since two archery rows are tier 4 and a tier number no
+  // longer identifies a row. See units() in src/admin.js.
+  const byTier = (famId, tier) => {
+    const f = families.find(x => x.id === famId);
+    const def = f.tiers.find(d => d.tier === tier);
+    return list.find(u => u.name === (def.soldier ? def.soldier.name : def.unit));
+  };
+  const spear = byTier('barracks', 1);
   ok(spear && spear.def === families.find(f => f.id === 'barracks').tiers[0].soldier,
     'a barracks row edits the man, not the tent', spear && spear.name);
 
   // And an archery tier's row IS the tier, because the archer's damage is the
   // tower's — he has no stat block of his own.
-  const archer = list.find(u => u.id === 'archery/1');
+  const archer = byTier('archery', 1);
   ok(archer && archer.def === families.find(f => f.id === 'archery').tiers[0],
     'an archery row edits the tier itself', archer && archer.name);
   ok(archer && archer.hp === false, 'and offers no health, because nothing can hurt him');
@@ -97,12 +105,14 @@ console.log('\nAn override is only an override while it differs\n');
 console.log('\nReset reaches the defs, not just the store\n');
 
 {
-  const u = units().find(x => x.id === 'barracks/2');
-  const hp = shipped('barracks/2|hp');
-  const dmg = shipped('barracks/2|damage');
+  // Taken from units() rather than typed, for the same reason the two rows above
+  // are found by their tower: a row's id is its tower's name now.
+  const u = units().find(x => x.of === 'Barracks T2');
+  const hp = shipped(`${u.id}|hp`);
+  const dmg = shipped(`${u.id}|damage`);
 
-  setUnitStat('barracks/2', 'hp', hp * 2);
-  setUnitStat('barracks/2', 'damage', dmg + 5);
+  setUnitStat(u.id, 'hp', hp * 2);
+  setUnitStat(u.id, 'damage', dmg + 5);
   setWaveCount('m1', 0, 0, 99);
 
   ok(u.def.hp === hp * 2 && u.def.damage === dmg + 5 && waveCount('m1', 0, 0) === 99,

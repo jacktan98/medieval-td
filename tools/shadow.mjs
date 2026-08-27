@@ -198,6 +198,9 @@ const SPRITES = [
   ['assets/towers/archery/Archery_Tower_T1.png',    'watchtower.groundFrac',  towers.archery[0].spriteTrim, towers.archery[0].groundFrac, 'whole'],
   ['assets/towers/archery/Archery_Tower_T2.png',    'watchtower2.groundFrac', towers.archery[1].spriteTrim, towers.archery[1].groundFrac, 'whole'],
   ['assets/towers/archery/Archery_Tower_T3.png',    'watchtower3.groundFrac', towers.archery[2].spriteTrim, towers.archery[2].groundFrac, 'whole'],
+  // Archery's SECOND fourth rung. The Musketeer Post is already further down
+  // this list with the other tier 4 buildings; this is the one the fork added.
+  ['assets/towers/archery/Crossbow_Sentry_Tower.png', 'sentry.groundFrac', towers.archery[4].spriteTrim, towers.archery[4].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T1.png',   'camp.groundFrac',        towers.barracks[0].spriteTrim, towers.barracks[0].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],
@@ -262,6 +265,10 @@ const SPRITES = [
   // will step sideways every time he fires.
   ['assets/units/Musketeer_Default.png', 'musketeer.gunnerPivot',  towers.archery[3].gunnerTrim, towers.archery[3].gunnerPivot],
   ['assets/units/Musketeer_Attack.png',  'musketeer.attack.pivot', towers.archery[3].attack.trim, towers.archery[3].attack.pivot],
+  // The crossbowman, archery's OTHER tier 4 man. Indexed 4 rather than 3: the
+  // ladder forks, and both fourth rungs live in the same array.
+  ['assets/units/Crossbowman_Default.png', 'crossbowman.gunnerPivot',  towers.archery[4].gunnerTrim, towers.archery[4].gunnerPivot],
+  ['assets/units/Crossbowman_Attack.png',  'crossbowman.attack.pivot', towers.archery[4].attack.trim, towers.archery[4].attack.pivot],
   // AND HIS THIRD POSE, the one Deadeye buys. It is in the pair rule for exactly
   // the same reason the other two are, and the reason is stronger here: this pose
   // is swapped in for a whole second at a time, so a shadow half a pixel out would

@@ -107,6 +107,13 @@ const TOWER3_TRIM = [331, 140, 362, 744];
 // the deck. Narrower than any of the three below it — 360 source px against 490,
 // 428 and 362 — because it is a tower rather than a platform on splayed legs.
 const TOWER4_TRIM = [332, 205, 360, 614];
+// THE SECOND FOURTH RUNG, and the first time a ladder has forked. The Crossbow
+// Sentry is the same turret drawn again with a rack of quarrels on the deck
+// instead of muskets — same 360px width, four source px taller, and the artist's
+// deck and battlement land on exactly the same coordinates shifted 4px down.
+// That is not a coincidence to lean on: it is measured out of the SVG below and
+// re-measured on every upload, like every other number here.
+const SENTRY_TRIM = [332, 201, 360, 622];
 // EVERY FIGHTING MAN IS TWO DRAWINGS, so every one of them has two trims.
 //
 // The two are NOT unioned into one box the way the catapult's three frames are,
@@ -134,6 +141,18 @@ const ARCHER3_ATK_TRIM = [195, 195, 142, 122];
 // the two drawings are otherwise the same figure in the same place.
 const MUSKET_TRIM = [180, 194, 152, 124];
 const MUSKET_ATK_TRIM = [173, 194, 159, 124];
+// The quarrel, and the flattest sprite in the game: 94 x 12 source, drawn 19x2.
+const QUARREL_TRIM = [209, 250, 94, 12];
+// The crossbowman, and he is the opposite shape to the musketeer: 124x118 where
+// the musket makes its man 152 across. A crossbow is held ACROSS the body rather
+// than run out in front of it, so he is nearly as compact as an unarmed figure.
+//
+// The Default pose is 13px wider on the left, and that is the loaded quarrel
+// sticking out past the prod. Attack is the same man with the bow empty — see
+// the note on `archer` for why those two names read backwards until you look at
+// the drawings.
+const XBOW_TRIM = [194, 197, 124, 118];
+const XBOW_ATK_TRIM = [207, 197, 111, 118];
 const CAMP_TRIM = [207, 249, 610, 526];
 const CAMP2_TRIM = [200, 197, 624, 630];
 const CAMP3_TRIM = [200, 201, 624, 621];
@@ -353,6 +372,39 @@ export const bullet = {
   speed: 520,
   // Loud leaving the barrel and silent arriving, the same split as the arrow and
   // the arcane missile. A musket IS its report.
+  fireSound: true,
+  landSound: false
+};
+
+// THE SENTRY'S QUARREL, and it is an arrow's kind of projectile with an arrow's
+// shape of drawing: flat, nose to the left, steered, silent on arrival.
+//
+// SO WHY NOT JUST FIRE `arrow`? Because the kind is what the kill line is keyed
+// on — enemies.js reads `killedBy` off the ammunition — and the owner asked for a
+// crossbowman's kill to have a voice of its own. Sharing the arrow would have
+// meant sharing the cry, and a separate ammo entry is how every other weapon in
+// the game says "this one sounds like itself". It also carries its own shot
+// noise, which is the other half of the same answer.
+//
+// 94x12 source against an arrow's 100x20: a quarrel is shorter and much thinner
+// than a longbow shaft, which is what the drawing already says.
+//
+// `grip` 0.07 rather than the arrow's 0.08 — the iron head is a blunt wedge in
+// the leftmost 7% of the trim, so the point sits a shade nearer the edge.
+//
+// SPEED 440, between the arrow's 360 and the ball's 520. A crossbow shoots
+// flatter and harder than a bow and nothing like as fast as powder, and at 330
+// reach the longest flight is 0.75s — inside the 1.5s the Attack pose is shown
+// for, which is the constraint that actually binds. See `cooldown` on the tier.
+export const quarrel = {
+  kind: 'quarrel',
+  sprite: 'quarrel',
+  trim: QUARREL_TRIM,
+  faces: -1,
+  grip: 0.07,
+  speed: 440,
+  // Loud leaving the bow, silent arriving — the same split as the arrow, the
+  // ball and the arcane missile. A crossbow announces itself by loosing.
   fireSound: true,
   landSound: false
 };
@@ -758,6 +810,55 @@ const post = {
   shape: 'tower'
 };
 
+// THE SECOND TIER 4 ON THIS LADDER, and the first fork in any family. The same
+// stone turret as the Musketeer Post with a rack of QUARRELS standing on the deck
+// where that one has muskets, and a crossbow mounted on the front wall.
+//
+// EVERY NUMBER BELOW IS THE MUSKETEER POST'S SHIFTED FOUR PIXELS DOWN, and that
+// is a measurement rather than a shortcut. The artist drew this on the same
+// template: the deck polygon comes out at (466.5, 247.6) (659.1, 277.2)
+// (555.2, 367.4) (349.8, 320.1) against the post's (466.5, 243.5) (659.1, 273.2)
+// (555.2, 363.4) (349.8, 316.0) — identical in x, exactly +4 in y. The trim
+// moved with it: [332, 201, 360, 622] against [332, 205, 360, 614], so the
+// FRACTIONS below differ even though the source pixels only slid.
+//
+// If a redraw ever breaks that, tools/shadow.mjs and tools/roof.mjs say so —
+// neither of them knows the two towers are related.
+const sentry = {
+  sprite: 'archery_t4b',
+  spriteTrim: SENTRY_TRIM,
+  w: drawnW(SENTRY_TRIM), h: drawnH(SENTRY_TRIM),
+  // The AREA CENTROID of the deck's top face, source (508.8, 304.5) — the same
+  // #969696 quadrilateral the post has, and found the same way, because the two
+  // long edges differ by 13px in run and it is not a parallelogram.
+  mountFrac: [0.491, 0.166],
+  // Shadow centre, source (511.5, 741.5), from the ellipse fit in
+  // tools/shadow.mjs. The SVG stores that shadow as a single #37422f path
+  // spanning 335..689 by 663..821, whose own bounding centre is (512.0, 741.9) —
+  // within half a pixel, measured two independent ways. All but dead centre
+  // across, like the post: this drawing has nothing leaning out of it either.
+  groundFrac: [0.499, 0.869],
+  // THE NEAR MERLON, the one block of stone standing between the crossbowman and
+  // the camera, and the owner flagged it as the thing to be careful of.
+  //
+  // A RECT CANNOT DO THIS. The merlon sits ON the banner draped over the deck, so
+  // a tight box around the stone also takes a wedge of blue cloth beside it and
+  // paints that over his legs. That shipped as a visible bug on the Musketeer
+  // Post once and this is the same trap, so it is a POLYGON, traced from the
+  // merlon's three faces in the SVG: the top (545.8, 297.5) (580.8, 303.9)
+  // (555.4, 323.4) (520.4, 316.4), and the two side faces hanging from it to
+  // (580.8, 345.0), (555.2, 367.4) and (520.3, 359.4). Padded 2px for the black
+  // stroke the PNG draws around shapes the SVG stores without one.
+  //
+  // The other three merlons are behind him or beside him; the left one at
+  // x 350..412 IS nearer the camera than the deck centre but stands 20px clear
+  // of his widest pose, so anything drawn round it would paint stone over grass.
+  frontPolys: [
+    [[546, 295], [583, 302], [583, 346], [555, 370], [518, 361], [518, 315]]
+  ],
+  shape: 'tower'
+};
+
 // WHICH POSE IS WHICH, because the names read backwards until you look at the
 // drawings. Default is the archer with an arrow NOCKED, the head of it sticking
 // out past the bow. Attack is the bow EMPTY, string snapped back — the instant
@@ -891,6 +992,40 @@ const musketeer = {
   muzzle: [Math.round(0.697 * MUSKET_TRIM[2] * SCALE), -Math.round(0.527 * MUSKET_TRIM[3] * SCALE)]
 };
 
+// THE CROSSBOWMAN, the second man on this ladder who does not draw a bow, and the
+// one the ladder now forks into if you do not want the musket.
+//
+// Default is the crossbow LOADED — the quarrel lies along the stock with its head
+// out past the prod, which is what makes the Default box 13px wider on the left
+// than the Attack one. Attack is the same figure with the bow EMPTY. Exactly the
+// archer's convention and exactly the musketeer's: the pose changes at the moment
+// the shot becomes a projectile on the board, and a man still holding a quarrel
+// while one flew would be holding two.
+const crossbowman = {
+  ammo: quarrel,
+  gunner: 'crossbowman',
+  gunnerTrim: XBOW_TRIM,
+  // THE CENTRE OF HIS GROUND SHADOW, source (275.0, 304.5), read out of the PNG
+  // by tools/shadow.mjs like every other figure's anchor. The Attack pose
+  // measures to (274.5, 305.0) — half a pixel away in each axis, well inside the
+  // 6px the tool allows — so the swap when he looses cannot move him.
+  gunnerPivot: [0.653, 0.911],
+  attack: { sprite: 'crossbowman_attack', trim: XBOW_ATK_TRIM, pivot: [0.608, 0.915] },
+  spriteFaces: -1,
+  // Where the quarrel leaves the bow, as an offset from the anchor above.
+  //
+  // MEASURED ON THE ATTACK POSE for the same reason the musketeer's is: that is
+  // the drawing that shows the weapon with nothing on it. Its leftmost opaque
+  // column is source x 207 and the metal is 5px inside the black outline, so the
+  // prod's face is x 212; the column there runs y 262..276, whose middle is 269.
+  // That is 63px in front of the anchor and 35 above it.
+  //
+  // Kept as fractions of the DEFAULT trim, exactly as the archer's, the priest's
+  // and the musketeer's are, so a re-export at another size moves the origin with
+  // the art rather than leaving it somewhere in his boot.
+  muzzle: [Math.round(0.508 * XBOW_TRIM[2] * SCALE), -Math.round(0.301 * XBOW_TRIM[3] * SCALE)]
+};
+
 // Range up across the board and cooldown down with it. The reach is what makes
 // a tower feel useful in the first three waves, when there is only one or two of
 // them on the map; the slower draw is what stops that reach turning archery into
@@ -1003,8 +1138,56 @@ export const archery = [
     // to upgrade it into. Ids into src/data/abilities.js, where the rules and the
     // numbers are — see the note at the top of that file for why a tier carries
     // only the list.
-    abilities: ['burst', 'deadeye'] }
+    abilities: ['burst', 'deadeye'] },
+  // THE OTHER TIER 4, and the ladder's first fork. A Crossbow Tower can become
+  // either of these two, which is why `tier` rather than array index is what
+  // decides what follows what — see upgradesFrom below.
+  //
+  // THE TOWER IT IS: a quick bow with real reach, against the Musketeer Post's
+  // one enormous shot from clear across the map. 35 a bolt every 0.75s is 46.7 a
+  // second where the post is 27.1, and that is the trade — the post reaches 480
+  // and this reaches 330.
+  //
+  // The reload is the character and it is the owner's: faster than the Crossbow
+  // Tower under it, which is what "fast reload, smaller damage" has to mean on a
+  // ladder whose tier 3 already reloads in 0.80. 0.75 is the quickest in the
+  // game; nothing else is under 0.80.
+  //
+  // A FIRST PASS AT THE NUMBERS, said plainly because the owner asked for a guess
+  // to test rather than a settled answer. 46.7 a second sits second among the
+  // tier 4s, under the Judgement Temple's 51.7 — and the Temple pays for its
+  // output with a 210 reach where this has 330, which is the part most likely to
+  // want moving after play.
+  { ...sentry, ...crossbowman, tier: 4, name: 'Crossbow Sentry', title: 'Crossbow Sentry',
+    unit: 'Crossbowman', cost: 240, damage: 35, range: 330, cooldown: 0.75,
+    colour: '#A8A29A', targeting: true,
+    // Its own picture on the upgrade button, like the Musketeer Post's — with two
+    // of them on the ring, a generic arrow on both would be a coin toss.
+    glyph: 'sentry',
+    // Its own three lines, on the same terms as every other tier 4: it answers
+    // when it is built and when its standing order changes rather than borrowing
+    // an archer's. See familyCue in src/audio.js.
+    voice: 'crossbowman' }
 ];
+
+// WHAT A TOWER CAN BECOME NEXT, and the reason it is a function rather than an
+// array index.
+//
+// `tiers[def.tier]` was the whole rule while every ladder was a straight line: an
+// array of four, index 0 holding tier 1, so the thing after tier 3 is at index 3.
+// Archery forks now — a Crossbow Tower buys either a Musketeer Post or a Crossbow
+// Sentry — and an index cannot express two answers.
+//
+// So the question is asked of the TIER NUMBER instead, which is the thing that
+// was really meant all along, and every straight ladder answers it with exactly
+// one entry as before. The array's order stops carrying meaning it was never
+// declared to carry.
+//
+// A FORK IS ONLY EVER AT THE TOP, and tools/families.mjs holds that: refundOf in
+// menu.js prices a tier by summing the rungs below it, which needs one rung per
+// tier down there. If a family is ever given a choice at tier 2, that sum is the
+// thing that breaks first.
+export const upgradesFrom = (fam, def) => fam.tiers.filter(d => d.tier === def.tier + 1);
 
 // Barracks. These do not shoot — `range` is how far from the tower the rally
 // point may sit, not a weapon range. The player moves that rally point, so the

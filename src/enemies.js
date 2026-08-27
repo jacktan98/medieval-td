@@ -282,6 +282,11 @@ export function updateEnemies(state, dt) {
          // and a second kill cry for the same weapon would be telling the player
          // apart two things that look identical on the board.
          : e.killedBy === 'bolt' ? CUE.ballistaKill
+         // A quarrel, which is the Crossbow Sentry's and nothing else's. The
+         // archery ladder is the first with two kill lines on it: its three lower
+         // tiers loose arrows and share the generic one, the Musketeer Post has
+         // its own, and so does the Sentry.
+         : e.killedBy === 'quarrel' ? CUE.crossbowKill
          // The pope's missile, and only his. The three tiers under him have no
          // kill line of their own and fall through to the generic one below, the
          // same way every melee weapon but the paladin's does.

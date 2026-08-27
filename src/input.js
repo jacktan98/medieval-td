@@ -436,7 +436,11 @@ function run(state, item) {
 
   if (item.act === 'upgrade') {
     const t = menu.tower;
-    const next = t.fam.tiers[t.def.tier];
+    // OFF THE BUTTON, not looked up again. A Crossbow Tower has two fourth rungs
+    // to choose between and only the button knows which one the thumb landed on
+    // — see towerItems in menu.js. A dead Max button carries no `to` and is not
+    // pressable, so this never runs without one.
+    const next = item.to;
     state.gold -= next.cost;
     t.def = next;
     t.spent += next.cost;

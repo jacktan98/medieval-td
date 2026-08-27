@@ -1,4 +1,4 @@
-import { families, AIM_MODES } from './data/towers.js';
+import { families, AIM_MODES, upgradesFrom } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
 
 // Radial menu around the tapped plot. Four families map to four quadrants;
@@ -60,8 +60,19 @@ export function refundValue(t) {
 // below it. The book quotes this beside the tier's own price, so the two numbers
 // answer the two questions a player actually has — what does the next step cost,
 // and what do I get back if I change my mind.
-export function refundOf(tiers, tier) {
-  const spent = tiers.slice(0, tier).reduce((sum, d) => sum + d.cost, 0);
+// TAKES THE DEF, NOT THE TIER NUMBER, and that changed when archery forked.
+//
+// It used to slice the array — `tiers.slice(0, tier)` — which quietly assumed
+// index n holds tier n+1. Two tier 4s in one array breaks that: slicing to 4 for
+// the Crossbow Sentry would have summed the Musketeer Post's price instead of
+// its own and quoted the wrong refund on the card.
+//
+// So it sums the rungs BELOW this one by their tier number and adds this def's
+// own cost. That reads the same on a straight ladder and stays right on a forked
+// one — as long as the fork is at the top, which is the assumption
+// tools/families.mjs is there to hold.
+export function refundOf(tiers, def) {
+  const spent = tiers.reduce((sum, d) => sum + (d.tier < def.tier ? d.cost : 0), 0) + def.cost;
   return Math.floor(spent * REFUND_RATE);
 }
 
@@ -151,25 +162,58 @@ function buildItems() {
 //
 // A barracks gets a third button, south, for moving its rally point. South
 // rather than north because north is where the roof and the muster rings are.
-function towerItems(t) {
-  const next = t.fam.tiers[t.def.tier];
 
-  const items = [
-    {
-      angle: E,
-      act: 'upgrade',
-      // A TIER MAY BRING ITS OWN PICTURE, which is what `glyph` on a def is for.
-      // Every rung of every ladder uses the generic arrow, because "one better
-      // than what you have" is what the button means — except the Musketeer Post,
-      // which is a named tower rather than a rung and has an icon of its own. The
-      // fallback keeps that a one-word opt-in per tier.
-      glyph: next ? (next.glyph || 'up') : 'max',
-      label: next ? 'Upgrade' : 'Max',
-      cost: next ? next.cost : null,
-      tier: next ? next.tier : null,
-      gain: null,
-      available: !!next
-    },
+// The two angles a FORKED upgrade uses, north-east and south-east. East itself is
+// left empty between them, so the pair reads as one direction splitting rather
+// than as two unrelated buttons — upgrade is still east, there are simply two of
+// it. They sit on the ordinary ring, not the ability ring, and the two never
+// appear together: a tower with a choice has no abilities yet, and one with
+// abilities has no choice left.
+const FORK_ANGLES = [-Math.PI / 4, Math.PI / 4];
+
+function towerItems(t) {
+  // ONE ENTRY, TWO, OR NONE. Archery forks at tier 3 — a Crossbow Tower buys
+  // either a Musketeer Post or a Crossbow Sentry — so what follows a tower is a
+  // LIST now. See upgradesFrom in data/towers.js for why it is asked by tier
+  // number rather than by array index.
+  const next = upgradesFrom(t.fam, t.def);
+
+  const items = next.length
+    ? next.map((n, i) => ({
+        // One button due east while there is only one thing to buy, which is
+        // every ladder but archery and archery below tier 3. The fork splits it.
+        angle: next.length === 1 ? E : FORK_ANGLES[i],
+        act: 'upgrade',
+        // WHICH TIER THIS BUTTON BUYS, carried on the item rather than looked up
+        // again when it is pressed. With one answer the lookup was harmless; with
+        // two, the button is the only thing that knows which of them the player
+        // aimed at.
+        to: n,
+        // A TIER MAY BRING ITS OWN PICTURE, which is what `glyph` on a def is for.
+        // Every rung of every ladder uses the generic arrow, because "one better
+        // than what you have" is what the button means. Both tier 4s on the
+        // archery fork name their own, and they have to: a fork whose two buttons
+        // wore the same arrow would be a coin toss.
+        glyph: n.glyph || 'up',
+        label: 'Upgrade',
+        cost: n.cost,
+        tier: n.tier,
+        gain: null,
+        available: true
+      }))
+    : [{
+        angle: E,
+        act: 'upgrade',
+        to: null,
+        glyph: 'max',
+        label: 'Max',
+        cost: null,
+        tier: null,
+        gain: null,
+        available: false
+      }];
+
+  items.push(
     {
       angle: W,
       act: 'refund',
@@ -179,8 +223,7 @@ function towerItems(t) {
       cost: null,
       gain: refundValue(t),
       available: true
-    }
-  ];
+    });
 
   if (t.def.soldier) {
     items.push({

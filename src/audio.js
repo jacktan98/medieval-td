@@ -196,6 +196,10 @@ const paths = {
   // data/towers.js — so there is no third.
   musketeer_shot:   'assets/audio/sfx/Musketeer_shot.mp3',
   musketeer_kill_enemy: 'assets/audio/sfx/Musketeer_kill_enemy.mp3',
+  // The Crossbow Sentry's pair, on exactly the same split: the bow loosing every
+  // time it fires, and a separate line for a crossbowman finishing somebody.
+  crossbow_shot:    'assets/audio/sfx/Crossbow_bolt_shot.mp3',
+  crossbowman_kill_enemy: 'assets/audio/sfx/Crossbowman_kill_enemy.mp3',
   // The ballista. The same pair again, and the third weapon in the game to have
   // them: the bolt going off every time one is loosed, and a separate line for
   // the engineer taking a man down. A bolt arriving is silent — see the two flags
@@ -290,7 +294,14 @@ const paths = {
   // told what to shoot at, rather than borrowing a monastery line.
   pope_1:          'assets/audio/voice/Pope_1.mp3',
   pope_2:          'assets/audio/voice/Pope_2.mp3',
-  pope_3:          'assets/audio/voice/Pope_3.mp3'
+  pope_3:          'assets/audio/voice/Pope_3.mp3',
+  // The Crossbow Sentry's own three, and the first voice belonging to a tier that
+  // shares its number with another. Same terms as the other four tier 4s: it
+  // answers when it is built and when its standing order changes rather than
+  // borrowing an archer's line.
+  crossbowman_1:   'assets/audio/voice/Crossbowman_1.mp3',
+  crossbowman_2:   'assets/audio/voice/Crossbowman_2.mp3',
+  crossbowman_3:   'assets/audio/voice/Crossbowman_3.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -390,6 +401,10 @@ export const CUE = {
   // The Judgement Temple's, keyed the same way off the `voice` field on monastery
   // tier 4 — the fourth and last tier with lines of its own.
   pope:         ['pope_1', 'pope_2', 'pope_3'],
+  // The Crossbow Sentry's, keyed off the `voice` field on its tier like the four
+  // above it. Archery is the only ladder with two of these now, and nothing here
+  // had to learn that: a tier names its own cue or falls through to its family.
+  crossbowman:  ['crossbowman_1', 'crossbowman_2', 'crossbowman_3'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -406,6 +421,12 @@ export const CUE = {
   // at close range is a different event to watch than an arrow finding him
   // across the map, and telling them apart by ear is most of what these are for.
   ballistaKill: ['ballista_kill_enemy'],
+  // A quarrel finishing a man. Its own line for the same reason the rock, the
+  // ball and the bolt have theirs — and it is the one the owner asked for by
+  // name. It is why the quarrel is its own ammunition rather than an arrow with
+  // a different picture: `killedBy` is the ammo's `kind`, so sharing the arrow
+  // would have meant sharing the cry.
+  crossbowKill: ['crossbowman_kill_enemy'],
   // A missile from the temple finishing a man, and the fifth thing with its own
   // kill line. The other three monastery tiers still share the arrow's, which is
   // the same split the barracks has: one line for the family, one for its tier 4.
@@ -436,6 +457,10 @@ export const ARCANE = ['arcane_shot'];
 // reason: it is a thing that happens rather than a thing announced, and two posts
 // firing at once are two events the player is watching.
 export const MUSKET = ['musketeer_shot'];
+// A crossbow loosing. Category B beside the bow, the staff and the musket, and
+// for the same reason: it is a thing that happens rather than a thing announced,
+// and two sentries firing at once are two events the player is watching.
+export const CROSSBOW = ['crossbow_shot'];
 // A ballista loosing. Category B beside the bow, the staff and the musket, and
 // for the same reason: it is a thing that happens rather than a thing announced,
 // and two turrets firing at once are two events the player is watching.

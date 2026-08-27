@@ -1,7 +1,7 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS, SCALE } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
-import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT } from './audio.js';
+import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW } from './audio.js';
 
 // What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
 // projectiles.js, and it is a table for the same reason that one is: "what does
@@ -20,7 +20,8 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT } from './audio.js';
 // noise, a quarter louder, so what he needed was a kind of his own for the KILL
 // cry — see src/enemies.js — and no new sound at all. The loudness rides on the
 // ammunition as `fireGain`.
-const FIRING = { arrow: SHOT, arcane: ARCANE, judgement: ARCANE, bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT };
+const FIRING = { arrow: SHOT, arcane: ARCANE, judgement: ARCANE, bullet: MUSKET,
+                 deadeye: DEADEYE, bolt: BOLT, quarrel: CROSSBOW };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the

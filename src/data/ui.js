@@ -165,6 +165,9 @@ export const ui = {
   // that cannot be used. 66x90 source, an upright mark like the cross above it,
   // so it takes the shared box and lands 19x26 rather than filling it.
   glyph_max:    { trim: [223, 211, 66, 90], fit: GLYPH_BOX },
+  // The Crossbow Sentry's upgrade button. Wider than it is tall, like the
+  // musket's, because the drawing is a crossbow lying across the disc.
+  glyph_sentry: { trim: [198, 201, 116, 110], fit: GLYPH_BOX },
   // THE FOUR ABILITY BUTTONS, and they are the only entries here that are a whole
   // BUTTON rather than a mark to put on one.
   //
@@ -322,6 +325,9 @@ export const GLYPH_ART = {
   catapult: 'glyph_catapult',
   cross: 'glyph_cross',
   up: 'glyph_up',
+  // The Crossbow Sentry's, beside the musket's. Archery's tier 3 shows both at
+  // once, which is why neither of them can wear the generic arrow.
+  sentry: 'glyph_sentry',
   // The button a tier 4 tower shows where its upgrade would be. It keeps the
   // dimming it already had — there is nothing to buy and it does not answer a
   // tap — and the drawing says WHY it is dead rather than showing a greyed-out

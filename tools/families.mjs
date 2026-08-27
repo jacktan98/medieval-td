@@ -300,7 +300,16 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
     'and pays for it in ground covered',
     `${dps(t4).toFixed(1)} a second against ${dps(t3).toFixed(1)}, over ${((t4.splash * t4.range) / (t3.splash * t3.range) * 100).toFixed(0)}% of the reach x blast`);
 
-  const spend = fam => fam.reduce((sum, d) => sum + d.cost, 0);
+  // WHAT ONE TOWER COSTS TO TAKE TO THE TOP, not what the array adds up to.
+  // Archery forks, so its five entries include two fourth rungs and nobody ever
+  // buys both — summing the array would have charged a player 730g for a ladder
+  // whose dearest path is 530. The path is: every rung below the top, plus the
+  // dearest of the top ones.
+  const spend = fam => {
+    const top = Math.max(...fam.map(d => d.tier));
+    const below = fam.filter(d => d.tier < top).reduce((sum, d) => sum + d.cost, 0);
+    return below + Math.max(...fam.filter(d => d.tier === top).map(d => d.cost));
+  };
   ok(spend(siege) > spend(archery) && spend(siege) > spend(barracks),
     'and is the dearest ladder there is',
     `${spend(siege)}g against ${spend(archery)}g and ${spend(barracks)}g`);
@@ -344,7 +353,16 @@ console.log('\nMonastery tier 4 — the same tower, harder\n');
   ok(dps(t4) > dps(t3), 'so its output rises with the blow and nothing else',
     `${dps(t4).toFixed(1)} a second against ${dps(t3).toFixed(1)}`);
 
-  const spend = fam => fam.reduce((sum, d) => sum + d.cost, 0);
+  // WHAT ONE TOWER COSTS TO TAKE TO THE TOP, not what the array adds up to.
+  // Archery forks, so its five entries include two fourth rungs and nobody ever
+  // buys both — summing the array would have charged a player 730g for a ladder
+  // whose dearest path is 530. The path is: every rung below the top, plus the
+  // dearest of the top ones.
+  const spend = fam => {
+    const top = Math.max(...fam.map(d => d.tier));
+    const below = fam.filter(d => d.tier < top).reduce((sum, d) => sum + d.cost, 0);
+    return below + Math.max(...fam.filter(d => d.tier === top).map(d => d.cost));
+  };
   ok(spend(monastery) > spend(archery) && spend(monastery) > spend(barracks) && spend(monastery) < spend(siege),
     'and the ladder is the second dearest there is',
     `${spend(monastery)}g against artillery's ${spend(siege)}g, archery's ${spend(archery)}g, the barracks' ${spend(barracks)}g`);

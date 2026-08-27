@@ -377,9 +377,27 @@ export function enemyCards() {
 // `detail` in data/abilities.js.
 export function abilityCards() {
   return ABILITIES.map((def, i) => ({
-    def, ...shelfRect(i % COLUMNS, Math.floor(i / COLUMNS))
+    def, ...shelfRect(Math.floor(i / ABILITY_ROWS), i % ABILITY_ROWS)
   }));
 }
+
+// DOWN THE COLUMN, NOT ACROSS THE ROW, and that is the owner's change: a family's
+// abilities now sit under one another in the family's own column, in the same
+// left-to-right order the build menu and the tower pages use — archery, barracks,
+// artillery, monastery.
+//
+// It flowed across before, which put Burst Fire and Deadeye side by side in row 1
+// and Far Shot and Heavy Bolt side by side in row 2. That reads as four rows of
+// unrelated pairs; every other page in the book reads as four columns of
+// families, and this one now does too — so a player who has learned that the
+// third column is artillery finds artillery's abilities in the third column.
+//
+// TWO PER FAMILY IS NOT ASSUMED. The layout is "fill a column, then start the
+// next", so a family taught a third would take three rows of its own column and
+// push nothing sideways. What it does assume is that ABILITIES is grouped by
+// tower, which tools/book.mjs checks — an ungrouped list would interleave two
+// families down one column.
+const ABILITY_ROWS = 2;
 
 // The picture slot on an ability card. A button rather than a figure or a
 // building, so it is neither anchored on a shadow nor scaled against anything —
@@ -653,7 +671,7 @@ export function towerEntry(def, tiers) {
       : null,
     occupier: `${man.count} x ${man.name}`,
     cost: def.cost,
-    refund: refundOf(tiers, def.tier)
+    refund: refundOf(tiers, def)
   };
 }
 

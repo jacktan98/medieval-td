@@ -124,9 +124,17 @@ export function units() {
     for (const def of fam.tiers || []) {
       const man = def.soldier;
       out.push({
-        id: `${fam.id}/${def.tier}`,
+        // KEYED BY THE TOWER'S OWN NAME, not by its tier number, and that changed
+        // when archery grew a second tier 4. `archery/4` named two rows the day
+        // the Crossbow Sentry landed, and this id is what an edit is SAVED under
+        // — so a clash is not a duplicate row, it is two towers sharing one
+        // stored damage number. Names are unique across the game and stable
+        // across a re-tiering, which the number was not.
+        id: `${fam.id}/${def.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
         name: man ? man.name : def.unit,
-        of: `${fam.name} T${def.tier}`,
+        // The tower rather than the rung, for the same reason: two rows reading
+        // "Archery T4" tells the reader nothing about which is which.
+        of: def.tier === 4 ? def.name : `${fam.name} T${def.tier}`,
         // The object the numbers actually live on, which is the SOLDIER for a
         // barracks and the TIER itself for everyone else. Held as a reference so
         // an edit lands on the same object the fight reads from.

@@ -1,7 +1,7 @@
 import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
-import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE, upgradesFrom } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
@@ -549,7 +549,13 @@ function drawRangeDisc(ctx, t) {
   // drawing that has to say so — a tower shooting further than its own ring reads
   // as the ring being broken.
   const r = rangeOf(t);
-  const next = t.fam.tiers[t.def.tier];
+  // THE FURTHEST OF THEM, where a ladder forks. Archery's tier 3 offers a
+  // Musketeer Post at 480 and a Crossbow Sentry at 330, and drawing both dotted
+  // rings would say "one of these" where the ring is meant to say "further than
+  // this". The outer one is the honest single answer: it is the most the upgrade
+  // button in front of you can buy.
+  const next = upgradesFrom(t.fam, t.def)
+    .reduce((best, d) => (!best || d.range > best.range ? d : best), null);
 
   // The reach the upgrade would buy, as a dotted ring outside the solid one.
   //

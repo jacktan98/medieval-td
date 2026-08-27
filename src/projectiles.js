@@ -111,7 +111,18 @@ function land(state, s) {
   if (!s.splash) {
     // Nothing left to hit: a steered shot cannot arrive at a dead man, but an
     // unsteered one with no splash can.
-    if (s.target.hp > 0) hit(state, s, s.target);
+    //
+    // AND NOT AT A MAN WHO IS MUSTERING EITHER. This path never had the flask's
+    // respawn bug — it has no respawn test to get wrong — but it was relying on
+    // one to be unnecessary: a soldier's hp stays at or below zero for the whole
+    // of his respawn, so `hp > 0` happened to cover it. That is a coincidence
+    // between two files rather than a rule, and it is one line to say outright.
+    //
+    // WRITTEN AS `!(x > 0)` rather than `x <= 0`, which is the part that matters:
+    // this same line lands every tower's arrow, and the target is then an ENEMY,
+    // which carries no respawn field at all. `undefined <= 0` is false and would
+    // have silently switched off every bow in the game.
+    if (s.target.hp > 0 && !(s.target.respawn > 0)) hit(state, s, s.target);
     return;
   }
 

@@ -28,6 +28,10 @@ export const paths = {
   // with the other three. The KEY stays tiered because the code reaches it through
   // a tier — `archery[3].sprite` — which is the same split every unit file has.
   archery_t4:  'assets/towers/archery/Musketeer_Post.png',
+  // The ladder's SECOND tier 4, and the first key that is a letter rather than a
+  // number. There is no tier 5 to call it: a Crossbow Tower buys either of these
+  // two, so they are 4 and 4b rather than 4 and 5.
+  archery_t4b: 'assets/towers/archery/Crossbow_Sentry_Tower.png',
   barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
   barracks_t3: 'assets/towers/barracks/Barracks_Tower_T3.png',
@@ -114,6 +118,10 @@ export const paths = {
   // the encyclopedia both print his name rather than his tier.
   musketeer:          'assets/units/Musketeer_Default.png',
   musketeer_attack:   'assets/units/Musketeer_Attack.png',
+  // The other tier 4 man, on the same terms: named for himself rather than for a
+  // tier, because the ladder has two fourth rungs and neither owns the number.
+  crossbowman:        'assets/units/Crossbowman_Default.png',
+  crossbowman_attack: 'assets/units/Crossbowman_Attack.png',
   // The Deadeye pose, and the first drawing in the game that belongs to an ABILITY
   // rather than to a man or a machine. It is a third pose of the same musketeer —
   // measured on the same shadow, so he does not step sideways when he swaps to it —
@@ -173,6 +181,10 @@ export const paths = {
   // carries no tier number — unlike the rocks and the missiles, which have three
   // each.
   bullet:      'assets/projectiles/Musketeer_Bullet.png',
+  // The Crossbow Sentry's quarrel. An arrow's shape of drawing — flat, nose left
+  // — but its own file and its own `kind`, which is what gives it its own shot
+  // and kill lines. See `quarrel` in data/towers.js.
+  quarrel:     'assets/projectiles/Crossbow_Sentry_Bolt.png',
   // Deadeye's ball: the same lead, drawn four times the size with a flame behind
   // it. A second file rather than the first one scaled up, because it is a
   // different drawing and not a bigger one — see `deadeyeBall` in
@@ -349,6 +361,9 @@ export const paths = {
   // like any unavailable button: the picture says "this is the top of the
   // ladder" and the dimming says "so there is nothing to press".
   glyph_max:       'assets/ui/Maxed_Icon.png',
+  // The Crossbow Sentry's own upgrade button, beside the Musketeer Post's. Two
+  // tier 4s on one ring means neither can wear the generic arrow.
+  glyph_sentry:    'assets/ui/Crossbow_Sentry_Icon.png',
   // The reach stat, beside the sword on every card that shows one. The first
   // stat icon added since the heart and the sword, and it goes through the same
   // `ui` table and the same drawUi they do.
