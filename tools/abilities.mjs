@@ -24,11 +24,12 @@
 // numbers are quoted in the comments in data/abilities.js and in the encyclopedia,
 // and a comment that has drifted from the code is worse than no comment.
 
-import { updateTowers, rangeOf, framesOf, auras, boost } from '../src/towers.js';
+import { updateTowers, rangeOf, framesOf, cooldownOf, gunnerOf, auras, boost } from '../src/towers.js';
 import { updateUnits, makeUnits } from '../src/units.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
+import { paths } from '../src/assets.js';
 import { nearestOnPath } from '../src/units.js';
 
 let bad = 0;
@@ -70,6 +71,20 @@ function turret(ids) {
     x: plot.x, y: plot.y,
     aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
     aimMode: 0, spent: 610, rally: null,
+    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
+    hit: [], locked: null, hold: 0
+  };
+}
+
+// A Crossbow Sentry, on the same terms as turret() above: archery[4], because
+// the ladder forks and both fourth rungs live in one array.
+function sentry(ids) {
+  const plot = level.plots[0];
+  return {
+    plot, fam: { id: 'archery' }, def: archery[4],
+    x: plot.x, y: plot.y,
+    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
+    aimMode: 0, spent: 490, rally: null,
     abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
     hit: [], locked: null, hold: 0
   };
@@ -553,17 +568,17 @@ console.log('\nWhat a dead man forgets\n');
     `${u.healCd.toFixed(2)}s left of ${abilityById('light').refresh}`);
 }
 
-console.log('\nFar Shot\n');
+console.log('\nReinforced Tension\n');
 
 {
   const plain = turret([]);
-  const far = turret(['farshot']);
-  const shot = abilityById('farshot');
+  const far = turret(['ballista_tension']);
+  const shot = abilityById('ballista_tension');
 
   ok(rangeOf(plain) === siege[3].range, 'an untaught turret reaches what its tier says',
     `${rangeOf(plain)}`);
   ok(rangeOf(far) === Math.round(siege[3].range * shot.rangeTimes),
-    'and one that has bought Far Shot reaches further',
+    'and one that has bought Reinforced Tension reaches further',
     `${rangeOf(far)} against ${rangeOf(plain)}`);
   // SECOND-LONGEST IN THE GAME, and no longer level with the Musketeer Post — the
   // owner brought it down from the Post's own 480. What the check asks is the
@@ -646,16 +661,16 @@ console.log('\nHeavy Bolt\n');
 console.log('\nBoth of them, on one turret\n');
 
 {
-  const both = turret(['farshot', 'heavybolt']);
+  const both = turret(['ballista_tension', 'heavybolt']);
   const heavy = abilityById('heavybolt');
 
   // THE OWNER'S OWN CONDITION: buy both and both pictures are used. They are
   // independent — one changes the machine, the other changes what leaves it — so
   // the check is that neither swallows the other.
-  ok(rangeOf(both) === Math.round(siege[3].range * abilityById('farshot').rangeTimes),
+  ok(rangeOf(both) === Math.round(siege[3].range * abilityById('ballista_tension').rangeTimes),
     'it reaches the far distance',
     `${rangeOf(both)}`);
-  ok(framesOf(both.def, both).join() === abilityById('farshot').frames.join(),
+  ok(framesOf(both.def, both).join() === abilityById('ballista_tension').frames.join(),
     'and is drawn in iron');
 
   const shots = fire(both, siege[3].cooldown * heavy.every - 0.1);
@@ -790,6 +805,64 @@ console.log('\nWhat gold buys\n');
   ok(owns(t, 'burst') && !owns(t, 'deadeye'), 'a tower owns what it bought and no more');
   ok(t.spent === before + ABILITY_COST, 'and the price goes into what it can refund',
     `${before} then ${t.spent}`);
+}
+
+console.log('\nThe Crossbow Sentry\'s two\n');
+
+{
+  const plain = sentry([]);
+  const steel = sentry(['sentry_tension']);
+  const quick = sentry(['swift']);
+  const both  = sentry(['sentry_tension', 'swift']);
+  const tension = abilityById('sentry_tension');
+
+  ok(rangeOf(plain) === archery[4].range, 'an untaught sentry reaches what its tier says',
+    `${rangeOf(plain)}`);
+  ok(rangeOf(steel) === Math.round(archery[4].range * tension.rangeTimes),
+    'and one that has bought Reinforced Tension reaches further',
+    `${rangeOf(steel)} against ${rangeOf(plain)}`);
+
+  // THE STANDARDISATION, and it is the whole reason the tier's own range came
+  // down to 260: the owner wants one ability with one answer on both bows. Two
+  // different towers, two different tiers, the same 390 once it is bought.
+  const far = turret(['ballista_tension']);
+  ok(rangeOf(steel) === rangeOf(far),
+    'and lands on exactly the reach a Ballista Turret buys',
+    `${rangeOf(steel)} both`);
+  ok(abilityById('sentry_tension').name === abilityById('ballista_tension').name &&
+     abilityById('sentry_tension').rangeTimes === abilityById('ballista_tension').rangeTimes,
+    'under the same name and the same multiple',
+    `${tension.name}, x${tension.rangeTimes}`);
+
+  // SWIFT RELOAD, the one absolute in the game. Read through cooldownOf rather
+  // than off the ability, so what is checked is the path the shot loop takes.
+  ok(cooldownOf(plain) === archery[4].cooldown, 'an untaught sentry reloads at its tier\'s rate',
+    `${cooldownOf(plain)}s`);
+  ok(cooldownOf(quick) === abilityById('swift').cooldown,
+    'and Swift Reload sets the rate rather than scaling it',
+    `${cooldownOf(quick)}s against ${cooldownOf(plain)}s`);
+  ok(cooldownOf(quick) < cooldownOf(plain), 'and it is a decrease, not an increase',
+    `${cooldownOf(quick)} < ${cooldownOf(plain)}`);
+
+  // THEY STACK RATHER THAN COMPETE, which is the claim the prose makes.
+  ok(rangeOf(both) === rangeOf(steel) && cooldownOf(both) === cooldownOf(quick),
+    'and the two together are both of them',
+    `${rangeOf(both)}px every ${cooldownOf(both)}s`);
+
+  // THE PICTURE FOLLOWS THE RULE, the same way the ballista's frames do: a man
+  // shooting 390 with a timber bow would be the board disagreeing with the fight.
+  ok(gunnerOf(plain) === null, 'an untaught crossbowman keeps his timber bow');
+  ok(gunnerOf(steel) && gunnerOf(steel).sprite === 'crossbowman_steel' &&
+     gunnerOf(steel).attack === 'crossbowman_steel_attack',
+    'and Reinforced Tension redraws BOTH his poses in steel',
+    gunnerOf(steel).sprite);
+  ok(gunnerOf(quick) === null, 'while Swift Reload leaves the drawing alone');
+
+  // AND THE STEEL PAIR REGISTERS ON THE TIMBER PAIR. Same trims to the pixel, so
+  // the swap cannot move him — the artist's promise, checked rather than trusted.
+  // tools/shadow.mjs holds the other half, that both shadows land on one pixel.
+  const A = paths['crossbowman'], B = paths['crossbowman_steel'];
+  ok(!!A && !!B, 'and both pairs are wired to files', `${A} / ${B}`);
 }
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);

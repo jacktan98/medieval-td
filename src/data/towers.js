@@ -1160,7 +1160,7 @@ export const archery = [
   // the upgrade buys is the blow and the reach. The two of them are still the
   // quickest things in the game.
   { ...sentry, ...crossbowman, tier: 4, name: 'Crossbow Sentry', title: 'Crossbow Sentry',
-    unit: 'Crossbowman', cost: 200, damage: 30, range: 300, cooldown: 0.80,
+    unit: 'Crossbowman', cost: 200, damage: 30, range: 260, cooldown: 0.80,
     colour: '#A8A29A', targeting: true,
     // Its own picture on the upgrade button, like the Musketeer Post's — with two
     // of them on the ring, a generic arrow on both would be a coin toss.
@@ -1168,7 +1168,11 @@ export const archery = [
     // Its own three lines, on the same terms as every other tier 4: it answers
     // when it is built and when its standing order changes rather than borrowing
     // an archer's. See familyCue in src/audio.js.
-    voice: 'crossbowman' }
+    voice: 'crossbowman',
+    // A steel bow and a windlass. The first is deliberately the same ability the
+    // Ballista Turret has, down to the name and the 1.5x — see the note on the
+    // ids in data/abilities.js.
+    abilities: ['sentry_tension', 'swift'] }
 ];
 
 // WHAT A TOWER CAN BECOME NEXT, and the reason it is a function rather than an
@@ -2012,7 +2016,7 @@ export const siege = [
     // is neither a rhythm nor a reaction — it is bought and the tower is simply
     // better afterwards — and Heavy Bolt is the first to double a number rather
     // than replace it.
-    abilities: ['farshot', 'heavybolt'] }
+    abilities: ['ballista_tension', 'heavybolt'] }
 ];
 
 // --- monastery -----------------------------------------------------------------

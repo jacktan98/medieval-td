@@ -290,6 +290,70 @@ export const ABILITIES = [
             '1 thing on the road that has to die and cannot be chipped down.'
   },
   {
+    // THE SAME ABILITY ON THE OTHER BOW, and deliberately the same in every part
+    // the player can read: the same name, the same 1.5x, the same sentence about
+    // rebuilding it in steel. The owner is standardising it across the two towers
+    // that are bows, so a player who has bought it on one knows exactly what it
+    // does on the other without opening the book again.
+    //
+    // AND THE NUMBERS LAND ON THE SAME PLACE, which is what makes the
+    // standardisation more than a name: the Sentry's 260 x 1.5 is 390, the
+    // Ballista Turret's 260 x 1.5 is 390. Two different towers, one reach, bought
+    // the same way. That is why the tier's own range came down from 300 to 260 in
+    // the same change.
+    id: 'sentry_tension',
+    name: 'Reinforced Tension',
+    of: 'Crossbow Sentry',
+    icon: 'ability_sentry_tension',
+    cost: ABILITY_COST,
+    rangeTimes: 1.5,
+    // AND THE MAN IS RE-DRAWN WITH A STEEL BOW, which is the figure's version of
+    // what `frames` does for the ballista's machine. Both of his poses are
+    // swapped, because he has two and the swap has to hold whichever one he is
+    // showing — see gunnerOf() in src/towers.js. The artist drew them to the same
+    // trims and the same shadow pixel as the timber pair, so nothing moves.
+    gunner: { sprite: 'crossbowman_steel', attack: 'crossbowman_steel_attack' },
+
+    detail: 'The engineers rebuild the bow in steel and the sentry reaches 390px ' +
+            'instead of 260 — level with a Ballista Turret that has bought the ' +
+            'same thing, and behind only the Musketeer Post.\n\n' +
+            'Nothing else changes: the same quarrel, the same 0.8 second reload, ' +
+            'the same 30 a bolt. The crossbowman is drawn with a steel bow from ' +
+            'the moment it is bought.'
+  },
+  {
+    // THE ONLY ABILITY IN THE GAME THAT SETS A NUMBER RATHER THAN SCALING ONE,
+    // and that is the owner's wording: "decrease shooting cooldown to 0.50".
+    //
+    // Every other magnitude here is a multiplier, on the reasoning that a tower's
+    // own stat should carry through — 5% of whatever this tier hits for. A reload
+    // is the one stat where the player is asking for a RATE rather than a
+    // proportion of one, and 0.50 said as 0.625x would be a number nobody can
+    // check against the card. cooldownOf() in src/towers.js reads it the way
+    // rangeOf() reads `range`, which has taken an absolute since Far Shot was
+    // written.
+    //
+    // WHAT IT BUYS: 30 every 0.5s is 60 a second, against 37.5. That is the
+    // biggest single output jump any ability in the game hands out, and it is on
+    // the tower with the smallest blow — which is the shape of the thing. It
+    // stacks with the range ability rather than competing, so a Sentry with both
+    // is 60 a second at 390.
+    id: 'swift',
+    name: 'Swift Reload',
+    of: 'Crossbow Sentry',
+    icon: 'ability_swift',
+    cost: ABILITY_COST,
+    cooldown: 0.50,
+
+    detail: 'The crossbowman works a windlass instead of a belt hook and looses ' +
+            'every 0.5 seconds instead of every 0.8 — 60 damage a second where ' +
+            'the sentry alone does 37.5.\n\n' +
+            'The largest jump in output any ability buys, on the tower with the ' +
+            'smallest blow. Nothing else changes: the same 30 a quarrel, the same ' +
+            'reach, and it stacks with Reinforced Tension rather than competing ' +
+            'with it.'
+  },
+  {
     id: 'light',
     name: 'Holy Light',
     of: 'Paladin Keep',
@@ -384,10 +448,17 @@ export const ABILITIES = [
             'out rather than all at once.'
   },
   {
-    id: 'farshot',
-    name: 'Far Shot',
+    // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its
+    // tower. The Crossbow Sentry has the same thing under the same name with the
+    // same number — the owner is standardising it across the two weapons that are
+    // bows — but each one is a separate entry, because the icon is a picture of
+    // ITS tower and the prose describes its own reach. So the id has to carry
+    // which of them it is; every other ability in the game is unique to one
+    // tower and gets away with a bare word.
+    id: 'ballista_tension',
+    name: 'Reinforced Tension',
     of: 'Ballista Turret',
-    icon: 'ability_farshot',
+    icon: 'ability_ballista_tension',
     cost: ABILITY_COST,
     // THE FIRST ABILITY THAT IS NEITHER A RHYTHM NOR A REACTION. It has no
     // `every` and no trigger at all: it is bought, and from then on the tower
@@ -414,7 +485,7 @@ export const ABILITIES = [
     // nothing — see the note beside them in src/assets.js. `frames` is read by
     // framesOf() in src/towers.js, which prefers what the tower OWNS over what the
     // tier ships with.
-    frames: ['artillery_t4_far', 'artillery_t4_reload_far', 'artillery_t4_fire_far'],
+    frames: ['artillery_t4_tension', 'artillery_t4_reload_tension', 'artillery_t4_fire_tension'],
 
     detail: 'The engineers rebuild the bow in steel and the turret reaches 390px ' +
             'instead of 260 — the second-longest arm in the game, behind only the ' +

@@ -269,6 +269,13 @@ const SPRITES = [
   // ladder forks, and both fourth rungs live in the same array.
   ['assets/units/Crossbowman_Default.png', 'crossbowman.gunnerPivot',  towers.archery[4].gunnerTrim, towers.archery[4].gunnerPivot],
   ['assets/units/Crossbowman_Attack.png',  'crossbowman.attack.pivot', towers.archery[4].attack.trim, towers.archery[4].attack.pivot],
+  // AND THE SAME MAN WITH A STEEL BOW, against the TIMBER pair's own trims and
+  // pivots — which is the check rather than a repetition of it. Reinforced
+  // Tension swaps which two files are drawn and changes nothing else, so if the
+  // artist ever moves the steel shadow the crossbowman will jump the moment the
+  // ability is bought, and this is the only thing that would say so.
+  ['assets/units/Crossbowman_Default_Reinforced_Tension.png', 'crossbowman steel Default', towers.archery[4].gunnerTrim, towers.archery[4].gunnerPivot],
+  ['assets/units/Crossbowman_Attack_Reinforced_Tension.png',  'crossbowman steel Attack',  towers.archery[4].attack.trim, towers.archery[4].attack.pivot],
   // AND HIS THIRD POSE, the one Deadeye buys. It is in the pair rule for exactly
   // the same reason the other two are, and the reason is stronger here: this pose
   // is swapped in for a whole second at a time, so a shadow half a pixel out would

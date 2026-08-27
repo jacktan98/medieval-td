@@ -7,7 +7,7 @@ import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
-         machineBox, machineFlip, crownTop } from './towers.js';
+         machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -919,7 +919,13 @@ function drawCamp(ctx, t, box) {
 function drawGunner(ctx, t) {
   const d = t.def;
   const m = mountPoint(t);
-  const img = art[d.gunner];
+  // A STEEL BOW IF ONE WAS BOUGHT, and both poses swap together — see gunnerOf
+  // in towers.js. Only the sprite keys change: the artist drew the pair to the
+  // timber pair's own trims and shadow, so the trim, the pivot and the muzzle
+  // below are still the tier's.
+  const swap = gunnerOf(t);
+  const attack = swap ? { ...d.attack, sprite: swap.attack } : d.attack;
+  const img = art[swap ? swap.sprite : d.gunner];
 
   if (!img) {
     ctx.fillStyle = '#E0D6C2';
@@ -942,7 +948,7 @@ function drawGunner(ctx, t) {
   // up, which is exactly what "use the Attack image" asked for.
   const held = t.hold > 0 && t.special ? t.special.pose : null;
   const [frame, trim, pivot] =
-    pose(d.attack, t.recoil > 0 || t.hold > 0, img, d.gunnerTrim, d.gunnerPivot, held);
+    pose(attack, t.recoil > 0 || t.hold > 0, img, d.gunnerTrim, d.gunnerPivot, held);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;

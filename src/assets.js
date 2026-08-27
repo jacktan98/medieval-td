@@ -74,12 +74,12 @@ export const paths = {
   artillery_t4:        'assets/towers/artillery/Ballista_Turret_Default.png',
   artillery_t4_reload: 'assets/towers/artillery/Ballista_Turret_Reload.png',
   artillery_t4_fire:   'assets/towers/artillery/Ballista_Turret_Fire.png',
-  // AND THE SAME THREE IN IRON, which is what Far Shot buys. Only the material
+  // AND THE SAME THREE IN IRON, which is what Reinforced Tension buys. Only the material
   // changes — every trim is identical to the timber frame's, to the pixel — so the
   // ability swaps which three files the beat loop draws and nothing else moves.
-  artillery_t4_far:        'assets/towers/artillery/Ballista_Turret_Default_Far_Shot.png',
-  artillery_t4_reload_far: 'assets/towers/artillery/Ballista_Turret_Reload_Far_Shot.png',
-  artillery_t4_fire_far:   'assets/towers/artillery/Ballista_Turret_Fire_Far_Shot.png',
+  artillery_t4_tension:        'assets/towers/artillery/Ballista_Turret_Default_Reinforced_Tension.png',
+  artillery_t4_reload_tension: 'assets/towers/artillery/Ballista_Turret_Reload_Reinforced_Tension.png',
+  artillery_t4_fire_tension:   'assets/towers/artillery/Ballista_Turret_Fire_Reinforced_Tension.png',
   // The monastery, in a folder of its own like every other family. The artist
   // uploaded these loose into assets/towers beside the three family folders, and
   // they were moved rather than wired where they landed — a building lives with
@@ -122,6 +122,13 @@ export const paths = {
   // tier, because the ladder has two fourth rungs and neither owns the number.
   crossbowman:        'assets/units/Crossbowman_Default.png',
   crossbowman_attack: 'assets/units/Crossbowman_Attack.png',
+  // AND THE SAME TWO IN STEEL, which is what Reinforced Tension buys — the same
+  // trick the ballista's three frames play, and it works for the same reason:
+  // only the material changes, so both trims are identical to the timber poses'
+  // to the pixel and both shadows land on the same source pixel. The ability
+  // swaps which two files are drawn and the man does not move.
+  crossbowman_steel:        'assets/units/Crossbowman_Default_Reinforced_Tension.png',
+  crossbowman_steel_attack: 'assets/units/Crossbowman_Attack_Reinforced_Tension.png',
   // The Deadeye pose, and the first drawing in the game that belongs to an ABILITY
   // rather than to a man or a machine. It is a third pose of the same musketeer —
   // measured on the same shadow, so he does not step sideways when he swaps to it —
@@ -344,7 +351,12 @@ export const paths = {
   ability_slash:   'assets/ui/Paladin_Holy_Slash_Icon.png',
   // The Ballista Turret's two, on the same terms: the whole button, drawn on the
   // plate's own disc.
-  ability_farshot: 'assets/ui/Ballista_Turret_Far_Shot_Icon.png',
+  ability_ballista_tension: 'assets/ui/Ballista_Turret_Reinforced_Tension_Icon.png',
+  // The Crossbow Sentry's two. Its Reinforced Tension is a second entry rather
+  // than a shared one because the icon is a picture of ITS weapon — see the note
+  // on the ids in data/abilities.js.
+  ability_sentry_tension:  'assets/ui/Crossbow_Sentry_Reinforced_Tension_Icon.png',
+  ability_swift:           'assets/ui/Crossbow_Sentry_Swift_Reload_Icon.png',
   ability_heavy:   'assets/ui/Ballista_Turret_Heavy_Bolt_Icon.png',
   // The Judgement Temple's two, and they come in PAIRS: a button face like every
   // other ability, and a badge drawn on the BOARD over each tower the aura is

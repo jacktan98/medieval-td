@@ -376,28 +376,36 @@ export function enemyCards() {
 // The explaining moved to the POP-UP, which is where there is room for it — see
 // `detail` in data/abilities.js.
 export function abilityCards() {
-  return ABILITIES.map((def, i) => ({
-    def, ...shelfRect(Math.floor(i / ABILITY_ROWS), i % ABILITY_ROWS)
-  }));
+  const col = new Map();   // family index -> how many of its cards are placed
+  return ABILITIES.map(def => {
+    const c = LADDERS.findIndex(tiers => tiers.some(d => d.name === def.of));
+    const row = col.get(c) || 0;
+    col.set(c, row + 1);
+    return { def, ...shelfRect(c, row) };
+  });
 }
 
 // DOWN THE COLUMN, NOT ACROSS THE ROW, and that is the owner's change: a family's
-// abilities now sit under one another in the family's own column, in the same
-// left-to-right order the build menu and the tower pages use — archery, barracks,
-// artillery, monastery.
+// abilities sit under one another in the family's OWN column, the same column it
+// occupies on the towers page and in the same left-to-right order the build menu
+// uses — archery, barracks, artillery, monastery.
 //
 // It flowed across before, which put Burst Fire and Deadeye side by side in row 1
-// and Far Shot and Heavy Bolt side by side in row 2. That reads as four rows of
-// unrelated pairs; every other page in the book reads as four columns of
-// families, and this one now does too — so a player who has learned that the
-// third column is artillery finds artillery's abilities in the third column.
+// and the artillery pair side by side in row 2. That reads as rows of unrelated
+// pairs; every other page in the book reads as four columns of families, and this
+// one now does too — so a player who has learned that the third column is
+// artillery finds artillery's abilities in the third column.
 //
-// TWO PER FAMILY IS NOT ASSUMED. The layout is "fill a column, then start the
-// next", so a family taught a third would take three rows of its own column and
-// push nothing sideways. What it does assume is that ABILITIES is grouped by
-// tower, which tools/book.mjs checks — an ungrouped list would interleave two
-// families down one column.
-const ABILITY_ROWS = 2;
+// THE COLUMN IS THE FAMILY'S, not a running count divided by two, and that is
+// what a second tier 4 forced. Archery teaches FOUR now — two on the Musketeer
+// Post and two on the Crossbow Sentry — so a fixed two rows per column would have
+// flowed archery's third card into the barracks' column and pushed the monastery
+// off the page. Looked up from the ladders instead: `of` names the tower, the
+// tower belongs to a ladder, and the ladder's position is the column. Six rows of
+// room means a family could teach six before this has to be thought about again.
+//
+// It still assumes ABILITIES is GROUPED by tower — two towers interleaved down
+// one column would read as one list — which tools/book.mjs checks.
 
 // The picture slot on an ability card. A button rather than a figure or a
 // building, so it is neither anchored on a shadow nor scaled against anything —

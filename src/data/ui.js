@@ -195,7 +195,11 @@ export const ui = {
   ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_slash:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Ballista Turret's two, measured to the same disc as the four above.
-  ability_farshot: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_ballista_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // The Crossbow Sentry's two, on the same terms: whole buttons on the artist's
+  // own disc, measured to btn_plate's trim like every other ability face.
+  ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Judgement Temple's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The

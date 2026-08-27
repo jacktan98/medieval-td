@@ -243,6 +243,36 @@ export function rangeOf(t) {
   return Math.round(t.def.range * k);
 }
 
+// HOW LONG THIS TOWER TAKES TO RELOAD, which is the tier's number unless an
+// ability it has bought says otherwise. The reload twin of rangeOf above.
+//
+// AN ABSOLUTE, NOT A MULTIPLIER, and Swift Reload is the only thing in the game
+// that hands one out. Every other magnitude is a factor of the stat it changes,
+// so a tower's own number carries through; a reload is the one place the player
+// is asking for a RATE rather than a share of one, and "0.5 seconds" is a thing
+// they can check against the card in a way that "0.625x" is not. rangeOf has
+// taken an absolute the same way since Far Shot.
+//
+// FIRST ONE WINS, like rangeOf's `range`. Nothing today gives a tower two, and
+// two that disagreed would be a data mistake rather than a case to average.
+export function cooldownOf(t) {
+  for (const a of boughtAbilities(t)) if (a.cooldown) return a.cooldown;
+  return t.def.cooldown;
+}
+
+// WHICH PAIR OF DRAWINGS THE MAN ON THE DECK IS SHOWING, or null for the ones
+// the tier ships with. The figure's answer to framesOf below.
+//
+// Reinforced Tension rebuilds the crossbow in steel, which is two files — his
+// standing pose and his loosing pose — and BOTH have to swap or he would change
+// weapon every time he fired. The artist drew them to the same trims and the
+// same shadow pixel as the timber pair, so this is a sprite key and nothing else:
+// no trim, no pivot, no muzzle. See the entry in data/abilities.js.
+export const gunnerOf = t => {
+  for (const a of boughtAbilities(t)) if (a.gunner) return a.gunner;
+  return null;
+};
+
 // Which drawing of the building to show. One-frame towers answer with the only
 // picture they have; a catapult answers with the beat it is on.
 //
@@ -391,7 +421,7 @@ function stepWeapon(state, t, dt, target) {
   if (!shotAt) return;
 
   t.shots = (t.shots || 0) + 1;
-  t.cd = t.def.cooldown;
+  t.cd = cooldownOf(t);
   t.recoil = 1;
 
   const special = specialFor(t, t.shots);
