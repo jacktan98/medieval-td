@@ -383,8 +383,16 @@ console.log('\nMonastery tier 4 — the same tower, harder\n');
 // sentence was decoration.
 console.log('\nBarracks tier 4 — a wall, not a weapon\n');
 {
-  const t4 = barracks[3].soldier;
-  const t3 = barracks[2].soldier;
+  // BY NAME, NOT BY INDEX. The barracks forks at the top the way archery does —
+  // barracks[3] is the Keep and barracks[4] is the Guild only until somebody
+  // writes them in the other order, and every claim below is about one of the two
+  // in particular rather than about "the last one in the array".
+  const named = n => barracks.find(d => d.name === n);
+  const spine = barracks.filter(d => d.tier < 4);
+  const keep = named('Paladin Keep');
+  const guild = named('Assassin Guild');
+  const t4 = keep.soldier;
+  const t3 = spine[spine.length - 1].soldier;
   const dps = m => (m.damage / m.cd) * m.count;
   const wall = m => m.hp * m.count;
 
@@ -413,11 +421,14 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // mustering man, and two abilities nothing below tier 4 can be taught. What it
   // must not be is FAR behind — a rung that is half as efficient is a trap
   // whatever else it carries — so the band is 10% either side of the rung below.
-  const spend = t => barracks.slice(0, t + 1).reduce((sum, d) => sum + d.cost, 0);
-  const per = t => wall(barracks[t].soldier) / spend(t);
-  const gain = per(3) / per(2) - 1;
+  //
+  // What a rung costs is what the WHOLE PATH to it costs — every rung below plus
+  // its own — which is why this walks the spine rather than slicing the array.
+  const paid = d => spine.filter(s => s.tier < d.tier).reduce((sum, s) => sum + s.cost, 0) + d.cost;
+  const per = d => wall(d.soldier) / paid(d);
+  const gain = per(keep) / per(spine[2]) - 1;
   ok(Math.abs(gain) < 0.10, 'and is within a tenth of it per gold, either way',
-    `${per(3).toFixed(2)} against ${per(2).toFixed(2)} per gold, ${gain >= 0 ? '+' : ''}${(gain * 100).toFixed(0)}%`);
+    `${per(keep).toFixed(2)} against ${per(spine[2]).toFixed(2)} per gold, ${gain >= 0 ? '+' : ''}${(gain * 100).toFixed(0)}%`);
 
   // Every rung of this ladder musters the same squad. The muster rings, the
   // formation and tools/formation.mjs are all drawn for three men, and a tier that
@@ -427,21 +438,65 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
     'and still musters the squad every other rung does',
     `${barracks[0].soldier.count} men`);
 
-  // The ladder's own five dials, each one continuing rather than reversing. This
+  // The ladder's own six dials, each one continuing rather than reversing. This
   // is what "the same tower one rung further up" means, and it is the check that
   // a later tune of one number did not put a tier 4 paladin behind a tier 3 knight
   // at something.
+  //
+  // DOWN THE KEEP'S PATH ONLY. The Guild is the other fourth rung and it is not
+  // claiming to be the same man further up — it is claiming a trade, and the
+  // section below is where that claim is checked. Running this over all five would
+  // read the fork as a collapse: 275 health then 150, which is the design.
   const climbs = [
     ['health', m => m.hp, 1], ['damage', m => m.damage, 1],
     ['reload', m => m.cd, -1], ['speed', m => m.speed, 1],
     ['respawn', m => m.respawn, -1], ['regen', m => m.regen, 1]
   ];
-  const men = barracks.map(d => d.soldier);
+  const men = [...spine, keep].map(d => d.soldier);
   for (const [name, pick, dir] of climbs) {
     const rising = men.every((m, i) => i === 0 || (pick(m) - pick(men[i - 1])) * dir > 0);
-    ok(rising, `and its ${name} carries on up the ladder`,
-      men.map(pick).join(' / '));
+    ok(rising, `and its ${name} carries on up the ladder`, men.map(pick).join(' / '));
   }
+
+  // --- and the other fourth rung, which is not that at all ----------------------
+  //
+  // The Assassin Guild costs the Keep's gold on the same plot off the same tier 3
+  // and hands back a squad that is worse at the one thing a barracks is for. That
+  // is deliberate and it is the whole tower, so it is stated as a trade with both
+  // halves checked: a player who reads "tier 4" as "strictly better" and buys it
+  // in front of the giants is meant to be wrong.
+  const g = guild.soldier;
+
+  ok(guild.cost === keep.cost && guild.tier === keep.tier,
+    'the Assassin Guild is the Keep\'s price on the Keep\'s rung',
+    `${guild.cost}g, tier ${guild.tier}, both`);
+
+  ok(dps(g) > dps(t4) && wall(g) < wall(t4),
+    'and trades the wall away for the blade',
+    `${dps(g).toFixed(0)}/s against ${dps(t4).toFixed(0)}, ${wall(g)} health against ${wall(t4)}`);
+
+  // Below the rung it upgrades FROM, which is the sharp end of the trade and the
+  // reason it cannot be bought on reflex. Three assassins are a thinner wall than
+  // the three knights they replaced.
+  ok(wall(g) < wall(t3), 'and is a thinner wall than the Knight\'s Hall it replaces',
+    `${wall(g)} against ${wall(t3)}`);
+
+  ok(g.damage === Math.max(...barracks.map(d => d.soldier.damage)),
+    'and lands the hardest blow any barracks musters', `${g.damage} a man`);
+
+  // The only rung in the family whose men come out of the door weaker than the
+  // last lot did. Not the least health in the family — a militiaman has 100 — but
+  // the only STEP DOWN, which is the thing a ladder is not supposed to do and the
+  // whole reason this fork is a decision rather than a purchase.
+  ok(g.hp < t3.hp && [...spine, keep].every((d, i, a) => i === 0 || d.soldier.hp > a[i - 1].soldier.hp),
+    'and is the one rung whose men come out weaker than the last',
+    `${g.hp} against the Hall's ${t3.hp}`);
+
+  // What buys the trade back. A man nothing can shoot at is a man who only ever
+  // spends his health on the fight he chose, and that is the answer to 150.
+  ok(g.hidden === true && barracks.filter(d => d.soldier.hidden).length === 1,
+    'and he is the one soldier in the family nothing can shoot at',
+    `hidden: ${g.hidden}`);
 }
 
 console.log(bad

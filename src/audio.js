@@ -200,6 +200,11 @@ const paths = {
   // time it fires, and a separate line for a crossbowman finishing somebody.
   crossbow_shot:    'assets/audio/sfx/Crossbow_bolt_shot.mp3',
   crossbowman_kill_enemy: 'assets/audio/sfx/Crossbowman_kill_enemy.mp3',
+  // The assassin's pair, and it is the same split every weapon in the game has:
+  // the blade landing every time he swings, and a separate line for him
+  // finishing somebody.
+  assassin_melee_attack: 'assets/audio/sfx/Assassin_melee_attack.mp3',
+  assassin_kill_enemy:   'assets/audio/sfx/Assassin_kill_enemy.mp3',
   // The ballista. The same pair again, and the third weapon in the game to have
   // them: the bolt going off every time one is loosed, and a separate line for
   // the engineer taking a man down. A bolt arriving is silent — see the two flags
@@ -301,7 +306,14 @@ const paths = {
   // borrowing an archer's line.
   crossbowman_1:   'assets/audio/voice/Crossbowman_1.mp3',
   crossbowman_2:   'assets/audio/voice/Crossbowman_2.mp3',
-  crossbowman_3:   'assets/audio/voice/Crossbowman_3.mp3'
+  crossbowman_3:   'assets/audio/voice/Crossbowman_3.mp3',
+  // The Assassin Guild's own three, and the sixth tier with a voice of its own.
+  // A barracks tier 4 answers when it is built and when it is given a RALLY
+  // POINT, where a shooting one answers when its standing order changes — same
+  // cue, different button, because that is what each family's south button does.
+  assassin_1:      'assets/audio/voice/Assassin_1.mp3',
+  assassin_2:      'assets/audio/voice/Assassin_2.mp3',
+  assassin_3:      'assets/audio/voice/Assassin_3.mp3'
 };
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
@@ -405,6 +417,9 @@ export const CUE = {
   // above it. Archery is the only ladder with two of these now, and nothing here
   // had to learn that: a tier names its own cue or falls through to its family.
   crossbowman:  ['crossbowman_1', 'crossbowman_2', 'crossbowman_3'],
+  // The Assassin Guild's, keyed off the `voice` field on its tier like the five
+  // above it. The barracks is the second ladder with two of these.
+  assassin:     ['assassin_1', 'assassin_2', 'assassin_3'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -427,6 +442,11 @@ export const CUE = {
   // a different picture: `killedBy` is the ammo's `kind`, so sharing the arrow
   // would have meant sharing the cry.
   crossbowKill: ['crossbowman_kill_enemy'],
+  // An assassin finishing a man, split out of meleeKill the same way the
+  // paladin's was: the three lower barracks tiers share the generic take, and
+  // each tier 4 has its own. Keyed off `blow` on his def — see BLOWS below,
+  // which is the same one word.
+  assassinKill: ['assassin_kill_enemy'],
   // A missile from the temple finishing a man, and the fifth thing with its own
   // kill line. The other three monastery tiers still share the arrow's, which is
   // the same split the barracks has: one line for the family, one for its tier 4.
@@ -476,6 +496,10 @@ export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // A longsword landing on plate. Category B beside the three generic takes and
 // chosen instead of them for one man — see blowCue below.
 export const PALADIN = ['paladin_attack'];
+// A blade going in. Category B beside the paladin's longsword and for the same
+// reason: it is a thing that happens rather than a thing announced, and three
+// assassins working is three events the player is watching.
+export const ASSASSIN = ['assassin_melee_attack'];
 // A rock arriving. Category B because a catapult's noise is the IMPACT, not the
 // release: several machines land rocks at once and a shared channel would
 // silence all but one of them, which is the same reason the bow is down here.
@@ -859,7 +883,7 @@ export function familyCue(famId, def) {
 // blade on it. The paladin is the one the player is meant to hear, because his
 // squad is the one they spent 530 gold on, and steel on plate is a different
 // noise rather than a louder one. A def with no `blow` behaves exactly as before.
-const BLOWS = { paladin: PALADIN };
+const BLOWS = { paladin: PALADIN, assassin: ASSASSIN };
 
 export const blowCue = def => (def && BLOWS[def.blow]) || ATTACK;
 

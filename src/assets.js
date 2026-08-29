@@ -39,6 +39,9 @@ export const paths = {
   // Paladin_Keep and it was filed with the other three barracks buildings, while
   // the KEY stays tiered because the code reaches it through `barracks[3].sprite`.
   barracks_t4: 'assets/towers/barracks/Paladin_Keep.png',
+  // The ladder's SECOND tier 4, on the same 4/4b naming the archery fork uses:
+  // a Knight's Hall buys either of these, so neither owns the number.
+  barracks_t4b: 'assets/towers/barracks/Assassin_Guild.png',
   // Artillery tier 1, and the first building with more than one drawing. The
   // three frames are one second each and the machine cycles through them while
   // it has something to shoot at; see `catapult` in data/towers.js.
@@ -120,6 +123,9 @@ export const paths = {
   musketeer_attack:   'assets/units/Musketeer_Attack.png',
   // The other tier 4 man, on the same terms: named for himself rather than for a
   // tier, because the ladder has two fourth rungs and neither owns the number.
+  // The other barracks tier 4's man, named for himself like every other tier 4.
+  assassin:           'assets/units/Assassin_Default.png',
+  assassin_attack:    'assets/units/Assassin_Attack.png',
   crossbowman:        'assets/units/Crossbowman_Default.png',
   crossbowman_attack: 'assets/units/Crossbowman_Attack.png',
   // AND THE SAME TWO IN STEEL, which is what Reinforced Tension buys — the same
@@ -269,6 +275,7 @@ export const paths = {
   // And the paladin's body. A tier 4 leaves a corpse like everybody else — the
   // artist drew it in the same upload as his two living poses.
   dead_paladin:    'assets/dead/Paladin_Dead.png',
+  dead_assassin:   'assets/dead/Assassin_Dead.png',
   // Blood, two of each so a hit or a death is never the same picture twice in a
   // row. All four in assets/effects now — the spatter used to sit with the arrows
   // and the pools with the corpses, which is where they happened to be uploaded.
@@ -376,6 +383,9 @@ export const paths = {
   // The Crossbow Sentry's own upgrade button, beside the Musketeer Post's. Two
   // tier 4s on one ring means neither can wear the generic arrow.
   glyph_sentry:    'assets/ui/Crossbow_Sentry_Icon.png',
+  // The Assassin Guild's, beside the Paladin Keep's. The barracks forks now too,
+  // so both of its fourth rungs need a face of their own.
+  glyph_assassin:  'assets/ui/Assassin_Guild_Icon.png',
   // The reach stat, beside the sword on every card that shows one. The first
   // stat icon added since the heart and the sword, and it goes through the same
   // `ui` table and the same drawUi they do.

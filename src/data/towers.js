@@ -168,6 +168,12 @@ const SPEAR3_ATK_TRIM = [166, 196, 145, 120];
 // NARROWER, which is what a keep is next to a hall, and it is the first barracks
 // building that is not wider than it is high.
 const CAMP4_TRIM = [252, 187, 520, 650];
+// The Assassin Guild is the SAME BOX, and that is measured rather than assumed:
+// tools/trim.mjs gives it [252, 187, 520, 650] and its ground shadow spans the
+// same 253..770 by 676..835 the keep's does, to the pixel. The artist redrew the
+// keep with a brown banner and daggers on the deck, so the two barracks tier 4s
+// share a footprint the way the two archery ones do — see `guild` below, which
+// reuses camp4 outright.
 // The paladin: full plate, a kite shield and a longsword. Narrow and TALL —
 // 123x140 against the swordsman's 110x120 and the spearman's 168x116 — because he
 // rests with the sword UPRIGHT over his shoulder, which makes him the tallest of
@@ -177,6 +183,13 @@ const CAMP4_TRIM = [252, 187, 520, 650];
 // down and levels out, so the box goes from 123x140 to 178x116 — 45px wider and
 // 24 shorter. That is why each pose carries its own trim and its own pivot rather
 // than sharing one box; see the note above the archers for the rule.
+// The assassin, and he is the narrowest man in the game standing still: 82
+// source px against a paladin's 123, because he holds a short blade against his
+// body rather than a longsword out from it. The Attack pose is 151 — nearly
+// double — which is the lunge, and it is the biggest gap between a man's two
+// poses anywhere in the set.
+const ASSASSIN_TRIM = [215, 198, 82, 116];
+const ASSASSIN_ATK_TRIM = [174, 198, 151, 116];
 const PAL_TRIM = [193, 188, 123, 140];
 const PAL_ATK_TRIM = [135, 212, 178, 116];
 
@@ -1463,6 +1476,52 @@ const paladin = {
   blow: 'paladin'
 };
 
+// THE OTHER TIER 4 BUILDING, and it is camp4 with a different picture on it.
+//
+// Every number is shared rather than re-derived, because the two are the same
+// drawing: same trim, same ground shadow to the pixel, same flat battlemented
+// top. Spreading camp4 says that outright — if the artist ever redraws one of
+// them differently, tools/shadow.mjs and tools/roof.mjs fail rather than the
+// building quietly standing 4px off its plot.
+const guild = { ...camp4, sprite: 'barracks_t4b' };
+
+// THE ASSASSIN, and he is a different KIND of barracks man rather than a better
+// one. Every rung below him trades health and damage upward together; he goes
+// the other way on health and a long way up on damage.
+//
+// HIS SHADOW IS 59 SOURCE PX like every other man in the game — the artist draws
+// them all at that width — so his collision radius comes out at 6 again and the
+// formation, the blocking and everything resting on those are untouched. The
+// fraction differs from the paladin's only because his standing box is narrower.
+const ASS_W = drawnW(ASSASSIN_TRIM);
+const ASS_BODY = 0.720;   // 59 / 82
+
+const assassin = {
+  sprite: 'assassin',
+  spriteTrim: ASSASSIN_TRIM,
+  // The centre of his ground shadow, source (259.0, 302.8).
+  pivot: [0.537, 0.903],
+  // Blade out. The SAME shadow pixel, exactly — not within a pixel, the same one
+  // — so the lunge that nearly doubles his box cannot move his feet.
+  attack: { sprite: 'assassin_attack', trim: ASSASSIN_ATK_TRIM, pivot: [0.563, 0.903] },
+  bodyFrac: ASS_BODY,
+  spriteFaces: -1,
+  dead: 'dead_assassin',
+  deadTrim: [164, 218, 185, 77],
+  // The centre of this corpse's own shadow, source (197.0, 286.2).
+  deadPivot: [0.178, 0.886],
+  r: Math.round(ASS_W * ASS_BODY / 2),
+  lunge: 6,
+  // WHAT HIS BLOW SOUNDS LIKE, and it is also what his KILL is credited to:
+  // units.js stamps `killedBy` with this word, and enemies.js reads it to pick
+  // the cry. One field, both sounds — see blowCue and CUE in src/audio.js.
+  blow: 'assassin',
+  // AND HE IS NOT THERE UNTIL HE IS. The one field that makes this man a
+  // different unit rather than a re-statted paladin — see hidden() in
+  // src/units.js for what it costs an enemy to walk past him.
+  hidden: true
+};
+
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
@@ -1518,6 +1577,34 @@ export const barracks = [
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'slash'],
     soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 275, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
+  },
+  // THE OTHER FOURTH RUNG, and the barracks' first fork. A Knight's Hall buys
+  // either of these two — see upgradesFrom in this file for why the choice is
+  // asked by tier number rather than by array index.
+  //
+  // THE SAME 210 AS THE KEEP, deliberately. Both paths up this ladder come to
+  // 530, so the fork is a question about what you want rather than what you can
+  // afford — the same shape the archery fork has at 200 each.
+  //
+  // WHAT THE TRADE IS: 150 health against a paladin's 275, and 20 a blow against
+  // his 7. A squad of three is 450 health where the Keep musters 825, and 75
+  // damage a second where the Keep does 26. That is the biggest output any tower
+  // in the game puts on the board and much the thinnest wall at tier 4 — a first
+  // pass on the owner's own figures, meant to be played rather than defended.
+  //
+  // He is quicker than the paladin, which continues the ladder's own 62/66/70
+  // and suits a man in cloth; his respawn and regen are the tier's, so what
+  // marks him out is the health, the blow and the fact that nothing can see him.
+  {
+    ...guild, tier: 4, name: 'Assassin Guild', title: 'Assassin Guild', cost: 210, range: 210, colour: '#8A7B5E',
+    // Its own picture on the upgrade button. With two of them on the ring neither
+    // can wear the generic arrow — the same reason the archery pair name theirs.
+    glyph: 'assassin',
+    // And its own three lines, on the same terms as every other tier 4: it
+    // answers when it is built and when it is given a rally point rather than
+    // borrowing a barracks line. See familyCue in src/audio.js.
+    voice: 'assassin',
+    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 20, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43' }
   }
 ];
 

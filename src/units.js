@@ -74,6 +74,33 @@ export function nearestOnPath(x, y) {
   return nearestOn(level.routes, x, y);
 }
 
+// IS THIS MAN HIDDEN RIGHT NOW, which is the whole of the assassin.
+//
+// ONE PREDICATE, THREE READERS, and that is deliberate: what the enemy can aim
+// at, what makes an enemy stop, and what the screen draws all have to agree, or
+// the player watches a flask sail into a man who is not there.
+//
+//   enemies.js nearestUnit   a thrower cannot pick him as a mark
+//   enemies.js screened      and does not stand off from him either
+//   render.js  drawSoldier   he is drawn at UNSEEN, and his health bar with him
+//
+// HE IS HIDDEN UNTIL HE HAS SOMEBODY, and `foe` is the right test rather than a
+// radius of its own. A soldier takes a foe at exactly ENGAGE — the distance at
+// which fighting starts — so "hidden until an enemy is near enough to attack",
+// which is what was asked for, is already a field on the man. A second constant
+// would be the same number written twice and free to drift.
+//
+// THE SECOND READER IS THE INTERESTING ONE. Leaving `screened` out would have a
+// thrower halt in front of men he cannot see and then throw nothing, which reads
+// as a bug and hangs on the wave clock. Taking him out of it instead means the
+// thrower walks on into a squad he has no idea is there, which is what an ambush
+// IS — and it makes the assassin the one answer in the game to an enemy that
+// stands off out of reach.
+//
+// A DEAD OR MUSTERING MAN IS NOT HIDDEN, he is absent; every caller already skips
+// him on `respawn` and `hp`, so this does not repeat that.
+export const hidden = u => !!u.def.hidden && !u.foe;
+
 // Where each man in the squad should be standing, given the tower's rally.
 //
 // Split out from makeUnits because moving the rally must not create anybody:

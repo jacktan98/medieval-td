@@ -151,6 +151,9 @@ export const ui = {
   // neither a size of its own nor a nudge. The musket above is the exception here,
   // not the pattern a tier 4 icon follows.
   glyph_keep:   { trim: [215, 214, 82, 84], fit: GLYPH_BOX },
+  // The Assassin Guild's, beside the Keep's. Both barracks fourth rungs name
+  // their own now that the ladder forks.
+  glyph_assassin: { trim: [212, 206, 88, 100], fit: GLYPH_BOX },
   // The Ballista Turret's, the third tier icon and an ordinary one like the
   // Keep's: 108x110 source is square enough for the shared box.
   glyph_ballista: { trim: [202, 201, 108, 110], fit: GLYPH_BOX },
@@ -332,6 +335,8 @@ export const GLYPH_ART = {
   // The Crossbow Sentry's, beside the musket's. Archery's tier 3 shows both at
   // once, which is why neither of them can wear the generic arrow.
   sentry: 'glyph_sentry',
+  // The barracks fork's second face, on the same terms as the archery one.
+  assassin: 'glyph_assassin',
   // The button a tier 4 tower shows where its upgrade would be. It keeps the
   // dimming it already had — there is nothing to buy and it does not answer a
   // tap — and the drawing says WHY it is dead rather than showing a greyed-out

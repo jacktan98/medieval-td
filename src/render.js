@@ -8,6 +8,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
+import { hidden } from './units.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -324,8 +325,14 @@ function drawStatus(ctx, state) {
     healthBar(ctx, e.x, e.y - artHeight(e.def) - 4, e.def.r, e.hp / e.maxHp);
   }
   for (const u of state.units) {
-    if (u.respawn > 0) musterRing(ctx, u);
-    else healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
+    if (u.respawn > 0) { musterRing(ctx, u); continue; }
+    // A hidden man's bar fades with him. It is the one piece of him drawn
+    // OUTSIDE his own figure, so left solid it would hang over empty ground and
+    // give away the assassin the whole point of him is that you cannot see.
+    ctx.save();
+    if (hidden(u)) ctx.globalAlpha *= UNSEEN;
+    healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
+    ctx.restore();
   }
   drawBadges(ctx, state);
 }
@@ -1252,6 +1259,13 @@ function drawSoldier(ctx, u) {
   const s = u.def;
   const img = s.sprite && art[s.sprite];
 
+  // MULTIPLIED into whatever alpha the caller has already set rather than
+  // assigned, so an assassin behind a tower ghosts through the stonework fainter
+  // still — 0.3 of 0.3 — instead of suddenly showing up brighter than he does in
+  // the open. One save covers both the fade and the sprite transform.
+  ctx.save();
+  if (hidden(u)) ctx.globalAlpha *= UNSEEN;
+
   if (!img) {
     ctx.fillStyle = s.colour;
     ctx.beginPath();
@@ -1260,6 +1274,7 @@ function drawSoldier(ctx, u) {
     ctx.strokeStyle = OUTLINE;
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.restore();
     return;
   }
 
@@ -1278,7 +1293,6 @@ function drawSoldier(ctx, u) {
   const dh = sh * SCALE;
   const dir = Math.cos(u.face) >= 0 ? 1 : -1;
 
-  ctx.save();
   // Lunge toward the foe on the swing, so a spear thrust reads as a thrust.
   ctx.translate(u.x + dir * u.thrust * s.lunge, u.y);
   ctx.scale(mirror(s, dir), 1);
@@ -1303,6 +1317,21 @@ function drawSoldier(ctx, u) {
 // looking like a building. 0.3 is enough to follow a fight through the stonework
 // and not enough to argue with what is standing in front of you.
 const GHOST = 0.3;
+
+// --- and how much of a man who is not there at all ----------------------------
+//
+// What an assassin looks like while nothing has seen him. The SAME number as
+// GHOST and for a different reason, so it is a different constant: GHOST is a
+// building's transparency wearing a figure's shape, this is a man's own cloak.
+// Either could be retuned without the other.
+//
+// THE FADE AND THE TARGETING ARE ONE TEST. `hidden(u)` is what enemies.js asks
+// before it will shoot at or halt for a soldier, and it is what is asked here, so
+// the moment an assassin is worth shooting at he is also drawn solid. A faint man
+// taking arrows, or a solid one archers refuse to aim at, would both be the game
+// lying about its own rules — and there is no second condition to drift out of
+// step, because there is no second condition.
+const UNSEEN = 0.3;
 
 // The rectangle a figure's art covers. Symmetric about the point it stands on, so
 // it is the same box whichever way the sprite happens to be mirrored, and drawn
@@ -1339,24 +1368,24 @@ const spanHits = (s, box) =>
 // close enough for that is rare and the difference is a shade.
 function ghostBehind(ctx, state, t) {
   const box = towerBox(t);
-  const hidden = [];
+  const behind = [];
 
   for (const e of state.enemies) {
-    if (e.y < t.y && spanHits(figureSpan(e.def, e.x, e.y), box)) hidden.push(() => drawEnemy(ctx, e));
+    if (e.y < t.y && spanHits(figureSpan(e.def, e.x, e.y), box)) behind.push(() => drawEnemy(ctx, e));
   }
   for (const u of state.units) {
     if (u.respawn <= 0 && u.y < t.y && spanHits(figureSpan(u.def, u.x, u.y), box)) {
-      hidden.push(() => drawSoldier(ctx, u));
+      behind.push(() => drawSoldier(ctx, u));
     }
   }
-  if (!hidden.length) return;
+  if (!behind.length) return;
 
   ctx.save();
   ctx.beginPath();
   ctx.rect(box.left, box.top, box.w, box.h);
   ctx.clip();
   ctx.globalAlpha = GHOST;
-  for (const run of hidden) run();
+  for (const run of behind) run();
   ctx.restore();
 }
 

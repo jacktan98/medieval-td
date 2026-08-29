@@ -2,7 +2,7 @@ import { level, remaining } from './level.js';
 import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
-import { unhook } from './units.js';
+import { unhook, hidden } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
 import { solo, play, CUE, SHOT } from './audio.js';
@@ -293,6 +293,10 @@ export function updateEnemies(state, dt) {
          : e.killedBy === 'judgement' ? CUE.popeKill
          : e.killedBy === 'bullet' || e.killedBy === 'deadeye' ? CUE.musketKill
          : e.killedBy === 'paladin' ? CUE.paladinKill
+         // And the barracks' OTHER tier 4 man. Two of the four men a barracks
+         // musters have a cry of their own now; the spearman, the pikeman and
+         // the swordsman still share the generic one below.
+         : e.killedBy === 'assassin' ? CUE.assassinKill
          : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and
@@ -326,6 +330,10 @@ const BLOCK_REACH = 45;
 function screened(state, e, road) {
   for (const u of state.units) {
     if (u.respawn > 0 || u.hp <= 0) continue;
+    // AND A MAN HE CANNOT SEE IS NOT A REASON TO STOP. An assassin standing in
+    // the road is not screening it as far as this thrower knows — see hidden()
+    // in units.js. He walks on into them, which is the point of them.
+    if (hidden(u)) continue;
     // HOW CLOSE HE INSISTS ON GETTING, which is not always how far he can hit.
     // `stopAt` is the archer's: he looses 260 and plants himself at 130, so a
     // squad can still walk out and pin him. Absent — the plague doctor — the two
@@ -353,6 +361,9 @@ function nearestUnit(state, x, y, range) {
 
   for (const u of state.units) {
     if (u.respawn > 0 || u.hp <= 0) continue;
+    // Nothing may aim at a man it cannot see, which is the other half of the
+    // same rule the standoff above obeys. See hidden() in units.js.
+    if (hidden(u)) continue;
     if (!inRange(x, y, u.x, u.y, range)) continue;
     const d = Math.hypot(u.x - x, u.y - y);
     if (d < least) { least = d; best = u; }

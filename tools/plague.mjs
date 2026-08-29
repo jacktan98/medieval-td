@@ -30,7 +30,7 @@
 
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
-import { makeUnits, updateUnits } from '../src/units.js';
+import { makeUnits, updateUnits, hidden } from '../src/units.js';
 import { updateImpacts } from '../src/impacts.js';
 // The wave loop, because it is now the thing that guarantees the board moves on
 // — see check 5. STALL_GRACE comes with it so the test quotes the same number
@@ -58,10 +58,13 @@ function board() {
   return state;
 }
 
-// A barracks with its squad already marched out and settled on the road.
-function withSquad(state, plotIndex = 3) {
+// A barracks with its squad already marched out and settled on the road. The
+// tier is a parameter because the last section musters assassins rather than
+// militia, and the whole point of that section is that the SAME fixture behaves
+// differently — so it has to be the same fixture.
+function withSquad(state, plotIndex = 3, def = barracks.tiers[0]) {
   const plot = level.plots[plotIndex];
-  const t = { plot, fam: barracks, def: barracks.tiers[0], x: plot.x, y: plot.y, rally: null };
+  const t = { plot, fam: barracks, def, x: plot.x, y: plot.y, rally: null };
   state.towers.push(t);
   makeUnits(state, t);
   for (let i = 0; i < 6 / DT; i++) updateUnits(state, DT);
@@ -469,6 +472,80 @@ console.log('\nWhat one flask does to three men\n');
   check(doses.every(d => Math.abs(d - flask.poison.seconds) < 1e-9),
     'and the poison refreshes rather than compounding',
     doses.map(d => d.toFixed(1) + 's').join(' / '));
+}
+
+// --- THE MAN HE CANNOT SEE -----------------------------------------------------
+//
+// The assassin's whole defence, and it is checked HERE rather than in a file of
+// its own because the thing it changes is the doctor. Two of the doctor's three
+// decisions ask "is there a soldier there" — screened(), which is why he stops,
+// and nearestUnit(), which is what he throws at — and hidden() in units.js is the
+// one answer both of them now take. A test that only asserted the flag would say
+// nothing about either.
+//
+// THE SAME FIXTURE TWICE is the whole design of this section. A doctor put 110px
+// short of a militia squad stops dead and starts throwing; the identical doctor
+// put 110px short of an ASSASSIN squad has no reason to do either and walks on
+// into them. One number changed between the two runs — which barracks was built —
+// so the difference cannot be anything else.
+console.log('\nThe man he cannot see\n');
+{
+  const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
+
+  const run = def => {
+    const state = board();
+    withSquad(state, 3, def);
+    const stand = squadAt(state);
+
+    spawn(state, 'plague_inf');
+    const doc = state.enemies[0];
+    doc.hp = 1e6;                        // he is meant to be walked into, not killed
+    place(doc, Math.max(0, stand - 110));
+
+    const from = doc.s;
+    let flasks = 0;
+    for (let i = 0; i < 6 / DT; i++) {
+      updateUnits(state, DT);
+      const before = state.shots.length;
+      updateEnemies(state, DT);
+      if (state.shots.length > before) flasks++;   // counted as they LEAVE his hand
+      updateShots(state, DT);
+      updateImpacts(state, DT);
+    }
+    return { state, doc, walked: Math.round(doc.s - from), flasks };
+  };
+
+  const seen = run(barracks.tiers[0]);
+  const unseen = run(guild);
+
+  check(seen.walked < 5 && seen.flasks > 0,
+    'a doctor stops for militia and throws at them',
+    `${seen.walked}px in 6s, ${seen.flasks} flasks`);
+
+  check(unseen.flasks === 0,
+    'and throws nothing at all at assassins',
+    `${unseen.flasks} flasks from the same 110px`);
+
+  check(unseen.walked > 40,
+    'and walks straight into the men he cannot see',
+    `${unseen.walked}px against the militia\'s ${seen.walked}`);
+
+  // AND THEY DO NOT STAY INVISIBLE, which is the other half of the rule and the
+  // half a flag-only test would miss. The moment one of them takes hold of him he
+  // is a fight rather than an ambush: hidden() goes false, render.js stops fading
+  // him, and from then on he is as shootable as anybody.
+  const engaged = unseen.state.units.filter(u => u.foe);
+  check(engaged.length > 0 && engaged.every(u => !hidden(u)),
+    'and they show themselves the moment they have hold of him',
+    `${engaged.length} of ${unseen.state.units.length} engaged, none still hidden`);
+
+  check(unseen.doc.foe !== null && unseen.doc.foe !== undefined,
+    'so he ends the six seconds pinned rather than throwing');
+
+  // The flag belongs to the man, not to the family. A militiaman is never hidden
+  // however the rest of the board is arranged.
+  check(seen.state.units.every(u => !hidden(u)),
+    'while a militiaman is never hidden from anybody');
 }
 
 console.log(bad

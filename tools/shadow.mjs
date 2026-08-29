@@ -184,6 +184,10 @@ const pose = id => abil.abilityById(id).pose;
 const spear = towers.barracks[0].soldier, spear2 = towers.barracks[1].soldier;
 const spear3 = towers.barracks[2].soldier;
 const pal = towers.barracks[3].soldier;
+// The barracks' second fourth rung. By name rather than by index, because a fork
+// is exactly the place where "the last one in the array" stops meaning anything.
+const guild = towers.barracks.find(d => d.name === 'Assassin Guild');
+const ass = guild.soldier;
 const mon = towers.monastery;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const plague = waves.enemyTypes.plague_inf;
@@ -206,6 +210,12 @@ const SPRITES = [
   ['assets/towers/barracks/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],
   // Tier 4, the Paladin Keep. Same ellipse fit as the three huts below it.
   ['assets/towers/barracks/Paladin_Keep.png',        'camp4.groundFrac',       towers.barracks[3].spriteTrim, towers.barracks[3].groundFrac, 'whole'],
+  // The barracks' SECOND fourth rung, and the reason it is worth listing rather
+  // than assuming: the Assassin Guild shares camp4's trim and ground anchor
+  // outright — the artist drew it on the Keep's footprint to the pixel — so this
+  // row is what proves the sharing is measured rather than hopeful. If a re-export
+  // ever nudges the guild inside its canvas, this fails and the Keep does not.
+  ['assets/towers/barracks/Assassin_Guild.png',      'camp4.groundFrac (shared)', guild.spriteTrim, guild.groundFrac, 'whole'],
   // ALL THREE CATAPULT FRAMES, against the SAME trim and the SAME anchor, and
   // that is the check rather than a repetition of it. The machine animates by
   // swapping which file is drawn into one unchanging box, so if the three
@@ -344,6 +354,11 @@ const SPRITES = [
   // pivot to three places, measured here per file rather than assumed.
   ['assets/units/Paladin_Holy_Light.png', 'light.pose.pivot', pose('light').trim, pose('light').pivot],
   ['assets/units/Paladin_Holy_Slash.png', 'slash.pose.pivot', pose('slash').trim, pose('slash').pivot],
+  // The assassin's pair, under the same rule as everybody's. He is drawn faint on
+  // the board — see UNSEEN in render.js — and a fainter figure is one whose feet
+  // are HARDER to check by eye, not easier, so the measurement matters more here.
+  ['assets/units/Assassin_Default.png',               'assassin.pivot',           ass.spriteTrim, ass.pivot],
+  ['assets/units/Assassin_Attack.png',                'assassin.attack.pivot',    ass.attack.trim, ass.attack.pivot],
   ['assets/enemies/Enemies_Thug_Default.png',        'light_inf.pivot',         light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],
@@ -368,6 +383,7 @@ const SPRITES = [
   ['assets/dead/Soldiers_Pikeman_Dead.png',   'spearman2.deadPivot',  spear2.deadTrim, spear2.deadPivot],
   ['assets/dead/Soldiers_Swordsman_Dead.png', 'spearman3.deadPivot',  spear3.deadTrim, spear3.deadPivot],
   ['assets/dead/Paladin_Dead.png',            'paladin.deadPivot',    pal.deadTrim, pal.deadPivot],
+  ['assets/dead/Assassin_Dead.png',           'assassin.deadPivot',   ass.deadTrim, ass.deadPivot],
   ['assets/dead/Enemies_Thug_Dead.png',        'light_inf.deadPivot',  light.deadTrim, light.deadPivot],
   ['assets/dead/Enemies_Giant_Thug_Dead.png',  'heavy_inf.deadPivot',  heavy.deadTrim, heavy.deadPivot],
   ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot],
