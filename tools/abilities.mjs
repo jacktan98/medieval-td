@@ -963,25 +963,29 @@ console.log('\nKnife Throw\n');
 {
   const man = barracks.find(d => d.name === 'Assassin Guild').soldier;
   const throwing = abilityById('knife');
+  // WELL INSIDE HIS REACH, read off the ability rather than typed. The reach has
+  // been 200 and is now 100, and a distance written here would have failed every
+  // check in this section for a reason that has nothing to do with what they ask.
+  const close = Math.round(throwing.reach * 0.7);
 
   // NOTHING AT ALL UNTIL IT IS BOUGHT, which is the baseline the rest of this
   // section is measured against — and it is also the state of every other barracks
   // in the game: a settled soldier with a man 150px away does exactly nothing.
   {
     const state = guild([]);
-    standoff(state, 150);
+    standoff(state, close);
     const { hits } = throwFor(state, 6);
-    ok(hits.length === 0, 'an untaught assassin throws nothing at a man 150px off',
+    ok(hits.length === 0, `an untaught assassin throws nothing at a man ${close}px off`,
       `${hits.length} hits in 6s`);
   }
 
   {
     const state = guild(['knife']);
-    standoff(state, 150);
+    standoff(state, close);
     const { hits } = throwFor(state, 6);
     ok(hits.length > 0, 'and one that has bought Knife Throw reaches him', `${hits.length} knives in 6s`);
-    ok(hits.every(h => h === Math.round(man.damage * throwing.times)),
-      'each worth half his blade, as a multiple of it',
+    ok(hits.length > 0 && hits.every(h => h === Math.round(man.damage * throwing.times)),
+      'each worth his whole blade, as a multiple of it',
       `${hits.join(' + ')} against ${man.damage} in the hand`);
     // AT HIS OWN RATE. The throw is the ELSE of the melee branch and shares `cd`,
     // so a man can never throw and swing in the same beat — and the count over six
@@ -1020,7 +1024,7 @@ console.log('\nKnife Throw\n');
   // thug on the road, which is the opposite of what 150 health can afford.
   {
     const state = guild(['knife']);
-    standoff(state, 150);
+    standoff(state, close);
     const { seen } = throwFor(state, 6);
     const shown = seen.filter(Boolean).length / seen.length;
     ok(seen.some(Boolean), 'he shows himself to throw');
@@ -1111,16 +1115,24 @@ console.log('\nSneak Attack\n');
   // Guild turns out too strong, which is why it is stated here in damage a second.
   {
     const state = guild(['knife', 'sneak']);
-    standoff(state, 150);
+    standoff(state, Math.round(abilityById('knife').reach * 0.7));
     const { hits } = throwFor(state, 6);
     const alone = Math.round(man.damage * abilityById('knife').times);
     ok(hits.length > 0 && hits.every(h => h === alone * sneak.times),
       'every knife from a Guild that has bought both is a sneak',
       `${hits.join(' + ')} against ${alone} untaught`);
-    const squad = (alone * sneak.times / man.cd) * man.count;
-    ok(squad === (man.damage / man.cd) * man.count,
-      'which is the squad\'s own melee output, at 200px',
-      `${squad.toFixed(1)}/s thrown against ${((man.damage / man.cd) * man.count).toFixed(1)}/s in the hand`);
+    // AND THE NUMBER THAT COMES OUT OF IT, printed rather than merely asserted,
+    // because it is the one figure in this file worth arguing about. The knife was
+    // half a blow when this was written and the pair came to the squad's own melee
+    // output; the owner has since taken the knife to a whole blow, so the pair is
+    // now DOUBLE what the same three men do in the hand — at range, from cover, on
+    // a tower that is also a wall. It is the rule as asked for and it is meant to
+    // be played before it is judged, but nothing about it should be a surprise.
+    const thrown = (alone * sneak.times / man.cd) * man.count;
+    const melee = (man.damage / man.cd) * man.count;
+    ok(thrown === melee * sneak.times,
+      `which is ${sneak.times}x the squad's own melee output, at ${abilityById('knife').reach}px`,
+      `${thrown.toFixed(1)}/s thrown against ${melee.toFixed(1)}/s in the hand`);
   }
 }
 

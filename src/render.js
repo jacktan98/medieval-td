@@ -1325,12 +1325,14 @@ const GHOST = 0.3;
 // wearing a figure's shape, this is a man's own cloak, and the two are tuned for
 // different jobs.
 //
-// IT SHIPPED AT 0.3 AND THE OWNER RAISED IT. At three tenths an assassin was a
-// pale smear you had to hunt for on the sand, which sounds like what invisible
-// should look like and plays badly: a squad you cannot find is a squad you cannot
-// give orders to, and the rally flag is the only thing left to aim by. At seven
-// tenths he is plainly there and plainly not solid — which is the honest picture,
-// because the enemy is the one who cannot see him, not the player.
+// IT SHIPPED AT 0.3, WENT TO 0.7, AND SETTLED AT 0.5 — the owner's dial, moved
+// twice, and both moves are the same argument from opposite ends. At three tenths
+// an assassin was a pale smear you had to hunt for on the sand, which sounds like
+// what invisible should look like and plays badly: a squad you cannot find is a
+// squad you cannot give orders to. At seven tenths he was very nearly solid and
+// the whole point of the man stopped reading. A half is the middle of the two:
+// plainly there, plainly not all there. The enemy is the one who cannot see him,
+// not the player — but the player still has to be told that is what is going on.
 //
 // THE FADE AND THE TARGETING ARE ONE TEST. `hidden(u)` is what enemies.js asks
 // before it will shoot at or halt for a soldier, and it is what is asked here, so
@@ -1338,7 +1340,7 @@ const GHOST = 0.3;
 // taking arrows, or a solid one archers refuse to aim at, would both be the game
 // lying about its own rules — and there is no second condition to drift out of
 // step, because there is no second condition.
-const UNSEEN = 0.7;
+const UNSEEN = 0.5;
 
 // The rectangle a figure's art covers. Symmetric about the point it stands on, so
 // it is the same box whichever way the sprite happens to be mirrored, and drawn
@@ -1524,6 +1526,29 @@ function rockShadow(ctx, s) {
 // picture any more: an arrow and a catapult's rock are in the air at the same
 // time and the shot carries its own, so nothing here has to know which tower
 // threw it.
+// Is this shot passing BEHIND a building, and over it on screen?
+//
+// The same two questions ghostBehind asks of a figure, in the same order and for
+// the same reason. BEHIND is a comparison of ground positions — `groundY` for a
+// lobbed rock, which is the patch of earth it is currently over, and `y` for
+// everything else, where the two are the same point. OVER is whether the pixels
+// land inside the building's own box.
+//
+// The rock is why the two are separate. At the top of its arc a catapult's rock
+// is drawn 40px above the ground it is flying over, so testing its DRAWN y
+// against the tower would call a rock in front of a tower "behind" it for the
+// middle of every throw, and the stone would blink as it rose.
+function behindBuilding(state, s) {
+  const ground = s.groundY ?? s.y;
+  for (const t of state.towers) {
+    if (ground >= t.y) continue;
+    const box = towerBox(t);
+    if (s.x > box.left && s.x < box.left + box.w &&
+        s.y > box.top && s.y < box.top + box.h) return true;
+  }
+  return false;
+}
+
 function drawShots(ctx, state) {
   // Shadows first, so every one of them is under every rock rather than under
   // only the rocks drawn after it.
@@ -1534,6 +1559,22 @@ function drawShots(ctx, state) {
     const img = art[ammo.sprite];
     const a = s.angle || 0;
 
+    ctx.save();
+    // THE WHOLE ARROW FADES, not the part of it over the stonework, and that is
+    // the one place this differs from ghostBehind. A figure is large and slow and
+    // clips beautifully — the ghost is shaped like the man. A knife is 8px long
+    // and crosses a tower in three frames, and half of it solid against half of it
+    // faint reads as a rendering fault rather than as depth. So the test is the
+    // anchor's and the fade is the sprite's, and the cost is a couple of frames
+    // where an arrow half over the grass is dimmer than it strictly should be.
+    //
+    // Shots are drawn after the depth pass and are therefore ON TOP of every
+    // building, which is why this is a fade rather than an occlusion: there is
+    // nothing in front of them to hide behind. GHOST is the same 0.3 the figures
+    // show through at, so a knife behind a tower and the man who threw it agree
+    // about how much stone is in the way.
+    if (behindBuilding(state, s)) ctx.globalAlpha *= GHOST;
+
     if (!img) {
       ctx.strokeStyle = '#F0E6D2';
       ctx.lineWidth = 3;
@@ -1542,6 +1583,7 @@ function drawShots(ctx, state) {
       ctx.moveTo(s.x, s.y);
       ctx.lineTo(s.x - Math.cos(a) * 10, s.y - Math.sin(a) * 10);
       ctx.stroke();
+      ctx.restore();
       continue;
     }
 
@@ -1549,7 +1591,6 @@ function drawShots(ctx, state) {
     const dw = sw * SCALE;
     const dh = sh * SCALE;
 
-    ctx.save();
     ctx.translate(s.x, s.y);
     // `faces` 0 means the drawing has no nose to point anywhere, so it is never
     // turned. A rock rotated to its heading is a rock at a random angle: all the

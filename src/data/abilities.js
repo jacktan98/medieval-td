@@ -494,31 +494,43 @@ export const ABILITIES = [
     // not stop for them at all: he walks into the ambush and dies of a blade. That
     // was true before this ability existed, and tools/plague.mjs measures it.
     //
-    // So what 200px actually buys is THE ROAD. Untaught, the assassins wait and
-    // three of them shuffle 50px out of formation to meet him; taught, he dies 59px
-    // short of them a second and a half sooner and nobody moves at all. Reaching
-    // further, sooner, without breaking formation — not "the only answer", which
-    // is what this comment said before the tool was written and disagreed.
+    // So what it buys is THE ROAD. Untaught, the assassins wait and three of them
+    // shuffle 50px out of formation to meet a thrower; taught, they open on him
+    // first and nobody moves at all. Reaching sooner without breaking formation —
+    // not "the only answer", which is what this comment said before the tool was
+    // written and disagreed.
     //
     // `reach` RATHER THAN `range`, and the name is load-bearing. rangeOf() in
     // src/towers.js returns an ability's `range` in place of the tower's own, and
     // the Assassin Guild's 210 is not a weapon's reach at all — it is the LEASH on
     // the rally point, the circle the men may be posted inside. Calling this field
-    // `range` would have quietly shortened every Guild's leash to 200 the moment
-    // the ability was bought, which is a bug with no visible cause. Two different
-    // quantities, two different words.
+    // `range` would have quietly shortened every Guild's leash the moment the
+    // ability was bought, which is a bug with no visible cause. Two different
+    // quantities, two different words — and reachOf() in src/towers.js is how the
+    // info box prints this one without going near the other.
     //
-    // HALF HIS BLOW, as `times` like every other magnitude here: 10 against his
-    // melee 20, and it follows him if the 20 is ever retuned. Three assassins
-    // throwing is 37.5 a second at 200px — about a tier 3 archery tower's output,
-    // bought on a plot that is also still a wall.
+    // 100px, AND IT WAS 200. Both numbers are the owner's, and the second came in
+    // the same breath as the damage going up to a full blow — the two moved
+    // together, so they are worth reading together. At 200 for half damage it was
+    // a poke that outranged a plague doctor's 130 standoff and quietly answered
+    // him. At 100 for a whole blow it is a knife thrown at a man nearly close
+    // enough to stab — barely past the 30 at which a soldier engages — so it
+    // front-loads a fight that is about to happen rather than replacing one that
+    // is not, and a doctor at 130 is out of reach again.
+    //
+    // HIS WHOLE BLOW, and `times: 1` rather than no `times` at all. The two would
+    // behave identically today and mean different things: the multiple of one says
+    // the knife IS his blade at a distance and follows the 20 wherever it is
+    // retuned to, where an omission would say the knife has no relation to it.
+    // Three assassins throwing is 75 a second — the same output they already have
+    // in the hand, which is the point.
     id: 'knife',
     name: 'Knife Throw',
     of: 'Assassin Guild',
     icon: 'ability_knife',
     cost: ABILITY_COST,
-    reach: 200,
-    times: 0.5,
+    reach: 100,
+    times: 1,
     ammo: knife,
     // He is drawn mid-throw for exactly as long as a lunge lasts, and that is not
     // a coincidence: units.js sets `hold` to the SAME quarter second the swing
@@ -526,12 +538,12 @@ export const ABILITIES = [
     // LUNGE there.
     pose: KNIFE_THROW_POSE,
 
-    detail: 'The assassin throws at 200px for 10 — half what his blade does — ' +
-            'without leaving his post. Three of them is 37.5 damage a second at ' +
-            'range, on a tower that is still a wall.\n\n' +
+    detail: 'The assassin throws at 100px for 20 — the whole of what his blade ' +
+            'does — without leaving his post. Three of them is 75 damage a ' +
+            'second at range, on a tower that is still a wall.\n\n' +
             'No squad in this game walks out to fetch an enemy, so this is the ' +
             'only reach a barracks has. Men who would otherwise wait to be walked ' +
-            'into kill on the road instead, and never break formation to do it. ' +
+            'into open on the road first, and never break formation to do it. ' +
             'He shows himself for the instant the knife is in his hand and is gone ' +
             'again before it lands.'
   },
@@ -558,11 +570,20 @@ export const ABILITIES = [
     //   makes the pair worth 300 gold rather than 150 twice, and it doubles the
     //   ability that was otherwise the weaker of the two.
     //
-    // 2x, WHICH IS THE MODEST END. Holy Slash is five times a paladin's blow. Two
-    // is a sneak attack's traditional number and it keeps the two-ability Guild at
-    // 75 a second thrown — the same output it already has in melee, at 200px
-    // instead of at arm's length. If that proves too much in play, this figure is
-    // the dial: nothing else needs to move with it.
+    // 2x, WHICH IS THE MODEST END on its own — Holy Slash is five times a paladin's
+    // blow — and the loudest number in the game once the knife is bought with it.
+    //
+    // THE ARITHMETIC IS WORTH HAVING IN FRONT OF YOU. The knife was half a blow at
+    // 200px when this was written, so a sneaked knife was 20 and the pair came to
+    // the squad's own melee output at range. The owner has since taken the knife to
+    // a FULL blow, which doubles the doubled number with it: a sneaked knife is now
+    // 40, and three assassins throwing are 150 a second — twice what the same three
+    // do in the hand, and the biggest figure any 300 gold buys.
+    //
+    // It is left at 2 because it is the rule as asked for and it is meant to be
+    // played before it is judged. If it proves too much, this is the dial and it is
+    // the only one that has to move: `times` on the knife is the owner's "same as
+    // melee damage" and should stay where it is.
     id: 'sneak',
     name: 'Sneak Attack',
     of: 'Assassin Guild',
@@ -594,7 +615,7 @@ export const ABILITIES = [
             'again, which in a melee means the opening strike of every fight he ' +
             'picks.\n\n' +
             'With Knife Throw it is every knife, because a thrower is only visible ' +
-            'for the instant he throws: 20 a blade instead of 10. His strike lands ' +
+            'for the instant he throws: 40 a blade instead of 20. His strike lands ' +
             'heavier and sounds it.'
   },
   {

@@ -281,10 +281,6 @@ export function makeUnits(state, tower) {
       // is already armed by the time anybody could be looking at him. Every other
       // soldier carries it and never reads it. See the arming line in updateUnits.
       sneak: true,
-      // Which way he turned to throw, held for the lunge that follows. Set here
-      // for the same reason every other clock is: a field that springs into
-      // existence is a field that was undefined on the frame before it.
-      throwFace: at.faceIdle,
       // { dps, left } while a flask is working on him, null otherwise. Set here
       // rather than left undefined so the shape of a unit is written down in one
       // place — see the same argument for `halted` on an enemy.
@@ -677,14 +673,31 @@ export function updateUnits(state, dt) {
     const ty = u.foe ? u.foe.y : u.ry;
     const d = Math.hypot(tx - u.x, ty - u.y);
 
+    // WHO HE WOULD THROW AT THIS FRAME, worked out ONCE and used twice: it is what
+    // he turns to face and it is what he throws at. Two separate answers would be
+    // a man who turns to one enemy and puts a knife in another.
+    //
+    // Only for a man at his post whose tower has bought the knife, so the scan
+    // costs every other soldier in the game one `owns` check on a short array.
+    const throwing = !u.foe && d <= SETTLE ? ability(u, 'knife') : null;
+    const mark = throwing ? nearestFoe(state, u, throwing.reach) : null;
+
     if (u.foe) u.face = Math.atan2(u.foe.y - u.y, u.foe.x - u.x);
-    // A MAN FACES WHAT HE JUST THREW AT. `thrust` is the same quarter second the
-    // throw pose is up for, so he turns, throws, and settles back to his post's
-    // heading as the arm comes down — rather than flicking a knife over his
-    // shoulder at a man behind him, which is what the two branches below would
-    // have him do. It ranks under `foe` because somebody with hold of him
-    // outranks a mark at 200px, exactly as it does for a thrower in enemies.js.
-    else if (u.thrust > 0) u.face = u.throwFace;
+    // A MAN FACES WHAT HE IS THROWING AT, for as long as there is somebody in
+    // reach — not for the quarter second of the throw, which is what this was and
+    // what made him spin.
+    //
+    // THE BUG THAT WAS: the reveal is a quarter second and the reload is eight
+    // tenths, so a `thrust > 0` test turned him toward his mark, then let the
+    // branch below snap him back to his post's heading for the remaining half
+    // second, then turned him again for the next knife. An enemy standing on his
+    // off side made that a flip twice a knife — the owner's "they flip left and
+    // right after throwing knife". Holding the mark's heading for as long as the
+    // mark exists is one turn per enemy instead of two per throw.
+    //
+    // It ranks under `foe` because somebody with hold of him outranks a mark out
+    // in the road, exactly as it does for a thrower in enemies.js.
+    else if (mark) u.face = Math.atan2(mark.y - u.y, mark.x - u.x);
     else if (d > SETTLE) u.face = Math.atan2(ty - u.y, tx - u.x);
     else u.face = u.faceIdle;
 
@@ -831,8 +844,6 @@ export function updateUnits(state, dt) {
       // the else of the melee one, so he throws at his own rate and can never
       // throw and strike in the same beat — a knife is what he does INSTEAD of a
       // blow, not as well as.
-      const throwing = ability(u, 'knife');
-      const mark = throwing && nearestFoe(state, u, throwing.reach);
       if (mark) {
         // HALF A BLOW, DOUBLED IF HE WAS UNSEEN — and both are multiples of his
         // own damage, so the knife follows him through any retune of the 20. See
@@ -853,7 +864,6 @@ export function updateUnits(state, dt) {
         u.thrust = 1;
         u.hold = LUNGE;
         u.holdArt = throwing.pose;
-        u.throwFace = Math.atan2(mark.y - u.y, mark.x - u.x);
       }
     }
 

@@ -26,6 +26,7 @@ import { enemyTypes } from '../src/data/waves.js';
 import { arrow, barracks } from '../src/data/towers.js';
 // The soldiers throw now too — see the last block of the thrower section.
 import { makeUnits, updateUnits } from '../src/units.js';
+import { abilityById } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
@@ -309,19 +310,22 @@ console.log('\nWhich way a thrower looks\n');
       // On his post from the first frame, so nothing below is a man mid-march.
       u.x = u.rx;
       u.y = u.ry;
-      // 150px is inside his 200 reach on either side. X rather than any other
-      // direction because inRange squashes the vertical for the board's
-      // perspective — and because left and right is the only thing `face` decides.
+      // Well inside his reach on either side, and read OFF the ability rather than
+      // typed: it has been 200 and is now 100, and a number written here would
+      // have made this section fail for a reason that has nothing to do with
+      // facing. X rather than any other direction because inRange squashes the
+      // vertical for the board's perspective — and because left and right is the
+      // only thing `face` decides.
+      const near = abilityById('knife').reach * 0.7;
       state.enemies.push({
         def: { r: 10, hp: 1e9, speed: 0, atkCd: 1e9, damage: 0, name: 'dummy' },
-        x: u.x + 150 * side, y: u.y, hp: 1e9, maxHp: 1e9,
+        x: u.x + near * side, y: u.y, hp: 1e9, maxHp: 1e9,
         route: 0, lane: 1, s: 0,
         foe: null, acd: 1e9, thrust: 0, halted: false, leaked: false
       });
-      // Two frames: the throw sets `throwFace`, the next one reads it. That order
-      // is the design — see the facing chain in units.js — and one frame of the
-      // old heading is a sixtieth of a second nobody can see.
-      updateUnits(state, 1 / 60);
+      // One frame is enough now: the heading is taken from the mark in the same
+      // pass that decides whether to throw at it, rather than stored on the throw
+      // and read back on the frame after. See the facing chain in units.js.
       updateUnits(state, 1 / 60);
       return { dir: Math.sign(Math.cos(u.face)), threw: state.shots.length };
     };
@@ -335,6 +339,63 @@ console.log('\nWhich way a thrower looks\n');
       `LEFT , ${left.threw} knife`);
     ok(right.dir !== left.dir, 'and the two are not the same answer',
       `${right.dir} vs ${left.dir}`);
+  }
+
+  // AND HE DOES NOT SPIN, which is the bug that made this block worth writing.
+  //
+  // The reveal is a quarter second and the reload is eight tenths. The first
+  // version turned him toward his mark for the reveal and let him snap back to his
+  // post's heading for the rest — so an enemy on his off side flipped him TWICE
+  // PER KNIFE, and the owner reported assassins that "flip left and right after
+  // throwing knife". The count is the check: over five seconds he throws six times
+  // and should turn exactly once, when the first mark appears.
+  //
+  // Counted rather than asserted as a boolean, because "does it flip" has no good
+  // yes/no answer — one turn is correct and eleven is the bug, and only a number
+  // tells them apart.
+  {
+    const plot = level.plots[0];
+    const guild = barracks.find(d => d.name === 'Assassin Guild');
+    const t = {
+      plot, fam: { id: 'barracks' }, def: guild, x: plot.x, y: plot.y,
+      rally: null, abilities: ['knife'], hold: 0
+    };
+    const state = { towers: [t], enemies: [], units: [], shots: [], hits: [],
+                    corpses: [], splats: [], impacts: [] };
+    makeUnits(state, t);
+    state.units.length = 1;
+    const u = state.units[0];
+    u.x = u.rx;
+    u.y = u.ry;
+
+    // ON HIS OFF SIDE, whichever that is: the flip only happens when the mark and
+    // the post disagree about which way he should be looking, so the fixture has
+    // to put them on opposite sides rather than guess that they are.
+    const idle = Math.sign(Math.cos(u.faceIdle)) || 1;
+    state.enemies.push({
+      def: { r: 10, hp: 1e9, speed: 0, atkCd: 1e9, damage: 0, name: 'dummy' },
+      x: u.x - idle * abilityById('knife').reach * 0.7, y: u.y, hp: 1e9, maxHp: 1e9,
+      route: 0, lane: 1, s: 0,
+      foe: null, acd: 1e9, thrust: 0, halted: false, leaked: false
+    });
+
+    let flips = 0;
+    let was = Math.sign(Math.cos(u.face)) || 1;
+    let knives = 0;
+    for (let i = 0; i < 5 * 60; i++) {
+      const before = state.shots.length;
+      updateUnits(state, 1 / 60);
+      if (state.shots.length > before) knives++;
+      state.shots.length = 0;          // drained, so nothing has to model flight
+      const now = Math.sign(Math.cos(u.face)) || 1;
+      if (now !== was) flips++;
+      was = now;
+    }
+
+    ok(knives >= 5, 'he throws a run of knives at a man on his off side',
+      `${knives} in 5s`);
+    ok(flips <= 1, 'and turns round once for him rather than once a knife',
+      `${flips} turn(s) in ${knives} throws`);
   }
 }
 

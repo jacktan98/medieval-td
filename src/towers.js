@@ -255,6 +255,27 @@ export function rangeOf(t) {
 //
 // THEY COMPOUND, like rangeOf's `rangeTimes`, so two of them would be worth the
 // product rather than the better of the pair. Nothing hands out two today.
+// HOW FAR THIS TOWER'S MEN THROW, or null if they do not throw at all.
+//
+// THE THIRD READING OF "REACH" ON ONE TOWER, and the reason it is a function of
+// its own rather than a branch in rangeOf. A barracks carries a `range` that is
+// the LEASH on its rally point — where its men may be posted — and rangeOf
+// answers with that; the Assassin Guild that has bought Knife Throw ALSO has a
+// distance its men can hurt somebody at, and the two are different numbers
+// meaning different things on the same building. Folding this into rangeOf would
+// have shortened the leash to the throw, which is the bug the ability's field is
+// named `reach` to avoid — see the note on it in data/abilities.js.
+//
+// Null for every tower in the game but that one, and null for that one until it
+// is taught. The info box prints it in the range row, which is otherwise blank
+// for a barracks; nothing else reads it, and in particular the RING on the board
+// is still the leash, because the ring is what the player drags a rally flag
+// against.
+export function reachOf(t) {
+  for (const a of boughtAbilities(t)) if (a.reach) return a.reach;
+  return null;
+}
+
 export function cooldownOf(t) {
   let k = 1;
   for (const a of boughtAbilities(t)) if (a.reloadTimes) k *= a.reloadTimes;

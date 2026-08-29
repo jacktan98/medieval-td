@@ -19,7 +19,7 @@
 // the soldier or the archer it puts on the road.
 
 import { SCALE } from './data/towers.js';
-import { boost, rangeOf } from './towers.js';
+import { boost, rangeOf, reachOf } from './towers.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -201,7 +201,14 @@ export function selectionInfo(state) {
       //
       // Null for a barracks: shownRange says why, and rangeOf would answer with
       // its rally radius, which is not a reach at all.
-      range: shownRange(s.ref.def) === null ? null : rangeOf(s.ref)
+      //
+      // UNLESS ITS MEN THROW. An Assassin Guild that has bought Knife Throw has a
+      // real reach to print — 100px, the distance a knife carries — and that row
+      // is otherwise blank on this family, so the ability arrives as a stat
+      // appearing rather than a number changing. reachOf is null for every other
+      // tower and for an untaught Guild, so the branch is the same one line for
+      // everybody: whatever this tower can hurt somebody at, or nothing.
+      range: shownRange(s.ref.def) === null ? reachOf(s.ref) : rangeOf(s.ref)
     };
   }
 

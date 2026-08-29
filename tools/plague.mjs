@@ -565,12 +565,14 @@ console.log('\nThe man he cannot see\n');
 //
 // 260px BACK ALONG THE ROAD, which is not 260px away — the road bends, and on this
 // map a doctor a quarter of a lap back stands about 109px from the squad in a
-// straight line. What the extra road buys is TIME: he is inside a 200px knife
-// reach for the whole walk, so the further back he starts the more of him the
-// knives get through before he arrives. At 160 he still reaches them and the
-// ability's difference is a second shaved off a melee; at 260 he does not, which
-// is the thing worth checking. Both distances are printed below so the number the
-// ability actually sees is on the page rather than inferred from this comment.
+// straight line. What the extra road buys is TIME: he walks the last stretch of it
+// inside knife reach, so the further back he starts the more of him the knives get
+// through before he arrives. At 160 he still reaches them and the ability's
+// difference is a second shaved off a melee; at 260 he does not, which is the
+// thing worth checking. Both distances are printed below so the number the ability
+// actually sees is on the page rather than inferred from this comment — and it has
+// stayed true across the reach going from 200 to 100, because the straight-line
+// start did not move.
 console.log('\nWhat the knife changes about him\n');
 {
   const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
