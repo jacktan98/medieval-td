@@ -2,7 +2,7 @@ import { level, useLevel } from './level.js';
 import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitModeButton, hitDifficultyButton,
          hitPauseButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
-import { makeUnits, moveUnits, removeUnits } from './units.js';
+import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
 import { towerBox } from './towers.js';
 import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
@@ -346,15 +346,28 @@ function toggleSpeed(state) {
   state.speed = state.speed === 2 ? 1 : 2;
 }
 
-// The rally is clamped to the tower's reach here as well as in stations(), so
-// the stored point is always one the barracks could actually use — otherwise
-// dragging far away and then upgrading would silently teleport the squad.
+// The rally is resolved to a real posting here as well as in stations(), so the
+// stored point is always one the barracks could actually use — otherwise dragging
+// far away and then upgrading would silently teleport the squad.
+//
+// THROUGH rallyPoint RATHER THAN clampToRange, and that one word is a bug the
+// owner reported: "my assassins cannot rally to my selected rally point... they
+// seem to be stuck". They were not stuck. The clamp pulls a drag onto the ring
+// and stops there — and the ring is not the road, so on a stretch running away
+// from the tower the stored point could be up to 288px from anywhere the squad
+// was ever going to stand. The flag was drawn at the stored point, the men obeyed
+// stations(), and the two disagreed by half a screen.
+//
+// rallyPoint answers the question the flag is actually asking: where will these
+// men end up. It is the road point stations() will choose, so the flag now marks
+// the posting rather than the drag, and a player who drags past the leash sees
+// the flag stop on the road instead of sliding onto the ring and lying about it.
 //
 // moveUnits, not makeUnits: the squad walks to the new flag. Rebuilding it here
 // is what used to make a rally change replace three wounded men with three fresh
 // ones standing back at the barracks.
 function setRally(state, tower, x, y) {
-  tower.rally = clampToRange(tower.x, tower.y, x, y, tower.def.range);
+  tower.rally = rallyPoint(tower, x, y);
   moveUnits(state, tower);
   // The squad answering the order. Here rather than on the menu button, because
   // the button only arms the placement — this is the tap that actually moves

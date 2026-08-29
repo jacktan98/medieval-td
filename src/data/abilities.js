@@ -544,8 +544,8 @@ export const ABILITIES = [
             'No squad in this game walks out to fetch an enemy, so this is the ' +
             'only reach a barracks has. Men who would otherwise wait to be walked ' +
             'into open on the road first, and never break formation to do it. ' +
-            'He shows himself for the instant the knife is in his hand and is gone ' +
-            'again before it lands.'
+            'He is out in the open for as long as anything is in reach of him, ' +
+            'and gone again the moment the road in front of him is clear.'
   },
   {
     // --- AND THE ONE THAT PAYS FOR BEING UNSEEN -------------------------------
@@ -564,26 +564,31 @@ export const ABILITIES = [
     //   ONE blow in each engagement is a sneak — the opener, and then nothing
     //   until his man is dead and he has faded again.
     //
-    //   THROWING, if the Guild has also bought Knife Throw, he shows himself for a
-    //   quarter second and hides again between knives. So EVERY knife is a sneak.
-    //   That is the literal reading of the rule and it is deliberate: it is what
-    //   makes the pair worth 300 gold rather than 150 twice, and it doubles the
-    //   ability that was otherwise the weaker of the two.
+    //   THROWING, if the Guild has also bought Knife Throw, he is visible for as
+    //   long as anything is in reach — so a volley opens with one sneaked knife
+    //   and settles into ordinary ones, and he re-arms when the road clears.
     //
-    // 2x, WHICH IS THE MODEST END on its own — Holy Slash is five times a paladin's
-    // blow — and the loudest number in the game once the knife is bought with it.
+    //   THAT SECOND ANSWER IS THE OWNER'S CORRECTION and it is worth keeping the
+    //   first one written down. He used to hide between knives, a quarter second
+    //   of reveal against eight tenths of reload, which re-armed this on every
+    //   throw and made EVERY blade a heavy one: 150 damage a second at range from
+    //   a squad that costs 300 gold to teach. The fix was not to weaken the bonus
+    //   but to stop him vanishing while he is plainly standing there throwing.
     //
-    // THE ARITHMETIC IS WORTH HAVING IN FRONT OF YOU. The knife was half a blow at
-    // 200px when this was written, so a sneaked knife was 20 and the pair came to
-    // the squad's own melee output at range. The owner has since taken the knife to
-    // a FULL blow, which doubles the doubled number with it: a sneaked knife is now
-    // 40, and three assassins throwing are 150 a second — twice what the same three
-    // do in the hand, and the biggest figure any 300 gold buys.
+    // 2x, WHICH IS THE MODEST END — Holy Slash is five times a paladin's blow.
     //
-    // It is left at 2 because it is the rule as asked for and it is meant to be
-    // played before it is judged. If it proves too much, this is the dial and it is
-    // the only one that has to move: `times` on the knife is the owner's "same as
-    // melee damage" and should stay where it is.
+    // THE ARITHMETIC HAS BEEN ROUND THE LOOP TWICE AND BOTH TURNS ARE WORTH
+    // KEEPING. The knife was half a blow at 200px, so a sneaked knife was 20 and
+    // the pair came to the squad's own melee output at range. Then the knife went
+    // to a full blow, which doubled the doubled number: 40 a blade, 150 a second
+    // from three men, twice what the same three do in the hand. The owner caught
+    // that and fixed the CAUSE rather than the number — an assassin no longer hides
+    // between throws, so only the first blade of a volley is a sneak.
+    //
+    // What it is worth now: 75 a second sustained, which is exactly the squad's
+    // melee output, plus 60 on the opening blade of every volley and on the
+    // opening blow of every fight. That is a bonus you can feel and cannot lean
+    // on, which is what an opener should be.
     id: 'sneak',
     name: 'Sneak Attack',
     of: 'Assassin Guild',
@@ -625,9 +630,10 @@ export const ABILITIES = [
             'where his blade does 20 — and it comes back the moment he fades ' +
             'again, which in a melee means the opening strike of every fight he ' +
             'picks.\n\n' +
-            'With Knife Throw it is every knife, because a thrower is only visible ' +
-            'for the instant he throws: 40 a blade instead of 20, and a heavier ' +
-            'blade in the air to say so. His strike lands harder and sounds it.'
+            'With Knife Throw it is the first blade of every volley — 40 instead ' +
+            'of 20, with a heavier knife in the air to say so — and it comes back ' +
+            'when the road in front of him is clear. His strike lands harder and ' +
+            'sounds it.'
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its

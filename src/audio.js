@@ -362,7 +362,7 @@ const AWAITED = new Set();
 // One thing no gain here can fix: `Rock_kill_enemy` peaks at 1.011, meaning the
 // summed channels clip. Only a re-record helps that, and it is the same note
 // Thug_1 and Attack_1 already have against them.
-const GAIN = {
+export const GAIN = {
   rock_hit_ground: 1.6,
   rock_kill_enemy: 0.7,
   // The click, at half — asked for by ear, and the measurement says why the ear
@@ -393,7 +393,45 @@ const GAIN = {
   // other weapons' reports and the heavy one lands where it always was, so the gap
   // between them goes from 2.9dB to 7.2dB — more than double, which is the size of
   // step an ear reads as "that was a different shot".
-  ballista_shot: 0.6
+  ballista_shot: 0.6,
+  // THE THREE GENERIC SWINGS, DOWN 6dB, and this is the ballista's argument made
+  // about the loudest thing in the game by frequency rather than by level.
+  //
+  // The leveller does its job on these — attack_1 comes down 3.3dB, attack_2 goes
+  // up 7.0, attack_3 barely moves — so all three arrive at the same peak as a
+  // bowshot or a paladin's longsword. That is right for one blow and wrong for
+  // what actually happens: this is the sound of ANY soldier who is not a paladin
+  // or an assassin landing ANY blow, and a Militia Camp alone is three men at a
+  // blow every 0.95s. Four barracks in a melee is a dozen swings a second, all at
+  // the level of a single event, and the owner's report is the predictable one —
+  // "Attack_1, 2 and 3 seem loud and take over other sound".
+  //
+  // A SHARE RULE WOULD BE THE OTHER FIX AND IT IS THE WRONG ONE. Category A has
+  // one, because a voice channel can only carry one thing; Category B is the
+  // battle and is meant to overlap. Dropping swings would make a busy fight
+  // quieter by making it sparser, which is a fight that sounds broken. Turning
+  // them down keeps every blow audible and lets the twelve of them sum to
+  // something under what one of them used to be.
+  //
+  // AND IT IS THE HALF THAT SHOULD MOVE, twice over — the same reasoning as the
+  // ballista's ordinary bolt above. Everything else in the mix is an EVENT: a
+  // tower built, a line spoken, a man killed, a tier 4 blade. Those are worth
+  // hearing over the bed, and the bed is what this is. Raising them instead would
+  // make the whole game louder to buy a contrast that is free from here.
+  //
+  // 0.5 rather than the ballista's 0.6 because these fire about six times as
+  // often. The SAME figure for all three, so the levelling that matched them to
+  // each other survives: three takes of one sound must stay one sound.
+  //
+  // It also answers the second half of the report — "prioritise tier 4 sounds
+  // when they are built". A build already TAKES the channel (see `priority` in
+  // solo) and the battle already ducks 9.5dB under it; what it could not do was
+  // out-shout a dozen swings summing underneath. It can now, and so can a
+  // paladin's longsword and an assassin's blade, which are supposed to be the
+  // audible difference a tier 4 squad buys.
+  attack_1: 0.5,
+  attack_2: 0.5,
+  attack_3: 0.5
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

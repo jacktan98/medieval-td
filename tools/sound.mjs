@@ -131,7 +131,7 @@ globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promis
 
 const { loadAudio, play, solo, CUE, SHOT, ATTACK, PALADIN, SELECT,
         DEADEYE, HOLY_LIGHT, HOLY_SLASH,
-        selectionCue, familyCue, blowCue, abilityCue } = await import('../src/audio.js');
+        selectionCue, familyCue, blowCue, abilityCue, GAIN } = await import('../src/audio.js');
 // The two ladders with a tier 4 on them, for the voice and blow checks below.
 // Imported here rather than at the top because everything above has to run after
 // the fake AudioContext is in place, and this file keeps its imports in one order
@@ -505,6 +505,25 @@ check('and a def with no blow falls back rather than going silent',
   blowCue({}), ATTACK);
 check('and so does one with a blow nobody recorded',
   blowCue({ blow: 'nobody' }), ATTACK);
+
+// AND THE GENERIC SWING IS TRIMMED UNDER THE TIER 4 BLADES, which is the design
+// claim beside `paladin_attack` in audio.js — "a tier 4 squad should be audibly
+// the one doing the fighting" — made checkable.
+//
+// It is asked of GAIN rather than of the levelled result on purpose. The
+// leveller brings every clip to one loudness by measurement and cannot be
+// asserted against without decoding audio; what is a DECISION, and what can be
+// undone by a careless edit, is the deliberate trim on top of it. The paladin's
+// and the assassin's blades carry none, so any entry at all on the three generic
+// takes puts them under.
+check('the three generic swings are trimmed and the tier 4 blades are not',
+  ATTACK.every(k => GAIN[k] < 1) && !GAIN.paladin_attack && !GAIN.assassin_melee_attack,
+  true);
+// One figure for all three, or the levelling that matched them to each other is
+// undone by the very table meant to place them: three takes of one sound have to
+// stay one sound.
+check('and all three are trimmed by the same amount',
+  new Set(ATTACK.map(k => GAIN[k])).size, 1);
 
 // AN ABILITY'S NOISE, the third one-word opt-in in audio.js after a tier's `voice`
 // and a soldier's `blow`. Same three questions as the other two, and one more that

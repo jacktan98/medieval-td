@@ -37,11 +37,14 @@ const ASSIST = 70;
 // can drift out of step with it.
 //
 // `thrust` is set to 1 the instant a man strikes and falls back to 0 at
-// THRUST_DECAY a second, so a swing takes a quarter second. Three separate things
-// are that quarter second and all three read it from here: the lunge render.js
-// draws, the pose a thrown knife holds, and the moment an assassin is visible for
-// having thrown it. Writing 0.25 next to any of them would be the same number
+// THRUST_DECAY a second, so a swing takes a quarter second. Two things are that
+// quarter second and both read it from here: the lunge render.js draws, and the
+// pose a thrown knife holds. Writing 0.25 next to either would be the same number
 // typed twice.
+//
+// IT USED TO BE THREE. An assassin's reveal was on this clock too, which is what
+// made him wink in and out between knives — see `exposed` in updateUnits for what
+// replaced it.
 const THRUST_DECAY = 4;
 const LUNGE = 1 / THRUST_DECAY;
 
@@ -99,21 +102,17 @@ export function nearestOnPath(x, y) {
 //   render.js  drawSoldier   he is drawn at UNSEEN, and his health bar with him
 //   units.js   updateUnits   his Sneak Attack comes back
 //
-// TWO WAYS TO GIVE HIMSELF AWAY, and both are the same rule: he is unseen right
-// up until he does something.
+// ONE FIELD, SET ONCE A FRAME. `exposed` is worked out in updateUnits, where the
+// board is in hand, and the note beside it is where the rule lives: he is seen
+// while something is close enough for him to attack, and unseen the moment
+// nothing is — walking included, because a man on the move is by definition not
+// yet in reach of what he is walking to.
 //
-//   `foe`     he has hold of somebody. A soldier takes a foe at exactly ENGAGE —
-//             the distance at which fighting starts — so "hidden until an enemy
-//             is near enough to attack", which is what was asked for, is already
-//             a field on the man rather than a second constant free to drift.
-//
-//   `thrust`  he has just struck, at anything, at any range. It is set to 1 by
-//             every blow and every knife and decays over LUNGE, so "visible when
-//             they throw the knife for a brief moment just like when they attack
-//             in melee" is the SAME quarter second the lunge already lasts — and
-//             the drawing, the reveal and the blow cannot come apart, because
-//             they are one clock. On a man in melee it changes nothing: he is
-//             already visible through `foe` the whole time.
+// IT WAS A PAIR OF TESTS HERE, `!u.foe && u.thrust <= 0`, and the owner overruled
+// that: a quarter second of reveal per throw against eight tenths of reload meant
+// he winked out between knives and re-armed his Sneak Attack every time, which is
+// how the pair reached 150 damage a second. Now a volley reveals him for as long
+// as it lasts.
 //
 // THE SECOND READER IS THE INTERESTING ONE. Leaving `screened` out would have a
 // thrower halt in front of men he cannot see and then throw nothing, which reads
@@ -124,7 +123,7 @@ export function nearestOnPath(x, y) {
 //
 // A DEAD OR MUSTERING MAN IS NOT HIDDEN, he is absent; every caller already skips
 // him on `respawn` and `hp`, so this does not repeat that.
-export const hidden = u => !!u.def.hidden && !u.foe && u.thrust <= 0;
+export const hidden = u => !!u.def.hidden && !u.exposed;
 
 // Where each man in the squad should be standing, given the tower's rally.
 //
@@ -151,31 +150,48 @@ function stations(tower) {
 // The squad's stations around one point of one road, given as a {route, s} the
 // way nearestOnPath returns it. Split out of stations() so the two-road fallback
 // at the bottom can start again on the other road without repeating any of this.
+//
+// TWO QUESTIONS, TWO FUNCTIONS, and the split is what fixed a bug the owner
+// reported as "my assassins cannot rally to my selected rally point". WHICH POINT
+// OF THE ROAD the squad gathers on is not the same question as WHERE THE THREE
+// MEN STAND around it — and only the first one has an answer the FLAG needs. The
+// flag used to be drawn at the raw drag, clamped to the ring; on a stretch that
+// runs away from the tower that lands off the road and up to 288px from anywhere
+// the men can stand, so the player plants a bright flag, the squad walks
+// somewhere else, and the tower looks broken. Now both read postOn.
 function stationsOn(tower, base) {
-  const s = tower.def.soldier;
-  const road = level.routes[base.route];
+  return layoutOn(tower, postOn(tower, base));
+}
 
-  // Where each man would stand, given a point along that road.
-  const layout = at0 => {
-    const out = [];
-    for (let i = 0; i < s.count; i++) {
-      const [along, across, splay] = FORMATION[i % FORMATION.length];
-      // `along` follows the road's curve; `across` steps off the tangent there.
-      // Walking by arc length keeps a squad on a bending road: offsetting along
-      // one segment's straight tangent puts a man 24px "forward" onto the grass
-      // on the outside of a bend, far enough that enemies pass outside ENGAGE
-      // without ever being blocked.
-      const at = pointOn(road, at0 + along);
-      out.push({
-        rx: at.x - at.ty * across,
-        ry: at.y + at.tx * across,
-        // At rest a soldier watches the way the enemies come from, which is back
-        // along the segment they walk. Only the left/right of this is drawn.
-        faceIdle: Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180
-      });
-    }
-    return out;
-  };
+// Where each man stands, given a point along a road.
+function layoutOn(tower, post) {
+  const s = tower.def.soldier;
+  const road = level.routes[post.route];
+  const out = [];
+  for (let i = 0; i < s.count; i++) {
+    const [along, across, splay] = FORMATION[i % FORMATION.length];
+    // `along` follows the road's curve; `across` steps off the tangent there.
+    // Walking by arc length keeps a squad on a bending road: offsetting along
+    // one segment's straight tangent puts a man 24px "forward" onto the grass
+    // on the outside of a bend, far enough that enemies pass outside ENGAGE
+    // without ever being blocked.
+    const at = pointOn(road, post.s + along);
+    out.push({
+      rx: at.x - at.ty * across,
+      ry: at.y + at.tx * across,
+      // At rest a soldier watches the way the enemies come from, which is back
+      // along the segment they walk. Only the left/right of this is drawn.
+      faceIdle: Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180
+    });
+  }
+  return out;
+}
+
+// WHICH POINT OF WHICH ROAD, as a {route, s}. Everything below this line used to
+// live inside stationsOn and decided the same thing; the only change is that it
+// now returns the answer instead of laying men out on it.
+function postOn(tower, base) {
+  const road = level.routes[base.route];
 
   // AND THEN BACK OFF ALONG THE ROAD UNTIL THE RALLY ITSELF IS INSIDE THE RING.
   //
@@ -206,14 +222,14 @@ function stationsOn(tower, base) {
     return inRange(q.x, q.y, tower.x, tower.y, tower.def.range);
   };
 
-  if (fits(base.s)) return layout(base.s);
+  if (fits(base.s)) return { route: base.route, s: base.s };
 
   const back = nearestOn([road], tower.x, tower.y).s;
   const step = base.s > back ? -4 : 4;
   for (let at0 = base.s + step; (at0 - back) * step < 0; at0 += step) {
-    if (fits(at0)) return layout(at0);
+    if (fits(at0)) return { route: base.route, s: at0 };
   }
-  if (fits(back)) return layout(back);
+  if (fits(back)) return { route: base.route, s: back };
 
   // NOTHING ON THIS ROAD IS IN REACH, which on a map with two of them is not the
   // dead-plot case at all: the player dragged toward the other road, the clamp
@@ -223,7 +239,7 @@ function stationsOn(tower, base) {
   // can produce this, and it did: two rallies in 352 posted a Paladin Keep's men
   // 1.19 ring-radii out.
   const own = nearestOnPath(tower.x, tower.y);
-  if (own.route !== base.route) return stationsOn(tower, own);
+  if (own.route !== base.route) return postOn(tower, own);
 
   // AND IF NO PART OF ANY ROAD IS IN REACH, the squad stands on the piece nearest
   // the tower. That plot cannot post a squad in range at all — map 1's plot 5 is
@@ -233,7 +249,24 @@ function stationsOn(tower, base) {
   // snapped to, which put the men 345px away on a tower that reaches 210: the
   // further the player dragged, the further from the tower they went, on a plot
   // where every direction is equally out of range.
-  return layout(back);
+  return { route: base.route, s: back };
+}
+
+// WHERE A FLAG DROPPED HERE WILL ACTUALLY PUT THE SQUAD, as a point on the board.
+//
+// The same three steps stations() takes — find the road, hold it inside the ring,
+// find the road again — and then the walk back along it that postOn does. It is
+// exported for the two places that draw or store a flag, so that the picture the
+// player is given and the order the men obey are one answer rather than two.
+//
+// IDEMPOTENT, which is what lets input.js store the result as `tower.rally`: the
+// point that comes back is on the road and inside the ring, so running stations()
+// on it finds it fits on the first test and posts the squad exactly there.
+export function rallyPoint(tower, x, y) {
+  const near = nearestOnPath(x, y);
+  const held = clampToRange(tower.x, tower.y, near.x, near.y, tower.def.range);
+  const post = postOn(tower, nearestOnPath(held.x, held.y));
+  return pointOn(level.routes[post.route], post.s);
 }
 
 export function makeUnits(state, tower) {
@@ -281,6 +314,11 @@ export function makeUnits(state, tower) {
       // is already armed by the time anybody could be looking at him. Every other
       // soldier carries it and never reads it. See the arming line in updateUnits.
       sneak: true,
+      // Whether anything is close enough for him to attack right now — see the
+      // note beside the line that sets it. FALSE from birth: a man mustering
+      // behind a barracks has nothing in reach, which is also the answer that
+      // leaves him hidden on the frame before his first update.
+      exposed: false,
       // { dps, left } while a flask is working on him, null otherwise. Set here
       // rather than left undefined so the shape of a unit is written down in one
       // place — see the same argument for `halted` on an enemy.
@@ -685,7 +723,20 @@ export function updateUnits(state, dt) {
     const throwing = !u.foe && d <= SETTLE ? ability(u, 'knife') : null;
     const mark = throwing ? nearestFoe(state, u, throwing.reach) : null;
 
-    if (u.foe) u.face = Math.atan2(u.foe.y - u.y, u.foe.x - u.x);
+    // A MAN COMMITTED TO A POSE DOES NOT TURN, and this is the first branch
+    // because it outranks every reason to look somewhere else. `hold` is a swing
+    // he is in the middle of — a Sneak Attack, a Holy Slash, a knife leaving his
+    // hand, a paladin kneeling in the light — and a figure that pivots half way
+    // through one is a figure whose drawing and heading have come apart.
+    //
+    // THE BUG IT FIXES was reported on the assassin and was never his alone. A
+    // Sneak Attack holds its pose for 0.80s, and if the blow KILLS its man the
+    // release below clears `foe` on the very next frame — so he spent the rest of
+    // the second lunging with a dagger while turned to face his post. Measured at
+    // 2851 of 3456 posed frames pointing the wrong way. Holy Light has carried the
+    // same fault since it shipped, for three seconds at a time.
+    if (u.hold > 0) { /* keep the heading he struck with */ }
+    else if (u.foe) u.face = Math.atan2(u.foe.y - u.y, u.foe.x - u.x);
     // A MAN FACES WHAT HE IS THROWING AT, for as long as there is somebody in
     // reach — not for the quarter second of the throw, which is what this was and
     // what made him spin.
@@ -703,6 +754,34 @@ export function updateUnits(state, dt) {
     else if (mark) u.face = Math.atan2(mark.y - u.y, mark.x - u.x);
     else if (d > SETTLE) u.face = Math.atan2(ty - u.y, tx - u.x);
     else u.face = u.faceIdle;
+
+    // --- IS HE GIVING HIMSELF AWAY THIS FRAME --------------------------------
+    //
+    // "Anytime there is no enemy in range or if they start walking, they turn
+    // invisible" — the owner's rule, and this line is the whole of it. Set here,
+    // read by hidden(), because it is the one question about an assassin that
+    // needs the BOARD and not just the man: whether anything is standing close
+    // enough for him to hurt.
+    //
+    // TWO WAYS TO BE SEEN, and they are the two ways he attacks:
+    //
+    //   a foe inside REACH   he is swinging, and stays visible for the whole
+    //                        fight rather than flashing once a blow
+    //   a mark in reach      he is throwing, and stays visible for the whole
+    //                        volley rather than once a knife
+    //
+    // WALKING NEEDS NO CLAUSE OF ITS OWN. A man closing on a foe is further off
+    // than REACH by definition, and `mark` is only looked for once he has settled
+    // — so marching to a rally point and stalking toward an enemy both fall out of
+    // this as invisible, which is what was asked for.
+    //
+    // AND IT IS WHY SNEAK ATTACK IS NOT ABSURD. It re-arms only while hidden, so
+    // this decides how often: it used to flash off between knives — a quarter
+    // second of reveal against eight tenths of reload — which made EVERY knife a
+    // sneak and the pair worth 150 damage a second. Now a volley opens with one
+    // and the rest are ordinary, and he re-arms when the road in front of him is
+    // clear.
+    u.exposed = !!((u.foe && d <= REACH) || mark);
 
     if (d > SETTLE && u.hold <= 0) {
       const step = Math.min(u.def.speed * dt, d);
@@ -850,8 +929,8 @@ export function updateUnits(state, dt) {
       if (mark) {
         // HALF A BLOW, DOUBLED IF HE WAS UNSEEN — and both are multiples of his
         // own damage, so the knife follows him through any retune of the 20. See
-        // both entries in data/abilities.js for why every knife is a sneak when
-        // the Guild has bought them together.
+        // both entries in data/abilities.js for why it is the first knife of a
+        // volley and not every one of them.
         const sneak = u.sneak ? ability(u, 'sneak') : null;
         // Rounded, so a health bar never has to show a fraction of a point —
         // the same rounding shoot() does on every tower's shot. And a sneaked
@@ -863,11 +942,10 @@ export function updateUnits(state, dt) {
           (sneak && sneak.ammo) || throwing.ammo);
         u.sneak = false;
         u.cd = u.def.cd;
-        // HE GIVES HIMSELF AWAY FOR THE LENGTH OF A LUNGE, and all three of these
-        // are that one quarter second: the reveal (hidden() reads `thrust`), the
-        // drawing, and which way he is turned. Set together and expiring together,
-        // so there is no state where a man is drawn mid-throw and invisible, or
-        // visible with his arm down.
+        // MID-THROW FOR THE LENGTH OF A LUNGE. The reveal is no longer one of
+        // these — it belongs to `exposed` above and lasts as long as the volley —
+        // so what this pair still buys is the drawing and the heading, which hold
+        // together and expire together.
         u.thrust = 1;
         u.hold = LUNGE;
         u.holdArt = throwing.pose;

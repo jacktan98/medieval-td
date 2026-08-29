@@ -1024,18 +1024,59 @@ console.log('\nKnife Throw\n');
       `${rangeOf(taught)}px both, the tier's own ${bare.def.range}`);
   }
 
-  // HE GIVES HIMSELF AWAY FOR A QUARTER SECOND AND NO LONGER. Both halves are the
-  // claim: he is seen at some point in every throw, and he is unseen for most of
-  // the time between them. A man who stayed visible would be shootable by every
-  // thug on the road, which is the opposite of what 150 health can afford.
+  // HE STAYS OUT FOR THE WHOLE VOLLEY, and this is the owner's second answer on
+  // the question. It was a quarter-second flash per throw, which read as the right
+  // idea and had a consequence nobody wants: a man who hides between knives
+  // re-arms his Sneak Attack between knives too, and every blade becomes a heavy
+  // one. So he now shows himself while anything is in reach and vanishes when the
+  // road in front of him is clear.
+  //
+  // BOTH HALVES, because either alone is satisfiable by a bug: a man permanently
+  // visible passes the first, and a man permanently hidden passes the second.
   {
     const state = guild(['knife']);
-    standoff(state, close);
-    const { seen } = throwFor(state, 6);
-    const shown = seen.filter(Boolean).length / seen.length;
-    ok(seen.some(Boolean), 'he shows himself to throw');
-    ok(shown < 0.45, 'and is unseen for most of the time between knives',
-      `visible ${(shown * 100).toFixed(0)}% of 6s`);
+    const e = standoff(state, close);
+    const a = throwFor(state, 4);
+    const shownWhileThrowing = a.seen.filter(Boolean).length / a.seen.length;
+
+    // Take the enemy off the board and give him the length of a throw to fade.
+    state.enemies.length = 0;
+    const b = throwFor(state, 2);
+    const shownAfter = b.seen.filter(Boolean).length / b.seen.length;
+
+    ok(shownWhileThrowing > 0.95, 'he is out in the open for the whole volley',
+      `visible ${(shownWhileThrowing * 100).toFixed(0)}% of 4s`);
+    ok(shownAfter === 0, 'and gone the moment nothing is in reach',
+      `visible ${(shownAfter * 100).toFixed(0)}% of the next 2s`);
+
+    // AND WALKING HIDES HIM TOO, which is the other half of the owner's sentence
+    // and the half that gives him his opening blow: a man who has been sent
+    // somewhere is out of reach of everything by definition, so he fades, re-arms,
+    // and arrives with a Sneak Attack ready.
+    //
+    // THE ENEMY STAYS ON THE BOARD AND INSIDE HIS REACH, or this would pass for
+    // the wrong reason — an empty road hides him whether or not walking does. He
+    // is sent 40px the OTHER WAY, so for the first part of the march the man is
+    // moving and the enemy is still well within 100px.
+    //
+    // Asserted per frame against whether he ACTUALLY MOVED, rather than over a
+    // span of time: "while he is walking" is a property of a frame, and a fixed
+    // number of frames would be a guess about how long a 40px walk takes.
+    state.enemies.push(e);
+    const u = state.units[0];
+    u.rx = u.x - 40;
+    u.ry = u.y;
+    let walked = 0, seenWalking = 0;
+    for (let i = 0; i < 60; i++) {
+      const wasX = u.x, wasY = u.y;
+      updateUnits(state, DT);
+      updateShots(state, DT);
+      if (Math.hypot(u.x - wasX, u.y - wasY) < 1e-9) continue;
+      walked++;
+      if (!hidden(u)) seenWalking++;
+    }
+    ok(walked > 10 && seenWalking === 0, 'and a man on the move is unseen while he moves',
+      `${walked} frames of walking, ${seenWalking} of them visible`);
   }
 }
 
@@ -1124,21 +1165,28 @@ console.log('\nSneak Attack\n');
     standoff(state, Math.round(abilityById('knife').reach * 0.7));
     const { hits } = throwFor(state, 6);
     const alone = Math.round(man.damage * abilityById('knife').times);
-    ok(hits.length > 0 && hits.every(h => h === alone * sneak.times),
-      'every knife from a Guild that has bought both is a sneak',
-      `${hits.join(' + ')} against ${alone} untaught`);
+
+    // ONE SNEAK PER VOLLEY, WHICH IS THE WHOLE OF THE OWNER'S CORRECTION. It was
+    // every knife, because he hid for half a second between throws and re-armed
+    // each time; now he stays out for as long as anything is in reach, so the
+    // first blade is the heavy one and the rest are ordinary.
+    ok(hits[0] === alone * sneak.times, 'a volley opens with a sneaked knife',
+      `${hits[0]} against ${alone}`);
+    ok(hits.slice(1).every(h => h === alone), 'and every knife after it is an ordinary one',
+      hits.join(' + '));
+
     // AND THE NUMBER THAT COMES OUT OF IT, printed rather than merely asserted,
-    // because it is the one figure in this file worth arguing about. The knife was
-    // half a blow when this was written and the pair came to the squad's own melee
-    // output; the owner has since taken the knife to a whole blow, so the pair is
-    // now DOUBLE what the same three men do in the hand — at range, from cover, on
-    // a tower that is also a wall. It is the rule as asked for and it is meant to
-    // be played before it is judged, but nothing about it should be a surprise.
-    const thrown = (alone * sneak.times / man.cd) * man.count;
+    // because it is the figure in this file worth arguing about — and because it
+    // has moved twice. At half a blow it was 37.5 a second; at a whole blow with a
+    // sneak on EVERY knife it was 150, which is what the owner caught. Sustained,
+    // it is now the squad's own melee output, with one opener on top of each
+    // volley.
+    const sustained = (alone / man.cd) * man.count;
     const melee = (man.damage / man.cd) * man.count;
-    ok(thrown === melee * sneak.times,
-      `which is ${sneak.times}x the squad's own melee output, at ${abilityById('knife').reach}px`,
-      `${thrown.toFixed(1)}/s thrown against ${melee.toFixed(1)}/s in the hand`);
+    ok(sustained === melee,
+      `which settles at the squad's own melee output, at ${abilityById('knife').reach}px`,
+      `${sustained.toFixed(1)}/s thrown against ${melee.toFixed(1)}/s in the hand, ` +
+      `plus ${alone * (sneak.times - 1) * man.count} once a volley`);
   }
 
   // --- AND THE BOARD SAYS WHICH IS WHICH -----------------------------------------
@@ -1161,9 +1209,12 @@ console.log('\nSneak Attack\n');
     const b = throwFor(both, 4).blades;
 
     ok(a.length > 0 && a.every(k => k === plainKnife.sprite),
-      'an ordinary knife is drawn as one', a[0]);
-    ok(b.length > 0 && b.every(k => k === heavy.sprite),
-      'and a sneaked one is drawn as the heavy blade', b[0]);
+      'an untaught Guild throws one blade all volley', `${a.length} x ${a[0]}`);
+    // THE FIRST ONE AND ONLY THE FIRST, which is now the picture of the rule
+    // itself: the drawing in the air changes on exactly the throw the damage does.
+    ok(b[0] === heavy.sprite && b.slice(1).every(k => k === plainKnife.sprite),
+      'and a taught one opens with the heavy blade and follows with plain',
+      `${b[0]} then ${b.length - 1} x ${b[1]}`);
     ok(a[0] !== b[0], 'so the two are not the same picture',
       `${a[0]} against ${b[0]}`);
   }

@@ -8,7 +8,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
-import { hidden } from './units.js';
+import { hidden, rallyPoint } from './units.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -1675,8 +1675,17 @@ function drawRally(ctx, state) {
   // a thumb has no position until it touches — so the flag above is what makes
   // the feature usable there: tap, look, tap again to correct.
   if (placing && state.ghost) {
-    const at = clampToRange(t.x, t.y, state.ghost.x, state.ghost.y, t.def.range);
-    // Full strength: this is where they would GO, under the player's pointer.
+    // WHERE THEY WOULD GO, which is not where the pointer is and is not the ring
+    // either. It used to be clampToRange — the drag pulled onto the ellipse — and
+    // that is a promise the squad cannot keep: the ring is not the road, so on a
+    // stretch running away from the tower the bright flag sat up to 288px from
+    // the furthest spot the men could actually reach. The player plants it, the
+    // squad walks somewhere else, and the dim flag below lands in a third place.
+    //
+    // rallyPoint is the same answer stations() gives the men, so dragging past
+    // the leash now shows the flag STOP on the road — which is the honest picture
+    // of a limit, and the thing that was missing.
+    const at = rallyPoint(t, state.ghost.x, state.ghost.y);
     flag(ctx, at.x, at.y, 1);
   }
 }
