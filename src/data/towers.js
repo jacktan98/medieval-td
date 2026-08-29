@@ -460,6 +460,35 @@ export const knife = {
   landSound: true
 };
 
+// THE SAME KNIFE, THROWN BY A MAN NOBODY HAD SEEN. What Sneak Attack puts in the
+// air instead of the blade above.
+//
+// SPREAD FROM `knife`, which is the heavy bolt's pattern and it is doing the same
+// job: everything about how this flies is inherited and only the picture, its box
+// and its anchor are restated. In particular `kind` is inherited on purpose — a
+// man killed by this is killed by an assassin and gets the assassin's cry, and it
+// makes the same noise arriving, because it IS his knife and there is one
+// recording of a knife going in.
+//
+// 37x15 against the plain blade's 39x15, and the two are not the same drawing
+// scaled: the artist has drawn a second knife, 2px shorter and starting 2px
+// further into the canvas.
+//
+// `grip` 0.084 IS THE PLAIN KNIFE'S 0.08 RE-EXPRESSED, not a second measurement.
+// The point that sits on the flight path has to be the same point of the same
+// weapon or the two would leave a hand from different places — so it is worked
+// out from where the blade begins in each file: the plain knife's first ink is at
+// source x 235 and this one's at 237, so 235 + 0.08 x 39 + 2 = 240.1 is the same
+// spot on this blade, which against a trim starting at 237 and 37 wide is 0.084.
+// The difference is a third of a source pixel and the arithmetic is written down
+// so the next re-export can redo it rather than guess.
+export const sneakKnife = {
+  ...knife,
+  sprite: 'assassin_knife_sneak',
+  trim: [237, 250, 37, 15],
+  grip: 0.084
+};
+
 // A LOB, and the only projectile in the game that is not steered.
 //
 // `arc` is what makes it one: the rock is thrown at a PATCH OF GROUND on a fixed

@@ -206,6 +206,10 @@ export const paths = {
   // than a building. Same shape of drawing as the two above — flat, point left —
   // at a third the arrow's length. See `knife` in data/towers.js.
   assassin_knife: 'assets/projectiles/Assassin_Knife.png',
+  // And the one a Sneak Attack throws — a second drawing of the same weapon, so
+  // the player can see which knives are the heavy ones. See `sneakKnife` in
+  // data/towers.js for why it inherits everything but the picture.
+  assassin_knife_sneak: 'assets/projectiles/Assassin_Knife_Sneak_Attack.png',
   // Deadeye's ball: the same lead, drawn four times the size with a flame behind
   // it. A second file rather than the first one scaled up, because it is a
   // different drawing and not a bigger one — see `deadeyeBall` in

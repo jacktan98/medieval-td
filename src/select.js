@@ -249,6 +249,13 @@ export function selectionInfo(state) {
     // An archer thug's 200 and a plague doctor's 130 are the two numbers that
     // explain why a tower is not answering them; everybody else on the road
     // fights at arm's length and gets no row.
-    range: shownRange(f.def)
+    //
+    // AND AN ASSASSIN WHOSE GUILD HAS BOUGHT THE KNIFE, which is the one figure on
+    // the board whose reach is not a property of what he IS. It is on his tower,
+    // because that is where gold buys things — so the man on the road and the
+    // building that sent him print the same 100, and tapping either answers the
+    // question. `f.tower` is on every soldier and on nothing else, so an enemy
+    // takes the `shownRange` answer and is never asked the second question.
+    range: shownRange(f.def) ?? (f.tower ? reachOf(f.tower) : null)
   };
 }

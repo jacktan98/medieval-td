@@ -5,7 +5,7 @@ import { splat } from './blood.js';
 import { clampToRange, inRange } from './ground.js';
 import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
 import { boost } from './towers.js';
-import { knife, SCALE } from './data/towers.js';
+import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
@@ -390,7 +390,7 @@ function nearestFoe(state, u, reach) {
 // NO `side`, which is the whole of what makes this the player's. projectiles.js
 // reads an absent `side` as "looks for enemies", exactly as it does for every
 // arrow a tower has ever fired, so a man throwing needed no branch there at all.
-function fling(state, u, mark, damage) {
+function fling(state, u, mark, damage, ammo) {
   const up = u.def.spriteTrim[3] * u.def.pivot[1] * SCALE * 0.55;
   const from = { x: u.x, y: u.y - up };
 
@@ -404,8 +404,11 @@ function fling(state, u, mark, damage) {
     target: mark,
     damage,
     splash: 0,
-    ammo: knife,
-    speed: knife.speed
+    // WHICH KNIFE, passed in rather than looked up, because the caller is the only
+    // thing that knows whether this one is a Sneak Attack — and the picture in the
+    // air is the only place on the board that difference shows.
+    ammo,
+    speed: ammo.speed
   });
 }
 
@@ -851,9 +854,13 @@ export function updateUnits(state, dt) {
         // the Guild has bought them together.
         const sneak = u.sneak ? ability(u, 'sneak') : null;
         // Rounded, so a health bar never has to show a fraction of a point —
-        // the same rounding shoot() does on every tower's shot.
+        // the same rounding shoot() does on every tower's shot. And a sneaked
+        // knife is a DIFFERENT DRAWING, so a squad throwing two numbers is
+        // visibly throwing two things: the ability names its own ammunition and
+        // this picks it, the same way shoot() prefers a special's ammo on a tower.
         fling(state, u, mark,
-          Math.round(u.def.damage * throwing.times * (sneak ? sneak.times : 1)));
+          Math.round(u.def.damage * throwing.times * (sneak ? sneak.times : 1)),
+          (sneak && sneak.ammo) || throwing.ammo);
         u.sneak = false;
         u.cd = u.def.cd;
         // HE GIVES HIMSELF AWAY FOR THE LENGTH OF A LUNGE, and all three of these

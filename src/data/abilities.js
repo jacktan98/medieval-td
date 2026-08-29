@@ -1,4 +1,4 @@
-import { bolt, knife } from './towers.js';
+import { bolt, knife, sneakKnife } from './towers.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -594,6 +594,17 @@ export const ABILITIES = [
     // man lunging with a dagger cannot also be the drawing of the knife leaving
     // his hand — and the throw is the half where you would not see this anyway.
     pose: SNEAK_ATTACK_POSE,
+    // BUT IT THROWS ITS OWN KNIFE. The pose is the man and cannot say which of two
+    // things he is doing; the BLADE in the air can, and that is where the whole of
+    // this ability's ranged half is visible. Without it a Guild with both
+    // abilities is a squad throwing identical knives for two different numbers,
+    // and nothing on the board says which is which.
+    //
+    // It is the same weapon drawn a second time — see `sneakKnife` in
+    // data/towers.js — so it lands with the same noise, credits the same kill and
+    // flies at the same speed. The picture is the entire difference, exactly as
+    // Deadeye's ball is the musketeer's ball drawn larger.
+    ammo: sneakKnife,
     // AND IT IS LOUDER, which is the FOURTH way an ability can be heard and the
     // first one that is not a clip. Burst Fire fires the ordinary ball, Deadeye
     // speaks through its ammunition, Holy Slash has a recording of its own — and
@@ -615,8 +626,8 @@ export const ABILITIES = [
             'again, which in a melee means the opening strike of every fight he ' +
             'picks.\n\n' +
             'With Knife Throw it is every knife, because a thrower is only visible ' +
-            'for the instant he throws: 40 a blade instead of 20. His strike lands ' +
-            'heavier and sounds it.'
+            'for the instant he throws: 40 a blade instead of 20, and a heavier ' +
+            'blade in the air to say so. His strike lands harder and sounds it.'
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its

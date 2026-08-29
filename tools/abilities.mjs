@@ -945,9 +945,15 @@ function standoff(state, dist) {
 function throwFor(state, seconds) {
   const hits = [];
   const seen = [];
+  // WHICH BLADE LEFT HIS HAND, recorded as it is created rather than as it lands:
+  // Sneak Attack throws a different drawing of the same knife, and that picture is
+  // the only thing on the board that says which knives are the heavy ones.
+  const blades = [];
   let last = state.enemies[0] ? state.enemies[0].hp : 0;
   for (let i = 0; i < seconds / DT; i++) {
+    const before = state.shots.length;
     updateUnits(state, DT);
+    for (let k = before; k < state.shots.length; k++) blades.push(state.shots[k].ammo.sprite);
     updateShots(state, DT);
     seen.push(!hidden(state.units[0]));
     if (state.enemies[0] && state.enemies[0].hp !== last) {
@@ -955,7 +961,7 @@ function throwFor(state, seconds) {
       last = state.enemies[0].hp;
     }
   }
-  return { hits, seen };
+  return { hits, seen, blades };
 }
 
 console.log('\nKnife Throw\n');
@@ -1134,6 +1140,54 @@ console.log('\nSneak Attack\n');
       `which is ${sneak.times}x the squad's own melee output, at ${abilityById('knife').reach}px`,
       `${thrown.toFixed(1)}/s thrown against ${melee.toFixed(1)}/s in the hand`);
   }
+
+  // --- AND THE BOARD SAYS WHICH IS WHICH -----------------------------------------
+  //
+  // A squad throwing two different numbers with one drawing is a squad the player
+  // cannot read. The heavy knife is the whole of the ranged half's feedback — the
+  // POSE cannot carry it, because a man mid-throw looks the same whichever blade
+  // is leaving his hand — so it is worth a check of its own rather than a trust in
+  // one field being set.
+  const plainKnife = abilityById('knife').ammo;
+  const heavy = sneak.ammo;
+
+  {
+    const bare = guild(['knife']);
+    standoff(bare, Math.round(abilityById('knife').reach * 0.7));
+    const both = guild(['knife', 'sneak']);
+    standoff(both, Math.round(abilityById('knife').reach * 0.7));
+
+    const a = throwFor(bare, 4).blades;
+    const b = throwFor(both, 4).blades;
+
+    ok(a.length > 0 && a.every(k => k === plainKnife.sprite),
+      'an ordinary knife is drawn as one', a[0]);
+    ok(b.length > 0 && b.every(k => k === heavy.sprite),
+      'and a sneaked one is drawn as the heavy blade', b[0]);
+    ok(a[0] !== b[0], 'so the two are not the same picture',
+      `${a[0]} against ${b[0]}`);
+  }
+
+  // IT IS THE SAME WEAPON, though, and everything but the picture says so. A
+  // separate `kind` would have given it its own kill cry and its own landing
+  // noise, and there is one recording of a knife going in.
+  ok(heavy.kind === plainKnife.kind && heavy.speed === plainKnife.speed &&
+     heavy.landSound === plainKnife.landSound && heavy.fireSound === plainKnife.fireSound,
+    'it flies, lands and kills as the same knife', `kind ${heavy.kind}`);
+
+  // AND IT LEAVES HIS HAND FROM THE SAME POINT OF THE BLADE. `grip` is a fraction
+  // of each trim and the two trims differ, so the fractions HAVE to differ to mean
+  // the same thing — 0.08 of 39 and 0.084 of 37 are both about 3.1 source px in
+  // from the tip. Checked in px rather than trusted, because this is exactly the
+  // arithmetic a re-export silently invalidates.
+  const fromTip = a => a.grip * a.trim[2];
+  ok(Math.abs(fromTip(heavy) - fromTip(plainKnife)) < 0.25,
+    'and from the same point of it, measured from the tip',
+    `${fromTip(plainKnife).toFixed(2)}px against ${fromTip(heavy).toFixed(2)}px`);
+
+  ok(!!paths[plainKnife.sprite] && !!paths[heavy.sprite],
+    'and both blades are wired to files',
+    `${paths[plainKnife.sprite]} / ${paths[heavy.sprite]}`);
 }
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);
