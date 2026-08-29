@@ -1,7 +1,7 @@
 import { splat } from './blood.js';
 import { impact } from './impacts.js';
 import { inRange } from './ground.js';
-import { play, LAND, BREAK } from './audio.js';
+import { play, LAND, BREAK, KNIFE } from './audio.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -191,7 +191,7 @@ const victims = (state, s) => (s.side === 'enemy' ? state.units : state.enemies)
 
 // What arriving SOUNDS like, by ammunition. An arrow is not here on purpose: it
 // makes its noise leaving the bow, because that is the moment you watch.
-const LANDING = { rock: LAND, flask: BREAK };
+const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE };
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what

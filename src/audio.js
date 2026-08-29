@@ -205,6 +205,10 @@ const paths = {
   // finishing somebody.
   assassin_melee_attack: 'assets/audio/sfx/Assassin_melee_attack.mp3',
   assassin_kill_enemy:   'assets/audio/sfx/Assassin_kill_enemy.mp3',
+  // And his knife ARRIVING, which is the flask's split rather than the arrow's:
+  // the thrower makes no noise and the blade going in does. See `knife` in
+  // data/towers.js for why, and LANDING in projectiles.js for where it is played.
+  assassin_knife_throw:  'assets/audio/sfx/Assassin_Knife_Throw.mp3',
   // The ballista. The same pair again, and the third weapon in the game to have
   // them: the bolt going off every time one is loosed, and a separate line for
   // the engineer taking a man down. A bolt arriving is silent — see the two flags
@@ -509,6 +513,10 @@ export const LAND = ['rock_hit_ground'];
 // the sound that tells the player poison is now on that patch of road, which is
 // information they need every single time rather than most times.
 export const BREAK = ['flask_break'];
+// A knife going in, at the far end of its flight. Category B beside the other
+// two landings, and for the third time the same reason: three assassins with
+// Knife Throw can land three blades on the same frame.
+export const KNIFE = ['assassin_knife_throw'];
 
 // THE TAP. Every control in the game that does something answers with this, and
 // it is Category B for a reason that has nothing to do with the battle: it is a

@@ -1320,10 +1320,17 @@ const GHOST = 0.3;
 
 // --- and how much of a man who is not there at all ----------------------------
 //
-// What an assassin looks like while nothing has seen him. The SAME number as
-// GHOST and for a different reason, so it is a different constant: GHOST is a
-// building's transparency wearing a figure's shape, this is a man's own cloak.
-// Either could be retuned without the other.
+// What an assassin looks like while nothing has seen him. A separate constant
+// from GHOST, and now a separate number too: GHOST is a building's transparency
+// wearing a figure's shape, this is a man's own cloak, and the two are tuned for
+// different jobs.
+//
+// IT SHIPPED AT 0.3 AND THE OWNER RAISED IT. At three tenths an assassin was a
+// pale smear you had to hunt for on the sand, which sounds like what invisible
+// should look like and plays badly: a squad you cannot find is a squad you cannot
+// give orders to, and the rally flag is the only thing left to aim by. At seven
+// tenths he is plainly there and plainly not solid — which is the honest picture,
+// because the enemy is the one who cannot see him, not the player.
 //
 // THE FADE AND THE TARGETING ARE ONE TEST. `hidden(u)` is what enemies.js asks
 // before it will shoot at or halt for a soldier, and it is what is asked here, so
@@ -1331,7 +1338,7 @@ const GHOST = 0.3;
 // taking arrows, or a solid one archers refuse to aim at, would both be the game
 // lying about its own rules — and there is no second condition to drift out of
 // step, because there is no second condition.
-const UNSEEN = 0.3;
+const UNSEEN = 0.7;
 
 // The rectangle a figure's art covers. Symmetric about the point it stands on, so
 // it is the same box whichever way the sprite happens to be mirrored, and drawn

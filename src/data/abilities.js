@@ -1,4 +1,4 @@
-import { bolt } from './towers.js';
+import { bolt, knife } from './towers.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -159,6 +159,29 @@ const HOLY_SLASH_POSE = {
   sprite: 'paladin_holy_slash',
   trim: [135, 212, 178, 116],
   pivot: [0.798, 0.905]
+};
+
+// The assassin's two, and both anchors are the finding the paladin's were: the
+// artist drew them over his existing poses, so the shadow comes back on the same
+// source pixel, (259.0, 302.8), as his Default and his Attack.
+//
+// KNIFE THROW is his standing box widened to the right — 110 against 82 — for the
+// arm coming through. Same origin, same height, so the pivot is the same POINT
+// re-expressed against a wider rect: 44/110 across instead of 44/82.
+//
+// SNEAK ATTACK comes back in the Attack pose's box to the pixel, [174, 198, 151,
+// 116], exactly as Holy Slash comes back in the paladin's. Measured per file
+// rather than copied — tools/shadow.mjs runs both of these every time.
+const KNIFE_THROW_POSE = {
+  sprite: 'assassin_knife_throw',
+  trim: [215, 198, 110, 116],
+  pivot: [0.400, 0.903]
+};
+
+const SNEAK_ATTACK_POSE = {
+  sprite: 'assassin_sneak_attack',
+  trim: [174, 198, 151, 116],
+  pivot: [0.563, 0.903]
 };
 
 // How long a special pose stays up. One second on Burst Fire and two on Deadeye:
@@ -329,31 +352,32 @@ export const ABILITIES = [
     // to anything.
     //
     // AND IT SCALES THE SPEED, NOT THE COOLDOWN, which is why it is greater than
-    // 1 rather than less. "Reload 1.25x faster" is the sentence a player reads;
+    // 1 rather than less. "Reload 1.35x faster" is the sentence a player reads;
     // dividing is cooldownOf's job in src/towers.js, exactly as multiplying is
-    // rangeOf's. A `cooldownTimes: 0.8` would mean the same thing and read as a
+    // rangeOf's. A `cooldownTimes: 0.74` would mean the same thing and read as a
     // nerf.
     //
-    // 1.25 ON 0.80 IS 0.64, and it is worth writing down that the owner asked for
-    // "0.60, as a multiplier of 1.25" — the two do not meet. 0.60 exactly wants
-    // 1.3333, which is not a number anybody wants on a card, so the round
-    // multiplier won and the reload is 0.64. Change this one figure if the 0.04
-    // matters.
+    // 1.35 ON 0.80 IS 0.593, and this figure has now been round the loop twice.
+    // It was an absolute 0.50, then 1.25 — which the owner accepted at 0.64 after
+    // asking for a 0.60 no round multiplier reaches — and is now 1.35. Only this
+    // one number moves each time, which is the whole point of holding it as a
+    // multiplier: nothing else in the file, the tools or the card is edited to
+    // follow it.
     //
-    // WHAT IT BUYS: 30 every 0.64s is 46.9 a second against 37.5, which is a
-    // quarter more output on the tower with the smallest blow. It stacks with the
-    // range ability rather than competing, so a Sentry with both is 46.9 a second
+    // WHAT IT BUYS: 30 every 0.59s is 50.6 a second against 37.5, which is a
+    // third more output on the tower with the smallest blow. It stacks with the
+    // range ability rather than competing, so a Sentry with both is 50.6 a second
     // at 390.
     id: 'swift',
     name: 'Swift Reload',
     of: 'Crossbow Sentry',
     icon: 'ability_swift',
     cost: ABILITY_COST,
-    reloadTimes: 1.25,
+    reloadTimes: 1.35,
 
     detail: 'The crossbowman works a windlass instead of a belt hook and reloads ' +
-            '1.25x faster — a quarrel every 0.64 seconds instead of every 0.8, ' +
-            'which is 46.9 damage a second where the sentry alone does 37.5.\n\n' +
+            '1.35x faster — a quarrel every 0.59 seconds instead of every 0.8, ' +
+            'which is 50.6 damage a second where the sentry alone does 37.5.\n\n' +
             'Nothing else changes: the same 30 a quarrel and the same reach. It ' +
             'stacks with Reinforced Tension rather than competing with it.'
   },
@@ -450,6 +474,128 @@ export const ABILITIES = [
             'exactly 2x, from the man who starts with the least damage in the ' +
             'game. Each of the 3 counts his own blows, so the strikes land spread ' +
             'out rather than all at once.'
+  },
+  {
+    // --- THE FIRST ABILITY THAT GIVES A SOLDIER A WEAPON HE DID NOT HAVE -------
+    //
+    // Everything above changes a number, a rhythm or a drawing on something that
+    // already fights the way it fights. This one hands the assassin a second
+    // attack: a knife at 200px, thrown from where he stands, at men his squad
+    // could never have reached.
+    //
+    // WHICH IS A HOLE IN THE GAME CLOSED, and it is worth being precise about
+    // WHICH hole, because the obvious answer is wrong. The owner's rule is that a
+    // squad holds the ground it was posted to hold and never walks out — "it is
+    // okay if they are attacked from afar and cannot do anything" — so a plague
+    // doctor standing off at 130px is unanswerable by a Militia Camp or a Paladin
+    // Keep, full stop.
+    //
+    // THE GUILD NEVER HAD THAT PROBLEM. Its men are invisible, so a thrower does
+    // not stop for them at all: he walks into the ambush and dies of a blade. That
+    // was true before this ability existed, and tools/plague.mjs measures it.
+    //
+    // So what 200px actually buys is THE ROAD. Untaught, the assassins wait and
+    // three of them shuffle 50px out of formation to meet him; taught, he dies 59px
+    // short of them a second and a half sooner and nobody moves at all. Reaching
+    // further, sooner, without breaking formation — not "the only answer", which
+    // is what this comment said before the tool was written and disagreed.
+    //
+    // `reach` RATHER THAN `range`, and the name is load-bearing. rangeOf() in
+    // src/towers.js returns an ability's `range` in place of the tower's own, and
+    // the Assassin Guild's 210 is not a weapon's reach at all — it is the LEASH on
+    // the rally point, the circle the men may be posted inside. Calling this field
+    // `range` would have quietly shortened every Guild's leash to 200 the moment
+    // the ability was bought, which is a bug with no visible cause. Two different
+    // quantities, two different words.
+    //
+    // HALF HIS BLOW, as `times` like every other magnitude here: 10 against his
+    // melee 20, and it follows him if the 20 is ever retuned. Three assassins
+    // throwing is 37.5 a second at 200px — about a tier 3 archery tower's output,
+    // bought on a plot that is also still a wall.
+    id: 'knife',
+    name: 'Knife Throw',
+    of: 'Assassin Guild',
+    icon: 'ability_knife',
+    cost: ABILITY_COST,
+    reach: 200,
+    times: 0.5,
+    ammo: knife,
+    // He is drawn mid-throw for exactly as long as a lunge lasts, and that is not
+    // a coincidence: units.js sets `hold` to the SAME quarter second the swing
+    // decays over, so the reveal, the pose and the blow all end together. See
+    // LUNGE there.
+    pose: KNIFE_THROW_POSE,
+
+    detail: 'The assassin throws at 200px for 10 — half what his blade does — ' +
+            'without leaving his post. Three of them is 37.5 damage a second at ' +
+            'range, on a tower that is still a wall.\n\n' +
+            'No squad in this game walks out to fetch an enemy, so this is the ' +
+            'only reach a barracks has. Men who would otherwise wait to be walked ' +
+            'into kill on the road instead, and never break formation to do it. ' +
+            'He shows himself for the instant the knife is in his hand and is gone ' +
+            'again before it lands.'
+  },
+  {
+    // --- AND THE ONE THAT PAYS FOR BEING UNSEEN -------------------------------
+    //
+    // ARMED BY HIDING, SPENT BY STRIKING. The owner's words: bonus damage every
+    // time they appear from their invisibility, and it "only resets when they
+    // become invisible and visible again". So it is not a rhythm like Holy Slash
+    // and not a reaction like Holy Light — it is a flag that hidden() turns back
+    // on, which makes hidden() the only trigger in the ability system that is also
+    // a drawing rule and a targeting rule. One predicate, now three jobs.
+    //
+    // WHAT THAT MEANS IN A FIGHT, and it is worth writing down because the two
+    // halves behave completely differently:
+    //
+    //   IN MELEE he is visible for as long as he has hold of somebody, so exactly
+    //   ONE blow in each engagement is a sneak — the opener, and then nothing
+    //   until his man is dead and he has faded again.
+    //
+    //   THROWING, if the Guild has also bought Knife Throw, he shows himself for a
+    //   quarter second and hides again between knives. So EVERY knife is a sneak.
+    //   That is the literal reading of the rule and it is deliberate: it is what
+    //   makes the pair worth 300 gold rather than 150 twice, and it doubles the
+    //   ability that was otherwise the weaker of the two.
+    //
+    // 2x, WHICH IS THE MODEST END. Holy Slash is five times a paladin's blow. Two
+    // is a sneak attack's traditional number and it keeps the two-ability Guild at
+    // 75 a second thrown — the same output it already has in melee, at 200px
+    // instead of at arm's length. If that proves too much in play, this figure is
+    // the dial: nothing else needs to move with it.
+    id: 'sneak',
+    name: 'Sneak Attack',
+    of: 'Assassin Guild',
+    icon: 'ability_sneak',
+    cost: ABILITY_COST,
+    times: 2,
+    // Only on the BLADE. A thrown knife keeps its own pose, because a drawing of a
+    // man lunging with a dagger cannot also be the drawing of the knife leaving
+    // his hand — and the throw is the half where you would not see this anyway.
+    pose: SNEAK_ATTACK_POSE,
+    // AND IT IS LOUDER, which is the FOURTH way an ability can be heard and the
+    // first one that is not a clip. Burst Fire fires the ordinary ball, Deadeye
+    // speaks through its ammunition, Holy Slash has a recording of its own — and
+    // this is the man's own blade played harder, because the owner asked for the
+    // heavy impact to be audible and a fourth take of a dagger is not what a
+    // heavier blow sounds like. Same trick as `fireGain` on the heavy bolt above,
+    // and it lives here for the same reason: the difference belongs to the BLOW,
+    // not to the file, and a GAIN entry would have raised every ordinary swing
+    // with it — including the three this one is supposed to stand out from.
+    //
+    // 1.8 RATHER THAN 2. Every clip is levelled to the same peak at load (see
+    // TARGET_LOUD in src/audio.js), so a plain doubling really doubles and clips
+    // against the ceiling on the loudest takes. 1.8 is a shade over 5dB: plainly
+    // a heavier blow, still inside the mix.
+    loud: 1.8,
+
+    detail: 'The first blow after an assassin shows himself is worth double — 40 ' +
+            'where his blade does 20 — and it comes back the moment he fades ' +
+            'again, which in a melee means the opening strike of every fight he ' +
+            'picks.\n\n' +
+            'With Knife Throw it is every knife, because a thrower is only visible ' +
+            'for the instant he throws: 20 a blade instead of 10. His strike lands ' +
+            'heavier and sounds it.'
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its

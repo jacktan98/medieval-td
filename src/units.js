@@ -5,6 +5,7 @@ import { splat } from './blood.js';
 import { clampToRange, inRange } from './ground.js';
 import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
 import { boost } from './towers.js';
+import { knife, SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
@@ -31,6 +32,18 @@ const SETTLE = 16;   // stop walking here, so the two stand adjacent not stacked
 // A soldier who is only assisting drops it the instant an unblocked enemy comes
 // within ENGAGE of him, so helping never costs the squad its grip on the road.
 const ASSIST = 70;
+
+// HOW LONG A BLOW LASTS, and it is one number rather than two so that nothing
+// can drift out of step with it.
+//
+// `thrust` is set to 1 the instant a man strikes and falls back to 0 at
+// THRUST_DECAY a second, so a swing takes a quarter second. Three separate things
+// are that quarter second and all three read it from here: the lunge render.js
+// draws, the pose a thrown knife holds, and the moment an assassin is visible for
+// having thrown it. Writing 0.25 next to any of them would be the same number
+// typed twice.
+const THRUST_DECAY = 4;
+const LUNGE = 1 / THRUST_DECAY;
 
 // Formation offsets as [along, across, splay] in path-local units: along is
 // the direction enemies travel, across is perpendicular, splay is degrees
@@ -76,19 +89,31 @@ export function nearestOnPath(x, y) {
 
 // IS THIS MAN HIDDEN RIGHT NOW, which is the whole of the assassin.
 //
-// ONE PREDICATE, THREE READERS, and that is deliberate: what the enemy can aim
-// at, what makes an enemy stop, and what the screen draws all have to agree, or
-// the player watches a flask sail into a man who is not there.
+// ONE PREDICATE, FOUR READERS, and that is deliberate: what the enemy can aim
+// at, what makes an enemy stop, what the screen draws, and what re-arms a Sneak
+// Attack all have to agree, or the player watches a flask sail into a man who is
+// not there — or a bonus land on a man nothing was hiding.
 //
 //   enemies.js nearestUnit   a thrower cannot pick him as a mark
 //   enemies.js screened      and does not stand off from him either
 //   render.js  drawSoldier   he is drawn at UNSEEN, and his health bar with him
+//   units.js   updateUnits   his Sneak Attack comes back
 //
-// HE IS HIDDEN UNTIL HE HAS SOMEBODY, and `foe` is the right test rather than a
-// radius of its own. A soldier takes a foe at exactly ENGAGE — the distance at
-// which fighting starts — so "hidden until an enemy is near enough to attack",
-// which is what was asked for, is already a field on the man. A second constant
-// would be the same number written twice and free to drift.
+// TWO WAYS TO GIVE HIMSELF AWAY, and both are the same rule: he is unseen right
+// up until he does something.
+//
+//   `foe`     he has hold of somebody. A soldier takes a foe at exactly ENGAGE —
+//             the distance at which fighting starts — so "hidden until an enemy
+//             is near enough to attack", which is what was asked for, is already
+//             a field on the man rather than a second constant free to drift.
+//
+//   `thrust`  he has just struck, at anything, at any range. It is set to 1 by
+//             every blow and every knife and decays over LUNGE, so "visible when
+//             they throw the knife for a brief moment just like when they attack
+//             in melee" is the SAME quarter second the lunge already lasts — and
+//             the drawing, the reveal and the blow cannot come apart, because
+//             they are one clock. On a man in melee it changes nothing: he is
+//             already visible through `foe` the whole time.
 //
 // THE SECOND READER IS THE INTERESTING ONE. Leaving `screened` out would have a
 // thrower halt in front of men he cannot see and then throw nothing, which reads
@@ -99,7 +124,7 @@ export function nearestOnPath(x, y) {
 //
 // A DEAD OR MUSTERING MAN IS NOT HIDDEN, he is absent; every caller already skips
 // him on `respawn` and `hp`, so this does not repeat that.
-export const hidden = u => !!u.def.hidden && !u.foe;
+export const hidden = u => !!u.def.hidden && !u.foe && u.thrust <= 0;
 
 // Where each man in the squad should be standing, given the tower's rally.
 //
@@ -251,6 +276,15 @@ export function makeUnits(state, tower) {
       holdArt: null,  // the drawing to show while holding, or his own Attack pose
       healing: 0,     // health a second while Holy Light is up, 0 the rest of the time
       healCd: 0,      // seconds until Holy Light may be called again
+      // Whether his next blow is a Sneak Attack. TRUE FROM BIRTH, and that is the
+      // right answer rather than a convenience: an assassin musters unseen, so he
+      // is already armed by the time anybody could be looking at him. Every other
+      // soldier carries it and never reads it. See the arming line in updateUnits.
+      sneak: true,
+      // Which way he turned to throw, held for the lunge that follows. Set here
+      // for the same reason every other clock is: a field that springs into
+      // existence is a field that was undefined on the frame before it.
+      throwFace: at.faceIdle,
       // { dps, left } while a flask is working on him, null otherwise. Set here
       // rather than left undefined so the shape of a unit is written down in one
       // place — see the same argument for `halted` on an enemy.
@@ -322,6 +356,62 @@ export function unhook(e) {
 // short array that is empty for every man in the game except a paladin, so a
 // spearman leaves this function without touching the ability table at all.
 const ability = (u, id) => (owns(u.tower, id) ? abilityById(id) : null);
+
+// --- what a soldier throws ------------------------------------------------------
+
+// The nearest live enemy within reach of a man standing still, or null.
+//
+// THROUGH inRange LIKE EVERY OTHER REACH IN THE GAME, because the board is drawn
+// in perspective and a round patch of ground is drawn squashed. A soldier using a
+// plain radius would throw further up the screen than down it, and the ring
+// render.js draws would be a lie about which men he can hit.
+//
+// It does NOT ask about the leash. `range` on a barracks tier is the circle the
+// men may be POSTED inside — where their feet may go — and a knife is not his
+// feet. He throws 200px from wherever he is standing, and the one thing that
+// stops him is running out of enemies.
+function nearestFoe(state, u, reach) {
+  let best = null;
+  let least = Infinity;
+  for (const e of state.enemies) {
+    if (e.hp <= 0 || e.leaked) continue;
+    if (!inRange(u.x, u.y, e.x, e.y, reach)) continue;
+    const d = Math.hypot(e.x - u.x, e.y - u.y);
+    if (d < least) { least = d; best = e; }
+  }
+  return best;
+}
+
+// A knife leaves a soldier's hand, at an enemy.
+//
+// THE SOLDIERS' HALF OF loose() IN enemies.js, and deliberately the same shape:
+// the hand is derived from the man's own drawing rather than typed, so nothing
+// needs re-measuring when the artist redraws him, and the DAMAGE is passed in
+// rather than read off the ammunition — the caller has already folded in the half
+// and the Sneak Attack double, exactly as a tower's shot carries the number its
+// abilities worked out rather than the one on the arrow.
+//
+// NO `side`, which is the whole of what makes this the player's. projectiles.js
+// reads an absent `side` as "looks for enemies", exactly as it does for every
+// arrow a tower has ever fired, so a man throwing needed no branch there at all.
+function fling(state, u, mark, damage) {
+  const up = u.def.spriteTrim[3] * u.def.pivot[1] * SCALE * 0.55;
+  const from = { x: u.x, y: u.y - up };
+
+  state.shots.push({
+    x: from.x,
+    y: from.y,
+    angle: Math.atan2(mark.y - from.y, mark.x - from.x),
+    // Where it was thrown FROM, so the body ends up facing the blow. The
+    // projectile's own x is no use: by the time it lands it is on top of the man.
+    fromX: u.x,
+    target: mark,
+    damage,
+    splash: 0,
+    ammo: knife,
+    speed: knife.speed
+  });
+}
 
 export function updateUnits(state, dt) {
   // DIVINE FORTITUDE, and it is applied here rather than at muster.
@@ -588,6 +678,13 @@ export function updateUnits(state, dt) {
     const d = Math.hypot(tx - u.x, ty - u.y);
 
     if (u.foe) u.face = Math.atan2(u.foe.y - u.y, u.foe.x - u.x);
+    // A MAN FACES WHAT HE JUST THREW AT. `thrust` is the same quarter second the
+    // throw pose is up for, so he turns, throws, and settles back to his post's
+    // heading as the arm comes down — rather than flicking a knife over his
+    // shoulder at a man behind him, which is what the two branches below would
+    // have him do. It ranks under `foe` because somebody with hold of him
+    // outranks a mark at 200px, exactly as it does for a thrower in enemies.js.
+    else if (u.thrust > 0) u.face = u.throwFace;
     else if (d > SETTLE) u.face = Math.atan2(ty - u.y, tx - u.x);
     else u.face = u.faceIdle;
 
@@ -598,7 +695,17 @@ export function updateUnits(state, dt) {
     }
 
     u.cd -= dt;
-    u.thrust = Math.max(0, u.thrust - dt * 4);
+    u.thrust = Math.max(0, u.thrust - dt * THRUST_DECAY);
+
+    // SNEAK ATTACK COMES BACK BY HIDING, and this one line is the whole of the
+    // "only resets when they become invisible and visible again" rule. It is
+    // AFTER the thrust decay above and BEFORE the two attacks below, so the frame
+    // a man's lunge finishes is the frame he is armed again — the same frame the
+    // screen starts drawing him faint.
+    //
+    // hidden() is false for everybody who is not an assassin, so this costs every
+    // other soldier in the game one property read.
+    if (hidden(u)) u.sneak = true;
 
     if (u.foe && d <= REACH) {
       // Each side spatters the one it HITS, so a melee throws blood both ways
@@ -615,13 +722,31 @@ export function updateUnits(state, dt) {
         const slash = ability(u, 'slash');
         const special = slash && (u.blows + 1) % slash.every === 0 ? slash : null;
 
+        // SNEAK ATTACK: whatever this blow was going to be, doubled, because he
+        // was not there a moment ago. Asked in that order — `u.sneak` first, the
+        // ability second — so a spearman never touches the ability table: the flag
+        // is armed for every soldier in the game and only an assassin's tower has
+        // anything to spend it on.
+        //
+        // It STACKS onto the special rather than replacing it, which costs nothing
+        // to write and is the only answer that stays right: Holy Slash and this
+        // belong to different towers today, but a barracks tier 4 that had both
+        // would want an opening strike worth five AND double, not a rule about
+        // which one wins.
+        const sneak = u.sneak ? ability(u, 'sneak') : null;
+
         // A MULTIPLE OF HIS OWN BLOW, the same shape shoot() reads on a tower: a
         // magnitude here is a multiplier of the stat it changes, so it survives the
         // next retune of that stat. `damage` is still honoured for an ability that
         // really means an absolute number.
-        u.foe.hp -= special
+        u.foe.hp -= (special
           ? (special.times ? u.def.damage * special.times : special.damage)
-          : u.def.damage;
+          : u.def.damage) * (sneak ? sneak.times : 1);
+        // SPENT, whether or not anything was bought. The flag means "his next blow
+        // is the one he lands on showing himself", and that is true of every man
+        // here; the ability is what turns it into damage. Re-armed by hiding, and
+        // by nothing else — see the line above the melee block.
+        u.sneak = false;
         u.blows++;
         u.cd = u.def.cd;
         u.thrust = 1;
@@ -655,6 +780,14 @@ export function updateUnits(state, dt) {
           u.hold = special.hold ?? u.def.cd;
           u.holdArt = special.pose;
           play(abilityCue(special.cue));
+        } else if (sneak) {
+          // NO CLIP OF ITS OWN. Sneak Attack is his own blade, harder — so it is
+          // the same recording played louder rather than a fourth take of a
+          // dagger, which is the artist's ask and the pope's trick from `fireGain`
+          // used on a man. See `loud` on the ability for why 1.8 and not 2.
+          u.hold = sneak.hold ?? u.def.cd;
+          u.holdArt = sneak.pose;
+          play(blowCue(u.def), sneak.loud);
         } else {
           play(blowCue(u.def));
         }
@@ -679,6 +812,48 @@ export function updateUnits(state, dt) {
           splat(state, u.x, u.y - u.def.r, u.y);
           u.struckFrom = u.foe.x >= u.x ? 1 : -1;
         }
+      }
+    } else if (!u.foe && d <= SETTLE && u.cd <= 0 && u.hold <= 0) {
+      // --- KNIFE THROW ---------------------------------------------------------
+      //
+      // AT HIS POST AND WITH NOBODY ON HIM, which is exactly the state this
+      // ability exists to make useful. Before it, a settled soldier with no foe
+      // did nothing whatsoever, and against an enemy that stands off and throws he
+      // went on doing nothing until the wave clock gave up — see the note on
+      // hidden() above and check 5 in tools/plague.mjs.
+      //
+      // `d <= SETTLE` is "he has arrived", the same test the step above uses to
+      // stop him walking. A man still marching does not throw: `hold` freezes him
+      // for a quarter second each time, and a squad flicking knives across the map
+      // would crawl to a rally point it was ordered to run to.
+      //
+      // THE SAME CLOCK AS A SWING. `cd` is his attack cooldown and this branch is
+      // the else of the melee one, so he throws at his own rate and can never
+      // throw and strike in the same beat — a knife is what he does INSTEAD of a
+      // blow, not as well as.
+      const throwing = ability(u, 'knife');
+      const mark = throwing && nearestFoe(state, u, throwing.reach);
+      if (mark) {
+        // HALF A BLOW, DOUBLED IF HE WAS UNSEEN — and both are multiples of his
+        // own damage, so the knife follows him through any retune of the 20. See
+        // both entries in data/abilities.js for why every knife is a sneak when
+        // the Guild has bought them together.
+        const sneak = u.sneak ? ability(u, 'sneak') : null;
+        // Rounded, so a health bar never has to show a fraction of a point —
+        // the same rounding shoot() does on every tower's shot.
+        fling(state, u, mark,
+          Math.round(u.def.damage * throwing.times * (sneak ? sneak.times : 1)));
+        u.sneak = false;
+        u.cd = u.def.cd;
+        // HE GIVES HIMSELF AWAY FOR THE LENGTH OF A LUNGE, and all three of these
+        // are that one quarter second: the reveal (hidden() reads `thrust`), the
+        // drawing, and which way he is turned. Set together and expiring together,
+        // so there is no state where a man is drawn mid-throw and invisible, or
+        // visible with his arm down.
+        u.thrust = 1;
+        u.hold = LUNGE;
+        u.holdArt = throwing.pose;
+        u.throwFace = Math.atan2(mark.y - u.y, mark.x - u.x);
       }
     }
 

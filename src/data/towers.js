@@ -422,6 +422,44 @@ export const quarrel = {
   landSound: false
 };
 
+// THE FIRST THING A SOLDIER HAS EVER THROWN.
+//
+// Every projectile above this line leaves a BUILDING. This one leaves a man's
+// hand — the assassin's, when his guild has bought Knife Throw — and it needed
+// nothing new in projectiles.js to do it: a shot with no `side` looks for
+// enemies, which is what a tower's arrows already say, so the whole difference
+// between an archer's tower and an assassin's wrist is who pushed the shot onto
+// the list. See loose() in src/units.js, which is the soldiers' half of the
+// function enemies.js has had all along.
+//
+// 39x15 source, the smallest thing that flies: 8px long on the board against an
+// arrow's 20. It is a knife rather than a missile and it should read as one.
+//
+// `grip` 0.08, measured the same way the arrow's was — the column where the
+// point first reaches half the blade's height, which is 3px into a 39px trim.
+// The tip is drawn at the LEFT like every other shaft in the game, so `faces` is
+// -1 and nothing about the rotation is special.
+//
+// SPEED 300, the slowest steered shot there is, below the arrow's 360. A thrown
+// blade is an arm rather than a bow, and at 200 reach the longest flight is 0.67s
+// — comfortably inside the 0.8s between throws, so a second knife never leaves
+// before the first arrives.
+//
+// SILENT LEAVING, LOUD ARRIVING, which is the flask's split rather than the
+// arrow's and is what the owner asked for: the moment worth hearing is the blade
+// going in, not the wrist that flicked it. The clip is wired into LANDING in
+// projectiles.js off `kind`, like the rock's and the flask's.
+export const knife = {
+  kind: 'knife',
+  sprite: 'assassin_knife',
+  trim: [235, 250, 39, 15],
+  faces: -1,
+  grip: 0.08,
+  speed: 300,
+  fireSound: false,
+  landSound: true
+};
+
 // A LOB, and the only projectile in the game that is not steered.
 //
 // `arc` is what makes it one: the rock is thrown at a PATCH OF GROUND on a fixed
@@ -1604,6 +1642,11 @@ export const barracks = [
     // answers when it is built and when it is given a rally point rather than
     // borrowing a barracks line. See familyCue in src/audio.js.
     voice: 'assassin',
+    // ITS TWO, and they are the first abilities in the game that change what a
+    // SOLDIER does rather than what a building does — a knife at 200px, and a
+    // heavier blow on the strike that comes out of nowhere. Both are read in
+    // src/units.js, which is where the men are, rather than in src/towers.js.
+    abilities: ['knife', 'sneak'],
     soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 20, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43' }
   }
 ];

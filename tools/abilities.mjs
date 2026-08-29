@@ -1,4 +1,4 @@
-// What the six tier 4 abilities actually do, driven through the real modules.
+// What every tier 4 ability actually does, driven through the real modules.
 // Node only.
 //
 //   node tools/abilities.mjs
@@ -6,6 +6,12 @@
 // Every check below steps `updateTowers` or `updateUnits` from src/ — the code
 // that ships — against a tower and a squad built the way input.js builds them.
 // Nothing here is a model of an ability; it is the ability, minus drawing.
+//
+// TWO KINDS OF ABILITY LIVE HERE NOW. Most of them change a BUILDING and are
+// asked through rangeOf, cooldownOf, framesOf or the shot loop. The Paladin
+// Keep's two and the Assassin Guild's two change a MAN, so they are asked of a
+// soldier standing on a road — and the Guild's are the first that need
+// updateShots as well, because one of them is a thrown knife.
 //
 // It exists because most of them are RHYTHMS, and a rhythm is the kind of thing
 // that looks right and is wrong. "Every sixth shot" off by one is invisible in play
@@ -25,7 +31,10 @@
 // and a comment that has drifted from the code is worse than no comment.
 
 import { updateTowers, rangeOf, framesOf, cooldownOf, gunnerOf, auras, boost } from '../src/towers.js';
-import { updateUnits, makeUnits } from '../src/units.js';
+import { updateUnits, makeUnits, hidden, unhook } from '../src/units.js';
+// The knives have to actually fly, or the Guild's section would watch blades
+// hang in the air a hundred frames from the man who threw them.
+import { updateShots } from '../src/projectiles.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
@@ -848,7 +857,9 @@ console.log('\nThe Crossbow Sentry\'s two\n');
   ok(cooldownOf(quick) < cooldownOf(plain), 'so it is a decrease in time, not an increase',
     `${cooldownOf(quick).toFixed(2)} < ${cooldownOf(plain)}`);
   // AND IT SURVIVES A RETUNE, which an absolute would not have. Same tower, a
-  // tier reload moved under it, same 1.25x out the other side.
+  // tier reload moved under it, the ability's own multiple out the other side —
+  // read off `swift` rather than typed, which is why the owner's retunes of it
+  // (0.50 absolute, then 1.25, now 1.35) have never needed a line changed here.
   {
     const retuned = sentry(['swift']);
     retuned.def = { ...archery[4], cooldown: 1.2 };
@@ -860,7 +871,7 @@ console.log('\nThe Crossbow Sentry\'s two\n');
   // THEY STACK RATHER THAN COMPETE, which is the claim the prose makes.
   ok(rangeOf(both) === rangeOf(steel) && cooldownOf(both) === cooldownOf(quick),
     'and the two together are both of them',
-    `${rangeOf(both)}px every ${cooldownOf(both)}s`);
+    `${rangeOf(both)}px every ${cooldownOf(both).toFixed(2)}s`);
 
   // THE PICTURE FOLLOWS THE RULE, the same way the ballista's frames do: a man
   // shooting 390 with a timber bow would be the board disagreeing with the fight.
@@ -876,6 +887,241 @@ console.log('\nThe Crossbow Sentry\'s two\n');
   // tools/shadow.mjs holds the other half, that both shadows land on one pixel.
   const A = paths['crossbowman'], B = paths['crossbowman_steel'];
   ok(!!A && !!B, 'and both pairs are wired to files', `${A} / ${B}`);
+}
+
+// --- the Assassin Guild's two ----------------------------------------------------
+//
+// THE FIRST PAIR THAT LIVE IN units.js RATHER THAN towers.js, because they change
+// what a MAN does. Everything above this line is asked of a building through
+// rangeOf, cooldownOf, framesOf or the shot loop; these two are asked of a soldier
+// standing on a road, so the fixture is the paladin's rather than the sentry's.
+function guild(ids) {
+  const plot = level.plots[0];
+  const def = barracks.find(d => d.name === 'Assassin Guild');
+  const t = {
+    plot, fam: { id: 'barracks' }, def,
+    x: plot.x, y: plot.y,
+    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
+    spent: 530, rally: null,
+    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
+    hit: [], locked: null, hold: 0
+  };
+  const state = { towers: [t], enemies: [], units: [], shots: [], hits: [],
+                  corpses: [], splats: [], impacts: [] };
+  makeUnits(state, t);
+  // ONE MAN, for the same reason the Keep's fixture keeps one: every counter here
+  // is the soldier's, and three assassins throwing would put three rhythms on one
+  // health bar.
+  state.units.length = 1;
+  // AND STOOD ON HIS POST FROM THE FIRST FRAME. makeUnits puts a man at the tower
+  // and lets him march out, and a march is 2s of this fixture in which he throws
+  // nothing — but worse than slow, it makes every distance below a lie: a settled
+  // man is anywhere within SETTLE of his post, so an enemy placed 205px from the
+  // POST can be 190px from the man. Snapping him there first is what lets the
+  // reach checks name an exact number.
+  state.units[0].x = state.units[0].rx;
+  state.units[0].y = state.units[0].ry;
+  return state;
+}
+
+// An enemy standing a measured distance ALONG X from the point man, out of every
+// melee reach. X rather than any other direction on purpose: `inRange` squashes
+// the vertical by SQUASH for the board's perspective, so a distance typed here is
+// only the distance the ability claims if it is sideways.
+function standoff(state, dist) {
+  const u = state.units[0];
+  const e = {
+    def: { r: 10, hp: 1e9, speed: 0, atkCd: 1e9, damage: 0, name: 'dummy' },
+    x: u.x + dist, y: u.y, hp: 1e9, maxHp: 1e9,
+    route: 0, lane: 1, s: 0,
+    foe: null, acd: 1e9, thrust: 0, halted: false, leaked: false
+  };
+  state.enemies.push(e);
+  return e;
+}
+
+// Walk the world forward with the knives in it. updateShots is what makes a throw
+// land, so a test that only stepped updateUnits would watch blades hang in the air.
+function throwFor(state, seconds) {
+  const hits = [];
+  const seen = [];
+  let last = state.enemies[0] ? state.enemies[0].hp : 0;
+  for (let i = 0; i < seconds / DT; i++) {
+    updateUnits(state, DT);
+    updateShots(state, DT);
+    seen.push(!hidden(state.units[0]));
+    if (state.enemies[0] && state.enemies[0].hp !== last) {
+      hits.push(Math.round(last - state.enemies[0].hp));
+      last = state.enemies[0].hp;
+    }
+  }
+  return { hits, seen };
+}
+
+console.log('\nKnife Throw\n');
+
+{
+  const man = barracks.find(d => d.name === 'Assassin Guild').soldier;
+  const throwing = abilityById('knife');
+
+  // NOTHING AT ALL UNTIL IT IS BOUGHT, which is the baseline the rest of this
+  // section is measured against — and it is also the state of every other barracks
+  // in the game: a settled soldier with a man 150px away does exactly nothing.
+  {
+    const state = guild([]);
+    standoff(state, 150);
+    const { hits } = throwFor(state, 6);
+    ok(hits.length === 0, 'an untaught assassin throws nothing at a man 150px off',
+      `${hits.length} hits in 6s`);
+  }
+
+  {
+    const state = guild(['knife']);
+    standoff(state, 150);
+    const { hits } = throwFor(state, 6);
+    ok(hits.length > 0, 'and one that has bought Knife Throw reaches him', `${hits.length} knives in 6s`);
+    ok(hits.every(h => h === Math.round(man.damage * throwing.times)),
+      'each worth half his blade, as a multiple of it',
+      `${hits.join(' + ')} against ${man.damage} in the hand`);
+    // AT HIS OWN RATE. The throw is the ELSE of the melee branch and shares `cd`,
+    // so a man can never throw and swing in the same beat — and the count over six
+    // seconds is what says so out loud.
+    const want = Math.floor(6 / man.cd);
+    ok(Math.abs(hits.length - want) <= 1, 'and thrown at the rate he swings',
+      `${hits.length} in 6s against ${want} swings`);
+  }
+
+  // THE REACH IS THE ABILITY'S, and 200 is a real edge rather than a number in a
+  // file: one man five px inside it is hit and one five px outside is not.
+  for (const [dist, want] of [[throwing.reach - 5, true], [throwing.reach + 5, false]]) {
+    const state = guild(['knife']);
+    standoff(state, dist);
+    const { hits } = throwFor(state, 4);
+    ok((hits.length > 0) === want, `a man at ${dist}px is ${want ? 'in' : 'out of'} his reach`,
+      `${hits.length} knives`);
+  }
+
+  // AND IT IS NOT THE TOWER'S RANGE, which is the whole reason the field is called
+  // `reach`. rangeOf() returns an ability's `range` in place of the tier's, and the
+  // Guild's 210 is the LEASH on its rally point — so a field named `range` here
+  // would have silently shortened every taught Guild's leash to 200. The check is
+  // cheap and the bug would have had no visible cause.
+  {
+    const taught = guild(['knife']).towers[0];
+    const bare = guild([]).towers[0];
+    ok(rangeOf(taught) === rangeOf(bare) && rangeOf(taught) === bare.def.range,
+      'and buying it leaves the rally leash exactly where it was',
+      `${rangeOf(taught)}px both, the tier's own ${bare.def.range}`);
+  }
+
+  // HE GIVES HIMSELF AWAY FOR A QUARTER SECOND AND NO LONGER. Both halves are the
+  // claim: he is seen at some point in every throw, and he is unseen for most of
+  // the time between them. A man who stayed visible would be shootable by every
+  // thug on the road, which is the opposite of what 150 health can afford.
+  {
+    const state = guild(['knife']);
+    standoff(state, 150);
+    const { seen } = throwFor(state, 6);
+    const shown = seen.filter(Boolean).length / seen.length;
+    ok(seen.some(Boolean), 'he shows himself to throw');
+    ok(shown < 0.45, 'and is unseen for most of the time between knives',
+      `visible ${(shown * 100).toFixed(0)}% of 6s`);
+  }
+}
+
+console.log('\nSneak Attack\n');
+
+{
+  const man = barracks.find(d => d.name === 'Assassin Guild').soldier;
+  const sneak = abilityById('sneak');
+
+  // IN MELEE IT IS THE OPENER AND ONLY THE OPENER. He is visible for as long as he
+  // has hold of somebody, so nothing re-arms until the fight is over — which is
+  // exactly the "resets when they become invisible and visible again" rule read on
+  // the half where he never goes invisible.
+  {
+    const state = guild(['sneak']);
+    const u = state.units[0];
+    const e = victim(state);
+    u.x = e.x - 12;
+    u.y = e.y;
+
+    let last = e.hp;
+    const blows = [];
+    const art = [];
+    for (let i = 0; i < 60 * 4; i++) {
+      updateUnits(state, DT);
+      if (e.hp !== last) { blows.push(Math.round(last - e.hp)); art.push(u.holdArt); last = e.hp; }
+    }
+    ok(blows.length >= 3, 'he lands a run of blows', `${blows.length} in 4s`);
+    ok(blows[0] === man.damage * sneak.times, 'and the first is worth double',
+      `${blows[0]} against his ${man.damage}`);
+    ok(blows.slice(1).every(b => b === man.damage), 'and every one after it is an ordinary blow',
+      blows.join(' + '));
+    ok(art[0] === sneak.pose && art[1] === null,
+      'and only the first is drawn in the sneak pose', sneak.pose.sprite);
+  }
+
+  // AND IT COMES BACK BY HIDING, WHICH IS THE ONLY THING THAT BRINGS IT BACK. The
+  // fight is ended by taking the enemy away rather than by killing it, so the ONLY
+  // thing that changed between the two openers is that he was unseen in between.
+  {
+    const state = guild(['sneak']);
+    const u = state.units[0];
+    const e = victim(state);
+    u.x = e.x - 12;
+    u.y = e.y;
+
+    const strike = () => {
+      let hp = e.hp;
+      for (let i = 0; i < 60 * 2 && e.hp === hp; i++) updateUnits(state, DT);
+      return Math.round(hp - e.hp);
+    };
+    const first = strike();
+    const second = strike();
+    // THE FIGHT ENDS AND ANOTHER ONE STARTS, with the same enemy at full health —
+    // so the only thing that changed between the two openers is that he was unseen
+    // in between, which is precisely the claim.
+    //
+    // BOTH HALVES OF LEAVING THE BOARD, which is what enemies.js does on a death
+    // or a leak and what a shorter version of this got wrong twice. Emptying the
+    // array is not enough — `u.foe` is a reference and holds him in the fight —
+    // and unhooking is not enough either, because the blocking pass would take
+    // hold of the same enemy again on the very next frame. Half a second is
+    // comfortably past LUNGE's quarter.
+    unhook(e);
+    state.enemies.length = 0;
+    for (let i = 0; i < 30; i++) updateUnits(state, DT);
+    const wasHidden = hidden(u);
+    state.enemies.push(e);
+    const third = strike();
+
+    ok(first === man.damage * sneak.times && second === man.damage,
+      'a fight opens with the bonus and then settles', `${first} then ${second}`);
+    ok(wasHidden, 'and he is unseen once the fight is over');
+    ok(third === man.damage * sneak.times, 'so the next fight opens with it again',
+      `${third}`);
+  }
+
+  // THE TWO TOGETHER, and this is the interaction worth writing a test for rather
+  // than a sentence about. A thrower is only visible for the quarter second the
+  // knife is in his hand, so he is hidden again — and armed again — before the next
+  // one. EVERY knife is a sneak. It is the literal reading of the owner's rule and
+  // it is what makes the pair worth buying; it is also the number to watch if the
+  // Guild turns out too strong, which is why it is stated here in damage a second.
+  {
+    const state = guild(['knife', 'sneak']);
+    standoff(state, 150);
+    const { hits } = throwFor(state, 6);
+    const alone = Math.round(man.damage * abilityById('knife').times);
+    ok(hits.length > 0 && hits.every(h => h === alone * sneak.times),
+      'every knife from a Guild that has bought both is a sneak',
+      `${hits.join(' + ')} against ${alone} untaught`);
+    const squad = (alone * sneak.times / man.cd) * man.count;
+    ok(squad === (man.damage / man.cd) * man.count,
+      'which is the squad\'s own melee output, at 200px',
+      `${squad.toFixed(1)}/s thrown against ${((man.damage / man.cd) * man.count).toFixed(1)}/s in the hand`);
+  }
 }
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);

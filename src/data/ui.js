@@ -204,6 +204,11 @@ export const ui = {
   ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // The Assassin Guild's two, measured to the same disc as every other face —
+  // 163,163,186,186 again, which is now nine files in a row the artist has drawn
+  // to the same circle without being asked twice.
+  ability_knife: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_sneak: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Judgement Temple's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

@@ -126,6 +126,10 @@ export const paths = {
   // The other barracks tier 4's man, named for himself like every other tier 4.
   assassin:           'assets/units/Assassin_Default.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
+  // His two ability poses. The first soldier in the game to have any beyond the
+  // paladin's, and the first to have one for a thrown weapon.
+  assassin_knife_throw:  'assets/units/Assassin_Knife_Throw.png',
+  assassin_sneak_attack: 'assets/units/Assassin_Sneak_Attack.png',
   crossbowman:        'assets/units/Crossbowman_Default.png',
   crossbowman_attack: 'assets/units/Crossbowman_Attack.png',
   // AND THE SAME TWO IN STEEL, which is what Reinforced Tension buys — the same
@@ -198,6 +202,10 @@ export const paths = {
   // — but its own file and its own `kind`, which is what gives it its own shot
   // and kill lines. See `quarrel` in data/towers.js.
   quarrel:     'assets/projectiles/Crossbow_Sentry_Bolt.png',
+  // The assassin's knife, and the only thing in this list a MAN throws rather
+  // than a building. Same shape of drawing as the two above — flat, point left —
+  // at a third the arrow's length. See `knife` in data/towers.js.
+  assassin_knife: 'assets/projectiles/Assassin_Knife.png',
   // Deadeye's ball: the same lead, drawn four times the size with a flame behind
   // it. A second file rather than the first one scaled up, because it is a
   // different drawing and not a bigger one — see `deadeyeBall` in
@@ -365,6 +373,10 @@ export const paths = {
   ability_sentry_tension:  'assets/ui/Crossbow_Sentry_Reinforced_Tension_Icon.png',
   ability_swift:           'assets/ui/Crossbow_Sentry_Swift_Reload_Icon.png',
   ability_heavy:   'assets/ui/Ballista_Turret_Heavy_Bolt_Icon.png',
+  // The Assassin Guild's two — the first abilities in the game that change what a
+  // SOLDIER does rather than what a building does.
+  ability_knife: 'assets/ui/Assassin_Knife_Throw_Icon.png',
+  ability_sneak: 'assets/ui/Assassin_Sneak_Attack_Icon.png',
   // The Judgement Temple's two, and they come in PAIRS: a button face like every
   // other ability, and a badge drawn on the BOARD over each tower the aura is
   // working on. The badge is the only feedback an aura has — nothing about the

@@ -296,7 +296,12 @@ export function updateEnemies(state, dt) {
          // And the barracks' OTHER tier 4 man. Two of the four men a barracks
          // musters have a cry of their own now; the spearman, the pikeman and
          // the swordsman still share the generic one below.
-         : e.killedBy === 'assassin' ? CUE.assassinKill
+         // Both of his: the blade and the thrown knife. `killedBy` is the man's
+         // `blow` for a melee kill and the AMMUNITION's `kind` for a shot, so an
+         // assassin arrives here under two words — and a man killed by an assassin
+         // is a man killed by an assassin whichever hand did it, which is the same
+         // reading that sends Deadeye's ball to the musket's line.
+         : e.killedBy === 'assassin' || e.killedBy === 'knife' ? CUE.assassinKill
          : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and

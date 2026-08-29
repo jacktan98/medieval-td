@@ -525,11 +525,23 @@ check('Burst Fire is silent, and fires the ordinary ball to be so',
   !abilityById('burst').cue && !abilityById('burst').ammo, true);
 check('and an ability nobody recorded falls to nothing rather than to undefined',
   abilityCue('nobody'), null);
-// Every ability either has a cue this file can answer or fires something. An
-// ability with neither would be a change that landed with no sound at all, which
-// is exactly the failure that is hardest to notice.
+// Every ability either has a cue this file can answer, fires something, or turns
+// its owner's own noise up. An ability with none of the three would be a change
+// that landed in silence, which is exactly the failure that is hardest to notice.
+//
+// `loud` is the third way and the newest: Sneak Attack has no recording, it plays
+// the assassin's own blade at 1.8 — see the note on the ability. Held as a field
+// rather than a number in units.js so that this line can see it.
 check('and every ability is either heard or fires something heard',
-  ABILITIES.every(a => abilityCue(a.cue) || a.ammo || !a.pose), true);
+  ABILITIES.every(a => abilityCue(a.cue) || a.ammo || a.loud || !a.pose), true);
+check('and the one that is only louder says so in its own data',
+  abilityById('sneak').loud > 1 && !abilityById('sneak').cue, true);
+// The knife is the other half of the Guild's noise, and it is heard ARRIVING
+// rather than leaving — the flask's split, not the arrow's. Checked here because
+// "silent both ends" is the one way an ammunition can be wired and heard by
+// nobody.
+check('and the assassin\'s knife is heard landing rather than leaving',
+  abilityById('knife').ammo.landSound && !abilityById('knife').ammo.fireSound, true);
 
 // The three ability clips are Category B, which means every one of them plays
 // every time — three paladins in trouble at once is three calls for the light, and

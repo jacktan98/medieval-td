@@ -23,7 +23,9 @@
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { enemyTypes } from '../src/data/waves.js';
-import { arrow } from '../src/data/towers.js';
+import { arrow, barracks } from '../src/data/towers.js';
+// The soldiers throw now too — see the last block of the thrower section.
+import { makeUnits, updateUnits } from '../src/units.js';
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
@@ -275,6 +277,64 @@ console.log('\nWhich way a thrower looks\n');
     updateEnemies(state, 1 / 60);
     ok(e.face === -1, 'and a captor outranks a mark on the other side',
       `${e.face > 0 ? 'RIGHT' : 'LEFT '}`);
+  }
+
+  // --- AND NOW THE OTHER ARMY THROWS TOO -----------------------------------------
+  //
+  // An assassin with Knife Throw is the first SOLDIER in the game that attacks
+  // something it is not standing next to, so he inherits the whole of the bug this
+  // section was written for: a settled man faces the heading of his post, and
+  // without a rule of his own he would flick a knife over his shoulder at a man
+  // behind him and be drawn looking the other way.
+  //
+  // His rule is the enemies' rule with the same ranking. `foe` first — somebody
+  // with hold of him outranks a mark at 200px — then the throw, then the post. It
+  // is checked here rather than in tools/abilities.mjs because this is the file
+  // that owns the question, and because the failure is identical: it is the exact
+  // 202-of-264-wrong that the thrower block above was written to fix.
+  {
+    const plot = level.plots[0];
+    const guild = barracks.find(d => d.name === 'Assassin Guild');
+
+    const throwAt = side => {
+      const t = {
+        plot, fam: { id: 'barracks' }, def: guild, x: plot.x, y: plot.y,
+        rally: null, abilities: ['knife'], hold: 0
+      };
+      const state = { towers: [t], enemies: [], units: [], shots: [], hits: [],
+                      corpses: [], splats: [], impacts: [] };
+      makeUnits(state, t);
+      state.units.length = 1;
+      const u = state.units[0];
+      // On his post from the first frame, so nothing below is a man mid-march.
+      u.x = u.rx;
+      u.y = u.ry;
+      // 150px is inside his 200 reach on either side. X rather than any other
+      // direction because inRange squashes the vertical for the board's
+      // perspective — and because left and right is the only thing `face` decides.
+      state.enemies.push({
+        def: { r: 10, hp: 1e9, speed: 0, atkCd: 1e9, damage: 0, name: 'dummy' },
+        x: u.x + 150 * side, y: u.y, hp: 1e9, maxHp: 1e9,
+        route: 0, lane: 1, s: 0,
+        foe: null, acd: 1e9, thrust: 0, halted: false, leaked: false
+      });
+      // Two frames: the throw sets `throwFace`, the next one reads it. That order
+      // is the design — see the facing chain in units.js — and one frame of the
+      // old heading is a sixtieth of a second nobody can see.
+      updateUnits(state, 1 / 60);
+      updateUnits(state, 1 / 60);
+      return { dir: Math.sign(Math.cos(u.face)), threw: state.shots.length };
+    };
+
+    const right = throwAt(1);
+    const left = throwAt(-1);
+
+    ok(right.threw === 1 && right.dir === 1, 'an assassin faces the man he throws at',
+      `RIGHT, ${right.threw} knife`);
+    ok(left.threw === 1 && left.dir === -1, 'and turns round for one behind him',
+      `LEFT , ${left.threw} knife`);
+    ok(right.dir !== left.dir, 'and the two are not the same answer',
+      `${right.dir} vs ${left.dir}`);
   }
 }
 

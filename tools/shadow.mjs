@@ -359,6 +359,13 @@ const SPRITES = [
   // are HARDER to check by eye, not easier, so the measurement matters more here.
   ['assets/units/Assassin_Default.png',               'assassin.pivot',           ass.spriteTrim, ass.pivot],
   ['assets/units/Assassin_Attack.png',                'assassin.attack.pivot',    ass.attack.trim, ass.attack.pivot],
+  // His two ABILITY poses, under the paladin's pair rule and for a sharper reason
+  // than his: one of these is a THROW. A knife whose anchor is out by a few pixels
+  // leaves his hand from somewhere his hand is not, and the flight is drawn from
+  // that point — so this is the one figure in the game where a bad pivot shows up
+  // in a projectile rather than in a footfall.
+  ['assets/units/Assassin_Knife_Throw.png',  'knife.pose.pivot', pose('knife').trim, pose('knife').pivot],
+  ['assets/units/Assassin_Sneak_Attack.png', 'sneak.pose.pivot', pose('sneak').trim, pose('sneak').pivot],
   ['assets/enemies/Enemies_Thug_Default.png',        'light_inf.pivot',         light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],

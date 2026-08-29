@@ -548,6 +548,90 @@ console.log('\nThe man he cannot see\n');
     'while a militiaman is never hidden from anybody');
 }
 
+// --- WHAT THE KNIFE CHANGES ABOUT HIM -------------------------------------------
+//
+// Knife Throw was written to close the hole check 5 measured — a thrower nobody
+// can reach — and against a GUILD it turns out not to be closing that at all,
+// because a Guild never had that hole. Its men are invisible, so the doctor never
+// stops for them and walks into the ambush and dies of a blade. That is worth
+// stating plainly rather than letting the ability's prose claim more than it does:
+// the hole is real for a Militia Camp and a Paladin Keep, and it was already shut
+// for this tower before either ability existed.
+//
+// SO WHAT IT ACTUALLY BUYS IS THE ROAD. Untaught, the assassins wait for him to
+// arrive and three of them shuffle 50px out of formation to meet him. Taught, he
+// dies on the road before he gets there and nobody moves at all — which is a
+// different and better thing, and it is what is checked here.
+//
+// 260px BACK ALONG THE ROAD, which is not 260px away — the road bends, and on this
+// map a doctor a quarter of a lap back stands about 109px from the squad in a
+// straight line. What the extra road buys is TIME: he is inside a 200px knife
+// reach for the whole walk, so the further back he starts the more of him the
+// knives get through before he arrives. At 160 he still reaches them and the
+// ability's difference is a second shaved off a melee; at 260 he does not, which
+// is the thing worth checking. Both distances are printed below so the number the
+// ability actually sees is on the page rather than inferred from this comment.
+console.log('\nWhat the knife changes about him\n');
+{
+  const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
+
+  const siege = ids => {
+    const state = board();
+    const t = withSquad(state, 3, guild);
+    t.abilities = ids;
+    const stand = squadAt(state);
+
+    spawn(state, 'plague_inf');
+    const doc = state.enemies[0];
+    // ON THE ROAD squadAt MEASURED, and this section is the one place in the file
+    // that has to say so. spawn() picks a route and a lane at random — three lanes
+    // per road, which is what stops a wave reading as a snake — so "160px back
+    // along the road" is only 160px from the men if it is the same lane they are
+    // standing in. Every other check here is about whether he throws at all and
+    // survives the wobble; these four are about a DISTANCE, and one lane over is
+    // enough to change which side of a 200px reach he starts on.
+    doc.route = 0;
+    doc.lane = 1;
+    place(doc, Math.max(0, stand - 260));
+    const start = Math.round(Math.min(...state.units.map(u => Math.hypot(u.x - doc.x, u.y - doc.y))));
+
+    let secs = 0;
+    let gap = Infinity;
+    for (let i = 0; i < 60 / DT && state.enemies.length; i++) {
+      step(state, DT);
+      secs = i * DT;
+      const live = state.units.filter(u => u.respawn <= 0);
+      if (live.length) gap = Math.min(...live.map(u => Math.hypot(u.x - doc.x, u.y - doc.y)));
+    }
+    // How far the furthest man ended up from the post he was given. SETTLE is 16
+    // in units.js — a settled man is anywhere inside it — so anything much over
+    // that is a man who left his station.
+    const off = Math.max(...state.units.map(u => Math.hypot(u.x - u.rx, u.y - u.ry)));
+    return { state, doc, secs, start, gap: Math.round(gap), off: Math.round(off) };
+  };
+
+  const mute = siege([]);
+  const armed = siege(['knife']);
+
+  check(mute.doc.killedBy === 'assassin' && mute.state.enemies.length === 0,
+    'an untaught Guild lets him walk in and knifes him at arm\'s length',
+    `from ${mute.start}px: killedBy ${mute.doc.killedBy} after ${mute.secs.toFixed(1)}s, ${mute.gap}px away`);
+
+  check(armed.doc.killedBy === 'knife',
+    'and one that has bought Knife Throw kills him on the road',
+    `from ${armed.start}px: killedBy ${armed.doc.killedBy} after ${armed.secs.toFixed(1)}s, ${armed.gap}px away`);
+
+  check(armed.gap > mute.gap, 'so he never reaches the men at all',
+    `${armed.gap}px against ${mute.gap}px`);
+
+  // AND NOBODY MOVED TO DO IT, which is the half that would be easiest to lose.
+  // An ability that quietly let the squad drift out to throw would pass every
+  // check above and break the rule the owner set on all of them.
+  check(armed.off <= 16 && armed.off < mute.off,
+    'and nobody left his station for it',
+    `${armed.off}px off post against ${mute.off}px untaught`);
+}
+
 console.log(bad
   ? `\n${bad} check(s) failed.`
   : '\nThe plague doctor behaves.');
