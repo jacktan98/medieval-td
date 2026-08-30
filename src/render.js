@@ -561,6 +561,11 @@ function drawRangeDisc(ctx, t) {
   // rings would say "one of these" where the ring is meant to say "further than
   // this". The outer one is the honest single answer: it is the most the upgrade
   // button in front of you can buy.
+  //
+  // AND WHERE THAT IS NO FURTHER, NOTHING IS DRAWN, which is the artillery
+  // fork's case and is also correct: a Trebuchet reaches 360, and its two fourth
+  // rungs reach 260 and 360. Neither buys reach, so the guard below draws no
+  // dotted ring at all rather than a second circle on top of the first.
   const next = upgradesFrom(t.fam, t.def)
     .reduce((best, d) => (!best || d.range > best.range ? d : best), null);
 

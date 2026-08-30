@@ -297,6 +297,10 @@ const CREW_TRIM = [208, 196, 94, 116];
 const CREW2_TRIM = [208, 196, 96, 120];
 const CREW3_TRIM = [201, 196, 110, 120];
 const CREW4_TRIM = [145, 196, 222, 120];
+// The other tier 4's gunner. Much narrower than the ballista engineer beside him
+// — 100 source px against 222 — because that engineer is holding a spare bolt
+// that runs a long way out to his left, and this one is standing behind his ball.
+const CREW4B_TRIM = [206, 189, 100, 134];
 
 // --- the ballista turret's two pieces ---------------------------------------------
 //
@@ -320,6 +324,30 @@ const BALLISTA_TRIM = [361, 398, 340, 228];
 // The bolt in the air. Drawn DIAGONALLY across its export, which no other
 // projectile in the game is — see `bolt` below for what that costs.
 const BOLT_TRIM = [172, 174, 168, 164];
+
+// --- the cannon outpost's two pieces ------------------------------------------
+//
+// The turret, and it is the BALLISTA'S TURRET: the two PNGs trim to the same
+// [254, 203, 516, 618] and differ in 23,960 pixels, all of them inside one
+// 134x241 box, and all of them the banner — the ballista's blue recoloured
+// purple with a cannon on it where the bolt was. So this tier stands on the same
+// stone, and the constant says so rather than repeating the numbers.
+const CANNON_TOWER_TRIM = BALLISTA_TOWER_TRIM;
+
+// The machine, and a UNION like the ballista's and the catapult's:
+//
+//   Default [343,431,338,162]   Reload [343,431,338,162]   Fire [339,431,342,162]
+//
+// The first two are the same rect to the pixel — the gunner moves the ball and
+// nothing crosses the edge of the box — and Fire reaches 4px further LEFT, which
+// is the smoke curling off the muzzle. Nothing moves vertically at all, same as
+// every other machine in the family.
+const CANNON_TRIM = [339, 431, 342, 162];
+
+// The ball in the air, and the smallest projectile artillery throws: 48x48
+// against the rocks' 60x48, 72x72 and 88x88. Round, so there is nothing to
+// anchor by and nothing to turn — see `cannonball` below.
+const BALL_TRIM = [232, 232, 48, 48];
 
 // The rock gets bigger with the machine that throws it: 12 x 10 game px, then
 // 15 x 15, then 18 x 18. Nothing about the FLIGHT changes — same speed, same arc,
@@ -610,6 +638,52 @@ export const bolt = {
 // bigger rock does is in the damage number beside it.
 export const rock2 = { ...rock, sprite: 'rock_t2', trim: ROCK2_TRIM };
 export const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
+
+// THE CANNON OUTPOST'S BALL, and it is the first projectile in the game that is
+// LOUD LEAVING AND LOUD ARRIVING — or rather, loud leaving and violent arriving,
+// which turned out to be two different questions with two different answers.
+//
+// Three flags, three answers, and this is the ammunition that shows why they were
+// ever separated. An arrow says yes/no/no: it announces itself by being loosed
+// and lands quietly on one man. A rock says no/yes/yes: it is silent in the air
+// and IS its arrival, in the ear and on the ground. This says yes/no/YES — the
+// report is the event you hear, because powder is what a cannon is, and the crater
+// is the event you SEE, because 70 damage into an 85px blast has to look like it
+// went off. A single "is this loud" flag could not have expressed that, and the
+// owner asked for exactly it: the shot on the release, the artillery impact on the
+// landing, and nothing in between.
+//
+// LOBBED, NOT STEERED, and that is what makes it artillery rather than a very
+// slow musket. `arc` commits the ball to a patch of GROUND, which is the whole
+// point of a splash weapon: it lands where it was aimed whatever the man it was
+// aimed at does, and everyone standing there takes it. A homing ball that died
+// with its target would put a blast tower's damage into one enemy and nobody else.
+//
+// `arc` 0.10 against the rocks' 0.22, so it flies visibly FLATTER than the
+// machines below it. Powder throws hard and low where a counterweight throws high
+// and slow, and the two arcs on screen at once is most of what says these are
+// different weapons before you read a single number.
+//
+// `speed` 420, between the rock's 300 and the musket ball's 520 and for the same
+// reason the arc is flatter. The longest flight is 360 / 420 = 0.86s against the
+// 1.5s the Fire pose holds — the smoke is still at the muzzle when the ball
+// lands, which is the constraint tools/siege.mjs measures for every tier.
+//
+// `faces` 0 and `grip` 0.5, both copied from the rock and both for the rock's
+// reason: a ball is a ball. There is no nose to put on the target and rotating a
+// circle to a heading says nothing, so it is drawn upright and never turned.
+export const cannonball = {
+  kind: 'cannonball',
+  sprite: 'cannonball',
+  trim: BALL_TRIM,
+  faces: 0,
+  grip: 0.5,
+  speed: 420,
+  arc: 0.10,
+  fireSound: true,
+  landSound: false,
+  impact: true
+};
 
 // THE ARCANE MISSILE, and the hardest single blow in the game.
 //
@@ -1925,8 +1999,29 @@ const ballista = {
     // and the arc's outer tip (past the mouth, and still with the shaft lying
     // back across the machine).
     nose: [0.150, 0.737],
-    // The line the drawing flips about, as a fraction of the same trim. The
-    // middle of it rather than the post — see `axis` in src/towers.js.
+    // WHAT TOUCHES THE DECK, as fractions of the same trim: the post's shadow at
+    // source (452.5, 607.8) and the engineer's at (628.0, 521.3), each the centre
+    // of a fitted ellipse rather than of the visible blob — the machine stands on
+    // both of them, so both are half occluded and both centroids read low.
+    //
+    // THE FIRST ONE IS `pivot`, to the digit, and it has to be: the point the
+    // machine is placed by is one of the points it stands on. Repeated here rather
+    // than referenced so the pair reads as a pair, and tools/siege.mjs checks the
+    // two agree so a re-measured pivot cannot leave a stale foot behind it.
+    //
+    // Data rather than a sentence, because `mirror` below is DERIVED from these
+    // and a derivation written in prose cannot be checked. tools/siege.mjs
+    // measures how far the pair walks when the drawing flips.
+    feet: [[0.269, 0.920], [0.785, 0.541]],
+    // The line the drawing flips about, as a fraction of the same trim — see
+    // `axis` in src/towers.js.
+    //
+    // THE MIDDLE OF THE DRAWING, and it is very nearly the middle of the FEET,
+    // which is the rule it was standing in for: the two feet sit at 0.269 and
+    // 0.785, so their midpoint is 0.527 against this 0.5. Flipping walks the pair
+    // 3.8 drawn px across the roof, which is nothing, and the number is left where
+    // the owner approved it. The Cannon Outpost is where the two rules come apart
+    // — see the note above `cannon`.
     mirror: 0.5
   },
   mountFrac: [0.360, 0.285],
@@ -1946,6 +2041,129 @@ const ballista = {
   // tools/shadow.mjs like every other figure's. He is well right of his box's
   // middle because the spare bolt he is holding runs out to the left of him.
   portraitPivot: [0.671, 0.912],
+  shape: 'siege'
+};
+
+// THE LADDER'S SECOND TIER 4, THE CANNON OUTPOST, and it is put together exactly
+// the way the Ballista Turret is: the same stone turret, standing still, with a
+// different machine on top that animates and turns. Every rule in the long note
+// above holds here unchanged — which is the point of having written it there.
+//
+// THE SAME STONE, LITERALLY. The two turret PNGs differ in 23,960 pixels inside
+// one 134x241 box and every one of them is the banner: the ballista's blue,
+// recoloured purple, with a cannon on it where the bolt was. So `groundFrac` and
+// `frontPolys` are the ballista's constants rather than the ballista's numbers
+// re-typed — if the artist ever moves that shadow, one edit moves both towers and
+// tools/shadow.mjs measures both files either way.
+//
+// WHERE IT STANDS, AND WHAT IT MIRRORS ABOUT, and the cannon answers the second
+// question DIFFERENTLY from the ballista — which is the one place this tier is
+// not a copy.
+//
+// The ballista mirrors about the middle of its own drawing, because its two feet
+// straddle that middle: the post's shadow is at source 452.5 and the engineer's
+// at 627.7, so their midpoint is 540.9 against a box middle of 531. Ten pixels
+// apart, and "the middle of the drawing" was near enough.
+//
+// The cannon's feet are nowhere near its box middle. Its carriage stands at 513
+// and its gunner at 629 — midpoint 571 — while the box middle is 510, because the
+// BARREL runs 170px off to the left of everything that touches the deck. Mirrored
+// about 510 the whole footprint swings 122 source px across the roof, which is
+// precisely the failure the ballista's own note describes and the owner sent back
+// once already.
+//
+// So the rule is the one the ballista's note MEANT rather than the number it
+// used: the machine mirrors about the midpoint of the points that touch the
+// ground. Then the carriage and the gunner simply swap ends of one footprint and
+// the machine stands in the same place both ways.
+//
+// The two are measured rather than argued: at the mount below, all four ground
+// points — carriage and gunner, each in both directions — sit 66.5 source px
+// inside the deck quad. Mirroring about the box middle instead gives 52.0, and
+// the two positions no longer coincide.
+//
+// The deck quad is the ballista's, being the same deck: one #969696 path with
+// corners (449.8, 242.5), (766.7, 291.2), (595.7, 439.6) and (257.4, 364.7).
+const cannon = {
+  sprite: 'artillery_t4b_base',
+  spriteTrim: CANNON_TOWER_TRIM,
+  w: drawnW(CANNON_TOWER_TRIM), h: drawnH(CANNON_TOWER_TRIM),
+  // The ballista's, and the same ellipse in the same file: source (518.7, 739.5),
+  // stored in the SVG as a #37422f path with radii 177 x 78.6.
+  groundFrac: ballista.groundFrac,
+  // The near merlon, likewise — the same battlement block on the same deck, so
+  // this machine's foot and the bottom of its barrel pass behind it exactly as the
+  // ballista's do.
+  frontPolys: ballista.frontPolys,
+  machine: {
+    frames: ['artillery_t4b', 'artillery_t4b_reload', 'artillery_t4b_fire'],
+    trim: CANNON_TRIM,
+    w: drawnW(CANNON_TRIM), h: drawnH(CANNON_TRIM),
+    // The centre of the shadow under the CARRIAGE, source (513.0, 569.3), and it
+    // is a fitted ellipse rather than the blob's centroid: the carriage sits on
+    // the middle of its own shadow, so what is visible is a crescent whose
+    // centroid is 4px low and 9px left. The ellipse spans x 436..590 and its
+    // per-column mid-height reads 569.5 at every unoccluded column, which is what
+    // says the fit is the drawing's own centre rather than a guess at it.
+    //
+    // All three frames put it on the same pixel, so the machine animates without
+    // walking about on the roof.
+    pivot: [0.509, 0.853],
+    // Drawn shooting up and to the LEFT, like the ballista: the muzzle is at the
+    // left end of the barrel and the gunner stands behind it on the right. So a
+    // target on the left is the unmirrored case.
+    faces: -1,
+    // THE MOUTH OF THE BARREL, source (355.0, 552.5) — the centre of the bore,
+    // which is the dark ellipse at the tip and the point the artist drew the smoke
+    // curling out of in the Fire frame. A ball is round and has no length, so
+    // there is no `clear` here: the bolt above needs one because it is 42 drawn px
+    // of shaft that would otherwise lie back across the machine, and this is a
+    // 10px circle that sits in the mouth it came out of.
+    nose: [0.047, 0.750],
+    // WHAT TOUCHES THE DECK: the carriage's shadow at source (513.0, 569.3) and
+    // the gunner's at (629.0, 555.4), both fitted ellipses for the reason the
+    // ballista's are — each is half hidden under the thing standing on it, and
+    // the carriage's visible crescent has a centroid 4px low and 9px left of the
+    // ellipse it belongs to. The first is `pivot` above, to the digit.
+    feet: [[0.509, 0.853], [0.848, 0.768]],
+    // The line the drawing flips about: the midpoint of those two, source 571.
+    // See the note above for why this is not 0.5 — the barrel hangs 170px off the
+    // left of everything that touches the deck, so the box middle is nowhere near
+    // the feet, and mirroring about it would swing the footprint 25 drawn px
+    // across the roof.
+    mirror: 0.678
+  },
+  // Source (485, 347), solved the same way the ballista's was — the mount that
+  // puts the worst of the four ground points furthest inside the deck quad. 66.5px
+  // of clearance, against the ballista's 25.4.
+  mountFrac: [0.448, 0.233],
+  ammo: cannonball,
+  // THE CATAPULTS' CYCLE, NOT THE BALLISTA'S, and it is the owner's ask: this
+  // tower reloads as slowly as the trebuchet it upgrades from. 0.75 / 0.75 / 1.5,
+  // the family's own beats, where the ballista plays the same shape at 60% length.
+  //
+  // Which means `cooldown` comes out at the family's 3.00 rather than 1.80 — and
+  // it is derived from these rather than chosen beside them, as it is for every
+  // artillery tier, so the machine can never fire on a frame it is not drawn
+  // firing.
+  //
+  // The Fire beat outlasts the shot with room to spare: 1.5s of pose against a
+  // longest flight of 360 / 420 = 0.86s. tools/siege.mjs checks that margin for
+  // every tier.
+  //
+  // WRITTEN OUT THOUGH `beatsOf` WOULD FALL BACK TO IT ANYWAY. It is the same
+  // array, not a copy, so it cannot drift — and being explicit is worth a line
+  // here for one reason: the tier directly above this one overrides it. A reader
+  // comparing the two fourth rungs should see the answer beside the question
+  // rather than have to know which way the default falls.
+  beats: BEATS,
+  portrait: 'cannoneer',
+  portraitTrim: CREW4B_TRIM,
+  // The centre of his own ground shadow, source (254.0, 312.5), measured by
+  // tools/shadow.mjs like every other figure's. All but dead centre of his box,
+  // where the ballista engineer beside him is well right of his: this man stands
+  // behind his ball and that one is holding a bolt out to one side.
+  portraitPivot: [0.480, 0.922],
   shape: 'siege'
 };
 
@@ -2105,9 +2323,10 @@ export const siege = [
   // explain — the 130px hole every other machine carries around itself is gone,
   // which makes tier 4 the one artillery tower that can defend its own plot.
   //
-  // `damage` 60 a bolt, level with the Musketeer Post's ball and behind only the
-  // Judgement Temple's missile, and `splash` 70 — a shade over two thirds of the
-  // trebuchet's 98. It catches a queue; it does not clear a wave.
+  // `damage` 55 a bolt — it shipped at 60 and the owner cut it — which leaves it
+  // just under the Musketeer Post's ball and the Cannon Outpost's shot, and
+  // `splash` 70, a shade over two thirds of the trebuchet's 98. It catches a
+  // queue; it does not clear a wave.
   //
   // IT WAS 55 AND WENT UP ON A PLAYED VERDICT, which is what the sweep below was
   // for: the blast was the one dial the numbers said was nearly free — 0 to 98
@@ -2118,14 +2337,20 @@ export const siege = [
   //
   // 74 IS THE CEILING and it is a design one rather than a balance one: the
   // catapult's blast is 75, and the claim in tools/families.mjs that this is the
-  // smallest of the four fails the moment it is not. Anything above that is a
+  // smallest in the family fails the moment it is not. Anything above that is a
   // different tower — see the note on the family's shape at the top of `siege`.
+  //
+  // THE CANNON OUTPOST IS WHY THAT CEILING NOW MATTERS TWICE OVER. The ladder
+  // forks here, and the two fourth rungs are meant to be the quick narrow one and
+  // the slow wide one: this turret is the smallest blast in the family and the
+  // cannon's 85 is the second largest. Raise this one and the fork stops being a
+  // choice.
   //
   // `cooldown` 1.80 rather than the family's 3.00, because its animation is
   // faster (see `beats`) and the cooldown IS the animation added up here, as it
-  // is for every artillery tier. 60 every 1.8s is 33.3 damage a second against a
-  // trebuchet's 12.0 — three times the output into a third of the area from
-  // two-thirds of the reach.
+  // is for every artillery tier. 55 every 1.8s is 30.6 damage a second against a
+  // trebuchet's 12.0 — two and a half times the output into a third of the area
+  // from two-thirds of the reach, and the most damage a second in the family.
   //
   // `cost` 230, which is 610 gold of cumulative spend on one plot: the most
   // expensive ladder in the game, ahead of the Musketeer Post's 500 and the
@@ -2175,7 +2400,85 @@ export const siege = [
     // is neither a rhythm nor a reaction — it is bought and the tower is simply
     // better afterwards — and Heavy Bolt is the first to double a number rather
     // than replace it.
-    abilities: ['ballista_tension', 'heavybolt'] }
+    abilities: ['ballista_tension', 'heavybolt'] },
+  // AND THE LADDER'S OTHER FOURTH RUNG, and it is the tier that puts artillery
+  // back where the family started rather than away from it.
+  //
+  // THE TWO TIER 4s ARE THE FAMILY'S OWN ARGUMENT, SPLIT IN TWO. Everything below
+  // them lobs: enormous reach, a hole in the middle it cannot defend, a wide
+  // blast, a slow heavy rhythm. The Ballista Turret walked away from all four of
+  // those — it is a wall-mounted crossbow that shoots fast and flat and near. This
+  // one keeps them and makes them hurt.
+  //
+  //                 damage  reload  dps    range  dead zone  blast
+  //   Trebuchet        36    3.00   12.0    360      130       98
+  //   Ballista Turret  55    1.80   30.6    260        0       70
+  //   Cannon Outpost   70    3.00   23.3    360        0       85
+  //
+  // Read down the two tier 4 rows and the fork is the whole design: the same 230
+  // gold buys either the quick narrow one or the slow wide one, and neither is
+  // better. The ballista puts out half again the damage a second and answers a
+  // leaker in 1.8s where this takes 3.0; this one reaches 100px further, bursts
+  // 15px wider, and lands 70 in one blow where the ballista needs two — which is
+  // the difference between killing a thug outright and softening him.
+  //
+  // `damage` 70, and the honest way to say what that is: the hardest blow in the
+  // game that lands on MORE THAN ONE MAN, ahead of the Musketeer Post's 65 and the
+  // ballista's 55 — and second overall to the Judgement Temple's 75, which is a
+  // missile that hits exactly one enemy and dies with him. 70 into an 85px ellipse
+  // against 75 into one throat is the whole trade the family table is about.
+  //
+  // Chosen by the owner and worth what it costs: 70 into a blast is a
+  // wave-clearing number where 70 into one man would be a sniper, so the two dials
+  // have to be read together, and the blast is what keeps this a catapult rather
+  // than a very rude archery tower.
+  //
+  // `range` 360, the trebuchet's own reach and the longest in the family, and
+  // `minRange` 0 — the second tower here with no dead zone, and the first with the
+  // full reach AND no hole. That combination is the one thing about this tier that
+  // is strictly better than the tier below it, and it is deliberate: 610 gold of
+  // cumulative spend should stop the tower being unable to defend its own plot.
+  // Everything else it buys, it pays for in rate of fire.
+  //
+  // `splash` 85, and it is pinned from both sides by DESIGN rather than by a
+  // sweep. Under the trebuchet's 98, because a tier 4 that also out-blasts the
+  // machine it upgrades from leaves tier 3 with nothing that is its own — the same
+  // rule that holds the ballista's reach under the trebuchet's. Over the
+  // ballista's 70, because that turret's claim to being the smallest blast in the
+  // family is what makes this one the widest of the pair, and a fork whose two
+  // halves blast the same is not a fork. See tools/families.mjs, which enforces
+  // both ends.
+  //
+  // `cooldown` 3.00, which is the owner's ask and is also not a choice: the
+  // cooldown IS the animation added up for every artillery tier, and this machine
+  // plays the family's own beats. See `beats` on `cannon`.
+  //
+  // `cost` 230, the same as the Ballista Turret beside it. Both forks in the game
+  // already price their pair identically — archery's at 200, the barracks' at 210
+  // — and for the reason the archery note gives: two tier 4s at one price are a
+  // genuine choice, and a cheap one beside a dear one is a recommendation.
+  //
+  // NO SWEEP BEHIND THESE NUMBERS YET, and that is worth saying plainly rather
+  // than leaving to be discovered. Every other tier in this file carries a table
+  // of measured win rates; these are reasoned from the family's own shape and the
+  // owner's brief, and they ship to be PLAYED first. `node tools/sim.mjs` will
+  // give them the same treatment the ballista got when he asks for it — the dials
+  // most likely to be wrong are `damage` and `splash`, which are the two the
+  // ballista's own sweep found the game least sensitive to.
+  //
+  // No abilities yet, exactly as the Assassin Guild shipped without them. The
+  // field is simply absent, which the menu already reads as "nothing to teach".
+  { ...cannon, tier: 4, name: 'Cannon Outpost', title: 'Cannon Outpost', unit: 'Cannoneer',
+    cost: 230, damage: 70, splash: 85, range: 360, minRange: 0, cooldown: CYCLE, colour: '#A8A29A',
+    // Its own picture on the upgrade button. With two of them on the ring neither
+    // can wear the generic arrow — the same reason both barracks and both archery
+    // fourth rungs name theirs.
+    glyph: 'cannon',
+    // And its own three lines, on the same terms as every other tier 4: a named
+    // tower at the top of a ladder answers for itself when it is built and when
+    // its standing order changes, rather than borrowing the family's. See
+    // familyCue in src/audio.js.
+    voice: 'cannoneer' }
 ];
 
 // --- monastery -----------------------------------------------------------------

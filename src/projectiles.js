@@ -191,7 +191,10 @@ const victims = (state, s) => (s.side === 'enemy' ? state.units : state.enemies)
 
 // What arriving SOUNDS like, by ammunition. An arrow is not here on purpose: it
 // makes its noise leaving the bow, because that is the moment you watch.
-const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE };
+// EXPORTED beside FIRING in towers.js and for the same reason: a `landSound`
+// with no row here is silence that nothing reports. tools/sound.mjs checks both
+// tables against every ammunition the game can actually fire.
+export const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE };
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what

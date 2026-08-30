@@ -172,6 +172,11 @@ const MEMORY_S = 20;
 // Every clip, by the name the game calls it. Every path is a plain URL — the
 // project has no filenames with spaces left in it. Keep it that way; if one
 // arrives, encode the space as %20 here rather than renaming the artist's file.
+//
+// EXPORTED as CLIPS below, for tools/sound.mjs: the KEYS are the set of names the
+// loader will answer to. A cue naming a clip that is not in here plays nothing at
+// all — silently, since solo() and play() both skip a cue whose clips did not
+// load — so the only place that break can be caught is against this table.
 const paths = {
   // The one sound the UI makes. Not a battle noise at all — it answers the
   // player's finger rather than anything happening on the board.
@@ -215,6 +220,24 @@ const paths = {
   // on `bolt` in data/towers.js — so there is no third.
   ballista_shot:    'assets/audio/sfx/Ballista_Bolt_shot.mp3',
   ballista_kill_enemy: 'assets/audio/sfx/Ballista_kill_enemy.mp3',
+  // The cannon, and the same pair a fourth time — but it is the first ARTILLERY
+  // weapon to have them. Every machine below it is silent leaving and loud
+  // landing, because a rock IS its arrival; powder is the other way round, and a
+  // cannon that went off quietly and thumped loudly would be the wrong instrument
+  // entirely. So the ball takes the bow's split — see `cannonball` in
+  // data/towers.js — and this is the report, played on the release.
+  //
+  // AND NO ENTRY IN GAIN, which is a decision rather than an omission. The
+  // leveller takes this file down 6.7dB on its own and lands it exactly where
+  // every other weapon report in the game sits, which is what "balanced with the
+  // other sounds" means here. The ballista's report is the one that departs from
+  // that, and it departs for a reason this tower does not have: it needs to be
+  // told apart from Heavy Bolt's, and it fires every 1.8s for the whole game
+  // where this fires every 3.0. So a Cannon Outpost is audibly louder than a
+  // Ballista Turret beside it — which is a cannon being a cannon, at two thirds
+  // the rate.
+  cannon_shot:      'assets/audio/sfx/Cannon_shot.mp3',
+  cannon_kill_enemy: 'assets/audio/sfx/Cannon_kill_enemy.mp3',
   // The pope. HALF a pair, and the missing half is the point: he fires the
   // monastery's own `arcane_shot` rather than a clip of his own — the artist
   // asked for the same noise, slightly louder — so the only new file here is the
@@ -317,8 +340,18 @@ const paths = {
   // cue, different button, because that is what each family's south button does.
   assassin_1:      'assets/audio/voice/Assassin_1.mp3',
   assassin_2:      'assets/audio/voice/Assassin_2.mp3',
-  assassin_3:      'assets/audio/voice/Assassin_3.mp3'
+  assassin_3:      'assets/audio/voice/Assassin_3.mp3',
+  // The Cannon Outpost's own three, and the seventh tier with a voice. Artillery
+  // is the third ladder to carry two of these, and nothing in familyCue had to
+  // learn that either: a tier names its own cue or falls through to its family.
+  cannoneer_1:     'assets/audio/voice/Cannoneer_1.mp3',
+  cannoneer_2:     'assets/audio/voice/Cannoneer_2.mp3',
+  cannoneer_3:     'assets/audio/voice/Cannoneer_3.mp3'
 };
+
+// The clip table, by the name the game calls each one. See the note above `paths`
+// for what tools/sound.mjs does with the keys.
+export const CLIPS = paths;
 
 // Clips the game is wired for but does not have yet. A miss on one of these is
 // expected, so it is reported once and quietly rather than as a warning per
@@ -462,6 +495,9 @@ export const CUE = {
   // The Assassin Guild's, keyed off the `voice` field on its tier like the five
   // above it. The barracks is the second ladder with two of these.
   assassin:     ['assassin_1', 'assassin_2', 'assassin_3'],
+  // The Cannon Outpost's, keyed off the `voice` field on its tier like the six
+  // above it. Artillery is the third ladder with two of these.
+  cannoneer:    ['cannoneer_1', 'cannoneer_2', 'cannoneer_3'],
   thug:         ['thug_1'],
   arrowKill:    ['arrow_kill_enemy'],
   // A rock killing a man is its own event with its own clip now — it used to
@@ -484,6 +520,13 @@ export const CUE = {
   // a different picture: `killedBy` is the ammo's `kind`, so sharing the arrow
   // would have meant sharing the cry.
   crossbowKill: ['crossbowman_kill_enemy'],
+  // A cannonball finishing a man. The sixth kill line, and the one that finally
+  // splits artillery in two: `rockKill` was every machine in the family while
+  // every machine in the family threw a rock, and this tier throws iron. It is
+  // the ammunition's `kind` that decides, as it is for all six, so the Cannon
+  // Outpost needed a kind of its own for exactly this reason as much as for the
+  // drawing.
+  cannonKill:   ['cannon_kill_enemy'],
   // An assassin finishing a man, split out of meleeKill the same way the
   // paladin's was: the three lower barracks tiers share the generic take, and
   // each tier 4 has its own. Keyed off `blow` on his def — see BLOWS below,
@@ -527,6 +570,12 @@ export const CROSSBOW = ['crossbow_shot'];
 // for the same reason: it is a thing that happens rather than a thing announced,
 // and two turrets firing at once are two events the player is watching.
 export const BOLT = ['ballista_shot'];
+// A cannon going off. Category B beside the bow, the staff, the musket and the
+// ballista, and for the same reason: it is a thing that happens rather than a
+// thing announced, and two outposts firing at once are two events the player is
+// watching. It is also the first artillery report in the game — every machine
+// below this tier makes its noise on the LANDING instead.
+export const CANNON = ['cannon_shot'];
 // The three ability sounds, and all three are Category B beside the weapons they
 // belong to. A heavy ball leaving the barrel, a paladin calling the light down on
 // himself, and a paladin's fifth blow. See abilityCue below for how an ability

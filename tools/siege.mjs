@@ -41,18 +41,31 @@ import { at as pointOn, laneOf, LANES } from '../src/route.js';
 const DT = 1 / 60;
 const def = siege[0];
 
-// TWO SHAPES OF ARTILLERY NOW, and most of the checks below are about the first.
+// TWO QUESTIONS ABOUT A SIEGE TIER, AND THEY ARE NOT THE SAME QUESTION — which
+// is a thing this file got wrong for as long as the answers happened to agree.
 //
-// The LOBBERS are tiers 1 to 3: one drawing per beat with the machine, the crew
-// and the ground in it, a rock thrown at a patch of ground on an arc, and a dead
-// zone they cannot reach into. The BOLTER is tier 4: a turret that never moves
-// with a machine on top that does, a steered bolt, and no dead zone at all.
+//   HOW IS IT DRAWN?  One picture per beat with the machine, the crew and the
+//   ground all in it, and the whole thing mirrors (a MACHINE); or a stone turret
+//   that never moves with a second drawing on top that animates and turns (a
+//   TURRET).
 //
-// Split by the ammunition rather than by the tier number, because `arc` is the
-// actual difference — a fifth tier that lobs belongs with the first three
-// wherever it lands on the ladder.
-const LOBBERS = siege.filter(d => d.ammo.arc);
-const BOLTERS = siege.filter(d => !d.ammo.arc);
+//   HOW DOES IT SHOOT?  Thrown at a patch of ground on an arc, committed before
+//   it lands (LOBBED); or steered at a man and dead when he is (STEERED).
+//
+// Tiers 1 to 3 are drawn machines that lob. The Ballista Turret is a turret that
+// steers. So one flag answered both, and `d.ammo.arc` was used to mean "is this
+// one of the three catapults" — which it was, right up until the Cannon Outpost:
+// a TURRET that LOBS. It crashed this file on the first run, on a check that
+// asked a two-piece tier for the frames only a one-piece tier has.
+//
+// Two splits now, and each check below is keyed to the axis it is actually about.
+// A drawing question asks MACHINES/TURRETS; a ballistics question asks
+// LOBBED/STEERED. Neither is ever the tier number: a sixth tier that lobs belongs
+// with the rocks wherever it lands on the ladder.
+const MACHINES = siege.filter(d => !d.machine);
+const TURRETS  = siege.filter(d => d.machine);
+const LOBBED   = siege.filter(d => d.ammo.arc);
+const STEERED  = siege.filter(d => !d.ammo.arc);
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -421,9 +434,9 @@ console.log('\nWhich way it faces\n');
   //   Catapult   sling  (373.5, 482.0) -> (434.0, 363.5)    +60.5 px
   //   Mangonel   cup    (395,   365)   -> (474.5, 258.4)    +79.5 px
   //   Trebuchet  pouch  (240,   480)   -> (600.9, 136.9)   +360.9 px
-  ok(LOBBERS.every(d => d.buildingFaces === 1),
-     'and all three lobbers throw RIGHT',
-     LOBBERS.map(d => `${d.name} ${d.buildingFaces}`).join(', '));
+  ok(MACHINES.every(d => d.buildingFaces === 1),
+     'and all three drawn machines throw RIGHT',
+     MACHINES.map(d => `${d.name} ${d.buildingFaces}`).join(', '));
 }
 
 // --- the turret's machine ------------------------------------------------------
@@ -432,10 +445,10 @@ console.log('\nWhich way it faces\n');
 // paragraphs above are checked again in its own terms. Naming the sides matters
 // here for the same reason it does above — a machine drawn shooting left and
 // flagged as shooting right passes every "the far side mirrors" test there is.
-if (BOLTERS.length) {
+if (TURRETS.length) {
   console.log('\nThe turret, and the machine standing on it\n');
 
-  for (const d of BOLTERS) {
+  for (const d of TURRETS) {
     const t = catapultAt(SPOT.x, SPOT.y - BACK, d);
 
     ok(buildingFlip(t) === 1 && (t.face = 1, buildingFlip(t) === 1) &&
@@ -462,15 +475,50 @@ if (BOLTERS.length) {
        'and the muzzle mirrors about the machine, not the plot',
        `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${axis.toFixed(1)}, plot ${t.x.toFixed(1)}`);
 
-    // THE MIDDLE OF THE DRAWING, NOT THE POST, and that is the whole of the
-    // second fix: mirroring about the post swings the machine across the roof.
-    // The plot's own line is NOT the thing to check against — the mount was
-    // chosen to put the machine's middle over the middle of the deck, so the two
-    // land within a pixel of each other on purpose.
-    const post = machineBox(d, towerBox(t)).x;
-    ok(Math.abs(axis - post) > 4,
-       'and that line is the middle of the drawing, not the post',
-       `${axis.toFixed(1)} against a post at ${post.toFixed(1)}`);
+    // NOT THE POINT IT STANDS ON, which is the first half of the fix this check
+    // was written for: mirroring about the foot swings the whole machine across
+    // the roof, and it shipped that way once. The plot's own line is NOT the thing
+    // to compare against — the mount puts the machine over the middle of the deck
+    // on purpose, so the two land within a pixel of each other.
+    const box = machineBox(d, towerBox(t));
+    ok(Math.abs(axis - box.x) > 4,
+       'the line it flips about is not the point it stands on',
+       `${axis.toFixed(1)} against a foot at ${box.x.toFixed(1)}`);
+
+    // AND IT IS THE MIDDLE OF THE FEET, which is the half the first one cannot
+    // see — and the half that actually matters.
+    //
+    // What a mirror has to preserve is the FOOTPRINT: the machine covers the same
+    // patch of deck whichever way it points, with its two feet swapping ends of
+    // it. Flip about anything else and the pair walks sideways by twice the error.
+    //
+    // "The middle of the drawing" was the rule for as long as artillery had one
+    // turret, and it was luck: the ballista's feet straddle its box middle, so 0.5
+    // was within 10 source px of right. The cannon's do not — its barrel hangs off
+    // one end and its box middle is 61px from its feet — so the old rule would
+    // have walked it 25 drawn px across the roof, which is the exact defect the
+    // check above exists to catch, wearing a different hat.
+    //
+    // Measured in DRAWN pixels because that is what the player sees, and against a
+    // real budget: 6px on a deck 104px wide is under 6% and invisible, and the
+    // box-middle mistake misses it four times over.
+    const feet = d.machine.feet;
+    if (feet) {
+      // THE FIRST FOOT IS THE PIVOT, which is not a coincidence to be preserved
+      // by hand: the point the machine is PLACED by is one of the points it
+      // stands on, and tools/shadow.mjs re-measures the pivot off the artwork on
+      // every run. Without this, a re-measured pivot would leave the foot beside
+      // it stale, and `mirror` — which is derived from the feet — would drift
+      // quietly away from the drawing it describes.
+      ok(feet[0][0] === d.machine.pivot[0] && feet[0][1] === d.machine.pivot[1],
+         'the foot it is placed by is the foot it stands on',
+         `[${feet[0]}] against a pivot of [${d.machine.pivot}]`);
+
+      const mid = feet.reduce((s, f) => s + f[0], 0) / feet.length;
+      const walk = 2 * Math.abs((d.machine.mirror ?? 0.5) - mid) * box.w;
+      ok(walk < 6, 'and flipping it does not walk the machine across the roof',
+         `${walk.toFixed(1)}px of a 6px budget, on a ${box.w.toFixed(0)}px machine`);
+    }
 
     // AND THE BOLT LEAVES THE FRONT, which is the other half of the same fix.
     // "Front" is measurable: the shot's origin has to be on the side of the
@@ -508,17 +556,17 @@ console.log('\nEvery tier is its own machine\n');
      'every tier has one frame per beat',
      siege.map(d => `${framesOf(d).length}/${beatsOf(d).length}`).join(' '));
 
-  // A LOBBER rests on the frame that is also its sprite, so anything reading
-  // `def.sprite` without knowing about beats gets a machine at rest. A TURRET
-  // cannot: its sprite is the stone, and the resting machine is a second
+  // A DRAWN MACHINE rests on the frame that is also its sprite, so anything
+  // reading `def.sprite` without knowing about beats gets a machine at rest. A
+  // TURRET cannot: its sprite is the stone, and the resting machine is a second
   // drawing that stands on it.
-  ok(LOBBERS.every(d => d.frames[0] === d.sprite),
-     'and a lobber rests on the frame that is also its sprite',
-     LOBBERS.map(d => d.sprite).join(', '));
+  ok(MACHINES.every(d => d.frames[0] === d.sprite),
+     'and a drawn machine rests on the frame that is also its sprite',
+     MACHINES.map(d => d.sprite).join(', '));
 
-  ok(BOLTERS.every(d => d.machine && !framesOf(d).includes(d.sprite)),
+  ok(TURRETS.every(d => d.machine && !framesOf(d).includes(d.sprite)),
      'while a turret keeps its stone apart from its machine',
-     BOLTERS.map(d => `${d.sprite} + ${framesOf(d)[0]}`).join(', '));
+     TURRETS.map(d => `${d.sprite} + ${framesOf(d)[0]}`).join(', '));
 
   const keys = siege.flatMap(d => framesOf(d));
   ok(new Set(keys).size === keys.length,
@@ -526,28 +574,87 @@ console.log('\nEvery tier is its own machine\n');
 
   // An anchor carried across from the tier below is the classic paste error, and
   // it is invisible: the machine simply stands a few px off its plot.
+  //
+  // THE PAIR OF THEM, not the ground point alone, and the two tier 4s are why.
+  // They stand on the SAME STONE — one turret drawing with a recoloured banner —
+  // so sharing a `groundFrac` is the correct answer there rather than a paste,
+  // and demanding five distinct ones would fail on a truth. What must differ is
+  // where the MACHINE stands on that stone, which is `mountFrac`, and the key
+  // below is both so that either kind of copy is still caught.
   const anchors = new Set(siege.map(d => `${d.groundFrac}|${d.mountFrac}`));
   ok(anchors.size === siege.length,
-     'and each was measured rather than copied down',
-     siege.map(d => `${d.name} ${d.groundFrac[1]}`).join(', '));
+     'and no two tiers stand a machine on the same spot',
+     siege.map(d => `${d.name} ${d.mountFrac}`).join(', '));
 
   // The rock grows with the machine; the FLIGHT does not change across the three
-  // that throw one, because the 1.5s Fire pose was chosen against it. Tier 4 is
-  // not in either check — it fires a bolt, which is the point of it.
-  const sizes = LOBBERS.map(d => d.ammo.trim[2]);
+  // that throw one, because the 1.5s Fire pose was chosen against it. Neither
+  // tier 4 is in either check — one fires a bolt and the other an iron ball, and
+  // the ball is SMALLER than every rock on purpose. See `cannonball`.
+  const sizes = MACHINES.map(d => d.ammo.trim[2]);
   ok(sizes.every((v, i) => i === 0 || v > sizes[i - 1]),
-     'the rock gets bigger with every lobbing tier', sizes.join(' -> '));
-  ok(new Set(LOBBERS.map(d => `${d.ammo.speed}|${d.ammo.arc}`)).size === 1,
+     'the rock gets bigger with every drawn machine', sizes.join(' -> '));
+  ok(new Set(MACHINES.map(d => `${d.ammo.speed}|${d.ammo.arc}`)).size === 1,
      'and every rock flies exactly the same way',
-     `${LOBBERS[0].ammo.speed}px/s, arc ${LOBBERS[0].ammo.arc}`);
+     `${MACHINES[0].ammo.speed}px/s, arc ${MACHINES[0].ammo.arc}`);
 
   // The longest THROW still has to land while the arm is up. This is the check
   // that caught a 1.50s flight against a 1.50s pose once; the per-tier version
   // of it, which covers the bolt as well, is up with the loop.
-  const far = Math.max(...LOBBERS.map(d => d.range));
-  const flight = far / LOBBERS[0].ammo.speed;
+  const far = Math.max(...MACHINES.map(d => d.range));
+  const flight = far / MACHINES[0].ammo.speed;
   ok(flight < BEATS[2], 'and the longest throw lands before the arm comes down',
      `${flight.toFixed(2)}s of ${BEATS[2]}s`);
+}
+
+// --- what a tier is, on both axes ----------------------------------------------
+//
+// The two questions at the top of this file, asked of the data rather than of the
+// tier numbers. This block exists because getting them confused is not a
+// hypothetical: `d.ammo.arc` meant "one of the three catapults" everywhere in
+// here until a turret started lobbing, and the file crashed rather than reporting
+// anything at all.
+//
+// So the split is stated as a table now. A reader who wants to know what shape a
+// tier is reads it off; a sixth tier that is a new combination of the two shows up
+// here as a new row rather than as a stack trace.
+
+console.log('\nHow each tier is drawn, and how it shoots\n');
+
+{
+  for (const d of siege)
+    console.log(`      ${d.name.padEnd(16)} ${(d.machine ? 'turret' : 'machine').padEnd(8)}`
+      + `${d.ammo.arc ? 'lobbed' : 'steered'}`);
+  console.log('');
+
+  // LOBBED IS NOT THE SAME SET AS MACHINE any more, and that is the whole point
+  // of the two constants. Stated as a check so the day they coincide again — a
+  // steered turret and nothing else at tier 4 — nobody quietly collapses them.
+  ok(LOBBED.length !== MACHINES.length ||
+     LOBBED.some(d => !MACHINES.includes(d)),
+     'how a tier is DRAWN and how it SHOOTS are two questions',
+     `${MACHINES.length} machines / ${TURRETS.length} turrets, `
+     + `${LOBBED.length} lobbed / ${STEERED.length} steered`);
+
+  // Everything thrown at a patch of ground damages a patch of ground, and throws
+  // up earth where it lands. A lobbed shot with no splash would be a catapult
+  // that had to hit one man, which is not what any of these towers are for.
+  ok(LOBBED.every(d => d.splash > 0 && d.ammo.impact),
+     'and everything lobbed bursts where it lands',
+     LOBBED.map(d => `${d.name} ${d.splash}`).join(', '));
+
+  // And a steered shot chases one man, so it has no patch to burst in.
+  ok(STEERED.every(d => !d.ammo.arc),
+     'while a steered shot follows the man it was aimed at',
+     STEERED.map(d => d.name).join(', '));
+
+  // The dead zone belongs to the LOB, not to the drawing — a machine that throws
+  // over an arc cannot drop its shot on its own feet. Except that it is bought
+  // off at tier 4: 610 gold should defend its own plot. So the rule is per tier
+  // and stated as such rather than derived, and what is checked is that no tier
+  // BELOW the top has bought its way out of it.
+  ok(MACHINES.every(d => d.minRange === DEAD) && TURRETS.every(d => d.minRange === 0),
+     'every machine keeps its dead zone and every turret has none',
+     siege.map(d => `${d.name} ${d.minRange}`).join(', '));
 }
 
 // --- the dead zone ------------------------------------------------------------
@@ -585,7 +692,7 @@ console.log('\nThe dead zone\n');
 
 // AND TIER 4 HAS NONE, which is half of what the player is buying. The same
 // enemy standing on the same spot, under a turret instead of a catapult.
-for (const d of BOLTERS) {
+for (const d of TURRETS) {
   const s = board();
   const t = catapultAt(SPOT.x, SPOT.y - BACK, d);
   s.towers.push(t);

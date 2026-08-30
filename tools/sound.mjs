@@ -131,13 +131,19 @@ globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promis
 
 const { loadAudio, play, solo, CUE, SHOT, ATTACK, PALADIN, SELECT,
         DEADEYE, HOLY_LIGHT, HOLY_SLASH,
-        selectionCue, familyCue, blowCue, abilityCue, GAIN } = await import('../src/audio.js');
+        selectionCue, familyCue, blowCue, abilityCue, GAIN, CLIPS } = await import('../src/audio.js');
 // The two ladders with a tier 4 on them, for the voice and blow checks below.
 // Imported here rather than at the top because everything above has to run after
 // the fake AudioContext is in place, and this file keeps its imports in one order
 // for that reason.
-const { archery, barracks } = await import('../src/data/towers.js');
+const { archery, barracks, siege, monastery } = await import('../src/data/towers.js');
 const { ABILITIES, abilityById } = await import('../src/data/abilities.js');
+// The two tables that turn an ammunition's "I make a noise" flag into an actual
+// clip. Imported for the block at the end of this file — see the note there for
+// why a missing row is invisible without it.
+const { FIRING } = await import('../src/towers.js');
+const { LANDING } = await import('../src/projectiles.js');
+const { enemyTypes } = await import('../src/data/waves.js');
 
 // Load with console.info muted. The module reports anything it had to move a
 // long way, which is useful in a browser and pure noise here — every fake clip
@@ -604,5 +610,56 @@ check('nothing plays while suspended', at(9100, () => { solo(CUE.thug); play(SHO
 ctx.state = 'running';
 check('and it all comes back when it resumes', at(9101, () => solo(CUE.thug)), 1);
 
-console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nBoth sound rules hold.');
+// --- every shot the game can fire is audible -------------------------------------
+//
+// THE FLAG AND THE TABLE HAVE TO AGREE, and nothing in the running game notices
+// when they do not.
+//
+// An ammunition declares what it sounds like with two booleans — `fireSound` on
+// the release, `landSound` on arrival — and each one is turned into an actual clip
+// by a table: FIRING in src/towers.js, LANDING in src/projectiles.js. A `kind`
+// that says true and has no row calls `play(undefined)`, which returns quietly
+// having done nothing. No warning, no error, no missing file: the weapon simply
+// stops making a noise, and everything else about the tower keeps working.
+//
+// That is a real failure mode and not a hypothetical. The same shape of break —
+// a name declared in one table and never resolved in the next — shipped a blank
+// upgrade button in this very change, and it took a screenshot to find. This
+// block is the sound half of it, and it is cheap: every ammunition the game can
+// reach, checked against both tables.
+//
+// EVERY AMMUNITION THE GAME CAN REACH, gathered the way the game reaches them
+// rather than from a list kept here — a tier's `ammo`, an ability's `ammo`, and
+// an enemy's. A list would need editing before it could see a new weapon, which
+// is the same defect it is meant to catch.
+console.log('\nEvery shot is heard, or is silent on purpose\n');
+{
+  const ammo = new Map();
+  const add = (a, from) => { if (a && a.kind && !ammo.has(a.kind)) ammo.set(a.kind, { a, from }); };
+  for (const d of [...archery, ...barracks, ...siege, ...monastery]) add(d.ammo, d.name);
+  for (const a of ABILITIES) add(a.ammo, a.id);
+  for (const [id, e] of Object.entries(enemyTypes)) add(e.ammo, id);
+
+  const loud = [...ammo.values()].filter(({ a }) => a.fireSound);
+  const lands = [...ammo.values()].filter(({ a }) => a.landSound);
+  check('every shot that says it is loud leaving has a clip',
+    loud.every(({ a }) => Array.isArray(FIRING[a.kind]) && FIRING[a.kind].length > 0), true);
+  check('and every shot that says it is loud landing has one',
+    lands.every(({ a }) => Array.isArray(LANDING[a.kind]) && LANDING[a.kind].length > 0), true);
+
+  // AND NOTHING IS SILENT AT BOTH ENDS. A projectile the player can neither hear
+  // leave nor hear arrive is a weapon that fires in total silence — which is
+  // never what anybody meant, and is exactly what a forgotten flag looks like.
+  const mute = [...ammo.values()].filter(({ a }) => !a.fireSound && !a.landSound);
+  check('and no weapon in the game is silent at both ends',
+    mute.map(({ from }) => from).join(', '), '');
+
+  // A row pointing at a cue with no clips is the same failure one layer down: the
+  // table resolves, the array is there, and solo/play find nothing to start.
+  const rows = [...Object.values(FIRING), ...Object.values(LANDING)].flat();
+  check('and every clip those tables name is one the loader knows',
+    rows.filter(k => !(k in CLIPS)).join(', '), '');
+}
+
+console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nAll three sound rules hold.');
 process.exit(bad ? 1 : 0);

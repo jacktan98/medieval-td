@@ -15,7 +15,7 @@ import { SCALE, BLOOD_SCALE, archery, barracks, siege, monastery } from '../src/
 // Sprite key -> file, so a frame is checked wherever the file actually lives.
 // The paths are URL-encoded for the browser; decode them to read from disk.
 import { paths as ASSET_URLS } from '../src/assets.js';
-import { ui, uiSize, PORTRAIT_SCALE } from '../src/data/ui.js';
+import { ui, uiSize, PORTRAIT_SCALE, GLYPH_ART } from '../src/data/ui.js';
 import { HUD_BTN, INFO_BOX } from '../src/render.js';
 
 // The three plates are sized by the renderer, not by data/ui.js — their widths
@@ -329,6 +329,39 @@ for (const d of dirs) {
     process.exitCode = 1;
   } else {
     console.log("Every full-plate button matches btn_plate's own disc.");
+  }
+}
+
+// --- every glyph a button names has a picture ------------------------------------
+//
+// A THREE-TABLE CHAIN, and a break anywhere in it draws a blank disc.
+//
+//   a tier's `glyph`  ->  GLYPH_ART  ->  a `ui` entry  ->  an assets.js path
+//
+// The Cannon Outpost shipped this way for one build. Its icon was measured, wired
+// into assets.js, given a box in data/ui.js with a `fit` and a `nudge` — and the
+// one line missing was the GLYPH_ART row that turns the def's word "cannon" into
+// the key `glyph_cannon`. Every other check in this file passed, because every
+// other check asks about a FILE and this is a question about a NAME. The button
+// came up with a price on it and nothing above the price.
+//
+// It is a silent failure by construction: drawGlyph falls back to a vector when
+// the art is missing, and there is no vector for a name it has never heard of, so
+// the disc is simply empty. Nothing is logged. The only way to see it is to look
+// at the ring, which is exactly the sort of thing a person stops doing.
+{
+  const named = [...archery, ...barracks, ...siege, ...monastery]
+    .map(d => d.glyph).filter(Boolean);
+  const missing = [...new Set(named)].filter(g => {
+    const key = GLYPH_ART[g];
+    return !key || !ui[key] || !ASSET_URLS[key];
+  });
+  if (missing.length) {
+    console.log(`\n${missing.length} tier glyph(s) name a picture that does not resolve: ${missing.join(', ')}`);
+    console.log('Add the row to GLYPH_ART in src/data/ui.js — the button draws blank without it.');
+    process.exitCode = 1;
+  } else {
+    console.log(`Every tier that names its own button icon has one (${new Set(named).size} of them).`);
   }
 }
 

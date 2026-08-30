@@ -133,21 +133,28 @@ console.log('\nBlast — the one thing only artillery has\n');
   // "highest range" costs. A family that reached furthest AND could shoot its own
   // feet would simply be the best tower.
   //
-  // THE LADDER, not every rung of it. Tier 4 gives the hole up — it fires a bolt
-  // rather than lobbing a rock, so there is no arc to clear — and it pays for
-  // that with the shortest reach in the family, 100px less than the trebuchet it
-  // upgrades from. The claim the game actually rests on is that a machine cannot
-  // have BOTH, so it is checked that way round: everything that reaches further
-  // than archery has a hole, and the one tier without a hole reaches less far
-  // than the tier below it.
-  const lobbers = siege.filter(d => d.minRange > 0);
-  const flat = siege.filter(d => !d.minRange);
-  ok(lobbers.length && lobbers.every(d => d.range > Math.max(...archery.slice(0, 3).map(a => a.range))),
-    'the artillery that lobs has a hole in the middle',
-    `${lobbers.map(d => d.minRange).join('/')}px`);
-  ok(flat.every(d => d.range < Math.min(...lobbers.map(l => l.range))),
-    'and the one that does not, reaches least of the family',
-    flat.map(d => `${d.name} ${d.range}`).join(', ') || 'none');
+  // THE LADDER, not every rung of it, and the rule is about the RUNG rather than
+  // about the weapon.
+  //
+  // It used to be about the weapon: tier 4 was a ballista, a bolt is aimed rather
+  // than thrown, there is no arc to clear, so no hole — and it paid for that with
+  // the shortest reach in the family. That reading is gone. The Cannon Outpost
+  // LOBS, on a real arc, with a real blast, and has no dead zone either; the hole
+  // is not a fact about the trajectory, it is a thing the top of the ladder buys
+  // off. 610 gold on one plot should be able to defend that plot.
+  //
+  // So what is checked is what the game actually rests on: every rung BELOW the
+  // top carries the hole, no rung at the top does, and no other family has one at
+  // all. What each tier 4 pays instead is its own trade and belongs in its own
+  // section further down — the ballista pays in reach, the cannon in rate of fire.
+  const below = siege.filter(d => d.tier < 4);
+  const top = siege.filter(d => d.tier === 4);
+  ok(below.length && below.every(d => d.minRange > 0),
+    'every artillery tier below the top has a hole in the middle',
+    `${below.map(d => d.minRange).join('/')}px`);
+  ok(top.length && top.every(d => d.minRange === 0),
+    'and reaching the top of the ladder is what buys it off',
+    top.map(d => `${d.name} ${d.minRange}`).join(', ') || 'none');
   const holed = [...archery, ...monastery].filter(d => d.minRange);
   ok(!holed.length, 'and no other family has a hole at all',
     holed.map(d => d.title).join(', ') || 'archery and the monastery shoot their own feet');
@@ -237,21 +244,33 @@ console.log('\nTier 4 — reach instead of output\n');
 // otherwise strictly better than the rung it upgrades from — more damage, more
 // often, no hole in the middle — and the only things holding that in balance are
 // the two numbers that went DOWN.
+//
+// ARTILLERY FORKS NOW, so this section is about ONE of its two fourth rungs and
+// says so by name. Everything below is the Ballista Turret's own trade; the
+// Cannon Outpost's is a different one and gets a section of its own, exactly as
+// the Assassin Guild does under the Paladin Keep. A fork is precisely where "the
+// same tower one rung further up" stops being the claim, and a check that reads
+// `siege[3]` while calling it "tier 4" would quietly start describing half a
+// ladder as the whole of it.
 console.log('\nArtillery tier 4 — output instead of reach\n');
 {
-  const t4 = siege[3];
+  const t4 = siege.find(d => d.name === 'Ballista Turret');
   const t3 = siege[2];
   const dps = d => d.damage / d.cooldown;
 
   ok(siege.every(d => d === t4 || d.range > t4.range), 'the Ballista Turret reaches least in its family',
     siege.map(d => d.range).join(' / '));
 
-  ok(t4.minRange === 0 && siege.every(d => d === t4 || d.minRange > 0),
-    'and is the only machine with no dead zone',
+  // NO DEAD ZONE, AND IT IS NO LONGER THE ONLY ONE — the Cannon Outpost beside it
+  // has none either, because that is what the top of the ladder buys rather than
+  // what a bolt buys. The claim that survives is the one about the rungs BELOW:
+  // this tower can defend its own plot and every machine it upgrades from cannot.
+  ok(t4.minRange === 0 && siege.every(d => d.tier === 4 || d.minRange > 0),
+    'and can defend its own plot, where every rung below it cannot',
     siege.map(d => d.minRange).join(' / '));
 
   ok(t4.splash > 0 && siege.every(d => d === t4 || d.splash > t4.splash),
-    'and still throws a blast, the smallest of the four',
+    'and still throws the smallest blast in the family',
     siege.map(d => d.splash).join(' / '));
 
   // THE HARDEST BLOW IN ITS OWN FAMILY, and it used to be joint hardest of the
@@ -270,14 +289,25 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
   ok(lower.every(d => d.damage < t4.damage), 'and out-hits every tier below 4 in both ladders',
     `${t4.damage} against the best lower tier's ${Math.max(...lower.map(d => d.damage))}`);
 
-  ok(siege.every(d => d === t4 || d.damage < t4.damage), 'and hits hardest in its own family',
+  // AND IT NO LONGER HITS HARDEST IN ITS OWN FAMILY. The Cannon Outpost lands 70
+  // against this turret's 55, and that is the fork working rather than a
+  // regression: the two fourth rungs are meant to be the quick one and the heavy
+  // one, and "hardest blow" is the heavy one's to own. What this turret owns is
+  // damage a SECOND, which is the number its 1.8s reload was bought for — and
+  // that claim is checked below, where it belongs.
+  ok(siege.every(d => d === t4 || d.tier === 4 || d.damage < t4.damage),
+    'and hits harder than every rung below it',
     siege.map(d => d.damage).join(' / '));
+
+  ok(siege.every(d => d === t4 || dps(d) < dps(t4)), 'and puts out the most damage a second in the family',
+    siege.map(d => dps(d).toFixed(1)).join(' / '));
 
   // And the ranking across the four tier 4s, printed rather than asserted: it is
   // the owner's to set, and what a check here would freeze is a decision that has
   // moved three times.
-  console.log(`      tier 4 damage: Post ${archery[3].damage}, Turret ${t4.damage}, ` +
-    `Temple ${monastery[3].damage}, Keep ${barracks[3].soldier.damage} a man`);
+  console.log(`      tier 4 damage: Post ${archery[3].damage}, Turret ${t4.damage}, `
+    + `Outpost ${siege.find(d => d.name === 'Cannon Outpost').damage}, `
+    + `Temple ${monastery[3].damage}, Keep ${barracks[3].soldier.damage} a man`);
 
   ok(siege.every(d => d === t4 || d.cooldown > t4.cooldown), 'and reloads fastest in its family',
     siege.map(d => d.cooldown.toFixed(2)).join(' / '));
@@ -313,6 +343,71 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
   ok(spend(siege) > spend(archery) && spend(siege) > spend(barracks),
     'and is the dearest ladder there is',
     `${spend(siege)}g against ${spend(archery)}g and ${spend(barracks)}g`);
+}
+
+// --- artillery's OTHER fourth rung -----------------------------------------------
+//
+// The Cannon Outpost, and it is checked separately for the reason the Assassin
+// Guild is: a fork is exactly where "the same tower one rung further up" stops
+// being the claim. Read the two sections together and the fork is the design —
+// one turret walked away from what the family is and this one leans into it.
+//
+// The trade this tower makes is against the BALLISTA, not against the trebuchet,
+// because they cost the same 230 and a player buying one is choosing not to buy
+// the other. So that is what every line below compares.
+console.log('\nArtillery tier 4 — the other one, blast instead of rate\n');
+{
+  const gun = siege.find(d => d.name === 'Cannon Outpost');
+  const bal = siege.find(d => d.name === 'Ballista Turret');
+  const t3 = siege[2];
+  const dps = d => d.damage / d.cooldown;
+
+  ok(gun.cost === bal.cost && gun.tier === bal.tier,
+    'the Cannon Outpost is the Turret\'s price on the Turret\'s rung',
+    `${gun.cost}g, tier ${gun.tier}, both`);
+
+  // THE THREE HALVES OF THE TRADE, and none of them is a straight upgrade in
+  // either direction — which is the whole test of a fork. Reach and blast go one
+  // way, damage a second goes the other.
+  ok(gun.range > bal.range && gun.splash > bal.splash && dps(gun) < dps(bal),
+    'and buys reach and blast with rate of fire',
+    `${gun.range} reach against ${bal.range}, ${gun.splash} blast against ${bal.splash}, `
+    + `${dps(gun).toFixed(1)}/s against ${dps(bal).toFixed(1)}`);
+
+  ok(gun.damage > bal.damage && gun.cooldown > bal.cooldown,
+    'and lands one heavy blow where the Turret lands two quick ones',
+    `${gun.damage} every ${gun.cooldown.toFixed(2)}s against ${bal.damage} every ${bal.cooldown.toFixed(2)}s`);
+
+  // THE HARDEST BLOW THAT LANDS ON MORE THAN ONE MAN, and the qualifier is the
+  // whole claim rather than a hedge. Only artillery bursts, so among towers that
+  // burst this is simply the biggest number; among ALL towers it is second, and
+  // the one ahead of it is the Judgement Temple's missile at 75 — which lands on
+  // exactly one enemy and dies with him. 70 into an 85px ellipse against 75 into
+  // one man is the trade the whole table at the top of this file is about, and
+  // writing it down as "hardest shot in the game" would have been false by five.
+  const bursters = [...archery, ...siege, ...monastery].filter(d => d.splash > 0);
+  const single = [...archery, ...siege, ...monastery].filter(d => !d.splash);
+  ok(bursters.every(d => d === gun || d.damage < gun.damage),
+    'and lands the hardest blow that touches more than one man',
+    `${gun.damage} against the next widest hitter's ${Math.max(...bursters.filter(d => d !== gun).map(d => d.damage))}`);
+  ok(single.filter(d => d.damage > gun.damage).length === 1,
+    'with exactly one single-target shot in the game still ahead of it',
+    single.filter(d => d.damage > gun.damage).map(d => `${d.name} ${d.damage}`).join(', '));
+
+  // IT KEEPS THE FAMILY'S SHAPE WHERE THE BALLISTA DROPPED IT. This one still
+  // lobs, still bursts, still reaches as far as the machine it upgrades from —
+  // the ballista gave up 100px of reach and the arc with it.
+  ok(gun.ammo.arc > 0 && gun.range === t3.range && !bal.ammo.arc,
+    'and is the tier 4 that still throws, at the trebuchet\'s own reach',
+    `arc ${gun.ammo.arc}, ${gun.range} both, against a steered bolt at ${bal.range}`);
+
+  // AND UNDER THE TREBUCHET'S BLAST, which is the one number the fork must not
+  // take from tier 3. A tier 4 that out-blasts the machine it upgrades from
+  // leaves that machine with nothing of its own — the same rule that holds the
+  // ballista's reach under the trebuchet's.
+  ok(gun.splash < t3.splash,
+    'while leaving the Trebuchet the widest burst in the game',
+    `${gun.splash} against ${t3.splash}`);
 }
 
 // --- the monastery's tier 4, on its own terms ------------------------------------

@@ -1,7 +1,7 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS, SCALE } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
-import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW } from './audio.js';
+import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW, CANNON } from './audio.js';
 
 // What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
 // projectiles.js, and it is a table for the same reason that one is: "what does
@@ -10,6 +10,12 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW } from './audio.js'
 //
 // A rock is not here on purpose. It is silent in the air and announces itself by
 // arriving, which is where the player is already looking.
+//
+// A CANNONBALL IS, AND IT IS THE ROW THAT MAKES THE POINT: the two artillery
+// tier 4s and the three machines under them are the same family firing very
+// different things, and the table is where that difference is stated once. Powder
+// is the report; a boulder is the arrival. A row here and a row in LANDING say
+// which, and no code anywhere asks what family a shot came from.
 //
 // `deadeye` is the fourth row and it is why the table earns its keep: an ability
 // arrived with a projectile of its own, and giving it a voice was one line here
@@ -20,8 +26,14 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW } from './audio.js'
 // noise, a quarter louder, so what he needed was a kind of his own for the KILL
 // cry — see src/enemies.js — and no new sound at all. The loudness rides on the
 // ammunition as `fireGain`.
-const FIRING = { arrow: SHOT, arcane: ARCANE, judgement: ARCANE, bullet: MUSKET,
-                 deadeye: DEADEYE, bolt: BOLT, quarrel: CROSSBOW };
+//
+// EXPORTED for tools/sound.mjs, which is the only way a missing row can be
+// caught. `play(undefined)` is silence with no error and no warning, so an
+// ammunition that says `fireSound: true` and has no row here simply stops making
+// a noise — and the tower goes on working perfectly in every other respect.
+export const FIRING = { arrow: SHOT, arcane: ARCANE, judgement: ARCANE, bullet: MUSKET,
+                        deadeye: DEADEYE, bolt: BOLT, quarrel: CROSSBOW,
+                        cannonball: CANNON };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the

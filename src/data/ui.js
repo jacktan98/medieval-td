@@ -157,6 +157,17 @@ export const ui = {
   // The Ballista Turret's, the third tier icon and an ordinary one like the
   // Keep's: 108x110 source is square enough for the shared box.
   glyph_ballista: { trim: [202, 201, 108, 110], fit: GLYPH_BOX },
+  // The Cannon Outpost's, and it is the SECOND glyph that needs the musket's
+  // treatment rather than the shared box. 112x40 source is 2.8:1 — a barrel lying
+  // across the disc, near enough the musket's 3:1 — so at GLYPH_BOX it would land
+  // 26x9 and float in the top half of a 60px plate with a third of the ink every
+  // other button carries. `fit` 34 lands it 34x12 and the same 3px nudge puts it
+  // where the eye centres a small mark, which is against the whole plate rather
+  // than against the band the tall glyphs fill.
+  //
+  // Still inside the sharpness ceiling: 34 drawn x 3 device px is 102 of the 112
+  // it has, the same margin the musket runs at.
+  glyph_cannon:   { trim: [200, 236, 112, 40], fit: 34, nudge: [0, 3] },
   // The Judgement Temple's, the fourth tier icon and the one TALL one: 76x104
   // source, half again as high as it is wide, because the drawing is the whole
   // tower with its roof and cross. `fit` is the shared box like the other two,
@@ -350,6 +361,8 @@ export const GLYPH_ART = {
   musket: 'glyph_musket',
   keep: 'glyph_keep',
   ballista: 'glyph_ballista',
+  // The artillery fork's second face, on the same terms as the other two forks'.
+  cannon: 'glyph_cannon',
   temple: 'glyph_temple',
   refund: 'glyph_refund',
   flag: 'glyph_flag',

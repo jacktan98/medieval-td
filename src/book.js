@@ -542,11 +542,13 @@ function artAt(state, x, y) {
     const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
     return { sprite: e.sprite, trim: e.trim, title: e.title,
              kind: state.book === 0 ? 'tower' : 'figure',
-             // AND THE MACHINE ON TOP, for the one tier that is two drawings.
+             // AND THE MACHINE ON TOP, for the two tiers that are two drawings.
              // The pop-up opened on the bare stone before this, which is not the
              // tower — half of a Ballista Turret is the ballista, and the man
              // standing beside it is the only place in the game he is drawn big
-             // enough to look at.
+             // enough to look at. The Cannon Outpost needed nothing added here:
+             // the rule is `def.machine`, not a tier number, so artillery's
+             // second fourth rung arrived already drawn.
              machine: e.machine || null };
   }
   return null;
@@ -665,10 +667,12 @@ export function towerEntry(def, tiers) {
     // The resting frame for an animated building, which `def.sprite` already is
     // — a catapult in the book is not mid-throw.
     art: towerArt(def),
-    // THE MACHINE ON TOP, for the one tier that is drawn in two pieces. The
+    // THE MACHINE ON TOP, for the two tiers that are drawn in two pieces. The
     // owner asked for the card to show the turret and the ballista together,
     // which is also the only honest picture of it: neither half on its own is
-    // the tower.
+    // the tower. The Cannon Outpost is the second, and it needed no change —
+    // the condition is `def.machine`, so a new turret is drawn on its stone the
+    // day its data lands.
     //
     // The def travels with it because placing a machine on a roof is arithmetic
     // machineBox already owns, and the card has to use the same arithmetic the

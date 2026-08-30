@@ -58,7 +58,7 @@ export const paths = {
   artillery_t3:        'assets/towers/artillery/Artillery_Default_T3.png',
   artillery_t3_reload: 'assets/towers/artillery/Artillery_Reload_T3.png',
   artillery_t3_fire:   'assets/towers/artillery/Artillery_Fire_T3.png',
-  // TIER 4, THE BALLISTA TURRET, and it is the first building in the game drawn
+  // TIER 4, THE BALLISTA TURRET, and it was the first building in the game drawn
   // as TWO SEPARATE PIECES: a stone turret that never moves, and a machine on
   // top of it that animates on the same three beats as the catapults below and
   // mirrors to face its target.
@@ -83,6 +83,25 @@ export const paths = {
   artillery_t4_tension:        'assets/towers/artillery/Ballista_Turret_Default_Reinforced_Tension.png',
   artillery_t4_reload_tension: 'assets/towers/artillery/Ballista_Turret_Reload_Reinforced_Tension.png',
   artillery_t4_fire_tension:   'assets/towers/artillery/Ballista_Turret_Fire_Reinforced_Tension.png',
+  // THE LADDER'S SECOND TIER 4, THE CANNON OUTPOST, on the same 4/4b naming the
+  // archery and barracks forks use: a Trebuchet buys either of these, so neither
+  // owns the number.
+  //
+  // Four files again, and the split is the ballista's for the ballista's reason —
+  // stone that never moves, a machine on top that turns. It is the SAME stone: the
+  // two turret PNGs differ in 23,960 pixels inside one 134x241 box, and every one
+  // of them is the banner, recoloured from the ballista's blue to this one's
+  // purple with a cannon on it in place of a bolt. Everything else is identical to
+  // the byte, which is why data/towers.js can hand this tier the ballista's
+  // measured ground point and merlon rather than measuring them twice.
+  //
+  // They are still two keys and two files. A shared key would say the two towers
+  // are the same drawing, and the moment the artist recolours one banner again
+  // that would be a lie nobody would notice until it was on screen.
+  artillery_t4b_base:   'assets/towers/artillery/Cannon_Outpost_Tower.png',
+  artillery_t4b:        'assets/towers/artillery/Cannon_Outpost_Default.png',
+  artillery_t4b_reload: 'assets/towers/artillery/Cannon_Outpost_Reload.png',
+  artillery_t4b_fire:   'assets/towers/artillery/Cannon_Outpost_Fire.png',
   // The monastery, in a folder of its own like every other family. The artist
   // uploaded these loose into assets/towers beside the three family folders, and
   // they were moved rather than wired where they landed — a building lives with
@@ -187,6 +206,11 @@ export const paths = {
   // info box and the encyclopedia use. Named for the man rather than the tier,
   // like the musketeer and the paladin.
   crew_t4:     'assets/units/Ballista_Engineer.png',
+  // The other tier 4's gunner, on the same terms and named for himself rather
+  // than for a tier, because the ladder has two fourth rungs now and neither owns
+  // the number. He is drawn into all three cannon frames like every crewman below
+  // him; this file exists so the info box and the encyclopedia have a face.
+  cannoneer:   'assets/units/Cannoneer.png',
   // THE ARROW LOST ITS TIER, because it stopped belonging to one family. The
   // artist renamed Archery_Arrows_T1 to Archer_Arrows when the Archer Thug
   // arrived: the same drawing now leaves a tower's bow and an enemy's, and a
@@ -227,6 +251,13 @@ export const paths = {
   rock_t1:     'assets/projectiles/Artillery_Rock_T1.png',
   rock_t2:     'assets/projectiles/Artillery_Rock_T2.png',
   rock_t3:     'assets/projectiles/Artillery_Rock_T3.png',
+  // The Cannon Outpost's ball, and the SMALLEST projectile the artillery family
+  // throws: 48x48 source against the three rocks' 60x48, 72x72 and 88x88. That is
+  // the drawing being right rather than the tier being weak — a cast iron ball is
+  // a dense little thing and a trebuchet stone is a boulder, and this one hits
+  // nearly twice as hard as the boulder does. No tier number on the key, like the
+  // bolt beside it: one drawing for the one tier that fires it.
+  cannonball:  'assets/projectiles/Cannonball.png',
   // The arcane missile, one per tier. Named for the man who throws it, like the
   // figures above and unlike the rocks, because that is how the artist exported
   // them — including the spelling of "Missle", which is left alone: the code
@@ -350,6 +381,10 @@ export const paths = {
   // to bring its own picture, and the same one-word opt-in — see the `glyph` field
   // on artillery tier 4 in data/towers.js.
   glyph_ballista:  'assets/ui/Ballista_Turret_Icon.png',
+  // The Cannon Outpost's, beside it. Both artillery fourth rungs name their own
+  // now that the ladder forks — which is not a nicety: two upgrade buttons
+  // wearing the same generic arrow would be a coin toss.
+  glyph_cannon:    'assets/ui/Cannon_Outpost_Icon.png',
   // The Judgement Temple's, on the upgrade button of an Abbey. The fourth and
   // last of them — every family's top rung now shows what it buys — and the same
   // one-word opt-in, on monastery tier 4 in data/towers.js.

@@ -282,6 +282,11 @@ export function updateEnemies(state, dt) {
          // and a second kill cry for the same weapon would be telling the player
          // apart two things that look identical on the board.
          : e.killedBy === 'bolt' ? CUE.ballistaKill
+         // A cannonball, which is the Cannon Outpost's and nothing else's. The
+         // artillery ladder is the third with two kill lines on it: its three
+         // lower tiers throw rocks and share `rockKill` above, and each of its
+         // two fourth rungs answers for itself.
+         : e.killedBy === 'cannonball' ? CUE.cannonKill
          // A quarrel, which is the Crossbow Sentry's and nothing else's. The
          // archery ladder is the first with two kill lines on it: its three lower
          // tiers loose arrows and share the generic one, the Musketeer Post has

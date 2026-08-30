@@ -334,6 +334,28 @@ const SPRITES = [
   ['assets/units/Artillery_Man_T2.png',     'mangonel.portraitPivot',  towers.siege[1].portraitTrim, towers.siege[1].portraitPivot],
   ['assets/units/Artillery_Man_T3.png',     'trebuchet.portraitPivot', towers.siege[2].portraitTrim, towers.siege[2].portraitPivot],
   ['assets/units/Ballista_Engineer.png',    'ballista.portraitPivot',  towers.siege[3].portraitTrim, towers.siege[3].portraitPivot],
+  // AND THE LADDER'S OTHER TIER 4, on exactly the same terms: a turret on grass,
+  // a machine on stone, a gunner in a portrait box.
+  //
+  // The turret PNG is the ballista's stone with a recoloured banner, and its
+  // groundFrac is the same CONSTANT rather than the same number typed twice — so
+  // this row does not so much check a second measurement as prove the two files
+  // really do put their shadow on the same pixel. If the artist ever moves one,
+  // this is where it shows up.
+  //
+  // The machine's shadow is the CARRIAGE's, and it is the worst-occluded blob in
+  // the set: the carriage stands on the middle of its own ellipse, so what is
+  // visible is a crescent whose centroid is 4px low and 9px left of the centre.
+  // Exactly the case the fit exists for.
+  ['assets/towers/artillery/Cannon_Outpost_Tower.png', 'cannon.groundFrac',
+    towers.siege[4].spriteTrim, towers.siege[4].groundFrac, 'whole'],
+  ['assets/towers/artillery/Cannon_Outpost_Default.png', 'cannon.machine.pivot',
+    towers.siege[4].machine.trim, towers.siege[4].machine.pivot],
+  ['assets/towers/artillery/Cannon_Outpost_Reload.png',  'cannon.machine.pivot',
+    towers.siege[4].machine.trim, towers.siege[4].machine.pivot],
+  ['assets/towers/artillery/Cannon_Outpost_Fire.png',    'cannon.machine.pivot',
+    towers.siege[4].machine.trim, towers.siege[4].machine.pivot],
+  ['assets/units/Cannoneer.png',            'cannon.portraitPivot',    towers.siege[4].portraitTrim, towers.siege[4].portraitPivot],
   ['assets/units/Soldiers_Spearman_Default.png',      'spearman.pivot',           spear.spriteTrim, spear.pivot],
   ['assets/units/Soldiers_Spearman_Attack.png',       'spearman.attack.pivot',    spear.attack.trim, spear.attack.pivot],
   ['assets/units/Soldiers_Pikeman_Default.png',       'spearman2.pivot',          spear2.spriteTrim, spear2.pivot],
