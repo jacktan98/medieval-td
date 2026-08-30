@@ -8,7 +8,9 @@
 // soldier who watched. It only sees the outcome, which is why both of these went
 // unnoticed for as long as they did.
 
-import { makeUnits, moveUnits, updateUnits } from '../src/units.js';
+import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath } from '../src/units.js';
+import { at as pointOn, LANE } from '../src/route.js';
+import { inRange } from '../src/ground.js';
 import { families } from '../src/data/towers.js';
 import { level } from '../src/level.js';
 
@@ -135,6 +137,68 @@ const check = (ok, label, detail = '') => {
   check(blocked === 3, 'and lets go the moment there is one each to block',
         `${blocked} of 3 enemies held`);
   check(squad(state).every(u => u.holds), 'with every man on his own');
+}
+
+// --- WHERE A FLAG PUTS THEM, from every place a finger could land ----------------
+//
+// The checks above stand one squad up and watch it. This one asks a property of
+// EVERY drag on EVERY plot, because the bug it guards was invisible one rally at
+// a time: "when I place the rally point on the top right, the assassins move to
+// bottom left".
+//
+// THE PROPERTY: of all the places on the road the squad could actually be posted,
+// it is posted at the one nearest the finger. Three versions of postOn have got
+// this wrong in three different ways — walking one direction only, walking both
+// but ranking by arc length, and ranking by distance to the road point rather
+// than to the flag — and none of them looked wrong until the whole board was
+// swept. So the whole board is swept.
+//
+// COMPARED ON HOW GOOD THE ANSWER IS, not on which of two equal ones it picked. A
+// road that doubles back offers two spots the same distance from a finger out of
+// reach of both; either is correct, and demanding one would be testing the
+// tie-break instead of the posting.
+console.log('\nWhere a flag puts them\n');
+{
+  const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
+  let checked = 0, off = 0, worst = 0;
+
+  for (const plot of level.plots) {
+    for (let x = 0; x < 960; x += 20) {
+      for (let y = 0; y < 540; y += 20) {
+        const near = nearestOnPath(x, y);
+        if (Math.hypot(near.x - x, near.y - y) > 40) continue;
+        const road = level.routes[near.route];
+
+        // The game's own offset and the game's own reach test, so what is compared
+        // is the CHOICE and not a paraphrase of the rules it chose under.
+        const raw = -(x - near.x) * near.ty + (y - near.y) * near.tx;
+        const across = Math.max(-LANE, Math.min(LANE, raw));
+        const spot = s => {
+          const q = pointOn(road, s);
+          return { x: q.x - q.ty * across, y: q.y + q.tx * across };
+        };
+
+        let best = Infinity;
+        for (let s = 0; s <= road.total; s += 2) {
+          const p = spot(s);
+          if (!inRange(p.x, p.y, plot.x, plot.y, guild.range)) continue;
+          best = Math.min(best, Math.hypot(p.x - x, p.y - y));
+        }
+        if (best === Infinity) continue;
+        checked++;
+
+        const t = { plot, fam: barracks, def: guild, x: plot.x, y: plot.y, rally: null };
+        const got = rallyPoint(t, x, y);
+        // 12px of slack: postOn steps 4px along the road and this sweep 2px.
+        const worse = Math.hypot(got.x - x, got.y - y) - best;
+        worst = Math.max(worst, worse);
+        if (worse > 12) off++;
+      }
+    }
+  }
+
+  check(off === 0, 'every drag posts the squad at the nearest spot it can reach',
+    `${checked} drags, worst ${worst.toFixed(0)}px off the best available`);
 }
 
 console.log(bad ? `\n${bad} failure(s).` : '\nSquad behaves.');

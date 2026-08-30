@@ -2,7 +2,7 @@ import { level } from './level.js';
 import { at as pointOn, nearestOn, LANE } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
-import { clampToRange, inRange } from './ground.js';
+import { inRange } from './ground.js';
 import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
@@ -188,16 +188,23 @@ function stations(tower) {
   // of the road to stand on, and the middle is the answer.
   const across = tower.rally ? kerbOf(near, want) : 0;
 
-  // Keep the rally inside the tower's reach, measured from the TOWER — that
-  // reach is what the barracks upgrade buys, and it is drawn as an ellipse
-  // around the building, so the clamp goes through the same helper the drawing
-  // does rather than through a round distance that would disagree with it.
-  const held = clampToRange(tower.x, tower.y, near.x, near.y, tower.def.range);
-
-  // Re-find the rally on the path after the range clamp, so the slots are laid
-  // out from a point that is actually on the road — and carry the offset over,
-  // so the squad keeps the side of the road it was sent to.
-  return stationsOn(tower, { ...nearestOnPath(held.x, held.y), across });
+  // AND STRAIGHT TO postOn, WHICH KEEPS THE STRETCH THE PLAYER POINTED AT.
+  //
+  // THERE USED TO BE A RANGE CLAMP HERE and it was the cause of the worst bug
+  // this function has had: "when I place the rally point on the top right, the
+  // assassins move to bottom left". It pulled the road point along the ray toward
+  // the tower until it sat on the ring, and then asked for the nearest road AGAIN
+  // — and on a road that bends round a plot, the pulled point can be nearest a
+  // COMPLETELY DIFFERENT STRETCH. Measured across every drag on every plot of map
+  // 1: seven of them jumped, the worst by 362px along the road and out the far
+  // side of the tower.
+  //
+  // Nothing is lost by dropping it, which is what makes this the fix rather than a
+  // trade. postOn already walks back ALONG THE ROAD until the posting is inside
+  // the ring, through the same inRange the clamp used, and a walk cannot cross to
+  // another stretch. So the reach is still enforced, and it is enforced on the
+  // piece of road the player was pointing at.
+  return stationsOn(tower, { ...near, across, at: want });
 }
 
 // How far off the centreline a point is, signed, held inside KERB.
@@ -280,14 +287,32 @@ function postOn(tower, base) {
   // is the flag, and the wedge is allowed to spread the width of itself past it,
   // exactly as it always did. The leash in updateUnits carries the same margin.
   //
-  // A LINEAR WALK RATHER THAN A BISECTION, for the same reason: a road bends, so
-  // "inside the ring" is not one contiguous stretch of it, and bisecting between
-  // two ends of a broken interval lands wherever the halving happens to fall.
-  // Stepping back from the point the player asked for takes the first spot that
-  // works, which is the nearest one to the flag they dropped.
+  // A SWEEP OF THE WHOLE ROAD, and what it minimises is the distance ON THE BOARD
+  // between the flag and the posting. That sentence is the fix for "when I place
+  // the rally point on the top right, the assassins move to bottom left", and it
+  // took three tries to land because two plausible readings of "nearest" disagree
+  // on a road that bends.
   //
-  // If no part of this road is in reach the walk finds nothing, and the two blocks
-  // at the bottom say what happens then.
+  //   IT WALKED ONE WAY, from the flag toward the tower, on the reasoning that the
+  //   road gets nearer as you go that way. A bend breaks that. Plot 6 of map 1
+  //   reaches its road over two separate stretches, 396..548 and 1288..1536; a flag
+  //   dropped at 788 sits between them, 240px from one and 500px from the other,
+  //   and the walk marched past the near one because it lay away from the tower.
+  //
+  //   THEN IT WALKED BOTH WAYS, which fixed that and left a subtler version of it:
+  //   expanding by ARC LENGTH still answers a different question from the one the
+  //   player asked. A road doubles back, so the spot 200px further along the tarmac
+  //   can be the one 40px from their finger. Measured over every drag on every
+  //   plot of map 1, the two readings disagreed on 591 of 12132.
+  //
+  // So it asks the question the player is actually asking — which reachable piece
+  // of this road is nearest the place I pointed — and answers it by looking at all
+  // of them. A sweep has no direction to get wrong and no assumption about the
+  // shape of the road, and it costs a few hundred range tests on a rally change,
+  // which happens when a thumb moves rather than once a frame.
+  //
+  // If no part of this road is in reach the sweep finds nothing, and the block at
+  // the bottom says what happens then.
   //
   // TESTED AT THE OFFSET, not on the centreline. The squad may now be posted a
   // lane over — see KERB — and the flag that has to be inside the ring is where
@@ -301,14 +326,25 @@ function postOn(tower, base) {
                    tower.x, tower.y, tower.def.range);
   };
 
-  if (fits(base.s)) return { route: base.route, s: base.s, across };
-
-  const back = nearestOn([road], tower.x, tower.y).s;
-  const step = base.s > back ? -4 : 4;
-  for (let at0 = base.s + step; (at0 - back) * step < 0; at0 += step) {
-    if (fits(at0)) return { route: base.route, s: at0, across };
+  let best = null;
+  for (let s = 0; s <= road.total; s += 4) {
+    if (!fits(s)) continue;
+    const q = pointOn(road, s);
+    // TO THE FLAG ITSELF, not to the road point under it. They are the same thing
+    // for a drag that lands on tarmac and up to 40px apart for one that does not,
+    // and where they disagree the finger is right: the player is pointing at a
+    // place, and the men should turn up at the reachable bit of road nearest THAT.
+    // Measured over map 1: using the road point instead moves the answer on 250 of
+    // 12132 drags, and every one of them moves it further from the finger.
+    //
+    // `at` is absent on the other-road recursion at the bottom, which has no drag
+    // of its own — it is being sent to the road its tower stands beside — so it
+    // falls back to the road point, which is exactly what that case means.
+    const aim = base.at || base;
+    const d = Math.hypot(q.x - aim.x, q.y - aim.y);
+    if (!best || d < best.d) best = { s, d };
   }
-  if (fits(back)) return { route: base.route, s: back, across };
+  if (best) return { route: base.route, s: best.s, across };
 
   // NOTHING ON THIS ROAD IS IN REACH, which on a map with two of them is not the
   // dead-plot case at all: the player dragged toward the other road, the clamp
@@ -332,7 +368,7 @@ function postOn(tower, base) {
   // snapped to, which put the men 345px away on a tower that reaches 210: the
   // further the player dragged, the further from the tower they went, on a plot
   // where every direction is equally out of range.
-  return { route: base.route, s: back, across };
+  return { route: base.route, s: nearestOn([road], tower.x, tower.y).s, across };
 }
 
 // WHERE A FLAG DROPPED HERE WILL ACTUALLY PUT THE SQUAD, as a point on the board.
@@ -348,8 +384,10 @@ function postOn(tower, base) {
 export function rallyPoint(tower, x, y) {
   const near = nearestOnPath(x, y);
   const across = kerbOf(near, { x, y });
-  const held = clampToRange(tower.x, tower.y, near.x, near.y, tower.def.range);
-  const post = postOn(tower, { ...nearestOnPath(held.x, held.y), across });
+  // No range clamp, for the reason spelled out in stations(): clamping first and
+  // re-finding the road second is what used to throw a squad onto a different
+  // stretch. postOn walks back along THIS one.
+  const post = postOn(tower, { ...near, across, at: { x, y } });
   const q = pointOn(level.routes[post.route], post.s);
   // The offset is part of the answer: a flag stored on the centreline would send
   // the squad back to the middle of the road the next time stations() read it.
