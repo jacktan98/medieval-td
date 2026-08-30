@@ -33,24 +33,33 @@ sharp at its drawn size.
 This is the one constraint worth knowing before you start, because it is the one
 that cannot be fixed in code.
 
-A mark is drawn 10 game px tall (`STATUS_H`), and the game may rasterise at 3x on
-a phone — so it needs **at least 30 source px on its longest side** or it goes
-soft. Both of the first two clear it, but only just: the flame is 38 and the
-droplets are exactly 30. Anything smaller than 30 will be reported as SOFT by
-`node tools/trim.mjs`, and the fix is to redraw it larger on the same canvas
-rather than to change any number.
+A mark is drawn 9 game px tall (`STATUS_H`), and the game may rasterise at 3x on
+a phone — so it needs **at least 27 source px on its longest side** or it goes
+soft. The flame has 34 and the droplets exactly 27. Anything smaller will be
+reported as SOFT by `node tools/trim.mjs`, and the fix is to redraw it larger on
+the same canvas rather than to change any number.
 
-10px is itself the ceiling rather than a choice: it is the largest a mark can be
-drawn while the 30px file stays sharp. Draw bigger and both can grow.
+9px is itself the ceiling rather than a choice: it is the largest a mark can be
+drawn while the SMALLEST file stays sharp, and every mark is drawn at one height
+so a row of them lines up. It was 10 against the first pair's 30px; the redraw
+came in a little smaller and took it down with it. Draw them bigger — 36 source
+px would buy 12 — and this can go back up.
 
-## Colour: anything, because of the chip
+## Give it a black outline
 
-The marks sit on a cream chip, and that is not decoration. The poisoned droplet
-is `rgb(92,127,73)` and the grass this game is played on is about
-`rgb(90,110,70)` — the same hue at almost the same brightness. Drawn straight on
-the board it disappeared; the first screenshot of a poisoned spearman was a
-health bar with nothing above it, while the flame beside it was perfectly clear.
-One status working is exactly what makes that kind of bug hard to see.
+This is the other thing that cannot be fixed in code, and it is the reason the
+first pair were redrawn.
 
-So there is a cream ground under every mark, which means a new one can be any
-colour you like. Dark reads best on it — the cream is about `rgb(240,230,210)`.
+The original poisoned droplet was `rgb(92,127,73)` and the grass this game is
+played on is about `rgb(90,110,70)` — the same hue at almost the same brightness.
+Drawn on the board it disappeared: the first screenshot of a poisoned spearman
+was a health bar with nothing above it, while the flame beside it was perfectly
+clear. One of two statuses working is exactly what makes that hard to notice.
+
+There was a cream chip behind the marks for one build to fix it. The artist's own
+answer is better and it is what ships: a black border on the drawing. It travels
+with the picture, it costs no furniture on the board, and a line of men wearing
+statuses reads as a fight rather than as a row of labels.
+
+So a new mark can be any colour, as long as it carries **its own dark edge**. It
+has to hold up on grass, on sand and on grey stone, at 9px.

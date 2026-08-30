@@ -239,8 +239,11 @@ export const ui = {
   // `h` rather than `fit`, so each keeps its own aspect at a common height: the
   // flame is 28x38 and the droplets 26x30, and fitting both in a square would draw
   // the flame narrower than the drop it is meant to sit beside.
-  status_burnt:    { trim: [242, 237, 28, 38], h: STATUS_H },
-  status_poisoned: { trim: [243, 240, 26, 30], h: STATUS_H },
+  // Both redrawn with a black outline, which is what let the cream chip behind
+  // them go — see statusMarks in render.js. A shade smaller than the first pair:
+  // 28x38 and 26x30 before.
+  status_burnt:    { trim: [243, 238, 24, 34], h: STATUS_H },
+  status_poisoned: { trim: [245, 242, 22, 27], h: STATUS_H },
   // The Judgement Temple's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

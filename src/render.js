@@ -385,34 +385,24 @@ function statusMarks(ctx, v, x, barTop) {
   const wide = marks.reduce((a, m) => a + m.w, 0) + gap * (marks.length - 1);
   const y = barTop - STATUS_GAP - STATUS_H;
 
-  // ON A CHIP, and it is not decoration — it is the difference between a status
-  // you can see and one you cannot.
+  // NOTHING BEHIND THEM, and the mark is legible anyway — because the OUTLINE is
+  // in the drawing now.
   //
-  // MEASURED, not judged by eye. The poisoned mark's own colour is rgb(92,127,73),
-  // and the grass this game is played on is about rgb(90,110,70): the same hue at
-  // 0.45 luminance against 0.40. Drawn straight onto the board it disappears, and
-  // the first screenshot of a poisoned spearman is a health bar with nothing above
-  // it. The flame is fine — 0.18 against 0.40 — which is exactly the trap: one of
-  // the two statuses works, so the mechanism looks right.
+  // These sat on a cream chip for one build, and the reason was real: the first
+  // poisoned mark was rgb(92,127,73) against grass of about rgb(90,110,70) — the
+  // same hue at almost the same brightness — so it simply vanished, while the
+  // flame beside it was perfectly clear. One of the two working is exactly what
+  // made it hard to notice.
   //
-  // CREAM RATHER THAN THE HEALTH BAR'S DARK, and that is the whole reason it is
-  // its own colour. The bar's backing is there to make a bright green fill read;
-  // a dark chip under a dark green droplet would be the same failure again. Cream
-  // is the game's own label ground — the button plates and the info box — and both
-  // marks are dark enough to sit on it: 0.45 and 0.18 against 0.90.
+  // The artist redrew both with a black border, which is the better answer to the
+  // same problem and the one that belongs in the art rather than in this file. A
+  // chip is furniture: it is drawn over the board on every figure wearing
+  // anything, and on a busy line of men it reads as a row of labels rather than as
+  // the fight. An outline costs nothing and travels with the picture.
   //
-  // It also does the job for statuses NOBODY HAS DRAWN YET. The owner is uploading
-  // more, and a mark that has to be a particular brightness to be visible is a
-  // constraint on the artist that nothing writes down. A ground removes it.
-  ctx.fillStyle = 'rgba(240,230,210,0.88)';
-  ctx.strokeStyle = 'rgba(34,32,28,0.55)';
-  ctx.lineWidth = 1;
-  const pad = 1.5;
-  ctx.beginPath();
-  ctx.rect(x - wide / 2 - pad, y - pad, wide + pad * 2, STATUS_H + pad * 2);
-  ctx.fill();
-  ctx.stroke();
-
+  // WHICH MOVES A CONSTRAINT ONTO THE ARTIST, so it is written down: a mark needs
+  // its own dark edge to read on grass, on sand and on stone. See
+  // assets/status/README.md.
   let at = x - wide / 2;
   for (const m of marks) {
     // Through drawUi like every other piece of art, so a missing file is a
@@ -3132,12 +3122,35 @@ const POP_TEXT_W = 340;
 const POP_TEXT = 12;
 const POP_LEAD = 17;
 
-// The deepest the prose may run. It is a CEILING rather than a measurement so the
-// plate has a height that can be checked without a canvas — tools/book.mjs
-// estimates the wrap and fails if any `detail` in data/abilities.js would need
-// more than this many lines.
-const POP_LINES = 12;
-const POP_BODY = POP_LINES * POP_LEAD;
+// THE PLATE IS SIZED TO ITS TEXT, and it was not.
+//
+// There used to be a fixed ceiling here — twelve lines' worth — that the body was
+// clamped to, with tools/book.mjs estimating the wrap and failing if any `detail`
+// needed more. Both halves of that were wrong at once.
+//
+// The clamp made overrunning it INVISIBLE rather than impossible: a description
+// that wrapped to thirteen lines still drew all thirteen, into a plate sized for
+// twelve, so the extra line ate the bottom padding and the last words sat on the
+// edge of the sheet. And the tool's estimate — 0.5em a character, described as
+// "high, which is the safe direction" — was in fact low. system-ui's widest line
+// here averages 0.575em, so it under-counted and passed.
+//
+// Two descriptions were already over when the owner noticed: Fiery Shot and Holy
+// Light, at thirteen lines each. Holy Light has been drawing past its own edge
+// since it shipped.
+//
+// So the height is measured from the wrap that is actually about to be drawn. A
+// long description now makes a taller plate rather than a cramped one, the pad at
+// the bottom is always the pad, and there is no number here for an estimate to
+// disagree with. tools/book.mjs still checks the deepest plate fits the BOARD —
+// which is the thing that was ever actually at risk — using these constants
+// rather than copies of them.
+//
+// EXPORTED for that check.
+export const POP_PAD_OUT = POP_PAD;
+export const POP_TITLE_H = POP_TITLE;
+export const POP_GAP_OUT = POP_GAP;
+export const POP_LEAD_OUT = POP_LEAD;
 
 function drawZoom(ctx, z) {
   const [sx, sy, sw, sh] = z.trim;
@@ -3157,7 +3170,10 @@ function drawZoom(ctx, z) {
   // — it is a rule rather than a thing, so a picture of it says almost nothing on
   // its own — and everything else opens as the picture alone.
   const lines = z.detail ? wrapped(ctx, z.detail, POP_TEXT_W) : null;
-  const bodyH = lines ? Math.max(slot.h, POP_BODY) : slot.h;
+  // AS DEEP AS THE PROSE ACTUALLY IS, or as the picture, whichever is more. See
+  // the note above: this was a fixed ceiling, and text that overran it was drawn
+  // anyway, into a plate that had not made room for it.
+  const bodyH = lines ? Math.max(slot.h, lines.length * POP_LEAD) : slot.h;
   const pw = lines
     ? POP_PAD * 2 + slot.w + POP_GAP + POP_TEXT_W
     : Math.max(slot.w + POP_PAD * 2, 240);

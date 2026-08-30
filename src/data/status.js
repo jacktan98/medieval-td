@@ -54,13 +54,20 @@ export const STATUS_ORDER = Object.keys(STATUS);
 
 // The mark's drawn height, in game px, and its gap from the health bar.
 //
-// 10 is the largest it can be and stay sharp: the smaller of the two files is 30
-// source px tall, and 10 drawn at the 3x device-pixel cap wants exactly 30. See
-// tools/trim.mjs, which measures both.
+// 9 IS THE LARGEST IT CAN BE AND STAY SHARP, and the number is set by the
+// smallest file rather than chosen: the poisoned droplets are 27 source px tall,
+// and 9 drawn at the 3x device-pixel cap wants exactly 27. The flame has 34 and
+// could go bigger; a row of marks at two different heights would not.
+//
+// IT WAS 10, AGAINST THE FIRST DRAWINGS' 30. The artist redrew both with black
+// outlines — see below — and the new pair came in a little smaller, so the
+// ceiling came down with them. It is a measurement, not a taste: raise it and
+// tools/trim.mjs reports the poison mark as SOFT. Draw the file larger on the
+// same 512 canvas and this can go back up.
 //
 // It is a little over twice the health bar's 4px depth, which is the point — a
 // bar is a quantity you read the length of and a status is a thing you recognise
 // the shape of, so it has to be big enough to tell a flame from a droplet at a
 // glance in a fight.
-export const STATUS_H = 10;
+export const STATUS_H = 9;
 export const STATUS_GAP = 2;

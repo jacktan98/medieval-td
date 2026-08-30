@@ -43,7 +43,8 @@ import {
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
-import { PAUSE_ROW, STAT_GAP } from '../src/render.js';
+import { PAUSE_ROW, STAT_GAP,
+         POP_PAD_OUT, POP_TITLE_H, POP_GAP_OUT, POP_LEAD_OUT } from '../src/render.js';
 import { uiSize } from '../src/data/ui.js';
 import { shownDamage, shownRange } from '../src/select.js';
 
@@ -523,30 +524,23 @@ console.log('\nThe picture pop-up\n');
       `worst ${worst.toFixed(3)}x of ${cap.toFixed(3)}x`);
   }
 
-  // The whole thing has to sit on the board with air around it, at its BIGGEST,
-  // which is a laptop at 1x. 22 is the padding drawZoom uses at each end, 30 the
-  // title band and 14 the gap under it; an ability adds a column of prose beside
-  // its picture, capped at twelve lines of 17.
-  const big = ['tower', 'figure', 'ability'].map(k => popSlot(k, 1).h);
-  const deepest = 22 * 2 + 30 + 14 + Math.max(...big, 12 * 17);
-  ok(deepest <= 540 - 2 * 22, 'and the deepest plate leaves a margin on the board',
-    `${deepest.toFixed(0)}px of 540`);
-
-  // THE ABILITY BUTTONS ARE A CIRCLE IN A SQUARE, and the pop-up clips them to
-  // one because the artist draws them round. That only works
-  // while the plate is square: a rectangular plate would clip to the shorter side
-  // and eat the disc. tools/trim.mjs checks the FILES are square; this checks the
-  // plate they are shown in is.
-  const disc = popSlot('ability', 1);
-  ok(Math.abs(disc.w - disc.h) < 0.001,
-    'and the ability plate is square, so its clip is a circle',
-    `${disc.w.toFixed(0)}x${disc.h.toFixed(0)}`);
-
   // EVERY ABILITY EXPLAINS ITSELF BESIDE ITS PICTURE, and the paragraphs fit the
-  // column the pop-up gives them. There is no canvas in Node, so the wrap is
-  // estimated at 0.5em a character against system-ui's real 0.48 for mixed case —
-  // high, which is the safe direction for a fits-in-the-box check.
-  const COLUMN = 340, EM = 0.5 * 12, CEILING = 12;
+  // PLATE the pop-up builds for them. There is no canvas in Node, so the wrap has
+  // to be estimated — and the estimate here was wrong in the dangerous direction
+  // for a long time.
+  //
+  // It said 0.5em a character, "against system-ui's real 0.48 for mixed case —
+  // high, which is the safe direction". The 0.48 was the mistake: measured in the
+  // browser at the size and font the pop-up actually uses, the widest line in the
+  // set averages 0.5750em. So the estimate allowed more characters a line than the
+  // renderer does, under-counted, and passed two descriptions that were drawing
+  // past the bottom of their own plate — Fiery Shot and Holy Light, both at
+  // thirteen real lines against a twelve-line cap.
+  //
+  // 0.58 is the measured worst rounded up, which puts the estimate ABOVE the true
+  // line count for every description rather than below it. That is what "the safe
+  // direction" means for a fits-in-the-box check, and it is now true.
+  const COLUMN = 340, EM = 0.58 * 12;
   const wrapLines = text => {
     let n = 0;
     for (const para of text.split('\n\n')) {
@@ -561,12 +555,38 @@ console.log('\nThe picture pop-up\n');
     return n;
   };
 
+  const maxLines = Math.max(...ABILITIES.map(a => wrapLines(a.detail)));
+
+  // The whole thing has to sit on the board with air around it, at its BIGGEST,
+  // which is a laptop at 1x.
+  //
+  // THROUGH RENDER.JS' OWN CONSTANTS, not copies of them. This read `22 * 2 + 30 +
+  // 14 + max(..., 12 * 17)` with all four numbers typed in — and the 12 was the
+  // one that mattered, because the plate is no longer capped at twelve lines. It
+  // grows with its text now (see the note above POP_PAD_OUT in render.js), so what
+  // has to be checked is the DEEPEST description rather than a ceiling nothing
+  // enforces.
+  const big = ['tower', 'figure', 'ability'].map(k => popSlot(k, 1).h);
+  const deepest = POP_PAD_OUT * 2 + POP_TITLE_H + POP_GAP_OUT +
+    Math.max(...big, maxLines * POP_LEAD_OUT);
+  ok(deepest <= 540 - 2 * POP_PAD_OUT, 'and the deepest plate leaves a margin on the board',
+    `${deepest.toFixed(0)}px of 540, at ${maxLines} lines`);
+
+  // THE ABILITY BUTTONS ARE A CIRCLE IN A SQUARE, and the pop-up clips them to
+  // one because the artist draws them round. That only works
+  // while the plate is square: a rectangular plate would clip to the shorter side
+  // and eat the disc. tools/trim.mjs checks the FILES are square; this checks the
+  // plate they are shown in is.
+  const disc = popSlot('ability', 1);
+  ok(Math.abs(disc.w - disc.h) < 0.001,
+    'and the ability plate is square, so its clip is a circle',
+    `${disc.w.toFixed(0)}x${disc.h.toFixed(0)}`);
+
   ok(ABILITIES.every(a => a.detail && a.detail.length > 80),
     'every ability has a description to open',
     ABILITIES.map(a => (a.detail || '').length).join('/') + ' chars');
-  const longest = Math.max(...ABILITIES.map(a => wrapLines(a.detail)));
-  ok(longest <= CEILING, 'and the longest of them fits the column it is given',
-    `${longest} lines of ${CEILING}`);
+  ok(true, 'and the longest of them runs to',
+    `${Math.max(...ABILITIES.map(a => wrapLines(a.detail)))} estimated lines`);
 }
 
 
