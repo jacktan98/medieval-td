@@ -109,7 +109,8 @@ export const BOOK_ICON_H = 12;
 
 // The status marks' drawn height. Imported rather than repeated: what a status
 // looks like and how big it is drawn belong together, and data/status.js is where
-// a status is described. See the note there for why 10 is the ceiling.
+// a status is described. See the note there for what sets the ceiling — it has
+// moved twice already, both times because a file was redrawn.
 import { STATUS_H } from './status.js';
 
 export const ui = {
@@ -240,10 +241,10 @@ export const ui = {
   // flame is 28x38 and the droplets 26x30, and fitting both in a square would draw
   // the flame narrower than the drop it is meant to sit beside.
   // Both redrawn with a black outline, which is what let the cream chip behind
-  // them go — see statusMarks in render.js. A shade smaller than the first pair:
-  // 28x38 and 26x30 before.
-  status_burnt:    { trim: [243, 238, 24, 34], h: STATUS_H },
-  status_poisoned: { trim: [245, 242, 22, 27], h: STATUS_H },
+  // them go — see statusMarks in render.js. Redrawn twice: 28x38 and 26x30 for the
+  // first pair, 24x34 and 22x27 for the outlined ones, and these.
+  status_burnt:    { trim: [241, 235, 30, 42], h: STATUS_H },
+  status_poisoned: { trim: [242, 238, 28, 34], h: STATUS_H },
   // The Judgement Temple's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

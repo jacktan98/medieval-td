@@ -33,17 +33,22 @@ sharp at its drawn size.
 This is the one constraint worth knowing before you start, because it is the one
 that cannot be fixed in code.
 
-A mark is drawn 9 game px tall (`STATUS_H`), and the game may rasterise at 3x on
-a phone — so it needs **at least 27 source px on its longest side** or it goes
-soft. The flame has 34 and the droplets exactly 27. Anything smaller will be
-reported as SOFT by `node tools/trim.mjs`, and the fix is to redraw it larger on
-the same canvas rather than to change any number.
+A mark is drawn 11 game px tall (`STATUS_H`), and the game may rasterise at 3x on
+a phone — so it needs **at least 33 source px on its longest side** or it goes
+soft. The flame has 42 and the droplets 34. Anything smaller will be reported as
+SOFT by `node tools/trim.mjs`, and the fix is to redraw it larger on the same
+canvas rather than to change any number.
 
-9px is itself the ceiling rather than a choice: it is the largest a mark can be
+The 11 is itself a ceiling rather than a choice: it is the largest a mark can be
 drawn while the SMALLEST file stays sharp, and every mark is drawn at one height
-so a row of them lines up. It was 10 against the first pair's 30px; the redraw
-came in a little smaller and took it down with it. Draw them bigger — 36 source
-px would buy 12 — and this can go back up.
+so a row of them lines up. It has been 10, then 9, and is 11 — the first pair
+were 38 and 30 source px, the outlined redraw came in at 34 and 27 and took it
+down, and the pair that ships are 42 and 34. **Whichever file is smallest sets
+the size of all of them**, so a new mark drawn small pulls the existing ones down
+with it.
+
+Rule of thumb: give it **40+ source px** on its longest side and it will never be
+the one holding the others back.
 
 ## Give it a black outline
 

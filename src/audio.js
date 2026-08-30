@@ -461,27 +461,44 @@ export const GAIN = {
   attack_1: 0.5,
   attack_2: 0.5,
   attack_3: 0.5,
-  // THE CANNON'S REPORT, UP 3dB, and it is the first entry here that raises
-  // something rather than trimming it.
+  // THE CANNON'S REPORT, AND IT IS THE ENTRY THAT EXPLAINS `rock_hit_ground`
+  // ABOVE.
   //
-  // It shipped at the common level — the leveller takes the file down 6.7dB on
-  // its own and lands it exactly where every other weapon report sits — and that
-  // was the defensible choice: "balanced with the other sounds" is what the
-  // leveller is FOR. The owner played it and asked for more, which is the right
-  // way round for this dial; a report that measures the same as a bowshot is not
-  // the same event as a bowshot.
+  // 2.2, which is +6.8dB on top of the levelling. It shipped at 1 and went to 1.4
+  // when the owner asked for "a bit louder"; he came back and said it still did
+  // not sit with the ballista's. It does not, and the reason is a real limitation
+  // of the automatic leveller rather than a taste:
   //
-  // 1.4 is about +3dB, which is the smallest step an ear reliably reads as
-  // "louder" rather than as "different" — a bit louder, which is what was asked
-  // for, rather than a new loudest thing in the game.
+  // THE LEVELLER MATCHES RMS. THE EAR DOES NOT. Every clip is brought to the same
+  // measured loudness — the RMS of its loudest 0.3s — and RMS counts a hertz at
+  // 100 exactly as much as one at 3000, where the ear counts the low one for very
+  // much less. Measured, by octave band:
   //
-  // AND IT CAN AFFORD IT, on both of the grounds the other entries here are argued
-  // from. FREQUENCY: this fires every 3.0s, the slowest cadence of any weapon in
-  // the game — against the ballista's 1.8s, which is trimmed 4.4dB down for that
-  // very reason, and the generic swings' dozen a second. SIZE: it still sits under
-  // `rock_hit_ground` at 1.6, so the loudest thing in the battle is still artillery
-  // ARRIVING, which is where the damage and the player's eye both are.
-  cannon_shot: 1.4
+  //             below 125Hz    A-weighted vs plain
+  //   ballista      18%            -3.0dB
+  //   cannon        38%            -4.2dB
+  //   rock landing  49%            -5.9dB
+  //
+  // So at one measured level the cannon arrives 4.5dB quieter to the ear than the
+  // ballista, and the rock landing 7.0dB quieter. Its file is less peaky as well —
+  // 0.68 against the ballista's 1.01 — so it has less transient snap to carry what
+  // level it does have.
+  //
+  // THIS IS WHY `rock_hit_ground` CARRIES 1.6. That number was set by ear long
+  // before anyone measured why, on the other bass-heavy clip in the game, and it
+  // is almost exactly the compensation the table above predicts. Two independent
+  // hearings of the same effect is what says it is the effect and not a
+  // preference.
+  //
+  // SO A BOOM NEEDS A HAND HERE and a crack does not, and that is the rule worth
+  // carrying forward: the automatic leveller under-serves anything with its energy
+  // low down, and this table is where that is put right.
+  //
+  // Headroom is not the constraint. At 2.2 the loudest sample reaches 0.27 of full
+  // scale after the bus and the master; Fiery Shot, at 2.3 times this, reaches
+  // 0.63. See `fieryBall` in data/abilities.js for that multiplier and why it is
+  // the heavy bolt's own.
+  cannon_shot: 2.2
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

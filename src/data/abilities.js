@@ -183,14 +183,21 @@ export const fieryBall = {
   // the same clip played harder rather than a second recording. See `level` in
   // play() in src/audio.js.
   //
-  // 1.6 RATHER THAN THE HEAVY BOLT'S 2.3, and the difference is entirely in what
-  // the two are measured against. `ballista_shot` carries a GAIN of 0.6, so that
-  // multiplier is climbing out of a 4.4dB hole before it starts; `cannon_shot`
-  // carries 1.4, which is already 3dB ABOVE every other weapon. 1.6 on top of that
-  // is a further 4.1dB — comfortably the loudest single thing in the battle, which
-  // is what a burning cannonball should be, and short of clipping because the file
-  // arrives 6.7dB under its own peak.
-  fireGain: 1.6
+  // 2.3, WHICH IS THE HEAVY BOLT'S OWN NUMBER, and that is the point of it rather
+  // than a coincidence. The owner asked for these two shots to sit with the
+  // ballista's pair, and the thing that makes a special shot READ as one is not
+  // its absolute level — it is how far it stands above the ordinary shot from the
+  // same machine. Giving the two tier 4s the same step means "that was the loud
+  // one" sounds like the same event on either tower.
+  //
+  // It was 1.6, chosen when `cannon_shot` sat at 1.4 and the arithmetic was being
+  // done against a different base. The base moved to 2.2 — see the note on
+  // `cannon_shot` in src/audio.js for the octave-band measurement behind that —
+  // and the multiplier follows the design rather than the old sum.
+  //
+  // Short of clipping with room: 2.2 x 2.3 puts the loudest sample at 0.63 of full
+  // scale after the bus and the master.
+  fireGain: 2.3
 };
 
 // The three poses the artist drew for these. Each is registered on the SAME source

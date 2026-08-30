@@ -54,20 +54,21 @@ export const STATUS_ORDER = Object.keys(STATUS);
 
 // The mark's drawn height, in game px, and its gap from the health bar.
 //
-// 9 IS THE LARGEST IT CAN BE AND STAY SHARP, and the number is set by the
-// smallest file rather than chosen: the poisoned droplets are 27 source px tall,
-// and 9 drawn at the 3x device-pixel cap wants exactly 27. The flame has 34 and
-// could go bigger; a row of marks at two different heights would not.
+// 11 IS THE LARGEST IT CAN BE AND STAY SHARP, and the number is set by the
+// smallest file rather than chosen: the poisoned droplets are 34 source px tall,
+// and 11 drawn at the 3x device-pixel cap wants 33. The flame has 42 and could go
+// bigger; a row of marks at two different heights could not.
 //
-// IT WAS 10, AGAINST THE FIRST DRAWINGS' 30. The artist redrew both with black
-// outlines — see below — and the new pair came in a little smaller, so the
-// ceiling came down with them. It is a measurement, not a taste: raise it and
-// tools/trim.mjs reports the poison mark as SOFT. Draw the file larger on the
-// same 512 canvas and this can go back up.
+// IT HAS BEEN 10, THEN 9, AND IS 11, and every one of those was a measurement
+// rather than a taste. The first pair were 38 and 30 source px; the artist redrew
+// them with black outlines and they came in at 34 and 27, which took the ceiling
+// down; the second redraw came back at 42 and 34, which takes it up past where it
+// started. Raise it beyond what the smallest file can carry and tools/trim.mjs
+// reports that mark as SOFT.
 //
-// It is a little over twice the health bar's 4px depth, which is the point — a
-// bar is a quantity you read the length of and a status is a thing you recognise
-// the shape of, so it has to be big enough to tell a flame from a droplet at a
-// glance in a fight.
-export const STATUS_H = 9;
+// It is nearly three times the health bar's 4px depth, which is the point — a bar
+// is a quantity you read the length of and a status is a thing you recognise the
+// shape of, so it has to be big enough to tell a flame from a droplet at a glance
+// in a fight.
+export const STATUS_H = 11;
 export const STATUS_GAP = 2;
