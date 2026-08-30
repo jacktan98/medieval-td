@@ -1,5 +1,5 @@
 import { level } from './level.js';
-import { at as pointOn, nearestOn } from './route.js';
+import { at as pointOn, nearestOn, LANE } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { clampToRange, inRange } from './ground.js';
@@ -72,12 +72,50 @@ const LUNGE = 1 / THRUST_DECAY;
 // would leave a gap up the middle; narrowing it lets the kerb lanes through.
 const FORMATION = [[-24, 0, 0], [13, -20, -22], [13, 20, 22]];
 
+// HOW FAR OFF THE CENTRELINE THE SQUAD MAY BE POSTED, either way.
+//
+// The wedge used to sit on the centreline and nowhere else, which the owner found
+// "very limiting" — and it was, but not by choice. The squad is 52px wide with
+// the men's bodies and the narrowest road in the game is 58px across, so there
+// was almost nowhere else to put it.
+//
+// SO THE MEN ARE ALLOWED ONTO THE KERB. The owner's call, and the right one: a
+// shoulder over the grass at the tightest pinch is a much smaller cost than a
+// control that can only be pointed at the middle of the road. Nothing about the
+// fight changes — blocking is measured in pixels between figures, not in tarmac —
+// so this is a look, and only at the narrow stretches.
+//
+// WHAT IT COSTS, measured against the artwork by tools/formation.mjs, as the share
+// of squads that keep every man fully on tarmac when the flag is dragged HARD to
+// one edge:
+//
+//   8px    93%
+//   12px   80%
+//   16px   75%
+//
+// AND 16 IS STILL THE RIGHT CAP, because the offset follows the drag rather than
+// jumping to the limit. A player who nudges the flag 8px off centre gets 8px and
+// the 93% row; only a deliberate full-kerb rally pays the 75%. Capping at 8 would
+// take the choice away from every player to spare the ones who never make it.
+//
+// LANE, WHICH IS 16, because that is where the OUTER ENEMIES WALK. It is the one
+// principled number available: post the squad a full lane over and its centre
+// sits on the kerb lane an enemy uses, which is exactly the thing a player would
+// slide it across to cover. Wider would be arbitrary.
+const KERB = LANE;
+
 // How far the furthest station is from the rally point, derived from the wedge
 // above rather than typed: 24 back down the road for the point man, or 13 forward
 // and 20 across for the rear pair. It is the margin the leash in updateUnits adds
 // to the tower's ring, so a squad posted at the edge of that ring is not leashed
 // tighter than it is posted. Re-derived if the wedge is ever widened.
-const WEDGE = Math.ceil(Math.max(...FORMATION.map(([a, c]) => Math.hypot(a, c))));
+//
+// AND THE KERB OFFSET IS IN IT, because a station's `across` and the squad's own
+// offset add: the far man of a squad slid a full lane over stands hypot(13, 36)
+// from the flag rather than hypot(13, 20). Left out, the leash would be tighter
+// than the posting for exactly the squads that had been slid sideways, and they
+// would refuse to fight at their own feet.
+const WEDGE = Math.ceil(Math.max(...FORMATION.map(([a, c]) => Math.hypot(a, Math.abs(c) + KERB))));
 
 // Nearest point on any of the level's roads — the rally point a barracks sends
 // its soldiers to.
@@ -136,6 +174,20 @@ function stations(tower) {
   const want = tower.rally || { x: tower.x, y: tower.y };
   const near = nearestOnPath(want.x, want.y);
 
+  // WHICH SIDE OF THE ROAD, AND HOW FAR OVER, which the centreline snap above
+  // throws away and this puts back. It is the whole of "rally at the edge of the
+  // road" — see KERB. Measured against the road the snap found, before the range
+  // clamp touches anything, because the clamp moves the point ALONG the ring and
+  // would report a sideways offset that was really the drag being pulled home.
+  //
+  // ONLY FROM AN ORDER THE PLAYER GAVE. `want` falls back to the TOWER when there
+  // is no rally, and a tower stands 50 to 140px off the road — so measuring that
+  // as a sideways preference shoved every un-rallied squad in the game a full lane
+  // toward its own barracks, and put 115 of 435 shipped soldier positions on the
+  // grass. A squad nobody has sent anywhere has been told nothing about which side
+  // of the road to stand on, and the middle is the answer.
+  const across = tower.rally ? kerbOf(near, want) : 0;
+
   // Keep the rally inside the tower's reach, measured from the TOWER — that
   // reach is what the barracks upgrade buys, and it is drawn as an ellipse
   // around the building, so the clamp goes through the same helper the drawing
@@ -143,8 +195,21 @@ function stations(tower) {
   const held = clampToRange(tower.x, tower.y, near.x, near.y, tower.def.range);
 
   // Re-find the rally on the path after the range clamp, so the slots are laid
-  // out from a point that is actually on the road.
-  return stationsOn(tower, nearestOnPath(held.x, held.y));
+  // out from a point that is actually on the road — and carry the offset over,
+  // so the squad keeps the side of the road it was sent to.
+  return stationsOn(tower, { ...nearestOnPath(held.x, held.y), across });
+}
+
+// How far off the centreline a point is, signed, held inside KERB.
+//
+// The sign is the one layoutOn uses: a station at `across` sits at (x - ty*a,
+// y + tx*a), so the across axis is the perpendicular (-ty, tx) and the offset is
+// the drag's displacement from the road projected onto it. Getting this backwards
+// would put the squad on the far kerb from the flag, which is why it is derived
+// from the layout rather than guessed and checked by eye.
+function kerbOf(near, want) {
+  const off = -(want.x - near.x) * near.ty + (want.y - near.y) * near.tx;
+  return Math.max(-KERB, Math.min(KERB, off));
 }
 
 // The squad's stations around one point of one road, given as a {route, s} the
@@ -175,10 +240,16 @@ function layoutOn(tower, post) {
     // one segment's straight tangent puts a man 24px "forward" onto the grass
     // on the outside of a bend, far enough that enemies pass outside ENGAGE
     // without ever being blocked.
+    //
+    // `post.across` is the squad's own offset and it simply ADDS to each man's:
+    // the wedge keeps its shape and slides sideways as one thing. Adding rather
+    // than replacing is what makes the point man lead on the kerb the same way he
+    // leads on the centreline.
     const at = pointOn(road, post.s + along);
+    const off = across + post.across;
     out.push({
-      rx: at.x - at.ty * across,
-      ry: at.y + at.tx * across,
+      rx: at.x - at.ty * off,
+      ry: at.y + at.tx * off,
       // At rest a soldier watches the way the enemies come from, which is back
       // along the segment they walk. Only the left/right of this is drawn.
       faceIdle: Math.atan2(-at.ty, -at.tx) + splay * Math.PI / 180
@@ -217,19 +288,27 @@ function postOn(tower, base) {
   //
   // If no part of this road is in reach the walk finds nothing, and the two blocks
   // at the bottom say what happens then.
+  //
+  // TESTED AT THE OFFSET, not on the centreline. The squad may now be posted a
+  // lane over — see KERB — and the flag that has to be inside the ring is where
+  // the men will actually gather, not the point on the centreline they were
+  // measured from. On a road running along the edge of the ring those are two
+  // different answers.
+  const across = base.across || 0;
   const fits = at0 => {
     const q = pointOn(road, at0);
-    return inRange(q.x, q.y, tower.x, tower.y, tower.def.range);
+    return inRange(q.x - q.ty * across, q.y + q.tx * across,
+                   tower.x, tower.y, tower.def.range);
   };
 
-  if (fits(base.s)) return { route: base.route, s: base.s };
+  if (fits(base.s)) return { route: base.route, s: base.s, across };
 
   const back = nearestOn([road], tower.x, tower.y).s;
   const step = base.s > back ? -4 : 4;
   for (let at0 = base.s + step; (at0 - back) * step < 0; at0 += step) {
-    if (fits(at0)) return { route: base.route, s: at0 };
+    if (fits(at0)) return { route: base.route, s: at0, across };
   }
-  if (fits(back)) return { route: base.route, s: back };
+  if (fits(back)) return { route: base.route, s: back, across };
 
   // NOTHING ON THIS ROAD IS IN REACH, which on a map with two of them is not the
   // dead-plot case at all: the player dragged toward the other road, the clamp
@@ -239,6 +318,10 @@ function postOn(tower, base) {
   // can produce this, and it did: two rallies in 352 posted a Paladin Keep's men
   // 1.19 ring-radii out.
   const own = nearestOnPath(tower.x, tower.y);
+  // The other road, and the offset does NOT travel with it: it was measured
+  // against a road this squad has just been told it cannot reach, and the two run
+  // in different directions. A squad that ends up here is being posted where an
+  // un-rallied one stands, which is the centre of the road the tower is beside.
   if (own.route !== base.route) return postOn(tower, own);
 
   // AND IF NO PART OF ANY ROAD IS IN REACH, the squad stands on the piece nearest
@@ -249,7 +332,7 @@ function postOn(tower, base) {
   // snapped to, which put the men 345px away on a tower that reaches 210: the
   // further the player dragged, the further from the tower they went, on a plot
   // where every direction is equally out of range.
-  return { route: base.route, s: back };
+  return { route: base.route, s: back, across };
 }
 
 // WHERE A FLAG DROPPED HERE WILL ACTUALLY PUT THE SQUAD, as a point on the board.
@@ -264,9 +347,13 @@ function postOn(tower, base) {
 // on it finds it fits on the first test and posts the squad exactly there.
 export function rallyPoint(tower, x, y) {
   const near = nearestOnPath(x, y);
+  const across = kerbOf(near, { x, y });
   const held = clampToRange(tower.x, tower.y, near.x, near.y, tower.def.range);
-  const post = postOn(tower, nearestOnPath(held.x, held.y));
-  return pointOn(level.routes[post.route], post.s);
+  const post = postOn(tower, { ...nearestOnPath(held.x, held.y), across });
+  const q = pointOn(level.routes[post.route], post.s);
+  // The offset is part of the answer: a flag stored on the centreline would send
+  // the squad back to the middle of the road the next time stations() read it.
+  return { x: q.x - q.ty * post.across, y: q.y + q.tx * post.across };
 }
 
 export function makeUnits(state, tower) {
