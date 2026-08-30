@@ -575,26 +575,42 @@ export const ABILITIES = [
     //   a squad that costs 300 gold to teach. The fix was not to weaken the bonus
     //   but to stop him vanishing while he is plainly standing there throwing.
     //
-    // 2x, WHICH IS THE MODEST END — Holy Slash is five times a paladin's blow.
+    // TWO MAGNITUDES, AND THE BLADE IS WORTH MORE THAN THE KNIFE. 2.5x in the hand
+    // against 2x thrown — the owner's split, and it is the right way round for the
+    // reason the whole tower is built on: getting close is the risk. A man who has
+    // crept to arm's length of a giant is spending 150 health to be there, and a
+    // man flicking a blade from 100px is spending nothing. The opener that costs
+    // something pays more.
     //
-    // THE ARITHMETIC HAS BEEN ROUND THE LOOP TWICE AND BOTH TURNS ARE WORTH
+    // 2.5x IS STILL THE MODEST END — Holy Slash is five times a paladin's blow.
+    //
+    // THE ARITHMETIC HAS BEEN ROUND THE LOOP THREE TIMES AND EVERY TURN IS WORTH
     // KEEPING. The knife was half a blow at 200px, so a sneaked knife was 20 and
     // the pair came to the squad's own melee output at range. Then the knife went
     // to a full blow, which doubled the doubled number: 40 a blade, 150 a second
     // from three men, twice what the same three do in the hand. The owner caught
     // that and fixed the CAUSE rather than the number — an assassin no longer hides
-    // between throws, so only the first blade of a volley is a sneak.
+    // between throws, so only the first blade of a volley is a sneak. And now the
+    // two halves have been told apart.
     //
-    // What it is worth now: 75 a second sustained, which is exactly the squad's
-    // melee output, plus 60 on the opening blade of every volley and on the
-    // opening blow of every fight. That is a bonus you can feel and cannot lean
-    // on, which is what an opener should be.
+    // What it is worth: 75 a second sustained, which is exactly the squad's melee
+    // output, plus 60 on the opening blade of every volley and 90 on the opening
+    // blow of every fight. A bonus you can feel and cannot lean on, which is what
+    // an opener should be.
     id: 'sneak',
     name: 'Sneak Attack',
     of: 'Assassin Guild',
     icon: 'ability_sneak',
     cost: ABILITY_COST,
-    times: 2,
+    // The blade's multiple. `times` is the field every other ability in this file
+    // uses for "a multiple of the thing it changes", so the ordinary one stays the
+    // ordinary name and the exception is the one that has to announce itself.
+    times: 2.5,
+    // AND THE KNIFE'S, which is the exception. Two numbers rather than one because
+    // the two openers are not worth the same: see the note above. units.js reads
+    // `thrownTimes ?? times`, so an ability that does not care needs no second
+    // field and this one says exactly how much it cares.
+    thrownTimes: 2,
     // Only on the BLADE. A thrown knife keeps its own pose, because a drawing of a
     // man lunging with a dagger cannot also be the drawing of the knife leaving
     // his hand — and the throw is the half where you would not see this anyway.
@@ -626,14 +642,14 @@ export const ABILITIES = [
     // a heavier blow, still inside the mix.
     loud: 1.8,
 
-    detail: 'The first blow after an assassin shows himself is worth double — 40 ' +
-            'where his blade does 20 — and it comes back the moment he fades ' +
-            'again, which in a melee means the opening strike of every fight he ' +
-            'picks.\n\n' +
-            'With Knife Throw it is the first blade of every volley — 40 instead ' +
-            'of 20, with a heavier knife in the air to say so — and it comes back ' +
-            'when the road in front of him is clear. His strike lands harder and ' +
-            'sounds it.'
+    detail: 'The first blow after an assassin shows himself is worth two and a ' +
+            'half of them — 50 where his blade does 20 — and it comes back the ' +
+            'moment he fades again, which in a melee means the opening strike of ' +
+            'every fight he picks.\n\n' +
+            'Thrown it is worth double instead of two and a half: 40 on the first ' +
+            'blade of a volley, with a heavier knife in the air to say so. ' +
+            'Creeping to arm\'s length is the risk, so it is the half that pays ' +
+            'more. His strike lands harder and sounds it.'
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its

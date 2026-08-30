@@ -1105,7 +1105,8 @@ console.log('\nSneak Attack\n');
       if (e.hp !== last) { blows.push(Math.round(last - e.hp)); art.push(u.holdArt); last = e.hp; }
     }
     ok(blows.length >= 3, 'he lands a run of blows', `${blows.length} in 4s`);
-    ok(blows[0] === man.damage * sneak.times, 'and the first is worth double',
+    ok(blows[0] === man.damage * sneak.times,
+      `and the first is worth ${sneak.times} of them`,
       `${blows[0]} against his ${man.damage}`);
     ok(blows.slice(1).every(b => b === man.damage), 'and every one after it is an ordinary blow',
       blows.join(' + '));
@@ -1170,10 +1171,22 @@ console.log('\nSneak Attack\n');
     // every knife, because he hid for half a second between throws and re-armed
     // each time; now he stays out for as long as anything is in reach, so the
     // first blade is the heavy one and the rest are ordinary.
-    ok(hits[0] === alone * sneak.times, 'a volley opens with a sneaked knife',
+    //
+    // AND IT TAKES THE THROWN MULTIPLE, not the blade's. The two are different
+    // numbers on purpose — see the note on the ability — so reading the wrong one
+    // here would pass while the game did something else.
+    const thrownTimes = sneak.thrownTimes ?? sneak.times;
+    ok(hits[0] === alone * thrownTimes, 'a volley opens with a sneaked knife',
       `${hits[0]} against ${alone}`);
     ok(hits.slice(1).every(h => h === alone), 'and every knife after it is an ordinary one',
       hits.join(' + '));
+
+    // THE BLADE IS WORTH MORE THAN THE KNIFE, which is the claim the split exists
+    // to make. Asserted as an ORDER rather than as two figures, so retuning either
+    // one is free and reversing them is not.
+    ok(sneak.times > thrownTimes,
+      'and creeping to arm\'s length pays better than throwing from cover',
+      `x${sneak.times} in the hand against x${thrownTimes} thrown`);
 
     // AND THE NUMBER THAT COMES OUT OF IT, printed rather than merely asserted,
     // because it is the figure in this file worth arguing about — and because it
@@ -1186,7 +1199,8 @@ console.log('\nSneak Attack\n');
     ok(sustained === melee,
       `which settles at the squad's own melee output, at ${abilityById('knife').reach}px`,
       `${sustained.toFixed(1)}/s thrown against ${melee.toFixed(1)}/s in the hand, ` +
-      `plus ${alone * (sneak.times - 1) * man.count} once a volley`);
+      `plus ${alone * (thrownTimes - 1) * man.count} opening a volley and ` +
+      `${man.damage * (sneak.times - 1) * man.count} opening a fight`);
   }
 
   // --- AND THE BOARD SAYS WHICH IS WHICH -----------------------------------------
