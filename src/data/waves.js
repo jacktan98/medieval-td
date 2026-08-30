@@ -52,8 +52,11 @@ export const flask = {
   // there is time to decide it matters.
   speed: 150,
   // Lobbed, like a rock, and for the same reason: he is throwing it over the
-  // fight rather than into it. The number is the height of the arc as a fraction
-  // of the throw, so a short lob is a low one.
+  // fight rather than into it. `lob` is what commits it to a patch of ground;
+  // `arc` is the height of the throw as a fraction of its length, so a short lob
+  // is a low one. Two fields rather than one since the Cannon Outpost arrived —
+  // see `cannonball` in data/towers.js.
+  lob: true,
   arc: 0.22,
   // HOW WIDE THE SPILL CATCHES, and the number is measured against the shape of
   // a squad rather than against the picture of a puddle.

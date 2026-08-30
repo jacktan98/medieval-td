@@ -558,6 +558,10 @@ export const rock = {
   // Centred, because it is a lump with no nose to put on the target.
   grip: 0.5,
   speed: 300,
+  // THROWN, not steered, and `lob` is the flag that says so — see the note on
+  // `cannonball` for why that stopped being the same question as `arc`.
+  lob: true,
+  // How high it goes, as a fraction of how far it is going.
   arc: 0.22,
   // SILENT IN THE AIR, and loud when it arrives. Nothing plays when the arm
   // comes over: the release is not the moment the player is looking at, and a
@@ -679,7 +683,34 @@ export const cannonball = {
   faces: 0,
   grip: 0.5,
   speed: 420,
-  arc: 0.10,
+  // THROWN, and FLAT, and those turned out to be two different facts about a
+  // shot rather than one.
+  //
+  // `arc` used to answer both, because until this tower every lobbed thing in the
+  // game rose: `if (ammo.arc)` meant "commit this to a patch of ground and lead
+  // it", and the same number set how high it went. A cannon is the first weapon
+  // that has to be one and not the other — it is committed to the ground like a
+  // catapult and it flies like a musket — so the question is split. `lob` is
+  // whether it is thrown; `arc` is how high.
+  //
+  // WHY IT IS STILL LOBBED at zero height, which is the half that is easy to get
+  // wrong. Dropping `lob` as well would make this a STEERED shot, and a steered
+  // shot follows one man and dies with him: kill him in the 0.86s the ball is in
+  // the air and it vanishes mid-flight, taking an 85px blast with it. A blast
+  // weapon has to be committed to the GROUND or its whole point can be cancelled
+  // by the shot working. It also keeps the lead, which is what puts the ball
+  // where a marching column will be rather than where its front man was.
+  lob: true,
+  // FLAT. The owner's ask, and it reads right: this is powder, not a
+  // counterweight — the ball goes where it is pointed, fast, in a straight line
+  // from the muzzle to the ground it was aimed at. The three machines below still
+  // arc at 0.22, so a cannon and a trebuchet firing at once are visibly two
+  // different weapons before you read a single number.
+  //
+  // render.js draws no ground shadow under a shot with no lift: the shadow exists
+  // to say how HIGH a thing is, and drawn under a ball that never left the ground
+  // it would just be a second ball.
+  arc: 0,
   fireSound: true,
   landSound: false,
   impact: true
@@ -1966,6 +1997,19 @@ const ballista = {
   frontPolys: [
     [[577, 373], [622, 381], [622, 420], [596, 442], [555, 433], [554, 391]]
   ],
+  // THE DECK'S TOP FACE, as fractions of this trim, and it is the quad the note
+  // above quotes: one #969696 path with corners (449.8, 242.5), (766.7, 291.2),
+  // (595.7, 439.6) and (257.4, 364.7).
+  //
+  // Data rather than prose for the same reason `feet` is. A machine standing on a
+  // roof has exactly one thing that can go wrong and it is invisible in this file:
+  // some part of it ends up over the edge, in one of the two directions, and
+  // nothing says so until somebody looks at the screen. That is precisely how the
+  // Cannon Outpost shipped with its muzzle 24px past the far parapet.
+  //
+  // tools/siege.mjs walks every foot and the muzzle, both ways round, against
+  // this.
+  deck: [[0.380, 0.064], [0.994, 0.143], [0.662, 0.383], [0.007, 0.262]],
   // THE MACHINE ON TOP. Its own trim, its own drawn size, and its own ground
   // point — the centre of the little shadow under the ballista's post, source
   // (452.5, 609) inside a trim that starts at (361, 398) and runs 340 x 228.
@@ -2095,6 +2139,9 @@ const cannon = {
   // this machine's foot and the bottom of its barrel pass behind it exactly as the
   // ballista's do.
   frontPolys: ballista.frontPolys,
+  // And the deck itself, for the same reason and by the same constant: it is one
+  // stone turret drawn twice with a different banner on it.
+  deck: ballista.deck,
   machine: {
     frames: ['artillery_t4b', 'artillery_t4b_reload', 'artillery_t4b_fire'],
     trim: CANNON_TRIM,
@@ -2126,17 +2173,46 @@ const cannon = {
     // the carriage's visible crescent has a centroid 4px low and 9px left of the
     // ellipse it belongs to. The first is `pivot` above, to the digit.
     feet: [[0.509, 0.853], [0.848, 0.768]],
-    // The line the drawing flips about: the midpoint of those two, source 571.
-    // See the note above for why this is not 0.5 — the barrel hangs 170px off the
-    // left of everything that touches the deck, so the box middle is nowhere near
-    // the feet, and mirroring about it would swing the footprint 25 drawn px
-    // across the roof.
-    mirror: 0.678
+    // The line the drawing flips about, and it is THE GUN'S OWN FOOT — the same
+    // 0.509 as `pivot` above, so the carriage does not move at all when the
+    // machine turns and the gunner swaps sides around it.
+    //
+    // TWO PRINCIPLED ANSWERS, AND THIS TOWER TAKES THE OTHER ONE. The ballista
+    // flips about the MIDPOINT of its feet: its footprint is identical both ways,
+    // its post and its engineer trade ends, and neither is more the machine than
+    // the other. That was the rule this tier shipped with too, at 0.678, and the
+    // owner sent it back — because a cannon is not a symmetrical pair. The
+    // carriage IS the weapon and the gunner is standing next to it, so what the
+    // player watches turn is the gun, and a gun that slides 116px sideways every
+    // time it changes target reads as the tower shuffling about.
+    //
+    // What it cost, measured against the deck quad: facing left the muzzle sat
+    // 8.2px inside the parapet and the drawing's own edge 1.8px — "too near one
+    // of the blocks" — and facing right the muzzle was 24.4px OUTSIDE it
+    // entirely. Pinned to the carriage at the deck's middle, the two come out
+    // 15.0 and 39.8px inside, and the carriage is dead centre both ways.
+    //
+    // So `mirror` is per-machine and not a constant: pin the pair when the two
+    // feet are equals, pin the weapon when one of them is the point. tools/
+    // siege.mjs names which of the two each machine chose, and checks that every
+    // foot and the muzzle stay on the deck either way — which is the thing that
+    // actually has to be true.
+    mirror: 0.509
   },
-  // Source (485, 347), solved the same way the ballista's was — the mount that
-  // puts the worst of the four ground points furthest inside the deck quad. 66.5px
-  // of clearance, against the ballista's 25.4.
-  mountFrac: [0.448, 0.233],
+  // THE MIDDLE OF THE PLATFORM, source (517.4, 334.5) — the centroid of the deck
+  // quad's four corners, and the owner's own words for where the cannon's shadow
+  // should sit. With `mirror` pinned to the carriage above, that is where it sits
+  // in BOTH directions rather than on average.
+  //
+  // Not the diagonals' crossing, which is the other honest reading of "the middle"
+  // of a quad drawn in perspective: it lands 7px lower and left, and that is
+  // enough to bring the left-facing muzzle from 15.0px inside the parapet to 7.0,
+  // with the drawing's own edge at 0.6. Same idea, no margin.
+  //
+  // It replaces (485, 347), which was solved for something else — the mount that
+  // put the worst of FOUR ground points furthest inside the quad, back when the
+  // machine flipped about the pair and the carriage therefore had two homes.
+  mountFrac: [0.511, 0.213],
   ammo: cannonball,
   // THE CATAPULTS' CYCLE, NOT THE BALLISTA'S, and it is the owner's ask: this
   // tower reloads as slowly as the trebuchet it upgrades from. 0.75 / 0.75 / 1.5,

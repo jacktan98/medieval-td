@@ -1557,7 +1557,12 @@ function behindBuilding(state, s) {
 function drawShots(ctx, state) {
   // Shadows first, so every one of them is under every rock rather than under
   // only the rocks drawn after it.
-  for (const s of state.shots) if (s.groundY !== undefined) rockShadow(ctx, s);
+  // AND ONLY WHERE THERE IS A HEIGHT TO READ. The shadow's whole job is to say
+  // how far off the ground a thing is and where it will come down; under a shot
+  // that never leaves the ground it says neither, and draws a second dark ball
+  // directly beneath the first. The Cannon Outpost's is the flat one — lobbed,
+  // led, committed to the ground, and with no rise at all.
+  for (const s of state.shots) if (s.groundY !== undefined && s.lift > 0) rockShadow(ctx, s);
 
   for (const s of state.shots) {
     const ammo = s.ammo;

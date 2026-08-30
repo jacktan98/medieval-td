@@ -722,7 +722,12 @@ function shoot(state, t, target, special) {
     speed: ammo.speed
   };
 
-  if (ammo.arc) aim(shot, m, target);
+  // `lob`, not `arc`. They were the same test until the Cannon Outpost, which is
+  // thrown at the ground like a catapult's rock and flies flat like a musket
+  // ball — see `cannonball` in data/towers.js. Asking about `arc` here would have
+  // read a flat shot as a steered one and quietly handed it an 85px blast that
+  // dies with its target.
+  if (ammo.lob) aim(shot, m, target);
   state.shots.push(shot);
 
   // Category B: never skipped, never queued. Every arrow you can see leave a bow

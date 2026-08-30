@@ -410,7 +410,10 @@ function loose(state, e, mark) {
   // A LOB HAS A FLIGHT TIME AND A STEERED SHOT DOES NOT. `flight` and `lift` are
   // what make projectiles.js run the arc; leaving them off is what makes a shot
   // home on its man and die with him. See fly() and land() there.
-  const flight = ammo.arc ? dist / ammo.speed : undefined;
+  // `lob` rather than `arc`, matching shoot() in towers.js: whether a shot is
+  // committed to a patch of ground is a different question from how high it goes,
+  // and one weapon in the game now answers them differently.
+  const flight = ammo.lob ? dist / ammo.speed : undefined;
 
   state.shots.push({
     x: from.x,
@@ -434,7 +437,7 @@ function loose(state, e, mark) {
     to,
     flight,
     t: 0,
-    lift: ammo.arc ? dist * ammo.arc : 0
+    lift: ammo.lob ? dist * ammo.arc : 0
   });
 
   // Category B, on the release, and only for ammunition that says it makes a

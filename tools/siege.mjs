@@ -49,8 +49,14 @@ const def = siege[0];
 //   that never moves with a second drawing on top that animates and turns (a
 //   TURRET).
 //
-//   HOW DOES IT SHOOT?  Thrown at a patch of ground on an arc, committed before
-//   it lands (LOBBED); or steered at a man and dead when he is (STEERED).
+//   HOW DOES IT SHOOT?  Thrown at a patch of ground, committed before it lands
+//   and led to where its target will be (LOBBED); or steered at a man and dead
+//   when he is (STEERED).
+//
+// Read off `ammo.lob`, which is a separate field from `ammo.arc` — being thrown
+// and rising are two facts, and the Cannon Outpost is the weapon that has one
+// without the other: committed to the ground like a catapult, flat as a musket.
+// `arc` answered both until it arrived.
 //
 // Tiers 1 to 3 are drawn machines that lob. The Ballista Turret is a turret that
 // steers. So one flag answered both, and `d.ammo.arc` was used to mean "is this
@@ -64,8 +70,8 @@ const def = siege[0];
 // with the rocks wherever it lands on the ladder.
 const MACHINES = siege.filter(d => !d.machine);
 const TURRETS  = siege.filter(d => d.machine);
-const LOBBED   = siege.filter(d => d.ammo.arc);
-const STEERED  = siege.filter(d => !d.ammo.arc);
+const LOBBED   = siege.filter(d => d.ammo.lob);
+const STEERED  = siege.filter(d => !d.ammo.lob);
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -475,33 +481,7 @@ if (TURRETS.length) {
        'and the muzzle mirrors about the machine, not the plot',
        `${un.x.toFixed(1)} and ${flipped.x.toFixed(1)} about ${axis.toFixed(1)}, plot ${t.x.toFixed(1)}`);
 
-    // NOT THE POINT IT STANDS ON, which is the first half of the fix this check
-    // was written for: mirroring about the foot swings the whole machine across
-    // the roof, and it shipped that way once. The plot's own line is NOT the thing
-    // to compare against — the mount puts the machine over the middle of the deck
-    // on purpose, so the two land within a pixel of each other.
     const box = machineBox(d, towerBox(t));
-    ok(Math.abs(axis - box.x) > 4,
-       'the line it flips about is not the point it stands on',
-       `${axis.toFixed(1)} against a foot at ${box.x.toFixed(1)}`);
-
-    // AND IT IS THE MIDDLE OF THE FEET, which is the half the first one cannot
-    // see — and the half that actually matters.
-    //
-    // What a mirror has to preserve is the FOOTPRINT: the machine covers the same
-    // patch of deck whichever way it points, with its two feet swapping ends of
-    // it. Flip about anything else and the pair walks sideways by twice the error.
-    //
-    // "The middle of the drawing" was the rule for as long as artillery had one
-    // turret, and it was luck: the ballista's feet straddle its box middle, so 0.5
-    // was within 10 source px of right. The cannon's do not — its barrel hangs off
-    // one end and its box middle is 61px from its feet — so the old rule would
-    // have walked it 25 drawn px across the roof, which is the exact defect the
-    // check above exists to catch, wearing a different hat.
-    //
-    // Measured in DRAWN pixels because that is what the player sees, and against a
-    // real budget: 6px on a deck 104px wide is under 6% and invisible, and the
-    // box-middle mistake misses it four times over.
     const feet = d.machine.feet;
     if (feet) {
       // THE FIRST FOOT IS THE PIVOT, which is not a coincidence to be preserved
@@ -514,10 +494,76 @@ if (TURRETS.length) {
          'the foot it is placed by is the foot it stands on',
          `[${feet[0]}] against a pivot of [${d.machine.pivot}]`);
 
-      const mid = feet.reduce((s, f) => s + f[0], 0) / feet.length;
-      const walk = 2 * Math.abs((d.machine.mirror ?? 0.5) - mid) * box.w;
-      ok(walk < 6, 'and flipping it does not walk the machine across the roof',
-         `${walk.toFixed(1)}px of a 6px budget, on a ${box.w.toFixed(0)}px machine`);
+      // WHICH OF THE TWO MIRRORS IT CHOSE, named rather than assumed.
+      //
+      // A machine on a roof can flip about the MIDPOINT of its feet — the
+      // footprint is then identical both ways and the crew and the weapon trade
+      // ends, which is the ballista, whose post and engineer are equals — or about
+      // ONE FOOT, which pins that foot and swings everything else round it. That
+      // is the cannon: the carriage is the weapon and the gunner is standing next
+      // to it, so what turns is the gun and it turns on the spot.
+      //
+      // Neither is more correct in general and the owner picks per machine. What
+      // is checked is that `mirror` is one of them and not a number somebody typed
+      // — an arbitrary value between the two would look almost right and be
+      // nobody's decision.
+      //
+      // TO WITHIN 3 DRAWN PIXELS, and the slack is there for one real reason. The
+      // ballista's `mirror` is 0.5, the middle of its DRAWING, which is what the
+      // rule was back when artillery had one turret. Its feet happen to straddle
+      // that middle, so 0.5 sits 1.9 drawn px off their true midpoint — near
+      // enough that it is the same decision, far enough that an exact test would
+      // fail on a tower the owner has already approved. Anything sloppier than
+      // this is caught by the deck check below, which is the one that binds.
+      const m = d.machine.mirror ?? 0.5;
+      const mid = feet.reduce((a, f) => a + f[0], 0) / feet.length;
+      const off = a => Math.abs(m - a) * box.w;
+      const foot = feet.reduce((b, f) => (!b || off(f[0]) < off(b[0]) ? f : b), null);
+      const how = off(mid) <= off(foot[0])
+        ? [off(mid), 'the midpoint of its feet — the pair stays put']
+        : [off(foot[0]), 'one of its feet — that foot stays put'];
+      ok(how[0] < 3, 'and it flips about a line somebody chose',
+         `${how[1]}, ${how[0].toFixed(1)}px off it`);
+    }
+
+    // AND NOTHING GOES OVER THE EDGE, EITHER WAY ROUND, which is the check that
+    // actually had to exist and the one this file did not have.
+    //
+    // The Cannon Outpost shipped with its muzzle 24px PAST the far parapet facing
+    // right, and 8px inside it facing left with the drawing's own edge at 1.8. The
+    // mount had been solved for a different quantity, every check in this file
+    // passed, and the only way to find out was to look at the screen. That is the
+    // whole class of bug a turret has: some part of the machine ends up off the
+    // roof, in one of the two directions, and nothing says so.
+    //
+    // Checked against the deck quad the artist drew, carried on the def — see
+    // `deck` in data/towers.js. Every foot and the muzzle, mirrored and not.
+    if (d.deck && d.machine.feet) {
+      const tb = towerBox(t);
+      const quad = d.deck.map(([fx, fy]) => [tb.left + fx * tb.w, tb.top + fy * tb.h]);
+      const inset = p => {
+        let best = Infinity;
+        for (let i = 0; i < 4; i++) {
+          const a = quad[i], c = quad[(i + 1) % 4];
+          const ex = c[0] - a[0], ey = c[1] - a[1], len = Math.hypot(ex, ey);
+          best = Math.min(best, -(((p[0] - a[0]) * ey - (p[1] - a[1]) * ex) / len));
+        }
+        return best;
+      };
+      // Every point of the drawing that has to stay on the roof: the feet, and the
+      // mouth the shot leaves by.
+      const marks = [...d.machine.feet, d.machine.nose];
+      let worst = Infinity, worstAt = '';
+      for (const flip of [1, -1]) {
+        for (const [fx, fy] of marks) {
+          const px = box.left + box.w * fx;
+          const p = [flip < 0 ? 2 * box.axis - px : px, box.top + box.h * fy];
+          const v = inset(p);
+          if (v < worst) { worst = v; worstAt = `${flip < 0 ? 'right' : 'left'}-facing`; }
+        }
+      }
+      ok(worst > 0, 'and every foot and the muzzle stay on the deck, both ways',
+         `worst ${worst.toFixed(1)}px inside, ${worstAt}`);
     }
 
     // AND THE BOLT LEAVES THE FRONT, which is the other half of the same fix.
@@ -623,7 +669,8 @@ console.log('\nHow each tier is drawn, and how it shoots\n');
 {
   for (const d of siege)
     console.log(`      ${d.name.padEnd(16)} ${(d.machine ? 'turret' : 'machine').padEnd(8)}`
-      + `${d.ammo.arc ? 'lobbed' : 'steered'}`);
+      + `${d.ammo.lob ? 'lobbed' : 'steered'}`.padEnd(9)
+      + `${d.ammo.arc ? 'arcs ' + d.ammo.arc : 'flat'}`);
   console.log('');
 
   // LOBBED IS NOT THE SAME SET AS MACHINE any more, and that is the whole point
@@ -643,9 +690,18 @@ console.log('\nHow each tier is drawn, and how it shoots\n');
      LOBBED.map(d => `${d.name} ${d.splash}`).join(', '));
 
   // And a steered shot chases one man, so it has no patch to burst in.
-  ok(STEERED.every(d => !d.ammo.arc),
+  ok(STEERED.every(d => !d.ammo.lob),
      'while a steered shot follows the man it was aimed at',
      STEERED.map(d => d.name).join(', '));
+
+  // AND HOW HIGH IT GOES IS A SEPARATE FACT, which is the whole reason `lob` and
+  // `arc` are two fields. The table above prints both; this is the case that
+  // makes the split necessary rather than tidy — one weapon that is thrown and
+  // does not rise.
+  const flat = LOBBED.filter(d => !d.ammo.arc);
+  ok(flat.length === 0 || flat.every(d => d.ammo.lob && d.splash > 0),
+     'and a flat shot is still thrown at the ground, not steered at a man',
+     flat.map(d => `${d.name} arc ${d.ammo.arc}`).join(', ') || 'every lobbed tier arcs');
 
   // The dead zone belongs to the LOB, not to the drawing — a machine that throws
   // over an arc cannot drop its shot on its own feet. Except that it is bought

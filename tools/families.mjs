@@ -397,9 +397,18 @@ console.log('\nArtillery tier 4 — the other one, blast instead of rate\n');
   // IT KEEPS THE FAMILY'S SHAPE WHERE THE BALLISTA DROPPED IT. This one still
   // lobs, still bursts, still reaches as far as the machine it upgrades from —
   // the ballista gave up 100px of reach and the arc with it.
-  ok(gun.ammo.arc > 0 && gun.range === t3.range && !bal.ammo.arc,
+  ok(gun.ammo.lob && gun.range === t3.range && !bal.ammo.lob,
     'and is the tier 4 that still throws, at the trebuchet\'s own reach',
-    `arc ${gun.ammo.arc}, ${gun.range} both, against a steered bolt at ${bal.range}`);
+    `${gun.range} both, against a steered bolt at ${bal.range}`);
+
+  // AND IT THROWS FLAT, which is the one thing it takes from the ballista's side
+  // of the fork rather than the trebuchet's. Powder, not a counterweight: the
+  // ball is committed to a patch of ground like every other artillery shot and
+  // goes there in a straight line. `lob` and `arc` are two fields for exactly
+  // this tower — see `cannonball` in data/towers.js.
+  ok(gun.ammo.arc === 0 && t3.ammo.arc > 0,
+    'and is the only artillery shot in the game with no rise at all',
+    `arc ${gun.ammo.arc} against every rock's ${t3.ammo.arc}`);
 
   // AND UNDER THE TREBUCHET'S BLAST, which is the one number the fork must not
   // take from tier 3. A tier 4 that out-blasts the machine it upgrades from
