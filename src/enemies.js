@@ -6,6 +6,10 @@ import { unhook, hidden } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
 import { solo, play, CUE, SHOT } from './audio.js';
+// Only the tick. An enemy that dies is dropped from the array on the same frame,
+// so there is nothing left to clear anything off — where a soldier musters again
+// and has to be given back clean.
+import { tick as tickStatus } from './status.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -42,7 +46,11 @@ export function spawn(state, typeId) {
     // happening, and read by leadPoint, which has to know that this figure is
     // not going anywhere. There is no budget beside it any more — see the
     // standoff block in updateEnemies.
-    halted: false
+    halted: false,
+    // What is being done to him, and the same field a soldier carries: an enemy
+    // can be burnt where a soldier can be poisoned, through one mechanism that
+    // does not know which army it is looking at. See src/status.js.
+    statuses: []
   });
 }
 
@@ -244,6 +252,24 @@ export function updateEnemies(state, dt) {
     e.y = p.y;
 
     if (e.s >= road.total) e.leaked = true;
+  }
+
+  // WHATEVER IS BEING DONE TO THEM, and this is the half of the status system that
+  // did not exist until the Cannon Outpost. A soldier could be poisoned from the
+  // day the plague doctor arrived; nothing could be done to an ENEMY over time at
+  // all, because every tower in the game hit once and was finished.
+  //
+  // Fiery Shot is the first thing that keeps hurting after it has landed. The tick
+  // is the same one units.js runs, on the same list, through src/status.js — so
+  // burning a thug and poisoning a spearman are the same mechanic pointed the
+  // other way, and there is one clock rather than two that agree today.
+  //
+  // BEFORE the leak and the death sweep below, so a burn that finishes somebody
+  // pays its bounty and plays its kill line on the same frame it lands, exactly as
+  // a blow would.
+  for (const e of state.enemies) {
+    const hurt = tickStatus(e, dt);
+    if (hurt) e.hp -= hurt;
   }
 
   for (const e of state.enemies) {

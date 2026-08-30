@@ -1,4 +1,4 @@
-import { bolt, knife, sneakKnife } from './towers.js';
+import { bolt, knife, sneakKnife, cannonball } from './towers.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -139,6 +139,58 @@ export const heavyBolt = {
   // Net x0.59 after levelling, on a file that peaks at 1.01, so there is no
   // headroom problem: the two numbers move together and always have to.
   fireGain: 2.3
+};
+
+// FIERY SHOT'S AMMUNITION: the same iron ball, lit.
+//
+// SPREAD FROM `cannonball` and it restates almost nothing, which is the point. The
+// artist drew no burning ball — there is one drawing of a cannonball and it is a
+// 10px circle — so this fires the same picture. Everything the player can tell
+// apart is at the two ends of the flight: it leaves louder, and where it lands the
+// earth comes up on fire and stays on the men it caught.
+//
+// That is a deliberate reading of what the ability IS. Heavy Bolt is a shot you
+// watch go — a burning shaft crossing the board — because a ballista's bolt is
+// 42px long and there is something to see. A cannonball is a dot; dressing the dot
+// would be four frames of work nobody would notice at 480px a second. So the
+// spectacle is put where the eye already is, which is where it lands.
+//
+// `kind` IS INHERITED, exactly as the heavy bolt inherits the ballista's: a man
+// killed by this is killed by a cannon, so he answers with the cannon's kill line,
+// and the shot goes out through the cannon's own row in the FIRING table.
+export const fieryBall = {
+  ...cannonball,
+  // THE EARTH COMES UP BURNING, and this is the first ammunition to name a PAIR.
+  // The plain ball takes `impact: true`, which means "the two ordinary drawings,
+  // at random"; this names the two fiery ones and gets the same treatment in its
+  // own colours. See impact() in src/impacts.js for why a list rather than a flag.
+  impact: ['fiery_1', 'fiery_2'],
+  // AND IT KEEPS BURNING. 10 a second for 5 seconds — 50 over the five, which is
+  // most of another shot's worth of damage laid on afterwards rather than at once.
+  //
+  // The magnitude lives here rather than in data/status.js, on the same argument
+  // `times` is on an ability rather than a number in the tower: how much a burn
+  // hurts is a property of the thing that started it, so a fiercer shot can burn
+  // harder without a second status existing.
+  //
+  // WHAT IT IS WORTH, and it is more than 50 on paper. The burn goes on ticking
+  // while the tower reloads, so on a wave it is 50 extra damage into everything the
+  // blast caught rather than into one man — the ball bursts across 85px and every
+  // enemy in it burns. Against a packed rank that is the biggest single thing this
+  // tower does; against one straggler it is 50.
+  burn: { dps: 10, seconds: 5 },
+  // Louder than an ordinary ball, at the owner's request, and only for this shot —
+  // the same clip played harder rather than a second recording. See `level` in
+  // play() in src/audio.js.
+  //
+  // 1.6 RATHER THAN THE HEAVY BOLT'S 2.3, and the difference is entirely in what
+  // the two are measured against. `ballista_shot` carries a GAIN of 0.6, so that
+  // multiplier is climbing out of a 4.4dB hole before it starts; `cannon_shot`
+  // carries 1.4, which is already 3dB ABOVE every other weapon. 1.6 on top of that
+  // is a further 4.1dB — comfortably the loudest single thing in the battle, which
+  // is what a burning cannonball should be, and short of clipping because the file
+  // arrives 6.7dB under its own peak.
+  fireGain: 1.6
 };
 
 // The three poses the artist drew for these. Each is registered on the SAME source
@@ -734,6 +786,87 @@ export const ABILITIES = [
             'It raises the turret from 33.3 damage a second to 41.7, on a machine ' +
             'whose every shot already bursts. You can hear which one it is — the ' +
             'heavy bolt leaves louder than the others.'
+  },
+  {
+    // THE CANNON OUTPOST'S FIRST, and it is the SAME ABILITY the Crossbow Sentry
+    // has, one id further along. Same name, same field, a different number and a
+    // different picture — see the note on the ids at the top of this file for why
+    // two towers that learn the same trick get two entries rather than sharing
+    // one: the icon is a picture of THIS tower's weapon, and the magnitude is
+    // tuned against THIS tower's rhythm.
+    //
+    // 1.5 AGAINST THE SENTRY'S 1.35, at the owner's ask, and it is the right way
+    // round: this is the slowest weapon in the game at 3.00s and the sentry is
+    // among the quickest at 0.80. Half again on a three-second cycle is 1.00s off
+    // it; half again on 0.80 would be 0.27, which is why the two are not one
+    // number.
+    //
+    // WHAT IT BUYS: 70 every 2.00s is 35.0 a second against 23.3 — the biggest
+    // single jump any reload ability makes, because it is multiplying the biggest
+    // blow. It takes this tower past the Ballista Turret's 30.6 and makes the fork
+    // a real question again for anyone who has 150 gold spare.
+    //
+    // AND THE ANIMATION FOLLOWS IT. Artillery's cooldown IS its three beats added
+    // up, so cooldownOf dividing by 1.5 would have the machine fire on a frame it
+    // is not drawn firing — see frameOf in src/towers.js, which scales the beats
+    // by the same figure for exactly this reason. The cannon reloads visibly
+    // faster; it does not skip.
+    id: 'cannon_swift',
+    name: 'Swift Reload',
+    of: 'Cannon Outpost',
+    icon: 'ability_cannon_swift',
+    cost: ABILITY_COST,
+    reloadTimes: 1.5,
+
+    detail: 'The gun crew work a faster drill and the cannon reloads 1.5x ' +
+            'quicker — a ball every 2 seconds instead of every 3, which is 35 ' +
+            'damage a second where the outpost alone does 23.3.\n\n' +
+            'Nothing else changes: the same 70 a ball, the same 85 blast and the ' +
+            'same 360 reach. The machine visibly works faster — its three beats ' +
+            'are the clock, so the drill you see is the reload the rules use.'
+  },
+  {
+    // AND ITS SECOND, which is Heavy Bolt's shape pointed at a different problem.
+    // Both are "every Nth shot is the special one" on a machine with no man to
+    // change the drawing of; where the heavy bolt hits twice as hard ONCE, this
+    // hits for the same 70 and then keeps hurting.
+    //
+    // ONE BALL IN FIVE, against the heavy bolt's one in four. The cannon fires at
+    // three fifths of the ballista's rate, so one in five here is a burning ball
+    // every 15 seconds against a heavy bolt every 7.2 — deliberately rarer, and
+    // rare enough to be an event. The owner asked for five.
+    //
+    // WHAT IT IS WORTH, and it is worth more than the arithmetic looks. 50 damage
+    // over 5 seconds is 10 a second added to a tower that does 23.3, which reads
+    // as +14% and is not: the burn lands on EVERYTHING the blast caught, and the
+    // blast is 85px across. Against one straggler it is 50. Against a packed rank
+    // it is 50 a man, laid on while the machine is reloading, which is the biggest
+    // single thing this tower does.
+    //
+    // NO POSE and no `hold`, exactly as Heavy Bolt has none, and for the same
+    // reason: a machine has no man to redraw and its clock is the beat loop rather
+    // than a cooldown a pose could delay. The ability announces itself at the two
+    // ends of the flight — louder leaving, burning where it lands — because there
+    // is nothing to see in between. A cannonball is a 10px dot moving at 480px a
+    // second.
+    id: 'fiery',
+    name: 'Fiery Shot',
+    of: 'Cannon Outpost',
+    icon: 'ability_fiery',
+    cost: ABILITY_COST,
+    every: 5,
+    shots: 1,
+    ammo: fieryBall,
+
+    detail: 'Every 5th ball leaves the barrel alight. It hits for the ordinary ' +
+            '70 and sets fire to everything in the blast: 10 damage a second for ' +
+            '5 seconds, on every enemy it caught.\n\n' +
+            'Burning men carry the flame over their health bar for as long as it ' +
+            'lasts. The ground comes up on fire where the ball lands, and you can ' +
+            'hear which shot it was — a fiery ball leaves much louder than the ' +
+            'others.\n\n' +
+            'Against one straggler it is 50 extra damage. Against a rank standing ' +
+            'together it is 50 each, laid on while the cannon reloads.'
   },
   {
     id: 'wrath',

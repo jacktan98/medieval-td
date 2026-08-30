@@ -7,6 +7,7 @@ import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
+import { tick as tickStatus, clear as clearStatus, harmed } from './status.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -444,10 +445,15 @@ export function makeUnits(state, tower) {
       // behind a barracks has nothing in reach, which is also the answer that
       // leaves him hidden on the frame before his first update.
       exposed: false,
-      // { dps, left } while a flask is working on him, null otherwise. Set here
-      // rather than left undefined so the shape of a unit is written down in one
-      // place — see the same argument for `halted` on an enemy.
-      poison: null
+      // WHAT IS BEING DONE TO HIM, and it is one list rather than a field per
+      // thing. `poison: null` sat here on its own for as long as a soldier was the
+      // only figure in the game something could happen to over time; the Cannon
+      // Outpost burns ENEMIES, and two bespoke fields ticked in two files is how
+      // two mechanics that should be one drift apart. See src/status.js.
+      //
+      // Empty rather than left undefined, so the shape of a unit is written down
+      // in one place — the same argument as `halted` on an enemy.
+      statuses: []
     });
   }
 }
@@ -1094,19 +1100,28 @@ export function updateUnits(state, dt) {
       }
     }
 
-    // PLAGUE. A flask leaves no wound and does no damage when it lands; it
-    // leaves a patch of ground, and this is where the ground does its work.
+    // WHATEVER IS BEING DONE TO HIM. Poison, today, from a flask or the ground it
+    // left; the arithmetic and the clock belong to src/status.js and what a death
+    // MEANS belongs here, which is why the damage comes back as a number rather
+    // than being subtracted there.
     //
-    // It suppresses the regen below rather than racing it, and that is the whole
+    // IT SUPPRESSES THE REGEN below rather than racing it, and that is the whole
     // reason the numbers are small enough to look harmless. A spearman regrows 4
-    // health a second out of combat, so a 6-a-second poison that let him heal
-    // through it would be a 2-a-second poison — and the tier 3 knight, at 6
-    // regen, would take literally nothing. "Slowly trickling his health" has to
-    // mean the trickle is the only thing happening.
-    if (u.poison) {
-      u.hp -= u.poison.dps * dt;
-      u.poison.left -= dt;
-      if (u.poison.left <= 0) u.poison = null;
+    // health a second out of combat, so an 8-a-second poison that let him heal
+    // through it would be a 4-a-second poison — and the tier 3 knight, at 6 regen,
+    // would take a quarter of it. "Slowly trickling his health" has to mean the
+    // trickle is the only thing happening.
+    //
+    // `harmed` rather than "is he wearing anything", so the day a status arrives
+    // that does no damage — stunned, slowed — a stunned man still heals. That is
+    // the branch this reads through, and the reason it is a helper rather than a
+    // length check.
+    const hurt = tickStatus(u, dt);
+    if (hurt) u.hp -= hurt;
+
+    if (harmed(u)) {
+      // Nothing else: the regen below is suppressed while something is working on
+      // him, which is the case this branch exists for.
     } else if (!u.foe && u.hp < u.maxHp) {
       // Regen only out of combat, so a barracks recovers between waves without
       // making a soldier unkillable inside one.
@@ -1116,10 +1131,11 @@ export function updateUnits(state, dt) {
     if (u.hp <= 0) {
       release(u);
       u.respawn = u.def.respawn;
-      // The plague dies with him. Without this he musters again at full health
-      // with the clock still running and walks straight back out to finish
-      // dying of a flask thrown at a man who is already dead.
-      u.poison = null;
+      // Everything being done to him dies with him. Without this he musters again
+      // at full health with the clock still running and walks straight back out to
+      // finish dying of a flask thrown at a man who is already dead — and, now
+      // that a status is drawn, wearing its mark while he does it.
+      clearStatus(u);
       // And so does everything an ability left on him, `healCd` INCLUDED. A man
       // who musters again is a new man in every respect: he is not still holding a
       // pose he struck before he died, he is not still being healed, his count

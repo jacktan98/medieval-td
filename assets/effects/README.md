@@ -1,17 +1,30 @@
 # Effects artwork
 
 Things that are neither a figure nor a building: marks the fight leaves on the
-ground, and one it puts in the air. Nine files, all 512 x 512 with a transparent
-background like every other sprite.
+ground, and one it puts in the air. Eleven files, all 512 x 512 with a
+transparent background like every other sprite.
 
 | file                                 | when                     | lasts         |
 |--------------------------------------|--------------------------|---------------|
 | `Blood_1.png`, `Blood_2.png`         | every hit that lands     | 0.35s         |
 | `Blood_Dead_1.png`, `_2.png`         | the pool a body lies in  | with the body |
 | `Artillery_Impact_1.png`, `_2.png`   | every rock that lands    | 0.45s         |
+| `Artillery_Fiery_Impact_1.png`, `_2.png` | every Fiery Shot ball that lands | 0.45s |
 | `Enemies_Plague_Thug_Spill.png`      | every flask that breaks  | 3s            |
 | `Construction_Smoke.png`             | a plot is built on, upgraded or cleared | 0.6s |
 | `Musketeer_Target_Locked.png`        | a Post picks its Deadeye man | until the ball lands |
+
+## The fiery pair are the plain pair, recoloured
+
+`Artillery_Fiery_Impact_1.png` and `_2.png` trim to exactly the same rects as
+`Artillery_Impact_1.png` and `_2.png` — the artist drew the fire over the earth
+rather than redrawing it — so `IMPACT_TRIM` in `src/impacts.js` hands the fiery
+pair the plain pair's constants rather than repeating them.
+
+Both are picked between at random, the same way the plain pair is, for the same
+reason: one picture repeated at the same stretch of road is a stamp rather than
+an event. See `impact()` in `src/impacts.js`, which takes a list as readily as a
+name.
 
 ## The target mark is the one that is not a stain
 

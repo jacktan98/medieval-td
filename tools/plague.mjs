@@ -38,6 +38,16 @@ import { updateImpacts } from '../src/impacts.js';
 import { updateWaves, STALL_GRACE } from '../src/waves.js';
 import { families } from '../src/data/towers.js';
 import { flask, FLASK_HIT, enemyTypes } from '../src/data/waves.js';
+// The poison is a STATUS now rather than a field of its own — one mechanism for
+// a burning enemy and a poisoned soldier alike. This file reads it the way the
+// game does, through the same helpers, so a check here is a check of the thing
+// that ships. See src/status.js.
+import { apply as applyStatus, wearing } from '../src/status.js';
+
+// The poison a figure is currently wearing, or undefined. A helper rather than
+// the expression four times over, and it reads the same list the renderer draws
+// from — so a check here cannot pass against a mark that is not on screen.
+const dose = v => v.statuses && v.statuses.find(x => x.id === 'poisoned');
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 
@@ -146,7 +156,7 @@ console.log('The flask\n');
     const before = state.shots.length;
     updateShots(state, DT);
     if (state.shots.length < before) {
-      caught.push(state.units.filter(u => u.poison && u.poison.left === flask.poison.seconds).length);
+      caught.push(state.units.filter(u => dose(u) && dose(u).left === flask.poison.seconds).length);
     }
     updateImpacts(state, DT);
   }
@@ -165,7 +175,7 @@ console.log('The flask\n');
   withSquad(state);
   const u = state.units[0];
   u.hp = u.maxHp;
-  u.poison = { dps: flask.poison.dps, left: flask.poison.seconds };
+  applyStatus(u, 'poisoned', flask.poison.dps, flask.poison.seconds, flask.kind);
 
   const before = u.hp;
   // One frame past the duration, not exactly the duration: `left` is counted
@@ -177,7 +187,13 @@ console.log('The flask\n');
 
   check(Math.abs(lost - want) < 1, 'a full dose takes its whole toll',
     `${lost.toFixed(1)} of ${want}, with regen ${u.def.regen}/s suppressed`);
-  check(u.poison === null, 'and then it wears off and the regen comes back');
+  check(!wearing(u, 'poisoned'), 'and then it wears off and the regen comes back');
+
+  // AND THE MARK COMES OFF WITH IT, which is the half a player can see. A status
+  // that outlived its effect would be a droplet over a man nothing is happening
+  // to — worse than no mark, because it teaches the player to ignore them.
+  check(u.statuses.length === 0, 'and he is wearing nothing afterwards',
+    `${u.statuses.length} statuses`);
 }
 
 console.log('\nHe stands off\n');
@@ -370,7 +386,7 @@ console.log('\nWhat one flask does to three men\n');
 {
   const man = (x, name) => ({
     def: { r: 8, hp: 275, damage: 7, cd: 0.8, name }, hp: 275, maxHp: 275,
-    x, y: 300, rx: x, ry: 300, respawn: 0, poison: null, hold: 0, healing: 0
+    x, y: 300, rx: x, ry: 300, respawn: 0, statuses: [], hold: 0, healing: 0
   });
   const aimed = man(400, 'the man it was thrown at');
   const beside = man(400 + Math.round(flask.splash / 2), 'a man beside him');
@@ -386,11 +402,18 @@ console.log('\nWhat one flask does to three men\n');
   for (let i = 0; i < 60 && state.shots.length; i++) updateShots(state, 1 / 60);
 
   const took = u => Math.round(u.maxHp - u.hp);
-  check(took(aimed) === FLASK_HIT && !!aimed.poison,
+  check(took(aimed) === FLASK_HIT && wearing(aimed, 'poisoned'),
     'the man it was thrown at takes the blow AND the poison',
     `${took(aimed)} and ${flask.poison.dps}/s for ${flask.poison.seconds}s`);
-  check(took(beside) === 0 && !!beside.poison,
+  check(took(beside) === 0 && wearing(beside, 'poisoned'),
     'a man beside him takes the poison and nothing else', `${took(beside)}`);
+
+  // AND BOTH OF THEM WEAR IT. The status is what the owner asked for and the only
+  // part of this a player can read at a glance — a health bar that will not come
+  // back up says nothing about why.
+  check(dose(aimed) && dose(aimed).dps === flask.poison.dps,
+    'and both are marked Poisoned, at the flask\'s own rate',
+    `${dose(aimed).dps}/s for ${dose(aimed).left.toFixed(1)}s`);
   check(took(clear) === 0 && !clear.poison,
     'and a man outside the patch takes neither');
 
@@ -416,7 +439,7 @@ console.log('\nWhat one flask does to three men\n');
 // the same run — same length after the fourth as after the first.
 {
   const man = { def: { r: 8, name: 'a man who does not move' }, hp: 1000, maxHp: 1000,
-                x: 400, y: 300, rx: 400, ry: 300, respawn: 0, poison: null,
+                x: 400, y: 300, rx: 400, ry: 300, respawn: 0, statuses: [],
                 hold: 0, healing: 0 };
   const state = { units: [man], enemies: [], shots: [], hits: [],
                   impacts: [], splats: [], corpses: [] };
@@ -435,7 +458,7 @@ console.log('\nWhat one flask does to three men\n');
     // so what is measured is the blow alone with no poison tick or regen in it.
     for (let i = 0; i < 60 && state.shots.length; i++) updateShots(state, DT);
     blows.push(Math.round(before - man.hp));
-    doses.push(man.poison ? man.poison.left : 0);
+    doses.push(dose(man) ? dose(man).left : 0);
   }
 
   check(blows.every(d => d === FLASK_HIT), 'every flask lands its full blow, not just the first',
@@ -453,7 +476,7 @@ console.log('\nWhat one flask does to three men\n');
   // one whose clock has been run to the bottom, and -0.016 is the number the
   // subtraction actually lands on.
   {
-    const back = { ...man, hp: 1000, poison: null, respawn: -0.0163 };
+    const back = { ...man, hp: 1000, statuses: [], respawn: -0.0163 };
     const s2 = { units: [back], enemies: [], shots: [], hits: [],
                  impacts: [], splats: [], corpses: [] };
     const before = back.hp;

@@ -30,7 +30,7 @@
 // numbers are quoted in the comments in data/abilities.js and in the encyclopedia,
 // and a comment that has drifted from the code is worse than no comment.
 
-import { updateTowers, rangeOf, framesOf, cooldownOf, gunnerOf, auras, boost } from '../src/towers.js';
+import { updateTowers, rangeOf, framesOf, beatsOf, cooldownOf, gunnerOf, auras, boost } from '../src/towers.js';
 import { updateUnits, makeUnits, hidden, unhook } from '../src/units.js';
 // The knives have to actually fly, or the Guild's section would watch blades
 // hang in the air a hundred frames from the man who threw them.
@@ -124,7 +124,11 @@ function fire(t, seconds, men = 1) {
   for (let i = 0; i * DT < seconds; i++) {
     updateTowers(state, DT);
     for (const s of state.shots) {
-      out.push({ t: i * DT, kind: s.ammo.kind, damage: s.damage, at: s.target.mark });
+      // `burn` rather than `kind`, because Fiery Shot's ball IS a cannonball —
+      // it inherits the kind so the kill line stays the cannon's. What tells the
+      // two apart is what the ammunition leaves on what it hits.
+      out.push({ t: i * DT, kind: s.ammo.kind, damage: s.damage, at: s.target.mark,
+                 burn: !!s.ammo.burn });
     }
     state.shots.length = 0;
   }
@@ -1253,6 +1257,109 @@ console.log('\nSneak Attack\n');
   ok(!!paths[plainKnife.sprite] && !!paths[heavy.sprite],
     'and both blades are wired to files',
     `${paths[plainKnife.sprite]} / ${paths[heavy.sprite]}`);
+}
+
+// --- the Cannon Outpost's two --------------------------------------------------
+//
+// Both are shapes this file has checked before — a reload multiplier and an
+// every-Nth-shot special — on a family where they mean something different.
+
+console.log('\nThe Cannon Outpost\n');
+
+// Built like turret() above and for the same reason: this family's clock is its
+// animation, so `beat` and `beatT` are the fields that matter. siege[4], because
+// the ladder forks and both fourth rungs live in one array.
+function outpost(ids) {
+  const plot = level.plots[0];
+  return {
+    plot, fam: { id: 'siege' }, def: siege[4],
+    x: plot.x, y: plot.y,
+    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
+    aimMode: 0, spent: 610, rally: null,
+    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
+    hit: [], locked: null, hold: 0
+  };
+}
+
+{
+  const gun = siege[4];
+  const plain = outpost([]);
+  const quick = outpost(['cannon_swift']);
+  const swift = abilityById('cannon_swift');
+
+  ok(near(cooldownOf(plain) / cooldownOf(quick), swift.reloadTimes),
+    'Swift Reload scales the cannon\'s rate as it scales the sentry\'s',
+    `${cooldownOf(quick).toFixed(2)}s against ${cooldownOf(plain).toFixed(2)}s, x${swift.reloadTimes}`);
+
+  // AND THE ANIMATION FOLLOWS IT, which is the check this ability actually needed
+  // and the one nothing else in this file could have caught.
+  //
+  // ARTILLERY'S CLOCK IS ITS ANIMATION. stepCrew advances on beat boundaries and
+  // the shot leaves on the Fire beat; `cooldown` is a DESCRIPTION of the beats
+  // that the menu and the encyclopedia read. So a reload ability that divided
+  // cooldownOf alone does literally nothing to this tower — the card would promise
+  // a ball every 2 seconds, the machine would go on firing every 3, and there
+  // would be no error anywhere to find it by. That is what the first version of
+  // this ability did, and it is why beatsOf takes a tower now.
+  const slow = beatsOf(gun, plain);
+  const fast = beatsOf(gun, quick);
+  ok(fast.every((b, i) => near(slow[i] / b, swift.reloadTimes)),
+    'and every beat of the machine shortens by the same figure',
+    `${slow.map(b => b.toFixed(2)).join('/')} -> ${fast.map(b => b.toFixed(2)).join('/')}`);
+
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  ok(near(sum(fast), cooldownOf(quick)),
+    'so the beats still add up to the cooldown, taught or not',
+    `${sum(fast).toFixed(2)}s = ${cooldownOf(quick).toFixed(2)}s`);
+
+  // AND THE OBSERVED GAP IS THE PROMISED ONE. The three above are arithmetic;
+  // this is the machine, run for twenty seconds, timed as the balls leave.
+  for (const [t, want, label] of [[outpost([]), 3.00, 'untaught'],
+                                  [outpost(['cannon_swift']), 2.00, 'taught']]) {
+    const shots = fire(t, 20);
+    const gaps = shots.slice(1).map((v, i) => v.t - shots[i].t);
+    const avg = sum(gaps) / gaps.length;
+    ok(Math.abs(avg - want) < 0.05,
+      `and a ${label} outpost really fires every ${want.toFixed(2)}s`,
+      `${avg.toFixed(2)}s over ${gaps.length} gaps`);
+  }
+
+  // FIERY SHOT: one ball in five, and it is the FIFTH rather than the first.
+  const fiery = abilityById('fiery');
+  const balls = fire(outpost(['fiery']), 40);
+  ok(balls.length >= 10, 'a taught outpost keeps firing', `${balls.length} balls`);
+  ok(balls.filter(b => b.burn).length === Math.floor(balls.length / fiery.every),
+    `and one ball in ${fiery.every} is the burning one`,
+    balls.map(b => (b.burn ? 'F' : '.')).join(''));
+  ok(balls.slice(0, fiery.every).map(b => (b.burn ? 'F' : '.')).join('')
+     === '.'.repeat(fiery.every - 1) + 'F',
+    'and it is the fifth rather than the first',
+    balls.slice(0, fiery.every).map(b => (b.burn ? 'F' : '.')).join(''));
+
+  // THE BURNING BALL IS STILL A CANNONBALL — same reach, same speed, same arc,
+  // same kill line. Everything the ability changes is at the two ends of the
+  // flight, which is what its note claims and what makes the `burn` flag above
+  // the only way to tell the two apart at all.
+  ok(fiery.ammo.speed === gun.ammo.speed && fiery.ammo.kind === gun.ammo.kind &&
+     fiery.ammo.arc === gun.ammo.arc && fiery.ammo.lob === gun.ammo.lob,
+    'and it flies exactly like an ordinary ball',
+    `${fiery.ammo.speed}px/s, arc ${fiery.ammo.arc}, kind ${fiery.ammo.kind}`);
+
+  // AND NO EXTRA DAMAGE ON IMPACT, which is the difference from Heavy Bolt and is
+  // worth pinning: this ability's whole magnitude is in the burn, so a `times`
+  // creeping in here would be doubling something that is already paid for.
+  ok(!fiery.times && !fiery.damage && balls.every(b => b.damage === gun.damage),
+    'and hits for the tower\'s ordinary blow, with the burn on top',
+    `${gun.damage} + ${fiery.ammo.burn.dps}/s for ${fiery.ammo.burn.seconds}s`);
+
+  // WHAT THE BURN IS WORTH, printed rather than asserted — it is the owner's to
+  // set and the sim has never been run on it. Per second over the whole cycle,
+  // against one man; against a rank it is this much per man caught.
+  const dps = d => d.damage / d.cooldown;
+  const burnPer = fiery.ammo.burn.dps * fiery.ammo.burn.seconds / fiery.every;
+  console.log(`      into one man: ${dps(gun).toFixed(1)}/s plain, ` +
+    `${(dps(gun) + burnPer / gun.cooldown).toFixed(1)}/s with Fiery Shot, ` +
+    `${(gun.damage / (gun.cooldown / swift.reloadTimes)).toFixed(1)}/s with Swift Reload`);
 }
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);

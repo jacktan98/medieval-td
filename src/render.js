@@ -27,6 +27,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, statStep, COLS } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
+import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
 const PLOT_R = 30;
 
@@ -322,19 +323,104 @@ function drawTower(ctx, t) {
 // take away.
 function drawStatus(ctx, state) {
   for (const e of state.enemies) {
-    healthBar(ctx, e.x, e.y - artHeight(e.def) - 4, e.def.r, e.hp / e.maxHp);
+    const top = e.y - artHeight(e.def) - 4;
+    healthBar(ctx, e.x, top, e.def.r, e.hp / e.maxHp);
+    statusMarks(ctx, e, e.x, top);
   }
   for (const u of state.units) {
     if (u.respawn > 0) { musterRing(ctx, u); continue; }
     // A hidden man's bar fades with him. It is the one piece of him drawn
     // OUTSIDE his own figure, so left solid it would hang over empty ground and
     // give away the assassin the whole point of him is that you cannot see.
+    //
+    // AND SO DO HIS STATUS MARKS, for exactly the same reason and more sharply: a
+    // burning flame at full opacity over an invisible man would be a torch
+    // pointing at him.
     ctx.save();
     if (hidden(u)) ctx.globalAlpha *= UNSEEN;
-    healthBar(ctx, u.x, u.y - artHeight(u.def) - 4, u.def.r, u.hp / u.maxHp);
+    const top = u.y - artHeight(u.def) - 4;
+    healthBar(ctx, u.x, top, u.def.r, u.hp / u.maxHp);
+    statusMarks(ctx, u, u.x, top);
     ctx.restore();
   }
   drawBadges(ctx, state);
+}
+
+// WHAT IS BEING DONE TO A FIGURE, in a row above its health bar.
+//
+// ABOVE THE BAR, NOT ON IT, which is the owner's ask and also the only place it
+// can go. The bar is a length you read; a mark laid over it would eat the length.
+// Below it is the figure's own head. So the marks sit in the band over the bar,
+// and the bar keeps every pixel it had.
+//
+// DRAWN IN STATUS_ORDER rather than in the order they were applied. A man who
+// catches fire and is then poisoned shows the same two marks in the same two
+// places as one poisoned and then set alight — a mark that moves about because of
+// the order two things happened in reads as two different marks.
+//
+// ONE ROW, CENTRED, growing outward. Two is the most anything can wear today and
+// the row is 12px wide at that; it is centred on the figure like the bar, so a
+// crowd of burning thugs reads as a row of flames over a row of bars rather than
+// as a drift of marks.
+//
+// It draws NOTHING when there is nothing to say, exactly as the health bar draws
+// nothing at full health. A game where every figure permanently carries a strip
+// of icons is a game you cannot see.
+function statusMarks(ctx, v, x, barTop) {
+  if (!v.statuses || !v.statuses.length) return;
+
+  const show = STATUS_ORDER.filter(id => v.statuses.some(s => s.id === id));
+  if (!show.length) return;
+
+  // Each mark keeps its own aspect, so a tall flame and a squat droplet are both
+  // STATUS_H high and as wide as their drawings make them — the same rule every
+  // icon in data/ui.js is drawn by.
+  const marks = show.map(id => {
+    const key = STATUS[id].icon;
+    const t = ui[key] && ui[key].trim;
+    return { key, w: t ? (t[2] / t[3]) * STATUS_H : STATUS_H };
+  });
+
+  const gap = 1;
+  const wide = marks.reduce((a, m) => a + m.w, 0) + gap * (marks.length - 1);
+  const y = barTop - STATUS_GAP - STATUS_H;
+
+  // ON A CHIP, and it is not decoration — it is the difference between a status
+  // you can see and one you cannot.
+  //
+  // MEASURED, not judged by eye. The poisoned mark's own colour is rgb(92,127,73),
+  // and the grass this game is played on is about rgb(90,110,70): the same hue at
+  // 0.45 luminance against 0.40. Drawn straight onto the board it disappears, and
+  // the first screenshot of a poisoned spearman is a health bar with nothing above
+  // it. The flame is fine — 0.18 against 0.40 — which is exactly the trap: one of
+  // the two statuses works, so the mechanism looks right.
+  //
+  // CREAM RATHER THAN THE HEALTH BAR'S DARK, and that is the whole reason it is
+  // its own colour. The bar's backing is there to make a bright green fill read;
+  // a dark chip under a dark green droplet would be the same failure again. Cream
+  // is the game's own label ground — the button plates and the info box — and both
+  // marks are dark enough to sit on it: 0.45 and 0.18 against 0.90.
+  //
+  // It also does the job for statuses NOBODY HAS DRAWN YET. The owner is uploading
+  // more, and a mark that has to be a particular brightness to be visible is a
+  // constraint on the artist that nothing writes down. A ground removes it.
+  ctx.fillStyle = 'rgba(240,230,210,0.88)';
+  ctx.strokeStyle = 'rgba(34,32,28,0.55)';
+  ctx.lineWidth = 1;
+  const pad = 1.5;
+  ctx.beginPath();
+  ctx.rect(x - wide / 2 - pad, y - pad, wide + pad * 2, STATUS_H + pad * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  let at = x - wide / 2;
+  for (const m of marks) {
+    // Through drawUi like every other piece of art, so a missing file is a
+    // missing mark rather than a crash — and so the trim comes from the one place
+    // trims are written down.
+    drawUi(ctx, m.key, at, y, { h: STATUS_H }, ZERO);
+    at += m.w + gap;
+  }
 }
 
 // --- what an aura is doing, over the towers it is doing it to --------------------

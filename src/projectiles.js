@@ -2,6 +2,7 @@ import { splat } from './blood.js';
 import { impact } from './impacts.js';
 import { inRange } from './ground.js';
 import { play, LAND, BREAK, KNIFE } from './audio.js';
+import { apply as applyStatus } from './status.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -202,16 +203,34 @@ function hit(state, s, v) {
   // standing in it — and that is the difference between this and every other
   // projectile in the game rather than a variation on it.
   //
+  // IT IS A STATUS NOW, not a field of its own, and the man WEARS it: a droplet
+  // over his health bar for as long as the plague is working on him. The rules did
+  // not change — the same dps for the same seconds — but the player can see it,
+  // which is what the owner asked for and what makes a slow trickle legible
+  // instead of a health bar that mysteriously will not come back up.
+  //
   // It REFRESHES rather than stacks: a second flask on the same man restarts the
-  // clock at the same rate. Stacking reads as a bug the first time three doctors
-  // delete a squad in a second, and "how long since the last flask" is a thing
-  // the player can see, where "how many are on him" is not.
+  // clock at the same rate. That rule lives in `apply` now rather than here, so
+  // burning and poisoning share it — see src/status.js.
   // POISON OR DAMAGE — for everyone the SPLASH catches. The man the flask was
   // aimed at also takes the blow itself, and that is applied by the caller
   // rather than here, because it belongs to one man and this runs for every man
   // in the patch. See land() above.
+  // AND IT MAY SET HIM ALIGHT ON TOP OF THE BLOW, which is Fiery Shot and the
+  // first thing in the game that does damage twice: the ball hits for its full
+  // 70, and then it burns.
+  //
+  // BEFORE the poison branch and not inside it, because burning is NOT the
+  // flask's kind of thing. A flask is poison INSTEAD of damage — that is what
+  // makes it a flask — and a burning cannonball is a cannonball that also burns.
+  // Folding the two into one "does it leave something on him" test would have made
+  // the flask hit for its 20 as well, which is a different weapon.
+  if (s.ammo.burn) {
+    applyStatus(v, 'burnt', s.ammo.burn.dps, s.ammo.burn.seconds, s.ammo.kind);
+  }
+
   if (s.ammo.poison) {
-    v.poison = { dps: s.ammo.poison.dps, left: s.ammo.poison.seconds };
+    applyStatus(v, 'poisoned', s.ammo.poison.dps, s.ammo.poison.seconds, s.ammo.kind);
   } else {
     v.hp -= s.damage;
     // On the man, not on the projectile. An arrow is inside its target by the

@@ -90,7 +90,34 @@ const ASSET_PATHS = Object.fromEntries(
   Object.entries(ASSET_URLS).map(([k, v]) => [k, decodeURIComponent(v)])
 );
 
-const dirs = ['towers', 'units', 'enemies', 'projectiles', 'dead', 'effects', 'ui'];
+// EVERY FOLDER UNDER assets, READ OFF THE DISK. It was a hand-written list of
+// seven, and a hand-written list of folders is a tool that goes blind the moment
+// somebody makes an eighth: assets/abilities and assets/status were created in
+// the same change that moved sixteen files into them, and a list would have
+// printed a clean table with all sixteen missing from it.
+//
+// That is this tool's worst failure mode and it has happened here before — see
+// pngsUnder, which was flat until assets/towers grew a folder per family.
+const dirs = readdirSync('assets', { withFileTypes: true })
+  .filter(e => e.isDirectory())
+  .map(e => e.name)
+  .sort();
+
+// THE FOLDERS WHOSE FILES ARE LOOKED UP RATHER THAN SCALED, derived rather than
+// named. Everything in the world — a tower, a man, a rock — is drawn at SCALE, so
+// its drawn size is its trim times a number. A button is 60px because a thumb
+// needs 60px, and an icon is 24px tall because the number beside it is 20px; so
+// those are looked up in data/ui.js, and one with no entry there is reported as
+// unused rather than measured against a scale that does not apply to it.
+//
+// Which folders those are is a fact about the files: it is wherever the things
+// data/ui.js boxes actually live. Asking the question that way means a folder of
+// icons created next week is understood the day its first file is wired up.
+const LOOKED_UP = new Set(
+  Object.entries(ASSET_URLS)
+    .filter(([key]) => ui[key])
+    .map(([, src]) => decodeURIComponent(src).split('/')[1])
+);
 
 // Walks subfolders, because assets/towers now has one per family — archery,
 // barracks, artillery. A flat readdir silently measured nothing after that move,
@@ -122,9 +149,17 @@ function pngsUnder(dir) {
 //
 // Keys with no data/ui.js entry are left out on purpose, so a file wired into
 // assets.js but never given a box still reports as unreferenced.
+//
+// AND NOT BY FOLDER EITHER, which is the second half of the same lesson. This
+// asked `src.startsWith('assets/ui/')` until the ability buttons and the status
+// marks were given folders of their own; the moment they moved, fourteen files
+// that are still measured, still boxed in data/ui.js and still drawn every frame
+// would have dropped out of every check here without a word. A file's FOLDER is
+// where it was filed. What decides whether this tool looks at it is whether
+// data/ui.js gives it a box.
 const UI_FILES = Object.fromEntries(
   Object.entries(ASSET_URLS)
-    .filter(([key, src]) => src.startsWith('assets/ui/') && ui[key])
+    .filter(([key]) => ui[key])
     .map(([key, src]) => [basename(src), key])
 );
 const uiKey = f => UI_FILES[f];
@@ -140,16 +175,13 @@ for (const d of dirs) {
     // A full-plate button that is OPAQUE is measured by its ink rather than its
     // alpha; one with a transparent background is measured like everything else.
     // See trim(), and `opaque` for why the file decides rather than the flag.
-    const t = trim(img, d === 'ui' && !!(ui[uiKey(f)] || {}).plate && opaque(img));
+    const t = trim(img, LOOKED_UP.has(d) && !!(ui[uiKey(f)] || {}).plate && opaque(img));
     if (!t) { console.log(`${path.padEnd(35)} fully transparent`); continue; }
 
-    // UI is the one folder where the drawn size does NOT come from a scale
-    // factor. A button is 60px because a thumb needs 60px; an icon is 24px tall
-    // because the number beside it is 20px. So its size is looked up rather than
-    // multiplied — and a UI file with no entry in data/ui.js is reported as
-    // unused rather than measured against a scale that does not apply to it.
+    // Looked up rather than multiplied, for the folders that hold interface art —
+    // see LOOKED_UP above for which those are and why it is derived.
     let dw, dh;
-    if (d === 'ui') {
+    if (LOOKED_UP.has(d)) {
       const key = uiKey(f);
       if (!key) { console.log(`${path.padEnd(35)} not referenced by src/data/ui.js`); continue; }
       // Every UI entry carries the box it is actually drawn at — except the
@@ -271,7 +303,7 @@ for (const d of dirs) {
 {
   let solid = 0;
   for (const [key, src] of Object.entries(ASSET_URLS)) {
-    if (!src.startsWith('assets/ui/') || !ui[key]) continue;
+    if (!ui[key]) continue;   // boxed in data/ui.js, wherever it is filed
     // THE FOUR ABILITY BUTTONS ARE HELD TO THIS TOO, and were not always. They are
     // the one kind of UI file with nothing underneath them — each one IS the plate
     // rather than a mark laid over it — so a white square behind the disc was
@@ -313,7 +345,7 @@ for (const d of dirs) {
   const want = ui.btn_plate.trim;
   let wrong = 0;
   for (const [key, src] of Object.entries(ASSET_URLS)) {
-    if (!src.startsWith('assets/ui/') || !ui[key] || !ui[key].plate) continue;
+    if (!ui[key] || !ui[key].plate) continue;
     const img = decode(readFileSync(src));
     const t = trim(img, true);
     const square = t[2] === t[3];

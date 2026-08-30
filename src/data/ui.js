@@ -107,6 +107,11 @@ export const STAT_COL = 15;
 // anything on the page reading as smaller.
 export const BOOK_ICON_H = 12;
 
+// The status marks' drawn height. Imported rather than repeated: what a status
+// looks like and how big it is drawn belong together, and data/status.js is where
+// a status is described. See the note there for why 10 is the ceiling.
+import { STATUS_H } from './status.js';
+
 export const ui = {
   // Dashboard. `h` rather than `fit`: these are sized by HEIGHT, because they
   // sit on a text baseline. The gold icon is 2.11 wide to 1 tall, and fitting
@@ -220,6 +225,22 @@ export const ui = {
   // to the same circle without being asked twice.
   ability_knife: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_sneak: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // The Cannon Outpost's two, on the same disc as every other ability face.
+  ability_cannon_swift: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_fiery:        { trim: [163, 163, 186, 186], fit: 60, plate: true },
+
+  // THE STATUS MARKS, and they are the first entries in this table that are drawn
+  // on the BOARD rather than on the interface. They are here anyway, and that is
+  // the right place: what this table holds is art whose size is LOOKED UP instead
+  // of derived from the board scale, and a status mark is exactly that — it is
+  // 10px tall because that is what reads over a health bar, not because a flame is
+  // 10px tall next to a man.
+  //
+  // `h` rather than `fit`, so each keeps its own aspect at a common height: the
+  // flame is 28x38 and the droplets 26x30, and fitting both in a square would draw
+  // the flame narrower than the drop it is meant to sit beside.
+  status_burnt:    { trim: [242, 237, 28, 38], h: STATUS_H },
+  status_poisoned: { trim: [243, 240, 26, 30], h: STATUS_H },
   // The Judgement Temple's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

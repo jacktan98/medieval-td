@@ -289,9 +289,16 @@ export function reachOf(t) {
 }
 
 export function cooldownOf(t) {
+  return t.def.cooldown / reloadK(t);
+}
+
+// How much faster this tower reloads than its tier says, as a multiplier. Split
+// out of cooldownOf because artillery needs the same figure applied somewhere
+// else entirely — see beatsOf.
+function reloadK(t) {
   let k = 1;
   for (const a of boughtAbilities(t)) if (a.reloadTimes) k *= a.reloadTimes;
-  return t.def.cooldown / k;
+  return k;
 }
 
 // WHICH PAIR OF DRAWINGS THE MAN ON THE DECK IS SHOWING, or null for the ones
@@ -334,7 +341,30 @@ export const framesOf = (def, t) => {
 // How long each beat holds, and a tier may have its own. The three catapults
 // share BEATS; the ballista is the same three beats at 60% of the length, which
 // is what "faster reload" is in a family whose cooldown IS its animation.
-export const beatsOf = def => def.beats || BEATS;
+//
+// AND AN ABILITY MAY SHORTEN THEM, which is the `t` argument and is the whole of
+// what Swift Reload means on this family.
+//
+// It is not a nicety. Artillery's clock is its ANIMATION — stepCrew advances on
+// beat boundaries and the shot leaves on the Fire beat, and `cooldown` is a
+// description of the beats that the menu and the encyclopedia read. So a reload
+// ability that only divided cooldownOf would have done LITERALLY NOTHING to a
+// cannon: the card would promise a ball every 2 seconds and the machine would go
+// on firing every 3, with no error anywhere and nothing to find but the feeling
+// that 150 gold had bought nothing.
+//
+// Dividing each beat by the same figure keeps the two in step by construction:
+// the beats still add up to cooldownOf, which is the invariant tools/families.mjs
+// checks for every artillery tier.
+//
+// `t` is optional, and a caller with only a def — the encyclopedia, the tools —
+// gets the beats the tier ships with, which is what those callers are asking
+// about. Exactly the same split framesOf makes, for the same reason.
+export const beatsOf = (def, t) => {
+  const beats = def.beats || BEATS;
+  const k = t ? reloadK(t) : 1;
+  return k === 1 ? beats : beats.map(b => b / k);
+};
 
 // The three beats of a catapult, in order. The index into `def.frames`, and into
 // BEATS for how long each one holds.
@@ -616,7 +646,7 @@ function stepCrew(state, t, dt, target) {
   }
 
   t.beat = (t.beat + 1) % framesOf(t.def, t).length;
-  t.beatT = beatsOf(t.def)[t.beat];
+  t.beatT = beatsOf(t.def, t)[t.beat];
 
   // WHICH WAY THE MACHINE FACES IS DECIDED HERE AND NOWHERE ELSE — once per
   // cycle, on the beat the crew starts loading, and then held through the throw

@@ -2579,7 +2579,11 @@ export const siege = [
     // tower at the top of a ladder answers for itself when it is built and when
     // its standing order changes, rather than borrowing the family's. See
     // familyCue in src/audio.js.
-    voice: 'cannoneer' }
+    voice: 'cannoneer',
+    // WHAT THIS OUTPOST CAN BE TAUGHT. A faster drill, and a ball that keeps
+    // burning after it lands — the first ability in the game that leaves a STATUS
+    // on what it hits rather than doing all its work on the frame it arrives.
+    abilities: ['cannon_swift', 'fiery'] }
 ];
 
 // --- monastery -----------------------------------------------------------------

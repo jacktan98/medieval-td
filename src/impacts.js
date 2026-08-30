@@ -18,7 +18,16 @@ import { SCALE } from './data/towers.js';
 export const IMPACT_TRIM = {
   impact_1: [198, 221, 116, 70],
   impact_2: [222, 233, 68, 47],
-  spill:    [180, 242, 152, 28]
+  // FIERY SHOT'S PAIR, AND THEY ARE THE SAME RECTS. The artist drew the burning
+  // versions over the plain ones and each trims to its sibling's box to the pixel,
+  // so these are the same constants rather than the same numbers typed again — if
+  // a re-export ever moves one, both move together or tools/trim.mjs says so.
+  fiery_1:  [198, 221, 116, 70],
+  fiery_2:  [222, 233, 68, 47],
+  // REDRAWN, and 16px narrower than it was: [180, 242, 152, 28] before. Same
+  // height, same top, so the puddle sits exactly where it did and only its spread
+  // changed.
+  spill:    [188, 242, 136, 28]
 };
 
 // TWO KINDS OF MARK, and the difference is which way the drawing hangs.
@@ -61,17 +70,26 @@ export const IMPACT_FADE = 0.25;
 // reads `flask.poison.seconds` rather than repeating it.
 export const SPILL_FADE = 0.6;
 
-const pick = (a, b) => (Math.random() < 0.5 ? a : b);
+const pick = list => list[(Math.random() * list.length) | 0];
+
+// The plain pair, and the default for anything that does not name its own.
+const EARTH = ['impact_1', 'impact_2'];
 
 // `x, y` is where the projectile hit the ground.
 //
-// `img` names the picture, or is absent for a rock — which throws up one of two
-// pictures of earth at random, because a catapult fires every three seconds at
-// the same stretch of road and one image repeated is a stamp rather than an
-// event. There is only one drawing of a spill, so a flask names it.
+// `img` NAMES THE PICTURE, OR NAMES SEVERAL. Absent means the plain earth a rock
+// throws up, one of two at random, because a catapult fires every three seconds at
+// the same stretch of road and one image repeated is a stamp rather than an event.
+// A flask names its single spill. Fiery Shot names a PAIR — it wants the same
+// one-of-two treatment the rock gets, in its own colours — so the field takes a
+// list as readily as a name and this picks from whatever it is handed.
+//
+// A list rather than a second flag, because "which picture" already had exactly
+// one answer per ammunition and the only thing that changed is that an answer may
+// now be plural. See `impact` on the ammunition in data/towers.js.
 export function impact(state, x, y, img, life = IMPACT_LIFE) {
   state.impacts.push({
-    img: img || pick('impact_1', 'impact_2'),
+    img: pick(Array.isArray(img) ? img : img ? [img] : EARTH),
     x,
     y,
     life,

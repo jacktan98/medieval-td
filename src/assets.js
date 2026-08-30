@@ -12,8 +12,13 @@
 //
 // Everything that is not a building goes in the folder for what it IS, whichever
 // family it belongs to: every figure in assets/units, every death pose in
-// assets/dead, every projectile in assets/projectiles. So the catapult's crewman
+// assets/dead, every projectile in assets/projectiles, every ability button in
+// assets/abilities, every status mark in assets/status. So the catapult's crewman
 // stands with the archers and the spearmen, and its rock flies beside the arrow.
+//
+// assets/ui is what is left over once that rule has been applied, and it is the
+// right leftover: the HUD, the menu plates, the family glyphs, the two aura
+// badges — the furniture of the interface rather than anything in the world.
 //
 // EXPORTED so the tools can resolve a sprite key back to a file. tools/trim.mjs
 // needs it to check that every frame of an animated building fits inside the one
@@ -333,6 +338,15 @@ export const paths = {
   // event. See src/impacts.js.
   impact_1:        'assets/effects/Artillery_Impact_1.png',
   impact_2:        'assets/effects/Artillery_Impact_2.png',
+  // AND THE SAME TWO ON FIRE, which is what Fiery Shot throws up. Two again, and
+  // picked between at random for the same reason — a burning ball lands every 15
+  // seconds, so one picture repeated would be noticed sooner here than anywhere.
+  //
+  // The artist drew them OVER the plain ones: each trims to the same rect as its
+  // sibling, to the pixel, so the fiery pair needs no measurements of its own and
+  // src/impacts.js hands them the plain pair's. A recolour, not a redraw.
+  fiery_1:         'assets/effects/Artillery_Fiery_Impact_1.png',
+  fiery_2:         'assets/effects/Artillery_Fiery_Impact_2.png',
   // The dust a plot throws up when something is built, upgraded or sold. It sits
   // with the other effects because that is what it is — a picture that fades —
   // and on the 1024 canvas the BUILDINGS use rather than the 512 the rest of this
@@ -394,37 +408,70 @@ export const paths = {
   // does, and the button is now the thing that can change without the drawing
   // being redrawn. The menu act, the rate and the helper were renamed in step;
   // see src/menu.js.
-  // THE FOUR ABILITY BUTTONS, and they are not glyphs. Every other icon in this
-  // folder is a transparent mark drawn ON TOP of `btn_plate`; these four arrive as
-  // the whole button — the artist drew each one on a blue disc of exactly the
-  // plate's own size — so they are drawn INSTEAD of the plate rather than over it.
-  // See the `plate` entries in src/data/ui.js for what that costs at the corners.
-  ability_burst:   'assets/ui/Musketeer_Burst_Fire_Icon.png',
-  ability_deadeye: 'assets/ui/Musketeer_Deadeye_Icon.png',
-  ability_light:   'assets/ui/Paladin_Holy_Light_Icon.png',
-  ability_slash:   'assets/ui/Paladin_Holy_Slash_Icon.png',
+  // --- THE ABILITY BUTTONS, in assets/abilities ---------------------------------
+  //
+  // A FOLDER OF THEIR OWN, at the owner's ask, and it is the same rule the rest of
+  // this file already follows: a folder is what a thing IS. These are not glyphs
+  // and never were — every other icon in assets/ui is a transparent mark drawn ON
+  // TOP of `btn_plate`, while each of these arrives as the whole button, drawn by
+  // the artist on a disc of exactly the plate's own size, and is drawn INSTEAD of
+  // the plate. See the `plate` entries in src/data/ui.js for what that costs at
+  // the corners.
+  //
+  // They keep their data/ui.js entries and their `ability_` keys — only the
+  // FOLDER moved. tools/trim.mjs finds them by asking assets.js where each key's
+  // file actually is rather than by matching on a path prefix, which is what let
+  // fourteen files move without a single check going blind.
+  //
+  // The two Judgement Temple BADGES stay in assets/ui, which is a line drawn on
+  // purpose and not an oversight: they are not buttons and never appear in the
+  // encyclopedia — they are marks the renderer hangs over a tower on the board.
+  ability_burst:   'assets/abilities/Musketeer_Burst_Fire_Icon.png',
+  ability_deadeye: 'assets/abilities/Musketeer_Deadeye_Icon.png',
+  ability_light:   'assets/abilities/Paladin_Holy_Light_Icon.png',
+  ability_slash:   'assets/abilities/Paladin_Holy_Slash_Icon.png',
   // The Ballista Turret's two, on the same terms: the whole button, drawn on the
   // plate's own disc.
-  ability_ballista_tension: 'assets/ui/Ballista_Turret_Reinforced_Tension_Icon.png',
+  ability_ballista_tension: 'assets/abilities/Ballista_Turret_Reinforced_Tension_Icon.png',
   // The Crossbow Sentry's two. Its Reinforced Tension is a second entry rather
   // than a shared one because the icon is a picture of ITS weapon — see the note
   // on the ids in data/abilities.js.
-  ability_sentry_tension:  'assets/ui/Crossbow_Sentry_Reinforced_Tension_Icon.png',
-  ability_swift:           'assets/ui/Crossbow_Sentry_Swift_Reload_Icon.png',
-  ability_heavy:   'assets/ui/Ballista_Turret_Heavy_Bolt_Icon.png',
+  ability_sentry_tension:  'assets/abilities/Crossbow_Sentry_Reinforced_Tension_Icon.png',
+  ability_swift:           'assets/abilities/Crossbow_Sentry_Swift_Reload_Icon.png',
+  ability_heavy:   'assets/abilities/Ballista_Turret_Heavy_Bolt_Icon.png',
   // The Assassin Guild's two — the first abilities in the game that change what a
   // SOLDIER does rather than what a building does.
-  ability_knife: 'assets/ui/Assassin_Knife_Throw_Icon.png',
-  ability_sneak: 'assets/ui/Assassin_Sneak_Attack_Icon.png',
+  ability_knife: 'assets/abilities/Assassin_Knife_Throw_Icon.png',
+  ability_sneak: 'assets/abilities/Assassin_Sneak_Attack_Icon.png',
   // The Judgement Temple's two, and they come in PAIRS: a button face like every
   // other ability, and a badge drawn on the BOARD over each tower the aura is
   // working on. The badge is the only feedback an aura has — nothing about the
   // temple itself changes when one is bought — so it is as much a part of the
   // ability as the number is.
-  ability_wrath:     'assets/ui/Judgement_Temple_Holy_Wrath_Icon.png',
-  ability_fortitude: 'assets/ui/Judgement_Temple_Divine_Fortitude_Icon.png',
+  ability_wrath:     'assets/abilities/Judgement_Temple_Holy_Wrath_Icon.png',
+  ability_fortitude: 'assets/abilities/Judgement_Temple_Divine_Fortitude_Icon.png',
   badge_wrath:       'assets/ui/Judgement_Temple_Holy_Wrath.png',
   badge_fortitude:   'assets/ui/Judgement_Temple_Divine_Fortitude.png',
+  // The Cannon Outpost's two, and the first pair to arrive after the folder
+  // existed — so they were uploaded to assets/ui like every icon before them and
+  // moved here with the rest.
+  ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload_Icon.png',
+  ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot_Icon.png',
+
+  // --- THE STATUS MARKS, in assets/status ---------------------------------------
+  //
+  // What is happening TO a figure, drawn over its health bar. Burnt and Poisoned
+  // are the first two; the folder exists so stunned, slowed and whatever else
+  // follows have somewhere to land, which is what the owner asked for.
+  //
+  // Their own folder rather than assets/ui for the reason the abilities have one:
+  // a status mark is not part of the interface. It is a thing drawn on the BOARD,
+  // over a man, that moves when he moves — much nearer a health bar than a button.
+  //
+  // Keyed `status_` and read through STATUS in src/data/status.js, which is the
+  // one place a status's picture, its colour and its rules are written down.
+  status_burnt:    'assets/status/Burnt_Status.png',
+  status_poisoned: 'assets/status/Poisoned_Status.png',
   // THE MAXED BADGE, for the upgrade button of a tower that has none left. It
   // replaces the vector chevrons that stood in for `max` since the ring was
   // built — the last glyph in the menu that had never been drawn. Still dimmed
