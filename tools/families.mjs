@@ -33,6 +33,10 @@
 // claim of its own shape that nothing above can ask. It still takes no part in the
 // three-column table.
 import { archery, barracks, monastery, siege } from '../src/data/towers.js';
+// Every ability and every enemy fires something too, and the speed order below is
+// about all of them rather than about the three ladders this file grew up on.
+import { ABILITIES } from '../src/data/abilities.js';
+import { enemyTypes } from '../src/data/waves.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -97,6 +101,64 @@ console.log('\nProjectile speed — how fast the shot travels\n');
   const strict = [0, 1, 2].every(t =>
     siege[t].ammo.speed < monastery[t].ammo.speed && monastery[t].ammo.speed < archery[t].ammo.speed);
   ok(strict, 'and all three are genuinely apart, not tied');
+
+  // --- AND THE WHOLE ORDER, ACROSS EVERY WEAPON IN THE GAME --------------------
+  //
+  // The three rows above compare tiers 1 to 3 of three families. That was the
+  // whole of it while every projectile belonged to one of those ladders, and it
+  // stopped being enough some time ago: tier 4s, abilities and enemies all fire
+  // things of their own, and none of them appeared in any check anywhere.
+  //
+  // WHICH IS HOW THE MUSKET STOPPED BEING THE FASTEST WITHOUT ANYONE NOTICING.
+  // `bullet` in data/towers.js said "the fastest thing in the game at 520" and
+  // meant it when it was written; the ballista's bolt then arrived at 520 and
+  // Deadeye's ball at 520, and the sentence described a three-way tie for two
+  // whole towers. Nothing failed, because it was a claim in a comment.
+  //
+  // The owner's rule is that the Musketeer Post's ball is the fastest thing in
+  // the game. It is held here, over EVERY ammunition the game can fire — gathered
+  // the way the game reaches them rather than from a list kept in this file,
+  // because a list would need editing before it could see the next new weapon,
+  // which is the defect it is meant to catch.
+  const ammo = new Map();
+  const add = (a, from) => { if (a && a.kind && !ammo.has(a.kind)) ammo.set(a.kind, { a, from }); };
+  for (const d of [...archery, ...barracks, ...siege, ...monastery]) add(d.ammo, d.name);
+  for (const a of ABILITIES) add(a.ammo, a.id);
+  for (const [id, e] of Object.entries(enemyTypes)) add(e.ammo, id);
+
+  const all = [...ammo.values()].sort((x, y) => y.a.speed - x.a.speed);
+  console.log('  every shot in the game, fastest first:');
+  for (const { a, from } of all)
+    console.log(`    ${String(a.speed).padStart(4)}  ${a.kind.padEnd(11)} ${from}`);
+  console.log('');
+
+  // THE MUSKET'S OWN TWO BALLS ARE ALLOWED TO TIE EACH OTHER, and must: the
+  // ordinary shot and Deadeye's are the same musket firing, and a special that
+  // flew slower than the plain one would read as the ability being a downgrade.
+  // Everything else has to be strictly behind them.
+  const musket = archery.find(d => d.name === 'Musketeer Post').ammo.speed;
+  const own = new Set(['bullet', 'deadeye']);
+  const level = all.filter(({ a }) => a.speed >= musket && !own.has(a.kind));
+  ok(level.length === 0, 'nothing in the game is as fast as the musket ball',
+    level.map(({ a, from }) => `${from} ${a.speed}`).join(', ') || `${musket}, next is ${all.find(x => !own.has(x.a.kind)).a.speed}`);
+  ok(all.filter(({ a }) => own.has(a.kind)).every(({ a }) => a.speed === musket),
+    'and Deadeye is the same musket, at the same speed',
+    all.filter(({ a }) => own.has(a.kind)).map(({ a }) => `${a.kind} ${a.speed}`).join(', '));
+
+  // AND ARTILLERY'S OWN ORDER, which is where the fork shows up in this column:
+  // both fourth rungs out-run every rock, and they do it in the two different ways
+  // the fork is about. The bolt is aimed and flat at 520; the ball is still thrown
+  // at a patch of ground and still gets there at 480, because powder throws harder
+  // than a counterweight. The three machines below them lob at 300.
+  //
+  // Worth holding because it is the one place a retune could quietly undo the
+  // tier: a cannonball at rock speed would be a trebuchet that hits harder, which
+  // is not the tower.
+  const rocks = siege.filter(d => d.tier < 4).map(d => d.ammo.speed);
+  const tops = siege.filter(d => d.tier === 4);
+  ok(tops.every(d => d.ammo.speed > Math.max(...rocks)),
+    'and both artillery tier 4s out-run every rock',
+    `${tops.map(d => `${d.name} ${d.ammo.speed}`).join(', ')} against ${Math.max(...rocks)}`);
 }
 
 console.log('\nDamage — how hard one shot lands\n');

@@ -76,7 +76,13 @@ export const deadeyeBall = {
   trim: [246, 246, 48, 20],
   faces: -1,
   grip: 0.10,
-  speed: 520,
+  // The ordinary ball's speed, and it has to BE that number rather than happen to
+  // match it: this is the same musket firing. A special shot that flew slower than
+  // the plain one would read as the ability being a downgrade in the one way the
+  // player can actually see. It went 520 -> 560 with `bullet` — see the note there
+  // — and this is the shot that most needs it, since Deadeye ignores the ring and
+  // can be fired clear across the board.
+  speed: 560,
   fireSound: true,
   landSound: false
 };

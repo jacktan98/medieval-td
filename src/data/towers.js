@@ -393,13 +393,24 @@ export const arrow = {
 // arrival — and everything that differs is a consequence of the musket rather
 // than a choice.
 //
-// FAST, and it is the fastest thing in the game at 520 against an arrow's 360.
+// FAST, and it is the fastest thing in the game — 560 against an arrow's 360.
 // That is the whole character of the weapon: a bow arcs a shaft across the board
 // and you watch it go, a musket cracks and the thing is already there. It also
 // has to be, because this tower shoots across the whole map — at 360 a shot at
 // something 450px away would spend a second and a quarter in the air, which on a
 // 2.4s reload means the tower is holding a shot in flight half the time it is
 // working.
+//
+// IT WAS 520 AND THE SENTENCE ABOVE WAS NOT TRUE. The ballista's bolt and
+// Deadeye's ball both landed at 520 afterwards, so "the fastest thing in the
+// game" described a three-way tie for as long as anybody read it — and nothing
+// checked it, because it was a claim in a comment. The owner asked for the musket
+// to be fastest; it is, by 40, and tools/families.mjs holds the whole order now
+// so the next projectile to arrive cannot quietly tie it again.
+//
+// Speed is not a balance dial the way damage is. It changes how long a shot is in
+// the air, and for a steered shot how often the man it was aimed at dies before it
+// arrives — a shade better, on the one tower whose character it is.
 //
 // `grip` 0.12, a shade behind the arrow's 0.08: the ball is drawn with a rounded
 // nose on the left and a flat base on the right, so its point is not quite the
@@ -410,7 +421,7 @@ export const bullet = {
   trim: BULLET_TRIM,
   faces: -1,
   grip: 0.12,
-  speed: 520,
+  speed: 560,
   // Loud leaving the barrel and silent arriving, the same split as the arrow and
   // the arcane missile. A musket IS its report.
   fireSound: true,
@@ -586,9 +597,14 @@ export const rock = {
 // this tier has no dead zone: there is no minimum range on a thing that does not
 // have to be thrown up in the air to reach you.
 //
-// `speed` 520, level with the musket ball and the fastest thing in the game.
-// The reach is 260, so the longest flight is exactly half a second — well inside
-// the 0.9s its Fire pose holds for. See `beats` on the tier.
+// `speed` 520, a shade under the musket ball and the second fastest thing in the
+// game. The reach is 260, so the longest flight is exactly half a second — well
+// inside the 0.9s its Fire pose holds for. See `beats` on the tier.
+//
+// It was LEVEL with the ball and described as tied for fastest. The ball went to
+// 560 on the owner's ask and this stayed put, because 520 is the number that
+// half-second flight was derived from, and the Post — not this turret — is the
+// tower whose whole character is speed. See `bullet`.
 //
 // DRAWN DIAGONALLY, which no other projectile is, and it needs two fields
 // nothing else uses:
@@ -668,10 +684,19 @@ export const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
 // and slow, and the two arcs on screen at once is most of what says these are
 // different weapons before you read a single number.
 //
-// `speed` 420, between the rock's 300 and the musket ball's 520 and for the same
-// reason the arc is flatter. The longest flight is 360 / 420 = 0.86s against the
-// 1.5s the Fire pose holds — the smoke is still at the muzzle when the ball
-// lands, which is the constraint tools/siege.mjs measures for every tier.
+// `speed` 480, the third fastest thing in the game: behind the musket ball's 560
+// and the ballista bolt's 520, ahead of everything else including the crossbow's
+// 440. Powder throws hard, and this is the heaviest charge on the board.
+//
+// It shipped at 420 and the owner asked for it to arrive sooner. The longest
+// flight comes down from 0.86s to 360 / 480 = 0.75s against the 1.5s the Fire
+// pose holds — the smoke is still at the muzzle when the ball lands, which is the
+// constraint tools/siege.mjs measures for every tier, and the margin grew rather
+// than shrank.
+//
+// UNDER THE MUSKET'S, deliberately: the ball from the Post is the fastest thing in
+// the game and nothing may tie it. That is the owner's rule and tools/families.mjs
+// is where the whole order is held, rather than in this sentence.
 //
 // `faces` 0 and `grip` 0.5, both copied from the rock and both for the rock's
 // reason: a ball is a ball. There is no nose to put on the target and rotating a
@@ -682,7 +707,7 @@ export const cannonball = {
   trim: BALL_TRIM,
   faces: 0,
   grip: 0.5,
-  speed: 420,
+  speed: 480,
   // THROWN, and FLAT, and those turned out to be two different facts about a
   // shot rather than one.
   //

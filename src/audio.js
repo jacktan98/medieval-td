@@ -227,15 +227,11 @@ const paths = {
   // entirely. So the ball takes the bow's split — see `cannonball` in
   // data/towers.js — and this is the report, played on the release.
   //
-  // AND NO ENTRY IN GAIN, which is a decision rather than an omission. The
-  // leveller takes this file down 6.7dB on its own and lands it exactly where
-  // every other weapon report in the game sits, which is what "balanced with the
-  // other sounds" means here. The ballista's report is the one that departs from
-  // that, and it departs for a reason this tower does not have: it needs to be
-  // told apart from Heavy Bolt's, and it fires every 1.8s for the whole game
-  // where this fires every 3.0. So a Cannon Outpost is audibly louder than a
-  // Ballista Turret beside it — which is a cannon being a cannon, at two thirds
-  // the rate.
+  // IT SHIPPED AT THE COMMON LEVEL AND THE OWNER ASKED FOR MORE, so it carries a
+  // GAIN entry of its own now — see `cannon_shot` down there for the arithmetic
+  // and for why this is the one report in the game that can afford it. Between the
+  // leveller's -6.7dB and that +3, it lands about 3dB over every other weapon and
+  // still under the rock's landing.
   cannon_shot:      'assets/audio/sfx/Cannon_shot.mp3',
   cannon_kill_enemy: 'assets/audio/sfx/Cannon_kill_enemy.mp3',
   // The pope. HALF a pair, and the missing half is the point: he fires the
@@ -464,7 +460,28 @@ export const GAIN = {
   // audible difference a tier 4 squad buys.
   attack_1: 0.5,
   attack_2: 0.5,
-  attack_3: 0.5
+  attack_3: 0.5,
+  // THE CANNON'S REPORT, UP 3dB, and it is the first entry here that raises
+  // something rather than trimming it.
+  //
+  // It shipped at the common level — the leveller takes the file down 6.7dB on
+  // its own and lands it exactly where every other weapon report sits — and that
+  // was the defensible choice: "balanced with the other sounds" is what the
+  // leveller is FOR. The owner played it and asked for more, which is the right
+  // way round for this dial; a report that measures the same as a bowshot is not
+  // the same event as a bowshot.
+  //
+  // 1.4 is about +3dB, which is the smallest step an ear reliably reads as
+  // "louder" rather than as "different" — a bit louder, which is what was asked
+  // for, rather than a new loudest thing in the game.
+  //
+  // AND IT CAN AFFORD IT, on both of the grounds the other entries here are argued
+  // from. FREQUENCY: this fires every 3.0s, the slowest cadence of any weapon in
+  // the game — against the ballista's 1.8s, which is trimmed 4.4dB down for that
+  // very reason, and the generic swings' dozen a second. SIZE: it still sits under
+  // `rock_hit_ground` at 1.6, so the loudest thing in the battle is still artillery
+  // ARRIVING, which is where the damage and the player's eye both are.
+  cannon_shot: 1.4
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
