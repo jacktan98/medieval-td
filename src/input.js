@@ -350,18 +350,17 @@ function toggleSpeed(state) {
 // stored point is always one the barracks could actually use — otherwise dragging
 // far away and then upgrading would silently teleport the squad.
 //
-// THROUGH rallyPoint RATHER THAN clampToRange, and that one word is a bug the
-// owner reported: "my assassins cannot rally to my selected rally point... they
-// seem to be stuck". They were not stuck. The clamp pulls a drag onto the ring
-// and stops there — and the ring is not the road, so on a stretch running away
-// from the tower the stored point could be up to 288px from anywhere the squad
-// was ever going to stand. The flag was drawn at the stored point, the men obeyed
-// stations(), and the two disagreed by half a screen.
+// THROUGH rallyPoint RATHER THAN clampToRange, which is the ORDER being stored
+// rather than the gesture that gave it. The clamp pulls a drag onto the ring and
+// stops there, and the ring is not the road — so a raw clamp could sit up to
+// 288px from anywhere the squad was ever going to stand, and an upgrade that
+// widened the ring would re-derive the posting from a point that never meant
+// anything.
 //
-// rallyPoint answers the question the flag is actually asking: where will these
-// men end up. It is the road point stations() will choose, so the flag now marks
-// the posting rather than the drag, and a player who drags past the leash sees
-// the flag stop on the road instead of sliding onto the ring and lying about it.
+// It does NOT decide what the player SEES. The bright flag under the pointer is
+// drawn from the pointer, held inside the ring and not snapped anywhere — see
+// drawRally in render.js, and the note there about why the two flags answer two
+// different questions. This is where the men are told to go.
 //
 // moveUnits, not makeUnits: the squad walks to the new flag. Rebuilding it here
 // is what used to make a rally change replace three wounded men with three fresh

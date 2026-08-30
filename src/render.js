@@ -8,7 +8,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
-import { hidden, rallyPoint } from './units.js';
+import { hidden } from './units.js';
 import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -1675,17 +1675,20 @@ function drawRally(ctx, state) {
   // a thumb has no position until it touches — so the flag above is what makes
   // the feature usable there: tap, look, tap again to correct.
   if (placing && state.ghost) {
-    // WHERE THEY WOULD GO, which is not where the pointer is and is not the ring
-    // either. It used to be clampToRange — the drag pulled onto the ellipse — and
-    // that is a promise the squad cannot keep: the ring is not the road, so on a
-    // stretch running away from the tower the bright flag sat up to 288px from
-    // the furthest spot the men could actually reach. The player plants it, the
-    // squad walks somewhere else, and the dim flag below lands in a third place.
+    // THE POINTER, held inside the ring and nowhere else. Two flags are drawn
+    // while placing and they answer two different questions, which is the whole
+    // reason there are two: this bright one is WHERE YOU ARE POINTING, and the
+    // dim one above is WHERE THE MEN ARE. Neither is a lie and neither can stand
+    // in for the other.
     //
-    // rallyPoint is the same answer stations() gives the men, so dragging past
-    // the leash now shows the flag STOP on the road — which is the honest picture
-    // of a limit, and the thing that was missing.
-    const at = rallyPoint(t, state.ghost.x, state.ghost.y);
+    // IT WAS SNAPPED TO THE ROAD FOR A BUILD and the owner had it taken back out.
+    // The reasoning for snapping was that a flag the squad cannot reach is a
+    // promise it cannot keep — but the cure was worse: it pinned the flag to the
+    // centreline, so the one control the player has for aiming a squad could only
+    // ever be pointed at the middle of the tarmac. Being able to point anywhere
+    // inside the ring is the feature; that the men then go to the nearest road is
+    // a fact about the men, and the dim flag is where it is said.
+    const at = clampToRange(t.x, t.y, state.ghost.x, state.ghost.y, t.def.range);
     flag(ctx, at.x, at.y, 1);
   }
 }

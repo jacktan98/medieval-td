@@ -763,41 +763,34 @@ export function updateUnits(state, dt) {
     // needs the BOARD and not just the man: whether anything is standing close
     // enough for him to hurt.
     //
-    // TWO WAYS TO BE SEEN, and between them they are every way he can be busy
-    // with somebody:
+    // TWO WAYS TO BE SEEN, and they are the two ways he attacks:
     //
-    //   `foe`    he has picked a man to fight. That is a commitment, not a
-    //            distance — it is made at ENGAGE or at ASSIST and it lasts until
-    //            the man is dead — so it covers the approach AND the fight with
-    //            one field and no arithmetic.
-    //   `mark`   he is throwing at somebody inside the knife's reach.
+    //   a foe inside REACH   he is swinging, and stays visible for the whole
+    //                        fight rather than flashing once a blow
+    //   a mark in reach      he is throwing, and stays visible for the whole
+    //                        volley rather than once a knife
     //
-    // IT WAS TWO DISTANCES AND THAT LEFT A FLASH. The test used to be a foe inside
-    // REACH, or a mark in throwing range, and those two do not meet: at ENGAGE's
-    // 30 he takes an enemy as his foe, which is what stops him throwing, and REACH
-    // is 20 — so for the eighth of a second it took to close the last ten pixels
-    // he was attacking nothing by either test and blinked out with a thug in his
-    // face. The owner saw it as the old per-knife flash coming back; it was a
-    // second one, in the seam between the two ways of asking.
+    // AND THE GAP BETWEEN THEM IS DELIBERATE. REACH is 20 and a soldier takes his
+    // foe at ENGAGE's 30, so for the eighth of a second it takes him to close that
+    // last ten pixels he is attacking nothing by either test and DROPS OUT OF
+    // SIGHT. It was reported as a bug and it is not one: it is the stalk. He fades
+    // as he steps in, re-arms while he is gone — see the arming line below — and
+    // the blow he arrives with is a Sneak Attack. Taking it out cost him his
+    // opening strike on anything that walked into knife range first, which is why
+    // it is back.
     //
-    // ASKING ABOUT THE COMMITMENT RATHER THAN THE GAP is what closes it for good.
-    // There is no distance left to disagree about, and no second scan of the
-    // board: `foe` is already on the man and `mark` was already worked out above.
-    //
-    // WALKING NEEDS NO CLAUSE OF ITS OWN, and it never did. A man sent across the
-    // map has no foe and nothing in reach for most of the walk, so he fades,
-    // re-arms, and arrives with a Sneak Attack ready — the behaviour that was
-    // asked for, arrived at by not asking about walking at all. He no longer
-    // vanishes while closing the last few pixels on a man who is plainly looking
-    // at him, and a squad that has taken a foe 70px off under ASSIST stays out in
-    // the open all the way in, which is right: he chose that fight.
+    // WALKING NEEDS NO CLAUSE OF ITS OWN. A man closing on a foe is further off
+    // than REACH by definition, and `mark` is only looked for once he has settled
+    // — so marching to a rally point and stalking toward an enemy both fall out of
+    // this as invisible, which is what was asked for.
     //
     // AND IT IS WHY SNEAK ATTACK IS NOT ABSURD. It re-arms only while hidden, so
     // this decides how often: it used to flash off between knives — a quarter
     // second of reveal against eight tenths of reload — which made EVERY knife a
-    // sneak and the pair worth 150 damage a second. Now an engagement gets exactly
-    // one, thrown or struck, and he re-arms when the road in front of him is clear.
-    u.exposed = !!(u.foe || mark);
+    // sneak and the pair worth 150 damage a second. Now a volley opens with one
+    // and the rest are ordinary, and he re-arms when the road in front of him is
+    // clear — or for the moment he spends stepping in from ENGAGE to REACH.
+    u.exposed = !!((u.foe && d <= REACH) || mark);
 
     if (d > SETTLE && u.hold <= 0) {
       const step = Math.min(u.def.speed * dt, d);
