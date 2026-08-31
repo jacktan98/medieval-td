@@ -680,7 +680,8 @@ function stepCrew(state, t, dt, target) {
     const special = specialFor(t, t.shots);
     shoot(state, t, target, special);
 
-    // AND A HEAVY SHOT COSTS THE CREW A SECOND, which is `after` on the ability.
+    // AND A HEAVY SHOT COSTS THE CREW HALF A RELOAD, which is `afterTimes` on the
+    // ability: the cycle that follows the special runs that many times as long.
     //
     // The owner's ask, and it is what turns both artillery specials from free into
     // a trade: Heavy Bolt was 2x damage on one bolt in four with nothing given up,
@@ -688,8 +689,18 @@ function stepCrew(state, t, dt, target) {
     // bigger shot that also slows the machine is a decision; one that does not is
     // simply a larger number.
     //
+    // A MULTIPLE RATHER THAN A NUMBER OF SECONDS, at the owner's ask and rightly.
+    // A flat second was the same second on a 1.8s turret and a 3.0s cannon, which
+    // made it a heavy tax on the fast machine and a light one on the slow — the
+    // ballista gave up 55% of a reload and the cannon 33%. x1.5 costs each of them
+    // the same SHARE of what it was already doing: 0.9s on the turret, 1.5s on the
+    // outpost. It also follows the tower rather than sitting beside it, so a
+    // cannon that has bought Swift Reload pays 1.0s against its own faster 2.0s
+    // cycle instead of the 1.5s its untaught cooldown would have said. cooldownOf
+    // is the tower's real reload, abilities and all.
+    //
     // ON THE FIRE BEAT rather than as a cooldown, because on this family the
-    // animation IS the clock — see beatsOf. Adding the second here holds the pose
+    // animation IS the clock — see beatsOf. Adding the time here holds the pose
     // the machine is already in: the arm stays over, the smoke stays at the
     // muzzle, and the crew visibly take longer to get back to work. A pause
     // inserted anywhere else would be a machine standing still in its resting
@@ -698,7 +709,9 @@ function stepCrew(state, t, dt, target) {
     // This is the note that stood here saying a turret needs no held pose because
     // "its next shot comes on the next cycle regardless". That is no longer true,
     // and this is where it went.
-    if (special && special.after) t.beatT += special.after;
+    if (special && special.afterTimes) {
+      t.beatT += (special.afterTimes - 1) * cooldownOf(t);
+    }
   }
 }
 

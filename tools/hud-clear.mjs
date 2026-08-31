@@ -94,12 +94,43 @@ const RUNS = [
 ];
 
 // The three HUD BUTTONS are a different problem from the text, and they sit on
-// the right where the text runs do not. Their panels are translucent, so a
-// building behind one is dimmed rather than erased — but it is still a building
-// standing inside a control the player taps, with the button's border drawn
-// across it, and there is no reading of that which looks intended. Taken from
-// render.js rather than copied, because a button that moves must move here too.
-const CONTROLS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
+// the right where the text runs do not. Taken from render.js rather than copied,
+// because a button that moves must move here too.
+//
+// WHAT IS ACTUALLY WRONG IS A BUILDING STANDING OUT OF A CONTROL, not a building
+// behind one, and that correction is the whole of this rule's second draft.
+//
+// It used to read "their panels are translucent, so a building behind one is
+// dimmed rather than erased — but it is still a building standing inside a
+// control the player taps, with the button's border drawn across it". The plates
+// are not translucent. `plate_speed` and `plate_wave` are opaque artwork drawn
+// after every tower, so a roof behind one is not dimmed, it is GONE, and no
+// border is drawn across anything a player can see.
+//
+// The premise was checked rather than argued: a Judgement Temple — the tallest
+// building in the game — was built on map 1's plot 6 and map 2's plot 4, the two
+// this rule was failing, and the button band was photographed at 10x. What is
+// there is the temple's spire pole coming out from UNDER the Next wave plate and
+// running down the board, which reads exactly like a pole behind a sign. Above
+// the plate there is nothing at all.
+//
+// So the line is the plate's TOP edge, not its bottom:
+//
+//   ink above the plate's top   -> a failure, the building is out of the control
+//   ink below it, box behind it -> reported, the opaque plate covers it
+//
+// That still catches the case this rule was written for. Map 1's last plot was
+// moved off (721, 128) because a TIER 2 tower there "was cut off by the top of
+// the board and stood inside the speed button" — a box top of 8.7 against the
+// plate's 9, which fails the new line as it failed the old one.
+//
+// AND THE TAP AREA IS NOT THE PLATE, which is the one thing the old note had
+// right for a reason it did not give. hitHudButton takes anything above y=63 and
+// HUD_PAD to either side, so the taps a plate swallows reach well below the
+// picture of it. It is not what this rule measures, because it is not something a
+// player can see and because the body of any building tall enough to reach up
+// there runs hundreds of px below y=63 — there is always somewhere to tap it.
+const CONTROLS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, id, b.y]);
 
 // THE INFO PANEL IS NOT A CONTROL, and that distinction is the whole reason it
 // sits in its own list. Nothing is tapped on it; it is 197px of opaque plate in
@@ -174,7 +205,10 @@ for (let i = 0; i < lv.plots.length; i++) {
     right > bx && left < bx + bw && worst.box < bBottom);
 
   const hits = RUNS.filter(([rx, rw]) => right > rx && left < rx + rw).map(r => r[2]);
+  // Behind a plate at all, and out of the top of one. The first is reported, the
+  // second fails — see the note on CONTROLS.
   const under = overlaps(CONTROLS);
+  const outOf = under.filter(([, , , , bTop]) => worst.top < bTop);
   const behindPanel = overlaps(PANELS);
 
   // Two ways a high plot goes wrong that the text rule below does not see.
@@ -197,21 +231,22 @@ for (let i = 0; i < lv.plots.length; i++) {
     faults.push([p.y - worst.top,
       'CUT OFF by the top of the board']);
   }
-  if (under.length) {
-    faults.push([p.y + under[0][2] - worst.box,
-      `UNDER the ${under.map(u => u[3]).join('/')} button`]);
+  if (outOf.length) {
+    faults.push([p.y + outOf[0][4] - worst.top,
+      `OUT OF THE TOP of the ${outOf.map(u => u[3]).join('/')} button`]);
   }
   if (hits.length && worst.box < TEXT_TOP) {
     faults.push([p.y + TEXT_TOP - worst.box, `BURIES ${hits.join('/')}`]);
   }
   faults.sort((a, b) => b[0] - a[0]);
 
-  // How deep the panel sits over the roof, in px, so "reported rather than
-  // failed" still comes with the number to argue about.
+  // How deep the panel — or a button plate — sits over the roof, in px, so
+  // "reported rather than failed" still comes with the number to argue about.
   const buried = behindPanel.length ? Math.round(behindPanel[0][2] - worst.box) : 0;
+  const plated = under.length ? Math.round(under[0][2] - worst.box) : 0;
 
   const behind = !faults.length && hits.length && worst.top < TEXT_BOTTOM;
-  if (faults.length) bad++; else if (behind || buried) noted++;
+  if (faults.length) bad++; else if (behind || buried || plated) noted++;
 
   console.log(
     `${i} (${String(p.x).padStart(3)}, ${String(p.y).padStart(3)})  ` +
@@ -220,6 +255,8 @@ for (let i = 0; i < lv.plots.length; i++) {
     `${String(Math.round(worst.box)).padStart(6)}  ` +
     (faults.length
       ? `${faults.map(f => f[1]).join('; ')} — needs y >= ${Math.ceil(faults[0][0])}`
+      : plated
+        ? `${plated}px of roof behind the ${under.map(u => u[3]).join('/')} plate, which covers it`
       : buried
         ? `${buried}px of roof behind the ${behindPanel.map(u => u[3]).join('/')} panel while it is up`
       : behind ? `behind ${hits.join('/')} — the text is drawn over it, ok`
@@ -237,6 +274,37 @@ for (let i = 0; i < lv.plots.length; i++) {
 // roof or drawn into the artwork. This prints the difference per tier so that a
 // re-export which moves a machine or a man shows up as a number here, and it
 // fails if the two tier 4s that visibly carry someone stop clearing their stone.
+
+// --- AND NO BADGE MAY BE DRAWN INSIDE THE BUTTON ROW ----------------------
+//
+// The plot table above would catch this as a fault, but only on a plot high
+// enough to reach the plates AND under one — and the whole reason this failed for
+// a release is that it takes a Judgement Temple, a SECOND temple to buy the aura,
+// and one of two plots in the game to see it. So the floor is checked directly,
+// on every plot, against the row it is meant to clear.
+{
+  const row = Math.max(...Object.values(HUD_BTN).map(b => b.y + b.h));
+  let low = Infinity, where = '';
+  for (const [li, lv] of levels.entries()) {
+    useLevel(li);
+    for (const [pi, p] of lv.plots.entries()) {
+      for (const f of families) {
+        for (const def of f.tiers || []) {
+          const top = badgeTop(crownTop({ plot: p, fam: f, def, x: p.x, y: p.y }));
+          if (top < low) { low = top; where = `${lv.id} plot ${pi}, ${f.name} T${def.tier}`; }
+        }
+      }
+    }
+  }
+  if (low < row) {
+    console.log(`\n  A badge is drawn at y=${low.toFixed(0)}, inside the button row ` +
+                `(which ends at ${row}) — ${where}`);
+    bad++;
+  } else {
+    console.log(`\n  The lowest a badge is ever hung is y=${low.toFixed(0)}, clear of the ` +
+                `button row's ${row} — ${where}`);
+  }
+}
 
 console.log('\nWhat stands above the stone\n');
 {

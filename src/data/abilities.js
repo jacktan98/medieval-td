@@ -797,21 +797,28 @@ export const ABILITIES = [
     // the family that already hits groups.
     every: 4,
     shots: 1,
-    // AND IT COSTS THE CREW A SECOND, at the owner's ask. `after` is seconds added
-    // to the machine's cycle once the special has left — see stepCrew in
-    // src/towers.js, which hangs it on the Fire beat so the arm stays over and the
-    // pause is something the player can watch rather than a gap in the rhythm.
+    // AND IT COSTS THE CREW HALF A RELOAD, at the owner's ask. `afterTimes` is the
+    // multiple the machine's cycle runs at once the special has left — see
+    // stepCrew in src/towers.js, which hangs the extra on the Fire beat so the arm
+    // stays over and the pause is something the player can watch rather than a gap
+    // in the rhythm. x1.5 on this turret's 1.8s reload is 0.9s.
+    //
+    // A MULTIPLE RATHER THAN A NUMBER OF SECONDS. It was a flat 1s, which cost
+    // this 1.8s turret 55% of a reload and the 3.0s cannon 33% — the same word for
+    // two different prices, decided by nothing but which machine happened to be
+    // faster. A multiple costs both of them the same share of what they were
+    // already doing, and it goes on surviving every retune of either cooldown.
     //
     // WHAT IT TURNS THIS FROM AND INTO. It was 2x damage on 1 bolt in 4 with
     // nothing given up: 275 over 4 shots in 7.2s, 38.2 a second against a plain
-    // turret's 30.6, and no reason on earth not to buy it. With the second it is
-    // 275 in 8.2s — 33.5 a second, +10% rather than +25%.
+    // turret's 30.6, and no reason on earth not to buy it. With the pause it is
+    // 275 in 8.1s — 34.0 a second, +11% rather than +25%.
     //
     // That is the ability becoming a decision. What it buys is the SHAPE of the
     // output rather than more of it: the same damage arriving in fewer, harder
     // blows, which is worth having against armour and worth much less against a
     // stream of militia.
-    after: 1,
+    afterTimes: 1.5,
     // DOUBLE, AS A MULTIPLIER RATHER THAN A NUMBER, and that is the point of the
     // field. "Twice as hard" is what was asked for, so twice is what is written
     // down; a 120 typed here would have been correct on the day and quietly wrong
@@ -827,9 +834,9 @@ export const ABILITIES = [
     detail: 'Every 4th bolt comes off the rack burning and hits for 2x the ' +
             'damage — 110 instead of 55. There is no wind-up: the machine works ' +
             'at its ordinary rhythm right up to the shot.\n\n' +
-            'It takes the crew 1 extra second to reload afterwards, so the cycle ' +
-            'runs 1.8 / 1.8 / 1.8 / 2.8 seconds. That works out at 33.5 damage a ' +
-            'second against a plain turret\'s 30.6.\n\n' +
+            'The reload afterwards takes 50% longer — 2.7 seconds instead of ' +
+            '1.8 — so the cycle runs 1.8 / 1.8 / 1.8 / 2.7. That works out at ' +
+            '34.0 damage a second against a plain turret\'s 30.6.\n\n' +
             'What it buys is the shape rather than the size: the same output in ' +
             'fewer, harder blows, on a machine whose every shot already bursts. ' +
             'You can hear which one it is — the heavy bolt leaves louder than the ' +
@@ -885,8 +892,8 @@ export const ABILITIES = [
     // rare enough to be an event. The owner asked for five.
     //
     // WHAT IT IS WORTH, and it is worth more than the arithmetic looks. 350 from
-    // 5 balls plus 50 of burn, over the 16s the cycle now takes, is 25.0 a second
-    // against the plain outpost's 23.3 — and that is the ONE-target reading. The
+    // 5 balls plus 50 of burn, over the 16.5s the cycle now takes, is 24.2 a
+    // second against the plain outpost's 23.3 — the ONE-target reading. The
     // burn lands on everything the fire ring caught, so against a packed rank it
     // is 50 a man, laid on while the machine is reloading. That is the biggest
     // single thing this tower does.
@@ -915,16 +922,19 @@ export const ABILITIES = [
     cost: ABILITY_COST,
     every: 5,
     shots: 1,
-    // AND IT COSTS THE CREW A SECOND, at the owner's ask. `after` is seconds added
-    // to the machine's cycle once the special has left — see stepCrew in
-    // src/towers.js, which hangs it on the Fire beat so the arm stays over and the
-    // pause is something the player can watch rather than a gap in the rhythm.
+    // AND IT COSTS THE CREW HALF A RELOAD, at the owner's ask. `afterTimes` is the
+    // multiple the machine's cycle runs at once the special has left — see
+    // stepCrew in src/towers.js. x1.5 on this cannon's 3.0s reload is 1.5s, the
+    // same SHARE of a reload the ballista gives up for a heavy bolt even though
+    // the ballista's is 0.9s. That is the whole point of writing it as a multiple:
+    // a flat second was a different price on every machine it touched.
     //
-    // It costs this tower proportionally less than it costs the ballista, and
-    // that is right: a second on a 3.0s cycle every 5th shot is 1s in 16 where the
-    // turret pays 1s in 8.2. The cannon is the slower machine and the rarer
-    // special, so the same second is the smaller share of it.
-    after: 1,
+    // AND IT FOLLOWS SWIFT RELOAD. The pause is taken off cooldownOf, which is the
+    // tower's REAL reload rather than its tier's — so a cannon that has bought
+    // both pays 1.0s against its own faster 2.0s cycle. A crew drilled to load in
+    // two seconds recover from a fiery ball faster too, which is the reading a
+    // player would expect and the one a flat number could not give.
+    afterTimes: 1.5,
     ammo: fieryBall,
 
     detail: 'Every 5th ball leaves the barrel alight. It hits for the ordinary ' +
@@ -934,10 +944,11 @@ export const ABILITIES = [
             'around an 85px blast — so men standing just clear of the crater ' +
             'burn anyway. They carry the flame over their health bar until it ' +
             'goes out, and you can hear which shot it was.\n\n' +
-            'The crew need 1 second longer to reload after it, making the cycle ' +
-            '3 / 3 / 3 / 3 / 4 seconds. Against 1 straggler that is 25.0 damage ' +
-            'a second where the outpost alone does 23.3, and against a rank it ' +
-            'is 50 extra on each of them.'
+            'The reload after it takes 50% longer — 4.5 seconds instead of 3 — ' +
+            'so the cycle runs 3 / 3 / 3 / 3 / 4.5. Against 1 straggler that is ' +
+            '24.2 damage a second where the outpost alone does 23.3, and ' +
+            'against a rank it is 50 extra on each of them. Swift Reload ' +
+            'shortens the pause with everything else, to 1 second.'
   },
   {
     id: 'wrath',

@@ -445,12 +445,29 @@ function statusMarks(ctx, v, x, barTop) {
 // tower it is over, not to a line across the board.
 const BADGE_GAP = 10;
 
-// AND IT NEVER LEAVES THE BOARD. A Judgement Temple is the tallest building in
-// the game, and on the highest plots of all three maps its roof is within 30px of
-// the top edge — badge, gap and all would be off the canvas, which draws a badge
-// sliced in half or not at all. On those plots the badge stops here and rests on
-// the roof instead, because a badge touching a roof is a badge you can read.
-const BADGE_TOP_MIN = 2;
+// AND IT NEVER LEAVES THE BOARD, OR GOES UNDER THE HUD. A Judgement Temple is the
+// tallest building in the game, and on the highest plots of all three maps its
+// roof is within 30px of the top edge — badge, gap and all would be off the
+// canvas, which draws a badge sliced in half or not at all. On those plots the
+// badge stops here and rests on the roof instead, because a badge touching a roof
+// is a badge you can read.
+//
+// THE FLOOR IS THE BUTTON ROW, not the canvas edge, and it was the canvas edge
+// for one release too long. It stopped a badge falling off the top and did
+// nothing about the thing directly under it: the speed and Next wave plates are
+// opaque and are drawn after every tower, so a badge clamped to y=2 over map 1's
+// plot 6 came out as a sword with its hilt cut off by a button. That is worse
+// than a badge off the board, because it looks deliberate.
+//
+// Taken from HUD_BTN so a plate that moves or is redrawn taller takes the badges
+// with it. It is a function rather than a constant only because HUD_BTN is
+// declared further down this file.
+//
+// It costs nothing anywhere else. Every plot whose tower is not within about 30px
+// of the top has a badge far below this line already, and the handful that are
+// hold their badge 31px lower — still on the roof, still clear of the gold and
+// wave readouts, which the old floor sat squarely inside.
+const badgeFloor = () => HUD_BTN.pause.y + HUD_BTN.pause.h;
 
 // Hangs the badge above the point given rather than centring it on it.
 const ABOVE = [0.5, 1];
@@ -484,7 +501,7 @@ const MULT_EDGE = '#241E17';
 // up under one.
 export function badgeTop(crown) {
   const h = Math.max(uiSize('badge_wrath').h, uiSize('badge_fortitude').h);
-  return Math.max(crown - BADGE_GAP - h, BADGE_TOP_MIN);
+  return Math.max(crown - BADGE_GAP - h, badgeFloor());
 }
 
 function drawBadges(ctx, state) {
@@ -530,7 +547,7 @@ function drawBadges(ctx, state) {
     // tallest of them is what the floor is measured against, so a row of two
     // different heights still sits on the board whichever is taller.
     const tall = Math.max(...parts.map(p => p.h));
-    const y = Math.max(crownTop(t) - BADGE_GAP, BADGE_TOP_MIN + tall);
+    const y = Math.max(crownTop(t) - BADGE_GAP, badgeFloor() + tall);
 
     let x = t.x - total / 2;
     for (const p of parts) {

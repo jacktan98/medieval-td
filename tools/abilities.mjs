@@ -633,7 +633,8 @@ console.log('\nHeavy Bolt\n');
   // once the heavy bolt has left, so a cycle is 4 ordinary reloads PLUS it — 8.2s
   // rather than 7.2s. Reading the cycle as cooldown * every alone is what this
   // file did before the pause existed, and it counted 11 bolts where it wanted 12.
-  const cycle = siege[3].cooldown * heavy.every + (heavy.after || 0);
+  const pause = d => siege[3].cooldown * ((d.afterTimes || 1) - 1);
+  const cycle = siege[3].cooldown * heavy.every + pause(heavy);
 
   // Three whole cycles, less a hair, for the same reason Burst Fire's window is a
   // cycle less a hair: the next shot lands on the boundary.
@@ -645,8 +646,8 @@ console.log('\nHeavy Bolt\n');
   // over the cycle. The gap before bolt 5 has to be a second longer than the gap
   // before bolt 2, or the crew are paying for something the player cannot see.
   const gap = i => shots[i].t - shots[i - 1].t;
-  ok(Math.abs(gap(n) - gap(1) - heavy.after) < 2 * DT,
-    `and the crew lose ${heavy.after}s right after the heavy one`,
+  ok(Math.abs(gap(n) - gap(1) - pause(heavy)) < 2 * DT,
+    `and the crew lose ${pause(heavy).toFixed(1)}s right after the heavy one`,
     `${gap(1).toFixed(2)}s ordinary, ${gap(n).toFixed(2)}s after it`);
 
   const heavies = shots.filter(s => s.damage > siege[3].damage);
@@ -710,7 +711,8 @@ console.log('\nBoth of them, on one turret\n');
   // divided by the time it actually took.
   const span = n => n - 0.1;
   const bare = siege[3].cooldown * heavy.every * 3;
-  const armedSpan = (siege[3].cooldown * heavy.every + (heavy.after || 0)) * 3;
+  const armedSpan = (siege[3].cooldown * heavy.every +
+                     siege[3].cooldown * ((heavy.afterTimes || 1) - 1)) * 3;
   const plain = fire(turret([]), span(bare));
   const armed = fire(turret(['heavybolt']), span(armedSpan));
   const sum = list => list.reduce((s, x) => s + x.damage, 0);
@@ -1374,13 +1376,28 @@ function outpost(ids) {
     `${gun.damage} + ${fiery.ammo.burn.dps}/s for ${fiery.ammo.burn.seconds}s`);
 
   // AND THE CREW PAY FOR IT, exactly as the ballista's crew pay for a heavy bolt.
-  // The gap before the ball AFTER the burning one is a second longer than an
+  // The gap before the ball AFTER the burning one is half a reload longer than an
   // ordinary gap — hung on the Fire beat, so the machine holds its firing pose
   // rather than opening a hole in the rhythm. See stepCrew in src/towers.js.
   const gapAfter = i => balls[i].t - balls[i - 1].t;
-  ok(Math.abs(gapAfter(fiery.every) - gapAfter(1) - fiery.after) < 2 * DT,
-    `and the crew lose ${fiery.after}s right after the burning one`,
+  const pause = gun.cooldown * ((fiery.afterTimes || 1) - 1);
+  ok(Math.abs(gapAfter(fiery.every) - gapAfter(1) - pause) < 2 * DT,
+    `and the crew lose ${pause.toFixed(1)}s right after the burning one`,
     `${gapAfter(1).toFixed(2)}s ordinary, ${gapAfter(fiery.every).toFixed(2)}s after it`);
+
+  // AND THE PAUSE FOLLOWS SWIFT RELOAD, which is the whole reason it is written as
+  // a multiple rather than as a number of seconds. A crew drilled to load in 2.0s
+  // recover from a fiery ball in 1.0s, not in the 1.5s their untaught cooldown
+  // would have said. It is taken off cooldownOf — the tower's real reload — so a
+  // machine that reloads faster pays less, in the same proportion.
+  {
+    const both = fire(outpost(['cannon_swift', 'fiery']), 40);
+    const gapB = i => both[i].t - both[i - 1].t;
+    const quickPause = cooldownOf(outpost(['cannon_swift'])) * (fiery.afterTimes - 1);
+    ok(Math.abs(gapB(fiery.every) - gapB(1) - quickPause) < 2 * DT,
+      `and a crew that has bought Swift Reload lose only ${quickPause.toFixed(1)}s`,
+      `${gapB(1).toFixed(2)}s ordinary, ${gapB(fiery.every).toFixed(2)}s after it`);
+  }
 
   // AND THE FIRE IS WIDER THAN THE BLAST, without the blast moving. The burning
   // pass is a second, larger sweep in land(); `splash` is the number the info box
@@ -1397,11 +1414,13 @@ function outpost(ids) {
   // against one man, WITH the pause in the cycle; against a rank it is the burn
   // again for every man the fire caught.
   const dps = d => d.damage / d.cooldown;
-  const cycle = gun.cooldown * fiery.every + (fiery.after || 0);
   const perCycle = gun.damage * fiery.every + fiery.ammo.burn.dps * fiery.ammo.burn.seconds;
+  const rate = reload => perCycle / (reload * fiery.every + reload * (fiery.afterTimes - 1));
+  const drilled = gun.cooldown / swift.reloadTimes;
   console.log(`      into one man: ${dps(gun).toFixed(1)}/s plain, ` +
-    `${(perCycle / cycle).toFixed(1)}/s with Fiery Shot over its ${cycle}s cycle, ` +
-    `${(gun.damage / (gun.cooldown / swift.reloadTimes)).toFixed(1)}/s with Swift Reload`);
+    `${rate(gun.cooldown).toFixed(1)}/s with Fiery Shot, ` +
+    `${(gun.damage / drilled).toFixed(1)}/s with Swift Reload, ` +
+    `${rate(drilled).toFixed(1)}/s with both`);
 }
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);
