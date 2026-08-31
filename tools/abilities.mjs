@@ -629,13 +629,25 @@ console.log('\nHeavy Bolt\n');
 {
   const t = turret(['heavybolt']);
   const heavy = abilityById('heavybolt');
-  const cycle = siege[3].cooldown * heavy.every;
+  // THE PAUSE IS PART OF THE CYCLE. `after` is a second the crew spend recovering
+  // once the heavy bolt has left, so a cycle is 4 ordinary reloads PLUS it — 8.2s
+  // rather than 7.2s. Reading the cycle as cooldown * every alone is what this
+  // file did before the pause existed, and it counted 11 bolts where it wanted 12.
+  const cycle = siege[3].cooldown * heavy.every + (heavy.after || 0);
 
   // Three whole cycles, less a hair, for the same reason Burst Fire's window is a
   // cycle less a hair: the next shot lands on the boundary.
   const n = heavy.every;
   const shots = fire(t, cycle * 3 - 0.1);
   ok(shots.length === n * 3, `${n * 3} bolts in three cycles of ${n}`, `${shots.length}`);
+
+  // AND THE PAUSE IS WHERE IT IS CLAIMED TO BE: after the heavy one, not spread
+  // over the cycle. The gap before bolt 5 has to be a second longer than the gap
+  // before bolt 2, or the crew are paying for something the player cannot see.
+  const gap = i => shots[i].t - shots[i - 1].t;
+  ok(Math.abs(gap(n) - gap(1) - heavy.after) < 2 * DT,
+    `and the crew lose ${heavy.after}s right after the heavy one`,
+    `${gap(1).toFixed(2)}s ordinary, ${gap(n).toFixed(2)}s after it`);
 
   const heavies = shots.filter(s => s.damage > siege[3].damage);
   ok(heavies.length === 3, `and one in ${n} is the heavy one`, `${heavies.length}`);
@@ -691,11 +703,20 @@ console.log('\nBoth of them, on one turret\n');
     `and bolt ${heavy.every} is still the heavy one`,
     `${shots[heavy.every - 1].damage}`);
 
-  const plain = fire(turret([]), siege[3].cooldown * 9 - 0.1).length;
-  const armed = fire(turret(['heavybolt']), siege[3].cooldown * 9 - 0.1);
-  const rate = armed.reduce((sum, s) => sum + s.damage, 0) / (siege[3].cooldown * 9);
-  console.log(`      one turret: ${(siege[3].damage / siege[3].cooldown).toFixed(1)}/s plain, ` +
-              `${rate.toFixed(1)}/s with Heavy Bolt, over ${plain} shots either way`);
+  // WHAT THE ABILITY IS WORTH PER SECOND, and the window has to be a WHOLE number
+  // of each tower's own cycles or the comparison is an artefact of where it was
+  // cut. They are no longer the same length — the pause makes the armed turret's
+  // cycle 8.2s against 7.2s — so each is fired for its own 3 cycles and the damage
+  // divided by the time it actually took.
+  const span = n => n - 0.1;
+  const bare = siege[3].cooldown * heavy.every * 3;
+  const armedSpan = (siege[3].cooldown * heavy.every + (heavy.after || 0)) * 3;
+  const plain = fire(turret([]), span(bare));
+  const armed = fire(turret(['heavybolt']), span(armedSpan));
+  const sum = list => list.reduce((s, x) => s + x.damage, 0);
+  console.log(`      one turret: ${(sum(plain) / bare).toFixed(1)}/s plain over ` +
+              `${plain.length} bolts, ${(sum(armed) / armedSpan).toFixed(1)}/s with ` +
+              `Heavy Bolt over ${armed.length} — the pause is already in it`);
 }
 
 console.log('\nHoly Wrath and Divine Fortitude\n');
@@ -1352,13 +1373,34 @@ function outpost(ids) {
     'and hits for the tower\'s ordinary blow, with the burn on top',
     `${gun.damage} + ${fiery.ammo.burn.dps}/s for ${fiery.ammo.burn.seconds}s`);
 
+  // AND THE CREW PAY FOR IT, exactly as the ballista's crew pay for a heavy bolt.
+  // The gap before the ball AFTER the burning one is a second longer than an
+  // ordinary gap — hung on the Fire beat, so the machine holds its firing pose
+  // rather than opening a hole in the rhythm. See stepCrew in src/towers.js.
+  const gapAfter = i => balls[i].t - balls[i - 1].t;
+  ok(Math.abs(gapAfter(fiery.every) - gapAfter(1) - fiery.after) < 2 * DT,
+    `and the crew lose ${fiery.after}s right after the burning one`,
+    `${gapAfter(1).toFixed(2)}s ordinary, ${gapAfter(fiery.every).toFixed(2)}s after it`);
+
+  // AND THE FIRE IS WIDER THAN THE BLAST, without the blast moving. The burning
+  // pass is a second, larger sweep in land(); `splash` is the number the info box
+  // prints and tools/families.mjs checks, so it has to be the same number taught
+  // or not. tools/status.mjs stands a man in the gap between the two and checks he
+  // burns without being hit.
+  ok(fiery.ammo.burn.splashTimes > 1 && fiery.ammo.splash === undefined,
+    'and the fire reaches further than the ball breaks',
+    `${gun.splash}px of blast inside ` +
+    `${(gun.splash * fiery.ammo.burn.splashTimes).toFixed(1)}px of fire`);
+
   // WHAT THE BURN IS WORTH, printed rather than asserted — it is the owner's to
   // set and the sim has never been run on it. Per second over the whole cycle,
-  // against one man; against a rank it is this much per man caught.
+  // against one man, WITH the pause in the cycle; against a rank it is the burn
+  // again for every man the fire caught.
   const dps = d => d.damage / d.cooldown;
-  const burnPer = fiery.ammo.burn.dps * fiery.ammo.burn.seconds / fiery.every;
+  const cycle = gun.cooldown * fiery.every + (fiery.after || 0);
+  const perCycle = gun.damage * fiery.every + fiery.ammo.burn.dps * fiery.ammo.burn.seconds;
   console.log(`      into one man: ${dps(gun).toFixed(1)}/s plain, ` +
-    `${(dps(gun) + burnPer / gun.cooldown).toFixed(1)}/s with Fiery Shot, ` +
+    `${(perCycle / cycle).toFixed(1)}/s with Fiery Shot over its ${cycle}s cycle, ` +
     `${(gun.damage / (gun.cooldown / swift.reloadTimes)).toFixed(1)}/s with Swift Reload`);
 }
 

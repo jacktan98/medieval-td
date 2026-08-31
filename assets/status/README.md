@@ -67,4 +67,4 @@ with the picture, it costs no furniture on the board, and a line of men wearing
 statuses reads as a fight rather than as a row of labels.
 
 So a new mark can be any colour, as long as it carries **its own dark edge**. It
-has to hold up on grass, on sand and on grey stone, at 9px.
+has to hold up on grass, on sand and on grey stone, at 11px.

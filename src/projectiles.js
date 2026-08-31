@@ -123,7 +123,14 @@ function land(state, s) {
     // this same line lands every tower's arrow, and the target is then an ENEMY,
     // which carries no respawn field at all. `undefined <= 0` is false and would
     // have silently switched off every bow in the game.
-    if (s.target.hp > 0 && !(s.target.respawn > 0)) hit(state, s, s.target);
+    if (s.target.hp > 0 && !(s.target.respawn > 0)) {
+      hit(state, s, s.target);
+      // And it may set him alight, on the one man it hit. Nothing in the game
+      // fires a burning shot with no splash today; the line is here so that
+      // "does it burn" and "does it burst" stay two questions, which is the whole
+      // point of the wider ring below.
+      if (s.ammo.burn) burn(s, s.target);
+    }
     return;
   }
 
@@ -139,6 +146,33 @@ function land(state, s) {
     if (v.hp <= 0 || v.respawn > 0) continue;
     if (!inRange(s.x, s.y, v.x, v.y, s.splash)) continue;
     hit(state, s, v);
+  }
+
+  // AND THE FIRE SPREADS FURTHER THAN THE BALL DID, which is a second pass over
+  // a second radius rather than a flag inside the first.
+  //
+  // Fiery Shot burns over half again the ground it damages — 127.5px against the
+  // outpost's 85 — at the owner's ask. Two rings rather than one is the honest
+  // shape of it: a ball breaks bodies where it lands and throws burning earth
+  // wider, and a man just outside the crater catches fire without being hit by
+  // anything.
+  //
+  // A SEPARATE LOOP, not a bigger `splash` with the damage held back, because
+  // `splash` is the number the info box prints and the number tools/families.mjs
+  // holds the family's shape against. Widening it would have made the Cannon
+  // Outpost read as out-blasting the Trebuchet on its own card while hitting for
+  // exactly what it always did.
+  //
+  // Everything caught by the first loop is caught again here, which costs one
+  // extra `apply` per man and is worth it for the loop reading as what it is: the
+  // fire's own patch, measured from where the ball came down.
+  if (s.ammo.burn) {
+    const r = s.splash * (s.ammo.burn.splashTimes || 1);
+    for (const v of victims(state, s)) {
+      if (v.hp <= 0 || v.respawn > 0) continue;
+      if (!inRange(s.x, s.y, v.x, v.y, r)) continue;
+      burn(s, v);
+    }
   }
 
   // AND THE MAN IT WAS AIMED AT TAKES THE BLOW ITSELF, on top of what the patch
@@ -197,6 +231,18 @@ const victims = (state, s) => (s.side === 'enemy' ? state.units : state.enemies)
 // tables against every ammunition the game can actually fire.
 export const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE };
 
+// SETTING SOMEBODY ALIGHT, and it is separate from hit() rather than a branch
+// inside it — because burning and being hit happen in two different patches now.
+// See the second loop in land().
+//
+// It is also not the flask's kind of thing, which is what the poison branch in
+// hit() is: a flask is poison INSTEAD of damage, and that is what makes it a
+// flask. A burning cannonball is a cannonball that ALSO burns, for its full 70,
+// and folding the two into one "does it leave something on him" test would have
+// had the flask hit for its 20 as well.
+const burn = (s, v) =>
+  applyStatus(v, 'burnt', s.ammo.burn.dps, s.ammo.burn.seconds, s.ammo.kind);
+
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what
   // it leaves is a patch of ground that trickles health out of whoever was
@@ -216,19 +262,6 @@ function hit(state, s, v) {
   // aimed at also takes the blow itself, and that is applied by the caller
   // rather than here, because it belongs to one man and this runs for every man
   // in the patch. See land() above.
-  // AND IT MAY SET HIM ALIGHT ON TOP OF THE BLOW, which is Fiery Shot and the
-  // first thing in the game that does damage twice: the ball hits for its full
-  // 70, and then it burns.
-  //
-  // BEFORE the poison branch and not inside it, because burning is NOT the
-  // flask's kind of thing. A flask is poison INSTEAD of damage — that is what
-  // makes it a flask — and a burning cannonball is a cannonball that also burns.
-  // Folding the two into one "does it leave something on him" test would have made
-  // the flask hit for its 20 as well, which is a different weapon.
-  if (s.ammo.burn) {
-    applyStatus(v, 'burnt', s.ammo.burn.dps, s.ammo.burn.seconds, s.ammo.kind);
-  }
-
   if (s.ammo.poison) {
     applyStatus(v, 'poisoned', s.ammo.poison.dps, s.ammo.poison.seconds, s.ammo.kind);
   } else {

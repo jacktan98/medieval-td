@@ -675,11 +675,30 @@ function stepCrew(state, t, dt, target) {
     // AND THE SPECIAL IS PICKED HERE RATHER THAN IN fire(), because this family
     // never goes through fire() — its clock is the animation. What it does NOT
     // need is the rest of what fire() does with a special: no lock (nothing on a
-    // machine announces itself), no burst queue (no artillery ability fires more
-    // than one), and no held pose (a machine has no man to change the drawing of,
-    // and its next shot comes on the next cycle regardless). If one of those ever
-    // arrives on a turret, this is where it goes.
-    shoot(state, t, target, specialFor(t, t.shots));
+    // machine announces itself) and no burst queue (no artillery ability fires
+    // more than one).
+    const special = specialFor(t, t.shots);
+    shoot(state, t, target, special);
+
+    // AND A HEAVY SHOT COSTS THE CREW A SECOND, which is `after` on the ability.
+    //
+    // The owner's ask, and it is what turns both artillery specials from free into
+    // a trade: Heavy Bolt was 2x damage on one bolt in four with nothing given up,
+    // and Fiery Shot 50 burn on one ball in five with nothing given up. A rarer,
+    // bigger shot that also slows the machine is a decision; one that does not is
+    // simply a larger number.
+    //
+    // ON THE FIRE BEAT rather than as a cooldown, because on this family the
+    // animation IS the clock — see beatsOf. Adding the second here holds the pose
+    // the machine is already in: the arm stays over, the smoke stays at the
+    // muzzle, and the crew visibly take longer to get back to work. A pause
+    // inserted anywhere else would be a machine standing still in its resting
+    // frame for no reason the player can see.
+    //
+    // This is the note that stood here saying a turret needs no held pose because
+    // "its next shot comes on the next cycle regardless". That is no longer true,
+    // and this is where it went.
+    if (special && special.after) t.beatT += special.after;
   }
 }
 

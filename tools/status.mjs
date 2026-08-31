@@ -293,8 +293,15 @@ console.log('\nFiery Shot is the thing that sets the fire\n');
   // aimed at — which is most of what the ability is worth on a packed rank. Run
   // through the real landing rather than asserted, since that is where the
   // splash loop and the status meet.
+  // AND THE FIRE REACHES FURTHER THAN THE BLAST DOES, at the owner's ask. The
+  // fourth man stands OUTSIDE the 85px the ball breaks and inside the 127.5px it
+  // sets alight: he must burn and he must not be hurt by the impact, which is the
+  // whole of the distinction. `splash` itself is untouched — it is the number the
+  // info box prints — so the wider ring is a second sweep in land().
+  const ring = gun.splash * fiery.ammo.burn.splashTimes;
   const s = board();
-  const marks = [0, 30, 60].map(dx => ({
+  const at = [0, 30, 60, Math.round((gun.splash + ring) / 2)];
+  const marks = at.map(dx => ({
     def: { ...enemyTypes.light_inf, speed: 0 }, x: 400 + dx, y: 300, hp: 1e6, maxHp: 1e6,
     face: 1, route: 0, s: 0, lane: 1, acd: 0, thrust: 0, leaked: false, statuses: []
   }));
@@ -307,7 +314,32 @@ console.log('\nFiery Shot is the thing that sets the fire\n');
   for (let i = 0; i < 30 && s.shots.length; i++) updateShots(s, DT);
   const lit = marks.filter(m => wearing(m, 'burnt')).length;
   ok(lit === marks.length, 'and one ball sets fire to everything in the blast',
-    `${lit} of ${marks.length} within ${gun.splash}px`);
+    `${lit} of ${marks.length}, out to ${ring}px`);
+  ok(marks.slice(0, 3).every(m => m.hp < m.maxHp),
+    `and the 3 inside ${gun.splash}px took the blow as well`,
+    marks.slice(0, 3).map(m => m.maxHp - m.hp).join(' + '));
+  const far = marks[3];
+  ok(far.hp === far.maxHp && wearing(far, 'burnt'),
+    `while the man at ${at[3]}px only burns`,
+    `${far.maxHp - far.hp} damage, burnt ${wearing(far, 'burnt')}`);
+
+  // The ordinary ball keeps the ordinary reach, or "wider burn" would quietly be
+  // "wider cannon" — the thing the owner asked NOT to change.
+  const plain = board();
+  const out = {
+    def: { ...enemyTypes.light_inf, speed: 0 }, x: 400 + at[3], y: 300, hp: 1e6, maxHp: 1e6,
+    face: 1, route: 0, s: 0, lane: 1, acd: 0, thrust: 0, leaked: false, statuses: []
+  };
+  plain.enemies.push(out);
+  plain.shots.push({
+    x: 400, y: 300, angle: 0, fromX: 200, target: out,
+    damage: gun.damage, splash: gun.splash, ammo: gun.ammo, speed: gun.ammo.speed,
+    from: { x: 200, y: 300 }, to: { x: 400, y: 300 }, flight: 0.1, t: 0, lift: 0
+  });
+  for (let i = 0; i < 30 && plain.shots.length; i++) updateShots(plain, DT);
+  ok(out.hp === out.maxHp && !wearing(out, 'burnt'),
+    'and an ordinary ball reaches neither that far nor at all',
+    `${out.maxHp - out.hp} damage at ${at[3]}px`);
 }
 
 console.log(bad

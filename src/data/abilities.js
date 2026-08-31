@@ -178,7 +178,29 @@ export const fieryBall = {
   // blast caught rather than into one man — the ball bursts across 85px and every
   // enemy in it burns. Against a packed rank that is the biggest single thing this
   // tower does; against one straggler it is 50.
-  burn: { dps: 10, seconds: 5 },
+  burn: {
+    dps: 10,
+    seconds: 5,
+    // AND IT BURNS WIDER THAN IT BREAKS, at the owner's ask: half again the
+    // outpost's own blast, so 85px of damage inside 127.5px of fire.
+    //
+    // A MULTIPLE OF THE TOWER'S BLAST rather than a distance, which is the rule
+    // every magnitude in this file follows — retune the Cannon Outpost's 85 and
+    // the fire stays half again as wide instead of being pinned to a number that
+    // no longer relates to anything.
+    //
+    // IT IS THE BLAST FIGURE THAT GOES UP BY HALF, not the area in the geometric
+    // sense. `splash` is a RADIUS everywhere in this game — the trebuchet's 98,
+    // the ballista's 70 — so "half again the blast" is the number a player reads
+    // off a card going up by half. Taken as area instead it would be x1.2247, and
+    // that is the one figure to change if it was ever meant the other way.
+    //
+    // Applied in its own pass in projectiles.js rather than by widening `splash`,
+    // because `splash` is what the info box prints and what tools/families.mjs
+    // holds the family's shape against — widening it would have this tower reading
+    // as out-blasting the Trebuchet while hitting for exactly what it always did.
+    splashTimes: 1.5
+  },
   // Louder than an ordinary ball, at the owner's request, and only for this shot —
   // the same clip played harder rather than a second recording. See `level` in
   // play() in src/audio.js.
@@ -299,7 +321,7 @@ export const ABILITIES = [
     detail: 'After 3 ordinary shots the musketeer empties 3 bullets into the road ' +
             'as fast as he can work the lock, 0.18s apart, then holds the smoke ' +
             'for 1 second before loading again. Each ball is the Post\'s own 65, ' +
-            'so the burst is 195 in under half a second.\n\n' +
+            'so the burst is 195 in under 0.5 seconds.\n\n' +
             'Each of the 3 picks a different man, through whatever standing order ' +
             'the tower is on. That is the point of it: 3 bullets into 1 militiaman ' +
             'is most of them wasted, and 3 into 3 of them is a rank gone. With ' +
@@ -604,7 +626,7 @@ export const ABILITIES = [
     pose: KNIFE_THROW_POSE,
 
     detail: 'The assassin throws at 100px for 20 — the whole of what his blade ' +
-            'does — without leaving his post. Three of them is 75 damage a ' +
+            'does — without leaving his post. 3 of them is 75 damage a ' +
             'second at range, on a tower that is still a wall.\n\n' +
             'No squad in this game walks out to fetch an enemy, so this is the ' +
             'only reach a barracks has. Men who would otherwise wait to be walked ' +
@@ -707,13 +729,13 @@ export const ABILITIES = [
     // a heavier blow, still inside the mix.
     loud: 1.8,
 
-    detail: 'The first blow after an assassin shows himself is worth two and a ' +
-            'half of them — 50 where his blade does 20 — and it comes back the ' +
+    detail: 'The first blow after an assassin shows himself is worth 2.5x — 50 ' +
+            'where his blade does 20 — and it comes back the ' +
             'moment he fades again, which in a melee means the opening strike of ' +
             'every fight he picks.\n\n' +
-            'Thrown it is worth double instead of two and a half: 40 on the first ' +
+            'Thrown it is worth 2x instead of 2.5x: 40 on the first ' +
             'blade of a volley, with a heavier knife in the air to say so. ' +
-            'Creeping to arm\'s length is the risk, so it is the half that pays ' +
+            'Creeping to arm\'s length is the risk, so it is the one that pays ' +
             'more. His strike lands harder and sounds it.'
   },
   {
@@ -775,6 +797,21 @@ export const ABILITIES = [
     // the family that already hits groups.
     every: 4,
     shots: 1,
+    // AND IT COSTS THE CREW A SECOND, at the owner's ask. `after` is seconds added
+    // to the machine's cycle once the special has left — see stepCrew in
+    // src/towers.js, which hangs it on the Fire beat so the arm stays over and the
+    // pause is something the player can watch rather than a gap in the rhythm.
+    //
+    // WHAT IT TURNS THIS FROM AND INTO. It was 2x damage on 1 bolt in 4 with
+    // nothing given up: 275 over 4 shots in 7.2s, 38.2 a second against a plain
+    // turret's 30.6, and no reason on earth not to buy it. With the second it is
+    // 275 in 8.2s — 33.5 a second, +10% rather than +25%.
+    //
+    // That is the ability becoming a decision. What it buys is the SHAPE of the
+    // output rather than more of it: the same damage arriving in fewer, harder
+    // blows, which is worth having against armour and worth much less against a
+    // stream of militia.
+    after: 1,
     // DOUBLE, AS A MULTIPLIER RATHER THAN A NUMBER, and that is the point of the
     // field. "Twice as hard" is what was asked for, so twice is what is written
     // down; a 120 typed here would have been correct on the day and quietly wrong
@@ -788,11 +825,15 @@ export const ABILITIES = [
     // leaves the bow — a bolt with its tail on fire — and by being louder.
 
     detail: 'Every 4th bolt comes off the rack burning and hits for 2x the ' +
-            'damage. There is no wind-up and no pause: the machine works at its ' +
-            'ordinary rhythm and 1 shot in 4 is simply worth 2.\n\n' +
-            'It raises the turret from 33.3 damage a second to 41.7, on a machine ' +
-            'whose every shot already bursts. You can hear which one it is — the ' +
-            'heavy bolt leaves louder than the others.'
+            'damage — 110 instead of 55. There is no wind-up: the machine works ' +
+            'at its ordinary rhythm right up to the shot.\n\n' +
+            'It takes the crew 1 extra second to reload afterwards, so the cycle ' +
+            'runs 1.8 / 1.8 / 1.8 / 2.8 seconds. That works out at 33.5 damage a ' +
+            'second against a plain turret\'s 30.6.\n\n' +
+            'What it buys is the shape rather than the size: the same output in ' +
+            'fewer, harder blows, on a machine whose every shot already bursts. ' +
+            'You can hear which one it is — the heavy bolt leaves louder than the ' +
+            'others.'
   },
   {
     // THE CANNON OUTPOST'S FIRST, and it is the SAME ABILITY the Crossbow Sentry
@@ -829,7 +870,7 @@ export const ABILITIES = [
             'quicker — a ball every 2 seconds instead of every 3, which is 35 ' +
             'damage a second where the outpost alone does 23.3.\n\n' +
             'Nothing else changes: the same 70 a ball, the same 85 blast and the ' +
-            'same 360 reach. The machine visibly works faster — its three beats ' +
+            'same 360 reach. The machine visibly works faster — its 3 beats ' +
             'are the clock, so the drill you see is the reload the rules use.'
   },
   {
@@ -843,12 +884,23 @@ export const ABILITIES = [
     // every 15 seconds against a heavy bolt every 7.2 — deliberately rarer, and
     // rare enough to be an event. The owner asked for five.
     //
-    // WHAT IT IS WORTH, and it is worth more than the arithmetic looks. 50 damage
-    // over 5 seconds is 10 a second added to a tower that does 23.3, which reads
-    // as +14% and is not: the burn lands on EVERYTHING the blast caught, and the
-    // blast is 85px across. Against one straggler it is 50. Against a packed rank
-    // it is 50 a man, laid on while the machine is reloading, which is the biggest
+    // WHAT IT IS WORTH, and it is worth more than the arithmetic looks. 350 from
+    // 5 balls plus 50 of burn, over the 16s the cycle now takes, is 25.0 a second
+    // against the plain outpost's 23.3 — and that is the ONE-target reading. The
+    // burn lands on everything the fire ring caught, so against a packed rank it
+    // is 50 a man, laid on while the machine is reloading. That is the biggest
     // single thing this tower does.
+    //
+    // AND THE FIRE RING IS WIDER THAN THE BLAST, at the owner's ask: burn.
+    // splashTimes multiplies the ball's splash for the burning pass only, so 85px
+    // of damage sits inside 127.5px of fire. `splash` itself is untouched — it is
+    // the number the info box prints and the number tools/families.mjs checks, and
+    // the ordinary 70 must keep its ordinary reach. See land() in
+    // src/projectiles.js, where the burn is a second, wider sweep.
+    //
+    // NOTE ON "+50% BLAST": splash is a RADIUS everywhere in this game, so the
+    // half is added to the radius. Reading it as area instead would be x1.2247
+    // on the same one number.
     //
     // NO POSE and no `hold`, exactly as Heavy Bolt has none, and for the same
     // reason: a machine has no man to redraw and its clock is the beat loop rather
@@ -863,17 +915,29 @@ export const ABILITIES = [
     cost: ABILITY_COST,
     every: 5,
     shots: 1,
+    // AND IT COSTS THE CREW A SECOND, at the owner's ask. `after` is seconds added
+    // to the machine's cycle once the special has left — see stepCrew in
+    // src/towers.js, which hangs it on the Fire beat so the arm stays over and the
+    // pause is something the player can watch rather than a gap in the rhythm.
+    //
+    // It costs this tower proportionally less than it costs the ballista, and
+    // that is right: a second on a 3.0s cycle every 5th shot is 1s in 16 where the
+    // turret pays 1s in 8.2. The cannon is the slower machine and the rarer
+    // special, so the same second is the smaller share of it.
+    after: 1,
     ammo: fieryBall,
 
     detail: 'Every 5th ball leaves the barrel alight. It hits for the ordinary ' +
-            '70 and sets fire to everything in the blast: 10 damage a second for ' +
-            '5 seconds, on every enemy it caught.\n\n' +
-            'Burning men carry the flame over their health bar for as long as it ' +
-            'lasts. The ground comes up on fire where the ball lands, and you can ' +
-            'hear which shot it was — a fiery ball leaves much louder than the ' +
-            'others.\n\n' +
-            'Against one straggler it is 50 extra damage. Against a rank standing ' +
-            'together it is 50 each, laid on while the cannon reloads.'
+            '70 and sets fire to what it catches: 10 damage a second for 5 ' +
+            'seconds.\n\n' +
+            'The fire reaches further than the ball breaks — 127.5px of flame ' +
+            'around an 85px blast — so men standing just clear of the crater ' +
+            'burn anyway. They carry the flame over their health bar until it ' +
+            'goes out, and you can hear which shot it was.\n\n' +
+            'The crew need 1 second longer to reload after it, making the cycle ' +
+            '3 / 3 / 3 / 3 / 4 seconds. Against 1 straggler that is 25.0 damage ' +
+            'a second where the outpost alone does 23.3, and against a rank it ' +
+            'is 50 extra on each of them.'
   },
   {
     id: 'wrath',
