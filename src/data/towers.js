@@ -209,7 +209,7 @@ const PAL_ATK_TRIM = [135, 212, 178, 116];
 const MON_TRIM = [241, 228, 542, 568];
 const MON2_TRIM = [274, 165, 476, 694];
 const MON3_TRIM = [277, 165, 469, 694];
-// Tier 4, the Judgement Temple. NARROWER AND TALLER than the three below it —
+// Tier 4, the High Altar. NARROWER AND TALLER than the three below it —
 // 360 x 804 against tier 3's 469 x 694 — and both halves of that are the drawing
 // rather than a scale change: the belfry sits on a storey of stonework instead
 // of on legs, so the building climbs rather than spreads. 165 game px makes it
@@ -811,7 +811,7 @@ export const missile3 = { ...missile, sprite: 'missile_t3' };
 // tiers 2 and 3 at the tier 1 speed.
 export const missile4 = {
   ...missile,
-  kind: 'judgement',
+  kind: 'pope',
   sprite: 'missile_t4',
   trim: MISSILE4_TRIM,
   grip: 0.10,
@@ -1359,9 +1359,9 @@ export const archery = [
   // and this reaches 300.
   //
   // THE OWNER'S SECOND PASS, and it is a real trim. The first was 35 at 0.75 over
-  // 330: 46.7 a second, behind only the Judgement Temple's 51.7 and reaching half
+  // 330: 46.7 a second, behind only the High Altar's 51.7 and reaching half
   // the board while it did it. 37.5 still clears the Crossbow Tower under it
-  // (32.5) and the two tier 4s that are not the Temple, without making the fork a
+  // (32.5) and the two tier 4s that are not the Altar, without making the fork a
   // foregone conclusion — and it costs the same 200 as a Musketeer Post now, so
   // the two are a genuine choice at one price rather than a cheap one and a dear
   // one. Both paths up this ladder come to 490.
@@ -2525,7 +2525,7 @@ export const siege = [
   //
   // `damage` 70, and the honest way to say what that is: the hardest blow in the
   // game that lands on MORE THAN ONE MAN, ahead of the Musketeer Post's 65 and the
-  // ballista's 55 — and second overall to the Judgement Temple's 75, which is a
+  // ballista's 55 — and second overall to the High Altar's 75, which is a
   // missile that hits exactly one enemy and dies with him. 70 into an 85px ellipse
   // against 75 into one throat is the whole trade the family table is about.
   //
@@ -2746,7 +2746,7 @@ const priest = {
 // TWO PIECES OF IT STAND IN FRONT OF THE MAN and that is the whole difficulty of
 // this drawing — the artist said so in the message that brought it. See
 // `frontPolys`.
-const temple = {
+const altar = {
   sprite: 'monastery_t4',
   spriteTrim: MON4_TRIM,
   w: drawnW(MON4_TRIM), h: drawnH(MON4_TRIM),
@@ -3065,17 +3065,17 @@ export const monastery = [
   // after this lands, the same way the ballista's did. `tools/families.mjs` is the
   // check that the family still reads the way the design says, and tools/sim.mjs
   // is the check that no family clears a map alone at the top of its ladder.
-  { ...temple, ...pope, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple', unit: 'Pope',
+  { ...altar, ...pope, tier: 4, name: 'High Altar', title: 'High Altar', unit: 'Pope',
     cost: 220, damage: 75, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
     // The upgrade button's own picture on an Abbey, and the fourth of four — every
     // family's top rung now shows what it buys rather than a plain arrow. See the
     // note on the Musketeer Post's `glyph`.
-    glyph: 'temple',
+    glyph: 'altar',
     // And its own three lines, on the same terms as the other three tier 4s: a
     // named tower answers for itself when it is built and when it is told what to
     // shoot at, rather than borrowing the family's. See familyCue in src/audio.js.
     voice: 'pope',
-    // WHAT THIS TEMPLE CAN BE TAUGHT, and both of them leave the plot: they change
+    // WHAT THIS ALTAR CAN BE TAUGHT, and both of them leave the plot: they change
     // every other tower on the map rather than this one. Ids into
     // src/data/abilities.js, where the rules and the badges live.
     abilities: ['wrath', 'fortitude'] }

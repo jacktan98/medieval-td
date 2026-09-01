@@ -953,13 +953,13 @@ export const ABILITIES = [
   {
     id: 'wrath',
     name: 'Holy Wrath',
-    of: 'Judgement Temple',
+    of: 'High Altar',
     icon: 'ability_wrath',
     cost: ABILITY_COST,
     // THE FIRST ABILITY THAT LEAVES ITS OWN PLOT. Everything before it changed the
     // tower that bought it — how often it fires, how far, how hard, what it looks
     // like. This changes every OTHER tower on the map, which is a third shape
-    // again: no `every`, no threshold, and nothing about the temple itself moves.
+    // again: no `every`, no threshold, and nothing about the altar itself moves.
     //
     // `aura` is that shape, and it is deliberately a plain object rather than a
     // predicate. `on` is a list of family ids, so the rule can be read, printed and
@@ -967,7 +967,7 @@ export const ABILITIES = [
     // covers rather than watching what it does.
     aura: {
       // A TWENTIETH MORE DAMAGE on every shot fired by a bow, a machine or a staff,
-      // and it COMPOUNDS with a second temple that has bought it: 1.05 x 1.05. It
+      // and it COMPOUNDS with a second altar that has bought it: 1.05 x 1.05. It
       // was a tenth; the owner halved it once the compounding was in, because four
       // temples at a tenth each is x1.46 on every tower on the board. See
       // `auras` in src/towers.js, which is the list of bought copies rather than
@@ -984,28 +984,28 @@ export const ABILITIES = [
     },
 
     detail: 'Every archery tower, artillery machine and monastery on the map hits ' +
-            'for 5% more, wherever it stands. The temple does not have to see ' +
+            'for 5% more, wherever it stands. The altar does not have to see ' +
             'them and does not fire any differently itself.\n\n' +
             'Barracks men are the exception: their damage belongs to the man rather ' +
             'than to the tower. A sword and an arrow appear over every tower it is ' +
-            'working on, and a second temple that has bought it compounds with the ' +
+            'working on, and a second altar that has bought it compounds with the ' +
             'first — 5% on top of 5%, marked x2 on the badge.'
   },
   {
     id: 'fortitude',
     name: 'Divine Fortitude',
-    of: 'Judgement Temple',
+    of: 'High Altar',
     icon: 'ability_fortitude',
     cost: ABILITY_COST,
     aura: {
       // A TENTH MORE HEALTH on every man a barracks musters, of every tier — a
       // spearman goes 100 to 110 and a paladin 275 to 303. It was a fifth, halved
       // with Holy Wrath and for the same reason: these two compound, so what
-      // matters is not what one temple does but what four of them do.
+      // matters is not what one altar does but what four of them do.
       //
       // It is applied to `maxHp` every frame rather than added once when the
       // ability is bought, and that is what makes buying it mid-wave, selling the
-      // temple, and mustering a fresh man after either one all behave without a
+      // altar, and mustering a fresh man after either one all behave without a
       // single hook. A man who is half wounded stays half wounded across the
       // change — see updateUnits.
       hp: 1.10,
@@ -1019,7 +1019,7 @@ export const ABILITIES = [
             'It reaches men already standing on the road, not only the next ones to ' +
             'muster, and a wounded man keeps the share of his health he had. A heart ' +
             'and an arrow appear over every barracks it is working on, and a second ' +
-            'temple compounds with the first — marked x2 on the badge.'
+            'altar compounds with the first — marked x2 on the badge.'
   }
 ];
 

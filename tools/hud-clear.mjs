@@ -54,7 +54,7 @@ import { crownTop } from '../src/towers.js';
 // render.js rather than worked out here, for the same reason `tierMarks` is.
 //
 // AN AURA BADGE is the third, and it is the one every tower can wear: the
-// Judgement Temple's two work on whole families, so any building on the board can
+// High Altar's two work on whole families, so any building on the board can
 // end up with a sword or a heart floating over it once one is bought. It is
 // therefore counted for every tower rather than for the ones that carry it today
 // — `badgeTop` is asked of render.js for the same reason the other two are.
@@ -107,10 +107,10 @@ const RUNS = [
 // after every tower, so a roof behind one is not dimmed, it is GONE, and no
 // border is drawn across anything a player can see.
 //
-// The premise was checked rather than argued: a Judgement Temple — the tallest
+// The premise was checked rather than argued: a High Altar — the tallest
 // building in the game — was built on map 1's plot 6 and map 2's plot 4, the two
 // this rule was failing, and the button band was photographed at 10x. What is
-// there is the temple's spire pole coming out from UNDER the Next wave plate and
+// there is the altar's spire pole coming out from UNDER the Next wave plate and
 // running down the board, which reads exactly like a pole behind a sign. Above
 // the plate there is nothing at all.
 //
@@ -279,7 +279,7 @@ for (let i = 0; i < lv.plots.length; i++) {
 //
 // The plot table above would catch this as a fault, but only on a plot high
 // enough to reach the plates AND under one — and the whole reason this failed for
-// a release is that it takes a Judgement Temple, a SECOND temple to buy the aura,
+// a release is that it takes a High Altar, a SECOND altar to buy the aura,
 // and one of two plots in the game to see it. So the floor is checked directly,
 // on every plot, against the row it is meant to clear.
 {

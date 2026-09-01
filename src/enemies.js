@@ -321,7 +321,7 @@ export function updateEnemies(state, dt) {
          // The pope's missile, and only his. The three tiers under him have no
          // kill line of their own and fall through to the generic one below, the
          // same way every melee weapon but the paladin's does.
-         : e.killedBy === 'judgement' ? CUE.popeKill
+         : e.killedBy === 'pope' ? CUE.popeKill
          : e.killedBy === 'bullet' || e.killedBy === 'deadeye' ? CUE.musketKill
          : e.killedBy === 'paladin' ? CUE.paladinKill
          // And the barracks' OTHER tier 4 man. Two of the four men a barracks

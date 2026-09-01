@@ -317,7 +317,7 @@ const paths = {
   ballista_1:      'assets/audio/voice/Ballista_Engineer_1.mp3',
   ballista_2:      'assets/audio/voice/Ballista_Engineer_2.mp3',
   ballista_3:      'assets/audio/voice/Ballista_Engineer_3.mp3',
-  // The Judgement Temple's own three, and the last family to get a tier 4 voice.
+  // The High Altar's own three, and the last family to get a tier 4 voice.
   // Same terms as the other three: it answers when it is built and when it is
   // told what to shoot at, rather than borrowing a monastery line.
   pope_1:          'assets/audio/voice/Pope_1.mp3',
@@ -519,7 +519,7 @@ export const CUE = {
   // The Ballista Turret's, keyed the same way off the `voice` field on artillery
   // tier 4.
   ballista:     ['ballista_1', 'ballista_2', 'ballista_3'],
-  // The Judgement Temple's, keyed the same way off the `voice` field on monastery
+  // The High Altar's, keyed the same way off the `voice` field on monastery
   // tier 4 — the fourth and last tier with lines of its own.
   pope:         ['pope_1', 'pope_2', 'pope_3'],
   // The Crossbow Sentry's, keyed off the `voice` field on its tier like the four
@@ -566,7 +566,7 @@ export const CUE = {
   // each tier 4 has its own. Keyed off `blow` on his def — see BLOWS below,
   // which is the same one word.
   assassinKill: ['assassin_kill_enemy'],
-  // A missile from the temple finishing a man, and the fifth thing with its own
+  // A missile from the altar finishing a man, and the fifth thing with its own
   // kill line. The other three monastery tiers still share the arrow's, which is
   // the same split the barracks has: one line for the family, one for its tier 4.
   popeKill:     ['pope_kill_enemy'],

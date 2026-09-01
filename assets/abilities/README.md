@@ -19,8 +19,8 @@ page.
 | Ballista Turret | Heavy Bolt | `Ballista_Turret_Heavy_Bolt_Icon.png` |
 | Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload_Icon.png` |
 | Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot_Icon.png` |
-| Judgement Temple | Holy Wrath | `Judgement_Temple_Holy_Wrath_Icon.png` |
-| Judgement Temple | Divine Fortitude | `Judgement_Temple_Divine_Fortitude_Icon.png` |
+| High Altar | Holy Wrath | `High_Altar_Holy_Wrath_Icon.png` |
+| High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude_Icon.png` |
 
 **Named after the tower, not the ability**, which is what keeps the two Swift
 Reloads and the two Reinforced Tensions apart on disk. A file named after the ability alone would
@@ -54,8 +54,8 @@ See the note on the ids at the top of `src/data/abilities.js`.
 
 ## The two aura badges are not here
 
-The temple's two badges stay in `assets/ui` — `Judgement_Temple_Holy_Wrath.png`
-and `Judgement_Temple_Divine_Fortitude.png`, the same names as the buttons here
+The altar's two badges stay in `assets/ui` — `High_Altar_Holy_Wrath.png`
+and `High_Altar_Divine_Fortitude.png`, the same names as the buttons here
 without the `_Icon`. They are not buttons and never appear in the encyclopedia:
 they are marks the renderer hangs over every tower an aura is working on, which
 is board furniture rather than interface.

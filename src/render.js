@@ -417,7 +417,7 @@ function statusMarks(ctx, v, x, barTop) {
 //
 // THE BADGE IS THE WHOLE FEEDBACK. Every other ability in this game announces
 // itself where it happens — a burst of three, a kneeling paladin, a burning bolt,
-// a machine rebuilt in iron. The Judgement Temple's two do their work on OTHER
+// a machine rebuilt in iron. The High Altar's two do their work on OTHER
 // towers and change nothing about themselves or about the shots, so without a
 // mark on the board the player has spent 150 gold on a number they have to take
 // on trust. A sword and an arrow over every tower hitting harder, a heart and an
@@ -445,7 +445,7 @@ function statusMarks(ctx, v, x, barTop) {
 // tower it is over, not to a line across the board.
 const BADGE_GAP = 10;
 
-// AND IT NEVER LEAVES THE BOARD, OR GOES UNDER THE HUD. A Judgement Temple is the
+// AND IT NEVER LEAVES THE BOARD, OR GOES UNDER THE HUD. A High Altar is the
 // tallest building in the game, and on the highest plots of all three maps its
 // roof is within 30px of the top edge — badge, gap and all would be off the
 // canvas, which draws a badge sliced in half or not at all. On those plots the
@@ -472,9 +472,9 @@ const badgeFloor = () => HUD_BTN.pause.y + HUD_BTN.pause.h;
 // Hangs the badge above the point given rather than centring it on it.
 const ABOVE = [0.5, 1];
 
-// THE MULTIPLIER BESIDE THE BADGE, when more than one temple is buffing this
+// THE MULTIPLIER BESIDE THE BADGE, when more than one altar is buffing this
 // tower. The badge says "something is boosting you" and stops being the whole
-// truth the moment a second temple buys the same ability, because two Holy
+// truth the moment a second altar buys the same ability, because two Holy
 // Wraths are not one — see `auras` in towers.js, where they compound. So the
 // badge stays one drawing and takes a count: x2 for two temples, x3 for three.
 //
@@ -2454,7 +2454,7 @@ function drawButton(ctx, state, it) {
 // already doing the separating: no price on the ring is a word.
 //
 // So a bought ability on a blue disc keeps the white its price was in, one on the
-// temple's pale disc keeps the ordinary dark ink, and "Maxed" on a cream plate
+// altar's pale disc keeps the ordinary dark ink, and "Maxed" on a cream plate
 // takes the same dark ink every tier upgrade in the game prints its price in.
 //
 // They are set SMALLER than a price, though — see WORD_SIZE. That is about the

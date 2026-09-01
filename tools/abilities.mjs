@@ -737,17 +737,17 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
   // A TOWER OF EVERY FAMILY, so the boost can be asked about each of them at once.
   const map = fams => ({ towers: fams.map(f => ({ ...turret([]), fam: { id: f } })), units: [] });
   const bare = map(['archery', 'siege', 'monastery', 'barracks']);
-  ok(auras(bare).length === 0, 'a map with no temple has no aura');
+  ok(auras(bare).length === 0, 'a map with no altar has no aura');
   for (const f of ['archery', 'siege', 'monastery', 'barracks']) {
     ok(boost(bare, 'damage', f) === 1 && boost(bare, 'hp', f) === 1,
       `and nothing is boosted on it (${f})`);
   }
 
-  // ONE TEMPLE, TAUGHT BOTH.
+  // ONE ALTAR, TAUGHT BOTH.
   const holy = { towers: [...map(['archery', 'siege', 'monastery', 'barracks']).towers,
                           { ...turret(['wrath', 'fortitude']), fam: { id: 'monastery' },
                             def: monastery[3] }], units: [] };
-  ok(auras(holy).length === 2, 'a temple taught both puts two auras on the map');
+  ok(auras(holy).length === 2, 'an altar taught both puts two auras on the map');
   ok(boost(holy, 'damage', 'archery') === wrath.aura.damage &&
      boost(holy, 'damage', 'siege') === wrath.aura.damage &&
      boost(holy, 'damage', 'monastery') === wrath.aura.damage,
@@ -757,13 +757,13 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
     `x${fort.aura.hp}`);
   ok(boost(holy, 'hp', 'archery') === 1, 'and nothing else is');
 
-  // AND TWO TEMPLES COMPOUND. 1.1 x 1.1 rather than 1.1, so the second temple's
-  // 150 gold buys as much of a step as the first one did — and a temple that has
+  // AND TWO TEMPLES COMPOUND. 1.1 x 1.1 rather than 1.1, so the second altar's
+  // 150 gold buys as much of a step as the first one did — and an altar that has
   // bought nothing adds nothing, which is what the third state below is for.
   const two = { towers: [...holy.towers,
                          { ...turret(['wrath', 'fortitude']), fam: { id: 'monastery' },
                            def: monastery[3] }], units: [] };
-  ok(auras(two).length === 4, 'a second taught temple puts its own two on the map');
+  ok(auras(two).length === 4, 'a second taught altar puts its own two on the map');
   ok(near(boost(two, 'damage', 'archery'), wrath.aura.damage ** 2),
     'and the damage buff compounds', `x${boost(two, 'damage', 'archery').toFixed(2)}`);
   ok(near(boost(two, 'hp', 'barracks'), fort.aura.hp ** 2),
@@ -773,7 +773,7 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
                           { ...turret([]), fam: { id: 'monastery' }, def: monastery[3] }],
                  units: [] };
   ok(near(boost(idle, 'damage', 'archery'), wrath.aura.damage),
-    'but a second temple that has bought nothing adds nothing',
+    'but a second altar that has bought nothing adds nothing',
     `x${boost(idle, 'damage', 'archery')}`);
 
   // WHAT IT IS WORTH ON A SHOT, through the real firing code rather than the
@@ -797,14 +797,14 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
   const live = keep([]);
   const man = live.units[0];
   updateUnits(live, DT);
-  ok(man.maxHp === barracks[3].soldier.hp, 'a man with no temple carries his own health',
+  ok(man.maxHp === barracks[3].soldier.hp, 'a man with no altar carries his own health',
     `${man.maxHp}`);
 
   man.hp = man.maxHp / 2;
   live.towers.push({ ...turret(['fortitude']), fam: { id: 'monastery' }, def: monastery[3] });
   updateUnits(live, DT);
   ok(man.maxHp === barracks[3].soldier.hp * fort.aura.hp,
-    'and gains a fifth the moment the temple is taught',
+    'and gains a fifth the moment the altar is taught',
     `${barracks[3].soldier.hp} becomes ${man.maxHp}`);
   // WOUNDED EXACTLY AS HE WAS. The aura raises the ceiling and lifts his health
   // with it, so a man at half stays at half rather than being handed the whole
@@ -818,7 +818,7 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
   live.towers.pop();
   updateUnits(live, DT);
   ok(man.maxHp === barracks[3].soldier.hp && man.hp > 0,
-    'and gives it back when the temple is sold, without killing him',
+    'and gives it back when the altar is sold, without killing him',
     `${man.maxHp}, at ${(100 * man.hp / man.maxHp).toFixed(0)}%`);
 }
 

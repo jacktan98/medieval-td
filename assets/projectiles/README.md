@@ -35,7 +35,7 @@ right".
 | `Soldiers_Priest_Arcane_Missle.png` | Wayside Shrine | 330 | flat |
 | `Soldiers_Bishop_Arcane_Missle.png` | Chapel | 330 | flat |
 | `Soldiers_Cardinal_Arcane_Missle.png` | Abbey | 330 | flat |
-| `Pope_Arcane_Missle.png` | Judgement Temple | 330 | flat, and a third longer than the others |
+| `Pope_Arcane_Missle.png` | High Altar | 330 | flat, and a third longer than the others |
 | `Assassin_Knife.png` | an assassin who has learned Knife Throw | 300 | flat |
 | `Assassin_Knife_Sneak_Attack.png` | the first knife of his volley | 300 | flat |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |

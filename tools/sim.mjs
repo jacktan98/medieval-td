@@ -368,7 +368,7 @@ m1: {
   // the top of a ladder is somewhere a real game reaches, so the invariant has to
   // hold there too.
   //
-  // It matters more here than anywhere else, because the Judgement Temple is the
+  // It matters more here than anywhere else, because the High Altar is the
   // one tier 4 that gives nothing up — more damage and more reach, no drawback but
   // its price. Six of them clear no map, 0 in 20, exactly as six Abbeys do.
   //
@@ -377,7 +377,7 @@ m1: {
   // it was 8, because a militiaman has 80 health and one missile killed him
   // outright. The owner asked for 75. Five points of damage are two wins here and
   // nothing at all on The Fork, which is the sharpest step in the file and is a
-  // fact about the militia rather than about the temple.
+  // fact about the militia rather than about the altar.
   'ALL monastery t4 x6 (expect LOSS)': [M(0, 3), M(1, 3), M(4, 3), M(6, 3), M(7, 3), M(8, 3)],
   'MIX 2A + 3B + 1 monastery t4':   [M(0, 3), B(1), A(4), B(6), B(7), A(8)],
   'under-built     (expect LOSS)':  [A(1, 0)]
@@ -417,7 +417,7 @@ m2: {
   'ALL monastery x6 (expect LOSS)': [M(0), M(2), M(5), M(6), M(7), M(8)],
   'MIX 2 archery + 3 barracks + 1 monastery': [M(0), A(2), B(5), A(6), B(7), B(8)],
   // Tier 4, for the reason given on map 1's pair. The Fork is the map that suits
-  // this family, and it is the map where the temple shows: 14 wins to 15 and a
+  // this family, and it is the map where the altar shows: 14 wins to 15 and a
   // life or two better, with the pure build still at 0.
   'ALL monastery t4 x6 (expect LOSS)': [M(0, 3), M(2, 3), M(5, 3), M(6, 3), M(7, 3), M(8, 3)],
   'MIX 2A + 3B + 1 monastery t4':   [M(0, 3), A(2), B(5), A(6), B(7), B(8)],

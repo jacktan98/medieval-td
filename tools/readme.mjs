@@ -92,7 +92,7 @@ for (const [dir, files] of [...wanted].sort()) {
 
 // ANYWHERE UNDER assets/, not only in the folder doing the naming. A README
 // pointing at a sibling's file is good documentation rather than a mistake —
-// assets/abilities explains that the temple's two aura BADGES stay in assets/ui
+// assets/abilities explains that the altar's two aura BADGES stay in assets/ui
 // and names them, which is exactly what somebody looking for them needs. What is
 // worth failing on is a name that has no file at all, which is what
 // `Sell_Icon.png` and `Cost_Icon.png` had become.

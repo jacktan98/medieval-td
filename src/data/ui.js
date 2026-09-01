@@ -174,12 +174,12 @@ export const ui = {
   // Still inside the sharpness ceiling: 34 drawn x 3 device px is 102 of the 112
   // it has, the same margin the musket runs at.
   glyph_cannon:   { trim: [200, 236, 112, 40], fit: 34, nudge: [0, 3] },
-  // The Judgement Temple's, the fourth tier icon and the one TALL one: 76x104
+  // The High Altar's, the fourth tier icon and the one TALL one: 76x104
   // source, half again as high as it is wide, because the drawing is the whole
   // tower with its roof and cross. `fit` is the shared box like the other two,
   // which fits the taller side — the same rule every glyph here is drawn by, so a
   // tall icon comes out narrower rather than cropped.
-  glyph_temple: { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
+  glyph_altar: { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
   // THE MAXED BADGE, and the one glyph that is never pressable: it sits on the
   // upgrade button of a tower at the top of its ladder, dimmed like any button
   // that cannot be used. 66x90 source, an upright mark like the cross above it,
@@ -245,7 +245,7 @@ export const ui = {
   // first pair, 24x34 and 22x27 for the outlined ones, and these.
   status_burnt:    { trim: [241, 235, 30, 42], h: STATUS_H },
   status_poisoned: { trim: [242, 238, 28, 34], h: STATUS_H },
-  // The Judgement Temple's two, measured to the same disc again — but drawn on a
+  // The High Altar's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark
   // blue disc; on these two it disappeared entirely. See buttonPrice in render.js,
@@ -388,7 +388,7 @@ export const GLYPH_ART = {
   ballista: 'glyph_ballista',
   // The artillery fork's second face, on the same terms as the other two forks'.
   cannon: 'glyph_cannon',
-  temple: 'glyph_temple',
+  altar: 'glyph_altar',
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',

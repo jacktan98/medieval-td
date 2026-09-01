@@ -382,7 +382,7 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
   // moved three times.
   console.log(`      tier 4 damage: Post ${archery[3].damage}, Turret ${t4.damage}, `
     + `Outpost ${siege.find(d => d.name === 'Cannon Outpost').damage}, `
-    + `Temple ${monastery[3].damage}, Keep ${barracks[3].soldier.damage} a man`);
+    + `Altar ${monastery[3].damage}, Keep ${barracks[3].soldier.damage} a man`);
 
   ok(siege.every(d => d === t4 || d.cooldown > t4.cooldown), 'and reloads fastest in its family',
     siege.map(d => d.cooldown.toFixed(2)).join(' / '));
@@ -445,7 +445,7 @@ console.log('\nArtillery tier 4 — the other one, blast instead of rate\n');
   // THE HARDEST BLOW THAT LANDS ON MORE THAN ONE MAN, and the qualifier is the
   // whole claim rather than a hedge. Only artillery bursts, so among towers that
   // burst this is simply the biggest number; among ALL towers it is second, and
-  // the one ahead of it is the Judgement Temple's missile at 75 — which lands on
+  // the one ahead of it is the High Altar's missile at 75 — which lands on
   // exactly one enemy and dies with him. 70 into an 85px ellipse against 75 into
   // one man is the trade the whole table at the top of this file is about, and
   // writing it down as "hardest shot in the game" would have been false by five.
@@ -499,7 +499,7 @@ console.log('\nMonastery tier 4 — the same tower, harder\n');
   const t3 = monastery[2];
 
   const everyone = [...archery, ...monastery, ...siege].filter(d => d !== t4);
-  ok(everyone.every(d => d.damage < t4.damage), 'the Judgement Temple lands the biggest blow in the game',
+  ok(everyone.every(d => d.damage < t4.damage), 'the High Altar lands the biggest blow in the game',
     `${t4.damage} against the next ${Math.max(...everyone.map(d => d.damage))}`);
 
   ok(t4.range > t3.range, 'and reaches further than the Abbey', `${t4.range} against ${t3.range}`);

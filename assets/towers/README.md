@@ -43,13 +43,21 @@ in `src/assets.js`.
 | `monastery/Monastery_Tower_T1.png`     | 1024   | 111 x 116 px | Wayside Shrine (1) |
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
-| `monastery/Judgement_Temple.png`       | 1024   | 74 x 165 px  | Judgement Temple (4) |
+| `monastery/High_Altar.png`       | 1024   | 74 x 165 px  | High Altar (4) |
 
 **Three families fork at the top.** Archery, the barracks and artillery each have
-two fourth rungs and the player buys one of them; the monastery has one. So a
-family folder holds four buildings or five, and `tiers` in `src/data/towers.js`
+two fourth rungs and the player buys one of them; the monastery has one so far. So
+a family folder holds four buildings or five, and `tiers` in `src/data/towers.js`
 is five entries long where the ladder forks — see the note there on why nobody
 ever pays for both.
+
+The monastery is the one still to fork, and everything a second fourth rung needs
+is already built: put its building in `monastery/`, add a fifth entry to the
+`monastery` array with `tier: 4`, give it a glyph in `assets/ui` and its own two
+ability icons in `assets/abilities`, and the menu, the encyclopedia and every
+checker pick it up with no code written. The name **Judgement Temple** is free
+and reserved for it — the Pope's tower carried it until this rename and is called
+the High Altar now, so nothing in the game answers to it.
 
 **Artillery is three frames per tier, not one drawing per tier.** Every rung of
 that family animates: a Default, a Reload and a Fire, and the loop through them
@@ -102,20 +110,20 @@ the trim grew 28px at the back to hold the fire. That is measured rather than
 assumed, and it is what lets both bolts leave the machine from exactly the same
 point — see `heavyBolt` in `src/data/abilities.js`.
 
-Elsewhere, but the Judgement Temple's: `units/Pope_Default.png` and `_Attack`,
-`projectiles/Pope_Arcane_Missle.png`, `ui/Judgement_Temple_Icon.png`, and four
+Elsewhere, but the High Altar's: `units/Pope_Default.png` and `_Attack`,
+`projectiles/Pope_Arcane_Missle.png`, `ui/High_Altar_Icon.png`, and four
 clips — `audio/sfx/Pope_kill_enemy.mp3` and three voice lines. It fires the
 monastery's own `Arcane_shot` a quarter louder rather than a fourth recording of
 it. Plus its two abilities, which are drawings only — no new frame of the tower
-and no new sound, because neither of them happens at the temple: the two button
-faces `ui/Judgement_Temple_Holy_Wrath_Icon.png` and
-`ui/Judgement_Temple_Divine_Fortitude_Icon.png`, and the two badges
-`ui/Judgement_Temple_Holy_Wrath.png` and `ui/Judgement_Temple_Divine_Fortitude.png`
+and no new sound, because neither of them happens at the altar: the two button
+faces `abilities/High_Altar_Holy_Wrath_Icon.png` and
+`abilities/High_Altar_Divine_Fortitude_Icon.png`, and the two badges
+`ui/High_Altar_Holy_Wrath.png` and `ui/High_Altar_Divine_Fortitude.png`
 that float over every building the aura reaches.
 
 **IT IS THE TALLEST BUILDING IN THE GAME**, 165 game px against the 142 of the
 two monastery tiers under it, and the only thing that costs is headroom on the
-plot: the drawing reaches further up the screen than anything else, so a temple
+plot: the drawing reaches further up the screen than anything else, so an altar
 on a high plot sits closer to the dashboard than a player is used to.
 
 **AND THE ONE WHERE THE MAN BARELY FITS.** Its belfry has 143 source px of clear
@@ -124,7 +132,7 @@ head of his staff — the artist sized the opening to the figure, near enough
 exactly. That is why he stands a little forward of the floor's centre rather than
 on it, which is where every other tower in the game puts its man: at the centre
 the eave crosses him at the eyebrows and takes his mitre with it, and a white robe
-with no hat on it is not the pope. See `mountFrac` on `temple` in
+with no hat on it is not the pope. See `mountFrac` on `altar` in
 `src/data/towers.js` for the measurement and the reasoning.
 
 **IT IS THE FIRST BUILDING DRAWN IN TWO PIECES**, and the reason is worth

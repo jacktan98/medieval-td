@@ -21,7 +21,7 @@ usable button rather than a blank disc.
 | `Musketeer_Post_Icon.png`| `musket`          | 34 box       |
 | `Paladin_Keep_Icon.png`  | `keep`            | 26 box       |
 | `Ballista_Turret_Icon.png` | `ballista`      | 26 box       |
-| `Judgement_Temple_Icon.png` | `temple`       | 26 box       |
+| `High_Altar_Icon.png` | `altar`       | 26 box       |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
 | `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
 | `Speed_Box.png`          | the 1x plate      | 54 x 24      |
@@ -42,8 +42,8 @@ usable button rather than a blank disc.
 | `Aim_Ranged_Enemies_Icon.png` | `aim_ranged` | 30 box       |
 | `Favicon.png`            | the browser tab icon | 64 x 64, and read at 16 |
 | `Apple_Touch_Icon.png`   | the iPhone home screen icon | 180 x 180, opaque |
-| `Judgement_Temple_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
-| `Judgement_Temple_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
+| `High_Altar_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
+| `High_Altar_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
 
 ## The favicon is the one file here judged at 16px
 
@@ -107,15 +107,15 @@ the whole button, disc included, and is drawn instead of the plate. Read
 `assets/abilities/README.md` before drawing one — it carries the size the disc
 has to trim to.
 
-The temple's two BADGES stayed, and they are the two rows at the foot of the
+The altar's two BADGES stayed, and they are the two rows at the foot of the
 table above. They are not buttons: they are marks hung over every tower an aura
 reaches, so they are board furniture like the rally flag rather than interface.
 
-The Judgement Temple's two abilities are the only ones that need a **second**
+The High Altar's two abilities are the only ones that need a **second**
 drawing each. Every other ability shows itself where it happens — three balls in
 the air, a kneeling paladin, a machine rebuilt in iron — but Holy Wrath and
 Divine Fortitude do their work on OTHER towers and change nothing about the
-temple or about the shots. The badge is the whole feedback, so it is drawn small
+altar or about the shots. The badge is the whole feedback, so it is drawn small
 and without the button's disc behind it, floating over the top of every building
 the aura reaches. See `drawBadges` in src/render.js.
 
@@ -123,7 +123,7 @@ Two things about that badge are worth knowing before either file is redrawn.
 It hangs above the top of the **whole drawing** rather than of the building —
 a Ballista Turret's machine stands 7px above its own stone and a Musketeer 3.6px
 above his deck, which `node tools/hud-clear.mjs` prints per tier — so a taller
-badge eats into that gap rather than into the roof. And when more than one temple
+badge eats into that gap rather than into the roof. And when more than one altar
 has bought the same ability, the badge does not double: it takes a **x2** beside
 it, because the two compound into one bigger number rather than into two marks.
 

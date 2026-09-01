@@ -141,7 +141,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a **Musketeer Post** is built, upgraded to, or given an order | `Musketeer_1..3` |
 | a **Paladin Keep** is built, upgraded to, or given a rally point | `Paladin_1..3` |
 | a **Ballista Turret** is built or upgraded to | `Ballista_Engineer_1..3` |
-| a **Judgement Temple** is built, upgraded to, or given an order | `Pope_1..3` |
+| a **High Altar** is built, upgraded to, or given an order | `Pope_1..3` |
 | a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..3` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
@@ -221,7 +221,7 @@ arrived with three lines where the other two arrived with two — which needed n
 code at all, because the share rules rotate over whatever a cue holds. The other
 two are three lines each now as well.
 
-**The Judgement Temple is the fourth and last**, at the top of the monastery
+**The High Altar is the fourth and last**, at the top of the monastery
 ladder, and every family's top rung now answers for itself.
 
 A `voice` naming a cue with no clips loaded falls back to the family's, which is the
@@ -245,7 +245,7 @@ artillery's and the monastery's were done.
 ### The pope fires the same missile, a quarter louder
 
 **THE ONE SOUND IN THE GAME THAT IS A VOLUME RATHER THAN A FILE.** The artist
-asked for the Judgement Temple to use `Arcane_shot` "but slightly louder", and
+asked for the High Altar to use `Arcane_shot` "but slightly louder", and
 that is exactly what it does: no fourth recording, no second key, and no `GAIN`
 entry — a gain would have made every other monastery louder too, since gain is a
 property of the clip.

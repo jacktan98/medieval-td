@@ -587,7 +587,7 @@ export function updateUnits(state, dt) {
   // A man's maximum health is his def's times whatever the map's auras say, read
   // fresh every frame. That one line covers every case a hook would have had to:
   // the ability bought mid-wave reaches men already standing on the road, the
-  // temple sold takes it back off them, a man who musters afterwards gets it
+  // altar sold takes it back off them, a man who musters afterwards gets it
   // without anything telling him, and two temples do not stack — see auras() in
   // src/towers.js. Nothing has to remember to call anything.
   //
@@ -600,7 +600,7 @@ export function updateUnits(state, dt) {
     // A WOUNDED MAN STAYS AS WOUNDED AS HE WAS. Raising the ceiling under him
     // without moving his health would heal nobody and quietly make him weaker as
     // a share of it; scaling both keeps the bar where the player last saw it and
-    // is the only reading under which selling the temple cannot kill anybody.
+    // is the only reading under which selling the altar cannot kill anybody.
     const max = u.def.hp * wall;
     if (u.maxHp !== max) {
       u.hp = max * (u.hp / u.maxHp);

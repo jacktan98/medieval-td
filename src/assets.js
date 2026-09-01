@@ -118,11 +118,11 @@ export const paths = {
   monastery_t1: 'assets/towers/monastery/Monastery_Tower_T1.png',
   monastery_t2: 'assets/towers/monastery/Monastery_Tower_T2.png',
   monastery_t3: 'assets/towers/monastery/Monastery_Tower_T3.png',
-  // Tier 4, the Judgement Temple: the same open belfry in stone, one storey
+  // Tier 4, the High Altar: the same open belfry in stone, one storey
   // taller, with a shingled roof over it and a cross on the point. It is the
   // tallest drawing in the game at 165 game px against the tier 2 and 3 towers'
   // 142.
-  monastery_t4: 'assets/towers/monastery/Judgement_Temple.png',
+  monastery_t4: 'assets/towers/monastery/High_Altar.png',
   // EVERY FIGHTING MAN IS TWO DRAWINGS NOW: a Default he stands and walks in,
   // and an Attack he swings or looses an arrow in. Same suffix rule as the
   // artillery frames above — the bare key is the resting pose, so the info box,
@@ -399,10 +399,10 @@ export const paths = {
   // now that the ladder forks — which is not a nicety: two upgrade buttons
   // wearing the same generic arrow would be a coin toss.
   glyph_cannon:    'assets/ui/Cannon_Outpost_Icon.png',
-  // The Judgement Temple's, on the upgrade button of an Abbey. The fourth and
+  // The High Altar's, on the upgrade button of an Abbey. The fourth and
   // last of them — every family's top rung now shows what it buys — and the same
   // one-word opt-in, on monastery tier 4 in data/towers.js.
-  glyph_temple:    'assets/ui/Judgement_Temple_Icon.png',
+  glyph_altar:    'assets/ui/High_Altar_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button
   // does, and the button is now the thing that can change without the drawing
@@ -423,7 +423,7 @@ export const paths = {
   // file actually is rather than by matching on a path prefix, which is what let
   // fourteen files move without a single check going blind.
   //
-  // The two Judgement Temple BADGES stay in assets/ui, which is a line drawn on
+  // The two High Altar BADGES stay in assets/ui, which is a line drawn on
   // purpose and not an oversight: they are not buttons and never appear in the
   // encyclopedia — they are marks the renderer hangs over a tower on the board.
   ability_burst:   'assets/abilities/Musketeer_Burst_Fire_Icon.png',
@@ -443,15 +443,15 @@ export const paths = {
   // SOLDIER does rather than what a building does.
   ability_knife: 'assets/abilities/Assassin_Knife_Throw_Icon.png',
   ability_sneak: 'assets/abilities/Assassin_Sneak_Attack_Icon.png',
-  // The Judgement Temple's two, and they come in PAIRS: a button face like every
+  // The High Altar's two, and they come in PAIRS: a button face like every
   // other ability, and a badge drawn on the BOARD over each tower the aura is
   // working on. The badge is the only feedback an aura has — nothing about the
-  // temple itself changes when one is bought — so it is as much a part of the
+  // altar itself changes when one is bought — so it is as much a part of the
   // ability as the number is.
-  ability_wrath:     'assets/abilities/Judgement_Temple_Holy_Wrath_Icon.png',
-  ability_fortitude: 'assets/abilities/Judgement_Temple_Divine_Fortitude_Icon.png',
-  badge_wrath:       'assets/ui/Judgement_Temple_Holy_Wrath.png',
-  badge_fortitude:   'assets/ui/Judgement_Temple_Divine_Fortitude.png',
+  ability_wrath:     'assets/abilities/High_Altar_Holy_Wrath_Icon.png',
+  ability_fortitude: 'assets/abilities/High_Altar_Divine_Fortitude_Icon.png',
+  badge_wrath:       'assets/ui/High_Altar_Holy_Wrath.png',
+  badge_fortitude:   'assets/ui/High_Altar_Divine_Fortitude.png',
   // The Cannon Outpost's two, and the first pair to arrive after the folder
   // existed — so they were uploaded to assets/ui like every icon before them and
   // moved here with the rest.

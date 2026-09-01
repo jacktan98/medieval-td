@@ -21,7 +21,7 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW, CANNON } from './a
 // arrived with a projectile of its own, and giving it a voice was one line here
 // rather than a branch in shoot().
 //
-// `judgement` is the fifth row and it points at the SAME cue as `arcane`, which
+// `pope` is the fifth row and it points at the SAME cue as `arcane`, which
 // is the other thing this table is good for: the pope fires the monastery's own
 // noise, a quarter louder, so what he needed was a kind of his own for the KILL
 // cry — see src/enemies.js — and no new sound at all. The loudness rides on the
@@ -31,7 +31,7 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW, CANNON } from './a
 // caught. `play(undefined)` is silence with no error and no warning, so an
 // ammunition that says `fireSound: true` and has no row here simply stops making
 // a noise — and the tower goes on working perfectly in every other respect.
-export const FIRING = { arrow: SHOT, arcane: ARCANE, judgement: ARCANE, bullet: MUSKET,
+export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, bullet: MUSKET,
                         deadeye: DEADEYE, bolt: BOLT, quarrel: CROSSBOW,
                         cannonball: CANNON };
 
@@ -550,8 +550,8 @@ const firingAbilities = t =>
 // AND THEY COMPOUND. Two temples both taught Holy Wrath are 1.1 x 1.1 = +21%, and
 // the same for Divine Fortitude, so the second 150 gold buys as much as the first
 // did relative to what is already on the board. The list is therefore the bought
-// COPIES rather than the distinct abilities — a temple that has bought nothing
-// contributes nothing, and a temple that has bought both puts both here.
+// COPIES rather than the distinct abilities — an altar that has bought nothing
+// contributes nothing, and an altar that has bought both puts both here.
 //
 // The one thing a caller must not do is treat this as a list of what to draw:
 // two temples are two Holy Wraths and one badge over each tower. See drawBadges

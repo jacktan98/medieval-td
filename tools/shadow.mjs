@@ -254,12 +254,12 @@ const SPRITES = [
   ['assets/towers/monastery/Monastery_Tower_T1.png', 'shrine.groundFrac', mon[0].spriteTrim, mon[0].groundFrac, 'whole'],
   ['assets/towers/monastery/Monastery_Tower_T2.png', 'chapel.groundFrac', mon[1].spriteTrim, mon[1].groundFrac, 'whole'],
   ['assets/towers/monastery/Monastery_Tower_T3.png', 'abbey.groundFrac',  mon[2].spriteTrim, mon[2].groundFrac, 'whole'],
-  // Tier 4, the Judgement Temple, and the drawing that most needs the ellipse
+  // Tier 4, the High Altar, and the drawing that most needs the ellipse
   // FIT rather than a bounding box: its own stonework covers the back of its
   // shadow, so the visible blob is a crescent whose box centre sits 18 source px
   // below the ellipse's. The number in data/towers.js comes from the artist's SVG,
   // and this is the row that says the fit agrees with it.
-  ['assets/towers/monastery/Judgement_Temple.png', 'temple.groundFrac', mon[3].spriteTrim, mon[3].groundFrac, 'whole'],
+  ['assets/towers/monastery/High_Altar.png', 'altar.groundFrac', mon[3].spriteTrim, mon[3].groundFrac, 'whole'],
   // Tier 4, the Musketeer Post. Same ellipse fit as the three archery towers
   // below it: the artist paints one #37422f patch of shaded grass under the
   // turret and its centre is the plot point.
