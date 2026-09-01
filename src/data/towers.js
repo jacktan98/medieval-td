@@ -2868,22 +2868,30 @@ const judgement = {
   // one of them standing in the air; separated along the axis, both have their
   // feet on the boards and the pair still reads as side by side to the camera.
   //
-  // Source (458, 568) and (532, 561), which is 74 apart against a monk 76 wide:
+  // Source (469, 566) and (543, 558), which is 74 apart against a monk 76 wide:
   // shoulder to shoulder with their robes touching.
   //
-  // EACH OF THEM STANDS IN THE MIDDLE OF HIS OWN COLUMN OF FLOOR, which is what
-  // "the centre of the platform" means on a board drawn at an angle. Down the
-  // vertical line through x 458 the boards run y 533..603, so his mark is 568; down
-  // the line through x 532 they run y 515..608, so his is 561. Both men are at 50%
-  // from the floor's back edge to its front, and the right one sits a few pixels
-  // higher on the screen than the left because THE FLOOR DOES — it climbs from the
-  // left corner (382, 585) to the right (627, 531). Level heads would mean one of
-  // them standing off the boards.
+  // THE PAIR'S MIDDLE IS THE FLOOR'S MIDDLE, in both directions.
+  //
+  // ACROSS: halfway between the two men is x 505.7, which is `mountFrac`'s x to a
+  // tenth of a pixel — the floor's own centroid. They were 11px left of it, which
+  // left a wedge of empty boards on the right and put the left man near the rail.
+  // Sliding both right costs a little of the right monk to the near post, and that
+  // is the trade: the post covers about half his robe now against a little under
+  // half before, and the pair sits where the platform's middle is.
+  //
+  // DOWN: each man is at the middle of HIS OWN COLUMN of floor, which is what a
+  // centre means on a board drawn at an angle. Down the vertical line through x 469
+  // the boards run y 525..606, so his mark is 566; down the line through x 543 they
+  // run y 516..600, so his is 558. Both are at 50% from the floor's back edge to
+  // its front, and the right one sits a few pixels higher on the screen than the
+  // left because THE FLOOR DOES — it climbs from the left corner (382, 585) to the
+  // right (627, 531). Level heads would mean one of them standing off the boards.
   //
   // THE ROOF CROSSES BOTH OF THEIR HEADS THERE, and that is wanted rather than
   // tolerated. It is what the owner asked for when this tower was designed — a roof
   // and a post that overlap the men, the way the altar's do to the pope. The crowns
-  // sit 9px inside the eave on the left and 17px on the right, so the shingles cut
+  // sit 7px inside the eave on the left and 18px on the right, so the shingles cut
   // across the tops of two skulls that are behind them, which is what a man under a
   // roof looks like.
   //
@@ -2901,7 +2909,7 @@ const judgement = {
   // that: inside the floor quad, and within a tenth of its middle. The floor
   // centroid is still `mountFrac` above, which is what everything asking for ONE
   // point gets.
-  pair: [[0.3500, 0.5722], [0.5556, 0.5637]],
+  pair: [[0.3797, 0.5691], [0.5853, 0.5593]],
   // THE BOARDS THEMSELVES, in the building's own source pixels, so that the two
   // sentences above stop being prose. Corners in draw order: back, right, front,
   // left — the same quad `mountFrac`'s centroid comes from.
@@ -2934,8 +2942,8 @@ const judgement = {
   // THE ROOF first, and it matters more here than anywhere: a monk is 116 source px
   // tall against a pope's 156, and the belfry's opening under the eave is about the
   // same, so a monk standing anywhere on this floor has his head inside the band.
-  // Standing at the floor's middle his crown reaches y 456 on the left and 456 on
-  // the right, and the eave hangs to 465 and 474 over them — so the shingles cross
+  // Standing at the floor's middle his crown reaches y 461 on the left and 453 on
+  // the right, and the eave hangs to 467 and 471 over them — so the shingles cross
   // both skulls. That is the overlap the owner asked for, and it is the artist's own
   // drawing producing it rather than a number chosen to make it happen.
   //
@@ -2952,9 +2960,9 @@ const judgement = {
   //
   // THE NEAR POST second, at the floor's nearest corner, source x 535..570 and y
   // 441..626. It is the only one of the four in front of them, and it crosses the
-  // RIGHT-HAND monk rather than passing between the two — his robe spans x 492..568
-  // and the post covers 535..570, so about half of it is stone. The left monk is
-  // 55px clear of it. That asymmetry is the drawing's, not a mistake: it is what
+  // RIGHT-HAND monk rather than passing between the two — his robe spans x 503..579
+  // and the post covers 533..572, so about half of it is stone. The left monk is
+  // 28px clear of it. That asymmetry is the drawing's, not a mistake: it is what
   // a post at a corner does to two men standing behind it.
   //
   // Its corners are the union of the post's two faces and its cap, from the SVG at
