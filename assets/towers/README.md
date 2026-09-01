@@ -66,15 +66,19 @@ the middle of the floor, which is what the encyclopedia and the info box use. If
 you redraw this building, both mounts have to be re-measured off the floor quad,
 not just the one.
 
-**And where they stand is squeezed between the roof and the front rail.** A monk
-is 116 source px tall and the opening under this belfry's eave is about the same,
-so there is one narrow band of floor where his head is clear of the shingles and
-his feet are still on the boards. Move him forward and the roof stops touching
-him but he ends up teetering on the lip; move him back and he is properly on the
-platform with the roof through his skull. The def carries the floor as
-`floorQuad` and the eave as `frontPolys[0]` for exactly this reason, and
-`node tools/pair.mjs` reads both and fails on either mistake. If you redraw the
-roof, run it before anything else.
+**Both of them stand in the middle of the boards, and the roof crosses their
+heads there.** That is wanted: a monk is 116 source px tall and the opening under
+this belfry's eave is about the same, so the shingles cut across two skulls that
+are behind them, the same way the altar's roof cuts across the pope. The def
+carries the floor as `floorQuad` and `node tools/pair.mjs` fails if either man
+leaves the middle of it.
+
+**What must never happen is a monk drawn ON TOP of the roof**, and the only thing
+standing between this tower and that is `frontPolys[0]` — the band along the eave
+that is painted back over the men. On this building it is load-bearing rather
+than belt-and-braces, because there is nowhere on the floor a monk's head does
+not reach into it. If you redraw the roof, re-measure that band off your own SVG
+and run `node tools/roof.mjs` before anything else.
 
 **Artillery is three frames per tier, not one drawing per tier.** Every rung of
 that family animates: a Default, a Reload and a Fire, and the loop through them

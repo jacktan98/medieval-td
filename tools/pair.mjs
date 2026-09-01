@@ -23,8 +23,12 @@
 //   THE CADENCE IS THE PAIR  a shot every cooldown, each monk on twice that
 //   CHARGING IS NEXT         the man drawn gathering is the man about to fire
 //   AND FOR AS LONG AS ASKED  `charge` seconds of gathering, the rest at rest
-//   AND HIS HEAD IS CLEAR    no man's crown is drawn inside his own roof
-//   AND HIS FEET ARE ON THE FLOOR  as deep on the boards as that roof allows
+//   AND HIS FEET ARE PLANTED  on the boards, in the middle of them
+//
+// The roof and the post being painted OVER the men — which is what keeps a monk's
+// head from appearing on top of the shingles — is `frontPolys` and belongs to
+// tools/roof.mjs, not here. See the note beside the floor check below: this file
+// carried a rule about it for a while and the rule was a misreading.
 
 import { readFileSync } from 'fs';
 import { updateTowers, mountPoint, muzzlePoint } from '../src/towers.js';
@@ -190,65 +194,32 @@ for (const def of PAIRED) {
       `${shown.toFixed(2)}s gathering, ${(per - shown).toFixed(2)}s at rest`);
   }
 
-  // AND HIS HEAD IS NOT INSIDE HIS OWN ROOF. The owner asked for the roof to
-  // overlap the men and then, seeing it, asked for it not to touch their heads —
-  // so this is the line between the two, and it is the one thing about this tower
-  // that is decided by the artwork rather than by the numbers.
+  // THE ROOF IS SUPPOSED TO CROSS THEIR HEADS, and there is deliberately no check
+  // that it does not. This file carried one for a while, and it was a misreading:
+  // the owner's "the roof cannot be overlapped by the monk head" is about the monk
+  // being painted ON TOP of the shingles, not about the shingles covering his
+  // crown. The second is the realism this tower was designed around — a roof and a
+  // post in front of the men, the way the altar's are in front of the pope.
   //
-  // `frontPolys[0]` is the roof band, in the building's own source pixels. A man's
-  // crown is his anchor less the height of his tallest ink, and the test is that it
-  // sits BELOW the lowest edge of that band at his x. Below rather than outside:
-  // the band is drawn as a strip along the eave, so a crown that cleared it by
-  // going further up would pass a point-in-polygon test and look absurd.
-  if (def.frontPolys && def.frontPolys.length) {
-    const roof = def.frontPolys[0];
-    // How tall he is above his anchor, in the sprite's own source px.
-    const crownUp = def.gunnerPivot[1] * def.gunnerTrim[3];
-    // The roof's lowest edge on the vertical line through x.
-    const eaveAt = x => {
-      let y = -Infinity;
-      for (let i = 0, j = roof.length - 1; i < roof.length; j = i++) {
-        const [x1, y1] = roof[j], [x2, y2] = roof[i];
-        if ((x1 <= x && x2 >= x) || (x2 <= x && x1 >= x)) {
-          const k = x2 === x1 ? 0 : (x - x1) / (x2 - x1);
-          y = Math.max(y, y1 + k * (y2 - y1));
-        }
-      }
-      return y;
-    };
-    const heads = def.pair.map((f, i) => {
-      const sx = def.spriteTrim[0] + f[0] * def.spriteTrim[2];
-      const sy = def.spriteTrim[1] + f[1] * def.spriteTrim[3];
-      return { i, x: sx, crown: sy - crownUp, eave: eaveAt(sx) };
-    });
-    const under = heads.filter(h => h.eave > -Infinity && h.crown <= h.eave);
-    ok(under.length === 0, 'and no man\'s head is drawn inside the roof',
-      heads.map(h => `${h.i}: clear by ${(h.crown - h.eave).toFixed(1)}px`).join(', '));
-
-    // AND HE IS NOT STANDING FURTHER FORWARD THAN HE HAS TO. The check above is
-    // one-sided: it is happy with a man at the very front lip of the platform,
-    // because a man out there has all the headroom in the world. That is exactly
-    // where the two of them drifted to, and what the owner saw — "they are closer
-    // to the bottom edge of the platform".
-    //
-    // So this is the other side of it. A man belongs at the deepest point the eave
-    // allows, and SLACK is how many pixels of that he is giving away. Six is a
-    // pixel over a game pixel: enough room for the eave being a curve sampled
-    // every 18px, not enough for a man to wander to the rail.
-    const SLACK = 6;
-    const forward = heads.filter(h => h.eave > -Infinity && h.crown - h.eave > SLACK);
-    ok(forward.length === 0, `and stands as deep as the roof allows (${SLACK}px)`,
-      heads.map(h => `${h.i}: ${(h.crown - h.eave).toFixed(1)}px of slack`).join(', '));
-  }
-
-  // AND BOTH OF THEM ARE ON THE BOARDS. The rule above pushes them backward and
-  // nothing pushed back until now — a man moved one step too far is standing in
-  // the air behind the platform, which looks no better than one on the lip.
+  // What that sentence actually asks for lives in `frontPolys[0]`, which is checked
+  // by tools/roof.mjs and by the eye, not here: get the band right and the roof is
+  // painted over the men at any depth they can stand at. It was wrong when the
+  // complaint was made — traced by hand and up to 10px above the true eave — and
+  // sampling it off the artist's SVG is what fixed it. Moving the men was not.
   //
-  // `floorQuad` is the belfry floor in the building's own source pixels, so this
-  // is a plain point-in-polygon on the artist's own shape. It also reports how far
-  // down the floor each man is, front to back, which is the number the owner was
-  // actually describing: they were at 67% and 79% before, and the middle is 50%.
+  // So the only thing worth holding about where they stand is the thing below.
+
+  // BOTH OF THEM ARE ON THE BOARDS, AND IN THE MIDDLE OF THEM. Nothing could see
+  // this until the men had drifted twice — forward onto the front lip while the
+  // rule above was being misapplied, then a few pixels back off it — and both
+  // times what was being described was a fraction of the floor.
+  //
+  // `floorQuad` is the belfry floor in the building's own source pixels, so being
+  // on it is a plain point-in-polygon on the artist's own shape. Being in the
+  // MIDDLE of it is measured down each man's own column, because the floor is drawn
+  // at an angle and its middle is a different y at every x: 0 is against the back
+  // rail, 1 is over the front lip, and 0.5 is the centre the owner asked for. They
+  // were at 67% and 79% when it read as two men on the edge of the platform.
   if (def.floorQuad) {
     const inside = (px, py, poly) => {
       let hit = false;
@@ -279,6 +250,14 @@ for (const def of PAIRED) {
     });
     ok(feet.every(f => f.on), 'and both men have their feet on the boards',
       feet.map(f => `${f.i}: ${(f.at * 100).toFixed(0)}% back to front`).join(', '));
+
+    // A TENTH OF THE FLOOR EITHER SIDE OF ITS MIDDLE. Wide enough that a re-export
+    // that shifts the quad by a pixel does not fail this, narrow enough that the
+    // 67%/79% it started at does — which is the whole job.
+    const OFF = 0.1;
+    ok(feet.every(f => Math.abs(f.at - 0.5) <= OFF),
+      `and stands within a tenth of their middle`,
+      feet.map(f => `${f.i}: ${(f.at * 100).toFixed(0)}%`).join(', '));
   }
 
   // AND NOBODY GATHERS OVER NOTHING. With no target the tower does not count
