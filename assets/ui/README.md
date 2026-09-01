@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Thirty-two files in, and two things still vector.** Everything below that is not in the table
+**Thirty-three files in, and two things still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -40,8 +40,36 @@ usable button rather than a blank disc.
 | `Aim_Near_Exit_Icon.png` | `aim_exit`, the standing order | 30 box |
 | `Aim_Most_Health_Icon.png` | `aim_tough`     | 30 box       |
 | `Aim_Ranged_Enemies_Icon.png` | `aim_ranged` | 30 box       |
+| `Favicon.png`            | the browser tab icon | 64 x 64, and read at 16 |
 | `Judgement_Temple_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
 | `Judgement_Temple_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
+
+## The favicon is the one file here judged at 16px
+
+`Favicon.png` is not a 512 sprite and is not sized by `SCALE`. It is 64 x 64, and
+every browser that shows it will shrink it: 16px on a tab, 32 on a bookmark bar.
+That is a smaller box than anything else in this project has to survive.
+
+It is composited rather than drawn — the barracks' crossed swords laid on
+`Button_Plate_Icon.png` at 52% of the disc — so it is the artist's own artwork
+without a new file to keep in step. The plate is what makes it work: a filled
+cream disc with a black rim holds a silhouette on a white tab and a dark one
+alike, where a bare transparent glyph disappeared into both.
+
+**If you replace it, the test is the only one that matters here: shrink your
+drawing to 16 x 16 and look at it.** Every candidate in this folder was tried
+that way before this one was picked, and most of them turned to mud — the
+catapult, the bow and the cannon all lost their shape entirely. What survived
+were the ones with a bold outer silhouette and one mark inside it. So:
+
+- a **solid shape that reaches the edges**, not a small mark on transparency
+- **one** idea, not a scene — a building with a roof, a door and a flag is three
+- **high contrast inside it**, because anti-aliasing at 16px eats thin lines
+- test it on white AND on dark; browser tabs are both
+
+512 x 512 is fine to draw at, as everything else here is. Save it as
+`Favicon.png` at 64 x 64 as well, or leave the composite in place and the game
+keeps using it.
 
 ## The ability buttons moved to `assets/abilities`
 
