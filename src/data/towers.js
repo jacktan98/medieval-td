@@ -2868,15 +2868,15 @@ const judgement = {
   // one of them standing in the air; separated along the axis, both have their
   // feet on the boards and the pair still reads as side by side to the camera.
   //
-  // Source (458, 578) and (532, 581), which is 74 apart against a monk 76 wide:
+  // Source (458, 573) and (532, 582), which is 74 apart against a monk 76 wide:
   // shoulder to shoulder with their robes touching.
   //
   // THEIR HEADS CLEAR THE ROOF, and that is what decides the depth rather than
   // taste. A monk's crown is 105 source px above his anchor — measured off the
   // topmost ink of both his poses, which agree — and the padded eave above hangs
-  // lowest at x 520, where it reaches y 476.6. So the deepest a man may stand and
-  // still keep his head out of the shingles is eave(x) + 105: y 581.6 under the
-  // lowest part of the roof, rising to y 566.5 further out.
+  // lowest at x 516, where it reaches y 478. So the deepest a man may stand and
+  // still keep his head out of the shingles is eave(x) + 105: y 583 under the
+  // lowest part of the roof, rising to y 555 out at the left tip.
   //
   // The first pair ran along the floor's own left-to-right axis, which is the line
   // two men standing on a sloped floor would naturally take — and it is the wrong
@@ -2885,15 +2885,35 @@ const judgement = {
   // deep enough to clear, and they still read as side by side because that is what
   // level means to the camera.
   //
-  // Left clears by 14.5px, right by 15.4px — about 3 game px each, which is the
-  // margin that survives the eave being a curve and the stroke being 2px wide.
-  // `node tools/pair.mjs` measures both against the band above and fails if either
-  // crown goes back under it.
+  // AND THEY STAND AS DEEP AS THAT LINE ALLOWS, which is the owner's second ask
+  // about this pair and the one that fights the first. They were at y 580 and 589,
+  // about four fifths of the way from the floor's back edge to its front, and it
+  // read as two men on the lip of the platform rather than on it. The floor's own
+  // centre is y 561.5 — but a man standing there has his crown 3px inside the eave
+  // on the left and 18px inside it on the right, which is the roof eating their
+  // heads all over again. So they are at eave(x) + 105 + 3 instead: as near the
+  // middle as the shingles permit, 7px further back than they were, and no further.
   //
-  // Both feet are on the boards: at x 458 the floor runs y 531..603 and at x 532 it
+  // The three pixels are the whole margin, and it is thinner than it sounds: the
+  // eave polygon below is already padded 2px DOWN from the artist's own line, so
+  // the real gap over each crown is nearer five. `node tools/pair.mjs` measures
+  // both against that band and fails if either crown goes back under it.
+  //
+  // Both feet are on the boards: at x 458 the floor runs y 533..603 and at x 532 it
   // runs y 515..608, so neither man is over the rail. The floor centroid is still
   // `mountFrac` above, which is what everything asking for ONE point gets.
-  pair: [[0.3500, 0.5876], [0.5556, 0.5992]],
+  pair: [[0.3500, 0.5787], [0.5556, 0.5896]],
+  // THE BOARDS THEMSELVES, in the building's own source pixels, so that the two
+  // sentences above stop being prose. Corners in draw order: back, right, front,
+  // left — the same quad `mountFrac`'s centroid comes from.
+  //
+  // It is here because the owner has now asked twice about where these two stand,
+  // in opposite directions — once for their heads to come out of the roof, which
+  // pushed them forward, and once for them to come off the front lip, which pushes
+  // them back — and there was no tool that could see either. `node tools/pair.mjs`
+  // reads this and the eave together and holds the men in the one band that
+  // satisfies both: on the boards, and as far back as the shingles allow.
+  floorQuad: [[494, 508], [627, 531], [520, 618], [382, 585]],
   // HOW LONG BEFORE HIS SHOT A MAN IS DRAWN GATHERING, in seconds, at the owner's
   // ask: half a second of charging against a second and a half at rest.
   //
@@ -2913,24 +2933,27 @@ const judgement = {
   // THE ROOF AND THE NEAR POST, the same two things that stand between the altar's
   // pope and the camera, measured on this drawing rather than inherited.
   //
-  // THE ROOF first, and it matters more here: a monk is 116 source px tall against
-  // a pope's 156, so he stands further under the eave. Standing on the floor at y
-  // 561 his head reaches about y 445, and the eave hangs to 466 at its lowest — so
-  // the roof crosses both monks above the shoulder. That is the overlap the owner
-  // asked for, and it is the artist's own drawing producing it rather than a
-  // number chosen to make it happen.
+  // THE ROOF first, and on this building it is the LIMIT rather than the overlap:
+  // a monk is 116 source px tall against a pope's 156, and the belfry's opening is
+  // 116 source px deep at its narrowest, so where the two men may stand is decided
+  // by the eave and nothing else. See `pair` above for the arithmetic. The roof
+  // ends up clearing both crowns by three pixels and touching neither.
   //
-  // The band runs from y 360 down to the eave, traced along it in five steps, with
-  // every vertex a pixel ABOVE the line rather than on it — the same one-pixel rule
-  // the altar's carries, and for the same reason: three pixels under the eave is
-  // the BACK post, which is behind the monks, and a band that overshot would paint
-  // its outline across a face.
+  // THE NEAR POST is what overlaps them instead, and that is the realism the owner
+  // asked for — see below. It does the job the roof was expected to do, and better,
+  // because a man half behind a pillar reads as standing behind it while a man with
+  // the top of his skull missing reads as a bug.
+  //
+  // The band runs from y 300 down to the eave, with every vertex a pixel ABOVE the
+  // line rather than on it — the same one-pixel rule the altar's carries, and for
+  // the same reason: three pixels under the eave is the BACK post, which is behind
+  // the monks, and a band that overshot would paint its outline across a face.
   //
   // THE NEAR POST second, at the floor's nearest corner, source x 535..570 and y
   // 441..626. It is the only one of the four in front of them, and it crosses the
-  // RIGHT-HAND monk rather than passing between the two — he stands at x 549.6 and
-  // the post covers 535..570, so about a third of his robe is stone. The left monk
-  // is 90px clear of it. That asymmetry is the drawing's, not a mistake: it is what
+  // RIGHT-HAND monk rather than passing between the two — his robe spans x 492..568
+  // and the post covers 535..570, so about half of it is stone. The left monk is
+  // 55px clear of it. That asymmetry is the drawing's, not a mistake: it is what
   // a post at a corner does to two men standing behind it.
   //
   // Its corners are the union of the post's two faces and its cap, from the SVG at

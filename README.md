@@ -69,7 +69,7 @@ exit non-zero when something is wrong.
 | `plague` | the thug throws, the flask breaks, and the spill poisons |
 | `hud-clear` | no tower or badge is drawn into the HUD or off the board |
 | `status` | a status goes on, hurts, shows and comes off, for both armies |
-| `pair` | the two men on a tower that holds two take turns |
+| `pair` | the two men on a tower that holds two take turns, and stand where they fit |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |

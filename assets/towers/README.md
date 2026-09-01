@@ -66,6 +66,16 @@ the middle of the floor, which is what the encyclopedia and the info box use. If
 you redraw this building, both mounts have to be re-measured off the floor quad,
 not just the one.
 
+**And where they stand is squeezed between the roof and the front rail.** A monk
+is 116 source px tall and the opening under this belfry's eave is about the same,
+so there is one narrow band of floor where his head is clear of the shingles and
+his feet are still on the boards. Move him forward and the roof stops touching
+him but he ends up teetering on the lip; move him back and he is properly on the
+platform with the roof through his skull. The def carries the floor as
+`floorQuad` and the eave as `frontPolys[0]` for exactly this reason, and
+`node tools/pair.mjs` reads both and fails on either mistake. If you redraw the
+roof, run it before anything else.
+
 **Artillery is three frames per tier, not one drawing per tier.** Every rung of
 that family animates: a Default, a Reload and a Fire, and the loop through them
 IS the tower's reload clock rather than a decoration over it. Tiers 1 to 3 shared

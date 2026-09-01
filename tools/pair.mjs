@@ -24,6 +24,7 @@
 //   CHARGING IS NEXT         the man drawn gathering is the man about to fire
 //   AND FOR AS LONG AS ASKED  `charge` seconds of gathering, the rest at rest
 //   AND HIS HEAD IS CLEAR    no man's crown is drawn inside his own roof
+//   AND HIS FEET ARE ON THE FLOOR  as deep on the boards as that roof allows
 
 import { readFileSync } from 'fs';
 import { updateTowers, mountPoint, muzzlePoint } from '../src/towers.js';
@@ -223,6 +224,61 @@ for (const def of PAIRED) {
     const under = heads.filter(h => h.eave > -Infinity && h.crown <= h.eave);
     ok(under.length === 0, 'and no man\'s head is drawn inside the roof',
       heads.map(h => `${h.i}: clear by ${(h.crown - h.eave).toFixed(1)}px`).join(', '));
+
+    // AND HE IS NOT STANDING FURTHER FORWARD THAN HE HAS TO. The check above is
+    // one-sided: it is happy with a man at the very front lip of the platform,
+    // because a man out there has all the headroom in the world. That is exactly
+    // where the two of them drifted to, and what the owner saw — "they are closer
+    // to the bottom edge of the platform".
+    //
+    // So this is the other side of it. A man belongs at the deepest point the eave
+    // allows, and SLACK is how many pixels of that he is giving away. Six is a
+    // pixel over a game pixel: enough room for the eave being a curve sampled
+    // every 18px, not enough for a man to wander to the rail.
+    const SLACK = 6;
+    const forward = heads.filter(h => h.eave > -Infinity && h.crown - h.eave > SLACK);
+    ok(forward.length === 0, `and stands as deep as the roof allows (${SLACK}px)`,
+      heads.map(h => `${h.i}: ${(h.crown - h.eave).toFixed(1)}px of slack`).join(', '));
+  }
+
+  // AND BOTH OF THEM ARE ON THE BOARDS. The rule above pushes them backward and
+  // nothing pushed back until now — a man moved one step too far is standing in
+  // the air behind the platform, which looks no better than one on the lip.
+  //
+  // `floorQuad` is the belfry floor in the building's own source pixels, so this
+  // is a plain point-in-polygon on the artist's own shape. It also reports how far
+  // down the floor each man is, front to back, which is the number the owner was
+  // actually describing: they were at 67% and 79% before, and the middle is 50%.
+  if (def.floorQuad) {
+    const inside = (px, py, poly) => {
+      let hit = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, yi] = poly[i], [xj, yj] = poly[j];
+        if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    // How far from the floor's back edge to its front edge he is, on his own
+    // column, as a fraction. 0 is against the back rail and 1 is over the lip.
+    const depth = (sx, sy) => {
+      let lo = Infinity, hi = -Infinity;
+      const poly = def.floorQuad;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [x1, y1] = poly[j], [x2, y2] = poly[i];
+        if ((x1 <= sx && x2 >= sx) || (x2 <= sx && x1 >= sx)) {
+          const y = x2 === x1 ? y1 : y1 + (sx - x1) / (x2 - x1) * (y2 - y1);
+          lo = Math.min(lo, y); hi = Math.max(hi, y);
+        }
+      }
+      return hi > lo ? (sy - lo) / (hi - lo) : NaN;
+    };
+    const feet = def.pair.map((f, i) => {
+      const sx = def.spriteTrim[0] + f[0] * def.spriteTrim[2];
+      const sy = def.spriteTrim[1] + f[1] * def.spriteTrim[3];
+      return { i, on: inside(sx, sy, def.floorQuad), at: depth(sx, sy) };
+    });
+    ok(feet.every(f => f.on), 'and both men have their feet on the boards',
+      feet.map(f => `${f.i}: ${(f.at * 100).toFixed(0)}% back to front`).join(', '));
   }
 
   // AND NOBODY GATHERS OVER NOTHING. With no target the tower does not count
