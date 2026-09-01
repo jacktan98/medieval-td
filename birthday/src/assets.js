@@ -25,7 +25,7 @@ export const paths = {
   giant: '../assets/enemies/Enemies_Giant_Thug_Default.png',
   giant_attack: '../assets/enemies/Enemies_Giant_Thug_Attack.png',
   plague: '../assets/enemies/Enemies_Plague_Thug_Default.png',
-  plague_attack: '../assets/enemies/Enemies_Plague_Thug_Attack.png',
+  plague_attack: '../assets/enemies/Enemies_Plague_Thug_Melee_Attack.png',
 
   // The dashboard's purse and lives, and the sword and heart that stand in for
   // the words "Damage" and "Health" on the stats panel.

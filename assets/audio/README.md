@@ -1,17 +1,44 @@
 # Audio
 
+**Seventy-two clips: thirty in `sfx/` and forty-two in `voice/`.**
+
 ```
-assets/audio/sfx/     Arrow_shot, Attack_1..3, Arrow_kill_enemy,
-                      Rock_hit_ground, Rock_kill_enemy, Arcane_shot,
-                      Musketeer_shot, Musketeer_kill_enemy,
-                      Ballista_Bolt_shot, Ballista_kill_enemy,
-                      Paladin_attack, Paladin_kill_enemy, Pope_kill_enemy,
-                      Flask_Break, Sell_Tower, Select_Sound,
-                      Thug_dies, Soldier_dies
-assets/audio/voice/   Archery_1..5, Barracks_1..5, Artillery_1..5,
-                      Monastery_1..5, Musketeer_1..3, Paladin_1..3,
-                      Ballista_Engineer_1..3, Pope_1..3, Thug_1
+assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
+                      Arrow_kill_enemy.mp3,
+                      Rock_hit_ground.mp3, Rock_kill_enemy.mp3, Arcane_shot.mp3,
+                      Musketeer_shot.mp3, Musketeer_kill_enemy.mp3,
+                      Musketeer_Deadeye.mp3,
+                      Crossbow_bolt_shot.mp3, Crossbowman_kill_enemy.mp3,
+                      Ballista_Bolt_shot.mp3, Ballista_kill_enemy.mp3,
+                      Cannon_shot.mp3, Cannon_kill_enemy.mp3,
+                      Paladin_attack.mp3, Paladin_kill_enemy.mp3,
+                      Paladin_Holy_Light.mp3, Paladin_Holy_Slash.mp3,
+                      Assassin_melee_attack.mp3, Assassin_kill_enemy.mp3,
+                      Assassin_Knife_Throw.mp3,
+                      Pope_kill_enemy.mp3,
+                      Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
+                      Thug_dies.mp3, Soldier_dies.mp3
+
+assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
+                      Barracks_1.mp3 .. Barracks_5.mp3
+                      Artillery_1.mp3 .. Artillery_5.mp3
+                      Monastery_1.mp3 .. Monastery_5.mp3
+                      Musketeer_1.mp3 .. Musketeer_3.mp3
+                      Crossbowman_1.mp3 .. Crossbowman_3.mp3
+                      Paladin_1.mp3 .. Paladin_3.mp3
+                      Assassin_1.mp3 .. Assassin_3.mp3
+                      Ballista_Engineer_1.mp3 .. Ballista_Engineer_3.mp3
+                      Cannoneer_1.mp3 .. Cannoneer_3.mp3
+                      Pope_1.mp3 .. Pope_3.mp3
+                      Thug_1.mp3
 ```
+
+**Five voices for a family, three for a man.** A family's five are what the whole
+ladder says when a tower is built or given an order; a tier 4's three belong to
+that one tower and replace the family's. Both fourth rungs of a forked ladder get
+their own three — the Musketeer and the Crossbowman, the Paladin and the
+Assassin, the Ballista Engineer and the Cannoneer — because they are different
+men, not the same man twice.
 
 All recorded and all wired. `node tools/audio.mjs` measures
 them; `node tools/sound.mjs` checks the rules below against the real

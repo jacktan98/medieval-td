@@ -44,6 +44,21 @@ const ok = (cond, label, detail = '') => {
   if (!cond) bad++;
 };
 
+// Damage a second, which is what every "is this tier stronger" check below is
+// really asking. It was written out four times.
+const dps = d => d.damage / d.cooldown;
+
+// WHAT ONE TOWER COSTS TO TAKE TO THE TOP, not what the array adds up to.
+// Archery forks, so its five entries include two fourth rungs and nobody ever
+// buys both — summing the array would have charged a player 730g for a ladder
+// whose dearest path is 530. The path is: every rung below the top, plus the
+// dearest of the top ones.
+const spend = fam => {
+  const top = Math.max(...fam.map(d => d.tier));
+  const below = fam.filter(d => d.tier < top).reduce((sum, d) => sum + d.cost, 0);
+  return below + Math.max(...fam.filter(d => d.tier === top).map(d => d.cost));
+};
+
 // Keyed by the name the table uses, so a failure reads in the same words the
 // design is written in.
 const FAM = { Archery: archery, Monastery: monastery, Artillery: siege };
@@ -271,7 +286,6 @@ console.log('\nTier 4 — reach instead of output\n');
 {
   const t4 = archery[3];
   const t3 = archery[2];
-  const dps = d => d.damage / d.cooldown;
 
   const longest = [...archery, ...monastery, ...siege].every(d => d === t4 || d.range < t4.range);
   ok(longest, 'the Musketeer Post reaches further than anything else',
@@ -318,7 +332,6 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
 {
   const t4 = siege.find(d => d.name === 'Ballista Turret');
   const t3 = siege[2];
-  const dps = d => d.damage / d.cooldown;
 
   ok(siege.every(d => d === t4 || d.range > t4.range), 'the Ballista Turret reaches least in its family',
     siege.map(d => d.range).join(' / '));
@@ -392,16 +405,6 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
     'and pays for it in ground covered',
     `${dps(t4).toFixed(1)} a second against ${dps(t3).toFixed(1)}, over ${((t4.splash * t4.range) / (t3.splash * t3.range) * 100).toFixed(0)}% of the reach x blast`);
 
-  // WHAT ONE TOWER COSTS TO TAKE TO THE TOP, not what the array adds up to.
-  // Archery forks, so its five entries include two fourth rungs and nobody ever
-  // buys both — summing the array would have charged a player 730g for a ladder
-  // whose dearest path is 530. The path is: every rung below the top, plus the
-  // dearest of the top ones.
-  const spend = fam => {
-    const top = Math.max(...fam.map(d => d.tier));
-    const below = fam.filter(d => d.tier < top).reduce((sum, d) => sum + d.cost, 0);
-    return below + Math.max(...fam.filter(d => d.tier === top).map(d => d.cost));
-  };
   ok(spend(siege) > spend(archery) && spend(siege) > spend(barracks),
     'and is the dearest ladder there is',
     `${spend(siege)}g against ${spend(archery)}g and ${spend(barracks)}g`);
@@ -422,7 +425,6 @@ console.log('\nArtillery tier 4 — the other one, blast instead of rate\n');
   const gun = siege.find(d => d.name === 'Cannon Outpost');
   const bal = siege.find(d => d.name === 'Ballista Turret');
   const t3 = siege[2];
-  const dps = d => d.damage / d.cooldown;
 
   ok(gun.cost === bal.cost && gun.tier === bal.tier,
     'the Cannon Outpost is the Turret\'s price on the Turret\'s rung',
@@ -515,20 +517,9 @@ console.log('\nMonastery tier 4 — the same tower, harder\n');
   // What that combination is worth, and what it costs. The output per second is
   // up by the damage alone; the ladder is the second dearest in the game, behind
   // artillery's, which is where a tower with no drawback belongs.
-  const dps = d => d.damage / d.cooldown;
   ok(dps(t4) > dps(t3), 'so its output rises with the blow and nothing else',
     `${dps(t4).toFixed(1)} a second against ${dps(t3).toFixed(1)}`);
 
-  // WHAT ONE TOWER COSTS TO TAKE TO THE TOP, not what the array adds up to.
-  // Archery forks, so its five entries include two fourth rungs and nobody ever
-  // buys both — summing the array would have charged a player 730g for a ladder
-  // whose dearest path is 530. The path is: every rung below the top, plus the
-  // dearest of the top ones.
-  const spend = fam => {
-    const top = Math.max(...fam.map(d => d.tier));
-    const below = fam.filter(d => d.tier < top).reduce((sum, d) => sum + d.cost, 0);
-    return below + Math.max(...fam.filter(d => d.tier === top).map(d => d.cost));
-  };
   ok(spend(monastery) > spend(archery) && spend(monastery) > spend(barracks) && spend(monastery) < spend(siege),
     'and the ladder is the second dearest there is',
     `${spend(monastery)}g against artillery's ${spend(siege)}g, archery's ${spend(archery)}g, the barracks' ${spend(barracks)}g`);

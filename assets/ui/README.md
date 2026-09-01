@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Twenty-two files in, two still vector.** Everything below that is not in the table
+**Thirty-two files in, and two things still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -31,16 +31,30 @@ usable button rather than a blank disc.
 | `Health_Icon.png`        | the word "Health" | 16 tall      |
 | `Gold_Cost_Icon.png`     | a tier's price, and an enemy's bounty | 14 tall |
 | `Life_Cost_Icon.png`     | lives an enemy costs if it gets past | 14 tall |
-| `Musketeer_Burst_Fire_Icon.png` | the Burst Fire button, plate and all | 60 diameter |
-| `Musketeer_Deadeye_Icon.png`    | the Deadeye button, plate and all    | 60 diameter |
-| `Paladin_Holy_Light_Icon.png`   | the Holy Light button, plate and all | 60 diameter |
-| `Paladin_Holy_Slash_Icon.png`   | the Holy Slash button, plate and all | 60 diameter |
-| `Ballista_Turret_Far_Shot_Icon.png`   | the Far Shot button, plate and all | 60 diameter |
-| `Ballista_Turret_Heavy_Bolt_Icon.png` | the Heavy Bolt button, plate and all | 60 diameter |
-| `Judgement_Temple_Holy_Wrath_Icon.png`       | the Holy Wrath button, plate and all       | 60 diameter |
-| `Judgement_Temple_Divine_Fortitude_Icon.png` | the Divine Fortitude button, plate and all | 60 diameter |
+| `Monastery_Icon.png`     | `cross`           | 26 box       |
+| `Crossbow_Sentry_Icon.png` | `sentry`        | 26 box       |
+| `Assassin_Guild_Icon.png`| `assassin`        | 26 box       |
+| `Cannon_Outpost_Icon.png`| `cannon`          | 34 box       |
+| `Maxed_Icon.png`         | `max`, on a ladder with nothing left to buy | 26 box |
+| `Range_Icon.png`         | the word "Reach"  | 16 tall      |
+| `Aim_Near_Exit_Icon.png` | `aim_exit`, the standing order | 30 box |
+| `Aim_Most_Health_Icon.png` | `aim_tough`     | 30 box       |
+| `Aim_Ranged_Enemies_Icon.png` | `aim_ranged` | 30 box       |
 | `Judgement_Temple_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
 | `Judgement_Temple_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
+
+## The ability buttons moved to `assets/abilities`
+
+All fourteen of them, and this folder used to hold the first eight. They left
+because they are a different KIND of thing: everything above is a transparent
+mark drawn on top of `Button_Plate_Icon.png`, and an ability button arrives as
+the whole button, disc included, and is drawn instead of the plate. Read
+`assets/abilities/README.md` before drawing one — it carries the size the disc
+has to trim to.
+
+The temple's two BADGES stayed, and they are the two rows at the foot of the
+table above. They are not buttons: they are marks hung over every tower an aura
+reaches, so they are board furniture like the rally flag rather than interface.
 
 The Judgement Temple's two abilities are the only ones that need a **second**
 drawing each. Every other ability shows itself where it happens — three balls in
@@ -58,12 +72,13 @@ badge eats into that gap rather than into the roof. And when more than one templ
 has bought the same ability, the badge does not double: it takes a **x2** beside
 it, because the two compound into one bigger number rather than into two marks.
 
-The two ability **buttons** are the only icons in this folder drawn on a WHITE
-disc; the other six are blue. The price under a button is white, so on these two
-it disappeared entirely until `pale: true` in src/data/ui.js taught `buttonPrice`
-to print gold there instead. Re-export them on a dark disc and that word can go.
+Some ability buttons are drawn on a WHITE disc and the rest on a blue one. The
+price under a button is white, so on the pale ones it disappeared entirely until
+`pale: true` in `src/data/ui.js` taught `buttonPrice` to print gold there
+instead. That flag now lives beside the entries in `src/data/ui.js` rather than
+here, because the buttons themselves do.
 
-`Sell_Icon.png` became **`Refund_Icon.png`** and the code followed all the way
+The sell button became **`Refund_Icon.png`** and the code followed all the way
 down: the sprite key is `glyph_refund`, the menu act is `refund`, the helper is
 `refundValue()` and the rate is `REFUND_RATE`. The key used to be `glyph_coin`,
 which named the picture; `glyph_refund` names the job, and the job is the thing
@@ -79,7 +94,7 @@ paid and the heart means damage done to you — the opposite sense from the same
 two pictures at the top of the screen, where they are what you HAVE. Two drawings
 that say *cost* carry that without a caption, and the enemy page used to need one.
 
-`Gold_Cost_Icon.png` is `Cost_Icon.png` renamed. It does double duty: a tier's
+`Gold_Cost_Icon.png` is the old cost icon renamed. It does double duty: a tier's
 price on the tower cards, paired with the refund icon beside what that tier gives
 back, and an enemy's bounty on the facing page.
 
@@ -479,7 +494,7 @@ each of them puts on the board, enemies, and — on the last page — the abilit
 tier 4 tower can be taught. Geometry is in `src/book.js`, drawing in `render.js`,
 and `node tools/book.mjs` checks it.
 
-There is **no new art for it** beyond `Cost_Icon.png`. The page is a parchment
+There is **no new art for it** beyond `Gold_Cost_Icon.png`. The page is a parchment
 sheet drawn in code, and every picture on it is the board's own — buildings from
 `assets/towers`, men from `assets/units`, enemies from `assets/enemies`, and on the
 last page the ability buttons from this folder.

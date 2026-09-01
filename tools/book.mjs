@@ -35,7 +35,7 @@ import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
 import { ABILITIES } from '../src/data/abilities.js';
 import {
   PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, abilityCards,
-  towerEntry, unitEntry, abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
+  towerEntry, unitEntry, figureSlot, ABILITY_ICON,
   SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,

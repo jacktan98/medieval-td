@@ -27,32 +27,15 @@ import { makeUnits, moveUnits, nearestOnPath, rallyPoint } from '../src/units.js
 import { LANE } from '../src/route.js';
 import { levels, useLevel } from '../src/level.js';
 import { barracks } from '../src/data/towers.js';
-import { shapesByFill } from './svg.mjs';
+import { fillPoly, insidePoly, ROAD_FILL, MAP_SCALE } from './svg.mjs';
 
-// The artist's road colour, in every map so far.
-const ROAD = '#ffde9e';
-// The maps are drawn at 1920x1080 and the game is 960x540.
-const MAP_SCALE = 0.5;
-
-// Every road ring of one map, in game space.
-function roadOf(src) {
-  const shapes = shapesByFill(readFileSync(src, 'utf8'))
-    .filter(s => (s.fill || '').toLowerCase() === ROAD);
-  if (!shapes.length) throw new Error(`no shape filled ${ROAD} in ${src}`);
-  // One `d` can hold several sub-paths and a map can have several road shapes;
-  // an even-odd test over the whole soup answers for all of them at once, which
-  // is what makes a map with two separate roads need no special case.
-  return shapes.flatMap(s => s.pts).map(p => [p[0] * MAP_SCALE, p[1] * MAP_SCALE]);
-}
-
-const onRoad = (poly, x, y) => {
-  let hit = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i], [xj, yj] = poly[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
-};
+// The road as a polygon and the test against it both live in tools/svg.mjs now —
+// tools/trace-road.mjs finds the road with the same two functions, which is the
+// point: "is this man on tarmac" and "where does the road run" are one question
+// asked twice, and they were two copies of the same arithmetic until they were
+// not.
+const roadOf = src => fillPoly(readFileSync(src, 'utf8'), ROAD_FILL, MAP_SCALE).poly;
+const onRoad = (poly, x, y) => insidePoly(poly, x, y);
 
 // A man is off the road if any of his BODY is: sample his collision circle at
 // eight points around the rim as well as at the centre. Testing the centre alone

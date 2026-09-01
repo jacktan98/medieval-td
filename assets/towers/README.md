@@ -14,28 +14,56 @@ in `src/assets.js`.
 | `archery/Archery_Tower_T2.png`         | 1024   | 88 x 153 px  | Archer Post (2)    |
 | `archery/Archery_Tower_T3.png`         | 1024   | 74 x 153 px  | Crossbow Tower (3) |
 | `archery/Musketeer_Post.png`           | 1024   | 74 x 126 px  | Musketeer Post (4) |
+| `archery/Crossbow_Sentry_Tower.png`    | 1024   | 74 x 128 px  | Crossbow Sentry (4), the OTHER fourth rung |
 | `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
 | `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
 | `barracks/Paladin_Keep.png`            | 1024   | 107 x 133 px | Paladin Keep (4)   |
-| `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | ALL THREE artillery tiers, at rest    |
-| `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | ALL THREE artillery tiers, loading    |
-| `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | ALL THREE artillery tiers, throwing   |
+| `barracks/Assassin_Guild.png`          | 1024   | 107 x 133 px | Assassin Guild (4), the other fourth rung |
+| `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | Catapult (1), at rest   |
+| `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | Catapult, winding       |
+| `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | Catapult, throwing      |
+| `artillery/Artillery_Default_T2.png`   | 1024   | 102 x 93 px  | Mangonel (2), at rest   |
+| `artillery/Artillery_Reload_T2.png`    | 1024   | 102 x 93 px  | Mangonel, winding       |
+| `artillery/Artillery_Fire_T2.png`      | 1024   | 102 x 93 px  | Mangonel, throwing      |
+| `artillery/Artillery_Default_T3.png`   | 1024   | 136 x 128 px | Trebuchet (3), at rest  |
+| `artillery/Artillery_Reload_T3.png`    | 1024   | 136 x 128 px | Trebuchet, winding      |
+| `artillery/Artillery_Fire_T3.png`      | 1024   | 136 x 128 px | Trebuchet, throwing     |
 | `artillery/Ballista_Turret_Tower.png`  | 1024   | 106 x 127 px | Ballista Turret (4), the stone alone  |
 | `artillery/Ballista_Turret_Default.png`| 1024   | 70 x 47 px   | its machine, at rest                  |
 | `artillery/Ballista_Turret_Reload.png` | 1024   | 62 x 47 px   | its machine, spanning the bow         |
 | `artillery/Ballista_Turret_Fire.png`   | 1024   | 63 x 47 px   | its machine, loosing                  |
-| `artillery/Ballista_Turret_Default_Far_Shot.png` | 1024 | 70 x 47 px | the same machine in iron, at rest    |
-| `artillery/Ballista_Turret_Reload_Far_Shot.png`  | 1024 | 62 x 47 px | in iron, spanning the bow            |
-| `artillery/Ballista_Turret_Fire_Far_Shot.png`    | 1024 | 63 x 47 px | in iron, loosing                     |
+| `artillery/Ballista_Turret_Default_Reinforced_Tension.png` | 1024 | 70 x 47 px | the same machine in iron, at rest |
+| `artillery/Ballista_Turret_Reload_Reinforced_Tension.png`  | 1024 | 62 x 47 px | in iron, spanning the bow         |
+| `artillery/Ballista_Turret_Fire_Reinforced_Tension.png`    | 1024 | 63 x 47 px | in iron, loosing                  |
+| `artillery/Cannon_Outpost_Tower.png`   | 1024   | 106 x 127 px | Cannon Outpost (4), the stone alone   |
+| `artillery/Cannon_Outpost_Default.png` | 1024   | (machine)    | its gun, at rest                      |
+| `artillery/Cannon_Outpost_Reload.png`  | 1024   | (machine)    | its gun, sponging out                 |
+| `artillery/Cannon_Outpost_Fire.png`    | 1024   | (machine)    | its gun, firing                       |
 | `monastery/Monastery_Tower_T1.png`     | 1024   | 111 x 116 px | Wayside Shrine (1) |
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
 | `monastery/Judgement_Temple.png`       | 1024   | 74 x 165 px  | Judgement Temple (4) |
 
-Elsewhere, but artillery's: `units/Artillery_Man_T1.png` (the crewman, for the
-info box only — he is drawn into all three frames already) and
-`projectiles/Artillery_Rock_T1.png`.
+**Three families fork at the top.** Archery, the barracks and artillery each have
+two fourth rungs and the player buys one of them; the monastery has one. So a
+family folder holds four buildings or five, and `tiers` in `src/data/towers.js`
+is five entries long where the ladder forks — see the note there on why nobody
+ever pays for both.
+
+**Artillery is three frames per tier, not one drawing per tier.** Every rung of
+that family animates: a Default, a Reload and a Fire, and the loop through them
+IS the tower's reload clock rather than a decoration over it. Tiers 1 to 3 shared
+one set of frames when the family shipped and each has its own now. The two
+fourth rungs are drawn differently again — a stone base with a separate machine
+standing on it, which is two files' worth of geometry and has its own section
+below.
+
+Elsewhere, but artillery's: `units/Artillery_Man_T1.png` and its T2 and T3 (the
+crewman, for the info box only — he is drawn into all three frames already), and
+`projectiles/Artillery_Rock_T1.png` per tier. The two fourth rungs bring their own
+portrait — `units/Ballista_Engineer.png` and `units/Cannoneer.png` — and their own
+projectile.
 
 Elsewhere, but the monastery's: `units/Soldiers_Priest_Default.png` and
 `_Attack` (and the Bishop's and the Cardinal's), and
@@ -57,11 +85,12 @@ already), `projectiles/Ballista_Turret_Bolt.png`, `ui/Ballista_Turret_Icon.png`,
 and five clips — `audio/sfx/Ballista_Bolt_shot.mp3`,
 `audio/sfx/Ballista_kill_enemy.mp3` and three voice lines. Plus its two
 abilities: the three iron frames above, `projectiles/Ballista_Turret_Heavy_Bolt.png`,
-and the two button faces `ui/Ballista_Turret_Far_Shot_Icon.png` and
-`ui/Ballista_Turret_Heavy_Bolt_Icon.png`.
+and the two button faces, which live in `assets/abilities` now:
+`abilities/Ballista_Turret_Reinforced_Tension_Icon.png` and
+`abilities/Ballista_Turret_Heavy_Bolt_Icon.png`.
 
 **THE IRON FRAMES ARE THE SAME MACHINE, RE-MATERIALLED.** Every trim is identical
-to the timber frame's to the pixel, which is what makes Far Shot a swap of three
+to the timber frame's to the pixel, which is what makes Reinforced Tension a swap of three
 filenames and nothing else: the machine stands in the same place, mirrors about
 the same line and fires from the same mouth. Keep it that way on any re-export —
 if the iron ever measures differently from the timber, the ballista will jump on

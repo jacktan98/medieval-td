@@ -20,11 +20,11 @@ import { updateCorpses } from '../src/corpses.js';
 import { updateSplats } from '../src/blood.js';
 import { updateImpacts } from '../src/impacts.js';
 import { families } from '../src/data/towers.js';
-import { level, levels, useLevel } from '../src/level.js';
+import { level, useLevel } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
 import { ABILITY_COST } from '../src/data/abilities.js';
 import { MODES, tableFor } from '../src/data/waves.js';
-import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from '../src/data/difficulty.js';
+import { DIFFICULTIES, scaleWaves, startingGold } from '../src/data/difficulty.js';
 
 // WHICH DIFFICULTY THE SIM IS MEASURING. Every balance note in data/waves.js was
 // written before difficulty existed, so the tables are the middle and the sim

@@ -180,3 +180,41 @@ export function shapesByFill(text) {
   }
   return out;
 }
+
+// --- THE ROAD, AND WHETHER A POINT IS ON IT ----------------------------------
+//
+// The fourth thing both callers needed, arrived at the same way the first three
+// did: tools/trace-road.mjs found the road in a map and tools/formation.mjs
+// copied it to ask whether a soldier is standing on one. The two copies had
+// already started to differ in their comments while doing exactly the same
+// arithmetic, which is how the copy before them went wrong.
+//
+// THE ARTIST'S ROAD COLOUR, in every map so far, and the reason `fill` is a
+// parameter rather than this constant is that the day a map is drawn with a
+// second surface — a bridge, a ford — it is one argument rather than a fork.
+export const ROAD_FILL = '#ffde9e';
+
+// The maps are drawn at 1920x1080 and the game is 960x540.
+export const MAP_SCALE = 0.5;
+
+// Every ring of one filled colour, in game space, as one flat soup of points.
+//
+// ONE SOUP RATHER THAN A LIST OF RINGS, deliberately. A single `d` can hold
+// several sub-paths and a map can hold several road shapes; an even-odd test
+// over the lot answers for all of them at once, which is what lets a map with
+// two separate roads need no special case anywhere.
+export function fillPoly(text, fill = ROAD_FILL, scale = MAP_SCALE) {
+  const shapes = shapesByFill(text).filter(s => (s.fill || '').toLowerCase() === fill);
+  if (!shapes.length) throw new Error(`no shape filled ${fill}`);
+  return { shapes: shapes.length, poly: shapes.flatMap(s => s.pts).map(p => [p[0] * scale, p[1] * scale]) };
+}
+
+// Even-odd point-in-polygon over that soup.
+export function insidePoly(poly, x, y) {
+  let hit = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}

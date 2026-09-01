@@ -13,6 +13,7 @@ drawing each of them needs — see "Why only one file" below:
 | `Soldiers_Pikeman_Dead.png`   | your pikeman, tier 2         | 49 x 16 px  |
 | `Soldiers_Swordsman_Dead.png` | your swordsman, tier 3       | 40 x 18 px  |
 | `Paladin_Dead.png`            | your paladin, tier 4         | 42 x 17 px  |
+| `Assassin_Dead.png`           | your assassin, the barracks' OTHER tier 4 | 38 x 16 px |
 
 Every file is named after the MAN, matching his living drawings in
 `assets/units` — `Soldiers_Spearman_Dead` beside `Soldiers_Spearman_Default`,
@@ -167,11 +168,20 @@ and paste the rect in as `deadTrim`. As shipped:
 
 | file                       | `deadTrim`            | `deadPivot`      |
 |----------------------------|-----------------------|------------------|
-| `Enemies_Man_Dead_T1a.png`   | `[193, 211, 126, 90]` | `[0.163, 0.753]` |
-| `Enemies_Man_Dead_T1b.png`   | `[125, 182, 241, 148]`| `[0.135, 0.644]` |
+| `Enemies_Thug_Dead.png`      | `[180, 217, 152, 78]` | `[0.207, 0.901]` |
+| `Enemies_Archer_Thug_Dead.png`| `[149, 218, 214, 76]`| `[0.161, 0.875]` |
+| `Enemies_Giant_Thug_Dead.png`| `[117, 195, 278, 122]`| `[0.171, 0.783]` |
+| `Enemies_Plague_Thug_Dead.png`| `[116, 207, 280, 97]`| `[0.118, 0.826]` |
 | `Soldiers_Spearman_Dead.png` | `[135, 215, 241, 82]` | `[0.118, 0.841]` |
 | `Soldiers_Pikeman_Dead.png`  | `[138, 217, 237, 77]` | `[0.120, 0.896]` |
 | `Soldiers_Swordsman_Dead.png`| `[159, 211, 193, 90]` | `[0.148, 0.770]` |
+| `Paladin_Dead.png`           | `[153, 214, 206, 84]` | `[0.160, 0.875]` |
+| `Assassin_Dead.png`          | `[164, 218, 185, 77]` | `[0.178, 0.886]` |
+
+The two rows that used to head this table were the first two corpses the game
+ever had, drawn before the enemies were named — Enemies_Man_Dead_T1a and T1b.
+Neither file has existed for a long time; the table outlived them because
+nothing checked it. `node tools/readme.mjs` does now.
 
 `deadPivot` is **the centre of the corpse's own shadow**, from
 `node tools/shadow.mjs`. Both numbers now come from this file and nothing else.

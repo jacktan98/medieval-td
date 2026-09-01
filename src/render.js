@@ -25,7 +25,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
-         waveCount, shipped, touched, statStep, COLS } from './admin.js';
+         waveCount, shipped, touched, COLS } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -767,6 +767,18 @@ const STAR_GAP = 11;            // between stars in the row
 // Tier 1 of such a family is marked too: one star against two is the comparison
 // that carries the information, and an unmarked tier 1 beside a two-starred tier
 // 2 reads as "this one is broken" rather than "this one is tier 1".
+//
+// TODAY THIS RETURNS 0 FOR EVERY TOWER IN THE GAME, and that is the mechanism
+// working rather than failing. Artillery was the family it was written for — one
+// set of three frames for the Catapult, the Mangonel and the Trebuchet alike —
+// and the artist has since drawn each of those tiers its own machine, so no
+// family shares a sprite across tiers any more.
+//
+// It stays because it costs nothing while nothing shares and it is right the day
+// something does: a new family whose first three rungs arrive as one drawing gets
+// its stars with no code written, and tools/hud-clear.mjs already reserves the
+// headroom above a roof for them. Deleting it would be deleting the answer to a
+// question that has been asked once and will be asked again.
 export function tierMarks(t) {
   const key = t.def.sprite;
   const shared = t.fam.tiers.filter(d => d.sprite === key).length > 1;

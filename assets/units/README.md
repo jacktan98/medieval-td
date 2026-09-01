@@ -9,7 +9,7 @@ nothing else.
 
 | man                | Default                            | Attack                            |
 |--------------------|------------------------------------|-----------------------------------|
-| Novice Archer      | `Soldier_Novice_Archer_Default`    | `Soldier_Novice_Archer_Attack`    |
+| Novice Archer      | `Soldiers_Novice_Archer_Default`   | `Soldiers_Novice_Archer_Attack`   |
 | Combat Archer      | `Soldiers_Combat_Archer_Default`   | `Soldiers_Combat_Archer_Attack`   |
 | Elite Archer       | `Soldiers_Elite_Archer_Default`    | `Soldiers_Elite_Archer_Attack`    |
 | Spearman           | `Soldiers_Spearman_Default`        | `Soldiers_Spearman_Attack`        |
@@ -21,11 +21,19 @@ nothing else.
 | Musketeer          | `Musketeer_Default`                | `Musketeer_Attack`                |
 | Paladin            | `Paladin_Default`                  | `Paladin_Attack`                  |
 | Pope               | `Pope_Default`                     | `Pope_Attack`                     |
+| Crossbowman        | `Crossbowman_Default`              | `Crossbowman_Attack`              |
+| Assassin           | `Assassin_Default`                 | `Assassin_Attack`                 |
 
 An artillery crewman is the exception to the two-pose rule: he is drawn into all
 three of his machine's frames already, so his file is a PORTRAIT with no Attack
-beside it — `Artillery_Man_T1/2/3` and, for the Ballista Turret, `Ballista_Engineer`.
-The info box and the encyclopedia are the only things that ever draw them.
+beside it — `Artillery_Man_T1.png`, `Artillery_Man_T2.png`, `Artillery_Man_T3.png`,
+and one per fourth rung: `Ballista_Engineer.png` and `Cannoneer.png`. The info box
+and the encyclopedia are the only things that ever draw them.
+
+**The whole artillery family works this way**, both of its tier 4s included. The
+machine is the drawing; the man is a face for the panel. So an artillery upload is
+three machine frames plus one portrait, where an archery upload is two poses of a
+man who is drawn on the board.
 
 ### And a third drawing where an ability needs one
 
@@ -39,6 +47,20 @@ nothing shows them until 150 gold has been spent.
 | Musketeer, Deadeye      | `Musketeer_Deadeye`      | the heavy ball leaves, and 2s after  |
 | Paladin, Holy Light     | `Paladin_Holy_Light`     | he kneels and heals, 3s              |
 | Paladin, Holy Slash     | `Paladin_Holy_Slash`     | the fifth blow lands, one swing      |
+| Assassin, Knife Throw   | `Assassin_Knife_Throw`   | each knife leaves, and the throw decays |
+| Assassin, Sneak Attack  | `Assassin_Sneak_Attack`  | the opening blow of a fight          |
+
+### And a fourth shape: an ability that redraws BOTH poses
+
+Reinforced Tension rebuilds the Crossbow Sentry's bow in steel, and a man cannot
+change weapon between standing and loosing — so it is a PAIR rather than a single
+pose: `Crossbowman_Default_Reinforced_Tension.png` and
+`Crossbowman_Attack_Reinforced_Tension.png`, drawn to the same trims and the same
+shadow pixel as the timber pair so nothing but the metal moves.
+
+That is the pattern to follow for any future ability that changes a man's kit
+rather than what he is doing: same two names with the ability appended, same
+anchors, and `node tools/shadow.mjs` will tell you if either has drifted.
 
 **Burst Fire has none, deliberately.** The artist asked for it to use the pictures
 the Musketeer Post already has, so it holds his ordinary Attack pose and fires his

@@ -22,17 +22,18 @@
 // tail costs nothing.
 
 import { readFileSync } from 'fs';
-import { shapesByFill } from './svg.mjs';
+import { fillPoly, insidePoly, ROAD_FILL, MAP_SCALE } from './svg.mjs';
 import { levels } from '../src/level.js';
 import { LANES, at as pointOn, laneOf } from '../src/route.js';
 
 const SRC = process.argv[2] || 'assets/map/Map_2.svg';
 
-// The artist's road colour, in both maps so far.
-const ROAD = '#ffde9e';
-
-// The map is drawn at 1920x1080 and the game is 960x540.
-const SCALE = 0.5;
+// The road colour and the 1920x1080 -> 960x540 scale both live in tools/svg.mjs
+// now, beside the two functions that use them. tools/formation.mjs asks the same
+// module the same question — "where is the road" — which is what stopped the two
+// of them being two copies of one even-odd test.
+const ROAD = ROAD_FILL;
+const SCALE = MAP_SCALE;
 const W = 960, H = 540;
 
 // Grid step for the search, in game px. 2 is fine: the road is ~70px wide, so a
@@ -65,25 +66,11 @@ const TOLERANCE = 3;
 // --- the road as a polygon ---------------------------------------------------
 
 const svg = readFileSync(SRC, 'utf8');
-const roads = shapesByFill(svg).filter(s => (s.fill || '').toLowerCase() === ROAD);
-if (!roads.length) throw new Error(`no shape filled ${ROAD} in ${SRC}`);
+const { shapes, poly } = fillPoly(svg, ROAD, SCALE);
 
-// Game-space rings. One `d` can hold several sub-paths; they are split on the
-// jumps the flattener leaves between them.
-const poly = roads.flatMap(s => s.pts).map(p => [p[0] * SCALE, p[1] * SCALE]);
+console.log(`${SRC}: ${shapes} road shape(s), ${poly.length} points`);
 
-console.log(`${SRC}: ${roads.length} road shape(s), ${poly.length} points`);
-
-// Even-odd point-in-polygon over the whole ring soup. The road is one closed
-// outline in both maps, so this is a single ring in practice.
-function inside(x, y) {
-  let hit = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i], [xj, yj] = poly[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
-}
+const inside = (x, y) => insidePoly(poly, x, y);
 
 // --- mask and clearance ------------------------------------------------------
 

@@ -1042,9 +1042,13 @@ export const MODES = [
   { id: 'extended', name: 'Extended', label: 'two more waves, and more of the throwers' }
 ];
 
-export const wavesExtended = extendedOf(waves);
-export const wavesForkExtended = extendedOf(wavesFork);
-export const wavesLongExtended = extendedOf(wavesLong);
+// THE EXTENDED TABLES ARE DERIVED BY THE LEVEL THAT OWNS ONE, not here. There
+// were three constants at this spot — one per map — and nothing had ever
+// imported any of them: every level file calls extendedOf on its own table and
+// hangs the result on `wavesExtended`, which is the property tableFor below
+// reads. A second derivation of the same thing is a second thing to keep in step
+// with extendedOf, and it would have gone stale silently because it was never
+// evaluated by anything that could disagree with it.
 
 // WHICH TABLE A MAP IS PLAYED WITH, in one place. A level carries both — see
 // `waves` and `wavesExtended` on each level file — and this is what turns the

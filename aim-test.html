@@ -54,6 +54,7 @@
 <script type="module">
 import { loadArt } from './src/assets.js';
 import { archery } from './src/data/towers.js';
+import { waves } from './src/data/waves.js';
 import { draw } from './src/render.js';
 
 const tier = +(new URLSearchParams(location.search).get('tier') || 0);
@@ -67,8 +68,16 @@ const state = {
   started: true,          // no title screen on a test page
   resting: false, menu: null, result: null,
   enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [],
+  // impacts and smoke are drained by the renderer on every frame, so a page
+  // that leaves either out draws nothing at all and throws on the first paint.
+  impacts: [], smoke: [],
+  // The HUD counts the wave off THIS table rather than a shared one, because
+  // map 3 runs ten where the others run eight. A page without it throws.
+  waves,
   towers: aims.map((aim, i) => ({
-    plot: null, def: archery[tier],
+    // `fam` because the tier stars ask a tower's family whether its tier shares
+    // a drawing with another — see tierMarks in src/render.js.
+    plot: null, fam: { id: 'archery', tiers: archery }, def: archery[tier],
     x: 60 + i * 120, y: 300,
     aim, cd: 0, recoil: 0
   }))

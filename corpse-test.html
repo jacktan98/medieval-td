@@ -34,7 +34,7 @@
 <script type="module">
 import { loadArt } from './src/assets.js';
 import { draw } from './src/render.js';
-import { enemyTypes } from './src/data/waves.js';
+import { enemyTypes, waves } from './src/data/waves.js';
 import { barracks } from './src/data/towers.js';
 import { CORPSE_LIFE } from './src/corpses.js';
 import { poolFor, splat } from './src/blood.js';
@@ -54,6 +54,12 @@ const state = {
   gold: 0, lives: 0, waveIndex: 0, spawned: 0, timer: 0,
   started: true,          // no title screen on a test page
   resting: false, menu: null, result: null, towers: [], shots: [], hits: [], splats: [],
+  // impacts and smoke are drained by the renderer on every frame, so a page
+  // that leaves either out draws nothing at all and throws on the first paint.
+  impacts: [], smoke: [],
+  // The HUD counts the wave off THIS table rather than a shared one, because
+  // map 3 runs ten where the others run eight. A page without it throws.
+  waves,
   enemies: [
     { def: enemyTypes.light_inf, x: militia, y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 },
     { def: enemyTypes.heavy_inf, x: heavy,   y: 150, hp: 1, maxHp: 1, t: 0, bobAmp: 1, face: 1, thrust: 0 }

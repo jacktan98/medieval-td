@@ -58,46 +58,49 @@ const near = (a, b) => Math.abs(a - b) < 1e-9;
 // The enemy is parked 60px away and given a million health, so nothing that
 // happens below is ever the target dying — every gap in the firing is the tower's
 // own doing, which is the only thing this file is asking about.
-function post(ids) {
+//
+// ONE BUILDER FOR ALL SIX TOWERS, and it replaced six copies of the same object
+// literal that differed in a family id, a def and a `spent`. They had already
+// drifted: the Paladin Keep's board was missing `impacts`, which the Assassin
+// Guild's had, so a keep that threw anything would have written to a list that
+// was not there. Nothing threw from a keep, which is exactly how a copy stays
+// broken.
+//
+// `beat` and `beatT` are here for every family rather than only for artillery.
+// They cost a machine nothing and they are what artillery's clock IS — a def
+// whose animation drives its firing reaches a beat boundary with `undefined - dt`
+// otherwise, and a NaN clock never fires again with nothing to find.
+const tower = (famId, def, spent, ids) => {
   const plot = level.plots[0];
   return {
-    plot, fam: { id: 'archery' }, def: archery[3],
+    plot, fam: { id: famId }, def,
     x: plot.x, y: plot.y,
     aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
-    aimMode: 0, spent: 500, rally: null,
+    aimMode: 0, spent, rally: null,
     abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
     hit: [], locked: null, hold: 0
   };
-}
+};
 
-// THE BALLISTA TURRET, built the same way, and it needs its own builder for one
-// reason: this family's clock is its animation. `beat` and `beatT` are the fields
-// that matter, and input.js sets them on a real build exactly as they are here.
-function turret(ids) {
-  const plot = level.plots[0];
-  return {
-    plot, fam: { id: 'siege' }, def: siege[3],
-    x: plot.x, y: plot.y,
-    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
-    aimMode: 0, spent: 610, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
-    hit: [], locked: null, hold: 0
-  };
-}
+// The empty board a tower stands on. Every list the update loop appends to has
+// to exist, which is the other half of what the six copies kept getting wrong.
+const board = t => ({
+  towers: [t], enemies: [], units: [], shots: [], hits: [],
+  corpses: [], splats: [], impacts: []
+});
 
-// A Crossbow Sentry, on the same terms as turret() above: archery[4], because
-// the ladder forks and both fourth rungs live in one array.
-function sentry(ids) {
-  const plot = level.plots[0];
-  return {
-    plot, fam: { id: 'archery' }, def: archery[4],
-    x: plot.x, y: plot.y,
-    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
-    aimMode: 0, spent: 490, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
-    hit: [], locked: null, hold: 0
-  };
-}
+const post = ids => tower('archery', archery[3], 500, ids);
+
+// THE BALLISTA TURRET. Its clock is its animation rather than a cooldown — see
+// beatsOf in src/towers.js — which is why the beat fields above are not optional.
+const turret = ids => tower('siege', siege[3], 610, ids);
+
+// A Crossbow Sentry: archery[4], because the ladder forks and both fourth rungs
+// live in one array.
+const sentry = ids => tower('archery', archery[4], 490, ids);
+
+// The Cannon Outpost, artillery's own second fourth rung.
+const outpost = ids => tower('siege', siege[4], 610, ids);
 
 function dummy(t, i = 0) {
   return {
@@ -118,8 +121,8 @@ function dummy(t, i = 0) {
 // in order, as { t, kind, damage, at } — `at` being which of the men it went to.
 // The shots list is drained each step so nothing has to model flight.
 function fire(t, seconds, men = 1) {
-  const enemies = Array.from({ length: men }, (_, i) => dummy(t, i));
-  const state = { towers: [t], enemies, shots: [], units: [], hits: [] };
+  const state = board(t);
+  state.enemies.push(...Array.from({ length: men }, (_, i) => dummy(t, i)));
   const out = [];
   for (let i = 0; i * DT < seconds; i++) {
     updateTowers(state, DT);
@@ -395,18 +398,8 @@ console.log('\nWhat the two are worth\n');
 // ever moves for reasons this file is asking about.
 
 function keep(ids) {
-  const plot = level.plots[0];
-  const t = {
-    plot, fam: { id: 'barracks' }, def: barracks[3],
-    x: plot.x, y: plot.y,
-    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
-    spent: 530, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
-    hit: [], locked: null, hold: 0
-  };
-  const state = { towers: [t], enemies: [], units: [], shots: [], hits: [],
-                  corpses: [], splats: [] };
-  makeUnits(state, t);
+  const state = board(tower('barracks', barracks[3], 530, ids));
+  makeUnits(state, state.towers[0]);
   // ONE MAN, not the squad of three. Every ability counter is the SOLDIER's — that
   // is the whole difference from the musketeer's, whose counter is the tower's —
   // and three paladins all assisting on the one enemy in front of them would land
@@ -923,19 +916,9 @@ console.log('\nThe Crossbow Sentry\'s two\n');
 // rangeOf, cooldownOf, framesOf or the shot loop; these two are asked of a soldier
 // standing on a road, so the fixture is the paladin's rather than the sentry's.
 function guild(ids) {
-  const plot = level.plots[0];
   const def = barracks.find(d => d.name === 'Assassin Guild');
-  const t = {
-    plot, fam: { id: 'barracks' }, def,
-    x: plot.x, y: plot.y,
-    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
-    spent: 530, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
-    hit: [], locked: null, hold: 0
-  };
-  const state = { towers: [t], enemies: [], units: [], shots: [], hits: [],
-                  corpses: [], splats: [], impacts: [] };
-  makeUnits(state, t);
+  const state = board(tower('barracks', def, 530, ids));
+  makeUnits(state, state.towers[0]);
   // ONE MAN, for the same reason the Keep's fixture keeps one: every counter here
   // is the soldier's, and three assassins throwing would put three rhythms on one
   // health bar.
@@ -1292,17 +1275,6 @@ console.log('\nThe Cannon Outpost\n');
 // Built like turret() above and for the same reason: this family's clock is its
 // animation, so `beat` and `beatT` are the fields that matter. siege[4], because
 // the ladder forks and both fourth rungs live in one array.
-function outpost(ids) {
-  const plot = level.plots[0];
-  return {
-    plot, fam: { id: 'siege' }, def: siege[4],
-    x: plot.x, y: plot.y,
-    aim: 0, cd: 0, recoil: 0, beat: 0, beatT: 0, face: 0,
-    aimMode: 0, spent: 610, rally: null,
-    abilities: [...ids], shots: 0, special: null, burst: 0, burstT: 0,
-    hit: [], locked: null, hold: 0
-  };
-}
 
 {
   const gun = siege[4];

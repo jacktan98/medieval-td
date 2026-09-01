@@ -9,7 +9,7 @@ transparent background like every other sprite.
 | `Blood_1.png`, `Blood_2.png`         | every hit that lands     | 0.35s         |
 | `Blood_Dead_1.png`, `_2.png`         | the pool a body lies in  | with the body |
 | `Artillery_Impact_1.png`, `_2.png`   | every rock that lands    | 0.45s         |
-| `Artillery_Fiery_Impact_1.png`, `_2.png` | every Fiery Shot ball that lands | 0.45s |
+| `Artillery_Fiery_Impact_1.png`, `Artillery_Fiery_Impact_2.png` | every Fiery Shot ball that lands, out to 127.5px | 0.45s |
 | `Enemies_Plague_Thug_Spill.png`      | every flask that breaks  | 3s            |
 | `Construction_Smoke.png`             | a plot is built on, upgraded or cleared | 0.6s |
 | `Musketeer_Target_Locked.png`        | a Post picks its Deadeye man | until the ball lands |

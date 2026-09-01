@@ -25,7 +25,10 @@ Hand-drawn files live here, all authored, never generated:
   1024-at-`SCALE` is the artist's convention. `tools/split-map.mjs` prints that
   percentage on every run. **If it ever drifts far from zero, the canvases have
   stopped agreeing and every 1024 asset is the wrong size.**
-- **`Gold.png`, `Life.png`** — the two HUD icons, at the top of the screen.
+The two HUD icons that once sat here are in `assets/ui` now, under the names
+`Gold_Icon.png` and `Life_Icon.png`, which is where the rest of the dashboard
+lives. Nothing in this folder is drawn over the board's edge any more: it holds
+the hand-drawn boards and the files derived from them, and nothing else.
 
 One derived file per board is generated from them and committed:
 
@@ -46,7 +49,8 @@ map needs its level file to exist first, even with an empty plot list.
 
 ## The HUD icons are not world art
 
-`Gold.png` and `Life.png` are the only artwork in the project deliberately NOT
+`Gold_Icon.png` and `Life_Icon.png` — in `assets/ui`, see above — are the only
+artwork in the project deliberately NOT
 sized by the shared `SCALE`. An icon's job is to sit beside a number and be read,
 so it is sized to the text — 24px tall against the 20px HUD font, which puts its
 cap height on the digits'. Their aspect comes from their measured trims, so a

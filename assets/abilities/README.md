@@ -5,22 +5,33 @@ entry in `ABILITIES` in `src/data/abilities.js`. Each appears twice — on the
 tower's radial menu when it has gold to spend, and on the encyclopedia's ability
 page.
 
-| tower            | its two                                     |
-|------------------|---------------------------------------------|
-| Musketeer Post   | Burst Fire, Deadeye                         |
-| Crossbow Sentry  | Reinforced Tension, Swift Reload            |
-| Paladin Keep     | Holy Light, Holy Slash                      |
-| Assassin Guild   | Knife Throw, Sneak Attack                   |
-| Ballista Turret  | Reinforced Tension, Heavy Bolt              |
-| Cannon Outpost   | Swift Reload, Fiery Shot                    |
-| Judgement Temple | Holy Wrath, Divine Fortitude                |
+| tower | ability | file |
+|-------|---------|------|
+| Musketeer Post | Burst Fire | `Musketeer_Burst_Fire_Icon.png` |
+| Musketeer Post | Deadeye | `Musketeer_Deadeye_Icon.png` |
+| Crossbow Sentry | Reinforced Tension | `Crossbow_Sentry_Reinforced_Tension_Icon.png` |
+| Crossbow Sentry | Swift Reload | `Crossbow_Sentry_Swift_Reload_Icon.png` |
+| Paladin Keep | Holy Light | `Paladin_Holy_Light_Icon.png` |
+| Paladin Keep | Holy Slash | `Paladin_Holy_Slash_Icon.png` |
+| Assassin Guild | Knife Throw | `Assassin_Knife_Throw_Icon.png` |
+| Assassin Guild | Sneak Attack | `Assassin_Sneak_Attack_Icon.png` |
+| Ballista Turret | Reinforced Tension | `Ballista_Turret_Reinforced_Tension_Icon.png` |
+| Ballista Turret | Heavy Bolt | `Ballista_Turret_Heavy_Bolt_Icon.png` |
+| Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload_Icon.png` |
+| Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot_Icon.png` |
+| Judgement Temple | Holy Wrath | `Judgement_Temple_Holy_Wrath_Icon.png` |
+| Judgement Temple | Divine Fortitude | `Judgement_Temple_Divine_Fortitude_Icon.png` |
+
+**Named after the tower, not the ability**, which is what keeps the two Swift
+Reloads and the two Reinforced Tensions apart on disk. A file named after the ability alone would
+have to be one drawing for two different weapons.
 
 ## These are BUTTONS, not icons
 
 That is the whole reason this folder exists apart from `assets/ui`. Every icon in
-`assets/ui` is a transparent mark drawn ON TOP of `Button_Plate_Icon.png`; each
-of these arrives as the whole button, drawn on a disc of exactly the plate's own
-size, and is drawn INSTEAD of the plate.
+`assets/ui` is a transparent mark drawn ON TOP of the button plate that lives
+there; each of these arrives as the whole button, drawn on a disc of exactly the
+plate's own size, and is drawn INSTEAD of the plate.
 
 So a new one has to match the plate: **512 x 512, with the disc trimming to
 [163, 163, 186, 186]** — centred, square, the same size as `btn_plate`.
@@ -43,8 +54,13 @@ See the note on the ids at the top of `src/data/abilities.js`.
 
 ## The two aura badges are not here
 
-`Judgement_Temple_Holy_Wrath.png` and `Judgement_Temple_Divine_Fortitude.png`
-stay in `assets/ui`, beside their `_Icon` counterparts' old home. They are not
-buttons and never appear in the encyclopedia: they are marks the renderer hangs
-over each tower an aura is working on, which is board furniture rather than
-interface.
+The temple's two badges stay in `assets/ui` — `Judgement_Temple_Holy_Wrath.png`
+and `Judgement_Temple_Divine_Fortitude.png`, the same names as the buttons here
+without the `_Icon`. They are not buttons and never appear in the encyclopedia:
+they are marks the renderer hangs over every tower an aura is working on, which
+is board furniture rather than interface.
+
+They also carry a constraint the buttons do not, and it cost a release to find:
+a badge is drawn over the TOWER, so on the highest plots it lands in the top
+button row, where an opaque plate erases it. `badgeFloor` in `src/render.js`
+stops it there and `node tools/hud-clear.mjs` checks that it does.
