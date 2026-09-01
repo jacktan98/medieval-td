@@ -9,6 +9,23 @@
      one piece of art here that has to read at 16px — see the note in
      assets/ui/README.md before replacing it. -->
 <link rel="icon" type="image/png" href="../assets/ui/Favicon.png">
+
+<!-- ADDED TO A HOME SCREEN, iOS ignores the tag above entirely. It looks for
+     apple-touch-icon, and with none it falls back to the first letter of the
+     title — which is why this game was a letter M on a phone.
+
+     A different drawing rather than the same file scaled up, and it has to be:
+     iOS composites any transparency onto black and then applies its own
+     rounded mask, so the favicon's disc-on-a-clear-ground would arrive as a
+     disc in a black box. This one is opaque edge to edge on the board's own
+     grass, with the swords held inside 14% of the edge so the corners iOS
+     rounds off take nothing with them. 180 x 180 is the largest iOS asks for
+     and it scales the rest itself. -->
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/ui/Apple_Touch_Icon.png">
+
+<!-- The label under the icon. Without this iOS uses the <title>, and the title
+     carries a build marker no player should be reading off their home screen. -->
+<meta name="apple-mobile-web-app-title" content="Medieval TD">
 <style>
   html, body {
     margin: 0;

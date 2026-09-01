@@ -12,7 +12,7 @@
 // everything to do with the same failure mode — something invisible in review
 // that only shows up on a real device. See INHERITED CANVAS STATE below.
 
-import { readdirSync, readFileSync } from 'fs';
+import { readdirSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 const PAGES = ['index.html', 'aim-test.html', 'corpse-test.html', 'tower-test.html', 'knock-test.html'];
@@ -95,6 +95,51 @@ const INHERITS_ON_PURPOSE = new Set(['statValue', 'hudIcon']);
     ? `${loose} function(s) inherit canvas text state — see the note in tools/check-modules.mjs.`
     : 'Every text-drawing function in render.js sets its own baseline.');
   bad += loose;
+}
+
+// --- THE TWO ICONS A PAGE HAS TO NAME ---------------------------------------
+//
+// A third thing this file has no business checking except that it fails the same
+// way: silently, on a device, long after the change that broke it.
+//
+// A browser TAB reads `rel="icon"`. An iPhone home screen ignores that tag
+// completely, looks for `apple-touch-icon`, and with none of it falls back to
+// the first letter of the <title> — so this game sat on a home screen as a
+// letter M with a favicon wired and working. Nothing in a desktop browser can
+// show you that.
+//
+// So both are checked, on the pages a player actually opens, and the file each
+// names has to exist. The test pages are not checked: nobody adds
+// `corpse-test.html` to a home screen.
+{
+  const PLAYED = ['index.html', 'birthday/index.html'];
+  let missing = 0;
+  for (const page of PLAYED) {
+    const html = readFileSync(page, 'utf8');
+    const dir = page.includes('/') ? page.slice(0, page.lastIndexOf('/') + 1) : '';
+    for (const rel of ['icon', 'apple-touch-icon']) {
+      const m = html.match(new RegExp(`<link[^>]*rel="${rel}"[^>]*href="([^"]+)"`));
+      if (!m) {
+        console.log(`  ${page}: no <link rel="${rel}">`);
+        missing++;
+        continue;
+      }
+      // Resolve the href the way the page would, then check the file is there.
+      const file = m[1].startsWith('../') ? m[1].slice(3) : dir + m[1];
+      if (!existsSync(file)) {
+        console.log(`  ${page}: rel="${rel}" points at ${m[1]}, which is not there`);
+        missing++;
+      }
+    }
+    if (!/apple-mobile-web-app-title/.test(html)) {
+      console.log(`  ${page}: no apple-mobile-web-app-title, so a home screen uses the <title>`);
+      missing++;
+    }
+  }
+  console.log(missing
+    ? `${missing} icon(s) a phone or a tab would not find.`
+    : `Both icons and the home-screen label are wired on all ${PLAYED.length} played pages.`);
+  bad += missing;
 }
 
 process.exit(bad ? 1 : 0);

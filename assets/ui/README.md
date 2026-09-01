@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Thirty-three files in, and two things still vector.** Everything below that is not in the table
+**Thirty-four files in, and two things still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -41,6 +41,7 @@ usable button rather than a blank disc.
 | `Aim_Most_Health_Icon.png` | `aim_tough`     | 30 box       |
 | `Aim_Ranged_Enemies_Icon.png` | `aim_ranged` | 30 box       |
 | `Favicon.png`            | the browser tab icon | 64 x 64, and read at 16 |
+| `Apple_Touch_Icon.png`   | the iPhone home screen icon | 180 x 180, opaque |
 | `Judgement_Temple_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
 | `Judgement_Temple_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
 
@@ -70,6 +71,32 @@ were the ones with a bold outer silhouette and one mark inside it. So:
 512 x 512 is fine to draw at, as everything else here is. Save it as
 `Favicon.png` at 64 x 64 as well, or leave the composite in place and the game
 keeps using it.
+
+## And a SECOND icon, because a phone does not read the first
+
+`Apple_Touch_Icon.png` is the one an iPhone puts on a home screen, and it is a
+different file rather than the same one scaled up. Three reasons, and each of
+them would have spoiled the favicon if it had been reused:
+
+- **iOS ignores `rel="icon"` completely.** It looks for `apple-touch-icon`, and
+  with none of it falls back to the first letter of the `<title>` — so this game
+  sat on a home screen as a letter **M** while its favicon worked perfectly in
+  every desktop browser. Nothing you can open on a laptop shows you that.
+- **It must be opaque, edge to edge.** iOS composites transparency onto black
+  and then applies its own rounded mask, so the favicon's cream disc on a clear
+  ground would arrive as a disc in a black box. This one fills the square with
+  the board's own grass, `rgb(50, 58, 40)`, read off the running game rather
+  than typed.
+- **The corners are cut off.** iOS rounds them at about 22%, so the swords sit
+  inside 14% of every edge and nothing of them is lost.
+
+180 x 180 is the largest size iOS asks for and it scales the rest itself, so one
+file is enough. `node tools/check-modules.mjs` checks that both icons are wired
+on the pages a player opens and that the files they name exist.
+
+**iOS caches a home-screen icon hard.** After changing this file, delete the
+shortcut from the home screen and add it again — reloading the page in Safari
+will not update an icon that is already sitting on a home screen.
 
 ## The ability buttons moved to `assets/abilities`
 
