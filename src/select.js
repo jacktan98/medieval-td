@@ -139,7 +139,12 @@ export function occupant(def) {
   const man = def.soldier;
   return {
     name: man ? man.name : def.unit,
-    count: man ? man.count : 1,
+    // HOW MANY OF HIM. A barracks says so on its squad; every tower said one, and
+    // that was true of every tower until the Judgement Temple put two monks on one
+    // floor. `pair` is the list of where they stand, so its length is the count —
+    // read from there rather than from a second field, because a number that had
+    // to be kept in step with the list would be a number that eventually was not.
+    count: man ? man.count : (def.pair ? def.pair.length : 1),
     sprite: man ? man.sprite : def.portrait || def.gunner,
     trim: man ? man.spriteTrim : def.portraitTrim || def.gunnerTrim,
     // The centre of his ground shadow, as a fraction of that trim — the point he

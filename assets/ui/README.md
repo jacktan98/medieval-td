@@ -3,7 +3,7 @@
 The dashboard across the top and the radial menu that opens on a plot. Nothing
 here is on the board — it is the layer between the player and the board.
 
-**Thirty-four files in, and two things still vector.** Everything below that is not in the table
+**Thirty-five files in, and two things still vector.** Everything below that is not in the table
 of what landed is still drawn in code, in `src/render.js`, and those vectors are
 also the fallback for every file here — a UI PNG that fails to load leaves a
 usable button rather than a blank disc.
@@ -22,6 +22,7 @@ usable button rather than a blank disc.
 | `Paladin_Keep_Icon.png`  | `keep`            | 26 box       |
 | `Ballista_Turret_Icon.png` | `ballista`      | 26 box       |
 | `High_Altar_Icon.png` | `altar`       | 26 box       |
+| `Judgement_Temple_Icon.png` | `temple`, the fork's other face | 26 box |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
 | `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
 | `Speed_Box.png`          | the 1x plate      | 54 x 24      |

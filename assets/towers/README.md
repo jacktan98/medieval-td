@@ -44,6 +44,7 @@ in `src/assets.js`.
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
 | `monastery/High_Altar.png`       | 1024   | 74 x 165 px  | High Altar (4) |
+| `monastery/Judgement_Temple.png` | 1024   | 74 x 159 px  | Judgement Temple (4), the other fourth rung |
 
 **Three families fork at the top.** Archery, the barracks and artillery each have
 two fourth rungs and the player buys one of them; the monastery has one so far. So
@@ -51,13 +52,19 @@ a family folder holds four buildings or five, and `tiers` in `src/data/towers.js
 is five entries long where the ladder forks — see the note there on why nobody
 ever pays for both.
 
-The monastery is the one still to fork, and everything a second fourth rung needs
-is already built: put its building in `monastery/`, add a fifth entry to the
-`monastery` array with `tier: 4`, give it a glyph in `assets/ui` and its own two
-ability icons in `assets/abilities`, and the menu, the encyclopedia and every
-checker pick it up with no code written. The name **Judgement Temple** is free
-and reserved for it — the Pope's tower carried it until this rename and is called
-the High Altar now, so nothing in the game answers to it.
+Every family has forked now. The monastery was the last, and its two fourth rungs
+are the same belfry drawn twice: `High_Altar.png` is 74 x 165 and
+`Judgement_Temple.png` is 74 x 159, the same width to the pixel and 28 source px
+shorter. That is the artist drawing one building twice rather than two buildings,
+and it is why the two share a footprint on the plot and differ only in what
+stands inside them and what hangs off the front.
+
+**THE TEMPLE IS THE ONLY BUILDING IN THE GAME THAT HOLDS TWO FIGURES.** Two monks
+stand side by side on its belfry floor, and where each of them stands is `pair` on
+the def in `src/data/towers.js` — the ordinary `mountFrac` is still there and is
+the middle of the floor, which is what the encyclopedia and the info box use. If
+you redraw this building, both mounts have to be re-measured off the floor quad,
+not just the one.
 
 **Artillery is three frames per tier, not one drawing per tier.** Every rung of
 that family animates: a Default, a Reload and a Fire, and the loop through them

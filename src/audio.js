@@ -240,6 +240,12 @@ const paths = {
   // line for him taking a man down. See `fireGain` on his missile in
   // data/towers.js for where the "louder" lives.
   pope_kill_enemy:  'assets/audio/sfx/Pope_kill_enemy.mp3',
+  // The monk's, and HALF a pair for the same reason the pope's is: the Judgement
+  // Temple's blast is the monastery's own Arcane_shot leaving, at the owner's ask,
+  // so what the two monks needed was a line for the KILL and no firing sound of
+  // their own. See `monk` in data/towers.js, where the ammunition carries a kind
+  // that points at the family's report and the monk's cry.
+  monk_kill_enemy:  'assets/audio/sfx/Monk_kill_enemy.mp3',
   // THE THREE ABILITY SOUNDS, all Category B and all for the same reason the shots
   // and the swings are: they are things that HAPPEN, several can happen at once —
   // three paladins in one squad, two Posts on one map — and a shared channel would
@@ -342,7 +348,14 @@ const paths = {
   // learn that either: a tier names its own cue or falls through to its family.
   cannoneer_1:     'assets/audio/voice/Cannoneer_1.mp3',
   cannoneer_2:     'assets/audio/voice/Cannoneer_2.mp3',
-  cannoneer_3:     'assets/audio/voice/Cannoneer_3.mp3'
+  cannoneer_3:     'assets/audio/voice/Cannoneer_3.mp3',
+  // The Judgement Temple's own three, and the eighth and LAST tier with a voice —
+  // every fourth rung in the game now answers for itself. Spoken by one monk for
+  // both of them: a tower speaks when it is built and when it is given an order,
+  // and it is the tower speaking rather than either man.
+  monk_1:          'assets/audio/voice/Monk_1.mp3',
+  monk_2:          'assets/audio/voice/Monk_2.mp3',
+  monk_3:          'assets/audio/voice/Monk_3.mp3'
 };
 
 // The clip table, by the name the game calls each one. See the note above `paths`
@@ -522,6 +535,10 @@ export const CUE = {
   // The High Altar's, keyed the same way off the `voice` field on monastery
   // tier 4 — the fourth and last tier with lines of its own.
   pope:         ['pope_1', 'pope_2', 'pope_3'],
+  // The Judgement Temple's, keyed off `voice` on the monastery's OTHER tier 4.
+  // The monastery is the last ladder to carry two of these and, again, nothing in
+  // familyCue had to learn it.
+  monk:         ['monk_1', 'monk_2', 'monk_3'],
   // The Crossbow Sentry's, keyed off the `voice` field on its tier like the four
   // above it. Archery is the only ladder with two of these now, and nothing here
   // had to learn that: a tier names its own cue or falls through to its family.
@@ -570,6 +587,11 @@ export const CUE = {
   // kill line. The other three monastery tiers still share the arrow's, which is
   // the same split the barracks has: one line for the family, one for its tier 4.
   popeKill:     ['pope_kill_enemy'],
+  // A monk's blast finishing a man. The monastery now has THREE kill lines against
+  // its one family line — the tiers below share the arrow's, the altar has the
+  // pope's and the temple has this — which is what a forked ladder with two named
+  // men at the top is supposed to sound like.
+  monkKill:     ['monk_kill_enemy'],
   meleeKill:    ['thug_dies'],
   // A PALADIN finishing a man, split out of meleeKill for the same reason the rock
   // and the ball were split out of the arrow's: it is a different event to watch.

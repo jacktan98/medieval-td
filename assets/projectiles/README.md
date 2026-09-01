@@ -40,6 +40,14 @@ right".
 | `Assassin_Knife_Sneak_Attack.png` | the first knife of his volley | 300 | flat |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |
 
+**A Judgement Temple's monks fire the Abbey's missile**, not one of their own.
+`Monk_Magic_Shot.graphite` is in this folder and is a working file rather than a
+sprite — the game does not load it and `node tools/readme.mjs` does not ask about
+it, because that check only covers what `src/assets.js` names. When it is exported
+as a PNG, wiring it is a trim and one line: give the monk's ammunition its own
+`sprite` in `src/data/towers.js` instead of spreading `missile3`. Nothing else
+moves — the speed, the kind and both sounds already belong to the monk.
+
 ## Lobbed is not the same as high
 
 Two separate things, and they were one field until the cannon arrived:

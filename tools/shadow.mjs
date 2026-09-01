@@ -260,6 +260,11 @@ const SPRITES = [
   // below the ellipse's. The number in data/towers.js comes from the artist's SVG,
   // and this is the row that says the fit agrees with it.
   ['assets/towers/monastery/High_Altar.png', 'altar.groundFrac', mon[3].spriteTrim, mon[3].groundFrac, 'whole'],
+  // Tier 4's other rung, the Judgement Temple. The same crescent problem as the
+  // altar's — the stonework covers the back of its own shadow — and the same
+  // answer: the number in data/towers.js is the SVG's ellipse and this row is what
+  // says the PNG agrees with it.
+  ['assets/towers/monastery/Judgement_Temple.png', 'judgement.groundFrac', mon[4].spriteTrim, mon[4].groundFrac, 'whole'],
   // Tier 4, the Musketeer Post. Same ellipse fit as the three archery towers
   // below it: the artist paints one #37422f patch of shaded grass under the
   // turret and its centre is the plot point.
@@ -312,6 +317,12 @@ const SPRITES = [
   // priest, so nothing but this says his two poses share a standing point.
   ['assets/units/Pope_Default.png', 'pope.gunnerPivot',  mon[3].gunnerTrim, mon[3].gunnerPivot],
   ['assets/units/Pope_Attack.png',  'pope.attack.pivot', mon[3].attack.trim, mon[3].attack.pivot],
+  // THE MONK, and the pair rule matters to him as much as to anyone even though he
+  // never moves: two of him stand on one floor, so a shadow that drifted between
+  // his poses would have one monk stepping sideways every second while the other
+  // held still — the easiest kind of wrong to see and the hardest to explain.
+  ['assets/units/Monk_Default.png', 'monk.gunnerPivot',  mon[4].gunnerTrim, mon[4].gunnerPivot],
+  ['assets/units/Monk_Attack.png',  'monk.attack.pivot', mon[4].attack.trim, mon[4].attack.pivot],
   // TIER 4 IS TWO DRAWINGS AND SO IS ITS SHADOW CHECK. The turret stands on grass
   // and has the usual dark-green ellipse under it — most of which is hidden
   // behind the tower itself, which is exactly the occluded case the fit was

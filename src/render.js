@@ -290,7 +290,7 @@ function drawTower(ctx, t) {
   }
 
   drawBuilding(ctx, t, box);
-  if (t.def.gunner) drawGunner(ctx, t);
+  if (t.def.gunner) t.def.pair ? drawPair(ctx, t) : drawGunner(ctx, t);
   // THE MACHINE ON TOP OF A TURRET, between the stone and the stone's front
   // layer — exactly where a gunner goes, and for the same reason: it stands on
   // the deck, so the near merlon is in front of it and everything else is
@@ -1033,6 +1033,63 @@ function drawCamp(ctx, t, box) {
 // The drawn size comes from gunnerR, so the body reads at a known radius
 // whatever the source art's proportions are, and it mirrors about the body
 // rather than the middle of a box that a bow pulls off-centre.
+// TWO MEN ON ONE DECK, which is the Judgement Temple and nothing else.
+//
+// WHY IT IS NOT drawGunner IN A LOOP. Two things differ, and both are about the
+// fact that the monks TAKE TURNS rather than fire together:
+//
+//   WHICH POSE. Every other figure in this game shows its Attack drawing AFTER
+//   the shot, for as long as the recoil lasts — the arrow is already gone and the
+//   bow is empty. A monk's Attack is him GATHERING the blast, so it is shown
+//   BEFORE his shot: the man whose turn is next is the man lit up, and the one who
+//   just fired is back at rest. That is what gives each monk the second of resting
+//   and the second of charging the owner asked for, out of one counter and no new
+//   clock — see nextInPair in src/towers.js.
+//
+//   AND ONLY WHILE A SHOT IS COMING. `t.cd` is above zero exactly when the tower
+//   is counting down to one, so an idle temple with nothing in range has both
+//   monks at rest rather than one frozen mid-prayer.
+//
+// FAR ONE FIRST. They stand at different depths on a sloped floor, so the painter
+// has to lay them down back to front or the near monk's shoulder ends up behind
+// the far one's robe. Sorted by the mount's own y rather than by index, so the
+// artist can reorder `pair` without breaking the overlap.
+//
+// No recoil kick: a man releasing a spell does not get shoved backwards by it, and
+// there is nothing in his hands to jump.
+function drawPair(ctx, t) {
+  const d = t.def;
+  const img = art[d.gunner];
+  const men = d.pair.map((_, i) => ({ i, m: mountPoint(t, i) }))
+    .sort((a, b) => a.m.y - b.m.y);
+
+  for (const { i, m } of men) {
+    const charging = i === (t.turn || 0) && t.cd > 0;
+    const [frame, trim, pivot] = charging && art[d.attack.sprite]
+      ? [art[d.attack.sprite], d.attack.trim, d.attack.pivot]
+      : [img, d.gunnerTrim, d.gunnerPivot];
+
+    if (!frame) {
+      ctx.fillStyle = '#E0D6C2';
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      continue;
+    }
+
+    const [sx, sy, sw, sh] = trim;
+    const dw = sw * SCALE, dh = sh * SCALE;
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.scale(mirror(d, facing(t)), 1);
+    ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
+    ctx.restore();
+  }
+}
+
 function drawGunner(ctx, t) {
   const d = t.def;
   const m = mountPoint(t);

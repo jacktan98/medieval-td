@@ -656,6 +656,102 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
     `hidden: ${g.hidden}`);
 }
 
+
+// --- the monastery's OTHER fourth rung, and the two men on it -------------------
+//
+// The Judgement Temple, and the last fork in the game — every ladder offers two
+// top rungs now. Checked against the HIGH ALTAR rather than against the Abbey,
+// because they cost the same 220 and a player buying one is choosing not to buy
+// the other.
+//
+// It is also the only tower in this game that carries more than one figure, so
+// half of what follows is about the pair rather than about the numbers: two
+// standing points, one counter, and a cadence that comes out of the two of them
+// taking turns rather than out of a second clock.
+console.log('\nMonastery tier 4 — the other one, cadence instead of weight\n');
+{
+  const temple = monastery.find(d => d.name === 'Judgement Temple');
+  const altar = monastery.find(d => d.name === 'High Altar');
+
+  ok(temple.cost === altar.cost && temple.tier === altar.tier,
+    'the Judgement Temple is the Altar\'s price on the Altar\'s rung',
+    `${temple.cost}g, tier ${temple.tier}, both`);
+
+  ok(temple.range === altar.range,
+    'and reaches exactly as far, at the owner\'s ask',
+    `${temple.range} both`);
+
+  // THE TRADE, and neither half of it is a straight upgrade — which is the whole
+  // test of a fork. The altar hits harder and more often per second; the temple
+  // hits more often per shot.
+  ok(temple.damage < altar.damage && temple.cooldown < altar.cooldown &&
+     dps(temple) < dps(altar),
+    'and buys cadence with weight',
+    `${temple.damage} every ${temple.cooldown.toFixed(2)}s against ` +
+    `${altar.damage} every ${altar.cooldown.toFixed(2)}s, ` +
+    `${dps(temple).toFixed(1)}/s against ${dps(altar).toFixed(1)}`);
+
+  // AND THE THING THAT PAYS FOR IT, which is the only reason 40 is not simply
+  // worse than 75. A militiaman has 80 health: the altar spends two 75s on him
+  // and throws 70 of the second one away, and the temple spends two 40s and
+  // throws away nothing. Fewer damage a second, more militia a second.
+  //
+  // Written as a KILL TIME rather than as a damage figure, because that is the
+  // thing the player experiences and it is the half a dps column cannot show.
+  const kill = (d, hp) => Math.ceil(hp / d.damage) * d.cooldown;
+  const militia = enemyTypes.light_inf.hp;
+  ok(kill(temple, militia) < kill(altar, militia),
+    'and kills a militiaman faster on less damage a second',
+    `${kill(temple, militia).toFixed(2)}s against ${kill(altar, militia).toFixed(2)}s, ` +
+    `on ${militia} health`);
+
+  // And loses the exchange on the thing the altar is for. If this ever flips, the
+  // fork has collapsed into "the temple, always".
+  const heavy = enemyTypes.heavy_inf.hp;
+  ok(kill(temple, heavy) > kill(altar, heavy),
+    'and loses to it on the heavy, which is what the altar is for',
+    `${kill(temple, heavy).toFixed(1)}s against ${kill(altar, heavy).toFixed(1)}s, ` +
+    `on ${heavy} health`);
+
+  ok(temple.damage < altar.damage,
+    'and the altar still lands the biggest single blow in the game',
+    `${altar.damage} against ${temple.damage}`);
+
+  // --- the pair --------------------------------------------------------------
+
+  ok(Array.isArray(temple.pair) && temple.pair.length === 2,
+    'the temple stands two men on one floor',
+    `${(temple.pair || []).length} standing points`);
+
+  ok(monastery.filter(d => d.pair).length === 1 &&
+     [...archery, ...siege, ...barracks].every(d => !d.pair),
+    'and is the only tower in the game that stands more than one',
+    'every other def has no `pair`');
+
+  // BOTH FEET ON THE BOARDS. The two mounts have to sit inside the building's own
+  // box — a fraction outside [0,1] is a monk standing in mid-air beside his tower,
+  // which is the kind of thing that looks fine in the data and absurd on screen.
+  ok(temple.pair.every(m => m.every(f => f > 0 && f < 1)),
+    'and both of them stand inside the building',
+    temple.pair.map(m => `[${m[0].toFixed(3)}, ${m[1].toFixed(3)}]`).join(' '));
+
+  // THEY DO NOT STAND IN THE SAME PLACE, and they are far enough apart to read as
+  // two men. 80 source px between them against a monk 76 wide.
+  const [a, b] = temple.pair;
+  const apart = Math.hypot((b[0] - a[0]) * temple.w, (b[1] - a[1]) * temple.h);
+  ok(apart > 8 && apart < 20,
+    'and stand shoulder to shoulder rather than on top of each other',
+    `${apart.toFixed(1)} game px apart, on a monk ${(temple.gunnerTrim[2] * 105 / 512).toFixed(1)} wide`);
+
+  // The mount everything else asks for is still the middle of the floor, and it
+  // sits BETWEEN them — so a card, an info box or a badge that wants one point for
+  // this tower gets the pair's own centre rather than one of the two men.
+  const mid = temple.mountFrac[0];
+  ok(mid > Math.min(a[0], b[0]) && mid < Math.max(a[0], b[0]),
+    'and the tower\'s own mount sits between the two of them',
+    `${a[0].toFixed(3)} < ${mid.toFixed(3)} < ${b[0].toFixed(3)}`);
+}
+
 console.log(bad
   ? `\n${bad} of the design's claims no longer holds.`
   : '\nEvery family is still the tower the design says it is.');

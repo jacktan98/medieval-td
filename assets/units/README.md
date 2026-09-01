@@ -23,6 +23,7 @@ nothing else.
 | Pope               | `Pope_Default`                     | `Pope_Attack`                     |
 | Crossbowman        | `Crossbowman_Default`              | `Crossbowman_Attack`              |
 | Assassin           | `Assassin_Default`                 | `Assassin_Attack`                 |
+| Monk               | `Monk_Default`                     | `Monk_Attack`                     |
 
 An artillery crewman is the exception to the two-pose rule: he is drawn into all
 three of his machine's frames already, so his file is a PORTRAIT with no Attack
@@ -77,6 +78,29 @@ drawing. That is a measured finding, not a copy: both are measured per file and
 came back equal. `Paladin_Holy_Light` is the widest spread of any of his poses —
 133 x 193 against his resting 123 x 140 — because the glow rises well above his
 head.
+
+### The monk's Attack is a WIND-UP, and he is the only one
+
+Every other Attack drawing in this folder is the blow already landing — the arrow
+gone, the sword through the swing — so the game shows it AFTER the shot, for as
+long as the recoil lasts. A monk's Attack is him gathering the blast, so it is
+shown BEFORE his: the man about to fire is the man drawn charging, and the one who
+just fired is back at rest.
+
+That is not a flag on the file; it is what a Judgement Temple does with the pair
+of them. **Two monks stand on that tower**, half a cycle apart, so one is always
+charging and one is always resting. Each works a 2 second loop — a second at rest,
+a second gathering — out of one counter and no second clock. See `pair` in
+`src/data/towers.js` and `drawPair` in `src/render.js`.
+
+One pair of drawings serves both men: they are the same monk twice, and a second
+set of files would be the same picture under another name.
+
+His two poses are 76 x 116 and 80 x 116 source — the same height and 4px wider as
+his elbows come out — and both put his shadow on the SAME source pixel, (258, 303).
+That matters more here than anywhere: two men a second out of step, so a shadow
+that drifted between the poses would have one monk twitching sideways beside the
+other holding still.
 
 **Default is the man at rest**, and it is the drawing used almost everywhere: he
 walks in it, stands in his slot in it, and it is the picture the encyclopedia and

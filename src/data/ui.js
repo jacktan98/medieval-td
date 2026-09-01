@@ -180,6 +180,11 @@ export const ui = {
   // which fits the taller side — the same rule every glyph here is drawn by, so a
   // tall icon comes out narrower rather than cropped.
   glyph_altar: { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
+  // The Judgement Temple's, and the fork's other face: two hands raised in prayer,
+  // 66 x 89 source. Taller than wide like the altar's cross beside it, so both fit
+  // the box by their height and the pair reads as one choice rather than two
+  // differently sized buttons.
+  glyph_temple: { trim: [223, 212, 66, 89], fit: GLYPH_BOX },
   // THE MAXED BADGE, and the one glyph that is never pressable: it sits on the
   // upgrade button of a tower at the top of its ladder, dimmed like any button
   // that cannot be used. 66x90 source, an upright mark like the cross above it,
@@ -389,6 +394,7 @@ export const GLYPH_ART = {
   // The artillery fork's second face, on the same terms as the other two forks'.
   cannon: 'glyph_cannon',
   altar: 'glyph_altar',
+  temple: 'glyph_temple',
   refund: 'glyph_refund',
   flag: 'glyph_flag',
   aim_exit: 'glyph_aim_exit',

@@ -1,7 +1,7 @@
 # Medieval TD
 
 A tower defence played in a browser. Three hand-drawn maps, four families of
-tower with a fork at the top of three of them, nineteen buildings, fourteen
+tower with a fork at the top of three of them, twenty buildings, fourteen
 abilities, and an army that walks in from the left.
 
 **Play it:** open `index.html`. That is the whole of it — there is no build step,
@@ -22,7 +22,7 @@ index.html          the game
 src/                the rules and the drawing — 32 modules, no dependencies
 src/data/           the numbers: towers, waves, abilities, statuses, the maps
 assets/             every drawing and every sound, one folder per KIND of thing
-tools/              25 checkers and measuring tools, Node only
+tools/              26 checkers and measuring tools, Node only
 birthday/           a separate mini-game, reached from the admin keypad
 ```
 
@@ -40,7 +40,7 @@ by a tool in `tools/`, and a tool checks it is still true. When the artist
 re-exports a sprite one pixel taller, the check fails and prints the new number
 rather than the game quietly drawing a man standing beside his own tower.
 
-That is why there are twenty-five tools for eighteen thousand lines of game.
+That is why there are twenty-six tools for eighteen thousand lines of game.
 
 ## The tools
 
@@ -69,18 +69,19 @@ exit non-zero when something is wrong.
 | `plague` | the thug throws, the flask breaks, and the spill poisons |
 | `hud-clear` | no tower or badge is drawn into the HUD or off the board |
 | `status` | a status goes on, hurts, shows and comes off, for both armies |
+| `pair` | the two men on a tower that holds two take turns |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
 | `split-map` | pulls the build plots out of a map SVG |
 | `trace-road` | pulls the road out of a map SVG and writes the route |
 
-The first twenty-one are checks — run them after any change:
+The first twenty-two are checks — run them after any change:
 
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last four are not checks. `sim` and `sweep` answer balance questions and take
@@ -117,7 +118,7 @@ something else — a tower's damage, a wave's size, the second a crew lose after
 heavy shot. If you want to know why the game plays the way it does, that folder
 is the answer, not the rendering code.
 
-`src/data/towers.js` holds the four families and their nineteen buildings;
+`src/data/towers.js` holds the four families and their twenty buildings;
 `src/data/waves.js` the army and the three maps' wave tables;
 `src/data/abilities.js` the fourteen things a tier 4 tower can be taught;
 `src/data/status.js` what can be happening to a figure; and

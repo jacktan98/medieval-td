@@ -216,6 +216,22 @@ const MON3_TRIM = [277, 165, 469, 694];
 // the tallest thing in the game, past the monastery's own 142 and the barracks'
 // 133.
 const MON4_TRIM = [332, 110, 360, 804];
+// Tier 4's second rung, the Judgement Temple, and it is the ALTAR'S BELFRY six
+// game px shorter: 360 x 776 against 360 x 804, the same width to the pixel and
+// 28 source px less height. The artist drew one building twice — a plain spire
+// where the altar has a cross, and a banner hung across the near rail — so the
+// two share a footprint and differ in what stands inside them.
+const MON4B_TRIM = [332, 124, 360, 776];
+
+// THE MONK, and there are two of him on a Judgement Temple. He is the smallest
+// figure in the game: 76 x 116 source against a priest's 80 x 154, because he
+// kneels rather than stands and carries no staff.
+//
+// HIS ATTACK POSE IS 4px WIDER and exactly as tall — 80 x 116 against 76 x 116 —
+// which is his elbows coming out as he gathers the blast. Same height, same
+// baseline, so the two poses swap with nothing but his arms moving.
+const MONK_TRIM = [218, 198, 76, 116];
+const MONK_ATK_TRIM = [214, 198, 80, 116];
 
 // The three churchmen. All six drawings share ONE pair of boxes, which is the
 // same finding the elite archer gave: the artist re-robed one figure rather than
@@ -2813,6 +2829,143 @@ const altar = {
   shape: 'tower'
 };
 
+// TIER 4'S OTHER RUNG, the Judgement Temple, and the first building in this game
+// that carries TWO figures. Everything else on the board is one man on a deck, one
+// machine on a stone, or a squad that walks off the plot; two men standing still,
+// side by side, taking turns, is a shape nothing here had.
+//
+// THE SAME BELFRY AS THE ALTAR'S, six game px shorter. The artist drew one
+// building twice — see MON4B_TRIM — so the two forks share a footprint and differ
+// in what stands inside them and what hangs off the front.
+const judgement = {
+  sprite: 'monastery_t4b',
+  spriteTrim: MON4B_TRIM,
+  w: drawnW(MON4B_TRIM), h: drawnH(MON4B_TRIM),
+  // The belfry floor again: the area centroid of the orange quad the artist paints
+  // between the four posts, source (505.7, 561.5), whose corners are (494, 508),
+  // (627, 531), (520, 618) and (382, 585).
+  //
+  // ITS X IS THE ALTAR'S X TO A TENTH OF A PIXEL — 505.7 in both — which is what
+  // says these are the same belfry rather than two drawings that resemble each
+  // other. The y differs by 14 because the floor sits higher in a shorter tower.
+  //
+  // This is the mount for anything that asks the tower for ONE standing point: the
+  // encyclopedia's card, crownTop, the info box. The two monks stand either side
+  // of it — see `pair`.
+  mountFrac: [0.4825, 0.5638],
+  // WHERE THE TWO OF THEM STAND, and the only field in this file that holds more
+  // than one figure.
+  //
+  // ALONG THE FLOOR'S OWN LEFT-TO-RIGHT AXIS rather than along the screen's. The
+  // belfry is drawn isometric, so its floor's side-to-side runs from the left
+  // corner (382, 585) to the right corner (627, 531) — 251 source px at a slope,
+  // not horizontally. Two men separated horizontally on a sloped floor would have
+  // one of them standing in the air; separated along the axis, both have their
+  // feet on the boards and the pair still reads as side by side to the camera.
+  //
+  // 40px either side of a point 10px left of the floor's middle and 6px forward of
+  // it — source (456.9, 575.6) and (535.1, 558.4). Eighty between them against a
+  // monk 76 wide, so they stand shoulder to shoulder with their robes just clear.
+  //
+  // THE OFFSET FROM THE MIDDLE IS BY EYE, and it is the one number on this tower
+  // that is not measured off the artwork. Standing them on the centroid puts the
+  // right-hand monk squarely behind the near post — a third of him is stone — and
+  // pushes both heads into the eave. Eight placements were rendered at 3x against
+  // the owner's own reference screenshot and this is the one where both men read:
+  // clear of the roof, clear of the post, and sitting on the boards rather than
+  // floating over the rail. The floor centroid is still `mountFrac` above, which
+  // is what everything asking for ONE point gets.
+  pair: [[0.3471, 0.5820], [0.5641, 0.5598]],
+  // Shadow centre, source (512.0, 818.5), from the SVG's own ellipse which spans
+  // 335..689 by 740..897. The same x as the altar's, 14px higher up, and measured
+  // the same way and for the same reason — this building covers the back of its
+  // own shadow too, so the visible blob in the PNG is a crescent and its box
+  // centre is not its middle. `node tools/shadow.mjs` fits the arc.
+  groundFrac: [0.500, 0.895],
+  // THE ROOF AND THE NEAR POST, the same two things that stand between the altar's
+  // pope and the camera, measured on this drawing rather than inherited.
+  //
+  // THE ROOF first, and it matters more here: a monk is 116 source px tall against
+  // a pope's 156, so he stands further under the eave. Standing on the floor at y
+  // 561 his head reaches about y 445, and the eave hangs to 466 at its lowest — so
+  // the roof crosses both monks above the shoulder. That is the overlap the owner
+  // asked for, and it is the artist's own drawing producing it rather than a
+  // number chosen to make it happen.
+  //
+  // The band runs from y 360 down to the eave, traced along it in five steps, with
+  // every vertex a pixel ABOVE the line rather than on it — the same one-pixel rule
+  // the altar's carries, and for the same reason: three pixels under the eave is
+  // the BACK post, which is behind the monks, and a band that overshot would paint
+  // its outline across a face.
+  //
+  // THE NEAR POST second, at the floor's nearest corner, source x 535..570 and y
+  // 441..626. It is the only one of the four in front of them, and it crosses the
+  // RIGHT-HAND monk rather than passing between the two — he stands at x 549.6 and
+  // the post covers 535..570, so about a third of his robe is stone. The left monk
+  // is 90px clear of it. That asymmetry is the drawing's, not a mistake: it is what
+  // a post at a corner does to two men standing behind it.
+  //
+  // Its corners are the union of the post's two faces and its cap, from the SVG at
+  // (535, 450), (555, 454), (569, 445), (570, 613), (555, 626), (535, 621), pushed
+  // 2px outward for the black stroke the PNG draws around shapes the SVG stores
+  // without one — the same pad the altar's post uses.
+  frontPolys: [
+    [[390, 360], [640, 360], [640, 437], [612, 447], [570, 458], [528, 468],
+     [514, 468], [470, 458], [430, 448], [390, 440]],
+    [[533, 448], [557, 452], [571, 443], [572, 615], [557, 628], [533, 623]]
+  ],
+  shape: 'tower'
+};
+
+// THE MONK, and a Judgement Temple stands two of him. One def for both, because
+// they are the same man twice — see `pair` above for where each of them stands.
+//
+// HE FIRES THE ABBEY'S MISSILE rather than the pope's. `missile3` is the cardinal's
+// drawing at the cardinal's speed, which is right twice over: a monk is a lesser
+// churchman than a pope, and the owner asked for the monastery's own Arcane_shot
+// on his blast rather than a sound of his own.
+//
+// A KIND OF HIS OWN all the same, and only for the KILL cry. `monk` points at the
+// same firing cue `arcane` does — see FIRING in src/towers.js — so what leaves
+// sounds like every other missile in the family, and what a man killed by it says
+// is the monk's line. That is the pattern the pope's `kind` established, and it is
+// the whole reason a kind exists separately from a sprite.
+const monk = {
+  ...priest,
+  ammo: { ...missile3, kind: 'monk' },
+  gunner: 'monk',
+  gunnerTrim: MONK_TRIM,
+  // The centre of his ground shadow, source (258.0, 303.0), by the tip rule every
+  // figure's anchor is read with — `node tools/shadow.mjs`.
+  gunnerPivot: [0.526, 0.905],
+  // Arms out, gathering the blast. HIS ATTACK POSE IS A WIND-UP, which no other
+  // figure in this game has: an archer's Attack is the arrow already leaving, so it
+  // is shown after the shot, and a monk's is the shot being built, so it is shown
+  // before. See `pair` handling in src/towers.js and drawPair in src/render.js.
+  //
+  // The box grows 4px on the LEFT only — 214 against 218, same width of drawing
+  // pushed forward — so his shadow does not move between the two and the pivot
+  // shifts with the box rather than the man.
+  // The shadow is at source (258.0, 303.0) in this drawing too — not close, the
+  // SAME pixel — so the two poses swap with his feet nailed down and only his arms
+  // moving. That matters more on this tower than on any other: two monks stand on
+  // one floor a second out of step, so a drift of even a pixel would have one of
+  // them twitching sideways beside the other holding still.
+  attack: { sprite: 'monk_attack', trim: MONK_ATK_TRIM, pivot: [0.550, 0.905] },
+  // Where the blast leaves him: the cupped hands at his chest, source (244.4,
+  // 260.2) on the Attack pose, which is 13.6 in FRONT of the anchor and 42.8 above
+  // it. Measured on the Attack pose like every bow and staff in this file, and on
+  // the one shape that is only there in that pose — his robe is closed over his
+  // hands at rest and opens around a pale circle as he gathers.
+  //
+  // [3, -9] once drawn, against a pope's [13, -23], and the difference is the man
+  // rather than the aim: he is 116 source px tall to the pope's 156 and holds the
+  // blast at his chest instead of on the head of a staff held out at arm's length.
+  // A shot that left where the pope's does would leave from a foot in front of a
+  // monk who is not holding anything there.
+  muzzle: [Math.round(0.179 * MONK_TRIM[2] * SCALE), -Math.round(0.369 * MONK_TRIM[3] * SCALE)]
+};
+
 const bishop = {
   ...priest,
   ammo: missile2,
@@ -3078,7 +3231,53 @@ export const monastery = [
     // WHAT THIS ALTAR CAN BE TAUGHT, and both of them leave the plot: they change
     // every other tower on the map rather than this one. Ids into
     // src/data/abilities.js, where the rules and the badges live.
-    abilities: ['wrath', 'fortitude'] }
+    abilities: ['wrath', 'fortitude'] },
+
+  // AND THE FOURTH FAMILY FORKS. The monastery was the last ladder with a single
+  // top rung; this is its second, and every fork in this game now offers the same
+  // shape of choice — the same gold, the same plot, two different answers.
+  //
+  // WHAT IT IS: two monks taking turns rather than one pope swinging a staff. The
+  // cadence is the whole tower. Each monk works a 2 second cycle — a second at
+  // rest, a second gathering the blast — and they are half a cycle apart, so one
+  // of them is always charging and the tower looses every 1.00s. That is the
+  // owner's own timing, and `cooldown` is the tower's half of it: the two monks
+  // between them fire at 1.00s intervals, and which of them is drawn firing
+  // alternates. See `pair` on the def above and stepWeapon in src/towers.js.
+  //
+  // 40 A BLAST, AND IT IS A NUMBER RATHER THAN A GUESS. The owner proposed 35 and
+  // asked for it to be checked against the High Altar, so:
+  //
+  //   High Altar        75 every 1.45s   51.7 a second
+  //   at 35             35 every 1.00s   35.0 a second
+  //   at 40             40 every 1.00s   40.0 a second
+  //
+  // 35 makes this tower strictly worse than the altar at the same price and the
+  // same reach — lower output AND slower against everything — which is not a fork,
+  // it is a trap. 40 is the number that turns it into a choice, and the reason is
+  // OVERKILL rather than the total:
+  //
+  //   a militia has 80 health.  The altar spends two 75s on it and wastes 70 of
+  //   the second one: 2.90s a kill.  The temple spends two 40s and wastes NOTHING:
+  //   2.00s a kill, 45% faster, on 22% less damage a second.
+  //
+  //   a heavy has 1000.  The altar takes 19.3s, the temple 25.0s.
+  //
+  // So the fork reads: the altar BREAKS BIG THINGS, the temple CLEARS SMALL ONES.
+  // That falls out of the arithmetic rather than being bolted on, and 40 is the
+  // exact number at which two blasts kill a militia with nothing spilled.
+  //
+  // FIRST GUESS ALL THE SAME, on the owner's own terms — the sweep comes after he
+  // has played it, the way the ballista's and the cannon's did.
+  { ...judgement, ...monk, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple',
+    unit: 'Monk', cost: 220, damage: 40, range: 210, cooldown: 1.00,
+    colour: '#A8A096', targeting: true,
+    // The upgrade button's own picture on an Abbey, beside the altar's — the
+    // monastery is the last family to offer two, so this is the eighth and final
+    // tier 4 glyph. See the note on the Musketeer Post's.
+    glyph: 'temple',
+    // Its own three lines, on the same terms as every other named tier 4.
+    voice: 'monk' }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

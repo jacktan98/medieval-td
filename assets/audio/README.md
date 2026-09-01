@@ -1,6 +1,6 @@
 # Audio
 
-**Seventy-two clips: thirty in `sfx/` and forty-two in `voice/`.**
+**Seventy-six clips: thirty-one in `sfx/` and forty-five in `voice/`.**
 
 ```
 assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
@@ -15,7 +15,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Paladin_Holy_Light.mp3, Paladin_Holy_Slash.mp3,
                       Assassin_melee_attack.mp3, Assassin_kill_enemy.mp3,
                       Assassin_Knife_Throw.mp3,
-                      Pope_kill_enemy.mp3,
+                      Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
                       Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3
 
@@ -30,6 +30,7 @@ assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Ballista_Engineer_1.mp3 .. Ballista_Engineer_3.mp3
                       Cannoneer_1.mp3 .. Cannoneer_3.mp3
                       Pope_1.mp3 .. Pope_3.mp3
+                      Monk_1.mp3 .. Monk_3.mp3
                       Thug_1.mp3
 ```
 
@@ -37,8 +38,17 @@ assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
 ladder says when a tower is built or given an order; a tier 4's three belong to
 that one tower and replace the family's. Both fourth rungs of a forked ladder get
 their own three — the Musketeer and the Crossbowman, the Paladin and the
-Assassin, the Ballista Engineer and the Cannoneer — because they are different
-men, not the same man twice.
+Assassin, the Ballista Engineer and the Cannoneer, the Pope and the Monk —
+because they are different men, not the same man twice. Every fourth rung in the
+game answers for itself now.
+
+**The Judgement Temple has a kill line and no firing sound**, which is the same
+half-a-pair the High Altar has and for the same reason: its blast IS the
+monastery's own `Arcane_shot`, at the owner's ask, so what the two monks needed
+was a cry of their own and no new noise leaving. The ammunition carries a `kind`
+purely to carry that split — see FIRING in `src/towers.js`, where `monk` points at
+the family's report, and the kill cue in `src/enemies.js`, where it points at
+`Monk_kill_enemy`.
 
 All recorded and all wired. `node tools/audio.mjs` measures
 them; `node tools/sound.mjs` checks the rules below against the real

@@ -31,9 +31,13 @@ import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW, CANNON } from './a
 // caught. `play(undefined)` is silence with no error and no warning, so an
 // ammunition that says `fireSound: true` and has no row here simply stops making
 // a noise — and the tower goes on working perfectly in every other respect.
-export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, bullet: MUSKET,
-                        deadeye: DEADEYE, bolt: BOLT, quarrel: CROSSBOW,
-                        cannonball: CANNON };
+// `monk` is the sixth row and it points at ARCANE too, for the same reason `pope`
+// does and more plainly: the owner asked for the Judgement Temple's blast to be
+// the monastery's own Arcane_shot. So the two monks needed a kind purely so their
+// KILLS could be theirs, and this row is what stops that kind going silent.
+export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, monk: ARCANE,
+                        bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT,
+                        quarrel: CROSSBOW, cannonball: CANNON };
 
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
@@ -82,7 +86,12 @@ export function crownTop(t) {
   let top = box.top;
 
   if (d.gunner) {
-    const m = mountPoint(t);
+    // THE HIGHEST OF THEM, on a tower with more than one. The temple's two monks
+    // stand at different depths on a sloped floor, so the far one's head is 19
+    // source px above the near one's — a badge measured off the near monk would
+    // land on the far one's hood.
+    const mounts = d.pair ? d.pair.map((_, i) => mountPoint(t, i)) : [mountPoint(t)];
+    const m = mounts.reduce((a, b) => (b.y < a.y ? b : a));
     const poses = [[d.gunnerTrim, d.gunnerPivot]];
     if (d.attack) poses.push([d.attack.trim, d.attack.pivot]);
     for (const a of abilitiesOf(d)) if (a.pose) poses.push([a.pose.trim, a.pose.pivot]);
@@ -165,13 +174,38 @@ export function machineNose(def, box) {
 // catapult facing right would swing its arm to the right and drop the rock out
 // of a sling still drawn on its left, which is the sort of thing that reads as
 // the projectile being broken rather than the transform being incomplete.
-export function mountPoint(t) {
+export function mountPoint(t, i) {
   const box = towerBox(t);
-  const x = box.left + box.w * t.def.mountFrac[0];
+  const frac = standFrac(t.def, i === undefined ? (t.turn || 0) : i);
+  const x = box.left + box.w * frac[0];
   return {
     x: buildingFlip(t) < 0 ? 2 * t.x - x : x,
-    y: box.top + box.h * t.def.mountFrac[1]
+    y: box.top + box.h * frac[1]
   };
+}
+
+// WHICH STANDING POINT, on a tower that has more than one.
+//
+// Every building in this game held exactly one figure until the Judgement Temple,
+// which holds two monks side by side on its belfry floor — see `pair` in
+// data/towers.js. `mountFrac` is still the answer for anything that wants ONE
+// point for the tower: the encyclopedia's card, the info box, crownTop's fallback.
+// `pair` is the answer for the men themselves.
+//
+// A def with no `pair` ignores the index entirely, so every other tower goes
+// through this unchanged and there is no second code path to keep in step.
+export const standFrac = (def, i = 0) => (def.pair ? def.pair[i] : def.mountFrac);
+
+// WHOSE TURN IT IS NEXT, on a paired tower.
+//
+// The two monks do not fire together and they do not fire independently — they
+// take turns, which is the owner's own description and is what makes the pair read
+// as one crew rather than as two towers on a plot. One counter, flipped after each
+// shot, and the man it points at is both the next to fire and the one drawn
+// gathering the blast. See drawPair in src/render.js: the charging pose IS the
+// wind-up, so "who is next" and "who is lit up" are the same question.
+function nextInPair(t) {
+  if (t.def.pair) t.turn = ((t.turn || 0) + 1) % t.def.pair.length;
 }
 
 // Whether the MACHINE on a turret is drawn mirrored: -1 if it is, 1 if not.
@@ -489,7 +523,10 @@ function stepWeapon(state, t, dt, target) {
   t.recoil = 1;
 
   const special = specialFor(t, t.shots);
-  if (!special) { shoot(state, t, shotAt); return; }
+  // AFTER the shot, never before: shoot() asks muzzlePoint where the blast starts
+  // and muzzlePoint asks mountPoint, which answers with the monk whose turn it
+  // currently is. Flipping first would fire every blast out of the resting monk.
+  if (!special) { shoot(state, t, shotAt); nextInPair(t); return; }
 
   // A locked shot goes to the man the mark is on, not to whoever the tower would
   // pick this frame. Without that the mark would be a lie — a second of warning
@@ -504,6 +541,7 @@ function stepWeapon(state, t, dt, target) {
   // queue is empty and the hold starts here.
   t.special = special;
   shoot(state, t, at, special);
+  nextInPair(t);
   t.hit = [at];
   t.burst = special.shots - 1;
   t.burstT = special.gap || 0;
