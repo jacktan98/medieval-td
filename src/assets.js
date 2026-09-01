@@ -289,6 +289,10 @@ export const paths = {
   // source px against the other three's 92, which is 26 game px of it in the air
   // against 19.
   missile_t4:  'assets/projectiles/Pope_Arcane_Missle.png',
+  // The monk's, and the smallest missile in the family: a 12 x 5 comet against a
+  // priest's 19 x 4 dart and the pope's 26 x 5. Two men throwing small blasts is
+  // what a Judgement Temple looks like, so the drawing says so.
+  monk_shot:       'assets/projectiles/Monk_Magic_Shot.png',
   // The plague doctor's flask, and the only projectile in the game thrown AT
   // the player's men rather than by them.
   flask:       'assets/projectiles/Enemies_Plague_Thug_Flask.png',

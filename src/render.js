@@ -1046,6 +1046,13 @@ function drawCamp(ctx, t, box) {
 //   and the second of charging the owner asked for, out of one counter and no new
 //   clock — see nextInPair in src/towers.js.
 //
+//   AND ONLY FOR THE LAST MOMENT OF THE WAIT. `charge` on the def is how long
+//   before his blast a man gathers it — half a second at the owner's ask, against
+//   a second and a half at rest. `t.cd` counts down to the next shot, so the whole
+//   animation is one comparison against it and there is no second clock to drift.
+//   A def with no `charge` falls back to the full wait, which is what the pair
+//   did before the owner split it.
+//
 //   AND ONLY WHILE A SHOT IS COMING. `t.cd` is above zero exactly when the tower
 //   is counting down to one, so an idle temple with nothing in range has both
 //   monks at rest rather than one frozen mid-prayer.
@@ -1064,7 +1071,7 @@ function drawPair(ctx, t) {
     .sort((a, b) => a.m.y - b.m.y);
 
   for (const { i, m } of men) {
-    const charging = i === (t.turn || 0) && t.cd > 0;
+    const charging = i === (t.turn || 0) && t.cd > 0 && t.cd <= (d.charge ?? Infinity);
     const [frame, trim, pivot] = charging && art[d.attack.sprite]
       ? [art[d.attack.sprite], d.attack.trim, d.attack.pivot]
       : [img, d.gunnerTrim, d.gunnerPivot];

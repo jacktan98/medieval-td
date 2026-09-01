@@ -89,9 +89,16 @@ just fired is back at rest.
 
 That is not a flag on the file; it is what a Judgement Temple does with the pair
 of them. **Two monks stand on that tower**, half a cycle apart, so one is always
-charging and one is always resting. Each works a 2 second loop — a second at rest,
-a second gathering — out of one counter and no second clock. See `pair` in
-`src/data/towers.js` and `drawPair` in `src/render.js`.
+resting and the other is either resting or about to fire. Each works a 2 second
+loop — **1.5 seconds at rest and 0.5 gathering** — out of one counter and no second
+clock, and the second monk's loop begins 1 second into the first's. See `pair` and
+`charge` in `src/data/towers.js` and `drawPair` in `src/render.js`.
+
+**His hands are where the blast comes from**, and they are the one shape that only
+exists in the Attack drawing: a small pale blob out beyond the near edge of his
+robe. His face and the opening of his robe are pale too and appear in both poses at
+the same place, so the hands are found by asking which pale shape is new. If you
+redraw him, keep them clear of his body — that blob is the muzzle.
 
 One pair of drawings serves both men: they are the same monk twice, and a second
 set of files would be the same picture under another name.

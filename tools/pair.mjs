@@ -22,8 +22,11 @@
 //   EACH SHOT IS HIS OWN     the blast leaves the mount of the man whose turn it was
 //   THE CADENCE IS THE PAIR  a shot every cooldown, each monk on twice that
 //   CHARGING IS NEXT         the man drawn gathering is the man about to fire
+//   AND FOR AS LONG AS ASKED  `charge` seconds of gathering, the rest at rest
+//   AND HIS HEAD IS CLEAR    no man's crown is drawn inside his own roof
 
-import { updateTowers, mountPoint } from '../src/towers.js';
+import { readFileSync } from 'fs';
+import { updateTowers, mountPoint, muzzlePoint } from '../src/towers.js';
 import { monastery, families } from '../src/data/towers.js';
 import { level } from '../src/level.js';
 
@@ -100,20 +103,23 @@ for (const def of PAIRED) {
   // and, more to the point, NEARER his mount than the other man's. That second
   // half is the check: if `turn` stopped flipping, every shot would still be
   // near A mount, just always the same one.
+  // OUT OF HIS OWN HANDS, to the pixel. Each man's muzzle is his mount plus the
+  // def's offset, so asking whether a blast STARTS there is exact rather than
+  // approximate — and it fails on the two ways this can break at once: a `turn`
+  // that stops flipping puts every blast on one man's muzzle, and a muzzle read
+  // off `mountFrac` instead of the pair puts every blast between the two of them.
   const { t: probe } = volley(def, 0.01);
-  const spots = def.pair.map((_, i) => mountPoint(probe, i));
-  const wrong = out.filter(s => {
-    const mine = Math.hypot(s.x - spots[s.monk].x, s.y - spots[s.monk].y);
-    // NEARER HIS OWN MOUNT THAN THE OTHER MAN'S, which is the clause that does the
-    // work. "Within a muzzle's length of a mount" would pass a tower whose `turn`
-    // had stopped flipping, because every blast would still be near the one man it
-    // all came from. This asks whose.
-    const others = spots.filter((_, i) => i !== s.monk)
-      .map(o => Math.hypot(s.x - o.x, s.y - o.y));
-    return mine >= Math.min(...others);
-  });
-  ok(wrong.length === 0, 'and every blast leaves the man whose turn it was',
-    `${out.length - wrong.length}/${out.length} nearer their own mount than the other's`);
+  const muzzles = def.pair.map((_, i) => { probe.turn = i; return muzzlePoint(probe); });
+  const wrong = out.filter(s =>
+    Math.hypot(s.x - muzzles[s.monk].x, s.y - muzzles[s.monk].y) > 0.01);
+  ok(wrong.length === 0, 'and every blast leaves its own man\'s hands',
+    muzzles.map((m, i) => `${i} at (${m.x.toFixed(1)}, ${m.y.toFixed(1)})`).join(', '));
+
+  // AND THE TWO MUZZLES REALLY ARE TWO, or the check above would pass on a tower
+  // that fired both men's blasts from one place.
+  ok(new Set(muzzles.map(m => `${m.x.toFixed(2)},${m.y.toFixed(2)}`)).size === n,
+    `and the ${n} of them fire from ${n} different points`,
+    `${Math.hypot(muzzles[0].x - muzzles[1].x, muzzles[0].y - muzzles[1].y).toFixed(1)}px apart`);
 
   // AND THE TWO MOUNTS REALLY ARE TWO. Distinct standing points, or the check
   // above would pass on a tower that drew both monks in the same spot.
@@ -159,6 +165,65 @@ for (const def of PAIRED) {
   ok(after.length > 0 && after[0].monk === nextUp,
     'and the man drawn gathering is the man who fires next',
     `turn ${nextUp} -> blast from ${after.length ? after[0].monk : 'none'}`);
+
+  // AND FOR AS LONG AS THE OWNER ASKED. `charge` is the window before a blast in
+  // which a man is drawn gathering, and the rest of his wait he is at rest. Read
+  // the same way drawPair reads it — off `cd` — so this is the picture rather than
+  // a restatement of the data.
+  if (def.charge !== undefined) {
+    const { t: t3, state: s3 } = stand(def);
+    let gathering = 0, resting = 0, frames = 0;
+    // Two whole cycles, after letting the first shot settle the counter.
+    for (let i = 0; i * DT < def.cooldown * n * 3; i++) {
+      updateTowers(s3, DT);
+      s3.shots.length = 0;
+      if (i * DT < def.cooldown * n) continue;      // skip the run-up
+      frames++;
+      // Monk 0 only: he is gathering when it is his turn and the blast is close.
+      if (t3.turn === 0 && t3.cd > 0 && t3.cd <= def.charge) gathering++; else resting++;
+    }
+    const per = def.cooldown * n;                   // one man's whole cycle
+    const shown = gathering / frames * per;
+    ok(Math.abs(shown - def.charge) < 0.06,
+      `and gathers for ${def.charge}s of his ${per.toFixed(1)}s cycle`,
+      `${shown.toFixed(2)}s gathering, ${(per - shown).toFixed(2)}s at rest`);
+  }
+
+  // AND HIS HEAD IS NOT INSIDE HIS OWN ROOF. The owner asked for the roof to
+  // overlap the men and then, seeing it, asked for it not to touch their heads —
+  // so this is the line between the two, and it is the one thing about this tower
+  // that is decided by the artwork rather than by the numbers.
+  //
+  // `frontPolys[0]` is the roof band, in the building's own source pixels. A man's
+  // crown is his anchor less the height of his tallest ink, and the test is that it
+  // sits BELOW the lowest edge of that band at his x. Below rather than outside:
+  // the band is drawn as a strip along the eave, so a crown that cleared it by
+  // going further up would pass a point-in-polygon test and look absurd.
+  if (def.frontPolys && def.frontPolys.length) {
+    const roof = def.frontPolys[0];
+    // How tall he is above his anchor, in the sprite's own source px.
+    const crownUp = def.gunnerPivot[1] * def.gunnerTrim[3];
+    // The roof's lowest edge on the vertical line through x.
+    const eaveAt = x => {
+      let y = -Infinity;
+      for (let i = 0, j = roof.length - 1; i < roof.length; j = i++) {
+        const [x1, y1] = roof[j], [x2, y2] = roof[i];
+        if ((x1 <= x && x2 >= x) || (x2 <= x && x1 >= x)) {
+          const k = x2 === x1 ? 0 : (x - x1) / (x2 - x1);
+          y = Math.max(y, y1 + k * (y2 - y1));
+        }
+      }
+      return y;
+    };
+    const heads = def.pair.map((f, i) => {
+      const sx = def.spriteTrim[0] + f[0] * def.spriteTrim[2];
+      const sy = def.spriteTrim[1] + f[1] * def.spriteTrim[3];
+      return { i, x: sx, crown: sy - crownUp, eave: eaveAt(sx) };
+    });
+    const under = heads.filter(h => h.eave > -Infinity && h.crown <= h.eave);
+    ok(under.length === 0, 'and no man\'s head is drawn inside the roof',
+      heads.map(h => `${h.i}: clear by ${(h.crown - h.eave).toFixed(1)}px`).join(', '));
+  }
 
   // AND NOBODY GATHERS OVER NOTHING. With no target the tower does not count
   // down, so drawPair's `t.cd > 0` is false and both men are at rest — the check

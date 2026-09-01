@@ -1,6 +1,6 @@
 # Projectile artwork
 
-Anything that leaves a tower, a man or an enemy and travels. Seventeen files,
+Anything that leaves a tower, a man or an enemy and travels. Eighteen files,
 all **512 x 512 with a transparent background**, like every other sprite in the
 game.
 
@@ -38,15 +38,18 @@ right".
 | `Pope_Arcane_Missle.png` | High Altar | 330 | flat, and a third longer than the others |
 | `Assassin_Knife.png` | an assassin who has learned Knife Throw | 300 | flat |
 | `Assassin_Knife_Sneak_Attack.png` | the first knife of his volley | 300 | flat |
+| `Monk_Magic_Shot.png` | a Judgement Temple's two monks | 330 | flat, and the smallest of the family |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |
 
-**A Judgement Temple's monks fire the Abbey's missile**, not one of their own.
-`Monk_Magic_Shot.graphite` is in this folder and is a working file rather than a
-sprite — the game does not load it and `node tools/readme.mjs` does not ask about
-it, because that check only covers what `src/assets.js` names. When it is exported
-as a PNG, wiring it is a trim and one line: give the monk's ammunition its own
-`sprite` in `src/data/towers.js` instead of spreading `missile3`. Nothing else
-moves — the speed, the kind and both sounds already belong to the monk.
+**Five drawings for one family, and the monk's is the odd one.** The three tiers
+under the fork share a 19 x 4 dart, the pope throws a 26 x 5 version of it, and a
+monk throws a 12 x 5 comet — a blunt head with a tail rather than a point, because
+he gathers it in his hands instead of loosing it off a staff. Same 330 speed and
+the same `Arcane_shot` leaving; what is his is the picture and the kill cry.
+
+Its `grip` is 0.12 against the darts' 0.15 for the same reason: on a shape with a
+head, the point that wants to sit on the flight line is the middle of the head
+rather than a tip it does not have.
 
 ## Lobbed is not the same as high
 

@@ -265,6 +265,11 @@ const MISSILE_TRIM = [210, 246, 92, 20];
 // missile at the top of the ladder and this is the whole of it — same colours,
 // same shape, a third longer.
 const MISSILE4_TRIM = [193, 244, 125, 24];
+// The monk's, and the smallest of the four: 59 x 24 source, 12 x 5 once drawn,
+// against the three shared 92 x 20 darts and the pope's 125 x 24. A blunt head
+// with a tail rather than a dart, which is what the artist drew for a blast thrown
+// from the hands instead of loosed off a staff.
+const MONK_SHOT_TRIM = [238, 253, 59, 24];
 
 // The musket ball. The smallest sprite in the game by a wide margin — an arrow is
 // 100x20 and this is 20x14, which is 4x3 once drawn.
@@ -2863,19 +2868,42 @@ const judgement = {
   // one of them standing in the air; separated along the axis, both have their
   // feet on the boards and the pair still reads as side by side to the camera.
   //
-  // 40px either side of a point 10px left of the floor's middle and 6px forward of
-  // it — source (456.9, 575.6) and (535.1, 558.4). Eighty between them against a
-  // monk 76 wide, so they stand shoulder to shoulder with their robes just clear.
+  // Source (458, 578) and (532, 581), which is 74 apart against a monk 76 wide:
+  // shoulder to shoulder with their robes touching.
   //
-  // THE OFFSET FROM THE MIDDLE IS BY EYE, and it is the one number on this tower
-  // that is not measured off the artwork. Standing them on the centroid puts the
-  // right-hand monk squarely behind the near post — a third of him is stone — and
-  // pushes both heads into the eave. Eight placements were rendered at 3x against
-  // the owner's own reference screenshot and this is the one where both men read:
-  // clear of the roof, clear of the post, and sitting on the boards rather than
-  // floating over the rail. The floor centroid is still `mountFrac` above, which
-  // is what everything asking for ONE point gets.
-  pair: [[0.3471, 0.5820], [0.5641, 0.5598]],
+  // THEIR HEADS CLEAR THE ROOF, and that is what decides the depth rather than
+  // taste. A monk's crown is 105 source px above his anchor — measured off the
+  // topmost ink of both his poses, which agree — and the padded eave above hangs
+  // lowest at x 520, where it reaches y 476.6. So the deepest a man may stand and
+  // still keep his head out of the shingles is eave(x) + 105: y 581.6 under the
+  // lowest part of the roof, rising to y 566.5 further out.
+  //
+  // The first pair ran along the floor's own left-to-right axis, which is the line
+  // two men standing on a sloped floor would naturally take — and it is the wrong
+  // line here, because going right along it goes UP: it put the right monk's crown
+  // 17.4px inside the eave. These two are near-level on the screen instead, both
+  // deep enough to clear, and they still read as side by side because that is what
+  // level means to the camera.
+  //
+  // Left clears by 14.5px, right by 15.4px — about 3 game px each, which is the
+  // margin that survives the eave being a curve and the stroke being 2px wide.
+  // `node tools/pair.mjs` measures both against the band above and fails if either
+  // crown goes back under it.
+  //
+  // Both feet are on the boards: at x 458 the floor runs y 531..603 and at x 532 it
+  // runs y 515..608, so neither man is over the rail. The floor centroid is still
+  // `mountFrac` above, which is what everything asking for ONE point gets.
+  pair: [[0.3500, 0.5876], [0.5556, 0.5992]],
+  // HOW LONG BEFORE HIS SHOT A MAN IS DRAWN GATHERING, in seconds, at the owner's
+  // ask: half a second of charging against a second and a half at rest.
+  //
+  // It is a window rather than a phase, and that is what keeps the whole animation
+  // on one counter. `cd` counts down to the next blast, so "charging" is simply
+  // `cd <= charge` — see drawPair in src/render.js. With a 1.00s cooldown and two
+  // men taking turns, each of them sits at rest for 1.5s, gathers for 0.5s, and
+  // looses; and the second monk's cycle begins 1.0s into the first monk's, which is
+  // exactly what alternating on a 1s cadence means.
+  charge: 0.5,
   // Shadow centre, source (512.0, 818.5), from the SVG's own ellipse which spans
   // 335..689 by 740..897. The same x as the altar's, 14px higher up, and measured
   // the same way and for the same reason — this building covers the back of its
@@ -2910,8 +2938,23 @@ const judgement = {
   // 2px outward for the black stroke the PNG draws around shapes the SVG stores
   // without one — the same pad the altar's post uses.
   frontPolys: [
-    [[390, 360], [640, 360], [640, 437], [612, 447], [570, 458], [528, 468],
-     [514, 468], [470, 458], [430, 448], [390, 440]],
+    // THE ROOF BAND, and it is SAMPLED FROM THE EAVE rather than traced by hand.
+    // The hand-traced version ran along five straight guesses and sat as much as
+    // 10 source px ABOVE the real edge — so it under-covered the roof, and worse,
+    // it made the head-clearance check in tools/pair.mjs pass on a monk whose
+    // crown was genuinely inside the shingles. The eave is a curve; five points
+    // cannot hold it.
+    //
+    // So: the lowest edge of every roof shape in the artist's SVG, read every 18px
+    // across the belfry and padded 2px down for the black stroke the PNG draws
+    // around shapes the SVG stores without one. Top at y 300, well clear of
+    // anything, because the band only has to be a band.
+    [[336, 300], [678, 300], [660, 412], [642, 427],
+     [624, 443], [606, 455], [588, 459], [570, 464],
+     [552, 469], [534, 473], [516, 478], [498, 475],
+     [480, 470], [462, 466], [444, 462], [426, 458],
+     [408, 454], [390, 450], [372, 446], [354, 442],
+     [336, 385]],
     [[533, 448], [557, 452], [571, 443], [572, 615], [557, 628], [533, 623]]
   ],
   shape: 'tower'
@@ -2920,10 +2963,13 @@ const judgement = {
 // THE MONK, and a Judgement Temple stands two of him. One def for both, because
 // they are the same man twice — see `pair` above for where each of them stands.
 //
-// HE FIRES THE ABBEY'S MISSILE rather than the pope's. `missile3` is the cardinal's
-// drawing at the cardinal's speed, which is right twice over: a monk is a lesser
-// churchman than a pope, and the owner asked for the monastery's own Arcane_shot
-// on his blast rather than a sound of his own.
+// HE FIRES HIS OWN BLAST, and it is the fifth drawing in a family of four. It flies
+// at the family's own 330 and makes the family's own Arcane_shot, at the owner's
+// ask — what is his is the picture and the kill cry, and nothing else.
+//
+// It stood in as the cardinal's missile for one build, while the artist's file was
+// still a working document rather than a sprite. Everything about that swap was
+// one line, which is the whole point of an ammunition being a table row.
 //
 // A KIND OF HIS OWN all the same, and only for the KILL cry. `monk` points at the
 // same firing cue `arcane` does — see FIRING in src/towers.js — so what leaves
@@ -2932,7 +2978,18 @@ const judgement = {
 // the whole reason a kind exists separately from a sprite.
 const monk = {
   ...priest,
-  ammo: { ...missile3, kind: 'monk' },
+  ammo: {
+    ...missile3,
+    kind: 'monk',
+    sprite: 'monk_shot',
+    trim: MONK_SHOT_TRIM,
+    // `grip` 0.12 rather than the darts' 0.15, and it is the shape that moves it:
+    // those are long thin bolts held near the point, and this is a blunt head with
+    // a tail behind it, so the point that wants to sit on the flight line is the
+    // middle of the head. Hand-set from watching the shot, like every other grip in
+    // the game — it is the one number in a projectile a tool cannot give you.
+    grip: 0.12
+  },
   gunner: 'monk',
   gunnerTrim: MONK_TRIM,
   // The centre of his ground shadow, source (258.0, 303.0), by the tip rule every
@@ -2952,18 +3009,22 @@ const monk = {
   // one floor a second out of step, so a drift of even a pixel would have one of
   // them twitching sideways beside the other holding still.
   attack: { sprite: 'monk_attack', trim: MONK_ATK_TRIM, pivot: [0.550, 0.905] },
-  // Where the blast leaves him: the cupped hands at his chest, source (244.4,
-  // 260.2) on the Attack pose, which is 13.6 in FRONT of the anchor and 42.8 above
-  // it. Measured on the Attack pose like every bow and staff in this file, and on
-  // the one shape that is only there in that pose — his robe is closed over his
-  // hands at rest and opens around a pale circle as he gathers.
+  // HIS HANDS, and they are found rather than guessed. The Attack drawing carries
+  // one pale shape the resting drawing does not: a 68px blob of the artist's cream
+  // at source (223.2, 258.4), out beyond the near edge of his robe, which is the
+  // cupped hands he gathers the blast in. Every other cream blob — his face at
+  // (258.1, 223.1), the opening of his robe at (262.5, 253.5) — appears in BOTH
+  // poses at the same place, so the one that only exists while he is charging is
+  // the one the shot comes out of.
   //
-  // [3, -9] once drawn, against a pope's [13, -23], and the difference is the man
-  // rather than the aim: he is 116 source px tall to the pope's 156 and holds the
-  // blast at his chest instead of on the head of a staff held out at arm's length.
-  // A shot that left where the pope's does would leave from a foot in front of a
-  // monk who is not holding anything there.
-  muzzle: [Math.round(0.179 * MONK_TRIM[2] * SCALE), -Math.round(0.369 * MONK_TRIM[3] * SCALE)]
+  // 34.8 in FRONT of his anchor and 44.6 above it, which is [7, -9] once drawn.
+  // It was [3, -9] for one build, taken by eye off a blown-up sprite, and that put
+  // the blast inside his chest rather than in his hands.
+  //
+  // Against a pope's [13, -23]: the difference is the man rather than the aim. He
+  // is 116 source px tall to the pope's 156 and holds the blast at arm's length in
+  // front of him instead of on the head of a staff swung overhead.
+  muzzle: [Math.round(0.458 * MONK_TRIM[2] * SCALE), -Math.round(0.384 * MONK_TRIM[3] * SCALE)]
 };
 
 const bishop = {
