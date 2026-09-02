@@ -19,7 +19,7 @@
 // the soldier or the archer it puts on the road.
 
 import { SCALE } from './data/towers.js';
-import { boost, rangeOf, reachOf } from './towers.js';
+import { boost, damageK, rangeOf, reachOf } from './towers.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -177,7 +177,17 @@ export function selectionInfo(state) {
     // A barracks reads 1 whatever is on the map — Holy Wrath does not reach its
     // men — so no special case is needed for the family that shows a soldier's
     // damage rather than the building's.
-    const k = boost(state, 'damage', s.ref.fam.id);
+    // TWO MULTIPLIERS, and both of them for the same reason. `boost` is the map's
+    // — Holy Wrath, a fact about the other towers on the board — and `damageK` is
+    // this tower's own, which today is the Judgement Temple's Inner Strength.
+    //
+    // The aura half has been here since Holy Wrath shipped and the argument was
+    // written down then: a player who has bought it and reads 60 would think it
+    // had not worked. Inner Strength is worse, because it is bought ON this tower
+    // and the box is the only place its 30% is ever shown — the owner asked for
+    // exactly this: "ensure description panel is updated if inner strength is
+    // owned". shoot() multiplies by both, in this order, and rounds once.
+    const k = damageK(s.ref) * boost(state, 'damage', s.ref.fam.id);
     return {
       sprite: man.sprite,
       trim: man.trim,
@@ -197,6 +207,12 @@ export function selectionInfo(state) {
       // wherever a base damage times 1.05 lands past a half — 26 becomes 27.3,
       // which is 27 fired and would be 28 printed. The health rows have no such
       // partner to agree with; this one does.
+      //
+      // ONE ROUNDING, over the product of both multipliers, which is what makes
+      // that agreement hold with two of them. A temple with Inner Strength under
+      // a Holy Wrath fires round(40 x 1.30 x 1.05) = 55; rounding the ability in
+      // first and the aura onto the result would print 55 too here and 54 or 56
+      // somewhere else the day either number moves.
       damage: Math.round(man.damage * k),
       // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
       // the targeting reads, so a tower that has bought Far Shot shows the

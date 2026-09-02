@@ -30,7 +30,7 @@
 // numbers are quoted in the comments in data/abilities.js and in the encyclopedia,
 // and a comment that has drifted from the code is worse than no comment.
 
-import { updateTowers, rangeOf, framesOf, beatsOf, cooldownOf, gunnerOf, ammoOf, auras, boost } from '../src/towers.js';
+import { updateTowers, rangeOf, framesOf, beatsOf, cooldownOf, gunnerOf, ammoOf, facing, auras, boost } from '../src/towers.js';
 import { updateUnits, makeUnits, hidden, unhook } from '../src/units.js';
 // The knives have to actually fly, or the Guild's section would watch blades
 // hang in the air a hundred frames from the man who threw them.
@@ -42,6 +42,7 @@ import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/
 import { level } from '../src/level.js';
 import { paths } from '../src/assets.js';
 import { nearestOnPath } from '../src/units.js';
+import { selectionInfo } from '../src/select.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -1518,6 +1519,40 @@ console.log('\nThe Judgement Temple\n');
     'and a temple fires the same comet whichever it bought first',
     ammoOf(temple(['strength', 'pulse'])).sprite);
 
+  // AND THE INFO BOX SAYS SO. The owner asked for it directly — "ensure
+  // description panel is updated if inner strength is owned" — and it is the same
+  // argument Holy Wrath's aura already had: the panel is the only place a bought
+  // multiplier is ever shown as a number, so a temple that reads 40 after buying
+  // 30% reads as the ability not having worked.
+  //
+  // Asked of selectionInfo, which is the function the panel draws from, and
+  // compared against the shot the tower actually fires rather than against a
+  // recomputed 52. Those are the two numbers that have to agree.
+  for (const ids of [[], ['strength'], ['pulse'], ['pulse', 'strength']]) {
+    const t = temple(ids);
+    const state = board(t);
+    state.selected = { kind: 'tower', ref: t };
+    const shown = selectionInfo(state).damage;
+    const fired = fire(temple(ids), def.cooldown + 0.1)[0].damage;
+    ok(shown === fired, `the panel prints what it fires, with ${ids.join(' + ') || 'nothing'}`,
+      `panel ${shown}, shot ${fired}`);
+  }
+
+  // AND THE AURA STILL LANDS ON TOP OF IT, rounded once over the product. A
+  // temple with Inner Strength under a Holy Wrath is 40 x 1.30 x 1.05 = 54.6 —
+  // 55 either way, and the check is that the panel and the shot round the same
+  // number rather than two different ones.
+  {
+    const t = temple(['strength']);
+    const state = board(t);
+    state.towers.push({ ...tower('monastery', monastery[3], 590, ['wrath']), turn: 0 });
+    state.selected = { kind: 'tower', ref: t };
+    const shown = selectionInfo(state).damage;
+    ok(shown === Math.round(def.damage * 1.30 * 1.05),
+      'and an altar\'s aura lands on top of the ability, rounded once',
+      `${shown} from ${def.damage} x 1.30 x 1.05`);
+  }
+
   // ALL FOUR DRAWINGS ARE ON DISK AND ALL FOUR ARE DIFFERENT. A missing file
   // draws nothing at all, and two keys pointing at one file is the version of
   // this bug that looks like the ability not working.
@@ -1525,6 +1560,76 @@ console.log('\nThe Judgement Temple\n');
   ok(arts.every(k => paths[k]) && new Set(arts.map(k => paths[k])).size === 4,
     'and the four comets are four different files',
     arts.map(k => (paths[k] || '?').split('/').pop()).join(', '));
+}
+
+console.log('\nAnd a monk turns once a cycle, not once a frame\n');
+
+{
+  // THE OWNER'S ASK, and it needs the real loop rather than a reading of the
+  // data: "ensure monk default and attack image face same direction for 1 cycle
+  // as to avoid flipping direction too much".
+  //
+  // The failure it prevents is invisible in any still picture. pickTarget
+  // re-chooses every frame, so on a road with men on both sides of a temple the
+  // pair snapped back and forth several times a second — and worse, a monk could
+  // turn between gathering the blast and loosing it, so the wind-up faced one way
+  // and the shot went the other.
+  //
+  // TWO MEN, ONE EITHER SIDE, and the standing order swapped under the tower every
+  // few frames by moving them along the road. A latched heading changes at most
+  // once a reload; a live one changes as often as the target does.
+  //
+  // dummy(t, 0) and dummy(t, 1) rather than two of the same: they differ in `s`,
+  // which is what the standing order sorts on, so swapping that swaps which of
+  // them the tower prefers. Two men at the same `s` would swap nothing and the
+  // check would pass on a tower that never turned because it never re-aimed.
+  const t = temple([]);
+  const state = board(t);
+  const left = dummy(t, 0); left.x = t.x - 60; left.mark = 0;
+  const right = dummy(t, 1); right.x = t.x + 60; right.mark = 1;
+  state.enemies.push(left, right);
+
+  let flips = 0, shots = 0, was = 0;
+  for (let i = 0; i < 60 * 6; i++) {
+    // Swap which of them the standing order prefers, every 10 frames — 6 times a
+    // second, which is far faster than the tower's 1s reload.
+    if (i % 10 === 0) { const s = left.s; left.s = right.s; right.s = s; }
+    updateTowers(state, DT);
+    shots += state.shots.length;
+    state.shots.length = 0;
+    const now = facing(t);
+    if (was && now !== was) flips++;
+    was = now;
+  }
+  ok(flips <= shots, 'a monk turns no more often than he fires',
+    `${flips} turns against ${shots} blasts in 6s`);
+
+  // AND THE TURN HAPPENS AT THE START OF A CYCLE rather than partway through it,
+  // which is the half that matters for the picture: the man drawn gathering has
+  // to be facing the way the blast will leave. Asked by watching `face` while the
+  // count is inside the wind-up window.
+  const def = monastery[4];
+  const t2 = temple([]);
+  const s2 = board(t2);
+  const a2 = dummy(t2, 0); a2.x = t2.x - 60; a2.mark = 0;
+  const b2 = dummy(t2, 1); b2.x = t2.x + 60; b2.mark = 1;
+  s2.enemies.push(a2, b2);
+  let turnedMidWindUp = 0, prev = 0;
+  for (let i = 0; i < 60 * 6; i++) {
+    if (i % 10 === 0) { const s = a2.s; a2.s = b2.s; b2.s = s; }
+    const winding = t2.cd > 0 && t2.cd <= def.charge;
+    updateTowers(s2, DT);
+    s2.shots.length = 0;
+    // Off facing(), which is what render.js mirrors the man by, rather than off
+    // `t.face`, which is only the latch's own record. The two agree on a temple
+    // and would not on a tower whose drawing still followed its aim — which is
+    // exactly the state this is here to fail on.
+    const now = facing(t2);
+    if (winding && prev && now !== prev) turnedMidWindUp++;
+    prev = now;
+  }
+  ok(turnedMidWindUp === 0, 'and never while he is gathering the blast',
+    `${turnedMidWindUp} turns inside a ${def.charge}s wind-up`);
 }
 
 console.log('\nWhat a Slowed Pulse does to the man it hits\n');

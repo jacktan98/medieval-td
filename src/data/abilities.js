@@ -483,9 +483,9 @@ export const ABILITIES = [
 
     detail: 'After 9 ordinary shots the musketeer takes 1 second to aim — a mark ' +
             'appears over the man he has chosen and stays there until the bullet ' +
-            'arrives — and then fires a single round for 8x the Post\'s own 65, ' +
+            'arrives — and then fires 1 round for 8x the Post\'s own 65, ' +
             '520 damage, the hardest blow in the game. It reaches anywhere on the ' +
-            'map: this one shot ignores the tower\'s range ring entirely.\n\n' +
+            'map: this 1 shot ignores the tower\'s range ring entirely.\n\n' +
             'He holds the pose for 2 seconds afterwards, which costs nothing: the ' +
             'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
             '1 thing on the road that has to die and cannot be chipped down.'
@@ -870,7 +870,7 @@ export const ABILITIES = [
     frames: ['artillery_t4_tension', 'artillery_t4_reload_tension', 'artillery_t4_fire_tension'],
 
     detail: 'The engineers rebuild the bow in steel and the turret reaches 390px ' +
-            'instead of 260 — the second-longest arm in the game, behind only the ' +
+            'instead of 260 — the 2nd-longest arm in the game, behind only the ' +
             'Musketeer Post, on the one tower that has no dead zone in it.\n\n' +
             'Nothing else changes: the same bolt, the same 1.8 second reload, the ' +
             'same blast. It is the whole board rather than a corner of it, and the ' +
@@ -1139,12 +1139,13 @@ export const ABILITIES = [
     shotWith: { strength: monkBothShot },
 
     detail: 'Every blast a monk throws now holds a man up: 30% off how fast he ' +
-            'walks and 30% off how often he swings, for 5 seconds, and two ' +
+            'walks and 30% off how often he swings, for 5 seconds, and 2 ' +
             'chevrons appear over his health bar while it lasts. The temple ' +
             'looses every second, so anything it keeps firing at stays slowed — ' +
             'and stays slowed for 5 seconds after it walks out of reach.\n\n' +
-            'It does not stack. A second temple on the same man refreshes the 5 ' +
-            'seconds rather than slowing him twice — what two of them buy is the ' +
+            'It does not stack. A 2nd temple on the same man refreshes the 5 ' +
+            'seconds rather than stacking a 2nd slow on him — what 2 of them buy ' +
+            'is the ' +
             'slow holding across a wider stretch of road, not a man standing ' +
             'still. Both monks throw it, and it costs the tower nothing: the ' +
             'damage, the reach and the cadence are exactly what they were.'
@@ -1175,7 +1176,7 @@ export const ABILITIES = [
             'from the moment it is bought.\n\n' +
             'That is more a second than a High Altar does at 51.7, on the same ' +
             'rung for the same gold — and still 23 short of the altar on the ' +
-            'single blow, which is what the two towers are for. The comet is ' +
+            'blow itself, which is what the 2 towers are for. The comet is ' +
             'redrawn, and redrawn again in blue if the temple has also learned ' +
             'Slowed Pulse.'
   }

@@ -168,6 +168,29 @@ console.log('\nWhat the cards say\n');
     towerEntry(def, tiers).occupier === `${occupant(def).count} x ${occupant(def).name}`);
   ok(counted, 'and the squad size is the one the barracks musters',
     `barracks ${occupant(barracks[0]).count}, everyone else ${occupant(archery[0]).count}`);
+
+  // AND EVERY QUANTITY IS A NUMERAL. A standing instruction from the owner, first
+  // given about the tower cards — "ensure encyclopedia description is in numbers
+  // (e.g. two and a half in sneak attack is 2.5x)" — and repeated about the
+  // ability cards, which is what this holds.
+  //
+  // WHY IT IS WORTH A CHECK RATHER THAN A HABIT: a card is prose, so the natural
+  // thing to type is "two chevrons" and "slowing him twice", and prose is exactly
+  // what nothing else in this repository measures. Both of those shipped.
+  //
+  // THE LIST IS DELIBERATELY SHORT. `one` and the ordinals are not in it and must
+  // not be: "the one tower with no dead zone" and "the first blow of a fight" are
+  // pronouns and prose rather than counts, and a rule that flagged them would be
+  // noise, and a noisy check is a check that gets ignored. What is here is the
+  // spelled cardinals from two up and the multiplier words, which in this file's
+  // vocabulary are always a quantity that has a digit.
+  const SPELLED = /\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twice|thrice|half|quarter)\b/gi;
+  const wordy = ABILITIES
+    .map(a => [a.name, [...new Set([...(a.detail || '').matchAll(SPELLED)].map(m => m[0]))]])
+    .filter(([, hits]) => hits.length);
+  ok(wordy.length === 0, 'and every quantity on an ability card is a numeral',
+    wordy.length ? wordy.map(([n, h]) => `${n}: ${h.join(', ')}`).join('; ')
+                 : `${ABILITIES.length} cards checked`);
 }
 
 console.log('\nWhat fits\n');

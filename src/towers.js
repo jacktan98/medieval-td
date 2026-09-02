@@ -228,6 +228,19 @@ export function machineFlip(t) {
 // rotating it to the aim angle lays the figure over — upright with a left/right
 // flip is the only orientation that reads correctly for a standing sprite.
 export function facing(t) {
+  // LATCHED FOR A WHOLE CYCLE on a tower whose men gather the shot, and read live
+  // on every other. `t.face` is set once a reload by stepWeapon — see the note
+  // there — and it is the same field, meaning the same thing, that stepCrew
+  // latches on a catapult's LOAD beat.
+  //
+  // The two towers that latch are the two whose picture takes TIME. A machine
+  // winds, loads and looses over three beats; a monk stands at rest and then
+  // gathers his blast for half a second. Anything that turns partway through
+  // either has one drawing facing one way and the next facing the other, several
+  // times a second, on a road with men on both sides of it. An archer's Attack is
+  // a single frame of an arrow already leaving, so he has nothing to be caught
+  // halfway through and follows his target live.
+  if (t.def.charge != null && t.face) return t.face;
   return Math.cos(t.aim) >= 0 ? 1 : -1;
 }
 
@@ -498,8 +511,25 @@ function stepWeapon(state, t, dt, target) {
   // alone; and the archer, the musketeer and the rest still fire the moment
   // something walks into the ring, because nothing about them is being animated
   // before the shot.
-  if (t.def.charge != null && !target && !(t.burst > 0) && !(t.hold > 0)) t.cd = cooldownOf(t);
-  else t.cd -= dt;
+  const latch = t.def.charge != null;
+  const full = latch ? cooldownOf(t) : 0;
+  if (latch && !target && !(t.burst > 0) && !(t.hold > 0)) t.cd = full;
+  else {
+    // AND HE TURNS ONCE A CYCLE, NOT ONCE A FRAME, at the owner's ask: "ensure
+    // monk default and attack image face same direction for 1 cycle as to avoid
+    // flipping direction too much".
+    //
+    // `cd` is at a full reload on exactly two frames — the one after a blast
+    // leaves, because firing resets it, and the one a parked clock is released by
+    // something walking into the ring. Both of those ARE the start of a cycle, so
+    // one line covers both and there is no flag to keep in step with them.
+    //
+    // Off the target's x rather than off `t.aim`, which is the same reading
+    // stepCrew takes for a machine: a figure mirrors, so which side of the tower
+    // the man is on is the whole question and the angle is not needed.
+    if (latch && target && t.cd >= full - 1e-9) t.face = target.x >= t.x ? 1 : -1;
+    t.cd -= dt;
+  }
 
   // THE REST OF A BURST, on its own little clock rather than on the reload. Once
   // the trigger has been squeezed the three balls are going.
