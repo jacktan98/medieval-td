@@ -429,7 +429,34 @@ export function updateTowers(state, dt) {
 // have to be the arm, which the artist has drawn.
 function stepWeapon(state, t, dt, target) {
   t.recoil = Math.max(0, t.recoil - dt * 5);
-  t.cd -= dt;
+
+  // A MAN WHO GATHERS HIS SHOT IS NEVER CAUGHT WITH IT ALREADY GATHERED, which is
+  // the one place `charge` costs the tower something.
+  //
+  // Every other tower in this game lets its clock run past zero with nothing in
+  // range and fires on the frame a target appears, which is right for a bow: the
+  // archer has been standing there with it drawn. It is wrong for a monk. His
+  // Attack pose is a WIND-UP rather than a follow-through — see `charge` in
+  // data/towers.js — and drawPair only shows it inside the last `charge` seconds
+  // of the count, so a temple firing off a cold clock loosed a blast out of a man
+  // who had not been drawn gathering it for a single frame. The owner saw it:
+  // "monks first attack when enemies are in range but the 1st monk has not
+  // finished his cycle."
+  //
+  // So an idle temple PARKS its clock at a full reload instead of letting it run
+  // down. The first man in range then rests, gathers for his whole half-second and
+  // looses — the same picture as every blast after it — and the tower pays one
+  // reload for the privilege, which is what the owner agreed to: "It is okay to
+  // have the first attack delayed as long as the animation cycle is full for each
+  // attack."
+  //
+  // Only while there is nothing to shoot at, and only on a tower with a `charge`.
+  // A burst mid-flight or an ability's held pose is a count of its own and is left
+  // alone; and the archer, the musketeer and the rest still fire the moment
+  // something walks into the ring, because nothing about them is being animated
+  // before the shot.
+  if (t.def.charge != null && !target && !(t.burst > 0) && !(t.hold > 0)) t.cd = cooldownOf(t);
+  else t.cd -= dt;
 
   // THE REST OF A BURST, on its own little clock rather than on the reload. Once
   // the trigger has been squeezed the three balls are going.

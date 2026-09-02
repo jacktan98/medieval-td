@@ -94,6 +94,14 @@ loop — **1.5 seconds at rest and 0.5 gathering** — out of one counter and no
 clock, and the second monk's loop begins 1 second into the first's. See `pair` and
 `charge` in `src/data/towers.js` and `drawPair` in `src/render.js`.
 
+**And it is the only tower that does not fire the instant something walks into
+range.** An archer has been standing there with the bow drawn, so he looses on the
+frame; a monk has to gather first, and a blast leaving a man who was still drawn at
+rest is the wind-up not happening at all. So an idle temple parks its reload
+instead of running it down at nothing, and pays a full second before its first
+blast to buy the whole animation. That is in `stepWeapon` in `src/towers.js`, and
+`node tools/pair.mjs` measures the first blast after an idle wait.
+
 **His hands are where the blast comes from**, and they are the one shape that only
 exists in the Attack drawing: a small pale blob out beyond the near edge of his
 robe. His face and the opening of his robe are pale too and appear in both poses at

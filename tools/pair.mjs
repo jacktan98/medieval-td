@@ -260,15 +260,44 @@ for (const def of PAIRED) {
       feet.map(f => `${f.i}: ${(f.at * 100).toFixed(0)}%`).join(', '));
   }
 
-  // AND NOBODY GATHERS OVER NOTHING. With no target the tower does not count
-  // down, so drawPair's `t.cd > 0` is false and both men are at rest — the check
-  // is that an idle temple really does leave the clock alone rather than sitting
-  // at some positive value forever.
+  // AND NOBODY GATHERS OVER NOTHING. An idle temple parks its clock at a full
+  // reload rather than letting it run past zero — see the note in stepWeapon — so
+  // the question here is not what `cd` is but what it MEANS: it has to sit above
+  // the charge window, because drawPair paints the Attack pose at `cd <= charge`
+  // and a man gathering a blast at an empty road is the same bug in reverse.
   const idle = stand(def);
   idle.state.enemies.length = 0;
   for (let i = 0; i < 60 * 3; i++) updateTowers(idle.state, DT);
-  ok(idle.t.cd <= 0, 'and an idle temple leaves both men at rest',
-    `cd ${idle.t.cd.toFixed(2)} with nothing in range`);
+  ok(idle.t.cd > (def.charge ?? 0), 'and an idle temple leaves both men at rest',
+    `cd ${idle.t.cd.toFixed(2)} against a ${def.charge}s wind-up, nothing in range`);
+
+  // AND THE FIRST BLAST OF ALL IS ANIMATED LIKE EVERY OTHER. This is the one the
+  // owner caught by eye: a temple that had been idle fired the instant a man
+  // walked into the ring, out of a monk who was still drawn at rest, because the
+  // clock had been running down at nothing for the whole wave.
+  //
+  // So: stand a temple with an empty road, let it settle, THEN put an enemy in
+  // front of it, and count the frames until the first blast and how many of them
+  // the man was drawn gathering. Both have to match what a blast in the middle of
+  // a fight gets — a whole reload of wait, of which the last `charge` is the
+  // wind-up. It reads `cd` the way drawPair does rather than trusting the counter.
+  {
+    const { t: t4, state: s4 } = stand(def);
+    const [foe] = s4.enemies.splice(0, 1);
+    for (let i = 0; i < 60 * 3; i++) { updateTowers(s4, DT); s4.shots.length = 0; }
+    s4.enemies.push(foe);
+    let wait = 0, wound = 0;
+    for (let i = 0; i < 60 * 10 && !s4.shots.length; i++) {
+      updateTowers(s4, DT);
+      wait += DT;
+      if (t4.cd > 0 && t4.cd <= def.charge) wound += DT;
+    }
+    const full = Math.abs(wait - def.cooldown) < 0.05 &&
+                 Math.abs(wound - def.charge) < 0.05;
+    ok(full, 'and the first blast after an idle wait is animated in full',
+      `fired ${wait.toFixed(2)}s later (reload ${def.cooldown.toFixed(2)}s), ` +
+      `${wound.toFixed(2)}s of it gathering (charge ${def.charge}s)`);
+  }
 }
 
 console.log(bad
