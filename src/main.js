@@ -17,6 +17,7 @@ import { updateWaves } from './waves.js';
 import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
+import { canvasScale } from './data/ui.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -29,16 +30,20 @@ const ctx = canvas.getContext('2d');
 //
 // Nothing else has to care: the transform keeps every draw call in 960x540
 // units, and input.js converts taps through the CSS box, which is unaffected.
-const MAX_SCALE = 3;   // caps fill rate on very dense displays
+//
+// THE TWO NUMBERS AND THE RULE THAT PICKS THEM live in data/ui.js — see
+// canvasScale, and the note above MIN_SCALE for why the floor is 2 and not 1.
+// They are there rather than here because this file cannot be imported by a tool
+// without starting a game, and the rule is worth checking.
 
 function fitToDisplay() {
   const rect = canvas.getBoundingClientRect();
   if (!rect.width) return;
 
   const dpr = window.devicePixelRatio || 1;
-  const scale = Math.min(MAX_SCALE, Math.max(1, (rect.width / 960) * dpr));
-  const w = Math.round(960 * scale);
-  const h = Math.round(540 * scale);
+  const { shown, backing } = canvasScale(rect.width, dpr);
+  const w = Math.round(960 * backing);
+  const h = Math.round(540 * backing);
 
   // Assigning width or height clears the canvas and resets the context, so
   // only do it when the size actually changed.
@@ -51,7 +56,11 @@ function fitToDisplay() {
   // thing reads it — the encyclopedia's pop-up, which promises to show art at its
   // own resolution and cannot keep that promise without knowing. Pushed rather
   // than imported: this module already imports render.js.
-  setDeviceScale(scale);
+  //
+  // `shown` and NOT `backing`: the promise is about the glass. Handed the backing
+  // scale, the pop-up would read a supersampled canvas as a denser screen and
+  // shrink the picture it was meant to be showing at full size.
+  setDeviceScale(shown);
 }
 
 const state = {};

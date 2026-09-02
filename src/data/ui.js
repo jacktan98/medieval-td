@@ -15,6 +15,69 @@
 // sprite trims in data/towers.js — the one thing that must be re-pasted after a
 // re-export at a different size.
 
+// --- HOW MANY REAL PIXELS A LOGICAL ONE IS WORTH ---------------------------------
+//
+// The game is drawn in a fixed 960x540 space and the canvas behind it is sized in
+// real pixels. These two numbers are the bracket that sizing is held inside, and
+// the FLOOR is the one with a story.
+//
+// THE CEILING, first, because it has always been here: 3 caps the fill rate on a
+// dense display. Everything drawn is checked against it — see the sharpness
+// section in tools/book.mjs — and 2880x1620 is as much canvas as this game will
+// ever ask a machine to paint.
+export const MAX_SCALE = 3;
+
+// AND THE FLOOR, which was 1, and 1 was too low.
+//
+// The rule was "one canvas pixel per real screen pixel" — no waste, and no
+// supersampling either. On a 1280-wide window at dpr 1 that is a scale of 1.333,
+// so a 12-unit stat icon was rasterised into SIXTEEN PIXELS. Sixteen pixels is not
+// enough for a shield with an outline, a rim and three studs: the armour icons
+// came out as grey blobs, and the heart and the sword were soft next to them.
+//
+// The text beside them stayed crisp the whole time, which is what made it look
+// like a drawing problem rather than a resolution one — a font rasteriser hints
+// and subpixel-positions every glyph at 12px, and `drawImage` does neither.
+//
+// IT IS NOT A FILTERING PROBLEM, and that was the first thing ruled out. Measured
+// against a true box filter, Chrome's own downscale of these icons is already
+// within an RMS of 4-9 of ideal at every size the game draws them, and both an
+// explicit `imageSmoothingQuality: 'high'` and a hand-built mip chain scored the
+// same or worse. There was nothing left to win in HOW the pixels were chosen. The
+// problem was how few of them there were.
+//
+// So the canvas is never rasterised below 1920x1080, whatever the window is doing,
+// and the browser downsamples to the display — which is supersampling, and is why
+// the icons come back.
+//
+// WHAT IT COSTS, measured interleaved on a busy board — every plot built, a squad
+// out of each barracks, thirty enemies walking — at 1280x720 CSS on a software
+// renderer, which is the pessimistic end of what anybody will play on:
+//
+//   floor 1   1280x720    median 16.7 / 16.7 / 16.7ms      (pinned to vsync)
+//   floor 2   1920x1080   median 19.2 / 17.4 / 17.8ms
+//   floor 3   2880x1620   median 39.8ms
+//
+// One frame in sixty at the floor, and a quarter of the frame rate at 3. That is
+// the whole argument for where the two ends sit: the ceiling is the expensive one,
+// and this is not.
+export const MIN_SCALE = 2;
+
+// The two answers a canvas needs, which are NOT the same number any more:
+//
+//   shown    real screen pixels per logical unit. What the glass actually has.
+//   backing  what the canvas is rasterised at. At least MIN_SCALE.
+//
+// They were one number until the floor went up, and the pop-up is why they had to
+// come apart: it promises to show artwork at its own resolution and caps itself at
+// `1 / device` to keep that promise (see popSlot in book.js). Handed the BACKING
+// scale it would read a supersampled canvas as a denser screen and shrink the
+// picture — the promise kept against the wrong surface. It gets `shown`.
+export function canvasScale(cssWidth, dpr) {
+  const shown = Math.min(MAX_SCALE, Math.max(1, (cssWidth / 960) * dpr));
+  return { shown, backing: Math.min(MAX_SCALE, Math.max(MIN_SCALE, shown)) };
+}
+
 // A HUD icon's height. 24 against the 20px HUD font puts its cap height on the
 // digits' cap height, which is what makes an icon read as part of the number
 // rather than as a picture beside it.

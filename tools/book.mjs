@@ -31,7 +31,8 @@ import { archery, barracks, siege, monastery, SCALE } from '../src/data/towers.j
 import { enemyTypes } from '../src/data/waves.js';
 import { occupant } from '../src/select.js';
 import { refundValue, REFUND_RATE } from '../src/menu.js';
-import { ui, PORTRAIT_SCALE, BOOK_ICON_H } from '../src/data/ui.js';
+import { ui, PORTRAIT_SCALE, BOOK_ICON_H,
+         canvasScale, MIN_SCALE, MAX_SCALE } from '../src/data/ui.js';
 import { ABILITIES } from '../src/data/abilities.js';
 import {
   PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, abilityCards,
@@ -57,9 +58,10 @@ const ok = (cond, label, detail = '') => {
 const LADDERS = [archery, barracks, siege, monastery];
 const TIERS = LADDERS.flat();
 
-// The device-pixel cap in main.js. Art is crisp iff drawn x MAX_SCALE fits in
-// the source, which is the same rule tools/trim.mjs prints its verdict from.
-const MAX_SCALE = 3;
+// MAX_SCALE is the device-pixel ceiling, imported above rather than copied: art is
+// crisp iff drawn x MAX_SCALE fits in the source, which is the same rule
+// tools/trim.mjs prints its verdict from, and a second 3 typed in here is a second
+// thing to change.
 
 console.log('\nWhat is on the pages\n');
 
@@ -704,6 +706,49 @@ console.log('\nWhat stays sharp at 3x\n');
     if (h * MAX_SCALE > src) { soft++; console.log(`      ${key} at ${h}px needs ${h * MAX_SCALE} source px, has ${src}`); }
   }
   ok(soft === 0, 'every icon on the page', `${icons.length} checked at ${BOOK_ICON_H}px`);
+
+  // AND THE OTHER END OF THE BRACKET, which is the one that was wrong.
+  //
+  // Everything above asks whether the artist gave us enough source pixels. This
+  // asks whether the canvas ever gets around to using them — and until the floor
+  // went up it did not: a 1280-wide window at dpr 1 rasterised at 1.333, which put
+  // a 12-unit armour icon into sixteen pixels and turned it into a grey blob.
+  //
+  // Checked here rather than in a tool of its own because this section is already
+  // the game's one place that reasons about resolution against source pixels — it
+  // checks the info box's portraits, which are not the book either.
+  //
+  // THE WORST CASE IS THE SMALLEST WINDOW, so that is what is asked: the narrowest
+  // board this game is played on, at the least dense screen anybody has.
+  const NARROW = 960, PLAIN = 1;
+  const worst = canvasScale(NARROW, PLAIN);
+  ok(worst.backing >= MIN_SCALE,
+    'the canvas is never rasterised below its floor',
+    `${(960 * worst.backing).toFixed(0)}x${(540 * worst.backing).toFixed(0)} at ${NARROW}px, dpr ${PLAIN}`);
+
+  // AND NEVER ABOVE THE CEILING, which is the fill rate. 2880x1620 was measured at
+  // a median 39.8ms a frame on a busy board — a quarter of the rate the floor
+  // costs — so the cap is not a formality.
+  const dense = canvasScale(2560, 3);
+  ok(dense.backing <= MAX_SCALE && dense.shown <= MAX_SCALE,
+    'and never above its ceiling, however dense the glass',
+    `${dense.backing}x on a 2560px board at dpr 3`);
+
+  // THE TWO NUMBERS ARE NOT THE SAME NUMBER, and the pop-up is what would notice.
+  // `shown` is the glass and `backing` is the canvas; where the floor lifts the
+  // canvas above the glass, only `backing` moves. Handed `backing`, popSlot would
+  // read a supersampled canvas as a denser screen and shrink the picture.
+  const lifted = canvasScale(1280, 1);
+  ok(lifted.backing > lifted.shown && lifted.shown === (1280 / 960),
+    'and the glass is still reported as the glass, not as the canvas',
+    `shown ${lifted.shown.toFixed(3)}x, backing ${lifted.backing.toFixed(3)}x`);
+
+  // A WIDE SCREEN IS ALREADY PAST THE FLOOR and must not be dragged down to it —
+  // `max`, not a replacement. This is the half a careless clamp gets wrong.
+  const wide = canvasScale(2400, 1);
+  ok(wide.backing === Math.min(MAX_SCALE, 2400 / 960) && wide.backing > MIN_SCALE,
+    'while a screen already past the floor keeps what it had',
+    `${wide.backing.toFixed(3)}x at 2400px, dpr 1`);
 }
 
 console.log(bad ? `\n${bad} problem(s) with the encyclopedia.` : '\nThe encyclopedia holds together.');
