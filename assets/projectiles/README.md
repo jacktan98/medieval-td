@@ -40,19 +40,28 @@ right".
 | `Assassin_Knife_Sneak_Attack.png` | the first knife of his volley | 300 | flat |
 | `Monk_Magic_Shot.png` | a Judgement Temple's two monks | 330 | flat, and the smallest of the family |
 | `Monk_Magic_Shot_Slowed_Pulse.png` | the same, once it has learned Slowed Pulse | 330 | flat |
-| `Monk_Magic_Shot_Inner_Strength.png` | the same, once it has learned Inner Strength | 330 | flat |
-| `Monk_Magic_Shot_Inner_Strength_Slowed_Pulse.png` | the same, having learned both | 330 | flat |
+| `Monk_Magic_Shot_Inner_Strength.png` | the same, once it has learned Inner Strength | 330 | flat, and half again the size |
+| `Monk_Magic_Shot_Inner_Strength_Slowed_Pulse.png` | the same, having learned both | 330 | flat, the big one in blue |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |
 
-**Five drawings for one family, and the monk's is the odd one.** The three tiers
-under the fork share a 19 x 4 dart, the pope throws a 26 x 5 version of it, and a
-monk throws a 12 x 5 comet — a blunt head with a tail rather than a point, because
-he gathers it in his hands instead of loosing it off a staff. Same 330 speed and
-the same `Arcane_shot` leaving; what is his is the picture and the kill cry.
+**Eight drawings for one family, and the monk's four are the odd ones.** The three
+tiers under the fork share a 19 x 4 dart, the pope throws a 26 x 5 version of it,
+and a monk throws a 12 x 5 comet — a blunt head with a tail rather than a point,
+because he gathers it in his hands instead of loosing it off a staff. Same 330
+speed and the same `Arcane_shot` leaving; what is his is the picture and the kill
+cry.
 
-Its `grip` is 0.12 against the darts' 0.15 for the same reason: on a shape with a
-head, the point that wants to sit on the flight line is the middle of the head
-rather than a tip it does not have.
+**Inner Strength redraws it at 18 x 9**, which makes it the second largest thing
+in the air in this game after the pope's missile, and that is deliberate: it is
+the only ability in the game whose whole visible half is the projectile, so it has
+to be obvious at a glance which temple has been taught it.
+
+`grip` is 0.12 on all four, against the darts' 0.15, for the same reason: on a
+shape with a head, the point that wants to sit on the flight line is the middle of
+the head rather than a tip it does not have. The big pair inherit it rather than
+getting one of their own, and that was measured before it was assumed — the artist
+scaled the head by 1.73 while the drawing grew by 1.49, so the same fraction lands
+within a third of a game pixel of the same part of the head.
 
 ## Lobbed is not the same as high
 

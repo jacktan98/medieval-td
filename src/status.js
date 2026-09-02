@@ -98,7 +98,7 @@ export function tick(v, dt) {
   return hurt;
 }
 
-// HOW FAST THIS FIGURE IS DOING THINGS, as a multiplier: 1 unslowed, 0.75 under a
+// HOW FAST THIS FIGURE IS DOING THINGS, as a multiplier: 1 unslowed, 0.7 under a
 // monk's Slowed Pulse. Read by enemies.js for the march and the throw clock and by
 // units.js for the melee clock, so one number covers "moves slower" and "swings
 // slower" — which is what a slow means and what saves the two from drifting apart.

@@ -7,7 +7,7 @@ so far; stunned and whatever else follows goes here.
 |----------------------|---------------------------------------|------------------------|
 | `Burnt_Status.png`   | anything a Fiery Shot ball catches    | 10 damage a second for 5s |
 | `Poisoned_Status.png`| any soldier a flask or its spill catches | 5 damage a second for 4s |
-| `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | a quarter off its speed and its swing, for 2s |
+| `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | 30% off its speed and its swing, for 5s |
 
 **Slowed is the first one that does no damage at all**, and that is a row in the
 table rather than a special case: `hurts: false` in `src/data/status.js` keeps its

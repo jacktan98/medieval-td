@@ -248,24 +248,33 @@ export const monkSlowShot = {
   ...monkShot,
   sprite: 'monk_shot_slow',
   trim: [226, 244, 60, 24],
-  // A QUARTER OFF EVERYTHING THE MAN DOES WITH TIME, at the owner's ask: he walks
-  // at 0.75 of his speed and swings at 0.75 of his rate, out of one number. See
-  // slowOf in src/status.js, which is read by the march in enemies.js, the
-  // thrower's clock in the same file, and the melee clock in units.js.
+  // 30% OFF EVERYTHING THE MAN DOES WITH TIME, at the owner's ask: he walks at 0.7
+  // of his speed and swings at 0.7 of his rate, out of one number. See slowOf in
+  // src/status.js, which is read by the march in enemies.js, the thrower's clock
+  // in the same file, and the melee clock in units.js.
   //
   // A MULTIPLIER RATHER THAN A SUBTRACTION, which is the rule every magnitude in
-  // this file follows: retune a thug's 46 and this is still a quarter of it.
+  // this file follows: retune a thug's 46 and this is still 30% of it.
   //
-  // TWO SECONDS, and the number is set by the tower rather than chosen. A temple
-  // looses every 1.00s, so two seconds is long enough that a man under fire from
-  // one is slowed continuously — each blast refreshes the clock with a second to
-  // spare — and short enough that walking out of the ring gets him moving again
-  // inside about a second. Statuses REFRESH rather than stack, so a second temple
-  // on the same man is more shots landing on a slow that is already there, which
-  // is why the magnitude can be this big without two of them stopping the road.
+  // FIVE SECONDS, and it was two. Both are the owner's; what the change buys is
+  // the slow OUTLIVING the ring rather than only holding inside it. A temple
+  // looses every 1.00s, so either number keeps a man under fire slowed
+  // continuously — each blast refreshes the clock long before it runs out. What
+  // two seconds did NOT do is follow him: he was up to speed about a second after
+  // the last blast, and five seconds means a man who walks out the far side of a
+  // temple's reach is still labouring for most of the next tower's ring.
+  //
+  // It is the longest status in the game — against a burn's five and a poison's
+  // four — and it can be, because it does no damage. A burn that outlasted its
+  // shot by five seconds would be free damage; a slow that does is a man arriving
+  // late, which is what the ability is for.
+  //
+  // Statuses REFRESH rather than stack, so a second temple on the same man is more
+  // shots landing on a slow that is already there. That is what lets the magnitude
+  // be this big without two of them stopping the road dead.
   slow: {
-    times: 0.75,
-    seconds: 2
+    times: 0.70,
+    seconds: 5
   }
 };
 
@@ -276,7 +285,19 @@ export const monkSlowShot = {
 export const monkStrongShot = {
   ...monkShot,
   sprite: 'monk_shot_strength',
-  trim: [228, 241, 56, 30]
+  // 88 x 44, redrawn from 56 x 30 at the owner's ask — "bigger and more obvious"
+  // — which puts 18 x 9 game px in the air against the plain comet's 12 x 5. It is
+  // now the second largest projectile in the game after the pope's missile, and
+  // that reads as the right way round: this is the blast a monk throws once he has
+  // been taught to throw it harder.
+  //
+  // `grip` IS STILL THE PLAIN COMET'S 0.12, INHERITED, and that is measured rather
+  // than assumed. The head is the part that has to sit on the flight line, and the
+  // artist scaled the head by 1.73 (its centre moved from 20.5 source px along to
+  // 35.5) while the whole drawing grew by 1.49 — so the same fraction lands 10.6px
+  // in where the same point of the head is at 12.3px. A third of a game pixel
+  // apart, which is under the resolution of the thing being aimed.
+  trim: [212, 234, 88, 44]
 };
 
 // AND BOTH AT ONCE. Blue like the slow, big like the strength, and it carries the
@@ -285,7 +306,11 @@ export const monkStrongShot = {
 export const monkBothShot = {
   ...monkSlowShot,
   sprite: 'monk_shot_both',
-  trim: [228, 241, 56, 30]
+  // The same box as monkStrongShot's, to the pixel, because it is the same drawing
+  // in the other colour — which is what says these two are a pair rather than two
+  // comets that happen to resemble each other. `node tools/trim.mjs` reads both
+  // off the files.
+  trim: [212, 234, 88, 44]
 };
 
 // The three poses the artist drew for these. Each is registered on the SAME source
@@ -1113,12 +1138,12 @@ export const ABILITIES = [
     shot: monkSlowShot,
     shotWith: { strength: monkBothShot },
 
-    detail: 'Every blast a monk throws now holds a man up: 25% off how fast he ' +
-            'walks and 25% off how often he swings, for 2 seconds, and two ' +
+    detail: 'Every blast a monk throws now holds a man up: 30% off how fast he ' +
+            'walks and 30% off how often he swings, for 5 seconds, and two ' +
             'chevrons appear over his health bar while it lasts. The temple ' +
-            'looses every second, so anything it keeps firing at stays slowed ' +
-            'until it leaves the ring.\n\n' +
-            'It does not stack. A second temple on the same man refreshes the 2 ' +
+            'looses every second, so anything it keeps firing at stays slowed — ' +
+            'and stays slowed for 5 seconds after it walks out of reach.\n\n' +
+            'It does not stack. A second temple on the same man refreshes the 5 ' +
             'seconds rather than slowing him twice — what two of them buy is the ' +
             'slow holding across a wider stretch of road, not a man standing ' +
             'still. Both monks throw it, and it costs the tower nothing: the ' +
