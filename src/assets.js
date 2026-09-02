@@ -31,11 +31,17 @@ export const paths = {
   // Tier 4, and the file is named for the tower rather than for the ladder: the
   // artist uploaded it as Musketeer_Post and it was filed into the archery folder
   // with the other three. The KEY stays tiered because the code reaches it through
-  // a tier — `archery[3].sprite` — which is the same split every unit file has.
+  // a tier — `def.sprite` off whichever fourth rung it is — which is the same
+  // split every unit file has.
+  //
+  // `t4` AND `t4b` ARE NOT AN ORDER. The Crossbow Sentry is listed first in the
+  // archery ladder now, at the owner's ask, and these two keys did not move with
+  // it: a key names a file and the array names the sequence, and confusing the two
+  // is how a rename turns into a re-order nobody asked for.
   archery_t4:  'assets/towers/archery/Musketeer_Post.png',
-  // The ladder's SECOND tier 4, and the first key that is a letter rather than a
-  // number. There is no tier 5 to call it: a Crossbow Tower buys either of these
-  // two, so they are 4 and 4b rather than 4 and 5.
+  // The ladder's SECOND tier 4 BY KEY, and the first key that is a letter rather
+  // than a number. There is no tier 5 to call it: a Crossbow Tower buys either of
+  // these two, so they are 4 and 4b rather than 4 and 5.
   archery_t4b: 'assets/towers/archery/Crossbow_Sentry_Tower.png',
   barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
@@ -185,7 +191,7 @@ export const paths = {
   paladin_attack:     'assets/units/Paladin_Attack.png',
   // His two ability poses, on the same terms as the musketeer's Deadeye above: a
   // paladin only ever shows these if his Keep has bought the ability they belong
-  // to. Holy Light is the kneel-and-heal; Holy Slash is the tenth blow.
+  // to. Holy Light is the kneel-and-heal; Blinding Strike is the tenth blow.
   paladin_holy_light: 'assets/units/Paladin_Holy_Light.png',
   paladin_holy_slash: 'assets/units/Paladin_Holy_Slash.png',
   // The monastery's three churchmen, who stand on their decks exactly as the
@@ -459,45 +465,43 @@ export const paths = {
   // The two High Altar BADGES stay in assets/ui, which is a line drawn on
   // purpose and not an oversight: they are not buttons and never appear in the
   // encyclopedia — they are marks the renderer hangs over a tower on the board.
-  ability_burst:   'assets/abilities/Musketeer_Burst_Fire_Icon.png',
-  ability_deadeye: 'assets/abilities/Musketeer_Deadeye_Icon.png',
-  ability_light:   'assets/abilities/Paladin_Holy_Light_Icon.png',
-  ability_slash:   'assets/abilities/Paladin_Holy_Slash_Icon.png',
+  ability_burst:   'assets/abilities/Musketeer_Post_Burst_Fire.png',
+  ability_deadeye: 'assets/abilities/Musketeer_Post_Deadeye.png',
+  ability_light:   'assets/abilities/Paladin_Keep_Holy_Light.png',
+  ability_slash:   'assets/abilities/Paladin_Keep_Blinding_Strike.png',
   // The Ballista Turret's two, on the same terms: the whole button, drawn on the
   // plate's own disc.
-  ability_ballista_tension: 'assets/abilities/Ballista_Turret_Reinforced_Tension_Icon.png',
+  ability_ballista_tension: 'assets/abilities/Ballista_Turret_Reinforced_Tension.png',
   // The Crossbow Sentry's two. Its Reinforced Tension is a second entry rather
   // than a shared one because the icon is a picture of ITS weapon — see the note
   // on the ids in data/abilities.js.
-  ability_sentry_tension:  'assets/abilities/Crossbow_Sentry_Reinforced_Tension_Icon.png',
-  ability_swift:           'assets/abilities/Crossbow_Sentry_Swift_Reload_Icon.png',
-  ability_heavy:   'assets/abilities/Ballista_Turret_Heavy_Bolt_Icon.png',
+  ability_sentry_tension:  'assets/abilities/Crossbow_Sentry_Reinforced_Tension.png',
+  ability_swift:           'assets/abilities/Crossbow_Sentry_Swift_Reload.png',
+  ability_heavy:   'assets/abilities/Ballista_Turret_Heavy_Bolt.png',
   // The Assassin Guild's two — the first abilities in the game that change what a
   // SOLDIER does rather than what a building does.
-  ability_knife: 'assets/abilities/Assassin_Knife_Throw_Icon.png',
-  ability_sneak: 'assets/abilities/Assassin_Sneak_Attack_Icon.png',
+  ability_knife: 'assets/abilities/Assassin_Guild_Knife_Throw.png',
+  ability_sneak: 'assets/abilities/Assassin_Guild_Sneak_Attack.png',
   // The High Altar's two, and they come in PAIRS: a button face like every
   // other ability, and a badge drawn on the BOARD over each tower the aura is
   // working on. The badge is the only feedback an aura has — nothing about the
   // altar itself changes when one is bought — so it is as much a part of the
   // ability as the number is.
-  ability_wrath:     'assets/abilities/High_Altar_Holy_Wrath_Icon.png',
-  ability_fortitude: 'assets/abilities/High_Altar_Divine_Fortitude_Icon.png',
+  ability_wrath:     'assets/abilities/High_Altar_Holy_Wrath.png',
+  ability_fortitude: 'assets/abilities/High_Altar_Divine_Fortitude.png',
   badge_wrath:       'assets/ui/High_Altar_Holy_Wrath.png',
   badge_fortitude:   'assets/ui/High_Altar_Divine_Fortitude.png',
   // The Cannon Outpost's two, and the first pair to arrive after the folder
   // existed — so they were uploaded to assets/ui like every icon before them and
   // moved here with the rest.
-  ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload_Icon.png',
-  ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot_Icon.png',
-  // The Judgement Temple's two, and the first pair whose names carry no tower.
-  // Every icon above says whose it is — Musketeer_, Cannon_Outpost_ — because
-  // every ability above belongs to one building. Slowed Pulse and Inner Strength
-  // are drawn as what they DO, on the monastery's own orange disc, and the artist
-  // named them that way; nothing in the game reads a filename, so the key below
-  // is where the binding is either way.
-  ability_pulse:    'assets/abilities/Slowed_Pulse_Icon.png',
-  ability_strength: 'assets/abilities/Inner_Strength_Icon.png',
+  ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload.png',
+  ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot.png',
+  // The Judgement Temple's two. Named for their tower like every other pair —
+  // they arrived as Slowed_Pulse_Icon and Inner_Strength_Icon and were renamed
+  // with the rest when the artist redrew all sixteen and dropped the `_Icon`
+  // suffix. Nothing in the game reads a filename; the key below is the binding.
+  ability_pulse:    'assets/abilities/Judgement_Temple_Slowed_Pulse.png',
+  ability_strength: 'assets/abilities/Judgement_Temple_Inner_Strength.png',
 
   // --- THE STATUS MARKS, in assets/status ---------------------------------------
   //

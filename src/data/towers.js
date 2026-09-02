@@ -1347,32 +1347,16 @@ export const archery = [
   { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 60,  damage: 8,  range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
   { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 14, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
   { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 26, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true },
-  // `title` IS THE TOWER'S NAME ON THIS RUNG, not "Archery Tier IV", and it is the
-  // first tier where those differ. The field heads the tier's entry in the
-  // encyclopedia, and a tier 4 is a named building rather than a rung — the artist
-  // asked for the card to read Musketeer Post, which is also what the upgrade
-  // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
-  // and the column they sit in is what names the family.
-  { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
-    cost: 200, damage: 65, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
-    // The upgrade button's picture when this is what the button buys. Every other
-    // tier uses the generic arrow; this one has an icon of its own, so the tap
-    // that turns a Crossbow Tower into a Musketeer Post shows what it is buying.
-    // See towerItems in src/menu.js — a tier with no `glyph` still gets the arrow.
-    glyph: 'musket',
-    // WHOSE VOICE ANSWERS, and it is not the archers'. Two lines were recorded for
-    // this tower specifically, so a Musketeer Post speaks for itself when it is
-    // built and when its standing order changes. See familyCue in src/audio.js:
-    // a tier with no `voice` falls through to its family's.
-    voice: 'musketeer',
-    // WHAT THIS POST CAN BE TAUGHT, once it is standing and there is nothing left
-    // to upgrade it into. Ids into src/data/abilities.js, where the rules and the
-    // numbers are — see the note at the top of that file for why a tier carries
-    // only the list.
-    abilities: ['burst', 'deadeye'] },
-  // THE OTHER TIER 4, and the ladder's first fork. A Crossbow Tower can become
-  // either of these two, which is why `tier` rather than array index is what
-  // decides what follows what — see upgradesFrom below.
+  // THE LADDER'S FIRST FORK, and the first of its two fourth rungs. A Crossbow
+  // Tower can become either of these two, which is why `tier` rather than array
+  // index is what decides what follows what — see upgradesFrom below.
+  //
+  // THE SENTRY IS LISTED FIRST, and the order is load-bearing rather than
+  // arbitrary: this array IS the order the encyclopedia lays out its towers page
+  // and its units page, and the order the fork's two buttons sit in on the radial
+  // menu. The owner asked for the two to swap. Nothing reads either of them by
+  // index any more — see the note on upgradesFrom, and the by-name lookups in the
+  // tools — so the swap is this block moving and nothing else.
   //
   // THE TOWER IT IS: a steady bow with real reach, against the Musketeer Post's
   // one enormous shot from clear across the map. 30 a bolt every 0.80s is 37.5 a
@@ -1403,7 +1387,32 @@ export const archery = [
     // A steel bow and a windlass. The first is deliberately the same ability the
     // Ballista Turret has, down to the name and the 1.5x — see the note on the
     // ids in data/abilities.js.
-    abilities: ['sentry_tension', 'swift'] }
+    abilities: ['sentry_tension', 'swift'] },
+  // AND THE OTHER FOURTH RUNG.
+  //
+  // `title` IS THE TOWER'S NAME ON THIS RUNG, not "Archery Tier IV", and it is the
+  // first tier where those differ. The field heads the tier's entry in the
+  // encyclopedia, and a tier 4 is a named building rather than a rung — the artist
+  // asked for the card to read Musketeer Post, which is also what the upgrade
+  // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
+  // and the column they sit in is what names the family.
+  { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
+    cost: 200, damage: 65, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    // The upgrade button's picture when this is what the button buys. Every other
+    // tier uses the generic arrow; this one has an icon of its own, so the tap
+    // that turns a Crossbow Tower into a Musketeer Post shows what it is buying.
+    // See towerItems in src/menu.js — a tier with no `glyph` still gets the arrow.
+    glyph: 'musket',
+    // WHOSE VOICE ANSWERS, and it is not the archers'. Two lines were recorded for
+    // this tower specifically, so a Musketeer Post speaks for itself when it is
+    // built and when its standing order changes. See familyCue in src/audio.js:
+    // a tier with no `voice` falls through to its family's.
+    voice: 'musketeer',
+    // WHAT THIS POST CAN BE TAUGHT, once it is standing and there is nothing left
+    // to upgrade it into. Ids into src/data/abilities.js, where the rules and the
+    // numbers are — see the note at the top of that file for why a tier carries
+    // only the list.
+    abilities: ['burst', 'deadeye'] }
 ];
 
 // WHAT A TOWER CAN BECOME NEXT, and the reason it is a function rather than an
@@ -2604,7 +2613,13 @@ export const siege = [
     // WHAT THIS OUTPOST CAN BE TAUGHT. A faster drill, and a ball that keeps
     // burning after it lands — the first ability in the game that leaves a STATUS
     // on what it hits rather than doing all its work on the frame it arrives.
-    abilities: ['cannon_swift', 'fiery'] }
+    // FIERY SHOT FIRST, and every pair in the game is ordered the same way now:
+    // the ability whose button is drawn on the LIGHTER disc is listed first, at
+    // the owner's ask. The list is what the encyclopedia lays the pair out in,
+    // down the family's column, and what decides which of the two sits north-west
+    // on the radial menu. `node tools/abilities.mjs` measures the discs off the
+    // files and fails if a pair is the other way round.
+    abilities: ['fiery', 'cannon_swift'] }
 ];
 
 // --- monastery -----------------------------------------------------------------
@@ -3331,7 +3346,9 @@ export const monastery = [
     // WHAT THIS ALTAR CAN BE TAUGHT, and both of them leave the plot: they change
     // every other tower on the map rather than this one. Ids into
     // src/data/abilities.js, where the rules and the badges live.
-    abilities: ['wrath', 'fortitude'] },
+    // Divine Fortitude first: its disc is the lighter of the two. See the note on
+    // the Cannon Outpost's pair.
+    abilities: ['fortitude', 'wrath'] },
 
   // AND THE FOURTH FAMILY FORKS. The monastery was the last ladder with a single
   // top rung; this is its second, and every fork in this game now offers the same
@@ -3387,7 +3404,8 @@ export const monastery = [
     // WHICH IS WHY THE ARTIST DREW FOUR PROJECTILES. See `shot` and `shotWith` on
     // the two entries in src/data/abilities.js, and ammoOf in src/towers.js, which
     // is the whole of the choosing.
-    abilities: ['pulse', 'strength'] }
+    // Inner Strength first, on the lighter disc. See the Cannon Outpost's pair.
+    abilities: ['strength', 'pulse'] }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers

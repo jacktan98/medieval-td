@@ -17,8 +17,8 @@ import { bolt, knife, sneakKnife, cannonball, monkShot } from './towers.js';
 // not. That is the same rule every other purchase in this game follows — gold buys
 // a thing on a plot — and it is what makes two of the same tower worth having.
 //
-// ONE MECHANISM, FOUR ABILITIES, and it is worth naming the parts because all four
-// are built from them:
+// ONE MECHANISM, AND MOST OF THE 16 ARE BUILT FROM IT. It is worth naming the
+// parts, because the ones that do not use them say so by what they carry instead:
 //
 //   `every`      one action in N is the special one. The musketeer's shots and the
 //                paladin's blows are both counted, and the count is per figure.
@@ -55,6 +55,27 @@ import { bolt, knife, sneakKnife, cannonball, monkShot } from './towers.js';
 // so a first ability is roughly the price of a second Crossbow Tower somewhere
 // else, which is the comparison a player actually makes.
 export const ABILITY_COST = 150;
+
+// THE ORDER OF THIS ARRAY IS THE ORDER THE PLAYER SEES, in two places at once, so
+// it is a design decision rather than a list that grew:
+//
+//   THE ENCYCLOPEDIA lays a family's abilities DOWN its own column, in this order.
+//   THE RADIAL MENU puts a tower's own two on the north-west and north-east arms,
+//   in the order its `abilities` list names them.
+//
+// TWO RULES DECIDE IT, both the owner's:
+//
+//   FAMILIES IN BUILD-MENU ORDER — archery, barracks, artillery, monastery — and
+//   inside archery the Crossbow Sentry before the Musketeer Post, which is the
+//   ladder's own order in data/towers.js.
+//
+//   LIGHTER DISC FIRST. Each tower's pair is arranged so the button drawn on the
+//   lighter background sits above (and to the left of) the darker one.
+//
+// The second is MEASURED rather than remembered: `node tools/abilities.mjs` reads
+// the plate colour out of each PNG and fails if a pair is the wrong way round, and
+// it checks the tier's own list against this array so the ring and the page can
+// never disagree.
 
 // The Musketeer's second ball: the same lead going the same speed, drawn four
 // times the size with a flame behind it.
@@ -317,7 +338,8 @@ export const monkBothShot = {
 // pixel as the man's own drawings — `node tools/shadow.mjs` checks all three — so
 // swapping to one of them cannot move him sideways.
 //
-// Holy Slash is drawn in the paladin's Attack box exactly, [135, 212, 178, 116]:
+// Blinding Strike's pose — `Paladin_Holy_Slash.png`, still under its old name on
+// disk — is drawn in the paladin's Attack box exactly, [135, 212, 178, 116]:
 // the artist re-lit the same swing rather than drawing a new one, and the pivot
 // comes back identical to three places. That is a finding rather than a copy — it
 // is measured per file, like every other anchor in this project.
@@ -348,7 +370,7 @@ const HOLY_SLASH_POSE = {
 // re-expressed against a wider rect: 44/110 across instead of 44/82.
 //
 // SNEAK ATTACK comes back in the Attack pose's box to the pixel, [174, 198, 151,
-// 116], exactly as Holy Slash comes back in the paladin's. Measured per file
+// 116], exactly as Blinding Strike comes back in the paladin's. Measured per file
 // rather than copied — tools/shadow.mjs runs both of these every time.
 const KNIFE_THROW_POSE = {
   sprite: 'assassin_knife_throw',
@@ -374,6 +396,75 @@ const HOLD = 1;
 const LONG_HOLD = 2;
 
 export const ABILITIES = [
+  {
+    // THE SAME ABILITY ON THE OTHER BOW, and deliberately the same in every part
+    // the player can read: the same name, the same 1.5x, the same sentence about
+    // rebuilding it in steel. The owner is standardising it across the two towers
+    // that are bows, so a player who has bought it on one knows exactly what it
+    // does on the other without opening the book again.
+    //
+    // AND THE NUMBERS LAND ON THE SAME PLACE, which is what makes the
+    // standardisation more than a name: the Sentry's 260 x 1.5 is 390, the
+    // Ballista Turret's 260 x 1.5 is 390. Two different towers, one reach, bought
+    // the same way. That is why the tier's own range came down from 300 to 260 in
+    // the same change.
+    id: 'sentry_tension',
+    name: 'Reinforced Tension',
+    of: 'Crossbow Sentry',
+    icon: 'ability_sentry_tension',
+    cost: ABILITY_COST,
+    rangeTimes: 1.5,
+    // AND THE MAN IS RE-DRAWN WITH A STEEL BOW, which is the figure's version of
+    // what `frames` does for the ballista's machine. Both of his poses are
+    // swapped, because he has two and the swap has to hold whichever one he is
+    // showing — see gunnerOf() in src/towers.js. The artist drew them to the same
+    // trims and the same shadow pixel as the timber pair, so nothing moves.
+    gunner: { sprite: 'crossbowman_steel', attack: 'crossbowman_steel_attack' },
+
+    detail: 'The engineers rebuild the bow in steel and the sentry reaches 390px ' +
+            'instead of 260 — level with a Ballista Turret that has bought the ' +
+            'same thing, and behind only the Musketeer Post.\n\n' +
+            'Nothing else changes: the same quarrel, the same 0.8 second reload, ' +
+            'the same 30 a bolt. The crossbowman is drawn with a steel bow from ' +
+            'the moment it is bought.'
+  },
+  {
+    // A MULTIPLIER LIKE EVERY OTHER MAGNITUDE HERE, and it was an absolute 0.50
+    // for one build. The owner's call, and the right one: a tower's own stat
+    // should carry through, so a retuned tier moves what its abilities are worth
+    // instead of leaving one of them pinned to a number that no longer relates
+    // to anything.
+    //
+    // AND IT SCALES THE SPEED, NOT THE COOLDOWN, which is why it is greater than
+    // 1 rather than less. "Reload 1.35x faster" is the sentence a player reads;
+    // dividing is cooldownOf's job in src/towers.js, exactly as multiplying is
+    // rangeOf's. A `cooldownTimes: 0.74` would mean the same thing and read as a
+    // nerf.
+    //
+    // 1.35 ON 0.80 IS 0.593, and this figure has now been round the loop twice.
+    // It was an absolute 0.50, then 1.25 — which the owner accepted at 0.64 after
+    // asking for a 0.60 no round multiplier reaches — and is now 1.35. Only this
+    // one number moves each time, which is the whole point of holding it as a
+    // multiplier: nothing else in the file, the tools or the card is edited to
+    // follow it.
+    //
+    // WHAT IT BUYS: 30 every 0.59s is 50.6 a second against 37.5, which is a
+    // third more output on the tower with the smallest blow. It stacks with the
+    // range ability rather than competing, so a Sentry with both is 50.6 a second
+    // at 390.
+    id: 'swift',
+    name: 'Swift Reload',
+    of: 'Crossbow Sentry',
+    icon: 'ability_swift',
+    cost: ABILITY_COST,
+    reloadTimes: 1.35,
+
+    detail: 'The crossbowman works a windlass instead of a belt hook and reloads ' +
+            '1.35x faster — a quarrel every 0.59 seconds instead of every 0.8, ' +
+            'which is 50.6 damage a second where the sentry alone does 37.5.\n\n' +
+            'Nothing else changes: the same 30 a quarrel and the same reach. It ' +
+            'stacks with Reinforced Tension rather than competing with it.'
+  },
   {
     id: 'burst',
     name: 'Burst Fire',
@@ -491,75 +582,6 @@ export const ABILITIES = [
             '1 thing on the road that has to die and cannot be chipped down.'
   },
   {
-    // THE SAME ABILITY ON THE OTHER BOW, and deliberately the same in every part
-    // the player can read: the same name, the same 1.5x, the same sentence about
-    // rebuilding it in steel. The owner is standardising it across the two towers
-    // that are bows, so a player who has bought it on one knows exactly what it
-    // does on the other without opening the book again.
-    //
-    // AND THE NUMBERS LAND ON THE SAME PLACE, which is what makes the
-    // standardisation more than a name: the Sentry's 260 x 1.5 is 390, the
-    // Ballista Turret's 260 x 1.5 is 390. Two different towers, one reach, bought
-    // the same way. That is why the tier's own range came down from 300 to 260 in
-    // the same change.
-    id: 'sentry_tension',
-    name: 'Reinforced Tension',
-    of: 'Crossbow Sentry',
-    icon: 'ability_sentry_tension',
-    cost: ABILITY_COST,
-    rangeTimes: 1.5,
-    // AND THE MAN IS RE-DRAWN WITH A STEEL BOW, which is the figure's version of
-    // what `frames` does for the ballista's machine. Both of his poses are
-    // swapped, because he has two and the swap has to hold whichever one he is
-    // showing — see gunnerOf() in src/towers.js. The artist drew them to the same
-    // trims and the same shadow pixel as the timber pair, so nothing moves.
-    gunner: { sprite: 'crossbowman_steel', attack: 'crossbowman_steel_attack' },
-
-    detail: 'The engineers rebuild the bow in steel and the sentry reaches 390px ' +
-            'instead of 260 — level with a Ballista Turret that has bought the ' +
-            'same thing, and behind only the Musketeer Post.\n\n' +
-            'Nothing else changes: the same quarrel, the same 0.8 second reload, ' +
-            'the same 30 a bolt. The crossbowman is drawn with a steel bow from ' +
-            'the moment it is bought.'
-  },
-  {
-    // A MULTIPLIER LIKE EVERY OTHER MAGNITUDE HERE, and it was an absolute 0.50
-    // for one build. The owner's call, and the right one: a tower's own stat
-    // should carry through, so a retuned tier moves what its abilities are worth
-    // instead of leaving one of them pinned to a number that no longer relates
-    // to anything.
-    //
-    // AND IT SCALES THE SPEED, NOT THE COOLDOWN, which is why it is greater than
-    // 1 rather than less. "Reload 1.35x faster" is the sentence a player reads;
-    // dividing is cooldownOf's job in src/towers.js, exactly as multiplying is
-    // rangeOf's. A `cooldownTimes: 0.74` would mean the same thing and read as a
-    // nerf.
-    //
-    // 1.35 ON 0.80 IS 0.593, and this figure has now been round the loop twice.
-    // It was an absolute 0.50, then 1.25 — which the owner accepted at 0.64 after
-    // asking for a 0.60 no round multiplier reaches — and is now 1.35. Only this
-    // one number moves each time, which is the whole point of holding it as a
-    // multiplier: nothing else in the file, the tools or the card is edited to
-    // follow it.
-    //
-    // WHAT IT BUYS: 30 every 0.59s is 50.6 a second against 37.5, which is a
-    // third more output on the tower with the smallest blow. It stacks with the
-    // range ability rather than competing, so a Sentry with both is 50.6 a second
-    // at 390.
-    id: 'swift',
-    name: 'Swift Reload',
-    of: 'Crossbow Sentry',
-    icon: 'ability_swift',
-    cost: ABILITY_COST,
-    reloadTimes: 1.35,
-
-    detail: 'The crossbowman works a windlass instead of a belt hook and reloads ' +
-            '1.35x faster — a quarrel every 0.59 seconds instead of every 0.8, ' +
-            'which is 50.6 damage a second where the sentry alone does 37.5.\n\n' +
-            'Nothing else changes: the same 30 a quarrel and the same reach. It ' +
-            'stacks with Reinforced Tension rather than competing with it.'
-  },
-  {
     id: 'light',
     name: 'Holy Light',
     of: 'Paladin Keep',
@@ -605,8 +627,18 @@ export const ABILITIES = [
             'place can call the light at once.'
   },
   {
+    // IT WAS HOLY SLASH, and the owner renamed it: "there are too many 'Holy'
+    // words in abilities". The keep still teaches Holy Light, the altar still
+    // grants Holy Wrath, and that is two rather than three.
+    //
+    // THE NAME IS THE ONLY THING THAT MOVED. `id`, the sprite key, the paladin's
+    // pose (`assets/units/Paladin_Holy_Slash.png`) and the sound
+    // (`assets/audio/sfx/Paladin_Holy_Slash.mp3`) all still read Holy Slash,
+    // because the artist renamed the BUTTON and nothing else — and a code name
+    // that matched the card while the file it points at did not would be worse
+    // than one that plainly matches the file. What a player sees is `name`.
     id: 'slash',
-    name: 'Holy Slash',
+    name: 'Blinding Strike',
     of: 'Paladin Keep',
     icon: 'ability_slash',
     cost: ABILITY_COST,
@@ -635,7 +667,7 @@ export const ABILITIES = [
     // that position like normal attack time.
     //
     // Null rather than 0.80 typed here, because the paladin's cd is his own number
-    // and this has to follow it. Typing the value would leave a Holy Slash frozen
+    // and this has to follow it. Typing the value would leave a Blinding Strike frozen
     // at a swing rate the man no longer has the day somebody tunes him.
     //
     // It also means the whole cost of the ability is now the strike's rarity. The
@@ -730,7 +762,7 @@ export const ABILITIES = [
     //
     // ARMED BY HIDING, SPENT BY STRIKING. The owner's words: bonus damage every
     // time they appear from their invisibility, and it "only resets when they
-    // become invisible and visible again". So it is not a rhythm like Holy Slash
+    // become invisible and visible again". So it is not a rhythm like Blinding Strike
     // and not a reaction like Holy Light — it is a flag that hidden() turns back
     // on, which makes hidden() the only trigger in the ability system that is also
     // a drawing rule and a targeting rule. One predicate, now three jobs.
@@ -760,7 +792,7 @@ export const ABILITIES = [
     // man flicking a blade from 100px is spending nothing. The opener that costs
     // something pays more.
     //
-    // 2.5x IS STILL THE MODEST END — Holy Slash is five times a paladin's blow.
+    // 2.5x IS STILL THE MODEST END — Blinding Strike is five times a paladin's blow.
     //
     // THE ARITHMETIC HAS BEEN ROUND THE LOOP THREE TIMES AND EVERY TURN IS WORTH
     // KEEPING. The knife was half a blow at 200px, so a sneaked knife was 20 and
@@ -806,7 +838,7 @@ export const ABILITIES = [
     ammo: sneakKnife,
     // AND IT IS LOUDER, which is the FOURTH way an ability can be heard and the
     // first one that is not a clip. Burst Fire fires the ordinary ball, Deadeye
-    // speaks through its ammunition, Holy Slash has a recording of its own — and
+    // speaks through its ammunition, Blinding Strike has a recording of its own — and
     // this is the man's own blade played harder, because the owner asked for the
     // heavy impact to be audible and a fourth take of a dagger is not what a
     // heavier blow sounds like. Same trick as `fireGain` on the heavy bolt above,
@@ -934,44 +966,6 @@ export const ABILITIES = [
             'others.'
   },
   {
-    // THE CANNON OUTPOST'S FIRST, and it is the SAME ABILITY the Crossbow Sentry
-    // has, one id further along. Same name, same field, a different number and a
-    // different picture — see the note on the ids at the top of this file for why
-    // two towers that learn the same trick get two entries rather than sharing
-    // one: the icon is a picture of THIS tower's weapon, and the magnitude is
-    // tuned against THIS tower's rhythm.
-    //
-    // 1.5 AGAINST THE SENTRY'S 1.35, at the owner's ask, and it is the right way
-    // round: this is the slowest weapon in the game at 3.00s and the sentry is
-    // among the quickest at 0.80. Half again on a three-second cycle is 1.00s off
-    // it; half again on 0.80 would be 0.27, which is why the two are not one
-    // number.
-    //
-    // WHAT IT BUYS: 70 every 2.00s is 35.0 a second against 23.3 — the biggest
-    // single jump any reload ability makes, because it is multiplying the biggest
-    // blow. It takes this tower past the Ballista Turret's 30.6 and makes the fork
-    // a real question again for anyone who has 150 gold spare.
-    //
-    // AND THE ANIMATION FOLLOWS IT. Artillery's cooldown IS its three beats added
-    // up, so cooldownOf dividing by 1.5 would have the machine fire on a frame it
-    // is not drawn firing — see frameOf in src/towers.js, which scales the beats
-    // by the same figure for exactly this reason. The cannon reloads visibly
-    // faster; it does not skip.
-    id: 'cannon_swift',
-    name: 'Swift Reload',
-    of: 'Cannon Outpost',
-    icon: 'ability_cannon_swift',
-    cost: ABILITY_COST,
-    reloadTimes: 1.5,
-
-    detail: 'The gun crew work a faster drill and the cannon reloads 1.5x ' +
-            'quicker — a ball every 2 seconds instead of every 3, which is 35 ' +
-            'damage a second where the outpost alone does 23.3.\n\n' +
-            'Nothing else changes: the same 70 a ball, the same 85 blast and the ' +
-            'same 360 reach. The machine visibly works faster — its 3 beats ' +
-            'are the clock, so the drill you see is the reload the rules use.'
-  },
-  {
     // AND ITS SECOND, which is Heavy Bolt's shape pointed at a different problem.
     // Both are "every Nth shot is the special one" on a machine with no man to
     // change the drawing of; where the heavy bolt hits twice as hard ONCE, this
@@ -1042,6 +1036,74 @@ export const ABILITIES = [
             'shortens the pause with everything else, to 1 second.'
   },
   {
+    // THE CANNON OUTPOST'S FIRST, and it is the SAME ABILITY the Crossbow Sentry
+    // has, one id further along. Same name, same field, a different number and a
+    // different picture — see the note on the ids at the top of this file for why
+    // two towers that learn the same trick get two entries rather than sharing
+    // one: the icon is a picture of THIS tower's weapon, and the magnitude is
+    // tuned against THIS tower's rhythm.
+    //
+    // 1.5 AGAINST THE SENTRY'S 1.35, at the owner's ask, and it is the right way
+    // round: this is the slowest weapon in the game at 3.00s and the sentry is
+    // among the quickest at 0.80. Half again on a three-second cycle is 1.00s off
+    // it; half again on 0.80 would be 0.27, which is why the two are not one
+    // number.
+    //
+    // WHAT IT BUYS: 70 every 2.00s is 35.0 a second against 23.3 — the biggest
+    // single jump any reload ability makes, because it is multiplying the biggest
+    // blow. It takes this tower past the Ballista Turret's 30.6 and makes the fork
+    // a real question again for anyone who has 150 gold spare.
+    //
+    // AND THE ANIMATION FOLLOWS IT. Artillery's cooldown IS its three beats added
+    // up, so cooldownOf dividing by 1.5 would have the machine fire on a frame it
+    // is not drawn firing — see frameOf in src/towers.js, which scales the beats
+    // by the same figure for exactly this reason. The cannon reloads visibly
+    // faster; it does not skip.
+    id: 'cannon_swift',
+    name: 'Swift Reload',
+    of: 'Cannon Outpost',
+    icon: 'ability_cannon_swift',
+    cost: ABILITY_COST,
+    reloadTimes: 1.5,
+
+    detail: 'The gun crew work a faster drill and the cannon reloads 1.5x ' +
+            'quicker — a ball every 2 seconds instead of every 3, which is 35 ' +
+            'damage a second where the outpost alone does 23.3.\n\n' +
+            'Nothing else changes: the same 70 a ball, the same 85 blast and the ' +
+            'same 360 reach. The machine visibly works faster — its 3 beats ' +
+            'are the clock, so the drill you see is the reload the rules use.'
+  },
+  {
+    id: 'fortitude',
+    name: 'Divine Fortitude',
+    of: 'High Altar',
+    icon: 'ability_fortitude',
+    cost: ABILITY_COST,
+    aura: {
+      // A TENTH MORE HEALTH on every man a barracks musters, of every tier — a
+      // spearman goes 100 to 110 and a paladin 275 to 303. It was a fifth, halved
+      // with Holy Wrath and for the same reason: these two compound, so what
+      // matters is not what one altar does but what four of them do.
+      //
+      // It is applied to `maxHp` every frame rather than added once when the
+      // ability is bought, and that is what makes buying it mid-wave, selling the
+      // altar, and mustering a fresh man after either one all behave without a
+      // single hook. A man who is half wounded stays half wounded across the
+      // change — see updateUnits.
+      hp: 1.10,
+      on: ['barracks'],
+      badge: 'badge_fortitude'
+    },
+
+    detail: 'Every man a barracks musters carries 10% more health, on every ' +
+            'tier and anywhere on the map: a spearman goes from 100 to 110 and a ' +
+            'paladin from 275 to 303.\n\n' +
+            'It reaches men already standing on the road, not only the next ones to ' +
+            'muster, and a wounded man keeps the share of his health he had. A heart ' +
+            'and an arrow appear over every barracks it is working on, and a second ' +
+            'altar compounds with the first — marked x2 on the badge.'
+  },
+  {
     id: 'wrath',
     name: 'Holy Wrath',
     of: 'High Altar',
@@ -1083,34 +1145,34 @@ export const ABILITIES = [
             'first — 5% on top of 5%, marked x2 on the badge.'
   },
   {
-    id: 'fortitude',
-    name: 'Divine Fortitude',
-    of: 'High Altar',
-    icon: 'ability_fortitude',
+    id: 'strength',
+    name: 'Inner Strength',
+    of: 'Judgement Temple',
+    icon: 'ability_strength',
     cost: ABILITY_COST,
-    aura: {
-      // A TENTH MORE HEALTH on every man a barracks musters, of every tier — a
-      // spearman goes 100 to 110 and a paladin 275 to 303. It was a fifth, halved
-      // with Holy Wrath and for the same reason: these two compound, so what
-      // matters is not what one altar does but what four of them do.
-      //
-      // It is applied to `maxHp` every frame rather than added once when the
-      // ability is bought, and that is what makes buying it mid-wave, selling the
-      // altar, and mustering a fresh man after either one all behave without a
-      // single hook. A man who is half wounded stays half wounded across the
-      // change — see updateUnits.
-      hp: 1.10,
-      on: ['barracks'],
-      badge: 'badge_fortitude'
-    },
+    // A THIRD MORE ON EVERY BLAST, at the owner's ask, and a MULTIPLE rather than
+    // a number for the reason every magnitude in this file is one: the temple's 40
+    // has already moved once and will again, and "30% more" survives that where a
+    // hard-coded 52 would quietly stop being 30%.
+    //
+    // WHICH TAKES IT TO 52 A BLAST and 52.0 damage a second, past the High Altar's
+    // own 51.7 — so a temple that has bought this out-damages an altar that has
+    // bought nothing, on the same rung at the same price, while still losing to it
+    // on the single blow that matters against a giant: 52 against 75. That is the
+    // fork's own trade turned up rather than broken, which is what an ability on
+    // the cadence tower should do.
+    damageTimes: 1.30,
+    shot: monkStrongShot,
+    shotWith: { pulse: monkBothShot },
 
-    detail: 'Every man a barracks musters carries 10% more health, on every ' +
-            'tier and anywhere on the map: a spearman goes from 100 to 110 and a ' +
-            'paladin from 275 to 303.\n\n' +
-            'It reaches men already standing on the road, not only the next ones to ' +
-            'muster, and a wounded man keeps the share of his health he had. A heart ' +
-            'and an arrow appear over every barracks it is working on, and a second ' +
-            'altar compounds with the first — marked x2 on the badge.'
+    detail: 'Every blast a monk throws hits for 30% more: 40 becomes 52, and the ' +
+            'temple goes from 40 to 52 damage a second. Both monks, every shot, ' +
+            'from the moment it is bought.\n\n' +
+            'That is more a second than a High Altar does at 51.7, on the same ' +
+            'rung for the same gold — and still 23 short of the altar on the ' +
+            'blow itself, which is what the 2 towers are for. The comet is ' +
+            'redrawn, and redrawn again in blue if the temple has also learned ' +
+            'Slowed Pulse.'
   },
   {
     // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
@@ -1149,36 +1211,6 @@ export const ABILITIES = [
             'slow holding across a wider stretch of road, not a man standing ' +
             'still. Both monks throw it, and it costs the tower nothing: the ' +
             'damage, the reach and the cadence are exactly what they were.'
-  },
-  {
-    id: 'strength',
-    name: 'Inner Strength',
-    of: 'Judgement Temple',
-    icon: 'ability_strength',
-    cost: ABILITY_COST,
-    // A THIRD MORE ON EVERY BLAST, at the owner's ask, and a MULTIPLE rather than
-    // a number for the reason every magnitude in this file is one: the temple's 40
-    // has already moved once and will again, and "30% more" survives that where a
-    // hard-coded 52 would quietly stop being 30%.
-    //
-    // WHICH TAKES IT TO 52 A BLAST and 52.0 damage a second, past the High Altar's
-    // own 51.7 — so a temple that has bought this out-damages an altar that has
-    // bought nothing, on the same rung at the same price, while still losing to it
-    // on the single blow that matters against a giant: 52 against 75. That is the
-    // fork's own trade turned up rather than broken, which is what an ability on
-    // the cadence tower should do.
-    damageTimes: 1.30,
-    shot: monkStrongShot,
-    shotWith: { pulse: monkBothShot },
-
-    detail: 'Every blast a monk throws hits for 30% more: 40 becomes 52, and the ' +
-            'temple goes from 40 to 52 damage a second. Both monks, every shot, ' +
-            'from the moment it is bought.\n\n' +
-            'That is more a second than a High Altar does at 51.7, on the same ' +
-            'rung for the same gold — and still 23 short of the altar on the ' +
-            'blow itself, which is what the 2 towers are for. The comet is ' +
-            'redrawn, and redrawn again in blue if the temple has also learned ' +
-            'Slowed Pulse.'
   }
 ];
 

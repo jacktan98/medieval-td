@@ -429,8 +429,8 @@ export function makeUnits(state, tower) {
       // The counters are the MAN's, not the tower's, which is the whole difference
       // from the musketeer's. A Keep musters three paladins and each of them is
       // counting his own blows towards his own fifth — three men swinging in step
-      // would land three Holy Slashes on the same frame.
-      blows: 0,       // how many he has landed, for Holy Slash's fifth
+      // would land three Blinding Strikes on the same frame.
+      blows: 0,       // how many he has landed, for Blinding Strike's fifth
       hold: 0,        // seconds committed to a special pose: no swing, no step
       holdArt: null,  // the drawing to show while holding, or his own Attack pose
       healing: 0,     // health a second while Holy Light is up, 0 the rest of the time
@@ -856,7 +856,7 @@ export function updateUnits(state, dt) {
 
     // A MAN COMMITTED TO A POSE DOES NOT TURN, and this is the first branch
     // because it outranks every reason to look somewhere else. `hold` is a swing
-    // he is in the middle of — a Sneak Attack, a Holy Slash, a knife leaving his
+    // he is in the middle of — a Sneak Attack, a Blinding Strike, a knife leaving his
     // hand, a paladin kneeling in the light — and a figure that pivots half way
     // through one is a figure whose drawing and heading have come apart.
     //
@@ -946,7 +946,7 @@ export function updateUnits(state, dt) {
       // Each side spatters the one it HITS, so a melee throws blood both ways
       // and you can see which of the two is currently landing blows.
       // `u.hold` is the second half of the guard, and it is what a held pose
-      // actually costs. Holy Slash's hold is now the man's OWN swing — see below —
+      // actually costs. Blinding Strike's hold is now the man's OWN swing — see below —
       // so the two clocks run out on the same frame and the strike costs him
       // nothing; Holy Light's three seconds are three seconds of not swinging, and
       // are meant to be.
@@ -964,7 +964,7 @@ export function updateUnits(state, dt) {
         // anything to spend it on.
         //
         // It STACKS onto the special rather than replacing it, which costs nothing
-        // to write and is the only answer that stays right: Holy Slash and this
+        // to write and is the only answer that stays right: Blinding Strike and this
         // belong to different towers today, but a barracks tier 4 that had both
         // would want an opening strike worth five AND double, not a rule about
         // which one wins.
@@ -1144,7 +1144,7 @@ export function updateUnits(state, dt) {
       // And so does everything an ability left on him, `healCd` INCLUDED. A man
       // who musters again is a new man in every respect: he is not still holding a
       // pose he struck before he died, he is not still being healed, his count
-      // towards the next Holy Slash starts over, and his thirty seconds of Holy
+      // towards the next Blinding Strike starts over, and his 30 seconds of Holy
       // Light start over too.
       //
       // That last one was the other way round until the artist asked — the reading

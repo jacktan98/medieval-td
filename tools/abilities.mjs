@@ -41,8 +41,18 @@ import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
 import { paths } from '../src/assets.js';
+import { ui } from '../src/data/ui.js';
+import { decode } from './png.mjs';
+import { readFileSync } from 'fs';
 import { nearestOnPath } from '../src/units.js';
 import { selectionInfo } from '../src/select.js';
+
+// THE ARCHERY LADDER'S TWO FOURTH RUNGS, BY NAME. They were archery[3] and
+// archery[4] until the owner swapped the pair's order — the Crossbow Sentry is
+// listed first now — and an index into a FORKED ladder was only ever right by
+// accident. A name is what this file actually means.
+const POST   = archery.find(d => d.name === 'Musketeer Post');
+const SENTRY = archery.find(d => d.name === 'Crossbow Sentry');
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -104,15 +114,15 @@ const board = t => ({
   corpses: [], splats: [], impacts: []
 });
 
-const post = ids => tower('archery', archery[3], 500, ids);
+const post = ids => tower('archery', POST, 500, ids);
 
 // THE BALLISTA TURRET. Its clock is its animation rather than a cooldown — see
 // beatsOf in src/towers.js — which is why the beat fields above are not optional.
 const turret = ids => tower('siege', siege[3], 610, ids);
 
-// A Crossbow Sentry: archery[4], because the ladder forks and both fourth rungs
+// A Crossbow Sentry: SENTRY, because the ladder forks and both fourth rungs
 // live in one array.
-const sentry = ids => tower('archery', archery[4], 490, ids);
+const sentry = ids => tower('archery', SENTRY, 490, ids);
 
 // The Cannon Outpost, artillery's own second fourth rung.
 const outpost = ids => tower('siege', siege[4], 610, ids);
@@ -162,6 +172,76 @@ function fire(t, seconds, men = 1) {
   return out;
 }
 
+console.log('\nWhich of a pair is on top\n');
+
+{
+  // THE LIGHTER DISC GOES FIRST, at the owner's ask, and it is measured off the
+  // artist's files rather than typed here — the same rule everything else in
+  // src/data/ is held to.
+  //
+  // WHAT "FIRST" MEANS in two places at once: the encyclopedia lays a family's
+  // abilities DOWN its column in ABILITIES order, so first is the top card; and
+  // the radial menu puts the tower's own list on the north-WEST and north-east
+  // arms, so first is the left button. One order drives both, which is why this
+  // asks the ABILITIES array and the tier's own list separately and then asks
+  // them to agree.
+  //
+  // THE PLATE COLOUR, not the whole disc: a ring sampled just inside the rim,
+  // skipping black outline, so whatever mark is drawn in the middle does not
+  // decide the answer. Luminance is the ordinary Rec.709 weighting.
+  const plate = key => {
+    const img = decode(readFileSync(decodeURIComponent(paths[key])));
+    const [tx, ty, tw, th] = ui[key].trim;
+    const cx = tx + tw / 2, cy = ty + th / 2, R = tw / 2;
+    let n = 0, r = 0, g = 0, b = 0;
+    for (let a = 0; a < 720; a++) {
+      const th2 = a * Math.PI / 360;
+      for (const k of [0.72, 0.78, 0.84]) {
+        const x = Math.round(cx + Math.cos(th2) * R * k);
+        const y = Math.round(cy + Math.sin(th2) * R * k);
+        const i = (y * img.w + x) * img.ch;
+        if (img.px[i + 3] < 200) continue;
+        if (img.px[i] < 40 && img.px[i + 1] < 40 && img.px[i + 2] < 40) continue;
+        r += img.px[i]; g += img.px[i + 1]; b += img.px[i + 2]; n++;
+      }
+    }
+    return n ? (0.2126 * r + 0.7152 * g + 0.0722 * b) / n : 0;
+  };
+
+  const owners = [...archery, ...barracks, ...siege, ...monastery]
+    .filter(d => d.abilities && d.abilities.length === 2);
+  const wrong = [];
+  for (const d of owners) {
+    const [first, second] = d.abilities.map(id => abilityById(id));
+    const lf = plate(first.icon), ls = plate(second.icon);
+    console.log(`      ${d.name.padEnd(18)} ${first.name.padEnd(20)} ${lf.toFixed(0).padStart(3)}` +
+                `   over   ${second.name.padEnd(20)} ${ls.toFixed(0).padStart(3)}`);
+    if (lf <= ls) wrong.push(`${d.name}: ${first.name} ${lf.toFixed(0)} under ${second.name} ${ls.toFixed(0)}`);
+  }
+  ok(wrong.length === 0, 'every pair is listed lighter disc first', wrong.join('; ') ||
+    `${owners.length} towers`);
+
+  // AND THE BOOK AND THE MENU ARE THE SAME ORDER. The tier's `abilities` list is
+  // what the ring draws and ABILITIES is what the page lays out, and nothing
+  // makes them agree — so a swap made in one and not the other puts a tower's
+  // pair one way round on the board and the other way round in the book.
+  const disagree = owners.filter(d => {
+    const page = ABILITIES.filter(a => d.abilities.includes(a.id)).map(a => a.id);
+    return page.join() !== d.abilities.join();
+  });
+  ok(disagree.length === 0, 'and the page lists them in the ring\'s own order',
+    disagree.map(d => d.name).join(', ') || 'all 8 pairs agree');
+
+  // AND THE ARCHERY LADDER LEADS WITH THE SENTRY, which is the owner's other
+  // swap. The array IS the order of the encyclopedia's towers page, its units
+  // page, its abilities page and the fork's two upgrade buttons, so this one
+  // line stands for all four.
+  const fourth = archery.filter(d => d.tier === 4).map(d => d.name);
+  ok(fourth[0] === 'Crossbow Sentry' && fourth[1] === 'Musketeer Post',
+    'and archery lists the Crossbow Sentry before the Musketeer Post',
+    fourth.join(' then '));
+}
+
 console.log('\nWhat a tier 4 offers\n');
 
 {
@@ -209,7 +289,7 @@ console.log('\nWhat a tier 4 offers\n');
     const evs = abilitiesOf(d).filter(a => a.every).map(a => a.every);
     console.log(`      ${d.name}: cycles ${evs.join(' and ') || 'none'}`);
   }
-  ok(abilitiesOf(archery[3]).filter(a => a.every).length === 2,
+  ok(abilitiesOf(POST).filter(a => a.every).length === 2,
     'the Musketeer Post runs two rhythms on one counter');
 }
 
@@ -218,7 +298,7 @@ console.log('\nBurst Fire\n');
 {
   const t = post(['burst']);
   const burst = abilityById('burst');
-  const cd = archery[3].cooldown;
+  const cd = POST.cooldown;
 
   // EXACTLY ONE CYCLE, read off the ability rather than typed: `every` reloads is
   // the cycle and the next slot lands on the nose, so the margin is SUBTRACTED —
@@ -232,8 +312,8 @@ console.log('\nBurst Fire\n');
     `${shots.length} balls`);
   ok(shots.every(s => s.kind === 'bullet'),
     `and all ${total} are the ordinary ball, as asked`);
-  ok(shots.every(s => s.damage === archery[3].damage),
-    'each doing the tower\'s own damage', `${archery[3].damage}`);
+  ok(shots.every(s => s.damage === POST.damage),
+    'each doing the tower\'s own damage', `${POST.damage}`);
 
   // The three are RAPID. Their spacing is the ability's `gap`, not the reload —
   // that is the whole effect, and it is the thing a wrong clock would break while
@@ -262,7 +342,7 @@ console.log('\nAnd the burst spreads\n');
   // all three balls went into one of them.
   const burst = abilityById('burst');
   const t = post(['burst']);
-  const shots = fire(t, archery[3].cooldown * burst.every - 0.1, 3);
+  const shots = fire(t, POST.cooldown * burst.every - 0.1, 3);
   const three = shots.slice(burst.every - 1);
 
   ok(three.length === 3, 'the burst is still three balls', `${three.length}`);
@@ -280,7 +360,7 @@ console.log('\nAnd the burst spreads\n');
   // AND IT FALLS BACK. With one man in reach there is nobody to spread to, and a
   // burst that refused to fire would read as the ability being broken exactly when
   // the player is watching it.
-  const lone = fire(post(['burst']), archery[3].cooldown * burst.every - 0.1, 1)
+  const lone = fire(post(['burst']), POST.cooldown * burst.every - 0.1, 1)
     .slice(burst.every - 1);
   ok(lone.length === 3 && lone.every(s => s.at === 0),
     'with one man on the road all three go to him', `${lone.length} balls`);
@@ -291,7 +371,7 @@ console.log('\nDeadeye\n');
 {
   const t = post(['deadeye']);
   const dead = abilityById('deadeye');
-  const cd = archery[3].cooldown;
+  const cd = POST.cooldown;
   const plain = dead.every - 1;
   const shots = fire(t, cd * dead.every - 0.1);
 
@@ -302,9 +382,9 @@ console.log('\nDeadeye\n');
   ok(last.kind === 'deadeye', `and number ${dead.every} is not`, last.kind);
   // A MULTIPLE OF THE TOWER'S OWN SHOT, so the check is the multiplier rather than
   // a number — the whole point of `times`, which is what the flat 300 became.
-  ok(last.damage === archery[3].damage * dead.times,
+  ok(last.damage === POST.damage * dead.times,
     'and it hits for the multiple the ability claims',
-    `${archery[3].damage} x${dead.times} = ${last.damage}`);
+    `${POST.damage} x${dead.times} = ${last.damage}`);
 
   // AND IT REACHES THE WHOLE BOARD. Every other shot in the game is bounded by
   // the tower's ring; this one is not, so a Post can answer an archer thug
@@ -362,8 +442,8 @@ console.log('\nDeadeye\n');
 console.log('\nWhat the two are worth\n');
 
 {
-  const cd = archery[3].cooldown;
-  const dmg = archery[3].damage;
+  const cd = POST.cooldown;
+  const dmg = POST.damage;
 
   // Measured over a whole number of BOTH cycles — six and eleven, so sixty-six
   // shots — which is the only window in which each ability has fired a whole
@@ -447,7 +527,7 @@ function victim(state) {
   return e;
 }
 
-console.log('\nHoly Slash\n');
+console.log('\nBlinding Strike\n');
 
 {
   const state = keep(['slash']);
@@ -614,9 +694,9 @@ console.log('\nReinforced Tension\n');
   // owner brought it down from the Post's own 480. What the check asks is the
   // shape of that decision rather than the number: further than the turret's own
   // reach by half again, and still short of the longest arm there is.
-  ok(rangeOf(far) < archery[3].range && rangeOf(far) > siege[3].range,
+  ok(rangeOf(far) < POST.range && rangeOf(far) > siege[3].range,
     'further than its own tier, shorter than a Musketeer Post',
-    `${siege[3].range} -> ${rangeOf(far)}, Post ${archery[3].range}`);
+    `${siege[3].range} -> ${rangeOf(far)}, Post ${POST.range}`);
   ok(Math.abs(rangeOf(far) / siege[3].range - shot.rangeTimes) < 0.02,
     'by exactly the multiple it claims',
     `x${(rangeOf(far) / siege[3].range).toFixed(2)}`);
@@ -807,14 +887,14 @@ console.log('\nHoly Wrath and Divine Fortitude\n');
   const state = { towers: [t, { ...turret(['wrath']), fam: { id: 'monastery' }, def: monastery[3] }],
                   enemies: [dummy(t)], shots: [], units: [], hits: [] };
   let shot = null;
-  for (let i = 0; i * DT < archery[3].cooldown + 0.1 && !shot; i++) {
+  for (let i = 0; i * DT < POST.cooldown + 0.1 && !shot; i++) {
     updateTowers(state, DT);
     if (state.shots.length) shot = state.shots[0];
     state.shots.length = 0;
   }
-  ok(shot && shot.damage === Math.round(archery[3].damage * wrath.aura.damage),
+  ok(shot && shot.damage === Math.round(POST.damage * wrath.aura.damage),
     'and a shot fired under it really does land harder',
-    `${archery[3].damage} becomes ${shot && shot.damage}`);
+    `${POST.damage} becomes ${shot && shot.damage}`);
 
   // THE HEALTH SIDE, through updateUnits, including the case a hook would have
   // missed: the ability bought while the men are already standing there.
@@ -869,9 +949,9 @@ console.log('\nThe Crossbow Sentry\'s two\n');
   const both  = sentry(['sentry_tension', 'swift']);
   const tension = abilityById('sentry_tension');
 
-  ok(rangeOf(plain) === archery[4].range, 'an untaught sentry reaches what its tier says',
+  ok(rangeOf(plain) === SENTRY.range, 'an untaught sentry reaches what its tier says',
     `${rangeOf(plain)}`);
-  ok(rangeOf(steel) === Math.round(archery[4].range * tension.rangeTimes),
+  ok(rangeOf(steel) === Math.round(SENTRY.range * tension.rangeTimes),
     'and one that has bought Reinforced Tension reaches further',
     `${rangeOf(steel)} against ${rangeOf(plain)}`);
 
@@ -889,7 +969,7 @@ console.log('\nThe Crossbow Sentry\'s two\n');
 
   // SWIFT RELOAD, the one absolute in the game. Read through cooldownOf rather
   // than off the ability, so what is checked is the path the shot loop takes.
-  ok(cooldownOf(plain) === archery[4].cooldown, 'an untaught sentry reloads at its tier\'s rate',
+  ok(cooldownOf(plain) === SENTRY.cooldown, 'an untaught sentry reloads at its tier\'s rate',
     `${cooldownOf(plain)}s`);
   // A MULTIPLIER ON THE SPEED, so the check is the RATIO rather than a number:
   // retune the tier's reload and this still has to hold. That is the whole reason
@@ -906,7 +986,7 @@ console.log('\nThe Crossbow Sentry\'s two\n');
   // (0.50 absolute, then 1.25, now 1.35) have never needed a line changed here.
   {
     const retuned = sentry(['swift']);
-    retuned.def = { ...archery[4], cooldown: 1.2 };
+    retuned.def = { ...SENTRY, cooldown: 1.2 };
     ok(Math.abs(cooldownOf(retuned) - 1.2 / swift.reloadTimes) < 1e-9,
       'and it still scales when the tier is retuned',
       `1.2s becomes ${cooldownOf(retuned).toFixed(2)}s`);

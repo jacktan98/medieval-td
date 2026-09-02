@@ -7,31 +7,50 @@ page.
 
 | tower | ability | file |
 |-------|---------|------|
-| Musketeer Post | Burst Fire | `Musketeer_Burst_Fire_Icon.png` |
-| Musketeer Post | Deadeye | `Musketeer_Deadeye_Icon.png` |
-| Crossbow Sentry | Reinforced Tension | `Crossbow_Sentry_Reinforced_Tension_Icon.png` |
-| Crossbow Sentry | Swift Reload | `Crossbow_Sentry_Swift_Reload_Icon.png` |
-| Paladin Keep | Holy Light | `Paladin_Holy_Light_Icon.png` |
-| Paladin Keep | Holy Slash | `Paladin_Holy_Slash_Icon.png` |
-| Assassin Guild | Knife Throw | `Assassin_Knife_Throw_Icon.png` |
-| Assassin Guild | Sneak Attack | `Assassin_Sneak_Attack_Icon.png` |
-| Ballista Turret | Reinforced Tension | `Ballista_Turret_Reinforced_Tension_Icon.png` |
-| Ballista Turret | Heavy Bolt | `Ballista_Turret_Heavy_Bolt_Icon.png` |
-| Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload_Icon.png` |
-| Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot_Icon.png` |
-| High Altar | Holy Wrath | `High_Altar_Holy_Wrath_Icon.png` |
-| High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude_Icon.png` |
-| Judgement Temple | Slowed Pulse | `Slowed_Pulse_Icon.png` |
-| Judgement Temple | Inner Strength | `Inner_Strength_Icon.png` |
+| Crossbow Sentry | Reinforced Tension | `Crossbow_Sentry_Reinforced_Tension.png` |
+| Crossbow Sentry | Swift Reload | `Crossbow_Sentry_Swift_Reload.png` |
+| Musketeer Post | Burst Fire | `Musketeer_Post_Burst_Fire.png` |
+| Musketeer Post | Deadeye | `Musketeer_Post_Deadeye.png` |
+| Paladin Keep | Holy Light | `Paladin_Keep_Holy_Light.png` |
+| Paladin Keep | Blinding Strike | `Paladin_Keep_Blinding_Strike.png` |
+| Assassin Guild | Knife Throw | `Assassin_Guild_Knife_Throw.png` |
+| Assassin Guild | Sneak Attack | `Assassin_Guild_Sneak_Attack.png` |
+| Ballista Turret | Reinforced Tension | `Ballista_Turret_Reinforced_Tension.png` |
+| Ballista Turret | Heavy Bolt | `Ballista_Turret_Heavy_Bolt.png` |
+| Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot.png` |
+| Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload.png` |
+| High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude.png` |
+| High Altar | Holy Wrath | `High_Altar_Holy_Wrath.png` |
+| Judgement Temple | Inner Strength | `Judgement_Temple_Inner_Strength.png` |
+| Judgement Temple | Slowed Pulse | `Judgement_Temple_Slowed_Pulse.png` |
+
+**THE TABLE IS IN THE GAME'S OWN ORDER**, which is the order `ABILITIES` in
+`src/data/abilities.js` lists them and the order the encyclopedia lays them out
+down each family's column. Two rules decide it and both are the owner's:
+
+- **Families in build-menu order** — archery, barracks, artillery, monastery —
+  and within archery the Crossbow Sentry before the Musketeer Post.
+- **Lighter disc first.** Each tower's pair is ordered so the ability drawn on
+  the LIGHTER background sits above the darker one. `node tools/abilities.mjs`
+  measures the discs off these files and fails if a pair is the wrong way round,
+  so you never have to judge it by eye — but if you redraw an icon much darker or
+  lighter, expect to swap a pair in the data.
 
 **Named after the tower, not the ability**, which is what keeps the two Swift
 Reloads and the two Reinforced Tensions apart on disk. A file named after the ability alone would
 have to be one drawing for two different weapons.
 
-The temple's two are the exception, and they are allowed to be: nothing else is
-called Slowed Pulse or Inner Strength, so there is nothing to keep apart. The rule
-is about collisions rather than about the shape of a name — and nothing in the
-game reads a filename anyway. The binding is the `ability_` key in
+All sixteen follow it now. They carried an `_Icon` suffix and three of them were
+named for a man rather than a building — `Musketeer_`, `Paladin_`, `Assassin_` —
+and two for nothing but the ability. The artist redrew the set and renamed them
+all to `<Tower>_<Ability>.png`, which is the shape this rule was always
+describing.
+
+**`Paladin_Keep_Blinding_Strike.png` was Holy Slash**, renamed because there were
+3 Holy things on the abilities page and the owner wanted 2. The ability's POSE and
+its SOUND still read Holy Slash on disk — `assets/units/Paladin_Holy_Slash.png` and
+`assets/audio/sfx/Paladin_Holy_Slash.mp3` — because only the button was redrawn.
+Nothing in the game reads a filename; the binding is the `ability_` key in
 `src/assets.js`.
 
 ## These are BUTTONS, not icons

@@ -38,6 +38,13 @@ import { archery, barracks, monastery, siege } from '../src/data/towers.js';
 import { ABILITIES } from '../src/data/abilities.js';
 import { enemyTypes } from '../src/data/waves.js';
 
+// THE ARCHERY LADDER'S TWO FOURTH RUNGS, BY NAME. They were archery[3] and
+// archery[4] until the owner swapped the pair's order — the Crossbow Sentry is
+// listed first now — and an index into a FORKED ladder was only ever right by
+// accident. A name is what this file actually means.
+const POST   = archery.find(d => d.name === 'Musketeer Post');
+const SENTRY = archery.find(d => d.name === 'Crossbow Sentry');
+
 let bad = 0;
 const ok = (cond, label, detail = '') => {
   console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(52)} ${detail}`);
@@ -284,7 +291,7 @@ console.log('');
 // better, which is the thing every other check here exists to prevent.
 console.log('\nTier 4 — reach instead of output\n');
 {
-  const t4 = archery[3];
+  const t4 = POST;
   const t3 = archery[2];
 
   const longest = [...archery, ...monastery, ...siege].every(d => d === t4 || d.range < t4.range);
@@ -380,7 +387,7 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
   // And the ranking across the four tier 4s, printed rather than asserted: it is
   // the owner's to set, and what a check here would freeze is a decision that has
   // moved three times.
-  console.log(`      tier 4 damage: Post ${archery[3].damage}, Turret ${t4.damage}, `
+  console.log(`      tier 4 damage: Post ${POST.damage}, Turret ${t4.damage}, `
     + `Outpost ${siege.find(d => d.name === 'Cannon Outpost').damage}, `
     + `Altar ${monastery[3].damage}, Keep ${barracks[3].soldier.damage} a man`);
 

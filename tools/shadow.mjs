@@ -176,6 +176,13 @@ function centre(parts) {
 // --- what the data files claim ------------------------------------------------
 
 const towers = await import('../src/data/towers.js');
+
+// THE ARCHERY LADDER'S TWO FOURTH RUNGS, BY NAME. They were archery[3] and
+// archery[4] until the owner swapped the pair's order — the Crossbow Sentry is
+// listed first now — and an index into a FORKED ladder was only ever right by
+// accident. A name is what this file actually means.
+const POST   = towers.archery.find(d => d.name === 'Musketeer Post');
+const SENTRY = towers.archery.find(d => d.name === 'Crossbow Sentry');
 const waves = await import('../src/data/waves.js');
 // The ability poses, by id, so the three rows below read from the same objects the
 // game draws rather than from numbers copied here.
@@ -204,7 +211,7 @@ const SPRITES = [
   ['assets/towers/archery/Archery_Tower_T3.png',    'watchtower3.groundFrac', towers.archery[2].spriteTrim, towers.archery[2].groundFrac, 'whole'],
   // Archery's SECOND fourth rung. The Musketeer Post is already further down
   // this list with the other tier 4 buildings; this is the one the fork added.
-  ['assets/towers/archery/Crossbow_Sentry_Tower.png', 'sentry.groundFrac', towers.archery[4].spriteTrim, towers.archery[4].groundFrac, 'whole'],
+  ['assets/towers/archery/Crossbow_Sentry_Tower.png', 'sentry.groundFrac', SENTRY.spriteTrim, SENTRY.groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T1.png',   'camp.groundFrac',        towers.barracks[0].spriteTrim, towers.barracks[0].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],
@@ -268,7 +275,7 @@ const SPRITES = [
   // Tier 4, the Musketeer Post. Same ellipse fit as the three archery towers
   // below it: the artist paints one #37422f patch of shaded grass under the
   // turret and its centre is the plot point.
-  ['assets/towers/archery/Musketeer_Post.png', 'post.groundFrac', towers.archery[3].spriteTrim, towers.archery[3].groundFrac, 'whole'],
+  ['assets/towers/archery/Musketeer_Post.png', 'post.groundFrac', POST.spriteTrim, POST.groundFrac, 'whole'],
   ['assets/units/Soldiers_Novice_Archer_Default.png',  'archer.gunnerPivot',       towers.archery[0].gunnerTrim, towers.archery[0].gunnerPivot],
   ['assets/units/Soldiers_Novice_Archer_Attack.png',   'archer.attack.pivot',      towers.archery[0].attack.trim, towers.archery[0].attack.pivot],
   ['assets/units/Soldiers_Combat_Archer_Default.png', 'archer2.gunnerPivot',      towers.archery[1].gunnerTrim, towers.archery[1].gunnerPivot],
@@ -278,19 +285,19 @@ const SPRITES = [
   // The musketeer, and the pair rule matters more on him than on anybody: his two
   // drawings are the same figure with smoke added, so if the shadows disagree he
   // will step sideways every time he fires.
-  ['assets/units/Musketeer_Default.png', 'musketeer.gunnerPivot',  towers.archery[3].gunnerTrim, towers.archery[3].gunnerPivot],
-  ['assets/units/Musketeer_Attack.png',  'musketeer.attack.pivot', towers.archery[3].attack.trim, towers.archery[3].attack.pivot],
+  ['assets/units/Musketeer_Default.png', 'musketeer.gunnerPivot',  POST.gunnerTrim, POST.gunnerPivot],
+  ['assets/units/Musketeer_Attack.png',  'musketeer.attack.pivot', POST.attack.trim, POST.attack.pivot],
   // The crossbowman, archery's OTHER tier 4 man. Indexed 4 rather than 3: the
   // ladder forks, and both fourth rungs live in the same array.
-  ['assets/units/Crossbowman_Default.png', 'crossbowman.gunnerPivot',  towers.archery[4].gunnerTrim, towers.archery[4].gunnerPivot],
-  ['assets/units/Crossbowman_Attack.png',  'crossbowman.attack.pivot', towers.archery[4].attack.trim, towers.archery[4].attack.pivot],
+  ['assets/units/Crossbowman_Default.png', 'crossbowman.gunnerPivot',  SENTRY.gunnerTrim, SENTRY.gunnerPivot],
+  ['assets/units/Crossbowman_Attack.png',  'crossbowman.attack.pivot', SENTRY.attack.trim, SENTRY.attack.pivot],
   // AND THE SAME MAN WITH A STEEL BOW, against the TIMBER pair's own trims and
   // pivots — which is the check rather than a repetition of it. Reinforced
   // Tension swaps which two files are drawn and changes nothing else, so if the
   // artist ever moves the steel shadow the crossbowman will jump the moment the
   // ability is bought, and this is the only thing that would say so.
-  ['assets/units/Crossbowman_Default_Reinforced_Tension.png', 'crossbowman steel Default', towers.archery[4].gunnerTrim, towers.archery[4].gunnerPivot],
-  ['assets/units/Crossbowman_Attack_Reinforced_Tension.png',  'crossbowman steel Attack',  towers.archery[4].attack.trim, towers.archery[4].attack.pivot],
+  ['assets/units/Crossbowman_Default_Reinforced_Tension.png', 'crossbowman steel Default', SENTRY.gunnerTrim, SENTRY.gunnerPivot],
+  ['assets/units/Crossbowman_Attack_Reinforced_Tension.png',  'crossbowman steel Attack',  SENTRY.attack.trim, SENTRY.attack.pivot],
   // AND HIS THIRD POSE, the one Deadeye buys. It is in the pair rule for exactly
   // the same reason the other two are, and the reason is stronger here: this pose
   // is swapped in for a whole second at a time, so a shadow half a pixel out would
@@ -382,7 +389,7 @@ const SPRITES = [
   // His two ability poses, in the same pair rule. Holy Light is the widest spread
   // of them all — 133x193 against his resting 123x140, because the glow rises well
   // above his head — and its shadow is still on his own pixel, source (277.0,
-  // 317.3). Holy Slash comes back in the Attack pose's box exactly, which is the
+  // 317.3). Blinding Strike comes back in the Attack pose's box exactly, which is the
   // artist re-lighting one swing rather than drawing a second: same trim, same
   // pivot to three places, measured here per file rather than assumed.
   ['assets/units/Paladin_Holy_Light.png', 'light.pose.pivot', pose('light').trim, pose('light').pivot],

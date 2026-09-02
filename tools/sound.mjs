@@ -145,6 +145,11 @@ const { FIRING } = await import('../src/towers.js');
 const { LANDING } = await import('../src/projectiles.js');
 const { enemyTypes } = await import('../src/data/waves.js');
 
+// THE MUSKETEER POST, BY NAME. It was archery[3] until the owner swapped the
+// order of the ladder's two fourth rungs, and an index into a FORKED ladder was
+// only ever right by accident.
+const POST = archery.find(d => d.name === 'Musketeer Post');
+
 // Load with console.info muted. The module reports anything it had to move a
 // long way, which is useful in a browser and pure noise here — every fake clip
 // is identical by construction, so it would print the same line fourteen times
@@ -481,13 +486,13 @@ check('a family with no voice says nothing', familyCue('alchemy'), null);
 // family's, and a def carrying a voice nobody recorded falls back rather than
 // going silent.
 check('the Musketeer Post answers with its own voice',
-  familyCue('archery', archery[3]), CUE.musketeer);
+  familyCue('archery', POST), CUE.musketeer);
 check('and the tiers below it still answer for archery',
   familyCue('archery', archery[0]), CUE.archery);
 check('and an unrecorded voice falls back to the family',
   familyCue('archery', { voice: 'nobody' }), CUE.archery);
 check('and selecting one picks the same lines',
-  selectionCue({ kind: 'tower', ref: { fam: { id: 'archery' }, def: archery[3] } }), CUE.musketeer);
+  selectionCue({ kind: 'tower', ref: { fam: { id: 'archery' }, def: POST } }), CUE.musketeer);
 
 // The same three things again for the SECOND tier 4, which is the point of asking
 // twice: the first one could have been wired by a special case for archery, and
@@ -538,7 +543,7 @@ check('and all three are trimmed by the same amount',
 console.log('\nWhat an ability sounds like\n');
 check('Holy Light calls the light down in its own voice',
   abilityCue(abilityById('light').cue), HOLY_LIGHT);
-check('and Holy Slash lands in its own',
+check('and Blinding Strike lands in its own',
   abilityCue(abilityById('slash').cue), HOLY_SLASH);
 check('Deadeye speaks through its ammunition instead',
   abilityById('deadeye').cue, undefined);

@@ -217,8 +217,15 @@ export const ui = {
   // wrong rather than visibly broken.
   ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_slash:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // THE PALADIN KEEP'S TWO, and they take `pale` like the altar's for the same
+  // reason and at the owner's word: "the price in Paladin and pope abilities icon
+  // uses same dark colour but for others is white". Holy Light's disc measures
+  // rgb(233,233,233) and Blinding Strike's rgb(150,150,150) — the two lightest
+  // greys in the set — and white ink on either is unreadable. See buttonPrice in
+  // render.js. A property of the ARTWORK, so a re-export on a dark disc is one
+  // word to delete.
+  ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_slash:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Ballista Turret's two, measured to the same disc as the four above.
   ability_ballista_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Crossbow Sentry's two, on the same terms: whole buttons on the artist's

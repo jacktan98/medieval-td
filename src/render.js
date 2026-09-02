@@ -1167,7 +1167,7 @@ function drawGunner(ctx, t) {
 // and nothing else changes, so a family can get its second drawing whenever the
 // artist gets to it.
 // `special` is a THIRD drawing, and it wins over both. An ability that carries a
-// pose — Deadeye, Holy Light, Holy Slash — hands it in here, and it is shaped like
+// pose — Deadeye, Holy Light, Blinding Strike — hands it in here, and it is shaped like
 // `attack` so nothing below has to know which it got. An ability with no pose of
 // its own hands in nothing and falls back to the Attack pose, which is what Burst
 // Fire wants: the artist asked for the pictures the man already has.
@@ -1463,7 +1463,7 @@ function drawSoldier(ctx, u) {
   // the blow and decays over a quarter second, so the pose and the movement are
   // one gesture — he steps in holding the spear out, not one then the other.
   // `holdArt` is whatever an ability has committed him to — the kneel of Holy
-  // Light or the follow-through of Holy Slash — and it stays up for as long as
+  // Light or the follow-through of Blinding Strike — and it stays up for as long as
   // `hold` does. A spearman carries both at zero forever and draws exactly as he
   // always did.
   const [frame, trim, pivot] =
