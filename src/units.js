@@ -954,8 +954,8 @@ export function updateUnits(state, dt) {
         // HOLY SLASH: the fourth blow, and only the fourth. `blows` counts this
         // one, so `every: 4` means three ordinary swings and then the strike — read
         // the field as the length of the cycle, exactly as the musketeer's is.
-        const slash = ability(u, 'slash');
-        const special = slash && (u.blows + 1) % slash.every === 0 ? slash : null;
+        const blinding = ability(u, 'blinding');
+        const special = blinding && (u.blows + 1) % blinding.every === 0 ? blinding : null;
 
         // SNEAK ATTACK: whatever this blow was going to be, doubled, because he
         // was not there a moment ago. Asked in that order — `u.sneak` first, the

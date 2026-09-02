@@ -130,7 +130,7 @@ globalThis.AudioContext = function () { return ctx; };
 globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(path) });
 
 const { loadAudio, play, solo, CUE, SHOT, ATTACK, PALADIN, SELECT,
-        DEADEYE, HOLY_LIGHT, HOLY_SLASH,
+        DEADEYE, HOLY_LIGHT, BLINDING_STRIKE,
         selectionCue, familyCue, blowCue, abilityCue, GAIN, CLIPS } = await import('../src/audio.js');
 // The two ladders with a tier 4 on them, for the voice and blow checks below.
 // Imported here rather than at the top because everything above has to run after
@@ -544,7 +544,7 @@ console.log('\nWhat an ability sounds like\n');
 check('Holy Light calls the light down in its own voice',
   abilityCue(abilityById('light').cue), HOLY_LIGHT);
 check('and Blinding Strike lands in its own',
-  abilityCue(abilityById('slash').cue), HOLY_SLASH);
+  abilityCue(abilityById('blinding').cue), BLINDING_STRIKE);
 check('Deadeye speaks through its ammunition instead',
   abilityById('deadeye').cue, undefined);
 check('and that ammunition is loud',
@@ -589,7 +589,7 @@ console.log('\nAbility sounds are Category B');
 // than to two sounds — so a test of "several at once" has to use several.
 ctx.currentTime = 8600;
 played = [];
-play(HOLY_LIGHT); play(HOLY_SLASH); play(DEADEYE);
+play(HOLY_LIGHT); play(BLINDING_STRIKE); play(DEADEYE);
 check('three ability sounds on one frame are three sounds', played.length, 3);
 check('and none of them shut the voice channel',
   at(8600.01, () => solo(CUE.paladin)), 1);

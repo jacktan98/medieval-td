@@ -256,7 +256,7 @@ const paths = {
   // times. Three cracks in half a second IS what a burst sounds like.
   musketeer_deadeye:  'assets/audio/sfx/Musketeer_Deadeye.mp3',
   paladin_holy_light: 'assets/audio/sfx/Paladin_Holy_Light.mp3',
-  paladin_holy_slash: 'assets/audio/sfx/Paladin_Holy_Slash.mp3',
+  paladin_blinding_strike: 'assets/audio/sfx/Paladin_Blinding_Strike.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
   // the air and announces itself by LANDING, which is also the moment the player
   // is looking at. See the artillery section in assets/audio/README.md.
@@ -638,7 +638,7 @@ export const CANNON = ['cannon_shot'];
 // asks for one.
 export const DEADEYE = ['musketeer_deadeye'];
 export const HOLY_LIGHT = ['paladin_holy_light'];
-export const HOLY_SLASH = ['paladin_holy_slash'];
+export const BLINDING_STRIKE = ['paladin_blinding_strike'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // A longsword landing on plate. Category B beside the three generic takes and
 // chosen instead of them for one man — see blowCue below.
@@ -1050,7 +1050,7 @@ export const blowCue = def => (def && BLOWS[def.blow]) || ATTACK;
 // ordinary crack, three times.
 const ABILITY_CUES = {
   holyLight: HOLY_LIGHT,
-  holySlash: HOLY_SLASH
+  blindingStrike: BLINDING_STRIKE
 };
 
 export const abilityCue = key => ABILITY_CUES[key] || null;

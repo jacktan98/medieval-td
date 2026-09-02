@@ -214,8 +214,8 @@ Elsewhere, but the Paladin Keep's: `units/Paladin_Default.png` and `_Attack`,
 `dead/Paladin_Dead.png`, `ui/Paladin_Keep_Icon.png`, and four clips —
 `audio/sfx/Paladin_attack.mp3`, `audio/sfx/Paladin_kill_enemy.mp3` and two voice
 lines. It has no projectile: it is a barracks, and its men do the fighting. Plus
-its two abilities: `units/Paladin_Holy_Light.png`, `units/Paladin_Holy_Slash.png`,
-`audio/sfx/Paladin_Holy_Light.mp3`, `audio/sfx/Paladin_Holy_Slash.mp3` and the two
+its two abilities: `units/Paladin_Holy_Light.png`, `units/Paladin_Blinding_Strike.png`,
+`audio/sfx/Paladin_Holy_Light.mp3`, `audio/sfx/Paladin_Blinding_Strike.mp3` and the two
 button faces `abilities/Paladin_Keep_Holy_Light.png` and
 `abilities/Paladin_Keep_Blinding_Strike.png` — the second of which was Holy Slash
 until the owner renamed the ability.

@@ -193,7 +193,7 @@ export const paths = {
   // paladin only ever shows these if his Keep has bought the ability they belong
   // to. Holy Light is the kneel-and-heal; Blinding Strike is the tenth blow.
   paladin_holy_light: 'assets/units/Paladin_Holy_Light.png',
-  paladin_holy_slash: 'assets/units/Paladin_Holy_Slash.png',
+  paladin_blinding_strike: 'assets/units/Paladin_Blinding_Strike.png',
   // The monastery's three churchmen, who stand on their decks exactly as the
   // archers do. The keys stay tiered — the code reaches them through
   // `monastery[1].gunner` — while the files are named for the man, which is the
@@ -468,7 +468,7 @@ export const paths = {
   ability_burst:   'assets/abilities/Musketeer_Post_Burst_Fire.png',
   ability_deadeye: 'assets/abilities/Musketeer_Post_Deadeye.png',
   ability_light:   'assets/abilities/Paladin_Keep_Holy_Light.png',
-  ability_slash:   'assets/abilities/Paladin_Keep_Blinding_Strike.png',
+  ability_blinding:   'assets/abilities/Paladin_Keep_Blinding_Strike.png',
   // The Ballista Turret's two, on the same terms: the whole button, drawn on the
   // plate's own disc.
   ability_ballista_tension: 'assets/abilities/Ballista_Turret_Reinforced_Tension.png',

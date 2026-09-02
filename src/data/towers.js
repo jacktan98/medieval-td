@@ -1802,7 +1802,7 @@ export const barracks = [
     // who use them, and that is deliberate: gold buys a thing on a plot, and the
     // squad is replaced every time one of them falls. A paladin who died would
     // otherwise muster again having forgotten what you paid for.
-    abilities: ['light', 'slash'],
+    abilities: ['light', 'blinding'],
     soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 275, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
   },
   // THE OTHER FOURTH RUNG, and the barracks' first fork. A Knight's Hall buys

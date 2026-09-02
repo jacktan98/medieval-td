@@ -12,7 +12,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Ballista_Bolt_shot.mp3, Ballista_kill_enemy.mp3,
                       Cannon_shot.mp3, Cannon_kill_enemy.mp3,
                       Paladin_attack.mp3, Paladin_kill_enemy.mp3,
-                      Paladin_Holy_Light.mp3, Paladin_Holy_Slash.mp3,
+                      Paladin_Holy_Light.mp3, Paladin_Blinding_Strike.mp3,
                       Assassin_melee_attack.mp3, Assassin_kill_enemy.mp3,
                       Assassin_Knife_Throw.mp3,
                       Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
@@ -176,7 +176,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 7.2dB louder |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
-| **a paladin's fifth blow lands** — Category B | `Paladin_Holy_Slash` |
+| **a paladin's 5th blow lands** — Category B | `Paladin_Blinding_Strike` |
 | an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |
 
 Everything above the line is Category A and shares the one channel; the ones
@@ -474,7 +474,7 @@ things gold buys now answer: build, upgrade, sell, and teach.
 The three arrived well balanced against each other and against what was already
 here, so **none of them needed a `GAIN` override**. Measured at load:
 `Musketeer_Deadeye` −11.8dB (against `Musketeer_shot`'s −9.9 and `Arcane_shot`'s
-−13.0), `Paladin_Holy_Slash` −8.5dB (against `Thug_dies`'s −8.6), and
+−13.0), `Paladin_Blinding_Strike` −8.5dB (against `Thug_dies`'s −8.6), and
 `Paladin_Holy_Light` inside ±3dB and not reported at all. Nothing is near the
 clamp; the leveller did the whole job.
 

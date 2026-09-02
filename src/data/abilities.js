@@ -355,8 +355,8 @@ const HOLY_LIGHT_POSE = {
   pivot: [0.504, 0.903]
 };
 
-const HOLY_SLASH_POSE = {
-  sprite: 'paladin_holy_slash',
+const BLINDING_STRIKE_POSE = {
+  sprite: 'paladin_blinding_strike',
   trim: [135, 212, 178, 116],
   pivot: [0.798, 0.905]
 };
@@ -632,15 +632,15 @@ export const ABILITIES = [
     // grants Holy Wrath, and that is two rather than three.
     //
     // THE NAME IS THE ONLY THING THAT MOVED. `id`, the sprite key, the paladin's
-    // pose (`assets/units/Paladin_Holy_Slash.png`) and the sound
-    // (`assets/audio/sfx/Paladin_Holy_Slash.mp3`) all still read Holy Slash,
+    // pose (`assets/units/Paladin_Blinding_Strike.png`) and the sound
+    // (`assets/audio/sfx/Paladin_Blinding_Strike.mp3`) all still read Holy Slash,
     // because the artist renamed the BUTTON and nothing else — and a code name
     // that matched the card while the file it points at did not would be worse
     // than one that plainly matches the file. What a player sees is `name`.
-    id: 'slash',
+    id: 'blinding',
     name: 'Blinding Strike',
     of: 'Paladin Keep',
-    icon: 'ability_slash',
+    icon: 'ability_blinding',
     cost: ABILITY_COST,
     // ONE BLOW IN FOUR is the strike, and three ordinary ones come before it. Read
     // the field the same way as the musketeer's: it is the length of the cycle, and
@@ -674,8 +674,8 @@ export const ABILITIES = [
     // two seconds used to be the brake — 14.5 a second where a free pose would have
     // been 16.6 — and taking the brake off is exactly why the damage came down.
     hold: null,
-    pose: HOLY_SLASH_POSE,
-    cue: 'holySlash',
+    pose: BLINDING_STRIKE_POSE,
+    cue: 'blindingStrike',
 
     detail: '3 ordinary blows and then 1 worth 5 of them — 35 where he normally ' +
             'does 7 — struck in the time an ordinary swing takes, so the rhythm ' +

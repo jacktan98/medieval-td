@@ -217,6 +217,23 @@ export const ui = {
   // wrong rather than visibly broken.
   ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // THE FOUR LIGHTEST DISCS IN THE SET take `pale`, and the list grew twice: the
+  // altar's two, then the keep's, then the two Reinforced Tensions — each time at
+  // the owner's word and each time about the same thing. White price ink is
+  // invisible on a light plate. Measured, so the line is not a matter of taste:
+  //
+  //   Holy Light          rgb(233,233,233)   233
+  //   Divine Fortitude    rgb(233,233,233)   233
+  //   Reinforced Tension  rgb(165,211,253)   205   (both of them, to a pixel)
+  //   Blinding Strike     rgb(150,150,150)   150
+  //   Holy Wrath          rgb(150,150,150)   150
+  //   ---- everything below here keeps the white ----
+  //   Inner Strength      rgb(255,170,54)    180
+  //
+  // Inner Strength is the one that breaks a clean threshold, and it is the owner's
+  // call rather than a number: an orange plate carries white where a pale blue one
+  // does not. So this stays a per-icon flag rather than a luminance test.
+  //
   // THE PALADIN KEEP'S TWO, and they take `pale` like the altar's for the same
   // reason and at the owner's word: "the price in Paladin and pope abilities icon
   // uses same dark colour but for others is white". Holy Light's disc measures
@@ -225,12 +242,12 @@ export const ui = {
   // render.js. A property of the ARTWORK, so a re-export on a dark disc is one
   // word to delete.
   ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_slash:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_blinding: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Ballista Turret's two, measured to the same disc as the four above.
-  ability_ballista_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_ballista_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Crossbow Sentry's two, on the same terms: whole buttons on the artist's
   // own disc, measured to btn_plate's trim like every other ability face.
-  ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Assassin Guild's two, measured to the same disc as every other face —

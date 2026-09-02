@@ -530,14 +530,14 @@ function victim(state) {
 console.log('\nBlinding Strike\n');
 
 {
-  const state = keep(['slash']);
+  const state = keep(['blinding']);
   const u = state.units[0];
   const e = victim(state);
   // Put the point man on his post so he is in reach from the first frame.
   u.x = e.x - 12;
   u.y = e.y;
 
-  const slash = abilityById('slash');
+  const blinding = abilityById('blinding');
   const man = barracks[3].soldier;
 
   let last = e.hp;
@@ -551,14 +551,14 @@ console.log('\nBlinding Strike\n');
     if (blows.length >= 12) break;
   }
 
-  const n = slash.every;   // the strike is the LAST blow of the cycle
+  const n = blinding.every;   // the strike is the LAST blow of the cycle
   ok(blows.length >= n + 2, 'the paladin keeps swinging', `${blows.length} blows`);
   ok(blows.slice(0, n - 1).every(b => b.hit === man.damage),
     `${n - 1} ordinary blows first`, `${man.damage} each`);
   // A MULTIPLE OF HIS OWN BLOW, checked as the multiplier rather than as a number.
-  const strike = man.damage * slash.times;
+  const strike = man.damage * blinding.times;
   ok(blows[n - 1] && blows[n - 1].hit === strike, `and blow ${n} is the strike`,
-    blows[n - 1] && `${blows[n - 1].hit} = ${man.damage} x${slash.times}`);
+    blows[n - 1] && `${blows[n - 1].hit} = ${man.damage} x${blinding.times}`);
   ok(blows[n] && blows[n].hit === man.damage, 'then he goes back to ordinary ones');
 
   // AND IT COSTS HIM NOTHING, which is the change the artist asked for and the
@@ -576,12 +576,12 @@ console.log('\nBlinding Strike\n');
 
   // The strike still SHOWS, and that is the other half of "held for a normal
   // attack time": a hold shortened to nothing would be an ability with no picture.
-  ok(blows[n - 1] && blows[n - 1].art === slash.pose && !blows[n - 2].art,
+  ok(blows[n - 1] && blows[n - 1].art === blinding.pose && !blows[n - 2].art,
     'and the strike is the only blow with a drawing of its own');
 
   const plain = man.damage / man.cd;
-  const armed = ((n - 1) * man.damage + man.damage * slash.times) / (n * man.cd);
-  console.log(`      one paladin: ${plain.toFixed(2)}/s plain, ${armed.toFixed(2)}/s with the slash ` +
+  const armed = ((n - 1) * man.damage + man.damage * blinding.times) / (n * man.cd);
+  console.log(`      one paladin: ${plain.toFixed(2)}/s plain, ${armed.toFixed(2)}/s with the strike ` +
               `(x${(armed / plain).toFixed(2)}), and a Keep musters ${man.count}`);
 }
 
@@ -654,12 +654,12 @@ console.log('\nWhat a dead man forgets\n');
   // progress, his count towards the next strike started over — and, since the
   // artist asked, his Holy Light ready again. The clock belongs to the man rather
   // than to the ability, so it dies with him.
-  const state = keep(['slash', 'light']);
+  const state = keep(['blinding', 'light']);
   const u = state.units[0];
 
   u.blows = 7;
   u.hold = 0.5;
-  u.holdArt = abilityById('slash').pose;
+  u.holdArt = abilityById('blinding').pose;
   u.healing = 100;
   // The light already spent, so it cannot answer the wound below — otherwise this
   // would be a check that Holy Light saves him, which is a different question and

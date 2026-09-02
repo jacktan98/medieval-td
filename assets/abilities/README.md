@@ -47,9 +47,13 @@ all to `<Tower>_<Ability>.png`, which is the shape this rule was always
 describing.
 
 **`Paladin_Keep_Blinding_Strike.png` was Holy Slash**, renamed because there were
-3 Holy things on the abilities page and the owner wanted 2. The ability's POSE and
-its SOUND still read Holy Slash on disk — `assets/units/Paladin_Holy_Slash.png` and
-`assets/audio/sfx/Paladin_Holy_Slash.mp3` — because only the button was redrawn.
+3 Holy things on the abilities page and the owner wanted 2. Everything the ability
+owns followed it: the paladin's pose is `units/Paladin_Blinding_Strike.png`, its
+clip is `audio/sfx/Paladin_Blinding_Strike.mp3`, and the id, the sprite key and
+the sound cue in the source all read `blinding` now. A name that had moved on the
+button and nowhere else is the version of this that confuses somebody a year
+later.
+
 Nothing in the game reads a filename; the binding is the `ability_` key in
 `src/assets.js`.
 

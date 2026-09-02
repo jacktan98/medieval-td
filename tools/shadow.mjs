@@ -393,7 +393,7 @@ const SPRITES = [
   // artist re-lighting one swing rather than drawing a second: same trim, same
   // pivot to three places, measured here per file rather than assumed.
   ['assets/units/Paladin_Holy_Light.png', 'light.pose.pivot', pose('light').trim, pose('light').pivot],
-  ['assets/units/Paladin_Holy_Slash.png', 'slash.pose.pivot', pose('slash').trim, pose('slash').pivot],
+  ['assets/units/Paladin_Blinding_Strike.png', 'blinding.pose.pivot', pose('blinding').trim, pose('blinding').pivot],
   // The assassin's pair, under the same rule as everybody's. He is drawn faint on
   // the board — see UNSEEN in render.js — and a fainter figure is one whose feet
   // are HARDER to check by eye, not easier, so the measurement matters more here.

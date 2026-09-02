@@ -47,7 +47,7 @@ nothing shows them until 150 gold has been spent.
 |-------------------------|--------------------------|--------------------------------------|
 | Musketeer, Deadeye      | `Musketeer_Deadeye`      | the heavy ball leaves, and 2s after  |
 | Paladin, Holy Light     | `Paladin_Holy_Light`     | he kneels and heals, 3s              |
-| Paladin, Blinding Strike| `Paladin_Holy_Slash`     | the 5th blow lands, one swing        |
+| Paladin, Blinding Strike| `Paladin_Blinding_Strike`| the 5th blow lands, one swing        |
 | Assassin, Knife Throw   | `Assassin_Knife_Throw`   | each knife leaves, and the throw decays |
 | Assassin, Sneak Attack  | `Assassin_Sneak_Attack`  | the opening blow of a fight          |
 
@@ -72,7 +72,7 @@ tools/shadow.mjs` checks each of them — which matters more here than on an ord
 Attack pose: these are held for a whole second or two at a time, so an anchor half
 a pixel out would read as the man shuffling every time the ability fired.
 
-`Paladin_Holy_Slash` comes back in the Attack pose's box **exactly**,
+`Paladin_Blinding_Strike` comes back in the Attack pose's box **exactly**,
 `[135, 212, 178, 116]`, because it is the same swing re-lit rather than a second
 drawing. That is a measured finding, not a copy: both are measured per file and
 came back equal. `Paladin_Holy_Light` is the widest spread of any of his poses —
