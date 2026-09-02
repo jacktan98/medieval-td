@@ -32,6 +32,9 @@ usable button rather than a blank disc.
 | `Magic_Damage_Icon.png`  | a magic attack    | 16 tall      |
 | `Physical_Armor_Icon.png`| physical armour   | 16 tall      |
 | `Magic_Armor_Icon.png`   | magic armour      | 16 tall      |
+| `Pierce_Physical_Armor_Icon.png` | ranks of physical armour an attack breaks | 16 tall, same baseline as the whole shield |
+| `Pierce_Magic_Armor_Icon.png` | ranks of magic armour an attack breaks | 16 tall, same baseline as the whole shield |
+| `Area_of_Damage_Icon.png`| how wide a blast is | 16 tall — the one wide icon in the set |
 | `Health_Icon.png`        | the word "Health" | 16 tall      |
 | `Gold_Cost_Icon.png`     | a tier's price, and an enemy's bounty | 14 tall |
 | `Life_Cost_Icon.png`     | lives an enemy costs if it gets past | 14 tall |

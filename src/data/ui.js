@@ -168,7 +168,16 @@ export const STAT_COL = 15;
 // last number ran off the edge; the row is a set of icons read at a glance, not
 // body text, and a couple of px off each of them buys the space back without
 // anything on the page reading as smaller.
-export const BOOK_ICON_H = 12;
+// 14, AND IT WAS 12. Twelve was chosen against a 17px row; the row is 20 now — see
+// ROW in book.js — and the owner's reason for growing the cards at all was "so that
+// the icons have more space to have their full resolution".
+//
+// 14 AND NOT 15, and the binding row is the archer thug's: health, attack and reach
+// is three icons and three numbers in a text column 141px wide, and tools/book.mjs
+// costs it pessimistically at 8.2px per unit of icon height plus 22. 14 comes to
+// 137 and 15 to 145, so this is the last size that fits. The other pages have room
+// to spare; that one card is the ceiling.
+export const BOOK_ICON_H = 14;
 
 // The status marks' drawn height. Imported rather than repeated: what a status
 // looks like and how big it is drawn belong together, and data/status.js is where
@@ -442,6 +451,30 @@ export const ui = {
   stat_damage_magic: { trim: [179, 179, 154, 154], h: STAT_ICON_H },
   stat_armour:       { trim: [170, 167, 172, 178], h: STAT_ICON_H },
   stat_armour_magic: { trim: [170, 167, 172, 178], h: STAT_ICON_H },
+  // AND THE SAME TWO SHIELDS WITH SOMETHING THROUGH THEM, for `pierce`. Both are
+  // 178 tall and start at y=167, exactly like the whole shields above — so a row
+  // that shows a rank and a break beside it has all four drawings sitting on one
+  // baseline, which is the thing that would have been fiddly to fix afterwards and
+  // the artist got right in the file.
+  //
+  // WIDER THAN THE PLAIN SHIELDS, though, and by different amounts: the physical
+  // one is 218 across and the magic one 234, because the bolt punching through the
+  // blue shield sticks out further than the shot through the grey. That is the
+  // drawing, not a mistake, and it is why nothing here is squared off — every
+  // entry's aspect comes out of its own trim. See uiSize.
+  stat_pierce:       { trim: [147, 167, 218, 178], h: STAT_ICON_H },
+  stat_pierce_magic: { trim: [139, 167, 234, 178], h: STAT_ICON_H },
+  // AND THE BLAST. This one is the odd shape in the set — 236 x 104, so better
+  // than twice as wide as it is tall, where every other stat icon is roughly
+  // square. A starburst drawn flat is what an area of effect looks like from
+  // above, and the game's reaches are ellipses for the same reason.
+  //
+  // It costs something real and it is worth naming: sized by the shared height
+  // like everything else, this comes out 2.3x the width of a shield, and the
+  // description panel's fixed STAT_COL cannot hold it. So the panel lets an icon
+  // overflow its column rather than widening the column for the fifteen icons that
+  // do not need it — see infoStat in render.js.
+  stat_splash:       { trim: [138, 204, 236, 104], h: STAT_ICON_H },
 
   // The encyclopedia's two costs: gold to build a tier, and lives when an enemy
   // gets past. They are drawn as a stack of coins and a BROKEN heart, which is

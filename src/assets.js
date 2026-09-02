@@ -572,6 +572,15 @@ export const paths = {
   // which of them a shot is up against.
   stat_armour:       'assets/ui/Physical_Armor_Icon.png',
   stat_armour_magic: 'assets/ui/Magic_Armor_Icon.png',
+  // AND THE SAME SHIELD BROKEN, for what a Cannon Outpost or a High Altar does to
+  // it. A pierced shield rather than a new symbol is the right drawing: `pierce`
+  // is not a fourth kind of damage, it is a number of ranks taken off the plate,
+  // and the icon says so by being the plate with a hole in it.
+  stat_pierce:       'assets/ui/Pierce_Physical_Armor_Icon.png',
+  stat_pierce_magic: 'assets/ui/Pierce_Magic_Armor_Icon.png',
+  // And how wide a blast is. Artillery's whole answer to a crowd, and the one
+  // number on a siege card that a player cannot infer from watching one shot.
+  stat_splash:       'assets/ui/Area_of_Damage_Icon.png',
   // A heart of its own for the info box. It is NOT hud_life: the dashboard's
   // heart is the keep's lives and this one is a figure's health, and the artist
   // drew them as two files, so they are two keys.

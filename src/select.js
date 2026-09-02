@@ -20,7 +20,7 @@
 
 import { SCALE } from './data/towers.js';
 import { boost, damageK, rangeOf, reachOf } from './towers.js';
-import { typeOf, pierceOf, RANK_NAME, RANK_SHORT, TYPE_NAME } from './data/armour.js';
+import { typeOf, pierceOf, RANK_SHORT } from './data/armour.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -104,73 +104,109 @@ export const shownDamage = def => def.listedDamage ?? def.damage;
 export const attackIcon = def =>
   typeOf(def.soldier || def) === 'magic' ? 'stat_damage_magic' : 'stat_damage';
 
-// THE TWO ARMOUR RANKS AS A CARD PRINTS THEM — a pair of words, beside a pair of
-// icons, in the row under health and attack. The owner's own layout:
+// WHAT PLATE A FIGURE WEARS, as a card prints it — a word beside an icon, in the
+// row under health and attack. The owner's own layout, before the `None`s came out
+// of it:
 //
 //     Pikeman
 //     Health: 125,        Attack: 4
 //     Physical Armor: Low, Magic Armor: None
 //
-// FOR ANYBODY WHO CAN BE HURT, and only for them. The call sites gate on `hp`,
-// which is the same test the health row already makes, and it is the right one:
-// armour is what stands between a figure and the thing shooting at it, so on an
-// archer up on his deck or a crewman behind his machine — neither of whom can be
-// reached at all — two ranks of plate would be two numbers that never matter.
+// NO GATE ON `hp` ANY MORE, and none is needed: only a barracks soldier and an
+// enemy carry `armour` in the data at all, and those are exactly the figures that
+// can be reached to be hurt. An archer on his deck and a crewman behind his machine
+// come out empty because they wear nothing, which is the same answer the gate gave
+// and one fewer rule to keep true.
 //
-// Missing armour reads as `none` rather than as a blank, because "no armour" is a
-// fact about a spearman and not an absence of information.
+// ONLY WHAT HE ACTUALLY WEARS. `None` used to be printed, on the argument that a
+// row which appears and vanishes reads as a card that forgot to say. The owner
+// looked at it and disagreed — "I want those with None for Armor removed so that
+// it is cleaner" — and on a page where every card carries the pair, they are
+// right: four of the five men in a barracks wear no magic plate, so `None` was
+// the most common word in the book and it said nothing.
+//
 // RANK_SHORT rather than RANK_NAME, and see the note beside it in data/armour.js:
 // "Medium" is 4px wider than the description panel has left for it.
-export function shownArmour(def) {
-  const man = def.soldier || def;
-  const a = man.armour || {};
-  return { physical: RANK_SHORT[a.physical || 'none'], magic: RANK_SHORT[a.magic || 'none'] };
-}
-
-// THE SHORT DESCRIPTION THAT OPENS WHEN A CARD IS TAPPED. It says what the ranks
-// beside the icons MEAN, which is the one thing the row itself cannot: "Low" is a
-// label, and "takes 75% of physical damage" is the number a player is actually
-// deciding with.
 //
-// SO THE CARD AND THE POP-UP ARE NOT THE SAME FACT TWICE. The card is the stat and
-// this is its consequence, the way an ability's button is its picture and its
-// `detail` is its rule.
-//
-// UNITS AND ENEMIES ONLY, at the owner's word — "don't add description in towers,
-// units having them will do". A tower's pop-up opens on the building, and the man
-// it musters has a card of his own on the next page carrying this same paragraph;
-// printing it under the tent as well would be the same sentence in two places, one
-// of them beside a picture of a roof.
-export function statLines(def) {
-  const man = def.soldier || def;
+// Returns PAIRS, in the shape every stat row in this game is built from — an icon
+// key and the text beside it — rather than an object the two call sites would each
+// have to turn into a row. That is what keeps the encyclopedia's copy of this line
+// and the description panel's copy identical: there is one line.
+function armourRow(def) {
+  const a = (def.soldier || def).armour || {};
   const out = [];
-  const kind = TYPE_NAME[typeOf(man)].toLowerCase();
-  const pierce = pierceOf(man);
-
-  out.push(pierce
-    ? `Deals ${kind} damage, and breaks ${pierce} rank${pierce > 1 ? 's' : ''} of ` +
-      `${kind} armour: what it hits is struck as though it wore ${pierce} rank` +
-      `${pierce > 1 ? 's' : ''} less.`
-    : `Deals ${kind} damage.`);
-
-  const a = man.armour;
-  if (a) {
-    // TAKES rather than reduces, which is the direction the player is reading in:
-    // they are looking at a thing that is about to be shot at, not at a formula.
-    const say = (which, rank) => rank === 'none'
-      ? `No ${which} armour — takes ${which} damage in full.`
-      : `${RANK_NAME[rank]} ${which} armour — takes ` +
-        `${{ low: '75%', med: '50%', high: '25%' }[rank]} of ${which} damage.`;
-    // ONE PARAGRAPH FOR THE PAIR. They are read together — "what gets through
-    // this man" is one question with two halves — and two paragraphs would put a
-    // blank line between them in a pop-up that has three at most.
-    out.push(`${say('physical', a.physical || 'none')} ${say('magic', a.magic || 'none')}`);
-  }
-  // A STRING, because that is what the pop-up's `detail` is everywhere else: an
-  // ability's card carries one and wrapped() in render.js splits it on blank
-  // lines. Two shapes for one field would be two code paths in the renderer.
-  return out.join('\n\n');
+  if (a.physical && a.physical !== 'none') out.push(['stat_armour', RANK_SHORT[a.physical]]);
+  if (a.magic && a.magic !== 'none') out.push(['stat_armour_magic', RANK_SHORT[a.magic]]);
+  return out;
 }
+
+// HOW WIDE A BLAST IS, or null for the great majority that hit one thing. Two
+// places keep it and this is what untangles them, the way `shownRange` untangles
+// reach:
+//
+//   a TOWER      its own `splash` — a catapult's 75, the Cannon Outpost's 85
+//   an ENEMY     the AMMUNITION's, because the plague doctor's spread belongs to
+//                the flask rather than to the man: he swings a fist for 20 and it
+//                hits one soldier.
+//
+// ZERO IS NOT A NUMBER TO PRINT. `splash: 0` is how data/towers.js says "a pure
+// single-target catapult" — a real setting with a comment of its own — and an
+// area-of-damage icon with a 0 beside it would be a card advertising the absence
+// of the thing the icon is for.
+export function shownSplash(def) {
+  const d = def.soldier || def;
+  const wide = d.splash ?? (d.ranged && d.ranged.ammo && d.ranged.ammo.splash);
+  return wide ? wide : null;
+}
+
+// THE SECOND LINE OF EVERY STAT BLOCK IN THE GAME: what a figure is wearing, and
+// what its attack does to what the other man is wearing.
+//
+// ONE FUNCTION FOR FOUR SURFACES — a unit card, an enemy card, and the description
+// panel's two shapes — which is the whole reason it returns pairs rather than a
+// shape each caller unpacks. The owner asked for these icons in the encyclopedia
+// AND the panel, and the way to guarantee a book and a board that agree is not to
+// write the row twice carefully.
+//
+// THE ORDER IS DEFENCE THEN OFFENCE, and it reads left to right as the sentence a
+// player is actually asking: what does this thing survive, and what does it get
+// through. A Paladin is High/Low and breaks nothing; a Cannoneer wears nothing and
+// breaks two ranks over an 85-wide blast.
+//
+// PIERCE TAKES THE COLOUR OF THE ATTACK IT BELONGS TO — the grey shield for a
+// cannonball, the blue one for a monk — because a break only ever applies to its
+// own kind of armour. That is the rule in data/armour.js, said in a picture.
+export function traitRow(def) {
+  const man = def.soldier || def;
+  const out = armourRow(def);
+
+  const p = pierceOf(man);
+  if (p) out.push([typeOf(man) === 'magic' ? 'stat_pierce_magic' : 'stat_pierce', p]);
+
+  const wide = shownSplash(def);
+  if (wide) out.push(['stat_splash', wide]);
+
+  return out;
+}
+
+// NO PROSE ANY MORE, and this is where a `statLines` used to be.
+//
+// It wrote out what each rank was worth — "Medium physical armour, takes 50% of
+// physical damage" — and opened under the picture when a card was tapped. The
+// owner took it out: "replace the description text with these icons to make it
+// minimalistic, remove all text in Units and Enemies and just leave icons and
+// numbers, as I think I have all the icons to describe the stats for now."
+//
+// Which is the right call once the icons exist. The paragraph was a gloss on a row
+// the player was already looking at, in a pop-up they had to open to read it, and
+// it said the same thing about every unarmoured figure in the game — most of the
+// book. An armour icon with `Med` beside it is the fact; the percentage behind it
+// is a rule a player learns once, not something a reference page should repeat
+// twenty times.
+//
+// ABILITIES KEPT THEIRS, and that is not an inconsistency. An ability is a RULE
+// rather than a thing — there is no number to put beside a picture of it — which
+// is the same reason its pop-up has always been the only one laid out as prose.
 
 // HOW FAR A CARD SAYS SOMETHING REACHES, or null for anything that fights at
 // arm's length. The three kinds keep their reach in three different places and
@@ -303,7 +339,16 @@ export function selectionInfo(state) {
       // Which is what leaves the reach row where it has always been. The owner drew
       // the line here: "remove range for units in description panels as there is no
       // space, only leave the range for units in towers".
-      armour: null,
+      //
+      // BUT A TOWER DOES GET THE REST OF THE ROW, and that is the owner's ask:
+      // "add all 3 where applicable in encyclopedia and description panel". A
+      // Cannon Outpost breaks two ranks over an 85-wide blast, and the panel is
+      // where a player looks while deciding what to build next.
+      //
+      // A LIST RATHER THAN NULL, so the panel's second row is one shape everywhere:
+      // pairs, possibly none of them. See drawInfo — an empty row is drawn as an
+      // empty row and the block above it does not move.
+      traits: traitRow(s.ref.def),
       // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
       // the targeting reads, so a tower that has bought Far Shot shows the
       // wider figure here rather than the one it was sold at. The book shows
@@ -365,7 +410,7 @@ export function selectionInfo(state) {
     // his wand; the two surfaces disagreed.
     attack: attackIcon(f.def),
     // The two ranks, on the row where the reach used to be.
-    armour: shownArmour(f.def),
+    traits: traitRow(f.def),
     // AND NO REACH, which is what armour cost. The panel is 68px tall and holds a
     // title over two stat rows at the most — see ROW_PITCH in render.js — so a
     // third line was never available, and the owner chose which of the two goes in

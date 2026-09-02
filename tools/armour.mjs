@@ -39,7 +39,7 @@ import { updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { level } from '../src/level.js';
 import { ABILITIES } from '../src/data/abilities.js';
-import { selectionInfo, shownArmour } from '../src/select.js';
+import { selectionInfo, traitRow, shownSplash, shownRange } from '../src/select.js';
 
 const DT = 1 / 60;
 let bad = 0;
@@ -224,17 +224,50 @@ console.log('\nWhat the card and the panel say about a figure\n');
     wrongIcon.map(([d, i]) => `${d.name} ${i}`).join(', ') ||
     foes.concat(men).map(d => `${d.name} ${typeOf(d)}`).filter(s => s.includes('magic')).join(', '));
 
-  // AND THE RANKS THEMSELVES, on both surfaces, against the data rather than
-  // against each other — two functions agreeing on a wrong answer is a thing that
-  // happens when they are checked in a pair.
+  // AND THE SECOND ROW ITSELF, against the data rather than against another copy of
+  // the row — two functions agreeing on a wrong answer is a thing that happens when
+  // they are checked in a pair.
+  //
+  // THE ROW IS EXACTLY WHAT THE FIGURE HAS, and both halves of that are worth
+  // holding: a rank it wears is printed, and a rank it does not is NOT. The second
+  // half is the owner's ask — "I want those with None for Armor removed" — and it
+  // is the half that quietly comes back the next time somebody makes the row
+  // uniform.
   const said = (def, kind) => (def.armour && def.armour[kind]) || 'none';
   const wrongRank = [...foes, ...men].filter(d => {
-    const a = shownArmour(d);
-    return a.physical !== RANK_SHORT[said(d, 'physical')] ||
-           a.magic !== RANK_SHORT[said(d, 'magic')];
+    const row = new Map(traitRow(d));
+    for (const [kind, key] of [['physical', 'stat_armour'], ['magic', 'stat_armour_magic']]) {
+      const worn = said(d, kind);
+      if (worn === 'none' ? row.has(key) : row.get(key) !== RANK_SHORT[worn]) return true;
+    }
+    return false;
   });
-  ok(wrongRank.length === 0, 'and every rank it prints is the rank the def wears',
+  ok(wrongRank.length === 0, 'and prints every rank it wears and no rank it does not',
     wrongRank.map(d => d.name).join(', ') || `${foes.length + men.length} figures`);
+
+  // THE BREAK IS DRAWN IN THE COLOUR OF THE BLOW IT BELONGS TO. A physical attack
+  // can only break physical armour — that is the rule in data/armour.js — so a
+  // Cannon Outpost showing the blue shield would be a picture of a mechanic this
+  // game does not have. Checked on the defs that actually have a `pierce`.
+  const breakers = [...TIERS, ...foes].filter(d => pierceOf(d.soldier || d) > 0);
+  const miscoloured = breakers.filter(d => {
+    const row = new Map(traitRow(d));
+    const want = typeOf(d.soldier || d) === 'magic' ? 'stat_pierce_magic' : 'stat_pierce';
+    return row.get(want) !== pierceOf(d.soldier || d);
+  });
+  ok(miscoloured.length === 0, 'and a break is drawn in the colour of the blow it belongs to',
+    miscoloured.map(d => d.name).join(', ') ||
+    breakers.map(d => `${d.name} x${pierceOf(d.soldier || d)}`).join(', '));
+
+  // AND A BLAST IS PRINTED WHERE THERE IS ONE. `splash: 0` is a real setting with a
+  // comment of its own in data/towers.js — a pure single-target catapult — so the
+  // thing to hold is that a 0 draws NOTHING rather than an area-of-damage icon
+  // advertising the absence of an area of damage.
+  const wide = [...TIERS, ...foes].filter(d => shownSplash(d));
+  const shown = [...TIERS, ...foes].filter(d => new Map(traitRow(d)).has('stat_splash'));
+  ok(wide.length === shown.length && wide.every(d => shown.includes(d)),
+    'and a blast is printed by everything that has one, and nothing that has not',
+    wide.map(d => `${d.name} ${shownSplash(d)}`).join(', '));
 
   // NO REACH ON A FIGURE, at the owner's word — the armour took that row. It is
   // checked because it is a deletion, and a deletion is the kind of thing that
@@ -242,15 +275,28 @@ console.log('\nWhat the card and the panel say about a figure\n');
   // SPOKEN FOR.
   const reaching = [...foes.map(d => ['enemy', d]), ...men.map(d => ['unit', d])]
     .filter(([k, d]) => panel(k, d, d.hp).range !== null);
-  ok(reaching.length === 0, 'and no figure prints a reach, which is the armour row now',
+  ok(reaching.length === 0, 'and no figure prints a reach, which is the second row now',
     reaching.map(([, d]) => d.name).join(', ') || `${foes.length + men.length} figures`);
 
-  // AND A TOWER IS THE OTHER WAY ROUND: no armour, and its reach kept. Its man's
-  // plate is not the tower's fact — a barracks sends him out, and tapping HIM is
-  // where the question is answered.
-  const armoured = TIERS.filter(def => panel('tower', def, null).armour !== null);
-  ok(armoured.length === 0, 'while a tower prints no armour and keeps its reach',
-    armoured.map(d => d.name).join(', ') || `${TIERS.length} tiers`);
+  // AND A TOWER KEEPS ITS REACH, which is the half of that deletion that did not
+  // apply to buildings — the owner drew the line themselves: "only leave the range
+  // for units in towers".
+  const mute = TIERS.filter(def =>
+    shownRange(def) !== null && panel('tower', def, null).range === null);
+  ok(mute.length === 0, 'while a tower keeps the reach a figure gave up',
+    mute.map(d => d.name).join(', ') ||
+    `${TIERS.filter(d => shownRange(d) !== null).length} tiers that shoot`);
+
+  // AND ITS SECOND ROW IS THE ONE ITS MAN'S CARD PRINTS. A wiring check rather than
+  // an arithmetic one — both sides go through traitRow today, and the point is that
+  // they keep doing so. The panel had its own copy of the armour row for one build
+  // and the two drifted the moment `pierce` arrived: the book knew about the Cannon
+  // Outpost's x2 and the panel did not.
+  const drifted = TIERS.filter(def =>
+    JSON.stringify(panel('tower', def, null).traits) !== JSON.stringify(traitRow(def)));
+  ok(drifted.length === 0, 'and its second row is the row its own card prints',
+    drifted.map(d => d.name).join(', ') ||
+    TIERS.filter(d => traitRow(d).length).map(d => d.name).length + ' tiers with one');
 }
 
 // --- the loops -----------------------------------------------------------------

@@ -13,7 +13,7 @@ import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
-import { selectionInfo, shownDamage, shownRange, attackIcon, shownArmour } from './select.js';
+import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
          abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
@@ -2714,9 +2714,18 @@ const PORTRAIT = { w: 58, h: 50 };
 // are taken out. 10.5 fits with 2.6px to spare and 11 does not fit at all.
 const INFO_TITLE = 10.5;
 const INFO_ROW = 10;
-// 12 rather than 14: the attack row carries a second icon and a second number
-// now, and the two pairs have to share one line of a panel 197 wide.
-const INFO_ICON = 12;
+// 14, AND IT WAS 12. Twelve was what a 10px gap between the pairs left room for;
+// the gap is 6 now — see STAT_GAP — and the widest row in the panel measures 105.6
+// of the 118px column at this size, where it was 103.3 at the old twelve and the
+// old gap. The room came from the air, not from the numbers.
+//
+// THE SAME 14 THE BOOK USES, which is the point of moving it: a player who learns
+// what a shield means on an encyclopedia card reads the same picture at the same
+// size when they tap a man on the road. It is not the same RATIO — the panel's type
+// is 10px against the book's 12, because this plate is 68px tall and the font
+// cannot grow with the icon — so the panel is the more icon-forward of the two.
+// That is the right way round for the surface you read mid-fight.
+const INFO_ICON = 14;
 
 function drawInfo(ctx, state) {
   const info = selectionInfo(state);
@@ -2773,9 +2782,21 @@ function drawInfo(ctx, state) {
   //   a tower    attack + reach    alone
   //
   // Which is the whole of the owner's layout, both halves of it. A tower has no
-  // armour to print because nothing can hurt it, and a figure has no reach to
-  // print because the row it would have sat in is the armour's.
-  const rows = info.hp !== null ? 2 : 1;
+  // health to print because nothing can hurt it, and a figure has no reach to
+  // print because the row it would have sat in is the trait row's.
+  //
+  // TWO ROWS FOR EVERYTHING, and it counted them for one build. A tower took one
+  // row and a figure two, so the two kinds of panel put their titles on different
+  // lines — and worse, the trait row was only drawn on the branch that had counted
+  // it, which is how a Cannon Outpost came to print its 65 and its 360 and say
+  // nothing at all about the two ranks it breaks or the 85 it scatters over. It was
+  // the panel a player looks at while deciding to build one.
+  //
+  // The owner's rule settles it in the general case as well as the case they were
+  // looking at: "don't shift the text to the middle when the bottom line is empty".
+  // Every panel is a title over two lines, and a line with nothing in it is a line
+  // with nothing in it.
+  const rows = 2;
   const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
 
   // See INFO_TITLE for why it is 10.5 and not a round number.
@@ -2807,29 +2828,33 @@ function drawInfo(ctx, state) {
       : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED);
     // THE ATTACK BESIDE THE HEALTH, at the owner's word — "move attack damage icon
     // beside health". It read down the left edge under it before, which left the
-    // right half of both rows empty and cost a line the armour now needs.
+    // right half of both rows empty and cost the line the trait row now has.
     infoStat(ctx, info.attack || 'stat_damage', hx + STAT_GAP, ty, String(info.damage), ink);
-    ty += ROW_PITCH;
-
-    // AND THE TWO RANKS UNDER THEM. Never coloured by how much they let through —
-    // green plate would read as a buff rather than as a fact about the figure, and
-    // the one colour scale in this panel already means health.
-    infoStat(ctx, 'stat_armour_magic',
-      infoStat(ctx, 'stat_armour', tx, ty, info.armour.physical, ink) + STAT_GAP,
-      ty, info.armour.magic, ink);
-    return;
+  } else {
+    // A TOWER, whose attack keeps the first row and whose reach keeps the place
+    // beside it. The pair reads as it does on an encyclopedia card — attack and
+    // reach are the two halves of one question and a player comparing towers reads
+    // them together.
+    //
+    // Measured in the browser rather than by a tool, for the reason INFO_TITLE
+    // gives: node has no canvas to set a font in. See tools/book.mjs for the same
+    // measurement made pessimistically on the encyclopedia's own rows.
+    const dx = infoStat(ctx, info.attack || 'stat_damage', tx, ty, String(info.damage), ink);
+    if (info.range !== null)
+      infoStat(ctx, 'stat_range', dx + STAT_GAP, ty, String(info.range), ink);
   }
 
-  // A TOWER, which has neither, so its attack keeps the first row and its reach
-  // keeps the place beside it. The pair reads as it does on an encyclopedia card —
-  // attack and reach are the two halves of one question and a player comparing
-  // towers reads them together.
+  // AND THE SECOND LINE, WHICHEVER KIND OF PANEL THIS IS: what it wears, what it
+  // breaks, how wide it scatters. Often empty — a spearman wears nothing, a
+  // Watchtower breaks nothing — and drawn as an empty line when it is.
   //
-  // Measured in the browser rather than by a tool, for the reason INFO_TITLE
-  // gives: node has no canvas to set a font in. See tools/book.mjs for the same
-  // measurement made pessimistically on the encyclopedia's own rows.
-  const dx = infoStat(ctx, info.attack || 'stat_damage', tx, ty, String(info.damage), ink);
-  if (info.range !== null) infoStat(ctx, 'stat_range', dx + STAT_GAP, ty, String(info.range), ink);
+  // Never coloured by how much a rank lets through. Green plate would read as a
+  // buff rather than as a fact about the figure, and the one colour scale in this
+  // panel already means health.
+  ty += ROW_PITCH;
+  let ax = tx;
+  for (const [key, value] of info.traits)
+    ax = infoStat(ctx, key, ax, ty, String(value), ink) + STAT_GAP;
 }
 
 // ONE ICON AND ITS NUMBER, and the reason it is a function rather than two lines
@@ -2853,12 +2878,22 @@ function drawInfo(ctx, state) {
 const STAT_PAD = 4;
 
 function infoStat(ctx, key, x, y, text, colour) {
-  drawUi(ctx, key, x + STAT_COL / 2, y, { h: INFO_ICON });
+  // THE COLUMN IS A MINIMUM, not a width, and that is what the blast icon changed.
+  // Every stat icon in the game is roughly square and fits inside STAT_COL — which
+  // is what makes the numbers line up between rows — except the area-of-damage
+  // burst, which the artist drew 2.3x as wide as it is tall. Widening the column to
+  // hold it would push every other number 17px right on every panel in the game to
+  // suit one icon on two towers.
+  //
+  // So a wide icon takes the room it needs and shifts only its OWN number. See the
+  // note beside stat_splash in data/ui.js.
+  const slot = Math.max(STAT_COL, uiSize(key, { h: INFO_ICON }).w);
+  drawUi(ctx, key, x + slot / 2, y, { h: INFO_ICON });
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = colour;
-  ctx.fillText(text, x + STAT_COL + STAT_PAD, y);
-  return x + STAT_COL + STAT_PAD + ctx.measureText(text).width;
+  ctx.fillText(text, x + slot + STAT_PAD, y);
+  return x + slot + STAT_PAD + ctx.measureText(text).width;
 }
 
 // How much vertical room the title takes, and the pitch between stat rows. 18 is
@@ -3288,19 +3323,28 @@ function drawZoom(ctx, z) {
   // Two shapes of plate. An ability opens with its description beside the picture
   // — it is a rule rather than a thing, so a picture of it says almost nothing on
   // its own — and everything else opens as the picture alone.
+  //
+  // WHICH IS NOW EVERY OTHER PAGE. A man and an enemy each carried a paragraph
+  // about their armour until the owner replaced it with the icons on their cards;
+  // an ability is the last thing in the book with prose in it. See the note where
+  // statLines was, in select.js.
   const lines = z.detail ? wrapped(ctx, z.detail, POP_TEXT_W) : null;
-  // THE ROW OF ICONS UNDER THE PROSE, for the two things an enemy is worth. It
-  // costs two leadings rather than one — a blank line above it, so the coin reads
-  // as a footer under the paragraphs rather than as a fourth sentence of them.
+  // AND A ROW OF ICONS UNDER EITHER SHAPE, for the two things an enemy is worth.
+  //
+  // UNDER THE PROSE it costs two leadings rather than one — a blank line above it,
+  // so the coin reads as a footer rather than as a fourth sentence. UNDER A PICTURE
+  // it costs one, because there is nothing above it to be mistaken for.
   //
   // Counted into the height by the same rule everything else is, which is the point
-  // of doing it here: a plate sized for the text alone would draw this over its own
-  // bottom edge, which is exactly the bug the note above describes.
-  const foot = lines && z.stats ? 2 : 0;
+  // of doing it here: a plate sized for what is above this would draw it over its
+  // own bottom edge, which is exactly the bug the note above describes.
+  const foot = z.stats ? (lines ? 2 : 1) : 0;
   // AS DEEP AS THE PROSE ACTUALLY IS, or as the picture, whichever is more. See
   // the note above: this was a fixed ceiling, and text that overran it was drawn
   // anyway, into a plate that had not made room for it.
-  const bodyH = lines ? Math.max(slot.h, (lines.length + foot) * POP_LEAD) : slot.h;
+  const bodyH = lines
+    ? Math.max(slot.h, (lines.length + foot) * POP_LEAD)
+    : slot.h + foot * POP_LEAD;
   const pw = lines
     ? POP_PAD * 2 + slot.w + POP_GAP + POP_TEXT_W
     : Math.max(slot.w + POP_PAD * 2, 240);
@@ -3334,7 +3378,10 @@ function drawZoom(ctx, z) {
   if (img) {
     // Centred in the slot both ways, so a short wide tent and a tall thin turret
     // sit in the middle of the same frame instead of one of them hugging an edge.
-    const top = bodyY + (bodyH - h) / 2;
+    // The footer's row, where there is one under a picture, is taken off the bottom
+    // first — otherwise the drawing centres itself against a body that includes the
+    // strip it is not allowed to sit in.
+    const top = bodyY + (bodyH - foot * POP_LEAD - h) / 2;
 
     // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. The
     // artist draws them as a disc, and a disc shown in a square frame wants the
@@ -3360,7 +3407,13 @@ function drawZoom(ctx, z) {
     }
   }
 
-  if (!lines) return;
+  // THE PICTURE ALONE, with its row of figures centred under it. This is where an
+  // enemy comes out now that his paragraph is gone: a portrait, and what killing
+  // him is worth.
+  if (!lines) {
+    if (foot) popStats(ctx, z.stats, cx, bodyY + bodyH - POP_LEAD / 2, 'center');
+    return;
+  }
 
   // The prose, top-aligned rather than centred against the picture: a block of
   // text hung off the middle of a disc drifts up and down as the text changes
@@ -3385,18 +3438,36 @@ function drawZoom(ctx, z) {
   // Drawn through the encyclopedia's own stat(), at the pop-up's type size rather
   // than a card's, so the pair sits with the prose it is under instead of reading
   // as a card that wandered inside the picture.
-  // The ink comes off the icon rather than travelling with the number, so book.js
-  // hands over what a thing IS WORTH and this file decides what colour worth is —
-  // the same split the cards already make. An icon nobody has given a colour to
-  // reads in the body ink, which is the right fallback: legible, and not pretending
-  // to mean good or bad.
-  const POP_STAT_INK = { stat_gold_cost: INK_GREEN, stat_life_cost: INK_RED };
-  const ty = bodyY + POP_LEAD * (lines.length + 1.5);
-  let ix = tx;
-  for (const [key, value] of z.stats) {
-    ix = stat(ctx, key, ix, ty, String(value), POP_STAT_INK[key] || INK, POP_TEXT + 2)
-       + STAT_GAP + 2;
-  }
+  popStats(ctx, z.stats, tx, bodyY + POP_LEAD * (lines.length + 1.5), 'left');
+}
+
+// The pop-up's own stat row. Two callers — under a paragraph, hard against the left
+// of the text column, and under a picture, centred on it — which is why it measures
+// itself before it draws: there is no centring a row of icons you have not costed.
+//
+// THE INK COMES OFF THE ICON rather than travelling with the number, so book.js
+// hands over what a thing IS WORTH and this file decides what colour worth is — the
+// same split the cards already make. An icon nobody has given a colour to reads in
+// the body ink, which is the right fallback: legible, and not pretending to mean
+// good or bad.
+const POP_STAT_INK = { stat_gold_cost: INK_GREEN, stat_life_cost: INK_RED };
+const POP_STAT_H = POP_TEXT + 2;
+
+function popStats(ctx, pairs, x, y, align) {
+  // A shade wider than a card's own gap, because this row is set two sizes up and
+  // a gap that did not grow with the type would read as tighter than the card's.
+  // Read here rather than kept in a const beside POP_STAT_H: STAT_GAP is declared
+  // further down the file, and a module-level const cannot reach back for it.
+  const gap = STAT_GAP + 2;
+
+  ctx.font = `700 ${POP_STAT_H - 2}px system-ui, sans-serif`;
+  const width = pairs.reduce((w, [key, value], i) =>
+    w + (i ? gap : 0) + uiSize(key, { h: POP_STAT_H }).w + 4 +
+    ctx.measureText(String(value)).width, 0);
+
+  let at = align === 'center' ? x - width / 2 : x;
+  for (const [key, value] of pairs)
+    at = stat(ctx, key, at, y, String(value), POP_STAT_INK[key] || INK, POP_STAT_H) + gap;
 }
 
 // Break a paragraph into lines that fit `width`, measured in the font the caller
@@ -3540,23 +3611,35 @@ function drawCardMachine(ctx, b, e) {
   ctx.drawImage(img, sx, sy, sw, sh, m.left, m.top, m.w, m.h);
 }
 
-// The air between one stat and the next icon. Was 14 when a row held two of
-// them; a third needs the space back and the icons are what separate the
-// numbers anyway, so a narrower gap still reads as three pairs rather than as
-// one run of digits.
-export const STAT_GAP = 10;
+// The air between one stat and the next icon. It was 14 when a row held two of
+// them and 10 when a third arrived; 6 is what a 14px icon leaves.
+//
+// THE GAP IS THE CHEAPEST THING IN THE ROW, which is why it pays for the icons
+// rather than the other way round. The binding line in the book is the archer
+// thug's — health, attack and reach, three icons and three numbers in a text column
+// 141px wide — and at the new icon height it measures 144.1px at a gap of 10, 140.1
+// at 8 and 136.1 at 6. Only the last of those has margin worth the name.
+//
+// And a bigger icon needs less air, not more: the pairs are separated by the
+// pictures, and 10px of parchment between a 14px shield and a 14px sword reads as
+// loose where the same 10 between two 12px ones read as tight.
+export const STAT_GAP = 6;
 
 function unitCard(ctx, b, e) {
   card(ctx, b);
   drawArt(ctx, e.sprite, e.trim, b, e.art);
 
   const tx = b.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
-  // TWO ROWS OR THREE, counted from the man rather than fixed, because rowsIn
-  // CENTRES what it is given: a card told it had three rows and printing two would
-  // hang the pair off the ceiling with the floor empty. A man in plate gets the
-  // armour line and everybody else does not — see shownArmour in select.js — so
-  // the archers keep the layout they have always had.
-  const [r1, r2, r3] = rowsIn(b, e.armour ? 3 : 2);
+  // THREE ROWS, ALWAYS, however few of them have anything in them. It counted the
+  // man's own rows for one build, and rowsIn CENTRES what it is given — so a card
+  // with no armour re-centred, and its name and its stats slid half a line down the
+  // plate. That is exactly what the owner ruled out: "don't shift the text to the
+  // middle when the bottom line is empty without armor stats."
+  //
+  // So the grid is the fixed thing and the rows fill it or do not. A page whose
+  // titles all sit on one line reads as a page; a page whose titles wander by 8px
+  // depending on whether a man happens to own a shield reads as a mistake.
+  const [r1, r2, r3] = rowsIn(b, 3);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
@@ -3568,28 +3651,29 @@ function unitCard(ctx, b, e) {
   // does not apply to rather than printed as a blank. An archer on his deck
   // cannot be reached to be hurt and has no health; a swordsman walks up to
   // what he hits and has no reach. So no man on the page shows all three.
-  let x = tx;
-  if (e.hp !== null) x = stat(ctx, 'stat_health', x, r2, String(e.hp), INK) + STAT_GAP;
-  x = stat(ctx, e.attack || 'stat_damage', x, r2, String(e.damage), INK) + STAT_GAP;
-  if (e.range !== null) stat(ctx, 'stat_range', x, r2, String(e.range), INK);
+  const top = [];
+  if (e.hp !== null) top.push(['stat_health', e.hp]);
+  top.push([e.attack || 'stat_damage', e.damage]);
+  if (e.range !== null) top.push(['stat_range', e.range]);
 
-  if (e.armour) armourRow(ctx, tx, r3, e.armour);
+  statRow(ctx, top, tx, r2);
+  statRow(ctx, e.traits, tx, r3);
 }
 
-// THE ARMOUR LINE, wherever it is printed — a unit card, an enemy card. One
-// function because the two pages have to lay it out identically: the ranks are the
-// thing a player compares ACROSS the fold, a swordsman's plate against the giant's,
-// and two icons that sat at two different distances from their words would make
-// that comparison harder than reading the numbers.
+// A ROW OF ICONS AND THE NUMBERS BESIDE THEM, wherever one is printed — a unit
+// card, an enemy card, either of their second lines. One function because the
+// pages have to lay them out identically: a rank is a thing a player compares
+// ACROSS the book, a swordsman's plate against the giant's, and two icons sitting
+// at different distances from their words would make that comparison harder than
+// reading the numbers would.
 //
-// Both ranks always, including `None`. A row that appeared on the armoured and
-// vanished on the bare would read as a card that forgot to say, where "None" says
-// it — and it is the half of the matchup that decides most shots: what gets through
-// a plague doctor is that his physical armour is None, not that his magic is Medium.
-function armourRow(ctx, x, y, armour) {
-  stat(ctx, 'stat_armour_magic',
-    stat(ctx, 'stat_armour', x, y, armour.physical, INK) + STAT_GAP,
-    y, armour.magic, INK);
+// AN EMPTY LIST DRAWS NOTHING AND STILL COSTS ITS ROW, which is the whole reason
+// the callers hand it one rather than skipping the call — see the note in unitCard.
+function statRow(ctx, pairs, x, y, colour = INK) {
+  let at = x;
+  for (const [key, value] of pairs)
+    at = stat(ctx, key, at, y, String(value), colour) + STAT_GAP;
+  return at;
 }
 
 // One icon and its number, returning the x to carry on from. The icon is drawn
@@ -3637,17 +3721,17 @@ function drawEnemyPage(ctx) {
     // archer's 200 and the doctor's 130 are the whole difference between them
     // and everything else on the page, and a player who cannot see the number
     // learns it by watching a tower fail to answer.
-    let sx = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK) + STAT_GAP;
-    sx = stat(ctx, attackIcon(d), sx, r2, String(shownDamage(d)), INK) + STAT_GAP;
-    if (shownRange(d) !== null) stat(ctx, 'stat_range', sx, r2, String(shownRange(d)), INK);
+    const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
+    if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
+    statRow(ctx, top, tx, r2);
 
-    // AND HIS PLATE, in the row the bounty and the leak used to have. Every enemy
-    // on the page shows it, which is the point of putting it here rather than in
-    // the pop-up: the four of them are read as a column, and what a tower can hurt
-    // is the question the page is being opened to answer.
+    // AND WHAT HE WEARS AND WHAT HE THROWS, in the row the bounty and the leak
+    // used to have. It is the point of putting them here rather than in the pop-up:
+    // the four enemies are read as a column, and what a tower can hurt is the
+    // question the page is being opened to answer.
     //
     // The coin and the broken heart went inside the picture — see artAt in book.js.
-    armourRow(ctx, tx, r3, shownArmour(d));
+    statRow(ctx, traitRow(d), tx, r3);
   }
 }
 

@@ -47,7 +47,7 @@ import {
 import { PAUSE_ROW, STAT_GAP,
          POP_PAD_OUT, POP_TITLE_H, POP_GAP_OUT, POP_LEAD_OUT } from '../src/render.js';
 import { uiSize } from '../src/data/ui.js';
-import { shownDamage, shownRange, shownArmour, statLines } from '../src/select.js';
+import { shownDamage, shownRange, traitRow } from '../src/select.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -279,7 +279,19 @@ console.log('\nWhat fits\n');
   // font with, so the digits are estimated at 0.62em of the row's size, which is
   // wider than bold system-ui actually sets them: the check is allowed to be
   // pessimistic, it is not allowed to pass a row that does not fit.
-  const DIGIT = 0.62;
+  // 0.72, AND IT WAS 0.62, and the recalibration is the point of writing it down.
+  //
+  // 0.62 was measured against the row's old 10px type and it WAS pessimistic there.
+  // At the 12px the bigger icons brought with them, bold system-ui sets digits at
+  // 0.696em — hinting squeezes small type harder than large — so the estimate
+  // silently became optimistic, and it passed a 14px archer thug's row at 136.9
+  // that really sets at 144.1 and drew its reach off the edge of the card.
+  //
+  // A screenshot caught it, which is the wrong thing to be relying on. 0.72 is the
+  // measured worst rounded up, so the check is once more the pessimistic side of
+  // true — and it now also covers the widest WORD the row can hold, "Med", which
+  // sets at 25.8 against this estimate's 25.9.
+  const DIGIT = 0.72;
   const rowWidth = figures => {
     const size = BOOK_ICON_H - 2;
     let w = 0;
@@ -290,14 +302,17 @@ console.log('\nWhat fits\n');
     return w;
   };
 
-  // THE ARMOUR ROW IS THE ONE WITH WORDS IN IT, which is why the estimate above is
-  // now being asked a question it was not written for. 0.62em a CHARACTER was
-  // pitched at digits; "Medium" is six letters and an M is nearly an em on its own.
-  // Measured in the browser at 700 10px system-ui the word sets at 37.3px, and six
-  // characters of the estimate is 44.6 — so the estimate is still the pessimistic
-  // side of true for the widest word the row can hold, and the check stays honest.
-  const armourRow = def => [['stat_armour', shownArmour(def).physical],
-                            ['stat_armour_magic', shownArmour(def).magic]];
+  // THE SECOND ROW IS THE ONE WITH WORDS IN IT, which is why the estimate above is
+  // being asked a question it was not written for. 0.62em a CHARACTER was pitched
+  // at digits; "Med" is three letters and an M is nearly an em on its own. Measured
+  // in the browser at 700 12px system-ui the word sets at 25.8px against the
+  // estimate's 22.3 — so for THIS word the estimate is optimistic by 3.5px, which
+  // is the one place in this check it is not pessimistic. The row has 20px of slack
+  // at its widest, so it is inside; if a rank word ever gets longer, measure it.
+  //
+  // Through traitRow rather than rebuilt here, because what has to fit the card is
+  // the row the game actually draws — armour, pierce and blast, in that order, with
+  // the `None`s already dropped.
 
   const textRoom = shelfRect(0, 0).w - (FIGURE_BOX.x + FIGURE_BOX.w + 8);
   const rows = [];
@@ -308,17 +323,14 @@ console.log('\nWhat fits\n');
     r.push(['stat_damage', e.damage]);
     if (e.range !== null) r.push(['stat_range', e.range]);
     rows.push([occupant(def).name, r]);
-    // The men in plate get a second row under it. The archers and the crews do not,
-    // and unitEntry is what says so — see shownArmour in select.js.
-    if (e.armour) rows.push([`${occupant(def).name} (armour)`, armourRow(def)]);
+    // And the second row, for the men who have anything to put in one.
+    if (e.traits.length) rows.push([`${occupant(def).name} (traits)`, e.traits]);
   }
   for (const d of Object.values(enemyTypes)) {
     const r = [['stat_health', d.hp], ['stat_damage', shownDamage(d)]];
     if (shownRange(d) !== null) r.push(['stat_range', shownRange(d)]);
     rows.push([d.name, r]);
-    // Every enemy shows both ranks — see armourRow in render.js for why `None` is
-    // printed rather than left blank.
-    rows.push([`${d.name} (armour)`, armourRow(d)]);
+    if (traitRow(d).length) rows.push([`${d.name} (traits)`, traitRow(d)]);
   }
   // NO REWARDS ROW HERE ANY MORE. The coin and the broken heart moved inside the
   // picture at the owner's word, and the card row they vacated is the armour's —
@@ -597,21 +609,11 @@ console.log('\nThe picture pop-up\n');
     return n;
   };
 
-  // EVERY POP-UP THE BOOK CAN OPEN, not just an ability's. Three pages carry prose
-  // now — an ability's rule, a man's armour and an enemy's — and the plate is sized
-  // to whichever of them is deepest, so a check that only knew about the abilities
-  // would be checking the wrong maximum the day a unit's description got longer.
-  //
-  // The enemy's is deepest by construction: it carries the same paragraphs as a
-  // man's AND the two leadings the bounty row costs — a blank line and the icons —
-  // which is exactly what `foot` adds in drawZoom.
-  const POP_FOOT = 2;
-  const detailed = [
-    ...ABILITIES.map(a => wrapLines(a.detail)),
-    ...shelf().map(({ def }) => wrapLines(unitEntry(def).detail)),
-    ...Object.values(enemyTypes).map(d => wrapLines(statLines(d)) + POP_FOOT)
-  ];
-  const maxLines = Math.max(...detailed);
+  // THE ABILITIES ARE THE ONLY PAGE WITH PROSE ON IT AGAIN. A man and an enemy each
+  // carried a paragraph about their armour for one build; the owner replaced both
+  // with the icons on their cards, so the deepest plate in the book is once more
+  // whichever ability has the most to say.
+  const maxLines = Math.max(...ABILITIES.map(a => wrapLines(a.detail)));
 
   // The whole thing has to sit on the board with air around it, at its BIGGEST,
   // which is a laptop at 1x.
@@ -641,26 +643,23 @@ console.log('\nThe picture pop-up\n');
   ok(ABILITIES.every(a => a.detail && a.detail.length > 80),
     'every ability has a description to open',
     ABILITIES.map(a => (a.detail || '').length).join('/') + ' chars');
-  ok(true, 'and the longest of them runs to',
-    `${maxLines} estimated lines, over every page`);
+  ok(true, 'and the longest of them runs to', `${maxLines} estimated lines`);
 
-  // THE PROSE BELONGS TO THE MEN AND THE ENEMIES, AND NOT TO THE TOWERS. The
-  // owner's call — "don't add description in towers, units having them will do" —
-  // and it is a real risk of drifting back, because both pop-ups are built from the
-  // same def by the same line in artAt. What keeps them apart is that towerEntry
-  // has no `detail` at all, so this checks the entry rather than the drawing.
-  const towered = shelf().filter(({ def, tiers }) => towerEntry(def, tiers).detail != null);
-  ok(towered.length === 0, 'a tower opens on its picture and says nothing',
-    towered.map(({ def }) => def.name).join(', ') || `${shelf().length} tiers, no prose`);
+  // NOTHING BUT AN ABILITY SAYS ANYTHING. The owner's call, in two steps: first the
+  // towers lost their description — "units having them will do" — and then the
+  // units and the enemies lost theirs too, for icons. This is a real risk of
+  // drifting back, because a tower's pop-up and a man's are built from the same def
+  // by the same line in artAt; what keeps them empty is that neither entry carries
+  // a `detail` at all, so this checks the entries rather than the drawing.
+  const worded = shelf().filter(({ def, tiers }) =>
+    towerEntry(def, tiers).detail != null || unitEntry(def).detail != null);
+  ok(worded.length === 0, 'no tower and no man opens with a paragraph',
+    worded.map(({ def }) => def.name).join(', ') || `${shelf().length} tiers and their men`);
 
-  const bare = shelf().filter(({ def }) => !(unitEntry(def).detail || '').length);
-  ok(bare.length === 0, 'and every man of them opens with what his armour is worth',
-    bare.map(({ def }) => occupant(def).name).join(', ') || `${shelf().length} men`);
-
-  // AND THE ENEMY'S REWARDS ROW FITS THE COLUMN IT MOVED INTO. It has a whole
-  // 340px line to itself where the card gave it 141 shared with nothing, so this
-  // has room to spare — which is the point of having moved it, and is worth
-  // measuring rather than assuming.
+  // AND THE ENEMY'S REWARDS ROW FITS THE PLATE IT MOVED INTO. It is centred under
+  // the portrait now that the paragraph beside it is gone, so what it has to fit is
+  // the picture plate's own width rather than a text column — but the text column
+  // is the narrower of the two and still the honest bound to check it against.
   const POP_STAT_H = 14;
   const rewards = Object.values(enemyTypes).map(d => {
     const size = POP_STAT_H - 2;

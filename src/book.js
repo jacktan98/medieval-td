@@ -32,7 +32,7 @@ import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
-import { occupant, shownRange, attackIcon, shownArmour, statLines } from './select.js';
+import { occupant, shownRange, attackIcon, traitRow } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 
 export const PAGES = 4;
@@ -118,13 +118,32 @@ export const FOOT_Y = INNER.b - FOOT_H;
 // The grid. Both card sizes are DERIVED from what is left inside the margins
 // rather than chosen, so the margins are the fixed thing and the cards give way —
 // which is the right way round when the complaint is about gaps.
-const TOP = INNER.y + 58;
+//
+// 57 AND NOT 58, and the odd pixel is doing work: with five rows and four gaps of
+// 4, the height between here and the footer's margin has to divide by five, and at
+// 58 it comes out 72.8. See the note on ROWS. Both numbers were arbitrary — this
+// one at least has a reason.
+const TOP = INNER.y + 57;
 
 // Exported for tools/book.mjs, which checks the GRID rather than the cards that
 // happen to be in it: the shelf no longer fills every cell — thirteen tiers in
 // twenty-four — so "the bottom card sits on the margin" has to be asked of the
 // last row that exists rather than of the last one used.
-export const ROWS = 6;
+// FIVE, AND IT WAS SIX. The sixth row was never filled: the longest ladder in the
+// game is archery's five rungs — four tiers with a fork at the top — and the other
+// three pages are shorter still, so the bottom row of the grid has been a strip of
+// blank parchment above the footer on every page of the book since it was built.
+//
+// The owner spent it: "since I won't be building a 5th family soon, take more space
+// in the pages so that the icons have more space to have their full resolution."
+// Five rows instead of six is 13 more pixels in every card, on all four pages at
+// once, which is where the bigger icons and the bigger drawings come from.
+//
+// WHAT A FIFTH FAMILY WOULD ACTUALLY HAVE COST is a fifth COLUMN, not this row —
+// the grid is one family per column — so nothing here is being borrowed against
+// that. What this does spend is the room for a SIXTH RUNG on a ladder. If a family
+// ever grows one, this goes back to 6 and every card gives the 13px back.
+export const ROWS = 5;
 export const COLUMNS = 4;
 
 // Where the grid starts across. The name is not `HALVES[0]` any more, and the
@@ -288,7 +307,26 @@ const FIGURE_SPAN = anchored(FIGURES);
 // the art gets the full 60px and the deepest building's stakes reach the card's
 // bottom edge exactly.
 const SLOT_H = CARD_H;
-export const TOWER_BOX = { x: 6, y: 0, w: 48, h: SLOT_H };
+
+// THE BUILDING SLOT'S WIDTH IS DERIVED NOW, and it was 48 typed in.
+//
+// A building is fitted by whichever of the two axes runs out first, and for as long
+// as the card was 60px tall that was the height — the 48 had slack in it and the
+// tallest tower filled its slot to within AIR top and bottom, which is what
+// tools/book.mjs asserts. Taking the grid to five rows made the card 73 tall, the
+// height stopped being the binding axis, and every building on the page stayed the
+// size the 48 allowed while the card grew around it: 6.8px of air where 4 was
+// wanted, and the check said so.
+//
+// So the width is now whatever makes the HEIGHT bind — the span's own aspect at the
+// height the slot has left after its air. Which is the same rule FIGURE_BOX below
+// has always used, and it means the next card-size change moves the buildings with
+// it instead of leaving them behind.
+export const TOWER_BOX = {
+  x: 6, y: 0,
+  w: Math.ceil(TOWER_SPAN.w * (SLOT_H - 2 * AIR) / TOWER_SPAN.h),
+  h: SLOT_H
+};
 export const FIGURE_BOX = { x: 6, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
 
 // ONE FACTOR FOR EVERY BUILDING, exactly as PORTRAIT_SCALE is one factor for
@@ -336,7 +374,12 @@ export function figureSlot(trim, pivot) {
 // the info box's own two-or-three rows: count the rows first, then place them. A
 // tower card has three and a unit card has two, and both sit in the middle of
 // the plate rather than one of them crowding the floor.
-export const ROW = 17;
+// 20, AND IT WAS 17. The pitch grew with the card: five rows of grid instead of
+// six put 13px into every plate, and a taller row is what turns that into a bigger
+// icon rather than into more blank parchment inside the card. Three rows of 20 in a
+// 73px card leave 6.5px of air top and bottom, which is the same proportion 17 left
+// in 60.
+export const ROW = 20;
 
 export function rowsIn(b, n) {
   const top = b.y + (b.h - n * ROW) / 2;
@@ -531,17 +574,18 @@ function artAt(state, x, y) {
   if (state.book === 2) {
     for (const c of enemyCards()) {
       if (within(cell(c), x, y)) {
-        // AND THE PROSE, which says what the two ranks on the card are worth.
-        //
         // AND WHAT KILLING HIM IS WORTH, which used to be the card's third row and
-        // is here now at the owner's word: "for enemies, move the bounty gold and
-        // live lost icon inside the description when they click the preview". That
-        // is the right trade twice over — the row it vacated is where the armour
-        // went, and a bounty is a REWARD rather than a stat, so it belongs at the
-        // foot of the explanation rather than lined up with the health it is not
-        // comparable to.
+        // is here at the owner's word: "for enemies, move the bounty gold and live
+        // lost icon inside the description when they click the preview". That is
+        // the right trade twice over — the row it vacated is where the armour went,
+        // and a bounty is a REWARD rather than a stat, so it does not belong lined
+        // up with the health it is not comparable to.
+        //
+        // AND IT IS ALL THAT IS LEFT IN HERE. The paragraph that used to sit beside
+        // the picture is gone with statLines — see the note where it was, in
+        // select.js — so this pop-up is now a portrait with two figures under it.
         return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name,
-                 kind: 'figure', detail: statLines(c.def),
+                 kind: 'figure',
                  stats: [['stat_gold_cost', c.def.bounty], ['stat_life_cost', c.def.leak]] };
       }
     }
@@ -553,10 +597,10 @@ function artAt(state, x, y) {
     const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
     return { sprite: e.sprite, trim: e.trim, title: e.title,
              kind: state.book === 0 ? 'tower' : 'figure',
-             // THE MAN'S PAGE CARRIES THE PROSE AND THE TOWER'S DOES NOT — see the
-             // note on statLines in select.js. `towerEntry` has no `detail` at all,
-             // so a tower opens on its picture alone, exactly as it did before
-             // armour landed.
+             // NOTHING BUT THE PICTURE, on either page. The tower's never had a
+             // description and the man's no longer does — see the note where
+             // statLines was, in select.js. `detail` stays in the shape because an
+             // ABILITY still carries one, and this is the same builder.
              detail: e.detail,
              // AND THE MACHINE ON TOP, for the two tiers that are two drawings.
              // The pop-up opened on the bare stone before this, which is not the
@@ -721,13 +765,15 @@ export function unitEntry(def) {
     // else with the sword, and a new magic tower needs nothing here. See
     // attackIcon in select.js.
     attack: attackIcon(def),
-    // HIS TWO RANKS OF PLATE, on a row of their own under health and attack — or
-    // null for the men who cannot be hurt, who get no health row either. See
-    // shownArmour in select.js for why those two questions have one answer.
-    armour: man.hp !== null ? shownArmour(def) : null,
-    // The prose the pop-up opens with, which is where the ranks stop being labels
-    // and become percentages. See statLines.
-    detail: statLines(def),
+    // HIS SECOND LINE: what he wears, what he breaks, and how wide his blast is.
+    // Empty for most of the page — an archer wears nothing and breaks nothing — and
+    // full for a Cannoneer, who breaks two ranks over 85. See traitRow in select.js.
+    //
+    // A LIST RATHER THAN NULL, because the card draws three rows either way: the
+    // owner asked for the `None` ranks to go WITHOUT the block sliding down to fill
+    // the space they left. So this says what is IN the row, not whether there is
+    // one.
+    traits: traitRow(def),
     // HOW FAR HE SHOOTS, which is his TOWER's reach: the man on the card is the
     // one standing on that deck, and a bow has no range of its own. Null for a
     // barracks man, who walks up to what he hits — see shownRange in select.js.
