@@ -3329,24 +3329,42 @@ function drawZoom(ctx, z) {
   // an ability is the last thing in the book with prose in it. See the note where
   // statLines was, in select.js.
   const lines = z.detail ? wrapped(ctx, z.detail, POP_TEXT_W) : null;
-  // AND A ROW OF ICONS UNDER EITHER SHAPE, for the two things an enemy is worth.
+
+  // AND THE STATS, IN THE COLUMN BESIDE THE PICTURE RATHER THAN UNDER IT. They sat
+  // under it for one build and the owner sent them round the side: "move the bounty
+  // gold and lives lost in the description beside the image — don't put it under
+  // the image."
   //
-  // UNDER THE PROSE it costs two leadings rather than one — a blank line above it,
-  // so the coin reads as a footer rather than as a fourth sentence. UNDER A PICTURE
-  // it costs one, because there is nothing above it to be mistaken for.
+  // Which is the better shape for what it is going to become. The description is
+  // the column, and it holds a list; two entries today, and the owner's own next
+  // sentence is "it is okay for the description to be just these 2 for now as I
+  // will add more soon". A footer under a portrait has nowhere to grow but down,
+  // into the plate's own bottom edge. A column has a whole side.
   //
-  // Counted into the height by the same rule everything else is, which is the point
-  // of doing it here: a plate sized for what is above this would draw it over its
-  // own bottom edge, which is exactly the bug the note above describes.
-  const foot = z.stats ? (lines ? 2 : 1) : 0;
-  // AS DEEP AS THE PROSE ACTUALLY IS, or as the picture, whichever is more. See
-  // the note above: this was a fixed ceiling, and text that overran it was drawn
-  // anyway, into a plate that had not made room for it.
-  const bodyH = lines
-    ? Math.max(slot.h, (lines.length + foot) * POP_LEAD)
-    : slot.h + foot * POP_LEAD;
-  const pw = lines
-    ? POP_PAD * 2 + slot.w + POP_GAP + POP_TEXT_W
+  // SO THE STATS ARE STACKED, one to a line, rather than run along a row. It is a
+  // list, and the next one added lands under the last instead of pushing the plate
+  // wider.
+  const stats = z.stats || null;
+  // AND THE COLUMN IS AS WIDE AS IT NEEDS TO BE, which is the other half of not
+  // being prose. A paragraph gets POP_TEXT_W because that is the measure a line of
+  // text reads at; two coins given the same 340px would sit in a plate two thirds
+  // empty. This is measured off the entries, with a floor so a one-digit bounty
+  // does not make a column narrower than the gap beside it.
+  const STAT_COL_MIN = 76;
+  const colW = lines ? POP_TEXT_W
+             : stats ? Math.max(STAT_COL_MIN, statsWidth(ctx, stats))
+             : 0;
+  // The picture's own column: the middle of the plate when it is alone, and the
+  // left of it when there is anything to its right.
+  const beside = colW > 0;
+
+  // AS DEEP AS THE PROSE ACTUALLY IS, or as the stats, or as the picture, whichever
+  // is most. See the note above: this was a fixed ceiling, and text that overran it
+  // was drawn anyway, into a plate that had not made room for it.
+  const bodyH = Math.max(slot.h,
+    (lines ? lines.length * POP_LEAD : 0) + (stats ? stats.length * POP_LEAD : 0));
+  const pw = beside
+    ? POP_PAD * 2 + slot.w + POP_GAP + colW
     : Math.max(slot.w + POP_PAD * 2, 240);
   const ph = POP_PAD * 2 + POP_TITLE + POP_GAP + bodyH;
   const px = 480 - pw / 2;
@@ -3370,18 +3388,13 @@ function drawZoom(ctx, z) {
   ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
 
   const bodyY = py + POP_PAD + POP_TITLE + POP_GAP;
-  // The picture's own column: the middle of the plate when it is alone, and the
-  // left of it when there is prose to its right.
-  const cx = lines ? px + POP_PAD + slot.w / 2 : 480;
+  const cx = beside ? px + POP_PAD + slot.w / 2 : 480;
 
   const img = z.sprite && art[z.sprite];
   if (img) {
     // Centred in the slot both ways, so a short wide tent and a tall thin turret
     // sit in the middle of the same frame instead of one of them hugging an edge.
-    // The footer's row, where there is one under a picture, is taken off the bottom
-    // first — otherwise the drawing centres itself against a body that includes the
-    // strip it is not allowed to sit in.
-    const top = bodyY + (bodyH - foot * POP_LEAD - h) / 2;
+    const top = bodyY + (bodyH - h) / 2;
 
     // ROUND PICTURES ARE CLIPPED, and only the ability buttons are round. The
     // artist draws them as a disc, and a disc shown in a square frame wants the
@@ -3407,13 +3420,30 @@ function drawZoom(ctx, z) {
     }
   }
 
-  // THE PICTURE ALONE, with its row of figures centred under it. This is where an
-  // enemy comes out now that his paragraph is gone: a portrait, and what killing
-  // him is worth.
-  if (!lines) {
-    if (foot) popStats(ctx, z.stats, cx, bodyY + bodyH - POP_LEAD / 2, 'center');
-    return;
+  if (!beside) return;
+  const tx = px + POP_PAD + slot.w + POP_GAP;
+
+  // THE STATS FIRST, because they are the top of the description rather than a
+  // footnote to it.
+  //
+  // THE BOOK'S OWN COST ICONS, not the dashboard's gold and lives. On an enemy the
+  // coin means a bounty you are PAID and the heart means damage to the keep — the
+  // opposite sense from the same two pictures at the top of the screen, where they
+  // are what you have. The broken heart carries that difference without a caption,
+  // and it is the same coin the tower cards charge you with.
+  //
+  // CENTRED against the picture when they are the whole column — two entries hung
+  // off the top of a 180px portrait read as having fallen to the ceiling — and hard
+  // against the top when prose follows, which is where a paragraph starts from.
+  let at = bodyY + (lines ? 0 : (bodyH - stats.length * POP_LEAD) / 2);
+  if (stats) {
+    stats.forEach(([key, value], i) =>
+      stat(ctx, key, tx, at + POP_LEAD * (i + 0.5), String(value),
+        POP_STAT_INK[key] || INK, POP_STAT_H));
+    at += stats.length * POP_LEAD;
   }
+
+  if (!lines) return;
 
   // The prose, top-aligned rather than centred against the picture: a block of
   // text hung off the middle of a disc drifts up and down as the text changes
@@ -3422,29 +3452,11 @@ function drawZoom(ctx, z) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
   ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
-  const tx = px + POP_PAD + slot.w + POP_GAP;
   lines.forEach((line, i) => {
-    if (line) ctx.fillText(line, tx, bodyY + POP_LEAD * (i + 0.5));
+    if (line) ctx.fillText(line, tx, at + POP_LEAD * (i + 0.5));
   });
-
-  if (!foot) return;
-
-  // THE BOOK'S OWN COST ICONS, not the dashboard's gold and lives. On an enemy the
-  // coin means a bounty you are PAID and the heart means damage to the keep — the
-  // opposite sense from the same two pictures at the top of the screen, where they
-  // are what you have. The broken heart carries that difference without a caption,
-  // and it is the same coin the tower cards charge you with.
-  //
-  // Drawn through the encyclopedia's own stat(), at the pop-up's type size rather
-  // than a card's, so the pair sits with the prose it is under instead of reading
-  // as a card that wandered inside the picture.
-  popStats(ctx, z.stats, tx, bodyY + POP_LEAD * (lines.length + 1.5), 'left');
 }
 
-// The pop-up's own stat row. Two callers — under a paragraph, hard against the left
-// of the text column, and under a picture, centred on it — which is why it measures
-// itself before it draws: there is no centring a row of icons you have not costed.
-//
 // THE INK COMES OFF THE ICON rather than travelling with the number, so book.js
 // hands over what a thing IS WORTH and this file decides what colour worth is — the
 // same split the cards already make. An icon nobody has given a colour to reads in
@@ -3453,21 +3465,14 @@ function drawZoom(ctx, z) {
 const POP_STAT_INK = { stat_gold_cost: INK_GREEN, stat_life_cost: INK_RED };
 const POP_STAT_H = POP_TEXT + 2;
 
-function popStats(ctx, pairs, x, y, align) {
-  // A shade wider than a card's own gap, because this row is set two sizes up and
-  // a gap that did not grow with the type would read as tighter than the card's.
-  // Read here rather than kept in a const beside POP_STAT_H: STAT_GAP is declared
-  // further down the file, and a module-level const cannot reach back for it.
-  const gap = STAT_GAP + 2;
-
+// How wide the widest of them sets, which is what the column is sized to when the
+// stats ARE the column. Measured rather than guessed for the reason every other
+// measurement in this file is: the plate is drawn from it, and a column costed at
+// anything but the truth is a plate with a number hanging out of it.
+function statsWidth(ctx, pairs) {
   ctx.font = `700 ${POP_STAT_H - 2}px system-ui, sans-serif`;
-  const width = pairs.reduce((w, [key, value], i) =>
-    w + (i ? gap : 0) + uiSize(key, { h: POP_STAT_H }).w + 4 +
-    ctx.measureText(String(value)).width, 0);
-
-  let at = align === 'center' ? x - width / 2 : x;
-  for (const [key, value] of pairs)
-    at = stat(ctx, key, at, y, String(value), POP_STAT_INK[key] || INK, POP_STAT_H) + gap;
+  return Math.max(...pairs.map(([key, value]) =>
+    uiSize(key, { h: POP_STAT_H }).w + 4 + ctx.measureText(String(value)).width));
 }
 
 // Break a paragraph into lines that fit `width`, measured in the font the caller

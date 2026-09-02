@@ -15,7 +15,7 @@ import { SCALE, BLOOD_SCALE, archery, barracks, siege, monastery } from '../src/
 // Sprite key -> file, so a frame is checked wherever the file actually lives.
 // The paths are URL-encoded for the browser; decode them to read from disk.
 import { paths as ASSET_URLS } from '../src/assets.js';
-import { ui, uiSize, PORTRAIT_SCALE, GLYPH_ART } from '../src/data/ui.js';
+import { ui, uiSize, PORTRAIT_SCALE, GLYPH_ART, MAX_SCALE } from '../src/data/ui.js';
 import { HUD_BTN, INFO_BOX } from '../src/render.js';
 
 // The three plates are sized by the renderer, not by data/ui.js — their widths
@@ -84,7 +84,7 @@ const opaque = img => {
   return solid / (img.w * img.h) >= 0.9;
 };
 
-const MAX_DPR = 3;     // MAX_SCALE in src/main.js
+const MAX_DPR = MAX_SCALE;   // the device-pixel ceiling, from src/data/ui.js
 
 const ASSET_PATHS = Object.fromEntries(
   Object.entries(ASSET_URLS).map(([k, v]) => [k, decodeURIComponent(v)])
@@ -412,4 +412,123 @@ if (soft) {
   );
 } else {
   console.log('\nEvery sprite has enough source pixels for a 3x display.');
+}
+
+// --- how heavy the ink is -------------------------------------------------------
+
+// EVERY STAT ICON IS DRAWN 14 TALL AND NONE OF THEM IS THE SAME WEIGHT, and until
+// this section nothing in the repository could say so.
+//
+// The set is nine drawings that sit in a row together — a heart, a sword, a wand, a
+// target, four shields and a burst — and the only thing they are guaranteed to
+// share is their drawn HEIGHT. What a reader actually sees is the black outline,
+// and that is the source stroke times the scale each file happens to be drawn at,
+// which is 14 divided by its own trim height. Two files with the same stroke and
+// different trim heights come out at different weights, and the thinner one reads
+// as blurred rather than as thin.
+//
+// The owner spotted both ends of it by eye — "armor black outline still does not
+// look too crisp but AOE black outline is thick" — and both ends were real:
+//
+//   the shields   10px of stroke on a 176-tall trim   0.80px on screen
+//   the burst     30px of stroke on a 104-tall trim   4.04px on screen
+//
+// Five times the weight, in a row where they sit side by side. So this measures it
+// after every upload rather than leaving it to somebody's eye.
+//
+// HOW THE STROKE IS MEASURED. On each scanline across the middle half of the
+// drawing, the run of dark opaque pixels starting at its left edge and the run
+// ending at its right — then the median of those runs. The median rather than the
+// mean because a starburst has spikes, and a spike is a long thin run of pure
+// outline that would drag an average up on its own.
+console.log('\nHow heavy the ink is\n');
+
+{
+  const DRAWN = 14;                    // BOOK_ICON_H, and INFO_ICON, in ui.js
+  const KEYS = Object.keys(ui).filter(k => k.startsWith('stat_') && ui[k].trim);
+
+  const strokeOf = (img, [tx, ty, tw, th]) => {
+    const { w, ch, px } = img;
+    const at = (x, y) => (y * w + x) * ch;
+    const solid = (x, y) => ch < 4 || px[at(x, y) + 3] > 128;
+    const dark = (x, y) => (px[at(x, y)] + px[at(x, y) + 1] + px[at(x, y) + 2]) / 3 < 70;
+    const runs = [];
+    for (let y = ty + (th >> 2); y <= ty + th - 1 - (th >> 2); y++) {
+      const on = [];
+      for (let x = tx; x < tx + tw; x++) if (solid(x, y)) on.push(x);
+      if (!on.length) continue;
+      for (const [from, step] of [[on[0], 1], [on[on.length - 1], -1]]) {
+        let n = 0, x = from;
+        while (x >= tx && x < tx + tw && solid(x, y) && dark(x, y)) { n++; x += step; }
+        if (n) runs.push(n);
+      }
+    }
+    runs.sort((a, b) => a - b);
+    return runs.length ? runs[runs.length >> 1] : 0;
+  };
+
+  const rows = KEYS.map(key => {
+    const file = ASSET_PATHS[key] || join('assets', 'ui', basename(ASSET_URLS[key]));
+    const img = decode(readFileSync(file));
+    const t = ui[key].trim;
+    const k = DRAWN / t[3];
+    return { key, t, k, stroke: strokeOf(img, t), ink: strokeOf(img, t) * k };
+  });
+
+  for (const r of rows)
+    console.log(`  ${r.key.padEnd(20)} ${String(r.t[2]).padStart(3)}x${String(r.t[3]).padEnd(4)}` +
+      ` at ${r.k.toFixed(4)}   ${String(r.stroke).padStart(2)}px of stroke` +
+      `   ${r.ink.toFixed(2)}px on screen`);
+
+  // THE FAMILY IS THE MEDIAN, and the allowance is generous on purpose: these are
+  // hand-drawn and a heart is not a shield. What is being caught is an icon that
+  // is not in the same set as the others, not one that is a little heavier.
+  const inks = rows.map(r => r.ink).sort((a, b) => a - b);
+  const mid = inks[inks.length >> 1];
+  const SPREAD = 2;
+
+  // AND ONE FILE IS KNOWN TO BE OUTSIDE IT. This list exists to be DELETED, not
+  // added to: the burst is drawn with a 30px stroke where the rest of the set uses
+  // 10 to 14, and on a 104-tall trim that lands at 4px on screen against the
+  // shields' 0.80.
+  //
+  // WHAT TO REDRAW IT TO is printed below, with every other file's number, rather
+  // than written here where it would go stale the first time the set moved. Take
+  // the exception out when the file lands and this check will hold it there.
+  const KNOWN = new Set(['stat_splash']);
+
+  const strays = rows.filter(r =>
+    !KNOWN.has(r.key) && (r.ink > mid * SPREAD || r.ink < mid / SPREAD));
+
+  if (strays.length) {
+    console.log(`\n${strays.length} stat icon(s) are not the same weight as the set:`);
+    for (const r of strays)
+      console.log(`  ${r.key} at ${r.ink.toFixed(2)}px, against the set's ${mid.toFixed(2)}px.` +
+        ` Redraw its outline at ${Math.round(mid / r.k)}px on the 512 canvas.`);
+    process.exitCode = 1;
+  } else {
+    console.log(`\nThe set reads at ${mid.toFixed(2)}px of outline, within ${SPREAD}x` +
+      `${KNOWN.size ? ` (${[...KNOWN].join(', ')} held out — see the note)` : ''}.`);
+  }
+
+  // AND WHAT IT WOULD TAKE TO LEVEL THE SET UP, which is a different question from
+  // the one above and not a failure. Passing means the icons belong to each other;
+  // it does not mean they are heavy enough. The whole set sits under 1.4px, and the
+  // owner's reading of the thinnest of them — "armor black outline still does not
+  // look too crisp" — is what a 0.79px line looks like: at the canvas floor that is
+  // a stroke a shade over one and a half real pixels, which no rasteriser can make
+  // black.
+  //
+  // THE SWORD AND THE WAND ARE THE HEAVIEST and they are the two that read best, so
+  // they are the target. Printed every run, so the numbers are there when somebody
+  // opens the files rather than in a conversation nobody can find.
+  // OFF THE ICONS THAT ARE IN THE SET, which is the whole point of excluding the
+  // held-out one: taking the max over everything would make the burst — the file
+  // that is wrong — the standard every other file is asked to match.
+  const target = Math.max(...rows.filter(r => !KNOWN.has(r.key)).map(r => r.ink));
+  const under = rows.filter(r => r.ink < target - 0.05)
+    .map(r => `${r.key} ${r.stroke}→${Math.round(target / r.k)}`);
+  if (under.length)
+    console.log(`To bring the set to ${target.toFixed(2)}px, on the 512 canvas:` +
+      `\n  ${under.join('\n  ')}`);
 }
