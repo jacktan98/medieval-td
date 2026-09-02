@@ -215,66 +215,70 @@ export const ui = {
   // corners on the grass. All four are transparent now, both measurements agree to
   // the pixel, and the clip stays as the guard that made the white version merely
   // wrong rather than visibly broken.
-  ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // `pale` MEANS DARK INK ON THIS BUTTON'S PRICE — see buttonPrice in render.js —
-  // and 8 of the 16 carry it. It started as a legibility rule and it is a
-  // CONSISTENCY rule now, which is worth writing down because the two disagree on
-  // two of the buttons.
+  // and it is on EXACTLY THE LIGHTER OF EACH TOWER'S PAIR, at the owner's ask:
+  // "for each tower, the lighter background uses dark colour for price and vice
+  // versa for the other ability with darker background colour."
   //
-  // THE LEGIBILITY HALF, and it is not a matter of taste. Measured plate colours:
+  // WHICH IS ONE RULE DOING TWO JOBS. Every price gets the ink that reads on the
+  // plate under it, AND a tower's two buttons are a contrast pair rather than two
+  // of the same — the light one dark-lettered, the dark one white-lettered. It
+  // replaces two earlier passes that each fixed one button at a time and left the
+  // set looking arbitrary.
   //
-  //   Holy Light          rgb(233,233,233)   233   dark
-  //   Divine Fortitude    rgb(233,233,233)   233   dark
-  //   Reinforced Tension  rgb(165,211,253)   205   dark   (both, to a pixel)
-  //   Inner Strength      rgb(255,170,54)    180   white  — orange carries white
-  //   Knife Throw         rgb(190,159,109)   162   white
-  //   Blinding Strike     rgb(150,150,150)   150   dark
-  //   Holy Wrath          rgb(150,150,150)   150   dark
-  //   Burst Fire          rgb(176,130,210)   146   white
-  //   Fiery Shot          rgb(176,130,210)   146   white
-  //   Slowed Pulse        rgb(216,102,1)     119   white
-  //   Sneak Attack        rgb(116,89,46)      92   white
-  //   Heavy Bolt          rgb(5,93,171)       80   DARK, and see below
-  //   Swift Reload (bow)  rgb(5,93,170)       80   DARK, and see below
-  //   Deadeye             rgb(98,0,171)       33   white
-  //   Swift Reload (gun)  rgb(97,0,170)       33   white
+  // IT ALSO FALLS OUT OF THE ORDERING. `abilities` on a tier lists the lighter
+  // disc first (see data/towers.js), so this is "the first is `pale`, the second
+  // is not" — and tools/abilities.mjs checks it against the MEASURED plate colour
+  // rather than against the order, so a re-export that flips a pair's lightness
+  // fails here rather than shipping a price nobody can read.
   //
-  // THE CONSISTENCY HALF, at the owner's ask: "change heavy bolt and swift reload
-  // for crossbow sentry to dark colour too so that it is organised". Every other
-  // tower's PAIR already shared one ink; those two were the only mixed pairs,
-  // because their light halves are the Reinforced Tensions. Both now read dark
-  // through the pair.
+  // WHAT IT COSTS, measured, as a WCAG contrast ratio of the ink against the plate.
+  // The rule picks the better ink on 14 of the 16:
   //
-  // IT COSTS THOSE TWO BUTTONS THEIR CONTRAST, and the number is here so nobody
-  // has to re-derive it: #3A3026 on rgb(5,93,171) is 1.9:1, against 6.6:1 for the
-  // white it replaced. The price is legible at arm's length and not from across a
-  // desk. It is the owner's call and it is one word per line to put back.
+  //   Reinforced Tension  rgb(165,211,253)  dark   8.2   (white would be 1.6)
+  //   Reinforced Tension  rgb(164,210,250)  dark   8.1   (white would be 1.6)
+  //   Holy Light          rgb(233,233,233)  dark  10.6   (white would be 1.2)
+  //   Divine Fortitude    rgb(233,233,233)  dark  10.6   (white would be 1.2)
+  //   Inner Strength      rgb(255,170,54)   dark   6.8   (white would be 1.9)
+  //   Knife Throw         rgb(190,159,109)  dark   5.1   (white would be 2.5)
+  //   Burst Fire          rgb(176,130,210)  dark   4.3   (white would be 3.0)
+  //   Fiery Shot          rgb(176,130,210)  dark   4.3   (white would be 3.0)
+  //   Deadeye             rgb(98,0,171)     white 10.0   (dark would be 1.3)
+  //   Swift Reload (gun)  rgb(97,0,170)     white 10.0   (dark would be 1.3)
+  //   Heavy Bolt          rgb(5,93,171)     white  6.7   (dark would be 1.9)
+  //   Swift Reload (bow)  rgb(5,93,170)     white  6.7   (dark would be 1.9)
+  //   Sneak Attack        rgb(116,89,46)    white  6.5   (dark would be 2.0)
+  //   Slowed Pulse        rgb(216,102,1)    white  3.6   (dark would be 3.6, a tie)
   //
-  // THE PALADIN KEEP'S TWO, and they take `pale` like the altar's for the same
-  // reason and at the owner's word: "the price in Paladin and pope abilities icon
-  // uses same dark colour but for others is white". Holy Light's disc measures
-  // rgb(233,233,233) and Blinding Strike's rgb(150,150,150) — the two lightest
-  // greys in the set — and white ink on either is unreadable. See buttonPrice in
-  // render.js. A property of the ARTWORK, so a re-export on a dark disc is one
-  // word to delete.
+  // AND THE TWO IT DOES NOT, which are the mid-greys — both the DARKER half of a
+  // pair whose other half is a near-white disc:
+  //
+  //   Blinding Strike     rgb(150,150,150)  white  3.0   (dark would be 4.4)
+  //   Holy Wrath          rgb(150,150,150)  white  3.0   (dark would be 4.4)
+  //
+  // 3.0 is the floor for text this size and they sit on it. They are white because
+  // the rule is about the PAIR: a keep whose two buttons both printed dark would
+  // not read as a light one and a dark one, which is the thing being organised.
+  //
   ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_blinding: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_blinding: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Ballista Turret's two, measured to the same disc as the four above.
   ability_ballista_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Crossbow Sentry's two, on the same terms: whole buttons on the artist's
   // own disc, measured to btn_plate's trim like every other ability face.
   ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Assassin Guild's two, measured to the same disc as every other face —
   // 163,163,186,186 again, which is now nine files in a row the artist has drawn
   // to the same circle without being asked twice.
-  ability_knife: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_knife: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_sneak: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // The Cannon Outpost's two, on the same disc as every other ability face.
   ability_cannon_swift: { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_fiery:        { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_fiery:        { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Judgement Temple's two, on the monastery's own ORANGE disc. Eleven files
   // in a row now measure to 163,163,186,186 — the artist draws every ability face
   // into the same circle, and that is worth saying out loud because it is the
@@ -282,7 +286,7 @@ export const ui = {
   // did. NOT `pale`: white price ink reads on this orange the way it reads on the
   // blue, and it is only the altar's white disc that swallowed it.
   ability_pulse:    { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
 
   // THE STATUS MARKS, and they are the first entries in this table that are drawn
   // on the BOARD rather than on the interface. They are here anyway, and that is
@@ -321,7 +325,7 @@ export const ui = {
   // which reads this and prints the ordinary dark ink instead — the same colour
   // every tier upgrade prints its price in. A property of the ARTWORK rather than
   // of the ability, so a re-export on a dark disc is one word to delete.
-  ability_wrath:     { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_wrath:     { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_fortitude: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // AND THE TWO BADGES, which are not buttons: they are drawn on the BOARD over
   // every tower an aura is working on. `h` rather than `fit`, because what has to

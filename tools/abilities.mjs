@@ -221,6 +221,30 @@ console.log('\nWhich of a pair is on top\n');
   ok(wrong.length === 0, 'every pair is listed lighter disc first', wrong.join('; ') ||
     `${owners.length} towers`);
 
+  // AND THE LIGHTER ONE PRINTS ITS PRICE IN DARK INK, the darker one in white.
+  // The owner's rule, and it is one rule doing two jobs: every price gets the ink
+  // that reads on the plate under it, and a tower's two buttons come out as a
+  // contrast pair rather than two of the same.
+  //
+  // ASKED OF THE MEASURED PLATE rather than of the list order, even though the two
+  // agree today. The order is a decision somebody typed; the lightness is a fact
+  // about the file. If a re-export ever flips a pair, this says which flag is now
+  // wrong instead of quietly agreeing with a stale order.
+  const inked = [];
+  for (const d of owners) {
+    const two = d.abilities.map(id => abilityById(id));
+    const lum = two.map(a => plate(a.icon));
+    const light = lum[0] >= lum[1] ? 0 : 1;
+    two.forEach((a, i) => {
+      const wantPale = i === light;
+      const isPale = !!(ui[a.icon] || {}).pale;
+      if (isPale !== wantPale)
+        inked.push(`${a.name} on ${lum[i].toFixed(0)} is ${isPale ? 'dark' : 'white'}, wanted ${wantPale ? 'dark' : 'white'}`);
+    });
+  }
+  ok(inked.length === 0, 'and the lighter takes the dark price, the darker white',
+    inked.join('; ') || `${owners.length * 2} buttons`);
+
   // AND THE BOOK AND THE MENU ARE THE SAME ORDER. The tier's `abilities` list is
   // what the ring draws and ABILITIES is what the page lays out, and nothing
   // makes them agree — so a swap made in one and not the other puts a tower's
