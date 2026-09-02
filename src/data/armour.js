@@ -91,10 +91,27 @@ export const typeOf = def => (def && def.damageType) || 'physical';
 // Every `pierce` in data/towers.js sits next to the `damageType` it belongs to.
 export const pierceOf = def => (def && def.pierce) || 0;
 
-// FOR THE CARD AND THE PANEL. A rank as the player reads it, which is title case
-// with `med` spelled out — "Med" is a stat block abbreviation and "Medium" is
-// English, and the encyclopedia is prose.
+// FOR PROSE. A rank as the player reads it in a sentence, which is title case with
+// `med` spelled out — "Med" is a stat block abbreviation and "Medium" is English,
+// and the pop-up's descriptions are English.
 export const RANK_NAME = { none: 'None', low: 'Low', med: 'Medium', high: 'High' };
+
+// AND FOR A STAT ROW, where it is a label beside an icon rather than a word in a
+// sentence, and where "Medium" does not fit.
+//
+// The description panel is the binding surface and the number is exact: its text
+// column is 118px wide once the portrait and the plate's own border are taken out,
+// and the armour row is two icons, two gaps and two words. At 700 10px system-ui
+// "Medium physical + None magic" sets at 122.0 — over the edge of the plate, and a
+// canvas clips nothing, so it would have drawn onto the parchment and off it.
+// "Med" brings the worst row to 106.3 and leaves 11.7px of air.
+//
+// THE OTHER THREE ARE THE SAME WORD IN BOTH TABLES, which is what makes the split
+// legible rather than arbitrary: only the one that does not fit is abbreviated, and
+// it is abbreviated everywhere a row prints it — the encyclopedia card has the room
+// to spell it out and deliberately does not, because a player comparing a swordsman
+// on the page against a giant on the board must be reading one word for one rank.
+export const RANK_SHORT = { none: 'None', low: 'Low', med: 'Med', high: 'High' };
 
 // And the damage kinds, for the same two surfaces.
 export const TYPE_NAME = { physical: 'Physical', magic: 'Magic', true: 'True' };

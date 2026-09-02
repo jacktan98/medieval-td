@@ -32,7 +32,7 @@ import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
-import { occupant, shownRange, attackIcon, statLines } from './select.js';
+import { occupant, shownRange, attackIcon, shownArmour, statLines } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 
 export const PAGES = 4;
@@ -531,11 +531,18 @@ function artAt(state, x, y) {
   if (state.book === 2) {
     for (const c of enemyCards()) {
       if (within(cell(c), x, y)) {
-        // AND THE PROSE. An enemy card shows health, attack and reach and has no
-        // room for a damage KIND or two armour ranks — so they open with the
-        // picture, which is the surface that has a column of room for them.
+        // AND THE PROSE, which says what the two ranks on the card are worth.
+        //
+        // AND WHAT KILLING HIM IS WORTH, which used to be the card's third row and
+        // is here now at the owner's word: "for enemies, move the bounty gold and
+        // live lost icon inside the description when they click the preview". That
+        // is the right trade twice over — the row it vacated is where the armour
+        // went, and a bounty is a REWARD rather than a stat, so it belongs at the
+        // foot of the explanation rather than lined up with the health it is not
+        // comparable to.
         return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name,
-                 kind: 'figure', detail: statLines(c.def) };
+                 kind: 'figure', detail: statLines(c.def),
+                 stats: [['stat_gold_cost', c.def.bounty], ['stat_life_cost', c.def.leak]] };
       }
     }
     return null;
@@ -546,9 +553,11 @@ function artAt(state, x, y) {
     const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
     return { sprite: e.sprite, trim: e.trim, title: e.title,
              kind: state.book === 0 ? 'tower' : 'figure',
-             // The unit page's entry already carries it; the tower page's is built
-             // from the same def, so both open with what the card had no room for.
-             detail: e.detail || statLines(def),
+             // THE MAN'S PAGE CARRIES THE PROSE AND THE TOWER'S DOES NOT — see the
+             // note on statLines in select.js. `towerEntry` has no `detail` at all,
+             // so a tower opens on its picture alone, exactly as it did before
+             // armour landed.
+             detail: e.detail,
              // AND THE MACHINE ON TOP, for the two tiers that are two drawings.
              // The pop-up opened on the bare stone before this, which is not the
              // tower — half of a Ballista Turret is the ballista, and the man
@@ -712,8 +721,12 @@ export function unitEntry(def) {
     // else with the sword, and a new magic tower needs nothing here. See
     // attackIcon in select.js.
     attack: attackIcon(def),
-    // The prose the pop-up opens with, which is where the armour and the damage
-    // kind live — there is no room for them on a card. See statLines.
+    // HIS TWO RANKS OF PLATE, on a row of their own under health and attack — or
+    // null for the men who cannot be hurt, who get no health row either. See
+    // shownArmour in select.js for why those two questions have one answer.
+    armour: man.hp !== null ? shownArmour(def) : null,
+    // The prose the pop-up opens with, which is where the ranks stop being labels
+    // and become percentages. See statLines.
     detail: statLines(def),
     // HOW FAR HE SHOOTS, which is his TOWER's reach: the man on the card is the
     // one standing on that deck, and a bow has no range of its own. Null for a

@@ -20,7 +20,7 @@
 
 import { SCALE } from './data/towers.js';
 import { boost, damageK, rangeOf, reachOf } from './towers.js';
-import { typeOf, pierceOf, RANK_NAME, TYPE_NAME } from './data/armour.js';
+import { typeOf, pierceOf, RANK_NAME, RANK_SHORT, TYPE_NAME } from './data/armour.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -104,19 +104,43 @@ export const shownDamage = def => def.listedDamage ?? def.damage;
 export const attackIcon = def =>
   typeOf(def.soldier || def) === 'magic' ? 'stat_damage_magic' : 'stat_damage';
 
-// THE SHORT DESCRIPTION THAT OPENS WHEN A CARD IS TAPPED, and it exists because
-// the card itself has no room — the owner's own reading: "add a short description
-// for the new stats for units and enemies when player click into it as I figure
-// there will be no space".
+// THE TWO ARMOUR RANKS AS A CARD PRINTS THEM — a pair of words, beside a pair of
+// icons, in the row under health and attack. The owner's own layout:
 //
-// A stat row is 3 icons wide and full. Armour is 2 more numbers and a damage KIND
-// is a third, and none of them is a quantity you can put beside a health bar — so
-// they are prose in the pop-up, where there is a whole column of room.
+//     Pikeman
+//     Health: 125,        Attack: 4
+//     Physical Armor: Low, Magic Armor: None
 //
-// WRITTEN AS SENTENCES rather than as a stat block, because the pop-up is the one
-// surface in this game that has space to say what a number MEANS. "Takes half of
-// what a physical attack does" is the thing a player actually needs; "Physical
-// armour: Medium" is the thing they would have to translate.
+// FOR ANYBODY WHO CAN BE HURT, and only for them. The call sites gate on `hp`,
+// which is the same test the health row already makes, and it is the right one:
+// armour is what stands between a figure and the thing shooting at it, so on an
+// archer up on his deck or a crewman behind his machine — neither of whom can be
+// reached at all — two ranks of plate would be two numbers that never matter.
+//
+// Missing armour reads as `none` rather than as a blank, because "no armour" is a
+// fact about a spearman and not an absence of information.
+// RANK_SHORT rather than RANK_NAME, and see the note beside it in data/armour.js:
+// "Medium" is 4px wider than the description panel has left for it.
+export function shownArmour(def) {
+  const man = def.soldier || def;
+  const a = man.armour || {};
+  return { physical: RANK_SHORT[a.physical || 'none'], magic: RANK_SHORT[a.magic || 'none'] };
+}
+
+// THE SHORT DESCRIPTION THAT OPENS WHEN A CARD IS TAPPED. It says what the ranks
+// beside the icons MEAN, which is the one thing the row itself cannot: "Low" is a
+// label, and "takes 75% of physical damage" is the number a player is actually
+// deciding with.
+//
+// SO THE CARD AND THE POP-UP ARE NOT THE SAME FACT TWICE. The card is the stat and
+// this is its consequence, the way an ability's button is its picture and its
+// `detail` is its rule.
+//
+// UNITS AND ENEMIES ONLY, at the owner's word — "don't add description in towers,
+// units having them will do". A tower's pop-up opens on the building, and the man
+// it musters has a card of his own on the next page carrying this same paragraph;
+// printing it under the tent as well would be the same sentence in two places, one
+// of them beside a picture of a roof.
 export function statLines(def) {
   const man = def.soldier || def;
   const out = [];
@@ -271,6 +295,15 @@ export function selectionInfo(state) {
       // The sword or the wand, off this tower's own kind — the panel is the one
       // place a player sees it while a fight is happening.
       attack: attackIcon(s.ref.def),
+      // NO ARMOUR ROW ON A TOWER, and it is the same reason there is no health row:
+      // a building cannot be hurt, and neither can the archer standing on it. The
+      // one tower whose man wears plate is a barracks, and that man is on the road
+      // — tapping HIM is the question armour answers.
+      //
+      // Which is what leaves the reach row where it has always been. The owner drew
+      // the line here: "remove range for units in description panels as there is no
+      // space, only leave the range for units in towers".
+      armour: null,
       // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
       // the targeting reads, so a tower that has bought Far Shot shows the
       // wider figure here rather than the one it was sold at. The book shows
@@ -324,16 +357,25 @@ export function selectionInfo(state) {
     hp: Math.max(0, Math.ceil(f.hp)),
     maxHp: Math.ceil(f.maxHp),
     damage: shownDamage(f.def),
-    // An archer thug's 200 and a plague doctor's 130 are the two numbers that
-    // explain why a tower is not answering them; everybody else on the road
-    // fights at arm's length and gets no row.
+    // THE SWORD OR THE WAND, off this figure's own kind. The panel had no `attack`
+    // at all until the armour row arrived, so it fell through to the sword for
+    // everybody — which was a wrong picture rather than a missing one, and the one
+    // figure it was wrong about is the plague doctor, whose whole point is that he
+    // is the magic on this board. The encyclopedia's enemy card has always shown
+    // his wand; the two surfaces disagreed.
+    attack: attackIcon(f.def),
+    // The two ranks, on the row where the reach used to be.
+    armour: shownArmour(f.def),
+    // AND NO REACH, which is what armour cost. The panel is 68px tall and holds a
+    // title over two stat rows at the most — see ROW_PITCH in render.js — so a
+    // third line was never available, and the owner chose which of the two goes in
+    // it: "remove range for units in description panels as there is no space".
     //
-    // AND AN ASSASSIN WHOSE GUILD HAS BOUGHT THE KNIFE, which is the one figure on
-    // the board whose reach is not a property of what he IS. It is on his tower,
-    // because that is where gold buys things — so the man on the road and the
-    // building that sent him print the same 100, and tapping either answers the
-    // question. `f.tower` is on every soldier and on nothing else, so an enemy
-    // takes the `shownRange` answer and is never asked the second question.
-    range: shownRange(f.def) ?? (f.tower ? reachOf(f.tower) : null)
+    // It is the right way round. An archer thug's 200 says why a tower is not
+    // answering him, which a player works out in about a second by watching; his
+    // armour says whether the tower they are about to build can hurt him at all,
+    // which nothing on the board shows. And the number is not lost — his card in
+    // the encyclopedia still prints it, on a page with room for three figures.
+    range: null
   };
 }
