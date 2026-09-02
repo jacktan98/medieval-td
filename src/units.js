@@ -8,6 +8,7 @@ import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
+import { taken, typeOf, pierceOf } from './data/armour.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -974,9 +975,16 @@ export function updateUnits(state, dt) {
         // magnitude here is a multiplier of the stat it changes, so it survives the
         // next retune of that stat. `damage` is still honoured for an ability that
         // really means an absolute number.
-        u.foe.hp -= (special
-          ? (special.times ? u.def.damage * special.times : special.damage)
-          : u.def.damage) * (sneak ? sneak.times : 1);
+        //
+        // AND THROUGH THE ENEMY'S ARMOUR, which is what makes an assassin's 20 and
+        // a paladin's 8 two different answers rather than the same answer at two
+        // speeds. The blow is the man's own kind, and his `pierce` with it — the
+        // assassin breaks a rank, which is what his knife is for.
+        u.foe.hp -= taken(
+          (special
+            ? (special.times ? u.def.damage * special.times : special.damage)
+            : u.def.damage) * (sneak ? sneak.times : 1),
+          typeOf(u.def), u.foe.def && u.foe.def.armour, pierceOf(u.def));
         // SPENT, whether or not anything was bought. The flag means "his next blow
         // is the one he lands on showing himself", and that is true of every man
         // here; the ability is what turns it into damage. Re-armed by hiding, and
@@ -1046,7 +1054,13 @@ export function updateUnits(state, dt) {
       if (u.holds) {
         u.foe.acd -= dt * slowOf(u.foe);
         if (u.foe.acd <= 0) {
-          u.hp -= u.foe.def.damage;
+          // AND THE OTHER WAY ROUND, through the SOLDIER'S armour — which is the
+          // half that pays for the paladin losing 100 health. At high physical he
+          // takes 25% of a thug's knife, so 175 in front of a physical enemy is
+          // worth 700 and 175 in front of a plague thug's magic flask is worth
+          // 233. He is a wall against one army and a man against the other.
+          u.hp -= taken(u.foe.def.damage, typeOf(u.foe.def),
+                        u.def && u.def.armour, pierceOf(u.foe.def));
           u.foe.acd = u.foe.def.atkCd;
           u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
           splat(state, u.x, u.y - u.def.r, u.y);

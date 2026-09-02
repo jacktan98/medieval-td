@@ -33,6 +33,7 @@
 // claim of its own shape that nothing above can ask. It still takes no part in the
 // three-column table.
 import { archery, barracks, monastery, siege } from '../src/data/towers.js';
+import { RANKS, TAKES } from '../src/data/armour.js';
 // Every ability and every enemy fires something too, and the speed order below is
 // about all of them rather than about the three ladders this file grew up on.
 import { ABILITIES } from '../src/data/abilities.js';
@@ -558,7 +559,20 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   const t4 = keep.soldier;
   const t3 = spine[spine.length - 1].soldier;
   const dps = m => (m.damage / m.cd) * m.count;
-  const wall = m => m.hp * m.count;
+
+  // A WALL IS HEALTH TIMES ARMOUR NOW, and that is the change armour made to this
+  // whole section rather than a refinement of it. `hp * count` was the wall while
+  // every blow in the game was the same blow; a paladin at 175 in HIGH plate takes
+  // a quarter of what a thug swings, so he is worth 700 in front of one and the
+  // raw figure says 175.
+  //
+  // AGAINST PHYSICAL, because that is what the army is: 3 of the 4 enemy types
+  // swing or shoot physical, and the fourth is the plague thug, who is the whole
+  // reason a wall of paladins is not an answer to everything. His magic flask is
+  // the number the LAST check in this block is about.
+  const soak = (m, kind = 'physical') =>
+    1 / TAKES[Math.max(0, RANKS.indexOf((m.armour && m.armour[kind]) || 'none'))];
+  const wall = m => m.hp * m.count * soak(m);
 
   const hpUp = wall(t4) / wall(t3) - 1;
   const dpsUp = dps(t4) / dps(t3) - 1;
@@ -573,26 +587,36 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   ok(wall(t4) > wall(t3) * 1.2, 'and is a much bigger wall on the one plot',
     `${wall(t4)} against ${wall(t3)}, +${((wall(t4) / wall(t3) - 1) * 100).toFixed(0)}%`);
 
-  // AND PER GOLD IT IS ALLOWED TO BE A LITTLE WORSE, which is a change of claim
-  // rather than a slackened one. It used to have to be a little BETTER, on the
-  // reasoning that a rung worse per gold than the one below would never be worth
-  // pressing — and at 300hp it was, by 4%. The owner took the paladin to 275 and
-  // that flips: 1.56 a gold against a swordsman's 1.64.
+  // AND PER GOLD IT MUST NOT BE BEHIND, which is ONE-SIDED and was not always.
   //
-  // The claim that survives is the honest one. Wall per gold is not what the
-  // button sells, or a player would buy a fourth Militia Camp instead of a Keep
-  // and be right; it sells wall per PLOT, a harder-hitting, faster, quicker-
-  // mustering man, and two abilities nothing below tier 4 can be taught. What it
-  // must not be is FAR behind — a rung that is half as efficient is a trap
-  // whatever else it carries — so the band is 10% either side of the rung below.
+  // It has been a band twice: "a little better" while the paladin had 300 health,
+  // then "within a tenth either way" when he came down to 275 and slipped 4%
+  // behind a swordsman. Armour ends the argument in the other direction — 175 in
+  // high plate is 700 against a physical enemy, so the Keep is now well AHEAD per
+  // gold — and the honest response is to drop the ceiling rather than to widen it.
+  //
+  // Being ahead per gold is not a failure mode. A rung that is far BEHIND is: it
+  // is a trap, whatever else it carries. That was always the worry the band was
+  // written for, and one side of it was only ever there because the number
+  // happened to sit close.
   //
   // What a rung costs is what the WHOLE PATH to it costs — every rung below plus
   // its own — which is why this walks the spine rather than slicing the array.
   const paid = d => spine.filter(s => s.tier < d.tier).reduce((sum, s) => sum + s.cost, 0) + d.cost;
   const per = d => wall(d.soldier) / paid(d);
   const gain = per(keep) / per(spine[2]) - 1;
-  ok(Math.abs(gain) < 0.10, 'and is within a tenth of it per gold, either way',
+  ok(gain > -0.10, 'and is not behind it per gold',
     `${per(keep).toFixed(2)} against ${per(spine[2]).toFixed(2)} per gold, ${gain >= 0 ? '+' : ''}${(gain * 100).toFixed(0)}%`);
+
+  // AND THE PLAGUE THUG IS WHY HE IS NOT AN ANSWER TO EVERYTHING. The same man,
+  // measured against the one enemy that throws MAGIC: low magic armour is 4/3
+  // rather than 4, so the wall he is worth collapses to a third of itself. That is
+  // the matchup the whole damage triangle exists to create, and it is worth a
+  // check because it is the one number a reader would not believe from the data.
+  const vsMagic = keep.soldier.hp * keep.soldier.count * soak(keep.soldier, 'magic');
+  ok(vsMagic < wall(keep.soldier) / 2,
+    'and is a third of that wall against the one enemy that throws magic',
+    `${wall(keep.soldier).toFixed(0)} against physical, ${vsMagic.toFixed(0)} against magic`);
 
   // Every rung of this ladder musters the same squad. The muster rings, the
   // formation and tools/formation.mjs are all drawn for three men, and a tier that
@@ -652,7 +676,16 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // last lot did. Not the least health in the family — a militiaman has 100 — but
   // the only STEP DOWN, which is the thing a ladder is not supposed to do and the
   // whole reason this fork is a decision rather than a purchase.
-  ok(g.hp < t3.hp && [...spine, keep].every((d, i, a) => i === 0 || d.soldier.hp > a[i - 1].soldier.hp),
+  //
+  // MEASURED THROUGH THE ARMOUR, since armour arrived. The assassin and the
+  // swordsman both carry 150 raw now, so the raw comparison stopped saying
+  // anything — what separates them is the plate: LOW against MED, which is 200 in
+  // front of a physical enemy against 300. The step down is still there and it is
+  // the armour that carries it.
+  const soakOf = m => 1 / TAKES[Math.max(0, RANKS.indexOf((m.armour && m.armour.physical) || 'none'))];
+  const alive = m => m.hp * soakOf(m);
+  ok(alive(g) < alive(t3) &&
+     [...spine, keep].every((d, i, a) => i === 0 || alive(d.soldier) > alive(a[i - 1].soldier)),
     'and is the one rung whose men come out weaker than the last',
     `${g.hp} against the Hall's ${t3.hp}`);
 
@@ -684,8 +717,16 @@ console.log('\nMonastery tier 4 — the other one, cadence instead of weight\n')
     'the Judgement Temple is the Altar\'s price on the Altar\'s rung',
     `${temple.cost}g, tier ${temple.tier}, both`);
 
-  ok(temple.range === altar.range,
-    'and reaches exactly as far, at the owner\'s ask',
+  // AND IT NOW REACHES FURTHER, which reverses this check rather than relaxing it.
+  //
+  // The two rungs shipped at the same 210 and the note here said so: same price,
+  // same rung, same reach, and the whole difference in the cadence. Armour changed
+  // what the pair is for. The altar breaks 2 ranks of magic armour and hits for 70;
+  // the temple breaks 1 and hits for 40, twice as often, from 30px further out.
+  // Reach is what pays the temple for the weaker blow now, so the assertion is that
+  // it reaches FURTHER — an equal 210 would be the old design silently restored.
+  ok(temple.range > altar.range,
+    'and reaches further, which is what pays for the lighter blast',
     `${temple.range} both`);
 
   // THE TRADE, and neither half of it is a straight upgrade — which is the whole

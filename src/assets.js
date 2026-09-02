@@ -556,7 +556,22 @@ export const paths = {
   plate_speed:     'assets/ui/Speed_Box.png',
   plate_wave:      'assets/ui/Next_Wave_Box.png',
   plate_info:      'assets/ui/Description_Box.png',
-  stat_damage:     'assets/ui/Damage_Icon.png',
+  // THE ATTACK ICONS, AND THERE ARE TWO OF THEM NOW. `Damage_Icon` became
+  // `Physical_Damage_Icon` when magic damage arrived — a sword is not "damage" any
+  // more, it is one of two kinds, and a file named for the general case would have
+  // to be the picture of both.
+  //
+  // WHICH ONE A CARD SHOWS is decided by the def's `damageType`, not by its family:
+  // see attackIcon in src/select.js. The monastery is the family that does magic
+  // today, and a barracks tower that hired a mage tomorrow would show the wand
+  // without a line changing here.
+  stat_damage:     'assets/ui/Physical_Damage_Icon.png',
+  stat_damage_magic: 'assets/ui/Magic_Damage_Icon.png',
+  // AND THE TWO ARMOURS. Same shield twice, in the two colours, because the two
+  // ranks are read side by side on a card and a player has to tell at a glance
+  // which of them a shot is up against.
+  stat_armour:       'assets/ui/Physical_Armor_Icon.png',
+  stat_armour_magic: 'assets/ui/Magic_Armor_Icon.png',
   // A heart of its own for the info box. It is NOT hud_life: the dashboard's
   // heart is the keep's lives and this one is a figure's health, and the artist
   // drew them as two files, so they are two keys.

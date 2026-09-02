@@ -139,6 +139,9 @@ export const enemyTypes = {
     deadTrim: [180, 217, 152, 78],
     deadPivot: [0.207, 0.901],
     hp: 80,
+    // A knife and no armour: the baseline both new axes are measured from.
+    damageType: 'physical',
+    armour: { physical: 'none', magic: 'none' },
     // Speed is the lever that makes blockers necessary. Fast enemies spend less
     // time inside a tower's range, so archery alone cannot kill them in transit
     // — but a soldier stops them dead, and blocking ignores speed entirely.
@@ -202,7 +205,9 @@ export const enemyTypes = {
     // doctor is lighter than a giant: everything he is worth is in the shooting,
     // and a body that also had to be chewed through would make him the thing a
     // wave is built around rather than the thing that makes a wave awkward.
-    hp: 110,
+    hp: 120,
+    damageType: 'physical',
+    armour: { physical: 'none', magic: 'none' },
     // Between the militia's 70 and the doctor's 60. He is not a wall and not a
     // straggler; he walks with the wave and starts working before it arrives.
     speed: 65,
@@ -358,7 +363,13 @@ export const enemyTypes = {
     // giant now beats one squad outright, where before it was the other way
     // round given long enough. What answers him is a tower rather than a wall,
     // which is the shape the change asks for.
-    hp: 1000,
+    hp: 800,
+    // MEDIUM PLATE, AND 200 FEWER HEALTH TO PAY FOR IT. Against a bow he is
+    // 800 / 0.5 = 1600 effective where he used to be a flat 1000, and against a
+    // monk's blast he is exactly the 800 on the tin — which is the whole point
+    // of him now. He is not a wall, he is a wall that a staff walks through.
+    damageType: 'physical',
+    armour: { physical: 'med', magic: 'none' },
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
@@ -473,6 +484,12 @@ export const enemyTypes = {
     // enemy whose whole job is to be difficult to reach, which is a fair amount
     // of both. The standoff is what makes him dangerous, not his health.
     hp: 150,
+    // THE MIRROR OF THE GIANT, and the reason the two of them are worth having
+    // on one road: his flask is MAGIC and his plate is magic too, so the
+    // monastery that answers the giant bounces off him and the bow that bounces
+    // off the giant kills him.
+    damageType: 'magic',
+    armour: { physical: 'none', magic: 'med' },
     // WHAT HE IS A COUNTER TO, because it is the opposite of what it looks like.
     //
     // He was added to punish a line of soldiers, and he does — from range, over

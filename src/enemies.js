@@ -10,6 +10,7 @@ import { solo, play, CUE, SHOT } from './audio.js';
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
 import { tick as tickStatus, slowOf } from './status.js';
+import { typeOf, pierceOf } from './data/armour.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -472,6 +473,11 @@ function loose(state, e, mark) {
     // tower's shot carries its own number. A flask does none: what it does is on
     // the ground it leaves, and `damage` on a poisoned shot is never read.
     damage: e.def.ranged.damage || 0,
+    // The thrower's own kind of blow, carried on the shot exactly as a tower's is
+    // — see shoot() in src/towers.js. It is what makes the plague thug's flask
+    // MAGIC and so the one enemy attack a paladin's plate does not turn.
+    type: typeOf(e.def),
+    pierce: pierceOf(e.def),
     splash: ammo.splash || 0,
     ammo,
     speed: ammo.speed,

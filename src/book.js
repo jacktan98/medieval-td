@@ -32,7 +32,7 @@ import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
 import { enemyTypes } from './data/waves.js';
 import { refundOf } from './menu.js';
-import { occupant, shownRange } from './select.js';
+import { occupant, shownRange, attackIcon, statLines } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 
 export const PAGES = 4;
@@ -531,7 +531,11 @@ function artAt(state, x, y) {
   if (state.book === 2) {
     for (const c of enemyCards()) {
       if (within(cell(c), x, y)) {
-        return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name, kind: 'figure' };
+        // AND THE PROSE. An enemy card shows health, attack and reach and has no
+        // room for a damage KIND or two armour ranks — so they open with the
+        // picture, which is the surface that has a column of room for them.
+        return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name,
+                 kind: 'figure', detail: statLines(c.def) };
       }
     }
     return null;
@@ -542,6 +546,9 @@ function artAt(state, x, y) {
     const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
     return { sprite: e.sprite, trim: e.trim, title: e.title,
              kind: state.book === 0 ? 'tower' : 'figure',
+             // The unit page's entry already carries it; the tower page's is built
+             // from the same def, so both open with what the card had no room for.
+             detail: e.detail || statLines(def),
              // AND THE MACHINE ON TOP, for the two tiers that are two drawings.
              // The pop-up opened on the bare stone before this, which is not the
              // tower — half of a Ballista Turret is the ballista, and the man
@@ -700,6 +707,14 @@ export function unitEntry(def) {
     art: figureSlot(man.trim, man.pivot),
     hp: man.hp,
     damage: man.damage,
+    // WHICH ATTACK ICON HE SHOWS — the sword or the wand. Off the def, so the
+    // three monastery tiers and the two monks come out with the wand and everyone
+    // else with the sword, and a new magic tower needs nothing here. See
+    // attackIcon in select.js.
+    attack: attackIcon(def),
+    // The prose the pop-up opens with, which is where the armour and the damage
+    // kind live — there is no room for them on a card. See statLines.
+    detail: statLines(def),
     // HOW FAR HE SHOOTS, which is his TOWER's reach: the man on the card is the
     // one standing on that deck, and a bow has no range of its own. Null for a
     // barracks man, who walks up to what he hits — see shownRange in select.js.

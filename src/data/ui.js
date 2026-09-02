@@ -373,6 +373,12 @@ export const ui = {
   // sized off the widest of the three rather than off any one of them.
   stat_range:   { trim: [172, 172, 168, 168], h: STAT_ICON_H },
   stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
+  // The wand and the two shields, all measured off the files like the three above.
+  // The shields are the SAME box to the pixel — [170, 167, 172, 178] — which is
+  // what says they are one drawing in two colours rather than two shields.
+  stat_damage_magic: { trim: [179, 179, 154, 154], h: STAT_ICON_H },
+  stat_armour:       { trim: [170, 167, 172, 178], h: STAT_ICON_H },
+  stat_armour_magic: { trim: [170, 167, 172, 178], h: STAT_ICON_H },
 
   // The encyclopedia's two costs: gold to build a tier, and lives when an enemy
   // gets past. They are drawn as a stack of coins and a BROKEN heart, which is

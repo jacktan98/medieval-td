@@ -19,10 +19,10 @@ Add `?debug` to the URL to hang the live game state on `window.__game`.
 
 ```
 index.html          the game
-src/                the rules and the drawing — 32 modules, no dependencies
+src/                the rules and the drawing — 33 modules, no dependencies
 src/data/           the numbers: towers, waves, abilities, statuses, the maps
 assets/             every drawing and every sound, one folder per KIND of thing
-tools/              26 checkers and measuring tools, Node only
+tools/              27 checkers and measuring tools, Node only
 birthday/           a separate mini-game, reached from the admin keypad
 ```
 
@@ -40,7 +40,7 @@ by a tool in `tools/`, and a tool checks it is still true. When the artist
 re-exports a sprite one pixel taller, the check fails and prints the new number
 rather than the game quietly drawing a man standing beside his own tower.
 
-That is why there are twenty-six tools for eighteen thousand lines of game.
+That is why there are twenty-seven tools for eighteen thousand lines of game.
 
 ## The tools
 
@@ -69,6 +69,7 @@ exit non-zero when something is wrong.
 | `plague` | the thug throws, the flask breaks, and the spill poisons |
 | `hud-clear` | no tower or badge is drawn into the HUD or off the board |
 | `status` | a status goes on, hurts, shows and comes off, for both armies |
+| `armour` | the damage triangle: what an attack is, what it meets, what is left |
 | `pair` | the two men on a tower that holds two take turns, and stand where they fit |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
@@ -76,12 +77,12 @@ exit non-zero when something is wrong.
 | `split-map` | pulls the build plots out of a map SVG |
 | `trace-road` | pulls the road out of a map SVG and writes the route |
 
-The first twenty-two are checks — run them after any change:
+The first twenty-three are checks — run them after any change:
 
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme pair; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair armour; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last four are not checks. `sim` and `sweep` answer balance questions and take
@@ -121,6 +122,7 @@ is the answer, not the rendering code.
 `src/data/towers.js` holds the four families and their twenty buildings;
 `src/data/waves.js` the army and the three maps' wave tables;
 `src/data/abilities.js` the sixteen things a tier 4 tower can be taught;
+`src/data/armour.js` the damage triangle and the four ranks of plate;
 `src/data/status.js` what can be happening to a figure; and
 `src/data/level01.js` … `level03.js` the three boards, whose roads and build
 plots were traced off the artwork rather than typed.

@@ -1,6 +1,7 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS, SCALE } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
+import { typeOf, pierceOf } from './data/armour.js';
 import { play, SHOT, ARCANE, MUSKET, DEADEYE, BOLT, CROSSBOW, CANNON } from './audio.js';
 
 // What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
@@ -915,6 +916,13 @@ function shoot(state, t, target, special) {
         : (special && special.damage) || t.def.damage)
       * damageK(t) * boost(state, 'damage', t.fam.id)
     ),
+    // WHAT KIND OF BLOW THIS IS, and how much armour it goes through, carried on
+    // the shot rather than looked up at the landing — by the time it lands the
+    // tower may have been sold. An ability's shot takes the TOWER'S kind, at the
+    // owner's word: "ability follow unit damage type". Nothing overrides it today
+    // and the line is here so that the day something does, it is one field.
+    type: (special && special.damageType) || typeOf(t.def),
+    pierce: (special && special.pierce != null) ? special.pierce : pierceOf(t.def),
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
     splash: t.def.splash || 0,

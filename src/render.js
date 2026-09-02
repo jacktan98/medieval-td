@@ -13,7 +13,7 @@ import { BTN_R, CANCEL_R, canUse } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
-import { selectionInfo, shownDamage, shownRange } from './select.js';
+import { selectionInfo, shownDamage, shownRange, attackIcon, statLines } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
          abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
@@ -2799,7 +2799,7 @@ function drawInfo(ctx, state) {
   }
 
   const ink = drawn ? INK : '#F0E6D2';
-  const dx = infoStat(ctx, 'stat_damage', tx, ty, String(info.damage), ink);
+  const dx = infoStat(ctx, info.attack || 'stat_damage', tx, ty, String(info.damage), ink);
 
   // AND HOW FAR, BESIDE THE ATTACK rather than under it. It had a line of its own
   // for one build; the owner asked for the pair to read as they do on an
@@ -3516,7 +3516,7 @@ function unitCard(ctx, b, e) {
   // shoot, that the third column had to be found for.
   let x = tx;
   if (e.hp !== null) x = stat(ctx, 'stat_health', x, r2, String(e.hp), INK) + STAT_GAP;
-  x = stat(ctx, 'stat_damage', x, r2, String(e.damage), INK) + STAT_GAP;
+  x = stat(ctx, e.attack || 'stat_damage', x, r2, String(e.damage), INK) + STAT_GAP;
   if (e.range !== null) stat(ctx, 'stat_range', x, r2, String(e.range), INK);
 }
 
@@ -3565,7 +3565,7 @@ function drawEnemyPage(ctx) {
     // and everything else on the page, and a player who cannot see the number
     // learns it by watching a tower fail to answer.
     let sx = stat(ctx, 'stat_health', tx, r2, String(d.hp), INK) + STAT_GAP;
-    sx = stat(ctx, 'stat_damage', sx, r2, String(shownDamage(d)), INK) + STAT_GAP;
+    sx = stat(ctx, attackIcon(d), sx, r2, String(shownDamage(d)), INK) + STAT_GAP;
     if (shownRange(d) !== null) stat(ctx, 'stat_range', sx, r2, String(shownRange(d)), INK);
 
     // THE BOOK'S OWN COST ICONS, not the dashboard's gold and lives. On an enemy

@@ -215,7 +215,14 @@ export const fieryBall = {
   // enemy in it burns. Against a packed rank that is the biggest single thing this
   // tower does; against one straggler it is 50.
   burn: {
-    dps: 10,
+    // 5 A SECOND, HALVED, and the reason is the damage triangle rather than the
+    // fire. A burn is TRUE damage — see data/armour.js — so it is the only thing
+    // the Cannon Outpost does that no armour in the game turns aside, and 10 a
+    // second through plate was worth more than the ball that started it. At 5 it
+    // is 25 over the five seconds against a target that takes 25% of the ball's
+    // 65: 16 from the hit and 25 from the fire, which is the right way round for
+    // an ability whose whole point is that it keeps working.
+    dps: 5,
     seconds: 5,
     // AND IT BURNS WIDER THAN IT BREAKS, at the owner's ask: half again the
     // outpost's own blast, so 85px of damage inside 127.5px of fire.
@@ -472,7 +479,7 @@ export const ABILITIES = [
     of: 'Crossbow Sentry',
     icon: 'ability_swift',
     cost: ABILITY_COST,
-    reloadTimes: 1.35,
+    reloadTimes: 1.5,
 
     detail: 'The crossbowman works a windlass instead of a belt hook and reloads ' +
             '1.35x faster — a quarrel every 0.59 seconds instead of every 0.8, ' +

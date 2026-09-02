@@ -3,6 +3,7 @@ import { impact } from './impacts.js';
 import { inRange } from './ground.js';
 import { play, LAND, BREAK, KNIFE } from './audio.js';
 import { apply as applyStatus } from './status.js';
+import { taken } from './data/armour.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -208,7 +209,7 @@ function land(state, s) {
   if (s.ammo.poison && s.damage > 0) {
     const mark = s.target;
     if (mark && mark.hp > 0 && mark.respawn <= 0 && inRange(s.x, s.y, mark.x, mark.y, s.splash)) {
-      mark.hp -= s.damage;
+      mark.hp -= taken(s.damage, s.type, mark.def && mark.def.armour, s.pierce);
       splat(state, mark.x, mark.y - (mark.def.r || 0), mark.y);
       mark.struckFrom = s.fromX >= mark.x ? 1 : -1;
       mark.killedBy = s.ammo.kind;
@@ -281,7 +282,10 @@ function hit(state, s, v) {
   if (s.ammo.poison) {
     applyStatus(v, 'poisoned', s.ammo.poison.dps, s.ammo.poison.seconds, s.ammo.kind);
   } else {
-    v.hp -= s.damage;
+    // THROUGH THE ARMOUR, and this is the one line that makes twenty towers
+    // differentiate. `s.damage` is what the tower hits FOR — the number on its
+    // card — and this is what the man in front of it actually loses.
+    v.hp -= taken(s.damage, s.type, v.def && v.def.armour, s.pierce);
     // On the man, not on the projectile. An arrow is inside its target by the
     // time it lands so the two are the same point, but a rock has a patch of
     // victims and blood belongs on each of them rather than in a heap at the

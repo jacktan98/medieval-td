@@ -20,6 +20,7 @@
 
 import { SCALE } from './data/towers.js';
 import { boost, damageK, rangeOf, reachOf } from './towers.js';
+import { typeOf, pierceOf, RANK_NAME, TYPE_NAME } from './data/armour.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -93,6 +94,59 @@ export function validate(state) {
 // what the UI should say about a thing, and the book and the info box must not
 // answer it differently.
 export const shownDamage = def => def.listedDamage ?? def.damage;
+
+// WHICH ATTACK ICON A CARD SHOWS — the sword or the wand — off the def's own
+// `damageType` rather than off its family. A barracks reads its SOLDIER'S kind,
+// because a barracks does no damage itself and the man is what swings.
+//
+// One line, and it is the whole of the wiring the owner asked for: "ensure units
+// that use magic use the magic attack icon".
+export const attackIcon = def =>
+  typeOf(def.soldier || def) === 'magic' ? 'stat_damage_magic' : 'stat_damage';
+
+// THE SHORT DESCRIPTION THAT OPENS WHEN A CARD IS TAPPED, and it exists because
+// the card itself has no room — the owner's own reading: "add a short description
+// for the new stats for units and enemies when player click into it as I figure
+// there will be no space".
+//
+// A stat row is 3 icons wide and full. Armour is 2 more numbers and a damage KIND
+// is a third, and none of them is a quantity you can put beside a health bar — so
+// they are prose in the pop-up, where there is a whole column of room.
+//
+// WRITTEN AS SENTENCES rather than as a stat block, because the pop-up is the one
+// surface in this game that has space to say what a number MEANS. "Takes half of
+// what a physical attack does" is the thing a player actually needs; "Physical
+// armour: Medium" is the thing they would have to translate.
+export function statLines(def) {
+  const man = def.soldier || def;
+  const out = [];
+  const kind = TYPE_NAME[typeOf(man)].toLowerCase();
+  const pierce = pierceOf(man);
+
+  out.push(pierce
+    ? `Deals ${kind} damage, and breaks ${pierce} rank${pierce > 1 ? 's' : ''} of ` +
+      `${kind} armour: what it hits is struck as though it wore ${pierce} rank` +
+      `${pierce > 1 ? 's' : ''} less.`
+    : `Deals ${kind} damage.`);
+
+  const a = man.armour;
+  if (a) {
+    // TAKES rather than reduces, which is the direction the player is reading in:
+    // they are looking at a thing that is about to be shot at, not at a formula.
+    const say = (which, rank) => rank === 'none'
+      ? `No ${which} armour — takes ${which} damage in full.`
+      : `${RANK_NAME[rank]} ${which} armour — takes ` +
+        `${{ low: '75%', med: '50%', high: '25%' }[rank]} of ${which} damage.`;
+    // ONE PARAGRAPH FOR THE PAIR. They are read together — "what gets through
+    // this man" is one question with two halves — and two paragraphs would put a
+    // blank line between them in a pop-up that has three at most.
+    out.push(`${say('physical', a.physical || 'none')} ${say('magic', a.magic || 'none')}`);
+  }
+  // A STRING, because that is what the pop-up's `detail` is everywhere else: an
+  // ability's card carries one and wrapped() in render.js splits it on blank
+  // lines. Two shapes for one field would be two code paths in the renderer.
+  return out.join('\n\n');
+}
 
 // HOW FAR A CARD SAYS SOMETHING REACHES, or null for anything that fights at
 // arm's length. The three kinds keep their reach in three different places and
@@ -214,6 +268,9 @@ export function selectionInfo(state) {
       // first and the aura onto the result would print 55 too here and 54 or 56
       // somewhere else the day either number moves.
       damage: Math.round(man.damage * k),
+      // The sword or the wand, off this tower's own kind — the panel is the one
+      // place a player sees it while a fight is happening.
+      attack: attackIcon(s.ref.def),
       // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
       // the targeting reads, so a tower that has bought Far Shot shows the
       // wider figure here rather than the one it was sold at. The book shows

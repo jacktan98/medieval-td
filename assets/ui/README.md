@@ -28,7 +28,10 @@ usable button rather than a blank disc.
 | `Speed_Box.png`          | the 1x plate      | 54 x 24      |
 | `Next_Wave_Box.png`      | the wave plate    | 127 x 24     |
 | `Description_Box.png`    | the info panel    | 220 x 76     |
-| `Damage_Icon.png`        | the word "Damage" | 16 tall      |
+| `Physical_Damage_Icon.png` | a physical attack | 16 tall    |
+| `Magic_Damage_Icon.png`  | a magic attack    | 16 tall      |
+| `Physical_Armor_Icon.png`| physical armour   | 16 tall      |
+| `Magic_Armor_Icon.png`   | magic armour      | 16 tall      |
 | `Health_Icon.png`        | the word "Health" | 16 tall      |
 | `Gold_Cost_Icon.png`     | a tier's price, and an enemy's bounty | 14 tall |
 | `Life_Cost_Icon.png`     | lives an enemy costs if it gets past | 14 tall |
@@ -107,6 +110,16 @@ mark drawn on top of `Button_Plate_Icon.png`, and an ability button arrives as
 the whole button, disc included, and is drawn instead of the plate. Read
 `assets/abilities/README.md` before drawing one — it carries the size the disc
 has to trim to.
+
+**Four stat icons where there were two.** The old damage icon became
+`Physical_Damage_Icon.png` when magic damage arrived: a sword is not "damage" any
+more, it is one of two kinds, and a file named for the general case would have to
+be the picture of both. Which of the two a card shows is decided by the def's
+`damageType` in `src/data/towers.js`, so a new magic tower needs no wiring here.
+
+The two ARMOUR shields are one drawing in two colours — they measure to the same
+`[170, 167, 172, 178]` to the pixel — and they are read side by side, so the
+colour is the only thing telling a player which rank a shot is up against.
 
 The altar's two BADGES stayed, and they are the two rows at the foot of the
 table above. They are not buttons: they are marks hung over every tower an aura

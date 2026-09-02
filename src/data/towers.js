@@ -1344,9 +1344,9 @@ export const AIM_MODES = [
 // see the whole board is a tower whose choice of target is the only thing left to
 // decide, and 60 damage into an 80-health militiaman is most of a reload wasted.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 60,  damage: 8,  range: 190, cooldown: 1.00, colour: '#9C7248', targeting: true },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 14, range: 210, cooldown: 0.90, colour: '#7A5230', targeting: true },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 26, range: 230, cooldown: 0.80, colour: '#B8B2A4', targeting: true },
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 60,  damage: 10, range: 200, damageType: 'physical', cooldown: 1.00, colour: '#9C7248', targeting: true },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 220, damageType: 'physical', cooldown: 0.90, colour: '#7A5230', targeting: true },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 240, damageType: 'physical', cooldown: 0.80, colour: '#B8B2A4', targeting: true },
   // THE LADDER'S FIRST FORK, and the first of its two fourth rungs. A Crossbow
   // Tower can become either of these two, which is why `tier` rather than array
   // index is what decides what follows what — see upgradesFrom below.
@@ -1375,7 +1375,7 @@ export const archery = [
   // the upgrade buys is the blow and the reach. The two of them are still the
   // quickest things in the game.
   { ...sentry, ...crossbowman, tier: 4, name: 'Crossbow Sentry', title: 'Crossbow Sentry',
-    unit: 'Crossbowman', cost: 200, damage: 30, range: 260, cooldown: 0.80,
+    unit: 'Crossbowman', cost: 200, damage: 35, range: 260, cooldown: 0.80, damageType: 'physical',
     colour: '#A8A29A', targeting: true,
     // Its own picture on the upgrade button, like the Musketeer Post's — with two
     // of them on the ring, a generic arrow on both would be a coin toss.
@@ -1397,7 +1397,8 @@ export const archery = [
   // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
   // and the column they sit in is what names the family.
   { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
-    cost: 200, damage: 65, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    cost: 200, damage: 60, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    damageType: 'physical', pierce: 1,
     // The upgrade button's picture when this is what the button buys. Every other
     // tier uses the generic arrow; this one has an icon of its own, so the tap
     // that turns a Crossbow Tower into a Musketeer Post shows what it is buying.
@@ -1752,15 +1753,18 @@ const assassin = {
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
-    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8' }
+    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8',
+               damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
     ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
-    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 125, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4' }
+    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 125, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4',
+               damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
   },
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
-    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 175, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE' }
+    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE',
+               damageType: 'physical', armour: { physical: 'med', magic: 'none' } }
   },
   // TIER 4 IS A FIRST GUESS, exactly as the Musketeer Post's numbers are, and it is
   // written down as one: the artist asked for a blocker at 210 gold with 300 health
@@ -1803,7 +1807,8 @@ export const barracks = [
     // squad is replaced every time one of them falls. A paladin who died would
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'blinding'],
-    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 275, damage: 7, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0' }
+    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 175, damage: 8, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0',
+               damageType: 'physical', armour: { physical: 'high', magic: 'low' } }
   },
   // THE OTHER FOURTH RUNG, and the barracks' first fork. A Knight's Hall buys
   // either of these two — see upgradesFrom in this file for why the choice is
@@ -1836,7 +1841,8 @@ export const barracks = [
     // heavier blow on the strike that comes out of nowhere. Both are read in
     // src/units.js, which is where the men are, rather than in src/towers.js.
     abilities: ['knife', 'sneak'],
-    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 20, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43' }
+    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 20, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43',
+              damageType: 'physical', pierce: 1, armour: { physical: 'low', magic: 'none' } }
   }
 ];
 
@@ -2435,11 +2441,14 @@ const cannon = {
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
   { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
-    cost: 90,  damage: 18, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A' },
+    cost: 90,  damage: 18, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A',
+    damageType: 'physical', pierce: 1 },
   { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
-    cost: 120, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042' },
+    cost: 120, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042',
+    damageType: 'physical', pierce: 1 },
   { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
-    cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56' },
+    cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56',
+    damageType: 'physical', pierce: 1 },
   // TIER 4, and it is the opposite tower to the three below it in every way that
   // matters. They are siege engines that lob: enormous reach, a hole in the
   // middle they cannot defend, a wide splash and a slow, heavy rhythm. This one
@@ -2519,6 +2528,7 @@ export const siege = [
   // has no artillery reading at all.
   { ...ballista, tier: 4, name: 'Ballista Turret', title: 'Ballista Turret', unit: 'Ballista Engineer',
     cost: 230, damage: 55, splash: 70, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
+    damageType: 'physical', pierce: 1,
     // The upgrade button's own picture on a Trebuchet, the third tier 4 to bring
     // one — see the note on the Musketeer Post's `glyph`.
     glyph: 'ballista',
@@ -2600,7 +2610,8 @@ export const siege = [
   // No abilities yet, exactly as the Assassin Guild shipped without them. The
   // field is simply absent, which the menu already reads as "nothing to teach".
   { ...cannon, tier: 4, name: 'Cannon Outpost', title: 'Cannon Outpost', unit: 'Cannoneer',
-    cost: 230, damage: 70, splash: 85, range: 360, minRange: 0, cooldown: CYCLE, colour: '#A8A29A',
+    cost: 230, damage: 65, splash: 85, range: 360, minRange: 0, cooldown: CYCLE, colour: '#A8A29A',
+    damageType: 'physical', pierce: 2,
     // Its own picture on the upgrade button. With two of them on the ring neither
     // can wear the generic arrow — the same reason both barracks and both archery
     // fourth rungs name theirs.
@@ -3283,11 +3294,11 @@ const pope = {
 
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 20, range: 150, cooldown: 1.82, colour: '#8C7A5C', targeting: true },
+    cost: 80,  damage: 20, range: 150, cooldown: 1.82, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 110, damage: 30, range: 165, cooldown: 1.64, colour: '#7E6E52', targeting: true },
+    cost: 110, damage: 30, range: 165, cooldown: 1.64, colour: '#7E6E52', targeting: true, damageType: 'magic' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 160, damage: 50, range: 180, cooldown: 1.45, colour: '#9A948A', targeting: true },
+    cost: 160, damage: 50, range: 180, cooldown: 1.45, colour: '#9A948A', targeting: true, damageType: 'magic' },
   // TIER 4, AND THE ONE TOP RUNG THAT IS NOT A TRADE.
   //
   // The other three tier 4 towers each give something up for what they gain — the
@@ -3334,7 +3345,8 @@ export const monastery = [
   // check that the family still reads the way the design says, and tools/sim.mjs
   // is the check that no family clears a map alone at the top of its ladder.
   { ...altar, ...pope, tier: 4, name: 'High Altar', title: 'High Altar', unit: 'Pope',
-    cost: 220, damage: 75, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
+    cost: 220, damage: 70, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
+    damageType: 'magic', pierce: 2,
     // The upgrade button's own picture on an Abbey, and the fourth of four — every
     // family's top rung now shows what it buys rather than a plain arrow. See the
     // note on the Musketeer Post's `glyph`.
@@ -3387,8 +3399,8 @@ export const monastery = [
   // FIRST GUESS ALL THE SAME, on the owner's own terms — the sweep comes after he
   // has played it, the way the ballista's and the cannon's did.
   { ...judgement, ...monk, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple',
-    unit: 'Monk', cost: 220, damage: 40, range: 210, cooldown: 1.00,
-    colour: '#A8A096', targeting: true,
+    unit: 'Monk', cost: 220, damage: 40, range: 240, cooldown: 1.00,
+    colour: '#A8A096', targeting: true, damageType: 'magic', pierce: 1,
     // The upgrade button's own picture on an Abbey, beside the altar's — the
     // monastery is the last family to offer two, so this is the eighth and final
     // tier 4 glyph. See the note on the Musketeer Post's.
