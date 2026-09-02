@@ -372,18 +372,25 @@ function statusMarks(ctx, v, x, barTop) {
   const show = STATUS_ORDER.filter(id => v.statuses.some(s => s.id === id));
   if (!show.length) return;
 
-  // Each mark keeps its own aspect, so a tall flame and a squat droplet are both
-  // STATUS_H high and as wide as their drawings make them — the same rule every
-  // icon in data/ui.js is drawn by.
+  // EACH MARK IS SIZED BY ITS OWN ENTRY IN data/ui.js, which is the same rule
+  // every other icon in the game is drawn by, and it stopped being a formality
+  // when the slowed chevrons arrived. The flame and the droplets are TALLER than
+  // they are wide and take `h: STATUS_H`; the chevrons are WIDER than they are
+  // tall and take `fit: STATUS_H`, because a wide mark drawn to a common height
+  // comes out half again the width of its neighbours and blown up past what its
+  // source pixels can carry. Both answers come out of uiSize, so this asks rather
+  // than working it out — the arithmetic here computed the height version only,
+  // which is how it would have quietly overridden the entry.
   const marks = show.map(id => {
     const key = STATUS[id].icon;
-    const t = ui[key] && ui[key].trim;
-    return { key, w: t ? (t[2] / t[3]) * STATUS_H : STATUS_H };
+    return { key, ...(ui[key] ? uiSize(key) : { w: STATUS_H, h: STATUS_H }) };
   });
 
   const gap = 1;
   const wide = marks.reduce((a, m) => a + m.w, 0) + gap * (marks.length - 1);
-  const y = barTop - STATUS_GAP - STATUS_H;
+  // ON ONE BASELINE, just above the bar, rather than hanging from one ceiling.
+  // Marks are different heights now, and a short one aligned at the top would
+  // float with a gap under it where the tall ones sit on the bar.
 
   // NOTHING BEHIND THEM, and the mark is legible anyway — because the OUTLINE is
   // in the drawing now.
@@ -408,7 +415,7 @@ function statusMarks(ctx, v, x, barTop) {
     // Through drawUi like every other piece of art, so a missing file is a
     // missing mark rather than a crash — and so the trim comes from the one place
     // trims are written down.
-    drawUi(ctx, m.key, at, y, { h: STATUS_H }, ZERO);
+    drawUi(ctx, m.key, at, barTop - STATUS_GAP - m.h, undefined, ZERO);
     at += m.w + gap;
   }
 }

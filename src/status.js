@@ -38,12 +38,22 @@ import { STATUS } from './data/status.js';
 // The refresh takes the NEW magnitude as well as the new clock, so a fiercer
 // source overwrites a weaker one rather than being ignored for as long as the
 // weaker one happens to have left.
-export function apply(v, id, dps, seconds, by) {
-  if (!STATUS[id]) return;                 // a typo is silence, so make it nothing
+//
+// `mag` IS WHATEVER THAT STATUS'S MAGNITUDE IS, and the status decides which. A
+// burn's is `dps`, damage a second; a slow's is `slow`, the multiplier on how fast
+// the figure does everything. Asked of `hurts` rather than of the id, so the next
+// row that does not hurt gets the same treatment without a line here — and so the
+// two kinds of number can never be read as each other. A slow written into `dps`
+// would be three quarters of a point of damage a second, which is a bug that
+// would take a wave to notice.
+export function apply(v, id, mag, seconds, by) {
+  const def = STATUS[id];
+  if (!def) return;                        // a typo is silence, so make it nothing
+  const key = def.hurts ? 'dps' : 'slow';
   const had = v.statuses && v.statuses.find(s => s.id === id);
-  if (had) { had.dps = dps; had.left = seconds; had.by = by; return; }
+  if (had) { had[key] = mag; had.left = seconds; had.by = by; return; }
   if (!v.statuses) v.statuses = [];
-  v.statuses.push({ id, dps, left: seconds, by });
+  v.statuses.push({ id, [key]: mag, left: seconds, by });
 }
 
 export const wearing = (v, id) => !!(v.statuses && v.statuses.some(s => s.id === id));
@@ -88,9 +98,27 @@ export function tick(v, dt) {
   return hurt;
 }
 
+// HOW FAST THIS FIGURE IS DOING THINGS, as a multiplier: 1 unslowed, 0.75 under a
+// monk's Slowed Pulse. Read by enemies.js for the march and the throw clock and by
+// units.js for the melee clock, so one number covers "moves slower" and "swings
+// slower" — which is what a slow means and what saves the two from drifting apart.
+//
+// THE STRONGEST WINS RATHER THAN THE PRODUCT, and it is the same instinct `apply`
+// follows one status at a time: two sources do not compound into a figure standing
+// still. Written as a scan over anything carrying `slow` rather than a lookup of
+// 'slowed', so a second slowing status costs nothing here.
+export const slowOf = v => {
+  let k = 1;
+  if (v.statuses) for (const s of v.statuses) if (s.slow && s.slow < k) k = s.slow;
+  return k;
+};
+
 // Whether anything currently on this figure is doing it harm. Read by units.js,
 // where regen is suppressed while a man is being hurt over time rather than
 // racing it — see the note there for why the poison numbers are only small enough
 // to look harmless because of this.
+//
+// A SLOW IS NOT HARM, and that falls out of `hurts` rather than needing saying:
+// a slowed man heals, because being held up is not being wounded.
 export const harmed = v =>
   !!(v.statuses && v.statuses.some(s => s.dps > 0 && (STATUS[s.id] || {}).hurts));

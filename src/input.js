@@ -3,7 +3,7 @@ import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitModeButton, hitDifficu
          hitPauseButton } from './render.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
 import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
-import { towerBox } from './towers.js';
+import { towerBox, cooldownOf } from './towers.js';
 import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
@@ -456,7 +456,14 @@ function run(state, item) {
     state.gold -= next.cost;
     t.def = next;
     t.spent += next.cost;
-    t.cd = 0;
+    // A NEW MACHINE COMES ONLINE LOADED, which is what a zero here means, and it
+    // is the right answer for every tower but one. A Judgement Temple's men have
+    // to be SEEN gathering the blast before it leaves — see `charge` in
+    // data/towers.js and the note in stepWeapon — so upgrading into one beside a
+    // wave would loose a blast out of a monk still drawn at rest, which is the
+    // exact thing stepWeapon parks an idle temple's clock to prevent. It comes
+    // online reloading instead, and pays its first second like any other.
+    t.cd = next.charge != null ? cooldownOf(t) : 0;
     // AFTER the def is swapped, so the cloud is sized to the building that is
     // arriving rather than the one that just left. On the monastery that is a
     // 29px difference in height between tiers 1 and 2, which is the difference

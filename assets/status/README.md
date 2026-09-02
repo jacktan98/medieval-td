@@ -1,13 +1,19 @@
 # Status marks
 
-What is happening TO a figure, drawn as a small mark over its health bar. Burnt
-and Poisoned are the first two; stunned, slowed and whatever else follows go
-here.
+What is happening TO a figure, drawn as a small mark over its health bar. Three
+so far; stunned and whatever else follows goes here.
 
 | file                 | who wears it                          | what it does           |
 |----------------------|---------------------------------------|------------------------|
 | `Burnt_Status.png`   | anything a Fiery Shot ball catches    | 10 damage a second for 5s |
 | `Poisoned_Status.png`| any soldier a flask or its spill catches | 5 damage a second for 4s |
+| `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | a quarter off its speed and its swing, for 2s |
+
+**Slowed is the first one that does no damage at all**, and that is a row in the
+table rather than a special case: `hurts: false` in `src/data/status.js` keeps its
+magnitude out of the damage arithmetic and lets a slowed soldier go on healing.
+Its number is a multiplier on time rather than health — how fast the figure walks
+and how often it swings, out of one value.
 
 A status belongs to BOTH armies. A cannon burns a thug and a plague doctor
 poisons a spearman through one mechanism that does not know which side it is
@@ -33,19 +39,26 @@ sharp at its drawn size.
 This is the one constraint worth knowing before you start, because it is the one
 that cannot be fixed in code.
 
-A mark is drawn 11 game px tall (`STATUS_H`), and the game may rasterise at 3x on
-a phone — so it needs **at least 33 source px on its longest side** or it goes
-soft. The flame has 42 and the droplets 34. Anything smaller will be reported as
-SOFT by `node tools/trim.mjs`, and the fix is to redraw it larger on the same
-canvas rather than to change any number.
+A mark is drawn inside an 11 game px box (`STATUS_H`), and the game may rasterise
+at 3x on a phone — so it needs **at least 33 source px on its longest side** or it
+goes soft. The flame has 42, the droplets 34 and the chevrons 34. Anything smaller
+will be reported as SOFT by `node tools/trim.mjs`, and the fix is to redraw it
+larger on the same canvas rather than to change any number.
 
 The 11 is itself a ceiling rather than a choice: it is the largest a mark can be
-drawn while the SMALLEST file stays sharp, and every mark is drawn at one height
-so a row of them lines up. It has been 10, then 9, and is 11 — the first pair
-were 38 and 30 source px, the outlined redraw came in at 34 and 27 and took it
-down, and the pair that ships are 42 and 34. **Whichever file is smallest sets
-the size of all of them**, so a new mark drawn small pulls the existing ones down
-with it.
+drawn while the SMALLEST file stays sharp. It has been 10, then 9, and is 11 — the
+first pair were 38 and 30 source px, the outlined redraw came in at 34 and 27 and
+took it down, and the two that ship are 42 and 34. **Whichever file is smallest
+sets the size of all of them**, so a new mark drawn small pulls the existing ones
+down with it.
+
+**A BOX rather than a height, and it matters if you draw a wide one.** A mark
+taller than it is wide is drawn to that 11 as a HEIGHT — the flame and the
+droplets both are. The slowed chevrons are 34 x 24, wider than tall, and are
+fitted inside the box instead, so they come out 11 x 7.8 rather than 15.6 x 11.
+Drawn to the height they would be half again the width of their neighbours AND
+would want 47 source px where there are 34. Which of the two an entry gets is `h`
+or `fit` in `src/data/ui.js`; `node tools/status.mjs` measures whichever it is.
 
 Rule of thumb: give it **40+ source px** on its longest side and it will never be
 the one holding the others back.

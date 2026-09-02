@@ -1,4 +1,4 @@
-import { bolt, knife, sneakKnife, cannonball } from './towers.js';
+import { bolt, knife, sneakKnife, cannonball, monkShot } from './towers.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -220,6 +220,72 @@ export const fieryBall = {
   // Short of clipping with room: 2.2 x 2.3 puts the loudest sample at 0.63 of full
   // scale after the bus and the master.
   fireGain: 2.3
+};
+
+// THE MONK'S COMET IN THREE MORE COLOURS, and the first ammunition in this file
+// that is not a SPECIAL. Everything above is a shot the tower fires once every few
+// reloads; these are what a Judgement Temple's ORDINARY blast becomes once it has
+// been taught something, so one of them is on every shot it fires for the rest of
+// the game.
+//
+// FOUR DRAWINGS FOR TWO ABILITIES, because they can both be bought. Plain, slowed,
+// strengthened, and both at once — the artist drew the fourth without being asked,
+// which is what makes `shotWith` below a table lookup rather than a compromise.
+//
+// SPREAD FROM `monkShot` rather than written out, on the rule every re-skin in
+// this file follows: how the thing FLIES belongs to the weapon and only the
+// picture belongs to the ability. Same 330, same `kind` — so the report leaving is
+// the family's Arcane_shot and a man killed by any of the four answers with the
+// monk's line, which is what a player should hear whichever of these is in the
+// air. The two Inner Strength drawings measure to the same box as each other and
+// two pixels off the plain one; `node tools/trim.mjs` reads all four off the files.
+
+// SLOWED PULSE'S. The comet in blue, and it carries the whole of what the ability
+// does — the slow is a property of the SHOT, exactly as Fiery Shot's burn is, so
+// projectiles.js lays it on whatever the blast lands on and nothing in towers.js
+// has to know a slow exists.
+export const monkSlowShot = {
+  ...monkShot,
+  sprite: 'monk_shot_slow',
+  trim: [226, 244, 60, 24],
+  // A QUARTER OFF EVERYTHING THE MAN DOES WITH TIME, at the owner's ask: he walks
+  // at 0.75 of his speed and swings at 0.75 of his rate, out of one number. See
+  // slowOf in src/status.js, which is read by the march in enemies.js, the
+  // thrower's clock in the same file, and the melee clock in units.js.
+  //
+  // A MULTIPLIER RATHER THAN A SUBTRACTION, which is the rule every magnitude in
+  // this file follows: retune a thug's 46 and this is still a quarter of it.
+  //
+  // TWO SECONDS, and the number is set by the tower rather than chosen. A temple
+  // looses every 1.00s, so two seconds is long enough that a man under fire from
+  // one is slowed continuously — each blast refreshes the clock with a second to
+  // spare — and short enough that walking out of the ring gets him moving again
+  // inside about a second. Statuses REFRESH rather than stack, so a second temple
+  // on the same man is more shots landing on a slow that is already there, which
+  // is why the magnitude can be this big without two of them stopping the road.
+  slow: {
+    times: 0.75,
+    seconds: 2
+  }
+};
+
+// INNER STRENGTH'S. The comet in cream and a size larger. No `slow` — what this
+// one carries is nothing at all, because the extra damage belongs to the TOWER
+// rather than to the shot: see `damageTimes` on the ability and damageK in
+// src/towers.js. The drawing is the only thing the ammunition contributes.
+export const monkStrongShot = {
+  ...monkShot,
+  sprite: 'monk_shot_strength',
+  trim: [228, 241, 56, 30]
+};
+
+// AND BOTH AT ONCE. Blue like the slow, big like the strength, and it carries the
+// slow because it IS the slowing shot — a temple that has bought both fires this
+// and gets both effects, one from here and one from damageK.
+export const monkBothShot = {
+  ...monkSlowShot,
+  sprite: 'monk_shot_both',
+  trim: [228, 241, 56, 30]
 };
 
 // The three poses the artist drew for these. Each is registered on the SAME source
@@ -1020,6 +1086,73 @@ export const ABILITIES = [
             'muster, and a wounded man keeps the share of his health he had. A heart ' +
             'and an arrow appear over every barracks it is working on, and a second ' +
             'altar compounds with the first — marked x2 on the badge.'
+  },
+  {
+    // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
+    // them is a rhythm (one shot in four), a passive on the tower's own numbers
+    // (reach, reload), a reaction to being nearly dead, or an aura over the map.
+    // These change EVERY shot the tower fires, for good, from the moment they are
+    // bought — so they have no `every`, no `hold` and no `pose`, and what they
+    // carry instead is a re-drawn projectile.
+    //
+    //   `shot`      the ammunition this tower fires from now on, in place of its
+    //               tier's own. Not `ammo`, which above means the ball a SPECIAL
+    //               fires once a cycle — two different questions, and folding them
+    //               into one field would have made every ability with an `ammo`
+    //               fire it on every shot.
+    //   `shotWith`  what to fire instead when the tower has ALSO bought the ability
+    //               named. Both entries below name each other and point at the same
+    //               drawing, which tools/abilities.mjs checks — a pair that
+    //               disagreed would fire a different comet depending on which of
+    //               the two was bought first.
+    id: 'pulse',
+    name: 'Slowed Pulse',
+    of: 'Judgement Temple',
+    icon: 'ability_pulse',
+    cost: ABILITY_COST,
+    shot: monkSlowShot,
+    shotWith: { strength: monkBothShot },
+
+    detail: 'Every blast a monk throws now holds a man up: 25% off how fast he ' +
+            'walks and 25% off how often he swings, for 2 seconds, and two ' +
+            'chevrons appear over his health bar while it lasts. The temple ' +
+            'looses every second, so anything it keeps firing at stays slowed ' +
+            'until it leaves the ring.\n\n' +
+            'It does not stack. A second temple on the same man refreshes the 2 ' +
+            'seconds rather than slowing him twice — what two of them buy is the ' +
+            'slow holding across a wider stretch of road, not a man standing ' +
+            'still. Both monks throw it, and it costs the tower nothing: the ' +
+            'damage, the reach and the cadence are exactly what they were.'
+  },
+  {
+    id: 'strength',
+    name: 'Inner Strength',
+    of: 'Judgement Temple',
+    icon: 'ability_strength',
+    cost: ABILITY_COST,
+    // A THIRD MORE ON EVERY BLAST, at the owner's ask, and a MULTIPLE rather than
+    // a number for the reason every magnitude in this file is one: the temple's 40
+    // has already moved once and will again, and "30% more" survives that where a
+    // hard-coded 52 would quietly stop being 30%.
+    //
+    // WHICH TAKES IT TO 52 A BLAST and 52.0 damage a second, past the High Altar's
+    // own 51.7 — so a temple that has bought this out-damages an altar that has
+    // bought nothing, on the same rung at the same price, while still losing to it
+    // on the single blow that matters against a giant: 52 against 75. That is the
+    // fork's own trade turned up rather than broken, which is what an ability on
+    // the cadence tower should do.
+    damageTimes: 1.30,
+    shot: monkStrongShot,
+    shotWith: { pulse: monkBothShot },
+
+    detail: 'Every blast a monk throws hits for 30% more: 40 becomes 52, and the ' +
+            'temple goes from 40 to 52 damage a second. Both monks, every shot, ' +
+            'from the moment it is bought.\n\n' +
+            'That is more a second than a High Altar does at 51.7, on the same ' +
+            'rung for the same gold — and still 23 short of the altar on the ' +
+            'single blow, which is what the two towers are for. The comet is ' +
+            'redrawn, and redrawn again in blue if the temple has also learned ' +
+            'Slowed Pulse.'
   }
 ];
 

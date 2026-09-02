@@ -30,11 +30,13 @@
 // numbers are quoted in the comments in data/abilities.js and in the encyclopedia,
 // and a comment that has drifted from the code is worse than no comment.
 
-import { updateTowers, rangeOf, framesOf, beatsOf, cooldownOf, gunnerOf, auras, boost } from '../src/towers.js';
+import { updateTowers, rangeOf, framesOf, beatsOf, cooldownOf, gunnerOf, ammoOf, auras, boost } from '../src/towers.js';
 import { updateUnits, makeUnits, hidden, unhook } from '../src/units.js';
 // The knives have to actually fly, or the Guild's section would watch blades
 // hang in the air a hundred frames from the man who threw them.
 import { updateShots } from '../src/projectiles.js';
+import { updateEnemies } from '../src/enemies.js';
+import { slowOf, apply as applyStatus } from '../src/status.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
@@ -52,6 +54,18 @@ const DT = 1 / 60;
 // Two multipliers agree. 1.1 x 1.1 is 1.2100000000000002 in binary floating
 // point, so the compounding checks below cannot ask for equality.
 const near = (a, b) => Math.abs(a - b) < 1e-9;
+
+// The same question asked of a MEASURED ratio rather than of two multipliers.
+// Walking a man down a road for a second and dividing lands within a frame of the
+// answer, not within a float's worth of it.
+const near2 = (a, b) => Math.abs(a - b) < 0.01;
+
+// Lay a Slowed Pulse on somebody, the way the shot does. Through the real `apply`
+// with the ability's own numbers, so a change to either reaches this.
+const applySlow = v => {
+  const s = abilityById('pulse').shot.slow;
+  applyStatus(v, 'slowed', s.times, s.seconds, 'monk');
+};
 
 // --- a tower on a plot, with a target it can always see -------------------------
 //
@@ -102,6 +116,11 @@ const sentry = ids => tower('archery', archery[4], 490, ids);
 // The Cannon Outpost, artillery's own second fourth rung.
 const outpost = ids => tower('siege', siege[4], 610, ids);
 
+// The Judgement Temple, monastery[4]: the ladder's second fourth rung, and the
+// only tower in the game that stands TWO men — so `turn` matters here where it is
+// meaningless everywhere else in this file.
+const temple = ids => ({ ...tower('monastery', monastery[4], 590, ids), turn: 0 });
+
 function dummy(t, i = 0) {
   return {
     def: { r: 10, hp: 1e9, speed: 0, atkCd: 1, damage: 0 },
@@ -131,7 +150,11 @@ function fire(t, seconds, men = 1) {
       // it inherits the kind so the kill line stays the cannon's. What tells the
       // two apart is what the ammunition leaves on what it hits.
       out.push({ t: i * DT, kind: s.ammo.kind, damage: s.damage, at: s.target.mark,
-                 burn: !!s.ammo.burn });
+                 burn: !!s.ammo.burn,
+                 // WHICH DRAWING LEFT, which is the whole visible half of the
+                 // Judgement Temple's two abilities: nothing about the shot's
+                 // kind, speed or report changes and the picture is what does.
+                 sprite: s.ammo.sprite, slow: !!s.ammo.slow });
     }
     state.shots.length = 0;
   }
@@ -1393,6 +1416,173 @@ console.log('\nThe Cannon Outpost\n');
     `${rate(gun.cooldown).toFixed(1)}/s with Fiery Shot, ` +
     `${(gun.damage / drilled).toFixed(1)}/s with Swift Reload, ` +
     `${rate(drilled).toFixed(1)}/s with both`);
+}
+
+// --- the Judgement Temple's two -------------------------------------------------
+//
+// A SHAPE THIS FILE HAS NOT CHECKED BEFORE. Everything above is a rhythm, a
+// passive on the tower's own numbers, a reaction, or an aura. These two change
+// EVERY shot the tower fires and they can both be bought, so what has to be true
+// is a small table rather than a rule:
+//
+//   bought            damage   drawing               does it slow
+//   nothing              40    monk_shot                  no
+//   Slowed Pulse         40    monk_shot_slow             yes
+//   Inner Strength       52    monk_shot_strength         no
+//   both                 52    monk_shot_both             yes
+//
+// Every cell of that has its own way of going wrong, and three of them are
+// invisible: a damage multiplier that misses the ordinary shot, a `shotWith` pair
+// that disagrees so the drawing depends on which was bought first, and a slow
+// carried by the ammunition that never reaches the man.
+
+console.log('\nThe Judgement Temple\n');
+
+{
+  const def = monastery[4];
+  const pulse = abilityById('pulse');
+  const strength = abilityById('strength');
+
+  ok(def.abilities && def.abilities.length === 2 &&
+     def.abilities.includes('pulse') && def.abilities.includes('strength'),
+    'the temple offers both of them', (def.abilities || []).join(', '));
+
+  // NEITHER HAS A RHYTHM, and that is the thing that makes them a new shape. An
+  // `every` here would put them through the special path in stepWeapon and fire
+  // the re-drawn comet once a cycle instead of always.
+  ok(!pulse.every && !strength.every && !pulse.pose && !strength.pose,
+    'and neither is a rhythm or a pose', 'no `every`, no `hold`, no `pose`');
+
+  // THE FOUR CELLS OF THE TABLE, read off the shots a tower actually fires rather
+  // than off the data. Four reloads each, so a special that fired once a cycle
+  // would show up as a run of mixed sprites instead of one.
+  const cases = [
+    { ids: [],                    dmg: def.damage,    art: 'monk_shot',           slow: false },
+    { ids: ['pulse'],             dmg: def.damage,    art: 'monk_shot_slow',      slow: true },
+    { ids: ['strength'],          dmg: 52,            art: 'monk_shot_strength',  slow: false },
+    { ids: ['pulse', 'strength'], dmg: 52,            art: 'monk_shot_both',      slow: true }
+  ];
+  for (const c of cases) {
+    const out = fire(temple(c.ids), def.cooldown * 4 + 0.1);
+    const label = c.ids.length ? c.ids.join(' + ') : 'nothing bought';
+    ok(out.length >= 4 &&
+       out.every(s => s.damage === c.dmg && s.sprite === c.art && s.slow === c.slow),
+      `with ${label}`.padEnd(30),
+      `${out.length} blasts, ${out[0].damage} damage, ${out[0].sprite}` +
+      `${out[0].slow ? ', slowing' : ''}`);
+  }
+
+  // A THIRD MORE, AND IT IS THE MULTIPLE THAT IS CHECKED rather than the 52. The
+  // rule this whole file runs on: a magnitude is a multiple of the stat it
+  // changes, so retuning the temple's 40 moves this with nothing to edit.
+  const plain = fire(temple([]), def.cooldown + 0.1)[0];
+  const strong = fire(temple(['strength']), def.cooldown + 0.1)[0];
+  ok(near(strong.damage / plain.damage, strength.damageTimes),
+    'Inner Strength is a multiple rather than a number',
+    `${strong.damage} against ${plain.damage}, x${strength.damageTimes}`);
+
+  // AND IT BEATS THE ALTAR PER SECOND WHILE STILL LOSING THE SINGLE BLOW, which
+  // is the fork's own trade turned up rather than broken — the thing the number
+  // was chosen for. Printed as well as checked, because it is the sentence on the
+  // encyclopedia card.
+  const altar = monastery[3];
+  const templeDps = strong.damage / def.cooldown;
+  const altarDps = altar.damage / altar.cooldown;
+  ok(templeDps > altarDps && strong.damage < altar.damage,
+    'and takes the temple past the altar a second, not past its blow',
+    `${templeDps.toFixed(1)}/s against ${altarDps.toFixed(1)}/s, ` +
+    `${strong.damage} a blast against ${altar.damage}`);
+
+  // NEITHER BUYS ANYTHING ELSE. They are damage and a slow; a reach or a reload
+  // that moved would be a second ability nobody wrote a card for.
+  const both = temple(['pulse', 'strength']);
+  ok(rangeOf(both) === rangeOf(temple([])) &&
+     near(cooldownOf(both), cooldownOf(temple([]))),
+    'and neither changes the reach or the cadence',
+    `${rangeOf(both)}px, ${cooldownOf(both).toFixed(2)}s either way`);
+
+  // THE PAIR AGREE ABOUT THE COMBINED DRAWING. Each names the other and points at
+  // an ammunition; if the two named different ones, which comet a temple fired
+  // would depend on which ability was listed first in its `abilities` array —
+  // that is, on the order the player bought them in, which is not a thing the art
+  // should depend on.
+  ok(pulse.shotWith && strength.shotWith &&
+     pulse.shotWith.strength === strength.shotWith.pulse,
+    'the two agree on what owning both fires',
+    (pulse.shotWith.strength || {}).sprite);
+
+  // AND THE ORDER REALLY DOES NOT MATTER, asked of ammoOf rather than of the data
+  // — the two-pass lookup in it is what makes this true, and a one-pass version
+  // would answer with whichever single ability came first.
+  ok(ammoOf(temple(['pulse', 'strength'])) === ammoOf(temple(['strength', 'pulse'])),
+    'and a temple fires the same comet whichever it bought first',
+    ammoOf(temple(['strength', 'pulse'])).sprite);
+
+  // ALL FOUR DRAWINGS ARE ON DISK AND ALL FOUR ARE DIFFERENT. A missing file
+  // draws nothing at all, and two keys pointing at one file is the version of
+  // this bug that looks like the ability not working.
+  const arts = cases.map(c => ammoOf(temple(c.ids)).sprite);
+  ok(arts.every(k => paths[k]) && new Set(arts.map(k => paths[k])).size === 4,
+    'and the four comets are four different files',
+    arts.map(k => (paths[k] || '?').split('/').pop()).join(', '));
+}
+
+console.log('\nWhat a Slowed Pulse does to the man it hits\n');
+
+{
+  // OFF THE REAL LOOPS, not off the number. A slow that is applied and then read
+  // by nobody is the failure worth catching, and it has three separate readers —
+  // the march in enemies.js, the thrower's clock in the same file, and the melee
+  // clock in units.js. This walks an enemy down the road twice and compares.
+  const pulse = abilityById('pulse');
+  const slowShot = pulse.shot;
+
+  const walker = () => ({
+    def: { r: 10, hp: 1e9, speed: 40, atkCd: 1, damage: 0 },
+    x: 0, y: 0, hp: 1e9, maxHp: 1e9, route: 0, lane: 1, s: 0,
+    foe: null, acd: 1, thrust: 0, halted: false, leaked: false, statuses: []
+  });
+  const walk = (e, seconds) => {
+    const state = { towers: [], enemies: [e], units: [], shots: [], hits: [],
+                    corpses: [], splats: [], impacts: [] };
+    for (let i = 0; i * DT < seconds; i++) updateEnemies(state, DT);
+    return e.s;
+  };
+
+  const free = walker();
+  const held = walker();
+  applySlow(held);
+  const a = walk(free, 1);
+  const b = walk(held, 1);
+  ok(near2(b / a, slowShot.slow.times),
+    'a slowed man walks at the fraction the shot says',
+    `${b.toFixed(1)}px against ${a.toFixed(1)}px in a second, x${(b / a).toFixed(2)}`);
+
+  // AND slowOf IS THE ONE NUMBER BEHIND ALL THREE READERS, so the swing cannot
+  // drift from the march. Asked directly, because the melee clock lives in
+  // units.js behind a soldier holding him and this file has no squad here.
+  const one = walker();
+  applySlow(one);
+  ok(near2(slowOf(one), slowShot.slow.times),
+    'and the same fraction is what his swing is ticked at',
+    `x${slowOf(one)}`);
+
+  // AND IT WEARS OFF. A status whose clock never runs out is a man slowed for the
+  // rest of the game with nothing to see it by.
+  const fading = walker();
+  applySlow(fading);
+  walk(fading, slowShot.slow.seconds + 0.2);
+  ok(slowOf(fading) === 1 && fading.statuses.length === 0,
+    `and it is gone ${slowShot.slow.seconds}s after the last blast`,
+    `${fading.statuses.length} worn, x${slowOf(fading)}`);
+
+  // AND IT REFRESHES RATHER THAN STACKS, which is what keeps two temples on one
+  // road from stopping it dead.
+  const twice = walker();
+  applySlow(twice); applySlow(twice);
+  ok(twice.statuses.length === 1 && near2(slowOf(twice), slowShot.slow.times),
+    'and two blasts on one man are one slow, not two',
+    `${twice.statuses.length} worn, x${slowOf(twice)}`);
 }
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);

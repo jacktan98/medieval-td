@@ -7,7 +7,7 @@ import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
-import { tick as tickStatus, clear as clearStatus, harmed } from './status.js';
+import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -1038,8 +1038,13 @@ export function updateUnits(state, dt) {
       // the enemy, so if every man attacking it decremented the timer, an enemy
       // fighting three would swing three times as often — the counter-attack
       // would speed up in proportion to how outnumbered it is.
+      //
+      // AND A SLOWED ENEMY SWINGS SLOWER, out of the same number that slows its
+      // march — see slowOf in src/status.js. The clock is ticked slower rather
+      // than `atkCd` being lengthened, so the slow can land halfway through a
+      // wind-up and take the rest of it rather than the whole swing.
       if (u.holds) {
-        u.foe.acd -= dt;
+        u.foe.acd -= dt * slowOf(u.foe);
         if (u.foe.acd <= 0) {
           u.hp -= u.foe.def.damage;
           u.foe.acd = u.foe.def.atkCd;

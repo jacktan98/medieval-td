@@ -43,6 +43,26 @@ export const STATUS = {
     icon: 'status_poisoned',
     name: 'Poisoned',
     hurts: true
+  },
+  // THE THIRD, AND THE FIRST THAT DOES NOT HURT — which is what the note above
+  // said a slow would be, two abilities before there was one. It arrived with the
+  // Judgement Temple's Slowed Pulse.
+  //
+  // `hurts: false` is not a formality. `tick` reads it before touching health, so
+  // a slow's magnitude never goes near the damage arithmetic; `harmed` reads it
+  // too, so a slowed soldier still regenerates, which he should — being held up is
+  // not being wounded. Both of those were written for this row before it existed.
+  //
+  // AND ITS MAGNITUDE IS A DIFFERENT KIND OF NUMBER. A burn carries `dps`; this
+  // carries `slow`, a multiplier on everything the figure does with time — how
+  // fast it walks and how often it swings. `apply` picks which field to write by
+  // asking `hurts`, so the one call site covers both without a branch of its own.
+  // Where it comes FROM is still the thing that applied it: the monk's shot, in
+  // data/abilities.js.
+  slowed: {
+    icon: 'status_slowed',
+    name: 'Slowed',
+    hurts: false
   }
 };
 
@@ -52,7 +72,10 @@ export const STATUS = {
 // two different marks.
 export const STATUS_ORDER = Object.keys(STATUS);
 
-// The mark's drawn height, in game px, and its gap from the health bar.
+// The mark's drawn BOX, in game px, and its gap from the health bar. A box rather
+// than a height since the slowed mark arrived: the first two are taller than they
+// are wide and are drawn to this as a height, and the slowed chevrons are wider
+// than they are tall and are fitted inside it. See the entries in data/ui.js.
 //
 // 11 IS THE LARGEST IT CAN BE AND STAY SHARP, and the number is set by the
 // smallest file rather than chosen: the poisoned droplets are 34 source px tall,

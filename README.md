@@ -1,7 +1,7 @@
 # Medieval TD
 
 A tower defence played in a browser. Three hand-drawn maps, four families of
-tower with a fork at the top of three of them, twenty buildings, fourteen
+tower with a fork at the top of all four, twenty buildings, sixteen
 abilities, and an army that walks in from the left.
 
 **Play it:** open `index.html`. That is the whole of it — there is no build step,
@@ -64,7 +64,7 @@ exit non-zero when something is wrong.
 | `squad` | a barracks musters, rallies and re-musters the men it should |
 | `svg` | the artist's SVGs still parse to the shapes the maps are built from |
 | `png` | every PNG is the canvas size the folder's README asks for |
-| `abilities` | all fourteen abilities do what their encyclopedia card says |
+| `abilities` | all sixteen abilities do what their encyclopedia card says |
 | `preview` | every wave table, normal and extended, beside its twin |
 | `plague` | the thug throws, the flask breaks, and the spill poisons |
 | `hud-clear` | no tower or badge is drawn into the HUD or off the board |
@@ -120,7 +120,7 @@ is the answer, not the rendering code.
 
 `src/data/towers.js` holds the four families and their twenty buildings;
 `src/data/waves.js` the army and the three maps' wave tables;
-`src/data/abilities.js` the fourteen things a tier 4 tower can be taught;
+`src/data/abilities.js` the sixteen things a tier 4 tower can be taught;
 `src/data/status.js` what can be happening to a figure; and
 `src/data/level01.js` … `level03.js` the three boards, whose roads and build
 plots were traced off the artwork rather than typed.

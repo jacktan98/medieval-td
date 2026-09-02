@@ -9,7 +9,7 @@ import { solo, play, CUE, SHOT } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
-import { tick as tickStatus } from './status.js';
+import { tick as tickStatus, slowOf } from './status.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -75,7 +75,11 @@ export function leadPoint(e, t) {
   // throws over the head of the one enemy on the board it can most easily hit.
   // Being held is one. Standing off to throw is the other — see the standoff
   // block in updateEnemies.
-  const ahead = e.foe || e.halted ? 0 : e.def.speed * t;
+  // AND A SLOWED MAN IS LEAD LESS FAR. The march below walks at `speed * slowOf`,
+  // so a lead that used the tier's own number would throw a rock in front of
+  // anything a monk had hold of — which is the one enemy a catapult is most likely
+  // to be aimed at, since a slowed man is one the towers have already found.
+  const ahead = e.foe || e.halted ? 0 : e.def.speed * slowOf(e) * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -115,7 +119,11 @@ export function updateEnemies(state, dt) {
     // off. See `damage` on both in data/waves.js.
     if (e.def.ranged && !e.foe) {
       const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
-      e.tcd -= dt;
+      // SLOWED SLOWS THE THROWING TOO, at the owner's ask: a quarter off how often
+      // he swings covers the flask and the arrow as well as the club. The clock is
+      // ticked slower rather than the cooldown lengthened, so a man slowed halfway
+      // through a wind-up loses the rest of it rather than the whole thing.
+      e.tcd -= dt * slowOf(e);
       if (mark && e.tcd <= 0) {
         loose(state, e, mark);
         e.tcd = e.def.ranged.cd;
@@ -234,7 +242,11 @@ export function updateEnemies(state, dt) {
     // The lane's own road, not the centreline. Walking the centreline and
     // drawing the figure offset from it makes speed depend on which way the
     // road is bending — see route.js.
-    e.s += e.def.speed * dt;
+    // WHATEVER IS BEING DONE TO HIM SCALES THIS, and today that is exactly one
+    // thing: a monk's Slowed Pulse, at 0.75. One multiplier rather than a subtracted
+    // speed, so it stays a quarter of whatever a thug's speed is retuned to — and it
+    // is the same number that slows his swing, out of slowOf in src/status.js.
+    e.s += e.def.speed * slowOf(e) * dt;
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should

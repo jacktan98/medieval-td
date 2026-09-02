@@ -26,7 +26,7 @@
 
 import { apply, tick, clear, wearing, harmed } from '../src/status.js';
 import { STATUS, STATUS_ORDER, STATUS_H } from '../src/data/status.js';
-import { ui } from '../src/data/ui.js';
+import { ui, uiSize } from '../src/data/ui.js';
 import { paths as ASSET_URLS } from '../src/assets.js';
 import { updateUnits, makeUnits } from '../src/units.js';
 import { updateEnemies } from '../src/enemies.js';
@@ -91,7 +91,20 @@ console.log('Every status has a picture\n');
   // repeated here because this is the file somebody adding a status will run, and
   // a new mark drawn on a smaller canvas would go soft with nothing else to say
   // so. 3 is MAX_DPR in src/main.js.
-  const soft = ids.filter(id => STATUS_H * 3 > ui[STATUS[id].icon].trim[3]);
+  //
+  // ASKED OF THE DRAWN BOX rather than of the height, since the slowed chevrons
+  // arrived. This compared STATUS_H against the source HEIGHT, which is the right
+  // question only for a mark taller than it is wide — every mark there was when it
+  // was written. A wide one drawn to a common height is wider than STATUS_H and
+  // would have passed here while going soft on a phone, which is the whole failure
+  // this exists to prevent. uiSize gives the box each entry actually draws at, `h`
+  // and `fit` alike, so this now asks what trim.mjs asks.
+  const soft = ids.filter(id => {
+    const key = STATUS[id].icon;
+    const t = ui[key].trim;
+    const box = uiSize(key);
+    return Math.max(box.w, box.h) * 3 > Math.max(t[2], t[3]);
+  });
   ok(soft.length === 0, `and is sharp at ${STATUS_H}px on a 3x screen`,
     soft.join(', ') || ids.map(id => `${STATUS[id].name} ${ui[STATUS[id].icon].trim[3]}px`).join(', '));
 }

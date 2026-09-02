@@ -1,6 +1,6 @@
 # Ability buttons
 
-The face of every ability a tier 4 tower can be taught: fourteen of them, one per
+The face of every ability a tier 4 tower can be taught: sixteen of them, one per
 entry in `ABILITIES` in `src/data/abilities.js`. Each appears twice — on the
 tower's radial menu when it has gold to spend, and on the encyclopedia's ability
 page.
@@ -21,10 +21,18 @@ page.
 | Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot_Icon.png` |
 | High Altar | Holy Wrath | `High_Altar_Holy_Wrath_Icon.png` |
 | High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude_Icon.png` |
+| Judgement Temple | Slowed Pulse | `Slowed_Pulse_Icon.png` |
+| Judgement Temple | Inner Strength | `Inner_Strength_Icon.png` |
 
 **Named after the tower, not the ability**, which is what keeps the two Swift
 Reloads and the two Reinforced Tensions apart on disk. A file named after the ability alone would
 have to be one drawing for two different weapons.
+
+The temple's two are the exception, and they are allowed to be: nothing else is
+called Slowed Pulse or Inner Strength, so there is nothing to keep apart. The rule
+is about collisions rather than about the shape of a name — and nothing in the
+game reads a filename anyway. The binding is the `ability_` key in
+`src/assets.js`.
 
 ## These are BUTTONS, not icons
 

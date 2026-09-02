@@ -1,6 +1,6 @@
 # Projectile artwork
 
-Anything that leaves a tower, a man or an enemy and travels. Eighteen files,
+Anything that leaves a tower, a man or an enemy and travels. Twenty-one files,
 all **512 x 512 with a transparent background**, like every other sprite in the
 game.
 
@@ -39,6 +39,9 @@ right".
 | `Assassin_Knife.png` | an assassin who has learned Knife Throw | 300 | flat |
 | `Assassin_Knife_Sneak_Attack.png` | the first knife of his volley | 300 | flat |
 | `Monk_Magic_Shot.png` | a Judgement Temple's two monks | 330 | flat, and the smallest of the family |
+| `Monk_Magic_Shot_Slowed_Pulse.png` | the same, once it has learned Slowed Pulse | 330 | flat |
+| `Monk_Magic_Shot_Inner_Strength.png` | the same, once it has learned Inner Strength | 330 | flat |
+| `Monk_Magic_Shot_Inner_Strength_Slowed_Pulse.png` | the same, having learned both | 330 | flat |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |
 
 **Five drawings for one family, and the monk's is the odd one.** The three tiers
@@ -76,6 +79,15 @@ one: **the ability's projectile is a redraw of the tower's own**. `Heavy_Bolt` i
 `Knife_Sneak_Attack` is a heavier blade. They fly at exactly the same speed and
 carry the same kill line — what changes is only the picture and how loud it
 leaves.
+
+**The monk's four are the same pattern taken one step further, and they are the
+only ORDINARY shot in the game that changes picture.** Every redraw above belongs
+to a special that fires once every four or ten reloads; a Judgement Temple that
+has learned something fires its new comet on every single blast for the rest of
+the game. And because it can learn BOTH things, there is a fourth drawing for
+that — which is why this is a set of four for two abilities rather than a set of
+two. If you draw an ability that re-skins another tower's every shot, draw the
+combination too.
 
 ## After uploading
 

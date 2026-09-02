@@ -234,6 +234,14 @@ export const ui = {
   // The Cannon Outpost's two, on the same disc as every other ability face.
   ability_cannon_swift: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_fiery:        { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  // The Judgement Temple's two, on the monastery's own ORANGE disc. Eleven files
+  // in a row now measure to 163,163,186,186 — the artist draws every ability face
+  // into the same circle, and that is worth saying out loud because it is the
+  // reason a new icon needs no thought: it lands on the plate where the last ten
+  // did. NOT `pale`: white price ink reads on this orange the way it reads on the
+  // blue, and it is only the altar's white disc that swallowed it.
+  ability_pulse:    { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true },
 
   // THE STATUS MARKS, and they are the first entries in this table that are drawn
   // on the BOARD rather than on the interface. They are here anyway, and that is
@@ -250,6 +258,21 @@ export const ui = {
   // first pair, 24x34 and 22x27 for the outlined ones, and these.
   status_burnt:    { trim: [241, 235, 30, 42], h: STATUS_H },
   status_poisoned: { trim: [242, 238, 28, 34], h: STATUS_H },
+  // AND SLOWED, which takes `fit` where the other two take `h` — the one entry in
+  // this table where the difference matters rather than being a preference.
+  //
+  // It is 34 x 24: the first status mark WIDER than it is tall, because it is two
+  // chevrons side by side where the others are a standing flame and a column of
+  // droplets. Drawn to a common HEIGHT it would come out 15.6 x 11, half again the
+  // width of either of its neighbours and — this is the part that decides it —
+  // 47 device px of drawing rasterised out of 34 source px on a 3x phone, which is
+  // the SOFT verdict tools/trim.mjs exists to catch.
+  //
+  // Fitted into the STATUS_H box instead it is 11 x 7.8: sharp, and the same
+  // width as the flame is tall, so the row reads as a row. The other two are
+  // taller than they are wide, so `fit` and `h` would give them the same answer
+  // and they keep the field that says what was meant.
+  status_slowed:   { trim: [239, 244, 34, 24], fit: STATUS_H },
   // The High Altar's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

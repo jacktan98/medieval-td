@@ -335,6 +335,49 @@ function reloadK(t) {
   return k;
 }
 
+// HOW MUCH HARDER THIS TOWER HITS THAN ITS TIER SAYS, as a multiplier. The damage
+// twin of reloadK, and it arrived with the Judgement Temple's Inner Strength —
+// the first ability that raises the tower's ORDINARY blow rather than handing it
+// a rarer, bigger one.
+//
+// SEPARATE FROM THE AURA. `boost(state, 'damage', ...)` is Holy Wrath, a fact
+// about the map; this is a fact about the tower, and the two multiply — a temple
+// with Inner Strength standing under a Holy Wrath is 1.30 x 1.05. Both are applied
+// in shoot(), and keeping them apart is what lets the info box print the tower's
+// own number without the rest of the board's towers coming into it.
+//
+// AND IT MULTIPLIES A SPECIAL TOO, which falls out of where it is applied rather
+// than needing a rule: whatever the shot was going to hit for — the tier's damage,
+// an ability's absolute, an ability's multiple — this is on top. Nothing today has
+// both; the Musketeer Post is the tower that would, and if it ever learns a
+// damageTimes its Deadeye should scale with it.
+export function damageK(t) {
+  let k = 1;
+  for (const a of boughtAbilities(t)) if (a.damageTimes) k *= a.damageTimes;
+  return k;
+}
+
+// WHICH DRAWING THIS TOWER'S ORDINARY SHOT IS, which is the tier's own until an
+// ability re-skins it. The ammunition twin of gunnerOf below.
+//
+// TWO PASSES, AND THE ORDER IS THE POINT. A Judgement Temple that has bought both
+// of its abilities fires a fourth comet that belongs to neither of them alone, so
+// the COMBINATIONS are asked first — `shotWith` names another ability and the
+// drawing for owning both — and only then the singles. One pass would answer with
+// whichever of the two was listed first and quietly drop the fourth drawing.
+//
+// Both halves of a pair name each other and point at the same ammunition, so this
+// gives the same answer whichever way round they were bought.
+// `node tools/abilities.mjs` checks that they agree.
+export function ammoOf(t) {
+  const bought = boughtAbilities(t);
+  for (const a of bought)
+    if (a.shotWith)
+      for (const id of Object.keys(a.shotWith)) if (owns(t, id)) return a.shotWith[id];
+  for (const a of bought) if (a.shot) return a.shot;
+  return t.def.ammo;
+}
+
 // WHICH PAIR OF DRAWINGS THE MAN ON THE DECK IS SHOWING, or null for the ones
 // the tier ships with. The figure's answer to framesOf below.
 //
@@ -786,7 +829,9 @@ function stepCrew(state, t, dt, target) {
 // they did before, which is why Deadeye needed no branch anywhere below.
 function shoot(state, t, target, special) {
   const m = muzzlePoint(t);
-  const ammo = (special && special.ammo) || t.def.ammo;
+  // The special's ball if this is a special, and otherwise whatever this tower's
+  // ordinary shot has become — see ammoOf.
+  const ammo = (special && special.ammo) || ammoOf(t);
 
   // WHERE THE DRAWING STARTS, which is not always where the weapon is. A
   // projectile is anchored by its HEAD — that is the point that has to land on
@@ -831,10 +876,14 @@ function shoot(state, t, target, special) {
     // Wrath is 330 rather than 300 — because the aura is a fact about the tower
     // firing rather than about which shot this is. Rounded, so a health bar never
     // has to show a fraction of a point.
+    // AND THE TOWER'S OWN BUFF UNDER THAT, which is Inner Strength — see damageK.
+    // Two multipliers rather than one because they answer two questions: what this
+    // tower has been taught, and what the map is doing to every tower on it.
     damage: Math.round(
       (special && special.times
         ? t.def.damage * special.times
-        : (special && special.damage) || t.def.damage) * boost(state, 'damage', t.fam.id)
+        : (special && special.damage) || t.def.damage)
+      * damageK(t) * boost(state, 'damage', t.fam.id)
     ),
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".

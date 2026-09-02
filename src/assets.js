@@ -293,6 +293,17 @@ export const paths = {
   // priest's 19 x 4 dart and the pope's 26 x 5. Two men throwing small blasts is
   // what a Judgement Temple looks like, so the drawing says so.
   monk_shot:       'assets/projectiles/Monk_Magic_Shot.png',
+  // AND THE SAME COMET IN THREE OTHER COLOURS, one per combination of the two
+  // things a Judgement Temple can be taught. This is the first tower in the game
+  // whose ORDINARY shot changes picture — every other re-skin in here belongs to
+  // a special that fires once every few reloads — so there are four drawings and
+  // no fourth ability: plain, slowed, strengthened, and both at once.
+  //
+  // Which one is fired is decided by what the tower has bought, in ammoOf in
+  // src/towers.js, off the `shot` and `shotWith` fields in data/abilities.js.
+  monk_shot_slow:     'assets/projectiles/Monk_Magic_Shot_Slowed_Pulse.png',
+  monk_shot_strength: 'assets/projectiles/Monk_Magic_Shot_Inner_Strength.png',
+  monk_shot_both:     'assets/projectiles/Monk_Magic_Shot_Inner_Strength_Slowed_Pulse.png',
   // The plague doctor's flask, and the only projectile in the game thrown AT
   // the player's men rather than by them.
   flask:       'assets/projectiles/Enemies_Plague_Thug_Flask.png',
@@ -479,6 +490,14 @@ export const paths = {
   // moved here with the rest.
   ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload_Icon.png',
   ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot_Icon.png',
+  // The Judgement Temple's two, and the first pair whose names carry no tower.
+  // Every icon above says whose it is — Musketeer_, Cannon_Outpost_ — because
+  // every ability above belongs to one building. Slowed Pulse and Inner Strength
+  // are drawn as what they DO, on the monastery's own orange disc, and the artist
+  // named them that way; nothing in the game reads a filename, so the key below
+  // is where the binding is either way.
+  ability_pulse:    'assets/abilities/Slowed_Pulse_Icon.png',
+  ability_strength: 'assets/abilities/Inner_Strength_Icon.png',
 
   // --- THE STATUS MARKS, in assets/status ---------------------------------------
   //
@@ -494,6 +513,16 @@ export const paths = {
   // one place a status's picture, its colour and its rules are written down.
   status_burnt:    'assets/status/Burnt_Status.png',
   status_poisoned: 'assets/status/Poisoned_Status.png',
+  // AND SLOWED, which is the third and the first that does not hurt. It arrived
+  // with the Judgement Temple's Slowed Pulse — the folder was made for exactly
+  // this, and the note above named it two abilities before it existed.
+  //
+  // IT IS THE FIRST MARK WIDER THAN IT IS TALL, two chevrons side by side against
+  // a standing flame and a column of droplets, and that costs a line in
+  // data/ui.js: it is fitted into the STATUS_H box rather than drawn to that
+  // HEIGHT, or it would be half again as wide as the other two and blown up past
+  // what its 34 source px can carry. See the note there.
+  status_slowed:   'assets/status/Slowed_Status.png',
   // THE MAXED BADGE, for the upgrade button of a tower that has none left. It
   // replaces the vector chevrons that stood in for `max` since the ring was
   // built — the last glyph in the menu that had never been drawn. Still dimmed

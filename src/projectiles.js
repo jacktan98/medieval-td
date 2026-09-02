@@ -130,6 +130,9 @@ function land(state, s) {
       // "does it burn" and "does it burst" stay two questions, which is the whole
       // point of the wider ring below.
       if (s.ammo.burn) burn(s, s.target);
+      // And it may hold him up. The monk's is the shot that does — the first in
+      // the game with no splash that leaves anything on the man it hits.
+      if (s.ammo.slow) slow(s, s.target);
     }
     return;
   }
@@ -146,6 +149,7 @@ function land(state, s) {
     if (v.hp <= 0 || v.respawn > 0) continue;
     if (!inRange(s.x, s.y, v.x, v.y, s.splash)) continue;
     hit(state, s, v);
+    if (s.ammo.slow) slow(s, v);
   }
 
   // AND THE FIRE SPREADS FURTHER THAN THE BALL DID, which is a second pass over
@@ -242,6 +246,18 @@ export const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE };
 // had the flask hit for its 20 as well.
 const burn = (s, v) =>
   applyStatus(v, 'burnt', s.ammo.burn.dps, s.ammo.burn.seconds, s.ammo.kind);
+
+// AND HOLDING SOMEBODY UP, which is the same shape and deliberately so: a monk's
+// Slowed Pulse carries `slow` on its ammunition exactly as a fiery ball carries
+// `burn`, so "what does this shot leave on the man" has one answer per effect and
+// this file needs to know nothing about what a slow IS.
+//
+// NO SECOND RING, unlike the burn. A burn spreads wider than the blast because the
+// owner asked for burning earth; a slow is what the blast itself does, so it lands
+// on exactly what was hit. If a slowing shot ever gains a splash it will slow
+// everything in it through the ordinary victims loop, with no line here.
+const slow = (s, v) =>
+  applyStatus(v, 'slowed', s.ammo.slow.times, s.ammo.slow.seconds, s.ammo.kind);
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what

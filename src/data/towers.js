@@ -3008,20 +3008,27 @@ const judgement = {
 // sounds like every other missile in the family, and what a man killed by it says
 // is the monk's line. That is the pattern the pope's `kind` established, and it is
 // the whole reason a kind exists separately from a sprite.
+// HIS COMET, hoisted out of the def because the two things a temple can be taught
+// each redraw it — see `monkSlowShot` and the rest in data/abilities.js, which
+// spread from this so that a change to how the shot FLIES reaches all four
+// pictures. Everything but the drawing is shared: the same 330, the same kind, the
+// same report leaving and the same kill line.
+export const monkShot = {
+  ...missile3,
+  kind: 'monk',
+  sprite: 'monk_shot',
+  trim: MONK_SHOT_TRIM,
+  // `grip` 0.12 rather than the darts' 0.15, and it is the shape that moves it:
+  // those are long thin bolts held near the point, and this is a blunt head with
+  // a tail behind it, so the point that wants to sit on the flight line is the
+  // middle of the head. Hand-set from watching the shot, like every other grip in
+  // the game — it is the one number in a projectile a tool cannot give you.
+  grip: 0.12
+};
+
 const monk = {
   ...priest,
-  ammo: {
-    ...missile3,
-    kind: 'monk',
-    sprite: 'monk_shot',
-    trim: MONK_SHOT_TRIM,
-    // `grip` 0.12 rather than the darts' 0.15, and it is the shape that moves it:
-    // those are long thin bolts held near the point, and this is a blunt head with
-    // a tail behind it, so the point that wants to sit on the flight line is the
-    // middle of the head. Hand-set from watching the shot, like every other grip in
-    // the game — it is the one number in a projectile a tool cannot give you.
-    grip: 0.12
-  },
+  ammo: monkShot,
   gunner: 'monk',
   gunnerTrim: MONK_TRIM,
   // The centre of his ground shadow, source (258.0, 303.0), by the tip rule every
@@ -3370,7 +3377,17 @@ export const monastery = [
     // tier 4 glyph. See the note on the Musketeer Post's.
     glyph: 'temple',
     // Its own three lines, on the same terms as every other named tier 4.
-    voice: 'monk' }
+    voice: 'monk',
+    // WHAT A TEMPLE CAN BE TAUGHT, and the pair are the first in the game that
+    // change EVERY shot rather than one in four or one in ten. Slowed Pulse makes
+    // the blast hold a man up; Inner Strength makes it hit harder. Neither has a
+    // rhythm, a pose or a special ball — what they have is a re-drawn comet, and a
+    // fourth one for a temple that has bought both.
+    //
+    // WHICH IS WHY THE ARTIST DREW FOUR PROJECTILES. See `shot` and `shotWith` on
+    // the two entries in src/data/abilities.js, and ammoOf in src/towers.js, which
+    // is the whole of the choosing.
+    abilities: ['pulse', 'strength'] }
 ];
 
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers
