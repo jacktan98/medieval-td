@@ -106,7 +106,7 @@ and two voice lines. Plus its two abilities: `units/Musketeer_Deadeye.png`,
 `projectiles/Musketeer_Deadeye_Bullet.png`, `audio/sfx/Musketeer_Deadeye.mp3`,
 `effects/Musketeer_Target_Locked.png` (the crosshair Deadeye paints over its man a
 second before it fires) and the two button faces
-`abilities/Musketeer_Post_Burst_Fire.png` and `abilities/Musketeer_Post_Deadeye.png`.
+`abilities/Musketeer_Post_Burst_Fire_Icon.png` and `abilities/Musketeer_Post_Deadeye_Icon.png`.
 
 Elsewhere, but the Ballista Turret's: `units/Ballista_Engineer.png` (the man, for
 the info box and the encyclopedia — he is drawn into all three machine frames
@@ -115,8 +115,8 @@ and five clips — `audio/sfx/Ballista_Bolt_shot.mp3`,
 `audio/sfx/Ballista_kill_enemy.mp3` and three voice lines. Plus its two
 abilities: the three iron frames above, `projectiles/Ballista_Turret_Heavy_Bolt.png`,
 and the two button faces, which live in `assets/abilities` now:
-`abilities/Ballista_Turret_Reinforced_Tension.png` and
-`abilities/Ballista_Turret_Heavy_Bolt.png`.
+`abilities/Ballista_Turret_Reinforced_Tension_Icon.png` and
+`abilities/Ballista_Turret_Heavy_Bolt_Icon.png`.
 
 **THE IRON FRAMES ARE THE SAME MACHINE, RE-MATERIALLED.** Every trim is identical
 to the timber frame's to the pixel, which is what makes Reinforced Tension a swap of three
@@ -137,8 +137,8 @@ clips — `audio/sfx/Pope_kill_enemy.mp3` and three voice lines. It fires the
 monastery's own `Arcane_shot` a quarter louder rather than a fourth recording of
 it. Plus its two abilities, which are drawings only — no new frame of the tower
 and no new sound, because neither of them happens at the altar: the two button
-faces `abilities/High_Altar_Holy_Wrath.png` and
-`abilities/High_Altar_Divine_Fortitude.png`, and the two badges
+faces `abilities/High_Altar_Holy_Wrath_Icon.png` and
+`abilities/High_Altar_Divine_Fortitude_Icon.png`, and the two badges
 `ui/High_Altar_Holy_Wrath.png` and `ui/High_Altar_Divine_Fortitude.png`
 that float over every building the aura reaches.
 
@@ -216,8 +216,8 @@ Elsewhere, but the Paladin Keep's: `units/Paladin_Default.png` and `_Attack`,
 lines. It has no projectile: it is a barracks, and its men do the fighting. Plus
 its two abilities: `units/Paladin_Holy_Light.png`, `units/Paladin_Blinding_Strike.png`,
 `audio/sfx/Paladin_Holy_Light.mp3`, `audio/sfx/Paladin_Blinding_Strike.mp3` and the two
-button faces `abilities/Paladin_Keep_Holy_Light.png` and
-`abilities/Paladin_Keep_Blinding_Strike.png` — the second of which was Holy Slash
+button faces `abilities/Paladin_Keep_Holy_Light_Icon.png` and
+`abilities/Paladin_Keep_Blinding_Strike_Icon.png` — the second of which was Holy Slash
 until the owner renamed the ability.
 
 **ONLY A TIER 4 HAS ABILITIES**, and that is what the tier is for once its ladder

@@ -465,43 +465,43 @@ export const paths = {
   // The two High Altar BADGES stay in assets/ui, which is a line drawn on
   // purpose and not an oversight: they are not buttons and never appear in the
   // encyclopedia — they are marks the renderer hangs over a tower on the board.
-  ability_burst:   'assets/abilities/Musketeer_Post_Burst_Fire.png',
-  ability_deadeye: 'assets/abilities/Musketeer_Post_Deadeye.png',
-  ability_light:   'assets/abilities/Paladin_Keep_Holy_Light.png',
-  ability_blinding:   'assets/abilities/Paladin_Keep_Blinding_Strike.png',
+  ability_burst:   'assets/abilities/Musketeer_Post_Burst_Fire_Icon.png',
+  ability_deadeye: 'assets/abilities/Musketeer_Post_Deadeye_Icon.png',
+  ability_light:   'assets/abilities/Paladin_Keep_Holy_Light_Icon.png',
+  ability_blinding:   'assets/abilities/Paladin_Keep_Blinding_Strike_Icon.png',
   // The Ballista Turret's two, on the same terms: the whole button, drawn on the
   // plate's own disc.
-  ability_ballista_tension: 'assets/abilities/Ballista_Turret_Reinforced_Tension.png',
+  ability_ballista_tension: 'assets/abilities/Ballista_Turret_Reinforced_Tension_Icon.png',
   // The Crossbow Sentry's two. Its Reinforced Tension is a second entry rather
   // than a shared one because the icon is a picture of ITS weapon — see the note
   // on the ids in data/abilities.js.
-  ability_sentry_tension:  'assets/abilities/Crossbow_Sentry_Reinforced_Tension.png',
-  ability_swift:           'assets/abilities/Crossbow_Sentry_Swift_Reload.png',
-  ability_heavy:   'assets/abilities/Ballista_Turret_Heavy_Bolt.png',
+  ability_sentry_tension:  'assets/abilities/Crossbow_Sentry_Reinforced_Tension_Icon.png',
+  ability_swift:           'assets/abilities/Crossbow_Sentry_Swift_Reload_Icon.png',
+  ability_heavy:   'assets/abilities/Ballista_Turret_Heavy_Bolt_Icon.png',
   // The Assassin Guild's two — the first abilities in the game that change what a
   // SOLDIER does rather than what a building does.
-  ability_knife: 'assets/abilities/Assassin_Guild_Knife_Throw.png',
-  ability_sneak: 'assets/abilities/Assassin_Guild_Sneak_Attack.png',
+  ability_knife: 'assets/abilities/Assassin_Guild_Knife_Throw_Icon.png',
+  ability_sneak: 'assets/abilities/Assassin_Guild_Sneak_Attack_Icon.png',
   // The High Altar's two, and they come in PAIRS: a button face like every
   // other ability, and a badge drawn on the BOARD over each tower the aura is
   // working on. The badge is the only feedback an aura has — nothing about the
   // altar itself changes when one is bought — so it is as much a part of the
   // ability as the number is.
-  ability_wrath:     'assets/abilities/High_Altar_Holy_Wrath.png',
-  ability_fortitude: 'assets/abilities/High_Altar_Divine_Fortitude.png',
+  ability_wrath:     'assets/abilities/High_Altar_Holy_Wrath_Icon.png',
+  ability_fortitude: 'assets/abilities/High_Altar_Divine_Fortitude_Icon.png',
   badge_wrath:       'assets/ui/High_Altar_Holy_Wrath.png',
   badge_fortitude:   'assets/ui/High_Altar_Divine_Fortitude.png',
   // The Cannon Outpost's two, and the first pair to arrive after the folder
   // existed — so they were uploaded to assets/ui like every icon before them and
   // moved here with the rest.
-  ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload.png',
-  ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot.png',
+  ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload_Icon.png',
+  ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot_Icon.png',
   // The Judgement Temple's two. Named for their tower like every other pair —
   // they arrived as Slowed_Pulse_Icon and Inner_Strength_Icon and were renamed
   // with the rest when the artist redrew all sixteen and dropped the `_Icon`
   // suffix. Nothing in the game reads a filename; the key below is the binding.
-  ability_pulse:    'assets/abilities/Judgement_Temple_Slowed_Pulse.png',
-  ability_strength: 'assets/abilities/Judgement_Temple_Inner_Strength.png',
+  ability_pulse:    'assets/abilities/Judgement_Temple_Slowed_Pulse_Icon.png',
+  ability_strength: 'assets/abilities/Judgement_Temple_Inner_Strength_Icon.png',
 
   // --- THE STATUS MARKS, in assets/status ---------------------------------------
   //

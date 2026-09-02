@@ -133,9 +133,24 @@ export const deadeyeBall = {
 export const heavyBolt = {
   ...bolt,
   sprite: 'heavy_bolt',
-  trim: [172, 148, 196, 190],
-  hold: [0.082, 0.908],
-  grip: 0.082,
+  // NOTHING BUT THE SPRITE KEY, and that is a finding rather than a tidy-up.
+  //
+  // This entry used to restate three numbers — `trim` [172, 148, 196, 190],
+  // `hold` and `grip` — because the flames spread the drawing 28px taller and
+  // wider than the plain bolt, so the same source pixel sat at a different
+  // fraction of a different box. The artist has redrawn it to match the ability
+  // button, and the new file trims to [172, 174, 168, 164]: the PLAIN BOLT'S BOX,
+  // to the pixel.
+  //
+  // So the three overrides are gone and the spread above supplies them. Measured
+  // before deleting rather than assumed: the shaft's hold point is source
+  // (188.1, 320.5) in both files, which against the new trim is 0.0960, 0.8930 —
+  // the plain bolt's own 0.096, 0.893 to four places. `clear` was already
+  // inherited and still is.
+  //
+  // `node tools/trim.mjs` reads the box off the file, so if the flames ever grow
+  // again this stops being true out loud rather than quietly drawing the bolt off
+  // the rail.
   // AND IT THROWS UP EARTH WHERE IT LANDS, which an ordinary bolt does not. The
   // artist's note: the heavy bolt hits the ground like the tiers below it do. A
   // catapult's rock has carried `impact` since it arrived — one of two drawings

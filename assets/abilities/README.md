@@ -7,22 +7,22 @@ page.
 
 | tower | ability | file |
 |-------|---------|------|
-| Crossbow Sentry | Reinforced Tension | `Crossbow_Sentry_Reinforced_Tension.png` |
-| Crossbow Sentry | Swift Reload | `Crossbow_Sentry_Swift_Reload.png` |
-| Musketeer Post | Burst Fire | `Musketeer_Post_Burst_Fire.png` |
-| Musketeer Post | Deadeye | `Musketeer_Post_Deadeye.png` |
-| Paladin Keep | Holy Light | `Paladin_Keep_Holy_Light.png` |
-| Paladin Keep | Blinding Strike | `Paladin_Keep_Blinding_Strike.png` |
-| Assassin Guild | Knife Throw | `Assassin_Guild_Knife_Throw.png` |
-| Assassin Guild | Sneak Attack | `Assassin_Guild_Sneak_Attack.png` |
-| Ballista Turret | Reinforced Tension | `Ballista_Turret_Reinforced_Tension.png` |
-| Ballista Turret | Heavy Bolt | `Ballista_Turret_Heavy_Bolt.png` |
-| Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot.png` |
-| Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload.png` |
-| High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude.png` |
-| High Altar | Holy Wrath | `High_Altar_Holy_Wrath.png` |
-| Judgement Temple | Inner Strength | `Judgement_Temple_Inner_Strength.png` |
-| Judgement Temple | Slowed Pulse | `Judgement_Temple_Slowed_Pulse.png` |
+| Crossbow Sentry | Reinforced Tension | `Crossbow_Sentry_Reinforced_Tension_Icon.png` |
+| Crossbow Sentry | Swift Reload | `Crossbow_Sentry_Swift_Reload_Icon.png` |
+| Musketeer Post | Burst Fire | `Musketeer_Post_Burst_Fire_Icon.png` |
+| Musketeer Post | Deadeye | `Musketeer_Post_Deadeye_Icon.png` |
+| Paladin Keep | Holy Light | `Paladin_Keep_Holy_Light_Icon.png` |
+| Paladin Keep | Blinding Strike | `Paladin_Keep_Blinding_Strike_Icon.png` |
+| Assassin Guild | Knife Throw | `Assassin_Guild_Knife_Throw_Icon.png` |
+| Assassin Guild | Sneak Attack | `Assassin_Guild_Sneak_Attack_Icon.png` |
+| Ballista Turret | Reinforced Tension | `Ballista_Turret_Reinforced_Tension_Icon.png` |
+| Ballista Turret | Heavy Bolt | `Ballista_Turret_Heavy_Bolt_Icon.png` |
+| Cannon Outpost | Fiery Shot | `Cannon_Outpost_Fiery_Shot_Icon.png` |
+| Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload_Icon.png` |
+| High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude_Icon.png` |
+| High Altar | Holy Wrath | `High_Altar_Holy_Wrath_Icon.png` |
+| Judgement Temple | Inner Strength | `Judgement_Temple_Inner_Strength_Icon.png` |
+| Judgement Temple | Slowed Pulse | `Judgement_Temple_Slowed_Pulse_Icon.png` |
 
 **THE TABLE IS IN THE GAME'S OWN ORDER**, which is the order `ABILITIES` in
 `src/data/abilities.js` lists them and the order the encyclopedia lays them out
@@ -40,13 +40,14 @@ down each family's column. Two rules decide it and both are the owner's:
 Reloads and the two Reinforced Tensions apart on disk. A file named after the ability alone would
 have to be one drawing for two different weapons.
 
-All sixteen follow it now. They carried an `_Icon` suffix and three of them were
-named for a man rather than a building — `Musketeer_`, `Paladin_`, `Assassin_` —
-and two for nothing but the ability. The artist redrew the set and renamed them
-all to `<Tower>_<Ability>.png`, which is the shape this rule was always
-describing.
+All sixteen follow it now: **`<Tower>_<Ability>_Icon.png`**, with no exceptions.
+Three used to be named for a man rather than a building — `Musketeer_`,
+`Paladin_`, `Assassin_` — and two for nothing but the ability. The `_Icon` suffix
+came off for one round and went straight back on, because a folder of files with
+no suffix is indistinguishable from every other PNG once it is sitting in a
+downloads folder.
 
-**`Paladin_Keep_Blinding_Strike.png` was Holy Slash**, renamed because there were
+**`Paladin_Keep_Blinding_Strike_Icon.png` was Holy Slash**, renamed because there were
 3 Holy things on the abilities page and the owner wanted 2. Everything the ability
 owns followed it: the paladin's pose is `units/Paladin_Blinding_Strike.png`, its
 clip is `audio/sfx/Paladin_Blinding_Strike.mp3`, and the id, the sprite key and
@@ -86,8 +87,8 @@ See the note on the ids at the top of `src/data/abilities.js`.
 ## The two aura badges are not here
 
 The altar's two badges stay in `assets/ui` — `High_Altar_Holy_Wrath.png`
-and `High_Altar_Divine_Fortitude.png`, the same names as the buttons here
-without the `_Icon`. They are not buttons and never appear in the encyclopedia:
+and `High_Altar_Divine_Fortitude.png`, which are the button names here without
+the `_Icon`, and that is the whole of how you tell a badge from a button on disk. They are not buttons and never appear in the encyclopedia:
 they are marks the renderer hangs over every tower an aura is working on, which
 is board furniture rather than interface.
 
