@@ -217,22 +217,39 @@ export const ui = {
   // wrong rather than visibly broken.
   ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  // THE FOUR LIGHTEST DISCS IN THE SET take `pale`, and the list grew twice: the
-  // altar's two, then the keep's, then the two Reinforced Tensions — each time at
-  // the owner's word and each time about the same thing. White price ink is
-  // invisible on a light plate. Measured, so the line is not a matter of taste:
+  // `pale` MEANS DARK INK ON THIS BUTTON'S PRICE — see buttonPrice in render.js —
+  // and 8 of the 16 carry it. It started as a legibility rule and it is a
+  // CONSISTENCY rule now, which is worth writing down because the two disagree on
+  // two of the buttons.
   //
-  //   Holy Light          rgb(233,233,233)   233
-  //   Divine Fortitude    rgb(233,233,233)   233
-  //   Reinforced Tension  rgb(165,211,253)   205   (both of them, to a pixel)
-  //   Blinding Strike     rgb(150,150,150)   150
-  //   Holy Wrath          rgb(150,150,150)   150
-  //   ---- everything below here keeps the white ----
-  //   Inner Strength      rgb(255,170,54)    180
+  // THE LEGIBILITY HALF, and it is not a matter of taste. Measured plate colours:
   //
-  // Inner Strength is the one that breaks a clean threshold, and it is the owner's
-  // call rather than a number: an orange plate carries white where a pale blue one
-  // does not. So this stays a per-icon flag rather than a luminance test.
+  //   Holy Light          rgb(233,233,233)   233   dark
+  //   Divine Fortitude    rgb(233,233,233)   233   dark
+  //   Reinforced Tension  rgb(165,211,253)   205   dark   (both, to a pixel)
+  //   Inner Strength      rgb(255,170,54)    180   white  — orange carries white
+  //   Knife Throw         rgb(190,159,109)   162   white
+  //   Blinding Strike     rgb(150,150,150)   150   dark
+  //   Holy Wrath          rgb(150,150,150)   150   dark
+  //   Burst Fire          rgb(176,130,210)   146   white
+  //   Fiery Shot          rgb(176,130,210)   146   white
+  //   Slowed Pulse        rgb(216,102,1)     119   white
+  //   Sneak Attack        rgb(116,89,46)      92   white
+  //   Heavy Bolt          rgb(5,93,171)       80   DARK, and see below
+  //   Swift Reload (bow)  rgb(5,93,170)       80   DARK, and see below
+  //   Deadeye             rgb(98,0,171)       33   white
+  //   Swift Reload (gun)  rgb(97,0,170)       33   white
+  //
+  // THE CONSISTENCY HALF, at the owner's ask: "change heavy bolt and swift reload
+  // for crossbow sentry to dark colour too so that it is organised". Every other
+  // tower's PAIR already shared one ink; those two were the only mixed pairs,
+  // because their light halves are the Reinforced Tensions. Both now read dark
+  // through the pair.
+  //
+  // IT COSTS THOSE TWO BUTTONS THEIR CONTRAST, and the number is here so nobody
+  // has to re-derive it: #3A3026 on rgb(5,93,171) is 1.9:1, against 6.6:1 for the
+  // white it replaced. The price is legible at arm's length and not from across a
+  // desk. It is the owner's call and it is one word per line to put back.
   //
   // THE PALADIN KEEP'S TWO, and they take `pale` like the altar's for the same
   // reason and at the owner's word: "the price in Paladin and pope abilities icon
@@ -248,8 +265,8 @@ export const ui = {
   // The Crossbow Sentry's two, on the same terms: whole buttons on the artist's
   // own disc, measured to btn_plate's trim like every other ability face.
   ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Assassin Guild's two, measured to the same disc as every other face —
   // 163,163,186,186 again, which is now nine files in a row the artist has drawn
   // to the same circle without being asked twice.
