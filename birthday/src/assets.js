@@ -31,7 +31,13 @@ export const paths = {
   // the words "Damage" and "Health" on the stats panel.
   icon_gold: '../assets/ui/Gold_Icon.png',
   icon_life: '../assets/ui/Life_Icon.png',
-  icon_damage: '../assets/ui/Damage_Icon.png',
+  // `Damage_Icon.png` until the damage triangle arrived in the big game and split
+  // the sword in two — see the note over `stat_damage` in ../src/assets.js. This
+  // line was not moved with it and had been 404ing on every load since: nothing
+  // broke visibly, because a missing image draws as nothing and the number beside
+  // it still read. The birthday game has one kind of damage, so it takes the
+  // physical sword.
+  icon_damage: '../assets/ui/Physical_Damage_Icon.png',
   icon_health: '../assets/ui/Health_Icon.png',
 
   // The big game's rally flag, borrowed whole. It is the one UI file that is

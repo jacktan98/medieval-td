@@ -323,8 +323,19 @@ export const paths = {
   // the note over the units above for which is which.
   thug:            'assets/enemies/Enemies_Thug_Default.png',
   thug_attack:     'assets/enemies/Enemies_Thug_Attack.png',
+  tough:           'assets/enemies/Enemies_Tough_Thug_Default.png',
+  tough_attack:    'assets/enemies/Enemies_Tough_Thug_Attack.png',
   giant:           'assets/enemies/Enemies_Giant_Thug_Default.png',
   giant_attack:    'assets/enemies/Enemies_Giant_Thug_Attack.png',
+  // THE THIRD DRAWING NOBODY ELSE HAS. Every other figure in this game is a
+  // Default and an Attack — what it looks like, and what it looks like doing its
+  // thing. The Blocker has a stance as well: a man behind a raised shield, which
+  // is neither of those, because it is not something he DOES to anybody. It is
+  // what he is while he is being shot at. See `guard` on blocker_inf in
+  // data/waves.js and enemyStance in render.js.
+  blocker:         'assets/enemies/Enemies_Blocker_Thug_Default.png',
+  blocker_attack:  'assets/enemies/Enemies_Blocker_Thug_Attack.png',
+  blocker_guard:   'assets/enemies/Enemies_Blocker_Thug_Defend.png',
   // TWO ATTACK DRAWINGS EACH for the two enemies that fight at both distances,
   // and they answer different questions: `_melee` is what he does to the man
   // holding him, `_ranged` is what he does to the men he cannot reach. The
@@ -345,6 +356,8 @@ export const paths = {
   // rather than the other way round: renaming an upload only means renaming it
   // again after the next one.
   dead_thug:       'assets/dead/Enemies_Thug_Dead.png',
+  dead_tough:      'assets/dead/Enemies_Tough_Thug_Dead.png',
+  dead_blocker:    'assets/dead/Enemies_Blocker_Thug_Dead.png',
   dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
   dead_plague:     'assets/dead/Enemies_Plague_Thug_Dead.png',
   dead_archer:     'assets/dead/Enemies_Archer_Thug_Dead.png',

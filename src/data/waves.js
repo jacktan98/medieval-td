@@ -165,6 +165,152 @@ export const enemyTypes = {
     colour: '#B98B5E'
   },
 
+  // THE SAME MAN, TOUGHER. "Just like a regular thug but tougher" is the whole
+  // brief and the def keeps to it: every field below that is not health, damage
+  // or armour is the Thug's own number, unchanged, so what makes him different is
+  // exactly the three things that were asked for and nothing else drifted in.
+  //
+  // 200 health against 80, 20 damage against 10, and LOW plate where the Thug
+  // wears none. The plate is the part that matters more than it looks: at low he
+  // takes three quarters of a physical blow, so a tier 1 bow needs 27 arrows
+  // rather than the 8 a Thug needs — and a monk's staff, which is magic and meets
+  // no ward at all, needs the same 10 either way. He is the first enemy in the
+  // game whose answer is "shoot him with the other thing", at a rank cheap enough
+  // to appear early.
+  //
+  // HIS BOX IS THE THUG'S BOX, 96 wide against 96 and 119 tall against 116, so he
+  // costs the encyclopedia nothing and stands in a lane exactly as his smaller
+  // cousin does. `r` stays 8 for the same reason: the body did not change size,
+  // the man wearing it got harder to kill.
+  tough_inf: {
+    name: 'Tough Thug',
+    sprite: 'tough',
+    spriteTrim: [208, 197, 96, 119],
+    pivot: [0.542, 0.903],
+    // His shadow is at source (260.0, 304.5) in BOTH drawings, to the pixel — the
+    // rule every figure in this game keeps, and what nails his feet to the spot
+    // while only the arm moves. Measured, not copied: two measurements that agree
+    // are the check.
+    attack: { sprite: 'tough_attack', trim: [158, 197, 146, 119], pivot: [0.699, 0.903] },
+    spriteFaces: -1,
+    dead: 'dead_tough',
+    deadTrim: [175, 217, 162, 78],
+    deadPivot: [0.213, 0.888],
+    hp: 200,
+    damageType: 'physical',
+    armour: { physical: 'low', magic: 'none' },
+    speed: 70,      // the Thug's, unchanged — see the note above
+    // Between the Thug's 15 and the Giant's 40, nearer the Thug: he is worth
+    // about two and a half of one to kill and pays about one and a half.
+    bounty: 25,
+    leak: 1,
+    damage: 20,
+    atkCd: 1.0,
+    r: 8,
+    colour: '#A87C4E'
+  },
+
+  // THE SHIELD, and he is the first enemy whose armour is a THING HE DOES rather
+  // than a row on his card.
+  //
+  // Every other creature in this game wears one set of plate from the moment it
+  // spawns to the moment it dies. This one wears three, and which he is wearing
+  // is the whole of him:
+  //
+  //   WALKING          med physical, no ward     his card's number
+  //   GUARDING         high physical, HIGH WARD  a projectile hit him
+  //   FIGHTING         low physical, no ward     a soldier has hold of him
+  //
+  // THE FIRST HIT PUTS THE SHIELD UP and every hit after it holds the shield
+  // there: five seconds, refreshed by anything that lands, so a tower shooting
+  // him steadily keeps him behind it indefinitely. Guarding he is very nearly
+  // arrow-proof — a quarter of a physical blow and a quarter of a magic one — and
+  // the ward is the half that is new, because it means the monastery cannot
+  // simply walk around him the way it walks around a Giant.
+  //
+  // AND HE IS SOFT THE MOMENT HE SWINGS. A man cannot hold a shield up and hit
+  // somebody with it, so being pinned drops him to LOW and takes his ward away
+  // entirely — below the med he walks in. That is the counter-play and it is the
+  // reason he is worth building: shoot him and he turtles, send a soldier and he
+  // opens up, and the answer is to do both in that order. He is the first enemy
+  // who makes the barracks the SETUP for the archery rather than the alternative
+  // to it.
+  //
+  // WHY THE SLOW-WALK IS A GIFT AS WELL AS A COST. Guarding he shuffles at half
+  // pace, so shooting a Blocker trades damage you will not land for time you will
+  // — he arrives later for having been shot at. Without it the interaction is a
+  // pure punish for firing, which is a mechanic that teaches players to stop
+  // playing.
+  //
+  // FIGHTING BEATS GUARDING when both are true, which is the precedence the
+  // owner asked for — "vulnerable when attacking but still tough" — and it is
+  // also the only ordering that leaves him beatable. See enemyStance in
+  // render.js for the drawing and wornBy in data/armour.js for the plate; the two
+  // read the same three states from one place, so what he looks like and what he
+  // takes cannot disagree.
+  blocker_inf: {
+    name: 'Blocker Thug',
+    sprite: 'blocker',
+    spriteTrim: [211, 197, 90, 118],
+    pivot: [0.606, 0.922],
+    // HIS SHADOW MOVES 2.5 SOURCE PX between walking and the other two poses —
+    // (265.5, 305.8) standing against (265.5, 303.3) swinging and guarding. Every
+    // other figure in the game holds its shadow to the pixel across poses, and
+    // this one does not quite.
+    //
+    // Kept as measured rather than levelled, on the rule the whole project runs
+    // on: each drawing carries its own answer. It is half a game pixel, so he
+    // settles very slightly as he raises the shield, which reads as weight
+    // rather than as a fault. Worth knowing about before the next re-export, not
+    // worth papering over.
+    attack: { sprite: 'blocker_attack', trim: [180, 197, 121, 118], pivot: [0.707, 0.900] },
+    // THE THIRD POSE, and the only one in the game that is neither a Default nor
+    // an Attack. It is a STANCE — a man standing behind a shield — so it carries
+    // a `default`-shaped entry with no attack beside it: he does not swing while
+    // he is guarding, because being swung at is not what put the shield up.
+    guard: {
+      sprite: 'blocker_guard',
+      trim: [169, 197, 132, 118],
+      pivot: [0.731, 0.900],
+      // What he wears while it is up. HIGH ON BOTH AXES, which nothing else in
+      // the game wears — the Giant's med plate is the previous ceiling.
+      armour: { physical: 'high', magic: 'high' },
+      // Refreshed by every hit that lands, so this is "five seconds since the
+      // last arrow" rather than "five seconds since the first".
+      seconds: 5,
+      // Half pace while it is up. A multiplier rather than a speed, so it stays
+      // half of whatever he is retuned to — the same shape as a monk's slow, and
+      // it multiplies with one rather than replacing it.
+      slow: 0.5
+    },
+    // What he wears with a spear in him. BELOW the med he walks in, which is the
+    // point: the shield is off his arm and in the way.
+    fightArmour: { physical: 'low', magic: 'none' },
+    spriteFaces: -1,
+    dead: 'dead_blocker',
+    deadTrim: [175, 217, 161, 78],
+    deadPivot: [0.211, 0.875],
+    hp: 250,
+    damageType: 'physical',
+    // His card's armour, and the one he is actually wearing for most of a walk
+    // down an undefended stretch of road.
+    armour: { physical: 'med', magic: 'none' },
+    // Slower than a Thug and quicker than a Giant: he is carrying a shield, and
+    // guarding halves this again.
+    speed: 60,
+    // Dearer than the Tough Thug and cheaper than a Giant. He is harder to kill
+    // than either on paper and easier than both if you answer him properly, so
+    // he pays for the answer rather than for the health bar.
+    bounty: 30,
+    leak: 1,
+    // The Thug's own blow. He is a wall, not a threat — everything he is worth
+    // is in what he takes rather than in what he lands.
+    damage: 10,
+    atkCd: 1.0,
+    r: 8,
+    colour: '#8E8478'
+  },
+
   // THE ARCHER, and he is the first enemy who is dangerous at a distance the
   // player's own line cannot answer with position alone.
   //
@@ -449,7 +595,20 @@ export const enemyTypes = {
   // of the melee damage, and dead to about three tier 1 volleys. Everything he
   // is worth is in the throwing.
   plague_inf: {
-    name: 'Plague Thug',
+    // PLAGUE DOCTOR, and the name caught up with the code rather than the other
+    // way round: every note in this project has called him the plague doctor
+    // since the day he was drawn, because that is what the drawing is — a man in
+    // a beaked mask with a basket of flasks. Only this line still said Thug.
+    //
+    // The gameplay key stays `plague_inf`, on the same rule light_inf follows:
+    // what a creature is called and what it does are different questions, and
+    // every wave table in this file reads the second one. Renaming the key would
+    // touch three level tables to change nothing.
+    //
+    // The ART FILES still say Plague_Thug, deliberately — see the note over the
+    // enemy sprites in src/assets.js: the code bends to the artist's filenames,
+    // because renaming an upload only means renaming it again after the next one.
+    name: 'Plague Doctor',
     sprite: 'plague',
     // Both poses are drawn in the SAME box — the only figure in the game where
     // that is true. He raises one arm to throw and the arm stays inside the

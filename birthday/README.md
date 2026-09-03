@@ -128,9 +128,11 @@ is the only reason they are any good. They are all on one screen in `src/data.js
 
 The thugs are the big game's, with **three numbers overridden at the top of
 `src/data.js`** and nothing written back: a Thug is 80 health at 70px/s hitting
-for 10 a second, a Giant Thug **1500** at 52 hitting for 30, and there is **no
-Plague Thug in this game at all** — he is filtered out of the roster rather than
-merely left out of the wave tables. Every bounty is **two thirds** of the big
+for 10 a second, a Giant Thug **1500** at 52 hitting for 30, and **those two are
+the whole roster** — `ROSTER` in `src/data.js` NAMES them rather than listing
+what to leave out, so a creature drawn for the big game cannot arrive here by
+being added there. It used to be a blocklist and that is exactly how the Tough
+Thug and the Blocker Thug turned up uninvited. Every bounty is **two thirds** of the big
 game's, so a thug pays 10 and a giant 27. The reference points are the towers
 those thugs were balanced against — a Watchtower is 70 gold for 10 damage a
 second, a Crossbow Tower 140 for 31.3, a Militia Camp 70 for three men of 100

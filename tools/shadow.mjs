@@ -198,6 +198,8 @@ const ass = guild.soldier;
 const mon = towers.monastery;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const plague = waves.enemyTypes.plague_inf;
+const tough = waves.enemyTypes.tough_inf;
+const blocker = waves.enemyTypes.blocker_inf;
 const archer = waves.enemyTypes.archer_inf;
 
 // `whole` sprites are the buildings: nothing else in those files is painted the
@@ -408,6 +410,21 @@ const SPRITES = [
   ['assets/units/Assassin_Sneak_Attack.png', 'sneak.pose.pivot', pose('sneak').trim, pose('sneak').pivot],
   ['assets/enemies/Enemies_Thug_Default.png',        'light_inf.pivot',         light.spriteTrim, light.pivot],
   ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
+  ['assets/enemies/Enemies_Tough_Thug_Default.png',   'tough_inf.pivot',         tough.spriteTrim, tough.pivot],
+  ['assets/enemies/Enemies_Tough_Thug_Attack.png',    'tough_inf.attack.pivot',  tough.attack.trim, tough.attack.pivot],
+  // THE BLOCKER'S THREE, and the third is a stance rather than a blow — see
+  // `guard` in data/waves.js. It matters here as much as any Attack does: he
+  // swaps into it mid-walk when something shoots him, so a pivot out by two would
+  // make him hop the moment an arrow arrived.
+  //
+  // HIS SHADOW IS NOT QUITE STILL between them and that is known: the walking
+  // pose sits 2.5 source px lower than the other two, where every other figure in
+  // this game holds it to the pixel. Each pivot is measured off its own drawing
+  // rather than levelled, so all three pass — and the day one of them is
+  // re-exported wrong, this is what says so.
+  ['assets/enemies/Enemies_Blocker_Thug_Default.png', 'blocker_inf.pivot',        blocker.spriteTrim, blocker.pivot],
+  ['assets/enemies/Enemies_Blocker_Thug_Attack.png',  'blocker_inf.attack.pivot', blocker.attack.trim, blocker.attack.pivot],
+  ['assets/enemies/Enemies_Blocker_Thug_Defend.png',  'blocker_inf.guard.pivot',  blocker.guard.trim, blocker.guard.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Default.png',  'heavy_inf.pivot',         heavy.spriteTrim, heavy.pivot],
   ['assets/enemies/Enemies_Giant_Thug_Attack.png',   'heavy_inf.attack.pivot',  heavy.attack.trim, heavy.attack.pivot],
   ['assets/enemies/Enemies_Plague_Thug_Default.png', 'plague_inf.pivot',        plague.spriteTrim, plague.pivot],
@@ -432,6 +449,8 @@ const SPRITES = [
   ['assets/dead/Paladin_Dead.png',            'paladin.deadPivot',    pal.deadTrim, pal.deadPivot],
   ['assets/dead/Assassin_Dead.png',           'assassin.deadPivot',   ass.deadTrim, ass.deadPivot],
   ['assets/dead/Enemies_Thug_Dead.png',        'light_inf.deadPivot',  light.deadTrim, light.deadPivot],
+  ['assets/dead/Enemies_Tough_Thug_Dead.png',   'tough_inf.deadPivot',   tough.deadTrim, tough.deadPivot],
+  ['assets/dead/Enemies_Blocker_Thug_Dead.png','blocker_inf.deadPivot', blocker.deadTrim, blocker.deadPivot],
   ['assets/dead/Enemies_Giant_Thug_Dead.png',  'heavy_inf.deadPivot',  heavy.deadTrim, heavy.deadPivot],
   ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot],
   ['assets/dead/Enemies_Archer_Thug_Dead.png', 'archer_inf.deadPivot', archer.deadTrim, archer.deadPivot]

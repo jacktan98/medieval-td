@@ -26,10 +26,17 @@ import { enemyTypes as bigGameEnemies } from '../../src/data/waves.js';
 // imported above and nothing is written back. What is different here is three
 // numbers, and each is a thing the owner asked for after playing it:
 //
-//   NO PLAGUE THUG AT ALL. He is dropped from the roster rather than merely left
-//   out of the wave tables, so nothing in this folder can accidentally bring him
-//   back — and so the stats panel's one portrait scale is worked out from the
-//   thugs that actually turn up.
+//   TWO THUGS AND NOTHING ELSE. The roster is a LIST OF WHAT IS IN rather than a
+//   list of what is out, and that is the whole of the difference between this
+//   working and this quietly breaking. It was a blocklist — everything the big
+//   game has, minus the Plague Doctor — and the day the big game gained a Tough
+//   Thug and a Blocker Thug they both silently arrived here: not in the wave
+//   tables, but in the roster the stats panel sizes its one portrait scale from,
+//   and in anything else that walks this object.
+//
+//   This game is finished and its balance was measured against the two thugs
+//   below. Naming them is what makes that survive the next creature drawn for the
+//   big game, whatever it is.
 //
 //   A THUG PAYS LESS. Gold from bodies is cut by a third across the board. It is
 //   the difficulty lever that costs nothing in fairness: the same thugs arrive at
@@ -41,12 +48,14 @@ import { enemyTypes as bigGameEnemies } from '../../src/data/waves.js';
 //   the family could burn down about as fast as an ordinary thug once two of them
 //   were levelled, which made "a giant is coming" a sentence with nothing behind
 //   it. He is now what he looks like.
+const ROSTER = ['light_inf', 'heavy_inf'];
+
 const BOUNTY = 2 / 3;
 const GIANT_HP = 1.5;
 
 export const enemyTypes = Object.fromEntries(
   Object.entries(bigGameEnemies)
-    .filter(([type]) => type !== 'plague_inf')
+    .filter(([type]) => ROSTER.includes(type))
     .map(([type, def]) => [type, {
       ...def,
       bounty: Math.round(def.bounty * BOUNTY),
@@ -117,7 +126,7 @@ const START_GOLD = [300, 420, 680];
 // have started with more gold. So the openings are gentle, the purses cover them,
 // and the last three waves of each table are where a map is won or lost.
 //
-// TWO KINDS OF THUG NOW, since the Plague Thug is gone. What he took with him was
+// TWO KINDS OF THUG NOW, since the Plague Doctor is gone. What he took with him was
 // most of each map's ranged pressure, so the counts below carry it instead: more
 // bodies, arriving closer together, which is the pressure this family is built to
 // answer.

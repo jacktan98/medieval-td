@@ -1400,12 +1400,25 @@ const ENEMY_LUNGE = 6;
 // drew the doctor ONE standing pose that serves both stances and drew the archer
 // two — so a def takes only the halves it actually has, and an enemy with no
 // `melee` at all answers with the one pair it has ever had.
+//
+// AND A THIRD THING THAT IS NEITHER, for the Blocker Thug: `guard` is a STANCE.
+// A Default says what a figure looks like and an Attack says what it looks like
+// doing something to somebody; a man standing behind a raised shield is doing
+// nothing to anybody, so it replaces the STANDING half and leaves the swing alone.
+//
+// THE ORDER MATTERS AND IT IS THE SAME ORDER wornBy uses in data/armour.js —
+// held beats guarding beats walking. That is not a coincidence to be tidied up
+// later: it is the one thing that has to agree between the two files, because a
+// Blocker drawn behind his shield while taking damage as though it were down is
+// the bug this whole enemy could plausibly ship with. Change one, change both,
+// and tools/facing.mjs checks that the drawing follows the plate.
 export function enemyStance(e) {
   const d = e.def;
   const close = !!(e.foe && d.melee);
+  const guarding = !e.foe && e.guard > 0 && !!d.guard;
   const own = { sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot };
   return {
-    stand: (close && d.melee.default) || own,
+    stand: (close && d.melee.default) || (guarding ? d.guard : own),
     swing: close ? d.melee.attack : d.attack
   };
 }
@@ -1460,10 +1473,17 @@ function drawEnemy(ctx, e) {
 // moment somebody caught him — and a bar that moves for a reason other than
 // health is a bar the player stops trusting. So it is a property of the DEF,
 // answered once and the same in every stance.
+// The Blocker's guard stance is in the same reckoning, for the same reason: it is
+// a third drawing he can be showing, and a bar that rose when he put his shield up
+// would be a bar that moves for a reason other than health. It happens to be his
+// own height today — 118 against 118 — so this line changes nothing on screen and
+// is here so that it still changes nothing after the next re-export.
 const artHeight = def => {
   if (!def.spriteTrim) return def.r * 2;
   const close = def.melee && def.melee.default;
-  return Math.max(def.spriteTrim[3], close ? close.trim[3] : 0) * SCALE;
+  return Math.max(def.spriteTrim[3],
+                  close ? close.trim[3] : 0,
+                  def.guard ? def.guard.trim[3] : 0) * SCALE;
 };
 
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars

@@ -20,7 +20,7 @@
 
 import { SCALE } from './data/towers.js';
 import { boost, damageK, rangeOf, reachOf } from './towers.js';
-import { typeOf, pierceOf, RANK_SHORT } from './data/armour.js';
+import { typeOf, pierceOf, RANK_SHORT, wornBy } from './data/armour.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -29,11 +29,14 @@ import { typeOf, pierceOf, RANK_SHORT } from './data/armour.js';
 // The tallest drawing the figure has, for the same reason render.js takes the
 // max: an archer thug is a head taller with the bow up, and a tap box that
 // shrank the moment he was caught would be a target that moves while you are
-// reaching for it.
+// reaching for it. The Blocker's guard stance counts for the same reason — a man
+// you are reaching for must not get smaller because something shot him.
 const artHeight = def => {
   if (!def.spriteTrim) return def.r * 2;
   const close = def.melee && def.melee.default;
-  return Math.max(def.spriteTrim[3], close ? close.trim[3] : 0) * SCALE;
+  return Math.max(def.spriteTrim[3],
+                  close ? close.trim[3] : 0,
+                  def.guard ? def.guard.trim[3] : 0) * SCALE;
 };
 
 // Slack around a figure's drawn box, in game px. A militiaman is 23px tall and
@@ -132,8 +135,23 @@ export const attackIcon = def =>
 // key and the text beside it — rather than an object the two call sites would each
 // have to turn into a row. That is what keeps the encyclopedia's copy of this line
 // and the description panel's copy identical: there is one line.
-function armourRow(def) {
-  const a = (def.soldier || def).armour || {};
+// WHAT IT IS WEARING, and there are two right answers depending on who is asking.
+//
+// A BOOK asks about a creature — "what is a Blocker Thug" — and the answer is the
+// plate on his card, which is what he walks in. It has to be stable: a reference
+// page whose numbers changed while you read it would be useless.
+//
+// THE PANEL asks about a MAN, one particular one, standing on the road right now,
+// with a health bar over his head counting down. There the live answer is the only
+// useful one — a Blocker behind his shield reads High/High, and the moment a
+// spearman gets hold of him he reads Low, which is the player watching the
+// mechanic work rather than being told about it afterwards.
+//
+// So `fig` is optional and its presence is the question being asked. Absent, the
+// def; present, whatever wornBy says he has on this frame. Everything else in the
+// game answers the same either way, because nothing else changes its plate.
+function armourRow(def, fig) {
+  const a = (fig ? wornBy(fig) : (def.soldier || def).armour) || {};
   const out = [];
   if (a.physical && a.physical !== 'none') out.push(['stat_armour', RANK_SHORT[a.physical]]);
   if (a.magic && a.magic !== 'none') out.push(['stat_armour_magic', RANK_SHORT[a.magic]]);
@@ -176,9 +194,12 @@ export function shownSplash(def) {
 // PIERCE TAKES THE COLOUR OF THE ATTACK IT BELONGS TO — the grey shield for a
 // cannonball, the blue one for a monk — because a break only ever applies to its
 // own kind of armour. That is the rule in data/armour.js, said in a picture.
-export function traitRow(def) {
+// `fig` is the LIVE figure when there is one, and it only reaches the armour
+// half — see armourRow. Pierce and blast are facts about a weapon and do not
+// change while a man is holding it.
+export function traitRow(def, fig = null) {
   const man = def.soldier || def;
-  const out = armourRow(def);
+  const out = armourRow(def, fig);
 
   const p = pierceOf(man);
   if (p) out.push([typeOf(man) === 'magic' ? 'stat_pierce_magic' : 'stat_pierce', p]);
@@ -409,8 +430,10 @@ export function selectionInfo(state) {
     // is the magic on this board. The encyclopedia's enemy card has always shown
     // his wand; the two surfaces disagreed.
     attack: attackIcon(f.def),
-    // The two ranks, on the row where the reach used to be.
-    traits: traitRow(f.def),
+    // The two ranks, on the row where the reach used to be — HIS, not his kind's.
+    // Every figure in the game but one reads the same either way; the Blocker
+    // Thug is why the live one is asked for. See armourRow.
+    traits: traitRow(f.def, f),
     // AND NO REACH, which is what armour cost. The panel is 68px tall and holds a
     // title over two stat rows at the most — see ROW_PITCH in render.js — so a
     // third line was never available, and the owner chose which of the two goes in

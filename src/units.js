@@ -8,7 +8,7 @@ import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
-import { taken, typeOf, pierceOf } from './data/armour.js';
+import { taken, typeOf, pierceOf, wornBy } from './data/armour.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -984,7 +984,7 @@ export function updateUnits(state, dt) {
           (special
             ? (special.times ? u.def.damage * special.times : special.damage)
             : u.def.damage) * (sneak ? sneak.times : 1),
-          typeOf(u.def), u.foe.def && u.foe.def.armour, pierceOf(u.def));
+          typeOf(u.def), wornBy(u.foe), pierceOf(u.def));
         // SPENT, whether or not anything was bought. The flag means "his next blow
         // is the one he lands on showing himself", and that is true of every man
         // here; the ability is what turns it into damage. Re-armed by hiding, and
@@ -1065,7 +1065,7 @@ export function updateUnits(state, dt) {
           // rank, so it meets the paladin's medium as low. tools/armour.mjs runs
           // this exact path rather than trusting it.
           u.hp -= taken(u.foe.def.damage, typeOf(u.foe.def),
-                        u.def && u.def.armour, pierceOf(u.foe.def));
+                        wornBy(u), pierceOf(u.foe.def));
           u.foe.acd = u.foe.def.atkCd;
           u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
           splat(state, u.x, u.y - u.def.r, u.y);

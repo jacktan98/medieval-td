@@ -6,6 +6,8 @@ drawing each of them needs — see "Why only one file" below:
 | file                          | who dies                     | drawn as    |
 |-------------------------------|------------------------------|-------------|
 | `Enemies_Thug_Dead.png`       | the thug, every wave         | 31 x 16 px  |
+| `Enemies_Tough_Thug_Dead.png` | the tough thug               | 33 x 16 px  |
+| `Enemies_Blocker_Thug_Dead.png`| the blocker thug            | 33 x 16 px  |
 | `Enemies_Giant_Thug_Dead.png` | the giant                    | 57 x 25 px  |
 | `Enemies_Plague_Thug_Dead.png`| the plague thug              | 57 x 20 px  |
 | `Enemies_Archer_Thug_Dead.png`| the archer thug              | 44 x 16 px  |
@@ -169,6 +171,8 @@ and paste the rect in as `deadTrim`. As shipped:
 | file                       | `deadTrim`            | `deadPivot`      |
 |----------------------------|-----------------------|------------------|
 | `Enemies_Thug_Dead.png`      | `[180, 217, 152, 78]` | `[0.207, 0.901]` |
+| `Enemies_Tough_Thug_Dead.png`| `[175, 217, 162, 78]` | `[0.213, 0.888]` |
+| `Enemies_Blocker_Thug_Dead.png`| `[175, 217, 161, 78]`| `[0.211, 0.875]` |
 | `Enemies_Archer_Thug_Dead.png`| `[149, 218, 214, 76]`| `[0.161, 0.875]` |
 | `Enemies_Giant_Thug_Dead.png`| `[117, 195, 278, 122]`| `[0.171, 0.783]` |
 | `Enemies_Plague_Thug_Dead.png`| `[116, 207, 280, 97]`| `[0.118, 0.826]` |

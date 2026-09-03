@@ -31,6 +31,8 @@ import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
 import { enemyStance } from '../src/render.js';
+import { raiseGuard } from '../src/enemies.js';
+import { wornBy } from '../src/data/armour.js';
 
 // Where on the road the test stands its victim. An enemy's position is DERIVED
 // from its route and how far along it has walked — setting x and y directly does
@@ -166,6 +168,108 @@ console.log('\nWhich drawing an enemy shows\n');
   const held = enemyStance({ def: thug, foe: {}, thrust: 1 });
   ok(held.stand.sprite === thug.sprite && held.swing.sprite === thug.attack.sprite,
     'a thug has one pair and shows it however he is caught', thug.sprite);
+
+  // THE BLOCKER'S THIRD STANCE, and the check that matters is not which drawing
+  // he shows — it is that the drawing and the PLATE agree.
+  //
+  // Two files answer "what state is this man in": enemyStance in render.js picks
+  // the picture, wornBy in data/armour.js picks what a blow meets. They read the
+  // same three conditions in the same order, in different files, and nothing but
+  // this makes them stay in step. A Blocker drawn behind his shield while taking
+  // arrows as though it were down is the bug this enemy would ship with, and it
+  // is invisible: the numbers are right on the card, the drawing is right on the
+  // road, and only the damage is wrong.
+  const bl = enemyTypes.blocker_inf;
+  const CASES = [
+    ['walking',  { def: bl, foe: null, guard: 0, thrust: 0 }, bl.sprite,       bl.armour],
+    ['guarding', { def: bl, foe: null, guard: 3, thrust: 0 }, bl.guard.sprite, bl.guard.armour],
+    ['held',     { def: bl, foe: {},   guard: 0, thrust: 0 }, bl.sprite,       bl.fightArmour],
+    // BOTH AT ONCE, and this is the row that pins the precedence down. A Blocker
+    // who was shot and then caught is FIGHTING: he cannot hold a shield up and
+    // swing, which is the whole counter-play. If this row ever flips, shooting
+    // him first becomes the way to protect him.
+    ['held while guarding', { def: bl, foe: {}, guard: 3, thrust: 0 }, bl.sprite, bl.fightArmour]
+  ];
+  for (const [label, e, sprite, armour] of CASES) {
+    const st = enemyStance(e);
+    const worn = wornBy(e);
+    ok(st.stand.sprite === sprite, `a Blocker ${label} is drawn as ${sprite}`, st.stand.sprite);
+    ok(worn === armour,
+      `and takes a blow on ${armour.physical}/${armour.magic} plate`,
+      `${worn.physical}/${worn.magic}`);
+  }
+  // He never swings with anything but his one Attack: the guard is a stance, not
+  // a blow, so it must not reach the swing half of the pair.
+  ok(CASES.every(([, e]) => enemyStance(e).swing.sprite === bl.attack.sprite),
+    'and swings with his one Attack in every state', bl.attack.sprite);
+
+  // AND THE SHIELD IS HIS ALONE. Every other enemy answers the same however long
+  // its `guard` field has been sitting at zero — the field is on all of them so
+  // that nothing has to test for it, and that is only safe if it does nothing.
+  for (const [id, d] of Object.entries(enemyTypes)) {
+    if (id === 'blocker_inf') continue;
+    const calm = enemyStance({ def: d, foe: null, guard: 0, thrust: 0 });
+    const shot = enemyStance({ def: d, foe: null, guard: 5, thrust: 0 });
+    ok(calm.stand.sprite === shot.stand.sprite && wornBy({ def: d, foe: null, guard: 5 }) === (d.armour || null),
+      `${d.name} has no shield to raise`, calm.stand.sprite);
+  }
+}
+
+// HOW LONG THE SHIELD STAYS UP, through the real updateEnemies rather than by
+// reading the number back out of the def.
+//
+// Three things are being checked and each was a plausible way to get this wrong:
+// that a hit raises it at all, that a LATER hit refreshes the full five seconds
+// rather than topping up or being ignored, and that it comes down on its own.
+// The last is the one with teeth — a shield that never lowered would make him
+// unkillable by anything but a soldier, and the wave would still end, so nothing
+// would crash and nobody would notice for a while.
+console.log('\nHow long the Blocker keeps his shield up\n');
+{
+  const ok = (cond, label, detail = '') => {
+    console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(56)} ${detail}`);
+    if (!cond) bad++;
+  };
+  const bl = enemyTypes.blocker_inf;
+  const road = laneOf(level.routes[0], 1);
+  const make = () => {
+    const at = pointOn(road, 0);
+    return { def: bl, x: at.x, y: at.y, hp: bl.hp, maxHp: bl.hp, face: 1, route: 0, s: 0,
+             lane: 1, acd: 0, tcd: 0, thrust: 0, foe: null, halted: false, guard: 0,
+             statuses: [], leaked: false };
+  };
+  const world = e => ({ enemies: [e], units: [], corpses: [], shots: [], hits: [],
+                        splats: [], impacts: [], gold: 0, lives: 20 });
+  const run = (state, seconds) => {
+    for (let i = 0; i < Math.round(seconds * 60); i++) updateEnemies(state, 1 / 60);
+  };
+
+  const e = make(); const st = world(e);
+  ok(e.guard === 0, 'he walks in with no shield up', String(e.guard));
+  raiseGuard(e);
+  ok(e.guard === bl.guard.seconds, 'a projectile puts it up for the full time',
+    `${e.guard}s`);
+  run(st, 3);
+  const after3 = e.guard;
+  ok(after3 > 1.9 && after3 < 2.1, 'and it counts down in real seconds', `${after3.toFixed(2)}s left`);
+  raiseGuard(e);
+  ok(e.guard === bl.guard.seconds, 'a second hit refreshes the whole five',
+    `${e.guard}s`);
+  run(st, 5.2);
+  ok(e.guard === 0, 'and it comes down when nothing has hit him for five',
+    `${e.guard}s`);
+
+  // AND HE WALKS SLOWER WHILE IT IS UP. Measured as ground covered rather than
+  // read off the multiplier, so it is the game's own movement being checked.
+  const fast = make(); const fs = world(fast);
+  run(fs, 4);
+  const slowOne = make(); const ss = world(slowOne);
+  raiseGuard(slowOne);
+  run(ss, 4);
+  const ratio = slowOne.s / fast.s;
+  ok(Math.abs(ratio - bl.guard.slow) < 0.02,
+    'and covers half the ground while he is behind it',
+    `${slowOne.s.toFixed(0)}px against ${fast.s.toFixed(0)}px, ratio ${ratio.toFixed(3)}`);
 }
 
 // --- WHICH WAY A THROWER LOOKS ------------------------------------------------

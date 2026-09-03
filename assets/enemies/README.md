@@ -6,7 +6,13 @@ they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 | Default                            | Attack                            | type key     | notes                                  |
 |------------------------------------|-----------------------------------|--------------|----------------------------------------|
 | `Enemies_Thug_Default.png`         | `Enemies_Thug_Attack.png`         | `light_inf`  | the militia, in all 8 waves            |
+| `Enemies_Tough_Thug_Default.png`   | `Enemies_Tough_Thug_Attack.png`   | `tough_inf`  | the same man in low plate, 200 health  |
 | `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
+
+**The Tough Thug is drawn in the Thug's box** — 96 wide against 96, 119 tall
+against 116 — and his shadow sits at source (260.0, 304.5) in both poses. He is
+the same creature with harder numbers, so he costs the encyclopedia's figure
+scale nothing and stands in a lane exactly as his smaller cousin does.
 
 ## Two enemies fight at both distances, and they carry two pairs
 
@@ -19,6 +25,34 @@ hold of him — `e.foe`, not "he is nearby".
 |-------------------------------------------|------------------------------------------|------------------------------------------|-----------------------------------------|--------------|
 | `Enemies_Archer_Thug_Ranged_Default.png`  | `Enemies_Archer_Thug_Ranged_Attack.png`  | `Enemies_Archer_Thug_Melee_Default.png`  | `Enemies_Archer_Thug_Melee_Attack.png`  | `archer_inf` |
 | `Enemies_Plague_Thug_Default.png`         | `Enemies_Plague_Thug_Ranged_Attack.png`  | *(shares the one Default)*               | `Enemies_Plague_Thug_Melee_Attack.png`  | `plague_inf` |
+
+## One enemy has a third drawing, and it is a STANCE
+
+The Blocker Thug carries a **Defend** pose on top of his Default and Attack. It
+is not a third thing he does to anybody — it is what he looks like while he is
+being shot at, which is why it replaces the STANDING half of his pair and leaves
+his swing alone.
+
+| Default                             | Attack                             | Defend                             | type key      |
+|-------------------------------------|------------------------------------|------------------------------------|---------------|
+| `Enemies_Blocker_Thug_Default.png`  | `Enemies_Blocker_Thug_Attack.png`  | `Enemies_Blocker_Thug_Defend.png`  | `blocker_inf` |
+
+**A projectile puts the shield up for five seconds**, refreshed by every one
+after it, and while it is up he wears high plate on BOTH axes and walks at half
+pace. A soldier getting hold of him takes it straight back down — he cannot hold
+a shield and swing — and drops him below the plate he walks in. See `guard` and
+`fightArmour` on `blocker_inf` in `src/data/waves.js`, `wornBy` in
+`src/data/armour.js` for what he takes, and `enemyStance` in `src/render.js` for
+what he shows. Those last two read the same three states in the same order on
+purpose: a man drawn behind a shield while taking damage as though it were down
+is the one bug this enemy could plausibly ship with, and `tools/facing.mjs`
+checks the two against each other.
+
+**His shadow moves 2.5 source px between poses** — (265.5, 305.8) walking
+against (265.5, 303.3) swinging and guarding — where every other figure in the
+game holds its shadow to the pixel. It is kept as measured rather than levelled,
+so he settles half a game pixel as the shield comes up. Worth knowing before the
+next re-export; not worth papering over.
 
 **The melee Default is optional and the doctor does without one.** He stands the
 same way whichever he is about to do, so one drawing serves both stances; the

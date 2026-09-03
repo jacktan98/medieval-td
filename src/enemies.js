@@ -48,11 +48,46 @@ export function spawn(state, typeId) {
     // not going anywhere. There is no budget beside it any more — see the
     // standoff block in updateEnemies.
     halted: false,
+    // SECONDS OF SHIELD LEFT, and only the Blocker Thug ever has any. Set by a
+    // projectile landing on him — see `raiseGuard` below — refreshed by every one
+    // after it, and counted down in updateEnemies.
+    //
+    // On every enemy rather than only on the one that uses it, the same rule
+    // `tcd` follows two fields up: the shape of an enemy is written down in one
+    // place, so nothing has to test whether the field exists before reading it.
+    // `wornBy` and `enemyStance` both read it, and both would need a guard of
+    // their own if it could be undefined.
+    guard: 0,
     // What is being done to him, and the same field a soldier carries: an enemy
     // can be burnt where a soldier can be poisoned, through one mechanism that
     // does not know which army it is looking at. See src/status.js.
     statuses: []
   });
+}
+
+// HOW MUCH OF HIS WALK A RAISED SHIELD COSTS HIM, as a multiplier, and 1 for
+// everything in the game that has no shield.
+//
+// Exported for the same reason enemyStance is: it is a RULE, and tools/facing.mjs
+// checks rules rather than trusting them.
+export function guardSlow(e) {
+  return e.guard > 0 && e.def.guard ? (e.def.guard.slow || 1) : 1;
+}
+
+// SOMETHING HIT HIM FROM A DISTANCE, so the shield goes up — and stays up for
+// five seconds after the LAST thing that hit him rather than the first.
+//
+// Called from projectiles.js, on the line where a shot lands, and from nowhere
+// else. That is the definition the owner asked for: "when he takes in 1st
+// projectile damage". A burn ticking on him is not a projectile and does not
+// count, which is right twice over — it is not something he can see coming, and a
+// status that kept the shield up would make Fiery Shot the worst possible answer
+// to him rather than merely a poor one.
+//
+// A no-op on everything else in the game, so the call site does not have to ask
+// what it just hit.
+export function raiseGuard(fig) {
+  if (fig && fig.def && fig.def.guard) fig.guard = fig.def.guard.seconds;
 }
 
 // Where an enemy will be `t` seconds from now, if nothing interrupts it.
@@ -104,6 +139,15 @@ export function updateEnemies(state, dt) {
     // dies still plays out instead of freezing mid-lunge. Same rate as the
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
     e.thrust = Math.max(0, e.thrust - dt * 4);
+
+    // THE SHIELD COMES DOWN when nothing has hit him for five seconds. Ticked
+    // here, at the top, so it runs wherever he is — held, halted or walking — and
+    // a Blocker who was shot and then pinned still lowers it on schedule instead
+    // of freezing mid-stance for the rest of the fight.
+    //
+    // Real seconds, NOT scaled by slowOf. A monk's pulse slows what a figure DOES;
+    // it does not make him hold a shield up for longer.
+    if (e.guard > 0) e.guard = Math.max(0, e.guard - dt);
 
     // THE THROWER, and the basket is bottomless.
     //
@@ -247,7 +291,13 @@ export function updateEnemies(state, dt) {
     // thing: a monk's Slowed Pulse, at 0.75. One multiplier rather than a subtracted
     // speed, so it stays a quarter of whatever a thug's speed is retuned to — and it
     // is the same number that slows his swing, out of slowOf in src/status.js.
-    e.s += e.def.speed * slowOf(e) * dt;
+    //
+    // AND WHAT HE IS DOING TO HIMSELF, which is the second factor and the newer
+    // one: a Blocker behind his shield shuffles at half pace. MULTIPLIED with the
+    // slow rather than replacing it, so a monk's pulse on a guarding Blocker is
+    // worth what it is worth on anything else — 0.75 x 0.5 — instead of one of the
+    // two silently winning.
+    e.s += e.def.speed * slowOf(e) * guardSlow(e) * dt;
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should

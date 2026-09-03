@@ -318,7 +318,7 @@ console.log('\nAnd a shot really is reduced where it lands\n');
 // A tower on a plot, firing at one enemy whose armour is ours to set. The point is
 // to read what the ENEMY LOSES rather than what the shot carries, so the whole
 // path — shoot, fly, land, reduce — runs.
-function shootAt(def, famId, armour) {
+function shootAt(def, famId, armour, enemyDef = null) {
   const plot = level.plots[0];
   const t = {
     plot, fam: { id: famId }, def, x: plot.x, y: plot.y,
@@ -327,8 +327,13 @@ function shootAt(def, famId, armour) {
     hit: [], locked: null, hold: 0, turn: 0
   };
   const e = {
-    def: { r: 10, hp: 1e6, speed: 0, atkCd: 1, damage: 0, armour }, x: t.x + 60, y: t.y,
-    hp: 1e6, maxHp: 1e6, route: 0, lane: 1, s: 300,
+    // The REAL def when one is handed over, so `guard` and `fightArmour` come
+    // along with the plate; a bare `armour` otherwise, which is every other case
+    // in this file and wants nothing else.
+    def: enemyDef ? { ...enemyDef, hp: 1e6, speed: 0, damage: 0 }
+                  : { r: 10, hp: 1e6, speed: 0, atkCd: 1, damage: 0, armour },
+    x: t.x + 60, y: t.y,
+    hp: 1e6, maxHp: 1e6, route: 0, lane: 1, s: 300, guard: 0,
     foe: null, acd: 1, thrust: 0, halted: false, leaked: false, statuses: []
   };
   const state = { towers: [t], enemies: [e], units: [], shots: [], hits: [],
@@ -338,7 +343,15 @@ function shootAt(def, famId, armour) {
     updateTowers(state, DT);
     updateShots(state, DT);
   }
-  return before - e.hp;
+  return enemyDef ? e : before - e.hp;
+}
+
+// THE SAME PATH, handing back the figure instead of the number — so a test can ask
+// what a landing DID to him as well as what it took off. Written as a wrapper on
+// one shared runner rather than a second copy of the fixture: two fixtures that
+// drift apart would make the two answers describe different fights.
+function shotLeaves(def, famId, enemyDef) {
+  return shootAt(def, famId, enemyDef.armour, enemyDef);
 }
 
 {
@@ -365,6 +378,62 @@ function shootAt(def, famId, armour) {
     'a monk\'s blast goes through the giant\'s plate whole', `${blast} of ${temple.damage}`);
   ok(bolt < siege.find(d => d.name === 'Ballista Turret').damage,
     'while a bolt does not', `${bolt} of ${siege.find(d => d.name === 'Ballista Turret').damage}`);
+}
+
+console.log('\nAnd the Blocker\'s shield goes up where the shot lands\n');
+
+// THE ONE ENEMY WHOSE ARMOUR IS NOT A CONSTANT, run through the same shoot-fly-
+// land path as everything above rather than by calling wornBy and believing it.
+//
+// The thing this catches that facing.mjs cannot: facing.mjs asks the RULE what a
+// Blocker is wearing in a given state, and gets the right answer. This asks
+// whether a real arrow, fired by a real tower, lands on that answer — which is
+// four files away from the rule and is where a shot reading `def.armour` directly
+// would still quietly work for every other creature in the game.
+{
+  const blocker = enemyTypes.blocker_inf;
+  const sentry = archery.find(d => d.name === 'Crossbow Sentry');
+
+  // The FIRST arrow meets the plate he walks in. `shootAt` builds a fresh enemy
+  // with `guard: 0` — as spawn does — so this is the shot that finds him unready.
+  const first = shootAt(sentry, 'archery', blocker.armour);
+  ok(first === taken(sentry.damage, 'physical', blocker.armour),
+    'the first bolt meets the plate he walks in',
+    `${first} of ${sentry.damage} through ${blocker.armour.physical}`);
+
+  // AND IT PUT THE SHIELD UP. Read off a live figure that a shot has actually
+  // landed on, rather than by calling raiseGuard here.
+  ok(shotLeaves(sentry, 'archery', blocker).guard === blocker.guard.seconds,
+    'and the landing is what raises the shield',
+    `${blocker.guard.seconds}s on the clock`);
+
+  // The SECOND arrow meets the shield. Same tower, same bolt, and it lands for
+  // less — which is the whole enemy in one comparison.
+  const guarded = shootAt(sentry, 'archery', blocker.guard.armour);
+  ok(guarded === taken(sentry.damage, 'physical', blocker.guard.armour),
+    'and every bolt after it meets the shield',
+    `${guarded} of ${sentry.damage} through ${blocker.guard.armour.physical}`);
+  ok(guarded < first, 'which is strictly less than the first one landed',
+    `${guarded} against ${first}`);
+
+  // AND THE MONASTERY IS NOT THE ANSWER TO HIM, which is what the ward is for and
+  // the one way he differs from every armoured thing before him: a Giant's medium
+  // plate is physical only, so a monk walks through it. This one wards both.
+  const altar = monastery.find(d => d.name === 'High Altar');
+  const onGiant = shootAt(altar, 'monastery', enemyTypes.heavy_inf.armour);
+  const onShield = shootAt(altar, 'monastery', blocker.guard.armour);
+  ok(onGiant === altar.damage, 'a blast still goes through a Giant whole',
+    `${onGiant} of ${altar.damage}`);
+  ok(onShield < onGiant, 'and does not go through this shield',
+    `${onShield} of ${altar.damage}`);
+
+  // AND A SOLDIER OPENS HIM UP. The counter-play, as arithmetic: pinned, he is
+  // softer than he walks, so the order is shoot-then-block rather than either
+  // alone. If this ever stops being true the enemy has no answer.
+  const pinned = taken(sentry.damage, 'physical', blocker.fightArmour);
+  ok(pinned > first && pinned > guarded,
+    'and a soldier holding him opens him up below both',
+    `${pinned} pinned, against ${first} walking and ${guarded} guarding`);
 }
 
 console.log('\nAnd a status is true damage, on both armies\n');

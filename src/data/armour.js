@@ -54,8 +54,9 @@ export const TAKES = [1, 0.75, 0.5, 0.25];
 //
 // `armour` is the shape a figure carries — `{ physical: 'med', magic: 'none' }` —
 // and it is absent on most things in the game, which reads as no armour at all.
-// It lives on the DEF rather than on the live figure, because it is a fact about
-// what a spearman IS; the call sites pass `x.def.armour`.
+// It lives on the DEF for almost everything, because it is a fact about what a
+// spearman IS — but not for everything any more, which is what `wornBy` below is
+// for. Call sites pass `wornBy(x)` rather than `x.def.armour`.
 export function rankAgainst(armour, kind, pierce = 0) {
   const worn = RANKS.indexOf((armour && armour[kind]) || 'none');
   return Math.max(0, (worn < 0 ? 0 : worn) - (pierce || 0));
@@ -77,6 +78,44 @@ export function rankAgainst(armour, kind, pierce = 0) {
 export function taken(damage, type, armour, pierce = 0) {
   if (type === 'true' || !type) return Math.round(damage);
   return Math.round(damage * TAKES[rankAgainst(armour, type, pierce)]);
+}
+
+// WHAT A FIGURE IS WEARING RIGHT NOW, which for almost everything is what it was
+// born wearing, and for exactly one creature is not.
+//
+// Armour was a property of the DEF for the whole of this game's life: a spearman
+// wears low plate because that is what a spearman is, and nothing that happened
+// to him during a wave could change it. The Blocker Thug breaks that. He walks in
+// medium plate, raises a shield to high on both axes when something shoots him,
+// and drops to low with no ward at all the moment a soldier gets hold of him —
+// so "what does this take" stopped being answerable from the def alone.
+//
+// ONE FUNCTION RATHER THAN A BRANCH AT EACH CALL SITE. Damage is applied in four
+// places (a shot, a splash, a soldier's swing, an enemy's swing) and read for
+// display in two more, and the failure this shape prevents is the interesting
+// one: three of those places agreeing about his armour and the fourth not, so he
+// LOOKS armoured in the info box while an arrow treats him as bare. Everything
+// asks here, so there is one answer.
+//
+// THE ORDER IS THE DESIGN, not an implementation detail:
+//
+//   1. HELD BY A SOLDIER wins over everything. A man cannot hold a shield up and
+//      swing at somebody, and this is the whole counter-play — see blocker_inf.
+//   2. GUARDING, while the timer set by the last hit on him is still running.
+//   3. Otherwise what the def says, which is every other figure in the game on
+//      every frame of its life.
+//
+// It takes the LIVE figure, not a def, and tolerates being handed something with
+// no def at all — the encyclopedia asks about creatures that are not on the board
+// and towers ask about plots that are empty.
+export function wornBy(fig) {
+  if (!fig) return null;
+  const def = fig.def || fig;
+  if (fig.def) {
+    if (fig.foe && def.fightArmour) return def.fightArmour;
+    if (fig.guard > 0 && def.guard && def.guard.armour) return def.guard.armour;
+  }
+  return def.armour || null;
 }
 
 // What a def's blow is, defaulting to physical. Nothing in this game did magic
