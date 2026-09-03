@@ -1,4 +1,5 @@
 import { families, AIM_MODES, upgradesFrom } from './data/towers.js';
+import { rangeOf } from './towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
 
 // Radial menu around the tapped plot. Four families map to four quadrants;
@@ -113,6 +114,61 @@ export function openMenu(state, plot, tower) {
 
 export function closeMenu(state) {
   state.menu = null;
+}
+
+// --- ARMING A PURCHASE ------------------------------------------------------------
+//
+// EVERY BUTTON THAT SPENDS OR RETURNS GOLD TAKES TWO PRESSES NOW. The first arms
+// it — the button turns into a tick — and the second makes the purchase.
+//
+// The owner asked for it off the board: "there are times where I would misclick and
+// an upgrade is done accidentally". A radial menu is four to six 60px discs around
+// a thumb, and the two most expensive things on it sit 96px apart on the same arc;
+// a slip is a tier bought or a tower sold, and neither can be undone.
+//
+// FOUR OF THE SIX ACTS, and the two left out are the two that cost nothing. `rally`
+// only arms a placement — the tap that follows is the one that moves anybody, so it
+// is already a two-step — and `target` cycles a standing order the player can cycle
+// straight back. Making those confirm would be ceremony around a free, reversible
+// choice, which is how a confirm step stops being read at all.
+export const NEEDS_CONFIRM = new Set(['build', 'upgrade', 'refund', 'ability']);
+
+export const needsConfirm = item => NEEDS_CONFIRM.has(item.act);
+
+// Whether this exact button is the one waiting for its second press. Identity
+// rather than a matching act, because a fork puts two upgrade buttons on the ring
+// and arming one must not light the other.
+export const armed = (state, item) => !!state.menu && state.menu.arming === item;
+
+// AND WHAT THE ARMED PURCHASE WOULD DO TO THE TOWER'S REACH, or null.
+//
+// This is the other half of what the owner asked for, and it fixes a thing that was
+// simply wrong. The dotted ring used to be drawn whenever a menu was open, at the
+// FURTHEST of whatever the tower could buy — so a Crossbow Tower, which forks into
+// a Musketeer Post at 480 and a Crossbow Sentry at 260, always showed 480. Two
+// buttons, one promise, and the promise belonged to only one of them.
+//
+// Now nothing is drawn until a button is armed, and then it is that button's own
+// answer. Hovering a tower shows what the tower actually reaches, which is what the
+// owner asked for in as many words.
+//
+// COMPUTED BY ASKING rangeOf A HYPOTHETICAL TOWER rather than by reading the def's
+// range, because reach is not always the def's range: Reinforced Tension multiplies
+// it and Deadeye replaces it outright. A clone with the purchase applied gets the
+// same answer the tower will give the moment the gold is spent, through the same
+// function, with nothing here to keep in step.
+export function armedRange(state, t) {
+  const it = state.menu && state.menu.tower === t && state.menu.arming;
+  if (!it) return null;
+
+  const after = it.act === 'upgrade' && it.to ? { ...t, def: it.to }
+              : it.act === 'ability' ? { ...t, abilities: [...(t.abilities || []), it.ability.id] }
+              : null;
+  if (!after) return null;
+
+  const now = rangeOf(t);
+  const then = rangeOf(after);
+  return then > now ? then : null;
 }
 
 // Affordability is checked live rather than baked in at open time — gold moves

@@ -9,7 +9,7 @@ import { art } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden } from './units.js';
-import { BTN_R, CANCEL_R, canUse } from './menu.js';
+import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
@@ -178,7 +178,7 @@ function drawPlots(ctx, state) {
 function drawRangeDiscs(ctx, state) {
   for (const t of state.towers) {
     if ((state.menu && state.menu.tower === t) || state.hoverTower === t) {
-      drawRangeDisc(ctx, t);
+      drawRangeDisc(ctx, t, armedRange(state, t));
     }
   }
 }
@@ -650,35 +650,30 @@ function mark(ctx, e) {
 // picture instead, which is the version that keeps the 3D and costs a rebalance
 // — a tower now covers 62% of the area it used to, and the ranges went up to pay
 // for it. That is the real price of the look, and it has been paid once.
-function drawRangeDisc(ctx, t) {
+function drawRangeDisc(ctx, t, buying) {
   // THROUGH rangeOf, not off the def, so the ring and the targeting cannot
   // disagree. Far Shot takes the Ballista Turret from 260 to 480 and this is the
   // drawing that has to say so — a tower shooting further than its own ring reads
   // as the ring being broken.
   const r = rangeOf(t);
-  // THE FURTHEST OF THEM, where a ladder forks. Archery's tier 3 offers a
-  // Musketeer Post at 480 and a Crossbow Sentry at 330, and drawing both dotted
-  // rings would say "one of these" where the ring is meant to say "further than
-  // this". The outer one is the honest single answer: it is the most the upgrade
-  // button in front of you can buy.
+  // The reach the ARMED purchase would buy, as a dotted ring outside the solid one.
   //
-  // AND WHERE THAT IS NO FURTHER, NOTHING IS DRAWN, which is the artillery
-  // fork's case and is also correct: a Trebuchet reaches 360, and its two fourth
-  // rungs reach 260 and 360. Neither buys reach, so the guard below draws no
-  // dotted ring at all rather than a second circle on top of the first.
-  const next = upgradesFrom(t.fam, t.def)
-    .reduce((best, d) => (!best || d.range > best.range ? d : best), null);
-
-  // The reach the upgrade would buy, as a dotted ring outside the solid one.
+  // ARMED, and it was "whenever the menu is open" at the furthest thing the tower
+  // could buy. On a forked tier that was a straight lie: a Crossbow Tower offers
+  // 480 and 260 and the ring always promised 480, whichever of the two buttons the
+  // player was actually looking at. The owner caught it — "the range automatically
+  // shows the highest range which is wrong" — and the confirm step is what fixes
+  // it, because arming a button is the game finally being told WHICH purchase the
+  // ring is about. See armedRange in menu.js.
   //
-  // Shown whenever the menu is open, NOT on hover: there is no hover on a
-  // phone, and this game is played with a thumb. Anything that only appears
-  // under a mouse pointer is invisible to most of the people playing it, so the
-  // trigger is "you are looking at this tower's menu" instead.
+  // So hovering a tower now shows only what that tower reaches, and the dotted ring
+  // is a preview of one specific button, drawn between pressing it and confirming
+  // it. Nothing here is hover-only: there is no hover on a phone and this game is
+  // played with a thumb, so the trigger is a press either way.
   //
   // Drawn first so the current range's rim stays the crisper of the two.
-  if (next && next.range > r) {
-    const gx = next.range;
+  if (buying) {
+    const gx = buying;
     ctx.save();
     ctx.fillStyle = 'rgba(200,240,255,0.07)';
     ringPath(ctx, t.x, t.y, gx);
@@ -2436,6 +2431,34 @@ function drawCancel(ctx, menu) {
 // keeps this folder at nine PNGs instead of eighteen.
 function drawButton(ctx, state, it) {
   const on = canUse(state, it);
+
+  // AN ARMED BUTTON IS A TICK ON THE ORDINARY CREAM PLATE, and nothing else — no
+  // price, no picture of what it buys, no coloured disc.
+  //
+  // It is the owner's own spec: "use the general #ffefd4 background and ensure the
+  // tick image is in the middle", and the reasoning holds up. This button is not
+  // asking WHAT any more, it is asking WHETHER — the what was answered by the press
+  // that armed it, and the dotted ring on the board is still saying so. An ability's
+  // blue disc kept under the tick would read as the ability's own button wearing a
+  // mark; the plate every other confirm wears makes all four of them one gesture.
+  //
+  // Centred rather than lifted, because the caption it would have been lifted for is
+  // gone. See the `gy`/`caption` pair below, which this deliberately does not use.
+  if (armed(state, it)) {
+    ctx.save();
+    if (!drawUi(ctx, 'btn_plate', it.x, it.y)) {
+      ctx.fillStyle = '#FFEFD4';
+      ctx.beginPath();
+      ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#C4A574';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    drawUi(ctx, 'glyph_confirm', it.x, it.y, ui.glyph_confirm.fit);
+    ctx.restore();
+    return;
+  }
   // WHAT THE LINE UNDER THE PICTURE SAYS. A price, a refund — or one of two
   // words, on the two buttons that have no price because there is nothing left
   // to pay: an ability you already own, and a tower already at the top of its

@@ -576,6 +576,10 @@ export const paths = {
   // it. A pierced shield rather than a new symbol is the right drawing: `pierce`
   // is not a fourth kind of damage, it is a number of ranks taken off the plate,
   // and the icon says so by being the plate with a hole in it.
+  // THE TICK, on the second press of anything that spends gold. See NEEDS_CONFIRM
+  // in src/menu.js — a purchase is armed by the first press and made by the second,
+  // and this is what the button wears in between.
+  glyph_confirm:   'assets/ui/Confirm_Icon.png',
   stat_pierce:       'assets/ui/Pierce_Physical_Armor_Icon.png',
   stat_pierce_magic: 'assets/ui/Pierce_Magic_Armor_Icon.png',
   // And how wide a blast is. Artillery's whole answer to a crowd, and the one

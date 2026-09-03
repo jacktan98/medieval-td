@@ -433,6 +433,10 @@ export const ui = {
   // the same box it lands 30x19 rather than 30x16. That is the drawing, not a
   // mistake: the box fits the longer side, and all three still sit inside the
   // button with room.
+  // THE TICK A PURCHASE IS CONFIRMED WITH, and it takes the BARE box rather than
+  // the priced one: an armed button prints no caption, so the glyph has the whole
+  // disc and should fill it the way the three aim glyphs do. See drawButton.
+  glyph_confirm:    { trim: [207, 211, 98, 91], fit: GLYPH_BOX_BARE },
   glyph_aim_exit:   { trim: [202, 227, 107, 57], fit: GLYPH_BOX_BARE },
   glyph_aim_tough:  { trim: [202, 220, 113, 70], fit: GLYPH_BOX_BARE },
   glyph_aim_ranged: { trim: [205, 230, 107, 52], fit: GLYPH_BOX_BARE },

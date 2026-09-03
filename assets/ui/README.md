@@ -13,6 +13,7 @@ usable button rather than a blank disc.
 | `Gold_Icon.png`          | the gold icon     | 51 x 24      |
 | `Life_Icon.png`          | the lives icon    | 30 x 24      |
 | `Button_Plate_Icon.png`  | the menu disc     | 60 diameter  |
+| `Confirm_Icon.png`       | the tick a purchase is confirmed with | 30 box |
 | `Cancel_Button_Icon.png` | the centre cancel | 36 diameter  |
 | `Archery_Icon.png`       | `bow`             | 27 x 32 box  |
 | `Barracks_Icon.png`      | `swords`          | 26 box       |

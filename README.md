@@ -22,7 +22,7 @@ index.html          the game
 src/                the rules and the drawing — 33 modules, no dependencies
 src/data/           the numbers: towers, waves, abilities, statuses, the maps
 assets/             every drawing and every sound, one folder per KIND of thing
-tools/              27 checkers and measuring tools, Node only
+tools/              28 checkers and measuring tools, Node only
 birthday/           a separate mini-game, reached from the admin keypad
 ```
 
@@ -40,7 +40,7 @@ by a tool in `tools/`, and a tool checks it is still true. When the artist
 re-exports a sprite one pixel taller, the check fails and prints the new number
 rather than the game quietly drawing a man standing beside his own tower.
 
-That is why there are twenty-seven tools for eighteen thousand lines of game.
+That is why there are twenty-eight tools for eighteen thousand lines of game.
 
 ## The tools
 
@@ -71,18 +71,19 @@ exit non-zero when something is wrong.
 | `status` | a status goes on, hurts, shows and comes off, for both armies |
 | `armour` | the damage triangle: what an attack is, what it meets, what is left |
 | `pair` | the two men on a tower that holds two take turns, and stand where they fit |
+| `confirm` | every button that moves gold asks twice, and the dotted ring belongs to the one that is armed |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
 | `split-map` | pulls the build plots out of a map SVG |
 | `trace-road` | pulls the road out of a map SVG and writes the route |
 
-The first twenty-three are checks — run them after any change:
+The first twenty-four are checks — run them after any change:
 
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme pair armour; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair armour confirm; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last four are not checks. `sim` and `sweep` answer balance questions and take

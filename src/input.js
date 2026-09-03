@@ -1,7 +1,8 @@
 import { level, useLevel } from './level.js';
 import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitModeButton, hitDifficultyButton,
          hitPauseButton } from './render.js';
-import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R } from './menu.js';
+import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R,
+         needsConfirm, armed } from './menu.js';
 import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
 import { towerBox, cooldownOf } from './towers.js';
 import { puff } from './smoke.js';
@@ -130,7 +131,12 @@ export function attachInput(canvas, state, restart) {
 // while it is: the book covers the board, the title screen covers the board, the
 // HUD sits over both the board and any menu on it. A tap is offered to them in
 // that order and the first one that wants it keeps it.
-function tap(state, x, y, restart) {
+// EXPORTED so a tool can press a button. tools/confirm.mjs drives the whole
+// two-press purchase through this function rather than through a copy of it —
+// which is the point: what has to hold is that the FIRST press of an upgrade
+// spends nothing, and a test that re-implemented the branch it is checking would
+// hold nothing at all. Nothing in the game calls it from outside.
+export function tap(state, x, y, restart) {
   // THE ADMIN DASHBOARD SWALLOWS EVERYTHING, and it is tested first because it
   // covers the whole board AND is opened from the title screen — so its keypad
   // sits on top of the map buttons, and a digit key must not be answered by the
@@ -223,6 +229,20 @@ function tap(state, x, y, restart) {
     // An unaffordable button absorbs the tap rather than closing — and answers
     // with nothing, because nothing happened.
     if (!canUse(state, item)) return false;
+
+    // THE FIRST PRESS OF A PURCHASE ARMS IT AND SPENDS NOTHING. See NEEDS_CONFIRM
+    // in menu.js for which buttons those are and why the other two are not.
+    //
+    // ARMING ALSO PINS A HOVER-OPENED MENU, and that is not a nicety: a menu that
+    // opened under the pointer closes when the pointer leaves it, so without this
+    // the tick would vanish on the way to being pressed. Clicking the plot pins
+    // the menu for exactly the same reason — see the note below.
+    if (needsConfirm(item) && !armed(state, item)) {
+      state.menu.arming = item;
+      state.menu.viaHover = false;
+      return true;
+    }
+
     run(state, item);
     return true;
   }
@@ -380,6 +400,13 @@ function setRally(state, tower, x, y) {
 
 function run(state, item) {
   const menu = state.menu;
+
+  // WHATEVER WAS ARMED IS NOT ANY MORE, and this has to be here rather than at the
+  // call site: most acts close the menu on their way out, but `target` and
+  // `ability` leave it open, and `ability` rebuilds its items — so an `arming` held
+  // past either of them would point at a button that is gone or light one the
+  // player never pressed.
+  if (menu) menu.arming = null;
 
   if (item.act === 'build') {
     const def = item.family.tiers[0];
