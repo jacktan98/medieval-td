@@ -463,16 +463,29 @@ export const ui = {
   // entry's aspect comes out of its own trim. See uiSize.
   stat_pierce:       { trim: [144, 173, 224, 167], h: STAT_ICON_H },
   stat_pierce_magic: { trim: [144, 173, 224, 167], h: STAT_ICON_H },
-  // AND THE BLAST. This one is the odd shape in the set — 188 x 98, so nearly
-  // twice as wide as it is tall, where every other stat icon is roughly square. A starburst drawn flat is what an area of effect looks like from
-  // above, and the game's reaches are ellipses for the same reason.
+  // AND THE BLAST, which is the odd shape in the set and the reason `byBox` exists.
   //
-  // It costs something real and it is worth naming: sized by the shared height
-  // like everything else, this comes out nearly twice the width of a shield, and
-  // the description panel's fixed STAT_COL cannot hold it. So the panel lets an icon
-  // overflow its column rather than widening the column for the fifteen icons that
-  // do not need it — see infoStat in render.js.
-  stat_splash:       { trim: [162, 207, 188, 98], h: STAT_ICON_H },
+  // 188 x 98, so nearly twice as wide as it is tall, where every other stat icon is
+  // between 0.97 and 1.34. A starburst drawn flat is what an area of effect looks
+  // like from above, and the game's reaches are ellipses for the same reason.
+  //
+  // FITTED TO THE SHARED HEIGHT IT READ AS THE BIGGEST THING IN THE ROW, and the
+  // owner asked why after redrawing it smaller on the canvas — which changed
+  // nothing, because a drawing is scaled until it is 14 tall whatever size it was
+  // exported at. Only the aspect survives. At 14 tall it came out 26.9 wide against
+  // a shield's 13.6: the same height, twice the width, and width is what the eye
+  // compares in a row.
+  //
+  // Measured, it was never carrying much more ink — 197 px2 of it against the set's
+  // middle of 173, a tenth over. It was the BOX that was big. So it is fitted by the
+  // geometric mean of that box instead: 19.4 x 10.1 at a requested 14, whose measure
+  // is 14 exactly, the same as every square icon beside it.
+  //
+  // It is still the widest of them, and the description panel's fixed STAT_COL still
+  // cannot hold it — the panel lets an icon overflow its column rather than widening
+  // the column for the fifteen that do not need it, see infoStat in render.js — but
+  // 19.4 is a peer of the pierce shield's 18.8 where 26.9 was not.
+  stat_splash:       { trim: [162, 207, 188, 98], h: STAT_ICON_H, byBox: true },
 
   // The encyclopedia's two costs: gold to build a tier, and lives when an enemy
   // gets past. They are drawn as a stack of coins and a BROKEN heart, which is
@@ -584,7 +597,17 @@ export function uiSize(key, override) {
   const [, , w, h] = e.trim;
 
   if (override && typeof override === 'object') {
-    return { w: (w / h) * override.h, h: override.h };
+    // BY THE BOX RATHER THAN BY THE HEIGHT, where an entry asks for it — see
+    // `byBox` on stat_splash below.
+    //
+    // For a square drawing the two are the same number, which is why this branch
+    // read as "height" for as long as everything asking it was square. For a wide
+    // one they are not: a 1.9:1 burst fitted to a shield's HEIGHT comes out twice
+    // the shield's WIDTH, and width is what the eye compares in a row of icons.
+    // Fitting the geometric mean of the box instead makes "the same size" mean the
+    // same size.
+    const k = e.byBox ? override.h / Math.sqrt(w * h) : override.h / h;
+    return { w: w * k, h: h * k };
   }
 
   const box = override ?? e.fit;
