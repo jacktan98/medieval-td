@@ -636,6 +636,30 @@ const OPTIONAL = new Set();
 
 export const art = {};
 
+// --- CACHE BUSTING, FOR THE ARTWORK -----------------------------------------------
+//
+// THE MODULES HAVE HAD THIS SINCE THE FIRST DEPLOY AND THE PICTURES NEVER DID.
+//
+// index.html rewrites every `src/*.js` URL through a versioned import map, because
+// GitHub Pages serves static files with max-age=600 and an edit to render.js was
+// otherwise invisible for ten minutes. Every PNG and every clip in this file went
+// on being fetched at its plain path — so re-uploading a drawing and reloading the
+// game showed the OLD drawing, for up to ten minutes, and longer wherever the
+// browser applied a heuristic of its own.
+//
+// That is a bad failure to have in an art-driven game: the artist's loop is upload,
+// reload, look. It cost the owner a round of "I can't seem to see the changes".
+//
+// THE SAME STAMP THE MODULES USE, read off the page rather than computed again, so
+// a reload gets one version for everything it loads instead of two that can differ
+// across a minute boundary. See the import-map block in index.html.
+//
+// APPENDED AT LOAD RATHER THAN BAKED INTO `paths`, and that is the half that
+// matters: half a dozen tools read `paths` to find files ON DISK, and a query
+// string is not part of a filename. The version belongs to the fetch.
+const stamp = typeof window !== 'undefined' && window.__stamp;
+const versioned = src => stamp ? `${src}?v=${stamp}` : src;
+
 export function loadArt() {
   const absent = [];
 
@@ -647,7 +671,7 @@ export function loadArt() {
       else console.warn('Missing sprite:', src);
       resolve();
     };
-    img.src = src;
+    img.src = versioned(src);
   }));
 
   return Promise.all(jobs).then(() => {

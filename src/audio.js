@@ -732,8 +732,12 @@ export function loadAudio() {
 
   const absent = [];
 
+  // VERSIONED like the artwork and the modules — see the note above `versioned` in
+  // src/assets.js. A re-recorded clip was stale for the same ten minutes a redrawn
+  // sprite was, and for the same reason.
+  const stamp = typeof window !== 'undefined' && window.__stamp;
   const jobs = Object.entries(paths).map(([key, src]) =>
-    fetch(src)
+    fetch(stamp ? `${src}?v=${stamp}` : src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
       .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1); })

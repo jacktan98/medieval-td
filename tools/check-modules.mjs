@@ -47,6 +47,39 @@ for (const page of PAGES) {
   for (const m of stale)   { console.log(`  ${page}: import map lists src/${m}.js, which does not exist`); bad++; }
 }
 
+
+// --- and the artwork gets the same version the modules do -------------------------
+//
+// THE IMPORT MAP ABOVE HAS VERSIONED `src/*.js` SINCE THE FIRST DEPLOY AND THE
+// PICTURES HAD NOTHING. GitHub Pages serves static files with max-age=600, so a
+// re-uploaded sprite kept showing the old drawing for up to ten minutes — and the
+// artist's loop is upload, reload, look. It cost a round of "I can't seem to see
+// the changes".
+//
+// The fix is one line per page: publish the stamp the import map was built from, so
+// assets.js and audio.js can hang it on every fetch. See `versioned` in
+// src/assets.js. This is the check that a page which busts its modules also busts
+// its art, because a page that did one and not the other looks entirely fine.
+{
+  const noStamp = PAGES.filter(page =>
+    !/window\.__stamp\s*=\s*stamp/.test(readFileSync(page, 'utf8')));
+  if (noStamp.length) {
+    console.log(`\n${noStamp.length} page(s) version their modules but not their artwork:`);
+    for (const p of noStamp) console.log(`  ${p}: add window.__stamp = stamp beside the import map`);
+    bad += noStamp.length;
+  } else {
+    console.log(`Every page publishes its stamp, so the artwork is versioned too.`);
+  }
+
+  // AND BOTH LOADERS USE IT. A stamp published and never read is the same bug with
+  // an extra step, and it would survive the check above untouched.
+  for (const [file, want] of [['src/assets.js', /window\.__stamp/], ['src/audio.js', /window\.__stamp/]]) {
+    if (want.test(readFileSync(file, 'utf8'))) continue;
+    console.log(`\n${file} does not read window.__stamp — its fetches are unversioned.`);
+    bad++;
+  }
+}
+
 console.log(bad
   ? `${bad} import map problem(s). Every file under src/ must be listed in every page.`
   : `Import maps cover all ${expected.length} modules in ${PAGES.join(' and ')}.`);

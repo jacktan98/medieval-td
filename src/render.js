@@ -181,6 +181,21 @@ function drawRangeDiscs(ctx, state) {
       drawRangeDisc(ctx, t, armedRange(state, t));
     }
   }
+
+  // AND AN EMPTY PLOT WITH A BUILD ARMED ON IT, which has no tower to hang a ring
+  // on and so needs its own line.
+  //
+  // It is the same promise the upgrade preview makes and it is worth as much: four
+  // families reach 165 to 300 from tier 1 and the choice is made before anything is
+  // standing there, so this is the one moment the ground a family would cover can
+  // be seen at all. The dotted rim says the same thing it says on a tower — this is
+  // what the button under your finger buys — and there is no solid ring beside it
+  // to be confused with, because there is nothing built.
+  const buy = state.menu && state.menu.arming;
+  if (buy && buy.act === 'build' && !state.menu.tower) {
+    const t1 = buy.family.tiers && buy.family.tiers[0];
+    if (t1) previewRing(ctx, state.menu.plot.x, state.menu.plot.y, t1.range, t1.minRange || 0);
+  }
 }
 
 // DEPTH. Everything solid standing on the board is drawn in one pass, ordered by
@@ -650,6 +665,44 @@ function mark(ctx, e) {
 // picture instead, which is the version that keeps the 3D and costs a rebalance
 // — a tower now covers 62% of the area it used to, and the ranges went up to pay
 // for it. That is the real price of the look, and it has been paid once.
+// THE DOTTED RING A PURCHASE PROMISES, wherever it is drawn — around a tower with
+// a button armed on it, and around an empty plot with a family armed on it. One
+// function because the two are the same promise and a player should not have to
+// learn two pictures for it.
+//
+// `hole` is the dead ground a siege engine cannot reach into, which only the build
+// preview ever passes: an upgrade never changes it — see the note on the same 130
+// at every tier in data/towers.js — so an armed upgrade has nothing to say about it.
+function previewRing(ctx, x, y, r, hole) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(200,240,255,0.07)';
+  ctx.beginPath();
+  ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
+  if (hole) ctx.ellipse(x, y, hole, hole * SQUASH, 0, 0, Math.PI * 2);
+  ctx.fill('evenodd');
+
+  ctx.setLineDash([7, 6]);
+  ctx.strokeStyle = 'rgba(24,26,20,0.35)';
+  ctx.lineWidth = 3;
+  ringPath(ctx, x, y, r, 3);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(150,225,255,0.90)';
+  ctx.lineWidth = 2;
+  ringPath(ctx, x, y, r);
+  ctx.stroke();
+
+  // The dead middle, in the warmer ink a limit is always drawn in here — see the
+  // inner rim on a built machine below, which this matches on purpose.
+  if (hole) {
+    ctx.strokeStyle = 'rgba(255,190,120,0.85)';
+    ctx.lineWidth = 2;
+    ringPath(ctx, x, y, hole);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawRangeDisc(ctx, t, buying) {
   // THROUGH rangeOf, not off the def, so the ring and the targeting cannot
   // disagree. Far Shot takes the Ballista Turret from 260 to 480 and this is the
@@ -672,25 +725,7 @@ function drawRangeDisc(ctx, t, buying) {
   // played with a thumb, so the trigger is a press either way.
   //
   // Drawn first so the current range's rim stays the crisper of the two.
-  if (buying) {
-    const gx = buying;
-    ctx.save();
-    ctx.fillStyle = 'rgba(200,240,255,0.07)';
-    ringPath(ctx, t.x, t.y, gx);
-    ctx.fill();
-
-    ctx.setLineDash([7, 6]);
-    ctx.strokeStyle = 'rgba(24,26,20,0.35)';
-    ctx.lineWidth = 3;
-    ringPath(ctx, t.x, t.y, gx, 3);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(150,225,255,0.90)';
-    ctx.lineWidth = 2;
-    ringPath(ctx, t.x, t.y, gx);
-    ctx.stroke();
-    ctx.restore();
-  }
+  if (buying) previewRing(ctx, t.x, t.y, buying, 0);
 
   // ARTILLERY HAS A HOLE IN IT. A catapult cannot drop a rock on its own feet,
   // so the ground inside `minRange` is dead and anything walking through it is

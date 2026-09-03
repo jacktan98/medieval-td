@@ -293,6 +293,34 @@ console.log('\nWhat the dotted ring promises\n');
     swift.ability.name);
 }
 
+{
+  // AND A BUILD PREVIEWS THE GROUND IT WOULD COVER, on a plot with nothing on it.
+  // There is no tower to hang a ring on, so this is a separate line in the renderer
+  // — see drawRangeDiscs — and a separate claim here: the armed FAMILY's tier 1 is
+  // what the ring is about, and the four of them do not reach the same distance.
+  const state = board();
+  openMenu(state, level.plots[0], null);
+  const builds = state.menu.items.filter(it => it.act === 'build');
+  ok(builds.length === families.filter(f => f.tiers).length,
+    'every family a plot offers has a button', builds.map(b => b.label).join(', '));
+
+  const reaches = builds.map(b => b.family.tiers[0].range);
+  ok(new Set(reaches).size > 1,
+    'and they do not all reach the same distance, which is why the ring is worth drawing',
+    reaches.join(' / '));
+
+  // The ring is read straight off the armed item by the renderer, so what this can
+  // hold from out here is that the item carries the family whose tier 1 it is.
+  for (const b of builds) {
+    press(state, b);
+    if (!armed(state, b)) { ok(false, `arming ${b.label} arms ${b.label}`); break; }
+  }
+  const last = builds[builds.length - 1];
+  ok(armed(state, last) && last.family.tiers[0].range > 0,
+    'and an armed build knows the family whose reach it promises',
+    `${last.label}, ${last.family.tiers[0].range}`);
+}
+
 console.log(bad
   ? `\n${bad} thing(s) about the confirm step are not true.`
   : '\nA purchase takes two presses, and the ring belongs to the button.');

@@ -40,6 +40,11 @@
   <script>
     (function () {
       var stamp = Math.floor(Date.now() / 60000);
+      // AND THE SAME STAMP FOR THE ARTWORK AND THE AUDIO, which fetch themselves
+      // from inside the modules and had no version at all — see `versioned` in
+      // src/assets.js. Published rather than recomputed there so one reload gets
+      // one version for everything, even across a minute boundary.
+      window.__stamp = stamp;
       var mods = [
         'main', 'assets', 'enemies', 'towers', 'projectiles', 'waves',
         'render', 'input', 'menu', 'book', 'admin', 'score', 'smoke', 'units', 'corpses', 'blood', 'impacts', 'ground', 'select', 'audio', 'route', 'level', 'status', 'data/ui',

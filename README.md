@@ -49,7 +49,7 @@ exit non-zero when something is wrong.
 
 | tool | what it holds true |
 |------|--------------------|
-| `check-modules` | every module is in each page's cache-busting import map |
+| `check-modules` | every module is in each page's cache-busting import map, and the artwork is versioned with them |
 | `trim` | every sprite's trim rect matches its file, and is sharp at its drawn size |
 | `shadow` | every ground shadow's anchor is still under the thing that casts it |
 | `roof` | nothing pokes through a roof it should be behind |
