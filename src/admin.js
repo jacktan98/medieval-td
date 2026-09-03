@@ -49,7 +49,7 @@ export const PARTY_PIN = '2208';
 export const PARTY_HREF = 'birthday/';
 
 import { levels } from './level.js';
-import { enemyTypes } from './data/waves.js';
+import { enemyTypes, MARCH_ORDER, defaultGap } from './data/waves.js';
 import { families } from './data/towers.js';
 
 // --- what is stored -----------------------------------------------------------
@@ -66,7 +66,7 @@ import { families } from './data/towers.js';
 //
 // Keys are strings so the whole thing is one flat JSON object:
 //
-//   waves   "m3|4|1"          level id, wave index, group index   -> count
+//   waves   "m3|4|heavy_inf"  level id, wave index, ENEMY TYPE     -> count
 //   gold    "m3"              level id                            -> starting purse
 //   units   "barracks/2|hp"   unit id, field                      -> number
 const KEY = 'medieval-td/admin';
@@ -83,8 +83,38 @@ function load() {
   if (!s) return { waves: {}, gold: {}, units: {} };
   try {
     const held = JSON.parse(s.getItem(KEY)) || {};
-    return { waves: held.waves || {}, gold: held.gold || {}, units: held.units || {} };
+    return { waves: migrate(held.waves || {}), gold: held.gold || {}, units: held.units || {} };
   } catch { return { waves: {}, gold: {}, units: {} }; }
+}
+
+// WAVE KEYS USED TO END IN A GROUP INDEX and now end in an enemy type, and a
+// saved blob from before that change is somebody's actual tuning work sitting in
+// their browser.
+//
+// Left alone it would not throw — "m1|0|0" simply never matches a lookup — it
+// would just silently stop applying, which is the worst of the three options: the
+// panel would show shipped numbers, the game would play shipped waves, and the
+// edits would still be in localStorage looking like they had been kept.
+//
+// So an old key is READ ONCE and rewritten. The index is looked up in the level's
+// own shipped table, which is the only place that ever knew what group 1 of wave 4
+// meant. An index that no longer resolves — a table retyped with fewer groups
+// since the edit was made — is dropped, because a count with nothing to attach to
+// is not recoverable and keeping it would make it reappear on some later table
+// that happened to grow that far.
+let migrated = false;
+
+function migrate(bag) {
+  const out = {};
+  for (const [key, value] of Object.entries(bag)) {
+    const [levelId, wave, tail] = key.split('|');
+    if (!/^\d+$/.test(tail || '')) { out[key] = value; continue; }
+    migrated = true;
+    const lv = levels.find(l => l.id === levelId);
+    const group = lv && lv.waves[+wave] && lv.waves[+wave].groups[+tail];
+    if (group) out[`${levelId}|${wave}|${group.type}`] = value;
+  }
+  return out;
 }
 
 function persist() {
@@ -94,6 +124,17 @@ function persist() {
 }
 
 const edits = load();
+
+// WRITTEN BACK AT ONCE when anything was rewritten above, rather than waiting for
+// the next edit to persist it. Both work — the migration is in memory either way,
+// and it is idempotent, so re-running it every load would be harmless — but a
+// store that heals on the load that noticed leaves nothing in the browser that
+// still looks like the old shape. It also drops the entries migrate() could not
+// resolve, which otherwise sit there forever being skipped.
+//
+// After the assignment, not inside load(): persist() reads `edits`, which does
+// not exist until this line has run.
+if (migrated) persist();
 
 // --- the units the dashboard can edit ------------------------------------------
 //
@@ -156,10 +197,15 @@ for (const u of units()) {
   SHIPPED.set(`${u.id}|damage`, u.def.damage);
   if (u.hp) SHIPPED.set(`${u.id}|hp`, u.def.hp);
 }
+// EVERY TYPE FOR EVERY WAVE, including the ones a wave does not send — those ship
+// at zero, which is what makes "add a Giant to wave 1" an ordinary edit rather
+// than a special case. A count put back to 0 on a wave that never had one clears
+// the override entirely, the same as any other value returning to its shipped one.
 for (const l of levels) {
-  l.waves.forEach((w, i) => w.groups.forEach((g, j) => {
-    SHIPPED.set(`${l.id}|${i}|${j}`, g.count);
-  }));
+  l.waves.forEach((w, i) => {
+    const sends = new Map(w.groups.map(g => [g.type, g.count]));
+    for (const t of MARCH_ORDER) SHIPPED.set(`${l.id}|${i}|${t}`, sends.get(t) || 0);
+  });
   // The purse, keyed on the level id alone — there is one per map, so there is
   // nothing to index it by. It cannot collide with a wave key above, which always
   // carries two more fields.
@@ -170,8 +216,18 @@ export const shipped = key => SHIPPED.get(key);
 
 // --- reading and writing -------------------------------------------------------
 
-export const waveCount = (levelId, wave, group) =>
-  edits.waves[`${levelId}|${wave}|${group}`] ?? SHIPPED.get(`${levelId}|${wave}|${group}`);
+export const waveCount = (levelId, wave, type) =>
+  edits.waves[`${levelId}|${wave}|${type}`] ?? SHIPPED.get(`${levelId}|${wave}|${type}`) ?? 0;
+
+// HOW FAST THAT TYPE COMES in that wave: the shipped table's own gap where the
+// wave already sends it, and the type's usual rate where it does not. The
+// dashboard does not edit this — it sets who is in a wave and how many, and the
+// rate is the one the tables already use — so it is a lookup rather than an edit.
+export const waveGap = (levelId, wave, type) => {
+  const lv = levels.find(l => l.id === levelId);
+  const g = lv && lv.waves[wave] && lv.waves[wave].groups.find(x => x.type === type);
+  return g ? g.gap : defaultGap(type);
+};
 
 export const unitStat = (unitId, field, def) =>
   edits.units[`${unitId}|${field}`] ?? def[field];
@@ -219,9 +275,18 @@ export const countStep = () => 1;
 export const statStep = value => Math.max(1, Math.round(Math.abs(value) * 0.05));
 export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 / 10) * 10);
 
-export function setWaveCount(levelId, wave, group, count) {
-  const key = `${levelId}|${wave}|${group}`;
-  put(edits.waves, key, Math.max(1, Math.min(99, Math.round(count))), SHIPPED.get(key));
+// ZERO IS THE FLOOR NOW, and it is the whole of what "place any enemy in any
+// wave" means: 0 is how a type says it is not in this wave. It used to be 1,
+// because a group that existed in the table was a group that sent somebody and
+// taking it to nothing would have left an empty group behind.
+//
+// A wave CAN now be taken to no enemies at all. That is deliberate and it does not
+// hang: updateWaves finds no group to spawn from, the wave has nothing left on the
+// field, and it clears immediately into the next one — an empty wave is a pause,
+// which is a real thing to want while testing a later one.
+export function setWaveCount(levelId, wave, type, count) {
+  const key = `${levelId}|${wave}|${type}`;
+  put(edits.waves, key, Math.max(0, Math.min(99, Math.round(count))), SHIPPED.get(key));
 }
 
 // Zero IS allowed, unlike a wave of no enemies or a figure with no health: a map
@@ -288,14 +353,33 @@ apply();
 // keyed by wave and group INDEX, so an edit to wave 3 lands on wave 3 of either
 // length; the two extra waves of an Extended run have no shipped entry and simply
 // keep their own counts.
+// A GROUP PER TYPE THE WAVE SENDS, in MARCH_ORDER, built rather than copied.
+//
+// It has to be built now: the dashboard can put a creature into a wave whose
+// shipped table has no group for it, so there is nothing to spread from. What
+// keeps that honest is that MARCH_ORDER reproduces every shipped table exactly —
+// see the note beside it in data/waves.js — so an untouched dashboard hands back
+// the same waves in the same order, which tools/admin.mjs checks table by table.
+//
+// A TYPE AT ZERO IS SIMPLY NOT A GROUP. It is left out rather than emitted empty,
+// because groupAt in waves.js walks groups by cumulative count and a zero-count
+// group in the middle of that walk is a group it can never be inside.
+//
+// THE GAP COMES FROM THE SHIPPED TABLE where the wave already sends that type, so
+// editing a count never disturbs the rhythm the map was balanced at, and from
+// defaultGap where it does not.
 export function adminWaves(level, table = level.waves) {
-  return table.map((w, i) => ({
-    ...w,
-    groups: w.groups.map((g, j) => ({
-      ...g,
-      count: waveCount(level.id, i, j) ?? g.count
-    }))
-  }));
+  return table.map((w, i) => {
+    const own = new Map(w.groups.map(g => [g.type, g]));
+    const groups = [];
+    for (const type of MARCH_ORDER) {
+      const count = waveCount(level.id, i, type);
+      if (!count) continue;
+      const g = own.get(type);
+      groups.push(g ? { ...g, count } : { type, count, gap: defaultGap(type) });
+    }
+    return { ...w, groups };
+  });
 }
 
 // --- geometry ------------------------------------------------------------------
@@ -391,7 +475,15 @@ export const COLS = {
 };
 
 export function stepper(col, rowY, field) {
-  const x = COLS[col];
+  return stepperAt(COLS[col], rowY, field);
+}
+
+// The same control at an ARBITRARY x, which the waves tab needs and the units tab
+// does not: the units tab has two fixed columns hung off the right margin, and the
+// waves tab now lays its rows out in a grid whose x depends on which side of the
+// page the row is on. One builder either way, so the two tabs cannot end up with
+// steppers of different sizes or different padding.
+export function stepperAt(x, rowY, field) {
   return {
     minus: { x, y: rowY, w: STEP_W, h: STEP_H },
     value: { x: x + STEP_W, y: rowY, w: 96, h: STEP_H },
@@ -400,13 +492,59 @@ export function stepper(col, rowY, field) {
   };
 }
 
-// The rows of the WAVES tab: one per group of the selected wave, so at most three
-// and usually one. They start below the wave row with a band of air.
+// The rows of the WAVES tab: ONE PER ENEMY IN THE GAME, whether or not this wave
+// sends it, which is the owner's ask — "allow me to place any enemy for any wave,
+// basically list all the enemy units in all waves so that I have more control".
+//
+// It used to be one row per GROUP, so the panel could only ever change how many of
+// something a wave already sent. Adding a Giant to wave 1 was not a thing the
+// dashboard could express, because there was no row to press.
+//
+// TWO COLUMNS, because six rows at the 60px pitch this dashboard uses everywhere
+// do not fit between the wave tabs and the footer, and the alternatives are both
+// worse: a tighter pitch puts the padded tap boxes of one row inside the next, and
+// paging hides half the roster behind a button on the one panel whose whole
+// purpose is seeing the roster at once. Across is where the room is — the page is
+// 944 wide and a label plus a stepper is 444 of it.
+//
+// IN MARCH_ORDER, so the list reads top-left to bottom-right in the order the wave
+// actually arrives — see data/waves.js. The rows do not move as counts change,
+// which is what makes the panel tappable: a row that jumped to the top when you
+// added one of something would move the button out from under the finger that was
+// about to press it again.
 export const GROUP_TOP = INNER.y + 186;
+const WAVE_CELL_GAP = 24;
+const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP) / 2;
+export const WAVE_COLS = 2;
 export const groupRows = (levelIndex, wave) => {
-  const w = levels[levelIndex].waves[wave];
-  return w.groups.map((g, j) => ({ j, group: g, y: GROUP_TOP + j * ROW_H }));
+  const lv = levels[levelIndex];
+  return MARCH_ORDER.map((type, i) => {
+    const col = i % WAVE_COLS;
+    const x = INNER.x + col * (WAVE_CELL_W + WAVE_CELL_GAP);
+    return {
+      type,
+      def: enemyTypes[type],
+      y: GROUP_TOP + Math.floor(i / WAVE_COLS) * ROW_H,
+      x,
+      // Hard against the right edge of its own cell, so the two columns of
+      // steppers line up with each other and the right-hand one lines up with the
+      // Start gold control above it.
+      stepX: x + WAVE_CELL_W - GROUP_W,
+      count: waveCount(lv.id, wave, type),
+      gap: waveGap(lv.id, wave, type)
+    };
+  });
 };
+
+// Where the wave's summary line sits: under the last row of the grid, wherever
+// that falls. Derived rather than typed so it follows the roster — the day a
+// seventh enemy is drawn the grid grows a row and this moves with it.
+//
+// tools/admin.mjs checks that it still clears the footer. That is the failure this
+// layout has: enough enemies and the grid runs into the Reset button, silently,
+// because nothing about drawing text off the bottom of a panel throws.
+export const SUMMARY_Y = () =>
+  GROUP_TOP + Math.ceil(MARCH_ORDER.length / WAVE_COLS) * ROW_H + 24;
 
 // The rows of the UNITS tab. Fifteen of them today — three enemies and four
 // families of three — so they are paged rather than crammed: six a page at the
@@ -546,10 +684,9 @@ export function tapAdmin(state, x, y, restart) {
     }
     const levelId = levels[a.map].id;
     for (const r of groupRows(a.map, a.wave)) {
-      const s = stepper('damage', r.y, 'count');
-      const now = waveCount(levelId, a.wave, r.j);
-      if (on(s.minus)) { setWaveCount(levelId, a.wave, r.j, now - countStep()); return true; }
-      if (on(s.plus)) { setWaveCount(levelId, a.wave, r.j, now + countStep()); return true; }
+      const s = stepperAt(r.stepX, r.y, 'count');
+      if (on(s.minus)) { setWaveCount(levelId, a.wave, r.type, r.count - countStep()); return true; }
+      if (on(s.plus)) { setWaveCount(levelId, a.wave, r.type, r.count + countStep()); return true; }
     }
     return false;
   }

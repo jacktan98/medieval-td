@@ -773,6 +773,59 @@ export const enemyTypes = {
     }
   }
 };
+
+// THE ORDER A WAVE MARCHES IN, and it is a rule rather than a preference.
+//
+// A wave's groups are spawned ONE AFTER ANOTHER — see groupAt in src/waves.js —
+// so the order groups are listed in IS the order the enemies arrive in, and a
+// wave of militia-then-giants plays completely differently from giants-then-
+// militia. It was implicit in how each table happened to be typed out, which was
+// fine while the tables were the only thing that could build a wave.
+//
+// The admin dashboard can now put any creature in any wave, so something has to
+// decide where a newly placed one falls in the queue. This is that something.
+//
+// THUGS LEAD, THEN THE GIANT, THEN THE SHOOTERS, which is what every shipped
+// table already does: bodies first to soak and to screen, the heavy behind them,
+// and the ranged pair last so they arrive with a fight already in progress to
+// stand behind. The three thug variants sit together at the front because that is
+// what they are — the same creature at three weights.
+//
+// IT REPRODUCES EVERY SHIPPED TABLE EXACTLY. Restricted to the four types the
+// tables actually use it reads light -> heavy -> archer -> plague, which is the
+// order all three maps were typed in and balanced at, so an untouched dashboard
+// hands the game back its own wave tables unchanged. tools/admin.mjs checks that
+// against the real tables rather than taking this paragraph's word for it, and it
+// also checks that every enemy in the game appears here exactly once — a creature
+// missing from this list would be one the dashboard could not place.
+export const MARCH_ORDER = [
+  'light_inf', 'tough_inf', 'blocker_inf', 'heavy_inf', 'archer_inf', 'plague_inf'
+];
+
+// HOW FAST THEY COME when nobody has said, which is what a creature placed into a
+// wave that never had one needs.
+//
+// Derived from the tables rather than typed: the MEDIAN gap that type is already
+// sent at across every wave on every map. So a militiaman placed by hand arrives
+// at the rate militia are actually sent at, and the number moves on its own if the
+// tables are ever retuned.
+//
+// The fallback is for a creature no shipped table sends — the Tough Thug and the
+// Blocker Thug today. 1.6s is the slowest rate anything in this game arrives at
+// and the rate wave 1 opens with, which is the right way to be wrong: a hand
+// placed group that turns out too thin is a wave you nudge, and one that turns out
+// too thick is a map you lose while working out why.
+const UNSENT = 1.6;
+export const defaultGap = type => {
+  const seen = [];
+  for (const table of [waves, wavesFork, wavesLong])
+    for (const w of table)
+      for (const g of w.groups) if (g.type === type) seen.push(g.gap);
+  if (!seen.length) return UNSENT;
+  seen.sort((a, b) => a - b);
+  return seen[seen.length >> 1];
+};
+
 // A WAVE TABLE BELONGS TO A LEVEL, and there are two of them now.
 //
 // Maps 1 and 2 share the eight below; map 3 has ten of its own further down.

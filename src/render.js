@@ -25,7 +25,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
-         waveCount, shipped, touched, COLS } from './admin.js';
+         waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -4256,6 +4256,12 @@ function drawAdmin(ctx, state) {
   ctx.textBaseline = 'middle';
 }
 
+// "1st in", "2nd in". Six is the most this will ever be handed — a wave cannot
+// contain more groups than the game has enemies — so the table is the whole rule
+// and there is no arithmetic to get wrong at eleven and thirteen.
+const ORDINALS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+const ordinal = n => ORDINALS[n - 1] || `${n}th`;
+
 function drawAdminWaves(ctx, a) {
   const lv = levels[a.map];
 
@@ -4279,23 +4285,40 @@ function drawAdminWaves(ctx, a) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
+  // EVERY ENEMY IN THE GAME, in two columns, whether or not this wave sends it.
+  // A row at zero is drawn DIMMED rather than left out: the point of the panel is
+  // that the whole roster is in front of you and any of it can be dialled up, and
+  // a list that hid what was absent would be the old panel with extra steps.
   const rows = groupRows(a.map, a.wave);
   let total = 0;
+  // Where each type falls in the queue, counted over the rows that are actually
+  // in the wave. Groups spawn one after another — see groupAt in waves.js — so
+  // this is the order they arrive in, and it is worth saying on a panel that can
+  // now put anything anywhere.
+  let place = 0;
 
   for (const r of rows) {
-    const count = waveCount(lv.id, a.wave, r.j);
-    total += count;
+    total += r.count;
+    const here = r.count > 0;
+    if (here) place++;
 
-    ctx.fillStyle = ADMIN_INK;
+    ctx.fillStyle = here ? ADMIN_INK : ADMIN_DIM;
     ctx.font = '700 19px system-ui, sans-serif';
-    ctx.fillText(enemyTypes[r.group.type].name, ADMIN_PANEL.x + 16, r.y + 16);
+    ctx.fillText(r.def.name, r.x, r.y + 16);
 
     ctx.fillStyle = ADMIN_DIM;
     ctx.font = '13px system-ui, sans-serif';
-    ctx.fillText(`one every ${r.group.gap.toFixed(2)}s`, ADMIN_PANEL.x + 16, r.y + 34);
+    // SHORT ENOUGH FOR THE LABEL COLUMN, which is 244px wide and the reason the
+    // absent line does not also quote the rate this creature would arrive at:
+    // "not in this wave — would come every 1.60s" set straight through the minus
+    // button beside it. The rate is one tap away and reads on the row the moment
+    // there is one of anything to read it about.
+    ctx.fillText(
+      here ? `${ordinal(place)} in, one every ${r.gap.toFixed(2)}s` : 'not in this wave',
+      r.x, r.y + 34);
 
-    stepperRow(ctx, stepper('damage', r.y, 'count'), count,
-      shipped(`${lv.id}|${a.wave}|${r.j}`));
+    stepperRow(ctx, stepperAt(r.stepX, r.y, 'count'), r.count,
+      shipped(`${lv.id}|${a.wave}|${r.type}`));
   }
 
   // The total, because the count that matters to a player is the wave's, and it
@@ -4305,9 +4328,10 @@ function drawAdminWaves(ctx, a) {
   ctx.fillStyle = ADMIN_DIM;
   ctx.font = '15px system-ui, sans-serif';
   ctx.fillText(
-    `Wave ${a.wave + 1} of ${lv.waves.length} on ${lv.name} — ${total} enemies` +
+    `Wave ${a.wave + 1} of ${lv.waves.length} on ${lv.name} — ` +
+    `${total ? `${total} enemies` : 'empty, a wave off'}` +
     `${a.wave === lv.waves.length - 1 ? ', the last one' : ''}`,
-    ADMIN_PANEL.x + 16, rows[rows.length - 1].y + 84);
+    ADMIN_PANEL.x + 16, SUMMARY_Y());
 
   ctx.fillStyle = 'rgba(240,230,210,0.40)';
   ctx.font = '13px system-ui, sans-serif';
