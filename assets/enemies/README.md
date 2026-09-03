@@ -24,6 +24,7 @@ hold of him — `e.foe`, not "he is nearby".
 | Ranged Default                            | Ranged Attack                            | Melee Default                            | Melee Attack                            | type key     |
 |-------------------------------------------|------------------------------------------|------------------------------------------|-----------------------------------------|--------------|
 | `Enemies_Archer_Thug_Ranged_Default.png`  | `Enemies_Archer_Thug_Ranged_Attack.png`  | `Enemies_Archer_Thug_Melee_Default.png`  | `Enemies_Archer_Thug_Melee_Attack.png`  | `archer_inf` |
+| `Enemies_Dark_Priest_Default.png`         | `Enemies_Dark_Priest_Ranged_Attack.png`  | *(shares the one Default)*               | `Enemies_Dark_Priest_Melee_Attack.png`  | `dark_priest` |
 | `Enemies_Plague_Thug_Default.png`         | `Enemies_Plague_Thug_Ranged_Attack.png`  | *(shares the one Default)*               | `Enemies_Plague_Thug_Melee_Attack.png`  | `plague_inf` |
 
 ## One enemy has a third drawing, and it is a STANCE
@@ -53,6 +54,29 @@ against (265.5, 303.3) swinging and guarding — where every other figure in the
 game holds its shadow to the pixel. It is kept as measured rather than levelled,
 so he settles half a game pixel as the shield comes up. Worth knowing before the
 next re-export; not worth papering over.
+
+## And the Dark Priest has FIVE, which is the most anything in this game has
+
+Four of them are the pairs above — the walk, the missile, the club. The fifth is
+`Enemies_Dark_Priest_Heal.png`, and it is a **stance** on exactly the terms the
+Blocker's shield is: casting is something he does to a friend rather than to you,
+so it replaces the STANDING half of his pair and leaves his swing alone.
+
+| Heal stance                        | type key      |
+|------------------------------------|---------------|
+| `Enemies_Dark_Priest_Heal.png`     | `dark_priest` |
+
+**He holds it for two seconds and stands still for all of them**, then the enemy
+he cast on wears `Dark_Healing_Status.png` and gets 10 health back over 5
+seconds. Being pinned mid-cast loses him the spell rather than pausing it. See
+`heal` on `dark_priest` in `src/data/waves.js`, `enemyStance` in `src/render.js`
+for which drawing is shown when, and `woundedNear` in `src/enemies.js` for who he
+picks — he passes over anyone already wearing the mark, which is the rule that
+lets him ever walk again.
+
+**All four of his living poses share one shadow**, source (261.0, 322.5) to the
+pixel. He swaps between them more than any other figure in the game, so he is
+where a pivot out by two would be most obvious.
 
 **The melee Default is optional and the doctor does without one.** He stands the
 same way whichever he is about to do, so one drawing serves both stances; the

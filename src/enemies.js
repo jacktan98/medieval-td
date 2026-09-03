@@ -9,7 +9,7 @@ import { solo, play, CUE, SHOT } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
-import { tick as tickStatus, slowOf } from './status.js';
+import { tick as tickStatus, slowOf, apply as applyStatus, wearing } from './status.js';
 import { typeOf, pierceOf } from './data/armour.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -58,6 +58,15 @@ export function spawn(state, typeId) {
     // `wornBy` and `enemyStance` both read it, and both would need a guard of
     // their own if it could be undefined.
     guard: 0,
+    // SECONDS OF CAST LEFT, and only the Dark Priest ever has any. He stands still
+    // for the whole of it and the mend lands when it reaches zero. On every enemy
+    // for the reason `tcd` and `guard` are: one shape, so nothing has to test
+    // whether the field is there before reading it.
+    cast: 0,
+    // Who the cast is FOR, held across the two seconds it takes. A reference to
+    // the live figure, so a target that dies mid-cast is caught by its own `hp`
+    // rather than by an index into a list that has moved.
+    mending: null,
     // What is being done to him, and the same field a soldier carries: an enemy
     // can be burnt where a soldier can be poisoned, through one mechanism that
     // does not know which army it is looking at. See src/status.js.
@@ -148,6 +157,64 @@ export function updateEnemies(state, dt) {
     // Real seconds, NOT scaled by slowOf. A monk's pulse slows what a figure DOES;
     // it does not make him hold a shield up for longer.
     if (e.guard > 0) e.guard = Math.max(0, e.guard - dt);
+
+    // THE HEALER, and he is the first thing on the road that helps somebody.
+    //
+    // BEFORE THE THROWER AND BEFORE THE MARCH, because mending is what he would
+    // rather be doing: a priest with a wounded giant beside him stops and works on
+    // it instead of walking on or throwing a missile. That order is the owner's —
+    // "he then continues healing others or walk/attack" puts healing first and the
+    // other two after it.
+    //
+    // NOT WHILE SOMEBODY HAS HOLD OF HIM, on exactly the rule the throwers follow
+    // one block down: a man in a melee fights with what is in his hands. A cast
+    // already running is ABANDONED rather than paused — see below.
+    if (e.def.heal) {
+      if (e.foe) {
+        // Caught mid-cast. The two seconds are lost, not banked: a spell
+        // interrupted by a spear in the ribs should cost him the spell, and
+        // banking it would make pinning him at 1.9 seconds worth nothing.
+        e.cast = 0;
+        e.mending = null;
+      } else if (e.cast > 0) {
+        // STANDING STILL AND WORKING. `halted` is what tells leadPoint and the
+        // march that this figure is not going anywhere, the same flag a thrower
+        // sets when he stops to shoot.
+        e.halted = true;
+        // Scaled by slowOf, like every other clock an enemy runs: a monk's pulse
+        // makes him slower at casting exactly as it makes him slower at swinging.
+        e.cast -= dt * slowOf(e);
+        if (e.mending) turnTo(e, e.mending.x);
+        if (e.cast <= 0) {
+          const mark = e.mending;
+          e.cast = 0;
+          e.mending = null;
+          // THE TARGET MAY HAVE DIED while he was casting, which is the ordinary
+          // outcome of standing still for two seconds in front of a tower. The
+          // spell is simply spent.
+          if (mark && mark.hp > 0) {
+            // Health a second, for this many seconds — the shape every status
+            // magnitude takes. 10 over 5 is 2, and `apply` REFRESHES rather than
+            // stacking, so that 2 is a ceiling however many priests are working.
+            // See the note on dark_priest in data/waves.js for why that number is
+            // what keeps a wave finishable.
+            applyStatus(mark, 'healing', e.def.heal.hp / e.def.heal.seconds,
+                        e.def.heal.seconds, null);
+          }
+        }
+        // Nothing else this frame: he is not throwing and he is not walking.
+        continue;
+      } else {
+        const mark = woundedNear(state, e, e.def.heal.range);
+        if (mark) {
+          e.cast = e.def.heal.cast;
+          e.mending = mark;
+          e.halted = true;
+          turnTo(e, mark.x);
+          continue;
+        }
+      }
+    }
 
     // THE THROWER, and the basket is bottomless.
     //
@@ -331,8 +398,12 @@ export function updateEnemies(state, dt) {
   // pays its bounty and plays its kill line on the same frame it lands, exactly as
   // a blow would.
   for (const e of state.enemies) {
+    // NEGATIVE MEANS MENDING, which is the Dark Priest's dark healing coming back
+    // through the same number a burn comes back through. Clamped to the ceiling
+    // here rather than in status.js, because what a full health bar means belongs
+    // to the army that owns the figure — see the note over tick().
     const hurt = tickStatus(e, dt);
-    if (hurt) e.hp -= hurt;
+    if (hurt) e.hp = Math.min(e.maxHp, e.hp - hurt);
   }
 
   for (const e of state.enemies) {
@@ -412,6 +483,41 @@ export function updateEnemies(state, dt) {
     }
     return true;
   });
+}
+
+// SOMEBODY WORTH MENDING, within reach of this priest. The worst wounded of them,
+// so a giant on his last legs is served before a thug with a scratch.
+//
+// THREE THINGS ARE SKIPPED and each is load-bearing:
+//
+//   HIMSELF. He is an enemy and he is in the list, and a priest who could mend
+//   himself would be a 200-health creature that never quite dies to anything
+//   doing less than 2 a second. Two priests still mend EACH OTHER, which is the
+//   interesting version of the same idea and costs each of them the cast.
+//
+//   ANYONE ALREADY WEARING THE MARK. This is the rule that lets him ever walk
+//   again. Enemies have no regeneration, so a creature hurt once is hurt for the
+//   rest of its life — a priest who simply took the nearest wounded man would
+//   find the same man wounded the moment the mark lapsed, stand still, and never
+//   move again. Passing over the mended sends him to the next one and then on
+//   down the road.
+//
+//   THE DEAD, who are dropped from the list on the frame they die but may still
+//   be in it on the frame a blow lands.
+//
+// It does NOT skip a pinned enemy, and that is deliberate rather than an
+// oversight: mending the man a soldier is holding is exactly what a healer should
+// do, and the arithmetic says the soldier still wins — see dark_priest.
+function woundedNear(state, healer, range) {
+  let best = null, worst = 1;
+  for (const e of state.enemies) {
+    if (e === healer || e.hp <= 0 || e.hp >= e.maxHp) continue;
+    if (wearing(e, 'healing')) continue;
+    if (!inRange(healer.x, healer.y, e.x, e.y, range)) continue;
+    const share = e.hp / e.maxHp;
+    if (share < worst) { worst = share; best = e; }
+  }
+  return best;
 }
 
 // How near a soldier has to be to a thrower's lane to count as standing in his

@@ -137,8 +137,11 @@ console.log('\nWhich drawing an enemy shows\n');
   };
   const state = (def, foe, thrust) => ({ def, foe, thrust });
 
-  for (const id of ['archer_inf', 'plague_inf']) {
-    const d = enemyTypes[id];
+  // DERIVED, not listed. It was ['archer_inf', 'plague_inf'] and the Dark Priest
+  // arrived with a `melee` block of his own — a list would have quietly not
+  // checked him, which is the failure mode a hand-written roster always has.
+  for (const [id, d] of Object.entries(enemyTypes)) {
+    if (!d.melee) continue;
     const far = enemyStance(state(d, null, 0));
     const loose = enemyStance(state(d, null, 1));
     const near = enemyStance(state(d, {}, 0));
@@ -203,13 +206,30 @@ console.log('\nWhich drawing an enemy shows\n');
   ok(CASES.every(([, e]) => enemyStance(e).swing.sprite === bl.attack.sprite),
     'and swings with his one Attack in every state', bl.attack.sprite);
 
+  // AND THE PRIEST'S CAST, which is the same shape of thing: a stance that
+  // replaces the standing half and leaves the swing alone. Two creatures now have
+  // one, so what is checked is the RULE rather than either of them — held beats
+  // the stance, the stance beats the Default, and nothing touches the swing.
+  const dp = enemyTypes.dark_priest;
+  const casting = enemyStance({ def: dp, foe: null, guard: 0, cast: 1.2, thrust: 0 });
+  ok(casting.stand.sprite === dp.heal.sprite, 'a Dark Priest casting is drawn as his Heal pose',
+    casting.stand.sprite);
+  ok(casting.swing.sprite === dp.attack.sprite,
+    'and still strikes with his own Attack', casting.swing.sprite);
+  // PINNED MID-CAST HE IS FIGHTING, not casting. updateEnemies clears the clock on
+  // that frame; this is the drawing agreeing with it, so a priest cannot be shown
+  // healing while a spearman has hold of him.
+  const caught = enemyStance({ def: dp, foe: {}, guard: 0, cast: 1.2, thrust: 0 });
+  ok(caught.stand.sprite === dp.sprite && caught.swing.sprite === dp.melee.attack.sprite,
+    'and being caught mid-cast puts him back in the melee pair', caught.swing.sprite);
+
   // AND THE SHIELD IS HIS ALONE. Every other enemy answers the same however long
   // its `guard` field has been sitting at zero — the field is on all of them so
   // that nothing has to test for it, and that is only safe if it does nothing.
   for (const [id, d] of Object.entries(enemyTypes)) {
     if (id === 'blocker_inf') continue;
-    const calm = enemyStance({ def: d, foe: null, guard: 0, thrust: 0 });
-    const shot = enemyStance({ def: d, foe: null, guard: 5, thrust: 0 });
+    const calm = enemyStance({ def: d, foe: null, guard: 0, cast: 0, thrust: 0 });
+    const shot = enemyStance({ def: d, foe: null, guard: 5, cast: 0, thrust: 0 });
     ok(calm.stand.sprite === shot.stand.sprite && wornBy({ def: d, foe: null, guard: 5 }) === (d.armour || null),
       `${d.name} has no shield to raise`, calm.stand.sprite);
   }
@@ -321,12 +341,15 @@ console.log('\nWhich way a thrower looks\n');
     return { face: e.face, halted: e.halted, toward: Math.sign(there.x - here.x) };
   }
 
-  for (const id of ['archer_inf', 'plague_inf']) {
-    const d = enemyTypes[id];
-    // Inside his reach on both sides. 60px is under the doctor's 130 as well as
-    // the archer's 200, so one offset serves both.
-    const ahead = look(id, AT + 60, -1);
-    const behind = look(id, AT - 60, 1);
+  // Every thrower in the game, derived for the same reason the stance loop above
+  // is: the Dark Priest throws too, and a list would not have known.
+  for (const [id, d] of Object.entries(enemyTypes)) {
+    if (!d.ranged) continue;
+    // Inside his reach on both sides, whatever that reach is — the priest's 100
+    // is half the archer's 200, so one fixed offset no longer serves all three.
+    const near = Math.round(d.ranged.range * 0.5);
+    const ahead = look(id, AT + near, -1);
+    const behind = look(id, AT - near, 1);
 
     ok(ahead.face === ahead.toward,
       `${d.name} faces a soldier in front of him`,

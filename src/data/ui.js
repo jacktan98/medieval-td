@@ -390,6 +390,12 @@ export const ui = {
   // taller than they are wide, so `fit` and `h` would give them the same answer
   // and they keep the field that says what was meant.
   status_slowed:   { trim: [239, 244, 34, 24], fit: STATUS_H },
+  // AND THE DARK HEALING, which takes `h` like the first two: 32 x 42, taller than
+  // it is wide, so a height and a fit give the same answer and it keeps the field
+  // that says what was meant. 42 source px is the same as the flame's, which is
+  // what STATUS_H's ceiling was set by — so this mark arrives with room to spare
+  // and does not move the number.
+  status_healing:  { trim: [240, 235, 32, 42], h: STATUS_H },
   // The High Altar's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

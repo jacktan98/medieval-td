@@ -63,6 +63,34 @@ export const STATUS = {
     icon: 'status_slowed',
     name: 'Slowed',
     hurts: false
+  },
+  // THE FOURTH, AND THE FIRST THAT IS GOOD FOR THE FIGURE WEARING IT. The Dark
+  // Priest's, and the only thing in this game that puts health back on an enemy.
+  //
+  // `mends` rather than a second meaning for `hurts`, because three states cannot
+  // be spelled with one boolean and the day something both hurt and slowed would
+  // have needed a third field anyway. The three are read separately: `hurts` says
+  // this costs health, `mends` says it gives health, and anything with neither
+  // carries a multiplier instead. See `apply` and `tick` in src/status.js.
+  //
+  // IT IS THE SAME MECHANISM POINTED THE OTHER WAY, which is what the note at the
+  // top of this file promised the day a burn and a poison were the whole list: a
+  // status is applied by whoever applies it and worn by whoever wears it. A
+  // cannon burns a thug, a plague doctor poisons a spearman, and a dark priest
+  // mends a giant, through one clock.
+  //
+  // AND ITS MAGNITUDE REFRESHES RATHER THAN STACKS, which is not a detail — it is
+  // what keeps a wave finishable. `apply` replaces the rate on a figure already
+  // wearing a status instead of adding a second one, so two priests working on
+  // the same giant mend him at the same 2 health a second as one does. That
+  // ceiling is below the weakest soldier in the game — a tier 1 spearman does
+  // 3.16 — so a pinned enemy still loses the fight he is in, however many priests
+  // are behind him. tools/plague.mjs checks that against the real numbers.
+  healing: {
+    icon: 'status_healing',
+    name: 'Dark Healing',
+    hurts: false,
+    mends: true
   }
 };
 

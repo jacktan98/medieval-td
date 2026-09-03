@@ -1140,8 +1140,13 @@ export function updateUnits(state, dt) {
     // that does no damage — stunned, slowed — a stunned man still heals. That is
     // the branch this reads through, and the reason it is a helper rather than a
     // length check.
+    // Clamped to his ceiling on the same terms enemies are, though nothing in the
+    // game mends a SOLDIER through a status today — his healing is Holy Light,
+    // which is a tower's aura and writes `u.healing` rather than wearing a mark.
+    // The clamp is here so that the two armies read the one mechanism the same way
+    // the day something does.
     const hurt = tickStatus(u, dt);
-    if (hurt) u.hp -= hurt;
+    if (hurt) u.hp = Math.min(u.maxHp, u.hp - hurt);
 
     if (harmed(u)) {
       // Nothing else: the regen below is suppressed while something is working on

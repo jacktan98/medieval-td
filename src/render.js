@@ -25,7 +25,8 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
-         waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y } from './admin.js';
+         waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
+         waveStepper, COUNT_VALUE_W, GAP_VALUE_W } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -1412,13 +1413,25 @@ const ENEMY_LUNGE = 6;
 // Blocker drawn behind his shield while taking damage as though it were down is
 // the bug this whole enemy could plausibly ship with. Change one, change both,
 // and tools/facing.mjs checks that the drawing follows the plate.
+// A THIRD STANCE OF THE SAME SHAPE arrived with the Dark Priest: `heal` is what
+// he looks like casting, and casting is something he does to a friend, so it
+// replaces the standing half exactly as the shield does. Two creatures, two
+// fields, one rule — a def's stance beats its Default and neither touches the
+// swing.
 export function enemyStance(e) {
   const d = e.def;
   const close = !!(e.foe && d.melee);
-  const guarding = !e.foe && e.guard > 0 && !!d.guard;
+  // WHICHEVER STANCE THIS CREATURE HAS, and nothing has two. Held always wins:
+  // a Blocker swinging has his shield down and a priest with a spear in him has
+  // stopped casting — see updateEnemies, which clears the cast on the frame
+  // somebody takes hold of him.
+  const stance = e.foe ? null
+               : (e.guard > 0 && d.guard) ? d.guard
+               : (e.cast > 0 && d.heal) ? d.heal
+               : null;
   const own = { sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot };
   return {
-    stand: (close && d.melee.default) || (guarding ? d.guard : own),
+    stand: (close && d.melee.default) || stance || own,
     swing: close ? d.melee.attack : d.attack
   };
 }
@@ -1483,7 +1496,8 @@ const artHeight = def => {
   const close = def.melee && def.melee.default;
   return Math.max(def.spriteTrim[3],
                   close ? close.trim[3] : 0,
-                  def.guard ? def.guard.trim[3] : 0) * SCALE;
+                  def.guard ? def.guard.trim[3] : 0,
+                  def.heal ? def.heal.trim[3] : 0) * SCALE;
 };
 
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
@@ -4302,8 +4316,13 @@ function drawAdminWaves(ctx, a) {
     const here = r.count > 0;
     if (here) place++;
 
+    // 17px, not the 19 the units tab uses. The label column lost width when the
+    // second stepper arrived — 134px against the old 232 — and "Plague Doctor"
+    // sets at 143 in 19px bold. tools/admin.mjs is what says so, and it checks the
+    // longest name in the game rather than a number typed here, so a creature with
+    // a longer one fails the check instead of being drawn through the minus button.
     ctx.fillStyle = here ? ADMIN_INK : ADMIN_DIM;
-    ctx.font = '700 19px system-ui, sans-serif';
+    ctx.font = '700 17px system-ui, sans-serif';
     ctx.fillText(r.def.name, r.x, r.y + 16);
 
     ctx.fillStyle = ADMIN_DIM;
@@ -4313,12 +4332,18 @@ function drawAdminWaves(ctx, a) {
     // "not in this wave — would come every 1.60s" set straight through the minus
     // button beside it. The rate is one tap away and reads on the row the moment
     // there is one of anything to read it about.
-    ctx.fillText(
-      here ? `${ordinal(place)} in, one every ${r.gap.toFixed(2)}s` : 'not in this wave',
-      r.x, r.y + 34);
+    // THE RATE IS ITS OWN CONTROL NOW, so the line under the name no longer has to
+    // print it: it says where in the queue this creature falls, which is the one
+    // thing about a wave that no stepper on the row can show.
+    ctx.fillText(here ? `${ordinal(place)} in` : 'not in this wave', r.x, r.y + 34);
 
-    stepperRow(ctx, stepperAt(r.stepX, r.y, 'count'), r.count,
+    stepperRow(ctx, waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W), r.count,
       shipped(`${lv.id}|${a.wave}|${r.type}`));
+    // Printed to two places and compared to two places, so a rate the player has
+    // stepped back onto its shipped value stops showing a "was" line — 1.6 and
+    // 1.60 are the same number and must read as the same number.
+    stepperRow(ctx, waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W), r.gap.toFixed(2),
+      shipped(`${lv.id}|${a.wave}|${r.type}|gap`).toFixed(2));
   }
 
   // The total, because the count that matters to a player is the wave's, and it
@@ -4333,10 +4358,15 @@ function drawAdminWaves(ctx, a) {
     `${a.wave === lv.waves.length - 1 ? ', the last one' : ''}`,
     ADMIN_PANEL.x + 16, SUMMARY_Y());
 
+  // The second line, 22px under the first. It hung off the last ROW rather than
+  // off the summary, which was the same place while the grid had three rows and
+  // stopped being it at four — it ran straight through the Reset button. Both
+  // lines come off SUMMARY_Y now, and tools/admin.mjs checks the LOWER of them
+  // against the footer rather than the upper.
   ctx.fillStyle = 'rgba(240,230,210,0.40)';
   ctx.font = '13px system-ui, sans-serif';
   ctx.fillText('Difficulty is applied on top of these: Normal thins a wave, Hard swells it.',
-    ADMIN_PANEL.x + 16, rows[rows.length - 1].y + 106);
+    ADMIN_PANEL.x + 16, SUMMARY_Y() + 22);
 }
 
 function drawAdminUnits(ctx, a) {

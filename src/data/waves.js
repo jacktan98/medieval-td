@@ -106,6 +106,24 @@ export const flask = {
   }
 };
 
+// THE DARK PRIEST'S MISSILE, and the second piece of enemy ammunition in the game.
+//
+// Shaped like every other projectile — `kind`, `speed`, `arc`, `impact` — because
+// projectiles.js reads them all the same way. Flat and fast like the monastery's
+// own missiles rather than lobbed like a flask: it is the same magic, thrown by
+// the other side.
+export const darkMissile = {
+  kind: 'missile',
+  sprite: 'dark_missile',
+  trim: [218, 246, 76, 20],
+  // Nose-first, like an arrow and unlike a bottle: it is a dart of magic and it
+  // points where it is going.
+  faces: 1,
+  grip: 0.5,
+  speed: 330,
+  impact: null
+};
+
 export const enemyTypes = {
   light_inf: {
     // What the info box calls him. The gameplay key stays light_inf: what he is
@@ -270,8 +288,12 @@ export const enemyTypes = {
     // he is guarding, because being swung at is not what put the shield up.
     guard: {
       sprite: 'blocker_guard',
-      trim: [169, 197, 132, 118],
-      pivot: [0.731, 0.900],
+      // RE-EXPORTED NARROWER: 101 source px wide against 132, so the shield is
+      // tucked in rather than held out. Same height and the same shadow to the
+      // pixel, so only the width moved — he is 20.7 game px across guarding where
+      // he was 27.1, against the 18.5 he walks in.
+      trim: [200, 197, 101, 118],
+      pivot: [0.649, 0.900],
       // What he wears while it is up. HIGH ON BOTH AXES, which nothing else in
       // the game wears — the Giant's med plate is the previous ceiling.
       armour: { physical: 'high', magic: 'high' },
@@ -771,6 +793,112 @@ export const enemyTypes = {
       // noise, and map 2 said the same (6, 8, 8). What costs the defence-breaking
       // is standing off AT ALL, not how long for.
     }
+  },
+
+  // THE HEALER, and the first creature on either side that puts health back on
+  // somebody. Everything before him could only take it away.
+  //
+  // He is a caster rather than a fighter, and both halves of that are in the
+  // numbers: HIGH magic wards and none at all against steel, so an arrow goes
+  // through him whole and a monk's staff barely scratches him. That is the exact
+  // inverse of the Giant, and it is deliberate — the two enemies that most reward
+  // being focused down want DIFFERENT towers pointed at them.
+  //
+  // WHAT HE ACTUALLY DOES, in the owner's words: "Dark Priest is in Heal image
+  // when casting Heal to an enemy unit. It holds this pose (stands still) for 2
+  // seconds and then after that, the enemy receives health regeneration of 10
+  // health over 5 seconds. He then continues healing others or walk/attack. He
+  // heals every time there is an enemy nearby (Range 100) that is injured."
+  //
+  // TWO SECONDS OF STANDING STILL IS THE COST, and it is the whole of his
+  // counter-play. A priest mid-cast is not walking, not shooting, and is standing
+  // in one place for two seconds with a distinctive pose on — which is a long time
+  // in this game and the window a tower is given to kill him before the heal
+  // lands. Nothing is refunded if he dies during it.
+  //
+  // HE WILL NOT CAST ON SOMEBODY ALREADY MENDING, and that rule is load-bearing
+  // rather than polite. Enemies have no regeneration of their own, so a creature
+  // hurt once stays hurt for the rest of its life: a priest who re-cast on the
+  // nearest injured man would find the same man injured again the moment the
+  // status lapsed, stand still, and never walk another step. He would arrive at
+  // the keep on the last wave of a long game. So he passes over anyone already
+  // wearing the mark and moves on to the next, and walks when everybody near him
+  // is either whole or already mending.
+  //
+  // AND A WAVE STILL ENDS. That is the invariant the plague doctor's standoff is
+  // built on — see the note over `plague_inf` — and it is the one this creature
+  // could have broken. It survives on arithmetic rather than on a special case:
+  // `apply` in src/status.js REFRESHES a status rather than stacking it, so 10
+  // health over 5 seconds is 2 a second and stays 2 a second however many priests
+  // are working on the same man. Every soldier in the game out-damages that — a
+  // tier 1 spearman does 3.16 — so a pinned enemy still loses the fight he is in.
+  // tools/plague.mjs checks that against the real soldier numbers rather than
+  // against this paragraph.
+  dark_priest: {
+    name: 'Dark Priest',
+    sprite: 'priest',
+    spriteTrim: [216, 178, 80, 156],
+    pivot: [0.563, 0.926],
+    // ALL FOUR OF HIS LIVING POSES SHARE ONE SHADOW, source (261.0, 322.5) to the
+    // pixel — the walk, the missile, the club and the cast. He swaps between them
+    // more than any other figure in the game, so this is the figure where a pivot
+    // out by two would be most obvious.
+    attack: { sprite: 'priest_cast', trim: [182, 205, 122, 129], pivot: [0.648, 0.911] },
+    // The close pair, on the archer's and the doctor's terms: shown while a
+    // soldier has hold of him. One standing pose serves both stances, like the
+    // doctor's, so there is no `melee.default` — see enemyStance in render.js.
+    melee: {
+      attack: { sprite: 'priest_swing', trim: [115, 218, 181, 116], pivot: [0.807, 0.901] }
+    },
+    // AND THE FIFTH DRAWING, which is neither a Default nor an Attack — the same
+    // shape as the Blocker's shield stance and for the same reason. Casting is
+    // something he does to a friend, not to you, so it replaces the STANDING half
+    // of his pair and leaves his swing alone.
+    heal: {
+      sprite: 'priest_heal',
+      trim: [190, 184, 111, 150],
+      pivot: [0.640, 0.923],
+      // How far he can reach somebody to mend them. The same 100 as his missile,
+      // so what he can hurt and what he can help are one circle — a player who has
+      // learned his reach has learned both.
+      range: 100,
+      // Seconds held in the pose before anything lands.
+      cast: 2,
+      // What the mark is worth, and over how long. 10 over 5 is 2 a second; see
+      // the note above for why that ceiling is the thing that keeps a wave
+      // finishable.
+      hp: 10,
+      seconds: 5
+    },
+    spriteFaces: -1,
+    dead: 'dead_priest',
+    deadTrim: [169, 214, 174, 84],
+    deadPivot: [0.187, 0.804],
+    hp: 200,
+    // MAGIC, and he is the second creature on the road that does it — the plague
+    // doctor being the first. What that costs the player is a barracks: a
+    // spearman wears no magic plate at all, so the missile lands whole on him.
+    damageType: 'magic',
+    armour: { physical: 'none', magic: 'high' },
+    // Slower than a thug and quicker than a giant. He is a man in robes who stops
+    // to work rather than one marching.
+    speed: 58,
+    bounty: 35,
+    leak: 1,
+    damage: 20,
+    atkCd: 1.0,
+    ranged: {
+      // The shortest reach of the three throwers — 100 against the doctor's 130
+      // and the archer's 200 — so every tower in the game outranges him and a
+      // squad's own ASSIST of 70 very nearly reaches him. He is meant to be got
+      // at, which is the trade for what he does while he is alive.
+      range: 100,
+      cd: 2.0,
+      damage: 20,
+      ammo: darkMissile
+    },
+    r: 8,
+    colour: '#6B5C7A'
   }
 };
 
@@ -799,7 +927,11 @@ export const enemyTypes = {
 // also checks that every enemy in the game appears here exactly once — a creature
 // missing from this list would be one the dashboard could not place.
 export const MARCH_ORDER = [
-  'light_inf', 'tough_inf', 'blocker_inf', 'heavy_inf', 'archer_inf', 'plague_inf'
+  'light_inf', 'tough_inf', 'blocker_inf', 'heavy_inf', 'archer_inf', 'plague_inf',
+  // The healer comes in LAST, behind everything he is there to mend. A priest at
+  // the head of a column would spend the wave walking with nobody hurt in front of
+  // him; behind it he arrives to a fight already going and men already wounded.
+  'dark_priest'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

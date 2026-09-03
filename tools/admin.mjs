@@ -34,7 +34,8 @@ import {
   adminWaves, adminGold, setStartGold, goldStep, goldStepper,
   statStep, countStep, PIN, ADMIN_BTN, mapTabs, waveTabs,
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, CLOSE_BTN,
-  PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, FOOT_Y
+  PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
+  waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep
 } from '../src/admin.js';
 import { starsFor, starCuts, bestStars, recordStars, clearStars, MAX_STARS } from '../src/score.js';
 
@@ -238,6 +239,39 @@ console.log('\nAnything, in any wave\n');
   ok(adminWaves(lv)[0].groups.length === 0, 'and a wave can be emptied completely');
   reset();
 
+  // AND HOW FAST THEY COME, which is the third control on a row and the newest.
+  const shippedGap = waveGap(lv.id, 3, 'light_inf');
+  ok(shippedGap === lv.waves[3].groups[0].gap,
+    'an untouched rate is the one the table ships', `every ${shippedGap}s`);
+  setWaveGap(lv.id, 3, 'light_inf', shippedGap + gapStep());
+  ok(adminWaves(lv)[3].groups[0].gap === +(shippedGap + 0.1).toFixed(1),
+    'and an override reaches the wave the game is handed',
+    `every ${adminWaves(lv)[3].groups[0].gap}s`);
+  ok(lv.waves[3].groups[0].gap === shippedGap,
+    'while the LEVEL keeps its own underneath', `every ${lv.waves[3].groups[0].gap}s`);
+  setWaveGap(lv.id, 3, 'light_inf', shippedGap);
+  ok(!touched(), 'and stepping it back to the shipped rate clears the edit');
+
+  // A TENTH IS NOT REPRESENTABLE IN BINARY, so ten taps down from 2.0 lands on
+  // 0.9999999999999999 unless the setter rounds — which prints as 1.00 and stores
+  // as an override that can never equal its shipped value again. This is that
+  // rounding, run through the real setter ten times rather than asserted.
+  let g = 2.0;
+  for (let i = 0; i < 10; i++) { setWaveGap(lv.id, 5, 'light_inf', g - gapStep()); g = waveGap(lv.id, 5, 'light_inf'); }
+  ok(g === 1, 'ten taps down from 2.0 lands exactly on 1', `${g}`);
+  reset();
+
+  // AND THE FLOOR IS A TENTH RATHER THAN ZERO. `gap` is what goes on the spawn
+  // clock, so 0 puts one enemy on the road every frame — thirty of them in half a
+  // second, stacked on one point of the map.
+  setWaveGap(lv.id, 0, 'light_inf', -5);
+  ok(waveGap(lv.id, 0, 'light_inf') === 0.1,
+    'a rate can never reach zero, which would spawn one a frame',
+    `${waveGap(lv.id, 0, 'light_inf')}s`);
+  setWaveGap(lv.id, 0, 'light_inf', 999);
+  ok(waveGap(lv.id, 0, 'light_inf') === 10, 'and is capped at ten seconds');
+  reset();
+
   // THE PANEL SHOWS THE WHOLE ROSTER. This is the owner's actual ask, and it is
   // checked against enemyTypes rather than against a number, so a creature drawn
   // tomorrow appears here without this line being touched.
@@ -253,20 +287,38 @@ console.log('\nAnything, in any wave\n');
   const last = rows[rows.length - 1];
   ok(last.y + ROW_H <= SUMMARY_Y(), 'the grid clears its own summary line',
     `last row ends ${last.y + ROW_H}, summary at ${SUMMARY_Y()}`);
-  ok(SUMMARY_Y() < FOOT_Y, 'and the summary clears the footer',
-    `${SUMMARY_Y()} against ${FOOT_Y}`);
+  // THE LOWER OF THE TWO SUMMARY LINES, not the upper. Checking the first one is
+  // what let the second be drawn through the Reset button when the grid grew a
+  // fourth row: it passed, because the line it was measuring was 22px higher than
+  // the line that overlapped.
+  ok(SUMMARY2_Y() < FOOT_Y, 'and both summary lines clear the footer',
+    `lower line ${SUMMARY2_Y()} against ${FOOT_Y}`);
 
   // The two columns must not overlap each other, and the right-hand one must stay
   // on the panel — the same pair of checks the units tab's columns already get.
   const lefts = rows.filter((_, i) => i % 2 === 0);
   const rights = rows.filter((_, i) => i % 2 === 1);
-  const s0 = stepperAt(lefts[0].stepX, 0, 'count');
-  ok(s0.plus.x + s0.plus.w < rights[0].x,
-    'the left column\'s stepper clears the right column\'s label',
-    `${rights[0].x - (s0.plus.x + s0.plus.w)}px apart`);
-  const s1 = stepperAt(rights[0].stepX, 0, 'count');
-  ok(s1.plus.x + s1.plus.w <= PANEL.x + PANEL.w - 16,
+  // TWO STEPPERS PER CELL NOW — how many, and how fast — so there are three gaps
+  // to keep open across a row rather than one: count clear of the label, rate
+  // clear of count, and the right column clear of the panel edge.
+  const count0 = waveStepper(lefts[0].stepX, 0, 'count', COUNT_VALUE_W);
+  const gap0 = waveStepper(lefts[0].gapX, 0, 'gap', GAP_VALUE_W);
+  ok(count0.plus.x + count0.plus.w <= gap0.minus.x,
+    'a row\'s two steppers do not overlap each other',
+    `${gap0.minus.x - (count0.plus.x + count0.plus.w)}px apart`);
+  ok(gap0.plus.x + gap0.plus.w < rights[0].x,
+    'the left column clears the right column\'s label',
+    `${rights[0].x - (gap0.plus.x + gap0.plus.w)}px apart`);
+  const gap1 = waveStepper(rights[0].gapX, 0, 'gap', GAP_VALUE_W);
+  ok(gap1.plus.x + gap1.plus.w <= PANEL.x + PANEL.w - 16,
     'and the right column stays on the panel');
+  // AND THE ROWS DO NOT REACH INTO EACH OTHER. The tap box is the drawn button
+  // plus STEP_PAD on every side, and the pitch has to clear it — this is the
+  // check that a tighter grid would fail, and a tighter grid is exactly what the
+  // next creature drawn will ask for.
+  ok(count0.minus.h + 2 * STEP_PAD <= ROW_H,
+    'and a row\'s tap boxes stay inside its own pitch',
+    `${count0.minus.h + 2 * STEP_PAD} tapped, ${ROW_H} pitch`);
 
   // AND THE TEXT FITS BESIDE THE STEPPER. There is no canvas out here to measure a
   // font with, so this estimates the way tools/book.mjs does and for the same
@@ -286,11 +338,13 @@ console.log('\nAnything, in any wave\n');
   const names = MARCH_ORDER.map(t => enemyTypes[t].name);
   // Every subtitle the row can hold: the absent one, and the longest arrival line
   // — the last place in the queue at the slowest rate anything is sent at.
-  const subs = ['not in this wave',
-                `${MARCH_ORDER.length}th in, one every 10.00s`];
-  ok(widest(names, 0.58, 19) < LABEL_W,
+  // The two lines a row can carry under its name. The rate moved out of here when
+  // it got a stepper of its own, so what is left is short — but it is still
+  // checked, because the next thing added to that line will not be.
+  const subs = ['not in this wave', `${MARCH_ORDER.length}th in`];
+  ok(widest(names, 0.58, 17) < LABEL_W,
     'the longest enemy name fits its column',
-    `${Math.round(widest(names, 0.58, 19))} of ${LABEL_W}px, "${names.reduce((a, b) => a.length > b.length ? a : b)}"`);
+    `${Math.round(widest(names, 0.58, 17))} of ${LABEL_W}px, "${names.reduce((a, b) => a.length > b.length ? a : b)}"`);
   ok(widest(subs, 0.52, 13) < LABEL_W,
     'and so does the longest line under it',
     `${Math.round(widest(subs, 0.52, 13))} of ${LABEL_W}px`);

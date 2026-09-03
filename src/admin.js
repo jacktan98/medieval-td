@@ -67,6 +67,7 @@ import { families } from './data/towers.js';
 // Keys are strings so the whole thing is one flat JSON object:
 //
 //   waves   "m3|4|heavy_inf"  level id, wave index, ENEMY TYPE     -> count
+//   gaps    "m3|4|heavy_inf"  the same, in its own bag             -> seconds
 //   gold    "m3"              level id                            -> starting purse
 //   units   "barracks/2|hp"   unit id, field                      -> number
 const KEY = 'medieval-td/admin';
@@ -80,11 +81,19 @@ const store = () => {
 // being thrown away.
 function load() {
   const s = store();
-  if (!s) return { waves: {}, gold: {}, units: {} };
+  if (!s) return { waves: {}, gaps: {}, gold: {}, units: {} };
   try {
     const held = JSON.parse(s.getItem(KEY)) || {};
-    return { waves: migrate(held.waves || {}), gold: held.gold || {}, units: held.units || {} };
-  } catch { return { waves: {}, gold: {}, units: {} }; }
+    // `gaps` reads as empty when it is absent, which is what lets it be added
+    // without throwing anybody's stored counts away — the same courtesy `gold`
+    // was given when it arrived.
+    return {
+      waves: migrate(held.waves || {}),
+      gaps: migrate(held.gaps || {}),
+      gold: held.gold || {},
+      units: held.units || {}
+    };
+  } catch { return { waves: {}, gaps: {}, gold: {}, units: {} }; }
 }
 
 // WAVE KEYS USED TO END IN A GROUP INDEX and now end in an enemy type, and a
@@ -203,8 +212,16 @@ for (const u of units()) {
 // the override entirely, the same as any other value returning to its shipped one.
 for (const l of levels) {
   l.waves.forEach((w, i) => {
-    const sends = new Map(w.groups.map(g => [g.type, g.count]));
-    for (const t of MARCH_ORDER) SHIPPED.set(`${l.id}|${i}|${t}`, sends.get(t) || 0);
+    const sends = new Map(w.groups.map(g => [g.type, g]));
+    for (const t of MARCH_ORDER) {
+      const g = sends.get(t);
+      SHIPPED.set(`${l.id}|${i}|${t}`, g ? g.count : 0);
+      // THE RATE, under a key with a fourth field so it cannot collide with the
+      // count above. A type the wave does not send ships at the rate that type is
+      // usually sent at, so the "was" marker under the stepper compares against
+      // the number the game would actually have used.
+      SHIPPED.set(`${l.id}|${i}|${t}|gap`, g ? g.gap : defaultGap(t));
+    }
   });
   // The purse, keyed on the level id alone — there is one per map, so there is
   // nothing to index it by. It cannot collide with a wave key above, which always
@@ -219,15 +236,17 @@ export const shipped = key => SHIPPED.get(key);
 export const waveCount = (levelId, wave, type) =>
   edits.waves[`${levelId}|${wave}|${type}`] ?? SHIPPED.get(`${levelId}|${wave}|${type}`) ?? 0;
 
-// HOW FAST THAT TYPE COMES in that wave: the shipped table's own gap where the
-// wave already sends it, and the type's usual rate where it does not. The
-// dashboard does not edit this — it sets who is in a wave and how many, and the
-// rate is the one the tables already use — so it is a lookup rather than an edit.
-export const waveGap = (levelId, wave, type) => {
-  const lv = levels.find(l => l.id === levelId);
-  const g = lv && lv.waves[wave] && lv.waves[wave].groups.find(x => x.type === type);
-  return g ? g.gap : defaultGap(type);
-};
+// HOW FAST THAT TYPE COMES in that wave: the override if one has been set, else
+// the shipped table's own gap where the wave sends it, else the type's usual rate.
+//
+// IT IS AN EDIT NOW. It was a lookup for one build — the panel set who was in a
+// wave and how many, and the rate was whatever the tables already used — and the
+// owner asked for the third control: a wave of six giants at 1.6s and the same six
+// at 3.0s are different waves, and the count alone could not say which.
+export const waveGap = (levelId, wave, type) =>
+  edits.gaps[`${levelId}|${wave}|${type}`] ??
+  SHIPPED.get(`${levelId}|${wave}|${type}|gap`) ??
+  defaultGap(type);
 
 export const unitStat = (unitId, field, def) =>
   edits.units[`${unitId}|${field}`] ?? def[field];
@@ -244,6 +263,7 @@ export const adminGold = level =>
 // Reset button can be drawn dead when there is nothing to reset.
 export const touched = () =>
   Object.keys(edits.waves).length +
+  Object.keys(edits.gaps).length +
   Object.keys(edits.gold).length +
   Object.keys(edits.units).length > 0;
 
@@ -272,6 +292,13 @@ function put(bag, key, value, base) {
 // twenty-three, and the rounding keeps the readout on numbers a person would
 // choose: 220, 240, 260, 290, 320.
 export const countStep = () => 1;
+
+// A TENTH OF A SECOND, flat, and it is the one step in this panel that is not
+// proportional. Gaps run 0.4 to 2.0 across every shipped table, so the whole
+// useful range is sixteen taps wide — there is nothing to hurry past, and a
+// proportional step would move 0.4 by 0.02 and 2.0 by 0.1, which reads as the
+// button doing different things at different ends of the same row.
+export const gapStep = () => 0.1;
 export const statStep = value => Math.max(1, Math.round(Math.abs(value) * 0.05));
 export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 / 10) * 10);
 
@@ -287,6 +314,23 @@ export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 /
 export function setWaveCount(levelId, wave, type, count) {
   const key = `${levelId}|${wave}|${type}`;
   put(edits.waves, key, Math.max(0, Math.min(99, Math.round(count))), SHIPPED.get(key));
+}
+
+// HOW LONG BETWEEN ONE AND THE NEXT, in seconds.
+//
+// FLOORED AT A TENTH RATHER THAN AT ZERO, and the floor is doing real work. `gap`
+// is what updateWaves puts on the clock after each spawn, so 0 spawns one enemy
+// EVERY FRAME — a wave of thirty arriving in half a second, stacked on one point
+// of road. That is not a rate anybody wants and it is not a rate the rest of the
+// game is built for; a tenth is already four times faster than anything shipped.
+//
+// ROUNDED TO ONE DECIMAL because the step is a tenth and floating point is not:
+// ten taps down from 2 lands on 0.9999999999999999 without it, which prints as
+// 1.00 and stores as an override that will never equal its shipped value again.
+export function setWaveGap(levelId, wave, type, gap) {
+  const key = `${levelId}|${wave}|${type}`;
+  const held = Math.round(Math.max(0.1, Math.min(10, gap)) * 10) / 10;
+  put(edits.gaps, key, held, SHIPPED.get(`${key}|gap`));
 }
 
 // Zero IS allowed, unlike a wave of no enemies or a figure with no health: a map
@@ -312,6 +356,7 @@ export function setUnitStat(unitId, field, value) {
 
 export function reset() {
   edits.waves = {};
+  edits.gaps = {};
   edits.gold = {};
   edits.units = {};
   persist();
@@ -376,7 +421,7 @@ export function adminWaves(level, table = level.waves) {
       const count = waveCount(level.id, i, type);
       if (!count) continue;
       const g = own.get(type);
-      groups.push(g ? { ...g, count } : { type, count, gap: defaultGap(type) });
+      groups.push({ ...(g || { type }), type, count, gap: waveGap(level.id, i, type) });
     }
     return { ...w, groups };
   });
@@ -483,14 +528,40 @@ export function stepper(col, rowY, field) {
 // waves tab now lays its rows out in a grid whose x depends on which side of the
 // page the row is on. One builder either way, so the two tabs cannot end up with
 // steppers of different sizes or different padding.
-export function stepperAt(x, rowY, field) {
+export function stepperAt(x, rowY, field, w = STEP_W, valueW = 96) {
   return {
-    minus: { x, y: rowY, w: STEP_W, h: STEP_H },
-    value: { x: x + STEP_W, y: rowY, w: 96, h: STEP_H },
-    plus:  { x: x + STEP_W + 96, y: rowY, w: STEP_W, h: STEP_H },
+    minus: { x, y: rowY, w, h: STEP_H },
+    value: { x: x + w, y: rowY, w: valueW, h: STEP_H },
+    plus:  { x: x + w + valueW, y: rowY, w, h: STEP_H },
     field
   };
 }
+
+// THE WAVES TAB'S OWN STEPPER, and it is smaller than the units tab's because it
+// has to be: that tab shows one control per row and this one now shows TWO — how
+// many of a creature, and how fast they come — in a cell half the page wide.
+//
+// 46 x 40 DRAWN, 58 x 52 TAPPED, against the 52 x 40 and 64 x 52 everywhere else.
+// That is 6 logical px off the tap box, which is the whole cost and it is worth
+// naming: the standard 64 is 44 real px on the narrowest canvas this game targets,
+// and 58 is about 40. Under the guideline, and accepted here rather than anywhere
+// else in the game — this panel is behind a four-digit PIN and is a tool for the
+// person building the levels, not a control anybody plays with.
+//
+// The alternatives were both worse. Full-size steppers do not fit two to a cell
+// at any label width — two groups of 200 in a cell of 450 leaves 50px for
+// "Plague Doctor" — so keeping them would have meant one column of enemies and
+// four rows a page, which is paging the roster on the one panel whose whole
+// purpose is seeing the roster at once.
+const WAVE_STEP_W = 46;
+export const waveStepper = (x, rowY, field, valueW) =>
+  stepperAt(x, rowY, field, WAVE_STEP_W, valueW);
+
+// The two value boxes are different widths because they hold different things: a
+// count is at most two digits and its "was" line at most six characters, while a
+// rate is always four ("1.60") and its "was" line eight ("was 1.60").
+export const COUNT_VALUE_W = 52;
+export const GAP_VALUE_W = 60;
 
 // The rows of the WAVES tab: ONE PER ENEMY IN THE GAME, whether or not this wave
 // sends it, which is the owner's ask — "allow me to place any enemy for any wave,
@@ -512,24 +583,36 @@ export function stepperAt(x, rowY, field) {
 // which is what makes the panel tappable: a row that jumped to the top when you
 // added one of something would move the button out from under the finger that was
 // about to press it again.
-export const GROUP_TOP = INNER.y + 186;
-const WAVE_CELL_GAP = 24;
+// RAISED FROM 210 TO 188 when the roster reached seven and the grid needed a
+// fourth row. The wave tabs end at 178, so this is 10px of air under them rather
+// than 32 — the tightest band on the panel, and the one that gives way first
+// because it is the only one with nothing in it.
+export const GROUP_TOP = INNER.y + 164;
+// 12 rather than 24, for the same reason the steppers shrank: the second control
+// per cell had to come from somewhere, and the gutter between two columns is the
+// cheapest 12px on the page.
+const WAVE_CELL_GAP = 12;
 const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP) / 2;
 export const WAVE_COLS = 2;
 export const groupRows = (levelIndex, wave) => {
   const lv = levels[levelIndex];
+  const countW = 2 * WAVE_STEP_W + COUNT_VALUE_W;
+  const gapW = 2 * WAVE_STEP_W + GAP_VALUE_W;
   return MARCH_ORDER.map((type, i) => {
     const col = i % WAVE_COLS;
     const x = INNER.x + col * (WAVE_CELL_W + WAVE_CELL_GAP);
+    // COUNT FIRST, THEN RATE, left to right, because that is the order the
+    // question is asked in: how many of these, and then how fast. Both hard
+    // against the right edge of the cell so the columns line up with each other
+    // down the page and the right-hand pair lines up with Start gold above it.
+    const gapX = x + WAVE_CELL_W - gapW;
     return {
       type,
       def: enemyTypes[type],
       y: GROUP_TOP + Math.floor(i / WAVE_COLS) * ROW_H,
       x,
-      // Hard against the right edge of its own cell, so the two columns of
-      // steppers line up with each other and the right-hand one lines up with the
-      // Start gold control above it.
-      stepX: x + WAVE_CELL_W - GROUP_W,
+      stepX: gapX - countW - 8,
+      gapX,
       count: waveCount(lv.id, wave, type),
       gap: waveGap(lv.id, wave, type)
     };
@@ -544,7 +627,14 @@ export const groupRows = (levelIndex, wave) => {
 // layout has: enough enemies and the grid runs into the Reset button, silently,
 // because nothing about drawing text off the bottom of a panel throws.
 export const SUMMARY_Y = () =>
-  GROUP_TOP + Math.ceil(MARCH_ORDER.length / WAVE_COLS) * ROW_H + 24;
+  GROUP_TOP + Math.ceil(MARCH_ORDER.length / WAVE_COLS) * ROW_H + 16;
+
+// AND THE SECOND LINE UNDER IT, which is the one that actually has to clear the
+// footer. It used to hang off the last ROW — the same place as this while the grid
+// had three rows, and not the same place at four, which is how it ended up drawn
+// through the Reset button. One anchor now, and the check reads this rather than
+// the line above it.
+export const SUMMARY2_Y = () => SUMMARY_Y() + 22;
 
 // The rows of the UNITS tab. Fifteen of them today — three enemies and four
 // families of three — so they are paged rather than crammed: six a page at the
@@ -684,9 +774,12 @@ export function tapAdmin(state, x, y, restart) {
     }
     const levelId = levels[a.map].id;
     for (const r of groupRows(a.map, a.wave)) {
-      const s = stepperAt(r.stepX, r.y, 'count');
-      if (on(s.minus)) { setWaveCount(levelId, a.wave, r.type, r.count - countStep()); return true; }
-      if (on(s.plus)) { setWaveCount(levelId, a.wave, r.type, r.count + countStep()); return true; }
+      const c = waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W);
+      if (on(c.minus)) { setWaveCount(levelId, a.wave, r.type, r.count - countStep()); return true; }
+      if (on(c.plus)) { setWaveCount(levelId, a.wave, r.type, r.count + countStep()); return true; }
+      const g = waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W);
+      if (on(g.minus)) { setWaveGap(levelId, a.wave, r.type, r.gap - gapStep()); return true; }
+      if (on(g.plus)) { setWaveGap(levelId, a.wave, r.type, r.gap + gapStep()); return true; }
     }
     return false;
   }

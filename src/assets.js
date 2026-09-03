@@ -285,20 +285,35 @@ export const paths = {
   cannonball:  'assets/projectiles/Cannonball.png',
   // The arcane missile, one per tier. Named for the man who throws it, like the
   // figures above and unlike the rocks, because that is how the artist exported
-  // them — including the spelling of "Missle", which is left alone: the code
-  // bends to the artist's filenames, and renaming an upload only means renaming
-  // it again after the next one.
-  missile_t1:  'assets/projectiles/Soldiers_Priest_Arcane_Missle.png',
-  missile_t2:  'assets/projectiles/Soldiers_Bishop_Arcane_Missle.png',
-  missile_t3:  'assets/projectiles/Soldiers_Cardinal_Arcane_Missle.png',
+  // them.
+  //
+  // THEY WERE SPELLED "Missle" AND THE FILES HAVE BEEN RENAMED, which is the one
+  // place this project has gone against its own rule that the code bends to the
+  // artist's filenames. The rule is about not fighting a re-upload; this was the
+  // owner asking for his own typo fixed everywhere it appears, and a key reading
+  // `Missle` beside a variable reading `missile` is exactly the drift the rule
+  // exists to prevent in the other direction.
+  //
+  // THE NEXT EXPORT HAS TO USE THE NEW NAME. There are five of them — four
+  // monastery tiers and the Dark Priest's — and a file uploaded as `Missle` again
+  // is a 404 that draws as nothing, which tools/png.mjs catches.
+  missile_t1:  'assets/projectiles/Soldiers_Priest_Arcane_Missile.png',
+  missile_t2:  'assets/projectiles/Soldiers_Bishop_Arcane_Missile.png',
+  missile_t3:  'assets/projectiles/Soldiers_Cardinal_Arcane_Missile.png',
   // The pope's, and the one missile in the family that is a different size: 125
   // source px against the other three's 92, which is 26 game px of it in the air
   // against 19.
-  missile_t4:  'assets/projectiles/Pope_Arcane_Missle.png',
+  missile_t4:  'assets/projectiles/Pope_Arcane_Missile.png',
   // The monk's, and the smallest missile in the family: a 12 x 5 comet against a
   // priest's 19 x 4 dart and the pope's 26 x 5. Two men throwing small blasts is
   // what a Judgement Temple looks like, so the drawing says so.
   monk_shot:       'assets/projectiles/Monk_Magic_Shot.png',
+  // AND THE SAME MAGIC THROWN BACK. The Dark Priest's missile is the first
+  // projectile in this game that is a MONASTERY drawing pointed the other way —
+  // 76 x 20 source against a priest's 92 x 20, so a shade shorter, and in his own
+  // colours. `side` on the shot is what makes it look for soldiers rather than
+  // enemies; the drawing knows nothing about which army threw it.
+  dark_missile:    'assets/projectiles/Enemies_Dark_Priest_Arcane_Missile.png',
   // AND THE SAME COMET IN THREE OTHER COLOURS, one per combination of the two
   // things a Judgement Temple can be taught. This is the first tower in the game
   // whose ORDINARY shot changes picture — every other re-skin in here belongs to
@@ -349,6 +364,15 @@ export const paths = {
   archer_attack:   'assets/enemies/Enemies_Archer_Thug_Melee_Attack.png',
   archer_ready:    'assets/enemies/Enemies_Archer_Thug_Ranged_Default.png',
   archer_loose:    'assets/enemies/Enemies_Archer_Thug_Ranged_Attack.png',
+  // FIVE DRAWINGS, more than anything else in this game has. The walk, the
+  // missile, the club, the body — and a fifth that is none of those: the cast,
+  // which is a STANCE the way the Blocker's shield is, because it is something he
+  // does to a friend rather than to you. See `heal` on dark_priest in
+  // data/waves.js and enemyStance in render.js.
+  priest:          'assets/enemies/Enemies_Dark_Priest_Default.png',
+  priest_cast:     'assets/enemies/Enemies_Dark_Priest_Ranged_Attack.png',
+  priest_swing:    'assets/enemies/Enemies_Dark_Priest_Melee_Attack.png',
+  priest_heal:     'assets/enemies/Enemies_Dark_Priest_Heal.png',
   // Death poses. See assets/dead/README.md.
   //
   // The tier comes LAST in these names — Man_Dead_T1, not Man_T1_Dead — because
@@ -359,6 +383,7 @@ export const paths = {
   dead_tough:      'assets/dead/Enemies_Tough_Thug_Dead.png',
   dead_blocker:    'assets/dead/Enemies_Blocker_Thug_Dead.png',
   dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
+  dead_priest:     'assets/dead/Enemies_Dark_Priest_Dead.png',
   dead_plague:     'assets/dead/Enemies_Plague_Thug_Dead.png',
   dead_archer:     'assets/dead/Enemies_Archer_Thug_Dead.png',
   // The three soldiers' bodies, renamed by the artist to match their living
@@ -540,6 +565,8 @@ export const paths = {
   // HEIGHT, or it would be half again as wide as the other two and blown up past
   // what its 34 source px can carry. See the note there.
   status_slowed:   'assets/status/Slowed_Status.png',
+  // The fourth mark, and the first that is good news for the figure wearing it.
+  status_healing:  'assets/status/Dark_Healing_Status.png',
   // THE MAXED BADGE, for the upgrade button of a tower that has none left. It
   // replaces the vector chevrons that stood in for `max` since the ring was
   // built — the last glyph in the menu that had never been drawn. Still dimmed

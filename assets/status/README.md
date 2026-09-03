@@ -1,6 +1,6 @@
 # Status marks
 
-What is happening TO a figure, drawn as a small mark over its health bar. Three
+What is happening TO a figure, drawn as a small mark over its health bar. Four
 so far; stunned and whatever else follows goes here.
 
 | file                 | who wears it                          | what it does           |
@@ -8,6 +8,19 @@ so far; stunned and whatever else follows goes here.
 | `Burnt_Status.png`   | anything a Fiery Shot ball catches    | 10 damage a second for 5s |
 | `Poisoned_Status.png`| any soldier a flask or its spill catches | 5 damage a second for 4s |
 | `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | 30% off its speed and its swing, for 5s |
+| `Dark_Healing_Status.png` | any enemy a Dark Priest has cast on | 2 health a second for 5s |
+
+**Dark Healing is the first one that is GOOD for the figure wearing it**, and it
+is a row in the table on the same terms as the rest: `mends: true` in
+`src/data/status.js` sends its magnitude through the same clock a burn uses, with
+the sign the other way round. `tick` hands back a negative number and the caller
+puts the health on — see `src/status.js`.
+
+**Its rate is a ceiling, not a rate per priest.** `apply` refreshes a status on a
+figure already wearing it rather than adding a second, so two priests mend the
+same giant at the same 2 a second as one does. That matters more than it sounds:
+it is under the weakest soldier's damage, which is what keeps a pinned enemy
+beatable and a wave finishable.
 
 **Slowed is the first one that does no damage at all**, and that is a row in the
 table rather than a special case: `hurts: false` in `src/data/status.js` keeps its

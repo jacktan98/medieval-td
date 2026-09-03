@@ -36,7 +36,8 @@ const artHeight = def => {
   const close = def.melee && def.melee.default;
   return Math.max(def.spriteTrim[3],
                   close ? close.trim[3] : 0,
-                  def.guard ? def.guard.trim[3] : 0) * SCALE;
+                  def.guard ? def.guard.trim[3] : 0,
+                  def.heal ? def.heal.trim[3] : 0) * SCALE;
 };
 
 // Slack around a figure's drawn box, in game px. A militiaman is 23px tall and

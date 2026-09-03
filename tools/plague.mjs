@@ -42,7 +42,7 @@ import { flask, FLASK_HIT, enemyTypes } from '../src/data/waves.js';
 // a burning enemy and a poisoned soldier alike. This file reads it the way the
 // game does, through the same helpers, so a check here is a check of the thing
 // that ships. See src/status.js.
-import { apply as applyStatus, wearing } from '../src/status.js';
+import { apply as applyStatus, wearing, tick as tickStatus } from '../src/status.js';
 
 // The poison a figure is currently wearing, or undefined. A helper rather than
 // the expression four times over, and it reads the same list the renderer draws
@@ -655,6 +655,60 @@ console.log('\nWhat the knife changes about him\n');
   check(armed.off <= 16 && armed.off < mute.off,
     'and nobody left his station for it',
     `${armed.off}px off post against ${mute.off}px untaught`);
+}
+
+// --- THE DARK PRIEST, AND THE INVARIANT HE COULD HAVE BROKEN -------------------
+//
+// This file exists because of one sentence in data/waves.js: a pinned thrower is
+// in a fight he loses, BECAUSE ENEMIES DO NOT HEAL, so a wave always ends. The
+// Dark Priest is the first thing in the game that makes that sentence false, and
+// he is checked here rather than beside his own art because what is at stake is
+// the plague doctor's standoff, not the priest's drawings.
+//
+// It survives on arithmetic rather than on a special case, and the arithmetic is
+// what is checked: `apply` REFRESHES a status instead of stacking a second one,
+// so the mend is capped at one rate however many priests are working, and that
+// rate is under what the weakest soldier in the game does. If either half of that
+// ever stops being true, a squad can be made to hold an enemy it can never kill.
+console.log('\nThe Dark Priest, and the wave that still ends\n');
+
+{
+  const priest = enemyTypes.dark_priest;
+  const hps = priest.heal.hp / priest.heal.seconds;
+
+  check(hps === 2, 'a dark healing mends 2 health a second',
+    `${priest.heal.hp} over ${priest.heal.seconds}s`);
+
+  // TWO PRIESTS ARE NOT TWICE THE MEND. Run through the real apply(), not
+  // asserted — this is the property the whole invariant rests on.
+  const victim = { hp: 100, maxHp: 500, statuses: [] };
+  applyStatus(victim, 'healing', hps, priest.heal.seconds, null);
+  applyStatus(victim, 'healing', hps, priest.heal.seconds, null);
+  applyStatus(victim, 'healing', hps, priest.heal.seconds, null);
+  check(victim.statuses.length === 1,
+    'and three priests on one man is still one mark', `${victim.statuses.length} mark(s)`);
+  const mended = -tickStatus(victim, 1);
+  check(Math.abs(mended - hps) < 1e-9,
+    'mending at the same rate one of them would', `${mended.toFixed(2)} a second`);
+
+  // AND EVERY SOLDIER OUT-DAMAGES IT. Read off the real barracks defs, so a
+  // retune that takes a spearman below 2 damage a second fails here rather than
+  // hanging a wave in somebody's game.
+  const men = [];
+  for (const tier of barracks.tiers) if (tier.soldier)
+    men.push({ name: tier.soldier.name, dps: tier.soldier.damage / tier.soldier.cd });
+  const weakest = men.reduce((a, b) => a.dps < b.dps ? a : b);
+  check(weakest.dps > hps,
+    'and the weakest soldier in the game still out-damages it',
+    `${weakest.name} does ${weakest.dps.toFixed(2)} against ${hps} mended`);
+
+  // WHICH MEANS A PINNED ENEMY STILL DIES. Stated as the margin rather than as a
+  // yes, because the margin is the thing worth watching: it is what decides
+  // whether the fight takes ten seconds or two minutes.
+  const net = weakest.dps - hps;
+  check(net > 0, 'so one held man still grinds a mended enemy down',
+    `${net.toFixed(2)} a second net, ${Math.ceil(enemyTypes.plague_inf.hp / net)}s ` +
+    `for a ${enemyTypes.plague_inf.hp}hp doctor`);
 }
 
 console.log(bad

@@ -40,16 +40,16 @@ import { STATUS } from './data/status.js';
 // weaker one happens to have left.
 //
 // `mag` IS WHATEVER THAT STATUS'S MAGNITUDE IS, and the status decides which. A
-// burn's is `dps`, damage a second; a slow's is `slow`, the multiplier on how fast
-// the figure does everything. Asked of `hurts` rather than of the id, so the next
-// row that does not hurt gets the same treatment without a line here — and so the
-// two kinds of number can never be read as each other. A slow written into `dps`
-// would be three quarters of a point of damage a second, which is a bug that
-// would take a wave to notice.
+// burn's is `dps`, damage a second; a mend's is `hps`, health a second; a slow's is
+// `slow`, the multiplier on how fast the figure does everything. Asked of the
+// status's own flags rather than of the id, so the next row gets the same
+// treatment without a line here — and so the kinds of number can never be read as
+// each other. A slow written into `dps` would be three quarters of a point of
+// damage a second, which is a bug that would take a wave to notice.
 export function apply(v, id, mag, seconds, by) {
   const def = STATUS[id];
   if (!def) return;                        // a typo is silence, so make it nothing
-  const key = def.hurts ? 'dps' : 'slow';
+  const key = def.hurts ? 'dps' : def.mends ? 'hps' : 'slow';
   const had = v.statuses && v.statuses.find(s => s.id === id);
   if (had) { had[key] = mag; had.left = seconds; had.by = by; return; }
   if (!v.statuses) v.statuses = [];
@@ -87,6 +87,16 @@ export function tick(v, dt) {
       hurt += s.dps * dt;
       if (s.by) v.killedBy = s.by;
     }
+    // A MEND IS NEGATIVE HARM, and it goes back through the same number rather
+    // than a second return value. The caller already does `hp -= tick(...)`, so a
+    // negative answer puts health on — which is the whole claim this file makes
+    // about statuses being one mechanism pointed either way, honoured rather than
+    // worked around.
+    //
+    // The CALLER still clamps to maxHp, for the same reason it applies the damage:
+    // what a full health bar means is a fact about the figure, and this file does
+    // not know which army it is looking at. See updateEnemies and updateUnits.
+    if (def && def.mends && s.hps) hurt -= s.hps * dt;
     s.left -= dt;
   }
   // Filtered in place rather than reassigned: enemies.js and units.js hold the

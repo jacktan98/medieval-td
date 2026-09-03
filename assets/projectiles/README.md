@@ -32,14 +32,15 @@ right".
 | `Artillery_Rock_T2.png` | Mangonel | 300 | lobbed |
 | `Artillery_Rock_T3.png` | Trebuchet | 300 | lobbed |
 | `Cannonball.png` | Cannon Outpost, and its Fiery Shot | 480 | **flat, though it is artillery** |
-| `Soldiers_Priest_Arcane_Missle.png` | Wayside Shrine | 330 | flat |
-| `Soldiers_Bishop_Arcane_Missle.png` | Chapel | 330 | flat |
-| `Soldiers_Cardinal_Arcane_Missle.png` | Abbey | 330 | flat |
-| `Pope_Arcane_Missle.png` | High Altar | 330 | flat, and a third longer than the others |
+| `Soldiers_Priest_Arcane_Missile.png` | Wayside Shrine | 330 | flat |
+| `Soldiers_Bishop_Arcane_Missile.png` | Chapel | 330 | flat |
+| `Soldiers_Cardinal_Arcane_Missile.png` | Abbey | 330 | flat |
+| `Pope_Arcane_Missile.png` | High Altar | 330 | flat, and a third longer than the others |
 | `Assassin_Knife.png` | an assassin who has learned Knife Throw | 300 | flat |
 | `Assassin_Knife_Sneak_Attack.png` | the first knife of his volley | 300 | flat |
 | `Monk_Magic_Shot.png` | a Judgement Temple's two monks | 330 | flat, and the smallest of the family |
 | `Monk_Magic_Shot_Slowed_Pulse.png` | the same, once it has learned Slowed Pulse | 330 | flat |
+| `Enemies_Dark_Priest_Arcane_Missile.png` | a Dark Priest, and it is thrown AT you | 330 | flat |
 | `Monk_Magic_Shot_Inner_Strength.png` | the same, once it has learned Inner Strength | 330 | flat, and half again the size |
 | `Monk_Magic_Shot_Inner_Strength_Slowed_Pulse.png` | the same, having learned both | 330 | flat, the big one in blue |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |

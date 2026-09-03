@@ -96,7 +96,7 @@ projectile.
 
 Elsewhere, but the monastery's: `units/Soldiers_Priest_Default.png` and
 `_Attack` (and the Bishop's and the Cardinal's), and
-`projectiles/Soldiers_Priest_Arcane_Missle.png` for each of the three.
+`projectiles/Soldiers_Priest_Arcane_Missile.png` for each of the three.
 
 Elsewhere, but the Musketeer Post's: `units/Musketeer_Default.png` and
 `_Attack`, `projectiles/Musketeer_Bullet.png`, `ui/Musketeer_Post_Icon.png` (the
@@ -132,7 +132,7 @@ assumed, and it is what lets both bolts leave the machine from exactly the same
 point — see `heavyBolt` in `src/data/abilities.js`.
 
 Elsewhere, but the High Altar's: `units/Pope_Default.png` and `_Attack`,
-`projectiles/Pope_Arcane_Missle.png`, `ui/High_Altar_Icon.png`, and four
+`projectiles/Pope_Arcane_Missile.png`, `ui/High_Altar_Icon.png`, and four
 clips — `audio/sfx/Pope_kill_enemy.mp3` and three voice lines. It fires the
 monastery's own `Arcane_shot` a quarter louder rather than a fourth recording of
 it. Plus its two abilities, which are drawings only — no new frame of the tower
