@@ -443,10 +443,10 @@ export const ui = {
 
   // The heart and the sword that replaced the words "Health:" and "Damage:".
   //
-  // The heart and the BROKEN heart below it were one rect for a long while, close
-  // enough to the pixel that a single number served both. They are two files and
-  // they drifted apart on a re-export, so they are measured apart now — see the
-  // note on stat_life_cost.
+  // The heart and the BROKEN heart below it carry the same rect to the pixel,
+  // which is deliberate — see the note on stat_life_cost. They are still two
+  // files and tools/trim.mjs measures them apart; matching is a fact about the
+  // art, not an assumption the code makes.
   stat_health:  { trim: [167, 183, 178, 146], h: STAT_ICON_H },
   // THE THIRD STAT ICON, and the first added since the heart and the sword. A
   // target, square at 168x168 source, so it takes the shared height and comes out
@@ -507,11 +507,18 @@ export const ui = {
   // override exists for. A second entry would be a second rect to re-paste after
   // a re-export.
   //
-  // The broken heart IS a second file, though, and it kept the rect the whole
-  // heart used to have when the whole heart was re-exported without it. Two
-  // files, two rects, measured apart — which is what tools/trim.mjs is for.
+  // The broken heart IS a second file, and its rect matches the whole heart's to
+  // the pixel BECAUSE THE OWNER DREW IT THAT WAY — a whole heart and the same
+  // heart broken should be the same size in a row, and the only way to get that
+  // is for the two exports to share a box. It came apart once, when the heart was
+  // re-exported and the broken one was not, and was put back on purpose.
+  //
+  // So do not fold them into one entry. Two files stay two rects, each measured
+  // off its own art by tools/trim.mjs; if a future export moves one of them the
+  // tool says so, where a shared constant would quietly draw one from the other's
+  // box.
   stat_gold_cost: { trim: [116, 189, 280, 134], h: STAT_ICON_H },
-  stat_life_cost: { trim: [157, 176, 198, 160], h: STAT_ICON_H },
+  stat_life_cost: { trim: [167, 183, 178, 146], h: STAT_ICON_H },
 
   // The three plates. These are drawn to a RECT rather than fitted to a box, so
   // the entry carries no size: the rect comes from HUD_BTN and INFO_BOX in
