@@ -17,6 +17,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Assassin_Knife_Throw.mp3,
                       Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
                       Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
+                      Blocker_Thug_Defend.mp3, Dark_Priest_Heal.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
@@ -171,6 +172,9 @@ and it now means "how long a lull has to be before the game forgets".
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
+| **a dark priest looses one** — Category B | `Arcane_shot` |
+| **a blocker thug gets his shield up** — Category B | `Blocker_Thug_Defend` |
+| **a dark priest starts a heal** — Category B | `Dark_Priest_Heal` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 7.2dB louder |
@@ -190,6 +194,30 @@ arrive or the button feels dead, and dropping it is invisible in a quiet game
 and constant in a busy one, which is exactly when a tower is most likely to be
 sold. Selling is the only one of the three that is a noise rather than a voice:
 there is nobody left in the tower to speak.
+
+**The last three rows are the OTHER army making a noise on purpose**, which is
+new: every enemy sound before them was a death. A shield going up and a spell
+being cast are things the player has to react to, so they are Category B beside
+the weapons and for the same reason — several can happen at once, and one channel
+would silence all but the first.
+
+**The shield plays on the way UP and not on the hits that hold it there.**
+`raiseGuard` in `src/enemies.js` runs for every projectile that lands on a
+Blocker, because each one refreshes his five seconds; playing the clip on all of
+them would make a Blocker under steady fire the loudest thing on the board.
+
+**The heal plays when the cast STARTS, not when it lands.** The clip runs 2.53s
+against a two-second cast, so it is written to cover the casting — and the
+player's cue to shoot him is him standing still, which is the moment it begins. A
+cast interrupted by a spear has therefore already made its noise, which is right:
+the spell was cast and then spoiled.
+
+**The priest fires the monastery's own `Arcane_shot`**, at the owner's ask, on
+the same terms the pope and the monks do — see `FIRING` in `src/audio.js`. That
+table moved there from `src/towers.js` to make this possible: it was the tower
+file's, so `loose()` in `src/enemies.js` could not read it and hardcoded the BOW
+noise for every thrower in the game. Nothing showed it, because the only thrower
+with `fireSound` was the archer and a bow is what he wanted.
 
 **`Flask_Break` is Category B**, like the rock it sits beside, and for the same
 two reasons: three plague doctors can be throwing at once and a shared channel

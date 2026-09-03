@@ -5,7 +5,7 @@ import { dropCorpse } from './corpses.js';
 import { unhook, hidden } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, CUE, SHOT } from './audio.js';
+import { solo, play, CUE, FIRING, DEFEND, HEAL } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
@@ -113,7 +113,14 @@ export function guardSlow(e) {
 // A no-op on everything else in the game, so the call site does not have to ask
 // what it just hit.
 export function raiseGuard(fig) {
-  if (fig && fig.def && fig.def.guard) fig.guard = fig.def.guard.seconds;
+  if (!fig || !fig.def || !fig.def.guard) return;
+  // ON THE WAY UP ONLY. This runs for every projectile that lands on him — that is
+  // the whole point of it, since each one refreshes the five seconds — so playing
+  // the clip here unconditionally would make a Blocker under steady fire the
+  // loudest thing on the board. What the player needs to hear is the shield
+  // GOING UP, which is the moment the drawing changes.
+  if (fig.guard <= 0) play(DEFEND);
+  fig.guard = fig.def.guard.seconds;
 }
 
 // Where an enemy will be `t` seconds from now, if nothing interrupts it.
@@ -240,6 +247,14 @@ export function updateEnemies(state, dt) {
           e.mending = mark;
           e.halted = true;
           turnTo(e, mark.x);
+          // ON THE FRAME THE POSE COMES UP, not on the one the mend lands. The
+          // clip runs 2.53s against a two-second cast, so it is written to cover
+          // the casting rather than to mark the moment it finishes — and the
+          // player's cue to shoot him is him standing still, which is now.
+          //
+          // A cast interrupted by a spear has therefore already made its noise,
+          // which is right: the spell was cast and then spoiled.
+          play(HEAL);
           continue;
         }
       }
@@ -688,7 +703,14 @@ function loose(state, e, mark) {
   // noise leaving. An arrow does — it is the same `arrow_shot` every bow in the
   // game uses, which is what the owner asked for and what the shared drawing
   // already implied. A flask does not: it announces itself by breaking.
-  if (ammo.fireSound) play(SHOT);
+  //
+  // THROUGH THE SAME TABLE THE TOWERS USE, which it was not: this line said
+  // `play(SHOT)` and so every thrower in the game made a BOW noise whatever it
+  // was throwing. Nothing showed it, because the only thrower with `fireSound`
+  // was the archer and a bow is what he wanted. The Dark Priest is the second,
+  // and he throws magic. See FIRING in src/audio.js, which moved there from
+  // towers.js so that both armies could read one table.
+  if (ammo.fireSound) play(FIRING[ammo.kind], ammo.fireGain);
 }
 
 // Closest to leaking, so towers focus whatever is about to cost a life.

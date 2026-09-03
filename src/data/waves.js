@@ -113,7 +113,12 @@ export const flask = {
 // own missiles rather than lobbed like a flask: it is the same magic, thrown by
 // the other side.
 export const darkMissile = {
-  kind: 'missile',
+  // `dark` rather than `arcane`, though it points at the monastery's own noise —
+  // see FIRING in src/audio.js. A kind is what a sound is looked up by AND what a
+  // kill is credited to, so sharing one with the monastery would be sharing both;
+  // this way "the priest's shot sounds like a staff" is one row that can change
+  // without anything else moving.
+  kind: 'dark',
   sprite: 'dark_missile',
   trim: [218, 246, 76, 20],
   // Nose-first, like an arrow and unlike a bottle: it is a dart of magic and it
@@ -121,6 +126,11 @@ export const darkMissile = {
   faces: 1,
   grip: 0.5,
   speed: 330,
+  // IT ANNOUNCES ITSELF LEAVING and arrives quietly, which is what every missile
+  // in this game does — the monastery's four included. At the owner's ask it is
+  // the monastery's own Arcane_shot: "Dark priest attacks use the same arcane
+  // shot sound effect."
+  fireSound: true,
   impact: null
 };
 

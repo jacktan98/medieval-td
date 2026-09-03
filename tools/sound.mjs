@@ -141,7 +141,7 @@ const { ABILITIES, abilityById } = await import('../src/data/abilities.js');
 // The two tables that turn an ammunition's "I make a noise" flag into an actual
 // clip. Imported for the block at the end of this file — see the note there for
 // why a missing row is invisible without it.
-const { FIRING } = await import('../src/towers.js');
+const { FIRING } = await import('../src/audio.js');
 const { LANDING } = await import('../src/projectiles.js');
 const { enemyTypes } = await import('../src/data/waves.js');
 
@@ -643,7 +643,12 @@ console.log('\nEvery shot is heard, or is silent on purpose\n');
   const add = (a, from) => { if (a && a.kind && !ammo.has(a.kind)) ammo.set(a.kind, { a, from }); };
   for (const d of [...archery, ...barracks, ...siege, ...monastery]) add(d.ammo, d.name);
   for (const a of ABILITIES) add(a.ammo, a.id);
-  for (const [id, e] of Object.entries(enemyTypes)) add(e.ammo, id);
+  // `e.ranged.ammo`, NOT `e.ammo`. This line read the second for as long as it has
+  // existed, and an enemy has never carried one — so the archer's arrow, the
+  // doctor's flask and the priest's missile were all outside a check that names
+  // them in its own comment. It was found by deleting the priest's FIRING row on
+  // purpose and watching this file pass.
+  for (const [id, e] of Object.entries(enemyTypes)) add(e.ranged && e.ranged.ammo, id);
 
   const loud = [...ammo.values()].filter(({ a }) => a.fireSound);
   const lands = [...ammo.values()].filter(({ a }) => a.landSound);

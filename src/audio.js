@@ -188,6 +188,19 @@ const paths = {
   // land for opposite reasons: a rock is the damage arriving and a flask is the
   // damage STARTING.
   flask_break:     'assets/audio/sfx/Flask_Break.mp3',
+  // THE OTHER ARMY'S TWO, and they are the first sounds in this table that belong
+  // to an ENEMY doing something rather than to one dying.
+  //
+  // A shield going up, and a spell being cast. Both Category B, on the rule every
+  // other row here follows: they are things that HAPPEN on the board and several
+  // can happen at once — three Blockers walking into the same volley put three
+  // shields up, and one channel would silence two of them.
+  //
+  // The heal clip runs 2.53s against a two-second cast, which is what says it is
+  // meant to cover the casting rather than to mark the moment it lands. It is
+  // played on the frame the pose comes up — see the heal block in src/enemies.js.
+  blocker_defend:  'assets/audio/sfx/Blocker_Thug_Defend.mp3',
+  dark_priest_heal: 'assets/audio/sfx/Dark_Priest_Heal.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
   // out exactly as an arrow does — see the two flags on every ammunition in
@@ -622,6 +635,30 @@ export const MUSKET = ['musketeer_shot'];
 // for the same reason: it is a thing that happens rather than a thing announced,
 // and two sentries firing at once are two events the player is watching.
 export const CROSSBOW = ['crossbow_shot'];
+                        // AND THE DARK PRIEST'S, which is the first row here for a
+                        // shot the OTHER army fires. It points at ARCANE for the
+                        // third time, at the owner's ask — "Dark priest attacks use
+                        // the same arcane shot sound effect" — so it needs a kind
+                        // of its own only so a future clip is one row rather than a
+                        // branch, exactly as `pope` and `monk` do.
+                        //
+                        // IT LIVES HERE RATHER THAN IN towers.js NOW, and that move
+                        // is what this row required. The table was the tower file's,
+                        // so an enemy could not read it: loose() in enemies.js
+                        // hardcoded `play(SHOT)` and every thrower in the game made
+                        // a BOW noise whatever it was throwing. Nobody noticed
+                        // because the only thrower with `fireSound` was the archer.
+                        // audio.js imports nothing, so both armies can read one
+                        // table without a cycle.
+
+// A Blocker Thug getting behind his shield. Category B beside the weapons and for
+// the same reason. It plays on the shield GOING UP and not on the hits that hold
+// it there — see raiseGuard in src/enemies.js, which is called by every projectile
+// that lands on him and would otherwise make this the loudest thing in the game.
+export const DEFEND = ['blocker_defend'];
+// A Dark Priest casting. Category B, and the first sound in this game made by an
+// enemy helping another one.
+export const HEAL = ['dark_priest_heal'];
 // A ballista loosing. Category B beside the bow, the staff and the musket, and
 // for the same reason: it is a thing that happens rather than a thing announced,
 // and two turrets firing at once are two events the player is watching.
@@ -637,6 +674,42 @@ export const CANNON = ['cannon_shot'];
 // himself, and a paladin's fifth blow. See abilityCue below for how an ability
 // asks for one.
 export const DEADEYE = ['musketeer_deadeye'];
+
+// What LEAVING sounds like, by ammunition — the mirror of the LANDING table in
+// projectiles.js, and it is a table for the same reason that one is: "what does
+// this sound like" has exactly one answer per kind, so a third projectile that
+// announces itself needs a row rather than a branch.
+//
+// A rock is not here on purpose. It is silent in the air and announces itself by
+// arriving, which is where the player is already looking.
+//
+// A CANNONBALL IS, AND IT IS THE ROW THAT MAKES THE POINT: the two artillery
+// tier 4s and the three machines under them are the same family firing very
+// different things, and the table is where that difference is stated once. Powder
+// is the report; a boulder is the arrival. A row here and a row in LANDING say
+// which, and no code anywhere asks what family a shot came from.
+//
+// `deadeye` is the fourth row and it is why the table earns its keep: an ability
+// arrived with a projectile of its own, and giving it a voice was one line here
+// rather than a branch in shoot().
+//
+// `pope` is the fifth row and it points at the SAME cue as `arcane`, which
+// is the other thing this table is good for: the pope fires the monastery's own
+// noise, a quarter louder, so what he needed was a kind of his own for the KILL
+// cry — see src/enemies.js — and no new sound at all. The loudness rides on the
+// ammunition as `fireGain`.
+//
+// EXPORTED for tools/sound.mjs, which is the only way a missing row can be
+// caught. `play(undefined)` is silence with no error and no warning, so an
+// ammunition that says `fireSound: true` and has no row here simply stops making
+// a noise — and the tower goes on working perfectly in every other respect.
+// `monk` is the sixth row and it points at ARCANE too, for the same reason `pope`
+// does and more plainly: the owner asked for the Judgement Temple's blast to be
+// the monastery's own Arcane_shot. So the two monks needed a kind purely so their
+// KILLS could be theirs, and this row is what stops that kind going silent.
+export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, monk: ARCANE,
+                        bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT,
+                        quarrel: CROSSBOW, cannonball: CANNON, dark: ARCANE };
 export const HOLY_LIGHT = ['paladin_holy_light'];
 export const BLINDING_STRIKE = ['paladin_blinding_strike'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
