@@ -881,7 +881,7 @@ export const enemyTypes = {
       // stops the two being confused after the fact.
       hps: 10,
       seconds: 5,
-      // AND HOW LONG BEFORE HE WILL WORK ON THE SAME MAN AGAIN. The owner's rule:
+      // AND HOW LONG BEFORE ANYBODY WORKS ON THE SAME MAN AGAIN. The owner's rule:
       // "only go back to healing the same unit after 30 seconds. It goes to heal
       // other units first or attack soldiers etc."
       //
@@ -892,10 +892,15 @@ export const enemyTypes = {
       // should worry a player is a wave that keeps getting back up, not one thug
       // who will not go down.
       //
+      // ON THE MAN RATHER THAN IN THE PRIEST'S HEAD — `mendCd` in src/enemies.js —
+      // so two priests cannot tag-team one giant by casting inside each other's
+      // gaps. It held per-priest for one build, which read more literally and let
+      // exactly that happen.
+      //
       // THIRTY IS LONG. A cast is two seconds and the mark runs five, so this is
-      // six casts' worth of looking elsewhere — he will have gone through every
-      // other wounded man in reach, and probably thrown a few missiles, before
-      // this one comes round again. That is the point.
+      // six casts' worth of looking elsewhere — a priest will have gone through
+      // every other wounded man in reach, and probably thrown a few missiles,
+      // before this one comes round again. That is the point.
       again: 30
     },
     spriteFaces: -1,

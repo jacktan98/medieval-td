@@ -720,7 +720,7 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   check(whole.hp === 100, 'and a mended figure stops at full health', `${whole.hp}/100`);
 }
 
-// HE DOES NOT PARK ON ONE MAN, which is what the thirty-second memory is for:
+// HE DOES NOT PARK ON ONE MAN, which is what the thirty-second cooldown is for:
 // "only go back to healing the same unit after 30 seconds. It goes to heal other
 // units first or attack soldiers etc."
 //
@@ -735,28 +735,34 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   const stand = squadAt(state);
 
   spawn(state, 'light_inf');
-  place(state.enemies[0], Math.max(0, stand - 20));
   spawn(state, 'dark_priest');
+  // Pinned to one lane on one road, like the fixtures below it. spawn() picks
+  // both at random, and a priest on the far kerb is a priest measuring a
+  // different fight — the thug died anywhere between 17 and 29 seconds depending
+  // on where the two landed.
+  for (const e of state.enemies) { e.route = 0; e.lane = 1; }
+  place(state.enemies[0], Math.max(0, stand - 20));
   place(state.enemies[1], Math.max(0, stand - 70));
-  const priest = state.enemies[1];
+  const thug = state.enemies[0];
 
   let secs = 0, everMended = false;
   while (secs < 90) {
     step(state, 1); secs++;
-    if (priest.mended.length) everMended = true;
-    if (!state.enemies.some(e => e.def.name === 'Thug')) break;
+    if (thug.mendCd > 0) everMended = true;
+    if (!state.enemies.includes(thug)) break;
   }
 
   check(everMended, 'a priest does mend the thug in front of him',
     everMended ? 'the mark landed' : 'never cast');
-  check(!state.enemies.some(e => e.def.name === 'Thug'),
+  check(!state.enemies.includes(thug),
     'and the squad still kills him, because the priest looks elsewhere after',
     `dead in ${secs}s`);
-  check(priest.def.heal.again === 30, 'thirty seconds before that man is a candidate again',
-    `${priest.def.heal.again}s`);
+  check(enemyTypes.dark_priest.heal.again === 30,
+    'thirty seconds before that man is a candidate again',
+    `${enemyTypes.dark_priest.heal.again}s`);
 }
 
-// AND THE MEMORY IS WHAT SENDS HIM TO THE NEXT MAN, checked directly rather than
+// AND THE COOLDOWN IS WHAT SENDS HIM TO THE NEXT MAN, checked directly rather than
 // through a fight: two wounded creatures, the worse one mended first, and then the
 // OTHER one chosen while the first is still the more injured of the two.
 {
@@ -775,76 +781,116 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   giant.hp = 100;    // 100 of 800, far the worse
   thug.hp = 60;      // 60 of 80
 
-  let first = null, second = null;
+  const order = [];
+  const seen = new Set();
   for (let f = 0; f < 60 * 12; f++) {
     step(state, 1 / 60);
-    // Pinned in place, so this measures who he PICKS rather than who he drifts
-    // into range of.
     hold();
-    if (priest.mended.length === 1 && !first) first = priest.mended[0].mark;
-    if (priest.mended.length === 2 && !second) second = priest.mended[1].mark;
-    if (second) break;
+    // A cooldown appearing on somebody is a mend having just landed on them.
+    for (const e of [giant, thug])
+      if (e.mendCd > 0 && !seen.has(e)) { seen.add(e); order.push(e); }
+    if (order.length === 2) break;
   }
 
-  const name = m => m ? m.def.name : 'nobody';
-  check(first === giant, 'the worst wounded is mended first', name(first));
-  check(second === thug,
+  const name = e => e ? e.def.name : 'nobody';
+  check(order[0] === giant, 'the worst wounded is mended first', name(order[0]));
+  check(order[1] === thug,
     'and the next cast goes to somebody else, though the giant is still the worse',
-    `${name(second)}, with the giant on ${Math.round(giant.hp)}/${giant.maxHp}`);
-  check(priest.mended.every(m => m.left > 0 && m.left <= priest.def.heal.again),
+    `${name(order[1])}, with the giant on ${Math.round(giant.hp)}/${giant.maxHp}`);
+  check(giant.mendCd > 0 && giant.mendCd <= enemyTypes.dark_priest.heal.again &&
+        thug.mendCd > 0 && thug.mendCd <= enemyTypes.dark_priest.heal.again,
     'and both are held on a clock that is running down',
-    priest.mended.map(m => `${name(m.mark)} ${m.left.toFixed(0)}s`).join(', '));
+    `giant ${giant.mendCd.toFixed(0)}s, thug ${thug.mendCd.toFixed(0)}s`);
 
   // AND THE CLOCK RUNS OUT, which is the other half of "after 30 seconds" and the
-  // half nothing above would catch. A memory that never expired would look right
+  // half nothing above would catch. A cooldown that never expired would look right
   // for the first minute of every wave — each man mended once, the priest moving
   // along the line — and then quietly stop being a healer at all.
-  //
-  // Run past the cooldown with the giant still far from whole, and he must come
-  // back to him.
-  const before = priest.mended.length;
   let back = false;
   for (let f = 0; f < 60 * 40 && !back; f++) {
     step(state, 1 / 60);
     hold();
-    // The pair he is holding drains, and a fresh entry for the giant is him
-    // returning to the man he had finished with.
-    if (priest.mended.length && priest.mended.some(m => m.mark === giant && m.left > 29)) back = true;
+    // It drains to zero and is then set afresh, so a full clock on a man it had
+    // finished with is him being returned to.
+    if (giant.mendCd > enemyTypes.dark_priest.heal.again - 1) back = true;
   }
-  check(before === 2 && back,
-    'and once it has, he comes back to the man he had finished with',
+  check(back, 'and once it has, he comes back to the man he had finished with',
     back ? `the giant again, on ${Math.round(giant.hp)}/${giant.maxHp}` : 'never returned');
 }
 
-// AND THE WAVE STILL HANDS OVER when the board will not clear on its own. The
-// memory makes a lone priest much less able to stall one, but a crowd of them can
-// still keep a crowd of enemies standing, and the clock is what covers that — the
-// same one built for a thrower nothing could reach.
+// AND TWO PRIESTS CANNOT TAG-TEAM ONE MAN, which is the whole reason the cooldown
+// sits on the target rather than in the healer's head.
+//
+// As a per-priest memory each of them kept his own list, so a pair standing over
+// one giant would mend him alternately — every fifteen seconds rather than every
+// thirty, and with four of them, faster still. The rule is meant to bound how
+// often a CREATURE can be picked up, and only a number on the creature does that.
+{
+  const state = board();
+  spawn(state, 'heavy_inf');
+  const giant = state.enemies[0];
+  for (let i = 0; i < 3; i++) spawn(state, 'dark_priest');
+  for (const e of state.enemies) { e.route = 0; e.lane = 1; }
+  const hold = () => {
+    place(giant, 230);
+    state.enemies.filter(e => e !== giant).forEach((p, i) => place(p, 200 + i * 12));
+  };
+  hold();
+  giant.hp = 100;
+
+  // Long enough for three priests to have cast many times over if nothing stopped
+  // them: 45 seconds is twenty-two casts between them.
+  let mends = 0, was = 0;
+  for (let f = 0; f < 60 * 45; f++) {
+    step(state, 1 / 60);
+    hold();
+    if (giant.mendCd > was + 1) mends++;      // a fresh cooldown means a fresh mend
+    was = giant.mendCd;
+  }
+
+  // 45 seconds is two cooldowns' worth, so two mends is the ceiling and three
+  // priests must not beat it.
+  check(mends <= 2, 'three priests on one giant mend him no faster than one would',
+    `${mends} mend(s) in 45s, against a ${enemyTypes.dark_priest.heal.again}s cooldown`);
+  // A hair of tolerance, because the mark is ticked at dt and the last fraction of
+  // a second of it lands past the round number.
+  const cap = 100 + 2 * enemyTypes.dark_priest.heal.hps * enemyTypes.dark_priest.heal.seconds;
+  check(giant.hp <= cap + 1, 'and he gains no more health for the extra company',
+    `${Math.round(giant.hp)} of 800, from 100 — two casts' worth, not six`);
+}
+
+// AND THREE PRIESTS DO NOT HOLD EACH OTHER UP EITHER, which is the same rule seen
+// from the other side and is worth measuring rather than assuming.
+//
+// They are enemies, so they can mend one another; the cooldown is on the man, so
+// each of them can be picked up once every thirty seconds whoever is doing the
+// picking. Against a squad that is not enough, and the board clears on its own —
+// which is a stronger result than the one this fixture was written to get. It ran
+// as a stall test while the cooldown was per-priest and the priests kept each
+// other standing; now it does not stall, and saying so is the honest version.
+//
+// The stall clock itself is still checked, on the case that DOES stall: three
+// plague doctors halted where nothing reaches them, further up this file.
 {
   const state = board();
   withSquad(state);
   const stand = squadAt(state);
+  // Pinned to one lane on one road: spawn() picks both at random, and three
+  // priests scattered across three lanes is a different fixture every run.
   for (let i = 0; i < 3; i++) {
     spawn(state, 'dark_priest');
-    place(state.enemies[i], Math.max(0, stand - 90 - i * 20));
+    const e = state.enemies[i];
+    e.route = 0; e.lane = 1;
+    place(e, Math.max(0, stand - 90 - i * 20));
   }
 
   let secs = 0;
-  while (state.enemies.length && secs < 60) { step(state, 1); secs++; }
+  while (state.enemies.length && secs < 180) { step(state, 1); secs++; }
 
-  state.waves = [{ groups: [], rest: 9 }];
-  state.waveIndex = 0;
-  state.spawned = 0;
-  state.resting = false;
-  state.stall = null;
-  state.timer = 0;
-  state.result = null;
-
-  let waited = 0;
-  while (!state.resting && waited < 400) { updateWaves(state, DT); waited += DT; }
-
-  check(state.resting, 'and a wave that will not clear hands over anyway',
-    `after ${waited.toFixed(0)}s with ${state.enemies.length} still on the road`);
+  check(state.enemies.length === 0,
+    'three priests against one squad clear on their own, with no clock needed',
+    state.enemies.length ? `${state.enemies.length} still up after ${secs}s`
+                         : `board empty in ${secs}s`);
 }
 
 console.log(bad

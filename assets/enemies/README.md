@@ -72,9 +72,10 @@ seconds — 50 a cast. Being pinned mid-cast loses him the spell rather than
 pausing it. See `heal` on `dark_priest` in `src/data/waves.js`, `enemyStance` in
 `src/render.js` for which drawing is shown when, and `woundedNear` in
 `src/enemies.js` for who he picks: the worst wounded within reach, himself
-excepted, and **nobody he has mended in the last 30 seconds** — so he works a
-crowd rather than parking on one creature, and falls through to throwing and
-walking when everyone in reach is on his list.
+excepted, and **nobody mended in the last 30 seconds** — so he works a crowd
+rather than parking on one creature, and falls through to throwing and walking
+when everyone in reach is on cooldown. The clock sits on the MAN (`mendCd`), not
+in the healer's head, so a second priest cannot fill the gap.
 
 **All four of his living poses share one shadow**, source (261.0, 322.5) to the
 pixel. He swaps between them more than any other figure in the game, so he is

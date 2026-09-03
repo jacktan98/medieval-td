@@ -67,16 +67,23 @@ export function spawn(state, typeId) {
     // the live figure, so a target that dies mid-cast is caught by its own `hp`
     // rather than by an index into a list that has moved.
     mending: null,
-    // WHO HE HAS JUST MENDED AND MAY NOT MEND AGAIN YET, as `{ mark, left }`
-    // entries counting down in seconds — the same shape every other clock in this
-    // file takes, because there is no global time to stamp against.
+    // SECONDS BEFORE ANY PRIEST MAY MEND THIS ONE AGAIN, and it is on the man
+    // rather than on the healer.
     //
-    // AN ARRAY RATHER THAN A MAP, and it matters that it is one that empties: the
-    // entries hold references to live enemies, and one that never expired would
-    // keep a dead thug reachable for as long as the priest stood on the road. This
-    // one drains itself — see the tick in updateEnemies — so the longest anything
-    // is held is the cooldown.
-    mended: [],
+    // IT WAS THE PRIEST'S OWN MEMORY — a list of who he had just worked on — which
+    // is the more literal reading of "he goes back to the same unit after 30
+    // seconds" and let two priests standing together tag-team one giant, each
+    // inside the other's gap. The owner asked for the other one: the cooldown
+    // belongs to the man, so a crowd of priests is a crowd covering more ground
+    // rather than a crowd keeping one creature permanently topped up.
+    //
+    // ONE NUMBER RATHER THAN A LIST, which is the whole of what the move bought.
+    // The list held references to live enemies and had to drain itself to avoid
+    // keeping a dead thug reachable; this cannot outlive its own figure, because
+    // it IS its figure. And `e.mendCd > 0` is false on a hand-built enemy that has
+    // no such field, so it needs no guard where the list did — see the four tools
+    // that stand enemies up without spawn().
+    mendCd: 0,
     // What is being done to him, and the same field a soldier carries: an enemy
     // can be burnt where a soldier can be poisoned, through one mechanism that
     // does not know which army it is looking at. See src/status.js.
@@ -168,22 +175,10 @@ export function updateEnemies(state, dt) {
     // it does not make him hold a shield up for longer.
     if (e.guard > 0) e.guard = Math.max(0, e.guard - dt);
 
-    // AND WHO HE IS STILL NOT ALLOWED TO MEND AGAIN. Real seconds too, and for the
-    // same reason: this is a memory rather than an action, and being slowed should
-    // not make a priest forget somebody more slowly.
-    //
-    // GUARDED, unlike the two clocks above it, and the difference is worth saying
-    // because it looks like an inconsistency. `e.guard > 0` and `e.cast > 0` are
-    // false on a figure that has neither field, so they survive a hand-built enemy
-    // by accident; `e.mended.length` throws on one. Four tools stand enemies up by
-    // hand rather than through spawn() — see tools/status.mjs and tools/facing.mjs —
-    // and a field they do not know about must be harmless rather than fatal.
-    //
-    // Backwards, so a splice does not move an index the loop has yet to reach.
-    if (e.mended) for (let i = e.mended.length - 1; i >= 0; i--) {
-      e.mended[i].left -= dt;
-      if (e.mended[i].left <= 0) e.mended.splice(i, 1);
-    }
+    // AND HOW LONG BEFORE ANYBODY MAY MEND HIM AGAIN. Real seconds too, and for
+    // the same reason: a monk's pulse slows what a figure DOES, and this is not
+    // something this figure is doing — it is something being counted about him.
+    if (e.mendCd > 0) e.mendCd = Math.max(0, e.mendCd - dt);
 
     // THE HEALER, and he is the first thing on the road that helps somebody.
     //
@@ -229,13 +224,11 @@ export function updateEnemies(state, dt) {
             // allowed: refreshing is a healer topping somebody up, and stacking
             // would be a rate that climbs with the size of the crowd.
             applyStatus(mark, 'healing', e.def.heal.hps, e.def.heal.seconds, null);
-            // AND HE REMEMBERS DOING IT. Thirty seconds before this man is a
-            // candidate again, which sends him to the next wounded one, or to a
-            // soldier, or back down the road. Recorded only on a mend that
-            // actually landed: a cast whose target died is not somebody to
-            // remember, and an entry for a dead figure would be a reference held
-            // for half a minute for nothing.
-            (e.mended || (e.mended = [])).push({ mark, left: e.def.heal.again });
+            // AND THE MAN CARRIES THE COOLDOWN. Thirty seconds before anybody may
+            // work on him again, which sends this priest to the next wounded one,
+            // or to a soldier, or back down the road — and stops a second priest
+            // filling the gap. Set only on a mend that actually landed.
+            mark.mendCd = e.def.heal.again;
           }
         }
         // Nothing else this frame: he is not throwing and he is not walking.
@@ -534,18 +527,19 @@ export function updateEnemies(state, dt) {
 //   THE DEAD, who are dropped from the list on the frame they die but may still
 //   be in it on the frame a blow lands.
 //
-// AND ANYONE HE MENDED IN THE LAST THIRTY SECONDS. That is the owner's rule —
-// "only go back to healing the same unit after 30 seconds, it goes to heal other
-// units first or attack soldiers etc" — and it is what turns a healer from
-// something that parks on one creature into something that works a crowd.
+// AND ANYONE MENDED IN THE LAST THIRTY SECONDS. That is the owner's rule — "only
+// go back to healing the same unit after 30 seconds, it goes to heal other units
+// first or attack soldiers etc" — and it is what turns a healer from something
+// that parks on one creature into something that works a crowd.
 //
-// IT IS THE PRIEST'S OWN MEMORY, not a mark on the man. Two priests standing
-// together can therefore both mend the same giant, thirty seconds apart each;
-// what the rule stops is ONE of them doing nothing else. That is the literal
-// reading of what was asked for, and it is also the one that keeps the rule a
-// property of how this creature behaves rather than a property of being wounded.
+// THE COOLDOWN IS ON THE MAN, not in the priest's head, and that is the owner's
+// second call on the same rule. As a per-priest memory it read more literally —
+// HE goes back to the same unit — but it left two priests standing together able
+// to tag-team one giant, each casting inside the other's gap, which is the
+// behaviour the rule exists to stop. On the man it holds however many of them
+// turn up.
 //
-// WHEN EVERYONE IN REACH IS ON HIS LIST he finds nobody, falls through to the
+// WHEN EVERYONE IN REACH IS ON COOLDOWN he finds nobody, falls through to the
 // throwing block below and then to the march, and gets on with the wave. That
 // fall-through IS the "or attack soldiers etc" half of the rule; there is no
 // second branch for it.
@@ -558,7 +552,7 @@ function woundedNear(state, healer, range) {
   let best = null, worst = 1;
   for (const e of state.enemies) {
     if (e === healer || e.hp <= 0 || e.hp >= e.maxHp) continue;
-    if (healer.mended && healer.mended.some(m => m.mark === e)) continue;
+    if (e.mendCd > 0) continue;
     if (!inRange(healer.x, healer.y, e.x, e.y, range)) continue;
     const share = e.hp / e.maxHp;
     if (share < worst) { worst = share; best = e; }

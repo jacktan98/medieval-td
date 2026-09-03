@@ -23,9 +23,10 @@ rather than a rate that climbs with the size of the crowd.
 
 **50 health a cast out-heals every soldier but the assassin**, and that is the
 owner's decision rather than an oversight: a squad can be held on a creature it
-can no longer kill. What limits it is the priest's own memory — he will not cast
-on the same man twice inside 30 seconds — so one priest cannot hold one creature
-up indefinitely, and a lone thug in front of a tier 1 squad still dies. It is a stall and not a lock — the wave loop hands over when
+can no longer kill. What limits it is a 30-second cooldown ON THE MAN — nobody
+mends the same creature twice inside it, however many priests are standing over
+him — so a lone thug in front of a tier 1 squad still dies, and three priests
+mend one giant no faster than one does. It is a stall and not a lock — the wave loop hands over when
 the field has not cleared in the time an unimpeded walk plus `STALL_GRACE` would
 have taken. See `stallClock` in `src/waves.js` and the run at the foot of
 `tools/plague.mjs`.
