@@ -660,33 +660,41 @@ export const art = {};
 const stamp = typeof window !== 'undefined' && window.__stamp;
 const versioned = src => stamp ? `${src}?v=${stamp}` : src;
 
-// --- WHAT COLOUR AN ABILITY'S DISC IS ---------------------------------------------
+// --- WHAT AN ABILITY'S DISC IS MADE OF --------------------------------------------
 //
-// THE CONFIRM TICK WEARS THE BUTTON'S OWN COLOUR, at the owner's ask: "for the
+// THE CONFIRM TICK WEARS THE BUTTON'S OWN FACE, at the owner's ask: "for the
 // abilities, change the background colour to the background colour of the
-// abilities — e.g. for Blinding Strike, use the same 969696". An ability's button
-// is one picture, disc and all, so the tick replacing it on the cream plate lost
-// the one thing that says WHICH ability is being confirmed.
+// abilities — e.g. for Blinding Strike, use the same 969696", and then "please add
+// the black outline of the disc to ensure consistency". An ability's button is one
+// picture, disc and rim and all, so a flat tinted circle in its place was the right
+// colour with the edge filed off — beside fifteen buttons that all have one.
 //
-// SAMPLED FROM THE FILE RATHER THAN WRITTEN DOWN. Sixteen hex values in data/ui.js
-// would be sixteen more numbers to re-paste after a re-export — and this project
-// has just spent a commit on trims that went stale exactly that way. A colour read
-// off the artwork cannot disagree with the artwork.
+// SAMPLED FROM THE FILE RATHER THAN WRITTEN DOWN. Two numbers per ability in
+// data/ui.js would be thirty-two more to re-paste after a re-export, and this
+// project has just spent a commit on trims that went stale exactly that way. A
+// colour and a width read off the artwork cannot disagree with the artwork.
 //
-// A RING JUST INSIDE THE RIM, and the MEDIAN of it per channel. The centre of the
-// disc is the drawing rather than the background, and a mean would be dragged by
-// whatever part of the drawing reaches the edge. Measured across the sixteen at
-// three radii, every disc is flat — 0.72, 0.80 and 0.86 of the radius all return
-// the same colour to the byte — so the exact ring is not delicate. Blinding Strike
-// comes back #969696, which is the number the owner asked for.
+// THE FILL is the MEDIAN of a ring of 64 points at 0.8 of the disc's radius, per
+// channel. The centre is the drawing rather than the background, and a mean would
+// be dragged by whatever part of the drawing reaches the edge. Measured across the
+// sixteen at three radii, every disc is flat to the byte — 0.72, 0.80 and 0.86 all
+// return the same colour — so the exact ring is not delicate. Blinding Strike comes
+// back rgb(150,150,150), which is #969696 exactly.
+//
+// THE RIM is the run of near-black pixels inward from the disc's edge along its
+// centre line, taken from both sides and returned as a FRACTION of the trim so the
+// caller can scale it to whatever size it is drawing. All sixteen measure 6 source
+// pixels, which is 1.94 at the 60px the menu draws them — the artist drew them to
+// one spec, and this reads that spec rather than repeating it.
 //
 // CACHED ON FIRST ASK, because this reads pixels back off a canvas and the menu is
 // drawn every frame. Never cached before the image has loaded: a miss returns null
-// and the caller falls back to the cream plate for that frame.
-const tints = {};
+// and the caller falls back to the cream plate for that frame rather than for the
+// session.
+const faces = {};
 
-export function discTint(key, trim) {
-  if (key in tints) return tints[key];
+export function discFace(key, trim) {
+  if (key in faces) return faces[key];
   const img = art[key];
   if (!img) return null;
 
@@ -697,21 +705,43 @@ export function discTint(key, trim) {
   g.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
   const px = g.getImageData(0, 0, sw, sh).data;
 
+  const at = (x, y) => (y * sw + x) * 4;
+  const mid = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+
+  // The fill, off a ring inside the rim.
   const cx = sw / 2, cy = sh / 2, r = Math.min(sw, sh) / 2 * 0.8;
   const chan = [[], [], []];
   for (let i = 0; i < 64; i++) {
     const a = (i / 64) * Math.PI * 2;
-    const x = Math.round(cx + Math.cos(a) * r);
-    const y = Math.round(cy + Math.sin(a) * r);
-    const o = (y * sw + x) * 4;
+    const o = at(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r));
     if (px[o + 3] < 200) continue;
     for (let k = 0; k < 3; k++) chan[k].push(px[o + k]);
   }
   if (!chan[0].length) return null;
 
-  const mid = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
-  tints[key] = `rgb(${mid(chan[0])}, ${mid(chan[1])}, ${mid(chan[2])})`;
-  return tints[key];
+  // And the rim, inward from both edges of the centre line. Stops at the first
+  // pixel that is not near-black, which is where the disc's own colour begins.
+  const row = Math.round(cy);
+  const runs = [];
+  for (const [from, step] of [[0, 1], [sw - 1, -1]]) {
+    let x = from, n = 0;
+    while (x >= 0 && x < sw) {
+      const o = at(x, row);
+      if (px[o + 3] < 128) { x += step; continue; }
+      if ((px[o] + px[o + 1] + px[o + 2]) / 3 >= 70) break;
+      n++; x += step;
+    }
+    if (n) runs.push(n);
+  }
+
+  faces[key] = {
+    fill: `rgb(${mid(chan[0])}, ${mid(chan[1])}, ${mid(chan[2])})`,
+    // A FRACTION OF THE TRIM, not a pixel count, so this survives a re-export on a
+    // bigger canvas: the artist doubling the file doubles the outline with it and
+    // the drawn rim stays where it was.
+    rim: runs.length ? mid(runs) / sh : 0
+  };
+  return faces[key];
 }
 
 export function loadArt() {

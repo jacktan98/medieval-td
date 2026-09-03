@@ -5,7 +5,7 @@ import { SCALE, EXPORT_PX, BLOOD_SCALE, upgradesFrom } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
-import { art, discTint } from './assets.js';
+import { art, discFace } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden } from './units.js';
@@ -2500,22 +2500,40 @@ function drawButton(ctx, state, it) {
   if (armed(state, it)) {
     ctx.save();
 
-    // AN ABILITY KEEPS ITS OWN COLOUR UNDER THE TICK, sampled off the artist's disc
-    // rather than written down — see discTint in assets.js. The owner's ask, and it
-    // fixes something the cream plate lost: an ability's button is one picture, so
-    // replacing the whole thing took away the only mark saying WHICH of the two an
-    // armed tick belongs to. On a tower with a pair on the ring, a cream disc could
-    // have been either.
+    // AN ABILITY KEEPS ITS OWN FACE UNDER THE TICK — its colour AND its black rim,
+    // both sampled off the artist's disc rather than written down. See discFace in
+    // assets.js.
+    //
+    // The owner's ask in two parts, and the second part is what makes the first
+    // one work: a flat tinted circle was the right colour with the edge filed off,
+    // sitting beside fifteen buttons that all have an outline. What the cream plate
+    // lost in the first place was the only mark saying WHICH ability an armed tick
+    // belongs to — on a tower with a pair on the ring, a cream disc could have been
+    // either of them.
+    //
+    // THE RIM IS STROKED INSIDE THE FILL, at half its width in from BTN_R, because
+    // a canvas stroke straddles its path and the artwork's outline is inside the
+    // disc's own edge. Drawn that way the tinted button is exactly the size of the
+    // picture it stands in for.
     //
     // Everything else — build, upgrade, refund — wears the plate every button on
     // the ring already wears. Those buttons carry a glyph on that plate rather than
     // being a picture, so there is nothing of their own to keep.
-    const tint = it.face && ui[it.face] && discTint(it.face, ui[it.face].trim);
-    if (tint) {
-      ctx.fillStyle = tint;
+    const face = it.face && ui[it.face] && discFace(it.face, ui[it.face].trim);
+    if (face) {
+      ctx.fillStyle = face.fill;
       ctx.beginPath();
       ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
       ctx.fill();
+
+      const rim = face.rim * BTN_R * 2;
+      if (rim > 0) {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = rim;
+        ctx.beginPath();
+        ctx.arc(it.x, it.y, BTN_R - rim / 2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     } else if (!drawUi(ctx, 'btn_plate', it.x, it.y)) {
       ctx.fillStyle = '#FFEFD4';
       ctx.beginPath();
