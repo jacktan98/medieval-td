@@ -449,32 +449,30 @@ export const ui = {
   // The shields are the SAME box to the pixel — [170, 167, 172, 178] — which is
   // what says they are one drawing in two colours rather than two shields.
   stat_damage_magic: { trim: [179, 179, 154, 154], h: STAT_ICON_H },
-  stat_armour:       { trim: [170, 167, 172, 178], h: STAT_ICON_H },
-  stat_armour_magic: { trim: [170, 167, 172, 178], h: STAT_ICON_H },
+  stat_armour:       { trim: [175, 173, 162, 167], h: STAT_ICON_H },
+  stat_armour_magic: { trim: [175, 173, 162, 167], h: STAT_ICON_H },
   // AND THE SAME TWO SHIELDS WITH SOMETHING THROUGH THEM, for `pierce`. Both are
   // 178 tall and start at y=167, exactly like the whole shields above — so a row
   // that shows a rank and a break beside it has all four drawings sitting on one
   // baseline, which is the thing that would have been fiddly to fix afterwards and
   // the artist got right in the file.
   //
-  // WIDER THAN THE PLAIN SHIELDS, though, and by different amounts: the physical
-  // one is 218 across and the magic one 234, because the bolt punching through the
-  // blue shield sticks out further than the shot through the grey. That is the
-  // drawing, not a mistake, and it is why nothing here is squared off — every
+  // WIDER THAN THE PLAIN SHIELDS, and the two of them the same 224 as each other —
+  // the re-upload lined the shot and the bolt up to the pixel where the first pair
+  // stuck out by different amounts. Nothing here is squared off either way: every
   // entry's aspect comes out of its own trim. See uiSize.
-  stat_pierce:       { trim: [147, 167, 218, 178], h: STAT_ICON_H },
-  stat_pierce_magic: { trim: [139, 167, 234, 178], h: STAT_ICON_H },
-  // AND THE BLAST. This one is the odd shape in the set — 236 x 104, so better
-  // than twice as wide as it is tall, where every other stat icon is roughly
-  // square. A starburst drawn flat is what an area of effect looks like from
+  stat_pierce:       { trim: [144, 173, 224, 167], h: STAT_ICON_H },
+  stat_pierce_magic: { trim: [144, 173, 224, 167], h: STAT_ICON_H },
+  // AND THE BLAST. This one is the odd shape in the set — 188 x 98, so nearly
+  // twice as wide as it is tall, where every other stat icon is roughly square. A starburst drawn flat is what an area of effect looks like from
   // above, and the game's reaches are ellipses for the same reason.
   //
   // It costs something real and it is worth naming: sized by the shared height
-  // like everything else, this comes out 2.3x the width of a shield, and the
-  // description panel's fixed STAT_COL cannot hold it. So the panel lets an icon
+  // like everything else, this comes out nearly twice the width of a shield, and
+  // the description panel's fixed STAT_COL cannot hold it. So the panel lets an icon
   // overflow its column rather than widening the column for the fifteen icons that
   // do not need it — see infoStat in render.js.
-  stat_splash:       { trim: [138, 204, 236, 104], h: STAT_ICON_H },
+  stat_splash:       { trim: [162, 207, 188, 98], h: STAT_ICON_H },
 
   // The encyclopedia's two costs: gold to build a tier, and lives when an enemy
   // gets past. They are drawn as a stack of coins and a BROKEN heart, which is

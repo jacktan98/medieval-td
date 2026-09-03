@@ -12,6 +12,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { basename, join } from 'path';
 import { decode } from './png.mjs';
 import { SCALE, BLOOD_SCALE, archery, barracks, siege, monastery } from '../src/data/towers.js';
+import { enemyTypes } from '../src/data/waves.js';
 // Sprite key -> file, so a frame is checked wherever the file actually lives.
 // The paths are URL-encoded for the browser; decode them to read from disk.
 import { paths as ASSET_URLS } from '../src/assets.js';
@@ -412,6 +413,77 @@ if (soft) {
   );
 } else {
   console.log('\nEvery sprite has enough source pixels for a 3x display.');
+}
+
+// --- and every trim in the data is the one in the file ----------------------------
+//
+// THE TABLE ABOVE PRINTS A MEASURED TRIM FOR SOMEBODY TO PASTE, and until this
+// section that was the whole mechanism: a re-export changed a drawing's box, the
+// tool printed the new numbers, and if nobody read them the game went on drawing
+// the OLD rectangle out of the new file — a slice of the wrong part of the canvas,
+// at the wrong size, silently.
+//
+// It happened. Five stat icons were re-uploaded a little smaller and a little
+// higher on their canvas; every checker passed, and the shields were drawn from a
+// box 10px too wide and 11px too tall with the extra coming out of the middle of
+// the picture. The README has claimed since it was written that "every sprite's
+// trim rect matches its file"; only the sharpness half of that was true.
+//
+// So the comparison is made rather than printed. A stored trim must EQUAL the box
+// its own file measures to.
+//
+// EXCEPT WHERE IT DELIBERATELY DOES NOT, and there are exactly three: an animated
+// building's spriteTrim is the union of its frames and matches none of them — see
+// CATAPULT_TRIM in data/towers.js, and the section above, which checks that union
+// property directly instead. A def with `frames` is skipped here and covered there.
+{
+  let stale = 0, checked = 0;
+  const seen = new Map();
+  const measured = key => {
+    const file = ASSET_PATHS[key];
+    if (!file) return null;
+    if (!seen.has(key)) seen.set(key, trim(decode(readFileSync(file))));
+    return seen.get(key);
+  };
+
+  const compare = (what, key, stored) => {
+    const m = key && stored && measured(key);
+    if (!m) return;
+    checked++;
+    if (m.every((v, i) => v === stored[i])) return;
+    console.log(`\n${what}: data has [${stored}], ${basename(ASSET_PATHS[key])} measures [${m}]`);
+    stale++;
+  };
+
+  for (const [key, e] of Object.entries(ui)) if (e.trim) compare(`ui.${key}`, key, e.trim);
+
+  for (const def of [...archery, ...barracks, ...siege, ...monastery]) {
+    // The union case, checked in the section above rather than here.
+    if (!def.frames && !def.machine) compare(`${def.name} building`, def.sprite, def.spriteTrim);
+    compare(`${def.name} portrait`, def.portrait, def.portraitTrim);
+    compare(`${def.name} gunner`, def.gunner, def.gunnerTrim);
+    const man = def.soldier;
+    if (man) {
+      compare(`${man.name}`, man.sprite, man.spriteTrim);
+      if (man.attack) compare(`${man.name} attack`, man.attack.sprite, man.attack.trim);
+    }
+  }
+
+  for (const d of Object.values(enemyTypes)) {
+    compare(`${d.name}`, d.sprite, d.spriteTrim);
+    if (d.attack) compare(`${d.name} attack`, d.attack.sprite, d.attack.trim);
+    compare(`${d.name} dead`, d.dead, d.deadTrim);
+  }
+
+  if (stale) {
+    console.log(
+      `\n${stale} trim(s) in src/data no longer match their file. Paste the measured` +
+      `\nrect from the table above — that is the number the game should be drawing.`
+    );
+    process.exitCode = 1;
+  } else {
+    console.log(`\nEvery trim in src/data is the box its own file measures to (${checked} of them).`);
+  }
 }
 
 // --- how heavy the ink is -------------------------------------------------------
