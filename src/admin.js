@@ -49,7 +49,7 @@ export const PARTY_PIN = '2208';
 export const PARTY_HREF = 'birthday/';
 
 import { levels } from './level.js';
-import { enemyTypes, MARCH_ORDER, defaultGap } from './data/waves.js';
+import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/waves.js';
 import { families } from './data/towers.js';
 
 // --- what is stored -----------------------------------------------------------
@@ -66,8 +66,8 @@ import { families } from './data/towers.js';
 //
 // Keys are strings so the whole thing is one flat JSON object:
 //
-//   waves   "m3|4|heavy_inf"  level id, wave index, ENEMY TYPE     -> count
-//   gaps    "m3|4|heavy_inf"  the same, in its own bag             -> seconds
+//   waves   "m3|extended|4|heavy_inf"   level, MODE, wave, enemy type -> count
+//   gaps    "m3|extended|4|heavy_inf"    the same, in its own bag      -> seconds
 //   gold    "m3"              level id                            -> starting purse
 //   units   "barracks/2|hp"   unit id, field                      -> number
 const KEY = 'medieval-td/admin';
@@ -113,15 +113,38 @@ function load() {
 // that happened to grow that far.
 let migrated = false;
 
+// A wave key has grown TWICE, and a saved blob can be from before either change:
+//
+//   "m1|3|1"                  level, wave, GROUP INDEX      the original
+//   "m1|3|heavy_inf"          level, wave, enemy type       once any enemy could
+//                                                           be put in any wave
+//   "m1|normal|3|heavy_inf"   level, MODE, wave, type       once Extended became
+//                                                           editable too
+//
+// Both old shapes are rewritten here, in that order, and the result is persisted
+// on the load that noticed. An index that no longer resolves is dropped: a count
+// with nothing to attach to is not recoverable, and keeping it would make it
+// reappear on some later table that happened to grow that far.
+//
+// EVERYTHING OLD IS NORMAL'S. There was only one editable table before this, and
+// it was the one the game plays on Normal — so an edit made then meant that
+// table, and an Extended run picking it up as well was a side effect of sharing
+// an index rather than anything anybody asked for.
 function migrate(bag) {
   const out = {};
   for (const [key, value] of Object.entries(bag)) {
-    const [levelId, wave, tail] = key.split('|');
-    if (!/^\d+$/.test(tail || '')) { out[key] = value; continue; }
+    const parts = key.split('|');
+    if (parts.length >= 4) { out[key] = value; continue; }
     migrated = true;
-    const lv = levels.find(l => l.id === levelId);
-    const group = lv && lv.waves[+wave] && lv.waves[+wave].groups[+tail];
-    if (group) out[`${levelId}|${wave}|${group.type}`] = value;
+    const [levelId, wave, tail] = parts;
+    let type = tail;
+    if (/^\d+$/.test(tail || '')) {
+      const lv = levels.find(l => l.id === levelId);
+      const group = lv && lv.waves[+wave] && lv.waves[+wave].groups[+tail];
+      if (!group) continue;
+      type = group.type;
+    }
+    out[`${levelId}|normal|${wave}|${type}`] = value;
   }
   return out;
 }
@@ -210,17 +233,23 @@ for (const u of units()) {
 // at zero, which is what makes "add a Giant to wave 1" an ordinary edit rather
 // than a special case. A count put back to 0 on a wave that never had one clears
 // the override entirely, the same as any other value returning to its shipped one.
+// BOTH LENGTHS, because both are editable now. The Extended table is DERIVED
+// from the shipped Normal one at level-load time — see extendedOf in
+// data/waves.js — so what is captured here is what that derivation produced, not
+// what Normal happens to be edited to. That is the right way round: the dashboard
+// edits the two tables independently, and an Extended run is not a Normal run
+// with a multiplier on it.
 for (const l of levels) {
-  l.waves.forEach((w, i) => {
+  for (const mode of MODES) tableFor(l, mode.id).forEach((w, i) => {
     const sends = new Map(w.groups.map(g => [g.type, g]));
     for (const t of MARCH_ORDER) {
       const g = sends.get(t);
-      SHIPPED.set(`${l.id}|${i}|${t}`, g ? g.count : 0);
-      // THE RATE, under a key with a fourth field so it cannot collide with the
+      SHIPPED.set(`${l.id}|${mode.id}|${i}|${t}`, g ? g.count : 0);
+      // THE RATE, under a key with one more field so it cannot collide with the
       // count above. A type the wave does not send ships at the rate that type is
       // usually sent at, so the "was" marker under the stepper compares against
       // the number the game would actually have used.
-      SHIPPED.set(`${l.id}|${i}|${t}|gap`, g ? g.gap : defaultGap(t));
+      SHIPPED.set(`${l.id}|${mode.id}|${i}|${t}|gap`, g ? g.gap : defaultGap(t));
     }
   });
   // The purse, keyed on the level id alone — there is one per map, so there is
@@ -233,8 +262,15 @@ export const shipped = key => SHIPPED.get(key);
 
 // --- reading and writing -------------------------------------------------------
 
-export const waveCount = (levelId, wave, type) =>
-  edits.waves[`${levelId}|${wave}|${type}`] ?? SHIPPED.get(`${levelId}|${wave}|${type}`) ?? 0;
+// EVERY WAVE LOOKUP CARRIES A MODE NOW. It is a required argument rather than one
+// defaulting to 'normal', which is the whole reason this change is safe: a call
+// site that has not been told which table it means fails loudly here instead of
+// quietly editing the Normal one.
+const waveKey = (levelId, mode, wave, type) => `${levelId}|${mode}|${wave}|${type}`;
+
+export const waveCount = (levelId, mode, wave, type) =>
+  edits.waves[waveKey(levelId, mode, wave, type)] ??
+  SHIPPED.get(waveKey(levelId, mode, wave, type)) ?? 0;
 
 // HOW FAST THAT TYPE COMES in that wave: the override if one has been set, else
 // the shipped table's own gap where the wave sends it, else the type's usual rate.
@@ -243,9 +279,9 @@ export const waveCount = (levelId, wave, type) =>
 // wave and how many, and the rate was whatever the tables already used — and the
 // owner asked for the third control: a wave of six giants at 1.6s and the same six
 // at 3.0s are different waves, and the count alone could not say which.
-export const waveGap = (levelId, wave, type) =>
-  edits.gaps[`${levelId}|${wave}|${type}`] ??
-  SHIPPED.get(`${levelId}|${wave}|${type}|gap`) ??
+export const waveGap = (levelId, mode, wave, type) =>
+  edits.gaps[waveKey(levelId, mode, wave, type)] ??
+  SHIPPED.get(`${waveKey(levelId, mode, wave, type)}|gap`) ??
   defaultGap(type);
 
 export const unitStat = (unitId, field, def) =>
@@ -311,8 +347,8 @@ export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 /
 // hang: updateWaves finds no group to spawn from, the wave has nothing left on the
 // field, and it clears immediately into the next one — an empty wave is a pause,
 // which is a real thing to want while testing a later one.
-export function setWaveCount(levelId, wave, type, count) {
-  const key = `${levelId}|${wave}|${type}`;
+export function setWaveCount(levelId, mode, wave, type, count) {
+  const key = waveKey(levelId, mode, wave, type);
   put(edits.waves, key, Math.max(0, Math.min(99, Math.round(count))), SHIPPED.get(key));
 }
 
@@ -327,8 +363,8 @@ export function setWaveCount(levelId, wave, type, count) {
 // ROUNDED TO ONE DECIMAL because the step is a tenth and floating point is not:
 // ten taps down from 2 lands on 0.9999999999999999 without it, which prints as
 // 1.00 and stores as an override that will never equal its shipped value again.
-export function setWaveGap(levelId, wave, type, gap) {
-  const key = `${levelId}|${wave}|${type}`;
+export function setWaveGap(levelId, mode, wave, type, gap) {
+  const key = waveKey(levelId, mode, wave, type);
   const held = Math.round(Math.max(0.1, Math.min(10, gap)) * 10) / 10;
   put(edits.gaps, key, held, SHIPPED.get(`${key}|gap`));
 }
@@ -392,12 +428,18 @@ apply();
 // "does the game own this table" depend on the contents of localStorage, and the
 // first thing to write through it would corrupt the shipped data for the rest of
 // the session.
-// `table` IS THE MODE'S TABLE, not always the level's own. A map has two lengths
-// now — see MODES in data/waves.js — and the dashboard's own list still edits the
-// Normal one, because that is the table it was built to show. The overrides are
-// keyed by wave and group INDEX, so an edit to wave 3 lands on wave 3 of either
-// length; the two extra waves of an Extended run have no shipped entry and simply
-// keep their own counts.
+// IT TAKES A MODE RATHER THAN A TABLE, and the two lengths are edited SEPARATELY.
+//
+// It took the caller's table for one build, and the overrides were keyed by wave
+// index alone — so an edit to wave 3 landed on wave 3 of either length, and the
+// two extra waves of an Extended run could not be reached at all. Both halves of
+// that were side effects of sharing an index rather than anything anybody chose.
+//
+// The owner asked for the Extended tables in the panel, and once both are in
+// front of you they have to be separable: changing wave 3 of the long game must
+// not change wave 3 of the short one. So the mode is part of the key, and this
+// takes the id rather than the array — tableFor is the one place that turns a
+// mode into a table, and a caller passing its own would be a second.
 // A GROUP PER TYPE THE WAVE SENDS, in MARCH_ORDER, built rather than copied.
 //
 // It has to be built now: the dashboard can put a creature into a wave whose
@@ -413,15 +455,15 @@ apply();
 // THE GAP COMES FROM THE SHIPPED TABLE where the wave already sends that type, so
 // editing a count never disturbs the rhythm the map was balanced at, and from
 // defaultGap where it does not.
-export function adminWaves(level, table = level.waves) {
-  return table.map((w, i) => {
+export function adminWaves(level, mode = 'normal') {
+  return tableFor(level, mode).map((w, i) => {
     const own = new Map(w.groups.map(g => [g.type, g]));
     const groups = [];
     for (const type of MARCH_ORDER) {
-      const count = waveCount(level.id, i, type);
+      const count = waveCount(level.id, mode, i, type);
       if (!count) continue;
       const g = own.get(type);
-      groups.push({ ...(g || { type }), type, count, gap: waveGap(level.id, i, type) });
+      groups.push({ ...(g || { type }), type, count, gap: waveGap(level.id, mode, i, type) });
     }
     return { ...w, groups };
   });
@@ -461,7 +503,11 @@ export const TABS = [
 
 // The map row on the Waves tab, laid out from the left margin rather than
 // centred: it is a filter on the list below it, not a headline.
-const MAP_W = 148, MAP_H = 40, MAP_GAP = 10;
+// 128 RATHER THAN 148, and the twenty pixels went to the two buttons beside them.
+// "Two Rivers" is the longest map name in the game and sets at 87px in the 15px
+// bold this row draws in, so 128 still holds it with room; tools/admin.mjs checks
+// that against the real names rather than against this sentence.
+const MAP_W = 128, MAP_H = 40, MAP_GAP = 10;
 const MAP_Y = INNER.y + 54;
 export const mapTabs = () => levels.map((l, i) => ({
   i,
@@ -472,6 +518,39 @@ export const mapTabs = () => levels.map((l, i) => ({
   w: MAP_W,
   h: MAP_H
 }));
+
+// WHICH LENGTH OF THE MAP, on the same row as the maps and immediately after
+// them, because the two questions are the same question: which table am I
+// editing. The wave numbers below say which wave OF it, which is a different
+// thing and belongs on its own line.
+//
+// A map has two lengths — see MODES in data/waves.js — and until now the panel
+// only ever showed the Normal one. The owner asked for both.
+// 86 wide, and the width is set by what is on either side rather than by taste.
+// The map tabs end at 428 and the "Start gold" label starts at about 627 — it is
+// right-aligned 14px from the stepper — so there is 199px for two buttons and a
+// gap, and 86 + 8 + 86 leaves 7px at the far end. "Extended" is the longer label
+// and sets at 65px in this row's type. tools/admin.mjs checks both clearances
+// against the real geometry, and it caught this at 96 wide.
+const MODE_W = 86, MODE_GAP = 8;
+// Off the LAST MAP TAB'S RIGHT EDGE rather than off a count times a pitch: the
+// arithmetic version included a trailing gap that is not there and put these 12px
+// further right than intended, which is most of what went wrong at 96.
+const MODE_X = INNER.x + (levels.length - 1) * (MAP_W + MAP_GAP) + MAP_W + 12;
+export const modeTabs = () => MODES.map((m, i) => ({
+  i,
+  id: m.id,
+  label: m.name,
+  x: MODE_X + i * (MODE_W + MODE_GAP),
+  y: MAP_Y,
+  w: MODE_W,
+  h: MAP_H
+}));
+
+// How many waves this map has at this length, which is what the row of numbered
+// buttons is built from and what a wave index has to be clamped to when the
+// length changes under it.
+export const waveCountFor = (levelIndex, mode) => tableFor(levels[levelIndex], mode).length;
 
 // The starting purse, on the map row and hard against the right margin.
 //
@@ -487,8 +566,8 @@ export const goldStepper = () => stepper('damage', GOLD_ROW_Y, 'gold');
 // map 3 runs ten and is the binding case, and a row that had to reflow for it
 // would put map 1's eight somewhere else on the screen.
 const WAVE_W = 56, WAVE_H = 44, WAVE_GAP = 6;
-export const waveTabs = levelIndex => {
-  const n = levels[levelIndex].waves.length;
+export const waveTabs = (levelIndex, mode = 'normal') => {
+  const n = waveCountFor(levelIndex, mode);
   return Array.from({ length: n }, (_, i) => ({
     i,
     x: INNER.x + i * (WAVE_W + WAVE_GAP),
@@ -594,7 +673,7 @@ export const GROUP_TOP = INNER.y + 164;
 const WAVE_CELL_GAP = 12;
 const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP) / 2;
 export const WAVE_COLS = 2;
-export const groupRows = (levelIndex, wave) => {
+export const groupRows = (levelIndex, wave, mode = 'normal') => {
   const lv = levels[levelIndex];
   const countW = 2 * WAVE_STEP_W + COUNT_VALUE_W;
   const gapW = 2 * WAVE_STEP_W + GAP_VALUE_W;
@@ -613,8 +692,8 @@ export const groupRows = (levelIndex, wave) => {
       x,
       stepX: gapX - countW - 8,
       gapX,
-      count: waveCount(lv.id, wave, type),
-      gap: waveGap(lv.id, wave, type)
+      count: waveCount(lv.id, mode, wave, type),
+      gap: waveGap(lv.id, mode, wave, type)
     };
   });
 };
@@ -688,7 +767,13 @@ export const PIN_CANCEL = { x: Math.round(480 - 70), y: PAD_Y + PAD_H + 14, w: 1
 // --- opening and closing -------------------------------------------------------
 
 export function openAdmin(state) {
-  state.admin = { stage: 'pin', typed: '', wrong: false, tab: 'waves', map: 0, wave: 0, page: 0 };
+  // `mode` is which LENGTH of the map is being edited, and it opens on Normal
+  // because that is the table a map is tuned at. It is the panel's own setting
+  // rather than the title screen's: what you are editing and what you last played
+  // are different questions, and tying them would mean a run on Extended silently
+  // moving which table the next edit lands on.
+  state.admin = { stage: 'pin', typed: '', wrong: false, tab: 'waves',
+                  map: 0, mode: 'normal', wave: 0, page: 0 };
 }
 
 export function closeAdmin(state) {
@@ -767,19 +852,30 @@ export function tapAdmin(state, x, y, restart) {
       a.wave = 0;
       return true;
     }
-    for (const w of waveTabs(a.map)) {
+    // SWITCHING LENGTH KEEPS THE WAVE YOU WERE ON, clamped to the shorter table.
+    // Going Normal -> Extended on wave 8 should leave you on wave 8 of the long
+    // game rather than back at the top, because comparing the same wave at the two
+    // lengths is most of what this button is for; going the other way from wave 12
+    // has nowhere to land, so it takes the last wave there is.
+    for (const m of modeTabs()) {
+      if (!on(m)) continue;
+      a.mode = m.id;
+      a.wave = Math.min(a.wave, waveCountFor(a.map, a.mode) - 1);
+      return true;
+    }
+    for (const w of waveTabs(a.map, a.mode)) {
       if (!on(w)) continue;
       a.wave = w.i;
       return true;
     }
     const levelId = levels[a.map].id;
-    for (const r of groupRows(a.map, a.wave)) {
+    for (const r of groupRows(a.map, a.wave, a.mode)) {
       const c = waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W);
-      if (on(c.minus)) { setWaveCount(levelId, a.wave, r.type, r.count - countStep()); return true; }
-      if (on(c.plus)) { setWaveCount(levelId, a.wave, r.type, r.count + countStep()); return true; }
+      if (on(c.minus)) { setWaveCount(levelId, a.mode, a.wave, r.type, r.count - countStep()); return true; }
+      if (on(c.plus)) { setWaveCount(levelId, a.mode, a.wave, r.type, r.count + countStep()); return true; }
       const g = waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W);
-      if (on(g.minus)) { setWaveGap(levelId, a.wave, r.type, r.gap - gapStep()); return true; }
-      if (on(g.plus)) { setWaveGap(levelId, a.wave, r.type, r.gap + gapStep()); return true; }
+      if (on(g.minus)) { setWaveGap(levelId, a.mode, a.wave, r.type, r.gap - gapStep()); return true; }
+      if (on(g.plus)) { setWaveGap(levelId, a.mode, a.wave, r.type, r.gap + gapStep()); return true; }
     }
     return false;
   }

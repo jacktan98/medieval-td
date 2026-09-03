@@ -26,7 +26,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
-         waveStepper, COUNT_VALUE_W, GAP_VALUE_W } from './admin.js';
+         waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -4280,7 +4280,10 @@ function drawAdminWaves(ctx, a) {
   const lv = levels[a.map];
 
   for (const m of mapTabs()) panelButton(ctx, m, m.label, { on: m.i === a.map });
-  for (const w of waveTabs(a.map)) {
+  // The two LENGTHS, beside the maps and on the same row: both answer "which
+  // table", where the numbers below answer "which wave of it".
+  for (const m of modeTabs()) panelButton(ctx, m, m.label, { on: m.id === a.mode });
+  for (const w of waveTabs(a.map, a.mode)) {
     panelButton(ctx, w, String(w.i + 1), { on: w.i === a.wave, r: 7 });
   }
 
@@ -4303,7 +4306,7 @@ function drawAdminWaves(ctx, a) {
   // A row at zero is drawn DIMMED rather than left out: the point of the panel is
   // that the whole roster is in front of you and any of it can be dialled up, and
   // a list that hid what was absent would be the old panel with extra steps.
-  const rows = groupRows(a.map, a.wave);
+  const rows = groupRows(a.map, a.wave, a.mode);
   let total = 0;
   // Where each type falls in the queue, counted over the rows that are actually
   // in the wave. Groups spawn one after another — see groupAt in waves.js — so
@@ -4338,12 +4341,12 @@ function drawAdminWaves(ctx, a) {
     ctx.fillText(here ? `${ordinal(place)} in` : 'not in this wave', r.x, r.y + 34);
 
     stepperRow(ctx, waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W), r.count,
-      shipped(`${lv.id}|${a.wave}|${r.type}`));
+      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}`));
     // Printed to two places and compared to two places, so a rate the player has
     // stepped back onto its shipped value stops showing a "was" line — 1.6 and
     // 1.60 are the same number and must read as the same number.
     stepperRow(ctx, waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W), r.gap.toFixed(2),
-      shipped(`${lv.id}|${a.wave}|${r.type}|gap`).toFixed(2));
+      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}|gap`).toFixed(2));
   }
 
   // The total, because the count that matters to a player is the wave's, and it
@@ -4352,10 +4355,15 @@ function drawAdminWaves(ctx, a) {
   ctx.textAlign = 'left';
   ctx.fillStyle = ADMIN_DIM;
   ctx.font = '15px system-ui, sans-serif';
+  // The length is named here as well as on the button, because the wave COUNT in
+  // this line is the thing that changes with it and a bare "wave 9 of 12" would
+  // leave the reader working out which table they were looking at.
+  const waves = waveCountFor(a.map, a.mode);
+  const length = a.mode === 'normal' ? '' : ' Extended';
   ctx.fillText(
-    `Wave ${a.wave + 1} of ${lv.waves.length} on ${lv.name} — ` +
+    `Wave ${a.wave + 1} of ${waves} on ${lv.name}${length} — ` +
     `${total ? `${total} enemies` : 'empty, a wave off'}` +
-    `${a.wave === lv.waves.length - 1 ? ', the last one' : ''}`,
+    `${a.wave === waves - 1 ? ', the last one' : ''}`,
     ADMIN_PANEL.x + 16, SUMMARY_Y());
 
   // The second line, 22px under the first. It hung off the last ROW rather than
