@@ -720,34 +720,118 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   check(whole.hp === 100, 'and a mended figure stops at full health', `${whole.hp}/100`);
 }
 
-// AND THE RUN THAT MATTERS: a priest holding a pinned enemy alive against a squad
-// that cannot out-damage him, for as long as it takes, and the wave loop handing
-// over anyway. This is the whole of what "a stall, not a lock" means, and it is
-// run through the real updateEnemies, updateUnits and updateWaves.
+// HE DOES NOT PARK ON ONE MAN, which is what the thirty-second memory is for:
+// "only go back to healing the same unit after 30 seconds. It goes to heal other
+// units first or attack soldiers etc."
+//
+// Run rather than reasoned about, because the behaviour is emergent — nothing in
+// the code says "walk away", it says "this man is not a candidate", and what he
+// does instead falls out of the blocks below the heal. The measurable consequence
+// is that ONE priest can no longer hold ONE thug alive: he mends 50, looks
+// elsewhere, and the squad gets on with it.
 {
   const state = board();
   withSquad(state);
   const stand = squadAt(state);
 
-  // A thug for the squad to hold, and a priest just behind him inside his 100.
   spawn(state, 'light_inf');
   place(state.enemies[0], Math.max(0, stand - 20));
   spawn(state, 'dark_priest');
   place(state.enemies[1], Math.max(0, stand - 70));
+  const priest = state.enemies[1];
+
+  let secs = 0, everMended = false;
+  while (secs < 90) {
+    step(state, 1); secs++;
+    if (priest.mended.length) everMended = true;
+    if (!state.enemies.some(e => e.def.name === 'Thug')) break;
+  }
+
+  check(everMended, 'a priest does mend the thug in front of him',
+    everMended ? 'the mark landed' : 'never cast');
+  check(!state.enemies.some(e => e.def.name === 'Thug'),
+    'and the squad still kills him, because the priest looks elsewhere after',
+    `dead in ${secs}s`);
+  check(priest.def.heal.again === 30, 'thirty seconds before that man is a candidate again',
+    `${priest.def.heal.again}s`);
+}
+
+// AND THE MEMORY IS WHAT SENDS HIM TO THE NEXT MAN, checked directly rather than
+// through a fight: two wounded creatures, the worse one mended first, and then the
+// OTHER one chosen while the first is still the more injured of the two.
+{
+  const state = board();
+  spawn(state, 'dark_priest');
+  spawn(state, 'heavy_inf');
+  spawn(state, 'light_inf');
+  const [priest, giant, thug] = state.enemies;
+  // ONE LANE ON ONE ROAD. spawn() picks both at random, so three figures placed
+  // at the same distance along "their" road can be a hundred px apart on the
+  // screen — which is outside his reach, and the fixture would then be measuring
+  // a priest with nobody to heal rather than a priest choosing between two.
+  for (const e of state.enemies) { e.route = 0; e.lane = 1; }
+  const hold = () => { place(priest, 200); place(giant, 230); place(thug, 250); };
+  hold();
+  giant.hp = 100;    // 100 of 800, far the worse
+  thug.hp = 60;      // 60 of 80
+
+  let first = null, second = null;
+  for (let f = 0; f < 60 * 12; f++) {
+    step(state, 1 / 60);
+    // Pinned in place, so this measures who he PICKS rather than who he drifts
+    // into range of.
+    hold();
+    if (priest.mended.length === 1 && !first) first = priest.mended[0].mark;
+    if (priest.mended.length === 2 && !second) second = priest.mended[1].mark;
+    if (second) break;
+  }
+
+  const name = m => m ? m.def.name : 'nobody';
+  check(first === giant, 'the worst wounded is mended first', name(first));
+  check(second === thug,
+    'and the next cast goes to somebody else, though the giant is still the worse',
+    `${name(second)}, with the giant on ${Math.round(giant.hp)}/${giant.maxHp}`);
+  check(priest.mended.every(m => m.left > 0 && m.left <= priest.def.heal.again),
+    'and both are held on a clock that is running down',
+    priest.mended.map(m => `${name(m.mark)} ${m.left.toFixed(0)}s`).join(', '));
+
+  // AND THE CLOCK RUNS OUT, which is the other half of "after 30 seconds" and the
+  // half nothing above would catch. A memory that never expired would look right
+  // for the first minute of every wave — each man mended once, the priest moving
+  // along the line — and then quietly stop being a healer at all.
+  //
+  // Run past the cooldown with the giant still far from whole, and he must come
+  // back to him.
+  const before = priest.mended.length;
+  let back = false;
+  for (let f = 0; f < 60 * 40 && !back; f++) {
+    step(state, 1 / 60);
+    hold();
+    // The pair he is holding drains, and a fresh entry for the giant is him
+    // returning to the man he had finished with.
+    if (priest.mended.length && priest.mended.some(m => m.mark === giant && m.left > 29)) back = true;
+  }
+  check(before === 2 && back,
+    'and once it has, he comes back to the man he had finished with',
+    back ? `the giant again, on ${Math.round(giant.hp)}/${giant.maxHp}` : 'never returned');
+}
+
+// AND THE WAVE STILL HANDS OVER when the board will not clear on its own. The
+// memory makes a lone priest much less able to stall one, but a crowd of them can
+// still keep a crowd of enemies standing, and the clock is what covers that — the
+// same one built for a thrower nothing could reach.
+{
+  const state = board();
+  withSquad(state);
+  const stand = squadAt(state);
+  for (let i = 0; i < 3; i++) {
+    spawn(state, 'dark_priest');
+    place(state.enemies[i], Math.max(0, stand - 90 - i * 20));
+  }
 
   let secs = 0;
-  while (state.enemies.length > 1 && secs < 90) { step(state, 1); secs++; }
+  while (state.enemies.length && secs < 60) { step(state, 1); secs++; }
 
-  const thug = state.enemies.find(e => e.def.name === 'Thug');
-  check(!!thug, 'a mended thug outlasts a minute and a half of tier 1 squad',
-    `${secs}s, ${state.enemies.length} still up`);
-  check(!!thug && thug.hp > 0,
-    'and is still on his feet at the end of it',
-    thug ? `${Math.round(thug.hp)} of ${thug.maxHp}` : 'dead');
-
-  // AND THE WAVE GIVES UP WAITING, exactly as it does for a thrower nothing can
-  // reach. Same fixture as check 5 above, pointed at a different reason the board
-  // will not clear.
   state.waves = [{ groups: [], rest: 9 }];
   state.waveIndex = 0;
   state.spawned = 0;
@@ -759,7 +843,7 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   let waited = 0;
   while (!state.resting && waited < 400) { updateWaves(state, DT); waited += DT; }
 
-  check(state.resting, 'but the wave hands over anyway, so it is a stall and not a lock',
+  check(state.resting, 'and a wave that will not clear hands over anyway',
     `after ${waited.toFixed(0)}s with ${state.enemies.length} still on the road`);
 }
 

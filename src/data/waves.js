@@ -880,7 +880,23 @@ export const enemyTypes = {
       // fifth of this and reads identically at a glance; the field name is what
       // stops the two being confused after the fact.
       hps: 10,
-      seconds: 5
+      seconds: 5,
+      // AND HOW LONG BEFORE HE WILL WORK ON THE SAME MAN AGAIN. The owner's rule:
+      // "only go back to healing the same unit after 30 seconds. It goes to heal
+      // other units first or attack soldiers etc."
+      //
+      // It is what makes him a healer of a CROWD rather than of one creature. 50
+      // health a cast is enough that parking on a single giant was a real
+      // behaviour — he would top the same bar up every two seconds and never look
+      // at anything else, which is both dull to watch and the wrong threat: what
+      // should worry a player is a wave that keeps getting back up, not one thug
+      // who will not go down.
+      //
+      // THIRTY IS LONG. A cast is two seconds and the mark runs five, so this is
+      // six casts' worth of looking elsewhere — he will have gone through every
+      // other wounded man in reach, and probably thrown a few missiles, before
+      // this one comes round again. That is the point.
+      again: 30
     },
     spriteFaces: -1,
     dead: 'dead_priest',

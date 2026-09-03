@@ -72,7 +72,9 @@ seconds — 50 a cast. Being pinned mid-cast loses him the spell rather than
 pausing it. See `heal` on `dark_priest` in `src/data/waves.js`, `enemyStance` in
 `src/render.js` for which drawing is shown when, and `woundedNear` in
 `src/enemies.js` for who he picks: the worst wounded within reach, himself
-excepted, and he will cast on the same man again.
+excepted, and **nobody he has mended in the last 30 seconds** — so he works a
+crowd rather than parking on one creature, and falls through to throwing and
+walking when everyone in reach is on his list.
 
 **All four of his living poses share one shadow**, source (261.0, 322.5) to the
 pixel. He swaps between them more than any other figure in the game, so he is
