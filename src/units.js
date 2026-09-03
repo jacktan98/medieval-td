@@ -1055,10 +1055,15 @@ export function updateUnits(state, dt) {
         u.foe.acd -= dt * slowOf(u.foe);
         if (u.foe.acd <= 0) {
           // AND THE OTHER WAY ROUND, through the SOLDIER'S armour — which is the
-          // half that pays for the paladin losing 100 health. At high physical he
-          // takes 25% of a thug's knife, so 175 in front of a physical enemy is
-          // worth 700 and 175 in front of a plague thug's magic flask is worth
-          // 233. He is a wall against one army and a man against the other.
+          // half that pays for the paladin's health being what it is. At medium
+          // physical he takes half a thug's knife, so his 200 is worth 400 in front
+          // of a physical enemy and, at low magic, 267 in front of a plague thug's
+          // flask. He is a wall against one army and a man against the other.
+          //
+          // AND THE ATTACKER'S `pierce` IS READ HERE TOO, which is the fifth of the
+          // five places damage lands and the one the giant needs: his club breaks a
+          // rank, so it meets the paladin's medium as low. tools/armour.mjs runs
+          // this exact path rather than trusting it.
           u.hp -= taken(u.foe.def.damage, typeOf(u.foe.def),
                         u.def && u.def.armour, pierceOf(u.foe.def));
           u.foe.acd = u.foe.def.atkCd;

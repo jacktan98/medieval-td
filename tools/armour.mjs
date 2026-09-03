@@ -36,6 +36,7 @@ import { enemyTypes } from '../src/data/waves.js';
 import { STATUS } from '../src/data/status.js';
 import { apply, tick } from '../src/status.js';
 import { updateTowers } from '../src/towers.js';
+import { updateUnits } from '../src/units.js';
 import { updateShots } from '../src/projectiles.js';
 import { level } from '../src/level.js';
 import { ABILITIES } from '../src/data/abilities.js';
@@ -306,10 +307,11 @@ console.log('\nWhat the card and the panel say about a figure\n');
 // land, reduce — and it is the wiring that the five call sites can get wrong one
 // at a time.
 //
-// The two melee paths and the thrower's are not run here: they go through the
-// same `taken()` with the same three arguments, and standing up a squad to watch
-// one swing would be tools/squad.mjs with an extra assertion rather than a check
-// of this mechanic. What is worth running end to end is the path with the most
+// The thrower's path is not run here: it goes through the same `taken()` with the
+// same three arguments, and standing up a squad to watch one flask would be
+// tools/plague.mjs with an extra assertion. The ENEMY'S SWING is run — see the
+// section at the foot of this file for why it earned a fixture of its own. What is
+// worth running end to end first is the path with the most
 // between the number and the health bar, which is a shot in flight.
 console.log('\nAnd a shot really is reduced where it lands\n');
 
@@ -383,6 +385,83 @@ console.log('\nAnd a status is true damage, on both armies\n');
 
   ok(Object.values(STATUS).filter(s => s.hurts).length === 2,
     'and both of the statuses that hurt are true damage', 'burnt and poisoned');
+}
+
+
+// --- and an enemy's swing, through the man's own plate ----------------------------
+
+// THE GIANT IS THE FIRST THING WALKING IN THAT BREAKS ARMOUR, and that is why this
+// path is now run rather than argued about.
+//
+// Every other `pierce` in the game belongs to a tower and lands through the shot
+// loop above. His belongs to a club, and a club goes through units.js — a different
+// call site, reading a different pair of defs, with the attacker and the target the
+// other way round. It is exactly the fifth site the note at the top of this file
+// warns about: four paths reducing correctly and one not is worse than none of them
+// doing it, because the one that does not is invisible.
+//
+// AND THE NUMBER IS THE DESIGN. The owner gave him the break in the same pass that
+// took the Paladin from high plate to medium, and the two together are what put the
+// barracks back in front of him.
+console.log('\nAnd an enemy really does break the plate of the man holding it\n');
+
+{
+  const swing = (soldierDef, enemyDef) => {
+    // A POST WITH NO ABILITIES ON IT. Every soldier on the board belongs to one and
+    // units.js asks it what it has been taught on the frame he swings, so `null`
+    // here is not a simpler fixture, it is a crash.
+    const post = { def: {}, fam: { id: 'barracks' }, abilities: [], x: 100, y: 100 };
+    const u = {
+      // AT HIS OWN FULL HEALTH, and not at some large number. Regen clamps a man to
+      // `def.hp` every frame, so a fixture that started him at a million watched him
+      // snap back to 150 before the giant had swung and reported the fall as the
+      // blow.
+      def: soldierDef, x: 100, y: 100, rx: 100, ry: 100,
+      hp: soldierDef.hp, maxHp: soldierDef.hp,
+      foe: null, cd: 0, thrust: 0, hold: 0, respawn: 0, face: 1, statuses: [],
+      tower: post, struckFrom: 0
+    };
+    const e = {
+      def: enemyDef, x: u.x + 6, y: u.y, hp: 1e6, maxHp: 1e6, route: 0, lane: 1,
+      s: 300, foe: null, acd: 0, thrust: 0, halted: false, leaked: false, statuses: []
+    };
+    const state = { towers: [post], enemies: [e], units: [u], shots: [], hits: [],
+                    corpses: [], splats: [], impacts: [], smoke: [] };
+    const before = u.hp;
+    for (let i = 0; i < 60 * 8 && u.hp === before; i++) updateUnits(state, DT);
+    return Math.round(before - u.hp);
+  };
+
+  const giant = enemyTypes.heavy_inf;
+  const men = Object.fromEntries(barracks.map(d => [d.soldier.name, d.soldier]));
+
+  ok(pierceOf(giant) === 1, 'the giant breaks one rank of physical plate',
+    `x${pierceOf(giant)} ${typeOf(giant)}`);
+
+  // THROUGH THE PLATE HE ACTUALLY BREAKS, one rung of the ladder at a time. The
+  // Pikeman wears nothing, so the break is worth nothing against him and the swing
+  // lands whole; the Swordsman's low plate is broken to none and the swing lands
+  // whole through that too; the Paladin's medium is broken to low, which is the
+  // only rung where the number moves.
+  const bare = swing(men.Pikeman, giant);
+  ok(bare === giant.damage, 'and lands whole on the man wearing none',
+    `${bare} of ${giant.damage} on a Pikeman`);
+
+  const low = swing(men.Swordsman, giant);
+  ok(low === giant.damage, 'and whole again on low plate, which the break erases',
+    `${low} of ${giant.damage} on a Swordsman`);
+
+  const med = swing(men.Paladin, giant);
+  ok(med === taken(giant.damage, 'physical', men.Paladin.armour, 1),
+    'and takes a quarter off medium, which it breaks to low',
+    `${med} of ${giant.damage} on a Paladin`);
+
+  // AND THE BREAK IS DOING IT, which is the half that would pass by accident. The
+  // same club with the pierce taken off lands for less, and if that ever stops
+  // being true the check above has become a check of nothing.
+  const unpierced = swing(men.Paladin, { ...giant, pierce: 0 });
+  ok(unpierced < med, 'and the same club without it does not',
+    `${unpierced} of ${giant.damage}, against ${med} with the break`);
 }
 
 console.log(bad

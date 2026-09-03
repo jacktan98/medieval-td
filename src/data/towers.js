@@ -1758,13 +1758,13 @@ export const barracks = [
   },
   {
     ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
-    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 125, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4',
-               damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
+    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 150, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4',
+               damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
     soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE',
-               damageType: 'physical', armour: { physical: 'med', magic: 'none' } }
+               damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
   },
   // TIER 4 IS A FIRST GUESS, exactly as the Musketeer Post's numbers are, and it is
   // written down as one: the artist asked for a blocker at 210 gold with 300 health
@@ -1807,8 +1807,8 @@ export const barracks = [
     // squad is replaced every time one of them falls. A paladin who died would
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'blinding'],
-    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 175, damage: 8, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0',
-               damageType: 'physical', armour: { physical: 'high', magic: 'low' } }
+    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 200, damage: 8, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0',
+               damageType: 'physical', armour: { physical: 'med', magic: 'low' } }
   },
   // THE OTHER FOURTH RUNG, and the barracks' first fork. A Knight's Hall buys
   // either of these two — see upgradesFrom in this file for why the choice is
@@ -1841,7 +1841,7 @@ export const barracks = [
     // heavier blow on the strike that comes out of nowhere. Both are read in
     // src/units.js, which is where the men are, rather than in src/towers.js.
     abilities: ['knife', 'sneak'],
-    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 20, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43',
+    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 15, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43',
               damageType: 'physical', pierce: 1, armour: { physical: 'low', magic: 'none' } }
   }
 ];
@@ -2441,13 +2441,13 @@ const cannon = {
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
   { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
-    cost: 90,  damage: 18, splash: 75, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A',
+    cost: 90,  damage: 18, splash: 70, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A',
     damageType: 'physical', pierce: 1 },
   { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
-    cost: 120, damage: 24, splash: 86, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042',
+    cost: 120, damage: 24, splash: 80, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042',
     damageType: 'physical', pierce: 1 },
   { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
-    cost: 170, damage: 36, splash: 98, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56',
+    cost: 170, damage: 36, splash: 90, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56',
     damageType: 'physical', pierce: 1 },
   // TIER 4, and it is the opposite tower to the three below it in every way that
   // matters. They are siege engines that lob: enormous reach, a hole in the
@@ -2610,7 +2610,7 @@ export const siege = [
   // No abilities yet, exactly as the Assassin Guild shipped without them. The
   // field is simply absent, which the menu already reads as "nothing to teach".
   { ...cannon, tier: 4, name: 'Cannon Outpost', title: 'Cannon Outpost', unit: 'Cannoneer',
-    cost: 230, damage: 65, splash: 85, range: 360, minRange: 0, cooldown: CYCLE, colour: '#A8A29A',
+    cost: 230, damage: 65, splash: 80, range: 360, minRange: 0, cooldown: CYCLE, colour: '#A8A29A',
     damageType: 'physical', pierce: 2,
     // Its own picture on the upgrade button. With two of them on the ring neither
     // can wear the generic arrow — the same reason both barracks and both archery

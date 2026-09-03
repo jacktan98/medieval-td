@@ -370,6 +370,24 @@ export const enemyTypes = {
     // of him now. He is not a wall, he is a wall that a staff walks through.
     damageType: 'physical',
     armour: { physical: 'med', magic: 'none' },
+    // AND HIS CLUB BREAKS A RANK OF PLATE, which is new and is the first time
+    // anything walking in has pierced anything. It is aimed squarely at the
+    // barracks: he is the enemy a squad is bought to hold, and holding him was a
+    // question of armour rank until now — a Paladin in high plate took 25% of a
+    // swing and simply did not die to it.
+    //
+    // At x1 he strikes whatever is holding him as though it wore one rank less, so
+    // the answer to him stops being "wear enough" and goes back to "bring enough".
+    // Measured end to end through units.js, which is a different call site from
+    // every other pierce in the game — see the last section of tools/armour.mjs:
+    //
+    //   a Pikeman    wears none, the break is worth nothing      30 of 30
+    //   a Swordsman  low, broken to none                         30 of 30
+    //   a Paladin    med, broken to low                          23 of 30
+    //
+    // The Paladin is the only rung where the number moves at all, and it moves a
+    // long way: without the break the same club lands 15 on him.
+    pierce: 1,
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts

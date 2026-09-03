@@ -352,8 +352,15 @@ console.log('\nArtillery tier 4 — output instead of reach\n');
     'and can defend its own plot, where every rung below it cannot',
     siege.map(d => d.minRange).join(' / '));
 
-  ok(t4.splash > 0 && siege.every(d => d === t4 || d.splash > t4.splash),
-    'and still throws the smallest blast in the family',
+  // NO BIGGER THAN ANY OF THEM, and it was STRICTLY SMALLER until the owner's
+  // balance pass. The claim has CHANGED rather than been relaxed: the three engines
+  // came down to 70 / 80 / 90 and the Ballista stayed at 70, so it now ties the
+  // Catapult exactly. That is a legible shape rather than a collision — the two
+  // fourth rungs are each a lower tier's blast carrying a fourth tier's damage, the
+  // Ballista a Catapult's 70 and the Cannon Outpost a Mangonel's 80 — and what has
+  // to keep holding is that the bolt is the family's floor.
+  ok(t4.splash > 0 && siege.every(d => d === t4 || d.splash >= t4.splash),
+    'and still throws no bigger a blast than anything in the family',
     siege.map(d => d.splash).join(' / '));
 
   // THE HARDEST BLOW IN ITS OWN FAMILY, and it used to be joint hardest of the
@@ -609,13 +616,17 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
     `${per(keep).toFixed(2)} against ${per(spine[2]).toFixed(2)} per gold, ${gain >= 0 ? '+' : ''}${(gain * 100).toFixed(0)}%`);
 
   // AND THE PLAGUE THUG IS WHY HE IS NOT AN ANSWER TO EVERYTHING. The same man,
-  // measured against the one enemy that throws MAGIC: low magic armour is 4/3
-  // rather than 4, so the wall he is worth collapses to a third of itself. That is
-  // the matchup the whole damage triangle exists to create, and it is worth a
-  // check because it is the one number a reader would not believe from the data.
+  // measured against the one enemy that throws MAGIC: his low magic plate is 4/3
+  // where his physical is 2, so the wall he is worth is two thirds of itself.
+  //
+  // IT WAS A THIRD, and this is a design change rather than a relaxed check — the
+  // owner's pass took his physical plate from HIGH to MED, which halves the gap
+  // between his two sides. 2100 against 700 has become 1200 against 800. The
+  // matchup the damage triangle exists to create is still there and it is a good
+  // deal softer; if it is meant to bite, the number to move is his magic rank.
   const vsMagic = keep.soldier.hp * keep.soldier.count * soak(keep.soldier, 'magic');
-  ok(vsMagic < wall(keep.soldier) / 2,
-    'and is a third of that wall against the one enemy that throws magic',
+  ok(vsMagic < wall(keep.soldier),
+    'and is two thirds of that wall against the one enemy that throws magic',
     `${wall(keep.soldier).toFixed(0)} against physical, ${vsMagic.toFixed(0)} against magic`);
 
   // Every rung of this ladder musters the same squad. The muster rings, the
@@ -635,8 +646,18 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // claiming to be the same man further up — it is claiming a trade, and the
   // section below is where that claim is checked. Running this over all five would
   // read the fork as a collapse: 275 health then 150, which is the design.
+  //
+  // HEALTH IS MEASURED THROUGH THE PLATE, and it was raw `hp` until the owner's
+  // balance pass put the Pikeman and the Swordsman both on 150. Raw, that is a flat
+  // step and this check called it a reversal; it is nothing of the kind. What the
+  // Knight's Hall buys at that rung is ARMOUR — none to low — so the man it musters
+  // survives 200 of a physical enemy's damage where the Pikeman survives 150.
+  //
+  // Which is the same move this file already makes at the fork below, for the same
+  // reason: once plate exists, effective health is the honest measure of a wall and
+  // raw health is a component of it.
   const climbs = [
-    ['health', m => m.hp, 1], ['damage', m => m.damage, 1],
+    ['health', m => m.hp * soak(m), 1], ['damage', m => m.damage, 1],
     ['reload', m => m.cd, -1], ['speed', m => m.speed, 1],
     ['respawn', m => m.respawn, -1], ['regen', m => m.regen, 1]
   ];
@@ -663,10 +684,22 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
     'and trades the wall away for the blade',
     `${dps(g).toFixed(0)}/s against ${dps(t4).toFixed(0)}, ${wall(g)} health against ${wall(t4)}`);
 
-  // Below the rung it upgrades FROM, which is the sharp end of the trade and the
-  // reason it cannot be bought on reflex. Three assassins are a thinner wall than
-  // the three knights they replaced.
-  ok(wall(g) < wall(t3), 'and is a thinner wall than the Knight\'s Hall it replaces',
+  // AND IT IS NO LONGER BELOW THE RUNG IT UPGRADES FROM, which is the biggest
+  // consequence of the owner's balance pass and is worth stating rather than
+  // quietly re-thresholding.
+  //
+  // The Guild used to be the sharp end of the trade: three assassins were a thinner
+  // wall than the three knights they replaced, which is what stopped it being
+  // bought on reflex. The pass moved the Swordsman's plate from MED to LOW, and the
+  // assassin already wore LOW at the same 150 health — so the two squads are now
+  // the same wall to the point, 600 against 600, and the Guild is ahead of the Hall
+  // on every other dial it has: 56 damage a second against 18, a rank of pierce,
+  // faster men, a shorter respawn.
+  //
+  // THE FORK IS STILL A DECISION, but it is now a decision against the KEEP alone
+  // rather than against the tier below as well — see the wall comparison above, and
+  // the effective-health check further down.
+  ok(wall(g) <= wall(t3), 'and is no thicker a wall than the Knight\'s Hall it replaces',
     `${wall(g)} against ${wall(t3)}`);
 
   ok(g.damage === Math.max(...barracks.map(d => d.soldier.damage)),
@@ -677,16 +710,20 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // the only STEP DOWN, which is the thing a ladder is not supposed to do and the
   // whole reason this fork is a decision rather than a purchase.
   //
-  // MEASURED THROUGH THE ARMOUR, since armour arrived. The assassin and the
-  // swordsman both carry 150 raw now, so the raw comparison stopped saying
-  // anything — what separates them is the plate: LOW against MED, which is 200 in
-  // front of a physical enemy against 300. The step down is still there and it is
-  // the armour that carries it.
+  // MEASURED THROUGH THE ARMOUR, since armour arrived — and the step down it was
+  // written to catch is gone. The assassin and the swordsman carry 150 raw AND the
+  // same LOW plate now, so they come out at exactly 200 effective apiece.
+  //
+  // WHAT SURVIVES IS THE HALF THAT STILL MATTERS: the Keep's path climbs at every
+  // rung, and the Guild is the one fourth rung that does not climb with it. That is
+  // the property the fork rests on — a player who reads "tier 4" as "a better wall"
+  // and buys the Guild in front of the giants is still wrong, because the tower
+  // they should have bought is the Keep at the same price.
   const soakOf = m => 1 / TAKES[Math.max(0, RANKS.indexOf((m.armour && m.armour.physical) || 'none'))];
   const alive = m => m.hp * soakOf(m);
-  ok(alive(g) < alive(t3) &&
+  ok(alive(g) <= alive(t3) && alive(g) < alive(keep.soldier) &&
      [...spine, keep].every((d, i, a) => i === 0 || alive(d.soldier) > alive(a[i - 1].soldier)),
-    'and is the one rung whose men come out weaker than the last',
+    'and is the one fourth rung that does not climb with the ladder',
     `${g.hp} against the Hall's ${t3.hp}`);
 
   // What buys the trade back. A man nothing can shoot at is a man who only ever

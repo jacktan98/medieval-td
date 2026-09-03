@@ -1243,7 +1243,13 @@ console.log('\nSneak Attack\n');
       if (e.hp !== last) { blows.push(Math.round(last - e.hp)); art.push(u.holdArt); last = e.hp; }
     }
     ok(blows.length >= 3, 'he lands a run of blows', `${blows.length} in 4s`);
-    ok(blows[0] === man.damage * sneak.times,
+    // ROUNDED, like the blow the game actually lands. This compared the raw
+    // product for as long as the assassin hit for 20 and x2.5 came out whole; at
+    // 15 it is 37.5, the game rounds it to 38 where it applies the damage — see
+    // taken() in data/armour.js — and an exact comparison against 37.5 failed a
+    // check of a mechanic that was working perfectly.
+    const sneaked = Math.round(man.damage * sneak.times);
+    ok(blows[0] === sneaked,
       `and the first is worth ${sneak.times} of them`,
       `${blows[0]} against his ${man.damage}`);
     ok(blows.slice(1).every(b => b === man.damage), 'and every one after it is an ordinary blow',
@@ -1286,11 +1292,12 @@ console.log('\nSneak Attack\n');
     state.enemies.push(e);
     const third = strike();
 
-    ok(first === man.damage * sneak.times && second === man.damage,
+    // Rounded for the same reason as above: the game rounds where it lands.
+    const sneaked = Math.round(man.damage * sneak.times);
+    ok(first === sneaked && second === man.damage,
       'a fight opens with the bonus and then settles', `${first} then ${second}`);
     ok(wasHidden, 'and he is unseen once the fight is over');
-    ok(third === man.damage * sneak.times, 'so the next fight opens with it again',
-      `${third}`);
+    ok(third === sneaked, 'so the next fight opens with it again', `${third}`);
   }
 
   // THE TWO TOGETHER, and this is the interaction worth writing a test for rather
