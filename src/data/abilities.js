@@ -1,4 +1,5 @@
-import { bolt, knife, sneakKnife, cannonball, monkShot } from './towers.js';
+import { bolt, knife, sneakKnife, cannonball, monkShot,
+         archery, barracks, siege, monastery } from './towers.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -417,6 +418,40 @@ const SNEAK_ATTACK_POSE = {
 const HOLD = 1;
 const LONG_HOLD = 2;
 
+// --- WHERE THE NUMBERS IN A DESCRIPTION COME FROM ---------------------------------
+//
+// EVERY FIGURE AN ABILITY'S CARD PRINTS IS DERIVED, and none of them is typed in.
+// That is this repository's oldest rule — nothing about a picture is written down
+// by hand — arriving late at the one place it had never been applied: prose.
+//
+// It arrived because the prose had rotted. A balance pass moved the Musketeer
+// Post's ball to 60, the Cannon Outpost's to 65, the assassin's blade to 15, the
+// paladin's health to 200 and Swift Reload to 1.5x, and twelve of the sixteen cards
+// went on quoting the numbers from before it. The owner caught one of them by
+// reading it — "I see sneak attack is not updated" — which is exactly the failure
+// mode a hand-typed number has: it is wrong silently, in the one place in the game
+// whose whole job is to be believed.
+//
+// SO `detail` IS A FUNCTION HERE and a string by the time anything reads it. It is
+// called once, at the foot of this file, with the ability itself and the def of the
+// tower that teaches it — so a card can quote its own magnitude and its own tower's
+// stats, and cannot quote anything else.
+const TIERS = [...archery, ...barracks, ...siege, ...monastery];
+const towerOf = name => TIERS.find(d => d.name === name);
+
+// At most one decimal, and no trailing zero: 43.8, 30, 56.3. Damage figures in this
+// game are whole where they land — see taken() in data/armour.js — but a rate is a
+// division and 43.75 in a sentence reads as a spreadsheet.
+const num = x => String(Math.round(x * 10) / 10);
+// Two, for the sub-second times a reload is measured in, where one would round 0.53
+// to 0.5 and lose the thing being said.
+const sec = x => String(Math.round(x * 100) / 100);
+// A multiplier as the percentage a player reads it: 1.1 is "10%".
+const pc = k => `${Math.round(Math.abs(k - 1) * 100)}%`;
+// And the blow a multiplier lands, rounded the way the game rounds it where it
+// applies it, so the card and the health bar agree: 2.5x a 15 blade is 38, not 37.5.
+const blow = (damage, times) => Math.round(damage * times);
+
 export const ABILITIES = [
   {
     // THE SAME ABILITY ON THE OTHER BOW, and deliberately the same in every part
@@ -443,12 +478,12 @@ export const ABILITIES = [
     // trims and the same shadow pixel as the timber pair, so nothing moves.
     gunner: { sprite: 'crossbowman_steel', attack: 'crossbowman_steel_attack' },
 
-    detail: 'The engineers rebuild the bow in steel and the sentry reaches 390px ' +
-            'instead of 260 — level with a Ballista Turret that has bought the ' +
-            'same thing, and behind only the Musketeer Post.\n\n' +
-            'Nothing else changes: the same quarrel, the same 0.8 second reload, ' +
-            'the same 30 a bolt. The crossbowman is drawn with a steel bow from ' +
-            'the moment it is bought.'
+    detail: (a, t) => `The engineers rebuild the bow in steel and the sentry reaches ` +
+      `${num(t.range * a.rangeTimes)}px instead of ${t.range} — level with a Ballista ` +
+      `Turret that has bought the same thing, and behind only the Musketeer Post.\n\n` +
+      `Nothing else changes: the same quarrel, the same ${num(t.cooldown)} second ` +
+      `reload, the same ${t.damage} a bolt. The crossbowman is drawn with a steel bow ` +
+      `from the moment it is bought.`
   },
   {
     // A MULTIPLIER LIKE EVERY OTHER MAGNITUDE HERE, and it was an absolute 0.50
@@ -481,11 +516,13 @@ export const ABILITIES = [
     cost: ABILITY_COST,
     reloadTimes: 1.5,
 
-    detail: 'The crossbowman works a windlass instead of a belt hook and reloads ' +
-            '1.35x faster — a quarrel every 0.59 seconds instead of every 0.8, ' +
-            'which is 50.6 damage a second where the sentry alone does 37.5.\n\n' +
-            'Nothing else changes: the same 30 a quarrel and the same reach. It ' +
-            'stacks with Reinforced Tension rather than competing with it.'
+    detail: (a, t) => `The crossbowman works a windlass instead of a belt hook and ` +
+      `reloads ${a.reloadTimes}x faster — a quarrel every ` +
+      `${sec(t.cooldown / a.reloadTimes)} seconds instead of every ${num(t.cooldown)}, ` +
+      `which is ${num(t.damage * a.reloadTimes / t.cooldown)} damage a second where ` +
+      `the sentry alone does ${num(t.damage / t.cooldown)}.\n\n` +
+      `Nothing else changes: the same ${t.damage} a quarrel and the same reach. It ` +
+      `stacks with Reinforced Tension rather than competing with it.`
   },
   {
     id: 'burst',
@@ -522,14 +559,15 @@ export const ABILITIES = [
     // The long form, shown beside the picture when the card is tapped open. Two or
     // three sentences: what it does, then the thing a player would only find out by
     // watching it for a while.
-    detail: 'After 3 ordinary shots the musketeer empties 3 bullets into the road ' +
-            'as fast as he can work the lock, 0.18s apart, then holds the smoke ' +
-            'for 1 second before loading again. Each ball is the Post\'s own 65, ' +
-            'so the burst is 195 in under 0.5 seconds.\n\n' +
-            'Each of the 3 picks a different man, through whatever standing order ' +
-            'the tower is on. That is the point of it: 3 bullets into 1 militiaman ' +
-            'is most of them wasted, and 3 into 3 of them is a rank gone. With ' +
-            'only 1 enemy in reach all 3 go to him.'
+    detail: (a, t) => `After ${a.every - 1} ordinary shots the musketeer empties ` +
+      `${a.shots} bullets into the road as fast as he can work the lock, ${a.gap}s ` +
+      `apart, then holds the smoke for ${a.hold} second before loading again. Each ` +
+      `ball is the Post's own ${t.damage}, so the burst is ${t.damage * a.shots} in ` +
+      `${num((a.shots - 1) * a.gap)} seconds.\n\n` +
+      `Each of the ${a.shots} picks a different man, through whatever standing order ` +
+      `the tower is on. That is the point of it: ${a.shots} bullets into 1 militiaman ` +
+      `is most of them wasted, and ${a.shots} into ${a.shots} of them is a rank gone. ` +
+      `With only 1 enemy in reach all ${a.shots} go to him.`
   },
   {
     id: 'deadeye',
@@ -594,14 +632,15 @@ export const ABILITIES = [
     // ability that fires something announces itself by firing it; `cue` is for the
     // two that do not, which are the paladin's.
 
-    detail: 'After 9 ordinary shots the musketeer takes 1 second to aim — a mark ' +
-            'appears over the man he has chosen and stays there until the bullet ' +
-            'arrives — and then fires 1 round for 8x the Post\'s own 65, ' +
-            '520 damage, the hardest blow in the game. It reaches anywhere on the ' +
-            'map: this 1 shot ignores the tower\'s range ring entirely.\n\n' +
-            'He holds the pose for 2 seconds afterwards, which costs nothing: the ' +
-            'musket takes 2.4 seconds to load whatever he just fired. Kept for the ' +
-            '1 thing on the road that has to die and cannot be chipped down.'
+    detail: (a, t) => `After ${a.every - 1} ordinary shots the musketeer takes ` +
+      `${a.lock} second to aim — a mark appears over the man he has chosen and stays ` +
+      `there until the bullet arrives — and then fires ${a.shots} round for ` +
+      `${a.times}x the Post's own ${t.damage}, ${blow(t.damage, a.times)} damage, the ` +
+      `hardest blow in the game. It reaches anywhere on the map: this ${a.shots} shot ` +
+      `ignores the tower's range ring entirely.\n\n` +
+      `He holds the pose for ${a.hold} seconds afterwards, which costs nothing: the ` +
+      `musket takes ${num(t.cooldown)} seconds to load whatever he just fired. Kept ` +
+      `for the 1 thing on the road that has to die and cannot be chipped down.`
   },
   {
     id: 'light',
@@ -638,15 +677,17 @@ export const ABILITIES = [
     pose: HOLY_LIGHT_POSE,
     cue: 'holyLight',
 
-    detail: 'The moment a paladin drops under 30% of his health he stops fighting, ' +
-            'kneels, and takes 80% of his full health back over 3 seconds — 220 on ' +
-            'a paladin, more under a Divine Fortitude. He keeps his grip on the ' +
-            'enemy the whole time, so the road stays held — and the enemy keeps ' +
-            'hitting him, so it is a race rather than a free reset.\n\n' +
-            'Each of the 3 calls it for himself and has his own 30 seconds before ' +
-            'he can call it again, counted from the moment he kneels. A paladin ' +
-            'killed anyway takes that clock with him: the man who musters in his ' +
-            'place can call the light at once.'
+    detail: (a, t) => `The moment a paladin drops under ${pc(1 + a.below)} of his ` +
+      `health he stops fighting, kneels, and takes ${pc(1 + a.healFrac)} of his full ` +
+      `health back over ${a.seconds} seconds — ` +
+      `${Math.round(t.soldier.hp * a.healFrac)} on a paladin, more under a Divine ` +
+      `Fortitude. He keeps his grip on the enemy the whole time, so the road stays ` +
+      `held — and the enemy keeps hitting him, so it is a race rather than a free ` +
+      `reset.\n\n` +
+      `Each of the ${t.soldier.count} calls it for himself and has his own ` +
+      `${a.refresh} seconds before he can call it again, counted from the moment he ` +
+      `kneels. A paladin killed anyway takes that clock with him: the man who musters ` +
+      `in his place can call the light at once.`
   },
   {
     // IT WAS HOLY SLASH, and the owner renamed it: "there are too many 'Holy'
@@ -699,13 +740,16 @@ export const ABILITIES = [
     pose: BLINDING_STRIKE_POSE,
     cue: 'blindingStrike',
 
-    detail: '3 ordinary blows and then 1 worth 5 of them — 35 where he normally ' +
-            'does 7 — struck in the time an ordinary swing takes, so the rhythm ' +
-            'never breaks.\n\n' +
-            'It works out at 17.5 damage a second against a plain paladin\'s 8.75, ' +
-            'exactly 2x, from the man who starts with the least damage in the ' +
-            'game. Each of the 3 counts his own blows, so the strikes land spread ' +
-            'out rather than all at once.'
+    detail: (a, t) => `${a.every - 1} ordinary blows and then ${a.shots} worth ` +
+      `${a.times} of them — ${blow(t.soldier.damage, a.times)} where he normally does ` +
+      `${t.soldier.damage} — struck in the time an ordinary swing takes, so the ` +
+      `rhythm never breaks.\n\n` +
+      `It works out at ` +
+      `${num((t.soldier.damage * (a.every - 1) + blow(t.soldier.damage, a.times)) / (a.every * t.soldier.cd))} ` +
+      `damage a second against a plain paladin's ${num(t.soldier.damage / t.soldier.cd)}, ` +
+      `exactly ${num((a.every - 1 + a.times) / a.every)}x, from the man who starts ` +
+      `with the least damage in the game. Each of the ${t.soldier.count} counts his ` +
+      `own blows, so the strikes land spread out rather than all at once.`
   },
   {
     // --- THE FIRST ABILITY THAT GIVES A SOLDIER A WEAPON HE DID NOT HAVE -------
@@ -770,14 +814,16 @@ export const ABILITIES = [
     // LUNGE there.
     pose: KNIFE_THROW_POSE,
 
-    detail: 'The assassin throws at 100px for 20 — the whole of what his blade ' +
-            'does — without leaving his post. 3 of them is 75 damage a ' +
-            'second at range, on a tower that is still a wall.\n\n' +
-            'No squad in this game walks out to fetch an enemy, so this is the ' +
-            'only reach a barracks has. Men who would otherwise wait to be walked ' +
-            'into open on the road first, and never break formation to do it. ' +
-            'He is out in the open for as long as anything is in reach of him, ' +
-            'and gone again the moment the road in front of him is clear.'
+    detail: (a, t) => `The assassin throws at ${a.reach}px for ` +
+      `${blow(t.soldier.damage, a.times)} — the whole of what his blade does — ` +
+      `without leaving his post. ${t.soldier.count} of them is ` +
+      `${num(t.soldier.count * blow(t.soldier.damage, a.times) / t.soldier.cd)} damage ` +
+      `a second at range, on a tower that is still a wall.\n\n` +
+      `No squad in this game walks out to fetch an enemy, so this is the only reach a ` +
+      `barracks has. Men who would otherwise wait to be walked into open on the road ` +
+      `first, and never break formation to do it. He is out in the open for as long as ` +
+      `anything is in reach of him, and gone again the moment the road in front of him ` +
+      `is clear.`
   },
   {
     // --- AND THE ONE THAT PAYS FOR BEING UNSEEN -------------------------------
@@ -874,14 +920,14 @@ export const ABILITIES = [
     // a heavier blow, still inside the mix.
     loud: 1.8,
 
-    detail: 'The first blow after an assassin shows himself is worth 2.5x — 50 ' +
-            'where his blade does 20 — and it comes back the ' +
-            'moment he fades again, which in a melee means the opening strike of ' +
-            'every fight he picks.\n\n' +
-            'Thrown it is worth 2x instead of 2.5x: 40 on the first ' +
-            'blade of a volley, with a heavier knife in the air to say so. ' +
-            'Creeping to arm\'s length is the risk, so it is the one that pays ' +
-            'more. His strike lands harder and sounds it.'
+    detail: (a, t) => `The first blow after an assassin shows himself is worth ` +
+      `${a.times}x — ${blow(t.soldier.damage, a.times)} where his blade does ` +
+      `${t.soldier.damage} — and it comes back the moment he fades again, which in a ` +
+      `melee means the opening strike of every fight he picks.\n\n` +
+      `Thrown it is worth ${a.thrownTimes}x instead of ${a.times}x: ` +
+      `${blow(t.soldier.damage, a.thrownTimes)} on the first blade of a volley, with a ` +
+      `heavier knife in the air to say so. Creeping to arm's length is the risk, so it ` +
+      `is the one that pays more. His strike lands harder and sounds it.`
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its
@@ -923,12 +969,13 @@ export const ABILITIES = [
     // tier ships with.
     frames: ['artillery_t4_tension', 'artillery_t4_reload_tension', 'artillery_t4_fire_tension'],
 
-    detail: 'The engineers rebuild the bow in steel and the turret reaches 390px ' +
-            'instead of 260 — the 2nd-longest arm in the game, behind only the ' +
-            'Musketeer Post, on the one tower that has no dead zone in it.\n\n' +
-            'Nothing else changes: the same bolt, the same 1.8 second reload, the ' +
-            'same blast. It is the whole board rather than a corner of it, and the ' +
-            'machine is drawn in iron from the moment it is bought.'
+    detail: (a, t) => `The engineers rebuild the bow in steel and the turret reaches ` +
+      `${num(t.range * a.rangeTimes)}px instead of ${t.range} — the 2nd-longest arm in ` +
+      `the game, behind only the Musketeer Post, on the one tower that has no dead ` +
+      `zone in it.\n\n` +
+      `Nothing else changes: the same bolt, the same ${num(t.cooldown)} second reload, ` +
+      `the same blast. It is the whole board rather than a corner of it, and the ` +
+      `machine is drawn in iron from the moment it is bought.`
   },
   {
     id: 'heavybolt',
@@ -976,16 +1023,20 @@ export const ABILITIES = [
     // than a cooldown a pose could delay. The ability announces itself by what
     // leaves the bow — a bolt with its tail on fire — and by being louder.
 
-    detail: 'Every 4th bolt comes off the rack burning and hits for 2x the ' +
-            'damage — 110 instead of 55. There is no wind-up: the machine works ' +
-            'at its ordinary rhythm right up to the shot.\n\n' +
-            'The reload afterwards takes 50% longer — 2.7 seconds instead of ' +
-            '1.8 — so the cycle runs 1.8 / 1.8 / 1.8 / 2.7. That works out at ' +
-            '34.0 damage a second against a plain turret\'s 30.6.\n\n' +
-            'What it buys is the shape rather than the size: the same output in ' +
-            'fewer, harder blows, on a machine whose every shot already bursts. ' +
-            'You can hear which one it is — the heavy bolt leaves louder than the ' +
-            'others.'
+    detail: (a, t) => `Every ${a.every}th bolt comes off the rack burning and hits ` +
+      `for ${a.times}x the damage — ${blow(t.damage, a.times)} instead of ${t.damage}. ` +
+      `There is no wind-up: the machine works at its ordinary rhythm right up to the ` +
+      `shot.\n\n` +
+      `The reload afterwards takes ${pc(a.afterTimes)} longer — ` +
+      `${num(t.cooldown * a.afterTimes)} seconds instead of ${num(t.cooldown)} — so ` +
+      `the cycle runs ` +
+      `${Array.from({ length: a.every }, (_, i) => num(t.cooldown * (i === a.every - 1 ? a.afterTimes : 1))).join(' / ')}. ` +
+      `That works out at ` +
+      `${num((t.damage * (a.every - 1) + blow(t.damage, a.times)) / (t.cooldown * (a.every - 1 + a.afterTimes)))} ` +
+      `damage a second against a plain turret's ${num(t.damage / t.cooldown)}.\n\n` +
+      `What it buys is the shape rather than the size: the same output in fewer, ` +
+      `harder blows, on a machine whose every shot already bursts. You can hear which ` +
+      `one it is — the heavy bolt leaves louder than the others.`
   },
   {
     // AND ITS SECOND, which is Heavy Bolt's shape pointed at a different problem.
@@ -1044,18 +1095,26 @@ export const ABILITIES = [
     afterTimes: 1.5,
     ammo: fieryBall,
 
-    detail: 'Every 5th ball leaves the barrel alight. It hits for the ordinary ' +
-            '70 and sets fire to what it catches: 10 damage a second for 5 ' +
-            'seconds.\n\n' +
-            'The fire reaches further than the ball breaks — 127.5px of flame ' +
-            'around an 85px blast — so men standing just clear of the crater ' +
-            'burn anyway. They carry the flame over their health bar until it ' +
-            'goes out, and you can hear which shot it was.\n\n' +
-            'The reload after it takes 50% longer — 4.5 seconds instead of 3 — ' +
-            'so the cycle runs 3 / 3 / 3 / 3 / 4.5. Against 1 straggler that is ' +
-            '24.2 damage a second where the outpost alone does 23.3, and ' +
-            'against a rank it is 50 extra on each of them. Swift Reload ' +
-            'shortens the pause with everything else, to 1 second.'
+    detail: (a, t) => `Every ${a.every}th ball leaves the barrel alight. It hits for ` +
+      `the ordinary ${t.damage} and sets fire to what it catches: ` +
+      `${a.ammo.burn.dps} damage a second for ${a.ammo.burn.seconds} seconds, which no ` +
+      `armour turns aside.\n\n` +
+      `The fire reaches further than the ball breaks — ` +
+      `${num(t.splash * a.ammo.burn.splashTimes)}px of flame around a blast of ` +
+      `${t.splash}px — so men standing just clear of the crater burn anyway. They carry the ` +
+      `flame over their health bar until it goes out, and you can hear which shot it ` +
+      `was.\n\n` +
+      `The reload after it takes ${pc(a.afterTimes)} longer — ` +
+      `${num(t.cooldown * a.afterTimes)} seconds instead of ${num(t.cooldown)} — so ` +
+      `the cycle runs ` +
+      `${Array.from({ length: a.every }, (_, i) => num(t.cooldown * (i === a.every - 1 ? a.afterTimes : 1))).join(' / ')}. ` +
+      `Against 1 straggler that is ` +
+      `${num((t.damage * a.every + a.ammo.burn.dps * a.ammo.burn.seconds) / (t.cooldown * (a.every - 1 + a.afterTimes)))} ` +
+      `damage a second where the outpost alone does ${num(t.damage / t.cooldown)} — so ` +
+      `it is not bought for one man. Against a rank it is ` +
+      `${a.ammo.burn.dps * a.ammo.burn.seconds} extra on each of them, and that is what ` +
+      `it is for. Swift Reload shortens the pause with everything else, to ` +
+      `${num(t.cooldown * (a.afterTimes - 1) / 1.5)} second.`
   },
   {
     // THE CANNON OUTPOST'S FIRST, and it is the SAME ABILITY the Crossbow Sentry
@@ -1088,12 +1147,14 @@ export const ABILITIES = [
     cost: ABILITY_COST,
     reloadTimes: 1.5,
 
-    detail: 'The gun crew work a faster drill and the cannon reloads 1.5x ' +
-            'quicker — a ball every 2 seconds instead of every 3, which is 35 ' +
-            'damage a second where the outpost alone does 23.3.\n\n' +
-            'Nothing else changes: the same 70 a ball, the same 85 blast and the ' +
-            'same 360 reach. The machine visibly works faster — its 3 beats ' +
-            'are the clock, so the drill you see is the reload the rules use.'
+    detail: (a, t) => `The gun crew work a faster drill and the cannon reloads ` +
+      `${a.reloadTimes}x quicker — a ball every ${num(t.cooldown / a.reloadTimes)} ` +
+      `seconds instead of every ${num(t.cooldown)}, which is ` +
+      `${num(t.damage * a.reloadTimes / t.cooldown)} damage a second where the outpost ` +
+      `alone does ${num(t.damage / t.cooldown)}.\n\n` +
+      `Nothing else changes: the same ${t.damage} a ball, the same ${t.splash} blast ` +
+      `and the same ${t.range} reach. The machine visibly works faster — its 3 beats ` +
+      `are the clock, so the drill you see is the reload the rules use.`
   },
   {
     id: 'fortitude',
@@ -1117,13 +1178,15 @@ export const ABILITIES = [
       badge: 'badge_fortitude'
     },
 
-    detail: 'Every man a barracks musters carries 10% more health, on every ' +
-            'tier and anywhere on the map: a spearman goes from 100 to 110 and a ' +
-            'paladin from 275 to 303.\n\n' +
-            'It reaches men already standing on the road, not only the next ones to ' +
-            'muster, and a wounded man keeps the share of his health he had. A heart ' +
-            'and an arrow appear over every barracks it is working on, and a second ' +
-            'altar compounds with the first — marked x2 on the badge.'
+    detail: a => `Every man a barracks musters carries ${pc(a.aura.hp)} more health, ` +
+      `on every tier and anywhere on the map: a spearman goes from ` +
+      `${barracks[0].soldier.hp} to ${Math.round(barracks[0].soldier.hp * a.aura.hp)} ` +
+      `and a paladin from ${towerOf('Paladin Keep').soldier.hp} to ` +
+      `${Math.round(towerOf('Paladin Keep').soldier.hp * a.aura.hp)}.\n\n` +
+      `It reaches men already standing on the road, not only the next ones to muster, ` +
+      `and a wounded man keeps the share of his health he had. A heart and an arrow ` +
+      `appear over every barracks it is working on, and a second altar compounds with ` +
+      `the first — marked x2 on the badge.`
   },
   {
     id: 'wrath',
@@ -1158,13 +1221,13 @@ export const ABILITIES = [
       badge: 'badge_wrath'
     },
 
-    detail: 'Every archery tower, artillery machine and monastery on the map hits ' +
-            'for 5% more, wherever it stands. The altar does not have to see ' +
-            'them and does not fire any differently itself.\n\n' +
-            'Barracks men are the exception: their damage belongs to the man rather ' +
-            'than to the tower. A sword and an arrow appear over every tower it is ' +
-            'working on, and a second altar that has bought it compounds with the ' +
-            'first — 5% on top of 5%, marked x2 on the badge.'
+    detail: a => `Every archery tower, artillery machine and monastery on the map ` +
+      `hits for ${pc(a.aura.damage)} more, wherever it stands. The altar does not have ` +
+      `to see them and does not fire any differently itself.\n\n` +
+      `Barracks men are the exception: their damage belongs to the man rather than to ` +
+      `the tower. A sword and an arrow appear over every tower it is working on, and a ` +
+      `second altar that has bought it compounds with the first — ${pc(a.aura.damage)} ` +
+      `on top of ${pc(a.aura.damage)}, marked x2 on the badge.`
   },
   {
     id: 'strength',
@@ -1187,14 +1250,17 @@ export const ABILITIES = [
     shot: monkStrongShot,
     shotWith: { pulse: monkBothShot },
 
-    detail: 'Every blast a monk throws hits for 30% more: 40 becomes 52, and the ' +
-            'temple goes from 40 to 52 damage a second. Both monks, every shot, ' +
-            'from the moment it is bought.\n\n' +
-            'That is more a second than a High Altar does at 51.7, on the same ' +
-            'rung for the same gold — and still 23 short of the altar on the ' +
-            'blow itself, which is what the 2 towers are for. The comet is ' +
-            'redrawn, and redrawn again in blue if the temple has also learned ' +
-            'Slowed Pulse.'
+    detail: (a, t) => `Every blast a monk throws hits for ${pc(a.damageTimes)} more: ` +
+      `${t.damage} becomes ${blow(t.damage, a.damageTimes)}, and the temple goes from ` +
+      `${num(t.damage / t.cooldown)} to ` +
+      `${num(blow(t.damage, a.damageTimes) / t.cooldown)} damage a second. Both monks, ` +
+      `every shot, from the moment it is bought.\n\n` +
+      `That is more a second than a High Altar does at ` +
+      `${num(towerOf('High Altar').damage / towerOf('High Altar').cooldown)}, on the ` +
+      `same rung for the same gold — and still ` +
+      `${towerOf('High Altar').damage - blow(t.damage, a.damageTimes)} short of the ` +
+      `altar on the blow itself, which is what the 2 towers are for. The comet is ` +
+      `redrawn, and redrawn again in blue if the temple has also learned Slowed Pulse.`
   },
   {
     // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
@@ -1222,17 +1288,18 @@ export const ABILITIES = [
     shot: monkSlowShot,
     shotWith: { strength: monkBothShot },
 
-    detail: 'Every blast a monk throws now holds a man up: 30% off how fast he ' +
-            'walks and 30% off how often he swings, for 5 seconds, and 2 ' +
-            'chevrons appear over his health bar while it lasts. The temple ' +
-            'looses every second, so anything it keeps firing at stays slowed — ' +
-            'and stays slowed for 5 seconds after it walks out of reach.\n\n' +
-            'It does not stack. A 2nd temple on the same man refreshes the 5 ' +
-            'seconds rather than stacking a 2nd slow on him — what 2 of them buy ' +
-            'is the ' +
-            'slow holding across a wider stretch of road, not a man standing ' +
-            'still. Both monks throw it, and it costs the tower nothing: the ' +
-            'damage, the reach and the cadence are exactly what they were.'
+    detail: (a, t) => `Every blast a monk throws now holds a man up: ` +
+      `${pc(a.shot.slow.times)} off how fast he walks and ${pc(a.shot.slow.times)} off ` +
+      `how often he swings, for ${a.shot.slow.seconds} seconds, and 2 chevrons appear ` +
+      `over his health bar while it lasts. The temple looses on a ${num(t.cooldown)} ` +
+      `second cadence, so anything it keeps firing at stays slowed — and ` +
+      `stays slowed for ${a.shot.slow.seconds} seconds after it walks out of reach.` +
+      `\n\n` +
+      `It does not stack. A 2nd temple on the same man refreshes the ` +
+      `${a.shot.slow.seconds} seconds rather than stacking a 2nd slow on him — what 2 ` +
+      `of them buy is the slow holding across a wider stretch of road, not a man ` +
+      `standing still. Both monks throw it, and it costs the tower nothing: the ` +
+      `damage, the reach and the cadence are exactly what they were.`
   }
 ];
 
@@ -1247,3 +1314,17 @@ export const abilitiesOf = def => (def.abilities || []).map(abilityById);
 // it owns; it is set on the tower when it is built, so nothing has to cope with
 // the field being absent.
 export const owns = (t, id) => !!t.abilities && t.abilities.includes(id);
+
+// --- and the descriptions, resolved -----------------------------------------------
+//
+// Called ONCE, here, rather than at every draw: `detail` is read by the encyclopedia
+// on every frame the ability page is open, and a card's prose does not change while
+// a game is running — the tower stats it quotes are data, not state.
+//
+// AFTER the array, because each one needs the finished entry and the def of the
+// tower named in its own `of`. An ability whose `of` names no tower is a wiring
+// mistake rather than a missing sentence, so it is left to throw here where the
+// stack says which one it was, instead of printing "undefined" on a card.
+for (const a of ABILITIES) {
+  if (typeof a.detail === 'function') a.detail = a.detail(a, towerOf(a.of));
+}

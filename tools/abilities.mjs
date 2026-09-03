@@ -52,6 +52,9 @@ import { selectionInfo } from '../src/select.js';
 // listed first now — and an index into a FORKED ladder was only ever right by
 // accident. A name is what this file actually means.
 const POST   = archery.find(d => d.name === 'Musketeer Post');
+
+// Every tier in the game, for the card-numbers section at the foot of this file.
+const TIERS = [...archery, ...barracks, ...siege, ...monastery];
 const SENTRY = archery.find(d => d.name === 'Crossbow Sentry');
 
 let bad = 0;
@@ -1800,6 +1803,54 @@ console.log('\nWhat a Slowed Pulse does to the man it hits\n');
     'and two blasts on one man are one slow, not two',
     `${twice.statuses.length} worn, x${slowOf(twice)}`);
 }
+
+// --- and the numbers a card prints ------------------------------------------------
+
+// NO ABILITY DESCRIPTION MAY CONTAIN A NUMBER TYPED IN BY HAND, and this is the
+// check that keeps it that way.
+//
+// Twelve of the sixteen cards were quoting stale figures when the owner noticed one
+// of them by reading it: a balance pass had moved the Musketeer Post's ball to 60,
+// the Cannon Outpost's to 65, the assassin's blade to 15, the paladin's health to
+// 200 and Swift Reload to 1.5x, and the prose went on saying 65, 70, 20, 275 and
+// 1.35x. Nothing failed. An encyclopedia is the one surface in a game whose whole
+// job is to be believed, so a wrong number there is worse than a missing one.
+//
+// The fix was to derive every figure from the ability's own magnitudes and the def
+// of the tower that teaches it — see the note above towerOf in data/abilities.js.
+// This holds the fix down, in two halves.
+console.log('\nAnd the numbers on the cards\n');
+
+{
+  // THE FIRST HALF IS READ OFF THE SOURCE, because by the time this file imports
+  // them the descriptions are strings and there is nothing left to tell a derived
+  // one from a typed one. A `detail:` that is not an arrow function is a card that
+  // has gone back to being written out.
+  const src = readFileSync('src/data/abilities.js', 'utf8');
+  const details = [...src.matchAll(/^    detail: (.*)$/gm)].map(m => m[1]);
+  ok(details.length === ABILITIES.length,
+    'every ability has a description in the data', `${details.length} of ${ABILITIES.length}`);
+
+  const typed = details.filter(d => !d.startsWith('(a, t) =>') && !d.startsWith('a =>'));
+  ok(typed.length === 0, 'and every one of them is derived rather than written out',
+    typed.length ? typed.map(d => d.slice(0, 40)).join(' | ') : 'all arrow functions');
+
+  // AND THE SECOND HALF IS READ OFF THE RESULT. A description built from a def it
+  // could not find prints "undefined" or "NaN" on a cream plate and looks, at a
+  // glance, like prose — which is how a mis-wired `of` would survive the check
+  // above. Both words are impossible in any sentence these cards actually contain.
+  const broken = ABILITIES.filter(a => /undefined|NaN|Infinity/.test(a.detail));
+  ok(broken.length === 0, 'and none of them resolved to a hole',
+    broken.map(a => a.name).join(', ') || `${ABILITIES.length} cards`);
+
+  // AND EVERY ONE NAMES A TOWER THAT EXISTS, which is what the two checks above
+  // both rest on: `of` is the only link between a card and the stats it quotes.
+  const orphan = ABILITIES.filter(a => !TIERS.some(d => d.name === a.of));
+  ok(orphan.length === 0, 'and every one is taught by a tower in the game',
+    orphan.map(a => `${a.name} of ${a.of}`).join(', ') ||
+    [...new Set(ABILITIES.map(a => a.of))].length + ' towers teach them');
+}
+
 
 console.log(bad ? `\n${bad} ability rule(s) broken.` : `\nAll ${ABILITIES.length} abilities do what they say.`);
 process.exit(bad ? 1 : 0);
