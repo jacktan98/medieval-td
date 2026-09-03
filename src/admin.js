@@ -345,9 +345,14 @@ export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 /
 // hang: updateWaves finds no group to spawn from, the wave has nothing left on the
 // field, and it clears immediately into the next one — an empty wave is a pause,
 // which is a real thing to want while testing a later one.
+// ROUNDED UP, on the same rule the rate follows: "units — any decimal place is
+// rounded up." Nothing here ever hands it a fraction, because the step is one
+// whole enemy, so this is the rule being stated in the one place a count is
+// written rather than a behaviour anybody will see. Where it DOES bite is
+// scaleWaves in data/difficulty.js, which multiplies a count by a difficulty.
 export function setWaveCount(levelId, mode, wave, type, count) {
   const key = waveKey(levelId, mode, wave, type);
-  put(edits.waves, key, Math.max(0, Math.min(99, Math.round(count))), SHIPPED.get(key));
+  put(edits.waves, key, Math.max(0, Math.min(99, Math.ceil(count))), SHIPPED.get(key));
 }
 
 // HOW LONG BETWEEN ONE AND THE NEXT, in seconds.
@@ -358,26 +363,33 @@ export function setWaveCount(levelId, mode, wave, type, count) {
 // of road. That is not a rate anybody wants and it is not a rate the rest of the
 // game is built for; a tenth is already four times faster than anything shipped.
 //
-// ROUNDED, because the step is a tenth and floating point is not: ten taps down
-// from 2 lands on 0.9999999999999999 otherwise, which prints as 1.00 and stores as
-// an override that will never equal its shipped value again.
+// ROUNDED UP TO ONE DECIMAL, at the owner's word: "any 2 decimal place is rounded
+// up to 1 decimal place." A tenth is the step, so a tenth is the precision the
+// readout carries, and anything finer is taken to the next one rather than to the
+// nearer one.
 //
-// TO TWO DECIMALS, AND IT WAS ONE. A tenth is the step, so one decimal looked like
-// the matching precision — and it was wrong, because the SHIPPED tables do not all
-// sit on a tenth. Map 3's Normal table runs rates of 1.05, 0.65 and 1.23, and at
-// one decimal the first tap on any of them snapped to 1.1, 0.7 or 1.2 and the
-// stepper could never get back: every route home rounded to the same tenth, so the
-// "was" line stayed on screen for the rest of the session with no way to clear it
-// but Reset.
+// IT WENT ONE DECIMAL -> TWO -> ONE AGAIN, and the middle step is worth keeping in
+// view because it was a real bug for a real reason. Map 3's SHORT table used to run
+// rates of 1.05, 0.65 and 1.23, and rounding those to a tenth meant the first tap
+// on any of them snapped to 1.1, 0.7 or 1.2 with no route home — every way back
+// landed on the same tenth, so the "was" line stayed on screen with nothing but
+// Reset to clear it. Two decimals fixed that by holding the awkward values.
 //
-// Two decimals holds every value in the game and still cancels the float error —
-// 1.05 + 0.1 - 0.1 comes home to 1.05 exactly. tools/admin.mjs now walks every
-// count and rate of both lengths of all three maps through this setter and asserts
-// that writing a shipped value back leaves no override behind, which is what found
-// this.
+// The awkward values are gone. Every table in the game is now the owner's own, and
+// every rate in them sits on a tenth, so one decimal is once again the precision
+// of the data as well as of the step — and the round trip comes home. That is
+// checked rather than assumed: tools/admin.mjs walks every count and rate of both
+// lengths of all three maps through this setter and asserts that writing a shipped
+// value back leaves no override behind.
+//
+// CEIL, NOT ROUND, and the multiply-then-divide is what makes it safe on floats:
+// 1.15 * 10 is 11.499999999999998, and ceil on that is 12 rather than the 11.5
+// the arithmetic means. Rounding to a whole number of tenths first is what stops
+// a tap from climbing by 0.2.
 export function setWaveGap(levelId, mode, wave, type, gap) {
   const key = waveKey(levelId, mode, wave, type);
-  const held = Math.round(Math.max(0.1, Math.min(10, gap)) * 100) / 100;
+  const tenths = Math.round(Math.max(0.1, Math.min(10, gap)) * 100) / 10;
+  const held = Math.ceil(tenths) / 10;
   put(edits.gaps, key, held, SHIPPED.get(`${key}|gap`));
 }
 

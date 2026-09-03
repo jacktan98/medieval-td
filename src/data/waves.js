@@ -1021,56 +1021,34 @@ export const defaultGap = type => {
 // opening is the tightest part of the whole curve, not the easiest. 220 gold is
 // three tier 1 towers, and you have not earned a bounty yet, so wave 1 is the
 // only wave you meet with whatever you could afford before it started.
-export const waves = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 12, gap: 1.10 }] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 10, gap: 1.00 },
-      { type: 'heavy_inf', count: 1, gap: 2.00 }
-    ] },
-  // Wave 5 is where the plague doctor arrives, and he arrives ALONE and LAST —
-  // behind the militia and behind the heavy, so the first one the player ever
-  // sees walks up to a squad that is already fighting, stops short of it, and
-  // starts throwing. That is the whole lesson, taught once, with nothing else
-  // new on the board to confuse it.
-  //
-  // He is always the last group in a wave. It is not only for the introduction:
-  // "at the back of the enemy line" is a position, and the spawn order is what
-  // puts him there. Sent first he would arrive at an unblocked road, walk to the
-  // end and leak without ever throwing anything.
-  //
-  // ONE PER WAVE, and it stays one. Ramping him the way the other two ramp — 1,
-  // 1, 2, 3 — was tried and measured, and it cost the level 12 more of 120 mixed
-  // wins than a flat one does (81 against 93). He is not a body you add more of;
-  // his effect is that the road stops while he throws, and two of those on the
-  // same road is the same delay twice rather than a harder wave. Make him
-  // nastier by giving him more flasks, not by sending more of him.
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 14, gap: 0.90 },
-      { type: 'heavy_inf', count: 2, gap: 2.00 },
-      { type: 'archer_inf', count: 2, gap: 1.80 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 18, gap: 0.80 },
-      { type: 'heavy_inf', count: 3, gap: 1.80 },
-      { type: 'archer_inf', count: 2, gap: 1.80 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 24, gap: 0.70 },
-      { type: 'heavy_inf', count: 4, gap: 1.60 },
-      { type: 'archer_inf', count: 4, gap: 1.70 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 0, groups: [
-      { type: 'light_inf', count: 34, gap: 0.60 },
-      { type: 'heavy_inf', count: 6, gap: 1.40 },
-      { type: 'archer_inf', count: 4, gap: 1.60 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] }
-];
+// MAPS 1 AND 2'S SHORT TABLES AND MAP 3'S ARE ALL DERIVED NOW, from the tuned
+// Extended tables at the foot of this file. The literal arrays that used to sit
+// here are gone, and so is the ramp they described — see `shortOf` down there for
+// the relationship and why it points that way round.
+//
+// WHAT THEY USED TO SAY, kept because it is the balance history of this game and
+// none of it is written down anywhere else:
+//
+//   Waves 1-3 were militia only and taught the level. The first heavy landed in
+//   wave 4 as a single one, alone, so it was unmistakable. From there heavies came
+//   in growing packs behind a militia screen, and wave 8 — 34 militia and 6
+//   heavies back to back — was the cliff the whole curve was built toward.
+//
+//   Waves 1 and 2 were deliberately thin, 4 and 6, because the opening is the
+//   tightest part of the curve rather than the easiest: 220 gold is three tier 1
+//   towers and you have not earned a bounty yet, so wave 1 is the only wave you
+//   meet with whatever you could afford before it started. The owner's own tables
+//   open on exactly the same 4 and 6, which is the strongest thing that can be
+//   said for that paragraph.
+//
+//   Map 2 ran its own eight rather than sharing map 1's, because its road is
+//   1060px against map 1's 1768 and the `march` multiplier that used to pay for
+//   the difference came out. Map 3 ran ten, bigger as well as more numerous,
+//   because it has two roads to defend and more time to do it in.
+//
+// All three of those shapes survive in the tables that replaced them: the owner
+// kept the thin opening, kept militia-only for the first two waves, and put the
+// first Giant in wave 5 rather than wave 4 — later, not earlier, on every map.
 
 // MAP 2'S EIGHT. It ran the table above until the `march` multiplier came out.
 //
@@ -1124,39 +1102,7 @@ export const waves = [
 // reason, and see the grid over wavesLong for the mechanism. The grid above is
 // still the right search; what it is missing is that every one of its `BROKE`
 // judgements came from five seeds. `node tools/sweep.mjs 2` runs twenty now.
-export const wavesFork = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 5, gap: 1.40 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 11, gap: 1.10 }] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 9, gap: 1.00 },
-      { type: 'heavy_inf', count: 1, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 13, gap: 0.90 },
-      { type: 'heavy_inf', count: 1, gap: 2.00 },
-      { type: 'archer_inf', count: 2, gap: 1.80 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 16, gap: 0.80 },
-      { type: 'heavy_inf', count: 2, gap: 1.80 },
-      { type: 'archer_inf', count: 2, gap: 1.80 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 22, gap: 0.70 },
-      { type: 'heavy_inf', count: 3, gap: 1.60 },
-      { type: 'archer_inf', count: 4, gap: 1.70 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 0, groups: [
-      { type: 'light_inf', count: 31, gap: 0.60 },
-      { type: 'heavy_inf', count: 5, gap: 1.40 },
-      { type: 'archer_inf', count: 4, gap: 1.60 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] }
-];
+// MAP 2'S SHORT TABLE, derived like map 1's — see `shortOf`.
 
 // MAP 3'S TEN, AND THEY ARE SMALLER THAN THE EIGHT ABOVE, NOT BIGGER.
 //
@@ -1330,54 +1276,10 @@ export const wavesFork = [
 // Waves 1-4 are militia only and teach the map, which takes a wave longer here
 // than elsewhere: the lesson is not "enemies walk down a road", it is "there are
 // two roads and you cannot cover both yet".
-export const wavesLong = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 9, gap: 1.20 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 11, gap: 1.05 }] },
-  // WAVE 5 IS WHERE THE BACK RANK ARRIVES, on this map as on the other two: the
-  // first heavy, the first archer and the first doctor together. It used to be
-  // the heavy alone here and the doctor two waves later, on the rule that two new
-  // things in one wave is one of them unnoticed — the owner has since asked for
-  // both throwers from wave 5 everywhere, which is a deliberate step up on the
-  // map they can already finish without losing a life.
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 10, gap: 0.65 },
-      { type: 'heavy_inf', count: 1, gap: 1.23 },
-      { type: 'archer_inf', count: 2, gap: 1.30 },
-      { type: 'plague_inf', count: 2, gap: 1.30 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 12, gap: 0.62 },
-      { type: 'heavy_inf', count: 2, gap: 1.23 },
-      { type: 'archer_inf', count: 2, gap: 1.30 },
-      { type: 'plague_inf', count: 2, gap: 1.30 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 16, gap: 0.55 },
-      { type: 'heavy_inf', count: 3, gap: 1.23 },
-      { type: 'archer_inf', count: 4, gap: 1.30 },
-      { type: 'plague_inf', count: 2, gap: 1.30 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 20, gap: 0.51 },
-      { type: 'heavy_inf', count: 4, gap: 1.23 },
-      { type: 'archer_inf', count: 4, gap: 1.30 },
-      { type: 'plague_inf', count: 2, gap: 1.30 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 26, gap: 0.45 },
-      { type: 'heavy_inf', count: 5, gap: 1.23 },
-      { type: 'archer_inf', count: 6, gap: 1.30 },
-      { type: 'plague_inf', count: 2, gap: 1.30 }
-    ] },
-  { rest: 0, groups: [
-      { type: 'light_inf', count: 32, gap: 0.40 },
-      { type: 'heavy_inf', count: 6, gap: 1.23 },
-      { type: 'archer_inf', count: 6, gap: 1.30 },
-      { type: 'plague_inf', count: 4, gap: 1.30 }
-    ] }
-];
+// MAP 3'S SHORT TABLE, derived like the other two — see `shortOf`. It is TEN
+// waves where they are eight, which is the one part of the old shape that is a
+// property of the map rather than of the ramp: two roads to defend and more
+// board to cover, so the long game is twelve there and the short one ten.
 
 // --- THE EXTENDED TABLES -------------------------------------------------------
 //
@@ -1651,6 +1553,41 @@ export const openingDelay = 14;
 // whole point is that it is a real choice: 9 seconds of rest is 36 gold, which
 // is half a tower, against facing the next wave with whatever is standing now.
 export const earlyCallRate = 4;
+
+// --- THE SHORT TABLES, DERIVED FROM THE LONG ONES ------------------------------
+//
+// The short game is the long game without its last two waves. One line, and the
+// direction it points is the whole of what this section is about.
+//
+// IT USED TO POINT THE OTHER WAY: three short tables were the tuned thing and
+// `extendedOf` grew two waves off the end of each. That was right while the short
+// game was the tuned one — and it stopped being right the moment the owner played
+// and hand-tuned all three maps at the LONG length. The numbers that have been
+// tested now live in the long tables, so the short ones are the derivation.
+//
+// THE RELATIONSHIP IS THE OWNER'S, not an invention of this file: he asked for
+// "my hard difficulty extended waves numbers to update normal length", and the
+// tables he supplied are exactly two waves longer than each map's short one. That
+// is the same relationship the old rule asserted, read off real data instead of
+// asserted by a function.
+//
+// WHAT IT FIXES is bigger than tidiness. The short tables were written before the
+// Tough Thug, the Blocker Thug and the Dark Priest existed and had never been
+// touched since — so the ONLY way to meet three of the game's seven enemies was to
+// pick Extended on the title screen. A player choosing the shorter game got an
+// older game.
+//
+// THE LAST WAVE'S REST GOES TO 0, which is not cosmetic: `rest` is the breather
+// after a wave clears, and 0 is how a table says "nothing follows". Wave 8 of the
+// long table has two waves behind it and rests 9; as the last wave of the short
+// one it has none, and a 9 there would hold the win screen back for nine seconds
+// of empty road.
+const shortOf = table => table.slice(0, -2).map((w, i, kept) =>
+  i === kept.length - 1 ? { ...w, rest: 0 } : w);
+
+export const waves = shortOf(wavesExtended);
+export const wavesFork = shortOf(wavesForkExtended);
+export const wavesLong = shortOf(wavesLongExtended);
 
 // Total enemies in a wave, for the HUD and for tools/sim.mjs.
 export const waveSize = w => w.groups.reduce((n, g) => n + g.count, 0);

@@ -83,7 +83,17 @@ export const DEFAULT_DIFFICULTY = 0;
 export function scaleWaves(waves, difficulty) {
   return waves.map(w => ({
     ...w,
-    groups: w.groups.map(g => ({ ...g, count: Math.max(1, Math.round(g.count * difficulty.count)) }))
+    // ROUNDED UP, at the owner's word: "units — any decimal place is rounded up."
+    // It was Math.round, which took a 6 on Normal to 5 — round(5.1) — and now takes
+    // it to 6. Every count in the game either stays where it is or goes up by one
+    // on Normal, and Hard is unchanged wherever the product was already past a
+    // half. It is the same rule the dashboard's steppers follow, so a number
+    // dialled in and a number scaled are rounded the same way.
+    //
+    // The floor of 1 stays: a group that survives the multiplier at all sends
+    // somebody, and ceil never reaches zero from a positive count anyway — it is
+    // there for a difficulty that might one day be harsher than any of these.
+    groups: w.groups.map(g => ({ ...g, count: Math.max(1, Math.ceil(g.count * difficulty.count)) }))
   }));
 }
 
