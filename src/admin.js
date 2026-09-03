@@ -233,12 +233,10 @@ for (const u of units()) {
 // at zero, which is what makes "add a Giant to wave 1" an ordinary edit rather
 // than a special case. A count put back to 0 on a wave that never had one clears
 // the override entirely, the same as any other value returning to its shipped one.
-// BOTH LENGTHS, because both are editable now. The Extended table is DERIVED
-// from the shipped Normal one at level-load time — see extendedOf in
-// data/waves.js — so what is captured here is what that derivation produced, not
-// what Normal happens to be edited to. That is the right way round: the dashboard
-// edits the two tables independently, and an Extended run is not a Normal run
-// with a multiplier on it.
+// BOTH LENGTHS, because both are editable now. Each is a table of its own in
+// data/waves.js — the Extended ones were derived from the Normal ones until the
+// owner tuned all three by hand — so what is captured here is each table as
+// shipped, and editing one never moves the other.
 for (const l of levels) {
   for (const mode of MODES) tableFor(l, mode.id).forEach((w, i) => {
     const sends = new Map(w.groups.map(g => [g.type, g]));
@@ -360,12 +358,26 @@ export function setWaveCount(levelId, mode, wave, type, count) {
 // of road. That is not a rate anybody wants and it is not a rate the rest of the
 // game is built for; a tenth is already four times faster than anything shipped.
 //
-// ROUNDED TO ONE DECIMAL because the step is a tenth and floating point is not:
-// ten taps down from 2 lands on 0.9999999999999999 without it, which prints as
-// 1.00 and stores as an override that will never equal its shipped value again.
+// ROUNDED, because the step is a tenth and floating point is not: ten taps down
+// from 2 lands on 0.9999999999999999 otherwise, which prints as 1.00 and stores as
+// an override that will never equal its shipped value again.
+//
+// TO TWO DECIMALS, AND IT WAS ONE. A tenth is the step, so one decimal looked like
+// the matching precision — and it was wrong, because the SHIPPED tables do not all
+// sit on a tenth. Map 3's Normal table runs rates of 1.05, 0.65 and 1.23, and at
+// one decimal the first tap on any of them snapped to 1.1, 0.7 or 1.2 and the
+// stepper could never get back: every route home rounded to the same tenth, so the
+// "was" line stayed on screen for the rest of the session with no way to clear it
+// but Reset.
+//
+// Two decimals holds every value in the game and still cancels the float error —
+// 1.05 + 0.1 - 0.1 comes home to 1.05 exactly. tools/admin.mjs now walks every
+// count and rate of both lengths of all three maps through this setter and asserts
+// that writing a shipped value back leaves no override behind, which is what found
+// this.
 export function setWaveGap(levelId, mode, wave, type, gap) {
   const key = waveKey(levelId, mode, wave, type);
-  const held = Math.round(Math.max(0.1, Math.min(10, gap)) * 10) / 10;
+  const held = Math.round(Math.max(0.1, Math.min(10, gap)) * 100) / 100;
   put(edits.gaps, key, held, SHIPPED.get(`${key}|gap`));
 }
 

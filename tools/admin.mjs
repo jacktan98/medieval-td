@@ -379,6 +379,41 @@ console.log('\nAnything, in any wave\n');
     'and the longest map name still fits its narrower tab',
     `"${longestName}" at ${Math.round(longestName.length * 15 * 0.58)} of ${maps[0].w - 12}px`);
 
+  // AND EVERY SHIPPED NUMBER IS ONE THE PANEL CAN EXPRESS, which matters more now
+  // that the tables are hand-written than it did when they were derived.
+  //
+  // The steppers clamp: a count to 0..99 and a rate to 0.1..10, rounded to a
+  // tenth. A shipped value outside that cannot be returned to — the first tap
+  // pulls it inside the range and the "was" marker then never clears, so the panel
+  // shows an override that can never be undone except by Reset. Two Rivers
+  // Extended already runs a 0.20s rate on its last wave, which is the closest
+  // anything has come to the floor.
+  //
+  // Checked across BOTH lengths of every map, and against the setters rather than
+  // against numbers typed here: the clamp is the authority.
+  {
+    const outside = [];
+    for (const l of levels) for (const mode of MODES) {
+      tableFor(l, mode.id).forEach((w, i) => {
+        for (const g of w.groups) {
+          setWaveCount(l.id, mode.id, i, g.type, g.count);
+          setWaveGap(l.id, mode.id, i, g.type, g.gap);
+          if (waveCount(l.id, mode.id, i, g.type) !== g.count ||
+              waveGap(l.id, mode.id, i, g.type) !== g.gap)
+            outside.push(`${l.id} ${mode.id} w${i + 1} ${g.type} x${g.count}@${g.gap}`);
+        }
+      });
+    }
+    ok(outside.length === 0,
+      'every shipped count and rate is one the steppers can hold',
+      outside.length ? outside.slice(0, 3).join('; ') : 'all inside 0-99 and 0.1-10.0s');
+    // AND WRITING THEM BACK LEFT NO OVERRIDE BEHIND. Setting a value to what it
+    // already ships as must CLEAR the entry rather than store it — that is what
+    // `put` is for, and it is what makes "was" mean something.
+    ok(!touched(), 'and writing each of them back leaves no override behind');
+    reset();
+  }
+
   // THE PANEL SHOWS THE WHOLE ROSTER. This is the owner's actual ask, and it is
   // checked against enemyTypes rather than against a number, so a creature drawn
   // tomorrow appears here without this line being touched.

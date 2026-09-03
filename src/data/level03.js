@@ -41,7 +41,7 @@
 // (547, 231) and moved three others by a handful of pixels, and that is the
 // whole difference. The waves were tuned against those lengths, so this upload
 // changes the PLOTS and nothing about the pace.
-import { wavesLong, extendedOf } from './waves.js';
+import { wavesLong, wavesLongExtended } from './waves.js';
 
 const north = [
   { x: -39, y: 246 },
@@ -154,7 +154,10 @@ export const level03 = {
   // cover it in — see wavesLong in data/waves.js for why they are bigger as
   // well as more numerous.
   waves: wavesLong,
-  wavesExtended: extendedOf(wavesLong),
+  // TWELVE at the longer length, hand-tuned. Its wave 9 sends no Tough Thugs
+  // where waves 8 and 10 both do, which is the sort of shape a person playing a
+  // map produces and a rule does not. See wavesLongExtended in data/waves.js.
+  wavesExtended: wavesLongExtended,
   // 260 RATHER THAN THE OTHER TWO MAPS' 220, and it is the map's own answer to
   // its first problem: nothing here can be defended until two roads are
   // defended, and 220 is three tier 1 towers, which is a good start on one road

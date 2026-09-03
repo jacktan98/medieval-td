@@ -14,7 +14,7 @@
 // the end, and two routes agreeing about the last third is exactly what "the
 // roads have merged" means on the screen. A junction that had to be modelled as
 // a decision would be a different feature.
-import { wavesFork, extendedOf } from './waves.js';
+import { wavesFork, wavesForkExtended } from './waves.js';
 
 const north = [
   { x: -39, y: 188 },
@@ -79,7 +79,11 @@ export const level02 = {
   // out and its enemies went from 62% speed to full — see wavesFork in
   // data/waves.js for what that cost and how it was paid back.
   waves: wavesFork,
-  wavesExtended: extendedOf(wavesFork),
+  // ITS OWN TEN AT THE LONGER LENGTH TOO, hand-tuned rather than derived — and
+  // the clearest case for typing them out: this map meets a Dark Priest on wave 5
+  // of the long game and its Normal table never sends one at all. See
+  // wavesForkExtended in data/waves.js.
+  wavesExtended: wavesForkExtended,
   startGold: 220,
   startLives: 20
 };

@@ -18,7 +18,7 @@
 //
 // `node tools/trace-road.mjs assets/map/Map_1.svg` checks that, at the end of its
 // output, against the routes the game actually loads.
-import { waves, extendedOf } from './waves.js';
+import { waves, wavesExtended } from './waves.js';
 
 const route1 = [
   { x: -39, y: 198 },
@@ -133,9 +133,11 @@ export const level01 = {
   // The shared eight-wave table, which map 2 runs too. A level names its own table so the
   // difficulty of a map is a property of the map. See data/waves.js.
   waves,
-  // The same map, two waves longer and with more of the throwers. See MODES and
-  // extendedOf in data/waves.js for the rule that derives it.
-  wavesExtended: extendedOf(waves),
+  // THE SAME MAP, TWO WAVES LONGER, and a table of its own rather than a
+  // derivation of the one above it. It was `extendedOf(waves)` — add one to the
+  // throwers from wave 5 on, then step the last wave twice — until the owner
+  // played it and hand-tuned all ten. See wavesExtended in data/waves.js.
+  wavesExtended,
   startGold: 220,
   startLives: 20
 };
