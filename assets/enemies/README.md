@@ -67,12 +67,12 @@ so it replaces the STANDING half of his pair and leaves his swing alone.
 | `Enemies_Dark_Priest_Heal.png`     | `dark_priest` |
 
 **He holds it for two seconds and stands still for all of them**, then the enemy
-he cast on wears `Dark_Healing_Status.png` and gets 10 health back over 5
-seconds. Being pinned mid-cast loses him the spell rather than pausing it. See
-`heal` on `dark_priest` in `src/data/waves.js`, `enemyStance` in `src/render.js`
-for which drawing is shown when, and `woundedNear` in `src/enemies.js` for who he
-picks — he passes over anyone already wearing the mark, which is the rule that
-lets him ever walk again.
+he cast on wears `Dark_Healing_Status.png` and gets 10 health a second for 5
+seconds — 50 a cast. Being pinned mid-cast loses him the spell rather than
+pausing it. See `heal` on `dark_priest` in `src/data/waves.js`, `enemyStance` in
+`src/render.js` for which drawing is shown when, and `woundedNear` in
+`src/enemies.js` for who he picks: the worst wounded within reach, himself
+excepted, and he will cast on the same man again.
 
 **All four of his living poses share one shadow**, source (261.0, 322.5) to the
 pixel. He swaps between them more than any other figure in the game, so he is

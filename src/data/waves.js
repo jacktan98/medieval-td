@@ -806,34 +806,42 @@ export const enemyTypes = {
   //
   // WHAT HE ACTUALLY DOES, in the owner's words: "Dark Priest is in Heal image
   // when casting Heal to an enemy unit. It holds this pose (stands still) for 2
-  // seconds and then after that, the enemy receives health regeneration of 10
-  // health over 5 seconds. He then continues healing others or walk/attack. He
-  // heals every time there is an enemy nearby (Range 100) that is injured."
+  // seconds and then after that, the enemy receives health regeneration... He then
+  // continues healing others or walk/attack. He heals every time there is an enemy
+  // nearby (Range 100) that is injured."
   //
   // TWO SECONDS OF STANDING STILL IS THE COST, and it is the whole of his
   // counter-play. A priest mid-cast is not walking, not shooting, and is standing
-  // in one place for two seconds with a distinctive pose on — which is a long time
+  // in one place for two seconds with a distinctive pose on, which is a long time
   // in this game and the window a tower is given to kill him before the heal
   // lands. Nothing is refunded if he dies during it.
   //
-  // HE WILL NOT CAST ON SOMEBODY ALREADY MENDING, and that rule is load-bearing
-  // rather than polite. Enemies have no regeneration of their own, so a creature
-  // hurt once stays hurt for the rest of its life: a priest who re-cast on the
-  // nearest injured man would find the same man injured again the moment the
-  // status lapsed, stand still, and never walk another step. He would arrive at
-  // the keep on the last wave of a long game. So he passes over anyone already
-  // wearing the mark and moves on to the next, and walks when everybody near him
-  // is either whole or already mending.
+  // HE WILL CAST ON THE SAME MAN AGAIN, and that is the owner's explicit call. It
+  // was the other way round for one build: he passed over anyone already wearing
+  // the mark, on the argument that a healer who could re-cast forever would stand
+  // still forever, because enemies have no regeneration and a creature hurt once
+  // stays hurt.
   //
-  // AND A WAVE STILL ENDS. That is the invariant the plague doctor's standoff is
-  // built on — see the note over `plague_inf` — and it is the one this creature
-  // could have broken. It survives on arithmetic rather than on a special case:
-  // `apply` in src/status.js REFRESHES a status rather than stacking it, so 10
-  // health over 5 seconds is 2 a second and stays 2 a second however many priests
-  // are working on the same man. Every soldier in the game out-damages that — a
-  // tier 1 spearman does 3.16 — so a pinned enemy still loses the fight he is in.
-  // tools/plague.mjs checks that against the real soldier numbers rather than
-  // against this paragraph.
+  // AT 10 A SECOND THAT ARGUMENT LARGELY DISSOLVES, which is worth writing down
+  // because the rule came out and the number went up in the same breath. 50 health
+  // a cast is most of a Thug and a fifth of a Blocker: the man he is working on
+  // actually reaches full health and stops being a reason to stand still, so he
+  // moves on by himself. Only something with a very deep bar keeps him in place,
+  // and then he is doing his job.
+  //
+  // AND A WAVE CAN NOW STALL, deliberately. The plague doctor standoff rests on a
+  // pinned enemy losing the fight he is in, and a mended one no longer does: 10 a
+  // second is three times a spearman 3.16 and only an assassin 18.75 is over it.
+  // The owner has taken that knowingly: "I am fine if the game stalls
+  // theoretically. Players will find ways to prevent this from happening, selling
+  // towers and placing at right plots or move rally points."
+  //
+  // IT IS NOT A LOCK, and that is what makes the call safe rather than brave. The
+  // wave loop measures: when the field has not cleared in the time an unimpeded
+  // walk would have taken plus STALL_GRACE, it hands over to the next wave anyway.
+  // See stallClock in src/waves.js. The clock that exists for a thrower nothing can
+  // reach covers a man nothing can out-damage without a line being changed, and
+  // tools/plague.mjs runs that end to end rather than trusting this paragraph.
   dark_priest: {
     name: 'Dark Priest',
     sprite: 'priest',
@@ -864,10 +872,14 @@ export const enemyTypes = {
       range: 100,
       // Seconds held in the pose before anything lands.
       cast: 2,
-      // What the mark is worth, and over how long. 10 over 5 is 2 a second; see
-      // the note above for why that ceiling is the thing that keeps a wave
-      // finishable.
-      hp: 10,
+      // HEALTH A SECOND, and for how many. The owner's numbers: "healing is 10
+      // health per second for 5 seconds", so 50 a cast.
+      //
+      // A RATE RATHER THAN A TOTAL, because that is what the status carries and
+      // what he said. It was `hp: 10, seconds: 5` meaning 10 in TOTAL, which is a
+      // fifth of this and reads identically at a glance; the field name is what
+      // stops the two being confused after the fact.
+      hps: 10,
       seconds: 5
     },
     spriteFaces: -1,

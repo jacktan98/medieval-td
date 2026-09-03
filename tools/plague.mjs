@@ -657,58 +657,110 @@ console.log('\nWhat the knife changes about him\n');
     `${armed.off}px off post against ${mute.off}px untaught`);
 }
 
-// --- THE DARK PRIEST, AND THE INVARIANT HE COULD HAVE BROKEN -------------------
+// --- THE DARK PRIEST, AND THE STALL THE OWNER ACCEPTED -------------------------
 //
 // This file exists because of one sentence in data/waves.js: a pinned thrower is
 // in a fight he loses, BECAUSE ENEMIES DO NOT HEAL, so a wave always ends. The
-// Dark Priest is the first thing in the game that makes that sentence false, and
-// he is checked here rather than beside his own art because what is at stake is
-// the plague doctor's standoff, not the priest's drawings.
+// Dark Priest makes that sentence false, and unlike the version of him that
+// shipped for one build he makes it emphatically false — 10 health a second is
+// three times a spearman's damage, and only an assassin out-does it.
 //
-// It survives on arithmetic rather than on a special case, and the arithmetic is
-// what is checked: `apply` REFRESHES a status instead of stacking a second one,
-// so the mend is capped at one rate however many priests are working, and that
-// rate is under what the weakest soldier in the game does. If either half of that
-// ever stops being true, a squad can be made to hold an enemy it can never kill.
-console.log('\nThe Dark Priest, and the wave that still ends\n');
+// THAT IS THE OWNER'S DECISION, taken with the consequence in front of him: "I am
+// fine if the game stalls theoretically. Players will find ways to prevent this
+// from happening, selling towers and placing at right plots or move rally
+// points." So what is checked here is no longer "a pinned enemy still dies" —
+// he does not, and asserting otherwise would be a tool lying about the game.
+//
+// WHAT IS CHECKED IS THAT IT IS A STALL AND NOT A LOCK. The wave loop already
+// measures: when the field has not cleared in the time an unimpeded walk would
+// have taken plus the grace, it hands over. That clock was built for a thrower
+// nothing could reach, and this run is the proof that it covers a man nothing can
+// out-damage too — which is the difference between a game that gets slow and a
+// game that stops.
+console.log('\nThe Dark Priest, and the stall the owner accepted\n');
 
 {
   const priest = enemyTypes.dark_priest;
-  const hps = priest.heal.hp / priest.heal.seconds;
 
-  check(hps === 2, 'a dark healing mends 2 health a second',
-    `${priest.heal.hp} over ${priest.heal.seconds}s`);
+  check(priest.heal.hps === 10 && priest.heal.seconds === 5,
+    'a dark healing mends 10 health a second for five',
+    `${priest.heal.hps} x ${priest.heal.seconds} = ${priest.heal.hps * priest.heal.seconds} a cast`);
 
-  // TWO PRIESTS ARE NOT TWICE THE MEND. Run through the real apply(), not
-  // asserted — this is the property the whole invariant rests on.
+  // REFRESHES RATHER THAN STACKS, which is still true and still worth holding.
+  // Re-casting on one man is allowed now; a rate that CLIMBED with the number of
+  // priests would not be a healer topping somebody up, it would be an unbounded
+  // number.
   const victim = { hp: 100, maxHp: 500, statuses: [] };
-  applyStatus(victim, 'healing', hps, priest.heal.seconds, null);
-  applyStatus(victim, 'healing', hps, priest.heal.seconds, null);
-  applyStatus(victim, 'healing', hps, priest.heal.seconds, null);
-  check(victim.statuses.length === 1,
-    'and three priests on one man is still one mark', `${victim.statuses.length} mark(s)`);
-  const mended = -tickStatus(victim, 1);
-  check(Math.abs(mended - hps) < 1e-9,
-    'mending at the same rate one of them would', `${mended.toFixed(2)} a second`);
+  for (let i = 0; i < 3; i++)
+    applyStatus(victim, 'healing', priest.heal.hps, priest.heal.seconds, null);
+  check(victim.statuses.length === 1, 'three priests on one man is still one mark',
+    `${victim.statuses.length} mark(s)`);
+  const perSecond = -tickStatus(victim, 1);
+  check(Math.abs(perSecond - priest.heal.hps) < 1e-9,
+    'and mends at the rate one of them would, not three',
+    `${perSecond.toFixed(0)} a second`);
 
-  // AND EVERY SOLDIER OUT-DAMAGES IT. Read off the real barracks defs, so a
-  // retune that takes a spearman below 2 damage a second fails here rather than
-  // hanging a wave in somebody's game.
+  // AND IT DOES OUT-HEAL A SQUAD, which is the fact the old check denied. Stated
+  // rather than asserted away, so the number is in front of whoever reads this
+  // next.
   const men = [];
   for (const tier of barracks.tiers) if (tier.soldier)
     men.push({ name: tier.soldier.name, dps: tier.soldier.damage / tier.soldier.cd });
-  const weakest = men.reduce((a, b) => a.dps < b.dps ? a : b);
-  check(weakest.dps > hps,
-    'and the weakest soldier in the game still out-damages it',
-    `${weakest.name} does ${weakest.dps.toFixed(2)} against ${hps} mended`);
+  const best = men.reduce((a, b) => a.dps > b.dps ? a : b);
+  check(priest.heal.hps > men[0].dps,
+    'and it out-heals a tier 1 squad, which is the accepted consequence',
+    `${priest.heal.hps} mended against ${men[0].name} ${men[0].dps.toFixed(2)}, ` +
+    `only ${best.name} ${best.dps.toFixed(2)} is over it`);
 
-  // WHICH MEANS A PINNED ENEMY STILL DIES. Stated as the margin rather than as a
-  // yes, because the margin is the thing worth watching: it is what decides
-  // whether the fight takes ten seconds or two minutes.
-  const net = weakest.dps - hps;
-  check(net > 0, 'so one held man still grinds a mended enemy down',
-    `${net.toFixed(2)} a second net, ${Math.ceil(enemyTypes.plague_inf.hp / net)}s ` +
-    `for a ${enemyTypes.plague_inf.hp}hp doctor`);
+  // MENDING STOPS AT FULL HEALTH. Without the clamp the bar runs past its own
+  // maximum and every health-bar fraction in the game goes over 1.
+  const whole = { hp: 95, maxHp: 100, statuses: [] };
+  applyStatus(whole, 'healing', priest.heal.hps, priest.heal.seconds, null);
+  whole.hp = Math.min(whole.maxHp, whole.hp - tickStatus(whole, 1));
+  check(whole.hp === 100, 'and a mended figure stops at full health', `${whole.hp}/100`);
+}
+
+// AND THE RUN THAT MATTERS: a priest holding a pinned enemy alive against a squad
+// that cannot out-damage him, for as long as it takes, and the wave loop handing
+// over anyway. This is the whole of what "a stall, not a lock" means, and it is
+// run through the real updateEnemies, updateUnits and updateWaves.
+{
+  const state = board();
+  withSquad(state);
+  const stand = squadAt(state);
+
+  // A thug for the squad to hold, and a priest just behind him inside his 100.
+  spawn(state, 'light_inf');
+  place(state.enemies[0], Math.max(0, stand - 20));
+  spawn(state, 'dark_priest');
+  place(state.enemies[1], Math.max(0, stand - 70));
+
+  let secs = 0;
+  while (state.enemies.length > 1 && secs < 90) { step(state, 1); secs++; }
+
+  const thug = state.enemies.find(e => e.def.name === 'Thug');
+  check(!!thug, 'a mended thug outlasts a minute and a half of tier 1 squad',
+    `${secs}s, ${state.enemies.length} still up`);
+  check(!!thug && thug.hp > 0,
+    'and is still on his feet at the end of it',
+    thug ? `${Math.round(thug.hp)} of ${thug.maxHp}` : 'dead');
+
+  // AND THE WAVE GIVES UP WAITING, exactly as it does for a thrower nothing can
+  // reach. Same fixture as check 5 above, pointed at a different reason the board
+  // will not clear.
+  state.waves = [{ groups: [], rest: 9 }];
+  state.waveIndex = 0;
+  state.spawned = 0;
+  state.resting = false;
+  state.stall = null;
+  state.timer = 0;
+  state.result = null;
+
+  let waited = 0;
+  while (!state.resting && waited < 400) { updateWaves(state, DT); waited += DT; }
+
+  check(state.resting, 'but the wave hands over anyway, so it is a stall and not a lock',
+    `after ${waited.toFixed(0)}s with ${state.enemies.length} still on the road`);
 }
 
 console.log(bad

@@ -9,7 +9,7 @@ import { solo, play, CUE, SHOT } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
-import { tick as tickStatus, slowOf, apply as applyStatus, wearing } from './status.js';
+import { tick as tickStatus, slowOf, apply as applyStatus } from './status.js';
 import { typeOf, pierceOf } from './data/armour.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -193,13 +193,15 @@ export function updateEnemies(state, dt) {
           // outcome of standing still for two seconds in front of a tower. The
           // spell is simply spent.
           if (mark && mark.hp > 0) {
-            // Health a second, for this many seconds — the shape every status
-            // magnitude takes. 10 over 5 is 2, and `apply` REFRESHES rather than
-            // stacking, so that 2 is a ceiling however many priests are working.
-            // See the note on dark_priest in data/waves.js for why that number is
-            // what keeps a wave finishable.
-            applyStatus(mark, 'healing', e.def.heal.hp / e.def.heal.seconds,
-                        e.def.heal.seconds, null);
+            // Health a second, straight off the def — the shape every status
+            // magnitude takes, and the shape the owner stated it in.
+            //
+            // `apply` REFRESHES rather than stacking, so a second priest working
+            // the same man restarts his five seconds instead of doubling the rate.
+            // That is still the right call now that re-casting on one man is
+            // allowed: refreshing is a healer topping somebody up, and stacking
+            // would be a rate that climbs with the size of the crowd.
+            applyStatus(mark, 'healing', e.def.heal.hps, e.def.heal.seconds, null);
           }
         }
         // Nothing else this frame: he is not throwing and he is not walking.
@@ -488,31 +490,31 @@ export function updateEnemies(state, dt) {
 // SOMEBODY WORTH MENDING, within reach of this priest. The worst wounded of them,
 // so a giant on his last legs is served before a thug with a scratch.
 //
-// THREE THINGS ARE SKIPPED and each is load-bearing:
+// TWO THINGS ARE SKIPPED and neither is arbitrary:
 //
 //   HIMSELF. He is an enemy and he is in the list, and a priest who could mend
-//   himself would be a 200-health creature that never quite dies to anything
-//   doing less than 2 a second. Two priests still mend EACH OTHER, which is the
-//   interesting version of the same idea and costs each of them the cast.
-//
-//   ANYONE ALREADY WEARING THE MARK. This is the rule that lets him ever walk
-//   again. Enemies have no regeneration, so a creature hurt once is hurt for the
-//   rest of its life — a priest who simply took the nearest wounded man would
-//   find the same man wounded the moment the mark lapsed, stand still, and never
-//   move again. Passing over the mended sends him to the next one and then on
-//   down the road.
+//   himself at 10 a second would be unkillable by most of this game. Two priests
+//   still mend EACH OTHER, which is the interesting version of the same idea and
+//   costs each of them the two-second cast.
 //
 //   THE DEAD, who are dropped from the list on the frame they die but may still
 //   be in it on the frame a blow lands.
 //
-// It does NOT skip a pinned enemy, and that is deliberate rather than an
-// oversight: mending the man a soldier is holding is exactly what a healer should
-// do, and the arithmetic says the soldier still wins — see dark_priest.
+// IT NO LONGER SKIPS ANYONE ALREADY WEARING THE MARK, at the owner's word: "Dark
+// Priest can heal the same person." It did for one build, to stop him standing
+// still forever topping up a man who could never get better on his own. At 10 a
+// second he does get better — 50 a cast fills most bars — so the man stops being
+// wounded and the priest moves on by himself, which is a nicer version of the
+// same outcome than a rule enforcing it.
+//
+// AND IT DOES NOT SKIP A PINNED ENEMY. Mending the man a soldier is holding is
+// exactly what a healer should do; it also means a squad can be held on a
+// creature it can no longer out-damage, which the owner has accepted and the wave
+// loop's stall clock catches. See dark_priest in data/waves.js.
 function woundedNear(state, healer, range) {
   let best = null, worst = 1;
   for (const e of state.enemies) {
     if (e === healer || e.hp <= 0 || e.hp >= e.maxHp) continue;
-    if (wearing(e, 'healing')) continue;
     if (!inRange(healer.x, healer.y, e.x, e.y, range)) continue;
     const share = e.hp / e.maxHp;
     if (share < worst) { worst = share; best = e; }
