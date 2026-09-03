@@ -442,7 +442,12 @@ export const ui = {
   glyph_aim_ranged: { trim: [205, 230, 107, 52], fit: GLYPH_BOX_BARE },
 
   // The heart and the sword that replaced the words "Health:" and "Damage:".
-  stat_health:  { trim: [157, 176, 198, 160], h: STAT_ICON_H },
+  //
+  // The heart and the BROKEN heart below it were one rect for a long while, close
+  // enough to the pixel that a single number served both. They are two files and
+  // they drifted apart on a re-export, so they are measured apart now — see the
+  // note on stat_life_cost.
+  stat_health:  { trim: [167, 183, 178, 146], h: STAT_ICON_H },
   // THE THIRD STAT ICON, and the first added since the heart and the sword. A
   // target, square at 168x168 source, so it takes the shared height and comes out
   // square where the heart is wider than it is tall — see STAT_COL, which is
@@ -450,23 +455,23 @@ export const ui = {
   stat_range:   { trim: [172, 172, 168, 168], h: STAT_ICON_H },
   stat_damage:  { trim: [182, 182, 148, 148], h: STAT_ICON_H },
   // The wand and the two shields, all measured off the files like the three above.
-  // The shields are the SAME box to the pixel — [170, 167, 172, 178] — which is
+  // The shields are the SAME box to the pixel — [180, 177, 152, 158] — which is
   // what says they are one drawing in two colours rather than two shields.
   stat_damage_magic: { trim: [179, 179, 154, 154], h: STAT_ICON_H },
-  stat_armour:       { trim: [175, 173, 162, 167], h: STAT_ICON_H },
-  stat_armour_magic: { trim: [175, 173, 162, 167], h: STAT_ICON_H },
+  stat_armour:       { trim: [180, 177, 152, 158], h: STAT_ICON_H },
+  stat_armour_magic: { trim: [180, 177, 152, 158], h: STAT_ICON_H },
   // AND THE SAME TWO SHIELDS WITH SOMETHING THROUGH THEM, for `pierce`. Both are
-  // 178 tall and start at y=167, exactly like the whole shields above — so a row
+  // 158 tall and start at y=177, exactly like the whole shields above — so a row
   // that shows a rank and a break beside it has all four drawings sitting on one
   // baseline, which is the thing that would have been fiddly to fix afterwards and
   // the artist got right in the file.
   //
-  // WIDER THAN THE PLAIN SHIELDS, and the two of them the same 224 as each other —
-  // the re-upload lined the shot and the bolt up to the pixel where the first pair
-  // stuck out by different amounts. Nothing here is squared off either way: every
-  // entry's aspect comes out of its own trim. See uiSize.
-  stat_pierce:       { trim: [144, 173, 224, 167], h: STAT_ICON_H },
-  stat_pierce_magic: { trim: [144, 173, 224, 167], h: STAT_ICON_H },
+  // WIDER THAN THE PLAIN SHIELDS, and within two pixels of each other in width —
+  // the shot pokes out a shade less than the bolt. Not squared off: every entry's
+  // aspect comes out of its own trim, so at a shared 14 tall they set 13.3 and
+  // 13.4 wide, a difference no eye finds in a row. See uiSize.
+  stat_pierce:       { trim: [145, 177, 222, 158], h: STAT_ICON_H },
+  stat_pierce_magic: { trim: [144, 177, 224, 158], h: STAT_ICON_H },
   // AND THE BLAST, which is the odd shape in the set and the reason `byBox` exists.
   //
   // 188 x 98, so nearly twice as wide as it is tall, where every other stat icon is
@@ -501,6 +506,10 @@ export const ui = {
   // STAT_ICON_H in a book row — which is exactly the case uiSize's { h }
   // override exists for. A second entry would be a second rect to re-paste after
   // a re-export.
+  //
+  // The broken heart IS a second file, though, and it kept the rect the whole
+  // heart used to have when the whole heart was re-exported without it. Two
+  // files, two rects, measured apart — which is what tools/trim.mjs is for.
   stat_gold_cost: { trim: [116, 189, 280, 134], h: STAT_ICON_H },
   stat_life_cost: { trim: [157, 176, 198, 160], h: STAT_ICON_H },
 
