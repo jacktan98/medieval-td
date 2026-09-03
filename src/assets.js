@@ -660,6 +660,60 @@ export const art = {};
 const stamp = typeof window !== 'undefined' && window.__stamp;
 const versioned = src => stamp ? `${src}?v=${stamp}` : src;
 
+// --- WHAT COLOUR AN ABILITY'S DISC IS ---------------------------------------------
+//
+// THE CONFIRM TICK WEARS THE BUTTON'S OWN COLOUR, at the owner's ask: "for the
+// abilities, change the background colour to the background colour of the
+// abilities — e.g. for Blinding Strike, use the same 969696". An ability's button
+// is one picture, disc and all, so the tick replacing it on the cream plate lost
+// the one thing that says WHICH ability is being confirmed.
+//
+// SAMPLED FROM THE FILE RATHER THAN WRITTEN DOWN. Sixteen hex values in data/ui.js
+// would be sixteen more numbers to re-paste after a re-export — and this project
+// has just spent a commit on trims that went stale exactly that way. A colour read
+// off the artwork cannot disagree with the artwork.
+//
+// A RING JUST INSIDE THE RIM, and the MEDIAN of it per channel. The centre of the
+// disc is the drawing rather than the background, and a mean would be dragged by
+// whatever part of the drawing reaches the edge. Measured across the sixteen at
+// three radii, every disc is flat — 0.72, 0.80 and 0.86 of the radius all return
+// the same colour to the byte — so the exact ring is not delicate. Blinding Strike
+// comes back #969696, which is the number the owner asked for.
+//
+// CACHED ON FIRST ASK, because this reads pixels back off a canvas and the menu is
+// drawn every frame. Never cached before the image has loaded: a miss returns null
+// and the caller falls back to the cream plate for that frame.
+const tints = {};
+
+export function discTint(key, trim) {
+  if (key in tints) return tints[key];
+  const img = art[key];
+  if (!img) return null;
+
+  const [sx, sy, sw, sh] = trim;
+  const c = document.createElement('canvas');
+  c.width = sw; c.height = sh;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+  const px = g.getImageData(0, 0, sw, sh).data;
+
+  const cx = sw / 2, cy = sh / 2, r = Math.min(sw, sh) / 2 * 0.8;
+  const chan = [[], [], []];
+  for (let i = 0; i < 64; i++) {
+    const a = (i / 64) * Math.PI * 2;
+    const x = Math.round(cx + Math.cos(a) * r);
+    const y = Math.round(cy + Math.sin(a) * r);
+    const o = (y * sw + x) * 4;
+    if (px[o + 3] < 200) continue;
+    for (let k = 0; k < 3; k++) chan[k].push(px[o + k]);
+  }
+  if (!chan[0].length) return null;
+
+  const mid = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+  tints[key] = `rgb(${mid(chan[0])}, ${mid(chan[1])}, ${mid(chan[2])})`;
+  return tints[key];
+}
+
 export function loadArt() {
   const absent = [];
 

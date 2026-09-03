@@ -166,9 +166,22 @@ export function armedRange(state, t) {
               : null;
   if (!after) return null;
 
+  // ANY CHANGE, IN EITHER DIRECTION, and it was "only if it is further" until the
+  // owner tried the artillery fork: "for ballista turret, because the range is
+  // smaller than trebuchet's the dotted range cannot be seen".
+  //
+  // Which was the preview quietly refusing to show the most important thing about
+  // that button. A Trebuchet reaches 360 and the Ballista Turret it buys reaches
+  // 260 — so the upgrade COSTS a hundred pixels of road, and a player who cannot
+  // see that finds out after paying 230 gold. A ring drawn inside the solid one
+  // says "you will cover less" as plainly as an outer one says "more".
+  //
+  // Still null when nothing moves, which is the Cannon Outpost's case at 360 from
+  // 360: a dotted ring exactly on top of a solid one is not a preview, it is a
+  // second line on the same ellipse.
   const now = rangeOf(t);
   const then = rangeOf(after);
-  return then > now ? then : null;
+  return then !== now ? then : null;
 }
 
 // Affordability is checked live rather than baked in at open time — gold moves

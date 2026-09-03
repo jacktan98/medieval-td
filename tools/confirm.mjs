@@ -35,7 +35,7 @@
 import { tap } from '../src/input.js';
 import { openMenu, NEEDS_CONFIRM, needsConfirm, armed, armedRange } from '../src/menu.js';
 import { level } from '../src/level.js';
-import { archery, families } from '../src/data/towers.js';
+import { archery, siege, families } from '../src/data/towers.js';
 import { rangeOf } from '../src/towers.js';
 
 let bad = 0;
@@ -249,16 +249,34 @@ console.log('\nWhat the dotted ring promises\n');
     `${armedRange(state, t)} for a ${far.to.name}`);
 
   press(state, near);
-  ok(armedRange(state, t) === near.to.range || armedRange(state, t) === null,
+  ok(armedRange(state, t) === near.to.range,
     'and arming the shorter one does NOT keep promising the longer',
     `${armedRange(state, t)} for a ${near.to.name}, not ${far.to.range}`);
+}
 
-  // THE BUG THIS FILE EXISTS FOR, stated as a number. The Crossbow Sentry reaches
-  // less than the Crossbow Tower it upgrades from, so there is no further ring to
-  // draw at all — and the old code drew the Musketeer Post's 480 over it.
-  ok(near.to.range <= rangeOf(t) ? armedRange(state, t) === null : true,
-    'and a rung that buys no reach draws no ring',
-    `${near.to.name} reaches ${near.to.range}, the tower already reaches ${rangeOf(t)}`);
+{
+  // A RUNG THAT COSTS REACH STILL DRAWS ITS RING, which is the owner's second
+  // report: "for ballista turret, because the range is smaller than trebuchet's the
+  // dotted range cannot be seen". A preview that only ever grew was hiding the most
+  // important thing about that button — 230 gold for a hundred pixels less road.
+  const state = board();
+  const trebuchet = siege.find(d => d.tier === 3);
+  const t = tower(state, level.plots[0], families[2], trebuchet);
+  openMenu(state, t.plot, t);
+
+  const ballista = button(state, b => b.act === 'upgrade' && b.to.name === 'Ballista Turret');
+  press(state, ballista);
+  ok(armedRange(state, t) === ballista.to.range && ballista.to.range < rangeOf(t),
+    'a rung that COSTS reach draws its ring too, inside the tower\'s own',
+    `${armedRange(state, t)} against the ${rangeOf(t)} it has`);
+
+  // AND ONE THAT CHANGES NOTHING DRAWS NOTHING. The Cannon Outpost reaches the
+  // Trebuchet's own 360, and a dotted ring exactly on top of a solid one is a
+  // second line on the same ellipse rather than a preview.
+  const cannon = button(state, b => b.act === 'upgrade' && b.to.name === 'Cannon Outpost');
+  press(state, cannon);
+  ok(armedRange(state, t) === null, 'while one that changes nothing draws nothing',
+    `${cannon.to.name} reaches the same ${cannon.to.range}`);
 }
 
 {

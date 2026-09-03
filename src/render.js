@@ -5,7 +5,7 @@ import { SCALE, EXPORT_PX, BLOOD_SCALE, upgradesFrom } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
-import { art } from './assets.js';
+import { art, discTint } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden } from './units.js';
@@ -673,13 +673,19 @@ function mark(ctx, e) {
 // `hole` is the dead ground a siege engine cannot reach into, which only the build
 // preview ever passes: an upgrade never changes it — see the note on the same 130
 // at every tier in data/towers.js — so an armed upgrade has nothing to say about it.
-function previewRing(ctx, x, y, r, hole) {
+function previewRing(ctx, x, y, r, hole, fill = true) {
   ctx.save();
-  ctx.fillStyle = 'rgba(200,240,255,0.07)';
-  ctx.beginPath();
-  ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
-  if (hole) ctx.ellipse(x, y, hole, hole * SQUASH, 0, 0, Math.PI * 2);
-  ctx.fill('evenodd');
+  // NO WASH ON A SHRINKING PREVIEW. The pale fill means "this tower shoots here",
+  // and a second one laid inside the solid ring's own fill brightens the middle —
+  // which reads as MORE ground at the exact moment the answer is less. The rim
+  // alone carries a shrink, and the fact that it is inside is what says so.
+  if (fill) {
+    ctx.fillStyle = 'rgba(200,240,255,0.07)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
+    if (hole) ctx.ellipse(x, y, hole, hole * SQUASH, 0, 0, Math.PI * 2);
+    ctx.fill('evenodd');
+  }
 
   ctx.setLineDash([7, 6]);
   ctx.strokeStyle = 'rgba(24,26,20,0.35)';
@@ -725,7 +731,9 @@ function drawRangeDisc(ctx, t, buying) {
   // played with a thumb, so the trigger is a press either way.
   //
   // Drawn first so the current range's rim stays the crisper of the two.
-  if (buying) previewRing(ctx, t.x, t.y, buying, 0);
+  // OUTSIDE THE SOLID RING, drawn first so the tower's own rim stays the crisper
+  // of the two. A shrinking preview goes the other way round — see below.
+  if (buying > r) previewRing(ctx, t.x, t.y, buying, 0);
 
   // ARTILLERY HAS A HOLE IN IT. A catapult cannot drop a rock on its own feet,
   // so the ground inside `minRange` is dead and anything walking through it is
@@ -772,6 +780,16 @@ function drawRangeDisc(ctx, t, buying) {
     ctx.stroke();
     ctx.restore();
   }
+
+  // AND A SHRINKING PREVIEW LAST OF ALL, inside everything the tower already
+  // draws. Same rule as the outer one, applied the other way round: the nearer
+  // ring is drawn later, so the one being promised stays the crisper of the two
+  // and does not come back washed through the solid disc's own fill.
+  //
+  // The case is the artillery fork — a Trebuchet at 360 buying a Ballista Turret
+  // at 260 — and see armedRange in menu.js for why a preview that only ever grew
+  // was hiding the most important thing about that button.
+  if (buying && buying < r) previewRing(ctx, t.x, t.y, buying, 0, false);
 }
 
 // THE TIER STARS ARE BACK, BUT ONLY WHERE THE ARTWORK CANNOT SAY IT.
@@ -2481,7 +2499,24 @@ function drawButton(ctx, state, it) {
   // gone. See the `gy`/`caption` pair below, which this deliberately does not use.
   if (armed(state, it)) {
     ctx.save();
-    if (!drawUi(ctx, 'btn_plate', it.x, it.y)) {
+
+    // AN ABILITY KEEPS ITS OWN COLOUR UNDER THE TICK, sampled off the artist's disc
+    // rather than written down — see discTint in assets.js. The owner's ask, and it
+    // fixes something the cream plate lost: an ability's button is one picture, so
+    // replacing the whole thing took away the only mark saying WHICH of the two an
+    // armed tick belongs to. On a tower with a pair on the ring, a cream disc could
+    // have been either.
+    //
+    // Everything else — build, upgrade, refund — wears the plate every button on
+    // the ring already wears. Those buttons carry a glyph on that plate rather than
+    // being a picture, so there is nothing of their own to keep.
+    const tint = it.face && ui[it.face] && discTint(it.face, ui[it.face].trim);
+    if (tint) {
+      ctx.fillStyle = tint;
+      ctx.beginPath();
+      ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (!drawUi(ctx, 'btn_plate', it.x, it.y)) {
       ctx.fillStyle = '#FFEFD4';
       ctx.beginPath();
       ctx.arc(it.x, it.y, BTN_R, 0, Math.PI * 2);
