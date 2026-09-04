@@ -159,12 +159,28 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 // and a re-upload at a different recording level needs nothing changed here. The
 // ceiling above catches whatever the multiplier would otherwise overrun.
 //
-// 2.5 is a shade under +8dB over the rest of the game. It lands the five spoken
-// lines between 0.51 and 0.79 peak against everything else's 0.32, and the sixth
-// — the fall — is held at the ceiling by its own transient.
-const LOUDER_TIMES = 2.5;
+// AS LOUD AS THE FILE ALLOWS, which is where this ended up after two rounds of
+// "still too soft" and is the honest end of the road.
+//
+// It was a multiple of the shared target — 2.5x, about +8dB — and that was still
+// levelling him, just to a higher line. A boss does not want to be levelled: he
+// wants to be as loud as his recording can be played without distorting. So these
+// clips skip the loudness target entirely and are amplified until their PEAK
+// reaches the ceiling, which is the most any file can give.
+//
+// What that comes to, measured: bodies of 0.30 to 0.47 against the rest of the
+// game's 0.09, so between +10dB and +14dB. `Captain_Thug_kill_soldier` gains the
+// most of all — the owner named it — because it has the lowest peak of the seven
+// and therefore the most room: it goes from 0.203 at the output to 0.95, and it
+// also stops running on the background bus at 0.45, so what the player hears is
+// more than four times what they heard.
+//
+// GAIN_MAX still applies. A clip quiet enough to want more than 5x is a recording
+// with something wrong with it, and multiplying its noise floor by six would not
+// help anybody.
+const LOUDEST = true;
 const LOUDER = new Set([
-  'captain_enters', 'captain_health30', 'captain_healed',
+  'captain_enters', 'captain_pause', 'captain_healed',
   'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked'
 ]);
 
@@ -272,7 +288,7 @@ const paths = {
   // run, and a shield clanking over the top of one would be the game losing its
   // own set piece.
   captain_enters:   'assets/audio/sfx/Captain_Thug_enters.mp3',
-  captain_health30: 'assets/audio/sfx/Captain_Thug_health_30.mp3',
+  captain_pause:    'assets/audio/sfx/Captain_Thug_pause.mp3',
   captain_healed:   'assets/audio/sfx/Captain_Thug_heal.mp3',
   captain_dying:    'assets/audio/sfx/Captain_Thug_before_dying.mp3',
   captain_fallen:   'assets/audio/sfx/Captain_Thug_fall_dead.mp3',
@@ -754,7 +770,11 @@ export const HEAL = ['enemies_heal'];
 // enemies.js, one from the spawn, one from the health check, one from units.js
 // where his blows land.
 export const BOSS_ENTERS = ['captain_enters'];
-export const BOSS_HURT   = ['captain_health30'];
+// WHAT HE SAYS WHILE HE CHANNELS. It was the line for first dropping below 30%
+// health and the owner has repointed it: the file is Captain_Thug_pause now and
+// "health drop to 30% no longer uses this". So the warning-shot moment is gone
+// and the sound belongs to the beat it is named after.
+export const BOSS_PAUSE  = ['captain_pause'];
 export const BOSS_HEALED = ['captain_healed'];
 export const BOSS_DYING  = ['captain_dying'];
 export const BOSS_FALLEN = ['captain_fallen'];
@@ -924,7 +944,7 @@ export function loadAudio() {
     fetch(stamp ? `${src}?v=${stamp}` : src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key) ? LOUDER_TIMES : 1); })
+      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key)); })
       .catch(() => { if (AWAITED.has(key)) absent.push(src); else console.warn('Missing or unreadable audio:', src); })
   );
 
@@ -939,7 +959,7 @@ export function loadAudio() {
 //
 // The channels are summed to mono first. What the player hears is the sum, and
 // measuring one side of a stereo file would under-read anything panned.
-function analyse(buf, trim, louder = 1) {
+function analyse(buf, trim, louder = false) {
   const n = buf.length;
   const mix = new Float32Array(n);
   for (let c = 0; c < buf.numberOfChannels; c++) {
@@ -981,7 +1001,10 @@ function analyse(buf, trim, louder = 1) {
   // the boost, the automatic gain, or a hand-set trim — from pushing a sample
   // past full scale. Applied last so it is the final word.
   const levelled = silent ? trim
-    : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD * louder / loud));
+    // A LOUDER clip is taken straight to the ceiling instead of to the target: it
+    // is not being matched to the battle, it is being played as loud as it can go.
+    : louder && peak > 0 ? trim * Math.min(GAIN_MAX, PEAK_CEILING / peak)
+    : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD / loud));
   const gain = peak > 0 ? Math.min(levelled, PEAK_CEILING / peak) : levelled;
 
   return {
@@ -1138,13 +1161,34 @@ export function play(cue, level = 1) {
 // files have not loaded, or because everything in it was heard too recently —
 // leaves the channel open for whatever asks next. That is the whole mechanism
 // by which a swing yields to a death cry.
-export function solo(cue, priority = false) {
+// WHILE A HELD CLIP IS SPEAKING, NOTHING MAY TAKE THE CHANNEL — not the gate's
+// ordinary traffic and not priority either. On the context's clock, like gateUntil.
+//
+// It is the boss's, and the owner's rule: "any voices coming from captain thug
+// will jump straight to number 1 priority and will ensure that his sound is
+// finished before others disrupt his sound." Priority alone only wins the RACE to
+// speak; it does nothing about what happens a moment later, and what happened a
+// moment later was an upgrade or another set piece hushing him mid-word.
+let holdUntil = 0;
+
+export function solo(cue, priority = false, hold = false) {
   // Callers pass the result of a lookup straight in, and plenty of things have
   // nothing to say — bare ground, a siege plot, a family with no voice yet.
   if (!cue) return;
   if (!ctx || ctx.state !== 'running') return;
 
   const now = ctx.currentTime;
+
+  // A HELD CLIP FINISHES. Before the priority branch, so it outranks that too —
+  // this is the one thing in the mixer that cannot be talked over. A cue that
+  // arrives during one is dropped rather than queued, which is the same thing the
+  // gate does to everything else and the right answer here: by the time the boss
+  // has finished, whatever wanted to say a swing landed is no longer news.
+  //
+  // It applies to HIS OWN lines as well. Two of his set pieces can only collide by
+  // landing inside the same second — entering and being shot to a third, say — and
+  // hearing the first of them whole is better than hearing half of each.
+  if (now < holdUntil) return;
 
   // PRIORITY TAKES THE CHANNEL, and two things use it now: buying an upgrade, and
   // the boss's five set pieces.
@@ -1209,6 +1253,10 @@ export function solo(cue, priority = false) {
   const seconds = fire(key, busA, true);
   duck(now, seconds);
   gateUntil = now + seconds + GAP;
+  // The hold covers the CLIP and not the gap after it. The gap is politeness
+  // between two ordinary sounds; this is about not cutting a line off, so it ends
+  // when the line does.
+  if (hold) holdUntil = now + seconds;
 }
 
 // A tower family's voice, or null for one with nothing recorded. All four have

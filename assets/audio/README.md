@@ -19,7 +19,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
-                      Captain_Thug_enters.mp3, Captain_Thug_health_30.mp3,
+                      Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
                       Captain_Thug_selected.mp3
@@ -186,9 +186,9 @@ and it now means "how long a lull has to be before the game forgets".
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
 | **a paladin's 5th blow lands, or the captain's sword does** — Category B | `Heavy_strike` |
-| **the captain kills his 5th, 10th, 15th man** — Category B | `Captain_Thug_kill_soldier` |
+| the **captain** kills his 5th, 10th, 15th man | `Captain_Thug_kill_soldier` |
 | the **captain** walks on | `Captain_Thug_enters` |
-| the **captain** first drops below 30% | `Captain_Thug_health_30` |
+| the **captain** channels, for 3s | `Captain_Thug_pause` |
 | the **captain** finishes mending himself | `Captain_Thug_heal` |
 | the **captain** is beaten and standing | `Captain_Thug_before_dying` |
 | the **captain** goes down | `Captain_Thug_fall_dead` |
@@ -197,13 +197,23 @@ and it now means "how long a lull has to be before the game forgets".
 Everything above the line is Category A and shares the one channel; the ones
 below run on the background bus and play every time.
 
-**The seven Captain Thug clips are levelled LOUDER than everything else** — 2.5x
-the shared target, about +8dB — at the owner's word: "players should hear them
-clearly as this is a boss fight." Everything else in the game arrives at one
-loudness on purpose; a boss is not in the battle, and his lines were landing at
-exactly the level `Thug_dies` and `Soldier_dies` sit at. See `LOUDER` in
-src/audio.js. It is a multiplier on the target rather than a hand-set gain, so a
-re-recorded file needs nothing changed.
+**The seven Captain Thug clips skip the levelling entirely and are played AS LOUD
+AS THEY CAN GO** — amplified until their peak reaches the ceiling, which comes to
+bodies of 0.30 to 0.47 against everything else's 0.09, between +10dB and +14dB.
+See `LOUDER` in src/audio.js.
+
+That is where this ended up after two rounds of "still too soft", and the reason
+the first two attempts fell short is worth keeping: matching him to a higher line
+is still levelling him. A boss does not want to be levelled. `Captain_Thug_kill_soldier`
+gains the most of the seven because it has the lowest peak and therefore the most
+room, and because it stopped running on the background bus at 0.45 — what the
+player hears is more than four times what they heard.
+
+**And nothing interrupts one of his lines.** Every Captain clip takes the channel
+with priority AND holds it until the clip has finished — `holdUntil` in
+src/audio.js. Priority alone wins the race to speak and does nothing about what
+happens a moment later, which was an upgrade or another set piece cutting him off
+mid-word. It is the only thing in the mixer that cannot be talked over.
 
 **No clip may be amplified past full scale at the output**, whatever the levelling
 wants — `PEAK_CEILING` in src/audio.js. That is a real fix rather than a

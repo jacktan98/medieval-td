@@ -7,7 +7,7 @@ import { unhook, hidden } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
 import { solo, play, CUE, FIRING, DEFEND, HEAL,
-         BOSS_ENTERS, BOSS_HURT, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
+         BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
@@ -115,11 +115,6 @@ export function spawn(state, typeId) {
     // counted down like the others, and it is what stops a boss under fire strobing
     // between his shooting drawing and his shield — see `stow` on captain_thug.
     stowed: 0,
-    // HAS HE ALREADY CRIED OUT AT A THIRD HEALTH. The owner asked for that line
-    // once and once only, and it is a DIFFERENT threshold from the transformation
-    // — 30% against 25% — so it cannot be inferred from the stage. It is a warning
-    // shot: you hear him falter about a second before he throws the shield away.
-    cried: false,
     // AND HOW MANY MEN HE HAS PUT DOWN, for the line he gives every fifth one.
     // Counted on the killer rather than on the game, so two bosses on one board
     // would each keep their own tally.
@@ -142,7 +137,7 @@ export function spawn(state, typeId) {
   // Priority takes the channel off whatever is speaking. Exactly one other thing in
   // the game uses it — buying an upgrade — on the same argument: the gate exists to
   // stop the battle talking over itself, and neither of these is the battle.
-  if (def.boss) solo(BOSS_ENTERS, true);
+  if (def.boss) solo(BOSS_ENTERS, true, true);
 }
 
 // IS THIS FIGURE PLAYING OUT ITS DEATH? True for the four seconds a boss spends
@@ -250,10 +245,11 @@ const GONE = 'gone';
 // and the other says what it sounds like, and a beat with no cue is simply absent
 // here rather than carrying a null.
 //
-// The pause has none on purpose. He has just cried out at 30% — see the warning in
-// bossBeat — and a second line a moment later would tread on it; what covers the
-// channelling is his silence, which is the tell.
-const BEAT_CUE = { mend: HEAL, fall: BOSS_DYING, rest: BOSS_FALLEN };
+// THE PAUSE HAS ONE NOW. It had none while the boss cried out at 30% health a
+// moment before it — a second line on top would have trodden on the first. The
+// owner has taken that warning away and given its recording to this beat instead,
+// so the three seconds of channelling are what the player hears him over.
+const BEAT_CUE = { pause: BOSS_PAUSE, mend: HEAL, fall: BOSS_DYING, rest: BOSS_FALLEN };
 
 // Start a beat.
 function begin(e, act) {
@@ -284,7 +280,10 @@ function begin(e, act) {
   // be casting — and Category A WITH PRIORITY for the two death beats, on the same
   // argument the entrance is: the gate is a queue, and a boss dying should not lose
   // its place in it to an arrow.
-  if (cue) (act === 'mend' ? play(cue) : solo(cue, true));
+  // The mend's cue is the SHARED enemy heal — a Dark Priest makes the same noise —
+  // so it stays Category B and unheld: it is not his voice. The other three are,
+  // and they take the channel and keep it until they have finished.
+  if (cue) (act === 'mend' ? play(cue) : solo(cue, true, true));
   // Everything he was doing stops. A shot half-nocked is lost rather than banked,
   // on the rule the Dark Priest's interrupted cast follows: a moment that gets
   // taken off you should cost you the moment.
@@ -310,7 +309,7 @@ function land(state, e) {
     // the 3 seconds" — this line, not the start of the mend, which has its own
     // sound above. Category A: it is the moment the player learns the fight is not
     // over, and it should cut through whatever they are doing about it.
-    solo(BOSS_HEALED, true);
+    solo(BOSS_HEALED, true, true);
     // AND HE IS THE OTHER CREATURE NOW. Set here rather than when the pause began,
     // so the whole five seconds of the transition are fought against the armour he
     // is transitioning IN — medium for the pause, high for the mend — and the low
@@ -366,18 +365,12 @@ function bossBeat(state, e, dt) {
     return true;
   }
 
-  // A THIRD OF THE WAY DOWN HE FALTERS, once, and it is deliberately NOT the same
-  // number as the transformation. 30% is a warning and 25% is the thing it warns
-  // about, so a player hears him break about a second before the shield comes off
-  // — long enough to change what they are doing and not long enough to relax.
+  // THERE IS NO LONGER A CRY AT 30%. He had one — a warning a second before the
+  // shield came off — and the owner has repointed that recording at the pause it
+  // was warning about: "health drop to 30% no longer uses this". So the whole
+  // threshold is gone rather than left firing silently, and the `cried` field went
+  // with it.
   //
-  // `cried` rather than a health comparison, because health goes back UP: he heals
-  // to 50% and would otherwise cross 30 a second time on the way down.
-  if (d.rage && !e.cried && e.hp > 0 && e.hp < e.maxHp * 0.3) {
-    e.cried = true;
-    solo(BOSS_HURT, true);
-  }
-
   // THE SECOND STAGE, at a quarter health and once. `e.stage` is its own guard:
   // this can only fire in stage 1 and `land` leaves him in stage 2 forever, so
   // "for the first time" needs no separate flag.
@@ -626,7 +619,16 @@ export function updateEnemies(state, dt) {
               loose(state, e, mark);
               e.shot = now.ranged.hold;
             }
-            e.tcd = now.ranged.cd;
+            // THE COOLDOWN IS THE HOLD, not the whole cycle, and that is what keeps
+            // the Default drawing off him. He waits out the loosing pose and is
+            // immediately ready to nock again, so the two poses run end to end for
+            // as long as anybody is in range. The cycle still comes to `cd`,
+            // because the nock below takes the rest of it.
+            //
+            // It was `cd` here, which made him wait a FULL cycle AFTER the pose had
+            // finished — so the shot rhythm was right and he spent the gap between
+            // shots standing in his walking pose with a squad in front of him.
+            e.tcd = now.ranged.hold;
             // AND REFRESHED ON THE LOOSE, not only on the nock. The two clocks are
             // both 2 seconds — `stow` and `cd` — so setting it once per shot let it
             // expire on the exact frame the next nock re-set it, and the shield went
@@ -637,7 +639,12 @@ export function updateEnemies(state, dt) {
             if (now.stow) e.stowed = now.stow;
           }
         } else if (mark && e.tcd <= 0) {
-          e.nock = now.reload.seconds;
+          // WHATEVER IS LEFT OF THE CYCLE once the loosing pose has had its share.
+          // Derived rather than a number on the def, so the two poses always add to
+          // exactly one shot and no retune can open a gap between them for the
+          // Default to show through. Floored at a frame so a `hold` mistakenly set
+          // longer than `cd` cannot make this negative and fire every frame.
+          e.nock = Math.max(1 / 60, now.ranged.cd - now.ranged.hold);
           // ON THE NOCK rather than on the loose, so the shield is already away
           // before the first arrow leaves — the drawing shows him with it stowed
           // from the moment he reaches for the bow, and the plate should agree.

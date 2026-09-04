@@ -1266,12 +1266,20 @@ export function updateUnits(state, dt) {
       // whichever hand did it — the tally is on the killer, so a sword and an
       // arrow both feed it and the fifth is the fifth however he got there.
       //
-      // Category B, unlike his other five lines: this is a running tally rather
-      // than a moment, and a boss who ducked the whole board every fifth kill
-      // would be talking over the fight he is winning.
+      // CATEGORY A, HELD, LIKE THE REST OF HIS VOICE. It was Category B on the
+      // reasoning that a running tally is not a moment and should not duck the
+      // board every fifth kill. The owner has overruled that twice — "increase more
+      // volume especially for captain_thug_kill_soldier", and "any voices coming
+      // from captain thug will jump straight to number 1 priority" — and they are
+      // right about what it costs: it fires once per five men, which on a board he
+      // is winning is not often, and the whole point of the line is that the player
+      // notices their squad is going down.
+      //
+      // The background bus runs at 0.45, so moving it off there is worth more than
+      // twice on its own, before the levelling change.
       if (u.killer && u.killer.def && u.killer.def.boss && u.killer.hp > 0) {
         u.killer.kills = (u.killer.kills || 0) + 1;
-        if (u.killer.kills % 5 === 0) play(BOSS_KILLS);
+        if (u.killer.kills % 5 === 0) solo(BOSS_KILLS, true, true);
       }
       u.killer = null;
       // He falls facing whatever killed him. The fallback is his own facing —

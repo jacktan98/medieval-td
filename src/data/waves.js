@@ -993,10 +993,19 @@ export const enemyTypes = {
       sprite: 'captain_reload',
       trim: [151, 182, 211, 167],
       pivot: [0.531, 0.904],
-      // A SIXTH OF A SECOND, three times quicker than the half-second it shipped
-      // with, at the owner's word. Written as the division so the change is legible
-      // rather than as 0.167, which reads like a measurement of something.
-      seconds: 0.5 / 3
+      // NO DURATION OF ITS OWN. It is whatever is left of the shot cycle once the
+      // loosing pose has had its share — `cd` minus `hold`, worked out in
+      // updateEnemies — and that is the whole of how the owner's second rule is
+      // kept: "animation should only alter between ranged reload and ranged attack
+      // when shooting arrows. Default image should also not be used unless enemies
+      // are not in range and he starts walking."
+      //
+      // A duration here could not keep it. Two fixed beats inside a longer cycle
+      // leave a gap, and a gap is the Default drawing: at a 0.667s cycle with two
+      // sixths of a second of poses, he stood in his walking pose for the other
+      // half of every shot while a squad was in front of him. Deriving it means the
+      // two poses fill the cycle exactly, whatever the rate of fire is retuned to,
+      // and the gap cannot come back.
     },
     // The sword, close in. The Blocker's arrangement: a soldier with hold of him
     // gets the blade, and the bow is not used at arm's length.
@@ -1104,7 +1113,15 @@ export const enemyTypes = {
       // himself there is a tower that can be built to answer him, which is the
       // thing that makes standing off a fight rather than a stalemate.
       range: 150,
-      cd: 2.0,
+      // THREE TIMES THE RATE OF FIRE, at the owner's clarification: "I meant the
+      // whole rate of fire should be 3x." A shot every two thirds of a second
+      // against the two seconds he shipped with.
+      //
+      // AND THIS IS THE ONLY NUMBER THAT SETS THE RHYTHM NOW. The loosing pose takes
+      // `hold` of it and the nocking pose takes the rest, so retuning this moves
+      // both animations with it and can never open a gap between them. At 0.667 he
+      // nocks for half a second and looses for a sixth.
+      cd: 2 / 3,
       // The same 80 the sword does. One number for both, so his reach decides how a
       // blow arrives and never how much it is worth.
       damage: 80,
@@ -1127,16 +1144,13 @@ export const enemyTypes = {
       //
       // There is no `onTheMove` flag any more. It existed for this one creature and
       // nothing else in the game used it.
-      // HOW LONG THE LOOSING POSE HOLDS, and it moves with the reload so the two
-      // beats stay equal: a sixth of a second each, three times quicker than they
-      // shipped. Timed rather than decayed, unlike every other figure's Attack
-      // drawing, so no lunge is dragged along with it.
+      // HOW LONG THE LOOSING POSE HOLDS. A sixth of a second — a snap, where the
+      // nocking that precedes it is the long half of the cycle, which is the right
+      // way round for a bow. Timed rather than decayed, unlike every other figure's
+      // Attack drawing, so no lunge is dragged along with it.
       //
-      // THE COOLDOWN IS UNCHANGED at 2 seconds, and that is worth knowing because
-      // it is what the two beats sit inside. He now nocks and looses in a third of
-      // a second and then stands with the bow down for the rest of it. If the whole
-      // RHYTHM is meant to be quicker rather than just the animation, `cd` is the
-      // number to move and it is one line.
+      // It is a SHARE of `cd` rather than a beat beside it: whatever is left after
+      // this is the reload, so the two always add to exactly one shot.
       hold: 0.5 / 3
     },
     // ========================================================================
@@ -1161,7 +1175,11 @@ export const enemyTypes = {
         sprite: 'captain_pause',
         trim: [112, 124, 343, 232],
         pivot: [0.44, 0.901],
-        seconds: 2
+        // THREE SECONDS, up from two, at the owner's word — and it is now the beat
+        // with his voice over it rather than the silent one, so it wants the room.
+        // Five seconds of standing still before he gets up again, all of it a
+        // window the player can spend.
+        seconds: 3
       },
       // BEAT TWO. Three seconds of mending, worth half his maximum.
       //
