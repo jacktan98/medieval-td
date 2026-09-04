@@ -1038,11 +1038,11 @@ export const enemyTypes = {
     // future Captain who guarded until something got closer than he could shoot
     // would be a one-line change instead of a rewrite.
     //
-    // It FOLLOWED the bow down from 200 to 150 rather than being left behind, which
+    // It FOLLOWS THE BOW — 200 to 150 to 90 — rather than being left behind, which
     // is the failure this field's independence invites: a Captain who put his
-    // shield away at 200 and could not shoot until 150 would spend 50px of every
+    // shield away at 150 and could not shoot until 90 would spend 60px of every
     // approach unarmed and unarmoured for no reason a player could see.
-    sheathe: 150,
+    sheathe: 90,
     // AND IT STAYS STOWED FOR TWO SECONDS ONCE HE STARTS SHOOTING, at the owner's
     // word — "when attacking by ranged, Captain Thug cannot use defend for 2
     // seconds. Otherwise, he keeps flipping between images when shooting arrows
@@ -1056,9 +1056,10 @@ export const enemyTypes = {
     // a rule about radius could never remove, because the shield really had gone
     // up.
     //
-    // Two seconds against a two-second shooting cycle, so a Captain who is working
-    // on a squad never puts it up at all, and one who has finished has it back by
-    // the time he could want it.
+    // Two seconds against a third-of-a-second shooting cycle, so a Captain who is
+    // working on a squad never puts it up at all, and one who has finished has it
+    // back well before he could want it. It was comfortably longer than the cycle
+    // when the cycle was 2s and it is six times longer now.
     stow: 2,
     // WHAT HE SAYS WHEN HE IS TAPPED, and he is the first creature on the road with
     // a line of his own — everything else answers with the common thug's. One word
@@ -1072,9 +1073,9 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    // 8,000, the owner's number, up from 5,000. He is ten Giants of health, and the
-    // fight is meant to be the length of a wave rather than an interruption to one.
-    hp: 8000,
+    // 9,000, the owner's number. He is eleven Giants of health, and the fight is
+    // meant to be the length of a wave rather than an interruption to one.
+    hp: 9000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
@@ -1099,32 +1100,44 @@ export const enemyTypes = {
     // Sword and bow both, and the two are one number on purpose: where he is
     // standing decides how the blow ARRIVES and not how hard.
     //
-    // 80, the owner's number. A spearman wears low physical plate, so it arrives as
-    // 60 and takes him in three swings; a paladin's medium turns it to 40 — which
-    // makes the paladin the answer to stage 1 and, deliberately, no answer at all
-    // to stage 2, where the same 80 comes back as magic and his physical plate is
-    // worth nothing against it.
-    damage: 80,
-    atkCd: 1.0,
+    // 90, the owner's number, and it is both his kinds of damage: physical in stage
+    // 1 and magic in stage 2, the same number either way. A spearman wears low
+    // physical plate, so it arrives as 68 and takes him in three swings; a
+    // paladin's medium turns it to 45 — which makes the paladin the answer to
+    // stage 1 and, deliberately, no answer at all to stage 2, where the same 90
+    // comes back as magic and his physical plate is worth nothing against it.
+    damage: 90,
+    // THREE STRIKES EVERY TWO SECONDS, the owner's rate, against the one a second
+    // everything else on the road swings at. He is half again as fast as a Giant
+    // with a blow three times the size.
+    //
+    // Stage 2 divides this by the 1.2 in `rage.times`, so an enraged Captain lands
+    // one every 0.56s — nine strikes in five seconds, at 90 magic each, on a line
+    // whose plate does nothing about it.
+    atkCd: 2 / 3,
     ranged: {
-      // 150, the owner's number, down from the 200 I had picked off the Archer
-      // Thug. It matters more now that he STANDS at it: every archery tower in the
-      // game outranges 150 — a tier 1 bow reaches 190 — so wherever he plants
-      // himself there is a tower that can be built to answer him, which is the
-      // thing that makes standing off a fight rather than a stalemate.
-      range: 150,
-      // THREE TIMES THE RATE OF FIRE, at the owner's clarification: "I meant the
-      // whole rate of fire should be 3x." A shot every two thirds of a second
-      // against the two seconds he shipped with.
+      // 90, the owner's number, and it is now the SHORTEST reach of any thrower in
+      // the game — under the Dark Priest's 100, well under the plague doctor's 130
+      // and less than half the Archer Thug's 200.
       //
-      // AND THIS IS THE ONLY NUMBER THAT SETS THE RHYTHM NOW. The loosing pose takes
+      // That is a real change of character and it cuts both ways. He has to come a
+      // long way in to work on a line, which is the danger; and everything the
+      // player owns reaches further than he does, right down to a barracks squad's
+      // own 70 assist, so the answer to a Captain planted at 90 is almost anything
+      // rather than a specific tower. Standing off is a fight and not a stalemate.
+      range: 90,
+      // THREE SHOTS EVERY SECOND, the owner's rate. A third of a second each,
+      // against the two seconds he shipped with — six times.
+      //
+      // AND THIS IS THE ONLY NUMBER THAT SETS THE RHYTHM. The loosing pose takes
       // `hold` of it and the nocking pose takes the rest, so retuning this moves
-      // both animations with it and can never open a gap between them. At 0.667 he
-      // nocks for half a second and looses for a sixth.
-      cd: 2 / 3,
-      // The same 80 the sword does. One number for both, so his reach decides how a
+      // both animations with it and can never open a gap between them for the
+      // Default to show through. At a third of a second the two come out equal: a
+      // sixth nocking and a sixth loosing.
+      cd: 1 / 3,
+      // The same 90 the sword does. One number for both, so his reach decides how a
       // blow arrives and never how much it is worth.
-      damage: 80,
+      damage: 90,
       ammo: enemyArrow,
       // AND HE PLANTS HIMSELF, exactly as the Archer Thug does — the owner's call:
       // "he shoots arrow like an archer thug where he stays put until the soldiers

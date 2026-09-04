@@ -204,6 +204,22 @@ export function raiseGuard(fig) {
   fig.guard = now.guard.seconds;
 }
 
+// WHAT A TIMER OVERSHOT BY, as a number to hand to the one that follows it, and
+// never more than a frame.
+//
+// Every clock in this game counts down and fires on `<= 0`, throwing away however
+// far past zero the last tick took it. That is fine for a two-second cooldown and
+// it stops being fine when a cycle is a third of a second: a tenth of a frame lost
+// per timer, twice a cycle, came out as 0.367s between the boss's arrows against
+// the 0.333 his rate of fire asks for — 2.7 shots a second where the owner said 3.
+//
+// CLAMPED TO ONE FRAME, which is the part that matters. `tcd` keeps counting down
+// while nobody is in range, so it can be seconds below zero by the time a soldier
+// walks up; carrying THAT would hand the next timer a negative start and fire a
+// shot instantly, and then another. A sub-frame remainder is the rounding error
+// this is for, and anything bigger is not a remainder.
+const carry = (clock, dt) => Math.max(-dt, Math.min(0, clock));
+
 // --- THE BOSS'S SCRIPT ----------------------------------------------------------
 //
 // Four beats, each a drawing held for a fixed number of seconds while he stands
@@ -614,10 +630,14 @@ export function updateEnemies(state, dt) {
         if (e.nock > 0) {
           e.nock -= dt * slowOf(e);
           if (e.nock <= 0) {
+            // The two poses run end to end, so the loosing one starts however far
+            // past zero the nock went — otherwise each beat costs an extra frame
+            // and the rate of fire comes out under what the def says.
+            const over = carry(e.nock, dt);
             e.nock = 0;
             if (mark) {
               loose(state, e, mark);
-              e.shot = now.ranged.hold;
+              e.shot = now.ranged.hold + over;
             }
             // THE COOLDOWN IS THE HOLD, not the whole cycle, and that is what keeps
             // the Default drawing off him. He waits out the loosing pose and is
@@ -628,7 +648,7 @@ export function updateEnemies(state, dt) {
             // It was `cd` here, which made him wait a FULL cycle AFTER the pose had
             // finished — so the shot rhythm was right and he spent the gap between
             // shots standing in his walking pose with a squad in front of him.
-            e.tcd = now.ranged.hold;
+            e.tcd = now.ranged.hold + over;
             // AND REFRESHED ON THE LOOSE, not only on the nock. The two clocks are
             // both 2 seconds — `stow` and `cd` — so setting it once per shot let it
             // expire on the exact frame the next nock re-set it, and the shield went
@@ -644,7 +664,8 @@ export function updateEnemies(state, dt) {
           // exactly one shot and no retune can open a gap between them for the
           // Default to show through. Floored at a frame so a `hold` mistakenly set
           // longer than `cd` cannot make this negative and fire every frame.
-          e.nock = Math.max(1 / 60, now.ranged.cd - now.ranged.hold);
+          e.nock = Math.max(1 / 60,
+            now.ranged.cd - now.ranged.hold + carry(e.tcd, dt));
           // ON THE NOCK rather than on the loose, so the shield is already away
           // before the first arrow leaves — the drawing shows him with it stowed
           // from the moment he reaches for the bow, and the plate should agree.
