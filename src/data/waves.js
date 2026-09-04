@@ -1073,9 +1073,9 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    // 9,000, the owner's number. He is eleven Giants of health, and the fight is
+    // 10,000, the owner's number, which is twelve and a half Giants. The fight is
     // meant to be the length of a wave rather than an interruption to one.
-    hp: 9000,
+    hp: 10000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
@@ -1084,29 +1084,43 @@ export const enemyTypes = {
     // it by the owner's 1.2, so enraged he moves at 60 — between a Blocker and an
     // Archer, and faster than the Giant he used to be slower than.
     speed: 50,
-    // THE CHOICE — BOUNTY. Not given. 250 against a Giant's 40, which is roughly
-    // what his health is worth at the rate the rest of the roster pays: he is 6.25
-    // giants of health and this is 6.25 giants of gold. It matters more than a
-    // normal bounty does, because killing him is a whole wave's work and the
-    // player should be able to rebuild afterwards.
-    bounty: 250,
-    // THE CHOICE — WHAT HE COSTS IF HE GETS THROUGH. Not given. 5 of 20 lives,
-    // against the Giant's 2 and everything else's 1. A quarter of the game for
-    // letting the boss walk past, which is meant to be the worst thing that can
-    // happen without being the end of the run — at 20 it would be a loss on its
-    // own, and a boss you cannot survive misjudging is a boss you reload rather
-    // than fight.
-    leak: 5,
+    // NO BOUNTY AND NO LEAK, at the owner's word, and the second of those is the
+    // reason for the first: "Captain thug has no bounty and no live lost as if he
+    // passes the exit, the game loses immediately."
+    //
+    // A leak COUNT would be a lie whatever number went in it. He does not take
+    // lives, he takes the run — see `ends` below — so 20 would be right only on a
+    // map that starts with 20 and wrong the moment one does not, and anything less
+    // would say he is survivable when he is not.
+    //
+    // And the bounty goes with it because the two are one idea: he is not a
+    // creature you trade against. There is no build to rebuild with afterwards if
+    // he gets through, and the reward for stopping him is the run continuing.
+    //
+    // Both are read straight off the def by the death sweep and the leak, and both
+    // are worth 0 there — the sweep pays `state.gold += 0` and the card prints
+    // nothing rather than a coin with a zero in it. See rewardRow in render.js.
+    bounty: 0,
+    leak: 0,
+    // HE ENDS THE RUN INSTEAD. One flag rather than a life count big enough to do
+    // it by arithmetic, because those are two different claims: a leak of 20 says
+    // "he costs twenty lives", which happens to lose a game that started with
+    // twenty and does not lose one that started with more. This says what is meant.
+    //
+    // Read in the leak sweep in src/enemies.js, which takes the lives to nothing
+    // rather than subtracting — so the ordinary "lives reached zero" path ends the
+    // game and there is no second way to lose for the summary to disagree about.
+    ends: true,
     // Sword and bow both, and the two are one number on purpose: where he is
     // standing decides how the blow ARRIVES and not how hard.
     //
-    // 90, the owner's number, and it is both his kinds of damage: physical in stage
-    // 1 and magic in stage 2, the same number either way. A spearman wears low
-    // physical plate, so it arrives as 68 and takes him in three swings; a
-    // paladin's medium turns it to 45 — which makes the paladin the answer to
-    // stage 1 and, deliberately, no answer at all to stage 2, where the same 90
+    // 100, the owner's number, and it is both his kinds of damage: physical in
+    // stage 1 and magic in stage 2, the same either way. A spearman wears low
+    // physical plate, so it arrives as 75 and takes him in three swings; a
+    // paladin's medium turns it to 50 — which makes the paladin the answer to
+    // stage 1 and, deliberately, no answer at all to stage 2, where the same 100
     // comes back as magic and his physical plate is worth nothing against it.
-    damage: 90,
+    damage: 100,
     // ONE STRIKE A SECOND, the owner's rate, which is the tempo everything else on
     // the road swings at. What makes him a boss in a melee is the size of the blow
     // rather than the rhythm of it.
@@ -1133,9 +1147,9 @@ export const enemyTypes = {
       // Default to show through. At half a second he nocks for a third and looses
       // for a sixth, which is the right way round for a bow: a draw and a snap.
       cd: 1 / 2,
-      // The same 90 the sword does. One number for both, so his reach decides how a
-      // blow arrives and never how much it is worth.
-      damage: 90,
+      // The same 100 the sword does. One number for both, so his reach decides how
+      // a blow arrives and never how much it is worth.
+      damage: 100,
       ammo: enemyArrow,
       // AND HE PLANTS HIMSELF, exactly as the Archer Thug does — the owner's call:
       // "he shoots arrow like an archer thug where he stays put until the soldiers

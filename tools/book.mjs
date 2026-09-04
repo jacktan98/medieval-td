@@ -36,7 +36,7 @@ import { ui, PORTRAIT_SCALE, BOOK_ICON_H,
 import { ABILITIES } from '../src/data/abilities.js';
 import {
   PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, abilityCards,
-  towerEntry, unitEntry, figureSlot, figureFit, ABILITY_ICON,
+  towerEntry, unitEntry, figureSlot, figureFit, ABILITY_ICON, bossCards, ENEMY_CARD_H, BOSS_TOP,
   SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
@@ -109,8 +109,14 @@ console.log('\nWhat is on the pages\n');
   ok(forkedLow.length === 0, 'and any fork in a ladder is at its top rung',
     LADDERS.map(t => t.map(d => d.tier).join('')).join(' / '));
 
-  ok(enemyCards().length === Object.keys(enemyTypes).length,
-    'every enemy has a card', `${enemyCards().length}`);
+  // BOTH BANDS. The enemy page is a roster above a boss band now, so a check that
+  // counted one of them would have quietly stopped covering the other — which is
+  // exactly what it did the moment the Captain arrived: seven cards for eight
+  // creatures, and the missing one was the boss.
+  const onPage = enemyCards().length + bossCards().length;
+  ok(onPage === Object.keys(enemyTypes).length,
+    'every enemy has a card, in one band or the other',
+    `${enemyCards().length} + ${bossCards().length} boss`);
 
   ok(abilityCards().length === ABILITIES.length,
     'and every ability has one', `${abilityCards().length}`);
@@ -203,7 +209,9 @@ console.log('\nWhat fits\n');
   // rather than two. Both pages draw the same cells, so checking them once is
   // checking both.
   const cards = shelf().map(({ col, row }) => shelfRect(col, row));
-  const all = [...cards, ...enemyCards(), ...abilityCards()];
+  // The shelf pages and the abilities, which share one card. The enemy roster and
+  // the boss band each have their own and are checked as their own bands below.
+  const all = [...cards, ...abilityCards()];
 
   // THE OVERFLOW CHECK, and it is here because the shelf has silently run off the
   // page once: twelve tiers exactly filled the two columns one half of a spread
@@ -220,6 +228,45 @@ console.log('\nWhat fits\n');
     b.x + b.w <= SHEET.x + SHEET.w && b.y + b.h <= SHEET.y + SHEET.h;
 
   ok(all.every(inSheet), 'every card sits on the parchment');
+
+  // --- THE ENEMY PAGE'S TWO BANDS ------------------------------------------------
+  //
+  // It is the one page with a layout of its own — a roster above, a boss band hung
+  // off the footer below — and the numbers that place it are derived from four
+  // others. Nothing checked any of it, which is how the old "every box the same
+  // size" check came to be the only thing standing near this geometry while not
+  // being about it at all.
+  //
+  // Four things have to hold, and each is a way the page could go wrong silently as
+  // the roster grows or a card gains a row:
+  {
+    const roster = enemyCards(), boss = bossCards();
+    const band = [...roster, ...boss];
+    ok(band.every(inSheet), 'every enemy and boss card sits on the parchment');
+
+    // THE TWO BANDS DO NOT MEET. The roster flows downward and the boss band is
+    // pinned upward, so they close on each other as enemies are added — an eighth
+    // roster member starts a third row and eats into the gap.
+    const lowest = Math.max(...roster.map(c => c.y + c.h));
+    const clear = BOSS_TOP - lowest;
+    ok(clear > 0, 'and the roster clears the boss band beneath it',
+      `${clear}px of parchment between them`);
+
+    // AND THE BOSS BAND CLEARS THE FOOTER, which is what it is measured against.
+    const under = FOOT_Y - (BOSS_TOP + ENEMY_CARD_H);
+    ok(under >= 0, 'and the boss band clears the footer', `${under}px`);
+
+    // AND THREE BOSSES FILL THE WIDTH FOUR ENEMIES DO, which is the owner's rule
+    // for the wider card and the only reason it has a width of its own.
+    // The gap is MEASURED off the roster rather than imported, so this compares two
+    // spans the page actually draws instead of one it draws and one it computes.
+    const gap = roster[1].x - (roster[0].x + roster[0].w);
+    const rosterSpan = roster[COLUMNS - 1].x + roster[COLUMNS - 1].w - roster[0].x;
+    const bossSpan = 3 * boss[0].w + 2 * gap;
+    ok(Math.abs(rosterSpan - bossSpan) <= 2,
+      'and three boss cards span what four enemy cards do',
+      `${bossSpan} against ${rosterSpan}`);
+  }
 
   // The fold is a gutter, not a divider, now that one list flows across both
   // halves — but nothing may sit ON it: a card that straddles the fold reads as
@@ -255,13 +302,21 @@ console.log('\nWhat fits\n');
   ok(gaps.size === 1, 'and every gap between cards is the same',
     `across ${across.join('/')}, down ${down.join('/')}`);
 
-  // EVERY BOX THE SAME SIZE. An enemy is exactly as much "a box description" as
-  // a tower is, and a page whose boxes are three sizes reads as three different
-  // kinds of thing. This is the check that keeps that true when the enemies
-  // page is next given something a shelf card has no room for.
+  // EVERY BOX THE SAME SIZE AS ITS SIBLINGS. It was every box in the BOOK, on the
+  // argument that an enemy is exactly as much "a box description" as a tower is and
+  // a page whose boxes are three sizes reads as three kinds of thing.
+  //
+  // That argument still holds inside a band and no longer holds across the book,
+  // and the owner's layout is why: an enemy card carries four rows where a tower
+  // carries three, so it is taller; and a boss card is wider, at three to a row
+  // where an enemy gets four, because his numbers are wider than anything else
+  // prints. Both are deliberate and neither is a size that "crept in".
+  //
+  // So the check is now the one that catches what the old one was really for —
+  // a card that does not match the cards beside it.
   const shape = b => `${b.w}x${b.h}`;
   const sizes = new Set(all.map(shape));
-  ok(sizes.size === 1, 'and every box on all four pages is the same size',
+  ok(sizes.size === 1, 'and every box on the shelf pages is the same size',
     [...sizes].join(', '));
 
   // THE ABILITY PAGE USES THE SAME CARD AS A TOWER'S — a name, the tower that
@@ -314,7 +369,12 @@ console.log('\nWhat fits\n');
   // the row the game actually draws — armour, pierce and blast, in that order, with
   // the `None`s already dropped.
 
-  const textRoom = shelfRect(0, 0).w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
+  // THE ROOM IS PER CARD NOW, not one number for the book. A boss card is wider
+  // than an enemy card — see bossCards in src/book.js — so measuring his rows
+  // against the shelf's width said his health did not fit a card it fits easily.
+  // Each row carries the width of the card it is actually printed on.
+  const roomIn = w => w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
+  const shelfRoom = roomIn(shelfRect(0, 0).w);
   const rows = [];
   for (const { def } of shelf()) {
     const e = unitEntry(def);
@@ -322,15 +382,28 @@ console.log('\nWhat fits\n');
     if (e.hp !== null) r.push(['stat_health', e.hp]);
     r.push(['stat_damage', e.damage]);
     if (e.range !== null) r.push(['stat_range', e.range]);
-    rows.push([occupant(def).name, r]);
+    rows.push([occupant(def).name, r, shelfRoom]);
     // And the second row, for the men who have anything to put in one.
-    if (e.traits.length) rows.push([`${occupant(def).name} (traits)`, e.traits]);
+    if (e.traits.length) rows.push([`${occupant(def).name} (traits)`, e.traits, shelfRoom]);
   }
-  for (const d of Object.values(enemyTypes)) {
+  // BOTH BANDS OF THE ENEMY PAGE, each against its own card. Taken from the cards
+  // themselves rather than from enemyTypes, so a creature that gained a band and
+  // lost its card would show up as a missing row rather than as a row measured
+  // against a width nothing draws it at.
+  for (const c of [...enemyCards(), ...bossCards()]) {
+    const d = c.def;
+    const room = roomIn(c.w);
     const r = [['stat_health', d.hp], ['stat_damage', shownDamage(d)]];
     if (shownRange(d) !== null) r.push(['stat_range', shownRange(d)]);
-    rows.push([d.name, r]);
-    if (traitRow(d).length) rows.push([`${d.name} (traits)`, traitRow(d)]);
+    rows.push([d.name, r, room]);
+    if (traitRow(d).length) rows.push([`${d.name} (traits)`, traitRow(d), room]);
+    // AND THE FOURTH ROW, which the enemy card gained for the bounty and the leak.
+    // Absent on a creature that has neither — the boss — and that absence is the
+    // card printing nothing rather than a coin with a zero in it.
+    if (d.bounty || d.leak) {
+      rows.push([`${d.name} (rewards)`,
+        [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]], room]);
+    }
   }
   // NO REWARDS ROW HERE ANY MORE. The coin and the broken heart moved inside the
   // picture at the owner's word, and the card row they vacated is the armour's —
@@ -349,22 +422,22 @@ console.log('\nWhat fits\n');
   //   does not fit at the floor is a card that needs redesigning — that is the
   //   failure, not the shrinking.
   const MIN_H = 10;
-  let squeezed = 0, widest = 0, stuck = 0;
-  for (const [who, r] of rows) {
+  let squeezed = 0, worst = 0, stuck = 0;
+  for (const [who, r, room] of rows) {
     const w = rowWidth(r);
-    if (w > widest) widest = w;
-    if (w <= textRoom) continue;
+    if (w / room > worst) worst = w / room;
+    if (w <= room) continue;
     squeezed++;
     // The same arithmetic statRow does: the height that would fit, floored.
-    const h = Math.max(MIN_H, Math.floor(BOOK_ICON_H * textRoom / w));
+    const h = Math.max(MIN_H, Math.floor(BOOK_ICON_H * room / w));
     const after = rowWidth(r, h);
-    const fits = after <= textRoom;
+    const fits = after <= room;
     if (!fits) stuck++;
-    console.log(`      ${who}: ${w.toFixed(1)}px of ${textRoom}, set at ${h}px -> ` +
+    console.log(`      ${who}: ${w.toFixed(1)}px of ${room}, set at ${h}px -> ` +
       `${after.toFixed(1)}px${fits ? '' : '  STILL OVER'}`);
   }
   ok(stuck === 0, 'and every stat row fits the card it is printed in',
-    `widest ${widest.toFixed(1)}px of ${textRoom}, ${squeezed} row(s) set smaller`);
+    `fullest row is ${(worst * 100).toFixed(0)}% of its card, ${squeezed} set smaller`);
 }
 
 console.log('\nOne margin, everywhere\n');

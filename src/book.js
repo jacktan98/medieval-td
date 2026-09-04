@@ -269,6 +269,9 @@ const figureAtBoard = (trim, pivot) => ({
 // and the small one: the alternative was every card in the book shrinking about a
 // tenth to make room for one creature. tools/book.mjs measures both halves.
 const roster = Object.values(enemyTypes).filter(d => !d.boss);
+// And the other half of the same split. One `boss` flag decides both the page's
+// two bands and the figure sizing above, so a second boss needs no code at all.
+const bosses = Object.values(enemyTypes).filter(d => d.boss);
 const BOARD_SPAN = anchored([
   ...TIERS.map(d => { const m = occupant(d); return figureAtBoard(m.trim, m.pivot); }),
   ...roster.map(d => figureAtBoard(d.spriteTrim, d.pivot))
@@ -465,9 +468,72 @@ export function rowsIn(b, n) {
 //
 // They flow across all four columns of the page and then down, so a third and
 // fourth enemy fill the row before anything starts a second one.
+// FOUR ROWS, WHICH IS WHY THE ENEMY PAGE HAS A CARD HEIGHT OF ITS OWN.
+//
+// Every other page holds a name over two rows and fits in the 73px the grid gives
+// it. An enemy now holds a name, its stats, its plate, and what killing it is
+// worth — four rows at ROW=20 is 80px before any air, so it cannot be the shelf's
+// card and stay legible.
+//
+// It costs the page nothing. Seven enemies in four columns is two rows and the
+// page has five rows' worth of room, which is the band of blank parchment the
+// mock-up shows under them. Taking 20px of that back for a row of numbers is the
+// best thing on the page to spend it on.
+//
+// The air is kept at what a tower card has — 73 less three rows is 13 — so the
+// block sits inside its plate exactly as every other card's does.
+const CARD_AIR = CARD_H - 3 * ROW;
+export const ENEMY_CARD_H = 4 * ROW + CARD_AIR;
+
+// A cell on the enemy page: the shelf's columns and gaps, its own height.
+const enemyRect = (col, row, h = ENEMY_CARD_H) => ({
+  x: PAGE_X + col * (CARD_W + GAP),
+  y: TOP + row * (h + GAP),
+  w: CARD_W,
+  h
+});
+
 export function enemyCards() {
-  return Object.values(enemyTypes).map((def, i) => ({
-    def, ...shelfRect(i % COLUMNS, Math.floor(i / COLUMNS))
+  return roster.map((def, i) => ({
+    def, ...enemyRect(i % COLUMNS, Math.floor(i / COLUMNS))
+  }));
+}
+
+// --- the boss row -------------------------------------------------------------
+//
+// A BAND OF ITS OWN AT THE FOOT OF THE PAGE, under its own heading, which is the
+// owner's layout. A boss is not a heavier thug and a row of him among the thugs
+// would say he was: he arrives once, the run turns on him, and the page should
+// read that way before any number on it is looked at.
+//
+// HUNG OFF THE BOTTOM rather than off the enemies above it. The roster grows — it
+// has gone from four to seven while this page has existed — and a band measured
+// down from the last enemy row would walk up and down the page every time one was
+// added. Measured up from the footer it does not move at all, and the blank
+// parchment between the two groups is what separates them.
+//
+// THREE TO A ROW WHERE AN ENEMY GETS FOUR, at the owner's word: "3 bosses
+// description length equals to 4 normal enemies description length". His numbers
+// are the reason — 10,000 and three digits of damage are wider than anything the
+// roster prints — and the arithmetic is exactly that sentence: three cards and
+// their two gaps fill what four cards and their three gaps do.
+const BOSS_COLUMNS = 3;
+const BOSS_CARD_W =
+  Math.floor((COLUMNS * CARD_W + (COLUMNS - 1) * GAP - (BOSS_COLUMNS - 1) * GAP) / BOSS_COLUMNS);
+
+// Where the band sits. The cards stand on the footer's own margin and the heading
+// rides above them at the same distance the page's heading sits above its first
+// row, so the two bands are titled identically.
+export const BOSS_TOP = FOOT_Y - PAD - ENEMY_CARD_H;
+export const BOSS_HEAD_Y = BOSS_TOP - (TOP - HEAD_Y);
+
+export function bossCards() {
+  return bosses.map((def, i) => ({
+    def,
+    x: PAGE_X + (i % BOSS_COLUMNS) * (BOSS_CARD_W + GAP),
+    y: BOSS_TOP + Math.floor(i / BOSS_COLUMNS) * (ENEMY_CARD_H + GAP),
+    w: BOSS_CARD_W,
+    h: ENEMY_CARD_H
   }));
 }
 
@@ -620,7 +686,7 @@ const within = (b, x, y) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y +
 // builders the cards themselves draw from, so the picture in the pop-up cannot
 // be a different drawing from the picture that was tapped.
 function artAt(state, x, y) {
-  if (state.book === 3) {
+  if (state.book === 2) {
     for (const c of abilityCards()) {
       if (within(cell(c), x, y)) {
         // `round` is the one thing an ability's picture needs that nothing else
@@ -639,8 +705,8 @@ function artAt(state, x, y) {
     return null;
   }
 
-  if (state.book === 2) {
-    for (const c of enemyCards()) {
+  if (state.book === 3) {
+    for (const c of [...enemyCards(), ...bossCards()]) {
       if (within(cell(c), x, y)) {
         // AND WHAT KILLING HIM IS WORTH, which used to be the card's third row and
         // is here at the owner's word: "for enemies, move the bounty gold and live
@@ -652,9 +718,20 @@ function artAt(state, x, y) {
         // AND IT IS ALL THAT IS LEFT IN HERE. The paragraph that used to sit beside
         // the picture is gone with statLines — see the note where it was, in
         // select.js — so this pop-up is now a portrait with two figures under it.
+        // AND WHAT KILLING HIM IS WORTH, which is also on the card now — the owner
+        // gave the enemy card a fourth row for it. Kept here as well rather than
+        // dropped: the pop-up is what a player opens to look at one creature, and
+        // taking a figure off it to avoid saying something twice would make the
+        // detailed view the less detailed one.
+        //
+        // NOTHING AT ALL FOR A CREATURE THAT HAS NEITHER, on exactly the reasoning
+        // rewardRow in render.js gives: a coin with a zero in it would say the boss
+        // is worth nothing to kill, which is the opposite of true.
+        const paid = c.def.bounty || c.def.leak
+          ? [['stat_gold_cost', c.def.bounty], ['stat_life_cost', c.def.leak]]
+          : [];
         return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name,
-                 kind: 'figure',
-                 stats: [['stat_gold_cost', c.def.bounty], ['stat_life_cost', c.def.leak]] };
+                 kind: 'figure', stats: paid };
       }
     }
     return null;

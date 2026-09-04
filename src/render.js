@@ -16,7 +16,8 @@ import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow } from './select.js';
-import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
+import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
+         abilityCards, towerEntry, unitEntry,
          abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
@@ -3480,10 +3481,15 @@ function drawBook(ctx, state) {
   ctx.font = '700 22px system-ui, sans-serif';
   ctx.fillText('Encyclopedia', 480, TITLE_Y);
 
+  // THE ENEMIES ARE LAST NOW and the abilities third, at the owner's word. It
+  // reads as a progression that way: what you build, who it musters, what those
+  // can be taught, and then what is coming for all of it. The enemy page is also
+  // the longest of the four — it has a boss band under the roster — so putting it
+  // at the back means the page that grows is the page nothing sits behind.
   if (state.book === 0) drawTowerPage(ctx);
   else if (state.book === 1) drawUnitPage(ctx);
-  else if (state.book === 2) drawEnemyPage(ctx);
-  else drawAbilityPage(ctx);
+  else if (state.book === 2) drawAbilityPage(ctx);
+  else drawEnemyPage(ctx);
 
   drawBookFooter(ctx, state);
   if (state.zoom) drawZoom(ctx, state.zoom);
@@ -4014,39 +4020,70 @@ function stat(ctx, key, x, y, text, colour, h = BOOK_ICON_H) {
 // and what it costs to let through are inside the picture instead, which is the
 // swap the armour paid for: they are the two facts a player learns once and then
 // knows, and the plate is the one they have to re-read for every tower they build.
+// WHAT A KILL PAYS AND WHAT A LEAK COSTS, as a row.
+//
+// They were the card's third row, then they moved inside the pop-up's picture to
+// make room for the armour, and the owner has now given the card a fourth row so
+// that both can be on it: "add 1 more line in their description preview so that
+// the bounty and lives lost can be shown there." The page is the place for them —
+// a bounty is a thing you compare across the roster, and comparing it meant
+// opening seven pop-ups.
+//
+// AN EMPTY ROW FOR A CREATURE THAT HAS NEITHER, which today is the boss and is
+// not an oversight: he pays nothing and costs nothing, because reaching the exit
+// ends the run outright. A zero in a coin would say he is worth nothing to kill,
+// which is the opposite of true, and a zero in a heart would say he is harmless.
+// Nothing said is better than either.
+const rewardRow = d => (d.bounty || d.leak)
+  ? [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]]
+  : [];
+
+// One enemy or boss card. The two are the same card at two widths — see
+// bossCards in book.js for why a boss gets a wider one — so they are drawn by one
+// function and differ only in the rect they are handed.
+function enemyCard(ctx, c) {
+  const d = c.def;
+  card(ctx, c);
+  drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot, figureFit(d)));
+
+  const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
+  const [r1, r2, r3, r4] = rowsIn(c, 4);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
+  ctx.fillText(d.name, tx, r1);
+
+  // Health, attack and — for the ones who fight at a distance — how far. The
+  // archer's 200 and the doctor's 130 are the whole difference between them
+  // and everything else on the page, and a player who cannot see the number
+  // learns it by watching a tower fail to answer.
+  const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
+  if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
+  const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
+  statRow(ctx, top, tx, r2, INK, room);
+
+  // AND WHAT HE WEARS AND WHAT HE THROWS. The four enemies are read as a column,
+  // and what a tower can hurt is the question the page is being opened to answer.
+  statRow(ctx, traitRow(d), tx, r3, INK, room);
+  statRow(ctx, rewardRow(d), tx, r4, INK, room);
+}
+
 function drawEnemyPage(ctx) {
   heading(ctx, 'Enemy', PAGE_X);
+  for (const c of enemyCards()) enemyCard(ctx, c);
 
-  for (const c of enemyCards()) {
-    const d = c.def;
-    card(ctx, c);
-    drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot, figureFit(d)));
-
-    const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
-    const [r1, r2, r3] = rowsIn(c, 3);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = INK;
-    ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
-    ctx.fillText(d.name, tx, r1);
-
-    // Health, attack and — for the two who fight at a distance — how far. The
-    // archer's 200 and the doctor's 130 are the whole difference between them
-    // and everything else on the page, and a player who cannot see the number
-    // learns it by watching a tower fail to answer.
-    const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
-    if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
-    const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
-    statRow(ctx, top, tx, r2, INK, room);
-
-    // AND WHAT HE WEARS AND WHAT HE THROWS, in the row the bounty and the leak
-    // used to have. It is the point of putting them here rather than in the pop-up:
-    // the four enemies are read as a column, and what a tower can hurt is the
-    // question the page is being opened to answer.
-    //
-    // The coin and the broken heart went inside the picture — see artAt in book.js.
-    statRow(ctx, traitRow(d), tx, r3, INK, room);
-  }
+  // AND THE BOSS BAND, under a heading of its own at the foot of the page. Only
+  // drawn when there IS one, so the heading cannot end up standing over blank
+  // parchment on a build where the roster has no boss in it.
+  const boss = bossCards();
+  if (!boss.length) return;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.fillText('Boss', PAGE_X, BOSS_HEAD_Y);
+  for (const c of boss) enemyCard(ctx, c);
 }
 
 // Page 4: what a topped-out tier 4 can be taught.

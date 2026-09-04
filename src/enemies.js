@@ -878,7 +878,18 @@ export function updateEnemies(state, dt) {
   }
 
   for (const e of state.enemies) {
-    if (e.leaked) state.lives -= e.def.leak;
+    if (!e.leaked) continue;
+    // A BOSS REACHING THE EXIT ENDS THE RUN, at the owner's word: "as if he passes
+    // the exit, the game loses immediately."
+    //
+    // Written as taking the lives to nothing rather than as setting `result`
+    // directly, and that is the whole care in it. There is exactly one way to lose
+    // this game — lives at zero, tested in main.js — and a second one set from
+    // here would be a second thing the end-of-game summary, the star record and
+    // the stall clock could each disagree about. Nothing downstream has to learn
+    // what a boss is; the keep simply falls.
+    if (e.def.ends) state.lives = 0;
+    else state.lives -= e.def.leak;
   }
 
   // Bounty is paid here rather than in projectiles.js, so a soldier's kill and
