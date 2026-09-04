@@ -536,7 +536,13 @@ export const ui = {
   // of being squashed into the old one.
   plate_speed:  { trim: [169, 217, 174, 78] },
   plate_wave:   { trim: [49, 217, 414, 78] },
-  plate_info:   { trim: [173, 395, 678, 234] }
+  // RE-DRAWN WIDER so the boss fits: 792 source px across against 678, at the same
+  // height and the same place in the canvas. The owner's reason is the Captain —
+  // 5,000 health is a digit wider than anything else in the game — and because the
+  // panel's width is DERIVED from this aspect at a fixed height, that is the whole
+  // change: the box gets 37 more game px of room and moves 37 further from the
+  // right edge, which tools/hud-clear.mjs re-checks against the gold and lives.
+  plate_info:   { trim: [116, 395, 792, 234] }
 };
 
 // The aspect of a plate, for deriving its drawn width from a fixed height.

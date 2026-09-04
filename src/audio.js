@@ -119,6 +119,55 @@ const LOUD_WINDOW = 0.3;
 const GAIN_MIN = 0.1;
 const GAIN_MAX = 5;
 
+// AND NO CLIP MAY BE AMPLIFIED PAST FULL SCALE, whatever the levelling wants.
+//
+// This is a real bug the boss uncovered rather than a precaution. The leveller
+// works on the RMS of the loudest 0.3s window, which is the right measure for
+// almost everything and badly wrong for a clip that is mostly quiet with one big
+// transient in it: `Captain_Thug_fall_dead` reads 0.048 loud — half the target —
+// so it was being multiplied by 1.87, and 0.774 peak x 1.87 is 1.446. Every
+// sample over full scale was being squared off, which is distortion, and
+// distortion on a clip with a quiet body is exactly what "too soft" sounds like.
+// The owner reported it by ear before anything measured it.
+//
+// EXPRESSED AT THE OUTPUT, which is why MASTER is in it. A source peak is not
+// what the speaker sees: it goes through its bus and then through the master at
+// 0.9, so the honest question is what comes out the end. `fall_dead` was reaching
+// 1.446 x 0.9 = 1.30 there, which is a third over and unambiguously clipping.
+//
+// 0.95 rather than 1.0 leaves a little room for the sum: Category A and the
+// background bus are both live at once, and two clips adding at their peaks is a
+// thing that happens.
+const PEAK_OUT = 0.95;
+const PEAK_CEILING = PEAK_OUT / MASTER;
+
+// --- Clips that are meant to be LOUDER than the rest of the game --------------
+//
+// TARGET_LOUD exists so that everything arrives at ONE loudness, and that is
+// right for the battle: a swing, a death and a selection are all things that
+// happen, and none of them should out-shout another. A boss is not in the battle.
+//
+// The owner's note is the whole of the argument — "players should hear them
+// clearly as this is a boss fight" — and the measurement says why levelling alone
+// could not deliver it: his lines were arriving at 0.29 to 0.32 peak, which is
+// exactly where `Thug_dies` (0.316) and `Soldier_dies` (0.329) sit. A boss
+// announcing himself at the same level as a militiaman dying is the leveller
+// doing its job and the job being the wrong one.
+//
+// A MULTIPLIER ON THE TARGET rather than six numbers in GAIN below, so it cannot
+// go stale: the six clips are re-levelled from their own measurements every load,
+// and a re-upload at a different recording level needs nothing changed here. The
+// ceiling above catches whatever the multiplier would otherwise overrun.
+//
+// 2.5 is a shade under +8dB over the rest of the game. It lands the five spoken
+// lines between 0.51 and 0.79 peak against everything else's 0.32, and the sixth
+// — the fall — is held at the ceiling by its own transient.
+const LOUDER_TIMES = 2.5;
+const LOUDER = new Set([
+  'captain_enters', 'captain_health30', 'captain_healed',
+  'captain_dying', 'captain_fallen', 'captain_kills'
+]);
+
 // Anything quieter than this counts as silence when finding where a clip really
 // starts and ends. Absolute rather than a share of the peak, so a quiet clip is
 // not credited with a quiet opening.
@@ -866,7 +915,7 @@ export function loadAudio() {
     fetch(stamp ? `${src}?v=${stamp}` : src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1); })
+      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key) ? LOUDER_TIMES : 1); })
       .catch(() => { if (AWAITED.has(key)) absent.push(src); else console.warn('Missing or unreadable audio:', src); })
   );
 
@@ -881,7 +930,7 @@ export function loadAudio() {
 //
 // The channels are summed to mono first. What the player hears is the sum, and
 // measuring one side of a stereo file would under-read anything panned.
-function analyse(buf, trim) {
+function analyse(buf, trim, louder = 1) {
   const n = buf.length;
   const mix = new Float32Array(n);
   for (let c = 0; c < buf.numberOfChannels; c++) {
@@ -918,8 +967,13 @@ function analyse(buf, trim) {
   // and is left alone rather than being multiplied by GAIN_MAX.
   const silent = head >= n || loud <= 0;
 
-  const gain = silent ? trim
-    : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD / loud));
+  // LEVELLED, THEN CAPPED. `louder` raises the target for the handful of clips
+  // that are meant to sit above the battle; the ceiling then stops any of it —
+  // the boost, the automatic gain, or a hand-set trim — from pushing a sample
+  // past full scale. Applied last so it is the final word.
+  const levelled = silent ? trim
+    : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD * louder / loud));
+  const gain = peak > 0 ? Math.min(levelled, PEAK_CEILING / peak) : levelled;
 
   return {
     buf,

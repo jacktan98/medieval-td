@@ -195,6 +195,27 @@ and it now means "how long a lull has to be before the game forgets".
 Everything above the line is Category A and shares the one channel; the ones
 below run on the background bus and play every time.
 
+**The six Captain Thug clips are levelled LOUDER than everything else** — 2.5x
+the shared target, about +8dB — at the owner's word: "players should hear them
+clearly as this is a boss fight." Everything else in the game arrives at one
+loudness on purpose; a boss is not in the battle, and his lines were landing at
+exactly the level `Thug_dies` and `Soldier_dies` sit at. See `LOUDER` in
+src/audio.js. It is a multiplier on the target rather than a hand-set gain, so a
+re-recorded file needs nothing changed.
+
+**No clip may be amplified past full scale at the output**, whatever the levelling
+wants — `PEAK_CEILING` in src/audio.js. That is a real fix rather than a
+precaution: `Captain_Thug_fall_dead` was being pushed to 1.30 at the output and
+every sample over the top was being squared off.
+
+**`Captain_Thug_fall_dead` cannot go as loud as the other five, and the file is
+why.** It is 0.63s at 0.038 RMS with a **0.1 millisecond spike** at 0.774 — three
+samples, right at the front. The ceiling is set by that spike, so the clip is held
+at a gain of 1.36 where the levelling would like 4.67. Re-export it with the spike
+gone (or simply normalised/compressed) and it will sit with the other five
+automatically: nothing here needs changing, because the level is measured at load
+rather than typed.
+
 **The three gold noises all have PRIORITY.** Building, upgrading and selling are
 the things a player does with money, and every one of them is a button pressed
 deliberately — so all three take the Category A channel off whatever the battle

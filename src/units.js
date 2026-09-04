@@ -8,7 +8,7 @@ import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
-import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf } from './data/armour.js';
+import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -1076,7 +1076,22 @@ export function updateUnits(state, dt) {
       // march — see slowOf in src/status.js. The clock is ticked slower rather
       // than `atkCd` being lengthened, so the slow can land halfway through a
       // wind-up and take the rest of it rather than the whole swing.
-      if (u.holds) {
+      // NOT WHILE HE IS CHANNELLING. A boss in one of his scripted beats does
+      // nothing at all — the owner's rule is "when healing, Captain Thug cannot
+      // attack, just like Paladin's Holy Light" — and this is the only place he
+      // still could, because the counter-attack is ticked from the SOLDIER'S loop
+      // rather than from his own.
+      //
+      // The clock is not ticked either, so he does not bank a swing while he
+      // stands there and land it the instant the beat ends. That is the same
+      // reading the Dark Priest's interrupted cast gets: a moment taken off you
+      // costs you the moment.
+      //
+      // It also makes the five seconds a real window rather than a nominal one.
+      // Standing in front of him with a squad while he mends is meant to be the
+      // player's chance, and a boss who was still cutting the squad down through
+      // it would have made the transformation free.
+      if (u.holds && !busy(u.foe)) {
         u.foe.acd -= dt * slowOf(u.foe);
         if (u.foe.acd <= 0) {
           // AND THE OTHER WAY ROUND, through the SOLDIER'S armour — which is the

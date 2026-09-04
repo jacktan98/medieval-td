@@ -154,6 +154,24 @@ export function stageOf(fig) {
   return (fig.stage === 2 && def.rage) ? def.rage : def;
 }
 
+// IS THIS FIGURE LOCKED IN A SCRIPTED BEAT — channelling, mending, beaten or
+// fallen — and therefore unable to do anything at all?
+//
+// It lives here rather than in enemies.js because units.js needs it and cannot
+// import from there: enemies.js already imports `unhook` and `hidden` from
+// units.js, so the arrow only goes one way. This module is the leaf all three
+// share and it is already where "what is this figure right now" is answered.
+//
+// WHAT IT IS FOR. A boss standing still with his hands full of light cannot swing
+// back at the man holding him, at the owner's word — "when healing, Captain Thug
+// cannot attack, just like Paladin's Holy Light". His own update loop already
+// stops dead during a beat, but the counter-attack is not run from there: it is
+// run from the SOLDIER'S loop, which ticks the enemy's clock and lands its blow,
+// and it knew nothing about any of this.
+//
+// False for everything in the game that is not a boss, on every frame of its life.
+export const busy = fig => !!(fig && fig.act);
+
 // HOW MUCH FASTER HE IS THAN THE DEF SAYS, as one multiplier for BOTH his walk
 // and his swing. The owner's number is 1.2 and it is one number on purpose: he is
 // faster, not faster at one thing and not the other, and two fields would let the

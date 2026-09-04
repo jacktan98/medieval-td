@@ -682,17 +682,16 @@ export function updateEnemies(state, dt) {
     // exactly what happened to the last one.
     const road = laneOf(level.routes[e.route], e.lane);
 
-    // AND ONE SHOOTER DOES NOT STOP AT ALL. `onTheMove` is the Captain's, and it
-    // is the one place the boss refuses to copy the Archer Thug he is partly made
-    // of. The owner has accepted that an archer standing at his own reach can hold
-    // a wave open until the stall clock fires — it is a creature you can leave and
-    // come back to. A BOSS doing it is not a hard fight, it is a wait: the wave is
-    // built around him, so a Captain planted at 200px shooting forever is the game
-    // stopping rather than the game being difficult.
+    // EVERY SHOOTER IN THE GAME STANDS OFF, the boss included. There was an
+    // `onTheMove` flag here for one build, so that the Captain fired as he walked
+    // and could never hold a wave open; the owner has ruled that he plants himself
+    // like an archer, and the flag is gone rather than left in the data unused.
     //
-    // He therefore fires as he walks and can never stall a wave at all, which also
-    // means the stall clock never has to save this creature from itself.
-    e.halted = !!now.ranged && !now.ranged.onTheMove && screened(state, e, road);
+    // The trade is the one the Archer Thug already carries and it is stated on his
+    // `ranged` block in data/waves.js: a thrower who halts where nothing reaches
+    // him is killed by nothing and advances never, and the wave hands over on the
+    // stall clock rather than on a clear field.
+    e.halted = !!now.ranged && screened(state, e, road);
     if (e.halted) continue;
 
     // One number forward along the road, then the position is looked up. The

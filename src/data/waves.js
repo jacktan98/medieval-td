@@ -1025,7 +1025,12 @@ export const enemyTypes = {
     // `ranged.range` because they are two different questions about him, and a
     // future Captain who guarded until something got closer than he could shoot
     // would be a one-line change instead of a rewrite.
-    sheathe: 200,
+    //
+    // It FOLLOWED the bow down from 200 to 150 rather than being left behind, which
+    // is the failure this field's independence invites: a Captain who put his
+    // shield away at 200 and could not shoot until 150 would spend 50px of every
+    // approach unarmed and unarmoured for no reason a player could see.
+    sheathe: 150,
     spriteFaces: -1,
     // HIS BODY IS HIS OWN ELEVENTH DRAWING, dropped by the finale below rather
     // than by the death sweep — see `dropCorpse` in src/enemies.js. The fields are
@@ -1055,28 +1060,46 @@ export const enemyTypes = {
     // own, and a boss you cannot survive misjudging is a boss you reload rather
     // than fight.
     leak: 5,
-    // Sword and bow both, at the owner's word: "Physical Attack (Melee and
-    // Ranged): 50 (individual)". The two are one number on purpose, so where he is
-    // standing decides how the blow arrives and not how hard.
-    damage: 50,
+    // Sword and bow both, and the two are one number on purpose: where he is
+    // standing decides how the blow ARRIVES and not how hard.
+    //
+    // 100, the owner's number, doubled from the 50 he shipped with. That is a real
+    // step: a spearman wears low physical plate, so 100 arrives as 75 and takes
+    // most of him in two swings, and a paladin's medium turns it to 50 — which
+    // makes the paladin the answer to stage 1 and, deliberately, no answer at all
+    // to stage 2, where the same 100 comes back as magic.
+    damage: 100,
     atkCd: 1.0,
     ranged: {
-      // THE CHOICE — REACH. Not given. The Archer Thug's 200, so a tier 1 bow at
-      // 190 nearly trades with him and a Crossbow Tower at 220 comfortably does.
-      range: 200,
+      // 150, the owner's number, down from the 200 I had picked off the Archer
+      // Thug. It matters more now that he STANDS at it: every archery tower in the
+      // game outranges 150 — a tier 1 bow reaches 190 — so wherever he plants
+      // himself there is a tower that can be built to answer him, which is the
+      // thing that makes standing off a fight rather than a stalemate.
+      range: 150,
       cd: 2.0,
-      damage: 50,
+      // The same 100 the sword does. One number for both, so his reach decides how
+      // a blow arrives and never how much it is worth.
+      damage: 100,
       ammo: enemyArrow,
-      // AND HE SHOOTS ON THE MOVE, which is the one place he does NOT copy the
-      // Archer Thug. An archer plants himself at his own reach and stands there,
-      // and the owner has accepted that this can hold a wave open until the stall
-      // clock fires — "players will find a way to eliminate him".
+      // AND HE PLANTS HIMSELF, exactly as the Archer Thug does — the owner's call:
+      // "he shoots arrow like an archer thug where he stays put until the soldiers
+      // is cleared from this range".
       //
-      // That trade is fine for a creature you can ignore and wrong for the one the
-      // wave is built around: a boss standing at 200px shooting for the rest of
-      // the game is not a fight, it is a wait. So he keeps walking and fires as he
-      // comes, which also means he cannot stall a wave at all.
-      onTheMove: true,
+      // I had him firing on the move for one build, on the reasoning that a boss
+      // standing at his own reach could hold a wave open until the stall clock
+      // fired, and that a wait is not a fight. The owner has ruled the other way
+      // and it is the same ruling the Archer already carries — "players will find a
+      // way to eliminate him" — so the same answer applies to both and there is one
+      // behaviour to learn rather than two.
+      //
+      // WHAT IT COSTS, stated plainly: a Captain who halts where no tower reaches
+      // is killed by nothing and advances never, and the wave hands over on the
+      // stall clock instead of on a clear field. 150 is what makes that unlikely —
+      // see `range` above — but it is the trade, and it is deliberate.
+      //
+      // There is no `onTheMove` flag any more. It existed for this one creature and
+      // nothing else in the game used it.
       // HOW LONG THE LOOSING POSE HOLDS, in seconds, and the owner's 0.5. Every
       // other figure in the game shows its Attack drawing for the quarter second
       // `thrust` takes to decay; his is twice that and is timed rather than
@@ -1146,9 +1169,16 @@ export const enemyTypes = {
       // that made him a wall against this boss for the whole of stage 1 — is worth
       // nothing against it.
       damageType: 'magic',
-      // AND IT CATCHES EVERYONE AROUND HIM, at the owner's 50. The same damage to
-      // the man he is fighting and to every man near him, with no falloff, which
-      // is how every other splash in this game reads.
+      // AND IT CATCHES EVERYONE AROUND HIM. The same damage to the man he is
+      // fighting and to every man near him, with no falloff, which is how every
+      // other splash in this game reads.
+      //
+      // THE SPLASH IS HIS BLOW, not a number of its own — `sweep` in units.js
+      // reads `def.damage` — so it followed the sword from 50 to 100 with him.
+      // The owner's "AOE damage of 50" was written when his attack WAS 50, and
+      // "magic attack when stage 2 follows to 100" reads as the whole blade moving
+      // together. If the splash was meant to stay behind at 50 it wants its own
+      // field here and one line in sweep(); say so and it is a two-minute change.
       //
       // THE CHOICE — HOW WIDE. Not given. 60px, which is twice the 30 a soldier
       // blocks at and just under the 70 a squad assists within: it catches the men
