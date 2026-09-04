@@ -39,6 +39,7 @@ import {
   modeTabs, waveCountFor
 } from '../src/admin.js';
 import { starsFor, starCuts, bestStars, recordStars, clearStars, MAX_STARS } from '../src/score.js';
+import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -172,6 +173,54 @@ console.log('\nThe wave table the game is handed\n');
   ok(lv.waves[2].groups[0].count === shipped(`${lv.id}|normal|2|light_inf`),
     'and the LEVEL is untouched underneath it', `${lv.waves[2].groups[0].count}`);
   reset();
+}
+
+// --- the difficulty layered on top ----------------------------------------------
+//
+// THE PANEL SHOWS A NUMBER AND THE GAME SENDS A NUMBER, and the whole point of the
+// dashboard is that they are the same number. They were not: the three Extended
+// tables were tuned by playing at HARD, and Hard was still multiplying them by
+// 1.10 on top, so a wave dialled to 22 arrived as 25 and a whole Bend Extended run
+// sent 329 enemies through a table tuned to 280. Nothing failed — every check here
+// read the table, and the multiplier lived one file away.
+//
+// So this section reads the table the DIFFICULTY hands over, not the one the panel
+// builds, and it checks the two are identical at Hard on every map and both
+// lengths. It is the only assertion in the project that ties data/waves.js to
+// data/difficulty.js, and it is the one that was missing.
+console.log('\nWhat the difficulty does to it\n');
+
+{
+  ok(DIFFICULTIES[1].count === 1,
+    'Hard multiplies the counts by ONE, because the tables were tuned at Hard',
+    `${DIFFICULTIES[1].count}`);
+
+  for (const lv of levels) {
+    for (const mode of MODES) {
+      const table = tableFor(lv, mode.id);
+      const played = scaleWaves(adminWaves(lv, mode.id), DIFFICULTIES[1]);
+      const same = played.length === table.length && played.every((w, i) =>
+        w.groups.length === table[i].groups.length &&
+        w.groups.every((g, j) => g.count === table[i].groups[j].count));
+      const total = t => t.reduce((a, w) => a + w.groups.reduce((b, g) => b + g.count, 0), 0);
+      ok(same, `${lv.name} ${mode.name} on Hard sends exactly what the table says`,
+        `${total(played)} vs ${total(table)}`);
+    }
+  }
+
+  // NEAREST, NOT UP. The dashboard's own steppers round a typed count up — that is
+  // the owner's rule for a dial — but a multiplier applied to a whole table has to
+  // round to nearest, or every group in a wave gains a body and a seven-group wave
+  // reads as "one extra of everything". 6 × 0.85 is 5, not 6.
+  const six = [{ rest: 0, groups: [{ type: 'light_inf', count: 6, gap: 1 }] }];
+  ok(scaleWaves(six, DIFFICULTIES[0])[0].groups[0].count === 5,
+    'and Normal actually thins a group of six, rather than rounding it back up',
+    `${scaleWaves(six, DIFFICULTIES[0])[0].groups[0].count}`);
+
+  // The floor survives it: a lone heavy is the wave that teaches the heavy.
+  const one = [{ rest: 0, groups: [{ type: 'heavy_inf', count: 1, gap: 1 }] }];
+  ok(scaleWaves(one, DIFFICULTIES[0])[0].groups[0].count === 1,
+    'but a group of one is never rounded out of the game');
 }
 
 // --- putting anything in any wave -----------------------------------------------

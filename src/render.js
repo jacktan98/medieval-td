@@ -4373,7 +4373,7 @@ function drawAdminWaves(ctx, a) {
   // against the footer rather than the upper.
   ctx.fillStyle = 'rgba(240,230,210,0.40)';
   ctx.font = '13px system-ui, sans-serif';
-  ctx.fillText('Difficulty is applied on top of these: Normal thins a wave, Hard swells it.',
+  ctx.fillText('Hard plays these counts exactly. Normal thins them to 85%.',
     ADMIN_PANEL.x + 16, SUMMARY_Y() + 22);
 }
 

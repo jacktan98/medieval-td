@@ -13,57 +13,78 @@
 // back. That is why Normal moves both in the same direction rather than only
 // thinning the waves.
 //
-// WHERE THE MIDDLE IS. Every wave table in data/waves.js was tuned before this
-// file existed, so the tables ARE the middle — 1.0 on both knobs is exactly the
-// game as it has been all along, and neither setting below is that. Normal is
-// easier than what the maps were tuned to and Hard is harder, so the tuning
-// notes over each table still describe the point the two settings straddle.
+// WHERE THE TABLES SIT. They used to be the middle: every wave table in
+// data/waves.js was tuned before this file existed, so 1.0 on both knobs was the
+// game as it had been all along and neither setting was that — Normal sat below
+// it, Hard above.
+//
+// THAT IS NO LONGER TRUE, and the reason is that the owner played the game. The
+// three Extended tables in data/waves.js are hand-tuned counts from real runs at
+// HARD Extended, dialled in through the admin dashboard, and the short tables are
+// derived from them. The tables are the Hard end of the scale now, not the middle
+// of it, so Hard multiplies by ONE: the numbers in the file are the numbers that
+// were tested, and the setting they were tested at plays them untouched.
+//
+// Hard was 1.10 for as long as the tables were the middle, and leaving it there
+// once they became the Hard end was a real bug rather than a stale comment. It
+// sent 329 enemies through a Bend Extended run that had been tuned to 280 — the
+// tenth on top of numbers that already had the tenth in them.
 
 export const DIFFICULTIES = [
   {
     id: 'normal',
     name: 'Normal',
     // NOT AS GENEROUS AS IT WANTED TO BE, and the limit is the invariant rather
-    // than taste. At 0.8 / 1.2 the best five-siege-plus-one build cleared map 1
-    // two seeds in five, and at 0.85 / 1.15 pure barracks cleared map 2 — which
-    // would teach a Normal player that one family is a strategy and then take it
-    // away the moment they pressed Hard.
+    // than taste. At 0.8 the best five-siege-plus-one build cleared map 1 two
+    // seeds in five, and at 0.85 with Hard only a tenth away pure barracks
+    // cleared map 2 — which would teach a Normal player that one family is a
+    // strategy and then take it away the moment they pressed Hard.
     //
-    // 0.85 / 1.10 is the most generous pair that holds it on all three maps over
-    // 12 seeds and every scenario in tools/sim.mjs, and it is a real easing:
-    // map 1's mixes go from 68% of runs cleared to 93%.
+    // 0.85 is the most generous count that holds it on all three maps over 12
+    // seeds and every scenario in tools/sim.mjs, and it is a real easing: map 1's
+    // mixes go from 68% of runs cleared to 93%.
     //
-    // Do not tune this at 5 seeds. The search that proposed these numbers broke
-    // at 0.9 / 1.05 and held at the strictly more generous 0.9 / 1.10, which is
-    // backwards and was the tell that a single-seed flip means nothing here.
+    // IT IS UNCHANGED BY HARD DROPPING TO 1.0, deliberately. This number was
+    // always measured against the file's own counts rather than against the other
+    // setting, so Normal sends today exactly what it sent yesterday and only Hard
+    // moved. The spread between the two narrowed from 0.85–1.10 to 0.85–1.00; if
+    // Normal should follow Hard down to keep the old gap it wants to be about
+    // 0.77, and that is a tuning question for a sim run, not a rename.
+    //
+    // Do not tune this at 5 seeds. The search that proposed it broke at 0.9 /
+    // 1.05 and held at the strictly more generous 0.9 / 1.10, which is backwards
+    // and was the tell that a single-seed flip means nothing here.
     count: 0.85,
     gold: 1.1
   },
   {
     id: 'hard',
     name: 'Hard',
-    // A TENTH MORE ENEMIES AND THE SAME PURSE. Hard is one lever, not two: the
-    // extra bodies already pay their own bounties, so cutting the gold as well
-    // compounds rather than adds, and it compounds hardest on the map that is
-    // already hardest.
+    // THE TABLE, EXACTLY, AND THE SAME PURSE. Hard multiplies nothing, because
+    // the tables it plays were tuned AT Hard: see the note at the top of this
+    // file. A multiplier here would be a second helping of a difficulty that is
+    // already baked into the counts, and for a while it was one.
     //
-    // Over 12 seeds and every scenario in tools/sim.mjs, as a share of mixed
-    // builds that clear the map:
+    // WHAT 1.10 USED TO BUY, over 12 seeds and every scenario in tools/sim.mjs,
+    // as a share of mixed builds that clear the map, back when the tables were
+    // the middle:
     //
-    //                    map 1   map 3      (map 2 has no table of its own yet)
+    //                    map 1   map 3      (map 2 had no table of its own yet)
     //   as tuned          68%     30%
-    //   count 1.10        48%     17%   <- this
+    //   count 1.10        48%     17%   <- Hard, then
     //   count 1.15/0.95   22%      2%
     //   count 1.20/0.90    7%      2%
     //
-    // 1.15 and 1.20 are not Hard, they are unwinnable-except-by-one-build, and
-    // the reason is in the third column: MAP 3 IS FAR MORE SENSITIVE TO COUNT
-    // than map 1. Ten plots across two roads means a build either covers both
-    // roads or loses, and more enemies pushes a marginal build over that line
-    // much faster than it does on a single road. One multiplier for every map is
-    // the price of a difficulty the player picks once; 1.10 is the value at
-    // which the price is still fair on the map it costs the most.
-    count: 1.1,
+    // That reading is not gone, it has moved: the hand-tuned tables ARE something
+    // near the second row now, arrived at by playing rather than by multiplying.
+    // The third and fourth rows are still the warning they always were, and the
+    // reason is in the map 3 column: MAP 3 IS FAR MORE SENSITIVE TO COUNT than
+    // map 1. Ten plots across two roads means a build either covers both roads or
+    // loses, and more enemies pushes a marginal build over that line much faster
+    // than it does on a single road. If Hard ever wants a multiplier again, that
+    // column is what it costs — and the honest way to make Hard harder now is to
+    // raise the counts in the table, on the map that should carry it.
+    count: 1,
     gold: 1
   }
 ];
@@ -83,17 +104,24 @@ export const DEFAULT_DIFFICULTY = 0;
 export function scaleWaves(waves, difficulty) {
   return waves.map(w => ({
     ...w,
-    // ROUNDED UP, at the owner's word: "units — any decimal place is rounded up."
-    // It was Math.round, which took a 6 on Normal to 5 — round(5.1) — and now takes
-    // it to 6. Every count in the game either stays where it is or goes up by one
-    // on Normal, and Hard is unchanged wherever the product was already past a
-    // half. It is the same rule the dashboard's steppers follow, so a number
-    // dialled in and a number scaled are rounded the same way.
+    // ROUNDED TO NEAREST, and it must stay that way. "Any decimal place is
+    // rounded up" is the rule for the dashboard's steppers — a number a person is
+    // dialling in, one at a time, where landing on the value you aimed at matters
+    // more than the half-unit you gained. Applying it here instead was a mistake
+    // that the owner felt before anyone measured it: ceil adds up to a whole
+    // enemy PER GROUP, a late wave has seven groups, and the result reads exactly
+    // as "there is one extra of everything". On Normal it also meant 6 × 0.85
+    // came back as 6 — a difficulty that eased nothing at the counts small enough
+    // to notice.
     //
-    // The floor of 1 stays: a group that survives the multiplier at all sends
-    // somebody, and ceil never reaches zero from a positive count anyway — it is
-    // there for a difficulty that might one day be harsher than any of these.
-    groups: w.groups.map(g => ({ ...g, count: Math.max(1, Math.ceil(g.count * difficulty.count)) }))
+    // Nearest costs nothing in fidelity where fidelity is owed: Hard multiplies
+    // by 1, so its numbers are integers already and no rounding rule can touch
+    // them.
+    //
+    // The floor of 1 stays: the wave that introduces a single heavy is the wave
+    // that teaches it, and Normal should meet it later or with more help, never
+    // miss it.
+    groups: w.groups.map(g => ({ ...g, count: Math.max(1, Math.round(g.count * difficulty.count)) }))
   }));
 }
 

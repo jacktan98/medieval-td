@@ -1340,11 +1340,16 @@ export const MODES = [
 // three level files import them, which is exactly the thing the old note said was
 // missing.
 //
-// THESE ARE BASE COUNTS, and the difficulty still multiplies them — 0.85 on
-// Normal, 1.10 on Hard, see scaleWaves in data/difficulty.js. That is the same
-// layering the dashboard edits under, and its own footer says so, so a wave dialled
-// to 22 in the panel and played on Hard arrived as 24. These are the panel's
-// numbers, which means Hard Extended plays exactly what was tested.
+// THESE ARE THE HARD COUNTS, not base counts, and that distinction cost a
+// release. They were tuned by playing at Hard, so Hard multiplies by 1 and plays
+// them exactly — see DIFFICULTIES in data/difficulty.js. Normal takes 0.85 of
+// them.
+//
+// The line that stood here claimed Hard still multiplied by 1.10 AND that "Hard
+// Extended plays exactly what was tested", which cannot both be true. It was the
+// second half that was meant and the first half that was running: a wave dialled
+// to 22 in the panel arrived as 25. Anything written here about a difficulty is a
+// claim about scaleWaves, and the two have to be read together or not at all.
 //
 // GROUPS ARE IN MARCH_ORDER, which is not decoration: groups spawn one after
 // another, so the order they are listed in is the order they arrive in, and it is

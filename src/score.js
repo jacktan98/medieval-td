@@ -104,8 +104,9 @@ function easierThan(difficultyId) {
 // THREE STARS ON HARD IS THREE STARS ON NORMAL, and on anything else below it.
 // The two ladders are still two ladders — that is what the note above is about,
 // and the easier setting must never light up the harder one — but the implication
-// runs one way and it is not symmetric. Hard sends a tenth more enemies through
-// the same map with the same purse, so a keep that finished it nearly untouched
+// runs one way and it is not symmetric. Hard sends the full table through the map
+// on a smaller purse where Normal thins it to 85% and pays 10% more for the
+// privilege — near enough a fifth in bodies — so a keep that finished it untouched
 // has, by any reading a player would accept, done the Normal run as well. Making
 // them go back and prove it on the easier setting is book-keeping, not an
 // achievement.

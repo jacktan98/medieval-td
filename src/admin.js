@@ -348,8 +348,13 @@ export const goldStep = value => Math.max(10, Math.round(Math.abs(value) * 0.1 /
 // ROUNDED UP, on the same rule the rate follows: "units — any decimal place is
 // rounded up." Nothing here ever hands it a fraction, because the step is one
 // whole enemy, so this is the rule being stated in the one place a count is
-// written rather than a behaviour anybody will see. Where it DOES bite is
-// scaleWaves in data/difficulty.js, which multiplies a count by a difficulty.
+// written rather than a behaviour anybody will see.
+//
+// IT IS THIS TOOL'S RULE AND NOT THE GAME'S. scaleWaves in data/difficulty.js
+// rounds to NEAREST, on purpose: ceil there adds up to a whole enemy per group,
+// and seven groups in a late wave read as one extra of everything. The rule is
+// right for a person turning a dial and wrong for a multiplier applied to a whole
+// table at once.
 export function setWaveCount(levelId, mode, wave, type, count) {
   const key = waveKey(levelId, mode, wave, type);
   put(edits.waves, key, Math.max(0, Math.min(99, Math.ceil(count))), SHIPPED.get(key));
