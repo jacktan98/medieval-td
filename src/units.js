@@ -3,12 +3,12 @@ import { at as pointOn, nearestOn, LANE } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
-import { solo, play, CUE, blowCue, abilityCue } from './audio.js';
+import { solo, play, CUE, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
-import { taken, typeOf, pierceOf, wornBy } from './data/armour.js';
+import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf } from './data/armour.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -511,6 +511,31 @@ export function unhook(e) {
   e.foe.foe = null;
   e.foe.holds = false;
   e.foe = null;
+}
+
+// A BLOW THAT CATCHES EVERYONE STANDING NEAR THE MAN IT LANDED ON.
+//
+// The Captain's enchanted blade, and nothing else in the game — every other area
+// attack arrives on a projectile and bursts in projectiles.js. This is the same
+// idea pointed at a melee: no falloff, the full number to everybody, measured
+// from the man who was actually hit rather than from the swinger, because that is
+// where the sword ended up.
+//
+// THE BLOCKER IS SKIPPED because the caller has already dealt with him. He takes
+// the blow itself, through his own armour, on the line above this call — exactly
+// the split land() uses for a projectile's target and its splash.
+//
+// Through `inRange` like every reach in the game: the board is drawn in
+// perspective, so a round patch of ground is drawn squashed, and a plain radius
+// would catch men further up the screen than down it.
+function sweep(state, enemy, blocked, blow) {
+  for (const u of state.units) {
+    if (u === blocked || u.hp <= 0 || u.respawn > 0) continue;
+    if (!inRange(enemy.x, enemy.y, u.x, u.y, blow.splash)) continue;
+    u.hp -= taken(enemy.def.damage, typeOf(blow), wornBy(u), pierceOf(blow));
+    splat(state, u.x, u.y - u.def.r, u.y);
+    u.struckFrom = enemy.x >= u.x ? 1 : -1;
+  }
 }
 
 // The ability a soldier's TOWER has bought, by id, or nothing. The tower is where
@@ -1064,9 +1089,37 @@ export function updateUnits(state, dt) {
           // five places damage lands and the one the giant needs: his club breaks a
           // rank, so it meets the paladin's medium as low. tools/armour.mjs runs
           // this exact path rather than trusting it.
-          u.hp -= taken(u.foe.def.damage, typeOf(u.foe.def),
-                        wornBy(u), pierceOf(u.foe.def));
-          u.foe.acd = u.foe.def.atkCd;
+          // THROUGH `stageOf` RATHER THAN OFF THE DEF, which is the one line the
+          // Captain's second stage needed here. His blade is enchanted below a
+          // quarter health — magic where it was physical — and that is aimed
+          // squarely at the player's line: a spearman wears no magic plate at all,
+          // and the paladin's medium physical, which made him a wall for the whole
+          // of stage 1, is worth nothing against it.
+          //
+          // Everything else in the game returns its own def from `stageOf`, so this
+          // reads exactly as it did. See data/armour.js.
+          const blow = stageOf(u.foe);
+          u.hp -= taken(u.foe.def.damage, typeOf(blow), wornBy(u), pierceOf(blow));
+          // AND THE MEN AROUND HIM. `splash` on a melee blow is the Captain's and
+          // nothing else's — every other area attack in this game arrives on a
+          // projectile — so it is applied here, where a swing lands, rather than in
+          // projectiles.js.
+          if (blow.splash) sweep(state, u.foe, u, blow);
+          // A HEAVY BLOW SOUNDS LIKE ONE. The Captain's sword, through the cue the
+          // owner renamed off the paladin's ability for exactly this — "so that
+          // enemies and soldiers can use this when strike hard".
+          //
+          // Category B: several men can be fighting him at once and a shared
+          // channel would silence all but one of them, which would make the boss
+          // quieter the more of a fight he was in.
+          if (u.foe.def.boss) play(HEAVY_STRIKE);
+          // AND WHOSE BLOW IT WAS, kept on the man so the death sweep below can ask
+          // who put him down. `struckFrom` is only a sign — it says which way to
+          // fall, not who did it — so it could not answer this.
+          u.killer = u.foe;
+          // A FASTER SWING IN STAGE 2, out of the same multiplier that speeds his
+          // walk: 1.2x, so his cooldown is his own atkCd divided by it.
+          u.foe.acd = u.foe.def.atkCd / timesOf(u.foe);
           u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
           splat(state, u.x, u.y - u.def.r, u.y);
           u.struckFrom = u.foe.x >= u.x ? 1 : -1;
@@ -1182,7 +1235,30 @@ export function updateUnits(state, dt) {
       u.healCd = 0;
       u.blows = 0;
       state.hits.push({ x: u.x, y: u.y, life: 0.2 });
-      solo(CUE.soldierDeath);
+      // AN ARROW KILLING A MAN SOUNDS THE SAME WHICHEVER ARMY LOOSED IT, which is
+      // the whole of why the owner renamed the file from Arrow_kill_enemy to
+      // Arrow_kill_unit. It has answered for a tower's arrow finding a thug since
+      // the day it was recorded; an enemy's arrow finding a soldier is the same
+      // event pointed the other way and had nothing at all.
+      //
+      // BEFORE the man's own death line and Category A like it, so the two do not
+      // overlap — the arrow is what the player needs to hear, because it says
+      // where the shot came from.
+      if (u.killedBy === 'arrow') solo(CUE.arrowKill);
+      else solo(CUE.soldierDeath);
+
+      // AND THE BOSS COUNTS. Every fifth man he puts down, at the owner's ask, by
+      // whichever hand did it — the tally is on the killer, so a sword and an
+      // arrow both feed it and the fifth is the fifth however he got there.
+      //
+      // Category B, unlike his other five lines: this is a running tally rather
+      // than a moment, and a boss who ducked the whole board every fifth kill
+      // would be talking over the fight he is winning.
+      if (u.killer && u.killer.def && u.killer.def.boss && u.killer.hp > 0) {
+        u.killer.kills = (u.killer.kills || 0) + 1;
+        if (u.killer.kills % 5 === 0) play(BOSS_KILLS);
+      }
+      u.killer = null;
       // He falls facing whatever killed him. The fallback is his own facing —
       // a soldier's `face` is an angle, not a side, so it is reduced to a sign
       // the same way drawSoldier reduces it — and it should never be reached,

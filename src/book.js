@@ -254,9 +254,24 @@ const figureAtBoard = (trim, pivot) => ({
   h: trim[3] * SCALE,
   a: pivot
 });
+// A BOSS IS NOT IN THE SPAN, and that is the whole of how the encyclopedia
+// survived getting one.
+//
+// Every figure on the page shares one scale, and the two spans decide it and the
+// size of the box it is drawn in. The Captain Thug is 212 source px wide against
+// the Giant's 179 — 62.6 game px against 52.9 — so letting him into the span
+// widened every figure cell in the book by 6px, which came straight out of the
+// text column beside it. Four enemies' stat rows stopped fitting their cards, and
+// three of them were creatures he has nothing to do with.
+//
+// So the ARMY sizes the furniture and the boss is fitted into it — see BOSS_FIT
+// below. He is drawn a little under the shared scale, which is the honest price
+// and the small one: the alternative was every card in the book shrinking about a
+// tenth to make room for one creature. tools/book.mjs measures both halves.
+const roster = Object.values(enemyTypes).filter(d => !d.boss);
 const BOARD_SPAN = anchored([
   ...TIERS.map(d => { const m = occupant(d); return figureAtBoard(m.trim, m.pivot); }),
-  ...Object.values(enemyTypes).map(d => figureAtBoard(d.spriteTrim, d.pivot))
+  ...roster.map(d => figureAtBoard(d.spriteTrim, d.pivot))
 ]);
 
 export const BOOK_FIGURE_SCALE = Math.min(FIGURE_WANT, CARD_H / BOARD_SPAN.h);
@@ -269,7 +284,7 @@ const figureArt = (trim, pivot) => ({
 
 const FIGURES = [
   ...TIERS.map(figureOf),
-  ...Object.values(enemyTypes).map(d => figureArt(d.spriteTrim, d.pivot))
+  ...roster.map(d => figureArt(d.spriteTrim, d.pivot))
 ];
 
 // How much clear card a building keeps above and below itself. The span is
@@ -329,6 +344,12 @@ export const TOWER_BOX = {
 };
 export const FIGURE_BOX = { x: 6, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
 
+// THE BLANK PARCHMENT BETWEEN A PICTURE AND THE WORDS BESIDE IT. It was the
+// literal 8 in two places in render.js, which was fine until something needed to
+// know how much room there was — see BOSS_FIT, where a boss is allowed to spill
+// into this gap and has to be told how big it is.
+export const TEXT_GAP = 8;
+
 // ONE FACTOR FOR EVERY BUILDING, exactly as PORTRAIT_SCALE is one factor for
 // every figure, and for the same reason: fitting each drawing to its own slot
 // would draw a Militia Camp and a Catapult the same size, which is a lie about
@@ -358,10 +379,57 @@ export function towerArt(def) {
   return { ...buildingOf(def), k, box: TOWER_BOX, anchor: anchorIn(TOWER_BOX, TOWER_SPAN, k) };
 }
 
-export function figureSlot(trim, pivot) {
-  return { ...figureArt(trim, pivot), k: 1, box: FIGURE_BOX,
+// HOW MUCH A BOSS IS SHRUNK, as a multiplier, and it is 1 today.
+//
+// HE IS ALLOWED TO OVERHANG HIS CELL, which is the whole idea and it took two
+// wrong answers to get to. Fitting him strictly inside the army's cell shrank him
+// to 81% — and 81% of the Captain is SHORTER than the Giant Thug, which is a boss
+// that looks less impressive than the creature below him in the same list. Letting
+// him size the cell instead is the other failure: he is 18% wider than the Giant,
+// so the cell grew 6px, the text column lost them, and three unrelated enemies'
+// stat rows fell off their cards.
+//
+// So he keeps the shared scale and spills into the GUTTER between the picture and
+// the words — 8px of blank parchment that exists to separate them. He may use all
+// but BOSS_AIR of it. Today he reaches 3.6px into it and stops 4.4px short of the
+// text, so nothing moved and nothing shrank.
+//
+// The multiplier is what happens when a future boss is wider than that: he is
+// scaled down until he clears the words, rather than pushing them. Derived from
+// every boss in the game rather than from the Captain by name.
+//
+// TODAY IT IS THE WIDTH THAT BINDS, and only just. Worth knowing before the next
+// boss is drawn: on this page a wide pose costs far more than a tall one.
+// The clear parchment kept between a boss and the words beside him, in game px.
+const BOSS_AIR = 4;
+
+const BOSS_FIT = (() => {
+  const bosses = Object.values(enemyTypes).filter(d => d.boss)
+    .map(d => figureArt(d.spriteTrim, d.pivot));
+  if (!bosses.length) return 1;
+  const s = anchored(bosses);
+  const at = anchorIn(FIGURE_BOX, FIGURE_SPAN, 1);
+  // How far he may reach from the shared anchor in each direction. Three of them
+  // are the cell; the fourth is the cell PLUS the gutter, less the air above.
+  return Math.min(1,
+    (at.x - FIGURE_BOX.x) / s.left,
+    (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP - BOSS_AIR - at.x) / s.right,
+    (at.y - FIGURE_BOX.y) / s.above,
+    (FIGURE_BOX.y + FIGURE_BOX.h - at.y) / s.below);
+})();
+
+// `fit` is BOSS_FIT for a boss and 1 for everything else, and it arrives as the
+// slot's `k` — which drawArt in render.js already multiplies the drawn size by
+// while leaving the anchor alone. So a shrunk figure stands on the same ground
+// line as the rest of its column rather than floating in the middle of the cell.
+export function figureSlot(trim, pivot, fit = 1) {
+  return { ...figureArt(trim, pivot), k: fit, box: FIGURE_BOX,
            anchor: anchorIn(FIGURE_BOX, FIGURE_SPAN, 1) };
 }
+
+// The fit a DEF is entitled to. One question, so no caller has to know what makes
+// a figure a boss.
+export const figureFit = def => (def && def.boss ? BOSS_FIT : 1);
 
 // WHERE A CARD'S ROWS SIT, and the answer is not a list of fixed offsets.
 //
@@ -757,7 +825,7 @@ export function unitEntry(def) {
     title: man.name,
     sprite: man.sprite,
     trim: man.trim,
-    art: figureSlot(man.trim, man.pivot),
+    art: figureSlot(man.trim, man.pivot, figureFit(def)),
     hp: man.hp,
     damage: man.damage,
     // WHICH ATTACK ICON HE SHOWS — the sword or the wand. Off the def, so the

@@ -311,4 +311,7 @@ function hit(state, s, v) {
   // ammunition names itself rather than being mapped here, so a third projectile
   // needs no branch.
   v.killedBy = s.ammo.kind;
+  // AND WHO FIRED IT, when the shot says. Only an enemy's does — see `by` in
+  // loose() in src/enemies.js — and only a boss's tally reads it back.
+  if (s.by) v.killer = s.by;
 }

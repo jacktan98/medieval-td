@@ -1,8 +1,44 @@
 # Boss artwork
 
-**Empty on purpose.** The first boss has not been drawn yet. This folder and this
-file exist so that the rules are settled before the art arrives rather than after,
-because two of them cannot be fixed in code once a drawing is uploaded.
+## Captain Thug — the first boss, in eleven drawings
+
+Ten of them are alive and one is a body. Nothing else in this game has more than
+five.
+
+| file | when it shows | plate |
+|------|---------------|-------|
+| `Captain_Thug_Default.png` | walking, unshot and unbothered. Also the encyclopedia and the description panel, for stage 1 | med / med |
+| `Captain_Thug_Defend.png` | a projectile has hit him and no soldier is near. 5s, refreshed by every hit, half pace | high / high |
+| `Captain_Thug_Ranged_Reload.png` | a soldier is inside 200px: shield away, nocking. 0.5s | med / med |
+| `Captain_Thug_Ranged_Attack.png` | the arrow is away. 0.5s | med / med |
+| `Captain_Thug_Melee_Attack.png` | a soldier has hold of him | med / med |
+| `Captain_Thug_Pause.png` | below a quarter health, once: shield and bow thrown away, channelling. 2s | med / med |
+| `Captain_Thug_Heal.png` | mending, worth half his maximum. 3s | high / high |
+| `Captain_Thug_Enraged_Default.png` | stage 2, walking at 1.2x. Also the description panel from here on | low / low |
+| `Captain_Thug_Enraged_Attack.png` | stage 2, swinging at 1.2x — magic now, and 50 to everyone within 60px | low / low |
+| `Captain_Thug_Before_Dying.png` | out of health, sword dropped. 2s, and nothing may touch him | — |
+| `Captain_Thug_Dead.png` | on the ground. 2s, and only then may the game end. Becomes his corpse | — |
+
+**All ten living poses share one ground point — source (263, 333) — to the pixel.**
+He swaps between more drawings than anything else in the game, so this is the
+figure where a pivot out by two would be most obvious, and the artist got it
+exactly right. Six of the eleven show the shadow ellipse edge to edge and five of
+those six measure to that point on the nose; the rest hide its tips behind a leg or
+a bow, which is why every `pivot` in `captain_thug` is derived from the one
+measurement rather than read off its own drawing. Re-measure the same way after a
+re-export: take the pose that shows the most ellipse, and give the others its
+answer.
+
+**His body is in this folder, not `assets/dead/`.** It is the second half of a
+two-beat ending — he drops his sword, then he drops — and filing a pair of
+drawings that play one after the other into two folders would be filing them by a
+rule that has nothing to do with how they are used.
+
+The rules below are what the next boss should be drawn to.
+
+---
+
+## For the next one
 
 ## Why a boss gets its own folder
 

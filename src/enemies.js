@@ -5,12 +5,13 @@ import { dropCorpse } from './corpses.js';
 import { unhook, hidden } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, CUE, FIRING, DEFEND, HEAL } from './audio.js';
+import { solo, play, CUE, FIRING, DEFEND, HEAL,
+         BOSS_ENTERS, BOSS_HURT, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
 import { tick as tickStatus, slowOf, apply as applyStatus } from './status.js';
-import { typeOf, pierceOf } from './data/armour.js';
+import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -84,12 +85,72 @@ export function spawn(state, typeId) {
     // no such field, so it needs no guard where the list did — see the four tools
     // that stand enemies up without spawn().
     mendCd: 0,
+    // --- THE BOSS'S FIVE, and they are on every enemy for the reason the four
+    // above are: the shape of an enemy is written down in one place, so `wornBy`,
+    // `enemyStance` and `striking` can read them without asking first whether the
+    // field exists. Every one of them is 0, null or 1 for the whole roster.
+    //
+    // WHICH HALF OF HIS FIGHT HE IS IN. 1 until he drops below a quarter and heals,
+    // 2 for the rest of his life, and there is no way back — which is what makes
+    // the owner's "for the first time" enforceable without a second flag to get out
+    // of step with this one. See `rage` on captain_thug in data/waves.js.
+    stage: 1,
+    // THE SCRIPTED BEAT HE IS LOCKED INTO, or null. One of 'pause', 'mend', 'fall'
+    // or 'rest' — the four moments where he stands still and the game plays out a
+    // drawing on a clock. It is deliberately NOT where the reload and the shot
+    // live: those two are poses he strikes while walking, and folding them in here
+    // would make "is he locked" and "which picture" the same question when they
+    // are not.
+    act: null,
+    actT: 0,          // seconds left in it
+    // NOCKING AN ARROW. Half a second in which he is committed to the shot but
+    // nothing has left the bow, and the only wind-up drawing in the game.
+    nock: 0,
+    // AND HOLDING THE LOOSE. Half a second of the shooting pose after it, timed
+    // rather than decayed — `thrust` fades over a quarter second and drags a lunge
+    // with it, and the owner asked for two equal half-second beats with no lurch.
+    shot: 0,
+    // HAS HE ALREADY CRIED OUT AT A THIRD HEALTH. The owner asked for that line
+    // once and once only, and it is a DIFFERENT threshold from the transformation
+    // — 30% against 25% — so it cannot be inferred from the stage. It is a warning
+    // shot: you hear him falter about a second before he throws the shield away.
+    cried: false,
+    // AND HOW MANY MEN HE HAS PUT DOWN, for the line he gives every fifth one.
+    // Counted on the killer rather than on the game, so two bosses on one board
+    // would each keep their own tally.
+    kills: 0,
     // What is being done to him, and the same field a soldier carries: an enemy
     // can be burnt where a soldier can be poisoned, through one mechanism that
     // does not know which army it is looking at. See src/status.js.
     statuses: []
   });
+
+  // HE ANNOUNCES HIMSELF. Category A, so it ducks whatever else is playing: the
+  // boss walking on is the loudest thing that happens in a run and it should not
+  // have to share the moment with an arrow.
+  //
+  // On the SPAWN rather than on the first frame of his update, because a wave can
+  // send him while the player is looking somewhere else and the cry is what turns
+  // them round.
+  if (def.boss) solo(BOSS_ENTERS);
 }
+
+// IS THIS FIGURE PLAYING OUT ITS DEATH? True for the four seconds a boss spends
+// losing, and false for everything else in the game on every frame of its life.
+//
+// He is still in `state.enemies` for the whole of it — that is the entire point,
+// and it is what the owner asked for: "after this 2 seconds, then only the game
+// can end". A wave clears when the field is empty, so staying on the field is how
+// a boss holds the run open while he falls over.
+//
+// But being on the field is all he does. Nothing may aim at him, no soldier may
+// take hold of him, he does not walk, shoot, swing or take damage, and his health
+// bar comes off. Every one of those is a caller asking this.
+//
+// EXPORTED because it is a RULE, the same argument enemyStance and guardSlow are
+// exported on: four files need the same answer and a rule nothing can ask is a
+// rule nobody can check. tools/facing.mjs asks it.
+export const downed = e => !!e && (e.act === 'fall' || e.act === 'rest' || e.act === 'gone');
 
 // HOW MUCH OF HIS WALK A RAISED SHIELD COSTS HIM, as a multiplier, and 1 for
 // everything in the game that has no shield.
@@ -97,7 +158,8 @@ export function spawn(state, typeId) {
 // Exported for the same reason enemyStance is: it is a RULE, and tools/facing.mjs
 // checks rules rather than trusting them.
 export function guardSlow(e) {
-  return e.guard > 0 && e.def.guard ? (e.def.guard.slow || 1) : 1;
+  const now = stageOf(e);
+  return e.guard > 0 && now.guard ? (now.guard.slow || 1) : 1;
 }
 
 // SOMETHING HIT HIM FROM A DISTANCE, so the shield goes up — and stays up for
@@ -113,14 +175,169 @@ export function guardSlow(e) {
 // A no-op on everything else in the game, so the call site does not have to ask
 // what it just hit.
 export function raiseGuard(fig) {
-  if (!fig || !fig.def || !fig.def.guard) return;
+  if (!fig || !fig.def) return;
+  // OF THE STAGE HE IS IN. The Captain throws his shield away at a quarter
+  // health and the owner's rule is that he then "no longer defends himself when
+  // projectiles hit him" — which is not a test here but an absence in the data:
+  // `rage` declares no `guard`, so there is nothing to raise. Same for his bow
+  // and his nocking pose. See stageOf in data/armour.js.
+  const now = stageOf(fig);
+  if (!now.guard) return;
   // ON THE WAY UP ONLY. This runs for every projectile that lands on him — that is
   // the whole point of it, since each one refreshes the five seconds — so playing
   // the clip here unconditionally would make a Blocker under steady fire the
   // loudest thing on the board. What the player needs to hear is the shield
   // GOING UP, which is the moment the drawing changes.
   if (fig.guard <= 0) play(DEFEND);
-  fig.guard = fig.def.guard.seconds;
+  fig.guard = now.guard.seconds;
+}
+
+// --- THE BOSS'S SCRIPT ----------------------------------------------------------
+//
+// Four beats, each a drawing held for a fixed number of seconds while he stands
+// still and does nothing else. Two of them are the second stage arriving and two
+// are him dying, and they are one mechanism because they are the same shape: a
+// pose, a clock, and what happens when the clock runs out.
+//
+// REAL SECONDS, not scaled by slowOf. A monk's pulse makes a figure slower at
+// what it is DOING; these are not things he is doing, they are things happening
+// to him on a script the player is watching. Slowing them would make a monk's
+// aura lengthen a boss's death animation, which is nonsense twice over.
+const BEATS = {
+  // He stops, throws the shield and bow away, and channels. Hittable throughout,
+  // and this is the window.
+  pause: { next: 'mend',   at: d => d.rage.pause.seconds },
+  // He mends, behind high plate. What he gets is granted when it FINISHES rather
+  // than trickled, so a player who kills him inside the three seconds gets the
+  // whole of that reward — see `land` below.
+  mend:  { next: null,     at: d => d.rage.mend.seconds },
+  // Beaten and standing, sword dropped.
+  fall:  { next: 'rest',   at: d => d.finale.fall.seconds },
+  // And on the ground. When this runs out he leaves the enemy list and a corpse
+  // takes his place, which is a handover the player cannot see: the body on the
+  // ground is the same drawing either side of it.
+  rest:  { next: 'gone',   at: d => d.finale.rest }
+};
+
+// THE ONE ACT THAT IS NOT A BEAT. 'gone' means the script has finished and the
+// sweep at the bottom of updateEnemies should take him off the board — it is a
+// message from the clock to the sweep, not a drawing.
+//
+// It exists so that finishing the script and being REMOVED are two different
+// moments. Without it, 'rest' running out would leave him with `hp <= 0` and no
+// act at all, and the ordinary death path would pay his bounty a second time.
+const GONE = 'gone';
+
+// WHAT EACH BEAT SOUNDS LIKE STARTING, or nothing. Beside BEATS rather than
+// inside it so that the table stays about timing: one says how long a beat runs
+// and the other says what it sounds like, and a beat with no cue is simply absent
+// here rather than carrying a null.
+//
+// The pause has none on purpose. He has just cried out at 30% — see the warning in
+// bossBeat — and a second line a moment later would tread on it; what covers the
+// channelling is his silence, which is the tell.
+const BEAT_CUE = { mend: HEAL, fall: BOSS_DYING, rest: BOSS_FALLEN };
+
+// Start a beat.
+function begin(e, act) {
+  e.act = act;
+  e.actT = BEATS[act].at(e.def);
+  // ON THE FRAME THE POSE COMES UP, not the frame it finishes, which is the rule
+  // the Dark Priest's cast already follows: the sound covers the beat rather than
+  // marking its end. Category B for the mend, because it is the shared enemy heal
+  // and two creatures could be casting; Category A for the two death beats.
+  const cue = BEAT_CUE[act];
+  if (cue) (act === 'mend' ? play : solo)(cue);
+  // Everything he was doing stops. A shot half-nocked is lost rather than banked,
+  // on the rule the Dark Priest's interrupted cast follows: a moment that gets
+  // taken off you should cost you the moment.
+  e.nock = 0;
+  e.shot = 0;
+  e.halted = true;
+}
+
+// A beat has finished. What that means depends on which one it was.
+function land(state, e) {
+  const done = e.act;
+  const after = BEATS[done].next;
+
+  if (done === 'mend') {
+    // HALF HIS MAXIMUM, at the owner's word, and capped at the bar. A flat share
+    // rather than a status: nothing can refresh it, nothing can stack with it, and
+    // a Dark Priest's dark healing running on him at the same time is a separate
+    // number through a separate mechanism, which is correct — they are two
+    // different creatures mending him.
+    e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.def.rage.mend.share);
+    // AND HE SAYS SO. The owner's cue is "when his health is fully recovered after
+    // the 3 seconds" — this line, not the start of the mend, which has its own
+    // sound above. Category A: it is the moment the player learns the fight is not
+    // over, and it should cut through whatever they are doing about it.
+    solo(BOSS_HEALED);
+    // AND HE IS THE OTHER CREATURE NOW. Set here rather than when the pause began,
+    // so the whole five seconds of the transition are fought against the armour he
+    // is transitioning IN — medium for the pause, high for the mend — and the low
+    // plate arrives with the enraged drawing rather than before it.
+    e.stage = 2;
+  }
+
+  // THROUGH begin() rather than by assignment, so every beat is entered the one
+  // way: its clock set, whatever he was doing cleared, and its sound played. It
+  // was two lines of assignment here, and the cost was exactly what you would
+  // expect — the beats reached from this function were the silent ones.
+  //
+  // GONE is not a beat and has no entry in BEATS, so it is set plainly. It is a
+  // message to the sweep, not something he does.
+  if (after && BEATS[after]) {
+    begin(e, after);
+  } else {
+    e.act = after;
+    e.actT = 0;
+    // Back on his feet, which only happens at the end of the mend: the other chain
+    // ends at GONE and he never walks again.
+    if (!after) e.halted = false;
+  }
+}
+
+// One frame of the script. Returns true when it has owned the frame, which is
+// every frame he is in a beat: a boss standing still does not walk, shoot, swing,
+// guard or heal, and returning true is how this file says so exactly once instead
+// of guarding five blocks below.
+function bossBeat(state, e, dt) {
+  const d = e.def;
+
+  // Finished, and waiting for the sweep. Nothing left to tick.
+  if (e.act === GONE) return true;
+
+  if (e.act) {
+    e.actT -= dt;
+    if (e.actT <= 0) land(state, e);
+    return true;
+  }
+
+  // A THIRD OF THE WAY DOWN HE FALTERS, once, and it is deliberately NOT the same
+  // number as the transformation. 30% is a warning and 25% is the thing it warns
+  // about, so a player hears him break about a second before the shield comes off
+  // — long enough to change what they are doing and not long enough to relax.
+  //
+  // `cried` rather than a health comparison, because health goes back UP: he heals
+  // to 50% and would otherwise cross 30 a second time on the way down.
+  if (d.rage && !e.cried && e.hp > 0 && e.hp < e.maxHp * 0.3) {
+    e.cried = true;
+    solo(BOSS_HURT);
+  }
+
+  // THE SECOND STAGE, at a quarter health and once. `e.stage` is its own guard:
+  // this can only fire in stage 1 and `land` leaves him in stage 2 forever, so
+  // "for the first time" needs no separate flag.
+  //
+  // ALIVE, which is not redundant. A blow that takes him from 30% straight past
+  // zero should kill him rather than trigger a transformation he cannot finish —
+  // the finale below owns that frame, and this must not race it.
+  if (d.rage && e.stage === 1 && e.hp > 0 && e.hp < e.maxHp * d.rage.at) {
+    begin(e, 'pause');
+    return true;
+  }
+  return false;
 }
 
 // Where an enemy will be `t` seconds from now, if nothing interrupts it.
@@ -148,7 +365,10 @@ export function leadPoint(e, t) {
   // so a lead that used the tier's own number would throw a rock in front of
   // anything a monk had hold of — which is the one enemy a catapult is most likely
   // to be aimed at, since a slowed man is one the towers have already found.
-  const ahead = e.foe || e.halted ? 0 : e.def.speed * slowOf(e) * t;
+  // THREE WAYS TO STAND STILL now — the third is a boss in one of his scripted
+  // beats, which is `halted` too: `begin` sets it, so nothing here has to know
+  // what a boss is.
+  const ahead = e.foe || e.halted ? 0 : e.def.speed * timesOf(e) * slowOf(e) * t;
   return pointOn(road, e.s + ahead);
 }
 
@@ -168,6 +388,18 @@ function turnTo(e, x) {
 
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
+    // WHAT THIS CREATURE IS ON THIS FRAME, and for everything but the boss that is
+    // its def — see stageOf in data/armour.js. Read once at the top because half
+    // the loop below asks it: his shield, his bow, his nocking pose and his plate
+    // all belong to the stage rather than to the def.
+    //
+    // That one word is also what DISARMS him. `rage` declares no `guard`, no
+    // `ranged` and no `reload`, so an enraged Captain has no shield to raise and no
+    // bow to draw — he threw both away in the pause, which is exactly what the
+    // drawing shows. Written as an absence in the data rather than as a stage test
+    // at each site, so the picture and the behaviour cannot come apart.
+    const now = stageOf(e);
+
     // Decays wherever the enemy is, so a swing that lands just as its holder
     // dies still plays out instead of freezing mid-lunge. Same rate as the
     // soldiers' thrust, so the two sides of a fight move at the same tempo.
@@ -186,6 +418,31 @@ export function updateEnemies(state, dt) {
     // the same reason: a monk's pulse slows what a figure DOES, and this is not
     // something this figure is doing — it is something being counted about him.
     if (e.mendCd > 0) e.mendCd = Math.max(0, e.mendCd - dt);
+
+    // THE LOOSING POSE COMES DOWN. Ticked up here with the other clocks rather
+    // than inside the shooting block, so it runs out on schedule even on the frame
+    // a soldier takes hold of him — otherwise a boss caught mid-shot would be left
+    // holding a drawn bow for the rest of the fight.
+    if (e.shot > 0) e.shot = Math.max(0, e.shot - dt * slowOf(e));
+
+    // THE BOSS'S SCRIPT, and it comes before everything else because a figure
+    // standing still on a clock is not doing any of it. See bossBeat above.
+    if ((e.def.rage || e.def.finale) && bossBeat(state, e, dt)) continue;
+
+    // AND THE SHIELD GOES BEHIND HIS BACK when a man comes into view, which is the
+    // owner's rule and the Captain's alone: "whenever Captain Thug sees a soldier
+    // nearby, he puts his shield behind his back and stops defending".
+    //
+    // A Blocker Thug guards whatever else is happening, because the shield is all
+    // he has. The Captain would rather shoot, so a soldier inside `sheathe` takes
+    // it straight back down and keeps it down while they are there. It is written
+    // as taking the timer to zero rather than as a test inside `wornBy` and
+    // `enemyStance` so that ONE thing decides it — the two of them read `guard`,
+    // and a shield that was down in the picture and up in the plate is the exact
+    // bug the Blocker nearly shipped.
+    if (e.guard > 0 && now.sheathe && nearestUnit(state, e.x, e.y, now.sheathe)) {
+      e.guard = 0;
+    }
 
     // THE HEALER, and he is the first thing on the road that helps somebody.
     //
@@ -273,16 +530,53 @@ export function updateEnemies(state, dt) {
     // club — 20 for the doctor and 15 for the archer, where the doctor's used to
     // be 5 — so pinning him is still a fight rather than a switch that turns him
     // off. See `damage` on both in data/waves.js.
-    if (e.def.ranged && !e.foe) {
-      const mark = nearestUnit(state, e.x, e.y, e.def.ranged.range);
+    // AND A HELD BOSS LOSES THE ARROW HE WAS NOCKING. The `!e.foe` guard below
+    // stops him STARTING one, and this is the other half: a wind-up already
+    // running is abandoned rather than frozen, on the rule the Dark Priest's
+    // interrupted cast follows.
+    if (e.foe && e.nock > 0) e.nock = 0;
+
+    if (now.ranged && !e.foe) {
+      const mark = nearestUnit(state, e.x, e.y, now.ranged.range);
       // SLOWED SLOWS THE THROWING TOO, at the owner's ask: a quarter off how often
       // he swings covers the flask and the arrow as well as the club. The clock is
       // ticked slower rather than the cooldown lengthened, so a man slowed halfway
       // through a wind-up loses the rest of it rather than the whole thing.
       e.tcd -= dt * slowOf(e);
-      if (mark && e.tcd <= 0) {
+
+      // TWO BEATS RATHER THAN ONE, for the boss and nothing else. He nocks for
+      // half a second and then holds the loose for half a second, which is the
+      // owner's rhythm and the reason his bow has a wind-up drawing at all.
+      //
+      // Every other thrower in the game goes from standing to struck on one frame
+      // and shows its Attack pose for the quarter second `thrust` takes to fade.
+      // That is still what the `else` below does; a def with a `reload` block gets
+      // the slower, more readable version, and a player watching him can see the
+      // shot coming.
+      //
+      // THE ARROW LEAVES AT THE END OF THE NOCK, and it is re-aimed at whoever is
+      // nearest THEN rather than at whoever was nearest when he started — half a
+      // second is long enough for a soldier to die or for a nearer one to arrive,
+      // and a boss loosing at a man who is no longer there would read as a bug.
+      // Nobody in reach when it finishes and the arrow is simply not fired; the
+      // cooldown still resets, so he does not get a free instant shot afterwards.
+      if (now.reload) {
+        if (e.nock > 0) {
+          e.nock -= dt * slowOf(e);
+          if (e.nock <= 0) {
+            e.nock = 0;
+            if (mark) {
+              loose(state, e, mark);
+              e.shot = now.ranged.hold;
+            }
+            e.tcd = now.ranged.cd;
+          }
+        } else if (mark && e.tcd <= 0) {
+          e.nock = now.reload.seconds;
+        }
+      } else if (mark && e.tcd <= 0) {
         loose(state, e, mark);
-        e.tcd = e.def.ranged.cd;
+        e.tcd = now.ranged.cd;
         // Same field the melee lunge uses, so the Attack drawing shows for the
         // throw exactly as long as it shows for a swing. It is also what makes
         // a doctor in close combat read correctly: he lunges as he throws, and
@@ -388,7 +682,17 @@ export function updateEnemies(state, dt) {
     // exactly what happened to the last one.
     const road = laneOf(level.routes[e.route], e.lane);
 
-    e.halted = !!e.def.ranged && screened(state, e, road);
+    // AND ONE SHOOTER DOES NOT STOP AT ALL. `onTheMove` is the Captain's, and it
+    // is the one place the boss refuses to copy the Archer Thug he is partly made
+    // of. The owner has accepted that an archer standing at his own reach can hold
+    // a wave open until the stall clock fires — it is a creature you can leave and
+    // come back to. A BOSS doing it is not a hard fight, it is a wait: the wave is
+    // built around him, so a Captain planted at 200px shooting forever is the game
+    // stopping rather than the game being difficult.
+    //
+    // He therefore fires as he walks and can never stall a wave at all, which also
+    // means the stall clock never has to save this creature from itself.
+    e.halted = !!now.ranged && !now.ranged.onTheMove && screened(state, e, road);
     if (e.halted) continue;
 
     // One number forward along the road, then the position is looked up. The
@@ -408,7 +712,11 @@ export function updateEnemies(state, dt) {
     // slow rather than replacing it, so a monk's pulse on a guarding Blocker is
     // worth what it is worth on anything else — 0.75 x 0.5 — instead of one of the
     // two silently winning.
-    e.s += e.def.speed * slowOf(e) * guardSlow(e) * dt;
+    // AND A THIRD FACTOR, which is the only one that can make a figure FASTER:
+    // the Captain's second stage walks at 1.2x, out of timesOf in data/armour.js.
+    // Multiplied in with the other two rather than replacing them, so an enraged
+    // boss under a monk's pulse is still slowed by exactly a quarter.
+    e.s += e.def.speed * timesOf(e) * slowOf(e) * guardSlow(e) * dt;
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should
@@ -421,7 +729,26 @@ export function updateEnemies(state, dt) {
     // Without this a thrower who is walking rather than halted would be turned
     // straight back down the road on the very next line, and the turn would only
     // ever be visible on a figure that had stopped.
-    if (p.tx && e.thrust <= 0) e.face = p.tx > 0 ? 1 : -1;
+    //
+    // AND THE BOSS SHOOTS ON THE MOVE, which is what made this a THREE-part test
+    // rather than a two-part one. `thrust` covers every other figure: it is up for
+    // the quarter second an Attack drawing is on screen and the road may not touch
+    // the heading while it is. The Captain never sets it — his two beats are timed,
+    // not decayed — so without `nock` and `shot` here the road turned him straight
+    // back down the lane on the very next line and he loosed arrows out of his own
+    // back. tools/facing.mjs caught exactly that, on the soldier standing BEHIND
+    // him: he faced the man, and then the road un-faced him in the same frame.
+    //
+    // He therefore twists to shoot and the road has him again the moment the arrow
+    // is away, which is what a man loosing over his shoulder while marching looks
+    // like.
+    // WRITTEN AS `!e.nock` RATHER THAN `e.nock <= 0`, and that is not style. Four
+    // tools stand enemies up by hand without going through spawn(), so these fields
+    // can be undefined — and `undefined <= 0` is FALSE, which turned the guard
+    // permanently on and stopped the road setting any heading at all. It is the
+    // same trap `mendCd` avoids by being tested with `> 0`; tools/facing.mjs caught
+    // this one on an empty road.
+    if (p.tx && e.thrust <= 0 && !e.nock && !e.shot) e.face = p.tx > 0 ? 1 : -1;
     e.x = p.x;
     e.y = p.y;
 
@@ -442,6 +769,10 @@ export function updateEnemies(state, dt) {
   // pays its bounty and plays its kill line on the same frame it lands, exactly as
   // a blow would.
   for (const e of state.enemies) {
+    // NOT ON A BODY. A boss playing out his four seconds takes nothing from
+    // anything, and a burn still ticking on him is the one thing that could still
+    // move his health bar — which would be a corpse visibly dying twice.
+    if (downed(e)) continue;
     // NEGATIVE MEANS MENDING, which is the Dark Priest's dark healing coming back
     // through the same number a burn comes back through. Clamped to the ceiling
     // here rather than in status.js, because what a full health bar means belongs
@@ -461,6 +792,53 @@ export function updateEnemies(state, dt) {
       unhook(e);
       return false;
     }
+    // THE BOSS FALLS OVER SLOWLY, and this is the whole of the owner's rule that
+    // "after this 2 seconds, then only the game can end".
+    //
+    // A `finale` def out of health does not leave the list — it starts a script
+    // and STAYS, so the field is not clear, the wave cannot bank, and a run on its
+    // last wave cannot be won for four more seconds. Everything else about him is
+    // settled on this frame: the gold is paid, the kill cry plays, and any soldier
+    // holding him is let go. What is left is a drawing on a clock.
+    //
+    // BEFORE the leak test above? No — deliberately after it, so a boss who is
+    // killed on the exact frame he reaches the exit leaks like anything else. He
+    // cannot do both: `leaked` returns first.
+    // THE SCRIPT HAS FINISHED. He goes now, and the body he was already drawing is
+    // handed to corpses.js in the same drawing at the same anchor — so what the
+    // player sees does not change across the handover, only what the rest of the
+    // game thinks is on the board. Nothing is paid here: the gold, the cry and the
+    // release all happened four seconds ago, when he actually died.
+    if (e.act === GONE) {
+      dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
+      return false;
+    }
+
+    if (e.hp <= 0 && e.def.finale && !downed(e)) {
+      state.gold += e.def.bounty;
+      state.hits.push({ x: e.x, y: e.y, life: 0.25 });
+      // NO KILL LINE. Every other death in this game answers with a cry keyed to
+      // the weapon that landed it — see the ladder below — and a boss answers with
+      // his own, played by `begin` on the frame the falling beat starts. Both are
+      // Category A, so playing the generic one here would duck the boss's own
+      // death and then be ducked by it a line later.
+      // LET GO OF HIM. Every other death drops out of the array on this frame and
+      // `unhook` is what releases the man who was holding it; a boss who stays has
+      // to be released explicitly or a soldier would go on swinging at a corpse.
+      unhook(e);
+      e.foe = null;
+      begin(e, 'fall');
+      return true;
+    }
+
+    // AND NOTHING BELOW TOUCHES A FIGURE ALREADY PLAYING OUT ITS DEATH. He has
+    // `hp <= 0` for the whole of his four seconds, so the ordinary death path
+    // caught him on the very next frame: it paid his 250 a SECOND time, dropped
+    // his body four seconds early, and took him off the board — which is exactly
+    // the wave-holding the finale exists to do. Measured, not guessed: a run gave
+    // 500 gold for one boss and a finale that lasted 0.02s.
+    if (downed(e)) return true;
+
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
@@ -659,7 +1037,11 @@ function loose(state, e, mark) {
   const up = e.def.spriteTrim[3] * e.def.pivot[1] * SCALE * 0.55;
   const from = { x: e.x, y: e.y - up };
   const to = { x: mark.x, y: mark.y };
-  const ammo = e.def.ranged.ammo;
+  // OF THE STAGE, like everything else about what a figure is carrying. It makes
+  // no difference today — nothing in this game changes stage while it still has a
+  // bow — and it is one word rather than a second rule to keep in step.
+  const now = stageOf(e);
+  const ammo = now.ranged.ammo;
   const dist = Math.hypot(to.x - from.x, to.y - from.y);
   // A LOB HAS A FLIGHT TIME AND A STEERED SHOT DOES NOT. `flight` and `lift` are
   // what make projectiles.js run the arc; leaving them off is what makes a shot
@@ -678,17 +1060,23 @@ function loose(state, e, mark) {
     // point the same landing code at the other army. Absent on every tower's
     // shot, which reads as the player's side.
     side: 'enemy',
+    // AND WHO LOOSED IT. Carried only so that a boss's tally counts the men his
+    // arrows kill as well as the men his sword does — see the death sweep in
+    // units.js. A reference rather than an id, because the shooter may be dead by
+    // the time the arrow lands and a dead reference is simply a counter nobody
+    // reads, where a stale id could be reused.
+    by: e,
     target: mark,
     // WHAT IT HITS FOR, off the enemy rather than off the ammunition, because two
     // enemies could loose the same arrow for different damage — the same reason a
     // tower's shot carries its own number. A flask does none: what it does is on
     // the ground it leaves, and `damage` on a poisoned shot is never read.
-    damage: e.def.ranged.damage || 0,
+    damage: now.ranged.damage || 0,
     // The thrower's own kind of blow, carried on the shot exactly as a tower's is
     // — see shoot() in src/towers.js. It is what makes the plague thug's flask
     // MAGIC and so the one enemy attack a paladin's plate does not turn.
-    type: typeOf(e.def),
-    pierce: pierceOf(e.def),
+    type: typeOf(now),
+    pierce: pierceOf(now),
     splash: ammo.splash || 0,
     ammo,
     speed: ammo.speed,
@@ -744,6 +1132,15 @@ export function pickTarget(enemies, x, y, range, min = 0, mode = 0) {
   let bestRank = Infinity;
 
   for (const e of enemies) {
+    // NOTHING AIMS AT A BOSS WHO IS ALREADY LOSING. He is on the board for four
+    // seconds after he runs out of health — that is what holds the wave open — and
+    // for every one of them he is a drawing rather than a target. Towers that went
+    // on shooting him would spend the end of the fight firing at a corpse while
+    // live enemies walked past.
+    //
+    // The FIRST test on purpose, before the reach: it is the cheapest and it is
+    // the only one that can be true of something already dead.
+    if (downed(e)) continue;
     // Measured from the enemy's ground anchor — its shadow — because that is
     // where the figure IS. Its head is drawn well above that and never counts.
     if (!inRange(x, y, e.x, e.y, range)) continue;
@@ -753,7 +1150,9 @@ export function pickTarget(enemies, x, y, range, min = 0, mode = 0) {
     // direction as everything else; `ranged` is a 0/1 flag for mode 2, which
     // makes the whole preference a single comparable number in every mode.
     const rank = mode === 1 ? -e.hp
-               : mode === 2 ? (e.def.ranged ? 0 : 1)
+               // OF THE STAGE: an enraged Captain has thrown his bow away, so a
+               // tower set to prefer throwers stops preferring him.
+               : mode === 2 ? (stageOf(e).ranged ? 0 : 1)
                : 0;
     if (rank < bestRank || (rank === bestRank && left < least)) {
       bestRank = rank;

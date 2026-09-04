@@ -373,6 +373,37 @@ export const paths = {
   priest_cast:     'assets/enemies/Enemies_Dark_Priest_Ranged_Attack.png',
   priest_swing:    'assets/enemies/Enemies_Dark_Priest_Melee_Attack.png',
   priest_heal:     'assets/enemies/Enemies_Dark_Priest_Heal.png',
+  // --- THE BOSS ----------------------------------------------------------------
+  //
+  // ELEVEN DRAWINGS FOR ONE CREATURE, where the Dark Priest's five was the record.
+  // They live in assets/bosses/ rather than assets/enemies/ because a boss is not
+  // a member of the army — see that folder's README.
+  //
+  // The keys are named for what the drawing IS rather than for the file, the same
+  // way `archer_ready` and `archer_loose` are: `captain_fall` is the moment he
+  // loses, and calling it `captain_before_dying` would put the filename in the
+  // code twice.
+  //
+  // TWO STAGES, and the split is visible in the names. Everything up to
+  // `captain_mend` is the armoured captain with a shield and a bow; everything
+  // from `captain_raged` on is what gets up afterwards, with neither.
+  captain:         'assets/bosses/Captain_Thug_Default.png',
+  captain_guard:   'assets/bosses/Captain_Thug_Defend.png',
+  captain_reload:  'assets/bosses/Captain_Thug_Ranged_Reload.png',
+  captain_shoot:   'assets/bosses/Captain_Thug_Ranged_Attack.png',
+  captain_swing:   'assets/bosses/Captain_Thug_Melee_Attack.png',
+  captain_pause:   'assets/bosses/Captain_Thug_Pause.png',
+  captain_mend:    'assets/bosses/Captain_Thug_Heal.png',
+  captain_raged:   'assets/bosses/Captain_Thug_Enraged_Default.png',
+  captain_rage_swing: 'assets/bosses/Captain_Thug_Enraged_Attack.png',
+  captain_fall:    'assets/bosses/Captain_Thug_Before_Dying.png',
+  // HIS BODY IS IN assets/bosses/ TOO, next to the drawing it follows, rather than
+  // in assets/dead/ with the rest of the corpses. It is half of a two-beat ending
+  // — he drops his sword, then he drops — and splitting a pair of drawings that
+  // play one after the other across two folders would be filing them by a rule
+  // that has nothing to do with how they are used.
+  captain_dead:    'assets/bosses/Captain_Thug_Dead.png',
+
   // Death poses. See assets/dead/README.md.
   //
   // The tier comes LAST in these names — Man_Dead_T1, not Man_T1_Dead — because

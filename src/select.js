@@ -20,7 +20,7 @@
 
 import { SCALE } from './data/towers.js';
 import { boost, damageK, rangeOf, reachOf } from './towers.js';
-import { typeOf, pierceOf, RANK_SHORT, wornBy } from './data/armour.js';
+import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -401,9 +401,18 @@ export function selectionInfo(state) {
   // names the shooting families and not the barracks, so what he hits for is what
   // his def says. If that ever changes it changes in units.js first, and this line
   // follows it — the card must never claim a boost the fight is not applying.
+  // THE PICTURE FOLLOWS THE STAGE, at the owner's word: "the description panel in
+  // the game also updates to this image". Every figure in this game is portrayed by
+  // its def's own Default, and the enraged Captain is the first that is not the
+  // creature its def describes — he has thrown away the shield and the bow the
+  // walking drawing shows him carrying.
+  //
+  // Through the same `stageOf` that answers for his armour two rows down, so the
+  // panel cannot show one stage's picture beside the other stage's plate.
+  const shown = stageOf(f);
   return {
-    sprite: f.def.sprite,
-    trim: f.def.spriteTrim,
+    sprite: shown.sprite || f.def.sprite,
+    trim: shown.trim || f.def.spriteTrim,
     title: f.def.name,
     // WHOLE NUMBERS, BOTH OF THEM, and rounded UP. Display only — the fight goes
     // on using the fractions.
@@ -423,6 +432,9 @@ export function selectionInfo(state) {
     // the trap here: it is not two roundings, it is one applied twice.
     hp: Math.max(0, Math.ceil(f.hp)),
     maxHp: Math.ceil(f.maxHp),
+    // AND SO DOES THE BLADE. His sword is enchanted in stage 2 — magic where it
+    // was physical — so the icon beside the number has to change with it or the
+    // panel would promise a player that a paladin's plate still answers him.
     damage: shownDamage(f.def),
     // THE SWORD OR THE WAND, off this figure's own kind. The panel had no `attack`
     // at all until the armour row arrived, so it fell through to the sword for
@@ -430,7 +442,7 @@ export function selectionInfo(state) {
     // figure it was wrong about is the plague doctor, whose whole point is that he
     // is the magic on this board. The encyclopedia's enemy card has always shown
     // his wand; the two surfaces disagreed.
-    attack: attackIcon(f.def),
+    attack: attackIcon(shown),
     // The two ranks, on the row where the reach used to be — HIS, not his kind's.
     // Every figure in the game but one reads the same either way; the Blocker
     // Thug is why the live one is asked for. See armourRow.

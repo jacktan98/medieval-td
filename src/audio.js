@@ -199,15 +199,37 @@ const paths = {
   // The heal clip runs 2.53s against a two-second cast, which is what says it is
   // meant to cover the casting rather than to mark the moment it lands. It is
   // played on the frame the pose comes up — see the heal block in src/enemies.js.
-  blocker_defend:  'assets/audio/sfx/Blocker_Thug_Defend.mp3',
-  dark_priest_heal: 'assets/audio/sfx/Dark_Priest_Heal.mp3',
+  defend_walking:  'assets/audio/sfx/Defend_while_walking.mp3',
+  enemies_heal: 'assets/audio/sfx/Enemies_heal.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
   // out exactly as an arrow does — see the two flags on every ammunition in
   // data/towers.js. Category B, because several shrines can fire at once and a
   // shared channel would silence all but one of them.
   arcane_shot:     'assets/audio/sfx/Arcane_shot.mp3',
-  arrow_kill_enemy: 'assets/audio/sfx/Arrow_kill_enemy.mp3',
+  arrow_kill_unit: 'assets/audio/sfx/Arrow_kill_unit.mp3',
+  // --- THE BOSS'S SIX -----------------------------------------------------------
+  //
+  // In assets/audio/sfx with everything else, though they were uploaded beside his
+  // drawings. His Dead PNG stays in assets/bosses because it is half of a pair of
+  // pictures that play one after the other; a sound is not half of a picture, and
+  // assets/audio is the folder the audio README documents and tools/sound.mjs
+  // checks. Splitting the game's audio across two folders would cost both.
+  //
+  // FIVE OF THE SIX ARE ONCE-A-FIGHT MOMENTS, so they are Category A — solo, which
+  // ducks whatever else is playing. That is the right call for exactly these: a
+  // boss arriving, a boss going below a third, a boss healing himself whole, and
+  // the two beats of a boss dying are the loudest things that will happen in a
+  // run, and a shield clanking over the top of one would be the game losing its
+  // own set piece.
+  captain_enters:   'assets/audio/sfx/Captain_Thug_enters.mp3',
+  captain_health30: 'assets/audio/sfx/Captain_Thug_health_30.mp3',
+  captain_healed:   'assets/audio/sfx/Captain_Thug_heal.mp3',
+  captain_dying:    'assets/audio/sfx/Captain_Thug_before_dying.mp3',
+  captain_fallen:   'assets/audio/sfx/Captain_Thug_fall_dead.mp3',
+  // The sixth is not a set piece — it is a running tally, every fifth man he
+  // kills — so it is Category B and does not duck anything.
+  captain_kills:    'assets/audio/sfx/Captain_Thug_kill_soldier.mp3',
   // The musket. Two clips, and they are the same pair the bow has: the crack of
   // the shot every time one is fired, and a separate line for a musketeer taking a
   // man down. A musket ball arriving is silent — see the two flags on `bullet` in
@@ -269,7 +291,7 @@ const paths = {
   // times. Three cracks in half a second IS what a burst sounds like.
   musketeer_deadeye:  'assets/audio/sfx/Musketeer_Deadeye.mp3',
   paladin_holy_light: 'assets/audio/sfx/Paladin_Holy_Light.mp3',
-  paladin_blinding_strike: 'assets/audio/sfx/Paladin_Blinding_Strike.mp3',
+  heavy_strike: 'assets/audio/sfx/Heavy_strike.mp3',
   // The catapult. Nothing plays when the arm comes over — the rock is silent in
   // the air and announces itself by LANDING, which is also the moment the player
   // is looking at. See the artillery section in assets/audio/README.md.
@@ -563,7 +585,7 @@ export const CUE = {
   // above it. Artillery is the third ladder with two of these.
   cannoneer:    ['cannoneer_1', 'cannoneer_2', 'cannoneer_3'],
   thug:         ['thug_1'],
-  arrowKill:    ['arrow_kill_enemy'],
+  arrowKill:    ['arrow_kill_unit'],
   // A rock killing a man is its own event with its own clip now — it used to
   // borrow the arrow's, which was the better of two wrongs while nothing else
   // existed. The two are different enough to be worth telling apart by ear: an
@@ -655,10 +677,30 @@ export const CROSSBOW = ['crossbow_shot'];
 // the same reason. It plays on the shield GOING UP and not on the hits that hold
 // it there — see raiseGuard in src/enemies.js, which is called by every projectile
 // that lands on him and would otherwise make this the loudest thing in the game.
-export const DEFEND = ['blocker_defend'];
-// A Dark Priest casting. Category B, and the first sound in this game made by an
-// enemy helping another one.
-export const HEAL = ['dark_priest_heal'];
+export const DEFEND = ['defend_walking'];
+// AN ENEMY MENDING SOMEBODY, whether that is a Dark Priest working on a thug or
+// the Captain working on himself. Category B, and the first sound in this game
+// made by an enemy helping another one.
+//
+// It was `dark_priest_heal` and the file was named for him. The owner renamed it
+// to Enemies_heal for the plainest of reasons: a second creature now heals, and a
+// cue named after the first one would have meant either a duplicate file or a
+// Captain who sounds like a priest for no reason a player could work out.
+export const HEAL = ['enemies_heal'];
+
+// --- THE BOSS ------------------------------------------------------------------
+//
+// Five moments and a tally. Each is exported on its own rather than gathered into
+// a CAPTAIN object, because that is the shape every other cue in this file has and
+// each of these is played from a different place: three from the beat machine in
+// enemies.js, one from the spawn, one from the health check, one from units.js
+// where his blows land.
+export const BOSS_ENTERS = ['captain_enters'];
+export const BOSS_HURT   = ['captain_health30'];
+export const BOSS_HEALED = ['captain_healed'];
+export const BOSS_DYING  = ['captain_dying'];
+export const BOSS_FALLEN = ['captain_fallen'];
+export const BOSS_KILLS  = ['captain_kills'];
 // A ballista loosing. Category B beside the bow, the staff and the musket, and
 // for the same reason: it is a thing that happens rather than a thing announced,
 // and two turrets firing at once are two events the player is watching.
@@ -711,7 +753,18 @@ export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, monk: ARCANE,
                         bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT,
                         quarrel: CROSSBOW, cannonball: CANNON, dark: ARCANE };
 export const HOLY_LIGHT = ['paladin_holy_light'];
-export const BLINDING_STRIKE = ['paladin_blinding_strike'];
+// A BLOW THAT LANDS HARD, whoever throws it. The paladin's fifth strike and the
+// Captain's sword, through one cue.
+//
+// It was BLINDING_STRIKE and the file was Paladin_Blinding_Strike, named for the
+// one ability that had it. The owner renamed the file to Heavy_strike "so that
+// enemies and soldiers can use this when strike hard", and the export follows: a
+// cue named after a paladin ability, played by a thug, is a name that actively
+// misleads whoever reads the next call site.
+//
+// `blindingStrike` stays as the ability's cue KEY below, because that is the
+// ability's own id and it belongs to the paladin.
+export const HEAVY_STRIKE = ['heavy_strike'];
 export const ATTACK = ['attack_1', 'attack_2', 'attack_3'];
 // A longsword landing on plate. Category B beside the three generic takes and
 // chosen instead of them for one man — see blowCue below.
@@ -1127,7 +1180,7 @@ export const blowCue = def => (def && BLOWS[def.blow]) || ATTACK;
 // ordinary crack, three times.
 const ABILITY_CUES = {
   holyLight: HOLY_LIGHT,
-  blindingStrike: BLINDING_STRIKE
+  blindingStrike: HEAVY_STRIKE
 };
 
 export const abilityCue = key => ABILITY_CUES[key] || null;

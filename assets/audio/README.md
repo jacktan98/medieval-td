@@ -1,10 +1,10 @@
 # Audio
 
-**Seventy-six clips: thirty-one in `sfx/` and forty-five in `voice/`.**
+**Eighty-two clips: thirty-seven in `sfx/` and forty-five in `voice/`.**
 
 ```
 assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
-                      Arrow_kill_enemy.mp3,
+                      Arrow_kill_unit.mp3,
                       Rock_hit_ground.mp3, Rock_kill_enemy.mp3, Arcane_shot.mp3,
                       Musketeer_shot.mp3, Musketeer_kill_enemy.mp3,
                       Musketeer_Deadeye.mp3,
@@ -12,13 +12,16 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Ballista_Bolt_shot.mp3, Ballista_kill_enemy.mp3,
                       Cannon_shot.mp3, Cannon_kill_enemy.mp3,
                       Paladin_attack.mp3, Paladin_kill_enemy.mp3,
-                      Paladin_Holy_Light.mp3, Paladin_Blinding_Strike.mp3,
+                      Paladin_Holy_Light.mp3, Heavy_strike.mp3,
                       Assassin_melee_attack.mp3, Assassin_kill_enemy.mp3,
                       Assassin_Knife_Throw.mp3,
                       Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
                       Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
-                      Blocker_Thug_Defend.mp3, Dark_Priest_Heal.mp3,
-                      Thug_dies.mp3, Soldier_dies.mp3
+                      Defend_while_walking.mp3, Enemies_heal.mp3,
+                      Thug_dies.mp3, Soldier_dies.mp3,
+                      Captain_Thug_enters.mp3, Captain_Thug_health_30.mp3,
+                      Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
+                      Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -156,7 +159,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..3` |
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1` |
-| an arrow kills an enemy | `Arrow_kill_enemy` |
+| an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |
 | a **bolt** kills an enemy | `Ballista_kill_enemy` |
@@ -173,14 +176,20 @@ and it now means "how long a lull has to be before the game forgets".
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |
-| **a blocker thug gets his shield up** — Category B | `Blocker_Thug_Defend` |
-| **a dark priest starts a heal** — Category B | `Dark_Priest_Heal` |
+| **a blocker thug or the captain gets his shield up** — Category B | `Defend_while_walking` |
+| **a dark priest starts a heal, or the captain mends himself** — Category B | `Enemies_heal` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 7.2dB louder |
 | **Deadeye's heavy ball leaves** — Category B | `Musketeer_Deadeye` |
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
-| **a paladin's 5th blow lands** — Category B | `Paladin_Blinding_Strike` |
+| **a paladin's 5th blow lands, or the captain's sword does** — Category B | `Heavy_strike` |
+| **the captain kills his 5th, 10th, 15th man** — Category B | `Captain_Thug_kill_soldier` |
+| the **captain** walks on | `Captain_Thug_enters` |
+| the **captain** first drops below 30% | `Captain_Thug_health_30` |
+| the **captain** finishes mending himself | `Captain_Thug_heal` |
+| the **captain** is beaten and standing | `Captain_Thug_before_dying` |
+| the **captain** goes down | `Captain_Thug_fall_dead` |
 | an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |
 
 Everything above the line is Category A and shares the one channel; the ones
@@ -363,9 +372,9 @@ here, most of a second on some clips:
 | `Thug_dies` | 1.34s | 1.04s | 2.04s |
 | `Archery_1` | 1.44s | 0.77s | 1.77s |
 | `Soldier_dies` | 0.70s | 0.48s | 1.48s |
-| `Arrow_kill_enemy` | 1.05s | 0.30s | 1.30s |
+| `Arrow_kill_unit` | 1.05s | 0.30s | 1.30s |
 
-`Arrow_kill_enemy` is the striking one: a 1.05s file with 0.30s of sound in it,
+`Arrow_kill_unit` is the striking one: a 1.05s file with 0.30s of sound in it,
 so it used to hold the channel for two seconds to say something that took a
 third of one.
 

@@ -696,7 +696,8 @@ export const ABILITIES = [
     //
     // THE NAME IS THE ONLY THING THAT MOVED. `id`, the sprite key, the paladin's
     // pose (`assets/units/Paladin_Blinding_Strike.png`) and the sound
-    // (`assets/audio/sfx/Paladin_Blinding_Strike.mp3`) all still read Holy Slash,
+    // (`assets/audio/sfx/Heavy_strike.mp3`, renamed off this ability so the boss
+    // could use it too) all still read Holy Slash,
     // because the artist renamed the BUTTON and nothing else — and a code name
     // that matched the card while the file it points at did not would be worse
     // than one that plainly matches the file. What a player sees is `name`.

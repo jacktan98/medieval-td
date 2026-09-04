@@ -36,8 +36,8 @@ import { ui, PORTRAIT_SCALE, BOOK_ICON_H,
 import { ABILITIES } from '../src/data/abilities.js';
 import {
   PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, abilityCards,
-  towerEntry, unitEntry, figureSlot, ABILITY_ICON,
-  SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX,
+  towerEntry, unitEntry, figureSlot, figureFit, ABILITY_ICON,
+  SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP,
   BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
   BOOK_BTN_START, popSlot
@@ -292,12 +292,12 @@ console.log('\nWhat fits\n');
   // true — and it now also covers the widest WORD the row can hold, "Med", which
   // sets at 25.8 against this estimate's 25.9.
   const DIGIT = 0.72;
-  const rowWidth = figures => {
-    const size = BOOK_ICON_H - 2;
+  const rowWidth = (figures, iconH = BOOK_ICON_H) => {
+    const size = iconH - 2;
     let w = 0;
     figures.forEach(([key, text], i) => {
       if (i) w += STAT_GAP;
-      w += uiSize(key, { h: BOOK_ICON_H }).w + 4 + String(text).length * size * DIGIT;
+      w += uiSize(key, { h: iconH }).w + 4 + String(text).length * size * DIGIT;
     });
     return w;
   };
@@ -314,7 +314,7 @@ console.log('\nWhat fits\n');
   // the row the game actually draws — armour, pierce and blast, in that order, with
   // the `None`s already dropped.
 
-  const textRoom = shelfRect(0, 0).w - (FIGURE_BOX.x + FIGURE_BOX.w + 8);
+  const textRoom = shelfRect(0, 0).w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
   const rows = [];
   for (const { def } of shelf()) {
     const e = unitEntry(def);
@@ -337,15 +337,34 @@ console.log('\nWhat fits\n');
   // so a rewards row checked against a card would be checking a layout the game no
   // longer draws. They are measured against the POP-UP's column instead, below.
 
-  let over = 0;
-  let widest = 0;
+  // A ROW THAT DOES NOT FIT IS SET SMALLER, and that rule is now in render.js
+  // rather than in this check's imagination — see statRow. So there are two things
+  // to assert and they are different questions:
+  //
+  //   which rows need shrinking at all, which should be a short list and is worth
+  //   printing, because a page where everything is being squeezed is a page whose
+  //   cards are the wrong size;
+  //
+  //   and that the shrink is enough. The floor is STAT_MIN_H, and a row that still
+  //   does not fit at the floor is a card that needs redesigning — that is the
+  //   failure, not the shrinking.
+  const MIN_H = 10;
+  let squeezed = 0, widest = 0, stuck = 0;
   for (const [who, r] of rows) {
     const w = rowWidth(r);
     if (w > widest) widest = w;
-    if (w > textRoom) { over++; console.log(`      ${who}: ${w.toFixed(1)}px of ${textRoom}`); }
+    if (w <= textRoom) continue;
+    squeezed++;
+    // The same arithmetic statRow does: the height that would fit, floored.
+    const h = Math.max(MIN_H, Math.floor(BOOK_ICON_H * textRoom / w));
+    const after = rowWidth(r, h);
+    const fits = after <= textRoom;
+    if (!fits) stuck++;
+    console.log(`      ${who}: ${w.toFixed(1)}px of ${textRoom}, set at ${h}px -> ` +
+      `${after.toFixed(1)}px${fits ? '' : '  STILL OVER'}`);
   }
-  ok(over === 0, 'and every stat row fits the card it is printed in',
-    `widest ${widest.toFixed(1)}px of ${textRoom}`);
+  ok(stuck === 0, 'and every stat row fits the card it is printed in',
+    `widest ${widest.toFixed(1)}px of ${textRoom}, ${squeezed} row(s) set smaller`);
 }
 
 console.log('\nOne margin, everywhere\n');
@@ -450,19 +469,39 @@ console.log('\nEverything stands on its shadow\n');
   // Figures are drawn at the FIXED PORTRAIT_SCALE — they never shrink to fit —
   // so their slot has to be wide enough for the widest man in the game rather
   // than the other way round.
+  //
+  // WITH ONE EXCEPTION, AND IT IS DELIBERATE. A boss DOES shrink to fit, because
+  // the alternative is a boss that makes every other card in the book smaller: the
+  // Captain Thug is 18% wider than the Giant, and letting him size the slot took
+  // 6px out of the text column beside it and pushed three unrelated enemies' stat
+  // rows off their cards. So `figureFit` scales him into the army's cell — see
+  // BOSS_FIT in src/book.js — and this walks the drawing WITH that factor applied,
+  // which is the version the page actually draws.
   const men = [
     ...TIERS.map(d => unitEntry(d)),
-    ...Object.values(enemyTypes).map(d => ({ trim: d.spriteTrim, art: figureSlot(d.spriteTrim, d.pivot) }))
+    ...Object.values(enemyTypes).map(d => ({
+      boss: !!d.boss, trim: d.spriteTrim,
+      art: figureSlot(d.spriteTrim, d.pivot, figureFit(d)) }))
   ];
+  // A BOSS MAY REACH INTO THE GUTTER and no further, which is the exception this
+  // check is really about. Everything else must be inside its cell; a boss must
+  // clear the WORDS, which is the cell plus the 8px gap. Measured as one rule with
+  // a per-figure right edge rather than as two loops, so a boss that ever did
+  // reach the text fails here instead of being drawn over it.
+  const room = m => (m.boss ? FIGURE_BOX.w + TEXT_GAP : FIGURE_BOX.w);
+  let tightest = Infinity;
   const inBox = men.every(m => {
-    const x = m.art.anchor.x - m.art.a[0] * m.art.w;
-    const y = m.art.anchor.y - m.art.a[1] * m.art.h;
+    const w = m.art.w * m.art.k;
+    const h = m.art.h * m.art.k;
+    const x = m.art.anchor.x - m.art.a[0] * w;
+    const y = m.art.anchor.y - m.art.a[1] * h;
+    tightest = Math.min(tightest, FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP - (x + w));
     return x >= FIGURE_BOX.x - 0.01 && y >= FIGURE_BOX.y - 0.01 &&
-      x + m.art.w <= FIGURE_BOX.x + FIGURE_BOX.w + 0.01 &&
-      y + m.art.h <= FIGURE_BOX.y + FIGURE_BOX.h + 0.01;
+      x + w <= FIGURE_BOX.x + room(m) + 0.01 &&
+      y + h <= FIGURE_BOX.y + FIGURE_BOX.h + 0.01;
   });
-  ok(inBox, 'every figure fits its slot at the fixed portrait scale',
-    `${FIGURE_BOX.w}x${FIGURE_BOX.h}`);
+  ok(inBox, 'every figure fits its slot, and a boss clears the words beside it',
+    `${FIGURE_BOX.w}x${FIGURE_BOX.h}, tightest ${tightest.toFixed(1)}px of air to the text`);
 
   // The whole point: one anchor point per slot, so a column lines up. If any
   // drawing were placed by its box instead, its anchor would land somewhere

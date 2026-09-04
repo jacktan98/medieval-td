@@ -942,6 +942,252 @@ export const enemyTypes = {
     },
     r: 8,
     colour: '#6B5C7A'
+  },
+
+  // ============================================================================
+  // THE CAPTAIN, and he is the first boss.
+  //
+  // The owner's description: "something a Blocker Thug + Archer Thug + Paladin
+  // morphed together." That is exactly what he is built from — his shield is the
+  // Blocker's `guard` stance, his bow is the Archer's `ranged` block, and his
+  // second stage is the Paladin's magic blade — so almost nothing here is a new
+  // mechanic. What IS new is that he has a SECOND STAGE and a DEATH THAT TAKES
+  // TIME, and both of those needed machinery that did not exist.
+  //
+  // ELEVEN DRAWINGS, TEN OF THEM LIVING, against the Dark Priest's five. Every one
+  // of the ten shares source (263, 333) to the pixel — the artist drew one shadow
+  // and let the poses cover different parts of it — so he never hops, however
+  // often he swaps. Six of the eleven show the ellipse edge to edge and five of
+  // those six measure to exactly that point; the others hide its tips behind a leg
+  // or a bow, which is why every pivot below is derived from the one measurement
+  // rather than read off its own drawing. See assets/bosses/README.md.
+  //
+  // THE NUMBERS THE OWNER GAVE: 5,000 health, 50 damage with sword and bow alike,
+  // medium armour on both axes, high behind the shield, low once enraged, 1.2x
+  // speed and 1.2x swing rate in stage 2, a heal worth half his bar, and 50 splash
+  // on the enchanted blade. The ones he did not give are marked THE CHOICE below —
+  // there are five of them and every one is a balance decision rather than a
+  // detail.
+  captain_thug: {
+    name: 'Captain Thug',
+    // WHAT MAKES HIM A BOSS, as a flag rather than as a name test. Read by the
+    // wave loop, the info panel and the admin dashboard, none of which should be
+    // asking "is this the captain" — they are asking "is this a boss", and the
+    // second question survives the next one being drawn.
+    boss: true,
+    sprite: 'captain',
+    spriteTrim: [150, 164, 212, 185],
+    pivot: [0.533, 0.914],
+    // The bow, loosed. This is `attack` — the swing half of his ordinary pair —
+    // because on the road shooting is what he does at range, exactly as the
+    // Archer Thug's `attack` is his bow rather than his club.
+    attack: { sprite: 'captain_shoot', trim: [179, 182, 183, 167], pivot: [0.459, 0.904] },
+    // AND THE HALF-SECOND BEFORE IT. Nothing else in this game has a wind-up
+    // drawing: every other figure goes from standing to struck in one frame.
+    //
+    // It is a STANCE and not an attack, on the same rule the shield and the cast
+    // follow — he is not doing anything to anybody yet, he is nocking an arrow —
+    // so it replaces the STANDING half of his pair and leaves the swing alone.
+    // `seconds` is the owner's 0.5.
+    reload: {
+      sprite: 'captain_reload',
+      trim: [151, 182, 211, 167],
+      pivot: [0.531, 0.904],
+      seconds: 0.5
+    },
+    // The sword, close in. The Blocker's arrangement: a soldier with hold of him
+    // gets the blade, and the bow is not used at arm's length.
+    melee: {
+      attack: { sprite: 'captain_swing', trim: [89, 183, 273, 166], pivot: [0.637, 0.904] }
+    },
+    // THE SHIELD, and it is the Blocker Thug's stance in every particular: five
+    // seconds, refreshed by every projectile that lands, half pace while it is up,
+    // high plate on both axes.
+    //
+    // WITH ONE RULE OF HIS OWN, which is the owner's: "if there are no soldiers
+    // nearby". A Blocker guards whatever else is happening; the Captain drops the
+    // shield the moment a man comes into bow range, because he would rather shoot.
+    // That is `sheathe` below rather than a number here — see updateEnemies.
+    guard: {
+      sprite: 'captain_guard',
+      trim: [119, 183, 243, 166],
+      pivot: [0.593, 0.904],
+      armour: { physical: 'high', magic: 'high' },
+      seconds: 5,
+      slow: 0.5
+    },
+    // HE PUTS IT AWAY TO SHOOT. A soldier inside this reach takes the shield down
+    // and keeps it down, which is the owner's "he puts his shield behind his back
+    // and stops defending".
+    //
+    // The same number as his bow, so what he can shoot and what makes him stop
+    // guarding are one circle. Written as its own field rather than read off
+    // `ranged.range` because they are two different questions about him, and a
+    // future Captain who guarded until something got closer than he could shoot
+    // would be a one-line change instead of a rewrite.
+    sheathe: 200,
+    spriteFaces: -1,
+    // HIS BODY IS HIS OWN ELEVENTH DRAWING, dropped by the finale below rather
+    // than by the death sweep — see `dropCorpse` in src/enemies.js. The fields are
+    // the ordinary ones so that corpses.js needs to know nothing about bosses.
+    dead: 'captain_dead',
+    deadTrim: [65, 241, 307, 108],
+    deadPivot: [0.645, 0.852],
+    hp: 5000,
+    damageType: 'physical',
+    armour: { physical: 'med', magic: 'med' },
+    // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
+    // just under the Giant's 52, which is what a man in that much plate should be
+    // and what gives the towers time to work on a 5,000 bar. Stage 2 multiplies
+    // it by the owner's 1.2, so enraged he moves at 60 — between a Blocker and an
+    // Archer, and faster than the Giant he used to be slower than.
+    speed: 50,
+    // THE CHOICE — BOUNTY. Not given. 250 against a Giant's 40, which is roughly
+    // what his health is worth at the rate the rest of the roster pays: he is 6.25
+    // giants of health and this is 6.25 giants of gold. It matters more than a
+    // normal bounty does, because killing him is a whole wave's work and the
+    // player should be able to rebuild afterwards.
+    bounty: 250,
+    // THE CHOICE — WHAT HE COSTS IF HE GETS THROUGH. Not given. 5 of 20 lives,
+    // against the Giant's 2 and everything else's 1. A quarter of the game for
+    // letting the boss walk past, which is meant to be the worst thing that can
+    // happen without being the end of the run — at 20 it would be a loss on its
+    // own, and a boss you cannot survive misjudging is a boss you reload rather
+    // than fight.
+    leak: 5,
+    // Sword and bow both, at the owner's word: "Physical Attack (Melee and
+    // Ranged): 50 (individual)". The two are one number on purpose, so where he is
+    // standing decides how the blow arrives and not how hard.
+    damage: 50,
+    atkCd: 1.0,
+    ranged: {
+      // THE CHOICE — REACH. Not given. The Archer Thug's 200, so a tier 1 bow at
+      // 190 nearly trades with him and a Crossbow Tower at 220 comfortably does.
+      range: 200,
+      cd: 2.0,
+      damage: 50,
+      ammo: enemyArrow,
+      // AND HE SHOOTS ON THE MOVE, which is the one place he does NOT copy the
+      // Archer Thug. An archer plants himself at his own reach and stands there,
+      // and the owner has accepted that this can hold a wave open until the stall
+      // clock fires — "players will find a way to eliminate him".
+      //
+      // That trade is fine for a creature you can ignore and wrong for the one the
+      // wave is built around: a boss standing at 200px shooting for the rest of
+      // the game is not a fight, it is a wait. So he keeps walking and fires as he
+      // comes, which also means he cannot stall a wave at all.
+      onTheMove: true,
+      // HOW LONG THE LOOSING POSE HOLDS, in seconds, and the owner's 0.5. Every
+      // other figure in the game shows its Attack drawing for the quarter second
+      // `thrust` takes to decay; his is twice that and is timed rather than
+      // decayed, so the reload and the shot read as two equal beats.
+      hold: 0.5
+    },
+    // ========================================================================
+    // STAGE 2, at a quarter health, ONCE.
+    //
+    // Three beats, in order: he stops and channels for two seconds, he mends
+    // himself for three and comes back with half his bar, and then he is a
+    // different creature for the rest of the fight.
+    //
+    // The whole of it is here rather than spread through enemies.js so that the
+    // second boss needs no new code — a def with a `rage` block gets a second
+    // stage, and one without does not.
+    rage: {
+      // The owner's "health hits below than 25% for the first time". Once only,
+      // and what enforces that is the stage itself: he leaves stage 1 and there is
+      // no way back, so there is no separate flag to get out of step.
+      at: 0.25,
+      // BEAT ONE. He throws away the shield, the bow and the bow bag, and stands
+      // still. Two seconds, and he can be hit for every one of them — this is the
+      // window, and the drawing is the tell.
+      pause: {
+        sprite: 'captain_pause',
+        trim: [112, 124, 343, 232],
+        pivot: [0.44, 0.901],
+        seconds: 2
+      },
+      // BEAT TWO. Three seconds of mending, worth half his maximum.
+      //
+      // HIGH PLATE WHILE HE DOES IT, at the owner's word, which is what stops the
+      // heal being a free two-thousand-five-hundred: everything shooting him is
+      // suddenly doing a quarter damage, so a player who has saved an ability for
+      // this moment gets much less out of it than one who spends it in the pause.
+      // Those are the two halves of the same five seconds and they are deliberately
+      // opposite.
+      //
+      // A FLAT SHARE OF MAXIMUM, not a rate: `share` of `maxHp`, granted when the
+      // three seconds finish rather than trickled. He is not wearing the Dark
+      // Priest's healing status — this is his own, it cannot be refreshed by
+      // anything, and it lands or it does not.
+      mend: {
+        sprite: 'captain_mend',
+        trim: [169, 121, 187, 239],
+        pivot: [0.503, 0.887],
+        seconds: 3,
+        share: 0.5,
+        armour: { physical: 'high', magic: 'high' }
+      },
+      // BEAT THREE, and everything under here is what he is afterwards.
+      sprite: 'captain_raged',
+      trim: [164, 164, 148, 185],
+      pivot: [0.669, 0.914],
+      attack: { sprite: 'captain_rage_swing', trim: [78, 183, 234, 166], pivot: [0.791, 0.904] },
+      // LOW ON BOTH AXES, down from medium. He has thrown the shield away and it
+      // shows in what he takes: the same tower that was doing half damage to him
+      // now does three quarters.
+      armour: { physical: 'low', magic: 'low' },
+      // Walk and swing, both, at the owner's 1.2x. One multiplier for the two so
+      // they cannot drift apart — he is faster, not faster at one thing.
+      times: 1.2,
+      // THE BLADE IS ENCHANTED, so it is MAGIC now. That is the sharpest part of
+      // the whole change and it is aimed straight at the player's line: a spearman
+      // wears no magic plate at all, and a paladin's medium physical — the thing
+      // that made him a wall against this boss for the whole of stage 1 — is worth
+      // nothing against it.
+      damageType: 'magic',
+      // AND IT CATCHES EVERYONE AROUND HIM, at the owner's 50. The same damage to
+      // the man he is fighting and to every man near him, with no falloff, which
+      // is how every other splash in this game reads.
+      //
+      // THE CHOICE — HOW WIDE. Not given. 60px, which is twice the 30 a soldier
+      // blocks at and just under the 70 a squad assists within: it catches the men
+      // who came to help and not the ones who stayed at their posts. A squad that
+      // piles onto him now loses everybody at once, which is the decision the
+      // second stage exists to force.
+      splash: 60
+    },
+    // ========================================================================
+    // AND HE DOES NOT DIE ON THE FRAME HE RUNS OUT OF HEALTH.
+    //
+    // Four seconds: two of standing there having lost, holding his dropped sword,
+    // and two on the ground. The owner's rule — "after this 2 seconds, then only
+    // the game can end" — is why this is not just an animation: he stays on the
+    // board for the whole of it, so a wave cannot clear and a run cannot be won
+    // until it has played out.
+    //
+    // Nothing may touch him during it. He does not walk, shoot, swing or take
+    // damage, no tower may aim at him, and any soldier holding him is let go on
+    // the frame it starts. See the finale block in updateEnemies.
+    finale: {
+      // He is beaten but standing. His own drawing, and the last living pose.
+      fall: {
+        sprite: 'captain_fall',
+        trim: [65, 183, 247, 166],
+        pivot: [0.802, 0.904],
+        seconds: 2
+      },
+      // Then he is on the ground, in the drawing that also becomes his corpse.
+      // Two seconds here, and then the body is handed to corpses.js and he leaves
+      // the enemy list — so what the player sees does not change at the handover,
+      // only what the rest of the game thinks is on the board.
+      rest: 2
+    },
+    // As big a body as the Giant's, and for the same reason: the hitbox is meant
+    // to match the figure you can see. He draws 43 x 38 game px against the
+    // Giant's 37 x 37.
+    r: 15,
+    colour: '#B08A4A'
   }
 };
 
@@ -974,7 +1220,13 @@ export const MARCH_ORDER = [
   // The healer comes in LAST, behind everything he is there to mend. A priest at
   // the head of a column would spend the wave walking with nobody hurt in front of
   // him; behind it he arrives to a fight already going and men already wounded.
-  'dark_priest'
+  'dark_priest',
+  // AND THE BOSS BEHIND EVEN HIM, because groups spawn one after another and this
+  // list is therefore the order they arrive in. A boss at the front of a wave is a
+  // boss the player meets with a full line and full towers; a boss at the back
+  // arrives to a line that has already been chewed on, which is the fight worth
+  // having. It also puts him behind his own healer rather than in front of one.
+  'captain_thug'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

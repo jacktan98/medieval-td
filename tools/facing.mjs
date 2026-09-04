@@ -32,7 +32,7 @@ import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
 import { enemyStance } from '../src/render.js';
 import { raiseGuard } from '../src/enemies.js';
-import { wornBy } from '../src/data/armour.js';
+import { wornBy, stageOf } from '../src/data/armour.js';
 
 // Where on the road the test stands its victim. An enemy's position is DERIVED
 // from its route and how far along it has walked — setting x and y directly does
@@ -223,15 +223,75 @@ console.log('\nWhich drawing an enemy shows\n');
   ok(caught.stand.sprite === dp.sprite && caught.swing.sprite === dp.melee.attack.sprite,
     'and being caught mid-cast puts him back in the melee pair', caught.swing.sprite);
 
-  // AND THE SHIELD IS HIS ALONE. Every other enemy answers the same however long
-  // its `guard` field has been sitting at zero — the field is on all of them so
-  // that nothing has to test for it, and that is only safe if it does nothing.
+  // AND A SHIELD BELONGS TO WHOEVER HAS ONE IN THE DATA. Every enemy without a
+  // `guard` block answers the same however long its `guard` field has been sitting
+  // at zero — the field is on all of them so that nothing has to test for it, and
+  // that is only safe if it does nothing.
+  //
+  // DERIVED RATHER THAN A LIST OF EXCEPTIONS. It read `if (id === 'blocker_inf')
+  // continue` until the Captain Thug arrived carrying a shield of his own, and a
+  // hard-coded exception is a check that quietly stops being about anything the
+  // second the data grows. Asking the def is the same question and it stays true.
   for (const [id, d] of Object.entries(enemyTypes)) {
-    if (id === 'blocker_inf') continue;
+    if (d.guard) continue;
     const calm = enemyStance({ def: d, foe: null, guard: 0, cast: 0, thrust: 0 });
     const shot = enemyStance({ def: d, foe: null, guard: 5, cast: 0, thrust: 0 });
     ok(calm.stand.sprite === shot.stand.sprite && wornBy({ def: d, foe: null, guard: 5 }) === (d.armour || null),
       `${d.name} has no shield to raise`, calm.stand.sprite);
+  }
+
+  // --- AND THE BOSS, WHOSE TEN LIVING DRAWINGS ARE THE POINT OF THIS FILE -------
+  //
+  // He swaps between more pictures than anything else in the game by a factor of
+  // two, and every one of them has a plate that has to agree with it. This walks
+  // all ten and checks the DRAWING against the ARMOUR each time, which is the one
+  // thing that has to hold: a boss shown behind a shield while taking damage as
+  // though it were down is the bug this whole file exists for.
+  {
+    const c = enemyTypes.captain_thug;
+    const base = { def: c, foe: null, guard: 0, cast: 0, thrust: 0, nock: 0, shot: 0, act: null, stage: 1 };
+    const rank = f => { const a = wornBy(f); return `${a.physical}/${a.magic}`; };
+    const shows = (f, sprite, plate, label) => {
+      const s = enemyStance(f);
+      ok(s.stand.sprite === sprite && rank(f) === plate, label, `${s.stand.sprite} in ${rank(f)}`);
+    };
+
+    shows({ ...base }, 'captain', 'med/med', 'walking, he is his own Default in medium plate');
+    shows({ ...base, guard: 5 }, 'captain_guard', 'high/high', 'shot at, the shield is up and the plate with it');
+    shows({ ...base, nock: 0.3 }, 'captain_reload', 'med/med', 'nocking, he is drawn reloading and the shield is off');
+    shows({ ...base, act: 'pause' }, 'captain_pause', 'med/med', 'channelling, he is exposed in medium');
+    shows({ ...base, act: 'mend' }, 'captain_mend', 'high/high', 'mending, he is behind high plate again');
+    shows({ ...base, stage: 2 }, 'captain_raged', 'low/low', 'enraged, he is a new figure in low plate');
+    shows({ ...base, act: 'fall' }, 'captain_fall', 'med/med', 'beaten, he holds the dropped sword');
+    shows({ ...base, act: 'rest' }, 'captain_dead', 'med/med', 'and then he is on the ground');
+
+    // THE SCRIPT OUTRANKS BEING HELD, which is the one ordering that differs from
+    // every other stance in this file. A boss on the ground does not get up
+    // because a spearman is standing over him.
+    const heldDown = enemyStance({ ...base, act: 'fall', foe: {} });
+    ok(heldDown.stand.sprite === 'captain_fall',
+      'and a soldier standing over him cannot take the beat away', heldDown.stand.sprite);
+
+    // AND THE TWO ATTACKS, which is where the stage decides what he even has.
+    const far = enemyStance({ ...base });
+    const near = enemyStance({ ...base, foe: {} });
+    ok(far.swing.sprite === 'captain_shoot' && near.swing.sprite === 'captain_swing',
+      'he looses at range and swings when held', `${far.swing.sprite} / ${near.swing.sprite}`);
+    const raged = enemyStance({ ...base, stage: 2 });
+    const ragedHeld = enemyStance({ ...base, stage: 2, foe: {} });
+    ok(raged.swing.sprite === 'captain_rage_swing' && ragedHeld.swing.sprite === 'captain_rage_swing',
+      'and enraged he has only the sword, at either distance', raged.swing.sprite);
+
+    // HE HAS NOTHING LEFT TO RAISE OR DRAW IN STAGE 2, and it is an absence in the
+    // data rather than a test in the loop: `rage` declares no guard, no bow and no
+    // reload. Checked here because the ABSENCE is the mechanism — the drawing and
+    // the behaviour both read the same block, so they cannot come apart.
+    const now = stageOf({ def: c, stage: 2 });
+    ok(!now.guard && !now.ranged && !now.reload,
+      'and enraged he has no shield, no bow and no wind-up',
+      `guard ${!!now.guard}, bow ${!!now.ranged}, reload ${!!now.reload}`);
+    ok(enemyStance({ ...base, stage: 2, guard: 5 }).stand.sprite === 'captain_raged',
+      'so a hit that would have raised his shield leaves him walking');
   }
 }
 

@@ -9,14 +9,16 @@ import { art, discFace } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden } from './units.js';
+import { stageOf } from './data/armour.js';
+import { downed } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, abilityCards, towerEntry, unitEntry,
-         abilityEntry, figureSlot, ABILITY_ICON, ICON_BOX,
-         SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, rowsIn,
+         abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
+         SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
@@ -339,7 +341,12 @@ function drawTower(ctx, t) {
 // take away.
 function drawStatus(ctx, state) {
   for (const e of state.enemies) {
-    const top = e.y - artHeight(e.def) - 4;
+    // NOT OVER A BODY. A boss stays in the enemy list for four seconds after he
+    // runs out of health — that is what holds the wave open — and an empty health
+    // bar hanging over a corpse is the one thing that would give the trick away.
+    // Nothing is being done to him either, so the status marks go with it.
+    if (downed(e)) continue;
+    const top = e.y - artHeight(e.def, e) - 4;
     healthBar(ctx, e.x, top, e.def.r, e.hp / e.maxHp);
     statusMarks(ctx, e, e.x, top);
   }
@@ -625,7 +632,7 @@ function drawMarks(ctx, state) {
 
 function mark(ctx, e) {
   const img = art.target_lock;
-  const cy = e.y - artHeight(e.def) - MARK_LIFT - MARK / 2;
+  const cy = e.y - artHeight(e.def, e) - MARK_LIFT - MARK / 2;
 
   if (!img) {
     // The vector fallback every drawn thing in this game has: a ring and a cross,
@@ -1418,23 +1425,70 @@ const ENEMY_LUNGE = 6;
 // replaces the standing half exactly as the shield does. Two creatures, two
 // fields, one rule — a def's stance beats its Default and neither touches the
 // swing.
+// AND THE BOSS BROUGHT FOUR MORE, which is why the chain below has a top half it
+// did not have. His scripted beats — channelling, mending, beaten, fallen — are
+// stances in exactly the sense the shield and the cast are, but they OUTRANK
+// being held rather than losing to it: a boss on the ground does not stop being on
+// the ground because a spearman is standing over him, and `downed` in enemies.js
+// says nothing may have hold of him anyway.
+//
+// His nocking pose is the ordinary kind and sits with the others: it is a stance
+// (he is not doing anything to anybody yet, he is drawing a bow) and being caught
+// takes it away, which is what updateEnemies does on the frame a soldier arrives.
+//
+// STAGE 2 REPLACES THE PAIR RATHER THAN ADDING A STANCE, and it is the only thing
+// in this file that does. `stageOf` answers with `rage`, which carries its own
+// Default and its own Attack, so the enraged Captain is a different creature
+// wearing the same figure rather than the same creature in a different pose. It is
+// the same block `wornBy` reads for his plate — one test, three answers, and the
+// picture cannot disagree with the damage.
 export function enemyStance(e) {
   const d = e.def;
+  const now = stageOf(e);
   const close = !!(e.foe && d.melee);
+  // A SCRIPTED BEAT BEATS EVERYTHING, including being held.
+  const beat = e.act === 'pause' ? d.rage.pause
+             : e.act === 'mend'  ? d.rage.mend
+             : e.act === 'fall'  ? d.finale.fall
+             : (e.act === 'rest' || e.act === 'gone')
+               ? { sprite: d.dead, trim: d.deadTrim, pivot: d.deadPivot }
+               : null;
   // WHICHEVER STANCE THIS CREATURE HAS, and nothing has two. Held always wins:
   // a Blocker swinging has his shield down and a priest with a spear in him has
   // stopped casting — see updateEnemies, which clears the cast on the frame
   // somebody takes hold of him.
   const stance = e.foe ? null
-               : (e.guard > 0 && d.guard) ? d.guard
-               : (e.cast > 0 && d.heal) ? d.heal
+               : (e.guard > 0 && now.guard) ? now.guard
+               : (e.cast > 0 && now.heal) ? now.heal
+               : (e.nock > 0 && now.reload) ? now.reload
                : null;
-  const own = { sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot };
+  // His own pair, which in stage 2 is the enraged one.
+  const own = { sprite: now.sprite || d.sprite,
+                trim: now.trim || d.spriteTrim,
+                pivot: now.pivot || d.pivot };
+  // WHICH ATTACK, and the two questions are asked in this order for a reason. The
+  // stage decides WHAT HE HAS; being held decides WHICH OF IT he uses. Asked the
+  // other way round, `now.attack` wins in stage 1 as well — it is just the def's
+  // own `attack` — and every thrower in the game goes back to shooting the man
+  // wrestling him. tools/facing.mjs caught exactly that.
+  const melee = now.melee;
   return {
-    stand: (close && d.melee.default) || stance || own,
-    swing: close ? d.melee.attack : d.attack
+    stand: beat || (close && melee && melee.default) || stance || own,
+    swing: (close && melee) ? melee.attack : now.attack
   };
 }
+
+// IS THIS FIGURE SHOWING ITS ATTACK DRAWING? One question, asked by the renderer
+// and by tools/facing.mjs, because "which of the pair" has two answers now.
+//
+// `thrust` is the ordinary one: it is set the moment a blow lands or a missile
+// leaves a hand and fades over a quarter second, dragging the lunge with it.
+//
+// `shot` is the boss's, and it is a TIMER rather than a decay — half a second of
+// holding the loose, at the owner's ask, with no lunge on it. Fading it would
+// have made the pose shorter than he asked for, and setting `thrust` to 2 to
+// stretch it would have doubled how far he lurches forward.
+export const striking = e => e.thrust > 0 || e.shot > 0;
 
 function drawEnemy(ctx, e) {
   const img = e.def.sprite && art[e.def.sprite];
@@ -1457,7 +1511,7 @@ function drawEnemy(ctx, e) {
   // plague doctor's `thrust` is set by the flask leaving his hand rather than by
   // a blow landing, and he gets the lunge with it, which is exactly right for a
   // man putting his shoulder into a throw.
-  const [frame, trim, pivot] = pose(swing, e.thrust > 0,
+  const [frame, trim, pivot] = pose(swing, striking(e),
     art[stand.sprite] || img, stand.trim, stand.pivot);
 
   const [sx, sy, sw, sh] = trim;
@@ -1491,13 +1545,44 @@ function drawEnemy(ctx, e) {
 // would be a bar that moves for a reason other than health. It happens to be his
 // own height today — 118 against 118 — so this line changes nothing on screen and
 // is here so that it still changes nothing after the next re-export.
-const artHeight = def => {
+// THE BOSS FORCED ONE EXCEPTION, and it is worth stating precisely because the
+// rule above is the thing it bends.
+//
+// He has ten living drawings and two of them tower over the rest: 232 source px
+// channelling and 239 mending, against the 185 he walks in. Folding those into the
+// maximum would float his health bar 11 game px above his head for the whole of a
+// fight — about a third of his own height — to make room for a pose he strikes
+// twice.
+//
+// So the maximum covers the drawings he can enter WITHOUT WARNING — the walk, the
+// shield, the nocking, the close pair — and the two scripted beats carry their own
+// height instead. That keeps the reason the rule exists: a bar must never move
+// because a soldier arrived or an arrow landed, and none of those can move it. It
+// moves for the transformation, which is a five-second set piece the player is
+// watching happen and the one moment on the board that ANNOUNCES itself.
+//
+// `fig` is optional. Every caller that has a live figure passes it; the ones asking
+// about a creature in the abstract — the encyclopedia, the info box — do not, and
+// get the def's own answer.
+const artHeight = (def, fig) => {
   if (!def.spriteTrim) return def.r * 2;
+  // A scripted beat is drawn at its own height, so the bar sits on the pose that
+  // is actually on screen. See BEATS in src/enemies.js for the four of them.
+  const beat = fig && (fig.act === 'pause' ? def.rage.pause
+                     : fig.act === 'mend'  ? def.rage.mend
+                     : null);
+  if (beat) return beat.trim[3] * SCALE;
   const close = def.melee && def.melee.default;
   return Math.max(def.spriteTrim[3],
                   close ? close.trim[3] : 0,
                   def.guard ? def.guard.trim[3] : 0,
-                  def.heal ? def.heal.trim[3] : 0) * SCALE;
+                  def.heal ? def.heal.trim[3] : 0,
+                  def.reload ? def.reload.trim[3] : 0,
+                  // The enraged Default, which he walks in for the whole second
+                  // half of the fight. It happens to be the same 185 as the first,
+                  // so this changes nothing on screen today and is here so that it
+                  // still changes nothing after the next re-export.
+                  def.rage ? def.rage.trim[3] : 0) * SCALE;
 };
 
 // Sized to the thing it belongs to, and hidden at full health. Fixed-width bars
@@ -3779,7 +3864,7 @@ function unitCard(ctx, b, e) {
   card(ctx, b);
   drawArt(ctx, e.sprite, e.trim, b, e.art);
 
-  const tx = b.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
+  const tx = b.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
   // THREE ROWS, ALWAYS, however few of them have anything in them. It counted the
   // man's own rows for one build, and rowsIn CENTRES what it is given — so a card
   // with no armour re-centred, and its name and its stats slid half a line down the
@@ -3806,8 +3891,12 @@ function unitCard(ctx, b, e) {
   top.push([e.attack || 'stat_damage', e.damage]);
   if (e.range !== null) top.push(['stat_range', e.range]);
 
-  statRow(ctx, top, tx, r2);
-  statRow(ctx, e.traits, tx, r3);
+  // The room a row has is the card's own width, less the picture column and the
+  // gutter it is measured from. Passed rather than assumed, because it is the same
+  // arithmetic `tx` is built from and two copies of it could drift.
+  const room = b.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
+  statRow(ctx, top, tx, r2, INK, room);
+  statRow(ctx, e.traits, tx, r3, INK, room);
 }
 
 // A ROW OF ICONS AND THE NUMBERS BESIDE THEM, wherever one is printed — a unit
@@ -3819,10 +3908,49 @@ function unitCard(ctx, b, e) {
 //
 // AN EMPTY LIST DRAWS NOTHING AND STILL COSTS ITS ROW, which is the whole reason
 // the callers hand it one rather than skipping the call — see the note in unitCard.
-function statRow(ctx, pairs, x, y, colour = INK) {
+// The smallest a stat row may be set at, in icon px. Below this the numbers stop
+// being readable at arm's length on a phone, and a row that cannot fit at 10 is a
+// card that needs redesigning rather than squeezing.
+const STAT_MIN_H = 10;
+
+// How wide a row of pairs would set at a given icon height. Measured through the
+// same ctx the row is drawn with, so it is the real width rather than an estimate.
+export function statRowWidth(ctx, pairs, h = BOOK_ICON_H) {
+  ctx.font = `700 ${h - 2}px system-ui, sans-serif`;
+  let w = 0;
+  pairs.forEach(([key, value], i) => {
+    if (i) w += STAT_GAP;
+    w += uiSize(key, { h }).w + 4 + ctx.measureText(String(value)).width;
+  });
+  return w;
+}
+
+function statRow(ctx, pairs, x, y, colour = INK, room = 0) {
+  // SET SMALLER RATHER THAN RUN OFF THE CARD, when a row is too long for the space
+  // beside its picture.
+  //
+  // The Captain Thug is what needed it and the reason is his health: every other
+  // figure in this game has at most three digits and he has 5,000, which is one
+  // whole extra character in the widest column on the page. His row sets 146.8px
+  // into 141px of card.
+  //
+  // A RULE RATHER THAN AN EXCEPTION FOR HIM. Any row that does not fit is set at
+  // whatever height does fit, floored at STAT_MIN_H, and every row that already
+  // fits is untouched — so nothing else on any page moved. That is the difference
+  // between this and the two alternatives: dropping his reach from the card loses
+  // information the player needs, and widening the column moves every other card.
+  //
+  // `room` is optional. A caller that does not pass one gets the old behaviour,
+  // which is what the pop-up's rows want — they are laid out in a column with no
+  // hard right edge.
+  let h = BOOK_ICON_H;
+  if (room > 0) {
+    const want = statRowWidth(ctx, pairs, h);
+    if (want > room) h = Math.max(STAT_MIN_H, Math.floor(h * room / want));
+  }
   let at = x;
   for (const [key, value] of pairs)
-    at = stat(ctx, key, at, y, String(value), colour) + STAT_GAP;
+    at = stat(ctx, key, at, y, String(value), colour, h) + STAT_GAP;
   return at;
 }
 
@@ -3857,9 +3985,9 @@ function drawEnemyPage(ctx) {
   for (const c of enemyCards()) {
     const d = c.def;
     card(ctx, c);
-    drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot));
+    drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot, figureFit(d)));
 
-    const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + 8;
+    const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
     const [r1, r2, r3] = rowsIn(c, 3);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -3873,7 +4001,8 @@ function drawEnemyPage(ctx) {
     // learns it by watching a tower fail to answer.
     const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
     if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
-    statRow(ctx, top, tx, r2);
+    const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
+    statRow(ctx, top, tx, r2, INK, room);
 
     // AND WHAT HE WEARS AND WHAT HE THROWS, in the row the bounty and the leak
     // used to have. It is the point of putting them here rather than in the pop-up:
@@ -3881,7 +4010,7 @@ function drawEnemyPage(ctx) {
     // question the page is being opened to answer.
     //
     // The coin and the broken heart went inside the picture — see artAt in book.js.
-    statRow(ctx, traitRow(d), tx, r3);
+    statRow(ctx, traitRow(d), tx, r3, INK, room);
   }
 }
 

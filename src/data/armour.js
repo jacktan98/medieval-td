@@ -108,15 +108,62 @@ export function taken(damage, type, armour, pierce = 0) {
 // It takes the LIVE figure, not a def, and tolerates being handed something with
 // no def at all — the encyclopedia asks about creatures that are not on the board
 // and towers ask about plots that are empty.
+// AND A FOURTH RULE ARRIVED WITH THE BOSS, which is a different KIND of change
+// and is why `stageOf` below exists rather than another clause in here. The
+// Blocker's three states are three things happening TO him, each lasting seconds;
+// the Captain's second stage is permanent and changes what he hits with as well
+// as what he wears. So the stance clauses stay here and the stage is answered
+// once, in one place, for every question about him.
 export function wornBy(fig) {
   if (!fig) return null;
+  const now = stageOf(fig);
   const def = fig.def || fig;
   if (fig.def) {
-    if (fig.foe && def.fightArmour) return def.fightArmour;
-    if (fig.guard > 0 && def.guard && def.guard.armour) return def.guard.armour;
+    if (fig.foe && now.fightArmour) return now.fightArmour;
+    if (fig.guard > 0 && now.guard && now.guard.armour) return now.guard.armour;
+    // MENDING HIMSELF, and it is the same shape as the shield: a stance with its
+    // own plate, worn only while it runs. High on both axes, which is what makes
+    // the Captain's three seconds of healing survivable for him and expensive for
+    // the player — see `rage.mend` on captain_thug in data/waves.js.
+    if (fig.act === 'mend' && def.rage && def.rage.mend.armour) return def.rage.mend.armour;
   }
-  return def.armour || null;
+  return now.armour || def.armour || null;
 }
+
+// WHAT A FIGURE IS RIGHT NOW, as a block of stats, and for everything in this
+// game but one creature that is its def.
+//
+// The Captain Thug has a SECOND STAGE: below a quarter health he throws his
+// shield away, heals, and comes back wearing low plate and swinging a magic
+// blade. That is not a stance — it does not end, and it is not something being
+// done to him — so it cannot be a fourth clause in wornBy: it changes his ARMOUR,
+// his DAMAGE TYPE and his PIERCE together, and three separate stage tests spread
+// across three files is exactly how the Blocker nearly shipped drawn behind a
+// shield while taking damage as though it were down.
+//
+// So there is ONE test, here, and everything that wants to know what he is asks
+// it: `wornBy` above for his plate, `typeOf(stageOf(e))` for his blade, and
+// `timesOf` below for how fast he moves and swings.
+//
+// It takes a live figure and returns its def unchanged when there is nothing to
+// say — a def handed in directly, a creature in the encyclopedia, anything
+// without a `rage` block, and the Captain himself for the whole of stage 1.
+export function stageOf(fig) {
+  if (!fig) return null;
+  const def = fig.def || fig;
+  return (fig.stage === 2 && def.rage) ? def.rage : def;
+}
+
+// HOW MUCH FASTER HE IS THAN THE DEF SAYS, as one multiplier for BOTH his walk
+// and his swing. The owner's number is 1.2 and it is one number on purpose: he is
+// faster, not faster at one thing and not the other, and two fields would let the
+// two drift apart in a retune.
+//
+// 1 for everything else in the game, so a caller multiplies unconditionally.
+export const timesOf = fig => {
+  const now = stageOf(fig);
+  return (now && now.times) || 1;
+};
 
 // What a def's blow is, defaulting to physical. Nothing in this game did magic
 // damage before the monastery was told to, and a def with no `damageType` at all
