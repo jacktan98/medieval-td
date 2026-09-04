@@ -911,7 +911,19 @@ export function updateEnemies(state, dt) {
       // corpse is thrown a little way from where it died and slides into place, and
       // a boss doing that at the changeover would twitch sideways at the one moment
       // nothing about him should move.
-      dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face, { pool: e.pool, kb: 0 });
+      // HIS OWN FACING, AND NOT THE BLOW'S. Every other body in this game turns to
+      // face whatever killed it — see dropCorpse — and that is right for a figure
+      // that becomes a corpse on the frame it dies. A boss does not: he has been
+      // lying in his own Dead drawing for two seconds by the time this runs, and
+      // `struckFrom` is overwritten by every hit that lands on him, so it is
+      // whatever happened to touch him last. Handing that to the corpse flipped
+      // him end over end at the changeover, which is the one moment nothing about
+      // him should move.
+      //
+      // `e.face` cannot change during the finale — bossBeat owns every frame of it
+      // and nothing in there turns him — so this is the direction he fell in, held
+      // through both beats and out the other side.
+      dropCorpse(state, e.def, e.x, e.y, e.face, { pool: e.pool, kb: 0 });
       return false;
     }
 
