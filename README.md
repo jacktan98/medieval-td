@@ -103,6 +103,7 @@ visible on grass.
 | `assets/towers/` | buildings only, one folder per family |
 | `assets/units/` | every man, whichever family he belongs to |
 | `assets/enemies/` | the army walking in |
+| `assets/bosses/` | the ones that arrive alone — empty until the first is drawn |
 | `assets/dead/` | one death pose per figure that can die |
 | `assets/projectiles/` | anything that flies |
 | `assets/effects/` | what a fight leaves on the ground |
