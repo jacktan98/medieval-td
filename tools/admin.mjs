@@ -211,7 +211,7 @@ console.log('\nWhat the difficulty does to it\n');
   // NEAREST, NOT UP. The dashboard's own steppers round a typed count up — that is
   // the owner's rule for a dial — but a multiplier applied to a whole table has to
   // round to nearest, or every group in a wave gains a body and a seven-group wave
-  // reads as "one extra of everything". 6 × 0.85 is 5, not 6.
+  // reads as "one extra of everything". A group of six thins to five, not six.
   const six = [{ rest: 0, groups: [{ type: 'light_inf', count: 6, gap: 1 }] }];
   ok(scaleWaves(six, DIFFICULTIES[0])[0].groups[0].count === 5,
     'and Normal actually thins a group of six, rather than rounding it back up',

@@ -34,27 +34,31 @@ export const DIFFICULTIES = [
   {
     id: 'normal',
     name: 'Normal',
-    // NOT AS GENEROUS AS IT WANTED TO BE, and the limit is the invariant rather
-    // than taste. At 0.8 the best five-siege-plus-one build cleared map 1 two
-    // seeds in five, and at 0.85 with Hard only a tenth away pure barracks
-    // cleared map 2 — which would teach a Normal player that one family is a
-    // strategy and then take it away the moment they pressed Hard.
+    // FOUR FIFTHS OF THE TABLE, the owner's number, set after Hard dropped to 1.0.
     //
-    // 0.85 is the most generous count that holds it on all three maps over 12
-    // seeds and every scenario in tools/sim.mjs, and it is a real easing: map 1's
-    // mixes go from 68% of runs cleared to 93%.
+    // It restores the SPREAD. Normal was 0.85 against tables that were the middle
+    // of the scale, with Hard a tenth above them; the tables are the Hard end now,
+    // so 0.85 against them was a much smaller easing than the one that was tuned —
+    // 15% rather than 23%. 0.80 puts the gap back to a fifth, and a little wider
+    // than the old one.
     //
-    // IT IS UNCHANGED BY HARD DROPPING TO 1.0, deliberately. This number was
-    // always measured against the file's own counts rather than against the other
-    // setting, so Normal sends today exactly what it sent yesterday and only Hard
-    // moved. The spread between the two narrowed from 0.85–1.10 to 0.85–1.00; if
-    // Normal should follow Hard down to keep the old gap it wants to be about
-    // 0.77, and that is a tuning question for a sim run, not a rename.
+    // WHAT THIS SETS ASIDE, said plainly because it was measured and is now being
+    // overridden: 0.8 was tried before and rejected, on the invariant rather than
+    // on taste. The best five-siege-plus-one build cleared map 1 two seeds in five
+    // at 0.8, and the rule the whole difficulty is built around is that no single
+    // tower family should be a strategy on Normal that Hard then takes away.
     //
-    // Do not tune this at 5 seeds. The search that proposed it broke at 0.9 /
-    // 1.05 and held at the strictly more generous 0.9 / 1.10, which is backwards
-    // and was the tell that a single-seed flip means nothing here.
-    count: 0.85,
+    // That reading is not a verdict on this number. It was taken against the OLD
+    // wave tables, before the owner hand-tuned all three Extended games by playing
+    // them, and those tables send a different game — different creatures, in a
+    // different order, on a roster of seven rather than four. Whether one family
+    // still walks map 1 at 0.80 is an open question that only tools/sim.mjs can
+    // answer, and it has not been run against these tables at any setting.
+    //
+    // Do not tune this at 5 seeds when it is run. The search that proposed 0.85
+    // broke at 0.9 / 1.05 and held at the strictly more generous 0.9 / 1.10, which
+    // is backwards and was the tell that a single-seed flip means nothing here.
+    count: 0.8,
     gold: 1.1
   },
   {
@@ -110,9 +114,9 @@ export function scaleWaves(waves, difficulty) {
     // more than the half-unit you gained. Applying it here instead was a mistake
     // that the owner felt before anyone measured it: ceil adds up to a whole
     // enemy PER GROUP, a late wave has seven groups, and the result reads exactly
-    // as "there is one extra of everything". On Normal it also meant 6 × 0.85
-    // came back as 6 — a difficulty that eased nothing at the counts small enough
-    // to notice.
+    // as "there is one extra of everything". On Normal it also meant a group of
+    // six came back as six — a difficulty that eased nothing at the counts small
+    // enough to notice.
     //
     // Nearest costs nothing in fidelity where fidelity is owed: Hard multiplies
     // by 1, so its numbers are integers already and no rounding rule can touch

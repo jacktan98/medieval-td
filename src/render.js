@@ -4373,7 +4373,15 @@ function drawAdminWaves(ctx, a) {
   // against the footer rather than the upper.
   ctx.fillStyle = 'rgba(240,230,210,0.40)';
   ctx.font = '13px system-ui, sans-serif';
-  ctx.fillText('Hard plays these counts exactly. Normal thins them to 85%.',
+  // READ OFF THE DIFFICULTIES rather than typed, because a percentage typed here
+  // is a second copy of a number that lives in data/difficulty.js — and a copy of
+  // that number going stale is precisely the bug this line is describing. The
+  // wording covers both settings by looking them up, so retuning either one
+  // rewrites the caption on its own.
+  const [easy, hardest] = DIFFICULTIES;
+  ctx.fillText(
+    `${hardest.name} plays these counts exactly. ` +
+    `${easy.name} thins them to ${Math.round(easy.count * 100)}%.`,
     ADMIN_PANEL.x + 16, SUMMARY_Y() + 22);
 }
 
