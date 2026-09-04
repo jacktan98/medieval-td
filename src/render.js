@@ -1324,6 +1324,18 @@ function drawPools(ctx, state) {
     drawBlood(ctx, c.pool.img, c.x + c.pool.dx, c.y + c.pool.dy,
       Math.min(1, c.life / CORPSE_FADE) * settled(c));
   }
+  // AND UNDER A BOSS WHO IS ON THE GROUND BUT NOT YET A CORPSE. He lies in his own
+  // Dead drawing for two seconds before the body takes over, and the stain has to
+  // be there for both — see `begin` in src/enemies.js, which makes the pool the
+  // moment he lands and hands the same one to dropCorpse at the changeover.
+  //
+  // At full opacity rather than faded in: an ordinary pool fades up over the throw
+  // because blood on the ground before the man has landed would give it away, and
+  // this one is made ON the landing frame, so there is nothing to hide.
+  for (const e of state.enemies) {
+    if (!e.pool) continue;
+    drawBlood(ctx, e.pool.img, e.x + e.pool.dx, e.y + e.pool.dy, 1);
+  }
 }
 
 // Where a figure's feet sit inside its FULL square export, as a fraction of that
@@ -2957,6 +2969,29 @@ const INFO_ROW = 10;
 // That is the right way round for the surface you read mid-fight.
 const INFO_ICON = 14;
 
+// --- WHERE THE CONTENT SITS INSIDE THE PLATE ----------------------------------
+//
+// The portrait hung off `x + 10` and the text off that plus the portrait, which
+// was right while the plate was 193 wide: the text column came out at 118 and
+// finished flush with the right edge, so there was nothing to centre.
+//
+// The owner re-drew the plate 37px wider to fit the boss, and every one of those
+// 37 pixels landed on the right — the picture and the numbers stayed jammed
+// against the left edge with a band of blank parchment beside them. Their note is
+// the fix: "shift the image and stats to the right since description box has more
+// space."
+//
+// SO THE BLOCK IS CENTRED, and its width is FIXED rather than measured. That is
+// the part that matters: centring on the actual width of each selection's longest
+// row would slide the portrait left and right as the player tapped from a thug to
+// a trebuchet engineer, and a picture that moves when nothing about the picture
+// changed reads as a fault. The block is the portrait, the gutter and the column
+// the fonts were sized against, so it is the same block for every figure in the
+// game and the margins come out even.
+const INFO_COL = 118;
+const INFO_GUTTER = 7;
+const INFO_PAD = Math.round((INFO_W - (PORTRAIT.w + INFO_GUTTER + INFO_COL)) / 2);
+
 function drawInfo(ctx, state) {
   const info = selectionInfo(state);
   if (!info) return;
@@ -2983,7 +3018,7 @@ function drawInfo(ctx, state) {
     const dw = sw * SCALE * INFO_PORTRAIT;
     const dh = sh * SCALE * INFO_PORTRAIT;
     ctx.drawImage(img, sx, sy, sw, sh,
-      x + 10 + (PORTRAIT.w - dw) / 2,
+      x + INFO_PAD + (PORTRAIT.w - dw) / 2,
       y + h / 2 - dh / 2,
       dw, dh);
   }
@@ -2993,7 +3028,7 @@ function drawInfo(ctx, state) {
   // Engineer". Naming the MAN instead was the right call and it is what put this
   // column under pressure; the gutters either side of the portrait are as tight
   // as they read at, and the font does the rest.
-  const tx = x + 10 + PORTRAIT.w + 7;
+  const tx = x + INFO_PAD + PORTRAIT.w + INFO_GUTTER;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 

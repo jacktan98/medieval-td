@@ -993,7 +993,10 @@ export const enemyTypes = {
       sprite: 'captain_reload',
       trim: [151, 182, 211, 167],
       pivot: [0.531, 0.904],
-      seconds: 0.5
+      // A SIXTH OF A SECOND, three times quicker than the half-second it shipped
+      // with, at the owner's word. Written as the division so the change is legible
+      // rather than as 0.167, which reads like a measurement of something.
+      seconds: 0.5 / 3
     },
     // The sword, close in. The Blocker's arrangement: a soldier with hold of him
     // gets the blade, and the bow is not used at arm's length.
@@ -1031,6 +1034,28 @@ export const enemyTypes = {
     // shield away at 200 and could not shoot until 150 would spend 50px of every
     // approach unarmed and unarmoured for no reason a player could see.
     sheathe: 150,
+    // AND IT STAYS STOWED FOR TWO SECONDS ONCE HE STARTS SHOOTING, at the owner's
+    // word — "when attacking by ranged, Captain Thug cannot use defend for 2
+    // seconds. Otherwise, he keeps flipping between images when shooting arrows
+    // while projectiles hit him."
+    //
+    // The radius rule above takes a raised shield DOWN when a soldier is near; this
+    // stops it going up in the first place. That difference is the whole of the
+    // fix. Under fire he was raising it on the frame an arrow landed and having it
+    // taken away on the next, so what the player saw was a boss strobing between
+    // two drawings rather than a boss doing either thing — a one-frame flash that
+    // a rule about radius could never remove, because the shield really had gone
+    // up.
+    //
+    // Two seconds against a two-second shooting cycle, so a Captain who is working
+    // on a squad never puts it up at all, and one who has finished has it back by
+    // the time he could want it.
+    stow: 2,
+    // WHAT HE SAYS WHEN HE IS TAPPED, and he is the first creature on the road with
+    // a line of his own — everything else answers with the common thug's. One word
+    // on the def, read by selectionCue in src/audio.js, which is the same opt-in a
+    // tower tier uses to override its family's voice.
+    voice: 'captainPicked',
     spriteFaces: -1,
     // HIS BODY IS HIS OWN ELEVENTH DRAWING, dropped by the finale below rather
     // than by the death sweep — see `dropCorpse` in src/enemies.js. The fields are
@@ -1038,7 +1063,9 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    hp: 5000,
+    // 8,000, the owner's number, up from 5,000. He is ten Giants of health, and the
+    // fight is meant to be the length of a wave rather than an interruption to one.
+    hp: 8000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
@@ -1063,12 +1090,12 @@ export const enemyTypes = {
     // Sword and bow both, and the two are one number on purpose: where he is
     // standing decides how the blow ARRIVES and not how hard.
     //
-    // 100, the owner's number, doubled from the 50 he shipped with. That is a real
-    // step: a spearman wears low physical plate, so 100 arrives as 75 and takes
-    // most of him in two swings, and a paladin's medium turns it to 50 — which
+    // 80, the owner's number. A spearman wears low physical plate, so it arrives as
+    // 60 and takes him in three swings; a paladin's medium turns it to 40 — which
     // makes the paladin the answer to stage 1 and, deliberately, no answer at all
-    // to stage 2, where the same 100 comes back as magic.
-    damage: 100,
+    // to stage 2, where the same 80 comes back as magic and his physical plate is
+    // worth nothing against it.
+    damage: 80,
     atkCd: 1.0,
     ranged: {
       // 150, the owner's number, down from the 200 I had picked off the Archer
@@ -1078,9 +1105,9 @@ export const enemyTypes = {
       // thing that makes standing off a fight rather than a stalemate.
       range: 150,
       cd: 2.0,
-      // The same 100 the sword does. One number for both, so his reach decides how
-      // a blow arrives and never how much it is worth.
-      damage: 100,
+      // The same 80 the sword does. One number for both, so his reach decides how a
+      // blow arrives and never how much it is worth.
+      damage: 80,
       ammo: enemyArrow,
       // AND HE PLANTS HIMSELF, exactly as the Archer Thug does — the owner's call:
       // "he shoots arrow like an archer thug where he stays put until the soldiers
@@ -1100,11 +1127,17 @@ export const enemyTypes = {
       //
       // There is no `onTheMove` flag any more. It existed for this one creature and
       // nothing else in the game used it.
-      // HOW LONG THE LOOSING POSE HOLDS, in seconds, and the owner's 0.5. Every
-      // other figure in the game shows its Attack drawing for the quarter second
-      // `thrust` takes to decay; his is twice that and is timed rather than
-      // decayed, so the reload and the shot read as two equal beats.
-      hold: 0.5
+      // HOW LONG THE LOOSING POSE HOLDS, and it moves with the reload so the two
+      // beats stay equal: a sixth of a second each, three times quicker than they
+      // shipped. Timed rather than decayed, unlike every other figure's Attack
+      // drawing, so no lunge is dragged along with it.
+      //
+      // THE COOLDOWN IS UNCHANGED at 2 seconds, and that is worth knowing because
+      // it is what the two beats sit inside. He now nocks and looses in a third of
+      // a second and then stands with the bow down for the rest of it. If the whole
+      // RHYTHM is meant to be quicker rather than just the animation, `cd` is the
+      // number to move and it is one line.
+      hold: 0.5 / 3
     },
     // ========================================================================
     // STAGE 2, at a quarter health, ONCE.

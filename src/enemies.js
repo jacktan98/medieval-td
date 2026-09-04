@@ -2,6 +2,7 @@ import { level, remaining } from './level.js';
 import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
+import { poolFor } from './blood.js';
 import { unhook, hidden } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
@@ -110,6 +111,10 @@ export function spawn(state, typeId) {
     // rather than decayed — `thrust` fades over a quarter second and drags a lunge
     // with it, and the owner asked for two equal half-second beats with no lurch.
     shot: 0,
+    // SECONDS THE SHIELD STAYS ON HIS BACK. Set whenever he starts a shot and
+    // counted down like the others, and it is what stops a boss under fire strobing
+    // between his shooting drawing and his shield — see `stow` on captain_thug.
+    stowed: 0,
     // HAS HE ALREADY CRIED OUT AT A THIRD HEALTH. The owner asked for that line
     // once and once only, and it is a DIFFERENT threshold from the transformation
     // — 30% against 25% — so it cannot be inferred from the stage. It is a warning
@@ -125,14 +130,19 @@ export function spawn(state, typeId) {
     statuses: []
   });
 
-  // HE ANNOUNCES HIMSELF. Category A, so it ducks whatever else is playing: the
-  // boss walking on is the loudest thing that happens in a run and it should not
-  // have to share the moment with an arrow.
+  // HE ANNOUNCES HIMSELF, on the frame he takes his first step onto the road.
   //
-  // On the SPAWN rather than on the first frame of his update, because a wave can
-  // send him while the player is looking somewhere else and the cry is what turns
-  // them round.
-  if (def.boss) solo(BOSS_ENTERS);
+  // WITH PRIORITY, which is the fix for "I still cannot hear his voice when he
+  // enters the game". Category A is a QUEUE, not a duck: a cue that asks while the
+  // gate is closed is passed over silently and never heard, and the gate is closed
+  // for a clip's own length plus a second afterwards. A boss walks in at the end of
+  // a wave's spawn run with arrows and deaths going off, so his entrance was losing
+  // that race almost every time — nothing was broken, he was simply queued out.
+  //
+  // Priority takes the channel off whatever is speaking. Exactly one other thing in
+  // the game uses it — buying an upgrade — on the same argument: the gate exists to
+  // stop the battle talking over itself, and neither of these is the battle.
+  if (def.boss) solo(BOSS_ENTERS, true);
 }
 
 // IS THIS FIGURE PLAYING OUT ITS DEATH? True for the four seconds a boss spends
@@ -183,6 +193,13 @@ export function raiseGuard(fig) {
   // and his nocking pose. See stageOf in data/armour.js.
   const now = stageOf(fig);
   if (!now.guard) return;
+  // NOT WHILE THE BOW IS UP. He put the shield on his back to shoot and it stays
+  // there for `stow` seconds — see captain_thug in data/waves.js. Tested here, in
+  // the one place a shield can be raised, rather than at the call sites: this
+  // function is called by every projectile that lands on anybody, and the whole
+  // point is that a projectile must not be able to raise it at all. Suppressing it
+  // one frame later instead is what made him strobe.
+  if (fig.stowed > 0) return;
   // ON THE WAY UP ONLY. This runs for every projectile that lands on him — that is
   // the whole point of it, since each one refreshes the five seconds — so playing
   // the clip here unconditionally would make a Blocker under steady fire the
@@ -242,12 +259,32 @@ const BEAT_CUE = { mend: HEAL, fall: BOSS_DYING, rest: BOSS_FALLEN };
 function begin(e, act) {
   e.act = act;
   e.actT = BEATS[act].at(e.def);
+  // THE BLOOD ARRIVES WITH THE BODY. He hits the ground at the start of `rest`, and
+  // the stain has to be under him from that frame — at the owner's word: "ensure
+  // blood is added to Dead pose when he first falls to the ground, not after he
+  // falls and then 2 seconds later another dead pose with blood".
+  //
+  // It was arriving late because a pool belongs to a CORPSE, and he does not become
+  // one until his script finishes: he lay there clean for two seconds and then
+  // dropCorpse put down an identical drawing with blood under it. What the player
+  // saw was a body that bled on a delay.
+  //
+  // So the pool is made here and HANDED to dropCorpse at the changeover rather than
+  // being made again — see the sweep in updateEnemies. Made once means it cannot
+  // jump: `poolFor` picks one of two pictures and jitters the offset, so a second
+  // call would put a different stain in a different place at the exact moment the
+  // player is looking at it.
+  if (act === 'rest') e.pool = poolFor();
   // ON THE FRAME THE POSE COMES UP, not the frame it finishes, which is the rule
   // the Dark Priest's cast already follows: the sound covers the beat rather than
   // marking its end. Category B for the mend, because it is the shared enemy heal
   // and two creatures could be casting; Category A for the two death beats.
   const cue = BEAT_CUE[act];
-  if (cue) (act === 'mend' ? play : solo)(cue);
+  // Category B for the mend — it is the shared enemy heal and two creatures could
+  // be casting — and Category A WITH PRIORITY for the two death beats, on the same
+  // argument the entrance is: the gate is a queue, and a boss dying should not lose
+  // its place in it to an arrow.
+  if (cue) (act === 'mend' ? play(cue) : solo(cue, true));
   // Everything he was doing stops. A shot half-nocked is lost rather than banked,
   // on the rule the Dark Priest's interrupted cast follows: a moment that gets
   // taken off you should cost you the moment.
@@ -262,17 +299,18 @@ function land(state, e) {
   const after = BEATS[done].next;
 
   if (done === 'mend') {
-    // HALF HIS MAXIMUM, at the owner's word, and capped at the bar. A flat share
-    // rather than a status: nothing can refresh it, nothing can stack with it, and
-    // a Dark Priest's dark healing running on him at the same time is a separate
-    // number through a separate mechanism, which is correct — they are two
-    // different creatures mending him.
-    e.hp = Math.min(e.maxHp, e.hp + e.maxHp * e.def.rage.mend.share);
+    // THE HEALTH ITSELF ARRIVED WHILE HE STOOD THERE, a share of his bar every
+    // frame — see the mend block in bossBeat. It was granted here in one lump for
+    // one build, and the owner's correction is right in both directions: a bar that
+    // jumps 4,000 in a single frame is a number changing rather than a thing
+    // happening, and it made the three seconds worth nothing to interrupt. Now a
+    // player who kills him at two and a half seconds has denied him a sixth of it.
+    //
     // AND HE SAYS SO. The owner's cue is "when his health is fully recovered after
     // the 3 seconds" — this line, not the start of the mend, which has its own
     // sound above. Category A: it is the moment the player learns the fight is not
     // over, and it should cut through whatever they are doing about it.
-    solo(BOSS_HEALED);
+    solo(BOSS_HEALED, true);
     // AND HE IS THE OTHER CREATURE NOW. Set here rather than when the pause began,
     // so the whole five seconds of the transition are fought against the armour he
     // is transitioning IN — medium for the pause, high for the mend — and the low
@@ -309,6 +347,20 @@ function bossBeat(state, e, dt) {
   if (e.act === GONE) return true;
 
   if (e.act) {
+    // MENDING IS A REGENERATION, at the owner's word: "his heal also is
+    // regeneration over 3 seconds, not immediate heal". A share of his maximum
+    // every frame, so the bar visibly climbs for the whole of the pose and a blow
+    // landed at two seconds has taken two thirds of it away from him.
+    //
+    // OFF `maxHp` AND NOT OFF WHAT IS LEFT, so the total is the owner's flat half
+    // however low he was when it started, and clamped at the bar so a Dark Priest
+    // working on him at the same time cannot push him over it. Real seconds, like
+    // the beat clock it is paced against — a monk's aura slows what a figure DOES,
+    // and this is the script rather than something he is doing.
+    if (e.act === 'mend') {
+      const m = d.rage.mend;
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * m.share * dt / m.seconds);
+    }
     e.actT -= dt;
     if (e.actT <= 0) land(state, e);
     return true;
@@ -323,7 +375,7 @@ function bossBeat(state, e, dt) {
   // to 50% and would otherwise cross 30 a second time on the way down.
   if (d.rage && !e.cried && e.hp > 0 && e.hp < e.maxHp * 0.3) {
     e.cried = true;
-    solo(BOSS_HURT);
+    solo(BOSS_HURT, true);
   }
 
   // THE SECOND STAGE, at a quarter health and once. `e.stage` is its own guard:
@@ -418,6 +470,11 @@ export function updateEnemies(state, dt) {
     // the same reason: a monk's pulse slows what a figure DOES, and this is not
     // something this figure is doing — it is something being counted about him.
     if (e.mendCd > 0) e.mendCd = Math.max(0, e.mendCd - dt);
+
+    // AND THE SHIELD STAYS ON HIS BACK while this runs. Real seconds, like the
+    // guard clock above and for the same reason: it is a decision he has made, not
+    // something he is doing.
+    if (e.stowed > 0) e.stowed = Math.max(0, e.stowed - dt);
 
     // THE LOOSING POSE COMES DOWN. Ticked up here with the other clocks rather
     // than inside the shooting block, so it runs out on schedule even on the frame
@@ -570,9 +627,21 @@ export function updateEnemies(state, dt) {
               e.shot = now.ranged.hold;
             }
             e.tcd = now.ranged.cd;
+            // AND REFRESHED ON THE LOOSE, not only on the nock. The two clocks are
+            // both 2 seconds — `stow` and `cd` — so setting it once per shot let it
+            // expire on the exact frame the next nock re-set it, and the shield went
+            // up for that one frame every cycle. Three frames in six seconds, which
+            // is precisely the strobe the owner reported, just faint enough to look
+            // like something else. Refreshing here puts the gap 0.17s inside the
+            // cycle instead of on its edge.
+            if (now.stow) e.stowed = now.stow;
           }
         } else if (mark && e.tcd <= 0) {
           e.nock = now.reload.seconds;
+          // ON THE NOCK rather than on the loose, so the shield is already away
+          // before the first arrow leaves — the drawing shows him with it stowed
+          // from the moment he reaches for the bow, and the plate should agree.
+          if (now.stow) e.stowed = now.stow;
         }
       } else if (mark && e.tcd <= 0) {
         loose(state, e, mark);
@@ -809,7 +878,12 @@ export function updateEnemies(state, dt) {
     // game thinks is on the board. Nothing is paid here: the gold, the cry and the
     // release all happened four seconds ago, when he actually died.
     if (e.act === GONE) {
-      dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
+      // HIS OWN POOL, AND NO KNOCKBACK. He has been lying still for two seconds, so
+      // the body must appear exactly where the drawing already is — an ordinary
+      // corpse is thrown a little way from where it died and slides into place, and
+      // a boss doing that at the changeover would twitch sideways at the one moment
+      // nothing about him should move.
+      dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face, { pool: e.pool, kb: 0 });
       return false;
     }
 

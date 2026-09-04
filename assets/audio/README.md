@@ -1,6 +1,6 @@
 # Audio
 
-**Eighty-two clips: thirty-seven in `sfx/` and forty-five in `voice/`.**
+**Eighty-three clips: thirty-eight in `sfx/` and forty-five in `voice/`.**
 
 ```
 assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
@@ -21,7 +21,8 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_health_30.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
-                      Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3
+                      Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
+                      Captain_Thug_selected.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -158,7 +159,8 @@ and it now means "how long a lull has to be before the game forgets".
 | a **High Altar** is built, upgraded to, or given an order | `Pope_1..3` |
 | a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..3` |
 | a barracks man is selected | `Barracks_1..5` |
-| an enemy is selected | `Thug_1` |
+| an enemy is selected | `Thug_1`, or its def's own `voice` |
+| the **captain** is selected | `Captain_Thug_selected` |
 | an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |
@@ -195,7 +197,7 @@ and it now means "how long a lull has to be before the game forgets".
 Everything above the line is Category A and shares the one channel; the ones
 below run on the background bus and play every time.
 
-**The six Captain Thug clips are levelled LOUDER than everything else** — 2.5x
+**The seven Captain Thug clips are levelled LOUDER than everything else** — 2.5x
 the shared target, about +8dB — at the owner's word: "players should hear them
 clearly as this is a boss fight." Everything else in the game arrives at one
 loudness on purpose; a boss is not in the battle, and his lines were landing at

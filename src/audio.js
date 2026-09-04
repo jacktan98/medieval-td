@@ -165,7 +165,7 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 const LOUDER_TIMES = 2.5;
 const LOUDER = new Set([
   'captain_enters', 'captain_health30', 'captain_healed',
-  'captain_dying', 'captain_fallen', 'captain_kills'
+  'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -279,6 +279,10 @@ const paths = {
   // The sixth is not a set piece — it is a running tally, every fifth man he
   // kills — so it is Category B and does not duck anything.
   captain_kills:    'assets/audio/sfx/Captain_Thug_kill_soldier.mp3',
+  // And the seventh: what he says when the player taps him. Category A like the
+  // rest of the selection lines, and levelled with his others — a boss's voice is
+  // his voice whichever way the player came to hear it.
+  captain_picked:   'assets/audio/sfx/Captain_Thug_selected.mp3',
   // The musket. Two clips, and they are the same pair the bow has: the crack of
   // the shot every time one is fired, and a separate line for a musketeer taking a
   // man down. A musket ball arriving is silent — see the two flags on `bullet` in
@@ -634,6 +638,11 @@ export const CUE = {
   // above it. Artillery is the third ladder with two of these.
   cannoneer:    ['cannoneer_1', 'cannoneer_2', 'cannoneer_3'],
   thug:         ['thug_1'],
+  // The boss has a line of his own when he is tapped, where every other creature
+  // on the road shares the one thug's. See selectionCue below for how it is
+  // reached, which is a DEF lookup rather than a kind check — the shape the note
+  // there always said the second enemy voice would need.
+  captainPicked: ['captain_picked'],
   arrowKill:    ['arrow_kill_unit'],
   // A rock killing a man is its own event with its own clip now — it used to
   // borrow the arrow's, which was the better of two wrongs while nothing else
@@ -1137,7 +1146,8 @@ export function solo(cue, priority = false) {
 
   const now = ctx.currentTime;
 
-  // PRIORITY TAKES THE CHANNEL, and only one thing uses it: buying an upgrade.
+  // PRIORITY TAKES THE CHANNEL, and two things use it now: buying an upgrade, and
+  // the boss's five set pieces.
   //
   // The gate exists to stop the battle talking over itself, and it is right
   // about almost everything — a swing, a death, a selection are all things the
@@ -1145,6 +1155,14 @@ export function solo(cue, priority = false) {
   // and spending gold, and the reply to a deliberate action has to arrive or the
   // button feels dead. Dropping it was invisible in a quiet game and constant in
   // a busy one, which is exactly when an upgrade is most likely to be bought.
+  //
+  // A BOSS IS THE SAME ARGUMENT FROM THE OTHER SIDE, and the owner found it by
+  // ear: "I still cannot hear his voice when he enters the game." Nothing was
+  // broken. He walks on at the end of a wave's spawn run with arrows and deaths
+  // going off, the gate was closed, and a cue that asks while it is closed is
+  // passed over SILENTLY and never heard — it is a queue, not a duck. His
+  // entrance was losing that race almost every time, and the busier the board the
+  // more certain it was to lose. Neither of these two callers is the battle.
   //
   // It does NOT skip the repeat rules below. Priority is about who gets the
   // channel, not about being allowed to say the same line five times running —
@@ -1246,11 +1264,17 @@ export const abilityCue = key => ABILITY_CUES[key] || null;
 // times.
 //
 // A giant thug answers with the common thug's line, because there is one enemy
-// voice so far. When a heavier one is recorded it becomes a `def` lookup rather
-// than a kind check; until then, silence for the giant would read as a bug.
+// voice for the whole roster. The note here used to say that a second recording
+// would turn this into a `def` lookup rather than a kind check, and the Captain
+// Thug is that second recording — so `voice` on an enemy's def now names its own
+// cue and everything without one falls through to the thug, exactly the way a
+// tower TIER already overrides its family.
 export function selectionCue(sel) {
   if (!sel) return null;
-  if (sel.kind === 'enemy') return CUE.thug;
+  if (sel.kind === 'enemy') {
+    const own = sel.ref && sel.ref.def && sel.ref.def.voice;
+    return (own && CUE[own]) || CUE.thug;
+  }
   if (sel.kind === 'unit') return CUE.barracks;
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

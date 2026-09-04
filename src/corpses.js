@@ -74,8 +74,14 @@ export const settled = thrown;
 // Walking direction is still the fallback, for a death with no recorded blow.
 // Nothing can currently die that way — you have to be hit to lose hp — so it is
 // there to keep a body pointing somewhere sane rather than because it happens.
-export function dropCorpse(state, def, x, y, face) {
+// `opts` is for a body that is ALREADY on the ground when it gets here, which is
+// one creature: a boss lies in his own Dead drawing for two seconds before the
+// corpse takes over. He brings his own `pool` — made when he fell, so the stain
+// does not appear late or jump to a new picture at the changeover — and `kb: 0`,
+// because a body that has been still for two seconds must not suddenly slide.
+export function dropCorpse(state, def, x, y, face, opts = {}) {
   if (!def.dead) return;
+  const kb = opts.kb ?? KNOCKBACK;
   // The pool comes with the body rather than being its own effect, so the two
   // always appear together, sit together and fade together. render.js draws it
   // in an earlier pass, which is what keeps the body on top of it.
@@ -86,10 +92,10 @@ export function dropCorpse(state, def, x, y, face) {
   // at the fight, and that one stays put.
   state.corpses.push({
     def, y, face,
-    x: x - face * KNOCKBACK,
-    kb: KNOCKBACK,
+    x: x - face * kb,
+    kb,
     life: CORPSE_LIFE,
-    pool: poolFor()
+    pool: opts.pool || poolFor()
   });
 }
 
