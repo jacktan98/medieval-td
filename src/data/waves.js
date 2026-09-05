@@ -1165,15 +1165,17 @@ export const enemyTypes = {
       // The same 80 the sword does. One number for both, so his reach decides how a
       // blow arrives and never how much it is worth.
       damage: 80,
-      // BUT THE ARROW BREAKS ONLY ONE RANK where the sword breaks two, at the
-      // owner's word, and that difference is the whole shape of him at two
-      // distances: the same damage arrives softer from further away.
+      // AND THE ARROW BREAKS TWO RANKS AS WELL, the owner's number, so his reach
+      // decides nothing about what a blow is worth: 80 through two broken ranks
+      // arrives the same at 150 as it does at arm's length.
       //
-      // Its own field rather than the def's, because those are two different
-      // weapons — see `loose` in src/enemies.js, which reads the ranged block's
-      // pierce and falls back to the def's for every other thrower in the game,
-      // none of which carries one.
-      pierce: 1,
+      // Still its own field rather than the def's even though the two now agree.
+      // They are two different weapons and the shape that says so is what let the
+      // arrow be 1 while the sword was 2; folding them back together would mean
+      // the next time they differ is a change to `loose` rather than a number
+      // here. See `loose` in src/enemies.js, where every other thrower in the game
+      // falls through to the def's, none of them carrying one.
+      pierce: 2,
       ammo: enemyArrow,
       // AND HE PLANTS HIMSELF, exactly as the Archer Thug does — the owner's call:
       // "he shoots arrow like an archer thug where he stays put until the soldiers
@@ -1269,6 +1271,11 @@ export const enemyTypes = {
       // a paladin's is low, so what this really answers is the monastery's aura and
       // anything else that might one day ward the player's men against magic.
       pierce: 2,
+      // WHAT HE IS CALLED ONCE HE GETS UP. The encyclopedia shows both halves of him
+      // — see the stage badge on his card — and "Captain Thug" over the enraged
+      // drawing would say the two are the same creature at different health, which
+      // is the one thing the second stage is not.
+      name: 'Enraged Captain Thug',
       // Walk and swing, both, at the owner's 1.2x. One multiplier for the two so
       // they cannot drift apart — he is faster, not faster at one thing.
       times: 1.2,

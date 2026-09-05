@@ -17,7 +17,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
-         abilityCards, towerEntry, unitEntry,
+         abilityCards, towerEntry, unitEntry, stageBadge, staged, stageOfCard,
          abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
@@ -3538,7 +3538,7 @@ function drawBook(ctx, state) {
   if (state.book === 0) drawTowerPage(ctx);
   else if (state.book === 1) drawUnitPage(ctx);
   else if (state.book === 2) drawAbilityPage(ctx);
-  else drawEnemyPage(ctx);
+  else drawEnemyPage(ctx, state);
 
   drawBookFooter(ctx, state);
   if (state.zoom) drawZoom(ctx, state.zoom);
@@ -4087,11 +4087,38 @@ const rewardRow = d => (d.bounty || d.leak)
   ? [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]]
   : [];
 
+// THE LITTLE NUMBER IN A BOSS CARD'S CORNER, and tapping it swaps the card to his
+// other stage. See stageBadge in book.js for the rect and the argument.
+//
+// A ROUNDED PLATE RATHER THAN A BARE DIGIT, because it has to read as a control. A
+// number alone on a card of numbers is one more statistic, and this is the only
+// thing on the page that answers a tap with something other than a picture.
+function drawStageBadge(ctx, c, stage) {
+  const b = stageBadge(c);
+  ctx.fillStyle = 'rgba(74,64,48,0.92)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 5);
+  ctx.fill();
+  // THE PARCHMENT'S OWN COLOUR, not CARD_FILL. CARD_FILL is the plate a card is
+  // drawn WITH — 6% dark over the page — so on this badge's dark ground it is
+  // invisible, and the badge rendered as a blank square with nothing in it. It is
+  // the ink that has to contrast here, and the page's own paper is what does.
+  ctx.fillStyle = SHEET_FILL;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 11px system-ui, sans-serif';
+  ctx.fillText(String(stage), b.x + b.w / 2, b.y + b.h / 2);
+}
+
 // One enemy or boss card. The two are the same card at two widths — see
 // bossCards in book.js for why a boss gets a wider one — so they are drawn by one
 // function and differ only in the rect they are handed.
-function enemyCard(ctx, c) {
-  const d = c.def;
+//
+// `stage` is which half of a two-stage boss to show, and every figure on the page
+// goes through the same lookup — see stageOfCard in book.js — so the drawing, the
+// name, the plate, the blade and the reach can never come from different halves.
+function enemyCard(ctx, c, stage = 1) {
+  const d = stageOfCard(c.def, stage);
   card(ctx, c);
   drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot, figureFit(d)));
 
@@ -4116,9 +4143,12 @@ function enemyCard(ctx, c) {
   // and what a tower can hurt is the question the page is being opened to answer.
   statRow(ctx, traitRow(d), tx, r3, INK, room);
   statRow(ctx, rewardRow(d), tx, r4, INK, room);
+
+  // LAST, so it sits over the plate and over anything that reaches its corner.
+  if (staged(c.def)) drawStageBadge(ctx, c, stage);
 }
 
-function drawEnemyPage(ctx) {
+function drawEnemyPage(ctx, state) {
   heading(ctx, 'Enemy', PAGE_X);
   for (const c of enemyCards()) enemyCard(ctx, c);
 
@@ -4132,7 +4162,7 @@ function drawEnemyPage(ctx) {
   ctx.fillStyle = INK_MUTED;
   ctx.font = '700 14px system-ui, sans-serif';
   ctx.fillText('Boss', PAGE_X, BOSS_HEAD_Y);
-  for (const c of boss) enemyCard(ctx, c);
+  for (const c of boss) enemyCard(ctx, c, state.bookStage);
 }
 
 // Page 4: what a topped-out tier 4 can be taught.

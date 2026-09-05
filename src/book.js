@@ -527,6 +527,65 @@ const BOSS_CARD_W =
 export const BOSS_TOP = FOOT_Y - PAD - ENEMY_CARD_H;
 export const BOSS_HEAD_Y = BOSS_TOP - (TOP - HEAD_Y);
 
+// --- THE STAGE BADGE ----------------------------------------------------------
+//
+// A boss with two stages is TWO creatures on one card, and the card can only show
+// one of them. The owner's answer is a small number in its top-right corner: it
+// reads 1, and tapping it makes it 2 and turns the card into the Enraged Captain
+// Thug — a different drawing, different plate, a magic blade and no bow.
+//
+// WHY A TOGGLE RATHER THAN A SECOND CARD. Two cards would say there are two
+// creatures in the game, and there is one that changes; and the band is sized for
+// three bosses, so the second one drawn would cost the next boss its place.
+//
+// WHICH STAGE IS SHOWING lives on the game state rather than in here, for the
+// reason every other book control does: this module is geometry and the page is
+// redrawn from scratch every frame, so anything remembered between frames belongs
+// to the caller. One number covers the band — nothing has two bosses today, and
+// when something does, this becomes a map keyed by name and the badge rect is
+// already per card.
+const BADGE = 16;
+const BADGE_PAD = 5;
+export const stageBadge = c => ({
+  x: c.x + c.w - BADGE - BADGE_PAD,
+  y: c.y + BADGE_PAD,
+  w: BADGE,
+  h: BADGE
+});
+
+// Does this creature have a second stage to show? The badge is drawn for exactly
+// these, so a boss written without one gets no control it cannot answer.
+export const staged = def => !!(def && def.rage);
+
+// THE CREATURE AS THE BOOK IS CURRENTLY SHOWING IT, as a def-shaped object.
+//
+// Stage 2 is `rage` merged over the def: it carries the drawing, the plate, the
+// damage type and the pierce, and the def carries what does not change — health,
+// the size of the blow, what killing him is worth.
+//
+// TWO FIELDS ARE CLEARED RATHER THAN INHERITED, and both are the point of the
+// second stage: `ranged` because he threw the bow away, so the card must not print
+// a reach he no longer has; and `melee` because `rage` brings its own attack and
+// the def's close pair belongs to the man who still had a shield.
+//
+// It answers with the def itself for stage 1 and for everything that is not a
+// boss, so every caller can go through it.
+export function stageOfCard(def, stage) {
+  if (stage !== 2 || !staged(def)) return def;
+  const r = def.rage;
+  return { ...def, ...r,
+    name: r.name || def.name,
+    sprite: r.sprite,
+    spriteTrim: r.trim,
+    pivot: r.pivot,
+    ranged: undefined,
+    melee: undefined };
+}
+
+// The same question asked of the live book state, which is what the drawing and
+// the pop-up both use so they cannot show different halves of him.
+export const shown = (state, def) => stageOfCard(def, state.bookStage);
+
 export function bossCards() {
   return bosses.map((def, i) => ({
     def,
@@ -639,6 +698,11 @@ export function hitBookButton(state, x, y) {
 export function openBook(state) {
   state.book = 0;
   state.zoom = null;
+  // WHICH HALF OF A TWO-STAGE BOSS THE PAGE IS SHOWING. Reset on opening rather
+  // than left where it was: the book is a reference and it should read the same
+  // way every time it is opened, and a card that is still enraged from a visit
+  // three waves ago is a page that remembers something the reader does not.
+  state.bookStage = 1;
 }
 
 // Tapping the book's own controls. Every tap while the book is open comes here
@@ -660,6 +724,20 @@ export function tapBook(state, x, y) {
   // when you press it reads as the game having stopped listening.
   if (inside(BOOK_PREV, x, y)) { state.book = (state.book + PAGES - 1) % PAGES; return true; }
   if (inside(BOOK_NEXT, x, y)) { state.book = (state.book + 1) % PAGES; return true; }
+
+  // THE STAGE BADGE, BEFORE THE CARD IT SITS ON. It is inside the cell, so asking
+  // in the other order would open the pop-up on every tap and the badge would
+  // never be reachable at all.
+  //
+  // Only on the enemy page, and only for a boss that HAS a second stage — a badge
+  // that turned into a 2 and changed nothing would be worse than no badge.
+  if (state.book === 3) {
+    for (const c of bossCards()) {
+      if (!staged(c.def) || !inside(stageBadge(c), x, y)) continue;
+      state.bookStage = state.bookStage === 2 ? 1 : 2;
+      return true;
+    }
+  }
 
   const art = artAt(state, x, y);
   if (art) { state.zoom = art; return true; }
@@ -718,20 +796,23 @@ function artAt(state, x, y) {
         // AND IT IS ALL THAT IS LEFT IN HERE. The paragraph that used to sit beside
         // the picture is gone with statLines — see the note where it was, in
         // select.js — so this pop-up is now a portrait with two figures under it.
-        // AND WHAT KILLING HIM IS WORTH, which is also on the card now — the owner
-        // gave the enemy card a fourth row for it. Kept here as well rather than
-        // dropped: the pop-up is what a player opens to look at one creature, and
-        // taking a figure off it to avoid saying something twice would make the
-        // detailed view the less detailed one.
+        // THE PICTURE AND NOTHING ELSE, at the owner's word: "remove description
+        // text from enemy page. When players click on each preview, only the image
+        // is shown."
         //
-        // NOTHING AT ALL FOR A CREATURE THAT HAS NEITHER, on exactly the reasoning
-        // rewardRow in render.js gives: a coin with a zero in it would say the boss
-        // is worth nothing to kill, which is the opposite of true.
-        const paid = c.def.bounty || c.def.leak
-          ? [['stat_gold_cost', c.def.bounty], ['stat_life_cost', c.def.leak]]
-          : [];
-        return { sprite: c.def.sprite, trim: c.def.spriteTrim, title: c.def.name,
-                 kind: 'figure', stats: paid };
+        // It carried the bounty and the lives lost in a column beside the drawing,
+        // which was the right place for them while the CARD had nowhere to put
+        // them. The card has a fourth row for them now, so the pop-up was saying a
+        // second time what the page already says — and the reason to open it is to
+        // see the drawing large, which a column of numbers beside it works against.
+        //
+        // An ability is the last thing in the book with anything but a picture in
+        // it, and it earns that: a rule's drawing says almost nothing on its own.
+        //
+        // The stage badge is why this reads through `shown` rather than off the def
+        // — tapping the enraged Captain opens the enraged drawing.
+        const d = shown(state, c.def);
+        return { sprite: d.sprite, trim: d.spriteTrim, title: d.name, kind: 'figure' };
       }
     }
     return null;

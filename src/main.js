@@ -155,6 +155,10 @@ function newGame() {
     // Reset with everything else, so a book left open on the title screen is not
     // still up when a map switch rebuilds the game underneath it.
     book: null,
+    // Which half of a two-stage boss the encyclopedia is showing. Reset by
+    // openBook as well; here so that a state built and never opened still has the
+    // field, on the same rule every other one in this object follows.
+    bookStage: 1,
     // The encyclopedia's picture pop-up: the drawing a card was tapped to open,
     // or null. A mode inside a mode — while it is set the book's own footer stops
     // answering and any tap closes it. Only ever set while `book` is, and cleared
