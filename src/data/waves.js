@@ -1073,9 +1073,9 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    // 8,000, the owner's number, which is ten Giants. The fight is meant to be the
-    // length of a wave rather than an interruption to one.
-    hp: 8000,
+    // 10,000, the owner's number, which is twelve and a half Giants. The fight is
+    // meant to be the length of a wave rather than an interruption to one.
+    hp: 10000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
