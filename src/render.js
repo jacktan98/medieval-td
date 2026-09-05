@@ -4607,6 +4607,29 @@ function drawAdmin(ctx, state) {
 const ORDINALS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 const ordinal = n => ORDINALS[n - 1] || `${n}th`;
 
+// A filled lozenge. `roundRect` is on every canvas this game targets, and the
+// fallback is the plain rect rather than nothing: a square-cornered pill still
+// reads as a button, where a missing one reads as a missing control.
+function pill(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else ctx.rect(x, y, w, h);
+  ctx.fill();
+}
+
+// The little caret that says which way this button moves a creature. Drawn rather
+// than set as a glyph, because the arrows in a system font sit on wildly different
+// baselines across the platforms this runs on and a 6px triangle is 6px everywhere.
+// `y` is the text baseline it is centred against, not its top.
+function caretUp(ctx, x, y) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - 8);
+  ctx.lineTo(x + 5, y - 1);
+  ctx.lineTo(x - 5, y - 1);
+  ctx.closePath();
+  ctx.fill();
+}
+
 function drawAdminWaves(ctx, a) {
   const lv = levels[a.map];
 
@@ -4638,17 +4661,24 @@ function drawAdminWaves(ctx, a) {
   // that the whole roster is in front of you and any of it can be dialled up, and
   // a list that hid what was absent would be the old panel with extra steps.
   const rows = groupRows(a.map, a.wave, a.mode);
-  let total = 0;
-  // Where each type falls in the queue, counted over the rows that are actually
-  // in the wave. Groups spawn one after another — see groupAt in waves.js — so
-  // this is the order they arrive in, and it is worth saying on a panel that can
-  // now put anything anywhere.
-  let place = 0;
+  // THE WHOLE WAVE'S COUNT, SUMMED BEFORE THE LOOP RATHER THAN DURING IT.
+  //
+  // It was a running accumulator, which was fine while the only reader was the
+  // summary line under the grid — that runs after the loop, by which time the
+  // tally is complete. The caret on each row reads it too, and asks whether there
+  // is anything ELSE in this wave to reorder against; a partial sum answers that
+  // with "no" on the first row of every wave, which is exactly what it did. The
+  // Thug on wave 5 had no caret while the Giant below it had one.
+  const total = rows.reduce((n, r) => n + r.count, 0);
 
   for (const r of rows) {
-    total += r.count;
     const here = r.count > 0;
-    if (here) place++;
+    // WHERE IT FALLS IN THE QUEUE, off the row rather than counted down the page.
+    // It used to be a running tally over the rows in order, which was right only
+    // while the rows WERE the order. They are not any more — the grid holds still
+    // in MARCH_ORDER and the queue is the wave's own — so the number has to come
+    // from the same place the game gets it. See wavePlace in admin.js.
+    const place = r.place;
 
     // 17px, not the 19 the units tab uses. The label column lost width when the
     // second stepper arrived — 134px against the old 232 — and "Plague Doctor"
@@ -4659,17 +4689,44 @@ function drawAdminWaves(ctx, a) {
     ctx.font = '700 17px system-ui, sans-serif';
     ctx.fillText(r.def.name, r.x, r.y + 16);
 
-    ctx.fillStyle = ADMIN_DIM;
-    ctx.font = '13px system-ui, sans-serif';
-    // SHORT ENOUGH FOR THE LABEL COLUMN, which is 244px wide and the reason the
-    // absent line does not also quote the rate this creature would arrive at:
-    // "not in this wave — would come every 1.60s" set straight through the minus
-    // button beside it. The rate is one tap away and reads on the row the moment
-    // there is one of anything to read it about.
-    // THE RATE IS ITS OWN CONTROL NOW, so the line under the name no longer has to
-    // print it: it says where in the queue this creature falls, which is the one
-    // thing about a wave that no stepper on the row can show.
-    ctx.fillText(here ? `${ordinal(place)} in` : 'not in this wave', r.x, r.y + 34);
+    // AND THE PLACE UNDER IT IS A BUTTON NOW, which is why it is drawn as a pill
+    // rather than as the bare words it was.
+    //
+    // The whole label block is the tap target — see `order` in groupRows — and the
+    // pill is only the affordance: it has to say "this is pressable" without
+    // claiming to BE the edge of the target, because the target is four times its
+    // size. A filled lozenge under the name does that; an outlined box the size of
+    // the words would have read as the button and made the rest of the block feel
+    // like a misfire when it worked.
+    //
+    // THE ARROW SAYS WHICH WAY IT MOVES. One button that only goes earlier needs
+    // to say so, and "1st in ^" on the leading row is also the honest picture of
+    // what pressing it does there: it wraps to the back. A row at the front of a
+    // queue of one is drawn without it, because nothing moves.
+    //
+    // SHORT ENOUGH FOR THE LABEL COLUMN, which is 138px wide. "not in this wave"
+    // is the longest thing that goes here and it is the reason the absent line does
+    // not also quote the rate this creature would arrive at — the rate is one tap
+    // away and reads on the row the moment there is one of anything.
+    if (here) {
+      const label = `${ordinal(place)} in`;
+      ctx.font = '13px system-ui, sans-serif';
+      const w = Math.ceil(ctx.measureText(label).width) + (total > r.count ? 30 : 18);
+      ctx.fillStyle = 'rgba(240,230,210,0.10)';
+      pill(ctx, r.x, r.y + 24, w, 20, 10);
+      ctx.fillStyle = ADMIN_DIM;
+      ctx.fillText(label, r.x + 9, r.y + 34);
+      // The caret, only when there is somewhere to move to — a wave sending one
+      // kind of creature has an order of exactly one and nothing to reorder.
+      if (total > r.count) {
+        ctx.fillStyle = 'rgba(240,230,210,0.45)';
+        caretUp(ctx, r.x + w - 12, r.y + 34);
+      }
+    } else {
+      ctx.fillStyle = ADMIN_DIM;
+      ctx.font = '13px system-ui, sans-serif';
+      ctx.fillText('not in this wave', r.x, r.y + 34);
+    }
 
     stepperRow(ctx, waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W), r.count,
       shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}`));

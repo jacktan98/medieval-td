@@ -68,8 +68,14 @@ import { families } from './data/towers.js';
 //
 //   waves   "m3|extended|4|heavy_inf"   level, MODE, wave, enemy type -> count
 //   gaps    "m3|extended|4|heavy_inf"    the same, in its own bag      -> seconds
+//   order   "m3|extended|4"   level, mode, wave    -> the types, in marching order
 //   gold    "m3"              level id                            -> starting purse
 //   units   "barracks/2|hp"   unit id, field                      -> number
+//
+// `order` IS THE ONE THAT HOLDS A LIST rather than a number, and it is keyed one
+// field shorter than a wave key because it is a fact about the WAVE rather than
+// about one creature in it. Three fields against four, so it cannot collide even
+// if the two ever shared a bag.
 const KEY = 'medieval-td/admin';
 
 const store = () => {
@@ -81,7 +87,7 @@ const store = () => {
 // being thrown away.
 function load() {
   const s = store();
-  if (!s) return { waves: {}, gaps: {}, gold: {}, units: {} };
+  if (!s) return { waves: {}, gaps: {}, order: {}, gold: {}, units: {} };
   try {
     const held = JSON.parse(s.getItem(KEY)) || {};
     // `gaps` reads as empty when it is absent, which is what lets it be added
@@ -90,10 +96,22 @@ function load() {
     return {
       waves: migrate(held.waves || {}),
       gaps: migrate(held.gaps || {}),
+      // NOT THROUGH `migrate`, which rewrites keys that end in a group INDEX into
+      // ones that end in a type — a question that cannot arise here, because an
+      // order key names no type at all. It reads as empty when absent, the
+      // courtesy `gaps` and `gold` were each given when they arrived.
+      //
+      // AND EVERY LIST IS SIEVED on the way in. What is in localStorage is a year
+      // old on somebody's machine and this one holds NAMES: a creature renamed or
+      // retired leaves a stored order quoting a type the game no longer has, and a
+      // wave built from that list would drop the survivors it did not mention. See
+      // waveOrder, which is where the sieve lives so that a hand-edited blob gets
+      // it too.
+      order: held.order || {},
       gold: held.gold || {},
       units: held.units || {}
     };
-  } catch { return { waves: {}, gaps: {}, gold: {}, units: {} }; }
+  } catch { return { waves: {}, gaps: {}, order: {}, gold: {}, units: {} }; }
 }
 
 // WAVE KEYS USED TO END IN A GROUP INDEX and now end in an enemy type, and a
@@ -282,6 +300,107 @@ export const waveGap = (levelId, mode, wave, type) =>
   SHIPPED.get(`${waveKey(levelId, mode, wave, type)}|gap`) ??
   defaultGap(type);
 
+// --- what order a wave marches in ----------------------------------------------
+//
+// THE ORDER GROUPS ARE LISTED IN IS THE ORDER THEY ARRIVE IN — groupAt in
+// src/waves.js walks them one after another — so this is the third thing about a
+// wave the dashboard can now say, after who is in it and how fast they come.
+//
+// It was MARCH_ORDER and nothing else: thugs, then the giant, then the shooters,
+// then the priest, then the boss. That is a good default and it reproduces every
+// shipped table exactly, which is why it is still the default. It is a poor RULE,
+// because "a wave that opens with the Giant" is an ordinary thing to want to test
+// and there was no way to ask for it. The owner's words: "I am forced to follow
+// sequence Thug, Tough Thug, Blocker Thug etc."
+//
+// STORED AS THE WHOLE LIST rather than as a rank per type, because an order is one
+// fact and eight numbers that have to stay a permutation of each other are eight
+// chances to stop being one. One key holds one array and it is either a valid
+// order or it is thrown away.
+const orderKey = (levelId, mode, wave) => `${levelId}|${mode}|${wave}`;
+
+// The marching order for one wave: the override if there is one, else MARCH_ORDER.
+//
+// SIEVED AND COMPLETED ON EVERY READ, which is what makes a stored list safe to
+// trust anywhere else. Whatever comes out of localStorage is filtered down to
+// types the game actually has, de-duplicated, and then anything MARCH_ORDER knows
+// about that the list did not mention is appended in MARCH_ORDER's own order. So
+// the answer is ALWAYS a permutation of MARCH_ORDER, whatever was stored — a blob
+// naming a retired creature, a blob written before a new one was drawn, or a blob
+// somebody edited by hand.
+//
+// That is the property every caller leans on: adminWaves builds the game's waves
+// from this, and a list one short would silently drop a creature from a wave the
+// panel says is sending it.
+export function waveOrder(levelId, mode, wave) {
+  const held = edits.order[orderKey(levelId, mode, wave)];
+  if (!Array.isArray(held)) return [...MARCH_ORDER];
+  const seen = new Set();
+  const out = [];
+  for (const t of held) if (MARCH_ORDER.includes(t) && !seen.has(t)) { seen.add(t); out.push(t); }
+  for (const t of MARCH_ORDER) if (!seen.has(t)) out.push(t);
+  return out;
+}
+
+// WHERE A TYPE FALLS IN THE QUEUE, counting only the types the wave actually
+// sends — 1 for the creature that arrives first, and 0 for one that is not in this
+// wave at all.
+//
+// Counted over the PRESENT types rather than over the whole roster, because that
+// is the number a person building a wave means: a wave of militia and giants sends
+// a 1st and a 2nd, not a 1st and a 4th.
+export function wavePlace(levelId, mode, wave, type) {
+  let n = 0;
+  for (const t of waveOrder(levelId, mode, wave)) {
+    if (!waveCount(levelId, mode, wave, t)) continue;
+    n++;
+    if (t === type) return n;
+  }
+  return 0;
+}
+
+// MOVE A TYPE ONE PLACE EARLIER IN THE QUEUE, and wrap to the back when it is
+// already leading. One button, and every order is reachable from every other by
+// pressing it — which is the whole reason it wraps rather than going dead at the
+// front. A pair of up/down arrows would be two more controls per row on the one
+// tab that has no room for even one more.
+//
+// IT STEPS OVER TYPES THE WAVE DOES NOT SEND. Promoting the Giant past a Blocker
+// that is at zero would look like a press that did nothing, so the swap is done
+// among the PRESENT types and the absent ones are left sitting where they are.
+// That is what keeps an order stable while a wave is being built: setting a count
+// to 0 and back does not shuffle anything.
+//
+// A NO-OP ON A WAVE WITH FEWER THAN TWO CREATURES IN IT, which is not a guard so
+// much as arithmetic — there is nothing to be earlier than — and it is worth being
+// explicit about because the alternative is a stored override identical to the
+// default, which every other setter in this file is careful never to leave behind.
+export function promoteType(levelId, mode, wave, type) {
+  const order = waveOrder(levelId, mode, wave);
+  const present = order.filter(t => waveCount(levelId, mode, wave, t) > 0);
+  const i = present.indexOf(type);
+  if (i < 0 || present.length < 2) return;
+
+  // One place earlier, wrapping off the front to the back.
+  const moved = [...present];
+  moved.splice(i, 1);
+  moved.splice((i - 1 + present.length) % present.length, 0, type);
+
+  // Rewrite only the slots the present types occupy, so the absent ones keep
+  // theirs. `next` walks the new sequence in step with the old one's positions.
+  let next = 0;
+  const out = order.map(t => (waveCount(levelId, mode, wave, t) > 0 ? moved[next++] : t));
+
+  // AND AN ORDER EQUAL TO THE DEFAULT IS NOT AN OVERRIDE, the rule every bag in
+  // this file follows. Compared as a string because two arrays are never `===`,
+  // and `put` tests exactly that — so a wave stepped all the way round back to
+  // MARCH_ORDER leaves nothing in localStorage at all.
+  const key = orderKey(levelId, mode, wave);
+  if (out.join() === MARCH_ORDER.join()) { delete edits.order[key]; persist(); return; }
+  edits.order[key] = out;
+  persist();
+}
+
 export const unitStat = (unitId, field, def) =>
   edits.units[`${unitId}|${field}`] ?? def[field];
 
@@ -298,6 +417,7 @@ export const adminGold = level =>
 export const touched = () =>
   Object.keys(edits.waves).length +
   Object.keys(edits.gaps).length +
+  Object.keys(edits.order).length +
   Object.keys(edits.gold).length +
   Object.keys(edits.units).length > 0;
 
@@ -422,6 +542,7 @@ export function setUnitStat(unitId, field, value) {
 export function reset() {
   edits.waves = {};
   edits.gaps = {};
+  edits.order = {};
   edits.gold = {};
   edits.units = {};
   persist();
@@ -488,7 +609,11 @@ export function adminWaves(level, mode = 'normal') {
   return tableFor(level, mode).map((w, i) => {
     const own = new Map(w.groups.map(g => [g.type, g]));
     const groups = [];
-    for (const type of MARCH_ORDER) {
+    // THE WAVE'S OWN ORDER, which is MARCH_ORDER until somebody says otherwise —
+    // see waveOrder. This is the line that makes the reordering real: `groups` is
+    // handed to the game and groupAt walks it in the order it is built in, so the
+    // sequence written here IS the sequence the player meets.
+    for (const type of waveOrder(level.id, mode, i)) {
       const count = waveCount(level.id, mode, i, type);
       if (!count) continue;
       const g = own.get(type);
@@ -686,8 +811,13 @@ export const GAP_VALUE_W = 60;
 // purpose is seeing the roster at once. Across is where the room is — the page is
 // 944 wide and a label plus a stepper is 444 of it.
 //
-// IN MARCH_ORDER, so the list reads top-left to bottom-right in the order the wave
-// actually arrives — see data/waves.js. The rows do not move as counts change,
+// ALWAYS IN MARCH_ORDER, EVEN NOW THAT THE QUEUE CAN BE REORDERED, and that is
+// the point rather than an oversight. The grid is where the player's finger is:
+// rows that re-sorted themselves as the order changed would move the button out
+// from under the thumb that just pressed it, which is the same argument the
+// paragraph below makes about counts. What changes when a wave is reordered is the
+// PLACE printed under each name — the number moves, the row does not.
+// The rows do not move as counts change,
 // which is what makes the panel tappable: a row that jumped to the top when you
 // added one of something would move the button out from under the finger that was
 // about to press it again.
@@ -714,15 +844,37 @@ export const groupRows = (levelIndex, wave, mode = 'normal') => {
     // against the right edge of the cell so the columns line up with each other
     // down the page and the right-hand pair lines up with Start gold above it.
     const gapX = x + WAVE_CELL_W - gapW;
+    const stepX = gapX - countW - 8;
+    const count = waveCount(lv.id, mode, wave, type);
+    const y = GROUP_TOP + Math.floor(i / WAVE_COLS) * ROW_H;
     return {
       type,
       def: enemyTypes[type],
-      y: GROUP_TOP + Math.floor(i / WAVE_COLS) * ROW_H,
+      y,
       x,
-      stepX: gapX - countW - 8,
+      stepX,
       gapX,
-      count: waveCount(lv.id, mode, wave, type),
-      gap: waveGap(lv.id, mode, wave, type)
+      count,
+      gap: waveGap(lv.id, mode, wave, type),
+      // WHERE THIS CREATURE FALLS IN THE QUEUE, and 0 if the wave does not send it.
+      place: wavePlace(lv.id, mode, wave, type),
+      // AND THE WHOLE LABEL BLOCK IS THE BUTTON THAT MOVES IT EARLIER.
+      //
+      // THE TAP TARGET IS THE LABEL COLUMN, not the little pill drawn inside it:
+      // the name, the place under it and the air around both, from the left edge
+      // of the cell to 8px short of the count stepper. That is 138 x 60, which is
+      // the most generous target on this panel — where the steppers had to shrink
+      // to 58 x 52 to fit two of them in a cell, this control cost nothing at all
+      // because the room was already there and holding text.
+      //
+      // Drawn as a pill under the name so it reads as pressable; the pill is the
+      // affordance and this is the target, which is the right way round for a
+      // finger. See drawAdminWaves in render.js.
+      //
+      // DEAD ON A ROW AT ZERO, and the box is still returned rather than nulled:
+      // "is this creature in the wave" is a question promoteType already answers,
+      // and two places deciding it is one place too many.
+      order: { x, y, w: stepX - 8 - x, h: ROW_H - 8 }
     };
   });
 };
@@ -905,6 +1057,18 @@ export function tapAdmin(state, x, y, restart) {
       const g = waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W);
       if (on(g.minus)) { setWaveGap(levelId, a.mode, a.wave, r.type, r.gap - gapStep()); return true; }
       if (on(g.plus)) { setWaveGap(levelId, a.mode, a.wave, r.type, r.gap + gapStep()); return true; }
+      // AND THE LABEL BLOCK MOVES IT EARLIER IN THE QUEUE. Tested LAST of the four,
+      // so it can be the widest box on the row without ever swallowing a stepper
+      // press — the steppers get first refusal on the tap and this catches what is
+      // left. It is also the reason the box stops 8px short of the count minus
+      // rather than running to it.
+      //
+      // `r.count` gates it here as well as inside promoteType. Not defensive
+      // duplication: this is the difference between a press that is REFUSED and one
+      // that is not a press at all, and returning false lets the tap fall through
+      // to whatever is behind — which on this panel is nothing, and that is exactly
+      // what a row saying "not in this wave" should do.
+      if (r.count && on(r.order)) { promoteType(levelId, a.mode, a.wave, r.type); return true; }
     }
     return false;
   }

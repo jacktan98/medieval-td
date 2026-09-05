@@ -36,7 +36,7 @@ import {
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
-  modeTabs, waveCountFor
+  modeTabs, waveCountFor, waveOrder, wavePlace, promoteType
 } from '../src/admin.js';
 import { starsFor, starCuts, bestStars, recordStars, clearStars, MAX_STARS } from '../src/score.js';
 import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
@@ -593,6 +593,32 @@ console.log('\nWhat fits, and what you can hit\n');
   const inside = b => b.x >= PANEL.x && b.y >= PANEL.y &&
     b.x + b.w <= PANEL.x + PANEL.w && b.y + b.h <= PANEL.y + PANEL.h;
 
+  // THE ORDER BUTTON IS THE WIDEST TARGET ON THE WAVES TAB and the only one that
+  // is not a stepper, so it is the one that can silently eat a neighbour: it fills
+  // the label column, and a label column measured wrong would put it under the
+  // count minus. The tap handler tests it LAST, so an overlap would not break the
+  // steppers — it would make the ROW's own button unreachable in the overlapping
+  // strip, which is the kind of thing nobody notices until they wonder why one
+  // creature will not move.
+  //
+  // Checked against the count stepper's TAPPED box, padding included, rather than
+  // its drawn one: the padding is the part a finger actually lands in.
+  for (const r of groupRows(0, 4, 'normal')) {
+    const c = waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W);
+    ok(r.order.x + r.order.w <= c.minus.x - STEP_PAD,
+      `the ${r.type} order button stops clear of its count stepper`,
+      `ends ${r.order.x + r.order.w}, stepper tap starts ${c.minus.x - STEP_PAD}`);
+    ok(r.order.h + 8 <= ROW_H, 'and is inside the row pitch',
+      `${r.order.h} in ${ROW_H}`);
+  }
+  // AND TWO ROWS' BUTTONS NEVER MEET, across the page or down it. The waves tab is
+  // a 2-column grid and this is the only control on it wide enough for the left
+  // column's to reach the right column's.
+  const boxes = groupRows(0, 4, 'normal').map(r => r.order);
+  const meets = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const collide = boxes.some((a, i) => boxes.slice(i + 1).some(b => meets(a, b)));
+  ok(!collide, 'and no two order buttons overlap', `${boxes.length} rows`);
+
   const fixed = { CLOSE_BTN, RESET_BTN, PREV_BTN, NEXT_BTN, ...Object.fromEntries(TABS.map(t => [t.id, t])) };
   const outside = Object.entries(fixed).filter(([, b]) => !inside(b)).map(([k]) => k);
   ok(!outside.length, 'every fixed control is on the panel', outside.join(', '));
@@ -711,6 +737,184 @@ console.log('\nThe starting purse\n');
     `${adminGold(m1)} vs ${adminGold(levels[1])}`);
   reset();
   ok(adminGold(m1) === m1.startGold, 'and Reset puts it back', `${adminGold(m1)}`);
+}
+
+// --- and which of them comes out first ------------------------------------------
+//
+// THE THIRD THING A WAVE CAN NOW SAY. The panel set who is in a wave and how many,
+// then how fast they come, and now the ORDER — at the owner's ask, because the
+// queue was MARCH_ORDER and nothing else: "I am forced to follow sequence Thug,
+// Tough Thug, Blocker Thug etc."
+//
+// Everything here goes through the shipping setter and reads back through the
+// builder the game is actually handed, because the failure this feature can have
+// is not a wrong number on a panel — it is a panel that says one order and a wave
+// that marches in another.
+console.log('\nWhich of them comes out first\n');
+
+{
+  const lv = levels[0];
+  reset();
+
+  // THE DEFAULT IS STILL MARCH_ORDER, on every wave of every map and both lengths.
+  // This is the check that says the feature costs nothing until it is used — the
+  // same promise the counts and the gaps each make.
+  let waves = 0, defaulted = 0;
+  for (const l of levels) for (const m of ['normal', 'extended']) {
+    for (let i = 0; i < waveCountFor(levels.indexOf(l), m); i++) {
+      waves++;
+      if (waveOrder(l.id, m, i).join() === MARCH_ORDER.join()) defaulted++;
+    }
+  }
+  ok(defaulted === waves, 'an untouched dashboard marches every wave in MARCH_ORDER',
+    `${defaulted} of ${waves} waves on ${levels.length} maps, both lengths`);
+
+  // WAVE 5 OF MAP 1 sends three kinds, which is the smallest wave that can show
+  // every part of this: a promotion, a wrap, and a type stepped over.
+  const w = 4;
+  const sent = () => adminWaves(lv, 'normal')[w].groups.map(g => g.type);
+  const before = sent();
+  ok(before.length === 3, 'wave 5 of map 1 sends 3 kinds', before.join(' -> '));
+
+  // ONE TAP MOVES A CREATURE ONE PLACE EARLIER.
+  const last = before[2];
+  promoteType(lv.id, 'normal', w, last);
+  ok(sent()[1] === last, 'and one tap moves the last of them up one',
+    `${before.join(' -> ')}  =>  ${sent().join(' -> ')}`);
+
+  // AND KEEPS GOING TO THE FRONT.
+  promoteType(lv.id, 'normal', w, last);
+  ok(sent()[0] === last, 'and again puts it at the head of the wave', sent().join(' -> '));
+  ok(wavePlace(lv.id, 'normal', w, last) === 1, 'which is what the panel prints under it',
+    `place ${wavePlace(lv.id, 'normal', w, last)} of ${before.length}`);
+  // AND THE PLACES ARE 1..n WITH NO GAPS AND NO REPEATS, counted over the types
+  // the wave actually sends. That is what the row labels claim and it is the kind
+  // of thing that goes wrong quietly: a place counted over the whole roster would
+  // print "1st, 4th, 6th" on a wave of three.
+  const places = before.map(t => wavePlace(lv.id, 'normal', w, t)).sort();
+  ok(places.join() === before.map((_, i) => i + 1).join(),
+    'and the places read 1 upwards with no gaps', places.join(', '));
+
+  // AND WRAPS OFF THE FRONT TO THE BACK, which is what makes one button enough:
+  // every order is reachable from every other by pressing it.
+  promoteType(lv.id, 'normal', w, last);
+  ok(sent()[2] === last, 'and once more wraps it round to the back', sent().join(' -> '));
+
+  // A FULL CYCLE COMES HOME, and an order equal to the default is not an override.
+  // This is the rule every bag in admin.js follows and the one an array-valued bag
+  // could most easily have broken — two arrays are never ===, so the comparison has
+  // to be done on purpose.
+  ok(sent().join() === before.join(), 'a full lap leaves the wave exactly as shipped',
+    sent().join(' -> '));
+  ok(!touched(), 'and leaves nothing behind in storage');
+
+  // THE GAME IS HANDED THE ORDER, not just the panel. adminWaves is what main.js
+  // builds state.waves from, and groupAt walks those groups in the order they are
+  // listed — so this is the line that says a reordered wave really arrives
+  // reordered.
+  promoteType(lv.id, 'normal', w, last);
+  promoteType(lv.id, 'normal', w, last);
+  const built = adminWaves(lv, 'normal')[w].groups;
+  ok(built[0].type === last, 'a promoted creature leads the wave the game is given',
+    built.map(g => `${g.type} x${g.count}`).join(' -> '));
+  // AND CARRIES ITS OWN COUNT AND RATE WITH IT. Reordering must move the group,
+  // not rebuild it from defaults — a promoted Giant that arrived at the militia's
+  // rate would be a different wave from the one the panel is showing.
+  const src = lv.waves[w].groups.find(g => g.type === last);
+  ok(built[0].count === src.count && built[0].gap === src.gap,
+    'with the count and rate it already had', `x${built[0].count} every ${built[0].gap}s`);
+
+  // AND EVERY TYPE IS STILL THERE. A reorder that dropped one would be the worst
+  // failure this feature can have, because the panel would go on printing a count
+  // for a creature the wave no longer sends.
+  ok(built.length === before.length &&
+     before.every(t => built.some(g => g.type === t)),
+    'and no creature is lost on the way', `${built.length} groups, ${before.length} before`);
+
+  // A TYPE AT ZERO IS STEPPED OVER RATHER THAN SHUFFLED. Setting a count to 0 and
+  // back must leave the order exactly as it was, or building a wave would reorder
+  // it every time a count passed through zero.
+  const order = sent().join(' -> ');
+  const middle = sent()[1];
+  setWaveCount(lv.id, 'normal', w, middle, 0);
+  setWaveCount(lv.id, 'normal', w, middle, src.count);
+  ok(sent().join(' -> ') === order, 'zeroing a creature and restoring it does not shuffle',
+    order);
+
+  // AND RESET PUTS THE ORDER BACK with everything else.
+  reset();
+  ok(sent().join() === before.join() && !touched(), 'and Reset restores the shipped order',
+    sent().join(' -> '));
+}
+
+// A STORED ORDER IS SIEVED ON THE WAY OUT, which is what makes a year-old blob in
+// somebody's browser safe. waveOrder always answers with a permutation of
+// MARCH_ORDER however mangled the stored list is — a creature that no longer
+// exists, a list one short, a duplicate — because a wave built from a short list
+// would silently DROP the creatures it did not mention, and the panel would go on
+// printing counts for them.
+//
+// THIS IS THE ONE SECTION THAT STUBS localStorage, against the note at the top of
+// this file, and the reason is that it is testing the LOAD path: `edits` is read
+// once when admin.js is imported, so a corrupt blob has to be in the store before
+// the import happens. The stub is installed, used, and taken away again — every
+// other section still runs with no store at all, which is the property that note
+// is protecting.
+//
+// A FRESH MODULE per case, through a cache-busting query, because an ES module is
+// evaluated once per specifier and `edits` is module state.
+console.log('\nA stored order that has gone stale\n');
+
+{
+  const lv = levels[0];
+  const key = `${lv.id}|normal|0`;
+  const full = MARCH_ORDER.join();
+  let held = null;
+  globalThis.localStorage = {
+    getItem: () => held,
+    setItem: (_, v) => { held = v; },
+    removeItem: () => { held = null; }
+  };
+
+  let n = 0;
+  for (const [label, list] of [
+    ['a creature the game no longer has', ['ghost_inf', ...MARCH_ORDER]],
+    ['a list that names only half of them', MARCH_ORDER.slice(0, 3)],
+    ['the same creature twice', [MARCH_ORDER[0], MARCH_ORDER[0], ...MARCH_ORDER]],
+    ['an empty list', []],
+    ['something that is not a list at all', 'light_inf'],
+    ['a list of nothing but rubbish', ['a', 'b', 'c']]
+  ]) {
+    held = JSON.stringify({ waves: {}, gaps: {}, order: { [key]: list }, gold: {}, units: {} });
+    const fresh = await import(`../src/admin.js?stale=${n++}`);
+    const got = fresh.waveOrder(lv.id, 'normal', 0);
+    ok(got.length === MARCH_ORDER.length &&
+       MARCH_ORDER.every(t => got.includes(t)) &&
+       new Set(got).size === got.length,
+      `survives ${label}`, `${got.length} types, no repeats`);
+    // AND THE ORDER IT ASKED FOR IS STILL HONOURED as far as it is legible. A
+    // half-list is not an error to discard, it is a preference to complete: the
+    // three types it named lead, in the order it named them, and the rest follow
+    // in MARCH_ORDER behind.
+    if (label.startsWith('a list that names')) {
+      ok(got.slice(0, 3).join() === MARCH_ORDER.slice(0, 3).join(),
+        'and a half-list keeps the half it named, with the rest behind',
+        got.slice(0, 4).join(' '));
+    }
+  }
+
+  // AND A BLOB WITH NO `order` BAG AT ALL is what everybody who has ever used this
+  // dashboard actually has in their browser today. It must read as "no overrides"
+  // rather than throwing, which is the courtesy `gaps` and `gold` were each given
+  // when they arrived.
+  held = JSON.stringify({ waves: { [`${lv.id}|normal|0|light_inf`]: 7 }, gold: {}, units: {} });
+  const older = await import('../src/admin.js?stale=old');
+  ok(older.waveOrder(lv.id, 'normal', 0).join() === full,
+    'and a saved blob from before this feature reads as MARCH_ORDER');
+  ok(older.waveCount(lv.id, 'normal', 0, 'light_inf') === 7,
+    'with the counts it was already holding kept', 'light_inf x7');
+
+  delete globalThis.localStorage;
 }
 
 console.log(bad
