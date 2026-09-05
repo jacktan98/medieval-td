@@ -119,11 +119,18 @@ for (const [li, lv] of levels.entries()) {
   }
   }
 
-  // AND THE LENGTHS ARE THE LENGTHS THE OWNER ASKED FOR: two more waves than the
-  // map's own table, whatever that table is. Checked here rather than typed as 10
-  // and 12, so a map that grows a wave keeps the relationship.
-  ok(tableFor(level, 'extended').length === tableFor(level, 'normal').length + 2,
-    'and Extended is exactly two waves longer',
+  // AND EXTENDED IS LONGER, by at least the two waves the owner's tables have
+  // always been. Checked as a relationship rather than as typed lengths, so a map
+  // that grows a wave keeps it.
+  //
+  // IT WAS "EXACTLY TWO" and the Bend broke it on purpose: its long game now ends
+  // with a boss finale the short game does not get, so it is three longer while
+  // the other two maps are still two. What has to stay true is that Extended is a
+  // strict superset — a map whose long table lost a wave, or whose short table
+  // grew past it, is what this catches. The exact number for each map is asserted
+  // in tools/admin.mjs, which is where shortOf's argument is checked.
+  ok(tableFor(level, 'extended').length >= tableFor(level, 'normal').length + 2,
+    'and Extended is at least two waves longer',
     `${tableFor(level, 'normal').length} -> ${tableFor(level, 'extended').length}`);
 
   // THE FIRST WAVE IS PREVIEWED, and it is the one time the row names the wave

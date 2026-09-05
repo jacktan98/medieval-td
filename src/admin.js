@@ -243,6 +243,9 @@ export function units() {
 // compares against, and it has to be taken at import time: after the first edit
 // is applied the def no longer knows what it used to say.
 const SHIPPED = new Map();
+// The queue each wave ships marching in, keyed `level|mode|wave`. See the loop
+// below and shippedOrder.
+const SHIPPED_ORDER = new Map();
 for (const u of units()) {
   SHIPPED.set(`${u.id}|damage`, u.def.damage);
   if (u.hp) SHIPPED.set(`${u.id}|hp`, u.def.hp);
@@ -267,6 +270,24 @@ for (const l of levels) {
       // the number the game would actually have used.
       SHIPPED.set(`${l.id}|${mode.id}|${i}|${t}|gap`, g ? g.gap : defaultGap(t));
     }
+    // AND THE ORDER THE TABLE ITSELF SENDS THEM IN, which is the default queue for
+    // this wave — see waveOrder.
+    //
+    // IT WAS MARCH_ORDER FOR EVERY WAVE, and that was right exactly as long as
+    // every shipped table happened to be typed in MARCH_ORDER. They all were, and
+    // the note beside MARCH_ORDER in data/waves.js said so out loud. The Bend's
+    // Extended finale broke it on purpose: the owner wants the Captain out FIRST
+    // and the boss is last in MARCH_ORDER, so a dashboard defaulting to that list
+    // would have rebuilt his wave backwards — Toughs first, boss behind them —
+    // and the game would have played a wave nobody typed.
+    //
+    // The table is the authority now and MARCH_ORDER is the fallback, which is the
+    // right way round: MARCH_ORDER answers "where does a creature the table never
+    // mentions belong", and only that. The types the wave SENDS lead, in the order
+    // it sends them; everything else follows in MARCH_ORDER behind.
+    const sent = w.groups.map(g => g.type).filter(t => MARCH_ORDER.includes(t));
+    SHIPPED_ORDER.set(`${l.id}|${mode.id}|${i}`,
+      [...sent, ...MARCH_ORDER.filter(t => !sent.includes(t))]);
   });
   // The purse, keyed on the level id alone — there is one per map, so there is
   // nothing to index it by. It cannot collide with a wave key above, which always
@@ -275,6 +296,12 @@ for (const l of levels) {
 }
 
 export const shipped = key => SHIPPED.get(key);
+
+// The queue a wave marches in with nothing overridden: its own table's order. Its
+// own bag rather than a `|order` key in SHIPPED, because it holds a LIST where
+// every other entry there holds a number.
+export const shippedOrder = (levelId, mode, wave) =>
+  SHIPPED_ORDER.get(`${levelId}|${mode}|${wave}`) || MARCH_ORDER;
 
 // --- reading and writing -------------------------------------------------------
 
@@ -333,12 +360,18 @@ const orderKey = (levelId, mode, wave) => `${levelId}|${mode}|${wave}`;
 // from this, and a list one short would silently drop a creature from a wave the
 // panel says is sending it.
 export function waveOrder(levelId, mode, wave) {
+  const base = shippedOrder(levelId, mode, wave);
   const held = edits.order[orderKey(levelId, mode, wave)];
-  if (!Array.isArray(held)) return [...MARCH_ORDER];
+  if (!Array.isArray(held)) return [...base];
   const seen = new Set();
   const out = [];
   for (const t of held) if (MARCH_ORDER.includes(t) && !seen.has(t)) { seen.add(t); out.push(t); }
-  for (const t of MARCH_ORDER) if (!seen.has(t)) out.push(t);
+  // COMPLETED FROM THE WAVE'S OWN DEFAULT rather than from MARCH_ORDER, so a
+  // stored list that names only some of the roster leaves the rest where this
+  // particular wave would have put them. On every wave but one those are the same
+  // list; on the Bend's finale they are not, and completing from MARCH_ORDER there
+  // would quietly move the boss to the back of a half-remembered order.
+  for (const t of base) if (!seen.has(t)) out.push(t);
   return out;
 }
 
@@ -396,7 +429,11 @@ export function promoteType(levelId, mode, wave, type) {
   // and `put` tests exactly that — so a wave stepped all the way round back to
   // MARCH_ORDER leaves nothing in localStorage at all.
   const key = orderKey(levelId, mode, wave);
-  if (out.join() === MARCH_ORDER.join()) { delete edits.order[key]; persist(); return; }
+  if (out.join() === shippedOrder(levelId, mode, wave).join()) {
+    delete edits.order[key];
+    persist();
+    return;
+  }
   edits.order[key] = out;
   persist();
 }

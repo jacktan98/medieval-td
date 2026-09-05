@@ -36,7 +36,7 @@ import {
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
-  modeTabs, waveCountFor, waveOrder, wavePlace, promoteType
+  modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder
 } from '../src/admin.js';
 import { starsFor, starCuts, bestStars, recordStars, clearStars, MAX_STARS } from '../src/score.js';
 import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
@@ -337,9 +337,24 @@ console.log('\nAnything, in any wave\n');
   ok(MODES.length === 2 && MODES.map(m => m.id).join() === 'normal,extended',
     'a map has two lengths and both are named', MODES.map(m => m.name).join(' / '));
 
+  // AND THE LONG ONE IS LONGER, per map, which used to be "two waves longer"
+  // everywhere. The Bend's Extended game grew a boss finale that its short game
+  // does not get, so it is three longer and the other two are still two — see
+  // shortOf in data/waves.js, where the number is the argument that says so.
+  //
+  // CHECKED AS A RANGE PER MAP rather than as one constant, because what has to
+  // stay true is that Extended is a strict superset with at least the two waves
+  // the owner's tables always had. A map whose Extended table lost a wave, or one
+  // whose short table grew past its long one, is what this is for.
   const nWaves = waveCountFor(0, 'normal');
   const xWaves = waveCountFor(0, 'extended');
-  ok(xWaves === nWaves + 2, 'and the long one is two waves longer',
+  for (let m = 0; m < levels.length; m++) {
+    const short = waveCountFor(m, 'normal');
+    const long = waveCountFor(m, 'extended');
+    ok(long >= short + 2, `${levels[m].name}'s long game is at least 2 waves longer`,
+      `${short} against ${long}`);
+  }
+  ok(xWaves === nWaves + 3, 'and the Bend is 3 longer, for the boss finale',
     `${nWaves} against ${xWaves}`);
 
   const nBefore = waveCount(lv.id, 'normal', 2, 'light_inf');
@@ -756,18 +771,41 @@ console.log('\nWhich of them comes out first\n');
   const lv = levels[0];
   reset();
 
-  // THE DEFAULT IS STILL MARCH_ORDER, on every wave of every map and both lengths.
-  // This is the check that says the feature costs nothing until it is used — the
-  // same promise the counts and the gaps each make.
+  // THE DEFAULT IS THE WAVE'S OWN SHIPPED ORDER, on every wave of every map and
+  // both lengths. This is the check that says the feature costs nothing until it
+  // is used — the same promise the counts and the gaps each make.
+  //
+  // IT USED TO SAY "MARCH_ORDER" and that was a weaker claim wearing a stronger
+  // one's clothes: it was true only while every table happened to be typed in
+  // MARCH_ORDER, and the Bend's boss finale is deliberately not. What actually has
+  // to hold is that an untouched dashboard hands back the table as typed, whatever
+  // order that is.
   let waves = 0, defaulted = 0;
   for (const l of levels) for (const m of ['normal', 'extended']) {
     for (let i = 0; i < waveCountFor(levels.indexOf(l), m); i++) {
       waves++;
-      if (waveOrder(l.id, m, i).join() === MARCH_ORDER.join()) defaulted++;
+      if (waveOrder(l.id, m, i).join() === shippedOrder(l.id, m, i).join()) defaulted++;
     }
   }
-  ok(defaulted === waves, 'an untouched dashboard marches every wave in MARCH_ORDER',
+  ok(defaulted === waves, 'an untouched dashboard marches every wave as its table types it',
     `${defaulted} of ${waves} waves on ${levels.length} maps, both lengths`);
+
+  // AND EXACTLY ONE WAVE IN THE GAME IS TYPED OUT OF MARCH_ORDER, which is the
+  // other half of the same fact. MARCH_ORDER is still the house style and a table
+  // that drifts out of it by accident is a wave nobody meant to reshape; the Bend's
+  // finale is the one that means it, so it is named here rather than merely
+  // tolerated. Add a second deliberate one and this line is where you say so.
+  const offOrder = [];
+  for (const l of levels) for (const m of ['normal', 'extended']) {
+    tableFor(l, m).forEach((w, i) => {
+      const sent = w.groups.map(g => g.type);
+      const inMarch = [...sent].sort((a, b) => MARCH_ORDER.indexOf(a) - MARCH_ORDER.indexOf(b));
+      if (sent.join() !== inMarch.join()) offOrder.push(`${l.id} ${m} wave ${i + 1}`);
+    });
+  }
+  ok(offOrder.length === 1 && offOrder[0] === 'm1 extended wave 11',
+    'and exactly 1 wave is deliberately typed out of MARCH_ORDER',
+    offOrder.join(', ') || 'none');
 
   // WAVE 5 OF MAP 1 sends three kinds, which is the smallest wave that can show
   // every part of this: a promotion, a wrap, and a type stepped over.
@@ -845,6 +883,92 @@ console.log('\nWhich of them comes out first\n');
   reset();
   ok(sent().join() === before.join() && !touched(), 'and Reset restores the shipped order',
     sent().join(' -> '));
+}
+
+// --- the Bend's boss finale ------------------------------------------------------
+//
+// THE FIRST BOSS IN A SHIPPED TABLE, on one map at one length: "add a last wave for
+// Hard Extended The Bend only, bringing it to 11 waves. This last wave will have 1
+// Captain Thug coming out followed by 20 Tough Thugs 2.50 gap stepper."
+//
+// Checked here rather than in a wave-data tool because every part of it is a claim
+// about what the DASHBOARD hands the game: the wave is typed against MARCH_ORDER on
+// purpose, and the panel is what would quietly put it back.
+console.log('\nThe Bend\'s boss finale\n');
+
+{
+  reset();
+  const bend = levels[0];
+  const w = 10;
+
+  ok(waveCountFor(0, 'extended') === 11, 'the Bend\'s long game is 11 waves now',
+    `${waveCountFor(0, 'extended')} waves`);
+  // AND THE SHORT GAME IS UNTOUCHED, which is the whole of "Extended only". The two
+  // tables share a derivation — see shortOf — so an eleventh wave on the long one
+  // reaching the short one is the exact mistake this guards.
+  ok(waveCountFor(0, 'normal') === 8, 'and the short one is still 8', `${waveCountFor(0, 'normal')}`);
+  const shortLast = adminWaves(bend, 'normal')[7];
+  const longEighth = tableFor(bend, 'extended')[7];
+  ok(JSON.stringify(shortLast.groups) === JSON.stringify(longEighth.groups),
+    'with the same 8 waves it always had', `${shortLast.groups.length} groups in its last`);
+  ok(shortLast.rest === 0, 'and its last wave still rests 0, because nothing follows');
+
+  // THE WAVE ITSELF, read off the builder main.js is handed rather than off the
+  // table — the table is what was typed and this is what gets played.
+  const built = adminWaves(bend, 'extended')[w];
+  ok(built.groups.length === 2, 'the finale sends 2 groups',
+    built.groups.map(g => `${g.type} x${g.count}`).join(' -> '));
+  ok(built.groups[0].type === 'captain_thug' && built.groups[0].count === 1,
+    'the Captain comes out first, alone', `${built.groups[0].type} x${built.groups[0].count}`);
+  ok(built.groups[1].type === 'tough_inf' && built.groups[1].count === 20,
+    'and 20 Tough Thugs follow him', `${built.groups[1].type} x${built.groups[1].count}`);
+  ok(built.groups[1].gap === 2.5, 'at the 2.50 gap the owner asked for',
+    `${built.groups[1].gap}s apart`);
+  ok(built.rest === 0, 'and nothing rests after it — it is the last wave there is');
+
+  // THE PANEL AGREES WITH THE GAME, which is the claim that needed a new mechanism
+  // to stay true: the boss is LAST in MARCH_ORDER, so a dashboard defaulting to
+  // that list would print him 2nd and hand the game a wave with the Toughs in
+  // front. See SHIPPED_ORDER in src/admin.js.
+  ok(wavePlace(bend.id, 'extended', w, 'captain_thug') === 1,
+    'and the panel prints the Captain as 1st in',
+    `place ${wavePlace(bend.id, 'extended', w, 'captain_thug')}`);
+  ok(wavePlace(bend.id, 'extended', w, 'tough_inf') === 2,
+    'with the Tough Thugs 2nd');
+  const rows = groupRows(0, w, 'extended');
+  ok(rows.find(r => r.type === 'captain_thug').count === 1 &&
+     rows.find(r => r.type === 'tough_inf').count === 20 &&
+     rows.filter(r => r.count).length === 2,
+    'and the wave shows on the panel with 2 rows filled in',
+    rows.filter(r => r.count).map(r => `${r.type} x${r.count}`).join(', '));
+
+  // AND IT IS EDITABLE LIKE ANY OTHER WAVE, which is the second half of "ensure
+  // admin panel also have this added wave" — a wave you can see and not change is
+  // half a feature.
+  setWaveCount(bend.id, 'extended', w, 'tough_inf', 25);
+  ok(adminWaves(bend, 'extended')[w].groups[1].count === 25, 'its counts can be edited', 'x25');
+  setWaveGap(bend.id, 'extended', w, 'tough_inf', 3.0);
+  ok(adminWaves(bend, 'extended')[w].groups[1].gap === 3.0, 'and its rate', '3s');
+  promoteType(bend.id, 'extended', w, 'tough_inf');
+  ok(adminWaves(bend, 'extended')[w].groups[0].type === 'tough_inf',
+    'and its order — the Toughs can be put in front of the boss',
+    adminWaves(bend, 'extended')[w].groups.map(g => g.type).join(' -> '));
+  reset();
+  ok(adminWaves(bend, 'extended')[w].groups[0].type === 'captain_thug' &&
+     adminWaves(bend, 'extended')[w].groups[1].count === 20 &&
+     adminWaves(bend, 'extended')[w].groups[1].gap === 2.5,
+    'and Reset puts all 3 back to the boss in front of 20 at 2.50');
+
+  // NORMAL THINS IT AND HARD PLAYS IT EXACTLY, which is the difficulty rule this
+  // table was tuned under — and the one place it could bite is the boss himself:
+  // a count of 1 scaled by 0.8 must not round to 0, or the finale of the game would
+  // arrive with no boss in it.
+  for (const d of DIFFICULTIES) {
+    const scaled = scaleWaves(adminWaves(bend, 'extended'), d)[w];
+    const boss = scaled.groups.find(g => g.type === 'captain_thug');
+    ok(boss && boss.count === 1, `${d.name} still sends exactly 1 Captain`,
+      `${scaled.groups.map(g => `${g.type} x${g.count}`).join(', ')}`);
+  }
 }
 
 // A STORED ORDER IS SIEVED ON THE WAY OUT, which is what makes a year-old blob in

@@ -1824,7 +1824,10 @@ export const wavesExtended = [
       { type: 'plague_inf', count: 2, gap: 1.40 },
       { type: 'dark_priest', count: 2, gap: 1.40 }
     ] },
-  { rest: 0, groups: [
+  // NINE AGAIN, NOT ZERO. This was the last wave and rested 0, which is how a
+  // table says "nothing follows"; something follows now. `shortOf` still forces
+  // the last wave it keeps back to 0, so the eight-wave game is unaffected.
+  { rest: 9, groups: [
       { type: 'light_inf', count: 20, gap: 0.50 },
       { type: 'tough_inf', count: 12, gap: 0.50 },
       { type: 'blocker_inf', count: 12, gap: 0.80 },
@@ -1832,6 +1835,39 @@ export const wavesExtended = [
       { type: 'archer_inf', count: 10, gap: 0.60 },
       { type: 'plague_inf', count: 4, gap: 0.60 },
       { type: 'dark_priest', count: 4, gap: 0.60 }
+    ] },
+  // --- WAVE 11: THE CAPTAIN, AND THEN THE COLUMN HE CAME IN FRONT OF ---------
+  //
+  // THE FIRST BOSS IN A SHIPPED TABLE. He has been placeable from the dashboard
+  // since he was drawn; this is the owner putting him into the game proper, on one
+  // map at one length: "add a last wave for Hard Extended The Bend only".
+  //
+  // THE BOSS COMES OUT FIRST, which is the whole shape of the wave and the reason
+  // this table is no longer typed in MARCH_ORDER. That list puts him last — a boss
+  // behind his escort arrives to a line already chewed on, which is the fight worth
+  // having on a wave that has an escort to chew on it. This wave inverts it: he
+  // walks in alone against everything the player has built, and the 20 Tough Thugs
+  // come up the road behind him while he is being fought. The 2.50 gap is what
+  // makes that a column rather than a crowd — 50 seconds of them, arriving one at
+  // a time into a fight that is already going.
+  //
+  // A wave typed out of MARCH_ORDER is new, so it is worth saying what carries it:
+  // the ORDER GROUPS ARE LISTED IN IS THE ORDER THEY ARRIVE IN (groupAt in
+  // src/waves.js), and the dashboard now defaults each wave to its own table's
+  // order rather than to MARCH_ORDER (SHIPPED_ORDER in src/admin.js). Both halves
+  // are checked in tools/admin.mjs.
+  //
+  // HIS OWN GAP IS 2.50 TOO, and it is never read while he leads: the first spawn
+  // of a wave is immediate and a group's gap governs the pause before each of ITS
+  // units, so the Toughs' 2.50 is what separates him from the first of them. It
+  // matters the moment somebody reorders this wave in the dashboard, which is
+  // exactly the thing the panel is for.
+  //
+  // REST 0, because nothing follows: this is the last wave of the longest game on
+  // this map. See shortOf.
+  { rest: 0, groups: [
+      { type: 'captain_thug', count: 1, gap: 2.50 },
+      { type: 'tough_inf', count: 20, gap: 2.50 }
     ] }
 ];
 
@@ -2013,10 +2049,25 @@ export const earlyCallRate = 4;
 // long table has two waves behind it and rests 9; as the last wave of the short
 // one it has none, and a 9 there would hold the win screen back for nine seconds
 // of empty road.
-const shortOf = table => table.slice(0, -2).map((w, i, kept) =>
+// HOW MANY TO DROP, and it is an argument now because the answer stopped being
+// the same for all three maps.
+//
+// It was a bare `-2` on the reading above: the owner's long tables are two waves
+// longer than his short ones. That is still true of the Fork and of Two Rivers.
+// It is not true of the Bend any more — its Extended game has a boss finale on the
+// end that the short game does not get — so the Bend drops three and lands on the
+// same eight waves it has always had.
+//
+// A NUMBER OF WAVES TO DROP rather than a length to keep, because the thing being
+// expressed is still the RELATIONSHIP between a map's two tables. Pinning the
+// short one to 8 would make the two independent, and the next wave appended to a
+// long table would silently stop reaching the short game on every map at once.
+const shortOf = (table, drop = 2) => table.slice(0, -drop).map((w, i, kept) =>
   i === kept.length - 1 ? { ...w, rest: 0 } : w);
 
-export const waves = shortOf(wavesExtended);
+// THREE, because of the boss wave. Everything before it is the eight-wave game
+// exactly as it was.
+export const waves = shortOf(wavesExtended, 3);
 export const wavesFork = shortOf(wavesForkExtended);
 export const wavesLong = shortOf(wavesLongExtended);
 
