@@ -1073,14 +1073,19 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    // 10,000, the owner's number, which is twelve and a half Giants. The fight is
-    // meant to be the length of a wave rather than an interruption to one.
-    hp: 10000,
+    // 8,000, the owner's number, which is exactly 10 Giants. The fight is meant to
+    // be the length of a wave rather than an interruption to one.
+    //
+    // IT HAS BEEN 5,000, 9,000 AND 10,000, and this is the owner playing it rather
+    // than a rule being applied — the number that matters is how long he survives
+    // the board the player has actually built by wave 11, which is not a thing any
+    // arithmetic here can tell him.
+    hp: 8000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
     // just under the Giant's 52, which is what a man in that much plate should be
-    // and what gives the towers time to work on a 5,000 bar. Stage 2 multiplies
+    // and what gives the towers time to work on a bar this size. Stage 2 multiplies
     // it by the owner's 1.2, so enraged he moves at 60 — between a Blocker and an
     // Archer, and faster than the Giant he used to be slower than.
     speed: 50,
@@ -1270,10 +1275,11 @@ export const enemyTypes = {
         trim: [169, 121, 187, 239],
         pivot: [0.503, 0.887],
         seconds: 4,
-        // THREE FIFTHS OF HIS BAR, the owner's number, up from a half. At 10,000
-        // that is 6,000 back over four seconds — 1,500 a second, which is more than
-        // most single towers do — so the four seconds behind high plate are the
-        // most expensive thing on the board to fail to interrupt.
+        // THREE FIFTHS OF HIS BAR, the owner's number, up from a half. A SHARE
+        // rather than a number of points, so it follows his health through every
+        // retune — at 8,000 that is 4,800 back over four seconds, 1,200 a second,
+        // which is more than most single towers do. The four seconds behind high
+        // plate are the most expensive thing on the board to fail to interrupt.
         share: 0.6,
         armour: { physical: 'high', magic: 'high' }
       },

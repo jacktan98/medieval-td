@@ -514,8 +514,9 @@ export function enemyCards() {
 //
 // THREE TO A ROW WHERE AN ENEMY GETS FOUR, at the owner's word: "3 bosses
 // description length equals to 4 normal enemies description length". His numbers
-// are the reason — 10,000 and three digits of damage are wider than anything the
-// roster prints — and the arithmetic is exactly that sentence: three cards and
+// are the reason — four digits of health and three of damage are wider than
+// anything the roster prints, which tops out at the Giant's 800 and 30 — and the
+// arithmetic is exactly that sentence: three cards and
 // their two gaps fill what four cards and their three gaps do.
 const BOSS_COLUMNS = 3;
 const BOSS_CARD_W =
