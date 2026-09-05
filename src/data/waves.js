@@ -1073,9 +1073,9 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    // 10,000, the owner's number, which is twelve and a half Giants. The fight is
-    // meant to be the length of a wave rather than an interruption to one.
-    hp: 10000,
+    // 8,000, the owner's number, which is ten Giants. The fight is meant to be the
+    // length of a wave rather than an interruption to one.
+    hp: 8000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
@@ -1114,13 +1114,28 @@ export const enemyTypes = {
     // Sword and bow both, and the two are one number on purpose: where he is
     // standing decides how the blow ARRIVES and not how hard.
     //
-    // 100, the owner's number, and it is both his kinds of damage: physical in
-    // stage 1 and magic in stage 2, the same either way. A spearman wears low
-    // physical plate, so it arrives as 75 and takes him in three swings; a
-    // paladin's medium turns it to 50 — which makes the paladin the answer to
-    // stage 1 and, deliberately, no answer at all to stage 2, where the same 100
-    // comes back as magic and his physical plate is worth nothing against it.
-    damage: 100,
+    // 80, the owner's number, and it is both his kinds of damage: physical in
+    // stage 1 and magic in stage 2, the same either way.
+    //
+    // WHAT ACTUALLY LANDS IS NOW A DIFFERENT QUESTION, because he breaks armour —
+    // see `pierce` below. A spearman's low plate is broken through entirely and
+    // takes the whole 80; a paladin's medium physical, which used to halve it,
+    // meets a sword that breaks two ranks and takes all 80 as well. The armour on
+    // the player's line stopped being an answer to him at the moment he was given
+    // a pierce, which is the point of giving him one.
+    damage: 80,
+    // HIS SWORD BREAKS TWO RANKS OF PHYSICAL PLATE, the owner's number for stage 1
+    // melee. `pierceOf` reads it and `rankAgainst` subtracts it before looking up
+    // what gets through, so two ranks is 50 percentage points of the blow — see the
+    // note on TAKES in data/armour.js for why a rank is always worth exactly a
+    // quarter.
+    //
+    // It is the largest pierce in the game. A Cannon Outpost breaks two and it is
+    // the only thing on the player's side that does; nothing on the road has ever
+    // broken any. Against the barracks it is close to total: low plate is one rank
+    // and medium is two, so every man the player can muster meets his sword as
+    // though bare.
+    pierce: 2,
     // ONE STRIKE A SECOND, the owner's rate, which is the tempo everything else on
     // the road swings at. What makes him a boss in a melee is the size of the blow
     // rather than the rhythm of it.
@@ -1147,9 +1162,18 @@ export const enemyTypes = {
       // Default to show through. At half a second he nocks for a third and looses
       // for a sixth, which is the right way round for a bow: a draw and a snap.
       cd: 1 / 2,
-      // The same 100 the sword does. One number for both, so his reach decides how
-      // a blow arrives and never how much it is worth.
-      damage: 100,
+      // The same 80 the sword does. One number for both, so his reach decides how a
+      // blow arrives and never how much it is worth.
+      damage: 80,
+      // BUT THE ARROW BREAKS ONLY ONE RANK where the sword breaks two, at the
+      // owner's word, and that difference is the whole shape of him at two
+      // distances: the same damage arrives softer from further away.
+      //
+      // Its own field rather than the def's, because those are two different
+      // weapons — see `loose` in src/enemies.js, which reads the ranged block's
+      // pierce and falls back to the def's for every other thrower in the game,
+      // none of which carries one.
+      pierce: 1,
       ammo: enemyArrow,
       // AND HE PLANTS HIMSELF, exactly as the Archer Thug does — the owner's call:
       // "he shoots arrow like an archer thug where he stays put until the soldiers
@@ -1236,6 +1260,15 @@ export const enemyTypes = {
       // shows in what he takes: the same tower that was doing half damage to him
       // now does three quarters.
       armour: { physical: 'low', magic: 'low' },
+      // AND HIS BLADE BREAKS TWO RANKS OF MAGIC WARD, at the owner's number.
+      //
+      // A pierce is always of its OWN kind — see pierceOf in data/armour.js — so
+      // this is magic where stage 1's is physical, and it follows the blade turning
+      // magic rather than being a second thing to remember. It also lands on a line
+      // that has almost nothing to break: a spearman wears no magic ward at all and
+      // a paladin's is low, so what this really answers is the monastery's aura and
+      // anything else that might one day ward the player's men against magic.
+      pierce: 2,
       // Walk and swing, both, at the owner's 1.2x. One multiplier for the two so
       // they cannot drift apart — he is faster, not faster at one thing.
       times: 1.2,
@@ -1281,7 +1314,11 @@ export const enemyTypes = {
         sprite: 'captain_fall',
         trim: [65, 183, 247, 166],
         pivot: [0.802, 0.904],
-        seconds: 2
+        // THREE SECONDS, up from two, at the owner's word — "to allow more time for
+        // players to see the animation of him dying". The whole ending is five
+        // seconds now: three beaten and standing, two on the ground, and the run
+        // cannot be won for any of them.
+        seconds: 3
       },
       // Then he is on the ground, in the drawing that also becomes his corpse.
       // Two seconds here, and then the body is handed to corpses.js and he leaves

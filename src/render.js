@@ -1239,6 +1239,38 @@ function pose(attack, attacking, img, trim, pivot, special) {
   return alt ? [alt, attack.trim, attack.pivot] : [img, trim, pivot];
 }
 
+// WHICH DRAWING A FIGURE IS SHOWING RIGHT NOW, as [image, trim, pivot], or null
+// for one whose art has not landed and is drawn as a coloured disc.
+//
+// TWO CALLERS AND THEY MUST NOT DISAGREE: the one that draws the figure, and the
+// one that works out how much room it takes up so a building can tell whether it
+// is standing in front of any of it. That second question was answered off the
+// DEF's walking trim for the whole of this game's life, which is right for a
+// figure with one drawing and wrong for every figure with more than one.
+//
+// It was wrong on 23 poses across the roster by the time the boss arrived — an
+// enemy's Attack reaches 12 to 41 game px wider than its Default, a corpse wider
+// still, and the Captain's channelling pose is 32px wider AND 8px taller than the
+// one he walks in. What that costs is exactly the thing the ghost exists to
+// prevent: a figure whose current drawing overlaps a building but whose WALKING
+// box does not is never ghosted, so the part of him inside the stonework simply
+// vanishes and he is drawn cut in half.
+//
+// So both callers ask here.
+export function enemyArt(e) {
+  const img = e.def.sprite && art[e.def.sprite];
+  if (!img) return null;
+  const { stand, swing } = enemyStance(e);
+  return pose(swing, striking(e), art[stand.sprite] || img, stand.trim, stand.pivot);
+}
+
+export function soldierArt(u) {
+  const s = u.def;
+  const img = s.sprite && art[s.sprite];
+  if (!img) return null;
+  return pose(s.attack, u.thrust > 0 || u.hold > 0, img, s.spriteTrim, s.pivot, u.holdArt);
+}
+
 // The construction dust. Anchored at the BOTTOM of its box rather than the
 // middle, because smoke rises from a place on the ground — see FOOT in smoke.js,
 // which is where the size and the anchor are both worked out. This only draws it.
@@ -1517,15 +1549,12 @@ function drawEnemy(ctx, e) {
     return;
   }
 
-  const { stand, swing } = enemyStance(e);
-
   // The swing, the stab, or the throw — one field for all three, because they
   // are the same event to an enemy: the moment it does the thing it does. A
   // plague doctor's `thrust` is set by the flask leaving his hand rather than by
   // a blow landing, and he gets the lunge with it, which is exactly right for a
   // man putting his shoulder into a throw.
-  const [frame, trim, pivot] = pose(swing, striking(e),
-    art[stand.sprite] || img, stand.trim, stand.pivot);
+  const [frame, trim, pivot] = enemyArt(e);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -1646,8 +1675,7 @@ function drawSoldier(ctx, u) {
   // Light or the follow-through of Blinding Strike — and it stays up for as long as
   // `hold` does. A spearman carries both at zero forever and draws exactly as he
   // always did.
-  const [frame, trim, pivot] =
-    pose(s.attack, u.thrust > 0 || u.hold > 0, img, s.spriteTrim, s.pivot, u.holdArt);
+  const [frame, trim, pivot] = soldierArt(u);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -1707,16 +1735,35 @@ const UNSEEN = 0.5;
 // it is the same box whichever way the sprite happens to be mirrored, and drawn
 // from the RESTING trim — a lunge moves a man a few pixels and this is a test for
 // "is any of him behind that building", not a hitbox.
-function figureSpan(def, x, y) {
-  const t = def.spriteTrim;
+// IT TAKES THE LIVE FIGURE, and `art` is the drawing that figure is showing right
+// now — see enemyArt and soldierArt. It read the DEF's walking trim, which is the
+// same answer for a figure with one drawing and a much too small one for anything
+// mid-swing, mid-cast or mid-channel.
+//
+// WIDENED BY THE LUNGE, too. A figure shifts up to its own `lunge` toward whatever
+// it is hitting while the Attack drawing is up, so the box has to cover the shift
+// as well as the drawing — otherwise the far edge of a swing reaches into a
+// building the span said it could not touch. Added on BOTH sides rather than
+// signed, because the span is a question about overlap and a couple of pixels of
+// slack costs nothing but a ghost drawn a frame early.
+// EXPORTED because it is a RULE — the same argument enemyStance and downed are
+// exported on. tools/facing.mjs checks that it follows the drawing rather than the
+// def, which is the whole of what was wrong with it.
+export function figureSpan(fig, shown, lunge = 0) {
+  const { x, y, def } = fig;
+  // `shown` is [image, trim, pivot] — named so rather than `art` because that is
+  // the module's asset table and shadowing it here would be a trap for the next
+  // line added to this function.
+  const trim = shown ? shown[1] : def.spriteTrim;
+  const pivot = shown ? shown[2] : def.pivot;
   // The fallback disc, for a def wired up before its art has landed — the same
   // case drawEnemy and drawSoldier both answer with a coloured circle.
-  if (!t || !def.pivot) return { left: x - def.r, top: y - def.r, right: x + def.r, bottom: y };
-  const dw = t[2] * SCALE;
-  const dh = t[3] * SCALE;
-  const out = Math.max(def.pivot[0], 1 - def.pivot[0]) * dw;
+  if (!trim || !pivot) return { left: x - def.r, top: y - def.r, right: x + def.r, bottom: y };
+  const dw = trim[2] * SCALE;
+  const dh = trim[3] * SCALE;
+  const out = Math.max(pivot[0], 1 - pivot[0]) * dw + lunge;
   return { left: x - out, right: x + out,
-           top: y - def.pivot[1] * dh, bottom: y + (1 - def.pivot[1]) * dh };
+           top: y - pivot[1] * dh, bottom: y + (1 - pivot[1]) * dh };
 }
 
 const spanHits = (s, box) =>
@@ -1741,10 +1788,12 @@ function ghostBehind(ctx, state, t) {
   const behind = [];
 
   for (const e of state.enemies) {
-    if (e.y < t.y && spanHits(figureSpan(e.def, e.x, e.y), box)) behind.push(() => drawEnemy(ctx, e));
+    if (e.y >= t.y) continue;
+    if (spanHits(figureSpan(e, enemyArt(e), ENEMY_LUNGE), box)) behind.push(() => drawEnemy(ctx, e));
   }
   for (const u of state.units) {
-    if (u.respawn <= 0 && u.y < t.y && spanHits(figureSpan(u.def, u.x, u.y), box)) {
+    if (u.respawn > 0 || u.y >= t.y) continue;
+    if (spanHits(figureSpan(u, soldierArt(u), u.def.lunge || 0), box)) {
       behind.push(() => drawSoldier(ctx, u));
     }
   }

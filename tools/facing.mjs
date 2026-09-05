@@ -30,7 +30,8 @@ import { abilityById } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
-import { enemyStance } from '../src/render.js';
+import { enemyStance, enemyArt, figureSpan } from '../src/render.js';
+import { art } from '../src/assets.js';
 import { raiseGuard } from '../src/enemies.js';
 import { wornBy, stageOf } from '../src/data/armour.js';
 
@@ -117,6 +118,91 @@ const pair = [kill(600, -1).face, kill(600, 1).face];
 if (pair[0] !== pair[1]) {
   bad++;
   console.log('\nWRONG: the body still turns with the way it was walking.');
+}
+
+// --- HOW MUCH ROOM A FIGURE TAKES UP ------------------------------------------
+//
+// A building redraws, at half alpha, every figure it is standing in front of, so
+// that a man behind a barracks is not simply gone. Which figures those are is
+// decided by a SPAN — a box around the drawing — tested against the building's
+// box.
+//
+// That span was measured off the def's WALKING trim, always, whatever the figure
+// was actually showing. Right for a figure with one drawing; wrong for every
+// figure with more than one, and by the time the boss arrived it was wrong on 23
+// poses across the roster — an Attack reaches 12 to 41 game px wider than its
+// Default, and the Captain's channelling pose is 32 wider and 8 taller than the
+// one he walks in.
+//
+// The cost is the exact failure the ghost exists to prevent: a figure whose
+// current drawing overlaps a building but whose walking box does not is never
+// ghosted, so the part of him inside the stonework vanishes and he is drawn cut in
+// half. Nothing would have reported it — it is a missing redraw, not an error.
+//
+// So the span follows the DRAWING now, and this is what says so.
+console.log('\nHow much room a figure takes up\n');
+{
+  // EVERY SPRITE KEY STUBBED, because this is the one check that cannot be run
+  // against an empty art table. `pose` falls back to the Default whenever the
+  // drawing it wants has not loaded — which is right in the game, where a def can
+  // be wired before its art lands — and in Node NOTHING has loaded, so every pose
+  // would answer with the walking trim and this check would pass on the very bug
+  // it exists to catch. It did, before the stub went in.
+  //
+  // A truthy placeholder is enough: nothing here draws, and `pose` only asks
+  // whether the image is there.
+  const keys = [];
+  for (const d of Object.values(enemyTypes)) {
+    keys.push(d.sprite, d.attack.sprite, d.dead);
+    if (d.melee) keys.push(d.melee.attack.sprite, d.melee.default && d.melee.default.sprite);
+    for (const k of ['guard', 'heal', 'reload']) if (d[k]) keys.push(d[k].sprite);
+    if (d.rage) keys.push(d.rage.sprite, d.rage.attack.sprite,
+                          d.rage.pause.sprite, d.rage.mend.sprite);
+    if (d.finale) keys.push(d.finale.fall.sprite);
+  }
+  for (const k of keys) if (k) art[k] = { stub: true };
+
+  const ok2 = (cond, label, detail = '') => {
+    console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(56)} ${detail}`);
+    if (!cond) bad++;
+  };
+  const stand = def => ({ def, x: 0, y: 0, face: 1, foe: null, thrust: 0, guard: 0,
+                          cast: 0, nock: 0, shot: 0, stage: 1, act: null, statuses: [] });
+  const wide = e => { const s = figureSpan(e, enemyArt(e)); return +(s.right - s.left).toFixed(1); };
+
+  // EVERY ENEMY WHOSE ATTACK IS WIDER THAN ITS DEFAULT, derived rather than
+  // listed. If the span ever goes back to reading the def, every one of these
+  // collapses to the same number and this fails on all of them at once.
+  let checked = 0;
+  for (const [id, d] of Object.entries(enemyTypes)) {
+    const at = d.attack;
+    const drawnWider = at.trim[2] * Math.max(at.pivot[0], 1 - at.pivot[0])
+                     > d.spriteTrim[2] * Math.max(d.pivot[0], 1 - d.pivot[0]);
+    if (!drawnWider) continue;
+    checked++;
+    const calm = wide(stand(d));
+    const striking = wide({ ...stand(d), thrust: 1 });
+    ok2(striking > calm, `${d.name}'s span grows when he strikes`,
+      `${calm} -> ${striking}`);
+  }
+  ok2(checked >= 4, 'and that is asked of every enemy whose Attack is wider',
+    `${checked} of ${Object.keys(enemyTypes).length}`);
+
+  // AND THE BOSS, whose scripted beats are the widest and tallest drawings in the
+  // game and the ones a def-shaped span was most wrong about.
+  const c = enemyTypes.captain_thug;
+  const walk = figureSpan(stand(c), enemyArt(stand(c)));
+  for (const [act, label] of [['pause', 'channelling'], ['fall', 'beaten'], ['rest', 'fallen']]) {
+    const e = { ...stand(c), act, actT: 1 };
+    const s = figureSpan(e, enemyArt(e));
+    ok2(s.right - s.left > walk.right - walk.left,
+      `and the Captain is wider ${label} than walking`,
+      `${(s.right - s.left).toFixed(1)} against ${(walk.right - walk.left).toFixed(1)}`);
+  }
+  const mend = { ...stand(c), act: 'mend', actT: 1 };
+  const mendSpan = figureSpan(mend, enemyArt(mend));
+  ok2(mendSpan.top < walk.top, 'and reaches higher mending than walking',
+    `${mendSpan.top.toFixed(1)} against ${walk.top.toFixed(1)}`);
 }
 
 // --- WHICH DRAWING AN ENEMY IS SHOWING ----------------------------------------

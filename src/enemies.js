@@ -1200,7 +1200,18 @@ function loose(state, e, mark) {
     // — see shoot() in src/towers.js. It is what makes the plague thug's flask
     // MAGIC and so the one enemy attack a paladin's plate does not turn.
     type: typeOf(now),
-    pierce: pierceOf(now),
+    // THE AMMUNITION'S OWN RANK-BREAK, falling back to the figure's.
+    //
+    // A pierce lives on the def for everything else in this game, because a
+    // creature has one weapon. The Captain has two and they break different
+    // amounts — his sword takes two ranks and his arrow one — so a shot that read
+    // `pierceOf(now)` would loose the SWORD's pierce across the board.
+    //
+    // `??` rather than `||` on purpose: a ranged block that deliberately says 0
+    // means "this arrow breaks nothing", and `||` would quietly hand it the
+    // figure's instead. No thrower but the boss carries one today, so every other
+    // one falls through to exactly what it read before.
+    pierce: now.ranged.pierce ?? pierceOf(now),
     splash: ammo.splash || 0,
     ammo,
     speed: ammo.speed,
