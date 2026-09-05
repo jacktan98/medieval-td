@@ -1,5 +1,13 @@
 import { bolt, knife, sneakKnife, cannonball, monkShot,
          archery, barracks, siege, monastery } from './towers.js';
+// For the prose only. Five of the cards below quote what a blow is worth once it
+// has been through armour, and quoting it means doing the arithmetic the game does
+// rather than typing the answer — see `plate` beside `blow` at the foot of this
+// file's helpers. armour.js imports nothing, so this cannot cycle.
+import { TAKES } from './armour.js';
+// Slowed Pulse's card quotes what a boss feels rather than typing 15%, for the
+// same reason: the halving is a rule in one place and the sentence follows it.
+import { slowOn, BOSS_SLOW_SHARE } from './status.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -164,6 +172,31 @@ export const heavyBolt = {
   // leaves the rail, the report is louder, and by the time it arrives the player
   // is looking at the target rather than at the machine.
   impact: true,
+  // AND THE SHAFT GOES ON BURNING IN THE WOUND. 8 true damage a second for 2
+  // seconds, at the owner's ask — the second burn in the game and the first on
+  // something that is not a cannon.
+  //
+  // TRUE DAMAGE, like every burn: see data/armour.js. That is what makes 16 worth
+  // having on a tower that already pierces — the bolt itself is turned aside by
+  // plate and the fire is not, so the ability's floor against the hardest target
+  // in the game is the fire rather than nothing.
+  //
+  // NO `splashTimes`, WHICH IS THE OWNER'S "AOE SAME": the fire covers exactly the
+  // ground the bolt broke, the turret's own 70px, rather than the wider ring Fiery
+  // Shot throws. Read that field's absence in land() in src/projectiles.js as x1 —
+  // the second loop still runs, over the same radius as the first. It is the right
+  // shape for this weapon: a ballista drives a burning shaft into a rank, where a
+  // cannon throws burning earth about.
+  //
+  // WHAT IT IS WORTH. 16 over the two seconds, on one bolt in four, is 4 damage a
+  // second added to a turret doing 34.0 — about 12% — and every point of it lands
+  // whatever the target is wearing. Against a giant in high plate the heavy bolt's
+  // own 120 becomes 45; the fire is 16 more on top of that, which is a third again.
+  // That is the ability leaning further into what it is already for.
+  burn: {
+    dps: 8,
+    seconds: 2
+  },
   // Louder than an ordinary bolt, at the artist's request, and only for this shot.
   // The same clip played harder rather than a second recording — see `level` in
   // play() in src/audio.js, the mechanism the pope's missile brought in.
@@ -216,14 +249,27 @@ export const fieryBall = {
   // enemy in it burns. Against a packed rank that is the biggest single thing this
   // tower does; against one straggler it is 50.
   burn: {
-    // 5 A SECOND, HALVED, and the reason is the damage triangle rather than the
-    // fire. A burn is TRUE damage — see data/armour.js — so it is the only thing
-    // the Cannon Outpost does that no armour in the game turns aside, and 10 a
-    // second through plate was worth more than the ball that started it. At 5 it
-    // is 25 over the five seconds against a target that takes 25% of the ball's
-    // 65: 16 from the hit and 25 from the fire, which is the right way round for
-    // an ability whose whole point is that it keeps working.
-    dps: 5,
+    // 8 A SECOND, AND IT HAS BEEN BOTH WAYS. It was 10, then 5, and is now the
+    // owner's 8 — worth writing down in that order, because the argument for
+    // halving it is still true and the number moved anyway.
+    //
+    // THE ARGUMENT FOR 5: a burn is TRUE damage — see data/armour.js — so it is
+    // the only thing this tower does that no armour in the game turns aside, and
+    // 10 a second through plate was worth more than the ball that started it. At 5
+    // it was 25 over the five seconds against a target taking 25% of the ball's
+    // 65: 16 from the hit and 25 from the fire.
+    //
+    // WHAT CHANGED IS THE COMPANY IT KEEPS. Heavy Bolt now burns too, at 8 for 2
+    // seconds, and the owner put the two fires on one rate — a burning shaft and
+    // burning earth do the same damage a second, and what separates them is how
+    // long they last and how wide they spread. So this is 40 over five seconds
+    // against that plate's 16, which is the pre-halving shape back again, bought
+    // deliberately rather than by not noticing.
+    //
+    // It is still the biggest thing this tower does against armour and it is meant
+    // to be: the Cannon Outpost is the game's answer to a rank of plate, and the
+    // fire is the half of it that plate cannot argue with.
+    dps: 8,
     seconds: 5,
     // AND IT BURNS WIDER THAN IT BREAKS, at the owner's ask: half again the
     // outpost's own blast, so 85px of damage inside 127.5px of fire.
@@ -451,6 +497,20 @@ const pc = k => `${Math.round(Math.abs(k - 1) * 100)}%`;
 // And the blow a multiplier lands, rounded the way the game rounds it where it
 // applies it, so the card and the health bar agree: 2.5x a 15 blade is 38, not 37.5.
 const blow = (damage, times) => Math.round(damage * times);
+// AND WHAT IS LEFT OF IT AFTER ARMOUR, which is the only way to say what a rank of
+// pierce is WORTH. A number of ranks broken means nothing on its own; "22 instead
+// of 15" is the fact.
+//
+// MEDIUM PLATE IS THE YARDSTICK — rank 2 of 3 — because it is the middle of the
+// ladder and because it is what the enemies a tier 4 tower is bought to answer
+// actually wear: the giant, the blocker, the captain. Clamped at the floor, so a
+// card can quote a break bigger than the armour it is quoted against without
+// reading off the end of TAKES.
+//
+// Through TAKES rather than a typed percentage, so these sentences follow the
+// triangle the day somebody retunes it. See data/armour.js.
+const plate = (damage, pierce = 0) =>
+  Math.round(damage * TAKES[Math.max(0, 2 - pierce)]);
 
 export const ABILITIES = [
   {
@@ -471,6 +531,30 @@ export const ABILITIES = [
     icon: 'ability_sentry_tension',
     cost: ABILITY_COST,
     rangeTimes: 1.5,
+    // AND THE STEEL BOW DRIVES A QUARREL THROUGH PLATE. One rank of physical
+    // armour, permanently, on everything this tower does from the moment it is
+    // bought — at the owner's ask, and standardised across the two bows exactly as
+    // the range is.
+    //
+    // `pierceUp` RATHER THAN `pierce`, and the difference is the whole of why it
+    // is a new field. A `pierce` on an ability is a TOTAL for one shot — Deadeye's
+    // 2, Blinding Strike's 1 — and it replaces whatever the weapon had. This is a
+    // PASSIVE and it ADDS: the sentry has no break of its own and gains one, the
+    // Ballista Turret has one and gains a second. Written as a total on either
+    // tower it would have been the wrong number on the other. See pierceUp() in
+    // src/towers.js, which sums it exactly as damageK multiplies.
+    //
+    // AND IT REACHES THE ABILITIES TOO, which is the owner's "all their attacks
+    // and abilities" and falls out of where it is applied rather than needing a
+    // rule: shoot() adds it after whatever the shot's own break was, so on the
+    // turret next door a Heavy Bolt goes through the extra rank exactly as a plain
+    // bolt does.
+    //
+    // WHAT IT IS WORTH: the sentry's 30 against medium plate was 15 and is 22.5.
+    // Half again, on the tower with the smallest blow in the game — which is what
+    // makes the ability a decision against Swift Reload rather than a strictly
+    // smaller version of it.
+    pierceUp: 1,
     // AND THE MAN IS RE-DRAWN WITH A STEEL BOW, which is the figure's version of
     // what `frames` does for the ballista's machine. Both of his poses are
     // swapped, because he has two and the swap has to hold whichever one he is
@@ -481,9 +565,12 @@ export const ABILITIES = [
     detail: (a, t) => `The engineers rebuild the bow in steel and the sentry reaches ` +
       `${num(t.range * a.rangeTimes)}px instead of ${t.range} — level with a Ballista ` +
       `Turret that has bought the same thing, and behind only the Musketeer Post.\n\n` +
-      `Nothing else changes: the same quarrel, the same ${num(t.cooldown)} second ` +
-      `reload, the same ${t.damage} a bolt. The crossbowman is drawn with a steel bow ` +
-      `from the moment it is bought.`
+      `The steel also drives the quarrel through ${a.pierceUp} rank of physical ` +
+      `armour, for good: ${t.damage} against medium plate lands ` +
+      `${plate(t.damage, a.pierceUp)} instead of ${plate(t.damage)}. Every shot the ` +
+      `sentry fires, ordinary or not. The reload and the ${t.damage} a bolt are ` +
+      `unchanged, and the crossbowman is drawn with a steel bow from the moment it ` +
+      `is bought.`
   },
   {
     // A MULTIPLIER LIKE EVERY OTHER MAGNITUDE HERE, and it was an absolute 0.50
@@ -552,6 +639,27 @@ export const ABILITIES = [
     // already hit — see burstTarget in src/towers.js, including what happens when
     // there is only one man on the road.
     spread: true,
+    // AND EVERY BALL OF IT BREAKS TWO RANKS, at the owner's ask, against the Post's
+    // own 1.
+    //
+    // `pierce` IS A TOTAL, not a bonus, and that is the difference from `pierceUp`
+    // on the two bows above: this is what the SHOT goes through, replacing the
+    // tower's own break rather than adding to it. Read in shoot() in src/towers.js,
+    // where it was already the shape an ability could name and nothing had ever
+    // named it — every ability in the game inherited its tower's pierce until this
+    // change.
+    //
+    // A TOTAL IS THE RIGHT SHAPE FOR A ONE-SHOT BREAK because the sentence is
+    // "this bullet goes through two ranks", which is true whatever the musket does
+    // the rest of the time. A bonus would have made the card's number depend on a
+    // stat the card does not print.
+    //
+    // WHAT IT IS WORTH: 65 into medium plate was 49 and is 65 — the burst goes from
+    // 147 to 195 against an armoured rank, which is the ability's own damage back
+    // again. Against unarmoured militia it changes nothing at all, and that is the
+    // point: the burst was already a rank-clearer and this stops plate being the
+    // one rank it could not clear.
+    pierce: 2,
     // NO POSE OF ITS OWN and no ammunition of its own, at the artist's request:
     // "use Attack and normal Bullet images". So the man holds the drawing he
     // already fires in and the balls are the balls he already fires.
@@ -567,7 +675,12 @@ export const ABILITIES = [
       `Each of the ${a.shots} picks a different man, through whatever standing order ` +
       `the tower is on. That is the point of it: ${a.shots} bullets into 1 militiaman ` +
       `is most of them wasted, and ${a.shots} into ${a.shots} of them is a rank gone. ` +
-      `With only 1 enemy in reach all ${a.shots} go to him.`
+      `With only 1 enemy in reach all ${a.shots} go to him.\n\n` +
+      `Every ball of the burst breaks ${a.pierce} ranks of physical armour where the ` +
+      `Post's ordinary shot breaks ${t.pierce}, so a burst into medium plate lands ` +
+      `${plate(t.damage, a.pierce) * a.shots} rather than ` +
+      `${plate(t.damage, t.pierce) * a.shots}. Against an unarmoured rank it changes ` +
+      `nothing: this is what stops plate being the 1 rank the burst cannot clear.`
   },
   {
     id: 'deadeye',
@@ -624,6 +737,17 @@ export const ABILITIES = [
     // two is WHERE the damage goes: the burst clears a rank of militia, this
     // removes one giant.
     times: 8,
+    // AND IT GOES THROUGH TWO RANKS, the same total the burst now carries, at the
+    // owner's ask — see the note on `pierce` there for why a total rather than a
+    // bonus. The two abilities on this tower break the same armour, which is right:
+    // what separates them is the size and rarity of the blow, and adding a third
+    // axis of difference would make the fork harder to read for nothing.
+    //
+    // IT MATTERS MOST HERE. Deadeye is bought for "the 1 thing on the road that has
+    // to die", and the things that have to die are the things in plate — a giant in
+    // medium physical armour took 260 of the 520 and now takes all of it. That is
+    // the ability doing what its card already claimed.
+    pierce: 2,
     ammo: deadeyeBall,
     pose: DEADEYE_POSE,
     // NO `cue`, and it is not silent. Its noise comes from its AMMUNITION, through
@@ -640,7 +764,12 @@ export const ABILITIES = [
       `ignores the tower's range ring entirely.\n\n` +
       `He holds the pose for ${a.hold} seconds afterwards, which costs nothing: the ` +
       `musket takes ${num(t.cooldown)} seconds to load whatever he just fired. Kept ` +
-      `for the 1 thing on the road that has to die and cannot be chipped down.`
+      `for the 1 thing on the road that has to die and cannot be chipped down.\n\n` +
+      `The round breaks ${a.pierce} ranks of physical armour where the Post's ` +
+      `ordinary shot breaks ${t.pierce}, so it lands ` +
+      `${plate(blow(t.damage, a.times), a.pierce)} on medium plate rather than ` +
+      `${plate(blow(t.damage, a.times), t.pierce)}. The 1 thing that has to die is ` +
+      `usually the 1 thing wearing armour.`
   },
   {
     id: 'light',
@@ -738,6 +867,24 @@ export const ABILITIES = [
     // two seconds used to be the brake — 14.5 a second where a free pose would have
     // been 16.6 — and taking the brake off is exactly why the damage came down.
     hold: null,
+    // AND THE STRIKE ITSELF BREAKS A RANK, at the owner's ask — "to this strike
+    // only", which is exactly what a `pierce` on an ability means and why it is
+    // written here rather than on the paladin.
+    //
+    // A TOTAL, like the musketeer's two, and on this man it is also the whole of
+    // it: a paladin breaks nothing with an ordinary swing, so 1 here is 1 more.
+    // The two readings coincide on this tower and would not on the assassin, which
+    // is why the field says what the BLOW goes through rather than what the ability
+    // adds. See swingPierce in src/units.js.
+    //
+    // THE THREE ORDINARY BLOWS BEFORE IT ARE UNTOUCHED. That is the shape of the
+    // ability — a rhythm with one loud beat — and it is what "this strike only"
+    // means on a man who swings four times to use it once.
+    //
+    // WHAT IT IS WORTH: 40 into medium plate was 20 and is 30. On the man who
+    // starts with the least damage in the game, against the enemies a Paladin Keep
+    // is posted to hold up.
+    pierce: 1,
     pose: BLINDING_STRIKE_POSE,
     cue: 'blindingStrike',
 
@@ -750,7 +897,11 @@ export const ABILITIES = [
       `damage a second against a plain paladin's ${num(t.soldier.damage / t.soldier.cd)}, ` +
       `exactly ${num((a.every - 1 + a.times) / a.every)}x, from the man who starts ` +
       `with the least damage in the game. Each of the ${t.soldier.count} counts his ` +
-      `own blows, so the strikes land spread out rather than all at once.`
+      `own blows, so the strikes land spread out rather than all at once.\n\n` +
+      `The strike also breaks ${a.pierce} rank of physical armour, which his ordinary ` +
+      `swings do not: ${blow(t.soldier.damage, a.times)} into medium plate lands ` +
+      `${plate(blow(t.soldier.damage, a.times), a.pierce)} rather than ` +
+      `${plate(blow(t.soldier.damage, a.times))}. Only the 1 blow in ${a.every}.`
   },
   {
     // --- THE FIRST ABILITY THAT GIVES A SOLDIER A WEAPON HE DID NOT HAVE -------
@@ -890,6 +1041,29 @@ export const ABILITIES = [
     // `thrownTimes ?? times`, so an ability that does not care needs no second
     // field and this one says exactly how much it cares.
     thrownTimes: 2,
+    // AND A SNEAKED BLOW GOES THROUGH TWO RANKS, at the owner's ask: "any sneak
+    // attacks have pierce physical armor 2" — so both halves of it, the blade and
+    // the knife, unlike `times` above.
+    //
+    // ONE NUMBER RATHER THAN TWO, and the asymmetry with `thrownTimes` is the
+    // owner's own. The reason the two openers pay different DAMAGE is the risk of
+    // getting to arm's length; where the blade goes is a fact about a man striking
+    // from behind, and that is the same fact at 100px as at 10.
+    //
+    // A TOTAL, so it is +1 on this man rather than +2: an assassin already breaks
+    // one rank with every blade he swings. That is the field working as intended —
+    // it says what the BLOW goes through, and on a tower whose weapon already
+    // pierces, a total is the only reading that gives the number on the card.
+    //
+    // AND IT IS TAKEN AS THE HIGHEST OF WHATEVER APPLIES rather than added on top
+    // of a special's own break — see swingPierce in src/units.js. Nothing today
+    // has both; a barracks tier 4 that learned this and Blinding Strike would want
+    // the blow that goes furthest, not the sum of two claims about how far it goes.
+    //
+    // WHAT IT IS WORTH: the opening blade is 38, which was 19 through medium plate
+    // and is now 38 in full. Against the blocker at the head of a rank — the one
+    // enemy an assassin most wants to open on — the ability roughly doubles again.
+    pierce: 2,
     // Only on the BLADE. A thrown knife keeps its own pose, because a drawing of a
     // man lunging with a dagger cannot also be the drawing of the knife leaving
     // his hand — and the throw is the half where you would not see this anyway.
@@ -928,7 +1102,13 @@ export const ABILITIES = [
       `Thrown it is worth ${a.thrownTimes}x instead of ${a.times}x: ` +
       `${blow(t.soldier.damage, a.thrownTimes)} on the first blade of a volley, with a ` +
       `heavier knife in the air to say so. Creeping to arm's length is the risk, so it ` +
-      `is the one that pays more. His strike lands harder and sounds it.`
+      `is the one that pays more. His strike lands harder and sounds it.\n\n` +
+      `A sneaked blow goes through ${a.pierce} ranks of physical armour where his ` +
+      `ordinary blade goes through ${t.soldier.pierce} — both the strike and the ` +
+      `throw. The opening blow into medium plate is ` +
+      `${plate(blow(t.soldier.damage, a.times), a.pierce)} rather than ` +
+      `${plate(blow(t.soldier.damage, a.times), t.soldier.pierce)}, which is what an ` +
+      `opener on an armoured man should be worth.`
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its
@@ -962,6 +1142,23 @@ export const ABILITIES = [
     // Far Shot makes it the one tower in the game that covers everything from its
     // own feet to 390px out.
     rangeTimes: 1.5,
+    // AND THE IRON BOW DRIVES A BOLT THROUGH PLATE, the same rank the Crossbow
+    // Sentry's version of this buys — see the long note there for why the field is
+    // `pierceUp` and adds rather than replacing.
+    //
+    // IT LANDS SOMEWHERE ELSE ON THIS TOWER, and that is the whole reason a bonus
+    // is the right shape. The turret already breaks a rank, so this is its SECOND:
+    // 60 into medium plate was 45 and is 60, and into high plate it was 30 and is
+    // 45. Written as a total of 1 — the number that is right on the sentry — it
+    // would have been a nerf here.
+    //
+    // AND IT REACHES THE HEAVY BOLT, which is the point of putting the break on
+    // the tower rather than on the shot: a turret with both fires its heavy bolt
+    // through the same 2 ranks as its plain ones, so 120 lands 90 on medium plate
+    // where it used to land 60. The bolt names no break of its own and does not
+    // need to — the ability it is bought alongside covers everything the machine
+    // throws.
+    pierceUp: 1,
     // AND THE MACHINE IS RE-DRAWN IN IRON, which is how the board says the ability
     // is bought. The artist's three frames are the same machine in steel instead
     // of timber, measured to the same trims to the pixel, so the swap moves
@@ -974,9 +1171,12 @@ export const ABILITIES = [
       `${num(t.range * a.rangeTimes)}px instead of ${t.range} — the 2nd-longest arm in ` +
       `the game, behind only the Musketeer Post, on the one tower that has no dead ` +
       `zone in it.\n\n` +
-      `Nothing else changes: the same bolt, the same ${num(t.cooldown)} second reload, ` +
-      `the same blast. It is the whole board rather than a corner of it, and the ` +
-      `machine is drawn in iron from the moment it is bought.`
+      `The iron also drives the bolt through ${a.pierceUp} more rank of physical ` +
+      `armour, ${t.pierce + a.pierceUp} in all: ${t.damage} against medium plate lands ` +
+      `${plate(t.damage, t.pierce + a.pierceUp)} instead of ` +
+      `${plate(t.damage, t.pierce)}. Every bolt, ordinary or heavy — the same reload ` +
+      `and the same blast, and the machine is drawn in iron from the moment it is ` +
+      `bought.`
   },
   {
     id: 'heavybolt',
@@ -1033,8 +1233,15 @@ export const ABILITIES = [
       `the cycle runs ` +
       `${Array.from({ length: a.every }, (_, i) => num(t.cooldown * (i === a.every - 1 ? a.afterTimes : 1))).join(' / ')}. ` +
       `That works out at ` +
-      `${num((t.damage * (a.every - 1) + blow(t.damage, a.times)) / (t.cooldown * (a.every - 1 + a.afterTimes)))} ` +
+      `${num((t.damage * (a.every - 1) + blow(t.damage, a.times) + a.ammo.burn.dps * a.ammo.burn.seconds) / (t.cooldown * (a.every - 1 + a.afterTimes)))} ` +
       `damage a second against a plain turret's ${num(t.damage / t.cooldown)}.\n\n` +
+      `The shaft goes on burning in the wound: ${a.ammo.burn.dps} a second for ` +
+      `${a.ammo.burn.seconds} seconds, ${a.ammo.burn.dps * a.ammo.burn.seconds} more ` +
+      `on everything the bolt caught, over the same ${t.splash}px it burst across. ` +
+      `Fire is true damage — no armour in the game turns it aside — so against ` +
+      `medium plate the bolt itself lands ` +
+      `${plate(blow(t.damage, a.times), t.pierce)} and the fire adds its full ` +
+      `${a.ammo.burn.dps * a.ammo.burn.seconds} on top.\n\n` +
       `What it buys is the shape rather than the size: the same output in fewer, ` +
       `harder blows, on a machine whose every shot already bursts. You can hear which ` +
       `one it is — the heavy bolt leaves louder than the others.`
@@ -1248,6 +1455,25 @@ export const ABILITIES = [
     // fork's own trade turned up rather than broken, which is what an ability on
     // the cadence tower should do.
     damageTimes: 1.30,
+    // AND A SECOND RANK OF MAGIC ARMOUR, at the owner's ask — "bringing its normal
+    // attacks to pierce magic armor to 2", which is the sentence that decided the
+    // field. A total of 2 is what the temple ends up with; what this ability adds
+    // is 1, because the temple already breaks one.
+    //
+    // `pierceUp`, THE SAME FIELD THE TWO BOWS CARRY, and it needs no `magic` in its
+    // name: pierce is only ever measured against the armour of the attack's own
+    // kind — see rankAgainst in data/armour.js — so a break on a magic tower is a
+    // magic break by construction. That is why one field covers a crossbow and a
+    // monk without a branch anywhere.
+    //
+    // IT COMPOUNDS WITH THE DAMAGE RATHER THAN OVERLAPPING IT, which is what makes
+    // this a bigger buy than it looks. 40 becomes 52, and 52 through medium magic
+    // armour was 26 and is now 52 — so against the things that actually wear magic
+    // plate the ability is worth twice what its own card's 30% says. That is the
+    // right way round for the tower whose fork is "the cadence one": the High
+    // Altar answers a giant with one big blow and this answers a rank of warded
+    // enemies with a stream that they cannot ward.
+    pierceUp: 1,
     shot: monkStrongShot,
     shotWith: { pulse: monkBothShot },
 
@@ -1261,7 +1487,12 @@ export const ABILITIES = [
       `same rung for the same gold — and still ` +
       `${towerOf('High Altar').damage - blow(t.damage, a.damageTimes)} short of the ` +
       `altar on the blow itself, which is what the 2 towers are for. The comet is ` +
-      `redrawn, and redrawn again in blue if the temple has also learned Slowed Pulse.`
+      `redrawn, and redrawn again in blue if the temple has also learned Slowed Pulse.\n\n` +
+      `The monks also learn to throw through ${a.pierceUp} more rank of magic armour, ` +
+      `${t.pierce + a.pierceUp} in all: the bigger blast lands ` +
+      `${plate(blow(t.damage, a.damageTimes), t.pierce + a.pierceUp)} on medium wards ` +
+      `where the temple alone lands ${plate(t.damage, t.pierce)}. Against anything ` +
+      `warded the ability is worth far more than its ${pc(a.damageTimes)} says.`
   },
   {
     // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
@@ -1300,7 +1531,12 @@ export const ABILITIES = [
       `${a.shot.slow.seconds} seconds rather than stacking a 2nd slow on him — what 2 ` +
       `of them buy is the slow holding across a wider stretch of road, not a man ` +
       `standing still. Both monks throw it, and it costs the tower nothing: the ` +
-      `damage, the reach and the cadence are exactly what they were.`
+      `damage, the reach and the cadence are exactly what they were.\n\n` +
+      `A boss shrugs off ${pc(1 + BOSS_SLOW_SHARE)} of it — ` +
+      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))} instead of ` +
+      `${pc(a.shot.slow.times)}, for the same ${a.shot.slow.seconds} seconds. ` +
+      `Slowing the 1 thing on the road that cannot be outrun is worth something, but ` +
+      `it is not worth what it is worth against a wave.`
   }
 ];
 

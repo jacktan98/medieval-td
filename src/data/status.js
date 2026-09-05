@@ -59,6 +59,11 @@ export const STATUS = {
   // asking `hurts`, so the one call site covers both without a branch of its own.
   // Where it comes FROM is still the thing that applied it: the monk's shot, in
   // data/abilities.js.
+  //
+  // AND IT IS THE ONE STATUS ANYTHING IN THE GAME RESISTS. A boss feels half of
+  // whatever slow is put on him — see BOSS_SLOW_SHARE at the foot of this file.
+  // That belongs to the boss rather than to this row, which is why the row is
+  // still just three fields.
   slowed: {
     icon: 'status_slowed',
     name: 'Slowed',
@@ -123,3 +128,35 @@ export const STATUS_ORDER = Object.keys(STATUS);
 // in a fight.
 export const STATUS_H = 11;
 export const STATUS_GAP = 2;
+
+// HOW MUCH OF A SLOW A BOSS ACTUALLY FEELS, at the owner's ask: "only 50% of the
+// slow effect affects bosses".
+//
+// A SHARE OF THE EFFECT, NOT OF THE MULTIPLIER, and the difference is the whole
+// reason this is a function rather than a number multiplied at the call site. A
+// slow is written down as `times` — 0.70, what the figure is left doing — so the
+// EFFECT is the 0.30 taken off it. Halving the effect is
+//
+//   1 - (1 - 0.70) x 0.5 = 0.85
+//
+// which is the 15% the owner asked for. Halving the multiplier instead would be
+// 0.35, a boss walking at a third speed: the same words and the opposite result.
+//
+// WHY IT LIVES HERE. It is a fact about what a BOSS is, not about the monk's
+// shot — the day a second thing in the game slows something, a boss should shrug
+// half of that off too without anybody remembering to write this line again. So
+// the rule is applied where a slow is put ON somebody (`slow` in
+// src/projectiles.js) rather than inside Slowed Pulse's ammunition, and the
+// magnitude on that ammunition stays the honest 0.70 the card prints for
+// everything else on the road.
+//
+// AND IT IS ASKED OF THE DEF rather than of the stage. An Enraged Captain Thug is
+// the same boss with a different armour plate; nothing about being enraged should
+// change how much a temple can hold him up.
+export const BOSS_SLOW_SHARE = 0.5;
+
+// The multiplier a slow of this size actually lands on this figure. 1 is unslowed,
+// and the number returned is what `slowOf` will read back off the status — see
+// src/status.js.
+export const slowOn = (v, times) =>
+  v && v.def && v.def.boss ? 1 - (1 - times) * BOSS_SLOW_SHARE : times;

@@ -548,6 +548,33 @@ function sweep(state, enemy, blocked, blow) {
 // spearman leaves this function without touching the ability table at all.
 const ability = (u, id) => (owns(u.tower, id) ? abilityById(id) : null);
 
+// HOW MANY RANKS OF ARMOUR THIS PARTICULAR BLOW GOES THROUGH. The soldier's twin
+// of the `pierce` line in shoot() in src/towers.js, and it answers the same
+// question differently because the two armies carry their abilities differently.
+//
+// A TOWER'S BONUS IS A PASSIVE AND ADDS; A SOLDIER'S IS A BLOW AND REPLACES.
+// Nothing a barracks teaches is permanent — Blinding Strike is one swing in four
+// and Sneak Attack is the opener — so there is nothing to add to: what each names
+// is what THAT blow goes through, and every other blow the man makes goes through
+// his own.
+//
+// THE HIGHEST WINS RATHER THAN THE SUM, which matters the moment a blow is both.
+// Nothing today is: Blinding Strike belongs to the Paladin Keep and Sneak Attack
+// to the Assassin Guild. But `u.sneak` is armed on every soldier in the game and
+// the specials are read off the tower, so a barracks tier 4 that learned both
+// would meet this line — and two claims about how deep one blade goes are not
+// worth twice as much as the deeper of them. The same instinct `slowOf` follows
+// with two slows.
+//
+// AND HIS OWN BREAK IS IN THE MAX, not a floor under it, so an ability that named
+// a SMALLER break than the man's own weapon could not quietly nerf him — the
+// assassin already pierces one rank, and Sneak Attack's 2 is a total rather than
+// a bonus for exactly that reason. See both notes in data/abilities.js.
+const swingPierce = (u, special, sneak) => Math.max(
+  pierceOf(u.def),
+  (special && special.pierce) || 0,
+  (sneak && sneak.pierce) || 0);
+
 // --- what a soldier throws ------------------------------------------------------
 
 // The nearest live enemy within reach of a man standing still, or null.
@@ -585,7 +612,7 @@ function nearestFoe(state, u, reach) {
 // NO `side`, which is the whole of what makes this the player's. projectiles.js
 // reads an absent `side` as "looks for enemies", exactly as it does for every
 // arrow a tower has ever fired, so a man throwing needed no branch there at all.
-function fling(state, u, mark, damage, ammo) {
+function fling(state, u, mark, damage, ammo, pierce) {
   const up = u.def.spriteTrim[3] * u.def.pivot[1] * SCALE * 0.55;
   const from = { x: u.x, y: u.y - up };
 
@@ -598,6 +625,26 @@ function fling(state, u, mark, damage, ammo) {
     fromX: u.x,
     target: mark,
     damage,
+    // WHAT KIND OF BLOW A THROWN KNIFE IS, and it used to be none at all.
+    //
+    // This was the one shot builder in the game that set neither `type` nor
+    // `pierce` — the tower's shoot() sets both and the enemy's throw sets both —
+    // and `taken` reads a missing type as TRUE DAMAGE, which no armour turns
+    // aside. So every knife an Assassin Guild threw ignored the damage triangle
+    // outright: 10 through a giant's plate where his blade, the same weapon in his
+    // hand, landed 4.
+    //
+    // Found by asking the question the owner asked — whether every ability is
+    // based off its tower's pierce — and the honest answer was that this one was
+    // not based off anything. It is a NERF to Knife Throw against armour and the
+    // correct one: a knife is a knife whichever end of the throw it is at, and
+    // "physical damage that breaks the man's own rank" is what the ability's card
+    // has always described.
+    //
+    // The pierce is passed in rather than read here, because the caller is the one
+    // that knows whether this blade is a Sneak Attack — the same reason `ammo` is.
+    type: typeOf(u.def),
+    pierce,
     splash: 0,
     // WHICH KNIFE, passed in rather than looked up, because the caller is the only
     // thing that knows whether this one is a Sneak Attack — and the picture in the
@@ -1009,7 +1056,7 @@ export function updateUnits(state, dt) {
           (special
             ? (special.times ? u.def.damage * special.times : special.damage)
             : u.def.damage) * (sneak ? sneak.times : 1),
-          typeOf(u.def), wornBy(u.foe), pierceOf(u.def));
+          typeOf(u.def), wornBy(u.foe), swingPierce(u, special, sneak));
         // SPENT, whether or not anything was bought. The flag means "his next blow
         // is the one he lands on showing himself", and that is true of every man
         // here; the ability is what turns it into damage. Re-armed by hiding, and
@@ -1179,7 +1226,14 @@ export function updateUnits(state, dt) {
         fling(state, u, mark,
           Math.round(u.def.damage * throwing.times *
             (sneak ? (sneak.thrownTimes ?? sneak.times) : 1)),
-          (sneak && sneak.ammo) || throwing.ammo);
+          (sneak && sneak.ammo) || throwing.ammo,
+          // THROUGH THE SAME ARMOUR THE BLADE WOULD HAVE, and through the same
+          // helper — a sneaked knife breaks what a sneaked blow breaks, which is
+          // the owner's "any sneak attacks". `throwing` is passed as the special
+          // so an ability that gave the THROW its own break someday would be read
+          // here without a line changing; Knife Throw names none and the man's
+          // own carries.
+          swingPierce(u, throwing, sneak));
         u.sneak = false;
         u.cd = u.def.cd;
         // MID-THROW FOR THE LENGTH OF A LUNGE. The reveal is no longer one of

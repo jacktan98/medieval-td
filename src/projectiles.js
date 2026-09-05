@@ -3,6 +3,7 @@ import { impact } from './impacts.js';
 import { inRange } from './ground.js';
 import { play, LAND, BREAK, KNIFE } from './audio.js';
 import { apply as applyStatus } from './status.js';
+import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armour.js';
 import { raiseGuard } from './enemies.js';
 
@@ -258,8 +259,16 @@ const burn = (s, v) =>
 // owner asked for burning earth; a slow is what the blast itself does, so it lands
 // on exactly what was hit. If a slowing shot ever gains a splash it will slow
 // everything in it through the ordinary victims loop, with no line here.
+// AND A BOSS SHRUGS OFF HALF OF IT, at the owner's word. `slowOn` is what turns
+// the shot's honest 0.70 into the 0.85 a boss actually walks at — the arithmetic
+// and the reason it is not 0.35 are in data/status.js.
+//
+// APPLIED HERE RATHER THAN ON THE AMMUNITION, because it is a fact about what was
+// hit rather than about what hit it. The magnitude on `monkSlowShot` stays the
+// number the card prints for everything else on the road, and the day a second
+// slowing thing exists it gets this rule for free.
 const slow = (s, v) =>
-  applyStatus(v, 'slowed', s.ammo.slow.times, s.ammo.slow.seconds, s.ammo.kind);
+  applyStatus(v, 'slowed', slowOn(v, s.ammo.slow.times), s.ammo.slow.seconds, s.ammo.kind);
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what

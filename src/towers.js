@@ -335,6 +335,37 @@ export function damageK(t) {
   return k;
 }
 
+// HOW MANY MORE RANKS OF ARMOUR THIS TOWER BREAKS THAN ITS TIER SAYS. The fourth
+// of the passive family — rangeOf multiplies, reloadK divides, damageK multiplies,
+// and this one ADDS, because a rank is an INDEX and breaking armour is
+// subtraction. See rankAgainst in data/armour.js.
+//
+// ADDITIVE IS THE ONLY READING THAT WORKS. Reinforced Tension is one ability on
+// two towers, and the owner's words are "adds pierce physical armor 1": the
+// Crossbow Sentry has no break at all and ends at 1, the Ballista Turret has one
+// and ends at 2. A multiplier would do nothing to the sentry, and a TOTAL would
+// have been a different number on each tower for one ability.
+//
+// AND IT REACHES EVERY SHOT THE TOWER FIRES, ordinary and special alike, which is
+// the owner's "all their attacks and abilities" and is a fact about where it is
+// applied rather than a rule: shoot() adds this AFTER resolving what the shot's
+// own break was, so a Heavy Bolt out of a taught turret breaks three ranks and a
+// plain bolt breaks two, out of one line.
+//
+// NO CEILING HERE. rankAgainst clamps at `none`, so a tower that breaks more ranks
+// than anything on the road wears is simply hitting for full — which is the honest
+// answer and does not need a second clamp to say it.
+//
+// KIND-BLIND ON PURPOSE. A break only ever meets the armour of its own damage
+// type, so a `pierceUp` on a bow is physical and the same field on the Judgement
+// Temple is magic without either of them saying so. That is what lets Inner
+// Strength share a field with Reinforced Tension.
+export function pierceUp(t) {
+  let n = 0;
+  for (const a of boughtAbilities(t)) n += a.pierceUp || 0;
+  return n;
+}
+
 // WHICH DRAWING THIS TOWER'S ORDINARY SHOT IS, which is the tier's own until an
 // ability re-skins it. The ammunition twin of gunnerOf below.
 //
@@ -886,7 +917,30 @@ function shoot(state, t, target, special) {
     // owner's word: "ability follow unit damage type". Nothing overrides it today
     // and the line is here so that the day something does, it is one field.
     type: (special && special.damageType) || typeOf(t.def),
-    pierce: (special && special.pierce != null) ? special.pierce : pierceOf(t.def),
+    // AND HOW MANY RANKS IT BREAKS, in two halves that answer two questions.
+    //
+    // THE SHOT'S OWN BREAK is a TOTAL: Burst Fire and Deadeye each name 2, which
+    // REPLACES the musket's 1 rather than adding to it, because the sentence on
+    // those cards is "this bullet goes through two ranks" and that is true whatever
+    // the tower does the rest of the time. `!= null` rather than a truth test, so
+    // an ability could name 0 and mean it — a special that deliberately gives up
+    // the tower's break is a thing this shape allows.
+    //
+    // THE TOWER'S OWN BONUS is ADDED ON TOP, and it is the passive half: Reinforced
+    // Tension and Inner Strength, bought once and true of every shot afterwards.
+    // Adding it here rather than folding it into either branch is what makes the
+    // owner's "all their attacks and abilities" one line instead of a rule each
+    // ability has to remember.
+    //
+    // The two never fight, because they are different claims. A Heavy Bolt names
+    // no break of its own, so out of a turret that has bought Reinforced Tension it
+    // goes through the machine's own 1 plus the ability's 1 — the same 2 the plain
+    // bolts beside it go through, which is the honest reading of "adds a rank to
+    // all their attacks and abilities". A special that wanted to go deeper than its
+    // tower would say so with a `pierce` of its own, and then the passive would add
+    // to THAT.
+    pierce: ((special && special.pierce != null) ? special.pierce : pierceOf(t.def))
+      + pierceUp(t),
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
     splash: t.def.splash || 0,

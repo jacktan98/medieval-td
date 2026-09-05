@@ -37,6 +37,11 @@ import { updateUnits, makeUnits, hidden, unhook } from '../src/units.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateEnemies } from '../src/enemies.js';
 import { slowOf, apply as applyStatus } from '../src/status.js';
+// The damage triangle itself, for the pierce section at the foot of this file: a
+// soldier's blow never becomes a projectile to read a field off, so what it breaks
+// is checked by putting armour on an enemy and comparing what he loses against
+// what the shipping arithmetic says he should.
+import { taken, RANKS } from '../src/data/armour.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
 import { level } from '../src/level.js';
@@ -165,6 +170,12 @@ function fire(t, seconds, men = 1) {
       // two apart is what the ammunition leaves on what it hits.
       out.push({ t: i * DT, kind: s.ammo.kind, damage: s.damage, at: s.target.mark,
                  burn: !!s.ammo.burn,
+                 // HOW MANY RANKS IT BREAKS, carried on the shot the same way the
+                 // damage is — see the `pierce` line in shoot() in src/towers.js.
+                 // Read by the pierce section at the foot of this file, which is
+                 // the only place that asks what an ability does to armour rather
+                 // than what it does to a health bar.
+                 pierce: s.pierce, type: s.type,
                  // WHICH DRAWING LEFT, which is the whole visible half of the
                  // Judgement Temple's two abilities: nothing about the shot's
                  // kind, speed or report changes and the picture is what does.
@@ -1802,6 +1813,263 @@ console.log('\nWhat a Slowed Pulse does to the man it hits\n');
   ok(twice.statuses.length === 1 && near2(slowOf(twice), slowShot.slow.times),
     'and two blasts on one man are one slow, not two',
     `${twice.statuses.length} worn, x${slowOf(twice)}`);
+}
+
+// --- and what each ability breaks -------------------------------------------------
+//
+// THE OWNER'S QUESTION, MADE PERMANENT: "check whether all abilities are based of
+// their pierce armor base stats". The answer on the day it was asked was that they
+// were — every ability inherited its tower's `pierce` and none overrode it, so the
+// mechanism was sound and simply unused. Then eight of them were given breaks of
+// their own, which is the moment "based off the base stat" stops being free.
+//
+// TWO SHAPES, AND THE POINT OF THIS SECTION IS THAT THEY STAY DISTINGUISHABLE:
+//
+//   `pierceUp`  a PASSIVE on the tower, ADDED to whatever a shot was going to
+//               break. Reinforced Tension, Inner Strength. Reaches the specials
+//               too, which is the half a rule could quietly stop doing.
+//   `pierce`    a TOTAL for one shot or one blow, REPLACING the weapon's own.
+//               Burst Fire, Deadeye, Blinding Strike, Sneak Attack.
+//
+// Everything below is measured through the shipping code — a shot's own `pierce`
+// field for a tower, and real health off a real armoured enemy for a soldier,
+// because a soldier's blow never becomes a projectile to inspect.
+console.log('\nWhat each ability breaks\n');
+
+// An enemy in medium plate on both axes, which is the middle of the ladder and
+// what the things a tier 4 is bought to answer actually wear.
+const MED = { physical: 'med', magic: 'none' };
+const WARDED = { physical: 'none', magic: 'med' };
+
+{
+  // THE PASSIVE, ON THE TOWER THAT HAS NO BREAK OF ITS OWN. The Crossbow Sentry
+  // starts at nothing, so this is the case where an ADDITIVE field and a TOTAL of
+  // 1 would look identical — which is why the turret below is checked as well.
+  ok(!SENTRY.pierce, 'a Crossbow Sentry breaks nothing on its own',
+    `pierce ${SENTRY.pierce || 0}`);
+  const plain = fire(sentry([]), 3);
+  const taught = fire(sentry(['sentry_tension']), 3);
+  ok(plain.length && plain.every(s => !s.pierce), 'and its untaught bolts break nothing',
+    `${plain.length} bolts at x0`);
+  ok(taught.length && taught.every(s => s.pierce === 1),
+    'and Reinforced Tension puts a rank on every one of them',
+    `${taught.length} bolts at x1`);
+
+  // AND ON THE TOWER THAT ALREADY HAS ONE, where the two readings come apart: a
+  // total of 1 would have been a NERF here and this is the check that would have
+  // caught it.
+  const t4 = siege[3];
+  const bolts = fire(turret(['ballista_tension']), 8);
+  ok(t4.pierce === 1, 'a Ballista Turret breaks one on its own', `pierce ${t4.pierce}`);
+  ok(bolts.length && bolts.every(s => s.pierce === t4.pierce + 1),
+    'and the same ability gives it a 2nd rather than replacing its 1st',
+    `${bolts.length} bolts at x${bolts[0].pierce}`);
+
+  // AND IT REACHES THE ABILITIES, which is the owner's "all their attacks and
+  // abilities" and the half that is easy to wire and easy to miss. A turret with
+  // both fires plain bolts at 2 and the heavy one at 3.
+  const both = fire(turret(['ballista_tension', 'heavybolt']), 12);
+  const heavy = both.filter(s => s.burn);
+  const light = both.filter(s => !s.burn);
+  ok(heavy.length && light.length, 'a turret with both fires both kinds of bolt',
+    `${light.length} plain, ${heavy.length} heavy`);
+  ok(light.every(s => s.pierce === 2) && heavy.every(s => s.pierce === 2),
+    'and the passive reaches the heavy bolt as well as the plain one',
+    `plain x${light[0].pierce}, heavy x${heavy[0].pierce}`);
+
+  // THE PASSIVE ON A MAGIC TOWER, and it needs no second field: pierce only ever
+  // meets the armour of the attack's own kind, so the same `pierceUp` is a magic
+  // break here and a physical one above.
+  const temple4 = monastery[4];
+  const blasts = fire(temple(['strength']), 4);
+  ok(blasts.length && blasts.every(s => s.type === 'magic' && s.pierce === temple4.pierce + 1),
+    'Inner Strength takes the temple to 2 ranks of MAGIC armour',
+    `${blasts.length} blasts, ${blasts[0].type} x${blasts[0].pierce}`);
+  // AND IT IS WORTH MORE THAN ITS OWN CARD'S 30% AGAINST A WARD, which is the
+  // thing a player cannot read off the ability button.
+  const plainBlast = taken(temple4.damage, 'magic', WARDED, temple4.pierce);
+  const strongBlast = taken(blasts[0].damage, 'magic', WARDED, blasts[0].pierce);
+  ok(strongBlast === blasts[0].damage && strongBlast > plainBlast * 1.3,
+    'and against a warded enemy it is worth more than the damage alone',
+    `${plainBlast} -> ${strongBlast}, x${(strongBlast / plainBlast).toFixed(2)}`);
+}
+
+{
+  // THE TOTAL, on the tower whose two specials both name one. What makes these
+  // TOTALS rather than bonuses is that the Post already breaks a rank: a bonus of
+  // 2 would have been 3, and the owner asked for 2.
+  const post4 = POST;
+  const burst = abilityById('burst');
+  const shots = fire(post(['burst']), 12, 3);
+  // A BALL IS PART OF A BURST IF IT HAS A NEIGHBOUR WITHIN THE GAP — either side.
+  // Looking only forwards catches the first two of a trio and leaves the third
+  // filed as an ordinary shot, which is a check that fails on its own bookkeeping
+  // rather than on the game. `gap` is read off the ability for the same reason
+  // every distance in this file is.
+  const near = (a, b) => b && Math.abs(b.t - a.t) < burst.gap * 1.5;
+  const trio = shots.filter((s, i) => near(s, shots[i + 1]) || near(s, shots[i - 1]));
+  ok(shots.length > burst.every, 'a Musketeer Post with Burst Fire keeps firing',
+    `${shots.length} balls`);
+  ok(trio.length && trio.every(s => s.pierce === burst.pierce),
+    `and every ball of the burst breaks ${burst.pierce}`,
+    `against the Post's own ${post4.pierce}`);
+  // The ordinary balls between the bursts are untouched, which is the whole of
+  // what "a total for one shot" means.
+  const ordinary = shots.filter(s => !trio.includes(s));
+  ok(ordinary.length && ordinary.every(s => s.pierce === post4.pierce),
+    `and the ordinary balls between them still break the tower's own ${post4.pierce}`,
+    `${ordinary.length} of them, deepest x${Math.max(...ordinary.map(s => s.pierce))}`);
+
+  const deadeye = abilityById('deadeye');
+  const long = fire(post(['deadeye']), 30);
+  const shot = long.find(s => s.kind === 'deadeye');
+  ok(shot && shot.pierce === deadeye.pierce, `and a Deadeye round breaks ${deadeye.pierce}`,
+    shot && `${shot.damage} damage at x${shot.pierce}`);
+  // WHAT IT IS FOR: the biggest blow in the game arriving whole through plate.
+  ok(shot && taken(shot.damage, 'physical', MED, shot.pierce) === shot.damage,
+    'so it lands in full on medium plate, where the plain Post loses a quarter',
+    shot && `${shot.damage} against ${taken(shot.damage, 'physical', MED, post4.pierce)}`);
+}
+
+{
+  // AND THE SOLDIERS, measured off a health bar rather than off a projectile —
+  // a swing never becomes a shot to read a field from, so the only honest check is
+  // what an armoured enemy actually loses.
+  const man = barracks[3].soldier;
+  const blinding = abilityById('blinding');
+  const state = keep(['blinding']);
+  const u = state.units[0];
+  const e = victim(state);
+  e.def.armour = MED;
+  u.x = e.x - 12;
+  u.y = e.y;
+
+  let last = e.hp;
+  const blows = [];
+  for (let i = 0; i < 60 * 30 && blows.length < blinding.every + 1; i++) {
+    updateUnits(state, DT);
+    if (e.hp !== last) { blows.push(Math.round(last - e.hp)); last = e.hp; }
+  }
+  const ordinary = taken(man.damage, 'physical', MED, 0);
+  const struck = taken(man.damage * blinding.times, 'physical', MED, blinding.pierce);
+  ok(blows.slice(0, blinding.every - 1).every(b => b === ordinary),
+    'a paladin\'s ordinary blows still meet the whole of medium plate',
+    `${ordinary} of ${man.damage}, ${blinding.every - 1} of them`);
+  ok(blows[blinding.every - 1] === struck,
+    `and the Blinding Strike alone breaks ${blinding.pierce} rank of it`,
+    `${blows[blinding.every - 1]} of ${Math.round(man.damage * blinding.times)}, ` +
+    `against ${taken(man.damage * blinding.times, 'physical', MED, 0)} unpierced`);
+  ok(blows[blinding.every] === ordinary, 'and the blow after it is an ordinary one again',
+    `${blows[blinding.every]}`);
+}
+
+{
+  // SNEAK ATTACK, WHICH IS THE ONE THAT IS A TOTAL ON A MAN WHO ALREADY PIERCES.
+  // The assassin breaks a rank with every blade, so a BONUS of 2 would have been
+  // 3 and the owner asked for 2 — this is the check that tells those apart.
+  const guildDef = barracks.find(d => d.name === 'Assassin Guild');
+  const man = guildDef.soldier;
+  const sneak = abilityById('sneak');
+  ok(man.pierce === 1, 'an assassin already breaks a rank with an ordinary blade',
+    `pierce ${man.pierce}`);
+
+  const state = guild(['sneak']);
+  const u = state.units[0];
+  const e = victim(state);
+  e.def.armour = MED;
+  u.x = e.x - 12;
+  u.y = e.y;
+
+  let last = e.hp;
+  const blows = [];
+  for (let i = 0; i < 60 * 4; i++) {
+    updateUnits(state, DT);
+    if (e.hp !== last) { blows.push(Math.round(last - e.hp)); last = e.hp; }
+  }
+  const opener = taken(man.damage * sneak.times, 'physical', MED, sneak.pierce);
+  const after = taken(man.damage, 'physical', MED, man.pierce);
+  ok(blows[0] === opener, `the opening blade breaks ${sneak.pierce} ranks`,
+    `${blows[0]} of ${Math.round(man.damage * sneak.times)}, against ` +
+    `${taken(man.damage * sneak.times, 'physical', MED, man.pierce)} at his own x${man.pierce}`);
+  ok(blows.slice(1, 4).every(b => b === after), 'and every blow after it is back to his own 1',
+    `${after} of ${man.damage}`);
+}
+
+{
+  // AND THE KNIFE, WHICH USED TO IGNORE ARMOUR ALTOGETHER.
+  //
+  // `fling` in src/units.js was the one shot builder in the game that set neither
+  // `type` nor `pierce`, and `taken` reads a missing type as TRUE damage — so an
+  // Assassin Guild threw 10 through a giant's plate where the same blade in his
+  // hand landed 4. It was found by asking the owner's question and it is checked
+  // here so that the answer cannot quietly change back.
+  //
+  // BOTH HALVES: the ordinary knife is his own break, and a sneaked one is the
+  // ability's, exactly as the two blades are.
+  const guildDef = barracks.find(d => d.name === 'Assassin Guild');
+  const man = guildDef.soldier;
+  const knife = abilityById('knife');
+  const sneak = abilityById('sneak');
+
+  // THROUGH THIS SECTION'S OWN FIXTURE, armoured. `standoff` puts the man out of
+  // arm's reach and inside the throw, so every blow it records is a knife rather
+  // than a blade — which is the whole point of checking here.
+  const thrown = ids => {
+    const state = guild(ids);
+    const e = standoff(state, Math.round(knife.reach * 0.7));
+    e.def.armour = MED;
+    return throwFor(state, 6).hits;
+  };
+
+  const plain = thrown(['knife']);
+  const want = taken(Math.round(man.damage * knife.times), 'physical', MED, man.pierce);
+  ok(plain.length >= 2, 'an assassin throws at a man 100px off', `${plain.length} knives`);
+  ok(plain.every(b => b === want),
+    'and a thrown knife meets armour like everything else in the game',
+    `${want} of ${Math.round(man.damage * knife.times)} — it used to land all of it`);
+
+  const sneaked = thrown(['knife', 'sneak']);
+  const opener = taken(Math.round(man.damage * knife.times * sneak.thrownTimes),
+    'physical', MED, sneak.pierce);
+  ok(sneaked[0] === opener, `and a sneaked knife breaks the ability's ${sneak.pierce}`,
+    `${sneaked[0]} of ${Math.round(man.damage * knife.times * sneak.thrownTimes)}`);
+  ok(sneaked.slice(1).every(b => b === want), 'while the rest of the volley is his own',
+    `${want} each`);
+}
+
+{
+  // AND NOTHING BREAKS MORE THAN THE GAME HAS RANKS TO BREAK, which is not a
+  // formality: rankAgainst clamps at `none`, so a runaway sum would show up as a
+  // tower that hits for full and nothing else. Three is the ceiling — `high` — and
+  // one thing in the game reaches it, on purpose.
+  const claims = [];
+  for (const a of ABILITIES) {
+    const t = TIERS.find(d => d.name === a.of);
+    const base = (t.soldier || t).pierce || 0;
+    if (a.pierce != null) claims.push([`${a.name} (${a.of})`, a.pierce, base, 'total']);
+    if (a.pierceUp) claims.push([`${a.name} (${a.of})`, base + a.pierceUp, base, '+' + a.pierceUp]);
+  }
+  ok(claims.length === 7, 'seven abilities say something about armour',
+    `${ABILITIES.length - claims.length} inherit their tower's break untouched`);
+  ok(claims.every(([, total]) => total <= RANKS.length - 1),
+    'and none of them claims more ranks than the game has',
+    `deepest ${Math.max(...claims.map(c => c[1]))} of ${RANKS.length - 1}`);
+  // AND NOTHING REACHES THE CEILING, which is worth stating out loud because it is
+  // the thing a reader assumes went the other way. `high` is rank 3 and the deepest
+  // anything gets is 2, so the heaviest plate in the game still turns a quarter of
+  // every blow aside — even a Deadeye, even a heavy bolt off a turret that has
+  // bought Reinforced Tension. A special that named a `pierce` of 2 on a tower with
+  // a `pierceUp` would be the first thing to get there, and this is the line that
+  // would notice.
+  const deepest = fire(turret(['ballista_tension', 'heavybolt']), 12)
+    .reduce((m, s) => Math.max(m, s.pierce || 0), 0);
+  ok(deepest === 2 && deepest < RANKS.length - 1,
+    'and the deepest shot in the game still meets a rank of the heaviest plate',
+    `x${deepest} of ${RANKS.length - 1} — ${RANKS[RANKS.length - 1]} armour keeps a rank`);
+
+  console.log('');
+  for (const [name, total, base, how] of claims)
+    console.log(`      ${name.padEnd(38)} x${total}  (tower ${base}, ${how})`);
 }
 
 // --- and the numbers a card prints ------------------------------------------------

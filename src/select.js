@@ -19,7 +19,7 @@
 // the soldier or the archer it puts on the road.
 
 import { SCALE } from './data/towers.js';
-import { boost, damageK, rangeOf, reachOf } from './towers.js';
+import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
@@ -198,11 +198,20 @@ export function shownSplash(def) {
 // `fig` is the LIVE figure when there is one, and it only reaches the armour
 // half — see armourRow. Pierce and blast are facts about a weapon and do not
 // change while a man is holding it.
-export function traitRow(def, fig = null) {
+//
+// `extra` IS WHAT THIS PARTICULAR TOWER HAS BEEN TAUGHT, and it is the one part of
+// the row that is about a BUILDING rather than about a kind of thing. Reinforced
+// Tension and Inner Strength add a rank permanently, so a Ballista Turret that has
+// bought one really does break two — and the panel is the only place that is ever
+// shown. Zero everywhere else: the encyclopedia describes a tower as it is SOLD,
+// and a soldier's abilities are per-blow rather than permanent, so neither passes
+// anything. See pierceUp() in src/towers.js, and the note on `damageK` in the
+// tower branch of selectionInfo below — the same argument about the same panel.
+export function traitRow(def, fig = null, extra = 0) {
   const man = def.soldier || def;
   const out = armourRow(def, fig);
 
-  const p = pierceOf(man);
+  const p = pierceOf(man) + extra;
   if (p) out.push([typeOf(man) === 'magic' ? 'stat_pierce_magic' : 'stat_pierce', p]);
 
   const wide = shownSplash(def);
@@ -370,7 +379,12 @@ export function selectionInfo(state) {
       // A LIST RATHER THAN NULL, so the panel's second row is one shape everywhere:
       // pairs, possibly none of them. See drawInfo — an empty row is drawn as an
       // empty row and the block above it does not move.
-      traits: traitRow(s.ref.def),
+      // AND THE PIERCE ROW FOLLOWS WHAT THIS TOWER HAS BOUGHT, on exactly the
+      // argument the damage above follows: Reinforced Tension is bought ON this
+      // tower and the panel is the only place its rank is ever shown. A player who
+      // has paid 150 gold for a steel bow and still reads "no pierce" would think
+      // it had not worked.
+      traits: traitRow(s.ref.def, null, pierceUp(s.ref)),
       // HOW FAR IT ACTUALLY REACHES, ring included — rangeOf() is the number
       // the targeting reads, so a tower that has bought Far Shot shows the
       // wider figure here rather than the one it was sold at. The book shows
