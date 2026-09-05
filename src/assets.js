@@ -393,6 +393,16 @@ export const paths = {
   captain_shoot:   'assets/bosses/Captain_Thug_Ranged_Attack.png',
   captain_swing:   'assets/bosses/Captain_Thug_Melee_Attack.png',
   captain_pause:   'assets/bosses/Captain_Thug_Pause.png',
+  // THE PAUSE, TAKEN APART. The same moment as `captain_pause` drawn in two
+  // layers so the second half of it can animate: the body stands unchanged while
+  // the weapons he has thrown down fade off the ground under him.
+  //
+  // They decompose the combined drawing exactly — the weapons share its x extent
+  // and its horizontal anchor to the pixel, and the body is the rest of it — which
+  // is what lets both be drawn at the figure's own ground point and land where
+  // they do in the single picture.
+  captain_pause_self:    'assets/bosses/Captain_Thug_Pause_Self.png',
+  captain_pause_weapons: 'assets/bosses/Captain_Thug_Pause_Weapons.png',
   captain_mend:    'assets/bosses/Captain_Thug_Heal.png',
   captain_raged:   'assets/bosses/Captain_Thug_Enraged_Default.png',
   captain_rage_swing: 'assets/bosses/Captain_Thug_Enraged_Attack.png',

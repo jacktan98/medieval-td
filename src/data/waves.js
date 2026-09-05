@@ -1226,11 +1226,31 @@ export const enemyTypes = {
         sprite: 'captain_pause',
         trim: [112, 124, 343, 232],
         pivot: [0.44, 0.901],
-        // THREE SECONDS, up from two, at the owner's word — and it is now the beat
-        // with his voice over it rather than the silent one, so it wants the room.
-        // Five seconds of standing still before he gets up again, all of it a
-        // window the player can spend.
-        seconds: 3
+        // FOUR SECONDS, and they are two beats of two rather than one long hold.
+        seconds: 4,
+        // THE SECOND HALF, and it is the whole reason the pause grew. The owner drew
+        // the moment twice more so it could animate: "his body remains unmoved but
+        // his weapons fade off over 2 seconds."
+        //
+        // TWO LAYERS AT ONE ANCHOR. Both are drawn at the figure's own ground point
+        // with their own pivots, which is what puts them back together as the single
+        // `sprite` above — the weapons share that drawing's x extent and its
+        // horizontal anchor to the pixel, and the body is the rest of it. Nothing
+        // here has to know they were ever one picture.
+        //
+        // `seconds` is how long the fade runs and also when it STARTS: the drop
+        // begins when this much of the beat is left, so the first two seconds are
+        // the combined pose and the last two are the fade. Written that way round
+        // — off the tail rather than off the head — because the fade has to finish
+        // exactly as the beat does, and a start time measured from the front would
+        // drift if the beat were ever retuned.
+        drop: {
+          seconds: 2,
+          self:    { sprite: 'captain_pause_self',
+                     trim: [185, 124, 127, 225], pivot: [0.614, 0.929] },
+          weapons: { sprite: 'captain_pause_weapons',
+                     trim: [112, 272, 343, 84], pivot: [0.440, 0.726] }
+        }
       },
       // BEAT TWO. Three seconds of mending, worth half his maximum.
       //
@@ -1249,8 +1269,12 @@ export const enemyTypes = {
         sprite: 'captain_mend',
         trim: [169, 121, 187, 239],
         pivot: [0.503, 0.887],
-        seconds: 3,
-        share: 0.5,
+        seconds: 4,
+        // THREE FIFTHS OF HIS BAR, the owner's number, up from a half. At 10,000
+        // that is 6,000 back over four seconds — 1,500 a second, which is more than
+        // most single towers do — so the four seconds behind high plate are the
+        // most expensive thing on the board to fail to interrupt.
+        share: 0.6,
         armour: { physical: 'high', magic: 'high' }
       },
       // BEAT THREE, and everything under here is what he is afterwards.

@@ -1260,8 +1260,15 @@ function pose(attack, attacking, img, trim, pivot, special) {
 export function enemyArt(e) {
   const img = e.def.sprite && art[e.def.sprite];
   if (!img) return null;
-  const { stand, swing } = enemyStance(e);
-  return pose(swing, striking(e), art[stand.sprite] || img, stand.trim, stand.pivot);
+  const { stand, swing, fade } = enemyStance(e);
+  const shown = pose(swing, striking(e), art[stand.sprite] || img, stand.trim, stand.pivot);
+  // The fading layer rides along as a fourth element, so the one place that says
+  // what a figure is showing says ALL of what it is showing. figureSpan unions it
+  // in — the weapons on the ground are 70 game px across against the body's 26, so
+  // a span that ignored them would be under-measuring by more than the body is
+  // wide, which is the exact fault this function was extracted to fix.
+  const layer = fade && art[fade.sprite];
+  return layer ? [...shown, [layer, fade.trim, fade.pivot, fade.alpha]] : shown;
 }
 
 export function soldierArt(u) {
@@ -1491,8 +1498,24 @@ export function enemyStance(e) {
   const d = e.def;
   const now = stageOf(e);
   const close = !!(e.foe && d.melee);
+  // AND ONE BEAT IS DRAWN IN TWO LAYERS. The last two seconds of the pause are the
+  // body standing exactly where it was with the weapons fading off the ground under
+  // it, which is a thing no single drawing can be — so the stance carries an
+  // optional `fade` beside its `stand`, and drawEnemy paints that over the top at
+  // the alpha named here.
+  //
+  // THE ALPHA IS DERIVED FROM THE CLOCK the beat is already running on, not from a
+  // second timer. `actT` is seconds left, the drop is the last `drop.seconds` of
+  // them, so the share left IS the opacity — full when the fade starts and nothing
+  // when the beat ends. One clock cannot drift from itself.
+  const drop = e.act === 'pause' && d.rage.pause.drop;
+  const fading = drop && e.actT <= drop.seconds
+    ? { ...drop.weapons, alpha: Math.max(0, Math.min(1, e.actT / drop.seconds)) }
+    : null;
+
   // A SCRIPTED BEAT BEATS EVERYTHING, including being held.
-  const beat = e.act === 'pause' ? d.rage.pause
+  const beat = fading ? drop.self
+             : e.act === 'pause' ? d.rage.pause
              : e.act === 'mend'  ? d.rage.mend
              : e.act === 'fall'  ? d.finale.fall
              : (e.act === 'rest' || e.act === 'gone')
@@ -1519,7 +1542,8 @@ export function enemyStance(e) {
   const melee = now.melee;
   return {
     stand: beat || (close && melee && melee.default) || stance || own,
-    swing: (close && melee) ? melee.attack : now.attack
+    swing: (close && melee) ? melee.attack : now.attack,
+    fade: fading
   };
 }
 
@@ -1554,7 +1578,7 @@ function drawEnemy(ctx, e) {
   // plague doctor's `thrust` is set by the flask leaving his hand rather than by
   // a blow landing, and he gets the lunge with it, which is exactly right for a
   // man putting his shoulder into a throw.
-  const [frame, trim, pivot] = enemyArt(e);
+  const [frame, trim, pivot, fade] = enemyArt(e);
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -1567,6 +1591,20 @@ function drawEnemy(ctx, e) {
   ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y);
   ctx.scale(mirror(e.def, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
+  // AND THE LAYER THAT IS FADING, if this pose has one — the weapons the Captain
+  // has thrown down, going out over two seconds. Inside the same transform, so it
+  // is mirrored with the body and lands where it does in the single drawing the
+  // two were cut from.
+  //
+  // MULTIPLIED into whatever alpha is already set rather than assigned, so a boss
+  // ghosting through a building fades his weapons out of the ghost rather than
+  // painting them over it at full strength.
+  if (fade) {
+    const [img2, t2, p2, alpha] = fade;
+    const w2 = t2[2] * SCALE, h2 = t2[3] * SCALE;
+    ctx.globalAlpha *= alpha;
+    ctx.drawImage(img2, t2[0], t2[1], t2[2], t2[3], -p2[0] * w2, -p2[1] * h2, w2, h2);
+  }
   ctx.restore();
 }
 
@@ -1756,14 +1794,27 @@ export function figureSpan(fig, shown, lunge = 0) {
   // line added to this function.
   const trim = shown ? shown[1] : def.spriteTrim;
   const pivot = shown ? shown[2] : def.pivot;
+  // A pose drawn in TWO layers is as big as both of them. Unioned rather than
+  // taken as the larger, because neither has to contain the other — the Captain's
+  // discarded weapons are 70 game px across against his body's 26, and his body
+  // reaches far higher than they do.
+  const fade = shown && shown[3];
   // The fallback disc, for a def wired up before its art has landed — the same
   // case drawEnemy and drawSoldier both answer with a coloured circle.
   if (!trim || !pivot) return { left: x - def.r, top: y - def.r, right: x + def.r, bottom: y };
   const dw = trim[2] * SCALE;
   const dh = trim[3] * SCALE;
-  const out = Math.max(pivot[0], 1 - pivot[0]) * dw + lunge;
-  return { left: x - out, right: x + out,
-           top: y - pivot[1] * dh, bottom: y + (1 - pivot[1]) * dh };
+  let out = Math.max(pivot[0], 1 - pivot[0]) * dw;
+  let up = pivot[1] * dh;
+  let down = (1 - pivot[1]) * dh;
+  if (fade) {
+    const [, t2, p2] = fade;
+    out = Math.max(out, Math.max(p2[0], 1 - p2[0]) * t2[2] * SCALE);
+    up = Math.max(up, p2[1] * t2[3] * SCALE);
+    down = Math.max(down, (1 - p2[1]) * t2[3] * SCALE);
+  }
+  out += lunge;
+  return { left: x - out, right: x + out, top: y - up, bottom: y + down };
 }
 
 const spanHits = (s, box) =>

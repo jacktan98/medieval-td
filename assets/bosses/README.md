@@ -1,30 +1,38 @@
 # Boss artwork
 
-## Captain Thug — the first boss, in eleven drawings
+## Captain Thug — the first boss, in thirteen drawings
 
-Ten of them are alive and one is a body. Nothing else in this game has more than
-five.
+Twelve of them are alive and one is a body. Nothing else in this game has more
+than five.
+
+**Two of the thirteen are one moment in two layers.** `Pause_Self` and
+`Pause_Weapons` are `Pause` taken apart, so the second half of the channelling can
+animate: the body holds still while the weapons fade off the ground under it. They
+decompose the combined drawing exactly — the weapons share its x extent and its
+horizontal anchor to the pixel — which is what lets both be drawn at the figure's
+own ground point and land where they do in the single picture.
 
 | file | when it shows | plate |
 |------|---------------|-------|
 | `Captain_Thug_Default.png` | walking, unshot and unbothered. Also the encyclopedia and the description panel, for stage 1 | med / med |
 | `Captain_Thug_Defend.png` | a projectile has hit him and no soldier is near. 5s, refreshed by every hit, half pace | high / high |
-| `Captain_Thug_Ranged_Reload.png` | a soldier is inside 200px: shield away, nocking. 0.5s | med / med |
-| `Captain_Thug_Ranged_Attack.png` | the arrow is away. 0.5s | med / med |
+| `Captain_Thug_Ranged_Reload.png` | a soldier is inside 150px: shield away, nocking. The long half of a 0.5s shot cycle | med / med |
+| `Captain_Thug_Ranged_Attack.png` | the arrow is away. The other sixth of a second of it | med / med |
 | `Captain_Thug_Melee_Attack.png` | a soldier has hold of him | med / med |
-| `Captain_Thug_Pause.png` | below a quarter health, once: shield and bow thrown away, channelling. 2s | med / med |
-| `Captain_Thug_Heal.png` | mending, worth half his maximum. 3s | high / high |
+| `Captain_Thug_Pause.png` | below a quarter health, once: shield and bow thrown away, channelling. The first 2s of a 4s beat | med / med |
+| `Captain_Thug_Pause_Self.png` | the last 2s of it — the body, standing unchanged | med / med |
+| `Captain_Thug_Pause_Weapons.png` | drawn over it and faded out across those 2s: the weapons on the ground | — |
+| `Captain_Thug_Heal.png` | mending, worth three fifths of his maximum. 4s | high / high |
 | `Captain_Thug_Enraged_Default.png` | stage 2, walking at 1.2x. Also the description panel from here on | low / low |
-| `Captain_Thug_Enraged_Attack.png` | stage 2, swinging at 1.2x — magic now, and 50 to everyone within 60px | low / low |
-| `Captain_Thug_Before_Dying.png` | out of health, sword dropped. 2s, and nothing may touch him | — |
+| `Captain_Thug_Enraged_Attack.png` | stage 2, swinging at 1.2x — magic now, and the same blow to everyone within 60px | low / low |
+| `Captain_Thug_Before_Dying.png` | out of health, sword dropped. 3s, and nothing may touch him | — |
 | `Captain_Thug_Dead.png` | on the ground. 2s, and only then may the game end. Becomes his corpse | — |
 
-**All ten living poses share one ground point — source (263, 333) — to the pixel.**
+**All twelve living poses share one ground point — source (263, 333) — to the pixel.**
 He swaps between more drawings than anything else in the game, so this is the
 figure where a pivot out by two would be most obvious, and the artist got it
-exactly right. Six of the eleven show the shadow ellipse edge to edge and five of
-those six measure to that point on the nose; the rest hide its tips behind a leg or
-a bow, which is why every `pivot` in `captain_thug` is derived from the one
+exactly right. Six of them show the shadow ellipse edge to edge and five of those
+six measure to that point on the nose; the rest hide its tips behind a leg or a bow, which is why every `pivot` in `captain_thug` is derived from the one
 measurement rather than read off its own drawing. Re-measure the same way after a
 re-export: take the pose that shows the most ellipse, and give the others its
 answer.

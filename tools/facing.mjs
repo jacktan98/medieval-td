@@ -156,8 +156,16 @@ console.log('\nHow much room a figure takes up\n');
     keys.push(d.sprite, d.attack.sprite, d.dead);
     if (d.melee) keys.push(d.melee.attack.sprite, d.melee.default && d.melee.default.sprite);
     for (const k of ['guard', 'heal', 'reload']) if (d[k]) keys.push(d[k].sprite);
-    if (d.rage) keys.push(d.rage.sprite, d.rage.attack.sprite,
-                          d.rage.pause.sprite, d.rage.mend.sprite);
+    if (d.rage) {
+      keys.push(d.rage.sprite, d.rage.attack.sprite,
+                d.rage.pause.sprite, d.rage.mend.sprite);
+      // The two layers the pause splits into for its second half. Missed here
+      // once, and the symptom was the Captain measuring NARROWER channelling than
+      // walking: without the stub the fading layer is dropped, so the span saw the
+      // body alone — 26 game px against the weapons' 70.
+      const drop = d.rage.pause.drop;
+      if (drop) keys.push(drop.self.sprite, drop.weapons.sprite);
+    }
     if (d.finale) keys.push(d.finale.fall.sprite);
   }
   for (const k of keys) if (k) art[k] = { stub: true };
@@ -192,13 +200,43 @@ console.log('\nHow much room a figure takes up\n');
   // game and the ones a def-shaped span was most wrong about.
   const c = enemyTypes.captain_thug;
   const walk = figureSpan(stand(c), enemyArt(stand(c)));
+  // `actT` is deliberately ABOVE the drop window for the pause, so this measures
+  // the combined pose; the two-layer half is checked on its own below.
   for (const [act, label] of [['pause', 'channelling'], ['fall', 'beaten'], ['rest', 'fallen']]) {
-    const e = { ...stand(c), act, actT: 1 };
+    const e = { ...stand(c), act, actT: 9 };
     const s = figureSpan(e, enemyArt(e));
     ok2(s.right - s.left > walk.right - walk.left,
       `and the Captain is wider ${label} than walking`,
       `${(s.right - s.left).toFixed(1)} against ${(walk.right - walk.left).toFixed(1)}`);
   }
+  // AND THE TWO-LAYER HALF OF THE PAUSE, which is the case the span could most
+  // easily get wrong: the body it draws is the NARROWEST thing on the figure and
+  // the weapons beside it are the widest, so a span that took the body alone would
+  // be under-measuring by more than the body is wide.
+  {
+    const drop = c.rage.pause.drop;
+    const mid = { ...stand(c), act: 'pause', actT: drop.seconds / 2 };
+    const s = figureSpan(mid, enemyArt(mid));
+    const body = drop.self.trim[2] * (105 / 512);
+    ok2(s.right - s.left > body * 1.5,
+      'and the fading weapons are inside his span, not just his body',
+      `${(s.right - s.left).toFixed(1)} against a body of ${body.toFixed(1)}`);
+    // AND THE FADE IS A CLOCK, not a flag: full at the top of the drop and gone at
+    // the end of the beat, so the two seconds are actually a fade.
+    const alphaAt = left => {
+      const e = { ...stand(c), act: 'pause', actT: left };
+      return enemyArt(e)[3][3];
+    };
+    ok2(Math.abs(alphaAt(drop.seconds) - 1) < 1e-9 && Math.abs(alphaAt(0)) < 1e-9 &&
+        Math.abs(alphaAt(drop.seconds / 2) - 0.5) < 1e-9,
+      'and they fade evenly across the drop',
+      `${alphaAt(drop.seconds)} -> ${alphaAt(drop.seconds / 2)} -> ${alphaAt(0)}`);
+    // Before the drop begins there is no second layer at all.
+    const early = { ...stand(c), act: 'pause', actT: drop.seconds + 0.5 };
+    ok2(enemyArt(early).length === 3,
+      'and the first half of the pause is one drawing, not two');
+  }
+
   const mend = { ...stand(c), act: 'mend', actT: 1 };
   const mendSpan = figureSpan(mend, enemyArt(mend));
   ok2(mendSpan.top < walk.top, 'and reaches higher mending than walking',
