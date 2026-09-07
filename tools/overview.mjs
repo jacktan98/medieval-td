@@ -41,6 +41,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const SRC = 'assets/map/Overview_Map.svg';
 const OUT = 'src/data/overview.js';
+const SEPIA = 'assets/map/Overview_Map_sepia.svg';
 
 // The artboard is 1920x1080 and the game is drawn in 960x540, so every
 // coordinate is exactly halved. Not a fit or a scale-to-cover: the artist drew it
@@ -49,6 +50,18 @@ const SCALE = 0.5;
 
 const MARKER_FILL = '#d30000';
 const ROAD_FILLS = new Set(['#ffde9e', '#ffefd4']);
+
+// THE BEACH IS THE SAME COLOUR AS THE ROAD. It is one shape of 631,000 square
+// units where the largest actual leg is 38,000, so size tells them apart with a
+// margin of more than ten to one — and nothing else could, because the artist is
+// using one sand colour for both and is right to.
+//
+// This mattered more than it looks. The first version of this file read paths
+// with a regex that happened not to match the beach, so the count came out at 14
+// and everything worked by luck. Reading the drawing properly found it, and
+// feeding a landmass to centreline() would have produced a "road" through the
+// middle of the sea.
+const ROAD_MAX_AREA = 100000;
 
 // How close a leg end has to be to a marker centre to count as arriving there,
 // and to another leg's end to count as the far side of a bridge. The first is
@@ -65,7 +78,7 @@ function parse(d) {
   const out = [];
   for (let i = 0; i < toks.length;) {
     const t = toks[i];
-    if (/[MLml]/.test(t)) { out.push(['ML', +toks[i + 1], +toks[i + 2]]); i += 3; }
+    if (/[MLml]/.test(t)) { out.push([t.toUpperCase(), +toks[i + 1], +toks[i + 2]]); i += 3; }
     else if (/[Cc]/.test(t)) { out.push(['C', ...toks.slice(i + 1, i + 7).map(Number)]); i += 7; }
     else if (/[Zz]/.test(t)) { out.push(['Z']); i += 1; }
     else i += 1;
@@ -80,7 +93,7 @@ function flatten(cmds, per = 20) {
   const pts = [];
   let cur = null, start = null;
   for (const c of cmds) {
-    if (c[0] === 'ML') {
+    if (c[0] === 'M' || c[0] === 'L') {
       cur = [c[1], c[2]];
       if (start === null) start = cur;
       pts.push(cur);
@@ -176,19 +189,92 @@ function centreline(d, N = 64) {
 
 const svg = readFileSync(SRC, 'utf8');
 
+// GROUPS CARRY TRANSFORMS, and half of them are mirrors. Graphite exports a
+// building drawn once and flipped as `matrix(-1,0,0,1,...)` on the group around
+// it, so the numbers inside that path are nowhere near where the building is
+// drawn. Reading path data without walking the group stack finds the road and the
+// markers — those happen to sit at the top level — and puts every building in the
+// artboard hundreds of pixels from where it appears.
+//
+// That was worth catching rather than working around: the road and the markers
+// come out identical either way, so nothing about the stages moved, but the depth
+// pass below is entirely about where BUILDINGS are.
+const IDENTITY = [1, 0, 0, 1, 0, 0];
+
+// Standard 2D affine compose: the parent's frame applied to the child's.
+const compose = (P, C) => [
+  P[0] * C[0] + P[2] * C[1],
+  P[1] * C[0] + P[3] * C[1],
+  P[0] * C[2] + P[2] * C[3],
+  P[1] * C[2] + P[3] * C[3],
+  P[0] * C[4] + P[2] * C[5] + P[4],
+  P[1] * C[4] + P[3] * C[5] + P[5]
+];
+
+const apply = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+
+function matrixOf(attrs) {
+  const m = /transform="matrix\(([^)]+)\)"/.exec(attrs);
+  if (!m) return IDENTITY;
+  const n = m[1].split(',').map(Number);
+  return n.length === 6 && n.every(Number.isFinite) ? n : IDENTITY;
+}
+
+const round = n => Math.round(n * 100) / 100;
+
+// Rewrite a path's coordinates through a matrix, command by command. Every
+// command in this file is M, L, C or Z with absolute coordinates — Graphite
+// writes nothing else — so each one is a whole number of points and the letters
+// come back out unchanged.
+//
+// Done through the parser rather than by substituting numbers in the string: a
+// path whose M was rewritten as an L closes a shape that was never meant to
+// close, and the difference does not show until something is drawn.
+function transformPath(d, m) {
+  if (m === IDENTITY) return d;
+  const pt = (x, y) => { const [a, b] = apply(m, x, y); return `${round(a)},${round(b)}`; };
+  let out = '';
+  for (const c of parse(d)) {
+    if (c[0] === 'Z') { out += 'Z'; continue; }
+    if (c[0] === 'C') out += `C${pt(c[1], c[2])} ${pt(c[3], c[4])} ${pt(c[5], c[6])}`;
+    else out += `${c[0]}${pt(c[1], c[2])}`;
+  }
+  return out;
+}
+
 const markers = [];
 const legs = [];
-const RE = /<path\s+d="([^"]+)"\s+fill="(#[0-9a-fA-F]{6})"|<path\s+fill="(#[0-9a-fA-F]{6})"\s+d="([^"]+)"/g;
-for (let m; (m = RE.exec(svg));) {
-  const d = m[1] || m[4];
-  const fill = (m[2] || m[3]).toLowerCase();
-  if (fill === MARKER_FILL) {
+// Every path, kept whole and placed where it is actually drawn, because the depth
+// pass needs to know what each shape IS and where its feet are.
+const shapes = [];
+
+{
+  const stack = [IDENTITY];
+  const TAG = /<(\/?)(g|path)\b([^>]*)>/g;
+  for (let t; (t = TAG.exec(svg));) {
+    const [, close, name, attrs] = t;
+    if (name === 'g') {
+      if (close) stack.pop();
+      else stack.push(compose(stack[stack.length - 1], matrixOf(attrs)));
+      continue;
+    }
+    if (close) continue;
+
+    const dm = /\bd="([^"]+)"/.exec(attrs);
+    const fm = /\bfill="(#[0-9a-fA-F]{6})"/.exec(attrs);
+    if (!dm || !fm) continue;
+
+    const here = stack[stack.length - 1];
+    const d = transformPath(dm[1], here);
+    const fill = fm[1].toLowerCase();
     const nums = (d.match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
     const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
-    markers.push([(Math.min(...xs) + Math.max(...xs)) / 2,
-                  (Math.min(...ys) + Math.max(...ys)) / 2]);
-  } else if (ROAD_FILLS.has(fill)) {
-    legs.push(centreline(d));
+    const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    shapes.push({ d, fill, box });
+
+    const area = (box[2] - box[0]) * (box[3] - box[1]);
+    if (fill === MARKER_FILL) markers.push([(box[0] + box[2]) / 2, (box[1] + box[3]) / 2]);
+    else if (ROAD_FILLS.has(fill) && area <= ROAD_MAX_AREA) legs.push(centreline(d));
   }
 }
 
@@ -285,6 +371,116 @@ for (let pass = 0; pass < ORDER.length; pass++) {
 }
 for (const m of ORDER) if (!incoming.has(m)) throw new Error(`marker ${m} is not on the road`);
 
+// --- what stands in front of a marker ---------------------------------------
+
+// THE MAP IS ONE FLAT PICTURE, so nothing in it can be behind anything the game
+// draws on top. A stage medallion sitting on the ground beside a tower therefore
+// covers the tower, which is exactly backwards: the tower is nearer the viewer.
+//
+// The fix is to name the shapes that stand IN FRONT of each marker and let the
+// game redraw those, clipped to their own outlines, over the medallion. It is the
+// same depth rule the board itself uses — see drawFigures in src/render.js —
+// applied to a picture instead of a list: a thing whose FEET are lower on the
+// screen is nearer, so it wins.
+//
+// Which shapes qualify:
+//
+//   IT HAS TO BE NEAR THE MARKER. Anything not touching the medallion's footprint
+//   cannot occlude it, and emitting it would make the game redraw half the map.
+//
+//   ITS FEET HAVE TO BE LOWER. `box[3]`, the bottom of the shape, below the
+//   marker's centre. A roof drawn high above the marker is behind it.
+//
+//   IT HAS TO BE AN OBJECT, not the ground. The terrain blobs pass both tests
+//   above — the whole green landmass has feet at the bottom of the artboard — and
+//   redrawing one would paint the entire map back over the medallion. Anything
+//   bigger than a fiftieth of the artboard is scenery, not a building.
+const ART = 1920 * 1080;
+const BIG = ART / 50;
+
+// The medallion's drawn footprint in artboard units: NODE_R in src/overview.js is
+// 14 canvas px, so 28 here, and a little wider than tall because it is an ellipse
+// lying on the ground rather than a disc facing the camera.
+const FOOT_X = 34;
+const FOOT_Y = 26;
+
+function inFrontOf([mx, my]) {
+  const out = [];
+  for (const s of shapes) {
+    if (s.fill === MARKER_FILL || ROAD_FILLS.has(s.fill)) continue;
+    const [x0, y0, x1, y1] = s.box;
+    if ((x1 - x0) * (y1 - y0) > BIG) continue;
+    if (y1 <= my) continue;
+    if (x1 < mx - FOOT_X || x0 > mx + FOOT_X) continue;
+    if (y1 < my - FOOT_Y || y0 > my + FOOT_Y) continue;
+    out.push(s.d);
+  }
+  return out;
+}
+
+// --- the same drawing, in browns --------------------------------------------
+
+// A PARCHMENT MAP, and it is a recolour rather than a repaint: every fill keeps
+// its brightness and loses its hue, which is the "turn it black and white, then
+// tint it" the owner asked for. So the artist goes on drawing in colour and this
+// derives the map the game shows.
+//
+// THE ONE PLACE IT IS NOT PURELY BRIGHTNESS is water. Blue reads bright to the
+// formula — the sea comes out at 0.61 where the grass is 0.53 — so a straight
+// conversion makes the sea LIGHTER than the land it cuts through, which is the
+// wrong way round on every map ever drawn. Cool hues are pushed down; greens are
+// nudged a hair to keep them off the mountains. Nothing else is touched.
+const RAMP = [
+  [0.00, [0x3B, 0x29, 0x17]],   // outlines and deep shadow
+  [0.30, [0x7A, 0x59, 0x34]],
+  [0.55, [0xA9, 0x81, 0x4E]],
+  [0.78, [0xC9, 0xA8, 0x78]],
+  [1.00, [0xEA, 0xDC, 0xB8]]    // the road, and paper
+];
+
+function hueOf(r, g, b) {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  if (mx === mn) return -1;                       // grey has no hue to bias
+  const c = mx - mn;
+  let h;
+  if (mx === r) h = ((g - b) / c) % 6;
+  else if (mx === g) h = (b - r) / c + 2;
+  else h = (r - g) / c + 4;
+  return ((h * 60) % 360 + 360) % 360;
+}
+
+function sepia(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  let L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const h = hueOf(r, g, b);
+  if (h >= 175 && h <= 265) L -= 0.14;            // water, and anything else cool
+  else if (h >= 70 && h < 175) L -= 0.02;         // keep grass off the mountains
+  L = Math.max(0, Math.min(1, L));
+
+  let i = 0;
+  while (i < RAMP.length - 2 && L > RAMP[i + 1][0]) i++;
+  const [l0, c0] = RAMP[i], [l1, c1] = RAMP[i + 1];
+  const t = l1 === l0 ? 0 : (L - l0) / (l1 - l0);
+  const mix = k => Math.round(c0[k] + (c1[k] - c0[k]) * t)
+    .toString(16).padStart(2, '0');
+  return `#${mix(0)}${mix(1)}${mix(2)}`;
+}
+
+{
+  const seen = new Map();
+  const browned = svg.replace(/(fill|stroke)="(#[0-9a-fA-F]{6})"/g, (_, attr, hex) => {
+    const key = hex.toLowerCase();
+    if (!seen.has(key)) seen.set(key, sepia(key));
+    return `${attr}="${seen.get(key)}"`;
+  });
+  writeFileSync(SEPIA, browned);
+  console.log(`wrote ${SEPIA}`);
+  console.log(`  ${seen.size} colour(s) mapped to browns`);
+}
+
 // --- write it out -----------------------------------------------------------
 
 // 40 points a leg. The longest is ~380 artboard px, so that is a point every 5
@@ -298,7 +494,11 @@ const stages = ORDER.map((m, i) => ({
   x: px(markers[m][0]),
   y: px(markers[m][1]),
   level: LEVEL_OF[i] ?? null,
-  leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)])
+  leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)]),
+  // The shapes that stand in front of this marker, as the artist's own path data
+  // in ARTBOARD units — not halved like everything else here, because the game
+  // clips with them under a 0.5 scale and re-scaled path data would round twice.
+  front: inFrontOf(markers[m])
 }));
 
 const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand.
@@ -337,5 +537,6 @@ console.log(`wrote ${OUT}`);
 console.log(`  ${stages.length} stages, ${built} playable, ${joined.length} road legs stitched`);
 for (const [i, s] of stages.entries()) {
   console.log(`  stage ${String(i + 1).padStart(2)}  marker ${s.marker}  (${String(s.x).padStart(6)}, ${String(s.y).padStart(5)})  ` +
-    `level ${s.level === null ? '-' : s.level}  leg ${s.leg.length}pts`);
+    `level ${s.level === null ? '-' : s.level}  leg ${s.leg.length}pts  ` +
+    `${s.front.length} shape(s) in front`);
 }

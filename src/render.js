@@ -27,7 +27,7 @@ import { drawOverview } from './overview.js';
 import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
-         CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
+         CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PROGRESS_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
@@ -4644,6 +4644,12 @@ function drawAdmin(ctx, state) {
   // when there is nothing to throw — a button that does nothing when you press
   // it reads as the panel having stopped listening.
   panelButton(ctx, RESET_BTN, 'Reset all', { live: touched() });
+
+  // ALWAYS LIVE, unlike Reset all beside it. That one is dimmed until something
+  // has been changed, because there is nothing to put back; this one is always
+  // something to do — a campaign standing at stage 1 can still be walked back to
+  // stage 0, which is where the opening animation lives.
+  panelButton(ctx, PROGRESS_BTN, 'Reset campaign', { size: 14 });
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';

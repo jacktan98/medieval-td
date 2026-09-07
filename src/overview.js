@@ -25,9 +25,10 @@
 import { art } from './assets.js';
 import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
 import { levels } from './level.js';
-import { bestStars, unlockedStages, saveUnlocked } from './score.js';
+import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { MODES } from './data/waves.js';
+import { SQUASH } from './ground.js';
 
 // --- how much of the road is open -------------------------------------------
 
@@ -64,10 +65,10 @@ function seedFromStars() {
 // zero is what makes the opening animation play.
 export function openedStages() {
   const saved = unlockedStages();
-  if (saved > 0) return saved;
+  if (saved !== null) return saved;         // including a deliberate zero
 
   const seeded = seedFromStars();
-  if (seeded > 0) saveUnlocked(seeded);
+  saveUnlocked(seeded);                     // written even at zero, so this runs once
   return seeded;
 }
 
@@ -148,8 +149,21 @@ export const stageOfLevel = li => {
 
 // --- drawing ----------------------------------------------------------------
 
-const NODE_R = 13;
+// THE MEDALLION IS AN ELLIPSE, not a disc, and it is the game's own SQUASH that
+// flattens it — the same 0.62 every reach ring and every plot's dirt patch on
+// every board is drawn with. A stage marker is a thing lying on the ground seen
+// from the same angle as everything else, so it is foreshortened by the same
+// amount. Picking a number by eye here would have made the world map the one
+// surface in the game at a different tilt.
+const NODE_R = 15;
 const INK = '#2A1D0E';
+
+// A blue banner, and blue because it has to be the one thing on a brown map that
+// is not brown. The map is a parchment now: every fill in it went through a
+// luminance ramp into browns, so a red flag would sit a shade away from the
+// hills behind it. See sepia() in tools/overview.mjs.
+const FLAG_CLOTH = '#3E6FA8';
+const FLAG_SHADE = '#2E5583';
 
 // A dot every 10px reads as a trail of steps rather than a line, which is the
 // whole point: the road is already painted into the artwork, so what this marks
@@ -195,30 +209,54 @@ function drawTrail(ctx, leg, frac) {
   ctx.restore();
 }
 
-// The medallion that replaces the artist's red marker once a stage is reached.
-// A marker the player has not got to yet is left alone: the red dot painted into
-// the map IS the drawing for an unvisited waypoint, so nothing is drawn over it.
+const disc = (ctx, x, y, r) => {
+  ctx.beginPath();
+  ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
+};
+
+// A waypoint the player has not reached. The artist's red dot is a brown dot on
+// the parchment now and would barely read, so it is drawn here instead — flat,
+// unlit, and the same ellipse as everything else so the row of them looks like
+// one kind of thing at two states rather than two kinds.
+function drawUnreached(ctx, i) {
+  const s = STAGES[i];
+  ctx.save();
+  disc(ctx, s.x, s.y, NODE_R * 0.62);
+  ctx.fillStyle = 'rgba(59,41,23,0.55)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(59,41,23,0.75)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// The medallion that replaces the artist's marker once a stage is reached.
 function drawNode(ctx, i, hot) {
   const s = STAGES[i];
   const open = playable(i);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, NODE_R, 0, Math.PI * 2);
+
+  // The shadow it casts on the ground, offset down rather than out: the light on
+  // this map comes from above, and a flat thing lying in grass has its shadow
+  // under its lower edge.
+  disc(ctx, s.x, s.y + 2.4, NODE_R);
+  ctx.fillStyle = 'rgba(43,30,16,0.34)';
+  ctx.fill();
+
+  disc(ctx, s.x, s.y, NODE_R);
   ctx.fillStyle = INK;
   ctx.fill();
 
-  const g = ctx.createLinearGradient(0, s.y - NODE_R, 0, s.y + NODE_R);
+  const g = ctx.createLinearGradient(0, s.y - NODE_R * SQUASH, 0, s.y + NODE_R * SQUASH);
   if (open) { g.addColorStop(0, '#F5DB95'); g.addColorStop(1, '#BE8C2A'); }
   else { g.addColorStop(0, '#9C958A'); g.addColorStop(1, '#6E685F'); }
-  ctx.beginPath();
-  ctx.arc(s.x, s.y, NODE_R - 2.6, 0, Math.PI * 2);
+  disc(ctx, s.x, s.y, NODE_R - 2.8);
   ctx.fillStyle = g;
   ctx.fill();
 
   if (hot) {
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, NODE_R + 2.4, 0, Math.PI * 2);
+    disc(ctx, s.x, s.y, NODE_R + 2.6);
     ctx.strokeStyle = 'rgba(246,231,193,0.9)';
     ctx.lineWidth = 1.6;
     ctx.stroke();
@@ -236,10 +274,78 @@ function drawNode(ctx, i, hot) {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 1.7;
     ctx.beginPath();
-    ctx.arc(s.x, s.y - 1.4, 3.1, Math.PI, 0);
+    ctx.arc(s.x, s.y - 1.8, 2.8, Math.PI, 0);
     ctx.stroke();
     ctx.fillStyle = INK;
-    ctx.fillRect(s.x - 4.2, s.y - 1.4, 8.4, 6.2);
+    ctx.fillRect(s.x - 3.9, s.y - 1.8, 7.8, 5.4);
+  }
+  ctx.restore();
+}
+
+// WHAT STANDS IN FRONT OF THE MARKER, PUT BACK ON TOP.
+//
+// The map is one flat picture, so a medallion drawn over it covers the tower
+// beside it — which is backwards, because the tower's feet are lower on the
+// screen and it is therefore nearer. tools/overview.mjs works out which shapes
+// those are; this redraws them, each clipped to its own outline, so the artwork
+// comes back over the medallion with nothing else coming with it.
+//
+// The clip is in ARTBOARD units, which is why the scale is applied first and the
+// map is drawn at 1920x1080 underneath it: the path data is the artist's own,
+// untouched, and re-scaling it here would round coordinates that have already
+// been rounded once.
+function drawFront(ctx, i) {
+  const img = art.overview;
+  const front = STAGES[i].front;
+  if (!img || !front || !front.length) return;
+
+  for (const d of front) {
+    ctx.save();
+    ctx.scale(0.5, 0.5);
+    ctx.clip(new Path2D(d));
+    ctx.drawImage(img, 0, 0, 1920, 1080);
+    ctx.restore();
+  }
+}
+
+// The stars a stage has been beaten with, over its marker. The BEST across every
+// difficulty and every length, not the setting currently chosen — there is no
+// setting chosen on this screen, and "what you have achieved here" is one answer
+// rather than four. The panel that opens on a tap is where the four are told
+// apart, because that is where they can be tapped between.
+function starsAt(i) {
+  const s = STAGES[i];
+  if (s.level === null) return 0;
+  const id = levels[s.level].id;
+  let best = 0;
+  for (const d of DIFFICULTIES) {
+    for (const m of MODES) best = Math.max(best, bestStars(id, d.id, m.id));
+  }
+  return best;
+}
+
+const STAR_R = 4.6;
+const STAR_GAP = 11;
+
+function drawStars(ctx, cx, cy, filled) {
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 1.5;
+  const left = cx - (MAX_STARS - 1) * STAR_GAP / 2;
+  for (let i = 0; i < MAX_STARS; i++) {
+    ctx.beginPath();
+    for (let p = 0; p < 10; p++) {
+      const a = -Math.PI / 2 + p * Math.PI / 5;
+      const rr = p % 2 ? STAR_R * 0.45 : STAR_R;
+      const x = left + i * STAR_GAP + Math.cos(a) * rr;
+      const y = cy + Math.sin(a) * rr;
+      p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = i < filled ? '#F2C64B' : 'rgba(59,41,23,0.30)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(43,30,16,0.85)';
+    ctx.stroke();
   }
   ctx.restore();
 }
@@ -250,8 +356,11 @@ function drawNode(ctx, i, hot) {
 function drawFlag(ctx, x, y, t, wave) {
   const k = plant(t);
   const drop = (1 - k) * 20;          // falls in from above
-  const foot = y - NODE_R - 1 + drop;
-  const h = 25 * (0.55 + 0.45 * k);   // and grows into its full height
+  // The pole stands at the BACK of the ellipse rather than its centre, so the
+  // medallion reads as ground the flag is planted in rather than a coin the flag
+  // is balanced on.
+  const foot = y - NODE_R * SQUASH - 1 + drop;
+  const h = 27 * (0.55 + 0.45 * k);   // and grows into its full height
 
   ctx.save();
   ctx.globalAlpha = Math.min(1, t * 2.4);
@@ -274,13 +383,25 @@ function drawFlag(ctx, x, y, t, wave) {
   ctx.quadraticCurveTo(x + 9 + s1, top + 3.5, x + 16 + s2, top + 7);
   ctx.quadraticCurveTo(x + 9 + s1, top + 10, x + 1, top + 13.5);
   ctx.closePath();
-  ctx.fillStyle = '#C4453A';
+  ctx.fillStyle = FLAG_CLOTH;
   ctx.fill();
-  ctx.strokeStyle = '#3A2A12';
+  ctx.strokeStyle = '#25190C';
   ctx.lineWidth = 1.4;
   ctx.stroke();
 
+  // A fold along the underside, so the cloth has a near face and a far one
+  // rather than reading as a flat triangle of colour.
+  ctx.beginPath();
+  ctx.moveTo(x + 1, top + 13.5);
+  ctx.quadraticCurveTo(x + 9 + s1, top + 10, x + 16 + s2, top + 7);
+  ctx.lineTo(x + 16 + s2, top + 7);
+  ctx.quadraticCurveTo(x + 9 + s1, top + 12.5, x + 1, top + 13.5);
+  ctx.closePath();
+  ctx.fillStyle = FLAG_SHADE;
+  ctx.fill();
+
   ctx.restore();
+  return foot - h;                    // the top of the pole, for the stars
 }
 
 // The world, everything reached on it, and the flag on the furthest point. Draws
@@ -300,19 +421,47 @@ export function drawOverview(ctx, state) {
     drawTrail(ctx, STAGES[i].leg, live && r.phase === 'road' ? easeOut(r.t) : 1);
   }
 
+  // Waypoints still ahead of the player, drawn before anything reached so a
+  // medallion always wins where two sit close together.
+  for (let i = unlocked; i < STAGE_COUNT; i++) drawUnreached(ctx, i);
+
   // The medallions. A stage still having its road drawn has not been arrived at
   // yet, so its marker stays as the artist painted it until the flag lands.
+  //
+  // EACH ONE IS FOLLOWED BY WHATEVER STANDS IN FRONT OF IT, put back on top of
+  // the medallion — the depth rule the board itself uses, applied to a flat
+  // picture. Done per stage rather than in a second pass over all of them,
+  // because a shape in front of stage 3 is not in front of stage 6 and redrawing
+  // it there would paint over a medallion it has nothing to do with.
+  const frontier = unlocked - 1;
   for (let i = 0; i < unlocked; i++) {
     if (r && r.stage === i && r.phase === 'road') continue;
-    drawNode(ctx, i, i === unlocked - 1 && state.stage === null);
+    drawNode(ctx, i, i === frontier && state.stage === null);
+    drawFront(ctx, i);
   }
 
   // The flag sits on the furthest stage reached, which is the one the player is
   // being pointed at. It waves off wall-clock time so it is alive on a screen
   // where nothing else is moving.
-  const front = unlocked - 1;
-  if (front >= 0 && !(r && r.stage === front && r.phase === 'road')) {
-    const t = r && r.stage === front && r.phase === 'flag' ? r.t : 1;
-    drawFlag(ctx, STAGES[front].x, STAGES[front].y, t, performance.now() / 1000);
+  let flagTop = null;
+  if (frontier >= 0 && !(r && r.stage === frontier && r.phase === 'road')) {
+    const t = r && r.stage === frontier && r.phase === 'flag' ? r.t : 1;
+    flagTop = drawFlag(ctx, STAGES[frontier].x, STAGES[frontier].y, t,
+      performance.now() / 1000);
+  }
+
+  // AND THE STARS, LAST AND ABOVE EVERYTHING. A stage that has been beaten wears
+  // what it was beaten with, over the flag where there is one and over the
+  // medallion where there is not — so the row never lands on the cloth, and a
+  // player looking down the road reads their record off it without tapping
+  // anything.
+  for (let i = 0; i < unlocked; i++) {
+    if (r && r.stage === i && r.phase === 'road') continue;
+    const stars = starsAt(i);
+    if (!stars) continue;
+    const top = i === frontier && flagTop !== null
+      ? flagTop - 8
+      : STAGES[i].y - NODE_R * SQUASH - 9;
+    drawStars(ctx, STAGES[i].x, top, stars);
   }
 }

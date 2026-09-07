@@ -30,6 +30,7 @@ import { stageAt, stageOfLevel } from '../src/overview.js';
 import { levels } from '../src/level.js';
 
 const SRC = 'assets/map/Overview_Map.svg';
+const SEPIA = 'assets/map/Overview_Map_sepia.svg';
 const SCALE = 0.5;
 const NODE_HIT = 22;   // must match src/overview.js
 
@@ -42,20 +43,65 @@ const ok = (cond, label, detail = '') => {
 // --- what the drawing says today --------------------------------------------
 
 const svg = readFileSync(SRC, 'utf8');
-const RE = /<path\s+d="([^"]+)"\s+fill="(#[0-9a-fA-F]{6})"|<path\s+fill="(#[0-9a-fA-F]{6})"\s+d="([^"]+)"/g;
+
+// THE GROUP TRANSFORMS ARE WALKED HERE TOO, deliberately as a second
+// implementation rather than by importing the generator's. A checker that shares
+// the code it is checking cannot catch a bug in it — and this is the exact bug
+// this feature already had once, where paths were read without their groups and
+// every building in the artboard landed hundreds of pixels from where it is
+// drawn. Both readings agreeing is the thing worth knowing.
+const ID = [1, 0, 0, 1, 0, 0];
+const mul = (P, C) => [
+  P[0] * C[0] + P[2] * C[1], P[1] * C[0] + P[3] * C[1],
+  P[0] * C[2] + P[2] * C[3], P[1] * C[2] + P[3] * C[3],
+  P[0] * C[4] + P[2] * C[5] + P[4], P[1] * C[4] + P[3] * C[5] + P[5]
+];
 
 const drawnMarkers = [];
-let roadPaths = 0;
-for (let m; (m = RE.exec(svg));) {
-  const d = m[1] || m[4];
-  const fill = (m[2] || m[3]).toLowerCase();
-  if (fill === '#d30000') {
-    const n = (d.match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
-    const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
-    drawnMarkers.push([(Math.min(...xs) + Math.max(...xs)) / 2 * SCALE,
-                       (Math.min(...ys) + Math.max(...ys)) / 2 * SCALE]);
-  } else if (fill === '#ffde9e' || fill === '#ffefd4') roadPaths++;
+const roadBoxes = [];
+let paths = 0, transformed = 0;
+{
+  const stack = [ID];
+  const TAG = /<(\/?)(g|path)\b([^>]*)>/g;
+  for (let t; (t = TAG.exec(svg));) {
+    const [, close, name, attrs] = t;
+    if (name === 'g') {
+      if (close) { stack.pop(); continue; }
+      const tm = /transform="matrix\(([^)]+)\)"/.exec(attrs);
+      const n = tm ? tm[1].split(',').map(Number) : null;
+      stack.push(mul(stack[stack.length - 1], n && n.length === 6 ? n : ID));
+      continue;
+    }
+    if (close) continue;
+
+    const dm = /\bd="([^"]+)"/.exec(attrs);
+    const fm = /\bfill="(#[0-9a-fA-F]{6})"/.exec(attrs);
+    if (!dm || !fm) continue;
+    paths++;
+
+    const m = stack[stack.length - 1];
+    if (m.some((v, i) => v !== ID[i])) transformed++;
+    const nums = (dm[1].match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
+    const xs = [], ys = [];
+    for (let i = 0; i + 1 < nums.length; i += 2) {
+      xs.push(m[0] * nums[i] + m[2] * nums[i + 1] + m[4]);
+      ys.push(m[1] * nums[i] + m[3] * nums[i + 1] + m[5]);
+    }
+    const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    const fill = fm[1].toLowerCase();
+    if (fill === '#d30000') {
+      drawnMarkers.push([(box[0] + box[2]) / 2 * SCALE, (box[1] + box[3]) / 2 * SCALE]);
+    } else if (fill === '#ffde9e' || fill === '#ffefd4') roadBoxes.push(box);
+  }
 }
+
+// The beach shares the road's sand colour and is excluded by area — see
+// ROAD_MAX_AREA in tools/overview.mjs. That split has to stay clean, or a
+// landmass gets fed to the centreline finder and a "road" appears through the sea.
+const ROAD_MAX_AREA = 100000;
+const area = b => (b[2] - b[0]) * (b[3] - b[1]);
+const roadPaths = roadBoxes.filter(b => area(b) <= ROAD_MAX_AREA).length;
+const roadTooBig = roadBoxes.filter(b => area(b) > ROAD_MAX_AREA);
 
 console.log('\n--- the committed data still describes the drawing ---\n');
 
@@ -81,10 +127,21 @@ ok(drawnMarkers.length === STAGE_COUNT,
         : `worst ${worst.toFixed(2)}px`);
 }
 
-// The generator asserts these two counts and refuses to write if they change, so
-// a mismatch here means the data was written against a different drawing.
+// The generator asserts this count and refuses to write if it changes, so a
+// mismatch here means the data was written against a different drawing.
 ok(roadPaths === 14, 'and the road is still drawn in the same number of pieces',
-  `${roadPaths} path(s) in the two road fills`);
+  `${roadPaths} leg(s) in the two road fills`);
+
+// The one sand-coloured shape that is not road. If a second appears, or this one
+// shrinks under the threshold, the area split has stopped telling them apart.
+ok(roadTooBig.length === 1, 'and the beach is the only sand that is not road',
+  roadTooBig.map(b => `${Math.round(area(b))} sq units`).join(', ') || 'none found');
+
+// The reading that caught a real bug: if this ever drops to zero, the artist has
+// flattened the file and the generator's transform walk is no longer being
+// exercised by anything.
+ok(transformed > 0, 'and the drawing still nests shapes inside moved groups',
+  `${transformed} of ${paths} path(s) carry a group transform`);
 
 console.log('\n--- every road leads where it says ---\n');
 
@@ -197,6 +254,90 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
 
   ok(stageOfLevel(levels.length) === null,
     'while a level that does not exist is nowhere');
+}
+
+console.log('\n--- the parchment is the same drawing in browns ---\n');
+
+// The recoloured map is DERIVED and committed like everything else here, so it
+// can go stale on its own — a redraw that is recoloured but not re-extracted, or
+// re-extracted but not recoloured, both leave a file that no longer matches.
+{
+  const sep = readFileSync(SEPIA, 'utf8');
+
+  const countPaths = s => (s.match(/<path\b/g) || []).length;
+  ok(countPaths(sep) === countPaths(svg),
+    'the recolour holds every shape the artist drew',
+    `${countPaths(sep)} path(s), source has ${countPaths(svg)}`);
+
+  // Same geometry, so the markers the game sits on are in the same places. This
+  // is what stops a recolour from silently becoming a redraw.
+  const strip = s => s.replace(/(fill|stroke)="#[0-9a-fA-F]{6}"/g, '');
+  ok(strip(sep) === strip(svg),
+    'and changes nothing but the colours',
+    'identical with every fill and stroke removed');
+
+  // EVERY COLOUR IS A BROWN. Red down through green down through blue is what
+  // brown IS, and it is the one thing a luminance ramp cannot get wrong by
+  // accident — a hue slipping through unconverted fails here immediately.
+  const colours = [...new Set((sep.match(/(?:fill|stroke)="(#[0-9a-fA-F]{6})"/g) || [])
+    .map(s => s.slice(-8, -1).toLowerCase()))];
+  const notBrown = colours.filter(c => {
+    const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+    return !(r >= g && g >= b);
+  });
+  ok(notBrown.length === 0, 'and every colour in it is a brown',
+    notBrown.length ? notBrown.join(', ') : `${colours.length} shade(s), all r >= g >= b`);
+
+  // A ramp that collapsed would be a silhouette rather than a map: the whole
+  // point is that lighter things stay lighter.
+  const lum = c => 0.299 * parseInt(c.slice(1, 3), 16) +
+                   0.587 * parseInt(c.slice(3, 5), 16) +
+                   0.114 * parseInt(c.slice(5, 7), 16);
+  const lo = Math.min(...colours.map(lum)), hi = Math.max(...colours.map(lum));
+  ok(hi - lo > 90, 'and the browns still range from dark to light',
+    `${Math.round(lo)} to ${Math.round(hi)} of 255, over ${colours.length} shade(s)`);
+}
+
+console.log('\n--- what stands in front of a marker is put back on top ---\n');
+
+// The depth pass. Its failure mode is silence: get it wrong and the medallion
+// simply covers a building, which looks like nothing in particular unless you
+// know the building should be in front.
+{
+  const withFront = STAGES.filter(s => s.front && s.front.length);
+  ok(withFront.length > 0, 'some markers have scenery standing in front of them',
+    `${withFront.length} of ${STAGE_COUNT} stage(s)`);
+
+  // Every occluder has to be a path the browser can actually clip with. A
+  // malformed one throws at draw time, on the world map, every frame.
+  const shapes = STAGES.flatMap(s => s.front || []);
+  const wellFormed = shapes.every(d => /^M[-\d.,\sCLZ]+$/.test(d) && d.includes('Z'));
+  ok(wellFormed, 'and every one is a closed path the game can clip with',
+    `${shapes.length} shape(s)`);
+
+  // AND ITS FEET ARE LOWER THAN THE MARKER, which is the whole rule. A shape
+  // that failed this would be drawn in front of something it is behind.
+  const NUM = /-?\d+\.?\d*(?:[eE][-+]?\d+)?/g;
+  let wrong = 0;
+  for (const s of STAGES) {
+    for (const d of s.front || []) {
+      const n = (d.match(NUM) || []).map(Number);
+      const ys = n.filter((_, i) => i % 2 === 1);
+      if (Math.max(...ys) * SCALE <= s.y) wrong++;
+    }
+  }
+  ok(wrong === 0, 'and stands nearer the viewer than the marker it covers',
+    wrong ? `${wrong} shape(s) are actually behind` : `${shapes.length} checked`);
+
+  // The occluders are the artist's own path data at ARTBOARD scale, because the
+  // game clips with them under a 0.5 transform. Emitted halved, every one would
+  // land in the top-left quarter of the map.
+  const onBoard = shapes.every(d => {
+    const n = (d.match(NUM) || []).map(Number);
+    const xs = n.filter((_, i) => i % 2 === 0);
+    return Math.max(...xs) <= 1920 && Math.min(...xs) >= -200;
+  });
+  ok(onBoard, 'and is stored in artboard units, not halved ones', '0..1920 across');
 }
 
 console.log(bad

@@ -440,10 +440,21 @@ So the order for an upload that gains or loses a marker is:
 
 `Overview_Map.svg` is not a board. It is the campaign map — the world the player
 picks a stage from before any game starts — and almost nothing above applies to
-it. There are no plots on it, nothing is ever taken away from it, and it is never
-split: `src/assets.js` loads the artist's file whole, under the key `overview`.
+it. There are no plots on it and nothing is ever taken away from it.
 `Overview_Map.png` is a flat export of the same drawing, kept beside it for
 reference; the game does not load it.
+
+**The game does not load `Overview_Map.svg` either.** It loads
+`Overview_Map_sepia.svg`, which is DERIVED from it and committed like everything
+else here. Every fill and stroke in the artist's file is put through a luminance
+ramp into browns: each colour keeps its brightness and loses its hue, so the map
+reads as parchment while staying the same picture. Draw in colour; the tool makes
+the parchment.
+
+The one place the ramp is not purely brightness is water. Blue reads bright to
+the formula — the sea comes out lighter than the grass — so cool hues are pushed
+down a step and greens a hair, which puts the sea back under the land where every
+map ever drawn has it. Nothing else is adjusted.
 
 **What IS extracted is geometry, into data rather than a second drawing.**
 `tools/overview.mjs` reads three things out of the SVG and writes

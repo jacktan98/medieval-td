@@ -151,13 +151,23 @@ export function clearStars() {
 // same reason — a game that cannot save progress should still be a game.
 const PROGRESS_KEY = 'medieval-td/progress';
 
+// NULL AND ZERO ARE DIFFERENT ANSWERS, and the difference is the whole reason
+// this returns null at all. Null means NOTHING HAS EVER BEEN WRITTEN — a player
+// who predates the key, whose progress has to be worked out from their star
+// records instead (see openedStages in overview.js). Zero means somebody wrote a
+// zero on purpose: the campaign was reset, and it must NOT be seeded back from
+// the stars that are still sitting there.
+//
+// Collapsing the two is how a reset button appears to do nothing.
 export function unlockedStages() {
   const s = store();
-  if (!s) return 0;
+  if (!s) return null;
   try {
-    const n = parseInt(s.getItem(PROGRESS_KEY), 10);
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  } catch { return 0; }
+    const raw = s.getItem(PROGRESS_KEY);
+    if (raw === null) return null;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  } catch { return null; }
 }
 
 export function saveUnlocked(n) {
@@ -166,13 +176,12 @@ export function saveUnlocked(n) {
   try { s.setItem(PROGRESS_KEY, String(n)); } catch { /* full, or refused */ }
 }
 
-// Back to a player who has never seen the world map, so the opening animation
-// plays again. Only the tools call it; there is no button for it in the game.
-export function clearProgress() {
-  const s = store();
-  if (!s) return;
-  try { s.removeItem(PROGRESS_KEY); } catch { /* refused */ }
-}
+// Back to a player who has never walked the road, so the opening animation plays
+// again. Writes an explicit zero rather than removing the key, for the reason
+// above — and leaves the STAR RECORDS alone, because they are not progress. What
+// a stage was beaten with and how far the road has opened are two different
+// facts, and resetting one should not throw away the other.
+export const resetProgress = () => saveUnlocked(0);
 
 // Everything the end-of-game panel shows, worked out ONCE at the moment the game
 // ends and then kept on the state.

@@ -51,6 +51,7 @@ export const PARTY_HREF = 'birthday/';
 import { levels } from './level.js';
 import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/waves.js';
 import { families } from './data/towers.js';
+import { resetProgress } from './score.js';
 
 // --- what is stored -----------------------------------------------------------
 //
@@ -950,6 +951,16 @@ export const unitRows = page =>
 const FOOT_H = 40;
 export const FOOT_Y = INNER.b - FOOT_H;
 export const RESET_BTN = { x: INNER.x, y: FOOT_Y, w: 140, h: FOOT_H };
+
+// WALK THE CAMPAIGN BACK TO THE START, beside the reset that undoes the numbers.
+// Two different things being put back, so two buttons: this one has nothing to do
+// with wave counts or purses, and clearing one should never clear the other.
+//
+// It exists because the world map cannot otherwise be tested. Its opening — the
+// road drawing itself in from off the edge, the flag planting — happens once per
+// player, and the owner had already finished every stage the game has, so there
+// was no way back to it short of editing storage by hand.
+export const PROGRESS_BTN = { x: INNER.x + 156, y: FOOT_Y, w: 186, h: FOOT_H };
 export const PREV_BTN = { x: INNER.r - 210, y: FOOT_Y, w: 52, h: FOOT_H };
 export const NEXT_BTN = { x: INNER.r - 52, y: FOOT_Y, w: 52, h: FOOT_H };
 
@@ -1049,6 +1060,20 @@ export function tapAdmin(state, x, y, restart) {
   if (on(RESET_BTN)) {
     if (!touched()) return false;
     reset();
+    return true;
+  }
+
+  // The campaign, back to nothing walked. The live state is put back too rather
+  // than only the stored value: newGame reads `unlocked` off the state when it is
+  // there, so writing storage alone would leave the map exactly as it was until
+  // the page was reloaded. Zero is what makes the opening animation play.
+  if (on(PROGRESS_BTN)) {
+    resetProgress();
+    state.unlocked = 0;
+    state.stage = null;
+    state.pendingReveal = null;
+    closeAdmin(state);
+    restart();
     return true;
   }
 

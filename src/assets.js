@@ -708,7 +708,10 @@ export const paths = {
   // IS split out, but into data rather than a second drawing: tools/overview.mjs
   // reads the marker positions and the road centrelines out of this same file
   // and writes src/data/overview.js. Re-run it after every redraw.
-  overview:    'assets/map/Overview_Map.svg'
+  // THE SEPIA ONE, and it is DERIVED: tools/overview.mjs recolours the artist's
+  // Overview_Map.svg into browns that keep every fill's brightness and drop its
+  // hue, then writes this beside it. The artist goes on drawing in colour.
+  overview:    'assets/map/Overview_Map_sepia.svg'
 };
 
 // Art the game is wired for but does not have yet. A miss here is expected, so
