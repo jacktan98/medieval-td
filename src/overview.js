@@ -24,6 +24,52 @@
 
 import { art } from './assets.js';
 import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
+import { levels } from './level.js';
+import { bestStars, unlockedStages, saveUnlocked } from './score.js';
+import { DIFFICULTIES } from './data/difficulty.js';
+import { MODES } from './data/waves.js';
+
+// --- how much of the road is open -------------------------------------------
+
+// HOW FAR A PLAYER HAS GOT, and the answer for somebody who was playing this
+// game before there was a road to be along.
+//
+// The progress key is new. Every player who already has this game on their phone
+// has no value under it, and reading that as "has never played" would lock maps
+// they cleared weeks ago behind stages they had just been told they cannot reach
+// — the one bug in this feature that would look exactly like the feature working.
+//
+// So a missing key falls back to the star records, which have been kept since
+// long before any of this. A star at ANY difficulty and ANY length means that
+// stage was finished, and finishing a stage is the whole of what opens the next
+// one. It stops at the first stage with nothing recorded, because the road opens
+// in order and a player who somehow has stars on map 3 and none on map 2 has not
+// walked past map 2.
+//
+// Seeded once and saved, so this runs on exactly one load per player.
+function seedFromStars() {
+  let open = 0;
+  for (let i = 0; i < STAGE_COUNT; i++) {
+    if (!playable(i)) break;
+    const id = levels[STAGES[i].level].id;
+    const cleared = DIFFICULTIES.some(d => MODES.some(m => bestStars(id, d.id, m.id) > 0));
+    if (!cleared) break;
+    open = i + 2;                       // this one is done, so the next is open
+  }
+  return Math.min(open, STAGE_COUNT);
+}
+
+// What the game should start with: the saved count, or one worked out from the
+// stars for a player who predates the key. Zero means a genuinely new player, and
+// zero is what makes the opening animation play.
+export function openedStages() {
+  const saved = unlockedStages();
+  if (saved > 0) return saved;
+
+  const seeded = seedFromStars();
+  if (seeded > 0) saveUnlocked(seeded);
+  return seeded;
+}
 
 // --- the animation ----------------------------------------------------------
 
