@@ -259,11 +259,21 @@ function drawNode(ctx, i, hot) {
   }
 
   if (open) {
-    ctx.fillStyle = INK;
-    ctx.font = '700 13px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(i + 1), s.x, s.y + 0.5);
+    // NO NUMBER. It used to carry one and it is better without: a player reads
+    // this map by where the flag is and how far the dots reach, not by counting.
+    // The numeral was also the only thing on the map at UI scale rather than map
+    // scale, and it fought the drawing for it — 13px of sans-serif on a
+    // parchment. The panel still says which stage this is, on the screen where
+    // that is a thing worth knowing.
+    //
+    // What replaces it is a highlight across the top of the dome, so the disc
+    // still reads as a raised object rather than a hole.
+    const lit = ctx.createLinearGradient(0, s.y - NODE_R * SQUASH, 0, s.y + NODE_R * SQUASH * 0.4);
+    lit.addColorStop(0, 'rgba(255,246,214,0.62)');
+    lit.addColorStop(1, 'rgba(255,246,214,0)');
+    disc(ctx, s.x, s.y - NODE_R * SQUASH * 0.16, NODE_R - 4.6);
+    ctx.fillStyle = lit;
+    ctx.fill();
   } else {
     // A padlock, small enough to read as texture at this size and specific
     // enough to read as "not yet" when you look at it.

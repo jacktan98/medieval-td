@@ -406,17 +406,18 @@ const FOOT_Y = 26;
 
 // HOW MUCH OF THE MEDALLION A SHAPE MAY SWALLOW.
 //
-// Depth is only worth having if the thing behind is still legible. The crossbow
-// sentry beside stage 3 stands almost exactly on its marker, and putting the
-// whole tower in front left a sliver of gold and an unreadable numeral — the
-// effect was working perfectly and the stage had disappeared.
+// This was 0.45 for one release, to keep a stage NUMBER readable under the
+// crossbow sentry that stands almost on top of stage 3's marker. There are no
+// numbers on the medallions any more — the owner took them off, on the grounds
+// that which stage this is matters far less than where it is — so the reason for
+// holding the scenery back has gone with them, and the owner's verdict on the
+// uncapped version was that it was working fine.
 //
-// So a shape that covers most of the medallion is dropped rather than drawn: it
-// is nearer, but saying so costs more than it is worth. Anything overlapping less
-// than this still goes in front, which is where the effect actually reads —
-// a corner of a roof crossing the disc says "these things are at different
-// depths" far better than a tower sitting on top of it.
-const MOST_OF_IT = 0.45;
+// It is not raised all the way to 1, though. A medallion that vanishes completely
+// is a stage that cannot be found or tapped, and a gold disc showing under the
+// edge of a tower is all it takes to avoid that. This is the ceiling, not the
+// target: nothing on the map currently comes near it.
+const MOST_OF_IT = 0.88;
 
 // MEASURED AS A UNION, not shape by shape. A building is not one path — the
 // sentry beside stage 3 is a body, a roof, a window and a door — and each of the
