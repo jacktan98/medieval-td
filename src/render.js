@@ -3287,7 +3287,7 @@ const ROW_PITCH = 18;
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 396, w: 160, h: 46 };
+export const START_BTN = { x: 400, y: 356, w: 160, h: 46 };
 
 // THE ROW OF MAP BUTTONS IS GONE. Which map you play is a place on the world map
 // now — see src/overview.js — so the thing that used to be three plates side by
@@ -3298,7 +3298,11 @@ export const START_BTN = { x: 400, y: 396, w: 160, h: 46 };
 // THE PANEL IT ALL SITS ON. Centred, and sized to what it holds rather than to
 // the screen: the world behind it is the thing the player has just been reading,
 // so this covers as little of it as it can get away with.
-export const STAGE_PANEL = { x: 258, y: 158, w: 444, h: 300 };
+// IT MOVED UP. At y 158 it ran to 458 and the Encyclopedia button starts at 460,
+// so the two were two pixels apart and read as one stuck-together block. The
+// panel is the thing being decided on and the book is a door out of it; they
+// need air between them.
+export const STAGE_PANEL = { x: 258, y: 136, w: 444, h: 292 };
 
 // Back to the world map without starting anything. Top-right of the panel, drawn
 // as a plain glyph rather than a plate — it is an escape, not a third choice
@@ -3332,8 +3336,8 @@ const settingRow = (items, y) => {
   }));
 };
 
-const MODE_ROW_Y = 276;
-const DIFF_ROW_Y = 322;
+const MODE_ROW_Y = 258;
+const DIFF_ROW_Y = 302;
 
 export const modeButtons = () => settingRow(MODES, MODE_ROW_Y);
 export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);

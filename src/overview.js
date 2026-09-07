@@ -79,8 +79,14 @@ export function openedStages() {
 // punctuation. Together they are about a second and a quarter, which is long
 // enough to read as an event and short enough that a player who has seen it four
 // times is not waiting on it — and they can tap through it anyway.
-const ROAD_SECONDS = 0.9;
-const FLAG_SECONDS = 0.42;
+// SLOW, because it is the only thing on this screen that happens and it is the
+// reward for a run. The first pass was 0.9s and 0.42s, which is the pace of a UI
+// transition — something to be got through. A road being walked should take long
+// enough to watch, and a flag going into the ground should land rather than
+// appear. A tap still skips both, so the cost to somebody who has seen it is one
+// touch.
+const ROAD_SECONDS = 2.6;
+const FLAG_SECONDS = 1.1;
 
 // Slow into the destination rather than arriving at full speed. The road is
 // walking towards somewhere, and something that stops dead has not arrived, it
@@ -214,23 +220,13 @@ const disc = (ctx, x, y, r) => {
   ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
 };
 
-// A waypoint the player has not reached. The artist's red dot is a brown dot on
-// the parchment now and would barely read, so it is drawn here instead — flat,
-// unlit, and the same ellipse as everything else so the row of them looks like
-// one kind of thing at two states rather than two kinds.
-function drawUnreached(ctx, i) {
-  const s = STAGES[i];
-  ctx.save();
-  disc(ctx, s.x, s.y, NODE_R * 0.62);
-  ctx.fillStyle = 'rgba(59,41,23,0.55)';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(59,41,23,0.75)';
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
-  ctx.restore();
-}
-
-// The medallion that replaces the artist's marker once a stage is reached.
+// NOTHING IS DRAWN FOR A STAGE THE PLAYER HAS NOT REACHED. The artist's red dots
+// are gone from the display map — see the note in tools/overview.mjs about why the
+// guide shapes are dropped — and nothing replaces them, deliberately: a waypoint
+// visible before it is reached tells a player how many stages are left and where
+// the road goes, which is the whole thing the reveal is for.
+//
+// The medallion that appears once a stage IS reached.
 function drawNode(ctx, i, hot) {
   const s = STAGES[i];
   const open = playable(i);
@@ -404,12 +400,84 @@ function drawFlag(ctx, x, y, t, wave) {
   return foot - h;                    // the top of the pole, for the stars
 }
 
+// --- making it look like a map rather than a drawing -------------------------
+//
+// THE FLAT FILLS ARE THE PROBLEM. The artwork is clean vector shapes in even
+// colours, which is what makes it read as a diagram: real maps are drawn on
+// something, and the something shows. Three passes over the top fix most of it
+// without touching a single shape the artist drew.
+//
+//   THE PAPER    a fixed grain multiplied over everything, so no fill is
+//                perfectly even any more
+//   THE AGE      a handful of soft blotches, darker in some places than others,
+//                the way a sheet that has been folded and carried is
+//   THE EDGES    a vignette, because the middle of a map is the part that has
+//                been looked at and the edges are the part that has been handled
+//
+// All three are drawn ONCE into an offscreen canvas and blitted, because the
+// grain is per-pixel work and this screen redraws every frame.
+
+let parchment = null;
+
+function makeParchment() {
+  const c = document.createElement('canvas');
+  c.width = 960; c.height = 540;
+  const g = c.getContext('2d');
+
+  // Deterministic noise: the same sheet of paper every time the game is opened,
+  // rather than a surface that crawls between reloads.
+  let seed = 0x9E3779B9;
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+
+  const grain = g.createImageData(960, 540);
+  const px = grain.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const v = 214 + (rnd() - 0.5) * 62;
+    px[i] = px[i + 1] = px[i + 2] = v;
+    px[i + 3] = 255;
+  }
+  g.putImageData(grain, 0, 0);
+
+  // Stains. Big, soft, and few — a dozen reads as age, fifty reads as dirt.
+  g.globalCompositeOperation = 'multiply';
+  for (let i = 0; i < 14; i++) {
+    const x = rnd() * 960, y = rnd() * 540, r = 60 + rnd() * 150;
+    const blot = g.createRadialGradient(x, y, 0, x, y, r);
+    const a = 0.05 + rnd() * 0.07;
+    blot.addColorStop(0, `rgba(150,120,80,${a})`);
+    blot.addColorStop(1, 'rgba(150,120,80,0)');
+    g.fillStyle = blot;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  // The vignette, elliptical rather than round so it follows the shape of the
+  // sheet instead of putting a circle on a landscape page.
+  const vig = g.createRadialGradient(480, 270, 120, 480, 270, 620);
+  vig.addColorStop(0, 'rgba(120,92,58,0)');
+  vig.addColorStop(0.62, 'rgba(120,92,58,0.10)');
+  vig.addColorStop(1, 'rgba(92,66,36,0.46)');
+  g.fillStyle = vig;
+  g.fillRect(0, 0, 960, 540);
+
+  parchment = c;
+  return c;
+}
+
 // The world, everything reached on it, and the flag on the furthest point. Draws
 // nothing else: the panel that opens on a tap belongs to render.js.
 export function drawOverview(ctx, state) {
   const img = art.overview;
   if (img) ctx.drawImage(img, 0, 0, 960, 540);
-  else { ctx.fillStyle = '#3E7C94'; ctx.fillRect(0, 0, 960, 540); }
+  else { ctx.fillStyle = '#C9A878'; ctx.fillRect(0, 0, 960, 540); }
+
+  // Over the artwork and UNDER everything the game draws on it: the medallions,
+  // the flag and the stars belong to the interface, not to the sheet, and a
+  // stain across a stage number would be a bug rather than atmosphere.
+  const sheet = parchment || makeParchment();
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.drawImage(sheet, 0, 0);
+  ctx.restore();
 
   const r = state.reveal;
   const unlocked = Math.min(state.unlocked ?? 0, STAGE_COUNT);
@@ -420,10 +488,6 @@ export function drawOverview(ctx, state) {
     const live = r && r.stage === i;
     drawTrail(ctx, STAGES[i].leg, live && r.phase === 'road' ? easeOut(r.t) : 1);
   }
-
-  // Waypoints still ahead of the player, drawn before anything reached so a
-  // medallion always wins where two sit close together.
-  for (let i = unlocked; i < STAGE_COUNT; i++) drawUnreached(ctx, i);
 
   // The medallions. A stage still having its road drawn has not been arrived at
   // yet, so its marker stays as the artist painted it until the flag lands.

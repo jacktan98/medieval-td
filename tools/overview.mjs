@@ -404,15 +404,66 @@ const BIG = ART / 50;
 const FOOT_X = 34;
 const FOOT_Y = 26;
 
+// HOW MUCH OF THE MEDALLION A SHAPE MAY SWALLOW.
+//
+// Depth is only worth having if the thing behind is still legible. The crossbow
+// sentry beside stage 3 stands almost exactly on its marker, and putting the
+// whole tower in front left a sliver of gold and an unreadable numeral — the
+// effect was working perfectly and the stage had disappeared.
+//
+// So a shape that covers most of the medallion is dropped rather than drawn: it
+// is nearer, but saying so costs more than it is worth. Anything overlapping less
+// than this still goes in front, which is where the effect actually reads —
+// a corner of a roof crossing the disc says "these things are at different
+// depths" far better than a tower sitting on top of it.
+const MOST_OF_IT = 0.45;
+
+// MEASURED AS A UNION, not shape by shape. A building is not one path — the
+// sentry beside stage 3 is a body, a roof, a window and a door — and each of the
+// four covers well under half the medallion while the four together bury it.
+// Testing them one at a time let every one through and changed nothing.
+//
+// So coverage is accumulated on a grid over the medallion's footprint, and a
+// shape is taken only while the running total stays under the cap. Shapes are
+// considered nearest-first, so when the budget runs out it is the furthest-back
+// scenery that gets dropped.
+const GRID_X = 24, GRID_Y = 18;
+
 function inFrontOf([mx, my]) {
+  const ex0 = mx - FOOT_X, ey0 = my - FOOT_Y;
+  const cw = (FOOT_X * 2) / GRID_X, ch = (FOOT_Y * 2) / GRID_Y;
+  const cells = GRID_X * GRID_Y;
+  const covered = new Uint8Array(cells);
+  let used = 0;
+
+  const near = shapes
+    .filter(s => {
+      if (s.fill === MARKER_FILL || ROAD_FILLS.has(s.fill)) return false;
+      const [x0, y0, x1, y1] = s.box;
+      if ((x1 - x0) * (y1 - y0) > BIG) return false;
+      if (y1 <= my) return false;
+      return x1 >= ex0 && x0 <= ex0 + FOOT_X * 2 &&
+             y1 >= ey0 && y0 <= ey0 + FOOT_Y * 2;
+    })
+    .sort((a, b) => b.box[3] - a.box[3]);      // lowest feet first: nearest first
+
   const out = [];
-  for (const s of shapes) {
-    if (s.fill === MARKER_FILL || ROAD_FILLS.has(s.fill)) continue;
+  for (const s of near) {
     const [x0, y0, x1, y1] = s.box;
-    if ((x1 - x0) * (y1 - y0) > BIG) continue;
-    if (y1 <= my) continue;
-    if (x1 < mx - FOOT_X || x0 > mx + FOOT_X) continue;
-    if (y1 < my - FOOT_Y || y0 > my + FOOT_Y) continue;
+    const hits = [];
+    for (let gy = 0; gy < GRID_Y; gy++) {
+      const cy = ey0 + (gy + 0.5) * ch;
+      if (cy < y0 || cy > y1) continue;
+      for (let gx = 0; gx < GRID_X; gx++) {
+        const cx = ex0 + (gx + 0.5) * cw;
+        if (cx < x0 || cx > x1) continue;
+        const k = gy * GRID_X + gx;
+        if (!covered[k]) hits.push(k);
+      }
+    }
+    if ((used + hits.length) / cells > MOST_OF_IT) continue;
+    for (const k of hits) covered[k] = 1;
+    used += hits.length;
     out.push(s.d);
   }
   return out;
@@ -449,7 +500,18 @@ function hueOf(r, g, b) {
   return ((h * 60) % 360 + 360) % 360;
 }
 
+// ONE WATER, NOT TWO. The artist drew the sea and rivers in a mid blue and the
+// waterfall and its lake in a pale one, and through a brightness ramp those come
+// out two clearly different browns — which reads as two different substances
+// rather than one body of water catching the light. The owner asked for one, and
+// the pale one is the one to keep: it is the lighter of the two, so the sea stops
+// competing with the land for weight.
+const WATER = '#61a6ff';
+const WATERFALL = '#a6d5ff';
+
 function sepia(hex) {
+  if (hex === WATER) hex = WATERFALL;
+
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -469,16 +531,71 @@ function sepia(hex) {
   return `#${mix(0)}${mix(1)}${mix(2)}`;
 }
 
+// THE ROAD AND THE MARKERS ARE TAKEN OUT OF THE PICTURE.
+//
+// They were the artist's guide for placing the medallions, and the game has read
+// what it needed off them — the geometry above is derived from these very shapes.
+// Leaving them drawn does two bad things: the road the game reveals a leg at a
+// time sits on top of a road already painted in full, which makes the reveal
+// decorative rather than informative; and a player can see the whole route and
+// every waypoint on it before reaching any of them.
+//
+// So the display map is terrain only. What the player learns about the road, they
+// learn by walking it.
+//
+// THE BEACH SURVIVES, and it is why this cannot simply drop everything in the two
+// road fills: the sand the road is drawn in is the sand the beach is drawn in, and
+// the beach is a landmass. Same area split as everywhere else in this file.
+//
+// STROKES ARE THINNED. Every shape in the artist's file carries a 4px outline,
+// which at the size the map is drawn reads as a colouring book — one heavy line
+// of one weight around everything, whether it is a mountain range or a window.
+// Two thirds of that keeps the drawing legible and lets the fills do more of the
+// work, which is what an old map looks like.
+const STROKE_W = 2.6;
+
 {
   const seen = new Map();
-  const browned = svg.replace(/(fill|stroke)="(#[0-9a-fA-F]{6})"/g, (_, attr, hex) => {
+  const brown = hex => {
     const key = hex.toLowerCase();
     if (!seen.has(key)) seen.set(key, sepia(key));
-    return `${attr}="${seen.get(key)}"`;
+    return seen.get(key);
+  };
+
+  // THREE PASSES, AND THE ORDER MATTERS. Dropping happens while the colours are
+  // still the artist's, because that is what identifies a guide; recolouring
+  // happens ONCE afterwards over the whole document, because a brown put through
+  // the ramp a second time comes out a different brown and the map loses its
+  // range. An earlier draft browned the paths and then browned the file, which
+  // doubled the conversion on every shape and flattened 19 shades into a muddy 17.
+  let dropped = 0;
+  let out = svg.replace(/<path\b[^>]*>/g, (tag) => {
+    const fm = /\bfill="(#[0-9a-fA-F]{6})"/.exec(tag);
+    const dm = /\bd="([^"]+)"/.exec(tag);
+    if (!fm || !dm) return tag;
+    const fill = fm[1].toLowerCase();
+    const nums = (dm[1].match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
+    const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+    const size = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+    if (fill === MARKER_FILL || (ROAD_FILLS.has(fill) && size <= ROAD_MAX_AREA)) {
+      dropped++;
+      return '';
+    }
+    return tag;
   });
+
+  // Everything with a colour on it, paths and otherwise. The artboard's backing
+  // colour is a <rect>: a pass that walked only <path> tags left the one shape
+  // underneath the whole map green, which read as a grass border round a
+  // parchment map.
+  out = out.replace(/(fill|stroke)="(#[0-9a-fA-F]{6})"/g,
+    (_, attr, hex) => `${attr}="${brown(hex)}"`);
+
+  const browned = out.replace(/stroke-width="4"/g, `stroke-width="${STROKE_W}"`);
+
   writeFileSync(SEPIA, browned);
   console.log(`wrote ${SEPIA}`);
-  console.log(`  ${seen.size} colour(s) mapped to browns`);
+  console.log(`  ${seen.size} colour(s) mapped to browns, ${dropped} guide shape(s) removed`);
 }
 
 // --- write it out -----------------------------------------------------------

@@ -264,17 +264,36 @@ console.log('\n--- the parchment is the same drawing in browns ---\n');
 {
   const sep = readFileSync(SEPIA, 'utf8');
 
-  const countPaths = s => (s.match(/<path\b/g) || []).length;
-  ok(countPaths(sep) === countPaths(svg),
-    'the recolour holds every shape the artist drew',
-    `${countPaths(sep)} path(s), source has ${countPaths(svg)}`);
+  const paths = s => (s.match(/<path\b[^>]*>/g) || []);
+  const guides = roadPaths + drawnMarkers.length;   // 14 legs plus 10 markers
 
-  // Same geometry, so the markers the game sits on are in the same places. This
-  // is what stops a recolour from silently becoming a redraw.
-  const strip = s => s.replace(/(fill|stroke)="#[0-9a-fA-F]{6}"/g, '');
-  ok(strip(sep) === strip(svg),
-    'and changes nothing but the colours',
-    'identical with every fill and stroke removed');
+  ok(paths(sep).length === paths(svg).length - guides,
+    'the display map holds every shape but the guides',
+    `${paths(sep).length} path(s), ${paths(svg).length} drawn less ${guides} guide(s)`);
+
+  // THE GUIDES ARE ACTUALLY GONE, checked by colour rather than by counting: a
+  // count can come out right while the wrong shapes were dropped.
+  const fillsIn = s => new Set((s.match(/fill="(#[0-9a-fA-F]{6})"/g) || []).map(f => f.slice(6, -1).toLowerCase()));
+  const before = fillsIn(svg), after = fillsIn(sep);
+  ok(!after.has('#d30000'), 'and no red marker survives in it',
+    before.has('#d30000') ? 'dropped' : 'none in the source either');
+
+  // EVERY SURVIVING SHAPE IS THE ARTIST'S OWN, geometry untouched. This is what
+  // stops the recolour from quietly becoming a redraw — the medallions are placed
+  // from the source file and drawn over this one, so the two must be the same
+  // picture or every stage sits somewhere wrong.
+  const dOf = t => { const m = /\bd="([^"]+)"/.exec(t); return m ? m[1] : null; };
+  const sourceShapes = new Set(paths(svg).map(dOf).filter(Boolean));
+  const strayed = paths(sep).map(dOf).filter(d => d && !sourceShapes.has(d));
+  ok(strayed.length === 0, 'and every shape in it is one the artist drew',
+    strayed.length ? `${strayed.length} shape(s) differ` : `${paths(sep).length} matched`);
+
+  // The outlines are thinned, which is most of what stops it reading as a
+  // colouring book. If a redraw ships a different width this stops firing and the
+  // heavy line comes back without anybody noticing.
+  const widths = new Set((sep.match(/stroke-width="([\d.]+)"/g) || []).map(w => w.slice(14, -1)));
+  ok(!widths.has('4'), 'and its outlines are thinner than the artist drew them',
+    `width(s): ${[...widths].join(', ') || 'none'}`);
 
   // EVERY COLOUR IS A BROWN. Red down through green down through blue is what
   // brown IS, and it is the one thing a luminance ramp cannot get wrong by

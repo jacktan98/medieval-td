@@ -51,7 +51,7 @@ export const PARTY_HREF = 'birthday/';
 import { levels } from './level.js';
 import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/waves.js';
 import { families } from './data/towers.js';
-import { resetProgress } from './score.js';
+import { resetProgress, clearStars } from './score.js';
 
 // --- what is stored -----------------------------------------------------------
 //
@@ -1067,8 +1067,16 @@ export function tapAdmin(state, x, y, restart) {
   // than only the stored value: newGame reads `unlocked` off the state when it is
   // there, so writing storage alone would leave the map exactly as it was until
   // the page was reloaded. Zero is what makes the opening animation play.
+  //
+  // AND THE STARS GO WITH IT, which they did not at first. Keeping them looked
+  // principled — what a stage was beaten with is a different fact from how far
+  // the road has opened — but it is wrong from the only side that matters: a
+  // player who has reset the campaign and walked back to stage 1 was met by three
+  // gold stars over a stage they had not played. A reset that leaves the old
+  // score sitting there has not reset anything the player can see.
   if (on(PROGRESS_BTN)) {
     resetProgress();
+    clearStars();
     state.unlocked = 0;
     state.stage = null;
     state.pendingReveal = null;
