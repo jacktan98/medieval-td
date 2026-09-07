@@ -19,10 +19,10 @@ Add `?debug` to the URL to hang the live game state on `window.__game`.
 
 ```
 index.html          the game
-src/                the rules and the drawing — 33 modules, no dependencies
+src/                the rules and the drawing — 35 modules, no dependencies
 src/data/           the numbers: towers, waves, abilities, statuses, the maps
 assets/             every drawing and every sound, one folder per KIND of thing
-tools/              28 checkers and measuring tools, Node only
+tools/              30 checkers and measuring tools, Node only
 birthday/           a separate mini-game, reached from the admin keypad
 ```
 
@@ -72,22 +72,24 @@ exit non-zero when something is wrong.
 | `armour` | the damage triangle: what an attack is, what it meets, what is left |
 | `pair` | the two men on a tower that holds two take turns, and stand where they fit |
 | `confirm` | every button that moves gold asks twice, and the dotted ring belongs to the one that is armed |
+| `campaign` | the world map's stages sit on the markers the artist drew, every road leads where it says, and a stage with no map behind it is not a button |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
 | `split-map` | pulls the build plots out of a map SVG |
 | `trace-road` | pulls the road out of a map SVG and writes the route |
+| `overview` | pulls the stage markers and the road centrelines out of the world map SVG |
 
-The first twenty-four are checks — run them after any change:
+The first twenty-five are checks — run them after any change:
 
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme pair armour confirm; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair armour confirm campaign; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
-The last four are not checks. `sim` and `sweep` answer balance questions and take
-minutes; `split-map` and `trace-road` are run once when the artist delivers a new
+The last five are not checks. `sim` and `sweep` answer balance questions and take
+minutes; `split-map`, `trace-road` and `overview` are run once when the artist delivers a new
 map.
 
 ## Uploading artwork

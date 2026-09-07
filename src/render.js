@@ -23,6 +23,8 @@ import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
+import { drawOverview } from './overview.js';
+import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
@@ -3285,42 +3287,23 @@ const ROW_PITCH = 18;
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 404, w: 160, h: 48 };
+export const START_BTN = { x: 400, y: 396, w: 160, h: 46 };
 
-// One button per level, side by side above Start. Sized for a thumb like
-// everything else — 150 x 60 is well over the 44px minimum — and laid out from
-// the middle so a third map would not need the numbers re-typed.
+// THE ROW OF MAP BUTTONS IS GONE. Which map you play is a place on the world map
+// now — see src/overview.js — so the thing that used to be three plates side by
+// side above Start is a flag standing on a road. This panel is what opens when
+// that flag is tapped, and it answers the two questions the marker cannot: how
+// long, and how hard.
 //
-// IT GREW 46 -> 60 TO HOLD THE STARS, and inside rather than under. Hanging them
-// below the button was the first attempt and it put them straight through the
-// difficulty row: this column is full, and the only spare space on the title
-// screen is inside things. It also reads better — a rating printed on the map's
-// own plate belongs to that map in a way a detached row of stars under it does
-// not — and it costs nothing, because the button was 46px of plate holding one
-// 18px word.
-const MAP_BTN_W = 150, MAP_BTN_H = 60, MAP_GAP = 16;
+// THE PANEL IT ALL SITS ON. Centred, and sized to what it holds rather than to
+// the screen: the world behind it is the thing the player has just been reading,
+// so this covers as little of it as it can get away with.
+export const STAGE_PANEL = { x: 258, y: 158, w: 444, h: 300 };
 
-export function mapButtons() {
-  const n = levels.length;
-  const total = n * MAP_BTN_W + (n - 1) * MAP_GAP;
-  return levels.map((l, i) => ({
-    i,
-    name: l.name,
-    x: Math.round(480 - total / 2 + i * (MAP_BTN_W + MAP_GAP)),
-    y: 250,
-    w: MAP_BTN_W,
-    h: MAP_BTN_H
-  }));
-}
-
-// Which map button is under a tap, or null. Only meaningful on the title
-// screen; input.js asks before it asks about Start.
-export function hitMapButton(state, x, y) {
-  for (const b of mapButtons()) {
-    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.i;
-  }
-  return null;
-}
+// Back to the world map without starting anything. Top-right of the panel, drawn
+// as a plain glyph rather than a plate — it is an escape, not a third choice
+// competing with Start.
+export const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12, w: 30, h: 30 };
 
 // The two setting rows, under the maps. Narrower buttons than the map ones and
 // laid out from the middle the same way, so a third entry in either would need no
@@ -3349,8 +3332,8 @@ const settingRow = (items, y) => {
   }));
 };
 
-const MODE_ROW_Y = 320;
-const DIFF_ROW_Y = 364;
+const MODE_ROW_Y = 276;
+const DIFF_ROW_Y = 322;
 
 export const modeButtons = () => settingRow(MODES, MODE_ROW_Y);
 export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
@@ -3371,9 +3354,21 @@ const START_PAD = 16;
 
 export function hitStart(state, x, y) {
   if (state.started) return false;
+  // Nothing to start until a stage has been chosen. The button is not drawn on
+  // the world map, and a hit test that answered anyway would let a tap on empty
+  // sea begin a game.
+  if (state.stage === null || state.stage === undefined) return false;
   const b = START_BTN;
   return x >= b.x - START_PAD && x <= b.x + b.w + START_PAD &&
          y >= b.y - START_PAD && y <= b.y + b.h + START_PAD;
+}
+
+// The stage panel's close. Only live while the panel is up, on the same rule.
+export function hitBack(state, x, y) {
+  if (state.started || state.stage === null || state.stage === undefined) return false;
+  const b = BACK_BTN, pad = 8;
+  return x >= b.x - pad && x <= b.x + b.w + pad &&
+         y >= b.y - pad && y <= b.y + b.h + pad;
 }
 
 // One captioned row of setting buttons. The caption sits BESIDE the row, hard
@@ -3409,54 +3404,92 @@ function settingRowUi(ctx, caption, row, chosen) {
 }
 
 function drawStart(ctx, state) {
-  ctx.fillStyle = 'rgba(34,32,28,0.72)';
-  ctx.fillRect(0, 0, 960, 540);
+  // THE WORLD, ALWAYS. This is a screen rather than an overlay now: the board
+  // behind it is whichever map was last played and has nothing to do with what is
+  // being chosen, so it is covered rather than dimmed.
+  drawOverview(ctx, state);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#F0E6D2';
-  ctx.font = '700 46px system-ui, sans-serif';
-  ctx.fillText('Medieval TD', 480, 206);
 
-  ctx.font = '17px system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(240,230,210,0.72)';
-  ctx.fillText('Nothing moves until you begin. Tap a plot to build.', 480, 234);
+  // NO STAGE PICKED: the map is the whole screen, and the only things on top of
+  // it are the two corner doors and a line telling the player what to do. The
+  // flag is drawn by drawOverview and it is the instruction as much as the text
+  // is — the text is there for the first time only.
+  if (state.stage === null || state.stage === undefined) {
+    if (!state.reveal) {
+      // WHAT THE LINE SAYS DEPENDS ON WHERE THE FLAG IS. The flag marks how far
+      // the road has opened, and the road opens ahead of the boards — clear every
+      // map the game has and the flag lands on a marker with nothing behind it.
+      // Telling that player to tap it would be telling them to tap a padlock, so
+      // the line says what is actually true instead.
+      const front = (state.unlocked ?? 0) - 1;
+      const label = playable(front)
+        ? 'Tap the flag to march'
+        : 'The road ends here — the next stage is still being drawn';
+      ctx.font = '600 16px system-ui, sans-serif';
+      const w = ctx.measureText(label).width + 30;
+      ctx.fillStyle = 'rgba(28,22,12,0.72)';
+      ctx.beginPath();
+      ctx.roundRect(480 - w / 2, 24, w, 32, 8);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(246,231,193,0.92)';
+      ctx.fillText(label, 480, 41);
+    }
 
-  // The board behind this overlay is already the chosen map, so picking one is
-  // its own preview: the roads and the plots change under the panel as you tap.
-  //
-  // EACH MAP CARRIES ITS BEST RESULT, as a row of three stars under the name.
-  // This is where progress belongs: it is the screen a player is on when they
-  // decide which map to play next, and the whole reason to know how a map went
-  // last time is to choose. It is read for the difficulty CURRENTLY SELECTED, so
-  // the rows change as you tap between Normal and Hard — which is also the
-  // clearest way to say that they are two separate ladders.
-  const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
-  for (const m of mapButtons()) {
-    const on = m.i === (state.levelIndex ?? 0);
-    ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
-    ctx.beginPath();
-    ctx.roundRect(m.x, m.y, m.w, m.h, 9);
-    ctx.fill();
-    ctx.strokeStyle = on ? '#F0E6D2' : 'rgba(196,165,116,0.55)';
-    ctx.lineWidth = on ? 2.5 : 1.5;
-    ctx.stroke();
-
-    ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
-    ctx.font = '700 18px system-ui, sans-serif';
-    ctx.fillText(m.name, m.x + m.w / 2, m.y + 21);
-
-    // The stars are for the map AT THE SETTINGS CURRENTLY CHOSEN — both of them
-    // now. Ten waves cleared is not eight waves cleared, so the rows change as
-    // you tap between the lengths exactly as they already changed between the
-    // difficulties.
-    starRow(ctx, m.x + m.w / 2, m.y + 44, 7,
-      bestStars(levels[m.i].id, diff.id, MODES[state.modeIndex ?? 0].id), on);
+    drawBookButton(ctx, BOOK_BTN_START, 19);
+    drawAdminDoor(ctx);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    return;
   }
 
-  // The two setting rows. Same treatment as the maps above them so the panel
-  // reads as one set of choices, at a smaller size because they are the lesser
-  // two of the three.
+  // A STAGE IS PICKED. Dim the world — it is still the thing behind this and
+  // still worth seeing — and put the two settings and Start on a plate over it.
+  ctx.fillStyle = 'rgba(26,22,16,0.66)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  const p = STAGE_PANEL;
+  ctx.fillStyle = 'rgba(30,26,18,0.94)';
+  ctx.beginPath();
+  ctx.roundRect(p.x, p.y, p.w, p.h, 14);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(196,165,116,0.75)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const stage = STAGES[state.stage];
+  const lv = levels[stage.level];
+
+  // WHICH PLACE ON THE ROAD, then what it is called. The number is the smaller of
+  // the two because the name is what a player recognises — but it is there,
+  // because the map is a sequence and the panel has to say where in it you are.
+  ctx.fillStyle = 'rgba(240,230,210,0.6)';
+  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.fillText(`STAGE ${state.stage + 1}`, 480, p.y + 34);
+
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '700 30px system-ui, sans-serif';
+  ctx.fillText(lv.name, 480, p.y + 64);
+
+  // The best result at THE SETTINGS CURRENTLY CHOSEN, which is why the row lives
+  // here rather than on the marker: it changes as the rows below it are tapped,
+  // and a rating painted on the world map could not say which ladder it was for.
+  const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
+  starRow(ctx, 480, p.y + 96, 9,
+    bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false);
+
+  // The back door, top-right of the plate.
+  ctx.strokeStyle = 'rgba(240,230,210,0.65)';
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  const b0 = BACK_BTN, cx = b0.x + b0.w / 2, cy = b0.y + b0.h / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 6, cy - 6); ctx.lineTo(cx + 6, cy + 6);
+  ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx - 6, cy + 6);
+  ctx.stroke();
+
+  // The two setting rows.
   settingRowUi(ctx, 'Length', modeButtons(), state.modeIndex ?? 0);
   settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
 
@@ -3478,11 +3511,23 @@ function drawStart(ctx, state) {
   // about to make with 220 gold — but Start is still what they came for, so it
   // keeps the middle of the panel and this sits below.
   drawBookButton(ctx, BOOK_BTN_START, 19);
+  drawAdminDoor(ctx);
 
-  // The dashboard's door, in the bottom-right corner. Drawn quiet — a thin
-  // outline and a muted label rather than the cream plate every other button on
-  // this screen wears — because it is not part of the game and should not read as
-  // a third thing to press before starting.
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+// The dashboard's door, in the bottom-right corner. Drawn quiet — a thin outline
+// and a muted label rather than the cream plate every other button wears —
+// because it is not part of the game and should not read as another thing to
+// press before starting.
+//
+// ITS OWN FUNCTION because there are two screens before a game now, the world map
+// and the stage panel, and the door is on both. Text alignment is the caller's:
+// both call sites are already centred when they get here.
+function drawAdminDoor(ctx) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   ctx.strokeStyle = 'rgba(196,165,116,0.45)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -3491,19 +3536,22 @@ function drawStart(ctx, state) {
   ctx.fillStyle = 'rgba(240,230,210,0.55)';
   ctx.font = '600 14px system-ui, sans-serif';
   ctx.fillText('Admin', ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
-
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
 }
 
 // A row of up to MAX_STARS stars, `filled` of them lit. Used in two places and
 // at two sizes — small under each map button on the title screen, large in the
 // end-of-game summary — so the size is a parameter and nothing else is.
 //
-// EVERY SLOT IS DRAWN, lit or not, which is what makes it a score rather than a
-// decoration: two stars only means something beside the third one you did not
+// EVERY SLOT IS DRAWN, earned or not, which is what makes it a score rather than
+// a decoration: two stars only means something beside the third one you did not
 // get. An unearned star is the same outline with nothing in it.
-function starRow(ctx, cx, cy, r, filled, lit = true) {
+//
+// `onLight` IS ABOUT THE BACKGROUND, not about the score — an unearned star is
+// an empty outline, and an outline has to be dark on a cream plate and pale on a
+// dark one or it is not there at all. It was called `lit` while its only callers
+// were the map buttons, where "the selected plate" and "the light plate" were the
+// same thing; the stage panel is dark and would have drawn three invisible stars.
+function starRow(ctx, cx, cy, r, filled, onLight = true) {
   const gap = r * 2.5;
   const left = cx - (MAX_STARS - 1) * gap / 2;
 
@@ -3526,7 +3574,7 @@ function starRow(ctx, cx, cy, r, filled, lit = true) {
       ctx.fill();
       ctx.strokeStyle = 'rgba(24,28,20,0.7)';
     } else {
-      ctx.strokeStyle = lit ? 'rgba(24,28,20,0.45)' : 'rgba(240,230,210,0.35)';
+      ctx.strokeStyle = onLight ? 'rgba(24,28,20,0.45)' : 'rgba(240,230,210,0.35)';
     }
     ctx.stroke();
   }

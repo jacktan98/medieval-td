@@ -4,7 +4,9 @@ import { level } from './level.js';
 import { openingDelay, MODES } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
-import { finish } from './score.js';
+import { finish, unlockedStages, saveUnlocked } from './score.js';
+import { startReveal, stepReveal, stageOfLevel } from './overview.js';
+import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf } from './towers.js';
 import { updateUnits } from './units.js';
@@ -79,10 +81,32 @@ function newGame() {
   const modeIndex = state.modeIndex ?? 0;
   const mode = MODES[modeIndex];
 
+  // WHERE ON THE WORLD MAP THE PLAYER IS, and how much of it has opened. Both
+  // survive the reset for the same reason the map and the difficulty do — they
+  // are not part of the board being thrown away — but they are not quite menu
+  // settings either: `unlocked` is saved progress, read off storage the first
+  // time and kept on the state after that.
+  //
+  // `stage` is null on the world map and an index while the panel for one is up.
+  // Whoever wants to land on the map rather than the panel sets it to null BEFORE
+  // calling this, which is what quitting and finishing a game both do.
+  const stage = state.stage ?? null;
+  const unlocked = state.unlocked ?? unlockedStages();
+  // A stage opened by a win that has not yet been shown opening. Set when the
+  // game is won and spent here, on the way back to the map.
+  const pendingReveal = state.pendingReveal ?? null;
+
   Object.assign(state, {
     levelIndex,
     difficultyIndex,
     modeIndex,
+    stage,
+    unlocked,
+    // The road drawing itself, or null. Never carried across a rebuild — it is
+    // started below from `pendingReveal`, so that a reveal cannot be inherited
+    // half-finished by a game that has nothing to do with it.
+    reveal: null,
+    pendingReveal: null,
     // THE WAVES THIS GAME WILL ACTUALLY SEND, scaled once here rather than read
     // through the level every frame. Two things depend on that: `waveSize` and
     // the spawn loop have to agree exactly about how many enemies a group holds,
@@ -184,6 +208,20 @@ function newGame() {
     // box the same number the health bar over its head is reading.
     selected: null
   });
+
+  // A PLAYER WHO HAS NEVER SEEN THE MAP. Nothing is unlocked, so the road comes
+  // in from off the left edge of the world, draws itself to the first marker and
+  // plants a flag there — which is both the opening of the game and the only
+  // instruction it gives. Saved immediately, so it happens exactly once.
+  if (state.unlocked === 0) {
+    state.unlocked = 1;
+    saveUnlocked(1);
+    startReveal(state, 0);
+  } else if (pendingReveal !== null) {
+    // A stage opened by the run that just ended. Shown now rather than over the
+    // result panel, because the point of it is the map.
+    startReveal(state, pendingReveal);
+  }
 }
 
 newGame();
@@ -233,7 +271,29 @@ function frame(now) {
   // for one frame and then contradict itself for the rest of the panel's life.
   if (state.result && !state.summary) {
     state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex], MODES[state.modeIndex ?? 0]);
+
+    // A WIN OPENS THE NEXT PLACE ON THE ROAD, once, and only from the front of
+    // it: replaying stage 1 after reaching stage 3 opens nothing, because the
+    // road past it is already drawn. Saved here rather than shown here — the
+    // animation belongs to the map, which the player has not gone back to yet.
+    //
+    // The unlock does NOT depend on the difficulty or the length. Those are two
+    // ladders for how well a stage went; this is one road, and clearing a stage
+    // clears it. See unlockedStages in score.js for why that is a separate key.
+    if (state.result === 'won') {
+      const here = stageOfLevel(state.levelIndex);
+      if (here !== null && here + 1 === state.unlocked && state.unlocked < STAGE_COUNT) {
+        state.unlocked += 1;
+        saveUnlocked(state.unlocked);
+        state.pendingReveal = state.unlocked - 1;
+      }
+    }
   }
+
+  // The world map's one moving part, and it only moves while the map is up.
+  // Stepped on real time rather than through step(): it is a screen animation,
+  // so the fast-forward multiplier has no business touching it.
+  if (!state.started) stepReveal(state, real);
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.

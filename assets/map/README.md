@@ -435,3 +435,55 @@ So the order for an upload that gains or loses a marker is:
    — all three walk every plot of every map and all three answer questions a new
    marker can break.
 6. Re-sweep and re-paste `tools/sim.mjs`'s scenario list for that map.
+
+## The world map is a different kind of file
+
+`Overview_Map.svg` is not a board. It is the campaign map — the world the player
+picks a stage from before any game starts — and almost nothing above applies to
+it. There are no plots on it, nothing is ever taken away from it, and it is never
+split: `src/assets.js` loads the artist's file whole, under the key `overview`.
+`Overview_Map.png` is a flat export of the same drawing, kept beside it for
+reference; the game does not load it.
+
+**What IS extracted is geometry, into data rather than a second drawing.**
+`tools/overview.mjs` reads three things out of the SVG and writes
+`src/data/overview.js`:
+
+- **The ten stage markers**, which are the ten paths filled `#d30000`. Their
+  bounding-box centres become the stage positions.
+- **The road**, which is filled `#ffde9e` everywhere except the desert stretch —
+  the artist lightened that one to `#ffefd4` so it would sit on the sand. Both
+  count as road.
+- **Which road leads to which marker**, by matching leg ends to marker centres.
+
+Run it after every redraw, exactly like the splitter:
+
+    node tools/overview.mjs
+
+### Three things the drawing has to keep doing
+
+**A road leg is a filled ribbon, not a stroke.** The tool takes the centreline by
+finding the two sides of each ribbon and averaging them. It does not care how the
+ends are capped — some legs cap with a line and some with a curve — but it does
+assume the shape is long and thin. A road leg drawn as wide as it is long has no
+centreline to find.
+
+**Bridges cut a leg in half.** The bridge is drawn on top in brown, so the road
+under it stops and starts again ~120px later. The tool rejoins those halves by
+matching loose ends within 150px. A bridge wider than that, or two unrelated legs
+whose ends come within 150px of each other, will be stitched wrongly.
+
+**Exactly one leg may have a loose end going nowhere.** That is the road arriving
+from off the left edge of the artboard, and it is what the game draws before
+stage 1 exists — the animation a brand-new player sees. The tool identifies it by
+elimination and stops if there is more or less than one.
+
+### Adding a stage
+
+Draw the marker in `#d30000` and the road to it in one of the two road fills,
+then re-run the tool. It will report the new count. The play order is the one
+decision in `tools/overview.mjs` that is typed rather than measured — see `ORDER`
+— because the road forks at marker 5 and a fork has no inherent order. `LEVEL_OF`
+beside it says which markers have a playable map behind them; a marker with none
+is drawn locked, which is the normal state for a stage that has been drawn before
+its board has.

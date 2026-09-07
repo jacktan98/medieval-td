@@ -1,6 +1,8 @@
 import { level, useLevel } from './level.js';
-import { PLOT_R, hitHudButton, hitStart, hitMapButton, hitModeButton, hitDifficultyButton,
+import { PLOT_R, hitHudButton, hitStart, hitBack, hitModeButton, hitDifficultyButton,
          hitPauseButton } from './render.js';
+import { stageAt, skipReveal } from './overview.js';
+import { STAGES } from './data/overview.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R,
          needsConfirm, armed } from './menu.js';
 import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
@@ -150,27 +152,42 @@ export function tap(state, x, y, restart) {
   // The title screen owns the whole board: nothing under it may act on a tap,
   // including a plot the Start button happens to be sitting over.
   if (!state.started) {
+    // A road drawing itself owns the tap. It finishes rather than being ignored,
+    // so a player who has seen the animation four times is never waiting on it —
+    // and a player who has not is never made to sit through it twice by a stray
+    // tap that did nothing.
+    if (skipReveal(state)) return true;
+
     if (hitBookButton(state, x, y)) { openBook(state); return true; }
 
     // The corner button, and the only way into the dashboard. Tested before the
     // map row for the usual reason — it is drawn on top, so it answers first.
     if (inside(ADMIN_BTN, x, y)) { openAdmin(state); return true; }
 
-    const pick = hitMapButton(state, x, y);
-    if (pick !== null) {
-      // Switching maps rebuilds the game rather than just remembering the
-      // choice, because the board behind the title screen is the chosen map:
-      // its roads, its plots, its purse. Anything already placed belonged to
-      // the other map's plots and cannot come along.
-      state.levelIndex = pick;
-      useLevel(pick);
+    // THE WORLD MAP, with nothing chosen yet. Only a stage marker answers a tap
+    // here — everything else on screen is scenery, and a tap on the sea should do
+    // nothing rather than something surprising.
+    if (state.stage === null || state.stage === undefined) {
+      const pick = stageAt(state, x, y);
+      if (pick === null) return false;
+
+      // Choosing a stage rebuilds the game, because the board behind all of this
+      // is the map about to be played: its roads, its plots, its purse. The
+      // chosen stage survives the rebuild the same way the difficulty does — see
+      // newGame in main.js, which carries it across.
+      state.stage = pick;
+      state.levelIndex = STAGES[pick].level;
+      useLevel(state.levelIndex);
       restart();
       return true;
     }
 
-    // Same treatment as the map, and for the same reason: the LENGTH is a
-    // property of the game about to be played. It chooses which of the level's
-    // two wave tables is loaded, and that is read once at newGame.
+    // Back out of the stage panel to the world map. Nothing is rebuilt: the
+    // player has changed their mind about where, not about what.
+    if (hitBack(state, x, y)) { state.stage = null; return true; }
+
+    // The LENGTH is a property of the game about to be played. It chooses which
+    // of the level's two wave tables is loaded, and that is read once at newGame.
     const longer = hitModeButton(state, x, y);
     if (longer !== null) {
       state.modeIndex = longer;
@@ -191,7 +208,11 @@ export function tap(state, x, y, restart) {
     return false;
   }
 
-  if (state.result) { restart(); return true; }
+  // A finished game goes back to the WORLD MAP, not to the panel it was started
+  // from: a win has just opened the next stage, and the road drawing itself to it
+  // is the reward for the run. Clearing the stage before the rebuild is what
+  // newGame reads, so it carries null across rather than the stage just played.
+  if (state.result) { state.stage = null; restart(); return true; }
 
   // The HUD sits above everything and is not part of the board, so it is
   // asked first — otherwise a button that happens to overlap a plot's menu
@@ -324,6 +345,11 @@ function tapPaused(state, x, y, restart) {
       // Restart skipping the title screen is the whole point of it — a player who
       // wanted the title screen has Quit right there — and it is why the two are
       // separate buttons rather than one that guesses.
+      //
+      // QUIT LANDS ON THE WORLD MAP rather than on the panel for the stage being
+      // left. Somebody quitting has finished with this place on the road, and the
+      // road is what they should be looking at.
+      if (hit === 'quit') state.stage = null;
       restart();
       if (hit === 'restart') state.started = true;
       return true;

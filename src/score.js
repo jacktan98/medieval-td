@@ -136,6 +136,44 @@ export function clearStars() {
   persist(table);
 }
 
+// --- HOW FAR ALONG THE ROAD THE PLAYER HAS GOT -------------------------------
+//
+// A SEPARATE KEY FROM THE STARS, and separate on purpose. A star record is per
+// map, per difficulty and per length — three ladders that say how WELL a stage
+// went. This is one number that says how far the campaign has opened, and it is
+// none of those things: beating stage 2 on Easy opens stage 3 exactly as beating
+// it on Hard does. Filing it in the stars table would have meant inventing an
+// answer to "unlocked at which difficulty", and there isn't one.
+//
+// The value is a COUNT, not an index: 0 is a player who has never seen the map,
+// which is the state the opening animation plays for, and 1 is a player standing
+// on stage 1 with nothing cleared. Same try/catch treatment as the stars for the
+// same reason — a game that cannot save progress should still be a game.
+const PROGRESS_KEY = 'medieval-td/progress';
+
+export function unlockedStages() {
+  const s = store();
+  if (!s) return 0;
+  try {
+    const n = parseInt(s.getItem(PROGRESS_KEY), 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  } catch { return 0; }
+}
+
+export function saveUnlocked(n) {
+  const s = store();
+  if (!s) return;
+  try { s.setItem(PROGRESS_KEY, String(n)); } catch { /* full, or refused */ }
+}
+
+// Back to a player who has never seen the world map, so the opening animation
+// plays again. Only the tools call it; there is no button for it in the game.
+export function clearProgress() {
+  const s = store();
+  if (!s) return;
+  try { s.removeItem(PROGRESS_KEY); } catch { /* refused */ }
+}
+
 // Everything the end-of-game panel shows, worked out ONCE at the moment the game
 // ends and then kept on the state.
 //

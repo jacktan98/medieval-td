@@ -701,7 +701,14 @@ export const paths = {
   // again — there is nothing special about a map with more than one road in
   // this file, because a route is just a list of waypoints.
   map03:       'assets/map/Map_3_base.svg',
-  plot_marker: 'assets/map/Plot_Marker.svg'
+  plot_marker: 'assets/map/Plot_Marker.svg',
+  // THE WORLD, rather than a board: the campaign map the player chooses a stage
+  // from. Not split the way the three boards are — there are no plots on it and
+  // nothing is ever taken away, so the artist's file is used whole. Its geometry
+  // IS split out, but into data rather than a second drawing: tools/overview.mjs
+  // reads the marker positions and the road centrelines out of this same file
+  // and writes src/data/overview.js. Re-run it after every redraw.
+  overview:    'assets/map/Overview_Map.svg'
 };
 
 // Art the game is wired for but does not have yet. A miss here is expected, so
