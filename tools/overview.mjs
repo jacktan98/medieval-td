@@ -1,12 +1,11 @@
 // DERIVE THE CAMPAIGN MAP FROM THE ARTIST'S LAYERS.
 //
-// Reads assets/map/Overview_Map_Layer_*.svg and writes three things:
+// Reads assets/map/Overview_Map_Layer_*.svg and writes four things:
 //
-//   src/data/overview.js            where the stages are, the road into each of
-//                                   them, and what stands in front of them
+//   src/data/overview.js            where the stages are, and the road into each
 //   assets/map/Overview_Map_merged.svg  every layer stacked into one, in colour
-//   assets/map/Overview_Map_sepia.svg   the same, muted, guides removed —
-//                                   this is the one the game loads
+//   assets/map/Overview_Map_sepia.svg   the picture, muted — the map the game loads
+//   assets/map/Overview_Map_names.svg   the region names, untouched, drawn over it
 //
 // DERIVED AND COMMITTED, exactly like Map_1_base.svg and for the same reason:
 // there is no build step, so the artist's upload alone is not enough. Re-run this
@@ -21,13 +20,22 @@
 // arrangement, and it costs the game nothing: every layer is the SAME 1920x1080
 // artboard, so stacking them is stacking, with no offsets and no arithmetic.
 //
-// LAYER 1 IS THE GUIDE, and it is not part of the picture. It holds the road and
-// the ten markers on a plain green field: the road the game reveals a leg at a
-// time, and the places the medallions stand. All of the geometry below is read
-// off it, and then it is dropped — everything except its background, which is the
-// grass the other layers sit on and the only opaque ground in the stack.
+// THREE KINDS OF LAYER, and only one of them is the picture:
 //
-// LAYERS 2 AND UP ARE THE PICTURE, in the order they are numbered.
+//   THE GUIDE is layer 1. It holds the road and the ten markers on a plain green
+//   field, and it is not drawn. All of the geometry below is read off it and then
+//   it is dropped — everything except its background, which is the grass the other
+//   layers sit on and the only opaque ground in the stack.
+//
+//   THE PICTURE is everything else, in the order it is numbered. It is muted and
+//   stacked into the map the game loads, and the game lays a sheet of parchment
+//   over the whole of it.
+//
+//   THE NAMES are a layer of lettering, found by its colour rather than by its
+//   number. It is pulled out of the picture and written to a file of its own,
+//   because the parchment is a MULTIPLY and the owner asked for the names exactly
+//   as drawn: the only place a name can be untouched by the sheet is on top of it,
+//   and the only way to be on top of it is not to be in the picture underneath.
 //
 // --- WHAT IT HAS TO FIND, and why none of it is hand-typed -------------------
 //
@@ -35,29 +43,25 @@
 //   box centres, which is exact for the ellipse the artist drew and would still
 //   be close enough for any blob.
 //
-//   THE ROAD is filled #ffde9e. On the old single-file map that colour was shared
-//   with the beach and the two had to be told apart by size; the beach lives in
-//   its own layer now and the guide holds nothing but road, so the size guard
-//   below is a belt on top of braces.
+//   THE ROAD is the ten STROKED paths — on the guide, a path with no fill is road.
+//   One line per stage, each running from one marker to the next, except the one
+//   that comes in from off the left edge so stage 1 has an opening.
 //
-//   A ROAD LEG IS A FILLED RIBBON, not a stroke: a closed outline that runs up
-//   one side and back down the other. What the game needs is the CENTRELINE, so
-//   the two sides have to be found and averaged. They cannot be found by looking
-//   for the end caps — some legs cap with a line, some with a curve, and some
-//   have straight sections in the middle that look exactly like a cap. See
-//   centreline() for the method that does work.
-//
-//   THE ROAD COMES IN PIECES, and how many pieces a connection takes is the
-//   artist's business. A leg may run marker to marker on its own, or a connection
-//   may be a chain of several with the joins a few pixels apart. They are walked
-//   end to end here rather than paired, so either works — see the note above the
-//   walk for what changed and why pairing stopped being enough.
+//   That is the whole of it, and it is worth saying how much it used to be. The
+//   road was a filled RIBBON, because that is what a road looks like on a map, and
+//   the line down the middle of it had to be recovered by pairing the two sides of
+//   the outline and averaging them. The ribbon came in pieces, so the pieces were
+//   chained end to end. The chains overlapped at their joins, so the overlaps had
+//   to be unpicked. The unpicking could not tell an overlap from a switchback, so
+//   it had to learn. Four hundred lines, five tuned constants, and every one of
+//   them answering a question the artist could answer with one stroke of a pen —
+//   which is what happened, and all of it is gone.
 //
 // THE ROAD IS A TREE, NOT A LINE. It forks: one branch runs east and up to the
 // top-right corner, the other dead-ends in the south-west. So each stage is given
 // the ONE leg that leads into it from its parent, rather than a leg per
 // consecutive pair — which means the play order below can be shuffled without any
-// leg becoming wrong.
+// leg becoming wrong. That part is still real work and is still here.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -71,6 +75,8 @@ const OUT = 'src/data/overview.js';
 // source now; this is a stitched copy for looking at.
 const MERGED = 'assets/map/Overview_Map_merged.svg';
 const SEPIA = 'assets/map/Overview_Map_sepia.svg';
+// The region names, alone and untouched, drawn over the sheet rather than under it.
+const NAMES = 'assets/map/Overview_Map_names.svg';
 
 // Sorted by the number in the name, not by string, so a tenth layer lands after
 // the ninth rather than after the first.
@@ -87,23 +93,10 @@ if (LAYERS.length < 2) throw new Error(`expected layer files in ${DIR}, found ${
 const SCALE = 0.5;
 
 const MARKER_FILL = '#d30000';
-const ROAD_FILLS = new Set(['#ffde9e', '#ffefd4']);
 
-// THE BEACH IS THE SAME COLOUR AS THE ROAD. It is one shape of 631,000 square
-// units where the largest actual leg is 38,000, so size tells them apart with a
-// margin of more than ten to one — and nothing else could, because the artist is
-// using one sand colour for both and is right to.
-//
-// This mattered more than it looks. The first version of this file read paths
-// with a regex that happened not to match the beach, so the count came out at 14
-// and everything worked by luck. Reading the drawing properly found it, and
-// feeding a landmass to centreline() would have produced a "road" through the
-// middle of the sea.
-const ROAD_MAX_AREA = 100000;
-
-// How close a leg end has to be to a marker centre to count as arriving there:
-// half the marker's drawn width plus slack. The distance between two legs that
-// count as joined is JOIN, down beside the walk that uses it.
+// How close a road line's end has to be to a marker centre to count as arriving
+// there: half the marker's drawn width plus slack. Every end in the current
+// drawing lands within 24.
 const AT_MARKER = 36;
 
 // --- path parsing -----------------------------------------------------------
@@ -133,9 +126,10 @@ function parse(d) {
   return out;
 }
 
-// Flatten to a dense closed polyline. 20 samples a curve is far more than the
-// game needs to draw, but the pairing below is measured on these points and a
-// coarse curve pairs badly with a fine one.
+// Flatten to a dense polyline, CLOSED ONLY IF THE PATH SAYS SO. Every path this
+// read for its first year was a closed outline, so it closed the polyline
+// unconditionally; the road is an open line now, and joining its far end back to
+// its near one would send the trail home along a road that is not there.
 function flatten(cmds, per = 20) {
   const pts = [];
   let cur = null, start = null;
@@ -168,29 +162,12 @@ function flatten(cmds, per = 20) {
       cur = [x2, y2];
     }
   }
-  if (pts.length && dist(pts[pts.length - 1], pts[0]) > 1e-6) pts.push(pts[0]);
+  const closed = cmds.length && cmds[cmds.length - 1][0] === 'Z';
+  if (closed && pts.length && dist(pts[pts.length - 1], pts[0]) > 1e-6) pts.push(pts[0]);
   return pts;
 }
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-
-// Resample a closed polyline to n points evenly spaced by arc length.
-function resampleClosed(poly, n) {
-  const acc = [0];
-  for (let i = 1; i < poly.length; i++) acc.push(acc[i - 1] + dist(poly[i - 1], poly[i]));
-  const total = acc[acc.length - 1];
-  const out = [];
-  let j = 0;
-  for (let i = 0; i < n; i++) {
-    const target = total * i / n;
-    while (j < acc.length - 2 && acc[j + 1] < target) j++;
-    const seg = acc[j + 1] - acc[j];
-    const t = seg === 0 ? 0 : (target - acc[j]) / seg;
-    out.push([poly[j][0] + (poly[j + 1][0] - poly[j][0]) * t,
-              poly[j][1] + (poly[j + 1][1] - poly[j][1]) * t]);
-  }
-  return out;
-}
 
 function resampleOpen(poly, n) {
   const acc = [0];
@@ -207,40 +184,6 @@ function resampleOpen(poly, n) {
               poly[j][1] + (poly[j + 1][1] - poly[j][1]) * t]);
   }
   return out;
-}
-
-// THE CENTRELINE OF A FILLED RIBBON.
-//
-// Walk the closed outline as M evenly spaced points. Somewhere on that loop is an
-// offset K such that point i and point (K - i) are on OPPOSITE sides of the
-// ribbon, directly across from each other — that is what "opposite" means on a
-// shape that is long and thin. Search every K and keep the one where the paired
-// points are closest on average; the ribbon's width is small and everything else
-// on the loop is far apart, so the minimum is unambiguous.
-//
-// The two fixed points of i -> K - i are the ribbon's ends, half a loop apart,
-// and the midpoints between each pair from one end to the other are the
-// centreline. This needs no assumption about how the ends are drawn, which is why
-// it survives caps that are lines on some legs and curves on others.
-function centreline(d, N = 64) {
-  const M = 2 * N;
-  const loop = resampleClosed(flatten(parse(d)), M);
-
-  let best = Infinity, bestK = 0;
-  for (let K = 0; K < M; K++) {
-    let cost = 0;
-    for (let i = 0; i < M; i += 2) cost += dist(loop[i], loop[(((K - i) % M) + M) % M]);
-    if (cost < best) { best = cost; bestK = K; }
-  }
-
-  const half = bestK >> 1;
-  const line = [];
-  for (let s = 0; s <= N; s++) {
-    const i = (half + s) % M;
-    const q = (((bestK - i) % M) + M) % M;
-    line.push([(loop[i][0] + loop[q][0]) / 2, (loop[i][1] + loop[q][1]) / 2]);
-  }
-  return line;
 }
 
 // --- read the layers ---------------------------------------------------------
@@ -334,13 +277,20 @@ function shapesIn(body) {
     if (close) continue;
 
     const dm = /\bd="([^"]+)"/.exec(attrs);
+    if (!dm) continue;
     const fm = /\bfill="(#[0-9a-fA-F]{6})"/.exec(attrs);
-    if (!dm || !fm) continue;
+    const sm = /\bstroke="(#[0-9a-fA-F]{6})"/.exec(attrs);
+    // A STROKED PATH IS A SHAPE TOO. This read fills only for as long as everything
+    // it had to find was a filled one; the road is a bare line now, drawn with no
+    // fill at all, and skipping it would leave the guide with markers and nothing
+    // to walk between them.
+    if (!fm && !sm) continue;
 
     const d = transformPath(dm[1], stack[stack.length - 1]);
     const nums = (d.match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
     const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
-    out.push({ d, fill: fm[1].toLowerCase(),
+    out.push({ d, fill: fm ? fm[1].toLowerCase() : null,
+               stroke: sm ? sm[1].toLowerCase() : null,
                box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] });
   }
   return out;
@@ -357,268 +307,92 @@ const layers = LAYERS.map(file => {
 // layer is scenery rather than a stage — which is what lets the picture use any
 // colour it likes.
 const guide = layers[0];
-const picture = layers.slice(1);
+
+// THE NAMES ARE NOT PART OF THE PICTURE EITHER. The owner asked for them to reach
+// the player exactly as drawn — not muted, and not under the paper. The paper is a
+// multiply over the whole map, so the only way a name can be untouched by it is to
+// be drawn AFTER it, which means it cannot be in the map image at all. It goes to
+// its own file, and the game lays it over the sheet.
+//
+// Found by colour rather than by layer number, because the artist adds and reorders
+// layers and a rule that says "the last one" would quietly start eating scenery.
+// A layer every one of whose shapes is drawn in the lettering colour is lettering.
+const LETTERING_FILL = '#fff5e1';
+const isLettering = l => l.shapes.length > 0 && l.shapes.every(s => s.fill === LETTERING_FILL);
+const names = layers.slice(1).filter(isLettering);
+const picture = layers.slice(1).filter(l => !isLettering(l));
+
+if (names.length > 1) {
+  throw new Error(`expected one layer of region names, found ${names.length}: ` +
+    names.map(l => l.file).join(', '));
+}
 
 const GROUND = guide.background;
 if (!GROUND) throw new Error(`${guide.file}: the guide layer has no background to use as ground`);
 
 const markers = [];
-const legs = [];
+const drawn = [];
 for (const s of guide.shapes) {
-  const area = (s.box[2] - s.box[0]) * (s.box[3] - s.box[1]);
   if (s.fill === MARKER_FILL) markers.push([(s.box[0] + s.box[2]) / 2, (s.box[1] + s.box[3]) / 2]);
-  else if (ROAD_FILLS.has(s.fill) && area <= ROAD_MAX_AREA) legs.push(centreline(s.d));
+  else if (s.fill === null && s.stroke) drawn.push(flatten(parse(s.d)));
 }
 
 if (markers.length !== 10) throw new Error(`expected 10 markers in ${guide.file}, found ${markers.length}`);
-if (legs.length < 2) throw new Error(`expected road legs in ${guide.file}, found ${legs.length}`);
+if (drawn.length !== markers.length) {
+  throw new Error(`expected one road line per marker in ${guide.file}, found ${drawn.length} line(s) for ${markers.length} marker(s)`);
+}
 
-// Everything drawn in the picture layers, which is what the depth pass searches.
-const shapes = picture.flatMap(l => l.shapes);
+// --- follow the road ---------------------------------------------------------
 
-// --- stitch the road --------------------------------------------------------
-
-// THE ROAD IS DRAWN IN PIECES, and how many pieces a connection takes is the
-// artist's business rather than the game's.
+// THE ROAD IS A LINE THE ARTIST DREW, and this reads it and stops.
 //
-// It used to be two: a leg ran up to a bridge, stopped, and started again on the
-// far side, and the tool paired the halves by their loose ends. The bridges are
-// drawn ON the road now — the artist carried the path across them — so a
-// connection can be a chain of three, and the pairing that assumed exactly two
-// halves found five legs it could not place and stopped.
+// It was not always. The road used to be a filled RIBBON — a closed outline running
+// up one side and back down the other — because that is what it looks like on the
+// map, and everything the game needed had to be recovered from it. Finding the
+// centre of a ribbon is not a lookup: the two sides had to be paired by walking the
+// loop from both directions and minimising the distance between the pairs, and the
+// answer came out in pieces, because a ribbon is drawn in pieces. So the pieces were
+// chained end to end, and the chains overlapped at their joins, and the overlaps
+// doubled the line back on itself, and the doubling bunched the trail dots — which
+// took a pass that removed reversals, which then had to learn the difference between
+// an overlap and a switchback the artist meant.
 //
-// So it walks instead of pairing. Start at a leg that touches a marker, follow it
-// to its far end, and if that end is loose, hop to the nearest unused loose end
-// and keep going until a marker turns up. One leg or six, it is the same walk —
-// and a chain that never reaches a marker is reported rather than silently
-// dropped.
+// All of that was arithmetic in service of a question the drawing could simply
+// answer. The road is one stroked line per leg now, ten lines for ten stages, each
+// running from one marker to the next. There is no centre to find, nothing to stitch
+// and nothing to unpick: flatten the curve and that is the road. Four hundred lines
+// of this file went with the ribbon, and so did every bug that lived in them.
 //
-// The hop distance is the one number to watch. Every real join in the current
-// drawing is 23px or less; 40 clears them all with most of a marker's width to
-// spare, and is small enough that two legs merely passing near each other cannot
-// be mistaken for a join. It was 150 while a hop had to clear a whole bridge.
-const JOIN = 40;
+// What the tool still has to work out is which leg leads into which stage, because
+// the road FORKS and the play order is a decision. That part is below and unchanged.
 
 const markerAt = p => markers.findIndex(m => dist(p, m) <= AT_MARKER);
-
-const ends = legs.map((line, i) => ({
-  i, line,
-  a: markerAt(line[0]),
-  b: markerAt(line[line.length - 1])
-}));
-
-const used = new Set();
-
-// The free end of a leg, given which end we came in by. `from` is the index of
-// the end we started at, so the far end is the other one.
-const tail = (L, fromA) => (fromA ? L.line[L.line.length - 1] : L.line[0]);
-const oriented = (L, fromA) => (fromA ? L.line : [...L.line].reverse());
-const farMarker = (L, fromA) => (fromA ? L.b : L.a);
-
-// TAKE THE DOUBLING BACK OUT OF A JOINED LINE.
-//
-// The artist draws the road up to a bridge and the bridge's own piece starting a
-// little way back along it, so the two OVERLAP. Laid end to end the line goes
-// forward, back, and forward again — invisible on the map, but not in the dots,
-// because the trail is spaced by ARC LENGTH. A 6px doubling spends 12px of walking
-// without going anywhere, so two dots land almost on top of each other: measured
-// at 3.4px apart where they should be 10, on all four bridges.
-//
-// Trimming at the seam was the obvious fix and it only half worked. The two pieces
-// meet at an ANGLE, so "behind the direction of travel" tested at the join misses
-// points that are behind the road while being ahead of that one line — it cleaned
-// up one bridge of four, then two of four.
-//
-// This asks the simpler question instead, everywhere rather than at the seams: does
-// this step reverse against the one before it? A road drawn by a person never does
-// — the six legs with no seam in them have not one reversal between them — so any
-// step that turns back more than ninety degrees is the overlap and nothing else.
-// Dropping the point that causes it is enough, and comparing against the last KEPT
-// direction rather than the original one lets a run of several go in a single pass.
-//
-// The last point is always kept: it is the marker the leg arrives at, and a leg
-// that stops short of its own stage would fail the check in tools/campaign.mjs.
-// A TURN SHARPER THAN THIS IS AN ARTEFACT, not a corner. The road is sampled
-// every 4px or so and a person drawing one does not hairpin inside 4px; the six
-// legs with no seam in them turn by at most a few degrees a step. 80 rather than
-// 90 because the residual zigs after one pass came in at 105 and 114 degrees, and
-// there is nothing between that and a genuine bend to protect.
-const KINK = Math.cos(80 * Math.PI / 180);
-
-// AND A TURN ALONE IS NOT ENOUGH TO CONVICT, which is what the paragraph above got
-// wrong. It was written when every leg on the map was a curve through open country,
-// and it says a person does not hairpin — then the artist redrew the mountain in the
-// top-right corner as a SWITCHBACK, a road that climbs by turning back on itself,
-// and every word of it was still true except the conclusion. The rule ate the
-// hairpin: 110 of the leg's 195 points went, and the trail ran straight down a cliff
-// the road zig-zags up.
-//
-// An overlap and a switchback turn through the same angle. What tells them apart is
-// HOW FAR THE ROAD GOES while it is turned back. An overlap is two pieces meeting,
-// so it doubles back by about as much as the pieces overlap and no more; a
-// switchback doubles back for the whole length of its limb. Measured over this map:
-//
-//   overlap at a join      0.0 to 20.6 units, eleven of them
-//   switchback limb        99.1 and 205.8 units, the two halves of the zig-zag
-//
-// Fifty sits in the middle of a five-to-one gap, and above JOIN, which is the
-// furthest apart two pieces are allowed to be and so bounds how far they can
-// overlap. A reversed run shorter than this is an artefact and goes; a longer one is
-// a road and stays.
-const BACKTRACK = 50;
-
-const unit = (a, b) => {
-  const dx = b[0] - a[0], dy = b[1] - a[1];
-  const l = Math.hypot(dx, dy);
-  return l ? [dx / l, dy / l] : null;
-};
-
-function unkink(line) {
-  if (line.length < 3) return line;
-
-  // ONE PASS IS NOT ENOUGH, and finding that out is what took two attempts.
-  // Dropping a point changes the direction the NEXT point is judged against, so a
-  // run of overlap can let its own tail through — both remaining bridges came back
-  // with exactly one reversal left. Repeating until a pass changes nothing is the
-  // only version that can promise none, and it converges in two or three.
-  let out = line;
-  for (let pass = 0; pass < 8; pass++) {
-    const kept = [out[0]];
-    let dir = null;
-    for (let i = 1; i < out.length; i++) {
-      const last = kept[kept.length - 1];
-      const dx = out[i][0] - last[0], dy = out[i][1] - last[1];
-      const len = Math.hypot(dx, dy);
-      if (!len) continue;
-      const d = [dx / len, dy / len];
-      if (dir && d[0] * dir[0] + d[1] * dir[1] < KINK) {
-        // Reversed. How far does the road stay reversed? Measured along its own
-        // consecutive points, because that is the distance it actually travels —
-        // measuring from the last KEPT point would count the gap this pass is in
-        // the middle of opening up.
-        let run = 0, j = i;
-        while (j < out.length) {
-          const step = unit(out[j - 1], out[j]);
-          if (!step) { j++; continue; }
-          if (step[0] * dir[0] + step[1] * dir[1] >= KINK) break;
-          run += dist(out[j - 1], out[j]);
-          j++;
-        }
-        // Short: two pieces overlapping at a join. Dropped ONE POINT AT A TIME, and
-        // deliberately not the whole run in one step. Skipping the run wholesale
-        // looks tidier and cleans less: the run ends at the first step that turns
-        // forward again, and the wobble at a join has several of those in it, so the
-        // tail goes back in and the dots bunch. Measured — dropping the run put the
-        // closest pair on stage 5 at 7.0px where dropping the point leaves it at 8.6.
-        // Each drop re-aims the direction the next point is judged against, which is
-        // what lets a run be cleaned properly over the passes.
-        if (run < BACKTRACK) continue;
-        // Long: the artist's own hairpin. Take the corner and turn with it.
-      }
-      kept.push(out[i]);
-      dir = d;
-    }
-
-    // THE FAR END IS ALWAYS KEPT: it is the marker the leg arrives at, and a leg
-    // that stopped short of its own stage would fail tools/campaign.mjs.
-    //
-    // But pushing it back on blindly was a bug that hid the whole problem. When
-    // the overlap is AT the marker end, the last point kept sits past it, so
-    // adding the end reverses — the pass drops it, the push adds it back, and the
-    // loop oscillates for ever while reporting one reversal left on three legs.
-    // Whatever is in the way is popped instead, which converges.
-    const end = out[out.length - 1];
-    if (kept[kept.length - 1] !== end) {
-      // AND THE POPPING IS BOUNDED BY THE SAME LENGTH, for the same reason: an
-      // overlap at the marker end is a few units of road, and unwinding further
-      // than that would be eating a corner to reach the marker in a straight line.
-      let undone = 0;
-      while (kept.length >= 2) {
-        const a = kept[kept.length - 1], b = kept[kept.length - 2];
-        const d1 = unit(b, a), d2 = unit(a, end);
-        if (!d1 || !d2 || d1[0] * d2[0] + d1[1] * d2[1] >= KINK) break;
-        undone += dist(b, a);
-        if (undone > BACKTRACK) break;
-        kept.pop();
-      }
-      kept.push(end);
-    }
-
-    if (kept.length === out.length) return kept;
-    out = kept;
-  }
-  return out;
-}
-
-// Walk out from one end of one leg, gathering legs until a marker or a dead end.
-function walk(L, fromA) {
-  let line = oriented(L, fromA);
-  let far = farMarker(L, fromA);
-  let here = L;
-  let cameA = fromA;
-  used.add(L.i);
-
-  while (far < 0) {
-    const p = tail(here, cameA);
-
-    // The nearest unused leg with a loose end in reach. Nearest rather than first
-    // found: with the road in this many pieces, two joins can be close together
-    // and taking whichever the loop happened to reach first is an ordering
-    // accident rather than a decision.
-    let best = null;
-    for (const O of ends) {
-      if (used.has(O.i)) continue;
-      for (const startA of [true, false]) {
-        // entering O at the end nearest p means the end we come IN by is loose
-        const entry = startA ? O.line[0] : O.line[O.line.length - 1];
-        const isLoose = startA ? O.a < 0 : O.b < 0;
-        if (!isLoose) continue;
-        const d = dist(p, entry);
-        if (d <= JOIN && (!best || d < best.d)) best = { O, startA, d };
-      }
-    }
-    if (!best) return { line, to: -1 };
-
-    used.add(best.O.i);
-    line = [...line, ...oriented(best.O, best.startA)];
-    here = best.O;
-    cameA = best.startA;
-    far = farMarker(best.O, best.startA);
-  }
-  return { line: unkink(line), to: far };
-}
 
 const joined = [];
 let approach = null;
 let approachAt = -1;
 
-// Every leg that touches a marker starts a walk. A leg with markers at BOTH ends
-// is a whole connection on its own and the walk ends immediately.
-for (const L of ends) {
-  for (const fromA of [true, false]) {
-    if (used.has(L.i)) continue;
-    const startMarker = fromA ? L.a : L.b;
-    if (startMarker < 0) continue;
+for (const [i, line] of drawn.entries()) {
+  const a = markerAt(line[0]);
+  const b = markerAt(line[line.length - 1]);
 
-    const { line, to } = walk(L, fromA);
-    if (to >= 0) { joined.push({ from: startMarker, to, line }); continue; }
+  if (a >= 0 && b >= 0) { joined.push({ from: a, to: b, line }); continue; }
 
-    // A chain that ran out of road without finding a marker. There is exactly one
-    // of those in a correct drawing — the approach, coming in from off the left
-    // edge — and anything else is a leg the artist has left dangling.
-    if (approach) {
-      throw new Error(`two roads run off the map: from marker ${approachAt} and from marker ${startMarker}`);
-    }
-    approach = [...line].reverse();     // pointed AT its marker, not away
-    approachAt = startMarker;
+  // A line with only one end at a marker is the approach, coming in from off the
+  // left edge so stage 1 has a road to arrive by. There is exactly one in a correct
+  // drawing; a second would mean a leg left dangling.
+  const at = a >= 0 ? a : b;
+  if (at < 0) {
+    throw new Error(`road line ${i} touches no marker at either end ` +
+      `(${line[0].map(Math.round)} and ${line[line.length - 1].map(Math.round)})`);
   }
+  if (approach) {
+    throw new Error(`two roads run off the map: from marker ${approachAt} and from marker ${at}`);
+  }
+  approach = a >= 0 ? [...line].reverse() : line;   // pointed AT its marker
+  approachAt = at;
 }
 
-const stranded = ends.filter(L => !used.has(L.i));
-if (stranded.length) {
-  throw new Error(`${stranded.length} road leg(s) touch no marker and no other leg — ` +
-    stranded.map(L => `leg ${L.i}`).join(', '));
-}
 if (!approach) throw new Error('no road runs in from off the map; stage 1 has no opening');
 
 // --- the play order ---------------------------------------------------------
@@ -659,193 +433,21 @@ for (let pass = 0; pass < ORDER.length; pass++) {
 }
 for (const m of ORDER) if (!incoming.has(m)) throw new Error(`marker ${m} is not on the road`);
 
-// --- what stands in front of a marker ---------------------------------------
-
-// THE MAP IS ONE FLAT PICTURE, so nothing in it can be behind anything the game
-// draws on top. A stage medallion sitting on the ground beside a tower therefore
-// covers the tower, which is exactly backwards: the tower is nearer the viewer.
+// --- THE DEPTH PASS IS GONE ---------------------------------------------------
 //
-// The fix is to name the shapes that stand IN FRONT of each marker and let the
-// game redraw those, clipped to their own outlines, over the medallion. It is the
-// same depth rule the board itself uses — see drawFigures in src/render.js —
-// applied to a picture instead of a list: a thing whose FEET are lower on the
-// screen is nearer, so it wins.
+// The map is one flat picture, so anything the game draws on it lands over scenery
+// it may be behind. There used to be a pass here that worked out which shapes those
+// were and put them back on top: it sampled every marker and every step of every
+// leg, collected the small shapes whose feet were lower on the screen, vetoed the
+// ones that would swallow a medallion, vetoed the ones the road runs ACROSS so the
+// bridges did not paint out the dots crossing them, and handed the game a list to
+// mask and redraw.
 //
-// Which shapes qualify:
-//
-//   IT HAS TO BE NEAR THE MARKER. Anything not touching the medallion's footprint
-//   cannot occlude it, and emitting it would make the game redraw half the map.
-//
-//   ITS FEET HAVE TO BE LOWER. `box[3]`, the bottom of the shape, below the
-//   marker's centre. A roof drawn high above the marker is behind it.
-//
-//   IT HAS TO BE AN OBJECT, not the ground. The terrain blobs pass both tests
-//   above — the whole green landmass has feet at the bottom of the artboard — and
-//   redrawing one would paint the entire map back over the medallion. Anything
-//   bigger than a fiftieth of the artboard is scenery, not a building.
-const ART = 1920 * 1080;
-const BIG = ART / 50;
-
-// The medallion's drawn footprint in artboard units: NODE_R in src/overview.js is
-// 14 canvas px, so 28 here, and a little wider than tall because it is an ellipse
-// lying on the ground rather than a disc facing the camera.
-const FOOT_X = 34;
-const FOOT_Y = 26;
-
-// HOW MUCH OF A MEDALLION A SHAPE MAY SWALLOW. Depth is only worth having if the
-// thing behind is still findable: a medallion that vanishes completely is a stage
-// nobody can tap. This is a ceiling, not a target — nothing currently comes near
-// it — and it is measured as a UNION on a grid, because a building is not one path
-// and testing its roof, its wall and its door separately lets all three through.
-const MOST_OF_IT = 0.88;
-const GRID_X = 24, GRID_Y = 18;
-
-// How wide a dot is on the artboard, plus a little. The trail is drawn at radius
-// 2.5 in the game's 960-wide space, so 6 here covers it with margin.
-const DOT_REACH = 6;
-
-// EVERYTHING THE ROAD PASSES, not just the ten markers.
-//
-// The depth pass used to ask only "what stands in front of this medallion", so a
-// building beside the road left the medallion alone and painted straight over the
-// trail — dots crossing in front of a mountain they are plainly behind. The dots
-// are on the ground exactly as the medallions are and get the same rule.
-//
-// So the question is asked of every point the trail passes through as well. A
-// shape whose FEET are lower on the screen than the point it covers is nearer the
-// viewer and goes in front; the rest of the drawing is left where it is.
-// THE ROAD CANNOT BE BEHIND SOMETHING IT RUNS ACROSS. A bridge is the one place
-// the rule breaks: its feet are lower on the screen than the road it carries, so
-// it qualifies as foreground and paints out the very dots that are supposed to be
-// walking over it. Four bridges, four gaps in the trail.
-//
-// The distinction is not "is it a bridge" — the tool has no idea what a bridge is —
-// it is INSIDE versus BESIDE. A mountain the road passes behind has trail points in
-// its bounding box but outside its outline; a bridge has them inside it, because
-// the road is drawn on top of the deck. So: if the road actually goes through the
-// shape, the shape is under the road and stays where the artist put it.
-//
-// Even-odd crossing count against the flattened outline, which is what the shape
-// is, rather than against the box, which is what it is not.
-function inside(poly, [px, py]) {
-  let hit = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i], [xj, yj] = poly[j];
-    if ((yi > py) !== (yj > py) &&
-        px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
-}
-
-// HOW MUCH ROAD, not how many points: a length, so it does not move when the leg
-// is sampled more finely, and not a fraction of the shape, so a small hut and a
-// long bridge are judged the same way. The measurement across this map is not
-// close — the four crossings carry 91 to 119 units of road inside them, and the
-// most any building the road merely passes takes is 29, that being the temple,
-// whose roof the trail clips the corner of on its way past. Sixty units sits in
-// the middle of a four-to-one gap; it is thirty canvas pixels, or three dot gaps.
-//
-// Point count would also separate them today (34 against 7) and is the wrong
-// measure: it counts the sampling rather than the road.
-const THROUGH = 60;
-
-function crossed(s) {
-  const poly = flatten(parse(s.d), 8);
-  if (poly.length < 4) return false;
-  let arc = 0;
-  for (const m of ORDER) {
-    const line = incoming.get(m);
-    for (let i = 1; i < line.length; i++) {
-      if (inside(poly, line[i]) && inside(poly, line[i - 1])) arc += dist(line[i - 1], line[i]);
-      if (arc >= THROUGH) return true;
-    }
-  }
-  return false;
-}
-
-function foreground() {
-  const marks = [];
-  for (const m of ORDER) {
-    marks.push({ p: markers[m], medallion: m });
-    const line = incoming.get(m);
-    for (let i = 1; i < line.length; i++) {
-      const [x0, y0] = line[i - 1], [x1, y1] = line[i];
-      const seg = Math.hypot(x1 - x0, y1 - y0);
-      const steps = Math.max(1, Math.round(seg / 8));
-      for (let k = 0; k < steps; k++) {
-        const t = k / steps;
-        marks.push({ p: [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t], medallion: -1 });
-      }
-    }
-  }
-
-  const near = shapes.filter(s => {
-    if (s.fill === MARKER_FILL || ROAD_FILLS.has(s.fill)) return false;
-    const [x0, y0, x1, y1] = s.box;
-    return (x1 - x0) * (y1 - y0) <= BIG;
-  });
-
-  const chosen = [];
-  for (const s of near) {
-    const [x0, y0, x1, y1] = s.box;
-    const covers = marks.some(({ p }) =>
-      p[0] >= x0 - DOT_REACH && p[0] <= x1 + DOT_REACH &&
-      p[1] >= y0 - DOT_REACH && p[1] <= y1 + DOT_REACH &&
-      y1 > p[1]);
-    if (covers && !crossed(s)) chosen.push(s);
-  }
-
-  // THE MEDALLION VETO, applied to whatever the trail test let in. A shape can
-  // qualify by standing in front of the road and still bury a marker it happens to
-  // sit on, so every marker gets its budget checked against the shapes that
-  // actually overlap it — nearest first, so what gets dropped when the budget runs
-  // out is the furthest-back scenery.
-  const vetoed = new Set();
-  for (const m of ORDER) {
-    const [mx, my] = markers[m];
-    const ex0 = mx - FOOT_X, ey0 = my - FOOT_Y;
-    const cw = (FOOT_X * 2) / GRID_X, ch = (FOOT_Y * 2) / GRID_Y;
-    const cells = GRID_X * GRID_Y;
-    const covered = new Uint8Array(cells);
-    let used = 0;
-
-    const over = chosen
-      .filter(s => !vetoed.has(s.d) &&
-        s.box[2] >= ex0 && s.box[0] <= ex0 + FOOT_X * 2 &&
-        s.box[3] >= ey0 && s.box[1] <= ey0 + FOOT_Y * 2)
-      .sort((a, b) => b.box[3] - a.box[3]);
-
-    for (const s of over) {
-      const [x0, y0, x1, y1] = s.box;
-      const hits = [];
-      for (let gy = 0; gy < GRID_Y; gy++) {
-        const cy = ey0 + (gy + 0.5) * ch;
-        if (cy < y0 || cy > y1) continue;
-        for (let gx = 0; gx < GRID_X; gx++) {
-          const cx = ex0 + (gx + 0.5) * cw;
-          if (cx < x0 || cx > x1) continue;
-          const k = gy * GRID_X + gx;
-          if (!covered[k]) hits.push(k);
-        }
-      }
-      if ((used + hits.length) / cells > MOST_OF_IT) { vetoed.add(s.d); continue; }
-      for (const k of hits) covered[k] = 1;
-      used += hits.length;
-    }
-  }
-
-  // De-duplicated, and in the order the artist drew them so a building that
-  // overlaps another comes back stacked the way it was painted.
-  const seen = new Set();
-  const out = [];
-  for (const s of shapes) {
-    if (vetoed.has(s.d) || seen.has(s.d)) continue;
-    if (!chosen.some(c => c.d === s.d)) continue;
-    seen.add(s.d);
-    out.push(s.d);
-  }
-  return out;
-}
+// The owner asked for the dots on top of everything and moved the buildings clear
+// of the medallions in the drawing, which is the same answer arrived at with a pen.
+// Nothing is left for the pass to do, and a rule with no cases is worse than no rule
+// — so the whole of it is deleted rather than kept switched off, along with the four
+// tuned constants it needed and the argument about what a bridge is.
 
 // --- the same drawing, muted -------------------------------------------------
 
@@ -903,20 +505,7 @@ function hueOf(r, g, b) {
 const WATER = '#61a6ff';
 const WATERFALL = '#a6d5ff';
 
-// LETTERING IS NOT SCENERY, so the muting is not asked to have an opinion about
-// it. Everything else in the stack is a thing in the world being lit — grass,
-// stone, water — and pulling it all toward one warm range is what makes the map
-// read as one place drawn in one light. A region's NAME is not in that place; it
-// is written over the top of it, and it has one job, which is to be read. The
-// artist picked the colour for that job, and the ramp would only argue.
-//
-// Kept as an exact colour rather than as "whatever is in the last layer", because
-// the artist adds and reorders layers and the name of the exemption should say
-// what it protects. This shade appears nowhere else in the stack.
-const LETTERING = new Set(['#fff5e1']);
-
 function sepia(hex) {
-  if (LETTERING.has(hex)) return hex;
   if (hex === WATER) hex = WATERFALL;
 
   const r0 = parseInt(hex.slice(1, 3), 16);
@@ -1024,7 +613,7 @@ const STROKE_W = 2.6;
 // gives each export a different artboard id, so seven of them can sit in one set
 // of defs without colliding. If two ever did collide, one layer would be clipped
 // by the other's rectangle — identical here, but not a thing to rely on.
-function stack({ recolour, guides }) {
+function stack({ recolour, guides, only = null, ground = true }) {
   const seen = new Map();
   const brown = hex => {
     const key = hex.toLowerCase();
@@ -1036,7 +625,7 @@ function stack({ recolour, guides }) {
   const parts = [];
   const defs = [];
 
-  const use = guides ? layers : picture;
+  const use = only ? only : (guides ? layers : picture);
   for (const l of use) {
     defs.push(`<clipPath id="${l.clip}"><rect x="0" y="0" width="1920" height="1080"/></clipPath>`);
     let body = l.body;
@@ -1052,7 +641,9 @@ function stack({ recolour, guides }) {
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">`,
     `<defs>${defs.join('')}</defs>`,
     `<g>`,
-    `<rect fill="${GROUND}" x="0" y="0" width="1920" height="1080"/>`,
+    // The names layer is laid OVER a finished map, so it must not bring a field of
+    // grass with it.
+    ...(ground ? [`<rect fill="${GROUND}" x="0" y="0" width="1920" height="1080"/>`] : []),
     ...parts,
     `</g></svg>`
   ].join('\n');
@@ -1085,7 +676,14 @@ function stack({ recolour, guides }) {
   const shown = stack({ recolour: true, guides: false });
   writeFileSync(SEPIA, shown.doc);
   console.log(`wrote ${SEPIA}`);
-  console.log(`  ${picture.length} picture layer(s), ${shown.colours} colour(s) muted, guide layer dropped`);
+  console.log(`  ${picture.length} picture layer(s), ${shown.colours} colour(s) muted, ` +
+    `guide and names dropped`);
+
+  // NOT RECOLOURED AND NOT ON A GROUND: this one is laid over a finished map.
+  const named = stack({ recolour: false, guides: false, only: names, ground: false });
+  writeFileSync(NAMES, named.doc);
+  console.log(`wrote ${NAMES}`);
+  console.log(`  ${names.length} lettering layer(s), untouched, to go over the paper`);
 }
 
 // --- write it out -----------------------------------------------------------
@@ -1104,18 +702,6 @@ const stages = ORDER.map((m, i) => ({
   leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)])
 }));
 
-// THE SHAPES THAT STAND IN FRONT OF THE ROAD, one list rather than one per stage.
-//
-// It was per stage while the only thing being covered was a medallion. The trail
-// is covered too now, and a stretch of road between two stages belongs to neither
-// of them — so the question stopped being "what is in front of stage 6" and became
-// "what is in front of the road", which has one answer.
-//
-// The artist's own path data in ARTBOARD units, not halved like everything else
-// here: the game clips with these under a 0.5 scale, and re-scaled path data would
-// round coordinates that have already been rounded once.
-const front = foreground();
-
 const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand.
 //
 // Written by tools/overview.mjs from assets/map/Overview_Map.svg. Re-run it after
@@ -1124,8 +710,8 @@ const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand
 //   node tools/overview.mjs
 //
 // Coordinates are in the game's 960x540 space, halved from the 1920x1080
-// artboard. \`leg\` is the centreline of the road that arrives at that stage,
-// running from the previous stage to this one — the game reveals it a fraction at
+// artboard. \`leg\` is the line the artist drew for the road that arrives at that
+// stage, running from the previous stage to this one — the game reveals it a fraction at
 // a time when the stage before it is cleared, then plants a flag at its end.
 //
 // Stage 1's leg comes in from off the left edge of the map, which is what a
@@ -1141,13 +727,6 @@ export const STAGES = ${JSON.stringify(stages, null, 2)
 // than of the game: markers exist ahead of the maps behind them.
 export const STAGE_COUNT = STAGES.length;
 
-// WHAT STANDS IN FRONT OF THE ROAD. The map is one flat picture, so anything the
-// game draws on it — a medallion, a trail dot — lands on top of scenery it may
-// well be behind. These are the shapes whose feet are lower on the screen than the
-// road they cover, in the artist's own coordinates; the game redraws them, each
-// clipped to its own outline, over the trail and the medallions.
-export const FRONT = ${JSON.stringify(front)};
-
 // Which stages can actually be played. Everything else draws locked.
 export const playable = i => STAGES[i] && STAGES[i].level !== null;
 `;
@@ -1156,8 +735,7 @@ writeFileSync(OUT, body);
 
 const built = stages.filter(s => s.level !== null).length;
 console.log(`wrote ${OUT}`);
-console.log(`  ${stages.length} stages, ${built} playable, ${joined.length} road legs stitched`);
-console.log(`  ${front.length} shape(s) stand in front of the road`);
+console.log(`  ${stages.length} stages, ${built} playable, ${joined.length + 1} road lines followed`);
 for (const [i, s] of stages.entries()) {
   console.log(`  stage ${String(i + 1).padStart(2)}  marker ${s.marker}  (${String(s.x).padStart(6)}, ${String(s.y).padStart(5)})  ` +
     `level ${s.level === null ? '-' : s.level}  leg ${s.leg.length}pts`);

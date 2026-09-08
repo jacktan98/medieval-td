@@ -23,7 +23,7 @@
 // measures the artwork; it reads the numbers that tool wrote.
 
 import { art } from './assets.js';
-import { STAGES, STAGE_COUNT, playable, FRONT } from './data/overview.js';
+import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
@@ -290,78 +290,18 @@ function drawNode(ctx, i, hot) {
   ctx.restore();
 }
 
-// WHAT STANDS IN FRONT OF THE ROAD, PUT BACK ON TOP.
+// THE DEPTH PASS IS GONE, and this is where it was.
 //
-// The map is one flat picture, so everything the game draws on it lands over
-// scenery it may well be behind — a medallion beside a tower, a trail dot crossing
-// a mountain. tools/overview.mjs works out which shapes those are; this redraws
-// them, each clipped to its own outline, so the artwork comes back on top with
-// nothing else coming with it.
+// The map is one flat picture, so everything the game draws on it landed over
+// scenery it might be behind — a medallion beside a tower, a trail dot crossing a
+// mountain. tools/overview.mjs worked out which shapes those were and this redrew
+// them, masked to their own outlines, over the trail and the medallions.
 //
-// ONE LIST, DRAWN ONCE, and late. It used to be per stage and drawn with each
-// medallion, which covered the medallions correctly and left the trail alone —
-// dots ran in front of hills they were plainly behind. A stretch of road between
-// two stages belongs to neither of them, so the question stopped being "what is in
-// front of stage 6" and became "what is in front of the road".
-//
-// AND IT IS BUILT ONCE, WHOLE, AND MASKED — never clipped and composited shape by
-// shape. That was the first way round and it drew a hairline down the middle of
-// every outline it touched: the temple's walls came back as thin double strokes,
-// as though the artist had traced them twice.
-//
-// The cause is partial alpha at a clip edge. The map underneath is already the
-// artwork multiplied by the parchment, and redrawing it inside a clip is meant to
-// land on identical pixels and be invisible. It does, right up to the boundary,
-// where the clip's antialiasing blends at some fraction a: the image is laid down
-// as a*art + (1-a)*(art x paper), and the paper is then multiplied over THAT. Two
-// operations at fractional coverage do not compose back to art x paper, so the
-// edge pixel lands somewhere else — a pale line exactly one pixel wide, following
-// the shape, which is the outline the stroke is centred on.
-//
-// So the two steps happen at full opacity on their own canvas, off screen, where
-// every pixel is whole. Only when the result is finished is it cut to shape and
-// laid down in one drawImage. A mask edge blends a finished pixel over the
-// identical finished pixel beneath it, which cannot show. Redrawing thirty shapes
-// once at load rather than every frame is the smaller reason to do it this way.
-//
-// The paths are in ARTBOARD units, which is why the scale is applied before them
-// and the map is drawn at 1920x1080: the data is the artist's own, untouched, and
-// re-scaling it here would round coordinates already rounded once.
-let frontLayer = null, frontFrom = null;
-
-function makeFront(img) {
-  const c = document.createElement('canvas');
-  c.width = 960;
-  c.height = 540;
-  const g = c.getContext('2d');
-
-  // The map as the player already sees it: the artwork with the sheet over it.
-  g.drawImage(img, 0, 0, 960, 540);
-  g.globalCompositeOperation = 'multiply';
-  g.drawImage(parchment || makeParchment(), 0, 0);
-
-  // The mask, accumulated as solid fills on a canvas of its own rather than as one
-  // Path2D. A union of paths taken as a single path is subject to the winding rule,
-  // and a shape wound against its neighbour would punch a hole in it.
-  const m = document.createElement('canvas');
-  m.width = 960;
-  m.height = 540;
-  const mg = m.getContext('2d');
-  mg.fillStyle = '#000';
-  mg.scale(0.5, 0.5);
-  for (const d of FRONT) mg.fill(new Path2D(d));
-
-  g.globalCompositeOperation = 'destination-in';
-  g.drawImage(m, 0, 0);
-  return c;
-}
-
-function drawFront(ctx) {
-  const img = art.overview;
-  if (!img || !FRONT.length) return;
-  if (frontFrom !== img) { frontLayer = makeFront(img); frontFrom = img; }
-  ctx.drawImage(frontLayer, 0, 0);
-}
+// The owner asked for the dots on top of everything and moved the buildings clear
+// of the medallions in the drawing itself, which is the same answer reached with a
+// pen. There are no cases left, so the pass is deleted rather than left switched
+// off: the trail and the medallions now simply go on last, in the order they are
+// drawn below, and that is the whole of it.
 
 // The stars a stage has been beaten with, over its marker. The BEST across every
 // difficulty and every length, not the setting currently chosen — there is no
@@ -538,9 +478,22 @@ export function drawOverview(ctx, state) {
   ctx.drawImage(sheet, 0, 0);
   ctx.restore();
 
+  // THE REGION NAMES, OVER THE SHEET RATHER THAN UNDER IT. They are a second image
+  // for exactly this reason: the sheet is a multiply, so a name inside the map
+  // picks up whatever grain, stain and vignette happen to fall on it, and one of
+  // them sat in the darkest corner of the map looking like a different colour from
+  // the rest. The owner asked for them exactly as drawn, and after the multiply is
+  // the only place that can be true.
+  if (art.overviewNames) ctx.drawImage(art.overviewNames, 0, 0, 960, 540);
+
   const r = state.reveal;
   const unlocked = Math.min(state.unlocked ?? 0, STAGE_COUNT);
 
+  // AND THE TRAIL OVER ALL OF IT. The dots are the last thing from the artwork
+  // side to go down and nothing in the drawing is put back on top of them: the
+  // road is on top of the world it crosses, which is what the owner asked for and
+  // what the drawing is now made to suit.
+  //
   // Every road walked so far, and the one being walked now at whatever fraction
   // the animation has reached.
   for (let i = 0; i < unlocked; i++) {
@@ -556,10 +509,6 @@ export function drawOverview(ctx, state) {
     if (r && r.stage === i && r.phase === 'road') continue;
     drawNode(ctx, i, i === frontier && state.stage === null);
   }
-
-  // AND THE SCENERY BACK OVER BOTH, after the trail and the medallions rather than
-  // between them. This is the whole depth pass in one call now.
-  drawFront(ctx);
 
   // The flag sits on the furthest stage reached, which is the one the player is
   // being pointed at. It waves off wall-clock time so it is alive on a screen

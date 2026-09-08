@@ -438,7 +438,7 @@ So the order for an upload that gains or loses a marker is:
 
 ## The world map is a different kind of file, and it comes in layers
 
-`Overview_Map_Layer_1.svg` up to `Overview_Map_Layer_7.svg` are the campaign map —
+`Overview_Map_Layer_1.svg` up to `Overview_Map_Layer_9.svg` are the campaign map —
 the world the player picks a stage from before any game starts — and almost
 nothing above applies to them. There are no plots on them and nothing is ever
 taken away.
@@ -454,17 +454,31 @@ after the first.
 **Layer 1 is the guide and is not part of the picture.** It holds the road and the
 ten stage markers on a plain green field. All the geometry is read off it, then it
 is dropped — everything except its background, which is the grass every other
-layer sits on and the only opaque ground in the stack. Layers 2 and up are the
-picture, drawn in the order they are numbered.
+layer sits on and the only opaque ground in the stack.
 
-Two files beside them are **DERIVED and committed**, and neither should ever be
+**The names layer is not part of the picture either.** It is found by its colour
+rather than by its number: a layer every shape of which is `#fff5e1` is lettering.
+It is pulled out and written to its own file, because the game multiplies a sheet
+of parchment over the map and the names have to be *exactly* as drawn — no grain,
+no stain, and above all no vignette, which had one name sitting in the dark corner
+of the map looking like a different colour from the rest. The only place a name can
+be untouched by the sheet is on top of it, and the only way to be on top of it is
+not to be in the picture underneath. Draw the names in that colour and in a layer
+of their own and nothing else is needed.
+
+Everything else is the picture, drawn in the order it is numbered.
+
+Three files beside them are **DERIVED and committed**, and none should ever be
 edited by hand:
 
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
-- `Overview_Map_sepia.svg` — the same stack in browns with the guide layer
-  dropped. **This is the one the game loads**, under the key `overview` in
+- `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
+  names dropped. **This is the one the game loads**, under the key `overview` in
   `src/assets.js`.
+- `Overview_Map_names.svg` — the names alone, in the colour they were drawn, on no
+  ground at all. The game draws it over the parchment, under the key
+  `overviewNames`.
 
 Run the tool after every redraw of any layer:
 
@@ -477,33 +491,47 @@ whole lot against the layers afterwards.
 
 - **The ten stage markers**, the paths filled `#d30000`. Bounding-box centres
   become the stage positions.
-- **The road**, filled `#ffde9e`. On the old single-file map that colour was
-  shared with the beach and the two had to be told apart by size; the beach has
-  its own layer now, so the size guard is a belt on top of braces.
-- **Which road leads to which marker**, by matching leg ends to marker centres.
+- **The road**, the stroked paths — on the guide, a path with no fill is road.
+  One line per stage.
+- **Which road leads to which marker**, by matching line ends to marker centres.
 
 ### Three things the guide has to keep doing
 
-**A road leg is a filled ribbon, not a stroke.** The tool takes the centreline by
-finding the two sides of each ribbon and averaging them. It does not care how the
-ends are capped — some cap with a line, some with a curve — but it does assume the
-shape is long and thin. A leg drawn as wide as it is long has no centreline.
+**A road leg is one stroked line, drawn end to end.** Ten lines for ten stages,
+each running from one marker to the next. Nothing is measured off its width and
+nothing is stitched: the tool flattens the curve and that is the road. Draw it as
+a single path per leg and it will be followed exactly.
 
-**A connection may be one leg or a chain of several.** The road used to stop at
-each bridge and start again on the far side, and the tool paired the two halves.
-The path is carried across the bridges now, so a connection can be three pieces
-with the joins a few pixels apart — the tool walks legs end to end instead of
-pairing them, and either arrangement works.
+*This is worth knowing because it used to be the hardest part of this tool.* The
+road was a filled ribbon — which is what a road looks like on a map — so the line
+down the middle had to be recovered by pairing the two sides of the outline and
+averaging them. The ribbon came in pieces, so the pieces were chained end to end.
+The chains overlapped where they joined, and an overlap sends the line backwards,
+and the trail is spaced by arc length, so a backwards stretch dropped two dots on
+top of each other. That needed a pass to remove reversals — which then could not
+tell an overlap from a switchback the artist meant, and ate one. Four hundred lines
+and five tuned constants, all answering a question one stroke of a pen answers
+better. **Do not go back to ribbons.**
 
-Two loose ends count as joined within **40px**. Every real join in the current
-drawing is 23px or less, and the bound is small enough that two legs merely
-passing near each other cannot be mistaken for one. If you go back to leaving
-whole bridges unpainted, that number has to go up to clear them.
+**A line's end counts as arriving at a marker within 36px.** Every end in the
+current drawing lands within 24. Nothing else has to line up.
 
-**Exactly one leg may have a loose end going nowhere.** That is the road arriving
+**Exactly one line may have a loose end going nowhere.** That is the road arriving
 from off the left edge, and it is what the game draws before stage 1 exists — the
 animation a brand-new player sees. The tool identifies it by elimination and stops
 if there is more or less than one.
+
+### The dots go on top of everything
+
+There is no depth pass any more. There was one: it worked out which shapes stood
+in front of the road, and masked and redrew them over the trail and the medallions
+so a building could overlap a dot. The owner asked for the dots on top and moved
+the buildings clear of the medallions in the drawing, which is the same answer
+reached with a pen — so the pass, its four tuned constants and its argument about
+what counts as a bridge are all deleted rather than switched off.
+
+What this asks of the drawing: **keep the buildings off the medallions.** Nothing
+in the artwork will be put back on top of anything the game draws.
 
 ### The recolour
 
