@@ -12,7 +12,12 @@ import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath } from '..
 import { at as pointOn, LANE } from '../src/route.js';
 import { inRange } from '../src/ground.js';
 import { families } from '../src/data/towers.js';
-import { level } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
+// Stage 1 is the tutorial and is the default board now — a short road with six
+// plots. These measurements were written against a full-length board, so pick
+// the first level that is not tier-capped and leave the tutorial out of it.
+useLevel(levels.findIndex(l => !l.maxTier));
+
 
 const DT = 1 / 60;
 const barracks = families.find(f => f.id === 'barracks');

@@ -27,7 +27,12 @@ import { arrow, barracks } from '../src/data/towers.js';
 // The soldiers throw now too — see the last block of the thrower section.
 import { makeUnits, updateUnits } from '../src/units.js';
 import { abilityById } from '../src/data/abilities.js';
-import { level } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
+// Stage 1 is the tutorial and is the default board now — a short road with six
+// plots. These measurements were written against a full-length board, so pick
+// the first level that is not tier-capped and leave the tutorial out of it.
+useLevel(levels.findIndex(l => !l.maxTier));
+
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';
 import { enemyStance, enemyArt, figureSpan } from '../src/render.js';

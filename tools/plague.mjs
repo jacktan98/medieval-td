@@ -48,8 +48,14 @@ import { apply as applyStatus, wearing, tick as tickStatus } from '../src/status
 // the expression four times over, and it reads the same list the renderer draws
 // from — so a check here cannot pass against a mark that is not on screen.
 const dose = v => v.statuses && v.statuses.find(x => x.id === 'poisoned');
-import { level } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
+
+// The default board is the tutorial now, and the tutorial is a short, gentle
+// road with six plots — the wrong fixture for a thrower who has to stand off at
+// a measured distance. Every check here was written against a full-length board,
+// so pick the first one that is not capped and leave the tutorial alone.
+useLevel(levels.findIndex(l => !l.maxTier));
 
 const DT = 1 / 60;
 const barracks = families.find(f => f.id === 'barracks');

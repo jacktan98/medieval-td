@@ -38,7 +38,12 @@ import { apply, tick } from '../src/status.js';
 import { updateTowers } from '../src/towers.js';
 import { updateUnits } from '../src/units.js';
 import { updateShots } from '../src/projectiles.js';
-import { level } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
+// Stage 1 is the tutorial and is the default board now — a short road with six
+// plots. These measurements were written against a full-length board, so pick
+// the first level that is not tier-capped and leave the tutorial out of it.
+useLevel(levels.findIndex(l => !l.maxTier));
+
 import { ABILITIES } from '../src/data/abilities.js';
 import { selectionInfo, traitRow, shownSplash, shownRange } from '../src/select.js';
 

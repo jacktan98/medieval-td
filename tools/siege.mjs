@@ -35,7 +35,12 @@ import { updateEnemies } from '../src/enemies.js';
 import { siege, arrow, rock, BEATS, DEAD } from '../src/data/towers.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { SQUASH, inRange } from '../src/ground.js';
-import { level, levels } from '../src/level.js';
+import { level, levels, useLevel } from '../src/level.js';
+// Stage 1 is the tutorial and is the default board now — a short road with six
+// plots. These measurements were written against a full-length board, so pick
+// the first level that is not tier-capped and leave the tutorial out of it.
+useLevel(levels.findIndex(l => !l.maxTier));
+
 import { at as pointOn, laneOf, LANES } from '../src/route.js';
 
 const DT = 1 / 60;

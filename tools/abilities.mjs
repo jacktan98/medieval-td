@@ -44,7 +44,12 @@ import { slowOf, apply as applyStatus } from '../src/status.js';
 import { taken, RANKS } from '../src/data/armour.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { ABILITIES, abilityById, abilitiesOf, owns, ABILITY_COST } from '../src/data/abilities.js';
-import { level } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
+// Stage 1 is the tutorial and is the default board now — a short road with six
+// plots. These measurements were written against a full-length board, so pick
+// the first level that is not tier-capped and leave the tutorial out of it.
+useLevel(levels.findIndex(l => !l.maxTier));
+
 import { paths } from '../src/assets.js';
 import { ui } from '../src/data/ui.js';
 import { decode } from './png.mjs';
