@@ -5,7 +5,7 @@
 //   src/data/overview.js            where the stages are, the road into each of
 //                                   them, and what stands in front of them
 //   assets/map/Overview_Map_merged.svg  every layer stacked into one, in colour
-//   assets/map/Overview_Map_sepia.svg   the same, in browns, guides removed —
+//   assets/map/Overview_Map_sepia.svg   the same, muted, guides removed —
 //                                   this is the one the game loads
 //
 // DERIVED AND COMMITTED, exactly like Map_1_base.svg and for the same reason:
@@ -542,7 +542,7 @@ function inFrontOf([mx, my]) {
   return out;
 }
 
-// --- the same drawing, in browns --------------------------------------------
+// --- the same drawing, muted -------------------------------------------------
 
 // A PARCHMENT MAP, and it is a recolour rather than a repaint: every fill keeps
 // its brightness and loses its hue, which is the "turn it black and white, then
@@ -554,6 +554,17 @@ function inFrontOf([mx, my]) {
 // conversion makes the sea LIGHTER than the land it cuts through, which is the
 // wrong way round on every map ever drawn. Cool hues are pushed down; greens are
 // nudged a hair to keep them off the mountains. Nothing else is touched.
+// HOW MUCH LIFE COMES OUT OF EVERY HUE, and how far the result is then warmed
+// towards parchment. Applied in that order — see the note in sepia() for why
+// warming first destroys water and warming second does not.
+//
+// 0.55 and 0.28 is the pair that leaves grass readable as grass and sea readable
+// as sea while putting both far enough back that a gold medallion wins. Raising
+// DESATURATE walks towards the old full-sepia map; raising WARMTH walks towards
+// it faster and takes the blues first.
+const DESATURATE = 0.55;
+const WARMTH = 0.28;
+
 const RAMP = [
   [0.00, [0x3B, 0x29, 0x17]],   // outlines and deep shadow
   [0.30, [0x7A, 0x59, 0x34]],
@@ -596,7 +607,12 @@ function sepia(hex) {
 
   let L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   const h = hueOf(r, g, b);
-  if (h >= 175 && h <= 265) L -= 0.14;            // water, and anything else cool
+  // A SMALLER PUSH THAN IT USED TO BE. Blue reads bright to this formula, so a
+  // straight conversion puts the sea lighter than the land it cuts through; the
+  // correction was -0.14 while tone was the ONLY thing separating them. Hue does
+  // most of that work now, so this only has to stop water floating above the land
+  // rather than carry the whole distinction.
+  if (h >= 175 && h <= 265) L -= 0.08;            // water, and anything else cool
   else if (h >= 70 && h < 175) L -= 0.02;         // keep grass off the mountains
   L = Math.max(0, Math.min(1, L));
 
@@ -606,20 +622,31 @@ function sepia(hex) {
   const t = l1 === l0 ? 0 : (L - l0) / (l1 - l0);
   let rgb = [0, 1, 2].map(k => c0[k] + (c1[k] - c0[k]) * t);
 
-  // WATER IS COOLED, and this is the second thing about it that is not pure
-  // brightness. Brightness alone put the rivers within a few percent of the grass
-  // they run through: on the old sparse map that was survivable, and on the
-  // detailed one it read as a river-shaped crease in a field.
+  // AND THEN ONLY PART OF THE WAY THERE.
   //
-  // Real maps do not solve this with brightness either — they solve it with
-  // temperature. So water keeps its place on the ramp and is pulled towards grey,
-  // which leaves it plainly a different material from the warm brown around it
-  // while staying inside the palette. Desaturating towards the mean cannot break
-  // the r >= g >= b that makes a colour brown, so it stays one.
-  if (isWater) {
-    const mean = (rgb[0] + rgb[1] + rgb[2]) / 3;
-    rgb = rgb.map(v => v + (mean - v) * 0.55);
-  }
+  // FULL SEPIA WAS TRIED AND IT COST TOO MUCH. A luminance ramp separates land,
+  // water and sand by TONE alone, and on a map with this much in it that is not
+  // enough signal: the rivers came out within a few percent of the grass they run
+  // through, and no ramp adjustment fixed that without flattening something else.
+  // Hue was doing work brightness cannot do on its own.
+  //
+  // SO THE HUE STAYS, PULLED WELL DOWN, and the order of the two steps is the
+  // whole trick. Blending straight towards the brown ramp was the obvious way and
+  // it does not work: brown is the opposite of blue, so a mix that mutes grass
+  // pleasantly destroys water completely — the sea came out a warm neutral with no
+  // blue left in it at all.
+  //
+  // Each colour is desaturated towards ITS OWN grey instead, which takes the same
+  // amount of life out of every hue rather than out of the cool ones only. Then
+  // the whole thing is warmed a little towards the parchment answer, which is what
+  // stops the result reading as a photograph with the saturation slider pulled
+  // down. Water is still blue, grass is still green, and both sit far enough back
+  // that the gold medallions and the blue flag are the brightest things on screen —
+  // which was the point of desaturating in the first place.
+  const raw = [r, g, b];
+  const grey = 0.299 * r + 0.587 * g + 0.114 * b;
+  const muted = raw.map(v => v + (grey - v) * DESATURATE);
+  rgb = muted.map((v, k) => v + (rgb[k] - v) * WARMTH);
 
   const chan = k => Math.round(Math.max(0, Math.min(255, rgb[k])))
     .toString(16).padStart(2, '0');
@@ -717,7 +744,7 @@ function stack({ recolour, guides }) {
   const shown = stack({ recolour: true, guides: false });
   writeFileSync(SEPIA, shown.doc);
   console.log(`wrote ${SEPIA}`);
-  console.log(`  ${picture.length} picture layer(s), ${shown.colours} colour(s) mapped to browns, guide layer dropped`);
+  console.log(`  ${picture.length} picture layer(s), ${shown.colours} colour(s) muted, guide layer dropped`);
 }
 
 // --- write it out -----------------------------------------------------------

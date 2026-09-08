@@ -299,7 +299,7 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
     'while a level that does not exist is nowhere');
 }
 
-console.log('\n--- the parchment is the same drawing in browns ---\n');
+console.log('\n--- the display map is the same drawing, muted ---\n');
 
 // The recoloured map is DERIVED and committed like everything else here, so it
 // can go stale on its own — a redraw that is recoloured but not re-extracted, or
@@ -344,17 +344,36 @@ console.log('\n--- the parchment is the same drawing in browns ---\n');
   ok(!widths.has('4'), 'and its outlines are thinner than the artist drew them',
     `width(s): ${[...widths].join(', ') || 'none'}`);
 
-  // EVERY COLOUR IS A BROWN. Red down through green down through blue is what
-  // brown IS, and it is the one thing a luminance ramp cannot get wrong by
-  // accident — a hue slipping through unconverted fails here immediately.
   const colours = [...new Set((sep.match(/(?:fill|stroke)="(#[0-9a-fA-F]{6})"/g) || [])
-    .map(s => s.slice(-8, -1).toLowerCase()))];
-  const notBrown = colours.filter(c => {
-    const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
-    return !(r >= g && g >= b);
-  });
-  ok(notBrown.length === 0, 'and every colour in it is a brown',
-    notBrown.length ? notBrown.join(', ') : `${colours.length} shade(s), all r >= g >= b`);
+    .map(t => t.slice(-8, -1).toLowerCase()))];
+
+  // EVERY COLOUR IS MUTED. It used to check that every one was literally a brown
+  // — r >= g >= b — which was true while the map was full sepia and stopped being
+  // true when the hues were let back in. What matters was never the hue; it is
+  // that nothing on the map has enough life left in it to compete with a gold
+  // medallion.
+  //
+  // Saturation is max minus min. The artist's own colours run 127 to 211 (the
+  // grass, the sea, the red marker); everything here comes out at 55 or less, so
+  // a bound of 80 separates a muted palette from a raw one with room to spare and
+  // no room to be wrong.
+  const SAT_MAX = 80;
+  const sat = c => {
+    const v = [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+    return Math.max(...v) - Math.min(...v);
+  };
+  const loud = colours.filter(c => sat(c) > SAT_MAX);
+  ok(loud.length === 0, 'and every colour in it is muted',
+    loud.length ? loud.map(c => `${c} at ${sat(c)}`).join(', ')
+                : `${colours.length} shade(s), strongest ${Math.max(...colours.map(sat))} of ${SAT_MAX}`);
+
+  // AND THE HUES SURVIVED, which is the other half of the same decision. A map
+  // where every colour came out grey would pass the bound above and would have
+  // thrown away exactly what the muting was pulled back to keep: water reading as
+  // water rather than as a crease in a field.
+  const hued = colours.filter(c => sat(c) >= 15);
+  ok(hued.length >= 4, 'while keeping enough hue to tell materials apart',
+    `${hued.length} of ${colours.length} shade(s) carry colour`);
 
   // A ramp that collapsed would be a silhouette rather than a map: the whole
   // point is that lighter things stay lighter.
@@ -362,7 +381,7 @@ console.log('\n--- the parchment is the same drawing in browns ---\n');
                    0.587 * parseInt(c.slice(3, 5), 16) +
                    0.114 * parseInt(c.slice(5, 7), 16);
   const lo = Math.min(...colours.map(lum)), hi = Math.max(...colours.map(lum));
-  ok(hi - lo > 90, 'and the browns still range from dark to light',
+  ok(hi - lo > 90, 'and the palette still ranges from dark to light',
     `${Math.round(lo)} to ${Math.round(hi)} of 255, over ${colours.length} shade(s)`);
 }
 

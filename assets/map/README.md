@@ -501,20 +501,36 @@ if there is more or less than one.
 
 ### The recolour
 
-Every fill and stroke goes through a luminance ramp into browns: each colour keeps
-its brightness and loses its hue, so the map reads as parchment while staying the
-same picture. Draw in colour; the tool makes the parchment. Outlines are thinned
-from the uniform 4px, which at the size the map is drawn is most of what makes a
-drawing read as a colouring book.
+Every fill and stroke is **muted**, not turned brown. It is two steps, and the
+order is the whole trick:
 
-Water is the one thing not handled by brightness alone, and it needs two
-corrections. Blue reads **bright** to the formula, so a straight conversion puts
-the sea lighter than the land it cuts through; cool hues are pushed down a step.
-And brightness alone left the rivers within a few percent of the grass they run
-through — a river-shaped crease in a field — so water is also pulled towards grey.
-Real maps separate water from land by temperature rather than by tone, and that is
-what the desaturation is doing. The sea and the waterfall are forced to the same
-colour on the way in, so one body of water reads as one substance.
+1. Each colour is desaturated towards **its own grey**, which takes the same
+   amount of life out of every hue rather than out of the cool ones only.
+2. The result is then warmed a little towards a parchment ramp, so it reads as an
+   aged map rather than as a photograph with the saturation pulled down.
+
+Outlines are also thinned from the uniform 4px, which at the size the map is drawn
+is most of what makes a drawing read as a colouring book.
+
+**Full sepia was tried first and cost too much.** A luminance ramp separates land,
+water and sand by tone alone, and on a map with this much in it that is not enough
+signal — the rivers came out within a few percent of the grass they run through,
+and no ramp adjustment fixed it without flattening something else.
+
+**Blending straight towards brown does not work either.** Brown is the opposite of
+blue, so a mix that mutes grass pleasantly destroys water completely: the sea came
+out a warm neutral with no blue left in it at all. Desaturating first and warming
+second is what keeps water blue and grass green while putting both far enough back
+that the gold medallions and the blue flag are the brightest things on screen.
+
+The sea and the waterfall are forced to the same colour on the way in, so one body
+of water reads as one substance. Cool hues also get a small push darker, because
+blue reads bright to a luminance formula and would otherwise float above the land
+it cuts through.
+
+`DESATURATE` and `WARMTH` in `tools/overview.mjs` are the two dials. Raising
+DESATURATE walks back towards the old full-sepia map; raising WARMTH walks there
+faster and takes the blues first.
 
 ### Adding a stage
 
