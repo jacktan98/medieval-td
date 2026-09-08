@@ -26,7 +26,7 @@
 //                              refuses on the ones with no board behind them
 
 import { readFileSync, readdirSync } from 'fs';
-import { STAGES, STAGE_COUNT, playable } from '../src/data/overview.js';
+import { STAGES, STAGE_COUNT, playable, FRONT } from '../src/data/overview.js';
 import { stageAt, stageOfLevel } from '../src/overview.js';
 import { hitStart, START_BTN } from '../src/render.js';
 import { canReach, setReached } from '../src/admin.js';
@@ -399,29 +399,79 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
   // the drawing rather than a fault in the tool — the artist adds buildings when
   // they add buildings. What follows checks whatever was found, and finding
   // nothing passes.
-  const withFront = STAGES.filter(s => s.front && s.front.length);
-  console.log(`      ${withFront.length} of ${STAGE_COUNT} stage(s) have scenery in front of them`);
+  console.log(`      ${FRONT.length} shape(s) stand in front of the road`);
 
   // Every occluder has to be a path the browser can actually clip with. A
   // malformed one throws at draw time, on the world map, every frame.
-  const shapes = STAGES.flatMap(s => s.front || []);
+  const shapes = FRONT;
   const wellFormed = shapes.every(d => /^M[-\d.,\sCLZ]+$/.test(d) && d.includes('Z'));
   ok(wellFormed, 'and every one is a closed path the game can clip with',
     `${shapes.length} shape(s)`);
 
-  // AND ITS FEET ARE LOWER THAN THE MARKER, which is the whole rule. A shape
-  // that failed this would be drawn in front of something it is behind.
+  // THE LIST IS DRAWN ONCE, SO IT MUST NOT REPEAT ITSELF. A shape listed twice
+  // is clipped and redrawn twice, which double-darkens its own edge.
+  ok(new Set(shapes).size === shapes.length, 'and appears in the list exactly once',
+    `${new Set(shapes).size} distinct of ${shapes.length}`);
+
+  // AND ITS FEET ARE LOWER THAN WHAT IT COVERS, which is the whole rule. The
+  // covered thing is now the road as well as the medallions — a building beside
+  // the road hides the trail dots that pass behind it — so the test is against
+  // every point the map draws: the ten marker centres and every point of every
+  // leg. A shape only has to beat the points it actually overlaps; one whose box
+  // contains a point it stands BEHIND is the failure, and would be drawn over
+  // scenery nearer the viewer than itself.
   const NUM = /-?\d+\.?\d*(?:[eE][-+]?\d+)?/g;
-  let wrong = 0;
+  const box = d => {
+    const n = (d.match(NUM) || []).map(Number);
+    const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  };
+  // Canvas coords, matching what drawOverview puts on screen.
+  const covered = [];
   for (const s of STAGES) {
-    for (const d of s.front || []) {
-      const n = (d.match(NUM) || []).map(Number);
-      const ys = n.filter((_, i) => i % 2 === 1);
-      if (Math.max(...ys) * SCALE <= s.y) wrong++;
+    covered.push([s.x, s.y]);
+    for (const p of s.leg) covered.push(p);
+  }
+  let wrong = 0, hit = 0;
+  for (const d of shapes) {
+    const b = box(d).map(v => v * SCALE);
+    for (const [x, y] of covered) {
+      if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;
+      hit++;
+      if (b[3] <= y) wrong++;
     }
   }
-  ok(wrong === 0, 'and stands nearer the viewer than the marker it covers',
-    wrong ? `${wrong} shape(s) are actually behind` : `${shapes.length} checked`);
+  ok(wrong === 0, 'and stands nearer the viewer than everything it covers',
+    wrong ? `${wrong} shape/point pair(s) are the wrong way round`
+          : `${hit} shape/point pair(s) checked`);
+
+  // AND IT COVERS THE TRAIL, not only the medallions. This is the bug the rule
+  // was widened for: the dots were drawn last and sat on top of the mountain the
+  // road runs behind. Ten shapes cover a marker and nothing else would mean the
+  // widening had quietly stopped working.
+  const onLeg = shapes.filter(d => {
+    const b = box(d).map(v => v * SCALE);
+    return STAGES.some(s => s.leg.some(([x, y]) =>
+      x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]));
+  });
+  ok(onLeg.length > 0, 'and the road itself is among what it hides',
+    `${onLeg.length} of ${shapes.length} shape(s) stand over a leg`);
+
+  // AND THE PAPER GOES BACK OVER IT. The parchment is laid over the whole map as a
+  // multiply before the trail is drawn; redrawing the artwork alone leaves each
+  // occluder as a clean patch with no grain, no stain and above all no vignette —
+  // a mountain at the darkened edge of the map came back a full 67 levels brighter
+  // than the mountain beside it, which reads as the artist having used two colours.
+  // This is a source check rather than a pixel one, and it only catches the line
+  // going missing; it is here because losing it is silent and looks like bad art.
+  const draw = readFileSync('src/overview.js', 'utf8');
+  const body = draw.slice(draw.indexOf('function drawFront'));
+  // Comments only, stripped: drawFront's own comment says the word "multiply",
+  // and a check the prose can satisfy is not a check.
+  const fn = body.slice(0, body.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
+  ok(/multiply/.test(fn) && /drawImage\(sheet/.test(fn),
+    'and the paper is laid back over what it redraws',
+    'drawFront re-applies the parchment inside its own clip');
 
   // The occluders are the artist's own path data at ARTBOARD scale, because the
   // game clips with them under a 0.5 transform. Emitted halved, every one would

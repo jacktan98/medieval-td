@@ -617,67 +617,107 @@ const BIG = ART / 50;
 const FOOT_X = 34;
 const FOOT_Y = 26;
 
-// HOW MUCH OF THE MEDALLION A SHAPE MAY SWALLOW.
-//
-// This was 0.45 for one release, to keep a stage NUMBER readable under the
-// crossbow sentry that stands almost on top of stage 3's marker. There are no
-// numbers on the medallions any more — the owner took them off, on the grounds
-// that which stage this is matters far less than where it is — so the reason for
-// holding the scenery back has gone with them, and the owner's verdict on the
-// uncapped version was that it was working fine.
-//
-// It is not raised all the way to 1, though. A medallion that vanishes completely
-// is a stage that cannot be found or tapped, and a gold disc showing under the
-// edge of a tower is all it takes to avoid that. This is the ceiling, not the
-// target: nothing on the map currently comes near it.
+// HOW MUCH OF A MEDALLION A SHAPE MAY SWALLOW. Depth is only worth having if the
+// thing behind is still findable: a medallion that vanishes completely is a stage
+// nobody can tap. This is a ceiling, not a target — nothing currently comes near
+// it — and it is measured as a UNION on a grid, because a building is not one path
+// and testing its roof, its wall and its door separately lets all three through.
 const MOST_OF_IT = 0.88;
-
-// MEASURED AS A UNION, not shape by shape. A building is not one path — the
-// sentry beside stage 3 is a body, a roof, a window and a door — and each of the
-// four covers well under half the medallion while the four together bury it.
-// Testing them one at a time let every one through and changed nothing.
-//
-// So coverage is accumulated on a grid over the medallion's footprint, and a
-// shape is taken only while the running total stays under the cap. Shapes are
-// considered nearest-first, so when the budget runs out it is the furthest-back
-// scenery that gets dropped.
 const GRID_X = 24, GRID_Y = 18;
 
-function inFrontOf([mx, my]) {
-  const ex0 = mx - FOOT_X, ey0 = my - FOOT_Y;
-  const cw = (FOOT_X * 2) / GRID_X, ch = (FOOT_Y * 2) / GRID_Y;
-  const cells = GRID_X * GRID_Y;
-  const covered = new Uint8Array(cells);
-  let used = 0;
+// How wide a dot is on the artboard, plus a little. The trail is drawn at radius
+// 2.5 in the game's 960-wide space, so 6 here covers it with margin.
+const DOT_REACH = 6;
 
-  const near = shapes
-    .filter(s => {
-      if (s.fill === MARKER_FILL || ROAD_FILLS.has(s.fill)) return false;
-      const [x0, y0, x1, y1] = s.box;
-      if ((x1 - x0) * (y1 - y0) > BIG) return false;
-      if (y1 <= my) return false;
-      return x1 >= ex0 && x0 <= ex0 + FOOT_X * 2 &&
-             y1 >= ey0 && y0 <= ey0 + FOOT_Y * 2;
-    })
-    .sort((a, b) => b.box[3] - a.box[3]);      // lowest feet first: nearest first
-
-  const out = [];
-  for (const s of near) {
-    const [x0, y0, x1, y1] = s.box;
-    const hits = [];
-    for (let gy = 0; gy < GRID_Y; gy++) {
-      const cy = ey0 + (gy + 0.5) * ch;
-      if (cy < y0 || cy > y1) continue;
-      for (let gx = 0; gx < GRID_X; gx++) {
-        const cx = ex0 + (gx + 0.5) * cw;
-        if (cx < x0 || cx > x1) continue;
-        const k = gy * GRID_X + gx;
-        if (!covered[k]) hits.push(k);
+// EVERYTHING THE ROAD PASSES, not just the ten markers.
+//
+// The depth pass used to ask only "what stands in front of this medallion", so a
+// building beside the road left the medallion alone and painted straight over the
+// trail — dots crossing in front of a mountain they are plainly behind. The dots
+// are on the ground exactly as the medallions are and get the same rule.
+//
+// So the question is asked of every point the trail passes through as well. A
+// shape whose FEET are lower on the screen than the point it covers is nearer the
+// viewer and goes in front; the rest of the drawing is left where it is.
+function foreground() {
+  const marks = [];
+  for (const m of ORDER) {
+    marks.push({ p: markers[m], medallion: m });
+    const line = incoming.get(m);
+    for (let i = 1; i < line.length; i++) {
+      const [x0, y0] = line[i - 1], [x1, y1] = line[i];
+      const seg = Math.hypot(x1 - x0, y1 - y0);
+      const steps = Math.max(1, Math.round(seg / 8));
+      for (let k = 0; k < steps; k++) {
+        const t = k / steps;
+        marks.push({ p: [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t], medallion: -1 });
       }
     }
-    if ((used + hits.length) / cells > MOST_OF_IT) continue;
-    for (const k of hits) covered[k] = 1;
-    used += hits.length;
+  }
+
+  const near = shapes.filter(s => {
+    if (s.fill === MARKER_FILL || ROAD_FILLS.has(s.fill)) return false;
+    const [x0, y0, x1, y1] = s.box;
+    return (x1 - x0) * (y1 - y0) <= BIG;
+  });
+
+  const chosen = [];
+  for (const s of near) {
+    const [x0, y0, x1, y1] = s.box;
+    const covers = marks.some(({ p }) =>
+      p[0] >= x0 - DOT_REACH && p[0] <= x1 + DOT_REACH &&
+      p[1] >= y0 - DOT_REACH && p[1] <= y1 + DOT_REACH &&
+      y1 > p[1]);
+    if (covers) chosen.push(s);
+  }
+
+  // THE MEDALLION VETO, applied to whatever the trail test let in. A shape can
+  // qualify by standing in front of the road and still bury a marker it happens to
+  // sit on, so every marker gets its budget checked against the shapes that
+  // actually overlap it — nearest first, so what gets dropped when the budget runs
+  // out is the furthest-back scenery.
+  const vetoed = new Set();
+  for (const m of ORDER) {
+    const [mx, my] = markers[m];
+    const ex0 = mx - FOOT_X, ey0 = my - FOOT_Y;
+    const cw = (FOOT_X * 2) / GRID_X, ch = (FOOT_Y * 2) / GRID_Y;
+    const cells = GRID_X * GRID_Y;
+    const covered = new Uint8Array(cells);
+    let used = 0;
+
+    const over = chosen
+      .filter(s => !vetoed.has(s.d) &&
+        s.box[2] >= ex0 && s.box[0] <= ex0 + FOOT_X * 2 &&
+        s.box[3] >= ey0 && s.box[1] <= ey0 + FOOT_Y * 2)
+      .sort((a, b) => b.box[3] - a.box[3]);
+
+    for (const s of over) {
+      const [x0, y0, x1, y1] = s.box;
+      const hits = [];
+      for (let gy = 0; gy < GRID_Y; gy++) {
+        const cy = ey0 + (gy + 0.5) * ch;
+        if (cy < y0 || cy > y1) continue;
+        for (let gx = 0; gx < GRID_X; gx++) {
+          const cx = ex0 + (gx + 0.5) * cw;
+          if (cx < x0 || cx > x1) continue;
+          const k = gy * GRID_X + gx;
+          if (!covered[k]) hits.push(k);
+        }
+      }
+      if ((used + hits.length) / cells > MOST_OF_IT) { vetoed.add(s.d); continue; }
+      for (const k of hits) covered[k] = 1;
+      used += hits.length;
+    }
+  }
+
+  // De-duplicated, and in the order the artist drew them so a building that
+  // overlaps another comes back stacked the way it was painted.
+  const seen = new Set();
+  const out = [];
+  for (const s of shapes) {
+    if (vetoed.has(s.d) || seen.has(s.d)) continue;
+    if (!chosen.some(c => c.d === s.d)) continue;
+    seen.add(s.d);
     out.push(s.d);
   }
   return out;
@@ -924,12 +964,20 @@ const stages = ORDER.map((m, i) => ({
   x: px(markers[m][0]),
   y: px(markers[m][1]),
   level: LEVEL_OF[i] ?? null,
-  leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)]),
-  // The shapes that stand in front of this marker, as the artist's own path data
-  // in ARTBOARD units — not halved like everything else here, because the game
-  // clips with them under a 0.5 scale and re-scaled path data would round twice.
-  front: inFrontOf(markers[m])
+  leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)])
 }));
+
+// THE SHAPES THAT STAND IN FRONT OF THE ROAD, one list rather than one per stage.
+//
+// It was per stage while the only thing being covered was a medallion. The trail
+// is covered too now, and a stretch of road between two stages belongs to neither
+// of them — so the question stopped being "what is in front of stage 6" and became
+// "what is in front of the road", which has one answer.
+//
+// The artist's own path data in ARTBOARD units, not halved like everything else
+// here: the game clips with these under a 0.5 scale, and re-scaled path data would
+// round coordinates that have already been rounded once.
+const front = foreground();
 
 const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand.
 //
@@ -956,6 +1004,13 @@ export const STAGES = ${JSON.stringify(stages, null, 2)
 // than of the game: markers exist ahead of the maps behind them.
 export const STAGE_COUNT = STAGES.length;
 
+// WHAT STANDS IN FRONT OF THE ROAD. The map is one flat picture, so anything the
+// game draws on it — a medallion, a trail dot — lands on top of scenery it may
+// well be behind. These are the shapes whose feet are lower on the screen than the
+// road they cover, in the artist's own coordinates; the game redraws them, each
+// clipped to its own outline, over the trail and the medallions.
+export const FRONT = ${JSON.stringify(front)};
+
 // Which stages can actually be played. Everything else draws locked.
 export const playable = i => STAGES[i] && STAGES[i].level !== null;
 `;
@@ -965,8 +1020,8 @@ writeFileSync(OUT, body);
 const built = stages.filter(s => s.level !== null).length;
 console.log(`wrote ${OUT}`);
 console.log(`  ${stages.length} stages, ${built} playable, ${joined.length} road legs stitched`);
+console.log(`  ${front.length} shape(s) stand in front of the road`);
 for (const [i, s] of stages.entries()) {
   console.log(`  stage ${String(i + 1).padStart(2)}  marker ${s.marker}  (${String(s.x).padStart(6)}, ${String(s.y).padStart(5)})  ` +
-    `level ${s.level === null ? '-' : s.level}  leg ${s.leg.length}pts  ` +
-    `${s.front.length} shape(s) in front`);
+    `level ${s.level === null ? '-' : s.level}  leg ${s.leg.length}pts`);
 }

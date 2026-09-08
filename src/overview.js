@@ -23,7 +23,7 @@
 // measures the artwork; it reads the numbers that tool wrote.
 
 import { art } from './assets.js';
-import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
+import { STAGES, STAGE_COUNT, playable, FRONT } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
@@ -290,30 +290,48 @@ function drawNode(ctx, i, hot) {
   ctx.restore();
 }
 
-// WHAT STANDS IN FRONT OF THE MARKER, PUT BACK ON TOP.
+// WHAT STANDS IN FRONT OF THE ROAD, PUT BACK ON TOP.
 //
-// The map is one flat picture, so a medallion drawn over it covers the tower
-// beside it — which is backwards, because the tower's feet are lower on the
-// screen and it is therefore nearer. tools/overview.mjs works out which shapes
-// those are; this redraws them, each clipped to its own outline, so the artwork
-// comes back over the medallion with nothing else coming with it.
+// The map is one flat picture, so everything the game draws on it lands over
+// scenery it may well be behind — a medallion beside a tower, a trail dot crossing
+// a mountain. tools/overview.mjs works out which shapes those are; this redraws
+// them, each clipped to its own outline, so the artwork comes back on top with
+// nothing else coming with it.
+//
+// ONE LIST, DRAWN ONCE, and late. It used to be per stage and drawn with each
+// medallion, which covered the medallions correctly and left the trail alone —
+// dots ran in front of hills they were plainly behind. A stretch of road between
+// two stages belongs to neither of them, so the question stopped being "what is in
+// front of stage 6" and became "what is in front of the road".
 //
 // The clip is in ARTBOARD units, which is why the scale is applied first and the
 // map is drawn at 1920x1080 underneath it: the path data is the artist's own,
-// untouched, and re-scaling it here would round coordinates that have already
-// been rounded once.
-function drawFront(ctx, i) {
+// untouched, and re-scaling it here would round coordinates already rounded once.
+function drawFront(ctx) {
   const img = art.overview;
-  const front = STAGES[i].front;
-  if (!img || !front || !front.length) return;
+  if (!img || !FRONT.length) return;
 
-  for (const d of front) {
+  // AND THE PAPER BACK OVER EACH ONE. The sheet was laid over the whole map before
+  // the trail was; redrawing the artwork alone would leave twenty-nine clean patches
+  // of it with no grain, no stain and no vignette, each outlined by the edge of a
+  // building. The sheet is a multiply, so applying it twice to the same pixels is
+  // what would show — it is applied once here, to pixels that just lost it.
+  const sheet = parchment || makeParchment();
+  ctx.save();
+  ctx.scale(0.5, 0.5);
+  for (const d of FRONT) {
     ctx.save();
-    ctx.scale(0.5, 0.5);
     ctx.clip(new Path2D(d));
     ctx.drawImage(img, 0, 0, 1920, 1080);
+    // Back to canvas units for the sheet — the clip is already set, and a sheet
+    // stretched to the artboard would grain these patches at twice the size of the
+    // grain around them, which is the seam it is here to avoid.
+    ctx.scale(2, 2);
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(sheet, 0, 0);
     ctx.restore();
   }
+  ctx.restore();
 }
 
 // The stars a stage has been beaten with, over its marker. The BEST across every
@@ -504,17 +522,15 @@ export function drawOverview(ctx, state) {
   // The medallions. A stage still having its road drawn has not been arrived at
   // yet, so its marker stays as the artist painted it until the flag lands.
   //
-  // EACH ONE IS FOLLOWED BY WHATEVER STANDS IN FRONT OF IT, put back on top of
-  // the medallion — the depth rule the board itself uses, applied to a flat
-  // picture. Done per stage rather than in a second pass over all of them,
-  // because a shape in front of stage 3 is not in front of stage 6 and redrawing
-  // it there would paint over a medallion it has nothing to do with.
   const frontier = unlocked - 1;
   for (let i = 0; i < unlocked; i++) {
     if (r && r.stage === i && r.phase === 'road') continue;
     drawNode(ctx, i, i === frontier && state.stage === null);
-    drawFront(ctx, i);
   }
+
+  // AND THE SCENERY BACK OVER BOTH, after the trail and the medallions rather than
+  // between them. This is the whole depth pass in one call now.
+  drawFront(ctx);
 
   // The flag sits on the furthest stage reached, which is the one the player is
   // being pointed at. It waves off wall-clock time so it is alive on a screen
