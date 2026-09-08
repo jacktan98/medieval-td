@@ -51,7 +51,8 @@ export const PARTY_HREF = 'birthday/';
 import { levels } from './level.js';
 import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/waves.js';
 import { families } from './data/towers.js';
-import { resetProgress, clearStars } from './score.js';
+import { resetProgress, clearStars, saveUnlocked, bestStars, setStars, MAX_STARS } from './score.js';
+import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
 
 // --- what is stored -----------------------------------------------------------
 //
@@ -682,12 +683,17 @@ const TAB_W = 104, TAB_H = 38, TAB_GAP = 8;
 const CLOSE_W = 92;
 
 export const CLOSE_BTN = { x: INNER.r - CLOSE_W, y: INNER.y, w: CLOSE_W, h: TAB_H };
-export const TABS = [
+// THREE TABS NOW, and the layout counts them rather than assuming two: the old
+// formula had a literal 2 in it, so adding Road would have stacked it on top of
+// Units instead of beside it.
+const TAB_IDS = [
   { id: 'waves', label: 'Waves' },
-  { id: 'units', label: 'Units' }
-].map((t, i) => ({
+  { id: 'units', label: 'Units' },
+  { id: 'road',  label: 'Road' }
+];
+export const TABS = TAB_IDS.map((t, i) => ({
   ...t,
-  x: CLOSE_BTN.x - 24 - (2 - i) * (TAB_W + TAB_GAP) + TAB_GAP,
+  x: CLOSE_BTN.x - 24 - (TAB_IDS.length - i) * (TAB_W + TAB_GAP) + TAB_GAP,
   y: INNER.y,
   w: TAB_W,
   h: TAB_H
@@ -964,6 +970,72 @@ export const PROGRESS_BTN = { x: INNER.x + 156, y: FOOT_Y, w: 186, h: FOOT_H };
 export const PREV_BTN = { x: INNER.r - 210, y: FOOT_Y, w: 52, h: FOOT_H };
 export const NEXT_BTN = { x: INNER.r - 52, y: FOOT_Y, w: 52, h: FOOT_H };
 
+
+
+// --- THE ROAD TAB ---------------------------------------------------------------
+//
+// Marking stages done by hand, and it exists because the road cannot otherwise be
+// tested. The reveal animation and the flag only happen when a stage is cleared,
+// and clearing one means playing it — so checking that the road into stage 8 draws
+// correctly meant winning seven games first, on maps that in most cases do not
+// exist yet.
+//
+// It writes exactly what winning writes: how far the road has opened, and the star
+// record for a stage. Nothing here is a second way of storing progress.
+const ROAD_TOP = INNER.y + 76;
+const ROAD_ROW_H = 44;
+const ROAD_COL_W = 448;
+const ROAD_PER_COL = 5;
+
+// Two columns of five. The stage list is a fixed ten and always will be until the
+// artist draws an eleventh marker, so this does not page.
+export const roadRows = () => STAGES.map((s, i) => ({
+  i,
+  level: s.level,
+  name: s.level === null ? null : levels[s.level].name,
+  x: INNER.x + Math.floor(i / ROAD_PER_COL) * ROAD_COL_W,
+  y: ROAD_TOP + (i % ROAD_PER_COL) * ROAD_ROW_H,
+  w: ROAD_COL_W - 24,
+  h: ROAD_ROW_H - 6
+}));
+
+// The button that says whether the road has reached this stage. 96 wide is enough
+// for "Reached" at the 13px it draws in.
+export const reachedBtn = row => ({ x: row.x + 190, y: row.y, w: 96, h: row.h });
+
+// And the stars beside it, as the same [-] value [+] the rest of the panel uses.
+export const starStepper = row => stepperAt(row.x + 300, row.y, 'stars', 34, 54);
+
+// HOW FAR THE ROAD IS OPEN, as a count. Marking stage i reached means the road has
+// got to it, so the count is i + 1; unmarking it means the road stops before it.
+//
+// It is deliberately not possible to open stage 5 while leaving stage 3 shut. The
+// road is walked in order and `unlocked` is one number, so every stage up to the
+// one tapped comes with it — which is also what makes this a test of the real
+// thing rather than of a state the game can never be in.
+export function setReached(state, i, on) {
+  const n = on ? i + 1 : i;
+  state.unlocked = Math.max(0, Math.min(STAGE_COUNT, n));
+  saveUnlocked(state.unlocked);
+  // A stage that is no longer reached cannot be the one the flag is being planted
+  // on, and a half-finished reveal would go on drawing a leg to nowhere.
+  state.reveal = null;
+  state.pendingReveal = null;
+  if (state.stage !== null && state.stage >= state.unlocked) state.stage = null;
+}
+
+// The stars shown on the world map are the BEST across every difficulty and
+// length, so writing one setting is enough to make them appear. Normal on both is
+// the one a player would meet first.
+export const roadStars = row =>
+  row.level === null ? 0 : bestStars(levels[row.level].id, 'normal', 'normal');
+
+export function setRoadStars(row, stars) {
+  if (row.level === null) return;
+  setStars(levels[row.level].id, 'normal', 'normal',
+    Math.max(0, Math.min(MAX_STARS, stars)));
+}
+
 // --- the keypad ----------------------------------------------------------------
 //
 // Twelve keys in a 3 x 4 grid, centred: 1-9, then Clear, 0, and the backspace.
@@ -1083,6 +1155,22 @@ export function tapAdmin(state, x, y, restart) {
     closeAdmin(state);
     restart();
     return true;
+  }
+
+  // --- the Road tab ---
+  if (a.tab === 'road') {
+    for (const row of roadRows()) {
+      const reached = row.i < (state.unlocked ?? 0);
+
+      if (on(reachedBtn(row))) { setReached(state, row.i, !reached); return true; }
+
+      // Stars are only meaningful where there is a map to have earned them on.
+      if (row.level === null) continue;
+      const st = starStepper(row);
+      if (on(st.minus)) { setRoadStars(row, roadStars(row) - 1); return true; }
+      if (on(st.plus))  { setRoadStars(row, roadStars(row) + 1); return true; }
+    }
+    return false;
   }
 
   if (a.tab === 'waves') {

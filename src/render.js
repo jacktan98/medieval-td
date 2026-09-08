@@ -31,7 +31,8 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
-         waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor } from './admin.js';
+         waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
+         roadRows, reachedBtn, starStepper, roadStars } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -3362,6 +3363,9 @@ export function hitStart(state, x, y) {
   // the world map, and a hit test that answered anyway would let a tap on empty
   // sea begin a game.
   if (state.stage === null || state.stage === undefined) return false;
+  // Nothing to start on a stage with no board behind it. The button is drawn, and
+  // drawn dead; this is what makes it dead.
+  if (STAGES[state.stage] && STAGES[state.stage].level === null) return false;
   const b = START_BTN;
   return x >= b.x - START_PAD && x <= b.x + b.w + START_PAD &&
          y >= b.y - START_PAD && y <= b.y + b.h + START_PAD;
@@ -3463,7 +3467,10 @@ function drawStart(ctx, state) {
   ctx.stroke();
 
   const stage = STAGES[state.stage];
-  const lv = levels[stage.level];
+  // A stage the artist has drawn a marker for but not a board. The panel opens
+  // anyway — see stageAt in src/overview.js for why the refusal lives here rather
+  // than on the marker — and says what is missing.
+  const lv = stage.level === null ? null : levels[stage.level];
 
   // WHICH PLACE ON THE ROAD, then what it is called. The number is the smaller of
   // the two because the name is what a player recognises — but it is there,
@@ -3472,16 +3479,22 @@ function drawStart(ctx, state) {
   ctx.font = '700 13px system-ui, sans-serif';
   ctx.fillText(`STAGE ${state.stage + 1}`, 480, p.y + 34);
 
-  ctx.fillStyle = '#F0E6D2';
-  ctx.font = '700 30px system-ui, sans-serif';
-  ctx.fillText(lv.name, 480, p.y + 64);
+  ctx.fillStyle = lv ? '#F0E6D2' : 'rgba(240,230,210,0.55)';
+  ctx.font = lv ? '700 30px system-ui, sans-serif' : 'italic 26px system-ui, sans-serif';
+  ctx.fillText(lv ? lv.name : 'Not drawn yet', 480, p.y + 64);
 
   // The best result at THE SETTINGS CURRENTLY CHOSEN, which is why the row lives
   // here rather than on the marker: it changes as the rows below it are tapped,
   // and a rating painted on the world map could not say which ladder it was for.
   const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
-  starRow(ctx, 480, p.y + 96, 9,
-    bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false);
+  if (lv) {
+    starRow(ctx, 480, p.y + 96, 9,
+      bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false);
+  } else {
+    ctx.fillStyle = 'rgba(240,230,210,0.42)';
+    ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText('This stretch of road has no battle on it yet.', 480, p.y + 96);
+  }
 
   // The back door, top-right of the plate.
   ctx.strokeStyle = 'rgba(240,230,210,0.65)';
@@ -3498,6 +3511,11 @@ function drawStart(ctx, state) {
   settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
 
   const b = START_BTN;
+  ctx.save();
+  // DRAWN DEAD RATHER THAN HIDDEN. A missing button raises the question of where
+  // it went; a locked one answers it. Same treatment Reset all gets in the
+  // dashboard when there is nothing to reset.
+  ctx.globalAlpha = lv ? 1 : 0.4;
   ctx.fillStyle = 'rgba(28,32,24,0.85)';
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, 10);
@@ -3508,7 +3526,8 @@ function drawStart(ctx, state) {
 
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '700 24px system-ui, sans-serif';
-  ctx.fillText('Start', b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.fillText(lv ? 'Start' : 'Locked', b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.restore();
 
   // Under Start rather than beside it. This is the one screen where a player has
   // time to read, and the whole reason the book exists is the decision they are
@@ -4635,13 +4654,15 @@ function drawAdmin(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_INK;
   ctx.font = '700 22px system-ui, sans-serif';
-  ctx.fillText(a.tab === 'waves' ? 'Admin — waves and gold' : 'Admin — unit stats',
-    ADMIN_PANEL.x + 16, ADMIN_TITLE_Y);
+  const TITLES = { waves: 'Admin — waves and gold', units: 'Admin — unit stats',
+                   road: 'Admin — the road' };
+  ctx.fillText(TITLES[a.tab] || TITLES.waves, ADMIN_PANEL.x + 16, ADMIN_TITLE_Y);
 
   for (const t of ADMIN_TABS) panelButton(ctx, t, t.label, { on: a.tab === t.id });
   panelButton(ctx, ADMIN_CLOSE, 'Close');
 
   if (a.tab === 'waves') drawAdminWaves(ctx, a);
+  else if (a.tab === 'road') drawAdminRoad(ctx, state);
   else drawAdminUnits(ctx, a);
 
   // Reset is the one control here that throws work away, so it is drawn dead
@@ -4657,6 +4678,57 @@ function drawAdmin(ctx, state) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+
+// THE ROAD TAB: ten rows, one per stage, saying how far the road has opened and
+// what each stage has been beaten with.
+//
+// It draws off `state` rather than off the dashboard's own object, because how far
+// the road is open is a fact about the GAME rather than about the panel — the same
+// number the world map reads, written where a win writes it.
+function drawAdminRoad(ctx, state) {
+  const open = state.unlocked ?? 0;
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(240,230,210,0.6)';
+  ctx.font = '600 13px system-ui, sans-serif';
+  ctx.fillText(
+    open === 0 ? 'The road has not opened. The map plays its opening on the way out.'
+      : `The road is open to stage ${open} of ${STAGES.length}.`,
+    ADMIN_PANEL.x + 16, ADMIN_TITLE_Y + 26);
+
+  for (const row of roadRows()) {
+    const reached = row.i < open;
+    const locked = row.level === null;
+
+    // The number, then what is behind it. A marker drawn ahead of its board says
+    // so rather than showing a blank, because "no map yet" is the answer to the
+    // question a blank would raise.
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = reached ? '#F0E6D2' : 'rgba(240,230,210,0.45)';
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(String(row.i + 1).padStart(2, ' '), row.x, row.y + row.h / 2);
+
+    ctx.font = locked ? 'italic 14px system-ui, sans-serif' : '600 14px system-ui, sans-serif';
+    ctx.fillStyle = locked ? 'rgba(240,230,210,0.4)'
+      : (reached ? '#F0E6D2' : 'rgba(240,230,210,0.55)');
+    ctx.fillText(locked ? 'no map yet' : row.name, row.x + 26, row.y + row.h / 2);
+
+    panelButton(ctx, reachedBtn(row), reached ? 'Reached' : 'Not yet',
+      { on: reached, size: 13 });
+
+    // Stars only where there is a map: a stepper on a stage that cannot be played
+    // would be writing a record for a level that does not exist.
+    if (locked) continue;
+    const st = starStepper(row);
+    const stars = roadStars(row);
+    panelButton(ctx, st.minus, '\u2212', { live: stars > 0, size: 16 });
+    panelButton(ctx, st.plus, '+', { live: stars < MAX_STARS, size: 16 });
+    starRow(ctx, st.value.x + st.value.w / 2, st.value.y + st.value.h / 2, 7, stars, false);
+  }
 }
 
 // "1st in", "2nd in". Six is the most this will ever be handed — a wave cannot

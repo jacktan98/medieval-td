@@ -5,8 +5,8 @@
 //   node tools/campaign.mjs
 //
 // WHY THIS IS ITS OWN FILE, and not part of tools/overview.mjs. That file is a
-// GENERATOR — it reads assets/map/Overview_Map.svg and writes
-// src/data/overview.js — and a generator cannot check its own output, because
+// GENERATOR — it reads the artist's layers and writes src/data/overview.js and
+// two stacked maps — and a generator cannot check its own output, because
 // re-running it makes any question about staleness answer itself. The one failure
 // this whole feature is most likely to have is the artist moving a marker and
 // nobody re-running the tool, and the only way to catch that is from outside.
@@ -22,11 +22,13 @@
 //   EVERY ROAD ARRIVES         each stage's leg ends at that stage
 //   AND STARTS SOMEWHERE REAL  at the stage before it, or off the edge for stage 1
 //   THE MARKERS ARE APART      no two tap targets overlap
-//   AND LOCKED MEANS LOCKED    stageAt answers only for reached, playable stages
+//   AND LOCKED MEANS LOCKED    every reached marker opens its panel, and Start
+//                              refuses on the ones with no board behind them
 
 import { readFileSync, readdirSync } from 'fs';
 import { STAGES, STAGE_COUNT, playable } from '../src/data/overview.js';
 import { stageAt, stageOfLevel } from '../src/overview.js';
+import { hitStart, START_BTN } from '../src/render.js';
 import { levels } from '../src/level.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
@@ -246,9 +248,29 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
     .map((s, i) => [i, s])
     .filter(([, s]) => s.level === null);
 
-  ok(reachedButUnbuilt.every(([i, s]) => stageAt(all, s.x, s.y) === null),
-    'a reached marker with no map still answers nothing',
+  // IT ANSWERS, and that is the rule now. A marker you can see with a flag on it
+  // that does nothing when tapped is a dead control with no explanation; the
+  // panel opens instead and its Start button is drawn locked. What must still
+  // hold is that the panel cannot be turned into a game — checked below through
+  // hitStart, which is the thing that would actually start one.
+  ok(reachedButUnbuilt.every(([i, s]) => stageAt(all, s.x, s.y) === i),
+    'a reached marker with no map opens its panel',
     `${reachedButUnbuilt.length} locked marker(s) tested at full progress`);
+
+  // And Start refuses on every one of them. This is the check that matters: the
+  // drawing being dimmed is cosmetic, and a live hit test under a dead-looking
+  // button would launch a game on whatever level index was lying around.
+  ok(reachedButUnbuilt.every(([i]) =>
+      !hitStart({ started: false, stage: i }, START_BTN.x + START_BTN.w / 2,
+                START_BTN.y + START_BTN.h / 2)),
+    'and its Start button will not start anything', 'hitStart refuses all of them');
+
+  // While a stage that HAS a board is startable from the same place, or the check
+  // above would pass by refusing everybody.
+  const built0 = STAGES.findIndex(s => s.level !== null);
+  ok(hitStart({ started: false, stage: built0 }, START_BTN.x + START_BTN.w / 2,
+               START_BTN.y + START_BTN.h / 2),
+    'while a stage with a board still starts', `stage ${built0 + 1}`);
 
   const none = { unlocked: 1 };
   ok(stageAt(none, STAGES[0].x, STAGES[0].y) === 0,

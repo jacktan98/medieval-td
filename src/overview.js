@@ -76,9 +76,8 @@ export function openedStages() {
 
 // How long the road takes to draw itself, and how long the flag takes to land.
 // The road is the part worth watching, so it gets most of the time; the flag is
-// punctuation. Together they are about a second and a quarter, which is long
-// enough to read as an event and short enough that a player who has seen it four
-// times is not waiting on it — and they can tap through it anyway.
+// punctuation.
+//
 // SLOW, because it is the only thing on this screen that happens and it is the
 // reward for a run. The first pass was 0.9s and 0.42s, which is the pace of a UI
 // transition — something to be got through. A road being walked should take long
@@ -133,12 +132,15 @@ export function skipReveal(state) {
 // is the floor the radial menu already holds itself to.
 const NODE_HIT = 22;
 
-// Which stage is under a tap, or null. Only stages that are unlocked AND have a
-// map behind them answer — a marker the artist has drawn ahead of its level is
-// visible, but it is not a button.
+// Which stage is under a tap, or null.
+//
+// EVERY STAGE THE ROAD HAS REACHED ANSWERS, including the ones with no map behind
+// them. It used to refuse those, which meant a marker you could see, with a flag
+// planted on it, that did nothing when tapped — and nothing on screen to say why.
+// The panel says why now, and its Start button is drawn locked. The refusal moved
+// from the marker to the button, which is where a player can read it.
 export function stageAt(state, x, y) {
   for (let i = 0; i < Math.min(state.unlocked ?? 0, STAGE_COUNT); i++) {
-    if (!playable(i)) continue;
     const s = STAGES[i];
     if (Math.hypot(x - s.x, y - s.y) <= NODE_HIT) return i;
   }

@@ -176,8 +176,15 @@ export function tap(state, x, y, restart) {
       // chosen stage survives the rebuild the same way the difficulty does — see
       // newGame in main.js, which carries it across.
       state.stage = pick;
-      state.levelIndex = STAGES[pick].level;
-      useLevel(state.levelIndex);
+
+      // A stage with no map behind it opens its panel and stops there. There is
+      // nothing to rebuild the board for, and useLevel(null) would clamp to map 1
+      // and quietly load the wrong game underneath a panel that says otherwise.
+      const li = STAGES[pick].level;
+      if (li === null) return true;
+
+      state.levelIndex = li;
+      useLevel(li);
       restart();
       return true;
     }

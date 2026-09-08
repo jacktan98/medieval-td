@@ -136,6 +136,21 @@ export function clearStars() {
   persist(table);
 }
 
+// SET a record rather than beat one, and the difference is the whole reason it
+// exists. recordStars only ever raises — a run that did worse than your best does
+// not overwrite it, which is right for playing and useless for testing, because
+// there is then no way back down from three stars without wiping the table.
+//
+// Only the dashboard's Road tab calls it. Nothing in a played game does, and it
+// does NOT fill in the easier difficulties the way recordStars does: this writes
+// the one slot it is given and no other.
+export function setStars(levelId, difficultyId, modeId, stars) {
+  const key = slot(levelId, difficultyId, modeId);
+  if (stars > 0) table[key] = stars;
+  else delete table[key];
+  persist(table);
+}
+
 // --- HOW FAR ALONG THE ROAD THE PLAYER HAS GOT -------------------------------
 //
 // A SEPARATE KEY FROM THE STARS, and separate on purpose. A star record is per
