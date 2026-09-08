@@ -689,7 +689,7 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // announcing itself — and under the trail, the medallions and the flag, which are
   // the interface and are never in shadow.
   const names = at(/drawImage\(art\.overviewNames/);
-  const fog = at(/fogFor\(/);
+  const fog = at(/spread\(fog\)/);
   const trail = at(/drawTrail\(/);
   ok(names >= 0 && fog > names, 'the drain falls over the names as well as the map',
     'fog after the names layer');
@@ -700,12 +700,16 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // dark wash, and when it was asked to be half as strong the only signal it had was
   // halved with it — darkness carried the whole distinction, so less darkness meant
   // less distinction, and the lit pocket around stage 1 could not be picked out of
-  // the world at all. Colour carries it now, which leaves the brightness free to be
-  // whatever reads best. So what this checks is that the country keeps most of its
-  // LIGHT: a drain that also went dark would be the old problem coming back.
+  // the world at all.
+  //
+  // THE FLOOR HAS COME DOWN since, from a half to a third, and deliberately: there
+  // is sunlight on the other side of the edge now, so the drain no longer has to be
+  // bright enough to look at on its own. What it still may not be is a hole in the
+  // page — below about a third the far country stops having a shape at all, and the
+  // reason for drawing a whole world goes with it.
   const bright = /FOG_BRIGHT = ([\d.]+)/.exec(draw);
-  ok(bright && +bright[1] >= 0.5 && +bright[1] < 1,
-    'and the country it covers keeps its light while losing its colour',
+  ok(bright && +bright[1] >= 0.33 && +bright[1] < 1,
+    'and the country it covers keeps a shape while losing its colour',
     bright ? `${bright[1]} of the brightness kept` : 'FOG_BRIGHT not found');
 
   // AND THE DRAIN IS THE SAME STACK, in the same order. What is punched out of the
@@ -740,6 +744,40 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
     'and the light fades out over at least as far as it reaches',
     reach && blur ? `${blur[1]} of fade on ${reach[1]} of reach` : 'constants not found');
 
+  // AND THE COUNTRY THAT HAS BEEN REACHED IS LIFTED THE OTHER WAY. The gap between
+  // reached and unreached is opened from BOTH ends now: the far country is darker
+  // than it was and the near country is in sunlight. That is what stops either half
+  // having to carry the whole distinction on its own, which is the trap this feature
+  // fell into twice — once when darkness was the only signal, and again when the
+  // brightness of the drain was asked to be both dim enough to read and bright
+  // enough to look at.
+  ok(/SUN_FILTER = 'brightness\(1\.[0-9]+\)/.test(draw),
+    'and the country that has been is brighter than the map itself',
+    (/SUN_FILTER = '([^']+)'/.exec(draw) || [])[1] || 'SUN_FILTER not found');
+
+  // ONE SHAPE, TWO SHEETS. The sun is cut to the lit shape and the fog is punched
+  // out with it, so they meet along a single edge. Two strokes with the same numbers
+  // would still differ by a pixel of antialiasing everywhere they touched.
+  const mk2 = draw.slice(draw.indexOf('function makeFog'));
+  const fogBody2 = mk2.slice(0, mk2.indexOf('\n}\n') + 2);
+  const uses = (fogBody2.match(/drawImage\(lit, 0, 0\)/g) || []).length;
+  ok(uses === 2, 'and both are cut from one lit shape rather than two',
+    `${uses} use(s) of the lit sheet`);
+
+  // AND THE EDGE OF THE DARK BREATHES, on a cycle long enough to be weather rather
+  // than a wobble. Both sheets drift together — they are drawn through one helper
+  // for exactly that reason, because drifting them apart would open a seam between
+  // the sunlight and the dark.
+  ok(/BREATH_SECONDS = ([\d.]+)/.test(draw) && /function breath\(t\)/.test(draw),
+    'and the edge of the dark breathes rather than sitting still',
+    `${(/BREATH_SECONDS = ([\d.]+)/.exec(draw) || [])[1]}s cycle`);
+  // ONE HELPER DRAWS BOTH, which is what keeps them together. Drifting them through
+  // two separate drawImage calls would work until somebody changed one of them.
+  const spreads = (draw.match(/\bspread\((sunSheet|fog)\)/g) || []).length;
+  ok(/const spread = /.test(draw) && spreads === 2,
+    'and the sunlight drifts with it rather than apart from it',
+    `${spreads} sheet(s) through one helper`);
+
   // AND IT LIFTS AS THE ROAD OPENS, which is the reason it is there. The lit area
   // is built from the stages the player has unlocked, so it cannot fail to grow.
   ok(/for \(let i = 0; i < unlocked; i\+\+\)/.test(draw.slice(draw.indexOf('function makeFog'))),
@@ -761,7 +799,8 @@ console.log('\n--- the map moves a little ---\n');
   // BOTH SWITCHES ARE REAL, and this is the promise the file was written under:
   // the owner asked for it in a form they could take out again if they did not like
   // it. Each name has to be declared and each has to actually gate its own effect.
-  for (const [name, fn] of [['CLOUDS', 'drawClouds'], ['SHIMMER', 'drawShimmer']]) {
+  for (const [name, fn] of [['CLOUDS', 'drawClouds'], ['SHIMMER', 'drawShimmer'],
+                            ['BIRDS', 'drawBirds']]) {
     const declared = new RegExp(`const ${name} = (true|false);`).test(bare);
     const gates = new RegExp(`${name}[^\\n]*${fn}\\(`).test(bare);
     ok(declared && gates, `${name} is a switch that turns its own effect off`,
@@ -769,22 +808,51 @@ console.log('\n--- the map moves a little ---\n');
                : 'not declared');
   }
 
-  // AND THE WHOLE THING COMES OUT IN THREE LINES. One import and two calls is what
-  // the file's own instructions promise; if a third call site appeared, the promise
+  // PULSE guards from inside its own function rather than at a call, because that
+  // function is exported and called directly. Same promise, different shape, so it
+  // is asked for differently rather than bent into the loop above.
+  ok(/const PULSE = (true|false);/.test(bare) && /if \(!PULSE \|\|/.test(bare),
+    'PULSE is a switch that turns its own effect off',
+    'declared and guards drawPulse from within');
+
+  // AND THE WHOLE THING COMES OUT IN FOUR LINES. One import and three calls is what
+  // the file's own instructions promise — the three are the three places it has to
+  // be: under the fog, over it, and over the trail. If a fourth appeared the promise
   // would be quietly false.
-  const calls = (draw.match(/\b(drawMotion|drawWater)\(/g) || []).length;
+  const calls = (draw.match(/\b(drawMotion|drawWater|drawPulse)\(/g) || []).length;
   const imports = (draw.match(/from '\.\/motion\.js'/g) || []).length;
-  ok(imports === 1 && calls === 2, 'and the whole of it is one import and two calls',
+  ok(imports === 1 && calls === 3, 'and the whole of it is one import and three calls',
     `${imports} import, ${calls} call(s) in src/overview.js`);
+
+  // THE WATER GOES WHERE THE ARTIST SAID. Two named directions in degrees, canvas
+  // reckoning — 0 east, 90 south. The owner set the river round Dawnford running
+  // east to west and the falls at Serene Peak coming down north-east to south-west,
+  // and a boolean could not have expressed the second one at all.
+  const flow = n => { const m = new RegExp(`${n} = (-?[\\d.]+)`).exec(bare); return m ? +m[1] : null; };
+  ok(flow('RIVER_FLOW') === 180, 'the river runs east to west',
+    `${flow('RIVER_FLOW')} degrees`);
+  ok(flow('FALLS_FLOW') === 135, 'and the waterfall north-east to south-west',
+    `${flow('FALLS_FLOW')} degrees`);
 
   // THE CLOUDS STAY UNDER THE FOG. Unexplored country is a still drained copy, and
   // a shadow crossing it would be motion in a place the player has not been.
   const body = draw.slice(draw.indexOf('export function drawOverview'));
   const fn = body.slice(0, body.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
   const at = re => fn.search(re);
-  ok(at(/drawMotion\(/) >= 0 && at(/drawMotion\(/) < at(/fogFor\(/),
+  // AGAINST WHERE THE FOG IS DRAWN, not where it is built. Those were the same line
+  // until the sunlight needed the same sheets and the build moved to the top of the
+  // function — at which point this check was comparing against fogFor and passing
+  // for the wrong reason. It is the drawing that has to come after the clouds.
+  ok(at(/drawMotion\(/) >= 0 && at(/drawMotion\(/) < at(/spread\(fog\)/),
     'the cloud shadows fall only on country that has been reached',
-    'drawMotion before the fog');
+    'drawMotion before the fog is laid down');
+
+  // AND THE SUN IS LAID DOWN BEFORE THEM, because it REPLACES the lit country with
+  // a brighter copy rather than tinting it. Drawn after the clouds it would paint
+  // every shadow out of the one place they are visible.
+  ok(at(/spread\(sunSheet\)/) >= 0 && at(/spread\(sunSheet\)/) < at(/drawMotion\(/),
+    'and fall on sunlit ground rather than being painted over by it',
+    'the sun before the clouds');
 
   // AND UNDER THE NAMES. A band crossing a river beneath a label was lighting the
   // lettering up with it, which is the one place this was visibly wrong.

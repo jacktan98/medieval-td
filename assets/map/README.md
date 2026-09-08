@@ -556,14 +556,24 @@ its own surroundings back into colour.
 
 ### The map moves a little
 
-`src/motion.js` draws cloud shadows crossing the land and highlight bands running on
-the water. It is deliberately separable: two switches at the top of that file turn
-either effect off, and removing it altogether is deleting the file plus one import
-and two calls in `src/overview.js`.
+`src/motion.js` holds four ambient effects, each with its own switch at the top of
+that file:
+
+- **Cloud shadows** crossing the land, four of them at different sizes and speeds.
+- **The water running.** The river round Dawnford flows **east to west**; the falls
+  at Serene Peak come down **north-east to south-west**. Both are single constants
+  in degrees (`RIVER_FLOW`, `FALLS_FLOW`, canvas reckoning: 0 east, 90 south), so
+  redirecting a body of water is one number.
+- **Birds**, a pair drifting across every so often and gone again.
+- **A road pulse**, a light running up the last leg to the flag every few seconds.
+  This one is not decoration: it says which way to go.
+
+Removing the lot is deleting the file plus one import and three calls in
+`src/overview.js` — under the fog, over it, and over the trail.
 
 What it asks of the drawing: **nothing**. The water is found by its colour in the
 muted map, so rivers and waterfalls drawn anywhere shimmer without being marked up.
-Two things follow from that which are worth knowing:
+Two things follow that are worth knowing:
 
 - Anything **drawn on top of the water** — the four bridges — is correctly left
   alone, because the colour key only finds water that is still visible.
@@ -571,6 +581,23 @@ Two things follow from that which are worth knowing:
   is at Serene Peak, which the road never reaches, so under the fog it would be
   frozen for every player for ever. Water is drawn over the fog instead; see
   `WATER_THROUGH_FOG` in `src/motion.js` to put it back under.
+
+### Sun on one side of the edge, dark on the other
+
+The reached country is drawn **brighter than the artwork** and the unreached country
+**darker**, from one lit shape: the sun is a brightened copy of the map cut to it,
+the fog is a drained copy with it punched out. Opening the gap from both ends is
+what stops either half having to carry the whole distinction — the trap this fell
+into twice, once when darkness was the only signal and again when one brightness had
+to be both dim enough to read as unexplored and bright enough to look at.
+
+The names are in the fog but not in the sun. A region nobody has reached should not
+announce itself, but in lit country a name is still the artist's own pixels.
+
+Both sheets **breathe**, drifting a few pixels on a slow figure of eight so the edge
+of the dark moves rather than sitting on the map like a stencil. They drift through
+one helper, because drifting apart would open a seam between the sunlight and the
+dark.
 
 ### The dots go on top of everything
 

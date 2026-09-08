@@ -7,11 +7,14 @@
 // Either switch below turns its own effect off on the next frame, and turning both
 // off leaves drawMotion doing nothing at all:
 //
-//   const CLOUDS  = false;
-//   const SHIMMER = false;
+//   const CLOUDS  = false;    cloud shadows crossing the land
+//   const SHIMMER = false;    the rivers and the waterfall running
+//   const BIRDS   = false;    two birds crossing now and then
+//   const PULSE   = false;    a light running up the road to the flag
 //
-// To remove it outright: delete this file, then delete the one import and the two
-// calls (drawMotion and drawWater) in src/overview.js. Nothing else refers to it.
+// To remove it outright: delete this file, then delete the one import and the three
+// calls (drawMotion, drawWater, drawPulse) in src/overview.js. Nothing else refers
+// to it.
 // RIVERS and FALLS in src/data/overview.js stop being read and can stay or go as
 // you like.
 //
@@ -33,6 +36,8 @@ import { RIVERS, FALLS } from './data/overview.js';
 
 const CLOUDS = true;
 const SHIMMER = true;
+const BIRDS = true;
+const PULSE = true;
 
 // WHETHER THE WATER MOVES IN COUNTRY NOBODY HAS REACHED.
 //
@@ -59,10 +64,15 @@ const WATER_THROUGH_FOG = true;
 const CLOUD_SPAN = 2160;
 const CLOUD_FROM = -600;
 
+// STRONGER THAN THEY WERE, because the owner could not find them. The first pass
+// topped out at 0.13 and a shadow that faint on a map this busy is indistinguishable
+// from the parchment's own stains — it was there, it moved, and it may as well not
+// have been. Doubled, and one more of them, so there is nearly always one on screen.
 const CLOUDS_AT = [
-  { seconds: 74, phase: 0.00, y: 150, rx: 260, ry: 120, alpha: 0.13 },
-  { seconds: 96, phase: 0.38, y: 350, rx: 210, ry: 95, alpha: 0.10 },
-  { seconds: 61, phase: 0.71, y: 470, rx: 170, ry: 78, alpha: 0.08 }
+  { seconds: 58, phase: 0.00, y: 130, rx: 270, ry: 125, alpha: 0.26 },
+  { seconds: 74, phase: 0.30, y: 320, rx: 220, ry: 100, alpha: 0.21 },
+  { seconds: 47, phase: 0.58, y: 460, rx: 180, ry: 82, alpha: 0.17 },
+  { seconds: 88, phase: 0.81, y: 240, rx: 310, ry: 135, alpha: 0.15 }
 ];
 
 // A shadow rather than a cloud: this is what the land looks like with something
@@ -117,19 +127,27 @@ function drawClouds(ctx, t) {
 const WATER_SHADE = [0xbc, 0xc2, 0xc2];   // see sepia() in tools/overview.mjs
 const WATER_TOLERANCE = 14;               // the interiors are exact; this catches the antialiased rim
 
-// Rivers drift ALONG the surface, which on this map runs broadly east-west, so the
-// bands are near-vertical and travel sideways. Slowly: the whole point is that you
-// see it in the corner of your eye.
+// WHICH WAY THE WATER GOES, in degrees, measured the way canvas measures them: 0 is
+// east, 90 is south. This is the direction of TRAVEL, so the stripes lie across it.
+//
+// The owner set both. The river round Dawnford runs east to west, which is 180. The
+// falls at Serene Peak come down north-east to south-west, which is south and west
+// at once: 135.
+const RIVER_FLOW = 180;
+const FALLS_FLOW = 135;
+
+// Rivers drift ALONG the surface. Slowly: the whole point is that you see it in the
+// corner of your eye.
 const RIVER_BANDS = [
   { seconds: 29, phase: 0.00, of: 0.085, alpha: 0.30 },
   { seconds: 41, phase: 0.44, of: 0.130, alpha: 0.22 },
   { seconds: 23, phase: 0.77, of: 0.050, alpha: 0.18 }
 ];
 
-// A waterfall FALLS, so its bands travel down instead, and much faster: falling
-// water is the one thing on this map that is genuinely quick, and a slow waterfall
-// looks like a glacier. It is a small part of the picture, so a livelier rate there
-// does not compete with the flag.
+// A waterfall FALLS, so its bands go much faster: falling water is the one thing on
+// this map that is genuinely quick, and a slow waterfall looks like a glacier. It is
+// a small part of the picture, so a livelier rate there does not compete with the
+// flag.
 const FALL_BANDS = [
   { seconds: 2.6, phase: 0.00, of: 0.14, alpha: 0.40 },
   { seconds: 3.9, phase: 0.35, of: 0.22, alpha: 0.30 },
@@ -245,22 +263,37 @@ function buildMasks(img) {
 
 // One group of bands: each `of` the run across, travelling along it and wrapping a
 // full band past either end so the surface is never bare.
-function bandsOn(g, t, list, box, vertical) {
-  const run = vertical ? box.h : box.w;
-  const from = vertical ? box.y0 : box.x0;
+// WATER FLOWS IN A DIRECTION, and the direction is the artist's to choose. This
+// took an angle rather than a boolean the moment the owner said the falls run
+// north-east to south-west: down and sideways at once is not a flag.
+//
+// The whole band pass is done in a ROTATED frame — turn the canvas so the flow is
+// along +x, draw plain vertical stripes travelling right, turn it back. The stripes
+// then run perpendicular to the flow whatever the angle, which is what a current
+// looks like, and there is no trigonometry anywhere but the setup.
+//
+// The travel span is the box's DIAGONAL rather than its width, because a rotated
+// box is wider than it was: a stripe has to start clear of one corner and finish
+// clear of the opposite one or the surface goes bare at the ends of the cycle.
+function bandsOn(g, t, list, box, degrees) {
+  const cx = box.x0 + box.w / 2, cy = box.y0 + box.h / 2;
+  const run = Math.hypot(box.w, box.h);
+
+  g.save();
+  g.translate(cx, cy);
+  g.rotate(degrees * Math.PI / 180);
+
   for (const b of list) {
     const size = Math.max(6, run * b.of);
-    const at = from - size + (((t / b.seconds) + b.phase) % 1) * (run + size * 2);
-    const grad = vertical
-      ? g.createLinearGradient(0, at - size / 2, 0, at + size / 2)
-      : g.createLinearGradient(at - size / 2, 0, at + size / 2, 0);
+    const at = -run / 2 - size + (((t / b.seconds) + b.phase) % 1) * (run + size * 2);
+    const grad = g.createLinearGradient(at - size / 2, 0, at + size / 2, 0);
     grad.addColorStop(0, 'rgba(255,252,238,0)');
     grad.addColorStop(0.5, `rgba(255,252,238,${b.alpha})`);
     grad.addColorStop(1, 'rgba(255,252,238,0)');
     g.fillStyle = grad;
-    if (vertical) g.fillRect(box.x0, at - size / 2, box.w, size);
-    else g.fillRect(at - size / 2, box.y0, size, box.h);
+    g.fillRect(at - size / 2, -run / 2, size, run);
   }
+  g.restore();
 }
 
 // Lay one group's bands down, cut them to that group's mask, and put the result on
@@ -270,14 +303,14 @@ function bandsOn(g, t, list, box, vertical) {
 // All of it happens inside the group's own rectangle: the layer is that size, the
 // mask is cropped to it, and the transform is set so artboard coordinates still
 // land where they should.
-function pass(ctx, t, list, box, vertical, grp) {
+function pass(ctx, t, list, box, degrees, grp) {
   const g = grp.layer.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, grp.rect.w, grp.rect.h);
   // Artboard units, as the outlines are, shifted so the rectangle's corner is the
   // layer's origin.
   g.setTransform(0.5, 0, 0, 0.5, -grp.rect.x, -grp.rect.y);
-  bandsOn(g, t, list, box, vertical);
+  bandsOn(g, t, list, box, degrees);
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalCompositeOperation = 'destination-in';
   g.drawImage(grp.mask, 0, 0);
@@ -298,13 +331,121 @@ function drawShimmer(ctx, t) {
 
   // The rivers get the whole artboard to travel across; the mask decides where
   // that actually lands.
-  if (river) pass(ctx, t, RIVER_BANDS, WHOLE_BOARD, false, river);
-  if (falls) pass(ctx, t, FALL_BANDS, fallsBox, true, falls);
+  if (river) pass(ctx, t, RIVER_BANDS, WHOLE_BOARD, RIVER_FLOW, river);
+  if (falls) pass(ctx, t, FALL_BANDS, fallsBox, FALLS_FLOW, falls);
 }
 
 // The one thing src/overview.js calls. `t` is wall-clock seconds — this is screen
 // atmosphere, so it is not stepped by the game clock and the fast-forward
 // multiplier has no business touching it.
+// --- birds -------------------------------------------------------------------
+
+// TWO BIRDS, NOT A FLOCK, and not always. A pair drifts across every so often on a
+// shallow arc, fades in, fades out, and is gone — the map is a drawing of a country
+// rather than a wildlife film, and a permanent bird is a smudge you stop seeing.
+//
+// They are the only thing here drawn as a SHAPE rather than as light on something
+// that is already there, which is why they are small and few. Two strokes each.
+const BIRDS_AT = [
+  { seconds: 46, phase: 0.00, from: [-60, 120], to: [1020, 250], rise: 70, size: 5.0 },
+  { seconds: 46, phase: 0.06, from: [-60, 150], to: [1020, 285], rise: 62, size: 4.2 },
+  { seconds: 67, phase: 0.52, from: [1020, 430], to: [-60, 330], rise: 54, size: 4.6 }
+];
+
+// Seen for the middle of the cycle only, easing in and out at the ends, so they
+// arrive and leave rather than blinking.
+const BIRD_SHOWS = 0.42;
+
+function drawBirds(ctx, t) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(46,34,18,0.62)';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for (const b of BIRDS_AT) {
+    const at = ((t / b.seconds) + b.phase) % 1;
+    if (at > BIRD_SHOWS) continue;
+    const k = at / BIRD_SHOWS;                       // 0..1 across the crossing
+    const fade = Math.sin(k * Math.PI);              // in and out at the ends
+    if (fade < 0.02) continue;
+
+    const x = b.from[0] + (b.to[0] - b.from[0]) * k;
+    // A shallow arc rather than a straight line: a bird crossing a valley rises
+    // and settles, and a ruler-straight bird reads as a UI element.
+    const y = b.from[1] + (b.to[1] - b.from[1]) * k - Math.sin(k * Math.PI) * b.rise;
+
+    // The wingbeat. Slow enough to see, and it is the fastest thing here after the
+    // flag — which is allowed, because a bird is 10px across and the flag is not.
+    const beat = Math.sin(t * 5.2 + b.phase * 20);
+    const drop = b.size * 0.42 * beat;
+
+    ctx.globalAlpha = fade * 0.9;
+    ctx.lineWidth = Math.max(1, b.size * 0.24);
+    ctx.beginPath();
+    ctx.moveTo(x - b.size, y - drop);
+    ctx.quadraticCurveTo(x - b.size * 0.4, y + drop * 0.6, x, y);
+    ctx.quadraticCurveTo(x + b.size * 0.4, y + drop * 0.6, x + b.size, y - drop);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// --- the road pulse ----------------------------------------------------------
+
+// A LIGHT RUNS UP THE ROAD TO THE FLAG, every few seconds, along the last leg only.
+//
+// This is the one effect here that is not purely decorative: the flag is where the
+// player is meant to go, and a light travelling towards it says so in a way a still
+// dotted line cannot. It runs the way the army walked, which is also the way the
+// eye should travel — from the country behind to the stage in front.
+//
+// Only the LAST leg. Lighting the whole road would be a Christmas tree, and the
+// stages behind the frontier are finished business.
+const PULSE_SECONDS = 4.6;
+const PULSE_WIDTH = 46;        // canvas px of road lit at once
+const PULSE_ALPHA = 0.75;
+const PULSE_DOT = 3.4;
+const PULSE_GAP = 10;          // DOT_GAP in src/overview.js
+
+// Walk the leg the way drawTrail walks it, so the pulse lands on the dots that are
+// actually drawn rather than on a second idea of where they are.
+export function drawPulse(ctx, t, leg) {
+  if (!PULSE || !leg || leg.length < 2) return;
+
+  let total = 0;
+  for (let i = 1; i < leg.length; i++) total += Math.hypot(leg[i][0] - leg[i - 1][0], leg[i][1] - leg[i - 1][1]);
+  if (total <= 0) return;
+
+  // The head of the pulse runs from before the start to past the end, so it enters
+  // and leaves rather than appearing at the first dot.
+  const head = -PULSE_WIDTH + ((t / PULSE_SECONDS) % 1) * (total + PULSE_WIDTH * 2);
+
+  ctx.save();
+  ctx.fillStyle = '#FFF3CE';
+  let walked = 0, next = PULSE_GAP;
+  for (let i = 1; i < leg.length; i++) {
+    const [x0, y0] = leg[i - 1], [x1, y1] = leg[i];
+    const seg = Math.hypot(x1 - x0, y1 - y0);
+    if (seg === 0) continue;
+    while (next <= walked + seg) {
+      const d = next - head;
+      // Brightest at the head and trailing off behind it, nothing in front: a
+      // pulse with a tail travels, a symmetrical one just throbs.
+      if (d <= 0 && d > -PULSE_WIDTH) {
+        const k = 1 + d / PULSE_WIDTH;               // 1 at the head, 0 at the tail
+        const f = (next - walked) / seg;
+        ctx.globalAlpha = k * k * PULSE_ALPHA;
+        ctx.beginPath();
+        ctx.arc(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, PULSE_DOT, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      next += PULSE_GAP;
+    }
+    walked += seg;
+  }
+  ctx.restore();
+}
+
 // Called from src/overview.js UNDER the fog. Cloud shadows always go here; the
 // water joins them unless it has been sent through the fog instead.
 export function drawMotion(ctx, t) {
@@ -317,4 +458,7 @@ export function drawMotion(ctx, t) {
 // a move.
 export function drawWater(ctx, t) {
   if (SHIMMER && WATER_THROUGH_FOG) drawShimmer(ctx, t);
+  // Birds fly over the far country as readily as the near: they are above the map
+  // rather than on it, so the fog has no business hiding them.
+  if (BIRDS) drawBirds(ctx, t);
 }

@@ -31,7 +31,7 @@ import { MODES } from './data/waves.js';
 import { SQUASH } from './ground.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
-import { drawMotion, drawWater } from './motion.js';
+import { drawMotion, drawWater, drawPulse } from './motion.js';
 
 // --- how much of the road is open -------------------------------------------
 
@@ -509,8 +509,30 @@ function makeParchment() {
 // and loses its greens and greys, so the difference is what KIND of picture it is
 // rather than how much light is on it — and the brightness is then free to be
 // whatever reads best rather than being the thing doing the work.
-const FOG_BRIGHT = 0.62;   // how much light the drained country keeps
-const FOG_WASH = 'rgba(38,25,12,0.16)';   // and a breath of brown over that
+// DARKER THAN IT WAS, at the owner's word, and now it can afford to be: the lit
+// country is lifted into sunlight below, so the gap between reached and unreached
+// is opened from BOTH ends rather than by pushing one of them around on its own.
+// That was the trap the first version fell into — darkness carrying the whole
+// distinction, so every change to the darkness changed the whole effect.
+const FOG_BRIGHT = 0.44;   // how much light the drained country keeps
+const FOG_WASH = 'rgba(38,25,12,0.22)';   // and a breath of brown over that
+
+// AND THE COUNTRY THAT HAS BEEN REACHED IS IN SUNLIGHT — the exact mirror of the
+// fog. The fog is a DRAINED copy of the map with the lit shape cut out of it; this
+// is a BRIGHTENED copy with everything but the lit shape cut out. Same picture,
+// same mask, opposite sides of it, so the two meet along one edge and can never
+// disagree about where that edge is.
+//
+// TWO BLEND MODES WERE TRIED FIRST AND BOTH WERE THE WRONG TOOL. `overlay` drives
+// light pixels hard towards white: the brightest thing in the lit country is the
+// river, and it came out a bleached channel with no water left in it. `soft-light`
+// was gentler and warmed rather than lit — the greens went olive and the whole map
+// read hazy rather than sunny. Neither could be tuned into the answer, because a
+// wash tints what is there and what was wanted was more LIGHT on it.
+//
+// A filtered copy says exactly what it means: fifteen percent more light, a little
+// more colour with it, and the faintest warm cast.
+const SUN_FILTER = 'brightness(1.16) saturate(1.18) sepia(0.06)';
 
 // HOW FAR THE LIGHT REACHES, and HOW LONG IT TAKES TO GO OUT. These are two
 // different things and the difference matters: reach is how much country a player
@@ -531,7 +553,7 @@ const FOG_WASH = 'rgba(38,25,12,0.16)';   // and a breath of brown over that
 const LIT_REACH = 69;
 const LIT_BLUR = 120;
 
-let fogSheet = null, fogKey = '';
+let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
 
 // The lit area is drawn as one thick round-capped stroke along every road the
 // player has walked, plus a disc at every marker they have reached, and then
@@ -543,8 +565,8 @@ function makeFog(unlocked, live, frac) {
   const c = fogSheet || (fogSheet = document.createElement('canvas'));
   c.width = 960;
   c.height = 540;
-  const g = c.getContext('2d');
-  g.clearRect(0, 0, 960, 540);
+  const f = c.getContext('2d');
+  f.clearRect(0, 0, 960, 540);
 
   // THE SAME PICTURE, DRAINED. The map, the paper and the names in the order
   // drawOverview lays them down, so that what is punched out of this lines up
@@ -555,32 +577,41 @@ function makeFog(unlocked, live, frac) {
   // on somebody else's display.
   let drained = false;
   try {
-    g.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
-    drained = g.filter !== 'none';
+    f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
+    drained = f.filter !== 'none';
   } catch { /* no filter support */ }
 
-  if (art.overview) g.drawImage(art.overview, 0, 0, 960, 540);
-  else { g.fillStyle = '#C9A878'; g.fillRect(0, 0, 960, 540); }
-  g.filter = 'none';
+  if (art.overview) f.drawImage(art.overview, 0, 0, 960, 540);
+  else { f.fillStyle = '#C9A878'; f.fillRect(0, 0, 960, 540); }
+  f.filter = 'none';
 
-  g.globalCompositeOperation = 'multiply';
-  g.drawImage(parchment || makeParchment(), 0, 0);
-  g.globalCompositeOperation = 'source-over';
+  f.globalCompositeOperation = 'multiply';
+  f.drawImage(parchment || makeParchment(), 0, 0);
+  f.globalCompositeOperation = 'source-over';
 
   if (art.overviewNames) {
     // The names go through the same drain. A region nobody has reached should not
     // be announcing itself in white.
-    try { g.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`; } catch { /* */ }
-    g.drawImage(art.overviewNames, 0, 0, 960, 540);
-    g.filter = 'none';
+    try { f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`; } catch { /* */ }
+    f.drawImage(art.overviewNames, 0, 0, 960, 540);
+    f.filter = 'none';
   }
 
   // Where filters are not available there is nothing to drain the colour, so the
   // old dark wash stands in: heavier than this, and the only thing that works.
-  g.fillStyle = drained ? FOG_WASH : 'rgba(26,17,8,0.55)';
-  g.fillRect(0, 0, 960, 540);
+  f.fillStyle = drained ? FOG_WASH : 'rgba(26,17,8,0.55)';
+  f.fillRect(0, 0, 960, 540);
 
-  g.globalCompositeOperation = 'destination-out';
+  // THE LIT SHAPE, ON ITS OWN SHEET, because two things need it: the fog is punched
+  // out with it and the sunlight is cut to it. Drawing it once and using it twice is
+  // the only way the two can be guaranteed to line up — a second stroke with the
+  // same numbers would still differ by a pixel of antialiasing along every edge.
+  const lit = litSheet || (litSheet = document.createElement('canvas'));
+  lit.width = 960;
+  lit.height = 540;
+  const g = lit.getContext('2d');
+  g.clearRect(0, 0, 960, 540);
+
   // A blur filter is what makes the edge a falloff rather than a cut. Where it is
   // not supported the light still lands, with a harder rim — the map stays
   // playable and nothing throws.
@@ -627,6 +658,34 @@ function makeFog(unlocked, live, frac) {
       g.fill();
     }
   }
+  g.filter = 'none';
+
+  // The fog is the drained picture with the lit shape taken out of it.
+  f.globalCompositeOperation = 'destination-out';
+  f.drawImage(lit, 0, 0);
+  f.globalCompositeOperation = 'source-over';
+
+  // And the sunlight is a brightened copy of the same picture with everything BUT
+  // the lit shape taken out.
+  //
+  // THE NAMES ARE NOT IN IT. They are in the fog, because a region nobody has
+  // reached should not be announcing itself — but the owner asked for them exactly
+  // as drawn, and putting them through a brightness filter would be one more thing
+  // done to them. So this sheet is the map and the paper only, and it is laid down
+  // BEFORE the names: in lit country a name is still the artist's own pixels.
+  const sun = sunSheet || (sunSheet = document.createElement('canvas'));
+  sun.width = 960;
+  sun.height = 540;
+  const sg = sun.getContext('2d');
+  sg.clearRect(0, 0, 960, 540);
+
+  try { sg.filter = SUN_FILTER; } catch { /* unfiltered: the map, unchanged */ }
+  if (art.overview) sg.drawImage(art.overview, 0, 0, 960, 540);
+  sg.filter = 'none';
+  sg.globalCompositeOperation = 'multiply';
+  sg.drawImage(parchment || makeParchment(), 0, 0);
+  sg.globalCompositeOperation = 'destination-in';
+  sg.drawImage(lit, 0, 0);
 
   return c;
 }
@@ -638,6 +697,19 @@ function fogFor(unlocked, live, frac) {
   const key = `${unlocked}:${live}:${Math.round(frac * 30)}`;
   if (key !== fogKey) { makeFog(unlocked, live, frac); fogKey = key; }
   return fogSheet;
+}
+
+// HOW FAR THE EDGE OF THE DARK WANDERS, and how long it takes to wander it. The
+// fog is a still sheet with a soft edge; moving the whole sheet by two or three
+// pixels on a long slow figure of eight makes that edge breathe instead, which is
+// the difference between country you have not been to and a stencil laid over the
+// map. Free: the sheet is already built, this only changes where it lands.
+const BREATH_X = 3.5, BREATH_Y = 2.4;
+const BREATH_SECONDS = 19;
+
+function breath(t) {
+  const a = (t / BREATH_SECONDS) * Math.PI * 2;
+  return [Math.sin(a) * BREATH_X, Math.sin(a * 0.61 + 1.3) * BREATH_Y];
 }
 
 export function drawOverview(ctx, state) {
@@ -654,35 +726,59 @@ export function drawOverview(ctx, state) {
   ctx.drawImage(sheet, 0, 0);
   ctx.restore();
 
-  // THE REGION NAMES, OVER THE SHEET RATHER THAN UNDER IT. They are a second image
-  // for exactly this reason: the sheet is a multiply, so a name inside the map
-  // picks up whatever grain, stain and vignette happen to fall on it, and one of
-  // them sat in the darkest corner of the map looking like a different colour from
-  // the rest. The owner asked for them exactly as drawn, and after the multiply is
-  // the only place that can be true.
-  // AND THE MAP MOVES A LITTLE: shadows crossing the land, the water running.
-  // BEFORE the names and before the fog. Before the names because a band crossing
-  // a river under a label was lighting up the lettering with it; before the fog
-  // because unexplored country is a drained still copy and should stay still. One
-  // call, deletable on its own; src/motion.js says how.
-  drawMotion(ctx, performance.now() / 1000);
-
-  if (art.overviewNames) ctx.drawImage(art.overviewNames, 0, 0, 960, 540);
-
+  // WHAT THE PLAYER HAS REACHED, AND WHAT THEY HAVE NOT. Both sheets are built
+  // together from one lit shape — see makeFog — so this settles the order they go
+  // down in, which is the whole of how the map reads.
   const r = state.reveal;
   const unlocked = Math.min(state.unlocked ?? 0, STAGE_COUNT);
+  const live = r && r.phase === 'road' ? r.stage : -1;
+  const now = performance.now() / 1000;
+  const fog = fogFor(unlocked, live, live >= 0 ? r.t : 1);
+
+  // THE SHEETS BREATHE. Both are still images with a soft edge; drifting them a few
+  // pixels on a long slow figure of eight makes that edge move instead, which is the
+  // difference between country you have not been to and a stencil laid over the map.
+  //
+  // DRAWN A LITTLE OVERSIZE, and that is not cosmetic. Shifting a 960x540 sheet by
+  // three pixels leaves three pixels of the map uncovered along one edge, and what
+  // showed through was a hard strip across the top of the screen. Blown up by twice
+  // the breath in each direction, a sheet covers the map wherever it drifts to, and
+  // a blurred sheet does not mind being stretched by one and a half percent.
+  const [bx, by] = breath(now);
+  const ox = BREATH_X * 2, oy = BREATH_Y * 2;
+  const spread = (img) => ctx.drawImage(img, bx - ox, by - oy, 960 + ox * 2, 540 + oy * 2);
+
+  // THE SUN FIRST, because it REPLACES the lit country with a brighter copy of
+  // itself rather than tinting what is there. Anything drawn before it inside the
+  // lit shape would be painted over — which is why the cloud shadows come after it
+  // and not before, so that a shadow falls on sunlit ground rather than being
+  // erased by it.
+  if (sunSheet) spread(sunSheet);
+
+  // AND THE MAP MOVES A LITTLE: shadows crossing the land. Before the names, because
+  // a band crossing a river under a label was lighting the lettering up with it, and
+  // before the fog, because unexplored country is a drained still copy and should
+  // stay still.
+  drawMotion(ctx, now);
+
+  // THE REGION NAMES, OVER ALL OF IT. They are a second image for exactly this
+  // reason: the parchment is a multiply, so a name inside the map picks up whatever
+  // grain, stain and vignette fall on it, and one sat in the darkest corner looking
+  // like a different colour from the rest. The owner asked for them exactly as
+  // drawn — so the sun does not touch them either, and in lit country these are the
+  // artist's own pixels and nothing else.
+  if (art.overviewNames) ctx.drawImage(art.overviewNames, 0, 0, 960, 540);
 
   // AND THE DARK OVER THE PARTS OF THE WORLD NOBODY HAS WALKED TO. Over the whole
   // drawing including the names — a region nobody has reached should not be
   // announcing itself — and under everything the game draws, because the trail, the
   // medallions and the flag are the interface and are never in shadow.
-  const live = r && r.phase === 'road' ? r.stage : -1;
-  ctx.drawImage(fogFor(unlocked, live, live >= 0 ? r.t : 1), 0, 0);
+  spread(fog);
 
   // AND THE WATER OVER THE TOP OF THE DARK, which is the one thing allowed through
   // it. The waterfall is in country the road never reaches, so under the fog it
   // would never be seen to move at all. See WATER_THROUGH_FOG in src/motion.js.
-  drawWater(ctx, performance.now() / 1000);
+  drawWater(ctx, now);
 
   // AND THE TRAIL OVER ALL OF IT. The dots are the last thing from the artwork
   // side to go down and nothing in the drawing is put back on top of them: the
@@ -709,6 +805,12 @@ export function drawOverview(ctx, state) {
     if (r && r.stage === i && r.phase === 'road') continue;
     drawNode(ctx, i, i === frontier && state.stage === null);
   }
+
+  // AND A LIGHT RUNS UP THE LAST STRETCH OF ROAD TO THE FLAG. Over the trail so it
+  // lands on the dots, under the medallions and the flag so it cannot outshine
+  // either, and only while the map is at rest — during a march the road is already
+  // drawing itself and a second travelling light on the same line is a fight.
+  if (frontier >= 0 && !r && state.stage === null) drawPulse(ctx, now, STAGES[frontier].leg);
 
   // The flag sits on the furthest stage reached, which is the one the player is
   // being pointed at. It waves off wall-clock time so it is alive on a screen
