@@ -489,10 +489,16 @@ finding the two sides of each ribbon and averaging them. It does not care how th
 ends are capped — some cap with a line, some with a curve — but it does assume the
 shape is long and thin. A leg drawn as wide as it is long has no centreline.
 
-**Bridges cut a leg in half.** The bridge is drawn in a picture layer on top, so
-the road under it stops and starts again ~120px later. The tool rejoins those
-halves by matching loose ends within 150px. A bridge wider than that, or two
-unrelated legs whose ends come within 150px, will be stitched wrongly.
+**A connection may be one leg or a chain of several.** The road used to stop at
+each bridge and start again on the far side, and the tool paired the two halves.
+The path is carried across the bridges now, so a connection can be three pieces
+with the joins a few pixels apart — the tool walks legs end to end instead of
+pairing them, and either arrangement works.
+
+Two loose ends count as joined within **40px**. Every real join in the current
+drawing is 23px or less, and the bound is small enough that two legs merely
+passing near each other cannot be mistaken for one. If you go back to leaving
+whole bridges unpainted, that number has to go up to clear them.
 
 **Exactly one leg may have a loose end going nowhere.** That is the road arriving
 from off the left edge, and it is what the game draws before stage 1 exists — the

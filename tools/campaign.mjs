@@ -142,10 +142,13 @@ ok(drawnMarkers.length === STAGE_COUNT,
         : `worst ${worst.toFixed(2)}px`);
 }
 
-// The generator asserts this count and refuses to write if it changes, so a
-// mismatch here means the data was written against a different drawing.
-ok(roadPaths === 14, 'and the road is still drawn in the same number of pieces',
-  `${roadPaths} leg(s) in the two road fills`);
+// HOW MANY PIECES THE ROAD IS DRAWN IN, which is the artist's business and not a
+// number to pin. What matters is that the count here matches the count the data
+// was built from — a leg added or removed since the last run is exactly the
+// staleness this file exists to catch, and the stage positions alone would not
+// notice it.
+ok(roadPaths === 18, 'and the road is still drawn in the same number of pieces',
+  `${roadPaths} leg(s) in the guide`);
 
 // THE GUIDE HOLDS NOTHING BUT ROAD. On the old single-file map the beach shared
 // the road's sand colour and had to be excluded by size; the picture lives in its

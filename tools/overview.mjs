@@ -47,11 +47,13 @@
 //   have straight sections in the middle that look exactly like a cap. See
 //   centreline() for the method that does work.
 //
-//   LEGS ARE SPLIT WHERE A BRIDGE CROSSES THEM. The bridge is drawn on top in
-//   another layer, so the road under it simply stops and starts again ~120px
-//   later. They are rejoined here by matching loose ends.
+//   THE ROAD COMES IN PIECES, and how many pieces a connection takes is the
+//   artist's business. A leg may run marker to marker on its own, or a connection
+//   may be a chain of several with the joins a few pixels apart. They are walked
+//   end to end here rather than paired, so either works — see the note above the
+//   walk for what changed and why pairing stopped being enough.
 //
-// THE ROAD IS A TREE, NOT A CHAIN. It forks: one branch runs east and up to the
+// THE ROAD IS A TREE, NOT A LINE. It forks: one branch runs east and up to the
 // top-right corner, the other dead-ends in the south-west. So each stage is given
 // the ONE leg that leads into it from its parent, rather than a leg per
 // consecutive pair — which means the play order below can be shuffled without any
@@ -99,13 +101,10 @@ const ROAD_FILLS = new Set(['#ffde9e', '#ffefd4']);
 // middle of the sea.
 const ROAD_MAX_AREA = 100000;
 
-// How close a leg end has to be to a marker centre to count as arriving there,
-// and to another leg's end to count as the far side of a bridge. The first is
-// half the marker's drawn width plus slack; the second has to clear the widest
-// bridge on the map (~135px) without joining two legs that merely pass near each
-// other.
+// How close a leg end has to be to a marker centre to count as arriving there:
+// half the marker's drawn width plus slack. The distance between two legs that
+// count as joined is JOIN, down beside the walk that uses it.
 const AT_MARKER = 36;
-const ACROSS_BRIDGE = 150;
 
 // --- path parsing -----------------------------------------------------------
 
@@ -355,55 +354,113 @@ const shapes = picture.flatMap(l => l.shapes);
 
 // --- stitch the road --------------------------------------------------------
 
-// Which marker a loose end arrives at, or -1.
+// THE ROAD IS DRAWN IN PIECES, and how many pieces a connection takes is the
+// artist's business rather than the game's.
+//
+// It used to be two: a leg ran up to a bridge, stopped, and started again on the
+// far side, and the tool paired the halves by their loose ends. The bridges are
+// drawn ON the road now — the artist carried the path across them — so a
+// connection can be a chain of three, and the pairing that assumed exactly two
+// halves found five legs it could not place and stopped.
+//
+// So it walks instead of pairing. Start at a leg that touches a marker, follow it
+// to its far end, and if that end is loose, hop to the nearest unused loose end
+// and keep going until a marker turns up. One leg or six, it is the same walk —
+// and a chain that never reaches a marker is reported rather than silently
+// dropped.
+//
+// The hop distance is the one number to watch. Every real join in the current
+// drawing is 23px or less; 40 clears them all with most of a marker's width to
+// spare, and is small enough that two legs merely passing near each other cannot
+// be mistaken for a join. It was 150 while a hop had to clear a whole bridge.
+const JOIN = 40;
+
 const markerAt = p => markers.findIndex(m => dist(p, m) <= AT_MARKER);
 
-// Every leg, described by what each of its two ends touches.
-const ends = legs.map((c, i) => ({
-  i, line: c,
-  a: markerAt(c[0]),
-  b: markerAt(c[c.length - 1])
+const ends = legs.map((line, i) => ({
+  i, line,
+  a: markerAt(line[0]),
+  b: markerAt(line[line.length - 1])
 }));
 
-// A leg that reaches a marker at both ends is already a whole connection.
-const joined = [];
 const used = new Set();
+
+// The free end of a leg, given which end we came in by. `from` is the index of
+// the end we started at, so the far end is the other one.
+const tail = (L, fromA) => (fromA ? L.line[L.line.length - 1] : L.line[0]);
+const oriented = (L, fromA) => (fromA ? L.line : [...L.line].reverse());
+const farMarker = (L, fromA) => (fromA ? L.b : L.a);
+
+// Walk out from one end of one leg, gathering legs until a marker or a dead end.
+function walk(L, fromA) {
+  let line = oriented(L, fromA);
+  let far = farMarker(L, fromA);
+  let here = L;
+  let cameA = fromA;
+  used.add(L.i);
+
+  while (far < 0) {
+    const p = tail(here, cameA);
+
+    // The nearest unused leg with a loose end in reach. Nearest rather than first
+    // found: with the road in this many pieces, two joins can be close together
+    // and taking whichever the loop happened to reach first is an ordering
+    // accident rather than a decision.
+    let best = null;
+    for (const O of ends) {
+      if (used.has(O.i)) continue;
+      for (const startA of [true, false]) {
+        // entering O at the end nearest p means the end we come IN by is loose
+        const entry = startA ? O.line[0] : O.line[O.line.length - 1];
+        const isLoose = startA ? O.a < 0 : O.b < 0;
+        if (!isLoose) continue;
+        const d = dist(p, entry);
+        if (d <= JOIN && (!best || d < best.d)) best = { O, startA, d };
+      }
+    }
+    if (!best) return { line, to: -1 };
+
+    used.add(best.O.i);
+    line = [...line, ...oriented(best.O, best.startA)];
+    here = best.O;
+    cameA = best.startA;
+    far = farMarker(best.O, best.startA);
+  }
+  return { line, to: far };
+}
+
+const joined = [];
+let approach = null;
+let approachAt = -1;
+
+// Every leg that touches a marker starts a walk. A leg with markers at BOTH ends
+// is a whole connection on its own and the walk ends immediately.
 for (const L of ends) {
-  if (L.a >= 0 && L.b >= 0) { joined.push({ from: L.a, to: L.b, line: L.line }); used.add(L.i); }
+  for (const fromA of [true, false]) {
+    if (used.has(L.i)) continue;
+    const startMarker = fromA ? L.a : L.b;
+    if (startMarker < 0) continue;
+
+    const { line, to } = walk(L, fromA);
+    if (to >= 0) { joined.push({ from: startMarker, to, line }); continue; }
+
+    // A chain that ran out of road without finding a marker. There is exactly one
+    // of those in a correct drawing — the approach, coming in from off the left
+    // edge — and anything else is a leg the artist has left dangling.
+    if (approach) {
+      throw new Error(`two roads run off the map: from marker ${approachAt} and from marker ${startMarker}`);
+    }
+    approach = [...line].reverse();     // pointed AT its marker, not away
+    approachAt = startMarker;
+  }
 }
 
-// Everything left has exactly one loose end, because a bridge cut it in half.
-// Pair the halves by their loose ends and splice each pair into one line running
-// marker -> gap -> marker. The gap itself is left as a straight join: the bridge
-// is drawn on top of it, so nothing of that segment is ever visible.
-const looseEnd = L => (L.a < 0 ? L.line[0] : L.line[L.line.length - 1]);
-const farMarker = L => (L.a < 0 ? L.b : L.a);
-
-for (const L of ends) {
-  if (used.has(L.i)) continue;
-  const mine = looseEnd(L);
-  const mate = ends.find(O => !used.has(O.i) && O.i !== L.i &&
-    dist(mine, looseEnd(O)) <= ACROSS_BRIDGE);
-  if (!mate) continue;
-
-  // Orient each half so the pair reads marker -> gap -> marker.
-  const head = L.a < 0 ? [...L.line].reverse() : L.line;             // ends at the gap
-  const tail = mate.a < 0 ? mate.line : [...mate.line].reverse();    // starts at the gap
-  joined.push({ from: farMarker(L), to: farMarker(mate), line: [...head, ...tail] });
-  used.add(L.i); used.add(mate.i);
+const stranded = ends.filter(L => !used.has(L.i));
+if (stranded.length) {
+  throw new Error(`${stranded.length} road leg(s) touch no marker and no other leg — ` +
+    stranded.map(L => `leg ${L.i}`).join(', '));
 }
-
-// WHATEVER IS STILL UNPAIRED IS THE APPROACH: the road arriving from off the left
-// edge of the artboard, with a marker at one end and nothing at all at the other.
-// It is what a player with no progress sees drawn before their first flag.
-const spare = ends.filter(L => !used.has(L.i));
-if (spare.length !== 1) {
-  throw new Error(`expected exactly one unpaired leg (the approach), found ${spare.length}`);
-}
-const approachLeg = spare[0];
-// Point it AT its marker rather than away from it.
-const approach = approachLeg.a >= 0 ? [...approachLeg.line].reverse() : approachLeg.line;
-const approachAt = farMarker(approachLeg);
+if (!approach) throw new Error('no road runs in from off the map; stage 1 has no opening');
 
 // --- the play order ---------------------------------------------------------
 
