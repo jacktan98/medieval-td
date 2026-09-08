@@ -304,34 +304,63 @@ function drawNode(ctx, i, hot) {
 // two stages belongs to neither of them, so the question stopped being "what is in
 // front of stage 6" and became "what is in front of the road".
 //
-// The clip is in ARTBOARD units, which is why the scale is applied first and the
-// map is drawn at 1920x1080 underneath it: the path data is the artist's own,
-// untouched, and re-scaling it here would round coordinates already rounded once.
+// AND IT IS BUILT ONCE, WHOLE, AND MASKED — never clipped and composited shape by
+// shape. That was the first way round and it drew a hairline down the middle of
+// every outline it touched: the temple's walls came back as thin double strokes,
+// as though the artist had traced them twice.
+//
+// The cause is partial alpha at a clip edge. The map underneath is already the
+// artwork multiplied by the parchment, and redrawing it inside a clip is meant to
+// land on identical pixels and be invisible. It does, right up to the boundary,
+// where the clip's antialiasing blends at some fraction a: the image is laid down
+// as a*art + (1-a)*(art x paper), and the paper is then multiplied over THAT. Two
+// operations at fractional coverage do not compose back to art x paper, so the
+// edge pixel lands somewhere else — a pale line exactly one pixel wide, following
+// the shape, which is the outline the stroke is centred on.
+//
+// So the two steps happen at full opacity on their own canvas, off screen, where
+// every pixel is whole. Only when the result is finished is it cut to shape and
+// laid down in one drawImage. A mask edge blends a finished pixel over the
+// identical finished pixel beneath it, which cannot show. Redrawing thirty shapes
+// once at load rather than every frame is the smaller reason to do it this way.
+//
+// The paths are in ARTBOARD units, which is why the scale is applied before them
+// and the map is drawn at 1920x1080: the data is the artist's own, untouched, and
+// re-scaling it here would round coordinates already rounded once.
+let frontLayer = null, frontFrom = null;
+
+function makeFront(img) {
+  const c = document.createElement('canvas');
+  c.width = 960;
+  c.height = 540;
+  const g = c.getContext('2d');
+
+  // The map as the player already sees it: the artwork with the sheet over it.
+  g.drawImage(img, 0, 0, 960, 540);
+  g.globalCompositeOperation = 'multiply';
+  g.drawImage(parchment || makeParchment(), 0, 0);
+
+  // The mask, accumulated as solid fills on a canvas of its own rather than as one
+  // Path2D. A union of paths taken as a single path is subject to the winding rule,
+  // and a shape wound against its neighbour would punch a hole in it.
+  const m = document.createElement('canvas');
+  m.width = 960;
+  m.height = 540;
+  const mg = m.getContext('2d');
+  mg.fillStyle = '#000';
+  mg.scale(0.5, 0.5);
+  for (const d of FRONT) mg.fill(new Path2D(d));
+
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(m, 0, 0);
+  return c;
+}
+
 function drawFront(ctx) {
   const img = art.overview;
   if (!img || !FRONT.length) return;
-
-  // AND THE PAPER BACK OVER EACH ONE. The sheet was laid over the whole map before
-  // the trail was; redrawing the artwork alone would leave twenty-nine clean patches
-  // of it with no grain, no stain and no vignette, each outlined by the edge of a
-  // building. The sheet is a multiply, so applying it twice to the same pixels is
-  // what would show — it is applied once here, to pixels that just lost it.
-  const sheet = parchment || makeParchment();
-  ctx.save();
-  ctx.scale(0.5, 0.5);
-  for (const d of FRONT) {
-    ctx.save();
-    ctx.clip(new Path2D(d));
-    ctx.drawImage(img, 0, 0, 1920, 1080);
-    // Back to canvas units for the sheet — the clip is already set, and a sheet
-    // stretched to the artboard would grain these patches at twice the size of the
-    // grain around them, which is the seam it is here to avoid.
-    ctx.scale(2, 2);
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.drawImage(sheet, 0, 0);
-    ctx.restore();
-  }
-  ctx.restore();
+  if (frontFrom !== img) { frontLayer = makeFront(img); frontFrom = img; }
+  ctx.drawImage(frontLayer, 0, 0);
 }
 
 // The stars a stage has been beaten with, over its marker. The BEST across every

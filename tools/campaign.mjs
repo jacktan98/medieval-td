@@ -409,9 +409,53 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
     `${shapes.length} shape(s)`);
 
   // THE LIST IS DRAWN ONCE, SO IT MUST NOT REPEAT ITSELF. A shape listed twice
-  // is clipped and redrawn twice, which double-darkens its own edge.
+  // is masked and redrawn twice, which double-darkens its own edge.
   ok(new Set(shapes).size === shapes.length, 'and appears in the list exactly once',
     `${new Set(shapes).size} distinct of ${shapes.length}`);
+
+  const NUM = /-?\d+\.?\d*(?:[eE][-+]?\d+)?/g;
+
+  // AND NOTHING THE ROAD RUNS ACROSS IS IN IT. A bridge's feet are lower on the
+  // screen than the road it carries, so it passes the rule the rest of the scenery
+  // is judged by and paints out the very dots that are supposed to be walking over
+  // it — a gap in the trail at all four crossings. The road cannot be behind
+  // something it runs across, so a shape with a real length of road INSIDE its
+  // outline, rather than merely inside its box, is left where the artist put it.
+  const flat = d => {
+    // Corner points and curve endpoints only. This is a coarser outline than the
+    // generator flattens, which is the right way round: a check that traced the
+    // curves as finely would be the generator's own arithmetic marking its own work.
+    const pts = [];
+    for (const m of d.matchAll(/([MLC])([-\d.,\se]+)/g)) {
+      const n = (m[2].match(NUM) || []).map(Number);
+      for (let i = m[1] === 'C' ? 4 : 0; i + 1 < n.length; i += 2) pts.push([n[i], n[i + 1]]);
+    }
+    return pts;
+  };
+  const inside = (poly, [px, py]) => {
+    let hit = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit;
+    }
+    return hit;
+  };
+  let across = 0, worstArc = 0;
+  for (const d of shapes) {
+    const poly = flat(d).map(([x, y]) => [x * SCALE, y * SCALE]);
+    if (poly.length < 4) continue;
+    let arc = 0;
+    for (const s of STAGES) {
+      for (let i = 1; i < s.leg.length; i++) {
+        if (inside(poly, s.leg[i]) && inside(poly, s.leg[i - 1]))
+          arc += Math.hypot(s.leg[i][0] - s.leg[i - 1][0], s.leg[i][1] - s.leg[i - 1][1]);
+      }
+    }
+    worstArc = Math.max(worstArc, arc);
+    if (arc >= 30) across++;      // 60 artboard units, the generator's threshold
+  }
+  ok(across === 0, 'and nothing the road runs across is among them',
+    across ? `${across} shape(s) carry the road` : `most road inside any of them ${worstArc.toFixed(0)}px of 30`);
 
   // AND ITS FEET ARE LOWER THAN WHAT IT COVERS, which is the whole rule. The
   // covered thing is now the road as well as the medallions — a building beside
@@ -420,7 +464,6 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
   // leg. A shape only has to beat the points it actually overlaps; one whose box
   // contains a point it stands BEHIND is the failure, and would be drawn over
   // scenery nearer the viewer than itself.
-  const NUM = /-?\d+\.?\d*(?:[eE][-+]?\d+)?/g;
   const box = d => {
     const n = (d.match(NUM) || []).map(Number);
     const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
@@ -465,13 +508,23 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
   // This is a source check rather than a pixel one, and it only catches the line
   // going missing; it is here because losing it is silent and looks like bad art.
   const draw = readFileSync('src/overview.js', 'utf8');
-  const body = draw.slice(draw.indexOf('function drawFront'));
-  // Comments only, stripped: drawFront's own comment says the word "multiply",
-  // and a check the prose can satisfy is not a check.
+  const body = draw.slice(draw.indexOf('function makeFront'));
+  // Comments only, stripped: the note above this code says every word the check
+  // looks for, and a check the prose can satisfy is not a check.
   const fn = body.slice(0, body.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
-  ok(/multiply/.test(fn) && /drawImage\(sheet/.test(fn),
+  ok(/multiply/.test(fn) && /drawImage\(parchment/.test(fn),
     'and the paper is laid back over what it redraws',
-    'drawFront re-applies the parchment inside its own clip');
+    'the front layer is the artwork times the sheet');
+
+  // AND IT IS MASKED, NOT CLIPPED. Clipping and compositing shape by shape put a
+  // pale hairline down every outline it touched — the temple came back with double
+  // walls — because at a clip's antialiased edge the redraw and the multiply each
+  // apply at partial coverage and do not compose back to the pixel underneath.
+  // Finishing the layer first and cutting it to shape last blends a finished pixel
+  // over the identical pixel beneath it, which cannot show.
+  ok(/destination-in/.test(fn) && !/\bclip\(/.test(fn),
+    'and cut to shape only once it is finished',
+    'masked with destination-in, no per-shape clip');
 
   // The occluders are the artist's own path data at ARTBOARD scale, because the
   // game clips with them under a 0.5 transform. Emitted halved, every one would

@@ -639,6 +639,55 @@ const DOT_REACH = 6;
 // So the question is asked of every point the trail passes through as well. A
 // shape whose FEET are lower on the screen than the point it covers is nearer the
 // viewer and goes in front; the rest of the drawing is left where it is.
+// THE ROAD CANNOT BE BEHIND SOMETHING IT RUNS ACROSS. A bridge is the one place
+// the rule breaks: its feet are lower on the screen than the road it carries, so
+// it qualifies as foreground and paints out the very dots that are supposed to be
+// walking over it. Four bridges, four gaps in the trail.
+//
+// The distinction is not "is it a bridge" — the tool has no idea what a bridge is —
+// it is INSIDE versus BESIDE. A mountain the road passes behind has trail points in
+// its bounding box but outside its outline; a bridge has them inside it, because
+// the road is drawn on top of the deck. So: if the road actually goes through the
+// shape, the shape is under the road and stays where the artist put it.
+//
+// Even-odd crossing count against the flattened outline, which is what the shape
+// is, rather than against the box, which is what it is not.
+function inside(poly, [px, py]) {
+  let hit = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > py) !== (yj > py) &&
+        px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
+// HOW MUCH ROAD, not how many points: a length, so it does not move when the leg
+// is sampled more finely, and not a fraction of the shape, so a small hut and a
+// long bridge are judged the same way. The measurement across this map is not
+// close — the four crossings carry 91 to 119 units of road inside them, and the
+// most any building the road merely passes takes is 29, that being the temple,
+// whose roof the trail clips the corner of on its way past. Sixty units sits in
+// the middle of a four-to-one gap; it is thirty canvas pixels, or three dot gaps.
+//
+// Point count would also separate them today (34 against 7) and is the wrong
+// measure: it counts the sampling rather than the road.
+const THROUGH = 60;
+
+function crossed(s) {
+  const poly = flatten(parse(s.d), 8);
+  if (poly.length < 4) return false;
+  let arc = 0;
+  for (const m of ORDER) {
+    const line = incoming.get(m);
+    for (let i = 1; i < line.length; i++) {
+      if (inside(poly, line[i]) && inside(poly, line[i - 1])) arc += dist(line[i - 1], line[i]);
+      if (arc >= THROUGH) return true;
+    }
+  }
+  return false;
+}
+
 function foreground() {
   const marks = [];
   for (const m of ORDER) {
@@ -668,7 +717,7 @@ function foreground() {
       p[0] >= x0 - DOT_REACH && p[0] <= x1 + DOT_REACH &&
       p[1] >= y0 - DOT_REACH && p[1] <= y1 + DOT_REACH &&
       y1 > p[1]);
-    if (covers) chosen.push(s);
+    if (covers && !crossed(s)) chosen.push(s);
   }
 
   // THE MEDALLION VETO, applied to whatever the trail test let in. A shape can
