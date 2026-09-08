@@ -497,30 +497,37 @@ for (const m of ORDER) if (!incoming.has(m)) throw new Error(`marker ${m} is not
 // as sea while putting both far enough back that a gold medallion wins. Raising
 // DESATURATE walks towards the old full-sepia map; raising WARMTH walks towards
 // it faster and takes the blues first.
-// MORE COLOUR LEFT IN IT than there was, at the owner's ask. 0.55 took over half
-// the life out of every hue, which was right when the whole map was one flat
-// brightness and wrong now that the country a player has reached is lit: sunlight
-// on a drained picture is a brighter drained picture. 0.38 leaves enough green in
-// the grass and enough blue in the water for the lit half to look sunny rather than
-// merely pale.
-const DESATURATE = 0.38;
+// AND THEN BACK UP AGAIN, at the owner's ask, which is worth writing down rather
+// than just changing: 0.55 -> 0.38 -> 0.52. The first move was made on the theory
+// that a sunlit map wants its colour back; what it actually produced was a lit
+// pocket of near-raw greens sitting in drained brown country, so the reached half
+// read as a different drawing rather than the same one in better light. Muting BOTH
+// halves further and lifting the light instead is the version that holds together —
+// the sun does the work, not the pigment.
+const DESATURATE = 0.52;
 const WARMTH = 0.28;
 
 // AND NOTHING MAY END UP LOUDER THAN THIS, whatever it started as. The gold in a
-// stage medallion runs from 96 up; a map colour at 72 sits plainly under it, and
+// stage medallion runs from 96 up; a map colour at 70 sits plainly under it, and
 // under the 80 tools/campaign.mjs holds the whole palette to.
-const SATURATION_CEILING = 80;
+const SATURATION_CEILING = 70;
 
 // AND THE BOTTOM OF THE RAMP IS LIFTED OFF BLACK. Every outline on this map lands
 // on the darkest stop, and at 0x3B2917 they read as holes — a drawing this dense is
 // mostly outline by area, so the darkest colour sets how heavy the whole thing
 // looks. Lifting the first two stops takes the weight out without touching the top,
 // which is where the road and the paper live.
+// LIFTED AGAIN, twice now, and the second time on the owner's word about black
+// spots. The dark end of this ramp is not "shadow" on this map — it is every
+// outline in a drawing that is mostly outline by area, plus the ellipse under every
+// building. Those are the spots, and lifting the first two stops is what takes the
+// weight out of them. The top of the ramp is left where it is: that is the road and
+// the paper, and it was never the problem.
 const RAMP = [
-  [0.00, [0x50, 0x3B, 0x25]],   // outlines and deep shadow
-  [0.30, [0x8A, 0x68, 0x40]],
-  [0.55, [0xB4, 0x8B, 0x56]],
-  [0.78, [0xCF, 0xAF, 0x80]],
+  [0.00, [0x63, 0x4C, 0x33]],   // outlines and deep shadow
+  [0.30, [0x99, 0x76, 0x4D]],
+  [0.55, [0xBD, 0x96, 0x62]],
+  [0.78, [0xD5, 0xB7, 0x8A]],
   [1.00, [0xEE, 0xE1, 0xBE]]    // the road, and paper
 ];
 

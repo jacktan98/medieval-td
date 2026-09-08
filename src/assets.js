@@ -705,6 +705,17 @@ export const paths = {
   // this file, because a route is just a list of waypoints.
   map03:       'assets/map/Map_3_base.svg',
   plot_marker: 'assets/map/Plot_Marker.svg',
+  // THE WORLD MAP'S FLAG, IN TWO PIECES, so that one of them can wave and the
+  // other cannot. The owner's word: the pole stick is not to wave with the cloth.
+  // A single picture cannot do that — whatever is done to a drawing is done to the
+  // whole of it — so tools/split-flag.mjs cuts the artist's Rally_Flag.svg into a
+  // pole and a pennant on ONE shared viewBox. Drawn into the same rectangle they
+  // land exactly where they were drawn, and overview.js transforms only the cloth.
+  //
+  // DERIVED and committed, like the boards. Re-run tools/split-flag.mjs after any
+  // redraw of Rally_Flag.svg or the map keeps the old flag.
+  map_flag_pole:  'assets/map/Rally_Flag_pole.svg',
+  map_flag_cloth: 'assets/map/Rally_Flag_cloth.svg',
   // THE WORLD, rather than a board: the campaign map the player chooses a stage
   // from. Not split the way the three boards are — there are no plots on it and
   // nothing is ever taken away, so the artist's file is used whole. Its geometry

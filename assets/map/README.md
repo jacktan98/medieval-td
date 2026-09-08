@@ -475,8 +475,8 @@ and it reaches the player untouched.
 
 Everything else is the picture, drawn in the order it is numbered.
 
-Three files beside them are **DERIVED and committed**, and none should ever be
-edited by hand:
+Files beside them are **DERIVED and committed**, and none should ever be edited by
+hand:
 
 - `Stage_1_Map_base.svg` — stage 1's board with the plot markers cut out, written
   by `node tools/split-map.mjs assets/map/Stage_1_Map.svg`. Same pipeline as
@@ -489,6 +489,18 @@ edited by hand:
 - `Overview_Map_names.svg` — the names alone, in the colour they were drawn, on no
   ground at all. The game draws it over the parchment, under the key
   `overviewNames`.
+- `Rally_Flag_pole.svg` and `Rally_Flag_cloth.svg` — the flag planted on the
+  furthest stage reached, cut out of `Rally_Flag.svg` by `node
+  tools/split-flag.mjs`. Two files because **the pole does not wave with the
+  cloth**: whatever transform makes a drawing flutter applies to all of it, so the
+  pennant is bent about the mast and the pole is drawn flat. Both carry the SAME
+  viewBox, cropped to the two paths together, which is what puts the cloth back on
+  the mast with no numbers lining them up.
+
+  The tool finds the two paths **by colour** — `#74592e` is the pole and `#055dab`
+  is the cloth — so a redraw may reorder them freely but must keep those two fills.
+  It prints the anchors `src/overview.js` holds as constants, and
+  `node tools/campaign.mjs` re-measures the drawing and fails if they drift.
 
 Run the tool after every redraw of any layer:
 

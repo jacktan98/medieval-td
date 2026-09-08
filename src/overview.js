@@ -28,9 +28,6 @@ import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { MODES } from './data/waves.js';
-// The rally point's flag and the numbers that place it — the same picture and the
-// same anchor the board plants, so the map's flag and the board's are one flag.
-import { ui, uiSize, FLAG_FOOT } from './data/ui.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse } from './motion.js';
@@ -206,6 +203,18 @@ const INK = '#2A1D0E';
 // How tall the planted flag stands, in canvas px. The drawing is scaled to this
 // height and keeps its own proportions.
 const FLAG_H = 30;
+
+// WHERE THE FLAG'S PARTS ARE IN THE DRAWING, as fractions of the shared box the
+// pole and the cloth are cropped to. Every one of these is PRINTED by
+// tools/split-flag.mjs and copied here, so the artwork is the source of truth and
+// this file only has to agree with it; tools/campaign.mjs re-measures the SVG and
+// fails if the two ever drift apart.
+//
+//   node tools/split-flag.mjs
+const FLAG_ART_W = 71.951;    // the shared viewBox, which fixes the proportions
+const FLAG_ART_H = 96.541;
+const FLAG_FOOT_X = 0.1161;   // the bottom of the pole, which lands on the marker
+const FLAG_MAST = 0.1988;     // the pole's inner edge — the line the cloth hangs from
 
 const FLAG_CLOTH = '#3E6FA8';
 const FLAG_SHADE = '#2E5583';
@@ -408,30 +417,39 @@ function drawFlag(ctx, x, y, t, wave) {
   ctx.save();
   ctx.globalAlpha = Math.min(1, t * 2.4);
 
-  // THE RALLY POINT'S OWN FLAG, the same file the barracks plants on a battle map,
-  // so the game has one flag rather than two drawn by different code.
+  // THE FLAG THE OWNER DREW FOR THIS MAP, IN TWO PIECES. It used to be the rally
+  // point's PNG, sheared about its foot to make it wave — and shearing a picture
+  // shears all of it, so the pole leaned over with the cloth. The owner's word:
+  // the pole stick is not to wave with the flag.
   //
-  // AND IT WAVES, which the picture cannot do on its own. The cloth is all on one
-  // side of the pole, so shearing the drawing horizontally about the FOOT swings the
-  // pennant and leaves the pole standing — the further up the drawing a pixel is,
-  // the further it moves, which is how a flag on a pole actually behaves. Two sines
-  // at different rates so the swing never repeats on a beat the eye can count.
+  // So the pole and the pennant are separate sheets on ONE shared viewBox (see
+  // tools/split-flag.mjs). Both go into the same rectangle, which is what puts the
+  // cloth back on the mast without a single number lining them up; the pole is
+  // drawn flat and only the cloth is transformed.
   //
-  // Sheared rather than redrawn: a vector pennant waving is a different flag from
-  // the one the board plants, and having one flag was the point of the change.
-  //
-  // FLAG_FOOT puts the bottom of the pole on the point given, which is the same
-  // anchor the board uses — see flag() in src/render.js. The pole is at 11% across
-  // the drawing rather than at its centre, because the pennant is all on one side.
-  const img = art.glyph_flag;
-  if (img) {
-    const [sx, sy, sw, sh] = ui.glyph_flag.trim;
-    const { w, h: ih } = uiSize('glyph_flag', h);
-    const swing = (Math.sin(wave * 2.1) * 0.055 + Math.sin(wave * 3.3 + 1.1) * 0.03) * k;
-    ctx.translate(x, foot);
-    ctx.transform(1, 0, swing, 1, 0, 0);     // shear about the foot: the top moves most
-    ctx.translate(-x, -foot);
-    ctx.drawImage(img, sx, sy, sw, sh, x - FLAG_FOOT[0] * w, foot - FLAG_FOOT[1] * ih, w, ih);
+  // THE CLOTH IS SHEARED VERTICALLY RATHER THAN HORIZONTALLY, which is the other
+  // half of standing still. A horizontal shear about the foot moves everything
+  // above the ground, mast included. A vertical shear about the MAST moves nothing
+  // on the mast at all and lifts the free end most — cloth pinned along one edge,
+  // which is what a pennant is. Two sines at different rates so the beat never
+  // repeats where the eye can count it, and the cloth narrows slightly as it
+  // swings, the way cloth turning away from you does.
+  const poleImg = art.map_flag_pole, clothImg = art.map_flag_cloth;
+  if (poleImg && clothImg) {
+    const w = h * (FLAG_ART_W / FLAG_ART_H);
+    const left = x - FLAG_FOOT_X * w;
+    const top = foot - h;
+
+    ctx.drawImage(poleImg, left, top, w, h);
+
+    const swing = (Math.sin(wave * 2.1) * 0.30 + Math.sin(wave * 3.3 + 1.1) * 0.16) * k;
+    const mast = left + FLAG_MAST * w;
+    ctx.save();
+    ctx.translate(mast, 0);
+    ctx.transform(1 - Math.abs(swing) * 0.16, swing, 0, 1, 0, 0);
+    ctx.translate(-mast, 0);
+    ctx.drawImage(clothImg, left, top, w, h);
+    ctx.restore();
   } else {
     // The same vector fallback the board carries, so a missing file is a plainer
     // flag rather than no flag.
@@ -576,7 +594,12 @@ const FOG_WASH = 'rgba(30,20,9,0.30)';   // and a breath of brown over that
 //
 // A filtered copy says exactly what it means: fifteen percent more light, a little
 // more colour with it, and the faintest warm cast.
-const SUN_FILTER = 'brightness(1.26) saturate(1.30) sepia(0.05)';
+// BRIGHTER, AND LESS COLOURFUL WITH IT. Raising both was the first attempt and it
+// cancelled itself: the artwork underneath went from 0.38 to 0.52 desaturated, the
+// sun's saturate went from 1.30 to 1.42 to match, and the reached country came out
+// on screen at exactly the saturation it had before — the change made, measured,
+// and worth nothing. The sun lifts the LIGHT now and leaves the colour alone.
+const SUN_FILTER = 'brightness(1.34) saturate(1.12) sepia(0.05)';
 
 // HOW FAR THE LIGHT REACHES, and HOW LONG IT TAKES TO GO OUT. These are two
 // different things and the difference matters: reach is how much country a player
@@ -594,7 +617,12 @@ const SUN_FILTER = 'brightness(1.26) saturate(1.30) sepia(0.05)';
 // lit pocket by. That is not true of a colour drain: the far country is a different
 // kind of picture rather than a dimmer one, so the two stay told apart however
 // softly they are joined, and the fade can be as long as it wants to be.
-const LIT_REACH = 69;
+// RAISED TWICE, both times on the owner's ask: 46 -> 69 -> 96. What a player gets
+// for arriving somewhere is the country around it, and at 69 that was a pocket
+// barely wider than the medallion — enough to see the stage they had reached and
+// not enough to see anywhere they might go next. The fade is unchanged at 120, so
+// the light now carries further AND still gives way over the same long distance.
+const LIT_REACH = 96;
 const LIT_BLUR = 120;
 
 let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
@@ -676,7 +704,7 @@ function drainByBlend(f, w, h) {
 // made the lit country a different, brighter green than the one on a laptop.
 function liftByBlend(sg, w, h) {
   sg.globalCompositeOperation = 'lighter';
-  sg.fillStyle = 'rgb(24,21,11)';
+  sg.fillStyle = 'rgb(31,27,14)';
   sg.fillRect(0, 0, w, h);
   sg.globalCompositeOperation = 'source-over';
 }
