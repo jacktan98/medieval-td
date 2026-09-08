@@ -706,6 +706,11 @@ function inFrontOf([mx, my]) {
 const DESATURATE = 0.55;
 const WARMTH = 0.28;
 
+// AND NOTHING MAY END UP LOUDER THAN THIS, whatever it started as. The gold in a
+// stage medallion runs from 96 up; a map colour at 72 sits plainly under it, and
+// under the 80 tools/campaign.mjs holds the whole palette to.
+const SATURATION_CEILING = 72;
+
 const RAMP = [
   [0.00, [0x3B, 0x29, 0x17]],   // outlines and deep shadow
   [0.30, [0x7A, 0x59, 0x34]],
@@ -788,6 +793,24 @@ function sepia(hex) {
   const grey = 0.299 * r + 0.587 * g + 0.114 * b;
   const muted = raw.map(v => v + (grey - v) * DESATURATE);
   rgb = muted.map((v, k) => v + (rgb[k] - v) * WARMTH);
+
+  // AND A CEILING ON TOP OF THE FRACTION, because a fraction alone cannot promise
+  // anything. Taking 55% of the life out of a colour leaves 45% of whatever it
+  // started with, so the loudest thing on the map is however loud the loudest
+  // thing the artist drew was — and layer 8 arrived with a gold at saturation 255
+  // and an orange at 217, which came through at 105 and 95 where the medallions
+  // sit at 96 and up. Two roofs were about to compete with the stage markers.
+  //
+  // So anything still over the ceiling is pulled the rest of the way to its own
+  // grey. It bites on almost nothing — twelve of the fifteen shades are nowhere
+  // near it — and it means a colour that has never been drawn yet cannot break the
+  // rule when it arrives.
+  const sat = Math.max(...rgb) - Math.min(...rgb);
+  if (sat > SATURATION_CEILING) {
+    const mid = (Math.max(...rgb) + Math.min(...rgb)) / 2;
+    const k = SATURATION_CEILING / sat;
+    rgb = rgb.map(v => mid + (v - mid) * k);
+  }
 
   const chan = k => Math.round(Math.max(0, Math.min(255, rgb[k])))
     .toString(16).padStart(2, '0');
