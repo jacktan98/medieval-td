@@ -1,24 +1,44 @@
-// DERIVE THE CAMPAIGN MAP'S GEOMETRY FROM THE ARTIST'S SVG.
+// DERIVE THE CAMPAIGN MAP FROM THE ARTIST'S LAYERS.
 //
-// Reads assets/map/Overview_Map.svg and writes src/data/overview.js: where the
-// ten stage markers sit, and the centreline of the road that leads into each of
-// them. The game animates those centrelines — a leg draws itself when a stage is
-// cleared, and a flag plants at its far end.
+// Reads assets/map/Overview_Map_Layer_*.svg and writes three things:
+//
+//   src/data/overview.js            where the stages are, the road into each of
+//                                   them, and what stands in front of them
+//   assets/map/Overview_Map_merged.svg  every layer stacked into one, in colour
+//   assets/map/Overview_Map_sepia.svg   the same, in browns, guides removed —
+//                                   this is the one the game loads
 //
 // DERIVED AND COMMITTED, exactly like Map_1_base.svg and for the same reason:
 // there is no build step, so the artist's upload alone is not enough. Re-run this
-// after every redraw of Overview_Map.svg or the game keeps the old road.
+// after every redraw of any layer.
 //
 //   node tools/overview.mjs
 //
-// WHAT IT HAS TO FIND, and why none of it is hand-typed:
+// --- WHY THERE ARE LAYERS AT ALL ---------------------------------------------
+//
+// The map was one file until it got detailed enough to make Graphite struggle on
+// the machine it is drawn on. Splitting it is the artist's own working
+// arrangement, and it costs the game nothing: every layer is the SAME 1920x1080
+// artboard, so stacking them is stacking, with no offsets and no arithmetic.
+//
+// LAYER 1 IS THE GUIDE, and it is not part of the picture. It holds the road and
+// the ten markers on a plain green field: the road the game reveals a leg at a
+// time, and the places the medallions stand. All of the geometry below is read
+// off it, and then it is dropped — everything except its background, which is the
+// grass the other layers sit on and the only opaque ground in the stack.
+//
+// LAYERS 2 AND UP ARE THE PICTURE, in the order they are numbered.
+//
+// --- WHAT IT HAS TO FIND, and why none of it is hand-typed -------------------
 //
 //   THE MARKERS are the ten paths filled #d30000. Their centres are the bounding
 //   box centres, which is exact for the ellipse the artist drew and would still
 //   be close enough for any blob.
 //
-//   THE ROAD is filled #ffde9e everywhere except the desert stretch, which is
-//   #ffefd4 — the artist lightened it to sit on the sand. Both count.
+//   THE ROAD is filled #ffde9e. On the old single-file map that colour was shared
+//   with the beach and the two had to be told apart by size; the beach lives in
+//   its own layer now and the guide holds nothing but road, so the size guard
+//   below is a belt on top of braces.
 //
 //   A ROAD LEG IS A FILLED RIBBON, not a stroke: a closed outline that runs up
 //   one side and back down the other. What the game needs is the CENTRELINE, so
@@ -28,20 +48,36 @@
 //   centreline() for the method that does work.
 //
 //   LEGS ARE SPLIT WHERE A BRIDGE CROSSES THEM. The bridge is drawn on top in
-//   brown, so the road under it simply stops and starts again ~120px later. Four
-//   legs are split this way; they are rejoined here by matching loose ends.
+//   another layer, so the road under it simply stops and starts again ~120px
+//   later. They are rejoined here by matching loose ends.
 //
-// THE ROAD IS A TREE, NOT A CHAIN. It forks at marker 5: one branch runs east and
-// up to the top-right corner, the other dead-ends in the bottom-left desert. So
-// each stage is given the ONE leg that leads into it from its parent, rather than
-// a leg per consecutive pair — which means the play order below can be shuffled
-// without any leg becoming wrong.
+// THE ROAD IS A TREE, NOT A CHAIN. It forks: one branch runs east and up to the
+// top-right corner, the other dead-ends in the south-west. So each stage is given
+// the ONE leg that leads into it from its parent, rather than a leg per
+// consecutive pair — which means the play order below can be shuffled without any
+// leg becoming wrong.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const SRC = 'assets/map/Overview_Map.svg';
+import { readdirSync } from 'node:fs';
+
+const DIR = 'assets/map';
 const OUT = 'src/data/overview.js';
+// NOT called Overview_Map.svg. That was the artist's own single file, and a
+// DERIVED file wearing the name of a hand-drawn one is an invitation to open it,
+// edit it, and lose the work on the next run of this tool. The layers are the
+// source now; this is a stitched copy for looking at.
+const MERGED = 'assets/map/Overview_Map_merged.svg';
 const SEPIA = 'assets/map/Overview_Map_sepia.svg';
+
+// Sorted by the number in the name, not by string, so a tenth layer lands after
+// the ninth rather than after the first.
+const LAYERS = readdirSync(DIR)
+  .filter(f => /^Overview_Map_Layer_\d+\.svg$/.test(f))
+  .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]))
+  .map(f => `${DIR}/${f}`);
+
+if (LAYERS.length < 2) throw new Error(`expected layer files in ${DIR}, found ${LAYERS.length}`);
 
 // The artboard is 1920x1080 and the game is drawn in 960x540, so every
 // coordinate is exactly halved. Not a fit or a scale-to-cover: the artist drew it
@@ -185,23 +221,37 @@ function centreline(d, N = 64) {
   return line;
 }
 
-// --- read the drawing -------------------------------------------------------
+// --- read the layers ---------------------------------------------------------
 
-const svg = readFileSync(SRC, 'utf8');
+// Everything between a layer's artboard clip group and the end of the document,
+// which is the layer's actual content. Found by counting groups rather than by
+// matching to the end of the string, so a file that ever gains a trailing element
+// does not swallow it.
+function contentOf(svg, file) {
+  const open = /<g\s+clip-path="url\(#(artboard-[^)"]+)\)"\s*>/.exec(svg);
+  if (!open) throw new Error(`${file}: no artboard group`);
+  const from = open.index + open[0].length;
+  let depth = 1, i = from;
+  const TAG = /<(\/?)g\b[^>]*?(\/?)>/g;
+  TAG.lastIndex = from;
+  for (let m; (m = TAG.exec(svg));) {
+    if (m[2] === '/') continue;                 // self-closing group, no depth
+    depth += m[1] ? -1 : 1;
+    if (depth === 0) { i = m.index; break; }
+    i = svg.length;
+  }
+  return { clip: open[1], body: svg.slice(from, i) };
+}
 
-// GROUPS CARRY TRANSFORMS, and half of them are mirrors. Graphite exports a
-// building drawn once and flipped as `matrix(-1,0,0,1,...)` on the group around
-// it, so the numbers inside that path are nowhere near where the building is
-// drawn. Reading path data without walking the group stack finds the road and the
-// markers — those happen to sit at the top level — and puts every building in the
-// artboard hundreds of pixels from where it appears.
-//
-// That was worth catching rather than working around: the road and the markers
-// come out identical either way, so nothing about the stages moved, but the depth
-// pass below is entirely about where BUILDINGS are.
+// The background rect each export carries. Layer 1's is the grass every other
+// layer sits on; the rest are fully transparent and are dropped.
+const bgOf = svg => {
+  const m = /<rect\s+fill="(#[0-9a-fA-F]{6})"(?![^>]*fill-opacity="0")[^>]*\/>/.exec(svg);
+  return m ? m[1].toLowerCase() : null;
+};
+
 const IDENTITY = [1, 0, 0, 1, 0, 0];
 
-// Standard 2D affine compose: the parent's frame applied to the child's.
 const compose = (P, C) => [
   P[0] * C[0] + P[2] * C[1],
   P[1] * C[0] + P[3] * C[1],
@@ -223,7 +273,7 @@ function matrixOf(attrs) {
 const round = n => Math.round(n * 100) / 100;
 
 // Rewrite a path's coordinates through a matrix, command by command. Every
-// command in this file is M, L, C or Z with absolute coordinates — Graphite
+// command in these files is M, L, C or Z with absolute coordinates — Graphite
 // writes nothing else — so each one is a whole number of points and the letters
 // come back out unchanged.
 //
@@ -242,20 +292,20 @@ function transformPath(d, m) {
   return out;
 }
 
-const markers = [];
-const legs = [];
-// Every path, kept whole and placed where it is actually drawn, because the depth
-// pass needs to know what each shape IS and where its feet are.
-const shapes = [];
-
-{
+// GROUPS CARRY TRANSFORMS, and many of them are mirrors — Graphite exports a
+// building drawn once and flipped as matrix(-1,0,0,1,...). Reading path data
+// without walking the group stack finds the guide layer perfectly, because it has
+// no transforms at all, and puts every building in the picture layers hundreds of
+// pixels from where it is drawn.
+function shapesIn(body) {
+  const out = [];
   const stack = [IDENTITY];
   const TAG = /<(\/?)(g|path)\b([^>]*)>/g;
-  for (let t; (t = TAG.exec(svg));) {
+  for (let t; (t = TAG.exec(body));) {
     const [, close, name, attrs] = t;
     if (name === 'g') {
       if (close) stack.pop();
-      else stack.push(compose(stack[stack.length - 1], matrixOf(attrs)));
+      else if (!/\/$/.test(attrs.trim())) stack.push(compose(stack[stack.length - 1], matrixOf(attrs)));
       continue;
     }
     if (close) continue;
@@ -264,22 +314,44 @@ const shapes = [];
     const fm = /\bfill="(#[0-9a-fA-F]{6})"/.exec(attrs);
     if (!dm || !fm) continue;
 
-    const here = stack[stack.length - 1];
-    const d = transformPath(dm[1], here);
-    const fill = fm[1].toLowerCase();
+    const d = transformPath(dm[1], stack[stack.length - 1]);
     const nums = (d.match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
     const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
-    const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
-    shapes.push({ d, fill, box });
-
-    const area = (box[2] - box[0]) * (box[3] - box[1]);
-    if (fill === MARKER_FILL) markers.push([(box[0] + box[2]) / 2, (box[1] + box[3]) / 2]);
-    else if (ROAD_FILLS.has(fill) && area <= ROAD_MAX_AREA) legs.push(centreline(d));
+    out.push({ d, fill: fm[1].toLowerCase(),
+               box: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] });
   }
+  return out;
 }
 
-if (markers.length !== 10) throw new Error(`expected 10 markers, found ${markers.length}`);
-if (legs.length !== 14) throw new Error(`expected 14 road paths, found ${legs.length}`);
+const layers = LAYERS.map(file => {
+  const svg = readFileSync(file, 'utf8');
+  const { clip, body } = contentOf(svg, file);
+  return { file, clip, body, background: bgOf(svg), shapes: shapesIn(body) };
+});
+
+// LAYER 1 IS THE GUIDE and nothing else reads from it. The markers and the road
+// are both taken from here alone, so a red ellipse the artist draws in a picture
+// layer is scenery rather than a stage — which is what lets the picture use any
+// colour it likes.
+const guide = layers[0];
+const picture = layers.slice(1);
+
+const GROUND = guide.background;
+if (!GROUND) throw new Error(`${guide.file}: the guide layer has no background to use as ground`);
+
+const markers = [];
+const legs = [];
+for (const s of guide.shapes) {
+  const area = (s.box[2] - s.box[0]) * (s.box[3] - s.box[1]);
+  if (s.fill === MARKER_FILL) markers.push([(s.box[0] + s.box[2]) / 2, (s.box[1] + s.box[3]) / 2]);
+  else if (ROAD_FILLS.has(s.fill) && area <= ROAD_MAX_AREA) legs.push(centreline(s.d));
+}
+
+if (markers.length !== 10) throw new Error(`expected 10 markers in ${guide.file}, found ${markers.length}`);
+if (legs.length < 2) throw new Error(`expected road legs in ${guide.file}, found ${legs.length}`);
+
+// Everything drawn in the picture layers, which is what the depth pass searches.
+const shapes = picture.flatMap(l => l.shapes);
 
 // --- stitch the road --------------------------------------------------------
 
@@ -513,6 +585,11 @@ const WATERFALL = '#a6d5ff';
 function sepia(hex) {
   if (hex === WATER) hex = WATERFALL;
 
+  const r0 = parseInt(hex.slice(1, 3), 16);
+  const g0 = parseInt(hex.slice(3, 5), 16);
+  const b0 = parseInt(hex.slice(5, 7), 16);
+  const isWater = hex === WATERFALL || (hueOf(r0, g0, b0) >= 175 && hueOf(r0, g0, b0) <= 265);
+
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -527,9 +604,26 @@ function sepia(hex) {
   while (i < RAMP.length - 2 && L > RAMP[i + 1][0]) i++;
   const [l0, c0] = RAMP[i], [l1, c1] = RAMP[i + 1];
   const t = l1 === l0 ? 0 : (L - l0) / (l1 - l0);
-  const mix = k => Math.round(c0[k] + (c1[k] - c0[k]) * t)
+  let rgb = [0, 1, 2].map(k => c0[k] + (c1[k] - c0[k]) * t);
+
+  // WATER IS COOLED, and this is the second thing about it that is not pure
+  // brightness. Brightness alone put the rivers within a few percent of the grass
+  // they run through: on the old sparse map that was survivable, and on the
+  // detailed one it read as a river-shaped crease in a field.
+  //
+  // Real maps do not solve this with brightness either — they solve it with
+  // temperature. So water keeps its place on the ramp and is pulled towards grey,
+  // which leaves it plainly a different material from the warm brown around it
+  // while staying inside the palette. Desaturating towards the mean cannot break
+  // the r >= g >= b that makes a colour brown, so it stays one.
+  if (isWater) {
+    const mean = (rgb[0] + rgb[1] + rgb[2]) / 3;
+    rgb = rgb.map(v => v + (mean - v) * 0.55);
+  }
+
+  const chan = k => Math.round(Math.max(0, Math.min(255, rgb[k])))
     .toString(16).padStart(2, '0');
-  return `#${mix(0)}${mix(1)}${mix(2)}`;
+  return `#${chan(0)}${chan(1)}${chan(2)}`;
 }
 
 // THE ROAD AND THE MARKERS ARE TAKEN OUT OF THE PICTURE.
@@ -555,7 +649,14 @@ function sepia(hex) {
 // work, which is what an old map looks like.
 const STROKE_W = 2.6;
 
-{
+// Build one document out of the stack. `recolour` decides whether the fills go
+// through the ramp, and `guides` whether layer 1's road and markers come with it.
+//
+// EVERY LAYER KEEPS ITS OWN CLIP, which is why the ids are left alone: Graphite
+// gives each export a different artboard id, so seven of them can sit in one set
+// of defs without colliding. If two ever did collide, one layer would be clipped
+// by the other's rectangle — identical here, but not a thing to rely on.
+function stack({ recolour, guides }) {
   const seen = new Map();
   const brown = hex => {
     const key = hex.toLowerCase();
@@ -563,40 +664,60 @@ const STROKE_W = 2.6;
     return seen.get(key);
   };
 
-  // THREE PASSES, AND THE ORDER MATTERS. Dropping happens while the colours are
-  // still the artist's, because that is what identifies a guide; recolouring
-  // happens ONCE afterwards over the whole document, because a brown put through
-  // the ramp a second time comes out a different brown and the map loses its
-  // range. An earlier draft browned the paths and then browned the file, which
-  // doubled the conversion on every shape and flattened 19 shades into a muddy 17.
   let dropped = 0;
-  let out = svg.replace(/<path\b[^>]*>/g, (tag) => {
-    const fm = /\bfill="(#[0-9a-fA-F]{6})"/.exec(tag);
-    const dm = /\bd="([^"]+)"/.exec(tag);
-    if (!fm || !dm) return tag;
-    const fill = fm[1].toLowerCase();
-    const nums = (dm[1].match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
-    const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
-    const size = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
-    if (fill === MARKER_FILL || (ROAD_FILLS.has(fill) && size <= ROAD_MAX_AREA)) {
-      dropped++;
-      return '';
-    }
-    return tag;
-  });
+  const parts = [];
+  const defs = [];
 
-  // Everything with a colour on it, paths and otherwise. The artboard's backing
-  // colour is a <rect>: a pass that walked only <path> tags left the one shape
-  // underneath the whole map green, which read as a grass border round a
-  // parchment map.
-  out = out.replace(/(fill|stroke)="(#[0-9a-fA-F]{6})"/g,
-    (_, attr, hex) => `${attr}="${brown(hex)}"`);
+  const use = guides ? layers : picture;
+  for (const l of use) {
+    defs.push(`<clipPath id="${l.clip}"><rect x="0" y="0" width="1920" height="1080"/></clipPath>`);
+    let body = l.body;
 
-  const browned = out.replace(/stroke-width="4"/g, `stroke-width="${STROKE_W}"`);
+    // The guide's own shapes only ever go in when guides are asked for; the
+    // picture layers are never filtered.
+    if (l === guide && !guides) { body = ''; }
 
-  writeFileSync(SEPIA, browned);
+    parts.push(`<g clip-path="url(#${l.clip})">${body}</g>`);
+  }
+
+  let out = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">`,
+    `<defs>${defs.join('')}</defs>`,
+    `<g>`,
+    `<rect fill="${GROUND}" x="0" y="0" width="1920" height="1080"/>`,
+    ...parts,
+    `</g></svg>`
+  ].join('\n');
+
+  if (recolour) {
+    // ONE PASS, over the whole document, after the stacking. A brown put through
+    // the ramp a second time comes out a different brown and the map loses its
+    // range: an earlier version browned each layer and then browned the file,
+    // which doubled the conversion on every shape.
+    out = out.replace(/(fill|stroke)="(#[0-9a-fA-F]{6})"/g,
+      (_, attr, hex) => `${attr}="${brown(hex)}"`);
+
+    // STROKES ARE THINNED. Every shape carries a 4px outline, which at the size
+    // the map is drawn reads as a colouring book — one heavy line of one weight
+    // around everything, whether it is a mountain range or a window. Two thirds
+    // of that keeps the drawing legible and lets the fills do more of the work,
+    // which is what an old map looks like.
+    out = out.replace(/stroke-width="4"/g, `stroke-width="${STROKE_W}"`);
+  }
+
+  return { doc: out, colours: seen.size, dropped };
+}
+
+{
+  const full = stack({ recolour: false, guides: true });
+  writeFileSync(MERGED, full.doc);
+  console.log(`wrote ${MERGED}`);
+  console.log(`  ${layers.length} layer(s) stacked in colour, guides included`);
+
+  const shown = stack({ recolour: true, guides: false });
+  writeFileSync(SEPIA, shown.doc);
   console.log(`wrote ${SEPIA}`);
-  console.log(`  ${seen.size} colour(s) mapped to browns, ${dropped} guide shape(s) removed`);
+  console.log(`  ${picture.length} picture layer(s), ${shown.colours} colour(s) mapped to browns, guide layer dropped`);
 }
 
 // --- write it out -----------------------------------------------------------

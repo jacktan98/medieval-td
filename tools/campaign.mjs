@@ -24,13 +24,19 @@
 //   THE MARKERS ARE APART      no two tap targets overlap
 //   AND LOCKED MEANS LOCKED    stageAt answers only for reached, playable stages
 
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { STAGES, STAGE_COUNT, playable } from '../src/data/overview.js';
 import { stageAt, stageOfLevel } from '../src/overview.js';
 import { levels } from '../src/level.js';
 
-const SRC = 'assets/map/Overview_Map.svg';
-const SEPIA = 'assets/map/Overview_Map_sepia.svg';
+// THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
+// the same tool this checks, so comparing the data against it would be asking the
+// generator whether it agrees with itself. Staleness lives between the artist's
+// layers and the committed data, and that is the gap this reads across.
+const DIR = 'assets/map';
+const GUIDE = `${DIR}/Overview_Map_Layer_1.svg`;
+const SEPIA = `${DIR}/Overview_Map_sepia.svg`;
+const MERGED = `${DIR}/Overview_Map_merged.svg`;
 const SCALE = 0.5;
 const NODE_HIT = 22;   // must match src/overview.js
 
@@ -42,7 +48,13 @@ const ok = (cond, label, detail = '') => {
 
 // --- what the drawing says today --------------------------------------------
 
-const svg = readFileSync(SRC, 'utf8');
+const layerFiles = readdirSync(DIR)
+  .filter(f => /^Overview_Map_Layer_\d+\.svg$/.test(f))
+  .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]))
+  .map(f => `${DIR}/${f}`);
+
+const svg = readFileSync(GUIDE, 'utf8');
+const allLayers = layerFiles.map(f => readFileSync(f, 'utf8')).join('\n');
 
 // THE GROUP TRANSFORMS ARE WALKED HERE TOO, deliberately as a second
 // implementation rather than by importing the generator's. A checker that shares
@@ -132,29 +144,37 @@ ok(drawnMarkers.length === STAGE_COUNT,
 ok(roadPaths === 14, 'and the road is still drawn in the same number of pieces',
   `${roadPaths} leg(s) in the two road fills`);
 
-// The one sand-coloured shape that is not road. If a second appears, or this one
-// shrinks under the threshold, the area split has stopped telling them apart.
-ok(roadTooBig.length === 1, 'and the beach is the only sand that is not road',
-  roadTooBig.map(b => `${Math.round(area(b))} sq units`).join(', ') || 'none found');
+// THE GUIDE HOLDS NOTHING BUT ROAD. On the old single-file map the beach shared
+// the road's sand colour and had to be excluded by size; the picture lives in its
+// own layers now, so anything sand-coloured on this one is road and a shape big
+// enough to trip the guard means the artist has painted terrain onto the guide.
+ok(roadTooBig.length === 0, 'and nothing sand-coloured on the guide is terrain',
+  roadTooBig.length ? roadTooBig.map(b => `${Math.round(area(b))} sq units`).join(', ')
+                    : `all ${roadPaths} under ${ROAD_MAX_AREA}`);
 
-// The reading that caught a real bug: if this ever drops to zero, the artist has
-// flattened the file and the generator's transform walk is no longer being
-// exercised by anything.
-ok(transformed > 0, 'and the drawing still nests shapes inside moved groups',
-  `${transformed} of ${paths} path(s) carry a group transform`);
+// The reading that caught a real bug once. The guide layer carries no transforms
+// at all — it is drawn flat — so this is asked of the PICTURE layers, which are
+// full of mirrored groups and are where getting it wrong would move a building.
+{
+  const tf = (allLayers.match(/transform="matrix\(/g) || []).length;
+  ok(tf > 0, 'and the picture still nests shapes inside moved groups',
+    `${tf} transform(s) across ${layerFiles.length} layer(s)`);
+}
 
 console.log('\n--- every road leads where it says ---\n');
 
-// A leg is the road INTO its stage, so its last point is that stage. 3px of
-// slack: the centreline stops at the marker's edge rather than its centre, and
-// the markers are 24px wide before scaling.
+// A leg is the road INTO its stage, so its last point is that stage — but not its
+// centre. The road is drawn UP TO a marker rather than through it, so the
+// centreline stops at its own cap, which can sit a marker's width short. 20px of
+// slack against a closest-marker-pair of 65 leaves no room to mistake one stage
+// for another, which is the only thing this can actually get wrong.
 {
   let off = 0, worst = 0;
   for (const [i, s] of STAGES.entries()) {
     const end = s.leg[s.leg.length - 1];
     const d = Math.hypot(end[0] - s.x, end[1] - s.y);
     worst = Math.max(worst, d);
-    if (d > 14) { off++; console.log(`      stage ${i + 1} leg ends ${d.toFixed(1)}px from its marker`); }
+    if (d > 20) { off++; console.log(`      stage ${i + 1} leg ends ${d.toFixed(1)}px from its marker`); }
   }
   ok(off === 0, 'every leg ends at the stage it belongs to', `worst ${worst.toFixed(1)}px`);
 }
@@ -264,27 +284,33 @@ console.log('\n--- the parchment is the same drawing in browns ---\n');
 {
   const sep = readFileSync(SEPIA, 'utf8');
 
-  const paths = s => (s.match(/<path\b[^>]*>/g) || []);
-  const guides = roadPaths + drawnMarkers.length;   // 14 legs plus 10 markers
+  const paths = t => (t.match(/<path\b[^>]*>/g) || []);
+  const pictureFiles = layerFiles.slice(1).map(f => readFileSync(f, 'utf8'));
+  const pictureText = pictureFiles.join('\n');
 
-  ok(paths(sep).length === paths(svg).length - guides,
-    'the display map holds every shape but the guides',
-    `${paths(sep).length} path(s), ${paths(svg).length} drawn less ${guides} guide(s)`);
+  ok(paths(sep).length === paths(pictureText).length,
+    'the display map holds every shape in the picture layers',
+    `${paths(sep).length} path(s), ${paths(pictureText).length} across ` +
+    `${pictureFiles.length} layer(s)`);
 
-  // THE GUIDES ARE ACTUALLY GONE, checked by colour rather than by counting: a
-  // count can come out right while the wrong shapes were dropped.
-  const fillsIn = s => new Set((s.match(/fill="(#[0-9a-fA-F]{6})"/g) || []).map(f => f.slice(6, -1).toLowerCase()));
-  const before = fillsIn(svg), after = fillsIn(sep);
-  ok(!after.has('#d30000'), 'and no red marker survives in it',
-    before.has('#d30000') ? 'dropped' : 'none in the source either');
+  const merged = readFileSync(MERGED, 'utf8');
+  ok(paths(merged).length === paths(allLayers).length,
+    'and the merged map holds every shape in every layer',
+    `${paths(merged).length} path(s), ${paths(allLayers).length} across ${layerFiles.length}`);
 
-  // EVERY SURVIVING SHAPE IS THE ARTIST'S OWN, geometry untouched. This is what
-  // stops the recolour from quietly becoming a redraw — the medallions are placed
-  // from the source file and drawn over this one, so the two must be the same
-  // picture or every stage sits somewhere wrong.
+  // THE GUIDES ARE ACTUALLY GONE from what the player sees, checked by colour
+  // rather than by counting: a count can come out right while the wrong shapes
+  // were dropped.
+  const fillsIn = t => new Set((t.match(/fill="(#[0-9a-fA-F]{6})"/g) || []).map(f => f.slice(6, -1).toLowerCase()));
+  ok(!fillsIn(sep).has('#d30000'), 'and no red marker survives in it',
+    fillsIn(svg).has('#d30000') ? 'dropped from the guide' : 'none in the guide either');
+
+  // EVERY SURVIVING SHAPE IS THE ARTIST'S OWN, geometry untouched — the
+  // medallions are placed from the guide and drawn over this one, so the two must
+  // be the same picture or every stage sits somewhere wrong.
   const dOf = t => { const m = /\bd="([^"]+)"/.exec(t); return m ? m[1] : null; };
-  const sourceShapes = new Set(paths(svg).map(dOf).filter(Boolean));
-  const strayed = paths(sep).map(dOf).filter(d => d && !sourceShapes.has(d));
+  const drawn = new Set(paths(pictureText).map(dOf).filter(Boolean));
+  const strayed = paths(sep).map(dOf).filter(d => d && !drawn.has(d));
   ok(strayed.length === 0, 'and every shape in it is one the artist drew',
     strayed.length ? `${strayed.length} shape(s) differ` : `${paths(sep).length} matched`);
 
@@ -323,9 +349,13 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
 // simply covers a building, which looks like nothing in particular unless you
 // know the building should be in front.
 {
+  // NOT AN ASSERTION THAT THERE ARE ANY. A map whose road runs through open
+  // country has nothing standing in front of anything, and that is a fact about
+  // the drawing rather than a fault in the tool — the artist adds buildings when
+  // they add buildings. What follows checks whatever was found, and finding
+  // nothing passes.
   const withFront = STAGES.filter(s => s.front && s.front.length);
-  ok(withFront.length > 0, 'some markers have scenery standing in front of them',
-    `${withFront.length} of ${STAGE_COUNT} stage(s)`);
+  console.log(`      ${withFront.length} of ${STAGE_COUNT} stage(s) have scenery in front of them`);
 
   // Every occluder has to be a path the browser can actually clip with. A
   // malformed one throws at draw time, on the world map, every frame.

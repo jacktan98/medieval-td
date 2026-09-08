@@ -436,65 +436,99 @@ So the order for an upload that gains or loses a marker is:
    marker can break.
 6. Re-sweep and re-paste `tools/sim.mjs`'s scenario list for that map.
 
-## The world map is a different kind of file
+## The world map is a different kind of file, and it comes in layers
 
-`Overview_Map.svg` is not a board. It is the campaign map — the world the player
-picks a stage from before any game starts — and almost nothing above applies to
-it. There are no plots on it and nothing is ever taken away from it.
-`Overview_Map.png` is a flat export of the same drawing, kept beside it for
-reference; the game does not load it.
+`Overview_Map_Layer_1.svg` up to `Overview_Map_Layer_7.svg` are the campaign map —
+the world the player picks a stage from before any game starts — and almost
+nothing above applies to them. There are no plots on them and nothing is ever
+taken away.
 
-**The game does not load `Overview_Map.svg` either.** It loads
-`Overview_Map_sepia.svg`, which is DERIVED from it and committed like everything
-else here. Every fill and stroke in the artist's file is put through a luminance
-ramp into browns: each colour keeps its brightness and loses its hue, so the map
-reads as parchment while staying the same picture. Draw in colour; the tool makes
-the parchment.
+**They are layers, not tiles.** Every one is the same 1920x1080 artboard, so
+stacking them is stacking: no offsets, no arithmetic, and a shape never has to
+move when the split is reorganised. They exist because the map got detailed enough
+to make Graphite struggle, and the split costs the game nothing. Add another by drawing
+it and giving it the next number in the sequence; the tool sorts by that number
+rather than by the string, so a tenth layer lands after the ninth rather than
+after the first.
 
-The one place the ramp is not purely brightness is water. Blue reads bright to
-the formula — the sea comes out lighter than the grass — so cool hues are pushed
-down a step and greens a hair, which puts the sea back under the land where every
-map ever drawn has it. Nothing else is adjusted.
+**Layer 1 is the guide and is not part of the picture.** It holds the road and the
+ten stage markers on a plain green field. All the geometry is read off it, then it
+is dropped — everything except its background, which is the grass every other
+layer sits on and the only opaque ground in the stack. Layers 2 and up are the
+picture, drawn in the order they are numbered.
 
-**What IS extracted is geometry, into data rather than a second drawing.**
-`tools/overview.mjs` reads three things out of the SVG and writes
-`src/data/overview.js`:
+Two files beside them are **DERIVED and committed**, and neither should ever be
+edited by hand:
 
-- **The ten stage markers**, which are the ten paths filled `#d30000`. Their
-  bounding-box centres become the stage positions.
-- **The road**, which is filled `#ffde9e` everywhere except the desert stretch —
-  the artist lightened that one to `#ffefd4` so it would sit on the sand. Both
-  count as road.
-- **Which road leads to which marker**, by matching leg ends to marker centres.
+- `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
+  included. Nothing loads it; it is there to look at.
+- `Overview_Map_sepia.svg` — the same stack in browns with the guide layer
+  dropped. **This is the one the game loads**, under the key `overview` in
+  `src/assets.js`.
 
-Run it after every redraw, exactly like the splitter:
+Run the tool after every redraw of any layer:
 
     node tools/overview.mjs
 
-### Three things the drawing has to keep doing
+It also writes `src/data/overview.js`, and `node tools/campaign.mjs` checks the
+whole lot against the layers afterwards.
+
+### What the tool reads out of the guide
+
+- **The ten stage markers**, the paths filled `#d30000`. Bounding-box centres
+  become the stage positions.
+- **The road**, filled `#ffde9e`. On the old single-file map that colour was
+  shared with the beach and the two had to be told apart by size; the beach has
+  its own layer now, so the size guard is a belt on top of braces.
+- **Which road leads to which marker**, by matching leg ends to marker centres.
+
+### Three things the guide has to keep doing
 
 **A road leg is a filled ribbon, not a stroke.** The tool takes the centreline by
 finding the two sides of each ribbon and averaging them. It does not care how the
-ends are capped — some legs cap with a line and some with a curve — but it does
-assume the shape is long and thin. A road leg drawn as wide as it is long has no
-centreline to find.
+ends are capped — some cap with a line, some with a curve — but it does assume the
+shape is long and thin. A leg drawn as wide as it is long has no centreline.
 
-**Bridges cut a leg in half.** The bridge is drawn on top in brown, so the road
-under it stops and starts again ~120px later. The tool rejoins those halves by
-matching loose ends within 150px. A bridge wider than that, or two unrelated legs
-whose ends come within 150px of each other, will be stitched wrongly.
+**Bridges cut a leg in half.** The bridge is drawn in a picture layer on top, so
+the road under it stops and starts again ~120px later. The tool rejoins those
+halves by matching loose ends within 150px. A bridge wider than that, or two
+unrelated legs whose ends come within 150px, will be stitched wrongly.
 
 **Exactly one leg may have a loose end going nowhere.** That is the road arriving
-from off the left edge of the artboard, and it is what the game draws before
-stage 1 exists — the animation a brand-new player sees. The tool identifies it by
-elimination and stops if there is more or less than one.
+from off the left edge, and it is what the game draws before stage 1 exists — the
+animation a brand-new player sees. The tool identifies it by elimination and stops
+if there is more or less than one.
+
+### The recolour
+
+Every fill and stroke goes through a luminance ramp into browns: each colour keeps
+its brightness and loses its hue, so the map reads as parchment while staying the
+same picture. Draw in colour; the tool makes the parchment. Outlines are thinned
+from the uniform 4px, which at the size the map is drawn is most of what makes a
+drawing read as a colouring book.
+
+Water is the one thing not handled by brightness alone, and it needs two
+corrections. Blue reads **bright** to the formula, so a straight conversion puts
+the sea lighter than the land it cuts through; cool hues are pushed down a step.
+And brightness alone left the rivers within a few percent of the grass they run
+through — a river-shaped crease in a field — so water is also pulled towards grey.
+Real maps separate water from land by temperature rather than by tone, and that is
+what the desaturation is doing. The sea and the waterfall are forced to the same
+colour on the way in, so one body of water reads as one substance.
 
 ### Adding a stage
 
-Draw the marker in `#d30000` and the road to it in one of the two road fills,
-then re-run the tool. It will report the new count. The play order is the one
-decision in `tools/overview.mjs` that is typed rather than measured — see `ORDER`
-— because the road forks at marker 5 and a fork has no inherent order. `LEVEL_OF`
-beside it says which markers have a playable map behind them; a marker with none
-is drawn locked, which is the normal state for a stage that has been drawn before
-its board has.
+Draw the marker in `#d30000` and the road to it on layer 1, then re-run the tool.
+It reports the new count. The play order is the one decision in
+`tools/overview.mjs` that is typed rather than measured — see `ORDER` — because
+the road forks and a fork has no inherent order. `LEVEL_OF` beside it says which
+markers have a playable map behind them; a marker with none is drawn locked, which
+is the normal state for a stage drawn before its board.
+
+### Scenery standing in front of a medallion
+
+The tool also works out which shapes in the picture layers stand nearer the viewer
+than each marker — feet lower on the screen — and the game redraws those over the
+medallion so a tower beside a stage is not covered by it. **Finding none is normal
+and not a fault**: a road running through open country has nothing in front of it,
+and the number only goes up when buildings are drawn.

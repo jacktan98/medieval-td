@@ -78,7 +78,7 @@ exit non-zero when something is wrong.
 | `sweep` | runs the sim across difficulties and prints the table |
 | `split-map` | pulls the build plots out of a map SVG |
 | `trace-road` | pulls the road out of a map SVG and writes the route |
-| `overview` | pulls the stage markers and the road centrelines out of the world map SVG |
+| `overview` | stacks the world map's layers, recolours them to parchment, and pulls the stage markers and road centrelines out of the guide layer |
 
 The first twenty-five are checks — run them after any change:
 
