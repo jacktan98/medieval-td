@@ -528,22 +528,27 @@ from off the left edge, and it is what the game draws before stage 1 exists — 
 animation a brand-new player sees. The tool identifies it by elimination and stops
 if there is more or less than one.
 
-### What has not been reached is dark
+### What has not been reached is drained of colour
 
-The game lays a deep brown over everything the player has not walked to, lifting it
-along the road as stages are cleared. Two things follow from that, and both are
-about the drawing rather than the code:
+The game shows the drawing **in colour only where the army has been**. The country
+beyond the road keeps most of its brightness and loses its greens and greys to a
+flat brown, and every stage cleared pulls more of the map back into colour.
 
-- **The whole map is visible from the first load unless something hides it.** Every
-  mountain and every name is drawn before the campaign starts, so a player on stage
-  1 could otherwise see the corner they reach ten stages later. The dark is what
+Two things follow, and both are about the drawing rather than the code:
+
+- **The whole map is visible from the first load unless something holds it back.**
+  Every mountain and every name is drawn before the campaign starts, so a player on
+  stage 1 could otherwise see the corner they reach ten stages later. This is what
   turns that into something to earn.
-- **It is not opaque** — about nine tenths — so the far country keeps its shape. A
-  coastline and the suggestion of a range still read, which is the difference
-  between unexplored country and a hole in the page.
+- **It is a colour drain, not a shadow.** The first version was a dark wash and it
+  was too heavy; halving its strength halved the only signal it had, and the lit
+  pocket stopped being findable. Draining the colour instead means the difference is
+  what KIND of picture the far country is rather than how much light is on it, so
+  brightness is free to be whatever reads best. The unexplored land is plainly still
+  a place — you can see it is a desert, you can see the forest.
 
-Nothing has to be drawn for it. It follows the road, so a leg drawn anywhere lights
-its own surroundings.
+Nothing has to be drawn for it. It follows the road, so a leg drawn anywhere brings
+its own surroundings back into colour.
 
 ### The dots go on top of everything
 

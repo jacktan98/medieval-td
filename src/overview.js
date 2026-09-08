@@ -484,28 +484,39 @@ function makeParchment() {
 // nothing else: the panel that opens on a tap belongs to render.js.
 // --- the world beyond the road ----------------------------------------------
 
-// WHAT HAS NOT BEEN REACHED IS DARK, and it gets darker the further from the road
-// it lies. The map is finished before the campaign is: every mountain, every
-// bridge and every name is drawn from the first load, so a player standing on
-// stage 1 can already see the corner they will arrive at ten stages later. That is
-// a lot of world handed over at once, and none of it is a reason to keep playing.
+// WHAT HAS NOT BEEN REACHED IS BROWN, and the country fades out the further from
+// the road it lies. The map is finished before the campaign is: every mountain,
+// every bridge and every name is drawn from the first load, so a player standing
+// on stage 1 can already see the corner they will arrive at ten stages later. That
+// is a lot of world handed over at once, and none of it is a reason to keep
+// playing.
 //
-// So the drawing is lit only where the army has been. Everything the road has
-// opened is clear, the country around it falls off into a deep brown, and every
-// stage cleared pulls more of the map out of it. Nothing is hidden that the player
-// has earned, and nothing is given away that they have not.
+// So the drawing is in COLOUR only where the army has been. Everything the road
+// has opened looks as it was painted; the country around it drains to a flat brown
+// and dims, and every stage cleared pulls more of the map back into colour.
 //
-// NOT PURE BLACK, and not opaque. At the far edge this leaves a shape you can
-// almost read — a coastline, the suggestion of a mountain range — which is the
-// difference between a map with unexplored country on it and a map with a hole.
-const FOG = [26, 17, 8];
-const FOG_MAX = 0.9;
+// IT IS A DRAIN RATHER THAN A VEIL, and that is the second attempt. The first was
+// a dark wash over the unreached country, which worked and was too heavy — and
+// halving its strength, which is what was asked for, halved the only signal it
+// had. Darkness carried the whole distinction, so less darkness meant less
+// distinction, and at half strength the lit pocket around stage 1 could not be
+// picked out of the world at all.
+//
+// Colour carries it instead. The unreached country keeps most of its brightness
+// and loses its greens and greys, so the difference is what KIND of picture it is
+// rather than how much light is on it — and the brightness is then free to be
+// whatever reads best rather than being the thing doing the work.
+const FOG_BRIGHT = 0.62;   // how much light the drained country keeps
+const FOG_WASH = 'rgba(38,25,12,0.16)';   // and a breath of brown over that
 
 // How far the light reaches from the road, and how soft its edge is. The reach is
-// generous: the point is to show the player where they are and what is around
-// them, not to make them peer down a tunnel. The blur is most of the effect —
-// a hard edge would read as a spotlight rather than as distance.
-const LIT_REACH = 46;
+// half again what it started at: arriving somewhere should show the player the
+// country they have arrived in rather than a circle of it.
+//
+// The BLUR is not scaled with it. Widening both together is the obvious reading of
+// "more range" and it washes the effect out — reach is how much you can see, blur
+// is how quickly it stops, and only the first was asked for.
+const LIT_REACH = 69;
 const LIT_BLUR = 58;
 
 let fogSheet = null, fogKey = '';
@@ -523,7 +534,38 @@ function makeFog(unlocked, live, frac) {
   const g = c.getContext('2d');
   g.clearRect(0, 0, 960, 540);
 
-  g.fillStyle = `rgba(${FOG[0]},${FOG[1]},${FOG[2]},${FOG_MAX})`;
+  // THE SAME PICTURE, DRAINED. The map, the paper and the names in the order
+  // drawOverview lays them down, so that what is punched out of this lines up
+  // exactly with what is underneath it — then the whole stack put through one
+  // filter. Rebuilt from the source images rather than copied off the screen,
+  // because the canvas the game draws to may carry a transform this knows nothing
+  // about, and reading pixels back through the wrong one is a bug that only shows
+  // on somebody else's display.
+  let drained = false;
+  try {
+    g.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
+    drained = g.filter !== 'none';
+  } catch { /* no filter support */ }
+
+  if (art.overview) g.drawImage(art.overview, 0, 0, 960, 540);
+  else { g.fillStyle = '#C9A878'; g.fillRect(0, 0, 960, 540); }
+  g.filter = 'none';
+
+  g.globalCompositeOperation = 'multiply';
+  g.drawImage(parchment || makeParchment(), 0, 0);
+  g.globalCompositeOperation = 'source-over';
+
+  if (art.overviewNames) {
+    // The names go through the same drain. A region nobody has reached should not
+    // be announcing itself in white.
+    try { g.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`; } catch { /* */ }
+    g.drawImage(art.overviewNames, 0, 0, 960, 540);
+    g.filter = 'none';
+  }
+
+  // Where filters are not available there is nothing to drain the colour, so the
+  // old dark wash stands in: heavier than this, and the only thing that works.
+  g.fillStyle = drained ? FOG_WASH : 'rgba(26,17,8,0.55)';
   g.fillRect(0, 0, 960, 540);
 
   g.globalCompositeOperation = 'destination-out';

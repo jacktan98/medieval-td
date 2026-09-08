@@ -674,7 +674,7 @@ console.log('\n--- the march is one pace, whatever the distance ---\n');
     `${Math.round(longest.d)}px, stage ${shortest.i + 1} ${shortest.secs.toFixed(1)}s over ${Math.round(shortest.d)}px`);
 }
 
-console.log('\n--- the world beyond the road is dark ---\n');
+console.log('\n--- the world beyond the road is drained of colour ---\n');
 
 // A SOURCE CHECK, and it says so. What the fog looks like is a matter of pixels on
 // a canvas this file has no way to make; what it must never do is a matter of the
@@ -691,17 +691,40 @@ console.log('\n--- the world beyond the road is dark ---\n');
   const names = at(/drawImage\(art\.overviewNames/);
   const fog = at(/fogFor\(/);
   const trail = at(/drawTrail\(/);
-  ok(names >= 0 && fog > names, 'the dark falls over the names as well as the map',
+  ok(names >= 0 && fog > names, 'the drain falls over the names as well as the map',
     'fog after the names layer');
   ok(fog >= 0 && trail > fog, 'and never over the road, the medallions or the flag',
     'fog before the trail');
 
-  // NOT OPAQUE. At the far edge the shape of the country has to survive — a
-  // coastline, the suggestion of a range — or the map has a hole in it rather than
-  // unexplored country.
-  const max = /FOG_MAX = ([\d.]+)/.exec(draw);
-  ok(max && +max[1] < 1 && +max[1] > 0.5, 'and it is deep enough to hide detail without hiding shape',
-    max ? `${max[1]} of 1` : 'FOG_MAX not found');
+  // IT DRAINS THE COLOUR RATHER THAN PUTTING OUT THE LIGHT. The first version was a
+  // dark wash, and when it was asked to be half as strong the only signal it had was
+  // halved with it — darkness carried the whole distinction, so less darkness meant
+  // less distinction, and the lit pocket around stage 1 could not be picked out of
+  // the world at all. Colour carries it now, which leaves the brightness free to be
+  // whatever reads best. So what this checks is that the country keeps most of its
+  // LIGHT: a drain that also went dark would be the old problem coming back.
+  const bright = /FOG_BRIGHT = ([\d.]+)/.exec(draw);
+  ok(bright && +bright[1] >= 0.5 && +bright[1] < 1,
+    'and the country it covers keeps its light while losing its colour',
+    bright ? `${bright[1]} of the brightness kept` : 'FOG_BRIGHT not found');
+
+  // AND THE DRAIN IS THE SAME STACK, in the same order. What is punched out of the
+  // fog has to line up exactly with what is underneath it, so the map, the paper
+  // and the names all have to be in it — a fog built from the map alone would erase
+  // the names wherever it fell.
+  const mk = draw.slice(draw.indexOf('function makeFog'));
+  const fogBody = mk.slice(0, mk.indexOf('\n}\n') + 2);
+  ok(/art\.overview\b/.test(fogBody) && /parchment/.test(fogBody) && /overviewNames/.test(fogBody),
+    'and it is drained from the same three layers the player sees',
+    'map, paper and names');
+
+  // A GRAYSCALE FILTER IS NOT EVERYWHERE. Where it is missing there is nothing to
+  // drain, so the old dark wash has to still be there to stand in — otherwise those
+  // browsers get a map with no unexplored country at all, which is the feature
+  // silently absent rather than degraded.
+  ok(/drained \?/.test(fogBody) && /grayscale/.test(fogBody),
+    'and falls back to a wash where filters are unavailable',
+    'drained ? light wash : dark one');
 
   // AND IT LIFTS AS THE ROAD OPENS, which is the reason it is there. The lit area
   // is built from the stages the player has unlocked, so it cannot fail to grow.
