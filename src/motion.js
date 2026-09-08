@@ -1,13 +1,19 @@
-// AMBIENT MOTION ON THE WORLD MAP: cloud shadows crossing the land, and the water
-// moving. Nothing here is part of how the game works. It exists so that the map is
-// not a photograph.
+// AMBIENT MOTION ON THE WORLD MAP: the water moving, a bird or two, and a light
+// running up the road to the flag. Nothing here is part of how the game works. It
+// exists so that the map is not a photograph.
+//
+// THERE WERE CLOUD SHADOWS HERE and they are gone at the owner's word. They were
+// four soft brown ellipses drifting across the land, and the honest reading of why
+// they went is that a shadow on a map is a thing you have to be told about: on a
+// drawing this dense it either reads as one more stain on the parchment or, when
+// it is strong enough not to, as a smudge. The map had to be diffed frame against
+// frame to prove they were working at all, which is its own verdict.
 //
 // --- HOW TO TURN IT OFF ------------------------------------------------------
 //
 // Either switch below turns its own effect off on the next frame, and turning both
 // off leaves drawMotion doing nothing at all:
 //
-//   const CLOUDS  = false;    cloud shadows crossing the land
 //   const SHIMMER = false;    the rivers and the waterfall running
 //   const BIRDS   = false;    two birds crossing now and then
 //   const PULSE   = false;    a light running up the road to the flag
@@ -25,16 +31,11 @@
 // is that fact. Ambient motion that competes with it does not make the map more
 // alive, it makes the flag harder to find. So everything here is slow, low in
 // contrast, and on a cycle long enough that you notice it on the second look
-// rather than the first — a cloud takes most of a minute to cross.
-//
-// The cloud shadows sit UNDER the fog: unexplored country is a drained still copy
-// of the map, so a shadow only crosses land the player has actually been to. The
-// water is the one exception and WATER_THROUGH_FOG below says why.
+// rather than the first.
 
 import { art } from './assets.js';
 import { RIVERS, FALLS } from './data/overview.js';
 
-const CLOUDS = true;
 const SHIMMER = true;
 const BIRDS = true;
 const PULSE = true;
@@ -52,59 +53,6 @@ const PULSE = true;
 // still runs, which is true of rivers. Set this false and the water goes back under
 // the fog with the clouds, still as everything else out there.
 const WATER_THROUGH_FOG = true;
-
-// --- cloud shadows -----------------------------------------------------------
-
-// Three, at different sizes and speeds, so they never line up into a pattern the
-// eye can lock on to. Positions are the fraction of a full crossing each one has
-// completed, offset from each other so they are spread out rather than in convoy.
-//
-// The map is 960 wide and a cloud is up to 520 across, so a crossing runs from
-// well off one edge to well off the other: -600 to 1560, which is 2160 of travel.
-const CLOUD_SPAN = 2160;
-const CLOUD_FROM = -600;
-
-// STRONGER THAN THEY WERE, because the owner could not find them. The first pass
-// topped out at 0.13 and a shadow that faint on a map this busy is indistinguishable
-// from the parchment's own stains — it was there, it moved, and it may as well not
-// have been. Doubled, and one more of them, so there is nearly always one on screen.
-const CLOUDS_AT = [
-  { seconds: 58, phase: 0.00, y: 130, rx: 270, ry: 125, alpha: 0.26 },
-  { seconds: 74, phase: 0.30, y: 320, rx: 220, ry: 100, alpha: 0.21 },
-  { seconds: 47, phase: 0.58, y: 460, rx: 180, ry: 82, alpha: 0.17 },
-  { seconds: 88, phase: 0.81, y: 240, rx: 310, ry: 135, alpha: 0.15 }
-];
-
-// A shadow rather than a cloud: this is what the land looks like with something
-// passing over the sun, so it is a soft darkening and never has an edge. Brown
-// rather than grey, because everything else on this map is.
-function drawClouds(ctx, t) {
-  ctx.save();
-  for (const c of CLOUDS_AT) {
-    const at = ((t / c.seconds) + c.phase) % 1;
-    const x = CLOUD_FROM + at * CLOUD_SPAN;
-
-    // The vertical drift is a slow sine rather than a straight line, so a cloud
-    // wanders down the map as it crosses instead of running on rails.
-    const y = c.y + Math.sin(at * Math.PI * 2 + c.phase * 6.283) * 26;
-
-    const g = ctx.createRadialGradient(x, y, 0, x, y, c.rx);
-    g.addColorStop(0, `rgba(38,26,12,${c.alpha})`);
-    g.addColorStop(0.55, `rgba(38,26,12,${c.alpha * 0.72})`);
-    g.addColorStop(1, 'rgba(38,26,12,0)');
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(1, c.ry / c.rx);
-    ctx.translate(-x, -y);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, c.rx, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-  ctx.restore();
-}
 
 // --- the water ---------------------------------------------------------------
 
@@ -130,11 +78,12 @@ const WATER_TOLERANCE = 14;               // the interiors are exact; this catch
 // WHICH WAY THE WATER GOES, in degrees, measured the way canvas measures them: 0 is
 // east, 90 is south. This is the direction of TRAVEL, so the stripes lie across it.
 //
-// The owner set both. The river round Dawnford runs east to west, which is 180. The
-// falls at Serene Peak come down north-east to south-west, which is south and west
-// at once: 135.
+// The owner set both. The river round Dawnford runs east to west, which is 180.
+// Serene Peak runs SOUTH ELEVEN DEGREES WEST — a compass bearing, near enough
+// straight down the falls with a lean off the vertical — which in this reckoning is
+// 90 for south plus 11 towards the west: 101.
 const RIVER_FLOW = 180;
-const FALLS_FLOW = 135;
+const FALLS_FLOW = 101;
 
 // Rivers drift ALONG the surface. Slowly: the whole point is that you see it in the
 // corner of your eye.
@@ -148,10 +97,15 @@ const RIVER_BANDS = [
 // this map that is genuinely quick, and a slow waterfall looks like a glacier. It is
 // a small part of the picture, so a livelier rate there does not compete with the
 // flag.
+// AND MUCH SLOWER THAN THEY WERE. The first rate was picked from what falling water
+// does rather than from what a map of falling water should do — 1.9 to 3.9 seconds a
+// band, three bands, which on a waterfall the size of a thumbnail is a flicker. Three
+// times the period puts it at the pace of everything else here: something you catch
+// rather than something that catches you.
 const FALL_BANDS = [
-  { seconds: 2.6, phase: 0.00, of: 0.14, alpha: 0.40 },
-  { seconds: 3.9, phase: 0.35, of: 0.22, alpha: 0.30 },
-  { seconds: 1.9, phase: 0.68, of: 0.09, alpha: 0.26 }
+  { seconds: 8.0, phase: 0.00, of: 0.14, alpha: 0.40 },
+  { seconds: 11.5, phase: 0.35, of: 0.22, alpha: 0.30 },
+  { seconds: 6.2, phase: 0.68, of: 0.09, alpha: 0.26 }
 ];
 
 // How strongly the finished band layer is laid over the map. The alphas above are
@@ -446,10 +400,11 @@ export function drawPulse(ctx, t, leg) {
   ctx.restore();
 }
 
-// Called from src/overview.js UNDER the fog. Cloud shadows always go here; the
-// water joins them unless it has been sent through the fog instead.
+// Called from src/overview.js UNDER the fog. This is empty while the water is sent
+// through the fog, which it is — it stays because WATER_THROUGH_FOG is a real
+// switch and this is where the water goes when it is turned off. The cloud shadows
+// used to be its other occupant.
 export function drawMotion(ctx, t) {
-  if (CLOUDS) drawClouds(ctx, t);
   if (SHIMMER && !WATER_THROUGH_FOG) drawShimmer(ctx, t);
 }
 

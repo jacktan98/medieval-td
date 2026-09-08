@@ -556,20 +556,23 @@ its own surroundings back into colour.
 
 ### The map moves a little
 
-`src/motion.js` holds four ambient effects, each with its own switch at the top of
+`src/motion.js` holds three ambient effects, each with its own switch at the top of
 that file:
 
-- **Cloud shadows** crossing the land, four of them at different sizes and speeds.
-- **The water running.** The river round Dawnford flows **east to west**; the falls
-  at Serene Peak come down **north-east to south-west**. Both are single constants
-  in degrees (`RIVER_FLOW`, `FALLS_FLOW`, canvas reckoning: 0 east, 90 south), so
-  redirecting a body of water is one number.
+- **The water running.** The river round Dawnford flows **east to west**; Serene
+  Peak runs **south, eleven degrees west**. Both are single constants in degrees
+  (`RIVER_FLOW`, `FALLS_FLOW`, canvas reckoning: 0 east, 90 south), so redirecting a
+  body of water is one number.
 - **Birds**, a pair drifting across every so often and gone again.
 - **A road pulse**, a light running up the last leg to the flag every few seconds.
   This one is not decoration: it says which way to go.
 
 Removing the lot is deleting the file plus one import and three calls in
-`src/overview.js` — under the fog, over it, and over the trail.
+`src/overview.js`.
+
+**There were cloud shadows and they are gone.** Four soft brown ellipses drifting
+across the land — the map had to be diffed frame against frame to prove they were
+working, which is its own verdict on a shadow drawn over a drawing this dense.
 
 What it asks of the drawing: **nothing**. The water is found by its colour in the
 muted map, so rivers and waterfalls drawn anywhere shimmer without being marked up.
@@ -584,9 +587,9 @@ Two things follow that are worth knowing:
 
 ### Sun on one side of the edge, dark on the other
 
-The reached country is drawn **brighter than the artwork** and the unreached country
-**darker**, from one lit shape: the sun is a brightened copy of the map cut to it,
-the fog is a drained copy with it punched out. Opening the gap from both ends is
+The reached country is drawn **brighter than the artwork** and the unreached
+**much darker**, from one lit shape: the sun is a brightened copy of the map cut to
+it, the fog a drained copy with it punched out. Opening the gap from both ends is
 what stops either half having to carry the whole distinction — the trap this fell
 into twice, once when darkness was the only signal and again when one brightness had
 to be both dim enough to read as unexplored and bright enough to look at.
@@ -594,10 +597,23 @@ to be both dim enough to read as unexplored and bright enough to look at.
 The names are in the fog but not in the sun. A region nobody has reached should not
 announce itself, but in lit country a name is still the artist's own pixels.
 
-Both sheets **breathe**, drifting a few pixels on a slow figure of eight so the edge
-of the dark moves rather than sitting on the map like a stencil. They drift through
-one helper, because drifting apart would open a seam between the sunlight and the
-dark.
+The edge **fades** rather than stopping: the colour leaves the drawing over about
+120px, wider than the 69px the light reaches from the road. A shorter fade puts a
+rim around the explored land and turns the whole thing into a spotlight.
+
+### What the game draws on top
+
+None of this is artwork you supply, but it is sized against yours:
+
+- **The stage medallion** is an ellipse at **0.50**, radius 11 — its own
+  foreshortening, deliberately not the game's `SQUASH` of 0.62, which is the angle
+  all three battle boards are drawn at. A locked stage is a grey face and nothing
+  else; the padlock that used to sit in it is gone.
+- **The flag** is `Rally_Point_Icon.png` — the same picture the barracks plants on a
+  battle map, on the same anchor, so the game has one flag rather than two. Its pole
+  stands in the centre of the medallion.
+- **The stars** are radius 12 with a solid black outline, spaced at a multiple of
+  that radius so changing one changes both.
 
 ### The dots go on top of everything
 

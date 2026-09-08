@@ -3442,15 +3442,42 @@ function drawStart(ctx, state) {
   ctx.fillRect(0, 0, 960, 540);
 
   const p = STAGE_PANEL;
-  ctx.fillStyle = 'rgba(30,26,18,0.94)';
+  const stage = STAGES[state.stage];
+  const board = stage.level === null ? null : art[levels[stage.level].art];
+
+  ctx.save();
   ctx.beginPath();
   ctx.roundRect(p.x, p.y, p.w, p.h, 14);
-  ctx.fill();
+  ctx.clip();
+
+  // THE BOARD ITSELF, BEHIND THE SETTINGS. The panel used to be a flat plate, and a
+  // flat plate is the one thing on this screen that says nothing — the player is
+  // choosing whether to fight HERE, and here has a shape.
+  //
+  // COVER-FITTED, not stretched. The panel is 444x292 and a board is 960x540, so
+  // fitting the width would leave the panel half empty and stretching it would put
+  // the map's roads at an angle they are never drawn at. Scaled to cover and centred
+  // takes the middle of the board, which is where the route is.
+  ctx.fillStyle = 'rgba(30,26,18,0.94)';
+  ctx.fillRect(p.x, p.y, p.w, p.h);
+  if (board) {
+    const k = Math.max(p.w / 960, p.h / 540);
+    const bw = 960 * k, bh = 540 * k;
+    ctx.drawImage(board, p.x + (p.w - bw) / 2, p.y + (p.h - bh) / 2, bw, bh);
+
+    // AND THEN MOSTLY COVERED AGAIN, because it is a background and the settings are
+    // the point. What survives is enough to recognise the map by — the shape of the
+    // land and the line of the road — and not enough to read a word over.
+    ctx.fillStyle = 'rgba(26,21,13,0.80)';
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+  }
+  ctx.restore();
+
   ctx.strokeStyle = 'rgba(196,165,116,0.75)';
   ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(p.x, p.y, p.w, p.h, 14);
   ctx.stroke();
-
-  const stage = STAGES[state.stage];
   // A stage the artist has drawn a marker for but not a board. The panel opens
   // anyway — see stageAt in src/overview.js for why the refusal lives here rather
   // than on the marker — and says what is missing.

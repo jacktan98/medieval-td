@@ -28,7 +28,9 @@ import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { MODES } from './data/waves.js';
-import { SQUASH } from './ground.js';
+// The rally point's flag and the numbers that place it — the same picture and the
+// same anchor the board plants, so the map's flag and the board's are one flag.
+import { ui, uiSize, FLAG_FOOT } from './data/ui.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse } from './motion.js';
@@ -178,19 +180,33 @@ export const stageOfLevel = li => {
 
 // --- drawing ----------------------------------------------------------------
 
-// THE MEDALLION IS AN ELLIPSE, not a disc, and it is the game's own SQUASH that
+// THE MEDALLION IS AN ELLIPSE, not a disc, and it was the game's own SQUASH that
 // flattens it — the same 0.62 every reach ring and every plot's dirt patch on
 // every board is drawn with. A stage marker is a thing lying on the ground seen
 // from the same angle as everything else, so it is foreshortened by the same
 // amount. Picking a number by eye here would have made the world map the one
 // surface in the game at a different tilt.
-const NODE_R = 15;
+// SMALLER, AND FLATTER, both at the owner's word. It was 15 at the game's own
+// SQUASH of 0.62; it is 11 at 0.50, which is a third less across and half again as
+// flat. A marker is a place on a road rather than a button, and the flag standing in
+// it is what the eye is meant to find.
+//
+// THE SQUASH IS ITS OWN NUMBER NOW rather than the one imported from ground.js.
+// That one is the game's ground foreshortening — every reach ring and every dirt
+// patch on every board is drawn at it — and pulling it to 0.50 to flatten a
+// medallion would have tilted the floor of all three battle maps with it.
+const NODE_R = 11;
+const NODE_SQUASH = 0.50;
 const INK = '#2A1D0E';
 
 // A blue banner, and blue because it has to be the one thing on a brown map that
 // is not brown. The map is a parchment now: every fill in it went through a
 // luminance ramp into browns, so a red flag would sit a shade away from the
 // hills behind it. See sepia() in tools/overview.mjs.
+// How tall the planted flag stands, in canvas px. The drawing is scaled to this
+// height and keeps its own proportions.
+const FLAG_H = 30;
+
 const FLAG_CLOTH = '#3E6FA8';
 const FLAG_SHADE = '#2E5583';
 
@@ -240,7 +256,7 @@ function drawTrail(ctx, leg, frac) {
 
 const disc = (ctx, x, y, r) => {
   ctx.beginPath();
-  ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y, r, r * NODE_SQUASH, 0, 0, Math.PI * 2);
 };
 
 // NOTHING IS DRAWN FOR A STAGE THE PLAYER HAS NOT REACHED. The artist's red dots
@@ -259,7 +275,7 @@ function drawNode(ctx, i, hot) {
   // The shadow it casts on the ground, offset down rather than out: the light on
   // this map comes from above, and a flat thing lying in grass has its shadow
   // under its lower edge.
-  disc(ctx, s.x, s.y + 2.4, NODE_R);
+  disc(ctx, s.x, s.y + 1.8, NODE_R);
   ctx.fillStyle = 'rgba(43,30,16,0.34)';
   ctx.fill();
 
@@ -267,15 +283,15 @@ function drawNode(ctx, i, hot) {
   ctx.fillStyle = INK;
   ctx.fill();
 
-  const g = ctx.createLinearGradient(0, s.y - NODE_R * SQUASH, 0, s.y + NODE_R * SQUASH);
+  const g = ctx.createLinearGradient(0, s.y - NODE_R * NODE_SQUASH, 0, s.y + NODE_R * NODE_SQUASH);
   if (open) { g.addColorStop(0, '#F5DB95'); g.addColorStop(1, '#BE8C2A'); }
   else { g.addColorStop(0, '#9C958A'); g.addColorStop(1, '#6E685F'); }
-  disc(ctx, s.x, s.y, NODE_R - 2.8);
+  disc(ctx, s.x, s.y, NODE_R - 2.1);
   ctx.fillStyle = g;
   ctx.fill();
 
   if (hot) {
-    disc(ctx, s.x, s.y, NODE_R + 2.6);
+    disc(ctx, s.x, s.y, NODE_R + 2.2);
     ctx.strokeStyle = 'rgba(246,231,193,0.9)';
     ctx.lineWidth = 1.6;
     ctx.stroke();
@@ -291,23 +307,18 @@ function drawNode(ctx, i, hot) {
     //
     // What replaces it is a highlight across the top of the dome, so the disc
     // still reads as a raised object rather than a hole.
-    const lit = ctx.createLinearGradient(0, s.y - NODE_R * SQUASH, 0, s.y + NODE_R * SQUASH * 0.4);
+    const lit = ctx.createLinearGradient(0, s.y - NODE_R * NODE_SQUASH, 0, s.y + NODE_R * NODE_SQUASH * 0.4);
     lit.addColorStop(0, 'rgba(255,246,214,0.62)');
     lit.addColorStop(1, 'rgba(255,246,214,0)');
-    disc(ctx, s.x, s.y - NODE_R * SQUASH * 0.16, NODE_R - 4.6);
+    disc(ctx, s.x, s.y - NODE_R * NODE_SQUASH * 0.16, NODE_R - 3.4);
     ctx.fillStyle = lit;
     ctx.fill();
-  } else {
-    // A padlock, small enough to read as texture at this size and specific
-    // enough to read as "not yet" when you look at it.
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 1.7;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y - 1.8, 2.8, Math.PI, 0);
-    ctx.stroke();
-    ctx.fillStyle = INK;
-    ctx.fillRect(s.x - 3.9, s.y - 1.8, 7.8, 5.4);
   }
+  // NOTHING FOR A LOCKED STAGE ANY MORE. There was a padlock drawn in the middle of
+  // it, gone at the owner's word — the grey face already says the stage is not open,
+  // the panel says so in words when it is tapped, and a lock inside an 11px ellipse
+  // was a detail nobody could read at map scale. It also sat exactly where the
+  // flag's pole now stands.
   ctx.restore();
 }
 
@@ -340,13 +351,15 @@ function starsAt(i) {
   return best;
 }
 
-const STAR_R = 4.6;
-const STAR_GAP = 11;
+// BIG, at the owner's word, and the gap has to grow with them or a three-star row
+// becomes one lump. Points touch at a gap of two radii; this leaves a little air.
+const STAR_R = 12;
+const STAR_GAP = STAR_R * 2.35;
 
 function drawStars(ctx, cx, cy, filled) {
   ctx.save();
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2.2;
   const left = cx - (MAX_STARS - 1) * STAR_GAP / 2;
   for (let i = 0; i < MAX_STARS; i++) {
     ctx.beginPath();
@@ -360,7 +373,10 @@ function drawStars(ctx, cx, cy, filled) {
     ctx.closePath();
     ctx.fillStyle = i < filled ? '#F2C64B' : 'rgba(59,41,23,0.30)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(43,30,16,0.85)';
+    // BLACK, and solid. It was a soft brown at 85% and at this size that read as a
+    // smudge round the edge rather than a line; a star this big needs an outline
+    // that holds it against whatever the map puts behind it.
+    ctx.strokeStyle = '#000';
     ctx.stroke();
   }
   ctx.restore();
@@ -372,49 +388,56 @@ function drawStars(ctx, cx, cy, filled) {
 function drawFlag(ctx, x, y, t, wave) {
   const k = plant(t);
   const drop = (1 - k) * 20;          // falls in from above
-  // The pole stands at the BACK of the ellipse rather than its centre, so the
-  // medallion reads as ground the flag is planted in rather than a coin the flag
-  // is balanced on.
-  const foot = y - NODE_R * SQUASH - 1 + drop;
-  const h = 27 * (0.55 + 0.45 * k);   // and grows into its full height
+  // THE POLE STANDS IN THE MIDDLE OF THE MEDALLION, at the owner's word. It used to
+  // stand at the BACK of the ellipse, on the reasoning that a flag planted in ground
+  // should meet it at the far edge rather than balance on the near one — but the
+  // medallion is smaller and flatter now and its back edge is five pixels off the
+  // centre, so the distinction cost more than it bought.
+  const foot = y + drop;
+  const h = FLAG_H * (0.62 + 0.38 * k);   // and grows into its full height
 
   ctx.save();
   ctx.globalAlpha = Math.min(1, t * 2.4);
 
-  ctx.strokeStyle = '#3A2A12';
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(x, foot);
-  ctx.lineTo(x, foot - h);
-  ctx.stroke();
-
-  // The cloth, as a triangle whose free corner and waist ride a slow sine. Two
-  // control points rather than one so it furls rather than merely tilting.
-  const top = foot - h;
-  const s1 = Math.sin(wave * 2.6) * 1.9;
-  const s2 = Math.sin(wave * 2.6 + 1.1) * 2.6;
-  ctx.beginPath();
-  ctx.moveTo(x + 1, top + 1);
-  ctx.quadraticCurveTo(x + 9 + s1, top + 3.5, x + 16 + s2, top + 7);
-  ctx.quadraticCurveTo(x + 9 + s1, top + 10, x + 1, top + 13.5);
-  ctx.closePath();
-  ctx.fillStyle = FLAG_CLOTH;
-  ctx.fill();
-  ctx.strokeStyle = '#25190C';
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
-
-  // A fold along the underside, so the cloth has a near face and a far one
-  // rather than reading as a flat triangle of colour.
-  ctx.beginPath();
-  ctx.moveTo(x + 1, top + 13.5);
-  ctx.quadraticCurveTo(x + 9 + s1, top + 10, x + 16 + s2, top + 7);
-  ctx.lineTo(x + 16 + s2, top + 7);
-  ctx.quadraticCurveTo(x + 9 + s1, top + 12.5, x + 1, top + 13.5);
-  ctx.closePath();
-  ctx.fillStyle = FLAG_SHADE;
-  ctx.fill();
+  // THE RALLY POINT'S OWN FLAG, the same file the barracks plants on a battle map.
+  // It was a vector pole and pennant drawn here, waving on a sine — which meant the
+  // game had TWO flags, one for "your squad stands here" and one for "your army is
+  // here", drawn by different code and looking like it.
+  //
+  // The wave goes with the vectors, and that is a real loss: this was the only thing
+  // on the map that moved before there was anything else moving on it. What replaces
+  // it is a picture that matches the rest of the game, which is what was asked for,
+  // and the road pulse now carries the job of pointing at it.
+  //
+  // FLAG_FOOT puts the bottom of the pole on the point given, which is the same
+  // anchor the board uses — see flag() in src/render.js. The pole is at 11% across
+  // the drawing rather than at its centre, because the pennant is all on one side.
+  const img = art.glyph_flag;
+  if (img) {
+    const [sx, sy, sw, sh] = ui.glyph_flag.trim;
+    const { w, h: ih } = uiSize('glyph_flag', h);
+    ctx.drawImage(img, sx, sy, sw, sh, x - FLAG_FOOT[0] * w, foot - FLAG_FOOT[1] * ih, w, ih);
+  } else {
+    // The same vector fallback the board carries, so a missing file is a plainer
+    // flag rather than no flag.
+    ctx.strokeStyle = '#3A2A12';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x, foot);
+    ctx.lineTo(x, foot - h);
+    ctx.stroke();
+    ctx.fillStyle = FLAG_CLOTH;
+    ctx.beginPath();
+    ctx.moveTo(x, foot - h);
+    ctx.lineTo(x + h * 0.52, foot - h + h * 0.19);
+    ctx.lineTo(x, foot - h + h * 0.38);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#25190C';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
 
   ctx.restore();
   return foot - h;                    // the top of the pole, for the stars
@@ -509,13 +532,19 @@ function makeParchment() {
 // and loses its greens and greys, so the difference is what KIND of picture it is
 // rather than how much light is on it — and the brightness is then free to be
 // whatever reads best rather than being the thing doing the work.
-// DARKER THAN IT WAS, at the owner's word, and now it can afford to be: the lit
-// country is lifted into sunlight below, so the gap between reached and unreached
-// is opened from BOTH ends rather than by pushing one of them around on its own.
-// That was the trap the first version fell into — darkness carrying the whole
-// distinction, so every change to the darkness changed the whole effect.
-const FOG_BRIGHT = 0.44;   // how much light the drained country keeps
-const FOG_WASH = 'rgba(38,25,12,0.22)';   // and a breath of brown over that
+// DARK, and it can afford to be, because the lit country is lifted into sunlight
+// below: the gap between reached and unreached is opened from BOTH ends rather than
+// by pushing one of them around on its own. That was the trap the first version fell
+// into — darkness carrying the whole distinction, so every change to the darkness
+// changed the whole effect.
+//
+// Asked for twice, in opposite directions, and both were right at the time. It was
+// once a dark WASH, and halving that on request halved the only signal there was. It
+// is a colour DRAIN now, so the far country keeps its shape at a brightness that
+// would have hidden it before — 0.28 here is much darker than the 0.45 wash ever
+// was, and you can still see it is a desert.
+const FOG_BRIGHT = 0.28;   // how much light the drained country keeps
+const FOG_WASH = 'rgba(30,20,9,0.30)';   // and a breath of brown over that
 
 // AND THE COUNTRY THAT HAS BEEN REACHED IS IN SUNLIGHT — the exact mirror of the
 // fog. The fog is a DRAINED copy of the map with the lit shape cut out of it; this
@@ -699,18 +728,6 @@ function fogFor(unlocked, live, frac) {
   return fogSheet;
 }
 
-// HOW FAR THE EDGE OF THE DARK WANDERS, and how long it takes to wander it. The
-// fog is a still sheet with a soft edge; moving the whole sheet by two or three
-// pixels on a long slow figure of eight makes that edge breathe instead, which is
-// the difference between country you have not been to and a stencil laid over the
-// map. Free: the sheet is already built, this only changes where it lands.
-const BREATH_X = 3.5, BREATH_Y = 2.4;
-const BREATH_SECONDS = 19;
-
-function breath(t) {
-  const a = (t / BREATH_SECONDS) * Math.PI * 2;
-  return [Math.sin(a) * BREATH_X, Math.sin(a * 0.61 + 1.3) * BREATH_Y];
-}
 
 export function drawOverview(ctx, state) {
   const img = art.overview;
@@ -735,18 +752,13 @@ export function drawOverview(ctx, state) {
   const now = performance.now() / 1000;
   const fog = fogFor(unlocked, live, live >= 0 ? r.t : 1);
 
-  // THE SHEETS BREATHE. Both are still images with a soft edge; drifting them a few
-  // pixels on a long slow figure of eight makes that edge move instead, which is the
-  // difference between country you have not been to and a stencil laid over the map.
-  //
-  // DRAWN A LITTLE OVERSIZE, and that is not cosmetic. Shifting a 960x540 sheet by
-  // three pixels leaves three pixels of the map uncovered along one edge, and what
-  // showed through was a hard strip across the top of the screen. Blown up by twice
-  // the breath in each direction, a sheet covers the map wherever it drifts to, and
-  // a blurred sheet does not mind being stretched by one and a half percent.
-  const [bx, by] = breath(now);
-  const ox = BREATH_X * 2, oy = BREATH_Y * 2;
-  const spread = (img) => ctx.drawImage(img, bx - ox, by - oy, 960 + ox * 2, 540 + oy * 2);
+  // THE SHEETS USED TO BREATHE, drifting a few pixels on a slow figure of eight so
+  // the edge of the dark moved rather than sitting still. Gone at the owner's word,
+  // and it takes its own complications with it: a drifting sheet had to be drawn
+  // oversize, because shifting a 960x540 sheet by three pixels left three pixels of
+  // map uncovered along one edge and showed as a hard strip across the top. Laid at
+  // its own size in its own place, a sheet covers the map exactly.
+  const spread = (img) => ctx.drawImage(img, 0, 0);
 
   // THE SUN FIRST, because it REPLACES the lit country with a brighter copy of
   // itself rather than tinting what is there. Anything drawn before it inside the
@@ -832,8 +844,8 @@ export function drawOverview(ctx, state) {
     const stars = starsAt(i);
     if (!stars) continue;
     const top = i === frontier && flagTop !== null
-      ? flagTop - 8
-      : STAGES[i].y - NODE_R * SQUASH - 9;
+      ? flagTop - STAR_R - 3
+      : STAGES[i].y - NODE_R * NODE_SQUASH - STAR_R - 4;
     drawStars(ctx, STAGES[i].x, top, stars);
   }
 }

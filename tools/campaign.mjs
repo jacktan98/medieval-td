@@ -708,7 +708,12 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // page — below about a third the far country stops having a shape at all, and the
   // reason for drawing a whole world goes with it.
   const bright = /FOG_BRIGHT = ([\d.]+)/.exec(draw);
-  ok(bright && +bright[1] >= 0.33 && +bright[1] < 1,
+  // THE FLOOR HAS COME DOWN TWICE, from a half to a third to a fifth, each time
+  // because the other side of the edge got stronger — first the drain replacing the
+  // wash, then sunlight on the lit country. What it may still not be is a hole in
+  // the page: below about a fifth the far country stops having a shape at all, and
+  // the reason for drawing a whole world goes with it.
+  ok(bright && +bright[1] >= 0.2 && +bright[1] < 1,
     'and the country it covers keeps a shape while losing its colour',
     bright ? `${bright[1]} of the brightness kept` : 'FOG_BRIGHT not found');
 
@@ -764,18 +769,12 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   ok(uses === 2, 'and both are cut from one lit shape rather than two',
     `${uses} use(s) of the lit sheet`);
 
-  // AND THE EDGE OF THE DARK BREATHES, on a cycle long enough to be weather rather
-  // than a wobble. Both sheets drift together — they are drawn through one helper
-  // for exactly that reason, because drifting them apart would open a seam between
-  // the sunlight and the dark.
-  ok(/BREATH_SECONDS = ([\d.]+)/.test(draw) && /function breath\(t\)/.test(draw),
-    'and the edge of the dark breathes rather than sitting still',
-    `${(/BREATH_SECONDS = ([\d.]+)/.exec(draw) || [])[1]}s cycle`);
-  // ONE HELPER DRAWS BOTH, which is what keeps them together. Drifting them through
-  // two separate drawImage calls would work until somebody changed one of them.
+  // THE SHEETS USED TO BREATHE and no longer do, at the owner's word. Both are still
+  // drawn through one helper, which is what kept them from sliding apart when they
+  // did move and is still what keeps them agreeing about where the map is.
   const spreads = (draw.match(/\bspread\((sunSheet|fog)\)/g) || []).length;
   ok(/const spread = /.test(draw) && spreads === 2,
-    'and the sunlight drifts with it rather than apart from it',
+    'and the sunlight and the dark are laid down the same way',
     `${spreads} sheet(s) through one helper`);
 
   // AND IT LIFTS AS THE ROAD OPENS, which is the reason it is there. The lit area
@@ -783,6 +782,100 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   ok(/for \(let i = 0; i < unlocked; i\+\+\)/.test(draw.slice(draw.indexOf('function makeFog'))),
     'and what is lit is exactly what the player has reached',
     'the lit area is built from unlocked stages');
+}
+
+console.log('\n--- the marker, the flag and the stars ---\n');
+
+// The furniture the game draws on top of the drawing. Source checks: what these
+// look like is pixels, but what they are made of is text, and every one of them is
+// a thing that was asked for by name and could silently drift back.
+{
+  const ov = readFileSync('src/overview.js', 'utf8');
+  const bare = ov.replace(/\/\/.*$/gm, '');
+  const num = n => { const m = new RegExp(`${n} = ([\\d.]+)`).exec(bare); return m ? +m[1] : null; };
+
+  // THE MEDALLION HAS ITS OWN FORESHORTENING, and that is the point of the check
+  // rather than the number. SQUASH in src/ground.js is the angle the whole GAME is
+  // seen at — every reach ring and every dirt patch on all three boards — and
+  // flattening a map marker by editing it would have tilted the floor of the game.
+  ok(num('NODE_SQUASH') === 0.5, 'the medallion is an ellipse at its own squash',
+    `${num('NODE_SQUASH')}`);
+  ok(!/from '\.\/ground\.js'/.test(ov), 'and does not borrow the ground\'s',
+    'src/ground.js is not imported by the map');
+
+  const ground = readFileSync('src/ground.js', 'utf8');
+  ok(/SQUASH = 0\.62/.test(ground), 'which is left where the boards need it',
+    'ground.js still at 0.62');
+
+  // AND IT IS SMALL. A marker is a place on a road, not a button; the tap target is
+  // the thing that has to be thumb-sized, and it is checked above at 22.
+  const r = num('NODE_R');
+  ok(r !== null && r <= 12, 'and it is smaller than the tap target that finds it',
+    `drawn at ${r}, tapped at ${NODE_HIT}`);
+  ok(r < NODE_HIT, 'so the marker is never bigger than its own hit box',
+    `${r} < ${NODE_HIT}`);
+
+  // NO PADLOCK. It was drawn in the middle of the medallion, which is exactly where
+  // the flag's pole now stands.
+  ok(!/ctx\.fillRect\(s\.x - [\d.]+, s\.y/.test(bare) && !/padlock/i.test(bare),
+    'a locked stage carries no padlock',
+    'nothing drawn inside a locked marker');
+
+  // THE FLAG IS THE RALLY POINT'S OWN PICTURE, the same file the barracks plants on
+  // a battle map. It was a vector pole and pennant, which meant the game had two
+  // flags drawn by different code and looking like it.
+  ok(/art\.glyph_flag/.test(bare) && /FLAG_FOOT/.test(bare),
+    'the map plants the same flag the board does',
+    'glyph_flag, on the board\'s own anchor');
+
+  const rd = readFileSync('src/render.js', 'utf8');
+  ok(/glyph_flag/.test(rd), 'and the board still plants it too', 'one picture, two screens');
+
+  // AND ITS POLE STANDS IN THE MIDDLE OF THE MARKER.
+  ok(/const foot = y \+ drop;/.test(bare), 'and its pole stands in the middle of the marker',
+    'foot at the marker centre');
+
+  // THE STARS ARE BIG AND OUTLINED IN BLACK. The gap is held as a multiple of the
+  // radius rather than a number of its own, because at this size a fixed gap and a
+  // changed radius is a row of stars growing into each other.
+  ok(num('STAR_R') === 12, 'the stars are drawn at radius 12', `${num('STAR_R')}`);
+  ok(/STAR_GAP = STAR_R \* [\d.]+/.test(bare), 'and their spacing follows the radius',
+    'gap is a multiple of the radius');
+  ok(/ctx\.strokeStyle = '#000';/.test(bare), 'and they are outlined in black',
+    'solid black, not a soft brown');
+}
+
+console.log('\n--- the stage panel stands on its own board ---\n');
+
+// Tapping a marker opens the length and difficulty panel, and behind it is the map
+// that stage is played on. It was a flat plate, which is the one thing on that
+// screen that says nothing about where the player is choosing to fight.
+{
+  const rd = readFileSync('src/render.js', 'utf8');
+  const fn = rd.slice(rd.indexOf('function drawStart'));
+  const body = fn.slice(0, fn.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
+
+  ok(/art\[levels\[stage\.level\]\.art\]/.test(body),
+    'the panel is backed by the board that stage is played on',
+    'the level\'s own art');
+
+  // CLIPPED, or the board is a rectangle over a rounded panel and the corners show.
+  const clipAt = body.search(/ctx\.clip\(\)/);
+  const drawAt = body.search(/drawImage\(board/);
+  ok(clipAt >= 0 && drawAt > clipAt, 'and cut to the panel rather than overhanging it',
+    'clipped before the board is drawn');
+
+  // COVER-FITTED. A 960x540 board in a 444x292 panel: fitting the width leaves the
+  // panel half empty, and stretching bends roads that are never drawn bent.
+  ok(/Math\.max\(p\.w \/ 960, p\.h \/ 540\)/.test(body),
+    'and scaled to cover it rather than stretched to fit',
+    'one scale for both axes, the larger');
+
+  // AND DIMMED AFTERWARDS, because it is a background and the settings are the
+  // point. A board at full strength is a lovely thing to read a label off badly.
+  ok(drawAt >= 0 && body.indexOf('fillRect(p.x, p.y, p.w, p.h)', drawAt) > drawAt,
+    'and then dimmed, because the settings are what the panel is for',
+    'a wash over the board');
 }
 
 console.log('\n--- the map moves a little ---\n');
@@ -799,8 +892,7 @@ console.log('\n--- the map moves a little ---\n');
   // BOTH SWITCHES ARE REAL, and this is the promise the file was written under:
   // the owner asked for it in a form they could take out again if they did not like
   // it. Each name has to be declared and each has to actually gate its own effect.
-  for (const [name, fn] of [['CLOUDS', 'drawClouds'], ['SHIMMER', 'drawShimmer'],
-                            ['BIRDS', 'drawBirds']]) {
+  for (const [name, fn] of [['SHIMMER', 'drawShimmer'], ['BIRDS', 'drawBirds']]) {
     const declared = new RegExp(`const ${name} = (true|false);`).test(bare);
     const gates = new RegExp(`${name}[^\\n]*${fn}\\(`).test(bare);
     ok(declared && gates, `${name} is a switch that turns its own effect off`,
@@ -831,34 +923,43 @@ console.log('\n--- the map moves a little ---\n');
   const flow = n => { const m = new RegExp(`${n} = (-?[\\d.]+)`).exec(bare); return m ? +m[1] : null; };
   ok(flow('RIVER_FLOW') === 180, 'the river runs east to west',
     `${flow('RIVER_FLOW')} degrees`);
-  ok(flow('FALLS_FLOW') === 135, 'and the waterfall north-east to south-west',
+  // South eleven degrees west, as a compass bearing: 90 for south, plus 11 towards
+  // the west. Held as the number rather than the bearing because the code is in
+  // canvas degrees and converting in two places is how the two drift apart.
+  ok(flow('FALLS_FLOW') === 101, 'and the waterfall south, eleven degrees west',
     `${flow('FALLS_FLOW')} degrees`);
+
+  // AND THE FALLS ARE NOT A FLICKER. Their first rate came from what falling water
+  // does rather than what a thumbnail of falling water should do, and at two seconds
+  // a band on a shape that size it read as a strobe rather than a current.
+  const fallCycles = [...(/const FALL_BANDS = \[([^\]]+)\]/.exec(bare) || ['', ''])[1]
+    .matchAll(/seconds: ([\d.]+)/g)].map(m => +m[1]);
+  ok(fallCycles.length >= 3 && Math.min(...fallCycles) >= 5,
+    'and it runs at the pace of the rest of the map',
+    `quickest band ${Math.min(...fallCycles)}s`);
 
   // THE CLOUDS STAY UNDER THE FOG. Unexplored country is a still drained copy, and
   // a shadow crossing it would be motion in a place the player has not been.
   const body = draw.slice(draw.indexOf('export function drawOverview'));
   const fn = body.slice(0, body.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
   const at = re => fn.search(re);
-  // AGAINST WHERE THE FOG IS DRAWN, not where it is built. Those were the same line
-  // until the sunlight needed the same sheets and the build moved to the top of the
-  // function — at which point this check was comparing against fogFor and passing
-  // for the wrong reason. It is the drawing that has to come after the clouds.
-  ok(at(/drawMotion\(/) >= 0 && at(/drawMotion\(/) < at(/spread\(fog\)/),
-    'the cloud shadows fall only on country that has been reached',
-    'drawMotion before the fog is laid down');
-
-  // AND THE SUN IS LAID DOWN BEFORE THEM, because it REPLACES the lit country with
-  // a brighter copy rather than tinting it. Drawn after the clouds it would paint
-  // every shadow out of the one place they are visible.
-  ok(at(/spread\(sunSheet\)/) >= 0 && at(/spread\(sunSheet\)/) < at(/drawMotion\(/),
-    'and fall on sunlit ground rather than being painted over by it',
-    'the sun before the clouds');
+  // THE SUN IS LAID DOWN BEFORE THE NAMES AND THE FOG. It REPLACES the lit country
+  // with a brighter copy rather than tinting it, so anything drawn inside the lit
+  // shape before it is painted over.
+  //
+  // THE CLOUD SHADOWS ARE GONE, at the owner's word, and the pair of checks that
+  // held their draw order went with them rather than being left to pass vacuously.
+  // What they were guarding — that the sun goes down before the things it would
+  // erase — is still worth holding, and is held here.
+  ok(at(/spread\(sunSheet\)/) >= 0 && at(/spread\(sunSheet\)/) < at(/spread\(fog\)/),
+    'the sun is laid on the map before the dark is',
+    'the sun before the fog');
 
   // AND UNDER THE NAMES. A band crossing a river beneath a label was lighting the
   // lettering up with it, which is the one place this was visibly wrong.
-  ok(at(/drawMotion\(/) < at(/drawImage\(art\.overviewNames/),
-    'and under the region names, which they must not light up',
-    'drawMotion before the names');
+  ok(at(/spread\(sunSheet\)/) < at(/drawImage\(art\.overviewNames/),
+    'and under the region names, which it must not repaint',
+    'the sun before the names');
 
   // NOTHING HERE MAY OUTRUN THE FLAG. Before this file the flag was the only thing
   // on the map that moved, and most of why it reads as "tap here" is that fact. The
