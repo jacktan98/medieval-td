@@ -32,7 +32,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
          waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
-         roadRows, reachedBtn, starStepper, roadStars } from './admin.js';
+         roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -4694,9 +4694,11 @@ function drawAdminRoad(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(240,230,210,0.6)';
   ctx.font = '600 13px system-ui, sans-serif';
+  const queued = state.pendingReveal !== null && state.pendingReveal !== undefined;
   ctx.fillText(
-    open === 0 ? 'The road has not opened. The map plays its opening on the way out.'
-      : `The road is open to stage ${open} of ${STAGES.length}.`,
+    queued ? `Close to watch the road draw into stage ${state.pendingReveal + 1}.`
+      : open === 0 ? 'The road has not opened. Close to watch it arrive at stage 1.'
+      : `The road is open to stage ${open} of ${STAGES.length}. One stage at a time.`,
     ADMIN_PANEL.x + 16, ADMIN_TITLE_Y + 26);
 
   for (const row of roadRows()) {
@@ -4717,8 +4719,11 @@ function drawAdminRoad(ctx, state) {
       : (reached ? '#F0E6D2' : 'rgba(240,230,210,0.55)');
     ctx.fillText(locked ? 'no map yet' : row.name, row.x + 26, row.y + row.h / 2);
 
+    // Live only on the two rows that can move: the next stage along, and the last
+    // one reached. Everything else is drawn dead — a button that would do nothing
+    // has to look like it, or the panel reads as having stopped listening.
     panelButton(ctx, reachedBtn(row), reached ? 'Reached' : 'Not yet',
-      { on: reached, size: 13 });
+      { on: reached, live: canReach(state, row.i), size: 13 });
 
     // Stars only where there is a map: a stepper on a stage that cannot be played
     // would be writing a record for a level that does not exist.

@@ -29,6 +29,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { STAGES, STAGE_COUNT, playable } from '../src/data/overview.js';
 import { stageAt, stageOfLevel } from '../src/overview.js';
 import { hitStart, START_BTN } from '../src/render.js';
+import { canReach, setReached } from '../src/admin.js';
 import { levels } from '../src/level.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
@@ -409,6 +410,47 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
     return Math.max(...xs) <= 1920 && Math.min(...xs) >= -200;
   });
   ok(onBoard, 'and is stored in artboard units, not halved ones', '0..1920 across');
+}
+
+console.log('\n--- the road opens one stage at a time ---\n');
+
+// THE DASHBOARD CANNOT INVENT A STATE THE GAME CANNOT REACH. Progress is one
+// number and the road is walked in order, so "stage 5 open, stage 3 shut" does not
+// exist — and a test panel able to produce it would be testing something the game
+// never does.
+{
+  const at = n => ({ unlocked: n, stage: null, reveal: null, pendingReveal: null });
+
+  ok(canReach(at(3), 3) && canReach(at(3), 2),
+    'the next stage and the last one reached can be pressed', 'open to 3: rows 4 and 3');
+  ok(!canReach(at(3), 4) && !canReach(at(3), 1),
+    'and nothing further ahead or further back can be', 'rows 5 and 2 refuse');
+
+  // The refusal has to be in setReached, not only in the drawing. A dimmed button
+  // with a live handler under it is the bug this pair of checks exists for.
+  const jump = at(3);
+  ok(setReached(jump, 7, true) === false && jump.unlocked === 3,
+    'and a press on an out-of-order row changes nothing', 'stage 8 from open-to-3');
+
+  const step = at(3);
+  ok(setReached(step, 3, true) === true && step.unlocked === 4,
+    'while the next stage along moves the road one', 'open to 3 -> 4');
+
+  // WHICH LEG GETS ANIMATED. Each stage's leg is the road INTO it, so queueing the
+  // stage just reached draws exactly the stretch from the one before it — which is
+  // what makes several presses in a row show the last leg rather than a replay.
+  ok(step.pendingReveal === step.unlocked - 1,
+    'and queues the leg into the stage just reached', `stage ${step.pendingReveal + 1}`);
+
+  const back = at(4);
+  ok(setReached(back, 3, false) === true && back.unlocked === 3 && back.pendingReveal === null,
+    'giving a stage back walks the road down and queues nothing', 'open to 4 -> 3');
+
+  // Reaching several in a row leaves only the last queued.
+  const many = at(0);
+  for (let i = 0; i < 3; i++) setReached(many, i, true);
+  ok(many.unlocked === 3 && many.pendingReveal === 2,
+    'and three presses queue only the last of them', `open to ${many.unlocked}, leg into ${many.pendingReveal + 1}`);
 }
 
 console.log(bad

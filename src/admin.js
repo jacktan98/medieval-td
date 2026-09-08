@@ -1006,22 +1006,47 @@ export const reachedBtn = row => ({ x: row.x + 190, y: row.y, w: 96, h: row.h })
 // And the stars beside it, as the same [-] value [+] the rest of the panel uses.
 export const starStepper = row => stepperAt(row.x + 300, row.y, 'stars', 34, 54);
 
+// WHICH ROWS MAY BE PRESSED, and it is only ever two of them: the next stage
+// along, and the last one reached.
+//
+// The road is walked in order and `unlocked` is one number, so "stage 5 open,
+// stage 3 shut" is a state the game cannot be in. The first version of this tab
+// let you tap any row and quietly dragged every stage before it along, which
+// worked but taught the wrong thing — and it meant one press could jump the road
+// five stages, with no single leg to animate.
+//
+// One press, one stage, one leg. Everything else is drawn dead.
+export function canReach(state, i) {
+  const open = state.unlocked ?? 0;
+  return i === open        // the next stage: press to reach it
+      || i === open - 1;   // the last one reached: press to give it back
+}
+
 // HOW FAR THE ROAD IS OPEN, as a count. Marking stage i reached means the road has
 // got to it, so the count is i + 1; unmarking it means the road stops before it.
-//
-// It is deliberately not possible to open stage 5 while leaving stage 3 shut. The
-// road is walked in order and `unlocked` is one number, so every stage up to the
-// one tapped comes with it — which is also what makes this a test of the real
-// thing rather than of a state the game can never be in.
 export function setReached(state, i, on) {
-  const n = on ? i + 1 : i;
-  state.unlocked = Math.max(0, Math.min(STAGE_COUNT, n));
+  if (!canReach(state, i)) return false;
+
+  state.unlocked = Math.max(0, Math.min(STAGE_COUNT, on ? i + 1 : i));
   saveUnlocked(state.unlocked);
-  // A stage that is no longer reached cannot be the one the flag is being planted
-  // on, and a half-finished reveal would go on drawing a leg to nowhere.
+
+  // AND THE ROAD DRAWS ITSELF ON THE WAY OUT. Queued rather than played: the
+  // dashboard covers the whole board, so an animation started here would run
+  // underneath it and be over before it could be seen. `pendingReveal` is the same
+  // field a won game sets, and newGame in main.js spends it — so closing the panel
+  // shows exactly what finishing a stage shows.
+  //
+  // Reaching several stages one after another leaves the LAST one queued, because
+  // each press overwrites the field. That is the wanted behaviour rather than a
+  // consequence to apologise for: what is worth watching is the road arriving
+  // where the flag now is, not a replay of the four legs before it.
+  state.pendingReveal = on ? state.unlocked - 1 : null;
+
+  // The map has to be what you come back to, or the reveal plays behind a stage
+  // panel left open from before the dashboard was opened.
+  state.stage = null;
   state.reveal = null;
-  state.pendingReveal = null;
-  if (state.stage !== null && state.stage >= state.unlocked) state.stage = null;
+  return true;
 }
 
 // The stars shown on the world map are the BEST across every difficulty and
@@ -1162,7 +1187,9 @@ export function tapAdmin(state, x, y, restart) {
     for (const row of roadRows()) {
       const reached = row.i < (state.unlocked ?? 0);
 
-      if (on(reachedBtn(row))) { setReached(state, row.i, !reached); return true; }
+      // Returns whether it acted, so a tap on a row that cannot move stays silent
+      // rather than clicking — see the note on the click in src/input.js.
+      if (on(reachedBtn(row))) return setReached(state, row.i, !reached);
 
       // Stars are only meaningful where there is a map to have earned them on.
       if (row.level === null) continue;
