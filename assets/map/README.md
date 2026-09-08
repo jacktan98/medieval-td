@@ -547,8 +547,30 @@ Two things follow, and both are about the drawing rather than the code:
   brightness is free to be whatever reads best. The unexplored land is plainly still
   a place — you can see it is a desert, you can see the forest.
 
+- **It fades, it does not stop.** The colour leaves the drawing over about 120px,
+  which is wider than the 69px the light reaches from the road. A shorter fade puts
+  a rim around the explored land and turns the whole thing into a spotlight.
+
 Nothing has to be drawn for it. It follows the road, so a leg drawn anywhere brings
 its own surroundings back into colour.
+
+### The map moves a little
+
+`src/motion.js` draws cloud shadows crossing the land and highlight bands running on
+the water. It is deliberately separable: two switches at the top of that file turn
+either effect off, and removing it altogether is deleting the file plus one import
+and two calls in `src/overview.js`.
+
+What it asks of the drawing: **nothing**. The water is found by its colour in the
+muted map, so rivers and waterfalls drawn anywhere shimmer without being marked up.
+Two things follow from that which are worth knowing:
+
+- Anything **drawn on top of the water** — the four bridges — is correctly left
+  alone, because the colour key only finds water that is still visible.
+- The **waterfall** is the exception to motion staying inside explored country. It
+  is at Serene Peak, which the road never reaches, so under the fog it would be
+  frozen for every player for ever. Water is drawn over the fog instead; see
+  `WATER_THROUGH_FOG` in `src/motion.js` to put it back under.
 
 ### The dots go on top of everything
 

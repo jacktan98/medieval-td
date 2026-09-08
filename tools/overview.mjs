@@ -327,6 +327,24 @@ if (names.length > 1) {
     names.map(l => l.file).join(', '));
 }
 
+// WHERE THE WATER IS, so the game can move it.
+//
+// The map is one flat picture to the game, which is why nothing on it has ever
+// been able to do anything. Water is the exception worth making: it is the one
+// thing on a map that is obviously supposed to be moving, and it is the one thing
+// the tool can find without the artist marking anything, because it is already
+// drawn in its own two colours.
+//
+// TWO LISTS, because the two move differently. A river drifts along itself and a
+// waterfall falls, and one shimmer for both would have the falls sliding sideways.
+//
+// Emitted at ARTBOARD scale like the road, and used the same way: the game clips
+// to these outlines and draws inside them.
+const RIVER_FILL = '#61a6ff';
+const FALLS_FILL = '#a6d5ff';
+const riverPaths = picture.flatMap(l => l.shapes.filter(sh => sh.fill === RIVER_FILL)).map(sh => sh.d);
+const fallsPaths = picture.flatMap(l => l.shapes.filter(sh => sh.fill === FALLS_FILL)).map(sh => sh.d);
+
 const GROUND = guide.background;
 if (!GROUND) throw new Error(`${guide.file}: the guide layer has no background to use as ground`);
 
@@ -741,6 +759,13 @@ export const STAGE_COUNT = STAGES.length;
 
 // Which stages can actually be played. Everything else draws locked.
 export const playable = i => STAGES[i] && STAGES[i].level !== null;
+
+// THE WATER, in the artist's own coordinates, for src/motion.js to shimmer inside.
+// Two lists because the two move differently: a river drifts along itself, a
+// waterfall falls. Nothing else reads these, and nothing breaks if motion.js is
+// deleted — they simply stop being used.
+export const RIVERS = ${JSON.stringify(riverPaths)};
+export const FALLS = ${JSON.stringify(fallsPaths)};
 `;
 
 writeFileSync(OUT, body);
@@ -748,6 +773,7 @@ writeFileSync(OUT, body);
 const built = stages.filter(s => s.level !== null).length;
 console.log(`wrote ${OUT}`);
 console.log(`  ${stages.length} stages, ${built} playable, ${joined.length + 1} road lines followed`);
+console.log(`  ${riverPaths.length} river shape(s) and ${fallsPaths.length} waterfall shape(s) for the shimmer`);
 for (const [i, s] of stages.entries()) {
   console.log(`  stage ${String(i + 1).padStart(2)}  marker ${s.marker}  (${String(s.x).padStart(6)}, ${String(s.y).padStart(5)})  ` +
     `level ${s.level === null ? '-' : s.level}  leg ${s.leg.length}pts`);

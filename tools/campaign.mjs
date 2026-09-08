@@ -726,11 +726,89 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
     'and falls back to a wash where filters are unavailable',
     'drained ? light wash : dark one');
 
+  // AND IT FADES RATHER THAN STOPPING. The owner's word was fade: the lit country
+  // has to give way to the drained country over a distance, with no rim anywhere
+  // that says "the light ends here". The blur IS that distance, and it has to be
+  // wide against the reach — a short blur on a long reach is a spotlight with a
+  // soft edge, which is still a spotlight.
+  //
+  // Held as a RATIO rather than a number so it survives the reach being retuned,
+  // which has happened twice.
+  const reach = /LIT_REACH = ([\d.]+)/.exec(draw);
+  const blur = /LIT_BLUR = ([\d.]+)/.exec(draw);
+  ok(reach && blur && +blur[1] >= +reach[1],
+    'and the light fades out over at least as far as it reaches',
+    reach && blur ? `${blur[1]} of fade on ${reach[1]} of reach` : 'constants not found');
+
   // AND IT LIFTS AS THE ROAD OPENS, which is the reason it is there. The lit area
   // is built from the stages the player has unlocked, so it cannot fail to grow.
   ok(/for \(let i = 0; i < unlocked; i\+\+\)/.test(draw.slice(draw.indexOf('function makeFog'))),
     'and what is lit is exactly what the player has reached',
     'the lit area is built from unlocked stages');
+}
+
+console.log('\n--- the map moves a little ---\n');
+
+// AMBIENT MOTION. Source checks, and they say so: what a cloud shadow looks like is
+// a matter of pixels on a canvas this file cannot make. What it can hold is the
+// shape of the thing — where it is drawn, that it is removable, and that it stays
+// out of the way of the one moving thing that means something.
+{
+  const motion = readFileSync('src/motion.js', 'utf8');
+  const draw = readFileSync('src/overview.js', 'utf8');
+  const bare = motion.replace(/\/\/.*$/gm, '');
+
+  // BOTH SWITCHES ARE REAL, and this is the promise the file was written under:
+  // the owner asked for it in a form they could take out again if they did not like
+  // it. Each name has to be declared and each has to actually gate its own effect.
+  for (const [name, fn] of [['CLOUDS', 'drawClouds'], ['SHIMMER', 'drawShimmer']]) {
+    const declared = new RegExp(`const ${name} = (true|false);`).test(bare);
+    const gates = new RegExp(`${name}[^\\n]*${fn}\\(`).test(bare);
+    ok(declared && gates, `${name} is a switch that turns its own effect off`,
+      declared ? (gates ? 'declared and gates its call' : 'declared but gates nothing')
+               : 'not declared');
+  }
+
+  // AND THE WHOLE THING COMES OUT IN THREE LINES. One import and two calls is what
+  // the file's own instructions promise; if a third call site appeared, the promise
+  // would be quietly false.
+  const calls = (draw.match(/\b(drawMotion|drawWater)\(/g) || []).length;
+  const imports = (draw.match(/from '\.\/motion\.js'/g) || []).length;
+  ok(imports === 1 && calls === 2, 'and the whole of it is one import and two calls',
+    `${imports} import, ${calls} call(s) in src/overview.js`);
+
+  // THE CLOUDS STAY UNDER THE FOG. Unexplored country is a still drained copy, and
+  // a shadow crossing it would be motion in a place the player has not been.
+  const body = draw.slice(draw.indexOf('export function drawOverview'));
+  const fn = body.slice(0, body.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
+  const at = re => fn.search(re);
+  ok(at(/drawMotion\(/) >= 0 && at(/drawMotion\(/) < at(/fogFor\(/),
+    'the cloud shadows fall only on country that has been reached',
+    'drawMotion before the fog');
+
+  // AND UNDER THE NAMES. A band crossing a river beneath a label was lighting the
+  // lettering up with it, which is the one place this was visibly wrong.
+  ok(at(/drawMotion\(/) < at(/drawImage\(art\.overviewNames/),
+    'and under the region names, which they must not light up',
+    'drawMotion before the names');
+
+  // NOTHING HERE MAY OUTRUN THE FLAG. Before this file the flag was the only thing
+  // on the map that moved, and most of why it reads as "tap here" is that fact. The
+  // flag's cloth rides a sine at 2.6 radians a second; a cloud takes over a minute
+  // to cross and the slowest water band most of half of one. The falls are the
+  // quickest thing here and still slower than the cloth.
+  const cycles = [...bare.matchAll(/seconds: ([\d.]+)/g)].map(m => +m[1]);
+  ok(cycles.length >= 6 && Math.min(...cycles) >= 1.5,
+    'and nothing in it moves faster than the flag does',
+    `${cycles.length} cycle(s), quickest ${Math.min(...cycles)}s`);
+
+  // THE WATER IS MASKED BY ITS OWN PIXELS. Clipping to the outline put bands across
+  // the temple and half of Dawnford, because the water is one shape whose outline
+  // goes round the islands too. The colour key also keeps the shimmer off the four
+  // bridges, which a clip never could.
+  ok(/WATER_SHADE/.test(bare) && /getImageData/.test(bare) && !/ctx\.clip\(/.test(bare),
+    'and the water is found by its colour rather than its outline',
+    'colour-keyed mask, no path clip');
 }
 
 console.log('\n--- the road opens one stage at a time ---\n');

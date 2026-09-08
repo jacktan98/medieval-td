@@ -29,6 +29,9 @@ import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { MODES } from './data/waves.js';
 import { SQUASH } from './ground.js';
+// AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
+// for what it does and how to switch it off or take it out.
+import { drawMotion, drawWater } from './motion.js';
 
 // --- how much of the road is open -------------------------------------------
 
@@ -509,15 +512,24 @@ function makeParchment() {
 const FOG_BRIGHT = 0.62;   // how much light the drained country keeps
 const FOG_WASH = 'rgba(38,25,12,0.16)';   // and a breath of brown over that
 
-// How far the light reaches from the road, and how soft its edge is. The reach is
-// half again what it started at: arriving somewhere should show the player the
-// country they have arrived in rather than a circle of it.
+// HOW FAR THE LIGHT REACHES, and HOW LONG IT TAKES TO GO OUT. These are two
+// different things and the difference matters: reach is how much country a player
+// gets for arriving somewhere, blur is how gradually that country gives way to the
+// country beyond it.
 //
-// The BLUR is not scaled with it. Widening both together is the obvious reading of
-// "more range" and it washes the effect out — reach is how much you can see, blur
-// is how quickly it stops, and only the first was asked for.
+// THE BLUR IS THE FADE, and it is wide on purpose. A short one puts a rim around
+// the explored land — you can see where the light stops, which makes it a spotlight
+// on a map rather than a map that carries on into the distance. At this width there
+// is no edge to find anywhere: the colour leaves the drawing over most of a
+// medallion's width, so the eye reads distance rather than a boundary.
+//
+// It has been both ways round now. When the fog was a DARK WASH at half strength a
+// blur this wide erased the effect completely — there was nothing left to see the
+// lit pocket by. That is not true of a colour drain: the far country is a different
+// kind of picture rather than a dimmer one, so the two stay told apart however
+// softly they are joined, and the fade can be as long as it wants to be.
 const LIT_REACH = 69;
-const LIT_BLUR = 58;
+const LIT_BLUR = 120;
 
 let fogSheet = null, fogKey = '';
 
@@ -648,6 +660,13 @@ export function drawOverview(ctx, state) {
   // them sat in the darkest corner of the map looking like a different colour from
   // the rest. The owner asked for them exactly as drawn, and after the multiply is
   // the only place that can be true.
+  // AND THE MAP MOVES A LITTLE: shadows crossing the land, the water running.
+  // BEFORE the names and before the fog. Before the names because a band crossing
+  // a river under a label was lighting up the lettering with it; before the fog
+  // because unexplored country is a drained still copy and should stay still. One
+  // call, deletable on its own; src/motion.js says how.
+  drawMotion(ctx, performance.now() / 1000);
+
   if (art.overviewNames) ctx.drawImage(art.overviewNames, 0, 0, 960, 540);
 
   const r = state.reveal;
@@ -659,6 +678,11 @@ export function drawOverview(ctx, state) {
   // medallions and the flag are the interface and are never in shadow.
   const live = r && r.phase === 'road' ? r.stage : -1;
   ctx.drawImage(fogFor(unlocked, live, live >= 0 ? r.t : 1), 0, 0);
+
+  // AND THE WATER OVER THE TOP OF THE DARK, which is the one thing allowed through
+  // it. The waterfall is in country the road never reaches, so under the fog it
+  // would never be seen to move at all. See WATER_THROUGH_FOG in src/motion.js.
+  drawWater(ctx, performance.now() / 1000);
 
   // AND THE TRAIL OVER ALL OF IT. The dots are the last thing from the artwork
   // side to go down and nothing in the drawing is put back on top of them: the
