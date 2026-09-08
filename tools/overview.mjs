@@ -391,6 +391,90 @@ const tail = (L, fromA) => (fromA ? L.line[L.line.length - 1] : L.line[0]);
 const oriented = (L, fromA) => (fromA ? L.line : [...L.line].reverse());
 const farMarker = (L, fromA) => (fromA ? L.b : L.a);
 
+// TAKE THE DOUBLING BACK OUT OF A JOINED LINE.
+//
+// The artist draws the road up to a bridge and the bridge's own piece starting a
+// little way back along it, so the two OVERLAP. Laid end to end the line goes
+// forward, back, and forward again — invisible on the map, but not in the dots,
+// because the trail is spaced by ARC LENGTH. A 6px doubling spends 12px of walking
+// without going anywhere, so two dots land almost on top of each other: measured
+// at 3.4px apart where they should be 10, on all four bridges.
+//
+// Trimming at the seam was the obvious fix and it only half worked. The two pieces
+// meet at an ANGLE, so "behind the direction of travel" tested at the join misses
+// points that are behind the road while being ahead of that one line — it cleaned
+// up one bridge of four, then two of four.
+//
+// This asks the simpler question instead, everywhere rather than at the seams: does
+// this step reverse against the one before it? A road drawn by a person never does
+// — the six legs with no seam in them have not one reversal between them — so any
+// step that turns back more than ninety degrees is the overlap and nothing else.
+// Dropping the point that causes it is enough, and comparing against the last KEPT
+// direction rather than the original one lets a run of several go in a single pass.
+//
+// The last point is always kept: it is the marker the leg arrives at, and a leg
+// that stops short of its own stage would fail the check in tools/campaign.mjs.
+// A TURN SHARPER THAN THIS IS AN ARTEFACT, not a corner. The road is sampled
+// every 4px or so and a person drawing one does not hairpin inside 4px; the six
+// legs with no seam in them turn by at most a few degrees a step. 80 rather than
+// 90 because the residual zigs after one pass came in at 105 and 114 degrees, and
+// there is nothing between that and a genuine bend to protect.
+const KINK = Math.cos(80 * Math.PI / 180);
+
+const unit = (a, b) => {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const l = Math.hypot(dx, dy);
+  return l ? [dx / l, dy / l] : null;
+};
+
+function unkink(line) {
+  if (line.length < 3) return line;
+
+  // ONE PASS IS NOT ENOUGH, and finding that out is what took two attempts.
+  // Dropping a point changes the direction the NEXT point is judged against, so a
+  // run of overlap can let its own tail through — both remaining bridges came back
+  // with exactly one reversal left. Repeating until a pass changes nothing is the
+  // only version that can promise none, and it converges in two or three.
+  let out = line;
+  for (let pass = 0; pass < 8; pass++) {
+    const kept = [out[0]];
+    let dir = null;
+    for (let i = 1; i < out.length; i++) {
+      const last = kept[kept.length - 1];
+      const dx = out[i][0] - last[0], dy = out[i][1] - last[1];
+      const len = Math.hypot(dx, dy);
+      if (!len) continue;
+      const d = [dx / len, dy / len];
+      if (dir && d[0] * dir[0] + d[1] * dir[1] < KINK) continue;
+      kept.push(out[i]);
+      dir = d;
+    }
+
+    // THE FAR END IS ALWAYS KEPT: it is the marker the leg arrives at, and a leg
+    // that stopped short of its own stage would fail tools/campaign.mjs.
+    //
+    // But pushing it back on blindly was a bug that hid the whole problem. When
+    // the overlap is AT the marker end, the last point kept sits past it, so
+    // adding the end reverses — the pass drops it, the push adds it back, and the
+    // loop oscillates for ever while reporting one reversal left on three legs.
+    // Whatever is in the way is popped instead, which converges.
+    const end = out[out.length - 1];
+    if (kept[kept.length - 1] !== end) {
+      while (kept.length >= 2) {
+        const a = kept[kept.length - 1], b = kept[kept.length - 2];
+        const d1 = unit(b, a), d2 = unit(a, end);
+        if (!d1 || !d2 || d1[0] * d2[0] + d1[1] * d2[1] >= KINK) break;
+        kept.pop();
+      }
+      kept.push(end);
+    }
+
+    if (kept.length === out.length) return kept;
+    out = kept;
+  }
+  return out;
+}
+
 // Walk out from one end of one leg, gathering legs until a marker or a dead end.
 function walk(L, fromA) {
   let line = oriented(L, fromA);
@@ -426,7 +510,7 @@ function walk(L, fromA) {
     cameA = best.startA;
     far = farMarker(best.O, best.startA);
   }
-  return { line, to: far };
+  return { line: unkink(line), to: far };
 }
 
 const joined = [];

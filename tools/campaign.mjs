@@ -434,6 +434,73 @@ console.log('\n--- what stands in front of a marker is put back on top ---\n');
   ok(onBoard, 'and is stored in artboard units, not halved ones', '0..1920 across');
 }
 
+console.log('\n--- the trail is evenly spaced along every leg ---\n');
+
+// THE FAILURE THIS CATCHES IS INVISIBLE ON THE MAP. The trail is spaced by ARC
+// LENGTH, so a leg that doubles back on itself spends walking without going
+// anywhere and drops two dots almost on top of each other. The road looks
+// perfectly fine; only the dots show it.
+//
+// It happened on all four bridge crossings at once, because the artist draws the
+// road up to a bridge and the bridge's piece starting a little way back along it,
+// so the two overlap where they are joined.
+{
+  const GAP = 10, DOT_R = 2.5;   // must match src/overview.js
+
+  // The same walk drawTrail does, so this measures what is actually drawn rather
+  // than a second idea of it.
+  const dotsOn = leg => {
+    const out = [];
+    let walked = 0, next = GAP;
+    for (let i = 1; i < leg.length; i++) {
+      const [x0, y0] = leg[i - 1], [x1, y1] = leg[i];
+      const seg = Math.hypot(x1 - x0, y1 - y0);
+      if (!seg) continue;
+      while (next <= walked + seg) {
+        const t = (next - walked) / seg;
+        out.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t]);
+        next += GAP;
+      }
+      walked += seg;
+    }
+    return out;
+  };
+
+  let worst = Infinity, worstAt = 0, touching = 0;
+  for (const [i, s] of STAGES.entries()) {
+    const d = dotsOn(s.leg);
+    for (let k = 1; k < d.length; k++) {
+      const gap = Math.hypot(d[k][0] - d[k - 1][0], d[k][1] - d[k - 1][1]);
+      if (gap < worst) { worst = gap; worstAt = i + 1; }
+      if (gap < DOT_R * 2) touching++;
+    }
+  }
+  // Two dots closer than their own diameter are drawn overlapping, which is the
+  // thing you can see. Three quarters of the nominal gap is the useful bound: a
+  // curve legitimately shortens the straight-line distance a little, and nothing
+  // clean has ever come in under it.
+  ok(touching === 0, 'no two dots are drawn on top of each other',
+    touching ? `${touching} pair(s) closer than ${DOT_R * 2}px` : 'none closer than their own width');
+  ok(worst >= GAP * 0.75, 'and none is bunched against its neighbour',
+    `closest pair ${worst.toFixed(1)}px of ${GAP}, on stage ${worstAt}`);
+
+  // AND NO LEG TURNS BACK ON ITSELF, which is the cause rather than the symptom.
+  // A road drawn by a person never reverses inside 4px; every reversal this has
+  // ever found was two pieces overlapping at a join.
+  let kinks = 0, kinked = [];
+  for (const [i, s] of STAGES.entries()) {
+    let n = 0;
+    for (let k = 2; k < s.leg.length; k++) {
+      const a = [s.leg[k - 1][0] - s.leg[k - 2][0], s.leg[k - 1][1] - s.leg[k - 2][1]];
+      const b = [s.leg[k][0] - s.leg[k - 1][0], s.leg[k][1] - s.leg[k - 1][1]];
+      if (a[0] * b[0] + a[1] * b[1] < 0) n++;
+    }
+    if (n) { kinks += n; kinked.push(`stage ${i + 1}`); }
+  }
+  ok(kinks === 0, 'because no leg doubles back where its pieces meet',
+    kinks ? `${kinks} reversal(s) on ${kinked.join(', ')}` : `${STAGES.length} legs walk forwards throughout`);
+}
+
 console.log('\n--- the road opens one stage at a time ---\n');
 
 // THE DASHBOARD CANNOT INVENT A STATE THE GAME CANNOT REACH. Progress is one
