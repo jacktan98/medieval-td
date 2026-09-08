@@ -466,6 +466,13 @@ be untouched by the sheet is on top of it, and the only way to be on top of it i
 not to be in the picture underneath. Draw the names in that colour and in a layer
 of their own and nothing else is needed.
 
+**One colour is held out of the recolour: `#ffd700`, gold leaf.** The muting exists
+to put every surface on the map into one range under one light, and gold is not a
+surface being lit — it is a thing that shines. The cross on the temple at Dawnford
+came through the same desaturation as one more shade of the tan roof it stands on.
+Draw anything meant to catch the light in that exact gold, as a fill or a stroke,
+and it reaches the player untouched.
+
 Everything else is the picture, drawn in the order it is numbered.
 
 Three files beside them are **DERIVED and committed**, and none should ever be
@@ -520,6 +527,23 @@ current drawing lands within 24. Nothing else has to line up.
 from off the left edge, and it is what the game draws before stage 1 exists — the
 animation a brand-new player sees. The tool identifies it by elimination and stops
 if there is more or less than one.
+
+### What has not been reached is dark
+
+The game lays a deep brown over everything the player has not walked to, lifting it
+along the road as stages are cleared. Two things follow from that, and both are
+about the drawing rather than the code:
+
+- **The whole map is visible from the first load unless something hides it.** Every
+  mountain and every name is drawn before the campaign starts, so a player on stage
+  1 could otherwise see the corner they reach ten stages later. The dark is what
+  turns that into something to earn.
+- **It is not opaque** — about nine tenths — so the far country keeps its shape. A
+  coastline and the suggestion of a range still read, which is the difference
+  between unexplored country and a hole in the page.
+
+Nothing has to be drawn for it. It follows the road, so a leg drawn anywhere lights
+its own surroundings.
 
 ### The dots go on top of everything
 

@@ -74,23 +74,41 @@ export function openedStages() {
 
 // --- the animation ----------------------------------------------------------
 
-// How long the road takes to draw itself, and how long the flag takes to land.
-// The road is the part worth watching, so it gets most of the time; the flag is
-// punctuation.
+// HOW FAST THE MARCH GOES, rather than how long it takes. This was one number —
+// 2.6 seconds a leg, whatever the leg — and a leg is anywhere from 50 to 333
+// canvas px, so the army crossed the short hop into stage 6 at 19px a second and
+// the long run out to stage 8 at 128. Nearly SEVEN TIMES the pace, on the same
+// road, on the same screen. Nothing about it read as one army walking; the long
+// legs in particular looked hurried, which is the opposite of what the distance
+// should say.
 //
-// SLOW, because it is the only thing on this screen that happens and it is the
-// reward for a run. The first pass was 0.9s and 0.42s, which is the pace of a UI
-// transition — something to be got through. A road being walked should take long
-// enough to watch, and a flag going into the ground should land rather than
-// appear. A tap still skips both, so the cost to somebody who has seen it is one
-// touch.
-const ROAD_SECONDS = 2.6;
+// So the road is walked at a fixed speed and the far stages simply take longer to
+// reach, which is what distance means. A tap still skips it, so the cost of a long
+// march to somebody who has seen it is one touch.
+//
+// Sixty is deliberately near the SLOW end of what the fixed duration used to
+// produce rather than at its average: the complaint was about rushing, and the
+// legs that were being rushed were the long ones. It puts the longest march on
+// this map at 5.6 seconds and the shortest at the floor below.
+const ROAD_SPEED = 60;
+
+// And a floor, because a 50px hop at any honest speed is over before it reads as
+// travel. Short legs are paced by this rather than by the speed, which is the one
+// place the two rules disagree and the right way round: a march you cannot see is
+// worse than a march very slightly quicker than its neighbour.
+const ROAD_MIN_SECONDS = 0.8;
+
 const FLAG_SECONDS = 1.1;
 
-// Slow into the destination rather than arriving at full speed. The road is
-// walking towards somewhere, and something that stops dead has not arrived, it
-// has been cut off.
-const easeOut = t => 1 - (1 - t) * (1 - t) * (1 - t);
+// How long the road into a given stage should take: its own length at the march
+// speed, never under the floor.
+function roadSeconds(i) {
+  const leg = STAGES[i] ? STAGES[i].leg : null;
+  if (!leg || leg.length < 2) return ROAD_MIN_SECONDS;
+  let d = 0;
+  for (let k = 1; k < leg.length; k++) d += Math.hypot(leg[k][0] - leg[k - 1][0], leg[k][1] - leg[k - 1][1]);
+  return Math.max(ROAD_MIN_SECONDS, d / ROAD_SPEED);
+}
 
 // The flag overshoots and settles. A pure ease would have it slide into place;
 // this drops it, lets it go slightly past, and brings it back — which is what
@@ -105,13 +123,13 @@ const plant = t => {
 // exists, which is what lets a tap skip straight to the end without losing the
 // unlock.
 export function startReveal(state, i) {
-  state.reveal = { stage: i, t: 0, phase: 'road' };
+  state.reveal = { stage: i, t: 0, phase: 'road', seconds: roadSeconds(i) };
 }
 
 export function stepReveal(state, dt) {
   const r = state.reveal;
   if (!r) return;
-  r.t += dt / (r.phase === 'road' ? ROAD_SECONDS : FLAG_SECONDS);
+  r.t += dt / (r.phase === 'road' ? (r.seconds || ROAD_MIN_SECONDS) : FLAG_SECONDS);
   if (r.t < 1) return;
   if (r.phase === 'road') { r.phase = 'flag'; r.t = 0; return; }
   state.reveal = null;
@@ -464,6 +482,110 @@ function makeParchment() {
 
 // The world, everything reached on it, and the flag on the furthest point. Draws
 // nothing else: the panel that opens on a tap belongs to render.js.
+// --- the world beyond the road ----------------------------------------------
+
+// WHAT HAS NOT BEEN REACHED IS DARK, and it gets darker the further from the road
+// it lies. The map is finished before the campaign is: every mountain, every
+// bridge and every name is drawn from the first load, so a player standing on
+// stage 1 can already see the corner they will arrive at ten stages later. That is
+// a lot of world handed over at once, and none of it is a reason to keep playing.
+//
+// So the drawing is lit only where the army has been. Everything the road has
+// opened is clear, the country around it falls off into a deep brown, and every
+// stage cleared pulls more of the map out of it. Nothing is hidden that the player
+// has earned, and nothing is given away that they have not.
+//
+// NOT PURE BLACK, and not opaque. At the far edge this leaves a shape you can
+// almost read — a coastline, the suggestion of a mountain range — which is the
+// difference between a map with unexplored country on it and a map with a hole.
+const FOG = [26, 17, 8];
+const FOG_MAX = 0.9;
+
+// How far the light reaches from the road, and how soft its edge is. The reach is
+// generous: the point is to show the player where they are and what is around
+// them, not to make them peer down a tunnel. The blur is most of the effect —
+// a hard edge would read as a spotlight rather than as distance.
+const LIT_REACH = 46;
+const LIT_BLUR = 58;
+
+let fogSheet = null, fogKey = '';
+
+// The lit area is drawn as one thick round-capped stroke along every road the
+// player has walked, plus a disc at every marker they have reached, and then
+// blurred. Stroking a polyline is one operation for a whole leg where a radial
+// gradient per point would be forty, and the blur does the falloff for nothing.
+function makeFog(unlocked, live, frac) {
+  // One canvas, redrawn. A march rebuilds this thirty times and a fresh canvas
+  // each time is thirty two-megabyte allocations to hand straight back.
+  const c = fogSheet || (fogSheet = document.createElement('canvas'));
+  c.width = 960;
+  c.height = 540;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 960, 540);
+
+  g.fillStyle = `rgba(${FOG[0]},${FOG[1]},${FOG[2]},${FOG_MAX})`;
+  g.fillRect(0, 0, 960, 540);
+
+  g.globalCompositeOperation = 'destination-out';
+  // A blur filter is what makes the edge a falloff rather than a cut. Where it is
+  // not supported the light still lands, with a harder rim — the map stays
+  // playable and nothing throws.
+  try { g.filter = `blur(${LIT_BLUR}px)`; } catch { /* hard edge, still lit */ }
+  g.lineWidth = LIT_REACH * 2;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.strokeStyle = '#000';
+  g.fillStyle = '#000';
+
+  for (let i = 0; i < unlocked; i++) {
+    const leg = STAGES[i].leg;
+    // The leg being walked is lit only as far as it has been walked, so the light
+    // travels with the army rather than arriving before it.
+    const upto = i === live ? frac : 1;
+    if (upto <= 0) continue;
+
+    let total = 0;
+    for (let k = 1; k < leg.length; k++) total += Math.hypot(leg[k][0] - leg[k - 1][0], leg[k][1] - leg[k - 1][1]);
+    const stop = total * upto;
+
+    g.beginPath();
+    g.moveTo(leg[0][0], leg[0][1]);
+    let walked = 0;
+    for (let k = 1; k < leg.length; k++) {
+      const seg = Math.hypot(leg[k][0] - leg[k - 1][0], leg[k][1] - leg[k - 1][1]);
+      if (walked + seg >= stop) {
+        const t = seg ? (stop - walked) / seg : 0;
+        g.lineTo(leg[k - 1][0] + (leg[k][0] - leg[k - 1][0]) * t,
+                 leg[k - 1][1] + (leg[k][1] - leg[k - 1][1]) * t);
+        break;
+      }
+      g.lineTo(leg[k][0], leg[k][1]);
+      walked += seg;
+    }
+    g.stroke();
+
+    // A wider pool at a marker the player has actually arrived at: a stage is a
+    // place rather than a point on a line, and its surroundings are what the
+    // player is choosing from.
+    if (upto >= 1) {
+      g.beginPath();
+      g.arc(STAGES[i].x, STAGES[i].y, LIT_REACH * 1.5, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
+  return c;
+}
+
+// Rebuilt only when what is lit has actually changed. During a march that is
+// thirty times across the whole leg, which is under the eye's threshold for a
+// blur this soft and a great deal cheaper than doing it every frame.
+function fogFor(unlocked, live, frac) {
+  const key = `${unlocked}:${live}:${Math.round(frac * 30)}`;
+  if (key !== fogKey) { makeFog(unlocked, live, frac); fogKey = key; }
+  return fogSheet;
+}
+
 export function drawOverview(ctx, state) {
   const img = art.overview;
   if (img) ctx.drawImage(img, 0, 0, 960, 540);
@@ -489,6 +611,13 @@ export function drawOverview(ctx, state) {
   const r = state.reveal;
   const unlocked = Math.min(state.unlocked ?? 0, STAGE_COUNT);
 
+  // AND THE DARK OVER THE PARTS OF THE WORLD NOBODY HAS WALKED TO. Over the whole
+  // drawing including the names — a region nobody has reached should not be
+  // announcing itself — and under everything the game draws, because the trail, the
+  // medallions and the flag are the interface and are never in shadow.
+  const live = r && r.phase === 'road' ? r.stage : -1;
+  ctx.drawImage(fogFor(unlocked, live, live >= 0 ? r.t : 1), 0, 0);
+
   // AND THE TRAIL OVER ALL OF IT. The dots are the last thing from the artwork
   // side to go down and nothing in the drawing is put back on top of them: the
   // road is on top of the world it crosses, which is what the owner asked for and
@@ -498,7 +627,12 @@ export function drawOverview(ctx, state) {
   // the animation has reached.
   for (let i = 0; i < unlocked; i++) {
     const live = r && r.stage === i;
-    drawTrail(ctx, STAGES[i].leg, live && r.phase === 'road' ? easeOut(r.t) : 1);
+    // LINEAR, and that is the point. The reveal used to ease out into the marker,
+    // which is a lovely thing for a UI panel to do and the wrong thing for an army:
+    // it means the last third of every road is walked slower than the first. The
+    // fraction here is fraction of ARC LENGTH, so a straight t is a straight pace.
+    // The arrival still has its beat — the flag drops, overshoots and settles.
+    drawTrail(ctx, STAGES[i].leg, live && r.phase === 'road' ? r.t : 1);
   }
 
   // The medallions. A stage still having its road drawn has not been arrived at

@@ -505,7 +505,19 @@ function hueOf(r, g, b) {
 const WATER = '#61a6ff';
 const WATERFALL = '#a6d5ff';
 
+// GOLD LEAF IS NOT A MATERIAL BEING LIT, it is a thing that shines, and the muting
+// has no way to know the difference. Every other colour on the map is a surface
+// under one light and belongs in one range; the cross on the temple at Dawnford is
+// meant to CATCH that light, and putting it through the same desaturation left it
+// as one more shade of the tan roof it stands on.
+//
+// So it keeps its own colour, exactly as the region names do and for the same
+// reason. It is the artist's own #ffd700, and it is a STROKE rather than a fill —
+// the cross is two thin lines — which is why the exemption is applied to both.
+const GOLD = new Set(['#ffd700']);
+
 function sepia(hex) {
+  if (GOLD.has(hex)) return hex;
   if (hex === WATER) hex = WATERFALL;
 
   const r0 = parseInt(hex.slice(1, 3), 16);

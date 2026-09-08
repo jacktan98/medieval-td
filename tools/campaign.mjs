@@ -27,7 +27,7 @@
 
 import { readFileSync, readdirSync } from 'fs';
 import { STAGES, STAGE_COUNT, playable } from '../src/data/overview.js';
-import { stageAt, stageOfLevel } from '../src/overview.js';
+import { stageAt, stageOfLevel, startReveal } from '../src/overview.js';
 import { hitStart, START_BTN } from '../src/render.js';
 import { canReach, setReached } from '../src/admin.js';
 import { levels } from '../src/level.js';
@@ -405,8 +405,13 @@ console.log('\n--- the display map is the same drawing, muted ---\n');
   ok(!widths.has('4'), 'and its outlines are thinner than the artist drew them',
     `width(s): ${[...widths].join(', ') || 'none'}`);
 
+  // THE GOLD IS NOT PART OF THE PALETTE, and is held out here by name rather than
+  // by widening the bound that follows. Raising SAT_MAX to let it through would
+  // have let a raw grass green through with it, which is the whole thing the bound
+  // is for. One exemption, written down, checked separately below.
+  const GOLD_LEAF = '#ffd700';
   const colours = [...new Set((sep.match(/(?:fill|stroke)="(#[0-9a-fA-F]{6})"/g) || [])
-    .map(t => t.slice(-8, -1).toLowerCase()))];
+    .map(t => t.slice(-8, -1).toLowerCase()))].filter(c => c !== GOLD_LEAF);
 
   // EVERY COLOUR IS MUTED. It used to check that every one was literally a brown
   // — r >= g >= b — which was true while the map was full sepia and stopped being
@@ -475,6 +480,21 @@ console.log('\n--- the display map is the same drawing, muted ---\n');
     ok(!/<rect[^>]*fill="#(?!ffffff")[0-9a-f]{6}"/i.test(names),
       'and it carries no ground of its own',
       'transparent behind the lettering');
+  }
+
+  // EXCEPT THE GOLD LEAF, which is not a material being lit. Every other colour on
+  // the map is a surface under one light and belongs in one range; the cross on the
+  // temple at Dawnford is meant to CATCH that light, and through the same
+  // desaturation it came out as one more shade of the tan roof it stands on. It is
+  // drawn as two thin STROKES rather than a fill, which is where the muting reaches
+  // it, so that is where this looks.
+  {
+    const GOLD = '#ffd700';
+    const drawnGold = (allLayers.match(new RegExp(`stroke="${GOLD}"`, 'gi')) || []).length;
+    const keptGold = (sep.match(new RegExp(`stroke="${GOLD}"`, 'gi')) || []).length;
+    ok(drawnGold > 0 && keptGold === drawnGold,
+      'and the gold on the temple is left to shine',
+      `${keptGold} of ${drawnGold} stroke(s) untouched`);
   }
 
   // AND THE TOOL CAN READ EVERY KIND OF CURVE THE ARTIST DRAWS. Text converts to
@@ -605,6 +625,89 @@ console.log('\n--- the trail is evenly spaced along every leg ---\n');
       off ? `${off} point(s) off the road, on ${[...offAt].map(n => `stage ${n}`).join(', ')}`
           : `worst ${worst.toFixed(2)} of ${SLACK} artboard units, over ${STAGE_COUNT} legs`);
   }
+}
+
+console.log('\n--- the march is one pace, whatever the distance ---\n');
+
+// THE ARMY WALKS AT A SPEED, not for a duration. The reveal used to run for a
+// fixed 2.6 seconds a leg, and a leg on this map is anywhere from 50 to 333 canvas
+// px — so the short hop into stage 6 was walked at 19px a second and the long run
+// out to stage 8 at 128. Seven times the pace, on the same road, and the long legs
+// were the ones that looked hurried.
+//
+// This asks it through startReveal, which is the way the game asks it, rather than
+// through the constant: a duration that came out right for the wrong reason would
+// still be wrong the next time a leg is redrawn.
+{
+  const paces = STAGES.map((s, i) => {
+    let d = 0;
+    for (let k = 1; k < s.leg.length; k++)
+      d += Math.hypot(s.leg[k][0] - s.leg[k - 1][0], s.leg[k][1] - s.leg[k - 1][1]);
+    const st = {};
+    startReveal(st, i);
+    return { i, d, secs: st.reveal.seconds, pace: d / st.reveal.seconds };
+  });
+
+  // The floor is allowed to be quicker than the speed, and only the floor: a leg
+  // too short to read as travel is paced by a minimum instead. Everything above it
+  // walks at one pace.
+  const FLOOR = 0.8;
+  const paced = paces.filter(p => p.secs > FLOOR + 1e-9);
+  const lo = Math.min(...paced.map(p => p.pace)), hi = Math.max(...paced.map(p => p.pace));
+  ok(paced.length >= STAGE_COUNT - 2 && hi - lo < 0.5,
+    'every leg long enough to see is walked at one speed',
+    `${paced.length} of ${STAGE_COUNT} at ${lo.toFixed(0)}px/s`);
+
+  const floored = paces.filter(p => p.secs <= FLOOR + 1e-9);
+  ok(floored.every(p => p.pace <= lo + 1e-6),
+    'and the ones on the floor are never faster than that',
+    floored.length ? `${floored.length} short leg(s) at the ${FLOOR}s floor`
+                   : 'no leg is short enough to need the floor');
+
+  // AND A LONG ROAD TAKES LONGER, which is the whole point of the change and the
+  // thing a fixed duration cannot do.
+  const longest = paces.reduce((a, b) => (b.d > a.d ? b : a));
+  const shortest = paces.reduce((a, b) => (b.d < a.d ? b : a));
+  ok(longest.secs > shortest.secs * 3,
+    'so the far stages take longer to reach than the near ones',
+    `stage ${longest.i + 1} ${longest.secs.toFixed(1)}s over ` +
+    `${Math.round(longest.d)}px, stage ${shortest.i + 1} ${shortest.secs.toFixed(1)}s over ${Math.round(shortest.d)}px`);
+}
+
+console.log('\n--- the world beyond the road is dark ---\n');
+
+// A SOURCE CHECK, and it says so. What the fog looks like is a matter of pixels on
+// a canvas this file has no way to make; what it must never do is a matter of the
+// order two calls appear in, which this can read.
+{
+  const draw = readFileSync('src/overview.js', 'utf8');
+  const fn = draw.slice(draw.indexOf('export function drawOverview'));
+  const body = fn.slice(0, fn.indexOf('\n}\n') + 2).replace(/\/\/.*$/gm, '');
+  const at = re => body.search(re);
+
+  // Over the drawing INCLUDING the names — an unreached region should not be
+  // announcing itself — and under the trail, the medallions and the flag, which are
+  // the interface and are never in shadow.
+  const names = at(/drawImage\(art\.overviewNames/);
+  const fog = at(/fogFor\(/);
+  const trail = at(/drawTrail\(/);
+  ok(names >= 0 && fog > names, 'the dark falls over the names as well as the map',
+    'fog after the names layer');
+  ok(fog >= 0 && trail > fog, 'and never over the road, the medallions or the flag',
+    'fog before the trail');
+
+  // NOT OPAQUE. At the far edge the shape of the country has to survive — a
+  // coastline, the suggestion of a range — or the map has a hole in it rather than
+  // unexplored country.
+  const max = /FOG_MAX = ([\d.]+)/.exec(draw);
+  ok(max && +max[1] < 1 && +max[1] > 0.5, 'and it is deep enough to hide detail without hiding shape',
+    max ? `${max[1]} of 1` : 'FOG_MAX not found');
+
+  // AND IT LIFTS AS THE ROAD OPENS, which is the reason it is there. The lit area
+  // is built from the stages the player has unlocked, so it cannot fail to grow.
+  ok(/for \(let i = 0; i < unlocked; i\+\+\)/.test(draw.slice(draw.indexOf('function makeFog'))),
+    'and what is lit is exactly what the player has reached',
+    'the lit area is built from unlocked stages');
 }
 
 console.log('\n--- the road opens one stage at a time ---\n');

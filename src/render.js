@@ -3420,31 +3420,15 @@ function drawStart(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // NO STAGE PICKED: the map is the whole screen, and the only things on top of
-  // it are the two corner doors and a line telling the player what to do. The
-  // flag is drawn by drawOverview and it is the instruction as much as the text
-  // is — the text is there for the first time only.
+  // NO STAGE PICKED: the map is the whole screen, and the only things on top of it
+  // are the two corner doors. There is no instruction line any more.
+  //
+  // There was one — "Tap the flag to march", or "The road ends here" once the road
+  // had opened past the last drawn board. It was there for a first-time player, and
+  // it sat across the top of the map for every player after that, over the artwork,
+  // saying something the flag already says by being the only thing on the screen
+  // that moves. The owner asked for it gone.
   if (state.stage === null || state.stage === undefined) {
-    if (!state.reveal) {
-      // WHAT THE LINE SAYS DEPENDS ON WHERE THE FLAG IS. The flag marks how far
-      // the road has opened, and the road opens ahead of the boards — clear every
-      // map the game has and the flag lands on a marker with nothing behind it.
-      // Telling that player to tap it would be telling them to tap a padlock, so
-      // the line says what is actually true instead.
-      const front = (state.unlocked ?? 0) - 1;
-      const label = playable(front)
-        ? 'Tap the flag to march'
-        : 'The road ends here — the next stage is still being drawn';
-      ctx.font = '600 16px system-ui, sans-serif';
-      const w = ctx.measureText(label).width + 30;
-      ctx.fillStyle = 'rgba(28,22,12,0.72)';
-      ctx.beginPath();
-      ctx.roundRect(480 - w / 2, 24, w, 32, 8);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(246,231,193,0.92)';
-      ctx.fillText(label, 480, 41);
-    }
-
     drawBookButton(ctx, BOOK_BTN_START, 19);
     drawAdminDoor(ctx);
     ctx.textAlign = 'left';
