@@ -72,8 +72,47 @@ const mul = (P, C) => [
   P[0] * C[4] + P[2] * C[5] + P[4], P[1] * C[4] + P[3] * C[5] + P[5]
 ];
 
+// Flatten a path to a polygon in artboard units. Curves are sampled rather than
+// taken at their endpoints, because the road's edges ARE curves and a polygon cut
+// across them would report the road narrower than it is drawn. Written here rather
+// than imported, for the reason in the note above.
+function outline(d, m) {
+  const toks = d.match(/[MLCQZmlcqz]|-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || [];
+  const at = (x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const pts = [];
+  let cur = null;
+  for (let i = 0; i < toks.length;) {
+    const t = toks[i];
+    const n = k => Number(toks[i + k]);
+    if (/[MLml]/.test(t)) { cur = at(n(1), n(2)); pts.push(cur); i += 3; }
+    else if (/[Cc]/.test(t)) {
+      const p1 = at(n(1), n(2)), p2 = at(n(3), n(4)), p3 = at(n(5), n(6));
+      for (let k = 1; k <= 12; k++) {
+        const u = k / 12, v = 1 - u;
+        pts.push([
+          v*v*v*cur[0] + 3*v*v*u*p1[0] + 3*v*u*u*p2[0] + u*u*u*p3[0],
+          v*v*v*cur[1] + 3*v*v*u*p1[1] + 3*v*u*u*p2[1] + u*u*u*p3[1]
+        ]);
+      }
+      cur = p3; i += 7;
+    } else if (/[Qq]/.test(t)) {
+      const p1 = at(n(1), n(2)), p2 = at(n(3), n(4));
+      for (let k = 1; k <= 12; k++) {
+        const u = k / 12, v = 1 - u;
+        pts.push([
+          v*v*cur[0] + 2*v*u*p1[0] + u*u*p2[0],
+          v*v*cur[1] + 2*v*u*p1[1] + u*u*p2[1]
+        ]);
+      }
+      cur = p2; i += 5;
+    } else i += 1;
+  }
+  return pts;
+}
+
 const drawnMarkers = [];
 const roadBoxes = [];
+const roadRibbons = [];   // the road's own outlines, flattened, artboard units
 let paths = 0, transformed = 0;
 {
   const stack = [ID];
@@ -106,7 +145,10 @@ let paths = 0, transformed = 0;
     const fill = fm[1].toLowerCase();
     if (fill === '#d30000') {
       drawnMarkers.push([(box[0] + box[2]) / 2 * SCALE, (box[1] + box[3]) / 2 * SCALE]);
-    } else if (fill === '#ffde9e' || fill === '#ffefd4') roadBoxes.push(box);
+    } else if (fill === '#ffde9e' || fill === '#ffefd4') {
+      roadBoxes.push(box);
+      roadRibbons.push({ box, poly: outline(dm[1], m) });
+    }
   }
 }
 
@@ -386,6 +428,46 @@ console.log('\n--- the display map is the same drawing, muted ---\n');
   const lo = Math.min(...colours.map(lum)), hi = Math.max(...colours.map(lum));
   ok(hi - lo > 90, 'and the palette still ranges from dark to light',
     `${Math.round(lo)} to ${Math.round(hi)} of 255, over ${colours.length} shade(s)`);
+
+  // EXCEPT THE LETTERING, which the owner asked to be left alone. The region names
+  // are not scenery being lit; they are written over the top of the map and their
+  // one job is to be read, so the ramp is not asked for an opinion. This shade is
+  // muted enough to pass every bound above on its own, which is exactly why it needs
+  // saying out loud — the exemption could stop working and nothing else would notice.
+  {
+    const LETTERING = '#fff5e1';
+    const drawn = (allLayers.match(new RegExp(`fill="${LETTERING}"`, 'gi')) || []).length;
+    const shown = (sep.match(new RegExp(`fill="${LETTERING}"`, 'gi')) || []).length;
+    ok(drawn > 0 && shown === drawn, 'while the region names keep the colour they were drawn in',
+      `${shown} of ${drawn} name(s) came through untouched`);
+  }
+
+  // AND THE TOOL CAN READ EVERY KIND OF CURVE THE ARTIST DRAWS. Text converts to
+  // outlines as QUADRATIC curves, and every other layer on this map is cubic — so
+  // the path parser in tools/overview.mjs read C and silently skipped Q for as long
+  // as the map was only scenery, and nobody could have known.
+  //
+  // The display map itself was never at risk: the stacker copies each layer's body
+  // through verbatim, so path data reaches the player exactly as drawn whatever the
+  // parser makes of it. What the parser feeds is the ANALYSIS — every shape's
+  // bounding box, which decides what stands in front of the road, and the outline
+  // the crossing test walks. A command it cannot read is a shape in the wrong place.
+  //
+  // So this is asked of the parser rather than of the output: whatever letters the
+  // drawing uses, the regex that tokenises paths has to list them.
+  {
+    const gen = readFileSync('tools/overview.mjs', 'utf8');
+    const tokeniser = /const toks = d\.match\(\/\[([A-Za-z]+)\]/.exec(gen);
+    const known = new Set((tokeniser ? tokeniser[1] : '').split(''));
+    const used = new Set();
+    for (const m of allLayers.matchAll(/\bd="([^"]*)"/g))
+      for (const c of m[1].match(/[A-Za-z]/g) || []) used.add(c);
+    const unread = [...used].filter(c => !known.has(c));
+    ok(tokeniser && unread.length === 0,
+      'and the path parser knows every command the drawing uses',
+      unread.length ? `cannot read ${unread.join(', ')}`
+                    : `${[...used].sort().join('')} drawn, all listed`);
+  }
 }
 
 console.log('\n--- what stands in front of a marker is put back on top ---\n');
@@ -547,8 +629,43 @@ console.log('\n--- the trail is evenly spaced along every leg ---\n');
 // It happened on all four bridge crossings at once, because the artist draws the
 // road up to a bridge and the bridge's piece starting a little way back along it,
 // so the two overlap where they are joined.
+//
+// A ROAD IS ALLOWED TO DOUBLE BACK, which this file used to deny. Both checks below
+// once read "no leg reverses, ever", and that was true of the map they were written
+// for and stopped being true the day the artist drew a switchback up a mountain and
+// hung a marker off a hairpin. What is forbidden is a SHORT reversal, because that
+// is two pieces overlapping; a long one is a road climbing. See BACKTRACK in
+// tools/overview.mjs for the measurement that separates them.
 {
   const GAP = 10, DOT_R = 2.5;   // must match src/overview.js
+  const KINK = Math.cos(80 * Math.PI / 180);
+  const BACKTRACK = 50 * SCALE;   // BACKTRACK in tools/overview.mjs, in canvas units
+
+  // Every stretch where the leg is turned back on itself, and how far it travels
+  // while it is. Returned rather than counted, because the two checks below want
+  // different things from it.
+  const reversals = leg => {
+    const out = [];
+    const unit = (a, b) => {
+      const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy);
+      return l ? [dx / l, dy / l] : null;
+    };
+    let dir = null, run = 0, from = 0;
+    for (let i = 1; i < leg.length; i++) {
+      const d = unit(leg[i - 1], leg[i]);
+      if (!d) continue;
+      if (dir && d[0] * dir[0] + d[1] * dir[1] < KINK) {
+        if (!run) from = i - 1;
+        run += Math.hypot(leg[i][0] - leg[i - 1][0], leg[i][1] - leg[i - 1][1]);
+      } else {
+        if (run) out.push({ run, from, to: i - 1 });
+        run = 0;
+        dir = d;
+      }
+    }
+    if (run) out.push({ run, from, to: leg.length - 1 });
+    return out;
+  };
 
   // The same walk drawTrail does, so this measures what is actually drawn rather
   // than a second idea of it.
@@ -569,13 +686,30 @@ console.log('\n--- the trail is evenly spaced along every leg ---\n');
     return out;
   };
 
-  let worst = Infinity, worstAt = 0, touching = 0;
+  // Dots that sit ON a genuine hairpin are exempt from the spacing bound, and only
+  // from that bound. The trail is spaced by ARC LENGTH: where the road turns back on
+  // itself the arc between two dots runs out and back, so the straight line between
+  // them is legitimately shorter than the gap. That is what a hairpin looks like
+  // drawn in dots, and it is the correct picture. Overlap bunching is the same
+  // arithmetic on a road that is not really turning, which is why the exemption is
+  // tied to a reversal long enough to be real.
+  let worst = Infinity, worstAt = 0, touching = 0, exempt = 0;
   for (const [i, s] of STAGES.entries()) {
+    const long = reversals(s.leg).filter(r => r.run >= BACKTRACK);
+    const bend = long.map(r => [
+      Math.min(...s.leg.slice(r.from, r.to + 1).map(p => p[0])) - GAP,
+      Math.min(...s.leg.slice(r.from, r.to + 1).map(p => p[1])) - GAP,
+      Math.max(...s.leg.slice(r.from, r.to + 1).map(p => p[0])) + GAP,
+      Math.max(...s.leg.slice(r.from, r.to + 1).map(p => p[1])) + GAP
+    ]);
+    const onBend = p => bend.some(b => p[0] >= b[0] && p[0] <= b[2] && p[1] >= b[1] && p[1] <= b[3]);
     const d = dotsOn(s.leg);
     for (let k = 1; k < d.length; k++) {
       const gap = Math.hypot(d[k][0] - d[k - 1][0], d[k][1] - d[k - 1][1]);
-      if (gap < worst) { worst = gap; worstAt = i + 1; }
+      // Overlapping dots are never allowed, hairpin or not: that is a thing you see.
       if (gap < DOT_R * 2) touching++;
+      if (onBend(d[k]) || onBend(d[k - 1])) { exempt++; continue; }
+      if (gap < worst) { worst = gap; worstAt = i + 1; }
     }
   }
   // Two dots closer than their own diameter are drawn overlapping, which is the
@@ -585,23 +719,70 @@ console.log('\n--- the trail is evenly spaced along every leg ---\n');
   ok(touching === 0, 'no two dots are drawn on top of each other',
     touching ? `${touching} pair(s) closer than ${DOT_R * 2}px` : 'none closer than their own width');
   ok(worst >= GAP * 0.75, 'and none is bunched against its neighbour',
-    `closest pair ${worst.toFixed(1)}px of ${GAP}, on stage ${worstAt}`);
+    `closest pair ${worst.toFixed(1)}px of ${GAP}, on stage ${worstAt}` +
+    (exempt ? `, ${exempt} pair(s) on a hairpin not counted` : ''));
 
-  // AND NO LEG TURNS BACK ON ITSELF, which is the cause rather than the symptom.
-  // A road drawn by a person never reverses inside 4px; every reversal this has
-  // ever found was two pieces overlapping at a join.
-  let kinks = 0, kinked = [];
+  // AND NO LEG DOUBLES BACK FOR LONG WITHOUT MEANING IT. Two pieces overlapping at
+  // a join reverse the leg for as far as they overlap, which was as much as ten
+  // canvas px and several steps; a hairpin reverses it for the length of a limb.
+  //
+  // ONE STEP IS ALLOWED, and this is the limit of what can be asked of the stored
+  // leg. It holds forty points, so a corner sharper than the sampling can put two
+  // consecutive chords more than ninety degrees apart with nothing wrong at all —
+  // the road really does turn that hard, between one sample and the next. The
+  // reversal this began as a proxy for is caught by the spacing bound above, which
+  // is the symptom you can actually see; this catches the shape of it going wrong
+  // in bulk, which is what disabling the unkink pass does.
+  let kinks = 0, kinked = [], hairpins = 0, corners = 0;
   for (const [i, s] of STAGES.entries()) {
+    const rs = reversals(s.leg);
     let n = 0;
-    for (let k = 2; k < s.leg.length; k++) {
-      const a = [s.leg[k - 1][0] - s.leg[k - 2][0], s.leg[k - 1][1] - s.leg[k - 2][1]];
-      const b = [s.leg[k][0] - s.leg[k - 1][0], s.leg[k][1] - s.leg[k - 1][1]];
-      if (a[0] * b[0] + a[1] * b[1] < 0) n++;
+    for (const r of rs) {
+      if (r.run >= BACKTRACK) { hairpins++; continue; }
+      if (r.to - r.from <= 1) { corners++; continue; }
+      n++;
     }
     if (n) { kinks += n; kinked.push(`stage ${i + 1}`); }
   }
   ok(kinks === 0, 'because no leg doubles back where its pieces meet',
-    kinks ? `${kinks} reversal(s) on ${kinked.join(', ')}` : `${STAGES.length} legs walk forwards throughout`);
+    kinks ? `${kinks} multi-step reversal(s) on ${kinked.join(', ')}`
+          : `${STAGES.length} legs, ${hairpins} hairpin(s) drawn and ${corners} corner(s) sampled tight`);
+
+  // AND THE TRAIL STAYS ON THE ROAD, which is the check that would have caught the
+  // switchback going missing in one line. Everything above measures the leg against
+  // itself and a leg that cuts a corner is perfectly smooth and evenly spaced — it
+  // is just not where the road is. This is the only rule here that reads the
+  // artist's drawing, so it is the only one that can tell.
+  {
+    const inRibbon = (poly, [px, py]) => {
+      let hit = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, yi] = poly[i], [xj, yj] = poly[j];
+        if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    const ribbons = roadRibbons.filter(r => area(r.box) <= ROAD_MAX_AREA);
+    let off = 0, total = 0, offAt = new Set();
+    for (const [i, s] of STAGES.entries()) {
+      // The ends are skipped: a leg finishes at the MARKER CENTRE, which the artist
+      // draws the road up to rather than through, so the last point or two sit past
+      // the ribbon by design.
+      for (let k = 2; k < s.leg.length - 2; k++) {
+        const p = [s.leg[k][0] / SCALE, s.leg[k][1] / SCALE];
+        total++;
+        if (!ribbons.some(r =>
+          p[0] >= r.box[0] - 4 && p[0] <= r.box[2] + 4 &&
+          p[1] >= r.box[1] - 4 && p[1] <= r.box[3] + 4 && inRibbon(r.poly, p))) {
+          off++;
+          offAt.add(i + 1);
+        }
+      }
+    }
+    ok(off === 0, 'and every step of it falls on a road the artist drew',
+      off ? `${off} of ${total} point(s) are off the road, on ${[...offAt].map(n => `stage ${n}`).join(', ')}`
+          : `${total} point(s) checked against ${ribbons.length} ribbon(s)`);
+  }
 }
 
 console.log('\n--- the road opens one stage at a time ---\n');

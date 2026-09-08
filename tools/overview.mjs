@@ -108,13 +108,25 @@ const AT_MARKER = 36;
 
 // --- path parsing -----------------------------------------------------------
 
+// M, L, C, Q, Z — every command Graphite emits, and QUADRATICS ARE NOT OPTIONAL.
+// The scenery layers are all cubics, so this read C and skipped anything else for
+// as long as the map was only scenery. Then a layer of region names arrived, and
+// text converts to outlines as QUADRATIC curves: every Q in it fell through to the
+// skip below, its numbers were eaten one at a time as if they were stray, and the
+// letters came back as a handful of disconnected corners.
+//
+// It cost nothing at first — that layer happens to carry no group transform, so
+// transformPath hands the string back untouched and the letters reach the merged
+// file whole. That is luck, not design. The day the artist nudges the group, every
+// name on the map is destroyed, silently, in a file nobody thinks to open.
 function parse(d) {
-  const toks = d.match(/[MLCZmlcz]|-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || [];
+  const toks = d.match(/[MLCQZmlcqz]|-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || [];
   const out = [];
   for (let i = 0; i < toks.length;) {
     const t = toks[i];
     if (/[MLml]/.test(t)) { out.push([t.toUpperCase(), +toks[i + 1], +toks[i + 2]]); i += 3; }
     else if (/[Cc]/.test(t)) { out.push(['C', ...toks.slice(i + 1, i + 7).map(Number)]); i += 7; }
+    else if (/[Qq]/.test(t)) { out.push(['Q', ...toks.slice(i + 1, i + 5).map(Number)]); i += 5; }
     else if (/[Zz]/.test(t)) { out.push(['Z']); i += 1; }
     else i += 1;
   }
@@ -143,6 +155,17 @@ function flatten(cmds, per = 20) {
         ]);
       }
       cur = [x3, y3];
+    } else if (c[0] === 'Q') {
+      const [, x1, y1, x2, y2] = c;
+      const [x0, y0] = cur;
+      for (let k = 1; k <= per; k++) {
+        const t = k / per, m = 1 - t;
+        pts.push([
+          m * m * x0 + 2 * m * t * x1 + t * t * x2,
+          m * m * y0 + 2 * m * t * y1 + t * t * y2
+        ]);
+      }
+      cur = [x2, y2];
     }
   }
   if (pts.length && dist(pts[pts.length - 1], pts[0]) > 1e-6) pts.push(pts[0]);
@@ -286,6 +309,7 @@ function transformPath(d, m) {
   for (const c of parse(d)) {
     if (c[0] === 'Z') { out += 'Z'; continue; }
     if (c[0] === 'C') out += `C${pt(c[1], c[2])} ${pt(c[3], c[4])} ${pt(c[5], c[6])}`;
+    else if (c[0] === 'Q') out += `Q${pt(c[1], c[2])} ${pt(c[3], c[4])}`;
     else out += `${c[0]}${pt(c[1], c[2])}`;
   }
   return out;
@@ -421,6 +445,28 @@ const farMarker = (L, fromA) => (fromA ? L.b : L.a);
 // there is nothing between that and a genuine bend to protect.
 const KINK = Math.cos(80 * Math.PI / 180);
 
+// AND A TURN ALONE IS NOT ENOUGH TO CONVICT, which is what the paragraph above got
+// wrong. It was written when every leg on the map was a curve through open country,
+// and it says a person does not hairpin — then the artist redrew the mountain in the
+// top-right corner as a SWITCHBACK, a road that climbs by turning back on itself,
+// and every word of it was still true except the conclusion. The rule ate the
+// hairpin: 110 of the leg's 195 points went, and the trail ran straight down a cliff
+// the road zig-zags up.
+//
+// An overlap and a switchback turn through the same angle. What tells them apart is
+// HOW FAR THE ROAD GOES while it is turned back. An overlap is two pieces meeting,
+// so it doubles back by about as much as the pieces overlap and no more; a
+// switchback doubles back for the whole length of its limb. Measured over this map:
+//
+//   overlap at a join      0.0 to 20.6 units, eleven of them
+//   switchback limb        99.1 and 205.8 units, the two halves of the zig-zag
+//
+// Fifty sits in the middle of a five-to-one gap, and above JOIN, which is the
+// furthest apart two pieces are allowed to be and so bounds how far they can
+// overlap. A reversed run shorter than this is an artefact and goes; a longer one is
+// a road and stays.
+const BACKTRACK = 50;
+
 const unit = (a, b) => {
   const dx = b[0] - a[0], dy = b[1] - a[1];
   const l = Math.hypot(dx, dy);
@@ -445,7 +491,30 @@ function unkink(line) {
       const len = Math.hypot(dx, dy);
       if (!len) continue;
       const d = [dx / len, dy / len];
-      if (dir && d[0] * dir[0] + d[1] * dir[1] < KINK) continue;
+      if (dir && d[0] * dir[0] + d[1] * dir[1] < KINK) {
+        // Reversed. How far does the road stay reversed? Measured along its own
+        // consecutive points, because that is the distance it actually travels —
+        // measuring from the last KEPT point would count the gap this pass is in
+        // the middle of opening up.
+        let run = 0, j = i;
+        while (j < out.length) {
+          const step = unit(out[j - 1], out[j]);
+          if (!step) { j++; continue; }
+          if (step[0] * dir[0] + step[1] * dir[1] >= KINK) break;
+          run += dist(out[j - 1], out[j]);
+          j++;
+        }
+        // Short: two pieces overlapping at a join. Dropped ONE POINT AT A TIME, and
+        // deliberately not the whole run in one step. Skipping the run wholesale
+        // looks tidier and cleans less: the run ends at the first step that turns
+        // forward again, and the wobble at a join has several of those in it, so the
+        // tail goes back in and the dots bunch. Measured — dropping the run put the
+        // closest pair on stage 5 at 7.0px where dropping the point leaves it at 8.6.
+        // Each drop re-aims the direction the next point is judged against, which is
+        // what lets a run be cleaned properly over the passes.
+        if (run < BACKTRACK) continue;
+        // Long: the artist's own hairpin. Take the corner and turn with it.
+      }
       kept.push(out[i]);
       dir = d;
     }
@@ -460,10 +529,16 @@ function unkink(line) {
     // Whatever is in the way is popped instead, which converges.
     const end = out[out.length - 1];
     if (kept[kept.length - 1] !== end) {
+      // AND THE POPPING IS BOUNDED BY THE SAME LENGTH, for the same reason: an
+      // overlap at the marker end is a few units of road, and unwinding further
+      // than that would be eating a corner to reach the marker in a straight line.
+      let undone = 0;
       while (kept.length >= 2) {
         const a = kept[kept.length - 1], b = kept[kept.length - 2];
         const d1 = unit(b, a), d2 = unit(a, end);
         if (!d1 || !d2 || d1[0] * d2[0] + d1[1] * d2[1] >= KINK) break;
+        undone += dist(b, a);
+        if (undone > BACKTRACK) break;
         kept.pop();
       }
       kept.push(end);
@@ -828,7 +903,20 @@ function hueOf(r, g, b) {
 const WATER = '#61a6ff';
 const WATERFALL = '#a6d5ff';
 
+// LETTERING IS NOT SCENERY, so the muting is not asked to have an opinion about
+// it. Everything else in the stack is a thing in the world being lit — grass,
+// stone, water — and pulling it all toward one warm range is what makes the map
+// read as one place drawn in one light. A region's NAME is not in that place; it
+// is written over the top of it, and it has one job, which is to be read. The
+// artist picked the colour for that job, and the ramp would only argue.
+//
+// Kept as an exact colour rather than as "whatever is in the last layer", because
+// the artist adds and reorders layers and the name of the exemption should say
+// what it protects. This shade appears nowhere else in the stack.
+const LETTERING = new Set(['#fff5e1']);
+
 function sepia(hex) {
+  if (LETTERING.has(hex)) return hex;
   if (hex === WATER) hex = WATERFALL;
 
   const r0 = parseInt(hex.slice(1, 3), 16);
