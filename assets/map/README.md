@@ -478,6 +478,9 @@ Everything else is the picture, drawn in the order it is numbered.
 Three files beside them are **DERIVED and committed**, and none should ever be
 edited by hand:
 
+- `Stage_1_Map_base.svg` — stage 1's board with the plot markers cut out, written
+  by `node tools/split-map.mjs assets/map/Stage_1_Map.svg`. Same pipeline as
+  `Map_N_base.svg`; the name follows the artist's file.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -600,6 +603,22 @@ announce itself, but in lit country a name is still the artist's own pixels.
 The edge **fades** rather than stopping: the colour leaves the drawing over about
 120px, wider than the 69px the light reaches from the road. A shorter fade puts a
 rim around the explored land and turns the whole thing into a spotlight.
+
+### Stage 1 is a tutorial and has its own rules
+
+`Stage_1_Map.svg` is the first board a player sees, and everything about it is the
+simplest version of itself: one road with no fork, six plots, five waves, and two
+kinds of enemy in the whole level. `maxTier: 2` in `src/data/level00.js` caps the
+tower ladder — the rungs above tier 2 are drawn and priced as normal and simply
+have nowhere to go, so they read as "Maxed", which is already how the menu says a
+tower has topped out.
+
+It also runs the **same five waves at either length**. Every other board's Extended
+table is at least two waves longer; a longer tutorial would be the same lesson
+twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the exception.
+
+The three older boards moved down to stages 2, 3 and 4. A stage's board is
+`LEVEL_OF` in `tools/overview.mjs` and nothing else.
 
 ### What the game draws on top
 

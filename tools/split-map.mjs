@@ -27,7 +27,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { levels } from '../src/level.js';
 import { nearestOn } from '../src/route.js';
 import { SCALE } from '../src/data/towers.js';
-import { allGroups, bounds } from './svg.mjs';
+import { allGroups, bounds, MAP_SCALE } from './svg.mjs';
 
 // Which map to split. Every level records the file it was drawn from, so the
 // tool finds its own level rather than being told twice.
@@ -79,30 +79,76 @@ for (const g of groups) {
 const encloses = (o, g) => o.start <= g.start && o.end >= g.end && (o.start < g.start || o.end > g.end);
 for (const [k, c] of clusters) clusters.set(k, c.filter(g => !c.some(o => encloses(o, g))));
 
-// Several clusters tie at nine: the whole marker repeats nine times, but so
-// does the ground ellipse nested inside it, and so does the signpost. Size
-// alone picks one of those arbitrarily — the first attempt at this cut out nine
-// ellipses and left nine signposts standing on the grass. Break the tie toward
-// the biggest drawing, which is the outermost of the nested candidates.
-const best = Math.max(...[...clusters.values()].map(c => c.length));
-const tied = [...clusters.values()].filter(c => c.length === best);
+// WHICH CLUSTER IS THE MARKER. "The one that repeats most" was the whole rule and
+// it held for three maps, then stopped: the tutorial board has six plots and eight
+// copies of one tuft of grass, so the grass won and the tool cut eight tufts out of
+// the map and left six signposts standing in it. Nothing threw — the count check
+// below only knows how many plots the level claims, and a level being written for
+// the first time claims whatever you last typed.
+//
+// So the marker is identified by BEING THE MARKER. It is a known drawing —
+// Plot_Marker.svg, the same file the game stamps on every empty plot — and its
+// proportions are the one thing about it that survives being scaled into a map.
+// Every cluster of two or more is scored on how close its box is to that shape, and
+// the best match inside a quarter wins. Repeat count is only the tie-break now,
+// which is the right way round: nine copies of a rock is not evidence of anything.
+//
+// The old rule stays as the fallback for a map drawn before there was a shared
+// marker file to match against.
+const mk = readFileSync(MARKER, 'utf8');
+const mkGroups = allGroups(mk);
+if (!mkGroups.length) throw new Error(`no geometry found in ${MARKER}`);
+const mkPaths = mkGroups.reduce((a, b) => (b.subPaths.length > a.subPaths.length ? b : a)).subPaths;
+const mkAll = bounds(mkPaths.flat());
+const mkW = mkAll.x1 - mkAll.x0;
+const mkH = mkAll.y1 - mkAll.y0;
 
-for (const c of tied) {
+// The marker drawn at the shared SCALE, in the map's own units. MAP_SCALE is how
+// many game px a map unit is, so this is the size the artist's stamp should be.
+const wantW = (mkW * SCALE) / MAP_SCALE;
+const wantH = (mkH * SCALE) / MAP_SCALE;
+
+const repeated = [...clusters.values()].filter(c => c.length >= 2);
+const score = c => {
   const b = bounds(c[0].subPaths.flat());
-  console.log(`  candidate: ${c[0].subPaths.length} sub-paths, ` +
-    `${(b.x1-b.x0).toFixed(0)}x${(b.y1-b.y0).toFixed(0)} map units`);
+  return Math.abs((b.x1 - b.x0) - wantW) / wantW + Math.abs((b.y1 - b.y0) - wantH) / wantH;
+};
+
+// Only the plausible ones are listed. A map has dozens of repeated tufts and
+// pebbles and printing all of them buries the answer.
+for (const c of repeated.filter(c => score(c) <= 1.5).sort((a, b) => score(a) - score(b))) {
+  const b = bounds(c[0].subPaths.flat());
+  console.log(`  candidate: x${String(c.length).padStart(2)}  ${c[0].subPaths.length} sub-paths, ` +
+    `${(b.x1-b.x0).toFixed(0)}x${(b.y1-b.y0).toFixed(0)} map units, ` +
+    `${(score(c) * 100).toFixed(0)}% off the marker`);
 }
 
-let markers = tied
-  .sort((a, b) => b[0].subPaths.length - a[0].subPaths.length ||
-                  (b[0].end - b[0].start) - (a[0].end - a[0].start))[0] || [];
+const LOOKS_LIKE_IT = 0.5;      // summed relative error across both axes
+const like = repeated.filter(c => score(c) <= LOOKS_LIKE_IT)
+  .sort((a, b) => score(a) - score(b) || b.length - a.length);
+
+let markers;
+if (like.length) {
+  markers = like[0];
+  const b = bounds(markers[0].subPaths.flat());
+  console.log(`  matched the marker: ${markers.length} copies at ` +
+    `${(b.x1-b.x0).toFixed(0)}x${(b.y1-b.y0).toFixed(0)}, wanted ${wantW.toFixed(0)}x${wantH.toFixed(0)}`);
+} else {
+  // Nothing looks like the stamp. Fall back to the old rule and say so, because
+  // a silent fallback here is exactly the failure this replaced.
+  const best = Math.max(0, ...repeated.map(c => c.length));
+  const tied = repeated.filter(c => c.length === best);
+  markers = tied.sort((a, b) => b[0].subPaths.length - a[0].subPaths.length ||
+                                (b[0].end - b[0].start) - (a[0].end - a[0].start))[0] || [];
+  console.log('  NOTHING matched Plot_Marker.svg — falling back to the largest cluster');
+}
 
 markers = [...markers].sort((a, b) => a.start - b.start);
 
-console.log(`${groups.length} groups, largest identical-shape cluster has ${markers.length}`);
+console.log(`${groups.length} groups, marker cluster has ${markers.length}`);
 if (markers.length !== level.plots.length) {
   throw new Error(
-    `found ${markers.length} repeated shapes but ${level.id} has ${level.plots.length} plots — ` +
+    `found ${markers.length} markers but ${level.id} has ${level.plots.length} plots — ` +
     `if the artwork gained or lost a marker, re-extract the plots before re-running this`);
 }
 
@@ -135,19 +181,11 @@ console.log(`wrote ${BASE}`);
 // the plot coordinate. The signpost sticks up above it, so the pivot is NOT the
 // middle of the box.
 
-const mk = readFileSync(MARKER, 'utf8');
-const mkGroups = allGroups(mk);
-if (!mkGroups.length) throw new Error(`no geometry found in ${MARKER}`);
-
-const mkPaths = mkGroups.reduce((a, b) => (b.subPaths.length > a.subPaths.length ? b : a)).subPaths;
-const mkAll = bounds(mkPaths.flat());
 const mkEll = bounds(mkPaths.reduce((a, b) => {
   const [ba, bb] = [bounds(a), bounds(b)];
   return (bb.x1 - bb.x0) > (ba.x1 - ba.x0) ? b : a;
 }));
 
-const mkW = mkAll.x1 - mkAll.x0;
-const mkH = mkAll.y1 - mkAll.y0;
 const pivotX = ((mkEll.x0 + mkEll.x1) / 2 - mkAll.x0) / mkW;
 const pivotY = ((mkEll.y0 + mkEll.y1) / 2 - mkAll.y0) / mkH;
 

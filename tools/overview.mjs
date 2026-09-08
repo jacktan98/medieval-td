@@ -428,7 +428,17 @@ const ORDER = [0, 1, 2, 3, 4, 5, 9, 7, 8, 6];
 
 // WHICH MAP EACH STAGE PLAYS. Three are drawn; the rest are markers on a road
 // with nothing behind them yet and the game shows them locked.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2 };
+// FOUR BOARDS NOW. The tutorial is stage 1 and the three that were stages 1 to 3
+// moved down one — which is the whole of "move the other maps to 2, 3 and 4", since
+// a stage's board is this table and nothing else.
+//
+// A PLAYER MID-CAMPAIGN KEEPS THEIR STARS AND LOSES THEIR PLACE. Star records key
+// on the level's own id, so every result already recorded still points at the board
+// it was won on; progress counts STAGES, so somebody who had cleared three now
+// stands at stage 3 with a tutorial behind them they never played. There is no
+// migration that could do better without inventing a result, and Reset campaign in
+// the admin panel puts anyone testing back to the start.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3 };
 
 // The approach has to arrive at whatever the order calls stage 1, or one of the
 // two is wrong and the campaign would start in the middle of the road.
@@ -487,20 +497,31 @@ for (const m of ORDER) if (!incoming.has(m)) throw new Error(`marker ${m} is not
 // as sea while putting both far enough back that a gold medallion wins. Raising
 // DESATURATE walks towards the old full-sepia map; raising WARMTH walks towards
 // it faster and takes the blues first.
-const DESATURATE = 0.55;
+// MORE COLOUR LEFT IN IT than there was, at the owner's ask. 0.55 took over half
+// the life out of every hue, which was right when the whole map was one flat
+// brightness and wrong now that the country a player has reached is lit: sunlight
+// on a drained picture is a brighter drained picture. 0.38 leaves enough green in
+// the grass and enough blue in the water for the lit half to look sunny rather than
+// merely pale.
+const DESATURATE = 0.38;
 const WARMTH = 0.28;
 
 // AND NOTHING MAY END UP LOUDER THAN THIS, whatever it started as. The gold in a
 // stage medallion runs from 96 up; a map colour at 72 sits plainly under it, and
 // under the 80 tools/campaign.mjs holds the whole palette to.
-const SATURATION_CEILING = 72;
+const SATURATION_CEILING = 80;
 
+// AND THE BOTTOM OF THE RAMP IS LIFTED OFF BLACK. Every outline on this map lands
+// on the darkest stop, and at 0x3B2917 they read as holes — a drawing this dense is
+// mostly outline by area, so the darkest colour sets how heavy the whole thing
+// looks. Lifting the first two stops takes the weight out without touching the top,
+// which is where the road and the paper live.
 const RAMP = [
-  [0.00, [0x3B, 0x29, 0x17]],   // outlines and deep shadow
-  [0.30, [0x7A, 0x59, 0x34]],
-  [0.55, [0xA9, 0x81, 0x4E]],
-  [0.78, [0xC9, 0xA8, 0x78]],
-  [1.00, [0xEA, 0xDC, 0xB8]]    // the road, and paper
+  [0.00, [0x50, 0x3B, 0x25]],   // outlines and deep shadow
+  [0.30, [0x8A, 0x68, 0x40]],
+  [0.55, [0xB4, 0x8B, 0x56]],
+  [0.78, [0xCF, 0xAF, 0x80]],
+  [1.00, [0xEE, 0xE1, 0xBE]]    // the road, and paper
 ];
 
 function hueOf(r, g, b) {

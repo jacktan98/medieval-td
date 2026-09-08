@@ -129,8 +129,15 @@ for (const [li, lv] of levels.entries()) {
   // strict superset — a map whose long table lost a wave, or whose short table
   // grew past it, is what this catches. The exact number for each map is asserted
   // in tools/admin.mjs, which is where shortOf's argument is checked.
-  ok(tableFor(level, 'extended').length >= tableFor(level, 'normal').length + 2,
-    'and Extended is at least two waves longer',
+  // EXCEPT ON A TUTORIAL, which runs the same five waves whichever length is
+  // chosen. A board whose job is teaching has one lesson; a longer version of it
+  // would teach the same lesson twice, and the setting is left on screen rather
+  // than hidden so a new player still learns that the choice exists.
+  ok(level.maxTier
+      ? tableFor(level, 'extended').length === tableFor(level, 'normal').length
+      : tableFor(level, 'extended').length >= tableFor(level, 'normal').length + 2,
+    level.maxTier ? 'and a tutorial runs the same waves at either length'
+                  : 'and Extended is at least two waves longer',
     `${tableFor(level, 'normal').length} -> ${tableFor(level, 'extended').length}`);
 
   // THE FIRST WAVE IS PREVIEWED, and it is the one time the row names the wave

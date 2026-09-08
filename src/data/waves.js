@@ -1789,6 +1789,29 @@ export const MODES = [
 // untouched dashboard would hand the game a different wave from the one in this
 // file — tools/admin.mjs checks all 32 of them.
 
+// STAGE 1'S FIVE WAVES, and the whole of what a tutorial sends.
+//
+// TWO KINDS OF ENEMY IN THE ENTIRE LEVEL: a thug, and a thug that takes longer to
+// kill. That is the syllabus — something arrives, you shoot it, some things need
+// more shooting. Every other enemy in the game is a rule on top of that one, and a
+// rule on top of nothing is not a lesson.
+//
+// FIVE WAVES, EACH BIGGER THAN THE LAST, and the first is four enemies because the
+// point of the first wave is to be survived by somebody who has not understood the
+// game yet. The tough thugs arrive in wave 4, once a player has had three waves to
+// notice that a tower kills a thug on its own.
+//
+// A LONG REST between them — 12 seconds against the 9 every other table uses. The
+// gap after a wave is when a player looks at their gold and decides something, and
+// on the first board that decision takes longer than it ever will again.
+export const tutorialWaves = [
+  { rest: 12, groups: [{ type: 'light_inf', count: 4, gap: 1.8 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 6, gap: 1.6 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 8, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.8 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

@@ -233,7 +233,9 @@ console.log('\nWhat the difficulty does to it\n');
 console.log('\nAnything, in any wave\n');
 
 {
-  const lv = levels[0];
+  // NOT levels[0] ANY MORE. That is the tutorial now, and this block is about a
+  // level with a longer Extended table — which a tutorial deliberately has not.
+  const lv = levels.find(l => !l.maxTier);
 
   // THE ONE THAT MATTERS MOST: with nothing edited, the builder must hand the
   // game back its own tables, group for group, count for count, gap for gap and
@@ -346,13 +348,25 @@ console.log('\nAnything, in any wave\n');
   // stay true is that Extended is a strict superset with at least the two waves
   // the owner's tables always had. A map whose Extended table lost a wave, or one
   // whose short table grew past its long one, is what this is for.
-  const nWaves = waveCountFor(0, 'normal');
-  const xWaves = waveCountFor(0, 'extended');
+  // THE BEND IS LEVEL 1 NOW, not level 0 — the tutorial took the front of the list
+  // when it became stage 1. Found by name rather than by index, because that is the
+  // thing this assertion is actually about.
+  const bend = levels.findIndex(l => l.id === 'm1');
+  const nWaves = waveCountFor(bend, 'normal');
+  const xWaves = waveCountFor(bend, 'extended');
+  // A TUTORIAL IS THE EXCEPTION and says so by capping the tower ladder: it runs
+  // the same five waves at either length, because a longer version of a lesson is
+  // the same lesson twice.
   for (let m = 0; m < levels.length; m++) {
     const short = waveCountFor(m, 'normal');
     const long = waveCountFor(m, 'extended');
-    ok(long >= short + 2, `${levels[m].name}'s long game is at least 2 waves longer`,
-      `${short} against ${long}`);
+    if (levels[m].maxTier) {
+      ok(long === short, `${levels[m].name} runs the same waves at either length`,
+        `${short} against ${long}`);
+    } else {
+      ok(long >= short + 2, `${levels[m].name}'s long game is at least 2 waves longer`,
+        `${short} against ${long}`);
+    }
   }
   ok(xWaves === nWaves + 3, 'and the Bend is 3 longer, for the boss finale',
     `${nWaves} against ${xWaves}`);
@@ -768,7 +782,9 @@ console.log('\nThe starting purse\n');
 console.log('\nWhich of them comes out first\n');
 
 {
-  const lv = levels[0];
+  // The Bend, by name. This block is about a specific wave of a specific map,
+  // and levels[0] stopped being that map when the tutorial took the front.
+  const lv = levels.find(l => l.id === 'm1');
   reset();
 
   // THE DEFAULT IS THE WAVE'S OWN SHIPPED ORDER, on every wave of every map and
@@ -898,15 +914,18 @@ console.log('\nThe Bend\'s boss finale\n');
 
 {
   reset();
-  const bend = levels[0];
+  // The Bend by name. It was levels[0] until the tutorial took the front of the
+  // list, and everything in this block is about that one map by name.
+  const bend = levels.find(l => l.id === 'm1');
   const w = 10;
 
-  ok(waveCountFor(0, 'extended') === 11, 'the Bend\'s long game is 11 waves now',
+  const bendAt = levels.indexOf(bend);
+  ok(waveCountFor(bendAt, 'extended') === 11, 'the Bend\'s long game is 11 waves now',
     `${waveCountFor(0, 'extended')} waves`);
   // AND THE SHORT GAME IS UNTOUCHED, which is the whole of "Extended only". The two
   // tables share a derivation — see shortOf — so an eleventh wave on the long one
   // reaching the short one is the exact mistake this guards.
-  ok(waveCountFor(0, 'normal') === 8, 'and the short one is still 8', `${waveCountFor(0, 'normal')}`);
+  ok(waveCountFor(bendAt, 'normal') === 8, 'and the short one is still 8', `${waveCountFor(bendAt, 'normal')}`);
   const shortLast = adminWaves(bend, 'normal')[7];
   const longEighth = tableFor(bend, 'extended')[7];
   ok(JSON.stringify(shortLast.groups) === JSON.stringify(longEighth.groups),
@@ -935,7 +954,7 @@ console.log('\nThe Bend\'s boss finale\n');
     `place ${wavePlace(bend.id, 'extended', w, 'captain_thug')}`);
   ok(wavePlace(bend.id, 'extended', w, 'tough_inf') === 2,
     'with the Tough Thugs 2nd');
-  const rows = groupRows(0, w, 'extended');
+  const rows = groupRows(bendAt, w, 'extended');
   ok(rows.find(r => r.type === 'captain_thug').count === 1 &&
      rows.find(r => r.type === 'tough_inf').count === 20 &&
      rows.filter(r => r.count).length === 2,

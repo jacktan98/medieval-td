@@ -34,7 +34,14 @@
 
 import { tap } from '../src/input.js';
 import { openMenu, NEEDS_CONFIRM, needsConfirm, armed, armedRange } from '../src/menu.js';
-import { level } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
+
+// NOT THE TUTORIAL. `level` starts as levels[0], which is stage 1 — and stage 1
+// caps the tower ladder at tier 2, so an archery tower there has no fork to press
+// and half of what this file asks about does not exist on it. The menu reads the
+// current level for that cap (see `capped` in src/menu.js), so a tool that wants
+// the uncapped rules has to say which board it is standing on.
+useLevel(levels.findIndex(l => !l.maxTier));
 import { archery, siege, families } from '../src/data/towers.js';
 import { rangeOf } from '../src/towers.js';
 

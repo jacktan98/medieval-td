@@ -693,6 +693,9 @@ export const paths = {
   // Map_1_base.svg is DERIVED and committed — there is no build step, so the
   // artist's upload alone is not enough. Re-run tools/split-map.mjs after every
   // map redraw or the board keeps the old road and the old markers.
+  // Stage 1's board, the tutorial. Same pipeline as the other three: the artist
+  // draws one file, tools/split-map.mjs writes the _base beside it.
+  map00:       'assets/map/Stage_1_Map_base.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

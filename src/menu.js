@@ -1,4 +1,8 @@
 import { families, AIM_MODES, upgradesFrom } from './data/towers.js';
+// The level, for its tier ceiling. A board may cap how far a ladder climbs on it —
+// see maxTier in src/data/level00.js — and the cap belongs to the board rather than
+// to the player, so it is read here rather than carried on the tower.
+import { level } from './level.js';
 import { rangeOf } from './towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
 
@@ -252,12 +256,25 @@ function buildItems() {
 // `ring: ABILITY_R` widens the menu's clamp on its own — see the reach line in
 // openTower — so nothing else has to know these buttons are further out.
 
+// A BOARD MAY STOP A LADDER SHORT. The tutorial allows tier 1 and tier 2 and
+// nothing above, so a player meets the idea of upgrading without meeting six
+// families' worth of it in the first five minutes.
+//
+// FILTERED HERE RATHER THAN REFUSED AT THE PRESS, and that is the whole design of
+// it: an empty list is already how this menu says a tower has nowhere left to go,
+// and it already draws that as "Maxed". So a capped tower is indistinguishable from
+// a topped-out one — no button that argues back, nothing to press twice. The rungs
+// exist, they are just not on this board.
+//
+// A level with no maxTier is uncapped, which is every level but the tutorial.
+const capped = list => (level.maxTier ? list.filter(n => n.tier <= level.maxTier) : list);
+
 function towerItems(t) {
   // ONE ENTRY, TWO, OR NONE. Archery forks at tier 3 — a Crossbow Tower buys
   // either a Musketeer Post or a Crossbow Sentry — so what follows a tower is a
   // LIST now. See upgradesFrom in data/towers.js for why it is asked by tier
   // number rather than by array index.
-  const next = upgradesFrom(t.fam, t.def);
+  const next = capped(upgradesFrom(t.fam, t.def));
 
   const items = next.length
     ? next.map((n, i) => ({

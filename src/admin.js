@@ -705,7 +705,15 @@ export const TABS = TAB_IDS.map((t, i) => ({
 // "Two Rivers" is the longest map name in the game and sets at 87px in the 15px
 // bold this row draws in, so 128 still holds it with room; tools/admin.mjs checks
 // that against the real names rather than against this sentence.
-const MAP_W = 128, MAP_H = 40, MAP_GAP = 10;
+// 100 WIDE AND TIGHTER SPACED, down from 128 and 10, because there are four maps
+// now rather than three. The
+// row is bounded on the right by the length buttons and the purse behind them, and
+// a fourth tab at the old width pushed "Extended" 117px past the "Start gold"
+// label. "Two Rivers" is the longest label and sets at 87px in this row's type, so
+// 93 was too narrow to hold it and the length buttons gave up the difference
+// instead. tools/admin.mjs checks the label fit and both clearances against the
+// real geometry, and caught each of those in turn.
+const MAP_W = 100, MAP_H = 40, MAP_GAP = 6;
 const MAP_Y = INNER.y + 54;
 export const mapTabs = () => levels.map((l, i) => ({
   i,
@@ -730,7 +738,7 @@ export const mapTabs = () => levels.map((l, i) => ({
 // gap, and 86 + 8 + 86 leaves 7px at the far end. "Extended" is the longer label
 // and sets at 65px in this row's type. tools/admin.mjs checks both clearances
 // against the real geometry, and it caught this at 96 wide.
-const MODE_W = 86, MODE_GAP = 8;
+const MODE_W = 78, MODE_GAP = 6;
 // Off the LAST MAP TAB'S RIGHT EDGE rather than off a count times a pitch: the
 // arithmetic version included a trailing gap that is not there and put these 12px
 // further right than intended, which is most of what went wrong at 96.

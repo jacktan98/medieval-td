@@ -224,8 +224,12 @@ function alongLeg(leg, frac, fn) {
   for (let i = 1; i < leg.length; i++) total += Math.hypot(leg[i][0] - leg[i - 1][0], leg[i][1] - leg[i - 1][1]);
   const stop = total * frac;
 
+  // FROM THE FIRST STEP, NOT THE SECOND. This started at DOT_GAP, so every leg
+  // lost a dot at its near end — invisible while the medallion was fifteen across
+  // and covered the gap, and a hole in the road once it came down to eleven. The
+  // dot that lands on the previous marker is drawn under it and costs nothing.
   let walked = 0;
-  let next = DOT_GAP;
+  let next = 0;
   for (let i = 1; i < leg.length; i++) {
     const [x0, y0] = leg[i - 1], [x1, y1] = leg[i];
     const seg = Math.hypot(x1 - x0, y1 - y0);
@@ -351,15 +355,18 @@ function starsAt(i) {
   return best;
 }
 
-// BIG, at the owner's word, and the gap has to grow with them or a three-star row
+// BIG, at the owner's word, and the gap follows the radius or a three-star row
 // becomes one lump. Points touch at a gap of two radii; this leaves a little air.
-const STAR_R = 12;
+//
+// Twelve first, then ten: at twelve the rows on stages 1 and 2 nearly met, because
+// those markers are ninety pixels apart and a three-star row was eighty-four wide.
+const STAR_R = 10;
 const STAR_GAP = STAR_R * 2.35;
 
 function drawStars(ctx, cx, cy, filled) {
   ctx.save();
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 2.2;
+  ctx.lineWidth = 1.7;
   const left = cx - (MAX_STARS - 1) * STAR_GAP / 2;
   for (let i = 0; i < MAX_STARS; i++) {
     ctx.beginPath();
@@ -373,10 +380,12 @@ function drawStars(ctx, cx, cy, filled) {
     ctx.closePath();
     ctx.fillStyle = i < filled ? '#F2C64B' : 'rgba(59,41,23,0.30)';
     ctx.fill();
-    // BLACK, and solid. It was a soft brown at 85% and at this size that read as a
-    // smudge round the edge rather than a line; a star this big needs an outline
-    // that holds it against whatever the map puts behind it.
-    ctx.strokeStyle = '#000';
+    // THE MEDALLION'S OWN INK, not black. Black was a step too far in the other
+    // direction from the soft brown it replaced — the stars were the only pure black
+    // on a map whose every outline is INK, and they sat in front of the drawing
+    // rather than on it. One colour for both is what makes them look like the same
+    // set of furniture.
+    ctx.strokeStyle = INK;
     ctx.stroke();
   }
   ctx.restore();
@@ -399,15 +408,17 @@ function drawFlag(ctx, x, y, t, wave) {
   ctx.save();
   ctx.globalAlpha = Math.min(1, t * 2.4);
 
-  // THE RALLY POINT'S OWN FLAG, the same file the barracks plants on a battle map.
-  // It was a vector pole and pennant drawn here, waving on a sine — which meant the
-  // game had TWO flags, one for "your squad stands here" and one for "your army is
-  // here", drawn by different code and looking like it.
+  // THE RALLY POINT'S OWN FLAG, the same file the barracks plants on a battle map,
+  // so the game has one flag rather than two drawn by different code.
   //
-  // The wave goes with the vectors, and that is a real loss: this was the only thing
-  // on the map that moved before there was anything else moving on it. What replaces
-  // it is a picture that matches the rest of the game, which is what was asked for,
-  // and the road pulse now carries the job of pointing at it.
+  // AND IT WAVES, which the picture cannot do on its own. The cloth is all on one
+  // side of the pole, so shearing the drawing horizontally about the FOOT swings the
+  // pennant and leaves the pole standing — the further up the drawing a pixel is,
+  // the further it moves, which is how a flag on a pole actually behaves. Two sines
+  // at different rates so the swing never repeats on a beat the eye can count.
+  //
+  // Sheared rather than redrawn: a vector pennant waving is a different flag from
+  // the one the board plants, and having one flag was the point of the change.
   //
   // FLAG_FOOT puts the bottom of the pole on the point given, which is the same
   // anchor the board uses — see flag() in src/render.js. The pole is at 11% across
@@ -416,6 +427,10 @@ function drawFlag(ctx, x, y, t, wave) {
   if (img) {
     const [sx, sy, sw, sh] = ui.glyph_flag.trim;
     const { w, h: ih } = uiSize('glyph_flag', h);
+    const swing = (Math.sin(wave * 2.1) * 0.055 + Math.sin(wave * 3.3 + 1.1) * 0.03) * k;
+    ctx.translate(x, foot);
+    ctx.transform(1, 0, swing, 1, 0, 0);     // shear about the foot: the top moves most
+    ctx.translate(-x, -foot);
     ctx.drawImage(img, sx, sy, sw, sh, x - FLAG_FOOT[0] * w, foot - FLAG_FOOT[1] * ih, w, ih);
   } else {
     // The same vector fallback the board carries, so a missing file is a plainer
@@ -543,7 +558,7 @@ function makeParchment() {
 // is a colour DRAIN now, so the far country keeps its shape at a brightness that
 // would have hidden it before — 0.28 here is much darker than the 0.45 wash ever
 // was, and you can still see it is a desert.
-const FOG_BRIGHT = 0.28;   // how much light the drained country keeps
+const FOG_BRIGHT = 0.20;   // how much light the drained country keeps
 const FOG_WASH = 'rgba(30,20,9,0.30)';   // and a breath of brown over that
 
 // AND THE COUNTRY THAT HAS BEEN REACHED IS IN SUNLIGHT — the exact mirror of the
@@ -561,7 +576,7 @@ const FOG_WASH = 'rgba(30,20,9,0.30)';   // and a breath of brown over that
 //
 // A filtered copy says exactly what it means: fifteen percent more light, a little
 // more colour with it, and the faintest warm cast.
-const SUN_FILTER = 'brightness(1.16) saturate(1.18) sepia(0.06)';
+const SUN_FILTER = 'brightness(1.26) saturate(1.30) sepia(0.05)';
 
 // HOW FAR THE LIGHT REACHES, and HOW LONG IT TAKES TO GO OUT. These are two
 // different things and the difference matters: reach is how much country a player
@@ -583,6 +598,48 @@ const LIT_REACH = 69;
 const LIT_BLUR = 120;
 
 let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
+
+// A SOFT EDGE WITHOUT A BLUR FILTER. Stamps every so often along the same roads,
+// each a radial gradient that is solid to LIT_REACH and gone by LIT_REACH+LIT_BLUR.
+// `lighter` rather than source-over: two overlapping half-transparent stamps under
+// source-over leave a seam where they meet, and under addition they simply saturate.
+function softFalloff(g, unlocked, live, frac) {
+  const STEP = 26;                       // stamps this far apart along the road
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  const stamp = (x, y) => {
+    const grad = g.createRadialGradient(x, y, LIT_REACH * 0.55, x, y, LIT_REACH + LIT_BLUR);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(0.45, 'rgba(0,0,0,0.55)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(x - LIT_REACH - LIT_BLUR, y - LIT_REACH - LIT_BLUR,
+               (LIT_REACH + LIT_BLUR) * 2, (LIT_REACH + LIT_BLUR) * 2);
+  };
+
+  for (let i = 0; i < unlocked; i++) {
+    const leg = STAGES[i].leg;
+    const upto = i === live ? frac : 1;
+    if (upto <= 0) continue;
+    let total = 0;
+    for (let k = 1; k < leg.length; k++) total += Math.hypot(leg[k][0] - leg[k - 1][0], leg[k][1] - leg[k - 1][1]);
+    const stop = total * upto;
+    let walked = 0, next = 0;
+    for (let k = 1; k < leg.length; k++) {
+      const [x0, y0] = leg[k - 1], [x1, y1] = leg[k];
+      const seg = Math.hypot(x1 - x0, y1 - y0);
+      if (!seg) continue;
+      while (next <= walked + seg && next <= stop) {
+        const t = (next - walked) / seg;
+        stamp(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+        next += STEP;
+      }
+      walked += seg;
+    }
+    if (upto >= 1) stamp(STAGES[i].x, STAGES[i].y);
+  }
+  g.restore();
+}
 
 // The lit area is drawn as one thick round-capped stroke along every road the
 // player has walked, plus a disc at every marker they have reached, and then
@@ -641,10 +698,16 @@ function makeFog(unlocked, live, frac) {
   const g = lit.getContext('2d');
   g.clearRect(0, 0, 960, 540);
 
-  // A blur filter is what makes the edge a falloff rather than a cut. Where it is
-  // not supported the light still lands, with a harder rim — the map stays
-  // playable and nothing throws.
-  try { g.filter = `blur(${LIT_BLUR}px)`; } catch { /* hard edge, still lit */ }
+  // A blur filter is what makes the edge a falloff rather than a cut, and WHERE IT
+  // IS MISSING THE EDGE IS THE BUG THE OWNER SAW. Canvas filters are not universal —
+  // the same build showed a soft fade on a laptop and hard lit circles on a phone,
+  // which is exactly the shape of a silently skipped filter. The old code caught the
+  // failure and carried on with a hard rim, which is a feature quietly not working.
+  //
+  // So the falloff is drawn a second way when the first is unavailable: soft radial
+  // stamps along the same road, which every canvas can do. See softFalloff below.
+  let blurred = false;
+  try { g.filter = `blur(${LIT_BLUR}px)`; blurred = g.filter !== 'none'; } catch { /* stamps instead */ }
   g.lineWidth = LIT_REACH * 2;
   g.lineCap = 'round';
   g.lineJoin = 'round';
@@ -681,13 +744,24 @@ function makeFog(unlocked, live, frac) {
     // A wider pool at a marker the player has actually arrived at: a stage is a
     // place rather than a point on a line, and its surroundings are what the
     // player is choosing from.
+    // A POOL AT AN ARRIVED-AT MARKER, THE SAME WIDTH AS THE ROAD. It was half again
+    // wider, on the reasoning that a stage is a place rather than a point — and a
+    // circle wider than the corridor it sits on is a bulge, which is a circle you
+    // can see. That is most of what "obvious lit circles" was.
     if (upto >= 1) {
       g.beginPath();
-      g.arc(STAGES[i].x, STAGES[i].y, LIT_REACH * 1.5, 0, Math.PI * 2);
+      g.arc(STAGES[i].x, STAGES[i].y, LIT_REACH, 0, Math.PI * 2);
       g.fill();
     }
   }
   g.filter = 'none';
+
+  // WITHOUT THE FILTER, the shape above is a hard-edged corridor. These are the
+  // edge: a ring of soft radial stamps along every open road, each opaque out to the
+  // reach and fading to nothing over the same distance the blur would have taken.
+  // Drawn with `lighter` so overlapping stamps saturate rather than banding, which
+  // is what accumulating alpha along a line would do.
+  if (!blurred) softFalloff(g, unlocked, live, frac);
 
   // The fog is the drained picture with the lit shape taken out of it.
   f.globalCompositeOperation = 'destination-out';

@@ -784,6 +784,62 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
     'the lit area is built from unlocked stages');
 }
 
+console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
+
+// The first board a player ever sees. Everything asserted here is a promise the
+// level file makes about being a teaching board rather than a testing one, and each
+// one is a thing that could be quietly undone by a later edit.
+{
+  const tut = levels[0];
+  ok(tut && tut.maxTier === 2, 'stage 1 caps the tower ladder at tier 2',
+    tut ? `maxTier ${tut.maxTier}` : 'no level 0');
+
+  // AND THE THREE OLDER BOARDS MOVED DOWN ONE, which is the whole of "move the
+  // other maps to 2, 3 and 4" — a stage's board is LEVEL_OF in tools/overview.mjs
+  // and nothing else.
+  const order = STAGES.slice(0, 4).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m1,m2,m3', 'and the first four stages run tutorial then the three older boards',
+    order.join(' -> '));
+  ok(STAGES.filter(s => s.level !== null).length === 4,
+    'with four boards on the road and the rest still empty',
+    `${STAGES.filter(s => s.level !== null).length} playable`);
+
+  // FIVE WAVES, AND ONLY TWO KINDS OF ENEMY IN THEM. A tutorial that grew a third
+  // enemy would have stopped being one without anybody deciding to.
+  ok(tut.waves.length === 5, 'it runs five waves', `${tut.waves.length}`);
+  const kinds = [...new Set(tut.waves.flatMap(w => w.groups.map(g => g.type)))].sort();
+  ok(kinds.length === 2 && kinds.includes('light_inf') && kinds.includes('tough_inf'),
+    'and sends thugs and tough thugs and nothing else', kinds.join(', '));
+
+  // AND IT GETS EASIER-SHAPED RATHER THAN HARDER: every wave is at least as big as
+  // the one before it, and the first is small enough to lose nothing to.
+  const size = w => w.groups.reduce((n, g) => n + g.count, 0);
+  const sizes = tut.waves.map(size);
+  ok(sizes.every((n, i) => i === 0 || n >= sizes[i - 1]), 'each wave at least as big as the last',
+    sizes.join(' -> '));
+  ok(sizes[0] <= 5, 'and the first is small enough to learn on', `${sizes[0]} enemies`);
+
+  // SIX PLOTS, ALL BESIDE THE ROAD. The splitter reads them off the artwork and the
+  // level file only has to agree; what this catches is a plot typed in by hand that
+  // no marker was ever drawn for.
+  ok(tut.plots.length === 6, 'and offers six build plots', `${tut.plots.length}`);
+  const near = (p, line) => {
+    let best = Infinity;
+    for (let i = 1; i < line.length; i++) {
+      const a = line[i - 1], b = line[i];
+      const dx = b.x - a.x, dy = b.y - a.y, len = dx * dx + dy * dy;
+      const t = len ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len)) : 0;
+      best = Math.min(best, Math.hypot(p.x - (a.x + dx * t), p.y - (a.y + dy * t)));
+    }
+    return best;
+  };
+  // The route is PREPARED by src/level.js on import — measured, with lanes — so the
+  // points live on .pts rather than being the array itself.
+  const offs = tut.plots.map(p => near(p, tut.routes[0].pts));
+  ok(Math.max(...offs) < 140, 'every one of them within reach of the road',
+    `furthest ${Math.max(...offs).toFixed(0)}px off`);
+}
+
 console.log('\n--- the marker, the flag and the stars ---\n');
 
 // The furniture the game draws on top of the drawing. Source checks: what these
@@ -838,11 +894,15 @@ console.log('\n--- the marker, the flag and the stars ---\n');
   // THE STARS ARE BIG AND OUTLINED IN BLACK. The gap is held as a multiple of the
   // radius rather than a number of its own, because at this size a fixed gap and a
   // changed radius is a row of stars growing into each other.
-  ok(num('STAR_R') === 12, 'the stars are drawn at radius 12', `${num('STAR_R')}`);
+  ok(num('STAR_R') === 10, 'the stars are drawn at radius 10', `${num('STAR_R')}`);
   ok(/STAR_GAP = STAR_R \* [\d.]+/.test(bare), 'and their spacing follows the radius',
     'gap is a multiple of the radius');
-  ok(/ctx\.strokeStyle = '#000';/.test(bare), 'and they are outlined in black',
-    'solid black, not a soft brown');
+  // THE MEDALLION'S INK, not black and not a soft brown. Both have been tried: a
+  // brown at 85% read as a smudge at this size, and pure black made the stars the
+  // only true black on a map whose every outline is INK. One colour for both is what
+  // makes them read as the same set of furniture rather than two.
+  ok(/ctx\.strokeStyle = INK;/.test(bare), 'and outlined in the same ink as the medallion',
+    'INK, the map\'s own outline colour');
 }
 
 console.log('\n--- the stage panel stands on its own board ---\n');
