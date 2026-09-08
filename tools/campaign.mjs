@@ -727,13 +727,29 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
     'and it is drained from the same three layers the player sees',
     'map, paper and names');
 
-  // A GRAYSCALE FILTER IS NOT EVERYWHERE. Where it is missing there is nothing to
-  // drain, so the old dark wash has to still be there to stand in — otherwise those
-  // browsers get a map with no unexplored country at all, which is the feature
-  // silently absent rather than degraded.
-  ok(/drained \?/.test(fogBody) && /grayscale/.test(fogBody),
-    'and falls back to a wash where filters are unavailable',
-    'drained ? light wash : dark one');
+  // A GRAYSCALE FILTER IS NOT EVERYWHERE, and where it is missing the colour has to
+  // come out some other way — otherwise those browsers get a map with no unexplored
+  // country at all, which is the feature silently absent rather than degraded. It is
+  // blend modes now rather than a heavier wash, because a wash dims without draining
+  // and the drain is the point.
+  ok(/if \(!drained\) drainByBlend/.test(fogBody) && /grayscale/.test(fogBody),
+    'and drains another way where filters are unavailable',
+    'drainByBlend on the whole sheet');
+
+  // AND THE TEST FOR THAT IS A DRAWN ONE. This is the bug the owner reported twice:
+  // a phone showed hard lit circles where a laptop faded, because every feature test
+  // here was of the form `ctx.filter = x; supported = ctx.filter !== 'none'` — and a
+  // context WITHOUT filter support has no such property, so the assignment makes an
+  // ordinary one and hands the string straight back. Every canvas that could not
+  // filter was therefore judged to be able to, and no fallback ever ran.
+  //
+  // A property that lies cannot be asked. The test has to draw something and look.
+  ok(/getImageData/.test((/function canFilter\(\)[\s\S]*?\n}/.exec(draw) || [''])[0]),
+    'and asks whether it can filter by drawing, not by asking',
+    'canFilter reads a pixel back');
+  ok(!/filter\s*!==\s*'none'/.test(draw),
+    'and never takes a filter property at its word',
+    "no `filter !== 'none'` left in the file");
 
   // AND IT FADES RATHER THAN STOPPING. The owner's word was fade: the lit country
   // has to give way to the drained country over a distance, with no rim anywhere
@@ -763,11 +779,20 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // ONE SHAPE, TWO SHEETS. The sun is cut to the lit shape and the fog is punched
   // out with it, so they meet along a single edge. Two strokes with the same numbers
   // would still differ by a pixel of antialiasing everywhere they touched.
-  const mk2 = draw.slice(draw.indexOf('function makeFog'));
-  const fogBody2 = mk2.slice(0, mk2.indexOf('\n}\n') + 2);
-  const uses = (fogBody2.match(/drawImage\(lit, 0, 0\)/g) || []).length;
+  const fin = draw.slice(draw.indexOf('function finishFog'));
+  const finBody = fin.slice(0, fin.indexOf('\n}\n') + 2);
+  const uses = (finBody.match(/drawImage\(lit, 0, 0\)/g) || []).length;
   ok(uses === 2, 'and both are cut from one lit shape rather than two',
     `${uses} use(s) of the lit sheet`);
+
+  // AND THE LIT EDGE IS BLURRED BY THIS FILE, on every device, which is the other
+  // half of the same bug. A blur the browser may or may not perform is two designs
+  // wearing one set of numbers — soft on a laptop, a hard circle on a phone. Three
+  // box passes over a quarter-size mask is a Gaussian to within a percent, costs
+  // less than asking the browser did, and cannot be absent.
+  ok(/boxBlurAlpha\(small\.data/.test(draw) && !/g\.filter = `blur/.test(draw),
+    'and the lit edge is blurred here rather than by the browser',
+    'boxBlurAlpha over the mask, no ctx.filter blur');
 
   // THE SHEETS USED TO BREATHE and no longer do, at the owner's word. Both are still
   // drawn through one helper, which is what kept them from sliding apart when they

@@ -599,46 +599,133 @@ const LIT_BLUR = 120;
 
 let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
 
-// A SOFT EDGE WITHOUT A BLUR FILTER. Stamps every so often along the same roads,
-// each a radial gradient that is solid to LIT_REACH and gone by LIT_REACH+LIT_BLUR.
-// `lighter` rather than source-over: two overlapping half-transparent stamps under
-// source-over leave a seam where they meet, and under addition they simply saturate.
-function softFalloff(g, unlocked, live, frac) {
-  const STEP = 26;                       // stamps this far apart along the road
-  g.save();
-  g.globalCompositeOperation = 'lighter';
-  const stamp = (x, y) => {
-    const grad = g.createRadialGradient(x, y, LIT_REACH * 0.55, x, y, LIT_REACH + LIT_BLUR);
-    grad.addColorStop(0, 'rgba(0,0,0,1)');
-    grad.addColorStop(0.45, 'rgba(0,0,0,0.55)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = grad;
-    g.fillRect(x - LIT_REACH - LIT_BLUR, y - LIT_REACH - LIT_BLUR,
-               (LIT_REACH + LIT_BLUR) * 2, (LIT_REACH + LIT_BLUR) * 2);
-  };
+// WHETHER THIS CANVAS CAN FILTER AT ALL, asked by drawing something and looking.
+//
+// THE OLD TEST WAS WRONG IN THE ONE CASE IT EXISTED FOR. It set ctx.filter and
+// checked the value came back as something other than 'none' — but a context that
+// does not support filters has no such property, so the assignment simply makes an
+// ordinary one, and reading it back hands the blur string straight back. Every
+// canvas WITHOUT filters was therefore judged to have them, which is why a phone
+// showed hard lit circles under a fallback that was never reached: the map was
+// never drained, the sun never brightened, and the lit edge never blurred.
+//
+// A property that lies cannot be asked politely. This blurs a hard edge and reads
+// a pixel three across from it: with a blur it is grey, without one it is nothing.
+let filterOk = null;
+function canFilter() {
+  if (filterOk !== null) return filterOk;
+  filterOk = false;
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 20;
+    const t = c.getContext('2d');
+    if (!t || !('filter' in t)) return filterOk;
+    t.filter = 'blur(4px)';
+    t.fillStyle = '#000';
+    t.fillRect(0, 0, 10, 20);
+    filterOk = t.getImageData(13, 10, 1, 1).data[3] > 0;
+  } catch { /* a locked-down canvas is one without filters */ }
+  return filterOk;
+}
 
-  for (let i = 0; i < unlocked; i++) {
-    const leg = STAGES[i].leg;
-    const upto = i === live ? frac : 1;
-    if (upto <= 0) continue;
-    let total = 0;
-    for (let k = 1; k < leg.length; k++) total += Math.hypot(leg[k][0] - leg[k - 1][0], leg[k][1] - leg[k - 1][1]);
-    const stop = total * upto;
-    let walked = 0, next = 0;
-    for (let k = 1; k < leg.length; k++) {
-      const [x0, y0] = leg[k - 1], [x1, y1] = leg[k];
-      const seg = Math.hypot(x1 - x0, y1 - y0);
-      if (!seg) continue;
-      while (next <= walked + seg && next <= stop) {
-        const t = (next - walked) / seg;
-        stamp(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
-        next += STEP;
-      }
-      walked += seg;
-    }
-    if (upto >= 1) stamp(STAGES[i].x, STAGES[i].y);
+// Blend modes are a separate question and answer honestly: the property exists
+// everywhere, and an unsupported mode is refused rather than stored.
+const blendSeen = {};
+function canBlend(mode) {
+  if (mode in blendSeen) return blendSeen[mode];
+  let ok = false;
+  try {
+    const t = document.createElement('canvas').getContext('2d');
+    t.globalCompositeOperation = mode;
+    ok = t.globalCompositeOperation === mode;
+  } catch { /* no */ }
+  return (blendSeen[mode] = ok);
+}
+
+// THE DRAIN, WITHOUT A FILTER TO DO IT. Three passes that between them say what
+// `grayscale(1) sepia(0.62) brightness(FOG_BRIGHT)` says: take the colour out with
+// a saturation blend, put the brown back with a multiply, then take the light out.
+// It runs over the finished sheet rather than per-image, so the map, the parchment
+// and the names all drain together — which is what the filter did anyway.
+function drainByBlend(f, w, h) {
+  if (canBlend('saturation')) {
+    f.globalCompositeOperation = 'saturation';
+    f.fillStyle = 'hsl(0,0%,50%)';
+    f.fillRect(0, 0, w, h);
   }
-  g.restore();
+  // THE COLOURS ARE DERIVED RATHER THAN CHOSEN. sepia(0.62) scales a grey by
+  // (1.218, 1.126, 0.961) and brightness(0.20) scales all three by a fifth, so the
+  // filter's whole effect on a drained pixel is (0.244, 0.225, 0.192). A multiply
+  // by m under a half-strength wash comes to 0.5m, which puts m at rgb(124,115,98).
+  // Picked by eye it came out rgb(138,106,63) — far too little blue, and the far
+  // country read orange next to the same country on a laptop.
+  if (canBlend('multiply')) {
+    f.globalCompositeOperation = 'multiply';
+    f.fillStyle = 'rgb(124,115,98)';
+    f.fillRect(0, 0, w, h);
+  }
+  f.globalCompositeOperation = 'source-over';
+  f.fillStyle = 'rgba(14,10,5,0.5)';         // and half of what is left
+  f.fillRect(0, 0, w, h);
+}
+
+// AND THE LIFT, the same way. `lighter` is addition, which every canvas has had
+// since before blend modes existed, and a flat warm addition is a near enough
+// sunlight for a build that cannot multiply one. It has to be a SMALL addition:
+// brightness(1.26) on a mid green is about twenty more, and adding fifty instead
+// made the lit country a different, brighter green than the one on a laptop.
+function liftByBlend(sg, w, h) {
+  sg.globalCompositeOperation = 'lighter';
+  sg.fillStyle = 'rgb(24,21,11)';
+  sg.fillRect(0, 0, w, h);
+  sg.globalCompositeOperation = 'source-over';
+}
+
+// THE BLUR, DONE HERE RATHER THAN ASKED FOR. Three box passes over the alpha of a
+// quarter-size copy, which is what a Gaussian is to within a percent, and then
+// scaled back up. It replaces ctx.filter for the lit edge on EVERY device, and
+// that is the point: a soft edge on a laptop and a hard one on a phone is not a
+// blur setting, it is two different code paths, and the fix that lasts is having
+// one. It is also cheap — 240x135 is thirty-two thousand pixels, blurred with
+// running sums, where the full sheet would be half a million.
+//
+// TWO OTHER ANSWERS WERE TRIED AND BOTH WERE WRONG IN THE SAME WAY: radial stamps
+// along the road, composited either by addition or as a union. Neither can make a
+// blur, because a point beside the road collects a contribution from every stamp
+// within reach of it. Under addition eight fifths saturate solid and the edge
+// comes back harder, further out; under union the same crowding drives the alpha
+// to one along the whole corridor. A blur does not accumulate — it redistributes,
+// which is why it also LOWERS the peak, and neither stamp scheme did that either.
+const SMALL = 4;                       // the mask is built and blurred at a quarter
+let maskSheet = null;
+
+// sigma is half the CSS blur radius, and three box passes of width w come to
+// sigma^2 = 3(w^2-1)/12 — so this is the w that matches blur(LIT_BLUR) exactly.
+const BOX_R = Math.max(1, Math.round((Math.sqrt(4 * (LIT_BLUR / 2 / SMALL) ** 2 + 1) - 1) / 2));
+
+function boxBlurAlpha(d, w, h, r) {
+  const n = 2 * r + 1;
+  const tmp = new Float32Array(w * h);
+  const clamp = (v, hi) => (v < 0 ? 0 : v > hi ? hi : v);
+  for (let pass = 0; pass < 3; pass++) {
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      let sum = 0;
+      for (let i = -r; i <= r; i++) sum += d[(row + clamp(i, w - 1)) * 4 + 3];
+      for (let x = 0; x < w; x++) {
+        tmp[row + x] = sum / n;
+        sum += d[(row + clamp(x + r + 1, w - 1)) * 4 + 3] - d[(row + clamp(x - r, w - 1)) * 4 + 3];
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let sum = 0;
+      for (let i = -r; i <= r; i++) sum += tmp[clamp(i, h - 1) * w + x];
+      for (let y = 0; y < h; y++) {
+        d[(y * w + x) * 4 + 3] = sum / n;
+        sum += tmp[clamp(y + r + 1, h - 1) * w + x] - tmp[clamp(y - r, h - 1) * w + x];
+      }
+    }
+  }
 }
 
 // The lit area is drawn as one thick round-capped stroke along every road the
@@ -661,11 +748,8 @@ function makeFog(unlocked, live, frac) {
   // because the canvas the game draws to may carry a transform this knows nothing
   // about, and reading pixels back through the wrong one is a bug that only shows
   // on somebody else's display.
-  let drained = false;
-  try {
-    f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
-    drained = f.filter !== 'none';
-  } catch { /* no filter support */ }
+  const drained = canFilter();
+  if (drained) f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
 
   if (art.overview) f.drawImage(art.overview, 0, 0, 960, 540);
   else { f.fillStyle = '#C9A878'; f.fillRect(0, 0, 960, 540); }
@@ -678,36 +762,38 @@ function makeFog(unlocked, live, frac) {
   if (art.overviewNames) {
     // The names go through the same drain. A region nobody has reached should not
     // be announcing itself in white.
-    try { f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`; } catch { /* */ }
+    if (drained) f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
     f.drawImage(art.overviewNames, 0, 0, 960, 540);
     f.filter = 'none';
   }
 
-  // Where filters are not available there is nothing to drain the colour, so the
-  // old dark wash stands in: heavier than this, and the only thing that works.
-  f.fillStyle = drained ? FOG_WASH : 'rgba(26,17,8,0.55)';
+  // Where filters are not available the colour comes out with blend modes instead,
+  // over the whole sheet at once — the map, the paper and the names together.
+  if (!drained) drainByBlend(f, 960, 540);
+
+  f.fillStyle = FOG_WASH;
   f.fillRect(0, 0, 960, 540);
 
   // THE LIT SHAPE, ON ITS OWN SHEET, because two things need it: the fog is punched
   // out with it and the sunlight is cut to it. Drawing it once and using it twice is
   // the only way the two can be guaranteed to line up — a second stroke with the
   // same numbers would still differ by a pixel of antialiasing along every edge.
-  const lit = litSheet || (litSheet = document.createElement('canvas'));
-  lit.width = 960;
-  lit.height = 540;
-  const g = lit.getContext('2d');
-  g.clearRect(0, 0, 960, 540);
-
-  // A blur filter is what makes the edge a falloff rather than a cut, and WHERE IT
-  // IS MISSING THE EDGE IS THE BUG THE OWNER SAW. Canvas filters are not universal —
-  // the same build showed a soft fade on a laptop and hard lit circles on a phone,
-  // which is exactly the shape of a silently skipped filter. The old code caught the
-  // failure and carried on with a hard rim, which is a feature quietly not working.
+  // THE EDGE IS THE BUG THE OWNER SAW, and it was never a question of how wide the
+  // blur was. Canvas filters are not universal: the same build faded softly on a
+  // laptop and drew hard lit circles on a phone, which is the shape of a filter
+  // that was silently skipped. So the blur is not asked for at all now — it is
+  // computed, at a quarter size, the same way on every device. See boxBlurAlpha.
   //
-  // So the falloff is drawn a second way when the first is unavailable: soft radial
-  // stamps along the same road, which every canvas can do. See softFalloff below.
-  let blurred = false;
-  try { g.filter = `blur(${LIT_BLUR}px)`; blurred = g.filter !== 'none'; } catch { /* stamps instead */ }
+  // The shape goes down at FULL size in map coordinates and is scaled on the way
+  // into the small sheet, so the road here is the road the dots are drawn along.
+  const mask = maskSheet || (maskSheet = document.createElement('canvas'));
+  const mw = 960 / SMALL, mh = 540 / SMALL;
+  mask.width = mw;
+  mask.height = mh;
+  const g = mask.getContext('2d');
+  g.clearRect(0, 0, mw, mh);
+  g.setTransform(1 / SMALL, 0, 0, 1 / SMALL, 0, 0);
+
   g.lineWidth = LIT_REACH * 2;
   g.lineCap = 'round';
   g.lineJoin = 'round';
@@ -754,15 +840,28 @@ function makeFog(unlocked, live, frac) {
       g.fill();
     }
   }
-  g.filter = 'none';
+  g.setTransform(1, 0, 0, 1, 0, 0);
 
-  // WITHOUT THE FILTER, the shape above is a hard-edged corridor. These are the
-  // edge: a ring of soft radial stamps along every open road, each opaque out to the
-  // reach and fading to nothing over the same distance the blur would have taken.
-  // Drawn with `lighter` so overlapping stamps saturate rather than banding, which
-  // is what accumulating alpha along a line would do.
-  if (!blurred) softFalloff(g, unlocked, live, frac);
+  // Blurred where it is small and cheap, then scaled back up. The upscale is a
+  // bilinear one over an already-smooth mask, so it costs nothing in softness —
+  // there is no detail left at quarter size for it to lose.
+  const small = g.getImageData(0, 0, mw, mh);
+  boxBlurAlpha(small.data, mw, mh, BOX_R);
+  g.putImageData(small, 0, 0);
 
+  const lit = litSheet || (litSheet = document.createElement('canvas'));
+  lit.width = 960;
+  lit.height = 540;
+  const lg = lit.getContext('2d');
+  lg.clearRect(0, 0, 960, 540);
+  lg.imageSmoothingEnabled = true;
+  lg.drawImage(mask, 0, 0, 960, 540);
+
+  return finishFog(f, lit);
+}
+
+// The fog and the sun, from a drained sheet and a lit shape.
+function finishFog(f, lit) {
   // The fog is the drained picture with the lit shape taken out of it.
   f.globalCompositeOperation = 'destination-out';
   f.drawImage(lit, 0, 0);
@@ -782,15 +881,25 @@ function makeFog(unlocked, live, frac) {
   const sg = sun.getContext('2d');
   sg.clearRect(0, 0, 960, 540);
 
-  try { sg.filter = SUN_FILTER; } catch { /* unfiltered: the map, unchanged */ }
+  const lifted = canFilter();
+  if (lifted) sg.filter = SUN_FILTER;
   if (art.overview) sg.drawImage(art.overview, 0, 0, 960, 540);
+  else { sg.fillStyle = '#C9A878'; sg.fillRect(0, 0, 960, 540); }
   sg.filter = 'none';
   sg.globalCompositeOperation = 'multiply';
   sg.drawImage(parchment || makeParchment(), 0, 0);
+  sg.globalCompositeOperation = 'source-over';
+
+  // Without a filter the light is added rather than multiplied. It is the sunlight
+  // that makes reached country read as reached, so a build that cannot filter must
+  // not simply go without it — that is half the effect gone and no sign of it.
+  if (!lifted) liftByBlend(sg, 960, 540);
+
   sg.globalCompositeOperation = 'destination-in';
   sg.drawImage(lit, 0, 0);
+  sg.globalCompositeOperation = 'source-over';
 
-  return c;
+  return fogSheet;
 }
 
 // Rebuilt only when what is lit has actually changed. During a march that is
