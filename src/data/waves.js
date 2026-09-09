@@ -1845,23 +1845,53 @@ export const stage2Waves = [
                        { type: 'archer_inf', count: 1, gap: 1.8 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 12, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 },
                        { type: 'archer_inf', count: 4, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.6 }, { type: 'archer_inf', count: 10, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 16, gap: 1.0 }, { type: 'tough_inf', count: 6, gap: 1.4 },
-                       { type: 'archer_inf', count: 16, gap: 1.3 }] }
+  // THE LAST TWO COME IN TIGHTER, at the owner's ask, and it is the gaps that were
+  // asked for rather than the counts: same enemies, less road between them. Every
+  // gap in these two waves is multiplied by 0.7 and rounded to the nearest TENTH,
+  // which is not a stylistic choice: the admin panel's rate stepper clamps to
+  // 0.1..10 and rounds to a tenth, so a shipped 1.05 is a number the panel can
+  // never be returned to — the first tap pulls it to 1.1 and the "was" marker never
+  // clears again. tools/admin.mjs checks every shipped rate against the setter.
+  //
+  // WHY THE GAP IS THE LEVER AT ALL. A wave is not its headcount, it is its arrival
+  // rate — ten men 1.6s apart is a queue a single tower can work through one at a
+  // time, and the same ten 1.1s apart is a column that overlaps its own reload. The
+  // counts are what the owner wrote down and they are unchanged; what changed is
+  // how much of the wave is standing on the board at once.
+  //
+  // AND IT IS THE SAME ON NORMAL, because `gap` is not one of the numbers
+  // difficulty scales — see data/difficulty.js, which moves counts and gold and
+  // nothing else. The table IS the Hard board (Hard multiplies by 1) and Normal
+  // meets the same rate with 20% fewer bodies in it.
+  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.1 }, { type: 'archer_inf', count: 10, gap: 1.0 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 16, gap: 0.7 }, { type: 'tough_inf', count: 6, gap: 1.0 },
+                       { type: 'archer_inf', count: 16, gap: 0.9 }] }
 ];
 
-// STAGE 3'S SIX, the owner's own list again.
+// STAGE 3'S SEVEN, the owner's own list again.
 //
 // WHAT IT ADDS is the BLOCKER, and wave 3 introduces exactly one of him — the
 // same way stage 2 introduced exactly one archer. By wave 6 there are four of
 // them in front of sixteen archers, which is the shape of the whole board: the
 // blockers hold your squads still and the archers shoot them while they stand.
 //
-// AND THE THUGS RUN OUT. Waves 1 to 4 open with ten of them; wave 5 has none at
-// all and wave 6 has none either — it is toughs, blockers and archers only. That
-// is the second time this campaign has taken the cheap bodies away (stage 2's
-// wave 5 did it first) and it is the same lesson twice on purpose: what is coming
-// matters more than how much of it there is.
+// AND THE THUGS RUN OUT. Waves 1 to 4 open with ten of them; waves 5, 6 and 7
+// have none at all — toughs, blockers and archers only. That is the second time
+// this campaign has taken the cheap bodies away (stage 2's wave 5 did it first)
+// and it is the same lesson twice on purpose: what is coming matters more than
+// how much of it there is.
+//
+// WAVE 7 IS THE ONE THAT DOUBLES THE BLOCKERS. Six waves ended on four of them;
+// this ends on TEN, in front of twenty archers, which is a different fight rather
+// than a longer one. Four blockers can pin the squads on one arm of the
+// roundabout; ten can pin both, and everything behind them walks.
+//
+// AND THE LAST THREE COME IN TIGHTER, at the owner's ask — the gaps, not the
+// counts. Waves 5 and 6 are their old gaps multiplied by 0.7 and rounded to the
+// nearest tenth — see stage 2's note on why a tenth; wave 7 carries the step on
+// below them, ending on an archer every 0.7s. `gap` is not a number
+// difficulty scales, so Normal meets the same arrival rate with 20% fewer bodies
+// in it — see the note on stage 2's last two.
 export const stage3Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
@@ -1869,10 +1899,12 @@ export const stage3Waves = [
                        { type: 'blocker_inf', count: 1, gap: 1.8 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 },
                        { type: 'blocker_inf', count: 2, gap: 1.8 }, { type: 'archer_inf', count: 4, gap: 1.6 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'archer_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 10, gap: 1.3 }, { type: 'blocker_inf', count: 4, gap: 1.6 },
-                       { type: 'archer_inf', count: 16, gap: 1.2 }] }
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.1 }, { type: 'blocker_inf', count: 4, gap: 1.2 },
+                       { type: 'archer_inf', count: 8, gap: 1.0 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 10, gap: 0.9 }, { type: 'blocker_inf', count: 4, gap: 1.1 },
+                       { type: 'archer_inf', count: 16, gap: 0.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 10, gap: 0.8 }, { type: 'blocker_inf', count: 10, gap: 1.0 },
+                       { type: 'archer_inf', count: 20, gap: 0.7 }] }
 ];
 
 export const wavesExtended = [

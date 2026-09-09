@@ -92,17 +92,37 @@ export function openedStages() {
 // reach, which is what distance means. A tap still skips it, so the cost of a long
 // march to somebody who has seen it is one touch.
 //
-// Sixty is deliberately near the SLOW end of what the fixed duration used to
+// Sixty was deliberately near the SLOW end of what the fixed duration used to
 // produce rather than at its average: the complaint was about rushing, and the
-// legs that were being rushed were the long ones. It puts the longest march on
-// this map at 5.6 seconds and the shortest at the floor below.
-const ROAD_SPEED = 60;
+// legs that were being rushed were the long ones.
+//
+// FORTY-FIVE NOW, AND THE REASON IS THE SOUND. The owner asked to "slow down
+// marching so that players can at least hear a few footsteps for some stages", and
+// the march is a LOOP that fades in over LOOP_FADE and out over LOOP_FADE — 0.35s
+// each end, see setLoop in src/audio.js. So a march is only at full volume for its
+// length MINUS 0.7s, and Marching_sound.mp3 puts a footstep down every 0.59s,
+// measured off the file rather than guessed: 45 onsets in 25.87s.
+//
+// At the old numbers the shortest leg on this map was 0.83 seconds. That is 0.13s
+// of audible march — a fifth of one footstep — so the loop faded up and straight
+// back down and the player heard a swell rather than an army. Three of the ten
+// legs were under a second and a half.
+const ROAD_SPEED = 45;
 
 // And a floor, because a 50px hop at any honest speed is over before it reads as
 // travel. Short legs are paced by this rather than by the speed, which is the one
 // place the two rules disagree and the right way round: a march you cannot see is
 // worse than a march very slightly quicker than its neighbour.
-const ROAD_MIN_SECONDS = 0.8;
+//
+// TWO SECONDS IS THREE FOOTSTEPS, and it is arithmetic rather than taste: two gaps
+// of 0.59s is 1.18s of march that has to be at full volume, plus the 0.7s the two
+// fades take, is 1.88 — rounded up. Every leg on this map clears it now, so there
+// is no stage where arriving is silent, and the long ones get five to twelve.
+//
+// It costs the far legs some patience: the longest march is 7.4s where it was 5.6.
+// A tap still skips the whole thing, so what that buys a player who has seen it
+// before is unchanged at one touch.
+const ROAD_MIN_SECONDS = 2.0;
 
 const FLAG_SECONDS = 1.1;
 
@@ -657,13 +677,27 @@ const SUN_FILTER = 'brightness(1.34) saturate(1.12) sepia(0.05)';
 // lit pocket by. That is not true of a colour drain: the far country is a different
 // kind of picture rather than a dimmer one, so the two stay told apart however
 // softly they are joined, and the fade can be as long as it wants to be.
-// RAISED TWICE, both times on the owner's ask: 46 -> 69 -> 96. What a player gets
-// for arriving somewhere is the country around it, and at 69 that was a pocket
-// barely wider than the medallion — enough to see the stage they had reached and
-// not enough to see anywhere they might go next. The fade is unchanged at 120, so
-// the light now carries further AND still gives way over the same long distance.
-const LIT_REACH = 96;
-const LIT_BLUR = 120;
+// RAISED THREE TIMES NOW, every time on the owner's ask: 46 -> 69 -> 96 -> 132.
+// What a player gets for arriving somewhere is the country around it, and at 69
+// that was a pocket barely wider than the medallion — enough to see the stage they
+// had reached and not enough to see anywhere they might go next. At 132 the pocket
+// around a stage reaches most of the way to its neighbours, so the road ahead is
+// country you can see rather than country you are told about.
+//
+// AND THE FADE GOES WITH IT THIS TIME, by the same factor — 120 * 1.375 = 165.
+// The first draft raised the reach alone and left the blur at 120, and
+// tools/campaign.mjs refused it: the fade has to be at least as wide as the reach,
+// because a short blur on a long reach is a spotlight with a soft edge, which is
+// still a spotlight. It is checked as a RATIO rather than a pair of numbers for
+// exactly this reason, and it has now caught the mistake it was written for.
+//
+// So the two stay in the proportion they have had since the fog was rewritten
+// (blur = 1.25 * reach) and the whole pocket scales by 1.375. What that costs is
+// the blur radius, which is derived from LIT_BLUR — see BOX_R below — and the
+// sheet it runs on is drawn at SMALL, so a wider blur is a bigger box on a small
+// canvas rather than on the full one.
+const LIT_REACH = 132;
+const LIT_BLUR = 165;
 
 let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
 

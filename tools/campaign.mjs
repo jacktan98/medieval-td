@@ -659,10 +659,29 @@ console.log('\n--- the march is one pace, whatever the distance ---\n');
   // The floor is allowed to be quicker than the speed, and only the floor: a leg
   // too short to read as travel is paced by a minimum instead. Everything above it
   // walks at one pace.
-  const FLOOR = 0.8;
+  //
+  // READ OFF THE SOURCE rather than typed here, and it had to be: this said 0.8
+  // because that is what ROAD_MIN_SECONDS said when it was written, and when the
+  // floor was raised to 2.0 every leg on the map counted as "long enough to see"
+  // — including the three ON the floor — so the check reported ten legs at three
+  // different paces and failed a change that was correct. A constant copied into
+  // a checker is a constant that goes stale, and the failure it produces points
+  // at the wrong file.
+  const FLOOR = +(/ROAD_MIN_SECONDS = ([\d.]+)/.exec(readFileSync('src/overview.js', 'utf8')) || [0, 0])[1];
+  ok(FLOOR > 0, 'the march floor is readable from src/overview.js', `ROAD_MIN_SECONDS = ${FLOOR}`);
   const paced = paces.filter(p => p.secs > FLOOR + 1e-9);
   const lo = Math.min(...paced.map(p => p.pace)), hi = Math.max(...paced.map(p => p.pace));
-  ok(paced.length >= STAGE_COUNT - 2 && hi - lo < 0.5,
+  // TWO THIRDS, WHERE IT USED TO BE "ALL BUT TWO", and the number moved because the
+  // floor did. What this clause is for is keeping the floor an EXCEPTION: a floor
+  // high enough to swallow most of the map would make "one pace" true of nothing,
+  // and the check would pass on a map that had quietly gone back to a fixed
+  // duration. "All but two" was a fine way to say that against a 0.8s floor, which
+  // three of these ten legs cleared easily; against 2.0s, three of them are short
+  // enough to need it, and the rule as written called a correct map broken.
+  //
+  // A fraction says the same thing and survives the next retune of either constant.
+  // Seven of ten walk at one pace here, to the pixel per second.
+  ok(paced.length * 3 >= STAGE_COUNT * 2 && hi - lo < 0.5,
     'every leg long enough to see is walked at one speed',
     `${paced.length} of ${STAGE_COUNT} at ${lo.toFixed(0)}px/s`);
 
@@ -972,9 +991,14 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
 
 console.log('\n--- stage 3, and the one rung above its cap ---\n');
 
-// AND ITS SIX WAVES ARE THE OWNER'S OWN, pinned the way the other two boards' are.
-// Written down rather than derived: waves 5 and 6 send NO THUGS AT ALL, which a
-// check measuring "gets bigger" would call a fault.
+// AND ITS SEVEN WAVES ARE THE OWNER'S OWN, pinned the way the other two boards'
+// are. Written down rather than derived: waves 5, 6 and 7 send NO THUGS AT ALL,
+// which a check measuring "gets bigger" would call a fault.
+//
+// THE RATES ARE PINNED TOO, on the last three, and that is new. The owner asked
+// for "the gap stepper shorter for wave 5, 6, 7" — a change to arrival rate with
+// the counts left alone — and a check that reads only counts would have watched
+// that change go by without a word.
 {
   const win = levels.find(l => l.id === 'm5');
   const WANT3 = [
@@ -983,11 +1007,39 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
     '10 light_inf + 4 tough_inf + 1 blocker_inf',
     '10 light_inf + 4 tough_inf + 2 blocker_inf + 4 archer_inf',
     '6 tough_inf + 4 blocker_inf + 8 archer_inf',
-    '10 tough_inf + 4 blocker_inf + 16 archer_inf'
+    '10 tough_inf + 4 blocker_inf + 16 archer_inf',
+    '10 tough_inf + 10 blocker_inf + 20 archer_inf'
   ];
   const got3 = win.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got3.join(' | ') === WANT3.join(' | '), 'Winchester sends exactly the six it was given',
+  ok(got3.join(' | ') === WANT3.join(' | '), 'Winchester sends exactly the seven it was given',
     got3.map((g, i) => (g === WANT3[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT3[i]})`)).join(' '));
+
+  // AND THE LAST THREE ARRIVE FASTER THAN THE FOUR BEFORE THEM. Stated as the
+  // SHAPE of the change rather than as nine numbers, so retuning a rate does not
+  // mean editing this file: what the owner asked for is that waves 5, 6 and 7 come
+  // in tighter, and what has to stay true is that no gap late in the table is
+  // slower than the slowest gap early in it, and that each of the three is at
+  // least as tight as the one before.
+  const slowest = w => Math.max(...w.groups.map(g => g.gap));
+  const early = Math.min(...win.waves.slice(0, 4).map(slowest));
+  const late = win.waves.slice(4).map(slowest);
+  ok(late.every(g => g < early), 'and its last three come in tighter than any of the first four',
+    `${late.map(g => g.toFixed(2)).join(', ')} against ${early.toFixed(2)}`);
+  ok(late.every((g, i) => i === 0 || g <= late[i - 1]),
+    'and each of the three is at least as tight as the one before it',
+    late.map(g => g.toFixed(2)).join(' >= '));
+}
+
+// STAGE 2'S LAST TWO TIGHTENED THE SAME WAY, and for the same ask. Same shape of
+// check rather than pinned numbers.
+{
+  const out = levels.find(l => l.id === 'm4');
+  const slowest = w => Math.max(...w.groups.map(g => g.gap));
+  const early = Math.min(...out.waves.slice(0, 4).map(slowest));
+  const late = out.waves.slice(4).map(slowest);
+  ok(late.length === 2 && late.every(g => g < early),
+    'Oakland Outskirts tightens its last two the same way',
+    `${late.map(g => g.toFixed(2)).join(', ')} against ${early.toFixed(2)}`);
 }
 
 
@@ -1000,8 +1052,8 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
   ok(win && win.maxTier === 3 && (win.allow || []).join() === 'Crossbow Sentry',
     'Winchester caps at tier 3 and lets one named rung through',
     win ? `maxTier ${win.maxTier}, allow ${JSON.stringify(win.allow)}` : 'no m5');
-  ok(win.plots.length === 8 && win.startGold === 220 && win.waves.length === 6,
-    'and is eight plots, 220 gold and six waves',
+  ok(win.plots.length === 8 && win.startGold === 220 && win.waves.length === 7,
+    'and is eight plots, 220 gold and seven waves',
     `${win.plots.length} plots, ${win.startGold} gold, ${win.waves.length} waves`);
 
   // WHAT THE RADIAL MENU ACTUALLY OFFERS, driven through the real menu rather than
