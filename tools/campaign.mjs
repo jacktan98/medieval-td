@@ -836,18 +836,39 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   ok(kinds.length === 2 && kinds.includes('light_inf') && kinds.includes('tough_inf'),
     'and sends thugs and tough thugs and nothing else', kinds.join(', '));
 
-  // AND IT GETS EASIER-SHAPED RATHER THAN HARDER: every wave is at least as big as
-  // the one before it, and the first is small enough to lose nothing to.
-  const size = w => w.groups.reduce((n, g) => n + g.count, 0);
-  const sizes = tut.waves.map(size);
-  ok(sizes.every((n, i) => i === 0 || n >= sizes[i - 1]), 'each wave at least as big as the last',
-    sizes.join(' -> '));
-  ok(sizes[0] <= 5, 'and the first is small enough to learn on', `${sizes[0]} enemies`);
+  // AND THE FIVE ARE THE OWNER'S OWN, pinned one by one.
+  //
+  // THIS USED TO ASSERT THAT THE WAVES GROW and it was wrong to. Wave 4 is two tough
+  // thugs where wave 3 is six thugs — fewer bodies AND less health, and the harder
+  // wave of the two, because a tough thug is the first thing on the road that
+  // carries armour. A table whose whole point is that one wave breaks the pattern
+  // cannot be guarded by a check that the pattern holds, so this pins the list
+  // instead: the shape is a decision rather than a rule, and a decision is checked
+  // by writing it down.
+  const shape = w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ');
+  const WANT = [
+    '2 light_inf',
+    '4 light_inf',
+    '6 light_inf',
+    '2 tough_inf',
+    '6 light_inf + 2 tough_inf'
+  ];
+  const got = tut.waves.map(shape);
+  ok(got.join(' | ') === WANT.join(' | '), 'and sends exactly the five it was given',
+    got.map((g, i) => (g === WANT[i] ? g : `${g} (wanted ${WANT[i]})`)).join(' / '));
 
-  // SIX PLOTS, ALL BESIDE THE ROAD. The splitter reads them off the artwork and the
+  const size = w => w.groups.reduce((n, g) => n + g.count, 0);
+  ok(size(tut.waves[0]) <= 5, 'the first small enough to learn on',
+    `${size(tut.waves[0])} enemies`);
+
+  // AND THE PURSE IT STARTS WITH, which is the other half of a tutorial's difficulty
+  // and the easiest thing to change by accident while tuning a later board.
+  ok(tut.startGold === 200, 'and opens the purse at 200 gold', `${tut.startGold}`);
+
+  // FIVE PLOTS, ALL BESIDE THE ROAD. The splitter reads them off the artwork and the
   // level file only has to agree; what this catches is a plot typed in by hand that
   // no marker was ever drawn for.
-  ok(tut.plots.length === 6, 'and offers six build plots', `${tut.plots.length}`);
+  ok(tut.plots.length === 5, 'and offers five build plots', `${tut.plots.length}`);
   const near = (p, line) => {
     let best = Infinity;
     for (let i = 1; i < line.length; i++) {

@@ -40,6 +40,25 @@ hand-drawn files. With no argument it does map 1. The tool finds which level a
 file belongs to by matching the `src` recorded in `src/data/level*.js`, so a new
 map needs its level file to exist first, even with an empty plot list.
 
+### A board may be drawn in layers instead of one file
+
+Stage 1 is, and any board may be. Name the files `<Board>_Layer_1.svg`,
+`_Layer_2.svg` and so on — the **same 1920x1080 artboard** in each, so stacking
+them is stacking, with no offsets — and set the level's `src` to the **stem** with
+no extension:
+
+    src: 'assets/map/Stage_1_Map',
+
+Every tool that reads a board goes through `readArtwork` in `tools/svg.mjs`, which
+reads one file or stacks the layers as needed. Nothing else in the game or the
+tools knows the difference, and `node tools/split-map.mjs assets/map/Stage_1_Map`
+runs exactly as it does for a single-file board.
+
+**The road and the plot markers may live in any layer** — the tool finds them by
+what they are, not by which file they are in: the markers by matching
+`Plot_Marker.svg`'s proportions, the road by its fill. On stage 1 both are in
+layer 3.
+
 > **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`** — and `Map_2_base.svg`, not
 > `Map_2.svg`. Uploading a redrawn
 > board changes nothing on screen until that command is run. This has caught us
@@ -479,8 +498,9 @@ Files beside them are **DERIVED and committed**, and none should ever be edited 
 hand:
 
 - `Stage_1_Map_base.svg` — stage 1's board with the plot markers cut out, written
-  by `node tools/split-map.mjs assets/map/Stage_1_Map.svg`. Same pipeline as
-  `Map_N_base.svg`; the name follows the artist's file.
+  by `node tools/split-map.mjs assets/map/Stage_1_Map`. Note the **stem**: stage 1
+  is drawn in layers, so the command names `Stage_1_Map` rather than a file. Same
+  pipeline as `Map_N_base.svg` otherwise.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -613,14 +633,15 @@ The names are in the fog but not in the sun. A region nobody has reached should 
 announce itself, but in lit country a name is still the artist's own pixels.
 
 The edge **fades** rather than stopping: the colour leaves the drawing over about
-120px, wider than the 69px the light reaches from the road. A shorter fade puts a
+120px, wider than the 96px the light reaches from the road. A shorter fade puts a
 rim around the explored land and turns the whole thing into a spotlight.
 
 ### Stage 1 is a tutorial and has its own rules
 
-`Stage_1_Map.svg` is the first board a player sees, and everything about it is the
-simplest version of itself: one road with no fork, six plots, five waves, and two
-kinds of enemy in the whole level. `maxTier: 2` in `src/data/level00.js` caps the
+Stage 1 — `Stage_1_Map_Layer_1.svg`, `Stage_1_Map_Layer_2.svg` and
+`Stage_1_Map_Layer_3.svg` — is the first board a player sees, and everything about
+it is the simplest version of itself: one road with no fork, five plots, five
+waves, and two kinds of enemy in the whole level. `maxTier: 2` in `src/data/level00.js` caps the
 tower ladder — the rungs above tier 2 are drawn and priced as normal and simply
 have nowhere to go, so they read as "Maxed", which is already how the menu says a
 tower has topped out.
@@ -640,11 +661,11 @@ None of this is artwork you supply, but it is sized against yours:
   foreshortening, deliberately not the game's `SQUASH` of 0.62, which is the angle
   all three battle boards are drawn at. A locked stage is a grey face and nothing
   else; the padlock that used to sit in it is gone.
-- **The flag** is `Rally_Point_Icon.png` — the same picture the barracks plants on a
-  battle map, on the same anchor, so the game has one flag rather than two. Its pole
+- **The flag** is `Rally_Flag.svg`, split into `Rally_Flag_pole.svg` and
+  `Rally_Flag_cloth.svg` so the pole can stand still while the cloth waves. Its pole
   stands in the centre of the medallion.
-- **The stars** are radius 12 with a solid black outline, spaced at a multiple of
-  that radius so changing one changes both.
+- **The stars** are radius 10, outlined in the map's own ink at the same weight as
+  the medallion, spaced at a multiple of that radius so changing one changes both.
 
 ### The dots go on top of everything
 

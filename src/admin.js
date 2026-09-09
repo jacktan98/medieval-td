@@ -718,7 +718,7 @@ const MAP_Y = INNER.y + 54;
 export const mapTabs = () => levels.map((l, i) => ({
   i,
   id: l.id,
-  label: l.name,
+  label: l.short || l.name,
   x: INNER.x + i * (MAP_W + MAP_GAP),
   y: MAP_Y,
   w: MAP_W,

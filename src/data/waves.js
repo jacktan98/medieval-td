@@ -1796,20 +1796,30 @@ export const MODES = [
 // more shooting. Every other enemy in the game is a rule on top of that one, and a
 // rule on top of nothing is not a lesson.
 //
-// FIVE WAVES, EACH BIGGER THAN THE LAST, and the first is four enemies because the
-// point of the first wave is to be survived by somebody who has not understood the
-// game yet. The tough thugs arrive in wave 4, once a player has had three waves to
-// notice that a tower kills a thug on its own.
+// THE OWNER'S OWN FIVE, written down exactly as given: 2 thugs, 4, 6, then two
+// tough thugs on their own, then six and two together.
+//
+// WAVE 4 IS SMALLER THAN WAVE 3 IN EVERY MEASURE THERE IS: two bodies against six,
+// and 400 health against 480. It is still the harder wave, and that is the lesson.
+// A tough thug has two and a half times a thug's health AND low physical armour, so
+// it is the first thing on the road that an arrow does not simply delete — a player
+// who has spent three waves learning "one tower, one thug" meets the exception with
+// nothing else on screen to confuse it. Wave 5 then puts both kinds on the road at
+// once, which is the exam.
+//
+// So nothing here may assert that the waves grow. They do not, and the wave that
+// breaks the rule is the point of the table — see the tutorial section of
+// tools/campaign.mjs, which pins these five to the owner's own list instead.
 //
 // A LONG REST between them — 12 seconds against the 9 every other table uses. The
 // gap after a wave is when a player looks at their gold and decides something, and
 // on the first board that decision takes longer than it ever will again.
 export const tutorialWaves = [
-  { rest: 12, groups: [{ type: 'light_inf', count: 4, gap: 1.8 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 2, gap: 1.8 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 4, gap: 1.7 }] },
   { rest: 12, groups: [{ type: 'light_inf', count: 6, gap: 1.6 }] },
-  { rest: 12, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 12, groups: [{ type: 'light_inf', count: 8, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.8 }] },
-  { rest: 12, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 }] }
+  { rest: 12, groups: [{ type: 'tough_inf', count: 2, gap: 1.8 }] },
+  { rest: 12, groups: [{ type: 'light_inf', count: 6, gap: 1.4 }, { type: 'tough_inf', count: 2, gap: 1.8 }] }
 ];
 
 export const wavesExtended = [

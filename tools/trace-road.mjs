@@ -21,8 +21,7 @@
 // wants, since a route is just a list of waypoints and two of them sharing a
 // tail costs nothing.
 
-import { readFileSync } from 'fs';
-import { fillPoly, insidePoly, ROAD_FILL, MAP_SCALE } from './svg.mjs';
+import { fillPoly, insidePoly, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
 import { levels } from '../src/level.js';
 import { LANES, at as pointOn, laneOf } from '../src/route.js';
 
@@ -65,7 +64,8 @@ const TOLERANCE = 3;
 
 // --- the road as a polygon ---------------------------------------------------
 
-const svg = readFileSync(SRC, 'utf8');
+// One file or a stack of layers — see readArtwork.
+const svg = readArtwork(SRC);
 const { shapes, poly } = fillPoly(svg, ROAD, SCALE);
 
 console.log(`${SRC}: ${shapes} road shape(s), ${poly.length} points`);

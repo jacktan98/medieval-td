@@ -27,12 +27,12 @@ import { readFileSync, writeFileSync } from 'fs';
 import { levels } from '../src/level.js';
 import { nearestOn } from '../src/route.js';
 import { SCALE } from '../src/data/towers.js';
-import { allGroups, bounds, MAP_SCALE } from './svg.mjs';
+import { allGroups, bounds, MAP_SCALE, readArtwork } from './svg.mjs';
 
 // Which map to split. Every level records the file it was drawn from, so the
 // tool finds its own level rather than being told twice.
 const SRC = process.argv[2] || 'assets/map/Map_1.svg';
-const BASE = SRC.replace(/\.svg$/, '_base.svg');
+const BASE = SRC.replace(/\.svg$/, '') + '_base.svg';
 const MARKER = 'assets/map/Plot_Marker.svg';
 
 const level = levels.find(l => l.src === SRC);
@@ -41,7 +41,8 @@ if (!level) {
     `add one before splitting its map, even with an empty plot list`);
 }
 
-const svg = readFileSync(SRC, 'utf8');
+// A board is one file or a stack of layers, and only readArtwork knows which.
+const svg = readArtwork(SRC);
 
 // --- geometry ----------------------------------------------------------------
 

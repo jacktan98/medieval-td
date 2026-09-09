@@ -9,6 +9,8 @@
 // Nothing here renders. Curves are sampled rather than solved because every
 // caller is measuring shapes, not drawing them.
 
+import { readFileSync, readdirSync } from 'fs';
+
 // Flatten a path's `d` to points under a 2x3 affine.
 export function points(d, tf) {
   const [a, b, c, e, f, g] = tf;
@@ -217,4 +219,94 @@ export function insidePoly(poly, x, y) {
     if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
   }
   return hit;
+}
+
+// --- a board that arrives as layers ------------------------------------------
+//
+// The boards were one file each until stage 1 got detailed enough to be drawn in
+// three, which is the same thing that happened to the world map and for the same
+// reason: Graphite struggles on a file that big. It costs the game nothing —
+// every layer is the SAME 1920x1080 artboard, so stacking them is stacking, with
+// no offsets and no arithmetic — but it costs the tools something, because three
+// of them read a board as one string.
+//
+// So they all read it through here instead, and only this knows the difference.
+// A level's `src` names either a file (`Map_1.svg`, drawn in one piece) or a STEM
+// (`Stage_1_Map`, drawn in layers as `Stage_1_Map_Layer_N.svg`).
+//
+// ONE CLIP FOR THE WHOLE STACK, not one per layer, and that is not a tidiness
+// choice. allGroups walks out of the FIRST artboard group it finds and stops at
+// its closing tag, so a stack of three clip groups hands every tool layer 1 and
+// nothing else — which showed up as split-map.mjs finding 153 groups of scenery
+// and no plot markers at all, because the markers are in layer 3. Every layer
+// clips to the same 1920x1080 rectangle anyway, so one is exactly equivalent.
+export function layerFiles(stem) {
+  const dir = stem.slice(0, stem.lastIndexOf('/'));
+  const base = stem.slice(stem.lastIndexOf('/') + 1);
+  const re = new RegExp(`^${base}_Layer_(\\d+)\\.svg$`);
+  return readdirSync(dir)
+    .map(f => [f, re.exec(f)])
+    .filter(([, m]) => m)
+    .sort((a, b) => +a[1][1] - +b[1][1])
+    .map(([f]) => `${dir}/${f}`);
+}
+
+// The artboard group of one export, and the clip it hangs from. Groups nest, so
+// the closing tag has to be matched by depth rather than by the next `</g>`.
+function artboard(svg, file) {
+  const open = /<g\s+clip-path="url\(#([^)"]+)\)"\s*>/.exec(svg);
+  if (!open) throw new Error(`${file}: no artboard group`);
+  const from = open.index + open[0].length;
+  let depth = 1, end = svg.length;
+  const TAG = /<(\/?)g\b[^>]*?(\/?)>/g;
+  TAG.lastIndex = from;
+  for (let m; (m = TAG.exec(svg));) {
+    if (m[2] === '/') continue;                  // self-closing, no depth
+    depth += m[1] ? -1 : 1;
+    if (depth === 0) { end = m.index; break; }
+  }
+  return { clip: open[1], body: svg.slice(from, end) };
+}
+
+// The opaque background rect an export carries. The first layer's is the ground
+// every other layer sits on; the rest are transparent and are dropped.
+const groundOf = svg => {
+  const m = /<rect\s+fill="(#[0-9a-fA-F]{6})"(?![^>]*fill-opacity="0")[^>]*\/>/.exec(svg);
+  return m ? m[1].toLowerCase() : null;
+};
+
+export function stackLayers(files) {
+  if (!files.length) throw new Error('no layers to stack');
+  const parts = [];
+  let ground = null;
+  for (const f of files) {
+    const svg = readFileSync(f, 'utf8');
+    const { body } = artboard(svg, f);
+    ground = ground || groundOf(svg);
+    // Each layer's own group, so a layer is still a thing you can find in the
+    // merged text — inside the one clip rather than inside three.
+    parts.push(`<g>${body}</g>`);
+  }
+  return [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">',
+    '<defs><clipPath id="artboard-stacked">' +
+      '<rect x="0" y="0" width="1920" height="1080"/></clipPath></defs>',
+    '<g>',
+    `<rect fill="${ground || '#5c7f49'}" x="0" y="0" width="1920" height="1080"/>`,
+    '<g clip-path="url(#artboard-stacked)">',
+    ...parts,
+    '</g>',
+    '</g></svg>'
+  ].join('\n');
+}
+
+// The drawing a level names, however it was drawn. This is what every tool that
+// reads a board should call.
+export function readArtwork(src) {
+  if (src.endsWith('.svg')) return readFileSync(src, 'utf8');
+  const files = layerFiles(src);
+  if (!files.length) {
+    throw new Error(`${src} is neither an .svg nor a stem with ${src}_Layer_N.svg beside it`);
+  }
+  return stackLayers(files);
 }

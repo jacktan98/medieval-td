@@ -452,7 +452,10 @@ console.log('\nAnything, in any wave\n');
     `"${longestMode}" at ${Math.round(longestMode.length * 14 * 0.58)} of ${modes[0].w - 12}px`);
   // The map names still fit the narrower tab. Estimated the way the row's own
   // labels are, pessimistically — see the note on the enemy names below.
-  const longestName = levels.map(l => l.name).reduce((a, b) => a.length > b.length ? a : b);
+  // The TAB's label, which is `short` where a level carries one — the row has no
+  // width to give, so a long map name is shortened here rather than the row being
+  // widened around it. Checked against what is drawn, not against `name`.
+  const longestName = levels.map(l => l.short || l.name).reduce((a, b) => a.length > b.length ? a : b);
   ok(longestName.length * 15 * 0.58 < maps[0].w - 12,
     'and the longest map name still fits its narrower tab',
     `"${longestName}" at ${Math.round(longestName.length * 15 * 0.58)} of ${maps[0].w - 12}px`);
