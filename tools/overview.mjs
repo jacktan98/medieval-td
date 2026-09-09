@@ -426,19 +426,27 @@ if (!approach) throw new Error('no road runs in from off the map; stage 1 has no
 // rule is that a stage must come after the one the road reaches it through.
 const ORDER = [0, 1, 2, 3, 4, 5, 9, 7, 8, 6];
 
-// WHICH MAP EACH STAGE PLAYS. Three are drawn; the rest are markers on a road
-// with nothing behind them yet and the game shows them locked.
-// FOUR BOARDS NOW. The tutorial is stage 1 and the three that were stages 1 to 3
-// moved down one — which is the whole of "move the other maps to 2, 3 and 4", since
-// a stage's board is this table and nothing else.
+// WHICH MAP EACH STAGE PLAYS. Five are drawn; the rest are markers on a road with
+// nothing behind them yet and the game shows them locked.
 //
-// A PLAYER MID-CAMPAIGN KEEPS THEIR STARS AND LOSES THEIR PLACE. Star records key
-// on the level's own id, so every result already recorded still points at the board
-// it was won on; progress counts STAGES, so somebody who had cleared three now
-// stands at stage 3 with a tutorial behind them they never played. There is no
-// migration that could do better without inventing a result, and Reset campaign in
-// the admin panel puts anyone testing back to the start.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3 };
+// FIVE BOARDS NOW, and this table is the identity map because src/level.js already
+// lists the levels IN PLAY ORDER. That is the whole of "move the three testing maps
+// to further stages": Oakland Outskirts went in second in that array and the three
+// older boards slid down to 3, 4 and 5 behind it. A stage's board is this table and
+// the order of that array, and nothing else.
+//
+// It is left written out rather than generated from the array's length, because the
+// day a stage is drawn out of order — a board finished for stage 7 before stage 6 —
+// this is the one line that says so.
+//
+// A PLAYER MID-CAMPAIGN KEEPS THEIR STARS AND LOSES THEIR PLACE, and this is the
+// second time that has been true. Star records key on the level's own id, so every
+// result already recorded still points at the board it was won on; progress counts
+// STAGES, so somebody who had cleared three now stands at stage 3 with two boards
+// behind them they have never played. There is no migration that could do better
+// without inventing a result, and Reset campaign in the admin panel puts anyone
+// testing back to the start.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 };
 
 // The approach has to arrive at whatever the order calls stage 1, or one of the
 // two is wrong and the campaign would start in the middle of the road.

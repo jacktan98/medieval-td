@@ -51,11 +51,12 @@ const dose = v => v.statuses && v.statuses.find(x => x.id === 'poisoned');
 import { level, useLevel, levels } from '../src/level.js';
 import { at as pointOn, laneOf } from '../src/route.js';
 
-// The default board is the tutorial now, and the tutorial is a short, gentle
-// road with six plots — the wrong fixture for a thrower who has to stand off at
-// a measured distance. Every check here was written against a full-length board,
-// so pick the first one that is not capped and leave the tutorial alone.
-useLevel(levels.findIndex(l => !l.maxTier));
+// The default board is the tutorial, which is a short gentle road with five plots
+// — the wrong fixture for a thrower who has to stand off at a measured distance.
+// Pinned to the Bend BY ID rather than to "the first uncapped board" — stage 2 now
+// sits in front of it and is a different shape of map. See the longer note in
+// tools/siege.mjs.
+useLevel(levels.findIndex(l => l.id === 'm1'));
 
 const DT = 1 / 60;
 const barracks = families.find(f => f.id === 'barracks');

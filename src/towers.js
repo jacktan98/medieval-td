@@ -4,6 +4,87 @@ import { abilitiesOf, owns } from './data/abilities.js';
 import { typeOf, pierceOf } from './data/armour.js';
 import { play, FIRING } from './audio.js';
 
+// A TOWER, AS THE GAME KEEPS ONE. Every field it will ever read, set here, once.
+//
+// IT WAS WRITTEN OUT INLINE at the build button and nowhere else, which was true
+// for as long as building was the only way a tower could come to exist. Stage 2
+// opens with a barracks already standing on it — the owner's ask — and a second
+// copy of this object literal is the kind of duplication that does not fail, it
+// DRIFTS: a field added to one and not the other is a tower that behaves almost
+// like a tower, and `undefined - dt` is NaN on a clock that then never ticks.
+//
+// Note what is NOT here: gold, dust, the voice line and the selection. Those are
+// what BUYING a tower does, and a tower that exists at the first frame was not
+// bought. See run() in src/input.js for that half, and prebuiltOn below.
+export function makeTower(plot, fam, def, spent = def.cost) {
+  return {
+    plot,
+    fam,
+    def,
+    x: plot.x,
+    y: plot.y,
+    aim: 0,
+    cd: 0,
+    recoil: 0,
+    // Which drawing an animated building is showing, and how long is left of it.
+    // Only artillery uses them; every other family has one frame and never touches
+    // these. Set here rather than defaulted in the update, because `undefined - dt`
+    // is NaN and a NaN clock never reaches a beat boundary.
+    beat: 0,
+    beatT: 0,
+    // Which way an animated building is drawn facing. 0 means "not decided yet",
+    // which reads as the direction the artwork was drawn in.
+    face: 0,
+    // WHAT TAKING IT DOWN IS WORTH. For a bought tower this is what was paid and
+    // grows with every upgrade; for a prebuilt one it is what the player WOULD
+    // have paid to build the same thing, so selling it refunds the same fraction
+    // of the same ladder. Anything else and the free tower is either a windfall or
+    // a trap, and both are surprises.
+    spent,
+    rally: null,
+    aimMode: 0,
+    abilities: [],
+    shots: 0,
+    special: null,
+    burst: 0,
+    burstT: 0,
+    hit: [],
+    locked: null,
+    hold: 0
+  };
+}
+
+// WHAT A LEVEL SAYS IS ALREADY STANDING, resolved against the families and the
+// plots. `level.prebuilt` names a plot by INDEX and a tier by NUMBER, so the
+// artwork can be redrawn and the plots re-extracted without a coordinate in the
+// level file going stale behind them.
+//
+// It throws rather than skipping. A prebuilt tower that quietly fails to appear
+// is a board that is harder than it was designed to be, with nothing on screen
+// and nothing in the console to say why — and the two ways to get it wrong, a
+// plot index past the end and a tier that family does not have, are both typos
+// made once and never noticed.
+export function prebuiltOn(level, families) {
+  return (level.prebuilt || []).map(p => {
+    const plot = level.plots[p.plot];
+    if (!plot) {
+      throw new Error(`${level.id}: prebuilt on plot ${p.plot}, but the map has ${level.plots.length}`);
+    }
+    const fam = families.find(f => f.id === p.family);
+    if (!fam) throw new Error(`${level.id}: prebuilt names no family "${p.family}"`);
+    const def = fam.tiers.find(d => d.tier === p.tier);
+    if (!def) {
+      throw new Error(`${level.id}: ${fam.name} has no tier ${p.tier} — ` +
+        `it goes up to ${Math.max(...fam.tiers.map(d => d.tier))}`);
+    }
+    // The whole ladder up to this rung, which is what a player would have spent
+    // to stand here. Summed by TIER NUMBER rather than by slicing the array,
+    // because a forked ladder has two tier 4s and index n is not tier n+1.
+    const spent = fam.tiers.reduce((sum, d) => sum + (d.tier < def.tier ? d.cost : 0), 0) + def.cost;
+    return makeTower(plot, fam, def, spent);
+  });
+}
+
 // The building's drawn box in world space. render.js draws the tower from this
 // box and both mount and muzzle are measured from its top-left corner, so the
 // art and the firing origin cannot drift apart.

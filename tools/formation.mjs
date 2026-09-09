@@ -27,15 +27,15 @@ import { makeUnits, moveUnits, nearestOnPath, rallyPoint } from '../src/units.js
 import { LANE } from '../src/route.js';
 import { levels, useLevel } from '../src/level.js';
 import { barracks } from '../src/data/towers.js';
-import { fillPoly, insidePoly, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
+import { fillPolys, insideAny, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
 
 // The road as a polygon and the test against it both live in tools/svg.mjs now —
 // tools/trace-road.mjs finds the road with the same two functions, which is the
 // point: "is this man on tarmac" and "where does the road run" are one question
 // asked twice, and they were two copies of the same arithmetic until they were
 // not.
-const roadOf = src => fillPoly(readArtwork(src), ROAD_FILL, MAP_SCALE).poly;
-const onRoad = (poly, x, y) => insidePoly(poly, x, y);
+const roadOf = src => fillPolys(readArtwork(src), ROAD_FILL, MAP_SCALE);
+const onRoad = (polys, x, y) => insideAny(polys, x, y);
 
 // A man is off the road if any of his BODY is: sample his collision circle at
 // eight points around the rim as well as at the centre. Testing the centre alone

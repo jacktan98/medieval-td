@@ -394,7 +394,13 @@ console.log('\nAnything, in any wave\n');
   // THE TWO EXTRA WAVES ARE REACHABLE AT ALL, which they were not: the panel's
   // wave row was built from the level's own table, so waves 9 and 10 of an
   // Extended run had no button and no shipped entry.
-  const lastWave = xWaves - 1;
+  //
+  // MEASURED OFF `lv`, not off the Bend. It was `xWaves - 1`, which is the Bend's
+  // count — right while `lv` WAS the Bend and wrong the moment a shorter board took
+  // the front of the non-tutorial list, which Oakland Outskirts did. The check then
+  // asked m4 for its wave 11 of 10 and reported the panel broken. Two levels in one
+  // assertion is the bug; one of them is enough.
+  const lastWave = waveCountFor(levels.indexOf(lv), 'extended') - 1;
   ok(shipped(`${lv.id}|extended|${lastWave}|light_inf`) !== undefined,
     'the last wave of the long game has a shipped entry to compare against',
     `wave ${lastWave + 1}`);

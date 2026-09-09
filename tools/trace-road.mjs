@@ -21,7 +21,7 @@
 // wants, since a route is just a list of waypoints and two of them sharing a
 // tail costs nothing.
 
-import { fillPoly, insidePoly, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
+import { fillPolys, insideAny, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
 import { levels } from '../src/level.js';
 import { LANES, at as pointOn, laneOf } from '../src/route.js';
 
@@ -66,11 +66,16 @@ const TOLERANCE = 3;
 
 // One file or a stack of layers — see readArtwork.
 const svg = readArtwork(SRC);
-const { shapes, poly } = fillPoly(svg, ROAD, SCALE);
+const polys = fillPolys(svg, ROAD, SCALE);
+const shapes = polys.length;
+const poly = polys.flat();
 
 console.log(`${SRC}: ${shapes} road shape(s), ${poly.length} points`);
 
-const inside = (x, y) => insidePoly(poly, x, y);
+// The UNION of the road's pieces — see fillPolys. A junction drawn as several
+// overlapping shapes is one road, and even-odd across the lot would read every
+// overlap as a hole.
+const inside = (x, y) => insideAny(polys, x, y);
 
 // --- mask and clearance ------------------------------------------------------
 
@@ -102,8 +107,13 @@ const chamfer = order => {
       // Sideways off-canvas: the road goes on, so this neighbour constrains
       // nothing. Vertically off-canvas: grass, so it is a wall at distance 0
       // and falls out of the `road[ni]` test below anyway.
-      if (nx < 0 || nx >= GW) continue;
-      const nv = (ny < 0 || ny >= GH) ? 0 : clear[ny * GW + nx];
+      // OFF-CANVAS CONSTRAINS NOTHING, on any edge. It was sideways only, on the
+      // reasoning that a road never leaves through the top or the bottom — which
+      // was true of four boards and is not true of stage 2. Where a road DOES run
+      // off the top, seeding a wall there makes its own mouth look like a dead
+      // end and the route bends away from the entry it is walking out of.
+      if (nx < 0 || nx >= GW || ny < 0 || ny >= GH) continue;
+      const nv = clear[ny * GW + nx];
       if (nv + w < clear[i]) clear[i] = nv + w;
     }
   }
@@ -119,26 +129,51 @@ for (const c of clear) if (isFinite(c) && c > maxClear) maxClear = c;
 
 // --- where the road meets the edges ------------------------------------------
 //
-// A run of road cells down the first or last column is a mouth. Two on the left
-// and one on the right is map 2; one of each is map 1.
-function mouths(gx) {
+// A run of road cells along an edge is a MOUTH: the road leaves the map there
+// and carries on off-screen.
+//
+// ANY OF THE FOUR EDGES, not just the left and the right. It was those two only,
+// which held for four boards and then did not: stage 2's road is a junction with
+// one arm running off the TOP of the map, and that arm was invisible to the tool
+// — no error, just a board that quietly had one road where the drawing has two.
+//
+// THE EXIT IS STILL THE RIGHT-HAND ONE, always. Every board in this game runs
+// west to east and ends at a keep off the right edge; a mouth anywhere else is a
+// way IN. That is a convention rather than a law, and it is the thing to revisit
+// the day a map wants its keep somewhere else.
+const EDGES = {
+  left:   { n: () => GH, at: k => [0, k] },
+  right:  { n: () => GH, at: k => [GW - 1, k] },
+  top:    { n: () => GW, at: k => [k, 0] },
+  bottom: { n: () => GW, at: k => [k, GH - 1] }
+};
+
+function mouths(edge) {
+  const { n, at } = EDGES[edge];
   const out = [];
   let run = null;
-  for (let gy = 0; gy < GH; gy++) {
-    if (road[gy * GW + gx]) { if (!run) run = { a: gy, b: gy }; else run.b = gy; }
+  for (let k = 0; k < n(); k++) {
+    const [gx, gy] = at(k);
+    if (road[gy * GW + gx]) { if (!run) run = { a: k, b: k }; else run.b = k; }
     else if (run) { out.push(run); run = null; }
   }
   if (run) out.push(run);
   // Ignore slivers — a couple of cells is the corner of a kerb, not a road.
-  return out.filter(r => (r.b - r.a + 1) * STEP > 20);
+  return out.filter(r => (r.b - r.a + 1) * STEP > 20)
+    .map(r => ({ ...r, edge, cell: at(Math.round((r.a + r.b) / 2)) }));
 }
 
-const entries = mouths(0);
-const exits = mouths(GW - 1);
-console.log(`  ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} on the left, ${exits.length} exit(s) on the right`);
-if (!entries.length || !exits.length) throw new Error('road does not reach both edges');
+const exits = mouths('right');
+// Sorted top to bottom, then left to right, because the pairing with the exits
+// below is by vertical order and needs one across all the edges rather than one
+// per edge.
+const entries = [...mouths('left'), ...mouths('top'), ...mouths('bottom')]
+  .sort((p, q) => p.cell[1] - q.cell[1] || p.cell[0] - q.cell[0]);
 
-const mid = (gx, run) => [gx, Math.round((run.a + run.b) / 2)];
+const where = list => list.map(m => m.edge).join(', ') || 'nowhere';
+console.log(`  ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} (${where(entries)}), ` +
+  `${exits.length} exit(s) on the right`);
+if (!entries.length || !exits.length) throw new Error('road does not reach both edges');
 
 // --- ridge walk --------------------------------------------------------------
 //
@@ -237,7 +272,7 @@ if (!pairs) {
 
 const fields = new Map();
 function fieldFor(exit) {
-  if (!fields.has(exit)) fields.set(exit, costField(mid(GW - 1, exit)));
+  if (!fields.has(exit)) fields.set(exit, costField(exit.cell));
   return fields.get(exit);
 }
 
@@ -306,7 +341,7 @@ pairs.forEach(([run, exit], n) => {
   // Already entry -> exit: the search ran FROM the exit, so following `from`
   // out of an entry walks toward it. Reversing here was the first version's
   // bug and produced routes that ran backwards into the spawn.
-  const raw = routeFrom(mid(0, run), exit);
+  const raw = routeFrom(run.cell, exit);
   const line = simplify(smooth(raw, SMOOTH), TOLERANCE).map(p => [Math.round(p[0]), Math.round(p[1])]);
 
   const head = extend(line, 40);
@@ -329,7 +364,10 @@ pairs.forEach(([run, exit], n) => {
     const c = clear[gy * GW + gx];
     if (isFinite(c)) narrow = Math.min(narrow, c * STEP);
   }
-  console.log(`\n  // entry at y ${Math.round((run.a + run.b) / 2 * STEP)} -> ` +
+  // Named by the edge it comes in through as well as where along it, because
+  // "entry at y 0" on a road that runs off the top is a coordinate that reads as
+  // a mistake until you know which edge it belongs to.
+  console.log(`\n  // in from the ${run.edge} at ${run.cell[0] * STEP}, ${run.cell[1] * STEP} -> ` +
     `exit at y ${Math.round((exit.a + exit.b) / 2 * STEP)}`);
 
   console.log(`\n  // route ${n} — ${full.length} points, ${Math.round(len)}px long, ` +

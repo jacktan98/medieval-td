@@ -126,6 +126,9 @@ const plots1 = [
 export const level01 = {
   id: 'm1',
   name: 'The Bend',
+  // The admin panel's map tab, which is a chip about nine characters wide — see
+  // MAP_W in src/admin.js. Every other screen shows the full name.
+  short: 'The Bend',
   art: 'map01',
   src: 'assets/map/Map_1.svg',
   routes: [route1],

@@ -41,7 +41,10 @@ import { level, useLevel, levels } from '../src/level.js';
 // and half of what this file asks about does not exist on it. The menu reads the
 // current level for that cap (see `capped` in src/menu.js), so a tool that wants
 // the uncapped rules has to say which board it is standing on.
-useLevel(levels.findIndex(l => !l.maxTier));
+// Pinned to the Bend BY ID rather than to "the first uncapped board" — stage 2 now
+// sits in front of it and is a different shape of map. See the longer note in
+// tools/siege.mjs.
+useLevel(levels.findIndex(l => l.id === 'm1'));
 import { archery, siege, families } from '../src/data/towers.js';
 import { rangeOf } from '../src/towers.js';
 

@@ -31,6 +31,10 @@ import { stageAt, stageOfLevel, startReveal } from '../src/overview.js';
 import { hitStart, START_BTN } from '../src/render.js';
 import { canReach, setReached } from '../src/admin.js';
 import { levels } from '../src/level.js';
+// For the prebuilt-tower checks below: the resolver the game itself runs, so a
+// check here cannot pass against a tower the game would refuse to build.
+import { prebuiltOn } from '../src/towers.js';
+import { families } from '../src/data/towers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
 // the same tool this checks, so comparing the data against it would be asking the
@@ -819,15 +823,54 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   ok(tut && tut.maxTier === 2, 'stage 1 caps the tower ladder at tier 2',
     tut ? `maxTier ${tut.maxTier}` : 'no level 0');
 
-  // AND THE THREE OLDER BOARDS MOVED DOWN ONE, which is the whole of "move the
-  // other maps to 2, 3 and 4" — a stage's board is LEVEL_OF in tools/overview.mjs
-  // and nothing else.
-  const order = STAGES.slice(0, 4).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m1,m2,m3', 'and the first four stages run tutorial then the three older boards',
+  // AND THE THREE TESTING BOARDS MOVED DOWN AGAIN, which is the whole of "move the
+  // 3 testing maps to further stages" — a stage's board is the order of the levels
+  // array in src/level.js and LEVEL_OF in tools/overview.mjs, and nothing else.
+  //
+  // THE IDS ARE OUT OF ORDER ON PURPOSE and that is the thing this pins. m4 is the
+  // newest board drawn and it plays SECOND; the file numbers are the order they
+  // were written and the ids are save keys that can never be renumbered, because
+  // m1 has star records on players' phones. Only this array means play order.
+  const order = STAGES.slice(0, 5).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m1,m2,m3',
+    'the campaign runs the two Oakland boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 4,
-    'with four boards on the road and the rest still empty',
+  ok(STAGES.filter(s => s.level !== null).length === 5,
+    'with five boards on the road and the rest still empty',
     `${STAGES.filter(s => s.level !== null).length} playable`);
+
+  // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
+  // tier 3 barracks standing on the top-right plot from the first frame, and every
+  // part of that is a thing a later edit could quietly undo: the plot index, the
+  // tier, and — the one that would be invisible — whether it is still an ORDINARY
+  // tower or has drifted into scenery that cannot be sold.
+  const two = levels[1];
+  ok(two.id === 'm4' && Array.isArray(two.prebuilt) && two.prebuilt.length === 1,
+    'stage 2 opens with exactly one tower already standing',
+    two.prebuilt ? `${two.prebuilt.length} on ${two.id}` : 'none');
+  const pre = two.prebuilt[0];
+  ok(pre.family === 'barracks' && pre.tier === 3, 'and it is a tier 3 barracks',
+    `${pre.family} tier ${pre.tier}`);
+
+  // THE TOP RIGHT MARKER, measured off the artwork's own plots rather than trusted.
+  // "Top right" is what the owner asked for and an index is what the file holds, so
+  // something has to check the two still mean the same thing: of the plots in the
+  // right-hand third of the board, this must be the highest.
+  const spot = two.plots[pre.plot];
+  const right = two.plots.filter(p => p.x > 640);
+  const topRight = right.reduce((a, b) => (b.y < a.y ? b : a));
+  ok(spot === topRight, 'on the top right plot of the board',
+    `(${spot.x}, ${spot.y}) of ${right.length} on the right-hand side`);
+
+  // AND IT IS WORTH WHAT IT WOULD HAVE COST. A prebuilt tower that refunds a tier
+  // 1 price is a trap and one that refunds more than it is worth is a bank; both
+  // are surprises, and neither is visible until somebody sells it.
+  const built = prebuiltOn(two, families);
+  const ladder = families.find(f => f.id === 'barracks').tiers
+    .reduce((sum, d) => sum + (d.tier <= pre.tier ? d.cost : 0), 0);
+  ok(built.length === 1 && built[0].spent === ladder,
+    'and carries the price of the whole ladder, so selling it is honest',
+    `${built[0].spent} gold, the same as building it`);
 
   // FIVE WAVES, AND ONLY TWO KINDS OF ENEMY IN THEM. A tutorial that grew a third
   // enemy would have stopped being one without anybody deciding to.

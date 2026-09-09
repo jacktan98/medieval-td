@@ -14,11 +14,21 @@ import { level00 } from './data/level00.js';
 import { level01 } from './data/level01.js';
 import { level02 } from './data/level02.js';
 import { level03 } from './data/level03.js';
+import { level04 } from './data/level04.js';
 import { prepare } from './route.js';
 
-// In the order they are offered on the title screen, which is the order they
-// are meant to be played.
-export const levels = [level00, level01, level02, level03];
+// IN THE ORDER THEY ARE PLAYED, which is no longer the order the files are
+// numbered in. level04 is the newest board drawn and it belongs SECOND: the
+// campaign runs the tutorial, then Oakland Outskirts, then the three boards that
+// were built for testing, which the owner asked to move further down the road.
+//
+// The file numbers are the order they were WRITTEN and the ids are save keys —
+// `m1` has star records on players' phones and must never come to mean a
+// different map — so neither of those can be renumbered to match. This array is
+// the one that means play order, and everything that cares reads it: the admin
+// panel's map tabs, and LEVEL_OF in tools/overview.mjs, which is what puts a
+// board behind a stage on the world map.
+export const levels = [level00, level04, level01, level02, level03];
 
 // Measure every route once, at load. `routes` holds prepared routes from here
 // on — the raw polyline is `route.pts` — so nothing has to remember whether it

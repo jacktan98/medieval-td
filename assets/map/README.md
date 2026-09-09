@@ -56,8 +56,20 @@ runs exactly as it does for a single-file board.
 
 **The road and the plot markers may live in any layer** — the tool finds them by
 what they are, not by which file they are in: the markers by matching
-`Plot_Marker.svg`'s proportions, the road by its fill. On stage 1 both are in
-layer 2.
+`Plot_Marker.svg`'s proportions, the road by its fill. On both Oakland boards they
+are in **layer 1**, along with the ground colour.
+
+**The road may be drawn in several overlapping pieces.** Stage 2's is: a junction
+of two arms, four shapes with the join painted over twice. They are unioned, not
+XORed — an earlier version even-odded every ring at once, which read each overlap
+as a hole and reported a road that reached no edge of the map.
+
+**A road may enter from any edge, and it exits on the right.** Stage 2 has one arm
+coming down from the **top** and one in from the west; they merge at the junction
+and leave east. Every mouth that is not on the right-hand edge is a way in, and the
+level gets one route per entry. The right edge is the keep, always — that is the
+convention the tracer is built on, and the thing to revisit if a board ever wants
+its keep somewhere else.
 
 **The layers stack in numeric order, so a higher number draws on top.** That is
 the only thing the order decides, and it is worth getting right in the drawing
@@ -504,10 +516,11 @@ Everything else is the picture, drawn in the order it is numbered.
 Files beside them are **DERIVED and committed**, and none should ever be edited by
 hand:
 
-- `Stage_1_Map_base.svg` — stage 1's board with the plot markers cut out, written
-  by `node tools/split-map.mjs assets/map/Stage_1_Map`. Note the **stem**: stage 1
-  is drawn in layers, so the command names `Stage_1_Map` rather than a file. Same
-  pipeline as `Map_N_base.svg` otherwise.
+- `Stage_1_Map_base.svg` and `Stage_2_Map_base.svg` — the two Oakland boards with
+  their plot markers cut out, written by
+  `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for `Stage_2_Map`.
+  Note the **stem**: both are drawn in layers, so the command names `Stage_1_Map`
+  rather than a file. Same pipeline as `Map_N_base.svg` otherwise.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -657,8 +670,18 @@ It also runs the **same five waves at either length**. Every other board's Exten
 table is at least two waves longer; a longer tutorial would be the same lesson
 twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the exception.
 
-The three older boards moved down to stages 2, 3 and 4. A stage's board is
-`LEVEL_OF` in `tools/overview.mjs` and nothing else.
+### Stage 2, and the three testing boards behind it
+
+Stage 2 — `Stage_2_Map_Layer_1.svg`, `Stage_2_Map_Layer_2.svg` and
+`Stage_2_Map_Layer_3.svg` — is the first board that is a game rather than a lesson:
+two roads in, one out, no tier cap. It also opens with a **tier 3 barracks already
+standing** on its top-right plot, which is `prebuilt` in `src/data/level04.js` — an
+ordinary tower in every other respect, sellable and rallyable, refunding what the
+same ladder would have cost.
+
+The three older boards moved down to stages 3, 4 and 5. A stage's board is the
+order of the `levels` array in `src/level.js` and `LEVEL_OF` in
+`tools/overview.mjs`, and nothing else.
 
 ### What the game draws on top
 

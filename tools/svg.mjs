@@ -199,17 +199,27 @@ export const ROAD_FILL = '#ffde9e';
 // The maps are drawn at 1920x1080 and the game is 960x540.
 export const MAP_SCALE = 0.5;
 
-// Every ring of one filled colour, in game space, as one flat soup of points.
+// Every shape of one filled colour, in game space, as ONE POLYGON EACH.
 //
-// ONE SOUP RATHER THAN A LIST OF RINGS, deliberately. A single `d` can hold
-// several sub-paths and a map can hold several road shapes; an even-odd test
-// over the lot answers for all of them at once, which is what lets a map with
-// two separate roads need no special case anywhere.
-export function fillPoly(text, fill = ROAD_FILL, scale = MAP_SCALE) {
+// IT WAS ONE FLAT SOUP OF POINTS and that was a bug with a long fuse. Even-odd
+// over every ring at once answers for several shapes in one test, which is true
+// and cheap while the shapes do not OVERLAP — three boards' worth of roads, and
+// map 3's two separate ones, never did. Stage 2's road is a junction drawn as
+// four overlapping pieces, and even-odd turns every overlap into a hole: the
+// mask came back as a thin diagonal streak with the junction missing, and the
+// tracer reported a road that reached no edge of the map.
+//
+// A shape's own `d` may still hold several sub-paths and those ARE even-odd
+// against each other — that is how a hole in one shape is drawn, and it is why
+// the split is per shape rather than per ring.
+export function fillPolys(text, fill = ROAD_FILL, scale = MAP_SCALE) {
   const shapes = shapesByFill(text).filter(s => (s.fill || '').toLowerCase() === fill);
   if (!shapes.length) throw new Error(`no shape filled ${fill}`);
-  return { shapes: shapes.length, poly: shapes.flatMap(s => s.pts).map(p => [p[0] * scale, p[1] * scale]) };
+  return shapes.map(s => s.pts.map(p => [p[0] * scale, p[1] * scale]));
 }
+
+// Inside ANY of them — the union, which is what a road drawn in pieces is.
+export const insideAny = (polys, x, y) => polys.some(p => insidePoly(p, x, y));
 
 // Even-odd point-in-polygon over that soup.
 export function insidePoly(poly, x, y) {

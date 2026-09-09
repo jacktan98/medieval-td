@@ -31,7 +31,10 @@ import { level, useLevel, levels } from '../src/level.js';
 // Stage 1 is the tutorial and is the default board now — a short road with six
 // plots. These measurements were written against a full-length board, so pick
 // the first level that is not tier-capped and leave the tutorial out of it.
-useLevel(levels.findIndex(l => !l.maxTier));
+// Pinned to the Bend BY ID rather than to "the first uncapped board" — stage 2 now
+// sits in front of it and is a different shape of map. See the longer note in
+// tools/siege.mjs.
+useLevel(levels.findIndex(l => l.id === 'm1'));
 
 import { at as pointOn, laneOf } from '../src/route.js';
 import { KNOCKBACK } from '../src/corpses.js';

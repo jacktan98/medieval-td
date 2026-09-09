@@ -734,7 +734,21 @@ export const TABS = TAB_IDS.map((t, i) => ({
 // 93 was too narrow to hold it and the length buttons gave up the difference
 // instead. tools/admin.mjs checks the label fit and both clearances against the
 // real geometry, and caught each of those in turn.
-const MAP_W = 100, MAP_H = 40, MAP_GAP = 6;
+// NARROWED AGAIN, to 82, because the row gained a FIFTH map. It has been 120, then
+// 100, and each time for the same reason: this row carries every board in the game
+// plus the two lengths plus the purse, so every board drawn costs it width. At 100
+// the length buttons ran 70px past the "Start gold" label — tools/admin.mjs measures
+// that clearance and is what caught it, both times.
+//
+// WHAT PAYS FOR IT IS THE `short` NAME. A tab this narrow holds about nine
+// characters, so every level now carries one: Town, Outskirts, The Bend, The Fork,
+// Rivers. The full names are on every screen that has room for them.
+//
+// The next board drawn takes this to six tabs and about 68px each, which is under
+// what "Outskirts" needs. That is the row's real limit, and the answer when it
+// arrives is a second row rather than a seventh shortening — there is no more type
+// to give back.
+const MAP_W = 82, MAP_H = 40, MAP_GAP = 6;
 const MAP_Y = INNER.y + 54;
 export const mapTabs = () => levels.map((l, i) => ({
   i,

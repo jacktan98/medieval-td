@@ -696,6 +696,8 @@ export const paths = {
   // Stage 1's board, the tutorial. Same pipeline as the other three: the artist
   // draws one file, tools/split-map.mjs writes the _base beside it.
   map00:       'assets/map/Stage_1_Map_base.svg',
+  // Stage 2's board, drawn in layers like stage 1's.
+  map04:       'assets/map/Stage_2_Map_base.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

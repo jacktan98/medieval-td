@@ -69,6 +69,9 @@ const plots = [
 export const level02 = {
   id: 'm2',
   name: 'The Fork',
+  // The admin panel's map tab, which is a chip about nine characters wide — see
+  // MAP_W in src/admin.js. Every other screen shows the full name.
+  short: 'The Fork',
   art: 'map02',
   src: 'assets/map/Map_2.svg',
   routes: [north, south],

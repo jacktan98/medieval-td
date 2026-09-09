@@ -146,6 +146,9 @@ const plots3 = [
 export const level03 = {
   id: 'm3',
   name: 'Two Rivers',
+  // The admin panel's map tab, which is a chip about nine characters wide — see
+  // MAP_W in src/admin.js. Every other screen shows the full name.
+  short: 'Rivers',
   art: 'map03',
   src: 'assets/map/Map_3.svg',
   routes: [north, south],

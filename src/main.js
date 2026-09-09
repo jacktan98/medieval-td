@@ -8,8 +8,10 @@ import { finish, saveUnlocked } from './score.js';
 import { startReveal, stepReveal, stageOfLevel, openedStages } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies } from './enemies.js';
-import { updateTowers, frameOf } from './towers.js';
-import { updateUnits } from './units.js';
+import { updateTowers, frameOf, prebuiltOn } from './towers.js';
+// The families, for resolving what a level says is already standing by name.
+import { families } from './data/towers.js';
+import { updateUnits, makeUnits } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateSplats } from './blood.js';
@@ -123,7 +125,18 @@ function newGame() {
     // finds. A purse dialled to 2000 for testing is still 2200 on Easy.
     gold: startingGold(adminGold(level), difficulty),
     lives: level.startLives,
-    towers: [],
+    // WHAT THE BOARD OPENS WITH, which on every map but one is nothing.
+    //
+    // Stage 2 starts with a tier 3 barracks on its top-right plot, at the owner's
+    // ask. It is an ordinary tower from here on — the squad can be rallied, the
+    // building can be sold, and the refund is what the same ladder would have cost
+    // — because the alternative is a thing on the board that does not answer taps,
+    // which reads as broken rather than as a gift.
+    //
+    // Rebuilt on every newGame rather than kept across one, exactly like the rest
+    // of this object: a restart puts the board back as it started, and "as it
+    // started" includes this.
+    towers: prebuiltOn(level, families),
     enemies: [],
     units: [],
     shots: [],
@@ -208,6 +221,14 @@ function newGame() {
     // box the same number the health bar over its head is reading.
     selected: null
   });
+
+  // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the
+  // Object.assign above: makeUnits pushes onto state.units, and state.units is one
+  // of the fields that assign is in the middle of replacing. Same call the build
+  // button makes, so a squad that starts on the board is the squad any other
+  // barracks would have — it musters, it walks to its post, and it answers a rally
+  // point like any other.
+  for (const t of state.towers) makeUnits(state, t);
 
   // A PLAYER WHO HAS NEVER SEEN THE MAP. Nothing is unlocked, so the road comes
   // in from off the left edge of the world, draws itself to the first marker and

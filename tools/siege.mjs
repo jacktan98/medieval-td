@@ -39,7 +39,15 @@ import { level, levels, useLevel } from '../src/level.js';
 // Stage 1 is the tutorial and is the default board now — a short road with six
 // plots. These measurements were written against a full-length board, so pick
 // the first level that is not tier-capped and leave the tutorial out of it.
-useLevel(levels.findIndex(l => !l.maxTier));
+// PINNED TO THE BEND BY ID, not to "the first board without a tier cap". That
+// rule was written when the only capped board was the tutorial and the first
+// uncapped one was always this map; stage 2 arrived in front of it and every
+// fixture below silently moved to a different board — a fork with a road coming
+// down from the north, where a catapult placed 400px along route 0 is somewhere
+// else entirely. One of these went red and the rest passed on the wrong map.
+//
+// A fixture that measures behaviour on a board has to name the board.
+useLevel(levels.findIndex(l => l.id === 'm1'));
 
 import { at as pointOn, laneOf, LANES } from '../src/route.js';
 

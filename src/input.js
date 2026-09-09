@@ -6,7 +6,7 @@ import { STAGES } from './data/overview.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R,
          needsConfirm, armed } from './menu.js';
 import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
-import { towerBox, cooldownOf } from './towers.js';
+import { towerBox, cooldownOf, makeTower } from './towers.js';
 import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
@@ -444,52 +444,11 @@ function run(state, item) {
   if (item.act === 'build') {
     const def = item.family.tiers[0];
     state.gold -= def.cost;
-    state.towers.push({
-      plot: menu.plot,
-      fam: item.family,
-      def,
-      x: menu.plot.x,
-      y: menu.plot.y,
-      aim: 0,
-      cd: 0,
-      recoil: 0,
-      // Which drawing an animated building is showing, and how long is left of
-      // it. Only artillery uses them; every other family has one frame and never
-      // touches these. Set here rather than defaulted in the update, because
-      // `undefined - dt` is NaN and a NaN clock never reaches a beat boundary —
-      // the catapult would stand still forever with no error anywhere.
-      beat: 0,
-      beatT: 0,
-      // Which way an animated building is drawn facing. Latched once per firing
-      // cycle rather than per frame — see stepCrew — and 0 means "not decided
-      // yet", which reads as the direction the artwork was drawn in.
-      face: 0,
-      spent: def.cost,
-      rally: null,
-      // The archer's standing order, and it survives an upgrade for the same
-      // reason the rally point does: it is an instruction the player gave, not a
-      // property of the tier they gave it to. See AIM_MODES in data/towers.js.
-      aimMode: 0,
-      // --- abilities ---------------------------------------------------------
-      //
-      // What this tower has been taught, by id, and the counters the teaching
-      // needs. All five are set here rather than appearing on the first tier 4
-      // that buys something, for the same reason `beat` and `beatT` are: a field
-      // that springs into existence is a field that is `undefined - dt` on the
-      // frame before, and a NaN clock never reaches a boundary.
-      //
-      // They survive an upgrade, exactly as the rally point and the standing order
-      // do — though nothing in the game can upgrade INTO an ability today, since
-      // only tier 4 offers any and tier 4 is the top of every ladder.
-      abilities: [],
-      shots: 0,       // ordinary and special alike, for whose cycle is due
-      special: null,  // the ability currently being fired or held
-      burst: 0,       // balls still to leave in this burst
-      burstT: 0,
-      hit: [],        // who this burst has already hit, so the next ball picks somebody else
-      locked: null,   // the man Deadeye has painted, during its second of wind-up
-      hold: 0         // seconds committed to a special pose: no shot, no swap
-    });
+    // THE OBJECT ITSELF IS BUILT IN src/towers.js, because this is no longer the
+    // only place a tower comes from: stage 2 opens with one already standing. Two
+    // copies of a thirty-field literal do not fail when they drift, they behave
+    // ALMOST the same, which is worse. See makeTower.
+    state.towers.push(makeTower(menu.plot, item.family, def));
     const built = state.towers[state.towers.length - 1];
     makeUnits(state, built);
     // The dust. All three money buttons raise one — see smoke.js for why the
