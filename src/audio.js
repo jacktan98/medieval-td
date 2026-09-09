@@ -459,7 +459,18 @@ const paths = {
   // and it is the tower speaking rather than either man.
   monk_1:          'assets/audio/voice/Monk_1.mp3',
   monk_2:          'assets/audio/voice/Monk_2.mp3',
-  monk_3:          'assets/audio/voice/Monk_3.mp3'
+  monk_3:          'assets/audio/voice/Monk_3.mp3',
+
+  // --- THE WORLD MAP -----------------------------------------------------------
+  //
+  // The first four clips in this file that belong to a SCREEN rather than to
+  // something on a battlefield. Three of them LOOP — see setLoop — which nothing
+  // in the game had needed until the map got a soundtrack: every other clip here
+  // answers a moment, and these answer a situation that lasts.
+  marching:        'assets/audio/sfx/Marching_sound.mp3',
+  flag_planted:    'assets/audio/sfx/Flag_planted.mp3',
+  flag_waving:     'assets/audio/sfx/Flag_waving.mp3',
+  bird_chirping:   'assets/audio/sfx/Bird_chirping.mp3'
 };
 
 // The clip table, by the name the game calls each one. See the note above `paths`
@@ -509,6 +520,19 @@ const AWAITED = new Set();
 // summed channels clip. Only a re-record helps that, and it is the same note
 // Thug_1 and Attack_1 already have against them.
 export const GAIN = {
+  // --- THE MAP'S OWN FOUR, and all four are trimmed DOWN.
+  //
+  // The leveller aims every clip at one loudness, which is the right target for
+  // the battle and the wrong one here: these play on a screen with nothing else
+  // happening, two of them for as long as the player sits there. A bird at the
+  // loudness of a cannon is not ambience, it is a bird in the room.
+  //
+  // The march is the loudest of them because it is the only one answering an
+  // ACTION — the army is walking and you are watching it walk — and the flag going
+  // in is a single event on a quiet screen, so it needs no help at all.
+  bird_chirping: 0.30,
+  flag_waving: 0.45,
+  marching: 0.65,
   rock_hit_ground: 1.6,
   rock_kill_enemy: 0.7,
   // The click, at half — asked for by ear, and the measurement says why the ear
@@ -761,6 +785,15 @@ export const DEFEND = ['defend_walking'];
 // cue named after the first one would have meant either a duplicate file or a
 // Captain who sounds like a priest for no reason a player could work out.
 export const HEAL = ['enemies_heal'];
+
+// --- THE WORLD MAP ---------------------------------------------------------------
+//
+// THE FLAG GOING IN is the only one-shot of the four, and it goes through `solo`
+// rather than `play`: it is a set piece on a screen with nothing else happening,
+// and Category A is what ducks the ambience under it for its own length. The other
+// three are loops — see setLoop — and have no cue of their own because a loop is
+// named by its key rather than chosen from a list.
+export const FLAG_PLANTED = ['flag_planted'];
 
 // --- THE BOSS ------------------------------------------------------------------
 //
@@ -1083,6 +1116,77 @@ function fire(key, bus, keep = false, level = 1) {
   src.start(0, c.offset);
   if (keep) voice = { src, g };
   return c.audible;
+}
+
+// --- SOUND THAT LASTS AS LONG AS A SITUATION DOES ----------------------------
+//
+// Every other clip in this file answers a MOMENT: an arrow leaves, a man dies, a
+// button is pressed. The world map needed the other kind — an army is marching,
+// and it marches for as long as the road takes; the player is looking at the map,
+// and birds are what that sounds like until they do something.
+//
+// THE CALLER SAYS WHAT SHOULD BE TRUE, NOT WHAT TO DO. `setLoop(key, on)` every
+// frame, and this works out whether anything has to start or stop. A start/stop
+// pair would put the bookkeeping in the game — a flag saying whether the march is
+// already playing, cleared on every path that ends a march, and the day one path
+// forgets, a phantom army marches under the menus forever.
+//
+// It is also what makes the loops survive the audio context being locked. A phone
+// will not play anything until the first tap, and every entry point here returns
+// quietly when there is no context; because the caller re-states the truth every
+// frame, the birds start on their own the moment the context wakes rather than
+// having missed their cue.
+const loops = new Map();
+
+// Long enough not to click, short enough that stopping reads as stopping. The
+// march in particular has to stop ON the flag going in, not a beat after it.
+const LOOP_FADE = 0.35;
+
+export function setLoop(key, on) {
+  if (!ctx || ctx.state !== 'running') return;
+  const live = loops.get(key);
+  if (on === !!live) return;
+
+  const now = ctx.currentTime;
+
+  if (!on) {
+    loops.delete(key);
+    try {
+      live.g.gain.cancelScheduledValues(now);
+      live.g.gain.setValueAtTime(live.g.gain.value, now);
+      live.g.gain.linearRampToValueAtTime(0, now + LOOP_FADE);
+      live.src.stop(now + LOOP_FADE);
+    } catch { /* already ended */ }
+    return;
+  }
+
+  const c = clips[key];
+  if (!c) return;                       // not loaded, or not there: silence, not a crash
+
+  const src = ctx.createBufferSource();
+  src.buffer = c.buf;
+  src.loop = true;
+  // ROUND THE DEAD AIR, not through it. Every clip in this file is measured for
+  // the silence at its head and started past it — see `offset` in loadAudio — and a
+  // loop that wrapped to zero would put that silence back in once a cycle, which is
+  // a hole in a marching column rather than a seam.
+  src.loopStart = c.offset;
+  src.loopEnd = c.buf.duration;
+
+  const g = ctx.createGain();
+  g.gain.value = 0;
+  src.connect(g).connect(busB);
+  src.start(0, c.offset);
+  g.gain.linearRampToValueAtTime(c.gain, now + LOOP_FADE);
+
+  loops.set(key, { src, g });
+}
+
+// Everything down, now. Nothing calls it yet; it is here because a loop with no
+// way to stop it all is the thing that turns one forgotten path into a bug you
+// cannot get out of without a reload.
+export function stopLoops() {
+  for (const key of [...loops.keys()]) setLoop(key, false);
 }
 
 // Take the channel off whatever is speaking, over 60ms rather than instantly.

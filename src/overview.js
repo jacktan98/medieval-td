@@ -31,6 +31,10 @@ import { MODES } from './data/waves.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse } from './motion.js';
+// The map's own four sounds. Three of them last as long as a situation does, so
+// they go through setLoop rather than being started and stopped by hand — see the
+// note above it in src/audio.js.
+import { setLoop, solo, FLAG_PLANTED } from './audio.js';
 
 // --- how much of the road is open -------------------------------------------
 
@@ -133,8 +137,44 @@ export function stepReveal(state, dt) {
   if (!r) return;
   r.t += dt / (r.phase === 'road' ? (r.seconds || ROAD_MIN_SECONDS) : FLAG_SECONDS);
   if (r.t < 1) return;
-  if (r.phase === 'road') { r.phase = 'flag'; r.t = 0; return; }
+  if (r.phase === 'road') {
+    r.phase = 'flag';
+    r.t = 0;
+    // THE FLAG GOES IN. Here rather than in the drawing, because it happens once
+    // and the drawing runs sixty times a second — and here rather than where the
+    // reveal is STARTED, because that is a road's length earlier than the flag.
+    solo(FLAG_PLANTED);
+    return;
+  }
   state.reveal = null;
+}
+
+// WHAT THE MAP SOUNDS LIKE, restated every frame rather than switched on events.
+//
+// Three situations, and each one is a plain reading of the state rather than a
+// flag somebody has to remember to clear:
+//
+//   THE ARMY IS WALKING — the road is drawing itself, which is the yellow dots
+//   moving. Marching, for exactly as long as that lasts.
+//
+//   THE PLAYER IS LOOKING AT THE MAP AND HAS DONE NOTHING — on the world map, with
+//   no road drawing and no stage panel open. Birds and the flag together, which is
+//   what a quiet map sounds like. Opening a stage is an action, so the panel takes
+//   them off: it is a decision being made, not a view being looked at.
+//
+//   ANYTHING ELSE — in a battle, at a result, under the dashboard — silence from
+//   all three, because none of them is a map.
+//
+// See setLoop for why this is safe to call on every frame, and why it is the
+// reason the birds start by themselves once a phone unlocks its audio.
+export function mapAudio(state) {
+  const onMap = !state.started && (state.stage === null || state.stage === undefined);
+  const marching = !!(state.reveal && state.reveal.phase === 'road');
+  const idle = onMap && !state.reveal;
+
+  setLoop('marching', marching);
+  setLoop('bird_chirping', idle);
+  setLoop('flag_waving', idle);
 }
 
 // A tap during the animation finishes it rather than being swallowed. Returns

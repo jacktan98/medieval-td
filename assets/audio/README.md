@@ -1,6 +1,6 @@
 # Audio
 
-**Eighty-three clips: thirty-eight in `sfx/` and forty-five in `voice/`.**
+**Eighty-seven clips: forty-two in `sfx/` and forty-five in `voice/`.**
 
 ```
 assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
@@ -22,7 +22,9 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
-                      Captain_Thug_selected.mp3
+                      Captain_Thug_selected.mp3,
+                      Marching_sound.mp3, Flag_planted.mp3,
+                      Flag_waving.mp3, Bird_chirping.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -390,6 +392,55 @@ line. An arrow finding one man across the map and a rock coming down on several
 are different enough events to be worth telling apart with your eyes shut.
 `killedBy` on the victim is the ammunition's own `kind`, so a third projectile
 would need no branch anywhere.
+
+## The world map has four sounds, and three of them LOOP
+
+Every other clip in this game answers a **moment**: an arrow leaves, a man dies,
+a button is pressed. The map needed the other kind — an army is marching and it
+marches for as long as the road takes; the player is looking at the map, and
+birds are what that sounds like until they do something.
+
+| clip | when |
+| --- | --- |
+| `Marching_sound.mp3` | loops while the road draws itself — the yellow dots moving |
+| `Flag_planted.mp3` | once, the moment the road arrives and the flag goes in |
+| `Flag_waving.mp3` | loops while the player is looking at the map, doing nothing |
+| `Bird_chirping.mp3` | loops with it, same situation |
+
+**A loop is stated, not started.** `setLoop(key, on)` is called every frame with
+what *should* be true, and it works out whether anything has to begin or end —
+see `mapAudio` in `src/overview.js`. Start/stop pairs would put the bookkeeping in
+the game, and the day one path that ends a march forgets to call stop, a phantom
+army marches under the menus until the page is reloaded.
+
+It is also what makes them survive a locked audio context. A phone plays nothing
+until the first tap; because the truth is restated every frame, the birds start on
+their own the moment the context wakes rather than having missed their cue.
+
+**Opening a stage takes the ambience off.** Choosing a board is an action, not a
+view — and the panel covers the map anyway.
+
+**A loop rounds the dead air rather than going through it.** Every clip here is
+measured for silence at its head and started past it; a loop wrapping to zero
+would put that silence back once a cycle, which is a hole in a marching column
+rather than a seam.
+
+### These four are trimmed down, hard
+
+The leveller aims every clip at one loudness, which is right for the battle and
+wrong here: these play on a screen with nothing else happening, two of them for as
+long as the player sits there. A bird at the loudness of a cannon is not ambience,
+it is a bird in the room. `bird_chirping` is at 0.30, `flag_waving` at 0.45,
+`marching` at 0.65 — the march is loudest because it is the only one answering an
+action, and the flag going in needs no help at all on a quiet screen.
+
+### `Bird_chirping.mp3` is 3.4MB, which is a third of all the audio in the game
+
+It is 109 seconds of stereo at 256kbps. Nothing is broken by that — it loads with
+everything else and sound never holds up the game — but it is worth knowing,
+because it is by far the largest single file in the project and it buys a loop
+nobody listens to closely. Mono at 96kbps would be about 1.3MB and would sound the
+same under a map. Worth re-exporting if the download ever matters.
 
 ## What the one-second rule actually costs
 

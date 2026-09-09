@@ -5,7 +5,7 @@ import { openingDelay, MODES } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked } from './score.js';
-import { startReveal, stepReveal, stageOfLevel, openedStages } from './overview.js';
+import { startReveal, stepReveal, stageOfLevel, openedStages, mapAudio } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
@@ -322,6 +322,10 @@ function frame(now) {
   // Stepped on real time rather than through step(): it is a screen animation,
   // so the fast-forward multiplier has no business touching it.
   if (!state.started) stepReveal(state, real);
+  // AND WHAT THE MAP SOUNDS LIKE, every frame and in every state — including the
+  // ones where the answer is silence, which is how the three loops get turned off
+  // by starting a game rather than by somebody remembering to stop them.
+  mapAudio(state);
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.
