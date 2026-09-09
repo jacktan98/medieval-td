@@ -893,6 +893,15 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
     'and carries the price of the whole ladder, so selling it is honest',
     `${built[0].spent} gold, the same as building it`);
 
+  // AND IT STANDS ON ONE OF THE BOARD'S OWN PLOTS — the SAME object, not a copy at
+  // the same coordinates. That identity is what makes the plot marker disappear
+  // under it: drawPlots skips a plot some tower is standing on, and it compares by
+  // reference. A prebuilt given a coordinate rather than an index would look right
+  // and leave a signpost poking out through the barracks' legs.
+  ok(built[0].plot === two.plots[pre.plot],
+    'and stands on one of the seven plots rather than beside it',
+    `plot ${pre.plot} of ${two.plots.length}, so ${two.plots.length - 1} markers are drawn`);
+
   // FIVE WAVES, AND ONLY TWO KINDS OF ENEMY IN THEM. A tutorial that grew a third
   // enemy would have stopped being one without anybody deciding to.
   ok(tut.waves.length === 5, 'it runs five waves', `${tut.waves.length}`);

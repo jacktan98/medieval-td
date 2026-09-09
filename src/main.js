@@ -263,7 +263,14 @@ attachInput(canvas, state, newGame);
 // pose is still up, which is the one thing about the lob that cannot be seen by
 // watching it once.
 if (new URLSearchParams(location.search).has('debug')) {
-  window.__game = { state, level, frameOf, selectionInfo, tierMarks };
+  window.__game = { state, frameOf, selectionInfo, tierMarks };
+  // `level` THROUGH A GETTER, because it is a live binding and this object is
+  // built once. Put in the literal it was a COPY of whichever board happened to be
+  // current at load — always stage 1 — so every check driven through this hatch
+  // read stage 1's plots however far into the campaign the game was. It reported
+  // the prebuilt barracks as standing on "plot -1" of a board it was not on, which
+  // is a debugging tool inventing a bug rather than finding one.
+  Object.defineProperty(window.__game, 'level', { get: () => level, enumerable: true });
 }
 
 let last = performance.now();
