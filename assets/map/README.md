@@ -558,14 +558,16 @@ Everything else is the picture, drawn in the order it is numbered.
 Files beside them are **DERIVED and committed**, and none should ever be edited by
 hand:
 
-- `Stage_1_Map_base.svg` and `Stage_2_Map_base.svg` — the two Oakland boards with
-  their plot markers cut out, written by
-  `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for `Stage_2_Map`.
-  Note the **stem**: both are drawn in layers, so the command names `Stage_1_Map`
-  rather than a file. Same pipeline as `Map_N_base.svg` otherwise.
-- `Stage_1_Map_front.svg` and `Stage_2_Map_front.svg` — **the things on those
-  boards that stand up**, on a transparent sheet of the same artboard. The same
-  command writes them. See "What a figure can walk behind" below.
+- `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg` and `Stage_3_Map_base.svg` — the
+  three drawn boards with their plot markers cut out, written by
+  `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for `Stage_2_Map`
+  and `Stage_3_Map`. Note the **stem**: all three are drawn in layers, so the
+  command names `Stage_1_Map` rather than a file. Same pipeline as
+  `Map_N_base.svg` otherwise.
+- `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg` and `Stage_3_Map_front.svg` —
+  **the things on those boards that stand up**, on a transparent sheet of the same
+  artboard. The same command writes them. See "What a figure can walk behind"
+  below.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -714,6 +716,30 @@ tower has topped out.
 It also runs the **same five waves at either length**. Every other board's Extended
 table is at least two waves longer; a longer tutorial would be the same lesson
 twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the exception.
+
+### Stage 3 is the approach to a town
+
+`Stage_3_Map_Layer_1.svg`, `Stage_3_Map_Layer_2.svg` and
+`Stage_3_Map_Layer_3.svg`. **Its road is 128px wide at the median and 384 at the
+gate**, where the three boards before it are 44 to 48 — a board where the tarmac is
+three times as wide is one where a tower's reach covers proportionally less of it.
+Eight plots, and the plots stand further back to match: plot 6 is 131px off the
+tarmac where the splitter starts calling them FAR at 95. That is the artwork being
+consistent rather than careless.
+
+**Its road is a roundabout, and both arms are walked.** One mouth on the left, one
+on the right, and a grass island with a statue painted on top of the tarmac between
+them — so `tools/trace-road.mjs`, which walks the path between a pair of mouths,
+found a single route and took the southern arm. That left the northern arm as road
+nobody used and the four plots ringing the island covering 8% and 4% of the road,
+which `tools/siege.mjs` refuses under 10%. `src/data/level05.js` carries **two
+routes** now, sharing their first three points and their last three and differing
+only in which side of the island they pass; an enemy picks one at random when it
+spawns. Every plot on the board covers 25% to 39% of the road.
+
+It opens with a **Crossbow Sentry** already standing on its top-right plot, with no
+abilities bought — `prebuilt` in `src/data/level05.js`, named rather than numbered
+because archery has two tier 4s and a number cannot say which.
 
 ### Stage 2, and the three testing boards behind it
 

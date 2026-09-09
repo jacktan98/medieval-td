@@ -21,7 +21,7 @@
 // wants, since a route is just a list of waypoints and two of them sharing a
 // tail costs nothing.
 
-import { fillPolys, insideAny, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
+import { roadPolys, onRoad, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
 import { levels } from '../src/level.js';
 import { LANES, at as pointOn, laneOf } from '../src/route.js';
 
@@ -66,16 +66,18 @@ const TOLERANCE = 3;
 
 // One file or a stack of layers — see readArtwork.
 const svg = readArtwork(SRC);
-const polys = fillPolys(svg, ROAD, SCALE);
-const shapes = polys.length;
-const poly = polys.flat();
+const surface = roadPolys(svg, SCALE);
+const shapes = surface.road.length;
+const holes = surface.holes.length;
+const poly = surface.road.flat();
 
-console.log(`${SRC}: ${shapes} road shape(s), ${poly.length} points`);
+console.log(`${SRC}: ${shapes} road shape(s), ${poly.length} points` +
+  (holes ? `, and ${holes} patch(es) of ground painted back over them` : ''));
 
-// The UNION of the road's pieces — see fillPolys. A junction drawn as several
-// overlapping shapes is one road, and even-odd across the lot would read every
-// overlap as a hole.
-const inside = (x, y) => insideAny(polys, x, y);
+// The union of the road's pieces, LESS the ground painted back over it — see
+// roadPolys. A junction drawn as several overlapping shapes is one road, and a
+// grass island in the middle of one is not road at all.
+const inside = (x, y) => onRoad(surface, x, y);
 
 // --- mask and clearance ------------------------------------------------------
 

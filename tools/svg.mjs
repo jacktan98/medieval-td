@@ -196,6 +196,21 @@ export function shapesByFill(text) {
 // second surface — a bridge, a ford — it is one argument rather than a fork.
 export const ROAD_FILL = '#ffde9e';
 
+// AND THE GROUND, which is how the artist punches a HOLE in a road.
+//
+// Stage 3's road is one big blob with a grass island in the middle of it — a
+// roundabout, with a statue and two braziers on it. The island is not a hole in
+// the road SHAPE; it is grass painted on top, which is the natural way to draw
+// it and was read by the tools as 1068x384 of walkable tarmac. The traced route
+// went straight over the statue.
+//
+// So the rule is: road is road, EXCEPT where the ground has been painted back
+// over it. That reads the drawing the way the eye does, and it costs the artist
+// nothing — a central reservation, a rock in the road and a roundabout are all
+// the same gesture. It is the same colour as layer 1's background, which is what
+// makes it "the ground" rather than a colour that has to be looked up.
+export const GROUND_FILL = '#5c7f49';
+
 // The maps are drawn at 1920x1080 and the game is 960x540.
 export const MAP_SCALE = 0.5;
 
@@ -220,6 +235,51 @@ export function fillPolys(text, fill = ROAD_FILL, scale = MAP_SCALE) {
 
 // Inside ANY of them — the union, which is what a road drawn in pieces is.
 export const insideAny = (polys, x, y) => polys.some(p => insidePoly(p, x, y));
+
+// WHERE A FIGURE MAY WALK: whichever of the road and the ground was painted LAST.
+//
+// ORDER IS THE WHOLE RULE, and it took two wrong versions to say it properly.
+//
+// "Any shape of the ground colour is a hole" reads stage 3's grass island
+// correctly and destroys map 1, whose grass FIELD is a path of that same colour
+// drawn under everything — subtracting it left a board with no road at all.
+//
+// "Ground drawn after the LAST road shape is a hole" then read map 1 correctly and
+// missed the island: stage 3 has three 13x11 road-coloured pebbles scattered at
+// indices 302, 308 and 430, so the last road shape is nowhere near the last road
+// SHAPE THAT MATTERS, and the island at index 1 was not after it.
+//
+// So it is asked per point, in painter's order, which is what the eye does: walk
+// the stack from the top and take the first shape that covers the spot. Paint
+// grass over tarmac and it is grass; paint tarmac over grass and it is road; paint
+// a pebble on the island and it is road again. Nothing else can tell them apart —
+// they are the same kind of shape and, in the field's case, the same colour.
+export function roadPolys(text, scale = MAP_SCALE) {
+  const shapes = shapesByFill(text);
+  const fillOf = s => (s.fill || '').toLowerCase();
+  const scaled = s => s.pts.map(p => [p[0] * scale, p[1] * scale]);
+
+  const layers = shapes
+    .filter(s => fillOf(s) === ROAD_FILL || fillOf(s) === GROUND_FILL)
+    .map(s => ({ poly: scaled(s), road: fillOf(s) === ROAD_FILL }));
+  if (!layers.some(l => l.road)) throw new Error(`no shape filled ${ROAD_FILL}`);
+
+  return {
+    layers,
+    // For the caller's own reporting only. `layers` is what decides.
+    road: layers.filter(l => l.road).map(l => l.poly),
+    holes: layers.filter(l => !l.road).map(l => l.poly)
+  };
+}
+
+// The topmost shape covering the point decides. Walked from the top down, so the
+// first hit is the answer and nothing below it is asked.
+export function onRoad({ layers }, x, y) {
+  for (let i = layers.length - 1; i >= 0; i--) {
+    if (insidePoly(layers[i].poly, x, y)) return layers[i].road;
+  }
+  return false;
+}
 
 // Even-odd point-in-polygon over that soup.
 export function insidePoly(poly, x, y) {

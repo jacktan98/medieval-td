@@ -32,10 +32,12 @@ import { hitStart, START_BTN } from '../src/render.js';
 import { canReach, setReached } from '../src/admin.js';
 // The stage panel's own geometry, for the setting rows below.
 import { difficultyButtons, modeButtons } from '../src/render.js';
-import { levels } from '../src/level.js';
+import { levels, useLevel } from '../src/level.js';
 // For the prebuilt-tower checks below: the resolver the game itself runs, so a
 // check here cannot pass against a tower the game would refuse to build.
-import { prebuiltOn } from '../src/towers.js';
+import { prebuiltOn, makeTower } from '../src/towers.js';
+// The real radial menu, so what is checked is what the player is offered.
+import { openMenu } from '../src/menu.js';
 import { families } from '../src/data/towers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
@@ -833,12 +835,12 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  const order = STAGES.slice(0, 5).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m1,m2,m3',
-    'the campaign runs the two Oakland boards, then the three testing ones',
+  const order = STAGES.slice(0, 6).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m5,m1,m2,m3',
+    'the campaign runs the three drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 5,
-    'with five boards on the road and the rest still empty',
+  ok(STAGES.filter(s => s.level !== null).length === 6,
+    'with six boards on the road and the rest still empty',
     `${STAGES.filter(s => s.level !== null).length} playable`);
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
@@ -966,6 +968,104 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   const offs = tut.plots.map(p => near(p, tut.routes[0].pts));
   ok(Math.max(...offs) < 140, 'every one of them within reach of the road',
     `furthest ${Math.max(...offs).toFixed(0)}px off`);
+}
+
+console.log('\n--- stage 3, and the one rung above its cap ---\n');
+
+// AND ITS SIX WAVES ARE THE OWNER'S OWN, pinned the way the other two boards' are.
+// Written down rather than derived: waves 5 and 6 send NO THUGS AT ALL, which a
+// check measuring "gets bigger" would call a fault.
+{
+  const win = levels.find(l => l.id === 'm5');
+  const WANT3 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 1 blocker_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 4 archer_inf',
+    '6 tough_inf + 4 blocker_inf + 8 archer_inf',
+    '10 tough_inf + 4 blocker_inf + 16 archer_inf'
+  ];
+  const got3 = win.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got3.join(' | ') === WANT3.join(' | '), 'Winchester sends exactly the six it was given',
+    got3.map((g, i) => (g === WANT3[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT3[i]})`)).join(' '));
+}
+
+
+// THE OWNER'S ASK: "towers that can be built is only restricted to tier 3 and
+// crossbow sentry. For archery tier 3, just show 1 option which is crossbow
+// sentry in the radial menu." Both halves are checkable and neither is visible
+// from the level file alone — what matters is what the MENU offers.
+{
+  const win = levels.find(l => l.id === 'm5');
+  ok(win && win.maxTier === 3 && (win.allow || []).join() === 'Crossbow Sentry',
+    'Winchester caps at tier 3 and lets one named rung through',
+    win ? `maxTier ${win.maxTier}, allow ${JSON.stringify(win.allow)}` : 'no m5');
+  ok(win.plots.length === 8 && win.startGold === 220 && win.waves.length === 6,
+    'and is eight plots, 220 gold and six waves',
+    `${win.plots.length} plots, ${win.startGold} gold, ${win.waves.length} waves`);
+
+  // WHAT THE RADIAL MENU ACTUALLY OFFERS, driven through the real menu rather than
+  // re-deriving the rule here. A check that reimplemented `capped` would agree with
+  // itself and tell us nothing.
+  const at = i => {
+    useLevel(i);
+    const out = {};
+    for (const f of families) {
+      const t3 = f.tiers.find(d => d.tier === 3);
+      const state = { towers: [], menu: null, gold: 99999 };
+      const tower = makeTower(levels[i].plots[2], f, t3);
+      state.towers.push(tower);
+      openMenu(state, levels[i].plots[2], tower);
+      out[f.id] = state.menu.items.filter(x => x.act === 'upgrade' && x.to).map(x => x.to.name);
+    }
+    return out;
+  };
+
+  const here = at(levels.findIndex(l => l.id === 'm5'));
+  ok(here.archery.join() === 'Crossbow Sentry',
+    'a Crossbow Tower there offers exactly one thing, and it is the Sentry',
+    here.archery.join(' | ') || 'nothing');
+  ok(!here.barracks.length && !here.siege.length && !here.monastery.length,
+    'and every other ladder stops dead at tier 3',
+    `barracks ${here.barracks.length}, siege ${here.siege.length}, monastery ${here.monastery.length}`);
+
+  // AND NOWHERE ELSE CHANGED. `allow` is a property of one board; a bug that let it
+  // leak would be a fork quietly closing on The Bend, which nothing else would say.
+  const bend = at(levels.findIndex(l => l.id === 'm1'));
+  ok(bend.archery.length === 2 && bend.barracks.length === 2,
+    'while an uncapped board still forks both ways',
+    `${bend.archery.join(' | ')}`);
+
+  // THE PREBUILT SENTRY, and the thing a number could not have said: archery has
+  // two tier 4s, so it is named. prebuiltOn refuses a bare tier on a forked ladder
+  // rather than picking the first one it finds.
+  const built = prebuiltOn(win, families);
+  ok(built.length === 1 && built[0].def.name === 'Crossbow Sentry',
+    'and the board opens with a Crossbow Sentry already standing',
+    built.length ? `${built[0].def.name} T${built[0].def.tier}` : 'nothing');
+  ok(built[0].abilities.length === 0, 'with no abilities bought',
+    `${built[0].abilities.length} of them`);
+
+  // ON THE TOP RIGHT PLOT, measured off the artwork rather than trusted — the same
+  // check stage 2's barracks gets, and the one that has caught the index moving
+  // twice already.
+  const spot = win.plots[win.prebuilt[0].plot];
+  const right = win.plots.filter(p => p.x > 640);
+  ok(spot === right.reduce((a, b) => (b.y < a.y ? b : a)),
+    'on the top right plot of the board',
+    `(${spot.x}, ${spot.y}) of ${right.length} on the right-hand side`);
+
+  // AND A BARE TIER ON A FORKED LADDER IS REFUSED. This is the failure the naming
+  // exists to prevent: a board that quietly opens with the wrong tier 4.
+  let threw = '';
+  try {
+    prebuiltOn({ ...win, prebuilt: [{ plot: 0, family: 'archery', tier: 4 }] }, families);
+  } catch (e) { threw = e.message; }
+  ok(/name the one you mean/.test(threw),
+    'and a prebuilt that says only "tier 4" on a forked ladder is refused',
+    threw ? 'it throws' : 'it picked one silently');
+
+  useLevel(0);
 }
 
 console.log('\n--- the panel a stage opens ---\n');

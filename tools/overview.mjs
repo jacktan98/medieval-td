@@ -426,10 +426,10 @@ if (!approach) throw new Error('no road runs in from off the map; stage 1 has no
 // rule is that a stage must come after the one the road reaches it through.
 const ORDER = [0, 1, 2, 3, 4, 5, 9, 7, 8, 6];
 
-// WHICH MAP EACH STAGE PLAYS. Five are drawn; the rest are markers on a road with
+// WHICH MAP EACH STAGE PLAYS. Six are drawn; the rest are markers on a road with
 // nothing behind them yet and the game shows them locked.
 //
-// FIVE BOARDS NOW, and this table is the identity map because src/level.js already
+// SIX BOARDS NOW, and this table is the identity map because src/level.js already
 // lists the levels IN PLAY ORDER. That is the whole of "move the three testing maps
 // to further stages": Oakland Outskirts went in second in that array and the three
 // older boards slid down to 3, 4 and 5 behind it. A stage's board is this table and
@@ -446,7 +446,7 @@ const ORDER = [0, 1, 2, 3, 4, 5, 9, 7, 8, 6];
 // behind them they have never played. There is no migration that could do better
 // without inventing a result, and Reset campaign in the admin panel puts anyone
 // testing back to the start.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 };
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 };
 
 // The approach has to arrive at whatever the order calls stage 1, or one of the
 // two is wrong and the campaign would start in the middle of the road.

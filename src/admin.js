@@ -734,21 +734,24 @@ export const TABS = TAB_IDS.map((t, i) => ({
 // 93 was too narrow to hold it and the length buttons gave up the difference
 // instead. tools/admin.mjs checks the label fit and both clearances against the
 // real geometry, and caught each of those in turn.
-// NARROWED AGAIN, to 82, because the row gained a FIFTH map. It has been 120, then
-// 100, and each time for the same reason: this row carries every board in the game
-// plus the two lengths plus the purse, so every board drawn costs it width. At 100
-// the length buttons ran 70px past the "Start gold" label — tools/admin.mjs measures
-// that clearance and is what caught it, both times.
+// AND THEN WIDER AGAIN, to 112, because the purse moved off this row. It went 120,
+// 100, 82 as boards were drawn — each time the row carried every map in the game
+// plus the two lengths plus a labelled gold stepper, and each new board took the
+// difference out of the tabs. At six maps it ran out: 68px a tab, under what
+// "Outskirts" needs, with the length buttons 68px past the gold label.
 //
-// WHAT PAYS FOR IT IS THE `short` NAME. A tab this narrow holds about nine
-// characters, so every level now carries one: Town, Outskirts, The Bend, The Fork,
-// Rivers. The full names are on every screen that has room for them.
+// The note here said the answer was a second row of tabs. It was not. THE PURSE HAD
+// NO BUSINESS ON THIS ROW — it is a property of the map, which is why it was put
+// beside the map tabs, but the footer had 570px of empty space and two buttons on
+// it that are ALSO about the whole map. Moving it there gave this row 284px back
+// and cost nothing.
 //
-// The next board drawn takes this to six tabs and about 68px each, which is under
-// what "Outskirts" needs. That is the row's real limit, and the answer when it
-// arrives is a second row rather than a seventh shortening — there is no more type
-// to give back.
-const MAP_W = 82, MAP_H = 40, MAP_GAP = 6;
+// That is worth a sentence because the cheap fix was available twice and taken
+// twice: shrink the tabs, shorten the names. Both were real work that bought one
+// more board each. Six tabs at 112 leaves room for eight before this row is tight
+// again, and by then the `short` names are still doing their job rather than having
+// been squeezed into abbreviations.
+const MAP_W = 112, MAP_H = 40, MAP_GAP = 6;
 const MAP_Y = INNER.y + 54;
 export const mapTabs = () => levels.map((l, i) => ({
   i,
@@ -793,15 +796,6 @@ export const modeTabs = () => MODES.map((m, i) => ({
 // length changes under it.
 export const waveCountFor = (levelIndex, mode) => tableFor(levels[levelIndex], mode).length;
 
-// The starting purse, on the map row and hard against the right margin.
-//
-// SAME ROW AS THE MAPS because it is a property of the map, not of the wave: the
-// tabs on the left say which map and this says what it hands you, and putting it
-// on a row of its own below would have said it belonged to the wave underneath it.
-// There is room — three tabs end at x 494 and the stepper group starts at 736 —
-// and the stepper is 40 tall, which is the map buttons' own height.
-export const GOLD_ROW_Y = MAP_Y;
-export const goldStepper = () => stepper('damage', GOLD_ROW_Y, 'gold');
 
 // One button per wave. Sized so the LONGEST table fits the page with room left on
 // the right — Two Rivers Extended runs twelve, and a row that had to reflow for it
@@ -1044,6 +1038,20 @@ export const unitRows = page =>
 // their lower edge is PAD from the panel exactly like the sides.
 const FOOT_H = 40;
 export const FOOT_Y = INNER.b - FOOT_H;
+
+// The starting purse, hard against the right margin of the FOOTER.
+//
+// IT WAS ON THE MAP ROW, beside the tabs, on the reasoning that it is a property of
+// the map rather than of the wave — true, and it stopped being affordable at six
+// boards. The footer is the better home for exactly the same reason: the two
+// buttons already on it, Reset all and Reset campaign, are about the whole map too,
+// and everything to their right was empty.
+//
+// The stepper is 40 tall, which is the footer's own height, and the Units tab's
+// page arrows live on this row without ever colliding — they are drawn and tapped
+// only on their own tab.
+export const GOLD_ROW_Y = FOOT_Y;
+export const goldStepper = () => stepper('damage', GOLD_ROW_Y, 'gold');
 export const RESET_BTN = { x: INNER.x, y: FOOT_Y, w: 140, h: FOOT_H };
 
 // WALK THE CAMPAIGN BACK TO THE START, beside the reset that undoes the numbers.

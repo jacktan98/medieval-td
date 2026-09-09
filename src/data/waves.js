@@ -1850,6 +1850,31 @@ export const stage2Waves = [
                        { type: 'archer_inf', count: 16, gap: 1.3 }] }
 ];
 
+// STAGE 3'S SIX, the owner's own list again.
+//
+// WHAT IT ADDS is the BLOCKER, and wave 3 introduces exactly one of him — the
+// same way stage 2 introduced exactly one archer. By wave 6 there are four of
+// them in front of sixteen archers, which is the shape of the whole board: the
+// blockers hold your squads still and the archers shoot them while they stand.
+//
+// AND THE THUGS RUN OUT. Waves 1 to 4 open with ten of them; wave 5 has none at
+// all and wave 6 has none either — it is toughs, blockers and archers only. That
+// is the second time this campaign has taken the cheap bodies away (stage 2's
+// wave 5 did it first) and it is the same lesson twice on purpose: what is coming
+// matters more than how much of it there is.
+export const stage3Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.8 }, { type: 'archer_inf', count: 4, gap: 1.6 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'archer_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 10, gap: 1.3 }, { type: 'blocker_inf', count: 4, gap: 1.6 },
+                       { type: 'archer_inf', count: 16, gap: 1.2 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

@@ -72,11 +72,21 @@ export function prebuiltOn(level, families) {
     }
     const fam = families.find(f => f.id === p.family);
     if (!fam) throw new Error(`${level.id}: prebuilt names no family "${p.family}"`);
-    const def = fam.tiers.find(d => d.tier === p.tier);
-    if (!def) {
-      throw new Error(`${level.id}: ${fam.name} has no tier ${p.tier} — ` +
-        `it goes up to ${Math.max(...fam.tiers.map(d => d.tier))}`);
+
+    // BY NAME OR BY TIER, and a forked ladder must use the name. Every family has
+    // two tier 4s now, so a bare `tier: 4` names two towers — and picking the first
+    // would be a board that quietly opens with the wrong one. It refuses instead.
+    const named = p.name ? fam.tiers.filter(d => d.name === p.name)
+                         : fam.tiers.filter(d => d.tier === p.tier);
+    if (!named.length) {
+      throw new Error(`${level.id}: ${fam.name} has no ${p.name ? `"${p.name}"` : `tier ${p.tier}`} — ` +
+        `it goes ${fam.tiers.map(d => `T${d.tier} ${d.name}`).join(', ')}`);
     }
+    if (named.length > 1) {
+      throw new Error(`${level.id}: ${fam.name} has ${named.length} towers at tier ${p.tier} ` +
+        `(${named.map(d => d.name).join(', ')}) — name the one you mean`);
+    }
+    const def = named[0];
     // The whole ladder up to this rung, which is what a player would have spent
     // to stand here. Summed by TIER NUMBER rather than by slicing the array,
     // because a forked ladder has two tier 4s and index n is not tier n+1.

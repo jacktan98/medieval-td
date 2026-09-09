@@ -266,8 +266,23 @@ function buildItems() {
 // a topped-out one — no button that argues back, nothing to press twice. The rungs
 // exist, they are just not on this board.
 //
-// A level with no maxTier is uncapped, which is every level but the tutorial.
-const capped = list => (level.maxTier ? list.filter(n => n.tier <= level.maxTier) : list);
+// A level with no maxTier is uncapped, which is every level but the campaign's
+// first three.
+//
+// AND `allow` IS THE EXCEPTION TO THE CAP, one named rung at a time. Stage 3 caps
+// at tier 3 and lets a Crossbow Tower buy a Crossbow Sentry and nothing else —
+// the owner's ask, and the shape of that board: one tier 4 to reach for rather
+// than a whole rank of them.
+//
+// It falls out of the menu with no other change. Archery's fork offers two
+// buttons; filtered to one, the menu draws it due east exactly as it draws every
+// unforked ladder's single upgrade, because what it asks is how many buttons there
+// are rather than which board it is on.
+const capped = list => {
+  if (!level.maxTier) return list;
+  const allow = level.allow || [];
+  return list.filter(n => n.tier <= level.maxTier || allow.includes(n.name));
+};
 
 function towerItems(t) {
   // ONE ENTRY, TWO, OR NONE. Archery forks at tier 3 — a Crossbow Tower buys

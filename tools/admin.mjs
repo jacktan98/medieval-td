@@ -34,7 +34,7 @@ import {
   units, shipped, waveCount, setWaveCount, setUnitStat, touched, reset,
   adminWaves, adminGold, setStartGold, goldStep, goldStepper,
   statStep, countStep, PIN, ADMIN_BTN, mapTabs, waveTabs,
-  groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, CLOSE_BTN,
+  groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, PROGRESS_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
   modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
@@ -450,14 +450,22 @@ console.log('\nAnything, in any wave\n');
   ok(modes[0].x > maps[maps.length - 1].x + maps[maps.length - 1].w,
     'the length buttons clear the map tabs',
     `${modes[0].x - (maps[maps.length - 1].x + maps[maps.length - 1].w)}px apart`);
-  // The purse's label is right-aligned 14px from its stepper, so where it STARTS
-  // is that minus its own width — estimated pessimistically, the way every other
-  // text fit in this file is.
+  // AND THE ROW ENDS INSIDE THE PANEL. It used to have to clear the "Start gold"
+  // label as well, because the purse sat on this row — six maps is where that ran
+  // out and the purse moved to the footer. What is left is the plainer question.
+  ok(modes[modes.length - 1].x + modes[modes.length - 1].w <= PANEL.x + PANEL.w - 16,
+    'and the row still ends inside the panel',
+    `ends ${modes[modes.length - 1].x + modes[modes.length - 1].w} of ${PANEL.x + PANEL.w - 16}`);
+
+  // THE PURSE IS ON THE FOOTER NOW, clear of the two buttons already there. Both
+  // are about the whole map, which is why it belongs beside them.
   const purse = goldStepper();
   const labelLeft = purse.minus.x - 14 - 'Start gold'.length * adminPx(14) * 0.58;
-  ok(modes[modes.length - 1].x + modes[modes.length - 1].w < labelLeft,
-    'and clear the Start gold label',
-    `${Math.round(labelLeft - (modes[modes.length - 1].x + modes[modes.length - 1].w))}px before it`);
+  ok(purse.minus.y === RESET_BTN.y, 'and the purse sits on the footer row',
+    `y ${purse.minus.y}`);
+  ok(labelLeft > PROGRESS_BTN.x + PROGRESS_BTN.w,
+    'clear of the two reset buttons',
+    `${Math.round(labelLeft - (PROGRESS_BTN.x + PROGRESS_BTN.w))}px between them`);
   // And the longer of the two labels fits its own button.
   const longestMode = MODES.map(m => m.name).reduce((a, b) => a.length > b.length ? a : b);
   ok(longestMode.length * adminPx(15) * 0.58 < modes[0].w - 12,
@@ -803,16 +811,17 @@ console.log('\nWhat fits, and what you can hit\n');
 
   ok(mapTabs().length === levels.length, 'there is a tab per map', `${levels.length}`);
 
-  // THE PURSE SHARES THE MAP ROW, so the one thing that can go wrong there is the
-  // one thing this checks: a map tab and the stepper beside it must not touch, or
-  // a thumb aiming at the third map lands on "less gold".
+  // THE PURSE IS ON THE FOOTER NOW rather than beside the last map tab, so what
+  // could go wrong there has changed: it must not overlap the row it moved to.
+  // Its clearance from the reset buttons is checked in the layout block above.
   const purse = goldStepper();
   const lastTab = mapTabs()[mapTabs().length - 1];
-  ok(lastTab.x + lastTab.w < purse.minus.x, 'and the purse keeps clear of the last of them',
-    `${purse.minus.x - (lastTab.x + lastTab.w)}px apart`);
+  ok(purse.minus.y > lastTab.y + lastTab.h,
+    'and the purse is off their row entirely',
+    `maps end at y ${lastTab.y + lastTab.h}, the purse is at ${purse.minus.y}`);
   ok(purse.plus.x + purse.plus.w <= PANEL.x + PANEL.w, 'and stays on the panel');
-  ok(purse.minus.y === lastTab.y && purse.minus.h === lastTab.h,
-    'and sits on their own line', `y ${purse.minus.y}, ${purse.minus.h} tall`);
+  ok(purse.minus.h === RESET_BTN.h,
+    'and is the height of the row it sits on', `${purse.minus.h} tall`);
 }
 
 // --- the starting purse --------------------------------------------------------
