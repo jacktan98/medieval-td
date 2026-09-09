@@ -1,4 +1,4 @@
-import { level, useLevel } from './level.js';
+import { level, levels, useLevel } from './level.js';
 import { PLOT_R, hitHudButton, hitStart, hitBack, hitModeButton, hitDifficultyButton,
          hitPauseButton } from './render.js';
 import { stageAt, skipReveal } from './overview.js';
@@ -185,6 +185,14 @@ export function tap(state, x, y, restart) {
 
       state.levelIndex = li;
       useLevel(li);
+
+      // A BOARD WITH ONE LENGTH IS ALWAYS PLAYED AT THE FIRST ONE. The row is not
+      // drawn for it — see hasLength in src/render.js — so a modeIndex carried in
+      // from the last board would be a setting the player cannot see and cannot
+      // change. It matters beyond the panel: a star record keys on the mode id, so
+      // the same six waves could be recorded twice under two names.
+      if (levels[li].oneLength) state.modeIndex = 0;
+
       restart();
       return true;
     }

@@ -3412,8 +3412,27 @@ const settingRow = (items, y) => {
 const MODE_ROW_Y = 258;
 const DIFF_ROW_Y = 302;
 
+// WHICH BOARD THE PANEL IS OPEN ON, or null on a stretch of road with no battle.
+// Three things need it now and none of them had it: the two setting rows and the
+// wash over the board behind them.
+export const stageLevel = state => {
+  const stage = STAGES[state.stage];
+  return stage && stage.level !== null ? levels[stage.level] : null;
+};
+
+// AND WHETHER THERE IS A LENGTH TO CHOOSE. Both Oakland boards run one table at
+// either setting — see `oneLength` in their level files — so the row offered a
+// choice that changed nothing, which is worse than no choice at all: a player who
+// picks Extended and gets the same six waves has been told something untrue.
+//
+// The row is REMOVED rather than drawn dead, at the owner's ask, and the
+// difficulty moves up into its place so the panel does not carry a hole where a
+// setting used to be.
+export const hasLength = lv => !(lv && lv.oneLength);
+
 export const modeButtons = () => settingRow(MODES, MODE_ROW_Y);
-export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
+export const difficultyButtons = lv =>
+  settingRow(DIFFICULTIES, hasLength(lv) ? DIFF_ROW_Y : MODE_ROW_Y);
 
 const hitRow = (row, x, y) => {
   for (const b of row) {
@@ -3422,8 +3441,13 @@ const hitRow = (row, x, y) => {
   return null;
 };
 
-export const hitModeButton = (state, x, y) => hitRow(modeButtons(), x, y);
-export const hitDifficultyButton = (state, x, y) => hitRow(difficultyButtons(), x, y);
+// A board with one length has no row to press, and the hit test says so rather
+// than the drawing alone: a button that is not on screen must not still answer,
+// or the panel has an invisible control where the difficulty row now sits.
+export const hitModeButton = (state, x, y) =>
+  hasLength(stageLevel(state)) ? hitRow(modeButtons(), x, y) : null;
+export const hitDifficultyButton = (state, x, y) =>
+  hitRow(difficultyButtons(stageLevel(state)), x, y);
 
 // Generous on a thumb without being a whole-screen tap: a mis-tap on the board
 // should do nothing rather than start a game you were not ready for.
@@ -3537,10 +3561,12 @@ function drawStart(ctx, state) {
     const bw = 960 * k, bh = 540 * k;
     ctx.drawImage(board, p.x + (p.w - bw) / 2, p.y + (p.h - bh) / 2, bw, bh);
 
-    // AND THEN MOSTLY COVERED AGAIN, because it is a background and the settings are
-    // the point. What survives is enough to recognise the map by — the shape of the
-    // land and the line of the road — and not enough to read a word over.
-    ctx.fillStyle = 'rgba(26,21,13,0.80)';
+    // AND THEN COVERED AGAIN, because it is a background and the settings are the
+    // point — but LESS than it was, at the owner's ask. At 0.80 the board behind
+    // this panel was a dark smudge that could be told from another board only by
+    // the line of its road; at 0.52 it is the map, and the type over it is still
+    // cream on brown at a contrast the whole game is drawn at.
+    ctx.fillStyle = 'rgba(26,21,13,0.52)';
     ctx.fillRect(p.x, p.y, p.w, p.h);
   }
   ctx.restore();
@@ -3589,9 +3615,10 @@ function drawStart(ctx, state) {
   ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx - 6, cy + 6);
   ctx.stroke();
 
-  // The two setting rows.
-  settingRowUi(ctx, 'Length', modeButtons(), state.modeIndex ?? 0);
-  settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
+  // The setting rows — one or two, depending on whether this board has a length
+  // worth choosing. See hasLength.
+  if (hasLength(lv)) settingRowUi(ctx, 'Length', modeButtons(), state.modeIndex ?? 0);
+  settingRowUi(ctx, 'Difficulty', difficultyButtons(lv), state.difficultyIndex ?? 0);
 
   const b = START_BTN;
   ctx.save();

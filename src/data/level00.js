@@ -16,29 +16,28 @@
 import { tutorialWaves } from './waves.js';
 
 const route1 = [
-  { x: -36, y: 195 },
-  { x: 1, y: 209 },
-  { x: 81, y: 253 },
-  { x: 133, y: 270 },
-  { x: 187, y: 279 },
-  { x: 325, y: 289 },
-  { x: 515, y: 353 },
-  { x: 663, y: 361 },
-  { x: 767, y: 374 },
-  { x: 907, y: 411 },
-  { x: 959, y: 419 },
-  { x: 998, y: 427 }
+  { x: -36, y: 193 },
+  { x: 1, y: 207 },
+  { x: 85, y: 249 },
+  { x: 125, y: 263 },
+  { x: 169, y: 271 },
+  { x: 333, y: 282 },
+  { x: 497, y: 345 },
+  { x: 645, y: 350 },
+  { x: 741, y: 360 },
+  { x: 959, y: 415 },
+  { x: 999, y: 421 }
 ];
 
 // Five, in road order — the order tools/sim.mjs and every "spread of towers" test
 // index into. Both sides of the road are used, which is the other thing this board
 // teaches: that a plot's side matters.
 const plots1 = [
-  { x: 291, y: 379 },   //  718 from the keep,  92 off the road
-  { x: 325, y: 204 },   //  697 from the keep,  85 off the road
-  { x: 523, y: 265 },   //  511 from the keep,  86 off the road
-  { x: 752, y: 284 },   //  263 from the keep,  87 off the road
-  { x: 731, y: 453 }    //  263 from the keep,  83 off the road
+  { x: 297, y: 363 },   //  716 from the keep,  83 off the road
+  { x: 326, y: 197 },   //  698 from the keep,  84 off the road
+  { x: 544, y: 270 },   //  465 from the keep,  77 off the road
+  { x: 687, y: 273 },   //  328 from the keep,  81 off the road
+  { x: 727, y: 439 }    //  260 from the keep,  80 off the road
 ];
 
 export const level00 = {
@@ -101,9 +100,11 @@ export const level00 = {
   // in the top layer by height and refuses if anything is sitting on the line.
   frontArt: 'front00',
   front: [
-    { x:  30, y:  80, w:  77, h:  81 },   // stands on y 161
-    { x: 158, y: 118, w:  77, h:  81 },   // stands on y 199
-    { x:  80, y: 165, w:  35, h:  42 },   // stands on y 207
+    { x:  30, y:  71, w:  77, h:  81 },   // stands on y 153
+    { x: 157, y: 109, w:  77, h:  81 },   // stands on y 191
+    { x:  80, y: 157, w:  35, h:  42 },   // stands on y 199
+    { x: 873, y: 181, w:  77, h:  81 },   // stands on y 262
+    { x: 782, y: 226, w:  77, h:  81 },   // stands on y 307
     { x:  68, y: 348, w: 106, h:  41 },   // stands on y 389
     { x: 397, y: 361, w:  77, h:  81 },   // stands on y 442
     { x: 529, y: 403, w:  77, h:  81 }   // stands on y 484

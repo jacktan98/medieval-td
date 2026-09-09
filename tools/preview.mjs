@@ -21,7 +21,7 @@
 //   the LAST wave previews nothing, because there is nothing after it, and an
 //   empty row appearing only at the end reads as something having broken
 
-import { updateWaves, upcomingWave } from '../src/waves.js';
+import { updateWaves, upcomingWave, canCallWave, WIN_PAUSE } from '../src/waves.js';
 import { enemyTypes, openingDelay, MODES, tableFor } from '../src/data/waves.js';
 import { levels, useLevel, level } from '../src/level.js';
 import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
@@ -181,6 +181,63 @@ console.log('\nWhat the dashboard changes\n');
      seen.groups[0].type === 'heavy_inf' && seen.groups[0].count === 7,
     'the row reads the table the game is playing',
     seen && show(new Map(seen.groups.map(g => [g.type, g.count]))));
+}
+
+// --- how a game ends -----------------------------------------------------------
+//
+// THE OWNER'S RULE: the game ends when the last unit of the last wave is
+// defeated, with two seconds before the summary and no next-wave countdown at
+// all. What used to happen is that the last wave rested for its table's ten or
+// twelve seconds first, with a live Next wave button counting down to a wave that
+// does not exist.
+//
+// Driven through the real updateWaves, because the thing being checked is the
+// wave loop's own arithmetic and a re-implementation here would only agree with
+// itself.
+console.log('\nHow a game ends\n');
+for (const [li, lv] of levels.entries()) {
+  useLevel(li);
+  const table = scaleWaves(tableFor(level, 'normal'), DIFFICULTIES[0]);
+  const state = {
+    waves: table, enemies: [], waveIndex: table.length - 1, spawned: 999,
+    timer: 0, resting: false, stall: null, gold: 0, result: null
+  };
+
+  // One step with the field clear: the last enemy of the last wave has died.
+  updateWaves(state, DT);
+  ok(state.resting && Math.abs(state.timer - WIN_PAUSE) < DT * 2,
+    `${lv.name} holds for ${WIN_PAUSE}s after the last one falls`,
+    `${state.timer.toFixed(2)}s, where its own rest is ${table[table.length - 1].rest}s`);
+
+  // AND OFFERS NOTHING TO CALL IN. The button and the row of faces both read
+  // this, so one check covers both — see drawWavePreview in src/render.js.
+  ok(!canCallWave(state), 'and offers no next wave to call in',
+    'the button is dead and the preview row with it');
+
+  let secs = 0;
+  while (state.result === null && secs < 10) { updateWaves(state, DT); secs += DT; }
+  ok(state.result === 'won', 'and is won a moment later', `after ${secs.toFixed(2)}s`);
+  // Two seconds and a frame, not two and a half and not ten.
+  ok(secs <= WIN_PAUSE + 3 * DT, 'with nothing else waited for',
+    `${secs.toFixed(2)}s against ${WIN_PAUSE}`);
+}
+
+// AND A WAVE THAT IS NOT THE LAST ONE STILL RESTS ITS FULL TABLE. The two-second
+// hold is the END of a game, not a shortening of every gap in it — a board whose
+// every rest collapsed to two seconds would be a different game.
+{
+  useLevel(levels.findIndex(l => l.id === 'm1'));
+  const table = scaleWaves(tableFor(level, 'normal'), DIFFICULTIES[0]);
+  const state = {
+    waves: table, enemies: [], waveIndex: 0, spawned: 999,
+    timer: 0, resting: false, stall: null, gold: 0, result: null
+  };
+  updateWaves(state, DT);
+  ok(Math.abs(state.timer - table[0].rest) < DT * 2,
+    'while an ordinary wave still rests for as long as its table says',
+    `${state.timer.toFixed(2)}s of ${table[0].rest}`);
+  ok(canCallWave(state), 'and that one can still be called in early',
+    'the button is live between waves');
 }
 
 // EVERY THROWER HAS SOMETHING TO THROW. The ammunition moved from the throwing

@@ -59,7 +59,13 @@ export function updateWaves(state, dt) {
     if (!state.resting) {
       state.gold += waveClearBonus;
       state.resting = true;
-      state.timer = wave.rest;
+      // THE LAST WAVE RESTS FOR TWO SECONDS, not for the ten or twelve its table
+      // asks for. A rest is time to spend the bonus before the next wave arrives,
+      // and after the last one there is no next wave to prepare for — the board is
+      // won and the player is watching a countdown to a summary. The owner's word:
+      // the game should end when the last unit of the last wave is defeated, with
+      // two seconds before the summary and no next-wave clock at all.
+      state.timer = state.waveIndex === waves.length - 1 ? WIN_PAUSE : wave.rest;
     }
     if (state.timer <= 0) {
       state.waveIndex++;
@@ -83,6 +89,18 @@ export function updateWaves(state, dt) {
 // be doing, and it is longer than this grace — see the note on what the clock
 // costs, below.
 export const STALL_GRACE = 20;
+
+// HOW LONG THE BOARD HOLDS AFTER THE LAST ENEMY OF THE LAST WAVE, before the
+// summary comes up. Seconds.
+//
+// Two, the owner's number, and the reason it is not zero is that a game ending on
+// the same frame as its last kill reads as a crash: the thing you were watching
+// dies and the screen is suddenly a panel. Two seconds is long enough to see the
+// last body fall and short enough that nobody waits.
+//
+// It replaces the wave's own `rest`, which is what used to run here — ten or
+// twelve seconds of next-wave countdown for a wave that does not exist.
+export const WIN_PAUSE = 2;
 
 // HOW LONG BEFORE A WAVE GIVES UP WAITING, and why there has to be an answer.
 //
@@ -136,6 +154,12 @@ function stallClock(state, dt) {
 // not one this level is balanced for.
 export function canCallWave(state) {
   if (state.result || state.waveIndex >= state.waves.length || state.timer <= 0) return false;
+  // AND NOTHING TO CALL IN AFTER THE LAST WAVE. The board is resting on its way to
+  // the summary, and a live button offering to summon the next one — with a bonus
+  // priced off a two-second clock — is asking for something that does not exist.
+  // The wave preview reads this too, so the row of faces goes with it: see
+  // drawWavePreview in src/render.js, which asks rather than re-deriving.
+  if (state.resting && state.waveIndex >= state.waves.length - 1) return false;
   const opening = state.waveIndex === 0 && state.spawned === 0;
   return state.resting || opening;
 }

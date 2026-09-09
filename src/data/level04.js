@@ -22,35 +22,37 @@ import { stage2Waves } from './waves.js';
 // way every other route starts off-canvas beside it: an enemy walks on rather
 // than appearing on the kerb.
 const north = [
-  { x: 238, y: -39 },
-  { x: 237, y: 1 },
-  { x: 219, y: 103 },
-  { x: 222, y: 133 },
-  { x: 232, y: 167 },
-  { x: 249, y: 205 },
-  { x: 267, y: 231 },
-  { x: 329, y: 295 },
-  { x: 351, y: 311 },
-  { x: 373, y: 317 },
-  { x: 577, y: 325 },
-  { x: 959, y: 363 },
-  { x: 999, y: 366 }
+  { x: 236, y: -39 },
+  { x: 233, y: 1 },
+  { x: 216, y: 85 },
+  { x: 216, y: 127 },
+  { x: 222, y: 153 },
+  { x: 241, y: 197 },
+  { x: 264, y: 233 },
+  { x: 319, y: 295 },
+  { x: 343, y: 313 },
+  { x: 365, y: 319 },
+  { x: 575, y: 326 },
+  { x: 853, y: 352 },
+  { x: 959, y: 355 },
+  { x: 999, y: 357 }
 ];
 
 // And route 1 in from the west, joining it at the junction. The two share every
 // pixel of road east of about x 370, which is why a plot beside the junction is
 // worth more than two beside the arms.
 const west = [
-  { x: -39, y: 410 },
+  { x: -39, y: 411 },
   { x: 1, y: 405 },
-  { x: 135, y: 404 },
-  { x: 205, y: 394 },
-  { x: 287, y: 367 },
-  { x: 345, y: 325 },
-  { x: 371, y: 317 },
-  { x: 563, y: 324 },
-  { x: 959, y: 363 },
-  { x: 999, y: 365 }
+  { x: 95, y: 406 },
+  { x: 197, y: 393 },
+  { x: 267, y: 368 },
+  { x: 327, y: 328 },
+  { x: 355, y: 319 },
+  { x: 575, y: 326 },
+  { x: 853, y: 352 },
+  { x: 959, y: 355 },
+  { x: 999, y: 357 }
 ];
 
 // SEVEN, in road order — the order tools/sim.mjs and every "spread of towers"
@@ -64,13 +66,13 @@ const west = [
 // a barracks squad walking a little further to its post, which tools/formation.mjs
 // measures on every plot of every board.
 const plots1 = [
-  { x:  78, y: 310 },   //  942 from the keep,  94 off the road
-  { x: 280, y: 473 },   //  769 from the keep,  98 off the road
-  { x: 382, y: 182 },   //  722 from the keep, 117 off the road
-  { x: 430, y: 420 },   //  567 from the keep, 101 off the road
-  { x: 528, y: 230 },   //  476 from the keep,  93 off the road
-  { x: 862, y: 262 },   //  147 from the keep,  91 off the road — the top right one
-  { x: 852, y: 443 }    //  139 from the keep,  90 off the road
+  { x: 104, y: 332 },   //  906 from the keep,  72 off the road
+  { x: 234, y: 467 },   //  811 from the keep,  82 off the road
+  { x: 368, y: 197 },   //  729 from the keep, 102 off the road
+  { x: 375, y: 423 },   //  622 from the keep, 103 off the road
+  { x: 517, y: 401 },   //  481 from the keep,  77 off the road
+  { x: 845, y: 433 },   //  147 from the keep,  81 off the road
+  { x: 862, y: 267 }    //  140 from the keep,  85 off the road — the top right one
 ];
 
 export const level04 = {
@@ -130,7 +132,7 @@ export const level04 = {
   frontArt: 'front04',
   front: [
     { x: 611, y: 175, w: 139, h:  95 },   // stands on y 270
-    { x: 194, y: 254, w:  48, h:  65 },   // stands on y 319
+    { x: 174, y: 255, w:  48, h:  65 },   // stands on y 320
     { x: 694, y: 358, w:  77, h:  81 },   // stands on y 439
     { x: 573, y: 401, w:  77, h:  81 }   // stands on y 482
   ],
@@ -144,11 +146,14 @@ export const level04 = {
   // fights is the kind of thing that makes a board feel broken rather than
   // generous.
   //
-  // The plot is named by INDEX into the list above, which is in road order, so
-  // this moves with the artwork rather than pinning a coordinate that a redraw
-  // would leave behind. Index 5 is (862, 262) — the top right marker, 147px from
-  // the keep, which is the one the owner asked for. See prebuiltOn in src/towers.js.
+  // The plot is named by INDEX into the list above, which is in road order — so a
+  // redraw that moves the markers moves this with them, where a pinned coordinate
+  // would be left behind. It does mean the INDEX moves too: the top right marker
+  // was 5 and is 6 after the road widened, because the plot at (845, 433) came
+  // seven pixels closer to the keep and took its place in the order. That is what
+  // the "top right plot" check in tools/campaign.mjs is for — it re-measures the
+  // artwork rather than trusting the number. See prebuiltOn in src/towers.js.
   prebuilt: [
-    { plot: 5, family: 'barracks', tier: 3 }
+    { plot: 6, family: 'barracks', tier: 3 }
   ]
 };
