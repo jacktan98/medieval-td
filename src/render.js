@@ -32,6 +32,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          PIN_DOTS, PIN_CANCEL,
          waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
          waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
+         diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
 import { enemyTypes, MODES } from './data/waves.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
@@ -4585,7 +4586,7 @@ const ADMIN_INK = '#F0E6D2';
 const ADMIN_DIM = 'rgba(240,230,210,0.55)';
 const ADMIN_EDGE = 'rgba(196,165,116,0.55)';
 
-function panelButton(ctx, b, label, { on = false, live = true, size = 15, r = 8 } = {}) {
+function panelButton(ctx, b, label, { on = false, live = true, size = adminPx(15), r = 8 } = {}) {
   ctx.save();
   ctx.globalAlpha = live ? 1 : 0.35;
   ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
@@ -4615,23 +4616,30 @@ function panelButton(ctx, b, label, { on = false, live = true, size = 15, r = 8 
 // labels beside it are drawn left-aligned in a loop — so without the restore
 // every row after the first drew its name centred on the left margin and half of
 // it fell off the panel. Two rows of "nt Thug" on the first screenshot.
-function stepperRow(ctx, s, value, base) {
-  const moved = value !== base;
-
-  panelButton(ctx, s.minus, '−', { size: 22, r: 7 });
-  panelButton(ctx, s.plus, '+', { size: 22, r: 7 });
+// `live` false draws the whole control greyed and unpressable — the Normal view of
+// the waves tab, where the numbers are derived and there is nothing to write back
+// to. `note` is the small line under the value: the shipped figure when a number
+// has been moved, and otherwise whatever the caller wants said about it, which on
+// the Normal view is the Hard number it came from.
+function stepperRow(ctx, s, value, base, { live = true, note = null } = {}) {
+  const moved = live && value !== base;
+  const under = moved ? `was ${base}` : note;
 
   ctx.save();
+  ctx.globalAlpha = live ? 1 : 0.45;
+  panelButton(ctx, s.minus, '−', { size: adminPx(22), r: 7, live });
+  panelButton(ctx, s.plus, '+', { size: adminPx(22), r: 7, live });
+
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = moved ? '#E0B24C' : ADMIN_INK;
-  ctx.font = '700 22px system-ui, sans-serif';
-  ctx.fillText(String(value), s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 - (moved ? 5 : 0));
+  ctx.font = `700 ${adminPx(22)}px system-ui, sans-serif`;
+  ctx.fillText(String(value), s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 - (under ? 5 : 0));
 
-  if (moved) {
+  if (under) {
     ctx.fillStyle = ADMIN_DIM;
-    ctx.font = '12px system-ui, sans-serif';
-    ctx.fillText(`was ${base}`, s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 + 12);
+    ctx.font = `${adminPx(12)}px system-ui, sans-serif`;
+    ctx.fillText(under, s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 + 12);
   }
   ctx.restore();
 }
@@ -4641,7 +4649,7 @@ function columnHead(ctx, x, w, label) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.font = `600 ${adminPx(12)}px system-ui, sans-serif`;
   ctx.fillText(label, x + w / 2, ADMIN_PANEL.y + 78);
   ctx.restore();
 }
@@ -4664,7 +4672,7 @@ function drawAdmin(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_INK;
-  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.font = `700 ${adminPx(22)}px system-ui, sans-serif`;
   const TITLES = { waves: 'Admin — waves and gold', units: 'Admin — unit stats',
                    road: 'Admin — the road' };
   ctx.fillText(TITLES[a.tab] || TITLES.waves, ADMIN_PANEL.x + 16, ADMIN_TITLE_Y);
@@ -4704,7 +4712,7 @@ function drawAdminRoad(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(240,230,210,0.6)';
-  ctx.font = '600 13px system-ui, sans-serif';
+  ctx.font = `600 ${adminPx(13)}px system-ui, sans-serif`;
   const queued = state.pendingReveal !== null && state.pendingReveal !== undefined;
   ctx.fillText(
     queued ? `Close to watch the road draw into stage ${state.pendingReveal + 1}.`
@@ -4722,10 +4730,11 @@ function drawAdminRoad(ctx, state) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = reached ? '#F0E6D2' : 'rgba(240,230,210,0.45)';
-    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
     ctx.fillText(String(row.i + 1).padStart(2, ' '), row.x, row.y + row.h / 2);
 
-    ctx.font = locked ? 'italic 14px system-ui, sans-serif' : '600 14px system-ui, sans-serif';
+    ctx.font = locked ? `italic ${adminPx(14)}px system-ui, sans-serif`
+                      : `600 ${adminPx(14)}px system-ui, sans-serif`;
     ctx.fillStyle = locked ? 'rgba(240,230,210,0.4)'
       : (reached ? '#F0E6D2' : 'rgba(240,230,210,0.55)');
     ctx.fillText(locked ? 'no map yet' : row.name, row.x + 26, row.y + row.h / 2);
@@ -4779,13 +4788,33 @@ function caretUp(ctx, x, y) {
 function drawAdminWaves(ctx, a) {
   const lv = levels[a.map];
 
-  for (const m of mapTabs()) panelButton(ctx, m, m.label, { on: m.i === a.map });
+  // WHICH DIFFICULTY IS BEING READ. Everything below asks this first, because on
+  // Normal the grid is a reading of the table rather than the table.
+  const live = editable(a.diff);
+  const at = n => countAtDiff(n, a.diff);
+
+  for (const m of mapTabs()) panelButton(ctx, m, m.label, { on: m.i === a.map, size: adminPx(15) });
   // The two LENGTHS, beside the maps and on the same row: both answer "which
   // table", where the numbers below answer "which wave of it".
-  for (const m of modeTabs()) panelButton(ctx, m, m.label, { on: m.id === a.mode });
+  for (const m of modeTabs()) panelButton(ctx, m, m.label, { on: m.id === a.mode, size: adminPx(15) });
   for (const w of waveTabs(a.map, a.mode)) {
-    panelButton(ctx, w, String(w.i + 1), { on: w.i === a.wave, r: 7 });
+    panelButton(ctx, w, String(w.i + 1), { on: w.i === a.wave, r: 7, size: adminPx(15) });
   }
+
+  // AND THE DIFFICULTY, on the same row as the wave numbers and hard against the
+  // right margin. Labelled, because this row already carries a Normal on the line
+  // above it that means something else entirely — that one is the LENGTH of the
+  // game and this one is how hard it plays, and the two words being the same is
+  // the whole reason the caption is worth its 11px.
+  const diffs = diffTabs();
+  ctx.save();
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ADMIN_DIM;
+  ctx.font = `700 ${adminPx(13)}px system-ui, sans-serif`;
+  ctx.fillText('Difficulty', diffs[0].x - 12, diffs[0].y + diffs[0].h / 2);
+  ctx.restore();
+  for (const d of diffs) panelButton(ctx, d, d.label, { on: d.id === a.diff, size: adminPx(15) });
 
   // The chosen map's starting purse, on the map row's own line. Labelled, unlike
   // every other stepper in this panel: the rows below all sit under a column head
@@ -4795,9 +4824,15 @@ function drawAdminWaves(ctx, a) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.font = `700 ${adminPx(14)}px system-ui, sans-serif`;
   ctx.fillText('Start gold', purse.minus.x - 14, purse.minus.y + purse.minus.h / 2);
-  stepperRow(ctx, purse, adminGold(lv), shipped(`${lv.id}|gold`));
+  // THE PURSE MOVES WITH THE DIFFICULTY TOO, and in the other direction to the
+  // counts: Normal sends fewer enemies and hands you more gold to meet them with.
+  // A panel that scaled the waves and not the purse would be describing a game
+  // nobody plays.
+  const gold = adminGold(lv);
+  stepperRow(ctx, purse, goldAtDiff(gold, a.diff), shipped(`${lv.id}|gold`),
+    { live, note: live ? null : `hard ${gold}` });
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -4832,7 +4867,7 @@ function drawAdminWaves(ctx, a) {
     // longest name in the game rather than a number typed here, so a creature with
     // a longer one fails the check instead of being drawn through the minus button.
     ctx.fillStyle = here ? ADMIN_INK : ADMIN_DIM;
-    ctx.font = '700 17px system-ui, sans-serif';
+    ctx.font = `700 ${adminPx(17)}px system-ui, sans-serif`;
     ctx.fillText(r.def.name, r.x, r.y + 16);
 
     // AND THE PLACE UNDER IT IS A BUTTON NOW, which is why it is drawn as a pill
@@ -4856,7 +4891,7 @@ function drawAdminWaves(ctx, a) {
     // away and reads on the row the moment there is one of anything.
     if (here) {
       const label = `${ordinal(place)} in`;
-      ctx.font = '13px system-ui, sans-serif';
+      ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
       const w = Math.ceil(ctx.measureText(label).width) + (total > r.count ? 30 : 18);
       ctx.fillStyle = 'rgba(240,230,210,0.10)';
       pill(ctx, r.x, r.y + 24, w, 20, 10);
@@ -4870,17 +4905,27 @@ function drawAdminWaves(ctx, a) {
       }
     } else {
       ctx.fillStyle = ADMIN_DIM;
-      ctx.font = '13px system-ui, sans-serif';
+      ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
       ctx.fillText('not in this wave', r.x, r.y + 34);
     }
 
-    stepperRow(ctx, waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W), r.count,
-      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}`));
+    // THE COUNT AT THE CHOSEN DIFFICULTY, with the number it came from under it on
+    // the derived view. That pairing is the whole point of the two tabs: a wave of
+    // six thugs is five on Normal and a wave of two tough thugs is still two, and
+    // which of those a change lands on is not something anybody should have to
+    // work out in their head while dialling counts in.
+    stepperRow(ctx, waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W), at(r.count),
+      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}`),
+      { live, note: live || !here ? null : `hard ${r.count}` });
     // Printed to two places and compared to two places, so a rate the player has
     // stepped back onto its shipped value stops showing a "was" line — 1.6 and
     // 1.60 are the same number and must read as the same number.
+    // THE RATE IS THE SAME AT BOTH SETTINGS and is drawn dead rather than hidden on
+    // the derived view. Difficulty has two knobs and this is not one of them — see
+    // the note at the top of data/difficulty.js — so a rate that changed with the
+    // tab would be inventing a third.
     stepperRow(ctx, waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W), r.gap.toFixed(2),
-      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}|gap`).toFixed(2));
+      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}|gap`).toFixed(2), { live });
   }
 
   // The total, because the count that matters to a player is the wave's, and it
@@ -4888,15 +4933,29 @@ function drawAdminWaves(ctx, a) {
   // has three groups in it.
   ctx.textAlign = 'left';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = '15px system-ui, sans-serif';
+  ctx.font = `${adminPx(15)}px system-ui, sans-serif`;
   // The length is named here as well as on the button, because the wave COUNT in
   // this line is the thing that changes with it and a bare "wave 9 of 12" would
   // leave the reader working out which table they were looking at.
   const waves = waveCountFor(a.map, a.mode);
   const length = a.mode === 'normal' ? '' : ' Extended';
+  // BOTH TOTALS, ALWAYS, WHICHEVER TAB IS OPEN. This is the line that answers the
+  // question the tabs make you flip for — change a count on Hard and the Normal
+  // figure moves here as you press, without leaving the view you are editing in.
+  // The pair is named only when the two differ; on a wave of tough thugs 80% of
+  // two is still two, and "2 enemies, 2 on Normal" reads as a fault.
+  //
+  // COUNTED AT THE DIFFICULTY ON SCREEN, not off the raw table. `total` above is
+  // the table's own and stays that way — the caret on each row asks whether there
+  // is anything else in the wave to reorder against, which is a question about the
+  // queue rather than about a setting. This line is the other question.
+  const other = a.diff === 'hard' ? DIFFICULTIES[0] : DIFFICULTIES[DIFFICULTIES.length - 1];
+  const shownTotal = rows.reduce((n, r) => n + at(r.count), 0);
+  const otherTotal = rows.reduce((n, r) => n + countAtDiff(r.count, other.id), 0);
+  const both = shownTotal && otherTotal !== shownTotal ? `, ${otherTotal} on ${other.name}` : '';
   ctx.fillText(
     `Wave ${a.wave + 1} of ${waves} on ${lv.name}${length} — ` +
-    `${total ? `${total} enemies` : 'empty, a wave off'}` +
+    `${shownTotal ? `${shownTotal} enemies${both}` : 'empty, a wave off'}` +
     `${a.wave === waves - 1 ? ', the last one' : ''}`,
     ADMIN_PANEL.x + 16, SUMMARY_Y());
 
@@ -4906,16 +4965,24 @@ function drawAdminWaves(ctx, a) {
   // lines come off SUMMARY_Y now, and tools/admin.mjs checks the LOWER of them
   // against the footer rather than the upper.
   ctx.fillStyle = 'rgba(240,230,210,0.40)';
-  ctx.font = '13px system-ui, sans-serif';
+  ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
   // READ OFF THE DIFFICULTIES rather than typed, because a percentage typed here
   // is a second copy of a number that lives in data/difficulty.js — and a copy of
   // that number going stale is precisely the bug this line is describing. The
   // wording covers both settings by looking them up, so retuning either one
   // rewrites the caption on its own.
+  //
+  // IT ALSO SAYS WHICH VIEW YOU ARE IN AND WHY ONE OF THEM IS DEAD. A panel whose
+  // buttons stop working needs to say so on the panel; the alternative is pressing
+  // a greyed stepper twice and deciding the dashboard is broken.
   const [easy, hardest] = DIFFICULTIES;
-  ctx.fillText(
-    `${hardest.name} plays these counts exactly. ` +
-    `${easy.name} thins them to ${Math.round(easy.count * 100)}%.`,
+  ctx.fillText(live
+    ? `${hardest.name} plays these counts exactly, and this is where they are set. ` +
+      `${easy.name} thins them to ${Math.round(easy.count * 100)}% and adds ` +
+      `${Math.round((easy.gold - 1) * 100)}% gold.`
+    : `${easy.name} is worked out from the ${hardest.name} table — ` +
+      `${Math.round(easy.count * 100)}% of each count, rounded, and ` +
+      `${Math.round(easy.gold * 100)}% of the purse. Switch to ${hardest.name} to change it.`,
     ADMIN_PANEL.x + 16, SUMMARY_Y() + 22);
 }
 
@@ -4931,11 +4998,11 @@ function drawAdminUnits(ctx, a) {
 
   for (const u of rows) {
     ctx.fillStyle = ADMIN_INK;
-    ctx.font = '700 19px system-ui, sans-serif';
+    ctx.font = `700 ${adminPx(19)}px system-ui, sans-serif`;
     ctx.fillText(u.name, ADMIN_PANEL.x + 16, u.y + 16);
 
     ctx.fillStyle = ADMIN_DIM;
-    ctx.font = '13px system-ui, sans-serif';
+    ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
     ctx.fillText(u.of, ADMIN_PANEL.x + 16, u.y + 34);
 
     if (u.hp) {
@@ -4947,7 +5014,7 @@ function drawAdminUnits(ctx, a) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(240,230,210,0.28)';
-      ctx.font = '14px system-ui, sans-serif';
+      ctx.font = `${adminPx(14)}px system-ui, sans-serif`;
       ctx.fillText('out of reach', COLS.hp + 100, u.y + 20);
       ctx.restore();
     }
@@ -4961,7 +5028,7 @@ function drawAdminUnits(ctx, a) {
   // panel whose buttons do different things on different rows without saying so
   // reads as broken.
   ctx.fillStyle = 'rgba(240,230,210,0.40)';
-  ctx.font = '13px system-ui, sans-serif';
+  ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
   ctx.fillText('Each tap moves a stat by about a twentieth of where it already is.',
     ADMIN_PANEL.x + 16, FOOT_Y - 14);
 
@@ -4970,7 +5037,7 @@ function drawAdminUnits(ctx, a) {
 
   ctx.textAlign = 'center';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = '15px system-ui, sans-serif';
+  ctx.font = `${adminPx(15)}px system-ui, sans-serif`;
   ctx.fillText(`Page ${a.page + 1} / ${pages}`,
     (PREV_BTN.x + PREV_BTN.w + NEXT_BTN.x) / 2, PREV_BTN.y + PREV_BTN.h / 2 + 1);
   ctx.textAlign = 'left';
@@ -4983,10 +5050,10 @@ function drawPinPad(ctx, a) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_INK;
-  ctx.font = '700 26px system-ui, sans-serif';
+  ctx.font = `700 ${adminPx(26)}px system-ui, sans-serif`;
   ctx.fillText('Admin', 480, 78);
 
-  ctx.font = '15px system-ui, sans-serif';
+  ctx.font = `${adminPx(15)}px system-ui, sans-serif`;
   ctx.fillStyle = a.wrong ? '#D4453A' : ADMIN_DIM;
   ctx.fillText(a.wrong ? 'Wrong code.' : `Enter the ${PIN.length}-digit code.`, 480, 108);
 

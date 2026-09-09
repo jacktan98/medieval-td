@@ -26,6 +26,7 @@
 // throws on a missing store, the game has picked up a hard dependency on the
 // browser that the whole tool suite would trip over.
 
+import { readFileSync } from 'fs';
 import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from '../src/data/waves.js';
 import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
@@ -36,10 +37,11 @@ import {
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
-  modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder
+  modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
+  diffTabs, countAtDiff, goldAtDiff, editable, adminPx
 } from '../src/admin.js';
 import { starsFor, starCuts, bestStars, recordStars, clearStars, MAX_STARS } from '../src/score.js';
-import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
+import { DIFFICULTIES, scaleWaves, scaleCount, startingGold } from '../src/data/difficulty.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -441,24 +443,113 @@ console.log('\nAnything, in any wave\n');
   // is that minus its own width — estimated pessimistically, the way every other
   // text fit in this file is.
   const purse = goldStepper();
-  const labelLeft = purse.minus.x - 14 - 'Start gold'.length * 14 * 0.58;
+  const labelLeft = purse.minus.x - 14 - 'Start gold'.length * adminPx(14) * 0.58;
   ok(modes[modes.length - 1].x + modes[modes.length - 1].w < labelLeft,
     'and clear the Start gold label',
     `${Math.round(labelLeft - (modes[modes.length - 1].x + modes[modes.length - 1].w))}px before it`);
   // And the longer of the two labels fits its own button.
   const longestMode = MODES.map(m => m.name).reduce((a, b) => a.length > b.length ? a : b);
-  ok(longestMode.length * 14 * 0.58 < modes[0].w - 12,
+  ok(longestMode.length * adminPx(15) * 0.58 < modes[0].w - 12,
     'and the longer length name fits its button',
-    `"${longestMode}" at ${Math.round(longestMode.length * 14 * 0.58)} of ${modes[0].w - 12}px`);
+    `"${longestMode}" at ${Math.round(longestMode.length * adminPx(15) * 0.58)} of ${modes[0].w - 12}px`);
   // The map names still fit the narrower tab. Estimated the way the row's own
   // labels are, pessimistically — see the note on the enemy names below.
   // The TAB's label, which is `short` where a level carries one — the row has no
   // width to give, so a long map name is shortened here rather than the row being
   // widened around it. Checked against what is drawn, not against `name`.
   const longestName = levels.map(l => l.short || l.name).reduce((a, b) => a.length > b.length ? a : b);
-  ok(longestName.length * 15 * 0.58 < maps[0].w - 12,
+  ok(longestName.length * adminPx(15) * 0.58 < maps[0].w - 12,
     'and the longest map name still fits its narrower tab',
-    `"${longestName}" at ${Math.round(longestName.length * 15 * 0.58)} of ${maps[0].w - 12}px`);
+    `"${longestName}" at ${Math.round(longestName.length * adminPx(15) * 0.58)} of ${maps[0].w - 12}px`);
+
+  // --- the two difficulties, and which of them can be edited ---
+  //
+  // The owner asked to see Normal and Hard in the panel, and to see the Normal
+  // numbers move while dialling a Hard one in. Both halves of that are checkable
+  // and neither is checkable by looking at the screen: what makes the reflection
+  // trustworthy is that it goes through the SAME arithmetic the game runs, and
+  // what makes the Normal view safe is that it cannot be written to.
+  const diffs = diffTabs();
+  ok(diffs.length === DIFFICULTIES.length &&
+     diffs.every((d, i) => d.id === DIFFICULTIES[i].id && d.label === DIFFICULTIES[i].name),
+    'the panel has a tab per difficulty, named from the data',
+    diffs.map(d => d.label).join(' / '));
+
+  // On the wave row, hard against the right margin, and clear of the longest table
+  // of wave buttons there is — ten, on Two Rivers Extended.
+  ok(diffs[0].y === tabs[0].y, 'on the same row as the wave numbers',
+    `y ${diffs[0].y}`);
+  // With room for the CAPTION between them, not merely for the buttons. The word
+  // is drawn right-aligned 12px off the first tab, so what has to clear the wave
+  // row is where that word starts — which at 56px wave buttons and twelve waves it
+  // did not, by 48px, on one map at one length and silently.
+  const capW = 'Difficulty'.length * adminPx(13) * 0.58;
+  const capLeft = diffs[0].x - 12 - capW;
+  ok(capLeft > tabs[tabs.length - 1].x + tabs[tabs.length - 1].w,
+    'and clear of the longest row of them, caption and all',
+    `${Math.round(capLeft - (tabs[tabs.length - 1].x + tabs[tabs.length - 1].w))}px between them`);
+  ok(diffs[diffs.length - 1].x + diffs[diffs.length - 1].w <= PANEL.x + PANEL.w - 16,
+    'and inside the panel',
+    `ends ${diffs[diffs.length - 1].x + diffs[diffs.length - 1].w}`);
+  const longestDiff = DIFFICULTIES.map(d => d.name).reduce((a, b) => a.length > b.length ? a : b);
+  ok(longestDiff.length * adminPx(15) * 0.58 < diffs[0].w - 12,
+    'and the longer difficulty name fits its button',
+    `"${longestDiff}" at ${Math.round(longestDiff.length * adminPx(15) * 0.58)} of ${diffs[0].w - 12}px`);
+
+  // THE REFLECTION IS THE GAME'S OWN ARITHMETIC. This is the check that matters:
+  // a panel that predicted Normal with a multiplication of its own would be right
+  // until either rule moved, and then it would be confidently wrong — which is
+  // worse than not showing the number at all.
+  const [easy, hardest] = DIFFICULTIES;
+  let drift = 0;
+  for (const n of [0, 1, 2, 3, 5, 6, 7, 10, 14, 22, 40]) {
+    for (const d of DIFFICULTIES) {
+      if (countAtDiff(n, d.id) !== scaleCount(n, d)) drift++;
+    }
+  }
+  ok(drift === 0, 'and reads its counts through the same rule the game does',
+    drift ? `${drift} disagreement(s)` : 'countAtDiff is scaleCount');
+  ok(goldAtDiff(200, easy.id) === startingGold(200, easy) &&
+     goldAtDiff(200, hardest.id) === startingGold(200, hardest),
+    'and its purse through the same rule too',
+    `200 -> ${goldAtDiff(200, easy.id)} on ${easy.name}, ${goldAtDiff(200, hardest.id)} on ${hardest.name}`);
+
+  // A GROUP THE WAVE DOES NOT SEND STAYS ABSENT. The floor of 1 in scaleCount is
+  // about a real group being thinned out of existence; the dashboard also holds a
+  // row for every creature a wave does not send, and rounding those up to one
+  // would have the Normal view inventing enemies.
+  ok(countAtDiff(0, easy.id) === 0, 'a row at zero is still zero on the easier setting',
+    `0 -> ${countAtDiff(0, easy.id)}`);
+  // And one of something never thins to none, which is the other end of the same
+  // rule: the wave that introduces a single heavy is the wave that teaches it.
+  ok(countAtDiff(1, easy.id) === 1, 'and one of something never thins to none',
+    `1 -> ${countAtDiff(1, easy.id)}`);
+
+  // HARD IS THE EDITABLE ONE. Normal is 80% rounded to nearest and rounding has no
+  // inverse — 5 could have come from 6 or from 7 — so there is no honest way to
+  // write a Normal number back to the table.
+  ok(editable(hardest.id) && !editable(easy.id),
+    `only ${hardest.name} can be edited`,
+    `${hardest.name} yes, ${easy.name} no`);
+
+  // AND THE TAP HANDLER ASKS. A greyed stepper that still works is worse than one
+  // that never greyed: it writes a number the view is not showing.
+  const src = readFileSync('src/admin.js', 'utf8');
+  const wavesTap = src.slice(src.indexOf("if (a.tab === 'waves') {"));
+  ok(/const live = editable\(a\.diff\);/.test(wavesTap) && /if \(!live\) return false;/.test(wavesTap),
+    'and the taps on that tab are gated on it rather than on the drawing',
+    'editable(a.diff) guards the steppers');
+
+  // THE PANEL'S TYPE IS ONE NUMBER. The owner asked for everything in here to come
+  // down a size; a panel where half the sizes are scaled and half are literals is
+  // one that drifts apart the next time it is asked.
+  const draw = readFileSync('src/render.js', 'utf8');
+  const from = draw.indexOf('function panelButton(');
+  const to = draw.indexOf('function drawGameOver(', from);
+  const block = draw.slice(from, to > from ? to : draw.length);
+  const literals = [...block.matchAll(/ctx\.font = '[^']*\d+px/g)].map(m => m[0]);
+  ok(literals.length === 0, 'every size in the panel goes through the one scale',
+    literals.length ? literals.join(', ') : `all through adminPx, at ${adminPx(17)}px for a row label`);
 
   // AND EVERY SHIPPED NUMBER IS ONE THE PANEL CAN EXPRESS, which matters more now
   // that the tables are hand-written than it did when they were derived.
@@ -565,12 +656,12 @@ console.log('\nAnything, in any wave\n');
   // it got a stepper of its own, so what is left is short — but it is still
   // checked, because the next thing added to that line will not be.
   const subs = ['not in this wave', `${MARCH_ORDER.length}th in`];
-  ok(widest(names, 0.58, 17) < LABEL_W,
+  ok(widest(names, 0.58, adminPx(17)) < LABEL_W,
     'the longest enemy name fits its column',
-    `${Math.round(widest(names, 0.58, 17))} of ${LABEL_W}px, "${names.reduce((a, b) => a.length > b.length ? a : b)}"`);
-  ok(widest(subs, 0.52, 13) < LABEL_W,
+    `${Math.round(widest(names, 0.58, adminPx(17)))} of ${LABEL_W}px, "${names.reduce((a, b) => a.length > b.length ? a : b)}"`);
+  ok(widest(subs, 0.52, adminPx(13)) < LABEL_W,
     'and so does the longest line under it',
-    `${Math.round(widest(subs, 0.52, 13))} of ${LABEL_W}px`);
+    `${Math.round(widest(subs, 0.52, adminPx(13)))} of ${LABEL_W}px`);
 }
 
 // --- the star rating ------------------------------------------------------------

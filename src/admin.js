@@ -53,6 +53,10 @@ import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/wav
 import { families } from './data/towers.js';
 import { resetProgress, clearStars, saveUnlocked, bestStars, setStars, MAX_STARS } from './score.js';
 import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
+// The difficulties themselves, and the two rules that turn a tuned Hard number
+// into the Normal one. Imported rather than reimplemented — see the note on
+// scaleCount in data/difficulty.js.
+import { DIFFICULTIES, scaleCount, startingGold } from './data/difficulty.js';
 
 // --- what is stored -----------------------------------------------------------
 //
@@ -678,6 +682,23 @@ const INNER = { x: PANEL.x + PAD, r: PANEL.x + PANEL.w - PAD, y: PANEL.y + PAD, 
 
 export const TITLE_Y = INNER.y + 14;
 
+// THE PANEL'S TYPE SCALE, one number for the whole dashboard.
+//
+// The owner's word: everything in here is too cramped. It is a dense screen by
+// design — eight creatures, two steppers each, on one page behind a PIN — so the
+// room has to come out of the type rather than out of the boxes, which are already
+// at the smallest tap target this game allows anywhere.
+//
+// It lives HERE rather than in render.js because tools/admin.mjs measures every
+// label in this panel against the width it has, and a scale the checker could not
+// see would make all of those measurements wrong in the safe direction — passing
+// while describing type that is no longer drawn.
+export const ADMIN_TYPE = 0.88;
+
+// With a floor, because the smallest things on the panel are already at 12px and
+// four fifths of that is not a caption, it is a smudge.
+export const adminPx = px => Math.max(11, Math.round(px * ADMIN_TYPE));
+
 // The top-right controls: the two tabs, then Close hard against the margin.
 const TAB_W = 104, TAB_H = 38, TAB_GAP = 8;
 const CLOSE_W = 92;
@@ -768,20 +789,65 @@ export const waveCountFor = (levelIndex, mode) => tableFor(levels[levelIndex], m
 export const GOLD_ROW_Y = MAP_Y;
 export const goldStepper = () => stepper('damage', GOLD_ROW_Y, 'gold');
 
-// One button per wave. Sized so ten of them fit the page width with room —
-// map 3 runs ten and is the binding case, and a row that had to reflow for it
-// would put map 1's eight somewhere else on the screen.
-const WAVE_W = 56, WAVE_H = 44, WAVE_GAP = 6;
+// One button per wave. Sized so the LONGEST table fits the page with room left on
+// the right — Two Rivers Extended runs twelve, and a row that had to reflow for it
+// would put the tutorial's five somewhere else on the screen.
+//
+// 46 RATHER THAN 56, to make that room. The difficulty tabs and their caption need
+// the right-hand end of this row, and at the old width twelve waves left 16px of
+// it — the buttons and the word "Difficulty" would have been drawn through each
+// other on one map, at one length, with nothing to say so. The tap box is 58 with
+// its padding, which is what the wave steppers already are and is justified in the
+// same place: this panel is behind a PIN and is a tool for building levels.
+const WAVE_W = 46, WAVE_H = 44, WAVE_GAP = 5;
+const WAVE_ROW_Y = INNER.y + 110;
 export const waveTabs = (levelIndex, mode = 'normal') => {
   const n = waveCountFor(levelIndex, mode);
   return Array.from({ length: n }, (_, i) => ({
     i,
     x: INNER.x + i * (WAVE_W + WAVE_GAP),
-    y: INNER.y + 110,
+    y: WAVE_ROW_Y,
     w: WAVE_W,
     h: WAVE_H
   }));
 };
+
+// WHICH DIFFICULTY THE GRID IS SHOWING, hard against the right margin of the wave
+// row. That row is the emptiest on the panel — the longest table is ten waves and
+// stops at x 644 of 936 — so this is the one place two more buttons fit without
+// anything else giving way.
+//
+// HARD IS THE EDITABLE ONE AND NORMAL IS DERIVED, which is not a UI preference but
+// what the data is: every wave table in data/waves.js was tuned at Hard and Hard
+// multiplies by 1, so the numbers in the file ARE the Hard numbers. Normal is
+// 80% of them, rounded, and rounding cannot be undone — 5 on Normal could have come
+// from 6 or from 7 — so the Normal view shows and does not edit. See scaleCount in
+// data/difficulty.js, which both this panel and the game read.
+const DIFF_W = 76, DIFF_GAP = 6;
+export const diffTabs = () => DIFFICULTIES.map((d, i) => ({
+  i,
+  id: d.id,
+  label: d.name,
+  x: INNER.r - (DIFFICULTIES.length - i) * (DIFF_W + DIFF_GAP) + DIFF_GAP,
+  y: WAVE_ROW_Y,
+  w: DIFF_W,
+  h: WAVE_H
+}));
+
+// The difficulty a tab id names, and the two questions the panel asks of it.
+export const diffBy = id => DIFFICULTIES.find(d => d.id === id) || DIFFICULTIES[DIFFICULTIES.length - 1];
+
+// WHAT THE PANEL SHOWS FOR A COUNT AND A PURSE, at whichever difficulty is
+// selected. Both go through data/difficulty.js rather than multiplying here: the
+// panel's job is to predict the game, and a prediction with its own arithmetic in
+// it is only right until somebody retunes one of the two copies.
+export const countAtDiff = (count, diffId) => scaleCount(count, diffBy(diffId));
+export const goldAtDiff = (gold, diffId) => startingGold(gold, diffBy(diffId));
+
+// AND WHETHER THE PANEL IS EDITABLE AT ALL. Hard edits the table; Normal is a
+// reading of it. One place decides, so the drawing and the tap handler cannot
+// disagree about which numbers are live.
+export const editable = diffId => diffBy(diffId).id === 'hard';
 
 // A row of the list, on either tab: a label on the left and one or two
 // [-] value [+] steppers on the right.
@@ -1106,8 +1172,10 @@ export function openAdmin(state) {
   // rather than the title screen's: what you are editing and what you last played
   // are different questions, and tying them would mean a run on Extended silently
   // moving which table the next edit lands on.
+  // `diff` opens on HARD because Hard is where the numbers live: the tables were
+  // tuned at that setting and it is the only view the steppers can write to.
   state.admin = { stage: 'pin', typed: '', wrong: false, tab: 'waves',
-                  map: 0, mode: 'normal', wave: 0, page: 0 };
+                  map: 0, mode: 'normal', wave: 0, page: 0, diff: 'hard' };
 }
 
 export function closeAdmin(state) {
@@ -1212,7 +1280,22 @@ export function tapAdmin(state, x, y, restart) {
     // Before the map tabs, because it shares their row: the stepper is drawn on
     // top of nothing, but a tap that misses a map button by a few pixels to the
     // right must not be answered by the map row's hit box growing into it.
-    {
+    // WHICH DIFFICULTY THE GRID IS READ AT. First of all the wave-tab row's
+    // controls, and before the steppers below, because everything after this asks
+    // whether the panel is editable and the answer is what this button changes.
+    for (const d of diffTabs()) {
+      if (!on(d)) continue;
+      a.diff = d.id;
+      return true;
+    }
+
+    // EVERY STEPPER ON THIS TAB IS DEAD ON THE NORMAL VIEW, and the guard is here
+    // rather than on each of them. Normal is 80% of the table rounded to nearest,
+    // and rounding has no inverse — 5 could have come from 6 or from 7 — so there
+    // is no honest way to write a Normal number back. The view shows; Hard edits.
+    const live = editable(a.diff);
+
+    if (live) {
       const s = goldStepper();
       const levelId = levels[a.map].id;
       const now = adminGold(levels[a.map]);
@@ -1242,6 +1325,8 @@ export function tapAdmin(state, x, y, restart) {
       a.wave = w.i;
       return true;
     }
+    if (!live) return false;
+
     const levelId = levels[a.map].id;
     for (const r of groupRows(a.map, a.wave, a.mode)) {
       const c = waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W);

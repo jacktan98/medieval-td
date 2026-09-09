@@ -125,9 +125,23 @@ export function scaleWaves(waves, difficulty) {
     // The floor of 1 stays: the wave that introduces a single heavy is the wave
     // that teaches it, and Normal should meet it later or with more help, never
     // miss it.
-    groups: w.groups.map(g => ({ ...g, count: Math.max(1, Math.round(g.count * difficulty.count)) }))
+    groups: w.groups.map(g => ({ ...g, count: scaleCount(g.count, difficulty) }))
   }));
 }
+
+// ONE GROUP'S COUNT AT ONE SETTING, pulled out of the loop above because a second
+// caller needed it and a second COPY of it would have been a bug waiting to be
+// written. The admin dashboard shows what Normal will send while the numbers are
+// being dialled in on Hard, and a panel that predicted the game with its own
+// arithmetic would be right until either rule was touched. tools/admin.mjs checks
+// that the panel's figures come through here rather than being recomputed.
+//
+// ZERO STAYS ZERO. The floor of 1 is about a group that EXISTS being thinned out
+// of existence; the dashboard's grid also holds a row for every creature the wave
+// does not send, and rounding those up to one would have Normal inventing enemies
+// that Hard never sends.
+export const scaleCount = (n, difficulty) =>
+  n === 0 ? 0 : Math.max(1, Math.round(n * difficulty.count));
 
 // THE PURSE THE GAME OPENS WITH, given a base and a difficulty.
 //
