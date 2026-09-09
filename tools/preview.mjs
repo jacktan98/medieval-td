@@ -129,15 +129,21 @@ for (const [li, lv] of levels.entries()) {
   // strict superset — a map whose long table lost a wave, or whose short table
   // grew past it, is what this catches. The exact number for each map is asserted
   // in tools/admin.mjs, which is where shortOf's argument is checked.
-  // EXCEPT ON A TUTORIAL, which runs the same five waves whichever length is
-  // chosen. A board whose job is teaching has one lesson; a longer version of it
-  // would teach the same lesson twice, and the setting is left on screen rather
-  // than hidden so a new player still learns that the choice exists.
-  ok(level.maxTier
+  // EXCEPT ON A BOARD THAT SAYS IT RUNS ONE LENGTH. The tutorial does, because a
+  // longer version of a lesson teaches the same lesson twice; stage 2 does because
+  // the owner wrote down six waves and there is no seventh. Either way the setting
+  // is left on screen rather than hidden, so a player still learns the choice
+  // exists.
+  //
+  // READ OFF `oneLength` rather than off the tier cap, which is what it used to
+  // be. That worked while the tutorial was the only capped board and stopped the
+  // day stage 2 capped at tier 3: a cap and a fixed length are two decisions, and
+  // a check that infers one from the other stops asking its own question.
+  ok(level.oneLength
       ? tableFor(level, 'extended').length === tableFor(level, 'normal').length
       : tableFor(level, 'extended').length >= tableFor(level, 'normal').length + 2,
-    level.maxTier ? 'and a tutorial runs the same waves at either length'
-                  : 'and Extended is at least two waves longer',
+    level.oneLength ? 'and this board runs the same waves at either length'
+                    : 'and Extended is at least two waves longer',
     `${tableFor(level, 'normal').length} -> ${tableFor(level, 'extended').length}`);
 
   // THE FIRST WAVE IS PREVIEWED, and it is the one time the row names the wave

@@ -862,6 +862,25 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   ok(spot === topRight, 'on the top right plot of the board',
     `(${spot.x}, ${spot.y}) of ${right.length} on the right-hand side`);
 
+  // AND THE SIX WAVES ARE THE OWNER'S OWN, pinned the way the tutorial's five are.
+  // Written down rather than derived, because the shape of them is a decision:
+  // wave 5 sends NO THUGS, which no other wave in the game does, and a check that
+  // measured "gets bigger" would call that a fault.
+  const shape2 = w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ');
+  const WANT2 = [
+    '5 light_inf',
+    '5 light_inf + 2 tough_inf',
+    '10 light_inf + 2 tough_inf + 1 archer_inf',
+    '12 light_inf + 4 tough_inf + 4 archer_inf',
+    '4 tough_inf + 10 archer_inf',
+    '16 light_inf + 6 tough_inf + 16 archer_inf'
+  ];
+  const got2 = two.waves.map(shape2);
+  ok(got2.join(' | ') === WANT2.join(' | '), 'and sends exactly the six it was given',
+    got2.map((g, i) => (g === WANT2[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT2[i]})`)).join(' '));
+  ok(two.maxTier === 3, 'with the ladder capped at tier 3', `maxTier ${two.maxTier}`);
+  ok(two.startGold === 200, 'and 200 gold on Hard', `${two.startGold}`);
+
   // AND IT IS WORTH WHAT IT WOULD HAVE COST. A prebuilt tower that refunds a tier
   // 1 price is a trap and one that refunds more than it is worth is a bank; both
   // are surprises, and neither is visible until somebody sells it.
@@ -927,6 +946,79 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   const offs = tut.plots.map(p => near(p, tut.routes[0].pts));
   ok(Math.max(...offs) < 140, 'every one of them within reach of the road',
     `furthest ${Math.max(...offs).toFixed(0)}px off`);
+}
+
+console.log('\n--- what a figure can walk behind ---\n');
+
+// THE OWNER'S RULE: a building overlaps a soldier when the building is in front,
+// judged by its shadow. The board is one flat image, so this is the one thing on
+// it that has to be lifted out and sorted with the figures — see `front` in the
+// level files, split-map.mjs which writes it, and drawFigures in src/render.js.
+//
+// Every check here is of the DATA against the ARTWORK, because the effect itself
+// is pixels: what can be asserted is that the boxes still describe the drawing,
+// that they are sorted by the right edge, and that the renderer still puts them in
+// the pass rather than painting them over everything.
+{
+  const draw = readFileSync('src/render.js', 'utf8');
+  const bare = draw.replace(/\/\/.*$/gm, '');
+
+  ok(/const front = art\[level\.frontArt\];/.test(bare) && /const foot = b\.y \+ b\.h;/.test(bare),
+    'the map\'s standing things go into the depth pass, at the foot of each box',
+    'sorted on y + h');
+
+  // AND WHOEVER IS BEHIND SHOWS THROUGH, at the owner's ask and through the same
+  // helper a tower uses. A figure that simply vanished behind a house would be a
+  // squad the player cannot find — the rule is about depth, not about hiding.
+  // Only the standing ones ghost: nothing can hide behind a road stone.
+  ok(/ghostInside\(ctx, state, box, foot\)/.test(bare) &&
+     /function ghostBehind\(ctx, state, t\) \{\s*ghostInside\(ctx, state, towerBox\(t\), t\.y\);/.test(bare),
+    'and show whoever is behind them through, as a tower does',
+    'one ghostInside for both');
+
+  // NOT AFTER THE PASS, which is the version of this that looks right until a
+  // soldier walks in front of a house. The call has to be INSIDE drawFigures.
+  const fig = bare.slice(bare.indexOf('function drawFigures('));
+  const body = fig.slice(0, fig.indexOf('\n}\n') + 2);
+  ok(/level\.front/.test(body), 'and inside drawFigures rather than over the top of it',
+    'in the same pass as the towers');
+
+  // AND THE SHEET IS DRAWN WHERE IT WAS DRAWN. One game px is two source px and
+  // there is no offset anywhere in the call — the moment there is, the copy on the
+  // sheet and the copy in the base can disagree, which reads as a building with a
+  // ghost of itself beside it.
+  ok(/drawImage\(img, b\.x \* MAP_PX, b\.y \* MAP_PX, b\.w \* MAP_PX, b\.h \* MAP_PX,\s*b\.x, b\.y, b\.w, b\.h\)/.test(bare),
+    'and lands exactly where it was drawn on the board',
+    'no offset between the sheet and the base it was cut from');
+
+  for (const l of levels.filter(l => l.front)) {
+    const sheet = readFileSync(`assets/map/${l.frontArt === 'front00' ? 'Stage_1' : 'Stage_2'}_Map_front.svg`, 'utf8');
+    const groups = (sheet.match(/<g transform=/g) || []).length;
+    ok(groups >= l.front.length,
+      `${l.name}'s sheet holds every box the level lists`,
+      `${l.front.length} boxes, ${groups} group(s) drawn`);
+
+    // SORTED BY THEIR GROUND LINE, which is what makes the list readable and is
+    // free to keep true — the tool writes them in that order.
+    const feet = l.front.map(b => b.y + b.h);
+    ok(feet.every((f, i) => i === 0 || f >= feet[i - 1]),
+      'and lists them from the back of the board forwards',
+      feet.join(' -> '));
+
+    // AND EVERY ONE OF THEM STANDS UP. Only standing things get a box: a road
+    // stone with one would be a wall a soldier could hide behind, and the sheet
+    // carries the flat props anyway, on whichever building they were drawn over.
+    const shortest = Math.min(...l.front.map(b => b.h));
+    ok(shortest >= 30, 'and every one of them is something that stands up',
+      `${l.front.length} of them, shortest ${shortest}px`);
+
+    // THE SHEET IS THE WHOLE LAYER, not just the boxed things. That is what keeps
+    // the artist's own order: a slice of it carries the props drawn on top of that
+    // building, so the little man at the tavern door stays in front of the tavern.
+    ok(groups > l.front.length * 2,
+      'while the sheet itself carries the whole layer, props and all',
+      `${groups} group(s) for ${l.front.length} box(es)`);
+  }
 }
 
 console.log('\n--- the marker, the flag and the stars ---\n');

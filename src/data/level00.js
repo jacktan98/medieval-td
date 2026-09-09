@@ -64,10 +64,48 @@ export const level00 = {
   // more of it would be teaching the same lesson twice.
   waves: tutorialWaves,
   wavesExtended: tutorialWaves,
+  // SAID OUT LOUD rather than inferred from the tier cap. The checkers used to read
+  // `maxTier` as "this is a tutorial, so its two tables may match", which happened
+  // to be true while the tutorial was the only capped board — stage 2 has a cap of
+  // 3 and is not a tutorial. A cap and a fixed length are two decisions.
+  oneLength: true,
   // THE CEILING ON THIS BOARD. Tier 1 and tier 2 only — the rungs above are drawn
   // and priced as normal and refuse the purchase, so a player learns that the
   // ladder exists here and climbs it somewhere else.
   maxTier: 2,
   startGold: 200,
-  startLives: 20
+  startLives: 20,
+
+  // WHAT A FIGURE CAN WALK BEHIND.
+  //
+  // The board is one flat image drawn under everything, so a soldier standing
+  // BEHIND a house was drawn on its roof. These are the things in the top layer of
+  // the artwork that STAND UP, each with the box it occupies; the renderer draws
+  // that box a second time from `Stage_1_Map_front.svg`, sorted into the same depth
+  // pass the towers and the soldiers are in, at the FOOT of the box — which is the
+  // bottom of the shadow, and the word the owner used.
+  //
+  // NOTHING IS CUT AND NOTHING IS RE-SORTED. The sheet is the WHOLE top layer in
+  // the artist's own order, so a slice of it carries every prop drawn on top of
+  // that building — the little man at the tavern door comes with the tavern and
+  // stays in front of it. Between two pieces of artwork the second draw changes
+  // nothing at all; the only thing it can get in front of is a game figure.
+  //
+  // Two earlier versions each broke that man. The first redrew the building alone
+  // and put its wall back over him. The second lifted the whole layer out of the
+  // base and sorted every piece by its own shadow, which put him behind the tavern
+  // because his shadow is four pixels further back — true to the rule and not to
+  // the drawing. The owner's word: he is supposed to be seen.
+  //
+  // Written out by `node tools/split-map.mjs assets/map/Stage_1_Map`, which finds them
+  // in the top layer by height and refuses if anything is sitting on the line.
+  frontArt: 'front00',
+  front: [
+    { x:  30, y:  80, w:  77, h:  81 },   // stands on y 161
+    { x: 158, y: 118, w:  77, h:  81 },   // stands on y 199
+    { x:  80, y: 165, w:  35, h:  42 },   // stands on y 207
+    { x:  68, y: 348, w: 106, h:  41 },   // stands on y 389
+    { x: 397, y: 361, w:  77, h:  81 },   // stands on y 442
+    { x: 529, y: 403, w:  77, h:  81 }   // stands on y 484
+  ]
 };

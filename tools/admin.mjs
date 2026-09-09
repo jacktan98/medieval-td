@@ -362,7 +362,12 @@ console.log('\nAnything, in any wave\n');
   for (let m = 0; m < levels.length; m++) {
     const short = waveCountFor(m, 'normal');
     const long = waveCountFor(m, 'extended');
-    if (levels[m].maxTier) {
+    // READ OFF `oneLength`, not off the tier cap. The cap was the proxy while the
+    // tutorial was the only capped board; stage 2 caps at tier 3 AND runs one
+    // length, and the two are separate decisions — a board could have either
+    // without the other, and inferring one from the other is how a real difference
+    // becomes invisible.
+    if (levels[m].oneLength) {
       ok(long === short, `${levels[m].name} runs the same waves at either length`,
         `${short} against ${long}`);
     } else {

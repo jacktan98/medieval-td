@@ -27,7 +27,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { levels } from '../src/level.js';
 import { nearestOn } from '../src/route.js';
 import { SCALE } from '../src/data/towers.js';
-import { allGroups, bounds, MAP_SCALE, readArtwork } from './svg.mjs';
+import { allGroups, bounds, MAP_SCALE, readArtwork, layerFiles } from './svg.mjs';
 
 // Which map to split. Every level records the file it was drawn from, so the
 // tool finds its own level rather than being told twice.
@@ -43,6 +43,9 @@ if (!level) {
 
 // A board is one file or a stack of layers, and only readArtwork knows which.
 const svg = readArtwork(SRC);
+// The layer files themselves, for the front-layer pass at the bottom. Empty for a
+// board drawn in one piece, which simply has no front sheet.
+const LAYERS = SRC.endsWith('.svg') ? [] : layerFiles(SRC);
 
 // --- geometry ----------------------------------------------------------------
 
@@ -233,4 +236,99 @@ for (const c of centres) {
     `   // ${String(Math.round(left)).padStart(4)} from the keep, ` +
     `${String(Math.round(off)).padStart(3)} off the road` +
     (off > 95 ? '   FAR' : ''));
+}
+
+// --- what a figure can walk behind -------------------------------------------
+//
+// THE OWNER'S RULE: "buildings are supposed to overlap soldiers if the building
+// is in front based on shadow". A board is one flat image drawn under everything,
+// so a soldier standing BEHIND a house was drawn on its roof.
+//
+// The game already sorts everything that stands on the ground into one pass by
+// depth — towers, soldiers, enemies, bodies, blood, dust. The map's own buildings
+// were the one kind of solid thing not in it. So this writes the top layer out as
+// a sheet the renderer can draw FROM at the right moment, and prints the box of
+// every thing on it that stands up.
+//
+// THE SHEET IS THE WHOLE LAYER, and only the standing things get a box. That
+// combination is the point, and it took two wrong versions to find:
+//
+//   The first cut nothing and redrew each building over the board. That re-covered
+//   whatever the artist had drawn IN FRONT of it — the little man at the tavern
+//   door went behind the wall, because the base had him after the building and the
+//   second copy put the building back on top.
+//
+//   The second lifted the whole layer out of the base and sorted every piece of it
+//   by its own shadow. That fixed the double-draw and broke the same man a
+//   different way: his shadow is four pixels behind the tavern's, so the sort put
+//   him behind it, which is not what the artist drew and not what the owner wants.
+//   "The man is supposed to be seen and the back is the tavern building."
+//
+// So NOTHING is cut and nothing is re-sorted. The artist's layer is drawn exactly
+// as drawn, and a building's box is redrawn from the SAME layer — which means the
+// slice carries every prop the artist put on top of that building, in their order.
+// Between two pieces of artwork nothing changes at all; the only thing the extra
+// draw can get in front of is a game figure standing behind the building.
+//
+// WHICH SHAPES STAND UP is a question the artwork answers rather than the artist:
+// a building stands and a road stone lies flat, so height decides. The tool
+// refuses rather than guesses if anything sits on the line, because a threshold
+// picked in the middle of a crowd will silently make a wall out of a rock.
+const FRONT_MIN_H = 30;      // game px: a thing this tall is standing up
+const FRONT_CLEAR = 0.15;    // and nothing may sit within this much of the line
+
+if (LAYERS.length) {
+  // The top layer's span in the STACKED text, so what is measured here is what the
+  // base actually draws.
+  const mark = /<g data-layer="(\d+)">/g;
+  let last = null;
+  for (let m; (m = mark.exec(svg));) last = m;
+  if (!last) throw new Error('the stacked artwork has no labelled layers');
+
+  const inTop = allGroups(svg).filter(g => g.start > last.index);
+  const outer = inTop.filter(g => !inTop.some(o => o !== g && o.start <= g.start && o.end >= g.end));
+
+  const measured = outer.map(g => {
+    const b = bounds(g.subPaths.flat());
+    return {
+      g,
+      x: b.x0 * MAP_SCALE, y: b.y0 * MAP_SCALE,
+      w: (b.x1 - b.x0) * MAP_SCALE, h: (b.y1 - b.y0) * MAP_SCALE
+    };
+  });
+
+  const tall = measured.filter(m => m.h >= FRONT_MIN_H).sort((a, b) => a.y + a.h - (b.y + b.h));
+  const flat = measured.filter(m => m.h < FRONT_MIN_H);
+  const shortest = Math.min(Infinity, ...tall.map(m => m.h));
+  const tallestFlat = Math.max(0, ...flat.map(m => m.h));
+  const low = FRONT_MIN_H * (1 - FRONT_CLEAR), high = FRONT_MIN_H * (1 + FRONT_CLEAR);
+  if (tall.length && (shortest < high || tallestFlat > low)) {
+    throw new Error(
+      `the top layer has something sitting on the ${FRONT_MIN_H}px line: its shortest standing ` +
+      `thing is ${shortest.toFixed(0)}px and its tallest flat one is ${tallestFlat.toFixed(0)}px, ` +
+      `where the clear band is under ${low.toFixed(0)} and over ${high.toFixed(0)}. Height cannot ` +
+      `tell them apart here — mark them another way before trusting this.`);
+  }
+
+  // The sheet: the same 1920x1080 artboard with the whole layer on it, in the
+  // artist's own order, so a slice of it is a slice of the board.
+  const FRONT = SRC.replace(/\.svg$/, '') + '_front.svg';
+  const body = measured
+    .slice()
+    .sort((a, b) => a.g.start - b.g.start)
+    .map(m => svg.slice(m.g.start, m.g.end))
+    .join('\n');
+  writeFileSync(FRONT,
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">\n' +
+    '<g>\n' + body + '\n</g>\n</svg>\n');
+
+  console.log(`\nwrote ${FRONT} — the whole top layer, ${measured.length} thing(s), ` +
+    `${tall.length} of which stand up` +
+    (tall.length ? `: shortest ${shortest.toFixed(0)}px against ${tallestFlat.toFixed(0)}px of flat` : ''));
+  console.log(`front, in depth order — paste into the level file:`);
+  for (const m of tall) {
+    console.log(`    { x: ${String(Math.round(m.x)).padStart(3)}, y: ${String(Math.round(m.y)).padStart(3)}, ` +
+      `w: ${String(Math.round(m.w)).padStart(3)}, h: ${String(Math.round(m.h)).padStart(3)} },` +
+      `   // stands on y ${Math.round(m.y + m.h)}`);
+  }
 }

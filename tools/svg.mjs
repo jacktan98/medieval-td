@@ -293,9 +293,11 @@ export function stackLayers(files) {
     const svg = readFileSync(f, 'utf8');
     const { body } = artboard(svg, f);
     ground = ground || groundOf(svg);
-    // Each layer's own group, so a layer is still a thing you can find in the
-    // merged text — inside the one clip rather than inside three.
-    parts.push(`<g>${body}</g>`);
+    // Each layer's own group, LABELLED, so a layer is still a thing you can find in
+    // the merged text — inside the one clip rather than inside three. The label is
+    // what lets split-map.mjs lift the top layer out for the front sheet without
+    // re-reading the files and re-deriving where each one landed.
+    parts.push(`<g data-layer="${parts.length + 1}">${body}</g>`);
   }
   return [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">',

@@ -7,13 +7,14 @@
 // there to the keep. Two ways in and one way out, which is the whole lesson of
 // the board: a tower that covers the west road covers nothing until the join.
 //
-// THE TIER CAP IS OFF. Stage 1 stops at tier 2 and this does not, so this is
-// where the ladder opens up — see `maxTier` in level00.js and the note on it.
+// THE LADDER OPENS ONE RUNG. Stage 1 stops at tier 2 and this stops at 3, so the
+// tower a player has been saving for is still one board away — see `maxTier`
+// below and how src/menu.js draws the rungs above it.
 //
 // TRACED FROM THE ARTWORK by `node tools/trace-road.mjs assets/map/Stage_2_Map`,
 // and the plots by `node tools/split-map.mjs assets/map/Stage_2_Map`. The map is
 // the source of truth for both. Redraw and re-run rather than nudging numbers here.
-import { stage2Waves, stage2WavesExtended } from './waves.js';
+import { stage2Waves } from './waves.js';
 
 // ROUTE 0 COMES DOWN FROM THE TOP OF THE MAP, which no board had done before this
 // one and which the tracer had to be taught to see — it looked for mouths on the
@@ -85,9 +86,54 @@ export const level04 = {
   routes: [north, west],
   plots: plots1,
   waves: stage2Waves,
-  wavesExtended: stage2WavesExtended,
-  startGold: 240,
+  // SIX WAVES AT EITHER LENGTH, like the tutorial and for a plainer reason: the
+  // owner wrote down six and there is no seventh to run. `oneLength` says so out
+  // loud rather than leaving it to be inferred from the tier cap, which is what
+  // the checkers used to do — a cap and a fixed length are two different
+  // decisions and a board can have either without the other.
+  wavesExtended: stage2Waves,
+  oneLength: true,
+  // TIER 3 IS THE CEILING HERE, at the owner's ask: stage 1 stops at 2, this stops
+  // at 3, and tier 4 waits for a board further down the road. The rungs above the
+  // cap are drawn and priced as normal and refuse the purchase, which reads as
+  // "Maxed" — see `capped` in src/menu.js.
+  maxTier: 3,
+  // THE HARD PURSE, which is what the owner named. Hard multiplies by 1 so this is
+  // literally what a Hard game opens with; Normal gets 10% more, as it does
+  // everywhere — see startingGold in data/difficulty.js.
+  startGold: 200,
   startLives: 20,
+
+  // WHAT A FIGURE CAN WALK BEHIND.
+  //
+  // The board is one flat image drawn under everything, so a soldier standing
+  // BEHIND a house was drawn on its roof. These are the things in the top layer of
+  // the artwork that STAND UP, each with the box it occupies; the renderer draws
+  // that box a second time from `Stage_2_Map_front.svg`, sorted into the same depth
+  // pass the towers and the soldiers are in, at the FOOT of the box — which is the
+  // bottom of the shadow, and the word the owner used.
+  //
+  // NOTHING IS CUT AND NOTHING IS RE-SORTED. The sheet is the WHOLE top layer in
+  // the artist's own order, so a slice of it carries every prop drawn on top of
+  // that building — the little man at the tavern door comes with the tavern and
+  // stays in front of it. Between two pieces of artwork the second draw changes
+  // nothing at all; the only thing it can get in front of is a game figure.
+  //
+  // Two earlier versions each broke that man. The first redrew the building alone
+  // and put its wall back over him. The second lifted the whole layer out of the
+  // base and sorted every piece by its own shadow, which put him behind the tavern
+  // because his shadow is four pixels further back — true to the rule and not to
+  // the drawing. The owner's word: he is supposed to be seen.
+  //
+  // Written out by `node tools/split-map.mjs assets/map/Stage_2_Map`, which finds them
+  // in the top layer by height and refuses if anything is sitting on the line.
+  frontArt: 'front04',
+  front: [
+    { x: 611, y: 175, w: 139, h:  95 },   // stands on y 270
+    { x: 194, y: 254, w:  48, h:  65 },   // stands on y 319
+    { x: 694, y: 358, w:  77, h:  81 },   // stands on y 439
+    { x: 573, y: 401, w:  77, h:  81 }   // stands on y 482
+  ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.
   //

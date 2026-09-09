@@ -1822,52 +1822,32 @@ export const tutorialWaves = [
   { rest: 12, groups: [{ type: 'light_inf', count: 6, gap: 1.4 }, { type: 'tough_inf', count: 2, gap: 1.8 }] }
 ];
 
-// STAGE 2'S EIGHT, and the first table in the game that is not the tutorial's.
+// STAGE 2'S SIX, and the owner's own list rather than a guess at one.
 //
-// THE OWNER HAS NOT PLAYED THIS BOARD YET — "i will test the waves later" — so
-// these are a starting point to be dialled in through the dashboard rather than
-// numbers arrived at by playing, and they are written down as such. Every other
-// table in this file below the tutorial's was hand-tuned at Hard from real runs;
-// this one has not been, and the difference matters when reading the notes.
+// The first version of this table was eight waves written here on the reasoning
+// that a board after a tutorial wants a full game; the owner then wrote the six
+// down. What they say, and it is worth reading as a design rather than as data:
 //
-// WHAT IT IS BUILT TO TEACH, wave by wave, which is the part worth keeping even
-// after every count moves:
+//   1    five thugs, which is the tutorial's last wave as an opening
+//   2    tough thugs return
+//   3    ONE archer, alone, which is how a new enemy should arrive
+//   4    all three together, and twice as many of everything
+//   5    NO THUGS AT ALL — four toughs and ten archers, which is a different
+//        problem rather than a bigger one: nothing cheap to soak the shooting
+//   6    sixteen, six and sixteen
 //
-//   1-2  thugs, as the tutorial left off, on a board with two roads in
-//   3    tough thugs return, now that there is a second road to miss them on
-//   4-5  the BLOCKER, which is the first thing that does not die to one tower
-//   6    the ARCHER, which shoots back, so a squad in the open starts to cost
-//   7-8  both together and more of them, which is the exam
-//
-// NO GIANTS, NO PRIESTS, NO PLAGUE. Those are stage 3's introductions and the
-// board after a tutorial should not be where four new rules arrive at once.
+// THE TIER CAP IS 3 ON THIS BOARD, so none of this is met with a tier 4 tower.
+// That is what makes wave 5 the wave it is.
 export const stage2Waves = [
-  { rest: 10, groups: [{ type: 'light_inf', count: 6, gap: 1.5 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 9, gap: 1.3 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.3 }, { type: 'tough_inf', count: 3, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.2 }, { type: 'blocker_inf', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.1 }, { type: 'tough_inf', count: 4, gap: 1.6 },
-                       { type: 'blocker_inf', count: 3, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.1 }, { type: 'archer_inf', count: 3, gap: 1.6 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 12, gap: 1.0 }, { type: 'tough_inf', count: 5, gap: 1.5 },
-                       { type: 'archer_inf', count: 4, gap: 1.6 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 14, gap: 0.9 }, { type: 'tough_inf', count: 6, gap: 1.4 },
-                       { type: 'blocker_inf', count: 4, gap: 1.7 }, { type: 'archer_inf', count: 4, gap: 1.6 }] }
-];
-
-// AND TWO WAVES LONGER, which is what Extended means everywhere except the
-// tutorial: the same board asked for more of the same game. Written as its own
-// table rather than derived from the eight above, for the reason the note on
-// wavesExtended gives — a derived table cannot be hand-tuned without becoming a
-// literal one anyway.
-export const stage2WavesExtended = [
-  ...stage2Waves.slice(0, 7),
-  { rest: 10, groups: [{ type: 'light_inf', count: 14, gap: 0.9 }, { type: 'tough_inf', count: 6, gap: 1.4 },
-                       { type: 'blocker_inf', count: 4, gap: 1.7 }, { type: 'archer_inf', count: 4, gap: 1.6 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 16, gap: 0.9 }, { type: 'tough_inf', count: 7, gap: 1.3 },
-                       { type: 'blocker_inf', count: 5, gap: 1.6 }, { type: 'archer_inf', count: 5, gap: 1.5 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 18, gap: 0.8 }, { type: 'tough_inf', count: 8, gap: 1.3 },
-                       { type: 'blocker_inf', count: 6, gap: 1.6 }, { type: 'archer_inf', count: 6, gap: 1.5 }] }
+  { rest: 10, groups: [{ type: 'light_inf', count: 5, gap: 1.6 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 5, gap: 1.5 }, { type: 'tough_inf', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 },
+                       { type: 'archer_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 12, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'archer_inf', count: 4, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.6 }, { type: 'archer_inf', count: 10, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 16, gap: 1.0 }, { type: 'tough_inf', count: 6, gap: 1.4 },
+                       { type: 'archer_inf', count: 16, gap: 1.3 }] }
 ];
 
 export const wavesExtended = [

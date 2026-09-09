@@ -221,6 +221,22 @@ function drawRangeDiscs(ctx, state) {
 // and a building at its base, so one number means the same thing for all of
 // them. Sorting by sprite top would put a tall figure behind a short one it is
 // standing in front of.
+// One standing thing off the front sheet, drawn where it was drawn.
+//
+// The sheet is the SAME 1920x1080 artboard as the board itself, so a box in game
+// px doubles into source px and lands exactly on top of the copy already in the
+// base. There is no placement here and there must not be: the moment this file
+// has an offset in it, the two copies can disagree.
+// The boards are authored at 1920x1080 and drawn into 960x540, so one game px is
+// two source px. Written here rather than imported from the tools, which never
+// run in the browser.
+const MAP_PX = 2;
+
+function drawFront(ctx, img, b) {
+  ctx.drawImage(img, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
+    b.x, b.y, b.w, b.h);
+}
+
 function drawFigures(ctx, state) {
   const items = [];
   const add = (y, rank, run) => items.push({ y, rank, run });
@@ -235,6 +251,52 @@ function drawFigures(ctx, state) {
   // stops a man walking in front of a barracks from having a thug show through
   // him.
   for (const t of state.towers) add(t.y, 1, () => { drawTower(ctx, t); ghostBehind(ctx, state, t); });
+
+  // THE MAP'S OWN BUILDINGS, in the same pass, which is the whole of the owner's
+  // rule: "buildings are supposed to overlap soldiers if the building is in front
+  // based on shadow". The board is one flat image drawn under everything, so a
+  // soldier standing BEHIND a house was drawn on its roof — every time, on every
+  // board, since the artwork replaced the vector scenery.
+  //
+  // They sort by the BOTTOM of their box, which is the bottom of their shadow: the
+  // shadow is the part that touches the ground, the same rule a tower is anchored
+  // by and the same word the owner used. A figure whose feet are above that line
+  // is behind the building and draws first; one below it draws after and walks in
+  // front.
+  //
+  // Drawn a SECOND time here — the base image already has them — and the sheet is
+  // the WHOLE top layer in the artist's order, so the slice is the same picture in
+  // the same place. That is what keeps the little man at the tavern door in front
+  // of the tavern: he was drawn after it, so he comes with it. Between two pieces
+  // of artwork this changes nothing; the only thing it can get in front of is a
+  // figure the game is drawing.
+  //
+  // Cutting them out of the base instead would mean a hole in the board wherever a
+  // sheet failed to load, where this way a missing sheet is only the old behaviour
+  // back.
+  //
+  // Rank 1, beside the figures, because a building IS one of the solid things
+  // standing on the ground rather than a mark on it.
+  const front = art[level.frontArt];
+  if (front && level.front) {
+    // AND EACH ONE SHOWS THROUGH, at the owner's ask and on exactly the terms a
+    // tower already did: whoever it is standing in front of is redrawn over it at
+    // GHOST alpha, clipped to the building. A soldier who walks behind a house
+    // should not simply vanish — the point of the rule is depth, not hiding, and a
+    // squad you cannot find is worse than one drawn on a roof.
+    //
+    // Immediately after the building and inside the pass, so anything NEARER the
+    // camera is drawn later and covers the ghost. That is what stops a man walking
+    // in front of a house from having another man show through him.
+    for (const b of level.front) {
+      const box = { left: b.x, top: b.y, w: b.w, h: b.h };
+      const foot = b.y + b.h;
+      add(foot, 1, () => {
+        drawFront(ctx, front, b);
+        ghostInside(ctx, state, box, foot);
+      });
+    }
+  }
   // Bodies are flat on the ground, so at equal depth they go under a figure
   // standing at the same spot rather than over its feet.
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
@@ -1839,15 +1901,24 @@ const spanHits = (s, box) =>
 // sliver where their boxes cross ends up 0.75 figure rather than 0.5. Two plots
 // close enough for that is rare and the difference is a shade.
 function ghostBehind(ctx, state, t) {
-  const box = towerBox(t);
+  ghostInside(ctx, state, towerBox(t), t.y);
+}
+
+// THE SAME THING FOR ANY BOX WITH A GROUND LINE, which is what let the map's own
+// buildings have it too. It was written for towers and hard-wired to one — the
+// box came from towerBox and the ground line from t.y — and the owner's ask was
+// that a house should hide a soldier the way a barracks does, and show him
+// through it the way a barracks does. Both halves of that are this function; only
+// the two numbers differ.
+function ghostInside(ctx, state, box, groundY) {
   const behind = [];
 
   for (const e of state.enemies) {
-    if (e.y >= t.y) continue;
+    if (e.y >= groundY) continue;
     if (spanHits(figureSpan(e, enemyArt(e), ENEMY_LUNGE), box)) behind.push(() => drawEnemy(ctx, e));
   }
   for (const u of state.units) {
-    if (u.respawn > 0 || u.y >= t.y) continue;
+    if (u.respawn > 0 || u.y >= groundY) continue;
     if (spanHits(figureSpan(u, soldierArt(u), u.def.lunge || 0), box)) {
       behind.push(() => drawSoldier(ctx, u));
     }

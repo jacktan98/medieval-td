@@ -78,6 +78,48 @@ two houses beside the road came out with the road paved across their walls.
 Ground first, then the road and its markers, then everything that stands on
 them.
 
+### What a figure can walk behind
+
+**The top layer is the one that stands up**, and the tool treats it specially. It
+copies the WHOLE layer onto a transparent sheet, `<Board>_front.svg`, and prints
+the box of every shape in it taller than 30 game px, to paste into the level file.
+The game draws those boxes a second time, sorted into the same depth pass the
+towers and the soldiers are in, at the bottom of each box.
+
+That is what makes a soldier standing behind a house get covered by its roof
+instead of drawn on it, and what makes him show through it at a third alpha rather
+than vanishing — the same way a barracks already treats anyone standing behind it.
+**The bottom of a thing's box is its shadow**, and its shadow is what decides which
+side of it a figure is on, so a drawing whose shadow does not sit at the bottom of
+its box will sort at the wrong depth.
+
+**Nothing is cut out of the base and nothing is re-sorted.** The sheet is the whole
+layer in your own drawing order, so a slice of it carries whatever you drew on top
+of that building — the little man at the tavern door comes with the tavern and
+stays in front of it. Between two pieces of artwork the second draw changes
+nothing; the only thing it can get in front of is a figure the game is drawing.
+
+Two earlier versions each broke that man, and both are worth knowing because both
+looked right until he was looked at. The first redrew the building alone and put
+its wall back over him. The second lifted the layer out of the base and sorted
+every piece of it by its own shadow, which put him behind the tavern — his shadow
+is four pixels further back than its, true to the rule and not to the drawing.
+
+What this asks of the drawing:
+
+- **Put anything that stands up in the top layer.** Flat things may live there too
+  — road stones, dirt, the buckets by a door — and they simply do not get a box;
+  they stay part of the board and ride along on whatever building they were drawn
+  over. What must NOT be there is a flat thing taller than 30px, which would get a
+  box and become a wall a soldier could hide behind.
+- **Keep a clear gap around 30px.** The tool refuses rather than guesses if the
+  shortest standing thing and the tallest flat one both sit near that line, since a
+  threshold picked in the middle of a crowd will silently take a rock or drop a
+  house. Stage 1's is 42 against 21; stage 2's is 65 against 21.
+- **Each standing thing is one group.** The tool takes the outermost group as the
+  building, so a house drawn as four loose groups becomes four occluders with four
+  different ground lines.
+
 > **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`** — and `Map_2_base.svg`, not
 > `Map_2.svg`. Uploading a redrawn
 > board changes nothing on screen until that command is run. This has caught us
@@ -521,6 +563,9 @@ hand:
   `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for `Stage_2_Map`.
   Note the **stem**: both are drawn in layers, so the command names `Stage_1_Map`
   rather than a file. Same pipeline as `Map_N_base.svg` otherwise.
+- `Stage_1_Map_front.svg` and `Stage_2_Map_front.svg` — **the things on those
+  boards that stand up**, on a transparent sheet of the same artboard. The same
+  command writes them. See "What a figure can walk behind" below.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
