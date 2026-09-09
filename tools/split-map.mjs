@@ -49,14 +49,51 @@ const LAYERS = SRC.endsWith('.svg') ? [] : layerFiles(SRC);
 
 // --- geometry ----------------------------------------------------------------
 
-// A shape signature that ignores where the group sits: the sorted list of
-// sub-path sizes. Two copies of the same drawing at different offsets — which is
-// exactly what nine plot markers are — produce the same string.
-function signature(g) {
-  return g.subPaths
-    .map(ps => { const b = bounds(ps); return `${(b.x1-b.x0).toFixed(1)}x${(b.y1-b.y0).toFixed(1)}`; })
-    .sort().join(' ');
+// A group's shape, ignoring where it sits: how many pieces it is drawn from and
+// how big each of them is, sorted. Two copies of the same drawing at different
+// offsets — which is exactly what eight plot markers are — measure the same.
+function shapeOf(g) {
+  return {
+    n: g.subPaths.length,
+    parts: g.subPaths
+      .map(ps => { const b = bounds(ps); return [b.x1 - b.x0, b.y1 - b.y0]; })
+      .sort((a, b) => b[0] * b[1] - a[0] * a[1])
+  };
 }
+
+// WHETHER TWO GROUPS ARE THE SAME DRAWING, WITHIN THE ARTIST'S HAND.
+//
+// THIS WAS AN EXACT STRING MATCH and it cost stage 2 a plot, silently. The
+// signature was every piece's size printed to a tenth of a pixel and joined; one
+// of the eight markers on that board measures 13.0x9.4 where the other seven
+// measure 13.1x9.6, because it was nudged or rotated a hair. Its string differed,
+// it formed a cluster of one, singletons are dropped as scenery — and the tool
+// reported seven markers on a board with eight, with nothing on screen or in the
+// console to say a plot had gone missing.
+//
+// A TOLERANCE, NOT A ROUNDING. Rounding to whole pixels does not fix it: 193.5
+// and 193.4 land either side of a boundary and split apart again, which is the
+// same bug with a coarser grid. A tolerance has no boundaries.
+//
+// AND IT NEEDS A FLOOR AS WELL AS A PERCENTAGE, which the first attempt did not
+// have and which is why it still found seven. A percentage is the wrong shape of
+// tolerance for a small piece: the odd marker's signpost head is 5.4 map px where
+// the others are 5.0, and 0.4 of 5 is EIGHT percent — a difference no eye can see
+// on a piece two game pixels wide, and one that no sane percentage would forgive
+// without also forgiving 15px on the 193px ellipse. So the two are separate: five
+// percent for the big pieces, and a flat pixel for everything, whichever is more
+// generous.
+//
+// Nothing is at risk of merging wrongly: a group must have the same NUMBER of
+// pieces to be compared at all, and the nearest six-piece thing on either board is
+// a fifth away on its longest side.
+const LIKE = 0.05;      // of the larger measurement
+const SLOP = 1;         // or a whole map pixel, whichever forgives more
+const close = (a, b) => Math.abs(a - b) <= Math.max(LIKE * Math.max(a, b), SLOP);
+const alike = (a, b) => a.n === b.n && a.parts.every(([w, h], i) => {
+  const [w2, h2] = b.parts[i];
+  return close(w, w2) && close(h, h2);
+});
 
 // --- find the markers --------------------------------------------------------
 //
@@ -69,12 +106,16 @@ function signature(g) {
 // rather than a quietly wrong map.
 
 const groups = allGroups(svg);
-const clusters = new Map();
+// Grouped by likeness rather than by an exact key, so a marker the artist moved
+// by a fraction of a pixel still joins its own kind. See `alike`.
+const found = [];
 for (const g of groups) {
-  const k = signature(g);
-  if (!clusters.has(k)) clusters.set(k, []);
-  clusters.get(k).push(g);
+  const shape = shapeOf(g);
+  const c = found.find(f => alike(f.shape, shape));
+  if (c) c.members.push(g);
+  else found.push({ shape, members: [g] });
 }
+const clusters = new Map(found.map((f, i) => [i, f.members]));
 
 // Drop members nested inside another member of the same cluster. The export
 // wraps single shapes in a <g> of their own, so an ellipse and the group around

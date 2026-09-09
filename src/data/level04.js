@@ -55,21 +55,26 @@ const west = [
   { x: 999, y: 357 }
 ];
 
-// SEVEN, in road order — the order tools/sim.mjs and every "spread of towers"
+// EIGHT, in road order — the order tools/sim.mjs and every "spread of towers"
 // test indexes into. On a forked map "along the road" is not one number: it is
 // how far each plot still is from the keep along whichever route passes nearest,
 // which is the only ordering that means anything with two roads in play.
 //
-// THREE OF THEM SIT FURTHER OFF THE TARMAC than any plot on any other board —
-// 98, 117 and 101px, where the splitter starts calling them FAR at 95. That is
-// the artwork's own spacing and not a mistake to correct here; what it costs is
-// a barracks squad walking a little further to its post, which tools/formation.mjs
-// measures on every plot of every board.
+// SEVEN OF THEM ARE BUILDABLE; the eighth opens with a barracks already on it —
+// see `prebuilt` below.
+//
+// IT WAS SEVEN FOR A WHILE, and that was the tool's fault rather than the
+// artist's. tools/split-map.mjs found the markers by grouping shapes with an
+// identical size string, and the marker at (509, 237) measures 13.0x9.4 where the
+// other seven measure 13.1x9.6 — nudged by a fraction of a pixel. It clustered
+// alone, singletons are dropped as scenery, and the board quietly had one fewer
+// plot than the drawing. The likeness test has a tolerance now.
 const plots1 = [
   { x: 104, y: 332 },   //  906 from the keep,  72 off the road
   { x: 234, y: 467 },   //  811 from the keep,  82 off the road
   { x: 368, y: 197 },   //  729 from the keep, 102 off the road
   { x: 375, y: 423 },   //  622 from the keep, 103 off the road
+  { x: 509, y: 237 },   //  494 from the keep,  87 off the road
   { x: 517, y: 401 },   //  481 from the keep,  77 off the road
   { x: 845, y: 433 },   //  147 from the keep,  81 off the road
   { x: 862, y: 267 }    //  140 from the keep,  85 off the road — the top right one
@@ -148,12 +153,13 @@ export const level04 = {
   //
   // The plot is named by INDEX into the list above, which is in road order — so a
   // redraw that moves the markers moves this with them, where a pinned coordinate
-  // would be left behind. It does mean the INDEX moves too: the top right marker
-  // was 5 and is 6 after the road widened, because the plot at (845, 433) came
-  // seven pixels closer to the keep and took its place in the order. That is what
-  // the "top right plot" check in tools/campaign.mjs is for — it re-measures the
-  // artwork rather than trusting the number. See prebuiltOn in src/towers.js.
+  // would be left behind. It does mean the INDEX moves whenever the order does,
+  // and it has twice: 5, then 6 when the road widened and a plot came closer to
+  // the keep, and 7 now that the eighth marker was found. That is what the "top
+  // right plot" check in tools/campaign.mjs is for — it re-measures the artwork
+  // rather than trusting the number, and it caught both. See prebuiltOn in
+  // src/towers.js.
   prebuilt: [
-    { plot: 6, family: 'barracks', tier: 3 }
+    { plot: 7, family: 'barracks', tier: 3 }
   ]
 };

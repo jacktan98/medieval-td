@@ -899,8 +899,17 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // reference. A prebuilt given a coordinate rather than an index would look right
   // and leave a signpost poking out through the barracks' legs.
   ok(built[0].plot === two.plots[pre.plot],
-    'and stands on one of the seven plots rather than beside it',
+    'and stands on one of the board\'s own plots rather than beside one',
     `plot ${pre.plot} of ${two.plots.length}, so ${two.plots.length - 1} markers are drawn`);
+
+  // AND THE BOARD HAS EIGHT, which is what the artwork has. It read seven for a
+  // while and that was the splitter's fault rather than the drawing's: it grouped
+  // shapes by an exact size string, and one marker measures a fraction of a pixel
+  // off the other seven, so it clustered alone and singletons are dropped as
+  // scenery. The count is pinned here because the failure was SILENT — a board
+  // with one fewer plot than it was drawn with, and nothing anywhere to say so.
+  ok(two.plots.length === 8, 'and the board offers eight plots in all',
+    `${two.plots.length}, ${two.plots.length - 1} of them to build on`);
 
   // FIVE WAVES, AND ONLY TWO KINDS OF ENEMY IN THEM. A tutorial that grew a third
   // enemy would have stopped being one without anybody deciding to.

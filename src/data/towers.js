@@ -3292,13 +3292,22 @@ const pope = {
   muzzle: [Math.round(0.758 * POPE_TRIM[2] * SCALE), -Math.round(0.717 * POPE_TRIM[3] * SCALE)]
 };
 
+// RANGES RAISED ONE STEP, at the owner's ask: 150/165/180/210 becomes
+// 160/180/200/220. The ladder still climbs and is still the shortest in the game —
+// an archery tier 3 reaches 230 and a Musketeer Post 480 — so the argument the
+// whole family rests on holds: a monastery has to be placed where the road is.
+//
+// WHAT CHANGED IS THE STEP, from 15 to 20 between the first three rungs and 20 at
+// the top where it was 30. The reach now grows evenly rather than saving most of
+// itself for a tier 4 that costs 570 gold of cumulative spend, which is the more
+// honest shape for a ladder whose lower rungs are the reason to take the family.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 20, range: 150, cooldown: 1.82, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
+    cost: 80,  damage: 20, range: 160, cooldown: 1.82, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 110, damage: 30, range: 165, cooldown: 1.64, colour: '#7E6E52', targeting: true, damageType: 'magic' },
+    cost: 110, damage: 30, range: 180, cooldown: 1.64, colour: '#7E6E52', targeting: true, damageType: 'magic' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 160, damage: 50, range: 180, cooldown: 1.45, colour: '#9A948A', targeting: true, damageType: 'magic' },
+    cost: 160, damage: 50, range: 200, cooldown: 1.45, colour: '#9A948A', targeting: true, damageType: 'magic' },
   // TIER 4, AND THE ONE TOP RUNG THAT IS NOT A TRADE.
   //
   // The other three tier 4 towers each give something up for what they gain — the
@@ -3321,11 +3330,10 @@ export const monastery = [
   // step anywhere in this file, and it is sharp for a reason that will move the day
   // the militia's health does.
   //
-  // `range` 210, up from 180. Still the shortest ladder in the game — an archery
-  // tier 3 reaches 230 and a Post 480 — so a tower that hits this hard still has to
-  // be placed where the road is, which is the argument the whole family rests on.
-  // Two rungs' worth of the family's own 15px step, which is what "more range"
-  // buys without the tower becoming something else.
+  // `range` 220, up from 210 when the whole ladder was raised a step — see the note
+  // above `monastery`. Still the shortest in the game: an archery tier 3 reaches
+  // 230 and a Post 480, so a tower that hits this hard still has to be placed where
+  // the road is, which is the argument the whole family rests on.
   //
   // `cooldown` 1.45, THE SAME as the Abbey's, and the one number that deliberately
   // does not move. The ladder's reloads are 1.82 / 1.64 / 1.45 and a fourth step
@@ -3345,7 +3353,7 @@ export const monastery = [
   // check that the family still reads the way the design says, and tools/sim.mjs
   // is the check that no family clears a map alone at the top of its ladder.
   { ...altar, ...pope, tier: 4, name: 'High Altar', title: 'High Altar', unit: 'Pope',
-    cost: 220, damage: 70, range: 210, cooldown: 1.45, colour: '#A8A096', targeting: true,
+    cost: 220, damage: 70, range: 220, cooldown: 1.45, colour: '#A8A096', targeting: true,
     damageType: 'magic', pierce: 2,
     // The upgrade button's own picture on an Abbey, and the fourth of four — every
     // family's top rung now shows what it buys rather than a plain arrow. See the
