@@ -53,8 +53,9 @@ export const level00 = {
   art: 'map00',
   // DRAWN IN LAYERS rather than in one file, which is why this names a stem
   // rather than an .svg: the artwork is Stage_1_Map_Layer_1..3.svg and the tools
-  // stack it — see readArtwork in tools/svg.mjs. Layer 3 carries the road and the
-  // plot markers.
+  // stack it — see readArtwork in tools/svg.mjs. Layer 2 carries the road and the
+  // plot markers; the buildings and trees are in layer 3, ABOVE it, so a house
+  // beside the road is stood on the ground rather than paved over by it.
   src: 'assets/map/Stage_1_Map',
   routes: [route1],
   plots: plots1,

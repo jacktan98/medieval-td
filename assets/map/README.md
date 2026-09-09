@@ -57,7 +57,14 @@ runs exactly as it does for a single-file board.
 **The road and the plot markers may live in any layer** — the tool finds them by
 what they are, not by which file they are in: the markers by matching
 `Plot_Marker.svg`'s proportions, the road by its fill. On stage 1 both are in
-layer 3.
+layer 2.
+
+**The layers stack in numeric order, so a higher number draws on top.** That is
+the only thing the order decides, and it is worth getting right in the drawing
+rather than in code: stage 1 shipped once with the road above the buildings, and
+two houses beside the road came out with the road paved across their walls.
+Ground first, then the road and its markers, then everything that stands on
+them.
 
 > **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`** — and `Map_2_base.svg`, not
 > `Map_2.svg`. Uploading a redrawn
