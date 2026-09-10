@@ -529,9 +529,9 @@ export const enemyTypes = {
     dead: 'dead_giant',
     deadTrim: [117, 195, 278, 122],
     deadPivot: [0.171, 0.783],
-    // AND THEN 30 -> 25 WITH A SWEEP, later and separately — see `damage` and
-    // `splash` below. What follows is the pass BEFORE that one, kept because it is
-    // where his shape came from:
+    // AND THEN 30 -> 25 WITH A SWEEP AND BACK TO 40 WITHOUT ONE, later and
+    // separately — see `damage` below. What follows is the pass BEFORE those, kept
+    // because it is where his shape came from:
     //
     // 1500 -> 1000, and 18 -> 30 damage in the same pass. That pair is the
     // single biggest change this file has taken, and it is worth being explicit
@@ -540,14 +540,11 @@ export const enemyTypes = {
     // leave alive. He has gone from a wall you grind down to a thing that kills
     // the man holding him.
     //
-    // A tier 1 spearman has 100 health, and 25 a swing on a 1.2s clock still kills
-    // him in exactly four — 4.8 seconds against a respawn of eight, the same as it
-    // was at 30, because 100 divides by both. What the sweep changed is not how long
-    // one man lasts but HOW MANY are dying at once: the club takes about two of them
-    // per swing now (see `splash`), so a squad does not lose its front man and then
-    // the next, it loses the front two together and the wedge never re-forms.
-    // What answers him is a tower rather than a wall, which is the shape the change
-    // asks for and is more true of him than it was.
+    // A tier 1 spearman has 100 health, and 40 a swing on a 1.2s clock kills him in
+    // THREE — 3.6 seconds against a respawn of eight, where 30 took four swings and
+    // 4.8s. One giant beats one squad outright and does it a second faster than the
+    // version this note was written for. What answers him is a tower rather than a
+    // wall, which is the shape the change asks for.
     hp: 800,
     // MEDIUM PLATE, AND 200 FEWER HEALTH TO PAY FOR IT. Against a bow he is
     // 800 / 0.5 = 1600 effective where he used to be a flat 1000, and against a
@@ -566,12 +563,12 @@ export const enemyTypes = {
     // Measured end to end through units.js, which is a different call site from
     // every other pierce in the game — see the last section of tools/armour.mjs:
     //
-    //   a Pikeman    wears none, the break is worth nothing      25 of 25
-    //   a Swordsman  low, broken to none                         25 of 25
-    //   a Paladin    med, broken to low                          19 of 25
+    //   a Pikeman    wears none, the break is worth nothing      40 of 40
+    //   a Swordsman  low, broken to none                         40 of 40
+    //   a Paladin    med, broken to low                          30 of 40
     //
     // The Paladin is the only rung where the number moves at all, and it moves a
-    // long way: without the break the same club lands 13 on him. tools/armour.mjs
+    // long way: without the break the same club lands 20 on him. tools/armour.mjs
     // measures all four through units.js rather than reading them off here, so this
     // table is a record of a run and not a claim — it re-printed itself when the
     // club came down from 30.
@@ -579,41 +576,33 @@ export const enemyTypes = {
     speed: 52,      // slower than the militia, so it arrives as a second wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
-    // 30 TO ONE MAN BECOMES 25 TO ABOUT TWO, at the owner's ask: "giant thugs now
-    // can deal aoe damage of 25 but attack damage is reduced to 25."
+    // 40 TO ONE MAN, and the club does not sweep. The owner's word: "remove aoe
+    // damage for giants and increase attack damage to 40."
     //
-    // The two numbers are one number. `sweep` in src/units.js reads `def.damage`
-    // for the men around the blow as well as for the man it landed on — the same
-    // way the Captain's does — so "aoe damage of 25" and "attack damage 25" are the
-    // same field, and the club lands 25 wherever it reaches. If the two are ever
-    // meant to differ, the splash wants its own number and one line in sweep().
-    damage: 25,
-    // HOW WIDE THE CLUB SWEEPS, and this is the half the owner did not give.
+    // THE SWEEP WAS TRIED AND TAKEN OUT AGAIN, one build apart, and the measurement
+    // is kept because it is the expensive part and it will not need doing twice. He
+    // briefly did 25 to everyone within a radius — `sweep` in src/units.js, which
+    // reads `def.damage` for the men around a blow as well as the man it landed on,
+    // and is the Captain's blade and nothing else again now.
     //
-    // MEASURED RATHER THAN PICKED, the same way the flask's 40 was and for the same
-    // reason: the arithmetic lies here. A squad's wedge stands its men 40 to 42px
-    // apart, which says a 40px sweep should reach nobody — and a squad in a fight is
-    // not standing in its wedge. Counted on the frame each swing lands, across three
-    // barracks on stage 4, two tiers, 24 runs, ~2800 swings:
+    // HOW WIDE, measured rather than picked, because the arithmetic lies here: a
+    // squad's wedge stands its men 40 to 42px apart, which says a 40px sweep should
+    // reach nobody, and a squad in a fight is not standing in its wedge. Counted on
+    // the frame each swing landed, three barracks on stage 4, two tiers, ~2800
+    // swings — militia / knights:
     //
-    //   splash 22   1.25 men (militia) / 1.35 (knights)
-    //   splash 30   1.42 / 1.55
-    //   splash 36   1.65 / 1.86
-    //   splash 40   1.88 / 2.03      <- this
-    //   splash 48   2.20 / 2.33
-    //   splash 55   2.40 / 2.50
-    //   splash 60   2.47 / 2.58
+    //   splash 22   1.25 / 1.35        splash 48   2.20 / 2.33
+    //   splash 30   1.42 / 1.55        splash 55   2.40 / 2.50
+    //   splash 40   1.88 / 2.03        splash 60   2.47 / 2.58
     //
-    // 40 IS JUST BEFORE THE KNEE. Under it the change is nearly free — at 22 the
-    // club does 25 x 1.3 = 32 where it used to do 30, which is not a new enemy — and
-    // over it the curve flattens: 55 buys 0.2 of a man over 48 and 60 buys 0.07 more.
+    // 40 was the knee and 40 was what shipped. If a sweeping enemy is ever wanted
+    // again, that table is the answer and this is the field: `splash` on the def,
+    // and units.js already applies it.
     //
-    // AND IT IS NOT THE CAPTAIN'S 60, deliberately. His is a boss's, chosen to catch
-    // the men who came to ASSIST at 70 so that a squad piling onto him loses everyone
-    // at once. There is one of him. There are eight of these in wave 7, so a sweep
-    // that took a whole squad per swing would not be a harder wave, it would be a
-    // wave with no barracks in it.
-    splash: 40,
+    // WHAT HE IS INSTEAD is the hardest single blow of anything that walks in. 40 is
+    // above the 30 he did before the sweep and well above the 25 he did during it,
+    // so the trade went back the other way twice over: one man, much harder.
+    damage: 40,
     atkCd: 1.2,
     // 12 -> 14, moved with the art rather than left behind, so the hitbox still
     // matches the body you can see. Checked before changing it, not after: the
@@ -1951,10 +1940,16 @@ export const stage3Waves = [
                        { type: 'archer_inf', count: 20, gap: 0.7 }] }
 ];
 
-// STAGE 4'S SEVEN, the owner's own list again — REWRITTEN once the giant learned
-// to sweep. The first version of this table was written against a giant who hit one
-// man for 30; he hits about two for 25 now, and the owner re-cut the whole board
-// around him rather than leaving the counts where they were.
+// STAGE 4'S SEVEN, the owner's own list again — REWRITTEN when the giant changed.
+// The first version of this table was written against a giant who hit one man for
+// 30; the owner re-cut the whole board around the new one rather than leaving the
+// counts where they were.
+//
+// THE GIANT HAS CHANGED TWICE SINCE and this table has not, which is correct rather
+// than stale: he swept for 25 when these counts were written and he hits one man for
+// 40 now, and the owner gave these seven waves against the sweeping version and has
+// not asked for them back. The re-cut was about WHICH ENEMIES, and that reading
+// survives him getting heavier — see `heavy_inf` above for the two moves.
 //
 // WHAT CHANGED, and it is the same change seven times: THE GIANT IS THE BOARD. He
 // arrives in wave 3 rather than 4 and one board earlier than the pattern the last
@@ -1964,7 +1959,8 @@ export const stage3Waves = [
 // and twenty archers and nothing else at all.
 //
 // THE HEADCOUNT BARELY MOVED AND THE BOARD GOT MUCH HEAVIER, which is the whole
-// shape of the re-cut. 118 enemies before and 111 now, and inside that:
+// shape of the re-cut, and got heavier again when the club went to 40. 118 enemies
+// before and 111 now, and inside that:
 //
 //   giants        11 -> 19      nearly double
 //   tough thugs   20 -> 10      halved
@@ -1973,17 +1969,19 @@ export const stage3Waves = [
 //   archers       36 -> 36      unchanged
 //
 // So seven fewer bodies carry eight more giants. What came out is the middle of the
-// army — the toughs and the blockers whose job was to screen — and what a screen
-// was for is exactly what the sweep now punishes.
+// army — the toughs and the blockers whose job was to screen — and what is left is a
+// board that asks for towers rather than for a wall, because a wall is what a 40
+// club goes through in three swings.
 //
 // The blocker's job changes with it. He used to hold your squads still so the
-// archers could shoot them; in front of a giant he holds them still inside a 40px
-// club, which is a different and worse problem.
+// archers could shoot them; in front of a giant he holds them still in front of the
+// hardest single blow that walks onto this board, which is a different and worse
+// problem.
 //
-// THE GAPS ARE THIS BOARD'S OWN, unchanged from the first cut where the counts
-// carried over. The giants stay slow — 2.0 down to 1.6 — because a giant arriving on
-// another giant's heels is a wall rather than a wave, and that is truer now than it
-// was. Every rate is a tenth so the admin panel can reach all of them; see the note
+// THE GAPS ARE THIS BOARD'S OWN, unchanged from the first cut. The giants stay slow
+// — 2.0 down to 1.6 — because a giant arriving on another giant's heels is a wall
+// rather than a wave, and that is truer of the 40 club than it was of either
+// version before it. Every rate is a tenth so the admin panel can reach all of them; see the note
 // on stage 2's last two.
 export const stage4Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
