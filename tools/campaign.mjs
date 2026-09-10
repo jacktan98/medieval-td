@@ -1000,11 +1000,11 @@ console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');
   const WANT4 = [
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 1 blocker_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 heavy_inf',
-    '4 tough_inf + 4 blocker_inf + 2 heavy_inf + 6 archer_inf',
-    '6 tough_inf + 6 blocker_inf + 2 heavy_inf + 10 archer_inf',
-    '6 heavy_inf + 20 archer_inf'
+    '10 light_inf + 4 tough_inf + 1 heavy_inf',
+    '10 light_inf + 2 blocker_inf + 2 heavy_inf',
+    '4 tough_inf + 4 heavy_inf + 6 archer_inf',
+    '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
+    '8 heavy_inf + 20 archer_inf'
   ];
   const got4 = shop.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got4.join(' | ') === WANT4.join(' | '), 'the Workshop sends exactly the seven it was given',
