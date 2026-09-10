@@ -22,9 +22,47 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 // the road, so a column arrives loose and ragged the way a body of men actually
 // would. It is three lanes per road — near kerb, middle, far kerb — so a map
 // with two roads in has six ways for an enemy to arrive.
+// WHICH ROAD THE NEXT MAN COMES DOWN, on a board that says how the wave should be
+// divided. Levels without `entryMix` are unchanged: they roll a die per enemy, and
+// on a two-road board that is fine.
+//
+// THE OWNER'S ASK, on stage 4's three entries: "assign only 50% of enemies to left
+// road and another 50% for 2 top roads to share. This is because in an unlucky
+// situation, all enemies can come from top right road and crush the player as there
+// is not enough defenses." They were right about the mechanism — a die is rolled per
+// enemy, independently — and right that weighting it alone would not fix what they
+// described. Weighted dice give the RIGHT AVERAGE and the same bad tail: 2:1:1 still
+// sends ten men in a row down one road often enough to lose a game to.
+//
+// So this DEALS rather than rolls. The mix is a bag of route indices — [0,1,2,2] for
+// 2:1:1 — shuffled and handed out one at a time, refilled when it runs out. Over
+// every four spawns the split is exactly the split, and the longest possible run
+// down one road is bounded instead of unbounded. The order inside a bag is still
+// shuffled, so a wave does not arrive metronomically.
+//
+// The bag lives on the STATE rather than in a module variable: a game is a bag, and
+// starting a new one has to start a new bag or the first wave inherits whatever was
+// left of the last game's.
+function nextRoute(state) {
+  const mix = level.entryMix;
+  if (!mix) return (Math.random() * level.routes.length) | 0;
+
+  let bag = state.entryBag;
+  if (!bag || !bag.length) {
+    bag = [];
+    mix.forEach((share, ri) => { for (let k = 0; k < share; k++) bag.push(ri); });
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0;
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    state.entryBag = bag;
+  }
+  return bag.pop();
+}
+
 export function spawn(state, typeId) {
   const def = enemyTypes[typeId];
-  const ri = (Math.random() * level.routes.length) | 0;
+  const ri = nextRoute(state);
   const lane = randomLane();
   const road = laneOf(level.routes[ri], lane);
   const at0 = pointOn(road, 0);

@@ -108,6 +108,12 @@ function newGame() {
     // started below from `pendingReveal`, so that a reveal cannot be inherited
     // half-finished by a game that has nothing to do with it.
     reveal: null,
+    // THE UNDEALT ROADS, on a board that divides its wave between its entries —
+    // see nextRoute in src/enemies.js. Cleared here with everything else, because
+    // a bag half dealt into a lost game is not the bag the next one should open
+    // with: the first four men of a new attempt would arrive on whatever the last
+    // attempt happened to leave behind.
+    entryBag: null,
     pendingReveal: null,
     // THE WAVES THIS GAME WILL ACTUALLY SEND, scaled once here rather than read
     // through the level every frame. Two things depend on that: `waveSize` and

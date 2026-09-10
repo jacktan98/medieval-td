@@ -471,15 +471,26 @@ console.log('\nAnything, in any wave\n');
   ok(longestMode.length * adminPx(15) * 0.58 < modes[0].w - 12,
     'and the longer length name fits its button',
     `"${longestMode}" at ${Math.round(longestMode.length * adminPx(15) * 0.58)} of ${modes[0].w - 12}px`);
-  // The map names still fit the narrower tab. Estimated the way the row's own
-  // labels are, pessimistically — see the note on the enemy names below.
-  // The TAB's label, which is `short` where a level carries one — the row has no
-  // width to give, so a long map name is shortened here rather than the row being
-  // widened around it. Checked against what is drawn, not against `name`.
-  const longestName = levels.map(l => l.short || l.name).reduce((a, b) => a.length > b.length ? a : b);
-  ok(longestName.length * adminPx(15) * 0.58 < maps[0].w - 12,
-    'and the longest map name still fits its narrower tab',
-    `"${longestName}" at ${Math.round(longestName.length * adminPx(15) * 0.58)} of ${maps[0].w - 12}px`);
+  // EVERY MAP NAME FITS ITS OWN TAB, which is a different question now that a tab is
+  // as wide as its label rather than as wide as the longest label in the game. This
+  // used to ask whether the longest name fitted maps[0], and maps[0] was every tab;
+  // with sized tabs that reads "does Winchester fit inside Town's tab", which is
+  // nonsense and duly failed.
+  //
+  // Estimated the way the row's own labels are, pessimistically — see the note on
+  // the enemy names below — and against the TAB's label, which is `short` where a
+  // level carries one, rather than against `name`.
+  const tight = maps.filter(m => m.label.length * adminPx(15) * 0.58 > m.w - 12);
+  ok(!tight.length, 'and every map name fits its own tab',
+    tight.length ? tight.map(m => `"${m.label}" at ${Math.round(m.label.length * adminPx(15) * 0.58)} of ${m.w - 12}`).join(', ')
+      : `${maps.length} tabs, widest "${maps.reduce((a, b) => (b.w > a.w ? b : a)).label}" at ${maps.reduce((a, b) => (b.w > a.w ? b : a)).w}px`);
+
+  // AND THE TABS DO NOT OVERLAP, which a fixed pitch made true for free and a
+  // per-label width does not: a width that came out short would slide the next tab
+  // under the last one's text with nothing to say so.
+  const laid = maps.every((m, i) => i === 0 || m.x >= maps[i - 1].x + maps[i - 1].w);
+  ok(laid, 'and no two tabs overlap',
+    maps.map(m => `${m.label} ${m.x}+${m.w}`).join(' | '));
 
   // --- the two difficulties, and which of them can be edited ---
   //

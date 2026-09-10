@@ -35,10 +35,13 @@ import { difficultyButtons, modeButtons } from '../src/render.js';
 import { levels, useLevel } from '../src/level.js';
 // For the prebuilt-tower checks below: the resolver the game itself runs, so a
 // check here cannot pass against a tower the game would refuse to build.
-import { prebuiltOn, makeTower } from '../src/towers.js';
+import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
+// The real spawner, for the entry mix: what walks is the question, not what the
+// level file declares.
+import { spawn } from '../src/enemies.js';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
-import { families } from '../src/data/towers.js';
+import { families, upgradesFrom } from '../src/data/towers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
 // the same tool this checks, so comparing the data against it would be asking the
@@ -854,12 +857,12 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  const order = STAGES.slice(0, 6).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m1,m2,m3',
-    'the campaign runs the three drawn boards, then the three testing ones',
+  const order = STAGES.slice(0, 7).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m5,m6,m1,m2,m3',
+    'the campaign runs the four drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 6,
-    'with six boards on the road and the rest still empty',
+  ok(STAGES.filter(s => s.level !== null).length === 7,
+    'with seven boards on the road and the rest still empty',
     `${STAGES.filter(s => s.level !== null).length} playable`);
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
@@ -987,6 +990,103 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   const offs = tut.plots.map(p => near(p, tut.routes[0].pts));
   ok(Math.max(...offs) < 140, 'every one of them within reach of the road',
     `furthest ${Math.max(...offs).toFixed(0)}px off`);
+}
+
+console.log('\n--- stage 4, its three mouths and the tower nobody can buy ---\n');
+
+// THE OWNER'S SEVEN, pinned the way the other three boards' are.
+{
+  const shop = levels.find(l => l.id === 'm6');
+  const WANT4 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 1 blocker_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 heavy_inf',
+    '4 tough_inf + 4 blocker_inf + 2 heavy_inf + 6 archer_inf',
+    '6 tough_inf + 6 blocker_inf + 2 heavy_inf + 10 archer_inf',
+    '6 heavy_inf + 20 archer_inf'
+  ];
+  const got4 = shop.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got4.join(' | ') === WANT4.join(' | '), 'the Workshop sends exactly the seven it was given',
+    got4.map((g, i) => (g === WANT4[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT4[i]})`)).join(' '));
+  ok(shop.plots.length === 9 && shop.startGold === 220 && shop.waves.length === 7,
+    'and is nine plots, 220 gold and seven waves',
+    `${shop.plots.length} plots, ${shop.startGold} gold, ${shop.waves.length} waves`);
+  ok(shop.routes.length === 3, 'and three ways in', `${shop.routes.length} routes`);
+
+  // HALF THE WAVE UP THE WEST ROAD, and it is asked of the SPAWNER rather than of
+  // the level file — `entryMix` is a declaration and what matters is what walks. A
+  // check that read the array back would agree with itself and tell us nothing.
+  //
+  // AND THE RUN LENGTH IS THE POINT, not the ratio. Weighted dice would pass a
+  // ratio test and still lose the game the owner described: what they asked for is
+  // that a long run down the short north-east road cannot happen. With a bag of
+  // four, a road with one share can appear twice in a row at most — once at the end
+  // of one bag and once at the start of the next.
+  useLevel(levels.indexOf(shop));
+  {
+    const st = { enemies: [] };
+    const n = [0, 0, 0];
+    const longest = [0, 0, 0];
+    let run = 0, prev = -1;
+    for (let i = 0; i < 4000; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      const r = st.enemies[0].route;
+      n[r]++;
+      run = r === prev ? run + 1 : 1;
+      prev = r;
+      if (run > longest[r]) longest[r] = run;
+    }
+    const share = n.map(c => c / 4000);
+    ok(Math.abs(share[0] - 0.5) < 0.01 && Math.abs(share[1] - 0.25) < 0.01 && Math.abs(share[2] - 0.25) < 0.01,
+      'and half the wave comes up the west road, a quarter down each of the other two',
+      share.map(x => (100 * x).toFixed(1) + '%').join(' / '));
+    ok(longest[1] <= 2 && longest[2] <= 2 && longest[0] <= 4,
+      'and no road ever sends a long run of them, which is what the mix is FOR',
+      `longest run: west ${longest[0]}, north ${longest[1]}, north-east ${longest[2]}`);
+  }
+
+  // THE GROUND BALLISTA STANDS AND CANNOT BE BOUGHT.
+  //
+  // The owner's ask has four parts and they are all one decision — the tower is not
+  // on the siege ladder. So this checks the CONSEQUENCE at each place a player could
+  // meet it, rather than checking the flag that produces them.
+  const gb = prebuiltOn(shop, families)[0];
+  ok(gb && gb.def.name === 'Ground Ballista' && gb.x === shop.plots[4].x && gb.y === shop.plots[4].y,
+    'the Workshop opens with a Ground Ballista on its middle plot',
+    gb ? `${gb.def.name} at ${gb.x},${gb.y}` : 'nothing prebuilt');
+  ok(gb.abilities.length === 0 && gb.def.abilities.join() === 'heavybolt',
+    'with no abilities bought and exactly one to buy',
+    `owns ${JSON.stringify(gb.abilities)}, offers ${JSON.stringify(gb.def.abilities)}`);
+  ok(gb.spent === gb.def.cost,
+    'and it is worth its own cost rather than a ladder nobody climbed',
+    `spent ${gb.spent} of a siege ladder worth ` +
+    families.find(f => f.id === 'siege').tiers.filter(d => d.tier < 4).reduce((a, d) => a + d.cost, 0));
+
+  // IT IS DRAWN WITH NO STONE UNDER IT, which is what "on the ground" means, and the
+  // machine has to land on the plot rather than near it.
+  ok(!gb.def.sprite && !!gb.def.machine,
+    'it is a machine with no building under it',
+    `sprite ${gb.def.sprite || 'none'}, machine ${gb.def.machine.frames[0]}`);
+  {
+    const box = towerBox(gb);
+    const m = machineBox(gb.def, box);
+    const foot = { x: m.left + m.w * gb.def.machine.pivot[0], y: m.top + m.h * gb.def.machine.pivot[1] };
+    ok(Math.abs(foot.x - gb.x) < 0.5 && Math.abs(foot.y - gb.y) < 0.5,
+      'and its post stands on the plot point, not beside it',
+      `foot ${foot.x.toFixed(1)},${foot.y.toFixed(1)} against plot ${gb.x},${gb.y}`);
+  }
+
+  // AND NOWHERE OFFERS IT. Every family's every rung, on every board, and the build
+  // menu itself.
+  const anywhere = families.some(f => f.tiers.some(d => d.name === 'Ground Ballista'));
+  ok(!anywhere, 'and no family ladder carries it, so no upgrade can reach it',
+    'not in any `tiers`');
+  const reachable = families.flatMap(f => f.tiers.flatMap(d => upgradesFrom(f, d))).map(d => d.name);
+  ok(!reachable.includes('Ground Ballista'),
+    'and it is not what any tower upgrades into',
+    `${reachable.length} upgrade targets in the game, none of them it`);
 }
 
 console.log('\n--- stage 3, and the one rung above its cap ---\n');

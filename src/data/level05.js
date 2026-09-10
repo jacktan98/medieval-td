@@ -153,16 +153,13 @@ export const level05 = {
   // src/render.js. Written out by `node tools/split-map.mjs assets/map/Stage_3_Map`.
   frontArt: 'front05',
   front: [
-    { x: 745, y: 142, w:  95, h:  63 },   // stands on y 205
-    { x: 421, y: 206, w:  26, h:  73 },   // stands on y 279
-    { x: 809, y: 242, w:  35, h:  42 },   // stands on y 284
-    { x: 504, y: 220, w:  26, h:  73 },   // stands on y 293
-    { x: 448, y: 232, w:  49, h:  62 },   // stands on y 294
+    { x: 745, y: 142, w:  95, h:  81 },   // stands on y 223
+    { x: 785, y: 225, w:  60, h:  61 },   // stands on y 286
     { x: 847, y: 258, w:  99, h:  56 },   // stands on y 314
-    { x: 347, y: 260, w: 211, h:  90 },   // stands on y 350
+    { x: 347, y: 206, w: 211, h: 144 },   // stands on y 350
     { x: 663, y: 432, w:  77, h:  81 },   // stands on y 513
-    { x: 145, y: 442, w:  77, h:  81 },   // stands on y 523
-    { x: 791, y: 455, w:  77, h:  81 }   // stands on y 537
+    { x: 145, y: 442, w:  80, h:  81 },   // stands on y 523
+    { x: 788, y: 455, w:  80, h:  81 }   // stands on y 537
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

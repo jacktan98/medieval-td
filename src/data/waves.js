@@ -1907,6 +1907,42 @@ export const stage3Waves = [
                        { type: 'archer_inf', count: 20, gap: 0.7 }] }
 ];
 
+// STAGE 4'S SEVEN, the owner's own list again.
+//
+// WHAT IT ADDS IS THE GIANT, and wave 4 introduces exactly one of him — the same
+// way stage 2 introduced one archer and stage 3 one blocker. This campaign has now
+// done it three times, and it is worth naming as a rule rather than a habit: a new
+// enemy arrives ALONE, one board's worth of waves before it arrives in numbers.
+//
+// AND THE THUGS RUN OUT AGAIN at wave 5, on the same schedule as the two boards
+// before it.
+//
+// WAVE 7 IS TWO KINDS OF ENEMY AND NOTHING ELSE: six giants and twenty archers. No
+// thugs, no toughs, no blockers — nothing cheap, and nothing whose job is to hold
+// your squads still. What holds them still is the giants, and what kills them is
+// twenty archers behind. It is the smallest wave on the board by headcount after
+// wave 1 and comfortably the heaviest.
+//
+// THE GAPS ARE THIS BOARD'S OWN. The owner asked for tightened rates on stage 2's
+// and stage 3's late waves specifically; nothing was asked for here, so this is a
+// plain ramp — 1.4 down to 1.0 for the light types, with the giants kept slow
+// (2.0 down to 1.6) because a giant arriving on another giant's heels is a wall
+// rather than a wave. Every rate is a tenth, so the admin panel can reach all of
+// them; see the note on stage 2's last two.
+export const stage4Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.5 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }, { type: 'archer_inf', count: 6, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.3 }, { type: 'blocker_inf', count: 6, gap: 1.5 },
+                       { type: 'heavy_inf', count: 2, gap: 1.8 }, { type: 'archer_inf', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 6, gap: 1.6 }, { type: 'archer_inf', count: 20, gap: 1.0 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

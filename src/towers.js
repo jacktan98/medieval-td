@@ -76,21 +76,37 @@ export function prebuiltOn(level, families) {
     // BY NAME OR BY TIER, and a forked ladder must use the name. Every family has
     // two tier 4s now, so a bare `tier: 4` names two towers — and picking the first
     // would be a board that quietly opens with the wrong one. It refuses instead.
-    const named = p.name ? fam.tiers.filter(d => d.name === p.name)
+    // A FAMILY'S `extra` IS SEARCHED TOO, and only from here. Those are towers that
+    // belong to the family but are not rungs on its ladder — see `groundBallista` in
+    // data/towers.js — so nothing that offers a PURCHASE can reach them and a board
+    // can still open with one standing. They must be named: a tier number cannot
+    // pick one out, because they share their tier with the rungs.
+    const pool = [...fam.tiers, ...(fam.extra || [])];
+    const named = p.name ? pool.filter(d => d.name === p.name)
                          : fam.tiers.filter(d => d.tier === p.tier);
     if (!named.length) {
       throw new Error(`${level.id}: ${fam.name} has no ${p.name ? `"${p.name}"` : `tier ${p.tier}`} — ` +
-        `it goes ${fam.tiers.map(d => `T${d.tier} ${d.name}`).join(', ')}`);
+        `it goes ${fam.tiers.map(d => `T${d.tier} ${d.name}`).join(', ')}` +
+        (fam.extra ? `, and off the ladder ${fam.extra.map(d => `"${d.name}"`).join(', ')}` : ''));
     }
     if (named.length > 1) {
       throw new Error(`${level.id}: ${fam.name} has ${named.length} towers at tier ${p.tier} ` +
         `(${named.map(d => d.name).join(', ')}) — name the one you mean`);
     }
     const def = named[0];
-    // The whole ladder up to this rung, which is what a player would have spent
-    // to stand here. Summed by TIER NUMBER rather than by slicing the array,
-    // because a forked ladder has two tier 4s and index n is not tier n+1.
-    const spent = fam.tiers.reduce((sum, d) => sum + (d.tier < def.tier ? d.cost : 0), 0) + def.cost;
+    // WHAT A PLAYER WOULD HAVE PAID TO STAND HERE, which is what taking it down
+    // refunds a fraction of. For a rung that is the whole ladder up to it, summed by
+    // TIER NUMBER rather than by slicing the array, because a forked ladder has two
+    // tier 4s and index n is not tier n+1.
+    //
+    // FOR AN `extra` IT IS ITS OWN COST AND NOTHING ELSE, because there is no ladder
+    // under it — nobody could have bought their way here. Summing the family's rungs
+    // below its tier would charge the Ground Ballista for a Catapult and a Mangonel
+    // and a Trebuchet nobody built, and refund 60% of all four.
+    const onLadder = fam.tiers.includes(def);
+    const spent = onLadder
+      ? fam.tiers.reduce((sum, d) => sum + (d.tier < def.tier ? d.cost : 0), 0) + def.cost
+      : def.cost;
     return makeTower(plot, fam, def, spent);
   });
 }

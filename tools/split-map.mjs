@@ -329,14 +329,79 @@ if (LAYERS.length) {
   const inTop = allGroups(svg).filter(g => g.start > last.index);
   const outer = inTop.filter(g => !inTop.some(o => o !== g && o.start <= g.start && o.end >= g.end));
 
-  const measured = outer.map(g => {
+  const boxes = outer.map(g => {
     const b = bounds(g.subPaths.flat());
     return {
-      g,
+      gs: [g],
       x: b.x0 * MAP_SCALE, y: b.y0 * MAP_SCALE,
       w: (b.x1 - b.x0) * MAP_SCALE, h: (b.y1 - b.y0) * MAP_SCALE
     };
   });
+
+  // A BUILDING'S OWN PARTS JOIN THE BUILDING. Loose flat things stay loose.
+  //
+  // Stage 4 is where one shape stopped being one thing. The workshop has a STACK OF
+  // TIMBER outside it — four planks, drawn as four sibling paths lying on each
+  // other. One at a time two of them measure 29.6px tall and two measure 36 to 37,
+  // straddling the 30px line that tells a building from a road stone, so the tool
+  // refused. As the one object a player sees, the stack is 51px tall and obviously
+  // standing.
+  //
+  // THE FIRST VERSION OF THIS MERGED ANY TWO OVERLAPPING BOXES and was wrong in the
+  // way this whole section exists to prevent. On stage 3 two 22px flat props overlap
+  // each other; merged, they became a 34px "building", and a rule meant to stop the
+  // tool making a wall out of a rock made one geometrically instead. The board went
+  // from passing to refusing, which is the only reason it was caught.
+  //
+  // So a cluster GROWS FROM A STANDING SEED and only from one. A shape joins a
+  // cluster if it overlaps something already in it and that cluster began with a
+  // shape over the line. Two flat things that overlap are still two flat things, and
+  // no combination of flat things can ever add up to a standing one.
+  //
+  // Every building on the earlier boards already arrived as a single group with
+  // sub-paths, so a cluster of one is what they were. What this adds is the props
+  // the artist drew as loose siblings ON a building — which is why stage 2's tavern
+  // box grows from 139 wide to 155 and its well from 77 to 115: it is the same
+  // building with the thing standing against it now inside its box, which is where
+  // the drawing always had it.
+  //
+  // Overlap has to be real in both axes; boxes that merely touch stay apart.
+  const overlaps = (a, b) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const grow = (c, b) => {
+    const x = Math.min(c.x, b.x), y = Math.min(c.y, b.y);
+    c.gs.push(...b.gs);
+    c.w = Math.max(c.x + c.w, b.x + b.w) - x;
+    c.h = Math.max(c.y + c.h, b.y + b.h) - y;
+    c.x = x; c.y = y;
+  };
+
+  const seeds = boxes.filter(b => b.h >= FRONT_MIN_H).map(b => ({ ...b, gs: [...b.gs] }));
+  const loose = boxes.filter(b => b.h < FRONT_MIN_H).map(b => ({ ...b, gs: [...b.gs] }));
+
+  // Seeds first, into each other: two halves of one building drawn as two paths are
+  // one building. Then the flat props, repeatedly, because absorbing one can widen a
+  // cluster onto the next.
+  const clusters = [];
+  for (const seed of seeds) {
+    let cur = seed;
+    for (let i = clusters.length - 1; i >= 0; i--) {
+      if (overlaps(cur, clusters[i])) { grow(cur, clusters[i]); clusters.splice(i, 1); }
+    }
+    clusters.push(cur);
+  }
+  for (let moved = true; moved;) {
+    moved = false;
+    for (let i = loose.length - 1; i >= 0; i--) {
+      const c = clusters.find(c => overlaps(c, loose[i]));
+      if (c) { grow(c, loose[i]); loose.splice(i, 1); moved = true; }
+    }
+  }
+
+  const measured = [...clusters, ...loose];
+  // The sheet is still written in the ARTIST'S order; a cluster's earliest group is
+  // only used to sort the printed list.
+  for (const m of measured) m.g = m.gs.reduce((a, c) => (c.start < a.start ? c : a));
 
   const tall = measured.filter(m => m.h >= FRONT_MIN_H).sort((a, b) => a.y + a.h - (b.y + b.h));
   const flat = measured.filter(m => m.h < FRONT_MIN_H);
@@ -355,9 +420,9 @@ if (LAYERS.length) {
   // artist's own order, so a slice of it is a slice of the board.
   const FRONT = SRC.replace(/\.svg$/, '') + '_front.svg';
   const body = measured
-    .slice()
-    .sort((a, b) => a.g.start - b.g.start)
-    .map(m => svg.slice(m.g.start, m.g.end))
+    .flatMap(m => m.gs)
+    .sort((a, b) => a.start - b.start)
+    .map(g => svg.slice(g.start, g.end))
     .join('\n');
   writeFileSync(FRONT,
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">\n' +

@@ -3428,6 +3428,72 @@ export const monastery = [
     abilities: ['strength', 'pulse'] }
 ];
 
+// A TOWER THAT IS NEVER FOR SALE.
+//
+// THE OWNER'S ASK, on stage 4: "the middle plot is a prebuilt ballista without
+// abilities at the start of the game... This prebuilt ballista is not on top of a
+// tower but on the ground. Same process and animation like it is on top of the
+// tower but this time built on the ground. It only has one ability to own which is
+// heavy bolt... there is only one prebuilt ballista but if players sell it, they
+// cannot build another one anymore."
+//
+// SO IT IS NOT A RUNG ON THE SIEGE LADDER, and that is what `extra` on a family is
+// for. Everything in the game that asks what a player can BUY walks `tiers` — the
+// build menu, `upgradesFrom`, the encyclopedia's towers page, the admin panel's
+// unit tab, tools/families.mjs' ladder shape. None of them see this, so "you cannot
+// build another one" needs no rule anywhere: there is nowhere to build it FROM.
+// Selling it frees an ordinary plot and the ordinary build menu opens on it.
+//
+// Putting it in `tiers` instead would have made it a THIRD tier 4 fork off the
+// Trebuchet, offered on every board without a tier cap, and broken the "the fork is
+// at the top and it is a pair" invariant that three tools lean on.
+//
+// WHAT IT IS MADE OF: the Ballista Turret's machine, its numbers, and no stone. The
+// machine is spread from `ballista` rather than retyped, so a re-measured pivot or
+// a re-drawn nose moves both towers at once — the same reason the Cannon Outpost
+// borrows the ballista's `groundFrac`.
+//
+// HOW IT STANDS ON THE GROUND. A turret is a box with the machine mounted at
+// `mountFrac` of it; this box IS the machine, so `w`/`h` are the machine's own
+// drawn size and both `groundFrac` and `mountFrac` are the machine's own pivot —
+// the little shadow under its post. towerBox then puts that shadow on the plot
+// point, machineBox puts the machine's pivot at the same place, and the drawing
+// lands on the ground exactly where the plot marker's dirt was. It animates, turns
+// and fires through the same three functions as the turret's, because it IS the
+// turret's machine; only the thing underneath is gone.
+//
+// ONE ABILITY. The turret can learn Reinforced Tension and Heavy Bolt; this learns
+// Heavy Bolt alone, at the owner's word.
+export const groundBallista = {
+  name: 'Ground Ballista',
+  title: 'Ground Ballista',
+  unit: 'Ballista Engineer',
+  // TIER 4 because that is what it is — a tier 4 machine's numbers — and because
+  // `capped` in src/menu.js reads tiers. It is never in a list `capped` filters, so
+  // the number is documentation here rather than a gate.
+  tier: 4,
+  // WHAT SELLING IT RETURNS, through the ordinary REFUND_RATE: 138 of 230. It has
+  // no ladder under it, so `spent` is this and only this — see prebuiltOn, which
+  // sums a family's rungs for an ordinary prebuilt and cannot for one that is not
+  // on the ladder.
+  cost: 230,
+  damage: 55, splash: 70, range: 260, minRange: 0, cooldown: 1.80,
+  damageType: 'physical', pierce: 1,
+  colour: '#A8A29A',
+  machine: ballista.machine,
+  w: drawnW(BALLISTA_TRIM), h: drawnH(BALLISTA_TRIM),
+  groundFrac: ballista.machine.pivot,
+  mountFrac: ballista.machine.pivot,
+  beats: ballista.beats,
+  ammo: ballista.ammo,
+  voice: 'ballista',
+  portrait: ballista.portrait,
+  portraitTrim: ballista.portraitTrim,
+  portraitPivot: ballista.portraitPivot,
+  shape: 'siege',
+  abilities: ['heavybolt']
+};
+
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers
 // now, so nothing in the ring is drawn locked — but the layout was laid out for
 // four from the first day precisely so that nothing moved under the player's
@@ -3435,6 +3501,8 @@ export const monastery = [
 export const families = [
   { id: 'archery',   name: 'Archery',   glyph: 'bow',      tiers: archery },
   { id: 'barracks',  name: 'Barracks',  glyph: 'swords',   tiers: barracks },
-  { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: siege },
+  // `extra` is towers that BELONG to the family — its voice, its cues, its shape —
+  // without being rungs on its ladder. Nothing that offers a purchase reads it.
+  { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: siege, extra: [groundBallista] },
   { id: 'monastery', name: 'Monastery', glyph: 'cross',    tiers: monastery }
 ];

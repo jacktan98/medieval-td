@@ -740,52 +740,59 @@ export const TABS = TAB_IDS.map((t, i) => ({
 // difference out of the tabs. At six maps it ran out: 68px a tab, under what
 // "Outskirts" needs, with the length buttons 68px past the gold label.
 //
-// The note here said the answer was a second row of tabs. It was not. THE PURSE HAD
-// NO BUSINESS ON THIS ROW — it is a property of the map, which is why it was put
-// beside the map tabs, but the footer had 570px of empty space and two buttons on
-// it that are ALSO about the whole map. Moving it there gave this row 284px back
-// and cost nothing.
+// The note here said the answer was a second row of tabs. It was not, twice over —
+// the purse moving to the footer gave this row 284px back, and there is no vertical
+// room for one anyway: 56px between this row and the wave row, and a row is 46.
 //
-// That is worth a sentence because the cheap fix was available twice and taken
-// twice: shrink the tabs, shorten the names. Both were real work that bought one
-// more board each. Six tabs at 112 leaves room for eight before this row is tight
-// again, and by then the `short` names are still doing their job rather than having
-// been squeezed into abbreviations.
-const MAP_W = 112, MAP_H = 40, MAP_GAP = 6;
+// AND NOW THE TABS ARE AS WIDE AS THEIR OWN NAMES, which is the fix that should
+// have come instead of the second and third shrink. A FIXED PITCH IS THE BUG: every
+// tab was as wide as the longest name in the game, so "Town" was carrying
+// "Winchester"'s width and every board added that width again. Seven at 112 ran
+// 82px past the panel.
+//
+// Measured with the same pessimistic estimate tools/admin.mjs checks against —
+// length x adminPx(15) x 0.58 — so the two cannot disagree: the width is DERIVED
+// from the fit rule rather than picked and then checked. A floor of 72 keeps a
+// short name looking like a tab rather than a chip.
+//
+// Seven boards now end at 645 where the fixed pitch ended at 856, and the length
+// buttons after them clear the panel by 93px. That is one more board of room rather
+// than a permanent answer: the next lever, when it is needed, is the LENGTH BUTTONS,
+// which are 174px of this row and mean nothing on six of the seven maps — every
+// drawn board is `oneLength` and only the three testing ones have a second table.
+const MAP_H = 40, MAP_GAP = 6, MAP_PAD = 14, MAP_MIN = 72;
 const MAP_Y = INNER.y + 54;
-export const mapTabs = () => levels.map((l, i) => ({
-  i,
-  id: l.id,
-  label: l.short || l.name,
-  x: INNER.x + i * (MAP_W + MAP_GAP),
-  y: MAP_Y,
-  w: MAP_W,
-  h: MAP_H
-}));
-
-// WHICH LENGTH OF THE MAP, on the same row as the maps and immediately after
-// them, because the two questions are the same question: which table am I
-// editing. The wave numbers below say which wave OF it, which is a different
-// thing and belongs on its own line.
+const tabW = label => Math.max(MAP_MIN, Math.round(label.length * adminPx(15) * 0.58) + MAP_PAD * 2);
+export const mapTabs = () => {
+  let x = INNER.x;
+  return levels.map((l, i) => {
+    const label = l.short || l.name;
+    const w = tabW(label);
+    const tab = { i, id: l.id, label, x, y: MAP_Y, w, h: MAP_H };
+    x += w + MAP_GAP;
+    return tab;
+  });
+};
+// WHICH LENGTH OF THE MAP, on the same row as the maps and immediately after them,
+// because the two questions are the same question: which table am I editing. The
+// wave numbers below say which wave OF it, which is a different thing.
 //
-// A map has two lengths — see MODES in data/waves.js — and until now the panel
-// only ever showed the Normal one. The owner asked for both.
-// 86 wide, and the width is set by what is on either side rather than by taste.
-// The map tabs end at 428 and the "Start gold" label starts at about 627 — it is
-// right-aligned 14px from the stepper — so there is 199px for two buttons and a
-// gap, and 86 + 8 + 86 leaves 7px at the far end. "Extended" is the longer label
-// and sets at 65px in this row's type. tools/admin.mjs checks both clearances
-// against the real geometry, and it caught this at 96 wide.
+// 78 wide, and the width is set by what is on either side rather than by taste.
+// "Extended" is the longer label and sets at 65px in this row's type.
+// tools/admin.mjs checks both clearances against the real geometry, and it caught
+// this at 96 wide.
 const MODE_W = 78, MODE_GAP = 6;
+
 // Off the LAST MAP TAB'S RIGHT EDGE rather than off a count times a pitch: the
 // arithmetic version included a trailing gap that is not there and put these 12px
-// further right than intended, which is most of what went wrong at 96.
-const MODE_X = INNER.x + (levels.length - 1) * (MAP_W + MAP_GAP) + MAP_W + 12;
+// further right than intended, and with tabs of different widths there is no pitch
+// to multiply at all.
+const modeX = () => { const t = mapTabs(); return t[t.length - 1].x + t[t.length - 1].w + 12; };
 export const modeTabs = () => MODES.map((m, i) => ({
   i,
   id: m.id,
   label: m.name,
-  x: MODE_X + i * (MODE_W + MODE_GAP),
+  x: modeX() + i * (MODE_W + MODE_GAP),
   y: MAP_Y,
   w: MODE_W,
   h: MAP_H

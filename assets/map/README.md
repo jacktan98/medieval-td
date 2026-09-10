@@ -115,10 +115,19 @@ What this asks of the drawing:
 - **Keep a clear gap around 30px.** The tool refuses rather than guesses if the
   shortest standing thing and the tallest flat one both sit near that line, since a
   threshold picked in the middle of a crowd will silently take a rock or drop a
-  house. Stage 1's is 42 against 21; stage 2's is 65 against 21.
-- **Each standing thing is one group.** The tool takes the outermost group as the
-  building, so a house drawn as four loose groups becomes four occluders with four
-  different ground lines.
+  house. Stage 1's is 44 against 21, stage 2's 65 against 21, stage 3's 56 against
+  21 and stage 4's 51 against 23.
+- **A standing thing may be drawn as several overlapping pieces.** The tool groups
+  them: a cluster grows from a shape OVER the line and swallows anything overlapping
+  it, so the stack of planks at stage 4's forge — four sibling paths, two just under
+  30px and two just over — comes through as the one 51px object a player sees, and
+  the props leaning on a building come through inside the building's box.
+
+  **Flat things that overlap each other stay flat.** A cluster only ever grows from
+  a standing seed, so no pile of road stones can add up to a wall. The first version
+  of this merged any two overlapping boxes and did exactly that on stage 3 — two
+  22px props became a 34px "building" — which is the mistake this whole section
+  exists to prevent, made geometrically instead of by threshold.
 
 > **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`** — and `Map_2_base.svg`, not
 > `Map_2.svg`. Uploading a redrawn
@@ -558,16 +567,15 @@ Everything else is the picture, drawn in the order it is numbered.
 Files beside them are **DERIVED and committed**, and none should ever be edited by
 hand:
 
-- `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg` and `Stage_3_Map_base.svg` — the
-  three drawn boards with their plot markers cut out, written by
-  `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for `Stage_2_Map`
-  and `Stage_3_Map`. Note the **stem**: all three are drawn in layers, so the
-  command names `Stage_1_Map` rather than a file. Same pipeline as
-  `Map_N_base.svg` otherwise.
-- `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg` and `Stage_3_Map_front.svg` —
-  **the things on those boards that stand up**, on a transparent sheet of the same
-  artboard. The same command writes them. See "What a figure can walk behind"
-  below.
+- `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg` and
+  `Stage_4_Map_base.svg` — the four drawn boards with their plot markers cut out,
+  written by `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for the
+  other three. Note the **stem**: all four are drawn in layers, so the command names
+  `Stage_1_Map` rather than a file. Same pipeline as `Map_N_base.svg` otherwise.
+- `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg` and
+  `Stage_4_Map_front.svg` — **the things on those boards that stand up**, on a
+  transparent sheet of the same artboard. The same command writes them. See "What a
+  figure can walk behind" below.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -716,6 +724,33 @@ tower has topped out.
 It also runs the **same five waves at either length**. Every other board's Extended
 table is at least two waves longer; a longer tutorial would be the same lesson
 twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the exception.
+
+### Stage 4 is the workshop, and three ways to reach it
+
+`Stage_4_Map_Layer_1.svg`, `Stage_4_Map_Layer_2.svg` and
+`Stage_4_Map_Layer_3.svg`. **Three roads in and one out**: two down out of the trees
+at the top and one in from the west, meeting above the workshop. The road is 55px at
+the median, the widest of the four boards, which is why five of its nine plots read
+`FAR` at the splitter's 95px threshold — a plot set the same distance back from the
+kerb is further from the centreline a tower measures against. All nine cover a real
+share of the road; `tools/siege.mjs` is what says so.
+
+**Half the wave comes up the west road** and the two top roads share the rest, dealt
+from a shuffled bag rather than rolled per enemy — see `entryMix` in
+`src/data/level06.js`. The north-east road reaches the gate 315px sooner than the
+west one, so an even three-way split is not an even fight.
+
+It opens with a **Ground Ballista** standing on the middle plot — the Ballista
+Turret's machine and animation with no stone under it. It is not a rung on the siege
+ladder (it lives in the family's `extra`), so nothing can offer it for sale: sell it
+and the plot goes back to being an ordinary one.
+
+**This board taught the splitter to cluster.** The stack of planks by the forge is
+four sibling paths lying on each other; measured one at a time, two fall just under
+the 30px line that tells a building from a road stone and two fall just over it, so
+the tool refused the board rather than pick a threshold inside that crowd. It groups
+a building's own parts into one thing now — a cluster grows from a STANDING seed
+only, so no pile of flat props can ever add up to a wall.
 
 ### Stage 3 is the approach to a town
 
