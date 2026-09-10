@@ -380,8 +380,7 @@ if (LAYERS.length) {
   const loose = boxes.filter(b => b.h < FRONT_MIN_H).map(b => ({ ...b, gs: [...b.gs] }));
 
   // Seeds first, into each other: two halves of one building drawn as two paths are
-  // one building. Then the flat props, repeatedly, because absorbing one can widen a
-  // cluster onto the next.
+  // one building. This part IS transitive — everything joined is a standing thing.
   const clusters = [];
   for (const seed of seeds) {
     let cur = seed;
@@ -390,12 +389,31 @@ if (LAYERS.length) {
     }
     clusters.push(cur);
   }
-  for (let moved = true; moved;) {
-    moved = false;
-    for (let i = loose.length - 1; i >= 0; i--) {
-      const c = clusters.find(c => overlaps(c, loose[i]));
-      if (c) { grow(c, loose[i]); loose.splice(i, 1); moved = true; }
-    }
+
+  // AND THEN THE FLAT PROPS, EACH ASKED OF THE BUILDING RATHER THAN OF THE PILE.
+  //
+  // The reach a prop is tested against is the union of the STANDING shapes only,
+  // frozen here before anything is absorbed. A prop that overlaps the building joins
+  // it; a prop that overlaps a prop that joined it does not.
+  //
+  // THAT IS THE FIX FOR A REAL BUG AND THE OWNER'S ARTWORK FOUND IT. This pass used
+  // to run repeatedly and test against the GROWING cluster — the comment even said
+  // so, "because absorbing one can widen a cluster onto the next", which is precisely
+  // the wrong behaviour written down as if it were the point. Stage 4 gained a couple
+  // of loose planks on the ground between the shed and the woodpile, and they chained:
+  // the plank reached the shed, a sawn log reached the plank, four little stones
+  // reached the log, and the shed's box walked from 128px wide to 217 — out across a
+  // stretch of open grass, sixty pixels past anything that stands up.
+  //
+  // What that costs on screen is a plank lying flat on the ground being drawn at the
+  // SHED'S depth, so it would paint over a soldier standing well in front of it.
+  //
+  // A prop belongs to a building because it is touching the BUILDING. Anything else
+  // is a line of stones dragging a barn across the map.
+  const reach = clusters.map(c => ({ x: c.x, y: c.y, w: c.w, h: c.h }));
+  for (let i = loose.length - 1; i >= 0; i--) {
+    const k = reach.findIndex(r => overlaps(r, loose[i]));
+    if (k >= 0) { grow(clusters[k], loose[i]); loose.splice(i, 1); }
   }
 
   const measured = [...clusters, ...loose];

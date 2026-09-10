@@ -169,8 +169,8 @@ export const level05 = {
   // src/render.js. Written out by `node tools/split-map.mjs assets/map/Stage_3_Map`.
   frontArt: 'front05',
   front: [
-    { x: 745, y: 142, w:  95, h:  81 },   // stands on y 223
-    { x: 785, y: 225, w:  60, h:  61 },   // stands on y 286
+    { x: 745, y: 142, w:  95, h:  80 },   // stands on y 222
+    { x: 785, y: 234, w:  60, h:  52 },   // stands on y 286
     { x: 847, y: 258, w:  99, h:  56 },   // stands on y 314
     { x: 347, y: 206, w: 211, h: 144 },   // stands on y 350
     { x: 663, y: 432, w:  77, h:  81 },   // stands on y 513

@@ -104,8 +104,8 @@ export const level00 = {
     { x: 157, y: 109, w:  77, h:  81 },   // stands on y 191
     { x:  80, y: 157, w:  35, h:  44 },   // stands on y 200
     { x: 856, y: 181, w:  95, h:  82 },   // stands on y 263
-    { x: 782, y: 226, w: 117, h:  85 },   // stands on y 311
-    { x:  67, y: 330, w: 118, h:  59 },   // stands on y 389
+    { x: 782, y: 226, w:  90, h:  81 },   // stands on y 307
+    { x:  67, y: 330, w: 116, h:  59 },   // stands on y 389
     { x: 397, y: 361, w:  77, h:  81 },   // stands on y 442
     { x: 526, y: 403, w:  80, h:  81 }   // stands on y 484
   ]
