@@ -1,14 +1,19 @@
 // STAGE 3: the road arrives somewhere.
 //
 // The two Oakland boards are country — fields, a well, a tavern at a crossroads.
-// This is the approach to a town, and the first thing you notice about it is the
-// ROAD: 128px wide at its median where the last three were 44 to 48, opening to
-// 384 at the gate. A board where the tarmac is three times as wide is a board
-// where a tower's reach covers proportionally less of it, which is what a town
-// entrance should feel like.
+// This is the approach to a town, and what makes it one is the ROUNDABOUT: the
+// road opens around a paved island with a statue on it and closes again, so the
+// board's whole middle is a thing the road goes AROUND rather than through.
 //
-// ONE ROAD, west to east, after stage 2's fork. The lesson goes back to a single
-// line so the new one — what is walking down it — has the board to itself.
+// IT IS NOT A WIDER ROAD, and this comment used to say it was — "128px at the
+// median where the last three were 44 to 48", which was measured off the road
+// BLOB'S BOUNDING BOX rather than off the corridor and was never true of a single
+// board. `node tools/trace-road.mjs` reports the real number, and it is 44px at
+// the median and 126 at its widest: stage 1 is 44 and 100, stage 2 is 48 and 141.
+// This road is the NARROWEST of the three at its widest point. A wrong number in
+// a comment is worse than no number, because the next decision gets made against
+// it — the balance note that followed from this one, that towers here cover
+// proportionally less road, was false for the same reason.
 //
 // WHAT IT ADDS TO THE LADDER: the Crossbow Sentry, and only that. See `maxTier`
 // and `allow` below.
@@ -149,11 +154,12 @@ export const level05 = {
   frontArt: 'front05',
   front: [
     { x: 745, y: 142, w:  95, h:  63 },   // stands on y 205
+    { x: 421, y: 206, w:  26, h:  73 },   // stands on y 279
     { x: 809, y: 242, w:  35, h:  42 },   // stands on y 284
+    { x: 504, y: 220, w:  26, h:  73 },   // stands on y 293
+    { x: 448, y: 232, w:  49, h:  62 },   // stands on y 294
     { x: 847, y: 258, w:  99, h:  56 },   // stands on y 314
-    { x: 426, y: 244, w:  26, h:  73 },   // stands on y 318
-    { x: 521, y: 245, w:  26, h:  73 },   // stands on y 319
-    { x: 466, y: 258, w:  43, h:  61 },   // stands on y 320
+    { x: 347, y: 260, w: 211, h:  90 },   // stands on y 350
     { x: 663, y: 432, w:  77, h:  81 },   // stands on y 513
     { x: 145, y: 442, w:  77, h:  81 },   // stands on y 523
     { x: 791, y: 455, w:  77, h:  81 }   // stands on y 537

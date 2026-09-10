@@ -720,12 +720,17 @@ twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the excepti
 ### Stage 3 is the approach to a town
 
 `Stage_3_Map_Layer_1.svg`, `Stage_3_Map_Layer_2.svg` and
-`Stage_3_Map_Layer_3.svg`. **Its road is 128px wide at the median and 384 at the
-gate**, where the three boards before it are 44 to 48 — a board where the tarmac is
-three times as wide is one where a tower's reach covers proportionally less of it.
-Eight plots, and the plots stand further back to match: plot 6 is 131px off the
-tarmac where the splitter starts calling them FAR at 95. That is the artwork being
-consistent rather than careless.
+`Stage_3_Map_Layer_3.svg`. Eight plots, and one of them stands further back than
+the rest: plot 6 is 131px off the tarmac where the splitter starts calling them FAR
+at 95. That is the plot the board opens with a tower already on, and a Crossbow
+Sentry out-ranges the gap.
+
+**This section used to claim the road was "128px at the median and 384 at the
+gate", three times the width of the boards before it. That was wrong** — it was the
+road blob's bounding box, not the corridor. `node tools/trace-road.mjs` measures the
+corridor and reports 44px at the median and 126 at its widest, against stage 1's 44
+and 100 and stage 2's 48 and 141. Run the tool rather than trusting a number in
+prose, this section included.
 
 **Its road is a roundabout, and both arms are walked.** One mouth on the left, one
 on the right, and a grass island with a statue painted on top of the tarmac between
