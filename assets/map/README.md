@@ -738,12 +738,16 @@ share of the road; `tools/siege.mjs` is what says so.
 **Half the wave comes up the west road** and the two top roads share the rest, dealt
 from a shuffled bag rather than rolled per enemy — see `entryMix` in
 `src/data/level06.js`. The north-east road reaches the gate 315px sooner than the
-west one, so an even three-way split is not an even fight.
+west one, so an even three-way split is not an even fight. Stage 2 and stage 3 deal
+their waves the same way; on stage 3 both routes leave the same mouth, so what the
+deal buys there is that the plots ringing the north arm of the roundabout always have
+something to shoot at.
 
-It opens with a **Ground Ballista** standing on the middle plot — the Ballista
-Turret's machine and animation with no stone under it. It is not a rung on the siege
-ladder (it lives in the family's `extra`), so nothing can offer it for sale: sell it
-and the plot goes back to being an ordinary one.
+It opens with a **Ballista Turret** on the middle plot, with neither of its abilities
+bought — and a Trebuchet can be upgraded into another one, so `allow` on this board
+names two rungs above the tier 3 cap rather than one: the Crossbow Sentry and the
+Ballista Turret. Each fork therefore offers a single choice, and the Musketeer Post
+and Cannon Outpost stay above the cap.
 
 **This board taught the splitter to cluster.** The stack of planks by the forge is
 four sibling paths lying on each other; measured one at a time, two fall just under

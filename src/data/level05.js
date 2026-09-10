@@ -41,9 +41,8 @@ import { stage3Waves } from './waves.js';
 //
 // The arms are not a fork like stage 2's — they leave and rejoin the same road, so
 // they SHARE their first three points and their last three, and differ only in
-// which side of the island they pass. An enemy picks one at random when it spawns
-// (see makeEnemy in src/enemies.js), so roughly half the wave comes each way and
-// every plot on the ring has something to shoot at.
+// which side of the island they pass. Exactly half the wave comes each way — see
+// `entryMix` below — so every plot on the ring has something to shoot at.
 const south = [
   { x: -37, y: 327 },
   { x: 1, y: 339 },
@@ -126,6 +125,23 @@ export const level05 = {
   waves: stage3Waves,
   wavesExtended: stage3Waves,
   oneLength: true,
+
+  // HALF THE WAVE ROUND EACH SIDE OF THE ISLAND, dealt rather than rolled.
+  //
+  // The owner asked to "assign 50% to left road for stage 2 and 3 too", and on this
+  // board that needs saying carefully, because THIS BOARD HAS ONLY ONE ROAD IN. Both
+  // routes start at the same mouth on the left — they are the two arms of the
+  // roundabout, not two entries — so 100% of the wave already comes in from the left
+  // and there is no second mouth to take a share from.
+  //
+  // What the ask means here is the other half of what it meant on stage 4: an even,
+  // GUARANTEED split rather than an even average. Half the wave goes round the south
+  // of the island and half round the north, dealt from a shuffled bag of two, so the
+  // four plots ringing the north arm always have something to shoot at. Rolled, a run
+  // of six round the south was ordinary and those four plots watched it go past.
+  //
+  // See nextRoute in src/enemies.js. Shares, in the same order as `routes`.
+  entryMix: [1, 1],
 
   // TIER 3, PLUS ONE NAMED RUNG ABOVE IT.
   //

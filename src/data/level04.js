@@ -100,6 +100,20 @@ export const level04 = {
   // decisions and a board can have either without the other.
   wavesExtended: stage2Waves,
   oneLength: true,
+
+  // HALF THE WAVE UP EACH ROAD, DEALT RATHER THAN ROLLED, at the owner's ask —
+  // "assign 50% to left road for stage 2 and 3 too."
+  //
+  // `routes` is [north, west], so the west road — the left one — is the second
+  // share. Two equal shares IS what a fair die already gives on average; what this
+  // buys is the tail. A die rolled per enemy sends a run of eight down one arm
+  // often enough to matter, and on this board the two arms are 1080px and 1000px of
+  // separate road before the junction, so a run down one is a run past every tower
+  // covering the other. Dealt from a shuffled bag of two, the split is exact over
+  // every pair and the longest run is two.
+  //
+  // See nextRoute in src/enemies.js. Shares, in the same order as `routes`.
+  entryMix: [1, 1],
   // TIER 3 IS THE CEILING HERE, at the owner's ask: stage 1 stops at 2, this stops
   // at 3, and tier 4 waits for a board further down the road. The rungs above the
   // cap are drawn and priced as normal and refuse the purchase, which reads as

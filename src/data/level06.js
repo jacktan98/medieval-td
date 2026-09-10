@@ -134,18 +134,24 @@ export const level06 = {
   // The numbers are SHARES rather than percentages, in the same order as `routes`.
   entryMix: [2, 1, 1],
 
-  // TIER 3, PLUS THE ONE NAMED RUNG ABOVE IT — the same rule as stage 3, at the
-  // owner's ask. Archery's fork stops being a fork here and a Crossbow Tower offers
-  // exactly one button; every other ladder reads "Maxed" at tier 3.
+  // TIER 3, PLUS TWO NAMED RUNGS ABOVE IT.
   //
-  // THE BALLISTA IS NOT AN EXCEPTION TO THIS, and that is worth being clear about,
-  // because it looks like one. It is a tier 4 machine standing on the board and it
-  // is not in `allow` — it does not need to be. `allow` lets a rung through a cap,
-  // and the Ground Ballista is not a rung: it is off the siege ladder entirely, so
-  // no menu can offer it whatever the cap says. See `groundBallista` in
-  // data/towers.js.
+  // Stage 3 let one tower through its cap; this lets two. The Crossbow Sentry is the
+  // same exception it was there, and the BALLISTA TURRET is the new one, at the
+  // owner's ask: "ballista turrets are no longer restricted for towers built so it
+  // will be seen in artillery tier 3 radial menu."
+  //
+  // WHAT THAT DOES TO EACH FORK. Both ladders fork at tier 4 into a pair, and `allow`
+  // names one of each pair, so on this board neither fork IS a fork: a Crossbow Tower
+  // offers only the Crossbow Sentry and a Trebuchet offers only the Ballista Turret,
+  // each drawn due east as a single choice. The Musketeer Post and the Cannon Outpost
+  // are still tier 4 and still above the cap, so both read "Maxed".
+  //
+  // AND THE PREBUILT IS NOW SOMETHING A PLAYER CAN BUILD, which it was not an hour
+  // ago. That is the point of this change rather than a side effect of it: the board
+  // opens with a Ballista Turret standing and the ladder to a second one is open.
   maxTier: 3,
-  allow: ['Crossbow Sentry'],
+  allow: ['Crossbow Sentry', 'Ballista Turret'],
 
   startGold: 220,
   startLives: 20,
@@ -173,33 +179,30 @@ export const level06 = {
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.
   //
-  // THE OWNER'S ASK: "the middle plot is a prebuilt ballista without abilities at
-  // the start of the game. Players can choose to sell or own heavy bolt ability when
-  // they have the gold. This prebuilt ballista is not on top of a tower but on the
-  // ground... It only has one ability to own which is heavy bolt. One exception is
-  // that there is only one prebuilt ballista but if players sell it, they cannot
-  // build another one anymore."
+  // A BALLISTA TURRET on the middle plot — the ordinary tier 4 siege tower, on its
+  // own stone, with both of its abilities to buy and neither of them bought. It is
+  // an ordinary tower in every respect: sellable, and buildable again on any other
+  // plot now that `allow` lets a Trebuchet reach it.
   //
-  // ALL FOUR OF THOSE ARE THE SAME ONE DECISION: the Ground Ballista is not on the
-  // siege ladder. Everything that offers a purchase — the build menu, `upgradesFrom`,
-  // the encyclopedia, the admin panel — walks a family's `tiers`, and this tower is
-  // in the family's `extra` instead. So there is nowhere to build it from, selling it
-  // leaves an ordinary empty plot, and "they cannot build another one" needed no rule
-  // written anywhere. It carries one ability because its def lists one.
+  // IT WAS A GROUND BALLISTA FOR ONE BUILD — the same machine with no stone under it,
+  // off the siege ladder so nothing could offer it for sale, one ability. The owner
+  // sent it back: "change it to normal tower ballista turret. put the ballista back
+  // on the tower. players can also own both abilities." So the def, the family
+  // `extra` that carried it, and the render rule that drew a machine with no
+  // building are all gone rather than left standing unused.
   //
-  // It opens with NONE bought, which is what any tower does: `abilities` starts empty
-  // in makeTower and the radial menu offers Heavy Bolt for the gold like any tier 4's.
+  // NAMED rather than numbered, because siege has two tier 4s and a number cannot
+  // say which — prebuiltOn refuses a bare tier on a forked ladder.
   //
-  // WHAT SELLING IT RETURNS is 138 — 60% of its own 230, and its own cost alone
-  // because there is no ladder underneath it that anybody could have climbed. That is
-  // a real choice against a 220 purse: sell for most of another tower, or save 150 for
-  // the Heavy Bolt.
+  // WHAT SELLING IT RETURNS is 366: 60% of the whole 610 ladder a player would have
+  // climbed to stand here, which is what every other prebuilt is worth. The ground
+  // version was worth 138 because it had no ladder under it; this one does.
   //
   // THE PLOT IS NAMED BY INDEX into the list above, which is in road order, so a
   // redraw that moves the markers moves this with them. Index 4 is the middle one —
   // fourth of nine from the keep, and the plot that sits between the two roads out of
   // the trees, which is why the owner put a ballista on it.
   prebuilt: [
-    { plot: 4, family: 'siege', name: 'Ground Ballista' }
+    { plot: 4, family: 'siege', name: 'Ballista Turret' }
   ]
 };

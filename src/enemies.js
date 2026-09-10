@@ -42,22 +42,31 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 //
 // The bag lives on the STATE rather than in a module variable: a game is a bag, and
 // starting a new one has to start a new bag or the first wave inherits whatever was
-// left of the last game's.
+// left of the last game's. newGame clears it with everything else.
+//
+// AND THE BAG KNOWS WHICH BOARD IT IS FOR, which is not belt-and-braces around that
+// reset — it is what the thing IS. A bag holds route INDICES, and an index only
+// means anything against one board's `routes`: a bag part-dealt on the Workshop's
+// three roads holds a 2, and a 2 on a two-road board is `routes[2]`, undefined, and
+// an enemy walking a lane of nothing. Tying the bag to the level it was filled for
+// makes that unrepresentable rather than merely unlikely, and it does not depend on
+// every path that changes boards remembering to clear it.
 function nextRoute(state) {
   const mix = level.entryMix;
   if (!mix) return (Math.random() * level.routes.length) | 0;
 
   let bag = state.entryBag;
-  if (!bag || !bag.length) {
-    bag = [];
-    mix.forEach((share, ri) => { for (let k = 0; k < share; k++) bag.push(ri); });
-    for (let i = bag.length - 1; i > 0; i--) {
+  if (!bag || bag.id !== level.id || !bag.cards.length) {
+    const cards = [];
+    mix.forEach((share, ri) => { for (let k = 0; k < share; k++) cards.push(ri); });
+    for (let i = cards.length - 1; i > 0; i--) {
       const j = (Math.random() * (i + 1)) | 0;
-      [bag[i], bag[j]] = [bag[j], bag[i]];
+      [cards[i], cards[j]] = [cards[j], cards[i]];
     }
+    bag = { id: level.id, cards };
     state.entryBag = bag;
   }
-  return bag.pop();
+  return bag.cards.pop();
 }
 
 export function spawn(state, typeId) {

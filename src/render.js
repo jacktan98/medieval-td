@@ -974,14 +974,6 @@ function drawBuilding(ctx, t, box) {
   // EXCEPT ON A TURRET, where the beats belong to the machine standing on top
   // and the BUILDING is the stone underneath — one picture, never animated,
   // never mirrored. drawMachine draws the other half.
-  // A MACHINE WITH NO STONE UNDER IT DRAWS NO STONE. Stage 4 opens with a
-  // ballista standing on the ground rather than on a turret — the owner's word,
-  // "not on top of a tower but on the ground" — and that tower is the machine and
-  // nothing else. Without this it would fall through to drawStoneTower below and
-  // get a vector building invented for it, which is the fallback doing its job on
-  // a def that means what it says. See `groundBallista` in data/towers.js.
-  if (t.def.machine && !t.def.sprite) return;
-
   const key = t.def.machine ? t.def.sprite : frameOf(t);
   const img = key && art[key];
   if (img) {

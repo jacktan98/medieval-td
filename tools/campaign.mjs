@@ -992,7 +992,7 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
     `furthest ${Math.max(...offs).toFixed(0)}px off`);
 }
 
-console.log('\n--- stage 4, its three mouths and the tower nobody can buy ---\n');
+console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');
 
 // THE OWNER'S SEVEN, pinned the way the other three boards' are.
 {
@@ -1047,46 +1047,72 @@ console.log('\n--- stage 4, its three mouths and the tower nobody can buy ---\n'
       `longest run: west ${longest[0]}, north ${longest[1]}, north-east ${longest[2]}`);
   }
 
-  // THE GROUND BALLISTA STANDS AND CANNOT BE BOUGHT.
+  // THE BALLISTA TURRET STANDS, AND IS ALSO BUILDABLE.
   //
-  // The owner's ask has four parts and they are all one decision — the tower is not
-  // on the siege ladder. So this checks the CONSEQUENCE at each place a player could
-  // meet it, rather than checking the flag that produces them.
-  const gb = prebuiltOn(shop, families)[0];
-  ok(gb && gb.def.name === 'Ground Ballista' && gb.x === shop.plots[4].x && gb.y === shop.plots[4].y,
-    'the Workshop opens with a Ground Ballista on its middle plot',
-    gb ? `${gb.def.name} at ${gb.x},${gb.y}` : 'nothing prebuilt');
-  ok(gb.abilities.length === 0 && gb.def.abilities.join() === 'heavybolt',
-    'with no abilities bought and exactly one to buy',
-    `owns ${JSON.stringify(gb.abilities)}, offers ${JSON.stringify(gb.def.abilities)}`);
-  ok(gb.spent === gb.def.cost,
-    'and it is worth its own cost rather than a ladder nobody climbed',
-    `spent ${gb.spent} of a siege ladder worth ` +
-    families.find(f => f.id === 'siege').tiers.filter(d => d.tier < 4).reduce((a, d) => a + d.cost, 0));
+  // IT WAS A GROUND BALLISTA FOR ONE BUILD, off the siege ladder so that nothing
+  // could offer it for sale — and the checks here were the mirror of these: that no
+  // ladder carried it, that no upgrade reached it, that it drew with no stone under
+  // it. The owner sent it back to the ordinary turret and opened the ladder to it, so
+  // every one of those assertions inverted, and all five failed together rather than
+  // quietly passing on a board that had changed underneath them.
+  const bt = prebuiltOn(shop, families)[0];
+  ok(bt && bt.def.name === 'Ballista Turret' && bt.x === shop.plots[4].x && bt.y === shop.plots[4].y,
+    'the Workshop opens with a Ballista Turret on its middle plot',
+    bt ? `${bt.def.name} at ${bt.x},${bt.y}` : 'nothing prebuilt');
+  ok(bt.abilities.length === 0 && bt.def.abilities.length === 2,
+    'with neither of its two abilities bought',
+    `owns ${JSON.stringify(bt.abilities)}, offers ${JSON.stringify(bt.def.abilities)}`);
 
-  // IT IS DRAWN WITH NO STONE UNDER IT, which is what "on the ground" means, and the
-  // machine has to land on the plot rather than near it.
-  ok(!gb.def.sprite && !!gb.def.machine,
-    'it is a machine with no building under it',
-    `sprite ${gb.def.sprite || 'none'}, machine ${gb.def.machine.frames[0]}`);
+  // AND IT IS WORTH THE LADDER, like every other prebuilt: what a player would have
+  // paid to stand here, so selling it is neither a windfall nor a trap.
+  const siegeLadder = families.find(f => f.id === 'siege').tiers
+    .filter(d => d.tier < 4).reduce((a, d) => a + d.cost, 0);
+  ok(bt.spent === siegeLadder + bt.def.cost,
+    'and worth the whole ladder a player would have climbed to it',
+    `spent ${bt.spent} = ${siegeLadder} of ladder + ${bt.def.cost}`);
+
+  // IT IS ON ITS STONE. The machine mounts on the deck rather than on the ground,
+  // which is the whole of "put the ballista back on the tower" and is checkable
+  // through the same geometry the renderer uses.
+  ok(!!bt.def.sprite && !!bt.def.machine,
+    'and it is a machine on a building again, not a machine alone',
+    `sprite ${bt.def.sprite}, machine ${bt.def.machine.frames[0]}`);
   {
-    const box = towerBox(gb);
-    const m = machineBox(gb.def, box);
-    const foot = { x: m.left + m.w * gb.def.machine.pivot[0], y: m.top + m.h * gb.def.machine.pivot[1] };
-    ok(Math.abs(foot.x - gb.x) < 0.5 && Math.abs(foot.y - gb.y) < 0.5,
-      'and its post stands on the plot point, not beside it',
-      `foot ${foot.x.toFixed(1)},${foot.y.toFixed(1)} against plot ${gb.x},${gb.y}`);
+    const box = towerBox(bt);
+    const m = machineBox(bt.def, box);
+    const foot = { x: m.left + m.w * bt.def.machine.pivot[0], y: m.top + m.h * bt.def.machine.pivot[1] };
+    ok(foot.y < bt.y - 40,
+      'with its post standing well above the plot, which is what a deck is',
+      `post at y ${foot.y.toFixed(0)}, plot at ${bt.y}`);
   }
 
-  // AND NOWHERE OFFERS IT. Every family's every rung, on every board, and the build
-  // menu itself.
-  const anywhere = families.some(f => f.tiers.some(d => d.name === 'Ground Ballista'));
-  ok(!anywhere, 'and no family ladder carries it, so no upgrade can reach it',
-    'not in any `tiers`');
-  const reachable = families.flatMap(f => f.tiers.flatMap(d => upgradesFrom(f, d))).map(d => d.name);
-  ok(!reachable.includes('Ground Ballista'),
-    'and it is not what any tower upgrades into',
-    `${reachable.length} upgrade targets in the game, none of them it`);
+  // AND A TREBUCHET CAN NOW REACH IT, which is the change: one option on the siege
+  // fork rather than none. Driven through the real menu rather than by re-deriving
+  // `capped` here — a check that reimplemented the rule would agree with itself.
+  {
+    useLevel(levels.indexOf(shop));
+    const treb = families.find(f => f.id === 'siege').tiers.find(d => d.tier === 3);
+    const st = {};
+    openMenu(st, shop.plots[0], makeTower(shop.plots[0], families.find(f => f.id === 'siege'), treb));
+    // BY THE DEF IT BUYS, not by the button's text. A single choice is drawn due
+    // east and simply labelled "Upgrade" — the tower's name only appears when there
+    // are two of them to tell apart — so a check on the label would read "Upgrade"
+    // and say nothing about which tower it is.
+    const ups = st.menu.items.filter(it => it.act === 'upgrade' && it.available).map(it => it.to);
+    ok(ups.length === 1 && ups[0] && ups[0].name === 'Ballista Turret',
+      'and a Trebuchet on this board offers exactly one upgrade: the Ballista Turret',
+      ups.length ? ups.map(d => d && d.name).join(', ') : 'nothing offered');
+  }
+  // The Cannon Outpost is the other half of that fork and is still above the cap.
+  {
+    const treb = families.find(f => f.id === 'siege').tiers.find(d => d.tier === 3);
+    const st = {};
+    openMenu(st, shop.plots[0], makeTower(shop.plots[0], families.find(f => f.id === 'siege'), treb));
+    const named = st.menu.items.filter(it => it.act === 'upgrade').map(it => it.to && it.to.name);
+    ok(!named.includes('Cannon Outpost'),
+      'and the other half of that fork stays above the cap',
+      `offered: ${named.filter(Boolean).join(', ') || 'nothing'}`);
+  }
 }
 
 console.log('\n--- stage 3, and the one rung above its cap ---\n');
@@ -1128,6 +1154,95 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
   ok(late.every((g, i) => i === 0 || g <= late[i - 1]),
     'and each of the three is at least as tight as the one before it',
     late.map(g => g.toFixed(2)).join(' >= '));
+}
+
+// EVERY BOARD WITH MORE THAN ONE ROUTE DEALS ITS WAVE, at the owner's ask to
+// "assign 50% to left road for stage 2 and 3 too".
+//
+// Asked of the SPAWNER for every such board rather than of one of them, and stated
+// as the property the mix exists to give: the shares come out right, and no route
+// ever sends a long run. Loaded dice would pass the first half and fail the second,
+// which is exactly the fix the owner asked for and the reason to check runs at all.
+//
+// STAGE 3 IS THE ODD ONE and worth naming: its two routes leave the SAME mouth —
+// they are the two arms of a roundabout, not two entries — so "50% to the left road"
+// is 100% either way there. What the deal buys on that board is that the four plots
+// ringing the north arm always have something to shoot at.
+// THE DRAWN BOARDS ONLY. The Fork and Two Rivers have several routes each and roll
+// for them like everything did before stage 4; they are the TESTING boards and the
+// owner has asked for the deal on the drawn campaign, board by board, as each was
+// drawn. Adding it to those two uninvited would tighten the tail on maps that exist
+// to be measured against. It is one `entryMix` line each when it is wanted.
+{
+  const drawn = levels.filter(l => /Stage_\d+_Map/.test(l.src));
+  for (const l of drawn.filter(l => l.routes.length > 1)) {
+    ok(!!l.entryMix, `${l.name} divides its wave between its roads rather than rolling`,
+      l.entryMix ? `shares ${JSON.stringify(l.entryMix)} over ${l.routes.length} routes` : 'no entryMix');
+  }
+
+  // And every board that DECLARES a mix keeps to it, drawn or not, so the day one of
+  // the testing boards gets a line it is checked by the same arithmetic.
+  for (const l of levels.filter(l => l.entryMix)) {
+    useLevel(levels.indexOf(l));
+    const total = l.entryMix.reduce((a, b) => a + b, 0);
+    const st = { enemies: [] };
+    const n = l.routes.map(() => 0);
+    const longest = l.routes.map(() => 0);
+    let run = 0, prev = -1;
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      const r = st.enemies[0].route;
+      n[r]++;
+      run = r === prev ? run + 1 : 1;
+      prev = r;
+      if (run > longest[r]) longest[r] = run;
+    }
+    const off = n.map((c, i) => Math.abs(c / N - l.entryMix[i] / total));
+    ok(Math.max(...off) < 0.01, `  and ${l.short || l.name} deals them in the shares it declares`,
+      n.map(c => (100 * c / N).toFixed(1) + '%').join(' / '));
+    // A bag of `total` can put a route's last card next to its first, so the longest
+    // possible run is twice its share. Anything longer means the deal is not a deal.
+    const cap = l.entryMix.map(share => share * 2);
+    ok(longest.every((r, i) => r <= cap[i]),
+      `  and no road ever sends more than its share twice over`,
+      longest.map((r, i) => `${r}/${cap[i]}`).join(' '));
+  }
+}
+
+// AND A BAG DEALT ON ONE BOARD IS NEVER DEALT ON ANOTHER.
+//
+// A bag holds route INDICES, and an index only means something against one board's
+// `routes`. Part-deal the Workshop's three-road bag, switch to a two-road board, and
+// a leftover 2 is `routes[2]` — undefined, and an enemy walking a lane of nothing.
+// newGame clears the bag, so this cannot happen through the front door; the bag also
+// carries the id of the board it was filled for, so it cannot happen through a door
+// nobody has thought of either.
+//
+// Checked by DOING IT: deal part of a three-road bag, change level underneath it
+// without clearing anything, and keep spawning.
+{
+  const shop = levels.find(l => l.id === 'm6');
+  const two = levels.find(l => l.entryMix && l.routes.length === 2);
+  const st = { enemies: [] };
+
+  useLevel(levels.indexOf(shop));
+  for (let i = 0; i < 3; i++) { st.enemies.length = 0; spawn(st, 'light_inf'); }
+  const carried = st.entryBag;
+
+  useLevel(levels.indexOf(two));
+  let bad = 0;
+  for (let i = 0; i < 200; i++) {
+    st.enemies.length = 0;
+    spawn(st, 'light_inf');
+    const e = st.enemies[0];
+    if (e.route >= two.routes.length || !Number.isFinite(e.x) || !Number.isFinite(e.y)) bad++;
+  }
+  ok(bad === 0 && st.entryBag.id === two.id,
+    'a part-dealt bag is never dealt onto the next board',
+    `carried ${JSON.stringify(carried && carried.cards)} from ${carried && carried.id}, ` +
+    `refilled for ${st.entryBag.id}, ${bad} bad spawn(s) of 200`);
 }
 
 // STAGE 2'S LAST TWO TIGHTENED THE SAME WAY, and for the same ask. Same shape of
