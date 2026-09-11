@@ -659,7 +659,43 @@ const FOG_WASH = 'rgba(30,20,9,0.30)';   // and a breath of brown over that
 // sun's saturate went from 1.30 to 1.42 to match, and the reached country came out
 // on screen at exactly the saturation it had before — the change made, measured,
 // and worth nothing. The sun lifts the LIGHT now and leaves the colour alone.
-const SUN_FILTER = 'brightness(1.34) saturate(1.12) sepia(0.05)';
+// THE SUN IS AN ADDITION ON EVERY DEVICE NOW, and it stopped being a filter
+// because of the sand.
+//
+// THE OWNER: "the colour of the sand at sandshroud looks different when compared to
+// laptop and my phone. Are the colours saturation different?" They are, by a factor
+// of two, and it was BRIGHTNESS(1.34) CLIPPING.
+//
+// Sandshroud's sand is rgb(211, 194, 164) in the artwork — hue 38, saturation 35%,
+// and the LIGHTEST thing on the whole map. Multiply it by 1.34 and it comes to
+// (283, 260, 220), which clips to (255, 255, 220): the two top channels flatten into
+// each other, the hue swings from 38 to 60, and the spread between the channels
+// collapses. The parchment multiply then scales that back down and what comes out is
+// grey-beige. Measured on the board:
+//
+//   the artwork's sand          hue 38   saturation 35%
+//   lifted by the filter        hue 41   saturation 11%     <- the laptop
+//   lifted by the addition      hue 40   saturation 22%     <- the phone
+//
+// A DEVICE WITHOUT ctx.filter WAS QUIETLY GETTING THE BETTER PICTURE. The fallback
+// adds a warm constant instead of multiplying, and an addition cannot clip a channel
+// that was not already near the ceiling: (211,194,164) + (31,27,14) is (242,221,178),
+// hue 40, and the spread comes out WIDER than it went in.
+//
+// AND IT IS THE SAND AND NOTHING ELSE, which is exactly what the owner noticed and
+// is the tell. Nothing else on this map is bright enough to clip at 1.34 — grass at
+// (120,140,90) goes to (161,188,121) with room to spare — so the green country looked
+// the same on both screens and only the desert came apart.
+//
+// So there is ONE PATH. The same lesson as the lit edge twenty lines down: a filter
+// the browser may or may not perform is two designs wearing one set of numbers, and
+// the fix that lasts is having one of them. `lighter` is addition, which every canvas
+// has had since before blend modes existed.
+//
+// A SMALL ADDITION, and it has to be: brightness(1.26) on a mid green is about twenty
+// more, and adding fifty instead made the lit country a different, brighter green
+// than the one this replaced.
+const SUN_LIFT = 'rgb(31,27,14)';
 
 // HOW FAR THE LIGHT REACHES, and HOW LONG IT TAKES TO GO OUT. These are two
 // different things and the difference matters: reach is how much country a player
@@ -771,14 +807,11 @@ function drainByBlend(f, w, h) {
   f.fillRect(0, 0, w, h);
 }
 
-// AND THE LIFT, the same way. `lighter` is addition, which every canvas has had
-// since before blend modes existed, and a flat warm addition is a near enough
-// sunlight for a build that cannot multiply one. It has to be a SMALL addition:
-// brightness(1.26) on a mid green is about twenty more, and adding fifty instead
-// made the lit country a different, brighter green than the one on a laptop.
-function liftByBlend(sg, w, h) {
+// THE SUNLIGHT. It was the fallback for a build that could not filter and it is the
+// only path now — see SUN_LIFT above for the sand that settled it.
+function lift(sg, w, h) {
   sg.globalCompositeOperation = 'lighter';
-  sg.fillStyle = 'rgb(31,27,14)';
+  sg.fillStyle = SUN_LIFT;
   sg.fillRect(0, 0, w, h);
   sg.globalCompositeOperation = 'source-over';
 }
@@ -983,19 +1016,16 @@ function finishFog(f, lit) {
   const sg = sun.getContext('2d');
   sg.clearRect(0, 0, 960, 540);
 
-  const lifted = canFilter();
-  if (lifted) sg.filter = SUN_FILTER;
   if (art.overview) sg.drawImage(art.overview, 0, 0, 960, 540);
   else { sg.fillStyle = '#C9A878'; sg.fillRect(0, 0, 960, 540); }
-  sg.filter = 'none';
   sg.globalCompositeOperation = 'multiply';
   sg.drawImage(parchment || makeParchment(), 0, 0);
   sg.globalCompositeOperation = 'source-over';
 
-  // Without a filter the light is added rather than multiplied. It is the sunlight
-  // that makes reached country read as reached, so a build that cannot filter must
-  // not simply go without it — that is half the effect gone and no sign of it.
-  if (!lifted) liftByBlend(sg, 960, 540);
+  // AFTER the paper rather than before it, which is the order the addition needs:
+  // multiplying a lifted colour scales the lift down with everything else, where
+  // lifting a multiplied one puts the warmth on top of the paper's own darkening.
+  lift(sg, 960, 540);
 
   sg.globalCompositeOperation = 'destination-in';
   sg.drawImage(lit, 0, 0);

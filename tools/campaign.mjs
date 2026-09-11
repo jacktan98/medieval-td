@@ -802,9 +802,25 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // fell into twice — once when darkness was the only signal, and again when the
   // brightness of the drain was asked to be both dim enough to read and bright
   // enough to look at.
-  ok(/SUN_FILTER = 'brightness\(1\.[0-9]+\)/.test(draw),
-    'and the country that has been is brighter than the map itself',
-    (/SUN_FILTER = '([^']+)'/.exec(draw) || [])[1] || 'SUN_FILTER not found');
+  // AND IT IS AN ADDITION RATHER THAN A FILTER, on every device, which is the same
+  // bug as the lit edge below and was found the same way: by somebody looking at two
+  // screens. This asserted `SUN_FILTER = 'brightness(1.34)...'` until the owner
+  // reported that Sandshroud's sand was a different colour on a laptop and a phone.
+  //
+  // It was, by a factor of two in saturation, and the filter was the reason:
+  // brightness(1.34) CLIPS the brightest thing on the map, which is the sand, and a
+  // clipped channel takes the hue with it. A device without ctx.filter was quietly
+  // getting the better picture. See SUN_LIFT in src/overview.js.
+  //
+  // So what is checked is that there is no filter left to diverge on, and that the
+  // lift is still applied.
+  const sunFn = draw.slice(draw.indexOf('function makeSun'));
+  ok(/const SUN_LIFT = 'rgb\(/.test(draw) && !/SUN_FILTER/.test(draw),
+    'and the country that has been reached is lifted by an addition, not a filter',
+    (/const SUN_LIFT = '([^']+)'/.exec(draw) || [])[1] || 'SUN_LIFT not found');
+  ok(/\blift\(sg, 960, 540\)/.test(draw) && !/sg\.filter = /.test(draw),
+    'and nothing on the sun sheet asks the browser to filter at all',
+    'lift() on the sheet, no ctx.filter');
 
   // ONE SHAPE, TWO SHEETS. The sun is cut to the lit shape and the fog is punched
   // out with it, so they meet along a single edge. Two strokes with the same numbers
