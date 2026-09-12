@@ -209,10 +209,74 @@ const markerBounds = bounds(markers[0].subPaths.flat());
   }
 }
 
-// --- background: the same file with the marker groups cut out ----------------
+// --- the garrison: figures the artist painted that the GAME will draw instead ---
+//
+// Stage 5 has two crossbowmen behind a barricade by the bridge. They are painted into
+// the artwork, and the owner wants them to be real: to aim, to shoot, to be selectable
+// for their numbers. A live figure drawn on top of a painted one is two figures, so
+// the painted pair has to come out of the base — exactly what already happens to the
+// plot markers, and for the same reason.
+//
+// FOUND BY ANCHOR RATHER THAN BY LIKENESS, and that is a deliberate retreat from how
+// markers are found. Markers are eight identical copies of one drawing and cluster
+// cleanly. These do not:
+//
+//   They are NOT identical to each other. One carries a quiver of arrows and the other
+//   does not, so "find every copy of this drawing" finds one of them.
+//
+//   They ARE nearly identical to the four villagers dotted about the board — 12.8x22
+//   against 12.8x20.6 — which is inside a hair of the likeness tolerance that already
+//   had to be loosened once to stop it dropping a plot.
+//
+//   And they OVERLAP THE BARRICADE, so growing a cluster outward from either of them
+//   swallows a wall that must stay in the base.
+//
+// So the level names a point per figure and this cuts what is standing there. The
+// window is figure-sized on purpose — 44 wide and 38 tall around the foot — which is
+// what keeps the barricade out of it: at 73px across it does not fit through.
+//
+// IT FAILS LOUDLY. A redraw that moves a figure leaves its anchor over bare ground and
+// the tool says "nothing to cut" rather than quietly shipping a board with a painted
+// crossbowman and a live one standing in the same place.
+const GARRISON_W = 22;    // half-width of the window, game px
+const GARRISON_UP = 34;   // how far above the foot it reaches
+const GARRISON_DOWN = 4;  // and below
+
+const garrisonGroups = [];
+if (level.garrison && level.garrison.length) {
+  console.log(`\nthe garrison — figures cut out of the base for the game to draw:`);
+  const marks2 = [...svg.matchAll(/<g data-layer="(\d+)">/g)];
+  const topN = Math.max(...marks2.map(m => +m[1]));
+  const firstTop = marks2.find(m => +m[1] === topN);
+  const wrapAt = new Set(marks2.map(m => m.index));
+  const inTop2 = allGroups(svg).filter(g => g.start > firstTop.index && !wrapAt.has(g.start));
+  const outer2 = inTop2.filter(g => !inTop2.some(o => o !== g && o.start <= g.start && o.end >= g.end));
+
+  for (const [i, at] of level.garrison.entries()) {
+    const win = { x0: at.x - GARRISON_W, x1: at.x + GARRISON_W,
+                  y0: at.y - GARRISON_UP, y1: at.y + GARRISON_DOWN };
+    const mine = outer2.filter(g => {
+      const b = bounds(g.subPaths.flat());
+      const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
+      return x0 >= win.x0 && x1 <= win.x1 && y0 >= win.y0 && y1 <= win.y1;
+    });
+    if (!mine.length) {
+      throw new Error(`garrison ${i} is at (${at.x}, ${at.y}) and there is nothing drawn there. ` +
+        `If the figure moved in a redraw, move the anchor in the level file to its feet.`);
+    }
+    const b = bounds(mine.flatMap(g => g.subPaths.flat()));
+    console.log(`  ${i}: ${mine.length} piece(s) at ${at.x},${at.y} — ` +
+      `${((b.x1 - b.x0) * MAP_SCALE).toFixed(0)}x${((b.y1 - b.y0) * MAP_SCALE).toFixed(0)}px, ` +
+      `standing on y ${(b.y1 * MAP_SCALE).toFixed(0)}`);
+    garrisonGroups.push(...mine);
+  }
+}
+
+// --- background: the same file with the marker and garrison groups cut out ----
 
 let base = svg;
-for (const g of [...markers].reverse()) base = base.slice(0, g.start) + base.slice(g.end);
+const cut = [...markers, ...garrisonGroups].sort((a, b) => a.start - b.start);
+for (const g of [...cut].reverse()) base = base.slice(0, g.start) + base.slice(g.end);
 writeFileSync(BASE, base);
 console.log(`wrote ${BASE}`);
 

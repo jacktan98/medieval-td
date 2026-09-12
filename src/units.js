@@ -5,7 +5,7 @@ import { splat } from './blood.js';
 import { inRange } from './ground.js';
 import { solo, play, CUE, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS } from './audio.js';
 import { boost } from './towers.js';
-import { SCALE } from './data/towers.js';
+import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
@@ -394,6 +394,65 @@ export function rallyPoint(tower, x, y) {
   // The offset is part of the answer: a flag stored on the centreline would send
   // the squad back to the middle of the road the next time stations() read it.
   return { x: q.x - q.ty * post.across, y: q.y + q.tx * post.across };
+}
+
+// A TOWER THAT IS NOT A TOWER, for the figures that belong to none.
+//
+// Every soldier in this game reaches for `u.tower` — `ability()` asks what it owns,
+// `refundValue` asks what it cost, the muster ring asks where it stands. A garrison
+// crossbowman has no tower, and `null` would throw in the first of those on the first
+// frame. This answers "nothing, and nothing to sell" to all of them, once, shared.
+//
+// FROZEN, because it is shared by every garrison figure on every board: a stray write
+// through one of them would be a write through all of them.
+const NO_TOWER = Object.freeze({ def: null, fam: null, abilities: [], spent: 0, x: 0, y: 0 });
+
+// THE FIGURES A BOARD IS BORN WITH, standing where the artist painted them.
+//
+// `level.garrison` names a point and a unit; the point is where the figure STANDS, and
+// tools/split-map.mjs cut the painted copy out of the base at that same point so the
+// board does not show two. See the note on `garrisonUnits` in data/towers.js.
+//
+// They are ordinary units in `state.units` from here on, which is the whole design:
+// selection, health bars, the depth sort, the info panel and the death of them are all
+// code that already existed.
+export function makeGarrison(state, level) {
+  for (const [i, at] of (level.garrison || []).entries()) {
+    const def = garrisonUnits[at.unit];
+    if (!def) {
+      throw new Error(`${level.id}: garrison ${i} wants "${at.unit}", which is not in garrisonUnits`);
+    }
+    state.units.push({
+      tower: NO_TOWER,
+      def,
+      slot: i,
+      // HIS POST IS WHERE HE IS. rx/ry is the point a soldier walks back to, and his is
+      // under his own feet, so the walk logic settles him on the first frame and never
+      // moves him again.
+      rx: at.x,
+      ry: at.y,
+      x: at.x,
+      y: at.y,
+      // FACING THE ROAD, which for both of stage 5's is to the left: they are watching
+      // the way in, not the bridge behind them.
+      faceIdle: Math.PI,
+      face: Math.PI,
+      hp: def.hp,
+      maxHp: def.hp,
+      foe: null,
+      holds: false,
+      cd: 0,
+      thrust: 0,
+      respawn: 0,
+      blows: 0,
+      hold: 0,
+      holdArt: null,
+      healing: 0,
+      healCd: 0,
+      sneak: false,
+      garrison: true
+    });
+  }
 }
 
 export function makeUnits(state, tower) {
@@ -924,8 +983,12 @@ export function updateUnits(state, dt) {
     //
     // Only for a man at his post whose tower has bought the knife, so the scan
     // costs every other soldier in the game one `owns` check on a short array.
-    const throwing = !u.foe && d <= SETTLE ? ability(u, 'knife') : null;
-    const mark = throwing ? nearestFoe(state, u, throwing.reach) : null;
+    // EITHER A KNIFE HIS TOWER BOUGHT OR A WEAPON HE WAS BORN WITH. The knife is an
+    // ability and `ranged` is on the def — see `garrisonUnits` in data/towers.js —
+    // and from here down they are the same thing: a reach to look inside and something
+    // to send. `reach` is the ability's word for it and `range` is the def's.
+    const throwing = !u.foe && d <= SETTLE ? (u.def.ranged || ability(u, 'knife')) : null;
+    const mark = throwing ? nearestFoe(state, u, throwing.reach ?? throwing.range) : null;
 
     // A MAN COMMITTED TO A POSE DOES NOT TURN, and this is the first branch
     // because it outranks every reason to look somewhere else. `hold` is a swing
@@ -1223,9 +1286,14 @@ export function updateUnits(state, dt) {
         // knife is a DIFFERENT DRAWING, so a squad throwing two numbers is
         // visibly throwing two things: the ability names its own ammunition and
         // this picks it, the same way shoot() prefers a special's ammo on a tower.
+        // A WEAPON OF HIS OWN NAMES ITS DAMAGE; an ability names a MULTIPLE of his
+        // blow. The knife is half a swing because it is the same man doing less with
+        // the same arm; a crossbow has nothing to be a fraction of.
         fling(state, u, mark,
-          Math.round(u.def.damage * throwing.times *
-            (sneak ? (sneak.thrownTimes ?? sneak.times) : 1)),
+          throwing.damage != null
+            ? throwing.damage
+            : Math.round(u.def.damage * throwing.times *
+                (sneak ? (sneak.thrownTimes ?? sneak.times) : 1)),
           (sneak && sneak.ammo) || throwing.ammo,
           // THROUGH THE SAME ARMOUR THE BLADE WOULD HAVE, and through the same
           // helper — a sneaked knife breaks what a sneaked blow breaks, which is
@@ -1235,7 +1303,7 @@ export function updateUnits(state, dt) {
           // own carries.
           swingPierce(u, throwing, sneak));
         u.sneak = false;
-        u.cd = u.def.cd;
+        u.cd = throwing.cd ?? u.def.cd;
         // MID-THROW FOR THE LENGTH OF A LUNGE. The reveal is no longer one of
         // these — it belongs to `exposed` above and lasts as long as the volley —
         // so what this pair still buys is the drawing and the heading, which hold

@@ -39,6 +39,8 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
 import { spawn } from '../src/enemies.js';
+import { makeGarrison } from '../src/units.js';
+import { readArtwork } from './svg.mjs';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
 import { families, upgradesFrom } from '../src/data/towers.js';
@@ -1006,6 +1008,89 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   const offs = tut.plots.map(p => near(p, tut.routes[0].pts));
   ok(Math.max(...offs) < 140, 'every one of them within reach of the road',
     `furthest ${Math.max(...offs).toFixed(0)}px off`);
+}
+
+console.log('\n--- stage 5, the bridge and the two men at it ---\n');
+
+{
+  const castle = levels.find(l => l.id === 'm7');
+  const WANT5 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 1 heavy_inf',
+    '10 light_inf + 2 blocker_inf + 2 heavy_inf',
+    '4 tough_inf + 4 heavy_inf + 6 archer_inf',
+    '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
+    '8 blocker_inf + 6 heavy_inf + 16 archer_inf',
+    '10 blocker_inf + 8 heavy_inf + 20 archer_inf'
+  ];
+  const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got5.join(' | ') === WANT5.join(' | '), 'the Castle sends exactly the eight it was given',
+    got5.map((g, i) => (g === WANT5[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT5[i]})`)).join(' '));
+  ok(castle.plots.length === 9 && castle.startGold === 240 && castle.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${castle.plots.length} plots, ${castle.startGold} gold, ${castle.waves.length} waves`);
+  ok(!castle.prebuilt || !castle.prebuilt.length,
+    'and opens with nothing built, the first board since the tutorial to',
+    `${(castle.prebuilt || []).length} prebuilt`);
+
+  // ITS FIRST SIX WAVES ARE STAGE 4'S, to the man. Stated because it is a DESIGN —
+  // the Workshop teaches the sequence and the Castle asks whether it was learned —
+  // and a design that is only true by coincidence stops being one silently.
+  const shop = levels.find(l => l.id === 'm6');
+  const same = castle.waves.slice(0, 6).every((w, i) =>
+    JSON.stringify(w.groups) === JSON.stringify(shop.waves[i].groups));
+  ok(same, "and its first six are the Workshop's own, unchanged",
+    same ? '6 of 6 identical' : 'they have drifted apart');
+
+  // THE KEEP IS OFF THE BOTTOM. Every other board ends past the right edge, and this
+  // is the one that made the exit an argument rather than a constant — so it is worth
+  // pinning that the routes really do leave that way.
+  const ends = castle.routes.map(r => r.pts[r.pts.length - 1]);
+  ok(ends.every(p => p.y > 540), 'and both its roads leave past the BOTTOM edge, not the right',
+    ends.map(p => `(${Math.round(p.x)}, ${Math.round(p.y)})`).join(' and '));
+
+  // --- the two men at the bridge ---
+  //
+  // Everything the owner asked for here falls out of them being UNITS rather than
+  // towers, so each check is of the CONSEQUENCE rather than of the flag that causes
+  // it: no abilities because abilities live on a tower, no selling because selling
+  // lives in a menu that opens on a plot, and selectable because pickFigure already
+  // walks the unit list.
+  const st = { units: [] };
+  useLevel(levels.indexOf(castle));
+  makeGarrison(st, castle);
+  ok(st.units.length === 2 && st.units.every(u => u.def.name === 'Crossbowman'),
+    'the Castle posts two crossbowmen who belong to no tower',
+    st.units.map(u => `${u.def.name} at ${u.x},${u.y}`).join(', '));
+  ok(st.units.every(u => u.x === u.rx && u.y === u.ry),
+    'and each stands on his own post, so he never walks',
+    'rally point is under his feet');
+  ok(st.units.every(u => u.def.ranged && u.def.ranged.range > 0 && u.def.ranged.ammo),
+    'and each carries his own weapon rather than a bought ability',
+    `reach ${st.units[0].def.ranged.range}, ${st.units[0].def.ranged.damage} a bolt every ` +
+    `${st.units[0].def.ranged.cd}s`);
+  ok(st.units.every(u => !u.def.abilities || !u.def.abilities.length),
+    'and has nothing to be taught',
+    'no abilities on the def');
+  // AND NO MENU CAN REACH THEM, which is what "cannot sell" means. Asked of the PLOTS
+  // rather than of a flag: a menu opens on a plot, so the test is that neither man is
+  // standing on one.
+  const onAPlot = st.units.filter(u =>
+    castle.plots.some(p => Math.hypot(p.x - u.x, p.y - u.y) <= 30));
+  ok(!onAPlot.length, 'and neither stands on a plot, so no menu can open on him',
+    `nearest plot is ${Math.round(Math.min(...st.units.flatMap(u =>
+      castle.plots.map(p => Math.hypot(p.x - u.x, p.y - u.y)))))}px away`);
+
+  // AND THE PAINTED PAIR IS GONE FROM THE BASE. The artist drew them; split-map cuts
+  // them; the game draws live ones on the same spot. If the cut ever stops happening
+  // the board shows two of each, which is the kind of thing that looks like a
+  // rendering bug and is actually a pipeline one.
+  const base = readFileSync('assets/map/Stage_5_Map_base.svg', 'utf8');
+  const stacked = readArtwork('assets/map/Stage_5_Map');
+  ok(base.length < stacked.length,
+    'and the painted copies are cut out of the base the game draws',
+    `${stacked.length - base.length} characters of artwork removed`);
 }
 
 console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');

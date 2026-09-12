@@ -126,6 +126,24 @@ export const level07 = {
   startGold: 240,
   startLives: 20,
 
+  // TWO CROSSBOWMEN BEHIND THE BARRICADE BY THE BRIDGE, and they are the first
+  // figures in this game that belong to no tower.
+  //
+  // THE OWNER'S ASK: "there are 2 independent crossbowman near the bridge that can
+  // attack normally to enemies but has no upgrade abilities nor can player sell them.
+  // They can select the unit and see the stats in description panel but that's it."
+  //
+  // The artist painted them into the artwork. `node tools/split-map.mjs` CUTS them out
+  // of the base — the same thing it does to the plot markers, and for the same reason:
+  // the game draws a live one on that spot, and a live figure over a painted one is
+  // two figures. Each anchor is the point the figure STANDS ON; the tool cuts whatever
+  // is drawn in a figure-sized window around it and refuses if there is nothing there,
+  // so a redraw that moves them is an error rather than a silent double.
+  garrison: [
+    { x: 675, y: 347, unit: 'Crossbowman' },
+    { x: 701, y: 338, unit: 'Crossbowman' }
+  ],
+
   // WHAT A FIGURE CAN WALK BEHIND. Two things: the castle, and one brazier.
   //
   // THE BRIDGE IS DELIBERATELY NOT HERE, and it is the biggest thing on the board.

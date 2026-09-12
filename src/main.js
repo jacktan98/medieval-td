@@ -11,7 +11,7 @@ import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
-import { updateUnits, makeUnits } from './units.js';
+import { updateUnits, makeUnits, makeGarrison } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateSplats } from './blood.js';
@@ -235,6 +235,11 @@ function newGame() {
   // barracks would have — it musters, it walks to its post, and it answers a rally
   // point like any other.
   for (const t of state.towers) makeUnits(state, t);
+  // AND THE FIGURES THE BOARD IS BORN WITH, which belong to no tower — stage 5's two
+  // crossbowmen at the bridge. After the squads for the same reason the squads are
+  // here at all: state.units is rebuilt by the Object.assign above, so anything that
+  // pushes onto it has to run after it.
+  makeGarrison(state, level);
 
   // A PLAYER WHO HAS NEVER SEEN THE MAP. Nothing is unlocked, so the road comes
   // in from off the left edge of the world, draws itself to the first marker and

@@ -3428,6 +3428,81 @@ export const monastery = [
     abilities: ['strength', 'pulse'] }
 ];
 
+// FIGURES THAT BELONG TO NO TOWER.
+//
+// THE OWNER'S ASK, on stage 5: "there are 2 independent crossbowman near the bridge
+// that can attack normally to enemies but has no upgrade abilities nor can player sell
+// them. They can select the unit and see the stats in description panel but that's it.
+// The crossbowman is just like regular unit without the tower."
+//
+// SO IT IS A SOLDIER'S DEF, not a tower's, and everything the owner asked for falls
+// out of that one choice rather than needing a rule each:
+//
+//   NO UPGRADES AND NO ABILITIES — a unit has neither. Abilities live on the TOWER a
+//   soldier belongs to, and this one belongs to none; the stand-in in units.js answers
+//   "owns nothing" to every ability lookup in the game.
+//
+//   NOT SELLABLE — selling happens in the radial menu, the menu opens on a PLOT, and
+//   these stand nowhere near one. There is nothing to write.
+//
+//   SELECTABLE FOR ITS NUMBERS — `pickFigure` in src/select.js already walks
+//   state.units, so this needed no line at all.
+//
+// WHAT IT IS MADE OF: the Crossbow Sentry's own crossbowman, remapped from GUNNER
+// fields to UNIT fields. A gunner is drawn by a tower from `gunner`/`gunnerTrim`/
+// `gunnerPivot`; a unit is drawn from `sprite`/`spriteTrim`/`pivot`. Same three
+// drawings, same anchor, same quarrel.
+//
+// AND IT SHOOTS BY THE SAME ROUTE A SOLDIER THROWS A KNIFE — `ranged` here, `fling` in
+// units.js. The knife was the only thing on the player's side that a man on foot could
+// do at a distance, and it is gated on an ability his tower bought; this carries its
+// own weapon instead. One branch in updateUnits reads either.
+//
+// THE NUMBERS ARE THE ENEMY ARCHER'S REACH AND A CROSSBOW TOWER'S RHYTHM, deliberately
+// modest: 20 a bolt every 1.6s is 12.5 a second, against a tier 1 archery tower's 21.7
+// for 70 gold. Two of them are worth about one cheap tower and cost nothing, which is
+// what a pair of sentries at a gate should be — a reason the bridge is not undefended
+// at wave 1, not a tower the player did not have to build.
+export const garrisonUnits = {
+  Crossbowman: {
+    ...crossbowman,
+    name: 'Crossbowman',
+    sprite: 'crossbowman',
+    spriteTrim: XBOW_TRIM,
+    pivot: [0.653, 0.911],
+    attack: { sprite: 'crossbowman_attack', trim: XBOW_ATK_TRIM, pivot: [0.608, 0.915] },
+    spriteFaces: -1,
+    // HOW FAR HE STEPS INTO A BLOW, and he never throws one — but drawSoldier reads
+    // it on every frame of every soldier, and `0 * undefined` is NaN. A NaN reaches
+    // ctx.translate, the canvas discards the whole draw silently, and the figure is
+    // simply not there with nothing anywhere to say why. Zero rather than a
+    // spearman's 6: a man who winds a crossbow does not lunge.
+    lunge: 0,
+    hp: 120,
+    // HE NEVER SWINGS. `damage` and `cd` are the melee pair every soldier carries and
+    // the card reads `damage`, so it says what his bolt does — see `listedDamage` on
+    // the plague doctor for the same choice made the other way.
+    damage: 20,
+    cd: 1.6,
+    r: 8,
+    // NOT MUSTERED AND NOT REPLACED. A soldier respawns at his tower's muster ring;
+    // there is no tower and no ring, so a garrison that died would have nowhere to come
+    // back to. He regenerates instead, at a swordsman's rate.
+    respawn: 0,
+    regen: 6,
+    speed: 0,
+    colour: '#6E86B4',
+    damageType: 'physical',
+    armour: { physical: 'low', magic: 'none' },
+    ranged: {
+      range: 200,
+      cd: 1.6,
+      damage: 20,
+      ammo: quarrel
+    }
+  }
+};
+
 // The four quadrants of the build menu, in N/E/S/W order. All four have tiers
 // now, so nothing in the ring is drawn locked — but the layout was laid out for
 // four from the first day precisely so that nothing moved under the player's
