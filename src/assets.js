@@ -700,6 +700,7 @@ export const paths = {
   map04:       'assets/map/Stage_2_Map_base.svg',
   map05:       'assets/map/Stage_3_Map_base.svg',
   map06:       'assets/map/Stage_4_Map_base.svg',
+  map07:       'assets/map/Stage_5_Map_base.svg',
   // THE THINGS ON EACH BOARD THAT STAND UP, on their own transparent sheet so the
   // renderer can draw them at the right depth instead of under everything. Derived
   // and committed by tools/split-map.mjs, like the bases beside them. See `front`
@@ -708,6 +709,7 @@ export const paths = {
   front04:     'assets/map/Stage_2_Map_front.svg',
   front05:     'assets/map/Stage_3_Map_front.svg',
   front06:     'assets/map/Stage_4_Map_front.svg',
+  front07:     'assets/map/Stage_5_Map_front.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

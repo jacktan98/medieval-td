@@ -316,17 +316,38 @@ for (const c of centres) {
 // refuses rather than guesses if anything sits on the line, because a threshold
 // picked in the middle of a crowd will silently make a wall out of a rock.
 const FRONT_MIN_H = 30;      // game px: a thing this tall is standing up
+// Set by --accept: a human has looked at whatever is sitting on the line and confirmed
+// the tool classified it right. It does not change any classification — it only stops
+// the refusal — and it is meant to be paired with a note in the level file saying what
+// was looked at, so the next person does not have to look again.
+const ACCEPT = process.argv.includes('--accept');
 const FRONT_CLEAR = 0.15;    // and nothing may sit within this much of the line
 
 if (LAYERS.length) {
   // The top layer's span in the STACKED text, so what is measured here is what the
   // base actually draws.
-  const mark = /<g data-layer="(\d+)">/g;
-  let last = null;
-  for (let m; (m = mark.exec(svg));) last = m;
-  if (!last) throw new Error('the stacked artwork has no labelled layers');
+  // THE TOP LAYER MAY BE SEVERAL FILES. Stage 5's castle is `_Layer_3a` through
+  // `_Layer_3d` — four drawings that are one layer — and stackLayers labels all four
+  // `data-layer="3"` for exactly this. So the top layer starts at the FIRST mark
+  // carrying the highest number, not at the last mark in the file: taking the last
+  // would have made the castle's final piece the whole front sheet and left the other
+  // three buried in the base, which is three quarters of a keep that nothing can walk
+  // behind.
+  const marks = [...svg.matchAll(/<g data-layer="(\d+)">/g)];
+  if (!marks.length) throw new Error('the stacked artwork has no labelled layers');
+  const top = Math.max(...marks.map(m => +m[1]));
+  const first = marks.find(m => +m[1] === top);
 
-  const inTop = allGroups(svg).filter(g => g.start > last.index);
+  // AND THE LAYER WRAPPERS THEMSELVES ARE NOT THINGS. `<g data-layer="3">` is a group
+  // like any other, so with the top layer split across four files the wrappers for the
+  // second, third and fourth start after `first.index` and come through as outer
+  // groups — each one swallowing everything in its own file. Stage 5 arrived as seven
+  // "things": three castle pieces and three whole files pretending to be one object.
+  //
+  // A single-file layer never showed this, because its one wrapper starts exactly AT
+  // `first.index` and the `>` excluded it by luck rather than on purpose.
+  const wrappers = new Set(marks.map(m => m.index));
+  const inTop = allGroups(svg).filter(g => g.start > first.index && !wrappers.has(g.start));
   const outer = inTop.filter(g => !inTop.some(o => o !== g && o.start <= g.start && o.end >= g.end));
 
   const boxes = outer.map(g => {
@@ -421,17 +442,54 @@ if (LAYERS.length) {
   // only used to sort the printed list.
   for (const m of measured) m.g = m.gs.reduce((a, c) => (c.start < a.start ? c : a));
 
-  const tall = measured.filter(m => m.h >= FRONT_MIN_H).sort((a, b) => a.y + a.h - (b.y + b.h));
+  // AND A BOX WHOSE FOOT IS OFF THE BOTTOM OF THE SCREEN IS NOT AN OCCLUDER.
+  //
+  // The depth pass sorts by the foot of a box, so a thing standing at y 651 on a 540px
+  // canvas sorts after EVERYTHING, forever. Nothing can ever be in front of it, because
+  // there is no ground below the bottom edge for anything to stand on. A box like that
+  // is not "a building figures walk behind", it is a guaranteed overdraw.
+  //
+  // Stage 5's bridge is the case. It is the exit — enemies walk ACROSS it — and it
+  // runs off the bottom-right corner, so its box feet at 651. Given one it would paint
+  // the whole bridge over every enemy on it, which is the one thing that must not
+  // happen on the tile they are walking over.
+  //
+  // The cost is that its near railing does not occlude either: a figure on the deck is
+  // drawn over the rail rather than behind it. That is a small wrongness in exchange
+  // for the figure being visible at all, and the fix if it ever matters is on the
+  // artist's side — the near rail as its own group, on the ground, inside the canvas.
+  const CANVAS_H = 540;
+  const offBottom = measured.filter(m => m.h >= FRONT_MIN_H && m.y + m.h > CANVAS_H);
+  for (const m of offBottom) {
+    console.log(`  not boxed: ${Math.round(m.w)}x${Math.round(m.h)} at ${Math.round(m.x)},${Math.round(m.y)} ` +
+      `— its foot is at y ${Math.round(m.y + m.h)}, past the ${CANVAS_H}px canvas, so nothing could ` +
+      `ever stand in front of it`);
+  }
+
+  const tall = measured
+    .filter(m => m.h >= FRONT_MIN_H && m.y + m.h <= CANVAS_H)
+    .sort((a, b) => a.y + a.h - (b.y + b.h));
   const flat = measured.filter(m => m.h < FRONT_MIN_H);
   const shortest = Math.min(Infinity, ...tall.map(m => m.h));
   const tallestFlat = Math.max(0, ...flat.map(m => m.h));
   const low = FRONT_MIN_H * (1 - FRONT_CLEAR), high = FRONT_MIN_H * (1 + FRONT_CLEAR);
-  if (tall.length && (shortest < high || tallestFlat > low)) {
+  if (tall.length && !ACCEPT && (shortest < high || tallestFlat > low)) {
+    // SAY WHICH ONES, because the whole point is that a human has to look. The
+    // message used to give two numbers and no way to find the shapes they came from,
+    // which left "mark them another way" as advice with nowhere to start.
+    const near = measured
+      .filter(m => m.h > low && m.h < high)
+      .sort((a, b) => a.h - b.h)
+      .map(m => `${m.h.toFixed(1)}px at ${Math.round(m.x)},${Math.round(m.y)} (${Math.round(m.w)} wide, ` +
+        `${m.h >= FRONT_MIN_H ? 'counted as STANDING' : 'counted as flat'})`);
     throw new Error(
       `the top layer has something sitting on the ${FRONT_MIN_H}px line: its shortest standing ` +
       `thing is ${shortest.toFixed(0)}px and its tallest flat one is ${tallestFlat.toFixed(0)}px, ` +
       `where the clear band is under ${low.toFixed(0)} and over ${high.toFixed(0)}. Height cannot ` +
-      `tell them apart here — mark them another way before trusting this.`);
+      `tell them apart here.\n\nIn the band:\n  ${near.join('\n  ')}\n\n` +
+      `Either redraw so the two kinds are clearly apart — a flat thing over ${FRONT_MIN_H}px is ` +
+      `the case this guard exists for — or, if you have LOOKED at those shapes and the ` +
+      `classification above is right, re-run with --accept and say so in the level file.`);
   }
 
   // The sheet: the same 1920x1080 artboard with the whole layer on it, in the

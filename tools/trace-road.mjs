@@ -139,10 +139,18 @@ for (const c of clear) if (isFinite(c) && c > maxClear) maxClear = c;
 // one arm running off the TOP of the map, and that arm was invisible to the tool
 // — no error, just a board that quietly had one road where the drawing has two.
 //
-// THE EXIT IS STILL THE RIGHT-HAND ONE, always. Every board in this game runs
-// west to east and ends at a keep off the right edge; a mouth anywhere else is a
-// way IN. That is a convention rather than a law, and it is the thing to revisit
-// the day a map wants its keep somewhere else.
+// AND WHICH MOUTH IS THE EXIT IS A CHOICE NOW, though it still defaults to the
+// right. Every board up to stage 4 ran west to east and ended at a keep off the
+// right edge, and the note here said this was "a convention rather than a law, and
+// the thing to revisit the day a map wants its keep somewhere else".
+//
+// Stage 5 is that day. Winchester Castle's enemies leave over a BRIDGE at the
+// bottom-right, so the road reaches the bottom edge and never reaches the right one
+// at all — the tracer found three mouths and no exit, and refused. Pass the edge:
+//
+//   node tools/trace-road.mjs assets/map/Stage_5_Map --exit bottom
+//
+// Everything not named as the exit is a way in, as before.
 const EDGES = {
   left:   { n: () => GH, at: k => [0, k] },
   right:  { n: () => GH, at: k => [GW - 1, k] },
@@ -165,16 +173,23 @@ function mouths(edge) {
     .map(r => ({ ...r, edge, cell: at(Math.round((r.a + r.b) / 2)) }));
 }
 
-const exits = mouths('right');
+const EXIT_EDGE = (() => {
+  const i = process.argv.indexOf('--exit');
+  const e = i >= 0 ? process.argv[i + 1] : 'right';
+  if (!EDGES[e]) throw new Error(`--exit must be one of ${Object.keys(EDGES).join(', ')}, not "${e}"`);
+  return e;
+})();
+
+const exits = mouths(EXIT_EDGE);
 // Sorted top to bottom, then left to right, because the pairing with the exits
 // below is by vertical order and needs one across all the edges rather than one
 // per edge.
-const entries = [...mouths('left'), ...mouths('top'), ...mouths('bottom')]
+const entries = Object.keys(EDGES).filter(e => e !== EXIT_EDGE).flatMap(mouths)
   .sort((p, q) => p.cell[1] - q.cell[1] || p.cell[0] - q.cell[0]);
 
 const where = list => list.map(m => m.edge).join(', ') || 'nowhere';
 console.log(`  ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} (${where(entries)}), ` +
-  `${exits.length} exit(s) on the right`);
+  `${exits.length} exit(s) on the ${EXIT_EDGE}`);
 if (!entries.length || !exits.length) throw new Error('road does not reach both edges');
 
 // --- ridge walk --------------------------------------------------------------

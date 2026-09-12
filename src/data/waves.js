@@ -1997,6 +1997,47 @@ export const stage4Waves = [
   { rest: 10, groups: [{ type: 'heavy_inf', count: 8, gap: 1.6 }, { type: 'archer_inf', count: 20, gap: 1.0 }] }
 ];
 
+// STAGE 5'S EIGHT, the owner's own list again, and the first table in the campaign
+// that is another board's table with more on the end.
+//
+// WAVES 1 TO 6 ARE STAGE 4'S, to the man. That is the owner's list rather than a
+// shortcut taken here, and it reads as a deliberate one: the Workshop teaches this
+// exact sequence and the Castle opens by asking whether it was learned, on a board
+// with two roads instead of three and 240 gold instead of 220. What is new is what
+// comes after the point where stage 4 stopped.
+//
+// AND WHAT COMES AFTER IS THE BLOCKER AND THE GIANT TOGETHER. Waves 7 and 8 are
+// blockers, giants and archers and nothing else — no thugs, no toughs, nothing cheap
+// anywhere. Eight blockers then ten; six giants then eight; sixteen archers then
+// twenty. Every number goes up and the KINDS stay the same, which is a different
+// shape of ending from stage 4's: that board finishes on one big wave, this one
+// finishes on the same wave twice, harder.
+//
+// The blockers are the point of it. A blocker holds a squad still and a giant hits
+// one man for 40 — the hardest single blow that walks onto any board — so ten of the
+// first in front of eight of the second is a fight the barracks cannot win by
+// standing in it.
+//
+// THE GAPS ARE STAGE 4'S for the first six, unchanged, because the waves are. Seven
+// and eight carry the step on: the giants come down from 1.8 to 1.6 and the archers
+// from 1.1 to 1.0. Every rate is a tenth so the admin panel can reach all of them.
+export const stage5Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 2, gap: 1.8 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.5 }, { type: 'heavy_inf', count: 4, gap: 2.0 },
+                       { type: 'archer_inf', count: 6, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 6, gap: 1.5 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.4 }, { type: 'heavy_inf', count: 6, gap: 1.8 },
+                       { type: 'archer_inf', count: 16, gap: 1.1 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.3 }, { type: 'heavy_inf', count: 8, gap: 1.6 },
+                       { type: 'archer_inf', count: 20, gap: 1.0 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

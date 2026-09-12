@@ -64,12 +64,16 @@ of two arms, four shapes with the join painted over twice. They are unioned, not
 XORed — an earlier version even-odded every ring at once, which read each overlap
 as a hole and reported a road that reached no edge of the map.
 
-**A road may enter from any edge, and it exits on the right.** Stage 2 has one arm
-coming down from the **top** and one in from the west; they merge at the junction
-and leave east. Every mouth that is not on the right-hand edge is a way in, and the
-level gets one route per entry. The right edge is the keep, always — that is the
-convention the tracer is built on, and the thing to revisit if a board ever wants
-its keep somewhere else.
+**A road may enter from any edge, and the exit may be on any edge too.** Stage 2 has
+one arm coming down from the **top** and one in from the west; they merge at the
+junction and leave east. Every mouth that is not the exit is a way in, and the level
+gets one route per entry.
+
+The exit defaulted to the right edge for four boards and stage 5 broke it: Winchester
+Castle's enemies leave over a **bridge at the bottom**, so the road never touches the
+right edge at all and the tracer refused the map. Name the edge:
+
+    node tools/trace-road.mjs assets/map/Stage_5_Map --exit bottom
 
 **The layers stack in numeric order, so a higher number draws on top.** That is
 the only thing the order decides, and it is worth getting right in the drawing
@@ -115,8 +119,14 @@ What this asks of the drawing:
 - **Keep a clear gap around 30px.** The tool refuses rather than guesses if the
   shortest standing thing and the tallest flat one both sit near that line, since a
   threshold picked in the middle of a crowd will silently take a rock or drop a
-  house. Stage 1's is 44 against 21, stage 2's 65 against 21, stage 3's 56 against
-  21 and stage 4's 51 against 23.
+  house. Stage 1's is 44 against 21, stage 2's 65 against 21, stage 3's 56 against 21
+  and stage 4's 51 against 23.
+
+  It names what is in the band now, so there is somewhere to start. If you have LOOKED
+  at those shapes and the classification it printed is right, `--accept` proceeds —
+  and the reason belongs in the level file, not just in a shell history. Stage 5 is
+  the one board that needs it: a pile of felled logs measures 29.7px against the 30px
+  line, and it is lying on the ground.
 - **A standing thing may be drawn as several overlapping pieces.** The tool groups
   them: a cluster grows from a shape OVER the line and swallows anything overlapping
   it, so the stack of planks at stage 4's forge — four sibling paths, two just under
@@ -567,15 +577,16 @@ Everything else is the picture, drawn in the order it is numbered.
 Files beside them are **DERIVED and committed**, and none should ever be edited by
 hand:
 
-- `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg` and
-  `Stage_4_Map_base.svg` — the four drawn boards with their plot markers cut out,
-  written by `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for the
-  other three. Note the **stem**: all four are drawn in layers, so the command names
-  `Stage_1_Map` rather than a file. Same pipeline as `Map_N_base.svg` otherwise.
-- `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg` and
-  `Stage_4_Map_front.svg` — **the things on those boards that stand up**, on a
-  transparent sheet of the same artboard. The same command writes them. See "What a
-  figure can walk behind" below.
+- `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg`,
+  `Stage_4_Map_base.svg` and `Stage_5_Map_base.svg` — the five drawn boards with their
+  plot markers cut out, written by `node tools/split-map.mjs assets/map/Stage_1_Map`
+  and the same for the others. Note the **stem**: all five are drawn in layers, so the
+  command names `Stage_1_Map` rather than a file. Same pipeline as `Map_N_base.svg`
+  otherwise.
+- `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
+  `Stage_4_Map_front.svg` and `Stage_5_Map_front.svg` — **the things on those boards
+  that stand up**, on a transparent sheet of the same artboard. The same command
+  writes them. See "What a figure can walk behind" below.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -724,6 +735,34 @@ tower has topped out.
 It also runs the **same five waves at either length**. Every other board's Extended
 table is at least two waves longer; a longer tutorial would be the same lesson
 twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the exception.
+
+### Stage 5 is the castle, and the keep is not on the right
+
+`Stage_5_Map_Layer_1.svg`, `_Layer_2.svg` and then **four files for layer 3** —
+`_Layer_3a` through `_Layer_3d`, which are the castle drawn as separable pieces.
+
+**A layer may be split into lettered parts.** They stack alphabetically among
+themselves and as a group in their number's place, and `stackLayers` labels all of
+them with their **number**, so `_Layer_3a`..`_Layer_3d` are all `data-layer="3"` and
+"the top layer" is all four. Labelling them 3, 4, 5, 6 by position would make the last
+piece the entire front sheet and leave the rest buried in the base.
+
+**The exit is on the BOTTOM edge** — enemies leave over the bridge at the
+bottom-right. That was a convention baked into the tracer until this board; name the
+edge instead:
+
+    node tools/trace-road.mjs assets/map/Stage_5_Map --exit bottom
+
+Everything not named as the exit is a way in. Two roads come in here, from the top and
+the west, and they are nearly the same length (999px and 1066px).
+
+**The bridge gets no occlusion box, on purpose.** It runs off the bottom-right corner
+so its box would foot at y 651 on a 540px canvas, and the depth pass sorts by the foot
+of a box — a box down there sorts after everything forever, and nothing could ever be
+drawn in front of it. It would paint over every enemy crossing it, which is the one
+tile on the board where that must not happen. The tool drops boxes whose foot is past
+the canvas and says so. If the near railing ever needs to occlude properly, draw it as
+its own group with its foot inside the canvas.
 
 ### Stage 4 is the workshop, and three ways to reach it
 

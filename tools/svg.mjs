@@ -310,14 +310,21 @@ export function insidePoly(poly, x, y) {
 // nothing else — which showed up as split-map.mjs finding 153 groups of scenery
 // and no plot markers at all, because the markers are in layer 3. Every layer
 // clips to the same 1920x1080 rectangle anyway, so one is exactly equivalent.
+// A LAYER MAY BE SPLIT INTO LETTERED PARTS: `_Layer_3a`, `_Layer_3b` and so on, which
+// stack among themselves in alphabetical order and as a group in their number's
+// place. Stage 5's castle arrived that way — four files that between them are the one
+// top layer, because the artist drew the keep as separable pieces.
+//
+// The order is (number, then letter), so 1, 2, 3a, 3b, 3c, 3d is the drawing order and
+// a bare `_Layer_3` sorts before `_Layer_3a` if both ever exist.
 export function layerFiles(stem) {
   const dir = stem.slice(0, stem.lastIndexOf('/'));
   const base = stem.slice(stem.lastIndexOf('/') + 1);
-  const re = new RegExp(`^${base}_Layer_(\\d+)\\.svg$`);
+  const re = new RegExp(`^${base}_Layer_(\\d+)([a-z]*)\\.svg$`);
   return readdirSync(dir)
     .map(f => [f, re.exec(f)])
     .filter(([, m]) => m)
-    .sort((a, b) => +a[1][1] - +b[1][1])
+    .sort((a, b) => +a[1][1] - +b[1][1] || a[1][2].localeCompare(b[1][2]))
     .map(([f]) => `${dir}/${f}`);
 }
 
@@ -345,7 +352,15 @@ const groundOf = svg => {
   return m ? m[1].toLowerCase() : null;
 };
 
-export function stackLayers(files) {
+// `ground` is the one option and it defaults to how this has always behaved: paint
+// the board's own ground colour across the artboard before the layers, because a map
+// layer is drawn expecting the ground under it.
+//
+// PASS FALSE FOR ARTWORK THAT IS NOT A BOARD. tools/combine.mjs stacks castle pieces
+// that are meant to be looked at on their own, and a full-artboard green rectangle
+// under them is a field, not a background — it hides exactly the thing being checked,
+// which is whether the pieces meet cleanly at their edges.
+export function stackLayers(files, { ground: withGround = true } = {}) {
   if (!files.length) throw new Error('no layers to stack');
   const parts = [];
   let ground = null;
@@ -357,14 +372,25 @@ export function stackLayers(files) {
     // the merged text — inside the one clip rather than inside three. The label is
     // what lets split-map.mjs lift the top layer out for the front sheet without
     // re-reading the files and re-deriving where each one landed.
-    parts.push(`<g data-layer="${parts.length + 1}">${body}</g>`);
+    //
+    // LABELLED BY THE LAYER'S OWN NUMBER rather than by its position in this list,
+    // which is what lettered parts need: `_Layer_3a` through `_Layer_3d` are four
+    // files and ONE layer, so all four carry `data-layer="3"` and "the top layer" is
+    // all of them. Numbering them 3, 4, 5, 6 by position would have made the castle's
+    // last piece the entire front sheet and left the other three in the base — which
+    // is three quarters of a keep that nothing can walk behind.
+    //
+    // A file that is not a `_Layer_N` at all — combine.mjs stacks named pieces — has
+    // no number to read, and falls back to its position.
+    const n = /_Layer_(\d+)[a-z]*\.svg$/.exec(f);
+    parts.push(`<g data-layer="${n ? n[1] : parts.length + 1}">${body}</g>`);
   }
   return [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">',
     '<defs><clipPath id="artboard-stacked">' +
       '<rect x="0" y="0" width="1920" height="1080"/></clipPath></defs>',
     '<g>',
-    `<rect fill="${ground || '#5c7f49'}" x="0" y="0" width="1920" height="1080"/>`,
+    withGround ? `<rect fill="${ground || '#5c7f49'}" x="0" y="0" width="1920" height="1080"/>` : '',
     '<g clip-path="url(#artboard-stacked)">',
     ...parts,
     '</g>',

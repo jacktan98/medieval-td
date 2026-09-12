@@ -189,11 +189,24 @@ for (const [li, lv] of levels.entries()) {
 for (let i = 0; i < lv.plots.length; i++) {
   const p = lv.plots[i];
 
-  // The worst case across every family and tier, so this does not go stale when
-  // a taller tier-3 building arrives.
+  // The worst case across every family and tier THIS BOARD CAN ACTUALLY BUILD, so it
+  // does not go stale when a taller tier-3 building arrives.
+  //
+  // THE CAP IS READ HERE NOW, and it had to be. This measured every tier in the game
+  // against every plot, and on a capped board that is a tower nobody can put there:
+  // stage 5 caps at tier 3 plus two named rungs, and its plot 6 failed by THREE PIXELS
+  // against a tier 4 Monastery — a building that board will never let anyone build.
+  // A checker that fails on an impossible tower is asking the artist to move a marker
+  // for nothing.
+  //
+  // The same rule `capped` uses in src/menu.js, and read from the level rather than
+  // re-derived: tier <= maxTier, or named in `allow`.
+  const buildable = def =>
+    !lv.maxTier || def.tier <= lv.maxTier || (lv.allow || []).includes(def.name);
+
   let worst = null;
   for (const f of families) {
-    for (const def of f.tiers || []) {
+    for (const def of (f.tiers || []).filter(buildable)) {
       const top = inkTop(p, f, def);
       if (!worst || top < worst.top) worst = { top, box: boxTop(p, def), def, fam: f.name };
     }

@@ -873,12 +873,12 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  const order = STAGES.slice(0, 7).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m1,m2,m3',
-    'the campaign runs the four drawn boards, then the three testing ones',
+  const order = STAGES.slice(0, 8).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m1,m2,m3',
+    'the campaign runs the five drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 7,
-    'with seven boards on the road and the rest still empty',
+  ok(STAGES.filter(s => s.level !== null).length === 8,
+    'with eight boards on the road and the rest still empty',
     `${STAGES.filter(s => s.level !== null).length} playable`);
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
