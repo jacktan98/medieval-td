@@ -1753,6 +1753,115 @@ console.log('\n--- what a figure can walk behind ---\n');
                   : `${cut} path(s) cut, none of them on ${sheets.length} sheet(s)`);
   }
 
+  // AND NO SCENERY IS DRAWN OVER A TOWER STANDING IN FRONT OF IT.
+  //
+  // REPORTED TWICE, on the same board: "why is the castle overlapping the archery
+  // tower" and then "why is the castle overlapping my barracks tower". Both times a
+  // front box claimed a ground line its ink does not reach — a keep 359px wide meets
+  // the grass at y 244 under one corner and 223 under another — so a building on the
+  // plot beside it sorted behind the whole keep and had its roof painted out.
+  //
+  // ASKED OF THE INK, not of the box. A box may legitimately cover a plot it stands
+  // in front of, and its rectangle may legitimately cover ground it draws nothing on.
+  // What must not happen is scenery PIXELS landing over a tower the depth pass has
+  // already decided is nearer the camera than that scenery's own footing.
+  //
+  // The mask is built here rather than imported, like everything else in this block:
+  // a checker that shares the code it checks cannot catch a bug in it.
+  const inkMask = text => {
+    const rows = new Map();
+    for (const g of allGroups(text)) {
+      for (const ps of g.subPaths) {
+        const b = bounds(ps);
+        for (let y = Math.floor(b.y0 * MAP_SCALE); y <= Math.ceil(b.y1 * MAP_SCALE); y++) {
+          const py = (y + 0.5) / MAP_SCALE;
+          const xs = [];
+          for (let k = 0; k < ps.length; k++) {
+            const [ax, ay] = ps[k], [bx, by] = ps[(k + 1) % ps.length];
+            if ((ay > py) !== (by > py)) xs.push(ax + (py - ay) / (by - ay) * (bx - ax));
+          }
+          xs.sort((m, n) => m - n);
+          if (!rows.has(y)) rows.set(y, []);
+          const spans = rows.get(y);
+          for (let i = 0; i + 1 < xs.length; i += 2) {
+            spans.push([xs[i] * MAP_SCALE, xs[i + 1] * MAP_SCALE]);
+          }
+        }
+      }
+    }
+    // The lowest ink between two columns, or null for none — the ground line of this
+    // drawing WHERE IT MATTERS, which is the whole point of the check below.
+    return (x0, x1, y0, y1) => {
+      let lo = null;
+      for (const [y, spans] of rows) {
+        if (y < y0 || y >= y1) continue;
+        for (const [a, b] of spans) {
+          if (b > x0 && a < x1 && (lo === null || y + 1 > lo)) lo = y + 1;
+        }
+      }
+      return lo;
+    };
+  };
+
+  for (const l of levels.filter(l => l.front)) {
+    useLevel(levels.indexOf(l));
+    const hasInk = inkMask(readFileSync(`${l.src}_front.svg`, 'utf8'));
+    const buildable = fam => fam.tiers.filter(d =>
+      !l.maxTier || d.tier <= l.maxTier || (l.allow || []).includes(d.name));
+    const painted = [];
+    for (const [pi, p] of l.plots.entries()) {
+      for (const fam of families) {
+        for (const def of buildable(fam)) {
+          const t = makeTower(p, fam, def);
+          const tb = towerBox(t);
+          for (const b of l.front) {
+            // A box that sorts BEHIND this plot never draws over it, whatever it
+            // covers — that is the feature working.
+            if (b.y + b.h <= p.y) continue;
+            const x0 = Math.max(tb.left, b.x), x1 = Math.min(tb.left + tb.w, b.x + b.w);
+            const y0 = Math.max(tb.top, b.y), y1 = Math.min(tb.top + tb.h, b.y + b.h);
+            if (x1 <= x0 || y1 <= y0) continue;
+            // AND WHERE IT DOES COVER, IT HAS TO BE STANDING THERE. The box's foot is
+            // one number for the whole drawing; this asks where the ink it is about to
+            // paint over this tower actually meets the ground. A house whose left wall
+            // laps over a plot behind it is nearer at that wall and passes. A keep
+            // whose far corner laps over a plot in FRONT of that corner is not, and
+            // does not.
+            //
+            // WITHIN A MAN'S HEIGHT, which is the same margin the splitter bands a
+            // wide drawing to — see FOOT_SLACK in tools/split-map.mjs. Inside it the
+            // worst a mis-sort can do is cover the head of somebody standing against
+            // a wall he is half behind anyway; outside it, a building gets painted
+            // out, which is what was reported twice.
+            //
+            // WIDER THAN A HAND. A drawing is banded into strips whose ground lines
+            // agree, and a strip too thin to be worth its own depth is merged into its
+            // neighbour — so a few pixels always ride at the wrong depth. The castle's
+            // far-left shadow tip is 17px of it. What that costs on screen is a sliver
+            // of shadow over the corner of a tent; what refusing it would cost is a
+            // keep cut into two-pixel boxes.
+            //
+            // AND NO SLACK ON THE DEPTH ITSELF, which the first version of this had
+            // and which made it useless: the reported bug is an EIGHT pixel mis-sort —
+            // a hall standing at y 225 against a corner footing at 217 — and twenty
+            // pixels of forgiveness waved it straight through. The depth error is
+            // small and what it does is not. Eight pixels the wrong way flips a
+            // hundred and twenty of roof behind a wall.
+            const SLIVER = 20;
+            if (x1 - x0 < SLIVER) continue;
+            const ground = hasInk(x0, x1, b.y, b.y + b.h);
+            if (ground === null || ground > p.y) continue;
+            painted.push(`${def.name} on plot ${pi + 1} (${p.x},${p.y}): the box footing ` +
+              `at ${b.y + b.h} has ink down to only y ${ground} where it covers him`);
+          }
+        }
+      }
+    }
+    ok(!painted.length, `nothing on ${l.name} paints over a tower standing in front of it`,
+      painted.length ? `${painted.length} case(s), e.g. ${painted[0]}`
+                     : `${l.plots.length} plot(s) against ${l.front.length} box(es)`);
+  }
+
   // AND THE ONE PIECE THAT IS IN FRONT OF EVERYTHING, on its own sheet.
   //
   // Stage 5's bridge rail. Every claim below is about keeping the two kinds apart:

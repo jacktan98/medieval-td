@@ -171,8 +171,18 @@ export const level07 = {
   // tool refused to classify it on its own. It is a pile of logs lying on the ground,
   // it was looked at, and "flat" is right.
   frontArt: 'front07',
+  //
+  // THREE BOXES AND ONE CASTLE, at the owner's ask: "Why is the castle overlapping my
+  // barracks tower." The keep is 359px wide and its shadow meets the grass at y 244
+  // under the near corner and at 223 under the right-hand one — so a hall built on
+  // the plot beside it, standing at y 225, was behind the whole keep when it is in
+  // front of that corner. A drawing this wide is cut into strips whose ground lines
+  // agree; see FOOT_SLACK in tools/split-map.mjs. The seam at x 445 is 110px from the
+  // nearest road and 82 from the nearest plot, so nothing ever stands on it.
   front: [
-    { x: 127, y:  35, w: 359, h: 209 }   // stands on y 244 — the castle and its braziers
+    { x: 445, y:  35, w:  41, h: 188 },   // stands on y 223 — the right-hand corner
+    { x: 127, y:  35, w:  71, h: 197 },   // stands on y 232 — the left-hand one
+    { x: 198, y:  35, w: 247, h: 209 }   // stands on y 244 — and the keep between them
   ],
   // ONE BOX WHERE THERE WERE TWO, and both halves of that are the redraw rather than
   // a change here. The blue ramp out of the gate is a scatter of cobbles now, which
