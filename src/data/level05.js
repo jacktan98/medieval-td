@@ -168,24 +168,14 @@ export const level05 = {
   // the soldiers are in — see the note in level04.js and drawFigures in
   // src/render.js. Written out by `node tools/split-map.mjs assets/map/Stage_3_Map`.
   frontArt: 'front05',
-  //
-  // THE PLAZA IS FOUR BOXES AND ONE DRAWING. It is 211px wide — wider than any
-  // building on any board — so its paving meets the grass at y 350 on the left and
-  // 328 on the right, and one ground line for both would put the whole slab at the
-  // near edge's depth. The splitter cuts a drawing that wide into strips whose ground
-  // lines agree; see FOOT_SLACK in tools/split-map.mjs. Nothing can stand on either
-  // seam — the nearest road is 132px away and the nearest plot 108.
   front: [
-    { x: 745, y: 142, w:  95, h:  80 },   // stands on y 222
-    { x: 785, y: 234, w:  60, h:  52 },   // stands on y 286
-    { x: 847, y: 258, w:  99, h:  56 },   // stands on y 314
-    { x: 515, y: 206, w:  43, h: 122 },   // stands on y 328 — the plaza's far edge
-    { x: 347, y: 206, w:  77, h: 137 },   // stands on y 343
-    { x: 481, y: 206, w:  34, h: 143 },   // stands on y 349
-    { x: 424, y: 206, w:  57, h: 144 },   // stands on y 350 — and its near one
-    { x: 663, y: 432, w:  77, h:  81 },   // stands on y 513
-    { x: 145, y: 442, w:  80, h:  81 },   // stands on y 523
-    { x: 788, y: 455, w:  80, h:  81 }   // stands on y 537
+    { x: 745, y: 142, w:  95, h:  80, g: 187 },   // stands on y 187
+    { x: 785, y: 234, w:  60, h:  52, g: 283 },   // stands on y 283
+    { x: 847, y: 258, w:  99, h:  56, g: 297 },   // stands on y 297
+    { x: 347, y: 206, w: 211, h: 144, g: 309 },   // stands on y 309 — the plaza
+    { x: 663, y: 432, w:  77, h:  81, g: 497 },   // stands on y 497
+    { x: 145, y: 442, w:  80, h:  81, g: 507 },   // stands on y 507
+    { x: 788, y: 455, w:  80, h:  81, g: 520 }   // stands on y 520
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

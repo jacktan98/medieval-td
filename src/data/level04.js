@@ -150,10 +150,10 @@ export const level04 = {
   // in the top layer by height and refuses if anything is sitting on the line.
   frontArt: 'front04',
   front: [
-    { x: 611, y: 175, w: 139, h:  95 },   // stands on y 270
-    { x: 174, y: 255, w:  48, h:  65 },   // stands on y 320
-    { x: 694, y: 358, w:  77, h:  81 },   // stands on y 439
-    { x: 573, y: 401, w:  77, h:  81 }   // stands on y 482
+    { x: 611, y: 175, w: 139, h:  95, g: 245 },   // stands on y 245
+    { x: 174, y: 255, w:  48, h:  65, g: 313 },   // stands on y 313
+    { x: 694, y: 358, w:  77, h:  81, g: 422 },   // stands on y 422
+    { x: 573, y: 401, w:  77, h:  81, g: 466 }   // stands on y 466
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

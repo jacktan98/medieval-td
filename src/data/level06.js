@@ -173,10 +173,10 @@ export const level06 = {
   // Written out by `node tools/split-map.mjs assets/map/Stage_4_Map`.
   frontArt: 'front06',
   front: [
-    { x: 633, y:  64, w:  92, h:  78 },   // stands on y 141 — the practice butt
-    { x: 473, y: 369, w:  73, h:  51 },   // stands on y 421 — the stack of planks
-    { x: 547, y: 369, w:  83, h:  89 },   // stands on y 458 — the forge
-    { x: 314, y: 359, w: 128, h: 108 }   // stands on y 468 — the shed and its sign
+    { x: 633, y:  64, w:  92, h:  78, g: 139 },   // stands on y 139 — the practice butt
+    { x: 473, y: 369, w:  73, h:  51, g: 406 },   // stands on y 406 — the stack of planks
+    { x: 547, y: 369, w:  83, h:  89, g: 439 },   // stands on y 439 — the forge
+    { x: 314, y: 359, w: 128, h: 108, g: 458 }   // stands on y 458 — the shed and its sign
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

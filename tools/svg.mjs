@@ -211,6 +211,14 @@ export const ROAD_FILL = '#ffde9e';
 // makes it "the ground" rather than a colour that has to be looked up.
 export const GROUND_FILL = '#5c7f49';
 
+// AND THE COLOUR EVERY GROUND SHADOW IS PAINTED IN. One dark green across all five
+// boards: every house, every tree, the castle and the plaza. It is what lets a tool
+// find the patch of ground a drawing stands on without being told, which is the
+// whole of how a piece of scenery gets a depth — see the ground-line pass in
+// tools/split-map.mjs, and the owner's rule that the CENTRE of that patch is where
+// the thing stands.
+export const SHADOW_FILL = '#37422f';
+
 // The maps are drawn at 1920x1080 and the game is 960x540.
 export const MAP_SCALE = 0.5;
 

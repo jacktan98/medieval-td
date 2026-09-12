@@ -342,7 +342,22 @@ function drawFigures(ctx, state) {
     // in front of a house from having another man show through him.
     for (const b of level.front) {
       const box = { left: b.x, top: b.y, w: b.w, h: b.h };
-      const foot = b.y + b.h;
+      // WHERE IT STANDS IS THE CENTRE OF ITS SHADOW, at the owner's rule: "shadows are
+      // used as the point of reference on whether an object, unit or building is in
+      // front or at the back. You should be using the centre."
+      //
+      // It is the rule everything else on the board already obeys. A tower's plot
+      // point is the centre of its ground shadow and a soldier's feet are the centre
+      // of his — tools/shadow.mjs fits the ellipse for one and reads the tips for the
+      // other precisely to find the middle. The map's scenery was the exception,
+      // sorted by the BOTTOM of its box, so every house claimed to be about half a
+      // shadow nearer the camera than it stands, and the bigger the shadow the bigger
+      // the claim: stage 5's castle sits on a 113px shadow, and a hall built beside it
+      // sorted behind the whole keep.
+      //
+      // `g` is measured off the artwork by tools/split-map.mjs. The fall back is the
+      // old rule, for a drawing with no shadow under it to measure.
+      const foot = b.g ?? b.y + b.h;
       add(foot, 1, () => {
         drawFront(ctx, front, b);
         ghostInside(ctx, state, box, foot);

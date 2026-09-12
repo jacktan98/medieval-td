@@ -1058,9 +1058,9 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
     '10 light_inf + 4 tough_inf + 1 heavy_inf',
     '10 light_inf + 2 blocker_inf + 2 heavy_inf',
     '10 light_inf + 4 tough_inf + 2 heavy_inf + 6 archer_inf',
-    '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
+    '6 blocker_inf + 3 heavy_inf + 10 archer_inf',
     '8 blocker_inf + 4 heavy_inf + 16 archer_inf',
-    '8 blocker_inf + 6 heavy_inf + 16 archer_inf'
+    '8 blocker_inf + 5 heavy_inf + 16 archer_inf'
   ];
   const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got5.join(' | ') === WANT5.join(' | '), 'the Castle sends exactly the eight it was given',
@@ -1072,19 +1072,20 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
     'and opens with nothing built, the first board since the tutorial to',
     `${(castle.prebuilt || []).length} prebuilt`);
 
-  // ITS FIRST FOUR WAVES ARE STAGE 4'S, to the man, and the fifth is where they part.
-  // Stated because it is a DESIGN — the Workshop teaches the opening and the Castle
-  // asks whether it was learned — and a design that is only true by coincidence stops
-  // being one silently.
+  // ITS FIRST THREE WAVES ARE STAGE 4'S, to the man, and the fourth is where they
+  // part. Stated because it is a DESIGN — the Workshop teaches the opening and the
+  // Castle asks whether it was learned — and a design that is only true by
+  // coincidence stops being one silently.
   //
-  // IT WAS SIX. The owner rewrote the Castle's fifth: the Workshop opens that wave
-  // with four tough thugs and this one puts ten ordinary ones in front of them. So
-  // the shared run is four, and the check says four rather than quietly counting
-  // whatever happens to match.
+  // IT WAS SIX, THEN FOUR, NOW THREE, and the run has shortened both times for a
+  // reason the owner gave: first the Castle's fifth was rewritten to open with ten
+  // thugs, and now its giants walk in further apart from the fourth onwards. The
+  // check states the number rather than counting whatever happens to match, so each
+  // of those was a deliberate edit here rather than a silent drift.
   const shop = levels.find(l => l.id === 'm6');
   const shared = castle.waves.findIndex((w, i) =>
     i >= shop.waves.length || JSON.stringify(w.groups) !== JSON.stringify(shop.waves[i].groups));
-  ok(shared === 4, "and its first four are the Workshop's own, unchanged",
+  ok(shared === 3, "and its first three are the Workshop's own, unchanged",
     `${shared} of ${shop.waves.length} identical before they part`);
 
   // THE KEEP IS OFF THE BOTTOM. Every other board ends past the right edge, and this
@@ -1660,9 +1661,24 @@ console.log('\n--- what a figure can walk behind ---\n');
   const draw = readFileSync('src/render.js', 'utf8');
   const bare = draw.replace(/\/\/.*$/gm, '');
 
-  ok(/const front = art\[level\.frontArt\];/.test(bare) && /const foot = b\.y \+ b\.h;/.test(bare),
-    'the map\'s standing things go into the depth pass, at the foot of each box',
-    'sorted on y + h');
+  // AND SORTED ON THE CENTRE OF THEIR SHADOW, which is the rule the whole board
+  // obeys: a tower's plot point and a soldier's feet are both the middle of a ground
+  // shadow. The map's scenery used to be the one thing sorted by the BOTTOM of its
+  // box — half a shadow nearer the camera than it stands — and `g` is that centre,
+  // measured off the artwork by tools/split-map.mjs.
+  ok(/const front = art\[level\.frontArt\];/.test(bare) && /const foot = b\.g \?\? b\.y \+ b\.h;/.test(bare),
+    'the map\'s standing things go into the depth pass, on the centre of each shadow',
+    'sorted on g');
+
+  // AND EVERY BOX CARRIES ONE. A missing `g` is not an error — it falls back to the
+  // old rule for a drawing with no shadow to measure — so nothing would say if a
+  // re-derive quietly stopped finding them.
+  for (const l of levels.filter(l => l.front)) {
+    const guessing = l.front.filter(b => b.g === undefined).length;
+    ok(!guessing, `${l.name}'s boxes each know where they stand`,
+      guessing ? `${guessing} of ${l.front.length} fall back to the bottom of the box`
+               : `${l.front.length} ground line(s) off the shadows`);
+  }
 
   // AND WHOEVER IS BEHIND SHOWS THROUGH, at the owner's ask and through the same
   // helper a tower uses. A figure that simply vanished behind a house would be a
@@ -1701,7 +1717,7 @@ console.log('\n--- what a figure can walk behind ---\n');
 
     // SORTED BY THEIR GROUND LINE, which is what makes the list readable and is
     // free to keep true — the tool writes them in that order.
-    const feet = l.front.map(b => b.y + b.h);
+    const feet = l.front.map(b => b.g ?? b.y + b.h);
     ok(feet.every((f, i) => i === 0 || f >= feet[i - 1]),
       'and lists them from the back of the board forwards',
       feet.join(' -> '));
@@ -1817,7 +1833,8 @@ console.log('\n--- what a figure can walk behind ---\n');
           for (const b of l.front) {
             // A box that sorts BEHIND this plot never draws over it, whatever it
             // covers — that is the feature working.
-            if (b.y + b.h <= p.y) continue;
+            const stands = b.g ?? b.y + b.h;
+            if (stands <= p.y) continue;
             const x0 = Math.max(tb.left, b.x), x1 = Math.min(tb.left + tb.w, b.x + b.w);
             const y0 = Math.max(tb.top, b.y), y1 = Math.min(tb.top + tb.h, b.y + b.h);
             if (x1 <= x0 || y1 <= y0) continue;
@@ -1852,7 +1869,7 @@ console.log('\n--- what a figure can walk behind ---\n');
             const ground = hasInk(x0, x1, b.y, b.y + b.h);
             if (ground === null || ground > p.y) continue;
             painted.push(`${def.name} on plot ${pi + 1} (${p.x},${p.y}): the box footing ` +
-              `at ${b.y + b.h} has ink down to only y ${ground} where it covers him`);
+              `at ${stands} has ink down to only y ${ground} where it covers him`);
           }
         }
       }

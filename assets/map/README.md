@@ -147,23 +147,17 @@ What this asks of the drawing:
   of this merged any two overlapping boxes and did exactly that on stage 3 — two
   22px props became a 34px "building" — which is the mistake this whole section
   exists to prevent, made geometrically instead of by threshold.
-- **A drawing wider than a building is cut into strips.** A box has one ground
-  line and it is the lowest point of the whole drawing, which is true of a house and
-  stops being true of a keep: stage 5's castle is 359px across and its shadow meets
-  the grass at y 244 under the near corner and 223 under the far one. One number for
-  both put a hall built beside it behind the whole castle, and the keep painted over
-  its roof.
+- **Give everything a shadow, and draw it in `#37422f`.** A drawing's ground line —
+  where it stands, and so what it is in front of — is the CENTRE of its shadow, which
+  is the rule every sprite in the game already follows: a tower's plot point and a
+  soldier's feet are both the middle of a ground shadow. The splitter finds the
+  shadow by that colour and writes the centre out as `g` beside each box.
 
-  So anything over 200px wide — wider than every building on every board, and
-  narrower than the two pieces of terrain that need this — is cut into vertical
-  strips whose ground lines agree within about a figure's height, each drawn at its
-  own depth. The drawing is untouched; only the depth is split. Strips too thin to be
-  worth their own depth are merged back, so a few pixels always ride at the wrong one
-  — a sliver of the castle's shadow, in practice, over the corner of a tent.
-
-  **Nothing should be able to stand on a seam.** The two on stage 5 and the three on
-  stage 3 are all more than 80px from the nearest plot and 110px from the nearest
-  road. A seam somewhere a figure walks would show as a vertical cut through him.
+  A drawing with no shadow falls back to the bottom of its own box, which places it
+  about half a shadow too near the camera. The tool says so by name when that
+  happens. On a 33px house that is 16px and nobody notices; on stage 5's castle, whose
+  shadow is 113px deep, it is 57px — enough that a hall built beside the keep sorted
+  behind the whole thing and had its roof painted out.
 - **Two things get no box, and the tool says so each time it runs.** One whose foot
   is off the bottom of the canvas, because nothing could ever be drawn in front of it
   — see "The near overlay" below. And one standing over a **garrison post**, because

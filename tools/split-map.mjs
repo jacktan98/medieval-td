@@ -27,7 +27,8 @@ import { readFileSync, writeFileSync } from 'fs';
 import { levels } from '../src/level.js';
 import { nearestOn } from '../src/route.js';
 import { SCALE } from '../src/data/towers.js';
-import { allGroups, bounds, MAP_SCALE, readArtwork, layerFiles } from './svg.mjs';
+import { allGroups, bounds, MAP_SCALE, readArtwork, layerFiles,
+         fillPolys, SHADOW_FILL } from './svg.mjs';
 
 // Which map to split. Every level records the file it was drawn from, so the
 // tool finds its own level rather than being told twice.
@@ -685,123 +686,70 @@ if (LAYERS.length) {
     if (k >= 0) { grow(clusters[k], loose[i]); loose.splice(i, 1); }
   }
 
-  // AND A BOX WIDER THAN A BUILDING IS BANDED BY ITS OWN GROUND LINE.
+  // AND ITS GROUND LINE IS THE CENTRE OF ITS SHADOW, not the bottom of it.
   //
-  // THE OWNER'S REPORT, on stage 5: "Why is the castle overlapping my barracks tower."
-  // A Knight's Hall on the plot beside the keep had its roof clipped by the castle's
-  // right-hand corner tower.
+  // THE OWNER'S RULE, and it is the one the rest of the game already obeys: "shadows
+  // are used as the point of reference on whether an object, unit or building is in
+  // front or at the back. You should be using the centre."
   //
-  // A box has ONE foot and it is the lowest point of the whole drawing — "the bottom
-  // of a thing's box is its shadow", which is true of a house and stops being true of
-  // a keep. The castle is 359px wide. Its shadow meets the grass at y 244 under the
-  // near corner and at 217 under the right-hand one, a third of a board away; the box
-  // claims 244 for both. The hall stands at y 225 — behind the near corner and in
-  // front of the far one — so the keep painted over it.
+  // Every sprite in this game is anchored that way. A tower's plot point is the
+  // centre of its ground shadow and a figure's feet are the centre of his — both
+  // measured by tools/shadow.mjs, which fits the ellipse for a building and reads the
+  // tips for a man precisely to find the CENTRE. The map's own scenery was the one
+  // thing sorted by the BOTTOM of its shadow, because a box has a bottom and that is
+  // what was to hand. So every house on every board claimed to be about half a shadow
+  // nearer the camera than it is, and the bigger the shadow the bigger the lie.
   //
-  // TRIMMING THE BOX WAS THE FIRST ANSWER AND IT WAS WRONG. Cutting the box back to
-  // the columns whose ink reaches its foot conflates two different things: where a
-  // building touches the ground, and how wide it is. Stage 4's practice butt is a
-  // target on a post — 92px of board over 13px of timber — and trimming took it down
-  // to the post, which is not an occluder any more, it is a stick.
+  // Stage 5's castle is the case that made it visible. Its shadow is 113px deep, so
+  // the bottom is 57px nearer than the centre, and a Knight's Hall built on the plot
+  // beside the keep sorted behind the whole castle and had its roof painted out.
   //
-  // So the box is BANDED instead: the drawing is kept whole and cut into vertical
-  // strips whose ground lines agree, each strip drawn at its own depth. Every strip
-  // still redraws its own slice of the sheet, so nothing is lost from the picture.
+  // WHICH SHADOW, when a cluster has several: the one whose BOTTOM is lowest — the
+  // same object that used to set the foot. That is deliberately the smallest possible
+  // change. Which thing in a cluster decides its depth is not what was wrong and is
+  // not being changed here; where on that thing the depth is read is.
   //
-  // ONLY THE WIDE ONES. A seam between two strips at different depths is a place a
-  // figure can be half-covered, so this is worth doing only where the alternative is
-  // worse — a drawing wide enough that its footprint spans a real depth. 200px is
-  // wider than every building on every board (the widest is stage 2's tavern at 139)
-  // and narrower than the two pieces of terrain that need this: stage 5's castle at
-  // 359 and stage 3's plaza at 211.
-  //
-  // A MAN'S HEIGHT for the tolerance: a militiaman is 23px tall, so two columns whose
-  // ground lines agree within it can never put a whole figure on the wrong side.
+  // A CLUSTER WITH NO SHADOW keeps the bottom of its box and says so. Nothing on the
+  // five drawn boards is in that case today.
   const CANVAS_H = 540;
-  const FOOT_SLACK = 20;
-  const BAND_MIN_W = 200;   // narrower than this is a building, and stays one box
-  const BAND_MIN = 24;      // and no strip is thinner than this
-
-  // The lowest ink of a cluster in one column, or null where it draws nothing.
-  const groundAt = (c, x) => {
-    let lo = null;
-    for (const m of c.masks) {
-      if (x < m.x0 || x >= m.x0 + m.w) continue;
-      for (let row = m.h - 1; row >= 0; row--) {
-        if (m.bits[row * m.w + (x - m.x0)]) {
-          const y = m.y0 + row + 1;
-          if (lo === null || y > lo) lo = y;
-          break;
-        }
-      }
-    }
-    return lo;
-  };
-
-  const banded = [];
+  // MATCHED TO THE CLUSTER THAT DRAWS IT, by the shape's own outline rather than by
+  // whose box it falls inside. Clusters NEST: stage 5's bridge is 490x340 and the
+  // barricade by it, with its own shadow and its own two crossbowmen, sits entirely
+  // within that rectangle. Assigned by box, the bridge adopted the barricade's shadow
+  // and came out standing at y 481 instead of off the bottom of the board — which
+  // would have given the one drawing on the board that must never occlude a box that
+  // covers half of everything crossing it.
+  //
+  // A shadow is a sub-path of the drawing it belongs to, so the join is exact: match
+  // the outline, not the neighbourhood.
+  //
+  // IN SOURCE UNITS on both sides of the join. fillPolys scales to game px by default
+  // and allGroups does not, so the two keys could never match and every cluster came
+  // back shadowless — quietly, since a missing shadow falls back to the old rule and
+  // the boards looked exactly as they did before.
+  const key = b => `${Math.round(b.x0)},${Math.round(b.y0)},${Math.round(b.x1)},${Math.round(b.y1)}`;
+  const shadows = new Map(fillPolys(svg, SHADOW_FILL, 1)
+    .map(pts => bounds(pts)).map(b => [key(b), b]));
+  const noShadow = [];
   for (const c of clusters) {
-    // Nothing off the bottom of the screen is banded: it gets no box at all a few
-    // lines down, so cutting it into strips is four ways of saying the same nothing.
-    if (c.w < BAND_MIN_W || c.y + c.h > CANVAS_H) { banded.push(c); continue; }
-    const x0 = Math.round(c.x), x1 = Math.round(c.x + c.w);
-    const bands = [];
-    for (let x = x0; x < x1; x++) {
-      const g = groundAt(c, x);
-      if (g === null) continue;
-      // MEASURED AGAINST THE BAND'S OWN LOW AND HIGH, not against a running foot.
-      // Comparing each column with the band's deepest point lets a band CREEP: the
-      // castle's left corner rises from y 198 to 244 a pixel at a time, every step
-      // inside the tolerance, so the whole taper ends up in one band claiming 244 —
-      // which is the 46px lie this exists to remove. Holding the whole band inside
-      // one slack is the invariant worth having: every column of a band stands
-      // within a man's height of the depth the band is drawn at.
-      const last = bands[bands.length - 1];
-      if (last && x === last.x1 &&
-          Math.max(last.hi, g) - Math.min(last.lo, g) <= FOOT_SLACK) {
-        last.x1 = x + 1;
-        last.lo = Math.min(last.lo, g);
-        last.hi = Math.max(last.hi, g);
-        last.foot = last.hi;
-      } else {
-        bands.push({ x0: x, x1: x + 1, foot: g, lo: g, hi: g });
-      }
-    }
-    // A strip too thin to be worth its own depth joins the neighbour it agrees with
-    // more closely. Done repeatedly, because merging one can leave the next too thin.
-    //
-    // A STRIP KEEPS ITS LIE WHEN IT IS MERGED, and that is the accepted cost of not
-    // cutting a drawing into slivers. The castle's far-left shadow tip is 17px wide
-    // and bottoms 30px above the wall beside it; kept apart it is a 17px box, merged
-    // it is 17px of shadow drawn at the wall's depth. Seventeen pixels of shadow over
-    // the corner of a tent is not something anybody can see, and a board cut into
-    // two-pixel strips is a different kind of wrong. tools/campaign.mjs draws the
-    // same line: it ignores an overlap narrower than a hand.
-    for (let pass = 0; pass < bands.length; pass++) {
-      const i = bands.findIndex(b => b.x1 - b.x0 < BAND_MIN);
-      if (i < 0 || bands.length < 2) break;
-      const into = i === 0 ? 1
-        : i === bands.length - 1 ? i - 1
-        : Math.abs(bands[i - 1].foot - bands[i].foot) <= Math.abs(bands[i + 1].foot - bands[i].foot) ? i - 1 : i + 1;
-      bands[into].x0 = Math.min(bands[into].x0, bands[i].x0);
-      bands[into].x1 = Math.max(bands[into].x1, bands[i].x1);
-      bands[into].foot = Math.max(bands[into].foot, bands[i].foot);
-      bands[into].lo = Math.min(bands[into].lo, bands[i].lo);
-      bands[into].hi = Math.max(bands[into].hi, bands[i].hi);
-      bands.splice(i, 1);
-    }
-    if (bands.length < 2) { banded.push(c); continue; }
-    console.log(`  banded: ${Math.round(c.w)}x${Math.round(c.h)} at ${Math.round(c.x)},${Math.round(c.y)} ` +
-      `into ${bands.length} strip(s) — its ground line runs from ` +
-      `${Math.min(...bands.map(b => b.foot))} to ${Math.max(...bands.map(b => b.foot))}`);
-    for (const b of bands) {
-      banded.push({ ...c, gs: c.gs, masks: c.masks, x: b.x0, w: b.x1 - b.x0,
-                    y: c.y, h: b.foot - c.y });
-    }
+    const mine = c.gs.flatMap(g => g.subPaths)
+      .map(ps => shadows.get(key(bounds(ps))))
+      .filter(Boolean);
+    const low = mine.reduce((a, b) => (!a || b.y1 > a.y1 ? b : a), null);
+    if (!low) { noShadow.push(c); continue; }
+    c.ground = Math.round((low.y0 + low.y1) / 2 * MAP_SCALE);
   }
-  clusters.length = 0;
-  clusters.push(...banded);
+  for (const c of noShadow) {
+    console.log(`  no shadow under the ${Math.round(c.w)}x${Math.round(c.h)} at ` +
+      `${Math.round(c.x)},${Math.round(c.y)} — it keeps the bottom of its box for a ` +
+      `ground line, which draws it about half a shadow too near the camera`);
+  }
 
   const measured = [...clusters, ...loose];
+  // WHERE A THING STANDS, through one accessor, so that every test below asks the
+  // same question the renderer will. `ground` is the centre of its shadow; the fall
+  // back is the bottom of its box, which is what all of this used to be.
+  const standsOn = m => (m.ground ?? m.y + m.h);
   // The sheet is still written in the ARTIST'S order; a cluster's earliest group is
   // only used to sort the printed list.
   for (const m of measured) m.g = m.gs.reduce((a, c) => (c.start < a.start ? c : a));
@@ -824,10 +772,10 @@ if (LAYERS.length) {
   // for the rail and the wrong one for the deck it stands at the edge of. Nothing in the
   // geometry separates them; the artist does, by drawing the near rail as its own
   // part file. Name that part with --over and it comes off on a sheet of its own.
-  const offBottom = measured.filter(m => m.h >= FRONT_MIN_H && m.y + m.h > CANVAS_H);
+  const offBottom = measured.filter(m => m.h >= FRONT_MIN_H && standsOn(m) > CANVAS_H);
   for (const m of offBottom) {
     console.log(`  not boxed: ${Math.round(m.w)}x${Math.round(m.h)} at ${Math.round(m.x)},${Math.round(m.y)} ` +
-      `— its foot is at y ${Math.round(m.y + m.h)}, past the ${CANVAS_H}px canvas, so nothing could ` +
+      `— it stands on y ${Math.round(standsOn(m))}, past the ${CANVAS_H}px canvas, so nothing could ` +
       `ever stand in front of it` +
       (OVER ? '' : `. If it is the NEAREST thing on the board rather than a floor, draw it as ` +
         `its own layer part and name it with --over`));
@@ -850,8 +798,8 @@ if (LAYERS.length) {
   // SAID RATHER THAN SUPPRESSED, like the off-canvas boxes above. If it is ever wrong,
   // it is wrong out loud.
   const posts = (level.garrison || []);
-  const overPost = measured.filter(m => m.h >= FRONT_MIN_H && m.y + m.h <= CANVAS_H &&
-    posts.some(p => p.x > m.x && p.x < m.x + m.w && p.y > m.y && p.y < m.y + m.h));
+  const overPost = measured.filter(m => m.h >= FRONT_MIN_H && standsOn(m) <= CANVAS_H &&
+    posts.some(p => p.x > m.x && p.x < m.x + m.w && p.y > m.y && p.y < standsOn(m)));
   for (const m of overPost) {
     console.log(`  not boxed: ${Math.round(m.w)}x${Math.round(m.h)} at ${Math.round(m.x)},${Math.round(m.y)} ` +
       `— it stands over a garrison post, and a box would draw it in front of the figure ` +
@@ -859,8 +807,8 @@ if (LAYERS.length) {
   }
 
   const tall = measured
-    .filter(m => m.h >= FRONT_MIN_H && m.y + m.h <= CANVAS_H && !overPost.includes(m))
-    .sort((a, b) => a.y + a.h - (b.y + b.h));
+    .filter(m => m.h >= FRONT_MIN_H && standsOn(m) <= CANVAS_H && !overPost.includes(m))
+    .sort((a, b) => standsOn(a) - standsOn(b));
   const flat = measured.filter(m => m.h < FRONT_MIN_H);
   const shortest = Math.min(Infinity, ...tall.map(m => m.h));
   const tallestFlat = Math.max(0, ...flat.map(m => m.h));
@@ -912,9 +860,9 @@ if (LAYERS.length) {
   const covered = [];
   level.plots.forEach((p, i) => {
     for (const m of tall) {
-      if (p.x > m.x && p.x < m.x + m.w && p.y > m.y && p.y < m.y + m.h) {
+      if (p.x > m.x && p.x < m.x + m.w && p.y > m.y && p.y < standsOn(m)) {
         covered.push(`  plot ${i} (${p.x}, ${p.y}) stands inside the ${Math.round(m.w)}x` +
-          `${Math.round(m.h)} box footing at y ${Math.round(m.y + m.h)} — whatever is built ` +
+          `${Math.round(m.h)} box standing on y ${Math.round(standsOn(m))} — whatever is built ` +
           `there is drawn BEHIND it. Right if that scenery is nearer the camera, wrong if ` +
           `the box has been dragged down the board by something lying in front of it.`);
       }
@@ -928,8 +876,10 @@ if (LAYERS.length) {
   console.log(`front, in depth order — paste into the level file:`);
   for (const m of tall) {
     console.log(`    { x: ${String(Math.round(m.x)).padStart(3)}, y: ${String(Math.round(m.y)).padStart(3)}, ` +
-      `w: ${String(Math.round(m.w)).padStart(3)}, h: ${String(Math.round(m.h)).padStart(3)} },` +
-      `   // stands on y ${Math.round(m.y + m.h)}`);
+      `w: ${String(Math.round(m.w)).padStart(3)}, h: ${String(Math.round(m.h)).padStart(3)}, ` +
+      `g: ${String(Math.round(standsOn(m))).padStart(3)} },` +
+      `   // stands on y ${Math.round(standsOn(m))}` +
+      (m.ground === undefined ? '   // NO SHADOW — the bottom of its box' : ''));
   }
 
   // --- and the near overlay, on a sheet of its own ------------------------------

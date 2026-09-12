@@ -100,13 +100,13 @@ export const level00 = {
   // in the top layer by height and refuses if anything is sitting on the line.
   frontArt: 'front00',
   front: [
-    { x:  30, y:  71, w:  77, h:  81 },   // stands on y 153
-    { x: 157, y: 109, w:  77, h:  81 },   // stands on y 191
-    { x:  80, y: 157, w:  35, h:  44 },   // stands on y 200
-    { x: 873, y: 181, w:  77, h:  81 },   // stands on y 262
-    { x: 782, y: 226, w:  77, h:  81 },   // stands on y 307
-    { x:  67, y: 346, w: 107, h:  43 },   // stands on y 389 — the campfire
-    { x: 397, y: 361, w:  77, h:  81 },   // stands on y 442
-    { x: 526, y: 403, w:  80, h:  81 }   // stands on y 484
+    { x:  30, y:  71, w:  77, h:  81, g: 136 },   // stands on y 136
+    { x: 157, y: 109, w:  77, h:  81, g: 174 },   // stands on y 174
+    { x:  80, y: 157, w:  35, h:  44, g: 198 },   // stands on y 198
+    { x: 873, y: 181, w:  77, h:  81, g: 246 },   // stands on y 246
+    { x: 782, y: 226, w:  77, h:  81, g: 290 },   // stands on y 290
+    { x:  67, y: 346, w: 107, h:  43, g: 383 },   // stands on y 383 — the campfire
+    { x: 397, y: 361, w:  77, h:  81, g: 426 },   // stands on y 426
+    { x: 526, y: 403, w:  80, h:  81, g: 467 }   // stands on y 467
   ]
 };
