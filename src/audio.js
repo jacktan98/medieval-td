@@ -1427,6 +1427,19 @@ export function selectionCue(sel) {
     const own = sel.ref && sel.ref.def && sel.ref.def.voice;
     return (own && CUE[own]) || CUE.thug;
   }
-  if (sel.kind === 'unit') return CUE.barracks;
+  // A SOLDIER SPEAKS WITH HIS BARRACKS' VOICE UNLESS HE HAS ONE. The five barracks
+  // lines belong to the building — a militiaman, a pikeman and a paladin are the
+  // men it musters and it answers for all of them — but stage 5's bridge
+  // crossbowmen belong to no building at all, and the owner asked for the man
+  // himself: "when players select the crossbowman, it plays any of the 3 voices."
+  //
+  // Those three are the Crossbow Sentry's own, and that is the whole point of it —
+  // he IS the man on that deck, moved to the ground. `voice` on his def names them,
+  // exactly as `voice` on a tier overrides its family two lines down and as `voice`
+  // on an enemy overrides the thug above.
+  if (sel.kind === 'unit') {
+    const own = sel.ref && sel.ref.def && sel.ref.def.voice;
+    return (own && CUE[own]) || CUE.barracks;
+  }
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

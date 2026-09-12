@@ -401,6 +401,18 @@ for (const c of centres) {
 // a building stands and a road stone lies flat, so height decides. The tool
 // refuses rather than guesses if anything sits on the line, because a threshold
 // picked in the middle of a crowd will silently make a wall out of a rock.
+// A DERIVED SHEET, in the shape stackLayers writes a board in.
+//
+// The artboard clip is the only thing in here doing work, and it is not clipping:
+// `allGroups` in tools/svg.mjs finds where the drawing starts by looking for it, so
+// a sheet written without one is an SVG that the reader every other tool uses cannot
+// read. They are the two files in this project derived FROM artwork that are also
+// artwork, and a checker that wants to ask what is on one should not need a hack to.
+const sheet = body =>
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">\n' +
+  '<defs><clipPath id="artboard-sheet"><rect x="0" y="0" width="1920" height="1080"/></clipPath></defs>\n' +
+  '<g clip-path="url(#artboard-sheet)">\n' + body + '\n</g>\n</svg>\n';
+
 const FRONT_MIN_H = 30;      // game px: a thing this tall is standing up
 // Set by --accept: a human has looked at whatever is sitting on the line and confirmed
 // the tool classified it right. It does not change any classification — it only stops
@@ -482,8 +494,30 @@ if (LAYERS.length) {
   }
   const inSpan = g => overSpan && g.start > overSpan[0] && g.start < overSpan[1];
 
+  // AND THE GARRISON IS NOT SCENERY. The two crossbowmen painted at stage 5's bridge
+  // are cut out of the base because the game draws a live one on each spot — and the
+  // front sheet is a SECOND copy of the top layer, so leaving them in it puts the
+  // painted pair back on the board the moment a box happens to cover them.
+  //
+  // It did. Giving the barricade they stand behind a box of its own is right and it
+  // is new; the slice of that box carried both painted men, drawn over the live ones
+  // at exactly the same coordinates. Two crossbowmen where there should be two, in
+  // the same poses, differing only in that half of them never move.
+  //
+  // THE WHOLE SPAN OF EACH, not the group that starts it. A figure is a group with
+  // groups inside it — a helmet, a body, two boots — and dropping only the outermost
+  // one promotes its own children to outermost, which puts the same drawing back on
+  // the sheet in pieces. That is not a hypothetical: it is what the first version of
+  // this did, and the painted pair came through the barricade's box exactly as
+  // before, in four parts instead of one.
+  //
+  // By span rather than by identity, because this pass walks the text again and gets
+  // its own group objects for the same offsets.
+  const painted = garrisonGroups.map(g => [g.start, g.end]);
+  const isPainted = g => painted.some(([a, b]) => g.start >= a && g.end <= b);
   const inTop = allGroups(svg)
-    .filter(g => g.start > first.index && !wrappers.has(g.start) && !inSpan(g));
+    .filter(g => g.start > first.index && !wrappers.has(g.start) && !inSpan(g) &&
+                 !isPainted(g));
   const outer = inTop.filter(g => !inTop.some(o => o !== g && o.start <= g.start && o.end >= g.end));
 
   const boxes = outer.map(g => {
@@ -522,19 +556,97 @@ if (LAYERS.length) {
   // building with the thing standing against it now inside its box, which is where
   // the drawing always had it.
   //
-  // Overlap has to be real in both axes; boxes that merely touch stay apart.
-  const overlaps = (a, b) =>
+  // OVERLAP MEANS SHARING INK, NOT SHARING A RECTANGLE, and that distinction is the
+  // whole of a bug the owner found on stage 5: "why is the castle overlapping the
+  // archery tower? Archery tower should be overlapping instead."
+  //
+  // The castle's bounding box is 359x113 and covers the whole keep and its shadow.
+  // The blue ramp out of its gate clips the bottom-right corner of that rectangle,
+  // so the two merged — fairly, they do touch. Then a brazier standing on the grass
+  // in FRONT of the castle clipped the ramp's rectangle, and two painted villagers
+  // clipped it too, and the castle's box walked down the board to their feet at
+  // y 314. A tower built on the plot at y 303 is nearer the camera than a castle
+  // whose walls end at 244 and further from it than a villager standing on the
+  // grass, so the depth pass put the keep on top of it. The player saw a castle
+  // drawn over a watchtower standing well in front of it.
+  //
+  // Neither the brazier nor either villager shares a single pixel with the castle.
+  // They were made part of it by arithmetic on rectangles, which is not a fact
+  // about the drawing at all — a diagonal thing's bounding box is mostly the ground
+  // beside it. So the test is the drawing: do these two shapes actually cover any
+  // of the same ground?
+  //
+  // Measured on a one-game-pixel grid, which is the same resolution the question is
+  // asked at on screen. It costs a few hundred milliseconds per board and it is the
+  // only thing in this file that looks at ink rather than at numbers about ink.
+  //
+  // ACROSS BOTH PASSES — seeds joining seeds and props joining buildings — because
+  // it is one claim and not two: a thing that touches nothing is its own thing.
+  const rect = (a, b) =>
     a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+  // A shape as a one-game-pixel occupancy grid over its own box, by scanline. Even-
+  // odd, so a hole drawn as a second sub-path reads as a hole — which errs towards
+  // saying two things do NOT touch, and "leave them apart" is the safe answer.
+  const maskOf = subPaths => {
+    const b = bounds(subPaths.flat());
+    const x0 = Math.floor(b.x0 * MAP_SCALE), y0 = Math.floor(b.y0 * MAP_SCALE);
+    const w = Math.max(1, Math.ceil(b.x1 * MAP_SCALE) - x0);
+    const h = Math.max(1, Math.ceil(b.y1 * MAP_SCALE) - y0);
+    const bits = new Uint8Array(w * h);
+    for (let row = 0; row < h; row++) {
+      const py = (y0 + row + 0.5) / MAP_SCALE;
+      const xs = [];
+      for (const ps of subPaths) {
+        for (let k = 0; k < ps.length; k++) {
+          const [ax, ay] = ps[k], [bx, by] = ps[(k + 1) % ps.length];
+          if ((ay > py) !== (by > py)) xs.push(ax + (py - ay) / (by - ay) * (bx - ax));
+        }
+      }
+      xs.sort((m, n) => m - n);
+      for (let i = 0; i + 1 < xs.length; i += 2) {
+        const from = Math.max(0, Math.round(xs[i] * MAP_SCALE) - x0);
+        const to = Math.min(w, Math.round(xs[i + 1] * MAP_SCALE) - x0);
+        for (let c = from; c < to; c++) bits[row * w + c] = 1;
+      }
+    }
+    return { x0, y0, w, h, bits };
+  };
+
+  const shareInk = (m, n) => {
+    const x0 = Math.max(m.x0, n.x0), x1 = Math.min(m.x0 + m.w, n.x0 + n.w);
+    const y0 = Math.max(m.y0, n.y0), y1 = Math.min(m.y0 + m.h, n.y0 + n.h);
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        if (m.bits[(y - m.y0) * m.w + (x - m.x0)] &&
+            n.bits[(y - n.y0) * n.w + (x - n.x0)]) return true;
+      }
+    }
+    return false;
+  };
+
+  // A cluster carries its members' masks rather than a merged one: the union of two
+  // boxes is mostly empty ground, and a prop landing in that emptiness is exactly
+  // what this is here to refuse.
+  const overlaps = (a, b) =>
+    rect(a, b) && a.masks.some(m => b.masks.some(n => rect(
+      { x: m.x0, y: m.y0, w: m.w, h: m.h }, { x: n.x0, y: n.y0, w: n.w, h: n.h }
+    ) && shareInk(m, n)));
+
   const grow = (c, b) => {
     const x = Math.min(c.x, b.x), y = Math.min(c.y, b.y);
     c.gs.push(...b.gs);
+    c.masks.push(...b.masks);
     c.w = Math.max(c.x + c.w, b.x + b.w) - x;
     c.h = Math.max(c.y + c.h, b.y + b.h) - y;
     c.x = x; c.y = y;
   };
 
-  const seeds = boxes.filter(b => b.h >= FRONT_MIN_H).map(b => ({ ...b, gs: [...b.gs] }));
-  const loose = boxes.filter(b => b.h < FRONT_MIN_H).map(b => ({ ...b, gs: [...b.gs] }));
+  for (const b of boxes) b.masks = [maskOf(b.gs[0].subPaths)];
+  const seeds = boxes.filter(b => b.h >= FRONT_MIN_H)
+    .map(b => ({ ...b, gs: [...b.gs], masks: [...b.masks] }));
+  const loose = boxes.filter(b => b.h < FRONT_MIN_H)
+    .map(b => ({ ...b, gs: [...b.gs], masks: [...b.masks] }));
 
   // Seeds first, into each other: two halves of one building drawn as two paths are
   // one building. This part IS transitive — everything joined is a standing thing.
@@ -567,7 +679,7 @@ if (LAYERS.length) {
   //
   // A prop belongs to a building because it is touching the BUILDING. Anything else
   // is a line of stones dragging a barn across the map.
-  const reach = clusters.map(c => ({ x: c.x, y: c.y, w: c.w, h: c.h }));
+  const reach = clusters.map(c => ({ x: c.x, y: c.y, w: c.w, h: c.h, masks: c.masks }));
   for (let i = loose.length - 1; i >= 0; i--) {
     const k = reach.findIndex(r => overlaps(r, loose[i]));
     if (k >= 0) { grow(clusters[k], loose[i]); loose.splice(i, 1); }
@@ -606,8 +718,33 @@ if (LAYERS.length) {
         `its own layer part and name it with --over`));
   }
 
+  // AND NOR IS A BOX THAT STANDS OVER A POST THE LEVEL PUTS A FIGURE ON.
+  //
+  // Stage 5's barricade is the case, and it is the long-diagonal problem again. It is
+  // a low wall running up the board from the lower left, so its box FOOT is the
+  // bottom of its far end at y 349 while the ground beside the two crossbowmen at its
+  // near end is thirty pixels higher. One number cannot be the ground line of a thing
+  // like that, and the one its box gives puts the whole wall in front of both men.
+  //
+  // The artist drew them the other way round — over the wall, plainly visible, which
+  // is what a pair of crossbowmen at a barricade should look like — and the drawing is
+  // the statement of intent. Boxing it hides them behind it and gains nothing: no
+  // enemy comes within ninety pixels of that wall, so those two figures are the only
+  // things on the board it could ever occlude.
+  //
+  // SAID RATHER THAN SUPPRESSED, like the off-canvas boxes above. If it is ever wrong,
+  // it is wrong out loud.
+  const posts = (level.garrison || []);
+  const overPost = measured.filter(m => m.h >= FRONT_MIN_H && m.y + m.h <= CANVAS_H &&
+    posts.some(p => p.x > m.x && p.x < m.x + m.w && p.y > m.y && p.y < m.y + m.h));
+  for (const m of overPost) {
+    console.log(`  not boxed: ${Math.round(m.w)}x${Math.round(m.h)} at ${Math.round(m.x)},${Math.round(m.y)} ` +
+      `— it stands over a garrison post, and a box would draw it in front of the figure ` +
+      `the artist drew in front of it`);
+  }
+
   const tall = measured
-    .filter(m => m.h >= FRONT_MIN_H && m.y + m.h <= CANVAS_H)
+    .filter(m => m.h >= FRONT_MIN_H && m.y + m.h <= CANVAS_H && !overPost.includes(m))
     .sort((a, b) => a.y + a.h - (b.y + b.h));
   const flat = measured.filter(m => m.h < FRONT_MIN_H);
   const shortest = Math.min(Infinity, ...tall.map(m => m.h));
@@ -640,13 +777,39 @@ if (LAYERS.length) {
     .sort((a, b) => a.start - b.start)
     .map(g => svg.slice(g.start, g.end))
     .join('\n');
-  writeFileSync(FRONT,
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">\n' +
-    '<g>\n' + body + '\n</g>\n</svg>\n');
+  writeFileSync(FRONT, sheet(body));
 
   console.log(`\nwrote ${FRONT} — the whole top layer, ${measured.length} thing(s), ` +
     `${tall.length} of which stand up` +
     (tall.length ? `: shortest ${shortest.toFixed(0)}px against ${tallestFlat.toFixed(0)}px of flat` : ''));
+  // AND WHICH PLOTS STAND INSIDE ONE, said rather than judged.
+  //
+  // A box that covers a plot is a piece of scenery the game will draw AFTER anything
+  // built there. That is right when the scenery really is nearer the camera — a plot
+  // tucked behind a house is meant to have the house in front of it — and it is the
+  // shape of a bug when it is not: stage 5 shipped with a castle box dragged down to
+  // a painted villager's feet, and a watchtower on open ground in front of the keep
+  // was drawn underneath it.
+  //
+  // NOT A REFUSAL, because nothing here can tell those two apart. Both are "a box
+  // whose foot is below a plot it stands over", and only the drawing says which. So
+  // this prints them to be looked at, like the FAR notes on the plot list above.
+  const covered = [];
+  level.plots.forEach((p, i) => {
+    for (const m of tall) {
+      if (p.x > m.x && p.x < m.x + m.w && p.y > m.y && p.y < m.y + m.h) {
+        covered.push(`  plot ${i} (${p.x}, ${p.y}) stands inside the ${Math.round(m.w)}x` +
+          `${Math.round(m.h)} box footing at y ${Math.round(m.y + m.h)} — whatever is built ` +
+          `there is drawn BEHIND it. Right if that scenery is nearer the camera, wrong if ` +
+          `the box has been dragged down the board by something lying in front of it.`);
+      }
+    }
+  });
+  if (covered.length) {
+    console.log(`\nlook at these:`);
+    for (const line of covered) console.log(line);
+  }
+
   console.log(`front, in depth order — paste into the level file:`);
   for (const m of tall) {
     console.log(`    { x: ${String(Math.round(m.x)).padStart(3)}, y: ${String(Math.round(m.y)).padStart(3)}, ` +
@@ -664,9 +827,7 @@ if (LAYERS.length) {
     // argument the front sheet is written on: what lands on the sheet is the text the
     // base was built from, so the two copies cannot disagree about where anything is.
     const OVER_F = SRC.replace(/\.svg$/, '') + '_over.svg';
-    writeFileSync(OVER_F,
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">\n' +
-      '<g>\n' + outerOver.map(g => svg.slice(g.start, g.end)).join('\n') + '\n</g>\n</svg>\n');
+    writeFileSync(OVER_F, sheet(outerOver.map(g => svg.slice(g.start, g.end)).join('\n')));
 
     const b = bounds(outerOver.flatMap(g => g.subPaths.flat()));
     const [x, y] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE];

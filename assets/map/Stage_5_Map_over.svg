@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
-<g>
+<defs><clipPath id="artboard-sheet"><rect x="0" y="0" width="1920" height="1080"/></clipPath></defs>
+<g clip-path="url(#artboard-sheet)">
 <g>
 		<g transform="matrix(1,0,0,1,19.274077296,579.375675413)">
 			<g transform="matrix(1,0,0,1,1221.88376745,106.019367599)">

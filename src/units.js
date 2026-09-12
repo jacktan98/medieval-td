@@ -3,7 +3,7 @@ import { at as pointOn, nearestOn, LANE } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
-import { solo, play, CUE, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS } from './audio.js';
+import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
@@ -727,6 +727,23 @@ function fling(state, u, mark, damage, ammo, pierce) {
     ammo,
     speed: ammo.speed
   });
+
+  // AND IT MAKES THE NOISE ITS AMMUNITION MAKES, through the same one line and the
+  // same table a tower fires by — see shoot() in src/towers.js and loose() in
+  // src/enemies.js, which are the other two ways something leaves a hand or a deck.
+  //
+  // THIS LINE WAS MISSING, and for as long as the only thing a man threw was a
+  // knife nothing was wrong: `knife` says `fireSound: false`, because a blade
+  // leaving a wrist is silent and the noise it makes is the one it makes arriving.
+  // A crossbow is the opposite — "loud leaving the bow, silent arriving" — so stage
+  // 5's two bridge crossbowmen loosed in complete silence while the identical
+  // weapon on a Crossbow Sentry's deck cracked every time. The owner's ask is that
+  // they sound like what they are: "Voices and attack sound should follow as if the
+  // unit is on crossbow sentry tower."
+  //
+  // Gated on the ammunition rather than on the man, so the knife is untouched and
+  // anything a soldier throws in future is heard or not heard by its own say-so.
+  if (ammo.fireSound) play(FIRING[ammo.kind], ammo.fireGain);
 }
 
 export function updateUnits(state, dt) {

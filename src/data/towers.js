@@ -3488,6 +3488,18 @@ export const garrisonUnits = {
     pivot: [0.653, 0.911],
     attack: { sprite: 'crossbowman_attack', trim: XBOW_ATK_TRIM, pivot: [0.608, 0.915] },
     spriteFaces: -1,
+    // HIS OWN THREE LINES, and they are the Crossbow Sentry's — the tier this man
+    // was lifted off. Without it selectionCue answers with the BARRACKS' five,
+    // which belong to a building these two have nothing to do with. The owner's
+    // ask: "Voices and attack sound should follow as if the unit is on crossbow
+    // sentry tower. when players select the crossbowman, it plays any of the 3
+    // voices."
+    //
+    // The same one-word opt-in a tier uses, read by the same table. His KILL line
+    // needed nothing: a man finished by a quarrel already gets the crossbowman's
+    // cry, because that cue is keyed off the ammunition rather than off who loosed
+    // it — see the `killedBy` branch in src/enemies.js.
+    voice: 'crossbowman',
     // HOW FAR HE STEPS INTO A BLOW, and he never throws one — but drawSoldier reads
     // it on every frame of every soldier, and `0 * undefined` is NaN. A NaN reaches
     // ctx.translate, the canvas discards the whole draw silently, and the figure is

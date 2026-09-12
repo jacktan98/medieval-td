@@ -173,8 +173,14 @@ export const level07 = {
   frontArt: 'front07',
   front: [
     { x: 498, y: 207, w:  14, h:  63 },   // stands on y 270 — the brazier by the gate
-    { x: 127, y:  35, w: 369, h: 279 }   // stands on y 314 — the castle, all four pieces
+    { x: 127, y:  35, w: 369, h: 259 }   // stands on y 294 — the castle and its ramp
   ],
+  // THE BARRICADE AT THE BRIDGE IS NOT HERE, and the splitter says why each time it
+  // runs: it is a low wall drawn on a long diagonal, so the one ground line its box
+  // can give is the bottom of its far end and that puts the whole wall in front of
+  // both crossbowmen — whom the artist drew in front of IT. Nothing else on the board
+  // ever comes near it; the road passes ninety pixels away.
+
 
   // AND THE ONE THING THAT IS IN FRONT OF EVERYTHING: the bridge's near handrail.
   //

@@ -41,7 +41,7 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
 import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
-import { readArtwork } from './svg.mjs';
+import { readArtwork, allGroups, bounds, MAP_SCALE } from './svg.mjs';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
 import { selectionInfo } from '../src/select.js';
@@ -1678,6 +1678,38 @@ console.log('\n--- what a figure can walk behind ---\n');
     ok(groups > l.front.length * 2,
       'while the sheet itself carries the whole layer, props and all',
       `${groups} group(s) for ${l.front.length} box(es)`);
+  }
+
+  // AND WHATEVER WAS CUT OUT OF THE BASE IS CUT OUT OF THE SHEET TOO.
+  //
+  // The splitter removes two kinds of thing from the board the game draws: the plot
+  // markers, because an occupied plot has to lose its signpost, and stage 5's two
+  // painted crossbowmen, because the game stands a live one on each spot. The front
+  // sheet is a SECOND copy of the top layer, so anything left in it comes back.
+  //
+  // THE CROSSBOWMEN CAME BACK. Nothing showed it for a while — no box covered them,
+  // so the second copy was never drawn — and it surfaced only when the barricade they
+  // stand behind got a box of its own and brought both of them with it: two
+  // crossbowmen in the right place in the right poses, of which half never moved.
+  //
+  // BY PATH DATA, which is exact and needs no window, no tolerance and no idea of
+  // what a figure looks like. Whatever is in the artwork and not in the base is a
+  // thing the game draws itself; if it is also on the sheet, it is drawn twice.
+  const paths = text => new Set([...text.matchAll(/ d="([^"]{40,})"/g)].map(m => m[1]));
+  for (const l of levels.filter(l => l.front && !l.src.endsWith('.svg'))) {
+    const drawn = paths(readArtwork(l.src));
+    const inBase = paths(readFileSync(`${l.src}_base.svg`, 'utf8'));
+    const sheets = [`${l.src}_front.svg`, l.over ? `${l.src}_over.svg` : null].filter(Boolean);
+    const back = [];
+    for (const name of sheets) {
+      const on = paths(readFileSync(name, 'utf8'));
+      for (const d of drawn) if (!inBase.has(d) && on.has(d)) back.push(name.split('/').pop());
+    }
+    const cut = [...drawn].filter(d => !inBase.has(d)).length;
+    ok(!back.length,
+      `nothing ${l.name} cuts out of its board is put back by a sheet`,
+      back.length ? `${[...new Set(back)].join(', ')} draws it again`
+                  : `${cut} path(s) cut, none of them on ${sheets.length} sheet(s)`);
   }
 
   // AND THE ONE PIECE THAT IS IN FRONT OF EVERYTHING, on its own sheet.

@@ -128,16 +128,36 @@ What this asks of the drawing:
   the one board that needs it: a pile of felled logs measures 29.7px against the 30px
   line, and it is lying on the ground.
 - **A standing thing may be drawn as several overlapping pieces.** The tool groups
-  them: a cluster grows from a shape OVER the line and swallows anything overlapping
-  it, so the stack of planks at stage 4's forge — four sibling paths, two just under
+  them: a cluster grows from a shape OVER the line and swallows anything it TOUCHES,
+  so the stack of planks at stage 4's forge — four sibling paths, two just under
   30px and two just over — comes through as the one 51px object a player sees, and
   the props leaning on a building come through inside the building's box.
+
+  **Touching means sharing ink, not sharing a rectangle.** A diagonal thing's
+  bounding box is mostly the ground beside it, so rectangles say two drawings meet
+  when they have no pixel in common — and that is how stage 5 shipped with a castle
+  whose box reached the feet of a painted villager standing on the grass in front of
+  it. The chain was castle → ramp → brazier → villager, each link a corner of one
+  rectangle clipping another, and a watchtower built on the open ground between them
+  was drawn underneath the keep. The tool reads the drawings now, on a one-pixel
+  grid.
 
   **Flat things that overlap each other stay flat.** A cluster only ever grows from
   a standing seed, so no pile of road stones can add up to a wall. The first version
   of this merged any two overlapping boxes and did exactly that on stage 3 — two
   22px props became a 34px "building" — which is the mistake this whole section
   exists to prevent, made geometrically instead of by threshold.
+- **Two things get no box, and the tool says so each time it runs.** One whose foot
+  is off the bottom of the canvas, because nothing could ever be drawn in front of it
+  — see "The near overlay" below. And one standing over a **garrison post**, because
+  the game puts a live figure on that spot and the artist drew that figure in FRONT
+  of the scenery: stage 5's barricade is a low wall on a long diagonal, so the only
+  ground line its box can give is the bottom of its far end, and that draws the whole
+  wall over both crossbowmen at its near one.
+- **Anything the splitter cuts out of the base comes out of the sheet too** — the
+  plot markers and the garrison. The sheet is a second copy of the top layer, so a
+  figure left in it is drawn twice: once by the game, live, and once painted, in the
+  same place and the same pose, and only one of them moves.
 
 > **THE GAME DRAWS `Map_1_base.svg`, NOT `Map_1.svg`** — and `Map_2_base.svg`, not
 > `Map_2.svg`. Uploading a redrawn
