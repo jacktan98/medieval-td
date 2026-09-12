@@ -710,6 +710,13 @@ export const paths = {
   front05:     'assets/map/Stage_3_Map_front.svg',
   front06:     'assets/map/Stage_4_Map_front.svg',
   front07:     'assets/map/Stage_5_Map_front.svg',
+  // AND THE ONE THING THAT IS IN FRONT OF EVERYTHING. Stage 5's bridge has a near
+  // railing between the camera and its deck, so a figure crossing belongs BEHIND it
+  // — which no box on the sheet above can say, because a box sorts by its foot and
+  // this one's foot is off the bottom of the screen along with the rest of the
+  // bridge. It is its own drawing (`_Layer_3e`) on its own sheet, drawn after the
+  // depth pass. See `over` in src/data/level07.js.
+  over07:      'assets/map/Stage_5_Map_over.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

@@ -6,6 +6,7 @@ import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armour.js';
 import { raiseGuard } from './enemies.js';
+import { fixture } from './units.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -229,7 +230,13 @@ function land(state, s) {
 //
 // A respawning soldier is skipped by the caller for the same reason nothing may
 // aim at one: he is not on the board, he is a muster ring over a barracks.
-const victims = (state, s) => (s.side === 'enemy' ? state.units : state.enemies);
+//
+// AND A FIXTURE IS SKIPPED HERE, where every other reader of it skips at the aiming
+// step. A flask is thrown at the GROUND a man is standing on and hurts whoever is in
+// the puddle, so a stray one landing beside stage 5's bridge crossbowmen would reach
+// them however carefully the throwing was aimed elsewhere. See fixture() in units.js.
+const victims = (state, s) =>
+  (s.side === 'enemy' ? state.units.filter(u => !fixture(u)) : state.enemies);
 
 // What arriving SOUNDS like, by ammunition. An arrow is not here on purpose: it
 // makes its noise leaving the bow, because that is the moment you watch.

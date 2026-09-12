@@ -165,6 +165,22 @@ export function nearestOnPath(x, y) {
 // him on `respawn` and `hp`, so this does not repeat that.
 export const hidden = u => !!u.def.hidden && !u.exposed;
 
+// A FIGURE NOTHING CAN HURT. Stage 5's two crossbowmen at the bridge and nothing
+// else in the game — see `fixture` in src/data/towers.js for why the owner's "without
+// any armor and health" comes out as this rather than as a large number.
+//
+// Every way a soldier can be hurt asks this, and there are exactly three: an enemy
+// throwing or loosing at him (nearestUnit in enemies.js), a flask or a rock landing
+// on him (victims in projectiles.js), and the Captain's blade sweeping past the man
+// it actually hit (sweep below). A fourth would be melee, and melee needs somebody to
+// close to within ENGAGE — nothing does, because these two stand ninety pixels off
+// the road and cannot take a step, but if one ever did the fight would simply never
+// end, so the two engagement passes skip them as well.
+//
+// NOT A SECOND MEANING FOR `hidden`. An assassin is unseen and very killable; the
+// moment he strikes he is neither. These men are in plain sight and out of reach.
+export const fixture = u => !!u.def.fixture;
+
 // Where each man in the squad should be standing, given the tower's rally.
 //
 // Split out from makeUnits because moving the rally must not create anybody:
@@ -589,7 +605,7 @@ export function unhook(e) {
 // would catch men further up the screen than down it.
 function sweep(state, enemy, blocked, blow) {
   for (const u of state.units) {
-    if (u === blocked || u.hp <= 0 || u.respawn > 0) continue;
+    if (u === blocked || u.hp <= 0 || u.respawn > 0 || fixture(u)) continue;
     if (!inRange(enemy.x, enemy.y, u.x, u.y, blow.splash)) continue;
     u.hp -= taken(enemy.def.damage, typeOf(blow), wornBy(u), pierceOf(blow));
     splat(state, u.x, u.y - u.def.r, u.y);
@@ -897,7 +913,13 @@ export function updateUnits(state, dt) {
     //    loses to blocking every time, so piling onto one enemy can never let
     //    the next one walk past: the moment it comes into reach, somebody peels
     //    off to meet it.
-    if (!u.holds) {
+    // AND A FIXTURE BLOCKS NOBODY. He cannot be hurt, so a fight he joined would
+    // have exactly one way to end — him winning, eventually, at melee numbers — and
+    // until then he would be holding an enemy off the road that nothing else could
+    // take over. Nothing reaches him today (ENGAGE is 30 and he stands ninety off
+    // the road on the one board he exists on), so this is a rule rather than a fix:
+    // a man who cannot lose a fight must not be allowed to start one.
+    if (!u.holds && !fixture(u)) {
       let best = null;
       let bestD = ENGAGE;
       for (const e of state.enemies) {
@@ -917,7 +939,7 @@ export function updateUnits(state, dt) {
     //    uncapped — and it puts the third man back in his slot watching, which
     //    is the exact thing that was reported. If everyone is free, everyone
     //    goes.
-    if (!u.foe) {
+    if (!u.foe && !fixture(u)) {
       let best = null;
       let bestD = ASSIST;
       for (const e of state.enemies) {

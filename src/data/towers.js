@@ -3458,11 +3458,27 @@ export const monastery = [
 // do at a distance, and it is gated on an ability his tower bought; this carries its
 // own weapon instead. One branch in updateUnits reads either.
 //
-// THE NUMBERS ARE THE ENEMY ARCHER'S REACH AND A CROSSBOW TOWER'S RHYTHM, deliberately
-// modest: 20 a bolt every 1.6s is 12.5 a second, against a tier 1 archery tower's 21.7
-// for 70 gold. Two of them are worth about one cheap tower and cost nothing, which is
-// what a pair of sentries at a gate should be — a reason the bridge is not undefended
-// at wave 1, not a tower the player did not have to build.
+// THE NUMBERS ARE THE CROSSBOW SENTRY'S OWN, at the owner's ask: "Use the encyclopedia
+// stats for both units. their range is 260 and deals 35 without any armor and health."
+//
+// That is a description of a page in the book, and the page is the Crossbow Sentry's —
+// `unitEntry` in src/book.js prints 35, 260, no health row and no armour row, because
+// nothing in the game can reach a man standing on a tower deck. All four halves of it
+// are copied here, INCLUDING the two that are absences.
+//
+// SO HE CANNOT BE HURT — `fixture` below — and that is the half with teeth. These two
+// are the only figures in the game that stand on the open ground and cannot be killed,
+// and it is the owner's choice rather than a convenience: a card that shows no health
+// beside a man who can die would be the card lying, and there is no barracks to muster
+// a replacement from when he does.
+//
+// THE RELOAD IS NOT THE SENTRY'S and is the one number here that is a decision. The
+// book does not print a reload, so "the encyclopedia stats" does not reach it, and the
+// Sentry's 0.80 would make this pair worth 87 damage a second — four times a tier 1
+// archery tower, standing free on a board that opens with 240 gold. At 1.6 they come to
+// 43.75 between them, about one cheap tower's worth, which is what a pair of sentries
+// posted at a gate should be: a reason the bridge is not undefended at wave 1, not a
+// tower the player did not have to build.
 export const garrisonUnits = {
   Crossbowman: {
     ...crossbowman,
@@ -3478,35 +3494,39 @@ export const garrisonUnits = {
     // simply not there with nothing anywhere to say why. Zero rather than a
     // spearman's 6: a man who winds a crossbow does not lunge.
     lunge: 0,
+    // NOTHING CAN REACH HIM, which is the whole of "without any health": no enemy
+    // aims at him, no flask is thrown at him, no blade sweeps over him. See `fixture`
+    // in src/units.js and the three places that ask.
+    //
+    // IT IS A GUARD AND NOT A BIG NUMBER. A million health would read the same for a
+    // while and then not — the poison in this game takes a fraction of a maximum, so a
+    // bigger number is a slower death and not no death. The 120 below stays because
+    // `maxHp` is arithmetic half the file does; what `fixture` changes is that nothing
+    // ever subtracts from it, no bar is drawn over him and no card prints it.
+    //
+    // AND IT REPLACES THE RESPAWN, which is the trap that caught the last version of
+    // this def. `respawn: 0` looked like "instantly" and meant "never" — the branch is
+    // gated on the clock being ABOVE zero — so a felled crossbowman was never restored,
+    // never removed, and the out-of-combat regen healed him back off the floor. That
+    // bug was fixed by giving him ten seconds. This removes the question: a man nothing
+    // can hurt has no death to come back from, and there is no barracks here to muster
+    // him at in any case.
+    fixture: true,
     hp: 120,
     // HE NEVER SWINGS. `damage` and `cd` are the melee pair every soldier carries and
     // the card reads `damage`, so it says what his bolt does — see `listedDamage` on
     // the plague doctor for the same choice made the other way.
-    damage: 20,
+    damage: 35,
     cd: 1.6,
     r: 8,
-    // HE COMES BACK, and at his own post rather than at a muster ring — there is no
-    // building to muster at, so updateUnits stands him up where he was standing.
-    //
-    // IT WAS 0, meaning "no delay", and that is not what zero does here. A soldier who
-    // falls is put on `def.respawn` seconds and the respawn branch is gated on the
-    // clock being ABOVE zero, so a zero skipped the branch entirely: he was never
-    // restored, never removed, and simply carried on being drawn at no health —
-    // whereupon the ordinary out-of-combat regen healed him back up from nothing. An
-    // unkillable crossbowman, by way of a number that looked like "instant".
-    //
-    // Ten seconds is longer than any barracks tier's 5 to 8. He is free and there are
-    // two of him; losing them for a while should cost something.
-    respawn: 10,
     regen: 6,
     speed: 0,
     colour: '#6E86B4',
     damageType: 'physical',
-    armour: { physical: 'low', magic: 'none' },
     ranged: {
-      range: 200,
+      range: 260,
       cd: 1.6,
-      damage: 20,
+      damage: 35,
       ammo: quarrel
     }
   }

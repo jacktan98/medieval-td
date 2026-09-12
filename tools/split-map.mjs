@@ -252,14 +252,36 @@ if (level.garrison && level.garrison.length) {
   const inTop2 = allGroups(svg).filter(g => g.start > firstTop.index && !wrapAt.has(g.start));
   const outer2 = inTop2.filter(g => !inTop2.some(o => o !== g && o.start <= g.start && o.end >= g.end));
 
-  for (const [i, at] of level.garrison.entries()) {
-    const win = { x0: at.x - GARRISON_W, x1: at.x + GARRISON_W,
-                  y0: at.y - GARRISON_UP, y1: at.y + GARRISON_DOWN };
-    const mine = outer2.filter(g => {
-      const b = bounds(g.subPaths.flat());
-      const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
-      return x0 >= win.x0 && x1 <= win.x1 && y0 >= win.y0 && y1 <= win.y1;
+  // EACH PIECE BELONGS TO ONE MAN. Two figures standing a step apart have windows
+  // that overlap, and stage 5's do: the second crossbowman's near boot falls inside
+  // the first one's window as well as his own. Claimed by both, that one group went
+  // into the cut list TWICE — and the cut is a pair of string slices, so the second
+  // pass took the same span of characters out of a file the first pass had already
+  // shortened. It does not remove the boot twice, it removes the boot and then four
+  // hundred characters of whatever had closed up behind it.
+  //
+  // So a piece goes to the NEAREST anchor and to no other. Nearest by the anchor
+  // point itself, which is the foot of the figure it belongs to.
+  const near = (g, at) => {
+    const b = bounds(g.subPaths.flat());
+    return Math.hypot((b.x0 + b.x1) / 2 * MAP_SCALE - at.x, b.y1 * MAP_SCALE - at.y);
+  };
+  const owner = new Map();
+  for (const g of outer2) {
+    const b = bounds(g.subPaths.flat());
+    const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
+    let best = -1, least = Infinity;
+    level.garrison.forEach((at, k) => {
+      if (x0 < at.x - GARRISON_W || x1 > at.x + GARRISON_W ||
+          y0 < at.y - GARRISON_UP || y1 > at.y + GARRISON_DOWN) return;
+      const d = near(g, at);
+      if (d < least) { least = d; best = k; }
     });
+    if (best >= 0) owner.set(g, best);
+  }
+
+  for (const [i, at] of level.garrison.entries()) {
+    const mine = outer2.filter(g => owner.get(g) === i);
     if (!mine.length) {
       throw new Error(`garrison ${i} is at (${at.x}, ${at.y}) and there is nothing drawn there. ` +
         `If the figure moved in a redraw, move the anchor in the level file to its feet.`);
@@ -387,6 +409,33 @@ const FRONT_MIN_H = 30;      // game px: a thing this tall is standing up
 const ACCEPT = process.argv.includes('--accept');
 const FRONT_CLEAR = 0.15;    // and nothing may sit within this much of the line
 
+// THE NEAR OVERLAY: a piece of the top layer that is in front of EVERYTHING.
+//
+//   node tools/split-map.mjs assets/map/Stage_5_Map --over 3e
+//
+// A box is a thing figures walk BEHIND, sorted by its foot, and that is the whole
+// vocabulary this tool had. Stage 5's bridge is the case it could not say: the deck
+// is a floor that figures walk ON — it must never occlude — and the near railing at
+// the bottom of the same bridge is a wall between the camera and the deck, so it
+// must occlude everything on it. Both run off the bottom-right corner, so neither
+// has a foot on the canvas and geometry cannot tell them apart. The artist can, and
+// did: the near railing arrived as `_Layer_3e`, its own file, drawn last.
+//
+// So the OVERLAY IS NAMED, not inferred, on the same terms as --accept: the tool
+// does the measuring, a human says which part is the near one, and the level file
+// records the decision beside the box. What it costs if nobody says is nothing new
+// — the part stays in the front sheet inside a cluster that is already dropped, and
+// the railing does not occlude, which is where stage 5 shipped.
+//
+// A SHEET OF ITS OWN rather than a box on the shared one, and that is forced. The
+// front sheet is the whole top layer flattened, so a rectangle over the railing
+// would carry the DECK drawn under it in the same rectangle — and re-drawing the
+// deck over everything is precisely the overdraw this is meant to avoid.
+const OVER = (() => {
+  const i = process.argv.indexOf('--over');
+  return i >= 0 ? process.argv[i + 1] : null;
+})();
+
 if (LAYERS.length) {
   // The top layer's span in the STACKED text, so what is measured here is what the
   // base actually draws.
@@ -411,7 +460,30 @@ if (LAYERS.length) {
   // A single-file layer never showed this, because its one wrapper starts exactly AT
   // `first.index` and the `>` excluded it by luck rather than on purpose.
   const wrappers = new Set(marks.map(m => m.index));
-  const inTop = allGroups(svg).filter(g => g.start > first.index && !wrappers.has(g.start));
+
+  // WHERE THE NAMED OVERLAY PART LIVES IN THAT TEXT. stackLayers writes one wrapper
+  // per file in the order layerFiles returned them, so mark `i` IS layer file `i` —
+  // the same correspondence combine.mjs prints its bounding boxes by. No new label
+  // is needed on the wrapper and none is wanted: another attribute would have to be
+  // matched by every regex in this file and in combine.mjs that finds a layer.
+  let overSpan = null;
+  if (OVER) {
+    const at = LAYERS.findIndex(f => f.endsWith(`_Layer_${OVER}.svg`));
+    if (at < 0) {
+      throw new Error(`--over ${OVER}: no ${SRC}_Layer_${OVER}.svg among the layers ` +
+        `(${LAYERS.map(f => /_Layer_(\w+)\.svg$/.exec(f)[1]).join(', ')})`);
+    }
+    if (+marks[at][1] !== top) {
+      throw new Error(`--over ${OVER}: that part is layer ${marks[at][1]} and the top ` +
+        `layer is ${top}. Only the top layer is lifted off the board at all, so a part ` +
+        `below it cannot be the nearest thing on it.`);
+    }
+    overSpan = [marks[at].index, at + 1 < marks.length ? marks[at + 1].index : svg.length];
+  }
+  const inSpan = g => overSpan && g.start > overSpan[0] && g.start < overSpan[1];
+
+  const inTop = allGroups(svg)
+    .filter(g => g.start > first.index && !wrappers.has(g.start) && !inSpan(g));
   const outer = inTop.filter(g => !inTop.some(o => o !== g && o.start <= g.start && o.end >= g.end));
 
   const boxes = outer.map(g => {
@@ -518,16 +590,20 @@ if (LAYERS.length) {
   // the whole bridge over every enemy on it, which is the one thing that must not
   // happen on the tile they are walking over.
   //
-  // The cost is that its near railing does not occlude either: a figure on the deck is
-  // drawn over the rail rather than behind it. That is a small wrongness in exchange
-  // for the figure being visible at all, and the fix if it ever matters is on the
-  // artist's side — the near rail as its own group, on the ground, inside the canvas.
+  // THE NEAR RAILING OF THAT SAME BRIDGE IS THE OPPOSITE CASE, and it is what --over
+  // exists for. It is a wall between the camera and the deck, so everything on the
+  // deck belongs behind it — "in front of everything, forever" is the RIGHT answer
+  // for the rail and the wrong one for the deck it stands at the edge of. Nothing in the
+  // geometry separates them; the artist does, by drawing the near rail as its own
+  // part file. Name that part with --over and it comes off on a sheet of its own.
   const CANVAS_H = 540;
   const offBottom = measured.filter(m => m.h >= FRONT_MIN_H && m.y + m.h > CANVAS_H);
   for (const m of offBottom) {
     console.log(`  not boxed: ${Math.round(m.w)}x${Math.round(m.h)} at ${Math.round(m.x)},${Math.round(m.y)} ` +
       `— its foot is at y ${Math.round(m.y + m.h)}, past the ${CANVAS_H}px canvas, so nothing could ` +
-      `ever stand in front of it`);
+      `ever stand in front of it` +
+      (OVER ? '' : `. If it is the NEAREST thing on the board rather than a floor, draw it as ` +
+        `its own layer part and name it with --over`));
   }
 
   const tall = measured
@@ -576,5 +652,30 @@ if (LAYERS.length) {
     console.log(`    { x: ${String(Math.round(m.x)).padStart(3)}, y: ${String(Math.round(m.y)).padStart(3)}, ` +
       `w: ${String(Math.round(m.w)).padStart(3)}, h: ${String(Math.round(m.h)).padStart(3)} },` +
       `   // stands on y ${Math.round(m.y + m.h)}`);
+  }
+
+  // --- and the near overlay, on a sheet of its own ------------------------------
+  if (overSpan) {
+    const mine = allGroups(svg).filter(g => inSpan(g) && !wrappers.has(g.start));
+    const outerOver = mine.filter(g => !mine.some(o => o !== g && o.start <= g.start && o.end >= g.end));
+    if (!outerOver.length) throw new Error(`--over ${OVER}: that part draws nothing`);
+
+    // SLICED OUT OF THE STACKED TEXT, not re-read from the part file. It is the same
+    // argument the front sheet is written on: what lands on the sheet is the text the
+    // base was built from, so the two copies cannot disagree about where anything is.
+    const OVER_F = SRC.replace(/\.svg$/, '') + '_over.svg';
+    writeFileSync(OVER_F,
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">\n' +
+      '<g>\n' + outerOver.map(g => svg.slice(g.start, g.end)).join('\n') + '\n</g>\n</svg>\n');
+
+    const b = bounds(outerOver.flatMap(g => g.subPaths.flat()));
+    const [x, y] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE];
+    const [w, h] = [(b.x1 - b.x0) * MAP_SCALE, (b.y1 - b.y0) * MAP_SCALE];
+    console.log(`\nwrote ${OVER_F} — layer ${OVER} alone, ${outerOver.length} thing(s), ` +
+      `in front of everything on the board`);
+    console.log(`over — paste into the level file:`);
+    console.log(`  over: { x: ${Math.round(x)}, y: ${Math.round(y)}, ` +
+      `w: ${Math.round(w)}, h: ${Math.round(h)} },` +
+      `   // ${Math.round(y + h) > 540 ? 'runs off the bottom of the canvas' : `foot at y ${Math.round(y + h)}`}`);
   }
 }

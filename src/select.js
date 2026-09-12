@@ -21,6 +21,7 @@
 import { SCALE } from './data/towers.js';
 import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
+import { fixture } from './units.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -424,6 +425,38 @@ export function selectionInfo(state) {
   // Through the same `stageOf` that answers for his armour two rows down, so the
   // panel cannot show one stage's picture beside the other stage's plate.
   const shown = stageOf(f);
+
+  // A FIGURE NOTHING CAN HURT GETS A TOWER'S CARD, which is the owner's ask read
+  // back exactly as it was given: "Use the encyclopedia stats for both units. their
+  // range is 260 and deals 35 without any armor and health. when players click on
+  // them, it shows the range and also stats in description panel."
+  //
+  // Health and armour are the two rows this panel normally spends itself on, and
+  // both of them are questions about a man who can be killed. Stage 5's bridge
+  // crossbowmen cannot — see fixture() in units.js — so both rows would print
+  // numbers that never move, and the reach that was cut to make room for them is
+  // the one thing about these two a player actually has to know: how far up the
+  // road they answer. That is the same trade the tower branch above makes and for
+  // the same reason, so it comes out the same shape.
+  //
+  // HIS BOLT, NOT HIS FIST. `damage` on a soldier is the melee pair, and this def
+  // carries the same number in both — see the note on it in data/towers.js — but
+  // the range beside it is the crossbow's, so the damage must be the crossbow's
+  // too or the card would price a blow he never throws at a reach he never swings.
+  if (fixture(f)) {
+    return {
+      sprite: shown.sprite || f.def.sprite,
+      trim: shown.trim || f.def.spriteTrim,
+      title: f.def.name,
+      hp: null,
+      maxHp: null,
+      damage: f.def.ranged ? f.def.ranged.damage : shownDamage(f.def),
+      attack: attackIcon(shown),
+      traits: [],
+      range: f.def.ranged ? f.def.ranged.range : null
+    };
+  }
+
   return {
     sprite: shown.sprite || f.def.sprite,
     trim: shown.trim || f.def.spriteTrim,

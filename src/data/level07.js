@@ -18,8 +18,9 @@
 // a way it was not on stage 4.
 //
 // TRACED FROM THE ARTWORK, and the plots by `node tools/split-map.mjs
-// assets/map/Stage_5_Map --accept`. The map is the source of truth for both. Redraw
-// and re-run rather than nudging numbers here.
+// assets/map/Stage_5_Map --accept --over 3e`. The map is the source of truth for
+// both. Redraw and re-run rather than nudging numbers here — see the notes on
+// `garrison`, `front` and `over` below for what each of those flags decides.
 import { stage5Waves } from './waves.js';
 
 // IN FROM THE WEST, along the bottom of the park and round to the bridge.
@@ -97,11 +98,12 @@ export const level07 = {
   // src/admin.js. Every screen with room shows the full name.
   short: 'Castle',
   art: 'map07',
-  // FOUR FILES FOR ONE LAYER. The castle is drawn as separable pieces —
-  // `_Layer_3a` through `_Layer_3d` — which is new, and `layerFiles` in tools/svg.mjs
-  // learned lettered parts for it: they stack alphabetically among themselves and as
-  // a group in layer 3's place, and all four are labelled `data-layer="3"` so that
-  // "the top layer" is all of them rather than only the last.
+  // FIVE FILES FOR ONE LAYER. The castle is drawn as separable pieces — `_Layer_3a`
+  // through `_Layer_3d` — and the bridge's near handrail is a fifth, `_Layer_3e`.
+  // `layerFiles` in tools/svg.mjs learned lettered parts for this: they stack
+  // alphabetically among themselves and as a group in layer 3's place, and all five
+  // are labelled `data-layer="3"` so that "the top layer" is all of them rather than
+  // only the last.
   src: 'assets/map/Stage_5_Map',
   routes: [west, north],
   plots: plots1,
@@ -139,9 +141,14 @@ export const level07 = {
   // two figures. Each anchor is the point the figure STANDS ON; the tool cuts whatever
   // is drawn in a figure-sized window around it and refuses if there is nothing there,
   // so a redraw that moves them is an error rather than a silent double.
+  //
+  // MOVED ONCE ALREADY, in the redraw that added `_Layer_3e`: both men shifted about
+  // sixteen px left and a dozen up, and the anchors moved with them. That is the
+  // mechanism working — the tool cut three stray fragments instead of a man and said
+  // so in its own output, where a silently doubled crossbowman would have shipped.
   garrison: [
-    { x: 675, y: 347, unit: 'Crossbowman' },
-    { x: 701, y: 338, unit: 'Crossbowman' }
+    { x: 660, y: 336, unit: 'Crossbowman' },
+    { x: 684, y: 323, unit: 'Crossbowman' }
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND. Two things: the castle, and one brazier.
@@ -153,18 +160,44 @@ export const level07 = {
   // bridge would paint over every enemy walking across it, which is the one tile on
   // this board where that must not happen: the bridge IS the exit.
   //
-  // What it costs is that the near railing does not occlude either — a figure on the
-  // deck draws over the rail rather than behind it. See the note in tools/split-map.mjs
-  // for the artist-side fix if that ever matters.
+  // Its near railing is the opposite case and has its own answer — see `over` below.
   //
-  // Written out by `node tools/split-map.mjs assets/map/Stage_5_Map --accept`. The
-  // `--accept` is a decision and belongs here rather than only in a shell history: the
-  // felled timber at (517, 468) measures 29.7px tall against a 30px line, so the tool
-  // refused to classify it on its own. It is a pile of logs lying on the ground, it
-  // was looked at, and "flat" is right.
+  // Written out by:
+  //
+  //   node tools/split-map.mjs assets/map/Stage_5_Map --accept --over 3e
+  //
+  // The `--accept` is a decision and belongs here rather than only in a shell history:
+  // the felled timber at (517, 468) measures 29.7px tall against a 30px line, so the
+  // tool refused to classify it on its own. It is a pile of logs lying on the ground,
+  // it was looked at, and "flat" is right.
   frontArt: 'front07',
   front: [
     { x: 498, y: 207, w:  14, h:  63 },   // stands on y 270 — the brazier by the gate
-    { x: 127, y:  29, w: 369, h: 285 }   // stands on y 314 — the castle, all four pieces
-  ]
+    { x: 127, y:  35, w: 369, h: 279 }   // stands on y 314 — the castle, all four pieces
+  ],
+
+  // AND THE ONE THING THAT IS IN FRONT OF EVERYTHING: the bridge's near handrail.
+  //
+  // THE OWNER'S ASK: "This part of the bridge must overlap units that walk on the
+  // bridge as it is 'nearer to the player' perspective. If can, use the transparency
+  // rule here too." Both halves are here — it draws over every figure on the board,
+  // and every figure it covers is redrawn through it at the same GHOST alpha a house
+  // shows a soldier through.
+  //
+  // NOT A `front` BOX, and it cannot be one, for two separate reasons:
+  //
+  //   A box sorts by its FOOT, and this rail's foot is at y 634 — off the bottom of a
+  //   540px canvas, along with the rest of the bridge. The depth pass has nowhere to
+  //   put it. "After everything" is exactly right for this rail and exactly wrong for
+  //   the deck it stands at the edge of, which figures walk ON.
+  //
+  //   And the front sheet is the whole top layer flattened, so a rectangle over the
+  //   rail would carry the DECK UNDER IT in the same rectangle. Drawing that over a
+  //   figure crossing the bridge is the overdraw the box was withheld to prevent.
+  //
+  // So the artist drew the rail as `_Layer_3e`, its own file, and split-map lifts that
+  // part alone onto a sheet of its own. The rectangle below is the sheet's own ink —
+  // where to draw it, and where the ghost is clipped — and not a ground line at all.
+  overArt: 'over07',
+  over: { x: 695, y: 418, w: 220, h: 216 }
 };

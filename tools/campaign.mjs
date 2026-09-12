@@ -39,10 +39,13 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
 import { spawn, updateEnemies } from '../src/enemies.js';
+import { updateShots } from '../src/projectiles.js';
 import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
 import { readArtwork } from './svg.mjs';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
+import { selectionInfo } from '../src/select.js';
+import { unitEntry } from '../src/book.js';
 import { families, upgradesFrom } from '../src/data/towers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
@@ -1073,6 +1076,40 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
   ok(st.units.every(u => !u.def.abilities || !u.def.abilities.length),
     'and has nothing to be taught',
     'no abilities on the def');
+
+  // AND HIS NUMBERS ARE THE BOOK'S, which is the owner's ask read literally: "Use the
+  // encyclopedia stats for both units. their range is 260 and deals 35 without any
+  // armor and health."
+  //
+  // ASKED OF THE PAGE rather than typed in twice. `unitEntry` is what the encyclopedia
+  // prints for the Crossbow Sentry, so this cannot drift: move the Sentry and either
+  // these two follow or this fails.
+  {
+    const sentry = families.find(f => f.id === 'archery').tiers
+      .find(t => t.name === 'Crossbow Sentry');
+    const card = unitEntry(sentry);
+    const w = st.units[0].def.ranged;
+    ok(card.damage === w.damage && card.range === w.range,
+      'and shoots the numbers the encyclopedia prints for a Crossbow Sentry',
+      `book ${card.damage} at ${card.range}, post ${w.damage} at ${w.range}`);
+    ok(card.hp == null && !card.traits.length,
+      'which is a page with no health row and no armour row on it',
+      'the man on a deck cannot be reached either');
+  }
+
+  // AND THE PANEL SAYS THE SAME THING. "when players click on them, it shows the range
+  // and also stats in description panel" — so the reach every other soldier's card
+  // gives up to make room for armour is back, because there is no armour to print.
+  {
+    const u = st.units[0];
+    const card = selectionInfo({ selected: { kind: 'unit', ref: u } });
+    ok(card.range === u.def.ranged.range && card.damage === u.def.ranged.damage,
+      'and tapping one shows his reach and his bolt in the panel',
+      `${card.damage} at ${card.range}`);
+    ok(card.hp === null && card.maxHp === null && !card.traits.length,
+      'and neither a health row nor an armour row, because nothing can hurt him',
+      'the card a tower gets');
+  }
   // AND NO MENU CAN REACH THEM, which is what "cannot sell" means. Asked of the PLOTS
   // rather than of a flag: a menu opens on a plot, so the test is that neither man is
   // standing on one.
@@ -1129,28 +1166,48 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
         st.units.filter(u => u.garrison).map(u => `${Math.max(0, u.hp).toFixed(0)}hp`).join(' and '));
   }
 
-  // AND A KILLED ONE COMES BACK WHERE HE STOOD. `respawn: 0` did not mean "at once":
-  // the respawn branch is gated on the clock being above zero, so zero skipped it and
-  // left him drawn at no health, healing back up out of combat — an unkillable man by
-  // way of a number that looked like "instant".
+  // AND NOTHING CAN TOUCH HIM, which is the owner's "without any armor and health"
+  // taken at its word: the card prints neither row because there is nothing to print.
+  //
+  // A THUG STOOD ON TOP OF HIM is the test, placed by hand and deliberately so. Every
+  // way an enemy can hurt a soldier begins with the enemy choosing him, and a wave
+  // left to walk the road never chooses these two: melee wants to be within 30px and
+  // they stand ninety off it, and a thrower only looks for a soldier once one has
+  // SCREENED the road in front of him, which needs a man within 45px of the lane.
+  // A wave of archers really does walk past them untouched — and passes this check
+  // just as happily with every guard removed, which is how the first version of it
+  // was written and why it was thrown away. An untouched man proves nothing if
+  // nothing ever reached for him.
+  //
+  // So the enemy is put where it could not otherwise get. Inside ENGAGE, un-held, on
+  // a board with no barracks: the block pass hands it to whoever is standing there,
+  // and the fight that follows is the one thing on this board that could kill him.
+  // `updateUnits` alone, so the thug stays where it was put rather than being walked
+  // back onto the road by its own route.
   {
     const st = { units: [], enemies: [], towers: [], shots: [], hits: [], corpses: [],
                  splats: [], impacts: [], smoke: [], gold: 0, lives: 20 };
     useLevel(levels.indexOf(castle));
     makeGarrison(st, castle);
-    const u = st.units[0];
-    const post = { x: u.x, y: u.y };
-    // KILLED THE WAY A GIANT KILLS HIM, past zero rather than exactly onto it. At
-    // EXACTLY zero the out-of-combat regen runs first and lifts him back off it, and
-    // he never dies at all — a pre-existing edge that has nothing to do with the
-    // garrison and takes a blow landing inside a tenth of a point of zero to reach.
-    // Setting it to 0 was the first version of this check, and it passed against the
-    // broken code for that reason.
-    u.hp = -1;
-    for (let f = 0; f < 60 * 30; f++) updateUnits(st, 1 / 60);
-    ok(u.hp === u.maxHp && u.x === post.x && u.y === post.y,
-      'and a crossbowman who falls comes back at his own post, not at the corner of the board',
-      `${u.hp}/${u.maxHp} at ${Math.round(u.x)},${Math.round(u.y)} against a post at ${post.x},${post.y}`);
+    spawn(st, 'heavy_inf');
+    const [u] = st.units;
+    const e = st.enemies[0];
+    e.x = u.x + 6; e.y = u.y;
+
+    const full = e.hp;
+    for (let f = 0; f < 60 * 30; f++) { updateUnits(st, 1 / 60); updateShots(st, 1 / 60); }
+
+    // AND HE SHOOTS IT, which is the half of this that must not come free. "Cannot be
+    // hurt, cannot be held" is one line away from "does nothing at all", and a check
+    // that only looked at his health would pass just as well on a man who had been
+    // quietly switched off. The giant has to be losing health at the end of it.
+    ok(e.hp < full, 'while shooting it the whole time he is not fighting it',
+      `the giant is down ${(full - e.hp).toFixed(0)} of ${full}`);
+    ok(u.hp === u.maxHp && !u.foe && !e.foe,
+      'and a giant swinging at point blank cannot touch one of them, or be held by one',
+      `${u.hp.toFixed(0)}/${u.maxHp} health, ` +
+      `${u.foe ? 'he took the fight' : 'he took no fight'}, ` +
+      `${e.foe ? 'the giant is held by him' : 'the giant is free to walk on'}`);
   }
 }
 
@@ -1591,7 +1648,11 @@ console.log('\n--- what a figure can walk behind ---\n');
     'no offset between the sheet and the base it was cut from');
 
   for (const l of levels.filter(l => l.front)) {
-    const sheet = readFileSync(`assets/map/${l.frontArt === 'front00' ? 'Stage_1' : 'Stage_2'}_Map_front.svg`, 'utf8');
+    // THE BOARD'S OWN SHEET, derived from its `src` like everything else about it.
+    // This read `front00 ? Stage_1 : Stage_2` and had done since there were two
+    // boards with front sheets: stages 3, 4 and 5 were each checked against stage
+    // 2's drawing, so four checks apiece were answering about the wrong picture.
+    const sheet = readFileSync(`${l.src}_front.svg`, 'utf8');
     const groups = (sheet.match(/<g transform=/g) || []).length;
     ok(groups >= l.front.length,
       `${l.name}'s sheet holds every box the level lists`,
@@ -1617,6 +1678,41 @@ console.log('\n--- what a figure can walk behind ---\n');
     ok(groups > l.front.length * 2,
       'while the sheet itself carries the whole layer, props and all',
       `${groups} group(s) for ${l.front.length} box(es)`);
+  }
+
+  // AND THE ONE PIECE THAT IS IN FRONT OF EVERYTHING, on its own sheet.
+  //
+  // Stage 5's bridge rail. Every claim below is about keeping the two kinds apart:
+  // a `front` box is sorted into the depth pass by its foot, and this is not sorted
+  // at all — which is right for the nearest thing on the board and catastrophic for
+  // anything else, so the renderer must draw it AFTER the pass and the sheet must
+  // hold that part alone.
+  for (const l of levels.filter(l => l.over)) {
+    const sheet = readFileSync(`${l.src}_over.svg`, 'utf8');
+    const groups = (sheet.match(/<g transform=/g) || []).length;
+    ok(groups > 0, `${l.name}'s near overlay is a sheet of its own`,
+      `${groups} group(s) drawn`);
+
+    // IT IS NOT ALSO A BOX. The same drawing in both lists would be drawn twice, once
+    // sorted and once not, and the sorted copy is the overdraw the overlay exists to
+    // avoid.
+    const b = l.over;
+    ok(!(l.front || []).some(f => f.x < b.x + b.w && b.x < f.x + f.w &&
+                                  f.y < b.y + b.h && b.y < f.y + f.h),
+      'and no box on the front sheet covers the same ground',
+      `over at ${b.x},${b.y} ${b.w}x${b.h}`);
+
+    // AFTER THE PASS, NOT IN IT, and showing whoever it covers through at the owner's
+    // ask. Infinity is the ground line: everything on the board is behind this.
+    const over = bare.slice(bare.indexOf('function drawOver('));
+    const body = over.slice(0, over.indexOf('\n}\n') + 2);
+    ok(/drawFront\(ctx, sheet, b\)/.test(body) &&
+       /ghostInside\(ctx, state, \{ left: b\.x, top: b\.y, w: b\.w, h: b\.h \}, Infinity\)/.test(body),
+      'and draws over every figure, showing each of them through it',
+      'ghostInside at a ground line of Infinity');
+    ok(bare.indexOf('drawOver(ctx, state)') > bare.indexOf('drawFigures(ctx, state)'),
+      'and is drawn after the depth pass rather than inside it',
+      'drawOver follows drawFigures');
   }
 }
 

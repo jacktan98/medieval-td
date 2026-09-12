@@ -146,6 +146,46 @@ What this asks of the drawing:
 > deleted the derived file, once because it left a stale one in place. If a
 > change to the board does not appear, this is why, before anything else.
 
+### The near overlay
+
+A box has one depth and it comes from the bottom of the box, which assumes there is
+ground below it for a figure to stand on. **Anything drawn off the bottom edge of the
+canvas breaks that assumption**: its box sorts after everything on the board, forever,
+so nothing can ever be drawn in front of it. The tool refuses a box to those and says
+so — `not boxed: 554x355 at 512,296`, stage 5's bridge, which runs off the
+bottom-right corner.
+
+That refusal is right for the bridge and wrong for one piece of it. **The deck is a
+floor** — figures walk ON it, so it must never occlude. **The near handrail is a wall
+between the camera and that deck**, so everything crossing belongs behind it. They are
+one structure drawn through each other and geometry cannot tell them apart.
+
+So the artist says which, by drawing the near piece as **its own layer part**, and the
+splitter is told its letter:
+
+    node tools/split-map.mjs assets/map/Stage_5_Map --accept --over 3e
+
+That part alone goes onto `<Board>_over.svg`, and the level file gets an `over`
+rectangle beside its `front` list. The game draws that sheet **after** the whole depth
+pass, and ghosts whoever it covers through it at the same alpha a house does.
+
+It has to be a sheet of its own rather than another box, and that is forced rather
+than tidy: the front sheet is the whole top layer flattened, so a rectangle over the
+rail would carry the **deck drawn under it** in the same rectangle — and painting that
+over a figure crossing the bridge is the exact overdraw the box was withheld to
+prevent.
+
+What this asks of the drawing:
+
+- **Only the nearest thing.** `--over` says "in front of everything, always". If
+  anything on the board could ever legitimately be drawn in front of this piece, it is
+  a `front` box and not an overlay.
+- **Its own part file, drawn last.** `_Layer_3e` beside `_Layer_3a..3d`. The part must
+  be in the top layer; the tool refuses if it is not, because nothing below the top
+  layer is lifted off the board at all.
+- **Nothing else in that file.** The sheet is the part, whole. Anything you leave in
+  it is also in front of everything.
+
 ## The HUD icons are not world art
 
 `Gold_Icon.png` and `Life_Icon.png` — in `assets/ui`, see above — are the only
@@ -587,6 +627,12 @@ hand:
   `Stage_4_Map_front.svg` and `Stage_5_Map_front.svg` — **the things on those boards
   that stand up**, on a transparent sheet of the same artboard. The same command
   writes them. See "What a figure can walk behind" below.
+- `Stage_5_Map_over.svg` — **the one piece of scenery that is in front of
+  everything**: the near handrail of the bridge. Written by the same command, given
+  `--over 3e`, which names the layer part it lifts. A `_front` box is sorted into the
+  depth pass by its foot and this rail has no foot on the canvas — it runs off the
+  bottom-right corner with the rest of the bridge — so it is not sorted at all, it is
+  drawn last. See "The near overlay" below.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
@@ -738,14 +784,15 @@ twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the excepti
 
 ### Stage 5 is the castle, and the keep is not on the right
 
-`Stage_5_Map_Layer_1.svg`, `_Layer_2.svg` and then **four files for layer 3** —
-`_Layer_3a` through `_Layer_3d`, which are the castle drawn as separable pieces.
+`Stage_5_Map_Layer_1.svg`, `_Layer_2.svg` and then **five files for layer 3** —
+`_Layer_3a` through `_Layer_3d`, which are the castle drawn as separable pieces, and
+`_Layer_3e`, which is the near handrail of the bridge and nothing else.
 
 **A layer may be split into lettered parts.** They stack alphabetically among
 themselves and as a group in their number's place, and `stackLayers` labels all of
-them with their **number**, so `_Layer_3a`..`_Layer_3d` are all `data-layer="3"` and
-"the top layer" is all four. Labelling them 3, 4, 5, 6 by position would make the last
-piece the entire front sheet and leave the rest buried in the base.
+them with their **number**, so `_Layer_3a`..`_Layer_3e` are all `data-layer="3"` and
+"the top layer" is all five. Labelling them 3, 4, 5, 6, 7 by position would make the
+last piece the entire front sheet and leave the rest buried in the base.
 
 **The exit is on the BOTTOM edge** — enemies leave over the bridge at the
 bottom-right. That was a convention baked into the tracer until this board; name the
@@ -761,8 +808,23 @@ so its box would foot at y 651 on a 540px canvas, and the depth pass sorts by th
 of a box — a box down there sorts after everything forever, and nothing could ever be
 drawn in front of it. It would paint over every enemy crossing it, which is the one
 tile on the board where that must not happen. The tool drops boxes whose foot is past
-the canvas and says so. If the near railing ever needs to occlude properly, draw it as
-its own group with its foot inside the canvas.
+the canvas and says so.
+
+**Its near handrail is the opposite case**, and that is what `_Layer_3e` is for. A
+figure on the deck is behind that rail, so "in front of everything, forever" is the
+right answer there and the wrong one a few pixels away on the deck itself. It comes
+off on its own sheet:
+
+    node tools/split-map.mjs assets/map/Stage_5_Map --accept --over 3e
+
+See "The near overlay" above for what that costs and what it asks of the drawing.
+
+**Two crossbowmen stand at the bridge**, painted into `_Layer_3d` and cut out of the
+base for the game to draw live — `garrison` in `src/data/level07.js` holds the point
+each one STANDS ON. If a redraw moves them, move the anchors: the tool cuts whatever
+is drawn in a figure-sized window around each point and refuses if there is nothing
+there, so a moved figure is an error rather than a silent double. **It moved once
+already**, in the redraw that added `_Layer_3e`.
 
 ### Stage 4 is the workshop, and three ways to reach it
 

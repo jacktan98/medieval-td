@@ -3,7 +3,7 @@ import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { poolFor } from './blood.js';
-import { unhook, hidden } from './units.js';
+import { unhook, hidden, fixture } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
 import { solo, play, CUE, FIRING, DEFEND, HEAL,
@@ -1142,7 +1142,7 @@ const BLOCK_REACH = 45;
 // the call site about roads that merge and roads that never meet.
 function screened(state, e, road) {
   for (const u of state.units) {
-    if (u.respawn > 0 || u.hp <= 0) continue;
+    if (u.respawn > 0 || u.hp <= 0 || fixture(u)) continue;
     // AND A MAN HE CANNOT SEE IS NOT A REASON TO STOP. An assassin standing in
     // the road is not screening it as far as this thrower knows — see hidden()
     // in units.js. He walks on into them, which is the point of them.
@@ -1177,6 +1177,11 @@ function nearestUnit(state, x, y, range) {
     // Nothing may aim at a man it cannot see, which is the other half of the
     // same rule the standoff above obeys. See hidden() in units.js.
     if (hidden(u)) continue;
+    // AND NOTHING MAY AIM AT A MAN IT CANNOT HURT. An archer picking one of stage
+    // 5's bridge crossbowmen as his nearest target would stop on the road and
+    // shoot at him for the rest of the wave, which is a thrower taken out of the
+    // fight by a wall. See fixture() in units.js.
+    if (fixture(u)) continue;
     if (!inRange(x, y, u.x, u.y, range)) continue;
     const d = Math.hypot(u.x - x, u.y - y);
     if (d < least) { least = d; best = u; }

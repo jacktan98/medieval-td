@@ -8,7 +8,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
-import { hidden } from './units.js';
+import { hidden, fixture } from './units.js';
 import { stageOf } from './data/armour.js';
 import { downed } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
@@ -63,6 +63,11 @@ export function draw(ctx, state) {
   // place on the board, and drawing it afterwards put it on top of buildings it
   // was thrown behind. See drawFigures.
   drawFigures(ctx, state);
+  // And the one piece of scenery that is nearer the camera than anything standing
+  // on the board — stage 5's bridge rail. After the pass rather than in it, which
+  // is the difference: a box in the pass sorts by its foot and this one has none on
+  // the canvas. See drawOver.
+  drawOver(ctx, state);
   // Health bars and muster rings after that, so status is never hidden by a
   // figure standing in front of the thing it belongs to.
   drawStatus(ctx, state);
@@ -204,6 +209,23 @@ function drawRangeDiscs(ctx, state) {
     const t1 = buy.family.tiers && buy.family.tiers[0];
     if (t1) previewRing(ctx, state.menu.plot.x, state.menu.plot.y, t1.range, t1.minRange || 0);
   }
+
+  // AND A SELECTED FIXTURE, which is the owner's ask on stage 5: "when players click
+  // on them, it shows the range and also stats in description panel."
+  //
+  // SELECTION IS THE TRIGGER HERE and a menu is the trigger everywhere else, because
+  // these two men have no menu to open — no plot, nothing to buy, nothing to sell.
+  // Tapping one is the whole interaction, so tapping one has to do both halves of it:
+  // the card in the corner and the ground it covers.
+  //
+  // Only a FIXTURE, not every soldier. A barracks squad is tapped constantly while
+  // the fight moves and three overlapping rings following three men around the board
+  // is noise; their card shows no reach either, for the same reason. See selectionInfo
+  // in src/select.js, which draws the line in the same place.
+  const sel = state.selected;
+  if (sel && sel.kind === 'unit' && fixture(sel.ref) && sel.ref.def.ranged) {
+    solidRing(ctx, sel.ref.x, sel.ref.y, sel.ref.def.ranged.range, 0);
+  }
 }
 
 // DEPTH. Everything solid standing on the board is drawn in one pass, ordered by
@@ -235,6 +257,36 @@ const MAP_PX = 2;
 function drawFront(ctx, img, b) {
   ctx.drawImage(img, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
     b.x, b.y, b.w, b.h);
+}
+
+// THE NEAREST THING ON THE BOARD, over the whole depth pass rather than inside it.
+//
+// Stage 5's bridge has a handrail along its near side, and a figure crossing the
+// deck is BEHIND it — the owner's words: "This part of the bridge must overlap
+// units that walk on the bridge as it is 'nearer to the player' perspective."
+//
+// A `front` box could not say that. A box is sorted by its foot and this rail has
+// no foot on the canvas: it runs off the bottom-right corner with the rest of the
+// bridge, at y 634 on a 540px board. Off the bottom edge the sort has no opinion
+// left to give — which is why split-map withholds a box from anything down there,
+// and why the deck this rail stands at the edge of must not have one at all.
+//
+// So the depth is not sorted, it is STATED: last. That is a claim about this one
+// drawing and not a general licence, which is why it takes a field of its own and a
+// sheet of its own — the artist drew the rail as a separate layer part, and `over`
+// in the level file records that somebody decided this piece is the near one.
+//
+// AND WHOEVER IS BEHIND IT SHOWS THROUGH, at the owner's ask ("use the transparency
+// rule here too") and through the same ghostInside every house on every board uses.
+// A ground line of Infinity rather than the rail's own: everything is behind this.
+// It matters — a squad crossing the bridge is on the tile the wave is decided on,
+// and a soldier the player cannot find is worse than one drawn on a handrail.
+function drawOver(ctx, state) {
+  const sheet = art[level.overArt];
+  if (!sheet || !level.over) return;
+  const b = level.over;
+  drawFront(ctx, sheet, b);
+  ghostInside(ctx, state, { left: b.x, top: b.y, w: b.w, h: b.h }, Infinity);
 }
 
 function drawFigures(ctx, state) {
@@ -419,6 +471,11 @@ function drawStatus(ctx, state) {
   }
   for (const u of state.units) {
     if (u.respawn > 0) { musterRing(ctx, u); continue; }
+    // NO BAR OVER A MAN NOTHING CAN HURT. A health bar is a thing you watch go
+    // down; one that is full for the whole game is furniture, and it would sit
+    // over stage 5's two bridge crossbowmen contradicting their own card, which
+    // prints no health at all. See fixture() in units.js.
+    if (fixture(u)) continue;
     // A hidden man's bar fades with him. It is the one piece of him drawn
     // OUTSIDE his own figure, so left solid it would hang over empty ground and
     // give away the assassin the whole point of him is that you cannot see.
@@ -784,6 +841,61 @@ function previewRing(ctx, x, y, r, hole, fill = true) {
   ctx.restore();
 }
 
+// THE RING ITSELF — the wash, the two rims, and the dashed inner limit an
+// artillery piece has. Split out of drawRangeDisc because a ring is a patch of
+// ground a weapon covers and does not have to belong to a tower: stage 5's two
+// bridge crossbowmen belong to no plot, and tapping one has to show the same
+// picture tapping a tower does or it is a different promise about the same thing.
+//
+// An ELLIPSE, not a circle, in both axes of everything below: the board is drawn
+// in perspective and inRange measures the same squash, so a round ring would
+// promise ground the bolt cannot reach.
+function solidRing(ctx, x, y, r, min) {
+  // ARTILLERY HAS A HOLE IN IT. A catapult cannot drop a rock on its own feet,
+  // so the ground inside `minRange` is dead and anything walking through it is
+  // safe. The fill is an ANNULUS rather than a disc, which is the only honest
+  // picture: the pale wash means "this shoots here", and washing over the dead
+  // zone would promise reach the weapon does not have.
+  //
+  // Two ellipses in one path with an even-odd fill. Drawing the hole as a second
+  // shape on top would need a colour that matches the ground under it, and the
+  // ground is grass, road, dirt and other buildings depending on the plot.
+  ctx.fillStyle = 'rgba(240,230,210,0.10)';
+  ctx.beginPath();
+  ctx.ellipse(x, y, r, r * SQUASH, 0, 0, Math.PI * 2);
+  if (min) ctx.ellipse(x, y, min, min * SQUASH, 0, 0, Math.PI * 2);
+  ctx.fill('evenodd');
+
+  ctx.strokeStyle = 'rgba(24,26,20,0.40)';
+  ctx.lineWidth = 3;
+  ringPath(ctx, x, y, r, 3);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,247,228,0.72)';
+  ctx.lineWidth = 2;
+  ringPath(ctx, x, y, r);
+  ctx.stroke();
+
+  // The inner rim, dashed and warmer than the outer one. Dashed because it is a
+  // limit rather than a reach — the same visual grammar the upgrade preview uses
+  // — and warmer because the two rims mean opposite things and a player glancing
+  // at a plot should not have to work out which ellipse is which.
+  if (min) {
+    ctx.save();
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = 'rgba(24,26,20,0.40)';
+    ctx.lineWidth = 3;
+    ringPath(ctx, x, y, min, 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,190,120,0.85)';
+    ctx.lineWidth = 2;
+    ringPath(ctx, x, y, min);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawRangeDisc(ctx, t, buying) {
   // THROUGH rangeOf, not off the def, so the ring and the targeting cannot
   // disagree. Far Shot takes the Ballista Turret from 260 to 480 and this is the
@@ -820,41 +932,7 @@ function drawRangeDisc(ctx, t, buying) {
   // shape on top would need a colour that matches the ground under it, and the
   // ground is grass, road, dirt and other buildings depending on the plot.
   const min = t.def.minRange || 0;
-
-  ctx.fillStyle = 'rgba(240,230,210,0.10)';
-  ctx.beginPath();
-  ctx.ellipse(t.x, t.y, r, r * SQUASH, 0, 0, Math.PI * 2);
-  if (min) ctx.ellipse(t.x, t.y, min, min * SQUASH, 0, 0, Math.PI * 2);
-  ctx.fill('evenodd');
-
-  ctx.strokeStyle = 'rgba(24,26,20,0.40)';
-  ctx.lineWidth = 3;
-  ringPath(ctx, t.x, t.y, r, 3);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(255,247,228,0.72)';
-  ctx.lineWidth = 2;
-  ringPath(ctx, t.x, t.y, r);
-  ctx.stroke();
-
-  // The inner rim, dashed and warmer than the outer one. Dashed because it is a
-  // limit rather than a reach — the same visual grammar the upgrade preview uses
-  // — and warmer because the two rims mean opposite things and a player glancing
-  // at a plot should not have to work out which ellipse is which.
-  if (min) {
-    ctx.save();
-    ctx.setLineDash([6, 5]);
-    ctx.strokeStyle = 'rgba(24,26,20,0.40)';
-    ctx.lineWidth = 3;
-    ringPath(ctx, t.x, t.y, min, 2);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(255,190,120,0.85)';
-    ctx.lineWidth = 2;
-    ringPath(ctx, t.x, t.y, min);
-    ctx.stroke();
-    ctx.restore();
-  }
+  solidRing(ctx, t.x, t.y, r, min);
 
   // AND A SHRINKING PREVIEW LAST OF ALL, inside everything the tower already
   // draws. Same rule as the outer one, applied the other way round: the nearer
