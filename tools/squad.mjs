@@ -9,7 +9,7 @@
 // unnoticed for as long as they did.
 
 import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath } from '../src/units.js';
-import { at as pointOn, LANE } from '../src/route.js';
+import { at as pointOn, nearestOn, LANE } from '../src/route.js';
 import { inRange } from '../src/ground.js';
 import { families } from '../src/data/towers.js';
 import { level, useLevel, levels } from '../src/level.js';
@@ -165,48 +165,66 @@ const check = (ok, label, detail = '') => {
 // road that doubles back offers two spots the same distance from a finger out of
 // reach of both; either is correct, and demanding one would be testing the
 // tie-break instead of the posting.
+//
+// EVERY BOARD, AND EVERY ROAD ON IT. This check existed and this bug walked past it,
+// which is worth more than the bug: it ran on ONE board — the Bend, which has a
+// single road — and it worked out the best available posting by sweeping
+// `level.routes[near.route]`, the one road `nearestOnPath` picks. That is the very
+// assumption the code under test was making. A checker that shares the assumption it
+// is meant to be testing agrees with anything.
+//
+// So the best is now the best over ALL roads, and the loop runs every level. The
+// owner's report: "Units will head to another rally point instead of the rally point
+// I clicked." It was 3.1% of drags on stage 3, 1.6% on stage 4 and the Fork, 1.3% on
+// stage 5 — and 0 on both single-road boards, which is exactly why one board was not
+// enough to see it.
 console.log('\nWhere a flag puts them\n');
 {
   const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
-  let checked = 0, off = 0, worst = 0;
+  let checked = 0, off = 0, worst = 0, where = '';
 
-  for (const plot of level.plots) {
-    for (let x = 0; x < 960; x += 20) {
-      for (let y = 0; y < 540; y += 20) {
-        const near = nearestOnPath(x, y);
-        if (Math.hypot(near.x - x, near.y - y) > 40) continue;
-        const road = level.routes[near.route];
+  for (const [li, lv] of levels.entries()) {
+    useLevel(li);
+    for (const plot of lv.plots) {
+      for (let x = 0; x < 960; x += 20) {
+        for (let y = 0; y < 540; y += 20) {
+          const near = nearestOnPath(x, y);
+          if (Math.hypot(near.x - x, near.y - y) > 40) continue;
 
-        // The game's own offset and the game's own reach test, so what is compared
-        // is the CHOICE and not a paraphrase of the rules it chose under.
-        const raw = -(x - near.x) * near.ty + (y - near.y) * near.tx;
-        const across = Math.max(-LANE, Math.min(LANE, raw));
-        const spot = s => {
-          const q = pointOn(road, s);
-          return { x: q.x - q.ty * across, y: q.y + q.tx * across };
-        };
+          // THE BEST POSTING ON ANY ROAD, using the game's own offset rule and the
+          // game's own reach test — so what is compared is the CHOICE and not a
+          // paraphrase of the rules it chose under. The kerb is measured per road,
+          // because which side of a road the finger fell on is a fact about that
+          // road.
+          let best = Infinity;
+          for (const road of lv.routes) {
+            const on = nearestOn([road], x, y);
+            const raw = -(x - on.x) * on.ty + (y - on.y) * on.tx;
+            const across = Math.max(-LANE, Math.min(LANE, raw));
+            for (let s = 0; s <= road.total; s += 2) {
+              const q = pointOn(road, s);
+              const px = q.x - q.ty * across, py = q.y + q.tx * across;
+              if (!inRange(px, py, plot.x, plot.y, guild.range)) continue;
+              best = Math.min(best, Math.hypot(px - x, py - y));
+            }
+          }
+          if (best === Infinity) continue;
+          checked++;
 
-        let best = Infinity;
-        for (let s = 0; s <= road.total; s += 2) {
-          const p = spot(s);
-          if (!inRange(p.x, p.y, plot.x, plot.y, guild.range)) continue;
-          best = Math.min(best, Math.hypot(p.x - x, p.y - y));
+          const t = { plot, fam: barracks, def: guild, x: plot.x, y: plot.y, rally: null };
+          const got = rallyPoint(t, x, y);
+          // 12px of slack: postOn steps 4px along the road and this sweep 2px.
+          const worse = Math.hypot(got.x - x, got.y - y) - best;
+          if (worse > worst) { worst = worse; where = `${lv.id} plot at ${plot.x},${plot.y}, drag to ${x},${y}`; }
+          if (worse > 12) off++;
         }
-        if (best === Infinity) continue;
-        checked++;
-
-        const t = { plot, fam: barracks, def: guild, x: plot.x, y: plot.y, rally: null };
-        const got = rallyPoint(t, x, y);
-        // 12px of slack: postOn steps 4px along the road and this sweep 2px.
-        const worse = Math.hypot(got.x - x, got.y - y) - best;
-        worst = Math.max(worst, worse);
-        if (worse > 12) off++;
       }
     }
   }
 
-  check(off === 0, 'every drag posts the squad at the nearest spot it can reach',
-    `${checked} drags, worst ${worst.toFixed(0)}px off the best available`);
+  check(off === 0, 'every drag posts the squad at the nearest spot it can reach, on any road',
+    `${checked} drags over ${levels.length} boards, worst ${worst.toFixed(0)}px off the best available` +
+    (worst > 6 ? ` (${where})` : ''));
 }
 
 console.log(bad ? `\n${bad} failure(s).` : '\nSquad behaves.');

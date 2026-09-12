@@ -190,7 +190,6 @@ function stations(tower) {
   // have not sent it anywhere. The rally is stored as a free point rather than
   // a point on the path, so it survives an upgrade and stays where it was put.
   const want = tower.rally || { x: tower.x, y: tower.y };
-  const near = nearestOnPath(want.x, want.y);
 
   // WHICH SIDE OF THE ROAD, AND HOW FAR OVER, which the centreline snap above
   // throws away and this puts back. It is the whole of "rally at the edge of the
@@ -204,7 +203,6 @@ function stations(tower) {
   // toward its own barracks, and put 115 of 435 shipped soldier positions on the
   // grass. A squad nobody has sent anywhere has been told nothing about which side
   // of the road to stand on, and the middle is the answer.
-  const across = tower.rally ? kerbOf(near, want) : 0;
 
   // AND STRAIGHT TO postOn, WHICH KEEPS THE STRETCH THE PLAYER POINTED AT.
   //
@@ -222,7 +220,56 @@ function stations(tower) {
   // the ring, through the same inRange the clamp used, and a walk cannot cross to
   // another stretch. So the reach is still enforced, and it is enforced on the
   // piece of road the player was pointing at.
-  return stationsOn(tower, { ...near, across, at: want });
+  return layoutOn(tower, postAny(tower, want, !!tower.rally));
+}
+
+// WHICH ROAD, asked of the ANSWER rather than of the centreline.
+//
+// THE OWNER'S REPORT: "There are some instances where rally point is not consistent.
+// Units will head to another rally point instead of the rally point I clicked."
+//
+// Both readers of a rally used to pick the road first and then look for a posting on
+// it: `nearestOnPath` returns whichever road's CENTRELINE runs closest to the finger,
+// and postOn then sweeps that one road. Those are two different questions on a board
+// with more than one road, and the first one is not the one being asked. A thumb can
+// land a few pixels nearer road A while the only part of A inside the tower's ring is
+// half a board away — and road B has tarmac right under the finger.
+//
+// Then the men march off to A, which is what the owner saw.
+//
+// MEASURED, over every drag the ring allows on every plot of every board: the single-
+// road boards are untouched at 0 of 11,809 and 0 of 20,039, and the multi-road ones
+// are 3.1% of drags on stage 3, 1.6% on stage 4, 1.3% on stage 5. The worst sends a
+// squad 196px from the finger where 57px was available on the other road.
+//
+// So it asks each road the same question postOn already asks of one — where on you
+// can this tower post its men, nearest to where the player pointed — and keeps the
+// best answer. That is the same widening postOn itself went through when it stopped
+// walking one way along a road and started sweeping the whole of it; this is the next
+// road out.
+//
+// THE KERB IS PER ROAD, and it has to be: the offset is which side of THIS road the
+// finger fell on, and two roads that cross run in different directions. Measuring it
+// once against the nearest centreline and carrying it onto another road would post
+// the squad on the wrong side of the one they end up on.
+//
+// `kerb` is false for a squad nobody has rallied — see the note above the call.
+//
+// Event-driven, not per frame: the two readers are makeUnits and moveUnits, so this
+// runs when a tower is built, upgraded or given an order.
+function postAny(tower, want, kerb) {
+  let best = null;
+  for (let ri = 0; ri < level.routes.length; ri++) {
+    // On a one-road list nearestOn reports route 0, which is why the index is put
+    // back rather than trusted.
+    const near = { ...nearestOn([level.routes[ri]], want.x, want.y), route: ri };
+    const across = kerb ? kerbOf(near, want) : 0;
+    const post = postOn(tower, { ...near, across, at: want });
+    const q = pointOn(level.routes[post.route], post.s);
+    const d = Math.hypot(q.x - q.ty * post.across - want.x, q.y + q.tx * post.across - want.y);
+    if (!best || d < best.d) best = { post, d };
+  }
+  return best.post;
 }
 
 // How far off the centreline a point is, signed, held inside KERB.
@@ -400,12 +447,15 @@ function postOn(tower, base) {
 // point that comes back is on the road and inside the ring, so running stations()
 // on it finds it fits on the first test and posts the squad exactly there.
 export function rallyPoint(tower, x, y) {
-  const near = nearestOnPath(x, y);
-  const across = kerbOf(near, { x, y });
   // No range clamp, for the reason spelled out in stations(): clamping first and
   // re-finding the road second is what used to throw a squad onto a different
-  // stretch. postOn walks back along THIS one.
-  const post = postOn(tower, { ...near, across, at: { x, y } });
+  // stretch. postOn walks back along the road it is given.
+  //
+  // THROUGH THE SAME postAny stations() uses, which is what keeps the flag and the
+  // men one answer. It has to be the same function and not merely the same steps:
+  // the flag is stored and read back, so a picture drawn by one rule and obeyed by
+  // another is a squad that stands somewhere the player was not shown.
+  const post = postAny(tower, { x, y }, true);
   const q = pointOn(level.routes[post.route], post.s);
   // The offset is part of the answer: a flag stored on the centreline would send
   // the squad back to the middle of the road the next time stations() read it.

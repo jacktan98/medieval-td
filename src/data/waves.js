@@ -2028,14 +2028,22 @@ export const stage5Waves = [
                        { type: 'heavy_inf', count: 1, gap: 2.0 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 2, gap: 1.8 },
                        { type: 'heavy_inf', count: 2, gap: 2.0 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.5 }, { type: 'heavy_inf', count: 4, gap: 2.0 },
-                       { type: 'archer_inf', count: 6, gap: 1.4 }] },
+  // FIVE IS WHERE THE TWO BOARDS PART. The Workshop's fifth drops the rank of thugs
+  // and sends four tough, four giants and six archers; this one keeps the ten thugs
+  // in front and halves the giants behind them. Same wave, different question — a
+  // screen of bodies to chew through with two archers shooting over it, rather than
+  // four giants arriving on their own.
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'tough_inf', count: 4, gap: 1.5 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }, { type: 'archer_inf', count: 6, gap: 1.4 }] },
   { rest: 10, groups: [{ type: 'blocker_inf', count: 6, gap: 1.5 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
                        { type: 'archer_inf', count: 10, gap: 1.2 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.4 }, { type: 'heavy_inf', count: 6, gap: 1.8 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.4 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
                        { type: 'archer_inf', count: 16, gap: 1.1 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.3 }, { type: 'heavy_inf', count: 8, gap: 1.6 },
-                       { type: 'archer_inf', count: 20, gap: 1.0 }] }
+  // AND THE LAST IS THE SEVENTH WITH TWO MORE GIANTS IN IT, at the owner's ask. It
+  // was ten blockers, eight giants and twenty archers; the board ends on a step up
+  // rather than on a wave half again as big as the one before it.
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.3 }, { type: 'heavy_inf', count: 6, gap: 1.6 },
+                       { type: 'archer_inf', count: 16, gap: 1.0 }] }
 ];
 
 export const wavesExtended = [

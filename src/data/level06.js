@@ -78,22 +78,24 @@ const northEast = [
 // board with more than one. Eight are buildable and the ninth opens with a ballista
 // standing on it; see `prebuilt` below.
 //
-// FIVE OF THEM READ "FAR" at the splitter's 95px, and on this board that is the
-// artwork being consistent rather than careless: the road is 55px at its median
-// against the earlier boards' 44 to 48, so a plot set the same distance back from
-// the KERB is further from the centreline the tower actually measures against.
-// Every one of them still covers a real share of the road — tools/siege.mjs
-// measures that, and the worst here is well clear of its floor.
+// ONE OF THEM READS "FAR" at the splitter's 95px, and it used to be five. The owner
+// moved the markers in — "Adjusted most of the plot markers nearer to the road" — and
+// the numbers moved with them: the worst clearance was 128px off the centreline and
+// is now 101. This board's road is 55px at its median against the earlier boards' 44
+// to 48, so a plot set the same distance back from the KERB is still further from the
+// centreline a tower measures against, which is why the middle one remains FAR.
+//
+// Every one covers a real share of the road — tools/siege.mjs measures that.
 const plots1 = [
-  { x:  80, y: 496 },   //  947 from the keep,  88 off the road
-  { x:  71, y: 308 },   //  943 from the keep, 100 off the road
-  { x: 232, y: 470 },   //  814 from the keep,  90 off the road
-  { x: 192, y: 254 },   //  786 from the keep, 128 off the road
+  { x:  86, y: 488 },   //  940 from the keep,  81 off the road
+  { x:  77, y: 327 },   //  938 from the keep,  80 off the road
+  { x: 243, y: 462 },   //  801 from the keep,  86 off the road
+  { x: 218, y: 285 },   //  770 from the keep,  90 off the road
   { x: 461, y: 222 },   //  532 from the keep, 101 off the road — between the two top roads
-  { x: 749, y: 243 },   //  279 from the keep,  98 off the road
-  { x: 735, y: 427 },   //  244 from the keep,  82 off the road
-  { x: 883, y: 258 },   //  124 from the keep,  99 off the road
-  { x: 880, y: 448 }    //  112 from the keep,  91 off the road
+  { x: 744, y: 256 },   //  280 from the keep,  85 off the road
+  { x: 720, y: 426 },   //  259 from the keep,  85 off the road
+  { x: 880, y: 272 },   //  125 from the keep,  85 off the road
+  { x: 873, y: 438 }    //  119 from the keep,  81 off the road
 ];
 
 export const level06 = {

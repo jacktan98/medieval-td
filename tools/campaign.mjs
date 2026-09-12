@@ -1022,10 +1022,10 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
     '10 light_inf + 2 tough_inf',
     '10 light_inf + 4 tough_inf + 1 heavy_inf',
     '10 light_inf + 2 blocker_inf + 2 heavy_inf',
-    '4 tough_inf + 4 heavy_inf + 6 archer_inf',
+    '10 light_inf + 4 tough_inf + 2 heavy_inf + 6 archer_inf',
     '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
-    '8 blocker_inf + 6 heavy_inf + 16 archer_inf',
-    '10 blocker_inf + 8 heavy_inf + 20 archer_inf'
+    '8 blocker_inf + 4 heavy_inf + 16 archer_inf',
+    '8 blocker_inf + 6 heavy_inf + 16 archer_inf'
   ];
   const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got5.join(' | ') === WANT5.join(' | '), 'the Castle sends exactly the eight it was given',
@@ -1037,14 +1037,20 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
     'and opens with nothing built, the first board since the tutorial to',
     `${(castle.prebuilt || []).length} prebuilt`);
 
-  // ITS FIRST SIX WAVES ARE STAGE 4'S, to the man. Stated because it is a DESIGN —
-  // the Workshop teaches the sequence and the Castle asks whether it was learned —
-  // and a design that is only true by coincidence stops being one silently.
+  // ITS FIRST FOUR WAVES ARE STAGE 4'S, to the man, and the fifth is where they part.
+  // Stated because it is a DESIGN — the Workshop teaches the opening and the Castle
+  // asks whether it was learned — and a design that is only true by coincidence stops
+  // being one silently.
+  //
+  // IT WAS SIX. The owner rewrote the Castle's fifth: the Workshop opens that wave
+  // with four tough thugs and this one puts ten ordinary ones in front of them. So
+  // the shared run is four, and the check says four rather than quietly counting
+  // whatever happens to match.
   const shop = levels.find(l => l.id === 'm6');
-  const same = castle.waves.slice(0, 6).every((w, i) =>
-    JSON.stringify(w.groups) === JSON.stringify(shop.waves[i].groups));
-  ok(same, "and its first six are the Workshop's own, unchanged",
-    same ? '6 of 6 identical' : 'they have drifted apart');
+  const shared = castle.waves.findIndex((w, i) =>
+    i >= shop.waves.length || JSON.stringify(w.groups) !== JSON.stringify(shop.waves[i].groups));
+  ok(shared === 4, "and its first four are the Workshop's own, unchanged",
+    `${shared} of ${shop.waves.length} identical before they part`);
 
   // THE KEEP IS OFF THE BOTTOM. Every other board ends past the right edge, and this
   // is the one that made the exit an argument rather than a constant — so it is worth
