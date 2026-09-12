@@ -88,7 +88,7 @@ const plots1 = [
   { x: 322, y: 458 },   //  691 from the bridge,  79 off the road
   { x: 657, y: 155 },   //  648 from the bridge,  88 off the road
   { x: 465, y: 427 },   //  565 from the bridge,  82 off the road
-  { x: 566, y: 211 },   //  541 from the bridge,  85 off the road
+  { x: 527, y: 225 },   //  504 from the bridge,  93 off the road
 ];
 
 export const level07 = {
@@ -151,7 +151,7 @@ export const level07 = {
     { x: 684, y: 323, unit: 'Crossbowman' }
   ],
 
-  // WHAT A FIGURE CAN WALK BEHIND. Two things: the castle, and one brazier.
+  // WHAT A FIGURE CAN WALK BEHIND. One thing: the castle.
   //
   // THE BRIDGE IS DELIBERATELY NOT HERE, and it is the biggest thing on the board.
   // Its box feet at y 651 on a 540px canvas — it runs off the bottom-right corner —
@@ -172,9 +172,14 @@ export const level07 = {
   // it was looked at, and "flat" is right.
   frontArt: 'front07',
   front: [
-    { x: 498, y: 207, w:  14, h:  63 },   // stands on y 270 — the brazier by the gate
-    { x: 127, y:  35, w: 369, h: 259 }   // stands on y 294 — the castle and its ramp
+    { x: 127, y:  35, w: 359, h: 209 }   // stands on y 244 — the castle and its braziers
   ],
+  // ONE BOX WHERE THERE WERE TWO, and both halves of that are the redraw rather than
+  // a change here. The blue ramp out of the gate is a scatter of cobbles now, which
+  // is flat and gets no box; without it bridging them, the castle's own walls decide
+  // its ground line and it foots at 244 rather than 294. And both braziers moved from
+  // the open grass to the gate itself, so they stand against the wall and come through
+  // inside the castle's box rather than each holding one of their own.
   // THE BARRICADE AT THE BRIDGE IS NOT HERE, and the splitter says why each time it
   // runs: it is a low wall drawn on a long diagonal, so the one ground line its box
   // can give is the bottom of its far end and that puts the whole wall in front of
