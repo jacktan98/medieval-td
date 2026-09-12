@@ -38,8 +38,10 @@ import {
   PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
   modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
-  diffTabs, countAtDiff, goldAtDiff, editable, adminPx
+  diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
+  roadRows, reachedBtn, starStepper, canReach, setReached
 } from '../src/admin.js';
+import { STAGES } from '../src/data/overview.js';
 import { starsFor, starCuts, bestStars, recordStars, clearStars, MAX_STARS } from '../src/score.js';
 import { DIFFICULTIES, scaleWaves, scaleCount, startingGold } from '../src/data/difficulty.js';
 
@@ -1183,6 +1185,68 @@ console.log('\nA stored order that has gone stale\n');
     'with the counts it was already holding kept', 'light_inf x7');
 
   delete globalThis.localStorage;
+}
+
+// --- the road tab fits in the panel -------------------------------------------
+//
+// THE ROAD TAB IS THE ONLY WAY TO OPEN THE ROAD WITHOUT PLAYING THE GAME, which is
+// what it is for: checking that the leg into stage 8 draws correctly should not mean
+// winning seven games first, on boards that in most cases do not exist yet.
+//
+// It shipped broken the moment the artist drew an eleventh stage. The rows were laid
+// out five to a column, so stage 11 started a THIRD column at x 920 against an inner
+// edge of 936: the row ran off the side of the panel and its Reached button sat
+// entirely past it. The road could not be opened to the last stage at all, and
+// nothing said so — the panel drew, the other ten rows worked, and the eleventh was
+// a sliver of text against the frame.
+//
+// Nothing in this file looked at that tab. These two checks are the ones that would
+// have caught it: everything is inside the panel, and the road can be walked to the
+// end.
+console.log('\nThe road tab\n');
+{
+  // The panel's own padding, mirrored here rather than exported: what is being
+  // asserted is that the controls sit inside the frame with the same margin every
+  // other row of this dashboard keeps, and a checker that took the number from the
+  // file it checks could not notice the number being wrong.
+  const PAD = 16;
+  const left = PANEL.x + PAD, right = PANEL.x + PANEL.w - PAD, top = PANEL.y + PAD;
+
+  const rows = roadRows();
+  ok(rows.length === STAGES.length, 'every stage on the map has a row on the road tab',
+    `${rows.length} row(s) for ${STAGES.length} stage(s)`);
+
+  const parts = rows.flatMap(r => {
+    const st = starStepper(r);
+    return [['row', r.i, r], ['Reached', r.i, reachedBtn(r)],
+            ['minus', r.i, st.minus], ['value', r.i, st.value], ['plus', r.i, st.plus]];
+  });
+  const outside = parts.filter(([, , b]) =>
+    b.x < left || b.x + b.w > right || b.y < top || b.y + b.h > FOOT_Y);
+  ok(!outside.length, 'and every row and control on it is inside the panel',
+    outside.length
+      ? `${outside[0][0]} on stage ${outside[0][1] + 1} runs to x ${Math.round(outside[0][2].x + outside[0][2].w)}` +
+        ` / y ${Math.round(outside[0][2].y + outside[0][2].h)} against ${right} / ${FOOT_Y}`
+      : `${parts.length} control(s) within ${left}..${right} and above the footer at ${FOOT_Y}`);
+
+  // AND THE ROAD CAN BE WALKED TO THE END, which is the thing the layout was quietly
+  // taking away. One press per stage, each time on the only row that allows it.
+  //
+  // A BUTTON OFF THE PANEL IS NOT A BUTTON. canReach is pure state and answered yes
+  // for stage 11 the whole time it was undrawable, so a walk that asked it alone
+  // passed against the bug — this asks whether the thing a finger lands on is on the
+  // screen as well.
+  const inPanel = b => b.x >= left && b.x + b.w <= right && b.y >= top && b.y + b.h <= FOOT_Y;
+  const st = { unlocked: 0, pendingReveal: null };
+  let pressed = 0;
+  for (let n = 0; n < STAGES.length + 2 && st.unlocked < STAGES.length; n++) {
+    const next = rows.find(r => r.i === st.unlocked && canReach(st, r.i) && inPanel(reachedBtn(r)));
+    if (!next) break;
+    setReached(st, next.i, true);
+    pressed++;
+  }
+  ok(st.unlocked === STAGES.length, 'and pressing one row at a time opens it to the last stage',
+    `${pressed} press(es) reached stage ${st.unlocked} of ${STAGES.length}`);
 }
 
 console.log(bad

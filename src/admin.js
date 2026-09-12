@@ -1088,10 +1088,22 @@ export const NEXT_BTN = { x: INNER.r - 52, y: FOOT_Y, w: 52, h: FOOT_H };
 const ROAD_TOP = INNER.y + 76;
 const ROAD_ROW_H = 44;
 const ROAD_COL_W = 448;
-const ROAD_PER_COL = 5;
 
-// Two columns of five. The stage list is a fixed ten and always will be until the
-// artist draws an eleventh marker, so this does not page.
+// TWO COLUMNS, AS DEEP AS THE ROAD IS LONG.
+//
+// It was a fixed five, under a comment saying the stage list "is a fixed ten and
+// always will be until the artist draws an eleventh marker". The artist drew an
+// eleventh marker. Stage 11 started a THIRD column at x 920 against an inner edge of
+// 936, so its row ran off the side of the panel with its Reached button entirely
+// past it — and that button is the only way to open the road to stage 11, which is
+// the one thing the road tab exists to do.
+//
+// So the depth is counted rather than fixed. Two columns is the shape of the panel
+// and that does not change; how many rows go in one is a fact about the drawing,
+// and the drawing is allowed to grow. The check in tools/admin.mjs is the other half
+// of this: it holds every row, button and stepper inside the panel and clear of the
+// footer, so the next stage to be added either fits or fails loudly.
+const ROAD_PER_COL = Math.ceil(STAGES.length / 2);
 export const roadRows = () => STAGES.map((s, i) => ({
   i,
   level: s.level,
