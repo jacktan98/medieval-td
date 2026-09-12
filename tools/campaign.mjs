@@ -41,7 +41,7 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
 import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
-import { readArtwork, allGroups, bounds, MAP_SCALE } from './svg.mjs';
+import { readArtwork, allGroups, bounds, MAP_SCALE, layerFiles } from './svg.mjs';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
 import { selectionInfo } from '../src/select.js';
@@ -68,13 +68,21 @@ const ok = (cond, label, detail = '') => {
 
 // --- what the drawing says today --------------------------------------------
 
-const layerFiles = readdirSync(DIR)
-  .filter(f => /^Overview_Map_Layer_\d+\.svg$/.test(f))
-  .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]))
-  .map(f => `${DIR}/${f}`);
+// WHICH FILES THE DRAWING IS, through the same layerFiles the tool reads it with.
+//
+// Everything below re-implements the tool's ARITHMETIC on purpose — see the note
+// under this one — but which files exist is not arithmetic, it is the input. A
+// checker looking at a different set of files from the tool is not checking the
+// tool, it is describing a drawing nobody draws.
+//
+// It mattered immediately. Both sides used to find layers with `_Layer_\d+\.svg`,
+// and when layer 8 arrived split in two as `_Layer_8a` and `_Layer_8b` that matched
+// neither — so both quietly agreed the map had no layer 8 in it at all, and the
+// whole of it went missing from the picture with every check still green.
+const LAYER_FILES = layerFiles(`${DIR}/Overview_Map`);
 
 const svg = readFileSync(GUIDE, 'utf8');
-const allLayers = layerFiles.map(f => readFileSync(f, 'utf8')).join('\n');
+const allLayers = LAYER_FILES.map(f => readFileSync(f, 'utf8')).join('\n');
 
 // THE GROUP TRANSFORMS ARE WALKED HERE TOO, deliberately as a second
 // implementation rather than by importing the generator's. A checker that shares
@@ -223,7 +231,7 @@ ok(roadLines.length === STAGE_COUNT, 'and one road line per stage, no more',
 {
   const tf = (allLayers.match(/transform="matrix\(/g) || []).length;
   ok(tf > 0, 'and the picture still nests shapes inside moved groups',
-    `${tf} transform(s) across ${layerFiles.length} layer(s)`);
+    `${tf} transform(s) across ${LAYER_FILES.length} layer(s)`);
 }
 
 console.log('\n--- every road leads where it says ---\n');
@@ -377,13 +385,29 @@ console.log('\n--- the display map is the same drawing, muted ---\n');
   // laid over the parchment rather than under it, so they cannot be part of the
   // picture the parchment is multiplied over — they live in their own file and are
   // counted against that instead, below.
+  // AND NO LAYER FILE IS QUIETLY LEFT OUT.
+  //
+  // Every check in this block compares the derived maps against LAYER_FILES, so a
+  // layer that the discovery misses is a layer neither side knows about — the two
+  // agree perfectly and the drawing is missing a layer. That is not hypothetical:
+  // when layer 8 was split into `_Layer_8a` and `_Layer_8b`, the `_Layer_\d+\.svg`
+  // both sides used matched neither, and the whole layer dropped out of the picture
+  // with every check still green.
+  //
+  // So this asks the DIRECTORY instead: whatever is named like a layer must be one.
+  const onDisk = readdirSync(DIR).filter(f => /^Overview_Map_Layer_.+\.svg$/.test(f)).sort();
+  const taken = LAYER_FILES.map(f => f.split('/').pop()).sort();
+  const missed = onDisk.filter(f => !taken.includes(f));
+  ok(!missed.length, 'every layer file beside the map is read as a layer',
+    missed.length ? `${missed.join(', ')} ignored` : `${taken.length} file(s), none skipped`);
+
   const LETTERING_FILL = '#fff5e1';
   const isNames = t => paths(t).length > 0 &&
     paths(t).every(g => /fill="#fff5e1"/i.test(g));
-  const pictureFiles = layerFiles.slice(1)
+  const pictureFiles = LAYER_FILES.slice(1)
     .map(f => readFileSync(f, 'utf8'))
     .filter(t => !isNames(t));
-  const nameFiles = layerFiles.slice(1)
+  const nameFiles = LAYER_FILES.slice(1)
     .map(f => readFileSync(f, 'utf8'))
     .filter(isNames);
   const pictureText = pictureFiles.join('\n');
@@ -396,7 +420,7 @@ console.log('\n--- the display map is the same drawing, muted ---\n');
   const merged = readFileSync(MERGED, 'utf8');
   ok(paths(merged).length === paths(allLayers).length,
     'and the merged map holds every shape in every layer',
-    `${paths(merged).length} path(s), ${paths(allLayers).length} across ${layerFiles.length}`);
+    `${paths(merged).length} path(s), ${paths(allLayers).length} across ${LAYER_FILES.length}`);
 
   // THE GUIDES ARE ACTUALLY GONE from what the player sees, checked by colour
   // rather than by counting: a count can come out right while the wrong shapes
@@ -679,19 +703,30 @@ console.log('\n--- the march is one pace, whatever the distance ---\n');
   ok(FLOOR > 0, 'the march floor is readable from src/overview.js', `ROAD_MIN_SECONDS = ${FLOOR}`);
   const paced = paces.filter(p => p.secs > FLOOR + 1e-9);
   const lo = Math.min(...paced.map(p => p.pace)), hi = Math.max(...paced.map(p => p.pace));
-  // TWO THIRDS, WHERE IT USED TO BE "ALL BUT TWO", and the number moved because the
-  // floor did. What this clause is for is keeping the floor an EXCEPTION: a floor
-  // high enough to swallow most of the map would make "one pace" true of nothing,
-  // and the check would pass on a map that had quietly gone back to a fixed
-  // duration. "All but two" was a fine way to say that against a 0.8s floor, which
-  // three of these ten legs cleared easily; against 2.0s, three of them are short
-  // enough to need it, and the rule as written called a correct map broken.
+  // AND THE FLOOR ONLY EVER CATCHES SHORT LEGS, which is the thing this clause was
+  // always trying to say and said twice with a guess instead.
   //
-  // A fraction says the same thing and survives the next retune of either constant.
-  // Seven of ten walk at one pace here, to the pixel per second.
-  ok(paced.length * 3 >= STAGE_COUNT * 2 && hi - lo < 0.5,
+  // It was "all but two", then "two thirds", and both were arbitrary in the same
+  // way: a count of how many legs are allowed to be floored is not a fact about
+  // anything. Each one failed a correct map the first time the drawing moved under
+  // it — "all but two" when the floor went from 0.8s to 2.0s, and "two thirds" when
+  // the artist added an eleventh stage and the new Winchester leg came out 66px
+  // long. Four floored of eleven is 4 too many for a two-thirds rule and exactly
+  // right for the map.
+  //
+  // What the clause is actually for is keeping the floor an EXCEPTION rather than
+  // the rule, so a map that had quietly gone back to a fixed duration could not
+  // pass. That is checkable exactly: a leg is allowed to be floored IF AND ONLY IF
+  // walking it at the shared pace would take less than the floor. No fraction, and
+  // nothing to retune when either constant moves.
+  const SPEED = +(/ROAD_SPEED = ([\d.]+)/.exec(readFileSync('src/overview.js', 'utf8')) || [0, 0])[1];
+  ok(SPEED > 0, 'and the march speed with it', `ROAD_SPEED = ${SPEED}`);
+  const wrongly = paces.filter(p => (p.secs <= FLOOR + 1e-9) !== (p.d / SPEED < FLOOR - 1e-9));
+  ok(paced.length > 0 && hi - lo < 0.5 && !wrongly.length,
     'every leg long enough to see is walked at one speed',
-    `${paced.length} of ${STAGE_COUNT} at ${lo.toFixed(0)}px/s`);
+    `${paced.length} of ${STAGE_COUNT} at ${lo.toFixed(0)}px/s, ` +
+    (wrongly.length ? `but stage ${wrongly[0].i + 1} is on the wrong side of the floor`
+                    : `the other ${STAGE_COUNT - paced.length} too short to be`));
 
   const floored = paces.filter(p => p.secs <= FLOOR + 1e-9);
   ok(floored.every(p => p.pace <= lo + 1e-6),

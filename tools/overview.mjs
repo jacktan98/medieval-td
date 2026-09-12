@@ -65,7 +65,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 
-import { readdirSync } from 'node:fs';
+import { layerFiles } from './svg.mjs';
 
 const DIR = 'assets/map';
 const OUT = 'src/data/overview.js';
@@ -78,12 +78,17 @@ const SEPIA = 'assets/map/Overview_Map_sepia.svg';
 // The region names, alone and untouched, drawn over the sheet rather than under it.
 const NAMES = 'assets/map/Overview_Map_names.svg';
 
-// Sorted by the number in the name, not by string, so a tenth layer lands after
-// the ninth rather than after the first.
-const LAYERS = readdirSync(DIR)
-  .filter(f => /^Overview_Map_Layer_\d+\.svg$/.test(f))
-  .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]))
-  .map(f => `${DIR}/${f}`);
+// THROUGH layerFiles, which is where the board maps get their layers and which
+// already knows the two things this needs: sort by the NUMBER rather than the
+// string, so a tenth layer lands after the ninth, and accept LETTERED PARTS.
+//
+// A layer may arrive as several files. The owner's reason is the honest one — "the
+// file is too heavy for me to edit in graphite" — and the answer is the same one the
+// castle on stage 5 got: `_Layer_8a` and `_Layer_8b` are one layer, stacked in
+// letter order in layer 8's place. The regex here used to be `_Layer_\d+\.svg`, which
+// matched neither of them, so splitting a layer did not break the map loudly: it
+// simply dropped that layer out of the drawing.
+const LAYERS = layerFiles(`${DIR}/Overview_Map`);
 
 if (LAYERS.length < 2) throw new Error(`expected layer files in ${DIR}, found ${LAYERS.length}`);
 
@@ -93,6 +98,11 @@ if (LAYERS.length < 2) throw new Error(`expected layer files in ${DIR}, found ${
 const SCALE = 0.5;
 
 const MARKER_FILL = '#d30000';
+
+// HOW MANY STAGES THE ROAD HAS, which is a fact about the drawing and is stated here
+// so that adding one is a deliberate edit rather than a silent renumbering. Every
+// marker index in ORDER below moves when this changes.
+const STAGE_MARKERS = 11;
 
 // How close a road line's end has to be to a marker centre to count as arriving
 // there: half the marker's drawn width plus slack. Every end in the current
@@ -296,11 +306,27 @@ function shapesIn(body) {
   return out;
 }
 
-const layers = LAYERS.map(file => {
+// AND THE PARTS OF ONE LAYER COME BACK TOGETHER, so that everything below sees the
+// layer the artist drew rather than the files it was saved in. It matters for more
+// than tidiness: a layer is classified as lettering when EVERY shape in it is in the
+// lettering colour, and half a layer is much likelier to be all of one colour than a
+// whole one is.
+const parts = LAYERS.map(file => {
   const svg = readFileSync(file, 'utf8');
   const { clip, body } = contentOf(svg, file);
-  return { file, clip, body, background: bgOf(svg), shapes: shapesIn(body) };
+  return { n: +/_Layer_(\d+)/.exec(file)[1], file, clip, body,
+           background: bgOf(svg), shapes: shapesIn(body) };
 });
+
+const layers = [];
+for (const part of parts) {
+  const same = layers.find(l => l.n === part.n);
+  if (!same) { layers.push({ ...part, files: [part.file] }); continue; }
+  same.files.push(part.file);
+  same.body += '\n' + part.body;
+  same.shapes.push(...part.shapes);
+  same.background = same.background || part.background;
+}
 
 // LAYER 1 IS THE GUIDE and nothing else reads from it. The markers and the road
 // are both taken from here alone, so a red ellipse the artist draws in a picture
@@ -355,7 +381,22 @@ for (const s of guide.shapes) {
   else if (s.fill === null && s.stroke) drawn.push(flatten(parse(s.d)));
 }
 
-if (markers.length !== 10) throw new Error(`expected 10 markers in ${guide.file}, found ${markers.length}`);
+// WHAT THE GUIDE LAYER SAYS, printed before anything is judged.
+//
+// ORDER below is the one decision in this file, and it is written as marker indices
+// — which are shape order in the artist's file and mean nothing to a reader. The day
+// a stage is added they all move, and without this the only way to re-derive them is
+// to instrument the tool. So it prints the board: where each marker is, and which
+// markers each leg of the road joins.
+console.log(`\n${guide.file.split('/').pop()}: ${markers.length} marker(s), ${drawn.length} road line(s)\n`);
+markers.forEach((m, i) => console.log(
+  `  marker ${String(i).padStart(2)}  at ${String(Math.round(m[0] / 2)).padStart(4)},` +
+  `${String(Math.round(m[1] / 2)).padStart(3)} (game px)`));
+
+if (markers.length !== STAGE_MARKERS) {
+  throw new Error(`expected ${STAGE_MARKERS} markers in ${guide.file}, found ${markers.length} — ` +
+    `if the artist added a stage, raise STAGE_MARKERS and put the new marker in ORDER`);
+}
 if (drawn.length !== markers.length) {
   throw new Error(`expected one road line per marker in ${guide.file}, found ${drawn.length} line(s) for ${markers.length} marker(s)`);
 }
@@ -376,8 +417,8 @@ if (drawn.length !== markers.length) {
 // an overlap and a switchback the artist meant.
 //
 // All of that was arithmetic in service of a question the drawing could simply
-// answer. The road is one stroked line per leg now, ten lines for ten stages, each
-// running from one marker to the next. There is no centre to find, nothing to stitch
+// answer. The road is one stroked line per leg now, one per stage, each running from
+// one marker to the next. There is no centre to find, nothing to stitch
 // and nothing to unpick: flatten the curve and that is the road. Four hundred lines
 // of this file went with the ribbon, and so did every bug that lived in them.
 //
@@ -413,6 +454,12 @@ for (const [i, line] of drawn.entries()) {
 
 if (!approach) throw new Error('no road runs in from off the map; stage 1 has no opening');
 
+// AND WHICH MARKERS EACH LEG JOINS, which is the other half of what somebody needs
+// to write ORDER. The road is a graph and the play order is a walk of it; printing
+// the edges is printing the map that walk is over.
+console.log(`\n  the road runs in from off the map to marker ${approachAt}, then:`);
+for (const J of joined) console.log(`    ${String(J.from).padStart(2)} <-> ${J.to}`);
+
 // --- the play order ---------------------------------------------------------
 
 // THE OWNER'S ORDER, and the one thing in this file that is a decision rather
@@ -424,7 +471,7 @@ if (!approach) throw new Error('no road runs in from off the map; stage 1 has no
 // SHUFFLE IT FREELY. Each stage draws the leg that leads into it from its
 // neighbour on the road, so reordering these cannot make a leg wrong; the only
 // rule is that a stage must come after the one the road reaches it through.
-const ORDER = [0, 1, 2, 3, 4, 5, 9, 7, 8, 6];
+const ORDER = [6, 7, 8, 10, 9, 0, 1, 5, 3, 4, 2];
 
 // WHICH MAP EACH STAGE PLAYS. Six are drawn; the rest are markers on a road with
 // nothing behind them yet and the game shows them locked.
@@ -770,8 +817,8 @@ const stages = ORDER.map((m, i) => ({
 
 const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand.
 //
-// Written by tools/overview.mjs from assets/map/Overview_Map.svg. Re-run it after
-// every redraw of that file:
+// Written by tools/overview.mjs from assets/map/Overview_Map_Layer_*.svg. Re-run it
+// after every redraw of any of them:
 //
 //   node tools/overview.mjs
 //

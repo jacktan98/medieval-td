@@ -610,8 +610,18 @@ it and giving it the next number in the sequence; the tool sorts by that number
 rather than by the string, so a tenth layer lands after the ninth rather than
 after the first.
 
+**And one layer may itself be several files**, named with letters — `_Layer_8a`
+and `_Layer_8b` — for when a single layer gets too heavy to edit. They stack in
+letter order in that number's place and are treated as the one layer the artist
+drew, which matters for the lettering rule below: half a layer is much likelier to
+be all of one colour than a whole one is. Same convention as the board maps.
+
 **Layer 1 is the guide and is not part of the picture.** It holds the road and the
-ten stage markers on a plain green field. All the geometry is read off it, then it
+stage markers on a plain green field — eleven of them at the time of writing, and
+the count is stated as `STAGE_MARKERS` in `tools/overview.mjs` so that adding one is
+a deliberate edit. It has to be: every marker index in `ORDER` moves when it changes,
+and the tool prints the markers and the road graph on every run so those indices can
+be re-derived by reading rather than by instrumenting it. All the geometry is read off it, then it
 is dropped — everything except its background, which is the grass every other
 layer sits on and the only opaque ground in the stack.
 
@@ -683,7 +693,7 @@ whole lot against the layers afterwards.
 
 ### What the tool reads out of the guide
 
-- **The ten stage markers**, the paths filled `#d30000`. Bounding-box centres
+- **The stage markers**, the paths filled `#d30000`. Bounding-box centres
   become the stage positions.
 - **The road**, the stroked paths — on the guide, a path with no fill is road.
   One line per stage.
@@ -691,8 +701,8 @@ whole lot against the layers afterwards.
 
 ### Three things the guide has to keep doing
 
-**A road leg is one stroked line, drawn end to end.** Ten lines for ten stages,
-each running from one marker to the next. Nothing is measured off its width and
+**A road leg is one stroked line, drawn end to end.** One line per stage, each
+running from one marker to the next. Nothing is measured off its width and
 nothing is stitched: the tool flattens the curve and that is the road. Draw it as
 a single path per leg and it will be followed exactly.
 
