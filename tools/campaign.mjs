@@ -38,8 +38,8 @@ import { levels, useLevel } from '../src/level.js';
 import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
-import { spawn } from '../src/enemies.js';
-import { makeGarrison } from '../src/units.js';
+import { spawn, updateEnemies } from '../src/enemies.js';
+import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
 import { readArtwork } from './svg.mjs';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
@@ -1091,6 +1091,67 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
   ok(base.length < stacked.length,
     'and the painted copies are cut out of the base the game draws',
     `${stacked.length - base.length} characters of artwork removed`);
+
+  // AND THE BOARD STEPS WITH A SQUAD ON IT, which is the check this whole feature
+  // needed and did not have.
+  //
+  // The owner reported stage 5 frozen mid-wave. It was a TypeError thrown inside
+  // updateUnits — the leash that keeps a squad near its barracks read `u.tower.def.
+  // range` through the garrison's stand-in tower, whose `def` is null — and a throw
+  // in the frame loop stops everything with the board still drawn, so it does not
+  // look like a crash, it looks like the game hanging.
+  //
+  // IT NEEDED A BARRACKS TO REACH. Both leash tests live in the passes about helping
+  // with somebody else's fight, so a garrison standing alone never touched them, and
+  // every check and every browser run up to then had been exactly that.
+  //
+  // So this steps the real update with the three things that have to be true at once:
+  // a garrison on the board, a squad on the board, and an enemy the squad is holding.
+  {
+    const barracks = families.find(f => f.id === 'barracks');
+    const st = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [],
+                 splats: [], impacts: [], smoke: [], gold: 0, lives: 20 };
+    const t = makeTower(castle.plots[6], barracks, barracks.tiers[0]);
+    st.towers.push(t);
+    makeUnits(st, t);
+    makeGarrison(st, castle);
+    for (let i = 0; i < 8; i++) spawn(st, 'light_inf');
+
+    let threw = null;
+    try {
+      for (let f = 0; f < 60 * 40; f++) {
+        updateUnits(st, 1 / 60);
+        updateEnemies(st, 1 / 60);
+      }
+    } catch (e) { threw = e.message; }
+    ok(!threw, 'and forty seconds of it step with a squad, a garrison and a wave all on the board',
+      threw || `${st.enemies.length} enemies left, garrison ` +
+        st.units.filter(u => u.garrison).map(u => `${Math.max(0, u.hp).toFixed(0)}hp`).join(' and '));
+  }
+
+  // AND A KILLED ONE COMES BACK WHERE HE STOOD. `respawn: 0` did not mean "at once":
+  // the respawn branch is gated on the clock being above zero, so zero skipped it and
+  // left him drawn at no health, healing back up out of combat — an unkillable man by
+  // way of a number that looked like "instant".
+  {
+    const st = { units: [], enemies: [], towers: [], shots: [], hits: [], corpses: [],
+                 splats: [], impacts: [], smoke: [], gold: 0, lives: 20 };
+    useLevel(levels.indexOf(castle));
+    makeGarrison(st, castle);
+    const u = st.units[0];
+    const post = { x: u.x, y: u.y };
+    // KILLED THE WAY A GIANT KILLS HIM, past zero rather than exactly onto it. At
+    // EXACTLY zero the out-of-combat regen runs first and lifts him back off it, and
+    // he never dies at all — a pre-existing edge that has nothing to do with the
+    // garrison and takes a blow landing inside a tenth of a point of zero to reach.
+    // Setting it to 0 was the first version of this check, and it passed against the
+    // broken code for that reason.
+    u.hp = -1;
+    for (let f = 0; f < 60 * 30; f++) updateUnits(st, 1 / 60);
+    ok(u.hp === u.maxHp && u.x === post.x && u.y === post.y,
+      'and a crossbowman who falls comes back at his own post, not at the corner of the board',
+      `${u.hp}/${u.maxHp} at ${Math.round(u.x)},${Math.round(u.y)} against a post at ${post.x},${post.y}`);
+  }
 }
 
 console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');

@@ -3485,10 +3485,19 @@ export const garrisonUnits = {
     damage: 20,
     cd: 1.6,
     r: 8,
-    // NOT MUSTERED AND NOT REPLACED. A soldier respawns at his tower's muster ring;
-    // there is no tower and no ring, so a garrison that died would have nowhere to come
-    // back to. He regenerates instead, at a swordsman's rate.
-    respawn: 0,
+    // HE COMES BACK, and at his own post rather than at a muster ring — there is no
+    // building to muster at, so updateUnits stands him up where he was standing.
+    //
+    // IT WAS 0, meaning "no delay", and that is not what zero does here. A soldier who
+    // falls is put on `def.respawn` seconds and the respawn branch is gated on the
+    // clock being ABOVE zero, so a zero skipped the branch entirely: he was never
+    // restored, never removed, and simply carried on being drawn at no health —
+    // whereupon the ordinary out-of-combat regen healed him back up from nothing. An
+    // unkillable crossbowman, by way of a number that looked like "instant".
+    //
+    // Ten seconds is longer than any barracks tier's 5 to 8. He is free and there are
+    // two of him; losing them for a while should cost something.
+    respawn: 10,
     regen: 6,
     speed: 0,
     colour: '#6E86B4',

@@ -762,8 +762,13 @@ export function updateUnits(state, dt) {
         // fixed too; this is the half that stops the next one being caught.
         u.respawn = 0;
         u.hp = u.maxHp;
-        u.x = u.tower.x;
-        u.y = u.tower.y;
+        // HOME IS THE TOWER, or his own post if he has none. A barracks soldier
+        // musters at the building and marches back out to his station; a garrison man
+        // has no building to muster at, and taking the stand-in's coordinates would
+        // have stood him up in the top-left corner of the board at (0, 0).
+        const back = u.tower.def ? u.tower : { x: u.rx, y: u.ry };
+        u.x = back.x;
+        u.y = back.y;
         u.face = u.faceIdle;
       }
       continue;
@@ -801,7 +806,24 @@ export function updateUnits(state, dt) {
     // which is the one place he certainly should. WEDGE is the furthest a station
     // sits from the flag, so the leash reaches exactly as far as the squad does.
     const home = u.tower;
-    const leashed = (x, y) => inRange(x, y, home.x, home.y, home.def.range + WEDGE);
+    // AND A MAN WITH NO TOWER IS LEASHED TO HIS OWN FEET.
+    //
+    // The ring a squad is kept inside belongs to its BARRACKS, and a garrison
+    // crossbowman has none: `u.tower` is the stand-in from makeGarrison, whose `def`
+    // is null. Reading `home.def.range` through it threw a TypeError, and a throw
+    // inside the frame loop stops the whole game — the board freezes mid-wave with
+    // every figure still drawn, which is exactly what it looks like from the outside.
+    //
+    // IT TOOK A BARRACKS TO SEE. Both leash tests are in the passes about helping
+    // with somebody ELSE'S fight, so nothing reached them until a squad was on the
+    // board holding something. Playing stage 5 with only towers never touched it.
+    //
+    // Leashing him to where he stands is not a special case dressed up as a rule: he
+    // cannot take a step — `speed: 0` — so the furthest he could ever go and help is
+    // as far as he can already reach.
+    const leashed = home.def
+      ? (x, y) => inRange(x, y, home.x, home.y, home.def.range + WEDGE)
+      : (x, y) => inRange(x, y, u.x, u.y, ENGAGE + WEDGE);
 
     // Four passes, in this order, and the order is the design.
     //
