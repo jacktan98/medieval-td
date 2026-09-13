@@ -1289,15 +1289,16 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
     'and leave by two different edges, one east and one south',
     tails.map(t => `(${Math.round(t.x)}, ${Math.round(t.y)})`).join(' and '));
 
-  // AND A PALADIN KEEP ALREADY STANDING, on the plot the owner counted to. They
-  // counted top to bottom by centre and this list is in ROAD order, so the index is
-  // not the number they said — what is pinned is the PLOT, which is the thing both
-  // orders agree on.
+  // AND A PALADIN KEEP ALREADY STANDING, on "the most top left. Near the fish
+  // storage." What is pinned is the PLOT rather than an index, because the index is an
+  // artefact of the order the list happens to be written in — road order — and a
+  // redraw that moves the markers renumbers them. "Most top left" does not renumber:
+  // it is the plot nearest the top-left corner, and here it wins by 90px.
   useLevel(levels.indexOf(ford));
   const keep = prebuiltOn(ford, families)[0];
-  const byTop = ford.plots.slice().sort((a, b) => a.y - b.y);
-  ok(keep && keep.def.name === 'Paladin Keep' && keep.plot === byTop[2],
-    'and opens with a Paladin Keep on the third plot from the top',
+  const topLeft = ford.plots.reduce((a, b) => (a.x + a.y <= b.x + b.y ? a : b));
+  ok(keep && keep.def.name === 'Paladin Keep' && keep.plot === topLeft,
+    'and opens with a Paladin Keep on the top-left plot, by the fish stall',
     keep ? `${keep.def.name} at (${keep.x}, ${keep.y})` : 'nothing prebuilt');
   ok(keep && (!keep.abilities || !keep.abilities.length),
     'with no abilities bought', `${(keep && keep.abilities || []).length} of them`);

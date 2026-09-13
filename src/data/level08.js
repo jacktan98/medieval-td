@@ -78,8 +78,8 @@ const south = [
 // measures against. Every one of them still covers a real share of the road —
 // tools/siege.mjs measures that.
 const plots1 = [
-  { x: 232, y: 316 },   //  806 from its door,  88 off the road
-  { x: 432, y: 206 },   //  616 from its door,  77 off the road — the top middle one
+  { x: 232, y: 316 },   //  806 from its door,  88 off the road — beside the fish stall
+  { x: 432, y: 206 },   //  616 from its door,  77 off the road
   { x: 496, y: 354 },   //  588 from its door,  81 off the road
   { x: 567, y: 168 },   //  471 from its door,  79 off the road
   { x: 682, y: 301 },   //  370 from its door,  75 off the road
@@ -131,16 +131,17 @@ export const level08 = {
   startGold: 240,
   startLives: 20,
 
-  // A PALADIN KEEP ALREADY STANDING, at the owner's ask: "There is a prebuilt paladin
-  // keep at the top middle (3rd plot marker if you count from top to bottom based on
-  // centre) at the beginning of the game. Players can sell or own abilities for that
-  // tower."
+  // A PALADIN KEEP ALREADY STANDING, at the owner's ask: "Switch the prebuilt paladin
+  // keep plot to the most top left. Near the fish storage." That is (232, 316), the
+  // plot beside the fishermen's stall — first in the list below, because the list is
+  // in ROAD order and this is the plot the road reaches first.
   //
-  // THE PLOT IS NAMED BY INDEX into the list above, which is in ROAD order, and the
-  // owner counted in a different one — top to bottom by centre, where this plot is
-  // third. In road order it is second. Both describe (432, 206), the plot in the top
-  // middle of the board; the index has to be the road one because that is the order
-  // the list is written in, and a redraw that moves the markers moves it with them.
+  // MOVED FROM THE TOP-MIDDLE PLOT, and the move costs the opening tower a great deal:
+  // it stood 616px from a door and now stands 806, on the run down from the bridge
+  // BEFORE the fork. Which is the whole point of standing there. A barracks holds
+  // ground rather than shooting over it, and the one stretch of road every enemy on
+  // this board walks is the one above the fork — a Keep there blocks a whole wave,
+  // where the same Keep below the fork could only ever block half of one.
   //
   // A TIER 4 ON A TIER 3 BOARD, which is why `allow` names the Paladin Keep as well
   // as capping at 3: a prebuilt tower is an ordinary tower in every respect except
@@ -150,7 +151,7 @@ export const level08 = {
   // stand here, exactly as every other prebuilt does. It can be sold, and both of its
   // abilities can be bought; nothing about it is special-cased.
   prebuilt: [
-    { plot: 1, family: 'barracks', name: 'Paladin Keep' }
+    { plot: 0, family: 'barracks', name: 'Paladin Keep' }
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND: the village, and nothing else.
@@ -167,8 +168,8 @@ export const level08 = {
   front: [
     { x: 233, y: 128, w:  35, h:  43, g: 169 },   // stands on y 169 — the Dawnford sign
     { x: 841, y: 112, w:  74, h:  91, g: 186 },   // stands on y 186
-    { x: 104, y: 206, w:  83, h:  88, g: 276 },   // stands on y 276 — the fish stall
-    { x:  42, y: 279, w:  47, h:  36, g: 301 },   // stands on y 301
+    { x:  80, y: 203, w:  83, h:  89, g: 274 },   // stands on y 274 — the fish stall
+    { x: 111, y: 309, w:  46, h:  36, g: 331 },   // stands on y 331 — the crates below it
     { x: 753, y: 288, w:  74, h:  91, g: 362 },   // stands on y 362
     { x: 825, y: 364, w:  78, h:  91, g: 438 }   // stands on y 438
   ],
