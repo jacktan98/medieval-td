@@ -22,12 +22,11 @@
 // point-in-polygon against that path — the same test tools/trace-road.mjs uses
 // to find the road in the first place, and the same source of truth.
 
-import { readFileSync } from 'fs';
 import { makeUnits, moveUnits, nearestOnPath, rallyPoint } from '../src/units.js';
 import { LANE } from '../src/route.js';
 import { levels, useLevel } from '../src/level.js';
 import { barracks } from '../src/data/towers.js';
-import { roadPolys, onRoad as onSurface, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
+import { roadPolys, onRoad as onSurface, MAP_SCALE, readArtwork } from './svg.mjs';
 
 // The road as a polygon and the test against it both live in tools/svg.mjs now —
 // tools/trace-road.mjs finds the road with the same two functions, which is the

@@ -217,7 +217,7 @@ export const downed = e => !!e && (e.act === 'fall' || e.act === 'rest' || e.act
 //
 // Exported for the same reason enemyStance is: it is a RULE, and tools/facing.mjs
 // checks rules rather than trusting them.
-export function guardSlow(e) {
+function guardSlow(e) {
   const now = stageOf(e);
   return e.guard > 0 && now.guard ? (now.guard.slow || 1) : 1;
 }

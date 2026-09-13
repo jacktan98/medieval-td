@@ -12,7 +12,7 @@
 
 // A third of a second. Long enough to register on a 1x board, short enough that
 // a dozen overlapping hits during a wave never turn the road red.
-export const SPLAT_LIFE = 0.35;
+const SPLAT_LIFE = 0.35;
 export const SPLAT_FADE = 0.20;
 
 // How far a spatter is thrown from the point of impact. Small: this is meant to

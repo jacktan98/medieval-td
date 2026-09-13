@@ -277,7 +277,6 @@ const FLAG_FOOT_X = 0.1161;   // the bottom of the pole, which lands on the mark
 const FLAG_MAST = 0.1988;     // the pole's inner edge — the line the cloth hangs from
 
 const FLAG_CLOTH = '#3E6FA8';
-const FLAG_SHADE = '#2E5583';
 
 // A dot every 10px reads as a trail of steps rather than a line, which is the
 // whole point: the road is already painted into the artwork, so what this marks

@@ -45,14 +45,14 @@ export const PIN = '1349';
 // here is imported there, and the whole of this game's involvement is the three
 // lines in tapAdmin that read this constant — so the mini-game can be deleted, or
 // left to rot, without a single other line of this project changing.
-export const PARTY_PIN = '2208';
-export const PARTY_HREF = 'birthday/';
+const PARTY_PIN = '2208';
+const PARTY_HREF = 'birthday/';
 
 import { levels } from './level.js';
 import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/waves.js';
 import { families } from './data/towers.js';
 import { resetProgress, clearStars, saveUnlocked, bestStars, setStars, MAX_STARS } from './score.js';
-import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
+import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
 // into the Normal one. Imported rather than reimplemented — see the note on
 // scaleCount in data/difficulty.js.
@@ -444,7 +444,7 @@ export function promoteType(levelId, mode, wave, type) {
   persist();
 }
 
-export const unitStat = (unitId, field, def) =>
+const unitStat = (unitId, field, def) =>
   edits.units[`${unitId}|${field}`] ?? def[field];
 
 // What a map starts you with, override or shipped. Read by main.js instead of
@@ -693,7 +693,7 @@ export const TITLE_Y = INNER.y + 14;
 // label in this panel against the width it has, and a scale the checker could not
 // see would make all of those measurements wrong in the safe direction — passing
 // while describing type that is no longer drawn.
-export const ADMIN_TYPE = 0.88;
+const ADMIN_TYPE = 0.88;
 
 // With a floor, because the smallest things on the panel are already at 12px and
 // four fifths of that is not a caption, it is a smudge.
@@ -866,7 +866,7 @@ export const diffTabs = () => DIFFICULTIES.map((d, i) => ({
 }));
 
 // The difficulty a tab id names, and the two questions the panel asks of it.
-export const diffBy = id => DIFFICULTIES.find(d => d.id === id) || DIFFICULTIES[DIFFICULTIES.length - 1];
+const diffBy = id => DIFFICULTIES.find(d => d.id === id) || DIFFICULTIES[DIFFICULTIES.length - 1];
 
 // WHAT THE PANEL SHOWS FOR A COUNT AND A PURSE, at whichever difficulty is
 // selected. Both go through data/difficulty.js rather than multiplying here: the
@@ -974,13 +974,13 @@ export const GAP_VALUE_W = 60;
 // fourth row. The wave tabs end at 178, so this is 10px of air under them rather
 // than 32 — the tightest band on the panel, and the one that gives way first
 // because it is the only one with nothing in it.
-export const GROUP_TOP = INNER.y + 164;
+const GROUP_TOP = INNER.y + 164;
 // 12 rather than 24, for the same reason the steppers shrank: the second control
 // per cell had to come from somewhere, and the gutter between two columns is the
 // cheapest 12px on the page.
 const WAVE_CELL_GAP = 12;
 const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP) / 2;
-export const WAVE_COLS = 2;
+const WAVE_COLS = 2;
 export const groupRows = (levelIndex, wave, mode = 'normal') => {
   const lv = levels[levelIndex];
   const countW = 2 * WAVE_STEP_W + COUNT_VALUE_W;
@@ -1049,8 +1049,8 @@ export const SUMMARY2_Y = () => SUMMARY_Y() + 22;
 // families of three — so they are paged rather than crammed: six a page at the
 // same 60px pitch the waves tab uses, which keeps one row height in the whole
 // dashboard.
-export const UNIT_TOP = INNER.y + 76;
-export const PER_PAGE = 6;
+const UNIT_TOP = INNER.y + 76;
+const PER_PAGE = 6;
 export const unitPages = () => Math.ceil(units().length / PER_PAGE);
 export const unitRows = page =>
   units().slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
@@ -1073,7 +1073,7 @@ export const FOOT_Y = INNER.b - FOOT_H;
 // The stepper is 40 tall, which is the footer's own height, and the Units tab's
 // page arrows live on this row without ever colliding — they are drawn and tapped
 // only on their own tab.
-export const GOLD_ROW_Y = FOOT_Y;
+const GOLD_ROW_Y = FOOT_Y;
 export const goldStepper = () => stepper('damage', GOLD_ROW_Y, 'gold');
 export const RESET_BTN = { x: INNER.x, y: FOOT_Y, w: 140, h: FOOT_H };
 
@@ -1186,7 +1186,7 @@ export function setReached(state, i, on) {
 export const roadStars = row =>
   row.level === null ? 0 : bestStars(levels[row.level].id, 'normal', 'normal');
 
-export function setRoadStars(row, stars) {
+function setRoadStars(row, stars) {
   if (row.level === null) return;
   setStars(levels[row.level].id, 'normal', 'normal',
     Math.max(0, Math.min(MAX_STARS, stars)));
@@ -1204,7 +1204,6 @@ const PAD_H = 4 * KEY_H + 3 * KEY_GAP;
 const PAD_X = Math.round(480 - PAD_W / 2);
 const PAD_Y = 176;
 
-export const KEY_PAD = 8;
 export const keys = () => {
   const face = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'back'];
   return face.map((k, i) => ({
@@ -1235,7 +1234,7 @@ export function openAdmin(state) {
                   map: 0, mode: 'normal', wave: 0, page: 0, diff: 'hard' };
 }
 
-export function closeAdmin(state) {
+function closeAdmin(state) {
   state.admin = null;
 }
 

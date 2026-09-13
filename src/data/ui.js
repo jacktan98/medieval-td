@@ -81,7 +81,7 @@ export function canvasScale(cssWidth, dpr) {
 // A HUD icon's height. 24 against the 20px HUD font puts its cap height on the
 // digits' cap height, which is what makes an icon read as part of the number
 // rather than as a picture beside it.
-export const HUD_ICON_H = 24;
+const HUD_ICON_H = 24;
 
 // The square a menu glyph fits inside. 26 when the button also shows a price,
 // bigger when it does not — the labels came out of these buttons, so the picture
@@ -131,7 +131,7 @@ export const FLAG_FOOT = [0.111, 1];
 // that a heart is a heart; the artist drew a second one, so the two are two
 // files and two keys. They are different questions anyway: lives are the keep's
 // and this is a figure's.
-export const STAT_ICON_H = 16;
+const STAT_ICON_H = 16;
 
 // The column the three icons sit in, so the numbers beside them line up whether
 // the rows above are there or not — a tower has no health, a swordsman has no

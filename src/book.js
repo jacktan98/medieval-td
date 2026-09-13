@@ -896,7 +896,7 @@ const popGroup = (trims, shrink) => ({
 
 // The three groups, as the raw source extents of the biggest drawing in each.
 // The FACTOR is not decided here — see popSlot.
-export const POP_GROUPS = {
+const POP_GROUPS = {
   tower: popGroup(TIERS.map(d => d.spriteTrim), POP_SHRINK.tower),
   // The men and the enemies together. They are the same kind of drawing at the
   // same scale, and the enemies page is as much a card of figures as the units

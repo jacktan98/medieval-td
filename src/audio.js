@@ -1182,13 +1182,6 @@ export function setLoop(key, on) {
   loops.set(key, { src, g });
 }
 
-// Everything down, now. Nothing calls it yet; it is here because a loop with no
-// way to stop it all is the thing that turns one forgotten path into a bug you
-// cannot get out of without a reload.
-export function stopLoops() {
-  for (const key of [...loops.keys()]) setLoop(key, false);
-}
-
 // Take the channel off whatever is speaking, over 60ms rather than instantly.
 //
 // A buffer source stopped mid-sample is a click — a step from full amplitude to

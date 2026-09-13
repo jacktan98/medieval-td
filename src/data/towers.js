@@ -677,8 +677,8 @@ export const bolt = {
 // the flight is what the Fire pose's 1.5s was chosen against, and a heavier
 // rock that also flew slower would put the longest throw back over it. What a
 // bigger rock does is in the damage number beside it.
-export const rock2 = { ...rock, sprite: 'rock_t2', trim: ROCK2_TRIM };
-export const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
+const rock2 = { ...rock, sprite: 'rock_t2', trim: ROCK2_TRIM };
+const rock3 = { ...rock, sprite: 'rock_t3', trim: ROCK3_TRIM };
 
 // THE CANNON OUTPOST'S BALL, and it is the first projectile in the game that is
 // LOUD LEAVING AND LOUD ARRIVING — or rather, loud leaving and violent arriving,
@@ -807,8 +807,8 @@ export const missile = {
 // tower's damage is. The speed and the grip are what the flight was chosen
 // against, and a tier 3 missile that also flew faster would stop being the thing
 // you watch.
-export const missile2 = { ...missile, sprite: 'missile_t2' };
-export const missile3 = { ...missile, sprite: 'missile_t3' };
+const missile2 = { ...missile, sprite: 'missile_t2' };
+const missile3 = { ...missile, sprite: 'missile_t3' };
 
 // THE POPE'S, and the one missile in the family that is not simply the same
 // drawing from another file.
@@ -830,7 +830,7 @@ export const missile3 = { ...missile, sprite: 'missile_t3' };
 // The SPEED is the family's 330, untouched. A tier 4 missile that also flew
 // faster would stop being the thing you watch — the same argument that keeps
 // tiers 2 and 3 at the tier 1 speed.
-export const missile4 = {
+const missile4 = {
   ...missile,
   kind: 'pope',
   sprite: 'missile_t4',

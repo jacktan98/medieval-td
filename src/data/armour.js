@@ -216,6 +216,3 @@ export const RANK_NAME = { none: 'None', low: 'Low', med: 'Medium', high: 'High'
 // to spell it out and deliberately does not, because a player comparing a swordsman
 // on the page against a giant on the board must be reading one word for one rank.
 export const RANK_SHORT = { none: 'None', low: 'Low', med: 'Med', high: 'High' };
-
-// And the damage kinds, for the same two surfaces.
-export const TYPE_NAME = { physical: 'Physical', magic: 'Magic', true: 'True' };

@@ -1,7 +1,7 @@
 import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
-import { SCALE, EXPORT_PX, BLOOD_SCALE, upgradesFrom } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
@@ -30,7 +30,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PROGRESS_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
-         waveCount, shipped, touched, COLS, stepperAt, SUMMARY_Y,
+         shipped, touched, COLS, SUMMARY_Y,
          waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
          diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
@@ -1430,7 +1430,7 @@ export function enemyArt(e) {
   return layer ? [...shown, [layer, fade.trim, fade.pivot, fade.alpha]] : shown;
 }
 
-export function soldierArt(u) {
+function soldierArt(u) {
   const s = u.def;
   const img = s.sprite && art[s.sprite];
   if (!img) return null;
@@ -2039,7 +2039,7 @@ export const RING_STEP = 3;
 // and the stack touches a roofline, which reads as a finial the artist put there;
 // much more and it floats free of the building it belongs to. Six is about half a
 // ring, which is enough of a break to see and small enough to still be attached.
-export const RING_GAP = 6;
+const RING_GAP = 6;
 
 // How far the muster rings reach above the top of a tower's box, or 0 for a tower
 // that musters nobody. The roof is BELOW the box top by `roofFrac` — see the note
@@ -3468,12 +3468,12 @@ export const START_BTN = { x: 400, y: 356, w: 160, h: 46 };
 // so the two were two pixels apart and read as one stuck-together block. The
 // panel is the thing being decided on and the book is a door out of it; they
 // need air between them.
-export const STAGE_PANEL = { x: 258, y: 136, w: 444, h: 292 };
+const STAGE_PANEL = { x: 258, y: 136, w: 444, h: 292 };
 
 // Back to the world map without starting anything. Top-right of the panel, drawn
 // as a plain glyph rather than a plate — it is an escape, not a third choice
 // competing with Start.
-export const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12, w: 30, h: 30 };
+const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12, w: 30, h: 30 };
 
 // The two setting rows, under the maps. Narrower buttons than the map ones and
 // laid out from the middle the same way, so a third entry in either would need no
@@ -4330,7 +4330,7 @@ const STAT_MIN_H = 10;
 
 // How wide a row of pairs would set at a given icon height. Measured through the
 // same ctx the row is drawn with, so it is the real width rather than an estimate.
-export function statRowWidth(ctx, pairs, h = BOOK_ICON_H) {
+function statRowWidth(ctx, pairs, h = BOOK_ICON_H) {
   ctx.font = `700 ${h - 2}px system-ui, sans-serif`;
   let w = 0;
   pairs.forEach(([key, value], i) => {

@@ -30,7 +30,6 @@
 // tools/roof.mjs, not here. See the note beside the floor check below: this file
 // carried a rule about it for a while and the rule was a misreading.
 
-import { readFileSync } from 'fs';
 import { updateTowers, mountPoint, muzzlePoint } from '../src/towers.js';
 import { monastery, families } from '../src/data/towers.js';
 import { level, useLevel, levels } from '../src/level.js';

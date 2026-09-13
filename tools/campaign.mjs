@@ -46,7 +46,7 @@ import { readArtwork, allGroups, bounds, MAP_SCALE, layerFiles } from './svg.mjs
 import { openMenu } from '../src/menu.js';
 import { selectionInfo } from '../src/select.js';
 import { unitEntry } from '../src/book.js';
-import { families, upgradesFrom } from '../src/data/towers.js';
+import { families } from '../src/data/towers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
 // the same tool this checks, so comparing the data against it would be asking the

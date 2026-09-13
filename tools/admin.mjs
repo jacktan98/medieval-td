@@ -35,7 +35,7 @@ import {
   adminWaves, adminGold, setStartGold, goldStep, goldStepper,
   statStep, countStep, PIN, ADMIN_BTN, mapTabs, waveTabs,
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, PROGRESS_BTN, CLOSE_BTN,
-  PREV_BTN, NEXT_BTN, TABS, ROW_H, stepperAt, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
+  PREV_BTN, NEXT_BTN, TABS, ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
   modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
   diffTabs, countAtDiff, goldAtDiff, editable, adminPx,

@@ -215,7 +215,7 @@ export function machineBox(def, box) {
 // mirror the picture does. An offset measured from the post would have to be
 // re-derived every time the mirror line moved, which is how the first version
 // ended up firing out of the back of the machine.
-export function machineNose(def, box) {
+function machineNose(def, box) {
   const m = machineBox(def, box);
   const [fx, fy] = def.machine.nose;
   return { x: m.left + m.w * fx, y: m.top + m.h * fy, axis: m.axis };
@@ -250,7 +250,7 @@ export function mountPoint(t, i) {
 //
 // A def with no `pair` ignores the index entirely, so every other tower goes
 // through this unchanged and there is no second code path to keep in step.
-export const standFrac = (def, i = 0) => (def.pair ? def.pair[i] : def.mountFrac);
+const standFrac = (def, i = 0) => (def.pair ? def.pair[i] : def.mountFrac);
 
 // WHOSE TURN IT IS NEXT, on a paired tower.
 //

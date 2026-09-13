@@ -38,7 +38,7 @@ export const CANCEL_R = 18; // drawn size of the centre cancel target
 //
 // The cost is a wider clamp — see centre() — and it is paid only by the towers
 // that have abilities. Everything else keeps exactly the ring it had.
-export const ABILITY_R = 96;
+const ABILITY_R = 96;
 
 // North-west and north-east. North itself is left empty on purpose: on a clamped
 // menu it is the direction the plot is most likely to be under, and a button

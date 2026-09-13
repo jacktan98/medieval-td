@@ -28,7 +28,7 @@ import { arrow } from './towers.js';
 // checked: `killedBy` is only read for an ENEMY's death, and no enemy can be
 // killed by this — it is aimed at soldiers and nothing else. The kind is what
 // makes it silent on arrival, the same as the tower's.
-export const enemyArrow = { ...arrow };
+const enemyArrow = { ...arrow };
 
 // WHAT THE GLASS ITSELF DOES, to the one man it was aimed at. Written once here
 // because three places need it to agree: the ammunition's damage, the card the
@@ -112,7 +112,7 @@ export const flask = {
 // projectiles.js reads them all the same way. Flat and fast like the monastery's
 // own missiles rather than lobbed like a flask: it is the same magic, thrown by
 // the other side.
-export const darkMissile = {
+const darkMissile = {
   // `dark` rather than `arcane`, though it points at the monastery's own noise —
   // see FIRING in src/audio.js. A kind is what a sound is looked up by AND what a
   // kill is credited to, so sharing one with the monastery would be sharing both;

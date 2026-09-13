@@ -372,7 +372,7 @@ export const monkSlowShot = {
 // one carries is nothing at all, because the extra damage belongs to the TOWER
 // rather than to the shot: see `damageTimes` on the ability and damageK in
 // src/towers.js. The drawing is the only thing the ammunition contributes.
-export const monkStrongShot = {
+const monkStrongShot = {
   ...monkShot,
   sprite: 'monk_shot_strength',
   // 88 x 44, redrawn from 56 x 30 at the owner's ask — "bigger and more obvious"
@@ -393,7 +393,7 @@ export const monkStrongShot = {
 // AND BOTH AT ONCE. Blue like the slow, big like the strength, and it carries the
 // slow because it IS the slowing shot — a temple that has bought both fires this
 // and gets both effects, one from here and one from damageK.
-export const monkBothShot = {
+const monkBothShot = {
   ...monkSlowShot,
   sprite: 'monk_shot_both',
   // The same box as monkStrongShot's, to the pixel, because it is the same drawing

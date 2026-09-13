@@ -57,7 +57,7 @@ export const IMPACT_SCALE = SCALE * 1.6;
 // Long enough to register at 2x fast-forward, short enough that a battery of
 // catapults working one bend does not leave the road permanently brown. The
 // spray fades over the back half rather than snapping out.
-export const IMPACT_LIFE = 0.45;
+const IMPACT_LIFE = 0.45;
 export const IMPACT_FADE = 0.25;
 
 // A SPILL LASTS AS LONG AS ITS POISON DOES, which is what keeps the picture
@@ -68,7 +68,7 @@ export const IMPACT_FADE = 0.25;
 //
 // It is the one number here that must be kept in step with something else; it
 // reads `flask.poison.seconds` rather than repeating it.
-export const SPILL_FADE = 0.6;
+const SPILL_FADE = 0.6;
 
 const pick = list => list[(Math.random() * list.length) | 0];
 

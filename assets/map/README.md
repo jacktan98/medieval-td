@@ -878,7 +878,7 @@ kerb is further from the centreline a tower measures against. All nine cover a r
 share of the road; `tools/siege.mjs` is what says so.
 
 **Half the wave comes up the west road** and the two top roads share the rest, dealt
-from a shuffled bag rather than rolled per enemy — see `entryMix` in
+from a shuffled bag rather than rolled per enemy — see `routeMix` in
 `src/data/level06.js`. The north-east road reaches the gate 315px sooner than the
 west one, so an even three-way split is not an even fight. Stage 2 and stage 3 deal
 their waves the same way; on stage 3 both routes leave the same mouth, so what the
