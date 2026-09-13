@@ -27,7 +27,8 @@ import { drawOverview } from './overview.js';
 import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
-         CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PROGRESS_BTN, PREV_BTN, NEXT_BTN, mapTabs, waveTabs,
+         CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PROGRESS_BTN, PREV_BTN, NEXT_BTN,
+         mapSelect, mapList, mapOptions, waveTabs,
          groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          shipped, touched, COLS, SUMMARY_Y,
@@ -4984,8 +4985,11 @@ function drawAdminWaves(ctx, a) {
   const live = editable(a.diff);
   const at = n => countAtDiff(n, a.diff);
 
-  for (const m of mapTabs()) panelButton(ctx, m, m.label, { on: m.i === a.map, size: adminPx(15) });
-  // The two LENGTHS, beside the maps and on the same row: both answer "which
+  // WHICH BOARD, as one control rather than a tab per board. The list it opens is
+  // drawn at the END of this function, over everything, because that is what makes
+  // it a dropdown rather than a panel with a hole in it.
+  selectButton(ctx, mapSelect(), lv.name, a.mapOpen);
+  // The two LENGTHS, beside the map and on the same row: both answer "which
   // table", where the numbers below answer "which wave of it".
   for (const m of modeTabs()) panelButton(ctx, m, m.label, { on: m.id === a.mode, size: adminPx(15) });
   for (const w of waveTabs(a.map, a.mode)) {
@@ -5175,6 +5179,91 @@ function drawAdminWaves(ctx, a) {
       `${Math.round(easy.count * 100)}% of each count, rounded, and ` +
       `${Math.round(easy.gold * 100)}% of the purse. Switch to ${hardest.name} to change it.`,
     ADMIN_PANEL.x + 16, SUMMARY_Y() + 22);
+
+  // LAST, OVER EVERYTHING. A dropdown that drew in reading order would come out
+  // under the wave grid, and the panel would look like it had a hole in it.
+  if (a.mapOpen) drawMapList(ctx, a);
+}
+
+// The closed control: the board's name on the left, an arrow on the right, and a
+// divider between them so the arrow reads as its own column rather than as the
+// last letter of the name.
+//
+// NOT `panelButton`, because that centres its label. A row of tabs is a set of
+// things to pick between and centring is right; a select shows ONE value and its
+// text has to start in the same place whichever value that is, or the panel
+// twitches every time the board changes.
+function selectButton(ctx, b, label, open) {
+  ctx.save();
+  ctx.fillStyle = open ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = open ? ADMIN_INK : ADMIN_EDGE;
+  ctx.lineWidth = open ? 2.5 : 1.5;
+  ctx.stroke();
+
+  const ink = open ? '#241F17' : ADMIN_INK;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ink;
+  ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
+  ctx.fillText(label, b.x + 14, b.y + b.h / 2 + 1);
+
+  const cx = b.x + b.w - 17, cy = b.y + b.h / 2;
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.moveTo(b.x + b.w - 32, b.y + 9);
+  ctx.lineTo(b.x + b.w - 32, b.y + b.h - 9);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  // The arrow turns over when the list is open, which is the only thing on the
+  // panel that says whether a second tap will open it or shut it.
+  ctx.beginPath();
+  if (open) { ctx.moveTo(cx - 5, cy + 2); ctx.lineTo(cx, cy - 3); ctx.lineTo(cx + 5, cy + 2); }
+  else { ctx.moveTo(cx - 5, cy - 2); ctx.lineTo(cx, cy + 3); ctx.lineTo(cx + 5, cy - 2); }
+  ctx.stroke();
+  ctx.restore();
+}
+
+// The open list. Opaque and shadowed, because it is over the wave grid and a
+// translucent one would read as two panels at once.
+function drawMapList(ctx, a) {
+  const box = mapList();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 6;
+  ctx.fillStyle = 'rgb(24,27,21)';
+  ctx.beginPath();
+  ctx.roundRect(box.x, box.y, box.w, box.h, 10);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = ADMIN_EDGE;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(box.x, box.y, box.w, box.h, 10);
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
+  for (const o of mapOptions()) {
+    const here = o.i === a.map;
+    if (here) {
+      ctx.fillStyle = 'rgba(196,165,116,0.92)';
+      ctx.beginPath();
+      ctx.roundRect(o.x, o.y + 2, o.w, o.h - 4, 6);
+      ctx.fill();
+    }
+    ctx.fillStyle = here ? '#241F17' : ADMIN_INK;
+    ctx.fillText(o.label, o.x + 10, o.y + o.h / 2 + 1);
+  }
+  ctx.restore();
 }
 
 function drawAdminUnits(ctx, a) {

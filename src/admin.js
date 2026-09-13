@@ -760,19 +760,53 @@ export const TABS = TAB_IDS.map((t, i) => ({
 // than a permanent answer: the next lever, when it is needed, is the LENGTH BUTTONS,
 // which are 174px of this row and mean nothing on six of the seven maps — every
 // drawn board is `oneLength` and only the three testing ones have a second table.
-const MAP_H = 40, MAP_GAP = 6, MAP_PAD = 14, MAP_MIN = 72;
+// A DROPDOWN, NOT A ROW OF TABS, at the owner's ask — and the row of tabs is what
+// the note above was fighting. Every board added its own width to a row with one
+// screen to live on, so the answer kept being to take width from something: the
+// tab pitch, then the purse, then the length buttons, which were pushed onto the
+// wave row and landed on top of the difficulty buttons. See modeTabs below.
+//
+// A LIST COSTS ONE BUTTON'S WIDTH WHATEVER IS IN IT, which ends that argument
+// rather than winning it once more. The twelfth board changes nothing here.
+//
+// AND IT SHOWS THE FULL NAME. The tabs showed `short` because a chip could not
+// carry "Winchester Entrance"; this can, so the panel now says the same name the
+// stage panel and the summary line under the grid say. `short` is still what the
+// road tab's narrow rows use.
+const MAP_H = 40, MAP_PAD = 14, MAP_MIN = 72;
 const MAP_Y = INNER.y + 54;
-const tabW = label => Math.max(MAP_MIN, Math.round(label.length * adminPx(15) * 0.58) + MAP_PAD * 2);
-export const mapTabs = () => {
-  let x = INNER.x;
-  return levels.map((l, i) => {
-    const label = l.short || l.name;
-    const w = tabW(label);
-    const tab = { i, id: l.id, label, x, y: MAP_Y, w, h: MAP_H };
-    x += w + MAP_GAP;
-    return tab;
-  });
-};
+
+// The same pessimistic estimate the rest of this panel is measured by, so the
+// width is DERIVED from the fit rule rather than picked and then checked.
+export const labelW = (label, px = adminPx(15)) => Math.round(label.length * px * 0.58);
+
+// The arrow's own column, right of the name, so a long name cannot run under it.
+const CHEV_W = 26;
+const MAP_SEL_W = Math.max(MAP_MIN,
+  levels.reduce((w, l) => Math.max(w, labelW(l.name)), 0) + MAP_PAD * 2 + CHEV_W);
+
+export const mapSelect = () => ({ x: INNER.x, y: MAP_Y, w: MAP_SEL_W, h: MAP_H });
+
+// THE LIST HANGS UNDER IT and is drawn over the wave grid, which is what a
+// dropdown is. Nine boards at 34 is 318px from y 122, so it stops 36px above the
+// footer; tools/admin.mjs asks that of the real geometry rather than of this
+// sentence, because the next board makes it 352.
+const OPT_H = 34, OPT_PAD = 6, OPT_DROP = 4;
+const LIST_Y = MAP_Y + MAP_H + OPT_DROP;
+
+export const mapList = () => ({
+  x: INNER.x, y: LIST_Y, w: MAP_SEL_W, h: OPT_PAD * 2 + levels.length * OPT_H
+});
+
+export const mapOptions = () => levels.map((l, i) => ({
+  i,
+  id: l.id,
+  label: l.name,
+  x: INNER.x + OPT_PAD,
+  y: LIST_Y + OPT_PAD + i * OPT_H,
+  w: MAP_SEL_W - OPT_PAD * 2,
+  h: OPT_H
+}));
 // WHICH LENGTH OF THE MAP, on the same row as the maps and immediately after them,
 // because the two questions are the same question: which table am I editing. The
 // wave numbers below say which wave OF it, which is a different thing.
@@ -788,30 +822,29 @@ const WAVE_ROW_Y = INNER.y + 110;
 
 const MODE_W = 78, MODE_GAP = 6;
 
-// ON THE WAVE ROW NOW, right-aligned, rather than after the last map tab.
+// BACK BESIDE THE MAP, which is where they belong and where the dropdown made room
+// for them again: both answer "which table am I editing", where the wave numbers
+// below answer "which wave of it".
 //
-// They sat beside the maps because the two questions are one question — which table
-// am I editing — and the row ran out. Nine boards of tabs end at 841 against an inner
-// edge of 936, which leaves 95px for two buttons that need 162. The note above the
-// tab widths named this as the next lever and it was right: these two mean nothing on
-// six of the nine maps, because every drawn board is `oneLength` and only the three
-// testing ones have a second table.
+// THEY SPENT ONE BUILD ON THE WAVE ROW and that was the bug the owner reported. The
+// row of map tabs had run out at nine boards, so these were pushed down and
+// right-aligned on the wave row — where the DIFFICULTY buttons already were, also
+// right-aligned. Both ended at 936 and they were drawn through each other: the word
+// "Extended" came out either side of "Hard", and "Standard"'s edge doubled the left
+// border of "Normal".
 //
-// A SECOND ROW OF TABS IS NOT THE ANSWER and the note above says why, on numbers that
-// had gone stale: there are 16px between the map row and the wave row, not 56, so a
-// 46px row does not go there. Nothing below can move down either — the group rows
-// already reach the footer.
-//
-// The wave row is where they went because it has the space: twelve wave buttons end
-// at 631 and the panel runs to 936. And it is still the right neighbourhood — the
-// wave numbers say which wave OF the table, and these say which table.
-const MODE_ROW_Y = WAVE_ROW_Y + 2;
+// Three checks passed over it, which is the part worth keeping. They asked whether
+// these buttons cleared the wave NUMBERS, whether they were off the map row, and
+// whether they ended inside the panel — all true, all of the wrong neighbour. There
+// is a check in tools/admin.mjs now that asks nothing about which control is which:
+// no two controls on this tab may share a pixel.
+const MODE_X = INNER.x + MAP_SEL_W + 20;
 export const modeTabs = () => MODES.map((m, i) => ({
   i,
   id: m.id,
   label: m.name,
-  x: INNER.r - MODES.length * MODE_W - (MODES.length - 1) * MODE_GAP + i * (MODE_W + MODE_GAP),
-  y: MODE_ROW_Y,
+  x: MODE_X + i * (MODE_W + MODE_GAP),
+  y: MAP_Y,
   w: MODE_W,
   h: MAP_H
 }));
@@ -1231,7 +1264,7 @@ export function openAdmin(state) {
   // `diff` opens on HARD because Hard is where the numbers live: the tables were
   // tuned at that setting and it is the only view the steppers can write to.
   state.admin = { stage: 'pin', typed: '', wrong: false, tab: 'waves',
-                  map: 0, mode: 'normal', wave: 0, page: 0, diff: 'hard' };
+                  map: 0, mapOpen: false, mode: 'normal', wave: 0, page: 0, diff: 'hard' };
 }
 
 function closeAdmin(state) {
@@ -1275,6 +1308,26 @@ export function tapAdmin(state, x, y, restart) {
       return true;
     }
     return false;
+  }
+
+  // AN OPEN LIST OWNS THE WHOLE PANEL, and that is before the top tabs rather than
+  // inside the waves branch on purpose. The list is DRAWN over everything, so every
+  // button under it is a button the player cannot see — including Close, which would
+  // otherwise shut the panel when they were reaching for "Winchester Entrance".
+  //
+  // A tap that lands nowhere shuts the list and stops there. Dismissing a list is an
+  // action; passing the same tap on to whatever it landed on would press a control
+  // the player was not looking at.
+  if (a.stage === 'board' && a.mapOpen) {
+    for (const o of mapOptions()) {
+      if (!on(o)) continue;
+      a.map = o.i;
+      a.wave = 0;
+      a.mapOpen = false;
+      return true;
+    }
+    a.mapOpen = false;
+    return true;
   }
 
   if (on(CLOSE_BTN)) { closeAdmin(state); restart(); return true; }
@@ -1359,12 +1412,7 @@ export function tapAdmin(state, x, y, restart) {
       if (on(s.plus)) { setStartGold(levelId, now + goldStep(now)); return true; }
     }
 
-    for (const m of mapTabs()) {
-      if (!on(m)) continue;
-      a.map = m.i;
-      a.wave = 0;
-      return true;
-    }
+    if (on(mapSelect())) { a.mapOpen = true; return true; }
     // SWITCHING LENGTH KEEPS THE WAVE YOU WERE ON, clamped to the shorter table.
     // Going Normal -> Extended on wave 8 should leave you on wave 8 of the long
     // game rather than back at the top, because comparing the same wave at the two

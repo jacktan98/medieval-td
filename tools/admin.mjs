@@ -33,7 +33,7 @@ import { families } from '../src/data/towers.js';
 import {
   units, shipped, waveCount, setWaveCount, setUnitStat, touched, reset,
   adminWaves, adminGold, setStartGold, goldStep, goldStepper,
-  statStep, countStep, PIN, ADMIN_BTN, mapTabs, waveTabs,
+  statStep, countStep, PIN, ADMIN_BTN, mapSelect, mapList, mapOptions, labelW, waveTabs, tapAdmin,
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, PROGRESS_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
@@ -444,28 +444,71 @@ console.log('\nAnything, in any wave\n');
     'and the longest row still fits the panel',
     `ends ${tabs[tabs.length - 1].x + tabs[tabs.length - 1].w}`);
 
-  // AND THE LENGTH BUTTONS SIT ON THE WAVE ROW NOW, clear of the wave numbers.
-  //
-  // They sat after the last map tab until there were nine boards, which ends that row
-  // at 841 against an inner edge of 936 — 95px for two buttons that need 162. Both
-  // clearances below are about the row they moved to.
-  const maps = mapTabs();
+  // THE MAP IS A DROPDOWN, so the question this row used to raise — does one more
+  // board push the row off the panel — is gone. What is left is whether the control
+  // can show what it is asked to show, and whether the list it opens fits.
+  const sel = mapSelect();
   const modes = modeTabs();
-  // The longest row there is, which is the one the buttons have to clear.
-  const numbers = tabs;
-  ok(modes[0].y >= maps[0].y + maps[0].h,
-    'the length buttons are off the map row',
-    `${modes[0].y - (maps[0].y + maps[0].h)}px below it`);
-  const lastNumber = numbers[numbers.length - 1];
-  ok(modes[0].x > lastNumber.x + lastNumber.w,
-    'and clear of the wave numbers beside them',
-    `${modes[0].x - (lastNumber.x + lastNumber.w)}px apart`);
-  // AND THE ROW ENDS INSIDE THE PANEL. It used to have to clear the "Start gold"
-  // label as well, because the purse sat on this row — six maps is where that ran
-  // out and the purse moved to the footer. What is left is the plainer question.
+  const longestName = levels.reduce((a, l) => (l.name.length > a.name.length ? l : a));
+  ok(labelW(longestName.name) <= sel.w - 28 - 26,
+    'the map button is wide enough for the longest board name',
+    `"${longestName.name}" at ${labelW(longestName.name)} of ${sel.w - 54}px`);
+  ok(sel.x + sel.w <= PANEL.x + PANEL.w - 16, 'and the control is on the panel',
+    `ends ${sel.x + sel.w}`);
+
+  const opts = mapOptions();
+  const box = mapList();
+  ok(opts.length === levels.length, 'the list has a row per board', `${opts.length} rows`);
+  ok(opts.every(o => o.x >= box.x && o.x + o.w <= box.x + box.w &&
+                     o.y >= box.y && o.y + o.h <= box.y + box.h),
+    'every row is inside the list', `list ${box.y}..${box.y + box.h}`);
+  // THE LIST IS DRAWN OVER THE GRID, so it may cover the wave rows — that is what a
+  // dropdown does. What it may NOT do is run off the panel, because the part below
+  // the edge is a board that cannot be picked.
+  ok(box.y + box.h <= FOOT_Y - 8,
+    'and the whole list clears the footer',
+    `ends ${box.y + box.h} against a footer at ${FOOT_Y}`);
+  ok(opts.every((o, i) => i === 0 || o.y >= opts[i - 1].y + opts[i - 1].h),
+    'and no two rows overlap');
+
+  // AND THE LENGTH BUTTONS SIT BESIDE THE MAP, which is the row the dropdown gave
+  // back to them. They spent one build on the wave row, on top of the difficulty
+  // buttons — see the overlap check below, which is what should have caught it.
+  ok(modes[0].y === sel.y, 'the length buttons are on the map row',
+    `y ${modes[0].y}`);
+  ok(modes[0].x > sel.x + sel.w,
+    'and clear of the map button beside them',
+    `${modes[0].x - (sel.x + sel.w)}px apart`);
   ok(modes[modes.length - 1].x + modes[modes.length - 1].w <= PANEL.x + PANEL.w - 16,
     'and the row still ends inside the panel',
     `ends ${modes[modes.length - 1].x + modes[modes.length - 1].w} of ${PANEL.x + PANEL.w - 16}`);
+
+  // NO TWO CONTROLS ON THIS TAB MAY SHARE A PIXEL, and this asks nothing about which
+  // control is which. That is the whole point of it.
+  //
+  // The length buttons were pushed onto the wave row and right-aligned, where the
+  // difficulty buttons already were, also right-aligned. Both ended at 936 and they
+  // were drawn through each other: "Extended" came out either side of "Hard" and
+  // "Standard"'s edge doubled the left border of "Normal". THREE CHECKS PASSED OVER
+  // IT — the buttons were off the map row, clear of the wave numbers, and inside the
+  // panel, all true and all of the wrong neighbour. A check that names the pair it
+  // is worried about can only ever catch the pair somebody thought of.
+  const hits = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const controls = [
+    ['map', sel],
+    ...modes.map(m => [`length "${m.label}"`, m]),
+    ...tabs.map(t => [`wave ${t.i + 1}`, t]),
+    ...diffTabs().map(d => [`difficulty "${d.label}"`, d]),
+    ['gold -', goldStepper().minus], ['gold +', goldStepper().plus],
+    ['reset all', RESET_BTN], ['reset campaign', PROGRESS_BTN],
+    ...TABS.map(t => [`tab "${t.label || t.id}"`, t]), ['close', CLOSE_BTN]
+  ];
+  const clashes = [];
+  for (let i = 0; i < controls.length; i++)
+    for (let j = i + 1; j < controls.length; j++)
+      if (hits(controls[i][1], controls[j][1])) clashes.push(`${controls[i][0]} over ${controls[j][0]}`);
+  ok(!clashes.length, 'and no two controls on the waves tab overlap',
+    clashes.length ? clashes.join(', ') : `${controls.length} controls, all clear`);
 
   // THE PURSE IS ON THE FOOTER NOW, clear of the two buttons already there. Both
   // are about the whole map, which is why it belongs beside them.
@@ -481,26 +524,15 @@ console.log('\nAnything, in any wave\n');
   ok(longestMode.length * adminPx(15) * 0.58 < modes[0].w - 12,
     'and the longer length name fits its button',
     `"${longestMode}" at ${Math.round(longestMode.length * adminPx(15) * 0.58)} of ${modes[0].w - 12}px`);
-  // EVERY MAP NAME FITS ITS OWN TAB, which is a different question now that a tab is
-  // as wide as its label rather than as wide as the longest label in the game. This
-  // used to ask whether the longest name fitted maps[0], and maps[0] was every tab;
-  // with sized tabs that reads "does Winchester fit inside Town's tab", which is
-  // nonsense and duly failed.
-  //
-  // Estimated the way the row's own labels are, pessimistically — see the note on
-  // the enemy names below — and against the TAB's label, which is `short` where a
-  // level carries one, rather than against `name`.
-  const tight = maps.filter(m => m.label.length * adminPx(15) * 0.58 > m.w - 12);
-  ok(!tight.length, 'and every map name fits its own tab',
-    tight.length ? tight.map(m => `"${m.label}" at ${Math.round(m.label.length * adminPx(15) * 0.58)} of ${m.w - 12}`).join(', ')
-      : `${maps.length} tabs, widest "${maps.reduce((a, b) => (b.w > a.w ? b : a)).label}" at ${maps.reduce((a, b) => (b.w > a.w ? b : a)).w}px`);
-
-  // AND THE TABS DO NOT OVERLAP, which a fixed pitch made true for free and a
-  // per-label width does not: a width that came out short would slide the next tab
-  // under the last one's text with nothing to say so.
-  const laid = maps.every((m, i) => i === 0 || m.x >= maps[i - 1].x + maps[i - 1].w);
-  ok(laid, 'and no two tabs overlap',
-    maps.map(m => `${m.label} ${m.x}+${m.w}`).join(' | '));
+  // EVERY NAME FITS ITS OWN ROW IN THE LIST, which is the dropdown's version of the
+  // question the tab row used to raise. A row is as wide as the widest name there
+  // is, so this can only fail if a board arrives with a longer one than the control
+  // was sized for — and then it fails for every row at once rather than silently
+  // clipping the one board nobody opened.
+  const tight = mapOptions().filter(o => labelW(o.label) > o.w - 20);
+  ok(!tight.length, 'and every board name fits its row in the list',
+    tight.length ? tight.map(o => `"${o.label}" at ${labelW(o.label)} of ${o.w - 20}`).join(', ')
+      : `${opts.length} rows, widest "${longestName.name}" at ${labelW(longestName.name)} of ${opts[0].w - 20}px`);
 
   // --- the two difficulties, and which of them can be edited ---
   //
@@ -830,16 +862,16 @@ console.log('\nWhat fits, and what you can hit\n');
     `${s2.minus.x - (s1.plus.x + s1.plus.w)}px apart`);
   ok(s2.plus.x + s2.plus.w <= PANEL.x + PANEL.w, 'and the right-hand one stays on the panel');
 
-  ok(mapTabs().length === levels.length, 'there is a tab per map', `${levels.length}`);
+  ok(mapOptions().length === levels.length, 'the map list has a row per map', `${levels.length}`);
 
   // THE PURSE IS ON THE FOOTER NOW rather than beside the last map tab, so what
   // could go wrong there has changed: it must not overlap the row it moved to.
   // Its clearance from the reset buttons is checked in the layout block above.
   const purse = goldStepper();
-  const lastTab = mapTabs()[mapTabs().length - 1];
-  ok(purse.minus.y > lastTab.y + lastTab.h,
-    'and the purse is off their row entirely',
-    `maps end at y ${lastTab.y + lastTab.h}, the purse is at ${purse.minus.y}`);
+  const mapRow = mapSelect();
+  ok(purse.minus.y > mapRow.y + mapRow.h,
+    'and the purse is off that row entirely',
+    `the map row ends at y ${mapRow.y + mapRow.h}, the purse is at ${purse.minus.y}`);
   ok(purse.plus.x + purse.plus.w <= PANEL.x + PANEL.w, 'and stays on the panel');
   ok(purse.minus.h === RESET_BTN.h,
     'and is the height of the row it sits on', `${purse.minus.h} tall`);
@@ -1193,6 +1225,102 @@ console.log('\nA stored order that has gone stale\n');
     'with the counts it was already holding kept', 'light_inf x7');
 
   delete globalThis.localStorage;
+}
+
+// --- the map dropdown ----------------------------------------------------------
+//
+// THE MAP IS A LIST NOW, at the owner's ask, and a list is the first control on this
+// panel with a state of its own. Everything else answers a tap and is done; this one
+// opens, covers half the panel, and has to be shut again. What follows drives the
+// REAL tap handler rather than the geometry, because the rule worth pinning is about
+// which control answers a tap and that rule lives in tapAdmin.
+console.log('\nThe map dropdown\n');
+{
+  const open = () => ({ admin: { stage: 'board', typed: '', wrong: false, tab: 'waves',
+                                 map: 0, mapOpen: false, mode: 'normal', wave: 0, page: 0, diff: 'hard' } });
+  const mid = b => [b.x + b.w / 2, b.y + b.h / 2];
+  const tap = (st, b) => tapAdmin(st, ...mid(b), () => {});
+
+  const st = open();
+  tap(st, mapSelect());
+  ok(st.admin.mapOpen, 'tapping the map button opens the list');
+
+  // A TAP ON A BOARD PICKS IT AND SHUTS THE LIST, and puts the wave back to the
+  // first: wave 8 of one map is not wave 8 of another, and the next board may not
+  // have eight.
+  st.admin.wave = 3;
+  tap(st, mapOptions()[5]);
+  ok(st.admin.map === 5 && !st.admin.mapOpen && st.admin.wave === 0,
+    'and picking a board takes it, closes the list and goes back to wave 1',
+    `map ${st.admin.map}, open ${st.admin.mapOpen}, wave ${st.admin.wave + 1}`);
+
+  // THE LIST OWNS EVERY PIXEL IT COVERS. It is drawn over the wave grid, so the
+  // wave buttons at the left of the row are underneath it — and the button
+  // underneath must never fire, whether the point lands on a board name or on the
+  // list's own padding.
+  //
+  // Read on the LONGEST table there is, so that the row has buttons both under the
+  // list and clear of it.
+  const longestTable = Math.max(...levels.map((_, i) => waveCountFor(i, 'extended')));
+  const busiest = levels.findIndex((_, i) => waveCountFor(i, 'extended') === longestTable);
+  const covered = w => { const b = mapList();
+    return w.x < b.x + b.w && b.x < w.x + w.w && w.y < b.y + b.h && b.y < w.y + w.h; };
+  const set = wave => Object.assign(st.admin,
+    { map: busiest, mode: 'extended', wave, mapOpen: false });
+
+  set(2);
+  const numbers = waveTabs(busiest, 'extended');
+  const under = numbers.filter(covered);
+  const beside = numbers.filter(w => !covered(w));
+  ok(under.length > 0 && beside.length > 0,
+    'the open list covers part of the wave row and not the rest',
+    `${under.length} under it, ${beside.length} beside it`);
+
+  // Pressing wave button N is the only thing that sets the wave to N, so a wave that
+  // is not N afterwards is the whole of "that button did not fire".
+  const buried = under[under.length - 1];
+  tap(st, mapSelect());
+  tap(st, buried);
+  ok(st.admin.wave !== buried.i,
+    'a tap on a wave button under the list never reaches it',
+    `wave ${st.admin.wave + 1}, not the ${buried.i + 1} the button would have set`);
+
+  // AND A TAP BESIDE IT DISMISSES, without pressing what it landed on. Dismissing a
+  // list is an action of its own; passing the same tap through would move the player
+  // to a wave they were not looking at on their way out of a menu.
+  set(2);
+  const far = beside[beside.length - 1];
+  tap(st, mapSelect());
+  tap(st, far);
+  ok(!st.admin.mapOpen && st.admin.wave === 2,
+    'and a tap beside it dismisses the list rather than pressing what it hit',
+    `open ${st.admin.mapOpen}, wave ${st.admin.wave + 1}`);
+  // The same button DOES work once the list is shut, or the check above would pass
+  // on a wave row that had simply stopped responding.
+  tap(st, far);
+  ok(st.admin.wave === far.i, 'while the same tap with the list shut selects that wave',
+    `wave ${st.admin.wave + 1}`);
+
+  // AND SO DOES CLOSE, which is the one that would have been a bug worth having.
+  // The top tabs and the Close button are handled before the waves branch, so a
+  // guard that lived inside that branch would have let a player reaching for a board
+  // name shut the whole panel. This is why the guard is at the top of tapAdmin.
+  tap(st, mapSelect());
+  const still = { ...st.admin };
+  ok(still.mapOpen, 'with the list open', `open ${still.mapOpen}`);
+  tap(st, CLOSE_BTN);
+  ok(st.admin && !st.admin.mapOpen && st.admin.stage === 'board',
+    'a tap on Close while the list is open shuts the list, not the panel',
+    st.admin ? `stage ${st.admin.stage}, open ${st.admin.mapOpen}` : 'the panel closed');
+  ok(st.admin && st.admin.map === still.map, 'and changes nothing else',
+    st.admin ? `map ${st.admin.map}` : 'the panel closed');
+
+  // CLOSE STILL CLOSES when the list is not open, or the check above would pass on a
+  // panel whose Close button had simply stopped working.
+  let restarted = 0;
+  tapAdmin(st, ...mid(CLOSE_BTN), () => { restarted++; });
+  ok(!st.admin && restarted === 1, 'and Close closes the panel when the list is shut',
+    `admin ${st.admin ? 'still open' : 'gone'}, restart called ${restarted}x`);
 }
 
 // --- the road tab fits in the panel -------------------------------------------
