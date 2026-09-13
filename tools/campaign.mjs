@@ -913,12 +913,12 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  const order = STAGES.slice(0, 8).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m1,m2,m3',
-    'the campaign runs the five drawn boards, then the three testing ones',
+  const order = STAGES.slice(0, 9).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m1,m2,m3',
+    'the campaign runs the six drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 8,
-    'with eight boards on the road and the rest still empty',
+  ok(STAGES.filter(s => s.level !== null).length === 9,
+    'with nine boards on the road and the rest still empty',
     `${STAGES.filter(s => s.level !== null).length} playable`);
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
@@ -1253,6 +1253,64 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
   }
 }
 
+console.log('\n--- stage 6, one way in and two ways out ---\n');
+
+// THE FIRST BOARD A WAVE CAN LEAVE BY TWO DOORS. Every board before it funnels —
+// stage 4 has three mouths and one exit, stage 5 has two and one — and this is the
+// other shape: one bridge in, and the road forks to a bottom door and a right one.
+{
+  const ford = levels.find(l => l.id === 'm8');
+  const WANT6 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 1 heavy_inf',
+    '10 light_inf + 2 blocker_inf + 2 heavy_inf',
+    '4 tough_inf + 4 heavy_inf + 6 archer_inf',
+    '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
+    '8 blocker_inf + 6 heavy_inf + 16 archer_inf',
+    '10 blocker_inf + 8 heavy_inf + 20 archer_inf'
+  ];
+  const got6 = ford.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got6.join(' | ') === WANT6.join(' | '), 'Dawnford sends exactly the eight it was given',
+    got6.map((g, i) => (g === WANT6[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT6[i]})`)).join(' '));
+  ok(ford.plots.length === 9 && ford.startGold === 240 && ford.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${ford.plots.length} plots, ${ford.startGold} gold, ${ford.waves.length} waves`);
+
+  // ONE MOUTH, TWO DOORS, and it is asked of the ROUTES rather than of a comment:
+  // both start at the same point and end at different edges. The shared head is what
+  // makes this board's shape — the only stretch every enemy walks is the run from the
+  // bridge to the fork.
+  const heads = ford.routes.map(r => `${Math.round(r.pts[0].x)},${Math.round(r.pts[0].y)}`);
+  ok(new Set(heads).size === 1, 'its two roads come in by the same bridge',
+    heads.join(' and '));
+  const tails = ford.routes.map(r => r.pts[r.pts.length - 1]);
+  ok(tails[0].x > 960 && tails[1].y > 540,
+    'and leave by two different edges, one east and one south',
+    tails.map(t => `(${Math.round(t.x)}, ${Math.round(t.y)})`).join(' and '));
+
+  // AND A PALADIN KEEP ALREADY STANDING, on the plot the owner counted to. They
+  // counted top to bottom by centre and this list is in ROAD order, so the index is
+  // not the number they said — what is pinned is the PLOT, which is the thing both
+  // orders agree on.
+  useLevel(levels.indexOf(ford));
+  const keep = prebuiltOn(ford, families)[0];
+  const byTop = ford.plots.slice().sort((a, b) => a.y - b.y);
+  ok(keep && keep.def.name === 'Paladin Keep' && keep.plot === byTop[2],
+    'and opens with a Paladin Keep on the third plot from the top',
+    keep ? `${keep.def.name} at (${keep.x}, ${keep.y})` : 'nothing prebuilt');
+  ok(keep && (!keep.abilities || !keep.abilities.length),
+    'with no abilities bought', `${(keep && keep.abilities || []).length} of them`);
+
+  // A TIER 4 ON A TIER 3 BOARD, which is what `allow` is for. The cap is what stops
+  // every other ladder, and the three named rungs are what gets through it — this is
+  // the first board to let a fourth-rung BARRACKS through, because it is the one that
+  // opens with one standing.
+  ok(ford.maxTier === 3 && ford.allow.includes('Paladin Keep'),
+    'Dawnford caps at tier 3 and lets the Keep through anyway',
+    `maxTier ${ford.maxTier}, allow ${JSON.stringify(ford.allow)}`);
+}
+
 console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');
 
 // THE OWNER'S SEVEN, pinned the way the other three boards' are.
@@ -1276,7 +1334,7 @@ console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');
   ok(shop.routes.length === 3, 'and three ways in', `${shop.routes.length} routes`);
 
   // HALF THE WAVE UP THE WEST ROAD, and it is asked of the SPAWNER rather than of
-  // the level file — `entryMix` is a declaration and what matters is what walks. A
+  // the level file — `routeMix` is a declaration and what matters is what walks. A
   // check that read the array back would agree with itself and tell us nothing.
   //
   // AND THE RUN LENGTH IS THE POINT, not the ratio. Weighted dice would pass a
@@ -1433,19 +1491,19 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
 // for them like everything did before stage 4; they are the TESTING boards and the
 // owner has asked for the deal on the drawn campaign, board by board, as each was
 // drawn. Adding it to those two uninvited would tighten the tail on maps that exist
-// to be measured against. It is one `entryMix` line each when it is wanted.
+// to be measured against. It is one `routeMix` line each when it is wanted.
 {
   const drawn = levels.filter(l => /Stage_\d+_Map/.test(l.src));
   for (const l of drawn.filter(l => l.routes.length > 1)) {
-    ok(!!l.entryMix, `${l.name} divides its wave between its roads rather than rolling`,
-      l.entryMix ? `shares ${JSON.stringify(l.entryMix)} over ${l.routes.length} routes` : 'no entryMix');
+    ok(!!l.routeMix, `${l.name} divides its wave between its roads rather than rolling`,
+      l.routeMix ? `shares ${JSON.stringify(l.routeMix)} over ${l.routes.length} routes` : 'no routeMix');
   }
 
   // And every board that DECLARES a mix keeps to it, drawn or not, so the day one of
   // the testing boards gets a line it is checked by the same arithmetic.
-  for (const l of levels.filter(l => l.entryMix)) {
+  for (const l of levels.filter(l => l.routeMix)) {
     useLevel(levels.indexOf(l));
-    const total = l.entryMix.reduce((a, b) => a + b, 0);
+    const total = l.routeMix.reduce((a, b) => a + b, 0);
     const st = { enemies: [] };
     const n = l.routes.map(() => 0);
     const longest = l.routes.map(() => 0);
@@ -1460,12 +1518,12 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
       prev = r;
       if (run > longest[r]) longest[r] = run;
     }
-    const off = n.map((c, i) => Math.abs(c / N - l.entryMix[i] / total));
+    const off = n.map((c, i) => Math.abs(c / N - l.routeMix[i] / total));
     ok(Math.max(...off) < 0.01, `  and ${l.short || l.name} deals them in the shares it declares`,
       n.map(c => (100 * c / N).toFixed(1) + '%').join(' / '));
     // A bag of `total` can put a route's last card next to its first, so the longest
     // possible run is twice its share. Anything longer means the deal is not a deal.
-    const cap = l.entryMix.map(share => share * 2);
+    const cap = l.routeMix.map(share => share * 2);
     ok(longest.every((r, i) => r <= cap[i]),
       `  and no road ever sends more than its share twice over`,
       longest.map((r, i) => `${r}/${cap[i]}`).join(' '));
@@ -1485,12 +1543,12 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
 // without clearing anything, and keep spawning.
 {
   const shop = levels.find(l => l.id === 'm6');
-  const two = levels.find(l => l.entryMix && l.routes.length === 2);
+  const two = levels.find(l => l.routeMix && l.routes.length === 2);
   const st = { enemies: [] };
 
   useLevel(levels.indexOf(shop));
   for (let i = 0; i < 3; i++) { st.enemies.length = 0; spawn(st, 'light_inf'); }
-  const carried = st.entryBag;
+  const carried = st.routeBag;
 
   useLevel(levels.indexOf(two));
   let bad = 0;
@@ -1500,10 +1558,10 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
     const e = st.enemies[0];
     if (e.route >= two.routes.length || !Number.isFinite(e.x) || !Number.isFinite(e.y)) bad++;
   }
-  ok(bad === 0 && st.entryBag.id === two.id,
+  ok(bad === 0 && st.routeBag.id === two.id,
     'a part-dealt bag is never dealt onto the next board',
     `carried ${JSON.stringify(carried && carried.cards)} from ${carried && carried.id}, ` +
-    `refilled for ${st.entryBag.id}, ${bad} bad spawn(s) of 200`);
+    `refilled for ${st.routeBag.id}, ${bad} bad spawn(s) of 200`);
 }
 
 // STAGE 2'S LAST TWO TIGHTENED THE SAME WAY, and for the same ask. Same shape of

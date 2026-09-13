@@ -659,21 +659,21 @@ Files beside them are **DERIVED and committed**, and none should ever be edited 
 hand:
 
 - `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg`,
-  `Stage_4_Map_base.svg` and `Stage_5_Map_base.svg` — the five drawn boards with their
-  plot markers cut out, written by `node tools/split-map.mjs assets/map/Stage_1_Map`
-  and the same for the others. Note the **stem**: all five are drawn in layers, so the
-  command names `Stage_1_Map` rather than a file. Same pipeline as `Map_N_base.svg`
-  otherwise.
+  `Stage_4_Map_base.svg`, `Stage_5_Map_base.svg` and `Stage_6_Map_base.svg` — the six
+  drawn boards with their plot markers cut out, written by `node tools/split-map.mjs
+  assets/map/Stage_1_Map` and the same for the others. Note the **stem**: all six are
+  drawn in layers, so the command names `Stage_1_Map` rather than a file. Same
+  pipeline as `Map_N_base.svg` otherwise.
 - `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
-  `Stage_4_Map_front.svg` and `Stage_5_Map_front.svg` — **the things on those boards
-  that stand up**, on a transparent sheet of the same artboard. The same command
-  writes them. See "What a figure can walk behind" below.
-- `Stage_5_Map_over.svg` — **the one piece of scenery that is in front of
-  everything**: the near handrail of the bridge. Written by the same command, given
-  `--over 3e`, which names the layer part it lifts. A `_front` box is sorted into the
-  depth pass by its foot and this rail has no foot on the canvas — it runs off the
-  bottom-right corner with the rest of the bridge — so it is not sorted at all, it is
-  drawn last. See "The near overlay" below.
+  `Stage_4_Map_front.svg`, `Stage_5_Map_front.svg` and `Stage_6_Map_front.svg` —
+  **the things on those boards that stand up**, on a transparent sheet of the same
+  artboard. The same
+  command writes them. See "What a figure can walk behind" below.
+- `Stage_5_Map_over.svg` and `Stage_6_Map_over.svg` — **the pieces of scenery that
+  are in front of everything**: the near side of each board's bridge. Written by the
+  same command, given `--over 3e` and `--over 3c`, which name the layer part to lift.
+  A bridge is drawn over water, so it has no shadow and no ground line, and a `_front`
+  box could not be sorted for it at all — see "The near overlay" below.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the

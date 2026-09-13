@@ -701,6 +701,7 @@ export const paths = {
   map05:       'assets/map/Stage_3_Map_base.svg',
   map06:       'assets/map/Stage_4_Map_base.svg',
   map07:       'assets/map/Stage_5_Map_base.svg',
+  map08:       'assets/map/Stage_6_Map_base.svg',
   // THE THINGS ON EACH BOARD THAT STAND UP, on their own transparent sheet so the
   // renderer can draw them at the right depth instead of under everything. Derived
   // and committed by tools/split-map.mjs, like the bases beside them. See `front`
@@ -710,6 +711,7 @@ export const paths = {
   front05:     'assets/map/Stage_3_Map_front.svg',
   front06:     'assets/map/Stage_4_Map_front.svg',
   front07:     'assets/map/Stage_5_Map_front.svg',
+  front08:     'assets/map/Stage_6_Map_front.svg',
   // AND THE ONE THING THAT IS IN FRONT OF EVERYTHING. Stage 5's bridge has a near
   // railing between the camera and its deck, so a figure crossing belongs BEHIND it
   // — which no box on the sheet above can say, because a box sorts by its foot and
@@ -717,6 +719,8 @@ export const paths = {
   // bridge. It is its own drawing (`_Layer_3e`) on its own sheet, drawn after the
   // depth pass. See `over` in src/data/level07.js.
   over07:      'assets/map/Stage_5_Map_over.svg',
+  // And stage 6's, which is the near side of the Dawnford bridge — same job.
+  over08:      'assets/map/Stage_6_Map_over.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

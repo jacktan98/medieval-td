@@ -781,19 +781,37 @@ export const mapTabs = () => {
 // "Extended" is the longer label and sets at 65px in this row's type.
 // tools/admin.mjs checks both clearances against the real geometry, and it caught
 // this at 96 wide.
+// The wave row's own geometry, declared here because the length buttons below sit
+// on it and a const cannot be read before it is written.
+const WAVE_W = 46, WAVE_H = 44, WAVE_GAP = 5;
+const WAVE_ROW_Y = INNER.y + 110;
+
 const MODE_W = 78, MODE_GAP = 6;
 
-// Off the LAST MAP TAB'S RIGHT EDGE rather than off a count times a pitch: the
-// arithmetic version included a trailing gap that is not there and put these 12px
-// further right than intended, and with tabs of different widths there is no pitch
-// to multiply at all.
-const modeX = () => { const t = mapTabs(); return t[t.length - 1].x + t[t.length - 1].w + 12; };
+// ON THE WAVE ROW NOW, right-aligned, rather than after the last map tab.
+//
+// They sat beside the maps because the two questions are one question — which table
+// am I editing — and the row ran out. Nine boards of tabs end at 841 against an inner
+// edge of 936, which leaves 95px for two buttons that need 162. The note above the
+// tab widths named this as the next lever and it was right: these two mean nothing on
+// six of the nine maps, because every drawn board is `oneLength` and only the three
+// testing ones have a second table.
+//
+// A SECOND ROW OF TABS IS NOT THE ANSWER and the note above says why, on numbers that
+// had gone stale: there are 16px between the map row and the wave row, not 56, so a
+// 46px row does not go there. Nothing below can move down either — the group rows
+// already reach the footer.
+//
+// The wave row is where they went because it has the space: twelve wave buttons end
+// at 631 and the panel runs to 936. And it is still the right neighbourhood — the
+// wave numbers say which wave OF the table, and these say which table.
+const MODE_ROW_Y = WAVE_ROW_Y + 2;
 export const modeTabs = () => MODES.map((m, i) => ({
   i,
   id: m.id,
   label: m.name,
-  x: modeX() + i * (MODE_W + MODE_GAP),
-  y: MAP_Y,
+  x: INNER.r - MODES.length * MODE_W - (MODES.length - 1) * MODE_GAP + i * (MODE_W + MODE_GAP),
+  y: MODE_ROW_Y,
   w: MODE_W,
   h: MAP_H
 }));
@@ -814,8 +832,6 @@ export const waveCountFor = (levelIndex, mode) => tableFor(levels[levelIndex], m
 // other on one map, at one length, with nothing to say so. The tap box is 58 with
 // its padding, which is what the wave steppers already are and is justified in the
 // same place: this panel is behind a PIN and is a tool for building levels.
-const WAVE_W = 46, WAVE_H = 44, WAVE_GAP = 5;
-const WAVE_ROW_Y = INNER.y + 110;
 export const waveTabs = (levelIndex, mode = 'normal') => {
   const n = waveCountFor(levelIndex, mode);
   return Array.from({ length: n }, (_, i) => ({

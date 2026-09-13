@@ -173,23 +173,70 @@ function mouths(edge) {
     .map(r => ({ ...r, edge, cell: at(Math.round((r.a + r.b) / 2)) }));
 }
 
-const EXIT_EDGE = (() => {
+// SEVERAL EDGES MAY BE THE WAY OUT, which stage 6 is the first board to need:
+//
+//   node tools/trace-road.mjs assets/map/Stage_6_Map --exit bottom,right
+//
+// Dawnford Bridge has ONE way in and TWO ways out, on two different edges — the
+// mirror of stage 4, which has three ways in and one out. `--exit` took a single
+// edge because every board until now had all its exits on one, and a list costs
+// nothing to accept.
+const EXIT_EDGES = (() => {
   const i = process.argv.indexOf('--exit');
-  const e = i >= 0 ? process.argv[i + 1] : 'right';
-  if (!EDGES[e]) throw new Error(`--exit must be one of ${Object.keys(EDGES).join(', ')}, not "${e}"`);
-  return e;
+  const list = (i >= 0 ? process.argv[i + 1] : 'right').split(',').map(e => e.trim());
+  for (const e of list) {
+    if (!EDGES[e]) throw new Error(`--exit must name edges from ${Object.keys(EDGES).join(', ')}, not "${e}"`);
+  }
+  return list;
 })();
 
-const exits = mouths(EXIT_EDGE);
+// A ROAD THAT MEETS A CORNER IS ONE MOUTH, not two.
+//
+// Stage 6's bridge comes in over the top-left corner, so the tarmac touches the top
+// edge at x 26 and the left edge at y 22 — one road, counted twice, and the pairing
+// below would have made two entries out of it and sent half the wave down a route
+// starting 34px from the other one.
+//
+// Merged by NEARNESS rather than by naming the corner: two mouths whose middles are
+// within a road's width of each other are the same piece of tarmac seen from two
+// sides. The widest is kept, because that is the one whose middle is nearest the
+// road's own centre.
+const CORNER = 80;
+const merge = list => {
+  const out = [];
+  for (const m of list) {
+    const near = out.find(o => Math.hypot((o.cell[0] - m.cell[0]) * STEP,
+                                          (o.cell[1] - m.cell[1]) * STEP) <= CORNER);
+    if (!near) { out.push(m); continue; }
+    if (m.b - m.a > near.b - near.a) out[out.indexOf(near)] = m;
+  }
+  return out;
+};
+
+const exits = merge(EXIT_EDGES.flatMap(mouths))
+  .sort((p, q) => p.cell[1] - q.cell[1] || p.cell[0] - q.cell[0]);
 // Sorted top to bottom, then left to right, because the pairing with the exits
 // below is by vertical order and needs one across all the edges rather than one
 // per edge.
-const entries = Object.keys(EDGES).filter(e => e !== EXIT_EDGE).flatMap(mouths)
+const entries = merge(Object.keys(EDGES).filter(e => !EXIT_EDGES.includes(e)).flatMap(mouths))
   .sort((p, q) => p.cell[1] - q.cell[1] || p.cell[0] - q.cell[0]);
+
+// EVERY MOUTH THE DRAWING HAS, named and placed, before any of them is called an
+// entry or an exit. A road that reaches a corner can show up on two edges at once,
+// and a board with the wrong number of either is a board where the first thing
+// anybody needs is the list.
+const spot = m => `${(m.cell[0] * STEP)},${(m.cell[1] * STEP)}`;
+console.log('  mouths:');
+for (const e of Object.keys(EDGES)) {
+  for (const m of mouths(e)) {
+    console.log(`    ${e.padEnd(6)} at ${spot(m)}  ` +
+      `${(m.b - m.a + 1) * STEP}px wide  — ${EXIT_EDGES.includes(e) ? 'a way OUT' : 'a way IN'}`);
+  }
+}
 
 const where = list => list.map(m => m.edge).join(', ') || 'nowhere';
 console.log(`  ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} (${where(entries)}), ` +
-  `${exits.length} exit(s) on the ${EXIT_EDGE}`);
+  `${exits.length} exit(s) (${where(exits)})`);
 if (!entries.length || !exits.length) throw new Error('road does not reach both edges');
 
 // --- ridge walk --------------------------------------------------------------
@@ -278,9 +325,16 @@ function costField(goal) {
 // wrong loudly — the field will not reach and the error above will say so.
 const pairs = exits.length === 1
   ? entries.map(run => [run, exits[0]])
-  : entries.length === exits.length
-    ? entries.map((run, i) => [run, exits[i]])
-    : null;
+  // AND ONE WAY IN WITH SEVERAL WAYS OUT, which is stage 6 and the mirror of the
+  // line above it. Dawnford Bridge has one mouth and two: the wave arrives over the
+  // bridge and the road forks, half going out at the bottom and half at the right.
+  // One route per exit, all starting at the same place and sharing everything up to
+  // the fork — which is what two routes with a common head cost, namely nothing.
+  : entries.length === 1
+    ? exits.map(exit => [entries[0], exit])
+    : entries.length === exits.length
+      ? entries.map((run, i) => [run, exits[i]])
+      : null;
 
 if (!pairs) {
   throw new Error(`${entries.length} entries and ${exits.length} exits: either ` +

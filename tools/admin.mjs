@@ -444,14 +444,22 @@ console.log('\nAnything, in any wave\n');
     'and the longest row still fits the panel',
     `ends ${tabs[tabs.length - 1].x + tabs[tabs.length - 1].w}`);
 
-  // AND THE LENGTH BUTTONS SIT CLEAR of the maps on their left and the purse on
-  // their right. They were squeezed onto that row by taking 20px off each map tab,
-  // so both of those clearances are new and neither is generous.
+  // AND THE LENGTH BUTTONS SIT ON THE WAVE ROW NOW, clear of the wave numbers.
+  //
+  // They sat after the last map tab until there were nine boards, which ends that row
+  // at 841 against an inner edge of 936 — 95px for two buttons that need 162. Both
+  // clearances below are about the row they moved to.
   const maps = mapTabs();
   const modes = modeTabs();
-  ok(modes[0].x > maps[maps.length - 1].x + maps[maps.length - 1].w,
-    'the length buttons clear the map tabs',
-    `${modes[0].x - (maps[maps.length - 1].x + maps[maps.length - 1].w)}px apart`);
+  // The longest row there is, which is the one the buttons have to clear.
+  const numbers = tabs;
+  ok(modes[0].y >= maps[0].y + maps[0].h,
+    'the length buttons are off the map row',
+    `${modes[0].y - (maps[0].y + maps[0].h)}px below it`);
+  const lastNumber = numbers[numbers.length - 1];
+  ok(modes[0].x > lastNumber.x + lastNumber.w,
+    'and clear of the wave numbers beside them',
+    `${modes[0].x - (lastNumber.x + lastNumber.w)}px apart`);
   // AND THE ROW ENDS INSIDE THE PANEL. It used to have to clear the "Start gold"
   // label as well, because the purse sat on this row — six maps is where that ran
   // out and the purse moved to the footer. What is left is the plainer question.

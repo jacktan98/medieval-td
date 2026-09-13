@@ -113,7 +113,7 @@ export const level04 = {
   // every pair and the longest run is two.
   //
   // See nextRoute in src/enemies.js. Shares, in the same order as `routes`.
-  entryMix: [1, 1],
+  routeMix: [1, 1],
   // TIER 3 IS THE CEILING HERE, at the owner's ask: stage 1 stops at 2, this stops
   // at 3, and tier 4 waits for a board further down the road. The rungs above the
   // cap are drawn and priced as normal and refuse the purchase, which reads as

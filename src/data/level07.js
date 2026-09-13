@@ -113,7 +113,7 @@ export const level07 = {
 
   // HALF THE WAVE DOWN EACH ROAD, dealt rather than rolled, at the owner's ask.
   // See nextRoute in src/enemies.js. Shares, in the same order as `routes`.
-  entryMix: [1, 1],
+  routeMix: [1, 1],
 
   // TIER 3, PLUS THE SAME TWO NAMED RUNGS STAGE 4 LETS THROUGH: the Crossbow Sentry
   // and the Ballista Turret. Neither archery nor siege forks on this board — each

@@ -739,10 +739,27 @@ if (LAYERS.length) {
     if (!low) { noShadow.push(c); continue; }
     c.ground = Math.round((low.y0 + low.y1) / 2 * MAP_SCALE);
   }
+  // AND A THING WITH NO SHADOW IS NOT STANDING ON THE GROUND, so it gets no box.
+  //
+  // The ground line IS the centre of a shadow. A drawing with none has no ground line
+  // to give, and the old fall-back — the bottom of its box — is not a worse answer to
+  // the same question, it is an answer to a different one.
+  //
+  // BOTH BRIDGES ARE THE CASE, and they are the case for the reason the rule states:
+  // a bridge is drawn over water and does not touch the ground, so the artist drew no
+  // shadow under either. Stage 5's was already boxless because it runs off the bottom
+  // of the canvas — an accident of where it sits. Stage 6's crosses the TOP-LEFT
+  // corner, so that accident does not save it: its box would have footed at y 263 and
+  // painted the whole bridge over every enemy walking across it, which is the one
+  // tile on either board where that must not happen.
+  //
+  // What a bridge needs instead is its NEAR side lifted out as an overlay — see
+  // --over — which is the half of it that genuinely is between the camera and the
+  // deck.
   for (const c of noShadow) {
-    console.log(`  no shadow under the ${Math.round(c.w)}x${Math.round(c.h)} at ` +
-      `${Math.round(c.x)},${Math.round(c.y)} — it keeps the bottom of its box for a ` +
-      `ground line, which draws it about half a shadow too near the camera`);
+    console.log(`  not boxed: ${Math.round(c.w)}x${Math.round(c.h)} at ` +
+      `${Math.round(c.x)},${Math.round(c.y)} — nothing is drawn under it, so it is not ` +
+      `standing on the ground and has no depth to be sorted at`);
   }
 
   const measured = [...clusters, ...loose];
@@ -807,7 +824,8 @@ if (LAYERS.length) {
   }
 
   const tall = measured
-    .filter(m => m.h >= FRONT_MIN_H && standsOn(m) <= CANVAS_H && !overPost.includes(m))
+    .filter(m => m.h >= FRONT_MIN_H && standsOn(m) <= CANVAS_H && !overPost.includes(m) &&
+                 !noShadow.includes(m))
     .sort((a, b) => standsOn(a) - standsOn(b));
   const flat = measured.filter(m => m.h < FRONT_MIN_H);
   const shortest = Math.min(Infinity, ...tall.map(m => m.h));
@@ -873,13 +891,22 @@ if (LAYERS.length) {
     for (const line of covered) console.log(line);
   }
 
+  // CLAMPED TO THE ARTBOARD. A box is a slice of a 1920x1080 sheet as well as a place
+  // on the board, and a drawing that runs off the left or top edge has a negative
+  // corner — which is not a rectangle any sheet has. Nothing is lost by cutting it:
+  // the part outside the artboard is the part nothing drew.
+  const onBoard = m => {
+    const x = Math.max(0, Math.round(m.x)), y = Math.max(0, Math.round(m.y));
+    return { x, y, w: Math.round(m.x + m.w) - x, h: Math.round(m.y + m.h) - y };
+  };
+
   console.log(`front, in depth order — paste into the level file:`);
   for (const m of tall) {
-    console.log(`    { x: ${String(Math.round(m.x)).padStart(3)}, y: ${String(Math.round(m.y)).padStart(3)}, ` +
-      `w: ${String(Math.round(m.w)).padStart(3)}, h: ${String(Math.round(m.h)).padStart(3)}, ` +
+    const b = onBoard(m);
+    console.log(`    { x: ${String(b.x).padStart(3)}, y: ${String(b.y).padStart(3)}, ` +
+      `w: ${String(b.w).padStart(3)}, h: ${String(b.h).padStart(3)}, ` +
       `g: ${String(Math.round(standsOn(m))).padStart(3)} },` +
-      `   // stands on y ${Math.round(standsOn(m))}` +
-      (m.ground === undefined ? '   // NO SHADOW — the bottom of its box' : ''));
+      `   // stands on y ${Math.round(standsOn(m))}`);
   }
 
   // --- and the near overlay, on a sheet of its own ------------------------------
@@ -900,8 +927,9 @@ if (LAYERS.length) {
     console.log(`\nwrote ${OVER_F} — layer ${OVER} alone, ${outerOver.length} thing(s), ` +
       `in front of everything on the board`);
     console.log(`over — paste into the level file:`);
-    console.log(`  over: { x: ${Math.round(x)}, y: ${Math.round(y)}, ` +
-      `w: ${Math.round(w)}, h: ${Math.round(h)} },` +
+    const bx = Math.max(0, Math.round(x)), by = Math.max(0, Math.round(y));
+    console.log(`  over: { x: ${bx}, y: ${by}, ` +
+      `w: ${Math.round(x + w) - bx}, h: ${Math.round(y + h) - by} },` +
       `   // ${Math.round(y + h) > 540 ? 'runs off the bottom of the canvas' : `foot at y ${Math.round(y + h)}`}`);
   }
 }

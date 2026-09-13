@@ -23,7 +23,7 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 // would. It is three lanes per road — near kerb, middle, far kerb — so a map
 // with two roads in has six ways for an enemy to arrive.
 // WHICH ROAD THE NEXT MAN COMES DOWN, on a board that says how the wave should be
-// divided. Levels without `entryMix` are unchanged: they roll a die per enemy, and
+// divided. Levels without `routeMix` are unchanged: they roll a die per enemy, and
 // on a two-road board that is fine.
 //
 // THE OWNER'S ASK, on stage 4's three entries: "assign only 50% of enemies to left
@@ -51,11 +51,19 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 // an enemy walking a lane of nothing. Tying the bag to the level it was filled for
 // makes that unrepresentable rather than merely unlikely, and it does not depend on
 // every path that changes boards remembering to clear it.
+// WHICH ROUTE THIS ONE TAKES, dealt from a shuffled bag rather than rolled.
+//
+// IT WAS `entryMix`, and the name outlived what it meant. Every board that had it
+// used its routes to say which MOUTH an enemy came in by — stage 4 has three ways in
+// and one out — so "entry mix" described the boards that existed. Stage 6 is one way
+// in and two ways out: its two routes share a head and part at a fork, and what the
+// shares divide is which EXIT the wave leaves by. The mechanism never cared; it
+// picks a route. The name now says so.
 function nextRoute(state) {
-  const mix = level.entryMix;
+  const mix = level.routeMix;
   if (!mix) return (Math.random() * level.routes.length) | 0;
 
-  let bag = state.entryBag;
+  let bag = state.routeBag;
   if (!bag || bag.id !== level.id || !bag.cards.length) {
     const cards = [];
     mix.forEach((share, ri) => { for (let k = 0; k < share; k++) cards.push(ri); });
@@ -64,7 +72,7 @@ function nextRoute(state) {
       [cards[i], cards[j]] = [cards[j], cards[i]];
     }
     bag = { id: level.id, cards };
-    state.entryBag = bag;
+    state.routeBag = bag;
   }
   return bag.cards.pop();
 }

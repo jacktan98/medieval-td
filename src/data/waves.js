@@ -2055,6 +2055,28 @@ export const stage5Waves = [
                        { type: 'archer_inf', count: 16, gap: 1.0 }] }
 ];
 
+// STAGE 6, DAWNFORD BRIDGE, and it is stage 5's table as that board first shipped —
+// before its giants were spaced out and thinned. The owner gave it wave for wave, and
+// the two are worth keeping as separate tables rather than one shared one: the Castle
+// eased because of what its two roads and its free crossbowmen do to a wave, and none
+// of that is true here. The same numbers on a different board are a different game.
+export const stage6Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 2, gap: 1.8 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 4, gap: 1.5 }, { type: 'heavy_inf', count: 4, gap: 2.0 },
+                       { type: 'archer_inf', count: 6, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 6, gap: 1.5 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.4 }, { type: 'heavy_inf', count: 6, gap: 1.8 },
+                       { type: 'archer_inf', count: 16, gap: 1.1 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.3 }, { type: 'heavy_inf', count: 8, gap: 1.6 },
+                       { type: 'archer_inf', count: 20, gap: 1.0 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

@@ -42,7 +42,7 @@ import { stage3Waves } from './waves.js';
 // The arms are not a fork like stage 2's — they leave and rejoin the same road, so
 // they SHARE their first three points and their last three, and differ only in
 // which side of the island they pass. Exactly half the wave comes each way — see
-// `entryMix` below — so every plot on the ring has something to shoot at.
+// `routeMix` below — so every plot on the ring has something to shoot at.
 const south = [
   { x: -37, y: 327 },
   { x: 1, y: 339 },
@@ -141,7 +141,7 @@ export const level05 = {
   // of six round the south was ordinary and those four plots watched it go past.
   //
   // See nextRoute in src/enemies.js. Shares, in the same order as `routes`.
-  entryMix: [1, 1],
+  routeMix: [1, 1],
 
   // TIER 3, PLUS ONE NAMED RUNG ABOVE IT.
   //

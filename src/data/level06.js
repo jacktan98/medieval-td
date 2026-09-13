@@ -13,7 +13,7 @@
 // spreading thin across three mouths.
 //
 // AND THE WAVE IS DEALT RATHER THAN ROLLED, which is the other half of the same
-// design and the owner's ask. See `entryMix` below.
+// design and the owner's ask. See `routeMix` below.
 //
 // TRACED FROM THE ARTWORK by `node tools/trace-road.mjs assets/map/Stage_4_Map`,
 // and the plots by `node tools/split-map.mjs assets/map/Stage_4_Map`. The map is
@@ -127,14 +127,14 @@ export const level06 = {
   // loses a game, because that road reaches the gate 315px sooner than the west one.
   //
   // AND WEIGHTING THE DIE WOULD NOT HAVE FIXED IT. Loaded dice give the right
-  // AVERAGE and the same bad tail. So `entryMix` is DEALT rather than rolled — a bag
+  // AVERAGE and the same bad tail. So `routeMix` is DEALT rather than rolled — a bag
   // of [west, west, north, north-east], shuffled and handed out, refilled when it
   // empties. Every four men are exactly two, one and one; the order inside a bag is
   // still shuffled so a wave does not arrive metronomically. See nextRoute in
   // src/enemies.js.
   //
   // The numbers are SHARES rather than percentages, in the same order as `routes`.
-  entryMix: [2, 1, 1],
+  routeMix: [2, 1, 1],
 
   // TIER 3, PLUS TWO NAMED RUNGS ABOVE IT.
   //

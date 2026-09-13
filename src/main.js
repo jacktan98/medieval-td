@@ -113,7 +113,7 @@ function newGame() {
     // a bag half dealt into a lost game is not the bag the next one should open
     // with: the first four men of a new attempt would arrive on whatever the last
     // attempt happened to leave behind.
-    entryBag: null,
+    routeBag: null,
     pendingReveal: null,
     // THE WAVES THIS GAME WILL ACTUALLY SEND, scaled once here rather than read
     // through the level every frame. Two things depend on that: `waveSize` and
