@@ -23,7 +23,7 @@ import { prepare } from './route.js';
 
 // IN THE ORDER THEY ARE PLAYED, which is no longer the order the files are
 // numbered in. level04 is the newest board drawn and it belongs SECOND: the
-// campaign runs the tutorial, then Oakland Outskirts, then the three boards that
+// campaign runs the tutorial, then Oakhaven Outskirts, then the three boards that
 // were built for testing, which the owner asked to move further down the road.
 //
 // The file numbers are the order they were WRITTEN and the ids are save keys —

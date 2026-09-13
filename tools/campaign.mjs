@@ -1573,7 +1573,7 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
   const early = Math.min(...out.waves.slice(0, 4).map(slowest));
   const late = out.waves.slice(4).map(slowest);
   ok(late.length === 2 && late.every(g => g < early),
-    'Oakland Outskirts tightens its last two the same way',
+    'Oakhaven Outskirts tightens its last two the same way',
     `${late.map(g => g.toFixed(2)).join(', ')} against ${early.toFixed(2)}`);
 }
 
@@ -1658,7 +1658,7 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
 console.log('\n--- the panel a stage opens ---\n');
 
 // WHAT THE PLAYER IS ASKED BEFORE A GAME, and the one setting that stopped being
-// a question. Both Oakland boards run one wave table at either length, so the
+// a question. Both Oakhaven boards run one wave table at either length, so the
 // Length row offered a choice that changed nothing — and a player who picks
 // Extended and gets the same six waves has been told something untrue.
 {

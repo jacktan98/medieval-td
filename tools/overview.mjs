@@ -478,7 +478,7 @@ const ORDER = [6, 7, 8, 10, 9, 0, 1, 5, 3, 4, 2];
 //
 // NINE BOARDS NOW, and this table is the identity map because src/level.js already
 // lists the levels IN PLAY ORDER. That is the whole of "move the three testing maps
-// to further stages": Oakland Outskirts went in second in that array and the three
+// to further stages": Oakhaven Outskirts went in second in that array and the three
 // older boards slid down to 3, 4 and 5 behind it. A stage's board is this table and
 // the order of that array, and nothing else.
 //

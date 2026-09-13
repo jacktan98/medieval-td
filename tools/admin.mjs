@@ -404,7 +404,7 @@ console.log('\nAnything, in any wave\n');
   //
   // MEASURED OFF `lv`, not off the Bend. It was `xWaves - 1`, which is the Bend's
   // count — right while `lv` WAS the Bend and wrong the moment a shorter board took
-  // the front of the non-tutorial list, which Oakland Outskirts did. The check then
+  // the front of the non-tutorial list, which Oakhaven Outskirts did. The check then
   // asked m4 for its wave 11 of 10 and reported the panel broken. Two levels in one
   // assertion is the bug; one of them is enough.
   const lastWave = waveCountFor(levels.indexOf(lv), 'extended') - 1;

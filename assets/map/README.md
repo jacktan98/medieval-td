@@ -56,7 +56,7 @@ runs exactly as it does for a single-file board.
 
 **The road and the plot markers may live in any layer** — the tool finds them by
 what they are, not by which file they are in: the markers by matching
-`Plot_Marker.svg`'s proportions, the road by its fill. On both Oakland boards they
+`Plot_Marker.svg`'s proportions, the road by its fill. On both Oakhaven boards they
 are in **layer 1**, along with the ground colour.
 
 **The road may be drawn in several overlapping pieces.** Stage 2's is: a junction

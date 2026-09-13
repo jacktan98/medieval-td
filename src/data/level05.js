@@ -1,6 +1,6 @@
 // STAGE 3: the road arrives somewhere.
 //
-// The two Oakland boards are country — fields, a well, a tavern at a crossroads.
+// The two Oakhaven boards are country — fields, a well, a tavern at a crossroads.
 // This is the approach to a town, and what makes it one is the ROUNDABOUT: the
 // road opens around a paved island with a statue on it and closes again, so the
 // board's whole middle is a thing the road goes AROUND rather than through.

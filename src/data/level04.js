@@ -82,7 +82,7 @@ const plots1 = [
 
 export const level04 = {
   id: 'm4',
-  name: 'Oakland Outskirts',
+  name: 'Oakhaven Outskirts',
   // Short enough for the admin panel's map tab, which is a chip in a row that now
   // holds five of them. The full name is what every screen with room shows.
   short: 'Outskirts',

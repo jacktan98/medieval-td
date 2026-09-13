@@ -3513,7 +3513,7 @@ export const stageLevel = state => {
   return stage && stage.level !== null ? levels[stage.level] : null;
 };
 
-// AND WHETHER THERE IS A LENGTH TO CHOOSE. Both Oakland boards run one table at
+// AND WHETHER THERE IS A LENGTH TO CHOOSE. Both Oakhaven boards run one table at
 // either setting — see `oneLength` in their level files — so the row offered a
 // choice that changed nothing, which is worse than no choice at all: a player who
 // picks Extended and gets the same six waves has been told something untrue.
