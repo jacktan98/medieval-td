@@ -152,21 +152,26 @@ export const level09 = {
     { plot: 8, family: 'monastery', name: 'High Altar' }
   ],
 
-  // WHAT A FIGURE CAN WALK BEHIND: the four stone huts, and the fountain.
+  // WHAT A FIGURE CAN WALK BEHIND: the four stone huts, the cooking fire, and the
+  // fountain.
   //
   // THE FOUNTAIN IS THE BIGGEST BOX ON ANY BOARD at 149 x 141, and it earns it the
   // ordinary way — it stands on the ground, it has a shadow, and its ground line is
-  // the centre of that shadow at y 395. No road passes behind it, so what the box
-  // actually does is catch a tower built on the plot above it at (465, 243): that
-  // tower stands 152px in front of the fountain's line and is drawn over it, which
-  // is right, and would not have been under the old rule that read the BOTTOM of a
-  // shadow rather than its middle.
+  // the centre of that shadow.
+  //
+  // NO ROAD PASSES BEHIND IT and no tower can be hidden by it either, which is worth
+  // saying because the plot at (465, 243) sits directly above it and looks like it
+  // should be. It is not: a tower stands ON its plot and draws UPWARD from it, so
+  // that one's ink runs from about y 130 to 243 and the fountain's box starts at 269.
+  // The two never share a pixel. tools/campaign.mjs asks that of the ink rather than
+  // of this paragraph.
   frontArt: 'front09',
   front: [
     { x: 602, y:  27, w:  73, h:  91, g: 102 },   // stands on y 102
-    { x: 106, y: 192, w:  74, h:  91, g: 267 },   // stands on y 267
+    { x: 109, y: 198, w:  74, h:  92, g: 273 },   // stands on y 273
     { x: 753, y: 212, w:  73, h:  91, g: 287 },   // stands on y 287
-    { x: 183, y: 251, w:  78, h:  91, g: 326 },   // stands on y 326
-    { x: 397, y: 284, w: 149, h: 141, g: 395 }    // stands on y 395 — the fountain
+    { x: 186, y: 251, w:  75, h:  91, g: 326 },   // stands on y 326
+    { x: 856, y: 309, w:  46, h:  38, g: 338 },   // stands on y 338 — the cooking fire
+    { x: 397, y: 269, w: 149, h: 141, g: 380 }    // stands on y 380 — the fountain
   ]
 };
