@@ -19,7 +19,13 @@
 const DUR = {
   'assets/audio/sfx/Arrow_shot.mp3': 0.5,
   'assets/audio/sfx/Select_Sound.mp3': 0.5,
-  'assets/audio/voice/Thug_1.mp3': 2
+  'assets/audio/voice/Thug_1.mp3': 2,
+  // The three summary clips, at roughly their real lengths — the point of the
+  // block that uses them is that a 2s fanfare does NOT gate a chime 0.55s later,
+  // and a 0.5s stand-in would not have been long enough to prove it.
+  'assets/audio/sfx/Victory_sound.mp3': 2,
+  'assets/audio/sfx/Lost_sound.mp3': 2,
+  'assets/audio/sfx/Star_sound.mp3': 2
 };
 const DEFAULT_DUR = 0.5;
 
@@ -129,8 +135,8 @@ const ctx = {
 globalThis.AudioContext = function () { return ctx; };
 globalThis.fetch = path => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(path) });
 
-const { loadAudio, play, solo, CUE, SHOT, ATTACK, PALADIN, SELECT,
-        DEADEYE, HOLY_LIGHT, HEAVY_STRIKE,
+const { loadAudio, play, solo, fanfare, CUE, SHOT, ATTACK, PALADIN, SELECT,
+        DEADEYE, HOLY_LIGHT, HEAVY_STRIKE, VICTORY, LOST, STAR,
         selectionCue, familyCue, blowCue, abilityCue, GAIN, CLIPS } = await import('../src/audio.js');
 // The two ladders with a tier 4 on them, for the voice and blow checks below.
 // Imported here rather than at the top because everything above has to run after
@@ -676,6 +682,101 @@ console.log('\nEvery shot is heard, or is silent on purpose\n');
   const rows = [...Object.values(FIRING), ...Object.values(LANDING)].flat();
   check('and every clip those tables name is one the loader knows',
     rows.filter(k => !(k in CLIPS)).join(', '), '');
+}
+
+// THE CLOCK ONLY EVER GOES FORWARD IN THIS FILE, and that is why this block is at
+// the end rather than beside the two categories it is about. It first sat between
+// them at t=600, which is BEHIND the Category B section at 300-500 and on top of
+// the fairness run at 600+i — so the gate it left closed at 10s in the future
+// silenced six checks that had nothing to do with it. Times here start at 10000.
+// --- the summary panel, which is neither category -------------------------------
+//
+// THE STARS HAVE TO COME OUT ONE BY ONE and the gate would not let them. This is
+// the block that says so, and it is written as a comparison: the same three calls
+// through `solo` and through `fanfare`, on the same clock.
+
+console.log('\nThe summary panel counts its stars out');
+
+ctx.currentTime = 10000;
+played = [];
+solo(CUE.thug);                                    // a 2s line, gate closed to 10002.9
+check('a fanfare is not silenced by a closed gate', at(10001, () => fanfare(VICTORY)), 1);
+
+// AND FIRING ONE DOES NOT CLOSE THE GATE. On a clean clock, so that the only thing
+// which could be holding the channel a second later is the fanfare itself.
+ctx.currentTime = 10050;
+played = [];
+fanfare(VICTORY);
+check('and firing one does not close the gate either', at(10051, () => solo(CUE.barracks)), 1);
+
+// THE THING THIS EXISTS FOR. Victory, then three chimes 0.55s apart — every one of
+// them has to be heard. `at` clears the log each time it is called, so the four are
+// summed rather than counted at the end.
+let rang = 0;
+ctx.currentTime = 10100;
+played = [];
+fanfare(VICTORY);
+rang += played.length;
+rang += at(10101.5, () => fanfare(STAR));
+rang += at(10102.05, () => fanfare(STAR));
+rang += at(10102.6, () => fanfare(STAR));
+check('a fanfare and three chimes 0.55s apart are four sounds', rang, 4);
+
+// AND THE SAME FOUR THROUGH THE GATE WOULD BE ONE, which is the whole argument for
+// `fanfare` existing. Nothing here is asserting that `solo` is wrong — it is doing
+// exactly its job, which is the wrong job for a screen with nothing else on it.
+let gated = 0;
+ctx.currentTime = 10200;
+played = [];
+solo(VICTORY);
+gated += played.length;
+gated += at(10201.5, () => solo(STAR));
+gated += at(10202.05, () => solo(STAR));
+gated += at(10202.6, () => solo(STAR));
+check('where through the gate the same four would be one', gated, 1);
+
+// It still goes out on Category A's bus, which is what makes it as loud as a line
+// rather than as quiet as an arrow.
+routes = [];
+ctx.currentTime = 10300;
+fanfare(LOST);
+check('and it leaves on the A bus, at A level', routes[0] && routes[0].bus, 'busA');
+
+// TWO CALLS FOR THE SAME CLIP IN ONE INSTANT ARE ONE SOUND. The one collision this
+// path can still have, and the only thing it borrows from Category B.
+ctx.currentTime = 10400;
+played = [];
+fanfare(STAR); fanfare(STAR);
+check('two chimes on the same millisecond de-dupe', played.length, 1);
+
+// AND ONE CHIME PER STAR, no more and no fewer. The clock lives in score.js and
+// the sound is fired by main.js from the count it returns, so what has to hold is
+// that the count over a whole reveal equals the stars earned — for every rating,
+// including the loss that earns none.
+{
+  const { startReveal, stepStars, STAR_FIRST, STAR_GAP } = await import('../src/score.js');
+  // The same clamp main.js applies to its delta. Stepping at exactly this is the
+  // worst case for the arithmetic: the most frames a reveal can be spread over.
+  const DT = 0.05;
+  const counts = [];
+  for (const stars of [0, 1, 2, 3]) {
+    const st = { summary: { stars } };
+    startReveal(st);
+    let rang = 0;
+    for (let i = 0; i < 400; i++) rang += stepStars(st, DT);
+    counts.push(rang);
+  }
+  check('a reveal rings exactly once per star earned', counts.join(','), '0,1,2,3');
+
+  // AND NOT ONE OF THEM BEFORE THE FANFARE HAS SAID ITS PIECE. The victory clip's
+  // held chord peaks at 1.15s; the first chime is timed to land on its decay.
+  const st = { summary: { stars: 3 } };
+  startReveal(st);
+  let t = 0, first = null;
+  for (let i = 0; i < 400 && first === null; i++) { t += DT; if (stepStars(st, DT)) first = t; }
+  check('the first chime lands after the fanfare peaks at 1.15s', first > 1.15, true);
+  check('and the three of them are spaced by STAR_GAP',
+    +(STAR_GAP).toFixed(2) >= 0.4 && STAR_FIRST >= 1.2, true);
 }
 
 console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nAll three sound rules hold.');

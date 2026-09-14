@@ -229,3 +229,50 @@ export function finish(state, level, difficulty, mode) {
     mode: mode ? mode.name : 'Normal'
   };
 }
+
+// --- HOW THE SUMMARY ARRIVES ------------------------------------------------------
+//
+// The panel used to appear whole: headline, stars, lines. It counts its stars out
+// now, at the owner's ask — "make the star come out one by one with this sound. If
+// players earn 3 stars, then there will be 3 stars that come out and they can hear
+// 3 sounds. If 1 then only 1 sound."
+//
+// THE TWO NUMBERS COME OFF THE RECORDINGS, measured rather than chosen. The victory
+// clip is three short hits and then a held chord that peaks at 1.15s and is spent by
+// 1.75; starting the count at 1.5 puts the first chime on the chord's decay rather
+// than across its face. And the star clip is 2.04s of file containing 0.35s of
+// sound, so 0.55 apart is three separate chimes with clear air between them — which
+// is what makes this a count rather than a chord.
+//
+// A LOSS REVEALS NOTHING, and that falls out rather than being special-cased: a loss
+// is zero stars, so there is never one due. The lost clip plays alone and its tail
+// runs to the end, because nothing follows it.
+export const STAR_FIRST = 1.5;
+export const STAR_GAP = 0.55;
+
+// Everything the reveal needs, reset when a summary is built. Held on the state
+// rather than on the summary itself because the summary is a RECORD — it is what
+// was achieved, and it is read back by the panel every frame; how far through the
+// animation we are is not part of that.
+export function startReveal(state) {
+  state.summaryClock = 0;
+  state.starsShown = 0;
+}
+
+// Stepped on REAL time, like the world map's reveal and for the same reason: this is
+// a screen animation, so the fast-forward multiplier has no business touching it.
+//
+// It returns how many came due rather than ringing them itself, which keeps this
+// file about scoring and out of the audio graph. Today that is always 0 or 1 — main
+// clamps its delta to 0.05s, so eleven frames pass between one star and the next —
+// and the loop is here because the CLOCK is the authority on how many are out, not
+// the frame count. Shorten STAR_GAP past the clamp and this still rings once each.
+export function stepStars(state, dt) {
+  const s = state.summary;
+  if (!s || state.starsShown >= s.stars) return 0;
+  state.summaryClock += dt;
+  const due = Math.min(s.stars, Math.floor((state.summaryClock - STAR_FIRST) / STAR_GAP) + 1);
+  let rang = 0;
+  while (state.starsShown < due) { state.starsShown++; rang++; }
+  return rang;
+}

@@ -24,7 +24,8 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
                       Captain_Thug_selected.mp3,
                       Marching_sound.mp3, Flag_planted.mp3,
-                      Flag_waving.mp3, Bird_chirping.mp3
+                      Flag_waving.mp3, Bird_chirping.mp3,
+                      Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -406,6 +407,35 @@ birds are what that sounds like until they do something.
 | `Flag_planted.mp3` | once, the moment the road arrives and the flag goes in |
 | `Flag_waving.mp3` | loops while the player is looking at the map, doing nothing |
 | `Bird_chirping.mp3` | loops with it, same situation |
+
+## The summary panel
+
+Three clips for the screen at the end of a game, and they are the only ones in the
+project **meant to be heard over each other**.
+
+| clip | when |
+| --- | --- |
+| `Victory_sound.mp3` | once, the instant a game is won |
+| `Lost_sound.mp3` | once, the instant a game is lost |
+| `Star_sound.mp3` | once per star earned, counted out from 1.5s at 0.55s apart |
+
+They do not go through `solo`. Category A holds the channel for a clip's length
+**plus a second**, so the fanfare would gate the first star until 2.9s and each star
+would gate the next until 1.4s after it — a three-star reveal would take seven
+seconds and sound like three separate announcements. They go through `fanfare`
+instead, which uses Category A's bus and level and touches the gate in neither
+direction. That is safe here and nowhere else: `frame` in `src/main.js` steps
+nothing once `result` is set, so the board has stopped and nothing else can ask.
+
+**The two timings are read off the recordings**, not chosen. `Victory_sound` is
+three short hits and then a held chord peaking at 1.15s and spent by 1.75, so the
+first chime at 1.5 lands on its decay rather than across its face. `Star_sound` is
+2.04s of file containing **0.35s of sound**, which is what lets three of them ring
+0.55s apart and still read as three. Re-record either one and re-run
+`node tools/audio.mjs` — the numbers it prints are where these came from.
+
+**A loss reveals nothing**, and that falls out rather than being special-cased: a
+loss is zero stars, so no chime is ever due and the lost clip's tail runs to the end.
 
 **A loop is stated, not started.** `setLoop(key, on)` is called every frame with
 what *should* be true, and it works out whether anything has to begin or end —

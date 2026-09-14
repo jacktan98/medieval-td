@@ -1,10 +1,10 @@
 import { loadArt } from './assets.js';
-import { loadAudio } from './audio.js';
+import { loadAudio, fanfare, VICTORY, LOST, STAR } from './audio.js';
 import { level } from './level.js';
 import { openingDelay, MODES } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
-import { finish, saveUnlocked } from './score.js';
+import { finish, saveUnlocked, startReveal as startStars, stepStars } from './score.js';
 import { startReveal, stepReveal, stageOfLevel, openedStages, mapAudio } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies } from './enemies.js';
@@ -222,6 +222,13 @@ function newGame() {
     // see finish() in score.js, which also writes the star record. Null until
     // then, and null again on a restart.
     summary: null,
+    // AND HOW FAR THROUGH ANNOUNCING ITSELF THAT PANEL IS. Kept beside the summary
+    // rather than inside it because the summary is the RECORD — what was achieved —
+    // and these two are where the animation has got to. Both are reset here as well
+    // as by startReveal, so a restart cannot land on a panel that thinks it has
+    // already counted its stars out.
+    summaryClock: 0,
+    starsShown: 0,
     // What the info box is describing: { kind, ref } or null. A direct reference
     // to the live enemy, soldier or tower, which is what makes the health in the
     // box the same number the health bar over its head is reading.
@@ -311,6 +318,16 @@ function frame(now) {
   if (state.result && !state.summary) {
     state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex], MODES[state.modeIndex ?? 0]);
 
+    // AND THE PANEL ANNOUNCES ITSELF. Here rather than in `finish` because finish
+    // is a record-keeper — it writes the star table — and a function that saves a
+    // result should not also be the thing that makes a noise. This block is already
+    // the one place both endings pass through exactly once.
+    //
+    // `fanfare` rather than `solo`: these ring OVER each other by design, and the
+    // gate would space them seven seconds apart. See the note beside it in audio.js.
+    startStars(state);
+    fanfare(state.result === 'won' ? VICTORY : LOST);
+
     // A WIN OPENS THE NEXT PLACE ON THE ROAD, once, and only from the front of
     // it: replaying stage 1 after reaching stage 3 opens nothing, because the
     // road past it is already drawn. Saved here rather than shown here — the
@@ -333,6 +350,16 @@ function frame(now) {
   // Stepped on real time rather than through step(): it is a screen animation,
   // so the fast-forward multiplier has no business touching it.
   if (!state.started) stepReveal(state, real);
+
+  // THE STARS COMING OUT, one by one, each with its own chime. Out here beside the
+  // map's reveal and for the same two reasons: it is a screen animation, so it runs
+  // on REAL seconds rather than through step(), and it has to keep running on a
+  // screen where the simulation has stopped — `state.result` is exactly what stops
+  // the loop above.
+  //
+  // The count comes back rather than the sound being played inside score.js, which
+  // keeps that file about scoring and out of the audio graph.
+  for (let n = stepStars(state, real); n > 0; n--) fanfare(STAR);
   // AND WHAT THE MAP SOUNDS LIKE, every frame and in every state — including the
   // ones where the answer is silence, which is how the three loops get turned off
   // by starting a game rather than by somebody remembering to stop them.

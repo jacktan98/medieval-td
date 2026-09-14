@@ -470,7 +470,29 @@ const paths = {
   marching:        'assets/audio/sfx/Marching_sound.mp3',
   flag_planted:    'assets/audio/sfx/Flag_planted.mp3',
   flag_waving:     'assets/audio/sfx/Flag_waving.mp3',
-  bird_chirping:   'assets/audio/sfx/Bird_chirping.mp3'
+  bird_chirping:   'assets/audio/sfx/Bird_chirping.mp3',
+
+  // --- THE SUMMARY --------------------------------------------------------------
+  //
+  // The second SCREEN these clips belong to, and the first three that answer a
+  // whole GAME rather than a moment in one. The simulation has stopped by the time
+  // any of them plays: `frame` in main.js steps nothing once `result` is set, so
+  // this is the only screen in the game where a sound has the speakers to itself.
+  //
+  // WHAT THE RECORDINGS ACTUALLY ARE, measured rather than assumed, because the
+  // timing of the star reveal is built on it:
+  //
+  //   Victory  3.08s, and its BODY ends at 1.75 — three short hits at 0.05, 0.35
+  //            and 0.70, then a held chord peaking at 1.15 and decaying out. The
+  //            rest is tail.
+  //   Lost     3.50s, 0.4s of silence first, body from 0.45 to 1.8, then a long
+  //            decay. Nothing follows it, so the tail is free to run.
+  //   Star     2.04s of FILE and 0.35s of sound — a short chime and then silence.
+  //            That is what lets three of them ring 0.55s apart without turning
+  //            into mud, and it is why the reveal is quick rather than stately.
+  victory:         'assets/audio/sfx/Victory_sound.mp3',
+  lost:            'assets/audio/sfx/Lost_sound.mp3',
+  star:            'assets/audio/sfx/Star_sound.mp3'
 };
 
 // The clip table, by the name the game calls each one. See the note above `paths`
@@ -794,6 +816,15 @@ export const HEAL = ['enemies_heal'];
 // three are loops — see setLoop — and have no cue of their own because a loop is
 // named by its key rather than chosen from a list.
 export const FLAG_PLANTED = ['flag_planted'];
+
+// --- THE END OF A GAME -----------------------------------------------------------
+//
+// Three clips for the summary panel, and they are the first in this file that are
+// meant to be heard OVER each other. See `fanfare` below, which is the whole of why
+// they are exported separately rather than added to CUE.
+export const VICTORY = ['victory'];
+export const LOST    = ['lost'];
+export const STAR    = ['star'];
 
 // --- THE BOSS ------------------------------------------------------------------
 //
@@ -1354,6 +1385,47 @@ export function solo(cue, priority = false, hold = false) {
   // between two ordinary sounds; this is about not cutting a line off, so it ends
   // when the line does.
   if (hold) holdUntil = now + seconds;
+}
+
+// THE SUMMARY PANEL'S OWN WAY OF SPEAKING, and the third alongside `play` and
+// `solo`. It goes on Category A's bus at Category A's level, ducks the background
+// under it exactly as `solo` does — and does not touch the GATE in either
+// direction: it neither waits for it nor closes it.
+//
+// WHY THAT IS NOT A LOOPHOLE. The gate is a traffic rule for the BATTLE, and its
+// whole argument is that a swing, a death and a selection are all things the game
+// decided to say while the player is watching something else. None of that is true
+// here. `frame` in main.js steps nothing once `result` is set, so the board has
+// stopped, nothing else can ask for the channel, and the three clips that use this
+// are a written sequence rather than competing events.
+//
+// AND THE SEQUENCE ONLY WORKS IF THEY OVERLAP. Category A holds the channel for a
+// clip's length plus a second, so a 1.9s fanfare would gate the first star until
+// 2.9s and each star would gate the next until 1.4s after it — a three-star reveal
+// would take seven seconds and sound like three separate announcements. What the
+// owner asked for is the stars coming out one by one over the fanfare's tail, which
+// is 0.55s apart and needs no gate at all.
+//
+// SAME_CLIP_GAP still applies, from `fire`. Two calls for the same clip inside one
+// frame cannot double-fire, which is the one collision this path could still have.
+export function fanfare(cue, level = 1) {
+  if (!cue) return 0;
+  if (!ctx || ctx.state !== 'running') return 0;
+  const ready = cue.filter(key => clips[key]);
+  if (!ready.length) return 0;
+  const key = ready[0];
+  const now = ctx.currentTime;
+  if (now - (lastStart[key] ?? -Infinity) < SAME_CLIP_GAP) return 0;
+  lastStart[key] = now;
+  // `keep` FALSE, unlike solo's call. That flag registers a clip as THE Category A
+  // voice, which is the handle `hush` cuts when priority takes the channel — and
+  // there is only one of it. Registering here would mean each star quietly replaced
+  // the fanfare as the thing that can be cut, and a cut would then silence one star
+  // and leave everything else ringing. Nothing on this screen can be interrupted, so
+  // nothing here asks to be interruptible.
+  const seconds = fire(key, busA, false, level);
+  duck(now, seconds);
+  return seconds;
 }
 
 // A tower family's voice, or null for one with nothing recorded. All four have

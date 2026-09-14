@@ -4725,7 +4725,16 @@ function drawResult(ctx, state) {
   // settings would be the same panel for two different achievements.
   ctx.fillText(`${s.map}  ·  ${s.mode}  ·  ${s.difficulty}`, 480, 186);
 
-  starRow(ctx, 480, 244, 26, s.stars);
+  // THE STARS ARE COUNTED OUT rather than shown all at once — see stepStars in
+  // score.js for the clock, and the `star` cue in audio.js for the chime that goes
+  // with each. `s.stars` is what was EARNED and `state.starsShown` is how many have
+  // arrived so far; the panel draws the second and the record keeps the first.
+  //
+  // The `??` is what keeps every other caller of this panel honest. A summary shown
+  // without the loop running — a tool, a test page — has no clock ticking for it,
+  // and falling back to the earned count means it draws the finished panel rather
+  // than an empty row that never fills.
+  starRow(ctx, 480, 244, 26, state.starsShown ?? s.stars);
 
   // What the rating was earned with, and what the next one up would take. The
   // second line is only worth saying while there is a rating left to reach.
