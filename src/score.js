@@ -237,18 +237,32 @@ export function finish(state, level, difficulty, mode) {
 // players earn 3 stars, then there will be 3 stars that come out and they can hear
 // 3 sounds. If 1 then only 1 sound."
 //
-// THE TWO NUMBERS COME OFF THE RECORDINGS, measured rather than chosen. The victory
-// clip is three short hits and then a held chord that peaks at 1.15s and is spent by
-// 1.75; starting the count at 1.5 puts the first chime on the chord's decay rather
-// than across its face. And the star clip is 2.04s of file containing 0.35s of
-// sound, so 0.55 apart is three separate chimes with clear air between them — which
-// is what makes this a count rather than a chord.
+// ONE NUMBER, NOT TWO, at the owner's ask: "standardise spacing to 1.5s each". It
+// shipped for a day as 1.5 then 0.55 then 0.55 — the first interval read off the
+// victory clip and the rest off the star clip — which meant the reveal had a pause
+// and then a flurry. An even beat is a count; an uneven one is a stumble followed by
+// a count, and the panel is not in a hurry.
+//
+// THE NUMBER IS STILL THE RECORDING'S. The victory clip is three short hits and then
+// a held chord that peaks at 1.15s and is spent by 1.75, so 1.5 puts the first chime
+// on the chord's decay rather than across its face. That it also suits the star clip
+// is luck worth stating rather than designing around: 2.04s of file carrying 0.35s
+// of sound leaves well over a second of air between chimes at this pace, where it
+// needed only a fifth of that.
+//
+// WHAT IT COSTS is the length of the reveal — three stars now finish at 4.5s against
+// 2.6 — and that is the trade the owner asked for. Nothing is waiting on it: the
+// panel is fully readable from the first frame and the stars are the last thing on
+// it to settle.
 //
 // A LOSS REVEALS NOTHING, and that falls out rather than being special-cased: a loss
 // is zero stars, so there is never one due. The lost clip plays alone and its tail
 // runs to the end, because nothing follows it.
-export const STAR_FIRST = 1.5;
-export const STAR_GAP = 0.55;
+//
+// THE TWO ARE ONE VALUE NOW and tools/sound.mjs asks that they stay equal — a reveal
+// whose first beat differs from the rest is the thing this replaced.
+export const STAR_GAP = 1.5;
+export const STAR_FIRST = STAR_GAP;
 
 // Everything the reveal needs, reset when a summary is built. Held on the state
 // rather than on the summary itself because the summary is a RECORD — it is what

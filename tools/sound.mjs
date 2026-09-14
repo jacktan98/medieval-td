@@ -709,31 +709,39 @@ played = [];
 fanfare(VICTORY);
 check('and firing one does not close the gate either', at(10051, () => solo(CUE.barracks)), 1);
 
-// THE THING THIS EXISTS FOR. Victory, then three chimes 0.55s apart — every one of
-// them has to be heard. `at` clears the log each time it is called, so the four are
-// summed rather than counted at the end.
+// THE THING THIS EXISTS FOR. Victory, then the stars — every one of them has to be
+// heard.
+//
+// THE TIMES ARE THE SHIPPED ONES, read off score.js rather than typed, so this can
+// never end up proving something about a pace the game does not use. `at` clears the
+// log each time it is called, so the sounds are summed rather than counted at the
+// end.
+const { startReveal, stepStars, STAR_FIRST, STAR_GAP } = await import('../src/score.js');
+const beats = [STAR_FIRST, STAR_FIRST + STAR_GAP, STAR_FIRST + STAR_GAP * 2];
+
 let rang = 0;
 ctx.currentTime = 10100;
 played = [];
 fanfare(VICTORY);
 rang += played.length;
-rang += at(10101.5, () => fanfare(STAR));
-rang += at(10102.05, () => fanfare(STAR));
-rang += at(10102.6, () => fanfare(STAR));
-check('a fanfare and three chimes 0.55s apart are four sounds', rang, 4);
+for (const b of beats) rang += at(10100 + b, () => fanfare(STAR));
+check(`a fanfare and three chimes ${STAR_GAP}s apart are four sounds`, rang, 4);
 
-// AND THE SAME FOUR THROUGH THE GATE WOULD BE ONE, which is the whole argument for
-// `fanfare` existing. Nothing here is asserting that `solo` is wrong — it is doing
-// exactly its job, which is the wrong job for a screen with nothing else on it.
+// AND THE SAME FOUR THROUGH THE GATE WOULD NOT BE, which is the whole argument for
+// `fanfare` existing. Nothing here says `solo` is wrong — it is doing exactly its
+// job, which is the wrong job for a screen with nothing else on it.
+//
+// HOW MANY IT LOSES DEPENDS ON THE PACE, so this asks "fewer than four" rather than
+// a number: at 0.55s apart the gate ate three of them, and at the standardised 1.5
+// it eats one or two depending on the clip lengths. Pinning the exact count would be
+// pinning the bug's shape rather than the rule.
 let gated = 0;
 ctx.currentTime = 10200;
 played = [];
 solo(VICTORY);
 gated += played.length;
-gated += at(10201.5, () => solo(STAR));
-gated += at(10202.05, () => solo(STAR));
-gated += at(10202.6, () => solo(STAR));
-check('where through the gate the same four would be one', gated, 1);
+for (const b of beats) gated += at(10200 + b, () => solo(STAR));
+check('where through the gate some of the same four are lost', gated < 4, true);
 
 // It still goes out on Category A's bus, which is what makes it as loud as a line
 // rather than as quiet as an arrow.
@@ -754,7 +762,6 @@ check('two chimes on the same millisecond de-dupe', played.length, 1);
 // that the count over a whole reveal equals the stars earned — for every rating,
 // including the loss that earns none.
 {
-  const { startReveal, stepStars, STAR_FIRST, STAR_GAP } = await import('../src/score.js');
   // The same clamp main.js applies to its delta. Stepping at exactly this is the
   // worst case for the arithmetic: the most frames a reveal can be spread over.
   const DT = 0.05;
@@ -775,8 +782,12 @@ check('two chimes on the same millisecond de-dupe', played.length, 1);
   let t = 0, first = null;
   for (let i = 0; i < 400 && first === null; i++) { t += DT; if (stepStars(st, DT)) first = t; }
   check('the first chime lands after the fanfare peaks at 1.15s', first > 1.15, true);
-  check('and the three of them are spaced by STAR_GAP',
-    +(STAR_GAP).toFixed(2) >= 0.4 && STAR_FIRST >= 1.2, true);
+  // AND THE BEAT IS EVEN. The owner asked for "1.5s each" after a day of 1.5 then
+  // 0.55 then 0.55, so what has to hold is that the first interval is the same as
+  // every other one — two numbers that happen to be equal today would drift apart
+  // the next time one of them is tuned.
+  check('the first beat is the same as the rest', STAR_FIRST === STAR_GAP, true);
+  check('and that beat is 1.5s', STAR_GAP, 1.5);
 }
 
 console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nAll three sound rules hold.');

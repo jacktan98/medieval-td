@@ -488,8 +488,10 @@ const paths = {
   //   Lost     3.50s, 0.4s of silence first, body from 0.45 to 1.8, then a long
   //            decay. Nothing follows it, so the tail is free to run.
   //   Star     2.04s of FILE and 0.35s of sound — a short chime and then silence.
-  //            That is what lets three of them ring 0.55s apart without turning
-  //            into mud, and it is why the reveal is quick rather than stately.
+  //            The reveal rings them 1.5s apart, so that short body is not being
+  //            leaned on any more; it is why the pace could be ANY of a wide range
+  //            and the one that was picked came off the victory clip instead. See
+  //            STAR_GAP in score.js.
   victory:         'assets/audio/sfx/Victory_sound.mp3',
   lost:            'assets/audio/sfx/Lost_sound.mp3',
   star:            'assets/audio/sfx/Star_sound.mp3'
