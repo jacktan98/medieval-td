@@ -493,7 +493,7 @@ const ORDER = [6, 7, 8, 10, 9, 0, 1, 5, 3, 4, 2];
 // behind them they have never played. There is no migration that could do better
 // without inventing a result, and Reset campaign in the admin panel puts anyone
 // testing back to the start.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8 };
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9 };
 
 // The approach has to arrive at whatever the order calls stage 1, or one of the
 // two is wrong and the campaign would start in the middle of the road.

@@ -788,25 +788,49 @@ const MAP_SEL_W = Math.max(MAP_MIN,
 export const mapSelect = () => ({ x: INNER.x, y: MAP_Y, w: MAP_SEL_W, h: MAP_H });
 
 // THE LIST HANGS UNDER IT and is drawn over the wave grid, which is what a
-// dropdown is. Nine boards at 34 is 318px from y 122, so it stops 36px above the
-// footer; tools/admin.mjs asks that of the real geometry rather than of this
-// sentence, because the next board makes it 352.
-const OPT_H = 34, OPT_PAD = 6, OPT_DROP = 4;
+// dropdown is. What it may not do is run off the bottom of the panel, because the
+// part below the edge is a board that cannot be picked.
+//
+// SO IT TAKES A SECOND COLUMN RATHER THAN A TENTH ROW. Nine boards fitted one
+// column with 36px to spare and the tenth ate 34 of them — this is the same wall
+// the row of tabs kept hitting, arriving from the other direction, and the same
+// answer will not do twice. A column holds as many boards as the panel has room
+// for and the list adds another when it needs one, so the count that breaks this
+// is 4 columns x 9 rows = 36 boards, by which point the panel is the least of it.
+//
+// The columns are BALANCED rather than filled: ten boards is 5 and 5, not 9 and 1,
+// because a list with one name hanging off the side of it reads as a mistake.
+const OPT_H = 34, OPT_PAD = 6, OPT_DROP = 4, OPT_GAP = 6;
 const LIST_Y = MAP_Y + MAP_H + OPT_DROP;
 
+// Asked of the footer rather than remembered, so moving the footer moves this — and
+// asked at CALL time rather than here, because FOOT_Y is declared three hundred
+// lines further down and a const read before its line is a TDZ error at load, not a
+// wrong number. This file has had that bug once already.
+const maxRows = () => Math.max(1, Math.floor((FOOT_Y - 8 - LIST_Y - OPT_PAD * 2) / OPT_H));
+const LIST_COLS = () => Math.max(1, Math.ceil(levels.length / maxRows()));
+const LIST_ROWS = () => Math.ceil(levels.length / LIST_COLS());
+const OPT_W = MAP_SEL_W - OPT_PAD * 2;
+
 export const mapList = () => ({
-  x: INNER.x, y: LIST_Y, w: MAP_SEL_W, h: OPT_PAD * 2 + levels.length * OPT_H
+  x: INNER.x,
+  y: LIST_Y,
+  w: OPT_PAD * 2 + LIST_COLS() * OPT_W + (LIST_COLS() - 1) * OPT_GAP,
+  h: OPT_PAD * 2 + LIST_ROWS() * OPT_H
 });
 
-export const mapOptions = () => levels.map((l, i) => ({
-  i,
-  id: l.id,
-  label: l.name,
-  x: INNER.x + OPT_PAD,
-  y: LIST_Y + OPT_PAD + i * OPT_H,
-  w: MAP_SEL_W - OPT_PAD * 2,
-  h: OPT_H
-}));
+export const mapOptions = () => {
+  const rows = LIST_ROWS();
+  return levels.map((l, i) => ({
+    i,
+    id: l.id,
+    label: l.name,
+    x: INNER.x + OPT_PAD + Math.floor(i / rows) * (OPT_W + OPT_GAP),
+    y: LIST_Y + OPT_PAD + (i % rows) * OPT_H,
+    w: OPT_W,
+    h: OPT_H
+  }));
+};
 // WHICH LENGTH OF THE MAP, on the same row as the maps and immediately after them,
 // because the two questions are the same question: which table am I editing. The
 // wave numbers below say which wave OF it, which is a different thing.

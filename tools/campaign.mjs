@@ -913,12 +913,12 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  const order = STAGES.slice(0, 9).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m1,m2,m3',
-    'the campaign runs the six drawn boards, then the three testing ones',
+  const order = STAGES.slice(0, 10).map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m1,m2,m3',
+    'the campaign runs the seven drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 9,
-    'with nine boards on the road and the rest still empty',
+  ok(STAGES.filter(s => s.level !== null).length === 10,
+    'with ten boards on the road and the rest still empty',
     `${STAGES.filter(s => s.level !== null).length} playable`);
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
@@ -1310,6 +1310,92 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
   ok(ford.maxTier === 3 && ford.allow.includes('Paladin Keep'),
     'Dawnford caps at tier 3 and lets the Keep through anyway',
     `maxTier ${ford.maxTier}, allow ${JSON.stringify(ford.allow)}`);
+}
+
+console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n');
+
+// THE FIRST BOARD THAT IS TWO BOARDS. Every shape before it shares ground somewhere:
+// stage 4 funnels three mouths into one exit, stage 5 two into one, stage 6 one into
+// two. This is two into two with no junction at all, which is the thing worth pinning
+// — a redraw that let the roads touch would change what every tower on it is worth.
+{
+  const well = levels.find(l => l.id === 'm9');
+  const WANT7 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 1 heavy_inf',
+    '10 light_inf + 4 blocker_inf + 1 heavy_inf + 2 dark_priest',
+    '8 tough_inf + 4 blocker_inf + 2 heavy_inf + 8 archer_inf + 2 dark_priest',
+    '4 blocker_inf + 4 heavy_inf + 10 archer_inf + 4 dark_priest',
+    '10 blocker_inf + 4 heavy_inf + 14 archer_inf + 6 dark_priest',
+    '12 blocker_inf + 6 heavy_inf + 20 archer_inf + 6 dark_priest'
+  ];
+  const got7 = well.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got7.join(' | ') === WANT7.join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
+    got7.map((g, i) => (g === WANT7[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT7[i]})`)).join(' '));
+  ok(well.plots.length === 9 && well.startGold === 240 && well.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${well.plots.length} plots, ${well.startGold} gold, ${well.waves.length} waves`);
+
+  // TWO MOUTHS AND TWO DOORS, asked of the ROUTES rather than of a comment: the two
+  // roads start in different places and end in different places.
+  const heads = well.routes.map(r => `${Math.round(r.pts[0].x)},${Math.round(r.pts[0].y)}`);
+  const tails = well.routes.map(r => r.pts[r.pts.length - 1]);
+  ok(new Set(heads).size === 2, 'its two roads come in by two different mouths',
+    heads.join(' and '));
+  ok(tails.every(t => t.y > 540) && Math.abs(tails[0].x - tails[1].x) > 200,
+    'and leave by two different doors along the bottom',
+    tails.map(t => `(${Math.round(t.x)}, ${Math.round(t.y)})`).join(' and '));
+
+  // AND THEY NEVER MEET, which is this board's whole shape and the one thing a
+  // redraw could quietly take away. Walked at 10px along both and measured: the
+  // closest the two roads come to each other is wider than the road itself, so
+  // there is no stretch of ground an enemy on either one could be standing on.
+  const walk = r => {
+    const out = [], pts = r.pts;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 10));
+      for (let s = 0; s < n; s++) out.push({ x: a.x + (b.x - a.x) * s / n, y: a.y + (b.y - a.y) * s / n });
+    }
+    return out;
+  };
+  const [A, B] = well.routes.map(walk);
+  let near = Infinity;
+  for (const p of A) for (const q of B) near = Math.min(near, Math.hypot(p.x - q.x, p.y - q.y));
+  ok(near > 136, 'and the two roads never come within a road-width of each other',
+    `closest approach ${Math.round(near)}px, against a widest road of 136`);
+
+  // A HIGH ALTAR ALREADY STANDING, on "the bottom middle" plot. Pinned as the plot
+  // rather than as an index — the index is an artefact of the order the list happens
+  // to be written in, and a redraw renumbers it. "The middle of the bottom three"
+  // does not.
+  useLevel(levels.indexOf(well));
+  const altar = prebuiltOn(well, families)[0];
+  const bottomThree = well.plots.slice().sort((a, b) => b.y - a.y).slice(0, 3).sort((a, b) => a.x - b.x);
+  ok(altar && altar.def.name === 'High Altar' && altar.plot === bottomThree[1],
+    'and opens with a High Altar on the bottom middle plot',
+    altar ? `${altar.def.name} at (${altar.x}, ${altar.y})` : 'nothing prebuilt');
+  ok(altar && (!altar.abilities || !altar.abilities.length),
+    'with no abilities bought', `${(altar && altar.abilities || []).length} of them`);
+
+  // A TIER 4 MONASTERY ON A TIER 3 BOARD, which is what `allow` is for — and this is
+  // the first board to let a fourth-rung MONASTERY through, because it is the one
+  // that opens with one standing.
+  ok(well.maxTier === 3 && well.allow.includes('High Altar'),
+    'Dawnford Fountain caps at tier 3 and lets the Altar through anyway',
+    `maxTier ${well.maxTier}, allow ${well.allow.join(', ')}`);
+  ok(well.allow.length === 4,
+    'along with the three rungs stage 6 already let through',
+    well.allow.join(', '));
+
+  // AND THE WAVE SHARES SPLIT THE ROUTES EVENLY, which on this board decides both
+  // ends at once: a route here is a whole road, so half the wave in each is half the
+  // wave out of each door.
+  ok(Array.isArray(well.routeMix) && well.routeMix.length === 2 &&
+     well.routeMix[0] === well.routeMix[1],
+    'and the wave is dealt evenly between the two roads',
+    JSON.stringify(well.routeMix));
 }
 
 console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');

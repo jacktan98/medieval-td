@@ -2077,6 +2077,44 @@ export const stage6Waves = [
                        { type: 'archer_inf', count: 20, gap: 1.0 }] }
 ];
 
+// STAGE 7: Dawnford Fountain, and the first table with a HEALER in it as standard.
+//
+// Every board before this met the dark priest once, on the last wave of the long
+// game — he is in `wavesExtended` at wave 10 and nowhere else. Here he arrives on
+// wave 4 and there are six of him by wave 7, at the owner's ask, which changes what
+// a wave IS on this board: damage that does not kill inside his reach is damage
+// undone. Two towers that each chip a giant are worth less than one that finishes
+// it, and that is the lesson this table teaches.
+//
+// HIS GAP IS 1.8 WHERE HIS DEFAULT IS 0.8, and that is the one number here not taken
+// from the owner's list. Six healers at the default arrive as a four-second block
+// and mend each other; spread over nine they arrive along the column they are there
+// to mend, which is the fight the artwork describes. See MARCH_ORDER for why he
+// walks in last whatever his gap.
+//
+// The rest follows the shape of stage 6, which the owner has played and signed off:
+// thugs thin and quick, giants slow and few, archers the thing that makes a late
+// wave loud. Every gap is a multiple of 0.1 because the admin panel's rate stepper
+// rounds to a tenth, and a shipped number it cannot return to is a number the owner
+// can never put back.
+export const stage7Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 8, gap: 1.5 }, { type: 'blocker_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }, { type: 'archer_inf', count: 8, gap: 1.3 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 4, gap: 1.9 },
+                       { type: 'archer_inf', count: 10, gap: 1.2 }, { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 14, gap: 1.1 }, { type: 'dark_priest', count: 6, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 20, gap: 1.0 }, { type: 'dark_priest', count: 6, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

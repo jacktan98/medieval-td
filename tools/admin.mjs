@@ -468,8 +468,20 @@ console.log('\nAnything, in any wave\n');
   ok(box.y + box.h <= FOOT_Y - 8,
     'and the whole list clears the footer',
     `ends ${box.y + box.h} against a footer at ${FOOT_Y}`);
-  ok(opts.every((o, i) => i === 0 || o.y >= opts[i - 1].y + opts[i - 1].h),
-    'and no two rows overlap');
+  // A 2D TEST, because the list takes columns when one will not fit. The first
+  // version of this walked the rows in order and asked whether each started below
+  // the last, which is only true of a single column — the tenth board turned it into
+  // two and the check failed against correct geometry.
+  const over = (a, c) => a.x < c.x + c.w && c.x < a.x + a.w && a.y < c.y + c.h && c.y < a.y + a.h;
+  const pairs = [];
+  for (let i = 0; i < opts.length; i++)
+    for (let j = i + 1; j < opts.length; j++)
+      if (over(opts[i], opts[j])) pairs.push(`"${opts[i].label}" over "${opts[j].label}"`);
+  ok(!pairs.length, 'and no two rows overlap',
+    pairs.length ? pairs.join(', ') : `${opts.length} rows in ${new Set(opts.map(o => o.x)).size} column(s)`);
+  ok(box.x + box.w <= PANEL.x + PANEL.w - 16,
+    'and the list is inside the panel however many columns it takes',
+    `ends ${box.x + box.w} of ${PANEL.x + PANEL.w - 16}`);
 
   // AND THE LENGTH BUTTONS SIT BESIDE THE MAP, which is the row the dropdown gave
   // back to them. They spent one build on the wave row, on top of the difficulty
