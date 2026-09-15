@@ -369,7 +369,13 @@ function drawFigures(ctx, state) {
   // standing at the same spot rather than over its feet.
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
-  for (const u of state.units) if (u.respawn <= 0) add(u.y, 1, () => drawSoldier(ctx, u));
+  // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
+  // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
+  // drawn; a soldier who has fallen for good — stage 8's church paladins — is
+  // spliced out of this list on the frame he dies and leaves a corpse behind. In
+  // between those two there is one frame where he is dead and still listed, and
+  // this is what stops him being drawn standing up on it.
+  for (const u of state.units) if (u.respawn <= 0 && u.hp > 0) add(u.y, 1, () => drawSoldier(ctx, u));
   // Spatter sorts HERE rather than in a pass of its own, and by the victim's
   // feet rather than by the wound it is drawn at. Rank 2 puts it just in front
   // of the figure it came out of, which is where blood coming off a body

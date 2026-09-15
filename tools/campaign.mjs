@@ -46,7 +46,7 @@ import { readArtwork, allGroups, bounds, MAP_SCALE, layerFiles } from './svg.mjs
 import { openMenu } from '../src/menu.js';
 import { selectionInfo } from '../src/select.js';
 import { unitEntry } from '../src/book.js';
-import { families } from '../src/data/towers.js';
+import { families, garrisonUnits } from '../src/data/towers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
 // the same tool this checks, so comparing the data against it would be asking the
@@ -913,13 +913,13 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  const order = STAGES.slice(0, 10).map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m1,m2,m3',
-    'the campaign runs the seven drawn boards, then the three testing ones',
+  const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m1,m2,m3',
+    'the campaign runs the eight drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 10,
-    'with ten boards on the road and the rest still empty',
-    `${STAGES.filter(s => s.level !== null).length} playable`);
+  ok(STAGES.filter(s => s.level !== null).length === 11,
+    'with every stage on the map now carrying a board',
+    `${STAGES.filter(s => s.level !== null).length} playable of ${STAGES.length}`);
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
   // tier 3 barracks standing on the top-right plot from the first frame, and every
@@ -1310,6 +1310,105 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
   ok(ford.maxTier === 3 && ford.allow.includes('Paladin Keep'),
     'Dawnford caps at tier 3 and lets the Keep through anyway',
     `maxTier ${ford.maxTier}, allow ${JSON.stringify(ford.allow)}`);
+}
+
+console.log('\n--- stage 8, two roads that cross, and five men already standing ---\n');
+
+// THE FIRST BOARD WHOSE ROADS CROSS. Stage 7's two never meet; these two meet exactly
+// once, and the owner's rule is that they SWAP — top left leaves bottom right and top
+// right leaves bottom left. That is not something the artwork can be asked, because a
+// crossing makes the ink one connected blob and both pairings are routable. It is a
+// decision, so it is pinned.
+{
+  const kirk = levels.find(l => l.id === 'm10');
+  const WANT8 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 plague_inf + 1 dark_priest',
+    '8 light_inf + 4 blocker_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 light_inf + 6 tough_inf + 4 blocker_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 3 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
+    '10 blocker_inf + 4 heavy_inf + 14 archer_inf + 4 plague_inf + 4 dark_priest',
+    '12 blocker_inf + 6 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
+  ];
+  const got8 = kirk.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got8.join(' | ') === WANT8.join(' | '), 'Dawnford Church sends exactly the eight it was given',
+    got8.map((g, i) => (g === WANT8[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT8[i]})`)).join(' '));
+  ok(kirk.plots.length === 8 && kirk.startGold === 240 && kirk.waves.length === 8,
+    'and is eight plots, 240 gold and eight waves',
+    `${kirk.plots.length} plots, ${kirk.startGold} gold, ${kirk.waves.length} waves`);
+  ok(!kirk.prebuilt || !kirk.prebuilt.length, 'with nothing prebuilt on any of them',
+    `${(kirk.prebuilt || []).length} prebuilt`);
+
+  // THE ROADS SWAP SIDES, asked of the routes rather than of a comment: whichever
+  // road comes in further left must leave further RIGHT. Pinned as the crossing
+  // itself, so a redraw that straightened the two into parallel lanes fails here.
+  const head = r => r.pts[0];
+  const tail = r => r.pts[r.pts.length - 1];
+  const [a, b] = kirk.routes;
+  ok((head(a).x < head(b).x) !== (tail(a).x < tail(b).x),
+    'the two roads swap sides between their mouths and their doors',
+    `in at x ${Math.round(head(a).x)} and ${Math.round(head(b).x)}, ` +
+    `out at x ${Math.round(tail(a).x)} and ${Math.round(tail(b).x)}`);
+
+  // AND THEY REALLY DO CROSS, which is the other half of the same claim: two roads
+  // could swap ends and still never touch if one went round the outside. Walked at
+  // 10px along both.
+  const walk = r => {
+    const out = [], pts = r.pts;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p = pts[i], q = pts[i + 1];
+      const n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / 10));
+      for (let s = 0; s < n; s++) out.push({ x: p.x + (q.x - p.x) * s / n, y: p.y + (q.y - p.y) * s / n });
+    }
+    return out;
+  };
+  const [A, B] = kirk.routes.map(walk);
+  let near = Infinity, where = null;
+  for (const p of A) for (const q of B) {
+    const d = Math.hypot(p.x - q.x, p.y - q.y);
+    if (d < near) { near = d; where = p; }
+  }
+  ok(near < 20, 'and they pass through the same patch of ground on the way',
+    `closest approach ${Math.round(near)}px, at (${Math.round(where.x)}, ${Math.round(where.y)})`);
+
+  // FIVE MEN ALREADY ON THE BOARD, and the two kinds are the point. The pope cannot
+  // be touched; the four paladins can be killed and do not come back.
+  const roll = (kirk.garrison || []).map(g => g.unit);
+  ok(roll.length === 5 && roll.filter(u => u === 'Pope').length === 1 &&
+     roll.filter(u => u === 'Paladin').length === 4,
+    'it opens with a pope and four paladins standing on it', roll.join(', '));
+
+  const pope = garrisonUnits.Pope;
+  const pal = garrisonUnits.Paladin;
+  ok(pope && pope.fixture === true, 'the pope is a fixture and nothing can reach him',
+    pope ? `fixture ${pope.fixture}` : 'no Pope');
+  // HIS NUMBERS ARE THE HIGH ALTAR'S, which is what "the same as encyclopedia" means.
+  // Read off the tier so a retune of the tower cannot leave this man behind.
+  const altar = families.find(f => f.id === 'monastery').tiers.find(t => t.name === 'High Altar');
+  ok(pope && pope.ranged && pope.ranged.damage === altar.damage &&
+     pope.ranged.range === altar.range && pope.ranged.cd === altar.cooldown,
+    'and shoots exactly what a High Altar shoots',
+    pope && pope.ranged ? `${pope.ranged.damage} dmg / ${pope.ranged.range} reach / ${pope.ranged.cd}s ` +
+      `against the tower's ${altar.damage} / ${altar.range} / ${altar.cooldown}` : 'no ranged');
+
+  ok(pal && !pal.fixture, 'a church paladin is NOT a fixture, so he can be killed',
+    `fixture ${!!(pal && pal.fixture)}`);
+  ok(pal && !(pal.respawn > 0), 'and carries no respawn, so he stays killed',
+    `respawn ${pal && pal.respawn}`);
+  // HIS STATS ARE THE KEEP'S SOLDIER, minus the respawn and the abilities.
+  const keepMan = families.find(f => f.id === 'barracks').tiers.find(t => t.name === 'Paladin Keep').soldier;
+  ok(pal && pal.hp === keepMan.hp && pal.damage === keepMan.damage && pal.cd === keepMan.cd &&
+     JSON.stringify(pal.armour) === JSON.stringify(keepMan.armour),
+    'and is an ordinary paladin in every other respect',
+    pal ? `${pal.hp}hp ${pal.damage}dmg ${pal.cd}s ${JSON.stringify(pal.armour)}` : 'no Paladin');
+
+  ok(kirk.maxTier === 3 && kirk.allow.length === 4 && kirk.allow.includes('High Altar'),
+    'Dawnford Church caps at tier 3 and lets the same four rungs through',
+    `maxTier ${kirk.maxTier}, allow ${kirk.allow.join(', ')}`);
+  ok(Array.isArray(kirk.routeMix) && kirk.routeMix.length === 2 &&
+     kirk.routeMix[0] === kirk.routeMix[1],
+    'and the wave is dealt evenly between the two roads', JSON.stringify(kirk.routeMix));
 }
 
 console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n');

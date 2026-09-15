@@ -20,6 +20,7 @@ import { level06 } from './data/level06.js';
 import { level07 } from './data/level07.js';
 import { level08 } from './data/level08.js';
 import { level09 } from './data/level09.js';
+import { level10 } from './data/level10.js';
 import { prepare } from './route.js';
 
 // IN THE ORDER THEY ARE PLAYED, which is no longer the order the files are
@@ -33,7 +34,7 @@ import { prepare } from './route.js';
 // the one that means play order, and everything that cares reads it: the admin
 // panel's map tabs, and LEVEL_OF in tools/overview.mjs, which is what puts a
 // board behind a stage on the world map.
-export const levels = [level00, level04, level05, level06, level07, level08, level09,
+export const levels = [level00, level04, level05, level06, level07, level08, level09, level10,
                        level01, level02, level03];
 
 // Measure every route once, at load. `routes` holds prepared routes from here

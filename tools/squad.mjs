@@ -8,7 +8,7 @@
 // soldier who watched. It only sees the outcome, which is why both of these went
 // unnoticed for as long as they did.
 
-import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath } from '../src/units.js';
+import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath, makeGarrison } from '../src/units.js';
 import { at as pointOn, nearestOn, LANE } from '../src/route.js';
 import { inRange } from '../src/ground.js';
 import { families } from '../src/data/towers.js';
@@ -225,6 +225,56 @@ console.log('\nWhere a flag puts them\n');
   check(off === 0, 'every drag posts the squad at the nearest spot it can reach, on any road',
     `${checked} drags over ${levels.length} boards, worst ${worst.toFixed(0)}px off the best available` +
     (worst > 6 ? ` (${where})` : ''));
+}
+
+
+// --- A MAN WITH NOWHERE TO MUSTER ------------------------------------------------
+//
+// Stage 8's four church paladins are the first figures in this game that can die and
+// stay dead, and getting there needed a third state beside "alive" and "mustering".
+//
+// WITHOUT IT THEY WOULD NOT HAVE DIED AT ALL. `respawn` undefined means the clock in
+// updateUnits never runs, so the man is never restored and never removed — and the
+// out-of-combat regen four lines above it heals him straight back off the floor. He
+// would have flickered at zero health, crying out once a frame, and stood up again.
+// That is not a hypothetical: it is written up on `fixture` in data/towers.js as the
+// bug an earlier crossbowman hit, and it was dodged rather than fixed.
+//
+// So: kill one and step the world on. He must be GONE, and he must go once.
+console.log('\nA garrison man with no respawn stays dead\n');
+{
+  const church = levels.findIndex(l => l.id === 'm10');
+  useLevel(church);
+  const st = { units: [], enemies: [], hits: [], corpses: [], shots: [], towers: [], gold: 0, lives: 20 };
+  makeGarrison(st, level);
+  const pope = st.units.filter(u => u.def.name === 'Pope');
+  const pals = st.units.filter(u => u.def.name === 'Paladin');
+  check(st.units.length === 5 && pope.length === 1 && pals.length === 4,
+    'the church musters a pope and four paladins', `${st.units.length} men`);
+
+  const doomed = pals[0];
+  doomed.hp = -1;
+  updateUnits(st, 1 / 60);
+  check(!st.units.includes(doomed), 'a paladin brought to zero leaves the list on that frame',
+    `${st.units.length} men left`);
+  check(st.corpses.length === 1, 'and leaves a body where he fell', `${st.corpses.length} corpse(s)`);
+
+  // AND HE DOES NOT COME BACK. Ten seconds of world, which is twice the Keep's own
+  // five-second muster — the number he would have used if he had inherited one.
+  for (let i = 0; i < 600; i++) updateUnits(st, 1 / 60);
+  check(st.units.length === 4 && !st.units.includes(doomed),
+    'and ten seconds later he is still gone', `${st.units.length} men`);
+  check(st.units.filter(u => u.def.name === 'Paladin').length === 3,
+    'leaving three of the four', `${st.units.filter(u => u.def.name === 'Paladin').length} paladins`);
+
+  // THE POPE IS THE OTHER HALF. Nothing can reach him, so the same force applied to
+  // him is a thing the game will never do — but if it ever did, he must not flicker.
+  const p = st.units.find(u => u.def.name === 'Pope');
+  p.hp = -1;
+  const before = st.hits.length;
+  updateUnits(st, 1 / 60);
+  check(!st.units.includes(p), 'and a fixture forced to zero goes the same way, once',
+    `${st.hits.length - before} death spark(s)`);
 }
 
 console.log(bad ? `\n${bad} failure(s).` : '\nSquad behaves.');

@@ -2115,6 +2115,46 @@ export const stage7Waves = [
                        { type: 'archer_inf', count: 20, gap: 1.0 }, { type: 'dark_priest', count: 6, gap: 1.8 }] }
 ];
 
+// STAGE 8: Dawnford Church, and the first table that fields BOTH support enemies at
+// once. The plague doctor has been a wave-8 arrival in the long game and the dark
+// priest a wave-10 one; here they come together from wave 3 and there are six of
+// each by the end, at the owner's ask.
+//
+// WHAT THAT DOES TO THE BOARD is worth knowing before tuning it further. The doctor
+// throws a flask that poisons whoever it lands near and the priest mends whoever is
+// hurt, so between them the damage a tower does is being subtracted at one end and
+// the damage a SOLDIER takes is being added at the other. This is the board where
+// four paladins stand in the road, and it is not a coincidence.
+//
+// THE COUNTS ARE THE OWNER'S EXACTLY. The gaps follow stage 7's shape, with the two
+// support types spread rather than clumped for the same reason the priest was there:
+// six healers arriving together mend each other. Every gap is a multiple of 0.1,
+// because the admin panel's rate stepper rounds to a tenth and a shipped number it
+// cannot return to is one the owner can never put back.
+export const stage8Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'plague_inf', count: 1, gap: 2.0 },
+                       { type: 'dark_priest', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 6, gap: 1.2 }, { type: 'tough_inf', count: 6, gap: 1.5 },
+                       { type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 8, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 3, gap: 1.9 },
+                       { type: 'archer_inf', count: 10, gap: 1.2 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 14, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 20, gap: 1.0 }, { type: 'plague_inf', count: 6, gap: 1.8 },
+                       { type: 'dark_priest', count: 6, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

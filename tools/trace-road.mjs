@@ -190,6 +190,31 @@ const EXIT_EDGES = (() => {
   return list;
 })();
 
+// WHICH EXIT EACH ENTRY IS FOR, when the ink cannot say.
+//
+//   node tools/trace-road.mjs assets/map/Stage_8_Map --exit bottom --pair 1,0
+//
+// The default pairs the nth entry from the top with the nth exit, and the note on
+// `pairs` below explains why that is exact for roads that do not cross. Stage 8's
+// DO cross — the owner's ask is "enemies who enter the top left will exit at the
+// bottom right road" — and the interesting part is that the failure it predicted
+// ("it will be wrong loudly — the field will not reach") does not happen. A crossing
+// makes the two ribbons one connected blob of ink, so a flood from either exit
+// reaches either entry and every pairing is routable. The tool cannot know which
+// one the artist drew, so it is told.
+//
+// One index per entry, naming the exit it takes, in the order the mouths are
+// printed. `1,0` is a crossing of two; `0,1` is what the default already does.
+const PAIRING = (() => {
+  const i = process.argv.indexOf('--pair');
+  if (i < 0) return null;
+  const list = (process.argv[i + 1] || '').split(',').map(n => Number(n.trim()));
+  if (!list.length || list.some(n => !Number.isInteger(n) || n < 0)) {
+    throw new Error('--pair takes one exit index per entry, like --pair 1,0');
+  }
+  return list;
+})();
+
 // A ROAD THAT MEETS A CORNER IS ONE MOUTH, not two.
 //
 // Stage 6's bridge comes in over the top-left corner, so the tarmac touches the top
@@ -323,7 +348,15 @@ function costField(goal) {
 // entry from the top belongs to the nth exit from the top. If a future map has
 // roads that DO cross, this is the thing that will be wrong, and it will be
 // wrong loudly — the field will not reach and the error above will say so.
-const pairs = exits.length === 1
+const pairs = PAIRING
+  // TOLD RATHER THAN DERIVED. Checked here rather than at parse time, because what
+  // makes an index wrong is how many mouths the artwork actually has.
+  ? (PAIRING.length === entries.length && PAIRING.every(n => n < exits.length)
+      ? entries.map((run, i) => [run, exits[PAIRING[i]]])
+      : (() => { throw new Error(
+          `--pair needs one exit index per entry: ${entries.length} entries and ` +
+          `${exits.length} exits, given [${PAIRING.join(', ')}]`); })())
+  : exits.length === 1
   ? entries.map(run => [run, exits[0]])
   // AND ONE WAY IN WITH SEVERAL WAYS OUT, which is stage 6 and the mirror of the
   // line above it. Dawnford Bridge has one mouth and two: the wave arrives over the

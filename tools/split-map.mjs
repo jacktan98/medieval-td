@@ -251,7 +251,19 @@ if (level.garrison && level.garrison.length) {
   const firstTop = marks2.find(m => +m[1] === topN);
   const wrapAt = new Set(marks2.map(m => m.index));
   const inTop2 = allGroups(svg).filter(g => g.start > firstTop.index && !wrapAt.has(g.start));
-  const outer2 = inTop2.filter(g => !inTop2.some(o => o !== g && o.start <= g.start && o.end >= g.end));
+
+  // NESTED GROUPS COUNT, and this used to be the outermost ones only.
+  //
+  // Stage 5's two crossbowmen stand on the grass, so each of them IS an outermost
+  // group and nothing else was ever needed. Stage 8's pope stands on an altar, and
+  // the artist drew the altar and the man on it as one group — 98 x 58 of stonework
+  // with a 16 x 31 figure inside it. Cutting the outermost thing that contains him
+  // would have taken the altar out from under him.
+  //
+  // He is his own group in there, which is the thing that makes this work at all:
+  // what the tool wants is the SMALLEST group that is still a whole figure, and the
+  // window below is what decides that. A group too big to be a man does not fit it.
+  const nested2 = inTop2;
 
   // EACH PIECE BELONGS TO ONE MAN. Two figures standing a step apart have windows
   // that overlap, and stage 5's do: the second crossbowman's near boot falls inside
@@ -268,7 +280,7 @@ if (level.garrison && level.garrison.length) {
     return Math.hypot((b.x0 + b.x1) / 2 * MAP_SCALE - at.x, b.y1 * MAP_SCALE - at.y);
   };
   const owner = new Map();
-  for (const g of outer2) {
+  for (const g of nested2) {
     const b = bounds(g.subPaths.flat());
     const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
     let best = -1, least = Infinity;
@@ -281,8 +293,23 @@ if (level.garrison && level.garrison.length) {
     if (best >= 0) owner.set(g, best);
   }
 
+  // AND NO PIECE MAY BE CUT INSIDE ANOTHER PIECE. Now that nesting is allowed, a
+  // group and its own parent can both fit a window and both be claimed — and the cut
+  // is a pair of string slices, so taking the parent out and then the child out of
+  // the file that has already closed up behind it removes four hundred characters of
+  // somebody else's markup. That is the same corruption the nearest-anchor rule above
+  // was written for, arriving by the other door.
+  //
+  // Across ALL anchors rather than within each, because two figures close enough to
+  // share a window are exactly the case where a parent goes to one man and his child
+  // to the other.
+  const claimed = nested2.filter(g => owner.has(g));
+  for (const g of claimed) {
+    if (claimed.some(o => o !== g && o.start <= g.start && o.end >= g.end)) owner.delete(g);
+  }
+
   for (const [i, at] of level.garrison.entries()) {
-    const mine = outer2.filter(g => owner.get(g) === i);
+    const mine = claimed.filter(g => owner.get(g) === i);
     if (!mine.length) {
       throw new Error(`garrison ${i} is at (${at.x}, ${at.y}) and there is nothing drawn there. ` +
         `If the figure moved in a redraw, move the anchor in the level file to its feet.`);
@@ -853,10 +880,33 @@ if (LAYERS.length) {
   // The sheet: the same 1920x1080 artboard with the whole layer on it, in the
   // artist's own order, so a slice of it is a slice of the board.
   const FRONT = SRC.replace(/\.svg$/, '') + '_front.svg';
+  //
+  // AND THE GARRISON COMES OFF IT, even when it is nested inside something that
+  // stays. The filter up by `isPainted` drops a group that IS a garrison figure, and
+  // that was the whole job while every such figure stood on open grass — stage 5's
+  // crossbowmen are outermost groups and there is nothing above them to carry them.
+  //
+  // Stage 8's pope stands on an ALTAR and the artist drew the two as one group, so
+  // the altar survives the filter and brings the painted man along in its own text.
+  // He would not have been drawn — the altar is refused a box for standing over a
+  // garrison post — but that is an accident of this board rather than a rule, and a
+  // sheet holding a figure the base has already cut out is a trap set for whoever
+  // next gives that altar a box. tools/campaign.mjs asks the path data directly and
+  // caught it.
+  //
+  // Cut back to front so the offsets ahead of each cut stay where they were, which
+  // is the same ordering the base's own cut uses and for the same reason.
+  const unpaint = g => {
+    const inside = painted.filter(([a, b]) => a >= g.start && b <= g.end)
+                          .sort((p, q) => q[0] - p[0]);
+    let s = svg.slice(g.start, g.end);
+    for (const [a, b] of inside) s = s.slice(0, a - g.start) + s.slice(b - g.start);
+    return s;
+  };
   const body = measured
     .flatMap(m => m.gs)
     .sort((a, b) => a.start - b.start)
-    .map(g => svg.slice(g.start, g.end))
+    .map(unpaint)
     .join('\n');
   writeFileSync(FRONT, sheet(body));
 

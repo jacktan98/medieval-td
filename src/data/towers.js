@@ -3541,6 +3541,83 @@ export const garrisonUnits = {
       damage: 35,
       ammo: quarrel
     }
+  },
+
+  // --- STAGE 8'S CHURCH ------------------------------------------------------------
+  //
+  // Five more figures that belong to no tower, and between them they are the two
+  // ANSWERS to the question the crossbowman only asked one half of.
+  //
+  // THE POPE IS THE CROSSBOWMAN'S SHAPE EXACTLY: a fixture, untouchable, standing
+  // where he is drawn and shooting what he is drawn shooting. The owner's ask — "a
+  // pope at an altar that can attack enemies just like a pope on top a high altar
+  // tower. Stats are the same as encyclopedia, attack speed is the same and the unit
+  // cannot be attacked."
+  //
+  // HIS NUMBERS ARE THE HIGH ALTAR'S, read off the tier rather than typed: 70 magic
+  // damage at 220 reach on a 1.45s cooldown, throwing the pope's own missile. That
+  // is what "the same as encyclopedia" means — the card the player can go and read
+  // is generated from the tier, so a retune of the tower retunes this man with it.
+  // See the note on `altarStats` below.
+  Pope: {
+    ...pope,
+    name: 'Pope',
+    sprite: 'pope',
+    spriteTrim: POPE_TRIM,
+    pivot: [0.512, 0.933],
+    attack: { sprite: 'pope_attack', trim: POPE_ATK_TRIM, pivot: [0.643, 0.923] },
+    spriteFaces: -1,
+    // The High Altar's three lines, the same one-word opt-in the crossbowman uses to
+    // borrow the Crossbow Sentry's. A pope at an altar who answered with the
+    // barracks' five would be a man in vestments shouting about spears.
+    voice: 'pope',
+    // He never swings, and drawSoldier multiplies by this on every frame of every
+    // soldier — see the crossbowman's note, where `0 * undefined` is NaN and a NaN
+    // makes the whole figure silently vanish.
+    lunge: 0,
+    fixture: true,
+    hp: 200,
+    damage: 70,
+    cd: 1.45,
+    r: 8,
+    regen: 6,
+    speed: 0,
+    colour: '#C9B06A',
+    damageType: 'magic',
+    ranged: { range: 220, cd: 1.45, damage: 70, ammo: missile4 }
+  },
+
+  // AND THE PALADIN IS THE OTHER ANSWER, the first figure in this game that can be
+  // killed and stay killed. "They are just like ordinary paladins but they have no
+  // abilities (same stats with health, armor, physical damage, etc.). They can die
+  // just like a normal paladin and will not be able to respawn."
+  //
+  // SO HE IS NOT A `fixture`. Everything that can hurt a soldier asks that one
+  // question, and all four answers have to be yes for him: an archer may aim at him,
+  // a flask may land on him, the Captain's blade may sweep over him, and a thug may
+  // close and hold him.
+  //
+  // AND HE CARRIES NO `respawn`, which is the whole of "will not be able to". That
+  // used to be a trap rather than a feature — see the note in updateUnits, where a
+  // man with no muster was neither restored nor removed and regenerated off the
+  // floor. `fallen` is what makes it mean what it reads as.
+  //
+  // NO ABILITIES, and there is nothing to switch off: abilities are bought on a
+  // TOWER and applied to the squad it owns. This man has no tower, so `light` and
+  // `blinding` have nothing to hang on. The stats below are the Paladin Keep's
+  // soldier to the number, minus the respawn.
+  Paladin: {
+    ...paladin,
+    name: 'Paladin',
+    hp: 200,
+    damage: 8,
+    cd: 0.80,
+    speed: 74,
+    regen: 7,
+    r: 6,
+    colour: '#4A6BA0',
+    damageType: 'physical',
+    armour: { physical: 'med', magic: 'low' }
   }
 };
 

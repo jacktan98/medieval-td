@@ -1460,7 +1460,23 @@ export function updateUnits(state, dt) {
 
     if (u.hp <= 0) {
       release(u);
-      u.respawn = u.def.respawn;
+      // A MAN WITH NOWHERE TO MUSTER FALLS FOR GOOD, and `fallen` is how the rest of
+      // this file is told. Stage 8's four paladins at the church are the first
+      // figures in the game that can die and stay dead — the owner's ask is "they
+      // can die just like a normal paladin and will not be able to respawn" — and
+      // they belong to no barracks, so there is no building to muster them at.
+      //
+      // WITHOUT THIS THEY WOULD NOT HAVE DIED AT ALL, and the bug is already written
+      // up on `fixture` over in data/towers.js: `respawn` undefined means the clock
+      // below never runs, so the man is never restored AND never removed, and the
+      // out-of-combat regen four lines up heals him back off the floor a tenth of a
+      // second later. He would have flickered at zero health crying out once a frame
+      // and then stood up again. The crossbowmen dodged it by being untouchable.
+      //
+      // He is spliced out at the end of this pass rather than here, because this is
+      // the middle of a loop over the list he is in.
+      u.respawn = u.def.respawn || 0;
+      if (!(u.respawn > 0)) u.fallen = true;
       // Everything being done to him dies with him. Without this he musters again
       // at full health with the clock still running and walks straight back out to
       // finish dying of a flask thrown at a man who is already dead — and, now
@@ -1522,5 +1538,19 @@ export function updateUnits(state, dt) {
       dropCorpse(state, u.def, u.x, u.y, u.struckFrom || (Math.cos(u.face) >= 0 ? 1 : -1));
       u.struckFrom = 0;
     }
+  }
+
+  // AND THE FALLEN LEAVE THE LIST, after the loop rather than inside it. The same
+  // shape updateEnemies uses for a leaked enemy, and for the same reason: a figure
+  // that is never coming back is gone, not a permanent entry every pass has to know
+  // to skip.
+  //
+  // NOTHING IS STILL HOLDING HIM. `release(u)` ran on the frame he fell, which is
+  // what hands his enemy back its freedom — an enemy whose `foe` is set stands
+  // still forever, so dropping him without that would have parked whoever killed
+  // him on the spot for the rest of the game. Anyone merely assisting never held a
+  // reference to begin with; they read the list each pass.
+  for (let i = state.units.length - 1; i >= 0; i--) {
+    if (state.units[i].fallen) state.units.splice(i, 1);
   }
 }
