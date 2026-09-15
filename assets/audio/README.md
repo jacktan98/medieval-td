@@ -417,7 +417,7 @@ project **meant to be heard over each other**.
 | --- | --- |
 | `Victory_sound.mp3` | once, the instant a game is won |
 | `Lost_sound.mp3` | once, the instant a game is lost |
-| `Star_sound.mp3` | once per star earned, on an even 1.5s beat from 1.5s |
+| `Star_sound.mp3` | once per star earned — the first at 1.5s, the rest 1.2s apart |
 
 They do not go through `solo`. Category A holds the channel for a clip's length
 **plus a second**, so the fanfare would gate the first star until 2.9s and each star
@@ -427,18 +427,18 @@ instead, which uses Category A's bus and level and touches the gate in neither
 direction. That is safe here and nowhere else: `frame` in `src/main.js` steps
 nothing once `result` is set, so the board has stopped and nothing else can ask.
 
-**One number, not two.** The reveal shipped for a day as 1.5s then 0.55 then 0.55 —
-the first interval read off the victory clip and the rest off the star clip — which
-made it a pause and then a flurry. It is an even **1.5s beat** now, at the owner's
-ask, and `tools/sound.mjs` asks that the first interval stays equal to the rest.
+**Two numbers, and they are two on purpose.** `STAR_FIRST` is the wait before the
+first star and `STAR_GAP` is the beat between the ones after it — **1.5s then 1.2s**.
+The first interval is not the same kind of interval as the others: it is the fanfare
+finishing, and the two after it are a count.
 
-**The number is still read off a recording**, not chosen. `Victory_sound` is three
-short hits and then a held chord peaking at 1.15s and spent by 1.75, so a chime at
-1.5 lands on its decay rather than across its face. `Star_sound` is 2.04s of file
-containing **0.35s of sound**, which at this pace leaves over a second of air between
-chimes — it no longer constrains anything, where at 0.55s apart it was the reason the
-reveal worked. Re-record either one and re-run `node tools/audio.mjs`; the numbers it
-prints are where these came from.
+**The first is read off a recording**, not chosen. `Victory_sound` is three short
+hits and then a held chord peaking at 1.15s and spent by 1.75, so a chime at 1.5
+lands on its decay rather than across its face. **The second is free**, and the only
+floor under it is that `Star_sound` carries **0.35s of sound** inside a 2.04s file —
+anything over about half a second is three separate chimes rather than a chord, so
+1.2 is well clear and can be tuned by ear. Re-record either clip and re-run
+`node tools/audio.mjs`; the numbers it prints are where these came from.
 
 **A loss reveals nothing**, and that falls out rather than being special-cased: a
 loss is zero stars, so no chime is ever due and the lost clip's tail runs to the end.

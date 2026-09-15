@@ -782,12 +782,24 @@ check('two chimes on the same millisecond de-dupe', played.length, 1);
   let t = 0, first = null;
   for (let i = 0; i < 400 && first === null; i++) { t += DT; if (stepStars(st, DT)) first = t; }
   check('the first chime lands after the fanfare peaks at 1.15s', first > 1.15, true);
-  // AND THE BEAT IS EVEN. The owner asked for "1.5s each" after a day of 1.5 then
-  // 0.55 then 0.55, so what has to hold is that the first interval is the same as
-  // every other one — two numbers that happen to be equal today would drift apart
-  // the next time one of them is tuned.
-  check('the first beat is the same as the rest', STAR_FIRST === STAR_GAP, true);
-  check('and that beat is 1.5s', STAR_GAP, 1.5);
+  // THE TWO SHIPPED NUMBERS, pinned as numbers because they are a judgement rather
+  // than a derivation — the owner has tuned this beat three times. They were briefly
+  // required to be EQUAL, which was wrong: the first interval is the fanfare
+  // finishing and the ones after it are a count, so they are not the same kind of
+  // interval and have no business being forced to match.
+  check('the wait before the first star is 1.5s', STAR_FIRST, 1.5);
+  check('and the beat between the rest is 1.2s', STAR_GAP, 1.2);
+
+  // AND THE COUNT NEVER DRAGS. Whatever the two are tuned to, a reveal that slowed
+  // down after its first chime would read as the game losing its place; holding or
+  // quickening reads as a count. This is the shape, where the two above are today's
+  // values of it.
+  check('the count does not slow down after it starts', STAR_GAP <= STAR_FIRST, true);
+
+  // AND NO TWO CHIMES OVERLAP. The star clip carries 0.35s of sound inside a 2.04s
+  // file, so the floor here is the sound and not the file — a gap under it would be
+  // two chimes ringing at once, which is a chord and not a count.
+  check('and no chime rings into the next', STAR_GAP > 0.35, true);
 }
 
 console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nAll three sound rules hold.');
