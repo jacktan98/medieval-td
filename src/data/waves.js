@@ -2131,26 +2131,41 @@ export const stage7Waves = [
 // six healers arriving together mend each other. Every gap is a multiple of 0.1,
 // because the admin panel's rate stepper rounds to a tenth and a shipped number it
 // cannot return to is one the owner can never put back.
+// THE GIANTS WENT UP ACROSS THE BOARD, at the owner's ask, and it is the only thing
+// that changed in this table: one arrives a wave earlier than it used to, and every
+// wave from there carries more of them — 1, 2, 3, 4, 6, 8 against the 0, 1, 2, 3, 4,
+// 6 it shipped with. Nothing else moved.
+//
+// WHAT THAT IS IN HEALTH is worth writing down, because a giant is 800 and every
+// other thing in this game is between 80 and 250. The last wave carries 6,400 points
+// of giant where it carried 4,800, which is more health than the twelve blockers and
+// twenty archers beside them put together.
+//
+// THE GAPS ARE UNCHANGED and that is deliberate rather than an oversight. The owner
+// has asked twice before to spread giants out when a wave felt overwhelming; this ask
+// is the other direction, so widening the gaps here would have been giving back half
+// of what was asked for. They still arrive slower than anything else — 1.7 to 2.0
+// against an archer's 1.0 — which is the shape the ladder already had.
 export const stage8Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'plague_inf', count: 1, gap: 2.0 },
-                       { type: 'dark_priest', count: 1, gap: 1.8 }] },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'plague_inf', count: 1, gap: 2.0 }, { type: 'dark_priest', count: 1, gap: 1.8 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'heavy_inf', count: 1, gap: 2.0 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 6, gap: 1.2 }, { type: 'tough_inf', count: 6, gap: 1.5 },
-                       { type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 3, gap: 2.0 },
                        { type: 'archer_inf', count: 8, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 3, gap: 1.9 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 4, gap: 1.9 },
                        { type: 'archer_inf', count: 10, gap: 1.2 }, { type: 'plague_inf', count: 4, gap: 1.9 },
                        { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'heavy_inf', count: 6, gap: 1.8 },
                        { type: 'archer_inf', count: 14, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
                        { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'heavy_inf', count: 8, gap: 1.7 },
                        { type: 'archer_inf', count: 20, gap: 1.0 }, { type: 'plague_inf', count: 6, gap: 1.8 },
                        { type: 'dark_priest', count: 6, gap: 1.8 }] }
 ];

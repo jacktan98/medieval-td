@@ -1324,16 +1324,25 @@ console.log('\n--- stage 8, two roads that cross, and five men already standing 
   const WANT8 = [
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 plague_inf + 1 dark_priest',
-    '8 light_inf + 4 blocker_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 light_inf + 6 tough_inf + 4 blocker_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 3 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
-    '10 blocker_inf + 4 heavy_inf + 14 archer_inf + 4 plague_inf + 4 dark_priest',
-    '12 blocker_inf + 6 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 heavy_inf + 1 plague_inf + 1 dark_priest',
+    '8 light_inf + 4 blocker_inf + 2 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 light_inf + 6 tough_inf + 4 blocker_inf + 3 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
+    '10 blocker_inf + 6 heavy_inf + 14 archer_inf + 4 plague_inf + 4 dark_priest',
+    '12 blocker_inf + 8 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
   ];
   const got8 = kirk.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got8.join(' | ') === WANT8.join(' | '), 'Dawnford Church sends exactly the eight it was given',
     got8.map((g, i) => (g === WANT8[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT8[i]})`)).join(' '));
+  // AND THE GIANTS CLIMB, which is the shape of the owner's second pass over this
+  // table rather than a number in it. Every wave from the third carries more of them
+  // than the wave before, and that is the thing a later edit could quietly flatten.
+  const giants = kirk.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
+  ok(giants.join(',') === '0,0,1,2,3,4,6,8', 'and its giants climb 0,0,1,2,3,4,6,8',
+    giants.join(','));
+  ok(giants.every((n, i) => i === 0 || n >= giants[i - 1]),
+    'never carrying fewer than the wave before', giants.join(' -> '));
+
   ok(kirk.plots.length === 8 && kirk.startGold === 240 && kirk.waves.length === 8,
     'and is eight plots, 240 gold and eight waves',
     `${kirk.plots.length} plots, ${kirk.startGold} gold, ${kirk.waves.length} waves`);
