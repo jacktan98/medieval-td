@@ -16,6 +16,7 @@
 
 import { readFileSync } from 'fs';
 import { decodeRGBA as decode } from './png.mjs';
+import { levels } from '../src/level.js';
 
 // Exactly these, and there are two of them because the artist paints a building
 // onto grass and a figure onto whatever it is standing on. Not tolerance ranges
@@ -469,6 +470,11 @@ const TOLERANCE = 6;
 const SEAM = 4;
 
 let bad = 0;
+const ok = (cond, label, detail = '') => {
+  console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(58)} ${detail}`);
+  if (!cond) bad++;
+};
+
 console.log('sprite                          holds                     measured centre   held        off');
 console.log('-'.repeat(100));
 
@@ -569,6 +575,72 @@ for (const [file, holder, trim, held, mode] of SPRITES) {
 // so all four are measured outright. If you want the figures automatic too, give
 // their shadow a colour nothing else in the drawing uses and the ambiguity
 // disappears in one line.
+
+// --- and the board may repaint that green ---------------------------------------
+//
+// "Their green is used for nothing else" is the sentence above, and src/tint.js
+// now depends on it outright: on a board that declares its own shadow colour every
+// #37422f pixel in a tower sprite is swapped for it at load, so a tower standing on
+// sand casts a sand shadow. If that sentence ever stops being true, the swap starts
+// repainting banners.
+//
+// Checked here rather than in tools/campaign.mjs because this is the file that owns
+// the claim.
+console.log('\n--- the desert repaints that green, so these have to agree ---\n');
+{
+  const tint = readFileSync('src/tint.js', 'utf8');
+  const render = readFileSync('src/render.js', 'utf8');
+
+  // THE SAME COLOUR, spelled two ways. tint.js runs in the browser and cannot
+  // import this file, so it writes the bytes out — and a tint aimed at a colour
+  // nothing wears is a silent no-op that would look exactly like "the artist
+  // changed the shadow", which is the failure the note at the top of this file
+  // exists to catch for the tools.
+  const bytes = (/GRASS_SHADOW = \[([^\]]+)\]/.exec(tint) || [])[1];
+  const got = bytes ? bytes.split(',').map(s => Number(s.trim())) : [];
+  ok(got.length === 3 && got.every((v, i) => v === GROUND[i]),
+    'src/tint.js repaints the same green this file calls the ground shadow',
+    `tint.js [${got.join(', ')}] against [${GROUND.join(', ')}]`);
+
+  // EVERY DRAW OF A TOWER'S OWN SPRITE GOES THROUGH IT. Three do — the stone, the
+  // machine on a turret, and the front layer sliced back out of the same file —
+  // and the front layer is the one that matters most: sliced from the UNTINTED
+  // sprite it would paint a green crescent back over a shadow the pass below it
+  // had just made brown.
+  // EACH FUNCTION TAKEN BY NAME, from its own declaration to the next one.
+  //
+  // The first version sliced from drawBuilding to drawTierMarks, on the assumption
+  // that the second came after the first. It does not — it is forty lines EARLIER
+  // — so the slice was empty, the scan read nothing, and the check passed while
+  // reporting "0 calls, none left on art[]", which was true of a string with
+  // nothing in it. It was caught by putting the bug back and watching it pass.
+  const bodyOf = name => {
+    const at = render.indexOf(`function ${name}(`);
+    if (at < 0) return null;
+    const next = render.indexOf('\nfunction ', at + 1);
+    return render.slice(at, next < 0 ? render.length : next);
+  };
+  const WANT = ['drawBuilding', 'drawMachine', 'drawBuildingFront'];
+  const bodies = WANT.map(n => [n, bodyOf(n)]);
+  ok(bodies.every(([, b]) => b), 'the three tower draws are all still there',
+    bodies.filter(([, b]) => !b).map(([n]) => n).join(', ') || WANT.join(', '));
+
+  const direct = bodies.filter(([, b]) => b && /\bart\[/.test(b)).map(([n]) => n);
+  const routed = bodies.filter(([, b]) => b && /onGround\(/.test(b)).map(([n]) => n);
+  ok(!direct.length && routed.length === WANT.length,
+    'and every tower sprite on the board is drawn through onGround',
+    direct.length ? `still on art[]: ${direct.join(', ')}`
+                  : `${routed.join(', ')}`);
+
+  // AND A BOARD THAT DECLARES A PALETTE DECLARES A SHADOW IN IT. The tint reads
+  // `palette.shadow` and falls back to leaving the sprite alone, so a palette
+  // missing that key is a desert board with green shadows and nothing saying so.
+  const missing = levels.filter(l => l.palette && !l.palette.shadow);
+  ok(!missing.length, 'and every board with a palette says what colour its shadows are',
+    missing.length ? missing.map(l => l.id).join(', ')
+                   : `${levels.filter(l => l.palette).length} board(s) with a palette`);
+}
+
 console.log(bad
   ? `\n${bad} anchor(s) no longer sit on a shadow. Paste the measured fractions above.`
   : '\nEvery anchor sits on its sprite\'s shadow, within ' + TOLERANCE + ' source px.');

@@ -6,6 +6,7 @@ import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art, discFace } from './assets.js';
+import { onGround } from './tint.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen } from './units.js';
@@ -1083,8 +1084,11 @@ function drawBuilding(ctx, t, box) {
   // EXCEPT ON A TURRET, where the beats belong to the machine standing on top
   // and the BUILDING is the stone underneath — one picture, never animated,
   // never mirrored. drawMachine draws the other half.
+  // THROUGH onGround, which hands back the same drawing on every board but the
+  // desert — there the ground shadow baked into it is recoloured to the one the
+  // board's own scenery casts. See src/tint.js.
   const key = t.def.machine ? t.def.sprite : frameOf(t);
-  const img = key && art[key];
+  const img = key && onGround(key);
   if (img) {
     const [sx, sy, sw, sh] = t.def.spriteTrim;
     ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
@@ -1103,7 +1107,10 @@ function drawBuilding(ctx, t, box) {
 // line that keeps the machine centred on the roof both ways round.
 function drawMachine(ctx, t, box) {
   const m = t.def.machine;
-  const img = art[frameOf(t)];
+  // Through onGround like the stone under it. The machines carry no shadow of
+  // their own — the turret does — so this is a no-op on them today and stays
+  // correct if one is ever redrawn with a patch of ground in it.
+  const img = onGround(frameOf(t));
   if (!img) return;
 
   const slot = machineBox(t.def, box);
@@ -1135,7 +1142,10 @@ function drawMachine(ctx, t, box) {
 // board; this decides what the tower puts in front of its own gunner.
 function drawBuildingFront(ctx, t, box) {
   const d = t.def;
-  const img = d.sprite && art[d.sprite];
+  // The SAME drawing drawBuilding used, recoloured the same way — a front layer
+  // sliced out of the untinted sprite would paint a green crescent back over a
+  // shadow the pass below it had just made brown.
+  const img = d.sprite && onGround(d.sprite);
   if (!img || (!d.frontTrims && !d.frontPolys)) return;
 
   const [tx, ty, tw, th] = d.spriteTrim;
