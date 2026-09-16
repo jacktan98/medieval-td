@@ -4459,7 +4459,7 @@ function statRowWidth(ctx, pairs, h = BOOK_ICON_H) {
   return w;
 }
 
-function statRow(ctx, pairs, x, y, colour = INK, room = 0, mid = false) {
+function statRow(ctx, pairs, x, y, colour = INK, room = 0) {
   // SET SMALLER RATHER THAN RUN OFF THE CARD, when a row is too long for the space
   // beside its picture.
   //
@@ -4477,20 +4477,12 @@ function statRow(ctx, pairs, x, y, colour = INK, room = 0, mid = false) {
   // `room` is optional. A caller that does not pass one gets the old behaviour,
   // which is what the pop-up's rows want — they are laid out in a column with no
   // hard right edge.
-  //
-  // `mid` CENTRES THE ROW IN `room` instead of starting it at `x`, and it is the
-  // boss band's alone — see enemyCard. It has to be inside this function rather
-  // than done by the caller, because the caller cannot know where the row will
-  // start: the height above may have been reduced to make the row fit, and a row
-  // set smaller is a narrower row. Centred from the outside it would be measured at
-  // one size and drawn at another.
   let h = BOOK_ICON_H;
   if (room > 0) {
     const want = statRowWidth(ctx, pairs, h);
     if (want > room) h = Math.max(STAT_MIN_H, Math.floor(h * room / want));
   }
   let at = x;
-  if (mid && room > 0) at = x + Math.max(0, (room - statRowWidth(ctx, pairs, h)) / 2);
   for (const [key, value] of pairs)
     at = stat(ctx, key, at, y, String(value), colour, h) + STAT_GAP;
   return at;
@@ -4569,53 +4561,58 @@ function drawStageBadge(ctx, c, stage) {
 // `stage` is which half of a two-stage boss to show, and every figure on the page
 // goes through the same lookup — see stageOfCard in book.js — so the drawing, the
 // name, the plate, the blade and the reach can never come from different halves.
-// `mid` CENTRES THE WORDS IN THE SPACE BESIDE THE FIGURE, and it is the boss
-// band's alone — at the owner's "align name and stats for bosses to the center of
-// the box. Boss cards do not have to follow other card rules."
+// AN EMPTY LAST ROW IS NOT LAID OUT, at the owner's ask: "align name and stats for
+// bosses to the center of the box... just move the name and stats down a bit so
+// that there are good gaps on top and below."
 //
-// WHY IT IS ONLY THE BOSS. A roster card is 229px wide and its text fills nearly
-// all of the 143 beside the figure, so left and centred are within a few pixels of
-// each other and left is what makes a COLUMN of cards read as a column — four
-// names down the page start at the same x. The boss band is three cards to the
-// roster's four, so a boss card is 301px with 215 beside its figure, and the
-// Captain's longest row sets about 145 of it. Left-aligned that is 70px of dead
-// parchment hanging off the right of every boss card, and one card in a band of
-// its own has no column to line up with.
+// rowsIn already centres a block of n rows in a card — that is its whole job, and
+// the note over it says so. The boss card was asking it for FOUR while drawing
+// three: he is worth no gold and costs no lives, so rewardRow gives him nothing,
+// and four rows of 20 in a 73px card start 3.5px ABOVE the plate. The three rows
+// he does draw were hung from that, which is the gap at the bottom.
 //
-// SO IT IS A PROPERTY OF THE BAND rather than of the creature. A second boss
-// arrives centred too, and the roster is untouched.
-function enemyCard(ctx, c, stage = 1, mid = false) {
+// SO THE COUNT IS DERIVED rather than passed in. Trailing empty rows are dropped
+// and the rest are centred, which needs no caller to know anything and fixes the
+// next card with a blank last row without being edited.
+//
+// IT LEAVES THE ROSTER ALONE, and that is what makes it safe rather than merely
+// general: every enemy on the page is worth gold and costs lives, so the reward
+// row is never their last-and-empty one. The Thug and the Archer Thug have a blank
+// row in the MIDDLE — no armour to print — and that one stays, because it is what
+// lines their bounty up with everybody else's across the row.
+function enemyCard(ctx, c, stage = 1) {
   const d = stageOfCard(c.def, stage);
   card(ctx, c);
   drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot, figureFit(d)));
 
   const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
-  const [r1, r2, r3, r4] = rowsIn(c, 4);
-  ctx.textAlign = mid ? 'center' : 'left';
+  const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
+
+  const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
+  if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
+  const traits = traitRow(d);
+  const reward = rewardRow(d);
+
+  // The name always counts; after it, the last row with anything in it.
+  const used = reward.length ? 4 : traits.length ? 3 : 2;
+  const [r1, r2, r3, r4] = rowsIn(c, used);
+
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
   ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
-  const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
-  ctx.fillText(d.name, mid ? tx + room / 2 : tx, r1);
+  ctx.fillText(d.name, tx, r1);
 
   // Health, attack and — for the ones who fight at a distance — how far. The
   // archer's 200 and the doctor's 130 are the whole difference between them
   // and everything else on the page, and a player who cannot see the number
   // learns it by watching a tower fail to answer.
-  const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
-  if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
-  statRow(ctx, top, tx, r2, INK, room, mid);
+  statRow(ctx, top, tx, r2, INK, room);
 
   // AND WHAT HE WEARS AND WHAT HE THROWS. The four enemies are read as a column,
   // and what a tower can hurt is the question the page is being opened to answer.
-  statRow(ctx, traitRow(d), tx, r3, INK, room, mid);
-  statRow(ctx, rewardRow(d), tx, r4, INK, room, mid);
-
-  // THE TEXT STATE GOES BACK, because this function now changes it and the next
-  // thing to draw on this page inherits whatever it was left at. A centred boss
-  // card followed by a left-aligned heading is how the Boss label would end up
-  // half off the edge of the parchment.
-  ctx.textAlign = 'left';
+  statRow(ctx, traits, tx, r3, INK, room);
+  statRow(ctx, reward, tx, r4, INK, room);
 
   // LAST, so it sits over the plate and over anything that reaches its corner.
   if (staged(c.def)) drawStageBadge(ctx, c, stage);
@@ -4635,7 +4632,7 @@ function drawEnemyPage(ctx, state) {
   ctx.fillStyle = INK_MUTED;
   ctx.font = '700 14px system-ui, sans-serif';
   ctx.fillText('Boss', PAGE_X, BOSS_HEAD_Y);
-  for (const c of boss) enemyCard(ctx, c, state.bookStage, true);
+  for (const c of boss) enemyCard(ctx, c, state.bookStage);
 }
 
 // Page 4: what a topped-out tier 4 can be taught.
