@@ -3617,7 +3617,20 @@ export const garrisonUnits = {
     r: 6,
     colour: '#4A6BA0',
     damageType: 'physical',
-    armour: { physical: 'med', magic: 'low' }
+    armour: { physical: 'med', magic: 'low' },
+    // HIS OWN THREE LINES WHEN HE IS TAPPED, at the owner's ask, and it is the
+    // crossbowman's rule rather than a new one: a soldier speaks with his
+    // BARRACKS' voice unless he has one of his own, and these four belong to no
+    // barracks at all. See selectionCue in src/audio.js.
+    //
+    // WHICH IS WHY THE KEEP'S PALADINS ARE NOT TOUCHED. The five barracks lines
+    // belong to the BUILDING and answer for every man it musters — a militiaman,
+    // a pikeman and a paladin alike — so a Paladin Keep's squad still speaks with
+    // them. The difference is not what kind of man he is, it is whether there is a
+    // building behind him to answer for him.
+    //
+    // The Pope beside them already had `voice: 'pope'` and needed nothing.
+    voice: 'paladin'
   }
 };
 

@@ -142,7 +142,7 @@ const { loadAudio, play, solo, fanfare, CUE, SHOT, ATTACK, PALADIN, SELECT,
 // Imported here rather than at the top because everything above has to run after
 // the fake AudioContext is in place, and this file keeps its imports in one order
 // for that reason.
-const { archery, barracks, siege, monastery } = await import('../src/data/towers.js');
+const { archery, barracks, siege, monastery, garrisonUnits } = await import('../src/data/towers.js');
 const { ABILITIES, abilityById } = await import('../src/data/abilities.js');
 // The two tables that turn an ammunition's "I make a noise" flag into an actual
 // clip. Imported for the block at the end of this file — see the note there for
@@ -481,6 +481,31 @@ check('an archery tower answers',
 check('a barracks answers',
   selectionCue({ kind: 'tower', ref: { fam: { id: 'barracks' } } }), CUE.barracks);
 check('a barracks man answers', selectionCue({ kind: 'unit', ref: {} }), CUE.barracks);
+
+// AND A MAN WHO BELONGS TO NO BARRACKS SPEAKS FOR HIMSELF. Three of them: stage
+// 5's bridge crossbowmen, and the pope and the four paladins standing in Dawnford
+// Church. They are placed by a level file rather than mustered by a building, so
+// there is no building whose lines could answer for them.
+//
+// CHECKED THROUGH garrisonUnits rather than against a list typed here, so the
+// next figure a level stands on a board is covered the day it is added — and the
+// failure this replaces is silence you have to listen for: a missing `voice` does
+// not throw, it just falls through to the barracks' five and sounds plausible.
+for (const [name, want] of [['Crossbowman', 'crossbowman'], ['Pope', 'pope'], ['Paladin', 'paladin']]) {
+  const def = garrisonUnits[name];
+  check(`  a placed ${name} speaks with his own voice`,
+    selectionCue({ kind: 'unit', ref: { def } }), CUE[want]);
+}
+
+// AND THE KEEP'S OWN PALADINS DO NOT, which is the other half of the same rule
+// and the thing that makes the line above a rule rather than an exception. The
+// five barracks lines belong to the BUILDING and answer for every man it musters;
+// what decides is whether there is one behind him, not what kind of man he is.
+{
+  const keepMan = barracks.find(t => t.name === 'Paladin Keep').soldier;
+  check('  but a Paladin Keep\'s squad still answers with the barracks',
+    selectionCue({ kind: 'unit', ref: { def: keepMan } }), CUE.barracks);
+}
 check('an enemy answers', selectionCue({ kind: 'enemy', ref: {} }), CUE.thug);
 check('bare ground says nothing', selectionCue(null), null);
 check('an artillery tower answers', familyCue('siege'), CUE.artillery);
