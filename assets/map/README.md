@@ -621,14 +621,14 @@ it and giving it the next number in the sequence; the tool sorts by that number
 rather than by the string, so a tenth layer lands after the ninth rather than
 after the first.
 
-**And one layer may itself be several files**, named with letters — `_Layer_8a`
-and `_Layer_8b` — for when a single layer gets too heavy to edit. They stack in
+**And one layer may itself be several files**, named with letters — `_Layer_8a`,
+`_Layer_8b` and `_Layer_8c` — for when a single layer gets too heavy to edit. They stack in
 letter order in that number's place and are treated as the one layer the artist
 drew, which matters for the lettering rule below: half a layer is much likelier to
 be all of one colour than a whole one is. Same convention as the board maps.
 
 **Layer 1 is the guide and is not part of the picture.** It holds the road and the
-stage markers on a plain green field — eleven of them at the time of writing, and
+stage markers on a plain green field — twelve of them at the time of writing, and
 the count is stated as `STAGE_MARKERS` in `tools/overview.mjs` so that adding one is
 a deliberate edit. It has to be: every marker index in `ORDER` moves when it changes,
 and the tool prints the markers and the road graph on every run so those indices can

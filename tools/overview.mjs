@@ -102,7 +102,7 @@ const MARKER_FILL = '#d30000';
 // HOW MANY STAGES THE ROAD HAS, which is a fact about the drawing and is stated here
 // so that adding one is a deliberate edit rather than a silent renumbering. Every
 // marker index in ORDER below moves when this changes.
-const STAGE_MARKERS = 11;
+const STAGE_MARKERS = 12;
 
 // How close a road line's end has to be to a marker centre to count as arriving
 // there: half the marker's drawn width plus slack. Every end in the current
@@ -464,19 +464,37 @@ for (const J of joined) console.log(`    ${String(J.from).padStart(2)} <-> ${J.t
 
 // THE OWNER'S ORDER, and the one thing in this file that is a decision rather
 // than a measurement. Stage 1 is the top-left marker; from there the road is
-// forced as far as marker 5, where it forks — east and up to the top-right
-// corner, or south-west into the desert. This takes the desert as the detour and
-// finishes in the corner.
+// forced as far as marker 10, where it forks — east and up to the top-right
+// corner, or south-west into the desert.
 //
 // SHUFFLE IT FREELY. Each stage draws the leg that leads into it from its
 // neighbour on the road, so reordering these cannot make a leg wrong; the only
 // rule is that a stage must come after the one the road reaches it through.
-const ORDER = [6, 7, 8, 10, 9, 0, 1, 5, 3, 4, 2];
+//
+// THE DESERT IS THE LAST STAGE NOW, and that is the whole of what changed when
+// Dawnford gained a third marker. It used to be the detour taken before the
+// eastern branch, and it carried Dawnford Church — a board named for a church,
+// sitting on a dark building in Sandshroud, which was flagged and is now fixed by
+// the redraw rather than by a rename. Dawnford has its own church on it, and its
+// own fountain, and its own bridge; marker 10 is the church, 11 the fountain and
+// 9 the bridge, so the three boards sit on the three landmarks they are named for.
+//
+// WHICH LEAVES THE DESERT MARKER WITH NOTHING BEHIND IT, and an undrawn stage
+// belongs at the END of the road rather than in the middle of it. A stage with no
+// board is locked, and a locked stage in the middle is a wall: the three testing
+// boards past it would have become unreachable. Put last, it costs nothing and
+// stages 1 to 11 keep both the marker and the board they already had — so nobody
+// mid-campaign moves at all, which is the first time that has been true here.
+const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 1, 2, 0, 3];
 
 // WHICH MAP EACH STAGE PLAYS. Six are drawn; the rest are markers on a road with
 // nothing behind them yet and the game shows them locked.
 //
-// NINE BOARDS NOW, and this table is the identity map because src/level.js already
+// ELEVEN BOARDS AND TWELVE STAGES, so this table is the identity map for the first
+// eleven and the twelfth is absent — the desert marker at the end of ORDER, drawn on
+// the road and shown locked until a board exists for it.
+//
+// It is the identity map because src/level.js already
 // lists the levels IN PLAY ORDER. That is the whole of "move the three testing maps
 // to further stages": Oakhaven Outskirts went in second in that array and the three
 // older boards slid down to 3, 4 and 5 behind it. A stage's board is this table and

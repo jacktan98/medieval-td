@@ -914,12 +914,23 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m1,m2,m3',
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m1,m2,m3,-',
     'the campaign runs the eight drawn boards, then the three testing ones',
     order.join(' -> '));
   ok(STAGES.filter(s => s.level !== null).length === 11,
-    'with every stage on the map now carrying a board',
+    'with eleven of the twelve stages carrying a board',
     `${STAGES.filter(s => s.level !== null).length} playable of ${STAGES.length}`);
+
+  // AND THE EMPTY ONE IS LAST, which is the rule rather than today's arrangement. A
+  // stage with no board is LOCKED, and a locked stage in the middle of the road is a
+  // wall — every board past it becomes unreachable, and nothing else in this file
+  // would have said so. The desert marker went from stage 8 to stage 12 when Dawnford
+  // gained a third landmark, and this is what keeps the next undrawn stage honest.
+  const empty = STAGES.map((s, i) => (s.level === null ? i : -1)).filter(i => i >= 0);
+  ok(empty.every(i => i >= STAGES.length - empty.length),
+    'and any stage without a board sits at the end of the road, never in the middle',
+    empty.length ? `empty at stage ${empty.map(i => i + 1).join(', ')} of ${STAGES.length}`
+                 : 'none empty');
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
   // tier 3 barracks standing on the top-right plot from the first frame, and every
