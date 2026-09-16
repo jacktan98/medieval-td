@@ -35,7 +35,7 @@ import {
   adminWaves, adminGold, setStartGold, goldStep, goldStepper,
   statStep, countStep, PIN, ADMIN_BTN, mapSelect, mapList, mapOptions, labelW, waveTabs, tapAdmin,
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, PROGRESS_BTN, CLOSE_BTN,
-  PREV_BTN, NEXT_BTN, TABS, ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
+  PREV_BTN, NEXT_BTN, TABS, ROW_H, WAVE_ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
   modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
   diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
@@ -679,12 +679,12 @@ console.log('\nAnything, in any wave\n');
   ok(rows.map(r => r.type).join() === MARCH_ORDER.join(),
     'in the order they would arrive in');
 
-  // AND THE ROWS FIT. Two columns at a 60px pitch, and the failure mode if the
-  // roster outgrows the panel is silent — text drawn past the bottom edge does not
-  // throw, it just is not there.
+  // AND THE ROWS FIT. Two columns at whatever pitch the roster leaves room for,
+  // and the failure mode if it outgrows the panel is silent — text drawn past the
+  // bottom edge does not throw, it just is not there.
   const last = rows[rows.length - 1];
-  ok(last.y + ROW_H <= SUMMARY_Y(), 'the grid clears its own summary line',
-    `last row ends ${last.y + ROW_H}, summary at ${SUMMARY_Y()}`);
+  ok(last.y + WAVE_ROW_H() <= SUMMARY_Y(), 'the grid clears its own summary line',
+    `last row ends ${last.y + WAVE_ROW_H()}, summary at ${SUMMARY_Y()}`);
   // THE LOWER OF THE TWO SUMMARY LINES, not the upper. Checking the first one is
   // what let the second be drawn through the Reset button when the grid grew a
   // fourth row: it passed, because the line it was measuring was 22px higher than
@@ -714,9 +714,16 @@ console.log('\nAnything, in any wave\n');
   // plus STEP_PAD on every side, and the pitch has to clear it — this is the
   // check that a tighter grid would fail, and a tighter grid is exactly what the
   // next creature drawn will ask for.
-  ok(count0.minus.h + 2 * STEP_PAD <= ROW_H,
+  //
+  // THIS IS THE FLOOR THE DERIVED PITCH IS NOT ALLOWED TO CROSS, and the reason
+  // WAVE_ROW_H() does not clamp itself to it. The pitch shrinks to fit the roster;
+  // below this it would be fitting the roster by overlapping the buttons, which is
+  // worse than not fitting. When this fails, the grid genuinely no longer holds the
+  // roster two-up and the answer is a design decision — page it, or go to three
+  // columns with shorter labels — not another two pixels.
+  ok(count0.minus.h + 2 * STEP_PAD <= WAVE_ROW_H(),
     'and a row\'s tap boxes stay inside its own pitch',
-    `${count0.minus.h + 2 * STEP_PAD} tapped, ${ROW_H} pitch`);
+    `${count0.minus.h + 2 * STEP_PAD} tapped, ${WAVE_ROW_H()} pitch`);
 
   // AND THE TEXT FITS BESIDE THE STEPPER. There is no canvas out here to measure a
   // font with, so this estimates the way tools/book.mjs does and for the same
@@ -815,8 +822,8 @@ console.log('\nWhat fits, and what you can hit\n');
     ok(r.order.x + r.order.w <= c.minus.x - STEP_PAD,
       `the ${r.type} order button stops clear of its count stepper`,
       `ends ${r.order.x + r.order.w}, stepper tap starts ${c.minus.x - STEP_PAD}`);
-    ok(r.order.h + 8 <= ROW_H, 'and is inside the row pitch',
-      `${r.order.h} in ${ROW_H}`);
+    ok(r.order.h + 8 <= WAVE_ROW_H(), 'and is inside the row pitch',
+      `${r.order.h} in ${WAVE_ROW_H()}`);
   }
   // AND TWO ROWS' BUTTONS NEVER MEET, across the page or down it. The waves tab is
   // a 2-column grid and this is the only control on it wide enough for the left
@@ -850,7 +857,7 @@ console.log('\nWhat fits, and what you can hit\n');
     for (let w = 0; w < lv.waves.length; w++) {
       const rows = groupRows(i, w);
       const last = rows[rows.length - 1];
-      if (last.y + ROW_H > RESET_BTN.y) clash.push(`${lv.id} wave ${w + 1}`);
+      if (last.y + WAVE_ROW_H() > RESET_BTN.y) clash.push(`${lv.id} wave ${w + 1}`);
     }
   }
   useLevel(0);

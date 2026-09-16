@@ -8,11 +8,22 @@ they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 | `Enemies_Thug_Default.png`         | `Enemies_Thug_Attack.png`         | `light_inf`  | the militia, in all 8 waves            |
 | `Enemies_Tough_Thug_Default.png`   | `Enemies_Tough_Thug_Attack.png`   | `tough_inf`  | the same man in low plate, 200 health  |
 | `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
+| `Enemies_Shadow_Thug_Default.png`  | `Enemies_Shadow_Thug_Attack.png`  | `shadow_inf` | masked, sword up at rest and thrust out swinging; invisible unless a soldier has hold of him |
 
 **The Tough Thug is drawn in the Thug's box** — 96 wide against 96, 119 tall
 against 116 — and his shadow sits at source (260.0, 304.5) in both poses. He is
 the same creature with harder numbers, so he costs the encyclopedia's figure
 scale nothing and stands in a lane exactly as his smaller cousin does.
+
+**The Shadow Thug is the tallest ordinary enemy**, at 159 source px against the
+Thug's 116, and all of the difference is the blade held overhead — his body is the
+Thug's own 59px round blob, so he stands in a lane the same way. His shadow sits at
+source (265.0, 324.0) in both poses.
+
+**He is drawn at half alpha whenever no soldier has hold of him**, which is the
+same cloak an assassin wears, so the drawing has to read at 50% over sand and over
+grass. Nothing about that is in the file — it is what the game does to it — but it
+is what the contrast in the drawing has to survive.
 
 ## Two enemies fight at both distances, and they carry two pairs
 

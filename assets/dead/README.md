@@ -7,6 +7,7 @@ drawing each of them needs — see "Why only one file" below:
 |-------------------------------|------------------------------|-------------|
 | `Enemies_Thug_Dead.png`       | the thug, every wave         | 31 x 16 px  |
 | `Enemies_Tough_Thug_Dead.png` | the tough thug               | 33 x 16 px  |
+| `Enemies_Shadow_Thug_Dead.png`| the shadow thug              | 41 x 18 px  |
 | `Enemies_Blocker_Thug_Dead.png`| the blocker thug            | 33 x 16 px  |
 | `Enemies_Dark_Priest_Dead.png`| the dark priest              | 36 x 17 px  |
 | `Enemies_Giant_Thug_Dead.png` | the giant                    | 57 x 25 px  |
@@ -173,6 +174,7 @@ and paste the rect in as `deadTrim`. As shipped:
 |----------------------------|-----------------------|------------------|
 | `Enemies_Thug_Dead.png`      | `[180, 217, 152, 78]` | `[0.207, 0.901]` |
 | `Enemies_Tough_Thug_Dead.png`| `[175, 217, 162, 78]` | `[0.213, 0.888]` |
+| `Enemies_Shadow_Thug_Dead.png`| `[155, 212, 202, 88]` | `[0.171, 0.790]` |
 | `Enemies_Blocker_Thug_Dead.png`| `[175, 217, 161, 78]`| `[0.211, 0.875]` |
 | `Enemies_Dark_Priest_Dead.png`| `[169, 214, 174, 84]`| `[0.187, 0.804]` |
 | `Enemies_Archer_Thug_Dead.png`| `[149, 218, 214, 76]`| `[0.161, 0.875]` |

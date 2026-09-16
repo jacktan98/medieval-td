@@ -967,11 +967,11 @@ export function stepper(col, rowY, field) {
 // waves tab now lays its rows out in a grid whose x depends on which side of the
 // page the row is on. One builder either way, so the two tabs cannot end up with
 // steppers of different sizes or different padding.
-export function stepperAt(x, rowY, field, w = STEP_W, valueW = 96) {
+export function stepperAt(x, rowY, field, w = STEP_W, valueW = 96, h = STEP_H) {
   return {
-    minus: { x, y: rowY, w, h: STEP_H },
-    value: { x: x + w, y: rowY, w: valueW, h: STEP_H },
-    plus:  { x: x + w + valueW, y: rowY, w, h: STEP_H },
+    minus: { x, y: rowY, w, h },
+    value: { x: x + w, y: rowY, w: valueW, h },
+    plus:  { x: x + w + valueW, y: rowY, w, h },
     field
   };
 }
@@ -993,8 +993,34 @@ export function stepperAt(x, rowY, field, w = STEP_W, valueW = 96) {
 // four rows a page, which is paging the roster on the one panel whose whole
 // purpose is seeing the roster at once.
 const WAVE_STEP_W = 46;
+// AND 36 TALL RATHER THAN THE 40 EVERYWHERE ELSE, which the ninth enemy bought.
+//
+// The grid is two columns and does not page — that is the whole point of the tab —
+// so every creature added to the game costs it half a row. Eight fitted in four
+// rows at a 60px pitch. The Shadow Thug makes nine, which is five rows, and five
+// rows at 60 put the summary lines 50px INTO the Reset button. The note below
+// SUMMARY_Y predicted exactly that and tools/admin.mjs caught it on the first run
+// after he was added.
+//
+// The pitch a row needs is the tapped height of what is in it — drawn plus
+// STEP_PAD on each side — so 4px off the drawing is 4px off every row, and five
+// rows at 48 land where four at 60 did. The whole change stays inside this tab,
+// which already has its own stepper size for the same kind of reason.
+//
+// 46 x 36 DRAWN, 58 x 48 TAPPED. That is about 33 real px on the narrowest canvas
+// this game targets, against the 40 this tab already accepted and the 44 the
+// guideline asks for. Accepted here and nowhere else, for the reason the note
+// above gives: this panel is behind a four-digit PIN and is a tool for the person
+// building the levels, not a control anybody plays with.
+//
+// THE ALTERNATIVE WAS THE HEADER'S WHITE SPACE. Sixteen pixels sit between the
+// tabs and the map row and sixteen more between that and the wave row, and
+// halving both would have bought the same 16px at a 52 pitch. It was not taken:
+// the rhythm of the header is the thing that makes a dense panel readable, and
+// four pixels off a stepper in a grid of steppers is the cheaper loss.
+const WAVE_STEP_H = 36;
 export const waveStepper = (x, rowY, field, valueW) =>
-  stepperAt(x, rowY, field, WAVE_STEP_W, valueW);
+  stepperAt(x, rowY, field, WAVE_STEP_W, valueW, WAVE_STEP_H);
 
 // The two value boxes are different widths because they hold different things: a
 // count is at most two digits and its "was" line at most six characters, while a
@@ -1038,6 +1064,38 @@ const GROUP_TOP = INNER.y + 164;
 const WAVE_CELL_GAP = 12;
 const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP) / 2;
 const WAVE_COLS = 2;
+
+// HOW MANY ROWS THE ROSTER NEEDS, and how tall each may be — DERIVED, because the
+// roster grows and this page does not.
+//
+// The note under SUMMARY_Y names the failure this replaces: "enough enemies and
+// the grid runs into the Reset button, silently, because nothing about drawing
+// text off the bottom of a panel throws." The ninth enemy was enough. A typed
+// pitch would simply be re-typed at the tenth.
+//
+// So the pitch is whatever fits between the top of the grid and the two summary
+// lines above the footer, never MORE than the dashboard's own 60 — the units tab
+// pages rather than shrinks, and one row height across the panel is still the
+// rule wherever both can have it.
+//
+// THE FLOOR IS THE TAPPED HEIGHT of what sits in a row, drawn plus STEP_PAD each
+// side, and this deliberately does not clamp to it. A pitch under the floor means
+// the roster genuinely no longer fits two-up on this page, which is a design
+// decision — page it, or go to three columns and shrink the labels — and not
+// something a layout function should quietly paper over. tools/admin.mjs asserts
+// the floor, so it fails loudly on the build that crosses it rather than shipping
+// steppers that overlap their neighbours.
+//
+// FUNCTIONS, NOT CONSTS, and that is forced: FOOT_Y is declared a hundred lines
+// BELOW this one, and a `const` reading it here is a temporal-dead-zone throw at
+// import. This file has been caught by that twice — see maxRows() above, which is
+// a function for exactly the same reason.
+const WAVE_GRID_ROWS = () => Math.ceil(MARCH_ORDER.length / WAVE_COLS);
+const SUMMARY_GAP = 16;     // grid bottom to the first summary line
+const SUMMARY_STEP = 22;    // and the second line under it
+const SUMMARY_CLEAR = 8;    // air between that line and the footer
+export const WAVE_ROW_H = () => Math.min(ROW_H, Math.floor(
+  (FOOT_Y - SUMMARY_CLEAR - SUMMARY_STEP - SUMMARY_GAP - GROUP_TOP) / WAVE_GRID_ROWS()));
 export const groupRows = (levelIndex, wave, mode = 'normal') => {
   const lv = levels[levelIndex];
   const countW = 2 * WAVE_STEP_W + COUNT_VALUE_W;
@@ -1052,7 +1110,7 @@ export const groupRows = (levelIndex, wave, mode = 'normal') => {
     const gapX = x + WAVE_CELL_W - gapW;
     const stepX = gapX - countW - 8;
     const count = waveCount(lv.id, mode, wave, type);
-    const y = GROUP_TOP + Math.floor(i / WAVE_COLS) * ROW_H;
+    const y = GROUP_TOP + Math.floor(i / WAVE_COLS) * WAVE_ROW_H();
     return {
       type,
       def: enemyTypes[type],
@@ -1080,7 +1138,7 @@ export const groupRows = (levelIndex, wave, mode = 'normal') => {
       // DEAD ON A ROW AT ZERO, and the box is still returned rather than nulled:
       // "is this creature in the wave" is a question promoteType already answers,
       // and two places deciding it is one place too many.
-      order: { x, y, w: stepX - 8 - x, h: ROW_H - 8 }
+      order: { x, y, w: stepX - 8 - x, h: WAVE_ROW_H() - 8 }
     };
   });
 };
@@ -1093,14 +1151,14 @@ export const groupRows = (levelIndex, wave, mode = 'normal') => {
 // layout has: enough enemies and the grid runs into the Reset button, silently,
 // because nothing about drawing text off the bottom of a panel throws.
 export const SUMMARY_Y = () =>
-  GROUP_TOP + Math.ceil(MARCH_ORDER.length / WAVE_COLS) * ROW_H + 16;
+  GROUP_TOP + WAVE_GRID_ROWS() * WAVE_ROW_H() + SUMMARY_GAP;
 
 // AND THE SECOND LINE UNDER IT, which is the one that actually has to clear the
 // footer. It used to hang off the last ROW — the same place as this while the grid
 // had three rows, and not the same place at four, which is how it ended up drawn
 // through the Reset button. One anchor now, and the check reads this rather than
 // the line above it.
-export const SUMMARY2_Y = () => SUMMARY_Y() + 22;
+export const SUMMARY2_Y = () => SUMMARY_Y() + SUMMARY_STEP;
 
 // The rows of the UNITS tab. Fifteen of them today — three enemies and four
 // families of three — so they are paged rather than crammed: six a page at the

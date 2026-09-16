@@ -8,7 +8,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
-import { hidden, fixture } from './units.js';
+import { hidden, fixture, unseen } from './units.js';
 import { stageOf } from './data/armour.js';
 import { downed } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
@@ -487,9 +487,18 @@ function drawStatus(ctx, state) {
     // bar hanging over a corpse is the one thing that would give the trick away.
     // Nothing is being done to him either, so the status marks go with it.
     if (downed(e)) continue;
+    // AND AN UNSEEN THUG'S BAR FADES WITH HIM, word for word the rule the
+    // assassin's bar keeps twenty lines below. It is the one piece of him drawn
+    // outside his own figure, so left solid it would hang over empty ground
+    // pointing at the thing the whole creature is about — and so would a poison
+    // droplet or a flame, more sharply still, since a burning Shadow Thug caught
+    // by a splash is exactly the case that happens.
+    ctx.save();
+    if (unseen(e)) ctx.globalAlpha *= UNSEEN;
     const top = e.y - artHeight(e.def, e) - 4;
     healthBar(ctx, e.x, top, e.def.r, e.hp / e.maxHp);
     statusMarks(ctx, e, e.x, top);
+    ctx.restore();
   }
   for (const u of state.units) {
     if (u.respawn > 0) { musterRing(ctx, u); continue; }
@@ -1728,7 +1737,25 @@ export const striking = e => e.thrust > 0 || e.shot > 0;
 function drawEnemy(ctx, e) {
   const img = e.def.sprite && art[e.def.sprite];
 
+  // A SHADOW THUG NOBODY HAS HOLD OF, at the assassin's own alpha and for the
+  // assassin's own reason — the player is not the one who cannot see him, the
+  // towers are, but the player still has to be told that is what is going on.
+  //
+  // THE SAME UNSEEN the soldiers use. One number for both cloaks, because they
+  // are the same effect seen from either side of the road and a player who has
+  // learned to read one has learned to read the other.
+  //
+  // MULTIPLIED into whatever the caller has already set rather than assigned, so
+  // a Shadow Thug walking behind a house ghosts fainter still — 0.5 of 0.3 —
+  // instead of coming out brighter in the stonework than in the open. Held as a
+  // factor rather than applied here, because the two paths below each have a save
+  // of their own and a third wrapping both of them would need two restores on one
+  // of them.
+  const cloak = unseen(e) ? UNSEEN : 1;
+
   if (!img) {
+    ctx.save();
+    ctx.globalAlpha *= cloak;
     ctx.fillStyle = e.def.colour;
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.def.r, 0, Math.PI * 2);
@@ -1736,6 +1763,7 @@ function drawEnemy(ctx, e) {
     ctx.strokeStyle = '#22201C';
     ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.restore();
     return;
   }
 
@@ -1752,6 +1780,7 @@ function drawEnemy(ctx, e) {
   const dir = e.face;
 
   ctx.save();
+  ctx.globalAlpha *= cloak;
   // Lunge toward whatever it is hitting, the same way a soldier does, so a
   // melee reads as two figures trading blows rather than one animated one.
   ctx.translate(e.x + dir * (e.thrust || 0) * ENEMY_LUNGE, e.y);

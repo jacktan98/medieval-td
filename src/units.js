@@ -165,6 +165,39 @@ export function nearestOnPath(x, y) {
 // him on `respawn` and `hp`, so this does not repeat that.
 export const hidden = u => !!u.def.hidden && !u.exposed;
 
+// AND THE SAME TRICK, FROM THE OTHER ARMY. The Shadow Thug is the assassin's
+// mirror: a thug who is not there until somebody is looking at him.
+//
+// It reads here, next to the man it is a mirror of, because the two rules have to
+// be able to be compared — and because everything that already asks "can this be
+// seen" imports from this file.
+//
+// A SEPARATE DEF FIELD RATHER THAN `hidden`, and that is not tidiness. `hidden`
+// pairs with `exposed`, which is computed once a frame in updateUnits from a
+// soldier's foe and his mark. An enemy has no `exposed` and never will, so a
+// Shadow Thug wearing `hidden: true` would be `!undefined` — invisible from spawn
+// to death, with nothing able to touch him but a splash. Two fields cannot make
+// that mistake.
+//
+// WHAT COUNTS AS BEING LOOKED AT is `e.foe`: the soldier who has hold of him. The
+// owner's rule is "when a soldier faces him, he now can be targeted like a normal
+// enemy", and a soldier facing an enemy is exactly what that field means — it is
+// set in the block pass below when a man comes within ENGAGE of him, and cleared
+// by release() and unhook() from both sides. So there is NO new state here and
+// nothing to keep in step: the thing that reveals him is the thing that holds
+// him.
+//
+// THAT IS ALSO THE COUNTER-PLAY, and it is why the block pass deliberately does
+// NOT ask whether it can see him. A squad walks into him and he is revealed;
+// towers alone never find him. An enemy nothing could reveal would be an enemy
+// with no answer, which is the failure mode this shape rules out rather than
+// mitigates.
+//
+// THE FADE AND THE TARGETING ARE ONE TEST, the same as the assassin's: render.js
+// asks this before it fades him and enemies.js asks it before it will shoot at
+// him, so a faint thug taking arrows is not representable.
+export const unseen = e => !!e.def.unseen && !e.foe;
+
 // A FIGURE NOTHING CAN HURT. Stage 5's two crossbowmen at the bridge and nothing
 // else in the game — see `fixture` in src/data/towers.js for why the owner's "without
 // any armor and health" comes out as this rather than as a large number.
@@ -718,6 +751,16 @@ function nearestFoe(state, u, reach) {
   let least = Infinity;
   for (const e of state.enemies) {
     if (e.hp <= 0 || e.leaked) continue;
+    // AND NOT AT A SHADOW THUG NOBODY HAS HOLD OF. A crossbowman's quarrel and an
+    // assassin's knife are projectiles like any other, so the rule that keeps
+    // arrows off him has to hold here too — this is the soldiers' half of the
+    // same test pickTarget makes in enemies.js.
+    //
+    // There is no irony to resolve in an assassin being unable to see him: one
+    // man's cloak says nothing about the other's eyes, and the thing that reveals
+    // a Shadow Thug is a soldier CLOSING with him, which a thrower by definition
+    // has not done.
+    if (unseen(e)) continue;
     if (!inRange(u.x, u.y, e.x, e.y, reach)) continue;
     const d = Math.hypot(e.x - u.x, e.y - u.y);
     if (d < least) { least = d; best = e; }

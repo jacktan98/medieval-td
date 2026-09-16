@@ -6,7 +6,7 @@ import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armour.js';
 import { raiseGuard } from './enemies.js';
-import { fixture } from './units.js';
+import { fixture, unseen } from './units.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -127,7 +127,18 @@ function land(state, s) {
     // this same line lands every tower's arrow, and the target is then an ENEMY,
     // which carries no respawn field at all. `undefined <= 0` is false and would
     // have silently switched off every bow in the game.
-    if (s.target.hp > 0 && !(s.target.respawn > 0)) {
+    // AND NOT ON A SHADOW THUG WHO HAS GONE, which closes the one gap the aiming
+    // test cannot: a tower may loose at him perfectly legally while a soldier has
+    // hold of him, and that soldier may die before the arrow arrives. Without this
+    // the rule would be "no projectiles can hit it, except one already in the
+    // air", and an exception in a rule this simple is worse than the frame of
+    // flight time it costs. The arrow passes through him.
+    //
+    // SAFE ON EITHER SIDE of the game. An enemy-side flask's target is a SOLDIER,
+    // and no soldier def carries `unseen` — an assassin's cloak is `hidden`, which
+    // this deliberately does not read. See unseen() in units.js for why they are
+    // two fields.
+    if (s.target.hp > 0 && !(s.target.respawn > 0) && !unseen(s.target)) {
       hit(state, s, s.target);
       // And it may set him alight, on the one man it hit. Nothing in the game
       // fires a burning shot with no splash today; the line is here so that

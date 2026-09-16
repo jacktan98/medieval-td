@@ -238,6 +238,118 @@ export const enemyTypes = {
     colour: '#A87C4E'
   },
 
+  // THE ASSASSIN'S MIRROR, and the first enemy in the game that towers cannot see.
+  //
+  // The owner's brief: "a thug that strikes a lot harder and can turn invisible
+  // when not facing a soldier. This invisibility is like assassins invisibility
+  // where no projectiles can hit it but any AOE damage can still hurt him if he is
+  // nearby the blast. Only then when a soldier faces him, he now can be targeted
+  // like a normal enemy."
+  //
+  // WHAT THAT IS, MECHANICALLY, is one field — `unseen` — and the whole of the
+  // rule lives in unseen() in src/units.js, beside the assassin's own `hidden`. He
+  // is revealed exactly while `e.foe` is set, which is the soldier who has hold of
+  // him: no new state, and the thing that reveals him is the thing that stops him.
+  //
+  // THE BOARD HAS ONE ANSWER TO HIM AND IT IS THE BARRACKS. Archery, siege and the
+  // monastery all fire projectiles and all come through pickTarget, so none of
+  // them can pick him at all. Send a soldier and he is an ordinary thug; send
+  // nobody and the only thing that touches him is a splash he happened to be
+  // standing in. That is a sharper version of the question the Blocker asks —
+  // "shoot him and he turtles, send a soldier and he opens up" — and it is the
+  // first enemy whose answer is a barracks FULL STOP rather than a barracks first.
+  //
+  // WHICH MAKES ONE THING LOAD-BEARING: every board must be able to build one.
+  // All twelve can today — the tutorial caps at tier 2 and a Militia Camp is tier
+  // 1 — but a board that capped the ladder below a barracks and sent Shadow Thugs
+  // would be unwinnable, and nothing would say so: the waves would spawn, the
+  // towers would build, and the road would simply never be defended.
+  // tools/unseen.mjs asks that of every level file rather than of this paragraph.
+  //
+  // AND A SPLASH STILL FINDS HIM, which is the owner's second sentence and the
+  // half that keeps him beatable without a squad. A rock or a cannonball is thrown
+  // at a patch of GROUND and hurts whoever is standing in it — see the victims
+  // loop in land() in src/projectiles.js, which has no aiming step to skip him at.
+  // Artillery is the one family that can kill him blind, and it cannot aim at him
+  // to do it.
+  //
+  // 250 HEALTH is the Blocker's exactly, and 30 damage is three times his. The
+  // bounty sits at 35 with the Dark Priest — above the Blocker's 30 for the same
+  // health and above the Tough Thug's 25 for half again his damage, below the
+  // Giant's 40 because he is still a man-sized body. Leak stays at 1: only the
+  // Giant is worth two lives, and this is a thug.
+  //
+  // TWO RANKS OF BREAK, and on this board that is not a discount, it is a flat
+  // rate. The heaviest physical plate any soldier in the game wears is the
+  // Paladin's med, which is rank 2 — so his break takes EVERY soldier to none and
+  // his 30 lands as 30 on all five of them. The Giant's one rank moves the Paladin
+  // alone; nothing else on the road is flat against the whole ladder.
+  //
+  // THE BOSS IS THE ONLY OTHER THING WITH TWO, which is the right company to be
+  // keeping and worth knowing before this is tuned: being unanswerable by armour
+  // was a boss's privilege, and this is an ordinary enemy who can arrive at wave
+  // three. tools/unseen.mjs measures all five rungs end to end through units.js
+  // rather than taking this paragraph's word for it — and the first version of the
+  // paragraph said "the only creature in the game", which the check disproved.
+  //
+  // HE HAS THREE DRAWINGS OF HIS OWN: a masked thug with a sword held overhead at
+  // rest, thrust out in front of him swinging, and a corpse. The owner's "use the
+  // default image for description panel and encyclopedia" is what every card in the
+  // game already does — the Default pose is the portrait — and the art landed the
+  // same day.
+  //
+  // HE IS THE TALLEST ORDINARY ENEMY ON THE ROAD, at 159 source px against the
+  // Thug's 116, and all of the difference is the raised blade. His BODY is the
+  // Thug's: a 59px round blob either way, which is why `r` stays 8. A health bar
+  // hangs off the tallest drawing a figure has, so his sits above the sword and
+  // stays there when he lowers it — see artHeight in src/render.js.
+  //
+  // HIS SHADOW IS AT SOURCE (265.0, 324.0) IN BOTH POSES, to the pixel, so the arm
+  // swings and nothing else moves. That is the rule every figure in this game
+  // keeps, and it is measured rather than assumed — the x of all three pivots below
+  // was reproduced from the artwork by the same method that reproduces the Thug's
+  // shipped numbers exactly. tools/shadow.mjs is the check.
+  //
+  // WHAT TELLS HIM APART ON THE BOARD IS STILL THE CLOAK: half alpha whenever
+  // nothing has hold of him, which is the assassin's own UNSEEN. `colour` is his
+  // own, for the vector fallback and anywhere the UI keys on it.
+  //
+  // AND HIS VOICE IS THE COMMON ONE, at "sound is just like a normal enemy sound
+  // (thug/tough thug)" — which costs nothing to arrange, because an enemy with no
+  // `voice` field already falls through to the thug's line. See selectionCue in
+  // src/audio.js. His death cry is decided by what killed him, as every creature's
+  // is, so that needed nothing either.
+  shadow_inf: {
+    name: 'Shadow Thug',
+    sprite: 'shadow',
+    spriteTrim: [191, 174, 118, 159],   // source px, re-paste from tools/trim.mjs
+    pivot: [0.627, 0.943],              // the centre of his ground shadow
+    attack: { sprite: 'shadow_attack', trim: [118, 217, 191, 116], pivot: [0.770, 0.922] },
+    spriteFaces: -1,
+    dead: 'dead_shadow',
+    deadTrim: [155, 212, 202, 88],
+    deadPivot: [0.171, 0.790],
+    hp: 250,
+    damageType: 'physical',
+    // NONE, at the owner's word, and it is the right shape for him rather than a
+    // saving. He is hard to HIT, not hard to hurt — so the moment a soldier pins
+    // him he takes everything at full price, which is what makes sending one worth
+    // it. Armour on top of the cloak would have made him both.
+    armour: { physical: 'none', magic: 'none' },
+    pierce: 2,
+    // INVISIBLE UNTIL SOMEBODY HAS HOLD OF HIM. One field, read by unseen() in
+    // src/units.js — and deliberately NOT named `hidden`, which is the assassin's
+    // and pairs with a per-frame `exposed` an enemy does not have.
+    unseen: true,
+    speed: 70,      // the Thug's, unchanged
+    bounty: 35,
+    leak: 1,
+    damage: 30,
+    atkCd: 1.0,     // the Thug's, unchanged
+    r: 8,
+    colour: '#4A4453'
+  },
+
   // THE SHIELD, and he is the first enemy whose armour is a THING HE DOES rather
   // than a row on his card.
   //
@@ -1429,7 +1541,11 @@ export const enemyTypes = {
 // also checks that every enemy in the game appears here exactly once — a creature
 // missing from this list would be one the dashboard could not place.
 export const MARCH_ORDER = [
-  'light_inf', 'tough_inf', 'blocker_inf', 'heavy_inf', 'archer_inf', 'plague_inf',
+  // The Shadow Thug marches with the other thug variants, which is where the note
+  // above puts "the same creature at three weights" — four now. He is last of them
+  // and in front of the Giant: a creature only a soldier can touch wants the squad
+  // already committed when he arrives, not waiting idle at the front of a column.
+  'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'heavy_inf', 'archer_inf', 'plague_inf',
   // The healer comes in LAST, behind everything he is there to mend. A priest at
   // the head of a column would spend the wave walking with nobody hurt in front of
   // him; behind it he arrives to a fight already going and men already wounded.

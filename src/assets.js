@@ -340,6 +340,8 @@ export const paths = {
   thug_attack:     'assets/enemies/Enemies_Thug_Attack.png',
   tough:           'assets/enemies/Enemies_Tough_Thug_Default.png',
   tough_attack:    'assets/enemies/Enemies_Tough_Thug_Attack.png',
+  shadow:          'assets/enemies/Enemies_Shadow_Thug_Default.png',
+  shadow_attack:   'assets/enemies/Enemies_Shadow_Thug_Attack.png',
   giant:           'assets/enemies/Enemies_Giant_Thug_Default.png',
   giant_attack:    'assets/enemies/Enemies_Giant_Thug_Attack.png',
   // THE THIRD DRAWING NOBODY ELSE HAS. Every other figure in this game is a
@@ -422,6 +424,7 @@ export const paths = {
   // again after the next one.
   dead_thug:       'assets/dead/Enemies_Thug_Dead.png',
   dead_tough:      'assets/dead/Enemies_Tough_Thug_Dead.png',
+  dead_shadow:     'assets/dead/Enemies_Shadow_Thug_Dead.png',
   dead_blocker:    'assets/dead/Enemies_Blocker_Thug_Dead.png',
   dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
   dead_priest:     'assets/dead/Enemies_Dark_Priest_Dead.png',

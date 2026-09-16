@@ -3,7 +3,7 @@ import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { poolFor } from './blood.js';
-import { unhook, hidden, fixture } from './units.js';
+import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
 import { solo, play, CUE, FIRING, DEFEND, HEAL,
@@ -1336,6 +1336,15 @@ export function pickTarget(enemies, x, y, range, min = 0, mode = 0) {
     // The FIRST test on purpose, before the reach: it is the cheapest and it is
     // the only one that can be true of something already dead.
     if (downed(e)) continue;
+    // AND NOTHING AIMS AT WHAT IT CANNOT SEE. A Shadow Thug with no soldier on
+    // him is not a target: every tower in the game comes through here, so this
+    // one line is the whole of "no projectiles can hit it" at the aiming end.
+    //
+    // BESIDE `downed` RATHER THAN INSIDE THE REACH TEST, because it is the same
+    // kind of statement — a thing on the board that is not a target — and because
+    // it must hold at every range, including the Infinity pass a global ability
+    // makes. See unseen() in units.js.
+    if (unseen(e)) continue;
     // Measured from the enemy's ground anchor — its shadow — because that is
     // where the figure IS. Its head is drawn well above that and never counts.
     if (!inRange(x, y, e.x, e.y, range)) continue;
