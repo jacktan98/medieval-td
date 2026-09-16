@@ -253,7 +253,14 @@ console.log('\nWhat fits\n');
       `${clear}px of parchment between them`);
 
     // AND THE BOSS BAND CLEARS THE FOOTER, which is what it is measured against.
-    const under = FOOT_Y - (BOSS_TOP + ENEMY_CARD_H);
+    //
+    // MEASURED OFF THE CARDS THEMSELVES rather than off BOSS_TOP plus a height
+    // named here. It used to add ENEMY_CARD_H, which was the boss card's height
+    // until the band got one of its own — and then this reported the boss band
+    // hanging 4px through the footer while it was in fact sitting exactly on the
+    // margin. A check that names a card's height separately from the card is a
+    // check that measures the wrong card the moment the two differ.
+    const under = FOOT_Y - Math.max(...boss.map(c => c.y + c.h));
     ok(under >= 0, 'and the boss band clears the footer', `${under}px`);
 
     // AND THREE BOSSES FILL THE WIDTH FOUR ENEMIES DO, which is the owner's rule

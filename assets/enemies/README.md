@@ -9,6 +9,7 @@ they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 | `Enemies_Tough_Thug_Default.png`   | `Enemies_Tough_Thug_Attack.png`   | `tough_inf`  | the same man in low plate, 200 health  |
 | `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
 | `Enemies_Shadow_Thug_Default.png`  | `Enemies_Shadow_Thug_Attack.png`  | `shadow_inf` | masked, sword up at rest and thrust out swinging; invisible unless a soldier has hold of him |
+| `Enemies_Rally_Thug_Default.png`   | `Enemies_Rally_Thug_Attack.png`   | `rally_inf`  | helmeted, sword and a banner on his back; lends a fifth of their health to everything within 100px |
 
 **The Tough Thug is drawn in the Thug's box** — 96 wide against 96, 119 tall
 against 116 — and his shadow sits at source (260.0, 304.5) in both poses. He is
@@ -24,6 +25,12 @@ source (265.0, 324.0) in both poses.
 same cloak an assassin wears, so the drawing has to read at 50% over sand and over
 grass. Nothing about that is in the file — it is what the game does to it — but it
 is what the contrast in the drawing has to survive.
+
+**The Rally Thug is the widest enemy on the road**, at 164 source px against the
+Thug's 96, and the banner is all of it — his body is the same round blob. His
+shadow sits at source (252.0, 321.5) in both poses. Everything standing inside a
+hundred game pixels of him wears `Health_Boost_Status.png`, so his own drawing has
+to be findable in a crowd that is all wearing the same mark.
 
 ## Two enemies fight at both distances, and they carry two pairs
 

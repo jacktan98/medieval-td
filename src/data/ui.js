@@ -396,6 +396,12 @@ export const ui = {
   // what STATUS_H's ceiling was set by — so this mark arrives with room to spare
   // and does not move the number.
   status_healing:  { trim: [240, 235, 32, 42], h: STATUS_H },
+  // AND THE HEALTH BOOST, which takes `fit` like the chevrons and for the same
+  // reason: 44 x 30 is the widest mark in the set, a heart with an arrow beside it
+  // rather than a standing shape, and drawn to a common HEIGHT it would come out
+  // 16 x 11 and overhang the row. Fitted, it is 11 x 7.5. 44 source px at the 3x
+  // device cap wants 33, so it is sharp with room over.
+  status_boost:    { trim: [234, 241, 44, 30], fit: STATUS_H },
   // The High Altar's two, measured to the same disc again — but drawn on a
   // WHITE disc where the other six are blue, which is what `pale` records. The
   // price under an ability button is white, because white is what reads on a dark

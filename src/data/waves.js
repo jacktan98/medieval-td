@@ -276,8 +276,7 @@ export const enemyTypes = {
   // 250 HEALTH is the Blocker's exactly, and 30 damage is three times his. The
   // bounty sits at 35 with the Dark Priest — above the Blocker's 30 for the same
   // health and above the Tough Thug's 25 for half again his damage, below the
-  // Giant's 40 because he is still a man-sized body. Leak stays at 1: only the
-  // Giant is worth two lives, and this is a thug.
+  // Giant's 40 because he is still a man-sized body.
   //
   // TWO RANKS OF BREAK, and on this board that is not a discount, it is a flat
   // rate. The heaviest physical plate any soldier in the game wears is the
@@ -343,11 +342,101 @@ export const enemyTypes = {
     unseen: true,
     speed: 70,      // the Thug's, unchanged
     bounty: 35,
-    leak: 1,
+    // TWO LIVES, raised from one at the owner's word. He is the third creature on
+    // the road worth two, beside the Giant and the Rally Thug, and the reason is
+    // the same as the reason nothing can shoot him: a board that fails to stop one
+    // has not misjudged a health bar, it has failed to bring the only thing that
+    // could have stopped him at all.
+    leak: 2,
     damage: 30,
     atkCd: 1.0,     // the Thug's, unchanged
     r: 8,
     colour: '#4A4453'
+  },
+
+  // THE STANDARD-BEARER, and the first enemy that makes the ones around it harder
+  // to kill.
+  //
+  // The owner's brief: "a thug that strikes hard and boost health of nearby
+  // enemies by 20%... when an enemy unit is within range of rally thug aura (100 px
+  // radius), their health is boosted by 20% as long as they are still within range.
+  // Once they are out of the range, health returns back to normal."
+  //
+  // EVERY OTHER ENEMY IN THIS GAME IS WORTH WHAT ITS OWN CARD SAYS. The Dark Priest
+  // comes closest — he puts health back — but he puts back health that was already
+  // taken, at a rate, on one man at a time, and the bar he fills is the same bar.
+  // This one raises the BAR, on everything standing near him, for as long as it
+  // stands there. It is the first time a tower's arithmetic — how many shots to
+  // kill this — depends on where the target happens to be walking.
+  //
+  // A FIFTH, AND IT IS A LOAN RATHER THAN A GIFT. The 20% is taken back when the
+  // enemy leaves the aura, and the owner's example is the whole rule:
+  //
+  //     Thug health 80 -> in range, 96 -> shot down to 10 -> out of range, 1
+  //
+  // So health spent inside the aura is not refunded outside it, and a thug walked
+  // through a rally and then shot is a thug on one point of health. That is the
+  // counter-play, and it is why the loan is worth taking rather than simply being
+  // a 20% tax on every tower: kill them AFTER they leave him and the boost has cost
+  // them nearly everything. See rallyAura in src/enemies.js for the arithmetic and
+  // the floor of 1.
+  //
+  // ONCE IN A LIFETIME, at the owner's ask — "enemies can only have their health
+  // boosted once. Once out of range, they can no longer be boosted." Two Rally
+  // Thugs do not stack, and walking back into an aura does nothing. Without that
+  // rule a column shuffling in and out of range would be topped up all the way down
+  // the road and the loan would never come due.
+  //
+  // 350 HEALTH IN MED PLATE ON BOTH AXES, which is the sturdiest card in the game
+  // outside the boss: half of every physical blow and half of every magic one. He
+  // is not the biggest bag of health — the Giant's 800 is — but he is the only
+  // thing on the road with no soft side, so "shoot him with the other thing" does
+  // not work on him.
+  //
+  // AND ONE RANK OF BREAK, the Giant's, which moves the Paladin alone. He is a
+  // hard hitter rather than the flat-rate one: see the Shadow Thug above, who
+  // breaks two.
+  //
+  // TWO LIVES, like the Giant, at the owner's word. Letting one through costs what
+  // letting a Giant through costs, and that is the right price for the creature
+  // that was making everything behind it harder to stop.
+  //
+  // HE WEARS HIS OWN THREE DRAWINGS — a helmeted thug with a sword and a banner on
+  // his back — and the common thug voice, at "sound is just like a normal enemy
+  // sound". His shadow is at source (252.0, 321.5) in both living poses, to the
+  // pixel.
+  rally_inf: {
+    name: 'Rally Thug',
+    sprite: 'rally',
+    spriteTrim: [174, 182, 164, 148],   // source px, re-paste from tools/trim.mjs
+    pivot: [0.476, 0.943],              // the centre of his ground shadow
+    attack: { sprite: 'rally_attack', trim: [121, 182, 217, 148], pivot: [0.604, 0.943] },
+    spriteFaces: -1,
+    dead: 'dead_rally',
+    deadTrim: [147, 215, 217, 82],
+    deadPivot: [0.161, 0.841],
+    hp: 350,
+    damageType: 'physical',
+    armour: { physical: 'med', magic: 'med' },
+    pierce: 1,
+    // THE AURA. `range` is a radius in game px and `share` a fraction of the
+    // target's OWN maximum — so the same aura lends a thug 16 and a giant 160,
+    // which is what "by 20%" means and what makes him worth more beside the heavy
+    // half of a wave than the light half.
+    //
+    // Read by rallyAura in src/enemies.js. A def with no `rally` block simply has
+    // no aura, so this is the only creature the pass does any work for.
+    rally: { range: 100, share: 0.2 },
+    speed: 70,      // the Thug's, unchanged
+    // Above the Giant's 40, which is the only other two-life creature on the road.
+    // He is worth more to kill than his own health says, because what he is worth
+    // is everything standing near him.
+    bounty: 45,
+    leak: 2,
+    damage: 30,
+    atkCd: 1.0,     // the Thug's, unchanged
+    r: 8,
+    colour: '#6B5A3A'
   },
 
   // THE SHIELD, and he is the first enemy whose armour is a THING HE DOES rather
@@ -1545,7 +1634,13 @@ export const MARCH_ORDER = [
   // above puts "the same creature at three weights" — four now. He is last of them
   // and in front of the Giant: a creature only a soldier can touch wants the squad
   // already committed when he arrives, not waiting idle at the front of a column.
-  'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'heavy_inf', 'archer_inf', 'plague_inf',
+  // The Rally Thug marches with the thug variants too, and LAST of them — in front
+  // of the Giant and behind everything he is there to rally. A standard-bearer at
+  // the head of a column carries his banner away from the men it is for; behind
+  // them, his hundred pixels cover the tail of the bodies ahead and the head of the
+  // heavies behind, which is the middle of the wave and the whole of what he is.
+  'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'rally_inf',
+  'heavy_inf', 'archer_inf', 'plague_inf',
   // The healer comes in LAST, behind everything he is there to mend. A priest at
   // the head of a column would spend the wave walking with nobody hurt in front of
   // him; behind it he arrives to a fight already going and men already wounded.
@@ -1556,6 +1651,26 @@ export const MARCH_ORDER = [
   // arrives to a line that has already been chewed on, which is the fight worth
   // having. It also puts him behind his own healer rather than in front of one.
   'captain_thug'
+];
+
+// AND THE ORDER THE ENCYCLOPEDIA LISTS THEM IN, which is a different question from
+// both of the orders above and now has to be asked separately.
+//
+// It used to be neither — the book read `Object.values(enemyTypes)` and got the
+// order this file happens to define them in, which was fine while defining them in
+// reading order cost nothing. It stopped being free: a creature's place in THIS
+// file is next to the creature it is a variant of, so the notes read, and the
+// Shadow Thug and the Rally Thug both belong beside the Tough Thug in the source
+// and at the END of the book, after the support units, because that is the order
+// the player meets them in.
+//
+// THE OWNER'S ORDER, exactly: thugs by weight, then the two shooters, then the two
+// support units, then the two newest. tools/book.mjs checks this lists every
+// non-boss enemy exactly once, so a creature added and forgotten here is a card
+// that silently never appears.
+export const BOOK_ORDER = [
+  'light_inf', 'tough_inf', 'archer_inf', 'blocker_inf', 'heavy_inf',
+  'plague_inf', 'dark_priest', 'shadow_inf', 'rally_inf'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

@@ -200,6 +200,8 @@ const mon = towers.monastery;
 const light = waves.enemyTypes.light_inf, heavy = waves.enemyTypes.heavy_inf;
 const plague = waves.enemyTypes.plague_inf;
 const tough = waves.enemyTypes.tough_inf;
+const shadowThug = waves.enemyTypes.shadow_inf;
+const rally = waves.enemyTypes.rally_inf;
 const blocker = waves.enemyTypes.blocker_inf;
 const archer = waves.enemyTypes.archer_inf;
 
@@ -413,6 +415,15 @@ const SPRITES = [
   ['assets/enemies/Enemies_Thug_Attack.png',         'light_inf.attack.pivot',  light.attack.trim, light.attack.pivot],
   ['assets/enemies/Enemies_Tough_Thug_Default.png',   'tough_inf.pivot',         tough.spriteTrim, tough.pivot],
   ['assets/enemies/Enemies_Tough_Thug_Attack.png',    'tough_inf.attack.pivot',  tough.attack.trim, tough.attack.pivot],
+  // THE TWO NEWEST THUGS, and they were missing from this list for a build each —
+  // added with their art and not with their row, which is exactly the omission a
+  // fixed list has as its failure mode. The Shadow Thug's shadow sits at source
+  // (265.0, 324.0) in both poses and the Rally Thug's at (252.0, 321.5), and those
+  // are the two numbers this re-measures out of the PNGs rather than trusting.
+  ['assets/enemies/Enemies_Shadow_Thug_Default.png', 'shadow_inf.pivot',        shadowThug.spriteTrim, shadowThug.pivot],
+  ['assets/enemies/Enemies_Shadow_Thug_Attack.png',  'shadow_inf.attack.pivot', shadowThug.attack.trim, shadowThug.attack.pivot],
+  ['assets/enemies/Enemies_Rally_Thug_Default.png',  'rally_inf.pivot',         rally.spriteTrim, rally.pivot],
+  ['assets/enemies/Enemies_Rally_Thug_Attack.png',   'rally_inf.attack.pivot',  rally.attack.trim, rally.attack.pivot],
   // THE BLOCKER'S THREE, and the third is a stance rather than a blow — see
   // `guard` in data/waves.js. It matters here as much as any Attack does: he
   // swaps into it mid-walk when something shoots him, so a pivot out by two would

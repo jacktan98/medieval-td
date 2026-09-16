@@ -11,7 +11,7 @@ import { solo, play, CUE, FIRING, DEFEND, HEAL,
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
-import { tick as tickStatus, slowOf, apply as applyStatus } from './status.js';
+import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus } from './status.js';
 import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -932,6 +932,11 @@ export function updateEnemies(state, dt) {
     if (hurt) e.hp = Math.min(e.maxHp, e.hp - hurt);
   }
 
+  // THE RALLY THUG'S AURA, after everything has moved and before anything leaves
+  // the list. See rallyAura below for why it is one pass at the end rather than a
+  // clause inside the loop above.
+  rallyAura(state);
+
   for (const e of state.enemies) {
     if (!e.leaked) continue;
     // A BOSS REACHING THE EXIT ENDS THE RUN, at the owner's word: "as if he passes
@@ -1084,6 +1089,94 @@ export function updateEnemies(state, dt) {
     }
     return true;
   });
+}
+
+// --- the Rally Thug's aura ----------------------------------------------------
+//
+// A fifth of an enemy's own maximum, lent while it stands inside 100px of a Rally
+// Thug and taken back the moment it walks out. The owner's rule, and his example:
+//
+//     Thug health 80 -> in range, 96 -> shot down to 10 -> out of range, 1
+//
+// A LOAN, NOT A GIFT, and that example is the whole of why. What comes off is what
+// went on, not a fifth of what is left — so health spent inside the aura is never
+// refunded, and an enemy walked through a rally and then shot comes out the other
+// side on almost nothing. The floor of 1 is the owner's too: it can take a figure
+// to the edge of death and never over it, so the boost can never be what kills
+// something and no tower is ever robbed of a kill it earned.
+//
+// ONE PASS AT THE END OF THE FRAME rather than a clause in the main loop, and both
+// halves of that matter. AT THE END, because "is it in range" is a question about
+// where things have finished up, and asked mid-loop it would answer for some
+// enemies with this frame's positions and for others with last frame's. ONE PASS,
+// because an aura is a relation between two figures rather than something either
+// one of them is doing, and the loop above is written per-figure.
+//
+// ONCE IN A LIFETIME. `e.rallied` is set the first time and never cleared, which is
+// the owner's "enemies can only have their health boosted once. Once out of range,
+// they can no longer be boosted." It is a separate field from the status because it
+// has to OUTLIVE the status — the whole point is that the mark can come off and
+// still bar a second helping.
+//
+// THE AMOUNT IS REMEMBERED ON THE STATUS rather than recomputed on the way out.
+// `def.hp` can be edited in the admin dashboard between the two moments, and a
+// boost that took off more than it put on would be a tower's damage arriving from
+// nowhere. What was lent is what is returned.
+//
+// HE DOES NOT RALLY HIMSELF. "Nearby enemies" is everything standing near him, and
+// he is not standing near himself. Two Rally Thugs inside each other's hundred
+// pixels DO boost each other, once each, which falls out of the same rule rather
+// than being a special case.
+//
+// A DEAD OR LEAKING RALLY THUG RALLIES NOBODY, so killing him takes the loan back
+// off everything around him in the same frame — which is the thing worth building
+// for, and the reason he is worth 45 rather than the 40 his health suggests.
+function rallyAura(state) {
+  const flags = state.enemies.filter(e => e.def.rally && e.hp > 0 && !e.leaked && !downed(e));
+
+  for (const e of state.enemies) {
+    // A BOSS PLAYING OUT HIS DEATH IS NOT ON THE BOARD any more — see downed() —
+    // and a leaking one is on its way off it. Neither may be lent health, and
+    // neither may have it taken back: `e.hp` is doing something else on those
+    // frames and this must not reach into it.
+    if (e.leaked || downed(e)) continue;
+
+    // WHICH Rally Thug, not merely whether one. The share is read off the flag
+    // that is actually in range rather than off the first one in the list, so two
+    // auras of different strengths could never lend at each other's rate.
+    const source = flags.find(f => f !== e &&
+      Math.hypot(f.x - e.x, f.y - e.y) <= f.def.rally.range);
+
+    if (source && !e.rallied) {
+      // Off its OWN maximum, so the same aura is worth 16 to a thug and 160 to a
+      // giant. Rounded, like every other health figure in this game, so a bar
+      // never has to show a fraction of a point.
+      const lent = Math.round(e.maxHp * source.def.rally.share);
+      if (lent > 0) {
+        e.rallied = true;
+        e.maxHp += lent;
+        e.hp += lent;
+        // No clock: the aura is what takes it off. See `boosted` in data/status.js.
+        applyStatus(e, 'boosted', lent, Infinity, null);
+      }
+      continue;
+    }
+
+    // OUT OF RANGE, AND STILL CARRYING IT. Asked of the status rather than of a
+    // flag, so the mark on screen and the health under it are the same fact.
+    if (!source) {
+      const had = dropStatus(e, 'boosted');
+      if (had) {
+        e.maxHp -= had.boost;
+        // ONLY ON SOMETHING STILL ALIVE, and this is not defensive tidiness. An
+        // enemy killed on the same frame its Rally Thug died is sitting at or
+        // below zero waiting for the sweep at the bottom of updateEnemies — and
+        // `Math.max(1, ...)` applied to that would put it back on its feet with a
+        // point of health. A corpse simply hands the loan back and keeps nothing.
+        if (e.hp > 0) e.hp = Math.max(1, e.hp - had.boost);
+      }
+    }
+  }
 }
 
 // SOMEBODY WORTH MENDING, within reach of this priest. The worst wounded of them,

@@ -342,6 +342,8 @@ export const paths = {
   tough_attack:    'assets/enemies/Enemies_Tough_Thug_Attack.png',
   shadow:          'assets/enemies/Enemies_Shadow_Thug_Default.png',
   shadow_attack:   'assets/enemies/Enemies_Shadow_Thug_Attack.png',
+  rally:           'assets/enemies/Enemies_Rally_Thug_Default.png',
+  rally_attack:    'assets/enemies/Enemies_Rally_Thug_Attack.png',
   giant:           'assets/enemies/Enemies_Giant_Thug_Default.png',
   giant_attack:    'assets/enemies/Enemies_Giant_Thug_Attack.png',
   // THE THIRD DRAWING NOBODY ELSE HAS. Every other figure in this game is a
@@ -425,6 +427,7 @@ export const paths = {
   dead_thug:       'assets/dead/Enemies_Thug_Dead.png',
   dead_tough:      'assets/dead/Enemies_Tough_Thug_Dead.png',
   dead_shadow:     'assets/dead/Enemies_Shadow_Thug_Dead.png',
+  dead_rally:      'assets/dead/Enemies_Rally_Thug_Dead.png',
   dead_blocker:    'assets/dead/Enemies_Blocker_Thug_Dead.png',
   dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
   dead_priest:     'assets/dead/Enemies_Dark_Priest_Dead.png',
@@ -611,6 +614,10 @@ export const paths = {
   status_slowed:   'assets/status/Slowed_Status.png',
   // The fourth mark, and the first that is good news for the figure wearing it.
   status_healing:  'assets/status/Dark_Healing_Status.png',
+  // The fifth, and the first worn for as long as a figure STANDS somewhere rather
+  // than for a number of seconds — the Rally Thug's aura. See `boosted` in
+  // data/status.js.
+  status_boost:    'assets/status/Health_Boost_Status.png',
   // THE MAXED BADGE, for the upgrade button of a tower that has none left. It
   // replaces the vector chevrons that stood in for `max` since the ring was
   // built — the last glyph in the menu that had never been drawn. Still dimmed

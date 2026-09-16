@@ -46,10 +46,15 @@ import { STATUS } from './data/status.js';
 // treatment without a line here — and so the kinds of number can never be read as
 // each other. A slow written into `dps` would be three quarters of a point of
 // damage a second, which is a bug that would take a wave to notice.
+// AND A FOURTH KIND, which is a lump rather than a rate: `boost`, the health a
+// Rally Thug's aura is currently lending. It is the one magnitude that is not per
+// second, and the one status with no clock — `seconds` comes in as Infinity, the
+// tick never runs it down, and `drop` below is what takes it off. See `boosted` in
+// data/status.js for why it could not be spelled as a mend.
 export function apply(v, id, mag, seconds, by) {
   const def = STATUS[id];
   if (!def) return;                        // a typo is silence, so make it nothing
-  const key = def.hurts ? 'dps' : def.mends ? 'hps' : 'slow';
+  const key = def.hurts ? 'dps' : def.mends ? 'hps' : def.boosts ? 'boost' : 'slow';
   const had = v.statuses && v.statuses.find(s => s.id === id);
   if (had) { had[key] = mag; had.left = seconds; had.by = by; return; }
   if (!v.statuses) v.statuses = [];
@@ -57,6 +62,21 @@ export function apply(v, id, mag, seconds, by) {
 }
 
 export const wearing = (v, id) => !!(v.statuses && v.statuses.some(s => s.id === id));
+
+// ONE status off, where `clear` takes them all.
+//
+// It exists for the clockless one. Everything else in this file comes off because
+// its seconds ran out, which is the tick's job; a health boost comes off because
+// the figure walked out of an aura, which only the aura knows about. Returns what
+// the status was carrying, so the caller can undo exactly what it lent rather than
+// recomputing it from a def that may have been edited in the dashboard since.
+export function drop(v, id) {
+  if (!v.statuses) return null;
+  const i = v.statuses.findIndex(s => s.id === id);
+  if (i < 0) return null;
+  const [gone] = v.statuses.splice(i, 1);
+  return gone;
+}
 
 // Everything a figure is wearing, gone. Called when it dies and when a soldier
 // musters again — a man who comes back is a new man, and one who walks out of the

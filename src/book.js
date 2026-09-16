@@ -30,7 +30,7 @@
 
 import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
-import { enemyTypes } from './data/waves.js';
+import { enemyTypes, BOOK_ORDER } from './data/waves.js';
 import { refundOf } from './menu.js';
 import { occupant, shownRange, attackIcon, traitRow } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
@@ -268,7 +268,11 @@ const figureAtBoard = (trim, pivot) => ({
 // below. He is drawn a little under the shared scale, which is the honest price
 // and the small one: the alternative was every card in the book shrinking about a
 // tenth to make room for one creature. tools/book.mjs measures both halves.
-const roster = Object.values(enemyTypes).filter(d => !d.boss);
+// IN THE OWNER'S READING ORDER rather than in the order this game defines them.
+// See BOOK_ORDER in data/waves.js for why those are two different questions — and
+// note the filter is kept as well as the list, so a boss accidentally named in
+// BOOK_ORDER still cannot end up among the roster.
+const roster = BOOK_ORDER.map(id => enemyTypes[id]).filter(d => d && !d.boss);
 // And the other half of the same split. One `boss` flag decides both the page's
 // two bands and the figure sizing above, so a second boss needs no code at all.
 const bosses = Object.values(enemyTypes).filter(d => d.boss);
@@ -525,7 +529,22 @@ const BOSS_CARD_W =
 // Where the band sits. The cards stand on the footer's own margin and the heading
 // rides above them at the same distance the page's heading sits above its first
 // row, so the two bands are titled identically.
-export const BOSS_TOP = FOOT_Y - PAD - ENEMY_CARD_H;
+// A BOSS CARD IS A ROW SHORTER, at the owner's word: "boss card only has 2 lines
+// for stats as there is no bounty or live lost. This way there will be enough space
+// for 3rd row of enemy units."
+//
+// He never printed that fourth row — rewardRow in render.js leaves it out for
+// anything worth no gold and no lives, which is the boss and nothing else — so the
+// card has been carrying twenty pixels of blank parchment for its whole life. It
+// cost nothing while the roster fitted in two rows. The ninth enemy makes it three,
+// and three rows of enemies reached y 368 against a boss heading at 360: the two
+// bands had started to overlap.
+//
+// Giving the band its own height moves it down by exactly one ROW and the overlap
+// goes with it. tools/book.mjs is what measures the gap.
+export const BOSS_CARD_H = 3 * ROW + CARD_AIR;
+
+export const BOSS_TOP = FOOT_Y - PAD - BOSS_CARD_H;
 export const BOSS_HEAD_Y = BOSS_TOP - (TOP - HEAD_Y);
 
 // --- THE STAGE BADGE ----------------------------------------------------------
@@ -591,9 +610,9 @@ export function bossCards() {
   return bosses.map((def, i) => ({
     def,
     x: PAGE_X + (i % BOSS_COLUMNS) * (BOSS_CARD_W + GAP),
-    y: BOSS_TOP + Math.floor(i / BOSS_COLUMNS) * (ENEMY_CARD_H + GAP),
+    y: BOSS_TOP + Math.floor(i / BOSS_COLUMNS) * (BOSS_CARD_H + GAP),
     w: BOSS_CARD_W,
-    h: ENEMY_CARD_H
+    h: BOSS_CARD_H
   }));
 }
 
