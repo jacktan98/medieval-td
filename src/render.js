@@ -2670,21 +2670,79 @@ const ZERO = [0, 0];
 // Draws a HUD icon and returns the x to carry on from. Falls back to the old
 // word if the image is missing, so a failed load leaves a readable dashboard
 // rather than a bare number.
-function hudIcon(ctx, key, x, word) {
+// `draw` IS FALSE ON THE MEASURING PASS. The scrim behind the readouts has to be
+// exactly as wide as the readouts are, and the only honest way to know that is to
+// walk the same layout — a scrim sized by its own copy of this arithmetic is a
+// scrim that stops matching the day the purse gains a digit.
+function hudIcon(ctx, key, x, word, draw = true) {
   if (!art[key]) {
-    ctx.fillText(word, x, 21);
+    if (draw) ctx.fillText(word, x, 21);
     return x + ctx.measureText(word).width + 7;
   }
   const { w } = uiSize(key);
-  drawUi(ctx, key, x + w / 2, 21);
+  if (draw) drawUi(ctx, key, x + w / 2, 21);
   return x + w + 7;
 }
 
-function statValue(ctx, x, value) {
+function statValue(ctx, x, value, draw = true) {
   const text = String(value);
-  ctx.fillText(text, x, 21);
+  if (draw) ctx.fillText(text, x, 21);
   return x + ctx.measureText(text).width;
 }
+
+// The three readouts, walked once. Returns where they end.
+//
+// IT SETS ITS OWN TEXT STATE rather than inheriting the caller's, which the two
+// helpers above are listed as exceptions for. They are called from here with the
+// state already in hand; this is called TWICE from two different places, and the
+// measuring pass runs outside the block that sets up the drawing one — so a font
+// set by the caller is a font one of the two passes could be missing, and the
+// scrim would come out sized for the wrong typeface. See the text-state rule in
+// tools/check-modules.mjs, which is what caught this.
+//
+// `fillStyle` is deliberately NOT set here: what colour the readouts are is the
+// caller's business, and the drawing pass wants it inside its shadow block.
+function readouts(ctx, state, draw) {
+  ctx.font = '600 20px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  let x = 16;
+  x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold', draw), state.gold, draw);
+  x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives', draw), state.lives, draw);
+  // This game's own count, not a shared one: map 3 runs ten where the other two
+  // run eight, and it is read off the state because that is where the waves the
+  // player is actually facing live.
+  const n = state.waves.length;
+  const wave = `Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`;
+  if (draw) ctx.fillText(wave, x + 26, 21);
+  return x + 26 + ctx.measureText(wave).width;
+}
+
+// --- the scrim the readouts sit on --------------------------------------------
+//
+// WHAT IT IS FOR, measured rather than asserted. The readouts are cream #F0E6D2
+// drawn straight onto whatever the artist painted at the top of the board, and for
+// eight boards that was grass — dark green, and the contrast came free. Sandshroud
+// is sand. Per-pixel against the WCAG ratio, 95% of the band fell under 3:1 there,
+// median 1.12:1, which is cream on cream: the worst board in the game and by a
+// distance, past Dawnford Bridge's 59% under a pale sky.
+//
+// A DROP SHADOW WAS ALREADY THERE and is not enough on its own. It darkens the
+// pixels immediately around a glyph, which rescues an edge; it does nothing for the
+// middle of a stroke, so a number reads as an embossed smudge rather than a number.
+// It stays — it still separates the glyphs from the scrim — but the scrim is what
+// makes the guarantee.
+//
+// THE ALPHA IS THE ANSWER TO AN ARITHMETIC RATHER THAN A TASTE. Composited over
+// every colour that can appear under this band — sand, desert road, pale sky, the
+// plot-marker ovals, grass, and the grass boards' road — 0.55 is the lowest value
+// that clears 3:1 against ALL of them, and the binding case is the marker oval at
+// #ffefd4 rather than the sand: 3.5:1 there, 4.1:1 on Sandshroud's own ground.
+// Lower and the palest thing on any board fails; higher and it stops being a scrim
+// and starts being a bar across the top of the artwork.
+const SCRIM_FILL = 'rgba(22,24,18,0.55)';
+const SCRIM_TOP = 4, SCRIM_BOT = 37;   // clear of the wave preview row at y 39
+const SCRIM_PAD = 10;                  // air either side of the ink it is behind
 
 function drawHud(ctx, state) {
   // The map artwork paints its own header strip across the top, 50px deep, so
@@ -2698,37 +2756,52 @@ function drawHud(ctx, state) {
     ctx.fillRect(0, 0, 960, 40);
   }
 
+  // THE SCRIM, sized to what it is behind and drawn before it. See SCRIM_FILL —
+  // the readouts are cream on whatever the artist painted, and on the desert board
+  // that is cream on sand.
+  //
+  // OUTSIDE THE SHADOW BLOCK, deliberately: a drop shadow on a translucent plate
+  // is a dark smear under one edge of it, which is exactly the dirty halo the note
+  // below says a plate must not have.
+  //
+  // AND CLAMPED SHORT OF THE FIRST BUTTON. READOUT_END is a pessimistic FIXED
+  // estimate of where the readouts stop — it has to be, because tools/hud-clear.mjs
+  // reads the layout in node where there is no canvas to measure text with — and
+  // HUD_X is placed 24px beyond it. The scrim is measured LIVE, so a purse nobody
+  // has reached yet could in principle push it past that estimate and slide a dark
+  // plate under a cream one. The clamp makes that unrepresentable rather than
+  // unlikely; at every width the game can actually reach it changes nothing.
+  const end = Math.min(readouts(ctx, state, false) + SCRIM_PAD, HUD_BTN.pause.x - 6);
+  ctx.save();
+  ctx.fillStyle = SCRIM_FILL;
+  ctx.beginPath();
+  ctx.roundRect(16 - SCRIM_PAD, SCRIM_TOP,
+    end - 16 + SCRIM_PAD, SCRIM_BOT - SCRIM_TOP, 9);
+  ctx.fill();
+  ctx.restore();
+
   // A drop shadow, not decoration. Two things sit behind this text and neither
   // is under our control: the artist's header strip, whose colour changes when
   // the map is redrawn, and the top of any tower built on a high plot, because
-  // the HUD draws after the towers. The shadow means neither can make a number
-  // unreadable. tools/hud-clear.mjs checks the second case has not got silly.
+  // the HUD draws after the towers. The scrim above now answers both of those
+  // outright; the shadow stays because it separates the glyphs from the scrim,
+  // which is the job it was always doing best. tools/hud-clear.mjs checks the
+  // tower case has not got silly.
   ctx.save();
   ctx.shadowColor = 'rgba(12,14,10,0.85)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
 
   ctx.fillStyle = '#F0E6D2';
-  ctx.font = '600 20px system-ui, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
 
   // Icons where the words used to be. "Wave" keeps its label: a count of eight
   // has no picture that reads faster than the word, and inventing one would be
   // a puzzle rather than a shortcut.
-  let x = 16;
-  x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold'), state.gold);
-  x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives'), state.lives);
-  // This game's own count, not a shared one: map 3 runs ten where the other two
-  // run eight, and it is read off the state because that is where the waves the
-  // player is actually facing live.
-  const n = state.waves.length;
-  ctx.fillText(`Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`, x + 26, 21);
+  readouts(ctx, state, true);
 
-  // The shadow ends here. It exists because the readouts sit straight on grass
-  // and road with nothing behind them; the two controls have a cream plate behind
-  // them now, and a drop shadow on dark text on a pale plate is a dirty halo
-  // rather than legibility. Restore BEFORE the buttons, not after.
+  // The shadow ends here. The two controls have a cream plate behind them, and a
+  // drop shadow on dark text on a pale plate is a dirty halo rather than
+  // legibility. Restore BEFORE the buttons, not after.
   ctx.restore();
 
   // The "Tap a plot to build" hint is gone. It said the same thing on every

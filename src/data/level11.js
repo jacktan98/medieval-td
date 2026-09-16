@@ -205,26 +205,32 @@ export const level11 = {
     { plot: 1, family: 'barracks', name: 'Assassin Guild' }
   ],
 
-  // WHAT A FIGURE CAN WALK BEHIND: six mud-brick houses, and nothing else on the
-  // board is tall enough to need a box.
+  // WHAT A FIGURE CAN WALK BEHIND: six mud-brick houses and the village signpost,
+  // and nothing else on the board is tall enough to need a box.
   //
   // NOT ONE OF THEM EVER OCCLUDES ANYTHING, and that is worth writing down rather
   // than discovering twice. Measured against all three roads, no road passes behind
-  // any of these six boxes — the nearest approach is the top-left house, whose box
-  // comes within 17px of the western road and is passed BESIDE rather than behind.
+  // any of these boxes — the nearest approach is the top-left house, whose box
+  // comes within 17px of the western road and is passed BESIDE rather than behind,
+  // and the sign stands in the crotch of the junction 72px from the nearest kerb.
   // No plot stands behind one either. So the boxes are correct and idle: they are
-  // here because the houses stand up and the rule is the rule, not because anything
+  // here because the things stand up and the rule is the rule, not because anything
   // on this board is currently hidden by them.
   //
-  // THE SANDSHROUD SIGNPOST GETS NO BOX, and the splitter says why each run: there
-  // is no #655a48 shadow under it. Its shadow is painted #37422f, the green of the
-  // grass boards, so the desert palette cannot see it. It stands in the crotch of
-  // the junction 72px from the nearest road and occludes nothing either, so today
-  // this costs the board nothing — but it is the artwork disagreeing with itself,
-  // and a redraw that moves the sign somewhere a road runs behind would find the
-  // sign quietly failing to cover anyone.
+  // AND THE SANDSHROUD SIGNPOST, which is the seventh and was the sixth-and-a-half
+  // for one build. It shipped with its shadow painted #37422f, the green of the
+  // grass boards, so the desert palette could not see it and the splitter withheld
+  // its box — "no #655a48 shadow under it", which is the message that named the
+  // cause rather than the effect. The owner repainted the shadow and it boxed
+  // itself on the next run. Nothing else on the board changed: the same nine plots,
+  // the same six houses, the same ground lines.
+  //
+  // IT IS THE SHORTEST BOX ON THE BOARD at 44px, which is what makes this a board
+  // with no `--accept`: 45px of standing thing against 21px of flat is still a
+  // clear gap either side of the splitter's 30px line.
   frontArt: 'front11',
   front: [
+    { x: 306, y:  60, w:  39, h:  44, g: 102 },   // stands on y 102 — the signpost
     { x:  30, y: 103, w:  99, h:  88, g: 169 },   // stands on y 169
     { x: 836, y: 114, w:  99, h:  87, g: 180 },   // stands on y 180
     { x: 470, y: 296, w:  82, h:  79, g: 356 },   // stands on y 356
