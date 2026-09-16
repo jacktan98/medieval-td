@@ -423,18 +423,36 @@ function starsAt(i) {
   return best;
 }
 
-// BIG, at the owner's word, and the gap follows the radius or a three-star row
-// becomes one lump. Points touch at a gap of two radii; this leaves a little air.
+// SMALLER THAN THE THING THEY BELONG TO, which they were not.
 //
-// Twelve first, then ten: at twelve the rows on stages 1 and 2 nearly met, because
-// those markers are ninety pixels apart and a three-star row was eighty-four wide.
-const STAR_R = 10;
+// They went 12, then 10, both times measured against each OTHER — does a three-star
+// row fit between two markers — and that is the wrong question. At 10 a star was the
+// same size as the medallion it annotates (NODE_R is 11), so three of them carried
+// three times the weight of the stage they are about, and a road with eight beaten
+// stages on it read as a scatter of gold confetti with a map behind it. The owner's
+// word: "make the stars not too distracting... more natural with the surroundings."
+//
+// SIX. A row is 40px wide against a 22px medallion, which is an annotation rather
+// than a second subject, and two adjacent rows on the closest pair of markers still
+// have 50px of air between them.
+const STAR_R = 6;
 const STAR_GAP = STAR_R * 2.35;
+
+// AND THEY ARE STRUCK FROM THE MEDALLION'S OWN METAL rather than from a colour of
+// their own. `#F2C64B` was a flat saturated gold, and on a map every fill of which
+// has been drained to browns by the sepia pass it was the only pure thing on the
+// screen — see the paper and the muting below, which the stars are drawn after and
+// so escape entirely.
+//
+// These two stops are drawNode's, to the digit. A star is now a small coin of the
+// same gold as the marker under it, lit from the same direction, which is the whole
+// of "natural with the surroundings": nothing about it is new to the picture.
+const STAR_HI = '#F5DB95';
+const STAR_LO = '#BE8C2A';
 
 function drawStars(ctx, cx, cy, filled) {
   ctx.save();
   ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.7;
   const left = cx - (MAX_STARS - 1) * STAR_GAP / 2;
   for (let i = 0; i < MAX_STARS; i++) {
     ctx.beginPath();
@@ -446,15 +464,29 @@ function drawStars(ctx, cx, cy, filled) {
       p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     }
     ctx.closePath();
-    ctx.fillStyle = i < filled ? '#F2C64B' : 'rgba(59,41,23,0.30)';
-    ctx.fill();
-    // THE MEDALLION'S OWN INK, not black. Black was a step too far in the other
-    // direction from the soft brown it replaced — the stars were the only pure black
-    // on a map whose every outline is INK, and they sat in front of the drawing
-    // rather than on it. One colour for both is what makes them look like the same
-    // set of furniture.
-    ctx.strokeStyle = INK;
-    ctx.stroke();
+
+    if (i < filled) {
+      const g = ctx.createLinearGradient(0, cy - STAR_R, 0, cy + STAR_R);
+      g.addColorStop(0, STAR_HI);
+      g.addColorStop(1, STAR_LO);
+      ctx.fillStyle = g;
+      ctx.fill();
+      // THE MEDALLION'S OWN INK, not black, and thinner than it was. At radius 10 a
+      // 1.7 line was a sixth of the star; at 6 it would have been most of what you
+      // see, and a rim that heavy is what made these read as stickers laid on the
+      // map rather than as things drawn on it.
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else {
+      // AN EMPTY SOCKET RATHER THAN A DARK STAR. It used to be filled with brown and
+      // rimmed in ink like the others, so a one-star stage wore three lumps and only
+      // the colour said which was which. What is wanted from it is "there is room for
+      // more here", and a faint outline says that without competing.
+      ctx.strokeStyle = 'rgba(42,29,14,0.34)';
+      ctx.lineWidth = 0.9;
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -1159,7 +1191,7 @@ export function drawOverview(ctx, state) {
     if (!stars) continue;
     const top = i === frontier && flagTop !== null
       ? flagTop - STAR_R - 3
-      : STAGES[i].y - NODE_R * NODE_SQUASH - STAR_R - 4;
+      : STAGES[i].y - NODE_R * NODE_SQUASH - STAR_R - 2;
     drawStars(ctx, STAGES[i].x, top, stars);
   }
 }

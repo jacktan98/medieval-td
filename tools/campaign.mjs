@@ -309,9 +309,16 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
   ok(new Set(ids).size === ids.length && ids.every(i => i >= 0 && i < levels.length),
     'and no level is claimed by two stages', ids.join(', '));
 
-  ok(built.every((s, i) => STAGES.indexOf(s) === i),
-    'and the playable ones come first, in order',
-    built.map(s => levels[s.level].name).join(' -> '));
+  // AND THE LEVELS ARE IN PLAY ORDER ALONG THE ROAD, which is a different claim from
+  // "the playable ones come first" and is the one that was meant. This asked the
+  // stronger thing until Sandshroud took stage 9 with no board behind it; a gap on
+  // the road is allowed — see LEVEL_OF in tools/overview.mjs — but a board appearing
+  // out of sequence is still an error, and that is what src/level.js's array order
+  // means.
+  const seq = built.map(s => s.level);
+  ok(seq.every((n, i) => i === 0 || n > seq[i - 1]),
+    'and the boards run along the road in the order src/level.js lists them',
+    built.map(s => `${STAGES.indexOf(s) + 1}:${levels[s.level].name}`).join(' -> '));
 }
 
 // stageAt is what input.js asks, and it must refuse twice over: for a stage the
@@ -914,23 +921,27 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m1,m2,m3,-',
-    'the campaign runs the eight drawn boards, then the three testing ones',
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,-,m1,m2,m3',
+    'the campaign runs the eight drawn boards, a gap at Sandshroud, then the three testing ones',
     order.join(' -> '));
   ok(STAGES.filter(s => s.level !== null).length === 11,
     'with eleven of the twelve stages carrying a board',
     `${STAGES.filter(s => s.level !== null).length} playable of ${STAGES.length}`);
 
-  // AND THE EMPTY ONE IS LAST, which is the rule rather than today's arrangement. A
-  // stage with no board is LOCKED, and a locked stage in the middle of the road is a
-  // wall — every board past it becomes unreachable, and nothing else in this file
-  // would have said so. The desert marker went from stage 8 to stage 12 when Dawnford
-  // gained a third landmark, and this is what keeps the next undrawn stage honest.
+  // AND WHAT THE GAP COSTS, counted rather than forbidden.
+  //
+  // This was a CHECK for one build — an empty stage must sit at the end, never in the
+  // middle — written when the desert marker was freed and nothing was going on it.
+  // The owner has since put stage 9 there deliberately and said the board is coming.
+  // A locked stage in the middle IS a wall, so the cost is real; it is just not an
+  // error, and a checker that forbids what the owner decided is a checker that gets
+  // edited away rather than read. So it counts the boards standing behind the gap and
+  // says so on every run.
   const empty = STAGES.map((s, i) => (s.level === null ? i : -1)).filter(i => i >= 0);
-  ok(empty.every(i => i >= STAGES.length - empty.length),
-    'and any stage without a board sits at the end of the road, never in the middle',
-    empty.length ? `empty at stage ${empty.map(i => i + 1).join(', ')} of ${STAGES.length}`
-                 : 'none empty');
+  const walled = empty.length ? STAGES.length - empty[0] - 1 : 0;
+  ok(empty.length <= 1, 'with at most one gap in the road at a time',
+    empty.length ? `stage ${empty.map(i => i + 1).join(', ')} of ${STAGES.length}, ` +
+      `walling off ${walled} stage(s) behind it until it is drawn` : 'no gap');
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
   // tier 3 barracks standing on the top-right plot from the first frame, and every
@@ -2188,6 +2199,9 @@ console.log('\n--- the marker, the flag and the stars ---\n');
   const ov = readFileSync('src/overview.js', 'utf8');
   const bare = ov.replace(/\/\/.*$/gm, '');
   const num = n => { const m = new RegExp(`${n} = ([\\d.]+)`).exec(bare); return m ? +m[1] : null; };
+  // The same reader for a colour constant, so a hex can be compared against the
+  // medallion's rather than retyped here and left to go stale.
+  const str = n => { const m = new RegExp(`${n} = '([^']+)'`).exec(bare); return m ? m[1] : null; };
 
   // THE MEDALLION HAS ITS OWN FORESHORTENING, and that is the point of the check
   // rather than the number. SQUASH in src/ground.js is the angle the whole GAME is
@@ -2280,16 +2294,31 @@ console.log('\n--- the marker, the flag and the stars ---\n');
   ok(/const foot = y \+ drop;/.test(bare), 'and its pole stands in the middle of the marker',
     'foot at the marker centre');
 
-  // THE STARS ARE BIG AND OUTLINED IN BLACK. The gap is held as a multiple of the
-  // radius rather than a number of its own, because at this size a fixed gap and a
-  // changed radius is a row of stars growing into each other.
-  ok(num('STAR_R') === 10, 'the stars are drawn at radius 10', `${num('STAR_R')}`);
+  // A STAR IS SMALLER THAN THE MEDALLION IT ANNOTATES, which is the rule and is what
+  // this asked backwards for three builds. It pinned the radius at 12, then 10, both
+  // chosen by measuring a three-star row against the GAP BETWEEN MARKERS — so it was
+  // asking whether two rows collide, and never whether a row outweighs the stage it
+  // is about. At 10 against a NODE_R of 11 each star was the size of the marker, and
+  // the owner's word for the result was "distracting".
+  //
+  // Against the medallion, then, and with room to tune inside that: a star may be at
+  // most two thirds of it.
+  ok(num('STAR_R') < num('NODE_R') * 0.67,
+    'a star is comfortably smaller than the medallion it sits over',
+    `STAR_R ${num('STAR_R')} against NODE_R ${num('NODE_R')}`);
   ok(/STAR_GAP = STAR_R \* [\d.]+/.test(bare), 'and their spacing follows the radius',
     'gap is a multiple of the radius');
-  // THE MEDALLION'S INK, not black and not a soft brown. Both have been tried: a
-  // brown at 85% read as a smudge at this size, and pure black made the stars the
-  // only true black on a map whose every outline is INK. One colour for both is what
-  // makes them read as the same set of furniture rather than two.
+
+  // AND IT IS STRUCK FROM THE MEDALLION'S OWN METAL. The stars used to carry a flat
+  // saturated gold of their own, which on a map every fill of which has been drained
+  // by the sepia pass was the only pure colour on the screen. These two stops are
+  // drawNode's, so a star is a small coin of the same gold as the marker under it —
+  // and a check that compares the two is what stops the pair drifting apart the next
+  // time either is touched.
+  const nodeStops = [...bare.matchAll(/g\.addColorStop\(\d, '(#[0-9A-Fa-f]{6})'\)/g)].map(m => m[1]);
+  ok(nodeStops.includes(str('STAR_HI')) && nodeStops.includes(str('STAR_LO')),
+    'and is struck from the medallion\'s own two golds',
+    `${str('STAR_HI')} / ${str('STAR_LO')}`);
   ok(/ctx\.strokeStyle = INK;/.test(bare), 'and outlined in the same ink as the medallion',
     'INK, the map\'s own outline colour');
 }

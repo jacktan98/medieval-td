@@ -471,21 +471,23 @@ for (const J of joined) console.log(`    ${String(J.from).padStart(2)} <-> ${J.t
 // neighbour on the road, so reordering these cannot make a leg wrong; the only
 // rule is that a stage must come after the one the road reaches it through.
 //
-// THE DESERT IS THE LAST STAGE NOW, and that is the whole of what changed when
-// Dawnford gained a third marker. It used to be the detour taken before the
-// eastern branch, and it carried Dawnford Church — a board named for a church,
-// sitting on a dark building in Sandshroud, which was flagged and is now fixed by
-// the redraw rather than by a rename. Dawnford has its own church on it, and its
-// own fountain, and its own bridge; marker 10 is the church, 11 the fountain and
-// 9 the bridge, so the three boards sit on the three landmarks they are named for.
+// DAWNFORD HOLDS THREE OF THEM and each sits on the landmark its board is named
+// for — marker 9 by the bridge, 11 at the fountain, 10 at the church. That was the
+// redraw's doing, and it is what freed the desert marker: Dawnford Church used to
+// sit on a dark building in Sandshroud because there was nowhere else for it to go.
 //
-// WHICH LEAVES THE DESERT MARKER WITH NOTHING BEHIND IT, and an undrawn stage
-// belongs at the END of the road rather than in the middle of it. A stage with no
-// board is locked, and a locked stage in the middle is a wall: the three testing
-// boards past it would have become unreachable. Put last, it costs nothing and
-// stages 1 to 11 keep both the marker and the board they already had — so nobody
-// mid-campaign moves at all, which is the first time that has been true here.
-const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 1, 2, 0, 3];
+// AND SANDSHROUD IS STAGE 9, at the owner's word — "Stage 9 is at Sandshroud" —
+// which is also where the road puts it: the fork is at marker 10 and the desert is
+// the near branch. It spent one build at the END of this list instead, on the
+// reasoning that an undrawn stage should not stand in front of drawn ones. That
+// reasoning is sound and it is not the owner's call to make by inference.
+//
+// WHAT IT COSTS UNTIL THE BOARD LANDS is real and worth knowing rather than
+// hiding: a stage with no board is LOCKED, so the three testing boards behind it
+// are unreachable from the map for as long as stage 9 is empty. The tool prints
+// how many that is on every run — see the note by `blocked` below — so it is a
+// number somebody chose to accept rather than a surprise.
+const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
 
 // WHICH MAP EACH STAGE PLAYS. Six are drawn; the rest are markers on a road with
 // nothing behind them yet and the game shows them locked.
@@ -511,7 +513,31 @@ const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 1, 2, 0, 3];
 // behind them they have never played. There is no migration that could do better
 // without inventing a result, and Reset campaign in the admin panel puts anyone
 // testing back to the start.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10 };
+// STAGE 9 IS THE GAP, and this table is where a gap is said. Sandshroud has a
+// marker on the road and no board behind it yet, so index 8 is absent and the three
+// testing boards sit at 10, 11 and 12 — which is the whole reason this is written
+// out rather than generated from the levels array's length. An identity map would
+// have quietly handed The Bend to Sandshroud and named a desert board after a bend
+// in a river.
+//
+// WHEN THE BOARD LANDS this becomes the identity map again and the three move back
+// down one. Nothing else has to change.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 9: 8, 10: 9, 11: 10 };
+
+// WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
+// LOCKED and the road runs through it, so every board behind one is unreachable from
+// the map until it is drawn. That was a CHECK for one build — "an empty stage sits at
+// the end, never in the middle" — and the owner has since placed one in the middle on
+// purpose. It is a consequence, not a rule, so the tool says what it is and stops
+// short of having an opinion.
+{
+  const first = ORDER.findIndex((_, i) => LEVEL_OF[i] === undefined);
+  const blocked = first < 0 ? 0 : ORDER.length - first - 1;
+  if (first >= 0) {
+    console.log(`\n  stage ${first + 1} has no board yet, so the ${blocked} stage(s) ` +
+      `behind it on the road cannot be reached until it is drawn`);
+  }
+}
 
 // The approach has to arrive at whatever the order calls stage 1, or one of the
 // two is wrong and the campaign would start in the middle of the road.
