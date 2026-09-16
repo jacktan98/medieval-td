@@ -2170,6 +2170,52 @@ export const stage8Waves = [
                        { type: 'dark_priest', count: 6, gap: 1.8 }] }
 ];
 
+// STAGE 9: Sandshroud Settlement, and it is stage 8's table with LIGHTER GIANTS.
+//
+// Every other count on it is stage 8's, wave for wave and type for type: 8 thugs,
+// then 10 and 2 tough, then the doctors and the priests arriving together at wave 3,
+// then the archers at wave 5, ending on 12 blockers, 20 archers, 6 doctors and 6
+// priests. The owner asked for the same ladder, so it is the same numbers rather
+// than numbers that happen to look alike.
+//
+// THE GIANTS ARE THE DIFFERENCE and there is something worth noticing in them. They
+// run 0, 0, 0, 1, 2, 3, 4, 6 here — which is EXACTLY the ladder stage 8 shipped
+// with before the owner asked for it to be raised to 1, 2, 3, 4, 6, 8. So the two
+// boards now sit either side of that ask: stage 8 carries 8,400 points of giant
+// health across its eight waves and this carries 4,800, and the wave-by-wave shape
+// of everything else is identical. If stage 8's late waves are the harder pair, the
+// giants are the whole reason, and this table is the control that says so.
+//
+// THE GAPS ARE STAGE 8'S, unchanged, for the reason its own note gives in the other
+// direction: the gap is the spacing WITHIN a group, so fewer giants at the same gap
+// is a shorter, thinner column rather than a slower one. Widening them as well would
+// have been taking the ask twice. Every gap is a multiple of 0.1, because the admin
+// panel's rate stepper rounds to a tenth and a shipped number it cannot return to is
+// one the owner can never put back.
+export const stage9Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'plague_inf', count: 1, gap: 2.0 }, { type: 'dark_priest', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 6, gap: 1.2 }, { type: 'tough_inf', count: 6, gap: 1.5 },
+                       { type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 8, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 }, { type: 'heavy_inf', count: 3, gap: 1.9 },
+                       { type: 'archer_inf', count: 10, gap: 1.2 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 14, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 20, gap: 1.0 }, { type: 'plague_inf', count: 6, gap: 1.8 },
+                       { type: 'dark_priest', count: 6, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

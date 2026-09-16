@@ -177,6 +177,43 @@ What this asks of the drawing:
 > deleted the derived file, once because it left a stale one in place. If a
 > change to the board does not appear, this is why, before anything else.
 
+### A board may be drawn in another palette
+
+Eight boards are grass and stage 9 is a desert, and the tools do not guess which.
+
+Three colours carry meaning rather than just appearance — **the road**, **the
+ground** and **every ground shadow** — because three questions are answered by
+reading them: where the road runs, where the artist has painted the ground back
+over it, and what each drawing stands on. Those were one hard-coded colour each
+for eight boards.
+
+Sandshroud is drawn in none of the three. What makes that worth a section is how
+it failed: the tracer did not refuse the new board, it found *four road shapes and
+six patches of ground* and then reported the road did not reach the edges. The four
+were highlights on four clay pots and the six were the cacti. **Every colour in the
+grass palette still exists on the desert board and not one of them means what it
+used to.**
+
+So a board that is not drawn in the grass palette says so, in its level file:
+
+    palette: { ground: '#fad5a5', road: '#be9f6d', shadow: '#655a48' },
+
+Any of the three may be given and the rest default to grass. A board that says
+nothing is a grass board, which is every board but one.
+
+**Paint every shadow on a board in that board's one shadow colour.** This is the
+rule most easily broken by accident, because a shadow in the wrong colour is still
+a shadow to look at — it simply stops being a ground line. The Sandshroud signpost
+is drawn with the grass boards' `#37422f` under it while every other drawing on
+that board has `#655a48`, so the splitter reports it as a thing standing on nothing
+and gives it no box. It costs nothing today, because no road passes behind the
+signpost. It would cost the next redraw that moves it.
+
+The splitter names the colour it looked for whenever it withholds a box for this
+reason, and the tracer names the road and ground colours on every run, so a board
+read in the wrong palette says so in its first line of output rather than in its
+numbers.
+
 ### The near overlay
 
 A box has one depth and it comes from the bottom of the box, which assumes there is
@@ -660,14 +697,16 @@ hand:
 
 - `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg`,
   `Stage_4_Map_base.svg`, `Stage_5_Map_base.svg`, `Stage_6_Map_base.svg`,
-  `Stage_7_Map_base.svg` and `Stage_8_Map_base.svg` — the eight drawn boards with
+  `Stage_7_Map_base.svg`, `Stage_8_Map_base.svg` and `Stage_9_Map_base.svg` — the
+  nine drawn boards with
   their plot markers cut out, written by `node tools/split-map.mjs
-  assets/map/Stage_1_Map` and the same for the others. Note the **stem**: all eight
+  assets/map/Stage_1_Map` and the same for the others. Note the **stem**: all nine
   are drawn in layers, so the command names `Stage_1_Map` rather than a file. Same
   pipeline as `Map_N_base.svg` otherwise.
 - `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
   `Stage_4_Map_front.svg`, `Stage_5_Map_front.svg`, `Stage_6_Map_front.svg`,
-  `Stage_7_Map_front.svg` and `Stage_8_Map_front.svg` — **the things on those boards
+  `Stage_7_Map_front.svg`, `Stage_8_Map_front.svg` and `Stage_9_Map_front.svg` —
+  **the things on those boards
   that stand up**, on a transparent sheet of the same artboard. The same
   command writes them. See "What a figure can walk behind" below.
 - `Stage_5_Map_over.svg` and `Stage_6_Map_over.svg` — **the pieces of scenery that

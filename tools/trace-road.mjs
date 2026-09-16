@@ -21,17 +21,22 @@
 // wants, since a route is just a list of waypoints and two of them sharing a
 // tail costs nothing.
 
-import { roadPolys, onRoad, ROAD_FILL, MAP_SCALE, readArtwork } from './svg.mjs';
+import { roadPolys, onRoad, paletteFor, MAP_SCALE, readArtwork } from './svg.mjs';
 import { levels } from '../src/level.js';
 import { LANES, at as pointOn, laneOf } from '../src/route.js';
 
 const SRC = process.argv[2] || 'assets/map/Map_2.svg';
 
-// The road colour and the 1920x1080 -> 960x540 scale both live in tools/svg.mjs
-// now, beside the two functions that use them. tools/formation.mjs asks the same
-// module the same question — "where is the road" — which is what stopped the two
-// of them being two copies of one even-odd test.
-const ROAD = ROAD_FILL;
+// The board's colours and the 1920x1080 -> 960x540 scale both live in
+// tools/svg.mjs now, beside the two functions that use them. tools/formation.mjs
+// asks the same module the same question — "where is the road" — which is what
+// stopped the two of them being two copies of one even-odd test.
+//
+// WHICH COLOURS depends on the board: eight are grass and stage 9 is a desert,
+// whose sand is the same hue an earlier board would have called road. See
+// PALETTE in tools/svg.mjs. It is looked up by `src`, so the board's level file
+// has to exist before it can be traced — which it already did, for split-map.
+const PAL = paletteFor(SRC);
 const SCALE = MAP_SCALE;
 const W = 960, H = 540;
 
@@ -66,12 +71,16 @@ const TOLERANCE = 3;
 
 // One file or a stack of layers — see readArtwork.
 const svg = readArtwork(SRC);
-const surface = roadPolys(svg, SCALE);
+const surface = roadPolys(svg, SCALE, PAL);
 const shapes = surface.road.length;
 const holes = surface.holes.length;
 const poly = surface.road.flat();
 
-console.log(`${SRC}: ${shapes} road shape(s), ${poly.length} points` +
+// NAMING THE COLOURS IT LOOKED FOR, every run, because the first desert board
+// went wrong silently: the counts below were 4 and 6 and both were scenery.
+// A count that looks plausible is worth nothing without the colour beside it.
+console.log(`${SRC}: road ${PAL.road}, ground ${PAL.ground}`);
+console.log(`  ${shapes} road shape(s), ${poly.length} points` +
   (holes ? `, and ${holes} patch(es) of ground painted back over them` : ''));
 
 // The union of the road's pieces, LESS the ground painted back over it — see
@@ -227,11 +236,17 @@ const PAIRING = (() => {
 // sides. The widest is kept, because that is the one whose middle is nearest the
 // road's own centre.
 const CORNER = 80;
+// Where a mouth is, in game px. Declared HERE rather than beside the listing below
+// that prints it, because the cross-list corner rule names the mouth it drops and
+// runs the moment its `const` is evaluated — a `const` further down the file is not
+// hoisted, and this file would have thrown on the one board that needs the rule.
+const spot = m => `${(m.cell[0] * STEP)},${(m.cell[1] * STEP)}`;
+const nearOne = (m, list) => list.find(o => Math.hypot((o.cell[0] - m.cell[0]) * STEP,
+                                                       (o.cell[1] - m.cell[1]) * STEP) <= CORNER);
 const merge = list => {
   const out = [];
   for (const m of list) {
-    const near = out.find(o => Math.hypot((o.cell[0] - m.cell[0]) * STEP,
-                                          (o.cell[1] - m.cell[1]) * STEP) <= CORNER);
+    const near = nearOne(m, out);
     if (!near) { out.push(m); continue; }
     if (m.b - m.a > near.b - near.a) out[out.indexOf(near)] = m;
   }
@@ -240,22 +255,49 @@ const merge = list => {
 
 const exits = merge(EXIT_EDGES.flatMap(mouths))
   .sort((p, q) => p.cell[1] - q.cell[1] || p.cell[0] - q.cell[0]);
+
+// AND THE CORNER RULE HAS TO REACH ACROSS THE TWO LISTS, not just within each.
+//
+// Merging happened per list, which is exactly enough while the two edges a corner
+// touches are on the SAME side of the question. Stage 6's bridge crosses the
+// top-left corner and top and left are both ways in, so its two mouths met in one
+// call to merge and became one.
+//
+// STAGE 9's EXIT LEAVES OVER THE BOTTOM-RIGHT CORNER. The tarmac touches the bottom
+// edge, which is the exit, for 138px, and the right edge, which is not, for 26 — so
+// the same piece of road was an exit in one list and an ENTRY in the other, and the
+// tool reported four entries on a board the artist drew three roads into. Pairing
+// then refused, which is the good case; had the count happened to come out right it
+// would have sent a quarter of every wave in through the door.
+//
+// So: an entry that is the same tarmac as an exit is not an entry. Same nearness,
+// same CORNER, asked across the lists instead of inside one. It says so when it
+// drops one, because a mouth silently disappearing is the failure this replaces.
+const roundTheCorner = [];
+const entries = merge(Object.keys(EDGES).filter(e => !EXIT_EDGES.includes(e)).flatMap(mouths))
+  .filter(m => {
+    const exit = nearOne(m, exits);
+    if (exit) roundTheCorner.push([m, exit]);
+    return !exit;
+  })
 // Sorted top to bottom, then left to right, because the pairing with the exits
 // below is by vertical order and needs one across all the edges rather than one
 // per edge.
-const entries = merge(Object.keys(EDGES).filter(e => !EXIT_EDGES.includes(e)).flatMap(mouths))
   .sort((p, q) => p.cell[1] - q.cell[1] || p.cell[0] - q.cell[0]);
 
 // EVERY MOUTH THE DRAWING HAS, named and placed, before any of them is called an
 // entry or an exit. A road that reaches a corner can show up on two edges at once,
 // and a board with the wrong number of either is a board where the first thing
 // anybody needs is the list.
-const spot = m => `${(m.cell[0] * STEP)},${(m.cell[1] * STEP)}`;
 console.log('  mouths:');
 for (const e of Object.keys(EDGES)) {
   for (const m of mouths(e)) {
+    const corner = roundTheCorner.find(([d]) => d.edge === e && d.cell[0] === m.cell[0]
+                                                             && d.cell[1] === m.cell[1]);
     console.log(`    ${e.padEnd(6)} at ${spot(m)}  ` +
-      `${(m.b - m.a + 1) * STEP}px wide  — ${EXIT_EDGES.includes(e) ? 'a way OUT' : 'a way IN'}`);
+      `${(m.b - m.a + 1) * STEP}px wide  — ` +
+      (corner ? `the ${corner[1].edge} exit at ${spot(corner[1])}, round the corner`
+              : EXIT_EDGES.includes(e) ? 'a way OUT' : 'a way IN'));
   }
 }
 

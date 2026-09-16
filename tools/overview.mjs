@@ -513,16 +513,20 @@ const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
 // behind them they have never played. There is no migration that could do better
 // without inventing a result, and Reset campaign in the admin panel puts anyone
 // testing back to the start.
-// STAGE 9 IS THE GAP, and this table is where a gap is said. Sandshroud has a
-// marker on the road and no board behind it yet, so index 8 is absent and the three
-// testing boards sit at 10, 11 and 12 — which is the whole reason this is written
-// out rather than generated from the levels array's length. An identity map would
-// have quietly handed The Bend to Sandshroud and named a desert board after a bend
-// in a river.
+// STAGE 9 WAS THE GAP AND IS NOT ANY MORE. Sandshroud had a marker on the road and
+// no board behind it, so index 8 was absent and the three testing boards sat at 10,
+// 11 and 12 — which is the whole reason this is written out rather than generated
+// from the levels array's length. An identity map at that moment would have quietly
+// handed The Bend to Sandshroud and named a desert board after a bend in a river.
 //
-// WHEN THE BOARD LANDS this becomes the identity map again and the three move back
-// down one. Nothing else has to change.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 9: 8, 10: 9, 11: 10 };
+// SANDSHROUD SETTLEMENT LANDED, so index 8 has its board and the three testing maps
+// moved back down one, exactly as the note here said they would. That is the whole
+// change: twelve stages, twelve boards, and the table is the identity map again for
+// the first time since the desert marker was drawn.
+//
+// IT STAYS WRITTEN OUT. The day a board is finished for stage 11 before stage 10,
+// this is the one line that can say so.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from

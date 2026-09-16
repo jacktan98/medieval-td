@@ -10,6 +10,7 @@
 // caller is measuring shapes, not drawing them.
 
 import { readFileSync, readdirSync } from 'fs';
+import { levels } from '../src/level.js';
 
 // Flatten a path's `d` to points under a 2x3 affine.
 export function points(d, tf) {
@@ -191,9 +192,11 @@ export function shapesByFill(text) {
 // already started to differ in their comments while doing exactly the same
 // arithmetic, which is how the copy before them went wrong.
 //
-// THE ARTIST'S ROAD COLOUR, in every map so far, and the reason `fill` is a
+// THE ARTIST'S ROAD COLOUR, on every GRASS map, and the reason `fill` is a
 // parameter rather than this constant is that the day a map is drawn with a
 // second surface — a bridge, a ford — it is one argument rather than a fork.
+//
+// It is the default rather than the law now. See PALETTE below.
 export const ROAD_FILL = '#ffde9e';
 
 // AND THE GROUND, which is how the artist punches a HOLE in a road.
@@ -218,6 +221,39 @@ export const GROUND_FILL = '#5c7f49';
 // tools/split-map.mjs, and the owner's rule that the CENTRE of that patch is where
 // the thing stands.
 export const SHADOW_FILL = '#37422f';
+
+// --- AND THE THREE OF THEM TOGETHER, BECAUSE A BOARD MAY BE DRAWN IN ANOTHER --
+//
+// Eight boards are grass, so for eight boards the three constants above were the
+// whole story: one road colour, one ground colour, one shadow colour, hard-coded,
+// and a tool could ask "which shape is the road" without being told anything.
+//
+// STAGE 9 IS A DESERT and it does not share one of them. Sandshroud's ground is
+// sand, its roads are a darker sand, and its shadows are warm brown — and the
+// first run of the tracer over it did not fail, which is the part worth
+// remembering. It reported "4 road shape(s) and 6 patches of ground painted back
+// over them" and then "road does not reach both edges", because the four shapes
+// it had found wearing #ffde9e were HIGHLIGHTS ON FOUR CLAY POTS, and the six
+// wearing #5c7f49 were the CACTI. Every colour in the old palette still exists on
+// that board; none of them means what it used to. A hard-coded palette cannot
+// report that, it can only mis-read it.
+//
+// So a board says. `palette` in its level file overrides any of the three, and a
+// board that says nothing gets grass — which is every board but one.
+//
+// GROUND IS DECLARED RATHER THAN READ OFF THE BACKGROUND RECT, though it is the
+// same colour on every board that has both, and the reason is map 1: its rect is
+// WHITE and its grass is a path drawn over it. Deriving would have been right
+// eight times out of nine, which is the worst kind of rule. tools/campaign.mjs
+// checks a declared ground against the rect instead, so the two cannot drift.
+export const PALETTE = { road: ROAD_FILL, ground: GROUND_FILL, shadow: SHADOW_FILL };
+
+// The palette a board is drawn in, found the way both callers already find a
+// board's level: by the `src` it names.
+export function paletteFor(src) {
+  const lv = levels.find(l => l.src === src);
+  return { ...PALETTE, ...(lv?.palette || {}) };
+}
 
 // The maps are drawn at 1920x1080 and the game is 960x540.
 export const MAP_SCALE = 0.5;
@@ -262,15 +298,15 @@ export const insideAny = (polys, x, y) => polys.some(p => insidePoly(p, x, y));
 // grass over tarmac and it is grass; paint tarmac over grass and it is road; paint
 // a pebble on the island and it is road again. Nothing else can tell them apart —
 // they are the same kind of shape and, in the field's case, the same colour.
-export function roadPolys(text, scale = MAP_SCALE) {
+export function roadPolys(text, scale = MAP_SCALE, pal = PALETTE) {
   const shapes = shapesByFill(text);
   const fillOf = s => (s.fill || '').toLowerCase();
   const scaled = s => s.pts.map(p => [p[0] * scale, p[1] * scale]);
 
   const layers = shapes
-    .filter(s => fillOf(s) === ROAD_FILL || fillOf(s) === GROUND_FILL)
-    .map(s => ({ poly: scaled(s), road: fillOf(s) === ROAD_FILL }));
-  if (!layers.some(l => l.road)) throw new Error(`no shape filled ${ROAD_FILL}`);
+    .filter(s => fillOf(s) === pal.road || fillOf(s) === pal.ground)
+    .map(s => ({ poly: scaled(s), road: fillOf(s) === pal.road }));
+  if (!layers.some(l => l.road)) throw new Error(`no shape filled ${pal.road}`);
 
   return {
     layers,

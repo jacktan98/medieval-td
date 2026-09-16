@@ -28,7 +28,7 @@ import { levels } from '../src/level.js';
 import { nearestOn } from '../src/route.js';
 import { SCALE } from '../src/data/towers.js';
 import { allGroups, bounds, MAP_SCALE, readArtwork, layerFiles,
-         fillPolys, SHADOW_FILL } from './svg.mjs';
+         fillPolys, paletteFor } from './svg.mjs';
 
 // Which map to split. Every level records the file it was drawn from, so the
 // tool finds its own level rather than being told twice.
@@ -41,6 +41,13 @@ if (!level) {
   throw new Error(`no level in src/level.js has src '${SRC}' — ` +
     `add one before splitting its map, even with an empty plot list`);
 }
+
+// WHAT COLOUR THIS BOARD'S SHADOWS ARE. Grass on eight boards and warm brown on
+// the desert, and a ground line is the centre of a shadow — so reading the wrong
+// colour does not fail, it silently falls every building back to the bottom of
+// its own box and puts the whole board about half a shadow too near the camera.
+// See PALETTE in tools/svg.mjs.
+const PAL = paletteFor(SRC);
 
 // A board is one file or a stack of layers, and only readArtwork knows which.
 const svg = readArtwork(SRC);
@@ -755,7 +762,7 @@ if (LAYERS.length) {
   // back shadowless — quietly, since a missing shadow falls back to the old rule and
   // the boards looked exactly as they did before.
   const key = b => `${Math.round(b.x0)},${Math.round(b.y0)},${Math.round(b.x1)},${Math.round(b.y1)}`;
-  const shadows = new Map(fillPolys(svg, SHADOW_FILL, 1)
+  const shadows = new Map(fillPolys(svg, PAL.shadow, 1)
     .map(pts => bounds(pts)).map(b => [key(b), b]));
   const noShadow = [];
   for (const c of clusters) {
@@ -783,9 +790,14 @@ if (LAYERS.length) {
   // What a bridge needs instead is its NEAR side lifted out as an overlay — see
   // --over — which is the half of it that genuinely is between the camera and the
   // deck.
+  // NAMING THE COLOUR IT LOOKED FOR, because "nothing is drawn under it" is the
+  // effect and not always the cause. On the desert board the shadows are brown and
+  // ONE drawing — the Sandshroud signpost — still carries the green shadow of the
+  // grass boards, so it reads as a thing standing on nothing. That is worth being
+  // able to tell apart from a bridge, which genuinely has no shadow at all.
   for (const c of noShadow) {
     console.log(`  not boxed: ${Math.round(c.w)}x${Math.round(c.h)} at ` +
-      `${Math.round(c.x)},${Math.round(c.y)} — nothing is drawn under it, so it is not ` +
+      `${Math.round(c.x)},${Math.round(c.y)} — no ${PAL.shadow} shadow under it, so it is not ` +
       `standing on the ground and has no depth to be sorted at`);
   }
 

@@ -41,7 +41,8 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 import { spawn, updateEnemies } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
 import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
-import { readArtwork, allGroups, bounds, MAP_SCALE, layerFiles } from './svg.mjs';
+import { readArtwork, allGroups, bounds, MAP_SCALE, layerFiles,
+         roadPolys, paletteFor, PALETTE } from './svg.mjs';
 // The real radial menu, so what is checked is what the player is offered.
 import { openMenu } from '../src/menu.js';
 import { selectionInfo } from '../src/select.js';
@@ -921,18 +922,21 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,-,m1,m2,m3',
-    'the campaign runs the eight drawn boards, a gap at Sandshroud, then the three testing ones',
+  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m1,m2,m3',
+    'the campaign runs the nine drawn boards, then the three testing ones',
     order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 11,
-    'with eleven of the twelve stages carrying a board',
+  ok(STAGES.filter(s => s.level !== null).length === 12,
+    'with every one of the twelve stages carrying a board',
     `${STAGES.filter(s => s.level !== null).length} playable of ${STAGES.length}`);
 
   // AND WHAT THE GAP COSTS, counted rather than forbidden.
   //
   // This was a CHECK for one build — an empty stage must sit at the end, never in the
   // middle — written when the desert marker was freed and nothing was going on it.
-  // The owner has since put stage 9 there deliberately and said the board is coming.
+  // The owner put stage 9 there deliberately and said the board was coming; it has
+  // since arrived, so there is no gap on the road today and this reports none. It is
+  // kept because the next marker drawn before its board will make one again.
+  //
   // A locked stage in the middle IS a wall, so the cost is real; it is just not an
   // error, and a checker that forbids what the owner decided is a checker that gets
   // edited away rather than read. So it counts the boards standing behind the gap and
@@ -1440,6 +1444,249 @@ console.log('\n--- stage 8, two roads that cross, and five men already standing 
   ok(Array.isArray(kirk.routeMix) && kirk.routeMix.length === 2 &&
      kirk.routeMix[0] === kirk.routeMix[1],
     'and the wave is dealt evenly between the two roads', JSON.stringify(kirk.routeMix));
+}
+
+console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
+
+// THE FIRST BOARD THAT IS BOTH A FUNNEL AND A FORK. Stage 4 runs three mouths into
+// one door and stage 6 one mouth into two; this has three mouths and two doors, with
+// two of the roads merging and the third touching neither. And it is the first board
+// not drawn on grass, which is the other half of what is pinned here.
+{
+  const sand = levels.find(l => l.id === 'm11');
+  const WANT9 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 plague_inf + 1 dark_priest',
+    '8 light_inf + 4 blocker_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 light_inf + 6 tough_inf + 4 blocker_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 3 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
+    '10 blocker_inf + 4 heavy_inf + 14 archer_inf + 4 plague_inf + 4 dark_priest',
+    '12 blocker_inf + 6 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
+  ];
+  const got9 = sand.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got9.join(' | ') === WANT9.join(' | '), 'Sandshroud sends exactly the eight it was given',
+    got9.map((g, i) => (g === WANT9[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT9[i]})`)).join(' '));
+
+  // THE GIANTS ARE THE ONLY THING THAT DIFFERS FROM STAGE 8, and this says so in the
+  // one way that cannot drift: every other count is read off the church's own table
+  // rather than copied. If either board is retuned, the pair stops matching here.
+  const giants9 = sand.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
+  ok(giants9.join(',') === '0,0,0,1,2,3,4,6', 'and its giants climb 0,0,0,1,2,3,4,6',
+    giants9.join(','));
+  ok(giants9.every((n, i) => i === 0 || n >= giants9[i - 1]),
+    'never carrying fewer than the wave before', giants9.join(' -> '));
+  {
+    const church = levels.find(l => l.id === 'm10');
+    const strip = lv => lv.waves.map(w => w.groups.filter(g => g.type !== 'heavy_inf')
+      .map(g => `${g.count} ${g.type}`).join(' + '));
+    ok(strip(sand).join(' | ') === strip(church).join(' | '),
+      'and everything that is NOT a giant is stage 8\'s table exactly',
+      strip(sand).map((g, i) => (g === strip(church)[i] ? '.' : `${i + 1}: differs`)).join(' '));
+    const gc = church.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
+    const hp = list => list.reduce((a, b) => a + b, 0) * 800;
+    ok(hp(giants9) < hp(gc), 'so this board is the lighter of the pair, by giant health alone',
+      `${hp(giants9)} against Dawnford Church's ${hp(gc)}`);
+  }
+
+  ok(sand.plots.length === 9 && sand.startGold === 240 && sand.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${sand.plots.length} plots, ${sand.startGold} gold, ${sand.waves.length} waves`);
+
+  // --- the shape of the roads ------------------------------------------------
+  //
+  // THREE IN AND TWO OUT, asked of the routes. A route is a whole road here, mouth
+  // to door, so the count IS the shape.
+  ok(sand.routes.length === 3, 'three roads run across it', `${sand.routes.length} routes`);
+
+  const head = r => r.pts[0];
+  const tail = r => r.pts[r.pts.length - 1];
+  const doors = sand.routes.map(tail);
+  // TWO OF THE THREE LEAVE BY THE SAME DOOR, which is what makes 1,1,2 the even
+  // deal rather than 1,1,1. Grouped by nearness rather than by index, so a redraw
+  // that renumbers the routes does not renumber this claim.
+  const sameDoor = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < 60;
+  const groups9 = [];
+  doors.forEach((d, i) => {
+    const g = groups9.find(g => sameDoor(doors[g[0]], d));
+    if (g) g.push(i); else groups9.push([i]);
+  });
+  ok(groups9.length === 2 && groups9.some(g => g.length === 2) && groups9.some(g => g.length === 1),
+    'leaving by two doors, two roads out of one of them and the third out of the other',
+    groups9.map(g => `[${g.join(',')}] at ${Math.round(doors[g[0]].x)},${Math.round(doors[g[0]].y)}`).join('  '));
+
+  // AND THE TWO THAT SHARE A DOOR REALLY MERGE, rather than running side by side
+  // into the same corner. Walked at 10px: they must come within a few pixels of each
+  // other well BEFORE the door, and the third must never come near either.
+  const walk9 = r => {
+    const out = [], pts = r.pts;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p = pts[i], q = pts[i + 1];
+      const n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / 10));
+      for (let s = 0; s < n; s++) out.push({ x: p.x + (q.x - p.x) * s / n, y: p.y + (q.y - p.y) * s / n });
+    }
+    return out;
+  };
+  const near9 = (A, B, before) => {
+    let d = Infinity, at = null;
+    for (const p of A) for (const q of B) {
+      if (before && (p.y > before || q.y > before)) continue;
+      const e = Math.hypot(p.x - q.x, p.y - q.y);
+      if (e < d) { d = e; at = p; }
+    }
+    return [d, at];
+  };
+  const paths9 = sand.routes.map(walk9);
+  {
+    const [i, j] = groups9.find(g => g.length === 2);
+    const lone = groups9.find(g => g.length === 1)[0];
+    // Well before the door: above y 400, which is 140px of road short of the exit.
+    const [d, at] = near9(paths9[i], paths9[j], 400);
+    ok(d < 10, '  the two that share a door have already merged long before it',
+      `within ${d.toFixed(1)}px of each other at (${Math.round(at.x)}, ${Math.round(at.y)})`);
+    const [d1] = near9(paths9[lone], paths9[i]);
+    const [d2] = near9(paths9[lone], paths9[j]);
+    ok(Math.min(d1, d2) > 100, '  and the third road never comes near either of them',
+      `closest approach ${Math.round(Math.min(d1, d2))}px`);
+  }
+
+  // HALF THE WAVE OUT OF EACH DOOR, and this is the claim `routeMix` does NOT make.
+  // The shares divide the ROUTES; the owner divided the DOORS, and two of these
+  // routes share one. So it is measured through the real spawner and counted by the
+  // door each enemy is walking towards, which is the only form of the question that
+  // means what was asked.
+  {
+    useLevel(levels.indexOf(sand));
+    const st = { enemies: [] };
+    const byDoor = groups9.map(() => 0);
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      byDoor[groups9.findIndex(g => g.includes(st.enemies[0].route))]++;
+    }
+    const worst = Math.max(...byDoor.map(c => Math.abs(c / N - 0.5)));
+    ok(worst < 0.01, '  and half of every wave leaves by each door, over 4000 spawns',
+      byDoor.map(c => (100 * c / N).toFixed(1) + '%').join(' / '));
+    // The two roads feeding the busy door take a quarter each, which is the even
+    // reading of an ask that named only the exits.
+    const shares = sand.routeMix;
+    const busy = groups9.find(g => g.length === 2);
+    ok(shares[busy[0]] === shares[busy[1]],
+      '  with the two roads that feed one door carrying a quarter each',
+      `shares ${JSON.stringify(shares)}`);
+  }
+
+  // --- what is already standing on it ----------------------------------------
+  //
+  // THE TOP MIDDLE PLOT, measured off the artwork rather than trusted, because an
+  // index is what the file holds and "top middle" is what the owner asked for.
+  // Stage 6 has already shipped a prebuilt pinned to an index a redraw moved.
+  //
+  // THIS MARKER WINS ON BOTH READINGS OF THE PHRASE, so both are asked: it is the
+  // topmost plot on the board, and it is the nearest to the board's middle by x.
+  // No other plot is first on either count, which is what makes the index safe.
+  ok(Array.isArray(sand.prebuilt) && sand.prebuilt.length === 1,
+    'it opens with exactly one tower already standing',
+    `${(sand.prebuilt || []).length} prebuilt`);
+  {
+    const pre = sand.prebuilt[0];
+    ok(pre.family === 'barracks' && pre.name === 'Assassin Guild',
+      'and it is an Assassin Guild', `${pre.family} "${pre.name}"`);
+
+    const spot9 = sand.plots[pre.plot];
+    const byTop = [...sand.plots].sort((a, b) => a.y - b.y);
+    const byMid = [...sand.plots].sort((a, b) => Math.abs(a.x - 480) - Math.abs(b.x - 480));
+    ok(byTop[0] === spot9 && byMid[0] === spot9,
+      '  standing on the plot that is both the topmost and the nearest the middle',
+      `(${spot9.x}, ${spot9.y}); next highest y ${byTop[1].y}, ` +
+      `next nearest the middle x ${byMid[1].x}`);
+    // AND IT WINS EACH BY A CLEAR MARGIN, so the two readings cannot be separated by
+    // a nudge to the artwork without this saying so.
+    ok(byTop[1].y - spot9.y >= 15 && Math.abs(byMid[1].x - 480) - Math.abs(spot9.x - 480) >= 40,
+      '  by a margin no small redraw could close',
+      `${byTop[1].y - spot9.y}px clear at the top, ` +
+      `${Math.round(Math.abs(byMid[1].x - 480) - Math.abs(spot9.x - 480))}px clear of the middle`);
+  }
+
+  // FIVE RUNGS, and two of them are the SAME family's tier 4 — which no board has
+  // done before. Reaching the top of the barracks is a choice here rather than a
+  // single door, and that is the thing a later edit could quietly undo by dropping
+  // one of the two.
+  ok(sand.maxTier === 3 && sand.allow.length === 5,
+    'Sandshroud caps at tier 3 and lets five named rungs through',
+    `maxTier ${sand.maxTier}, allow ${sand.allow.join(', ')}`);
+  {
+    const top = families.find(f => f.id === 'barracks').tiers.filter(t => t.tier === 4);
+    const both = top.filter(t => sand.allow.includes(t.name));
+    ok(both.length === 2, '  including BOTH of the barracks\' tier 4 rungs, which is a first',
+      both.map(t => t.name).join(' and ') || 'neither');
+    const others = levels.filter(l => l !== sand && Array.isArray(l.allow));
+    const anyOther = others.some(l => families.some(f =>
+      f.tiers.filter(t => t.tier === 4 && l.allow.includes(t.name)).length > 1));
+    ok(!anyOther, '  and no other board opens two rungs of one family',
+      anyOther ? 'another board does' : `checked ${others.length} other board(s)`);
+  }
+}
+
+console.log('\n--- a board may be drawn in another palette ---\n');
+
+// THREE COLOURS CARRY MEANING on a board — the road, the ground and every ground
+// shadow — and for eight boards they were hard-coded. Stage 9 is a desert and shares
+// none of them.
+//
+// WHAT MAKES THIS WORTH CHECKING is how it failed rather than that it failed. Read
+// with the grass palette, the desert board does not come back empty: it comes back
+// with FOUR road shapes and SIX patches of ground, which are the highlights on four
+// clay pots and the six cacti. A wrong palette produces plausible numbers, so the
+// thing to pin is that the declared one is load-bearing.
+{
+  const declared = levels.filter(l => l.palette);
+  ok(declared.length >= 1, 'at least one board declares a palette of its own',
+    declared.map(l => l.name).join(', ') || 'none');
+
+  for (const l of declared) {
+    const art = readArtwork(l.src);
+    const pal = paletteFor(l.src);
+
+    // THE DECLARED GROUND IS THE BOARD'S OWN BACKGROUND RECT. Ground is declared
+    // rather than read off that rect because map 1's rect is white and its grass is
+    // a path over it — but on a board that declares one, the two must agree, or the
+    // colour the tools subtract is not the colour the board is painted.
+    const first = layerFiles(l.src)[0] || l.src;
+    const rect = (/<rect\s+fill="(#[0-9a-fA-F]{6})"(?![^>]*fill-opacity="0")[^>]*\/>/
+      .exec(readFileSync(first, 'utf8')) || [])[1];
+    ok(rect && rect.toLowerCase() === pal.ground,
+      `  ${l.name}'s declared ground is the colour its board is painted`,
+      `declared ${pal.ground}, the artboard rect is ${rect}`);
+
+    // AND THE DECLARED ROAD IS A ROAD: ink that reaches at least two edges of the
+    // canvas. A colour that names scenery cannot do that.
+    const reaches = surf => {
+      const edges = new Set();
+      for (const poly of surf.road) for (const [x, y] of poly) {
+        if (x <= 2) edges.add('left');
+        if (x >= 958) edges.add('right');
+        if (y <= 2) edges.add('top');
+        if (y >= 538) edges.add('bottom');
+      }
+      return edges;
+    };
+    const mine = reaches(roadPolys(art, MAP_SCALE, pal));
+    ok(mine.size >= 2, `  and what it calls road runs off the edge of the board`,
+      `reaches ${[...mine].join(', ') || 'no edge'}`);
+
+    // THE DECLARATION IS DOING REAL WORK. Read with the grass palette the same board
+    // must NOT describe a road — either nothing wears that colour, or what does goes
+    // nowhere. This is the check that fails against a level file with `palette`
+    // deleted, which is the whole point of having it.
+    let grass;
+    try { grass = reaches(roadPolys(art, MAP_SCALE, PALETTE)); }
+    catch { grass = new Set(); }
+    ok(grass.size < 2, `  and the grass palette does not describe this board at all`,
+      grass.size ? `the old road colour reaches ${[...grass].join(', ')}` :
+        'the old road colour goes nowhere on it');
+  }
 }
 
 console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n');

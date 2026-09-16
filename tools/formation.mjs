@@ -26,14 +26,17 @@ import { makeUnits, moveUnits, nearestOnPath, rallyPoint } from '../src/units.js
 import { LANE } from '../src/route.js';
 import { levels, useLevel } from '../src/level.js';
 import { barracks } from '../src/data/towers.js';
-import { roadPolys, onRoad as onSurface, MAP_SCALE, readArtwork } from './svg.mjs';
+import { roadPolys, onRoad as onSurface, paletteFor, MAP_SCALE, readArtwork } from './svg.mjs';
 
 // The road as a polygon and the test against it both live in tools/svg.mjs now —
 // tools/trace-road.mjs finds the road with the same two functions, which is the
 // point: "is this man on tarmac" and "where does the road run" are one question
 // asked twice, and they were two copies of the same arithmetic until they were
 // not.
-const roadOf = src => roadPolys(readArtwork(src), MAP_SCALE);
+// In the board's OWN colours: the desert's sand is the same hue an earlier board
+// would have read as tarmac, so "is this man on the road" has to be asked with
+// the palette that board was drawn in. See PALETTE in tools/svg.mjs.
+const roadOf = src => roadPolys(readArtwork(src), MAP_SCALE, paletteFor(src));
 // The road less any ground painted over it — see roadPolys in tools/svg.mjs.
 const onRoad = (surface, x, y) => onSurface(surface, x, y);
 
