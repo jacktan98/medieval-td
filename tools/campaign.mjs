@@ -1290,11 +1290,11 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
     '10 light_inf + 4 tough_inf + 1 heavy_inf',
-    '10 light_inf + 2 blocker_inf + 2 heavy_inf',
-    '4 tough_inf + 4 heavy_inf + 6 archer_inf',
-    '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
-    '8 blocker_inf + 6 heavy_inf + 16 archer_inf',
-    '10 blocker_inf + 8 heavy_inf + 20 archer_inf'
+    '10 light_inf + 2 blocker_inf + 2 heavy_inf + 1 plague_inf',
+    '4 tough_inf + 4 heavy_inf + 4 archer_inf + 2 plague_inf',
+    '6 blocker_inf + 4 heavy_inf + 8 archer_inf + 2 plague_inf',
+    '8 blocker_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf',
+    '10 blocker_inf + 8 heavy_inf + 12 archer_inf + 6 plague_inf'
   ];
   const got6 = ford.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got6.join(' | ') === WANT6.join(' | '), 'Dawnford sends exactly the eight it was given',
@@ -1457,37 +1457,58 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
   const WANT9 = [
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 plague_inf + 1 dark_priest',
-    '8 light_inf + 4 blocker_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 light_inf + 6 tough_inf + 4 blocker_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 3 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
-    '10 blocker_inf + 4 heavy_inf + 14 archer_inf + 4 plague_inf + 4 dark_priest',
-    '12 blocker_inf + 6 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 2 shadow_inf + 1 heavy_inf + 1 plague_inf + 1 dark_priest',
+    '8 tough_inf + 4 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 4 shadow_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '8 blocker_inf + 6 shadow_inf + 4 heavy_inf + 10 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 10 shadow_inf + 4 heavy_inf + 12 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got9 = sand.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got9.join(' | ') === WANT9.join(' | '), 'Sandshroud sends exactly the eight it was given',
     got9.map((g, i) => (g === WANT9[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT9[i]})`)).join(' '));
 
-  // THE GIANTS ARE THE ONLY THING THAT DIFFERS FROM STAGE 8, and this says so in the
-  // one way that cannot drift: every other count is read off the church's own table
-  // rather than copied. If either board is retuned, the pair stops matching here.
+  // THE SHADOW THUG SHIPS HERE AND NOWHERE ELSE, which is the thing this table is
+  // for and the thing a later retune could quietly undo from either end: take him
+  // off this board and he is a creature nothing sends again; put him on another and
+  // the claim below about the barracks stops being about one board.
+  const shadows = sand.waves.map(w => (w.groups.find(g => g.type === 'shadow_inf') || {}).count || 0);
+  ok(shadows.join(',') === '0,0,1,2,2,4,6,10', 'its Shadow Thugs climb 0,0,1,2,2,4,6,10',
+    shadows.join(','));
+  ok(shadows.every((n, i) => i === 0 || n >= shadows[i - 1]),
+    '  never carrying fewer than the wave before', shadows.join(' -> '));
+  {
+    const elsewhere = levels.filter(l => l !== sand &&
+      l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
+    ok(!elsewhere.length, '  and no other board in the game sends one',
+      elsewhere.length ? elsewhere.map(l => l.id).join(', ') : `${levels.length - 1} other board(s)`);
+  }
+
+  // AND THE BOARD THAT SENDS TEN OF THEM IS THE BOARD WITH TWO WAYS TO ANSWER.
+  //
+  // No tower can aim at a Shadow Thug, so the only thing that stops one is a
+  // soldier taking hold of it — see unseen() in src/units.js and tools/unseen.mjs.
+  // Sandshroud is the one board in the game that opens BOTH tier-4 barracks rungs,
+  // and with ten of them in the last wave that stops being a flourish and starts
+  // being the reason. If a future edit closes one of those rungs, this is where the
+  // two facts are held against each other.
+  {
+    const bar = families.find(f => f.id === 'barracks').tiers.filter(t => t.tier === 4);
+    const open = bar.filter(t => (sand.allow || []).includes(t.name));
+    ok(shadows[shadows.length - 1] >= 10 && open.length === 2,
+      '  on the one board that opens both tier-4 barracks rungs',
+      `${shadows[shadows.length - 1]} in the last wave, ${open.map(t => t.name).join(' and ')}`);
+  }
+
+  // THE GIANTS CLIMB TOO, and more gently than they used to. The ladder was
+  // 0,0,0,1,2,3,4,6 when this board was stage 8's table with lighter giants; the
+  // owner's rewrite took the late pair down to four and made the Shadow Thug the
+  // thing that grows instead.
   const giants9 = sand.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants9.join(',') === '0,0,0,1,2,3,4,6', 'and its giants climb 0,0,0,1,2,3,4,6',
+  ok(giants9.join(',') === '0,0,0,1,2,2,4,4', 'and its giants climb 0,0,0,1,2,2,4,4',
     giants9.join(','));
   ok(giants9.every((n, i) => i === 0 || n >= giants9[i - 1]),
-    'never carrying fewer than the wave before', giants9.join(' -> '));
-  {
-    const church = levels.find(l => l.id === 'm10');
-    const strip = lv => lv.waves.map(w => w.groups.filter(g => g.type !== 'heavy_inf')
-      .map(g => `${g.count} ${g.type}`).join(' + '));
-    ok(strip(sand).join(' | ') === strip(church).join(' | '),
-      'and everything that is NOT a giant is stage 8\'s table exactly',
-      strip(sand).map((g, i) => (g === strip(church)[i] ? '.' : `${i + 1}: differs`)).join(' '));
-    const gc = church.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-    const hp = list => list.reduce((a, b) => a + b, 0) * 800;
-    ok(hp(giants9) < hp(gc), 'so this board is the lighter of the pair, by giant health alone',
-      `${hp(giants9)} against Dawnford Church's ${hp(gc)}`);
-  }
+    '  never carrying fewer than the wave before', giants9.join(' -> '));
 
   ok(sand.plots.length === 9 && sand.startGold === 240 && sand.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
@@ -1701,11 +1722,11 @@ console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n')
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
     '10 light_inf + 4 tough_inf + 1 heavy_inf',
-    '10 light_inf + 4 blocker_inf + 1 heavy_inf + 2 dark_priest',
-    '8 tough_inf + 4 blocker_inf + 2 heavy_inf + 8 archer_inf + 2 dark_priest',
-    '4 blocker_inf + 4 heavy_inf + 10 archer_inf + 4 dark_priest',
-    '10 blocker_inf + 4 heavy_inf + 14 archer_inf + 6 dark_priest',
-    '12 blocker_inf + 6 heavy_inf + 20 archer_inf + 6 dark_priest'
+    '10 light_inf + 4 blocker_inf + 1 heavy_inf + 1 plague_inf + 1 dark_priest',
+    '8 tough_inf + 4 blocker_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 4 heavy_inf + 10 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
+    '12 blocker_inf + 6 heavy_inf + 12 archer_inf + 6 plague_inf + 6 dark_priest'
   ];
   const got7 = well.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got7.join(' | ') === WANT7.join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
