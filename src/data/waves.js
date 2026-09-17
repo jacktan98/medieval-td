@@ -2511,49 +2511,65 @@ export const stage9Waves = [
 // FIRST one's lending redundant, because an enemy can only be boosted once ever
 // (see `rallied` in src/enemies.js).
 //
-// WHAT ONE OF HIM IS WORTH DEPENDS ENTIRELY ON WHO HE WALKS WITH, and that is why
-// he arrives in wave 6 rather than wave 3. His aura reaches 100px, and on an open
-// road at these gaps the column is 105px and more apart — so on a thin wave he pays
-// out nothing at all. What he is for is the crowd that piles up against a squad or
-// stacks at a bend, and those crowds are waves 6 to 8: ten, twelve and fourteen
-// blockers, which are the slowest things on the road and the things a squad holds
-// longest. He is a multiplier on congestion, so he ships where the congestion is.
+// WHAT ONE OF HIM IS WORTH DEPENDS ON WHO HE WALKS WITH, and that is why he arrives
+// in wave 6 rather than wave 3: he is a multiplier on congestion, so he ships where
+// the crowd is.
 //
-// AND THE BOARD IS BUILT FOR IT. Ironforge is the first board with THREE doors, and
-// 40/30/30 means no single road carries even half the wave — see `routeMix` in
-// data/level12.js. A wave split three ways is a wave that bunches less, which is the
-// one thing that blunts him. The counts here are the owner's; what this note records
-// is that the two facts pull against each other on purpose.
+// AND THE SPEED PASS CHANGED WHAT "CONGESTION" MEANS HERE. His aura reaches 100px.
+// At the old speeds the column on an OPEN road was 105px and more apart, so he paid
+// out nothing at all unless a squad or a bend bunched the wave — which is what this
+// note used to say. Everything walks slower now, and a gap in seconds times a slower
+// pace is a shorter gap in pixels. Wave 6 today, spacing as the table types it:
 //
-// THE SHADOW THUG COMES TOO, at 1, 1, 2, 4, 6, 8 — flatter than Sandshroud's 1, 2,
-// 2, 4, 6, 10, because this board also carries giants the whole way up where that
-// one tapered them. Six giants and eight shadows in the last wave is 4,800 points of
-// armour a tower cannot see past and 2,000 it cannot see at all.
+//   blockers   1.6s x 50px/s =  80px        archers   1.2s x 60 = 72px
+//   shadows    1.7s x 50     =  85px        doctors   1.9s x 50 = 95px
+//   giants     1.9s x 50     =  95px        priests   1.8s x 50 = 90px
+//
+// Every one of them inside the 100. So the aura now fires on an empty road, and it
+// was measured rather than inferred: wave 6 sent down Ironforge with NO TOWERS ON THE
+// BOARD boosted 5 enemies, 3 of them at once. It used to boost none.
+//
+// HE IS ALSO THE SLOWEST THING ON THE ROAD BUT THE BOSS, at 45 against everything
+// else's 50 and 60, which compounds it — the column he walks in front of catches him
+// up and the column behind him walks past, so bodies pass THROUGH his reach instead
+// of holding station outside it. None of that was designed; it fell out of the
+// owner's speed numbers, and it makes him a better creature than he was.
+//
+// AND THE BOARD STILL PULLS THE OTHER WAY. Ironforge is the first board with THREE
+// doors, and 40/30/30 means no single road carries even half the wave — see
+// `routeMix` in data/level12.js. A wave split three ways is a wave that bunches less.
+// The counts here are the owner's; what this note records is that the two facts pull
+// against each other on purpose.
+//
+// THE SHADOW THUG COMES TOO, at 1, 1, 2, 2, 4, 6 — flatter than Sandshroud's 1, 2,
+// 2, 4, 6, 10, because this board also carries giants through the back half where
+// that one tapered them. Four giants and six shadows in the last wave is 3,200 points
+// of armour a tower cannot see past and 1,500 it cannot see at all.
 //
 // Every gap is a multiple of 0.1, because the admin panel's rate stepper rounds to a
 // tenth and a shipped number it cannot return to is one the owner can never put back.
 export const stage10Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.6 },
                        { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 },
                        { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 4, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
                        { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.6 }, { type: 'shadow_inf', count: 2, gap: 1.7 },
                        { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 6, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'shadow_inf', count: 4, gap: 1.6 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.8 },
                        { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
                        { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'shadow_inf', count: 6, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.7 },
                        { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];

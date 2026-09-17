@@ -1820,12 +1820,12 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
   const WANT10 = [
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf + 2 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 2 plague_inf + 2 dark_priest',
+    '6 tough_inf + 4 blocker_inf + 2 shadow_inf + 1 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '8 blocker_inf + 2 shadow_inf + 1 rally_inf + 2 heavy_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got10.join(' | ') === WANT10.join(' | '), 'Ironforge sends exactly the eight it was given',
@@ -1843,9 +1843,14 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
     ok(!elsewhere.length, '  and no other board in the game sends one',
       elsewhere.length ? elsewhere.map(l => l.id).join(', ') : `${levels.length - 1} other board(s)`);
   }
-  // AND HE ARRIVES WHERE THE CROWD IS. His aura reaches 100px and pays out nothing on
-  // a thin column, so the waves that carry him have to be the dense ones — asked as
-  // "every wave he is in carries more bodies than every wave he is not".
+  // AND HE ARRIVES WHERE THE CROWD IS. His aura reaches 100px, so the waves that
+  // carry him have to be the dense ones — asked as "every wave he is in carries more
+  // bodies than every wave he is not".
+  //
+  // THE MARGIN IS NARROW NOW and the figure below says so on every run: the owner's
+  // rebalance took wave 6 from 29 bodies to 23 and left wave 5 at 21, so his thinnest
+  // wave is 2 bodies clear of the thickest without him where it used to be 5. Still
+  // the right shape, and close enough that another trim to wave 6 would invert it.
   {
     const bodies = iron.waves.map(w => w.groups.reduce((n, g) => n + g.count, 0));
     const withHim = bodies.filter((_, i) => rally[i] > 0);
@@ -1855,8 +1860,40 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       `${Math.min(...withHim)} bodies at his thinnest against ${Math.max(...without)} at their thickest`);
   }
 
+  // AND HIS AURA REACHES THE COLUMN ON AN OPEN ROAD, which it did not before the
+  // owner's speed pass and which is the single biggest thing that changed about him.
+  //
+  // An enemy's spacing is its GAP times its SPEED. At the old speeds every type in his
+  // waves was 105px or more apart against his 100px reach, so on a road with no towers
+  // on it he boosted nobody — he only ever paid out where a squad or a bend bunched
+  // the wave. Everything walks slower now and the same gaps are shorter in pixels.
+  //
+  // CHECKED AS THE PRODUCT rather than by playing a wave, because it is arithmetic and
+  // the arithmetic is the thing a later retune would break: raise a gap or a speed and
+  // that type slips back outside his reach with nothing else to say so. Measured in
+  // the running game once, on Ironforge with no towers at all: wave 6 boosted 5
+  // enemies, 3 of them at once.
+  {
+    const aura = enemyTypes.rally_inf.rally.range;
+    const withRally = iron.waves.filter(w => w.groups.some(g => g.type === 'rally_inf'));
+    const spans = withRally.flatMap(w => w.groups.map(g => ({
+      type: g.type, px: Math.round(g.gap * enemyTypes[g.type].speed)
+    })));
+    const worst = spans.reduce((a, b) => (b.px > a.px ? b : a));
+    ok(worst.px <= aura,
+      '  and every type beside him walks close enough for his aura to reach',
+      `widest spacing is ${worst.type} at ${worst.px}px, against a ${aura}px aura`);
+    // AND HE IS THE SLOWEST THING ON THE ROAD BUT THE BOSS, which is what carries the
+    // column through his reach rather than leaving it holding station outside.
+    const road = Object.values(enemyTypes).filter(d => !d.boss && d.speed);
+    ok(road.every(d => d === enemyTypes.rally_inf || d.speed > enemyTypes.rally_inf.speed),
+      '  while he himself walks slower than all of them, so they pass through him',
+      `${enemyTypes.rally_inf.speed} against a next-slowest ${Math.min(...road
+        .filter(d => d !== enemyTypes.rally_inf).map(d => d.speed))}`);
+  }
+
   const giants10 = iron.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants10.join(',') === '0,0,0,1,2,2,4,6', 'and its giants climb 0,0,0,1,2,2,4,6',
+  ok(giants10.join(',') === '0,0,0,0,1,2,2,4', 'and its giants climb 0,0,0,0,1,2,2,4',
     giants10.join(','));
   ok(giants10.every((n, i) => i === 0 || n >= giants10[i - 1]),
     '  never carrying fewer than the wave before', giants10.join(' -> '));
