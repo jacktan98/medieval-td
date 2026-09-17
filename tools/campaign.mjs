@@ -39,6 +39,7 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
 import { spawn, updateEnemies } from '../src/enemies.js';
+import { at as routeAt } from '../src/route.js';
 import { updateShots } from '../src/projectiles.js';
 import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
 import { readArtwork, allGroups, bounds, MAP_SCALE, layerFiles,
@@ -302,9 +303,30 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
 // level index happens to be lying around.
 {
   const built = STAGES.filter(s => s.level !== null);
-  ok(built.length === levels.length,
-    'every level the game has is somewhere on the road',
-    `${built.length} playable stage(s), ${levels.length} level(s)`);
+  // A BOARD CAN OUTRUN THE MAP, and Ironforge is the first one that has.
+  //
+  // This asked for every level to be on the road, which held while the artwork and
+  // the levels array grew together — twelve markers and twelve boards. Stage 10
+  // arrived without a thirteenth marker, so the LAST board in play order has nowhere
+  // to stand: `levels` is one longer than the road.
+  //
+  // IT IS NOT AN ERROR, for the same reason the gap in the road below is not one. The
+  // markers are the artist's and the boards are the owner's, and either can arrive
+  // first; a checker that calls the ordinary case a failure is a checker that gets
+  // edited away rather than read. So it says WHICH board is off the map and how many,
+  // on every run, and fails only if more than one is — because two adrift means the
+  // two lists have stopped tracking each other rather than being one apart.
+  //
+  // WHAT IT COSTS: a board with no marker cannot be reached from the world map at
+  // all. It is still in the game — the admin panel's map tabs list it and it still
+  // holds its own save key — but no player will find it. Drawing a marker on
+  // Overview_Map_Layer_1.svg and re-running tools/overview.mjs puts it back.
+  const adrift = levels.filter((_, li) => stageOfLevel(li) === null);
+  ok(adrift.length <= 1, 'at most one board is off the end of the road',
+    adrift.length
+      ? `${adrift.map(l => l.name).join(', ')} — ${built.length} marker(s) for ${levels.length} board(s), ` +
+        `so it cannot be reached from the world map until one more marker is drawn`
+      : `all ${levels.length} on the road`);
 
   const ids = built.map(s => s.level);
   ok(new Set(ids).size === ids.length && ids.every(i => i >= 0 && i < levels.length),
@@ -369,12 +391,16 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
 // The round trip input.js and main.js both depend on: a level index has to come
 // back as the stage that plays it.
 {
+  // Every level that IS on the road knows which stage it is, and the round trip
+  // agrees. A board off the end of the road answers `null` rather than a stage, which
+  // is the correct answer and is checked as such — see the note above.
   const trip = levels.every((_, li) => {
     const i = stageOfLevel(li);
-    return i !== null && STAGES[i].level === li;
+    return i === null || STAGES[i].level === li;
   });
   ok(trip, 'and every level knows which stage it is',
-    levels.map((l, li) => `${l.name}=${stageOfLevel(li) + 1}`).join(', '));
+    levels.map((l, li) => `${l.name}=${stageOfLevel(li) === null ? 'off the road' : stageOfLevel(li) + 1}`)
+      .join(', '));
 
   ok(stageOfLevel(levels.length) === null,
     'while a level that does not exist is nowhere');
@@ -921,13 +947,19 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
+  // THE ORDER IS ASKED OF `levels`, NOT OF THE ROAD, which is the change Ironforge
+  // forced. Play order is the levels array and nothing else — the road is where that
+  // order is DRAWN, and the road is currently one marker short — so asking the road
+  // would have made a missing marker look like a board out of sequence.
+  const play = levels.map(l => l.id);
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m1,m2,m3',
+    'the campaign runs the ten drawn boards, then the three testing ones',
+    play.join(' -> '));
+  // And the stages carry them in that same order, as far as the markers go.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(order.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m1,m2,m3',
-    'the campaign runs the nine drawn boards, then the three testing ones',
-    order.join(' -> '));
-  ok(STAGES.filter(s => s.level !== null).length === 12,
-    'with every one of the twelve stages carrying a board',
-    `${STAGES.filter(s => s.level !== null).length} playable of ${STAGES.length}`);
+  ok(play.join(',').startsWith(order.join(',')),
+    'with the stages carrying them in that order, as far as the road reaches',
+    `${order.length} marker(s): ${order.join(' -> ')}`);
 
   // AND WHAT THE GAP COSTS, counted rather than forbidden.
   //
@@ -1478,17 +1510,22 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
   ok(shadows.every((n, i) => i === 0 || n >= shadows[i - 1]),
     '  never carrying fewer than the wave before', shadows.join(' -> '));
   {
-    const elsewhere = levels.filter(l => l !== sand &&
-      l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
-    ok(!elsewhere.length, '  and no other board in the game sends one',
-      elsewhere.length ? elsewhere.map(l => l.id).join(', ') : `${levels.length - 1} other board(s)`);
+    // HE IS NO LONGER ALONE ON THE DESERT. Ironforge sends him too, at the owner's
+    // ask, so the claim this check was written to hold — "nowhere else" — is not the
+    // claim any more. What is still worth pinning is that the list is SHORT and
+    // NAMED: he belongs to the last two boards of the campaign, and a retune that
+    // scattered him over the early ones would be a different creature.
+    const sends = levels.filter(l => l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
+    ok(sends.map(l => l.id).join(', ') === 'm11, m12',
+      '  and the only other board that sends one is Ironforge',
+      sends.map(l => l.id).join(', ') || 'none');
   }
 
   // AND THE BOARD THAT SENDS TEN OF THEM IS THE BOARD WITH TWO WAYS TO ANSWER.
   //
   // No tower can aim at a Shadow Thug, so the only thing that stops one is a
   // soldier taking hold of it — see unseen() in src/units.js and tools/unseen.mjs.
-  // Sandshroud is the one board in the game that opens BOTH tier-4 barracks rungs,
+  // Sandshroud is the first board that opens BOTH tier-4 barracks rungs,
   // and with ten of them in the last wave that stops being a flourish and starts
   // being the reason. If a future edit closes one of those rungs, this is where the
   // two facts are held against each other.
@@ -1642,11 +1679,223 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     const both = top.filter(t => sand.allow.includes(t.name));
     ok(both.length === 2, '  including BOTH of the barracks\' tier 4 rungs, which is a first',
       both.map(t => t.name).join(' and ') || 'neither');
-    const others = levels.filter(l => l !== sand && Array.isArray(l.allow));
-    const anyOther = others.some(l => families.some(f =>
+    // AND IRONFORGE DOES IT TOO, so "no other board" is not the claim any more. What
+    // holds is that these are the LAST TWO boards and no earlier one does it: a
+    // player meets the fork at the top of a family once the campaign is nearly over,
+    // and an edit that opened two tier-4 rungs on an early board would be a real
+    // change to the ladder rather than a tweak.
+    const opensTwo = levels.filter(l => Array.isArray(l.allow) && families.some(f =>
       f.tiers.filter(t => t.tier === 4 && l.allow.includes(t.name)).length > 1));
-    ok(!anyOther, '  and no other board opens two rungs of one family',
-      anyOther ? 'another board does' : `checked ${others.length} other board(s)`);
+    ok(opensTwo.map(l => l.id).join(', ') === 'm11, m12',
+      '  and Ironforge is the only other board that opens two rungs of one family',
+      opensTwo.map(l => l.id).join(', ') || 'none');
+  }
+}
+
+console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n');
+
+// THE TENTH BOARD, and the first with THREE DOORS. Two ways in and three out, which
+// is a shape no other board has: the eastern road SPLITS, so there are three routes
+// over two entries and one mouth feeds two doors.
+{
+  const iron = levels.find(l => l.id === 'm12');
+  ok(!!iron, 'Ironforge Town is in the game', iron ? iron.name : 'missing');
+
+  const WANT10 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+  ];
+  const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got10.join(' | ') === WANT10.join(' | '), 'Ironforge sends exactly the eight it was given',
+    got10.map((g, i) => (g === WANT10[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT10[i]})`)).join(' '));
+
+  // THE RALLY THUG SHIPS HERE AND NOWHERE ELSE, which is the thing this table is for
+  // and the thing a later retune could quietly undo from either end: take him off
+  // this board and he is a creature nothing sends again.
+  const rally = iron.waves.map(w => (w.groups.find(g => g.type === 'rally_inf') || {}).count || 0);
+  ok(rally.join(',') === '0,0,0,0,0,1,1,1', 'its Rally Thugs are one each in the last three waves',
+    rally.join(','));
+  {
+    const elsewhere = levels.filter(l => l !== iron &&
+      l.waves.some(w => w.groups.some(g => g.type === 'rally_inf')));
+    ok(!elsewhere.length, '  and no other board in the game sends one',
+      elsewhere.length ? elsewhere.map(l => l.id).join(', ') : `${levels.length - 1} other board(s)`);
+  }
+  // AND HE ARRIVES WHERE THE CROWD IS. His aura reaches 100px and pays out nothing on
+  // a thin column, so the waves that carry him have to be the dense ones — asked as
+  // "every wave he is in carries more bodies than every wave he is not".
+  {
+    const bodies = iron.waves.map(w => w.groups.reduce((n, g) => n + g.count, 0));
+    const withHim = bodies.filter((_, i) => rally[i] > 0);
+    const without = bodies.filter((_, i) => rally[i] === 0);
+    ok(Math.min(...withHim) > Math.max(...without),
+      '  arriving only on waves denser than every wave without him',
+      `${Math.min(...withHim)} bodies at his thinnest against ${Math.max(...without)} at their thickest`);
+  }
+
+  const giants10 = iron.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
+  ok(giants10.join(',') === '0,0,0,1,2,2,4,6', 'and its giants climb 0,0,0,1,2,2,4,6',
+    giants10.join(','));
+  ok(giants10.every((n, i) => i === 0 || n >= giants10[i - 1]),
+    '  never carrying fewer than the wave before', giants10.join(' -> '));
+
+  ok(iron.plots.length === 9 && iron.startGold === 240 && iron.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${iron.plots.length} plots, ${iron.startGold} gold, ${iron.waves.length} waves`);
+
+  ok(iron.maxTier === 3 && iron.allow.length === 6,
+    'it caps at tier 3 and lets six named rungs through — more than any board before it',
+    `maxTier ${iron.maxTier}, allow ${iron.allow.join(', ')}`);
+
+  // --- the shape of the roads ------------------------------------------------
+  //
+  // TWO IN AND THREE OUT. A route here is a mouth-to-door path, so three routes over
+  // two distinct heads is exactly the fork: one head appears twice.
+  ok(iron.routes.length === 3, 'three routes run across it', `${iron.routes.length} routes`);
+
+  const head10 = r => r.pts[0];
+  const tail10 = r => r.pts[r.pts.length - 1];
+  const same10 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < 60;
+  const cluster = list => {
+    const g = [];
+    list.forEach((p, i) => {
+      const h = g.find(h => same10(list[h[0]], p));
+      if (h) h.push(i); else g.push([i]);
+    });
+    return g;
+  };
+  const mouths = cluster(iron.routes.map(head10));
+  const doors10 = cluster(iron.routes.map(tail10));
+  ok(mouths.length === 2 && mouths.some(m => m.length === 2),
+    '  entering by two mouths, two of the routes sharing one',
+    mouths.map(m => `[${m.join(',')}]`).join(' '));
+  ok(doors10.length === 3, '  and leaving by three doors of their own, which no board has had',
+    doors10.map(d => {
+      const t = tail10(iron.routes[d[0]]);
+      return `${Math.round(t.x)},${Math.round(t.y)}`;
+    }).join('  '));
+
+  // AND THE FORK IS A REAL FORK: the two routes that share a mouth run as one piece
+  // of road for a good stretch and then genuinely part company.
+  {
+    const walk10 = r => {
+      const out = [], pts = r.pts;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p = pts[i], q = pts[i + 1];
+        const n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / 10));
+        for (let s = 0; s < n; s++) out.push({ x: p.x + (q.x - p.x) * s / n, y: p.y + (q.y - p.y) * s / n });
+      }
+      return out;
+    };
+    const paths = iron.routes.map(walk10);
+    const [i, j] = mouths.find(m => m.length === 2);
+    const lone = mouths.find(m => m.length === 1)[0];
+    // Walked in step from the shared mouth: they stay together, then split for good.
+    const A = paths[i], B = paths[j];
+    let together = 0;
+    while (together < Math.min(A.length, B.length) &&
+           Math.hypot(A[together].x - B[together].x, A[together].y - B[together].y) < 15) together++;
+    ok(together > 15, '  the two that share a mouth run as one road for a long way first',
+      `${together * 10}px in step, parting at (${Math.round(A[together].x)}, ${Math.round(A[together].y)})`);
+    const apart = Math.hypot(tail10(iron.routes[i]).x - tail10(iron.routes[j]).x,
+                             tail10(iron.routes[i]).y - tail10(iron.routes[j]).y);
+    ok(apart > 200, '  and then end a long way apart', `${Math.round(apart)}px between their doors`);
+    // The western road touches neither.
+    let near = Infinity;
+    for (const p of paths[lone]) for (const q of [...A, ...B]) {
+      near = Math.min(near, Math.hypot(p.x - q.x, p.y - q.y));
+    }
+    ok(near > 100, '  while the western road never comes near either of them',
+      `closest approach ${Math.round(near)}px`);
+  }
+
+  // 40 / 30 / 30, MEASURED THROUGH THE REAL SPAWNER rather than read off routeMix.
+  //
+  // Here each route ends at a door of its own, so a share of the wave and a share of
+  // a door are the same number — which is what makes this the first board where the
+  // owner's percentages can be asked of the spawner directly.
+  {
+    useLevel(levels.indexOf(iron));
+    const st = { enemies: [] };
+    const seen = [0, 0, 0];
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      seen[st.enemies[0].route]++;
+    }
+    const want = [0.4, 0.3, 0.3];
+    const worst = Math.max(...seen.map((c, i) => Math.abs(c / N - want[i])));
+    ok(worst < 0.01, '  and the wave splits 40/30/30 between them, over 4000 spawns',
+      seen.map(c => (100 * c / N).toFixed(1) + '%').join(' / '));
+    // WHICH MEANS 40% IN AT THE TOP LEFT AND 60% AT THE TOP RIGHT, the entry-side
+    // reading of an ask that named only the exits.
+    const byMouth = mouths.map(m => m.reduce((n, r) => n + seen[r], 0) / N);
+    ok(Math.abs(Math.max(...byMouth) - 0.6) < 0.01 && Math.abs(Math.min(...byMouth) - 0.4) < 0.01,
+      '  which is 60% in at the forked mouth and 40% at the other',
+      byMouth.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+  }
+
+  // --- what is already standing on it ----------------------------------------
+  //
+  // THE BOTTOM RIGHT CORNER PLOT, measured off the artwork rather than trusted,
+  // because an index is what the file holds and "bottom right (corner)" is what the
+  // owner asked for. Stage 6 has already shipped a prebuilt pinned to an index a
+  // redraw moved.
+  ok(Array.isArray(iron.prebuilt) && iron.prebuilt.length === 1,
+    'it opens with exactly one tower already standing',
+    `${(iron.prebuilt || []).length} prebuilt`);
+  {
+    const pre = iron.prebuilt[0];
+    ok(pre.family === 'archery' && pre.name === 'Musketeer Post',
+      '  a Musketeer Post, which is an ARCHERY tier 4 and the largest gift any board makes',
+      `${pre.name} (${pre.family})`);
+    const spot = iron.plots[pre.plot];
+    const byCorner = [...iron.plots].sort((a, b) =>
+      Math.hypot(a.x - 960, a.y - 540) - Math.hypot(b.x - 960, b.y - 540));
+    ok(byCorner[0] === spot, '  standing on the plot nearest the bottom-right corner',
+      `(${spot.x}, ${spot.y}), ${Math.round(Math.hypot(spot.x - 960, spot.y - 540))}px from the corner`);
+    ok(Math.hypot(byCorner[1].x - 960, byCorner[1].y - 540) -
+        Math.hypot(spot.x - 960, spot.y - 540) >= 40,
+      '  by a margin no small redraw could close',
+      `${Math.round(Math.hypot(byCorner[1].x - 960, byCorner[1].y - 540) -
+        Math.hypot(spot.x - 960, spot.y - 540))}px clear of the next nearest`);
+    // AND THE BOARD OPENS ITS OWN RUNG, so a player who sells the free tower can
+    // build another. A prebuilt the board forbids is a tower that cannot be replaced.
+    ok(iron.allow.includes(pre.name), '  on a board that also lets the player build one',
+      iron.allow.join(', '));
+    // AND IT WATCHES ALL THREE DOORS, which is not what this check was written
+    // expecting. The guess was two — the plot sits in the crook between the southern
+    // and eastern branches and the western road runs down the far side of the board —
+    // and the measurement says three. A Musketeer Post's 480px is the longest ring in
+    // the game and the far door is 458px away.
+    //
+    // SO THE THING WORTH PINNING IS THE ASYMMETRY, not the count. It covers 84% of
+    // each of the two roads beside it and only the last 46% of the far one, which is
+    // the difference between answering a road and catching what is left of it.
+    const post = families.find(f => f.id === 'archery').tiers.find(t => t.name === pre.name);
+    const onCanvas = p => p.y >= 0 && p.y <= 540 && p.x >= 0 && p.x <= 960;
+    const covered = iron.routes.map(r => {
+      let inside = 0, total = 0;
+      for (let s = 0; s <= r.total; s += 2) {
+        const p = routeAt(r, s);
+        if (!onCanvas(p)) continue;
+        total += 2;
+        if (Math.hypot(p.x - spot.x, p.y - spot.y) <= post.range) inside += 2;
+      }
+      return inside / total;
+    });
+    ok(covered.every(f => f > 0), '  and reaching every one of the three doors from where it stands',
+      covered.map(f => (100 * f).toFixed(0) + '%').join(' / ') + ` of each road, ring ${post.range}px`);
+    const far = Math.min(...covered), near = Math.min(...covered.filter(f => f !== far));
+    ok(near - far > 0.25, '  though it holds the two roads beside it far better than the third',
+      `${(100 * near).toFixed(0)}% of the nearer pair against ${(100 * far).toFixed(0)}% of the far road`);
   }
 }
 

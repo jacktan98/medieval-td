@@ -214,14 +214,44 @@ const EXIT_EDGES = (() => {
 //
 // One index per entry, naming the exit it takes, in the order the mouths are
 // printed. `1,0` is a crossing of two; `0,1` is what the default already does.
+//
+// AND A LONG FORM, `entry:exit`, ONE ITEM PER ROUTE:
+//
+//   node tools/trace-road.mjs assets/map/Stage_10_Map --exit bottom,right --pair 0:1,1:2,1:0
+//
+// Stage 10 is the first board where the count of routes is neither the count of
+// entries nor the count of exits. Ironforge Town has two ways in and three out,
+// because the road from the top right FORKS — "enemies who enter the top right
+// will exit either at the bottom right or right road" — so one entry needs two
+// routes and the other needs one. The short form cannot say that: it is indexed by
+// entry, so it can name at most one exit per entry.
+//
+// The long form drops that assumption entirely and names each route. Mixing the two
+// forms in one list is rejected rather than guessed at, because `0:1,2` reads as
+// either "and entry 2's default" or "and entry 1 takes exit 2" depending on which
+// half you believe.
 const PAIRING = (() => {
   const i = process.argv.indexOf('--pair');
   if (i < 0) return null;
-  const list = (process.argv[i + 1] || '').split(',').map(n => Number(n.trim()));
-  if (!list.length || list.some(n => !Number.isInteger(n) || n < 0)) {
+  const items = (process.argv[i + 1] || '').split(',').map(s => s.trim());
+  const long = items.filter(s => s.includes(':'));
+  if (long.length && long.length !== items.length) {
+    throw new Error('--pair takes either bare exit indices or entry:exit pairs, not both');
+  }
+  const nums = s => s.split(':').map(n => Number(n.trim()));
+  const ok = n => Number.isInteger(n) && n >= 0;
+  if (long.length) {
+    const list = items.map(nums);
+    if (list.some(p => p.length !== 2 || !p.every(ok))) {
+      throw new Error('--pair pairs look like 0:1,1:2,1:0 — entry index, colon, exit index');
+    }
+    return { long: true, list };
+  }
+  const list = items.map(Number);
+  if (!list.length || !list.every(ok)) {
     throw new Error('--pair takes one exit index per entry, like --pair 1,0');
   }
-  return list;
+  return { long: false, list };
 })();
 
 // A ROAD THAT MEETS A CORNER IS ONE MOUTH, not two.
@@ -390,14 +420,22 @@ function costField(goal) {
 // entry from the top belongs to the nth exit from the top. If a future map has
 // roads that DO cross, this is the thing that will be wrong, and it will be
 // wrong loudly — the field will not reach and the error above will say so.
+const shown = p => (PAIRING.long ? p.join(':') : p);
 const pairs = PAIRING
   // TOLD RATHER THAN DERIVED. Checked here rather than at parse time, because what
   // makes an index wrong is how many mouths the artwork actually has.
-  ? (PAIRING.length === entries.length && PAIRING.every(n => n < exits.length)
-      ? entries.map((run, i) => [run, exits[PAIRING[i]]])
-      : (() => { throw new Error(
-          `--pair needs one exit index per entry: ${entries.length} entries and ` +
-          `${exits.length} exits, given [${PAIRING.join(', ')}]`); })())
+  ? (PAIRING.long
+      ? (PAIRING.list.every(([a, b]) => a < entries.length && b < exits.length)
+          ? PAIRING.list.map(([a, b]) => [entries[a], exits[b]])
+          : (() => { throw new Error(
+              `--pair names a mouth the artwork does not have: ${entries.length} ` +
+              `entries and ${exits.length} exits, given ` +
+              `[${PAIRING.list.map(shown).join(', ')}]`); })())
+      : PAIRING.list.length === entries.length && PAIRING.list.every(n => n < exits.length)
+        ? entries.map((run, i) => [run, exits[PAIRING.list[i]]])
+        : (() => { throw new Error(
+            `--pair needs one exit index per entry: ${entries.length} entries and ` +
+            `${exits.length} exits, given [${PAIRING.list.join(', ')}]`); })())
   : exits.length === 1
   ? entries.map(run => [run, exits[0]])
   // AND ONE WAY IN WITH SEVERAL WAYS OUT, which is stage 6 and the mirror of the
@@ -513,8 +551,13 @@ pairs.forEach(([run, exit], n) => {
   // Named by the edge it comes in through as well as where along it, because
   // "entry at y 0" on a road that runs off the top is a coordinate that reads as
   // a mistake until you know which edge it belongs to.
+  //
+  // AND THE EXIT THE SAME WAY, which it used to print as "exit at y <n>" whatever
+  // edge it left by — so stage 10's bottom-left exit announced itself as "y 368"
+  // when 368 is its x. One edge for the exits made that harmless; three exits over
+  // two edges makes it a lie you cannot check the routes against.
   console.log(`\n  // in from the ${run.edge} at ${run.cell[0] * STEP}, ${run.cell[1] * STEP} -> ` +
-    `exit at y ${Math.round((exit.a + exit.b) / 2 * STEP)}`);
+    `${exit.edge} exit at ${exit.cell[0] * STEP}, ${exit.cell[1] * STEP}`);
 
   console.log(`\n  // route ${n} — ${full.length} points, ${Math.round(len)}px long, ` +
     `${Math.round(narrow)}px of road either side at its narrowest`);

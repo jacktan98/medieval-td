@@ -22,6 +22,7 @@ import { level08 } from './data/level08.js';
 import { level09 } from './data/level09.js';
 import { level10 } from './data/level10.js';
 import { level11 } from './data/level11.js';
+import { level12 } from './data/level12.js';
 import { prepare } from './route.js';
 
 // IN THE ORDER THEY ARE PLAYED, which is no longer the order the files are
@@ -36,7 +37,7 @@ import { prepare } from './route.js';
 // panel's map tabs, and LEVEL_OF in tools/overview.mjs, which is what puts a
 // board behind a stage on the world map.
 export const levels = [level00, level04, level05, level06, level07, level08, level09, level10,
-                       level11, level01, level02, level03];
+                       level11, level12, level01, level02, level03];
 
 // Measure every route once, at load. `routes` holds prepared routes from here
 // on — the raw polyline is `route.pts` — so nothing has to remember whether it

@@ -42,13 +42,14 @@ const plots1 = [
 
 export const level00 = {
   id: 'm0',
-  name: 'Oakhaven Town',
+  name: 'Oakhaven Village',
   // AND A SHORT ONE FOR THE ADMIN PANEL'S TAB, which is a chip in a row that now
-  // holds five of them and is hard against the length buttons and the purse. "Town"
-  // and "Outskirts" are also what tells these two apart at a glance, which "Oakhaven"
-  // on both would not. Everywhere a name has room to be read in full it is the full
-  // one: the stage panel, the pause banner and the score record all use `name`.
-  short: 'Town',
+  // holds five of them and is hard against the length buttons and the purse.
+  // "Village" and "Outskirts" are also what tells these two apart at a glance,
+  // which "Oakhaven" on both would not. Everywhere a name has room to be read in
+  // full it is the full one: the stage panel, the pause banner and the score record
+  // all use `name`.
+  short: 'Village',
   art: 'map00',
   // DRAWN IN LAYERS rather than in one file, which is why this names a stem
   // rather than an .svg: the artwork is Stage_1_Map_Layer_1..3.svg and the tools

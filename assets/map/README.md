@@ -697,18 +697,21 @@ hand:
 
 - `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg`,
   `Stage_4_Map_base.svg`, `Stage_5_Map_base.svg`, `Stage_6_Map_base.svg`,
-  `Stage_7_Map_base.svg`, `Stage_8_Map_base.svg` and `Stage_9_Map_base.svg` — the
-  nine drawn boards with
+  `Stage_7_Map_base.svg`, `Stage_8_Map_base.svg`, `Stage_9_Map_base.svg` and
+  `Stage_10_Map_base.svg` — the ten drawn boards with
   their plot markers cut out, written by `node tools/split-map.mjs
-  assets/map/Stage_1_Map` and the same for the others. Note the **stem**: all nine
+  assets/map/Stage_1_Map` and the same for the others. Note the **stem**: all ten
   are drawn in layers, so the command names `Stage_1_Map` rather than a file. Same
   pipeline as `Map_N_base.svg` otherwise.
 - `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
   `Stage_4_Map_front.svg`, `Stage_5_Map_front.svg`, `Stage_6_Map_front.svg`,
-  `Stage_7_Map_front.svg`, `Stage_8_Map_front.svg` and `Stage_9_Map_front.svg` —
-  **the things on those boards
+  `Stage_7_Map_front.svg`, `Stage_8_Map_front.svg`, `Stage_9_Map_front.svg` and
+  `Stage_10_Map_front.svg` — **the things on those boards
   that stand up**, on a transparent sheet of the same artboard. The same
   command writes them. See "What a figure can walk behind" below.
+  Stage 10 needs `--accept` on that command, because its archery target stands
+  29.5px tall and the splitter cannot tell a standing thing from a flat one inside
+  the 26–35px band. See the note at the top of `src/data/level12.js`.
 - `Stage_5_Map_over.svg` and `Stage_6_Map_over.svg` — **the pieces of scenery that
   are in front of everything**: the near side of each board's bridge. Written by the
   same command, given `--over 3e` and `--over 3c`, which name the layer part to lift.

@@ -2451,8 +2451,9 @@ export const stage8Waves = [
 // at a Shadow Thug — see `unseen` in data/towers.js and src/units.js — so a board
 // sending ten of them is a board asking for a barracks that can hold ten, or a
 // splash big enough to catch what the squad cannot. Sandshroud opens BOTH tier-4
-// barracks rungs, which is the one board in the game that does, and that is not a
-// coincidence: see `allow` in data/level11.js.
+// barracks rungs, which no earlier board does, and that is not a coincidence: see
+// `allow` in data/level11.js. Ironforge opens both as well, and it is the board he
+// walks onto next.
 //
 // HIS LADDER IS WIDER THAN A BLOCKER'S AND NARROWER THAN A GIANT'S — 1.8 down to
 // 1.5 — and it is the only gap set here not carried over from the shipped table.
@@ -2491,6 +2492,63 @@ export const stage9Waves = [
   { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.3 }, { type: 'shadow_inf', count: 10, gap: 1.5 },
                        { type: 'heavy_inf', count: 4, gap: 1.7 }, { type: 'archer_inf', count: 12, gap: 1.0 },
                        { type: 'plague_inf', count: 4, gap: 1.8 }, { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
+// STAGE 10: Ironforge Town, and the board the Rally Thug walks onto.
+//
+// HE SHIPS HERE AND NOWHERE ELSE, exactly as the Shadow Thug shipped on the desert
+// and for the same reason: a creature nothing sends is a creature no player meets.
+// The owner has put ONE of him in each of the last three waves — 1, 1, 1 — and one
+// is the right number for what he is. He does not fight for the wave, he lends it
+// health, so a second would not make the wave twice as hard; it would make the
+// FIRST one's lending redundant, because an enemy can only be boosted once ever
+// (see `rallied` in src/enemies.js).
+//
+// WHAT ONE OF HIM IS WORTH DEPENDS ENTIRELY ON WHO HE WALKS WITH, and that is why
+// he arrives in wave 6 rather than wave 3. His aura reaches 100px, and on an open
+// road at these gaps the column is 105px and more apart — so on a thin wave he pays
+// out nothing at all. What he is for is the crowd that piles up against a squad or
+// stacks at a bend, and those crowds are waves 6 to 8: ten, twelve and fourteen
+// blockers, which are the slowest things on the road and the things a squad holds
+// longest. He is a multiplier on congestion, so he ships where the congestion is.
+//
+// AND THE BOARD IS BUILT FOR IT. Ironforge is the first board with THREE doors, and
+// 40/30/30 means no single road carries even half the wave — see `routeMix` in
+// data/level12.js. A wave split three ways is a wave that bunches less, which is the
+// one thing that blunts him. The counts here are the owner's; what this note records
+// is that the two facts pull against each other on purpose.
+//
+// THE SHADOW THUG COMES TOO, at 1, 1, 2, 4, 6, 8 — flatter than Sandshroud's 1, 2,
+// 2, 4, 6, 10, because this board also carries giants the whole way up where that
+// one tapered them. Six giants and eight shadows in the last wave is 4,800 points of
+// armour a tower cannot see past and 2,000 it cannot see at all.
+//
+// Every gap is a multiple of 0.1, because the admin panel's rate stepper rounds to a
+// tenth and a shipped number it cannot return to is one the owner can never put back.
+export const stage10Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
 export const wavesExtended = [

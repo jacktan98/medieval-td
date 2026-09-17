@@ -688,17 +688,18 @@ export const ABILITIES = [
     of: 'Musketeer Post',
     icon: 'ability_deadeye',
     cost: ABILITY_COST,
-    // ONE SHOT IN TEN, against the burst's one in four, and eight times as hard.
-    // That is the shape the artist asked for: the burst is a rhythm you stop
+    // ONE SHOT IN EIGHT, against the burst's one in four, and six times as hard.
+    // That is the shape the owner asked for: the burst is a rhythm you stop
     // noticing and this is an event.
     //
-    // TEN RATHER THAN EIGHT ALSO KEEPS THE TWO OUT OF EACH OTHER'S WAY. Where the
-    // cycles collide the rarer one wins, so a Post that has bought both loses a
-    // burst to every Deadeye that lands on one of its slots. At 4 and 8 that was
-    // EVERY Deadeye; at 4 and 10 it is every other one — one burst lost in twenty
-    // shots — and the second 150 gold is worth 86% of what it is worth alone
-    // instead of 60%.
-    every: 10,
+    // EIGHT IS A MULTIPLE OF THE BURST'S FOUR, and that costs the Post that has
+    // bought both. Where the cycles collide the rarer one wins, so EVERY Deadeye
+    // lands on a burst slot and eats it — shots 8, 16, 24 — and half of the
+    // bursts are lost. It was 10 before, where only every other Deadeye collided.
+    // The owner asked for 7 ordinary shots between them, so this is what that
+    // costs, named here rather than left to be rediscovered: the second 150 gold
+    // on a Post is worth less than the first.
+    every: 8,
     shots: 1,
     // TWO SECONDS of held pose, not one. It is the biggest single blow in the game
     // and he stands over it. Still free, because the musket takes 2.4s to load
@@ -720,23 +721,29 @@ export const ABILITIES = [
     // tower's own standing order — so "aim at whoever is nearest the exit" still
     // means that, over the whole board instead of over the ring.
     global: true,
-    // EIGHT TIMES THE TOWER'S OWN SHOT rather than a number of its own, which is
+    // SIX TIMES THE TOWER'S OWN SHOT rather than a number of its own, which is
     // the rule the owner put on every ability here: a magnitude is a multiple of
     // the stat it changes, so it stays true the next time that stat is retuned. It
     // was a flat 300 against a 60 damage tower, which was five times — and would
     // have been four times, or eight, after any change to the Post.
     //
-    // 520 NOW THAT THE POST HITS FOR 65, and it moved on its own: eight times the
-    // tower's shot is what is written down, so raising the tower raised this with
+    // 360 AGAINST THE POST'S 60, and it will move on its own: six times the
+    // tower's shot is what is written down, so retuning the tower retunes this with
     // no line here to edit. That is the whole reason the magnitudes are multiples.
     //
-    // The biggest single blow in the game by a factor of eight. Nine ordinary
-    // shots plus one of these is 1105 over ten reloads: 46.0 a second against a
-    // plain Post's 27.1, where Burst Fire is 40.6. Rarer and harder than the burst
-    // and a little ahead of it per second, which is the trade — what separates the
-    // two is WHERE the damage goes: the burst clears a rank of militia, this
-    // removes one giant.
-    times: 8,
+    // It was eight, once in ten. The owner brought it to six, once in eight: the
+    // event comes round oftener and lands softer, and ON ITS OWN the two changes
+    // very nearly cancel — 40.2 a second against the old 40.9, over a plain Post's
+    // 25.0, where Burst Fire is 37.1. Still the biggest single blow in the game by
+    // a factor of six, and still a little ahead of the burst per second, which is
+    // the trade: what separates the two is WHERE the damage goes — the burst clears
+    // a rank of militia, this removes one giant.
+    //
+    // WHAT DID MOVE IS THE PAIR. A Post carrying both used to make 50.8 a second
+    // and now makes 46.2, because the cycles collide — see `every` above. The
+    // figures are tools/abilities.mjs's, measured through the real trigger rather
+    // than worked out here, and it prints all four every run.
+    times: 6,
     // AND IT GOES THROUGH TWO RANKS, the same total the burst now carries, at the
     // owner's ask — see the note on `pierce` there for why a total rather than a
     // bonus. The two abilities on this tower break the same armour, which is right:
