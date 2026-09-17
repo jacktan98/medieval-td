@@ -1093,8 +1093,9 @@ export function updateEnemies(state, dt) {
 
 // --- the Rally Thug's aura ----------------------------------------------------
 //
-// A fifth of an enemy's own maximum, lent while it stands inside 100px of a Rally
-// Thug and taken back the moment it walks out. The owner's rule, and his example:
+// A fifth of an enemy's own maximum, lent while it stands inside the Rally Thug's
+// own radius — `rally.range` on his def, 150px today — and taken back the moment it
+// walks out. The owner's rule, and his example:
 //
 //     Thug health 80 -> in range, 96 -> shot down to 10 -> out of range, 1
 //

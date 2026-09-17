@@ -430,9 +430,21 @@ export const enemyTypes = {
     // which is what "by 20%" means and what makes him worth more beside the heavy
     // half of a wave than the light half.
     //
+    // 150px, RAISED FROM 100 at the owner's word. It is half again as far and more
+    // than twice the ground: an aura is a circle, so 150 covers 2.25x the area 100
+    // did, and on a road it is the LENGTH that counts — 300px of column against 200.
+    // At Ironforge's spacing that is about four bodies in reach at once where it was
+    // two or three.
+    //
+    // WHAT IT MEANT AT 100 IS WORTH KEEPING. The whole column there was 72 to 95px
+    // apart, so his neighbours were inside it by a margin of a few pixels and a
+    // single retune of a gap could have put them out. At 150 the nearest thing to
+    // trouble is a giant at 95px, which is 55px of slack. He has stopped being a
+    // creature whose aura depends on the wave table.
+    //
     // Read by rallyAura in src/enemies.js. A def with no `rally` block simply has
     // no aura, so this is the only creature the pass does any work for.
-    rally: { range: 100, share: 0.2 },
+    rally: { range: 150, share: 0.2 },
     speed: 45,      // the slowest thing on the road but the boss
     // Above the Giant's 40, which is the only other two-life creature on the road.
     // He is worth more to kill than his own health says, because what he is worth
@@ -2515,19 +2527,27 @@ export const stage9Waves = [
 // in wave 6 rather than wave 3: he is a multiplier on congestion, so he ships where
 // the crowd is.
 //
-// AND THE SPEED PASS CHANGED WHAT "CONGESTION" MEANS HERE. His aura reaches 100px.
-// At the old speeds the column on an OPEN road was 105px and more apart, so he paid
-// out nothing at all unless a squad or a bend bunched the wave — which is what this
-// note used to say. Everything walks slower now, and a gap in seconds times a slower
-// pace is a shorter gap in pixels. Wave 6 today, spacing as the table types it:
+// AND 150px IS THE RADIUS AT WHICH HE STARTS WORKING ON THIS BOARD AT ALL.
 //
-//   blockers   1.6s x 50px/s =  80px        archers   1.2s x 60 = 72px
-//   shadows    1.7s x 50     =  85px        doctors   1.9s x 50 = 95px
-//   giants     1.9s x 50     =  95px        priests   1.8s x 50 = 90px
+// Wave 6 sent down Ironforge by the game's own spawner, no towers and no soldiers, so
+// nothing bunches the column but the road itself — how many of its 22 other bodies
+// were ever boosted:
 //
-// Every one of them inside the 100. So the aura now fires on an empty road, and it
-// was measured rather than inferred: wave 6 sent down Ironforge with NO TOWERS ON THE
-// BOARD boosted 5 enemies, 3 of them at once. It used to boost none.
+//   100px   0        the radius he shipped with
+//   150px   3        the owner's, and 3 of them in reach at once
+//   200px   4
+//
+// ZERO IS THE NUMBER TO UNDERSTAND. Spacing on a road is a gap in seconds times a
+// speed, and after the speed pass wave 6's column is 72 to 95px apart — every type
+// apparently inside a 100px reach. It still boosted nobody, and the reason is THIS
+// BOARD: Ironforge has three doors and `routeMix` deals 40/30/30, so the man walking
+// beside him is usually on another road entirely. See data/level12.js. The arithmetic
+// says the aura reaches; the deal says there is often nothing there to reach.
+//
+// So 150 is not "half again as much aura", it is the difference between a creature
+// who does something here and one who does not. The counts here are the owner's and
+// the two facts still pull against each other on purpose — a wave split three ways is
+// a wave that bunches less — but at 150 he wins that argument often enough to matter.
 //
 // HE IS ALSO THE SLOWEST THING ON THE ROAD BUT THE BOSS, at 45 against everything
 // else's 50 and 60, which compounds it — the column he walks in front of catches him

@@ -1860,19 +1860,24 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       `${Math.min(...withHim)} bodies at his thinnest against ${Math.max(...without)} at their thickest`);
   }
 
-  // AND HIS AURA REACHES THE COLUMN ON AN OPEN ROAD, which it did not before the
-  // owner's speed pass and which is the single biggest thing that changed about him.
+  // AND HIS AURA HAS TO CLEAR THE ROUTE SPLIT, not just the spacing.
   //
-  // An enemy's spacing is its GAP times its SPEED. At the old speeds every type in his
-  // waves was 105px or more apart against his 100px reach, so on a road with no towers
-  // on it he boosted nobody — he only ever paid out where a squad or a bend bunched
-  // the wave. Everything walks slower now and the same gaps are shorter in pixels.
+  // THE SPACING ALONE IS NOT THE TEST, and believing it was is what made the first
+  // version of this check worthless. An enemy's spacing is its GAP times its SPEED,
+  // and after the owner's speed pass wave 6's column is 72 to 95px apart — every type
+  // apparently inside even the 100px radius he shipped with. Played for real at 100px,
+  // with no towers on the board, he boosted NOBODY.
   //
-  // CHECKED AS THE PRODUCT rather than by playing a wave, because it is arithmetic and
-  // the arithmetic is the thing a later retune would break: raise a gap or a speed and
-  // that type slips back outside his reach with nothing else to say so. Measured in
-  // the running game once, on Ironforge with no towers at all: wave 6 boosted 5
-  // enemies, 3 of them at once.
+  // The reason is this board. Ironforge deals 40/30/30 across three roads, so the man
+  // 80px behind him in the table is usually on a different road entirely, and the
+  // spacing arithmetic describes a column that never exists. Measured over wave 6 by
+  // the game's own spawner: 0 boosted at 100px, 3 at 150, 4 at 200.
+  //
+  // SO WHAT IS CHECKED IS THE MARGIN OVER THE SPACING, not that it merely reaches.
+  // A radius equal to the widest gap is the case that measured zero; the aura has to
+  // be far enough clear of it to catch a neighbour that is one place further back in a
+  // column dealt three ways. Half again as far is the owner's 150 against a 95px
+  // widest, and this fails if a retune brings the two back level.
   {
     const aura = enemyTypes.rally_inf.rally.range;
     const withRally = iron.waves.filter(w => w.groups.some(g => g.type === 'rally_inf'));
@@ -1880,9 +1885,10 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       type: g.type, px: Math.round(g.gap * enemyTypes[g.type].speed)
     })));
     const worst = spans.reduce((a, b) => (b.px > a.px ? b : a));
-    ok(worst.px <= aura,
-      '  and every type beside him walks close enough for his aura to reach',
-      `widest spacing is ${worst.type} at ${worst.px}px, against a ${aura}px aura`);
+    ok(aura >= worst.px * 1.5,
+      '  and his aura reaches half again past the widest gap in his waves',
+      `${aura}px against a widest spacing of ${worst.px}px (${worst.type}) — ` +
+      `${(aura / worst.px).toFixed(2)}x`);
     // AND HE IS THE SLOWEST THING ON THE ROAD BUT THE BOSS, which is what carries the
     // column through his reach rather than leaving it holding station outside.
     const road = Object.values(enemyTypes).filter(d => !d.boss && d.speed);
