@@ -419,8 +419,8 @@ export const arrow = {
 // and you watch it go, a musket cracks and the thing is already there. It also
 // has to be, because this tower shoots across the whole map — at 360 a shot at
 // something 450px away would spend a second and a quarter in the air, which on a
-// 2.4s reload means the tower is holding a shot in flight half the time it is
-// working.
+// 2s reload means the tower is holding a shot in flight more than half the time it
+// is working.
 //
 // IT WAS 520 AND THE SENTENCE ABOVE WAS NOT TRUE. The ballista's bolt and
 // Deadeye's ball both landed at 520 afterwards, so "the fastest thing in the
@@ -1328,13 +1328,19 @@ export const AIM_MODES = [
 // which is what makes the ball worth waiting for. It was 50 for one build, level
 // with the Abbey; the artist raised it, and the reload is what pays for it.
 //
-// `cooldown` 2.40, and it is the number holding the tower down. 60 every 2.4s is
-// 25.0 damage a second, which is LESS than an Elite Archer's 31.3 and less than a
-// Cardinal's 34.5 — this is deliberately not an upgrade in output. What it buys is
+// `cooldown` 2.00, and it is the number holding the tower down. 60 every 2s is 30.0
+// damage a second, which is still LESS than a Crossbow Sentry's 43.8 and less than
+// an Abbey's 35.7 — this is deliberately not an upgrade in output. What it buys is
 // UPTIME: a bow covers about a fifth of a map's road and spends the rest of the
-// wave idle, and this covers all of it, so 25.0 a second everywhere can beat 31.3
+// wave idle, and this covers all of it, so 30.0 a second everywhere can beat 43.8
 // a second somewhere. That is the trade to check when the sweep runs, and the
 // reload is the dial to turn if it wins too easily.
+//
+// IT WAS 2.40 AND THE OWNER BROUGHT IT TO 2.00, which is a fifth more output on the
+// tower that already reaches the whole board — the largest single buff in this pass.
+// What pays some of it back is Deadeye, which now charges 3s for the reload after
+// its shot; a Post with Deadeye makes 47.7 a second against the 51.4 the same cycle
+// would make if the big shot were still free.
 //
 // `cost` 200, which is 500 gold of cumulative spend on one plot — more than any
 // two other towers together. It also has to be worth pressing over a second bow
@@ -1397,7 +1403,7 @@ export const archery = [
   // button's own icon says. Tiers 1 to 3 keep the plain form: they are the ladder,
   // and the column they sit in is what names the family.
   { ...post, ...musketeer, tier: 4, name: 'Musketeer Post', title: 'Musketeer Post', unit: 'Musketeer',
-    cost: 200, damage: 60, range: 480, cooldown: 2.40, colour: '#A8A29A', targeting: true,
+    cost: 200, damage: 60, range: 480, cooldown: 2.00, colour: '#A8A29A', targeting: true,
     damageType: 'physical', pierce: 1,
     // The upgrade button's picture when this is what the button buys. Every other
     // tier uses the generic arrow; this one has an icon of its own, so the tap
@@ -2132,14 +2138,20 @@ const ballista = {
   mountFrac: [0.360, 0.285],
   ammo: bolt,
   // A FASTER CYCLE THAN THE CATAPULTS, and it is the tier's whole character
-  // beside the damage. 0.45 / 0.45 / 0.9 against 0.75 / 0.75 / 1.5 — the same
-  // shape at 60% of the length, so the machine reads as the same three beats
-  // played quicker rather than as a different animation.
+  // beside the damage. 0.5 / 0.5 / 1.0 against 0.75 / 0.75 / 1.5 — the same
+  // shape at two thirds of the length, so the machine reads as the same three
+  // beats played quicker rather than as a different animation.
   //
-  // The Fire beat still has to outlast the shot: 0.9s of pose against a longest
+  // THEY MUST SUM TO `cooldown` AND THEY ARE DERIVED FROM IT. The owner moved this
+  // turret from 1.80s to 2.00s, and beats left at 0.45 / 0.45 / 0.9 would have kept
+  // the ANIMATION at 1.8 while the rules reloaded at 2.0 — the card promising a bolt
+  // every 2s and the machine playing a 1.8s loop out of step with it. Scaled by the
+  // same 10/9 the cooldown moved by, which keeps the shape exactly.
+  //
+  // The Fire beat still has to outlast the shot: 1.0s of pose against a longest
   // flight of 260 / 520 = 0.50s. tools/siege.mjs checks that margin for every
   // tier and this one has the most of any of them.
-  beats: [0.45, 0.45, 0.9],
+  beats: [0.5, 0.5, 1.0],
   portrait: 'crew_t4',
   portraitTrim: CREW4_TRIM,
   // The centre of his own ground shadow, source (293.7, 308.5), measured by
@@ -2527,7 +2539,7 @@ export const siege = [
   // tools/sim.mjs' scenarios for maps 1 and 2 — and the note there on why map 3
   // has no artillery reading at all.
   { ...ballista, tier: 4, name: 'Ballista Turret', title: 'Ballista Turret', unit: 'Ballista Engineer',
-    cost: 230, damage: 55, splash: 70, range: 260, minRange: 0, cooldown: 1.80, colour: '#A8A29A',
+    cost: 230, damage: 55, splash: 70, range: 260, minRange: 0, cooldown: 2.00, colour: '#A8A29A',
     damageType: 'physical', pierce: 1,
     // The upgrade button's own picture on a Trebuchet, the third tier 4 to bring
     // one — see the note on the Musketeer Post's `glyph`.
@@ -3136,32 +3148,37 @@ const cardinal = {
 //
 // So, in order:
 //
-// `cooldown` 1.82 / 1.64 / 1.45. Slower than archery's 1.00 / 0.90 / 0.80 and
-// faster than artillery's flat 3.0, which is the middle column of the table.
+// `cooldown` 1.80 / 1.60 / 1.40. Slower than archery's 1.00 / 0.90 / 0.80 and
+// faster than artillery's flat 3.0, which is the middle column of the table. The
+// owner rounded all three off the 1.82 / 1.64 / 1.45 they shipped at, which is the
+// same ladder a hair quicker and a great deal easier to read on a card.
 //
 // `damage` 20 / 30 / 50, the highest in the game at every tier — against
-// archery's 8 / 14 / 26 and artillery's 18 / 24 / 36.
+// archery's 10 / 15 / 25 and artillery's 18 / 24 / 36.
 //
-// MORE OUTPUT THAN ARCHERY, AND BY LESS AND LESS AS THE LADDER CLIMBS.
+// MORE OUTPUT THAN ARCHERY, AT EVERY RUNG, BY ABOUT AN EIGHTH.
 //
 // The cooldowns were 2.00 / 1.80 / 1.60, which put the two families at EXACTLY
-// the same damage per second — 10.0, 16.7 and 31.3 for both, to a tenth. That
-// was pleasing and it was wrong, and the artist said why in one line: a
-// monastery costs more and reaches less, so it cannot also do the same work.
-// Two towers where one is strictly worse is not a choice.
+// the same damage per second. That was pleasing and it was wrong, and the artist
+// said why in one line: a monastery costs more and reaches less, so it cannot also
+// do the same work. Two towers where one is strictly worse is not a choice.
 //
-// So the reload came down a tenth and nothing else moved: 11.0, 18.3 and 34.5 a
-// second against archery's 10.0, 16.7 and 31.3 — the premium a shorter reach and
-// a bigger bill have to buy.
+// So the reload came down and nothing else moved. TODAY, at the owner's rounded
+// 1.80 / 1.60 / 1.40:
 //
-// ARCHERY'S SIDE OF IT HAS SINCE MOVED, on the owner's own pass: 8 / 14 / 26 at
-// the same reloads is 8.0, 15.6 and 32.5, so the monastery's premium is +37% at
-// tier 1, +17% at tier 2 and +6% at tier 3. That is a shape rather than a flat
-// tenth, and it is a defensible one — a shrine is much better than a watchtower
-// and an abbey is barely better than a crossbow tower, so the reason to take the
-// monastery is strongest early, which is when its short reach hurts least.
-// Watch tier 3: another point on the elite archer would put the two families
-// level again, which is the exact thing the reload cut was made to prevent.
+//   tier 1    archery 10.0/s    monastery 11.1/s    +11%
+//   tier 2    archery 16.7/s    monastery 18.8/s    +13%
+//   tier 3    archery 31.3/s    monastery 35.7/s    +14%
+//
+// A premium that holds roughly flat and leans very slightly up the ladder, which is
+// a better shape than the one this note used to describe — it read +37% / +17% / +6%
+// off numbers neither family carries any more, with the monastery's whole case
+// concentrated in tier 1 and all but gone by tier 3. The reason to take a monastery
+// is now the same size wherever you are on the ladder, and what varies is whether
+// its 30px of lost reach matters on the plot you are standing on.
+//
+// Both columns are printed by tools/families.mjs on every run, so this table cannot
+// go stale again without somebody having read the real one first.
 //
 // EVERYTHING ELSE THAT SEPARATES THEM IS SHAPE:
 //
@@ -3247,7 +3264,7 @@ const cardinal = {
 //
 // It is the family with the strongest case for it after archery, and the case is
 // the size of the blow rather than the reach: 50 damage into a militiaman with 80
-// health throws most of a 1.45s reload away, and "most health" is exactly where
+// health throws most of a 1.40s reload away, and "most health" is exactly where
 // that blow belongs. A bow wasting 10 on the same man has wasted a tenth as much.
 //
 // It also fits what the family has become. The button is a preference and never a
@@ -3303,11 +3320,11 @@ const pope = {
 // honest shape for a ladder whose lower rungs are the reason to take the family.
 export const monastery = [
   { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
-    cost: 80,  damage: 20, range: 160, cooldown: 1.82, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
+    cost: 80,  damage: 20, range: 160, cooldown: 1.80, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
   { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
-    cost: 110, damage: 30, range: 180, cooldown: 1.64, colour: '#7E6E52', targeting: true, damageType: 'magic' },
+    cost: 110, damage: 30, range: 180, cooldown: 1.60, colour: '#7E6E52', targeting: true, damageType: 'magic' },
   { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
-    cost: 160, damage: 50, range: 200, cooldown: 1.45, colour: '#9A948A', targeting: true, damageType: 'magic' },
+    cost: 160, damage: 50, range: 200, cooldown: 1.40, colour: '#9A948A', targeting: true, damageType: 'magic' },
   // TIER 4, AND THE ONE TOP RUNG THAT IS NOT A TRADE.
   //
   // The other three tier 4 towers each give something up for what they gain — the
@@ -3335,12 +3352,16 @@ export const monastery = [
   // 230 and a Post 480, so a tower that hits this hard still has to be placed where
   // the road is, which is the argument the whole family rests on.
   //
-  // `cooldown` 1.45, THE SAME as the Abbey's, and the one number that deliberately
-  // does not move. The ladder's reloads are 1.82 / 1.64 / 1.45 and a fourth step
-  // would have been about 1.30; at 75 damage that is 57.7 a second rather than
-  // 51.7, and the gap between "more powerful" and "the only tower worth building"
+  // `cooldown` 1.40, THE SAME as the Abbey's, and the one number that deliberately
+  // does not move. The ladder's reloads are 1.80 / 1.60 / 1.40 and a fourth step
+  // would have been about 1.25; at 70 damage that is 56.0 a second rather than
+  // 50.0, and the gap between "more powerful" and "the only tower worth building"
   // is exactly that sort of number. The tier buys the blow and the reach; the
   // rhythm is what still makes it a monastery.
+  //
+  // IT MOVED WITH THE ABBEY, from 1.45 to 1.40, which is the point of saying "the
+  // same as the Abbey's" rather than writing a number twice. tools/families.mjs
+  // asserts the two are equal, so the day one of them moves alone it says so.
   //
   // `cost` 220, which is 570 gold of cumulative spend on one plot — dearer than
   // the Musketeer Post's 500 and the Paladin Keep's 530, and under the Ballista
@@ -3353,7 +3374,7 @@ export const monastery = [
   // check that the family still reads the way the design says, and tools/sim.mjs
   // is the check that no family clears a map alone at the top of its ladder.
   { ...altar, ...pope, tier: 4, name: 'High Altar', title: 'High Altar', unit: 'Pope',
-    cost: 220, damage: 70, range: 220, cooldown: 1.45, colour: '#A8A096', targeting: true,
+    cost: 220, damage: 70, range: 220, cooldown: 1.40, colour: '#A8A096', targeting: true,
     damageType: 'magic', pierce: 2,
     // The upgrade button's own picture on an Abbey, and the fourth of four — every
     // family's top rung now shows what it buys rather than a plain arrow. See the
@@ -3382,32 +3403,41 @@ export const monastery = [
   // between them fire at 1.00s intervals, and which of them is drawn firing
   // alternates. See `pair` on the def above and stepWeapon in src/towers.js.
   //
-  // 40 A BLAST, AND IT IS A NUMBER RATHER THAN A GUESS. The owner proposed 35 and
-  // asked for it to be checked against the High Altar, so:
+  // 50 A BLAST, AND IT IS A NUMBER RATHER THAN A GUESS. The owner proposed 35 once
+  // and asked for it to be checked against the High Altar, so:
   //
-  //   High Altar        75 every 1.45s   51.7 a second
+  //   High Altar        70 every 1.40s   50.0 a second
   //   at 35             35 every 1.00s   35.0 a second
   //   at 40             40 every 1.00s   40.0 a second
+  //   at 50             50 every 1.00s   50.0 a second
   //
-  // 35 makes this tower strictly worse than the altar at the same price and the
-  // same reach — lower output AND slower against everything — which is not a fork,
-  // it is a trap. 40 is the number that turns it into a choice, and the reason is
-  // OVERKILL rather than the total:
+  // AT 50 THE TWO RUNGS ARE EXACTLY LEVEL PER SECOND, which is where the owner has
+  // put them, and it is a cleaner fork than 40 was: the temple no longer buys its
+  // faster kills on light enemies by giving up output. What separates them now is
+  // ARMOUR and nothing else — the altar breaks 2 ranks of magic ward and this breaks
+  // 1 — so the altar wins the warded giant (16.8s against 22.0 at a medium ward,
+  // 22.4 against 32.0 at a high one) and this wins everything bare. tools/families.mjs
+  // measures all four of those through the same taken() the game applies.
   //
-  //   a militia has 80 health.  The altar spends two 75s on it and wastes 70 of
-  //   the second one: 2.90s a kill.  The temple spends two 40s and wastes NOTHING:
-  //   2.00s a kill, 45% faster, on 22% less damage a second.
+  // 35 would have made this tower strictly worse than the altar at the same price and
+  // the same reach — lower output AND slower against everything — which is not a
+  // fork, it is a trap. What turned it into a choice was OVERKILL rather than the
+  // total, and that is still the mechanism at 50:
   //
-  //   a heavy has 1000.  The altar takes 19.3s, the temple 25.0s.
+  //   a militia has 80 health.  The altar spends two 70s on it and wastes 60 of
+  //   the second one: 2.80s a kill.  The temple spends two 50s and wastes 20:
+  //   2.00s a kill, 29% faster, on the SAME damage a second.
   //
-  // So the fork reads: the altar BREAKS BIG THINGS, the temple CLEARS SMALL ONES.
-  // That falls out of the arithmetic rather than being bolted on, and 40 is the
-  // exact number at which two blasts kill a militia with nothing spilled.
+  //   a bare giant has 800.  The temple takes 16.0s, the altar 16.8 — and the
+  //   ranking inverts the moment that giant is warded, which is the note above.
   //
-  // FIRST GUESS ALL THE SAME, on the owner's own terms — the sweep comes after he
+  // So the fork reads: the altar BREAKS ARMOUR, the temple CLEARS EVERYTHING ELSE.
+  // That falls out of the arithmetic rather than being bolted on.
+  //
+  // STILL THE OWNER'S NUMBER, on the owner's own terms — the sweep comes after he
   // has played it, the way the ballista's and the cannon's did.
   { ...judgement, ...monk, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple',
-    unit: 'Monk', cost: 220, damage: 40, range: 240, cooldown: 1.00,
+    unit: 'Monk', cost: 220, damage: 50, range: 240, cooldown: 1.00,
     colour: '#A8A096', targeting: true, damageType: 'magic', pierce: 1,
     // The upgrade button's own picture on an Abbey, beside the altar's — the
     // monastery is the last family to offer two, so this is the eighth and final
@@ -3479,6 +3509,22 @@ export const monastery = [
 // 43.75 between them, about one cheap tower's worth, which is what a pair of sentries
 // posted at a gate should be: a reason the bridge is not undefended at wave 1, not a
 // tower the player did not have to build.
+// THE HIGH ALTAR'S THREE NUMBERS, so the pope standing in Dawnford Church can borrow
+// them instead of repeating them.
+//
+// THIS NOTE EXISTED BEFORE THE CODE DID. The pope's entry below has said "read off
+// the tier rather than typed ... so a retune of the tower retunes this man with it"
+// and pointed at `altarStats` since the day he was drawn, and `altarStats` was never
+// written — his 70 / 220 / 1.45 were three literals. The owner moved the altar to
+// 1.40s and the pope stayed at 1.45, which is precisely the drift the note promised
+// could not happen. tools/campaign.mjs caught it, because that check DOES read the
+// tier.
+//
+// So the promise is now the mechanism. Nothing here can be edited into disagreement
+// with the tower; the only way to change the pope's blow is to change the altar's.
+const ALTAR = monastery.find(t => t.name === 'High Altar');
+const altarStats = { damage: ALTAR.damage, range: ALTAR.range, cd: ALTAR.cooldown };
+
 export const garrisonUnits = {
   Crossbowman: {
     ...crossbowman,
@@ -3554,11 +3600,12 @@ export const garrisonUnits = {
   // tower. Stats are the same as encyclopedia, attack speed is the same and the unit
   // cannot be attacked."
   //
-  // HIS NUMBERS ARE THE HIGH ALTAR'S, read off the tier rather than typed: 70 magic
-  // damage at 220 reach on a 1.45s cooldown, throwing the pope's own missile. That
-  // is what "the same as encyclopedia" means — the card the player can go and read
-  // is generated from the tier, so a retune of the tower retunes this man with it.
-  // See the note on `altarStats` below.
+  // HIS NUMBERS ARE THE HIGH ALTAR'S, read off the tier rather than typed: its magic
+  // damage at its reach on its cooldown, throwing the pope's own missile. That is
+  // what "the same as encyclopedia" means — the card the player can go and read is
+  // generated from the tier, so a retune of the tower retunes this man with it.
+  // See `altarStats` above, and note that this sentence was true of the INTENT and
+  // false of the code for the whole life of the board until it was.
   Pope: {
     ...pope,
     name: 'Pope',
@@ -3577,14 +3624,16 @@ export const garrisonUnits = {
     lunge: 0,
     fixture: true,
     hp: 200,
-    damage: 70,
-    cd: 1.45,
+    // The blow and the rhythm, from the tower. `hp` and `regen` are his own — he is
+    // a man standing on a board, not a building, and the altar has neither.
+    damage: altarStats.damage,
+    cd: altarStats.cd,
     r: 8,
     regen: 6,
     speed: 0,
     colour: '#C9B06A',
     damageType: 'magic',
-    ranged: { range: 220, cd: 1.45, damage: 70, ammo: missile4 }
+    ranged: { ...altarStats, ammo: missile4 }
   },
 
   // AND THE PALADIN IS THE OTHER ANSWER, the first figure in this game that can be

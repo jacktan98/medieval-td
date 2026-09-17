@@ -649,9 +649,10 @@ function stepWeapon(state, t, dt, target) {
 
   // THE HELD POSE AFTER A SPECIAL, and it blocks the next shot as well as showing.
   // One rule for all four abilities — see `hold` in data/abilities.js — and on this
-  // tower it is invisible: the reload is 2.4s and the longest hold is 2, so the
-  // pose is over before the musket is loaded again. It is the paladin, whose swing
-  // is 0.80s, that a two-second hold actually costs anything.
+  // tower it is invisible: the reload is 2s and the longest hold is 2 — and 3s after
+  // a Deadeye, which is the only hold with real slack under it — so the pose is over
+  // by the time the musket is loaded again. It is the paladin, whose swing is 0.80s,
+  // that a two-second hold actually costs anything.
   if (t.hold > 0) {
     t.hold -= dt;
     if (t.hold > 0) return;
@@ -718,6 +719,22 @@ function stepWeapon(state, t, dt, target) {
   // A locked shot goes to the man the mark is on, not to whoever the tower would
   // pick this frame. Without that the mark would be a lie — a second of warning
   // over one enemy and the ball into another.
+  // AND A SPECIAL MAY COST THE RELOAD THAT FOLLOWS IT, which Deadeye does and
+  // nothing else in the game does. `t.cd` was set to the tower's ordinary reload a
+  // few lines up, before the shot was known to be a special at all; this stretches
+  // that one reload and leaves every other shot's alone.
+  //
+  // IT IS A MULTIPLE OF THE TOWER'S OWN RELOAD, like every other magnitude here, so
+  // "half again as long" stays half again as long the next time the Post is retuned.
+  // See `reloadAfter` in data/abilities.js.
+  //
+  // MULTIPLIED RATHER THAN ADDED, and it lands on the number cooldownOf already
+  // returned — so a Post that has also bought Swift Reload would get the penalty on
+  // its SHORTENED reload, which is the right reading of both: the ability makes the
+  // gun quicker and the big shot still costs half again as much as a shot now does.
+  // Nothing teaches that pair today.
+  if (special.reloadAfter) t.cd *= special.reloadAfter;
+
   const at = (special.lock && t.locked && t.locked.hp > 0 && !t.locked.leaked)
     ? t.locked : shotAt;
   t.locked = null;

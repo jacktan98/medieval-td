@@ -33,7 +33,7 @@
 // claim of its own shape that nothing above can ask. It still takes no part in the
 // three-column table.
 import { archery, barracks, monastery, siege } from '../src/data/towers.js';
-import { RANKS, TAKES } from '../src/data/armour.js';
+import { RANKS, TAKES, taken } from '../src/data/armour.js';
 // Every ability and every enemy fires something too, and the speed order below is
 // about all of them rather than about the three ladders this file grew up on.
 import { ABILITIES } from '../src/data/abilities.js';
@@ -258,10 +258,17 @@ console.log('\nWhat the shape costs, per second\n');
     console.log(`  ${t + 1}      ${dps('Archery').padStart(7)}   ${dps('Monastery').padStart(9)}` +
       `   ${dps('Artillery').padStart(9)}${siege[t].splash ? ' + blast' : ''}`);
   }
-  console.log('\n  The monastery runs about a tenth ahead of archery, which is what its');
-  console.log('  shorter reach and its higher price are buying — they were exactly level');
-  console.log('  for one commit and that made one of them strictly worse. Artillery');
-  console.log('  trades raw output for reach and blast.');
+  // THE MARGIN IS COMPUTED, not described. This line used to say "about a tenth
+  // ahead" beside a table that had been through several retunings since anyone
+  // checked — which is the same failure the printed table exists to prevent, one
+  // paragraph lower down. It now reads the three numbers it is summarising.
+  const gap = t => (FAM.Monastery[t].damage / FAM.Monastery[t].cooldown) /
+                   (FAM.Archery[t].damage / FAM.Archery[t].cooldown) - 1;
+  const pcts = [0, 1, 2].map(t => `${(gap(t) * 100).toFixed(0)}%`);
+  console.log(`\n  The monastery runs ${pcts.join(' / ')} ahead of archery up the ladder,`);
+  console.log('  which is what its shorter reach and its higher price are buying — they');
+  console.log('  were exactly level for one commit and that made one of them strictly');
+  console.log('  worse. Artillery trades raw output for reach and blast.');
 }
 
 // The one claim in this file that is not in the artist's table, and it earns its
@@ -767,11 +774,22 @@ console.log('\nMonastery tier 4 — the other one, cadence instead of weight\n')
     `${temple.range} both`);
 
   // THE TRADE, and neither half of it is a straight upgrade — which is the whole
-  // test of a fork. The altar hits harder and more often per second; the temple
-  // hits more often per shot.
+  // test of a fork. The altar hits harder per blast; the temple blasts oftener.
+  //
+  // AND THEY ARE NOW LEVEL PER SECOND, which is new and is the owner's doing: the
+  // temple went to 50 damage on its 1.00s while the altar went to 1.40s, and 50/1.0
+  // and 70/1.4 are both exactly 50.0. This check used to demand the temple be BEHIND
+  // on damage a second, on the reasoning that its faster kills on light enemies had
+  // to be paid for somewhere. They are still paid for — see the armour check below,
+  // which is now the whole of the difference — but not out of throughput.
+  //
+  // SO THE ASSERTION IS THE SHAPE, not the ranking. Lighter blast, quicker rhythm,
+  // and the two within a hair of each other per second. A temple AHEAD on raw damage
+  // a second would be the fork collapsing, and so would a gap of any size: identical
+  // is the design, and 2% of slack is there for a retune that lands on 49 or 51.
   ok(temple.damage < altar.damage && temple.cooldown < altar.cooldown &&
-     dps(temple) < dps(altar),
-    'and buys cadence with weight',
+     Math.abs(dps(temple) - dps(altar)) / dps(altar) < 0.02,
+    'and buys cadence with weight, for the same damage a second',
     `${temple.damage} every ${temple.cooldown.toFixed(2)}s against ` +
     `${altar.damage} every ${altar.cooldown.toFixed(2)}s, ` +
     `${dps(temple).toFixed(1)}/s against ${dps(altar).toFixed(1)}`);
@@ -786,17 +804,41 @@ console.log('\nMonastery tier 4 — the other one, cadence instead of weight\n')
   const kill = (d, hp) => Math.ceil(hp / d.damage) * d.cooldown;
   const militia = enemyTypes.light_inf.hp;
   ok(kill(temple, militia) < kill(altar, militia),
-    'and kills a militiaman faster on less damage a second',
+    'and kills a militiaman faster on the same damage a second',
     `${kill(temple, militia).toFixed(2)}s against ${kill(altar, militia).toFixed(2)}s, ` +
     `on ${militia} health`);
 
-  // And loses the exchange on the thing the altar is for. If this ever flips, the
-  // fork has collapsed into "the temple, always".
+  // AND LOSES THE EXCHANGE ON THE THING THE ALTAR IS FOR — which is no longer true
+  // of a BARE giant and is the thing to understand about this pair now.
+  //
+  // On 800 unarmoured health the temple gets there in 16.0s and the altar in 16.8,
+  // because 800 divides evenly by 50 and leaves 40 of the altar's twelfth blast on
+  // the floor. At equal damage a second, whoever wastes less of its last shot wins,
+  // and that is the temple on almost every health total.
+  //
+  // WHAT THE ALTAR IS FOR IS ARMOUR, then, and only armour. It breaks 2 ranks of
+  // magic ward against the temple's 1, so the moment a giant is WARDED the ranking
+  // inverts and stays inverted: at a medium ward 16.8s against 22.0, at a high ward
+  // 22.4 against 32.0. That is the fork, measured through the same taken() the game
+  // applies, and it is a better fork than the old one — the choice is now about WHAT
+  // is walking down the road rather than about a damage column.
+  //
+  // If the altar ever stops winning the warded giant, the fork really has collapsed
+  // into "the temple, always", and this is the line that will say so.
   const heavy = enemyTypes.heavy_inf.hp;
-  ok(kill(temple, heavy) > kill(altar, heavy),
-    'and loses to it on the heavy, which is what the altar is for',
-    `${kill(temple, heavy).toFixed(1)}s against ${kill(altar, heavy).toFixed(1)}s, ` +
-    `on ${heavy} health`);
+  const kills = (d, hp, ward) => {
+    const per = taken(d.damage, 'magic', { physical: 'none', magic: ward }, d.pierce || 0);
+    return Math.ceil(hp / per) * d.cooldown;
+  };
+  ok(kills(temple, heavy, 'none') <= kills(altar, heavy, 'none'),
+    'and now takes the BARE giant marginally faster too, on equal damage a second',
+    `${kills(temple, heavy, 'none').toFixed(1)}s against ` +
+    `${kills(altar, heavy, 'none').toFixed(1)}s, on ${heavy} health`);
+  ok(['med', 'high'].every(w => kills(altar, heavy, w) < kills(temple, heavy, w)),
+    '  while the altar takes the WARDED giant, which is now the whole of the fork',
+    ['med', 'high'].map(w =>
+      `${w}: ${kills(altar, heavy, w).toFixed(1)}s against ` +
+      `${kills(temple, heavy, w).toFixed(1)}s`).join(', '));
 
   ok(temple.damage < altar.damage,
     'and the altar still lands the biggest single blow in the game',

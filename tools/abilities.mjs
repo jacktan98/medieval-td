@@ -432,6 +432,45 @@ console.log('\nDeadeye\n');
     'and it hits for the multiple the ability claims',
     `${POST.damage} x${dead.times} = ${last.damage}`);
 
+  // AND THE RELOAD AFTER IT TAKES HALF AGAIN AS LONG, which is the one real COST any
+  // ability in this game carries. Measured as the gap between shots rather than read
+  // off the field: the tower is run two whole cycles and the interval before each
+  // ball is taken from the timestamps, so what is checked is what a player waits.
+  //
+  // WHY BOTH ENDS. The gap AFTER the big shot must be stretched and every other gap
+  // must not, and a bug in either direction is invisible from the other — an
+  // implementation that stretched every reload would still pass "the reload after
+  // Deadeye is 3s". So the ordinary gaps are asked for too, and they are asked for
+  // over the SECOND cycle as well, which is the only part of the run that follows a
+  // stretched reload.
+  {
+    const two = fire(post(['deadeye']), cd * dead.every * 2 + 0.4);
+    const gaps = two.slice(1).map((s, i) => +(s.t - two[i].t).toFixed(2));
+    // The gap that FOLLOWS the Deadeye is the one at index `plain` of this list:
+    // gaps[0] is shot 1 to shot 2, so gaps[plain] is shot `every` to shot `every`+1.
+    const after = gaps[plain];
+    const ordinary = gaps.filter((_, i) => i !== plain);
+    const want = +(cd * dead.reloadAfter).toFixed(2);
+    ok(Math.abs(after - want) <= DT * 1.5,
+      `  and the reload after it is ${dead.reloadAfter}x the tower's own`,
+      `${after.toFixed(2)}s against an ordinary ${cd}s — ${want}s wanted`);
+    // AND THE SHIPPED ARITHMETIC, spelled out the way the owner did: "2+1 = 3s". The
+    // check above reads `reloadAfter` out of the data, so it can only ever catch the
+    // MECHANISM being broken — an implementation that ignored the field entirely.
+    // This one catches the NUMBER moving, which nothing else would notice.
+    ok(cd === 2 && want === 3, '  which is the 2s + 1s the owner asked for',
+      `${cd}s ordinary + ${(want - cd).toFixed(1)}s = ${want}s`);
+    ok(ordinary.every(g => Math.abs(g - cd) <= DT * 1.5),
+      '  while every other shot reloads at the tower\'s ordinary rate',
+      `${ordinary.length} gap(s), ${Math.min(...ordinary).toFixed(2)}–${Math.max(...ordinary).toFixed(2)}s`);
+    // AND THE HELD POSE IS STILL FREE, which the longer reload makes more true
+    // rather than less. He stands over the shot for `hold` and the musket takes
+    // `after` to load; if a retune ever made the pose the longer of the two, the
+    // ability would start costing a second time and nothing else would say so.
+    ok(dead.hold < want, '  and the pose he holds is still shorter than that reload',
+      `${dead.hold}s held against ${want}s loading`);
+  }
+
   // AND IT REACHES THE WHOLE BOARD. Every other shot in the game is bounded by
   // the tower's ring; this one is not, so a Post can answer an archer thug
   // standing off in a corner no tower covers.
@@ -1609,11 +1648,18 @@ console.log('\nThe Judgement Temple\n');
   // THE FOUR CELLS OF THE TABLE, read off the shots a tower actually fires rather
   // than off the data. Four reloads each, so a special that fired once a cycle
   // would show up as a run of mixed sprites instead of one.
+  // THE STRENGTHENED BLOW IS DERIVED, not typed. It was a literal 52 — the temple's
+  // old 40 at Inner Strength's x1.3 — sitting two lines above a comment that said the
+  // multiple was what mattered "so retuning the temple's 40 moves this with nothing to
+  // edit". Retuning it to 50 moved everything except this table, which is exactly the
+  // failure that note was written to prevent, and the only reason it was caught is
+  // that these four cells read the damage off shots the tower really fired.
+  const boosted = Math.round(def.damage * strength.damageTimes);
   const cases = [
-    { ids: [],                    dmg: def.damage,    art: 'monk_shot',           slow: false },
-    { ids: ['pulse'],             dmg: def.damage,    art: 'monk_shot_slow',      slow: true },
-    { ids: ['strength'],          dmg: 52,            art: 'monk_shot_strength',  slow: false },
-    { ids: ['pulse', 'strength'], dmg: 52,            art: 'monk_shot_both',      slow: true }
+    { ids: [],                    dmg: def.damage, art: 'monk_shot',           slow: false },
+    { ids: ['pulse'],             dmg: def.damage, art: 'monk_shot_slow',      slow: true },
+    { ids: ['strength'],          dmg: boosted,    art: 'monk_shot_strength',  slow: false },
+    { ids: ['pulse', 'strength'], dmg: boosted,    art: 'monk_shot_both',      slow: true }
   ];
   for (const c of cases) {
     const out = fire(temple(c.ids), def.cooldown * 4 + 0.1);

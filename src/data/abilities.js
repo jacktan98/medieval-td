@@ -36,7 +36,8 @@ import { slowOn, BOSS_SLOW_SHARE } from './status.js';
 //                on the rare shot where both land the rarer one wins.
 //   `hold`       how long the special POSE stays up afterwards. It blocks the next
 //                action as well as showing, which is invisible on the musketeer —
-//                his reload is 2.4s and the longest hold is 2 — and would be very
+//                his reload is 2s and the longest hold is 2, and 3s after a Deadeye —
+//                and would be very
 //                visible on the paladin, whose swing is 0.80s. NULL means "his own
 //                attack time", which is the one value that costs him nothing: the
 //                pose is up for exactly one beat of fighting and the next blow
@@ -454,8 +455,9 @@ const SNEAK_ATTACK_POSE = {
 };
 
 // How long a special pose stays up. One second on Burst Fire and two on Deadeye:
-// a big blow is worth standing over, and both are free on a man who takes 2.4s to
-// load whatever he just fired.
+// a big blow is worth standing over, and both are free on a man who takes 2s to load
+// whatever he just fired — 3s when what he just fired was a Deadeye, which is the
+// one pose that got MORE slack when its ability got a price. See `reloadAfter`.
 //
 // HOLY SLASH USED TO TAKE THE LONG ONE and now takes none — see `hold: null`
 // below. The constant stays a constant rather than being folded into Deadeye,
@@ -717,6 +719,26 @@ export const ABILITIES = [
     // happens, and at six times the tower's damage it should: the player gets a
     // second to see where the shot is going.
     lock: 1,
+    // AND THE RELOAD AFTER IT TAKES HALF AGAIN AS LONG, at the owner's ask: "deadeye
+    // musketeer reload speed after firing takes 50% longer. so 2+1 = 3s."
+    //
+    // A MULTIPLE OF THE POST'S OWN RELOAD rather than a flat 3 seconds, which is the
+    // rule every magnitude in this file follows: at the Post's 2.0s this is the 3.0s
+    // the owner wrote down, and it stays "half again as long" the next time the tower
+    // is retuned. Read by stepWeapon in src/towers.js, which stretches THIS ONE
+    // reload and leaves every ordinary shot's alone.
+    //
+    // IT IS THE FIRST REAL COST ANY ABILITY HAS CARRIED. Every other one in the game
+    // is free once bought — a rhythm that only ever adds — and this one takes a
+    // second of firing back for the blow it lands. What that is worth: 6 ordinary
+    // shots at 2.0s and one Deadeye at 3.0 is 720 damage over 15 seconds, 48.0 a
+    // second, against the 51.4 the same cycle would make without the penalty.
+    //
+    // THE HELD POSE IS STILL FREE, and further from mattering than it was. He stands
+    // over the shot for `hold` seconds and the musket takes `reloadAfter` x the
+    // tower's reload to load — 2 against 3 — so the pose is over with a second to
+    // spare. See the note on `hold` above.
+    reloadAfter: 1.5,
     // AND IT REACHES THE WHOLE MAP, at the owner's word. Every other shot in the
     // game is bounded by the tower's ring; this one is not, so a Musketeer Post
     // can answer the archer thug standing off in a corner no tower covers. It is
@@ -778,9 +800,12 @@ export const ABILITIES = [
       `${a.times}x the Post's own ${t.damage}, ${blow(t.damage, a.times)} damage, the ` +
       `hardest blow in the game. It reaches anywhere on the map: this ${a.shots} shot ` +
       `ignores the tower's range ring entirely.\n\n` +
-      `He holds the pose for ${a.hold} seconds afterwards, which costs nothing: the ` +
-      `musket takes ${num(t.cooldown)} seconds to load whatever he just fired. Kept ` +
-      `for the 1 thing on the road that has to die and cannot be chipped down.\n\n` +
+      `Reloading after it takes ${num(t.cooldown * a.reloadAfter)} seconds against ` +
+      `the Post's usual ${num(t.cooldown)}, which is the only price any ability in ` +
+      `this game charges — every other one is free once bought. He stands ` +
+      `over the shot for ${a.hold} of those ${num(t.cooldown * a.reloadAfter)} ` +
+      `seconds, so the pose costs nothing on top of it. Kept for the 1 thing on the ` +
+      `road that has to die and cannot be chipped down.\n\n` +
       `The round breaks ${a.pierce} ranks of physical armour where the Post's ` +
       `ordinary shot breaks ${t.pierce}, so it lands ` +
       `${plate(blow(t.damage, a.times), a.pierce)} on medium plate rather than ` +
