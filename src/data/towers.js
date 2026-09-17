@@ -3525,6 +3525,31 @@ export const monastery = [
 const ALTAR = monastery.find(t => t.name === 'High Altar');
 const altarStats = { damage: ALTAR.damage, range: ALTAR.range, cd: ALTAR.cooldown };
 
+// AND THE CROSSBOW SENTRY'S, for the two men on the Winchester gatehouse.
+//
+// THE SAME MOVE `altarStats` MAKES, at the owner's ask: "ensure crossbowman in
+// winchester castle also derive stats from Crossbow Sentry's. only difference is
+// that damage is 20 instead of 35." So everything comes off the tier and the damage
+// is overridden at the one place it differs — which is what makes that difference
+// readable as a decision rather than as two numbers that happen not to match.
+//
+// WHAT THIS ACTUALLY CHANGED IS THE RELOAD. He carried 35 damage on a 1.60s cooldown
+// against the Sentry's 35 on 0.80 — twice the tier's reload, typed rather than
+// derived, under a comment that already called him "the tier this man was lifted
+// off". He now looses at the Sentry's rate for a smaller bolt: 20 every 0.80s is 25.0
+// a second against the 21.9 he made before, and against the Sentry's own 43.8.
+//
+// TWO OF HIM STAND ON THAT GATE, so the pair is 50.0 a second — a little over one
+// Crossbow Sentry, free, on a board that opens with no towers at all.
+const SENTRY = archery.find(t => t.name === 'Crossbow Sentry');
+const sentryStats = {
+  // 20 RATHER THAN THE TIER'S 35, and it is the only line here that is not the
+  // Sentry's. A tower is bought and these two are given.
+  damage: 20,
+  range: SENTRY.range,
+  cd: SENTRY.cooldown
+};
+
 // AND THE PALADIN KEEP'S SOLDIER, for the four paladins standing in Dawnford Church.
 //
 // SAME STORY AS `altarStats` ABOVE, found the same way. His entry below says "the
@@ -3590,19 +3615,14 @@ export const garrisonUnits = {
     // HE NEVER SWINGS. `damage` and `cd` are the melee pair every soldier carries and
     // the card reads `damage`, so it says what his bolt does — see `listedDamage` on
     // the plague doctor for the same choice made the other way.
-    damage: 35,
-    cd: 1.6,
+    damage: sentryStats.damage,
+    cd: sentryStats.cd,
     r: 8,
     regen: 6,
     speed: 0,
     colour: '#6E86B4',
     damageType: 'physical',
-    ranged: {
-      range: 260,
-      cd: 1.6,
-      damage: 35,
-      ammo: quarrel
-    }
+    ranged: { ...sentryStats, ammo: quarrel }
   },
 
   // --- STAGE 8'S CHURCH ------------------------------------------------------------

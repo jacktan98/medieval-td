@@ -1,4 +1,8 @@
 import { level } from './level.js';
+// pickTarget, so a soldier's throw and a tower's shot pick their man by one rule.
+// enemies.js imports from this file too; the pair has been a cycle since the day
+// units.js was split out, and both sides only call across it at runtime.
+import { pickTarget } from './enemies.js';
 import { at as pointOn, nearestOn, LANE } from './route.js';
 import { dropCorpse } from './corpses.js';
 import { splat } from './blood.js';
@@ -735,37 +739,42 @@ const swingPierce = (u, special, sneak) => Math.max(
 
 // --- what a soldier throws ------------------------------------------------------
 
-// The nearest live enemy within reach of a man standing still, or null.
+// WHO A MAN STANDING STILL THROWS AT: the enemy nearest the EXIT within his reach,
+// or null. The same question a tower asks, answered by the same function.
+//
+// IT USED TO BE THE NEAREST ONE TO HIM, and that is a different rule with a visible
+// failure: the owner watched both crossbowmen in Winchester Castle empty their
+// quarrels into one Giant Thug while the militia beside it walked past. A giant is
+// slow, so once it is the closest thing to a post it STAYS the closest thing for as
+// long as it lives, and "nearest to me" is a rule that locks on. Every tower in the
+// game already avoids this by ranking on distance REMAINING — see pickTarget in
+// enemies.js and the note above it — and there was never a reason for a soldier's
+// throw to answer differently.
+//
+// SO IT DELEGATES RATHER THAN DUPLICATING. What was here was a second, worse target
+// picker: it forgot `downed`, so a thrower would keep throwing at a boss in his four
+// seconds of dying, and it could not be told a standing order. pickTarget at mode 0
+// is "closest to leaking", which is what a garrison unit standing at a castle gate is
+// for, and it carries the `downed` and `unseen` rules with it.
+//
+// MODE 0 AND NOT THE TOWER'S MODE, because these men have no tower to ask. The two
+// in Winchester Castle and the five in Dawnford Church belong to the LEVEL; an
+// assassin's knife belongs to a barracks, which has an aim button, but the knife is a
+// bonus on a squad rather than the squad's weapon and giving it a second, invisible
+// standing order would be a setting the player cannot see. One rule for every thrower.
 //
 // THROUGH inRange LIKE EVERY OTHER REACH IN THE GAME, because the board is drawn
 // in perspective and a round patch of ground is drawn squashed. A soldier using a
 // plain radius would throw further up the screen than down it, and the ring
-// render.js draws would be a lie about which men he can hit.
+// render.js draws would be a lie about which men he can hit. pickTarget uses the
+// same one.
 //
 // It does NOT ask about the leash. `range` on a barracks tier is the circle the
 // men may be POSTED inside — where their feet may go — and a knife is not his
 // feet. He throws 200px from wherever he is standing, and the one thing that
 // stops him is running out of enemies.
 function nearestFoe(state, u, reach) {
-  let best = null;
-  let least = Infinity;
-  for (const e of state.enemies) {
-    if (e.hp <= 0 || e.leaked) continue;
-    // AND NOT AT A SHADOW THUG NOBODY HAS HOLD OF. A crossbowman's quarrel and an
-    // assassin's knife are projectiles like any other, so the rule that keeps
-    // arrows off him has to hold here too — this is the soldiers' half of the
-    // same test pickTarget makes in enemies.js.
-    //
-    // There is no irony to resolve in an assassin being unable to see him: one
-    // man's cloak says nothing about the other's eyes, and the thing that reveals
-    // a Shadow Thug is a soldier CLOSING with him, which a thrower by definition
-    // has not done.
-    if (unseen(e)) continue;
-    if (!inRange(u.x, u.y, e.x, e.y, reach)) continue;
-    const d = Math.hypot(e.x - u.x, e.y - u.y);
-    if (d < least) { least = d; best = e; }
-  }
-  return best;
+  return pickTarget(state.enemies, u.x, u.y, reach);
 }
 
 // A knife leaves a soldier's hand, at an enemy.

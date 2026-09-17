@@ -38,7 +38,9 @@ import { levels, useLevel } from '../src/level.js';
 import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
-import { spawn, updateEnemies } from '../src/enemies.js';
+import { spawn, updateEnemies, pickTarget } from '../src/enemies.js';
+import { enemyTypes } from '../src/data/waves.js';
+import { inRange } from '../src/ground.js';
 import { at as routeAt } from '../src/route.js';
 import { updateShots } from '../src/projectiles.js';
 import { makeGarrison, makeUnits, updateUnits } from '../src/units.js';
@@ -1193,21 +1195,35 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
     'and has nothing to be taught',
     'no abilities on the def');
 
-  // AND HIS NUMBERS ARE THE BOOK'S, which is the owner's ask read literally: "Use the
-  // encyclopedia stats for both units. their range is 260 and deals 35 without any
-  // armor and health."
+  // AND HIS NUMBERS ARE THE CROSSBOW SENTRY'S, EXCEPT THE ONE THAT IS NOT.
   //
-  // ASKED OF THE PAGE rather than typed in twice. `unitEntry` is what the encyclopedia
-  // prints for the Crossbow Sentry, so this cannot drift: move the Sentry and either
-  // these two follow or this fails.
+  // The first ask read literally — "Use the encyclopedia stats for both units. their
+  // range is 260 and deals 35 without any armor and health" — and the second narrowed
+  // it: "ensure crossbowman in winchester castle also derive stats from Crossbow
+  // Sentry's. only difference is that damage is 20 instead of 35."
+  //
+  // SO THE CHECK IS IN TWO HALVES, and the split is the point. Reach and reload must
+  // TRACK the tier, because they are derived — see `sentryStats` in data/towers.js —
+  // and the damage must DIFFER from it, because the owner said so and a silent return
+  // to 35 would be somebody's derivation quietly swallowing the exception.
+  //
+  // The reload is what this caught the first time round. He carried the tier's 35 at a
+  // typed 1.60s against the Sentry's 0.80 — half the rate, under a comment calling him
+  // "the tier this man was lifted off" — and nothing said so, because the old check
+  // only ever compared damage and range.
   {
     const sentry = families.find(f => f.id === 'archery').tiers
       .find(t => t.name === 'Crossbow Sentry');
     const card = unitEntry(sentry);
     const w = st.units[0].def.ranged;
-    ok(card.damage === w.damage && card.range === w.range,
-      'and shoots the numbers the encyclopedia prints for a Crossbow Sentry',
-      `book ${card.damage} at ${card.range}, post ${w.damage} at ${w.range}`);
+    ok(card.range === w.range && sentry.cooldown === w.cd,
+      'and reaches and reloads exactly as a Crossbow Sentry does',
+      `${w.range}px every ${w.cd}s, the tier's ${sentry.range}px every ${sentry.cooldown}s`);
+    ok(w.damage === 20 && w.damage < card.damage,
+      '  while his bolt lands the 20 the owner set, under the tier\'s own',
+      `${w.damage} against the book's ${card.damage} — ` +
+      `${(w.damage / w.cd).toFixed(1)}/s each, ${(2 * w.damage / w.cd).toFixed(1)}/s for the pair, ` +
+      `against a Sentry's ${(sentry.damage / sentry.cooldown).toFixed(1)}`);
     ok(card.hp == null && !card.traits.length,
       'which is a page with no health row and no armour row on it',
       'the man on a deck cannot be reached either');
@@ -1226,6 +1242,90 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
       'and neither a health row nor an armour row, because nothing can hurt him',
       'the card a tower gets');
   }
+  // AND THEY SHOOT THE MAN NEAREST THE EXIT, not the man nearest themselves.
+  //
+  // THE OWNER'S REPORT: "i see the both of them attacking a giant continuously without
+  // switching target". That is what "nearest to me" does on a board with a Giant Thug
+  // on it — a giant walks at 50 against a thug's 60, so once it is the closest thing
+  // to the gatehouse it STAYS the closest thing for as long as it lives, and every
+  // bolt from both men goes into it while the wave walks past.
+  //
+  // THE FIX WAS TO STOP HAVING TWO RULES. nearestFoe in src/units.js was a second
+  // target picker that ranked on distance to the thrower; it now delegates to
+  // pickTarget, which is what every tower in the game uses and ranks on distance
+  // REMAINING. See the note above it.
+  //
+  // SET UP AS THE OWNER DESCRIBED IT rather than abstractly: a giant parked close to
+  // the post and a thug further along the same road, both in reach. The old rule picks
+  // the giant every time and the new one picks the thug, so this check fails against
+  // the code it was written for — which is the only way to know it is checking
+  // anything.
+  {
+    const post = st.units[0];
+    const route = castle.routes[0];
+    // Two enemies on the road, in reach, with the GIANT nearer the man and the thug
+    // nearer the exit. `s` is distance along the route, so the larger `s` is further
+    // along and has less left to walk.
+    const on = (s, type) => {
+      const p = routeAt(route, s);
+      return { def: enemyTypes[type], x: p.x, y: p.y, s, route: 0, lane: 1,
+               hp: enemyTypes[type].hp, maxHp: enemyTypes[type].hp,
+               leaked: false, statuses: [] };
+    };
+    // Walk the road for every point genuinely inside his reach, the second further
+    // along than the first.
+    //
+    // THROUGH THE GAME'S OWN inRange, not a radius. The board is drawn in perspective
+    // and a reach is an ELLIPSE — this fixture first picked its thug with a plain
+    // hypot at 80% of the range and put him 203px off, which is inside 260 as a circle
+    // and outside it as the squashed patch of ground the game actually uses. The check
+    // failed, and it was the fixture that was wrong: pickTarget never saw the thug at
+    // all, so it was choosing between a giant and nothing.
+    const reach = post.def.ranged.range;
+    const inReach = [];
+    for (let s = 0; s < route.total; s += 10) {
+      const p = routeAt(route, s);
+      if (inRange(post.x, post.y, p.x, p.y, reach)) inReach.push(s);
+    }
+    const giantAt = inReach.reduce((best, s) => {
+      const p = routeAt(route, s), q = routeAt(route, best);
+      return Math.hypot(p.x - post.x, p.y - post.y) < Math.hypot(q.x - post.x, q.y - post.y) ? s : best;
+    }, inReach[0]);
+    const thugAt = Math.max(...inReach);
+    const giant = on(giantAt, 'heavy_inf');
+    const thug = on(thugAt, 'light_inf');
+    const dG = Math.round(Math.hypot(giant.x - post.x, giant.y - post.y));
+    const dT = Math.round(Math.hypot(thug.x - post.x, thug.y - post.y));
+    ok(giantAt < thugAt && dG < dT,
+      'with a giant parked near the gatehouse and a thug further down the road',
+      `giant ${dG}px off at s ${giantAt}, thug ${dT}px off at s ${thugAt}`);
+
+    // FIRED FOR REAL, through updateUnits, rather than asked of pickTarget.
+    //
+    // The first version of this check called pickTarget itself and passed against the
+    // very code it was written to condemn — it proved that pickTarget ranks by
+    // distance remaining, which was never in doubt, and said nothing about whether the
+    // CROSSBOWMAN asks it. The fix was in nearestFoe, so the check has to go through
+    // nearestFoe, which means letting the man loose a bolt and reading its target.
+    const live = { units: st.units, enemies: [giant, thug], shots: [], towers: [], hits: [] };
+    for (const u of live.units) { u.acd = 0; u.thrust = 0; }
+    const DT = 1 / 60;
+    for (let i = 0; i < 60 * 3 && !live.shots.length; i++) updateUnits(live, DT);
+    const bolt = live.shots[0];
+    ok(bolt && bolt.target === thug,
+      '  the bolt goes to the thug, because he is nearer the exit',
+      bolt ? `loosed at the ${bolt.target.def.name} — ` +
+        `${Math.round(route.total - thug.s)}px left to walk against the giant's ` +
+        `${Math.round(route.total - giant.s)}`
+           : 'nobody loosed at all');
+    // AND THE OLD RULE WOULD HAVE PICKED THE GIANT, stated so the check is visibly
+    // about a difference rather than about an arrangement that happens to pass.
+    const byNearness = [giant, thug].reduce((a, e) =>
+      Math.hypot(e.x - post.x, e.y - post.y) < Math.hypot(a.x - post.x, a.y - post.y) ? e : a);
+    ok(byNearness === giant, '  where "nearest to me" would have picked the giant',
+      'which is the report this replaces');
+  }
+
   // AND NO MENU CAN REACH THEM, which is what "cannot sell" means. Asked of the PLOTS
   // rather than of a flag: a menu opens on a plot, so the test is that neither man is
   // standing on one.
