@@ -557,7 +557,7 @@ export const sneakKnife = {
 // chases; a rock is committed the moment it leaves the sling.
 //
 // That is why the crew AIMS AHEAD. Being unsteered against a target walking at
-// 70px/s for the better part of a second would mean landing behind the column
+// 60px/s for the better part of a second would mean landing behind the column
 // every single time — so the shot is aimed at where the target WILL be when it
 // arrives, worked out exactly from the road rather than guessed from a heading
 // (see leadPoint in src/enemies.js). It can still miss, and the interesting
@@ -1759,17 +1759,17 @@ const assassin = {
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
-    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 62, respawn: 8, regen: 4, colour: '#7C93B8',
+    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 60, respawn: 8, regen: 4, colour: '#7C93B8',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
     ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
-    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 150, damage: 4, cd: 0.90, speed: 66, respawn: 7, regen: 5, colour: '#6E86B4',
+    soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 150, damage: 4, cd: 0.90, speed: 60, respawn: 7, regen: 5, colour: '#6E86B4',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
-    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 70, respawn: 6, regen: 6, colour: '#5C79AE',
+    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 60, respawn: 6, regen: 6, colour: '#5C79AE',
                damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
   },
   // TIER 4 IS A FIRST GUESS, exactly as the Musketeer Post's numbers are, and it is
@@ -1813,7 +1813,7 @@ export const barracks = [
     // squad is replaced every time one of them falls. A paladin who died would
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'blinding'],
-    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 200, damage: 8, cd: 0.80, speed: 74, respawn: 5, regen: 7, colour: '#4A6BA0',
+    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 200, damage: 8, cd: 0.80, speed: 60, respawn: 5, regen: 7, colour: '#4A6BA0',
                damageType: 'physical', armour: { physical: 'med', magic: 'low' } }
   },
   // THE OTHER FOURTH RUNG, and the barracks' first fork. A Knight's Hall buys
@@ -1847,7 +1847,7 @@ export const barracks = [
     // heavier blow on the strike that comes out of nowhere. Both are read in
     // src/units.js, which is where the men are, rather than in src/towers.js.
     abilities: ['knife', 'sneak'],
-    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 15, cd: 0.8, speed: 78, respawn: 5, regen: 7, colour: '#6B5B43',
+    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 15, cd: 0.8, speed: 60, respawn: 5, regen: 7, colour: '#6B5B43',
               damageType: 'physical', pierce: 1, armour: { physical: 'low', magic: 'none' } }
   }
 ];
@@ -3525,6 +3525,22 @@ export const monastery = [
 const ALTAR = monastery.find(t => t.name === 'High Altar');
 const altarStats = { damage: ALTAR.damage, range: ALTAR.range, cd: ALTAR.cooldown };
 
+// AND THE PALADIN KEEP'S SOLDIER, for the four paladins standing in Dawnford Church.
+//
+// SAME STORY AS `altarStats` ABOVE, found the same way. His entry below says "the
+// stats below are the Paladin Keep's soldier to the number, minus the respawn" and
+// then typed five of them out; the owner moved every soldier in the game to 60 and
+// this man would have been left walking at 74 with the comment still claiming he
+// could not be. So the sentence is the mechanism now.
+//
+// `respawn` IS WHAT IS LEFT OUT, and it is the whole of what makes him different —
+// "They can die just like a normal paladin and will not be able to respawn." It is
+// not in this object, so spreading it cannot give him one back.
+const KEEP = barracks.find(t => t.name === 'Paladin Keep').soldier;
+const keepPaladin = {
+  hp: KEEP.hp, damage: KEEP.damage, cd: KEEP.cd, speed: KEEP.speed, regen: KEEP.regen
+};
+
 export const garrisonUnits = {
   Crossbowman: {
     ...crossbowman,
@@ -3653,16 +3669,13 @@ export const garrisonUnits = {
   //
   // NO ABILITIES, and there is nothing to switch off: abilities are bought on a
   // TOWER and applied to the squad it owns. This man has no tower, so `light` and
-  // `blinding` have nothing to hang on. The stats below are the Paladin Keep's
-  // soldier to the number, minus the respawn.
+  // `blinding` have nothing to hang on. His stats ARE the Paladin Keep's soldier's,
+  // minus the respawn — read off that tier rather than repeated here, so a retune of
+  // the barracks retunes him with it. See `keepPaladin` above.
   Paladin: {
     ...paladin,
     name: 'Paladin',
-    hp: 200,
-    damage: 8,
-    cd: 0.80,
-    speed: 74,
-    regen: 7,
+    ...keepPaladin,
     r: 6,
     colour: '#4A6BA0',
     damageType: 'physical',

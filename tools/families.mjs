@@ -665,7 +665,7 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // raw health is a component of it.
   const climbs = [
     ['health', m => m.hp * soak(m), 1], ['damage', m => m.damage, 1],
-    ['reload', m => m.cd, -1], ['speed', m => m.speed, 1],
+    ['reload', m => m.cd, -1],
     ['respawn', m => m.respawn, -1], ['regen', m => m.regen, 1]
   ];
   const men = [...spine, keep].map(d => d.soldier);
@@ -673,6 +673,21 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
     const rising = men.every((m, i) => i === 0 || (pick(m) - pick(men[i - 1])) * dir > 0);
     ok(rising, `and its ${name} carries on up the ladder`, men.map(pick).join(' / '));
   }
+
+  // SPEED IS NOT ONE OF THEM ANY MORE, and that is the owner's doing rather than an
+  // omission. It climbed 62 / 66 / 70 / 74 and every soldier in the game now walks at
+  // 60 — the same pace as a Thug — so this used to sit in the list above and now
+  // states the opposite claim.
+  //
+  // IT IS STILL WORTH A CHECK, because FLAT is a decision. A tier that quietly got a
+  // different pace would change what a barracks is for: how fast a man walks decides
+  // how much road one squad can hold, so a faster tier 4 would be a bigger NET as
+  // well as a better fighter, and the ladder here is deliberately only about the
+  // fighting. Asked over all five rungs, the Guild included, because the Assassin was
+  // the fastest man in the game at 78 and is now level with the militia.
+  const paces = barracks.map(d => d.soldier.speed);
+  ok(new Set(paces).size === 1, 'while every rung walks at exactly the same pace',
+    `${paces.join(' / ')} — the Guild included`);
 
   // --- and the other fourth rung, which is not that at all ----------------------
   //

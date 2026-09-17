@@ -174,12 +174,18 @@ export const enemyTypes = {
     // time inside a tower's range, so archery alone cannot kill them in transit
     // — but a soldier stops them dead, and blocking ignores speed entirely.
     //
-    // 72 -> 88 -> 94 -> 70. The first three were forced upward each time the
-    // artist moved the plots and archery got more road to shoot at. 70 is a
-    // deliberate slow-down of the whole game, taken together with a longer
-    // archery cooldown; the difficulty that speed used to provide now comes
-    // from the heavies below and from the later waves being bigger.
-    speed: 70,      // logical px per second
+    // 72 -> 88 -> 94 -> 70 -> 60. The first three were forced upward each time the
+    // artist moved the plots and archery got more road to shoot at. Everything since
+    // has gone the other way: two deliberate slow-downs of the whole game, and the
+    // difficulty that speed used to provide now comes from the heavies below and
+    // from the later waves being bigger.
+    //
+    // AT 60 HE WALKS AT EXACTLY A SOLDIER'S PACE, which every rung of the barracks
+    // now shares. That costs the squad nothing, because a barracks does not CHASE:
+    // it puts men on the road and takes hold of what walks into them, and a held
+    // enemy is stopped dead. Measured in a real wave, an engaged Thug moves 4px
+    // while a soldier has him against 568px when he is free.
+    speed: 60,      // logical px per second
     bounty: 15,
     leak: 1,        // lives lost if it reaches the keep
     damage: 10,     // per swing, once a barracks soldier has stopped it
@@ -227,7 +233,7 @@ export const enemyTypes = {
     hp: 200,
     damageType: 'physical',
     armour: { physical: 'low', magic: 'none' },
-    speed: 70,      // the Thug's, unchanged — see the note above
+    speed: 60,      // the Thug's, unchanged — see the note above
     // Between the Thug's 15 and the Giant's 40, nearer the Thug: he is worth
     // about two and a half of one to kill and pays about one and a half.
     bounty: 25,
@@ -340,7 +346,7 @@ export const enemyTypes = {
     // src/units.js — and deliberately NOT named `hidden`, which is the assassin's
     // and pairs with a per-frame `exposed` an enemy does not have.
     unseen: true,
-    speed: 70,      // the Thug's, unchanged
+    speed: 50,      // a Blocker's pace, not a Thug's
     bounty: 35,
     // TWO LIVES, raised from one at the owner's word. He is the third creature on
     // the road worth two, beside the Giant and the Rally Thug, and the reason is
@@ -427,7 +433,7 @@ export const enemyTypes = {
     // Read by rallyAura in src/enemies.js. A def with no `rally` block simply has
     // no aura, so this is the only creature the pass does any work for.
     rally: { range: 100, share: 0.2 },
-    speed: 70,      // the Thug's, unchanged
+    speed: 45,      // the slowest thing on the road but the boss
     // Above the Giant's 40, which is the only other two-life creature on the road.
     // He is worth more to kill than his own health says, because what he is worth
     // is everything standing near him.
@@ -530,7 +536,7 @@ export const enemyTypes = {
     armour: { physical: 'med', magic: 'none' },
     // Slower than a Thug and quicker than a Giant: he is carrying a shield, and
     // guarding halves this again.
-    speed: 60,
+    speed: 50,
     // Dearer than the Tough Thug and cheaper than a Giant. He is harder to kill
     // than either on paper and easier than both if you answer him properly, so
     // he pays for the answer rather than for the health bar.
@@ -587,9 +593,10 @@ export const enemyTypes = {
     hp: 120,
     damageType: 'physical',
     armour: { physical: 'none', magic: 'none' },
-    // Between the militia's 70 and the doctor's 60. He is not a wall and not a
-    // straggler; he walks with the wave and starts working before it arrives.
-    speed: 65,
+    // Level with the militia at 60 and ahead of the doctor's 50. He is not a wall
+    // and not a straggler; he walks with the wave and starts working before it
+    // arrives.
+    speed: 60,
     // Above a militiaman's 15 and below the doctor's 30. He is harder to reach
     // than the first and easier than the second, and the bounty is what a player
     // is paid for building the tower that can.
@@ -774,7 +781,7 @@ export const enemyTypes = {
     // table is a record of a run and not a claim — it re-printed itself when the
     // club came down from 30.
     pierce: 1,
-    speed: 52,      // slower than the militia, so it arrives as a second wall
+    speed: 50,      // level with the blockers, so the two arrive as one wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
     // 40 TO ONE MAN, and the club does not sweep. The owner's word: "remove aoe
@@ -960,7 +967,7 @@ export const enemyTypes = {
     // So he is not the lever for "barracks are too strong on this map", and
     // making him nastier moves it the wrong way. That lever is arrival rate; see
     // the grid over wavesLong.
-    speed: 60,
+    speed: 50,
     bounty: 30,
     leak: 1,
     // HIS MELEE MATCHES HIS FLASK, at the owner's word: 20 either way, where it
@@ -1159,7 +1166,7 @@ export const enemyTypes = {
     armour: { physical: 'none', magic: 'high' },
     // Slower than a thug and quicker than a giant. He is a man in robes who stops
     // to work rather than one marching.
-    speed: 58,
+    speed: 50,
     bounty: 35,
     leak: 1,
     damage: 20,
@@ -1322,7 +1329,7 @@ export const enemyTypes = {
     // and what gives the towers time to work on a bar this size. Stage 2 multiplies
     // it by the owner's 1.2, so enraged he moves at 60 — between a Blocker and an
     // Archer, and faster than the Giant he used to be slower than.
-    speed: 50,
+    speed: 40,
     // NO BOUNTY AND NO LEAK, at the owner's word, and the second of those is the
     // reason for the first: "Captain thug has no bounty and no live lost as if he
     // passes the exit, the game loses immediately."
@@ -1753,7 +1760,7 @@ export const defaultGap = type => {
 // under fire, and slowing the column was how the second map was made as hard as
 // the first while both shared one table. Waves are per-level now, so the map can
 // be balanced by what it sends instead of by how fast a Thug walks — and a Thug
-// walks at 70px/s everywhere, which is what it should always have been.
+// walks at one speed everywhere, which is what it should always have been.
 //
 // The shortfall is real and has to be paid for here instead. Searched
 // exhaustively over all 5376 ways of putting six towers of two families on nine
