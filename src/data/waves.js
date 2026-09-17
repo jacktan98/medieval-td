@@ -439,15 +439,16 @@ export const enemyTypes = {
     // untouched — they are the two magic attacks on the road. Every other creature
     // in the game strikes physically, including the boss.
     //
-    // AND NOT ANOTHER RALLY THUG, at the owner's ask: "Rally thugs cannot boost each
-    // other." That is a rule about the KIND rather than about the geometry — he does
-    // not boost himself because he is not near himself, and two of them standing
-    // together are still two unboosted Rally Thugs.
+    // AND HE IS BOOSTED LIKE ANYTHING ELSE. He strikes physically, so two of them
+    // standing together sharpen each other — the owner's "rally thugs can boost each
+    // other too but only 1 boost at a time". He cannot boost himself, which needs no
+    // rule: a figure is not standing near itself.
     //
-    // NO COMPOUNDING. "Boosts cannot compound and only can boost 50% even though
-    // there are 2 rally thugs nearby" — so the multiplier is read off whichever
-    // source is in range rather than multiplied across all of them, and a figure
-    // wears one mark however many auras it stands in.
+    // NO COMPOUNDING, which is also what "only 1 boost at a time" means. "Boosts
+    // cannot compound and only can boost 50% even though there are 2 rally thugs
+    // nearby" — so the multiplier is read off whichever source is in range rather
+    // than multiplied across all of them, and a figure wears one mark however many
+    // auras it stands in, itself included.
     //
     // 150px, RAISED FROM 100 at the owner's word. It is half again as far and more
     // than twice the ground: an aura is a circle, so 150 covers 2.25x the area 100
@@ -2531,9 +2532,11 @@ export const stage9Waves = [
 // One in wave 6, one in wave 7, and TWO in wave 8 — the first wave in the game to
 // send a second, which it can now that the aura no longer lends health. Two of him
 // used to be pointless (an enemy could be boosted once in its life, so the second
-// one had nothing left to give); two of him now means two overlapping patches of
-// road where the crowd hits half again as hard, and standing them together buys
-// nothing because the boost does not compound.
+// one had nothing left to give); two of him now means two patches of road where the
+// crowd hits half again as hard, and if the two happen to walk within reach of each
+// other they sharpen EACH OTHER as well — the owner's "rally thugs can boost each
+// other too but only 1 boost at a time". What standing them together does NOT buy is
+// a bigger boost for anything: one mark, x1.5, however many auras overlap.
 //
 // WHAT HE DOES CHANGED ENTIRELY. He lent a fifth of an enemy's own health; he now
 // puts half again on the ATTACK of every physical striker near him — "No more health

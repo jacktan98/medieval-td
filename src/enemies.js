@@ -1122,10 +1122,21 @@ export function updateEnemies(state, dt) {
 // creatures on the road this passes over. Asked through typeOf, so a def that is
 // retyped later moves with it rather than being listed here by name.
 //
-// AND NOT ANOTHER RALLY THUG, at the owner's ask: "Rally thugs cannot boost each
-// other." That is the one line here that is about a KIND rather than about geometry
-// — he already cannot boost himself, because he is not standing near himself, and
-// this is what stops two of them doubling as each other's escort.
+// AND A RALLY THUG IS BOOSTED LIKE ANYTHING ELSE. He strikes physically, so two of
+// them standing together sharpen each other — the owner's "rally thugs can boost
+// each other too but only 1 boost at a time". He still cannot boost HIMSELF, and
+// that needs no rule of its own: `f !== e` is the whole of it, because a figure is
+// not standing near itself.
+//
+// "ONLY 1 BOOST AT A TIME" IS THE SAME NO-COMPOUNDING RULE, not a second one. Two
+// Rally Thugs beside a blocker are worth one, and two beside EACH OTHER are worth
+// one each — every figure on the board carries at most one mark and it is always
+// x1.5. That falls out of the shape below rather than being guarded: one source is
+// found and one multiplier is written.
+//
+// IT WAS FORBIDDEN FOR ONE BUILD, at the owner's earlier "Rally thugs cannot boost
+// each other", and that was the only line in this pass about a KIND rather than
+// about geometry. It has gone, and the pass is simpler for it.
 //
 // ONE PASS AT THE END OF THE FRAME rather than a clause in the main loop, and both
 // halves of that matter. AT THE END, because "is it in range" is a question about
@@ -1146,9 +1157,10 @@ function rallyAura(state) {
     // neither needs the mark put on or taken off.
     if (e.leaked || downed(e)) continue;
 
-    // THE THREE REASONS A FIGURE IS NOT A CANDIDATE, in one line: it is a Rally
-    // Thug itself, or it strikes magic, or nothing is near it.
-    const source = (e.def.rally || typeOf(e.def) !== 'physical') ? null
+    // THE TWO REASONS A FIGURE IS NOT A CANDIDATE: it strikes magic, or nothing is
+    // near it. A Rally Thug is neither — he is a physical striker like the rest and
+    // is boosted by any OTHER Rally Thug in reach.
+    const source = typeOf(e.def) !== 'physical' ? null
       : flags.find(f => f !== e &&
           Math.hypot(f.x - e.x, f.y - e.y) <= f.def.rally.range);
 

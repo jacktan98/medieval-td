@@ -25,6 +25,7 @@
 // broken rather than as the respawn being.
 
 import { apply, tick, clear, wearing, harmed, swing } from '../src/status.js';
+import { selectionInfo } from '../src/select.js';
 import { STATUS, STATUS_ORDER, STATUS_H } from '../src/data/status.js';
 import { ui, uiSize } from '../src/data/ui.js';
 import { paths as ASSET_URLS } from '../src/assets.js';
@@ -492,10 +493,15 @@ console.log('\n--- the Rally Thug sharpens what stands near him ---\n');
       `boosted -> ${orphaned} with him dead -> ${swing(e, e.def.damage)} with the next`);
   }
 
-  // RALLY THUGS CANNOT BOOST EACH OTHER, at the owner's ask, and it is the one rule
-  // here that is about a KIND rather than about geometry. The old aura DID let two
-  // of them boost each other and the note there called that "the same rule rather
-  // than a special case"; it is a special case now because the owner made it one.
+  // A RALLY THUG DOES NOT BOOST HIMSELF, and needs no rule to stop him: a figure is
+  // not standing near itself, so `f !== e` is the whole of it.
+  //
+  // BUT TWO OF THEM DO BOOST EACH OTHER, at the owner's "rally thugs can boost each
+  // other too but only 1 boost at a time". That was forbidden for one build and the
+  // note here called it the one rule about a KIND rather than about geometry; the
+  // rule has gone and this checks the opposite. Both directions are asked, because a
+  // version that boosted only the first of the pair would pass a test that looked at
+  // one of them.
   {
     const lone = foe(RALLY, NEAR);
     step(world([lone]));
@@ -504,9 +510,21 @@ console.log('\n--- the Rally Thug sharpens what stands near him ---\n');
 
     const a = foe(RALLY, NEAR), b = foe(RALLY, NEAR);
     step(world([a, b]));
-    ok(!wearing(a, 'rallied') && !wearing(b, 'rallied'),
-      '  and two of them standing together boost NEITHER',
-      `${swing(a, a.def.damage)} and ${swing(b, b.def.damage)}, both their own ${RALLY.damage}`);
+    const want = Math.round(RALLY.damage * RALLY.rally.times);
+    ok(swing(a, a.def.damage) === want && swing(b, b.def.damage) === want,
+      '  but two of them standing together boost EACH OTHER',
+      `${swing(a, a.def.damage)} and ${swing(b, b.def.damage)}, from ${RALLY.damage} each`);
+
+    // AND "ONLY 1 BOOST AT A TIME" IS THE NO-COMPOUNDING RULE APPLIED TO HIM. Three
+    // of them together are still x1.5 apiece, not x1.5 squared — which is the case
+    // wave 8 of Ironforge can actually produce, since it sends two.
+    const [p, q, r] = [foe(RALLY, NEAR), foe(RALLY, NEAR), foe(RALLY, NEAR)];
+    step(world([p, q, r]));
+    ok([p, q, r].every(x => swing(x, x.def.damage) === want &&
+                            x.statuses.filter(y => y.id === 'rallied').length === 1),
+      '  and three of them are still one boost each, never two',
+      `${[p, q, r].map(x => swing(x, x.def.damage)).join(', ')} — ` +
+      `1 mark apiece, not ${Math.round(RALLY.damage * RALLY.rally.times ** 2)}`);
   }
 
   // TWO AURAS DO NOT COMPOUND. "Boosts cannot compound and only can boost 50% even
@@ -519,6 +537,66 @@ console.log('\n--- the Rally Thug sharpens what stands near him ---\n');
     ok(swing(e, e.def.damage) === Math.round(e.def.damage * RALLY.rally.times),
       '  and two auras on one enemy are worth exactly one',
       `${swing(e, e.def.damage)}, not ${Math.round(e.def.damage * RALLY.rally.times ** 2)}`);
+  }
+
+  // AND THE DESCRIPTION PANEL SAYS SO, at the owner's ask: "ensure the enemy
+  // description panel is updated when the physical damage is boosted."
+  //
+  // ASKED OF selectionInfo, which is what the box is built from — see drawInfo in
+  // render.js, which calls it once a DRAW, so the number in the panel is recomputed
+  // every frame off the live figure. That is what makes this work with nothing to
+  // invalidate: a thug tapped open reads 10, climbs to 15 as the Rally Thug walks up
+  // and drops back to 10 when he is killed.
+  //
+  // CHECKED AGAINST `swing` RATHER THAN AGAINST 15, so the panel is pinned to what
+  // the FIGHT does rather than to a number typed here twice. A panel that computed
+  // the boost for itself could disagree with the blow, and this box exists to say
+  // what the blow is.
+  {
+    const e = foe(enemyTypes.light_inf, NEAR);
+    const rally = foe(RALLY, NEAR);
+    const st = world([rally, e]);
+
+    const before = selectionInfo({ selected: { kind: 'enemy', ref: e } }).damage;
+    step(st);
+    // BOTH READ AT THE SAME INSTANT. The panel figure and the blow it is supposed to
+    // match are captured together, because `swing` answers for the figure AS IT IS —
+    // comparing a `during` captured now against a `swing` evaluated after the Rally
+    // Thug is dead is comparing two different moments, which is how the first version
+    // of this check failed on numbers that were all correct.
+    const during = selectionInfo({ selected: { kind: 'enemy', ref: e } }).damage;
+    const blowNow = swing(e, e.def.damage);
+    rally.hp = 0;
+    step(st);
+    const after = selectionInfo({ selected: { kind: 'enemy', ref: e } }).damage;
+
+    ok(before === e.def.damage && during === blowNow &&
+       during > before && after === e.def.damage,
+      '  and the description panel follows it up and back down',
+      `${before} -> ${during} with him near -> ${after} with him dead`);
+
+    // AND IT IS THE SAME NUMBER THE SOLDIER TAKES, which is the claim that matters
+    // and the one a panel doing its own arithmetic would break.
+    step(st);
+    const marked = foe(enemyTypes.light_inf, NEAR);
+    const st2 = world([foe(RALLY, NEAR), marked]);
+    step(st2);
+    ok(selectionInfo({ selected: { kind: 'enemy', ref: marked } }).damage ===
+       swing(marked, marked.def.damage),
+      '  and prints exactly what the blow lands for',
+      `panel ${selectionInfo({ selected: { kind: 'enemy', ref: marked } }).damage}, ` +
+      `blow ${swing(marked, marked.def.damage)}`);
+
+    // A MAGIC CASTER'S PANEL DOES NOT MOVE, because he is never boosted. The card
+    // reads `listedDamage` for the doctor rather than `damage`, so this also pins
+    // that `swing` has not quietly replaced the number the panel was showing.
+    const doc = foe(enemyTypes.plague_inf, NEAR);
+    const st3 = world([foe(RALLY, NEAR), doc]);
+    const docBefore = selectionInfo({ selected: { kind: 'enemy', ref: doc } }).damage;
+    step(st3);
+    ok(selectionInfo({ selected: { kind: 'enemy', ref: doc } }).damage === docBefore,
+      '  while a Plague Doctor\'s panel does not move beside him',
+      `${docBefore}, unchanged`);
   }
 
   // KILLING HIM TAKES IT OFF, in the same frame, off everything near him. That is

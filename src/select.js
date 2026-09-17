@@ -22,6 +22,7 @@ import { SCALE } from './data/towers.js';
 import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
 import { fixture } from './units.js';
+import { swing } from './status.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -482,7 +483,22 @@ export function selectionInfo(state) {
     // AND SO DOES THE BLADE. His sword is enchanted in stage 2 — magic where it
     // was physical — so the icon beside the number has to change with it or the
     // panel would promise a player that a paladin's plate still answers him.
-    damage: shownDamage(f.def),
+    //
+    // THROUGH `swing`, so a figure inside a Rally Thug's aura shows what it is
+    // ACTUALLY hitting for and not what its card says, at the owner's ask: "ensure
+    // the enemy description panel is updated when the physical damage is boosted."
+    //
+    // LIVE, AND THAT IS THE WHOLE OF WHY IT WORKS. This box is rebuilt every frame
+    // from the figure — see drawInfo in render.js, which calls selectionInfo once a
+    // draw — so a thug tapped open reads 10, climbs to 15 as the Rally Thug walks
+    // up, and drops back to 10 when he is killed, with nothing here to invalidate
+    // or refresh. Health has always behaved this way in this box; damage did not,
+    // because until now nothing could change it.
+    //
+    // THE SAME FUNCTION THE BLOW GOES THROUGH, not a second copy of the multiply.
+    // A panel that computed the boost for itself is a panel that can disagree with
+    // the fight, and this box exists to say what the fight is doing.
+    damage: swing(f, shownDamage(f.def)),
     // THE SWORD OR THE WAND, off this figure's own kind. The panel had no `attack`
     // at all until the armour row arrived, so it fell through to the sword for
     // everybody — which was a wrong picture rather than a missing one, and the one
