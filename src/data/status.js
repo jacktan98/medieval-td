@@ -97,29 +97,37 @@ export const STATUS = {
     hurts: false,
     mends: true
   },
-  // THE FIFTH, AND THE FIRST WITH NO CLOCK AT ALL. The Rally Thug's aura: a fifth
-  // of an enemy's health while it stands inside 100px of him, and gone the moment
-  // it walks out.
+  // THE FIFTH, AND THE FIRST WITH NO CLOCK AT ALL. The Rally Thug's aura: half again
+  // on the attack of every physical striker standing inside his radius, and gone the
+  // moment the last Rally Thug near it dies or it walks out of reach.
+  //
+  // IT USED TO BE HEALTH and the owner has replaced it outright — "No more health
+  // boost but for those enemies that deals physical damage is boosted by 50% on their
+  // attack damage." The shape of the status changed with it, and the change is the
+  // interesting part: a health boost had to be UNDONE, because health lent has to be
+  // taken back off a bar that may have been spent in the meantime, and that made the
+  // magnitude a debt the status had to remember. A damage boost is not a debt. It is
+  // read at the moment a blow lands and never written anywhere, so leaving the aura
+  // just stops it — there is nothing to give back.
   //
   // `boosts` RATHER THAN A FOURTH MEANING FOR THE OTHER THREE. `hurts` says this
   // costs health every second, `mends` says it gives health every second, and both
-  // are RATES ticked by the clock. This is neither: it is a lump of health added
-  // once and taken off once, and what decides when is where the figure is standing
-  // rather than how long it has been there. Spelling it as a mend would have the
-  // tick paying it out every frame forever.
+  // are RATES ticked by the clock. This is neither: it is a multiplier that is true
+  // or not true, and what decides is where the figure is standing rather than how
+  // long it has been there. Spelling it as a mend would have the tick paying it out
+  // every frame forever.
   //
   // SO IT IS WORN WITHOUT A DURATION — see `apply`, which writes `left: Infinity`
-  // for this one — and the thing that put it on is what takes it off. That is
-  // rallyAura in src/enemies.js, through `drop` in src/status.js, and the two
-  // happen on the same line so the mark cannot outlive the health it stands for.
+  // for this one — and the aura is what takes it off, every frame, in rallyAura.
   //
-  // AND IT IS WORN ONCE IN A LIFETIME, at the owner's ask: "enemies can only have
-  // their health boosted once. Once out of range, they can no longer be boosted."
-  // That guard is `e.rallied` on the enemy rather than anything here, because it
-  // has to outlive the status it guards.
-  boosted: {
-    icon: 'status_boost',
-    name: 'Health Boost',
+  // AND IT MAY BE WORN AGAIN, which is the other half of what the owner changed:
+  // "Can be boosted again if a rally thug nearby dies and another one comes nearby
+  // again." The old rule was once in a lifetime and needed `e.rallied` on the enemy
+  // to outlive the status; there is no such flag any more, because presence is the
+  // whole rule.
+  rallied: {
+    icon: 'status_rally',
+    name: 'Physical Damage Boost',
     hurts: false,
     boosts: true
   }

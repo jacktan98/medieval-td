@@ -40,6 +40,7 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // level file declares.
 import { spawn, updateEnemies, pickTarget } from '../src/enemies.js';
 import { enemyTypes } from '../src/data/waves.js';
+import { typeOf } from '../src/data/armour.js';
 import { inRange } from '../src/ground.js';
 import { at as routeAt } from '../src/route.js';
 import { updateShots } from '../src/projectiles.js';
@@ -1822,10 +1823,10 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
     '10 light_inf + 2 tough_inf',
     '10 light_inf + 2 tough_inf + 2 blocker_inf + 1 shadow_inf',
     '10 light_inf + 4 blocker_inf + 1 shadow_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 4 blocker_inf + 2 shadow_inf + 1 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '8 blocker_inf + 2 shadow_inf + 1 rally_inf + 2 heavy_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '14 blocker_inf + 6 shadow_inf + 2 rally_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got10.join(' | ') === WANT10.join(' | '), 'Ironforge sends exactly the eight it was given',
@@ -1835,7 +1836,8 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
   // and the thing a later retune could quietly undo from either end: take him off
   // this board and he is a creature nothing sends again.
   const rally = iron.waves.map(w => (w.groups.find(g => g.type === 'rally_inf') || {}).count || 0);
-  ok(rally.join(',') === '0,0,0,0,0,1,1,1', 'its Rally Thugs are one each in the last three waves',
+  ok(rally.join(',') === '0,0,0,0,0,1,1,2',
+    'its Rally Thugs are one in each of waves 6 and 7, and two in the last',
     rally.join(','));
   {
     const elsewhere = levels.filter(l => l !== iron &&
@@ -1896,13 +1898,61 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       '  while he himself walks slower than all of them, so they pass through him',
       `${enemyTypes.rally_inf.speed} against a next-slowest ${Math.min(...road
         .filter(d => d !== enemyTypes.rally_inf).map(d => d.speed))}`);
+
+    // AND WHAT HIS AURA IS WORTH ON THIS BOARD, now that it sharpens blows rather
+    // than lending health. Wave 8 is the one to measure: it sends TWO of him, which
+    // is the first wave in the game to, and the owner's rule is that two are worth
+    // exactly what one is.
+    const last = iron.waves[iron.waves.length - 1];
+    const physical = last.groups.filter(g => typeOf(enemyTypes[g.type]) === 'physical' &&
+                                             g.type !== 'rally_inf');
+    const plain = physical.reduce((n, g) => n + g.count * enemyTypes[g.type].damage, 0);
+    const lifted = physical.reduce((n, g) =>
+      n + g.count * Math.round(enemyTypes[g.type].damage * enemyTypes.rally_inf.rally.times), 0);
+    ok(lifted > plain,
+      '  and in his last wave he can sharpen every physical striker on it',
+      `${physical.reduce((n, g) => n + g.count, 0)} of them, ${plain} damage a swing ` +
+      `between them against ${lifted} inside his reach`);
+    // THE TWO OF HIM ARE NOT WORTH TWICE ONE, at the owner's ask, and the arithmetic
+    // above is per-enemy so it cannot show that. It is checked in tools/status.mjs
+    // through the real aura pass; what is pinned HERE is only that the wave really
+    // does send two, because that is the wave-table half of the same claim.
+    const two = (last.groups.find(g => g.type === 'rally_inf') || {}).count || 0;
+    ok(two === 2, '  the first wave in the game to send two of him',
+      `${two} in wave ${iron.waves.length}`);
   }
 
+  // NO GIANTS AT ALL, which is not a ladder going flat but a creature the owner took
+  // off the board. They climbed 0,0,0,1,2,2,4,6 when it shipped, then 0,0,0,0,1,2,2,4,
+  // and now nothing.
+  //
+  // WHAT REPLACES THEM IS THE RALLY THUG, and the two changes arrived together. A
+  // giant is a wall a player answers with damage; a Rally Thug is half again on
+  // fourteen blockers' blows, which is a threat to the SQUAD. The board's late waves
+  // are no longer about chewing through 800-point bodies, they are about a crowd that
+  // hits harder than its card says, and killing the one creature making that true.
+  //
+  // Checked as a whole-board claim rather than as a per-wave ladder, because a single
+  // giant slipping back into any wave is the thing that would undo it.
   const giants10 = iron.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants10.join(',') === '0,0,0,0,1,2,2,4', 'and its giants climb 0,0,0,0,1,2,2,4',
+  ok(giants10.every(n => n === 0), 'and it sends no Giant Thugs at all, on any wave',
     giants10.join(','));
-  ok(giants10.every((n, i) => i === 0 || n >= giants10[i - 1]),
-    '  never carrying fewer than the wave before', giants10.join(' -> '));
+  {
+    // AND IT IS THE FIRST BOARD SINCE STAGE 3 TO SEND NONE, which is the claim worth
+    // making and is NOT "the only one past the tutorial" — stages 2 and 3 send none
+    // either, because the giant has not been introduced yet. The interesting fact is
+    // that this one comes AFTER six boards that all send them: a player reaching
+    // Ironforge has been answering giants for the whole back half of the campaign and
+    // meets a board that has none.
+    const sends = l => l.waves.some(w => w.groups.some(g => g.type === 'heavy_inf'));
+    const road = STAGES.map(st => (st.level === null ? null : levels[st.level])).filter(Boolean);
+    const here = road.indexOf(iron);
+    const before = road.slice(0, here);
+    const lastQuiet = before.map(sends).lastIndexOf(false);
+    ok(here > 0 && !sends(iron) && before.slice(lastQuiet + 1).every(sends),
+      '  and the first board since stage ' + (lastQuiet + 1) + ' to send none',
+      `${before.length - lastQuiet - 1} board(s) in a row before it do`);
+  }
 
   ok(iron.plots.length === 9 && iron.startGold === 240 && iron.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',

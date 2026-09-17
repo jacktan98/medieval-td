@@ -137,6 +137,45 @@ export function tick(v, dt) {
 // follows one status at a time: two sources do not compound into a figure standing
 // still. Written as a scan over anything carrying `slow` rather than a lookup of
 // 'slowed', so a second slowing status costs nothing here.
+// HOW MUCH HARDER THIS FIGURE HITS than its def says, which today is the Rally
+// Thug's aura and nothing else. 1 when nothing is boosting it, which is the answer
+// almost every call gets.
+//
+// THE MULTIPLIER IS ON THE STATUS rather than looked up from a def, for the same
+// reason a burn carries its own `dps`: the thing that put it there knew which aura
+// it was, and a reader that went back to the data would have to guess when two
+// sources of different strengths exist.
+//
+// HIGHEST WINS, not the product. The owner's rule is that two Rally Thugs are worth
+// what one is — "Boosts cannot compound and only can boost 50% even though there are
+// 2 rally thugs nearby" — and `apply` already keeps ONE status per id, so this loop
+// can only ever see one entry today. It is written as a max rather than as a read of
+// `[0]` so that the day a second kind of boost exists the rule is still the owner's
+// and not whichever happened to be applied last.
+//
+// The MIRROR of slowOf above, which takes the lowest for the same reason: in both
+// cases the strongest effect on the figure is the one the player sees, and neither
+// stacks.
+const blowTimes = v => {
+  let k = 1;
+  if (v.statuses) for (const s of v.statuses) if (s.boost && s.boost > k) k = s.boost;
+  return k;
+};
+
+// WHAT THIS FIGURE'S BLOW ACTUALLY LANDS FOR, which is what every caller wants and
+// is why the multiplier above is not exported on its own: there are three places an
+// enemy's damage reaches a soldier — a swing, the Captain's splash and a loosed
+// arrow — and three copies of `Math.round(d * blowTimes(e))` is three chances to
+// round differently.
+//
+// ROUNDED, like every other damage figure in this game, so a health bar never has to
+// show a fraction of a point.
+//
+// TAKES THE DAMAGE RATHER THAN READING IT off the figure, because the caller already
+// knows which number it means: a boss's sword and a boss's arrow are different
+// damages on the same creature, and only the call site can tell them apart.
+export const swing = (v, damage) => Math.round(damage * blowTimes(v));
+
 export const slowOf = v => {
   let k = 1;
   if (v.statuses) for (const s of v.statuses) if (s.slow && s.slow < k) k = s.slow;

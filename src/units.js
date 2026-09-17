@@ -11,7 +11,7 @@ import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS 
 import { boost } from './towers.js';
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
-import { tick as tickStatus, clear as clearStatus, harmed, slowOf } from './status.js';
+import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from './status.js';
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
@@ -694,7 +694,7 @@ function sweep(state, enemy, blocked, blow) {
   for (const u of state.units) {
     if (u === blocked || u.hp <= 0 || u.respawn > 0 || fixture(u)) continue;
     if (!inRange(enemy.x, enemy.y, u.x, u.y, blow.splash)) continue;
-    u.hp -= taken(enemy.def.damage, typeOf(blow), wornBy(u), pierceOf(blow));
+    u.hp -= taken(swing(enemy, enemy.def.damage), typeOf(blow), wornBy(u), pierceOf(blow));
     splat(state, u.x, u.y - u.def.r, u.y);
     u.struckFrom = enemy.x >= u.x ? 1 : -1;
   }
@@ -1387,7 +1387,16 @@ export function updateUnits(state, dt) {
           // Everything else in the game returns its own def from `stageOf`, so this
           // reads exactly as it did. See data/armour.js.
           const blow = stageOf(u.foe);
-          u.hp -= taken(u.foe.def.damage, typeOf(blow), wornBy(u), pierceOf(blow));
+          // AND HALF AGAIN IF A RALLY THUG IS STANDING OVER HIM. blowTimes is 1 for
+          // everything the aura is not touching, which is almost every blow in the
+          // game — see the note on it in src/status.js and rallyAura in enemies.js.
+          //
+          // APPLIED BEFORE THE ARMOUR, not after, and the order is the whole of what
+          // the boost is worth. Plate subtracts a share of what arrives, so boosting
+          // first means the extra is shaved down with the rest; boosting after would
+          // hand the Rally Thug a way to push damage straight past a paladin's
+          // medium plate, which no attack in this game can do without `pierce`.
+          u.hp -= taken(swing(u.foe, u.foe.def.damage), typeOf(blow), wornBy(u), pierceOf(blow));
           // AND THE MEN AROUND HIM. `splash` on a melee blow is the Captain's and
           // nothing else's — every other area attack in this game arrives on a
           // projectile — so it is applied here, where a swing lands, rather than in

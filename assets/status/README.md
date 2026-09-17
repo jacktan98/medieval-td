@@ -9,7 +9,17 @@ so far; stunned and whatever else follows goes here.
 | `Poisoned_Status.png`| any soldier a flask or its spill catches | 5 damage a second for 4s |
 | `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | 30% off its speed and its swing, for 5s |
 | `Dark_Healing_Status.png` | any enemy a Dark Priest has cast on | 10 health a second for 5s |
-| `Health_Boost_Status.png` | any enemy standing within 100px of a Rally Thug | a fifth of its own maximum, lent |
+| `Physical_Damage_Boost_Status.png` | any PHYSICAL striker standing within 150px of a Rally Thug | half again on its attack, for as long as it stands there |
+| `Health_Boost_Status.png` | **nothing — kept, not loaded** | see below |
+
+`Health_Boost_Status.png` is the Rally Thug's ORIGINAL mark, from when his aura
+lent health rather than sharpening a blow. The owner replaced what the aura does —
+"No more health boost but for those enemies that deals physical damage is boosted by
+50% on their attack damage" — and drew a new mark for it, so nothing in the game
+loads the old file any more. It is left here rather than deleted because it is the
+artist's work and the aura has already changed once; `tools/trim.mjs` will name it
+as unreferenced on every run, which is the reminder that it is a spare and not a
+mistake.
 
 **Dark Healing is the first one that is GOOD for the figure wearing it**, and it
 is a row in the table on the same terms as the rest: `mends: true` in

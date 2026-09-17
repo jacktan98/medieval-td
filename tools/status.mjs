@@ -24,7 +24,7 @@
 // walks back out of the door still on fire is a bug that reads as the fire being
 // broken rather than as the respawn being.
 
-import { apply, tick, clear, wearing, harmed } from '../src/status.js';
+import { apply, tick, clear, wearing, harmed, swing } from '../src/status.js';
 import { STATUS, STATUS_ORDER, STATUS_H } from '../src/data/status.js';
 import { ui, uiSize } from '../src/data/ui.js';
 import { paths as ASSET_URLS } from '../src/assets.js';
@@ -356,22 +356,27 @@ console.log('\nFiery Shot is the thing that sets the fire\n');
 }
 
 
-console.log('\n--- the Rally Thug lends health, and takes it back ---\n');
+console.log('\n--- the Rally Thug sharpens what stands near him ---\n');
 
 // THE FIFTH STATUS IS THE FIRST WITH NO CLOCK, so nothing above this line covers
 // it: every check in this file so far is about a rate running down. This one is a
-// lump of health that comes and goes with where a figure is STANDING, which makes
-// the interesting failures different ones — health that is not returned, health
-// returned twice, a mark left behind without the health under it, and a corpse put
-// back on its feet by the arithmetic that takes the loan back.
+// multiplier that is true exactly while a figure is STANDING somewhere.
+//
+// IT USED TO BE HEALTH and the whole section is rewritten with it. What the old
+// rule needed checking for was a LOAN — health not returned, returned twice, a mark
+// left behind without the health under it, a corpse stood back up by the arithmetic
+// taking the loan back. None of those failures can exist now: nothing is written to
+// a health bar, so there is nothing to give back. What replaces them is a different
+// list — the wrong creatures boosted, the boost not reaching a blow that lands, and
+// the three rules the owner spelled out about when it may be worn.
 {
   const RALLY = enemyTypes.rally_inf;
   // POSITION COMES FROM `s`, NOT FROM x AND y, and that is the one thing this
   // fixture has to get right. updateEnemies walks every enemy along its route and
   // writes x and y from the distance it has covered — so a test that moved a Rally
   // Thug by setting `x` had its move undone before the aura pass ran, and reported
-  // that the boost was never taken back. It is taken back; the fixture was walking
-  // him home again every frame.
+  // that the boost was never taken off. It is; the fixture was walking him home
+  // again every frame.
   //
   // So `apart` is a distance ALONG THE ROAD, and the checks below assert the
   // straight-line gap they actually got rather than assuming the two are the same.
@@ -387,105 +392,138 @@ console.log('\n--- the Rally Thug lends health, and takes it back ---\n');
   // One frame is all the aura needs — it is a pass, not a clock.
   const step = st => updateEnemies(st, DT);
 
-  ok(!!RALLY && !!RALLY.rally, 'the Rally Thug carries an aura',
-    RALLY && RALLY.rally ? `${RALLY.rally.range}px, ${RALLY.rally.share * 100}%` : 'none');
+  ok(!!RALLY && !!RALLY.rally && !!RALLY.rally.times, 'the Rally Thug carries an aura',
+    RALLY && RALLY.rally ? `${RALLY.rally.range}px, x${RALLY.rally.times} on physical attack` : 'none');
 
-  // A FIFTH OF ITS OWN MAXIMUM, which is what makes the same aura worth 16 to a
-  // thug and 160 to a giant. Both are checked, because a boost written off the
-  // RALLY THUG's health instead would be one number for everybody and would look
-  // right on whichever creature it was tuned against.
-  for (const [id, want] of [['light_inf', 16], ['heavy_inf', 160]]) {
+  // IT DOES NOT TOUCH HEALTH AT ALL, which is the thing the old aura did and the
+  // first thing anybody re-reading this will want to know. Checked explicitly rather
+  // than left to be inferred from the checks below, because a version that boosted
+  // both would pass every one of them.
+  {
+    const e = foe(enemyTypes.light_inf, NEAR);
+    const st = world([foe(RALLY, NEAR), e]);
+    step(st);
+    ok(e.hp === enemyTypes.light_inf.hp && e.maxHp === enemyTypes.light_inf.hp,
+      '  and a Thug inside it is not given one point of health',
+      `${e.hp}/${e.maxHp}, unchanged`);
+    ok(wearing(e, 'rallied'), '  but does wear the Physical Damage Boost mark',
+      `${e.statuses.length} status(es)`);
+  }
+
+  // HALF AGAIN ON THE BLOW, measured through `swing` — the one function all three
+  // damage sites go through, so this is what a soldier actually takes.
+  for (const id of ['light_inf', 'blocker_inf', 'heavy_inf', 'archer_inf']) {
     const e = foe(enemyTypes[id], NEAR);
     const st = world([foe(RALLY, NEAR), e]);
     step(st);
-    ok(e.hp === enemyTypes[id].hp + want && e.maxHp === enemyTypes[id].hp + want,
-      `  a ${enemyTypes[id].name} inside it gains ${want}`,
-      `${e.hp}/${e.maxHp} from ${enemyTypes[id].hp}`);
-    ok(wearing(e, 'boosted'), '  and wears the Health Boost mark', `${e.statuses.length} status(es)`);
+    const base = enemyTypes[id].damage;
+    ok(swing(e, base) === Math.round(base * RALLY.rally.times),
+      `  a ${enemyTypes[id].name} strikes for ${Math.round(base * RALLY.rally.times)} rather than ${base}`,
+      `${base} -> ${swing(e, base)}`);
   }
 
-  // OUT OF RANGE AND IT COMES BACK OFF, both numbers, exactly.
+  // MAGIC IS NOT TOUCHED, at the owner's "for those enemies that deals physical
+  // damage". The two casters on the road are the Plague Doctor and the Dark Priest,
+  // and they are asked by their `damageType` rather than by name.
+  for (const id of ['plague_inf', 'dark_priest']) {
+    const e = foe(enemyTypes[id], NEAR);
+    const st = world([foe(RALLY, NEAR), e]);
+    step(st);
+    ok(!wearing(e, 'rallied') && swing(e, enemyTypes[id].damage) === enemyTypes[id].damage,
+      `  a ${enemyTypes[id].name} throws magic and is not boosted`,
+      `${enemyTypes[id].damage} unchanged, no mark`);
+  }
+
+  // OUT OF RANGE AND IT STOPS. No arithmetic to undo — the mark comes off and the
+  // blow is the def's again on the very next frame.
   {
     const e = foe(enemyTypes.light_inf, NEAR);
     const rally = foe(RALLY, NEAR);
     const st = world([rally, e]);
     step(st);
-    const boosted = e.hp;
+    const inside = swing(e, e.def.damage);
     e.s = FAR;                          // he walks on down the road, out of it
     step(st);
     ok(gap(rally, e) > RALLY.rally.range, '  and 400px of road really is out of range',
       `${gap(rally, e).toFixed(0)}px apart against a ${RALLY.rally.range}px aura`);
-    ok(e.hp === 80 && e.maxHp === 80, '  out of range, both numbers return exactly',
-      `${boosted} -> ${e.hp}/${e.maxHp}`);
-    ok(!wearing(e, 'boosted'), '  and the mark goes with the health');
+    ok(swing(e, e.def.damage) === e.def.damage && !wearing(e, 'rallied'),
+      '  out of range, the blow is his own again and the mark is gone',
+      `${inside} inside -> ${swing(e, e.def.damage)} outside`);
   }
 
-  // THE OWNER'S OWN EXAMPLE, end to end and in his numbers:
-  //   "Thug health 80 -> in range 96 -> projectiles hit thug, health drop to 10 ->
-  //    out of range, health drop to 1"
-  {
-    const e = foe(enemyTypes.light_inf, NEAR);
-    const st = world([foe(RALLY, NEAR), e]);
-    step(st);
-    const inRange = e.hp;
-    e.hp = 10;                          // whatever a tower did to him
-    e.s = FAR;
-    step(st);
-    ok(inRange === 96 && e.hp === 1, '  the owner\'s example: 80 -> 96 -> 10 -> 1',
-      `80 -> ${inRange} -> 10 -> ${e.hp}`);
-  }
-
-  // A LOAN, NOT A REFUND. What comes off is what went on, not a fifth of what is
-  // left — so an enemy shot inside the aura comes out of it worse than it went in,
-  // which is the whole counter-play. Checked as a NUMBER rather than as a floor,
-  // so a version that took off 20% of the remainder would fail here.
-  {
-    const e = foe(enemyTypes.heavy_inf, NEAR);       // 800 -> 960
-    const st = world([foe(RALLY, NEAR), e]);
-    step(st);
-    e.hp = 500;
-    e.s = FAR;
-    step(st);
-    ok(e.hp === 340, '  health spent inside the aura is not refunded outside it',
-      `960 -> 500 -> ${e.hp}, which is 500 less the 160 lent`);
-  }
-
-  // ONCE IN A LIFETIME, at the owner's ask. Walking back in does nothing.
+  // AND IT MAY BE WORN AGAIN, which is the owner's change and the exact opposite of
+  // the rule this replaces: "Can be boosted again if a rally thug nearby dies and
+  // another one comes nearby again." Walked out, walked back in.
   {
     const e = foe(enemyTypes.light_inf, NEAR);
     const st = world([foe(RALLY, NEAR), e]);
     step(st);
     e.s = FAR;  step(st);
+    const away = swing(e, e.def.damage);
     e.s = NEAR; step(st);
-    ok(e.hp === 80 && e.maxHp === 80 && !wearing(e, 'boosted'),
-      '  and an enemy walked back in is not boosted a second time',
-      `${e.hp}/${e.maxHp}`);
+    ok(away === e.def.damage && swing(e, e.def.damage) === Math.round(e.def.damage * RALLY.rally.times),
+      '  an enemy walked back in IS boosted again',
+      `${e.def.damage} -> boosted -> ${away} out -> ${swing(e, e.def.damage)} back in`);
   }
 
-  // HE DOES NOT RALLY HIMSELF, and two of them DO rally each other — once each,
-  // which is the same rule rather than an exception to it.
+  // AND THE SAME THING BY THE OTHER ROUTE: the Rally Thug dies, a second one
+  // arrives. This is the owner's own wording of it, and it is a different code path
+  // from walking out — the figure never moved.
+  //
+  // THE SECOND ONE IS PUSHED ONTO THE BOARD rather than resurrected. The first
+  // version of this fixture parked him there dead and stood him up again, and it
+  // failed — updateEnemies sweeps corpses out of `state.enemies` at the end of the
+  // frame, so restoring `hp` on the object put health back on a figure the game had
+  // already forgotten. Which is the right behaviour, and a fixture that fights it is
+  // testing nothing.
+  {
+    const e = foe(enemyTypes.light_inf, NEAR);
+    const first = foe(RALLY, NEAR);
+    const st = world([first, e]);
+    step(st);
+    first.hp = 0;                       // the one that was rallying him is killed
+    step(st);
+    const orphaned = swing(e, e.def.damage);
+    st.enemies.push(foe(RALLY, NEAR));  // and another walks up
+    step(st);
+    ok(orphaned === e.def.damage &&
+       swing(e, e.def.damage) === Math.round(e.def.damage * RALLY.rally.times),
+      '  and boosted again when one dies and another takes his place',
+      `boosted -> ${orphaned} with him dead -> ${swing(e, e.def.damage)} with the next`);
+  }
+
+  // RALLY THUGS CANNOT BOOST EACH OTHER, at the owner's ask, and it is the one rule
+  // here that is about a KIND rather than about geometry. The old aura DID let two
+  // of them boost each other and the note there called that "the same rule rather
+  // than a special case"; it is a special case now because the owner made it one.
   {
     const lone = foe(RALLY, NEAR);
     step(world([lone]));
-    ok(lone.hp === RALLY.hp && !wearing(lone, 'boosted'),
-      '  a Rally Thug alone does not boost himself', `${lone.hp}/${lone.maxHp}`);
+    ok(!wearing(lone, 'rallied'), '  a Rally Thug alone does not boost himself',
+      `${swing(lone, lone.def.damage)} from ${lone.def.damage}`);
 
     const a = foe(RALLY, NEAR), b = foe(RALLY, NEAR);
     step(world([a, b]));
-    ok(a.hp === RALLY.hp + 70 && b.hp === RALLY.hp + 70,
-      '  but two of them rally each other, once each', `${a.hp} and ${b.hp}`);
+    ok(!wearing(a, 'rallied') && !wearing(b, 'rallied'),
+      '  and two of them standing together boost NEITHER',
+      `${swing(a, a.def.damage)} and ${swing(b, b.def.damage)}, both their own ${RALLY.damage}`);
   }
 
-  // TWO AURAS DO NOT STACK, which falls out of the once-only rule and is worth
-  // pinning anyway: it is the case a player will actually build against.
+  // TWO AURAS DO NOT COMPOUND. "Boosts cannot compound and only can boost 50% even
+  // though there are 2 rally thugs nearby" — checked as a NUMBER, so a version that
+  // multiplied 1.5 by 1.5 would fail here at 22 rather than passing at 15.
   {
     const e = foe(enemyTypes.light_inf, NEAR);
     const st = world([foe(RALLY, NEAR), foe(RALLY, NEAR), e]);
     step(st); step(st);
-    ok(e.hp === 96, '  and two auras on one enemy lend once, not twice', `${e.hp}`);
+    ok(swing(e, e.def.damage) === Math.round(e.def.damage * RALLY.rally.times),
+      '  and two auras on one enemy are worth exactly one',
+      `${swing(e, e.def.damage)}, not ${Math.round(e.def.damage * RALLY.rally.times ** 2)}`);
   }
 
-  // KILLING HIM TAKES THE LOAN BACK, in the same frame, off everything near him.
+  // KILLING HIM TAKES IT OFF, in the same frame, off everything near him. That is
+  // the counter-play, and it is now immediate in a way the health version was not —
+  // there is no bar to unwind.
   {
     const e = foe(enemyTypes.light_inf, NEAR);
     const rally = foe(RALLY, NEAR);
@@ -493,24 +531,9 @@ console.log('\n--- the Rally Thug lends health, and takes it back ---\n');
     step(st);
     rally.hp = 0;
     step(st);
-    ok(e.hp === 80 && !wearing(e, 'boosted'),
-      '  and killing him takes it back off everything around him', `${e.hp}/${e.maxHp}`);
-  }
-
-  // AND THE FLOOR NEVER RAISES A CORPSE. An enemy killed on the same frame its
-  // Rally Thug died is at or below zero waiting for the sweep, and `Math.max(1, …)`
-  // applied to that would stand it back up with a point of health — a thug that
-  // refuses to die because something else did.
-  {
-    const e = foe(enemyTypes.light_inf, NEAR);
-    const rally = foe(RALLY, NEAR);
-    const st = world([rally, e]);
-    step(st);
-    e.hp = 0;
-    rally.hp = 0;
-    step(st);
-    ok(e.hp <= 0, '  and a corpse is not stood back up by the loan coming due',
-      `${e.hp}`);
+    ok(swing(e, e.def.damage) === e.def.damage && !wearing(e, 'rallied'),
+      '  and killing him takes it off everything around him at once',
+      `${swing(e, e.def.damage)}, his own again`);
   }
 }
 

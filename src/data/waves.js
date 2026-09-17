@@ -425,26 +425,37 @@ export const enemyTypes = {
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     pierce: 1,
-    // THE AURA. `range` is a radius in game px and `share` a fraction of the
-    // target's OWN maximum — so the same aura lends a thug 16 and a giant 160,
-    // which is what "by 20%" means and what makes him worth more beside the heavy
-    // half of a wave than the light half.
+    // THE AURA. `range` is a radius in game px and `times` a multiplier on the
+    // ATTACK of everything physical standing inside it — the owner's "for those
+    // enemies that deals physical damage is boosted by 50% on their attack damage".
+    //
+    // IT USED TO BE HEALTH, at `share: 0.2`, and swapping the two changed what the
+    // creature is for. A fifth more health made a wave take longer to kill; half
+    // again on its blows makes it kill FASTER, which is a threat to the squad rather
+    // than to the clock. The player answers it by killing the Rally Thug rather than
+    // by out-damaging what he lends.
+    //
+    // PHYSICAL ONLY, so the Plague Doctor's flask and the Dark Priest's bolt are
+    // untouched — they are the two magic attacks on the road. Every other creature
+    // in the game strikes physically, including the boss.
+    //
+    // AND NOT ANOTHER RALLY THUG, at the owner's ask: "Rally thugs cannot boost each
+    // other." That is a rule about the KIND rather than about the geometry — he does
+    // not boost himself because he is not near himself, and two of them standing
+    // together are still two unboosted Rally Thugs.
+    //
+    // NO COMPOUNDING. "Boosts cannot compound and only can boost 50% even though
+    // there are 2 rally thugs nearby" — so the multiplier is read off whichever
+    // source is in range rather than multiplied across all of them, and a figure
+    // wears one mark however many auras it stands in.
     //
     // 150px, RAISED FROM 100 at the owner's word. It is half again as far and more
     // than twice the ground: an aura is a circle, so 150 covers 2.25x the area 100
     // did, and on a road it is the LENGTH that counts — 300px of column against 200.
-    // At Ironforge's spacing that is about four bodies in reach at once where it was
-    // two or three.
-    //
-    // WHAT IT MEANT AT 100 IS WORTH KEEPING. The whole column there was 72 to 95px
-    // apart, so his neighbours were inside it by a margin of a few pixels and a
-    // single retune of a gap could have put them out. At 150 the nearest thing to
-    // trouble is a giant at 95px, which is 55px of slack. He has stopped being a
-    // creature whose aura depends on the wave table.
     //
     // Read by rallyAura in src/enemies.js. A def with no `rally` block simply has
     // no aura, so this is the only creature the pass does any work for.
-    rally: { range: 150, share: 0.2 },
+    rally: { range: 150, times: 1.5 },
     speed: 45,      // the slowest thing on the road but the boss
     // Above the Giant's 40, which is the only other two-life creature on the road.
     // He is worth more to kill than his own health says, because what he is worth
@@ -2517,21 +2528,33 @@ export const stage9Waves = [
 //
 // HE SHIPS HERE AND NOWHERE ELSE, exactly as the Shadow Thug shipped on the desert
 // and for the same reason: a creature nothing sends is a creature no player meets.
-// The owner has put ONE of him in each of the last three waves — 1, 1, 1 — and one
-// is the right number for what he is. He does not fight for the wave, he lends it
-// health, so a second would not make the wave twice as hard; it would make the
-// FIRST one's lending redundant, because an enemy can only be boosted once ever
-// (see `rallied` in src/enemies.js).
+// One in wave 6, one in wave 7, and TWO in wave 8 — the first wave in the game to
+// send a second, which it can now that the aura no longer lends health. Two of him
+// used to be pointless (an enemy could be boosted once in its life, so the second
+// one had nothing left to give); two of him now means two overlapping patches of
+// road where the crowd hits half again as hard, and standing them together buys
+// nothing because the boost does not compound.
 //
-// WHAT ONE OF HIM IS WORTH DEPENDS ON WHO HE WALKS WITH, and that is why he arrives
-// in wave 6 rather than wave 3: he is a multiplier on congestion, so he ships where
-// the crowd is.
+// WHAT HE DOES CHANGED ENTIRELY. He lent a fifth of an enemy's own health; he now
+// puts half again on the ATTACK of every physical striker near him — "No more health
+// boost but for those enemies that deals physical damage is boosted by 50% on their
+// attack damage." That turns him from a creature who makes a wave take longer to
+// kill into one who makes it kill faster, which is a threat to the SQUAD rather than
+// to the clock, and it is answered by killing him rather than by out-damaging him.
 //
-// AND 150px IS THE RADIUS AT WHICH HE STARTS WORKING ON THIS BOARD AT ALL.
+// AND THE GIANTS CAME OFF THE BOARD IN THE SAME PASS. They were 0,0,0,1,2,2,4,6 when
+// this shipped, then 0,0,0,0,1,2,2,4, and now there are none at all — the first board
+// since stage 3 to send none, after six in a row that do. The two changes are one
+// decision: a giant is a wall you answer with damage, and this board's back half is
+// now about fourteen blockers striking for 15 apiece instead of 10, which is a
+// different question. What the player must kill has moved from the biggest body on
+// the road to the one making the rest dangerous.
 //
-// Wave 6 sent down Ironforge by the game's own spawner, no towers and no soldiers, so
-// nothing bunches the column but the road itself — how many of its 22 other bodies
-// were ever boosted:
+// 150px IS THE RADIUS AT WHICH HE WORKS ON THIS BOARD AT ALL, and that was measured
+// before the aura changed — the reach is the reach whatever it carries. Wave 6 sent
+// down Ironforge by the game's own spawner, no towers and no soldiers, so nothing
+// bunches the column but the road itself; how many of its other bodies came within
+// reach at some point:
 //
 //   100px   0        the radius he shipped with
 //   150px   3        the owner's, and 3 of them in reach at once
@@ -2539,32 +2562,19 @@ export const stage9Waves = [
 //
 // ZERO IS THE NUMBER TO UNDERSTAND. Spacing on a road is a gap in seconds times a
 // speed, and after the speed pass wave 6's column is 72 to 95px apart — every type
-// apparently inside a 100px reach. It still boosted nobody, and the reason is THIS
+// apparently inside a 100px reach. It still reached nobody, and the reason is THIS
 // BOARD: Ironforge has three doors and `routeMix` deals 40/30/30, so the man walking
-// beside him is usually on another road entirely. See data/level12.js. The arithmetic
-// says the aura reaches; the deal says there is often nothing there to reach.
+// beside him in the TABLE is usually on another road entirely. See data/level12.js.
+// The arithmetic says the aura reaches; the deal says there is often nothing there to
+// reach.
 //
 // So 150 is not "half again as much aura", it is the difference between a creature
 // who does something here and one who does not. The counts here are the owner's and
 // the two facts still pull against each other on purpose — a wave split three ways is
 // a wave that bunches less — but at 150 he wins that argument often enough to matter.
 //
-// HE IS ALSO THE SLOWEST THING ON THE ROAD BUT THE BOSS, at 45 against everything
-// else's 50 and 60, which compounds it — the column he walks in front of catches him
-// up and the column behind him walks past, so bodies pass THROUGH his reach instead
-// of holding station outside it. None of that was designed; it fell out of the
-// owner's speed numbers, and it makes him a better creature than he was.
-//
-// AND THE BOARD STILL PULLS THE OTHER WAY. Ironforge is the first board with THREE
-// doors, and 40/30/30 means no single road carries even half the wave — see
-// `routeMix` in data/level12.js. A wave split three ways is a wave that bunches less.
-// The counts here are the owner's; what this note records is that the two facts pull
-// against each other on purpose.
-//
-// THE SHADOW THUG COMES TOO, at 1, 1, 2, 2, 4, 6 — flatter than Sandshroud's 1, 2,
-// 2, 4, 6, 10, because this board also carries giants through the back half where
-// that one tapered them. Four giants and six shadows in the last wave is 3,200 points
-// of armour a tower cannot see past and 1,500 it cannot see at all.
+// THE SHADOW THUG COMES TOO, at 1, 1, 2, 4, 6, 6 — flatter than Sandshroud's 1, 2, 2,
+// 4, 6, 10, and flat at the top now that the last two waves both send six.
 //
 // Every gap is a multiple of 0.1, because the admin panel's rate stepper rounds to a
 // tenth and a shipped number it cannot return to is one the owner can never put back.
@@ -2576,20 +2586,20 @@ export const stage10Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
                        { type: 'shadow_inf', count: 1, gap: 1.8 },
                        { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 4, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 },
                        { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.6 }, { type: 'shadow_inf', count: 2, gap: 1.7 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 },
                        { type: 'archer_inf', count: 6, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.4 }, { type: 'shadow_inf', count: 4, gap: 1.6 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.8 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 },
                        { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
                        { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.3 }, { type: 'shadow_inf', count: 6, gap: 1.5 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.7 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 6, gap: 1.5 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 },
                        { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];

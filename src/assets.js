@@ -617,7 +617,9 @@ export const paths = {
   // The fifth, and the first worn for as long as a figure STANDS somewhere rather
   // than for a number of seconds — the Rally Thug's aura. See `boosted` in
   // data/status.js.
-  status_boost:    'assets/status/Health_Boost_Status.png',
+  // THE RALLY THUG'S MARK. It was Health_Boost_Status.png until the owner replaced
+  // what the aura does; that file is still in assets/status and nothing loads it now.
+  status_rally:    'assets/status/Physical_Damage_Boost_Status.png',
   // THE MAXED BADGE, for the upgrade button of a tower that has none left. It
   // replaces the vector chevrons that stood in for `max` since the ring was
   // built — the last glyph in the menu that had never been drawn. Still dimmed
