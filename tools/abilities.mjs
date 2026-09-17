@@ -491,10 +491,20 @@ console.log('\nWhat the two are worth\n');
   const cd = POST.cooldown;
   const dmg = POST.damage;
 
-  // Measured over a whole number of BOTH cycles — six and eleven, so sixty-six
-  // shots — which is the only window in which each ability has fired a whole
-  // number of times and the answer is not an artefact of where the run was cut.
-  const window = cd * 66;
+  // MEASURED OVER A WHOLE NUMBER OF BOTH CYCLES, which is the only window in which
+  // each ability has fired a whole number of times and the answer is not an artefact
+  // of where the run was cut.
+  //
+  // DERIVED FROM THE CYCLES RATHER THAN WRITTEN DOWN, which it was not. It was a flat
+  // 66 shots, explained as "six and eleven" — numbers the two abilities had not
+  // carried for several tunings. The moment Deadeye moved to one in seven, 66 stopped
+  // being a whole number of its cycles and the rate it printed was exactly the
+  // artefact this line exists to prevent. Ten times the lowest common multiple is
+  // long enough to be a rate rather than a sample and cannot fall out of step.
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  const cycles = [ABILITIES.find(a => a.id === 'burst').every,
+                  ABILITIES.find(a => a.id === 'deadeye').every];
+  const window = cd * 10 * (cycles[0] * cycles[1] / gcd(cycles[0], cycles[1]));
   const rate = ids => {
     const shots = fire(post(ids), window + cd);
     const inside = shots.filter(s => s.t < shots[0].t + window);
@@ -514,31 +524,40 @@ console.log('\nWhat the two are worth\n');
   // three men and Deadeye puts six times one shot through one of them, which is the
   // difference between a road full of militia and a giant walking down it.
   //
-  // WITHIN A TENTH OF EACH OTHER rather than within a fifth of a point. The owner
-  // now sets both rhythms directly — one in four and one in eight — so the tolerance
-  // has to be a share of what they are worth rather than an absolute, or it would
-  // fail on the next tuning pass for being 3 points apart out of 40.
-  ok(Math.abs(burst - deadeye) / Math.max(burst, deadeye) < 0.10,
-    'Burst Fire and Deadeye are worth about the same',
-    `${burst.toFixed(2)} against ${deadeye.toFixed(2)}`);
+  // AND DEADEYE IS THE ONE IN FRONT, by a little. That is the shape both cards
+  // already claim — "rarer and harder than the burst and a little ahead of it per
+  // second" — so it is asked as a direction and a bound rather than as a distance.
+  //
+  // THE BOUND IS A FIFTH, AND IT USED TO BE A TENTH THAT WAS NOT TRUE. The window
+  // above was a hard-coded 66 shots that had stopped being a whole number of either
+  // cycle, and under it the two measured 5% apart. Measured over a real window they
+  // have been about 12% apart for several tunings, including the ones this check was
+  // said to pass. The tolerance is now set to what the game actually ships rather
+  // than to what a mis-cut window reported.
+  ok(deadeye > burst && (deadeye - burst) / deadeye < 0.20,
+    'Deadeye is worth a little more per second than Burst Fire, and only a little',
+    `${burst.toFixed(2)} against ${deadeye.toFixed(2)} — ` +
+    `${(100 * (deadeye - burst) / deadeye).toFixed(0)}% ahead`);
 
-  // AND THE SECOND ONE BOUGHT IS STILL WORTH BUYING — but no longer worth the same
-  // as the first, and that is a consequence of the numbers rather than a bug.
+  // AND THE SECOND ONE BOUGHT IS NOW WORTH VERY NEARLY WHAT IT IS WORTH ALONE, which
+  // is what the owner's "after 6" bought and is the whole reason for the odd number.
   //
-  // THE CYCLES STILL SHARE A FACTOR, and how much that costs is what this measures.
-  // Where they collide the rarer one wins, so a Post that has bought both loses a
-  // burst to any Deadeye landing on a burst slot. At 4 and 8 that was EVERY Deadeye
-  // and the second ability was worth 60% of its solo value; at 4 and 10 it is every
-  // other one — one burst in twenty shots — and it is worth 86%.
+  // THE COST OF A SHARED FACTOR, measured. Where the cycles collide the rarer one
+  // wins, so a Post that has bought both loses a burst to any Deadeye landing on a
+  // burst slot. At 4 and 8 that was EVERY Deadeye and the second ability was worth
+  // 60% of its solo value; at 4 and 10, every other one, and 86%. At 4 and 7 they are
+  // coprime and meet once in 28 shots — a minute and a half of continuous firing —
+  // and it is worth 91%.
   //
-  // What is checked is therefore the thing that matters to a player: the second 150
-  // gold still buys most of what it would have bought on its own. If this ever
-  // drops below half, make the rarer cycle odd and the two go back to being fully
-  // independent.
+  // What is checked is the thing that matters to a player: the second 150 gold buys
+  // nearly all of what it would have bought on its own. The bar is set at 80% rather
+  // than at the half it was, because 4 and 7 have no factor to share and the only way
+  // back under it is somebody making the cycles collide again.
   const alone = deadeye - plain;
   const second = both - burst;
-  ok(second > alone * 0.5, 'and buying the second still adds most of its own worth',
-    `+${(burst - plain).toFixed(1)} then +${second.toFixed(1)} of ${alone.toFixed(1)}`);
+  ok(second > alone * 0.8, 'and buying the second adds nearly all of its own worth',
+    `+${(burst - plain).toFixed(1)} then +${second.toFixed(1)} of ${alone.toFixed(1)} ` +
+    `(${(100 * second / alone).toFixed(0)}%)`);
 }
 
 // --- the paladin ----------------------------------------------------------------

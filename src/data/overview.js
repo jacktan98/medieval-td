@@ -501,7 +501,7 @@ export const STAGES = [
     "marker": 2,
     "x": 882.4,
     "y": 271.3,
-    "level": 10,
+    "level": null,
     "leg": [
       [764.2, 314.1],
       [766.9, 312.6],
@@ -549,7 +549,7 @@ export const STAGES = [
     "marker": 0,
     "x": 859.3,
     "y": 80.2,
-    "level": 11,
+    "level": null,
     "leg": [
       [876, 266.7],
       [871.6, 263],

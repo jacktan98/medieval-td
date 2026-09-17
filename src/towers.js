@@ -821,18 +821,17 @@ const boughtAbilities = t =>
 // WHICH SPECIAL, IF ANY, SHOT NUMBER `n` IS.
 //
 // EVERY ABILITY KEEPS ITS OWN CYCLE. Burst Fire wants every fourth shot and
-// Deadeye every eighth, and they simply both run on the tower's one counter — so a
-// Post that has bought both bursts on 4, 8, 12... and takes the long shot on 8,
-// 16, 24... An earlier version divided one shared cycle between them, which was
-// written when both wanted the same number and became wrong the moment they did
-// not.
+// Deadeye every seventh, and they simply both run on the tower's one counter — so a
+// Post that has bought both bursts on 4, 8, 12... and takes the long shot on 7, 14,
+// 21... An earlier version divided one shared cycle between them, which was written
+// when both wanted the same number and became wrong the moment they did not.
 //
 // Where the cycles collide the RARER one wins, because the rarer one is the bigger
-// event and losing it is the more noticeable of the two. Today eight is a multiple
-// of four, so EVERY Deadeye lands on a burst slot and half the bursts are lost —
-// the cost of the owner's "after 7 ordinary shots", named on `every` in
-// data/abilities.js. Nothing here assumes the two are coprime; this line is only
-// true of the numbers as they stand.
+// event and losing it is the more noticeable of the two. Today the two are coprime,
+// so they meet only at shot 28 — one burst lost in a minute and a half of continuous
+// firing. That is deliberate and it is the reason Deadeye's cycle is an odd number;
+// see `every` in data/abilities.js. Nothing HERE assumes it, so a future pair that
+// shares a factor still works — it just costs the player bursts.
 //
 // It takes the shot number rather than reading `t.shots` so the same function can
 // answer "what was this shot" and "what will the next one be", which is what the

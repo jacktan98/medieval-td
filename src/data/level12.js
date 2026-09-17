@@ -29,23 +29,24 @@
 //
 // The splitter tells a standing thing from a flat one by height, at 30px, and it
 // refuses when anything sits in the 26–35 band because there height cannot tell them
-// apart. Ironforge has one: THE ARCHERY TARGET on the grass at (131, 120), 27 wide
+// apart. Ironforge has one: THE ARCHERY TARGET on the grass at (121, 138), 27 wide
 // and 29.5 tall. It is a butt on a tripod with its own shadow — a standing thing, by
 // half a pixel classified as flat — so it gets no box and a figure at its foot would
 // be drawn over it rather than behind it.
 //
-// SHIPPED THAT WAY BECAUSE IT COSTS ALMOST NOTHING, measured rather than assumed.
-// No road passes behind it: the nearest point of any road ON THE CANVAS is 101px
-// away, and the only route samples inside its 27px of x are the west road's lead-in
-// at y −28 to −9, which is off the top of the board and drawn nowhere. No plot
-// stands behind it either. The ONE case left is a rally flag — plot 0 is 113px off
-// and a barracks ring reaches 210 — so a player who posts a squad on that exact spot
-// gets a soldier whose ankles draw over the target's base. He is 105px tall and the
-// target is 29.5, so what is not hidden is his shins.
+// IT MOVED DOWN THE BOARD AND KEPT ITS HEIGHT. The owner adjusted it for the
+// composition, which was not the change that would clear the band; a target drawn
+// 5px TALLER is. So the flag stays and so does this note.
 //
-// If the owner would rather have it right, the fix is on the artboard and it is one
-// nudge: a target drawn 5px taller lands clear of the band and boxes itself on the
-// next run, and this whole note and the flag come off.
+// SHIPPED THAT WAY BECAUSE IT COSTS ALMOST NOTHING, measured rather than assumed.
+// No road passes behind it: the nearest point of any road ON THE CANVAS is 91px
+// away, and the only route samples inside its 27px of x are the west road's lead-in
+// above y 0, which is off the top of the board and drawn nowhere. No plot stands
+// behind it either. The ONE case left is a rally flag — plot 0 is 110px off and a
+// barracks ring reaches 210 — so a player who sells the free Musketeer Post, builds a
+// barracks there and posts a squad on that exact spot gets a soldier whose ankles
+// draw over the target's base. He is 105px tall and the target is 29.5, so what is
+// not hidden is his shins.
 import { stage10Waves } from './waves.js';
 
 // THE WEST ROAD, in over the top at x 166 and out at the bottom at x 368. 708px, the
@@ -121,6 +122,14 @@ const east = [
 // whichever road passes closest. Written out by
 // `node tools/split-map.mjs assets/map/Stage_10_Map --accept`.
 //
+// TWO OF THEM MOVED DOWN in the owner's second upload of layer 1 — the pair in the
+// middle of the board went from (486, 187) and (568, 240) to (508, 391) and
+// (605, 327). That fixed a real thing as well as a compositional one: the middle
+// house cluster moved UP the board in the same pass, and where the old marker at
+// (486, 187) stood inside the cluster's new box, both now clear it. The splitter said
+// so by name on the run in between — "whatever is built there is drawn BEHIND it" —
+// and says nothing now.
+//
 // SEVEN OF THE NINE READ "FAR" at the splitter's 95px, against all nine on Sandshroud
 // and five on the two Dawnford boards. The two that do not are the pair beside the
 // eastern fork, at 93 and 94px, and they are the two plots on this board that matter
@@ -132,15 +141,15 @@ const east = [
 // markers sit in the middle of one. The shortest reach in the game is the Wayside
 // Shrine's 160px, which is still 13px more than the furthest any plot here sits from
 // a road, so nothing on this board is out of range of anything. But a Watchtower at
-// 200px on plot 7 covers a good deal less road than the same tower on plot 5, and
+// 200px on plot 7 covers a good deal less road than the same tower on plot 4, and
 // that difference is the board's own shape rather than a mistake.
 const plots1 = [
-  { x: 228, y: 226 },   //  481 from its door, 114 off the road
-  { x: 568, y: 240 },   //  417 from its door, 131 off the road
-  { x: 486, y: 187 },   //  357 from its door, 125 off the road
+  { x: 228, y: 226 },   //  481 from its door, 114 off the road — the top left
   { x: 831, y: 217 },   //  349 from its door, 123 off the road
   { x: 258, y: 305 },   //  263 from its door, 126 off the road
-  { x: 810, y: 464 },   //  164 from its door,  93 off the road — the corner
+  { x: 508, y: 391 },   //  225 from its door, 134 off the road
+  { x: 605, y: 327 },   //  209 from its door, 124 off the road
+  { x: 810, y: 464 },   //  164 from its door,  93 off the road
   { x: 894, y: 295 },   //  138 from its door,  94 off the road
   { x: 528, y: 488 },   //  128 from its door, 147 off the road
   { x: 220, y: 485 }    //  101 from its door, 136 off the road
@@ -188,30 +197,28 @@ export const level12 = {
   startGold: 240,
   startLives: 20,
 
-  // A MUSKETEER POST ALREADY STANDING, at the owner's ask: "There is a prebuilt
-  // tower, Musketeer Post at the beginning of the game. This tower is placed at the
-  // bottom right (corner) plot marker. Players can sell or own abilities for this
-  // tower."
+  // A MUSKETEER POST ALREADY STANDING, at the owner's ask — first at the bottom
+  // right, then "Move the prebuilt tower, musketeer post to the top left plot
+  // marker". Players can sell it or buy abilities for it, as on every prebuilt.
   //
-  // (810, 464) IS THE BOTTOM RIGHT CORNER MARKER, and it is the nearest of the nine
-  // to the bottom-right corner of the board by a clear margin — see the check in
-  // tools/campaign.mjs, which asks the geometry rather than trusting this index,
-  // because a redraw renumbers the list and stage 6 has already shipped a prebuilt
-  // pinned to an index the artwork moved.
+  // (228, 226) IS THE TOP LEFT MARKER, and it is the nearest of the nine to the
+  // board's top-left corner by 78px — see the check in tools/campaign.mjs, which asks
+  // the geometry rather than trusting this index, because a redraw renumbers the list
+  // and stage 6 has already shipped a prebuilt pinned to an index the artwork moved.
   //
-  // AND IT REACHES ALL THREE DOORS, which was not the guess. It stands in the crook
-  // where the southern branch turns for the bottom edge and the eastern branch runs
-  // for the right, so those two were obvious; the western road runs down the far side
-  // of the board and looked out of the question. It is not. A Musketeer Post's 480px
-  // is the longest ring in the game and that door is 458px away.
+  // AND THE MOVE CHANGED WHAT THE FREE TOWER IS FOR. Sampled every 2px along each
+  // road, from the bottom-right corner it held 84% of each eastern branch and the
+  // last 46% of the western; from here it holds ALL of the western — every pixel of
+  // it that is on the canvas, 630 of 630 — and 52% of each branch.
   //
-  // WHAT IT ACTUALLY COVERS, sampled every 2px along each road: 84% of the southern
-  // branch, 84% of the eastern, and the LAST 46% of the western — 288px of it,
-  // starting halfway down. So the free tower is not half a board's worth of defence.
-  // It is most of two roads and the tail of the third, which makes the opening
-  // stronger than "a prebuilt in the corner" sounds, and makes the WESTERN HALF the
-  // part a player has to build for: 40% of every wave walks the first 342px of that
-  // road with nothing on it. tools/campaign.mjs measures all three every run.
+  // SO THE BOARD OPENS WITH ITS BIGGEST SHARE ALREADY ANSWERED. The west road carries
+  // 40% of every wave and the Post covers the whole of it, which is the largest thing
+  // a prebuilt has ever been given. What it half-covers is the other 60%: each branch
+  // is watched for its last 360px and walks the first 330 with nothing on it, so the
+  // part a player has to build for is the TOP RIGHT, where the road comes in and
+  // forks. The old corner placement was the mirror of that — two roads well held and
+  // the biggest one barely — and this one is the stronger opening of the two, because
+  // a road held whole leaks nothing at all.
   //
   // A MUSKETEER POST IS A TIER 4, which makes this the largest gift any board has
   // made — Sandshroud's Assassin Guild is the only other tier 4 handed over, and this
@@ -219,7 +226,7 @@ export const level12 = {
   // decision in the game, and the board opens its own rung in `allow` so a player who
   // sells it can build another.
   prebuilt: [
-    { plot: 5, family: 'archery', name: 'Musketeer Post' }
+    { plot: 0, family: 'archery', name: 'Musketeer Post' }
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND: the Ironforge signpost and the two clusters of
@@ -228,20 +235,21 @@ export const level12 = {
   //
   // NOT ONE OF THEM EVER OCCLUDES AN ENEMY, which is worth writing down rather than
   // discovering twice. Sampled every 2px along all three roads, no road passes
-  // through any of these boxes at all — nearest approach is 70px for the sign, 96 for
-  // the middle houses and 115 for the left. So the boxes are correct and idle: they
-  // are here because the things stand up and the rule is the rule, not because
-  // anything on this board is currently hidden by them.
+  // through any of these boxes at all. The middle houses come CLOSE — the southern
+  // branch passes 9px from the box's right edge, near enough that a redraw either way
+  // would put men behind it — but nothing walks through it today. So the boxes are
+  // correct and idle: they are here because the things stand up and the rule is the
+  // rule, not because anything on this board is currently hidden by them.
   //
-  // THE TWO PLOTS THAT SIT ABOVE A HOUSE CLUSTER CLEAR IT. Plot 0 stands on y 226
-  // and the left houses' ink starts at 291; plot 1 stands on 240 and the middle
-  // houses' ink starts at 270. A tower is drawn upward from its plot, so both towers
-  // end above the roof below them with 30px and 65px to spare. Nothing is hidden and
-  // nothing pokes through.
+  // AND NO PLOT STANDS INSIDE ONE, which took the owner's second upload. The middle
+  // house cluster moved up the board to y 92..227 and the marker that used to sit at
+  // (486, 187) would have been inside it — the splitter said so by name — and the
+  // same pass moved that marker down to (508, 391). Nothing is hidden and nothing
+  // pokes through.
   frontArt: 'front12',
   front: [
     { x: 717, y:  56, w:  35, h:  44, g:  98 },   // stands on y 98 — the signpost
-    { x: 503, y: 270, w:  91, h: 149, g: 402 },   // stands on y 402
+    { x: 459, y:  92, w: 119, h: 152, g: 227 },   // stands on y 227
     { x: 116, y: 291, w: 131, h: 135, g: 409 }    // stands on y 409
   ]
 };

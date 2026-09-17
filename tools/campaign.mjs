@@ -303,29 +303,24 @@ console.log('\n--- a marker with no map behind it is not a button ---\n');
 // level index happens to be lying around.
 {
   const built = STAGES.filter(s => s.level !== null);
-  // A BOARD CAN OUTRUN THE MAP, and Ironforge is the first one that has.
+  // A BOARD IN THE GAME NEED NOT BE ON THE ROAD, and three of them are not.
   //
   // This asked for every level to be on the road, which held while the artwork and
-  // the levels array grew together — twelve markers and twelve boards. Stage 10
-  // arrived without a thirteenth marker, so the LAST board in play order has nowhere
-  // to stand: `levels` is one longer than the road.
+  // the levels array grew together. The owner then took the three testing maps off
+  // it — "The 3 test maps do not need a stage" — and they are still loaded, still in
+  // the admin panel, and no longer reachable by a player. That is a decision rather
+  // than a drift, so what is checked is WHICH boards are off the road, by name.
   //
-  // IT IS NOT AN ERROR, for the same reason the gap in the road below is not one. The
-  // markers are the artist's and the boards are the owner's, and either can arrive
-  // first; a checker that calls the ordinary case a failure is a checker that gets
-  // edited away rather than read. So it says WHICH board is off the map and how many,
-  // on every run, and fails only if more than one is — because two adrift means the
-  // two lists have stopped tracking each other rather than being one apart.
-  //
-  // WHAT IT COSTS: a board with no marker cannot be reached from the world map at
-  // all. It is still in the game — the admin panel's map tabs list it and it still
-  // holds its own save key — but no player will find it. Drawing a marker on
-  // Overview_Map_Layer_1.svg and re-running tools/overview.mjs puts it back.
+  // NAMED RATHER THAN COUNTED, because the failure this replaces is the one that
+  // matters: a DRAWN board silently losing its marker. m1, m2 and m3 belong off the
+  // road; anything else appearing in this list is a board a player can no longer
+  // reach and probably should be able to.
   const adrift = levels.filter((_, li) => stageOfLevel(li) === null);
-  ok(adrift.length <= 1, 'at most one board is off the end of the road',
+  ok(adrift.map(l => l.id).sort().join(',') === 'm1,m2,m3',
+    'the only boards off the road are the three testing maps',
     adrift.length
-      ? `${adrift.map(l => l.name).join(', ')} — ${built.length} marker(s) for ${levels.length} board(s), ` +
-        `so it cannot be reached from the world map until one more marker is drawn`
+      ? `${adrift.map(l => `${l.name} (${l.id})`).join(', ')} — ` +
+        `${built.length} of ${levels.length} boards are on the road`
       : `all ${levels.length} on the road`);
 
   const ids = built.map(s => s.level);
@@ -947,37 +942,58 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // newest board drawn and it plays SECOND; the file numbers are the order they
   // were written and the ids are save keys that can never be renumbered, because
   // m1 has star records on players' phones. Only this array means play order.
-  // THE ORDER IS ASKED OF `levels`, NOT OF THE ROAD, which is the change Ironforge
-  // forced. Play order is the levels array and nothing else — the road is where that
-  // order is DRAWN, and the road is currently one marker short — so asking the road
-  // would have made a missing marker look like a board out of sequence.
+  // THE ORDER IS ASKED OF `levels`, NOT OF THE ROAD. Play order is the levels array
+  // and nothing else — the road is where that order is DRAWN, and it now runs two
+  // markers past the last board — so asking the road would have made an empty marker
+  // look like a board out of sequence.
+  //
+  // THE THREE TESTING BOARDS ARE STILL IN THIS LIST and off the ROAD, at the owner's
+  // word, and the difference is the thing to keep straight. They rode the tail of
+  // `levels` for the whole life of the campaign, moving down one each time a real
+  // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
+  // campaign a player walks is the ten drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
   ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m1,m2,m3',
-    'the campaign runs the ten drawn boards, then the three testing ones',
+    'the game loads the ten drawn boards, then the three testing ones',
     play.join(' -> '));
-  // And the stages carry them in that same order, as far as the markers go.
+  // And the stages carry them in that same order, as far as the markers go — which
+  // is now ten of the thirteen.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
-  ok(play.join(',').startsWith(order.join(',')),
-    'with the stages carrying them in that order, as far as the road reaches',
+  const filled = order.filter(id => id !== '-');
+  ok(play.join(',').startsWith(filled.join(',')),
+    'and the road carries the first ten of them, in that order',
     `${order.length} marker(s): ${order.join(' -> ')}`);
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12',
+    '  stopping at Ironforge, with the testing maps behind it and off the road',
+    filled.join(' -> '));
 
-  // AND WHAT THE GAP COSTS, counted rather than forbidden.
+  // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
   //
-  // This was a CHECK for one build — an empty stage must sit at the end, never in the
-  // middle — written when the desert marker was freed and nothing was going on it.
-  // The owner put stage 9 there deliberately and said the board was coming; it has
-  // since arrived, so there is no gap on the road today and this reports none. It is
-  // kept because the next marker drawn before its board will make one again.
+  // MARKERS AT THE END ARE FREE. Stages 11 and 12 stand empty today: the road is
+  // drawn past the last board, waiting for the next two, and nothing is behind them.
+  // That is the ordinary state of a campaign still being built and it is not counted
+  // against anything — it used to be, with "at most one gap", which turned the
+  // owner's decision to take the testing maps off the road into a failure.
   //
-  // A locked stage in the middle IS a wall, so the cost is real; it is just not an
-  // error, and a checker that forbids what the owner decided is a checker that gets
-  // edited away rather than read. So it counts the boards standing behind the gap and
-  // says so on every run.
+  // A MARKER IN THE MIDDLE IS A WALL. A locked stage cannot be walked past, so every
+  // board behind one is unreachable from the world map until it is drawn. That is a
+  // real cost and it is what this counts: how many boards are standing behind a hole.
+  //
+  // It is still not an ERROR — the owner has placed one in the middle on purpose
+  // before, and a checker that forbids what the owner decided is a checker that gets
+  // edited away rather than read. What is checked is the cost, at zero: a hole with
+  // nothing behind it is a hole nobody can notice.
   const empty = STAGES.map((s, i) => (s.level === null ? i : -1)).filter(i => i >= 0);
-  const walled = empty.length ? STAGES.length - empty[0] - 1 : 0;
-  ok(empty.length <= 1, 'with at most one gap in the road at a time',
-    empty.length ? `stage ${empty.map(i => i + 1).join(', ')} of ${STAGES.length}, ` +
-      `walling off ${walled} stage(s) behind it until it is drawn` : 'no gap');
+  const last = STAGES.reduce((n, s, i) => (s.level === null ? n : i), -1);
+  const holes = empty.filter(i => i < last);
+  const walled = holes.length ? last - holes[0] : 0;
+  ok(walled === 0, 'with no board walled off behind an empty marker',
+    holes.length
+      ? `stage ${holes.map(i => i + 1).join(', ')} empty with ${walled} board(s) behind`
+      : empty.length
+        ? `${empty.length} empty marker(s) at the end of the road — ` +
+          `stage ${empty.map(i => i + 1).join(' and ')} of ${STAGES.length}, waiting for a board`
+        : 'every marker has a board');
 
   // AND STAGE 2 IS THE ONE WITH SOMETHING ALREADY ON IT. The owner asked for a
   // tier 3 barracks standing on the top-right plot from the first frame, and every
@@ -1858,27 +1874,27 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       `${pre.name} (${pre.family})`);
     const spot = iron.plots[pre.plot];
     const byCorner = [...iron.plots].sort((a, b) =>
-      Math.hypot(a.x - 960, a.y - 540) - Math.hypot(b.x - 960, b.y - 540));
-    ok(byCorner[0] === spot, '  standing on the plot nearest the bottom-right corner',
-      `(${spot.x}, ${spot.y}), ${Math.round(Math.hypot(spot.x - 960, spot.y - 540))}px from the corner`);
-    ok(Math.hypot(byCorner[1].x - 960, byCorner[1].y - 540) -
-        Math.hypot(spot.x - 960, spot.y - 540) >= 40,
+      Math.hypot(a.x, a.y) - Math.hypot(b.x, b.y));
+    ok(byCorner[0] === spot, '  standing on the plot nearest the top-left corner',
+      `(${spot.x}, ${spot.y}), ${Math.round(Math.hypot(spot.x, spot.y))}px from the corner`);
+    ok(Math.hypot(byCorner[1].x, byCorner[1].y) - Math.hypot(spot.x, spot.y) >= 40,
       '  by a margin no small redraw could close',
-      `${Math.round(Math.hypot(byCorner[1].x - 960, byCorner[1].y - 540) -
-        Math.hypot(spot.x - 960, spot.y - 540))}px clear of the next nearest`);
+      `${Math.round(Math.hypot(byCorner[1].x, byCorner[1].y) -
+        Math.hypot(spot.x, spot.y))}px clear of the next nearest`);
     // AND THE BOARD OPENS ITS OWN RUNG, so a player who sells the free tower can
     // build another. A prebuilt the board forbids is a tower that cannot be replaced.
     ok(iron.allow.includes(pre.name), '  on a board that also lets the player build one',
       iron.allow.join(', '));
-    // AND IT WATCHES ALL THREE DOORS, which is not what this check was written
-    // expecting. The guess was two — the plot sits in the crook between the southern
-    // and eastern branches and the western road runs down the far side of the board —
-    // and the measurement says three. A Musketeer Post's 480px is the longest ring in
-    // the game and the far door is 458px away.
+    // AND FROM THE TOP LEFT IT COVERS THE WHOLE WESTERN ROAD. That is the shape the
+    // owner's move made: the Post used to stand in the bottom-right corner, where it
+    // held 84% of each eastern branch and the last 46% of the west; from here it holds
+    // ALL of the west — every pixel of it that is on the canvas — and 52% of each
+    // branch. The board's biggest single share, whole, plus half of each of the other
+    // two.
     //
-    // SO THE THING WORTH PINNING IS THE ASYMMETRY, not the count. It covers 84% of
-    // each of the two roads beside it and only the last 46% of the far one, which is
-    // the difference between answering a road and catching what is left of it.
+    // WHAT IS PINNED IS THAT SHAPE. One road complete and the other two half covered,
+    // rather than the even spread it looks like from a corner. If a redraw moves the
+    // plot or the roads, this is where the change shows.
     const post = families.find(f => f.id === 'archery').tiers.find(t => t.name === pre.name);
     const onCanvas = p => p.y >= 0 && p.y <= 540 && p.x >= 0 && p.x <= 960;
     const covered = iron.routes.map(r => {
@@ -1891,11 +1907,13 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       }
       return inside / total;
     });
-    ok(covered.every(f => f > 0), '  and reaching every one of the three doors from where it stands',
+    ok(covered.every(f => f > 0), '  and reaching a part of all three roads from where it stands',
       covered.map(f => (100 * f).toFixed(0) + '%').join(' / ') + ` of each road, ring ${post.range}px`);
-    const far = Math.min(...covered), near = Math.min(...covered.filter(f => f !== far));
-    ok(near - far > 0.25, '  though it holds the two roads beside it far better than the third',
-      `${(100 * near).toFixed(0)}% of the nearer pair against ${(100 * far).toFixed(0)}% of the far road`);
+    const whole = covered.filter(f => f > 0.99), part = covered.filter(f => f <= 0.99);
+    ok(whole.length === 1 && part.length === 2 && Math.max(...part) < 0.7,
+      '  holding one of them whole and about half of each of the other two',
+      `${(100 * whole[0]).toFixed(0)}% of one road, ` +
+      `${part.map(f => (100 * f).toFixed(0) + '%').join(' and ')} of the other two`);
   }
 }
 

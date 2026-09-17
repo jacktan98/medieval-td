@@ -519,14 +519,23 @@ const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
 // from the levels array's length. An identity map at that moment would have quietly
 // handed The Bend to Sandshroud and named a desert board after a bend in a river.
 //
-// SANDSHROUD SETTLEMENT LANDED, so index 8 has its board and the three testing maps
-// moved back down one, exactly as the note here said they would. That is the whole
-// change: twelve stages, twelve boards, and the table is the identity map again for
-// the first time since the desert marker was drawn.
+// AND THE THREE TESTING MAPS ARE OFF THE ROAD ENTIRELY, at the owner's word: "The 3
+// test maps do not need a stage. Once I created 11 and 12 stage, they were replace
+// these test maps. These 3 maps can just keep for future use if needed."
 //
-// IT STAYS WRITTEN OUT. The day a board is finished for stage 11 before stage 10,
+// They have been riding the tail of this table since the campaign had four boards,
+// each real board pushing them down one, and stages 11 and 12 were drawn for boards
+// that are coming rather than for them. So the table now ends at 9 and the last two
+// markers are EMPTY: locked medallions at the end of the road with nothing behind
+// them, which is the state this file has always been able to describe.
+//
+// The three boards are still in the repository — src/data/level01..03.js, ids m1, m2
+// and m3 — and are simply not in `levels` in src/level.js any more. Putting one back
+// is a line there and a line here.
+//
+// IT STAYS WRITTEN OUT. The day a board is finished for stage 12 before stage 11,
 // this is the one line that can say so.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11 };
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from

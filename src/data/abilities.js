@@ -688,18 +688,23 @@ export const ABILITIES = [
     of: 'Musketeer Post',
     icon: 'ability_deadeye',
     cost: ABILITY_COST,
-    // ONE SHOT IN EIGHT, against the burst's one in four, and six times as hard.
+    // ONE SHOT IN SEVEN, against the burst's one in four, and six times as hard.
     // That is the shape the owner asked for: the burst is a rhythm you stop
     // noticing and this is an event.
     //
-    // EIGHT IS A MULTIPLE OF THE BURST'S FOUR, and that costs the Post that has
-    // bought both. Where the cycles collide the rarer one wins, so EVERY Deadeye
-    // lands on a burst slot and eats it — shots 8, 16, 24 — and half of the
-    // bursts are lost. It was 10 before, where only every other Deadeye collided.
-    // The owner asked for 7 ordinary shots between them, so this is what that
-    // costs, named here rather than left to be rediscovered: the second 150 gold
-    // on a Post is worth less than the first.
-    every: 8,
+    // SEVEN RATHER THAN EIGHT, AND THE REASON IS THE OTHER ABILITY. Where the two
+    // cycles collide the rarer one wins, so a Post carrying both loses a burst to
+    // every Deadeye that lands on one of its slots. Eight is a MULTIPLE of the
+    // burst's four, so every Deadeye collided and half the bursts were lost — the
+    // pair made 46.2 a second where the two alone promise more. Seven is coprime
+    // with four, so they meet once in twenty-eight shots: one burst lost in a
+    // minute and a half of continuous firing instead of every other one.
+    //
+    // THAT IS THE WHOLE OF WHY THIS NUMBER IS NOT ROUND. Anything sharing a factor
+    // with 4 — 4, 8, 12 — eats bursts; 5, 7, 9 and 11 do not. The owner asked for
+    // "after 6" for exactly this, so if the burst's `every` ever moves, check this
+    // against it rather than leaving the two to collide quietly.
+    every: 7,
     shots: 1,
     // TWO SECONDS of held pose, not one. It is the biggest single blow in the game
     // and he stands over it. Still free, because the musket takes 2.4s to load
@@ -731,18 +736,22 @@ export const ABILITIES = [
     // tower's shot is what is written down, so retuning the tower retunes this with
     // no line here to edit. That is the whole reason the magnitudes are multiples.
     //
-    // It was eight, once in ten. The owner brought it to six, once in eight: the
-    // event comes round oftener and lands softer, and ON ITS OWN the two changes
-    // very nearly cancel — 40.2 a second against the old 40.9, over a plain Post's
-    // 25.0, where Burst Fire is 37.1. Still the biggest single blow in the game by
-    // a factor of six, and still a little ahead of the burst per second, which is
-    // the trade: what separates the two is WHERE the damage goes — the burst clears
-    // a rank of militia, this removes one giant.
+    // It was eight, once in ten. The owner brought it to six, once in seven: the
+    // event comes round oftener and lands softer. A Post carrying Deadeye alone
+    // makes 42.3 a second against a plain one's 25.0, where Burst Fire is 37.2 —
+    // still the biggest single blow in the game by a factor of six, and still a
+    // little ahead of the burst per second, which is the trade. What separates the
+    // two is WHERE the damage goes: the burst clears a rank of militia, this
+    // removes one giant.
     //
-    // WHAT DID MOVE IS THE PAIR. A Post carrying both used to make 50.8 a second
-    // and now makes 46.2, because the cycles collide — see `every` above. The
-    // figures are tools/abilities.mjs's, measured through the real trigger rather
-    // than worked out here, and it prints all four every run.
+    // AND THE PAIR IS WHAT THE ODD CYCLE IS FOR. A Post carrying both makes 53.0 a
+    // second, and the second ability bought is worth 91% of what it is worth alone
+    // — the best the two have ever been together, because 7 and 4 share no factor.
+    // See `every` above.
+    //
+    // The figures are tools/abilities.mjs's, measured through the real trigger over
+    // a whole number of both cycles rather than worked out here, and it prints all
+    // four every run.
     times: 6,
     // AND IT GOES THROUGH TWO RANKS, the same total the burst now carries, at the
     // owner's ask — see the note on `pierce` there for why a total rather than a
