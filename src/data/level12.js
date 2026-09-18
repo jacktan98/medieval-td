@@ -5,7 +5,7 @@
 // a funnel or a fork or a funnel with a fork at the end. This one FORKS ONE OF ITS
 // TWO ROADS: the road in at the top left runs the length of the board to the bottom
 // left and never meets anything, and the road in at the top right splits at about
-// (685, 179), one branch going out at the bottom right and the other running east to
+// (724, 332), one branch going out at the bottom right and the other running east to
 // the right edge. So there are three routes over two entries, and that is the thing
 // this board taught the tools.
 //
@@ -34,125 +34,147 @@
 // half a pixel classified as flat — so it gets no box and a figure at its foot would
 // be drawn over it rather than behind it.
 //
-// IT MOVED DOWN THE BOARD AND KEPT ITS HEIGHT. The owner adjusted it for the
-// composition, which was not the change that would clear the band; a target drawn
-// 5px TALLER is. So the flag stays and so does this note.
+// IT HAS KEPT ITS HEIGHT THROUGH TWO REDRAWS. The owner has moved it and reworked
+// the art around it; neither was the change that clears the band, which is a target
+// drawn 5px TALLER. So the flag stays and so does this note.
 //
-// SHIPPED THAT WAY BECAUSE IT COSTS ALMOST NOTHING, measured rather than assumed.
-// No road passes behind it: the nearest point of any road ON THE CANVAS is 91px
-// away, and the only route samples inside its 27px of x are the west road's lead-in
-// above y 0, which is off the top of the board and drawn nowhere. No plot stands
-// behind it either. The ONE case left is a rally flag — plot 0 is 110px off and a
-// barracks ring reaches 210 — so a player who sells the free Musketeer Post, builds a
-// barracks there and posts a squad on that exact spot gets a soldier whose ankles
-// draw over the target's base. He is 105px tall and the target is 29.5, so what is
-// not hidden is his shins.
+// SHIPPED THAT WAY BECAUSE IT COSTS ALMOST NOTHING, measured rather than assumed,
+// and re-measured after the roads narrowed. No road passes through it at all: the
+// nearest point of any road ON THE CANVAS is 80px away — it was 91 before the redraw
+// brought the western road in — and no plot stands behind it. The ONE case left is a
+// rally flag: plot 0 is 110px off and a barracks ring reaches 210, so a player who
+// sells the free Musketeer Post, builds a barracks there and posts a squad on that
+// exact spot gets a soldier whose ankles draw over the target's base. He is 105px
+// tall and the target is 29.5, so what is not hidden is his shins.
 import { stage10Waves } from './waves.js';
 
-// THE WEST ROAD, in over the top at x 166 and out at the bottom at x 368. 708px, the
+// THE WEST ROAD, in over the top at x 154 and out at the bottom at x 358. 710px, the
 // shortest of the three and the only one that touches neither of the others at any
-// point. It carries the largest share of the wave — see `routeMix`.
+// point — its closest approach to either eastern branch is 220px. It carries the
+// largest share of the wave — see `routeMix`.
 const west = [
-  { x: 139, y: -28 },
-  { x: 167, y: 1 },
-  { x: 191, y: 47 },
-  { x: 217, y: 79 },
-  { x: 301, y: 138 },
-  { x: 330, y: 163 },
-  { x: 350, y: 191 },
-  { x: 368, y: 229 },
-  { x: 381, y: 271 },
-  { x: 385, y: 303 },
-  { x: 378, y: 359 },
-  { x: 355, y: 449 },
-  { x: 357, y: 497 },
-  { x: 369, y: 539 },
-  { x: 367, y: 579 }
+  { x: 131, y: -31 },
+  { x: 155, y: 1 },
+  { x: 181, y: 51 },
+  { x: 202, y: 79 },
+  { x: 235, y: 109 },
+  { x: 317, y: 163 },
+  { x: 340, y: 191 },
+  { x: 356, y: 225 },
+  { x: 369, y: 265 },
+  { x: 373, y: 303 },
+  { x: 367, y: 359 },
+  { x: 343, y: 449 },
+  { x: 346, y: 491 },
+  { x: 359, y: 539 },
+  { x: 357, y: 579 }
 ];
 
-// THE EAST ROAD'S SOUTHERN BRANCH, in over the top at x 458 and out at the bottom at
-// x 710. 769px, the longest road on the board.
+// THE EAST ROAD'S SOUTHERN BRANCH, in over the top at x 466 and out at the bottom at
+// x 708. 769px, the longest road on the board.
 const south = [
-  { x: 425, y: -21 },
-  { x: 459, y: 1 },
-  { x: 472, y: 6 },
-  { x: 525, y: 51 },
-  { x: 627, y: 109 },
-  { x: 663, y: 143 },
-  { x: 685, y: 179 },
-  { x: 721, y: 273 },
-  { x: 736, y: 335 },
-  { x: 731, y: 359 },
-  { x: 685, y: 433 },
-  { x: 673, y: 463 },
-  { x: 682, y: 503 },
-  { x: 698, y: 530 },
-  { x: 711, y: 539 },
-  { x: 729, y: 575 }
+  { x: 435, y: -23 },
+  { x: 467, y: 1 },
+  { x: 523, y: 48 },
+  { x: 629, y: 115 },
+  { x: 659, y: 147 },
+  { x: 683, y: 189 },
+  { x: 717, y: 287 },
+  { x: 724, y: 331 },
+  { x: 715, y: 357 },
+  { x: 664, y: 435 },
+  { x: 655, y: 469 },
+  { x: 663, y: 495 },
+  { x: 676, y: 517 },
+  { x: 695, y: 536 },
+  { x: 709, y: 539 },
+  { x: 738, y: 567 }
 ];
 
-// AND ITS EASTERN BRANCH, in at the same mouth and out at the right edge at y 408.
-// 767px — two pixels shorter than the branch it forks from, which is as near to the
-// same length as two different roads get.
+// AND ITS EASTERN BRANCH, in at the same mouth and out at the right edge at y 410.
+// 759px — ten pixels shorter than the branch it forks from, which is as near to the
+// same length as two different roads get. They part at (724, 332), 480px in, and
+// their doors end 296px apart.
 //
 // PASTED AS TRACED rather than snapped onto a shared head, which is the same call
 // stage 9 made for its two western roads and for the same reason. These two are one
 // piece of tarmac from the mouth to the fork and the simplifier describes it twice,
-// never more than 7px apart across that stretch. Nudging them together by hand would
+// never more than 15px apart across that stretch. Nudging them together by hand would
 // buy nothing and would break the rule that matters more: re-run the tracer after a
 // redraw and paste what it says, rather than keeping numbers alive that nothing
 // regenerates.
 const east = [
-  { x: 425, y: -21 },
-  { x: 459, y: 1 },
-  { x: 472, y: 6 },
-  { x: 529, y: 54 },
-  { x: 619, y: 103 },
-  { x: 658, y: 137 },
-  { x: 685, y: 179 },
-  { x: 733, y: 311 },
-  { x: 755, y: 343 },
-  { x: 777, y: 355 },
-  { x: 889, y: 393 },
-  { x: 959, y: 409 },
-  { x: 997, y: 421 }
+  { x: 435, y: -23 },
+  { x: 467, y: 1 },
+  { x: 523, y: 48 },
+  { x: 615, y: 104 },
+  { x: 651, y: 137 },
+  { x: 681, y: 185 },
+  { x: 723, y: 305 },
+  { x: 744, y: 334 },
+  { x: 769, y: 349 },
+  { x: 879, y: 391 },
+  { x: 959, y: 411 },
+  { x: 997, y: 424 }
 ];
 
 // NINE, in road order, and how far each is from the door it is nearest along
 // whichever road passes closest. Written out by
 // `node tools/split-map.mjs assets/map/Stage_10_Map --accept`.
 //
-// TWO OF THEM MOVED DOWN in the owner's second upload of layer 1 — the pair in the
-// middle of the board went from (486, 187) and (568, 240) to (508, 391) and
-// (605, 327). That fixed a real thing as well as a compositional one: the middle
-// house cluster moved UP the board in the same pass, and where the old marker at
-// (486, 187) stood inside the cluster's new box, both now clear it. The splitter said
-// so by name on the run in between — "whatever is built there is drawn BEHIND it" —
-// and says nothing now.
+// THE OWNER HAS BROUGHT THEM IN, twice. The first pass moved the two middle markers
+// down; this one narrowed the roads and walked most of the markers closer to them —
+// "Made the road path narrower and moved the plot markers nearer to the road."
 //
-// SEVEN OF THE NINE READ "FAR" at the splitter's 95px, against all nine on Sandshroud
-// and five on the two Dawnford boards. The two that do not are the pair beside the
-// eastern fork, at 93 and 94px, and they are the two plots on this board that matter
-// most — a tower there covers two roads instead of one.
+// WHAT THAT DID TO THE SPREAD is the number worth keeping. They ran 76 to 147px off
+// the road, which was the widest range any board had shipped; they now run 76 to 133.
+// Seven of the nine still read "FAR" at the splitter's 95px, which sounds like
+// nothing changed and is not what the board plays like — the ROADS moved too. Median
+// road width went from 68px to 56, so a narrower ribbon further from a marker is
+// still less road inside a ring than it was.
 //
-// THE SPREAD IS WIDE: 93px at the closest and 147 at the furthest, which is the
-// widest range any board has shipped. The cause is the drawing — three roads across
-// a board this size leaves large pockets of grass between them, and four of the
-// markers sit in the middle of one. The shortest reach in the game is the Wayside
-// Shrine's 160px, which is still 13px more than the furthest any plot here sits from
-// a road, so nothing on this board is out of range of anything. But a Watchtower at
-// 200px on plot 7 covers a good deal less road than the same tower on plot 4, and
-// that difference is the board's own shape rather than a mistake.
+// SO IT IS MEASURED AS ROAD COVERED rather than as distance. A 200px Watchtower,
+// sampled every 2px along every road on the canvas:
+//
+//   plot 0  422px     plot 3  382px     plot 6  482px
+//   plot 1  702px     plot 4  716px     plot 7  412px
+//   plot 2  440px     plot 5  652px     plot 8  200px
+//
+// Three good plots, four ordinary ones and plot 8 in a corner of its own — it sits
+// 117px off the bottom of the western road with nothing else in reach, and covers a
+// third of what plot 4 does. It is the plot a player should be last to build on.
+//
+// AND IT IS NOW UNDER THE SIEGE FLOOR, which is a live failure rather than a note.
+// tools/siege.mjs asks whether a CATAPULT on each plot still keeps a tenth of the
+// board's road — "does any plot lose so much road that building a catapult there is a
+// mistake the game never warns you about" — and plot 8 answers 9.2%, the worst figure
+// in the game. The next worst anywhere is 13%.
+//
+// IT WAS ALREADY THE WORST AND ALREADY MARGINAL, at 10.55%, so this redraw did not
+// create the problem; it pushed a plot that was a hair over the line a hair under it.
+// The marker itself barely moved (220,485 -> 228,487) and is actually 19px CLOSER to
+// the road than it was — what moved is the road, which now bends away from it further
+// up, so less of it lands inside a 300px ring.
+//
+// THE FIX IS ON THE ARTBOARD and it is small: the marker 20px UP reads 10.2%, and
+// 20px LEFT reads 10.6%. Moving it right or down makes it worse. Left for the owner
+// rather than fudged here, because these nine numbers are read off the artwork by
+// tools/split-map.mjs and a plot typed to a different place than the marker it is
+// drawn on is a lie this file cannot contain.
+//
+// The shortest reach in the game is the Wayside Shrine's 160px, which is still 27px
+// more than the furthest any plot here sits from a road, so nothing on this board is
+// out of range of anything.
 const plots1 = [
   { x: 228, y: 226 },   //  481 from its door, 114 off the road — the top left
-  { x: 831, y: 217 },   //  349 from its door, 123 off the road
+  { x: 804, y: 211 },   //  364 from its door, 100 off the road
   { x: 258, y: 305 },   //  263 from its door, 126 off the road
-  { x: 508, y: 391 },   //  225 from its door, 134 off the road
+  { x: 481, y: 375 },   //  225 from its door, 104 off the road
   { x: 605, y: 327 },   //  209 from its door, 124 off the road
-  { x: 810, y: 464 },   //  164 from its door,  93 off the road
-  { x: 894, y: 295 },   //  138 from its door,  94 off the road
-  { x: 528, y: 488 },   //  128 from its door, 147 off the road
-  { x: 220, y: 485 }    //  101 from its door, 136 off the road
+  { x: 775, y: 442 },   //  201 from its door,  81 off the road
+  { x: 888, y: 312 },   //  139 from its door,  76 off the road
+  { x: 540, y: 457 },   //  128 from its door, 133 off the road
+  { x: 228, y: 487 }    //   99 from its door, 128 off the road
 ];
 
 export const level12 = {
@@ -209,12 +231,17 @@ export const level12 = {
   // AND THE MOVE CHANGED WHAT THE FREE TOWER IS FOR. Sampled every 2px along each
   // road, from the bottom-right corner it held 84% of each eastern branch and the
   // last 46% of the western; from here it holds ALL of the western — every pixel of
-  // it that is on the canvas, 630 of 630 — and 52% of each branch.
+  // it that is on the canvas, 632 of 632 — and 53% of each branch.
+  //
+  // THE REDRAW DID NOT MOVE IT. The roads narrowed and shifted and the markers came
+  // in, and this plot's answer went from 100 / 52 / 52 to 100 / 53 / 54 — which is
+  // worth recording precisely because it is a non-event: it says the shape of the
+  // board survived the pass rather than having to be re-argued.
   //
   // SO THE BOARD OPENS WITH ITS BIGGEST SHARE ALREADY ANSWERED. The west road carries
   // 40% of every wave and the Post covers the whole of it, which is the largest thing
   // a prebuilt has ever been given. What it half-covers is the other 60%: each branch
-  // is watched for its last 360px and walks the first 330 with nothing on it, so the
+  // is watched for its last 365px and walks the first 320 with nothing on it, so the
   // part a player has to build for is the TOP RIGHT, where the road comes in and
   // forks. The old corner placement was the mirror of that — two roads well held and
   // the biggest one barely — and this one is the stronger opening of the two, because
@@ -233,23 +260,27 @@ export const level12 = {
   // stone houses, each of which the artist drew as ONE group of two buildings and so
   // gets one box with one ground line.
   //
+  // FOUR OF THEM NOW, where there were three: the redraw added something standing at
+  // (752, 25), up beside the signpost.
+  //
   // NOT ONE OF THEM EVER OCCLUDES AN ENEMY, which is worth writing down rather than
   // discovering twice. Sampled every 2px along all three roads, no road passes
   // through any of these boxes at all. The middle houses come CLOSE — the southern
-  // branch passes 9px from the box's right edge, near enough that a redraw either way
-  // would put men behind it — but nothing walks through it today. So the boxes are
-  // correct and idle: they are here because the things stand up and the rule is the
-  // rule, not because anything on this board is currently hidden by them.
+  // branch passes 9px from the box, near enough that a redraw either way would put
+  // men behind it, and it has now survived one — but nothing walks through it today.
+  // So the boxes are correct and idle: they are here because the things stand up and
+  // the rule is the rule, not because anything on this board is currently hidden by
+  // them.
   //
-  // AND NO PLOT STANDS INSIDE ONE, which took the owner's second upload. The middle
-  // house cluster moved up the board to y 92..227 and the marker that used to sit at
-  // (486, 187) would have been inside it — the splitter said so by name — and the
-  // same pass moved that marker down to (508, 391). Nothing is hidden and nothing
-  // pokes through.
+  // AND NO PLOT STANDS INSIDE ONE, which took the owner's second upload to get right:
+  // the marker that used to sit at (486, 187) was inside the middle cluster's box and
+  // the splitter said so by name. It has stayed right through this one — the markers
+  // moved again and all four boxes are still clear of all nine.
   frontArt: 'front12',
   front: [
-    { x: 717, y:  56, w:  35, h:  44, g:  98 },   // stands on y 98 — the signpost
-    { x: 459, y:  92, w: 119, h: 152, g: 227 },   // stands on y 227
+    { x: 752, y:  25, w:  77, h:  89, g:  89 },   // stands on y 89
+    { x: 693, y:  63, w:  35, h:  44, g: 105 },   // stands on y 105 — the signpost
+    { x: 447, y:  94, w: 132, h: 139, g: 216 },   // stands on y 216
     { x: 116, y: 291, w: 131, h: 135, g: 409 }    // stands on y 409
   ]
 };
