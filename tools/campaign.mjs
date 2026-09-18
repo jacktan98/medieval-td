@@ -956,8 +956,8 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
   // campaign a player walks is the ten drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
-  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m1,m2,m3',
-    'the game loads the ten drawn boards, then the three testing ones',
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m1,m2,m3',
+    'the game loads the eleven drawn boards, then the three testing ones',
     play.join(' -> '));
   // And the stages carry them in that same order, as far as the markers go — which
   // is now ten of the thirteen.
@@ -966,8 +966,8 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   ok(play.join(',').startsWith(filled.join(',')),
     'and the road carries the first ten of them, in that order',
     `${order.length} marker(s): ${order.join(' -> ')}`);
-  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12',
-    '  stopping at Ironforge, with the testing maps behind it and off the road',
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13',
+    '  stopping at the Factory, with the testing maps behind it and off the road',
     filled.join(' -> '));
 
   // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
@@ -1633,8 +1633,8 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     // NAMED: he belongs to the last two boards of the campaign, and a retune that
     // scattered him over the early ones would be a different creature.
     const sends = levels.filter(l => l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
-    ok(sends.map(l => l.id).join(', ') === 'm11, m12',
-      '  and the only other board that sends one is Ironforge',
+    ok(sends.map(l => l.id).join(', ') === 'm11, m12, m13',
+      '  and the only others that send one are the two Ironforge boards',
       sends.map(l => l.id).join(', ') || 'none');
   }
 
@@ -1803,8 +1803,8 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     // change to the ladder rather than a tweak.
     const opensTwo = levels.filter(l => Array.isArray(l.allow) && families.some(f =>
       f.tiers.filter(t => t.tier === 4 && l.allow.includes(t.name)).length > 1));
-    ok(opensTwo.map(l => l.id).join(', ') === 'm11, m12',
-      '  and Ironforge is the only other board that opens two rungs of one family',
+    ok(opensTwo.map(l => l.id).join(', ') === 'm11, m12, m13',
+      '  and the two Ironforge boards are the only others that open two rungs of one family',
       opensTwo.map(l => l.id).join(', ') || 'none');
   }
 }
@@ -1840,10 +1840,13 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
     'its Rally Thugs are one in each of waves 6 and 7, and two in the last',
     rally.join(','));
   {
-    const elsewhere = levels.filter(l => l !== iron &&
-      l.waves.some(w => w.groups.some(g => g.type === 'rally_inf')));
-    ok(!elsewhere.length, '  and no other board in the game sends one',
-      elsewhere.length ? elsewhere.map(l => l.id).join(', ') : `${levels.length - 1} other board(s)`);
+    // THE FACTORY SENDS HIM TOO now that there is a board after this one, so "nowhere
+    // else" is not the claim any more. What holds is that he belongs to the last two
+    // boards of the campaign and to no earlier one.
+    const sends = levels.filter(l => l.waves.some(w => w.groups.some(g => g.type === 'rally_inf')));
+    ok(sends.map(l => l.id).join(', ') === 'm12, m13',
+      '  and the only other board that sends one is the Factory',
+      sends.map(l => l.id).join(', ') || 'none');
   }
   // AND HE ARRIVES WHERE THE CROWD IS. His aura reaches 100px, so the waves that
   // carry him have to be the dense ones — asked as "every wave he is in carries more
@@ -2107,6 +2110,174 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
       '  holding one of them whole and about half of each of the other two',
       `${(100 * whole[0]).toFixed(0)}% of one road, ` +
       `${part.map(f => (100 * f).toFixed(0) + '%').join(' and ')} of the other two`);
+  }
+}
+
+console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends ---\n');
+
+// THE ELEVENTH BOARD, and the first whose route count is neither its mouths nor its
+// doors. Three in, three out, FOUR routes: two of the roads merge and leave by one
+// door, and the third splits in half.
+{
+  const fact = levels.find(l => l.id === 'm13');
+  ok(!!fact, 'Ironforge Factory is in the game', fact ? fact.name : 'missing');
+
+  const WANT11 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+  ];
+  const got11 = fact.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got11.join(' | ') === WANT11.join(' | '), 'the Factory sends exactly the eight it was given',
+    got11.map((g, i) => (g === WANT11[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT11[i]})`)).join(' '));
+
+  // IT SENDS EVERY CREATURE BUT THE BOSS, which no other table does and which is what
+  // makes it a last board rather than a harder version of the one before.
+  {
+    const sent = new Set(fact.waves.flatMap(w => w.groups.map(g => g.type)));
+    const road = Object.entries(enemyTypes).filter(([, d]) => !d.boss).map(([id]) => id);
+    const missing = road.filter(id => !sent.has(id));
+    ok(!missing.length, '  and it is the only table that sends every creature but the boss',
+      `${sent.size} of ${road.length}` + (missing.length ? ` — missing ${missing.join(', ')}` : ''));
+    const others = levels.filter(l => l !== fact &&
+      road.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
+    ok(!others.length, '  and no other board does',
+      others.length ? others.map(l => l.id).join(', ') : `${levels.length - 1} other board(s) fall short`);
+  }
+
+  ok(fact.plots.length === 9 && fact.startGold === 240 && fact.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${fact.plots.length} plots, ${fact.startGold} gold, ${fact.waves.length} waves`);
+  ok(fact.maxTier === 3 && fact.allow.length === 7,
+    'it caps at tier 3 and lets seven named rungs through — the most of any board',
+    `maxTier ${fact.maxTier}, allow ${fact.allow.join(', ')}`);
+
+  // --- the shape of the roads ------------------------------------------------
+  ok(fact.routes.length === 4, 'four routes run across it', `${fact.routes.length} routes`);
+  {
+    const head = r => r.pts[0];
+    const tail = r => r.pts[r.pts.length - 1];
+    const same = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < 60;
+    const cluster = list => {
+      const g = [];
+      list.forEach((p, i) => {
+        const h = g.find(h => same(list[h[0]], p));
+        if (h) h.push(i); else g.push([i]);
+      });
+      return g;
+    };
+    const mouths = cluster(fact.routes.map(head));
+    const doors = cluster(fact.routes.map(tail));
+    ok(mouths.length === 3 && doors.length === 3,
+      '  over three mouths and three doors, which is the shape no board has had',
+      `mouths ${mouths.map(m => `[${m.join(',')}]`).join(' ')}, ` +
+      `doors ${doors.map(d => `[${d.join(',')}]`).join(' ')}`);
+    // ONE MOUTH FEEDS TWO ROUTES and one DOOR takes two, at the same time. That is the
+    // funnel and the fork in one board, and it is why four is neither three nor three.
+    ok(mouths.some(m => m.length === 2) && doors.some(d => d.length === 2),
+      '  with one mouth feeding two of them and one door taking two',
+      `busiest mouth ${Math.max(...mouths.map(m => m.length))}, ` +
+      `busiest door ${Math.max(...doors.map(d => d.length))}`);
+    // AND THE TWO THAT SHARE A DOOR REALLY MERGE rather than arriving side by side.
+    const walk = r => {
+      const o = [];
+      for (let s = 0; s <= r.total; s += 2) o.push(routeAt(r, s));
+      return o;
+    };
+    const paths = fact.routes.map(walk);
+    const [i, j] = doors.find(d => d.length === 2);
+    let a = paths[i].length - 1, b = paths[j].length - 1, shared = 0;
+    while (a >= 0 && b >= 0 && Math.hypot(paths[i][a].x - paths[j][b].x,
+                                          paths[i][a].y - paths[j][b].y) < 15) { a--; b--; shared += 2; }
+    ok(shared > 400, '  the two that share a door walk the last of it as one road',
+      `${shared}px of shared tarmac`);
+    // AND THE TWO THAT SHARE A MOUTH REALLY FORK.
+    const [p, q] = mouths.find(m => m.length === 2);
+    let k = 0;
+    while (k < Math.min(paths[p].length, paths[q].length) &&
+           Math.hypot(paths[p][k].x - paths[q][k].x, paths[p][k].y - paths[q][k].y) < 15) k++;
+    const apart = Math.hypot(tail(fact.routes[p]).x - tail(fact.routes[q]).x,
+                             tail(fact.routes[p]).y - tail(fact.routes[q]).y);
+    ok(k * 2 > 200 && apart > 100,
+      '  and the two that share a mouth run as one and then part for good',
+      `${k * 2}px in step, then doors ${Math.round(apart)}px apart`);
+  }
+
+  // 30 / 30 / 20 / 20, MEASURED THROUGH THE REAL SPAWNER, and asked from BOTH ends
+  // because the owner gave it from both. On stage 9 the two readings had to be
+  // reconciled by hand; here they agree, and this is what says so.
+  {
+    useLevel(levels.indexOf(fact));
+    const st = { enemies: [] };
+    const seen = [0, 0, 0, 0];
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      seen[st.enemies[0].route]++;
+    }
+    const want = [0.3, 0.3, 0.2, 0.2];
+    const worst = Math.max(...seen.map((c, i) => Math.abs(c / N - want[i])));
+    ok(worst < 0.01, '  and the wave splits 30/30/20/20 between them, over 4000 spawns',
+      seen.map(c => (100 * c / N).toFixed(1) + '%').join(' / '));
+    // THE ENTRY SIDE: "30% for left middle and left bottom each and 40% for bottom
+    // middle". Routes 2 and 3 share a mouth, so their shares add.
+    const byMouth = [seen[0] / N, seen[1] / N, (seen[2] + seen[3]) / N];
+    ok([0.3, 0.3, 0.4].every((w, i) => Math.abs(byMouth[i] - w) < 0.01),
+      '  which is 30/30/40 in at the three mouths', byMouth.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+    // THE EXIT SIDE: "60% for top right and 20% for right and bottom right each".
+    // Routes 0 and 1 share a door, so theirs add.
+    const byDoor = [(seen[0] + seen[1]) / N, seen[2] / N, seen[3] / N];
+    ok([0.6, 0.2, 0.2].every((w, i) => Math.abs(byDoor[i] - w) < 0.01),
+      '  and 60/20/20 out at the three doors', byDoor.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+  }
+
+  // --- what is already standing on it ----------------------------------------
+  ok(Array.isArray(fact.prebuilt) && fact.prebuilt.length === 1,
+    'it opens with exactly one tower already standing',
+    `${(fact.prebuilt || []).length} prebuilt`);
+  {
+    const pre = fact.prebuilt[0];
+    ok(pre.family === 'siege' && pre.name === 'Cannon Outpost',
+      '  a Cannon Outpost, which is the first ARTILLERY any board has given away',
+      `${pre.name} (${pre.family})`);
+    const spot = fact.plots[pre.plot];
+    // THE FOURTH MARKER FROM THE TOP, measured off the artwork rather than trusted,
+    // because an index is what the file holds and "fourth from the top" is what the
+    // owner asked for. Stage 6 has already shipped a prebuilt pinned to an index a
+    // redraw moved.
+    const byTop = [...fact.plots].sort((a, b) => a.y - b.y);
+    ok(byTop[3] === spot, '  standing on the fourth plot marker counting from the top',
+      `(${spot.x}, ${spot.y}); the three above it are ` +
+      byTop.slice(0, 3).map(p => `y ${p.y}`).join(', '));
+    ok(spot.y - byTop[2].y >= 15 && byTop[4].y - spot.y >= 15,
+      '  by a margin no small redraw could close',
+      `${spot.y - byTop[2].y}px below the third, ${byTop[4].y - spot.y}px above the fifth`);
+    // AND IT SEES EVERY ROAD, which is the claim the level file makes about why this
+    // plot. A Cannon Outpost has no dead zone, so its whole ring counts.
+    const cannon = families.find(f => f.id === 'siege').tiers.find(t => t.name === pre.name);
+    const onCanvas = p => p.y >= 0 && p.y <= 540 && p.x >= 0 && p.x <= 960;
+    const covered = fact.routes.map(r => {
+      let inside = 0, total = 0;
+      for (let s = 0; s <= r.total; s += 2) {
+        const p = routeAt(r, s);
+        if (!onCanvas(p)) continue;
+        total += 2;
+        if (inRange(spot.x, spot.y, p.x, p.y, cannon.range) &&
+            !(cannon.minRange && inRange(spot.x, spot.y, p.x, p.y, cannon.minRange))) inside += 2;
+      }
+      return inside / total;
+    });
+    ok(covered.every(f => f > 0.5),
+      '  and covering more than half of every one of the four roads',
+      covered.map(f => (100 * f).toFixed(0) + '%').join(' / ') + `, ring ${cannon.range}px`);
+    ok(fact.allow.includes(pre.name), '  on a board that also lets the player build one',
+      fact.allow.join(', '));
   }
 }
 

@@ -2607,6 +2607,53 @@ export const stage10Waves = [
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
+// STAGE 11: Ironforge Factory, the board at the end of the road.
+//
+// IT SENDS EVERYTHING. Nine of the ten creatures in the game walk this board — every
+// one but the boss — and it is the only table that does. Ironforge Town took the
+// giants off; the Factory puts them back and keeps everything the Town had, which is
+// what makes it a last board rather than a harder version of the one before.
+//
+// THE GIANTS ARE THE TABLE'S SPINE, at 0,0,0,1,2,2,4,6, which is the ladder the Town
+// shipped with before the owner stripped it. 6 giants in the last wave is 4,800
+// points of health in six bodies, against 3,500 spread over fourteen blockers beside
+// them — so the last wave asks two different questions at once and a board answering
+// only one of them leaks.
+//
+// AND ONE RALLY THUG FROM WAVE 6, not two. The Town's last wave sends a pair; this
+// one does not, and the reason is what else is on the road. Half again on the blow of
+// six giants is 60 a swing rather than 40, and a second aura would add nothing to
+// that — the boost does not compound — while a second body would. One is the number
+// that makes the giants hurt; two would just be another 350-point creature.
+//
+// Every gap is a multiple of 0.1, because the admin panel's rate stepper rounds to a
+// tenth and a shipped number it cannot return to is one the owner can never put back.
+export const stage11Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

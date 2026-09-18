@@ -6,12 +6,13 @@ import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, CUE, FIRING, DEFEND, HEAL,
+import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
          BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
-import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing } from './status.js';
+import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing,
+         wearing as wearingStatus } from './status.js';
 import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -1167,8 +1168,21 @@ function rallyAura(state) {
     // WHICH Rally Thug, not merely whether one, so the multiplier is read off the
     // aura that is actually in range rather than off the first one in the list.
     // Two of different strengths could never lend at each other's rate.
-    if (source) applyStatus(e, 'rallied', source.def.rally.times, Infinity, null);
-    else dropStatus(e, 'rallied');
+    if (source) {
+      // THE SHOUT GOES ON THE TRANSITION, which is the owner's "if rally thug boosts
+      // a NEW enemy". applyStatus below refreshes an existing mark silently, so
+      // without this test the cry would be requested sixty times a second for as long
+      // as anything stood in the aura — and Category A would drop all but one of them,
+      // which would SOUND right and would be a channel held open for nothing.
+      //
+      // Asked of the figure before the status is written, because afterwards there is
+      // no way to tell a new hold from a refreshed one.
+      const fresh = !wearingStatus(e, 'rallied');
+      applyStatus(e, 'rallied', source.def.rally.times, Infinity, null);
+      if (fresh) solo(WAR_CRY);
+    } else {
+      dropStatus(e, 'rallied');
+    }
   }
 }
 

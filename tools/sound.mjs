@@ -827,5 +827,156 @@ check('two chimes on the same millisecond de-dupe', played.length, 1);
   check('and no chime rings into the next', STAR_GAP > 0.35, true);
 }
 
+// --- the two noises the fight makes for itself -------------------------------
+//
+// BOTH OF THESE ARE DRIVEN THROUGH THE REAL GAME CODE rather than asked of a table.
+// The block above proves that every ammunition with `fireSound` has a FIRING row,
+// which is a fact about two objects; it says nothing about whether loose() reaches
+// the table, and the owner's question — "help me check that archer thugs use the
+// arrow shot sound effect" — is about the second thing.
+//
+// So updateEnemies is run with a real archer on a real route, and what comes back is
+// whatever the mixer was actually asked to start.
+
+console.log('\nWhat the enemies sound like\n');
+
+{
+  const { updateEnemies } = await import('../src/enemies.js');
+  const { levels, useLevel } = await import('../src/level.js');
+  const DT = 1 / 60;
+  useLevel(0);
+
+  // A figure on the first road of the first board, far enough along to be walking.
+  // EVERY CLOCK AN ENEMY RUNS, initialised. `tcd` is the one that caught this out:
+  // it is the seconds until the next arrow, and a fixture that leaves it undefined
+  // makes `undefined - dt` = NaN on the first frame — a clock that never reaches
+  // zero, so the archer walks the whole road and never looses. Nothing errors. See
+  // the note on `tcd` beside spawn() in src/enemies.js, which says the same thing
+  // about the same field.
+  const foe = (id, s, over = {}) => ({
+    def: enemyTypes[id], x: 0, y: 0, hp: enemyTypes[id].hp, maxHp: enemyTypes[id].hp,
+    route: 0, lane: 1, s, foe: null, acd: 0, tcd: 0, shot: 0, thrust: 0,
+    halted: false, leaked: false, statuses: [], face: -1, guard: 0, ...over
+  });
+  const world = (es, us = []) => ({ towers: [], enemies: es, units: us, shots: [], hits: [],
+                                    corpses: [], splats: [], impacts: [], smoke: [],
+                                    gold: 0, lives: 20 });
+
+  // THE ARCHER THUG'S ARROW. He needs somebody to shoot at, and the somebody is a
+  // REAL SQUAD out of a real barracks rather than a hand-rolled object — the first
+  // version of this fixture built a plain `{ def, hp, x, y }` and the archer never
+  // took aim at it, because the picker asks questions of a soldier that a stand-in
+  // does not answer. makeUnits is the same call the game makes.
+  const { makeUnits } = await import('../src/units.js');
+  const { makeTower } = await import('../src/towers.js');
+  {
+    const bar = barracks[0];
+    const fam = { id: 'barracks', tiers: barracks };
+    const archer = foe('archer_inf', 300);
+    const st = world([archer], []);
+    const tower = makeTower({ x: 0, y: 0 }, fam, bar);
+    st.towers.push(tower);
+    makeUnits(st, tower);
+    ctx.currentTime = 20000;
+    played = [];
+    for (let i = 0; i < 60 * 8 && !played.filter(c => c === 'Arrow_shot').length; i++) {
+      // Keep the squad standing beside him, inside his 200px reach.
+      for (const u of st.units) { u.x = archer.x + 60; u.y = archer.y; u.rx = u.x; u.ry = u.y; }
+      tower.x = archer.x + 60; tower.y = archer.y;
+      updateEnemies(st, DT);
+    }
+    // `played` HOLDS FILE NAMES, not cue keys — see the fake decodeAudioData at the
+    // top, which names each buffer after its basename. Comparing against 'arrow_shot'
+    // read false on a run where the clip really did play, which is the fixture being
+    // wrong rather than the game.
+    check('an Archer Thug looses with the arrow shot clip',
+      played.filter(c => c === 'Arrow_shot').length > 0, true);
+    check('  and makes no other noise doing it',
+      played.filter(c => c !== 'Arrow_shot').join(', '), '');
+  }
+
+  // THE RALLY THUG'S WAR CRY, at the owner's ask, and the three things about it that
+  // could each be wrong on their own.
+  {
+    const near = 200;
+    // ONCE, when the mark goes on.
+    ctx.currentTime = 30000;
+    played = [];
+    const thug = foe('light_inf', near);
+    const st = world([foe('rally_inf', near), thug]);
+    updateEnemies(st, DT);
+    check('a Rally Thug cries out when his aura takes hold',
+      played.filter(c => c === 'War_cry').length, 1);
+
+    // AND NOT AGAIN on the frames that merely refresh it — which took THREE goes to
+    // ask in a way that could come back no.
+    //
+    // The first version ran 60 frames. A cry requested every frame is dropped for as
+    // long as the first one holds the channel, so one second of frames gives exactly
+    // one cry whether the rule is in the code or not. The second ran four seconds,
+    // reasoning that a dropped request never closes the gate, so the moment the gate
+    // opens the next frame's request would start another clip. It passed too, and
+    // that was the finding: the war cry has ONE take, and a single-take cue is
+    // ineligible for as long as it is the last thing `heard` — see solo() in
+    // src/audio.js, and MEMORY_S, which only clears the slate after 20s of silence.
+    // A cry asked for every frame on a quiet board is silent anyway.
+    //
+    // So this puts SOMETHING ELSE on the channel in between, which is the one thing
+    // that makes the cry eligible again without waiting out the memory. After the
+    // select clip the gate is open, the cry is no longer `last`, and it has been
+    // heard once of its allowed two. A version that asks every frame cries here. The
+    // one that ships asks only on the transition, and says nothing.
+    ctx.currentTime = 30010;
+    played = [];
+    for (let i = 0; i < 60 * 2; i++) { ctx.currentTime += DT; updateEnemies(st, DT); }
+    solo(SELECT);
+    ctx.currentTime += 2;
+    for (let i = 0; i < 60 * 2; i++) { ctx.currentTime += DT; updateEnemies(st, DT); }
+    check('  and not again, for as long as the same enemy stands there',
+      played.filter(c => c === 'War_cry').length, 0);
+    // ...and the clip that was supposed to clear the way really did sound, because if
+    // it had been dropped the check above would be back to proving nothing.
+    check('  (the gap was opened by something else on the channel)',
+      played.filter(c => c === 'Select_Sound').length, 1);
+
+    // AND AGAIN for somebody new. A second body walks into the same aura — and he is
+    // put down BESIDE THE FLAG rather than at the `near` the other two started from,
+    // because by now the flag has walked 180px up the road and 200 is no longer next
+    // to him. The first version of this spawned at `near`, read a silence, and was
+    // measuring the aura's 150px reach rather than the cry.
+    //
+    // Two frames, not one: a figure is placed by `s` and its x/y is whatever the last
+    // frame left there, so the frame that puts him in the right place is not
+    // necessarily the frame the aura sees him on.
+    ctx.currentTime = 30020;
+    played = [];
+    st.enemies.push(foe('tough_inf', st.enemies[0].s));
+    updateEnemies(st, DT);
+    updateEnemies(st, DT);
+    check('  and again when it takes hold of a new one',
+      played.filter(c => c === 'War_cry').length, 1);
+  }
+
+  // AND IT IS CATEGORY A, at the owner's word: one at a time. Asked the way the
+  // Category A block above asks it — a second cry inside the first is dropped.
+  {
+    const near = 200;
+    const st = world([foe('rally_inf', near)]);
+    ctx.currentTime = 40000;
+    played = [];
+    st.enemies.push(foe('light_inf', near));
+    updateEnemies(st, DT);
+    const first = played.filter(c => c === 'War_cry').length;
+    // A second body arrives a quarter second later, while the 1.34s clip is sounding.
+    ctx.currentTime = 40000.25;
+    played = [];
+    st.enemies.push(foe('tough_inf', near));
+    updateEnemies(st, DT);
+    check('the war cry is Category A — a second inside the first is dropped',
+      `${first} then ${played.filter(c => c === 'War_cry').length}`, '1 then 0');
+  }
+}
+
+
 console.log(bad ? `\n${bad} sound rule(s) broken.` : '\nAll three sound rules hold.');
 process.exit(bad ? 1 : 0);

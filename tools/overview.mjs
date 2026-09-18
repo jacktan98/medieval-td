@@ -533,9 +533,12 @@ const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
 // and m3 — and are simply not in `levels` in src/level.js any more. Putting one back
 // is a line there and a line here.
 //
-// IT STAYS WRITTEN OUT. The day a board is finished for stage 12 before stage 11,
+// STAGE 11 HAS ITS BOARD NOW — Ironforge Factory — so the road runs one marker
+// further and only stage 12 stands empty.
+//
+// IT STAYS WRITTEN OUT. The day a board is finished for stage 13 before stage 12,
 // this is the one line that can say so.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9 };
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from

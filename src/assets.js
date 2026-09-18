@@ -718,6 +718,7 @@ export const paths = {
   map10:       'assets/map/Stage_8_Map_base.svg',
   map11:       'assets/map/Stage_9_Map_base.svg',
   map12:       'assets/map/Stage_10_Map_base.svg',
+  map13:       'assets/map/Stage_11_Map_base.svg',
   // THE THINGS ON EACH BOARD THAT STAND UP, on their own transparent sheet so the
   // renderer can draw them at the right depth instead of under everything. Derived
   // and committed by tools/split-map.mjs, like the bases beside them. See `front`
@@ -732,6 +733,7 @@ export const paths = {
   front10:     'assets/map/Stage_8_Map_front.svg',
   front11:     'assets/map/Stage_9_Map_front.svg',
   front12:     'assets/map/Stage_10_Map_front.svg',
+  front13:     'assets/map/Stage_11_Map_front.svg',
   // AND THE ONE THING THAT IS IN FRONT OF EVERYTHING. Stage 5's bridge has a near
   // railing between the camera and its deck, so a figure crossing belongs BEHIND it
   // — which no box on the sheet above can say, because a box sorts by its foot and

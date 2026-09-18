@@ -273,12 +273,31 @@ const CORNER = 80;
 const spot = m => `${(m.cell[0] * STEP)},${(m.cell[1] * STEP)}`;
 const nearOne = (m, list) => list.find(o => Math.hypot((o.cell[0] - m.cell[0]) * STEP,
                                                        (o.cell[1] - m.cell[1]) * STEP) <= CORNER);
+// AND IT SAYS WHAT IT DROPPED, which it did not until stage 11.
+//
+// The cross-list rule below has always named the mouth it discards, on the stated
+// reasoning that "a mouth silently disappearing is the failure this replaces" — and
+// merge(), the WITHIN-list rule, was silently disappearing them the whole time. On
+// Ironforge Factory that shows up plainly: the bottom-left road runs off over the
+// corner, so the listing prints `bottom at 20,538 — a way IN` and the summary on the
+// next line says three entries. Both are true and the pair reads as a contradiction.
+//
+// `merged` is filled as a side effect and read by the listing below. Same shape as
+// `roundTheCorner`, for the same reason and with the same message.
+const merged = [];
 const merge = list => {
   const out = [];
   for (const m of list) {
     const near = nearOne(m, out);
     if (!near) { out.push(m); continue; }
-    if (m.b - m.a > near.b - near.a) out[out.indexOf(near)] = m;
+    // The WIDEST of the pair is kept, so which one is recorded as dropped depends on
+    // that — record whichever actually goes, and what it went into.
+    if (m.b - m.a > near.b - near.a) {
+      merged.push([near, m]);
+      out[out.indexOf(near)] = m;
+    } else {
+      merged.push([m, near]);
+    }
   }
   return out;
 };
@@ -322,11 +341,14 @@ const entries = merge(Object.keys(EDGES).filter(e => !EXIT_EDGES.includes(e)).fl
 console.log('  mouths:');
 for (const e of Object.keys(EDGES)) {
   for (const m of mouths(e)) {
-    const corner = roundTheCorner.find(([d]) => d.edge === e && d.cell[0] === m.cell[0]
-                                                             && d.cell[1] === m.cell[1]);
+    const same = (d) => d.edge === e && d.cell[0] === m.cell[0] && d.cell[1] === m.cell[1];
+    const corner = roundTheCorner.find(([d]) => same(d));
+    const folded = merged.find(([d]) => same(d));
     console.log(`    ${e.padEnd(6)} at ${spot(m)}  ` +
       `${(m.b - m.a + 1) * STEP}px wide  — ` +
       (corner ? `the ${corner[1].edge} exit at ${spot(corner[1])}, round the corner`
+              : folded ? `the same tarmac as the ${folded[1].edge} mouth at ` +
+                         `${spot(folded[1])}, round the corner`
               : EXIT_EDGES.includes(e) ? 'a way OUT' : 'a way IN'));
   }
 }

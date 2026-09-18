@@ -266,6 +266,9 @@ const paths = {
   // played on the frame the pose comes up — see the heal block in src/enemies.js.
   defend_walking:  'assets/audio/sfx/Defend_while_walking.mp3',
   enemies_heal: 'assets/audio/sfx/Enemies_heal.mp3',
+  // THE RALLY THUG'S SHOUT, when his aura takes hold of somebody new. The owner's
+  // ask, and Category A at his word — see WAR_CRY below for what that buys.
+  war_cry:         'assets/audio/sfx/War_cry.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
   // out exactly as an arrow does — see the two flags on every ammunition in
@@ -809,6 +812,27 @@ export const DEFEND = ['defend_walking'];
 // cue named after the first one would have meant either a duplicate file or a
 // Captain who sounds like a priest for no reason a player could work out.
 export const HEAL = ['enemies_heal'];
+
+// A RALLY THUG TAKING HOLD OF SOMEBODY, and the first noise in this game made by an
+// enemy helping another one that is not a heal.
+//
+// CATEGORY A, at the owner's word, and it is what he asked for rather than a
+// coincidence: "Ensure the war cry sound finishes then only trigger another war cry
+// if rally thug boosts a new enemy." Category A is ONE CHANNEL — while a clip in it
+// is sounding every other Category A request is dropped rather than queued, and
+// nothing may start for a second afterwards. So a second cry during the first is not
+// heard, which is the whole of the ask, and it costs nothing: the enemy is boosted
+// whether or not anything is said about it.
+//
+// NOT `hold`. That third flag on solo() is the boss's — it makes a clip
+// uninterruptible by PRIORITY as well, so that an upgrade cannot talk over him — and
+// a war cry is not a set piece. It takes its turn like a swing.
+//
+// ON THE TRANSITION, not on the aura. rallyAura runs every frame and refreshes the
+// status every frame; the cry goes only where a figure that was not wearing the mark
+// starts wearing it. See the `fresh` test in rallyAura, which is the one line that
+// makes this "a new enemy" rather than "an enemy, sixty times a second".
+export const WAR_CRY = ['war_cry'];
 
 // --- THE WORLD MAP ---------------------------------------------------------------
 //
