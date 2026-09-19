@@ -757,122 +757,147 @@ console.log('\nHoly Light\n');
 
 // --- AND THE LIGHT IS NOT A SHIELD -------------------------------------------
 //
-// The owner's rule, stated after he watched one: "When paladins are healing with
-// holy light, bomb thug can straight explode on them. Enemies do not need to wait
-// paladins to finish healing before attacking."
+// The owner's rule: "Enemies do not need to wait paladins to finish healing
+// before attacking." Stated after he watched the opposite happen — "Bomb thug
+// does not explode immediately when paladin is healing. I see that he is waiting
+// for him to finish healing then only explode."
 //
 // IT IS THE HALF OF HOLY LIGHT THAT MAKES IT A COST. Three seconds of kneeling
 // are three seconds of not swinging — the block above measures that — and they
 // buy 220 health back. If the road went quiet while he knelt, the ability would
-// be a free reset rather than a gamble, and the note beside it in src/units.js
-// has said so since it shipped: "he keeps his grip on the enemy the whole time,
-// so the enemy stays stopped and goes on hitting him."
+// be a free reset rather than a gamble.
 //
-// SO WHY CHECK SOMETHING THAT ALREADY WORKS. Because the rule lives in the
-// ABSENCE of a condition — the enemy's counter-attack is gated on `u.holds` and
-// deliberately not on `u.hold` — and an absence is the kind of thing a later
-// change adds back by accident. The boss already has the opposite rule ("when
-// healing, Captain Thug cannot attack"), and one line of `&& u.hold <= 0` typed
-// on the wrong side of that symmetry would silently make the light invulnerable.
-// Nothing would throw and nothing else here would notice.
+// THE FIRST VERSION OF THIS CHECK PASSED AGAINST THE BUG, and how it managed to
+// is the reason the fixture below is shaped the way it is. It put the enemy down
+// at `nearestOnPath` — about ten pixels from the man, already inside REACH — and
+// asked whether he detonated. He did, on the next frame, because there was no gap
+// left to close. What the game actually does to a creature that WALKS UP is
+// another thing entirely: a soldier takes his foe at ENGAGE's 30 and melee lands
+// at REACH's 20, the soldier is the only one who can walk those ten pixels, and a
+// frozen soldier does not walk. See the step in src/units.js.
 //
-// A REAL CREATURE ON THE ROAD, not the `victim` above: that one carries
-// `acd: 1e9` so it never hits back, which is right for measuring the paladin's
-// own rhythm and useless for measuring what is being done TO him.
-function comer(state, def) {
+// So the enemy starts 120px of ROAD away and arrives under its own power. That is
+// the only version of this question that can come back no.
+const walkUp = (ids, def, kneel) => {
+  const state = keep(ids);
   const u = state.units[0];
-  const at = nearestOnPath(u.rx, u.ry);
+  const light = abilityById('light');
+  // Let him settle on his post with nothing in front of him.
+  for (let i = 0; i < 120; i++) updateUnits(state, DT);
+  const at = nearestOnPath(u.x, u.y);
   const e = {
-    def, x: at.x, y: at.y, hp: def.hp, maxHp: def.hp,
-    route: at.route, lane: 1, s: at.s, foe: null,
-    // ZERO, which is what the spawner writes and what makes the bomb go off on the
+    def, x: 0, y: 0, hp: def.hp, maxHp: def.hp, route: at.route, lane: 1,
+    s: Math.max(0, at.s - 120), foe: null,
+    // ZERO, which is what the spawner writes and what makes a bomb go off on the
     // frame of contact. A fixture that leaves this at 1 measures a creature that
     // waits a second, which is the very thing being asked about.
     acd: 0, tcd: 0, shot: 0, thrust: 0, halted: false, leaked: false,
     statuses: [], face: -1, guard: 0
   };
   state.enemies.push(e);
-  return e;
-}
-
-// Put the man beside the enemy and hold him there, so the run measures the fight
-// rather than the walk back to a rally point.
-const pin = (u, e, t) => { u.x = e.x + 10; u.y = e.y; u.rx = u.x; u.ry = u.y; t.x = e.x; t.y = e.y; };
-
-{
-  const state = keep(['light']);
-  const u = state.units[0];
-  const t = state.towers[0];
-  const e = comer(state, enemyTypes.light_inf);
-  const light = abilityById('light');
-  pin(u, e, t);
-  for (let i = 0; i < 30; i++) { updateUnits(state, DT); updateEnemies(state, DT); pin(u, e, t); }
-
-  // Under the threshold, so the light fires on the next frame.
-  u.hp = u.maxHp * (light.below - 0.05);
-  let kneeling = 0, struck = 0;
-  for (let i = 0; i < 60 * 4 && state.enemies.length; i++) {
+  // Under the threshold, so the light is already up before he arrives.
+  if (kneel) { u.hp = u.maxHp * (light.below - 0.05); updateUnits(state, DT); }
+  const out = { engaged: null, gap: null, struck: null, blown: null, held: 0, drift: 0 };
+  for (let f = 1; f <= 60 * 10 && state.enemies.length; f++) {
     const before = u.hp;
+    const wasAt = { x: u.x, y: u.y, hold: u.hold };
     updateUnits(state, DT);
-    updateEnemies(state, DT);
-    pin(u, e, t);
+    // HOW FAR HE MOVES WHILE FROZEN, summed. The exception that closes the last
+    // few pixels must not become a walk — see the step in src/units.js.
+    if (wasAt.hold > 0) out.drift += Math.hypot(u.x - wasAt.x, u.y - wasAt.y);
+    if (out.engaged === null && u.holds) {
+      out.engaged = f;
+      out.gap = +Math.hypot(e.x - u.x, e.y - u.y).toFixed(1);
+    }
     // A BLOW SHOWS AS A STEP DOWN INSIDE ONE FRAME. He is being healed and hit at
-    // once, so his health is not monotonic in either direction — the heal adds
-    // about 1.2 a frame and a thug's knife takes 5 through med plate, and only the
-    // frames that end lower than they started are blows.
-    if (u.hold > 0) { kneeling++; if (u.hp < before) struck++; }
+    // once, so his health is not monotonic in either direction.
+    if (out.struck === null && u.hp < before) { out.struck = f; out.held = u.hold; }
+    if (out.blown === null && e.blown) out.blown = f;
+    updateEnemies(state, DT);
   }
-  ok(kneeling > 60 * 2, 'a paladin kneels in the light for its full three seconds',
-    `${(kneeling * DT).toFixed(2)}s of ${light.seconds}s`);
-  ok(struck >= 2, '  and a thug goes on hitting him the whole way through',
-    `${struck} blow(s) landed while he knelt`);
+  return out;
+};
+
+{
+  // AN ORDINARY THUG FIRST, because the fault was never the Bomb Thug's: anything
+  // that arrives while a man is frozen used to stall, and a thug that starts
+  // swinging three seconds late merely looks like a thug swinging.
+  const calm = walkUp(['light'], enemyTypes.light_inf, false);
+  const knelt = walkUp(['light'], enemyTypes.light_inf, true);
+  ok(calm.struck !== null && knelt.struck !== null,
+    'a thug that walks up to a paladin lands a blow either way',
+    `frame ${calm.struck} calm, ${knelt.struck} kneeling`);
+  // THE SAME FRAME, which is the whole claim. Not "eventually" — before the fix
+  // this read 103 against 190, and 190 was the frame the light ran out on.
+  ok(knelt.struck === calm.struck,
+    '  and the light costs him nothing: the same frame either way',
+    `${knelt.struck} against ${calm.struck}`);
+  ok(knelt.held > 0, '  landed while the paladin is still kneeling',
+    `${knelt.held.toFixed(2)}s of the light still to run`);
+  // HE CLOSED, AND THEN HE STOPPED. `drift > 0` is the fix itself — before it he
+  // moved not one pixel while frozen — and the upper bound says he came to rest at
+  // SETTLE rather than walking on through. Bounded by the gap he was engaged at
+  // rather than by a number typed here, so it needs no copy of ENGAGE.
+  //
+  // This does NOT say he has stopped walking to his rally point; he has a foe for
+  // the whole of this run, so there is no rally point to walk to. That half is
+  // asked below, where it can actually come back no.
+  ok(knelt.drift > 0 && knelt.drift < knelt.gap,
+    '  after closing the last few pixels, and no further',
+    `${knelt.drift.toFixed(1)}px across the whole hold, from a gap of ${knelt.gap}`);
 }
 
 {
-  // AND A BOMB THUG DOES NOT WAIT AT ALL, which is the owner's own example and the
-  // sharpest form of the rule: his blow and his death are one event, so if a
-  // kneeling man were untouchable the creature would simply stand there.
+  // AND A FROZEN MAN WITH NOBODY ON HIM STILL DOES NOT MOVE, which is the other
+  // half of the exception and the half that can be broken by widening it.
   //
-  // HE IS ALREADY KNEELING WHEN THE THUG ARRIVES, which is the order that has to
-  // be arranged rather than the other one. A Bomb Thug put down beside him first
-  // goes off on the frame contact happens — long before anything takes the paladin
-  // low enough to call the light — so a fixture that engages and then wounds is
-  // measuring an explosion that already happened.
+  // "He may close on somebody he is holding" and "a held pose no longer stops him"
+  // are one clause apart in src/units.js, and the second reads the same in every
+  // fixture that gives him an enemy — the man closes on his foe either way. So this
+  // one gives him no enemy and a rally point a long way off: with the exception he
+  // stands still for the whole three seconds, and with `u.holds` dropped from that
+  // clause he walks 180 frames' worth of road while kneeling.
   const state = keep(['light']);
   const u = state.units[0];
   const light = abilityById('light');
-  // Let him settle on his post with nothing in front of him, then take him under.
   for (let i = 0; i < 120; i++) updateUnits(state, DT);
+  // A rally point 200px away, which he would ordinarily march to.
+  u.rx = u.x + 200;
+  u.ry = u.y;
   u.hp = u.maxHp * (light.below - 0.05);
   updateUnits(state, DT);
-  ok(u.hold > 0 && u.healing > 0, 'a paladin alone and nearly dead calls the light',
-    `${u.hold.toFixed(2)}s, mending ${u.healing.toFixed(0)} a second`);
-
-  const e = comer(state, enemyTypes.bomb_inf);
-  let frames = 0, knelt = 0;
-  while (frames < 60 * 5 && !e.blown) {
-    // CAPTURED BEFORE THE FRAME, not after. The blast kills him, and a dead man's
-    // cleanup zeroes `hold` inside the same updateUnits — so reading it afterwards
-    // reports a paladin who was not kneeling, which is the fixture lying rather
-    // than the game.
-    knelt = u.hold;
+  let held = 0, walked = 0;
+  // SUMMED PER FRAME AND GUARDED BY THE HOLD AS IT WAS AT THE START OF IT, not by
+  // the distance between two snapshots. The last pass of this loop is the one that
+  // takes `hold` to zero, and the step below it in updateUnits reads the field
+  // AFTER the decrement — so he takes his first stride toward the rally point on
+  // that same frame, correctly, and a pair of snapshots would count it as a
+  // kneeling man moving. It read 1.0px and the fixture was what was wrong.
+  while (u.hold > 0 && held < 60 * 5) {
+    const was = { x: u.x, y: u.y, hold: u.hold };
     updateUnits(state, DT);
-    updateEnemies(state, DT);
-    frames++;
+    if (was.hold > 0 && u.hold > 0) walked += Math.hypot(u.x - was.x, u.y - was.y);
+    held++;
   }
-  ok(e.blown === true, 'and a Bomb Thug goes off on him where he kneels',
-    `after ${frames} frame(s)`);
-  // WHILE THE LIGHT IS STILL RUNNING, not once it has finished. Three seconds later
-  // would also read as `blown` and would be exactly the behaviour this refuses.
-  ok(knelt > 0 && frames <= 3, '  with the light still running, rather than after it',
-    `${frames} frame(s) in, ${knelt.toFixed(2)}s of ${light.seconds}s still to go`);
-  // AND IT IS FATAL, every time, which is worth stating as a fact about the two
-  // numbers rather than as a balance opinion: the light is called under 30% of his
-  // maximum and the blast takes 90 through his plate, so a paladin low enough to
-  // kneel is a paladin the blast kills outright. Mending him is not a race he can
-  // win — the answer is to not let one reach him.
-  ok(u.hp <= 0, '  and it kills him, because 90 is more than he had left',
-    `${Math.round(u.hp)} health`);
+  ok(held > 60 * 2, 'a paladin called away mid-heal keeps kneeling',
+    `${(held * DT).toFixed(2)}s of ${light.seconds}s`);
+  ok(walked < 0.01, '  and does not set off for the rally point until it ends',
+    `${walked.toFixed(1)}px in that time`);
+}
+
+{
+  // AND THE OWNER'S OWN EXAMPLE, which is the sharpest form of it: a Bomb Thug's
+  // blow and his death are one event, so a man who cannot be reached is a man the
+  // creature simply stands in front of.
+  const calm = walkUp(['light'], enemyTypes.bomb_inf, false);
+  const knelt = walkUp(['light'], enemyTypes.bomb_inf, true);
+  ok(knelt.blown !== null, 'a Bomb Thug goes off on a paladin who is kneeling',
+    `frame ${knelt.blown}`);
+  ok(knelt.blown === calm.blown,
+    '  on the same frame he would have without the light',
+    `${knelt.blown} against ${calm.blown}`);
+  ok(knelt.held > 1, '  with most of the three seconds still to run',
+    `${knelt.held.toFixed(2)}s left`);
 }
 
 console.log('\nWhat a dead man forgets\n');

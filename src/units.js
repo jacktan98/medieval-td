@@ -1225,7 +1225,41 @@ export function updateUnits(state, dt) {
     // clear — or for the moment he spends stepping in from ENGAGE to REACH.
     u.exposed = !!((u.foe && d <= REACH) || mark);
 
-    if (d > SETTLE && u.hold <= 0) {
+    // A HELD POSE STOPS THE WALK — BUT NOT THE LAST STEP ONTO SOMEBODY HE IS
+    // ALREADY HOLDING. `u.holds` is the whole of the exception and it is narrow:
+    // true only for the man BLOCKING an enemy, in which case `tx, ty` is that
+    // enemy and the step below closes to SETTLE and stops.
+    //
+    // THE DEADLOCK IT FIXES was reported on the Bomb Thug and was never his. A
+    // soldier takes his foe at ENGAGE's 30 and melee lands at REACH's 20, so ten
+    // pixels have to be walked before anybody can hit anybody — and the man who
+    // walks them is always the SOLDIER, because an enemy advances along its road
+    // and stops dead the moment it is blocked (see `ahead` in src/enemies.js).
+    // Freeze the soldier and nothing closes that gap: the two stand eight pixels
+    // too far apart doing nothing at all until the pose runs out.
+    //
+    // Holy Light is three seconds of it. Measured before the fix, against a
+    // paladin kneeling on his post: an enemy that walked up engaged on frame 93 at
+    // 29.6px and landed its first blow on frame 190 — the frame the light ended.
+    // The same run without the light: first blow on frame 103. So a creature that
+    // arrived during the heal waited out the whole of it, which is the owner's
+    // report exactly — "he is waiting for him to finish healing then only explode".
+    //
+    // AND IT WAS NEVER ABOUT THE BOMB. A plain Thug stalls in the identical way
+    // and it is simply less visible, because a thug that starts swinging three
+    // seconds late looks like a thug swinging. What made this findable is a
+    // creature whose first blow is the entire fight.
+    //
+    // WHY THE SOLDIER AND NOT THE ENEMY. There is no version of this where the
+    // enemy closes: it moves along `s`, its distance from a man standing off the
+    // line is not something it can steer, and letting held enemies advance would
+    // walk them past their blocker rather than into him.
+    //
+    // WHAT THE HOLD STILL COSTS, which is the thing worth not breaking: he does
+    // not swing, and he does not walk to a rally point. This is the last few
+    // pixels onto a fight he is already in, bounded by SETTLE — where he would
+    // have been standing anyway.
+    if (d > SETTLE && (u.hold <= 0 || u.holds)) {
       const step = Math.min(u.def.speed * dt, d);
       u.x += ((tx - u.x) / d) * step;
       u.y += ((ty - u.y) / d) * step;
