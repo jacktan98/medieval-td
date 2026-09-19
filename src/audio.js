@@ -676,7 +676,35 @@ export const GAIN = {
   // scale after the bus and the master; Fiery Shot, at 2.3 times this, reaches
   // 0.63. See `fieryBall` in data/abilities.js for that multiplier and why it is
   // the heavy bolt's own.
-  cannon_shot: 2.2
+  cannon_shot: 2.2,
+  // THE BOMB, AT THE CANNON'S OWN NUMBER, and the arithmetic that says so is
+  // exact rather than a judgement.
+  //
+  // The leveller brings every clip to TARGET_LOUD, so a trim here is a
+  // multiplier on that and nothing else: what comes out is TARGET_LOUD x trim,
+  // whatever the recording happened to be. An arrow is 0.09, a rock landing is
+  // 0.144, a cannon is 0.198. So "as loud as the cannon" is not a number to feel
+  // for, it is 2.2, and it lands within a tenth of a decibel of it.
+  //
+  // THAT IS THE RIGHT SHELF FOR IT. The cannon's entry above is the case this
+  // table exists for — a boom, whose energy is low down where the leveller's RMS
+  // over-counts it and the ear under-counts it — and a bomb going off is the same
+  // kind of sound answering a bigger event: 120 damage to every man inside 100px,
+  // which is more than any wall in the game survives. It should not arrive
+  // quieter than one catapult stone hitting a road.
+  //
+  // IT IS THE ROCK LANDING'S RECORDING, byte for byte — Bomb_sound.mp3 and
+  // Rock_hit_ground.mp3 are the same 43,200 bytes and decode to the same samples.
+  // Worth writing down twice over. It is why the default trim of 1 read as quiet:
+  // the identical clip already carried 1.6 under its other name, so the bomb was
+  // shipping 4.1dB below a rock landing on the same file. And it is why no trim
+  // here can make the two tell apart by ear — that needs a different take, not a
+  // different number.
+  //
+  // Headroom: the leveller cuts this file to x0.28 because it is a hot recording,
+  // so 2.2 comes to x0.62 and the loudest sample reaches 0.21 of full scale after
+  // the Category B bus and the master. The cannon, at the same trim, reaches more.
+  bomb_sound: 2.2
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

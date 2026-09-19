@@ -36,6 +36,11 @@ export const IMPACT_TRIM = {
   // upward — over the man who set it off rather than under him. See IMPACT_LIE
   // below for the table it is deliberately not in.
   //
+  // AND IT IS THE ONE MARK THAT OUTLASTS IMPACT_FADE, at 0.3s against 0.25 — so it
+  // is the only one in the game drawn at full opacity before it starts going. See
+  // FLASH in src/bombs.js, and the note on `fade` below for why that is a length
+  // the burst has to earn rather than something clamped for it.
+  //
   // AND IT IS NOT THE WIDTH OF THE BLAST. 119 source px at IMPACT_SCALE is 39 on
   // the board against a blast 200 across, and that is the same ratio the rock's
   // spray keeps against its own splash — see the note on IMPACT_SCALE. A picture
@@ -109,15 +114,20 @@ export function impact(state, x, y, img, life = IMPACT_LIFE) {
     // Kept so the renderer can fade over the right stretch: earth is gone in
     // under half a second and a spill sits there for three.
     //
-    // NEVER LONGER THAN THE MARK ITSELF LASTS. The renderer's opacity is
-    // `life / fade` capped at 1, so a mark whose whole life is shorter than the
-    // fade starts part-transparent and is never once drawn solid — it appears
-    // half there and then goes. Nothing hit that until the Bomb Thug: his burst is
-    // on screen for 0.2s against a 0.25s fade, and it read as a puff rather than a
-    // bang. Clamping here rather than giving him his own number keeps it one rule,
-    // and it changes nothing for the two marks that were already longer-lived than
-    // their fade.
-    fade: img === 'spill' ? SPILL_FADE : Math.min(IMPACT_FADE, life)
+    // A MARK MUST OUTLAST ITS OWN FADE, and that is a constraint on whoever picks
+    // the `life` rather than something clamped here. The renderer's opacity is
+    // `life / fade` capped at 1, so a mark shorter than its fade starts
+    // part-transparent and is never once drawn solid — it appears half there and
+    // then goes.
+    //
+    // This was briefly a `Math.min` on the line below, added when the Bomb Thug's
+    // burst shipped at 0.2s against this 0.25s and read as a puff. The burst is
+    // 0.3s now and clears it on its own, so the clamp had no case left and went:
+    // a clamp with no user is a rule nothing can check, and quietly shortening a
+    // fade is the wrong answer anyway — a picture too short to be seen is a length
+    // to reconsider, not to paper over. tools/bomb.mjs asserts the opacity, so the
+    // build that crosses it says so.
+    fade: img === 'spill' ? SPILL_FADE : IMPACT_FADE
   });
 }
 

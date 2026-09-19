@@ -574,6 +574,33 @@ check('the three generic swings are trimmed and the tier 4 blades are not',
 check('and all three are trimmed by the same amount',
   new Set(ATTACK.map(k => GAIN[k])).size, 1);
 
+// AND THE TWO BOOMS ARE TRIMMED UP, which is the other half of the same table and
+// the claim beside `cannon_shot` in audio.js: the leveller matches RMS, the ear
+// does not, and anything with its energy low down arrives quieter than it
+// measures. Asked of GAIN for the same reason the swings above are — a decision
+// can be checked, a measurement cannot be without decoding audio.
+//
+// The bomb sits WITH the cannon rather than merely above 1, and that is the
+// number rather than a feeling: a trim is a multiplier on TARGET_LOUD, so equal
+// trims are equal loudness at the output. Two things that go bang should.
+check('the cannon and the bomb are both trimmed up, and to the same place',
+  GAIN.cannon_shot > 1 && GAIN.bomb_sound === GAIN.cannon_shot, true);
+// A rock hitting a road is the third boom and the quiet one of the three, which
+// is right: it is one stone landing, not a weapon going off.
+check('and a rock landing sits under both of them',
+  GAIN.rock_hit_ground > 1 && GAIN.rock_hit_ground < GAIN.cannon_shot, true);
+
+// A NOTE RATHER THAN A CHECK, because what it reports is not wrong — it is just
+// worth knowing, and it is the reason the trim above had to be set at all.
+{
+  const { readFileSync } = await import('node:fs');
+  const same = readFileSync('assets/audio/sfx/Bomb_sound.mp3')
+    .equals(readFileSync('assets/audio/sfx/Rock_hit_ground.mp3'));
+  console.log(`  note  ${'the bomb and the rock landing are one recording'.padEnd(56)} ` +
+    (same ? 'identical files — no trim can tell them apart by ear'
+          : 'no longer identical, so the trims can be reconsidered'));
+}
+
 // AN ABILITY'S NOISE, the third one-word opt-in in audio.js after a tier's `voice`
 // and a soldier's `blow`. Same three questions as the other two, and one more that
 // is particular to these: an ability may legitimately be SILENT, and the two that

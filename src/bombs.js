@@ -57,10 +57,15 @@ import { fixture } from './units.js';
 // moves, what changes is which half of the drawing is left over.
 export const FUSE = 2;
 
-// How long the burst is on screen. "Maybe 0.2 seconds effect", and it goes
-// through the impact system like every other picture of something that has just
-// happened — see src/impacts.js.
-export const FLASH = 0.2;
+// How long the burst is on screen, and it goes through the impact system like
+// every other picture of something that has just happened — see src/impacts.js.
+//
+// 0.2 -> 0.3 at the owner's second look, and the longer number is the one that
+// works: it is the first mark in the game that outlasts IMPACT_FADE, so it is
+// drawn solid for its first 0.05s and fades over the rest. At 0.2 it could never
+// once be solid — the renderer's opacity is life over fade — and it read as a
+// puff rather than a bang. See the note beside `bomb_blast` in src/impacts.js.
+export const FLASH = 0.3;
 
 // WHERE THE BOMB LIES RELATIVE TO THE BODY, in SOURCE px, measured off the
 // composite the artist drew rather than chosen.

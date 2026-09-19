@@ -483,12 +483,16 @@ export const enemyTypes = {
   // hurt it, it deletes it — and against the tier 4s, who are the only men in the
   // game who survive one, it still takes more than half of a paladin.
   //
-  // HIS COUNTER IS THE OTHER HALF OF THE BOARD. 150 health and no armour at all is
-  // the softest card on the road outside the plain Thug: two ballista bolts, three
-  // arrows from a tier 3 bow. He is not a problem you solve with a better wall,
-  // because no wall survives him; he is a problem you solve by not letting him
-  // arrive, which is what the archery and the artillery are for. That is the whole
-  // design of the creature and it is why the two numbers are so far apart.
+  // HIS COUNTER IS THE OTHER HALF OF THE BOARD. 120 health and no armour at all,
+  // which is the Archer Thug's card exactly and the softest thing on the road after
+  // the plain Thug: two ballista bolts, three arrows from a tier 3 bow. He is not a
+  // problem you solve with a better wall, because no wall survives him; he is a
+  // problem you solve by not letting him arrive, which is what the archery and the
+  // artillery are for. That is the whole design of the creature and it is why the
+  // two numbers are so far apart.
+  //
+  // 150 -> 120 at the owner's word, and it widens that gap rather than changing the
+  // shape: he now carries exactly as much health as the blow he strikes with.
   //
   // AND KILLING HIM DOES NOT MAKE HIM SAFE, which is the part that makes him worth
   // more than an arithmetic problem. The bomb is not triggered when he falls — it
@@ -534,7 +538,7 @@ export const enemyTypes = {
     dead: 'bomb_dead',
     deadTrim: [161, 217, 108, 77],
     deadPivot: [0.315, 0.851],
-    hp: 150,
+    hp: 120,
     damageType: 'physical',
     armour: { physical: 'none', magic: 'none' },
     pierce: 1,
@@ -546,8 +550,13 @@ export const enemyTypes = {
     // for the same length of time — a Bomb Thug who ran would be a Bomb Thug who
     // arrives, and arriving is the whole of his damage.
     speed: 60,
-    // The Plague Doctor's, who has the same 150 health. Worth saying because the
-    // bounty is only ever paid for one of his two endings: a Bomb Thug who reaches
+    // FIVE MORE THAN THE ARCHER THUG, whose health and armour he now shares exactly.
+    // It was the Plague Doctor's 30 read off a shared 150 health, and the health
+    // moved; the number stays, and what it is worth is no longer a matter of how
+    // hard he is to kill but of what it costs to fail. An Archer Thug that gets
+    // through takes a life. This one that gets through takes a squad.
+    //
+    // AND IT IS ONLY EVER PAID FOR ONE OF HIS TWO ENDINGS: a Bomb Thug who reaches
     // a soldier was not killed by anybody and pays nothing, on the same rule that
     // gives a leaked enemy no body. See the `blown` branch in src/enemies.js.
     bounty: 30,

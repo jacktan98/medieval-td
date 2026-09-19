@@ -284,13 +284,13 @@ console.log('\n--- and the bomb he drops is worth exactly what he was ---\n');
   // uses. 0.2s at the owner's word.
   const flash = st.impacts.filter(i => i.img === 'bomb_blast');
   ok(flash.length === 1 && Math.abs(flash[0].life - FLASH) < 1e-9,
-    '  and puts its own burst on the board for 0.2s',
+    `  and puts its own burst on the board for ${FLASH}s`,
     `${flash.length} mark(s), life ${flash[0] && flash[0].life}`);
   // AND IT IS DRAWN SOLID ON THE FRAME IT APPEARS. The renderer's opacity is
-  // life/fade capped at 1, so a fade longer than the life means the picture is
-  // never once at full — which is what a 0.2s burst under the 0.25s default did,
-  // and it read as a puff rather than a bang. Asked as the opacity rather than as
-  // the number, because the opacity is the thing that was wrong.
+  // life/fade capped at 1, so a mark shorter than its fade is never once at full —
+  // which is what the burst did at 0.2s under the 0.25s default, and it read as a
+  // puff rather than a bang. Nothing clamps this: 0.3 clears 0.25 because it was
+  // chosen to, and if it is ever shortened again this is the line that says so.
   ok(flash[0] && flash[0].life / flash[0].fade >= 1,
     '  at full opacity rather than part-faded from birth',
     flash[0] ? `${flash[0].life} life against ${flash[0].fade} fade` : 'no mark');
