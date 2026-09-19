@@ -497,14 +497,34 @@ for (const [name, want] of [['Crossbowman', 'crossbowman'], ['Pope', 'pope'], ['
     selectionCue({ kind: 'unit', ref: { def } }), CUE[want]);
 }
 
-// AND THE KEEP'S OWN PALADINS DO NOT, which is the other half of the same rule
-// and the thing that makes the line above a rule rather than an exception. The
-// five barracks lines belong to the BUILDING and answer for every man it musters;
-// what decides is whether there is one behind him, not what kind of man he is.
+// AND SO DOES THE KEEP'S SQUAD, at the owner's word: "when I select any paladin
+// unit, they should use their own paladin voice not the general barracks voice."
+//
+// THIS CHECK USED TO ASSERT THE OPPOSITE and it was not wrong at the time — the
+// five barracks lines belong to the BUILDING and answered for every man it
+// musters, so what decided was whether there was one behind him. The owner's rule
+// is about the man instead: a paladin sounds like a paladin wherever he stands.
+//
+// The two paladins are asked TOGETHER rather than in two places, because the
+// point of the change is that there is now one answer: the man the church stands
+// on a board and the man a Keep musters are the same man.
 {
   const keepMan = barracks.find(t => t.name === 'Paladin Keep').soldier;
-  check('  but a Paladin Keep\'s squad still answers with the barracks',
-    selectionCue({ kind: 'unit', ref: { def: keepMan } }), CUE.barracks);
+  check('  and so does a Paladin Keep\'s, wherever he is standing',
+    selectionCue({ kind: 'unit', ref: { def: keepMan } }), CUE.paladin);
+  check('  the church\'s and the Keep\'s give the same answer',
+    selectionCue({ kind: 'unit', ref: { def: keepMan } }) ===
+    selectionCue({ kind: 'unit', ref: { def: garrisonUnits.Paladin } }), true);
+}
+
+// AND THE THREE MILITIA RUNGS STILL SPEAK FOR THEIR BARRACKS, which is what keeps
+// the line above a change to one man rather than to the rule. There is no
+// spearman voice to give them, so the building answering for them is not a
+// fallback they are stuck with — it is the only thing there is.
+{
+  const militia = barracks.slice(0, 3).map(t => t.soldier);
+  check('  while the three militia rungs still answer with the barracks',
+    militia.every(def => selectionCue({ kind: 'unit', ref: { def } }) === CUE.barracks), true);
 }
 check('an enemy answers', selectionCue({ kind: 'enemy', ref: {} }), CUE.thug);
 check('bare ground says nothing', selectionCue(null), null);
@@ -580,15 +600,24 @@ check('and all three are trimmed by the same amount',
 // measures. Asked of GAIN for the same reason the swings above are — a decision
 // can be checked, a measurement cannot be without decoding audio.
 //
-// The bomb sits WITH the cannon rather than merely above 1, and that is the
-// number rather than a feeling: a trim is a multiplier on TARGET_LOUD, so equal
-// trims are equal loudness at the output. Two things that go bang should.
-check('the cannon and the bomb are both trimmed up, and to the same place',
-  GAIN.cannon_shot > 1 && GAIN.bomb_sound === GAIN.cannon_shot, true);
-// A rock hitting a road is the third boom and the quiet one of the three, which
-// is right: it is one stone landing, not a weapon going off.
-check('and a rock landing sits under both of them',
-  GAIN.rock_hit_ground > 1 && GAIN.rock_hit_ground < GAIN.cannon_shot, true);
+// The three booms are ranked, and the order is the size of the event rather than
+// the size of the recording: a bomb takes a squad off the board, a cannon fires
+// every few seconds, a rock is one stone landing on a road.
+check('the three booms are trimmed up, and the bomb is the loudest',
+  GAIN.bomb_sound > GAIN.cannon_shot && GAIN.cannon_shot > GAIN.rock_hit_ground &&
+  GAIN.rock_hit_ground > 1, true);
+
+// AND THE LOUDEST OF THEM STILL LEAVES ROOM FOR THREE AT ONCE. Category B has no
+// gate, so nothing stops three Bomb Thugs bursting on the same frame — see the
+// note beside `bomb_sound` in audio.js for why that, rather than taste, is what
+// fixes the number.
+//
+// The arithmetic is reproduced here rather than imported, on the rule the top of
+// this file already keeps for MEMORY_S: a check that reads the number it is
+// checking cannot catch the number changing. 0.0952 is this clip's own output
+// peak per unit of trim, measured off the file; PEAK_OUT is 0.95.
+check('and three bombs on one frame still clear the mixer\'s headroom',
+  +(3 * 0.0952 * GAIN.bomb_sound).toFixed(2) <= 0.95, true);
 
 // A NOTE RATHER THAN A CHECK, because what it reports is not wrong — it is just
 // worth knowing, and it is the reason the trim above had to be set at all.

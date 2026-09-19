@@ -677,21 +677,38 @@ export const GAIN = {
   // 0.63. See `fieryBall` in data/abilities.js for that multiplier and why it is
   // the heavy bolt's own.
   cannon_shot: 2.2,
-  // THE BOMB, AT THE CANNON'S OWN NUMBER, and the arithmetic that says so is
-  // exact rather than a judgement.
+  // THE BOMB, AND IT IS THE LOUDEST THING IN THE BATTLE ON PURPOSE.
   //
-  // The leveller brings every clip to TARGET_LOUD, so a trim here is a
-  // multiplier on that and nothing else: what comes out is TARGET_LOUD x trim,
-  // whatever the recording happened to be. An arrow is 0.09, a rock landing is
-  // 0.144, a cannon is 0.198. So "as loud as the cannon" is not a number to feel
-  // for, it is 2.2, and it lands within a tenth of a decibel of it.
+  // 1 -> 2.2 -> 3.3 over two rounds of the owner asking for louder, and the last
+  // number is not a third guess: it is the most this clip can carry and still
+  // leave the mixer its own headroom. The working is below, because the next
+  // person to be asked for louder needs to know there is very little left.
   //
-  // THAT IS THE RIGHT SHELF FOR IT. The cannon's entry above is the case this
-  // table exists for — a boom, whose energy is low down where the leveller's RMS
-  // over-counts it and the ear under-counts it — and a bomb going off is the same
-  // kind of sound answering a bigger event: 120 damage to every man inside 100px,
-  // which is more than any wall in the game survives. It should not arrive
-  // quieter than one catapult stone hitting a road.
+  // A TRIM IS A MULTIPLIER ON TARGET_LOUD AND NOTHING ELSE. The leveller brings
+  // every clip to that one loudness by measurement, so what comes out is
+  // TARGET_LOUD x trim whatever the recording was. That makes this table directly
+  // comparable: an arrow is 0.09, a rock landing 0.144, a cannon 0.198, and this
+  // is 0.297. It also makes 2.2 exactly "as loud as the cannon", which is where
+  // this sat after the first round and was the wrong shelf — a catapult firing
+  // every three seconds and a bomb taking a squad off the board are not the same
+  // size of event.
+  //
+  // WHAT STOPS IT AT 3.3 IS THREE OF THEM AT ONCE. Category B has no gate: a wave
+  // can send several Bomb Thugs, they reach a line together, and nothing stops
+  // three bursts landing on the same frame. Each one reaches peak x gain x
+  // BG_LEVEL x MASTER = 0.095 x trim at the output, so three of them sum to
+  // 0.286 x trim, and PEAK_OUT — the 0.95 this file already keeps back for
+  // exactly this kind of sum — is reached at 3.32. Rounded down.
+  //
+  // THE OTHER CEILING IS 4.49, and it is worth knowing which one bites first.
+  // Past that the per-clip peak clamp in analyse() takes over and the trim stops
+  // doing anything at all, so 4.49 is the loudest this file can be played on this
+  // bus by any number typed here. The headroom rule above is the tighter of the
+  // two and it is the one that should hold.
+  //
+  // SO A THIRD "LOUDER" IS NOT A NUMBER. It is one of: a different recording with
+  // more room in it, moving the cue off the Category B bus, or raising BG_LEVEL —
+  // and the last of those makes the whole battle louder rather than this.
   //
   // IT IS THE ROCK LANDING'S RECORDING, byte for byte — Bomb_sound.mp3 and
   // Rock_hit_ground.mp3 are the same 43,200 bytes and decode to the same samples.
@@ -700,11 +717,7 @@ export const GAIN = {
   // shipping 4.1dB below a rock landing on the same file. And it is why no trim
   // here can make the two tell apart by ear — that needs a different take, not a
   // different number.
-  //
-  // Headroom: the leveller cuts this file to x0.28 because it is a hot recording,
-  // so 2.2 comes to x0.62 and the loudest sample reaches 0.21 of full scale after
-  // the Category B bus and the master. The cannon, at the same trim, reaches more.
-  bomb_sound: 2.2
+  bomb_sound: 3.3
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

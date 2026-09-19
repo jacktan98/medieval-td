@@ -1814,7 +1814,27 @@ export const barracks = [
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'blinding'],
     soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 200, damage: 8, cd: 0.80, speed: 60, respawn: 5, regen: 7, colour: '#4A6BA0',
-               damageType: 'physical', armour: { physical: 'med', magic: 'low' } }
+               damageType: 'physical', armour: { physical: 'med', magic: 'low' },
+               // HIS OWN THREE LINES WHEN HE IS TAPPED, at the owner's word: "when
+               // I select any paladin unit, they should use their own paladin voice
+               // not the general barracks voice."
+               //
+               // IT OVERRULES THE RULE THAT WAS HERE, and the rule was a reasonable
+               // reading rather than an oversight — the five barracks lines belong
+               // to the BUILDING and answered for every man it musters, so stage 8's
+               // church paladins got their own voice on the grounds that they have no
+               // building behind them and a Keep's did not. See the note on the
+               // church Paladin further down, which used to say exactly that.
+               //
+               // The owner's reading is the simpler one and it is about the MAN: a
+               // paladin sounds like a paladin wherever he is standing. The building
+               // still answers for itself — `voice: 'paladin'` on the tier above is
+               // what speaks when the Keep is built or given a rally point — so what
+               // changes is only who answers when you tap the figure.
+               //
+               // The three militia rungs are untouched and still speak for their
+               // barracks, which is right: there is no spearman voice to give them.
+               voice: 'paladin' }
   },
   // THE OTHER FOURTH RUNG, and the barracks' first fork. A Knight's Hall buys
   // either of these two — see upgradesFrom in this file for why the choice is
@@ -3705,11 +3725,12 @@ export const garrisonUnits = {
     // BARRACKS' voice unless he has one of his own, and these four belong to no
     // barracks at all. See selectionCue in src/audio.js.
     //
-    // WHICH IS WHY THE KEEP'S PALADINS ARE NOT TOUCHED. The five barracks lines
-    // belong to the BUILDING and answer for every man it musters — a militiaman,
-    // a pikeman and a paladin alike — so a Paladin Keep's squad still speaks with
-    // them. The difference is not what kind of man he is, it is whether there is a
-    // building behind him to answer for him.
+    // THE KEEP'S PALADINS CARRY IT NOW TOO. This note used to say the opposite and
+    // give the reason — the five barracks lines belong to the BUILDING and answer
+    // for every man it musters, so what marked these four out was having no
+    // building behind them. The owner has overruled it: "when I select any paladin
+    // unit, they should use their own paladin voice." A paladin sounds like a
+    // paladin wherever he is standing, and the two defs say the same thing now.
     //
     // The Pope beside them already had `voice: 'pope'` and needed nothing.
     voice: 'paladin'
