@@ -497,28 +497,39 @@ for (const [name, want] of [['Crossbowman', 'crossbowman'], ['Pope', 'pope'], ['
     selectionCue({ kind: 'unit', ref: { def } }), CUE[want]);
 }
 
-// AND SO DOES THE KEEP'S SQUAD, at the owner's word: "when I select any paladin
-// unit, they should use their own paladin voice not the general barracks voice."
+// AND SO DOES A MAN A BARRACKS MUSTERED, if he is one of the two with a voice.
+// The owner's word, twice: "when I select any paladin unit, they should use their
+// own paladin voice not the general barracks voice", and then "make the change for
+// assassins too".
 //
 // THIS CHECK USED TO ASSERT THE OPPOSITE and it was not wrong at the time — the
 // five barracks lines belong to the BUILDING and answered for every man it
-// musters, so what decided was whether there was one behind him. The owner's rule
-// is about the man instead: a paladin sounds like a paladin wherever he stands.
+// musters, so what decided was whether there was one behind him. The rule is about
+// the man now: a paladin sounds like a paladin wherever he stands, and so does an
+// assassin.
 //
-// The two paladins are asked TOGETHER rather than in two places, because the
-// point of the change is that there is now one answer: the man the church stands
-// on a board and the man a Keep musters are the same man.
+// ASKED OF BOTH FORKS TOGETHER, because a fork where one brother speaks and the
+// other does not would be an accident of the order two asks arrived in rather than
+// a decision. These two are the only men a barracks musters who have recordings.
+for (const [tier, want] of [['Paladin Keep', 'paladin'], ['Assassin Guild', 'assassin']]) {
+  const man = barracks.find(t => t.name === tier).soldier;
+  check(`  and so does one mustered by the ${tier}`,
+    selectionCue({ kind: 'unit', ref: { def: man } }), CUE[want]);
+}
+
+// AND THE CHURCH'S PALADIN GIVES THE SAME ANSWER AS THE KEEP'S, which is the point
+// of the change rather than a second way of asking it. He was the exception that
+// proved the old rule — a paladin with no building behind him — and there is no
+// longer anything for him to be an exception to.
 {
   const keepMan = barracks.find(t => t.name === 'Paladin Keep').soldier;
-  check('  and so does a Paladin Keep\'s, wherever he is standing',
-    selectionCue({ kind: 'unit', ref: { def: keepMan } }), CUE.paladin);
-  check('  the church\'s and the Keep\'s give the same answer',
+  check('  the church\'s paladin and the Keep\'s give the same answer',
     selectionCue({ kind: 'unit', ref: { def: keepMan } }) ===
     selectionCue({ kind: 'unit', ref: { def: garrisonUnits.Paladin } }), true);
 }
 
 // AND THE THREE MILITIA RUNGS STILL SPEAK FOR THEIR BARRACKS, which is what keeps
-// the line above a change to one man rather than to the rule. There is no
+// the lines above a change to two men rather than to the rule. There is no
 // spearman voice to give them, so the building answering for them is not a
 // fallback they are stuck with — it is the only thing there is.
 {

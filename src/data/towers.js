@@ -1868,7 +1868,19 @@ export const barracks = [
     // src/units.js, which is where the men are, rather than in src/towers.js.
     abilities: ['knife', 'sneak'],
     soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 15, cd: 0.8, speed: 60, respawn: 5, regen: 7, colour: '#6B5B43',
-              damageType: 'physical', pierce: 1, armour: { physical: 'low', magic: 'none' } }
+              damageType: 'physical', pierce: 1, armour: { physical: 'low', magic: 'none' },
+              // HIS OWN THREE LINES WHEN HE IS TAPPED, on the Keep's terms — see the
+              // note beside the Paladin's `voice` above, which is the whole of the
+              // reasoning and applies here word for word.
+              //
+              // BOTH FORKS OF THIS LADDER OR NEITHER. The owner asked for the
+              // paladin first and the assassin a moment later, and there was never a
+              // reading on which the two differed: the barracks' fourth rungs are the
+              // two men in this game with recorded voices of their own, and what
+              // changed is that a man answers for himself rather than for the
+              // building that mustered him. A fork where one brother speaks and the
+              // other does not would be an accident of the order the asks arrived in.
+              voice: 'assassin' }
   }
 ];
 
