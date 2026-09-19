@@ -1225,41 +1225,17 @@ export function updateUnits(state, dt) {
     // clear — or for the moment he spends stepping in from ENGAGE to REACH.
     u.exposed = !!((u.foe && d <= REACH) || mark);
 
-    // A HELD POSE STOPS THE WALK — BUT NOT THE LAST STEP ONTO SOMEBODY HE IS
-    // ALREADY HOLDING. `u.holds` is the whole of the exception and it is narrow:
-    // true only for the man BLOCKING an enemy, in which case `tx, ty` is that
-    // enemy and the step below closes to SETTLE and stops.
+    // A HELD POSE STOPS THE WALK, FULL STOP. He does not step to a rally point and
+    // he does not step toward an enemy — the owner's "do not make the paladin move
+    // towards the bomb thug while healing", and the artist's "he stays in that
+    // position" before it. A man kneeling in a light who slides across the road is
+    // not kneeling, he is walking on his knees.
     //
-    // THE DEADLOCK IT FIXES was reported on the Bomb Thug and was never his. A
-    // soldier takes his foe at ENGAGE's 30 and melee lands at REACH's 20, so ten
-    // pixels have to be walked before anybody can hit anybody — and the man who
-    // walks them is always the SOLDIER, because an enemy advances along its road
-    // and stops dead the moment it is blocked (see `ahead` in src/enemies.js).
-    // Freeze the soldier and nothing closes that gap: the two stand eight pixels
-    // too far apart doing nothing at all until the pose runs out.
-    //
-    // Holy Light is three seconds of it. Measured before the fix, against a
-    // paladin kneeling on his post: an enemy that walked up engaged on frame 93 at
-    // 29.6px and landed its first blow on frame 190 — the frame the light ended.
-    // The same run without the light: first blow on frame 103. So a creature that
-    // arrived during the heal waited out the whole of it, which is the owner's
-    // report exactly — "he is waiting for him to finish healing then only explode".
-    //
-    // AND IT WAS NEVER ABOUT THE BOMB. A plain Thug stalls in the identical way
-    // and it is simply less visible, because a thug that starts swinging three
-    // seconds late looks like a thug swinging. What made this findable is a
-    // creature whose first blow is the entire fight.
-    //
-    // WHY THE SOLDIER AND NOT THE ENEMY. There is no version of this where the
-    // enemy closes: it moves along `s`, its distance from a man standing off the
-    // line is not something it can steer, and letting held enemies advance would
-    // walk them past their blocker rather than into him.
-    //
-    // WHAT THE HOLD STILL COSTS, which is the thing worth not breaking: he does
-    // not swing, and he does not walk to a rally point. This is the last few
-    // pixels onto a fight he is already in, bounded by SETTLE — where he would
-    // have been standing anyway.
-    if (d > SETTLE && (u.hold <= 0 || u.holds)) {
+    // IT WAS BRIEFLY `(u.hold <= 0 || u.holds)`, which let him close the last few
+    // pixels onto somebody he was already holding. That fixed a real deadlock and
+    // fixed it in the wrong place; `contact` below is the same fix made without
+    // moving him. See the note there.
+    if (d > SETTLE && u.hold <= 0) {
       const step = Math.min(u.def.speed * dt, d);
       u.x += ((tx - u.x) / d) * step;
       u.y += ((ty - u.y) / d) * step;
@@ -1278,7 +1254,52 @@ export function updateUnits(state, dt) {
     // other soldier in the game one property read.
     if (hidden(u)) u.sneak = true;
 
-    if (u.foe && d <= REACH) {
+    // HOW CLOSE COUNTS AS CONTACT, and for one man it is not REACH.
+    //
+    // A soldier takes his foe at ENGAGE's 30 and melee lands at REACH's 20, so ten
+    // pixels have to be walked before anybody can hit anybody — and the man who
+    // walks them is always the SOLDIER, because an enemy advances along its road
+    // and stops dead the moment it is blocked (see `ahead` in src/enemies.js).
+    // Freeze the soldier and nothing closes that gap: the two stand eight pixels
+    // too far apart doing nothing at all until the pose runs out.
+    //
+    // Holy Light is three seconds of it. Measured: an enemy that walked up to a
+    // kneeling paladin engaged on frame 93 at 29.6px and landed its first blow on
+    // frame 190 — the frame the light ended. The same run at full health: frame
+    // 103. The owner's report exactly, on the creature that makes it visible:
+    // "he is waiting for him to finish healing then only explode". A plain Thug
+    // stalls identically and simply looks like a thug swinging late.
+    //
+    // SO THE BLOCK IS THE CONTACT while he cannot tidy the distance up. He did not
+    // choose to stand there and he cannot back away either; the ten pixels are an
+    // accident of which frame the enemy crossed 30 on, and they should not protect
+    // a man who is stuck.
+    //
+    // IT ONLY EVER LETS THE ENEMY IN. There are exactly two things inside this
+    // block — his own swing and the enemy's counter-attack — and the first is
+    // already gated on `u.hold <= 0`, so a frozen man gains nothing from the wider
+    // number and loses the shelter he was getting by standing out of reach. That
+    // asymmetry is the whole of it, and it is the safe direction to be wrong in.
+    //
+    // `u.holds` SAYS WHOSE CONTACT IT IS, and it is honest about being belt and
+    // braces: the counter-attack below is already gated on the same field, so
+    // dropping it here would change nothing an assistant could feel — the wider
+    // block would simply be entered and find nothing to do. It is kept because the
+    // number is called `contact`, and contact is something the man BLOCKING an
+    // enemy has. An assistant standing at 28px is not what stopped it.
+    //
+    // Which is to say: no check fails when this term is removed, and that is a
+    // fact about the term rather than a gap in the checks. See the three variants
+    // tools/abilities.mjs was run against.
+    //
+    // THE OTHER FIX WAS TO LET HIM WALK, and it shipped for one commit: the step
+    // above carried `|| u.holds` so he closed the last few pixels himself. It
+    // worked and the owner refused it on sight — "do not make the paladin move
+    // towards the bomb thug while healing" — which is the right call. The pose is
+    // the thing the ability is; the distance is bookkeeping.
+    const contact = u.holds && u.hold > 0 ? ENGAGE : REACH;
+
+    if (u.foe && d <= contact) {
       // Each side spatters the one it HITS, so a melee throws blood both ways
       // and you can see which of the two is currently landing blows.
       // `u.hold` is the second half of the guard, and it is what a held pose

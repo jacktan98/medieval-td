@@ -802,10 +802,18 @@ const walkUp = (ids, def, kneel) => {
     const before = u.hp;
     const wasAt = { x: u.x, y: u.y, hold: u.hold };
     updateUnits(state, DT);
-    // HOW FAR HE MOVES WHILE FROZEN, summed. The exception that closes the last
-    // few pixels must not become a walk — see the step in src/units.js.
-    if (wasAt.hold > 0) out.drift += Math.hypot(u.x - wasAt.x, u.y - wasAt.y);
-    if (out.engaged === null && u.holds) {
+    // HOW FAR HE MOVES WHILE FROZEN, summed, and the hold has to be up at BOTH
+    // ends of the frame. The pass that takes `hold` to zero also steps him, because
+    // the step reads the field after the decrement — so a guard on the start of the
+    // frame alone credits a kneeling man with the first stride of his walk. It read
+    // 1.0px and the fixture was what was wrong. Same off-by-one as the rally-point
+    // block further down, and the same guard.
+    if (wasAt.hold > 0 && u.hold > 0) out.drift += Math.hypot(u.x - wasAt.x, u.y - wasAt.y);
+    // READ OFF THE ENEMY, not off `u.holds`. A Bomb Thug is blocked and gone
+    // inside one frame, and the soldier's side of the hook is already cleared by
+    // the time this line runs; the enemy's `foe` survives until updateEnemies
+    // unhooks it below.
+    if (out.engaged === null && e.foe) {
       out.engaged = f;
       out.gap = +Math.hypot(e.x - u.x, e.y - u.y).toFixed(1);
     }
@@ -827,23 +835,26 @@ const walkUp = (ids, def, kneel) => {
   ok(calm.struck !== null && knelt.struck !== null,
     'a thug that walks up to a paladin lands a blow either way',
     `frame ${calm.struck} calm, ${knelt.struck} kneeling`);
-  // THE SAME FRAME, which is the whole claim. Not "eventually" — before the fix
-  // this read 103 against 190, and 190 was the frame the light ran out on.
-  ok(knelt.struck === calm.struck,
-    '  and the light costs him nothing: the same frame either way',
-    `${knelt.struck} against ${calm.struck}`);
-  ok(knelt.held > 0, '  landed while the paladin is still kneeling',
+  // NO LATER FOR THE LIGHT BEING UP, which is the whole claim. Before the fix this
+  // read 190 against 103, and 190 was the frame the light ran out on.
+  ok(knelt.struck <= calm.struck,
+    '  and the light never buys him time',
+    `${knelt.struck} kneeling against ${calm.struck} calm`);
+  // ON THE FRAME HE IS BLOCKED, because there is nothing left to wait for: a man
+  // who cannot close is in contact where he stands.
+  ok(knelt.struck === knelt.engaged,
+    '  landing on the frame the thug is blocked, not ten later',
+    `struck ${knelt.struck}, blocked ${knelt.engaged}, at ${knelt.gap}px`);
+  ok(knelt.held > 0, '  and while the paladin is still kneeling',
     `${knelt.held.toFixed(2)}s of the light still to run`);
-  // HE CLOSED, AND THEN HE STOPPED. `drift > 0` is the fix itself — before it he
-  // moved not one pixel while frozen — and the upper bound says he came to rest at
-  // SETTLE rather than walking on through. Bounded by the gap he was engaged at
-  // rather than by a number typed here, so it needs no copy of ENGAGE.
+  // AND HE HAS NOT MOVED A PIXEL, at the owner's word: "do not make the paladin
+  // move towards the bomb thug while healing."
   //
-  // This does NOT say he has stopped walking to his rally point; he has a foe for
-  // the whole of this run, so there is no rally point to walk to. That half is
-  // asked below, where it can actually come back no.
-  ok(knelt.drift > 0 && knelt.drift < knelt.gap,
-    '  after closing the last few pixels, and no further',
+  // This is the half that decided the shape of the fix. The deadlock can be broken
+  // from either end — let the man close, or let the enemy reach him — and the first
+  // shipped for one commit before the owner saw it and refused it. The kneel is
+  // what the ability IS; the ten pixels are bookkeeping.
+  ok(knelt.drift < 0.01, '  without taking a step toward him',
     `${knelt.drift.toFixed(1)}px across the whole hold, from a gap of ${knelt.gap}`);
 }
 
@@ -893,11 +904,13 @@ const walkUp = (ids, def, kneel) => {
   const knelt = walkUp(['light'], enemyTypes.bomb_inf, true);
   ok(knelt.blown !== null, 'a Bomb Thug goes off on a paladin who is kneeling',
     `frame ${knelt.blown}`);
-  ok(knelt.blown === calm.blown,
-    '  on the same frame he would have without the light',
-    `${knelt.blown} against ${calm.blown}`);
+  ok(knelt.blown <= calm.blown && knelt.blown === knelt.engaged,
+    '  on the frame he reaches him, not after the light',
+    `${knelt.blown} kneeling against ${calm.blown} calm`);
   ok(knelt.held > 1, '  with most of the three seconds still to run',
     `${knelt.held.toFixed(2)}s left`);
+  ok(knelt.drift < 0.01, '  and the paladin never stepped toward him',
+    `${knelt.drift.toFixed(1)}px`);
 }
 
 console.log('\nWhat a dead man forgets\n');
