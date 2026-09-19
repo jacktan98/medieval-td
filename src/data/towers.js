@@ -3598,6 +3598,35 @@ const keepPaladin = {
   hp: KEEP.hp, damage: KEEP.damage, cd: KEEP.cd, speed: KEEP.speed, regen: KEEP.regen
 };
 
+// AND THE MUSKETEER POST'S, for the two men standing behind the barricades at
+// Ironforge Castle. The third time this move has been made and the third ask that
+// asked for it in the same words — "same stats as a musketeer in a tower, only
+// difference is physical damage is 40."
+//
+// SO IT IS THE SENTRY'S SHAPE EXACTLY: everything off the tier, and the damage
+// overridden at the one place it differs, which is what makes that difference
+// readable as a decision rather than as two numbers that happen not to match.
+//
+// 40 RATHER THAN THE TIER'S 60, on a 2.00s reload at 480 reach. Two of them is 40 a
+// second — almost exactly the Winchester pair's 50 — but the reach is what makes
+// this a different gift. 480 is the longest in the game by a distance and they stand
+// either side of the crossroads every road on this board passes through, so between
+// them they cover nearly all of it. That is a lot to be given on a board that opens
+// with no tower at all, and it is the answer to the board having no prebuilt: the
+// Factory hands you a machine on a plot, this hands you two men who need none.
+//
+// NO ABILITIES, and nothing to switch off. Deadeye and Burst Fire are bought on a
+// TOWER and read off the one that owns the gunner; these two own nothing, so the
+// specials have nothing to hang on and every shot is an ordinary ball.
+const POST = archery.find(t => t.name === 'Musketeer Post');
+const postStats = {
+  // The only line here that is not the Post's. A tower is bought and these two are
+  // given.
+  damage: 40,
+  range: POST.range,
+  cd: POST.cooldown
+};
+
 export const garrisonUnits = {
   Crossbowman: {
     ...crossbowman,
@@ -3746,6 +3775,69 @@ export const garrisonUnits = {
     //
     // The Pope beside them already had `voice: 'pope'` and needed nothing.
     voice: 'paladin'
+  },
+
+  // --- STAGE 12'S BARRICADES -------------------------------------------------------
+  //
+  // TWO MUSKETEERS, ONE AT EACH END OF THE CASTLE'S SIDE OF THE ROAD, and they are
+  // the crossbowman's shape rather than the paladin's: "these 2 musketeer units has
+  // the same concept as pope in church and crossbowmen in castle. They cannot die and
+  // have voices when selected, like a musketeer in a tower."
+  //
+  // So every line below is one of the three things that makes a garrison figure:
+  // what he is (the Post's gunner drawing and the Post's numbers), that nothing can
+  // touch him (`fixture`), and that he answers for himself when tapped (`voice`).
+  // Nothing here is new — this is the fourth figure of this kind and the pattern has
+  // not needed a change since stage 5.
+  //
+  // `...musketeer` BRINGS THE GUN, which is worth saying because it is not obvious
+  // from the spread: that object is the GUNNER half of the Musketeer Post — his two
+  // poses, his shadow anchor, the muzzle offset the ball leaves from, and the ball
+  // itself. The tier is the building; this is the man on it, and the man is what
+  // stands behind a barricade.
+  //
+  // `sprite` AND `spriteTrim` RESTATE `gunner` AND `gunnerTrim` because a figure on
+  // the board and a figure on a deck are read through different fields — a tower's
+  // gunner is drawn by drawPair off the tier, and a garrison man is drawn by
+  // drawSoldier off his own def. The two pairs are the same numbers and have to be:
+  // see the crossbowman above, where the same two lines do the same job.
+  Musketeer: {
+    ...musketeer,
+    name: 'Musketeer',
+    sprite: 'musketeer',
+    spriteTrim: MUSKET_TRIM,
+    pivot: [0.737, 0.913],
+    attack: { sprite: 'musketeer_attack', trim: MUSKET_ATK_TRIM, pivot: [0.748, 0.913] },
+    spriteFaces: -1,
+    // The Musketeer Post's three lines, through the same one-word opt-in the
+    // crossbowman uses to borrow the Crossbow Sentry's. At the owner's ask: "have
+    // voices when selected, like a musketeer in a tower."
+    //
+    // His KILL line needs nothing, for the reason the crossbowman's does not: a man
+    // finished by a ball already answers with the musket's cry, because that cue is
+    // keyed off the ammunition rather than off who fired it. See the `killedBy`
+    // branch in src/enemies.js.
+    voice: 'musketeer',
+    // He never swings, and drawSoldier multiplies by this on every frame of every
+    // soldier — see the crossbowman's note, where `0 * undefined` is NaN and a NaN
+    // makes the whole figure silently vanish.
+    lunge: 0,
+    // NOTHING CAN REACH HIM, at the owner's "they cannot die". The same guard the
+    // crossbowman and the pope carry, and the same reason it is a flag rather than a
+    // big number: the poison in this game takes a FRACTION of a maximum, so a million
+    // health is a slower death and not no death.
+    fixture: true,
+    hp: 120,
+    // HE NEVER SWINGS. `damage` and `cd` are the melee pair every soldier carries and
+    // the card reads `damage`, so it says what his ball does.
+    damage: postStats.damage,
+    cd: postStats.cd,
+    r: 8,
+    regen: 6,
+    speed: 0,
+    colour: '#8A7B5E',
+    damageType: 'physical',
+    ranged: { ...postStats, ammo: bullet }
   }
 };
 

@@ -533,12 +533,16 @@ const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
 // and m3 — and are simply not in `levels` in src/level.js any more. Putting one back
 // is a line there and a line here.
 //
-// STAGE 11 HAS ITS BOARD NOW — Ironforge Factory — so the road runs one marker
-// further and only stage 12 stands empty.
+// AND NOW STAGE 12 HAS ITS BOARD TOO — Ironforge Castle — so the road is FULL for
+// the first time since it was drawn. Every marker on the world map has a board
+// behind it, nothing is locked for want of one, and the note above about what an
+// empty stage costs has nothing to describe this build.
 //
-// IT STAYS WRITTEN OUT. The day a board is finished for stage 13 before stage 12,
-// this is the one line that can say so.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10 };
+// IT STAYS WRITTEN OUT ALL THE SAME. The map has twelve markers and the campaign has
+// twelve boards, which is a coincidence of today rather than a rule — the next board
+// drawn needs a thirteenth medallion before it can have a line here, and the day one
+// is finished for stage 14 before stage 13, this is the one place that can say so.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from

@@ -2769,6 +2769,57 @@ export const stage11Waves = [
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
+// STAGE 12: Ironforge Castle, and the table is the Factory's, wave for wave.
+//
+// THAT IS NOT A SHORTCUT AND IT IS WORTH SAYING PLAINLY: the owner sent the same
+// eight waves for both boards, counts and creatures identical down to the single
+// Rally Thug from wave 6. Nothing was copied from the Factory in the sense of a
+// decision being reused — two asks arrived and they happened to be the same ask.
+//
+// SO WHY A SECOND ARRAY RATHER THAN `export const stage12Waves = stage11Waves`.
+// Because they are equal today and not the same thing. These are two boards with
+// different roads and different shapes, and the first retune of either one has to
+// be able to land on one of them. A shared reference would make "make stage 11's
+// last wave harder" quietly mean both, and the failure would be a board nobody
+// edited playing differently — which is the exact class of bug this file's notes
+// keep warning about, pointed the other way.
+//
+// WHAT IS DIFFERENT IS THE BOARD UNDER IT, and that is a lot. The Factory sends
+// these eight down four routes over three mouths and three doors; the Castle sends
+// them down four routes over three mouths and TWO, with the shares decided at the
+// entry end — see routeMix in src/data/level14.js. The same wave arrives split
+// differently and leaves by different doors, so the two tables being equal does
+// not make the two boards equal.
+//
+// Every gap is a multiple of 0.1, for the reason the Factory's note gives: the
+// admin panel's rate stepper rounds to a tenth and a shipped number it cannot
+// return to is one the owner can never put back.
+export const stage12Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

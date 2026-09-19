@@ -698,23 +698,28 @@ hand:
 - `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg`,
   `Stage_4_Map_base.svg`, `Stage_5_Map_base.svg`, `Stage_6_Map_base.svg`,
   `Stage_7_Map_base.svg`, `Stage_8_Map_base.svg`, `Stage_9_Map_base.svg`,
-  `Stage_10_Map_base.svg` and `Stage_11_Map_base.svg` — the eleven drawn boards with
-  their plot markers cut out, written by `node tools/split-map.mjs
-  assets/map/Stage_1_Map` and the same for the others. Note the **stem**: all eleven
-  are drawn in layers, so the command names `Stage_1_Map` rather than a file. Same
-  pipeline as `Map_N_base.svg` otherwise.
+  `Stage_10_Map_base.svg`, `Stage_11_Map_base.svg` and `Stage_12_Map_base.svg` — the
+  twelve drawn boards with their plot markers cut out, written by `node
+  tools/split-map.mjs assets/map/Stage_1_Map` and the same for the others. Note the
+  **stem**: all twelve are drawn in layers, so the command names `Stage_1_Map` rather
+  than a file. Same pipeline as `Map_N_base.svg` otherwise.
 - `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
   `Stage_4_Map_front.svg`, `Stage_5_Map_front.svg`, `Stage_6_Map_front.svg`,
   `Stage_7_Map_front.svg`, `Stage_8_Map_front.svg`, `Stage_9_Map_front.svg`,
-  `Stage_10_Map_front.svg` and `Stage_11_Map_front.svg` — **the things on those boards
-  that stand up**, on a transparent sheet of the same artboard. The same
-  command writes them. See "What a figure can walk behind" below.
+  `Stage_10_Map_front.svg`, `Stage_11_Map_front.svg` and `Stage_12_Map_front.svg` —
+  **the things on those boards that stand up**, on a transparent sheet of the same
+  artboard. The same command writes them. See "What a figure can walk behind" below.
   Stages 10 and 11 need `--accept` on that command, for opposite reasons. Stage 10's
   archery target stands 29.5px tall, inside the 26–35px band where the splitter
   cannot tell a standing thing from a flat one. Stage 11 has no such shape at all —
   its shortest standing thing is 81px against 22px of flat — and what it trips is
   the sheer COUNT: sixty things on its top layer, most of them the factory's planks
   and crates. See the notes in `src/data/level12.js` and `src/data/level13.js`.
+  Stage 12 needs neither flag, though it has the same fifty-seven things on its top
+  layer: only two of them stand up once the two barricades are withheld, and the
+  shortest of those is 81px against 21px of flat. What decides it is that a garrison
+  post takes a shape OUT of the count — see the two musketeers in
+  `src/data/level14.js`.
 - `Stage_5_Map_over.svg` and `Stage_6_Map_over.svg` — **the pieces of scenery that
   are in front of everything**: the near side of each board's bridge. Written by the
   same command, given `--over 3e` and `--over 3c`, which name the layer part to lift.

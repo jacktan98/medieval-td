@@ -52,6 +52,12 @@ import { openMenu } from '../src/menu.js';
 import { selectionInfo } from '../src/select.js';
 import { unitEntry } from '../src/book.js';
 import { families, garrisonUnits } from '../src/data/towers.js';
+// For stage 12's two musketeers: the predicate that says nothing can touch them, and
+// the table that decides what a tap makes them say. Asked through the game's own
+// functions rather than off the defs, because "cannot die" and "has a voice" are
+// both questions somebody else answers.
+import { fixture } from '../src/units.js';
+import { selectionCue, CUE } from '../src/audio.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
 // the same tool this checks, so comparing the data against it would be asking the
@@ -69,6 +75,30 @@ let bad = 0;
 const ok = (cond, label, detail = '') => {
   if (!cond) bad++;
   console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(54)} ${detail}`);
+};
+
+// THE CAMPAIGN A PLAYER WALKS, in order: every board with a marker on the world map.
+// The three testing boards are loaded and off the road — see "the only boards off
+// the road are the three testing maps" below — so they are not in this.
+const onRoad = () => levels.filter((_, li) => stageOfLevel(li) !== null);
+
+// "THESE ARE THE LAST N BOARDS OF THE CAMPAIGN, AND NO EARLIER ONE."
+//
+// Three creatures and one allow-list are described that way, and each of them used
+// to be a TYPED LIST of ids that had to be retyped every time a board was drawn.
+// Three of the four failed on the day stage 12 landed, all for the same reason and
+// none of them because anything was wrong: the Shadow Thug, the Rally Thug and the
+// two-rungs-of-one-family rule had each gained a board, exactly as intended.
+//
+// A check that has to be edited to stay true says nothing the day it is edited. This
+// one says what the claim actually is — a contiguous run at the END of the road —
+// and it still fails on the thing worth catching, which is any of them appearing on
+// an early board.
+const tailOfCampaign = (matching) => {
+  const road = onRoad();
+  const hit = road.filter(matching);
+  const tail = road.slice(road.length - hit.length);
+  return { hit, tail, ok: hit.length > 0 && hit.every((l, i) => l === tail[i]) };
 };
 
 // --- what the drawing says today --------------------------------------------
@@ -954,20 +984,24 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // word, and the difference is the thing to keep straight. They rode the tail of
   // `levels` for the whole life of the campaign, moving down one each time a real
   // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
-  // campaign a player walks is the ten drawn boards, and these three stay loaded.
+  // campaign a player walks is the twelve drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
-  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m1,m2,m3',
-    'the game loads the eleven drawn boards, then the three testing ones',
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m1,m2,m3',
+    'the game loads the twelve drawn boards, then the three testing ones',
     play.join(' -> '));
   // And the stages carry them in that same order, as far as the markers go — which
-  // is now ten of the thirteen.
+  // is now ALL TWELVE, for the first time since the road was drawn.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
   const filled = order.filter(id => id !== '-');
   ok(play.join(',').startsWith(filled.join(',')),
-    'and the road carries the first ten of them, in that order',
+    'and the road carries them in that order',
     `${order.length} marker(s): ${order.join(' -> ')}`);
-  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13',
-    '  stopping at the Factory, with the testing maps behind it and off the road',
+  // THE ROAD IS FULL. Every marker on the world map has a board behind it, which has
+  // not been true since the map was drawn — stages 11 and 12 were medallions waiting
+  // for boards, and both have one now. The three testing maps stay where they are:
+  // loaded, editable from the dashboard, and unreachable from the map.
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14',
+    '  ending at the Castle, with the testing maps behind it and off the road',
     filled.join(' -> '));
 
   // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
@@ -1627,15 +1661,14 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
   ok(shadows.every((n, i) => i === 0 || n >= shadows[i - 1]),
     '  never carrying fewer than the wave before', shadows.join(' -> '));
   {
-    // HE IS NO LONGER ALONE ON THE DESERT. Ironforge sends him too, at the owner's
-    // ask, so the claim this check was written to hold — "nowhere else" — is not the
-    // claim any more. What is still worth pinning is that the list is SHORT and
-    // NAMED: he belongs to the last two boards of the campaign, and a retune that
-    // scattered him over the early ones would be a different creature.
-    const sends = levels.filter(l => l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
-    ok(sends.map(l => l.id).join(', ') === 'm11, m12, m13',
-      '  and the only others that send one are the two Ironforge boards',
-      sends.map(l => l.id).join(', ') || 'none');
+    // HE IS NO LONGER ALONE ON THE DESERT. Every Ironforge board sends him too, at
+    // the owner's ask, so the claim this was written to hold — "nowhere else" — is
+    // not the claim any more. What is: he belongs to the LAST boards of the campaign
+    // and to no earlier one, and a retune that scattered him over the early ones
+    // would be a different creature. See tailOfCampaign.
+    const t = tailOfCampaign(l => l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
+    ok(t.ok, '  and the others that send one are the last boards of the campaign',
+      t.hit.map(l => l.id).join(', ') || 'none');
   }
 
   // AND THE BOARD THAT SENDS TEN OF THEM IS THE BOARD WITH TWO WAYS TO ANSWER.
@@ -1796,16 +1829,15 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     const both = top.filter(t => sand.allow.includes(t.name));
     ok(both.length === 2, '  including BOTH of the barracks\' tier 4 rungs, which is a first',
       both.map(t => t.name).join(' and ') || 'neither');
-    // AND IRONFORGE DOES IT TOO, so "no other board" is not the claim any more. What
-    // holds is that these are the LAST TWO boards and no earlier one does it: a
-    // player meets the fork at the top of a family once the campaign is nearly over,
-    // and an edit that opened two tier-4 rungs on an early board would be a real
-    // change to the ladder rather than a tweak.
-    const opensTwo = levels.filter(l => Array.isArray(l.allow) && families.some(f =>
-      f.tiers.filter(t => t.tier === 4 && l.allow.includes(t.name)).length > 1));
-    ok(opensTwo.map(l => l.id).join(', ') === 'm11, m12, m13',
-      '  and the two Ironforge boards are the only others that open two rungs of one family',
-      opensTwo.map(l => l.id).join(', ') || 'none');
+    // AND EVERY IRONFORGE BOARD DOES IT TOO, so "no other board" is not the claim
+    // any more. What holds is that they are the LAST boards and no earlier one does
+    // it: a player meets the fork at the top of a family once the campaign is nearly
+    // over, and an edit that opened two tier-4 rungs on an early board would be a
+    // real change to the ladder rather than a tweak.
+    const t = tailOfCampaign(l => Array.isArray(l.allow) && families.some(f =>
+      f.tiers.filter(x => x.tier === 4 && l.allow.includes(x.name)).length > 1));
+    ok(t.ok, '  and the others that open two rungs of one family are the last boards',
+      t.hit.map(l => l.id).join(', ') || 'none');
   }
 }
 
@@ -1840,13 +1872,12 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
     'its Rally Thugs are one in each of waves 6 and 7, and two in the last',
     rally.join(','));
   {
-    // THE FACTORY SENDS HIM TOO now that there is a board after this one, so "nowhere
-    // else" is not the claim any more. What holds is that he belongs to the last two
-    // boards of the campaign and to no earlier one.
-    const sends = levels.filter(l => l.waves.some(w => w.groups.some(g => g.type === 'rally_inf')));
-    ok(sends.map(l => l.id).join(', ') === 'm12, m13',
-      '  and the only other board that sends one is the Factory',
-      sends.map(l => l.id).join(', ') || 'none');
+    // THE BOARDS AFTER THIS ONE SEND HIM TOO, so "nowhere else" is not the claim any
+    // more. What holds is that he belongs to the last boards of the campaign and to
+    // no earlier one.
+    const t = tailOfCampaign(l => l.waves.some(w => w.groups.some(g => g.type === 'rally_inf')));
+    ok(t.ok, '  and the others that send one are the last boards of the campaign',
+      t.hit.map(l => l.id).join(', ') || 'none');
   }
   // AND HE ARRIVES WHERE THE CROWD IS. His aura reaches 100px, so the waves that
   // carry him have to be the dense ones — asked as "every wave he is in carries more
@@ -2150,6 +2181,11 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
   // that will use it is a normal state for this project to be in and the owner is
   // the one who decides which waves it joins. The second is the check that still has
   // teeth: everything the campaign DOES send, the Factory sends.
+  //
+  // AND IT IS NO LONGER THE ONLY ONE. The Castle behind it ships the same eight waves
+  // — the owner sent the same table for both boards — so "no other board does" went
+  // from true to false without a line of either level changing. It is the last-boards
+  // claim the Shadow and Rally Thugs already make, and it is made the same way.
   {
     const sent = new Set(fact.waves.flatMap(w => w.groups.map(g => g.type)));
     const road = Object.entries(enemyTypes).filter(([, d]) => !d.boss).map(([id]) => id);
@@ -2158,15 +2194,16 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
     console.log(`note  ${'built, and no board sends one yet'.padEnd(56)} ` +
       (unused.length ? unused.map(id => enemyTypes[id].name).join(', ') : 'none'));
 
-    const missing = road.filter(id => anywhere.has(id) && !sent.has(id));
-    ok(!missing.length, '  and it is the only table that sends every creature in play',
-      `${sent.size} of ${road.length - unused.length}` +
+    const inPlay = road.filter(id => anywhere.has(id));
+    const missing = inPlay.filter(id => !sent.has(id));
+    ok(!missing.length, '  and its table sends every creature in play',
+      `${sent.size} of ${inPlay.length}` +
       (missing.length ? ` — missing ${missing.join(', ')}` : ''));
-    const others = levels.filter(l => l !== fact &&
-      road.filter(id => anywhere.has(id))
-          .every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
-    ok(!others.length, '  and no other board does',
-      others.length ? others.map(l => l.id).join(', ') : `${levels.length - 1} other board(s) fall short`);
+    const t = tailOfCampaign(l =>
+      inPlay.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
+    ok(t.ok && t.hit.includes(fact),
+      '  and the boards that do are the last of the campaign',
+      t.hit.map(l => l.id).join(', ') || 'none');
   }
 
   ok(fact.plots.length === 9 && fact.startGold === 240 && fact.waves.length === 8,
@@ -2297,6 +2334,191 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
       covered.map(f => (100 * f).toFixed(0) + '%').join(' / ') + `, ring ${cannon.range}px`);
     ok(fact.allow.includes(pre.name), '  on a board that also lets the player build one',
       fact.allow.join(', '));
+  }
+}
+
+console.log('\n--- stage 12, Ironforge Castle ---\n');
+
+// THE BOARD AT THE END OF THE ROAD, and the first build in which the road is FULL:
+// twelve markers, twelve boards, nothing locked for want of one.
+//
+// WHAT IS NEW ABOUT ITS SHAPE is that the two ends are independent. Every board
+// before it could be described from one end — three roads into one door, one mouth
+// forking into two, two mouths merging and a third forking. This one is a matrix:
+// which door you leave by is decided by which mouth you came in at, except for the
+// road that splits.
+{
+  const cast = levels.find(l => l.id === 'm14');
+  ok(!!cast, 'Ironforge Castle is in the game', cast ? cast.name : 'missing');
+
+  const WANT12 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+  ];
+  const got12 = cast.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got12.join(' | ') === WANT12.join(' | '), 'the Castle sends exactly the eight it was given',
+    got12.map((g, i) => (g === WANT12[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT12[i]})`)).join(' '));
+
+  // AND THEY ARE THE FACTORY'S, WAVE FOR WAVE. The owner sent the same eight for
+  // both boards, so this is a fact rather than a coincidence to tidy away — and it
+  // is checked, because the day one of them is retuned this line is what says the
+  // other was left behind on purpose or by accident.
+  //
+  // NOT THE SAME ARRAY, which is the other half of it. They are equal today and are
+  // two tables, so a retune of either lands on one board. See the note over
+  // stage12Waves in src/data/waves.js.
+  {
+    const fact = levels.find(l => l.id === 'm13');
+    const same = JSON.stringify(cast.waves) === JSON.stringify(fact.waves);
+    console.log(`note  ${'the Castle and the Factory ship the same eight waves'.padEnd(56)} ` +
+      (same ? 'identical tables, as the owner asked for both' : 'no longer identical'));
+    ok(cast.waves !== fact.waves, '  and they are two tables rather than one array',
+      'a retune of either lands on one board');
+  }
+
+  ok(cast.plots.length === 9 && cast.startGold === 240 && cast.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${cast.plots.length} plots, ${cast.startGold} gold, ${cast.waves.length} waves`);
+  ok(cast.maxTier === 3 && cast.allow.length === 7,
+    'it caps at tier 3 and lets seven named rungs through',
+    `maxTier ${cast.maxTier}, allow ${cast.allow.join(', ')}`);
+
+  // --- the shape of the roads ------------------------------------------------
+  ok(cast.routes.length === 4, 'four routes run across it', `${cast.routes.length} routes`);
+  {
+    const head = r => r.pts[0];
+    const tail = r => r.pts[r.pts.length - 1];
+    const same = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < 60;
+
+    // THREE MOUTHS AND TWO DOORS. Routes 2 and 3 share a mouth — the fork — and
+    // routes 0 and 2 share a door, and routes 1 and 3 share the other.
+    ok(same(head(cast.routes[2]), head(cast.routes[3])),
+      '  two of them come in at the same mouth',
+      `${Math.round(Math.hypot(head(cast.routes[2]).x - head(cast.routes[3]).x,
+                               head(cast.routes[2]).y - head(cast.routes[3]).y))}px apart`);
+    const mouths = [head(cast.routes[0]), head(cast.routes[1]), head(cast.routes[2])];
+    ok(!same(mouths[0], mouths[1]) && !same(mouths[0], mouths[2]) && !same(mouths[1], mouths[2]),
+      '  and the other two do not, so there are three ways in',
+      mouths.map(p => `(${Math.round(p.x)}, ${Math.round(p.y)})`).join(' '));
+
+    ok(same(tail(cast.routes[0]), tail(cast.routes[2])) &&
+       same(tail(cast.routes[1]), tail(cast.routes[3])) &&
+       !same(tail(cast.routes[0]), tail(cast.routes[1])),
+      '  and they leave by two doors, paired across the mouths',
+      `0+2 -> (${Math.round(tail(cast.routes[0]).x)}, ${Math.round(tail(cast.routes[0]).y)}), ` +
+      `1+3 -> (${Math.round(tail(cast.routes[1]).x)}, ${Math.round(tail(cast.routes[1]).y)})`);
+
+    // THE MATRIX ITSELF, which is the thing no board before this one has. The two
+    // roads that come in at DIFFERENT mouths leave by DIFFERENT doors, and the two
+    // that share a mouth leave by both — so the exit cannot be read off the entry
+    // for the board as a whole, only route by route.
+    ok(!same(tail(cast.routes[0]), tail(cast.routes[1])) &&
+       same(tail(cast.routes[2]), tail(cast.routes[0])) &&
+       same(tail(cast.routes[3]), tail(cast.routes[1])),
+      '  the left road to one door, the bottom road to the other, the fork to both',
+      'and no board before this had a door that depended on the mouth');
+  }
+
+  // 30 / 30 / 20 / 20, MEASURED THROUGH THE REAL SPAWNER, and asked from both ends
+  // because the owner gave it from one and checked it from the other.
+  {
+    useLevel(levels.indexOf(cast));
+    const st = { enemies: [] };
+    const seen = [0, 0, 0, 0];
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      seen[st.enemies[0].route]++;
+    }
+    const want = [0.3, 0.3, 0.2, 0.2];
+    const worst = Math.max(...seen.map((c, i) => Math.abs(c / N - want[i])));
+    ok(worst < 0.01, '  and the wave splits 30/30/20/20 between them, over 4000 spawns',
+      seen.map(c => (100 * c / N).toFixed(1) + '%').join(' / '));
+    // THE ENTRY SIDE, which is what the owner actually specified: "30% for left road,
+    // 30% for bottom middle, 40% for left bottom". Routes 2 and 3 share a mouth, so
+    // their shares add.
+    const byMouth = [seen[0] / N, seen[1] / N, (seen[2] + seen[3]) / N];
+    ok([0.3, 0.3, 0.4].every((w, i) => Math.abs(byMouth[i] - w) < 0.01),
+      '  which is 30/30/40 in at the three mouths',
+      byMouth.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+    // AND THE EXIT SIDE, which is the owner's own check on his own arithmetic —
+    // "that way, 50% of enemies should exit either top or right road."
+    const byDoor = [(seen[0] + seen[2]) / N, (seen[1] + seen[3]) / N];
+    ok(byDoor.every(f => Math.abs(f - 0.5) < 0.01),
+      '  and half out at each of the two doors, as he worked out it would be',
+      byDoor.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+    // THE FORK IS EVEN, which the door shares alone do not pin: 50/50 at the doors
+    // survives moving ten points from the left road to the bottom one and splitting
+    // the fork 30/10 instead. This is the line that refuses that.
+    ok(seen[2] === seen[3] || Math.abs(seen[2] - seen[3]) / N < 0.02,
+      '  with the forked road split half and half',
+      `${(100 * seen[2] / N).toFixed(1)}% / ${(100 * seen[3] / N).toFixed(1)}%`);
+  }
+
+  // --- what is already standing on it ----------------------------------------
+  //
+  // NOTHING IS BUILT AND TWO MEN ARE GIVEN, which is the swap this board makes for
+  // the Factory's prebuilt Cannon Outpost.
+  ok(!cast.prebuilt || !cast.prebuilt.length,
+    'nothing is prebuilt on it', `${(cast.prebuilt || []).length} prebuilt`);
+  ok(Array.isArray(cast.garrison) && cast.garrison.length === 2,
+    '  and two musketeers stand on it instead',
+    `${(cast.garrison || []).length} garrison figure(s)`);
+  {
+    const men = cast.garrison.map(g => garrisonUnits[g.unit]);
+    ok(men.every(m => m && m.name === 'Musketeer'), '  both of them Musketeers',
+      cast.garrison.map(g => g.unit).join(', '));
+    // THE POST'S NUMBERS WITH ONE CHANGE, read off the tier rather than trusted:
+    // "same stats as a musketeer in a tower, only difference is physical damage
+    // is 40."
+    const POST = families.find(f => f.id === 'archery').tiers.find(t => t.name === 'Musketeer Post');
+    const m = men[0];
+    ok(m.ranged.range === POST.range && m.ranged.cd === POST.cooldown,
+      '  reaching and reloading exactly as a Musketeer Post does',
+      `${m.ranged.range}px every ${m.ranged.cd}s, against the tower's ${POST.range}px every ${POST.cooldown}s`);
+    ok(m.ranged.damage === 40 && POST.damage !== 40,
+      '  and hitting for 40 where the tower hits for its own number',
+      `${m.ranged.damage} against ${POST.damage}`);
+    // NOTHING CAN TOUCH THEM, at "they cannot die" — the crossbowman's and the
+    // pope's own flag, asked through the predicate the game asks.
+    ok(men.every(x => fixture({ def: x })), '  nothing on the road can touch them',
+      'fixture on both');
+    // AND THEY ANSWER FOR THEMSELVES, at "have voices when selected, like a
+    // musketeer in a tower". Through selectionCue, which is what the tap runs.
+    ok(men.every(x => selectionCue({ kind: 'unit', ref: { def: x } }) === CUE.musketeer),
+      '  and answer with the Musketeer Post\'s three lines when tapped',
+      'CUE.musketeer');
+    // THEY STAND ON THE ARTWORK. The anchors are where the artist painted them, and
+    // split-map cuts those figures out of the base — so a redraw that moves one is
+    // an error in that tool rather than a board with two musketeers in one place.
+    // What is checked here is the half the tool cannot: that they are on the BOARD
+    // and not on the road.
+    const onCanvas = p => p.x > 0 && p.x < 960 && p.y > 0 && p.y < 540;
+    ok(cast.garrison.every(onCanvas), '  standing inside the board',
+      cast.garrison.map(g => `(${g.x}, ${g.y})`).join(' '));
+    // AND BETWEEN THEM THEY SEE THE CROSSROADS, which is the claim the level file
+    // makes about why these two spots. Every route passes through the middle of this
+    // board, and a Musketeer Post reaches 480 — the longest in the game.
+    const covered = cast.routes.map(r => {
+      let inside = 0, total = 0;
+      for (let s = 0; s <= r.total; s += 2) {
+        const p = routeAt(r, s);
+        if (!onCanvas(p)) continue;
+        total += 2;
+        if (cast.garrison.some(g => inRange(g.x, g.y, p.x, p.y, m.ranged.range))) inside += 2;
+      }
+      return inside / total;
+    });
+    ok(covered.every(f => f > 0.4),
+      '  and cover more than two fifths of every one of the four roads',
+      covered.map(f => (100 * f).toFixed(0) + '%').join(' / ') + `, reach ${m.ranged.range}px`);
   }
 }
 
