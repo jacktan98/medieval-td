@@ -14,6 +14,7 @@ import { families } from './data/towers.js';
 import { updateUnits, makeUnits, makeGarrison } from './units.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
+import { updateBombs } from './bombs.js';
 import { updateSplats } from './blood.js';
 import { updateImpacts } from './impacts.js';
 import { updateSmoke } from './smoke.js';
@@ -159,6 +160,10 @@ function newGame() {
     // The dust over a plot that has just been built on, upgraded or cleared.
     // Cleared with everything else, so a restart never inherits a cloud.
     smoke: [],
+    // Live bombs, left by a Bomb Thug shot down before he reached anybody. The
+    // only decoration in this list that is not decoration: it goes off. See
+    // src/bombs.js.
+    bombs: [],
     waveIndex: 0,
     spawned: 0,
     timer: openingDelay,
@@ -381,6 +386,10 @@ function step(state, dt) {
   updateEnemies(state, dt);
   updateTowers(state, dt);
   updateShots(state, dt);
+  // BEFORE the decoration below and after everything that can drop one. A fuse
+  // that runs out takes soldiers with it, which makes this the last thing in the
+  // frame that can change the state of the board rather than the look of it.
+  updateBombs(state, dt);
   // Last, so blood and bodies made by this step get their full life rather than
   // being aged by the frame that created them.
   updateCorpses(state, dt);

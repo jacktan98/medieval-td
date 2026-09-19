@@ -1018,7 +1018,28 @@ const WAVE_STEP_W = 46;
 // halving both would have bought the same 16px at a 52 pitch. It was not taken:
 // the rhythm of the header is the thing that makes a dense panel readable, and
 // four pixels off a stepper in a grid of steppers is the cheaper loss.
-const WAVE_STEP_H = 36;
+//
+// 36 -> 28, AND THE BOMB THUG BOUGHT THIS ONE. Eleven creatures is six grid rows
+// where ten was five, and six rows into the 242px between GROUP_TOP and the
+// summary lines is a 40px pitch — eight short of the 48 a 36-tall stepper needs
+// once STEP_PAD is added on both sides. tools/admin.mjs failed on the first run
+// after he was wired, reading "48 tapped, 40 pitch", which is the second time that
+// check has caught this panel on the frame a creature was added to the game.
+//
+// 46 x 28 DRAWN, 58 x 40 TAPPED, which is about 27 real px on the narrowest canvas
+// this game targets. That is below the 33 this tab already accepted and well below
+// the 44 the guideline asks for, and it is accepted for the third time on the same
+// reasoning: the panel is behind a four-digit PIN and is a tool for the person
+// building the levels rather than a control anybody plays with.
+//
+// AND THIS IS THE LAST TIME IT CAN BE DONE. The pitch is exactly the tapped height
+// now, with nothing left over — one more creature is seven rows at a 34px pitch,
+// and no stepper worth pressing fits inside that. What comes next is one of the two
+// things the note under WAVE_GRID_ROWS already names, and they should be weighed
+// then rather than now: page the roster the way the Units tab does, or go to three
+// columns and put each label above its own pair instead of beside it. Both are real
+// work on a panel nobody plays; neither should be done speculatively.
+const WAVE_STEP_H = 28;
 export const waveStepper = (x, rowY, field, valueW) =>
   stepperAt(x, rowY, field, WAVE_STEP_W, valueW, WAVE_STEP_H);
 

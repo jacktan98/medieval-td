@@ -975,6 +975,42 @@ console.log('\nWhat the enemies sound like\n');
     check('the war cry is Category A — a second inside the first is dropped',
       `${first} then ${played.filter(c => c === 'War_cry').length}`, '1 then 0');
   }
+
+  // THE BOMB THUG'S BURST, and it is the other side of the line from the cry
+  // above — the owner asked for Category B and this is what that buys.
+  {
+    const { detonate, updateBombs, dropBomb } = await import('../src/bombs.js');
+    const bomb = enemyTypes.bomb_inf;
+    const at = (x, y) => ({ def: bomb, x, y, hp: bomb.hp, statuses: [] });
+
+    ctx.currentTime = 50000;
+    played = [];
+    detonate(world([]), at(100, 100));
+    check('a Bomb Thug going off makes the bomb noise',
+      played.filter(c => c === 'Bomb_sound').length, 1);
+
+    // AND AGAIN, A TENTH OF A SECOND LATER. This is the whole of the Category B
+    // claim and it is the check that could come back no: the same pair of bursts
+    // through `solo` gives one sound and a silence, because the first holds the
+    // channel for its own length plus a second of quiet — and then the single-take
+    // rule keeps it silent for twenty more. A wave can send several Bomb Thugs and
+    // they arrive at the line together; hearing one of them is the wrong answer.
+    ctx.currentTime = 50000.1;
+    played = [];
+    detonate(world([]), at(300, 100));
+    check('  and a second one right behind it is heard too',
+      played.filter(c => c === 'Bomb_sound').length, 1);
+
+    // THE DROPPED BOMB SOUNDS THE SAME. One event, one noise — which of the two
+    // ways it went off is something you can see rather than hear.
+    ctx.currentTime = 50001;
+    played = [];
+    const st = world([]);
+    dropBomb(st, bomb, 500, 300, bomb.spriteFaces);
+    for (let i = 0; i < 60 * 3 && st.bombs.length; i++) { ctx.currentTime += DT; updateBombs(st, DT); }
+    check('  and so does one that burns down on the ground',
+      played.filter(c => c === 'Bomb_sound').length, 1);
+  }
 }
 
 

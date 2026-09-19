@@ -9,7 +9,7 @@ they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 | `Enemies_Tough_Thug_Default.png`   | `Enemies_Tough_Thug_Attack.png`   | `tough_inf`  | the same man in low plate, 200 health  |
 | `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
 | `Enemies_Shadow_Thug_Default.png`  | `Enemies_Shadow_Thug_Attack.png`  | `shadow_inf` | masked, sword up at rest and thrust out swinging; invisible unless a soldier has hold of him |
-| `Enemies_Rally_Thug_Default.png`   | `Enemies_Rally_Thug_Attack.png`   | `rally_inf`  | helmeted, sword and a banner on his back; lends a fifth of their health to everything within 100px |
+| `Enemies_Rally_Thug_Default.png`   | `Enemies_Rally_Thug_Attack.png`   | `rally_inf`  | helmeted, sword and a banner on his back; adds half again to the blows of everything physical within 150px |
 
 **The Tough Thug is drawn in the Thug's box** — 96 wide against 96, 119 tall
 against 116 — and his shadow sits at source (260.0, 304.5) in both poses. He is
@@ -31,6 +31,50 @@ Thug's 96, and the banner is all of it — his body is the same round blob. His
 shadow sits at source (252.0, 321.5) in both poses. Everything standing inside a
 hundred game pixels of him wears `Health_Boost_Status.png`, so his own drawing has
 to be findable in a crowd that is all wearing the same mark.
+
+## The Bomb Thug has no Attack, and four drawings that are all endings
+
+He is the one enemy in the game with no Attack pose, and it is not a file anybody
+forgot: he has no attack. He walks up to a soldier and explodes, so the blow and
+the death are the same event and the Default is what he is showing right up to
+the frame he is not there.
+
+| file                                | key          | what it is                                        |
+|-------------------------------------|--------------|---------------------------------------------------|
+| `Enemies_Bomb_Thug_Default.png`     | `bomb`       | the walk, the portrait and the encyclopedia card  |
+| `Enemies_Bomb_Thug_Explode.png`     | `bomb_blast` | the burst, on screen for 0.2s, both ways he goes off |
+| `Enemies_Bomb_Thug_Self.png`        | `bomb_dead`  | his body, when a projectile got him first         |
+| `Enemies_Bomb_Thug_Bomb.png`        | `bomb_live`  | the bomb lying beside it, fuse still burning      |
+| `Enemies_Bomb_Thug_Dead.png`        | *(not loaded)* | the two of them together — the reference the offset is measured off |
+
+**His corpse is in this folder, not in `assets/dead/`.** Every other body in the
+game is over there and this one is not, because the rule in that folder's README
+is the one that decides: *"assets.js is where a name and a key meet, and it is
+changed to suit each upload rather than the files being renamed."* Five drawings
+of one creature arrived in one upload into one folder, which is the sane way to
+send them; moving four of them would only mean moving them again next time.
+
+**`_Dead` is `_Self` plus `_Bomb`, and the game loads the halves.** The composite
+is never drawn — the bomb in it is still live and runs on its own two-second
+clock, so it cannot be part of a corpse. What the composite is for is the GAP
+between the two: the body's ground shadow is centred at source (195.0, 282.5) and
+the bomb's trim box has its bottom middle at (315.0, 295.0), and `DROP` in
+`src/bombs.js` is that difference. Redraw the pair and that constant has to be
+re-measured, or the bomb will lie somewhere the artist did not put it.
+
+**So the two halves must not move relative to each other** across a re-export. It
+is the one thing about this creature that cannot be checked by looking at either
+file on its own.
+
+**The bomb has no ground shadow and is not meant to have one.** Every figure in
+this game stands on a flat brown ellipse and is anchored by its centre; this one
+is an object lying on the road, anchored by the bottom middle of its own box.
+`tools/shadow.mjs` is not given a row for it for that reason.
+
+**His body is the Thug's**, at 92 source px wide against 96 and the same 116
+tall, so he stands in a lane exactly as the rest of them do — the bomb he carries
+is held in front of him and adds nothing to his footprint. His shadow sits at
+source (267.0, 303.0).
 
 ## Two enemies fight at both distances, and they carry two pairs
 

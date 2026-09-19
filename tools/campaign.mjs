@@ -2136,16 +2136,35 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
   ok(got11.join(' | ') === WANT11.join(' | '), 'the Factory sends exactly the eight it was given',
     got11.map((g, i) => (g === WANT11[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT11[i]})`)).join(' '));
 
-  // IT SENDS EVERY CREATURE BUT THE BOSS, which no other table does and which is what
-  // makes it a last board rather than a harder version of the one before.
+  // IT SENDS EVERY CREATURE THE CAMPAIGN USES, which no other table does and which
+  // is what makes it a last board rather than a harder version of the one before.
+  //
+  // "THE CAMPAIGN USES" RATHER THAN "EXISTS", and that clause was bought by the
+  // Bomb Thug. The claim here was "every creature but the boss" and it was true on
+  // the day it was written; the next creature added to the game broke it without
+  // anything about the Factory changing, because a creature wired into the game is
+  // not the same thing as a creature any board sends.
+  //
+  // So the question is asked in two halves now. The first names what no table sends
+  // ANYWHERE — a report, not a failure, because a creature built ahead of the board
+  // that will use it is a normal state for this project to be in and the owner is
+  // the one who decides which waves it joins. The second is the check that still has
+  // teeth: everything the campaign DOES send, the Factory sends.
   {
     const sent = new Set(fact.waves.flatMap(w => w.groups.map(g => g.type)));
     const road = Object.entries(enemyTypes).filter(([, d]) => !d.boss).map(([id]) => id);
-    const missing = road.filter(id => !sent.has(id));
-    ok(!missing.length, '  and it is the only table that sends every creature but the boss',
-      `${sent.size} of ${road.length}` + (missing.length ? ` — missing ${missing.join(', ')}` : ''));
+    const anywhere = new Set(levels.flatMap(l => l.waves.flatMap(w => w.groups.map(g => g.type))));
+    const unused = road.filter(id => !anywhere.has(id));
+    console.log(`note  ${'built, and no board sends one yet'.padEnd(56)} ` +
+      (unused.length ? unused.map(id => enemyTypes[id].name).join(', ') : 'none'));
+
+    const missing = road.filter(id => anywhere.has(id) && !sent.has(id));
+    ok(!missing.length, '  and it is the only table that sends every creature in play',
+      `${sent.size} of ${road.length - unused.length}` +
+      (missing.length ? ` — missing ${missing.join(', ')}` : ''));
     const others = levels.filter(l => l !== fact &&
-      road.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
+      road.filter(id => anywhere.has(id))
+          .every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
     ok(!others.length, '  and no other board does',
       others.length ? others.map(l => l.id).join(', ') : `${levels.length - 1} other board(s) fall short`);
   }

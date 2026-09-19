@@ -2,6 +2,7 @@ import { level, remaining } from './level.js';
 import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
+import { dropBomb } from './bombs.js';
 import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
@@ -1024,6 +1025,31 @@ export function updateEnemies(state, dt) {
     // 500 gold for one boss and a finale that lasted 0.02s.
     if (downed(e)) return true;
 
+    // HE BLEW HIMSELF UP, and none of the three things a death does is right for
+    // him. `blown` is set by detonate in src/bombs.js and by nothing else.
+    //
+    //   NO BOUNTY. The gold is what you are paid for a kill and nobody killed him.
+    //   It is the same reading the line further down already makes about the body —
+    //   "a leak gets no body on purpose: the body is what you get for a kill" — and
+    //   he is the second creature to arrive at the board's edge without having been
+    //   beaten. He costs a squad instead of paying for one.
+    //
+    //   NO KILL LINE. Every other death answers with a cry keyed to the weapon that
+    //   landed the last blow, and there was no last blow. His own bomb has already
+    //   sounded, from burst().
+    //
+    //   NO BODY AND NO BLOOD, at the owner's word: "If bomb thug explodes by
+    //   himself, do not use Bomb Thug Dead png and there is no blood. He just
+    //   vanishes as the explosion is too strong." dropCorpse is what makes the pool,
+    //   so not calling it is the whole of both halves.
+    //
+    // `unhook` still runs. The man who was holding him has to be let go or he goes
+    // on swinging at nothing — that part of dying is the same however you died.
+    if (e.hp <= 0 && e.blown) {
+      unhook(e);
+      return false;
+    }
+
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
@@ -1085,6 +1111,14 @@ export function updateEnemies(state, dt) {
       //
       // A leak gets no body on purpose: the body is what you get for a kill.
       dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
+      // AND THE BOMB HE WAS CARRYING IS STILL LIVE. Shot before he reached anybody,
+      // so nothing triggered it — it lies beside the body on a 2 second fuse and
+      // then does exactly what it would have done in his hands. The owner's rule,
+      // and the reason killing a Bomb Thug over your own line does not save it.
+      //
+      // The same three numbers dropCorpse was handed, so the bomb and the body are
+      // placed from one answer and cannot drift apart. See src/bombs.js.
+      if (e.def.bomb) dropBomb(state, e.def, e.x, e.y, e.struckFrom || e.face);
       unhook(e);
       return false;
     }

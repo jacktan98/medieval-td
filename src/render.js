@@ -3,6 +3,10 @@ import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
+// The live bomb's window into its own drawing, and where in that window it sits
+// on the ground. Kept in bombs.js beside the offset that was measured with them —
+// see the note there on the composite the three numbers come off.
+import { BOMB_TRIM, BOMB_PIVOT } from './bombs.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art, discFace } from './assets.js';
@@ -369,6 +373,14 @@ function drawFigures(ctx, state) {
   // Bodies are flat on the ground, so at equal depth they go under a figure
   // standing at the same spot rather than over its feet.
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
+  // A LIVE BOMB, at rank 1 with the standing figures rather than at rank 0 with
+  // the bodies. It is an object sitting ON the road, not a stain painted on it, so
+  // a soldier at the same depth should be beside it and not over the top of it.
+  //
+  // `|| []` for the same reason src/bombs.js makes the list on demand: every
+  // fixture in tools/ builds its own world by hand, and a renderer that insisted
+  // on the field would take them all down. The smoke pass below does the same.
+  for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
@@ -1611,6 +1623,32 @@ function drawCorpse(ctx, c) {
     ctx.drawImage(img, -ax * d, -ay * d, d, d);
   }
 
+  ctx.restore();
+}
+
+// A BOMB LYING ON THE ROAD WITH ITS FUSE STILL BURNING.
+//
+// The simplest drawing in the file: one trim, one pivot, no poses, no health bar
+// and no fade. It is on screen for its whole 2 seconds at full opacity and then
+// it is not on screen, because what ends it is an explosion rather than time
+// passing — a bomb that faded out would be telling the player it was going away.
+//
+// MIRRORED WITH THE BODY IT BELONGS TO. `face` is the side the blow that killed
+// the thug came from, the same number the corpse was given, and the flip has to
+// match or the bomb would sit on the wrong side of him half the time. bombs.js
+// has already put that flip into `b.x`; this is the other half of it, the picture
+// itself turning round.
+function drawBomb(ctx, b) {
+  const img = art.bomb_live;
+  if (!img) return;
+  const [sx, sy, sw, sh] = BOMB_TRIM;
+  const dw = sw * SCALE;
+  const dh = sh * SCALE;
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.scale(mirror(b.def, b.face), 1);
+  ctx.drawImage(img, sx, sy, sw, sh,
+    -BOMB_PIVOT[0] * dw, -BOMB_PIVOT[1] * dh, dw, dh);
   ctx.restore();
 }
 

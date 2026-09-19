@@ -1,6 +1,11 @@
 # Audio
 
-**Eighty-seven clips: forty-two in `sfx/` and forty-five in `voice/`.**
+**Ninety-four clips: forty-nine in `sfx/` and forty-five in `voice/`.**
+
+*(The count was six low before the Bomb Thug's clip was added — every file was
+named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
+whether each file is documented, not whether the prose can add up. Counted off
+`CLIPS` in `src/audio.js` rather than off the list.)*
 
 ```
 assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
@@ -18,7 +23,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
                       Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
-                      War_cry.mp3,
+                      War_cry.mp3, Bomb_sound.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,

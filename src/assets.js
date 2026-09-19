@@ -377,6 +377,27 @@ export const paths = {
   priest_cast:     'assets/enemies/Enemies_Dark_Priest_Ranged_Attack.png',
   priest_swing:    'assets/enemies/Enemies_Dark_Priest_Melee_Attack.png',
   priest_heal:     'assets/enemies/Enemies_Dark_Priest_Heal.png',
+  // THE ONE CREATURE WITH NO ATTACK DRAWING, because he has no attack: he walks
+  // up to a man and stops existing. `bomb` is the walk and the portrait, and the
+  // other three are all pictures of him being over.
+  //
+  // THEY ARE ALL IN assets/enemies/, INCLUDING THE BODY. Every other corpse in
+  // the game is in assets/dead/, and the rule that says where a file lives is the
+  // one in that folder's README: "assets.js is where a name and a key meet, and
+  // it is changed to suit each upload rather than the files being renamed." The
+  // artist uploaded five drawings of one creature into one folder, which is the
+  // sane thing to do, and moving four of them would mean moving them again after
+  // the next upload.
+  //
+  // `bomb_dead` AND `bomb_live` ARE ONE DRAWING TAKEN APART, and the artist did
+  // the taking apart. Enemies_Bomb_Thug_Dead.png is the two of them together and
+  // the game never loads it — it is the reference that says where the bomb lies
+  // relative to the body, and `drop` on his def is that gap measured off it. See
+  // src/bombs.js.
+  bomb:            'assets/enemies/Enemies_Bomb_Thug_Default.png',
+  bomb_dead:       'assets/enemies/Enemies_Bomb_Thug_Self.png',
+  bomb_live:       'assets/enemies/Enemies_Bomb_Thug_Bomb.png',
+  bomb_blast:      'assets/enemies/Enemies_Bomb_Thug_Explode.png',
   // --- THE BOSS ----------------------------------------------------------------
   //
   // ELEVEN DRAWINGS FOR ONE CREATURE, where the Dark Priest's five was the record.

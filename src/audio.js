@@ -269,6 +269,16 @@ const paths = {
   // THE RALLY THUG'S SHOUT, when his aura takes hold of somebody new. The owner's
   // ask, and Category A at his word — see WAR_CRY below for what that buys.
   war_cry:         'assets/audio/sfx/War_cry.mp3',
+  // THE BOMB THUG GOING OFF, both ways he can: the one he sets off himself against
+  // a soldier, and the one left on the ground when he is shot before he gets there.
+  // One sound for one event — a bomb bursting is a bomb bursting, and which of the
+  // two it was is visible rather than audible.
+  //
+  // Category B at the owner's word, and it is the right side of the line anyway. A
+  // wave can send several of these and they arrive at the line together; Category A
+  // would let exactly one of them be heard and silence the rest, which is the wrong
+  // way round for the creature whose whole point is that there are several.
+  bomb_sound:      'assets/audio/sfx/Bomb_sound.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
   // out exactly as an arrow does — see the two flags on every ammunition in
@@ -833,6 +843,14 @@ export const HEAL = ['enemies_heal'];
 // starts wearing it. See the `fresh` test in rallyAura, which is the one line that
 // makes this "a new enemy" rather than "an enemy, sixty times a second".
 export const WAR_CRY = ['war_cry'];
+
+// A BOMB BURSTING. Category B — `play`, its own bus, no gate — which is what lets
+// three of them go off along one line and be heard as three.
+//
+// It is also the reason this cue needs none of the care the war cry above needed.
+// Category B has no `heard` memory and no last-clip rule, so a single take is a
+// single take: it sounds every time it is asked for, however quiet the board is.
+export const BOMB = ['bomb_sound'];
 
 // --- THE WORLD MAP ---------------------------------------------------------------
 //

@@ -5,6 +5,9 @@ import { level } from './level.js';
 import { pickTarget } from './enemies.js';
 import { at as pointOn, nearestOn, LANE } from './route.js';
 import { dropCorpse } from './corpses.js';
+// The Bomb Thug's ending, in place of the swing every other creature makes. The
+// file imports `fixture` back out of this one — see the note at the top of it.
+import { detonate } from './bombs.js';
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
 import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS } from './audio.js';
@@ -1366,7 +1369,25 @@ export function updateUnits(state, dt) {
       // it would have made the transformation free.
       if (u.holds && !busy(u.foe)) {
         u.foe.acd -= dt * slowOf(u.foe);
-        if (u.foe.acd <= 0) {
+        // A BOMB THUG DOES NOT SWING. He is the one creature on the road with no
+        // counter-attack at all: the owner's "bombing himself when in contact with
+        // a soldier" is this branch, and the ordinary blow in the `else` never runs
+        // for him.
+        //
+        // THIS IS THE FRAME CONTACT HAPPENS. `acd` starts a creature's life at zero
+        // and is only ticked here, by the man holding it — so for everything else
+        // the first swing lands the instant it is blocked, and for this one the
+        // first swing IS the explosion. There is no wind-up to arrange and no fuse
+        // to start; "in contact" and "went off" are the same moment.
+        //
+        // NOTHING UNDER THE `else` MEANS ANYTHING FOR HIM. It is all about a blow
+        // that landed on one man and a creature that is still standing — who struck
+        // whom, the lunge back, the clock reset for a second swing — and there is no
+        // second swing. detonate deals the blast to everybody in reach, this man
+        // included, and marks him blown.
+        if (u.foe.acd <= 0 && u.foe.def.bomb) {
+          detonate(state, u.foe);
+        } else if (u.foe.acd <= 0) {
           // AND THE OTHER WAY ROUND, through the SOLDIER'S armour — which is the
           // half that pays for the paladin's health being what it is. At medium
           // physical he takes half a thug's knife, so his 200 is worth 400 in front

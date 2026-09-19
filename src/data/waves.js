@@ -469,6 +469,99 @@ export const enemyTypes = {
     colour: '#6B5A3A'
   },
 
+  // THE ONE THAT CANNOT BE FOUGHT. Every other creature on this road walks into a
+  // soldier and starts something that takes seconds to settle; this one walks into
+  // a soldier and the fight is already over.
+  //
+  // The owner's brief: "a thug that sacrifices himself by bombing himself when in
+  // contact with a soldier. Deals a lot of damage but kills himself in the process."
+  //
+  // 120 OVER 100px, AND THAT IS FOUR TIMES THE HARDEST BLOW IN THE GAME. The Giant
+  // hits for 50 and the Rally Thug for 30; the boss himself hits for 60. This lands
+  // 120 on everybody inside a 100px circle at once, through one rank of plate, and
+  // a tier 1 spearman has 100 health. So a Bomb Thug that reaches a line does not
+  // hurt it, it deletes it — and against the tier 4s, who are the only men in the
+  // game who survive one, it still takes more than half of a paladin.
+  //
+  // HIS COUNTER IS THE OTHER HALF OF THE BOARD. 150 health and no armour at all is
+  // the softest card on the road outside the plain Thug: two ballista bolts, three
+  // arrows from a tier 3 bow. He is not a problem you solve with a better wall,
+  // because no wall survives him; he is a problem you solve by not letting him
+  // arrive, which is what the archery and the artillery are for. That is the whole
+  // design of the creature and it is why the two numbers are so far apart.
+  //
+  // AND KILLING HIM DOES NOT MAKE HIM SAFE, which is the part that makes him worth
+  // more than an arithmetic problem. The bomb is not triggered when he falls — it
+  // lies where he fell and goes off 2 seconds later for the same 120 — so shooting
+  // one down on top of your own line kills your line anyway. See src/bombs.js.
+  //
+  // `splash` IS THE SAME FIELD A CATAPULT USES, which is what puts the blast icon
+  // on his card and in his panel without a line of UI code: see shownSplash in
+  // src/select.js. It is read for the blast itself in src/bombs.js rather than by
+  // the Captain's `sweep`, and the note at the top of that file says why.
+  //
+  // NO ATTACK DRAWING AND NO `attack` BLOCK. He is the only creature in the game
+  // without one, and it is not a gap in the upload: he has no attack pose because
+  // he has no attack, only an ending. enemyStance in src/render.js falls through to
+  // the Default for a def with no `attack`, which is exactly right — he is walking
+  // right up until the frame he is not there.
+  //
+  // `atkCd` IS STILL 1.0 AND IT NEVER RUNS OUT TWICE. `acd` starts a creature's
+  // life at zero and is only ticked by the man holding it, so the blast lands on
+  // the first frame of contact — the number below is what the clock would be reset
+  // to for a second blow, and there is no second blow. It is here because every
+  // creature's counter-attack reads it, and a field that must exist and cannot
+  // matter is better written down than left to be undefined.
+  //
+  // HIS BODY IS THE THUG'S. 92 source px wide against 96 and the same 116 tall, so
+  // `r` stays 8 and he stands in a lane exactly as the rest of them do — the bomb
+  // he carries is held in front of him and adds nothing to his footprint.
+  bomb_inf: {
+    name: 'Bomb Thug',
+    sprite: 'bomb',
+    spriteTrim: [210, 198, 92, 116],   // source px, re-paste from tools/trim.mjs
+    pivot: [0.620, 0.905],             // the centre of his ground shadow
+    spriteFaces: -1,
+    // THE BODY, WITHOUT THE BOMB. Enemies_Bomb_Thug_Self.png rather than the Dead
+    // drawing beside it, because the bomb in that drawing is not a corpse — it is
+    // still live, and it is drawn by src/bombs.js on its own clock. The Dead file
+    // is the two of them together and the game never loads it; it is the reference
+    // the offset between them was measured off.
+    //
+    // It is in assets/enemies/ with his other four rather than in assets/dead/
+    // with every other corpse in the game. See the note over `bomb_dead` in
+    // src/assets.js for why that is the rule rather than an oversight.
+    dead: 'bomb_dead',
+    deadTrim: [161, 217, 108, 77],
+    deadPivot: [0.315, 0.851],
+    hp: 150,
+    damageType: 'physical',
+    armour: { physical: 'none', magic: 'none' },
+    pierce: 1,
+    // A HUNDRED PIXELS OF IT. The Cannon Outpost's blast is 85 and the Trebuchet's
+    // is the widest thing the player owns; his is wider than either.
+    splash: 100,
+    // THE THUG'S PACE, and it is the number that decides whether the creature is
+    // fair. He has to cross the same road everything else crosses to be shot at
+    // for the same length of time — a Bomb Thug who ran would be a Bomb Thug who
+    // arrives, and arriving is the whole of his damage.
+    speed: 60,
+    // The Plague Doctor's, who has the same 150 health. Worth saying because the
+    // bounty is only ever paid for one of his two endings: a Bomb Thug who reaches
+    // a soldier was not killed by anybody and pays nothing, on the same rule that
+    // gives a leaked enemy no body. See the `blown` branch in src/enemies.js.
+    bounty: 30,
+    leak: 1,
+    damage: 120,
+    atkCd: 1.0,
+    r: 8,
+    colour: '#4B3410',
+    // WHAT MAKES HIM ONE. Read in two places and nowhere else: the counter-attack
+    // in src/units.js, which calls detonate instead of swinging, and the death path
+    // in src/enemies.js, which leaves a live bomb behind the body.
+    bomb: true
+  },
+
   // THE SHIELD, and he is the first enemy whose armour is a THING HE DOES rather
   // than a row on his card.
   //
@@ -1670,7 +1763,15 @@ export const MARCH_ORDER = [
   // the head of a column carries his banner away from the men it is for; behind
   // them, his hundred pixels cover the tail of the bodies ahead and the head of the
   // heavies behind, which is the middle of the wave and the whole of what he is.
-  'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'rally_inf',
+  // The Bomb Thug marches with them too, and for the Shadow Thug's reason pointed
+  // at the opposite end of a fight: he wants the squad ALREADY COMMITTED when he
+  // arrives. A bomb that goes off against the first man to meet it kills one man;
+  // the same bomb against a line that has closed on the wave ahead of it takes
+  // three, because his blast is 100px and a squad holding a road stands inside
+  // that. He is also in front of the Rally Thug rather than behind, because the
+  // banner is worth half again on his blast and a standard-bearer arriving after
+  // the bomb has gone off is a standard-bearer who missed it.
+  'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'bomb_inf', 'rally_inf',
   'heavy_inf', 'archer_inf', 'plague_inf',
   // The healer comes in LAST, behind everything he is there to mend. A priest at
   // the head of a column would spend the wave walking with nobody hurt in front of
@@ -1696,12 +1797,17 @@ export const MARCH_ORDER = [
 // the player meets them in.
 //
 // THE OWNER'S ORDER, exactly: thugs by weight, then the two shooters, then the two
-// support units, then the two newest. tools/book.mjs checks this lists every
+// support units, then the newest at the end. tools/book.mjs checks this lists every
 // non-boss enemy exactly once, so a creature added and forgotten here is a card
 // that silently never appears.
+//
+// NEWEST LAST, which is why the tail of this list is not sorted by anything: the
+// Shadow Thug, the Rally Thug and the Bomb Thug arrived in that order and sit in
+// that order, behind the roster the book opened with. The player meets them in
+// that order too, because each one was written into the late boards.
 export const BOOK_ORDER = [
   'light_inf', 'tough_inf', 'archer_inf', 'blocker_inf', 'heavy_inf',
-  'plague_inf', 'dark_priest', 'shadow_inf', 'rally_inf'
+  'plague_inf', 'dark_priest', 'shadow_inf', 'rally_inf', 'bomb_inf'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

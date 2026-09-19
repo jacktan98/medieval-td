@@ -161,7 +161,11 @@ console.log('\nHow much room a figure takes up\n');
   // whether the image is there.
   const keys = [];
   for (const d of Object.values(enemyTypes)) {
-    keys.push(d.sprite, d.attack.sprite, d.dead);
+    // `d.attack &&` FOR THE ONE CREATURE WITHOUT ONE. The Bomb Thug has no attack
+    // drawing because he has no attack — he walks up to a man and the next thing
+    // that exists is a blast — and every line in this file assumed the pair. The
+    // `if (k)` below already drops the undefined.
+    keys.push(d.sprite, d.attack && d.attack.sprite, d.dead);
     if (d.melee) keys.push(d.melee.attack.sprite, d.melee.default && d.melee.default.sprite);
     for (const k of ['guard', 'heal', 'reload']) if (d[k]) keys.push(d[k].sprite);
     if (d.rage) {
@@ -192,6 +196,9 @@ console.log('\nHow much room a figure takes up\n');
   let checked = 0;
   for (const [id, d] of Object.entries(enemyTypes)) {
     const at = d.attack;
+    // Nothing to compare for a creature with one drawing. See the note by the
+    // stub list above, and the check further down that says which one that is.
+    if (!at) continue;
     const drawnWider = at.trim[2] * Math.max(at.pivot[0], 1 - at.pivot[0])
                      > d.spriteTrim[2] * Math.max(d.pivot[0], 1 - d.pivot[0]);
     if (!drawnWider) continue;

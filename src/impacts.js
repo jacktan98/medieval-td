@@ -27,7 +27,20 @@ export const IMPACT_TRIM = {
   // REDRAWN, and 16px narrower than it was: [180, 242, 152, 28] before. Same
   // height, same top, so the puddle sits exactly where it did and only its spread
   // changed.
-  spill:    [188, 242, 136, 28]
+  spill:    [188, 242, 136, 28],
+  // A BOMB GOING OFF, and the first mark in this table made by the other army.
+  // Everything above it is something the player's artillery did to the road.
+  //
+  // IT HANGS RATHER THAN LYING, which is the default and the right one: it is not
+  // a stain, it is a burst, so it is anchored at the bottom of its box and drawn
+  // upward — over the man who set it off rather than under him. See IMPACT_LIE
+  // below for the table it is deliberately not in.
+  //
+  // AND IT IS NOT THE WIDTH OF THE BLAST. 119 source px at IMPACT_SCALE is 39 on
+  // the board against a blast 200 across, and that is the same ratio the rock's
+  // spray keeps against its own splash — see the note on IMPACT_SCALE. A picture
+  // of the damage would be a different thing from a picture of the event.
+  bomb_blast: [197, 207, 119, 98]
 };
 
 // TWO KINDS OF MARK, and the difference is which way the drawing hangs.
@@ -95,7 +108,16 @@ export function impact(state, x, y, img, life = IMPACT_LIFE) {
     life,
     // Kept so the renderer can fade over the right stretch: earth is gone in
     // under half a second and a spill sits there for three.
-    fade: img === 'spill' ? SPILL_FADE : IMPACT_FADE
+    //
+    // NEVER LONGER THAN THE MARK ITSELF LASTS. The renderer's opacity is
+    // `life / fade` capped at 1, so a mark whose whole life is shorter than the
+    // fade starts part-transparent and is never once drawn solid — it appears
+    // half there and then goes. Nothing hit that until the Bomb Thug: his burst is
+    // on screen for 0.2s against a 0.25s fade, and it read as a puff rather than a
+    // bang. Clamping here rather than giving him his own number keeps it one rule,
+    // and it changes nothing for the two marks that were already longer-lived than
+    // their fade.
+    fade: img === 'spill' ? SPILL_FADE : Math.min(IMPACT_FADE, life)
   });
 }
 
