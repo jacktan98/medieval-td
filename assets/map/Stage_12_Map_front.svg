@@ -1403,8 +1403,12 @@
 		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
 			<path d="M862.2996634209436,171.77132985255838 L879.0714163257264,168.12225328570457 L879.0714163257264,190.10503243183481 L862.2996634209435,194.38669755669497 L862.2996634209436,171.77132985255838 Z" transform="matrix(1,0,0,1,0,0)" fill="#969696" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
 		</g>
-		
-		
+		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
+			<path d="M938.0983752619671,113.67260703934281 L938.0997811227035,130.68558651270502" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
+		</g>
+		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
+			<path d="M907.0575672278798,124.8685807175056 L907.121339074559,142.02538204167496" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
+		</g>
 		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
 			<path d="M878.9372801449941,135.01116443042412 L879.1076518713992,152.27991596570678" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
 		</g>
@@ -1417,8 +1421,12 @@
 		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
 			<path d="M879.1076518713991,135.01116443042412 C879.1076518713991,135.01116443042412 857.1813904042232,133.22299137798407 857.1813904042232,133.22299137798407" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
 		</g>
-		
-		
+		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
+			<path d="M907.121339074559,124.86858071750561 L885.566517343787,122.7333344566423" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
+		</g>
+		<g transform="matrix(1,0,0,1,878.497038402,751.05177853)">
+			<path d="M938.0983752619672,113.67260703934282 L916.5563971083932,111.28109725310684" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#000000"/>
+		</g>
 	</g>
 <g>
 		<g transform="matrix(1,0,0,1,1559.882318168,69.173603537)">

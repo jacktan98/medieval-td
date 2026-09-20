@@ -679,10 +679,10 @@ export const GAIN = {
   cannon_shot: 2.2,
   // THE BOMB, AND IT IS THE LOUDEST THING IN THE BATTLE ON PURPOSE.
   //
-  // 1 -> 2.2 -> 3.3 over two rounds of the owner asking for louder, and the last
-  // number is not a third guess: it is the most this clip can carry and still
-  // leave the mixer its own headroom. The working is below, because the next
-  // person to be asked for louder needs to know there is very little left.
+  // 1 -> 2.2 -> 3.3 -> 4.0 over three rounds of the owner asking for louder, and
+  // the last one is his arithmetic rather than mine: "make the bomb sound another
+  // 20% louder". The working is below, because what is left after it is very
+  // little and the next person asked for louder needs to know that.
   //
   // A TRIM IS A MULTIPLIER ON TARGET_LOUD AND NOTHING ELSE. The leveller brings
   // every clip to that one loudness by measurement, so what comes out is
@@ -693,18 +693,25 @@ export const GAIN = {
   // every three seconds and a bomb taking a squad off the board are not the same
   // size of event.
   //
-  // WHAT STOPS IT AT 3.3 IS THREE OF THEM AT ONCE. Category B has no gate: a wave
-  // can send several Bomb Thugs, they reach a line together, and nothing stops
-  // three bursts landing on the same frame. Each one reaches peak x gain x
-  // BG_LEVEL x MASTER = 0.095 x trim at the output, so three of them sum to
-  // 0.286 x trim, and PEAK_OUT — the 0.95 this file already keeps back for
-  // exactly this kind of sum — is reached at 3.32. Rounded down.
+  // 3.3 WAS WHERE THREE AT ONCE STILL FITTED, and 4.0 is past it. That is the cost
+  // of this round and it is worth writing down rather than discovering.
   //
-  // THE OTHER CEILING IS 4.49, and it is worth knowing which one bites first.
-  // Past that the per-clip peak clamp in analyse() takes over and the trim stops
-  // doing anything at all, so 4.49 is the loudest this file can be played on this
-  // bus by any number typed here. The headroom rule above is the tighter of the
-  // two and it is the one that should hold.
+  // Category B has no gate: a wave can send several Bomb Thugs, they reach a line
+  // together, and nothing stops three bursts landing on the same frame. Each one
+  // reaches peak x gain x BG_LEVEL x MASTER = 0.095 x trim at the output, so two of
+  // them sum to 0.76 and three to 1.14 — and PEAK_OUT, the 0.95 this file keeps
+  // back for exactly this kind of sum, sits between them. Two bombs on one frame
+  // have room; three clip.
+  //
+  // WHAT CLIPPING COSTS HERE, since it is now a thing that can happen: the summed
+  // samples square off for the few milliseconds the three attacks overlap. It is
+  // audible as a harder crack rather than as a fault, it needs all three peaks on
+  // the same sample to reach 1.14 at all, and the owner has asked three times for
+  // this sound to be bigger. Accepted, with the number written down.
+  //
+  // THE HARD CEILING IS 4.49. Past that the per-clip peak clamp in analyse() takes
+  // over and the trim stops doing anything at all, so that is the loudest this file
+  // can be played on this bus by any number typed here. 4.0 is 1.1dB short of it.
   //
   // SO A THIRD "LOUDER" IS NOT A NUMBER. It is one of: a different recording with
   // more room in it, moving the cue off the Category B bus, or raising BG_LEVEL —
@@ -717,7 +724,7 @@ export const GAIN = {
   // shipping 4.1dB below a rock landing on the same file. And it is why no trim
   // here can make the two tell apart by ear — that needs a different take, not a
   // different number.
-  bomb_sound: 3.3
+  bomb_sound: 4.0
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a

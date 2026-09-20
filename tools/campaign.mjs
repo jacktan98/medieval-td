@@ -984,24 +984,27 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // word, and the difference is the thing to keep straight. They rode the tail of
   // `levels` for the whole life of the campaign, moving down one each time a real
   // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
-  // campaign a player walks is the twelve drawn boards, and these three stay loaded.
+  // campaign a player walks is the drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
-  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m1,m2,m3',
-    'the game loads the twelve drawn boards, then the three testing ones',
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m1,m2,m3',
+    'the game loads the thirteen drawn boards, then the three testing ones',
     play.join(' -> '));
   // And the stages carry them in that same order, as far as the markers go — which
-  // is now ALL TWELVE, for the first time since the road was drawn.
+  // is now ALL THIRTEEN, the road having grown a marker in the same batch as the
+  // board behind it.
   const order = STAGES.map(s => (s.level === null ? '-' : levels[s.level].id));
   const filled = order.filter(id => id !== '-');
   ok(play.join(',').startsWith(filled.join(',')),
     'and the road carries them in that order',
     `${order.length} marker(s): ${order.join(' -> ')}`);
-  // THE ROAD IS FULL. Every marker on the world map has a board behind it, which has
-  // not been true since the map was drawn — stages 11 and 12 were medallions waiting
-  // for boards, and both have one now. The three testing maps stay where they are:
-  // loaded, editable from the dashboard, and unreachable from the map.
-  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14',
-    '  ending at the Castle, with the testing maps behind it and off the road',
+  // THE ROAD IS FULL, AND STAYED FULL. Every marker on the world map has a board
+  // behind it. The build before this one was the first time that was true; this one
+  // is the first time the map GREW without losing it — the owner drew a thirteenth
+  // medallion in Layer 1 and wrote Serene Peak Lake in the same batch, so the road
+  // never spent a day with a locked marker on the end of it. The three testing maps
+  // stay where they are: loaded, editable from the dashboard, off the map.
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15',
+    '  ending at Serene Peak, with the testing maps behind it and off the road',
     filled.join(' -> '));
 
   // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
@@ -1834,8 +1837,18 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     // it: a player meets the fork at the top of a family once the campaign is nearly
     // over, and an edit that opened two tier-4 rungs on an early board would be a
     // real change to the ladder rather than a tweak.
-    const t = tailOfCampaign(l => Array.isArray(l.allow) && families.some(f =>
-      f.tiers.filter(x => x.tier === 4 && l.allow.includes(x.name)).length > 1));
+    //
+    // ASKED THE WAY THE MENU ASKS IT, which is not the same as reading `allow`.
+    // Serene Peak has no `allow` and no `maxTier` at all, so it opens every rung of
+    // every family and most certainly opens both — and a predicate that began with
+    // `Array.isArray(l.allow)` said it did not, which put the board that opens the
+    // MOST outside a check about opening two. See `capped` in src/menu.js: a board
+    // with no cap lets the whole list through and `allow` is an exception to a cap
+    // rather than a list of what is buildable.
+    const opens = (l, rung) => !l.maxTier || rung.tier <= l.maxTier ||
+                               (l.allow || []).includes(rung.name);
+    const t = tailOfCampaign(l => families.some(f =>
+      f.tiers.filter(x => x.tier === 4 && opens(l, x)).length > 1));
     ok(t.ok, '  and the others that open two rungs of one family are the last boards',
       t.hit.map(l => l.id).join(', ') || 'none');
   }
@@ -2195,15 +2208,32 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
       (unused.length ? unused.map(id => enemyTypes[id].name).join(', ') : 'none'));
 
     const inPlay = road.filter(id => anywhere.has(id));
+
+    // AND THE SAME THING HAPPENED AGAIN, one creature later. The Bomb Thug is IN
+    // PLAY now — Serene Peak Lake sends it in five of its eight waves — and the
+    // Factory does not, because the Factory's table was written before the creature
+    // existed. "Every creature in play" went from true to false with nothing about
+    // this board changing, for the second build running.
+    //
+    // SO THE CLAIM MOVES TO WHERE IT IS LOAD-BEARING and what stays here is the part
+    // that cannot rot: whatever the Factory lacks is sent ONLY BY BOARDS AFTER IT.
+    // That still has teeth — putting the Bomb Thug into an earlier board's waves and
+    // not into the Factory's fails this line — and it stops being a claim about
+    // which creature was invented last.
+    //
+    // The whole-set claim now lives on the LAST board, in the stage 13 block below,
+    // which is where it belongs: the board at the end of the road is the one that
+    // has to show the player everything.
+    const road11 = onRoad();
+    const behind = new Set(road11.slice(0, road11.indexOf(fact) + 1)
+      .flatMap(l => l.waves.flatMap(w => w.groups.map(g => g.type))));
     const missing = inPlay.filter(id => !sent.has(id));
-    ok(!missing.length, '  and its table sends every creature in play',
+    ok(missing.every(id => !behind.has(id)),
+      '  and lacks nothing the campaign has already shown by then',
       `${sent.size} of ${inPlay.length}` +
-      (missing.length ? ` — missing ${missing.join(', ')}` : ''));
-    const t = tailOfCampaign(l =>
-      inPlay.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
-    ok(t.ok && t.hit.includes(fact),
-      '  and the boards that do are the last of the campaign',
-      t.hit.map(l => l.id).join(', ') || 'none');
+      (missing.length
+        ? ` — ${missing.map(id => enemyTypes[id].name).join(', ')}, first sent after it`
+        : ''));
   }
 
   ok(fact.plots.length === 9 && fact.startGold === 240 && fact.waves.length === 8,
@@ -2519,6 +2549,205 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
     ok(covered.every(f => f > 0.4),
       '  and cover more than two fifths of every one of the four roads',
       covered.map(f => (100 * f).toFixed(0) + '%').join(' / ') + `, reach ${m.ranged.range}px`);
+  }
+}
+
+console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it ---\n');
+
+// THE BOARD WITH NO CAP, and the simplest road shape a three-road board can have.
+//
+// Two decisions of the owner's meet on it: "towers are no longer restricted and can
+// access all towers for this stage", and a Judgement Temple already standing. The
+// Temple is the one fourth rung no `allow` list in the campaign has ever named, so
+// lifting the cap and giving one away are the same decision said twice.
+{
+  const peak = levels.find(l => l.id === 'm15');
+  ok(!!peak, 'Serene Peak Lake is in the game', peak ? peak.name : 'missing');
+
+  const WANT13 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 2 bomb_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 4 bomb_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 6 bomb_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 8 bomb_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '14 blocker_inf + 8 shadow_inf + 10 bomb_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+  ];
+  const got13 = peak.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got13.join(' | ') === WANT13.join(' | '), 'the Lake sends exactly the eight it was given',
+    got13.map((g, i) => (g === WANT13[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT13[i]})`)).join(' '));
+
+  ok(peak.plots.length === 9 && peak.startGold === 240 && peak.waves.length === 8,
+    'and is nine plots, 240 gold and eight waves',
+    `${peak.plots.length} plots, ${peak.startGold} gold, ${peak.waves.length} waves`);
+
+  // --- AND IT IS THE BOARD THAT SENDS EVERYTHING ---------------------------------
+  //
+  // THE CLAIM THE FACTORY USED TO MAKE, moved to where it holds. It sat in the
+  // stage 11 block for two builds and broke twice without that board changing a
+  // line, because each new creature was in play the moment some board sent it and
+  // the Factory's table was already written. The board at the END of the road is the
+  // one that has to show the player everything, so that is where the whole-set
+  // question is asked — and the day a creature is added it fails HERE, which is the
+  // table that ought to gain it.
+  {
+    const road13 = Object.entries(enemyTypes).filter(([, d]) => !d.boss).map(([id]) => id);
+    const anywhere = new Set(levels.flatMap(l => l.waves.flatMap(w => w.groups.map(g => g.type))));
+    const inPlay = road13.filter(id => anywhere.has(id));
+    const sent = new Set(peak.waves.flatMap(w => w.groups.map(g => g.type)));
+    const missing = inPlay.filter(id => !sent.has(id));
+    ok(!missing.length, '  and its table sends every creature in play',
+      `${sent.size} of ${inPlay.length}` +
+      (missing.length ? ` — missing ${missing.map(id => enemyTypes[id].name).join(', ')}` : ''));
+    // AND THE BOARDS THAT DO ARE THE LAST OF THE CAMPAIGN, which is the shape every
+    // other claim of this kind here takes: a player meets the full roster at the end
+    // of the road rather than somewhere in the middle of it.
+    const t = tailOfCampaign(l =>
+      inPlay.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
+    ok(t.ok && t.hit.includes(peak), '  and the boards that do are the last of the campaign',
+      t.hit.map(l => l.id).join(', ') || 'none');
+  }
+
+  // --- nothing held back ---------------------------------------------------------
+  //
+  // NO CAP AND NO LIST, which is not the same as a list of everything and is why it
+  // is asked as an absence. `capped` in src/menu.js lets the whole ladder through
+  // when a board has no `maxTier`; `allow` is an exception TO a cap, so a board with
+  // neither says more than any list could.
+  ok(peak.maxTier === undefined && peak.allow === undefined,
+    'nothing on it is held back — no cap and no named rungs',
+    `maxTier ${peak.maxTier}, allow ${peak.allow}`);
+  {
+    // AND IT IS THE ONLY BOARD ON THE ROAD THAT SAYS SO. Every other one caps, which
+    // is what makes this a decision rather than an omission somebody forgot to fill
+    // in — and an edit that quietly uncapped an earlier board would fail here.
+    const free = onRoad().filter(l => l.maxTier === undefined);
+    ok(free.length === 1 && free[0] === peak, '  and the only board on the road that does',
+      free.map(l => l.name).join(', ') || 'none');
+
+    // THE RUNG NO OTHER BOARD OPENS, measured off the ladders rather than named.
+    // Eight fourth rungs exist; seven of them are on some board's `allow` list and
+    // the Judgement Temple is on none, so this is the one board in the campaign
+    // where a player can build one.
+    const top = families.flatMap(f => f.tiers.filter(t => t.tier === 4));
+    const never = top.filter(t => !onRoad().some(l => (l.allow || []).includes(t.name)));
+    ok(never.length === 1 && never[0].name === 'Judgement Temple',
+      '  and the one rung no other board opens is the Judgement Temple',
+      `${never.map(t => t.name).join(', ') || 'none'}, of ${top.length} fourth rungs`);
+  }
+
+  // --- three in, three out, one to one -------------------------------------------
+  //
+  // THE SIMPLEST SHAPE A THREE-ROAD BOARD CAN HAVE, and the first time the game has
+  // used it. Stage 4 merges, stage 9 shares a door, stage 11 branches at both ends,
+  // stage 12 pairs across a matrix. Here each mouth leads to its own door and nothing
+  // in between decides anything — which is exactly why the owner could say "exiting
+  // should have the same percentage" in one line and be right by construction.
+  ok(peak.routes.length === 3, 'three roads run across it', `${peak.routes.length} routes`);
+  {
+    const head = r => r.pts[0];
+    const tail = r => r.pts[r.pts.length - 1];
+    const same = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < 60;
+    const apart = ps => ps.every((p, i) => ps.every((q, j) => i === j || !same(p, q)));
+
+    ok(apart(peak.routes.map(head)), '  coming in at three mouths of their own',
+      peak.routes.map(r => `(${Math.round(head(r).x)}, ${Math.round(head(r).y)})`).join(' '));
+    ok(apart(peak.routes.map(tail)), '  and leaving by three doors of their own',
+      peak.routes.map(r => `(${Math.round(tail(r).x)}, ${Math.round(tail(r).y)})`).join(' '));
+
+    // AND THEY CROSS. The owner's pairing — "bottom left road to right road, bottom
+    // middle to top right, bottom right to top" — means the roads change places on
+    // the way across, which is what the junction in the middle is for. Read off the
+    // geometry: the leftmost mouth leaves by the LOWEST door and the rightmost mouth
+    // by the HIGHEST, so the order at the far end is the reverse of the near one.
+    const byMouth = [...peak.routes].sort((a, b) => head(a).x - head(b).x);
+    const doors = byMouth.map(r => tail(r).y);
+    ok(doors[0] > doors[1] && doors[1] > doors[2],
+      '  and they cross: the leftmost mouth takes the lowest door and the rightmost the top',
+      doors.map(y => `y ${Math.round(y)}`).join(' -> '));
+
+    // THE SPREAD, which is this board's own shape rather than an accident. 1204 down
+    // to 751 is the widest any board has had, and it is why the deep plots on the
+    // right side are worth more than their distance from a door suggests.
+    const len = peak.routes.map(r => Math.round(r.total));
+    ok(Math.max(...len) - Math.min(...len) > 400,
+      '  and the longest is half as long again as the shortest',
+      len.join(' / ') + 'px');
+  }
+
+  // 30 / 30 / 40, MEASURED THROUGH THE REAL SPAWNER — and the one board where the
+  // entry shares and the exit shares CANNOT disagree, because there is no fork and no
+  // merge anywhere for them to disagree across. Both are asked all the same: the
+  // owner gave the numbers from one end and checked them at the other.
+  {
+    useLevel(levels.indexOf(peak));
+    const st = { enemies: [] };
+    const seen = [0, 0, 0];
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      st.enemies.length = 0;
+      spawn(st, 'light_inf');
+      seen[st.enemies[0].route]++;
+    }
+    // THE MOUTHS, in the owner's own order: "30% of enemies for bottom left road,
+    // 30% for bottom middle road, 40% for bottom right road." Sorted left to right
+    // off the artwork rather than trusted to be the order of the routes array.
+    const order = peak.routes
+      .map((r, i) => [r.pts[0].x, i])
+      .sort((a, b) => a[0] - b[0])
+      .map(([, i]) => i);
+    const atMouth = order.map(i => seen[i] / N);
+    const want = [0.3, 0.3, 0.4];
+    ok(want.every((w, i) => Math.abs(atMouth[i] - w) < 0.01),
+      '  and the wave splits 30/30/40 in at the three mouths, over 4000 spawns',
+      atMouth.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+
+    // AND THE DOORS, counted where the walk ENDS rather than restated. It is the
+    // same three numbers and it is not the same measurement: the shares are tallied
+    // by which door each spawn's road runs to, so an edit that re-paired the mouths
+    // and the doors would move these and leave the line above alone.
+    //
+    // THE OWNER ASKED FOR IT — "exiting should have the same percentage" — and on
+    // this board it is true by construction, one road being one of each. That is
+    // worth pinning precisely because it is free today: the day a road is forked or
+    // merged here, this is what says the exit side no longer follows.
+    const doorOf = i => peak.routes[i].pts[peak.routes[i].pts.length - 1];
+    const byDoor = [...peak.routes.keys()]
+      .sort((a, b) => doorOf(b).y - doorOf(a).y)      // lowest door first
+      .map(i => seen[i] / N);
+    ok(want.every((w, i) => Math.abs(byDoor[i] - w) < 0.01),
+      '  and 30/30/40 out at the three doors, counted where each road ends',
+      byDoor.map(f => (100 * f).toFixed(1) + '%').join(' / '));
+  }
+
+  // --- the temple that is already standing ---------------------------------------
+  {
+    ok(Array.isArray(peak.prebuilt) && peak.prebuilt.length === 1,
+      'one tower is already standing on it', `${(peak.prebuilt || []).length} prebuilt`);
+    const pre = peak.prebuilt[0];
+    ok(pre.family === 'monastery' && pre.name === 'Judgement Temple',
+      '  and it is a Judgement Temple', `${pre.family} "${pre.name}"`);
+
+    // THE MOST TOP LEFT PLOT MARKER, measured off the artwork's own plots rather
+    // than trusted. "Top left" is what the owner asked for and an index is what the
+    // file holds, so something has to check the two still mean the same thing.
+    const corner = p => Math.hypot(p.x, p.y);
+    const byCorner = [...peak.plots].sort((a, b) => corner(a) - corner(b));
+    const spot = peak.plots[pre.plot];
+    ok(spot === byCorner[0], '  standing on the plot nearest the top left corner',
+      `(${spot.x}, ${spot.y}); next nearest (${byCorner[1].x}, ${byCorner[1].y})`);
+    ok(corner(byCorner[1]) - corner(byCorner[0]) >= 60,
+      '  by a margin no small redraw could close',
+      `${Math.round(corner(byCorner[0]))}px from the corner against ${Math.round(corner(byCorner[1]))}`);
+
+    // AND IT IS AN ORDINARY TOWER. The owner's other line about it — "players can
+    // sell or own abilities for this tower" — is the default and stays the default
+    // only for as long as nothing marks it otherwise. A prebuilt with no `fixed` or
+    // `keep` flag is sold and upgraded like any other.
+    ok(!pre.fixed && !pre.keep && pre.tier === undefined,
+      '  and it is an ordinary tower, sellable and able to buy abilities',
+      Object.keys(pre).join(', '));
   }
 }
 

@@ -163,16 +163,23 @@ const boxTop = (plot, def) => plot.y - def.groundFrac[1] * def.h;
 const marks = (fam, def) => tierMarks({ fam, def });
 const lift = (fam, def) =>
   Math.max(marks(fam, def) ? STAR_LIFT + STAR_R : 0, ringLift(def));
-// The badge is asked for its own top rather than for a lift, because it is the
-// one piece of this stack that STOPS: on the highest plots it rests on the roof
-// instead of going off the board. See badgeTop in render.js.
+// THE BADGE IS NO LONGER PART OF THIS, and taking it out is the point rather than
+// a simplification.
 //
-// And it is measured from the CROWN — the top of the whole drawing, crew
-// included — rather than from the building, because that is where the renderer
-// hangs it. On a Ballista Turret the two are 30px apart.
-const inkTop = (plot, fam, def) =>
-  Math.min(boxTop(plot, def) - lift(fam, def),
-           badgeTop(crownTop({ plot, fam, def, x: plot.x, y: plot.y })));
+// It used to be, on the reasoning that a badge is ink over a plot like the tier
+// stars are, and it belonged here while the badge had a FLOOR: it stopped before
+// the button row, so asking a plot to keep it on the board was asking for something
+// achievable. The owner has removed that floor — "do not move them down, just
+// assume the icons are not blocked and put it on top of the tower like normal" — so
+// a badge over a high plot is now expected to be clipped, and a plot that fails
+// because of one is being asked to move a marker for a thing that is working as
+// intended.
+//
+// What this measures now is the BUILDING and its crew: the box, the tier stars and
+// the muster ring, which are the things a plot really does have to keep on the
+// board and out from under a button. The badge is measured separately and printed
+// as a note further down.
+const inkTop = (plot, fam, def) => boxTop(plot, def) - lift(fam, def);
 
 let bad = 0, noted = 0;
 
@@ -288,13 +295,21 @@ for (let i = 0; i < lv.plots.length; i++) {
 // re-export which moves a machine or a man shows up as a number here, and it
 // fails if the two tier 4s that visibly carry someone stop clearing their stone.
 
-// --- AND NO BADGE MAY BE DRAWN INSIDE THE BUTTON ROW ----------------------
+// --- WHERE THE HIGHEST BADGE IN THE GAME IS DRAWN -------------------------
 //
-// The plot table above would catch this as a fault, but only on a plot high
-// enough to reach the plates AND under one — and the whole reason this failed for
-// a release is that it takes a High Altar, a SECOND altar to buy the aura,
-// and one of two plots in the game to see it. So the floor is checked directly,
-// on every plot, against the row it is meant to clear.
+// A REPORT NOW, NOT A CHECK, and the difference is a decision the owner made:
+// "if a tower is built on the top of the stage map and the icons are blocked by
+// the top dashboard, do not move them down. Just assume the icons are not blocked
+// and put it on top of the tower like normal."
+//
+// This used to fail when a badge reached the button row, and the floor in
+// render.js used to stop it reaching. Both are gone. A badge hangs a fixed 10px
+// over its own roof wherever that roof is, which is worth more than being whole on
+// the handful of plots high enough to be a problem — see the note on BADGE_GAP.
+//
+// IT IS STILL MEASURED AND STILL PRINTED, because the number is the thing somebody
+// will want when they next look at this: how far into the HUD the worst plot in the
+// campaign actually reaches, and which plot it is.
 {
   const row = Math.max(...Object.values(HUD_BTN).map(b => b.y + b.h));
   let low = Infinity, where = '';
@@ -309,14 +324,13 @@ for (let i = 0; i < lv.plots.length; i++) {
       }
     }
   }
-  if (low < row) {
-    console.log(`\n  A badge is drawn at y=${low.toFixed(0)}, inside the button row ` +
-                `(which ends at ${row}) — ${where}`);
-    bad++;
-  } else {
-    console.log(`\n  The lowest a badge is ever hung is y=${low.toFixed(0)}, clear of the ` +
-                `button row's ${row} — ${where}`);
-  }
+  console.log(low < row
+    ? `\n  note  the highest badge in the campaign is drawn at y=${low.toFixed(0)}, ` +
+      `${(row - low).toFixed(0)}px into the button row (which ends at ${row}) and ` +
+      `${low < 0 ? `${(-low).toFixed(0)}px off the top of the canvas` : 'on the canvas'} — ${where}. ` +
+      `Deliberate: a badge sits over its own roof wherever that roof is.`
+    : `\n  The lowest a badge is ever hung is y=${low.toFixed(0)}, clear of the ` +
+      `button row's ${row} — ${where}`);
 }
 
 console.log('\nWhat stands above the stone\n');

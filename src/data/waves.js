@@ -2820,6 +2820,63 @@ export const stage12Waves = [
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
+// STAGE 13: Serene Peak Lake, and the first shipped table that sends a Bomb Thug.
+//
+// He has been in the game for two boards without a wave to walk in — tools/campaign
+// printed "built, and no board sends one yet" every run — and this is where he
+// arrives. 2, 4, 6, 8, 10 across waves 4 to 8, which is the steepest ramp any
+// creature has: the Shadow Thug's is 1,2,4,6,8 and the Giant's 1,2,2,4,6.
+//
+// WHAT THAT DOES TO THE BOARD is the point of him rather than a side effect. Ten
+// Bomb Thugs in the last wave is 1,200 damage looking for a squad, delivered 120 at
+// a time to everybody inside 100px — so a barracks line that holds the other
+// fourteen blockers is a barracks line that is deleted five times over. He is the
+// creature that makes a wall stop being the answer, and he lands on the board that
+// finally lets the player build every tower in the game.
+//
+// EVERYTHING ELSE IS THE CASTLE'S TABLE, wave for wave, which is itself the
+// Factory's. Three boards now ship the same eight waves with one creature threaded
+// through the last five of this one — so the difference between the end of the
+// campaign's three hardest boards is the roads under them and, here, the bombs.
+//
+// They arrive at 1.9s and then quicken to 1.4, which is slower than the blockers
+// beside them on purpose: a column of bombs is a column of separate problems, and
+// two arriving together is two blasts on one line rather than one.
+//
+// Every gap is a multiple of 0.1, for the reason the Factory's note gives: the admin
+// panel's rate stepper rounds to a tenth and a shipped number it cannot return to is
+// one the owner can never put back.
+export const stage13Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'bomb_inf', count: 2, gap: 1.9 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'bomb_inf', count: 4, gap: 1.8 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'bomb_inf', count: 6, gap: 1.7 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'bomb_inf', count: 8, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

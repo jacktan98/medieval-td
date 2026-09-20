@@ -618,17 +618,26 @@ check('the three booms are trimmed up, and the bomb is the loudest',
   GAIN.bomb_sound > GAIN.cannon_shot && GAIN.cannon_shot > GAIN.rock_hit_ground &&
   GAIN.rock_hit_ground > 1, true);
 
-// AND THE LOUDEST OF THEM STILL LEAVES ROOM FOR THREE AT ONCE. Category B has no
-// gate, so nothing stops three Bomb Thugs bursting on the same frame — see the
-// note beside `bomb_sound` in audio.js for why that, rather than taste, is what
-// fixes the number.
+// AND TWO OF THEM AT ONCE STILL CLEAR THE MIXER'S HEADROOM, which is the claim
+// after the third round of "louder" and is weaker than the one before it.
+//
+// Category B has no gate, so nothing stops several Bomb Thugs bursting on the same
+// frame. At 3.3 three of them fitted inside PEAK_OUT; at the owner's 4.0 they do
+// not — two sum to 0.76 and three to 1.14 — so what is pinned now is the pair. See
+// the note beside `bomb_sound` in audio.js, which says what the third one costs and
+// that it was accepted rather than missed.
 //
 // The arithmetic is reproduced here rather than imported, on the rule the top of
 // this file already keeps for MEMORY_S: a check that reads the number it is
-// checking cannot catch the number changing. 0.0952 is this clip's own output
-// peak per unit of trim, measured off the file; PEAK_OUT is 0.95.
-check('and three bombs on one frame still clear the mixer\'s headroom',
-  +(3 * 0.0952 * GAIN.bomb_sound).toFixed(2) <= 0.95, true);
+// checking cannot catch the number changing. 0.0952 is this clip's own output peak
+// per unit of trim, measured off the file; PEAK_OUT is 0.95.
+check('and two bombs on one frame still clear the mixer\'s headroom',
+  +(2 * 0.0952 * GAIN.bomb_sound).toFixed(2) <= 0.95, true);
+// AND THE TRIM STILL DOES SOMETHING. Past 4.49 the per-clip peak clamp takes over
+// and a bigger number here changes nothing at all, which would be a setting that
+// looks like a lever and is not.
+check('  and the trim is still under the clamp that would ignore it',
+  GAIN.bomb_sound < 4.49, true);
 
 // A NOTE RATHER THAN A CHECK, because what it reports is not wrong — it is just
 // worth knowing, and it is the reason the trim above had to be set at all.

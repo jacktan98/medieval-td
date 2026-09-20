@@ -25,6 +25,7 @@ import { level11 } from './data/level11.js';
 import { level12 } from './data/level12.js';
 import { level13 } from './data/level13.js';
 import { level14 } from './data/level14.js';
+import { level15 } from './data/level15.js';
 import { prepare } from './route.js';
 
 // IN THE ORDER THEY ARE PLAYED, which is no longer the order the files are
@@ -56,7 +57,7 @@ import { prepare } from './route.js';
 // them at — see the note beside SHIPPED in src/admin.js, which is built from THIS
 // array, so a board taken out of it stops being editable at all.
 export const levels = [level00, level04, level05, level06, level07, level08, level09, level10,
-                       level11, level12, level13, level14, level01, level02, level03];
+                       level11, level12, level13, level14, level15, level01, level02, level03];
 
 // Measure every route once, at load. `routes` holds prepared routes from here
 // on — the raw polyline is `route.pts` — so nothing has to remember whether it

@@ -286,18 +286,113 @@ if (level.garrison && level.garrison.length) {
     const b = bounds(g.subPaths.flat());
     return Math.hypot((b.x0 + b.x1) / 2 * MAP_SCALE - at.x, b.y1 * MAP_SCALE - at.y);
   };
+  // A PIECE BELONGS TO THE DRAWING IT IS PART OF, and that is what decides whether
+  // it belongs to the man.
+  //
+  // THE BUG THIS FIXES SHIPPED. Stage 12's lower musketeer stands against a stone
+  // barricade, and the artist draws that barricade's block divisions as STROKED
+  // paths in their own little groups. Four of them fell inside his 44x38 window,
+  // were cut out of the base with him, and the board went out with a wall that had
+  // lost its lines. The owner found it by eye: "why is the barrier near the
+  // musketeer unit lost some of its lines?" Stage 5 had the same wall and the same
+  // four lines missing, unreported, since the day it was drawn.
+  //
+  // The window alone could not catch it. Its note says the barricade is kept out
+  // because "at 73px across it does not fit through" — true of the barricade as a
+  // shape and false of the lines drawn on it: 0.0 x 8.5, 0.0 x 8.6, 10.8 x 1.1 and
+  // 10.8 x 1.2. Anything that thin fits any window.
+  //
+  // "IS IT FILLED" WAS THE FIRST FIX AND IT WAS WRONG. A man is areas of colour and
+  // a rule line is a stroke with nothing inside it, which sorts these four
+  // correctly and also strands three pieces of each Winchester crossbowman: his
+  // bowstring and prod are strokes too, and cutting the figure while leaving them
+  // put two black lines in mid-air over the grass. Measured, not reasoned — the
+  // board was rendered and they were there.
+  //
+  // SO THE QUESTION IS WHOSE DRAWING IT IS IN. Every piece has a smallest enclosing
+  // group, and that group is the object it is part of: a wall line's is the 73x46
+  // barricade, and a bowstring's is the 24x12 crossbow. If that object is too big
+  // to be a figure, the piece is scenery however small it is itself.
+  //
+  // ONLY THE IMMEDIATE PARENT IS ASKED, and that is enough for the whole chain: a
+  // parent that fits is itself a candidate and gets the same test, and the nesting
+  // rule below keeps the outermost of the two. So "every ancestor fits" falls out
+  // of one comparison.
+  //
+  // A PIECE AT THE TOP OF THE LAYER HAS NO SUCH PARENT — its enclosing group is the
+  // layer wrapper, which `wrapAt` already excludes — and is judged by the window
+  // alone, exactly as before. That is how each figure's own outermost group comes
+  // through.
+  // A group no bigger than the window itself could be a man. Anything wider or
+  // taller is an object he is standing in.
+  const figureSized = g => {
+    const b = bounds(g.subPaths.flat());
+    return (b.x1 - b.x0) * MAP_SCALE <= GARRISON_W * 2 &&
+           (b.y1 - b.y0) * MAP_SCALE <= GARRISON_UP + GARRISON_DOWN;
+  };
+  // And a stroke with nothing inside it is a line drawn ON something.
+  const filled = g => /fill="(?!none")/.test(svg.slice(g.start, g.end));
+  const inside = (o, g) => o !== g && o.start <= g.start && o.end >= g.end &&
+                           !(o.start === g.start && o.end === g.end);
+  const parentOf = g => {
+    let best = null;
+    for (const o of nested2) {
+      if (!inside(o, g)) continue;
+      if (!best || (o.end - o.start) < (best.end - best.start)) best = o;
+    }
+    return best;
+  };
+
+  // AND THE OTHER HALF OF THE SAME RULE: A DRAWING IS CUT WHOLE OR NOT AT ALL.
+  //
+  // THE SECOND HALF OF THE BUG was on the same wall and looked nothing like the
+  // first. Stage 5's right-hand crossbowman wears a quiver, and the artist drew it
+  // as one group: a lid, six bolts and the two brown faces of the box. The window
+  // is 44px wide and the quiver straddles its right edge, so ONE brown face fell
+  // inside and the other did not — and the board went out with half a quiver cut
+  // off the wall and the other half still painted on it.
+  //
+  // IT IS THE FIRST HALF READ THE OTHER WAY. There, a piece inside a drawing too
+  // big to be a man belongs to that drawing and stays; here, a piece inside a
+  // drawing small enough to be a man belongs to that drawing and goes WITH IT. So
+  // a claim is promoted to the outermost enclosing group that could still be a
+  // figure, and what the window decides is which DRAWING is the man's, never which
+  // part of one.
+  //
+  // THE PROMOTED GROUP NEED NOT FIT THE WINDOW, which is the whole point — the
+  // quiver does not. It is bounded all the same: it climbs only while the next
+  // group up is figure-sized, so the most it can ever take is one window's worth.
+  const unitOf = g => {
+    for (let u = g; ;) {
+      const p = parentOf(u);
+      if (!p || !figureSized(p)) return u;
+      u = p;
+    }
+  };
+
+  // WHAT THE RULES ABOVE HELD BACK, printed rather than silent. A line withheld here
+  // is a line that STAYS IN THE BASE where it belongs, and seeing the count is what
+  // makes the next redraw's answer readable — the same reason the plot list below
+  // says which shapes it did not box.
+  const withheld = new Set();
+
   const owner = new Map();
   for (const g of nested2) {
     const b = bounds(g.subPaths.flat());
     const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
     let best = -1, least = Infinity;
+    const par = parentOf(g);
     level.garrison.forEach((at, k) => {
       if (x0 < at.x - GARRISON_W || x1 > at.x + GARRISON_W ||
           y0 < at.y - GARRISON_UP || y1 > at.y + GARRISON_DOWN) return;
+      // AND A BARE LINE DRAWN INSIDE SOMETHING TOO BIG TO BE A MAN is that thing's
+      // line and not his — see the note above.
+      if (par && !figureSized(par)) { withheld.add(g); return; }
       const d = near(g, at);
       if (d < least) { least = d; best = k; }
     });
-    if (best >= 0) owner.set(g, best);
+    // The claim lands on the whole drawing the piece is part of, not on the piece.
+    if (best >= 0) owner.set(unitOf(g), best);
   }
 
   // AND NO PIECE MAY BE CUT INSIDE ANOTHER PIECE. Now that nesting is allowed, a
@@ -313,6 +408,11 @@ if (level.garrison && level.garrison.length) {
   const claimed = nested2.filter(g => owner.has(g));
   for (const g of claimed) {
     if (claimed.some(o => o !== g && o.start <= g.start && o.end >= g.end)) owner.delete(g);
+  }
+
+  if (withheld.size) {
+    console.log(`  ${withheld.size} line(s) left in the base: each is drawn inside something ` +
+      `too big to be a figure, so it belongs to that rather than to the man standing on it`);
   }
 
   for (const [i, at] of level.garrison.entries()) {

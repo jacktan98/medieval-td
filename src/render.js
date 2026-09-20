@@ -643,29 +643,31 @@ function statusMarks(ctx, v, x, barTop) {
 // tower it is over, not to a line across the board.
 const BADGE_GAP = 10;
 
-// AND IT NEVER LEAVES THE BOARD, OR GOES UNDER THE HUD. A High Altar is the
-// tallest building in the game, and on the highest plots of all three maps its
-// roof is within 30px of the top edge — badge, gap and all would be off the
-// canvas, which draws a badge sliced in half or not at all. On those plots the
-// badge stops here and rests on the roof instead, because a badge touching a roof
-// is a badge you can read.
+// AND IT SITS THERE WHEREVER THAT IS, including over the HUD, at the owner's word:
+// "if a tower is built on the top of the stage map and the icons are blocked by the
+// top dashboard, do not move them down. Just assume the icons are not blocked and
+// put it on top of the tower like normal."
 //
-// THE FLOOR IS THE BUTTON ROW, not the canvas edge, and it was the canvas edge
-// for one release too long. It stopped a badge falling off the top and did
-// nothing about the thing directly under it: the speed and Next wave plates are
-// opaque and are drawn after every tower, so a badge clamped to y=2 over map 1's
-// plot 6 came out as a sword with its hilt cut off by a button. That is worse
-// than a badge off the board, because it looks deliberate.
+// THERE WAS A FLOOR HERE AND IT IS GONE. A High Altar is the tallest building in
+// the game, and on the highest plots its roof is within 30px of the top edge — so
+// badge, gap and all reach past the button row and off the canvas. The badge used
+// to stop at the bottom of that row and rest lower on the roof, which kept it
+// whole and readable and made it sit somewhere other than where every other badge
+// in the game sits.
 //
-// Taken from HUD_BTN so a plate that moves or is redrawn taller takes the badges
-// with it. It is a function rather than a constant only because HUD_BTN is
-// declared further down this file.
+// THE OWNER PREFERS THE CONSISTENT PLACE TO THE READABLE ONE, and on a second look
+// he is right about which is the real cost. A badge that is always the same
+// distance above its own roof is a thing the eye finds without reading; a badge
+// that is sometimes 10px above the roof and sometimes 41px is a thing you have to
+// look for, on the one plot where you are least likely to. Being partly behind a
+// plate on that plot is a smaller price than that, and it is a price only a handful
+// of plots on the whole campaign ever pay.
 //
-// It costs nothing anywhere else. Every plot whose tower is not within about 30px
-// of the top has a badge far below this line already, and the handful that are
-// hold their badge 31px lower — still on the roof, still clear of the gold and
-// wave readouts, which the old floor sat squarely inside.
-const badgeFloor = () => HUD_BTN.pause.y + HUD_BTN.pause.h;
+// WHAT IT COSTS, exactly, so nobody rediscovers it as a bug: on a plot whose roof
+// tops out within about 40px of the edge, the badge is drawn under the pause and
+// speed plates — which are opaque and drawn after every tower — and above about
+// 20px it is sliced by the canvas edge. tools/hud-clear.mjs knows, and says so
+// rather than failing.
 
 // Hangs the badge above the point given rather than centring it on it.
 const ABOVE = [0.5, 1];
@@ -699,7 +701,7 @@ const MULT_EDGE = '#241E17';
 // up under one.
 export function badgeTop(crown) {
   const h = Math.max(uiSize('badge_wrath').h, uiSize('badge_fortitude').h);
-  return Math.max(crown - BADGE_GAP - h, badgeFloor());
+  return crown - BADGE_GAP - h;
 }
 
 function drawBadges(ctx, state) {
@@ -744,8 +746,11 @@ function drawBadges(ctx, state) {
     // The bottom edge of the row, which is where the badges hang from — and the
     // tallest of them is what the floor is measured against, so a row of two
     // different heights still sits on the board whichever is taller.
+    // The bottom edge of the row. `tall` is no longer read for a floor — see the
+    // note on BADGE_GAP — and is kept because the layout below still hangs every
+    // badge from one line whatever their heights.
     const tall = Math.max(...parts.map(p => p.h));
-    const y = Math.max(crownTop(t) - BADGE_GAP, badgeFloor() + tall);
+    const y = crownTop(t) - BADGE_GAP;
 
     let x = t.x - total / 2;
     for (const p of parts) {

@@ -102,7 +102,7 @@ const MARKER_FILL = '#d30000';
 // HOW MANY STAGES THE ROAD HAS, which is a fact about the drawing and is stated here
 // so that adding one is a deliberate edit rather than a silent renumbering. Every
 // marker index in ORDER below moves when this changes.
-const STAGE_MARKERS = 12;
+const STAGE_MARKERS = 13;
 
 // How close a road line's end has to be to a marker centre to count as arriving
 // there: half the marker's drawn width plus slack. Every end in the current
@@ -464,8 +464,20 @@ for (const J of joined) console.log(`    ${String(J.from).padStart(2)} <-> ${J.t
 
 // THE OWNER'S ORDER, and the one thing in this file that is a decision rather
 // than a measurement. Stage 1 is the top-left marker; from there the road is
-// forced as far as marker 10, where it forks — east and up to the top-right
-// corner, or south-west into the desert.
+// forced as far as marker 8, where it forks — south-west into the desert, or
+// east and up through Ironforge to the top-right corner.
+//
+// THE MARKERS RENUMBERED WHEN LAYER 1 GAINED A THIRTEENTH, and that is why every
+// index in this list moved. The owner's note was one line — "Added 1 more stage in
+// Ironforge" — but a marker added anywhere in that drawing shifts the ones after it
+// in document order, so the names in ORDER are only as good as the run that printed
+// them. Read the edge list this tool prints above before editing this line; do not
+// carry an index over from a previous build.
+//
+// THE DESERT IS A LEAF NOW. Marker 1 is Sandshroud and its only edge is `8 <-> 1`:
+// the road goes in and comes back out the same way, so stage 9 is a dead end the
+// campaign visits and returns from. Ironforge is the through line — 8 to 10 to 12 to
+// 11 and on to 0 at the top right.
 //
 // SHUFFLE IT FREELY. Each stage draws the leg that leads into it from its
 // neighbour on the road, so reordering these cannot make a leg wrong; the only
@@ -487,14 +499,14 @@ for (const J of joined) console.log(`    ${String(J.from).padStart(2)} <-> ${J.t
 // are unreachable from the map for as long as stage 9 is empty. The tool prints
 // how many that is on every run — see the note by `blocked` below — so it is a
 // number somebody chose to accept rather than a surprise.
-const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
+const ORDER = [2, 3, 4, 6, 5, 7, 9, 8, 1, 10, 12, 11, 0];
 
-// WHICH MAP EACH STAGE PLAYS. Six are drawn; the rest are markers on a road with
-// nothing behind them yet and the game shows them locked.
+// WHICH MAP EACH STAGE PLAYS. All thirteen are drawn; a stage left out of this table
+// would be a marker on the road with nothing behind it, and the game would show it
+// locked.
 //
-// ELEVEN BOARDS AND TWELVE STAGES, so this table is the identity map for the first
-// eleven and the twelfth is absent — the desert marker at the end of ORDER, drawn on
-// the road and shown locked until a board exists for it.
+// THIRTEEN BOARDS AND THIRTEEN STAGES, so this table is the identity map the whole
+// way across. The paragraphs below are the record of the builds where it was not.
 //
 // It is the identity map because src/level.js already
 // lists the levels IN PLAY ORDER. That is the whole of "move the three testing maps
@@ -538,11 +550,16 @@ const ORDER = [4, 5, 6, 8, 7, 9, 11, 10, 3, 1, 2, 0];
 // behind it, nothing is locked for want of one, and the note above about what an
 // empty stage costs has nothing to describe this build.
 //
-// IT STAYS WRITTEN OUT ALL THE SAME. The map has twelve markers and the campaign has
-// twelve boards, which is a coincidence of today rather than a rule — the next board
-// drawn needs a thirteenth medallion before it can have a line here, and the day one
-// is finished for stage 14 before stage 13, this is the one place that can say so.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11 };
+// THE ROAD AND THE CAMPAIGN GREW TOGETHER THIS TIME. The owner drew the thirteenth
+// medallion in Layer 1 and wrote the thirteenth board — Serene Peak Lake — in the
+// same batch, so the map went from twelve full to thirteen full without spending a
+// build with a locked marker on it. That is the first time that has happened.
+//
+// IT STAYS WRITTEN OUT ALL THE SAME. Thirteen markers and thirteen boards is a
+// coincidence of today rather than a rule — the next board drawn needs a fourteenth
+// medallion before it can have a line here, and the day one is finished for stage 15
+// before stage 14, this is the one place that can say so.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from
