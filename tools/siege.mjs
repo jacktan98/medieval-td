@@ -779,7 +779,32 @@ for (const d of TURRETS) {
 {
   const SAMPLE = 4;
   const FLOOR = 0.10;
+
+  // AND ONE PLOT IS BELOW IT ON PURPOSE, at the owner's word: "plot 8 in Ironforge
+  // Town is fine."
+  //
+  // THE FLOOR IS NOT LOWERED, which is the whole point of writing this down. A
+  // tenth of the road is still the line every other plot in the game is held to —
+  // the next worst is m12's own plot 0 at 15% — and moving the number to 9% to make
+  // one board pass would have quietly taken the next four plots with it.
+  //
+  // WHAT THE OWNER IS ACCEPTING is a corner plot on a board where the road bends
+  // away from it: the catapult's dead ground costs it 2 points and the rest is
+  // simply distance. A player who builds siege there has made a poor choice on one
+  // plot of one board, which is a board being interesting rather than a board being
+  // broken, and it is his call to make.
+  //
+  // THE RECORDED NUMBER IS PART OF THE EXEMPTION. It covers this plot at about
+  // where it stands today and no further: a redraw that took it to 4% would fall
+  // through and say so, because what was looked at and accepted was 9% and not
+  // "whatever this plot happens to be".
+  const ACCEPTED = [
+    { id: 'm12', plot: 8, frac: 0.093, slack: 0.02 }
+  ];
+  const accepted = (id, i) => ACCEPTED.find(a => a.id === id && a.plot === i);
+
   let worst = null;
+  const drifted = [];
 
   console.log('\nRoad each plot still covers, tier 1 (dead ground in brackets)\n');
   for (const lv of levels) {
@@ -798,14 +823,26 @@ for (const d of TURRETS) {
         }
       }
       const frac = live / total;
-      if (!worst || frac < worst.frac) worst = { frac, id: lv.id, i };
-      return `${i}:${(frac * 100).toFixed(0)}%${dead ? `(-${(dead / total * 100).toFixed(0)})` : ''}`;
+      const let_ = accepted(lv.id, i);
+      if (let_ && Math.abs(frac - let_.frac) > let_.slack) drifted.push({ let_, frac });
+      if (!let_ && (!worst || frac < worst.frac)) worst = { frac, id: lv.id, i };
+      return `${i}:${(frac * 100).toFixed(0)}%${dead ? `(-${(dead / total * 100).toFixed(0)})` : ''}` +
+             (let_ ? '*' : '');
     });
     console.log(`  ${lv.id}  ${cells.join('  ')}`);
   }
 
   ok(worst.frac >= FLOOR, `every plot keeps at least ${FLOOR * 100}% of the road`,
-     `worst is ${worst.id} plot ${worst.i} at ${(worst.frac * 100).toFixed(0)}%`);
+     `worst is ${worst.id} plot ${worst.i} at ${(worst.frac * 100).toFixed(0)}%` +
+     (ACCEPTED.length ? `, leaving aside the ${ACCEPTED.length} marked *` : ''));
+
+  // AND THE ONE MARKED * IS STILL THE ONE THAT WAS LOOKED AT. See the note by
+  // ACCEPTED: the exemption is for a plot at a number, not for a plot.
+  ok(!drifted.length, '  and the plot below it is where the owner accepted it',
+     drifted.length
+       ? drifted.map(d => `${d.let_.id} plot ${d.let_.plot} was ` +
+           `${(d.let_.frac * 100).toFixed(0)}% and is now ${(d.frac * 100).toFixed(0)}%`).join('; ')
+       : ACCEPTED.map(a => `${a.id} plot ${a.plot} at ${(a.frac * 100).toFixed(0)}%`).join('; '));
 }
 
 console.log(bad ? `\n${bad} check(s) failed.` : '\nThe catapult behaves.');
