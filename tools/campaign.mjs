@@ -929,7 +929,12 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // would still differ by a pixel of antialiasing everywhere they touched.
   const fin = draw.slice(draw.indexOf('function finishFog'));
   const finBody = fin.slice(0, fin.indexOf('\n}\n') + 2);
-  const uses = (finBody.match(/drawImage\(lit, 0, 0\)/g) || []).length;
+  // THE SIZE IS OPTIONAL HERE AND THE SHAPE IS NOT. The sheets are built at the
+  // display's own density now — see HD_MAX in src/overview.js — so the lit sheet is
+  // bigger than the map it covers and every use of it names the size. What this
+  // line is about is that there is ONE of them used TWICE, so the pattern allows
+  // the size and still counts the uses.
+  const uses = (finBody.match(/drawImage\(lit, 0, 0(?:, 960, 540)?\)/g) || []).length;
   ok(uses === 2, 'and both are cut from one lit shape rather than two',
     `${uses} use(s) of the lit sheet`);
 
@@ -941,6 +946,35 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   ok(/boxBlurAlpha\(small\.data/.test(draw) && !/g\.filter = `blur/.test(draw),
     'and the lit edge is blurred here rather than by the browser',
     'boxBlurAlpha over the mask, no ctx.filter blur');
+
+  // AND THE SHEETS ARE BUILT AT THE DISPLAY'S OWN DENSITY, at "can you make the
+  // overview map more high definition a bit".
+  //
+  // THE MAP WAS THE ONE THING IN THE GAME DRAWN AT HALF RESOLUTION. Every board and
+  // every figure goes down through a context whose transform is the canvas backing
+  // scale, so an SVG drawn through it rasterises at the density of the glass. These
+  // three sheets were offscreen canvases sized 960x540 with no transform, and they
+  // cover the board edge to edge — the sun over everything reached and the fog over
+  // everything else — so every pixel of the world map the player ever saw came off a
+  // raster below the drawing's own resolution and was then blown up.
+  //
+  // WHAT IS CHECKED IS THAT EACH SHEET IS SIZED AND TRANSFORMED TOGETHER, because
+  // one without the other is the bug this could regress into: a sheet sized at hd
+  // with no transform draws the map into its top-left quarter, and a transform with
+  // no size crops it. Three sheets, three of each.
+  const sized = (draw.match(/\.(?:width|height) = (?:960|540) \* hd/g) || []).length;
+  const tf = (draw.match(/\.setTransform\(hd, 0, 0, hd, 0, 0\)/g) || []).length;
+  ok(sized === 6 && tf === 3,
+    'and the fog, the sun and the lit shape are built at the display\'s own density',
+    `${sized / 2} sheet(s) sized at hd, ${tf} transformed to match`);
+
+  // AND THE DENSITY IS PART OF WHAT THE CACHE IS KEYED ON. These sheets are rebuilt
+  // only when what is lit changes; a window dragged to a denser screen changes
+  // neither the stage nor the fraction, so without this the map would stay at the
+  // old resolution until the player happened to walk a leg.
+  ok(/const key = `\$\{unlocked\}:\$\{live\}:\$\{Math\.round\(frac \* 30\)\}:\$\{hd\}`/.test(draw),
+    '  and rebuilt when the screen they are built for changes',
+    'hd is part of the fog key');
 
   // THE SHEETS USED TO BREATHE and no longer do, at the owner's word. Both are still
   // drawn through one helper, which is what kept them from sliding apart when they

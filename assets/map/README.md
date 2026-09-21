@@ -1054,9 +1054,33 @@ of water reads as one substance. Cool hues also get a small push darker, because
 blue reads bright to a luminance formula and would otherwise float above the land
 it cuts through.
 
-`DESATURATE` and `WARMTH` in `tools/overview.mjs` are the two dials. Raising
-DESATURATE walks back towards the old full-sepia map; raising WARMTH walks there
-faster and takes the blues first.
+`DESATURATE` and `WARMTH` in `tools/overview.mjs` are the two dials, and
+`SATURATION_CEILING` is the cap that nothing may end up over. Raising DESATURATE
+walks back towards the old full-sepia map; WARMTH is **not** the opposite dial it
+looks like, because warming pulls each colour towards the brown ramp and for the
+browns on this map that ADDS chroma — measured across the palette, cutting WARMTH
+comes out less colourful on average, not more.
+
+**Measure it rather than nudging it.** The number worth watching is the mean
+saturation across the shades in `Overview_Map_sepia.svg`, along with how many of
+them land on the ceiling: a shade at the ceiling has the same saturation as every
+other shade at the ceiling, so a change that raises the mean by clamping three more
+colours together has made the map flatter, not richer. Today: mean 40, one shade on
+a ceiling of 72, against the 80 `tools/campaign.mjs` holds the whole palette to.
+
+### The map is drawn at the screen's own resolution
+
+The fog, the sun and the lit shape are offscreen sheets, and between them they
+cover the board edge to edge. They are built at the canvas backing scale — see
+`HD_MAX` in `src/overview.js` — so the drawing is rasterised at the density of the
+glass, the way every board and figure in the game already was. They were 960x540
+with no transform for a long time, which meant the world map was the one thing in
+the game the player only ever saw blown up from half resolution.
+
+A sheet is sized at `hd` **and** given `hd` as its transform, always together: one
+without the other draws the map into a quarter of the sheet or crops it. The paper
+grain stays at 960x540 on purpose — its specks are a designed size, and one speck
+per device pixel is a different sheet of paper rather than a sharper one.
 
 ### Adding a stage
 

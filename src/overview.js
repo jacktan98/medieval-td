@@ -768,6 +768,36 @@ const LIT_BLUR = 165;
 
 let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
 
+// HOW MANY REAL PIXELS A LOGICAL ONE IS WORTH ON THE SHEETS, which is the whole of
+// "can you make the map a bit more high definition".
+//
+// THE MAP WAS THE ONE THING IN THE GAME DRAWN AT 960x540 AND THEN BLOWN UP. The
+// board, the towers and every figure go down through a context whose transform is
+// the display's own backing scale — see fitToDisplay in src/main.js — so an SVG
+// drawn through it is rasterised at the density of the glass. These sheets were
+// not: they are offscreen canvases, they were sized 960x540 with no transform, and
+// what went onto them was a 960x540 raster of a 1920x1080 drawing. Then the finished
+// sheet was scaled up by two or more on the way to the screen.
+//
+// AND THE SHEETS ARE THE WHOLE MAP. The sun covers everything the player has
+// reached and the fog covers everything else, so between them they cover the board
+// edge to edge — the crisp copy underneath is never visible through either. Every
+// pixel of the world map the player has ever looked at came off a half-resolution
+// raster.
+//
+// So the sheets are built at the same scale the screen is, and every context gets
+// that as its transform, which is what lets the drawing below go on speaking in map
+// coordinates. Read off the live context rather than imported, because the answer
+// changes when a window moves between displays and the only thing that knows is the
+// transform the renderer is currently using.
+//
+// CAPPED, because this is three full-sheet canvases plus a readback. At 3 a 4K
+// phone would be asking for a 2880x1620 sheet rebuilt thirty times during a march.
+// Two is the step that matters — it is the difference between a raster below the
+// drawing's own resolution and one at it.
+const HD_MAX = 2;
+let hd = 1;
+
 // WHETHER THIS CANVAS CAN FILTER AT ALL, asked by drawing something and looking.
 //
 // THE OLD TEST WAS WRONG IN THE ONE CASE IT EXISTED FOR. It set ctx.filter and
@@ -902,9 +932,14 @@ function makeFog(unlocked, live, frac) {
   // One canvas, redrawn. A march rebuilds this thirty times and a fresh canvas
   // each time is thirty two-megabyte allocations to hand straight back.
   const c = fogSheet || (fogSheet = document.createElement('canvas'));
-  c.width = 960;
-  c.height = 540;
+  c.width = 960 * hd;
+  c.height = 540 * hd;
   const f = c.getContext('2d');
+  // IN MAP COORDINATES WHATEVER THE SHEET IS, so everything below goes on saying
+  // 960 and 540 and the density is settled in one place. Every fill and every
+  // drawImage here is transformed; the two getImageData passes are not, and both
+  // are on the quarter-size mask rather than on this sheet.
+  f.setTransform(hd, 0, 0, hd, 0, 0);
   f.clearRect(0, 0, 960, 540);
 
   // THE SAME PICTURE, DRAINED. The map, the paper and the names in the order
@@ -1016,9 +1051,10 @@ function makeFog(unlocked, live, frac) {
   g.putImageData(small, 0, 0);
 
   const lit = litSheet || (litSheet = document.createElement('canvas'));
-  lit.width = 960;
-  lit.height = 540;
+  lit.width = 960 * hd;
+  lit.height = 540 * hd;
   const lg = lit.getContext('2d');
+  lg.setTransform(hd, 0, 0, hd, 0, 0);
   lg.clearRect(0, 0, 960, 540);
   lg.imageSmoothingEnabled = true;
   lg.drawImage(mask, 0, 0, 960, 540);
@@ -1029,8 +1065,13 @@ function makeFog(unlocked, live, frac) {
 // The fog and the sun, from a drained sheet and a lit shape.
 function finishFog(f, lit) {
   // The fog is the drained picture with the lit shape taken out of it.
+  //
+  // SIZED RATHER THAN PLACED, here and everywhere else the lit sheet is used. It
+  // is `hd` times the size it draws at, and both contexts carry that as their
+  // transform, so a bare drawImage would put four times the mask into a quarter of
+  // the sheet. Naming the size says what is meant at any density.
   f.globalCompositeOperation = 'destination-out';
-  f.drawImage(lit, 0, 0);
+  f.drawImage(lit, 0, 0, 960, 540);
   f.globalCompositeOperation = 'source-over';
 
   // And the sunlight is a brightened copy of the same picture with everything BUT
@@ -1042,9 +1083,10 @@ function finishFog(f, lit) {
   // done to them. So this sheet is the map and the paper only, and it is laid down
   // BEFORE the names: in lit country a name is still the artist's own pixels.
   const sun = sunSheet || (sunSheet = document.createElement('canvas'));
-  sun.width = 960;
-  sun.height = 540;
+  sun.width = 960 * hd;
+  sun.height = 540 * hd;
   const sg = sun.getContext('2d');
+  sg.setTransform(hd, 0, 0, hd, 0, 0);
   sg.clearRect(0, 0, 960, 540);
 
   if (art.overview) sg.drawImage(art.overview, 0, 0, 960, 540);
@@ -1059,7 +1101,7 @@ function finishFog(f, lit) {
   lift(sg, 960, 540);
 
   sg.globalCompositeOperation = 'destination-in';
-  sg.drawImage(lit, 0, 0);
+  sg.drawImage(lit, 0, 0, 960, 540);
   sg.globalCompositeOperation = 'source-over';
 
   return fogSheet;
@@ -1069,13 +1111,29 @@ function finishFog(f, lit) {
 // thirty times across the whole leg, which is under the eye's threshold for a
 // blur this soft and a great deal cheaper than doing it every frame.
 function fogFor(unlocked, live, frac) {
-  const key = `${unlocked}:${live}:${Math.round(frac * 30)}`;
+  // THE DENSITY IS PART OF THE KEY, because it is part of what was built. A window
+  // dragged from a laptop screen to an external one changes the transform under a
+  // cached sheet, and without this the map would stay at the old resolution until
+  // the player happened to walk a leg.
+  const key = `${unlocked}:${live}:${Math.round(frac * 30)}:${hd}`;
   if (key !== fogKey) { makeFog(unlocked, live, frac); fogKey = key; }
   return fogSheet;
 }
 
 
 export function drawOverview(ctx, state) {
+  // HOW DENSE THE GLASS IS, taken off the context about to be drawn into. `a` is
+  // the horizontal scale of its transform, which fitToDisplay sets to the canvas
+  // backing scale — see the note on HD_MAX. Asked every frame because it is free
+  // and because the answer can change without anything telling this module.
+  // THE PAPER IS NOT PART OF THIS and stays at 960x540. Its grain is a designed
+  // size — one speck per map pixel — and generating it per DEVICE pixel would make
+  // the specks half as wide, which is not a sharper sheet of paper but a different
+  // one. It is drawn to the same place at any density and simply carries less
+  // detail than what it multiplies over, which is what paper does.
+  const tf = ctx.getTransform ? ctx.getTransform() : null;
+  hd = Math.max(1, Math.min(HD_MAX, Math.round(tf ? tf.a : 1)));
+
   const img = art.overview;
   if (img) ctx.drawImage(img, 0, 0, 960, 540);
   else { ctx.fillStyle = '#C9A878'; ctx.fillRect(0, 0, 960, 540); }
@@ -1104,7 +1162,11 @@ export function drawOverview(ctx, state) {
   // oversize, because shifting a 960x540 sheet by three pixels left three pixels of
   // map uncovered along one edge and showed as a hard strip across the top. Laid at
   // its own size in its own place, a sheet covers the map exactly.
-  const spread = (img) => ctx.drawImage(img, 0, 0);
+  //
+  // AT THE MAP'S SIZE rather than at its own: a sheet is `hd` times as wide as the
+  // board it covers now, so the size has to be named. It was a bare drawImage while
+  // the two were always equal.
+  const spread = (img) => ctx.drawImage(img, 0, 0, 960, 540);
 
   // THE SUN FIRST, because it REPLACES the lit country with a brighter copy of
   // itself rather than tinting what is there. Anything drawn before it inside the

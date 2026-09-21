@@ -640,13 +640,40 @@ for (const m of ORDER) if (!incoming.has(m)) throw new Error(`marker ${m} is not
 // read as a different drawing rather than the same one in better light. Muting BOTH
 // halves further and lifting the light instead is the version that holds together —
 // the sun does the work, not the pigment.
-const DESATURATE = 0.52;
-const WARMTH = 0.28;
+//
+// AND 0.52 -> 0.40 NOW, at "can you make the overview map's colour more vibrant a
+// bit". The failed attempt above is the reason this one was measured rather than
+// nudged by eye: the thing that went wrong at 0.38 was not the number, it was that
+// only the LIT half changed, and this pair recolours the whole sheet, so both
+// halves move together and the map stays one drawing.
+//
+// WARMTH IS LEFT ALMOST ALONE, 0.28 -> 0.26, and the two pixels are not a rounding.
+// Warming pulls each colour towards the brown ramp, and for a good half of this
+// palette that ADDS chroma rather than removing it — measured across the seventeen
+// shades, dropping warmth to 0.22 came out LESS colourful on average than keeping
+// it at 0.26, because what it gains in the greens it loses in every brown on the
+// map. The mean saturation of the palette goes 35.2 to 40.1, and one shade sits on
+// the ceiling before and after.
+const DESATURATE = 0.40;
+const WARMTH = 0.26;
 
 // AND NOTHING MAY END UP LOUDER THAN THIS, whatever it started as. The gold in a
-// stage medallion runs from 96 up; a map colour at 70 sits plainly under it, and
+// stage medallion runs from 96 up; a map colour at 72 sits plainly under it, and
 // under the 80 tools/campaign.mjs holds the whole palette to.
-const SATURATION_CEILING = 70;
+//
+// 70 -> 72, AND ONLY BECAUSE THE PALETTE MOVED UNDER IT. A ceiling is not a way to
+// make a map more colourful — every shade it touches comes out at exactly the same
+// saturation, so raising it to let more through is a way of making the loudest
+// colours indistinguishable from each other. What it is for is the shade that was
+// already on it: the one brown that clamps here clamped at 0.52 as well, and
+// letting it move with the rest is what keeps the vibrance edit from quietly
+// flattening it against its neighbours.
+//
+// THE SIZE OF THE STEP IS THE POINT. Two, not six: 76 was tried and it buys almost
+// nothing the eye can see while eating most of the room between here and the 80 the
+// checker holds. Eight of headroom is still room to spare; four is a bound waiting
+// to be argued with.
+const SATURATION_CEILING = 72;
 
 // AND THE BOTTOM OF THE RAMP IS LIFTED OFF BLACK. Every outline on this map lands
 // on the darkest stop, and at 0x3B2917 they read as holes — a drawing this dense is
