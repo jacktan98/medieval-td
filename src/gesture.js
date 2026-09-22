@@ -1,11 +1,9 @@
 // HOW A FIGURE MOVES WHEN THE ROAD IS NOT MOVING IT.
 //
-// Three small things, all of them about the same complaint — "it feels like there
-// is still a lot more to improve" — and all three are one number on a figure and
-// one curve read off it at draw time. Nothing here changes what happens in the
-// game: no damage, no reach, no depth, no hit box. A figure drawn through this
-// file is at exactly the coordinates the rules put it at, with a few pixels of
-// offset that only the eye sees.
+// Two small things, both of them one number on a figure and one curve read off it
+// at draw time. Nothing here changes what happens in the game: no damage, no
+// reach, no depth, no hit box. A figure drawn through this file is at exactly the
+// coordinates the rules put it at, with a few pixels of offset only the eye sees.
 //
 //   THE FLINCH. Before this, a paladin took 120 damage and the only thing that
 //   changed on screen was a bar. Every blow in the game already recorded WHICH
@@ -16,14 +14,17 @@
 //   THE SWING. `thrust` ran 1 to 0 at a constant rate, so a lunge went out and
 //   came back at the same speed, which is the one thing weight never does.
 //
-//   THE BREATH. A soldier at his post, a tower's gunner between shots and a thug
-//   held by a squad were all perfectly still. A held fight in this game can last
-//   ten seconds and for all of them the two figures are frozen a foot apart.
-//
-// ONE CURVE FOR BOTH GESTURES. A swing recovering and a man recovering from being
-// hit are the same shape — hold, then settle — so `swingOut` below does both, and
-// two figures trading blows move on one idea rather than two. The corpse throw in
+// ONE CURVE FOR BOTH. A swing recovering and a man recovering from being hit are
+// the same shape — hold, then settle — so `swingOut` below does both, and two
+// figures trading blows move on one idea rather than two. The corpse throw in
 // src/corpses.js deliberately keeps its own: see the note on `flinch`.
+//
+// A THIRD THING LIVED HERE AND WAS TAKEN OUT AT THE OWNER'S WORD: an idle breath,
+// a 0.6px rise and fall on any figure standing still. It worked and it is gone,
+// which is the whole note — a thing that measures correctly and is not wanted is
+// still not wanted. Everything it needed went with it: the per-figure phase, the
+// game clock this file kept, and `moving` on a soldier, which nothing else read.
+// See the commit that removed it if it is ever asked for again.
 
 // --- being hit -----------------------------------------------------------------
 
@@ -113,54 +114,6 @@ export function flinch(v) {
 // `swing` from src/status.js — the Rally Thug's damage boost — and two of them
 // need both.
 export const swingOut = thrust => thrust * thrust * (3 - 2 * thrust);
-
-// --- breathing -----------------------------------------------------------------
-
-// HOW FAR A STANDING FIGURE RISES AND FALLS, and how long it takes.
-//
-// 0.6px is deliberately under the threshold of "I can see that moving". The test
-// this was tuned against is not whether the bob is visible on one man — it should
-// not be — but whether a squad of three standing at a wall looks alive or looks
-// placed. At 1.5 they bounce; at 0.6 they breathe.
-//
-// 2.8s is a slow breath rather than a resting heart rate, because the amplitude is
-// so small that anything quicker reads as a vibration.
-const BREATH_RISE = 0.6;
-const BREATH_TIME = 2.8;
-
-// AND THEY MUST NOT DO IT TOGETHER, which is the whole difference between a squad
-// and a pulsing light. Three men on one phase is one three-wide figure breathing;
-// three men a third of a cycle apart is three men.
-//
-// SPACED BY THE GOLDEN RATIO rather than by Math.random(), and it is the better
-// answer twice over: consecutive figures are always about 0.618 of a cycle apart —
-// as far from each other as two numbers in [0,1) can repeatedly be — and the whole
-// thing replays identically, so a recording of a fight is a recording of that
-// fight. Random phases would cluster by chance often enough to be noticed.
-const GOLDEN = 0.6180339887;
-let issued = 0;
-export const nextPhase = () => (issued++ * GOLDEN) % 1;
-
-// AND THE CLOCK IS THE GAME'S, NOT THE WALL'S. It is advanced from step() in
-// src/main.js, which means it stops when the game is paused and runs twice as fast
-// at 2x — the same two rules every other clock on the board obeys.
-//
-// performance.now() was the obvious source and is wrong in a way that only shows
-// up paused: everything else on the board freezes and the figures go on breathing,
-// which reads as the render loop having come loose from the game. It is also why
-// this is seconds of PLAY rather than seconds since load.
-let clock = 0;
-export const tickClock = dt => { clock += dt; };
-
-// THE OFFSET ITSELF, in px, to be ADDED to a figure's drawn y — positive is down,
-// which is the canvas's own direction and the one the pivots are measured in.
-//
-// A figure with no phase gets a stable one on first use, so a figure placed
-// directly by one of the test pages breathes rather than throwing.
-export function breath(fig) {
-  const ph = fig.phase !== undefined ? fig.phase : (fig.phase = nextPhase());
-  return Math.sin((clock / BREATH_TIME + ph) * Math.PI * 2) * BREATH_RISE;
-}
 
 // --- the white copy ------------------------------------------------------------
 

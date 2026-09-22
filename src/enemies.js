@@ -15,7 +15,7 @@ import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
 import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing,
          wearing as wearingStatus } from './status.js';
 import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
-import { tickHit, nextPhase } from './gesture.js';
+import { tickHit } from './gesture.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -97,11 +97,9 @@ export function spawn(state, typeId) {
     hp: def.hp,
     maxHp: def.hp,
     face: 1,         // +1 walking right, -1 left; only the sign is ever drawn
-    // HOW WHITE HE IS FROM THE LAST BLOW, and WHERE IN HIS OWN BREATH HE IS.
-    // Both from birth rather than on first use, so a creature is a complete
-    // figure the moment it exists — see src/gesture.js.
+    // HOW WHITE HE IS FROM THE LAST BLOW, from birth rather than on first use, so
+    // a creature is a complete figure the moment it exists — see src/gesture.js.
     hit: 0,
-    phase: nextPhase(),
     foe: null,       // the barracks soldier holding it, if any
     acd: 0,          // melee cooldown, only ticks while held
     thrust: 0,       // 1 on the swing, decays; drives the lunge in render.js

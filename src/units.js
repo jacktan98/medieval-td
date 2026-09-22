@@ -16,7 +16,7 @@ import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from './status.js';
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
-import { struck, tickHit, nextPhase } from './gesture.js';
+import { struck, tickHit } from './gesture.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -551,7 +551,6 @@ export function makeGarrison(state, level) {
       cd: 0,
       thrust: 0,
       hit: 0,             // how white he is from the last blow — src/gesture.js
-      phase: nextPhase(), // where in his own breath he is, so a squad is three men
       respawn: 0,
       blows: 0,
       hold: 0,
@@ -588,7 +587,6 @@ export function makeUnits(state, tower) {
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       hit: 0,             // how white he is from the last blow — src/gesture.js
-      phase: nextPhase(), // where in his own breath he is, so a squad is three men
       respawn: 0,
       // --- what an ability leaves on a man -------------------------------------
       //
@@ -1240,14 +1238,7 @@ export function updateUnits(state, dt) {
     // pixels onto somebody he was already holding. That fixed a real deadlock and
     // fixed it in the wrong place; `contact` below is the same fix made without
     // moving him. See the note there.
-    // WHETHER HE IS ON HIS FEET THIS FRAME, recorded rather than re-derived. It
-    // is the same condition as the step above and it is kept because the drawing
-    // needs it: a man who is walking is already moving and must not also breathe
-    // — see breath() in src/gesture.js. Asking again in render.js would mean a
-    // second copy of SETTLE and of the station arithmetic, and the day one of
-    // them changed a walking squad would start bobbing.
-    u.moving = d > SETTLE && u.hold <= 0;
-    if (u.moving) {
+    if (d > SETTLE && u.hold <= 0) {
       const step = Math.min(u.def.speed * dt, d);
       u.x += ((tx - u.x) / d) * step;
       u.y += ((ty - u.y) / d) * step;

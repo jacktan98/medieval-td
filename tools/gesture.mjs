@@ -1,19 +1,23 @@
-// The three things a figure does that the road does not make it do: flinch when
-// it is hit, recover from a swing, and breathe while it stands. Node only.
+// The two things a figure does that the road does not make it do: flinch when it
+// is hit, and recover from a swing. Node only.
 //
 //   node tools/gesture.mjs
 //
-// WHY THIS IS A CHECKER AND NOT A LOOK. All three are a few pixels, deliberately
-// — a breath that can be seen on one man is a bounce, and a flinch that can be
-// seen in a still frame is a stagger. The whole point of the sizes chosen in
+// WHY THIS IS A CHECKER AND NOT A LOOK. Both are a few pixels, deliberately — a
+// flinch that can be seen in a still frame is a stagger, and a swing that can be
+// seen frame by frame is a stutter. The whole point of the sizes chosen in
 // src/gesture.js is that no single frame shows them, which means no single frame
 // can show them missing either. A silent regression here is the default.
+//
+// THERE WAS A THIRD, an idle breath, and it was removed at the owner's word. Its
+// checks went with it rather than being left passing against nothing, which is the
+// only honest thing to do with a check whose subject no longer exists.
 //
 // So what is pinned is the SHAPE of each curve and the WIRING that runs it, both
 // of which are exact. Every claim below was made to fail against the code as it
 // stood before the feature, which is the only reason any of them is worth reading.
 import { readFileSync } from 'fs';
-import { swingOut, flinch, breath, struck, tickHit, tickClock, nextPhase,
+import { swingOut, flinch, struck, tickHit,
          HIT_TIME, HIT_SHOVE, HIT_FLASH } from '../src/gesture.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { families } from '../src/data/towers.js';
@@ -36,7 +40,6 @@ const code = f => src(f).replace(/^\s*\/\/.*$/gm, '');
 const units = code('units.js');
 const enemies = code('enemies.js');
 const render = code('render.js');
-const main = code('main.js');
 const gesture = code('gesture.js');
 
 // --- the curve -----------------------------------------------------------------
@@ -122,41 +125,6 @@ console.log('\nBeing hit\n');
     `${HIT_FLASH} of white at the instant of the blow`);
 }
 
-// --- the breath ----------------------------------------------------------------
-
-console.log('\nStanding still\n');
-
-// SMALL ENOUGH NOT TO BE SEEN ON ONE MAN. The test that matters is a squad looking
-// alive, and anything the eye can follow on a single figure is a bounce.
-{
-  const one = { phase: 0 };
-  let lo = Infinity, hi = -Infinity;
-  for (let i = 0; i < 400; i++) {
-    tickClock(0.02);
-    const y = breath(one);
-    lo = Math.min(lo, y);
-    hi = Math.max(hi, y);
-  }
-  ok(hi - lo > 0.5 && hi - lo < 2,
-    'a standing figure rises and falls by about a pixel',
-    `${(hi - lo).toFixed(2)}px peak to peak`);
-
-  // AND IT COMES BACK. A drift would walk a squad off its wall over a long game.
-  ok(Math.abs(hi + lo) < 1e-6, '  around the spot the rules put him, not away from it',
-    `top ${hi.toFixed(3)}, bottom ${lo.toFixed(3)}`);
-
-  // NOT ALL TOGETHER, which is the difference between three men and one pulsing
-  // three-wide figure.
-  const phases = [nextPhase(), nextPhase(), nextPhase()];
-  const apart = phases.map((p, i) => {
-    const q = phases[(i + 1) % 3];
-    const d = Math.abs(p - q);
-    return Math.min(d, 1 - d);
-  });
-  ok(Math.min(...apart) > 0.2, '  and no two of a squad breathe together',
-    phases.map(p => p.toFixed(3)).join(' / '));
-}
-
 // --- the wiring ----------------------------------------------------------------
 
 console.log('\nWhat runs it\n');
@@ -183,30 +151,20 @@ console.log('\nWhat runs it\n');
   ok(/tickHit\(u, dt\)/.test(units) && /tickHit\(e, dt\)/.test(enemies),
     'a flinch fades on the same clock the figure moves on',
     'tickHit beside the thrust decay in both files');
-  ok(/tickClock\(dt\);/.test(main) && /function step\(state, dt\)/.test(main),
-    'and the breath runs on the game\'s time, not the wall\'s',
-    'tickClock in step(), so it stops when the game does');
   ok(!/performance\.now\(\)/.test(gesture),
-    '  with no second clock inside gesture.js to disagree with it',
-    'no performance.now()');
+    '  and on no clock of its own that could disagree with it',
+    'no performance.now() in gesture.js');
 }
 
-// A FIGURE IN A POSE SOMEBODY DREW IS NOT NUDGED. Holy Light's kneel and Blinding
-// Strike's follow-through are scripted; a man walking to his station is already
-// moving. Neither may also breathe.
+// AND THE BREATH LEFT NOTHING BEHIND. It needed three things that nothing else
+// wanted — a per-figure phase, a clock this file kept, and `moving` on a soldier —
+// and a removal that leaves those in place is the kind that gets half-reverted by
+// somebody who finds one of them later and assumes it is load-bearing.
 {
-  ok(/const still = !u\.moving && u\.hold <= 0;/.test(render),
-    'a walking man and a man in a held pose do not breathe',
-    'both excluded in drawSoldier');
-  ok(/u\.moving = d > SETTLE && u\.hold <= 0;/.test(units),
-    '  and whether he is walking is recorded where he walks',
-    'one condition, not two copies of SETTLE');
-  ok(/const still = !!e\.foe \|\| e\.halted;/.test(render),
-    '  while a creature breathes only when something is holding it',
-    'held or standing off to throw');
-  ok(/const still = t\.recoil <= 0 && t\.hold <= 0;/.test(render),
-    '  and a tower\'s man only between his shots',
-    'not during the recoil or an ability');
+  const leftovers = ['breath', 'nextPhase', 'tickClock', 'BREATH_']
+    .filter(w => new RegExp(`\\b${w}`).test(gesture + units + enemies + render + code('main.js')));
+  ok(leftovers.length === 0, 'and nothing of the breath is still wired up',
+    leftovers.length ? leftovers.join(', ') : 'phase, clock and `moving` all gone with it');
 }
 
 // THE FLASH IS THE FIGURE. Drawn from a white copy of the same sheet with the same

@@ -75,7 +75,7 @@ exit non-zero when something is wrong.
 | `campaign` | the world map's stages sit on the markers the artist drew, every road leads where it says, and a stage with no map behind it is not a button |
 | `unseen` | the Shadow Thug: no tower can aim at him, a blast finds him anyway, a soldier taking hold is what reveals him, and his break is flat against every rung of the barracks |
 | `bomb` | the Bomb Thug: he goes off on contact, leaves no body, and the bomb he drops when shot keeps its own fuse |
-| `gesture` | a figure flinches away from what hit it, a swing holds and settles rather than snapping back, and a man standing still breathes |
+| `gesture` | a figure flinches away from what hit it, and a swing holds and settles rather than snapping back |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |

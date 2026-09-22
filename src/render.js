@@ -11,7 +11,7 @@ import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art, discFace } from './assets.js';
 import { onGround } from './tint.js';
-import { swingOut, flinch, breath, flash } from './gesture.js';
+import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen } from './units.js';
@@ -1402,18 +1402,8 @@ function drawGunner(ctx, t) {
   const dw = sw * SCALE;
   const dh = sh * SCALE;
 
-  // AND HE BREATHES BETWEEN SHOTS. A man on a tower has nowhere to walk and
-  // nothing to do for two seconds at a time, so he was the stillest figure in the
-  // game — the building under him is meant to be a building, but the archer on top
-  // of it was just as fixed. Only while he is at rest: during the recoil and under
-  // an ability's held pose he is in a gesture that was drawn for him.
-  //
-  // Applied to the UNMIRRORED y, before the scale, for the obvious reason that a
-  // vertical offset has nothing to do with which way he is facing. See
-  // src/gesture.js.
-  const still = t.recoil <= 0 && t.hold <= 0;
   ctx.save();
-  ctx.translate(m.x, m.y + (still ? breath(t) : 0));
+  ctx.translate(m.x, m.y);
   ctx.scale(mirror(d, facing(t)), 1);
   ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
@@ -1848,17 +1838,10 @@ function drawEnemy(ctx, e) {
   // Lunge toward whatever it is hitting, the same way a soldier does, so a
   // melee reads as two figures trading blows rather than one animated one.
   //
-  // AND THE SAME THREE OFFSETS A SOLDIER GETS, for the same reasons and out of
-  // the same file — the eased swing, the flinch away from the last blow, and the
-  // breath. See the note in drawSoldier and src/gesture.js.
-  //
-  // A CREATURE BREATHES ONLY WHEN IT IS NOT WALKING, which here means held by a
-  // squad or standing off to throw. Everything else on this road is travelling,
-  // and a bob on a figure already sliding along a line is a different effect
-  // altogether — a walk cycle, which this is not and should not pretend to be.
-  const still = !!e.foe || e.halted;
-  ctx.translate(e.x + dir * swingOut(e.thrust || 0) * ENEMY_LUNGE + flinch(e),
-                e.y + (still ? breath(e) : 0));
+  // AND THE SAME TWO OFFSETS A SOLDIER GETS, for the same reasons and out of the
+  // same file — the eased swing and the flinch away from the last blow. See the
+  // note in drawSoldier and src/gesture.js.
+  ctx.translate(e.x + dir * swingOut(e.thrust || 0) * ENEMY_LUNGE + flinch(e), e.y);
   ctx.scale(mirror(e.def, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, e, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
@@ -1993,19 +1976,14 @@ function drawSoldier(ctx, u) {
 
   // Lunge toward the foe on the swing, so a spear thrust reads as a thrust.
   //
-  // THREE OFFSETS, AND NONE OF THEM MOVES HIM. His x and y are where the rules
+  // TWO OFFSETS, AND NEITHER OF THEM MOVES HIM. His x and y are where the rules
   // put him and are what the formation, the depth sort, the reach and the tap box
   // all read; these are pixels added inside his own transform, seen and nothing
   // else. See src/gesture.js.
   //
   //   the SWING, eased rather than linear, so he holds the blow and recovers
   //   the FLINCH, away from whatever last hit him
-  //   the BREATH, and only while he is standing still — a man walking to his
-  //   station is already moving, and a man in a scripted hold is in the pose the
-  //   artist drew rather than one this file is allowed to nudge.
-  const still = !u.moving && u.hold <= 0;
-  ctx.translate(u.x + dir * swingOut(u.thrust) * s.lunge + flinch(u),
-                u.y + (still ? breath(u) : 0));
+  ctx.translate(u.x + dir * swingOut(u.thrust) * s.lunge + flinch(u), u.y);
   ctx.scale(mirror(s, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, u, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
