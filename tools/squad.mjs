@@ -418,6 +418,30 @@ console.log('\nA garrison man with no respawn stays dead\n');
   check(together / frames < 0.6, '  and not in step with each other',
     `${(100 * together / frames).toFixed(0)}% of frames with the whole squad in one pose`);
 
+  // AND IT IS SLOW, at the owner's word: "slow down the switches between each pose."
+  //
+  // WHAT HE WAS WATCHING IS THE SQUAD AND NOT ONE MAN, which is why the rate is
+  // measured across all three. Each man changing every five and a half seconds —
+  // which is what a three-to-eight-second spell gives — is something moving on that
+  // plot every other second, and that reads as restlessness whatever the number on
+  // any one of them says.
+  //
+  // BOUNDED AT BOTH ENDS, because "slow" has a wrong direction too: a squad that
+  // changed once a minute would be three statues with a glitch. One visible change
+  // every three seconds is the ceiling and one every half minute the floor, and the
+  // settings sit comfortably between them.
+  let changes = 0;
+  let was = men.map(u => `${atEase(u)}${u.away}`);
+  for (let i = 0; i < 300 / DT; i++) {
+    updateUnits(state, DT);
+    const now = men.map(u => `${atEase(u)}${u.away}`);
+    changes += now.filter((v, k) => v !== was[k]).length;
+    was = now;
+  }
+  const every = 300 / Math.max(1, changes);
+  check(every > 3 && every < 30, '  and changes slowly enough to read as standing about',
+    `${changes} change(s) in five minutes — one every ${every.toFixed(1)}s across the squad`);
+
   // BACK TO ATTENTION ON THE FRAME SOMETHING ARRIVES, which is the half that can
   // actually cost the player something to look at. One enemy walks into the point
   // man; by the end of that single step he must be facing the road with his weapon

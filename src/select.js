@@ -23,7 +23,7 @@ import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
 import { fixture } from './units.js';
 import { swing } from './status.js';
-import { VILLAGER, TAP_PAD } from './villagers.js';
+import { VILLAGER, TAP_PAD, VILLAGER_H } from './villagers.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -55,9 +55,10 @@ const PAD = 8;
 export function pickFigure(state, x, y) {
   let best = null;
 
-  // THREE LISTS NOW, and the villagers are the odd one: a tap on him is not only a
-  // question about what he is, it is the whole of what he does. See sendVillager
-  // in src/villagers.js and the board tap in src/input.js.
+  // THREE LISTS NOW, and the villagers are the odd one: they are not drawn from
+  // this game's figures at all — they stay painted into the board — so what is
+  // listed for them is a point to test a tap against and nothing more. See
+  // src/villagers.js.
   for (const [kind, list] of [['unit', state.units], ['enemy', state.enemies],
                               ['villager', state.villagers || []]]) {
     for (const f of list) {
@@ -70,7 +71,7 @@ export function pickFigure(state, x, y) {
       // the one interaction he has, and he is the smallest figure on the board.
       const pad = kind === 'villager' ? TAP_PAD : PAD;
       const half = Math.max(f.def.r, 8) + pad;
-      const top = f.y - artHeight(f.def) - pad;
+      const top = f.y - (kind === 'villager' ? VILLAGER_H : artHeight(f.def)) - pad;
       if (x < f.x - half || x > f.x + half || y < top || y > f.y + pad) continue;
       if (!best || f.y > best.ref.y) best = { kind, ref: f };
     }

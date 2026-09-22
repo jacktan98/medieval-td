@@ -3,20 +3,21 @@
 //   node tools/villager.mjs
 //
 // A villager is the one figure in this game with no part in the fight: nothing
-// shoots him, he blocks nobody, and what he does when he is tapped is run to a
-// door and stop existing. That makes him easy to get wrong in ways nothing else
-// would notice — a board plays exactly the same with all five of them broken.
+// shoots him, he blocks nobody, and the only thing he does is answer a tap with a
+// card. That makes him easy to get wrong in ways nothing else would notice — a
+// board plays exactly the same with all five of them broken.
 //
-// THE HALF THAT IS NOT CODE. He is PAINTED into stage 1's artwork and cut out of
-// the base so the game can move him, which means a redraw, a re-split or a nudged
-// anchor can leave a painted villager standing under a live one, or an empty patch
-// of grass where a man should be. Both look like art bugs and neither throws. So
-// the artwork is checked here beside the behaviour.
+// HE RAN FOR A DOOR FOR ONE BUILD. He was cut out of the artwork, drawn live and
+// would sprint to a doorway and vanish when tapped; the owner's verdict was "it's
+// bad. remove the running completely... Do not change the villager original
+// 'pose'." All of that is gone, and this file is now mostly about proving that it
+// is gone properly — a half-removed feature leaves the machinery that broke the
+// board in place with nothing calling it.
 import { readFileSync } from 'fs';
 import { levels } from '../src/level.js';
 import { allGroups, bounds, MAP_SCALE, readArtwork } from './svg.mjs';
-import { makeVillagers, updateVillagers, sendVillager, VILLAGER, TAP_PAD } from '../src/villagers.js';
-import { pickFigure, selectionInfo } from '../src/select.js';
+import { makeVillagers, VILLAGER, TAP_PAD, VILLAGER_H } from '../src/villagers.js';
+import { pickFigure, selectionInfo, validate } from '../src/select.js';
 import { selectionCue } from '../src/audio.js';
 import { BOOK_ORDER } from '../src/data/waves.js';
 
@@ -26,10 +27,11 @@ const ok = (cond, label, detail = '') => {
   if (!cond) bad++;
 };
 
-const DT = 1 / 60;
+const src = f => readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
+const code = f => src(f).replace(/^\s*\/\/.*$/gm, '');
 const peopled = levels.filter(l => (l.villagers || []).length);
 
-// --- the data ------------------------------------------------------------------
+// --- who lives here --------------------------------------------------------------
 
 console.log('\nWho lives here\n');
 
@@ -37,111 +39,87 @@ console.log('\nWho lives here\n');
   ok(peopled.length >= 1, 'at least one board has people living on it',
     peopled.map(l => `${l.name}: ${l.villagers.length}`).join(', ') || 'none');
 
-  // EVERY DOOR INDEX RESOLVES. A villager whose index is out of range keeps no door
-  // and simply cannot be sent — a quiet nothing rather than a crash, which is the
-  // right failure at runtime and the wrong thing to ship.
-  const lost = [];
-  for (const l of peopled)
+  // A POINT AND NOTHING ELSE. Every other field a villager carried a build ago —
+  // a door, a heading, a speed, a flag saying he was running — was a thing that
+  // could be wrong about a man who does not move. This is what says they are gone
+  // from the DATA as well as from the code.
+  const extra = [];
+  for (const l of peopled) {
     l.villagers.forEach((v, i) => {
-      if (!(l.doors || [])[v.door]) lost.push(`${l.name} villager ${i} -> door ${v.door}`);
+      const keys = Object.keys(v).filter(k => k !== 'x' && k !== 'y');
+      if (keys.length) extra.push(`${l.name} villager ${i}: ${keys.join(', ')}`);
     });
-  ok(lost.length === 0, 'and every one of them has a door to run to',
-    lost.length ? lost.join(', ')
-                : peopled.map(l => `${l.doors.length} door(s) on ${l.name}`).join(', '));
-}
-
-// AND EVERY DOOR IS IN A BUILDING. The owner's rule was "the nearest house with an
-// obvious door", and the thing that could silently go wrong is a doorway measured
-// off the artwork and then typed in one digit out — a villager who runs into open
-// grass and vanishes there.
-//
-// The front boxes ARE the buildings, derived from the same artwork by
-// tools/split-map.mjs, so this asks the drawing rather than a second list of houses.
-//
-// INSIDE THE BOX AND IN ITS LOWER HALF, which is what a doorway is. The first
-// version of this asked for the box's BOTTOM EDGE and failed on both doors by nine
-// pixels — the bottom of a front box is the bottom of the drawing, ground shadow
-// and all, and a door's floor is on the wall face above it. The box's own ground
-// line is nearer but not exact either. A door is simply a thing low down in a wall,
-// and that is all this needs to say.
-{
-  const strays = [];
-  for (const l of peopled) {
-    (l.doors || []).forEach((d, i) => {
-      const home = (l.front || []).find(b =>
-        d.x >= b.x && d.x <= b.x + b.w && d.y >= b.y + b.h / 2 && d.y <= b.y + b.h);
-      if (!home) strays.push(`${l.name} door ${i} at (${d.x}, ${d.y})`);
-    });
+    if (l.doors) extra.push(`${l.name} still lists doors`);
   }
-  ok(strays.length === 0, 'every doorway is low down in a building\'s wall',
-    strays.length ? strays.join(', ') : 'each one inside a front box, in its lower half');
+  ok(extra.length === 0, 'and each of them is a place and nothing more',
+    extra.length ? extra.join('; ') : 'x and y, on every one of them');
 }
 
-// --- the artwork ----------------------------------------------------------------
+// --- and he stays painted on the board --------------------------------------------
 
-console.log('\nCut out of the board\n');
+console.log('\nStill in the picture\n');
 
-// HE IS PAINTED IN AND HAS TO COME OUT. A live figure drawn over a painted one is
-// two figures — the same thing that happens to a plot marker under a tower, and to
-// stage 5's crossbowmen.
+// THE POSE IS THE ARTIST'S, AT THE OWNER'S WORD. The surest way to keep a figure in
+// the pose he was drawn in is not to redraw him, so a villager is left in the base
+// the game loads and the game never draws one.
 //
-// ASKED OF THE GEOMETRY rather than of the path text: how many pieces of drawing
-// sit entirely inside each villager's window, in the artist's file and in the base
-// the game loads. The artwork must have some and the base must have none.
+// ASKED OF THE GEOMETRY: how many pieces of drawing sit inside each villager's own
+// window, in the base. A cut would empty it.
 {
-  const W = 12, UP = 28, DOWN = 6;      // a shade wider than the cutting window
+  const W = 12, UP = 28, DOWN = 6;
   for (const l of peopled) {
-    const art = allGroups(readArtwork(l.src));
     const base = allGroups(readFileSync(`${l.src}_base.svg`, 'utf8'));
-    const inside = (groups, at) => groups.filter(g => {
+    const standing = l.villagers.map(v => base.filter(g => {
       const b = bounds(g.subPaths.flat());
-      return b.x0 * MAP_SCALE >= at.x - W && b.x1 * MAP_SCALE <= at.x + W &&
-             b.y0 * MAP_SCALE >= at.y - UP && b.y1 * MAP_SCALE <= at.y + DOWN;
-    }).length;
-
-    const drawn = l.villagers.map(v => inside(art, v));
-    const left = l.villagers.map(v => inside(base, v));
-    ok(drawn.every(n => n >= 4), `${l.name}: the artist painted all of them in`,
-      `${drawn.join('/')} piece(s) standing at the five anchors`);
-    ok(left.every(n => n === 0), '  and every one is cut out of the base the game draws',
-      left.some(n => n) ? `${left.join('/')} left behind` : 'nothing left standing there');
+      return b.x0 * MAP_SCALE >= v.x - W && b.x1 * MAP_SCALE <= v.x + W &&
+             b.y0 * MAP_SCALE >= v.y - UP && b.y1 * MAP_SCALE <= v.y + DOWN;
+    }).length);
+    ok(standing.every(n => n >= 4),
+      `${l.name}: every one of them is still painted on the board`,
+      `${standing.join('/')} piece(s) standing at the five anchors`);
   }
-}
 
-// AND THE CUT TAKES NOTHING ELSE WITH IT. This is the failure that shipped for one
-// run: the window is sized for stage 5's crossbowmen, who carry a crossbow and a
-// quiver, and two of stage 1's villagers stand in front of scenery small enough to
-// fit through it — a log by the campfire and a stepping stone on the path. Both
-// came out with the man, which leaves a hole in the board and, for the log, its own
-// shadow floating over bare grass.
-//
-// COUNTED RATHER THAN LOOKED AT. A villager is four pieces — a shadow, a body and
-// two arms — and every one of the five measures 13 to 17 game px across. Anything
-// wider is something he was standing in front of.
-{
+  // AND THE BASE IS THE ONE THE BOARD HAD BEFORE THEY WERE NAMED. Nothing is cut
+  // for a villager, so adding the list must not have moved a single byte of the
+  // artwork — which is the strongest form of "his pose is unchanged" there is.
   for (const l of peopled) {
-    const base = readFileSync(`${l.src}_base.svg`, 'utf8');
     const art = readArtwork(l.src);
-    const gone = allGroups(art).filter(g => !base.includes(art.slice(g.start, g.end)));
-    const near = l.villagers.map(v => gone.filter(g => {
-      const b = bounds(g.subPaths.flat());
-      const cx = (b.x0 + b.x1) / 2 * MAP_SCALE, cy = (b.y0 + b.y1) / 2 * MAP_SCALE;
-      return Math.hypot(cx - v.x, cy - v.y) < 30;
-    }));
-    const wide = near.flat().map(g => {
-      const b = bounds(g.subPaths.flat());
-      return (b.x1 - b.x0) * MAP_SCALE;
-    }).filter(w => w > 20);
-    ok(wide.length === 0, '  and takes nothing but the man with it',
-      wide.length ? `${wide.length} piece(s) wider than a villager: ` +
-                    wide.map(w => w.toFixed(0) + 'px').join(', ')
-                  : `${near.flat().length} piece(s) cut, widest ` +
-                    `${Math.max(...near.flat().map(g => { const b = bounds(g.subPaths.flat());
-                      return (b.x1 - b.x0) * MAP_SCALE; })).toFixed(0)}px`);
+    const base = readFileSync(`${l.src}_base.svg`, 'utf8');
+    const kept = l.villagers.filter(v => {
+      const near = allGroups(art).filter(g => {
+        const b = bounds(g.subPaths.flat());
+        const cx = (b.x0 + b.x1) / 2 * MAP_SCALE, cy = (b.y0 + b.y1) / 2 * MAP_SCALE;
+        return Math.hypot(cx - v.x, cy - v.y) < 12;
+      });
+      return near.length > 0 && near.every(g => base.includes(art.slice(g.start, g.end)));
+    });
+    ok(kept.length === l.villagers.length,
+      '  and nothing about any of them is cut out of it',
+      `${kept.length} of ${l.villagers.length} untouched between the artwork and the base`);
   }
 }
 
-// --- what he does ---------------------------------------------------------------
+// AND NOTHING IN THE GAME DRAWS ONE. The draw, the update loop and the tap that
+// sent him running were three separate edits and all three had to come out; a
+// villager still in the render pass would be a second copy of a man who is already
+// painted on the board, drawn over himself.
+{
+  const files = ['render.js', 'main.js', 'input.js', 'villagers.js'];
+  const ghosts = files.filter(f => /drawVillager|updateVillagers|sendVillager/.test(code(f)));
+  ok(ghosts.length === 0, 'and nothing in the game draws, moves or sends one',
+    ghosts.length ? ghosts.join(', ') + ' still reference the running'
+                  : 'no draw, no update loop, no door');
+
+  // NOR CARRIES THE MACHINERY WITH NOTHING CALLING IT. A module that still exported
+  // a `sendVillager` nobody calls is a feature waiting to be switched back on by
+  // somebody who finds it and assumes it is wanted.
+  const left = ['going', 'door', 'face', 'SPEED', 'ARRIVED']
+    .filter(w => new RegExp(`\\b${w}\\b`).test(code('villagers.js')));
+  ok(left.length === 0, '  and src/villagers.js keeps none of it either',
+    left.length ? left.join(', ') : 'a def, a tap pad and a list of points');
+}
+
+// --- what a tap does ---------------------------------------------------------------
 
 console.log('\nTapped\n');
 
@@ -155,81 +133,48 @@ const board = level => {
   const lvl = peopled[0];
   const state = board(lvl);
 
-  // HE STANDS STILL UNTIL HE IS TAPPED. A villager who wandered off on his own
-  // would be the board deciding something without the player.
-  for (let i = 0; i < 10 / DT; i++) updateVillagers(state, DT);
-  ok(state.villagers.length === lvl.villagers.length &&
-     state.villagers.every((v, i) => v.x === lvl.villagers[i].x && v.y === lvl.villagers[i].y),
-    'he stands where the artist put him until somebody taps him',
-    `${state.villagers.length} still there after ten seconds`);
-
   // THE TAP FINDS HIM. Through pickFigure, which is the function the board tap
   // actually calls — a fixture with its own hit test would prove nothing.
   //
-  // ONE AT A TIME, AND THAT IS NOT A WEAKER CLAIM. Two of stage 1's five stand 13px
-  // apart, so their tap boxes overlap and the nearer one wins both — which is the
-  // rule every figure in this game is picked by and is what the player expects when
-  // two things are stacked. The first version of this asked for all five to be
-  // reachable at once and read 4 of 5, which was the check being wrong rather than
-  // the board: the man in front runs off and the man behind him is then tappable.
-  //
-  // So what is checked is the guarantee that matters — every villager can be sent,
-  // and no tap on one lands on bare ground.
-  const sent = new Set();
-  for (let pass = 0; pass < state.villagers.length + 2; pass++) {
-    const waiting = state.villagers.filter(v => !v.going);
-    if (!waiting.length) break;
-    let any = false;
-    for (const v of waiting) {
-      const hit = pickFigure(state, v.x, v.y - 8);
-      if (!hit || hit.kind !== 'villager') continue;
-      any = true;
-      sendVillager(hit.ref);
-      if (hit.ref === v) sent.add(v);
-    }
-    if (!any) break;
-    for (let i = 0; i < 6 / DT; i++) updateVillagers(state, DT);
-  }
-  ok(sent.size === lvl.villagers.length && state.villagers.length === 0,
-    '  and every one of them can be tapped and sent',
-    `${sent.size} of ${lvl.villagers.length}, leaving ${state.villagers.length} on the board`);
+  // ONE AT A TIME IS NOT REQUIRED ANY MORE, and that is a quiet gain from taking
+  // the running out: nobody leaves the board, so all five have to answer at once.
+  // Two of stage 1's five stand 13px apart and their boxes overlap, so the nearer
+  // one wins both — which is the rule every figure in this game is picked by. What
+  // must hold is that a tap on a villager finds A villager rather than bare ground.
+  const found = state.villagers.map(v => {
+    const hit = pickFigure(state, v.x, v.y - 8);
+    return hit && hit.kind === 'villager';
+  });
+  ok(found.every(Boolean), 'a tap on any of them lands on a villager',
+    `${found.filter(Boolean).length} of ${found.length}`);
 
-  // AND HE RUNS THE RIGHT WAY. Not "he moves": toward the door his level names,
-  // and facing the way he is going. On a fresh board, since the one above is empty.
-  const fresh = board(lvl);
-  const one = fresh.villagers[0];
-  const door = one.door;
-  const was = Math.hypot(door.x - one.x, door.y - one.y);
-  sendVillager(one);
-  ok(one.going && one.face === (door.x >= one.x ? 1 : -1),
-    '  and sets off facing the way he is going',
-    `face ${one.face}, door ${door.x > one.x ? 'to his right' : 'to his left'}`);
+  // AND MOST OF THEM ARE THEMSELVES. Only the two that overlap can hand a tap to
+  // their neighbour, so four of the five must answer for themselves.
+  const own = state.villagers.filter(v => {
+    const hit = pickFigure(state, v.x, v.y - 8);
+    return hit && hit.ref === v;
+  });
+  ok(own.length >= state.villagers.length - 1,
+    '  and all but the one standing behind another answer for themselves',
+    `${own.length} of ${state.villagers.length}`);
 
-  for (let i = 0; i < 0.5 / DT; i++) updateVillagers(fresh, DT);
-  const now = Math.hypot(door.x - one.x, door.y - one.y);
-  ok(now < was - 20, '  closing on the doorway rather than merely moving',
-    `${was.toFixed(0)}px to go, ${now.toFixed(0)}px after half a second`);
+  // HE STAYS. There is no update loop any more, so this is a statement about the
+  // whole feature rather than about a timer: the board has the same five people on
+  // it whatever the player does.
+  state.selected = { kind: 'villager', ref: state.villagers[0] };
+  for (let i = 0; i < 600; i++) validate(state);
+  ok(state.villagers.length === lvl.villagers.length && state.selected,
+    '  and nothing ever takes him off the board or drops his card',
+    `${state.villagers.length} of ${lvl.villagers.length}, still selected`);
 
-  // AND THROUGH IT. Ten seconds is far longer than the longest run on this board.
-  for (let i = 0; i < 10 / DT; i++) updateVillagers(fresh, DT);
-  ok(!fresh.villagers.includes(one), '  then goes through it and is gone',
-    `${fresh.villagers.length} left on the board`);
-
-  // A SECOND TAP ON A MAN ALREADY RUNNING IS NOT A SECOND START. It re-selects him
-  // and nothing else — otherwise his heading would be redrawn mid-stride every time
-  // the player tapped the moving figure.
-  const two = fresh.villagers[0];
-  sendVillager(two);
-  const heading = two.face;
-  for (let i = 0; i < 0.25 / DT; i++) updateVillagers(fresh, DT);
-  const mid = { x: two.x, y: two.y };
-  sendVillager(two);
-  ok(two.face === heading && two.x === mid.x && two.y === mid.y,
-    '  and tapping him again while he runs changes nothing',
-    'same heading, same place');
+  // AND HIS BOX IS BUILT OFF HIS OWN DRAWING. `artHeight` in select.js reads a def's
+  // `spriteTrim` and a villager's is his portrait rather than his board pose, so the
+  // tap box says so in his own terms — see VILLAGER_H.
+  ok(VILLAGER_H > 15 && VILLAGER_H < 35, '  over a box the size of the man',
+    `${VILLAGER_H.toFixed(1)}px tall, ${VILLAGER.r * 2}px across, ${TAP_PAD}px of padding`);
 }
 
-// --- his card -------------------------------------------------------------------
+// --- his card ----------------------------------------------------------------------
 
 console.log('\nWhat the panel says\n');
 
@@ -263,7 +208,7 @@ console.log('\nWhat the panel says\n');
     'and he is not in the encyclopedia', `${BOOK_ORDER.length} card(s), none of them his`);
 }
 
-// --- and he is not in the fight --------------------------------------------------
+// --- and he is not in the fight ------------------------------------------------------
 
 console.log('\nOut of the fight altogether\n');
 
@@ -275,20 +220,13 @@ console.log('\nOut of the fight altogether\n');
   const has = ['hp', 'maxHp', 'damage', 'armour', 'speed', 'atkCd']
     .filter(k => VILLAGER[k] !== undefined);
   ok(has.length === 0, 'he has no health, no armour and nothing to hit with',
-    has.length ? has.join(', ') : 'a name, a drawing and a radius for the tap');
+    has.length ? has.join(', ') : 'a name, a drawing for his card, and a radius for the tap');
 
-  // AND HE IS IN A LIST OF HIS OWN. Putting him in `units` or `enemies` would have
-  // been a `villager` test threaded through the two busiest loops in the game.
   const state = board(peopled[0]);
   ok(state.units.length === 0 && state.enemies.length === 0 && state.villagers.length > 0,
     'and lives in a list of his own, not among the soldiers or the thugs',
     `${state.villagers.length} villager(s), 0 units, 0 enemies`);
-
-  // A BIGGER TAP BOX THAN A SOLDIER'S, because he is smaller than one and tapping
-  // him is the whole of what he is for.
-  ok(TAP_PAD > 8, 'and a tap box bigger than a soldier\'s, because a miss costs more',
-    `${TAP_PAD}px of padding, on a body ${VILLAGER.r * 2}px across`);
 }
 
-console.log(bad ? `\n${bad} check(s) failed.` : '\nThe village is alive.');
+console.log(bad ? `\n${bad} check(s) failed.` : '\nThe village is where it was.');
 process.exit(bad ? 1 : 0);

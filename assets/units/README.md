@@ -98,15 +98,19 @@ sideways as it does it. `tools/shadow.mjs` checks all four.
 ### And one figure who is not in the fight
 
 `Villager_Default` — the five people who live on stage 1. One drawing, no Attack
-and no Idle: he stands where the artist painted him, and if he is tapped he runs
-for the nearest doorway and is gone.
+and no Idle.
 
-He is painted into the artwork like stage 5's crossbowmen and cut out of the base
-by the same pass, so the game can move him — see `villagers` in
-`src/data/level00.js` and `src/villagers.js`. **His cutting window is half the
-size**, because he is half the figure: 20 game px across and 30 tall, against the
-44 by 38 a garrison soldier gets. The generous window shipped once and took a log
-out of the campfire and a stepping stone off the path with two of them.
+**This PNG is only ever drawn on his card.** On the board he is the figure the
+artist painted, left exactly where and as he was drawn: nothing is cut out of the
+base for him and the game never draws one. What the level holds is where each of
+them stands, so a tap can find him — see `villagers` in `src/data/level00.js` and
+`src/villagers.js`.
+
+It was the other way round for one build: cut out like stage 5's crossbowmen,
+drawn live, and running to a doorway when tapped. The owner took the running out,
+and with nothing left to move, cutting him out was all cost — a second copy of a
+drawing, a mirror that can be the wrong way round, an anchor that can drift, and a
+cutting window that took a log out of the campfire the first time it ran.
 
 He is not in the encyclopedia and his card in the description panel is a picture
 and a name with no stats under it at all — the only card in the game with nothing

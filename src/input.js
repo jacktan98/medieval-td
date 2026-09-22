@@ -11,7 +11,6 @@ import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
-import { sendVillager } from './villagers.js';
 import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
@@ -328,16 +327,6 @@ export function tap(state, x, y, restart) {
   const had = state.selected;
   closeMenu(state);
   state.selected = pickFigure(state, x, y);
-  // AND A VILLAGER DOES SOMETHING WHEN HE IS LOOKED AT, which no other figure on
-  // the board does. At the owner's word: "if a player clicks each of them, that
-  // unit will run off to the nearest house with an obvious door."
-  //
-  // ONE TAP DOES BOTH, and that is the owner's shape read back rather than a
-  // choice made here — he asked for the run and for the panel in the same breath,
-  // so tapping a villager opens his card AND sends him. The card is his for the
-  // few seconds he is still on the board; src/select.js drops it when he goes
-  // through the door, on the frame he leaves the list.
-  if (state.selected && state.selected.kind === 'villager') sendVillager(state.selected.ref);
   solo(selectionCue(state.selected));
   // Picking somebody up is an action and so is putting them down; tapping bare
   // ground twice is not.

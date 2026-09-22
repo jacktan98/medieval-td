@@ -76,7 +76,7 @@ exit non-zero when something is wrong.
 | `unseen` | the Shadow Thug: no tower can aim at him, a blast finds him anyway, a soldier taking hold is what reveals him, and his break is flat against every rung of the barracks |
 | `bomb` | the Bomb Thug: he goes off on contact, leaves no body, and the bomb he drops when shot keeps its own fuse |
 | `gesture` | a figure flinches away from what hit it, and a swing holds and settles rather than snapping back |
-| `villager` | stage 1's five are cut out of the board, run to a door when tapped, and carry no statistic at all |
+| `villager` | stage 1's five are still painted on the board, answer a tap with a card, and carry no statistic at all |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |

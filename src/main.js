@@ -12,7 +12,7 @@ import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
 import { updateUnits, makeUnits, makeGarrison } from './units.js';
-import { makeVillagers, updateVillagers } from './villagers.js';
+import { makeVillagers } from './villagers.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateBombs } from './bombs.js';
@@ -253,9 +253,8 @@ function newGame() {
   // here at all: state.units is rebuilt by the Object.assign above, so anything that
   // pushes onto it has to run after it.
   makeGarrison(state, level);
-  // AND THE PEOPLE WHO LIVE THERE, beside the figures the artist painted in for
-  // the board to stand on. Both are read off the level and both are cut out of the
-  // base by tools/split-map.mjs, so this is the same idea twice — see
+  // AND THE PEOPLE WHO LIVE THERE. Not figures the game draws — they stay painted
+  // into the board — but points a tap can find, so their card can be opened. See
   // src/villagers.js.
   makeVillagers(state, level);
 
@@ -402,9 +401,6 @@ function step(state, dt) {
   updateSplats(state, dt);
   updateImpacts(state, dt);
   updateSmoke(state, dt);
-  // With the decoration rather than with the fight, because that is what he is:
-  // nothing he does can change the board. See src/villagers.js.
-  updateVillagers(state, dt);
   if (state.lives <= 0) state.result = 'lost';
 }
 

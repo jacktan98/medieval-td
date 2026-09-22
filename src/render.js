@@ -15,7 +15,6 @@ import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen, atEase } from './units.js';
-import { drawVillager } from './villagers.js';
 import { stageOf } from './data/armour.js';
 import { downed } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
@@ -391,10 +390,6 @@ function drawFigures(ctx, state) {
   // between those two there is one frame where he is dead and still listed, and
   // this is what stops him being drawn standing up on it.
   for (const u of state.units) if (u.respawn <= 0 && u.hp > 0) add(u.y, 1, () => drawSoldier(ctx, u));
-  // AND THE PEOPLE WHO LIVE HERE, in the same pass and at the same rank, so a man
-  // walking to his door goes behind the house he is above and in front of the one
-  // he is below. Nothing else about him is in this file — see src/villagers.js.
-  for (const v of state.villagers || []) add(v.y, 1, () => drawVillager(ctx, v));
   // Spatter sorts HERE rather than in a pass of its own, and by the victim's
   // feet rather than by the wound it is drawn at. Rank 2 puts it just in front
   // of the figure it came out of, which is where blood coming off a body

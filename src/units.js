@@ -99,11 +99,23 @@ export const REST_SECONDS = REST_AFTER;
 // positions.
 //
 // ONE CLOCK FOR BOTH, because a change of pose and a change of heading are the
-// same event to the eye: something about that man just moved. Three to eight
-// seconds, drawn per man. About a quarter of the draws change nothing at all,
-// which is right — a man who shifts on every count is fidgeting.
-const SPELL_MIN = 3;
-const SPELL_MAX = 8;
+// same event to the eye: something about that man just moved. Drawn per man, and
+// about a quarter of the draws change nothing at all, which is right — a man who
+// shifts on every count is fidgeting.
+//
+// SEVEN TO EIGHTEEN SECONDS, and it was three to eight at the owner's "slow down
+// the switches between each pose". More than doubled rather than nudged, because
+// what was wrong was not one number but the RATE the squad turned over between
+// them: three men each changing every five and a half seconds is something moving
+// on that plot every other second, which reads as restlessness rather than as men
+// standing about. At twelve and a half it is one move every four seconds across the
+// whole squad, which is roughly how often somebody standing around actually shifts.
+//
+// AND THE RANGE IS WIDER AS WELL AS LONGER, eleven seconds of spread against five.
+// A long spell that is always about the same length is a metronome; the point of a
+// slow rhythm is that you cannot feel it coming.
+const SPELL_MIN = 7;
+const SPELL_MAX = 18;
 
 // HOW THE POSE COIN IS WEIGHTED. Even, so all four ways come up about as often as
 // each other — subject to the cap below, which is the only thing that bends it.
