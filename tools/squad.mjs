@@ -332,73 +332,91 @@ console.log('\nA garrison man with no respawn stays dead\n');
   check(men.every(u => !atEase(u)), 'and is still at attention four seconds later',
     `rest ${men.map(u => u.rest.toFixed(1)).join('/')}s of ${REST_SECONDS}`);
 
-  // AND THEN HE IS, but NOT ALL ON THE SAME FRAME, which is the owner's ask:
-  // "don't make all the 3 units in each barracks go to idle pose at the same
-  // time." They shared one clock before this — `rest` is zero in all three men on
-  // the frame their fight ends — so they crossed the threshold together and stood
-  // down as one figure three wide.
-  //
-  // WHAT IS MEASURED IS THE FRAME EACH ONE FIRST GOES OVER, stepped one frame at a
-  // time so the answer is exact rather than sampled.
-  const first = men.map(() => null);
-  for (let i = 0; i < 6 / DT && first.some(f => f === null); i++) {
+  // AND THEN SOME OF THEM ARE, but NOT ALL ON THE SAME FRAME. They shared one
+  // clock before this — `rest` is zero in all three men on the frame their fight
+  // ends — so they crossed the threshold together and stood down as one figure
+  // three wide.
+  // OVER A WINDOW AND NOT AT AN INSTANT, which the first version of this got
+  // wrong and failed about one run in twelve for it. A man's first draw past the
+  // threshold is a coin like any other, so all three coming up "default" is an
+  // eighth of the time — a squad that has not visibly stood down four seconds in
+  // is the feature working, not the feature missing. Twenty seconds is four or
+  // five draws each.
+  let stoodDown = 0;
+  for (let i = 0; i < 20 / DT; i++) {
     updateUnits(state, DT);
-    men.forEach((u, k) => { if (first[k] === null && atEase(u)) first[k] = u.rest; });
+    if (men.some(u => atEase(u))) stoodDown++;
   }
-  check(first.every(f => f !== null), '  then stands down once nothing has needed him',
-    `at ${first.map(f => (f === null ? 'never' : f.toFixed(1) + 's')).join(' / ')}, ` +
-    `${(Math.max(...first) - Math.min(...first)).toFixed(1)}s between the first and the last`);
-  // NO BOUND ON THAT SPREAD, deliberately. Three draws from one range land close
-  // together often enough that any threshold here would fail on a good build now
-  // and then, and a check that cries wolf gets deleted. What can be asserted
-  // exactly is the MECHANISM — three men holding three different waits, above —
-  // and what it produces over a long quiet, below.
+  check(stoodDown > 0, '  then the squad stands down, some of it at a time',
+    `at least one man at ease on ${(100 * stoodDown / (20 / DT)).toFixed(0)}% of twenty seconds`);
 
-  // AND HE DOES NOT STAY DOWN. At the owner's ask: "each unit can also go back to
-  // default pose after being in idle pose for awhile." So over a long quiet every
-  // man must be seen in BOTH poses — a man who only ever stands down is the
-  // feature half-built, and one who never does is it not running.
+  // --- THE ONE ARRANGEMENT THAT IS FORBIDDEN -------------------------------
+  //
+  // At the owner's word: "ensure not all 3 units are in idle pose at the same
+  // time." This is the check the whole cap exists for, and it is worth knowing
+  // what it would cost to leave to chance: at even money on the pose, all three
+  // land in the idle pose an EIGHTH of the time. Over the five minutes below that
+  // is the better part of a minute of exactly the thing that was asked against,
+  // which is why it is a rule in src/units.js and not a weighting.
+  //
+  // ZERO FRAMES, not "rarely". A statistical bound here would pass a build that
+  // had lost the rule and was merely unlucky about it.
+  const ways = new Map();            // each of the four, per man, in frames
   const easy = men.map(() => 0);
-  const back = men.map(() => 0);
-  const awayWhileEasy = men.map(() => 0);
-  let frames = 0, together = 0;
+  const away = men.map(() => 0);
+  let frames = 0, allEasy = 0, together = 0;
   for (let i = 0; i < 300 / DT; i++) {
     updateUnits(state, DT);
     frames++;
     men.forEach((u, k) => {
-      if (atEase(u)) { easy[k]++; if (u.away) awayWhileEasy[k]++; }
-      if (u.rest >= REST_SECONDS && !atEase(u)) back[k]++;
+      const way = `${atEase(u) ? 'idle' : 'default'} ${u.away ? 'away' : 'to the road'}`;
+      ways.set(`${k}|${way}`, (ways.get(`${k}|${way}`) || 0) + 1);
+      if (atEase(u)) easy[k]++;
+      if (u.away) away[k]++;
     });
+    if (men.every(u => atEase(u))) allEasy++;
     if (men.every(u => atEase(u) === atEase(men[0]))) together++;
   }
-  check(easy.every(n => n > 0) && back.every(n => n > 0),
-    '  and comes back up to the ready, then down again, for as long as it is quiet',
-    easy.map((n, k) => `${(100 * n / (n + back[k])).toFixed(0)}%`).join(' / ') +
-    ' of five minutes at ease');
+  check(allEasy === 0, '  and the whole squad is never in the idle pose at once',
+    `${allEasy} frame(s) of ${frames} over five minutes`);
 
-  // LONGER AT EASE THAN AT THE READY, which is what the two poses mean: a man with
-  // nothing to do spends most of his time at rest and straightens up now and then.
-  const share = easy.reduce((a, b) => a + b, 0) /
-                (easy.reduce((a, b) => a + b, 0) + back.reduce((a, b) => a + b, 0));
-  check(share > 0.5 && share < 0.8, '  spending more of the quiet at ease than at the ready',
-    `${(100 * share).toFixed(0)}% of man-frames at ease`);
+  // AND ALL FOUR WAYS TURN UP, FOR EVERY MAN. The owner listed them: "default
+  // facing left, default facing right, idle facing left, idle facing right."
+  //
+  // TWO OF THEM WERE UNREACHABLE BEFORE THIS. Turning away could only happen while
+  // a man was already in the idle pose, so a man at the ready always faced the
+  // road and "default facing the wrong way" never appeared on screen once.
+  const missing = [];
+  men.forEach((u, k) => {
+    for (const pose of ['default', 'idle']) {
+      for (const look of ['to the road', 'away']) {
+        if (!ways.get(`${k}|${pose} ${look}`)) missing.push(`man ${k + 1}: ${pose} ${look}`);
+      }
+    }
+  });
+  check(missing.length === 0, '  and every man is seen all four ways of being idle',
+    missing.length ? missing.join(', ') : '4 of 4, for each of the three');
 
-  // AND THE SQUAD IS NOT IN STEP. Three men on one clock are in the same stance on
-  // EVERY frame; three on their own are in the same one about half the time, which
-  // is what two independent coins do. The bound is well below the first.
-  check(together / frames < 0.75, '  and not in step with each other',
-    `${(100 * together / frames).toFixed(0)}% of frames with the whole squad in one stance`);
+  // NEITHER POSE IS A CORNER CASE. The pose coin is even and the cap bends it down
+  // a little; anything outside a quarter to two thirds means one of the two
+  // drawings is barely being used.
+  const share = easy.reduce((a, b) => a + b, 0) / (frames * men.length);
+  check(share > 0.25 && share < 0.65, '  spending a fair share of the quiet in each pose',
+    `${(100 * share).toFixed(0)}% of man-frames in the idle pose, cap allowing`);
 
-  // HE LOOKS ROUND WHILE HE IS DOWN, and the share is asked OF THE TIME HE IS AT
-  // EASE rather than of the whole quiet. Turning away belongs to being at ease —
-  // a man back at the ready faces the road — so measuring it against the whole
-  // five minutes would report a third of a two-thirds as a fifth and fail for
-  // arithmetic rather than for behaviour. It did, once.
-  const turned = awayWhileEasy.reduce((a, b) => a + b, 0) / easy.reduce((a, b) => a + b, 0);
-  check(awayWhileEasy.every(n => n > 0) && turned > 0.2 && turned < 0.5,
-    '  looking away from the road for about a third of the time he is down',
-    `${(100 * turned).toFixed(0)}% of at-ease man-frames turned away, ` +
-    `against the ${(100 / 3).toFixed(0)}% asked for`);
+  // AND NEITHER IS THE HEADING. Asked across BOTH poses now, which is the change:
+  // a man can look away with his weapon levelled as well as with it up.
+  const turned = away.reduce((a, b) => a + b, 0) / (frames * men.length);
+  check(away.every(n => n > 0) && turned > 0.3 && turned < 0.6,
+    '  and looking away from the road for about half of it',
+    `${(100 * turned).toFixed(0)}% of man-frames turned away`);
+
+  // AND THE SQUAD IS NOT IN STEP. Three men on one clock are in the same pose on
+  // EVERY frame. The cap makes the all-idle case impossible, so agreement here is
+  // the all-default one, which three independent men reach about a quarter of the
+  // time.
+  check(together / frames < 0.6, '  and not in step with each other',
+    `${(100 * together / frames).toFixed(0)}% of frames with the whole squad in one pose`);
 
   // BACK TO ATTENTION ON THE FRAME SOMETHING ARRIVES, which is the half that can
   // actually cost the player something to look at. One enemy walks into the point
@@ -442,25 +460,38 @@ console.log('\nA garrison man with no respawn stays dead\n');
     'artHeight is asked of the def alone, with no branch for the pose');
 }
 
-// --- 6. the assassin never stands down ---------------------------------------
+// --- 6. every rung of the ladder has all three poses -------------------------
 //
-// He has no `idle` drawing, and that is the whole of his exemption — no line was
-// written to exclude him. What this pins is that the absence is doing the work: a
-// guild soldier left alone for a minute is still at attention.
+// THE ASSASSIN WAS THE EXCEPTION AND IS NOT ANY MORE. He had no idle drawing, so
+// `atEase` asked for the field, found nothing, and he never stood down — an
+// exemption that cost nothing to write because it was an absence. The owner drew
+// him one, so what is checked now is that nothing on the ladder is still missing
+// a pose, which is the state that used to be normal and would now be an oversight.
 {
+  const missing = barracks.tiers.filter(t => !t.soldier.idle);
+  check(missing.length === 0, 'every rung of the barracks has a pose to stand down into',
+    missing.length ? missing.map(t => t.name).join(', ')
+                   : barracks.tiers.map(t => t.soldier.name).join(', '));
+
+  // AND THE ASSASSIN USES IT, which is the half a data check cannot see. He is the
+  // one soldier whose own machinery could have swallowed it — he spends a quiet
+  // minute invisible — so he is run for one and watched.
   const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
   const plot = level.plots[3];
   const state = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
   const t = { plot, fam: barracks, def: guild, x: plot.x, y: plot.y, rally: null, abilities: [], hold: 0 };
   state.towers.push(t);
   makeUnits(state, t);
-  step(state, 60);
-  const men = squad(state);
-  check(men.every(u => !u.def.idle), 'an assassin has no pose to stand down into',
-    `${men.length} man/men, none with an idle drawing`);
-  check(men.every(u => !atEase(u) && !u.away),
-    '  so a minute alone leaves him at attention, knife out',
-    `rest ${men.map(u => u.rest.toFixed(0)).join('/')}s, none turned away`);
+  let seen = 0, all = 0;
+  for (let i = 0; i < 120 / DT; i++) {
+    updateUnits(state, DT);
+    if (state.units.some(u => atEase(u))) seen++;
+    if (state.units.every(u => atEase(u))) all++;
+  }
+  check(seen > 0, '  and an assassin stands down like the rest of them',
+    `${(100 * seen / (120 / DT)).toFixed(0)}% of two minutes with at least one of the guild at ease`);
+  check(all === 0, '  without the whole guild putting its knives away at once',
+    `${all} frame(s) with all three at ease`);
 }
 
 console.log(bad ? `\n${bad} failure(s).` : '\nSquad behaves.');

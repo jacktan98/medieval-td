@@ -173,6 +173,7 @@ const SPEAR_IDLE_TRIM = [248, 133, 81, 181];
 const SPEAR2_IDLE_TRIM = [256, 139, 80, 177];
 const SPEAR3_IDLE_TRIM = [202, 196, 108, 120];
 const PAL_IDLE_TRIM = [222, 212, 123, 116];
+const ASN_IDLE_TRIM = [210, 198, 87, 116];
 // THE FOURTH RUNG OF THE BARRACKS LADDER, and the second tier 4 in the game. A
 // square stone keep with a pitched roof and a banner, on the same 1024 canvas as
 // the other three buildings. 520x650 against the log hut's 624x621 — TALLER AND
@@ -1713,11 +1714,7 @@ const paladin = {
   // resting pose's, so the two swap with his feet nailed to the spot and only the
   // sword moving.
   attack: { sprite: 'paladin_attack', trim: PAL_ATK_TRIM, pivot: [0.798, 0.905] },
-  // Sword shouldered. The ASSASSIN has no such drawing and is the one soldier who
-  // never stands down — see atEase in src/units.js, which asks for this field and
-  // finds nothing on him. That is the right answer for him twice over: he spends
-  // most of a quiet minute invisible anyway, and a man whose whole job is not
-  // being noticed does not put his knife away where the road can see it.
+  // Sword shouldered. See atEase in src/units.js for when it is shown.
   idle: { sprite: 'paladin_idle', trim: PAL_IDLE_TRIM, pivot: [0.447, 0.907] },
   bodyFrac: PAL_BODY,
   spriteFaces: -1,
@@ -1762,6 +1759,12 @@ const assassin = {
   // Blade out. The SAME shadow pixel, exactly — not within a pixel, the same one
   // — so the lunge that nearly doubles his box cannot move his feet.
   attack: { sprite: 'assassin_attack', trim: ASSASSIN_ATK_TRIM, pivot: [0.563, 0.903] },
+  // AND HIS KNIFE HELD DOWN, which is the last of the five. He was the one soldier
+  // with no such drawing and therefore the one who never stood down — an exemption
+  // that cost nothing to write because it was an absence. The owner drew him one,
+  // so the exemption is gone and every rung of the ladder now has all three poses.
+  // Same shadow pixel again, source (259.0, 302.8).
+  idle: { sprite: 'assassin_idle', trim: ASN_IDLE_TRIM, pivot: [0.563, 0.903] },
   bodyFrac: ASS_BODY,
   spriteFaces: -1,
   dead: 'dead_assassin',

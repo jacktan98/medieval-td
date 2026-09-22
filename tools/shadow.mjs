@@ -401,6 +401,7 @@ const SPRITES = [
   ['assets/units/Paladin_Default.png',                'paladin.pivot',            pal.spriteTrim, pal.pivot],
   ['assets/units/Paladin_Attack.png',                 'paladin.attack.pivot',     pal.attack.trim, pal.attack.pivot],
   ['assets/units/Paladin_Idle.png',                   'paladin.idle.pivot',       pal.idle.trim, pal.idle.pivot],
+  ['assets/units/Assassin_Idle.png',                  'assassin.idle.pivot',      ass.idle.trim, ass.idle.pivot],
   // His two ability poses, in the same pair rule. Holy Light is the widest spread
   // of them all — 133x193 against his resting 123x140, because the glow rises well
   // above his head — and its shadow is still on his own pixel, source (277.0,

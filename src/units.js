@@ -86,18 +86,28 @@ const REST_AFTER = 5;
 // against a 5 typed a second time.
 export const REST_SECONDS = REST_AFTER;
 
-// AND THEN HE IS NOT STOOD DOWN FOREVER. At the owner's word: "each unit can also
-// go back to default pose after being in idle pose for awhile." So the quiet is a
-// CYCLE rather than a state — spear up for a spell, spear down for a spell, round
-// again for as long as nothing needs him.
+// AND THEN THERE ARE FOUR WAYS OF BEING IDLE, which is the owner's own list:
+// "default facing left, default facing right, idle facing left, idle facing
+// right." Two independent coins — the POSE he is in and the WAY he is looking —
+// picked afresh every few seconds for as long as nothing needs him.
 //
-// LONGER AT EASE THAN AT THE READY, because that is what the two poses mean. A man
-// with nothing to do spends most of his time at rest and straightens up now and
-// then; the reverse would read as a squad that cannot settle.
-const EASE_MIN = 5;
-const EASE_MAX = 11;
-const READY_MIN = 3;
-const READY_MAX = 7;
+// THEY WERE ONE CHOICE BEFORE THIS AND THAT WAS THE MISTAKE. Turning away was
+// something that could only happen while a man was already in the idle pose, which
+// left two of the four ways unreachable: a man at the ready always faced the road,
+// so "default facing the wrong way" never once appeared on screen. Splitting them
+// is most of what makes the quiet look random rather than like a switch with two
+// positions.
+//
+// ONE CLOCK FOR BOTH, because a change of pose and a change of heading are the
+// same event to the eye: something about that man just moved. Three to eight
+// seconds, drawn per man. About a quarter of the draws change nothing at all,
+// which is right — a man who shifts on every count is fidgeting.
+const SPELL_MIN = 3;
+const SPELL_MAX = 8;
+
+// HOW THE POSE COIN IS WEIGHTED. Even, so all four ways come up about as often as
+// each other — subject to the cap below, which is the only thing that bends it.
+const EASY_ODDS = 0.5;
 
 // AND THEY DO NOT ALL DO IT AT ONCE, at the owner's word: "don't make all the 3
 // units in each barracks go to idle pose at the same time."
@@ -114,18 +124,41 @@ const READY_MAX = 7;
 // or the man who drew the long straw never stands down at all between waves.
 const ENTER_SPREAD = 2.5;
 
-// AND HOW OFTEN HE LOOKS ROUND while he is at ease. A new heading every three to
-// seven seconds, which is slow enough to read as a man glancing about rather than
-// a figure flickering, and RANDOM per man rather than a shared clock: a squad that
-// turns in unison is a drill, not three men standing around.
-const LOOK_MIN = 3;
-const LOOK_MAX = 7;
+// AND HOW OFTEN THE HEADING IS THE WRONG WAY. A shade under half, so a squad
+// faces the road a little more than away from it without any one man looking as
+// though he has been told to.
+//
+// It was a third while turning belonged to the idle pose alone. Now that a man can
+// look away in either pose it is one of the two coins that make the owner's four
+// ways, and weighting it much below even would make two of them rare.
+const AWAY_ODDS = 0.45;
 
-// AND HOW OFTEN THAT HEADING IS THE WRONG WAY. Not half — at half, half the squad
-// has its back to the road at any moment and the line reads as abandoned rather
-// than as at ease. At a third, it is usually one man of three looking away, which
-// is what a guard post looks like when nothing is happening.
-const AWAY_ODDS = 1 / 3;
+// AND NEVER THE WHOLE SQUAD IN THE IDLE POSE AT ONCE, at the owner's word: "ensure
+// not all 3 units are in idle pose at the same time."
+//
+// THE CAP IS ON THE POSE AND NOT ON THE HEADING. Three men who have all put their
+// weapons up read as a post nobody is watching; three men looking in three
+// directions do not, which is why the four ways carry the variety and this only
+// has to stop the one arrangement that was asked against.
+//
+// ODDS ALONE COULD NOT DO IT. At even money all three land in the idle pose an
+// eighth of the time, which over a quiet minute is several seconds of exactly the
+// thing the owner said to prevent. So it is a RULE and not a weighting: a man who
+// draws the idle pose looks at his squad first and takes the other one if he would
+// be the last.
+//
+// ONE FEWER THAN THE SQUAD, floored at one. Every barracks squad is three men
+// today — see FORMATION — but a one-man squad must still be allowed to stand down,
+// or this would silently turn the feature off for him.
+const easyRoom = (state, u) => {
+  let mine = 0, easy = 0;
+  for (const o of state.units) {
+    if (o.tower !== u.tower) continue;
+    mine++;
+    if (o !== u && o.easy) easy++;
+  }
+  return easy < Math.max(1, mine - 1);
+};
 
 // A SPELL, in seconds, somewhere between two bounds. One line so that every clock
 // in this section is drawn the same way and none of them can be the one that was
@@ -639,15 +672,14 @@ export function makeGarrison(state, level) {
       cd: 0,
       thrust: 0,
       hit: 0,             // how white he is from the last blow — src/gesture.js
-      // STANDING DOWN: seconds since anything needed him, whether he is at ease
-      // this instant, seconds until his stance next flips, seconds until he next
-      // looks round, and whether he is looking the wrong way. See REST_AFTER
-      // above. A garrison man carries all five and uses none of them unless his
-      // def has an `idle` drawing, which none of them does today.
+      // STANDING DOWN: seconds since anything needed him, seconds until he picks
+      // a new way of being idle, and the two coins that say which way it is — the
+      // pose he is in and whether he is looking away from the road. See REST_AFTER
+      // above. A garrison man carries all four and uses none of them unless his def
+      // has an `idle` drawing, which none of them does today.
       rest: 0,
-      easy: false,
       stance: 0,
-      look: 0,
+      easy: false,
       away: false,
       respawn: 0,
       blows: 0,
@@ -685,15 +717,14 @@ export function makeUnits(state, tower) {
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       hit: 0,             // how white he is from the last blow — src/gesture.js
-      // STANDING DOWN: seconds since anything needed him, whether he is at ease
-      // this instant, seconds until his stance next flips, seconds until he next
-      // looks round, and whether he is looking the wrong way. See REST_AFTER
-      // above. A garrison man carries all five and uses none of them unless his
-      // def has an `idle` drawing, which none of them does today.
+      // STANDING DOWN: seconds since anything needed him, seconds until he picks
+      // a new way of being idle, and the two coins that say which way it is — the
+      // pose he is in and whether he is looking away from the road. See REST_AFTER
+      // above. A garrison man carries all four and uses none of them unless his def
+      // has an `idle` drawing, which none of them does today.
       rest: 0,
-      easy: false,
       stance: 0,
-      look: 0,
+      easy: false,
       away: false,
       respawn: 0,
       // --- what an ability leaves on a man -------------------------------------
@@ -1321,7 +1352,6 @@ export function updateUnits(state, dt) {
       // mid-turn.
       u.rest = 0;
       u.easy = false;
-      u.look = 0;
       u.away = false;
       // AND HIS OWN WAIT IS DRAWN NOW, not when the threshold arrives, which is
       // what spreads the squad. Three men whose fight ends on the same frame get
@@ -1330,31 +1360,20 @@ export function updateUnits(state, dt) {
     } else if (u.def.idle) {
       u.rest += dt;
       if (u.rest >= REST_AFTER) {
-        // THE CYCLE. One countdown, flipped at zero, with the length of the next
-        // spell drawn from whichever pose he is flipping INTO — so at ease is a
-        // long spell and at the ready is a short one, and neither is the same
-        // length twice.
+        // THE FOUR WAYS. One countdown; when it runs out he draws a new pose and a
+        // new heading, independently, and a new length for the next spell. See
+        // SPELL_MIN above for why the two are on one clock.
         u.stance -= dt;
         if (u.stance <= 0) {
-          u.easy = !u.easy;
-          u.stance = u.easy ? spell(EASE_MIN, EASE_MAX) : spell(READY_MIN, READY_MAX);
-          // HE STRAIGHTENS UP FACING THE ROAD. Turning away belongs to being at
-          // ease; a man who has come back to the ready and is still looking the
-          // wrong way is a man at attention with his back to the enemy, which is
-          // the one reading of this that would look like a bug.
-          u.away = u.easy && Math.random() < AWAY_ODDS;
-          u.look = spell(LOOK_MIN, LOOK_MAX);
+          u.stance = spell(SPELL_MIN, SPELL_MAX);
+          u.away = Math.random() < AWAY_ODDS;
+          // THE COIN IS TOSSED FIRST AND THE SQUAD ASKED SECOND, in that order, so
+          // that a man refused the idle pose is refused for the reason the owner
+          // gave rather than simply drawing it less often. `easyRoom` counts the
+          // OTHERS, so a man already at ease re-drawing it keeps his place.
+          u.easy = Math.random() < EASY_ODDS && easyRoom(state, u);
         }
-        // AND HE GLANCES ABOUT WITHIN A SPELL, on a second clock of his own, so a
-        // long spell at ease is not one unbroken stare.
-        if (u.easy) {
-          u.look -= dt;
-          if (u.look <= 0) {
-            u.look = spell(LOOK_MIN, LOOK_MAX);
-            u.away = Math.random() < AWAY_ODDS;
-          }
-          if (u.away) u.face = u.faceIdle + Math.PI;
-        }
+        if (u.away) u.face = u.faceIdle + Math.PI;
       }
     }
 

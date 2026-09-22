@@ -159,6 +159,7 @@ export const paths = {
   // tier, because the ladder has two fourth rungs and neither owns the number.
   // The other barracks tier 4's man, named for himself like every other tier 4.
   assassin:           'assets/units/Assassin_Default.png',
+  assassin_idle:      'assets/units/Assassin_Idle.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.
