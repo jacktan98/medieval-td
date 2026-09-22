@@ -191,6 +191,14 @@ export const level12 = {
 
   routes: [west, south, east],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 743, y:  93 },       // by the Ironforge sign
+    { x: 785, y: 113 },       // on the top-right steps
+    { x:  91, y: 328 },       // by the tools and crates
+    { x: 263, y: 380 }        // at the front of the houses
+  ],
   waves: stage10Waves,
   wavesExtended: stage10Waves,
   oneLength: true,

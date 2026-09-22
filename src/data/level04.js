@@ -92,6 +92,13 @@ export const level04 = {
   src: 'assets/map/Stage_2_Map',
   routes: [north, west],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 758, y: 263 },       // at the tavern door
+    { x: 636, y: 266 },       // on the tavern porch
+    { x: 232, y: 300 }        // at the well
+  ],
   waves: stage2Waves,
   // SIX WAVES AT EITHER LENGTH, like the tutorial and for a plainer reason: the
   // owner wrote down six and there is no seventh to run. `oneLength` says so out

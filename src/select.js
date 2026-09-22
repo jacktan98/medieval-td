@@ -49,9 +49,15 @@ const artHeight = def => {
 // look-at, not a fire button — so it errs generous.
 const PAD = 8;
 
+// How far a tap is from the middle of a villager's drawing: half his height up
+// from the shadow he stands on.
+export const VILLAGER_MID = VILLAGER_H / 2;
+const bodyGap = (f, x, y) => Math.hypot(x - f.x, y - (f.y - VILLAGER_MID));
+
 // The figure under a tap, or null. Nearest the camera wins: `y` is the ground
 // anchor, so the largest y is the one drawn last and on top, which is the one
-// the player believes they tapped.
+// the player believes they tapped. Villagers among themselves are the exception
+// — see below.
 export function pickFigure(state, x, y) {
   let best = null;
 
@@ -73,6 +79,16 @@ export function pickFigure(state, x, y) {
       const half = Math.max(f.def.r, 8) + pad;
       const top = f.y - (kind === 'villager' ? VILLAGER_H : artHeight(f.def)) - pad;
       if (x < f.x - half || x > f.x + half || y < top || y > f.y + pad) continue;
+      // TWO VILLAGERS UNDER ONE TAP go to the one whose body is nearer it, not
+      // the one nearer the camera. He is painted, so there is no "drawn last" to
+      // defer to, and a crowd like stage 8's congregation stands close enough that
+      // nearest-the-camera would leave four of its nine with no spot of their own
+      // to be tapped on. Nearest body gives every man his own — a tap on the
+      // middle of his drawing is always his.
+      if (best && kind === 'villager' && best.kind === 'villager') {
+        if (bodyGap(f, x, y) < bodyGap(best.ref, x, y)) best = { kind, ref: f };
+        continue;
+      }
       if (!best || f.y > best.ref.y) best = { kind, ref: f };
     }
   }

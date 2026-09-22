@@ -103,6 +103,14 @@ export const level08 = {
   src: 'assets/map/Stage_6_Map',
   routes: [east, south],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x:  65, y: 227 },       // fishing off the bank
+    { x: 885, y: 229 },       // by the top-right hut
+    { x:  55, y: 268 },       // fishing, with the bucket
+    { x: 804, y: 409 }        // between the two bottom-right huts
+  ],
   waves: stage6Waves,
   wavesExtended: stage6Waves,
   oneLength: true,

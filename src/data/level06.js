@@ -108,6 +108,13 @@ export const level06 = {
   src: 'assets/map/Stage_4_Map',
   routes: [west, north, northEast],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 571, y: 431 },       // at the anvil, hammer in hand
+    { x: 525, y: 462 },       // carrying the plank, front end
+    { x: 473, y: 477 }        // and the back end
+  ],
   waves: stage4Waves,
   wavesExtended: stage4Waves,
   oneLength: true,

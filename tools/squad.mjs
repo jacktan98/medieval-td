@@ -355,17 +355,21 @@ console.log('\nA garrison man with no respawn stays dead\n');
   // At the owner's word: "ensure not all 3 units are in idle pose at the same
   // time." This is the check the whole cap exists for, and it is worth knowing
   // what it would cost to leave to chance: at even money on the pose, all three
-  // land in the idle pose an EIGHTH of the time. Over the five minutes below that
-  // is the better part of a minute of exactly the thing that was asked against,
+  // land in the idle pose an EIGHTH of the time. Over the fifteen minutes below
+  // that is the better part of two of exactly the thing that was asked against,
   // which is why it is a rule in src/units.js and not a weighting.
   //
   // ZERO FRAMES, not "rarely". A statistical bound here would pass a build that
   // had lost the rule and was merely unlucky about it.
+  //
+  // FIFTEEN MINUTES rather than five: at seven to eighteen seconds a spell, five
+  // minutes is about twenty spells a man, and one run in fifteen found a man who
+  // had simply not drawn one of the four ways yet — a flake, not a fault.
   const ways = new Map();            // each of the four, per man, in frames
   const easy = men.map(() => 0);
   const away = men.map(() => 0);
   let frames = 0, allEasy = 0, together = 0;
-  for (let i = 0; i < 300 / DT; i++) {
+  for (let i = 0; i < 900 / DT; i++) {
     updateUnits(state, DT);
     frames++;
     men.forEach((u, k) => {
@@ -378,7 +382,7 @@ console.log('\nA garrison man with no respawn stays dead\n');
     if (men.every(u => atEase(u) === atEase(men[0]))) together++;
   }
   check(allEasy === 0, '  and the whole squad is never in the idle pose at once',
-    `${allEasy} frame(s) of ${frames} over five minutes`);
+    `${allEasy} frame(s) of ${frames} over fifteen minutes`);
 
   // AND ALL FOUR WAYS TURN UP, FOR EVERY MAN. The owner listed them: "default
   // facing left, default facing right, idle facing left, idle facing right."

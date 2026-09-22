@@ -164,6 +164,16 @@ export const level14 = {
 
   routes: [left, bottom, lowerRight, lowerTop],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 663, y: 305 },       // the two off the castle path
+    { x: 641, y: 309 },
+    { x: 918, y: 314 },       // the three to the right of the barricade
+    { x: 902, y: 320 },
+    { x: 867, y: 328 },
+    { x: 908, y: 517 }        // in the bottom-right corner
+  ],
   waves: stage12Waves,
   wavesExtended: stage12Waves,
   oneLength: true,

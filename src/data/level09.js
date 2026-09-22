@@ -107,6 +107,16 @@ export const level09 = {
   src: 'assets/map/Stage_7_Map',
   routes: [west, east],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 211, y: 238 },       // by the left-hand huts
+    { x: 521, y: 306 },       // the two at the fountain
+    { x: 530, y: 331 },
+    { x: 869, y: 312 },       // at the campfire
+    { x: 922, y: 341 },       // with the pitchfork
+    { x: 520, y: 405 }        // at the foot of the fountain
+  ],
   waves: stage7Waves,
   wavesExtended: stage7Waves,
   oneLength: true,

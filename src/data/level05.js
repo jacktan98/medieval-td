@@ -122,6 +122,14 @@ export const level05 = {
   src: 'assets/map/Stage_3_Map',
   routes: [south, north],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 427, y: 299 },       // on the plinth under the statue
+    { x: 415, y: 319 },       // and the one beside him
+    { x: 500, y: 374 },       // on the green below the plinth
+    { x: 758, y: 513 }        // between the two bottom-right houses
+  ],
   waves: stage3Waves,
   wavesExtended: stage3Waves,
   oneLength: true,

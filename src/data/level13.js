@@ -156,6 +156,14 @@ export const level13 = {
 
   routes: [upper, lower, right, lowerRight],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 452, y: 144 },       // at the mill door
+    { x: 394, y: 160 },       // carrying a crate from the store
+    { x: 137, y: 207 },       // by the top-left house
+    { x: 623, y: 326 }        // at the stone pile
+  ],
   waves: stage11Waves,
   wavesExtended: stage11Waves,
   oneLength: true,

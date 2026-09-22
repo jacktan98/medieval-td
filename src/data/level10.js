@@ -108,6 +108,19 @@ export const level10 = {
   src: 'assets/map/Stage_8_Map',
   routes: [east, west],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 418, y: 241 },       // the two at the church door
+    { x: 437, y: 252 },
+    { x:  69, y: 321 },       // the congregation, standing
+    { x: 137, y: 345 },
+    { x:  56, y: 355 },
+    { x: 119, y: 376 },
+    { x:  71, y: 378 },
+    { x: 154, y: 354 },       // and kneeling, backs to us
+    { x: 101, y: 368 }
+  ],
   waves: stage8Waves,
   wavesExtended: stage8Waves,
   oneLength: true,

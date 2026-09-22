@@ -97,14 +97,17 @@ sideways as it does it. `tools/shadow.mjs` checks all four.
 
 ### And one figure who is not in the fight
 
-`Villager_Default` — the five people who live on stage 1. One drawing, no Attack
-and no Idle.
+`Villager_Default` — the people who live on every stage, sixty-two of them across
+thirteen boards. One drawing, no Attack and no Idle. Those painted holding a tool —
+a hammer, a plank, a fishing rod, a pitchfork — are villagers all the same and get
+the same card.
 
 **This PNG is only ever drawn on his card.** On the board he is the figure the
 artist painted, left exactly where and as he was drawn: nothing is cut out of the
 base for him and the game never draws one. What the level holds is where each of
-them stands, so a tap can find him — see `villagers` in `src/data/level00.js` and
-`src/villagers.js`.
+them stands, so a tap can find him — see `villagers` in each `src/data/levelNN.js` and
+`src/villagers.js`. The robed priest at the lectern on Dawnford Church is not one
+of them.
 
 It was the other way round for one build: cut out like stage 5's crossbowmen,
 drawn live, and running to a doorway when tapped. The owner took the running out,

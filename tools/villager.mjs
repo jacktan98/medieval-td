@@ -5,7 +5,7 @@
 // A villager is the one figure in this game with no part in the fight: nothing
 // shoots him, he blocks nobody, and the only thing he does is answer a tap with a
 // card. That makes him easy to get wrong in ways nothing else would notice — a
-// board plays exactly the same with all five of them broken.
+// board plays exactly the same with every one of them broken.
 //
 // HE RAN FOR A DOOR FOR ONE BUILD. He was cut out of the artwork, drawn live and
 // would sprint to a doorway and vanish when tapped; the owner's verdict was "it's
@@ -15,9 +15,9 @@
 // board in place with nothing calling it.
 import { readFileSync } from 'fs';
 import { levels } from '../src/level.js';
-import { allGroups, bounds, MAP_SCALE, readArtwork } from './svg.mjs';
+import { allGroups, bounds, MAP_SCALE, readArtwork, shapesByFill } from './svg.mjs';
 import { makeVillagers, VILLAGER, TAP_PAD, VILLAGER_H } from '../src/villagers.js';
-import { pickFigure, selectionInfo, validate } from '../src/select.js';
+import { pickFigure, selectionInfo, validate, VILLAGER_MID } from '../src/select.js';
 import { selectionCue } from '../src/audio.js';
 import { BOOK_ORDER } from '../src/data/waves.js';
 
@@ -53,6 +53,49 @@ console.log('\nWho lives here\n');
   }
   ok(extra.length === 0, 'and each of them is a place and nothing more',
     extra.length ? extra.join('; ') : 'x and y, on every one of them');
+
+  // EVERY STAGE, at the owner's word: "Make every villager clickable (same as stage
+  // 1) in other stages." The campaign is the head of `levels` up to the three
+  // testing boards, which have nobody painted on them.
+  const campaign = levels.slice(0, levels.indexOf(levels.find(l => l.id === 'm1')));
+  const empty = campaign.filter(l => !(l.villagers || []).length);
+  ok(empty.length === 0, 'every stage of the campaign has its people listed',
+    empty.length ? empty.map(l => l.name).join(', ') + ' has none'
+                 : `${campaign.length} stage(s), ${campaign.reduce((n, l) => n + l.villagers.length, 0)} villager(s)`);
+
+  // AND NOBODY PAINTED IS LEFT OFF THE LIST. A figure stands on the artist's
+  // #362407 ground shadow, 11 x 3 at game scale — a man kneeling, 16 x 5. Every one
+  // of those that is not a plot marker or a garrison post is somebody a player can
+  // see and try to tap, so it must be on the list; and every point on the list must
+  // stand on one, or it is a tap box over bare grass.
+  //
+  // ONE PAINTED FIGURE IS NOT A VILLAGER: the robed priest at his lectern on
+  // Dawnford Church, who is drawn as nobody else on any board is.
+  const NOT_VILLAGERS = { m10: [{ x: 189, y: 303 }] };
+  const missing = [], stray = [];
+  for (const l of campaign) {
+    const feet = shapesByFill(readArtwork(l.src))
+      .filter(s => (s.fill || '').toLowerCase() === '#362407')
+      .map(s => {
+        const b = bounds(s.pts);
+        return { w: (b.x1 - b.x0) * MAP_SCALE, h: (b.y1 - b.y0) * MAP_SCALE,
+                 x: (b.x0 + b.x1) / 2 * MAP_SCALE, y: (b.y0 + b.y1) / 2 * MAP_SCALE };
+      })
+      .filter(f => (Math.abs(f.w - 11) < 1.5 && Math.abs(f.h - 3) < 1) ||
+                   (Math.abs(f.w - 16) < 1 && Math.abs(f.h - 5) < 1));
+    const near = (list, f, d) => (list || []).some(p => Math.hypot(p.x - f.x, p.y - f.y) < d);
+    for (const f of feet) {
+      if (near(l.plots, f, 8) || near(l.garrison, f, 12) || near(NOT_VILLAGERS[l.id], f, 4)) continue;
+      if (!near(l.villagers, f, 3)) missing.push(`${l.name} (${f.x.toFixed(0)},${f.y.toFixed(0)})`);
+    }
+    for (const v of l.villagers || []) {
+      if (!near(feet, v, 3)) stray.push(`${l.name} (${v.x},${v.y})`);
+    }
+  }
+  ok(missing.length === 0, '  and every figure painted on a board is on its list',
+    missing.length ? missing.join(', ') + ' not listed' : 'every figure shadow accounted for');
+  ok(stray.length === 0, '  and every point on a list is standing on one',
+    stray.length ? stray.join(', ') + ' on bare ground' : 'no tap box over empty grass');
 }
 
 // --- and he stays painted on the board --------------------------------------------
@@ -76,7 +119,7 @@ console.log('\nStill in the picture\n');
     }).length);
     ok(standing.every(n => n >= 4),
       `${l.name}: every one of them is still painted on the board`,
-      `${standing.join('/')} piece(s) standing at the five anchors`);
+      `${standing.join('/')} piece(s) standing at the anchors`);
   }
 
   // AND THE BASE IS THE ONE THE BOARD HAD BEFORE THEY WERE NAMED. Nothing is cut
@@ -130,37 +173,51 @@ const board = level => {
 };
 
 {
+  // THE TAP FINDS HIM, on every board. Through pickFigure, which is the function
+  // the board tap actually calls — a fixture with its own hit test would prove
+  // nothing.
+  //
+  // AND IT FINDS HIM, NOT HIS NEIGHBOUR. Villagers stand close — stage 8's
+  // congregation is nine men in a patch of ground two soldiers wide — so their tap
+  // boxes overlap, and under the nearest-the-camera rule every other figure is
+  // picked by, four of those nine could not be selected at all. Among villagers the
+  // nearer BODY wins instead, and this is what says it is enough: a tap on the
+  // middle of each man's drawing opens his card.
+  const lost = [];
+  let total = 0;
+  for (const lvl of peopled) {
+    const state = board(lvl);
+    for (const v of state.villagers) {
+      total++;
+      const hit = pickFigure(state, v.x, v.y - VILLAGER_MID);
+      if (!hit || hit.ref !== v) {
+        lost.push(`${lvl.name} (${v.x},${v.y})` +
+          (hit ? ` -> (${hit.ref.x},${hit.ref.y})` : ' -> nothing'));
+      }
+    }
+  }
+  ok(lost.length === 0, 'a tap on any of them opens his card and nobody else\'s',
+    lost.length ? lost.join('; ') : `${total} of ${total}, on ${peopled.length} board(s)`);
+
+  // AND THE REST OF THE GAME STILL PICKS NEAREST THE CAMERA. The exception is for
+  // villagers among themselves; a soldier walking in front of one must still be
+  // the one a tap finds.
+  {
+    const state = board(peopled[0]);
+    const v = state.villagers[0];
+    const man = { def: { r: 6, spriteTrim: [0, 0, 60, 110] }, x: v.x, y: v.y + 4, respawn: 0 };
+    state.units.push(man);
+    const hit = pickFigure(state, v.x, v.y - VILLAGER_MID);
+    ok(hit && hit.ref === man, '  and a soldier in front of him still takes the tap',
+      hit ? hit.kind : 'nothing');
+  }
+
   const lvl = peopled[0];
   const state = board(lvl);
 
-  // THE TAP FINDS HIM. Through pickFigure, which is the function the board tap
-  // actually calls — a fixture with its own hit test would prove nothing.
-  //
-  // ONE AT A TIME IS NOT REQUIRED ANY MORE, and that is a quiet gain from taking
-  // the running out: nobody leaves the board, so all five have to answer at once.
-  // Two of stage 1's five stand 13px apart and their boxes overlap, so the nearer
-  // one wins both — which is the rule every figure in this game is picked by. What
-  // must hold is that a tap on a villager finds A villager rather than bare ground.
-  const found = state.villagers.map(v => {
-    const hit = pickFigure(state, v.x, v.y - 8);
-    return hit && hit.kind === 'villager';
-  });
-  ok(found.every(Boolean), 'a tap on any of them lands on a villager',
-    `${found.filter(Boolean).length} of ${found.length}`);
-
-  // AND MOST OF THEM ARE THEMSELVES. Only the two that overlap can hand a tap to
-  // their neighbour, so four of the five must answer for themselves.
-  const own = state.villagers.filter(v => {
-    const hit = pickFigure(state, v.x, v.y - 8);
-    return hit && hit.ref === v;
-  });
-  ok(own.length >= state.villagers.length - 1,
-    '  and all but the one standing behind another answer for themselves',
-    `${own.length} of ${state.villagers.length}`);
-
   // HE STAYS. There is no update loop any more, so this is a statement about the
-  // whole feature rather than about a timer: the board has the same five people on
-  // it whatever the player does.
+  // whole feature rather than about a timer: the board has the same people on it
+  // whatever the player does.
   state.selected = { kind: 'villager', ref: state.villagers[0] };
   for (let i = 0; i < 600; i++) validate(state);
   ok(state.villagers.length === lvl.villagers.length && state.selected,

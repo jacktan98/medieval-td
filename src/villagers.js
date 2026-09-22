@@ -3,7 +3,7 @@
 // opens his card and that is all he does.
 //
 // HE IS NOT DRAWN BY THIS FILE, AND THAT IS THE WHOLE DESIGN. He is painted into
-// stage 1's artwork and stays there — the base the game loads has him in it, in the
+// every stage's artwork and stays there — the base the game loads has him in it, in the
 // pose the artist drew, exactly, forever. What this file holds is WHERE he is, so a
 // tap can find him, and WHO he is, so the panel can say.
 //

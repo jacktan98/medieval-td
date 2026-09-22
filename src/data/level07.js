@@ -107,6 +107,17 @@ export const level07 = {
   src: 'assets/map/Stage_5_Map',
   routes: [west, north],
   plots: plots1,
+  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // Each anchor is the centre of the figure's own ground shadow.
+  villagers: [
+    { x: 415, y: 274 },       // on the castle path
+    { x: 380, y: 314 },       // below it, by the road
+    { x: 816, y: 341 },       // the three by the bridge
+    { x: 774, y: 358 },
+    { x: 752, y: 362 },
+    { x: 580, y: 484 },       // at the broken ballista
+    { x: 511, y: 516 }        // with the mallet below it
+  ],
   waves: stage5Waves,
   wavesExtended: stage5Waves,
   oneLength: true,
