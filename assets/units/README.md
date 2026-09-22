@@ -61,11 +61,26 @@ nothing shows them until 150 gold has been spent.
 | Paladin   | `Paladin_Idle`              |
 
 **The only drawing in the game the rules never ask for.** No ability owns it and
-nothing about a fight can produce it: a barracks soldier stands down into it after
-five seconds in which nothing has needed him, and back out of it on the frame
-something does. See `REST_AFTER` and `atEase` in `src/units.js`. While he is at
-ease he also looks round every three to seven seconds, and a third of the time the
-new heading is away from the road.
+nothing about a fight can produce it. Five seconds in which nothing has needed him
+makes a soldier eligible, and from then on the quiet is a CYCLE: five to eleven
+seconds at ease, three to seven back at the ready, round again until something
+needs him — at which point he is at attention on that frame. See `REST_AFTER`,
+`EASE_MIN` and `atEase` in `src/units.js`.
+
+**Every clock is per man.** Each draws his own wait on top of the threshold and his
+own length for every spell after it, so a squad of three enters the cycle spread
+out and stays out of step. They shared one clock for a build and stood down as one
+figure three wide, which is what that is for.
+
+While he is at ease he also looks round every three to seven seconds, and a third
+of the time the new heading is away from the road. A man back at the ready always
+faces it.
+
+**His health bar does not move for any of this.** A spear carried upright is taller
+than the bar hangs, so the bar crosses the shaft with the spearhead above it. That
+is the owner's decision over the alternative — a bar that rises and falls with the
+pose — and it is the rule `src/render.js` states anyway: a bar that moves for a
+reason other than health is a bar the player stops trusting.
 
 **The Assassin has none and that is deliberate** — he is the one soldier who never
 stands down. He needs no exemption written for him: `atEase` asks for an `idle`

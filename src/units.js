@@ -86,6 +86,34 @@ const REST_AFTER = 5;
 // against a 5 typed a second time.
 export const REST_SECONDS = REST_AFTER;
 
+// AND THEN HE IS NOT STOOD DOWN FOREVER. At the owner's word: "each unit can also
+// go back to default pose after being in idle pose for awhile." So the quiet is a
+// CYCLE rather than a state — spear up for a spell, spear down for a spell, round
+// again for as long as nothing needs him.
+//
+// LONGER AT EASE THAN AT THE READY, because that is what the two poses mean. A man
+// with nothing to do spends most of his time at rest and straightens up now and
+// then; the reverse would read as a squad that cannot settle.
+const EASE_MIN = 5;
+const EASE_MAX = 11;
+const READY_MIN = 3;
+const READY_MAX = 7;
+
+// AND THEY DO NOT ALL DO IT AT ONCE, at the owner's word: "don't make all the 3
+// units in each barracks go to idle pose at the same time."
+//
+// THE BUG WAS IN THE CLOCK THEY SHARED. `rest` starts at zero for every man in a
+// squad on the frame their fight ends, and it is the same number in all three, so
+// they crossed the threshold on the same frame and stood down as one. Every man
+// now waits his own extra spell on top of it, drawn when the clock is reset — so
+// the squad enters the cycle spread out, and stays spread out, because every spell
+// after that is drawn per man too.
+//
+// UP TO TWO AND A HALF SECONDS, which is as much spread as there is room for: the
+// five-second threshold plus this has to stay clear of the nine-second wave rest,
+// or the man who drew the long straw never stands down at all between waves.
+const ENTER_SPREAD = 2.5;
+
 // AND HOW OFTEN HE LOOKS ROUND while he is at ease. A new heading every three to
 // seven seconds, which is slow enough to read as a man glancing about rather than
 // a figure flickering, and RANDOM per man rather than a shared clock: a squad that
@@ -99,14 +127,24 @@ const LOOK_MAX = 7;
 // is what a guard post looks like when nothing is happening.
 const AWAY_ODDS = 1 / 3;
 
-// IS HE STOOD DOWN, asked by the one thing outside this file that needs to know:
-// the renderer, which draws his third pose when he is. The answer is a fact about
-// the man rather than a drawing, which is why it lives here and not in render.js.
+// A SPELL, in seconds, somewhere between two bounds. One line so that every clock
+// in this section is drawn the same way and none of them can be the one that was
+// written as a fixed number by mistake.
+const spell = (lo, hi) => lo + Math.random() * (hi - lo);
+
+// IS HE STOOD DOWN RIGHT NOW, asked by the one thing outside this file that needs
+// to know: the renderer, which draws his third pose when he is. The answer is a
+// fact about the man rather than a drawing, which is why it lives here and not in
+// render.js.
+//
+// IT IS THE FLAG AND NOT THE CLOCK. It was `rest >= REST_AFTER` while standing
+// down was a state a man entered and stayed in; now that it is a cycle, the clock
+// only says he is eligible and `easy` says which half of it he is in.
 //
 // A SOLDIER WITH NO `idle` DRAWING NEVER STANDS DOWN, and that is the whole of the
 // assassin's exemption — he simply has no such field, so this is false for him
 // forever and he keeps his knife out. Nothing had to be written to exclude him.
-export const atEase = u => !!(u.def.idle && u.rest >= REST_AFTER);
+export const atEase = u => !!(u.def.idle && u.easy);
 
 // Formation offsets as [along, across, splay] in path-local units: along is
 // the direction enemies travel, across is perpendicular, splay is degrees
@@ -601,11 +639,14 @@ export function makeGarrison(state, level) {
       cd: 0,
       thrust: 0,
       hit: 0,             // how white he is from the last blow — src/gesture.js
-      // STANDING DOWN: seconds since anything needed him, seconds until he next
-      // looks round, and whether he is currently looking the wrong way. See
-      // REST_AFTER above. A garrison man carries all three and uses none of them
-      // unless his def has an `idle` drawing, which none of them does today.
+      // STANDING DOWN: seconds since anything needed him, whether he is at ease
+      // this instant, seconds until his stance next flips, seconds until he next
+      // looks round, and whether he is looking the wrong way. See REST_AFTER
+      // above. A garrison man carries all five and uses none of them unless his
+      // def has an `idle` drawing, which none of them does today.
       rest: 0,
+      easy: false,
+      stance: 0,
       look: 0,
       away: false,
       respawn: 0,
@@ -644,11 +685,14 @@ export function makeUnits(state, tower) {
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       hit: 0,             // how white he is from the last blow — src/gesture.js
-      // STANDING DOWN: seconds since anything needed him, seconds until he next
-      // looks round, and whether he is currently looking the wrong way. See
-      // REST_AFTER above. A garrison man carries all three and uses none of them
-      // unless his def has an `idle` drawing, which none of them does today.
+      // STANDING DOWN: seconds since anything needed him, whether he is at ease
+      // this instant, seconds until his stance next flips, seconds until he next
+      // looks round, and whether he is looking the wrong way. See REST_AFTER
+      // above. A garrison man carries all five and uses none of them unless his
+      // def has an `idle` drawing, which none of them does today.
       rest: 0,
+      easy: false,
+      stance: 0,
       look: 0,
       away: false,
       respawn: 0,
@@ -1271,21 +1315,46 @@ export function updateUnits(state, dt) {
     const needed = u.foe || mark || u.thrust > 0 || u.hold > 0 || u.hit > 0 || d > SETTLE;
     if (needed) {
       // BACK TO ATTENTION ON THE SAME FRAME, which is the half that matters. The
-      // pose and the heading both hang off `rest`, so clearing it here means a
-      // soldier is facing the road and levelling his spear on the very frame an
-      // enemy comes within reach — not a frame later, and never mid-turn.
+      // pose and the heading both hang off `easy` and `away`, so clearing them
+      // here means a soldier is facing the road and levelling his spear on the
+      // very frame an enemy comes within reach — not a frame later, and never
+      // mid-turn.
       u.rest = 0;
+      u.easy = false;
       u.look = 0;
       u.away = false;
+      // AND HIS OWN WAIT IS DRAWN NOW, not when the threshold arrives, which is
+      // what spreads the squad. Three men whose fight ends on the same frame get
+      // three different numbers here and stand down at three different moments.
+      u.stance = Math.random() * ENTER_SPREAD;
     } else if (u.def.idle) {
       u.rest += dt;
       if (u.rest >= REST_AFTER) {
-        u.look -= dt;
-        if (u.look <= 0) {
-          u.look = LOOK_MIN + Math.random() * (LOOK_MAX - LOOK_MIN);
-          u.away = Math.random() < AWAY_ODDS;
+        // THE CYCLE. One countdown, flipped at zero, with the length of the next
+        // spell drawn from whichever pose he is flipping INTO — so at ease is a
+        // long spell and at the ready is a short one, and neither is the same
+        // length twice.
+        u.stance -= dt;
+        if (u.stance <= 0) {
+          u.easy = !u.easy;
+          u.stance = u.easy ? spell(EASE_MIN, EASE_MAX) : spell(READY_MIN, READY_MAX);
+          // HE STRAIGHTENS UP FACING THE ROAD. Turning away belongs to being at
+          // ease; a man who has come back to the ready and is still looking the
+          // wrong way is a man at attention with his back to the enemy, which is
+          // the one reading of this that would look like a bug.
+          u.away = u.easy && Math.random() < AWAY_ODDS;
+          u.look = spell(LOOK_MIN, LOOK_MAX);
         }
-        if (u.away) u.face = u.faceIdle + Math.PI;
+        // AND HE GLANCES ABOUT WITHIN A SPELL, on a second clock of his own, so a
+        // long spell at ease is not one unbroken stare.
+        if (u.easy) {
+          u.look -= dt;
+          if (u.look <= 0) {
+            u.look = spell(LOOK_MIN, LOOK_MAX);
+            u.away = Math.random() < AWAY_ODDS;
+          }
+          if (u.away) u.face = u.faceIdle + Math.PI;
+        }
       }
     }
 

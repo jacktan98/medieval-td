@@ -530,7 +530,7 @@ function drawStatus(ctx, state) {
     // pointing at him.
     ctx.save();
     if (hidden(u)) ctx.globalAlpha *= UNSEEN;
-    const top = u.y - artHeight(u.def, u) - 4;
+    const top = u.y - artHeight(u.def) - 4;
     healthBar(ctx, u.x, top, u.def.r, u.hp / u.maxHp);
     statusMarks(ctx, u, u.x, top);
     ctx.restore();
@@ -1922,27 +1922,16 @@ const artHeight = (def, fig) => {
                      : null);
   if (beat) return beat.trim[3] * SCALE;
 
-  // AND THE SECOND EXCEPTION, for the same reason and on better terms: a barracks
-  // soldier stood down carries his own height too.
+  // THE AT-EASE POSE IS NOT IN HERE, at the owner's word: "do not move the health
+  // bar. just let the health bar overlap part of the spear."
   //
-  // THE BAR CUT THE SPEAR IN HALF. A spear carried upright is 181 source px where
-  // the same man levelling it is 116, so folding the pose into the maximum below
-  // would float every spearman's bar 13 game px over a man who is 24 px tall —
-  // more than half his own height, all the time, for a pose he is not in. Leaving
-  // it out was worse: rendered and looked at, the bar sat across the shaft with
-  // the spearhead floating free above it.
-  //
-  // SO THE BAR FOLLOWS THE POSE, and the rule this bends is worth restating
-  // exactly. What it protects is that a bar must never move because a soldier
-  // arrived or an arrow landed — and it still cannot. Standing down takes five
-  // seconds in which nothing at all has happened, and coming back to attention is
-  // on the same frame as an enemy arriving. So DURING A FIGHT the bar is exactly
-  // where it has always been, and it moves only while there is nothing to watch.
-  //
-  // That is a better bargain than the boss's, whose bar moves for a set piece in
-  // the middle of a fight.
-  if (fig && def.idle && atEase(fig)) return def.idle.trim[3] * SCALE;
-
+  // It was, for one build. A spear carried upright is 181 source px where the same
+  // man levelling it is 116, so a bar hung off the def's height crosses the shaft
+  // with the spearhead above it, and the fix was to let the bar follow the pose.
+  // The owner looked at both and kept the still bar, which is the rule this file
+  // already states twice over: a bar that moves for a reason other than health is
+  // a bar the player stops trusting, and a weapon crossing it costs less than
+  // that. The boss's two scripted beats remain the only exception in the game.
   const close = def.melee && def.melee.default;
   return Math.max(def.spriteTrim[3],
                   close ? close.trim[3] : 0,
