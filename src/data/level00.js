@@ -76,6 +76,44 @@ export const level00 = {
   startGold: 200,
   startLives: 20,
 
+  // THE FIVE PEOPLE WHO LIVE HERE, and the first thing on any board that is alive
+  // without being part of the fight.
+  //
+  // At the owner's ask: "if a player clicks each of them, that unit will run off to
+  // the nearest house with an obvious door." They are painted into the artwork, so
+  // tools/split-map.mjs cuts them out of the base exactly as it cuts stage 5's two
+  // crossbowmen — a live figure drawn over a painted one is two figures. The anchor
+  // is the centre of each one's own ground shadow, read off the drawing.
+  //
+  // WHICH DOOR IS THE OWNER'S CALL AND NOT A MEASUREMENT. "Nearest" would be wrong
+  // twice on this board: the man by the bottom house is nearer the house BEHIND the
+  // one with the door, and the pair by the campfire are nearer the two houses up at
+  // the top left, neither of which has a door drawn on it. Only two of the eight
+  // buildings on this map have one, and a villager running into a blank wall is
+  // worse than one running a little further.
+  //
+  // So it is written down: the three in the bottom half go to door 0 and the two at
+  // the top right go to door 1, which is what the owner asked for in those words.
+  villagers: [
+    { x: 176, y: 351, door: 0 },   // by the campfire
+    { x: 157, y: 379, door: 0 },   // and the other one
+    { x: 495, y: 460, door: 0 },   // outside the bottom house
+    { x: 918, y: 298, door: 1 },   // the pair up at the top right
+    { x: 905, y: 319, door: 1 }
+  ],
+
+  // AND THE TWO DOORWAYS, at the floor of each: the bottom-middle of the dark
+  // opening the artist drew, so a villager stops ON the threshold rather than in
+  // front of it or inside the wall.
+  //
+  // Measured rather than eyeballed — each door is a 10x37 source-px shape in
+  // #362407, the same brown a figure's shadow is painted in, which is why they
+  // fall out of the artwork as cleanly as the villagers do.
+  doors: [
+    { x: 455, y: 433 },   // the left of the two houses at the bottom middle
+    { x: 892, y: 253 }    // the upper of the two at the top right
+  ],
+
   // WHAT A FIGURE CAN WALK BEHIND.
   //
   // The board is one flat image drawn under everything, so a soldier standing
@@ -101,9 +139,13 @@ export const level00 = {
   // in the top layer by height and refuses if anything is sitting on the line.
   frontArt: 'front00',
   front: [
-    { x:  30, y:  71, w:  77, h:  81, g: 136 },   // stands on y 136
-    { x: 157, y: 109, w:  77, h:  81, g: 174 },   // stands on y 174
-    { x:  80, y: 157, w:  35, h:  44, g: 198 },   // stands on y 198
+    // THREE OF THESE MOVED BY A PIXEL when the list was last re-derived, and not
+    // because of the villagers — two houses at the top left went 81 tall to 82 and
+    // the signpost 44 to 43, and none of the three is anywhere near a person. The
+    // committed numbers had simply drifted from the tool at some earlier change.
+    { x:  30, y:  71, w:  77, h:  82, g: 136 },   // stands on y 136
+    { x: 157, y: 109, w:  77, h:  82, g: 174 },   // stands on y 174
+    { x:  80, y: 157, w:  35, h:  43, g: 198 },   // stands on y 198
     { x: 873, y: 181, w:  77, h:  81, g: 246 },   // stands on y 246
     { x: 782, y: 226, w:  77, h:  81, g: 290 },   // stands on y 290
     { x:  67, y: 346, w: 107, h:  43, g: 383 },   // stands on y 383 — the campfire

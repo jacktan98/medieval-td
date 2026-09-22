@@ -95,6 +95,23 @@ pair on the roster. The shadow does not move at all — all three of each man's 
 share one source pixel — which is what lets a squad stand down without stepping
 sideways as it does it. `tools/shadow.mjs` checks all four.
 
+### And one figure who is not in the fight
+
+`Villager_Default` — the five people who live on stage 1. One drawing, no Attack
+and no Idle: he stands where the artist painted him, and if he is tapped he runs
+for the nearest doorway and is gone.
+
+He is painted into the artwork like stage 5's crossbowmen and cut out of the base
+by the same pass, so the game can move him — see `villagers` in
+`src/data/level00.js` and `src/villagers.js`. **His cutting window is half the
+size**, because he is half the figure: 20 game px across and 30 tall, against the
+44 by 38 a garrison soldier gets. The generous window shipped once and took a log
+out of the campfire and a stepping stone off the path with two of them.
+
+He is not in the encyclopedia and his card in the description panel is a picture
+and a name with no stats under it at all — the only card in the game with nothing
+to say, because he is the only figure with no part in the fight.
+
 ### And a fourth shape: an ability that redraws BOTH poses
 
 Reinforced Tension rebuilds the Crossbow Sentry's bow in steel, and a man cannot

@@ -177,6 +177,7 @@ function centre(parts) {
 // --- what the data files claim ------------------------------------------------
 
 const towers = await import('../src/data/towers.js');
+const { VILLAGER } = await import('../src/villagers.js');
 
 // THE ARCHERY LADDER'S TWO FOURTH RUNGS, BY NAME. They were archery[3] and
 // archery[4] until the owner swapped the pair's order — the Crossbow Sentry is
@@ -402,6 +403,11 @@ const SPRITES = [
   ['assets/units/Paladin_Attack.png',                 'paladin.attack.pivot',     pal.attack.trim, pal.attack.pivot],
   ['assets/units/Paladin_Idle.png',                   'paladin.idle.pivot',       pal.idle.trim, pal.idle.pivot],
   ['assets/units/Assassin_Idle.png',                  'assassin.idle.pivot',      ass.idle.trim, ass.idle.pivot],
+  // THE ONE FIGURE WHO IS NOT IN THE FIGHT. He is cut out of stage 1's base and
+  // drawn by the game, so his anchor has to sit on his shadow exactly as a
+  // soldier's does — otherwise five villagers would step sideways on the frame the
+  // board opens. See src/villagers.js.
+  ['assets/units/Villager_Default.png',               'villager.pivot',           VILLAGER.spriteTrim, VILLAGER.pivot],
   // His two ability poses, in the same pair rule. Holy Light is the widest spread
   // of them all — 133x193 against his resting 123x140, because the glow rises well
   // above his head — and its shadow is still on his own pixel, source (277.0,

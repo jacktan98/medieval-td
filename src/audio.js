@@ -1598,5 +1598,13 @@ export function selectionCue(sel) {
     const own = sel.ref && sel.ref.def && sel.ref.def.voice;
     return (own && CUE[own]) || CUE.barracks;
   }
+  // A VILLAGER SAYS NOTHING. He is not a soldier and has no barracks to answer
+  // for him, and the line below would ask his `fam` — which he has not got.
+  //
+  // NULL RATHER THAN A BORROWED VOICE, and it is the honest answer rather than a
+  // gap waiting to be filled: the five lines in this game belong to men who fight,
+  // and a villager running for his door is not one of them. The tap still clicks,
+  // which is what tells the player it landed — see the note in src/input.js.
+  if (sel.kind === 'villager') return null;
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

@@ -246,13 +246,49 @@ const markerBounds = bounds(markers[0].subPaths.flat());
 // IT FAILS LOUDLY. A redraw that moves a figure leaves its anchor over bare ground and
 // the tool says "nothing to cut" rather than quietly shipping a board with a painted
 // crossbowman and a live one standing in the same place.
-const GARRISON_W = 22;    // half-width of the window, game px
+// AND A VILLAGER GETS A SMALLER ONE, because he is a smaller figure. The window is
+// the size of the thing it is cutting out — that is the whole of why it works — and
+// a garrison man's is sized for stage 5's crossbowmen, who carry a crossbow and a
+// quiver. A villager carries nothing: 13 game px across and 24 tall, against the 44
+// by 38 the other window allows.
+//
+// IT SHIPPED WRONG FOR ONE RUN and both failures were the same failure. Standing in
+// the generous window with each of two of stage 1's villagers was a piece of scenery
+// he happens to be in front of — a 30x21 log by the campfire, and a 19x7 stepping
+// stone outside the bottom house — and both were cut out with him, which leaves a
+// hole in the board and, for the log, its own shadow floating over bare grass.
+//
+// Either of the two numbers below would have excluded both on its own. Both are
+// tightened anyway, because each is a true statement about the figure rather than a
+// setting that happens to work: the widest thing about a villager is his shoulders
+// and the tallest is his head.
+const WINDOW = {
+  garrison: { w: 22, up: 34, down: 4 },
+  villager: { w: 10, up: 26, down: 4 }
+};
+
+const GARRISON_W = 22;    // half-width of the widest window, for the notes below
 const GARRISON_UP = 34;   // how far above the foot it reaches
 const GARRISON_DOWN = 4;  // and below
 
+// AND THE VILLAGERS ARE THE SAME IDEA A SECOND TIME. Stage 1 has five people
+// painted onto it who run for a door when they are tapped — see src/villagers.js —
+// and a live one drawn over a painted one is two people, exactly as it was for the
+// crossbowmen. One list of anchors, one cut.
+//
+// TOGETHER RATHER THAN IN TWO PASSES, because the nesting rule below is about the
+// whole cut and not about either half of it: a piece claimed by a garrison anchor
+// and a piece claimed by a villager anchor can be parent and child of each other,
+// and two passes would take the parent out and then reach into a file that had
+// already closed up behind it.
+const figures = [
+  ...(level.garrison || []).map(at => ({ at, what: 'garrison' })),
+  ...(level.villagers || []).map(at => ({ at, what: 'villager' }))
+];
+
 const garrisonGroups = [];
-if (level.garrison && level.garrison.length) {
-  console.log(`\nthe garrison — figures cut out of the base for the game to draw:`);
+if (figures.length) {
+  console.log(`\nfigures cut out of the base for the game to draw:`);
   const marks2 = [...svg.matchAll(/<g data-layer="(\d+)">/g)];
   const topN = Math.max(...marks2.map(m => +m[1]));
   const firstTop = marks2.find(m => +m[1] === topN);
@@ -382,9 +418,10 @@ if (level.garrison && level.garrison.length) {
     const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
     let best = -1, least = Infinity;
     const par = parentOf(g);
-    level.garrison.forEach((at, k) => {
-      if (x0 < at.x - GARRISON_W || x1 > at.x + GARRISON_W ||
-          y0 < at.y - GARRISON_UP || y1 > at.y + GARRISON_DOWN) return;
+    figures.forEach(({ at, what }, k) => {
+      const win = WINDOW[what];
+      if (x0 < at.x - win.w || x1 > at.x + win.w ||
+          y0 < at.y - win.up || y1 > at.y + win.down) return;
       // AND A BARE LINE DRAWN INSIDE SOMETHING TOO BIG TO BE A MAN is that thing's
       // line and not his — see the note above.
       if (par && !figureSized(par)) { withheld.add(g); return; }
@@ -415,14 +452,14 @@ if (level.garrison && level.garrison.length) {
       `too big to be a figure, so it belongs to that rather than to the man standing on it`);
   }
 
-  for (const [i, at] of level.garrison.entries()) {
+  for (const [i, { at, what }] of figures.entries()) {
     const mine = claimed.filter(g => owner.get(g) === i);
     if (!mine.length) {
-      throw new Error(`garrison ${i} is at (${at.x}, ${at.y}) and there is nothing drawn there. ` +
+      throw new Error(`${what} ${i} is at (${at.x}, ${at.y}) and there is nothing drawn there. ` +
         `If the figure moved in a redraw, move the anchor in the level file to its feet.`);
     }
     const b = bounds(mine.flatMap(g => g.subPaths.flat()));
-    console.log(`  ${i}: ${mine.length} piece(s) at ${at.x},${at.y} — ` +
+    console.log(`  ${what} ${i}: ${mine.length} piece(s) at ${at.x},${at.y} — ` +
       `${((b.x1 - b.x0) * MAP_SCALE).toFixed(0)}x${((b.y1 - b.y0) * MAP_SCALE).toFixed(0)}px, ` +
       `standing on y ${(b.y1 * MAP_SCALE).toFixed(0)}`);
     garrisonGroups.push(...mine);

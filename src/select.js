@@ -23,6 +23,7 @@ import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
 import { fixture } from './units.js';
 import { swing } from './status.js';
+import { VILLAGER, TAP_PAD } from './villagers.js';
 
 // How tall a figure's artwork is in game px, so the tap box covers the drawing
 // rather than the collision circle. A def with no sprite yet falls back to its
@@ -54,15 +55,23 @@ const PAD = 8;
 export function pickFigure(state, x, y) {
   let best = null;
 
-  for (const [kind, list] of [['unit', state.units], ['enemy', state.enemies]]) {
+  // THREE LISTS NOW, and the villagers are the odd one: a tap on him is not only a
+  // question about what he is, it is the whole of what he does. See sendVillager
+  // in src/villagers.js and the board tap in src/input.js.
+  for (const [kind, list] of [['unit', state.units], ['enemy', state.enemies],
+                              ['villager', state.villagers || []]]) {
     for (const f of list) {
       // A soldier waiting to respawn is a muster ring, not a man. There is
       // nothing on the board to have tapped.
       if (kind === 'unit' && f.respawn > 0) continue;
 
-      const half = Math.max(f.def.r, 8) + PAD;
-      const top = f.y - artHeight(f.def) - PAD;
-      if (x < f.x - half || x > f.x + half || y < top || y > f.y + PAD) continue;
+      // A BIGGER BOX FOR A VILLAGER, and the reason is what a miss costs. Missing
+      // a soldier opens nothing and the player taps again; missing a villager is
+      // the one interaction he has, and he is the smallest figure on the board.
+      const pad = kind === 'villager' ? TAP_PAD : PAD;
+      const half = Math.max(f.def.r, 8) + pad;
+      const top = f.y - artHeight(f.def) - pad;
+      if (x < f.x - half || x > f.x + half || y < top || y > f.y + pad) continue;
       if (!best || f.y > best.ref.y) best = { kind, ref: f };
     }
   }
@@ -83,6 +92,7 @@ export function validate(state) {
 
   const list = s.kind === 'unit' ? state.units
              : s.kind === 'enemy' ? state.enemies
+             : s.kind === 'villager' ? (state.villagers || [])
              : state.towers;
 
   if (!list.includes(s.ref)) state.selected = null;
@@ -313,6 +323,30 @@ export function occupant(def) {
 export function selectionInfo(state) {
   const s = state.selected;
   if (!s) return null;
+
+  // A VILLAGER, WHOSE CARD IS A PICTURE AND A NAME AND NOTHING ELSE. At the
+  // owner's word: "the description panel shows villager default png and the name
+  // villager but there will be no stats at all."
+  //
+  // AND IT IS THE FIRST CARD IN THE GAME WITH NOTHING TO SAY, which is why it is
+  // said with a null rather than with zeroes. Every other figure has health, or a
+  // reach, or something it hits for; a villager is not in the fight at all, and a
+  // panel printing "0" beside a sword would be inventing a statistic about a man
+  // who has none. `damage: null` is what drawInfo reads as "no rows" — see the
+  // note there, and the pair of nulls it needs to be sure.
+  if (s.kind === 'villager') {
+    return {
+      sprite: VILLAGER.sprite,
+      trim: VILLAGER.spriteTrim,
+      title: VILLAGER.name,
+      hp: null,
+      maxHp: null,
+      damage: null,
+      attack: null,
+      traits: [],
+      range: null
+    };
+  }
 
   if (s.kind === 'tower') {
     const man = occupant(s.ref.def);

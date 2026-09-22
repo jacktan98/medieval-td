@@ -160,6 +160,10 @@ export const paths = {
   // The other barracks tier 4's man, named for himself like every other tier 4.
   assassin:           'assets/units/Assassin_Default.png',
   assassin_idle:      'assets/units/Assassin_Idle.png',
+  // THE ONE FIGURE IN THE GAME THAT IS NOT IN THE FIGHT. He is painted into stage
+  // 1's artwork and cut out of the base so the game can draw him itself — see
+  // `villagers` in src/data/level00.js and src/villagers.js.
+  villager:           'assets/units/Villager_Default.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.
