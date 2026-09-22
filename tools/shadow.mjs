@@ -385,12 +385,22 @@ const SPRITES = [
   ['assets/units/Soldiers_Pikeman_Attack.png',        'spearman2.attack.pivot',   spear2.attack.trim, spear2.attack.pivot],
   ['assets/units/Soldiers_Swordsman_Default.png',     'spearman3.pivot',          spear3.spriteTrim, spear3.pivot],
   ['assets/units/Soldiers_Swordsman_Attack.png',      'spearman3.attack.pivot',   spear3.attack.trim, spear3.attack.pivot],
+  // AND THE THIRD POSE EACH, the weapon at rest. The pair rule matters most on the
+  // two pole-arms: a spear carried upright is 181 source px tall against the 116 he
+  // levels it at, so the TRIM moves further between these two drawings than between
+  // any other pair on the roster — and the shadow does not move at all. If it did,
+  // a squad standing down between waves would step sideways as it did it, which is
+  // exactly the thing nobody would think to look for.
+  ['assets/units/Soldiers_Spearman_Idle.png',         'spearman.idle.pivot',      spear.idle.trim, spear.idle.pivot],
+  ['assets/units/Soldiers_Pikeman_Idle.png',          'spearman2.idle.pivot',     spear2.idle.trim, spear2.idle.pivot],
+  ['assets/units/Soldiers_Swordsman_Idle.png',        'spearman3.idle.pivot',     spear3.idle.trim, spear3.idle.pivot],
   // The paladin, whose two poses differ more than anybody's — 123 wide at rest and
   // 178 swinging — which makes the pair rule worth more on him than on the rest:
   // if the two shadows disagreed he would step sideways every time the sword came
   // down. They are at the same source pixel to within nothing.
   ['assets/units/Paladin_Default.png',                'paladin.pivot',            pal.spriteTrim, pal.pivot],
   ['assets/units/Paladin_Attack.png',                 'paladin.attack.pivot',     pal.attack.trim, pal.attack.pivot],
+  ['assets/units/Paladin_Idle.png',                   'paladin.idle.pivot',       pal.idle.trim, pal.idle.pivot],
   // His two ability poses, in the same pair rule. Holy Light is the widest spread
   // of them all — 133x193 against his resting 123x140, because the glow rises well
   // above his head — and its shadow is still on his own pixel, source (277.0,

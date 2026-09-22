@@ -51,6 +51,33 @@ nothing shows them until 150 gold has been spent.
 | Assassin, Knife Throw   | `Assassin_Knife_Throw`   | each knife leaves, and the throw decays |
 | Assassin, Sneak Attack  | `Assassin_Sneak_Attack`  | the opening blow of a fight          |
 
+### A third pose for the barracks: the weapon at rest
+
+| man       | Idle                        |
+|-----------|-----------------------------|
+| Spearman  | `Soldiers_Spearman_Idle`    |
+| Pikeman   | `Soldiers_Pikeman_Idle`     |
+| Swordsman | `Soldiers_Swordsman_Idle`   |
+| Paladin   | `Paladin_Idle`              |
+
+**The only drawing in the game the rules never ask for.** No ability owns it and
+nothing about a fight can produce it: a barracks soldier stands down into it after
+five seconds in which nothing has needed him, and back out of it on the frame
+something does. See `REST_AFTER` and `atEase` in `src/units.js`. While he is at
+ease he also looks round every three to seven seconds, and a third of the time the
+new heading is away from the road.
+
+**The Assassin has none and that is deliberate** — he is the one soldier who never
+stands down. He needs no exemption written for him: `atEase` asks for an `idle`
+field and finds nothing on him.
+
+The two pole-arms are the reason this is worth measuring rather than eyeballing: a
+spear carried **upright** is 181 source px tall where the same man levelling it is
+116, so the trim moves further between these two drawings than between any other
+pair on the roster. The shadow does not move at all — all three of each man's poses
+share one source pixel — which is what lets a squad stand down without stepping
+sideways as it does it. `tools/shadow.mjs` checks all four.
+
 ### And a fourth shape: an ability that redraws BOTH poses
 
 Reinforced Tension rebuilds the Crossbow Sentry's bow in steel, and a man cannot

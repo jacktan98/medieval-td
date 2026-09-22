@@ -58,6 +58,56 @@ const ASSIST = 70;
 const THRUST_DECAY = 4;
 const LUNGE = 1 / THRUST_DECAY;
 
+// --- STANDING DOWN ------------------------------------------------------------
+//
+// HOW LONG NOTHING HAS TO HAPPEN before a barracks soldier puts his weapon up and
+// looks around, at the owner's ask: "if the unit has not been attacking for a
+// while, he can face backwards randomly or use this pose. This makes the game a
+// bit more alive."
+//
+// FIVE SECONDS, AND IT IS THE WAVE TABLES THAT SET IT. Measured across all
+// nineteen of them: the LONGEST gap between two spawns inside a wave is 3.6s —
+// stage 5's giants — and the SHORTEST rest between waves is 9s. Five sits between
+// them with 1.4s of room below and 4s above.
+//
+// Both sides of that matter. Under 3.6 and a man stands down between two thugs of
+// the same wave with the road still filling, which reads as him losing interest;
+// over 9 and he never stands down at all and none of this does anything.
+// tools/squad.mjs asks the tables rather than trusting this paragraph — the first
+// draft of it said "1.4 to 2 between spawns" and "ten seconds between waves", and
+// both were wrong.
+//
+// It also covers the quietest moment the game has — before wave 1, while the
+// player is spending his opening gold. That is when the board is most static and
+// it is the first thing anybody sees.
+const REST_AFTER = 5;
+
+// Exported so tools/squad.mjs can check it against the wave tables rather than
+// against a 5 typed a second time.
+export const REST_SECONDS = REST_AFTER;
+
+// AND HOW OFTEN HE LOOKS ROUND while he is at ease. A new heading every three to
+// seven seconds, which is slow enough to read as a man glancing about rather than
+// a figure flickering, and RANDOM per man rather than a shared clock: a squad that
+// turns in unison is a drill, not three men standing around.
+const LOOK_MIN = 3;
+const LOOK_MAX = 7;
+
+// AND HOW OFTEN THAT HEADING IS THE WRONG WAY. Not half — at half, half the squad
+// has its back to the road at any moment and the line reads as abandoned rather
+// than as at ease. At a third, it is usually one man of three looking away, which
+// is what a guard post looks like when nothing is happening.
+const AWAY_ODDS = 1 / 3;
+
+// IS HE STOOD DOWN, asked by the one thing outside this file that needs to know:
+// the renderer, which draws his third pose when he is. The answer is a fact about
+// the man rather than a drawing, which is why it lives here and not in render.js.
+//
+// A SOLDIER WITH NO `idle` DRAWING NEVER STANDS DOWN, and that is the whole of the
+// assassin's exemption — he simply has no such field, so this is false for him
+// forever and he keeps his knife out. Nothing had to be written to exclude him.
+export const atEase = u => !!(u.def.idle && u.rest >= REST_AFTER);
+
 // Formation offsets as [along, across, splay] in path-local units: along is
 // the direction enemies travel, across is perpendicular, splay is degrees
 // added to the idle facing. The point of the wedge faces upstream, into the
@@ -551,6 +601,13 @@ export function makeGarrison(state, level) {
       cd: 0,
       thrust: 0,
       hit: 0,             // how white he is from the last blow — src/gesture.js
+      // STANDING DOWN: seconds since anything needed him, seconds until he next
+      // looks round, and whether he is currently looking the wrong way. See
+      // REST_AFTER above. A garrison man carries all three and uses none of them
+      // unless his def has an `idle` drawing, which none of them does today.
+      rest: 0,
+      look: 0,
+      away: false,
       respawn: 0,
       blows: 0,
       hold: 0,
@@ -587,6 +644,13 @@ export function makeUnits(state, tower) {
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
       hit: 0,             // how white he is from the last blow — src/gesture.js
+      // STANDING DOWN: seconds since anything needed him, seconds until he next
+      // looks round, and whether he is currently looking the wrong way. See
+      // REST_AFTER above. A garrison man carries all three and uses none of them
+      // unless his def has an `idle` drawing, which none of them does today.
+      rest: 0,
+      look: 0,
+      away: false,
       respawn: 0,
       // --- what an ability leaves on a man -------------------------------------
       //
@@ -1190,6 +1254,40 @@ export function updateUnits(state, dt) {
     else if (mark) u.face = Math.atan2(mark.y - u.y, mark.x - u.x);
     else if (d > SETTLE) u.face = Math.atan2(ty - u.y, tx - u.x);
     else u.face = u.faceIdle;
+
+    // --- AND WHETHER HE IS STOOD DOWN ----------------------------------------
+    //
+    // AFTER the heading above rather than inside it, because standing down is not
+    // a sixth reason to look somewhere — it is a thing that happens once every
+    // other reason has run out, and it overrides only the last of them. A man who
+    // has a foe, a mark, a swing in the air, a pose he is committed to, a blow he
+    // is still reacting to, or ground to cover is NEEDED, and needed men do not
+    // stand down. Every one of those is a live field this loop has already
+    // settled by the time it gets here.
+    //
+    // `needed` rather than `busy`, which is taken: src/data/armour.js exports a
+    // `busy` this file already imports, and it answers a different question about
+    // a different army.
+    const needed = u.foe || mark || u.thrust > 0 || u.hold > 0 || u.hit > 0 || d > SETTLE;
+    if (needed) {
+      // BACK TO ATTENTION ON THE SAME FRAME, which is the half that matters. The
+      // pose and the heading both hang off `rest`, so clearing it here means a
+      // soldier is facing the road and levelling his spear on the very frame an
+      // enemy comes within reach — not a frame later, and never mid-turn.
+      u.rest = 0;
+      u.look = 0;
+      u.away = false;
+    } else if (u.def.idle) {
+      u.rest += dt;
+      if (u.rest >= REST_AFTER) {
+        u.look -= dt;
+        if (u.look <= 0) {
+          u.look = LOOK_MIN + Math.random() * (LOOK_MAX - LOOK_MIN);
+          u.away = Math.random() < AWAY_ODDS;
+        }
+        if (u.away) u.face = u.faceIdle + Math.PI;
+      }
+    }
 
     // --- IS HE GIVING HIMSELF AWAY THIS FRAME --------------------------------
     //

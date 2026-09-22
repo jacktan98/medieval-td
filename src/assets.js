@@ -185,10 +185,22 @@ export const paths = {
   soldier_t2_attack:  'assets/units/Soldiers_Pikeman_Attack.png',
   soldier_t3:         'assets/units/Soldiers_Swordsman_Default.png',
   soldier_t3_attack:  'assets/units/Soldiers_Swordsman_Attack.png',
+  // AND A THIRD POSE FOR EACH: the weapon at rest. A barracks soldier stands down
+  // into it when nothing has needed him for a while, and it is the only drawing in
+  // the game the RULES never ask for — no ability owns it and nothing about the
+  // fight can produce it. See `idle` on each soldier in src/data/towers.js and
+  // atEase in src/units.js.
+  //
+  // Measured on the same shadow as his Default, like the musketeer's Deadeye, so
+  // he stands down where he was standing instead of stepping sideways into it.
+  soldier_t1_idle:    'assets/units/Soldiers_Spearman_Idle.png',
+  soldier_t2_idle:    'assets/units/Soldiers_Pikeman_Idle.png',
+  soldier_t3_idle:    'assets/units/Soldiers_Swordsman_Idle.png',
   // Tier 4's man, named rather than tiered for the same reason the musketeer is:
   // the info box and the encyclopedia print "Paladin", not "Barracks Tier IV".
   paladin:            'assets/units/Paladin_Default.png',
   paladin_attack:     'assets/units/Paladin_Attack.png',
+  paladin_idle:       'assets/units/Paladin_Idle.png',
   // His two ability poses, on the same terms as the musketeer's Deadeye above: a
   // paladin only ever shows these if his Keep has bought the ability they belong
   // to. Holy Light is the kneel-and-heal; Blinding Strike is the tenth blow.

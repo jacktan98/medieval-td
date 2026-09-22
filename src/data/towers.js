@@ -162,6 +162,17 @@ const SPEAR2_TRIM = [174, 196, 163, 120];
 const SPEAR2_ATK_TRIM = [155, 196, 181, 120];
 const SPEAR3_TRIM = [201, 196, 110, 120];
 const SPEAR3_ATK_TRIM = [166, 196, 145, 120];
+// THE AT-EASE POSES, one per soldier, and the two pole-arms are the reason they
+// get their own line rather than a reused one: a spear carried UPRIGHT is 181
+// source px tall where the same man levelling it is 116, so the trim is half as
+// tall again as anything else this man has. Everything that asks how much room a
+// figure takes up goes through soldierArt and gets this box when it is the pose
+// being shown — see figureSpan in src/render.js — so a ghost through a building
+// follows the spear up rather than stopping at the head it used to end at.
+const SPEAR_IDLE_TRIM = [248, 133, 81, 181];
+const SPEAR2_IDLE_TRIM = [256, 139, 80, 177];
+const SPEAR3_IDLE_TRIM = [202, 196, 108, 120];
+const PAL_IDLE_TRIM = [222, 212, 123, 116];
 // THE FOURTH RUNG OF THE BARRACKS LADDER, and the second tier 4 in the game. A
 // square stone keep with a pitched roof and a banner, on the same 1024 canvas as
 // the other three buildings. 520x650 against the log hut's 624x621 — TALLER AND
@@ -1588,6 +1599,11 @@ const spearman = {
   // too — not close, IDENTICAL, on all three soldiers — so the two poses swap
   // with the man's feet nailed to the spot and only the spear moving.
   attack: { sprite: 'soldier_t1_attack', trim: SPEAR_ATK_TRIM, pivot: [0.816, 0.905] },
+  // AND THE SPEAR AT REST, butt on the ground, when nothing has needed him for a
+  // while. The pivot is his shadow again — source (293.0, 303.0) in this drawing
+  // as well, so all THREE of his poses are nailed to the same spot. See atEase in
+  // src/units.js for when it is shown.
+  idle: { sprite: 'soldier_t1_idle', trim: SPEAR_IDLE_TRIM, pivot: [0.556, 0.939] },
   bodyFrac: SPEAR_BODY,
   spriteFaces: -1,
   // A spearman leaves a body too, then musters again from the barracks once his
@@ -1621,6 +1637,7 @@ const spearman2 = {
   pivot: [0.779, 0.911],
   // Pike thrust. Same shadow, source (301.0, 305.3), to the pixel.
   attack: { sprite: 'soldier_t2_attack', trim: SPEAR2_ATK_TRIM, pivot: [0.807, 0.911] },
+  idle: { sprite: 'soldier_t2_idle', trim: SPEAR2_IDLE_TRIM, pivot: [0.563, 0.939] },
   bodyFrac: SPEAR2_BODY,
   spriteFaces: -1,
   dead: 'dead_soldier_t2',
@@ -1649,6 +1666,7 @@ const spearman3 = {
   pivot: [0.673, 0.911],
   // Sword swung. Same shadow, source (275.0, 305.3), to the pixel.
   attack: { sprite: 'soldier_t3_attack', trim: SPEAR3_ATK_TRIM, pivot: [0.752, 0.911] },
+  idle: { sprite: 'soldier_t3_idle', trim: SPEAR3_IDLE_TRIM, pivot: [0.676, 0.912] },
   bodyFrac: SPEAR3_BODY,
   spriteFaces: -1,
   dead: 'dead_soldier_t3',
@@ -1695,6 +1713,12 @@ const paladin = {
   // resting pose's, so the two swap with his feet nailed to the spot and only the
   // sword moving.
   attack: { sprite: 'paladin_attack', trim: PAL_ATK_TRIM, pivot: [0.798, 0.905] },
+  // Sword shouldered. The ASSASSIN has no such drawing and is the one soldier who
+  // never stands down — see atEase in src/units.js, which asks for this field and
+  // finds nothing on him. That is the right answer for him twice over: he spends
+  // most of a quiet minute invisible anyway, and a man whose whole job is not
+  // being noticed does not put his knife away where the road can see it.
+  idle: { sprite: 'paladin_idle', trim: PAL_IDLE_TRIM, pivot: [0.447, 0.907] },
   bodyFrac: PAL_BODY,
   spriteFaces: -1,
   dead: 'dead_paladin',

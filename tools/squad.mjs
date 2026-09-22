@@ -8,10 +8,13 @@
 // soldier who watched. It only sees the outcome, which is why both of these went
 // unnoticed for as long as they did.
 
-import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath, makeGarrison } from '../src/units.js';
+import { readFileSync } from 'fs';
+import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath, makeGarrison,
+         atEase, REST_SECONDS } from '../src/units.js';
 import { at as pointOn, nearestOn, LANE } from '../src/route.js';
 import { inRange } from '../src/ground.js';
 import { families } from '../src/data/towers.js';
+import * as WAVES from '../src/data/waves.js';
 import { level, useLevel, levels } from '../src/level.js';
 // Stage 1 is the tutorial and is the default board now — a short road with six
 // plots. These measurements were written against a full-length board, so pick
@@ -24,6 +27,11 @@ useLevel(levels.findIndex(l => l.id === 'm1'));
 
 const DT = 1 / 60;
 const barracks = families.find(f => f.id === 'barracks');
+
+// Every wave table in the game, by shape rather than by name, so a table added
+// later is included without this line being edited.
+const waves = Object.values(WAVES).filter(v =>
+  Array.isArray(v) && v.length && v[0] && Array.isArray(v[0].groups));
 
 function board(tier = 0) {
   const state = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
@@ -275,6 +283,164 @@ console.log('\nA garrison man with no respawn stays dead\n');
   updateUnits(st, 1 / 60);
   check(!st.units.includes(p), 'and a fixture forced to zero goes the same way, once',
     `${st.hits.length - before} death spark(s)`);
+}
+
+// --- 5. standing down, and coming back to attention --------------------------
+//
+// At the owner's ask: "if the unit has not been attacking for a while, he can face
+// backwards randomly or use this pose."
+//
+// WHAT IS CHECKED IS THE STATE MACHINE, not the drawing. Whether the right PNG is
+// on screen is a question for the eye and for tools/shadow.mjs, which already pins
+// all four idle anchors to the same source pixel as their Default. What can go
+// wrong silently is the timing: a man who stands down while the road is still full,
+// or one who is slow coming back out of it, and neither shows up in a screenshot.
+{
+  const { state } = board(2);           // Knight's Hall, so the men have an `idle`
+  step(state, 6);                       // out to their stations and settled
+  const men = squad(state);
+
+  check(men.every(u => u.def.idle), 'a barracks soldier has a pose for standing down',
+    men.map(u => u.def.idle.sprite).join(', '));
+
+  // FROM THE MOMENT SOMETHING LAST NEEDED HIM, which is what the clock actually
+  // measures — not from muster. The men are put back to attention by hand here,
+  // exactly as a blow landing would, so the two steps below straddle the threshold
+  // rather than whatever the march happened to leave on the clock. The first
+  // version of this check measured from muster and read 8.6s where it wanted 3.9.
+  men.forEach(u => { u.rest = 0; u.away = false; u.look = 0; });
+
+  // NOT YET. Five seconds is the threshold and four and a half is inside it. This
+  // is the half a smaller REST_AFTER would break: a man who stands down between
+  // two thugs of the same wave, with the road still full.
+  step(state, 4.5);
+  check(men.every(u => !atEase(u)), 'and is still at attention four seconds later',
+    `rest ${men.map(u => u.rest.toFixed(1)).join('/')}s of ${REST_SECONDS}`);
+
+  // AND THEN HE IS, just past it.
+  step(state, 1);
+  check(men.every(u => atEase(u)), '  then stands down once nothing has needed him',
+    `rest ${men.map(u => u.rest.toFixed(1)).join('/')}s`);
+
+  // AND THE THRESHOLD IS ON THE RIGHT SIDE OF BOTH CLOCKS THE WAVES RUN ON, which
+  // is the whole reason REST_AFTER is the number it is. It has to be LONGER than
+  // the longest gap between two spawns — or a man stands down with the road still
+  // filling — and SHORTER than the rest between waves, or he never stands down at
+  // all and the feature does nothing.
+  //
+  // MEASURED RATHER THAN ASSUMED, and the first version of this check was wrong on
+  // both counts: it said "1.4 to 2 between spawns" when stage 5 sends its giants
+  // 3.6s apart, and "ten seconds between waves" when six tables use 9.
+  //
+  // THE LAST WAVE OF EVERY TABLE HAS `rest: 0` and is left out, because there is no
+  // wave after it to rest before — that zero is the end of the board, not a pause a
+  // soldier could stand down in.
+  {
+    const rests = waves.flatMap(w => w.slice(0, -1).map(x => x.rest));
+    const gaps = waves.flatMap(w => w.flatMap(x => x.groups.map(g => g.gap)));
+    const gap = Math.max(...gaps), rest = Math.min(...rests);
+    check(REST_SECONDS > gap && REST_SECONDS < rest,
+      '  after longer than any spawn gap and less than any wave rest',
+      `${REST_SECONDS}s, ${(REST_SECONDS - gap).toFixed(1)}s clear of the longest gap ` +
+      `(${gap}s) and ${(rest - REST_SECONDS).toFixed(1)}s clear of the shortest rest (${rest}s)`);
+  }
+
+  // AND HE LOOKS ROUND. Five minutes at ease, which is long enough for the share
+  // of time to settle: a man turns for 3 to 7 seconds at a time, so a minute is
+  // only about a dozen draws and the first version of this check failed on a man
+  // who happened to come up away 51% of one. A statistic wants a sample.
+  //
+  // PER MAN, THE CLAIM IS ONLY THAT HE DOES BOTH — he turns away at some point and
+  // he comes back at some point. That is what "a feature that is running" means
+  // and it is true every time rather than usually.
+  const back = men.map(() => 0);
+  let frames = 0, together = 0;
+  for (let i = 0; i < 300 / DT; i++) {
+    updateUnits(state, DT);
+    frames++;
+    men.forEach((u, k) => { if (u.away) back[k]++; });
+    if (men.every(u => u.away === men[0].away)) together++;
+  }
+  check(back.every(n => n > 0 && n < frames), '  looking away from the road, and back again',
+    back.map(n => `${(100 * n / frames).toFixed(0)}%`).join(' / ') + ' of five minutes turned away');
+
+  // THE SHARE IS ASKED OF THE SQUAD, not of one man, and that is three times the
+  // sample for the same wall clock. At a third of the turns being away, three men
+  // over five minutes is about 180 draws, which is tight enough that a bound of a
+  // fifth to a half cannot be met by luck — and loose enough that it never fails
+  // for want of it.
+  const away = back.reduce((a, b) => a + b, 0) / (frames * men.length);
+  check(away > 0.2 && away < 0.5, '  and facing it about two thirds of the time',
+    `${(100 * away).toFixed(0)}% of man-frames turned away, against the ${(100 / 3).toFixed(0)}% asked for`);
+
+  // AND NOT ALL AT ONCE, which is the whole reason the interval is per man rather
+  // than shared. Three men on one clock agree on EVERY frame; three independent
+  // men at these odds agree on about a third of them. The bound is well below the
+  // one and well above the other.
+  check(together / frames < 0.6, '  and never in unison',
+    `${(100 * together / frames).toFixed(0)}% of frames with the whole squad agreeing`);
+
+  // BACK TO ATTENTION ON THE FRAME SOMETHING ARRIVES, which is the half that can
+  // actually cost the player something to look at. One enemy walks into the point
+  // man; by the end of that single step he must be facing the road with his weapon
+  // levelled, not part way through a turn.
+  const point = men.reduce((a, u) => (u.ry < a.ry ? u : a));
+  state.enemies.push({
+    def: { r: 12, damage: 18, atkCd: 1.2, speed: 0 },
+    x: point.rx, y: point.ry, hp: 4000, maxHp: 4000,
+    foe: null, acd: 0, thrust: 0, face: 1, route: 0, lane: 1, s: 0
+  });
+  updateUnits(state, DT);
+  check(!atEase(point) && point.rest === 0 && !point.away,
+    'and comes back to attention on the frame an enemy reaches him',
+    `rest ${point.rest}s, away ${point.away}`);
+}
+
+// --- 5b. and his health bar goes with him ------------------------------------
+//
+// THE BAR CUT THE SPEAR IN HALF, and it was found by rendering the board rather
+// than by reasoning about it. A spear carried upright is 181 source px against the
+// 116 the same man levels it at, so a bar hung off the DEF's height sat across the
+// shaft with the spearhead floating above it.
+//
+// What is checked here is that the two halves of the fix are both still in place:
+// the data says the poses differ enough to matter, and the renderer asks the
+// question with the figure in hand rather than the def alone. Neither is visible
+// in a still frame of a healthy squad, since a bar is hidden at full health.
+{
+  const withIdle = barracks.tiers.map(t => t.soldier).filter(d => d.idle);
+  const spread = withIdle.map(d => d.idle.trim[3] - d.spriteTrim[3]);
+  check(Math.max(...spread.map(Math.abs)) > 20,
+    'a soldier at ease is a different height from one at attention',
+    withIdle.map((d, i) => `${d.name} ${spread[i] > 0 ? '+' : ''}${spread[i]}`).join(', ') +
+    ' source px');
+
+  const render = readFileSync(new URL('../src/render.js', import.meta.url), 'utf8')
+    .replace(/^\s*\/\/.*$/gm, '');
+  check(/artHeight\(u\.def, u\)/.test(render) && /def\.idle && atEase\(fig\)/.test(render),
+    '  so his bar is measured off the pose he is showing, not off his def',
+    'artHeight is asked with the man, and answers with the idle trim when he is at ease');
+}
+
+// --- 6. the assassin never stands down ---------------------------------------
+//
+// He has no `idle` drawing, and that is the whole of his exemption — no line was
+// written to exclude him. What this pins is that the absence is doing the work: a
+// guild soldier left alone for a minute is still at attention.
+{
+  const guild = barracks.tiers.find(d => d.name === 'Assassin Guild');
+  const plot = level.plots[3];
+  const state = { towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
+  const t = { plot, fam: barracks, def: guild, x: plot.x, y: plot.y, rally: null, abilities: [], hold: 0 };
+  state.towers.push(t);
+  makeUnits(state, t);
+  step(state, 60);
+  const men = squad(state);
+  check(men.every(u => !u.def.idle), 'an assassin has no pose to stand down into',
+    `${men.length} man/men, none with an idle drawing`);
+  check(men.every(u => !atEase(u) && !u.away),
+    '  so a minute alone leaves him at attention, knife out',
+    `rest ${men.map(u => u.rest.toFixed(0)).join('/')}s, none turned away`);
 }
 
 console.log(bad ? `\n${bad} failure(s).` : '\nSquad behaves.');

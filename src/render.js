@@ -14,7 +14,7 @@ import { onGround } from './tint.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
-import { hidden, fixture, unseen } from './units.js';
+import { hidden, fixture, unseen, atEase } from './units.js';
 import { stageOf } from './data/armour.js';
 import { downed } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
@@ -530,7 +530,7 @@ function drawStatus(ctx, state) {
     // pointing at him.
     ctx.save();
     if (hidden(u)) ctx.globalAlpha *= UNSEEN;
-    const top = u.y - artHeight(u.def) - 4;
+    const top = u.y - artHeight(u.def, u) - 4;
     healthBar(ctx, u.x, top, u.def.r, u.hp / u.maxHp);
     statusMarks(ctx, u, u.x, top);
     ctx.restore();
@@ -1435,11 +1435,21 @@ function drawGunner(ctx, t) {
 // It is registered on the same shadow as the other two — tools/shadow.mjs measures
 // all three of the ability poses against their own man's anchor — so swapping to it
 // cannot move him.
-function pose(attack, attacking, img, trim, pivot, special) {
+function pose(attack, attacking, img, trim, pivot, special, rest) {
   const held = special && art[special.sprite];
   if (held) return [held, special.trim, special.pivot];
   const alt = attacking && attack && art[attack.sprite];
-  return alt ? [alt, attack.trim, attack.pivot] : [img, trim, pivot];
+  if (alt) return [alt, attack.trim, attack.pivot];
+  // AND THE AT-EASE POSE UNDER BOTH OF THEM, which is where it belongs: it is
+  // what a figure shows when nothing else has anything to say about him. An
+  // ability's pose outranks it because it is scripted, and the Attack outranks it
+  // because a man who is swinging is by definition not at ease — though in
+  // practice that second one can never fire, since striking is one of the things
+  // that clears `rest`. Ordered anyway, because the rule reads the same whether or
+  // not the caller has already ruled it out.
+  const easy = rest && art[rest.sprite];
+  if (easy) return [easy, rest.trim, rest.pivot];
+  return [img, trim, pivot];
 }
 
 // WHICH DRAWING A FIGURE IS SHOWING RIGHT NOW, as [image, trim, pivot], or null
@@ -1478,7 +1488,12 @@ function soldierArt(u) {
   const s = u.def;
   const img = s.sprite && art[s.sprite];
   if (!img) return null;
-  return pose(s.attack, u.thrust > 0 || u.hold > 0, img, s.spriteTrim, s.pivot, u.holdArt);
+  // `atEase` IS ASKED OF THE MAN, not worked out here. Whether he has stood down
+  // is a fact about a unit that src/units.js settles every frame — see REST_AFTER
+  // — and re-deriving it at draw time would mean a second copy of the rule that
+  // could disagree with the one the heading already used.
+  return pose(s.attack, u.thrust > 0 || u.hold > 0, img, s.spriteTrim, s.pivot,
+              u.holdArt, atEase(u) ? s.idle : null);
 }
 
 // The construction dust. Anchored at the BOTTOM of its box rather than the
@@ -1906,6 +1921,28 @@ const artHeight = (def, fig) => {
                      : fig.act === 'mend'  ? def.rage.mend
                      : null);
   if (beat) return beat.trim[3] * SCALE;
+
+  // AND THE SECOND EXCEPTION, for the same reason and on better terms: a barracks
+  // soldier stood down carries his own height too.
+  //
+  // THE BAR CUT THE SPEAR IN HALF. A spear carried upright is 181 source px where
+  // the same man levelling it is 116, so folding the pose into the maximum below
+  // would float every spearman's bar 13 game px over a man who is 24 px tall —
+  // more than half his own height, all the time, for a pose he is not in. Leaving
+  // it out was worse: rendered and looked at, the bar sat across the shaft with
+  // the spearhead floating free above it.
+  //
+  // SO THE BAR FOLLOWS THE POSE, and the rule this bends is worth restating
+  // exactly. What it protects is that a bar must never move because a soldier
+  // arrived or an arrow landed — and it still cannot. Standing down takes five
+  // seconds in which nothing at all has happened, and coming back to attention is
+  // on the same frame as an enemy arriving. So DURING A FIGHT the bar is exactly
+  // where it has always been, and it moves only while there is nothing to watch.
+  //
+  // That is a better bargain than the boss's, whose bar moves for a set piece in
+  // the middle of a fight.
+  if (fig && def.idle && atEase(fig)) return def.idle.trim[3] * SCALE;
+
   const close = def.melee && def.melee.default;
   return Math.max(def.spriteTrim[3],
                   close ? close.trim[3] : 0,
