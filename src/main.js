@@ -19,6 +19,7 @@ import { updateSplats } from './blood.js';
 import { updateImpacts } from './impacts.js';
 import { updateSmoke } from './smoke.js';
 import { updateWaves } from './waves.js';
+import { tickClock } from './gesture.js';
 import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
@@ -379,6 +380,10 @@ function frame(now) {
 
 function step(state, dt) {
   if (state.result) return;
+  // THE CLOCK THE FIGURES BREATHE ON, advanced here so it is the game's time and
+  // not the wall's: stopped while paused, twice as fast at 2x, and not running at
+  // all on the world map. See src/gesture.js.
+  tickClock(dt);
   updateWaves(state, dt);
   // Units run before enemies so an enemy that just walked into a soldier is
   // already held when the movement step asks whether it may advance.

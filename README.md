@@ -74,6 +74,8 @@ exit non-zero when something is wrong.
 | `confirm` | every button that moves gold asks twice, and the dotted ring belongs to the one that is armed |
 | `campaign` | the world map's stages sit on the markers the artist drew, every road leads where it says, and a stage with no map behind it is not a button |
 | `unseen` | the Shadow Thug: no tower can aim at him, a blast finds him anyway, a soldier taking hold is what reveals him, and his break is flat against every rung of the barracks |
+| `bomb` | the Bomb Thug: he goes off on contact, leaves no body, and the bomb he drops when shot keeps its own fuse |
+| `gesture` | a figure flinches away from what hit it, a swing holds and settles rather than snapping back, and a man standing still breathes |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
@@ -81,12 +83,12 @@ exit non-zero when something is wrong.
 | `trace-road` | pulls the road out of a map SVG and writes the route |
 | `overview` | stacks the world map's layers, recolours them to parchment, lifts the region names out to a file of their own, and reads the stage markers and road lines off the guide layer |
 
-The first twenty-six are checks — run them after any change:
+The first twenty-eight are checks — run them after any change:
 
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme pair armour confirm campaign unseen; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair armour confirm campaign unseen bomb gesture; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last five are not checks. `sim` and `sweep` answer balance questions and take

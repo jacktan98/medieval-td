@@ -16,6 +16,7 @@ import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from './status.js';
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
+import { struck, tickHit, nextPhase } from './gesture.js';
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -549,6 +550,8 @@ export function makeGarrison(state, level) {
       holds: false,
       cd: 0,
       thrust: 0,
+      hit: 0,             // how white he is from the last blow — src/gesture.js
+      phase: nextPhase(), // where in his own breath he is, so a squad is three men
       respawn: 0,
       blows: 0,
       hold: 0,
@@ -584,6 +587,8 @@ export function makeUnits(state, tower) {
       holds: false,   // true only if he is the one BLOCKING his foe
       cd: 0,
       thrust: 0,      // 1 on the swing, decays; drives the lunge in render.js
+      hit: 0,             // how white he is from the last blow — src/gesture.js
+      phase: nextPhase(), // where in his own breath he is, so a squad is three men
       respawn: 0,
       // --- what an ability leaves on a man -------------------------------------
       //
@@ -699,7 +704,7 @@ function sweep(state, enemy, blocked, blow) {
     if (!inRange(enemy.x, enemy.y, u.x, u.y, blow.splash)) continue;
     u.hp -= taken(swing(enemy, enemy.def.damage), typeOf(blow), wornBy(u), pierceOf(blow));
     splat(state, u.x, u.y - u.def.r, u.y);
-    u.struckFrom = enemy.x >= u.x ? 1 : -1;
+    struck(u, enemy.x);
   }
 }
 
@@ -1235,7 +1240,14 @@ export function updateUnits(state, dt) {
     // pixels onto somebody he was already holding. That fixed a real deadlock and
     // fixed it in the wrong place; `contact` below is the same fix made without
     // moving him. See the note there.
-    if (d > SETTLE && u.hold <= 0) {
+    // WHETHER HE IS ON HIS FEET THIS FRAME, recorded rather than re-derived. It
+    // is the same condition as the step above and it is kept because the drawing
+    // needs it: a man who is walking is already moving and must not also breathe
+    // — see breath() in src/gesture.js. Asking again in render.js would mean a
+    // second copy of SETTLE and of the station arithmetic, and the day one of
+    // them changed a walking squad would start bobbing.
+    u.moving = d > SETTLE && u.hold <= 0;
+    if (u.moving) {
       const step = Math.min(u.def.speed * dt, d);
       u.x += ((tx - u.x) / d) * step;
       u.y += ((ty - u.y) / d) * step;
@@ -1243,6 +1255,7 @@ export function updateUnits(state, dt) {
 
     u.cd -= dt;
     u.thrust = Math.max(0, u.thrust - dt * THRUST_DECAY);
+    tickHit(u, dt);
 
     // SNEAK ATTACK COMES BACK BY HIDING, and this one line is the whole of the
     // "only resets when they become invisible and visible again" rule. It is
@@ -1350,7 +1363,7 @@ export function updateUnits(state, dt) {
         u.cd = u.def.cd;
         u.thrust = 1;
         splat(state, u.foe.x, u.foe.y - u.foe.def.r, u.foe.y);
-        u.foe.struckFrom = u.x >= u.foe.x ? 1 : -1;
+        struck(u.foe, u.x);
         // Which family gets the credit if this is the blow that kills it.
         // Overwritten by every hit exactly like struckFrom above, and for the
         // same reason: the last blow is the one that counts.
@@ -1495,7 +1508,7 @@ export function updateUnits(state, dt) {
           u.foe.acd = u.foe.def.atkCd / timesOf(u.foe);
           u.foe.thrust = 1;   // the enemy lunges back, so a fight reads two-sided
           splat(state, u.x, u.y - u.def.r, u.y);
-          u.struckFrom = u.foe.x >= u.x ? 1 : -1;
+          struck(u, u.foe.x);
         }
       }
     } else if (!u.foe && d <= SETTLE && u.cd <= 0 && u.hold <= 0) {

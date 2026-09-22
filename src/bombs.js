@@ -39,6 +39,7 @@ import { SCALE } from './data/towers.js';
 // rather than repeated, so the bomb lands beside the body and not beside where
 // the body used to be if that number ever changes.
 import { KNOCKBACK } from './corpses.js';
+import { struck } from './gesture.js';
 import { swing } from './status.js';
 // `fixture` is the one thing this file borrows from units.js, and it puts the
 // pair in a cycle — the same one enemies.js and units.js have had since they were
@@ -141,7 +142,7 @@ export function burst(state, def, x, y, damage, by = null) {
     if (!inRange(x, y, u.x, u.y, def.splash)) continue;
     u.hp -= taken(damage, typeOf(def), wornBy(u), pierceOf(def));
     splat(state, u.x, u.y - u.def.r, u.y);
-    u.struckFrom = x >= u.x ? 1 : -1;
+    struck(u, x);
     u.killer = by;
   }
   // Category B, at the owner's word — see BOMB in src/audio.js for why that is

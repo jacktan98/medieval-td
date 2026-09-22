@@ -6,6 +6,7 @@ import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armour.js';
 import { raiseGuard } from './enemies.js';
+import { struck } from './gesture.js';
 import { fixture, unseen } from './units.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
@@ -225,7 +226,7 @@ function land(state, s) {
     if (mark && mark.hp > 0 && mark.respawn <= 0 && inRange(s.x, s.y, mark.x, mark.y, s.splash)) {
       mark.hp -= taken(s.damage, s.type, wornBy(mark), s.pierce);
       splat(state, mark.x, mark.y - (mark.def.r || 0), mark.y);
-      mark.struckFrom = s.fromX >= mark.x ? 1 : -1;
+      struck(mark, s.fromX);
       mark.killedBy = s.ammo.kind;
     }
   }
@@ -331,7 +332,7 @@ function hit(state, s, v) {
   // the target, so its own position says nothing about where it was shot from.
   // Overwritten by every hit, so the last blow is the one that counts, which is
   // the one that killed him.
-  v.struckFrom = s.fromX >= v.x ? 1 : -1;
+  struck(v, s.fromX);
   // Who to credit if this is the killing blow — see enemies.js, which is the one
   // place that sees every death however it was caused, and so the only place
   // that can tell an arrow kill from a rock kill from a sword kill. The
