@@ -2691,21 +2691,44 @@ function transportGlyph(ctx, b, paused, ink) {
   ctx.fillRect(cx + gap / 2, cy - h / 2, w, h);
 }
 
+// --- THE HOUSE STYLE FOR BUTTONS AND PANELS -----------------------------------
+//
+// The owner's, settled over four rounds of samples: black at 60% behind, a thin
+// cream #FFEFD4 edge that is itself a little translucent, and cream words. What a
+// player has CHOSEN — the difficulty they picked, the Restart or Quit waiting for
+// its second tap — keeps the dark fill and turns its edge and its words GOLD, the
+// edge a little heavier. Nothing is filled gold and nothing is filled cream.
+//
+// ONLY BLACK, CREAM AND GOLD, by design. The HUD readouts (gold, lives, wave) and
+// the description panel keep their own looks at the owner's word, and the radial
+// build menu is untouched.
+export const UI_BACK = 'rgba(14,12,10,0.6)';
+export const UI_EDGE = 'rgba(255,239,212,0.8)';
+export const UI_INK = '#FFEFD4';
+export const UI_GOLD = '#E0B24C';
+const UI_EDGE_W = 1.25;
+const UI_HOT_W = 2.75;
+
+function panelBox(ctx, x, y, w, h, { hot = false, r = null } = {}) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r ?? Math.min(h / 2, 12));
+  ctx.fillStyle = UI_BACK;
+  ctx.fill();
+  ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
+  ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
+  ctx.stroke();
+  ctx.restore();
+}
+
 function hudButton(ctx, b, label, sub, on) {
   ctx.save();
   if (!on) ctx.globalAlpha = 0.45;
 
-  const drawn = drawPlate(ctx, b.art, b);
-  if (!drawn) {
-    // Vector fallback: the dark translucent plate this replaced.
-    ctx.fillStyle = 'rgba(28,32,24,0.62)';
-    ctx.beginPath();
-    ctx.roundRect(b.x, b.y, b.w, b.h, 7);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(240,230,210,0.75)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
+  // THE HOUSE STYLE, not the cream plate artwork it replaced — see panelBox. The
+  // plate files stay in data/ui.js for their proportions, which still size these
+  // buttons; nothing draws them any more.
+  panelBox(ctx, b.x, b.y, b.w, b.h);
 
   // BOTH text properties, set here rather than inherited. This is the one that
   // bit: the buttons used to sit inside drawHud's save/restore and picked up its
@@ -2724,7 +2747,7 @@ function hudButton(ctx, b, label, sub, on) {
   // one place moves the pixels in another.
   // A button with no words is a button with a picture on it, and the caller
   // draws that itself — see the pause control in drawHud.
-  if (label === null) { ctx.restore(); return drawn; }
+  if (label === null) { ctx.restore(); return false; }
 
   const mid = b.y + b.h / 2;
   ctx.textAlign = 'left';
@@ -2736,17 +2759,21 @@ function hudButton(ctx, b, label, sub, on) {
 
   const x = b.x + (b.w - lw - sw) / 2;
   ctx.font = '700 13px system-ui, sans-serif';
-  ctx.fillStyle = drawn ? INK : '#F0E6D2';
+  ctx.fillStyle = UI_INK;
   ctx.fillText(label, x, mid);
 
+  // The bonus for calling early stays green: it is money, and money is green
+  // everywhere else in the game.
   if (sub) {
     ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillStyle = drawn ? INK_GREEN : '#9BE08A';
+    ctx.fillStyle = '#9BE08A';
     ctx.fillText(sub, x + lw + 5, mid);
   }
 
   ctx.restore();
-  return drawn;
+  // FALSE: there is no pale plate under the words, so whatever the caller draws on
+  // top of the button — the pause glyph — is drawn in cream, not dark ink.
+  return false;
 }
 
 // Ink for text sitting on a CREAM plate. The dashboard and the info box used to
@@ -2964,10 +2991,12 @@ function drawHud(ctx, state) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '700 15px system-ui, sans-serif';
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(24,28,20,0.55)';
+    // Cream with a black edge — the two colours every control is drawn in.
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(14,12,10,0.8)';
     ctx.strokeText('Paused', 480, 78);
-    ctx.fillStyle = '#F0E6D2';
+    ctx.fillStyle = UI_INK;
     ctx.fillText('Paused', 480, 78);
     ctx.restore();
 
@@ -2999,6 +3028,8 @@ const PREVIEW_H = 26;      // how tall the BIGGEST enemy is drawn
 const PREVIEW_Y = 39;      // the top of the row, 6px under the 24px HUD plates
 const PREVIEW_GAP = 5;     // between a number and the next face
 const PREVIEW_TEXT = 4;    // between a face and its own number
+const PREVIEW_PAD = 8;     // air inside the strip, either side of the row
+const PREVIEW_BACK = 'rgba(255,239,212,0.62)';
 
 // ONE SCALE FOR EVERY ENEMY, exactly as the info box portraits use one — so the
 // giant is drawn bigger than the thug beside him, which is the whole reason the
@@ -3039,9 +3070,18 @@ function drawWavePreview(ctx, state) {
   const total = items.reduce((n, it) => n + it.w + PREVIEW_TEXT + it.lw, 0)
     + (items.length - 1) * PREVIEW_GAP;
 
-  const right = HUD_BTN.wave.x + HUD_BTN.wave.w;
+  // A TRANSLUCENT CREAM STRIP behind the row — the cream twin of the dark one
+  // behind the gold and lives, at the owner's ask — with its RIGHT EDGE FLUSH with
+  // the Next wave button's, so the two read as one control and what it will send.
+  const right = HUD_BTN.wave.x + HUD_BTN.wave.w - PREVIEW_PAD;
   let x = right - total;
   const mid = PREVIEW_Y + PREVIEW_H / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x - PREVIEW_PAD, PREVIEW_Y - 2, total + 2 * PREVIEW_PAD, PREVIEW_H + 4, 8);
+  ctx.fillStyle = PREVIEW_BACK;
+  ctx.fill();
+  ctx.restore();
 
   for (const it of items) {
     const img = art[it.g.def.sprite];
@@ -3056,11 +3096,8 @@ function drawWavePreview(ctx, state) {
 
     // Cream on ink, the same pair the aura badges use, because this row sits on
     // the board rather than on a plate and the board is grass, road and stone.
-    ctx.lineWidth = 3;
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#241E17';
-    ctx.strokeText(it.label, x, mid);
-    ctx.fillStyle = '#F4ECD8';
+    // Black on the cream strip; the outline it used to need was for grass.
+    ctx.fillStyle = '#141210';
     ctx.fillText(it.label, x, mid);
     x += it.lw + PREVIEW_GAP;
   }
@@ -3848,15 +3885,10 @@ function settingRowUi(ctx, caption, row, chosen) {
 
   for (const b of row) {
     const on = b.i === chosen;
-    ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
-    ctx.beginPath();
-    ctx.roundRect(b.x, b.y, b.w, b.h, 8);
-    ctx.fill();
-    ctx.strokeStyle = on ? '#F0E6D2' : 'rgba(196,165,116,0.55)';
-    ctx.lineWidth = on ? 2.5 : 1.5;
-    ctx.stroke();
+    // THE CHOSEN ONE IS GOLD — edge and word — on the same dark fill as the rest.
+    panelBox(ctx, b.x, b.y, b.w, b.h, { hot: on, r: 9 });
 
-    ctx.fillStyle = on ? '#241F17' : 'rgba(240,230,210,0.75)';
+    ctx.fillStyle = on ? UI_GOLD : UI_INK;
     ctx.font = '700 15px system-ui, sans-serif';
     ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h / 2 + 1);
   }
@@ -3926,8 +3958,8 @@ function drawStart(ctx, state) {
   }
   ctx.restore();
 
-  ctx.strokeStyle = 'rgba(196,165,116,0.75)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = UI_EDGE;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.roundRect(p.x, p.y, p.w, p.h, 14);
   ctx.stroke();
@@ -3981,15 +4013,9 @@ function drawStart(ctx, state) {
   // it went; a locked one answers it. Same treatment Reset all gets in the
   // dashboard when there is nothing to reset.
   ctx.globalAlpha = lv ? 1 : 0.4;
-  ctx.fillStyle = 'rgba(28,32,24,0.85)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 10);
-  ctx.fill();
-  ctx.strokeStyle = '#C4A574';
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
+  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 10 });
 
-  ctx.fillStyle = '#F0E6D2';
+  ctx.fillStyle = UI_INK;
   ctx.font = '700 24px system-ui, sans-serif';
   ctx.fillText(lv ? 'Start' : 'Locked', b.x + b.w / 2, b.y + b.h / 2 + 1);
   ctx.restore();
@@ -4016,12 +4042,8 @@ function drawStart(ctx, state) {
 function drawAdminDoor(ctx) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.strokeStyle = 'rgba(196,165,116,0.45)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(ADMIN_BTN.x, ADMIN_BTN.y, ADMIN_BTN.w, ADMIN_BTN.h, 8);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(240,230,210,0.55)';
+  panelBox(ctx, ADMIN_BTN.x, ADMIN_BTN.y, ADMIN_BTN.w, ADMIN_BTN.h, { r: 9 });
+  ctx.fillStyle = UI_INK;
   ctx.font = '600 14px system-ui, sans-serif';
   ctx.fillText('Admin', ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
 }
@@ -4934,41 +4956,31 @@ function drawPauseRow(ctx, state) {
 
 // One of the two buttons that ask before they act, drawn plain or as a question.
 //
-// THE QUESTION IS SMALLER THAN THE WORD, because it is three times as long and
-// the plate does not grow: "Quit — sure?" measures about 86px at 13 against a
-// 110px plate, where at 15 it would be 99 and crowd both ends. "Restart — sure?"
-// is longer again, which is what the wider plate is for.
+// "CONFIRM?" FOR BOTH, at the owner's word, in place of "Restart — sure?" and
+// "Quit — sure?". Short enough to keep the word's own size, so the question no
+// longer has to shrink to fit the plate. The second tap is the one that acts — see
+// tapPaused in input.js, which this does not change.
+//
+// WAITING, IT IS GOLD: the edge and the word, the edge heavier, and the dark fill
+// kept — see panelBox.
 function askButton(ctx, b, word, armed) {
-  ctx.fillStyle = 'rgba(28,32,24,0.85)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 9);
-  ctx.fill();
-  ctx.strokeStyle = armed ? '#E0B24C' : '#C4A574';
-  ctx.lineWidth = armed ? 2.5 : 2;
-  ctx.stroke();
-
+  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: armed, r: 9 });
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = armed ? '#E0B24C' : '#F0E6D2';
-  ctx.font = armed ? '700 12px system-ui, sans-serif' : '700 15px system-ui, sans-serif';
-  ctx.fillText(armed ? `${word} — sure?` : word, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.fillStyle = armed ? UI_GOLD : UI_INK;
+  ctx.font = '700 15px system-ui, sans-serif';
+  ctx.fillText(armed ? 'Confirm?' : word, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
 // The button that opens the book, drawn in two places and in two styles. On the
 // title screen it is a full-sized panel button beside Start; on a paused game it
 // is a small plate in the row above.
 function drawBookButton(ctx, b, size) {
-  ctx.fillStyle = 'rgba(28,32,24,0.85)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 9);
-  ctx.fill();
-  ctx.strokeStyle = '#C4A574';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9 });
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#F0E6D2';
+  ctx.fillStyle = UI_INK;
   ctx.font = `700 ${size}px system-ui, sans-serif`;
   ctx.fillText('Encyclopedia', b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
