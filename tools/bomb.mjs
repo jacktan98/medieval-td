@@ -341,8 +341,14 @@ console.log('\n--- what the rest of the roster is not ---\n');
   // trivia: tools/facing.mjs and the renderer both used to assume the pair, and
   // `pose` falling through to the Default is what keeps him walking right up to
   // the frame he is not there.
-  const poseless = Object.entries(enemyTypes).filter(([, d]) => !d.attack).map(([id]) => id);
-  ok(poseless.join(',') === 'bomb_inf', 'and he is the only one with no attack pose',
+  //
+  // OF THE ONES THAT FIGHT. The Dark Crow has no attack drawing either, because he
+  // has no attack — he never strikes, so there is no blow for a drawing to be the
+  // picture of. This is about the one creature whose blow and whose ending are the
+  // same event.
+  const poseless = Object.entries(enemyTypes)
+    .filter(([, d]) => !d.attack && (d.damage > 0 || d.ranged)).map(([id]) => id);
+  ok(poseless.join(',') === 'bomb_inf', 'and he is the only one that fights with no attack pose',
     poseless.join(', ') || 'none');
 }
 

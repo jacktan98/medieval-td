@@ -14,6 +14,7 @@ drawing each of them needs — see "Why only one file" below:
 | `Enemies_Giant_Thug_Dead.png` | the giant                    | 57 x 25 px  |
 | `Enemies_Plague_Thug_Dead.png`| the plague thug              | 57 x 20 px  |
 | `Enemies_Archer_Thug_Dead.png`| the archer thug              | 44 x 16 px  |
+| `Enemies_Dark_Crow_Dead.png`  | the dark crow, after his fall | 16 x 6 px  |
 | `Soldiers_Spearman_Dead.png`  | your spearman, tier 1        | 49 x 17 px  |
 | `Soldiers_Pikeman_Dead.png`   | your pikeman, tier 2         | 49 x 16 px  |
 | `Soldiers_Swordsman_Dead.png` | your swordsman, tier 3       | 40 x 18 px  |
@@ -180,6 +181,7 @@ and paste the rect in as `deadTrim`. As shipped:
 | `Enemies_Blocker_Thug_Dead.png`| `[175, 217, 161, 78]`| `[0.211, 0.875]` |
 | `Enemies_Dark_Priest_Dead.png`| `[169, 214, 174, 84]`| `[0.187, 0.804]` |
 | `Enemies_Archer_Thug_Dead.png`| `[149, 218, 214, 76]`| `[0.161, 0.875]` |
+| `Enemies_Dark_Crow_Dead.png`  | `[216, 241, 80, 30]` | `[0.456, 0.833]` |
 | `Enemies_Giant_Thug_Dead.png`| `[117, 195, 278, 122]`| `[0.171, 0.783]` |
 | `Enemies_Plague_Thug_Dead.png`| `[116, 207, 280, 97]`| `[0.118, 0.826]` |
 | `Soldiers_Spearman_Dead.png` | `[135, 215, 241, 82]` | `[0.118, 0.841]` |

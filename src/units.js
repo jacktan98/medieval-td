@@ -930,8 +930,12 @@ const swingPierce = (u, special, sneak) => Math.max(
 // men may be POSTED inside — where their feet may go — and a knife is not his
 // feet. He throws 200px from wherever he is standing, and the one thing that
 // stops him is running out of enemies.
-function nearestFoe(state, u, reach) {
-  return pickTarget(state.enemies, u.x, u.y, reach);
+// AND IT ASKS WHETHER WHAT HE THROWS REACHES THE AIR, the same question a tower
+// asks of its ammunition: an assassin's knife does and so does every garrison man's
+// weapon today, but the answer is the ammunition's to give — see `air` on the arrow
+// in data/towers.js.
+function nearestFoe(state, u, reach, ammo) {
+  return pickTarget(state.enemies, u.x, u.y, reach, 0, 0, !!(ammo && ammo.air));
 }
 
 // A knife leaves a soldier's hand, at an enemy.
@@ -1200,6 +1204,11 @@ export function updateUnits(state, dt) {
       let bestD = ENGAGE;
       for (const e of state.enemies) {
         if (e.foe || e.hp <= 0) continue;
+        // NOBODY TAKES HOLD OF A BIRD. A crow is flying over the man's head, and
+        // this one line is the whole of why a barracks cannot touch him: every
+        // blow a soldier lands is on the enemy he holds or is helping to hold,
+        // and pass 3 below only helps with an enemy somebody already holds.
+        if (e.def.flying) continue;
         const d = Math.hypot(e.x - u.x, e.y - u.y);
         if (d < bestD) { bestD = d; best = e; }
       }
@@ -1308,7 +1317,7 @@ export function updateUnits(state, dt) {
     // and from here down they are the same thing: a reach to look inside and something
     // to send. `reach` is the ability's word for it and `range` is the def's.
     const throwing = !u.foe && d <= SETTLE ? (u.def.ranged || ability(u, 'knife')) : null;
-    const mark = throwing ? nearestFoe(state, u, throwing.reach ?? throwing.range) : null;
+    const mark = throwing ? nearestFoe(state, u, throwing.reach ?? throwing.range, throwing.ammo) : null;
 
     // A MAN COMMITTED TO A POSE DOES NOT TURN, and this is the first branch
     // because it outranks every reason to look somewhere else. `hold` is a swing

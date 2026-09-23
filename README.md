@@ -76,6 +76,7 @@ exit non-zero when something is wrong.
 | `unseen` | the Shadow Thug: no tower can aim at him, a blast finds him anyway, a soldier taking hold is what reveals him, and his break is flat against every rung of the barracks |
 | `bomb` | the Bomb Thug: he goes off on contact, leaves no body, and the bomb he drops when shot keeps its own fuse |
 | `gesture` | a figure flinches away from what hit it, and a swing holds and settles rather than snapping back |
+| `crow` | the Dark Crow: only what reaches the air can hit him, no soldier holds him, and he falls onto his own shadow |
 | `villager` | every stage's villagers are listed, still painted on the board, each answer a tap with his own card, and carry no statistic at all |
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
@@ -89,7 +90,7 @@ The first twenty-nine are checks — run them after any change:
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme pair armour confirm campaign unseen bomb gesture villager; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair armour confirm campaign unseen bomb gesture villager crow; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last five are not checks. `sim` and `sweep` answer balance questions and take

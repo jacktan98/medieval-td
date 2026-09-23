@@ -218,6 +218,29 @@ export function spawn(state, typeId) {
 // rule nobody can check. tools/facing.mjs asks it.
 export const downed = e => !!e && (e.act === 'fall' || e.act === 'rest' || e.act === 'gone');
 
+// --- IN THE AIR --------------------------------------------------------------
+//
+// WHICH BEAT OF THE WINGBEAT A FLYER IS ON, as the frame to draw. Default, Flying 1,
+// Flying 2, Flying 1 and round again — a ping-pong rather than a loop, so the wings
+// never snap from fully down to fully up in one frame.
+//
+// OFF THE DISTANCE FLOWN rather than a clock, so it needs no state of its own and
+// a crow slowed by the monk beats his wings slower, as a bird working less hard
+// would. Two crows side by side are out of step because they were not spawned on
+// the same frame, and that is all the variety a flock needs.
+const BEAT = [0, 1, 2, 1];
+export function wingbeat(e) {
+  const f = e.def.flying;
+  // `|| 0` for a figure built by hand without a distance — the tools stand enemies
+  // up that way — which is a crow that has not flown yet, on his first beat.
+  return f.frames[BEAT[Math.floor(Math.max(0, e.s || 0) / f.stride) % BEAT.length]];
+}
+
+// HOW HIGH ABOVE HIS SHADOW THE BIRD ITSELF IS, in game px, on the frame he is
+// showing: where an arrow goes in and where the blood comes out. Zero for anything
+// on its feet, so every caller can ask it of any enemy without testing first.
+export const airLift = e => (e && e.def.flying ? wingbeat(e).lift * SCALE : 0);
+
 // HOW MUCH OF HIS WALK A RAISED SHIELD COSTS HIM, as a multiplier, and 1 for
 // everything in the game that has no shield.
 //
@@ -1011,7 +1034,8 @@ export function updateEnemies(state, dt) {
 
     if (e.hp <= 0 && e.def.finale && !downed(e)) {
       state.gold += e.def.bounty;
-      state.hits.push({ x: e.x, y: e.y, life: 0.25 });
+      // At the BIRD for a crow — he dies in the air — and on the ground for the rest.
+      state.hits.push({ x: e.x, y: e.y - airLift(e), life: 0.25 });
       // NO KILL LINE. Every other death in this game answers with a cry keyed to
       // the weapon that landed it — see the ladder below — and a boss answers with
       // his own, played by `begin` on the frame the falling beat starts. Both are
@@ -1119,7 +1143,16 @@ export function updateEnemies(state, dt) {
       // nothing should ever reach it: an enemy cannot die without being hit.
       //
       // A leak gets no body on purpose: the body is what you get for a kill.
-      dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
+      //
+      // A CROW FALLS OUT OF THE AIR FIRST. He is handed down with the height he was
+      // flying at on this frame, so the drop starts from the bird on screen rather
+      // than from a number, and with no throw: a body falling straight onto its own
+      // shadow is the whole of the effect, and one sliding sideways at the same time
+      // would land somewhere his shadow never was. He keeps FACING THE WAY HE FLEW —
+      // a bird turned round in mid-air by the arrow that killed him reads as the
+      // drawing flipping, not as a hit.
+      if (e.def.flying) dropCorpse(state, e.def, e.x, e.y, e.face, { kb: 0, from: airLift(e) });
+      else dropCorpse(state, e.def, e.x, e.y, e.struckFrom || e.face);
       // AND THE BOMB HE WAS CARRYING IS STILL LIVE. Shot before he reached anybody,
       // so nothing triggered it — it lies beside the body on a 2 second fuse and
       // then does exactly what it would have done in his hands. The owner's rule,
@@ -1471,7 +1504,12 @@ function loose(state, e, mark) {
 //
 // Distance-to-the-exit is the tiebreak in every mode, which is what makes mode 0
 // fall out as the special case where the preference is flat.
-export function pickTarget(enemies, x, y, range, min = 0, mode = 0) {
+// `air` says whether whatever the caller throws can reach a bird — the `air` flag on
+// its AMMUNITION, which the caller has and this does not. Off by default, so a
+// weapon that says nothing about the air cannot hit a crow: forgetting to pass it
+// leaves a crow flying on, which the player can see, rather than a catapult
+// knocking one out of the sky, which is the rule broken. See `flying` on the crow.
+export function pickTarget(enemies, x, y, range, min = 0, mode = 0, air = false) {
   let best = null;
   let least = Infinity;
   let bestRank = Infinity;
@@ -1495,6 +1533,10 @@ export function pickTarget(enemies, x, y, range, min = 0, mode = 0) {
     // it must hold at every range, including the Infinity pass a global ability
     // makes. See unseen() in units.js.
     if (unseen(e)) continue;
+    // AND NOTHING AIMS AT A BIRD IT CANNOT REACH. Beside the other two for the same
+    // reason they are together: a thing on the board that is not a target, at any
+    // range. His shadow is where he is for everything else below.
+    if (e.def.flying && !air) continue;
     // Measured from the enemy's ground anchor — its shadow — because that is
     // where the figure IS. Its head is drawn well above that and never counts.
     if (!inRange(x, y, e.x, e.y, range)) continue;

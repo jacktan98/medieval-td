@@ -415,6 +415,19 @@ export const paths = {
   bomb_dead:       'assets/enemies/Enemies_Bomb_Thug_Self.png',
   bomb_live:       'assets/enemies/Enemies_Bomb_Thug_Bomb.png',
   bomb_blast:      'assets/enemies/Enemies_Bomb_Thug_Explode.png',
+  // THE DARK CROW, and the first creature drawn in the air. Three flight drawings
+  // with its shadow painted on the ground under it — the same shadow, to the pixel,
+  // in all three — one of it dropping with no shadow at all, and a body. `crow` is
+  // the Default: the portrait, and the first beat of the wingbeat.
+  //
+  // THE SHADOW UNDER A FALLING BIRD IS NOT A FILE OF ITS OWN. It is cut out of the
+  // Default drawing — `flying.shadow` on the def says where — so the one on the
+  // ground under a dropping crow is the artist's, not a second ellipse to keep in
+  // step with it. See drawCorpse in src/render.js.
+  crow:            'assets/enemies/Enemies_Dark_Crow_Default.png',
+  crow_flap1:      'assets/enemies/Enemies_Dark_Crow_Flying_1.png',
+  crow_flap2:      'assets/enemies/Enemies_Dark_Crow_Flying_2.png',
+  crow_falling:    'assets/enemies/Enemies_Dark_Crow_Falling.png',
   // --- THE BOSS ----------------------------------------------------------------
   //
   // ELEVEN DRAWINGS FOR ONE CREATURE, where the Dark Priest's five was the record.
@@ -471,6 +484,7 @@ export const paths = {
   dead_priest:     'assets/dead/Enemies_Dark_Priest_Dead.png',
   dead_plague:     'assets/dead/Enemies_Plague_Thug_Dead.png',
   dead_archer:     'assets/dead/Enemies_Archer_Thug_Dead.png',
+  dead_crow:       'assets/dead/Enemies_Dark_Crow_Dead.png',
   // The three soldiers' bodies, renamed by the artist to match their living
   // drawings — Soldiers_Spearman_Dead beside Soldiers_Spearman_Default — and
   // redrawn in the same upload, so every deadTrim and deadPivot below was

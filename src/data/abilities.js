@@ -103,6 +103,7 @@ export const ABILITY_COST = 150;
 // point on the same nose, drawn at different sizes.
 export const deadeyeBall = {
   kind: 'deadeye',
+  air: true,        // reaches a crow, like the ball it replaces — see the arrow
   sprite: 'deadeye_bullet',
   trim: [246, 246, 48, 20],
   faces: -1,

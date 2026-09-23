@@ -128,6 +128,12 @@ export function validate(state) {
 // answer it differently.
 export const shownDamage = def => def.listedDamage ?? def.damage;
 
+// DOES THIS CREATURE ATTACK AT ALL? The Dark Crow does not — "does not attack
+// anybody" — and a card or a panel that printed a sword and a 0 for him would be
+// saying he has a weapon that does nothing. Asked of the numbers rather than of
+// the kind, so the next creature that strikes nobody is left out the same way.
+export const strikes = def => shownDamage(def) > 0 || !!def.ranged;
+
 // WHICH ATTACK ICON A CARD SHOWS — the sword or the wand — off the def's own
 // `damageType` rather than off its family. A barracks reads its SOLDIER'S kind,
 // because a barracks does no damage itself and the man is what swings.
@@ -549,7 +555,7 @@ export function selectionInfo(state) {
     // THE SAME FUNCTION THE BLOW GOES THROUGH, not a second copy of the multiply.
     // A panel that computed the boost for itself is a panel that can disagree with
     // the fight, and this box exists to say what the fight is doing.
-    damage: swing(f, shownDamage(f.def)),
+    damage: strikes(f.def) ? swing(f, shownDamage(f.def)) : null,
     // THE SWORD OR THE WAND, off this figure's own kind. The panel had no `attack`
     // at all until the armour row arrived, so it fell through to the sword for
     // everybody — which was a wrong picture rather than a missing one, and the one

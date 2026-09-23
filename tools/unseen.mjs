@@ -330,8 +330,11 @@ console.log('\n--- his blow lands whole on every man in the game ---\n');
   // honest claim is narrower: the Captain is a boss, arrives once, and being flat
   // against the ladder is part of being a boss. What is new is an ORDINARY enemy
   // with that property, at wave-three prices.
+  // OF THE CREATURES THAT STRIKE AT ALL. The Dark Crow's zero is flat against every
+  // plate in the game in the most literal way, and a blow that is never swung is
+  // not the property this is about.
   const flat = Object.entries(enemyTypes).filter(([, def]) =>
-    typeOf(def) === 'physical' &&
+    def.damage > 0 && typeOf(def) === 'physical' &&
     Object.values(men).every(m => taken(def.damage, 'physical', m.armour, pierceOf(def)) === def.damage));
   const rank = flat.filter(([, def]) => !def.boss);
   ok(rank.length === 1 && rank[0][0] === 'shadow_inf',

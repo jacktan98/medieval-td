@@ -9,6 +9,7 @@
 // runs with an empty art table and never creates one.
 
 import { poolFor } from './blood.js';
+import { SCALE } from './data/towers.js';
 
 // How long a body stays, in GAME seconds. On 2x from the dashboard that is one
 // real second, because the fast-forward runs the whole simulation twice per
@@ -52,9 +53,41 @@ const thrown = c => (c.kb ? eased(Math.min(1, (CORPSE_LIFE - c.life) / KNOCKBACK
 // the spot the man was killed on, which is where the throw starts.
 export const knockbackOffset = c => c.face * (c.kb || 0) * (1 - thrown(c));
 
+// --- A BODY THAT FALLS FIRST --------------------------------------------------
+//
+// A CROW DIES IN THE AIR, and the owner's rule for it is "when the crow is shot
+// down, it will fall and use 'falling'... Use 'dead' when the crow landed on the
+// ground and vanishes like normal units when dead." So his body has a beat nobody
+// else's has: `fall` seconds of dropping, and only then the two seconds every
+// corpse gets. The clock that fades a body does not start until it is on the
+// ground, so a crow is on screen for exactly as long dead as a man is.
+//
+// STRAIGHT DOWN, onto the spot his shadow was on. The shadow is where he WAS all
+// along — every reach and every lane position in the game measured him from it —
+// so it is where he lands, and it stays on the ground under him the whole way.
+// See drawCorpse in src/render.js, which lays it there.
+//
+// Is this body still in the air?
+export const falling = c => !!c.fall && c.fallT < c.fall;
+
+// HOW HIGH ITS MIDDLE IS ABOVE ITS SHADOW, in game px, on this frame. From the
+// height the bird was flying at — `from`, which the death path reads off the wing
+// frame he was showing — to the height his body lies at in the Dead drawing, so
+// the Falling bird lands exactly where the Dead one takes over.
+//
+// ACCELERATING, on the square of the time: a thing that falls starts slowly and
+// hits the ground fast. A straight line would read as being lowered.
+export function dropHeight(c) {
+  const land = c.def.flying.rest * SCALE;
+  if (!falling(c)) return land;
+  const p = c.fallT / c.fall;
+  return c.from + (land - c.from) * p * p;
+}
+
 // The pool's opacity ramp. Blood spreads once the body is down, so the stain
-// arrives with the landing rather than being on the ground ahead of it.
-export const settled = thrown;
+// arrives with the landing rather than being on the ground ahead of it — and a
+// body still falling is not down at all.
+export const settled = c => (falling(c) ? 0 : thrown(c));
 
 // `def` is the living figure's def, not a separate corpse def: the body is drawn
 // from `def.dead` and positioned from the same trim and pivot the standing
@@ -95,11 +128,32 @@ export function dropCorpse(state, def, x, y, face, opts = {}) {
     x: x - face * kb,
     kb,
     life: CORPSE_LIFE,
-    pool: opts.pool || poolFor()
+    // NO POOL UNDER A CROW. The stain is drawn for a man — it is wider than the
+    // whole bird — and one spreading under a body a third its size read as a
+    // second, bigger creature having died there. A flyer lies on his own shadow
+    // and nothing else, which is what the Dead drawing already has painted in.
+    pool: def.flying ? null : (opts.pool || poolFor()),
+    // A FLYER'S DROP: how long it takes, how far through it he is, and the height
+    // he started from. Zero `fall` on everything that dies on its feet, which is
+    // what `falling` reads as "already down".
+    fall: def.flying ? def.flying.fall : 0,
+    fallT: 0,
+    from: opts.from || 0
   });
 }
 
 export function updateCorpses(state, dt) {
-  for (const c of state.corpses) c.life -= dt;
+  for (const c of state.corpses) {
+    // IN THE AIR, THE BODY'S TWO SECONDS HAVE NOT STARTED. The part of this frame
+    // left over after he lands comes off `life`, so the drop and the fade add up to
+    // exactly the time they are meant to at any frame rate.
+    if (falling(c)) {
+      c.fallT += dt;
+      if (falling(c)) continue;
+      c.life -= c.fallT - c.fall;
+      continue;
+    }
+    c.life -= dt;
+  }
   state.corpses = state.corpses.filter(c => c.life > 0);
 }

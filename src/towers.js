@@ -549,13 +549,21 @@ const REST = 0;      // crew holding the rock — also the pose it idles on
 const LOAD = 1;      // the rock goes in the sling; the crew commits to a side here
 const FIRE = 2;      // the arm comes over, and the rock leaves on this beat
 
+// CAN THIS TOWER HIT SOMETHING IN THE AIR? Asked of its ammunition. See `air` on
+// the arrow in data/towers.js.
+const reachesAir = t => !!(t.def.ammo && t.def.ammo.air);
+
 export function updateTowers(state, dt) {
   for (const t of state.towers) {
     // Barracks have no weapon — their range is rally reach, not a firing arc,
     // and they carry no mount or muzzle to aim with.
     if (!t.def.cooldown) continue;
 
-    const target = pickTarget(state.enemies, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode);
+    // WHETHER IT CAN REACH A CROW is what it throws, not what it is: `air` on the
+    // tower's own ammunition. A special that throws something else — a Heavy Bolt,
+    // Deadeye's ball — throws it from a tower whose ordinary shot already answered
+    // this, and every one of them answers it the same way the ordinary one does.
+    const target = pickTarget(state.enemies, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode, reachesAir(t));
     if (target) t.aim = Math.atan2(target.y - t.y, target.x - t.x);
 
     if (framesOf(t.def, t)) stepCrew(state, t, dt, target);
@@ -683,7 +691,7 @@ function stepWeapon(state, t, dt, target) {
   // ball goes to a man on the far side of the map, so "no target" below has to
   // mean no target ANYWHERE rather than none in the ring.
   const far = coming && coming.global
-    ? pickTarget(state.enemies, t.x, t.y, Infinity, 0, t.aimMode)
+    ? pickTarget(state.enemies, t.x, t.y, Infinity, 0, t.aimMode, reachesAir(t))
     : null;
   const aimAt = far || target;
 
@@ -767,7 +775,7 @@ function stepWeapon(state, t, dt, target) {
 function burstTarget(state, t) {
   const fresh = state.enemies.filter(e => !t.hit.includes(e));
   if (!fresh.length) return null;
-  return pickTarget(fresh, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode);
+  return pickTarget(fresh, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode, reachesAir(t));
 }
 
 // The abilities a tower has BOUGHT that change how it shoots. Holy Light is not

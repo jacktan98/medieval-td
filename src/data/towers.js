@@ -404,6 +404,13 @@ const ROCK3_TRIM = [212, 212, 88, 88];
 // drawn upright and never turned.
 export const arrow = {
   kind: 'arrow',
+  // IT REACHES THE AIR. A Dark Crow can only be shot at with ammunition that
+  // carries this, and it is on the AMMUNITION rather than the tower because three
+  // different kinds of thing throw at him — towers, the garrisons' men and an
+  // assassin's knife — and all three already carry what they throw. Arrows,
+  // quarrels, musket balls, knives and the monastery's missiles have it; a rock, a
+  // bolt and a cannonball do not. See `flying` on the crow in data/waves.js.
+  air: true,
   sprite: 'arrow_t1',
   trim: [203, 246, 100, 20],
   faces: -1,
@@ -450,6 +457,7 @@ export const arrow = {
 // edge of the trim the way an arrowhead is.
 export const bullet = {
   kind: 'bullet',
+  air: true,        // reaches a crow — see the arrow's note
   sprite: 'bullet',
   trim: BULLET_TRIM,
   faces: -1,
@@ -483,6 +491,7 @@ export const bullet = {
 // for, which is the constraint that actually binds. See `cooldown` on the tier.
 export const quarrel = {
   kind: 'quarrel',
+  air: true,        // reaches a crow — see the arrow's note
   sprite: 'quarrel',
   trim: QUARREL_TRIM,
   faces: -1,
@@ -523,6 +532,7 @@ export const quarrel = {
 // projectiles.js off `kind`, like the rock's and the flask's.
 export const knife = {
   kind: 'knife',
+  air: true,        // reaches a crow — see the arrow's note
   sprite: 'assassin_knife',
   trim: [235, 250, 39, 15],
   faces: -1,
@@ -797,6 +807,7 @@ export const cannonball = {
 // know whether it was worth firing.
 export const missile = {
   kind: 'arcane',
+  air: true,        // reaches a crow — see the arrow's note
   sprite: 'missile_t1',
   trim: MISSILE_TRIM,
   // Drawn lying to the LEFT, like the arrow, and rotated to its heading. The

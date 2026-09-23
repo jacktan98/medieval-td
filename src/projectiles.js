@@ -5,7 +5,7 @@ import { play, LAND, BREAK, KNIFE } from './audio.js';
 import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armour.js';
-import { raiseGuard } from './enemies.js';
+import { raiseGuard, airLift } from './enemies.js';
 import { struck } from './gesture.js';
 import { fixture, unseen } from './units.js';
 
@@ -28,7 +28,10 @@ export function updateShots(state, dt) {
     const step = s.speed * dt;
     if (s.target.hp <= 0) { s.dead = true; continue; }
 
-    const ax = s.target.x - s.x, ay = s.target.y - s.y;
+    // STEERED AT THE BIRD, NOT HIS SHADOW. For everything on its feet `airLift` is
+    // zero and this is the anchor it always was; for a crow it is the body in the
+    // frame he is showing, so the arrow flies into him rather than into the grass.
+    const ax = s.target.x - s.x, ay = s.target.y - airLift(s.target) - s.y;
     const adist = Math.hypot(ax, ay);
 
     if (adist <= step) {
@@ -248,7 +251,13 @@ function land(state, s) {
 // the puddle, so a stray one landing beside stage 5's bridge crossbowmen would reach
 // them however carefully the throwing was aimed elsewhere. See fixture() in units.js.
 const victims = (state, s) =>
-  (s.side === 'enemy' ? state.units.filter(u => !fixture(u)) : state.enemies);
+  (s.side === 'enemy' ? state.units.filter(u => !fixture(u))
+  // AND NOT A BIRD, unless what landed could have reached one. A rock comes down
+  // on the ground and a crow is not on it: his shadow standing inside the crater
+  // means the bird is twenty pixels over it. The arrow's `air` is the same flag
+  // the aiming asks — see pickTarget — so a weapon that cannot aim at him cannot
+  // catch him in a blast either, and one that can, can.
+                      : state.enemies.filter(e => !e.def.flying || s.ammo.air));
 
 // What arriving SOUNDS like, by ammunition. An arrow is not here on purpose: it
 // makes its noise leaving the bow, because that is the moment you watch.
@@ -325,7 +334,9 @@ function hit(state, s, v) {
     // time it lands so the two are the same point, but a rock has a patch of
     // victims and blood belongs on each of them rather than in a heap at the
     // impact. Poison draws no blood: nothing has broken the skin.
-    splat(state, v.x, v.y, v.y);
+    //
+    // At the BIRD for a crow, above his shadow; `airLift` is zero for the rest.
+    splat(state, v.x, v.y - airLift(v), v.y);
   }
   // Which side the blow came from, so the body ends up facing it. The THROWER's
   // x, not the projectile's: at the moment of impact the projectile is on top of

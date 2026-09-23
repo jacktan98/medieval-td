@@ -76,6 +76,40 @@ tall, so he stands in a lane exactly as the rest of them do — the bomb he carr
 is held in front of him and adds nothing to his footprint. His shadow sits at
 source (267.0, 303.0).
 
+## The Dark Crow flies, and his shadow is on the ground
+
+He is the first creature drawn in the air. Three of his drawings are the wingbeat,
+with the bird well above a brown shadow on the ground — and the shadow is on the
+SAME PIXEL in all three, source (257.5, 323.3), which is what keeps the ground under
+him still while the wings move. That shadow is where he is: every reach, lane and
+tap box measures him from it, exactly as a man is measured from his feet.
+
+| file                              | key            | what it is                                        |
+|-----------------------------------|----------------|---------------------------------------------------|
+| `Enemies_Dark_Crow_Default.png`   | `crow`         | the portrait, the card, and the first beat of flight |
+| `Enemies_Dark_Crow_Flying_1.png`  | `crow_flap1`   | wings level — the second and fourth beats         |
+| `Enemies_Dark_Crow_Flying_2.png`  | `crow_flap2`   | wings down — the third beat                       |
+| `Enemies_Dark_Crow_Falling.png`   | `crow_falling` | half a second of dropping, once he is shot        |
+
+The body is `Enemies_Dark_Crow_Dead.png` in `assets/dead/`, lying on its own
+shadow like every other corpse.
+
+**The wingbeat is Default, Flying 1, Flying 2, Flying 1** and round again, one
+frame per 9px flown, so the wings never jump from fully down to fully up.
+
+**The Falling drawing has no shadow, and must not get one.** While he drops, the
+game cuts the shadow out of the Default drawing — `flying.shadow` on his def,
+`[236, 316, 43, 16]` — and leaves it on the ground where he was, and the bird falls
+onto it. If the Default is redrawn with the shadow somewhere else, that rect has to
+be re-measured.
+
+**How high the bird is above his shadow** is `lift` on each flight frame, in source
+px: 113, 104 and 86, from the middle of the body. Arrows are steered there rather
+than at the shadow. The fall ends 10 source px above the shadow, which is where the
+Dead drawing has his body — `rest` on the def.
+
+**He has no Attack drawing** because he has no attack.
+
 ## Two enemies fight at both distances, and they carry two pairs
 
 An enemy that shoots and also gets caught needs a drawing for each. The suffixes

@@ -205,6 +205,8 @@ const shadowThug = waves.enemyTypes.shadow_inf;
 const rally = waves.enemyTypes.rally_inf;
 const blocker = waves.enemyTypes.blocker_inf;
 const archer = waves.enemyTypes.archer_inf;
+const crow = waves.enemyTypes.crow;
+const flap = crow.flying.frames;
 
 // `whole` sprites are the buildings: nothing else in those files is painted the
 // ground colour, so every blob of it is part of one ellipse and they are fitted
@@ -482,7 +484,14 @@ const SPRITES = [
   ['assets/dead/Enemies_Blocker_Thug_Dead.png','blocker_inf.deadPivot', blocker.deadTrim, blocker.deadPivot],
   ['assets/dead/Enemies_Giant_Thug_Dead.png',  'heavy_inf.deadPivot',  heavy.deadTrim, heavy.deadPivot],
   ['assets/dead/Enemies_Plague_Thug_Dead.png', 'plague_inf.deadPivot', plague.deadTrim, plague.deadPivot],
-  ['assets/dead/Enemies_Archer_Thug_Dead.png', 'archer_inf.deadPivot', archer.deadTrim, archer.deadPivot]
+  ['assets/dead/Enemies_Archer_Thug_Dead.png', 'archer_inf.deadPivot', archer.deadTrim, archer.deadPivot],
+  // THE CROW'S SHADOW IS ON THE GROUND AND HE IS NOT. Three flight drawings, one
+  // shadow on one pixel under all of them — and it is the shadow the pivot means,
+  // exactly as for a man, so the bird is drawn well above the point measured here.
+  ['assets/enemies/Enemies_Dark_Crow_Default.png',  'crow.pivot',              crow.spriteTrim, crow.pivot],
+  ['assets/enemies/Enemies_Dark_Crow_Flying_1.png', 'crow.flying.frames[1]',   flap[1].trim, flap[1].pivot],
+  ['assets/enemies/Enemies_Dark_Crow_Flying_2.png', 'crow.flying.frames[2]',   flap[2].trim, flap[2].pivot],
+  ['assets/dead/Enemies_Dark_Crow_Dead.png',        'crow.deadPivot',          crow.deadTrim, crow.deadPivot]
 ];
 
 // How far the held anchor may sit from the measured centre before it is wrong,

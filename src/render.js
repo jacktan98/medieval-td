@@ -2,7 +2,7 @@ import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
 import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
-import { CORPSE_FADE, knockbackOffset, settled } from './corpses.js';
+import { CORPSE_FADE, knockbackOffset, settled, falling, dropHeight } from './corpses.js';
 // The live bomb's window into its own drawing, and where in that window it sits
 // on the ground. Kept in bombs.js beside the offset that was measured with them —
 // see the note there on the composite the three numbers come off.
@@ -16,12 +16,12 @@ import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFli
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen, atEase } from './units.js';
 import { stageOf } from './data/armour.js';
-import { downed } from './enemies.js';
+import { downed, wingbeat } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
-import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow } from './select.js';
+import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes } from './select.js';
 import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
          abilityCards, towerEntry, unitEntry, stageBadge, staged, stageOfCard,
          abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
@@ -1619,6 +1619,7 @@ function canvasAnchor(def) {
 // nothing at all. That is the whole fallback: no grey box, no placeholder, just
 // the game exactly as it was before the feature existed.
 function drawCorpse(ctx, c) {
+  if (falling(c)) { drawFall(ctx, c); return; }
   const img = art[c.def.dead];
   if (!img) return;
 
@@ -1644,6 +1645,47 @@ function drawCorpse(ctx, c) {
     ctx.drawImage(img, -ax * d, -ay * d, d, d);
   }
 
+  ctx.restore();
+}
+
+// A CROW ON HIS WAY DOWN: the Falling drawing in the air, and his shadow on the
+// ground under it.
+//
+// THE SHADOW IS THE ONE HE FLEW WITH. The Falling drawing has none, so it is cut
+// out of the Default drawing — `flying.shadow` says where — and laid on the
+// ground with the same pivot the flying bird is drawn from. So on the frame he is
+// shot the shadow does not move by a pixel: the bird changes drawing above it and
+// starts to drop, and the shadow waits for him on the spot he lands on.
+//
+// THE BIRD'S MIDDLE IS THE ANCHOR, `dropHeight` above the shadow. It starts where
+// the wing frame he died on had his body and ends where the Dead drawing has it,
+// and drawCorpse hands over to the Dead drawing on the frame the two meet.
+//
+// FULL OPACITY THE WHOLE WAY. The fade is the last half second of lying on the
+// ground, as for every body, and it has not started.
+function drawFall(ctx, c) {
+  const d = c.def, f = d.flying;
+  ctx.save();
+  ctx.translate(c.x, c.y);
+  ctx.scale(mirror(d, c.face), 1);
+
+  const img = art[d.sprite];
+  if (img) {
+    const [tx, ty, tw, th] = d.spriteTrim;
+    const [sx, sy, sw, sh] = f.shadow;
+    // The pivot in source px, so the cut-out lands where it sat in the drawing.
+    const px = tx + d.pivot[0] * tw, py = ty + d.pivot[1] * th;
+    ctx.drawImage(img, sx, sy, sw, sh,
+      (sx - px) * SCALE, (sy - py) * SCALE, sw * SCALE, sh * SCALE);
+  }
+
+  const bird = art[f.fallen.sprite];
+  if (bird) {
+    const [sx, sy, sw, sh] = f.fallen.trim;
+    const dw = sw * SCALE, dh = sh * SCALE;
+    ctx.drawImage(bird, sx, sy, sw, sh,
+      -f.fallen.pivot[0] * dw, -dropHeight(c) - f.fallen.pivot[1] * dh, dw, dh);
+  }
   ctx.restore();
 }
 
@@ -1775,7 +1817,12 @@ export function enemyStance(e) {
                : (e.nock > 0 && now.reload) ? now.reload
                : null;
   // His own pair, which in stage 2 is the enraged one.
-  const own = { sprite: now.sprite || d.sprite,
+  //
+  // OR, FOR A BIRD, WHICHEVER BEAT OF THE WINGBEAT HE IS ON. A crow has no pair —
+  // he never strikes — and no stance; what he is showing is only ever a frame of
+  // flight, chosen off the distance he has flown. See wingbeat in src/enemies.js.
+  const own = d.flying ? wingbeat(e)
+            : { sprite: now.sprite || d.sprite,
                 trim: now.trim || d.spriteTrim,
                 pivot: now.pivot || d.pivot };
   // WHICH ATTACK, and the two questions are asked in this order for a reason. The
@@ -3577,7 +3624,9 @@ function drawInfo(ctx, state) {
     // THE ATTACK BESIDE THE HEALTH, at the owner's word — "move attack damage icon
     // beside health". It read down the left edge under it before, which left the
     // right half of both rows empty and cost the line the trait row now has.
-    infoStat(ctx, info.attack || 'stat_damage', hx + STAT_GAP, ty, String(info.damage), ink);
+    // NO SWORD FOR A CREATURE WITH NOTHING TO HIT WITH. See `strikes`.
+    if (info.damage !== null)
+      infoStat(ctx, info.attack || 'stat_damage', hx + STAT_GAP, ty, String(info.damage), ink);
   } else {
     // A TOWER, whose attack keeps the first row and whose reach keeps the place
     // beside it. The pair reads as it does on an encyclopedia card — attack and
@@ -4683,7 +4732,8 @@ function enemyCard(ctx, c, stage = 1) {
   const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
   const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
 
-  const top = [['stat_health', d.hp], [attackIcon(d), shownDamage(d)]];
+  const top = [['stat_health', d.hp]];
+  if (strikes(d)) top.push([attackIcon(d), shownDamage(d)]);
   if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
   const traits = traitRow(d);
   const reward = rewardRow(d);
@@ -5547,7 +5597,19 @@ function drawAdminUnits(ctx, a) {
       ctx.restore();
     }
 
-    stepperRow(ctx, stepper('damage', u.y, 'damage'), u.def.damage, shipped(`${u.id}|damage`));
+    if (u.dmg) {
+      stepperRow(ctx, stepper('damage', u.y, 'damage'), u.def.damage, shipped(`${u.id}|damage`));
+    } else {
+      // A creature with no attack at all — the Dark Crow — said in words for the
+      // same reason as above.
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(240,230,210,0.28)';
+      ctx.font = `${adminPx(14)}px system-ui, sans-serif`;
+      ctx.fillText('no attack', COLS.damage + 100, u.y + 20);
+      ctx.restore();
+    }
   }
 
   // How far one tap moves a number, said once for the page rather than on every

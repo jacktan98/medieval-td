@@ -571,6 +571,103 @@ export const enemyTypes = {
     bomb: true
   },
 
+  // THE DARK CROW, and the first thing on the road that is not ON the road.
+  //
+  // The owner's brief: "A crow that flies to the exit fast. Does not attack
+  // anybody... Only archery and monastery towers/units and assassins with knife
+  // throw can attack crows."
+  //
+  // WHAT THAT IS, MECHANICALLY, is the `flying` block below and one question asked
+  // of every weapon in the game: does what it throws reach the air? `air` on the
+  // AMMUNITION is the answer — see the arrow in data/towers.js — so a tower, a
+  // garrison man and an assassin's knife all say it the same way, by what leaves
+  // their hand. Arrows, quarrels, musket balls, knives and the monastery's missiles
+  // carry it; a rock, a bolt and a cannonball do not, and nor does anything a
+  // soldier holds, because no soldier can take hold of a bird. pickTarget asks it
+  // of the aim and the splash loop in src/projectiles.js asks it of the landing, so
+  // a catapult neither aims at a crow nor catches one in its blast.
+  //
+  // THE BARRACKS HAS NO ANSWER TO HIM, and that is the point of him: he is the
+  // Shadow Thug turned inside out. That one is only a barracks' to kill; this one
+  // is only the bows' and the altars'. A board built all walls and machines lets
+  // every crow through.
+  //
+  // HE DOES NOT FIGHT. `damage: 0` and no `atkCd`, because nothing ever holds him
+  // to swing at — and a zero rather than a missing field so that every table that
+  // adds damage up across the roster stays a sum of numbers. The card and the
+  // panel leave the attack out for a zero; see selectionInfo in src/select.js.
+  //
+  // 100 HEALTH AND NO PLATE, at the owner's word. Soft to anything that can reach
+  // him; the protection is how little time he spends inside anybody's reach.
+  //
+  // SPEED 100, the fastest thing in the game by a distance — the Thug walks at 60 —
+  // and the owner's "fast" with a number put on it. A tier 1 bow at 10 a second
+  // needs ten shots and gets about four as he crosses its ring, so one crow wants
+  // two bows or a better one. The bounty and the number are both first guesses,
+  // left for the dashboard.
+  crow: {
+    name: 'Dark Crow',
+    // THE DEFAULT IS THE PORTRAIT AND THE FIRST WINGBEAT, both. The book and the
+    // panel draw this trim; on the board it is one of the three frames below.
+    sprite: 'crow',
+    spriteTrim: [217, 180, 78, 152],   // source px, re-paste from tools/trim.mjs
+    // THE CENTRE OF HIS SHADOW, on the ground under him, and that is where he IS:
+    // the owner's "shadow will be the centre point of the crow in 3d like world".
+    // Every reach, every lane position and every tap box in the game measures from
+    // this point, exactly as it does for a man standing on the road — the bird is
+    // drawn above it.
+    pivot: [0.519, 0.942],
+    spriteFaces: -1,
+    // THE BODY, lying on its own shadow. Faded out like every other corpse.
+    dead: 'dead_crow',
+    deadTrim: [216, 241, 80, 30],
+    deadPivot: [0.456, 0.833],
+    hp: 100,
+    damageType: 'physical',
+    armour: { physical: 'none', magic: 'none' },
+    speed: 100,
+    bounty: 20,
+    leak: 1,
+    damage: 0,
+    r: 8,
+    colour: '#655A48',
+    // HE FLIES. Read by pickTarget, the splash, the soldiers' block, the renderer
+    // and the death path, and by nothing else.
+    //
+    //   frames   the wingbeat: Default, Flying 1, Flying 2 and back through 1, so
+    //            the wings go up, level, down, level and never jump from down to up.
+    //            All three drawings put the shadow on the same pixel, so the pivot
+    //            only differs because the trims do — the ground under him does not
+    //            move while the wings do.
+    //   lift     how far the BIRD is above that shadow in each frame, in source px:
+    //            the middle of his body, which is where an arrow goes in. The wings
+    //            carry the body down as they beat, which is why the three differ.
+    //   stride   game px flown per frame of the wingbeat. Driven by distance rather
+    //            than time, so a crow that is slowed flaps slower.
+    //   shadow   where the shadow sits in the Default drawing, in source px. The
+    //            Falling drawing has none — a falling bird's shadow is not a
+    //            property of the bird — so it is cut from here and laid on the
+    //            ground under him while he drops. See drawCorpse.
+    //   fall     seconds from the shot to the ground.
+    //   fallen   the Falling drawing: its trim, and its middle as the anchor,
+    //            because the renderer moves that point from the air to the ground.
+    //   rest     how far the body's middle sits above its shadow in the Dead
+    //            drawing, in source px — where the drop ends, so the Falling bird
+    //            lands exactly where the Dead one lies.
+    flying: {
+      frames: [
+        { sprite: 'crow',       trim: [217, 180, 78, 152], pivot: [0.519, 0.942], lift: 113 },
+        { sprite: 'crow_flap1', trim: [217, 199, 78, 133], pivot: [0.519, 0.934], lift: 104 },
+        { sprite: 'crow_flap2', trim: [217, 212, 78, 120], pivot: [0.519, 0.927], lift: 86 }
+      ],
+      stride: 9,
+      shadow: [236, 316, 43, 16],
+      fall: 0.5,
+      fallen: { sprite: 'crow_falling', trim: [217, 230, 78, 52], pivot: [0.5, 0.5] },
+      rest: 10
+    }
+  },
+
   // THE SHIELD, and he is the first enemy whose armour is a THING HE DOES rather
   // than a row on his card.
   //
@@ -1782,6 +1879,12 @@ export const MARCH_ORDER = [
   // the bomb has gone off is a standard-bearer who missed it.
   'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'bomb_inf', 'rally_inf',
   'heavy_inf', 'archer_inf', 'plague_inf',
+  // THE CROW FLIES IN BEHIND THE WHOLE COLUMN AND OVERTAKES IT. He is two thirds
+  // again as fast as anything walking, so where he starts is not where he arrives:
+  // from the back he reaches the towers with the column, while the bows are already
+  // busy with it — which is the fight he is for. From the front he would arrive
+  // alone and be shot down by towers with nothing else to do.
+  'crow',
   // The healer comes in LAST, behind everything he is there to mend. A priest at
   // the head of a column would spend the wave walking with nobody hurt in front of
   // him; behind it he arrives to a fight already going and men already wounded.
@@ -1811,12 +1914,12 @@ export const MARCH_ORDER = [
 // that silently never appears.
 //
 // NEWEST LAST, which is why the tail of this list is not sorted by anything: the
-// Shadow Thug, the Rally Thug and the Bomb Thug arrived in that order and sit in
-// that order, behind the roster the book opened with. The player meets them in
+// Shadow Thug, the Rally Thug, the Bomb Thug and the Dark Crow arrived in that order
+// and sit in that order, behind the roster the book opened with. The player meets them in
 // that order too, because each one was written into the late boards.
 export const BOOK_ORDER = [
   'light_inf', 'tough_inf', 'archer_inf', 'blocker_inf', 'heavy_inf',
-  'plague_inf', 'dark_priest', 'shadow_inf', 'rally_inf', 'bomb_inf'
+  'plague_inf', 'dark_priest', 'shadow_inf', 'rally_inf', 'bomb_inf', 'crow'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

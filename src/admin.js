@@ -214,7 +214,11 @@ export function units() {
   const out = [];
 
   for (const [id, def] of Object.entries(enemyTypes)) {
-    out.push({ id: `enemy/${id}`, name: def.name, of: 'Enemy', def, hp: true });
+    // `dmg: false` for a creature that attacks nobody — the Dark Crow — which has
+    // a zero and no weapon to put a number on. A stepper there would let the
+    // dashboard give a bird a blow that nothing in the fight ever reads.
+    out.push({ id: `enemy/${id}`, name: def.name, of: 'Enemy', def, hp: true,
+               dmg: def.damage > 0 || !!def.ranged });
   }
 
   for (const fam of families) {
@@ -236,7 +240,8 @@ export function units() {
         // barracks and the TIER itself for everyone else. Held as a reference so
         // an edit lands on the same object the fight reads from.
         def: man || def,
-        hp: !!man
+        hp: !!man,
+        dmg: true
       });
     }
   }
@@ -1033,8 +1038,10 @@ const WAVE_STEP_W = 46;
 // building the levels rather than a control anybody plays with.
 //
 // AND THIS IS THE LAST TIME IT CAN BE DONE. The pitch is exactly the tapped height
-// now, with nothing left over — one more creature is seven rows at a 34px pitch,
-// and no stepper worth pressing fits inside that. What comes next is one of the two
+// now, with nothing left over. Six rows of two hold twelve creatures, and the Dark
+// Crow was the twelfth — this note once said the twelfth would not fit, which
+// counted rows of one. The THIRTEENTH is seven rows at a 34px pitch, and no
+// stepper worth pressing fits inside that. What comes next is one of the two
 // things the note under WAVE_GRID_ROWS already names, and they should be weighed
 // then rather than now: page the roster the way the Units tab does, or go to three
 // columns and put each label above its own pair instead of beside it. Both are real
@@ -1566,6 +1573,7 @@ export function tapAdmin(state, x, y, restart) {
   for (const u of unitRows(a.page)) {
     for (const field of ['hp', 'damage']) {
       if (field === 'hp' && !u.hp) continue;
+      if (field === 'damage' && !u.dmg) continue;
       const s = stepper(field, u.y, field);
       const now = u.def[field];
       if (on(s.minus)) { setUnitStat(u.id, field, now - statStep(now)); return true; }
