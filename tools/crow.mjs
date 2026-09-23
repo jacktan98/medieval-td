@@ -18,7 +18,8 @@ import { decode } from './png.mjs';
 import { enemyTypes, MARCH_ORDER, BOOK_ORDER } from '../src/data/waves.js';
 import { families, garrisonUnits, SCALE, knife } from '../src/data/towers.js';
 import { abilityById } from '../src/data/abilities.js';
-import { pickTarget, updateEnemies, wingbeat, airLift } from '../src/enemies.js';
+import { pickTarget, updateEnemies, wingbeat, airLift, flapped } from '../src/enemies.js';
+import { CUE, FLAP, GAIN, CLIPS } from '../src/audio.js';
 import { makeTower, updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateUnits } from '../src/units.js';
@@ -332,6 +333,53 @@ console.log('\n--- shot down ---\n');
   const c = st.corpses[0];
   ok(c && !falling(c) && c.pool && c.kb > 0, 'a Thug still drops where he stood, thrown back, in a pool',
     c ? `kb ${c.kb}` : 'no body');
+}
+
+// --- what he sounds like -----------------------------------------------------------
+
+console.log('\n--- his cry and his wings ---\n');
+
+{
+  // "crow dies — use it when it is shot and falling down. Category A." His def names
+  // the cue, and the death path plays the def's cry in place of the weapon's line.
+  const cue = CUE[CROW.cry];
+  ok(cue && cue.length === 1 && CLIPS[cue[0]] === 'assets/audio/sfx/Crow_dies.mp3',
+    'he has his own cry, and it is Crow_dies', cue ? `${CROW.cry} -> ${cue.join(', ')}` : 'no cue');
+  const death = readFileSync(new URL('../src/enemies.js', import.meta.url), 'utf8');
+  ok(/solo\(e\.def\.cry \? CUE\[e\.def\.cry\]/.test(death),
+    '  played through solo — Category A — in place of the kill line', 'the death path in src/enemies.js');
+
+  // "wings flap — use it every time crow flaps its wing... category B... soft."
+  ok(FLAP.length === 1 && CLIPS[FLAP[0]] === 'assets/audio/sfx/Wings_flap.mp3' && GAIN[FLAP[0]] < 1,
+    'his wings are Wings_flap, played under full level', `gain ${GAIN[FLAP[0]]}`);
+
+  // ONCE PER WINGBEAT, through the same distance the drawing is chosen from: flown
+  // at his own speed one frame at a time for ten wingbeats, the flap fires ten times.
+  const cycle = F.stride * 4;
+  const e = foe(CROW, 0, 0, { s: 0.5 });
+  let flaps = 0;
+  while (e.s < cycle * 10) { const before = e.s; e.s += CROW.speed * DT; if (flapped(e, before)) flaps++; }
+  ok(flaps === 10, '  once a wingbeat, every wingbeat', `${flaps} flap(s) in ten beats`);
+  ok(/if \(e\.def\.flying && flapped\(e, flown\)\) play\(FLAP\)/.test(death),
+    '  played through play — Category B — from the step that moves him', 'updateEnemies in src/enemies.js');
+
+  // AND ON THE DOWNSTROKE. Every flap fires on the frame the wings reach Flying 2.
+  const f2 = F.frames[2];
+  const on = foe(CROW, 0, 0, { s: 0.5 });
+  let right = 0, fired = 0;
+  while (on.s < cycle * 10) { const before = on.s; on.s += CROW.speed * DT; if (flapped(on, before)) { fired++; if (wingbeat(on) === f2) right++; } }
+  ok(fired > 0 && right === fired, '  and on the frame the wings come down', `${right} of ${fired} on Flying 2`);
+
+  // AND THE WHOOSH IS HEARD INSIDE THAT FRAME. The clip's first whoosh is 0.24s in
+  // (measured off the file with the browser's own decoder), and the mixer trims the
+  // 0.198s of silence ahead of it as it loads — both numbers are the game's own, the
+  // second printed by the levelling in src/audio.js. What is left must be shorter
+  // than one wing frame at his speed, or the sound lands on the upstroke after.
+  const WHOOSH = 0.24, TRIMMED = 0.198;
+  const lag = WHOOSH - TRIMMED, frame = F.stride / CROW.speed;
+  ok(lag < frame, '  so its whoosh lands while they are down',
+    `${(lag * 1000).toFixed(0)}ms after the flap starts, against ${(frame * 1000).toFixed(0)}ms a frame at speed ${CROW.speed}`);
+  ok(CROW.speed === 80, 'he flies at 80', `${CROW.speed}`);
 }
 
 console.log(bad ? `\n${bad} check(s) failed.` : '\nThe crow flies over the wall and falls where his shadow was.');

@@ -279,6 +279,18 @@ const paths = {
   // would let exactly one of them be heard and silence the rest, which is the wrong
   // way round for the creature whose whole point is that there are several.
   bomb_sound:      'assets/audio/sfx/Bomb_sound.mp3',
+  // THE DARK CROW'S TWO. His cry when he is shot out of the air — Category A, in
+  // place of the kill line the weapon would have played — and his wings, which
+  // are Category B and quiet: one flap per wingbeat of every crow in the sky, so
+  // it is the sound of a flock going over rather than an event. See `cry` on his
+  // def and flapped() in src/enemies.js.
+  //
+  // WHAT THE FILES ARE, measured: both 1.0s. Wings_flap is silent for its first
+  // 0.2s, then two soft whooshes at 0.24 and 0.33 — 16dB under full scale at its
+  // peak, before the levelling lifts it. Crow_dies is loud from the first frame
+  // and tails off by 0.5s.
+  crow_dies:       'assets/audio/sfx/Crow_dies.mp3',
+  wings_flap:      'assets/audio/sfx/Wings_flap.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
   // out exactly as an arrow does — see the two flags on every ammunition in
@@ -724,7 +736,13 @@ export const GAIN = {
   // shipping 4.1dB below a rock landing on the same file. And it is why no trim
   // here can make the two tell apart by ear — that needs a different take, not a
   // different number.
-  bomb_sound: 4.0
+  bomb_sound: 4.0,
+  // SOFT, AT THE OWNER'S WORD: "make the volume sound soft like background sound
+  // effect." The levelling lifts the recording 8dB on load to match the rest of the
+  // battle, so this is what makes it background: about 9dB under an arrow, beside
+  // the world map's birdsong at 0.30. It plays once per wingbeat per crow, and
+  // several crows is several of it, which is the other reason it sits this low.
+  wings_flap: 0.35
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
@@ -817,6 +835,9 @@ export const CUE = {
   // they share one line; the tier 4 squad has its own.
   paladinKill:  ['paladin_kill_enemy'],
   soldierDeath: ['soldier_dies'],
+  // THE CROW'S OWN CRY, played when he is shot down in place of whatever the
+  // weapon would have said — see `cry` on his def in data/waves.js.
+  crowDies:     ['crow_dies'],
   // Selling. Category A and always played with priority, which puts it in the
   // same bracket as a build and an upgrade rather than with the battle: all
   // three are the player pressing a button and moving gold, and the reply to a
@@ -899,6 +920,10 @@ export const WAR_CRY = ['war_cry'];
 // Category B has no `heard` memory and no last-clip rule, so a single take is a
 // single take: it sounds every time it is asked for, however quiet the board is.
 export const BOMB = ['bomb_sound'];
+
+// A CROW'S WINGS, once per wingbeat. Category B — `play` — and soft. See
+// flapped() in src/enemies.js for when, and why that lines up with the drawing.
+export const FLAP = ['wings_flap'];
 
 // --- THE WORLD MAP ---------------------------------------------------------------
 //

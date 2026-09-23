@@ -1,6 +1,6 @@
 # Audio
 
-**Ninety-four clips: forty-nine in `sfx/` and forty-five in `voice/`.**
+**Ninety-six clips: fifty-one in `sfx/` and forty-five in `voice/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -24,6 +24,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
                       War_cry.mp3, Bomb_sound.mp3,
+                      Crow_dies.mp3, Wings_flap.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
@@ -178,12 +179,14 @@ and it now means "how long a lull has to be before the game forgets".
 | a **pope's** missile kills an enemy | `Pope_kill_enemy` |
 | any other barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
+| a **dark crow** is shot down, whatever shot him | `Crow_dies` |
 | a tower is **sold** | `Sell_Tower` |
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a spearman, pikeman or swordsman swings** — Category B | `Attack_1/2/3` |
 | **a paladin swings** — Category B | `Paladin_attack` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
+| **a dark crow's wings come down**, once a wingbeat per crow — Category B, soft, at 0.35 | `Wings_flap` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |

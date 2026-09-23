@@ -603,9 +603,9 @@ export const enemyTypes = {
   // them, while the monastery's missiles meet his high ward and do a fraction of
   // their number. The altars can still hurt him; they are not the answer to him.
   //
-  // SPEED 100, the fastest thing in the game by a distance — the Thug walks at 60 —
-  // and the owner's "fast" with a number put on it. The bounty and the speed are
-  // first guesses, left for the dashboard.
+  // SPEED 80, the owner's number, down from a first guess of 100: still the
+  // fastest thing on the road — the Thug walks at 60 — and a third again faster
+  // than him. His wings are heard on every downstroke; see flapped() in src/enemies.js.
   crow: {
     name: 'Dark Crow',
     // THE DEFAULT IS THE PORTRAIT AND THE FIRST WINGBEAT, both. The book and the
@@ -626,12 +626,15 @@ export const enemyTypes = {
     hp: 60,
     damageType: 'physical',
     armour: { physical: 'none', magic: 'high' },
-    speed: 100,
+    speed: 80,
     bounty: 20,
     leak: 1,
     damage: 0,
     r: 8,
     colour: '#655A48',
+    // HIS OWN CRY WHEN HE DIES, in place of the kill line the weapon would have
+    // played: a key into CUE in src/audio.js. Category A, like every death.
+    cry: 'crowDies',
     // HE FLIES. Read by pickTarget, the splash, the soldiers' block, the renderer
     // and the death path, and by nothing else.
     //
@@ -1880,7 +1883,7 @@ export const MARCH_ORDER = [
   // the bomb has gone off is a standard-bearer who missed it.
   'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'bomb_inf', 'rally_inf',
   'heavy_inf', 'archer_inf', 'plague_inf',
-  // THE CROW FLIES IN BEHIND THE WHOLE COLUMN AND OVERTAKES IT. He is two thirds
+  // THE CROW FLIES IN BEHIND THE WHOLE COLUMN AND OVERTAKES IT. He is a third
   // again as fast as anything walking, so where he starts is not where he arrives:
   // from the back he reaches the towers with the column, while the bows are already
   // busy with it — which is the fight he is for. From the front he would arrive

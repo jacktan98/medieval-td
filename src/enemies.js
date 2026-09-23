@@ -7,7 +7,7 @@ import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
+import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY, FLAP,
          BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
@@ -239,6 +239,28 @@ export function wingbeat(e) {
 // HOW HIGH ABOVE HIS SHADOW THE BIRD ITSELF IS, in game px, on the frame he is
 // showing: where an arrow goes in and where the blood comes out. Zero for anything
 // on its feet, so every caller can ask it of any enemy without testing first.
+// DID HIS WINGS COME DOWN BETWEEN THESE TWO DISTANCES? True on the frame the
+// wingbeat reaches its third drawing — Flying 2, wings down — which is when the flap
+// is played, so the whoosh is heard on the downstroke it belongs to.
+//
+// ON THE DOWNSTROKE ITSELF, not ahead of it, and the reason is in the file rather
+// than in the drawing. Wings_flap.mp3 opens with 0.2s of silence before its first
+// whoosh at 0.24s — but the mixer trims leading silence off every clip as it loads
+// (see the levelling in src/audio.js, which reports "wings_flap ... skipped 198ms of
+// silence"), so what actually plays reaches that whoosh about 40ms after it starts.
+// Forty milliseconds is a third of one wing frame at his speed, so it lands inside
+// the downstroke without the flapping having to be slowed to fit the sound.
+//
+// Off the same distance the drawing is chosen from, so the sound and the picture
+// cannot drift apart: one beat, one flap, for every crow in the sky — and a crow
+// the monk has slowed beats his wings, and is heard beating them, slower.
+export const flapped = (e, before) => {
+  const f = e.def.flying;
+  const cycle = f.stride * BEAT.length;
+  const down = f.stride * BEAT.indexOf(2);
+  return Math.floor((before - down) / cycle) !== Math.floor((e.s - down) / cycle);
+};
+
 export const airLift = e => (e && e.def.flying ? wingbeat(e).lift * SCALE : 0);
 
 // HOW MUCH OF HIS WALK A RAISED SHIELD COSTS HIM, as a multiplier, and 1 for
@@ -901,7 +923,10 @@ export function updateEnemies(state, dt) {
     // the Captain's second stage walks at 1.2x, out of timesOf in data/armour.js.
     // Multiplied in with the other two rather than replacing them, so an enraged
     // boss under a monk's pulse is still slowed by exactly a quarter.
+    const flown = e.s;
     e.s += e.def.speed * timesOf(e) * slowOf(e) * guardSlow(e) * dt;
+    // A CROW'S WINGS ARE HEARD ONCE PER BEAT. See flapped() below.
+    if (e.def.flying && flapped(e, flown)) play(FLAP);
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should
@@ -1100,7 +1125,12 @@ export function updateEnemies(state, dt) {
       // `killedBy` is the ammunition's `kind` when a shot landed the last blow,
       // and the soldier's own `blow` key when a man did — 'melee' for the three
       // who share the generic swing, 'paladin' for the one who does not.
-      solo(e.killedBy === 'arrow' ? CUE.arrowKill
+      //
+      // A CREATURE WITH A CRY OF ITS OWN GIVES THAT INSTEAD — the Dark Crow, whose
+      // "crow dies" is the owner's for the moment he is shot and starts to fall.
+      // Whatever brought him down, what the player hears is the bird.
+      solo(e.def.cry ? CUE[e.def.cry]
+         : e.killedBy === 'arrow' ? CUE.arrowKill
          : e.killedBy === 'rock' ? CUE.rockKill
          // Both balls the Musketeer Post fires answer with the same line. The
          // ordinary one and Deadeye's are separate ammunition — they leave the
