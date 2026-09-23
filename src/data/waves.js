@@ -633,7 +633,8 @@ export const enemyTypes = {
     r: 8,
     colour: '#655A48',
     // HIS OWN CRY WHEN HE DIES, in place of the kill line the weapon would have
-    // played: a key into CUE in src/audio.js. Category A, like every death.
+    // played: a key into CUE in src/audio.js. Category B, at the owner's word —
+    // on the background bus, so every crow shot down is heard.
     cry: 'crowDies',
     // HE FLIES. Read by pickTarget, the splash, the soldiers' block, the renderer
     // and the death path, and by nothing else.

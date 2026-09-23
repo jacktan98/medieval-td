@@ -7,7 +7,7 @@ import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, alone, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
+import { solo, play, alone, WINGS_RATE, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
          BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
@@ -241,8 +241,10 @@ export function wingbeat(e) {
 // on its feet, so every caller can ask it of any enemy without testing first.
 // DID THIS CROW'S WINGS COME DOWN BETWEEN THESE TWO DISTANCES? Once per wingbeat —
 // the frame he reaches Flying 2 — started early by the time the recording takes to
-// reach its first clap, 0.168s, so that clap lands on the downstroke. The two claps
-// after it are the recording's own rhythm and do not follow the drawing.
+// reach its first clap, so that clap lands on the downstroke. That is 0.168s into
+// the file, and the file is played WINGS_RATE times faster — see src/audio.js — so
+// it is reached sooner by the same factor. The two claps after it come about 0.64
+// and 0.78s later at that rate, near enough his 0.65s wingbeat to follow the wings.
 //
 // ASKED OF EVERY CROW AND ANSWERED FOR THE FLOCK: the wings are one sound however
 // many birds there are, so the first crow to reach a downstroke once the last play
@@ -251,7 +253,7 @@ export const WINGS_CLAP = 0.168;
 export const flapped = (e, before) => {
   const f = e.def.flying;
   const cycle = f.stride * BEAT.length;
-  const at = f.stride * BEAT.indexOf(2) - WINGS_CLAP * e.def.speed;
+  const at = f.stride * BEAT.indexOf(2) - (WINGS_CLAP / WINGS_RATE) * e.def.speed;
   return Math.floor((before - at) / cycle) !== Math.floor((e.s - at) / cycle);
 };
 
@@ -921,7 +923,7 @@ export function updateEnemies(state, dt) {
     e.s += e.def.speed * timesOf(e) * slowOf(e) * guardSlow(e) * dt;
     // A CROW'S WINGS, on a downstroke, if they are not already sounding. See
     // flapped() below and `alone` in src/audio.js.
-    if (e.def.flying && flapped(e, flown)) alone('wings_flap');
+    if (e.def.flying && flapped(e, flown)) alone('wings_flap', 1, WINGS_RATE);
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should
@@ -1124,8 +1126,12 @@ export function updateEnemies(state, dt) {
       // A CREATURE WITH A CRY OF ITS OWN GIVES THAT INSTEAD — the Dark Crow, whose
       // "crow dies" is the owner's for the moment he is shot and starts to fall.
       // Whatever brought him down, what the player hears is the bird.
-      solo(e.def.cry ? CUE[e.def.cry]
-         : e.killedBy === 'arrow' ? CUE.arrowKill
+      //
+      // ON THE BACKGROUND BUS, NOT THE ONE CHANNEL: Category B at the owner's word.
+      // A flock shot down is several cries, every one of them heard under the
+      // battle, rather than one of them winning the channel and the rest dropped.
+      if (e.def.cry) play(CUE[e.def.cry]);
+      else solo(e.killedBy === 'arrow' ? CUE.arrowKill
          : e.killedBy === 'rock' ? CUE.rockKill
          // Both balls the Musketeer Post fires answer with the same line. The
          // ordinary one and Deadeye's are separate ammunition — they leave the

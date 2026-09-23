@@ -279,7 +279,7 @@ const paths = {
   // would let exactly one of them be heard and silence the rest, which is the wrong
   // way round for the creature whose whole point is that there are several.
   bomb_sound:      'assets/audio/sfx/Bomb_sound.mp3',
-  // THE DARK CROW'S. His cry when he is shot out of the air — Category A, in place
+  // THE DARK CROW'S. His cry when he is shot out of the air — Category B, in place
   // of the kill line the weapon would have played — and his wings.
   //
   // THE WINGS ARE THE WHOLE RECORDING, UNCUT, and never more than one at a time.
@@ -838,7 +838,9 @@ export const CUE = {
   paladinKill:  ['paladin_kill_enemy'],
   soldierDeath: ['soldier_dies'],
   // THE CROW'S OWN CRY, played when he is shot down in place of whatever the
-  // weapon would have said — see `cry` on his def in data/waves.js.
+  // weapon would have said — see `cry` on his def in data/waves.js. Category B:
+  // played through `play`, not `solo`, at the owner's word, though it sits in this
+  // table because it is keyed by the def rather than exported on its own.
   crowDies:     ['crow_dies'],
   // Selling. Category A and always played with priority, which puts it in the
   // same bracket as a build and an upgrade rather than with the battle: all
@@ -1418,15 +1420,27 @@ export function play(cue, level = 1) {
 // queued. The crow's wings, and nothing else yet — "do not add any extra sound if
 // there are more than 1", and "use the original mp3 and do not cut it".
 const aloneUntil = {};
-export function alone(key, level = 1) {
+
+// HOW MUCH FASTER THE CROW'S WINGS PLAY than they were recorded, at the owner's
+// "make the wingbeats sound a bit more faster". The recording's three flaps are
+// 0.80 and 0.98s apart; at 1.25 they are 0.64 and 0.78s, near enough the crow's
+// 0.65s wingbeat to follow it, and the file is 1.92s long instead of 2.40. It is
+// also about four semitones higher, which on a whoosh reads as a smaller, quicker
+// bird rather than as a pitch change.
+export const WINGS_RATE = 1.25;
+//
+// `rate` plays it faster — pitch and all, which is what speeding a recording does —
+// and the clip is over sooner by the same factor, so the next one may start sooner.
+export function alone(key, level = 1, rate = 1) {
   if (!ctx || ctx.state !== 'running') return false;
   const c = clips[key];
   if (!c) return false;
   const now = ctx.currentTime;
   if (now < (aloneUntil[key] ?? -Infinity)) return false;
-  aloneUntil[key] = now + c.buf.duration;
+  aloneUntil[key] = now + c.buf.duration / rate;
   const src = ctx.createBufferSource();
   src.buffer = c.buf;
+  src.playbackRate.value = rate;
   const g = ctx.createGain();
   g.gain.value = c.gain * level;
   src.connect(g).connect(busB);

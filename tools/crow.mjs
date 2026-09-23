@@ -19,7 +19,7 @@ import { enemyTypes, MARCH_ORDER, BOOK_ORDER } from '../src/data/waves.js';
 import { families, garrisonUnits, SCALE, knife } from '../src/data/towers.js';
 import { abilityById } from '../src/data/abilities.js';
 import { pickTarget, updateEnemies, wingbeat, airLift, flapped, WINGS_CLAP } from '../src/enemies.js';
-import { CUE, GAIN, CLIPS } from '../src/audio.js';
+import { CUE, GAIN, CLIPS, WINGS_RATE } from '../src/audio.js';
 import { makeTower, updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateUnits } from '../src/units.js';
@@ -340,14 +340,15 @@ console.log('\n--- shot down ---\n');
 console.log('\n--- his cry and his wings ---\n');
 
 {
-  // "crow dies — use it when it is shot and falling down. Category A." His def names
-  // the cue, and the death path plays the def's cry in place of the weapon's line.
+  // "crow dies — use it when it is shot and falling down", and since moved to
+  // Category B at the owner's word. His def names the cue, and the death path plays
+  // the def's cry through `play` in place of the weapon's line.
   const cue = CUE[CROW.cry];
   ok(cue && cue.length === 1 && CLIPS[cue[0]] === 'assets/audio/sfx/Crow_dies.mp3',
     'he has his own cry, and it is Crow_dies', cue ? `${CROW.cry} -> ${cue.join(', ')}` : 'no cue');
   const death = readFileSync(new URL('../src/enemies.js', import.meta.url), 'utf8');
-  ok(/solo\(e\.def\.cry \? CUE\[e\.def\.cry\]/.test(death),
-    '  played through solo — Category A — in place of the kill line', 'the death path in src/enemies.js');
+  ok(/if \(e\.def\.cry\) play\(CUE\[e\.def\.cry\]\);\s*else solo\(/.test(death),
+    '  played through play — Category B — in place of the kill line', 'the death path in src/enemies.js');
 
   // THE WINGS: THE WHOLE RECORDING, ONE AT A TIME. "Just use the original mp3 and do
   // not cut it", and "do not add any extra sound if there are more than 1".
@@ -357,12 +358,22 @@ console.log('\n--- his cry and his wings ---\n');
   ok(cues.length === 0, '  never played as a cue', cues.map(([k]) => k).join(', ') || 'only through `alone`');
   const audio = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
   const aloneFn = audio.slice(audio.indexOf('export function alone'), audio.indexOf('let holdUntil'));
-  ok(/if \(now < \(aloneUntil\[key\]/.test(aloneFn) && /aloneUntil\[key\] = now \+ c\.buf\.duration/.test(aloneFn) &&
+  ok(/if \(now < \(aloneUntil\[key\]/.test(aloneFn) && /aloneUntil\[key\] = now \+ c\.buf\.duration \/ rate/.test(aloneFn) &&
      /src\.start\(0, 0\)/.test(aloneFn) && !/setLoop\('wings_flap'/.test(death),
     '  from its first sample to its last, never twice at once, never looped',
     '`alone` in src/audio.js');
-  ok(/if \(e\.def\.flying && flapped\(e, flown\)\) alone\('wings_flap'\)/.test(death),
-    '  started from the step that moves him', 'updateEnemies in src/enemies.js');
+  ok(/if \(e\.def\.flying && flapped\(e, flown\)\) alone\('wings_flap', 1, WINGS_RATE\)/.test(death) &&
+     /src\.playbackRate\.value = rate/.test(aloneFn),
+    '  started from the step that moves him, a quarter faster', `rate ${WINGS_RATE}`);
+
+  // "A BIT MORE FASTER": the recording's flaps are 0.800s and 0.975s apart (its
+  // claps at 0.168, 0.968 and 1.943, measured off the file). At the rate they play,
+  // both gaps must be within a quarter of his wingbeat, so all three flaps follow it.
+  const beatS = F.stride * 4 / CROW.speed;
+  const gaps = [0.800, 0.975].map(g => g / WINGS_RATE);
+  ok(WINGS_RATE > 1 && gaps.every(g => Math.abs(g - beatS) / beatS <= 0.25),
+    '  so its flaps come about as often as his wings beat',
+    `${gaps.map(g => g.toFixed(2)).join('s and ')}s apart, against a ${beatS.toFixed(2)}s wingbeat`);
 
   // ONCE PER WINGBEAT, at most — ten downstrokes in ten beats.
   const cycle = F.stride * 4;
@@ -372,11 +383,12 @@ console.log('\n--- his cry and his wings ---\n');
   ok(starts.length === 10, '  offered once a wingbeat', `${starts.length} in ten beats`);
 
   // ITS FIRST CLAP ON THE DOWNSTROKE. The recording claps at 0.168s (measured off
-  // the file with the browser's own decoder); started that long ahead, it lands on
-  // the frame the wings reach Flying 2.
+  // the file with the browser's own decoder), reached sooner by WINGS_RATE; started
+  // that long ahead, it lands on the frame the wings reach Flying 2.
   const step = CROW.speed * DT;
-  const landed = starts.map(s0 => F.frames.indexOf(wingbeat({ def: CROW, s: s0 + WINGS_CLAP * CROW.speed + step })));
-  const off = starts.map(s0 => { const r = ((s0 + WINGS_CLAP * CROW.speed - 2 * F.stride) % cycle + cycle) % cycle; return Math.min(r, cycle - r); });
+  const lead = WINGS_CLAP / WINGS_RATE * CROW.speed;
+  const landed = starts.map(s0 => F.frames.indexOf(wingbeat({ def: CROW, s: s0 + lead + step })));
+  const off = starts.map(s0 => { const r = ((s0 + lead - 2 * F.stride) % cycle + cycle) % cycle; return Math.min(r, cycle - r); });
   ok(WINGS_CLAP === 0.168 && landed.every(f => f === 2) && Math.max(...off) <= step + 1e-9,
     '  and its first clap lands as the wings come down', `within ${Math.max(...off).toFixed(2)}px, on Flying 2 every time`);
   ok(CROW.speed === 80, 'he flies at 80', `${CROW.speed}`);
