@@ -45,31 +45,24 @@
 export const EXPORT_PX = 512;
 export const SCALE = 105 / EXPORT_PX;
 
-// THE ONE EXCEPTION TO THE RULE ABOVE, and it is deliberate.
+// BLOOD IS DRAWN AT THE SHARED SCALE NOW, like every other drawing in the game.
 //
-// Blood is an effect, not a figure. The shared SCALE exists so that figures are
-// sized against each other by the artwork — a soldier is small next to a tower
-// because that is how tall a soldier is. A splash of blood has no such truth to
-// respect: how big it should be is a question about how well it reads, not about
-// anatomy.
+// It was the one exception for a long time — x2, and x4 before the art was
+// redrawn at twice the pixels — on the argument that an effect has no anatomy to
+// respect and should be sized for how well it reads. The owner asked for the
+// other thing: "Make the 4 blood effects sizes smaller... make it the same scale
+// as the px in the map." So a source pixel of blood is the same size on the board
+// as a source pixel of the man it came out of, and the artist sizes the splash by
+// how big it is drawn, exactly as he sizes the man.
 //
-// x2. That puts the spatter at about 14px beside a 23px militia and the pool at
-// about 40px under a 27px body — big enough to read, small enough not to be the
-// loudest thing on the board. Drawn at the shared SCALE instead it would be a
-// 7x7 speck.
+// HALF WHAT IT WAS ON SCREEN: a spatter about 7px across beside a 23px militia and
+// a pool about 20-23px under a 27px body. The spread each is thrown at in
+// src/blood.js came down by the same half, so it still lands on the figure.
 //
-// THIS NUMBER IS HALF OF WHAT IT WAS, AND THE BLOOD IS THE SAME SIZE ON SCREEN.
-// It was x4 against art that filled 17-56px of its canvas; the art was redrawn
-// at twice that, so the multiplier came down by the same factor to hold the
-// drawn size still. That is the whole point of keeping the size in one constant:
-// the artist changes how many pixels the drawing has, and one number here decides
-// how big it appears, so the two can move independently.
-//
-// It also bought back most of the sharpness. The upscale at 3x device pixels went
-// from 2.46x to 1.23x — visibly softer than a sprite drawn 1:1, but close enough
-// that a red blob will not read as blurry. Do not raise this to chase the last of
-// it: bigger blood was explicitly not wanted.
-export const BLOOD_SCALE = SCALE * 2;
+// KEPT AS ITS OWN NAME, equal to SCALE, rather than deleted. Every blood draw and
+// tools/trim.mjs read it, and the day the owner wants blood a different size again
+// it is one number rather than a search.
+export const BLOOD_SCALE = SCALE;
 
 const drawnW = trim => Math.round(trim[2] * SCALE);
 const drawnH = trim => Math.round(trim[3] * SCALE);

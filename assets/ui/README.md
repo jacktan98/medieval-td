@@ -215,8 +215,8 @@ The two HUD icons already work this way — see `HUD_ICON_H` in `src/render.js`,
 24px against a 20px font so the icon's cap height lands on the digits'. That rule
 now covers the whole folder.
 
-Blood is the other exception (`BLOOD_SCALE`, in `assets/effects`), and it is a
-different kind: blood is sized to read, this is sized to fit.
+Blood used to be the other exception and is not any more: it is drawn at the
+shared scale, like the figures it comes out of (`BLOOD_SCALE`, in `assets/effects`).
 
 ## Export at 512 square, like everything else
 

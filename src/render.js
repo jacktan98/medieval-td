@@ -1516,9 +1516,8 @@ function drawSmoke(ctx, p) {
   ctx.restore();
 }
 
-// Blood. Measured by tools/trim.mjs like everything else, but drawn at
-// BLOOD_SCALE rather than the shared SCALE — see the note on that constant in
-// data/towers.js for why an effect is allowed to break the one-scale rule.
+// Blood. Measured by tools/trim.mjs like everything else, and drawn at BLOOD_SCALE,
+// which is the shared SCALE now — see the note on that constant in data/towers.js.
 //
 // Anchored at the CENTRE of the trim, not at a pivot. A splash has no feet and
 // no upright; the point it is thrown at is the middle of it.

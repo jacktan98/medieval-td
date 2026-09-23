@@ -18,15 +18,21 @@ export const SPLAT_FADE = 0.20;
 // How far a spatter is thrown from the point of impact. Small: this is meant to
 // read as coming OUT of the figure that was hit, not as a separate event
 // happening nearby.
-const SPLAT_SPREAD_X = 7;
-const SPLAT_SPREAD_Y = 6;
+//
+// HALVED WITH THE DRAWING when blood went to the map's own scale — see BLOOD_SCALE
+// in data/towers.js — so the throw is the same share of the splash it always was.
+const SPLAT_SPREAD_X = 3.5;
+const SPLAT_SPREAD_Y = 3;
 
 // How far a pool sits from the body that made it. Deliberately smaller than the
 // spatter's throw: the pool has to stay under the corpse, and a corpse is only
 // about 27px long, so an offset much past this would leave blood lying beside a
 // clean body rather than beneath a bloody one.
-const POOL_SPREAD_X = 6;
-const POOL_SPREAD_Y = 3;
+//
+// Halved with the drawing, as above — and it matters more here: a crow's body is
+// 16px long, and the old 6px would have laid his pool beside him half the time.
+const POOL_SPREAD_X = 3;
+const POOL_SPREAD_Y = 1.5;
 
 const pick = (a, b) => (Math.random() < 0.5 ? a : b);
 const jitter = r => (Math.random() * 2 - 1) * r;

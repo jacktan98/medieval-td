@@ -87,7 +87,14 @@ export function dropHeight(c) {
 // The pool's opacity ramp. Blood spreads once the body is down, so the stain
 // arrives with the landing rather than being on the ground ahead of it — and a
 // body still falling is not down at all.
-export const settled = c => (falling(c) ? 0 : thrown(c));
+//
+// AND ONE THAT FELL SPREADS FROM THE LANDING. A crow has no throw — `kb` is 0 — so
+// `thrown` would hand his pool over at full strength on the frame he hits the
+// ground. Instead it comes up over the same 0.18s a thrown body's does, counted
+// from the landing, which is when his two seconds on the ground began.
+export const settled = c => (falling(c) ? 0
+  : c.fall ? Math.min(1, (CORPSE_LIFE - c.life) / KNOCKBACK_TIME)
+  : thrown(c));
 
 // `def` is the living figure's def, not a separate corpse def: the body is drawn
 // from `def.dead` and positioned from the same trim and pivot the standing
@@ -128,11 +135,10 @@ export function dropCorpse(state, def, x, y, face, opts = {}) {
     x: x - face * kb,
     kb,
     life: CORPSE_LIFE,
-    // NO POOL UNDER A CROW. The stain is drawn for a man — it is wider than the
-    // whole bird — and one spreading under a body a third its size read as a
-    // second, bigger creature having died there. A flyer lies on his own shadow
-    // and nothing else, which is what the Dead drawing already has painted in.
-    pool: def.flying ? null : (opts.pool || poolFor()),
+    // A CROW BLEEDS TOO, at the owner's word — "include blood for crows" — once
+    // blood was brought down to the map's own scale. His pool waits for him to
+    // land: see `settled` above.
+    pool: opts.pool || poolFor(),
     // A FLYER'S DROP: how long it takes, how far through it he is, and the height
     // he started from. Zero `fall` on everything that dies on its feet, which is
     // what `falling` reads as "already down".

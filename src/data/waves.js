@@ -597,14 +597,15 @@ export const enemyTypes = {
   // adds damage up across the roster stays a sum of numbers. The card and the
   // panel leave the attack out for a zero; see selectionInfo in src/select.js.
   //
-  // 100 HEALTH AND NO PLATE, at the owner's word. Soft to anything that can reach
-  // him; the protection is how little time he spends inside anybody's reach.
+  // 60 HEALTH, NO PHYSICAL PLATE AND HIGH MAGIC, at the owner's word — down from
+  // 100 and none on both. So of the two families that can reach him, it is the
+  // BOWS that bring him down: an arrow meets nothing and a tier 1 bow needs six of
+  // them, while the monastery's missiles meet his high ward and do a fraction of
+  // their number. The altars can still hurt him; they are not the answer to him.
   //
   // SPEED 100, the fastest thing in the game by a distance — the Thug walks at 60 —
-  // and the owner's "fast" with a number put on it. A tier 1 bow at 10 a second
-  // needs ten shots and gets about four as he crosses its ring, so one crow wants
-  // two bows or a better one. The bounty and the number are both first guesses,
-  // left for the dashboard.
+  // and the owner's "fast" with a number put on it. The bounty and the speed are
+  // first guesses, left for the dashboard.
   crow: {
     name: 'Dark Crow',
     // THE DEFAULT IS THE PORTRAIT AND THE FIRST WINGBEAT, both. The book and the
@@ -622,9 +623,9 @@ export const enemyTypes = {
     dead: 'dead_crow',
     deadTrim: [216, 241, 80, 30],
     deadPivot: [0.456, 0.833],
-    hp: 100,
+    hp: 60,
     damageType: 'physical',
-    armour: { physical: 'none', magic: 'none' },
+    armour: { physical: 'none', magic: 'high' },
     speed: 100,
     bounty: 20,
     leak: 1,

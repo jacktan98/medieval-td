@@ -78,37 +78,39 @@ exception on the FILENAME, not the folder, and re-measured all four to the same
 trims they had before. Keep it that way — a folder says where something was
 uploaded, a name says what it is.
 
-## Blood is the one thing not drawn at the shared SCALE
+## Blood is drawn at the shared SCALE, like everything else
 
-Blood is drawn at **`BLOOD_SCALE`, which is 2x the shared `SCALE`**, and it is the
-only exception in the project. The reasoning is on that constant in
-`src/data/towers.js`. Short version: the shared scale exists so that figures are
-sized against each other truthfully — a soldier is small next to a tower because
-that is how tall a soldier is — and a splash of blood has no such truth to
-respect. How big it should be is a question about how well it reads.
+Blood is drawn at **`BLOOD_SCALE`, which is now the shared `SCALE`** — a source
+pixel of blood is the same size on the board as a source pixel of the man it came
+out of. That is at the owner's word: *"Make the 4 blood effects sizes smaller. I
+remember the blood was not in the same scale as the px in the map, make it the
+same this time."*
 
-The multiplier was **4x** against the first export and is **2x** now, and the
-blood is the same size on screen either way: the art was redrawn at twice the
-pixels, so the multiplier came down by the same factor. That is exactly what the
-constant is for. How many pixels the drawing has and how big it appears are two
-separate decisions, one yours and one the code's, and neither has to disturb the
-other.
+It used to be the one exception: **4x** the shared scale against the first export,
+then **2x** once the art was redrawn at twice the pixels, on the argument that an
+effect is sized for how well it reads rather than against the figures. That is
+gone. **So the size you draw it at is the size it appears**, exactly as for a
+figure: to make blood bigger or smaller on the board, draw it bigger or smaller.
 
-## Drawn size is settled and should not grow
+The constant keeps its own name so it stays one number to change, and the spread
+each splash is thrown at in `src/blood.js` was halved along with it so it still
+lands on the figure rather than beside it.
 
-Spatter about 14px beside a 23px militia, pools about 40-46px under a 27px body.
-Big enough to read, small enough not to be the loudest thing on the board.
+## Drawn size
+
+Spatter about 7px beside a 23px militia, pools about 20-23px under a 27px body —
+half of what they were. Every body bleeds, the Dark Crow included; his pool
+appears when he lands, not while he is falling.
 
 | file           | trim                  | drawn   |
 |----------------|-----------------------|---------|
-| `Blood_1`      | `[241, 240, 33, 32]`  | 14 x 13 |
-| `Blood_2`      | `[238, 239, 36, 20]`  | 15 x 8  |
-| `Blood_Dead_1` | `[207, 241, 98, 30]`  | 40 x 12 |
-| `Blood_Dead_2` | `[200, 243, 112, 26]` | 46 x 11 |
+| `Blood_1`      | `[241, 240, 33, 32]`  | 7 x 7   |
+| `Blood_2`      | `[238, 239, 36, 20]`  | 7 x 4   |
+| `Blood_Dead_1` | `[207, 241, 98, 30]`  | 20 x 6  |
+| `Blood_Dead_2` | `[200, 243, 112, 26]` | 23 x 5  |
 
-`tools/trim.mjs` prints SOFT for all four because it flags anything upscaled at
-all, but the re-export brought that from **2.46x down to 1.23x** and 1.23x on a
-red blob is not something you will see. It is not worth another redraw.
+All four are `sharp` in `tools/trim.mjs` now: at the shared scale nothing is
+upscaled, which the old 2x was by 1.23x.
 
 ## The artillery impact
 
@@ -120,12 +122,12 @@ Earth thrown up where a rock comes down, drawn at **1.6x the shared `SCALE`** �
 | `Artillery_Impact_1`  | `[198, 221, 116, 70]`  | 39 x 23 |
 | `Artillery_Impact_2`  | `[222, 233, 68, 47]`   | 23 x 16 |
 
-That 1.6 is **not** a taste decision like `BLOOD_SCALE`; it is the sharpness
+That 1.6 is **not** a taste decision; it is the sharpness
 ceiling. A sprite is crisp while its drawn size times the 3x device-pixel cap
 fits in its source pixels, so the largest honest multiple is
 `1 / (3 * SCALE) = 1.625` — the same number `PORTRAIT_SCALE` is chosen against.
 Both files are `sharp` in `tools/trim.mjs` at it. **Do not raise it**: past 1.625
-the impact starts being upscaled, and unlike the blood it is drawn on bare road
+the impact starts being upscaled, and it is drawn on bare road
 where softness shows.
 
 It is deliberately **not** the size of the splash. A rock damages everything in

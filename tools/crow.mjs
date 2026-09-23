@@ -22,7 +22,7 @@ import { pickTarget, updateEnemies, wingbeat, airLift } from '../src/enemies.js'
 import { makeTower, updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateUnits } from '../src/units.js';
-import { updateCorpses, falling, dropHeight, CORPSE_LIFE } from '../src/corpses.js';
+import { updateCorpses, falling, dropHeight, settled, CORPSE_LIFE } from '../src/corpses.js';
 import { selectionInfo, strikes } from '../src/select.js';
 import { units as adminUnits } from '../src/admin.js';
 import { paths } from '../src/assets.js';
@@ -57,9 +57,9 @@ const world = (over = {}) => ({
 console.log('\n--- the card ---\n');
 
 {
-  ok(CROW.name === 'Dark Crow' && CROW.hp === 100, 'a Dark Crow, with 100 health', `${CROW.name}, ${CROW.hp}`);
-  ok(CROW.armour.physical === 'none' && CROW.armour.magic === 'none',
-    '  and no plate of either kind', `${CROW.armour.physical} / ${CROW.armour.magic}`);
+  ok(CROW.name === 'Dark Crow' && CROW.hp === 60, 'a Dark Crow, with 60 health', `${CROW.name}, ${CROW.hp}`);
+  ok(CROW.armour.physical === 'none' && CROW.armour.magic === 'high',
+    '  no physical plate and a high magic ward', `${CROW.armour.physical} / ${CROW.armour.magic}`);
 
   // FAST, AT THE OWNER'S WORD, and "fast" has to mean faster than anything else on
   // the road or it means nothing.
@@ -76,7 +76,7 @@ console.log('\n--- the card ---\n');
     others.map(d => d.name).join(', ') || 'every other one strikes');
 
   const info = selectionInfo({ selected: { kind: 'enemy', ref: foe(CROW, 0, 0) } });
-  ok(info && info.hp === 100 && info.damage === null, '  so his panel shows health and no attack',
+  ok(info && info.hp === CROW.hp && info.damage === null, '  so his panel shows health and no attack',
     info ? `health ${info.hp}, attack ${info.damage}` : 'no panel');
 
   const row = adminUnits().find(u => u.id === 'enemy/crow');
@@ -281,7 +281,10 @@ console.log('\n--- shot down ---\n');
   ok(c.face === 1, '  still facing the way he flew, not the way the arrow came', `face ${c.face}`);
   ok(Math.abs(dropHeight(c) - airLift(e)) < 0.01, '  starting from the height he was flying at',
     `${dropHeight(c).toFixed(1)}px, flying at ${airLift(e).toFixed(1)}px`);
-  ok(!c.pool, '  and leaving no pool, which is drawn for a man', 'none');
+  // HE BLEEDS, at the owner's word, but not until he is down: the pool is his from
+  // the frame he dies and invisible for as long as he is in the air.
+  ok(c.pool && settled(c) === 0, '  and a pool that waits under him until he lands',
+    c.pool ? `${c.pool.img}, at ${settled(c)} while falling` : 'no pool');
 
   // THE DROP: accelerating, ending where the Dead drawing has his body, and the two
   // seconds every body gets only starting once he is down.
@@ -294,6 +297,10 @@ console.log('\n--- shot down ---\n');
     `${t.toFixed(2)}s, ${steps[0].toFixed(2)}px then ${steps[steps.length - 1].toFixed(2)}px a frame`);
   ok(lives.every(l => l === CORPSE_LIFE), '  and the body\'s fade has not started while he is in the air',
     `life ${CORPSE_LIFE}s throughout`);
+  const early = settled(c);
+  updateCorpses(st, 0.1);
+  ok(early < 0.2 && settled(c) > early, '  then the pool spreads from the landing',
+    `${early.toFixed(2)} on landing, ${settled(c).toFixed(2)} a tenth of a second later`);
   ok(Math.abs(dropHeight(c) - F.rest * SCALE) < 0.01, '  landing where the Dead drawing has his body',
     `${dropHeight(c).toFixed(2)}px above the shadow`);
 
@@ -313,8 +320,8 @@ console.log('\n--- shot down ---\n');
   // THEN HE LIES THERE FOR THE TWO SECONDS ANY BODY DOES, and is gone.
   let lying = 0;
   while (st.corpses.length && lying < 10) { updateCorpses(st, DT); lying += DT; }
-  ok(Math.abs(lying - CORPSE_LIFE) < 2 * DT, 'then lies for two seconds like any body and is gone',
-    `${lying.toFixed(2)}s on the ground`);
+  ok(Math.abs(lying + 0.1 - CORPSE_LIFE) < 2 * DT, 'then lies for two seconds like any body and is gone',
+    `${(lying + 0.1).toFixed(2)}s on the ground`);
 }
 
 {
