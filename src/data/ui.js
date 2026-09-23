@@ -78,10 +78,10 @@ export function canvasScale(cssWidth, dpr) {
   return { shown, backing: Math.min(MAX_SCALE, Math.max(MIN_SCALE, shown)) };
 }
 
-// A HUD icon's height. 24 against the 20px HUD font puts its cap height on the
-// digits' cap height, which is what makes an icon read as part of the number
-// rather than as a picture beside it.
-const HUD_ICON_H = 24;
+// A HUD icon's height. 20, a touch under the 20px HUD font's line, so the icon
+// and its cream halo sit clear of the scrim's top and bottom edges with air to
+// spare — at 24 they all but touched it.
+const HUD_ICON_H = 20;
 
 // The square a menu glyph fits inside. 26 when the button also shows a price,
 // bigger when it does not — the labels came out of these buttons, so the picture

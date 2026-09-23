@@ -5121,27 +5121,22 @@ function drawResult(ctx, state) {
 // get drawn — the same split as the radial menu and the encyclopedia, and for the
 // same reason.
 //
-// It is drawn in the game's own palette rather than as a settings screen, because
-// it is opened over the title screen and a grey form dropped on a parchment game
-// reads as a different application.
-const ADMIN_INK = '#F0E6D2';
-const ADMIN_DIM = 'rgba(240,230,210,0.55)';
-const ADMIN_EDGE = 'rgba(196,165,116,0.55)';
+// It is drawn in the game's own house style rather than as a settings screen —
+// dark fill, thin cream edge, gold edge and gold text for what is picked; see
+// panelBox — because it is opened over the title screen and a grey form dropped
+// on the game reads as a different application.
+const ADMIN_INK = UI_INK;
+const ADMIN_DIM = 'rgba(255,239,212,0.55)';
+const ADMIN_EDGE = UI_EDGE;
 
 function panelButton(ctx, b, label, { on = false, live = true, size = adminPx(15), r = 8 } = {}) {
   ctx.save();
   ctx.globalAlpha = live ? 1 : 0.35;
-  ctx.fillStyle = on ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, r);
-  ctx.fill();
-  ctx.strokeStyle = on ? ADMIN_INK : ADMIN_EDGE;
-  ctx.lineWidth = on ? 2.5 : 1.5;
-  ctx.stroke();
+  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: on, r });
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = on ? '#241F17' : ADMIN_INK;
+  ctx.fillStyle = on ? UI_GOLD : ADMIN_INK;
   ctx.font = `700 ${size}px system-ui, sans-serif`;
   ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
   ctx.restore();
@@ -5206,7 +5201,7 @@ function drawAdmin(ctx, state) {
   ctx.roundRect(ADMIN_PANEL.x, ADMIN_PANEL.y, ADMIN_PANEL.w, ADMIN_PANEL.h, 12);
   ctx.fill();
   ctx.strokeStyle = ADMIN_EDGE;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
   if (a.stage === 'pin') { drawPinPad(ctx, a); return; }
@@ -5253,7 +5248,7 @@ function drawAdminRoad(ctx, state) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(240,230,210,0.6)';
+  ctx.fillStyle = 'rgba(255,239,212,0.6)';
   ctx.font = `600 ${adminPx(13)}px system-ui, sans-serif`;
   const queued = state.pendingReveal !== null && state.pendingReveal !== undefined;
   ctx.fillText(
@@ -5271,14 +5266,14 @@ function drawAdminRoad(ctx, state) {
     // question a blank would raise.
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = reached ? '#F0E6D2' : 'rgba(240,230,210,0.45)';
+    ctx.fillStyle = reached ? UI_INK : 'rgba(255,239,212,0.45)';
     ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
     ctx.fillText(String(row.i + 1).padStart(2, ' '), row.x, row.y + row.h / 2);
 
     ctx.font = locked ? `italic ${adminPx(14)}px system-ui, sans-serif`
                       : `600 ${adminPx(14)}px system-ui, sans-serif`;
-    ctx.fillStyle = locked ? 'rgba(240,230,210,0.4)'
-      : (reached ? '#F0E6D2' : 'rgba(240,230,210,0.55)');
+    ctx.fillStyle = locked ? 'rgba(255,239,212,0.4)'
+      : (reached ? UI_INK : 'rgba(255,239,212,0.55)');
     ctx.fillText(locked ? 'no map yet' : row.name, row.x + 26, row.y + row.h / 2);
 
     // Live only on the two rows that can move: the next stage along, and the last
@@ -5438,14 +5433,14 @@ function drawAdminWaves(ctx, a) {
       const label = `${ordinal(place)} in`;
       ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
       const w = Math.ceil(ctx.measureText(label).width) + (total > r.count ? 30 : 18);
-      ctx.fillStyle = 'rgba(240,230,210,0.10)';
+      ctx.fillStyle = 'rgba(255,239,212,0.10)';
       pill(ctx, r.x, r.y + 24, w, 20, 10);
       ctx.fillStyle = ADMIN_DIM;
       ctx.fillText(label, r.x + 9, r.y + 34);
       // The caret, only when there is somewhere to move to — a wave sending one
       // kind of creature has an order of exactly one and nothing to reorder.
       if (total > r.count) {
-        ctx.fillStyle = 'rgba(240,230,210,0.45)';
+        ctx.fillStyle = 'rgba(255,239,212,0.45)';
         caretUp(ctx, r.x + w - 12, r.y + 34);
       }
     } else {
@@ -5509,7 +5504,7 @@ function drawAdminWaves(ctx, a) {
   // stopped being it at four — it ran straight through the Reset button. Both
   // lines come off SUMMARY_Y now, and tools/admin.mjs checks the LOWER of them
   // against the footer rather than the upper.
-  ctx.fillStyle = 'rgba(240,230,210,0.40)';
+  ctx.fillStyle = 'rgba(255,239,212,0.40)';
   ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
   // READ OFF THE DIFFICULTIES rather than typed, because a percentage typed here
   // is a second copy of a number that lives in data/difficulty.js — and a copy of
@@ -5545,15 +5540,9 @@ function drawAdminWaves(ctx, a) {
 // twitches every time the board changes.
 function selectButton(ctx, b, label, open) {
   ctx.save();
-  ctx.fillStyle = open ? 'rgba(196,165,116,0.92)' : 'rgba(28,32,24,0.85)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 8);
-  ctx.fill();
-  ctx.strokeStyle = open ? ADMIN_INK : ADMIN_EDGE;
-  ctx.lineWidth = open ? 2.5 : 1.5;
-  ctx.stroke();
+  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: open, r: 8 });
 
-  const ink = open ? '#241F17' : ADMIN_INK;
+  const ink = open ? UI_GOLD : ADMIN_INK;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ink;
@@ -5605,12 +5594,13 @@ function drawMapList(ctx, a) {
   for (const o of mapOptions()) {
     const here = o.i === a.map;
     if (here) {
-      ctx.fillStyle = 'rgba(196,165,116,0.92)';
+      ctx.strokeStyle = UI_GOLD;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.roundRect(o.x, o.y + 2, o.w, o.h - 4, 6);
-      ctx.fill();
+      ctx.roundRect(o.x + 1, o.y + 3, o.w - 2, o.h - 6, 6);
+      ctx.stroke();
     }
-    ctx.fillStyle = here ? '#241F17' : ADMIN_INK;
+    ctx.fillStyle = here ? UI_GOLD : ADMIN_INK;
     ctx.fillText(o.label, o.x + 10, o.y + o.h / 2 + 1);
   }
   ctx.restore();
@@ -5643,7 +5633,7 @@ function drawAdminUnits(ctx, a) {
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(240,230,210,0.28)';
+      ctx.fillStyle = 'rgba(255,239,212,0.28)';
       ctx.font = `${adminPx(14)}px system-ui, sans-serif`;
       ctx.fillText('out of reach', COLS.hp + 100, u.y + 20);
       ctx.restore();
@@ -5657,7 +5647,7 @@ function drawAdminUnits(ctx, a) {
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(240,230,210,0.28)';
+      ctx.fillStyle = 'rgba(255,239,212,0.28)';
       ctx.font = `${adminPx(14)}px system-ui, sans-serif`;
       ctx.fillText('no attack', COLS.damage + 100, u.y + 20);
       ctx.restore();
@@ -5669,7 +5659,7 @@ function drawAdminUnits(ctx, a) {
   // the giant's health moves 75 and a tap on a spearman's damage moves 1 — and a
   // panel whose buttons do different things on different rows without saying so
   // reads as broken.
-  ctx.fillStyle = 'rgba(240,230,210,0.40)';
+  ctx.fillStyle = 'rgba(255,239,212,0.40)';
   ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
   ctx.fillText('Each tap moves a stat by about a twentieth of where it already is.',
     ADMIN_PANEL.x + 16, FOOT_Y - 14);
