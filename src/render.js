@@ -2703,17 +2703,20 @@ function transportGlyph(ctx, b, paused, ink) {
 // the description panel keep their own looks at the owner's word, and the radial
 // build menu is untouched.
 export const UI_BACK = 'rgba(14,12,10,0.6)';
+// DENSER FOR WHAT IS PRESSED IN PLAY — pause, speed, Next wave and the pause
+// menu's three — so a button over the board reads as a button, not a label.
+export const UI_PRESS = 'rgba(14,12,10,0.8)';
 export const UI_EDGE = 'rgba(255,239,212,0.8)';
 export const UI_INK = '#FFEFD4';
 export const UI_GOLD = '#E0B24C';
 const UI_EDGE_W = 1.25;
 const UI_HOT_W = 2.75;
 
-function panelBox(ctx, x, y, w, h, { hot = false, r = null } = {}) {
+function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false } = {}) {
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r ?? Math.min(h / 2, 12));
-  ctx.fillStyle = UI_BACK;
+  ctx.fillStyle = press ? UI_PRESS : UI_BACK;
   ctx.fill();
   ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
   ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
@@ -2728,7 +2731,7 @@ function hudButton(ctx, b, label, sub, on) {
   // THE HOUSE STYLE, not the cream plate artwork it replaced — see panelBox. The
   // plate files stay in data/ui.js for their proportions, which still size these
   // buttons; nothing draws them any more.
-  panelBox(ctx, b.x, b.y, b.w, b.h);
+  panelBox(ctx, b.x, b.y, b.w, b.h, { press: true });
 
   // BOTH text properties, set here rather than inherited. This is the one that
   // bit: the buttons used to sit inside drawHud's save/restore and picked up its
@@ -3029,7 +3032,6 @@ const PREVIEW_Y = 39;      // the top of the row, 6px under the 24px HUD plates
 const PREVIEW_GAP = 5;     // between a number and the next face
 const PREVIEW_TEXT = 4;    // between a face and its own number
 const PREVIEW_PAD = 8;     // air inside the strip, either side of the row
-const PREVIEW_BACK = 'rgba(255,239,212,0.62)';
 
 // ONE SCALE FOR EVERY ENEMY, exactly as the info box portraits use one — so the
 // giant is drawn bigger than the thug beside him, which is the whole reason the
@@ -3070,18 +3072,13 @@ function drawWavePreview(ctx, state) {
   const total = items.reduce((n, it) => n + it.w + PREVIEW_TEXT + it.lw, 0)
     + (items.length - 1) * PREVIEW_GAP;
 
-  // A TRANSLUCENT CREAM STRIP behind the row — the cream twin of the dark one
-  // behind the gold and lives, at the owner's ask — with its RIGHT EDGE FLUSH with
-  // the Next wave button's, so the two read as one control and what it will send.
+  // THE HOUSE BOX behind the row — dark fill, thin cream edge, see panelBox — with
+  // its RIGHT EDGE FLUSH with the Next wave button's, so the two read as one
+  // control and what it will send.
   const right = HUD_BTN.wave.x + HUD_BTN.wave.w - PREVIEW_PAD;
   let x = right - total;
   const mid = PREVIEW_Y + PREVIEW_H / 2;
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(x - PREVIEW_PAD, PREVIEW_Y - 2, total + 2 * PREVIEW_PAD, PREVIEW_H + 4, 8);
-  ctx.fillStyle = PREVIEW_BACK;
-  ctx.fill();
-  ctx.restore();
+  panelBox(ctx, x - PREVIEW_PAD, PREVIEW_Y - 2, total + 2 * PREVIEW_PAD, PREVIEW_H + 4, { r: 8 });
 
   for (const it of items) {
     const img = art[it.g.def.sprite];
@@ -3096,8 +3093,8 @@ function drawWavePreview(ctx, state) {
 
     // Cream on ink, the same pair the aura badges use, because this row sits on
     // the board rather than on a plate and the board is grass, road and stone.
-    // Black on the cream strip; the outline it used to need was for grass.
-    ctx.fillStyle = '#141210';
+    // Cream on the dark box; the outline it used to need was for grass.
+    ctx.fillStyle = UI_INK;
     ctx.fillText(it.label, x, mid);
     x += it.lw + PREVIEW_GAP;
   }
@@ -3567,6 +3564,10 @@ function drawInfo(ctx, state) {
   // The figure, at the shared portrait scale rather than fitted to the slot.
   // Drawn from its own sprite trim, so a re-export moves the portrait with the
   // board art and there is no second set of pictures to keep in step.
+  // Framed in the house box, the same one the wave preview sits in, so a unit's
+  // picture reads the same wherever it is shown.
+  panelBox(ctx, x + INFO_PAD - 2, y + h / 2 - PORTRAIT.h / 2 - 2,
+    PORTRAIT.w + 4, PORTRAIT.h + 4, { r: 8 });
   const img = info.sprite && art[info.sprite];
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
@@ -4941,7 +4942,7 @@ function drawPauseRow(ctx, state) {
   // where a player stops mid-wave to work out whether the Mangonel is worth 115
   // gold, and neither it nor the tier below it is selected — so the info box
   // cannot answer and the radial menu only quotes a price.
-  drawBookButton(ctx, PAUSE_ROW.book, 15);
+  drawBookButton(ctx, PAUSE_ROW.book, 15, true);
 
   // ARMED OR NOT, and the label is the only thing that says which. Both of these
   // throw away a board that may be half an hour old, so the first tap asks and
@@ -4964,7 +4965,7 @@ function drawPauseRow(ctx, state) {
 // WAITING, IT IS GOLD: the edge and the word, the edge heavier, and the dark fill
 // kept — see panelBox.
 function askButton(ctx, b, word, armed) {
-  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: armed, r: 9 });
+  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: armed, r: 9, press: true });
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = armed ? UI_GOLD : UI_INK;
@@ -4975,8 +4976,8 @@ function askButton(ctx, b, word, armed) {
 // The button that opens the book, drawn in two places and in two styles. On the
 // title screen it is a full-sized panel button beside Start; on a paused game it
 // is a small plate in the row above.
-function drawBookButton(ctx, b, size) {
-  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9 });
+function drawBookButton(ctx, b, size, press = false) {
+  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9, press });
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
