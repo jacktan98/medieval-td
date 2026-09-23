@@ -665,9 +665,9 @@ export const enemyTypes = {
         { sprite: 'crow_flap2', trim: [217, 212, 78, 120], pivot: [0.519, 0.927], lift: 86 }
       ],
       // 13, slowed from 9 when each stroke had a flap of its own to fit. The
-      // wings are one loop for the whole flock now — see wingsAudio in
-      // src/enemies.js — so this is a matter of look alone: a stroke is 0.325s at
-      // his 80, and 9 would put it back to 0.225s.
+      // wings are one recording for the whole flock now — see flapped() in
+      // src/enemies.js — so this is a matter of look: a wingbeat is 0.65s at his
+      // 80, and 9 would put it back to 0.45s.
       stride: 13,
       shadow: [236, 316, 43, 16],
       fall: 0.5,

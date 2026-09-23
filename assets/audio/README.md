@@ -49,11 +49,11 @@ assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Thug_1.mp3
 ```
 
-**`Wings_flap` is a loop, and there is only ever one.** It runs, whole, on the
-background bus for as long as any Dark Crow is in the air, and fades out when the
-last one is shot down or gets through — one flock sound however many crows there
-are. It is asked every frame, like the world map's loops, so a pause or the end of
-a game stops it too. See `wingsAudio` in `src/enemies.js`.
+**`Wings_flap` plays whole, and only one at a time.** It starts on a crow's
+downstroke, from its first sample to its last — the leading quiet is NOT skipped,
+unlike every other clip — and nothing starts it again until it has finished, however
+many crows are in the air. So a flock sounds like the recording: three flaps, a
+rest, and the next three on the next wingbeat. See `alone` in `src/audio.js`.
 
 **Five voices for a family, three for a man.** A family's five are what the whole
 ladder says when a tower is built or given an order; a tier 4's three belong to
@@ -192,7 +192,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a paladin swings** — Category B | `Paladin_attack` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
-| **any dark crow is in the air** — a background loop, one however many, soft at 0.35 | `Wings_flap` |
+| **a dark crow's wings come down**, if the last play has finished — whole, one at a time, soft at 0.35 | `Wings_flap` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |

@@ -18,7 +18,7 @@ import { decode } from './png.mjs';
 import { enemyTypes, MARCH_ORDER, BOOK_ORDER } from '../src/data/waves.js';
 import { families, garrisonUnits, SCALE, knife } from '../src/data/towers.js';
 import { abilityById } from '../src/data/abilities.js';
-import { pickTarget, updateEnemies, wingbeat, airLift, crowsOverhead } from '../src/enemies.js';
+import { pickTarget, updateEnemies, wingbeat, airLift, flapped, WINGS_CLAP } from '../src/enemies.js';
 import { CUE, GAIN, CLIPS } from '../src/audio.js';
 import { makeTower, updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
@@ -349,25 +349,36 @@ console.log('\n--- his cry and his wings ---\n');
   ok(/solo\(e\.def\.cry \? CUE\[e\.def\.cry\]/.test(death),
     '  played through solo — Category A — in place of the kill line', 'the death path in src/enemies.js');
 
-  // THE WINGS: ONE LOOP FOR THE WHOLE FLOCK. "Just play the original sound whenever
-  // there is a crow and do not add any extra sound if there are more than 1."
+  // THE WINGS: THE WHOLE RECORDING, ONE AT A TIME. "Just use the original mp3 and do
+  // not cut it", and "do not add any extra sound if there are more than 1".
   ok(CLIPS.wings_flap === 'assets/audio/sfx/Wings_flap.mp3' && GAIN.wings_flap < 1,
     'his wings are Wings_flap, whole, under full level', `gain ${GAIN.wings_flap}`);
   const cues = Object.entries(CUE).filter(([, keys]) => keys.some(k => k.startsWith('wings')));
-  ok(cues.length === 0, '  never played as a cue, so no crow adds a second one',
-    cues.map(([k]) => k).join(', ') || 'a loop only');
-  ok(/setLoop\('wings_flap', crowsOverhead\(state\)\)/.test(death) &&
-     /wingsAudio\(state\)/.test(readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')),
-    '  switched by whether any crow is up, asked every frame', 'wingsAudio, from main.js');
+  ok(cues.length === 0, '  never played as a cue', cues.map(([k]) => k).join(', ') || 'only through `alone`');
+  const audio = readFileSync(new URL('../src/audio.js', import.meta.url), 'utf8');
+  const aloneFn = audio.slice(audio.indexOf('export function alone'), audio.indexOf('let holdUntil'));
+  ok(/if \(now < \(aloneUntil\[key\]/.test(aloneFn) && /aloneUntil\[key\] = now \+ c\.buf\.duration/.test(aloneFn) &&
+     /src\.start\(0, 0\)/.test(aloneFn) && !/setLoop\('wings_flap'/.test(death),
+    '  from its first sample to its last, never twice at once, never looped',
+    '`alone` in src/audio.js');
+  ok(/if \(e\.def\.flying && flapped\(e, flown\)\) alone\('wings_flap'\)/.test(death),
+    '  started from the step that moves him', 'updateEnemies in src/enemies.js');
 
-  const sky = (enemies, over = {}) => crowsOverhead({ started: true, paused: false, result: null, enemies, ...over });
-  const c1 = foe(CROW, 0, 0), c2 = foe(CROW, 50, 0), c3 = foe(CROW, 90, 0), t = foe(THUG, 0, 0);
-  ok(!sky([]) && !sky([t]), '  off with no crow on the board', 'none, or only a thug');
-  ok(sky([c1]) && sky([c1, c2, c3, t]), '  on with one crow, and the same one loop with three', 'one switch, one sound');
-  ok(!sky([{ ...c1, hp: 0 }]) && !sky([{ ...c1, leaked: true }]),
-    '  and off once the last one is shot down or through', 'dead, or leaked');
-  ok(!sky([c1], { paused: true }) && !sky([c1], { result: 'won' }) && !sky([c1], { started: false }),
-    '  and silent when paused, over, or off the board', 'paused, result, not started');
+  // ONCE PER WINGBEAT, at most — ten downstrokes in ten beats.
+  const cycle = F.stride * 4;
+  const e = foe(CROW, 0, 0, { s: 0.5 });
+  const starts = [];
+  while (e.s < cycle * 10 + 0.5) { const before = e.s; e.s += CROW.speed * DT; if (flapped(e, before)) starts.push(e.s); }
+  ok(starts.length === 10, '  offered once a wingbeat', `${starts.length} in ten beats`);
+
+  // ITS FIRST CLAP ON THE DOWNSTROKE. The recording claps at 0.168s (measured off
+  // the file with the browser's own decoder); started that long ahead, it lands on
+  // the frame the wings reach Flying 2.
+  const step = CROW.speed * DT;
+  const landed = starts.map(s0 => F.frames.indexOf(wingbeat({ def: CROW, s: s0 + WINGS_CLAP * CROW.speed + step })));
+  const off = starts.map(s0 => { const r = ((s0 + WINGS_CLAP * CROW.speed - 2 * F.stride) % cycle + cycle) % cycle; return Math.min(r, cycle - r); });
+  ok(WINGS_CLAP === 0.168 && landed.every(f => f === 2) && Math.max(...off) <= step + 1e-9,
+    '  and its first clap lands as the wings come down', `within ${Math.max(...off).toFixed(2)}px, on Flying 2 every time`);
   ok(CROW.speed === 80, 'he flies at 80', `${CROW.speed}`);
 }
 

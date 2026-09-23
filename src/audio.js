@@ -282,13 +282,16 @@ const paths = {
   // THE DARK CROW'S. His cry when he is shot out of the air — Category A, in place
   // of the kill line the weapon would have played — and his wings.
   //
-  // THE WINGS ARE A LOOP, NOT A CUE, at the owner's word: "just play the original
-  // sound whenever there is a crow and do not add any extra sound if there are
-  // more than 1." Wings_flap.mp3 — 2.4s, three wingbeats — runs round on the
-  // background bus for as long as any crow is in the air, once however many there
-  // are, and fades out when the last one is down or through. See wingsAudio in
-  // src/enemies.js and setLoop below. It replaced a flap per stroke of every crow,
-  // which was too busy for a flock.
+  // THE WINGS ARE THE WHOLE RECORDING, UNCUT, and never more than one at a time.
+  // Wings_flap.mp3 is 2.4s of three wingbeats; it is started on a crow's downstroke
+  // and nothing starts it again until it has played to its last sample — however
+  // many crows are in the air. See `alone` below and flapped() in src/enemies.js.
+  //
+  // IT WAS A LOOP FOR ONE BUILD, and before that a flap per stroke of every crow,
+  // and the owner found both too busy. The loop was the file with its rest taken
+  // out: played on its own the recording is three flaps and then quiet, and a loop
+  // runs from the third straight back into the first. So it plays through, stops,
+  // and waits for the next wingbeat.
   crow_dies:       'assets/audio/sfx/Crow_dies.mp3',
   wings_flap:      'assets/audio/sfx/Wings_flap.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
@@ -1409,6 +1412,28 @@ export function play(cue, level = 1) {
 // finished before others disrupt his sound." Priority alone only wins the RACE to
 // speak; it does nothing about what happens a moment later, and what happened a
 // moment later was an upgrade or another set piece hushing him mid-word.
+// A CATEGORY B CLIP THAT MAY ONLY BE SOUNDING ONCE, played WHOLE — from its first
+// sample, not from past its leading quiet as `fire` does, and to its last. Asked
+// again while it is still sounding, it does nothing: the request is dropped, not
+// queued. The crow's wings, and nothing else yet — "do not add any extra sound if
+// there are more than 1", and "use the original mp3 and do not cut it".
+const aloneUntil = {};
+export function alone(key, level = 1) {
+  if (!ctx || ctx.state !== 'running') return false;
+  const c = clips[key];
+  if (!c) return false;
+  const now = ctx.currentTime;
+  if (now < (aloneUntil[key] ?? -Infinity)) return false;
+  aloneUntil[key] = now + c.buf.duration;
+  const src = ctx.createBufferSource();
+  src.buffer = c.buf;
+  const g = ctx.createGain();
+  g.gain.value = c.gain * level;
+  src.connect(g).connect(busB);
+  src.start(0, 0);
+  return true;
+}
+
 let holdUntil = 0;
 
 export function solo(cue, priority = false, hold = false) {
