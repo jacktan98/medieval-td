@@ -2726,12 +2726,12 @@ function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false, edge 
   ctx.restore();
 }
 
-// A UNIT PICTURE WITH A CREAM HALO — a second outline, outside the drawing's own
+// A UNIT PICTURE OR AN ICON WITH A CREAM HALO — a second outline, outside the drawing's own
 // black one, so a figure reads on the dark box it sits in. The halo is the
 // figure's own silhouette filled cream and stamped in a ring around it, so it
 // follows the shape rather than boxing it. Silhouettes are made once per sprite
 // and trim, at source size, and scale with the picture.
-const HALO_R = 1.5;       // logical px beyond the drawing's own outline
+const HALO_R = 1;         // logical px beyond the drawing's own outline
 const HALO_STEPS = 12;
 const haloCache = new Map();
 function haloOf(img, trim) {
@@ -2752,12 +2752,18 @@ function haloOf(img, trim) {
 }
 function drawHaloed(ctx, img, trim, x, y, w, h) {
   const halo = haloOf(img, trim);
+  // NO DROP SHADOW, even inside a caller's shadow block: twelve shadowed stamps
+  // pool into a dark smudge, and the drawing's own shadow lands on the ring and
+  // greys it. The halo does the separating a shadow was there for.
+  ctx.save();
+  ctx.shadowColor = 'transparent';
   for (let i = 0; i < HALO_STEPS; i++) {
     const a = (i / HALO_STEPS) * Math.PI * 2;
     ctx.drawImage(halo, x + Math.cos(a) * HALO_R, y + Math.sin(a) * HALO_R, w, h);
   }
   const [sx, sy, sw, sh] = trim;
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  ctx.restore();
 }
 
 function hudButton(ctx, b, label, sub, on) {
@@ -2845,12 +2851,15 @@ const INK_RED = '#A83A2C';
 // Draws a piece of UI art centred on (x, y), at the box data/ui.js gives it.
 // Returns false if the image is not loaded, so every caller can fall back to the
 // vector it replaced rather than leaving a hole.
-function drawUi(ctx, key, x, y, box, anchor = HALF) {
+// `halo` rings it in cream — see drawHaloed — which the HUD readouts and the
+// description panel's stat icons ask for.
+function drawUi(ctx, key, x, y, box, anchor = HALF, halo = false) {
   const img = art[key];
   if (!img) return false;
-  const [sx, sy, sw, sh] = ui[key].trim;
+  const trim = ui[key].trim;
   const { w, h } = uiSize(key, box);
-  ctx.drawImage(img, sx, sy, sw, sh, x - anchor[0] * w, y - anchor[1] * h, w, h);
+  if (halo) drawHaloed(ctx, img, trim, x - anchor[0] * w, y - anchor[1] * h, w, h);
+  else ctx.drawImage(img, ...trim, x - anchor[0] * w, y - anchor[1] * h, w, h);
   return true;
 }
 
@@ -2872,7 +2881,7 @@ function hudIcon(ctx, key, x, word, draw = true) {
     return x + ctx.measureText(word).width + 7;
   }
   const { w } = uiSize(key);
-  if (draw) drawUi(ctx, key, x + w / 2, 21);
+  if (draw) drawUi(ctx, key, x + w / 2, 21, undefined, HALF, true);
   return x + w + 7;
 }
 
@@ -3753,7 +3762,7 @@ function infoStat(ctx, key, x, y, text, colour) {
   // So a wide icon takes the room it needs and shifts only its OWN number. See the
   // note beside stat_splash in data/ui.js.
   const slot = Math.max(STAT_COL, uiSize(key, { h: INFO_ICON }).w);
-  drawUi(ctx, key, x + slot / 2, y, { h: INFO_ICON });
+  drawUi(ctx, key, x + slot / 2, y, { h: INFO_ICON }, HALF, true);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = colour;
