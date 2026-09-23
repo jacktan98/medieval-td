@@ -2712,16 +2712,52 @@ export const UI_GOLD = '#E0B24C';
 const UI_EDGE_W = 1.25;
 const UI_HOT_W = 2.75;
 
-function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false } = {}) {
+function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false, edge = true } = {}) {
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r ?? Math.min(h / 2, 12));
   ctx.fillStyle = press ? UI_PRESS : UI_BACK;
   ctx.fill();
-  ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
-  ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
-  ctx.stroke();
+  if (edge) {
+    ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
+    ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
+    ctx.stroke();
+  }
   ctx.restore();
+}
+
+// A UNIT PICTURE WITH A CREAM HALO — a second outline, outside the drawing's own
+// black one, so a figure reads on the dark box it sits in. The halo is the
+// figure's own silhouette filled cream and stamped in a ring around it, so it
+// follows the shape rather than boxing it. Silhouettes are made once per sprite
+// and trim, at source size, and scale with the picture.
+const HALO_R = 1.5;       // logical px beyond the drawing's own outline
+const HALO_STEPS = 12;
+const haloCache = new Map();
+function haloOf(img, trim) {
+  const key = `${img.src}|${trim}`;
+  let c = haloCache.get(key);
+  if (!c) {
+    const [sx, sy, sw, sh] = trim;
+    c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    const g = c.getContext('2d');
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = UI_INK;
+    g.fillRect(0, 0, sw, sh);
+    haloCache.set(key, c);
+  }
+  return c;
+}
+function drawHaloed(ctx, img, trim, x, y, w, h) {
+  const halo = haloOf(img, trim);
+  for (let i = 0; i < HALO_STEPS; i++) {
+    const a = (i / HALO_STEPS) * Math.PI * 2;
+    ctx.drawImage(halo, x + Math.cos(a) * HALO_R, y + Math.sin(a) * HALO_R, w, h);
+  }
+  const [sx, sy, sw, sh] = trim;
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
 function hudButton(ctx, b, label, sub, on) {
@@ -3072,22 +3108,22 @@ function drawWavePreview(ctx, state) {
   const total = items.reduce((n, it) => n + it.w + PREVIEW_TEXT + it.lw, 0)
     + (items.length - 1) * PREVIEW_GAP;
 
-  // THE HOUSE BOX behind the row — dark fill, thin cream edge, see panelBox — with
-  // its RIGHT EDGE FLUSH with the Next wave button's, so the two read as one
-  // control and what it will send.
+  // A DARK BOX behind the row — the house fill, no edge; the cream is on the
+  // figures instead (see drawHaloed) — with its RIGHT EDGE FLUSH with the Next
+  // wave button's, so the two read as one control and what it will send.
   const right = HUD_BTN.wave.x + HUD_BTN.wave.w - PREVIEW_PAD;
   let x = right - total;
   const mid = PREVIEW_Y + PREVIEW_H / 2;
-  panelBox(ctx, x - PREVIEW_PAD, PREVIEW_Y - 2, total + 2 * PREVIEW_PAD, PREVIEW_H + 4, { r: 8 });
+  panelBox(ctx, x - PREVIEW_PAD, PREVIEW_Y - 2, total + 2 * PREVIEW_PAD, PREVIEW_H + 4,
+    { r: 8, edge: false });
 
   for (const it of items) {
     const img = art[it.g.def.sprite];
     if (img) {
-      const [sx, sy, sw, sh] = it.g.def.spriteTrim;
       // Bottom-aligned rather than centred: these are figures standing on a
       // line, and a shorter one hung from the middle of the row would look like
       // it was floating while the giant beside it stood.
-      ctx.drawImage(img, sx, sy, sw, sh, x, PREVIEW_Y + PREVIEW_H - it.h, it.w, it.h);
+      drawHaloed(ctx, img, it.g.def.spriteTrim, x, PREVIEW_Y + PREVIEW_H - it.h, it.w, it.h);
     }
     x += it.w + PREVIEW_TEXT;
 
@@ -3564,16 +3600,16 @@ function drawInfo(ctx, state) {
   // The figure, at the shared portrait scale rather than fitted to the slot.
   // Drawn from its own sprite trim, so a re-export moves the portrait with the
   // board art and there is no second set of pictures to keep in step.
-  // Framed in the house box, the same one the wave preview sits in, so a unit's
-  // picture reads the same wherever it is shown.
+  // On the same dark box the wave preview sits on, with the same cream halo round
+  // the figure, so a unit's picture reads the same wherever it is shown.
   panelBox(ctx, x + INFO_PAD - 2, y + h / 2 - PORTRAIT.h / 2 - 2,
-    PORTRAIT.w + 4, PORTRAIT.h + 4, { r: 8 });
+    PORTRAIT.w + 4, PORTRAIT.h + 4, { r: 8, edge: false });
   const img = info.sprite && art[info.sprite];
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
     const dw = sw * SCALE * INFO_PORTRAIT;
     const dh = sh * SCALE * INFO_PORTRAIT;
-    ctx.drawImage(img, sx, sy, sw, sh,
+    drawHaloed(ctx, img, info.trim,
       x + INFO_PAD + (PORTRAIT.w - dw) / 2,
       y + h / 2 - dh / 2,
       dw, dh);
