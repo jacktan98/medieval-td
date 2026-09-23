@@ -3902,6 +3902,56 @@ console.log('\n--- the road opens one stage at a time ---\n');
     'and three presses queue only the last of them', `open to ${many.unlocked}, leg into ${many.pendingReveal + 1}`);
 }
 
+// --- NOTHING IS CUT OUT OF A BOARD BUT ITS MARKERS AND ITS GARRISON MEN ---------
+//
+// The owner, by eye: "why is stage 5, the box of quivers beside the crossbowman
+// missing?" The garrison cut in tools/split-map.mjs had taken a box of arrows and a
+// stray arrow out with the crossbowman standing next to it — and the lectern from
+// beside Dawnford Church's pope the same way, which nobody had reported. Every
+// check in the suite passed with both gone, because nothing asked what a cut is
+// ALLOWED to take.
+//
+// SO THIS ASKS IT, drawing by drawing. Every smallest group in the artist's file
+// must still be in the BASE the game draws unless it is part of a plot marker (the
+// game stamps its own) or lies wholly inside a garrison man's window (the game draws
+// him live). Anything else missing is scenery the split lost.
+//
+// THE BASE ALONE, NOT THE OVERLAY SHEETS. A front or over sheet is only ever drawn
+// inside its own boxes, so a drawing that survived only there is still missing
+// everywhere else — and the first cut of this check, counting them as kept, passed
+// the broken board.
+//
+// The window is split-map's own: 22 either side of the foot, 34 up and 4 down.
+// Copied rather than imported, because that file is a script that writes the board
+// when it is loaded; change one, change both.
+{
+  const W = 22, UP = 34, DOWN = 4;
+  for (const l of levels.filter(l => (l.garrison || []).length)) {
+    const art = readArtwork(l.src);
+    const kept = ['base'].map(s => {
+      try { return readFileSync(`${l.src}_${s}.svg`, 'utf8'); } catch { return ''; }
+    });
+    const groups = allGroups(art);
+    const leaves = groups.filter(g => !groups.some(o => o !== g && o.start >= g.start &&
+      o.end <= g.end && !(o.start === g.start && o.end === g.end)));
+    const lost = leaves.filter(g => !kept.some(k => k.includes(art.slice(g.start, g.end)))).filter(g => {
+      const b = bounds(g.subPaths.flat());
+      const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
+      const post = l.garrison.some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - UP && y1 <= at.y + DOWN);
+      // A MARKER is the oval the plot stands in and the signpost on it: about 97x45
+      // around the plot point, the post reaching some 50px above it.
+      const marker = l.plots.some(p => x0 >= p.x - 52 && x1 <= p.x + 52 && y0 >= p.y - 60 && y1 <= p.y + 26);
+      return !post && !marker;
+    });
+    ok(lost.length === 0, `${l.name}: the split took nothing but markers and garrison men`,
+      lost.length ? lost.map(g => {
+        const b = bounds(g.subPaths.flat());
+        return `lost ${((b.x1 - b.x0) * MAP_SCALE).toFixed(0)}x${((b.y1 - b.y0) * MAP_SCALE).toFixed(0)} at ` +
+               `(${(b.x0 * MAP_SCALE).toFixed(0)}, ${(b.y0 * MAP_SCALE).toFixed(0)})`;
+      }).join(', ') : `every drawing kept, ${l.garrison.length} figure(s) cut`);
+  }
+}
+
 console.log(bad
   ? `\n${bad} thing(s) about the world map are not true.`
   : '\nThe world map matches the drawing, and locked means locked.');

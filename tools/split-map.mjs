@@ -373,9 +373,19 @@ if (figures.length) {
   // figure, and what the window decides is which DRAWING is the man's, never which
   // part of one.
   //
-  // THE PROMOTED GROUP NEED NOT FIT THE WINDOW, which is the whole point — the
-  // quiver does not. It is bounded all the same: it climbs only while the next
-  // group up is figure-sized, so the most it can ever take is one window's worth.
+  // THAT READING OF THE QUIVER WAS WRONG, and the correction is the owner's: "why
+  // is stage 5, the box of quivers beside the crossbowman missing?" It is not a
+  // quiver he wears. It is a box of arrows standing on the ground beside him, with a
+  // stray arrow drawn past it, all one group — and promoting the claim to that group
+  // cut the box, its bolts and the arrow out of the board with the man. Garrison 1
+  // came out 71px wide against a man's 24.
+  //
+  // SO THE PROMOTED DRAWING MUST FIT THE MAN'S OWN WINDOW. The promotion still
+  // stands — a piece goes with the whole drawing it is part of, never half of one —
+  // but a drawing that reaches outside the window is scenery he stands beside, and
+  // it stays in the base WHOLE. Everything a man is actually drawn from fits: a
+  // crossbowman is 24x23 in a 44x38 window. The half-a-quiver bug stays fixed, from
+  // the other side: the box is not cut at all now, rather than cut whole.
   const unitOf = g => {
     for (let u = g; ;) {
       const p = parentOf(u);
@@ -389,6 +399,14 @@ if (figures.length) {
   // makes the next redraw's answer readable — the same reason the plot list below
   // says which shapes it did not box.
   const withheld = new Set();
+  // AND WHOLE DRAWINGS HELD BACK because they reach outside the window — scenery a
+  // man stands beside, like stage 5's box of arrows.
+  const spilled = new Set();
+  const inWindow = (g, at) => {
+    const b = bounds(g.subPaths.flat());
+    return b.x0 * MAP_SCALE >= at.x - GARRISON_W && b.x1 * MAP_SCALE <= at.x + GARRISON_W &&
+           b.y0 * MAP_SCALE >= at.y - GARRISON_UP && b.y1 * MAP_SCALE <= at.y + GARRISON_DOWN;
+  };
 
   const owner = new Map();
   for (const g of nested2) {
@@ -405,8 +423,13 @@ if (figures.length) {
       const d = near(g, at);
       if (d < least) { least = d; best = k; }
     });
-    // The claim lands on the whole drawing the piece is part of, not on the piece.
-    if (best >= 0) owner.set(unitOf(g), best);
+    // The claim lands on the whole drawing the piece is part of, not on the piece —
+    // and only if that whole drawing fits the man's window. See the note on unitOf.
+    if (best >= 0) {
+      const unit = unitOf(g);
+      if (inWindow(unit, figures[best].at)) owner.set(unit, best);
+      else spilled.add(unit);
+    }
   }
 
   // AND NO PIECE MAY BE CUT INSIDE ANOTHER PIECE. Now that nesting is allowed, a
@@ -424,6 +447,14 @@ if (figures.length) {
     if (claimed.some(o => o !== g && o.start <= g.start && o.end >= g.end)) owner.delete(g);
   }
 
+  if (spilled.size) {
+    const sizes = [...spilled].map(g => {
+      const b = bounds(g.subPaths.flat());
+      return `${((b.x1 - b.x0) * MAP_SCALE).toFixed(0)}x${((b.y1 - b.y0) * MAP_SCALE).toFixed(0)}`;
+    });
+    console.log(`  ${spilled.size} drawing(s) left in the base whole (${sizes.join(', ')}px): ` +
+      `each reaches outside a figure's window, so it is scenery beside him, not part of him`);
+  }
   if (withheld.size) {
     console.log(`  ${withheld.size} line(s) left in the base: each is drawn inside something ` +
       `too big to be a figure, so it belongs to that rather than to the man standing on it`);
