@@ -2834,20 +2834,6 @@ const INK_RED = '#A83A2C';
 // itself, and the health row keeps its green/amber/red for the one thing that
 // row is for. What announces the aura is the badge over the tower.
 
-// A plate drawn to an exact rect rather than fitted to a box. Returns false if
-// the art has not loaded, so the caller can fall back to the vector it replaced.
-//
-// The rect is safe to stretch to because it was DERIVED from this trim's aspect
-// — see HUD_BTN and INFO_BOX. If a plate is redrawn at a different shape its slot
-// changes with it and nothing is squashed.
-function drawPlate(ctx, key, b) {
-  const img = key && art[key];
-  if (!img) return false;
-  const [sx, sy, sw, sh] = ui[key].trim;
-  ctx.drawImage(img, sx, sy, sw, sh, b.x, b.y, b.w, b.h);
-  return true;
-}
-
 // HUD icons. These are the one kind of artwork NOT sized by the shared SCALE,
 // and correctly so: an icon's job is to sit beside a number and be read, so it
 // is sized to the text, not to how big a coin is next to a soldier. 24px against
@@ -3067,7 +3053,6 @@ const PREVIEW_H = 26;      // how tall the BIGGEST enemy is drawn
 const PREVIEW_Y = 39;      // the top of the row, 6px under the 24px HUD plates
 const PREVIEW_GAP = 5;     // between a number and the next face
 const PREVIEW_TEXT = 4;    // between a face and its own number
-const PREVIEW_PAD = 8;     // air inside the strip, either side of the row
 
 // ONE SCALE FOR EVERY ENEMY, exactly as the info box portraits use one — so the
 // giant is drawn bigger than the thug beside him, which is the whole reason the
@@ -3108,14 +3093,12 @@ function drawWavePreview(ctx, state) {
   const total = items.reduce((n, it) => n + it.w + PREVIEW_TEXT + it.lw, 0)
     + (items.length - 1) * PREVIEW_GAP;
 
-  // A DARK BOX behind the row — the house fill, no edge; the cream is on the
-  // figures instead (see drawHaloed) — with its RIGHT EDGE FLUSH with the Next
-  // wave button's, so the two read as one control and what it will send.
-  const right = HUD_BTN.wave.x + HUD_BTN.wave.w - PREVIEW_PAD;
+  // No box behind the row — the figures carry their own cream halo (see
+  // drawHaloed) — and its RIGHT EDGE FLUSH with the Next wave button's, so the
+  // two read as one control and what it will send.
+  const right = HUD_BTN.wave.x + HUD_BTN.wave.w;
   let x = right - total;
   const mid = PREVIEW_Y + PREVIEW_H / 2;
-  panelBox(ctx, x - PREVIEW_PAD, PREVIEW_Y - 2, total + 2 * PREVIEW_PAD, PREVIEW_H + 4,
-    { r: 8, edge: false });
 
   for (const it of items) {
     const img = art[it.g.def.sprite];
@@ -3129,8 +3112,11 @@ function drawWavePreview(ctx, state) {
 
     // Cream on ink, the same pair the aura badges use, because this row sits on
     // the board rather than on a plate and the board is grass, road and stone.
-    // Cream on the dark box; the outline it used to need was for grass.
-    ctx.fillStyle = UI_INK;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#241E17';
+    ctx.strokeText(it.label, x, mid);
+    ctx.fillStyle = '#F4ECD8';
     ctx.fillText(it.label, x, mid);
     x += it.lw + PREVIEW_GAP;
   }
@@ -3585,25 +3571,23 @@ function drawInfo(ctx, state) {
   if (!info) return;
 
   const { x, y, w, h } = INFO_BOX;
-  const drawn = drawPlate(ctx, INFO_BOX.art, INFO_BOX);
 
-  if (!drawn) {
-    ctx.fillStyle = 'rgba(28,32,24,0.82)';
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 9);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(240,230,210,0.55)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
+  // THE READOUTS' SCRIM, not the cream plate artwork, at the owner's word — the
+  // same translucent dark the gold, lives and wave sit on, with the same cream
+  // text over a soft shadow. The plate file stays in data/ui.js for its
+  // proportions, which still size the panel.
+  ctx.save();
+  ctx.fillStyle = SCRIM_FILL;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 9);
+  ctx.fill();
+  ctx.restore();
 
   // The figure, at the shared portrait scale rather than fitted to the slot.
   // Drawn from its own sprite trim, so a re-export moves the portrait with the
   // board art and there is no second set of pictures to keep in step.
-  // On the same dark box the wave preview sits on, with the same cream halo round
-  // the figure, so a unit's picture reads the same wherever it is shown.
-  panelBox(ctx, x + INFO_PAD - 2, y + h / 2 - PORTRAIT.h / 2 - 2,
-    PORTRAIT.w + 4, PORTRAIT.h + 4, { r: 8, edge: false });
+  // With the same cream halo round the figure as the wave preview's, so a unit's
+  // picture reads the same wherever it is shown.
   const img = info.sprite && art[info.sprite];
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
@@ -3621,6 +3605,10 @@ function drawInfo(ctx, state) {
   // column under pressure; the gutters either side of the portrait are as tight
   // as they read at, and the font does the rest.
   const tx = x + INFO_PAD + PORTRAIT.w + INFO_GUTTER;
+  ctx.save();
+  ctx.shadowColor = 'rgba(12,14,10,0.85)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
@@ -3661,7 +3649,7 @@ function drawInfo(ctx, state) {
   // The check on it is the browser and not a tool: node has no canvas, so there
   // is nothing outside one that can measure a font. If a name longer than
   // "Trebuchet Engineer" is ever added, look at the box.
-  ctx.fillStyle = drawn ? INK : '#F0E6D2';
+  ctx.fillStyle = PANEL_INK;
   ctx.font = `700 ${INFO_TITLE}px system-ui, sans-serif`;
   ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
 
@@ -3674,7 +3662,7 @@ function drawInfo(ctx, state) {
   ctx.font = `700 ${INFO_ROW}px system-ui, sans-serif`;
   let ty = top + TITLE_BAND + ROW_PITCH / 2;
 
-  const ink = drawn ? INK : '#F0E6D2';
+  const ink = PANEL_INK;
 
   // A CARD WITH NOTHING TO SAY, and the only one in the game: a villager. Both
   // numbers are null, so there is no health row and no attack row to draw, and the
@@ -3692,8 +3680,7 @@ function drawInfo(ctx, state) {
     // heads, so the two readings agree at a glance.
     const frac = info.maxHp ? info.hp / info.maxHp : 1;
     const hx = infoStat(ctx, 'stat_health', tx, ty, `${info.hp}/${info.maxHp}`,
-      !drawn ? '#F0E6D2'
-      : frac > 0.5 ? INK_GREEN : frac > 0.25 ? INK_AMBER : INK_RED);
+      frac > 0.5 ? PANEL_GREEN : frac > 0.25 ? PANEL_AMBER : PANEL_RED);
     // THE ATTACK BESIDE THE HEALTH, at the owner's word — "move attack damage icon
     // beside health". It read down the left edge under it before, which left the
     // right half of both rows empty and cost the line the trait row now has.
@@ -3725,7 +3712,15 @@ function drawInfo(ctx, state) {
   let ax = tx;
   for (const [key, value] of info.traits)
     ax = infoStat(ctx, key, ax, ty, String(value), ink) + STAT_GAP;
+  ctx.restore();
 }
+
+// The panel's inks on the dark scrim: the readouts' cream, and the health scale
+// lifted so green, amber and red still read on dark rather than on cream.
+const PANEL_INK = '#F0E6D2';
+const PANEL_GREEN = '#9BE08A';
+const PANEL_AMBER = '#EBC45A';
+const PANEL_RED = '#F2826E';
 
 // ONE ICON AND ITS NUMBER, and the reason it is a function rather than two lines
 // at each call site: the attack and the reach sat at different distances from
