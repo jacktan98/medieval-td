@@ -7,7 +7,7 @@ import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY, FLAP,
+import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY, FLAP, FLAP_LEAD,
          BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
@@ -239,26 +239,25 @@ export function wingbeat(e) {
 // HOW HIGH ABOVE HIS SHADOW THE BIRD ITSELF IS, in game px, on the frame he is
 // showing: where an arrow goes in and where the blood comes out. Zero for anything
 // on its feet, so every caller can ask it of any enemy without testing first.
-// DID HIS WINGS COME DOWN BETWEEN THESE TWO DISTANCES? True on the frame the
-// wingbeat reaches its third drawing — Flying 2, wings down — which is when the flap
-// is played, so the whoosh is heard on the downstroke it belongs to.
+// SHOULD A FLAP START BETWEEN THESE TWO DISTANCES? Once per STROKE, at the owner's
+// count: "1 cycle (default -> flying 1 -> flying 2) counts as 1 flap then (flying 2
+// -> flying 1 -> default) counts as another." So the wings coming down and the
+// wings going back up are a flap each, two to every wingbeat.
 //
-// ON THE DOWNSTROKE ITSELF, not ahead of it, and the reason is in the file rather
-// than in the drawing. Wings_flap.mp3 opens with 0.2s of silence before its first
-// whoosh at 0.24s — but the mixer trims leading silence off every clip as it loads
-// (see the levelling in src/audio.js, which reports "wings_flap ... skipped 198ms of
-// silence"), so what actually plays reaches that whoosh about 40ms after it starts.
-// Forty milliseconds is a third of one wing frame at his speed, so it lands inside
-// the downstroke without the flapping having to be slowed to fit the sound.
+// STARTED EARLY SO THE CLAP LANDS ON THE ARRIVAL. Every flap clip is cut to reach
+// its clap FLAP_LEAD after it starts — see CUTS in src/audio.js — and a stroke ends
+// on the frame the wings arrive, at Flying 2 or back at the Default. So the flap is
+// started that long ahead of the arrival, in distance at his own speed: the swish
+// is heard as the wings move and the clap as they get there.
 //
 // Off the same distance the drawing is chosen from, so the sound and the picture
-// cannot drift apart: one beat, one flap, for every crow in the sky — and a crow
-// the monk has slowed beats his wings, and is heard beating them, slower.
+// cannot drift apart. A crow the monk has slowed beats his wings slower and is heard
+// beating them slower; his clap comes a little ahead of the arrival, by a fraction
+// of a frame.
 export const flapped = (e, before) => {
-  const f = e.def.flying;
-  const cycle = f.stride * BEAT.length;
-  const down = f.stride * BEAT.indexOf(2);
-  return Math.floor((before - down) / cycle) !== Math.floor((e.s - down) / cycle);
+  const stroke = e.def.flying.stride * BEAT.indexOf(2);
+  const at = stroke - FLAP_LEAD * e.def.speed;
+  return Math.floor((before - at) / stroke) !== Math.floor((e.s - at) / stroke);
 };
 
 export const airLift = e => (e && e.def.flying ? wingbeat(e).lift * SCALE : 0);

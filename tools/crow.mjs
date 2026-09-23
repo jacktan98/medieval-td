@@ -19,7 +19,7 @@ import { enemyTypes, MARCH_ORDER, BOOK_ORDER } from '../src/data/waves.js';
 import { families, garrisonUnits, SCALE, knife } from '../src/data/towers.js';
 import { abilityById } from '../src/data/abilities.js';
 import { pickTarget, updateEnemies, wingbeat, airLift, flapped } from '../src/enemies.js';
-import { CUE, FLAP, GAIN, CLIPS } from '../src/audio.js';
+import { CUE, FLAP, FLAP_LEAD, CUTS, GAIN, CLIPS } from '../src/audio.js';
 import { makeTower, updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateUnits } from '../src/units.js';
@@ -349,36 +349,50 @@ console.log('\n--- his cry and his wings ---\n');
   ok(/solo\(e\.def\.cry \? CUE\[e\.def\.cry\]/.test(death),
     '  played through solo — Category A — in place of the kill line', 'the death path in src/enemies.js');
 
-  // "wings flap — use it every time crow flaps its wing... category B... soft."
-  ok(FLAP.length === 1 && CLIPS[FLAP[0]] === 'assets/audio/sfx/Wings_flap.mp3' && GAIN[FLAP[0]] < 1,
-    'his wings are Wings_flap, played under full level', `gain ${GAIN[FLAP[0]]}`);
+  // "wings flap — use it every time crow flaps its wing... category B... soft." Three
+  // wingbeats cut out of one recording, taken in turn.
+  ok(FLAP.length === 3 && FLAP.every(k => CLIPS[k] === 'assets/audio/sfx/Wings_flap.mp3' && CUTS[k] && GAIN[k] < 1),
+    'his wings are three flaps cut out of Wings_flap, under full level',
+    FLAP.map(k => `${k} [${CUTS[k].map(v => v.toFixed(3)).join('-')}] x${GAIN[k]}`).join(', '));
 
-  // ONCE PER WINGBEAT, through the same distance the drawing is chosen from: flown
-  // at his own speed one frame at a time for ten wingbeats, the flap fires ten times.
-  const cycle = F.stride * 4;
+  // ONCE PER STROKE, at the owner's count: down is a flap and back up is another.
+  // Flown at his own speed a frame at a time for ten wingbeats: twenty flaps.
+  const stroke = F.stride * 2;
   const e = foe(CROW, 0, 0, { s: 0.5 });
   let flaps = 0;
-  while (e.s < cycle * 10) { const before = e.s; e.s += CROW.speed * DT; if (flapped(e, before)) flaps++; }
-  ok(flaps === 10, '  once a wingbeat, every wingbeat', `${flaps} flap(s) in ten beats`);
+  const starts = [];
+  while (e.s < stroke * 20 + 0.5) {
+    const before = e.s; e.s += CROW.speed * DT;
+    if (flapped(e, before)) { flaps++; starts.push(e.s); }
+  }
+  ok(flaps === 20, '  once a stroke: twenty flaps in ten wingbeats', `${flaps}`);
   ok(/if \(e\.def\.flying && flapped\(e, flown\)\) play\(FLAP\)/.test(death),
     '  played through play — Category B — from the step that moves him', 'updateEnemies in src/enemies.js');
 
-  // AND ON THE DOWNSTROKE. Every flap fires on the frame the wings reach Flying 2.
-  const f2 = F.frames[2];
-  const on = foe(CROW, 0, 0, { s: 0.5 });
-  let right = 0, fired = 0;
-  while (on.s < cycle * 10) { const before = on.s; on.s += CROW.speed * DT; if (flapped(on, before)) { fired++; if (wingbeat(on) === f2) right++; } }
-  ok(fired > 0 && right === fired, '  and on the frame the wings come down', `${right} of ${fired} on Flying 2`);
+  // THE CLAP LANDS ON THE ARRIVAL. Every cut starts FLAP_LEAD before its clap, so a
+  // flap started at distance s claps at s + FLAP_LEAD x speed — which must be the
+  // frame the wings reach Flying 2 or the Default, within the one frame step.
+  const step = CROW.speed * DT;
+  const off = starts.map(s0 => {
+    const clapAt = s0 + FLAP_LEAD * CROW.speed;
+    const r = ((clapAt % stroke) + stroke) % stroke;
+    return Math.min(r, stroke - r);
+  });
+  ok(Math.max(...off) <= step + 1e-9, '  and each clap lands on the frame the wings arrive',
+    `within ${Math.max(...off).toFixed(2)}px of it, a frame's step is ${step.toFixed(2)}px`);
+  const arrivals = starts.map(s0 => {
+    const w = wingbeat({ def: CROW, s: s0 + FLAP_LEAD * CROW.speed + step });
+    return F.frames.indexOf(w);
+  });
+  ok(arrivals.every(f => f === 0 || f === 2) && arrivals.includes(0) && arrivals.includes(2),
+    '  down to Flying 2 and back up to the Default, in turn', arrivals.slice(0, 6).join(' '));
 
-  // AND THE WHOOSH IS HEARD INSIDE THAT FRAME. The clip's first whoosh is 0.24s in
-  // (measured off the file with the browser's own decoder), and the mixer trims the
-  // 0.198s of silence ahead of it as it loads — both numbers are the game's own, the
-  // second printed by the levelling in src/audio.js. What is left must be shorter
-  // than one wing frame at his speed, or the sound lands on the upstroke after.
-  const WHOOSH = 0.24, TRIMMED = 0.198;
-  const lag = WHOOSH - TRIMMED, frame = F.stride / CROW.speed;
-  ok(lag < frame, '  so its whoosh lands while they are down',
-    `${(lag * 1000).toFixed(0)}ms after the flap starts, against ${(frame * 1000).toFixed(0)}ms a frame at speed ${CROW.speed}`);
+  // AND ONE FLAP HAS FINISHED BEFORE THE NEXT BEGINS. The longest cut, against the
+  // time a stroke takes at his speed.
+  const longest = Math.max(...FLAP.map(k => CUTS[k][1] - CUTS[k][0]));
+  const strokeS = stroke / CROW.speed;
+  ok(longest <= strokeS + 0.01, '  and no flap is still sounding when the next one starts',
+    `longest flap ${longest.toFixed(3)}s, a stroke ${strokeS.toFixed(3)}s`);
   ok(CROW.speed === 80, 'he flies at 80', `${CROW.speed}`);
 }
 

@@ -279,18 +279,20 @@ const paths = {
   // would let exactly one of them be heard and silence the rest, which is the wrong
   // way round for the creature whose whole point is that there are several.
   bomb_sound:      'assets/audio/sfx/Bomb_sound.mp3',
-  // THE DARK CROW'S TWO. His cry when he is shot out of the air — Category A, in
-  // place of the kill line the weapon would have played — and his wings, which
-  // are Category B and quiet: one flap per wingbeat of every crow in the sky, so
-  // it is the sound of a flock going over rather than an event. See `cry` on his
-  // def and flapped() in src/enemies.js.
+  // THE DARK CROW'S. His cry when he is shot out of the air — Category A, in place
+  // of the kill line the weapon would have played — and his wings, which are
+  // Category B and quiet: one flap per stroke of every crow in the sky, so it is
+  // the sound of a flock going over rather than an event. See `cry` on his def and
+  // flapped() in src/enemies.js.
   //
-  // WHAT THE FILES ARE, measured: both 1.0s. Wings_flap is silent for its first
-  // 0.2s, then two soft whooshes at 0.24 and 0.33 — 16dB under full scale at its
-  // peak, before the levelling lifts it. Crow_dies is loud from the first frame
-  // and tails off by 0.5s.
+  // THREE FLAPS OUT OF ONE FILE. Wings_flap.mp3 is 2.4s of three separate
+  // wingbeats with true silence between them, and each is its own take here — cut
+  // out of the recording as it loads, by CUTS below — so the same clap is never
+  // heard twice running. Crow_dies is 1.0s, loud from the first frame.
   crow_dies:       'assets/audio/sfx/Crow_dies.mp3',
-  wings_flap:      'assets/audio/sfx/Wings_flap.mp3',
+  wings_flap_1:    'assets/audio/sfx/Wings_flap.mp3',
+  wings_flap_2:    'assets/audio/sfx/Wings_flap.mp3',
+  wings_flap_3:    'assets/audio/sfx/Wings_flap.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
   // out exactly as an arrow does — see the two flags on every ammunition in
@@ -526,6 +528,52 @@ const paths = {
 // for what tools/sound.mjs does with the keys.
 export const CLIPS = paths;
 
+// --- CLIPS CUT OUT OF A LONGER RECORDING -----------------------------------------
+//
+// A key here plays only [start, end] seconds of its file, sliced out as it loads,
+// with a few milliseconds of fade at either edge so the cut does not click. The
+// levelling then measures the slice rather than the file, and — unlike every other
+// clip — does NOT trim the slice's leading silence, because where the slice starts
+// is the whole point of it. See loadAudio.
+//
+// THE CROW'S THREE WINGBEATS, measured off Wings_flap.mp3 with the browser's own
+// decoder. Each is a rising swish that ends in a clap — the wings arriving — and a
+// short tail:
+//
+//     take   swish from   clap at   silent by
+//      1       0.080       0.168      0.339
+//      2       0.818       0.968      1.203
+//      3       1.839       1.943      2.190
+//
+// EVERY SLICE STARTS FLAP_LEAD BEFORE ITS CLAP, so all three put the clap at the
+// same moment after they start, and the game can start any of them early by the
+// same amount and have the clap land on the frame the wings arrive. Take 2's swish
+// is the longest and loses 70ms of its quietest start to that; nobody hears it.
+export const FLAP_LEAD = 0.08;
+export const CUTS = {
+  wings_flap_1: [0.168 - FLAP_LEAD, 0.345],
+  wings_flap_2: [0.968 - FLAP_LEAD, 1.210],
+  wings_flap_3: [1.943 - FLAP_LEAD, 2.195]
+};
+// Fade in and out at each edge of a cut, in seconds.
+const CUT_FADE = 0.005;
+
+function cut(buf, [start, end]) {
+  const sr = buf.sampleRate;
+  const from = Math.max(0, Math.round(start * sr));
+  const to = Math.min(buf.length, Math.round(end * sr));
+  const out = ctx.createBuffer(buf.numberOfChannels, Math.max(1, to - from), sr);
+  const fade = Math.max(1, Math.round(CUT_FADE * sr));
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const src = buf.getChannelData(c), dst = out.getChannelData(c);
+    for (let i = 0; i < dst.length; i++) {
+      const edge = Math.min(1, i / fade, (dst.length - 1 - i) / fade);
+      dst[i] = src[from + i] * edge;
+    }
+  }
+  return out;
+}
+
 // Clips the game is wired for but does not have yet. A miss on one of these is
 // expected, so it is reported once and quietly rather than as a warning per
 // file — a console you have learned to ignore is how a REAL missing clip goes
@@ -738,11 +786,13 @@ export const GAIN = {
   // different number.
   bomb_sound: 4.0,
   // SOFT, AT THE OWNER'S WORD: "make the volume sound soft like background sound
-  // effect." The levelling lifts the recording 8dB on load to match the rest of the
-  // battle, so this is what makes it background: about 9dB under an arrow, beside
-  // the world map's birdsong at 0.30. It plays once per wingbeat per crow, and
-  // several crows is several of it, which is the other reason it sits this low.
-  wings_flap: 0.35
+  // effect." The levelling brings every clip to the battle's loudness, so this is
+  // what makes them background: about 9dB under an arrow, beside the world map's
+  // birdsong at 0.30. They play once per stroke per crow, and several crows is
+  // several of them, which is the other reason they sit this low.
+  wings_flap_1: 0.35,
+  wings_flap_2: 0.35,
+  wings_flap_3: 0.35
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
@@ -921,9 +971,9 @@ export const WAR_CRY = ['war_cry'];
 // single take: it sounds every time it is asked for, however quiet the board is.
 export const BOMB = ['bomb_sound'];
 
-// A CROW'S WINGS, once per wingbeat. Category B — `play` — and soft. See
-// flapped() in src/enemies.js for when, and why that lines up with the drawing.
-export const FLAP = ['wings_flap'];
+// A CROW'S WINGS, once per stroke, three takes. Category B — `play` — and soft.
+// See flapped() in src/enemies.js for when, and why that lines up with the drawing.
+export const FLAP = ['wings_flap_1', 'wings_flap_2', 'wings_flap_3'];
 
 // --- THE WORLD MAP ---------------------------------------------------------------
 //
@@ -1125,7 +1175,11 @@ export function loadAudio() {
     fetch(stamp ? `${src}?v=${stamp}` : src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key)); })
+      .then(buf => {
+        clips[key] = CUTS[key]
+          ? analyse(cut(buf, CUTS[key]), GAIN[key] ?? 1, LOUDER.has(key), true)
+          : analyse(buf, GAIN[key] ?? 1, LOUDER.has(key));
+      })
       .catch(() => { if (AWAITED.has(key)) absent.push(src); else console.warn('Missing or unreadable audio:', src); })
   );
 
@@ -1140,7 +1194,7 @@ export function loadAudio() {
 //
 // The channels are summed to mono first. What the player hears is the sum, and
 // measuring one side of a stereo file would under-read anything panned.
-function analyse(buf, trim, louder = false) {
+function analyse(buf, trim, louder = false, exact = false) {
   const n = buf.length;
   const mix = new Float32Array(n);
   for (let c = 0; c < buf.numberOfChannels; c++) {
@@ -1197,7 +1251,9 @@ function analyse(buf, trim, louder = false) {
     // whole fix for a sword that lands a quarter of a second after the blow:
     // the offset is real time removed from the sound, not a delay compensated
     // for somewhere else.
-    offset: silent ? 0 : head / buf.sampleRate,
+    // A CUT STARTS WHERE IT WAS CUT. See CUTS: its start is measured to put the
+    // clap a fixed time in, and skipping a quiet head would move the clap.
+    offset: silent || exact ? 0 : head / buf.sampleRate,
     // How long the clip is AUDIBLE for, which is what the Category A gate and
     // the duck should use. Holding the channel through a clip's trailing
     // silence is time spent saying nothing.

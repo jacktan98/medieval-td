@@ -605,7 +605,7 @@ export const enemyTypes = {
   //
   // SPEED 80, the owner's number, down from a first guess of 100: still the
   // fastest thing on the road — the Thug walks at 60 — and a third again faster
-  // than him. His wings are heard on every downstroke; see flapped() in src/enemies.js.
+  // than him. His wings are heard on every stroke; see flapped() in src/enemies.js.
   crow: {
     name: 'Dark Crow',
     // THE DEFAULT IS THE PORTRAIT AND THE FIRST WINGBEAT, both. The book and the
@@ -664,7 +664,11 @@ export const enemyTypes = {
         { sprite: 'crow_flap1', trim: [217, 199, 78, 133], pivot: [0.519, 0.934], lift: 104 },
         { sprite: 'crow_flap2', trim: [217, 212, 78, 120], pivot: [0.519, 0.927], lift: 86 }
       ],
-      stride: 9,
+      // 13, SLOWED FROM 9 FOR THE SOUND. A stroke is two frames, 26px, 0.325s at
+      // his 80; the longest flap clip runs 0.33s from start to silence, so each
+      // stroke's flap has finished before the next one's swish begins. See CUTS in
+      // src/audio.js.
+      stride: 13,
       shadow: [236, 316, 43, 16],
       fall: 0.5,
       fallen: { sprite: 'crow_falling', trim: [217, 230, 78, 52], pivot: [0.5, 0.5] },
