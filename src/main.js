@@ -7,7 +7,7 @@ import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked, startReveal as startStars, stepStars } from './score.js';
 import { startReveal, stepReveal, stageOfLevel, openedStages, mapAudio } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
-import { updateEnemies } from './enemies.js';
+import { updateEnemies, wingsAudio } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
@@ -374,6 +374,9 @@ function frame(now) {
   // ones where the answer is silence, which is how the three loops get turned off
   // by starting a game rather than by somebody remembering to stop them.
   mapAudio(state);
+  // AND WHETHER THERE ARE CROWS OVERHEAD, by the same rule: asked every frame, so
+  // the wings stop with the last crow, a pause or the end of a game.
+  wingsAudio(state);
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.

@@ -7,7 +7,7 @@ import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, CUE, FIRING, DEFEND, HEAL, WAR_CRY, FLAP, FLAP_LEAD,
+import { solo, play, setLoop, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
          BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
@@ -239,27 +239,6 @@ export function wingbeat(e) {
 // HOW HIGH ABOVE HIS SHADOW THE BIRD ITSELF IS, in game px, on the frame he is
 // showing: where an arrow goes in and where the blood comes out. Zero for anything
 // on its feet, so every caller can ask it of any enemy without testing first.
-// SHOULD A FLAP START BETWEEN THESE TWO DISTANCES? Once per STROKE, at the owner's
-// count: "1 cycle (default -> flying 1 -> flying 2) counts as 1 flap then (flying 2
-// -> flying 1 -> default) counts as another." So the wings coming down and the
-// wings going back up are a flap each, two to every wingbeat.
-//
-// STARTED EARLY SO THE CLAP LANDS ON THE ARRIVAL. Every flap clip is cut to reach
-// its clap FLAP_LEAD after it starts — see CUTS in src/audio.js — and a stroke ends
-// on the frame the wings arrive, at Flying 2 or back at the Default. So the flap is
-// started that long ahead of the arrival, in distance at his own speed: the swish
-// is heard as the wings move and the clap as they get there.
-//
-// Off the same distance the drawing is chosen from, so the sound and the picture
-// cannot drift apart. A crow the monk has slowed beats his wings slower and is heard
-// beating them slower; his clap comes a little ahead of the arrival, by a fraction
-// of a frame.
-export const flapped = (e, before) => {
-  const stroke = e.def.flying.stride * BEAT.indexOf(2);
-  const at = stroke - FLAP_LEAD * e.def.speed;
-  return Math.floor((before - at) / stroke) !== Math.floor((e.s - at) / stroke);
-};
-
 export const airLift = e => (e && e.def.flying ? wingbeat(e).lift * SCALE : 0);
 
 // HOW MUCH OF HIS WALK A RAISED SHIELD COSTS HIM, as a multiplier, and 1 for
@@ -922,10 +901,7 @@ export function updateEnemies(state, dt) {
     // the Captain's second stage walks at 1.2x, out of timesOf in data/armour.js.
     // Multiplied in with the other two rather than replacing them, so an enraged
     // boss under a monk's pulse is still slowed by exactly a quarter.
-    const flown = e.s;
     e.s += e.def.speed * timesOf(e) * slowOf(e) * guardSlow(e) * dt;
-    // A CROW'S WINGS ARE HEARD ONCE PER BEAT. See flapped() below.
-    if (e.def.flying && flapped(e, flown)) play(FLAP);
 
     const p = pointOn(road, e.s);
     // A vertical stretch of road says nothing about which way the figure should
@@ -1538,6 +1514,24 @@ function loose(state, e, mark) {
 // weapon that says nothing about the air cannot hit a crow: forgetting to pass it
 // leaves a crow flying on, which the player can see, rather than a catapult
 // knocking one out of the sky, which is the rule broken. See `flying` on the crow.
+// THE SOUND OF CROWS OVERHEAD: one loop of Wings_flap, on while any crow is in the
+// air and off when none is, however many there are. The owner's rule — "just play
+// the original sound whenever there is a crow and do not add any extra sound if
+// there are more than 1" — and it is a statement of what should be true rather than
+// a start and a stop, so it is asked every frame from main.js and cannot be left
+// running by a crow that leaked, a game that ended or a pause. See setLoop in
+// src/audio.js, which fades it in and out and does nothing when nothing changed.
+//
+// A CROW THAT IS FALLING IS NOT FLYING: he leaves `state.enemies` on the frame he
+// is shot, so the last crow shot down takes the wings with him as he drops.
+export const crowsOverhead = state =>
+  !!(state.started && !state.paused && !state.result &&
+     state.enemies.some(e => e.def.flying && e.hp > 0 && !e.leaked));
+
+export function wingsAudio(state) {
+  setLoop('wings_flap', crowsOverhead(state));
+}
+
 export function pickTarget(enemies, x, y, range, min = 0, mode = 0, air = false) {
   let best = null;
   let least = Infinity;

@@ -95,8 +95,7 @@ The body is `Enemies_Dark_Crow_Dead.png` in `assets/dead/`, lying on its own
 shadow like every other corpse.
 
 **The wingbeat is Default, Flying 1, Flying 2, Flying 1** and round again, one
-frame per 13px flown, so the wings never jump from fully down to fully up. Each
-stroke — Default to Flying 2, and back — is two frames, and is heard as one flap.
+frame per 13px flown, so the wings never jump from fully down to fully up.
 
 **The Falling drawing has no shadow, and must not get one.** While he drops, the
 game cuts the shadow out of the Default drawing — `flying.shadow` on his def,

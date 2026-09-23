@@ -49,13 +49,11 @@ assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Thug_1.mp3
 ```
 
-**`Wings_flap` is three clips in one file.** It is 2.4s of three separate
-wingbeats with silence between them, and `CUTS` in `src/audio.js` slices each one
-out as it loads, so the crow rotates through three flaps rather than repeating one.
-Each slice starts exactly 0.08s before its clap, which is what lets the game time
-the clap to the frame the wings arrive — so **if the recording is replaced, the
-cut points have to be re-measured.** The three claps are at 0.168, 0.968 and
-1.943s.
+**`Wings_flap` is a loop, and there is only ever one.** It runs, whole, on the
+background bus for as long as any Dark Crow is in the air, and fades out when the
+last one is shot down or gets through — one flock sound however many crows there
+are. It is asked every frame, like the world map's loops, so a pause or the end of
+a game stops it too. See `wingsAudio` in `src/enemies.js`.
 
 **Five voices for a family, three for a man.** A family's five are what the whole
 ladder says when a tower is built or given an order; a tier 4's three belong to
@@ -194,7 +192,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a paladin swings** — Category B | `Paladin_attack` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
-| **a dark crow's wings finish a stroke**, down or up, per crow — Category B, soft, at 0.35 | `Wings_flap`, one of its three wingbeats |
+| **any dark crow is in the air** — a background loop, one however many, soft at 0.35 | `Wings_flap` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |
