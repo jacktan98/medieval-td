@@ -144,9 +144,65 @@ const RAYS = 18;
 const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
 const SHRINE = { x: 520, y: 240, rx: 82, ry: 50 };   // the middle of the town
 
-function drawHoly(ctx, t, unlocked) {
+// Where the holy light may fall, and how strongly: the land, fading to nothing
+// over SHORE_FADE px as it nears the water. Worked out once from the map — the
+// water is one exact shade, as src/motion.js finds it — at half resolution.
+const HOLY_BOX = { x: 250, y: 110, w: 560, h: 260 };
+const WATER = [0xbc, 0xc2, 0xc2];
+const SHORE_FADE = 14;
+let holyLayer = null, shore = null, shoreFrom = null;
+
+function shoreMask() {
+  const img = art.overview;
+  if (!img) return null;
+  if (shoreFrom === img) return shore;
+  shoreFrom = img;
+  const W = 480, H = 270;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, W, H);
+  const d = g.getImageData(0, 0, W, H);
+  const px = d.data;
+  const dist = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const wet = Math.abs(px[i * 4] - WATER[0]) <= 14 && Math.abs(px[i * 4 + 1] - WATER[1]) <= 14 &&
+      Math.abs(px[i * 4 + 2] - WATER[2]) <= 14;
+    dist[i] = wet ? 0 : 1e9;
+  }
+  // Distance to the nearest water, two chamfer sweeps.
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (x > 0) dist[i] = Math.min(dist[i], dist[i - 1] + 1);
+    if (y > 0) dist[i] = Math.min(dist[i], dist[i - W] + 1);
+  }
+  for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+    const i = y * W + x;
+    if (x < W - 1) dist[i] = Math.min(dist[i], dist[i + 1] + 1);
+    if (y < H - 1) dist[i] = Math.min(dist[i], dist[i + W] + 1);
+  }
+  for (let i = 0; i < W * H; i++) {
+    const k = Math.min(1, (dist[i] * 2) / SHORE_FADE);
+    px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = 255;
+    px[i * 4 + 3] = Math.round(255 * k * k * (3 - 2 * k));
+  }
+  g.putImageData(d, 0, 0);
+  shore = c;
+  return shore;
+}
+
+function drawHoly(out, t, unlocked) {
   const h = HOLY;
   if (!awake(h.town, unlocked)) return;
+  const mask = shoreMask();
+  if (!mask) return;
+  const L = HOLY_BOX;
+  if (!holyLayer) { holyLayer = document.createElement('canvas'); holyLayer.width = L.w; holyLayer.height = L.h; }
+  const ctx = holyLayer.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.clearRect(0, 0, L.w, L.h);
+  ctx.setTransform(1, 0, 0, 1, -L.x, -L.y);
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
   for (let i = 0; i < RAYS; i++) {
@@ -203,6 +259,17 @@ function drawHoly(ctx, t, unlocked) {
     ctx.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
   }
   ctx.restore();
+
+  // FADED OUT AT THE RIVER. The light is cut to the land and eased off over the
+  // last few px before the water, so it lies on the island and not on the river.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.drawImage(mask, L.x / 2, L.y / 2, L.w / 2, L.h / 2, 0, 0, L.w, L.h);
+  ctx.globalCompositeOperation = 'source-over';
+  out.save();
+  out.globalCompositeOperation = 'screen';
+  out.drawImage(holyLayer, L.x, L.y);
+  out.restore();
 }
 
 // --- the campfire --------------------------------------------------------------
@@ -369,37 +436,45 @@ function drawForest(ctx, t, unlocked) {
 // A small flock now and then, low over the village and away east across the open
 // grass, where a dark bird can be seen — over the woods it vanished — wings
 // beating, then gone for a while.
-const FLOCKS = [
-  { seconds: 18, phase: 0.1, from: [110, 112], to: [450, 62], size: 4.6 },
-  { seconds: 26, phase: 0.6, from: [-20, 128], to: [340, 78], size: 4.0 }
-];
-const FLOCK = [[0, 0], [-10, 5], [-9, -5], [-19, 9], [-20, 1]];
+// NOT ON A FIXED BEAT. Time is cut into 30-second slots; in each one a flock
+// comes or does not, and a flock that comes has its own size (two to seven),
+// path, height and moment, all drawn from the slot number so every visit sees the
+// same sky but no two slots look alike.
+const BIRD_SLOT = 30;
+const FLIGHT = 12;                  // seconds a crossing takes
 
 function drawBirds(ctx, t, unlocked) {
   if (!awake('oakhaven', unlocked)) return;
   ctx.save();
   ctx.strokeStyle = 'rgba(34,26,14,0.85)';
   ctx.lineCap = 'round';
-  for (const f of FLOCKS) {
-    const at = ((t / f.seconds) + f.phase) % 1;
-    const SHOWN = 0.45;
-    if (at > SHOWN) continue;
-    const q = at / SHOWN;
+  ctx.lineWidth = 1.1;
+  const now = Math.floor(t / BIRD_SLOT);
+  for (const n of [now - 1, now]) {
+    if (hash(n * 3.1 + 7) < 0.45) continue;            // about half the slots are empty
+    const start = n * BIRD_SLOT + hash(n * 5.7) * (BIRD_SLOT - FLIGHT);
+    const q = (t - start) / FLIGHT;
+    if (q < 0 || q > 1) continue;
+    const count = 2 + Math.floor(hash(n * 9.3 + 1) * 6);
+    const fromY = 100 + hash(n * 2.2) * 35, toY = 45 + hash(n * 4.4) * 35;
+    const fromX = -20 + hash(n * 6.6) * 100, toX = fromX + 300 + hash(n * 8.8) * 120;
     const fade = Math.min(1, q / 0.1, (1 - q) / 0.15);
-    const bx = f.from[0] + (f.to[0] - f.from[0]) * q;
-    const by = f.from[1] + (f.to[1] - f.from[1]) * q - Math.sin(q * Math.PI) * 12;
-    FLOCK.forEach(([ox, oy], j) => {
+    const bx = fromX + (toX - fromX) * q;
+    const by = fromY + (toY - fromY) * q - Math.sin(q * Math.PI) * 10;
+    ctx.globalAlpha = fade;
+    for (let j = 0; j < count; j++) {
+      // A loose V: every other bird to one side, each a little further back.
+      const rank = Math.ceil(j / 2), side = j % 2 ? 1 : -1;
+      const ox = -rank * (8 + hash(n + j) * 4), oy = side * rank * (4 + hash(n * 2 + j) * 3);
       const x = bx + ox + Math.sin(t * 1.7 + j) * 1.2, y = by + oy + Math.cos(t * 1.3 + j * 2) * 0.8;
       const beat = Math.sin(t * 11 + j * 1.9);
-      const s = f.size * (j ? 0.85 : 1), drop = s * 0.5 * beat;
-      ctx.globalAlpha = fade;
-      ctx.lineWidth = 1.1;
+      const sz = 3.6 + hash(n * 3 + j) * 1.4, drop = sz * 0.5 * beat;
       ctx.beginPath();
-      ctx.moveTo(x - s, y - drop);
-      ctx.quadraticCurveTo(x - s * 0.4, y + drop * 0.5, x, y);
-      ctx.quadraticCurveTo(x + s * 0.4, y + drop * 0.5, x + s, y - drop);
+      ctx.moveTo(x - sz, y - drop);
+      ctx.quadraticCurveTo(x - sz * 0.4, y + drop * 0.5, x, y);
+      ctx.quadraticCurveTo(x + sz * 0.4, y + drop * 0.5, x + sz, y - drop);
       ctx.stroke();
-    });
+    }
   }
   ctx.restore();
 }
@@ -408,39 +483,47 @@ function drawBirds(ctx, t, unlocked) {
 //
 // Now and then one blows in off the western edge and rolls east across the sand,
 // spinning and hopping, and fades before it reaches the woods.
-const WEEDS = [
-  { seconds: 12, phase: 0.0, y: 470, r: 5.0, speed: 1 },
-  { seconds: 17, phase: 0.45, y: 512, r: 4.2, speed: 0.8 },
-  { seconds: 21, phase: 0.75, y: 428, r: 3.6, speed: 0.9 }
-];
+// NOT ON A FIXED BEAT either: 25-second slots, each with none, one, two or three
+// tumbleweeds — none most often — every one with its own size, line, pace and
+// moment. A crossing takes ROLL seconds.
+const WEED_SLOT = 25;
+const ROLL = 9;
 
 function drawTumbleweeds(ctx, t, unlocked) {
   if (!awake('sandshroud', unlocked)) return;
   ctx.save();
-  for (const [i, wd] of WEEDS.entries()) {
-    const at = ((t / wd.seconds) + wd.phase) % 1;
-    const SHOWN = 0.55;
-    if (at > SHOWN) continue;
-    const q = at / SHOWN;
-    const x = -10 + q * 380 * wd.speed;
-    const hop = Math.abs(Math.sin(q * 28 + i)) * 5 * (0.6 + 0.4 * Math.sin(q * 7));
-    const y = wd.y - hop - q * 12;
-    const fade = Math.min(1, q / 0.05, (1 - q) / 0.2);
-    // Its shadow, on the sand under it.
-    ctx.globalAlpha = 0.25 * fade;
-    ctx.fillStyle = '#3a2a16';
-    ctx.beginPath();
-    ctx.ellipse(x, wd.y - q * 12 + wd.r * 0.9, wd.r * 0.9, wd.r * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // A ball of tangled twigs, spinning as it rolls.
-    ctx.globalAlpha = 0.9 * fade;
-    ctx.strokeStyle = '#6b4c28';
-    ctx.lineWidth = 0.8;
-    const spin = q * 60;
-    for (let k = 0; k < 5; k++) {
+  const now = Math.floor(t / WEED_SLOT);
+  for (const n of [now - 1, now]) {
+    const roll = hash(n * 4.7 + 3);
+    const count = roll < 0.4 ? 0 : roll < 0.75 ? 1 : roll < 0.93 ? 2 : 3;
+    for (let i = 0; i < count; i++) {
+      const pace = 0.75 + hash(n * 7 + i) * 0.5;
+      const dur = ROLL / pace;
+      const start = n * WEED_SLOT + hash(n * 3.3 + i * 11) * (WEED_SLOT - dur);
+      const q = (t - start) / dur;
+      if (q < 0 || q > 1) continue;
+      const r = 3.4 + hash(n * 5 + i * 3) * 1.8;
+      const base = 420 + hash(n * 6.1 + i * 2) * 95;
+      const x = -10 + q * 380;
+      const hop = Math.abs(Math.sin(q * 28 + i + n)) * 5 * (0.6 + 0.4 * Math.sin(q * 7 + n));
+      const ground = base - q * 12;
+      const fade = Math.min(1, q / 0.05, (1 - q) / 0.2);
+      // Its shadow, on the sand under it.
+      ctx.globalAlpha = 0.25 * fade;
+      ctx.fillStyle = '#3a2a16';
       ctx.beginPath();
-      ctx.ellipse(x, y, wd.r, wd.r * (0.45 + 0.15 * k), spin + k * 0.8, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.ellipse(x, ground + r * 0.9, r * 0.9, r * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // A ball of tangled twigs, spinning as it rolls.
+      ctx.globalAlpha = 0.9 * fade;
+      ctx.strokeStyle = '#6b4c28';
+      ctx.lineWidth = 0.8;
+      const spin = q * 60;
+      for (let k = 0; k < 5; k++) {
+        ctx.beginPath();
+        ctx.ellipse(x, ground - hop, r, r * (0.45 + 0.15 * k), spin + k * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
   }
   ctx.restore();
