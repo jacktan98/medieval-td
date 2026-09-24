@@ -90,6 +90,11 @@ export const level00 = {
   // gone there is nothing left to move, and cutting a figure out of the board is
   // only worth its risks when the game needs to move him. So the `doors` that went
   // with it are gone too, and so is every field on a villager but where he stands.
+  // WHERE THE ENEMY LEAVES, marked with a flag beside the road — the foot of
+  // the pole, which is the centre of its ground shadow. On the grass under the
+  // road's last bend before it runs off the right-hand edge.
+  exitFlags: [{ x: 926, y: 486 }],
+
   villagers: [
     { x: 176, y: 351 },   // by the campfire
     { x: 157, y: 379 },   // and the other one

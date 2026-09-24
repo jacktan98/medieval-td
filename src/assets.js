@@ -544,6 +544,10 @@ export const paths = {
   // the spaces. If a file with a space ever arrives again, encode it here rather
   // than renaming it — the code bends to the artist's filenames.
   hud_gold:        'assets/ui/Gold_Icon.png',
+  // The flag that stands by a road's exit, so a player on a new stage can see
+  // where the enemy is heading. Drawn on the board at the shared SCALE, like
+  // the rally flag; see drawExitFlag in render.js.
+  exit_flag:       'assets/ui/Exit_Flag.png',
   hud_life:        'assets/ui/Life_Icon.png',
   btn_plate:       'assets/ui/Button_Plate_Icon.png',
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',

@@ -26,6 +26,7 @@ usable button rather than a blank disc.
 | `Judgement_Temple_Icon.png` | `temple`, the fork's other face | 26 box |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
 | `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
+| `Exit_Flag.png`          | nothing — new: marks where the road leaves the board | ~33 tall on the board, at the shared SCALE; the banner waves (see `drawExitFlag`) |
 | `Speed_Box.png`          | the 1x plate      | 54 x 24      |
 | `Next_Wave_Box.png`      | the wave plate    | 127 x 24     |
 | `Description_Box.png`    | the info panel    | 220 x 76     |
