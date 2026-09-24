@@ -24,8 +24,9 @@ const TOWN = { oakhaven: 0, winchester: 2, dawnford: 5, ironforge: 9 };
 // castles and the workshops of Winchester and Ironforge. The villages of Oakhaven,
 // Winchester and Dawnford keep clean roofs — the campfire is Oakhaven's smoke.
 const HOUSE_SMOKE = [
-  { x: 810, y: 231 }, { x: 783, y: 288 }, { x: 746, y: 302 },
-  { x: 810, y: 325 }, { x: 889, y: 335 }, { x: 767, y: 372 }
+  { x: 810, y: 231 }, { x: 783, y: 288 }, { x: 746, y: 302 }, { x: 759, y: 314 },
+  { x: 810, y: 325 }, { x: 889, y: 335 }, { x: 879, y: 352 }, { x: 740, y: 355 },
+  { x: 767, y: 372 }
 ].map(c => ({ ...c, town: 'ironforge' }));
 
 const BLACK_SMOKE = [
@@ -100,19 +101,21 @@ function drawSmoke(ctx, t, unlocked) {
     if (!awake(c.town, unlocked)) return;
     const w = wind(t, c.x);
     for (let k = 0; k < 9; k++) {
-      const p = ((t / 4.4) + k / 9 + hash(i)) % 1;
-      puff(ctx, c.x, c.y, p, 20, 10 * w, 1.6, 5.4, '150,146,140', 0.6);
+      const p = ((t / 5.2) + k / 9 + hash(i)) % 1;
+      // A PALE grey: a mid grey is the grass's own brightness and vanished into it.
+      puff(ctx, c.x, c.y, p, 22, 10 * w, 1.8, 6.2, '204,200,194', 0.85);
     }
   });
   BLACK_SMOKE.forEach((c, i) => {
     if (!awake(c.town, unlocked)) return;
     const w = wind(t, c.x);
-    for (let k = 0; k < 10; k++) {
-      const p = ((t / 3.8) + k / 10 + hash(i + 50)) % 1;
+    // SLOW, at the owner's word: heavy smoke hangs and rolls rather than streams.
+    for (let k = 0; k < 12; k++) {
+      const p = ((t / 7.5) + k / 12 + hash(i + 50)) % 1;
       puff(ctx, c.x, c.y, p, 26, 13 * w, 2, 7.5, '26,24,22', 0.8);
     }
     // A spark now and then from the fires under it.
-    const sp = ((t / 2.3) + hash(i + 90)) % 1;
+    const sp = ((t / 3.4) + hash(i + 90)) % 1;
     if (sp < 0.35) {
       const q = sp / 0.35;
       ctx.fillStyle = `rgba(255,${170 - 60 * q | 0},70,${0.9 * (1 - q)})`;
@@ -130,8 +133,13 @@ function drawSmoke(ctx, t, unlocked) {
 // brightening and fading on its own beat so the light seems to breathe, and a few
 // motes of light drifting down through it. Laid on with `screen`, so it lightens
 // what is there without covering it.
-const HOLY = { x: 520, y: -30, town: 'dawnford', reach: 360, from: 1.27, to: 1.90 };
-const RAYS = 11;
+// THE WHOLE ISLAND IS LIT, and the light gathers on the church and the High Altar:
+// the rays fan out to reach every shore, and the ones aimed at those two buildings
+// are the brightest and the widest.
+const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.60 };
+const RAYS = 18;
+const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
+const SHRINE = { x: 462, y: 262, rx: 72, ry: 44 };   // the church and the High Altar
 
 function drawHoly(ctx, t, unlocked) {
   const h = HOLY;
@@ -140,16 +148,19 @@ function drawHoly(ctx, t, unlocked) {
   ctx.globalCompositeOperation = 'screen';
   for (let i = 0; i < RAYS; i++) {
     const a = h.from + (h.to - h.from) * (i + 0.5 + (hash(i) - 0.5) * 0.6) / RAYS
-      + 0.02 * Math.sin(t * 0.21 + i);
-    const width = 0.035 + 0.03 * hash(i + 10) + 0.012 * Math.sin(t * 0.5 + i * 1.7);
-    const glow = 0.08 + 0.08 * (0.5 + 0.5 * Math.sin(t * (0.35 + hash(i + 20) * 0.3) + i * 2.1));
-    const len = h.reach * (0.8 + 0.2 * hash(i + 30));
+      + 0.015 * Math.sin(t * 0.21 + i);
+    const near = Math.exp(-(((a - h.focus) / 0.22) ** 2));      // 1 on the shrine
+    const width = (0.022 + 0.02 * hash(i + 10)) * (1 + near)
+      + 0.008 * Math.sin(t * 0.5 + i * 1.7);
+    const glow = (0.05 + 0.06 * (0.5 + 0.5 * Math.sin(t * (0.35 + hash(i + 20) * 0.3) + i * 2.1)))
+      * (0.55 + 0.9 * near);
+    const len = h.reach * (0.85 + 0.15 * hash(i + 30));
     const g = ctx.createLinearGradient(h.x, h.y, h.x + Math.cos(a) * len, h.y + Math.sin(a) * len);
     // Dark until the rays reach the island, so Winchester across the river is not
     // lit with it.
     g.addColorStop(0, 'rgba(255,238,180,0)');
     g.addColorStop(0.5, 'rgba(255,238,180,0)');
-    g.addColorStop(0.68, `rgba(255,236,170,${glow})`);
+    g.addColorStop(0.7, `rgba(255,236,170,${glow})`);
     g.addColorStop(0.88, `rgba(255,232,160,${glow * 0.8})`);
     g.addColorStop(1, 'rgba(255,232,160,0)');
     ctx.fillStyle = g;
@@ -160,21 +171,26 @@ function drawHoly(ctx, t, unlocked) {
     ctx.closePath();
     ctx.fill();
   }
-  // A soft pool of warmth where the light lands on the town.
-  const pool = ctx.createRadialGradient(525, 245, 0, 525, 245, 95);
-  const breathe = 0.07 + 0.025 * Math.sin(t * 0.4);
-  pool.addColorStop(0, `rgba(255,236,170,${breathe})`);
-  pool.addColorStop(1, 'rgba(255,236,170,0)');
-  ctx.fillStyle = pool;
-  ctx.beginPath();
-  ctx.ellipse(525, 245, 95, 65, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Motes of light drifting down through the rays, glowing and gone.
-  for (let k = 0; k < 16; k++) {
+  // Warmth over the whole island, and more of it on the shrine.
+  const breathe = 0.5 + 0.5 * Math.sin(t * 0.4);
+  for (const [e, a] of [[ISLAND, 0.05 + 0.015 * breathe], [SHRINE, 0.10 + 0.03 * breathe]]) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.scale(1, e.ry / e.rx);
+    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, e.rx);
+    pool.addColorStop(0, `rgba(255,236,170,${a})`);
+    pool.addColorStop(1, 'rgba(255,236,170,0)');
+    ctx.fillStyle = pool;
+    ctx.fillRect(-e.rx, -e.rx, e.rx * 2, e.rx * 2);
+    ctx.restore();
+  }
+  // Motes of light drifting down through the rays, most of them over the shrine.
+  for (let k = 0; k < 24; k++) {
     const life = 6 + hash(k + 40) * 5;
     const p = ((t / life) + hash(k + 50)) % 1;
-    const x = 450 + hash(k + 60) * 150 + Math.sin(t * 0.6 + k) * 4;
-    const y = 150 + hash(k + 70) * 120 + p * 25;
+    const wide = k % 3 === 0 ? SHRINE : ISLAND;
+    const x = wide.x + (hash(k + 60) - 0.5) * wide.rx * 1.6 + Math.sin(t * 0.6 + k) * 4;
+    const y = wide.y - wide.ry * 0.9 + hash(k + 70) * wide.ry * 1.4 + p * 25;
     const r = 0.8 + hash(k + 80) * 1.6;
     const a = 0.45 * Math.sin(Math.PI * p);
     const m = ctx.createRadialGradient(x, y, 0, x, y, r * 2);

@@ -346,7 +346,7 @@ function drawShimmer(ctx, t) {
 // pixels, so no mark crosses a bank or a bridge.
 const CURRENTS = true;
 const RIVER_MARKS = 260, LAKE_MARKS = 28;
-const RIVER_SPEED = 11, LAKE_SPEED = 3.2;          // canvas px a second, in open water
+const RIVER_SPEED = 11, LAKE_SPEED = 2.0;          // canvas px a second, in open water
 const GLINTS = 9;
 const currents = { river: [], lake: [] };
 let lastT = null;
@@ -480,7 +480,8 @@ function step(list, f, want, speed, dt, lakeRun) {
     const [dx, dy, bank, dist] = v;
     // Narrow water runs fast and wide water lazily; the lake quickens to the lip.
     let s = speed * Math.max(0.35, Math.min(1.5, 1.6 - bank / 22));
-    if (lakeRun) s = speed * (1 + 7 * Math.exp(-dist / 22));
+    // A gentle pull towards the lip, not a rush — the owner found the first one too quick.
+    if (lakeRun) s = speed * (1 + 1.8 * Math.exp(-dist / 30));
     m.vx = dx; m.vy = dy; m.s = s;
     m.x += dx * s * dt;
     m.y += dy * s * dt;
