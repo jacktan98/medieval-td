@@ -119,3 +119,92 @@ export function onGround(key) {
   baked.set(id, out);
   return out;
 }
+
+// A DRAWING SPLIT INTO ITS GROUND SHADOW AND EVERYTHING ELSE, so the shadow can be
+// laid on the ground under a range ring and the building drawn over both — the
+// owner's ask: a range line should lie over a shadow, not vanish under it.
+//
+// The same exact-colour test as the recolour above, against the board's shadow
+// colour AND the grass one: the recolour only touches solid pixels, so a soft
+// edge keeps the grass green whatever board it is on. Any alpha counts here,
+// so that soft edge goes with the shadow rather than leaving a ring of it on
+// the building.
+//
+// `soft` is for a board's front sheet, which is cut from the flat board rather
+// than drawn on its own: the shadow's rim there is not a soft alpha edge but a
+// row of solid pixels blended half way to the grass or road it meets. Those
+// count as shadow too, or they draw a faint dark outline over the ring. A blend
+// is told apart by lying on the straight line between the shadow's colour and
+// the ground's or the road's, and only the shadow's end of it — a pixel that is
+// nearly all road is left alone, in case a figure's skin is that colour.
+//
+// Returns null when the image cannot be read — no canvas in node, or a tainted
+// one — and the caller draws the whole picture as it always did.
+const parts = new Map();
+const GROUND_FILL = '#5c7f49', ROAD_FILL = '#ffde9e';
+function onBlend(px, i, from, to) {
+  const d = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+  const len = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+  if (!len) return false;
+  const v = [px[i] - from[0], px[i + 1] - from[1], px[i + 2] - from[2]];
+  const t = (v[0] * d[0] + v[1] * d[1] + v[2] * d[2]) / len;
+  if (t <= 0 || t > 0.9) return false;
+  for (let k = 0; k < 3; k++) if (Math.abs(v[k] - t * d[k]) > 8) return false;
+  return true;
+}
+export function shadowSplit(img, id, soft = false) {
+  if (!img) return null;
+  if (parts.has(id)) return parts.get(id);
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  if (!w || !h) return null;
+
+  const want = (level && level.palette && level.palette.shadow) || '#37422f';
+  const [r, gr, b] = hex(want);
+  const pal = (level && level.palette) || {};
+  const ground = hex(pal.ground || GROUND_FILL), road = hex(pal.road || ROAD_FILL);
+  // NEAR, not equal. A canvas hands back a part-transparent pixel with its colour
+  // rounded through premultiplied alpha, so the rim of a shadow comes back a few
+  // steps off its own colour — and the boards' exports carry the odd solid pixel
+  // one step off it too (54,65,46 in a field of 55,66,47).
+  const near = (px, i, c) => {
+    const tol = px[i + 3] >= 250 ? 2 : 3 + Math.round(255 / px[i + 3]);
+    return Math.abs(px[i] - c[0]) <= tol && Math.abs(px[i + 1] - c[1]) <= tol &&
+      Math.abs(px[i + 2] - c[2]) <= tol;
+  };
+  const isShadow = (px, i) => px[i + 3] > 0 &&
+    (near(px, i, [r, gr, b]) || near(px, i, GRASS_SHADOW) ||
+     (soft && (onBlend(px, i, [r, gr, b], ground) || onBlend(px, i, [r, gr, b], road))));
+
+  let out = null;
+  try {
+    const make = () => {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      return c;
+    };
+    const bodyC = make(), shadowC = make();
+    const bg = bodyC.getContext('2d', { willReadFrequently: true });
+    bg.drawImage(img, 0, 0);
+    const body = bg.getImageData(0, 0, w, h);
+    const sg = shadowC.getContext('2d');
+    const shadow = sg.createImageData(w, h);
+    const bp = body.data, sp = shadow.data;
+    let hits = 0;
+    for (let i = 0; i < bp.length; i += 4) {
+      if (!isShadow(bp, i)) continue;
+      sp[i] = bp[i]; sp[i + 1] = bp[i + 1]; sp[i + 2] = bp[i + 2]; sp[i + 3] = bp[i + 3];
+      bp[i + 3] = 0;
+      hits++;
+    }
+    if (hits) {
+      bg.putImageData(body, 0, 0);
+      sg.putImageData(shadow, 0, 0);
+      out = { body: bodyC, shadow: shadowC };
+    }
+  } catch {
+    out = null;
+  }
+  parts.set(id, out);
+  return out;
+}

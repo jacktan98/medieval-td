@@ -10,7 +10,7 @@ import { BOMB_TRIM, BOMB_PIVOT } from './bombs.js';
 import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art, discFace } from './assets.js';
-import { onGround } from './tint.js';
+import { onGround, shadowSplit } from './tint.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -59,6 +59,9 @@ export function draw(ctx, state) {
 
   drawGround(ctx);
   drawPlots(ctx, state);
+  // Every tower's ground shadow, on the ground and under the range rings — the
+  // building itself is drawn without it in the depth pass. See shadowSplit.
+  drawTowerShadows(ctx, state);
   drawRangeDiscs(ctx, state);
   // Blood pools BEFORE the depth pass, not inside it. A pool is a stain on the
   // ground, so nothing standing on the board should ever be behind one — and in
@@ -261,8 +264,15 @@ function drawRangeDiscs(ctx, state) {
 // run in the browser.
 const MAP_PX = 2;
 
+// WITHOUT ITS SHADOW. The base board already has the shadow painted in, under
+// the range rings; the copy drawn here only has to put the building back over
+// whatever stands behind it, and a shadow drawn a second time would cover a ring
+// lying across it. See shadowSplit.
 function drawFront(ctx, img, b) {
-  ctx.drawImage(img, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
+  // Keyed by the sheet itself: the bridge rail's `over` sheet comes through here
+  // too, and a key naming the board alone handed it the front sheet's cut.
+  const split = shadowSplit(img, `sheet|${img.src}`, true);
+  ctx.drawImage(split ? split.body : img, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
     b.x, b.y, b.w, b.h);
 }
 
@@ -1105,11 +1115,15 @@ function drawBuilding(ctx, t, box) {
   // THROUGH onGround, which hands back the same drawing on every board but the
   // desert — there the ground shadow baked into it is recoloured to the one the
   // board's own scenery casts. See src/tint.js.
+  //
+  // AND WITHOUT THAT SHADOW, which drawTowerShadows has already laid on the
+  // ground under the range rings.
   const key = t.def.machine ? t.def.sprite : frameOf(t);
   const img = key && onGround(key);
   if (img) {
     const [sx, sy, sw, sh] = t.def.spriteTrim;
-    ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+    const split = shadowSplit(img, groundId(key));
+    ctx.drawImage(split ? split.body : img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
     return;
   }
   if (t.def.shape === 'camp') drawCamp(ctx, t, box);
@@ -1123,6 +1137,32 @@ function drawBuilding(ctx, t, box) {
 // MIRRORED ABOUT THE MIDDLE OF ITS OWN DRAWING rather than about the tower or
 // about the post it stands on — see `axis` in machineBox for why that is the one
 // line that keeps the machine centred on the roof both ways round.
+// One cache entry per drawing per board, because onGround hands back a
+// different recolour on a board with its own shadow colour.
+const groundId = key => `${key}|${(level.palette && level.palette.shadow) || ''}`;
+
+// The shadow half of every tower, drawn flat on the ground before the range
+// rings, mirrored exactly as drawTower mirrors the building. A drawing that could
+// not be split is drawn whole in the depth pass as before, and has nothing here.
+function drawTowerShadows(ctx, state) {
+  for (const t of state.towers) {
+    const key = t.def.machine ? t.def.sprite : frameOf(t);
+    const img = key && onGround(key);
+    const split = img && shadowSplit(img, groundId(key));
+    if (!split) continue;
+    const box = towerBox(t);
+    const [sx, sy, sw, sh] = t.def.spriteTrim;
+    ctx.save();
+    if (buildingFlip(t) < 0) {
+      ctx.translate(t.x, 0);
+      ctx.scale(-1, 1);
+      ctx.translate(-t.x, 0);
+    }
+    ctx.drawImage(split.shadow, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+    ctx.restore();
+  }
+}
+
 function drawMachine(ctx, t, box) {
   const m = t.def.machine;
   // Through onGround like the stone under it. The machines carry no shadow of
@@ -1163,7 +1203,9 @@ function drawBuildingFront(ctx, t, box) {
   // The SAME drawing drawBuilding used, recoloured the same way — a front layer
   // sliced out of the untinted sprite would paint a green crescent back over a
   // shadow the pass below it had just made brown.
-  const img = d.sprite && onGround(d.sprite);
+  const whole = d.sprite && onGround(d.sprite);
+  const split = whole && shadowSplit(whole, groundId(d.sprite));
+  const img = split ? split.body : whole;
   if (!img || (!d.frontTrims && !d.frontPolys)) return;
 
   const [tx, ty, tw, th] = d.spriteTrim;

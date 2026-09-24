@@ -3378,7 +3378,7 @@ console.log('\n--- what a figure can walk behind ---\n');
   // there is no offset anywhere in the call — the moment there is, the copy on the
   // sheet and the copy in the base can disagree, which reads as a building with a
   // ghost of itself beside it.
-  ok(/drawImage\(img, b\.x \* MAP_PX, b\.y \* MAP_PX, b\.w \* MAP_PX, b\.h \* MAP_PX,\s*b\.x, b\.y, b\.w, b\.h\)/.test(bare),
+  ok(/drawImage\((?:img|split \? split\.body : img), b\.x \* MAP_PX, b\.y \* MAP_PX, b\.w \* MAP_PX, b\.h \* MAP_PX,\s*b\.x, b\.y, b\.w, b\.h\)/.test(bare),
     'and lands exactly where it was drawn on the board',
     'no offset between the sheet and the base it was cut from');
 
