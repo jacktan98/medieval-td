@@ -23,6 +23,7 @@
 // measures the artwork; it reads the numbers that tool wrote.
 
 import { art } from './assets.js';
+import { drawExitFlag, EXIT_TALL } from './flag.js';
 import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
@@ -264,18 +265,6 @@ const INK = '#2A1D0E';
 // height and keeps its own proportions.
 const FLAG_H = 30;
 
-// WHERE THE FLAG'S PARTS ARE IN THE DRAWING, as fractions of the shared box the
-// pole and the cloth are cropped to. Every one of these is PRINTED by
-// tools/split-flag.mjs and copied here, so the artwork is the source of truth and
-// this file only has to agree with it; tools/campaign.mjs re-measures the SVG and
-// fails if the two ever drift apart.
-//
-//   node tools/split-flag.mjs
-const FLAG_ART_W = 71.951;    // the shared viewBox, which fixes the proportions
-const FLAG_ART_H = 96.541;
-const FLAG_FOOT_X = 0.1161;   // the bottom of the pole, which lands on the marker
-const FLAG_MAST = 0.1988;     // the pole's inner edge — the line the cloth hangs from
-
 const FLAG_CLOTH = '#3E6FA8';
 
 // A dot every 10px reads as a trail of steps rather than a line, which is the
@@ -508,40 +497,11 @@ function drawFlag(ctx, x, y, t, wave) {
   ctx.save();
   ctx.globalAlpha = Math.min(1, t * 2.4);
 
-  // THE FLAG THE OWNER DREW FOR THIS MAP, IN TWO PIECES. It used to be the rally
-  // point's PNG, sheared about its foot to make it wave — and shearing a picture
-  // shears all of it, so the pole leaned over with the cloth. The owner's word:
-  // the pole stick is not to wave with the flag.
-  //
-  // So the pole and the pennant are separate sheets on ONE shared viewBox (see
-  // tools/split-flag.mjs). Both go into the same rectangle, which is what puts the
-  // cloth back on the mast without a single number lining them up; the pole is
-  // drawn flat and only the cloth is transformed.
-  //
-  // THE CLOTH IS SHEARED VERTICALLY RATHER THAN HORIZONTALLY, which is the other
-  // half of standing still. A horizontal shear about the foot moves everything
-  // above the ground, mast included. A vertical shear about the MAST moves nothing
-  // on the mast at all and lifts the free end most — cloth pinned along one edge,
-  // which is what a pennant is. Two sines at different rates so the beat never
-  // repeats where the eye can count it, and the cloth narrows slightly as it
-  // swings, the way cloth turning away from you does.
-  const poleImg = art.map_flag_pole, clothImg = art.map_flag_cloth;
-  if (poleImg && clothImg) {
-    const w = h * (FLAG_ART_W / FLAG_ART_H);
-    const left = x - FLAG_FOOT_X * w;
-    const top = foot - h;
-
-    ctx.drawImage(poleImg, left, top, w, h);
-
-    const swing = (Math.sin(wave * 2.1) * 0.30 + Math.sin(wave * 3.3 + 1.1) * 0.16) * k;
-    const mast = left + FLAG_MAST * w;
-    ctx.save();
-    ctx.translate(mast, 0);
-    ctx.transform(1 - Math.abs(swing) * 0.16, swing, 0, 1, 0, 0);
-    ctx.translate(-mast, 0);
-    ctx.drawImage(clothImg, left, top, w, h);
-    ctx.restore();
-  } else {
+  // THE EXIT FLAG, the same one that stands by every board's exit, at the owner's
+  // word — it replaced the rally pennant that used to be planted here. Its banner
+  // waves and its pole stands still; see src/flag.js. The wave grows in with the
+  // planting, so a flag still falling is a flag still furled.
+  if (!drawExitFlag(ctx, x, foot, h / EXIT_TALL, { wind: k, time: wave })) {
     // The same vector fallback the board carries, so a missing file is a plainer
     // flag rather than no flag.
     ctx.strokeStyle = '#3A2A12';

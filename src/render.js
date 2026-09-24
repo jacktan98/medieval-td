@@ -11,6 +11,7 @@ import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
+import { drawExitFlag } from './flag.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -392,7 +393,7 @@ function drawFigures(ctx, state) {
   // fixture in tools/ builds its own world by hand, and a renderer that insisted
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
-  for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y));
+  for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
@@ -1138,89 +1139,6 @@ function drawBuilding(ctx, t, box) {
 // MIRRORED ABOUT THE MIDDLE OF ITS OWN DRAWING rather than about the tower or
 // about the post it stands on — see `axis` in machineBox for why that is the one
 // line that keeps the machine centred on the roof both ways round.
-// --- the exit flag -----------------------------------------------------------
-//
-// A pole that stands and a banner that waves, from ONE drawing. The banner hangs
-// from a rod at its top edge, so it is cut out along that edge and redrawn a
-// couple of source rows at a time, each row pushed sideways by a ripple that runs
-// down the cloth: nothing at the rod, most at the pointed tip. The pole behind the
-// banner is never drawn by the artist — the banner covers it — so it is rebuilt
-// from a row of the pole below the tip, or the cloth swinging aside would show a
-// hole where the pole should be.
-//
-// All numbers are source px in Exit_Flag.png (512 square). The foot is the centre
-// of the ground shadow, which is what every standing thing is placed by.
-const EXIT_TRIM = [216, 176, 80, 160];
-const EXIT_FOOT = [255.5, 328];
-// The banner's outline, a little outside the artist's black edge. Its top runs
-// along the rod, just above it, so the knob on the pole stays with the pole.
-const EXIT_BANNER = [[212, 179], [300, 201], [300, 224], [292, 224], [292, 259],
-  [256, 284], [212, 246]];
-const EXIT_POLE = { x0: 246, x1: 266, row: 300, from: 186, to: 284 };
-const EXIT_WAVE = { amp: 5.5, top: 190, bottom: 284, speed: 3.2, length: 58 };
-
-let exitParts = null;
-function exitLayers() {
-  if (exitParts !== null) return exitParts;
-  const img = art.exit_flag;
-  if (!img || !img.complete) return null;
-  exitParts = false;
-  try {
-    const w = img.naturalWidth, h = img.naturalHeight;
-    const make = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-    const outline = g => {
-      g.beginPath();
-      EXIT_BANNER.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-      g.closePath();
-    };
-    // The cloth: the drawing clipped to the banner's outline.
-    const cloth = make(), cg = cloth.getContext('2d');
-    outline(cg); cg.clip();
-    cg.drawImage(img, 0, 0);
-    // The pole: everything else, plus the pole rebuilt behind the banner.
-    const pole = make(), pg = pole.getContext('2d');
-    pg.drawImage(img, 0, 0);
-    pg.globalCompositeOperation = 'destination-out';
-    outline(pg); pg.fill();
-    pg.globalCompositeOperation = 'destination-over';
-    const { x0, x1, row, from, to } = EXIT_POLE;
-    for (let y = from; y < to; y++) pg.drawImage(img, x0, row, x1 - x0, 1, x0, y, x1 - x0, 1);
-    exitParts = { cloth, pole };
-  } catch {
-    exitParts = false;
-  }
-  return exitParts;
-}
-
-function drawExitFlag(ctx, x, y) {
-  const img = art.exit_flag;
-  if (!img) return;
-  const [tx, ty, tw, th] = EXIT_TRIM;
-  const left = x - (EXIT_FOOT[0] - tx) * SCALE;
-  const top = y - (EXIT_FOOT[1] - ty) * SCALE;
-  const parts = exitLayers();
-  if (!parts) {
-    ctx.drawImage(img, tx, ty, tw, th, left, top, tw * SCALE, th * SCALE);
-    return;
-  }
-  ctx.drawImage(parts.pole, tx, ty, tw, th, left, top, tw * SCALE, th * SCALE);
-
-  // Wall-clock, like the overview map's flag: it waves on a paused board too, and
-  // each flag is put out of step with the next by where it stands.
-  const t = performance.now() / 1000 + x * 0.013;
-  const { amp, top: t0, bottom: t1, speed, length } = EXIT_WAVE;
-  const STEP = 2;
-  for (let sy = t0 - 14; sy < t1; sy += STEP) {
-    const s = Math.max(0, Math.min(1, (sy + STEP / 2 - t0) / (t1 - t0)));
-    const dx = amp * s * s * Math.sin(t * speed - (sy - t0) * (Math.PI * 2 / length))
-      + amp * 0.35 * s * Math.sin(t * speed * 0.53 + 0.8);
-    // A hair taller than the slice, so two neighbours overlap rather than leave a
-    // seam of the board between them where they have been pushed apart.
-    ctx.drawImage(parts.cloth, tx - 8, sy, tw + 16, STEP,
-      left + (dx - 8) * SCALE, top + (sy - ty) * SCALE, (tw + 16) * SCALE, STEP * SCALE + 0.4);
-  }
-}
-
 // One cache entry per drawing per board, because onGround hands back a
 // different recolour on a board with its own shadow colour.
 const groundId = key => `${key}|${(level.palette && level.palette.shadow) || ''}`;

@@ -64,6 +64,55 @@ export const levels = [level00, level04, level05, level06, level07, level08, lev
 // is looking at the artist's numbers or the measured form of them.
 for (const l of levels) l.routes = l.routes.map(prepare);
 
+// WHERE THE ENEMY LEAVES, marked with the exit flag — at the owner's ask, so a
+// player on a new stage can see which way the road runs out. Planted in the
+// MIDDLE OF THE ROAD, on the route's own centreline, a little way back from where
+// it leaves the board: far enough in that the whole flag is on screen and clear
+// of the dashboard, near enough to the edge to read as the way out.
+//
+// Worked out from the routes rather than written into each board, so a new board
+// gets its flags for nothing. Two routes that leave by the same road share one
+// flag. A board that wants its flag somewhere else — stage 5's stands before the
+// bridge, not at the bottom of it — says so with `exitFlags` of its own.
+const EXIT_BOX = { x0: 24, x1: 936, y0: 95, y1: 522 };   // where a foot may stand
+const EXIT_IN = 26;                                       // and this far back along the road
+const EXIT_APART = 60;                                    // closer than this is one exit
+
+const inBox = p => p.x >= EXIT_BOX.x0 && p.x <= EXIT_BOX.x1 && p.y >= EXIT_BOX.y0 && p.y <= EXIT_BOX.y1;
+const along = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+
+export function exitPoint(pts) {
+  // The last place on the road inside the box: the end itself if the road stops on
+  // the board, otherwise where its last segment crosses the box's edge.
+  let i = pts.length - 1, at;
+  if (inBox(pts[i])) at = { x: pts[i].x, y: pts[i].y, i };
+  else {
+    while (i > 0 && !inBox(pts[i - 1])) i--;
+    if (i === 0) return null;
+    const p = pts[i - 1], q = pts[i];
+    let lo = 0, hi = 1;
+    for (let k = 0; k < 30; k++) { const m = (lo + hi) / 2; if (inBox(along(p, q, m))) lo = m; else hi = m; }
+    at = { ...along(p, q, lo), i: i - 1 };
+  }
+  // Then EXIT_IN back along the road towards where it came from.
+  let need = EXIT_IN, j = at.i, cur = { x: at.x, y: at.y };
+  while (j >= 0 && need > 0) {
+    const b = pts[j], d = Math.hypot(cur.x - b.x, cur.y - b.y);
+    if (d >= need) { cur = along(cur, b, need / d); break; }
+    need -= d; cur = { x: b.x, y: b.y }; j--;
+  }
+  return { x: Math.round(cur.x), y: Math.round(cur.y) };
+}
+
+for (const l of levels) {
+  if (l.exitFlags) continue;
+  l.exitFlags = [];
+  for (const r of l.routes) {
+    const f = exitPoint(r.pts);
+    if (f && !l.exitFlags.some(g => Math.hypot(g.x - f.x, g.y - f.y) < EXIT_APART)) l.exitFlags.push(f);
+  }
+}
+
 export let level = levels[0];
 
 export function useLevel(i) {

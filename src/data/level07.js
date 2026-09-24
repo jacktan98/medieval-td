@@ -181,6 +181,12 @@ export const level07 = {
   // the felled timber at (517, 468) measures 29.7px tall against a 30px line, so the
   // tool refused to classify it on its own. It is a pile of logs lying on the ground,
   // it was looked at, and "flat" is right.
+  // THE EXIT FLAG STANDS BEFORE THE BRIDGE, at the owner's word, rather than at
+  // the far end of it where the road leaves the board: in the middle of the road
+  // where the two routes have joined, just short of the first plank. See the
+  // exit flags in src/level.js for every other board's, which are worked out.
+  exitFlags: [{ x: 655, y: 428 }],
+
   frontArt: 'front07',
   //
   // ITS GROUND LINE IS THE CENTRE OF ITS SHADOW, at the owner's rule, and this board

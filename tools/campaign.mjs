@@ -3633,61 +3633,14 @@ console.log('\n--- the marker, the flag and the stars ---\n');
     'a locked stage carries no padlock',
     'nothing drawn inside a locked marker');
 
-  // THE FLAG IS THE OWNER'S OWN, AND IT IS IN TWO PIECES. It was the rally point's
-  // PNG, sheared about its foot to wave — and a shear applies to the whole picture,
-  // so the pole leaned over with the cloth. The owner's word: the pole stick is not
-  // to wave with the flag. One picture cannot do that, so there are two, and only
-  // one of them is ever transformed.
-  ok(/art\.map_flag_pole/.test(bare) && /art\.map_flag_cloth/.test(bare),
-    'the map plants a flag whose pole and cloth are separate',
-    'two sheets, one drawing');
-
-  // AND THE POLE IS DRAWN OUTSIDE THE TRANSFORM. This is the whole of what the
-  // owner asked for and the one thing that could silently come undone: put the
-  // pole's drawImage after the translate and it waves again, with every other
-  // check here still passing.
+  // THE FLAG IS THE EXIT FLAG, the same drawing that stands by every board's exit,
+  // at the owner's word. It replaced the rally pennant; src/flag.js keeps its pole
+  // still and waves only the banner, which is what the old two-sheet pennant was
+  // split for.
   const flagBody = (/function drawFlag\([\s\S]*?\n}/.exec(bare) || [''])[0];
-  const poleAt = flagBody.indexOf('drawImage(poleImg');
-  const shearAt = flagBody.indexOf('ctx.transform(');
-  ok(poleAt > 0 && shearAt > poleAt, 'and the pole is drawn before anything is bent',
-    poleAt > 0 && shearAt > poleAt ? 'pole, then the shear' : 'the pole is inside the transform');
-
-  // AND THE CLOTH IS BENT ABOUT THE MAST, VERTICALLY. A horizontal shear moves
-  // everything above the ground however it is anchored; a vertical one about the
-  // mast moves nothing on the mast and lifts the free end most, which is what cloth
-  // pinned along one edge does.
-  ok(/ctx\.transform\(.*, swing, 0, 1/.test(flagBody) && /translate\(mast, 0\)/.test(flagBody),
-    'and bent about the mast rather than the ground',
-    'a vertical shear, pinned at the pole');
-
-  // THE TWO SHEETS SHARE ONE BOX, which is what puts the cloth back on the mast
-  // without a number lining them up. tools/split-flag.mjs crops both to the two
-  // paths together and prints the anchors below; this re-measures the artwork the
-  // owner drew and fails if the constants here have drifted from it.
-  const flagSvg = readFileSync('assets/map/Rally_Flag_pole.svg', 'utf8');
-  const clothSvg = readFileSync('assets/map/Rally_Flag_cloth.svg', 'utf8');
-  const vb = t => (/viewBox="([^"]+)"/.exec(t) || [])[1];
-  ok(vb(flagSvg) && vb(flagSvg) === vb(clothSvg),
-    'the pole and the cloth are cropped to one shared box',
-    vb(flagSvg) || 'no viewBox');
-
-  const [, , vw, vh] = (vb(flagSvg) || '0 0 0 0').split(' ').map(Number);
-  const artW = num('FLAG_ART_W'), artH = num('FLAG_ART_H');
-  ok(Math.abs(artW - vw) < 0.01 && Math.abs(artH - vh) < 0.01,
-    'and the map is drawing them at the proportions they were cropped to',
-    `${artW}x${artH} against ${vw}x${vh}`);
-
-  // The mast is the pole's inner edge. Measured off the pole's own path rather than
-  // trusted, because a redraw that moves the pole moves the line the cloth hangs
-  // from, and nothing else in the game would notice.
-  const poleXs = [...((/ d="([^"]*)"/.exec(flagSvg) || ['', ''])[1])
-    .matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map(m => +m[1]);
-  const mat = ((/matrix\(([^)]*)\)/.exec(flagSvg) || ['', '1,0,0,1,0,0'])[1]).split(',').map(Number);
-  const [vx] = (vb(flagSvg) || '0 0 0 0').split(' ').map(Number);
-  const mastX = (Math.max(...poleXs) * mat[0] + mat[4] - vx) / vw;
-  ok(Math.abs(num('FLAG_MAST') - mastX) < 0.005,
-    'and the cloth hangs from where the pole actually ends',
-    `FLAG_MAST ${num('FLAG_MAST')} against ${mastX.toFixed(4)} in the drawing`);
+  ok(/drawExitFlag\(ctx, x, foot, h \/ EXIT_TALL/.test(flagBody) && !/map_flag_/.test(bare),
+    'the map plants the exit flag',
+    'one drawing, the same as on the boards');
 
   const rd = readFileSync('src/render.js', 'utf8');
   ok(/glyph_flag/.test(rd), 'while the board plants its own rally flag',
