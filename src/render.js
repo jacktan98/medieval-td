@@ -2712,21 +2712,19 @@ export const UI_GOLD = '#E0B24C';
 const UI_EDGE_W = 1.25;
 const UI_HOT_W = 2.75;
 
-function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false, edge = true } = {}) {
+function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false } = {}) {
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r ?? Math.min(h / 2, 12));
   ctx.fillStyle = press ? UI_PRESS : UI_BACK;
   ctx.fill();
-  if (edge) {
-    ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
-    ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
-    ctx.stroke();
-  }
+  ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
+  ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
+  ctx.stroke();
   ctx.restore();
 }
 
-// A UNIT PICTURE OR AN ICON WITH A CREAM HALO — a second outline, outside the drawing's own
+// A UNIT PICTURE WITH A CREAM HALO — a second outline, outside the drawing's own
 // black one, so a figure reads on the dark box it sits in. The halo is the
 // figure's own silhouette filled cream and stamped in a ring around it, so it
 // follows the shape rather than boxing it. Silhouettes are made once per sprite
@@ -2766,14 +2764,24 @@ function drawHaloed(ctx, img, trim, x, y, w, h) {
   ctx.restore();
 }
 
+const HUD_PLATE = 'rgba(255,239,212,0.85)';
+const HUD_PLATE_EDGE = 'rgba(14,12,10,0.9)';
+
 function hudButton(ctx, b, label, sub, on) {
   ctx.save();
   if (!on) ctx.globalAlpha = 0.45;
 
-  // THE HOUSE STYLE, not the cream plate artwork it replaced — see panelBox. The
+  // CREAM INSIDE, A DARK EDGE — the old plates' look, drawn rather than
+  // painted, and a little see-through so the board still shows under them. The
   // plate files stay in data/ui.js for their proportions, which still size these
-  // buttons; nothing draws them any more.
-  panelBox(ctx, b.x, b.y, b.w, b.h, { press: true });
+  // buttons.
+  ctx.beginPath();
+  ctx.roundRect(b.x, b.y, b.w, b.h, Math.min(b.h / 2, 12));
+  ctx.fillStyle = HUD_PLATE;
+  ctx.fill();
+  ctx.strokeStyle = HUD_PLATE_EDGE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
   // BOTH text properties, set here rather than inherited. This is the one that
   // bit: the buttons used to sit inside drawHud's save/restore and picked up its
@@ -2792,7 +2800,7 @@ function hudButton(ctx, b, label, sub, on) {
   // one place moves the pixels in another.
   // A button with no words is a button with a picture on it, and the caller
   // draws that itself — see the pause control in drawHud.
-  if (label === null) { ctx.restore(); return false; }
+  if (label === null) { ctx.restore(); return true; }
 
   const mid = b.y + b.h / 2;
   ctx.textAlign = 'left';
@@ -2804,14 +2812,14 @@ function hudButton(ctx, b, label, sub, on) {
 
   const x = b.x + (b.w - lw - sw) / 2;
   ctx.font = '700 13px system-ui, sans-serif';
-  ctx.fillStyle = UI_INK;
+  ctx.fillStyle = INK;
   ctx.fillText(label, x, mid);
 
   // The bonus for calling early stays green: it is money, and money is green
   // everywhere else in the game.
   if (sub) {
     ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillStyle = '#9BE08A';
+    ctx.fillStyle = INK_GREEN;
     ctx.fillText(sub, x + lw + 5, mid);
   }
 
@@ -2851,15 +2859,11 @@ const INK_RED = '#A83A2C';
 // Draws a piece of UI art centred on (x, y), at the box data/ui.js gives it.
 // Returns false if the image is not loaded, so every caller can fall back to the
 // vector it replaced rather than leaving a hole.
-// `halo` rings it in cream — see drawHaloed — which the HUD readouts and the
-// description panel's stat icons ask for.
-function drawUi(ctx, key, x, y, box, anchor = HALF, halo = false) {
+function drawUi(ctx, key, x, y, box, anchor = HALF) {
   const img = art[key];
   if (!img) return false;
-  const trim = ui[key].trim;
   const { w, h } = uiSize(key, box);
-  if (halo) drawHaloed(ctx, img, trim, x - anchor[0] * w, y - anchor[1] * h, w, h);
-  else ctx.drawImage(img, ...trim, x - anchor[0] * w, y - anchor[1] * h, w, h);
+  ctx.drawImage(img, ...ui[key].trim, x - anchor[0] * w, y - anchor[1] * h, w, h);
   return true;
 }
 
@@ -2881,14 +2885,61 @@ function hudIcon(ctx, key, x, word, draw = true) {
     return x + ctx.measureText(word).width + 7;
   }
   const { w } = uiSize(key);
-  if (draw) drawUi(ctx, key, x + w / 2, 21, undefined, HALF, true);
+  if (draw) drawUi(ctx, key, x + w / 2, 21);
   return x + w + 7;
 }
 
+// Laid out at the readouts' LAYOUT font and drawn a size down — see READOUT_INK
+// — so the bars keep the size they had while the digits in them shrink.
 function statValue(ctx, x, value, draw = true) {
   const text = String(value);
-  if (draw) ctx.fillText(text, x, 21);
+  if (draw) inkText(ctx, text, x);
   return x + ctx.measureText(text).width;
+}
+
+// The right-hand edge of a HUD icon's ink, row by row across the readout bar, as
+// [y, x] points to clip the bar to. Rows the icon does not reach fall back to the
+// icon's middle. Measured once from the image's alpha and cached per icon.
+const edgeCache = new Map();
+function iconEdge(key, x) {
+  const img = art[key];
+  if (!img || !img.complete) return null;
+  const { w, h } = uiSize(key);
+  const top = 21 - h / 2;
+  let rows = edgeCache.get(key);
+  if (!rows) {
+    const [sx, sy, sw, sh] = ui[key].trim;
+    const c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    const g = c.getContext('2d');
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    const a = g.getImageData(0, 0, sw, sh).data;
+    rows = [];
+    for (let j = 0; j < sh; j++) {
+      let r = -1;
+      for (let i = sw - 1; i >= 0; i--) if (a[(j * sw + i) * 4 + 3] > 96) { r = i; break; }
+      rows.push(r < 0 ? null : (r + 1) / sw);
+    }
+    edgeCache.set(key, rows);
+  }
+  const pts = [];
+  const STEP = 0.5;
+  for (let y = BAR_TOP; y <= BAR_TOP + BAR_H + 1e-6; y += STEP) {
+    const j = Math.floor(((y - top) / h) * rows.length);
+    const f = j >= 0 && j < rows.length ? rows[j] : null;
+    // A hair inside the ink, so the bar tucks under the outline with no seam.
+    pts.push([y, f === null ? x + w / 2 : x + f * w - 1.5]);
+  }
+  return pts;
+}
+
+const READOUT_INK = '600 16px system-ui, sans-serif';
+function inkText(ctx, text, x) {
+  const layout = ctx.font;
+  ctx.font = READOUT_INK;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, 21);
+  ctx.font = layout;
 }
 
 // The three readouts, walked once. Returns where they end.
@@ -2903,19 +2954,28 @@ function statValue(ctx, x, value, draw = true) {
 //
 // `fillStyle` is deliberately NOT set here: what colour the readouts are is the
 // caller's business, and the drawing pass wants it inside its shadow block.
-function readouts(ctx, state, draw) {
-  ctx.font = '600 20px system-ui, sans-serif';
+function readouts(ctx, state, draw, segs = null) {
+  ctx.font = '600 17px system-ui, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   let x = 16;
+  // `segs` collects each readout's bar: from the middle of its icon, which
+  // overlaps the bar's left end, to the end of its number.
+  const icon = key => art[key] ? uiSize(key).w / 2 : 0;
+  let from = x + icon('hud_gold');
   x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold', draw), state.gold, draw);
+  segs?.push([from, x, false, 'hud_gold', 16]);
+  const lifeX = x + 26;
+  from = x + 26 + icon('hud_life');
   x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives', draw), state.lives, draw);
+  segs?.push([from, x, false, 'hud_life', lifeX]);
   // This game's own count, not a shared one: map 3 runs ten where the other two
   // run eight, and it is read off the state because that is where the waves the
   // player is actually facing live.
   const n = state.waves.length;
   const wave = `Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`;
-  if (draw) ctx.fillText(wave, x + 26, 21);
+  if (draw) inkText(ctx, wave, x + 26);
+  segs?.push([x + 26 - SCRIM_PAD, x + 26 + ctx.measureText(wave).width, true]);
   return x + 26 + ctx.measureText(wave).width;
 }
 
@@ -2942,8 +3002,8 @@ function readouts(ctx, state, draw) {
 // Lower and the palest thing on any board fails; higher and it stops being a scrim
 // and starts being a bar across the top of the artwork.
 const SCRIM_FILL = 'rgba(22,24,18,0.55)';
-const SCRIM_TOP = 4, SCRIM_BOT = 37;   // clear of the wave preview row at y 39
 const SCRIM_PAD = 10;                  // air either side of the ink it is behind
+const BAR_H = 22, BAR_TOP = 21 - BAR_H / 2;   // each readout's own bar, round the 21 midline
 
 function drawHud(ctx, state) {
   // The map artwork paints its own header strip across the top, 50px deep, so
@@ -2972,14 +3032,33 @@ function drawHud(ctx, state) {
   // has reached yet could in principle push it past that estimate and slide a dark
   // plate under a cream one. The clamp makes that unrepresentable rather than
   // unlikely; at every width the game can actually reach it changes nothing.
-  const end = Math.min(readouts(ctx, state, false) + SCRIM_PAD, HUD_BTN.pause.x - 6);
-  ctx.save();
-  ctx.fillStyle = SCRIM_FILL;
-  ctx.beginPath();
-  ctx.roundRect(16 - SCRIM_PAD, SCRIM_TOP,
-    end - 16 + SCRIM_PAD, SCRIM_BOT - SCRIM_TOP, 9);
-  ctx.fill();
-  ctx.restore();
+  // ONE BAR PER READOUT, each icon overlapping the left end of its own
+  // bar, the way Kingdom Rush hangs them. The wave count has no icon, so its bar
+  // simply wraps it.
+  const segs = [];
+  readouts(ctx, state, false, segs);
+  // SQUARE at the left where an icon sits over the end — a rounded corner there
+  // peeks out under the heart's point — and round where nothing covers it.
+  //
+  // AND CUT TO THE ICON'S OWN RIGHT EDGE, row by row, so the bar never shows in a
+  // gap INSIDE the icon — the notch at the top of the heart, the gap between the
+  // two coins. See iconEdge.
+  for (const [a, b, round, key, ix] of segs) {
+    const end = Math.min(b + SCRIM_PAD, HUD_BTN.pause.x - 6);
+    const r = BAR_H / 2;
+    const edge = key && iconEdge(key, ix);
+    if (edge) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(end, BAR_TOP);
+      for (const [y, xr] of edge) ctx.lineTo(xr, y);
+      ctx.lineTo(end, BAR_TOP + BAR_H);
+      ctx.closePath();
+      ctx.clip();
+    }
+    scrimBox(ctx, a, BAR_TOP, end - a, BAR_H, round ? r : [0, r, r, 0]);
+    if (edge) ctx.restore();
+  }
 
   // A drop shadow, not decoration. Two things sit behind this text and neither
   // is under our control: the artist's header strip, whose colour changes when
@@ -3507,17 +3586,13 @@ function drawGlyph(ctx, kind) {
 
 // The info box: who you have selected, and how they are doing.
 //
-// TOP right, with the dashboard controls centred to its left. What it shows comes
-// from selectionInfo() in select.js; health is read off the live object every
-// frame, so a soldier's bar and this number are the same fact twice.
+// BOTTOM left — see drawInfo. What it shows comes from selectionInfo() in
+// select.js; health is read off the live object every frame, so a soldier's bar
+// and this number are the same fact twice.
 //
-// Same rule as the dashboard plates: the HEIGHT is chosen — 76 holds a title and
-// two stat rows beside a 56px portrait — and the WIDTH comes from the drawing's
-// own proportions. 678x234 at 76 tall is 220.
-//
-// And this is the constraint the rows are laid out against rather than the other
-// way round: raising it to fit a third row widens the panel too, and the panel is
-// already 12px from the right edge of the board. See TITLE_BAND.
+// INFO_BOX is no longer where the panel is drawn. It is the cream plate
+// artwork's own size, kept because tools/trim.mjs still judges that file's
+// sharpness against it.
 const INFO_H = Math.round(76 * INFO_SCALE);
 const INFO_W = Math.round(INFO_H * aspect('plate_info'));
 export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art: 'plate_info' };
@@ -3528,199 +3603,114 @@ export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art:
 // heavy at 186 x 162 source, which lands at 61 x 53. 64 x 56 holds it.
 const PORTRAIT = { w: 58, h: 50 };
 
-// Everything inside the panel, at the size it came down to. These are written
-// out rather than multiplied by INFO_SCALE, because a font is not a length: 11.5
-// x 0.9 is 10.35, and the size that actually fits is a measurement.
-//
-// The binding one is the TITLE, and the string that binds it is "Trebuchet
-// Engineer" — the longest name the box can be asked to show. At 700 weight in
-// system-ui it measures 142.9px at 13, 115.4 at 10.5 and 110.0 at 10, against a
-// text column that is now 118 wide once the portrait and the plate's own border
-// are taken out. 10.5 fits with 2.6px to spare and 11 does not fit at all.
-const INFO_TITLE = 10.5;
-const INFO_ROW = 10;
-// 14, AND IT WAS 12. Twelve was what a 10px gap between the pairs left room for;
-// the gap is 6 now — see STAT_GAP — and the widest row in the panel measures 105.6
-// of the 118px column at this size, where it was 103.3 at the old twelve and the
-// old gap. The room came from the air, not from the numbers.
+// The stat icons' height. 14, AND IT WAS 12. Twelve was what a 10px gap between the pairs left room for;
+// the gap is 6 now — see STAT_GAP.
 //
 // THE SAME 14 THE BOOK USES, which is the point of moving it: a player who learns
 // what a shield means on an encyclopedia card reads the same picture at the same
-// size when they tap a man on the road. It is not the same RATIO — the panel's type
-// is 10px against the book's 12, because this plate is 68px tall and the font
-// cannot grow with the icon — so the panel is the more icon-forward of the two.
-// That is the right way round for the surface you read mid-fight.
+// size when they tap a man on the road.
 const INFO_ICON = 14;
-
-// --- WHERE THE CONTENT SITS INSIDE THE PLATE ----------------------------------
-//
-// The portrait hung off `x + 10` and the text off that plus the portrait, which
-// was right while the plate was 193 wide: the text column came out at 118 and
-// finished flush with the right edge, so there was nothing to centre.
-//
-// The owner re-drew the plate 37px wider to fit the boss, and every one of those
-// 37 pixels landed on the right — the picture and the numbers stayed jammed
-// against the left edge with a band of blank parchment beside them. Their note is
-// the fix: "shift the image and stats to the right since description box has more
-// space."
-//
-// SO THE BLOCK IS CENTRED, and its width is FIXED rather than measured. That is
-// the part that matters: centring on the actual width of each selection's longest
-// row would slide the portrait left and right as the player tapped from a thug to
-// a trebuchet engineer, and a picture that moves when nothing about the picture
-// changed reads as a fault. The block is the portrait, the gutter and the column
-// the fonts were sized against, so it is the same block for every figure in the
-// game and the margins come out even.
-const INFO_COL = 118;
-const INFO_GUTTER = 7;
-const INFO_PAD = Math.round((INFO_W - (PORTRAIT.w + INFO_GUTTER + INFO_COL)) / 2);
 
 function drawInfo(ctx, state) {
   const info = selectionInfo(state);
   if (!info) return;
 
-  const { x, y, w, h } = INFO_BOX;
-
-  // THE READOUTS' SCRIM, not the cream plate artwork, at the owner's word — the
-  // same translucent dark the gold, lives and wave sit on, with the same cream
-  // text over a soft shadow. The plate file stays in data/ui.js for its
-  // proportions, which still size the panel.
-  ctx.save();
-  ctx.fillStyle = SCRIM_FILL;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 9);
-  ctx.fill();
-  ctx.restore();
-
-  // The figure, at the shared portrait scale rather than fitted to the slot.
-  // Drawn from its own sprite trim, so a re-export moves the portrait with the
-  // board art and there is no second set of pictures to keep in step.
-  // With the same cream halo round the figure as the wave preview's, so a unit's
-  // picture reads the same wherever it is shown.
+  // BOTTOM LEFT: the figure in a round medallion, and beside it one line — the
+  // name, then every stat — on the readouts' scrim. The line is as long as what
+  // it says.
+  //
+  // THE MEDALLION AND ITS BAR ARE ONE PIECE, the way Kingdom Rush hangs a
+  // portrait off the end of its name bar: the bar starts under the middle of the
+  // medallion, and the text starts just past it.
+  const BOTTOM = 540 - 12;
   const img = info.sprite && art[info.sprite];
+  let dw = PORTRAIT.w, dh = PORTRAIT.h;
+  if (img && info.trim) {
+    const [, , sw, sh] = info.trim;
+    dw = sw * SCALE * INFO_PORTRAIT;
+    dh = sh * SCALE * INFO_PORTRAIT;
+  }
+  // A ROUND MEDALLION the figure stands in, and the bar's bottom edge on the
+  // line of its ground shadow, so the figure reads as standing on the bar.
+  const R = 32;
+  const cx = 12 + R, cy = BOTTOM - R;
+  const feet = cy + 22;
+  const barX = cx;
+  const lx = cx + R + 6;
+
+  // What the line says, in order: health (or a tower's attack and reach), the
+  // attack beside it, then what it wears or breaks.
+  const items = [];
+  if (info.hp !== null) {
+    const frac = info.maxHp ? info.hp / info.maxHp : 1;
+    items.push(['stat_health', `${info.hp}/${info.maxHp}`,
+      frac > 0.5 ? PANEL_GREEN : frac > 0.25 ? PANEL_AMBER : PANEL_RED]);
+    if (info.damage !== null)
+      items.push([info.attack || 'stat_damage', String(info.damage), PANEL_INK]);
+  } else if (info.damage !== null) {
+    items.push([info.attack || 'stat_damage', String(info.damage), PANEL_INK]);
+    if (info.range !== null) items.push(['stat_range', String(info.range), PANEL_INK]);
+  }
+  for (const [key, value] of info.traits) items.push([key, String(value), PANEL_INK]);
+
+  const LINE_H = 28, LINE_PAD = 10, NAME_GAP = 12, ITEM_GAP = 10;
+  const NAME_FONT = '700 13px system-ui, sans-serif';
+  const STAT_FONT = '700 12px system-ui, sans-serif';
+  ctx.save();
+  ctx.font = NAME_FONT;
+  const nameW = ctx.measureText(info.title).width;
+  ctx.font = STAT_FONT;
+  const slotOf = key => Math.max(STAT_COL, uiSize(key, { h: INFO_ICON }).w);
+  const statsW = items.reduce((n, [key, text]) =>
+    n + slotOf(key) + STAT_PAD + ctx.measureText(text).width, 0)
+    + Math.max(0, items.length - 1) * ITEM_GAP;
+  const lw = LINE_PAD + nameW + (items.length ? NAME_GAP + statsW : 0);
+  const ly = feet - LINE_H;
+  // The bar is cut away where the medallion covers it, so the see-through
+  // medallion does not show a stripe of the bar through it.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, 960, 540);
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.clip('evenodd');
+  scrimBox(ctx, barX, ly, lx + lw - barX, LINE_H);
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  // Cream inside, a dark ring, at the transport buttons' own opacity. No cream
+  // halo on the figure here — on cream it would be an outline nobody can see.
+  ctx.fillStyle = HUD_PLATE;
+  ctx.fill();
+  ctx.strokeStyle = HUD_PLATE_EDGE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
-    const dw = sw * SCALE * INFO_PORTRAIT;
-    const dh = sh * SCALE * INFO_PORTRAIT;
-    drawHaloed(ctx, img, info.trim,
-      x + INFO_PAD + (PORTRAIT.w - dw) / 2,
-      y + h / 2 - dh / 2,
-      dw, dh);
+    ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
   }
 
-  // THE TEXT COLUMN. Every tower used to be captioned with its tier — "Archers
-  // Tier I" — and the longest of those is 18px shorter than "Trebuchet
-  // Engineer". Naming the MAN instead was the right call and it is what put this
-  // column under pressure; the gutters either side of the portrait are as tight
-  // as they read at, and the font does the rest.
-  const tx = x + INFO_PAD + PORTRAIT.w + INFO_GUTTER;
-  ctx.save();
+  const mid = ly + LINE_H / 2;
   ctx.shadowColor = 'rgba(12,14,10,0.85)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-
-  // The whole block is CENTRED in the panel rather than hung from the top, so a
-  // swordsman's two rows and an archer thug's three both sit in the middle of the
-  // plate instead of the last one crowding the bottom edge. That is why the rows
-  // are counted before anything is drawn.
-  //
-  // TWO ROWS AT MOST, and the pair on each of them shares a line rather than
-  // taking one of its own — the same rows the encyclopedia prints, which is the
-  // point: a player who learns the layout on the page reads it unchanged on the
-  // board. Health is still the only stat that adds a line, and what it adds is now
-  // the armour row underneath it:
-  //
-  //   a figure   health + attack   over   physical armour + magic armour
-  //   a tower    attack + reach    alone
-  //
-  // Which is the whole of the owner's layout, both halves of it. A tower has no
-  // health to print because nothing can hurt it, and a figure has no reach to
-  // print because the row it would have sat in is the trait row's.
-  //
-  // TWO ROWS FOR EVERYTHING, and it counted them for one build. A tower took one
-  // row and a figure two, so the two kinds of panel put their titles on different
-  // lines — and worse, the trait row was only drawn on the branch that had counted
-  // it, which is how a Cannon Outpost came to print its 65 and its 360 and say
-  // nothing at all about the two ranks it breaks or the 85 it scatters over. It was
-  // the panel a player looks at while deciding to build one.
-  //
-  // The owner's rule settles it in the general case as well as the case they were
-  // looking at: "don't shift the text to the middle when the bottom line is empty".
-  // Every panel is a title over two lines, and a line with nothing in it is a line
-  // with nothing in it.
-  const rows = 2;
-  const top = y + (h - (TITLE_BAND + rows * ROW_PITCH)) / 2;
-
-  // See INFO_TITLE for why it is 10.5 and not a round number.
-  //
-  // The check on it is the browser and not a tool: node has no canvas, so there
-  // is nothing outside one that can measure a font. If a name longer than
-  // "Trebuchet Engineer" is ever added, look at the box.
   ctx.fillStyle = PANEL_INK;
-  ctx.font = `700 ${INFO_TITLE}px system-ui, sans-serif`;
-  ctx.fillText(info.title, tx, top + TITLE_BAND / 2);
+  ctx.font = NAME_FONT;
+  ctx.fillText(info.title, lx, mid + 1);
+  ctx.font = STAT_FONT;
+  let ax = lx + nameW + NAME_GAP;
+  for (const [key, text, colour] of items)
+    ax = infoStat(ctx, key, ax, mid + 1, text, colour) + ITEM_GAP;
+  ctx.restore();
+}
 
-  // The rows are ICONS, not the words "Health:", "Damage:" and "Range:". Each
-  // sits in a column STAT_COL wide so the numbers beside them line up whether the
-  // row above is there or not — a tower has no health row, and a damage figure
-  // that shifted left on towers and right on units would read as two layouts.
-  // Down with the title, so the panel still reads as a heading over two stat
-  // rows rather than as three lines of the same weight.
-  ctx.font = `700 ${INFO_ROW}px system-ui, sans-serif`;
-  let ty = top + TITLE_BAND + ROW_PITCH / 2;
-
-  const ink = PANEL_INK;
-
-  // A CARD WITH NOTHING TO SAY, and the only one in the game: a villager. Both
-  // numbers are null, so there is no health row and no attack row to draw, and the
-  // panel is his picture over his name. See selectionInfo.
-  //
-  // ASKED AS A PAIR rather than on `damage` alone, because a null damage on its own
-  // could only ever be a mistake somewhere else — a tower or a figure that had lost
-  // its number — and drawing nothing would hide it. Two nulls together is a shape
-  // no other branch produces.
-  if (info.hp === null && info.damage === null) {
-    // Nothing. The title is already drawn and the rows below it stay empty, which
-    // is the same thing an empty trait row does — see the note on `rows`.
-  } else if (info.hp !== null) {
-    // Reddens as it drops, on the same thresholds as the health bars over their
-    // heads, so the two readings agree at a glance.
-    const frac = info.maxHp ? info.hp / info.maxHp : 1;
-    const hx = infoStat(ctx, 'stat_health', tx, ty, `${info.hp}/${info.maxHp}`,
-      frac > 0.5 ? PANEL_GREEN : frac > 0.25 ? PANEL_AMBER : PANEL_RED);
-    // THE ATTACK BESIDE THE HEALTH, at the owner's word — "move attack damage icon
-    // beside health". It read down the left edge under it before, which left the
-    // right half of both rows empty and cost the line the trait row now has.
-    // NO SWORD FOR A CREATURE WITH NOTHING TO HIT WITH. See `strikes`.
-    if (info.damage !== null)
-      infoStat(ctx, info.attack || 'stat_damage', hx + STAT_GAP, ty, String(info.damage), ink);
-  } else {
-    // A TOWER, whose attack keeps the first row and whose reach keeps the place
-    // beside it. The pair reads as it does on an encyclopedia card — attack and
-    // reach are the two halves of one question and a player comparing towers reads
-    // them together.
-    //
-    // Measured in the browser rather than by a tool, for the reason INFO_TITLE
-    // gives: node has no canvas to set a font in. See tools/book.mjs for the same
-    // measurement made pessimistically on the encyclopedia's own rows.
-    const dx = infoStat(ctx, info.attack || 'stat_damage', tx, ty, String(info.damage), ink);
-    if (info.range !== null)
-      infoStat(ctx, 'stat_range', dx + STAT_GAP, ty, String(info.range), ink);
-  }
-
-  // AND THE SECOND LINE, WHICHEVER KIND OF PANEL THIS IS: what it wears, what it
-  // breaks, how wide it scatters. Often empty — a spearman wears nothing, a
-  // Watchtower breaks nothing — and drawn as an empty line when it is.
-  //
-  // Never coloured by how much a rank lets through. Green plate would read as a
-  // buff rather than as a fact about the figure, and the one colour scale in this
-  // panel already means health.
-  ty += ROW_PITCH;
-  let ax = tx;
-  for (const [key, value] of info.traits)
-    ax = infoStat(ctx, key, ax, ty, String(value), ink) + STAT_GAP;
+function scrimBox(ctx, x, y, w, h, r = 9) {
+  ctx.save();
+  ctx.fillStyle = SCRIM_FILL;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -3762,24 +3752,13 @@ function infoStat(ctx, key, x, y, text, colour) {
   // So a wide icon takes the room it needs and shifts only its OWN number. See the
   // note beside stat_splash in data/ui.js.
   const slot = Math.max(STAT_COL, uiSize(key, { h: INFO_ICON }).w);
-  drawUi(ctx, key, x + slot / 2, y, { h: INFO_ICON }, HALF, true);
+  drawUi(ctx, key, x + slot / 2, y, { h: INFO_ICON });
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = colour;
   ctx.fillText(text, x + slot + STAT_PAD, y);
   return x + slot + STAT_PAD + ctx.measureText(text).width;
 }
-
-// How much vertical room the title takes, and the pitch between stat rows. 18 is
-// a 12px icon with 6 of air, which is the tightest the hearts and swords can sit
-// without touching. Both came down with the panel.
-//
-// STILL TWO ROWS at the most, which is why these are where they were: reach went
-// in beside the attack rather than under it, so the panel never grew a third
-// line. It could not have afforded one — 20 + 3x18 is 74 in a plate 68 tall, and
-// the plate cannot get taller without getting wider. See INFO_H.
-const TITLE_BAND = 20;
-const ROW_PITCH = 18;
 
 // The title screen, and the reason it exists.
 //

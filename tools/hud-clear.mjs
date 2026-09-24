@@ -25,7 +25,7 @@
 
 import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
-import { HUD_BTN, INFO_BOX, STAR_R, STAR_LIFT, tierMarks, ringLift, badgeTop }
+import { HUD_BTN, STAR_R, STAR_LIFT, tierMarks, ringLift, badgeTop }
   from '../src/render.js';
 import { crownTop } from '../src/towers.js';
 
@@ -150,7 +150,11 @@ const CONTROLS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, 
 //
 // Reported rather than silent, so a plot that ends up half a building deep is
 // still visible here. A CONTROL is still a failure — see above.
-const PANELS = [['info', INFO_BOX]].map(([id, b]) => [b.x, b.w, b.y + b.h, id]);
+//
+// EMPTY NOW: the description panel moved to the BOTTOM left, at the owner's word,
+// so nothing hangs over the top of the board any more. The list and the report
+// stay for the day a panel goes back up there.
+const PANELS = [];
 
 // Same geometry as towerBox(): a building hangs off its ground shadow, whose
 // centre sits on the plot point.
