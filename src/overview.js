@@ -1218,7 +1218,7 @@ export function drawOverview(ctx, state) {
   // stay still.
   drawMotion(ctx, now);
   // And the towns the player has reached, alive — see src/life.js.
-  drawLife(ctx, now, unlocked, base, stillKey);
+  drawLife(ctx, now, unlocked, base);
 
   // THE REGION NAMES, OVER ALL OF IT. They are a second image for exactly this
   // reason: the parchment is a multiply, so a name inside the map picks up whatever

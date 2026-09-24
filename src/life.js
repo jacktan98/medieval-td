@@ -17,7 +17,7 @@
 import { art } from './assets.js';
 
 const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true, trees: true,
-             forest: true, birds: true, tumbleweeds: true, pristine: true, heat: true };
+             forest: true, birds: true, tumbleweeds: true, pristine: true };
 
 // The first stage of each town, by index into STAGES — the town wakes when the
 // player has reached it.
@@ -472,7 +472,7 @@ function drawBirds(ctx, t, unlocked) {
   ctx.lineWidth = 1.1;
   const now = Math.floor(t / BIRD_SLOT);
   for (const n of [now - 1, now]) {
-    if (hash(n * 3.1 + 7) < 0.34) continue;            // about a third of the slots are empty
+    if (hash(n * 3.1 + 7) < 0.30) continue;            // seven slots in ten carry a flock
     const start = n * BIRD_SLOT + hash(n * 5.7) * (BIRD_SLOT - FLIGHT);
     const q = (t - start) / FLIGHT;
     if (q < 0 || q > 1) continue;
@@ -516,7 +516,7 @@ function drawTumbleweeds(ctx, t, unlocked) {
   const now = Math.floor(t / WEED_SLOT);
   for (const n of [now - 1, now]) {
     const roll = hash(n * 4.7 + 3);
-    const count = roll < 0.28 ? 0 : roll < 0.68 ? 1 : roll < 0.9 ? 2 : 3;
+    const count = roll < 0.2 ? 0 : roll < 0.62 ? 1 : roll < 0.88 ? 2 : 3;   // eight in ten carry some
     for (let i = 0; i < count; i++) {
       const pace = 0.75 + hash(n * 7 + i) * 0.5;
       const dur = ROLL / pace;
@@ -548,99 +548,6 @@ function drawTumbleweeds(ctx, t, unlocked) {
     }
   }
   ctx.restore();
-}
-
-// --- heat over Sandshroud --------------------------------------------------------
-//
-// THE AIR OVER THE SAND WOBBLES. The desert is taken off the still map a row at a
-// time and put back pushed a fraction of a pixel sideways, by ripples that climb as
-// hot air does — so the dunes, the cacti and the town seem to quiver. Cut to the
-// sand itself, found by its one flat colour, so the river and the woods beside it
-// stay still. Wakes with Sandshroud.
-const DESERT = { x: 0, y: 322, w: 400, h: 218 };
-const SAND = [233, 211, 179];
-let heat = null, heatMask = null, heatFrom = null, heatSrc = null;
-
-function drawHeat(ctx, t, unlocked, src, srcKey) {
-  if (!awake('sandshroud', unlocked) || !src) return;
-  const img = art.overview;
-  if (!img) return;
-  const m = ctx.getTransform(), k = m.a;
-  const { x, y, w, h } = DESERT;
-  const sw = Math.ceil(w * k), sh = Math.ceil(h * k);
-  if (heatFrom !== `${img.src}|${sw}x${sh}`) {
-    heatFrom = `${img.src}|${sw}x${sh}`;
-    // The sand's own shape: its colour, anywhere in the box, with a soft edge.
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    g.drawImage(img, x * 2, y * 2, w * 2, h * 2, 0, 0, w, h);
-    const d = g.getImageData(0, 0, w, h);
-    const px = d.data;
-    let on = new Uint8Array(w * h);
-    for (let i = 0; i < w * h; i++) {
-      const j = i * 4;
-      on[i] = Math.abs(px[j] - SAND[0]) < 14 && Math.abs(px[j + 1] - SAND[1]) < 14 &&
-        Math.abs(px[j + 2] - SAND[2]) < 14 ? 1 : 0;
-    }
-    // CLOSED, so the things drawn ON the sand shimmer with it — the dune lines and
-    // the cacti are what make the wobble visible, and on flat sand alone there is
-    // nothing to see move. Grown by R and shrunk back by R: every gap narrower than
-    // twice R is filled, and the outer edge against the river and the woods comes
-    // back to where it was.
-    const R = 5;
-    const grow = (src, keep) => {
-      const tmp = new Uint8Array(w * h), out = new Uint8Array(w * h);
-      for (let y2 = 0; y2 < h; y2++) for (let x2 = 0; x2 < w; x2++) {
-        let v = keep;
-        for (let d = -R; d <= R && v === keep; d++) {
-          const xx = x2 + d;
-          // Off the box counts as not-sand, so the shrink pulls the edge back there too.
-          if (xx < 0 || xx >= w ? keep === 1 : src[y2 * w + xx] !== keep) v = 1 - keep;
-        }
-        tmp[y2 * w + x2] = v;
-      }
-      for (let y2 = 0; y2 < h; y2++) for (let x2 = 0; x2 < w; x2++) {
-        let v = keep;
-        for (let d = -R; d <= R && v === keep; d++) {
-          const yy = y2 + d;
-          if (yy < 0 || yy >= h ? keep === 1 : tmp[yy * w + x2] !== keep) v = 1 - keep;
-        }
-        out[y2 * w + x2] = v;
-      }
-      return out;
-    };
-    on = grow(grow(on, 0), 1);
-    for (let i = 0; i < w * h; i++) {
-      px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = 0;
-      px[i * 4 + 3] = on[i] ? 255 : 0;
-    }
-    g.putImageData(d, 0, 0);
-    heatMask = c;
-    heat = document.createElement('canvas');
-    heat.width = sw; heat.height = sh;
-    heatSrc = null;
-  }
-  // THE DESERT CUT OUT ONCE, from the still map, whenever the still map changes —
-  // not cut again every frame. Each frame only copies rows from it.
-  if (heatSrc !== srcKey) {
-    heatSrc = srcKey;
-    const g = heat.getContext('2d');
-    g.globalCompositeOperation = 'source-over';
-    g.clearRect(0, 0, sw, sh);
-    g.drawImage(src, x * k + m.e, y * k + m.f, sw, sh, 0, 0, sw, sh);
-    g.globalCompositeOperation = 'destination-in';
-    g.drawImage(heatMask, 0, 0, sw, sh);
-    g.globalCompositeOperation = 'source-over';
-  }
-  // Three device rows at a time: finer than the eye can count, far fewer copies.
-  const STEP = 3;
-  for (let r = 0; r < sh; r += STEP) {
-    const Y = y + r / k;
-    const dx = 0.55 * Math.sin(Y * 0.55 + t * 3.2) * (0.6 + 0.4 * Math.sin(Y * 0.07 - t * 0.9))
-      + 0.25 * Math.sin(Y * 1.3 + t * 5.1);
-    ctx.drawImage(heat, 0, r, sw, STEP, x + dx, Y, w, STEP / k);
-  }
 }
 
 // --- Serene Peak, pristine -------------------------------------------------------
@@ -687,7 +594,7 @@ export function drawPristine(ctx) {
 // Called from src/overview.js over the map and under the names and the fog.
 // `unlocked` is how many stages the player has reached.
 // `src` is the still map the towns stand on — see stillMap in src/overview.js.
-export function drawLife(ctx, t, unlocked, src, srcKey = '') {
+export function drawLife(ctx, t, unlocked, src) {
   if (ON.trees) drawTrees(ctx, t, unlocked, src);
   if (ON.banners) drawBanners(ctx, t, unlocked, src);
   if (ON.fire) drawFire(ctx, t, unlocked);
@@ -697,5 +604,4 @@ export function drawLife(ctx, t, unlocked, src, srcKey = '') {
   if (ON.forest) drawForest(ctx, t, unlocked, src);
   if (ON.birds) drawBirds(ctx, t, unlocked);
   if (ON.tumbleweeds) drawTumbleweeds(ctx, t, unlocked);
-  if (ON.heat) drawHeat(ctx, t, unlocked, src, srcKey);
 }

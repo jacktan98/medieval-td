@@ -466,7 +466,7 @@ function spawn(f) {
     if (Math.random() > 1 / (1 + b / 14)) continue;
     const life = 2.6 + Math.random() * 2.6;
     return { x: (i % f.W) * R, y: ((i / f.W) | 0) * R, age: Math.random() * life * 0.5, life,
-             len: 5 + Math.random() * 6, a: 0.22 + Math.random() * 0.2, glint: false };
+             len: 5 + Math.random() * 6, a: 0.29 + Math.random() * 0.26, glint: false };
   }
   return null;
 }
@@ -518,7 +518,7 @@ function paintGlints(g, f, dt, t) {
     if (f.bank[i] < 3) continue;
     glints.push({ x: (i % f.W) * R, y: ((i / f.W) | 0) * R, age: -Math.random() * 3, life: 0.7 + Math.random() * 0.5 });
   }
-  g.fillStyle = 'rgba(255,253,244,0.6)';
+  g.fillStyle = 'rgba(255,253,244,0.78)';
   for (let k = glints.length - 1; k >= 0; k--) {
     const s = glints[k];
     s.age += dt;
@@ -553,7 +553,7 @@ function paintRings(g, f, dt) {
     for (const lag of [0, 0.25]) {
       const q = p - lag;
       if (q <= 0) continue;
-      g.strokeStyle = `rgba(255,252,240,${0.32 * (1 - q)})`;
+      g.strokeStyle = `rgba(255,252,240,${0.42 * (1 - q)})`;
       g.beginPath();
       g.ellipse(r.x, r.y, 2 + q * 11, (2 + q * 11) * 0.45, 0, 0, Math.PI * 2);
       g.stroke();
