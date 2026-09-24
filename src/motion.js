@@ -615,10 +615,10 @@ function drawCurrents(ctx, t) {
 // the streaks are cut to it; the corners below only aim the lanes, which lean
 // with the water — south a little west, as FALLS_FLOW says.
 const FALLING = true;
-const FACE_PATH = 1;          // FALLS: the lake, the sheet, then three splash shapes
-const SPLASH_LAST = 4;
-const LIP = [[668, 104], [721, 115]];      // where the water goes over, left to right
-const FOOT = [[634, 176], [697, 186]];     // where it lands
+const FACE_PATH = 1;          // FALLS: the lake, the sheet, then the splash; then the fountain
+const SPLASH_LAST = 2;
+const LIP = [[666, 111], [714, 119]];      // where the water goes over, left to right
+const FOOT = [[637, 177], [692, 186]];     // where it lands
 const LANES = 34;
 const STREAK_TINT = '255,251,240';
 const SHADE_TINT = '84,94,96';
