@@ -132,6 +132,9 @@ function bounds(list) {
 
 let maskFrom = null, fallsBox = null;
 let river = null, falls = null;      // { mask, layer, rect } per group
+let face = null;                     // the falling sheet alone, for drawFalls
+let lake = null;                     // Serene Peak's lake alone, for drawCurrents
+let riverFlow = null, lakeFlow = null;
 
 const sheet = (w = 960, h = 540) => {
   const c = document.createElement('canvas');
@@ -193,14 +196,27 @@ function buildMasks(img) {
   g.putImageData(px, 0, 0);
 
   // The falls: their own outlines, kept only where the map agrees there is water.
-  const fallsMask = sheet();
-  const fg = fallsMask.getContext('2d');
-  fg.setTransform(0.5, 0, 0, 0.5, 0, 0);
-  fg.fillStyle = '#000';
-  for (const dd of FALLS) fg.fill(new Path2D(dd));
-  fg.setTransform(1, 0, 0, 1, 0, 0);
-  fg.globalCompositeOperation = 'destination-in';
-  fg.drawImage(wet, 0, 0);
+  //
+  // EXCEPT THE SHEET AND ITS SPLASH, which drawFalls animates as falling water
+  // rather than as light drifting over a surface. The bands stay on the lake that
+  // feeds it and on the fountain, and the river mask below still leaves the sheet
+  // out, so nothing else moves on it.
+  const cut = (list, into) => {
+    const g2 = into.getContext('2d');
+    g2.setTransform(0.5, 0, 0, 0.5, 0, 0);
+    g2.fillStyle = '#000';
+    for (const dd of list) g2.fill(new Path2D(dd));
+    g2.setTransform(1, 0, 0, 1, 0, 0);
+    g2.globalCompositeOperation = 'destination-in';
+    g2.drawImage(wet, 0, 0);
+    return into;
+  };
+  const fallsMask = cut(FALLS, sheet());
+  const faceMask = cut(FALLS.slice(FACE_PATH, FACE_PATH + 1), sheet());
+  // The bands now only light the fountain: the lake and the rivers carry
+  // currents instead — see drawCurrents.
+  const bandMask = cut(FALLS.filter((_, i) => i > SPLASH_LAST), sheet());
+  const lakeMask = cut(FALLS.slice(0, 1), sheet());
 
   // And the rivers: everything else that is wet.
   const riverMask = sheet();
@@ -210,7 +226,26 @@ function buildMasks(img) {
   rg.drawImage(fallsMask, 0, 0);
 
   river = group(riverMask);
-  falls = group(fallsMask);
+  falls = group(bandMask);
+  face = group(faceMask);
+  lake = group(lakeMask);
+  // Which way the water runs at every pixel. The rivers run to the sea off the
+  // left-hand edge; the lake runs to the lip of the falls.
+  // And it comes FROM the foot of the falls, which is what sends the arm round
+  // the south of Dawnford downstream: measured from the sea alone, the top of that
+  // arm is nearer the sea back past the falls, and ran uphill.
+  const [fx, fy] = mix(FOOT[0], FOOT[1], 0.5);
+  riverFlow = flowField(riverMask, (x, y) => x <= 1, (x, y) => Math.hypot(x - fx, y - fy) < 22);
+  const lip = faceMask.getContext('2d').getImageData(0, 0, 960, 540).data;
+  lakeFlow = flowField(lakeMask, (x, y) => {
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const X = x + dx, Y = y + dy;
+      if (X >= 0 && X < 960 && Y >= 0 && Y < 540 && lip[(Y * 960 + X) * 4 + 3] > 8) return true;
+    }
+    return false;
+  });
+  currents.river.length = 0;
+  currents.lake.length = 0;
   fallsBox = bounds(FALLS);
   maskFrom = img;
 }
@@ -283,10 +318,444 @@ function drawShimmer(ctx, t) {
   if (!img || (!RIVERS.length && !FALLS.length)) return;
   if (maskFrom !== img) buildMasks(img);
 
-  // The rivers get the whole artboard to travel across; the mask decides where
-  // that actually lands.
-  if (river) pass(ctx, t, RIVER_BANDS, WHOLE_BOARD, RIVER_FLOW, river);
+  // The rivers and the lake carry currents; the bands are left to the fountain.
+  if (!CURRENTS && river) pass(ctx, t, RIVER_BANDS, WHOLE_BOARD, RIVER_FLOW, river);
   if (falls) pass(ctx, t, FALL_BANDS, fallsBox, FALLS_FLOW, falls);
+  if (CURRENTS) drawCurrents(ctx, t);
+  if (FALLING) drawFalls(ctx, t);
+}
+
+// --- the currents ------------------------------------------------------------
+//
+// THE LAKE AND THE RIVER BELOW THE FALLS, AS MOVING WATER, at the owner's ask.
+// Bands of light drifting due west said "water" but not which way any of it went:
+// the arm that runs south round Dawnford drifted sideways across its own banks.
+//
+// So each body of water gets a FLOW FIELD, worked out once from the map itself:
+// the distance from every wet pixel to where the water leaves — the sea off the
+// left-hand edge for the rivers, the lip of the falls for the lake — measured
+// round the islands rather than through them. Downhill on that distance is the
+// way the water runs, so a current follows every channel, splits round Dawnford
+// and meets again, and nothing here needed a line drawn by hand.
+//
+// On that field ride CURRENT MARKS — short pale strokes, each drifting along the
+// flow for a few seconds and fading in and out — faster where a channel is
+// narrow and lazy where it opens into the sea. The lake's run slow in the middle
+// and gather speed as they are drawn to the lip. And GLINTS: sunlight catching the
+// surface for a moment here and there. Everything is cut to the water's own
+// pixels, so no mark crosses a bank or a bridge.
+const CURRENTS = true;
+const RIVER_MARKS = 260, LAKE_MARKS = 28;
+const RIVER_SPEED = 11, LAKE_SPEED = 3.2;          // canvas px a second, in open water
+const GLINTS = 9;
+const currents = { river: [], lake: [] };
+let lastT = null;
+
+// Distance round the water from `sink`, and distance to the nearest bank. Chamfer
+// sweeps, repeated until nothing changes, so the distance goes round an island
+// rather than through it.
+//
+// AT HALF RESOLUTION, a quarter of the pixels: a full-size field took most of a
+// second to build the first time the map opened. The currents are a few px long
+// and a direction every 2px is more than they can show. `R` is that factor, and
+// `sink` and `source` are still asked in canvas px.
+const R = 2;
+function flowField(mask, sink, source = null) {
+  const W = 960 / R, H = 540 / R, N = W * H;
+  const small = sheet(W, H);
+  const sg = small.getContext('2d', { willReadFrequently: true });
+  sg.imageSmoothingEnabled = false;
+  sg.drawImage(mask, 0, 0, W, H);
+  const a = sg.getImageData(0, 0, W, H).data;
+  const wet = new Uint8Array(N);
+  let x0 = W, y0 = H, x1 = 0, y1 = 0;
+  for (let i = 0; i < N; i++) if (a[i * 4 + 3] > 8) {
+    wet[i] = 1;
+    const x = i % W, y = (i / W) | 0;
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+  }
+  // Only the water's own box is swept, with a margin for the banks.
+  x0 = Math.max(0, x0 - 10); y0 = Math.max(0, y0 - 10);
+  x1 = Math.min(W - 1, x1 + 10); y1 = Math.min(H - 1, y1 + 10);
+  const INF = 1e9;
+  const dist = new Float32Array(N).fill(INF);
+  const from = new Float32Array(N).fill(INF);
+  const bank = new Float32Array(N).fill(INF);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const i = y * W + x;
+    if (!wet[i]) bank[i] = 0;
+    else {
+      if (sink(x * R, y * R)) dist[i] = 0;
+      if (source && source(x * R, y * R)) from[i] = 0;
+    }
+  }
+  // UNDER THE BRIDGES. A bridge is drawn over the river, so its deck is not water
+  // and the channel reads as cut in two — the water above it could find no way to
+  // the sea. So the distance is let across dry ground too, but at DRY times the
+  // price: a bridge's width is cheap to cross, an island costs far more than
+  // going round it, and marks only ever travel on the wet pixels anyway.
+  const DRY = 9;
+  const cost = i => (wet[i] ? 1 : DRY);
+  const sweep = (f, weighted) => {
+    let changed = false;
+    const pass = (ys, ye, dy, xs, xe, dx) => {
+      for (let y = ys; y !== ye; y += dy) for (let x = xs; x !== xe; x += dx) {
+        const i = y * W + x;
+        const c = weighted ? cost(i) : 1;
+        let v = f[i];
+        const px = x - dx, py = y - dy;
+        if (px >= x0 && px <= x1) { const u = f[i - dx] + c; if (u < v) v = u; }
+        if (py >= y0 && py <= y1) {
+          const u = f[i - dy * W] + c; if (u < v) v = u;
+          if (px >= x0 && px <= x1) { const w = f[i - dy * W - dx] + c * Math.SQRT2; if (w < v) v = w; }
+          const qx = x + dx;
+          if (qx >= x0 && qx <= x1) { const w = f[i - dy * W + dx] + c * Math.SQRT2; if (w < v) v = w; }
+        }
+        if (v < f[i]) { f[i] = v; changed = true; }
+      }
+    };
+    pass(y0, y1 + 1, 1, x0, x1 + 1, 1);
+    pass(y1, y0 - 1, -1, x1, x0 - 1, -1);
+    return changed;
+  };
+  for (let k = 0; k < 60 && sweep(dist, true); k++);
+  if (source) {
+    for (let k = 0; k < 60 && sweep(from, true); k++);
+    // BOTH ENDS AT ONCE: the share of the way from the source to the sea. It is 1
+    // at the falls and 0 at the sea, and falls on every branch between them — so
+    // water leaves the falls down both arms and meets the sea from both.
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = y * W + x;
+      if (dist[i] < INF && from[i] < INF) dist[i] = 1000 * dist[i] / (dist[i] + from[i] + 1e-3);
+    }
+  } else {
+    for (let i = 0; i < N; i++) if (dist[i] < INF) dist[i] *= R;
+  }
+  sweep(bank, false);
+  for (let i = 0; i < N; i++) if (bank[i] < INF) bank[i] *= R;
+  const cells = [];
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const i = y * W + x;
+    if (wet[i] && dist[i] < INF) cells.push(i);
+  }
+  return { wet, dist, bank, cells, INF, W, H };
+}
+
+// The way the water runs at (x, y): down the distance, a few px either side so a
+// single pixel's rounding does not turn a mark round. Null off the water.
+function flowAt(f, x, y) {
+  const W = f.W, xi = Math.round(x / R), yi = Math.round(y / R);
+  if (xi < 2 || yi < 2 || xi > W - 3 || yi > f.H - 3) return null;
+  const i = yi * W + xi;
+  if (!f.wet[i] || f.dist[i] >= f.INF) return null;
+  const at = (dx, dy) => { const d = f.dist[i + dy * W + dx]; return d >= f.INF ? f.dist[i] : d; };
+  const gx = at(-2, 0) - at(2, 0), gy = at(0, -2) - at(0, 2);
+  const m = Math.hypot(gx, gy);
+  if (m < 1e-3) return null;
+  return [gx / m, gy / m, f.bank[i], f.dist[i]];
+}
+
+// A new mark somewhere on the water, favouring the channels over the open sea so
+// the sea does not take every mark there is.
+function spawn(f) {
+  for (let tries = 0; tries < 12; tries++) {
+    const i = f.cells[(Math.random() * f.cells.length) | 0];
+    const b = f.bank[i];
+    if (b < 1.5) continue;
+    if (Math.random() > 1 / (1 + b / 14)) continue;
+    const life = 2.6 + Math.random() * 2.6;
+    return { x: (i % f.W) * R, y: ((i / f.W) | 0) * R, age: Math.random() * life * 0.5, life,
+             len: 5 + Math.random() * 6, a: 0.22 + Math.random() * 0.2, glint: false };
+  }
+  return null;
+}
+
+function step(list, f, want, speed, dt, lakeRun) {
+  while (list.length < want) { const m = spawn(f); if (!m) break; list.push(m); }
+  for (let k = list.length - 1; k >= 0; k--) {
+    const m = list[k];
+    m.age += dt;
+    const v = flowAt(f, m.x, m.y);
+    if (!v || m.age > m.life) { list.splice(k, 1); continue; }
+    const [dx, dy, bank, dist] = v;
+    // Narrow water runs fast and wide water lazily; the lake quickens to the lip.
+    let s = speed * Math.max(0.35, Math.min(1.5, 1.6 - bank / 22));
+    if (lakeRun) s = speed * (1 + 7 * Math.exp(-dist / 22));
+    m.vx = dx; m.vy = dy; m.s = s;
+    m.x += dx * s * dt;
+    m.y += dy * s * dt;
+  }
+}
+
+function paintMarks(g, list) {
+  g.lineCap = 'round';
+  for (const m of list) {
+    if (m.vx === undefined) continue;
+    const k = m.age / m.life;
+    const a = m.a * Math.sin(Math.PI * Math.min(1, k));
+    if (a <= 0.01) continue;
+    const len = m.len * (0.8 + m.s / 14);
+    // A shallow crescent across the flow rather than a straight dash, which is how
+    // a map draws moving water.
+    const nx = -m.vy, ny = m.vx;
+    const x1 = m.x - m.vx * len, y1 = m.y - m.vy * len;
+    g.strokeStyle = `rgba(255,252,240,${a})`;
+    g.lineWidth = 1.05;
+    g.beginPath();
+    g.moveTo(x1, y1);
+    g.quadraticCurveTo((x1 + m.x) / 2 + nx * 1.4, (y1 + m.y) / 2 + ny * 1.4, m.x, m.y);
+    g.stroke();
+  }
+}
+
+// Sunlight caught on the water: a small four-pointed sparkle that swells and goes.
+const glints = [];
+function paintGlints(g, f, dt, t) {
+  while (glints.length < GLINTS) {
+    const i = f.cells[(Math.random() * f.cells.length) | 0];
+    if (f.bank[i] < 3) continue;
+    glints.push({ x: (i % f.W) * R, y: ((i / f.W) | 0) * R, age: -Math.random() * 3, life: 0.7 + Math.random() * 0.5 });
+  }
+  g.fillStyle = 'rgba(255,253,244,0.6)';
+  for (let k = glints.length - 1; k >= 0; k--) {
+    const s = glints[k];
+    s.age += dt;
+    if (s.age > s.life) { glints.splice(k, 1); continue; }
+    if (s.age < 0) continue;
+    const r = 2.2 * Math.sin(Math.PI * s.age / s.life);
+    g.globalAlpha = Math.sin(Math.PI * s.age / s.life);
+    g.beginPath();
+    g.moveTo(s.x - r, s.y); g.lineTo(s.x - r * 0.18, s.y - r * 0.18);
+    g.lineTo(s.x, s.y - r * 0.8); g.lineTo(s.x + r * 0.18, s.y - r * 0.18);
+    g.lineTo(s.x + r, s.y); g.lineTo(s.x + r * 0.18, s.y + r * 0.18);
+    g.lineTo(s.x, s.y + r * 0.8); g.lineTo(s.x - r * 0.18, s.y + r * 0.18);
+    g.closePath();
+    g.fill();
+  }
+  g.globalAlpha = 1;
+}
+
+// Rings on the lake now and then, as if something had broken the surface.
+const rings = [];
+function paintRings(g, f, dt) {
+  if (rings.length < 2 && Math.random() < dt / 1.6) {
+    const i = f.cells[(Math.random() * f.cells.length) | 0];
+    if (f.bank[i] > 5 && f.dist[i] > 30) rings.push({ x: (i % f.W) * R, y: ((i / f.W) | 0) * R, age: 0, life: 2.4 });
+  }
+  g.lineWidth = 0.7;
+  for (let k = rings.length - 1; k >= 0; k--) {
+    const r = rings[k];
+    r.age += dt;
+    if (r.age > r.life) { rings.splice(k, 1); continue; }
+    const p = r.age / r.life;
+    for (const lag of [0, 0.25]) {
+      const q = p - lag;
+      if (q <= 0) continue;
+      g.strokeStyle = `rgba(255,252,240,${0.32 * (1 - q)})`;
+      g.beginPath();
+      g.ellipse(r.x, r.y, 2 + q * 11, (2 + q * 11) * 0.45, 0, 0, Math.PI * 2);
+      g.stroke();
+    }
+  }
+}
+
+function layerFor(grp, paint) {
+  const g = grp.layer.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, grp.rect.w, grp.rect.h);
+  g.setTransform(1, 0, 0, 1, -grp.rect.x, -grp.rect.y);
+  paint(g);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(grp.mask, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  return grp.layer;
+}
+
+function drawCurrents(ctx, t) {
+  if (!riverFlow || !river) return;
+  const dt = lastT === null ? 0 : Math.max(0, Math.min(0.1, t - lastT));
+  lastT = t;
+
+  step(currents.river, riverFlow, RIVER_MARKS, RIVER_SPEED, dt, false);
+  ctx.drawImage(layerFor(river, g => {
+    paintMarks(g, currents.river);
+    paintGlints(g, riverFlow, dt, t);
+  }), river.rect.x, river.rect.y);
+
+  if (lake && lakeFlow) {
+    step(currents.lake, lakeFlow, LAKE_MARKS, LAKE_SPEED, dt, true);
+    ctx.drawImage(layerFor(lake, g => {
+      paintMarks(g, currents.lake);
+      paintRings(g, lakeFlow, dt);
+    }), lake.rect.x, lake.rect.y);
+  }
+}
+
+// --- the waterfall -----------------------------------------------------------
+//
+// SERENE PEAK'S FALLS, AS FALLING WATER, at the owner's ask: "more realistic".
+// Light drifting down the sheet read as a surface, not as water going over an
+// edge. Four things make a waterfall read as one, and this draws all four:
+//
+//   STREAKS down the sheet, many thin lanes of them, each ACCELERATING — slow
+//   where the water tips over the lip and fast at the bottom, stretching as they
+//   go, because that is what gravity does and a constant speed looks like a
+//   conveyor belt.
+//   THE LIP, a bright rim where the water turns over the edge, flickering along
+//   its length.
+//   SPRAY at the foot, white specks thrown up and out of the splash the artist
+//   drew, and a soft MIST breathing over it.
+//   RIPPLES spreading across the pool below.
+//
+// All in canvas px. The sheet is the artist's own outline (FALLS[FACE_PATH]) and
+// the streaks are cut to it; the corners below only aim the lanes, which lean
+// with the water — south a little west, as FALLS_FLOW says.
+const FALLING = true;
+const FACE_PATH = 1;          // FALLS: the lake, the sheet, then three splash shapes
+const SPLASH_LAST = 4;
+const LIP = [[668, 104], [721, 115]];      // where the water goes over, left to right
+const FOOT = [[634, 176], [697, 186]];     // where it lands
+const LANES = 34;
+const STREAK_TINT = '255,251,240';
+const SHADE_TINT = '84,94,96';
+const FOAM_TINT = '250,247,238';
+
+// A fixed scatter, so the lanes and the specks are uneven but the same on every
+// frame and every visit.
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+
+// The lane at `u` across the sheet, at `v` down it: a gentle curve rather than a
+// ruler line, bowed out at the top where the water rolls over the lip.
+function laneAt(u, v) {
+  const top = mix(LIP[0], LIP[1], u), foot = mix(FOOT[0], FOOT[1], u);
+  const bow = 5 * Math.sin(Math.PI * v) * (1 - v);
+  return [top[0] + (foot[0] - top[0]) * v - bow * 0.6, top[1] + (foot[1] - top[1]) * v];
+}
+
+function drawFalls(ctx, t) {
+  if (!face) return;
+  const g = face.layer.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, face.rect.w, face.rect.h);
+  g.setTransform(1, 0, 0, 1, -face.rect.x, -face.rect.y);
+  g.lineCap = 'round';
+
+  // THE STREAKS. Each lane has its own pace and a few streaks on it at once.
+  for (let i = 0; i < LANES; i++) {
+    const u = (i + 0.5 + (hash(i) - 0.5) * 0.7) / LANES;
+    const rate = 0.55 + hash(i + 40) * 0.35;          // falls per second
+    const dark = hash(i + 80) < 0.28;                 // a few lanes of shade, for depth
+    const each = dark ? 1 : 4;
+    for (let k = 0; k < each; k++) {
+      const p = ((t * rate + k / each + hash(i * 7 + k)) % 1);
+      const v = Math.pow(p, 1.5);                     // accelerating
+      const len = 0.06 + 0.22 * p;                    // stretching as it speeds up
+      const v0 = Math.max(0, v - len);
+      const [x0, y0] = laneAt(u, v0), [x1, y1] = laneAt(u, Math.min(1, v));
+      const fade = Math.min(1, p / 0.10) * Math.min(1, (1 - p) / 0.06);
+      const grad = g.createLinearGradient(x0, y0, x1, y1);
+      const tint = dark ? SHADE_TINT : STREAK_TINT;
+      const a = (dark ? 0.32 : 0.62 + hash(i + 3 * k) * 0.33) * fade;
+      grad.addColorStop(0, `rgba(${tint},0)`);
+      grad.addColorStop(1, `rgba(${tint},${a})`);
+      g.strokeStyle = grad;
+      g.lineWidth = dark ? 1.5 : 0.6 + hash(i + 11 * k) * 0.6;
+      g.beginPath();
+      const [xm, ym] = laneAt(u, (v0 + Math.min(1, v)) / 2);
+      g.moveTo(x0, y0);
+      g.quadraticCurveTo(xm, ym, x1, y1);
+      g.stroke();
+    }
+  }
+
+  // THE LIP: a bright rim just under the edge, its brightness running along it.
+  // Stroked as one line with a gradient along it, so it reads as a rim rather
+  // than as a row of beads.
+  const [lx0, ly0] = laneAt(0, 0.03), [lx1, ly1] = laneAt(1, 0.03);
+  const rim = g.createLinearGradient(lx0, ly0, lx1, ly1);
+  for (let i = 0; i <= 12; i++) {
+    const u = i / 12;
+    const shine = 0.45 + 0.35 * Math.sin(t * 2.3 + u * 9) * Math.sin(t * 1.1 + u * 4.3);
+    rim.addColorStop(u, `rgba(${STREAK_TINT},${Math.max(0, shine)})`);
+  }
+  g.strokeStyle = rim;
+  g.lineWidth = 2.2;
+  g.beginPath();
+  for (let i = 0; i <= 24; i++) {
+    const [x, y] = laneAt(i / 24, 0.03);
+    if (i) g.lineTo(x, y + 1.2); else g.moveTo(x, y + 1.2);
+  }
+  g.stroke();
+
+  // THE CURTAIN'S FOOT: white water where the sheet hits the pool, churning —
+  // a band of foam across the bottom of the sheet whose brightness moves along it.
+  for (let i = 0; i <= 30; i++) {
+    const u = i / 30;
+    const churn = 0.45 + 0.3 * Math.sin(t * 5.1 + u * 13) + 0.2 * Math.sin(t * 3.7 - u * 7);
+    for (const [v, r, a] of [[0.93, 3.2, 0.55], [0.84, 2.4, 0.30]]) {
+      const [x, y] = laneAt(u, v);
+      g.fillStyle = `rgba(${FOAM_TINT},${Math.max(0, churn * a)})`;
+      g.beginPath();
+      g.ellipse(x, y, r, r * 0.7, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(face.mask, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  ctx.drawImage(face.layer, face.rect.x, face.rect.y);
+
+  ctx.save();
+  // RIPPLES on the pool, under the spray: rings spreading from the foot and fading,
+  // flattened to the map's own foreshortening.
+  const [cx, cy] = mix(FOOT[0], FOOT[1], 0.5);
+  if (river) {
+    ctx.save();
+    for (let k = 0; k < 3; k++) {
+      const p = ((t / 2.6) + k / 3) % 1;
+      ctx.strokeStyle = `rgba(${FOAM_TINT},${0.5 * (1 - p) * Math.min(1, p / 0.15)})`;
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.ellipse(cx - 2, cy + 6 + p * 5, 18 + p * 30, (18 + p * 30) * 0.3, 0, 0.05 * Math.PI, 0.95 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // MIST, a few soft clouds over the foot, breathing and drifting up.
+  for (let k = 0; k < 4; k++) {
+    const p = ((t / (3.2 + k * 0.7)) + hash(k + 90)) % 1;
+    const [mx, my] = mix(FOOT[0], FOOT[1], 0.15 + 0.23 * k);
+    const r = 12 + 10 * p;
+    const a = 0.30 * Math.sin(Math.PI * p);
+    const grad = ctx.createRadialGradient(mx, my - 4 - p * 12, 0, mx, my - 4 - p * 12, r);
+    grad.addColorStop(0, `rgba(${FOAM_TINT},${a})`);
+    grad.addColorStop(1, `rgba(${FOAM_TINT},0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(mx - r, my - 4 - p * 12 - r, r * 2, r * 2);
+  }
+
+  // SPRAY: specks thrown up and out of the splash, slowing and fading.
+  for (let k = 0; k < 46; k++) {
+    const life = 0.8 + hash(k + 200) * 0.7;
+    const p = ((t / life) + hash(k + 300)) % 1;
+    const [sx, sy] = mix(FOOT[0], FOOT[1], hash(k + 400));
+    const up = 10 + hash(k + 500) * 16, side = (hash(k + 600) - 0.5) * 18;
+    const e = 1 - (1 - p) * (1 - p);                  // quick out, slowing
+    const x = sx + side * e, y = sy - up * e + 9 * p * p;
+    const r = 0.6 + 1.2 * p;
+    ctx.fillStyle = `rgba(${FOAM_TINT},${0.8 * (1 - p)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 // The one thing src/overview.js calls. `t` is wall-clock seconds — this is screen

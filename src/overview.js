@@ -32,6 +32,7 @@ import { MODES } from './data/waves.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse } from './motion.js';
+import { drawLife } from './life.js';
 // The map's own four sounds. Three of them last as long as a situation does, so
 // they go through setLoop rather than being started and stopped by hand — see the
 // note above it in src/audio.js.
@@ -1140,6 +1141,8 @@ export function drawOverview(ctx, state) {
   // before the fog, because unexplored country is a drained still copy and should
   // stay still.
   drawMotion(ctx, now);
+  // And the towns the player has reached, alive — see src/life.js.
+  drawLife(ctx, now, unlocked);
 
   // THE REGION NAMES, OVER ALL OF IT. They are a second image for exactly this
   // reason: the parchment is a multiply, so a name inside the map picks up whatever
