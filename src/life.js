@@ -167,9 +167,15 @@ const RAYS = 18;
 // RAYS THAT END ON THE GROUND, at the owner's ask: a few shafts come down onto the
 // church and the High Altar and stop at their shadows, with a soft pool of light
 // where each lands. `at` is where the shaft ends, `w` how wide it is there.
+//
+// AND THEY WANDER, slowly, round the shadow they fall on: each foot drifts on its
+// own small loop — `rx` by `ry`, one lap every `lap` seconds — so the light seems
+// to shift as clouds pass, without ever leaving the building it is falling on.
 const LANDING = [
-  { at: [418, 282], w: 16 }, { at: [436, 284], w: 12 },   // the church
-  { at: [488, 296], w: 13 }, { at: [500, 292], w: 9 }     // the High Altar
+  { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23 },   // the church
+  { at: [434, 284], w: 12, rx: 10, ry: 3, lap: 31 },
+  { at: [490, 295], w: 13, rx: 7, ry: 3, lap: 27 },    // the High Altar
+  { at: [497, 292], w: 9, rx: 6, ry: 2.5, lap: 19 }
 ];
 const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
 const SHRINE = { x: 488, y: 250, rx: 82, ry: 50 };   // the town's middle, drawn towards the church
@@ -270,7 +276,9 @@ function drawHoly(out, t, unlocked) {
     ctx.fill();
   }
   for (const [i, r] of LANDING.entries()) {
-    const [ex, ey] = r.at;
+    const a = (t / r.lap) * Math.PI * 2 * (i % 2 ? -1 : 1) + i * 1.7;
+    const ex = r.at[0] + Math.cos(a) * r.rx;
+    const ey = r.at[1] + Math.sin(a) * r.ry;
     const dx = ex - h.x, dy = ey - h.y, len = Math.hypot(dx, dy);
     const nx = -dy / len, ny = dx / len;
     const glow = (0.11 + 0.07 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.1 * i) + i * 1.9)));
