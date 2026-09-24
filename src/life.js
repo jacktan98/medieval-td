@@ -85,6 +85,25 @@ const wind = (t, x) => 0.6 + 0.4 * Math.sin(t * 0.37 - x * 0.006) * Math.sin(t *
 
 // --- smoke -------------------------------------------------------------------
 
+// A soft round puff, drawn once per colour and stamped, rather than a new gradient
+// built for every puff on every frame.
+const sprites = new Map();
+function sprite(rgb) {
+  let c = sprites.get(rgb);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, `rgba(${rgb},1)`);
+    grad.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    sprites.set(rgb, c);
+  }
+  return c;
+}
+
 function puff(ctx, x, y, p, rise, drift, r0, r1, rgb, alpha) {
   const e = 1 - (1 - p) * (1 - p);
   const px = x + drift * p * p + Math.sin(p * 5 + x) * 0.8;
@@ -92,19 +111,17 @@ function puff(ctx, x, y, p, rise, drift, r0, r1, rgb, alpha) {
   const r = r0 + (r1 - r0) * p;
   const a = alpha * Math.min(1, p / 0.15) * (1 - p);
   if (a <= 0.005) return;
-  const g = ctx.createRadialGradient(px, py, 0, px, py, r);
-  g.addColorStop(0, `rgba(${rgb},${a})`);
-  g.addColorStop(1, `rgba(${rgb},0)`);
-  ctx.fillStyle = g;
-  ctx.fillRect(px - r, py - r, r * 2, r * 2);
+  ctx.globalAlpha = a;
+  ctx.drawImage(sprite(rgb), px - r, py - r, r * 2, r * 2);
+  ctx.globalAlpha = 1;
 }
 
 function drawSmoke(ctx, t, unlocked) {
   HOUSE_SMOKE.forEach((c, i) => {
     if (!awake(c.town, unlocked)) return;
     const w = wind(t, c.x);
-    for (let k = 0; k < 9; k++) {
-      const p = ((t / 9.5) + k / 9 + hash(i)) % 1;
+    for (let k = 0; k < 6; k++) {
+      const p = ((t / 9.5) + k / 6 + hash(i)) % 1;
       // A PALE grey: a mid grey is the grass's own brightness and vanished into it.
       puff(ctx, c.x, c.y, p, 22, 10 * w, 1.8, 6.2, '204,200,194', 0.85);
     }
@@ -113,8 +130,8 @@ function drawSmoke(ctx, t, unlocked) {
     if (!awake(c.town, unlocked)) return;
     const w = wind(t, c.x);
     // SLOW, at the owner's word: heavy smoke hangs and rolls rather than streams.
-    for (let k = 0; k < 12; k++) {
-      const p = ((t / 13) + k / 12 + hash(i + 50)) % 1;
+    for (let k = 0; k < 8; k++) {
+      const p = ((t / 13) + k / 8 + hash(i + 50)) % 1;
       puff(ctx, c.x, c.y, p, 26, 13 * w, 2, 7.5, '26,24,22', 0.8);
     }
     // A spark now and then from the fires under it.
@@ -139,10 +156,10 @@ function drawSmoke(ctx, t, unlocked) {
 // THE WHOLE ISLAND IS LIT, and the light gathers on the middle of the town: the
 // rays fan out to reach every shore, and the ones aimed at its heart are the
 // brightest and the widest. `focus` is the angle from the source to SHRINE.
-const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.406 };
+const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.519 };
 const RAYS = 18;
 const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
-const SHRINE = { x: 520, y: 240, rx: 82, ry: 50 };   // the middle of the town
+const SHRINE = { x: 488, y: 250, rx: 82, ry: 50 };   // the town's middle, drawn towards the church
 
 // Where the holy light may fall, and how strongly: the land, fading to nothing
 // over SHORE_FADE px as it nears the water. Worked out once from the map — the
@@ -252,11 +269,9 @@ function drawHoly(out, t, unlocked) {
     const y = wide.y - wide.ry * 0.9 + hash(k + 70) * wide.ry * 1.4 + p * 25;
     const r = 0.8 + hash(k + 80) * 1.6;
     const a = 0.45 * Math.sin(Math.PI * p);
-    const m = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
-    m.addColorStop(0, `rgba(255,245,205,${a})`);
-    m.addColorStop(1, 'rgba(255,245,205,0)');
-    ctx.fillStyle = m;
-    ctx.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
+    ctx.globalAlpha = a;
+    ctx.drawImage(sprite('255,245,205'), x - r * 2, y - r * 2, r * 4, r * 4);
+    ctx.globalAlpha = 1;
   }
   ctx.restore();
 
@@ -347,39 +362,37 @@ function drawFountain(ctx, t, unlocked) {
 // player sees them — and put back a row at a time, each row pushed a fraction of a
 // pixel sideways. The top of a banner and the foot of a tree stay where they are
 // and the far end swings. The canvas is copied onto itself, which it allows.
-const scratch = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-function bend(ctx, x0, y0, w, h, shift) {
+// FROM THE STILL MAP, NOT THE CANVAS. Copying pixels off the canvas while it is
+// being drawn makes the device finish everything queued so far first, and doing it
+// for every tree and banner — twenty-odd times a frame — was what made the map lag.
+// src/overview.js hands over the still map it has already built (see stillMap
+// there), which is exactly what lies under the trees and the banners, and every
+// bend reads from that.
+function bend(ctx, src, x0, y0, w, h, shift) {
   const m = ctx.getTransform();
   const k = m.a;
-  // ONE READ OF THE CANVAS PER THING, into a scratch sheet, and the rows are cut from
-  // that. Reading the canvas row by row copied the whole canvas every time and
-  // brought a large screen to a standstill.
+  const sx = x0 * k + m.e, sy = y0 * k + m.f;
   const sw = Math.ceil(w * k), sh = Math.ceil(h * k);
-  if (scratch.width < sw) scratch.width = sw;
-  if (scratch.height < sh) scratch.height = sh;
-  const g = scratch.getContext('2d');
-  g.clearRect(0, 0, sw, sh);
-  g.drawImage(ctx.canvas, x0 * k + m.e, y0 * k + m.f, sw, sh, 0, 0, sw, sh);
   // ONE DEVICE ROW AT A TIME. A logical row is two or three device rows on a phone,
   // and moving them together turned a smooth lean into a staircase.
   for (let r = 0; r < sh; r++) {
     const dx = shift(r / sh);
     if (Math.abs(dx) < 0.02) continue;
-    ctx.drawImage(scratch, 0, r, sw, 1, x0 + dx, y0 + r / k, sw / k, 1 / k);
+    ctx.drawImage(src, sx, sy + r, sw, 1, x0 + dx, y0 + r / k, sw / k, 1 / k);
   }
 }
 
-function drawBanners(ctx, t, unlocked) {
+function drawBanners(ctx, t, unlocked, src) {
   BANNERS.forEach((b, i) => {
     if (!awake(b.town, unlocked)) return;
     const w = wind(t, b.x);
     // Nothing at the top, most at the foot, a ripple running down.
-    bend(ctx, b.x - b.w / 2 - 1, b.y, b.w + 2, b.h, v =>
+    bend(ctx, src, b.x - b.w / 2 - 1, b.y, b.w + 2, b.h, v =>
       w * 0.9 * v * Math.sin(t * 3.4 + i - v * 4));
   });
 }
 
-function drawTrees(ctx, t, unlocked) {
+function drawTrees(ctx, t, unlocked, src) {
   TREES.forEach((tr, i) => {
     if (!awake(tr.town, unlocked)) return;
     // A gust crosses the map west to east, so neighbouring trees lean in turn.
@@ -387,7 +400,7 @@ function drawTrees(ctx, t, unlocked) {
     const sway = 0.55 * gust * Math.sin(t * 1.3 - tr.x * 0.02 + hash(i) * 2)
       + 0.2 * Math.sin(t * 2.9 + i);
     // v is 0 at the top of the crown and 1 where it meets the trunk.
-    bend(ctx, tr.x - tr.w - 1, tr.y - tr.h, tr.w * 2 + 2, tr.h, v => sway * (1 - v) * (1 - v));
+    bend(ctx, src, tr.x - tr.w - 1, tr.y - tr.h, tr.w * 2 + 2, tr.h, v => sway * (1 - v) * (1 - v));
   });
 }
 
@@ -402,30 +415,23 @@ function drawTrees(ctx, t, unlocked) {
 const FOREST = [[382, 540], [384, 420], [410, 376], [452, 352], [500, 340], [560, 335],
   [606, 342], [612, 358], [592, 410], [576, 462], [562, 540]];
 const FOREST_BOX = { x: 380, y: 332, w: 236, h: 208 };
-const forestSheet = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-
-function drawForest(ctx, t, unlocked) {
+function drawForest(ctx, t, unlocked, src) {
   if (!awake('sandshroud', unlocked)) return;
   const m = ctx.getTransform(), k = m.a;
   const { x, y, w, h } = FOREST_BOX;
-  const sw = Math.ceil(w * k), sh = Math.ceil(h * k);
-  if (forestSheet.width !== sw || forestSheet.height !== sh) { forestSheet.width = sw; forestSheet.height = sh; }
-  const g = forestSheet.getContext('2d');
-  g.clearRect(0, 0, sw, sh);
-  g.drawImage(ctx.canvas, x * k + m.e, y * k + m.f, sw, sh, 0, 0, sw, sh);
   ctx.save();
   ctx.beginPath();
   FOREST.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
   ctx.closePath();
   ctx.clip();
-  const COL = 10, ROW = 2;
+  const COL = 14, ROW = 3;
   for (let cy = 0; cy < h; cy += ROW) {
     for (let cx = 0; cx < w; cx += COL) {
       const X = x + cx, Y = y + cy;
       const gust = wind(t, X) * (0.7 + 0.3 * Math.sin(t * 0.9 - X * 0.025));
       const dx = 1.5 * gust * Math.sin(t * 1.5 - X * 0.03 + Y * 0.05)
         + 0.5 * Math.sin(t * 3.1 + Y * 0.45 + X * 0.02);
-      ctx.drawImage(forestSheet, cx * k, cy * k, COL * k, ROW * k, X + dx - 0.25, Y, COL + 0.5, ROW + 0.05);
+      ctx.drawImage(src, X * k + m.e, Y * k + m.f, COL * k, ROW * k, X + dx - 0.25, Y, COL + 0.5, ROW + 0.05);
     }
   }
   ctx.restore();
@@ -539,7 +545,9 @@ const PEAK = { x: 875, y: 55, rx: 150, ry: 95 };
 const GRASS = [131, 153, 84];
 let pristine = null, pristineFrom = null;
 
-function drawPristine(ctx) {
+// Baked into the still map by src/overview.js rather than drawn every frame.
+export function drawPristine(ctx) {
+  if (!ON.pristine) return;
   const img = art.overview;
   if (!img) return;
   if (pristineFrom !== img) {
@@ -570,15 +578,15 @@ function drawPristine(ctx) {
 
 // Called from src/overview.js over the map and under the names and the fog.
 // `unlocked` is how many stages the player has reached.
-export function drawLife(ctx, t, unlocked) {
-  if (ON.pristine) drawPristine(ctx);
-  if (ON.trees) drawTrees(ctx, t, unlocked);
-  if (ON.banners) drawBanners(ctx, t, unlocked);
+// `src` is the still map the towns stand on — see stillMap in src/overview.js.
+export function drawLife(ctx, t, unlocked, src) {
+  if (ON.trees) drawTrees(ctx, t, unlocked, src);
+  if (ON.banners) drawBanners(ctx, t, unlocked, src);
   if (ON.fire) drawFire(ctx, t, unlocked);
   if (ON.fountain) drawFountain(ctx, t, unlocked);
   if (ON.smoke) drawSmoke(ctx, t, unlocked);
   if (ON.holy) drawHoly(ctx, t, unlocked);
-  if (ON.forest) drawForest(ctx, t, unlocked);
+  if (ON.forest) drawForest(ctx, t, unlocked, src);
   if (ON.birds) drawBirds(ctx, t, unlocked);
   if (ON.tumbleweeds) drawTumbleweeds(ctx, t, unlocked);
 }

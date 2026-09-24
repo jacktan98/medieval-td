@@ -345,7 +345,7 @@ function drawShimmer(ctx, t) {
 // surface for a moment here and there. Everything is cut to the water's own
 // pixels, so no mark crosses a bank or a bridge.
 const CURRENTS = true;
-const RIVER_MARKS = 260, LAKE_MARKS = 28;
+const RIVER_MARKS = 150, LAKE_MARKS = 22;
 const RIVER_SPEED = 11, LAKE_SPEED = 2.0;          // canvas px a second, in open water
 const GLINTS = 9;
 const currents = { river: [], lake: [] };

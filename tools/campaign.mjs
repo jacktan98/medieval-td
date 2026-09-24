@@ -820,7 +820,8 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // Over the drawing INCLUDING the names — an unreached region should not be
   // announcing itself — and under the trail, the medallions and the flag, which are
   // the interface and are never in shadow.
-  const names = at(/drawImage\(art\.overviewNames/);
+  // The names are rasterised once — see stillNames — and laid on here.
+  const names = at(/stillNames\(ctx\)/);
   const fog = at(/spread\(fog\)/);
   const trail = at(/drawTrail\(/);
   ok(names >= 0 && fog > names, 'the drain falls over the names as well as the map',
@@ -979,10 +980,15 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // THE SHEETS USED TO BREATHE and no longer do, at the owner's word. Both are still
   // drawn through one helper, which is what kept them from sliding apart when they
   // did move and is still what keeps them agreeing about where the map is.
-  const spreads = (draw.match(/\bspread\((sunSheet|fog)\)/g) || []).length;
-  ok(/const spread = /.test(draw) && spreads === 2,
+  //
+  // THE SUN NOW GOES INTO THE STILL MAP, built once rather than every frame (see
+  // stillMap), so it is laid there at the map's size exactly as spread() lays the
+  // dark — the same rectangle, which is what keeps the two agreeing.
+  const sunLaid = /g\.drawImage\(sunSheet, 0, 0, 960, 540\)/.test(draw);
+  const spreads = (draw.match(/\bspread\(fog\)/g) || []).length;
+  ok(/const spread = img => ctx\.drawImage\(img, 0, 0, 960, 540\)|const spread = \(img\) => ctx\.drawImage\(img, 0, 0, 960, 540\)/.test(draw) && sunLaid && spreads === 1,
     'and the sunlight and the dark are laid down the same way',
-    `${spreads} sheet(s) through one helper`);
+    sunLaid ? 'both at the map\'s size' : 'the sun is not laid at the map\'s size');
 
   // AND IT LIFTS AS THE ROAD OPENS, which is the reason it is there. The lit area
   // is built from the stages the player has unlocked, so it cannot fail to grow.
@@ -3785,13 +3791,14 @@ console.log('\n--- the map moves a little ---\n');
   // held their draw order went with them rather than being left to pass vacuously.
   // What they were guarding — that the sun goes down before the things it would
   // erase — is still worth holding, and is held here.
-  ok(at(/spread\(sunSheet\)/) >= 0 && at(/spread\(sunSheet\)/) < at(/spread\(fog\)/),
+  // The sun is part of the still map now, which is the first thing drawn.
+  ok(at(/stillMap\(ctx/) >= 0 && at(/stillMap\(ctx/) < at(/spread\(fog\)/),
     'the sun is laid on the map before the dark is',
     'the sun before the fog');
 
   // AND UNDER THE NAMES. A band crossing a river beneath a label was lighting the
   // lettering up with it, which is the one place this was visibly wrong.
-  ok(at(/spread\(sunSheet\)/) < at(/drawImage\(art\.overviewNames/),
+  ok(at(/stillMap\(ctx/) >= 0 && at(/stillMap\(ctx/) < at(/stillNames\(ctx\)/),
     'and under the region names, which it must not repaint',
     'the sun before the names');
 

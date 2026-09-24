@@ -32,7 +32,7 @@ import { MODES } from './data/waves.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse } from './motion.js';
-import { drawLife } from './life.js';
+import { drawLife, drawPristine } from './life.js';
 // The map's own four sounds. Three of them last as long as a situation does, so
 // they go through setLoop rather than being started and stopped by hand — see the
 // note above it in src/audio.js.
@@ -1082,6 +1082,55 @@ function fogFor(unlocked, live, frac) {
 }
 
 
+// The still map, at the canvas's own resolution, and what it was built from.
+//
+// THE SUN, because it REPLACES the lit country with a brighter copy of itself
+// rather than tinting what is there — anything drawn before it inside the lit
+// shape would be painted over. The paper goes under it: over the artwork and
+// UNDER everything the game draws on it, because the medallions, the flag and the
+// stars belong to the interface, not to the sheet.
+let stillSheet = null, stillKey = '';
+function stillMap(ctx, tf, img) {
+  const c = ctx.canvas;
+  const key = `${fogKey}|${c.width}x${c.height}|${tf ? [tf.a, tf.e, tf.f].join(',') : ''}|` +
+    `${img && img.complete ? img.src : ''}|${parchment ? 1 : 0}`;
+  if (stillSheet && key === stillKey) return stillSheet;
+  stillKey = key;
+  stillSheet = stillSheet || document.createElement('canvas');
+  stillSheet.width = c.width;
+  stillSheet.height = c.height;
+  const g = stillSheet.getContext('2d');
+  if (tf) g.setTransform(tf);
+  if (img) g.drawImage(img, 0, 0, 960, 540);
+  else { g.fillStyle = '#C9A878'; g.fillRect(0, 0, 960, 540); }
+  const sheet = parchment || makeParchment();
+  g.save();
+  g.globalCompositeOperation = 'multiply';
+  g.drawImage(sheet, 0, 0);
+  g.restore();
+  if (sunSheet) g.drawImage(sunSheet, 0, 0, 960, 540);
+  drawPristine(g);
+  return stillSheet;
+}
+
+// The region names, rasterised once per screen size rather than every frame.
+let namesSheet = null, namesKey = '';
+function stillNames(ctx) {
+  const img = art.overviewNames;
+  if (!img) return null;
+  const c = ctx.canvas, tf = ctx.getTransform();
+  const key = `${c.width}x${c.height}|${tf.a},${tf.e},${tf.f}|${img.complete ? img.src : ''}`;
+  if (namesSheet && key === namesKey) return namesSheet;
+  namesKey = key;
+  namesSheet = namesSheet || document.createElement('canvas');
+  namesSheet.width = c.width;
+  namesSheet.height = c.height;
+  const g = namesSheet.getContext('2d');
+  g.setTransform(tf);
+  g.drawImage(img, 0, 0, 960, 540);
+  return namesSheet;
+}
+
 export function drawOverview(ctx, state) {
   // HOW DENSE THE GLASS IS, taken off the context about to be drawn into. `a` is
   // the horizontal scale of its transform, which fitToDisplay sets to the canvas
@@ -1096,17 +1145,6 @@ export function drawOverview(ctx, state) {
   hd = Math.max(1, Math.min(HD_MAX, Math.round(tf ? tf.a : 1)));
 
   const img = art.overview;
-  if (img) ctx.drawImage(img, 0, 0, 960, 540);
-  else { ctx.fillStyle = '#C9A878'; ctx.fillRect(0, 0, 960, 540); }
-
-  // Over the artwork and UNDER everything the game draws on it: the medallions,
-  // the flag and the stars belong to the interface, not to the sheet, and a
-  // stain across a stage number would be a bug rather than atmosphere.
-  const sheet = parchment || makeParchment();
-  ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.drawImage(sheet, 0, 0);
-  ctx.restore();
 
   // WHAT THE PLAYER HAS REACHED, AND WHAT THEY HAVE NOT. Both sheets are built
   // together from one lit shape — see makeFog — so this settles the order they go
@@ -1129,12 +1167,17 @@ export function drawOverview(ctx, state) {
   // the two were always equal.
   const spread = (img) => ctx.drawImage(img, 0, 0, 960, 540);
 
-  // THE SUN FIRST, because it REPLACES the lit country with a brighter copy of
-  // itself rather than tinting what is there. Anything drawn before it inside the
-  // lit shape would be painted over — which is why the cloud shadows come after it
-  // and not before, so that a shadow falls on sunlit ground rather than being
-  // erased by it.
-  if (sunSheet) spread(sunSheet);
+  // THE STILL PART OF THE MAP, DRAWN ONCE: the artwork, the paper over it, the sun
+  // on the lit country and Serene Peak's greener grass. None of it moves, and the
+  // artwork is a detailed vector drawing — rasterising it and laying three full
+  // sheets over it on every frame was most of what the map cost. It is rebuilt only
+  // when one of them changes: a stage reached or a road being walked (the fog key),
+  // the screen resized, or a file finishing loading. See stillMap.
+  const base = stillMap(ctx, tf, img);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(base, 0, 0);
+  ctx.restore();
 
   // AND THE MAP MOVES A LITTLE: shadows crossing the land. Before the names, because
   // a band crossing a river under a label was lighting the lettering up with it, and
@@ -1142,7 +1185,7 @@ export function drawOverview(ctx, state) {
   // stay still.
   drawMotion(ctx, now);
   // And the towns the player has reached, alive — see src/life.js.
-  drawLife(ctx, now, unlocked);
+  drawLife(ctx, now, unlocked, base);
 
   // THE REGION NAMES, OVER ALL OF IT. They are a second image for exactly this
   // reason: the parchment is a multiply, so a name inside the map picks up whatever
@@ -1150,7 +1193,13 @@ export function drawOverview(ctx, state) {
   // like a different colour from the rest. The owner asked for them exactly as
   // drawn — so the sun does not touch them either, and in lit country these are the
   // artist's own pixels and nothing else.
-  if (art.overviewNames) ctx.drawImage(art.overviewNames, 0, 0, 960, 540);
+  const names = stillNames(ctx);
+  if (names) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(names, 0, 0);
+    ctx.restore();
+  }
 
   // AND THE DARK OVER THE PARTS OF THE WORLD NOBODY HAS WALKED TO. Over the whole
   // drawing including the names — a region nobody has reached should not be
