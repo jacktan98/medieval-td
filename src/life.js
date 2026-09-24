@@ -17,7 +17,7 @@
 import { art } from './assets.js';
 
 const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true, trees: true,
-             forest: true, birds: true, tumbleweeds: true, pristine: true, heat: true, boat: true };
+             forest: true, birds: true, tumbleweeds: true, pristine: true, heat: true };
 
 // The first stage of each town, by index into STAGES — the town wakes when the
 // player has reached it.
@@ -168,11 +168,12 @@ const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
 const SHRINE = { x: 488, y: 250, rx: 82, ry: 50 };   // the town's middle, drawn towards the church
 
 // Where the holy light may fall, and how strongly: the land, fading to nothing
-// over SHORE_FADE px as it nears the water. Worked out once from the map — the
+// over SHORE_FADE px as it nears the water — and the river north of the island. Worked out once from the map — the
 // water is one exact shade, as src/motion.js finds it — at half resolution.
 const HOLY_BOX = { x: 250, y: 110, w: 560, h: 260 };
 const WATER = [0xbc, 0xc2, 0xc2];
 const SHORE_FADE = 14;
+const NORTH_FROM = 205, NORTH_TO = 232;   // water north of this y may be lit, fading out by NORTH_TO
 let holyLayer = null, shore = null, shoreFrom = null;
 
 function shoreMask() {
@@ -206,8 +207,15 @@ function shoreMask() {
   }
   for (let i = 0; i < W * H; i++) {
     const k = Math.min(1, (dist[i] * 2) / SHORE_FADE);
+    let a = k * k * (3 - 2 * k);
+    // EXCEPT NORTH OF THE ISLAND, where the rays come down across the river on
+    // their way to the town: the water there takes the light, and the cut to the
+    // land only begins below the island's upper shore.
+    const y = ((i / W) | 0) * 2;
+    const north = Math.min(1, Math.max(0, (NORTH_TO - y) / (NORTH_TO - NORTH_FROM)));
+    a = Math.max(a, north);
     px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = 255;
-    px[i * 4 + 3] = Math.round(255 * k * k * (3 - 2 * k));
+    px[i * 4 + 3] = Math.round(255 * a);
   }
   g.putImageData(d, 0, 0);
   shore = c;
@@ -234,15 +242,16 @@ function drawHoly(out, t, unlocked) {
     const near = Math.exp(-(((a - h.focus) / 0.22) ** 2));      // 1 on the shrine
     const width = (0.022 + 0.02 * hash(i + 10)) * (1 + near)
       + 0.008 * Math.sin(t * 0.5 + i * 1.7);
-    const glow = (0.08 + 0.095 * (0.5 + 0.5 * Math.sin(t * (0.35 + hash(i + 20) * 0.3) + i * 2.1)))
+    const glow = (0.056 + 0.066 * (0.5 + 0.5 * Math.sin(t * (0.35 + hash(i + 20) * 0.3) + i * 2.1)))
       * (0.55 + 0.9 * near);
     const len = h.reach * (0.85 + 0.15 * hash(i + 30));
     const g = ctx.createLinearGradient(h.x, h.y, h.x + Math.cos(a) * len, h.y + Math.sin(a) * len);
-    // Dark until the rays reach the island, so Winchester across the river is not
-    // lit with it.
+    // Dark until the rays are past Winchester's bank, then growing as they cross
+    // the river north of the island, so they come down through the air onto the
+    // water and the town rather than starting at the island's edge.
     g.addColorStop(0, 'rgba(255,238,180,0)');
-    g.addColorStop(0.5, 'rgba(255,238,180,0)');
-    g.addColorStop(0.7, `rgba(255,236,170,${glow})`);
+    g.addColorStop(0.47, 'rgba(255,238,180,0)');
+    g.addColorStop(0.62, `rgba(255,236,170,${glow})`);
     g.addColorStop(0.88, `rgba(255,232,160,${glow * 0.8})`);
     g.addColorStop(1, 'rgba(255,232,160,0)');
     ctx.fillStyle = g;
@@ -255,7 +264,7 @@ function drawHoly(out, t, unlocked) {
   }
   // Warmth over the whole island, and more of it on the shrine.
   const breathe = 0.5 + 0.5 * Math.sin(t * 0.4);
-  for (const [e, a] of [[ISLAND, 0.08 + 0.025 * breathe], [SHRINE, 0.16 + 0.05 * breathe]]) {
+  for (const [e, a] of [[ISLAND, 0.056 + 0.018 * breathe], [SHRINE, 0.112 + 0.035 * breathe]]) {
     ctx.save();
     ctx.translate(e.x, e.y);
     ctx.scale(1, e.ry / e.rx);
@@ -274,7 +283,7 @@ function drawHoly(out, t, unlocked) {
     const x = wide.x + (hash(k + 60) - 0.5) * wide.rx * 1.6 + Math.sin(t * 0.6 + k) * 4;
     const y = wide.y - wide.ry * 0.9 + hash(k + 70) * wide.ry * 1.4 + p * 25;
     const r = 0.8 + hash(k + 80) * 1.6;
-    const a = 0.65 * Math.sin(Math.PI * p);
+    const a = 0.45 * Math.sin(Math.PI * p);
     ctx.globalAlpha = a;
     ctx.drawImage(sprite('255,245,205'), x - r * 2, y - r * 2, r * 4, r * 4);
     ctx.globalAlpha = 1;
@@ -634,66 +643,6 @@ function drawHeat(ctx, t, unlocked, src, srcKey) {
   }
 }
 
-// --- a boat on the sea ------------------------------------------------------------
-//
-// A LITTLE SAILING BOAT GOING ROUND THE SEA, slowly, on a loop that stays on open
-// water the whole way (checked against the map's water colour). It turns to face
-// the way it goes, bobs a little, and trails a faint wake. Drawn under the fog, so
-// it is only seen once the sea is.
-const SEA = { x: 160, y: 282, rx: 110, ry: 26, seconds: 90 };
-
-function drawBoat(ctx, t) {
-  const a = (t / SEA.seconds) * Math.PI * 2;
-  const x = SEA.x + Math.cos(a) * SEA.rx;
-  const y = SEA.y + Math.sin(a) * SEA.ry + Math.sin(t * 1.7) * 0.4;
-  const vx = -Math.sin(a) * SEA.rx, vy = Math.cos(a) * SEA.ry;
-  const face = vx >= 0 ? 1 : -1;
-  // Further away (higher up the map) is smaller.
-  const s = 0.85 + 0.15 * Math.sin(a);
-  ctx.save();
-  // The wake: two faint lines opening out behind it.
-  const back = Math.atan2(-vy, -vx);
-  ctx.strokeStyle = 'rgba(255,252,240,0.45)';
-  ctx.lineWidth = 0.7;
-  for (const side of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(x + Math.cos(back) * 3 * s, y + 1 + Math.sin(back) * 3 * s);
-    ctx.lineTo(x + Math.cos(back + side * 0.35) * 13 * s, y + 1 + Math.sin(back + side * 0.35) * 13 * s * 0.6);
-    ctx.stroke();
-  }
-  ctx.translate(x, y);
-  ctx.scale(face * s, s);
-  ctx.rotate(Math.sin(t * 1.3) * 0.06);
-  // Hull.
-  ctx.fillStyle = '#6b4a28';
-  ctx.strokeStyle = '#2a1d10';
-  ctx.lineWidth = 0.6;
-  ctx.beginPath();
-  ctx.moveTo(-5, -1);
-  ctx.lineTo(5, -1);
-  ctx.quadraticCurveTo(4, 2, 2, 2.2);
-  ctx.lineTo(-3, 2.2);
-  ctx.quadraticCurveTo(-4.6, 1.4, -5, -1);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  // Mast and sail, filling a little with the wind.
-  ctx.beginPath();
-  ctx.moveTo(0, -1);
-  ctx.lineTo(0, -9);
-  ctx.stroke();
-  const fill = 1.2 + 0.4 * Math.sin(t * 0.8);
-  ctx.fillStyle = '#f3ead6';
-  ctx.beginPath();
-  ctx.moveTo(0.4, -8.6);
-  ctx.quadraticCurveTo(3 + fill, -5, 4.2, -1.8);
-  ctx.lineTo(0.4, -1.8);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
 // --- Serene Peak, pristine -------------------------------------------------------
 //
 // THE GRASS UP BY THE LAKE A LITTLE GREENER, so the high country reads as untouched.
@@ -749,5 +698,4 @@ export function drawLife(ctx, t, unlocked, src, srcKey = '') {
   if (ON.birds) drawBirds(ctx, t, unlocked);
   if (ON.tumbleweeds) drawTumbleweeds(ctx, t, unlocked);
   if (ON.heat) drawHeat(ctx, t, unlocked, src, srcKey);
-  if (ON.boat) drawBoat(ctx, t);
 }
