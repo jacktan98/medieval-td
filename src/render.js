@@ -2711,6 +2711,7 @@ export const UI_INK = '#FFEFD4';
 export const UI_GOLD = '#E0B24C';
 const UI_EDGE_W = 1.25;
 const UI_HOT_W = 2.75;
+const UI_PRESS_W = 2;     // the pause menu's buttons, a touch heavier than a panel's
 
 function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false } = {}) {
   ctx.save();
@@ -2719,7 +2720,7 @@ function panelBox(ctx, x, y, w, h, { hot = false, r = null, press = false } = {}
   ctx.fillStyle = press ? UI_PRESS : UI_BACK;
   ctx.fill();
   ctx.strokeStyle = hot ? UI_GOLD : UI_EDGE;
-  ctx.lineWidth = hot ? UI_HOT_W : UI_EDGE_W;
+  ctx.lineWidth = hot ? UI_HOT_W : press ? UI_PRESS_W : UI_EDGE_W;
   ctx.stroke();
   ctx.restore();
 }
@@ -2934,11 +2935,17 @@ function iconEdge(key, x) {
 }
 
 const READOUT_INK = '600 16px system-ui, sans-serif';
-function inkText(ctx, text, x) {
+// CENTRED ON THE DIGITS, not on the em box. 'middle' centres the font's whole
+// box, descender room and all, and a row of numbers has no descenders — so they
+// sat high in the bar. Measured off a zero, so every readout sits on the same
+// line whatever it happens to say.
+function inkText(ctx, text, x, mid = 21) {
   const layout = ctx.font;
   ctx.font = READOUT_INK;
+  ctx.textBaseline = 'alphabetic';
+  const m = ctx.measureText('0');
+  ctx.fillText(text, x, mid + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x, 21);
   ctx.font = layout;
 }
 
@@ -2972,11 +2979,15 @@ function readouts(ctx, state, draw, segs = null) {
   // This game's own count, not a shared one: map 3 runs ten where the other two
   // run eight, and it is read off the state because that is where the waves the
   // player is actually facing live.
+  //
+  // ON A SECOND ROW, under the gold and lives, at the owner's word — its bar
+  // lines up with the coin's left edge.
   const n = state.waves.length;
   const wave = `Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`;
-  if (draw) inkText(ctx, wave, x + 26);
-  segs?.push([x + 26 - SCRIM_PAD, x + 26 + ctx.measureText(wave).width, true]);
-  return x + 26 + ctx.measureText(wave).width;
+  const wx = 16 + SCRIM_PAD;
+  if (draw) inkText(ctx, wave, wx, WAVE_MID);
+  segs?.push([16, wx + ctx.measureText(wave).width, true, null, 0, WAVE_MID - BAR_H / 2]);
+  return Math.max(x, wx + ctx.measureText(wave).width);
 }
 
 // --- the scrim the readouts sit on --------------------------------------------
@@ -3004,6 +3015,7 @@ function readouts(ctx, state, draw, segs = null) {
 const SCRIM_FILL = 'rgba(22,24,18,0.55)';
 const SCRIM_PAD = 10;                  // air either side of the ink it is behind
 const BAR_H = 22, BAR_TOP = 21 - BAR_H / 2;   // each readout's own bar, round the 21 midline
+const WAVE_MID = 21 + BAR_H + 5;               // the wave count's row, under them
 
 function drawHud(ctx, state) {
   // The map artwork paints its own header strip across the top, 50px deep, so
@@ -3043,7 +3055,7 @@ function drawHud(ctx, state) {
   // AND CUT TO THE ICON'S OWN RIGHT EDGE, row by row, so the bar never shows in a
   // gap INSIDE the icon — the notch at the top of the heart, the gap between the
   // two coins. See iconEdge.
-  for (const [a, b, round, key, ix] of segs) {
+  for (const [a, b, round, key, ix, top = BAR_TOP] of segs) {
     const end = Math.min(b + SCRIM_PAD, HUD_BTN.pause.x - 6);
     const r = BAR_H / 2;
     const edge = key && iconEdge(key, ix);
@@ -3056,7 +3068,7 @@ function drawHud(ctx, state) {
       ctx.closePath();
       ctx.clip();
     }
-    scrimBox(ctx, a, BAR_TOP, end - a, BAR_H, round ? r : [0, r, r, 0]);
+    scrimBox(ctx, a, top, end - a, BAR_H, round ? r : [0, r, r, 0]);
     if (edge) ctx.restore();
   }
 
@@ -3632,9 +3644,17 @@ function drawInfo(ctx, state) {
   }
   // A ROUND MEDALLION the figure stands in, and the bar's bottom edge on the
   // line of its ground shadow, so the figure reads as standing on the bar.
-  const R = 32;
+  //
+  // SIZED TO THE FIGURE: 32 holds everything up to a thug, and a bigger one — a
+  // Giant Thug — gets a bigger medallion rather than spilling out of it. The
+  // feet sit at the same fraction of the way down whatever the size.
+  const FEET = 0.69;
+  // Grown until the drawing's top corners are inside the ring — a Giant's club
+  // reaches out to the top left of his box.
+  let R = 32;
+  while (Math.hypot(dw / 2, dh - FEET * R) > R - 2) R++;
   const cx = 12 + R, cy = BOTTOM - R;
-  const feet = cy + 22;
+  const feet = cy + FEET * R;
   const barX = cx;
   const lx = cx + R + 6;
 
