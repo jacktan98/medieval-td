@@ -154,139 +154,51 @@ function drawSmoke(ctx, t, unlocked) {
 
 // --- the holy light over Dawnford ---------------------------------------------
 //
-// SHAFTS OF LIGHT FALLING ON THE TOWN, at the owner's ask: subtle, and alive. A
-// fan of soft rays from high above the island, each one slowly widening,
-// brightening and fading on its own beat so the light seems to breathe, and a few
-// motes of light drifting down through it. Laid on with `screen`, so it lightens
-// what is there without covering it.
-// THE WHOLE ISLAND IS LIT, and the light gathers on the middle of the town: the
-// rays fan out to reach every shore, and the ones aimed at its heart are the
-// brightest and the widest. `focus` is the angle from the source to SHRINE.
-const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.519 };
-const RAYS = 18;
-// RAYS THAT END ON THE GROUND, at the owner's ask: a few shafts come down onto the
-// church and the High Altar and stop at their shadows, with a soft pool of light
-// where each lands. `at` is where the shaft ends, `w` how wide it is there.
+// SHAFTS OF LIGHT COMING DOWN ON THE TOWN, every one of them landing somewhere: a
+// ray runs from high above the island, grows out of the sky as it comes down, and
+// ends on the ground in a soft pool of light. Nothing cuts it at the river — a ray
+// that crosses the water on its way down simply shines on it, as light would.
 //
-// AND THEY WANDER, slowly, round the shadow they fall on: each foot drifts on its
-// own small loop — `rx` by `ry`, one lap every `lap` seconds — so the light seems
-// to shift as clouds pass, without ever leaving the building it is falling on.
+// At the owner's word, after a fan of rays faded at the shore and never looked
+// right: "light should be like the one you did for the church and altar". So all
+// of them are that kind now. The brightest and widest fall on the church and the
+// High Altar; the rest are spread over the town.
+//
+// AND THEY WANDER, slowly: each foot drifts on its own small loop — `rx` by `ry`,
+// one lap every `lap` seconds, neighbours turning opposite ways — so the light
+// seems to shift as clouds pass, and each breathes brighter and dimmer on its own
+// beat. Laid on with `screen`, so it lightens what is there without covering it.
+const HOLY = { x: 470, y: -60, town: 'dawnford' };
 const LANDING = [
-  { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23 },   // the church
-  { at: [434, 284], w: 12, rx: 10, ry: 3, lap: 31 },
-  { at: [490, 295], w: 13, rx: 7, ry: 3, lap: 27 },    // the High Altar
-  { at: [497, 292], w: 9, rx: 6, ry: 2.5, lap: 19 }
+  { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23, k: 1 },     // the church
+  { at: [434, 284], w: 12, rx: 10, ry: 3, lap: 31, k: 1 },
+  { at: [490, 295], w: 13, rx: 7, ry: 3, lap: 27, k: 1 },      // the High Altar
+  { at: [497, 292], w: 9, rx: 6, ry: 2.5, lap: 19, k: 1 },
+  { at: [514, 222], w: 11, rx: 8, ry: 3, lap: 29, k: 0.7 },    // the barracks
+  { at: [465, 240], w: 12, rx: 10, ry: 4, lap: 33, k: 0.65 },  // the houses by the church
+  { at: [517, 278], w: 10, rx: 6, ry: 2.5, lap: 21, k: 0.7 },  // the fountain
+  { at: [560, 262], w: 12, rx: 10, ry: 4, lap: 35, k: 0.6 },   // the houses east of it
+  { at: [590, 235], w: 11, rx: 9, ry: 3, lap: 26, k: 0.5 },
+  { at: [395, 252], w: 10, rx: 8, ry: 3, lap: 30, k: 0.5 }     // the trees west of the church
 ];
-const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
-const SHRINE = { x: 488, y: 250, rx: 82, ry: 50 };   // the town's middle, drawn towards the church
 
-// Where the holy light may fall, and how strongly: the land, fading to nothing
-// over SHORE_FADE px as it nears the water — and the river north of the island. Worked out once from the map — the
-// water is one exact shade, as src/motion.js finds it — at half resolution.
-const HOLY_BOX = { x: 250, y: 110, w: 560, h: 260 };
-const WATER = [0xbc, 0xc2, 0xc2];
-const SHORE_FADE = 14;
-const NORTH_FROM = 205, NORTH_TO = 232;   // water north of this y may be lit, fading out by NORTH_TO
-let holyLayer = null, shore = null, shoreFrom = null;
-
-function shoreMask() {
-  const img = art.overview;
-  if (!img) return null;
-  if (shoreFrom === img) return shore;
-  shoreFrom = img;
-  const W = 480, H = 270;
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  const g = c.getContext('2d', { willReadFrequently: true });
-  g.drawImage(img, 0, 0, W, H);
-  const d = g.getImageData(0, 0, W, H);
-  const px = d.data;
-  const dist = new Float32Array(W * H);
-  for (let i = 0; i < W * H; i++) {
-    const wet = Math.abs(px[i * 4] - WATER[0]) <= 14 && Math.abs(px[i * 4 + 1] - WATER[1]) <= 14 &&
-      Math.abs(px[i * 4 + 2] - WATER[2]) <= 14;
-    dist[i] = wet ? 0 : 1e9;
-  }
-  // Distance to the nearest water, two chamfer sweeps.
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = y * W + x;
-    if (x > 0) dist[i] = Math.min(dist[i], dist[i - 1] + 1);
-    if (y > 0) dist[i] = Math.min(dist[i], dist[i - W] + 1);
-  }
-  for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
-    const i = y * W + x;
-    if (x < W - 1) dist[i] = Math.min(dist[i], dist[i + 1] + 1);
-    if (y < H - 1) dist[i] = Math.min(dist[i], dist[i + W] + 1);
-  }
-  for (let i = 0; i < W * H; i++) {
-    const k = Math.min(1, (dist[i] * 2) / SHORE_FADE);
-    let a = k * k * (3 - 2 * k);
-    // EXCEPT NORTH OF THE ISLAND, where the rays come down across the river on
-    // their way to the town: the water there takes the light, and the cut to the
-    // land only begins below the island's upper shore.
-    const y = ((i / W) | 0) * 2;
-    const north = Math.min(1, Math.max(0, (NORTH_TO - y) / (NORTH_TO - NORTH_FROM)));
-    a = Math.max(a, north);
-    px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = 255;
-    px[i * 4 + 3] = Math.round(255 * a);
-  }
-  g.putImageData(d, 0, 0);
-  shore = c;
-  return shore;
-}
-
-function drawHoly(out, t, unlocked) {
+function drawHoly(ctx, t, unlocked) {
   const h = HOLY;
   if (!awake(h.town, unlocked)) return;
-  const mask = shoreMask();
-  if (!mask) return;
-  const L = HOLY_BOX;
-  if (!holyLayer) { holyLayer = document.createElement('canvas'); holyLayer.width = L.w; holyLayer.height = L.h; }
-  const ctx = holyLayer.getContext('2d');
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.clearRect(0, 0, L.w, L.h);
-  ctx.setTransform(1, 0, 0, 1, -L.x, -L.y);
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
-  for (let i = 0; i < RAYS; i++) {
-    const a = h.from + (h.to - h.from) * (i + 0.5 + (hash(i) - 0.5) * 0.6) / RAYS
-      + 0.015 * Math.sin(t * 0.21 + i);
-    const near = Math.exp(-(((a - h.focus) / 0.22) ** 2));      // 1 on the shrine
-    const width = (0.022 + 0.02 * hash(i + 10)) * (1 + near)
-      + 0.008 * Math.sin(t * 0.5 + i * 1.7);
-    const glow = (0.056 + 0.066 * (0.5 + 0.5 * Math.sin(t * (0.35 + hash(i + 20) * 0.3) + i * 2.1)))
-      * (0.55 + 0.9 * near);
-    const len = h.reach * (0.85 + 0.15 * hash(i + 30));
-    const g = ctx.createLinearGradient(h.x, h.y, h.x + Math.cos(a) * len, h.y + Math.sin(a) * len);
-    // Dark until the rays are past Winchester's bank, then growing as they cross
-    // the river north of the island, so they come down through the air onto the
-    // water and the town rather than starting at the island's edge.
-    g.addColorStop(0, 'rgba(255,238,180,0)');
-    g.addColorStop(0.47, 'rgba(255,238,180,0)');
-    g.addColorStop(0.62, `rgba(255,236,170,${glow})`);
-    g.addColorStop(0.88, `rgba(255,232,160,${glow * 0.8})`);
-    g.addColorStop(1, 'rgba(255,232,160,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(h.x, h.y);
-    ctx.lineTo(h.x + Math.cos(a - width) * len, h.y + Math.sin(a - width) * len);
-    ctx.lineTo(h.x + Math.cos(a + width) * len, h.y + Math.sin(a + width) * len);
-    ctx.closePath();
-    ctx.fill();
-  }
   for (const [i, r] of LANDING.entries()) {
     const a = (t / r.lap) * Math.PI * 2 * (i % 2 ? -1 : 1) + i * 1.7;
     const ex = r.at[0] + Math.cos(a) * r.rx;
     const ey = r.at[1] + Math.sin(a) * r.ry;
     const dx = ex - h.x, dy = ey - h.y, len = Math.hypot(dx, dy);
     const nx = -dy / len, ny = dx / len;
-    const glow = (0.11 + 0.07 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.1 * i) + i * 1.9)));
+    const glow = (0.35 + 0.65 * r.k) * (0.13 + 0.08 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.07 * i) + i * 1.9)));
     const half = r.w * (0.9 + 0.1 * Math.sin(t * 0.45 + i));
     const g = ctx.createLinearGradient(h.x, h.y, ex, ey);
-    // Dark over Winchester's bank, growing across the river, full on the ground.
+    // Out of the sky: nothing high up, growing as it comes down, full on the ground.
     g.addColorStop(0, 'rgba(255,238,180,0)');
-    g.addColorStop(0.55, 'rgba(255,238,180,0)');
+    g.addColorStop(0.45, 'rgba(255,238,180,0)');
     g.addColorStop(0.8, `rgba(255,236,170,${glow * 0.8})`);
     g.addColorStop(1, `rgba(255,236,170,${glow})`);
     ctx.fillStyle = g;
@@ -297,7 +209,7 @@ function drawHoly(out, t, unlocked) {
     ctx.quadraticCurveTo(ex, ey + 2.5, ex - nx * half, ey - ny * half);
     ctx.closePath();
     ctx.fill();
-    // Where it lands, a flat pool of light on the shadow.
+    // Where it lands, a flat pool of light on the ground.
     ctx.save();
     ctx.translate(ex, ey);
     ctx.scale(1, 0.4);
@@ -308,45 +220,20 @@ function drawHoly(out, t, unlocked) {
     ctx.fillRect(-half * 1.3, -half * 1.3, half * 2.6, half * 2.6);
     ctx.restore();
   }
-
-  // Warmth over the whole island, and more of it on the shrine.
-  const breathe = 0.5 + 0.5 * Math.sin(t * 0.4);
-  for (const [e, a] of [[ISLAND, 0.056 + 0.018 * breathe], [SHRINE, 0.112 + 0.035 * breathe]]) {
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    ctx.scale(1, e.ry / e.rx);
-    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, e.rx);
-    pool.addColorStop(0, `rgba(255,236,170,${a})`);
-    pool.addColorStop(1, 'rgba(255,236,170,0)');
-    ctx.fillStyle = pool;
-    ctx.fillRect(-e.rx, -e.rx, e.rx * 2, e.rx * 2);
-    ctx.restore();
-  }
-  // Motes of light drifting down through the rays, most of them over the shrine.
-  for (let k = 0; k < 24; k++) {
+  // Motes of light drifting down in the shafts, glowing and gone.
+  for (let k = 0; k < 18; k++) {
+    const r = LANDING[k % LANDING.length];
     const life = 6 + hash(k + 40) * 5;
     const p = ((t / life) + hash(k + 50)) % 1;
-    const wide = k % 3 === 0 ? SHRINE : ISLAND;
-    const x = wide.x + (hash(k + 60) - 0.5) * wide.rx * 1.6 + Math.sin(t * 0.6 + k) * 4;
-    const y = wide.y - wide.ry * 0.9 + hash(k + 70) * wide.ry * 1.4 + p * 25;
-    const r = 0.8 + hash(k + 80) * 1.6;
-    const a = 0.45 * Math.sin(Math.PI * p);
-    ctx.globalAlpha = a;
-    ctx.drawImage(sprite('255,245,205'), x - r * 2, y - r * 2, r * 4, r * 4);
-    ctx.globalAlpha = 1;
+    // Somewhere along the lower part of its shaft, drifting down it.
+    const f = 0.6 + 0.35 * ((hash(k + 60) + p * 0.3) % 1);
+    const x = h.x + (r.at[0] - h.x) * f + (hash(k + 70) - 0.5) * r.w + Math.sin(t * 0.6 + k) * 2;
+    const y = h.y + (r.at[1] - h.y) * f;
+    const rad = 0.8 + hash(k + 80) * 1.4;
+    ctx.globalAlpha = 0.45 * Math.sin(Math.PI * p);
+    ctx.drawImage(sprite('255,245,205'), x - rad * 2, y - rad * 2, rad * 4, rad * 4);
   }
   ctx.restore();
-
-  // FADED OUT AT THE RIVER. The light is cut to the land and eased off over the
-  // last few px before the water, so it lies on the island and not on the river.
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalCompositeOperation = 'destination-in';
-  ctx.drawImage(mask, L.x / 2, L.y / 2, L.w / 2, L.h / 2, 0, 0, L.w, L.h);
-  ctx.globalCompositeOperation = 'source-over';
-  out.save();
-  out.globalCompositeOperation = 'screen';
-  out.drawImage(holyLayer, L.x, L.y);
-  out.restore();
 }
 
 // --- the campfire --------------------------------------------------------------
