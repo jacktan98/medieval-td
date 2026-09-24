@@ -1,6 +1,6 @@
 // THE TOWNS ON THE WORLD MAP, ALIVE: smoke from Ironforge and from the castles
 // and workshops, Oakhaven's campfire, the castle banners, Dawnford's fountain and
-// the holy light on it, and the trees in the wind. At the owner's ask, alongside
+// the holy light on it, and Fernshadow in the wind. At the owner's ask, alongside
 // the water in src/motion.js.
 //
 // ONLY WHERE THE PLAYER HAS BEEN. Each town wakes when the first of its stages is
@@ -16,7 +16,7 @@
 
 import { art } from './assets.js';
 
-const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true, trees: true,
+const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true,
              forest: true, birds: true, tumbleweeds: true, pristine: true };
 
 // The first stage of each town, by index into STAGES — the town wakes when the
@@ -64,24 +64,6 @@ const BANNERS = [
 
 const FOUNTAIN = { x: 517.5, y: 264, bowl: 276, town: 'dawnford' };
 
-// A tree: where its canopy meets its trunk, how wide the canopy is either side,
-// and how tall. The trunk stays; the crown sways.
-const TREES = [
-  { x: 136, y: 46, w: 14, h: 20, town: 'oakhaven' },
-  { x: 160, y: 60, w: 14, h: 20, town: 'oakhaven' },
-  { x: 265, y: 64, w: 13, h: 18, town: 'winchester' },
-  { x: 372, y: 55, w: 14, h: 20, town: 'winchester' },
-  { x: 571, y: 186, w: 14, h: 18, town: 'dawnford' },
-  { x: 566, y: 290, w: 15, h: 20, town: 'dawnford' },
-  { x: 782, y: 243, w: 14, h: 20, town: 'ironforge' },
-  { x: 802, y: 262, w: 14, h: 18, town: 'ironforge' },
-  { x: 724, y: 291, w: 14, h: 18, town: 'ironforge' },
-  { x: 941, y: 290, w: 14, h: 18, town: 'ironforge' },
-  { x: 784, y: 324, w: 13, h: 18, town: 'ironforge' },
-  { x: 856, y: 364, w: 14, h: 20, town: 'ironforge' },
-  { x: 926, y: 366, w: 14, h: 20, town: 'ironforge' },
-  { x: 737, y: 380, w: 13, h: 18, town: 'ironforge' }
-];
 
 const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const awake = (town, unlocked) => unlocked > TOWN[town];
@@ -304,7 +286,7 @@ function drawFountain(ctx, t, unlocked) {
   ctx.stroke();
 }
 
-// --- banners and trees: the map's own pixels, bent ----------------------------
+// --- banners: the map's own pixels, bent ------------------------------------
 //
 // NOT REDRAWN, MOVED. A banner and a tree are already painted into the map, so they
 // are taken off the canvas as it stands — lit, textured and inked exactly as the
@@ -341,17 +323,6 @@ function drawBanners(ctx, t, unlocked, src) {
   });
 }
 
-function drawTrees(ctx, t, unlocked, src) {
-  TREES.forEach((tr, i) => {
-    if (!awake(tr.town, unlocked)) return;
-    // A gust crosses the map west to east, so neighbouring trees lean in turn.
-    const gust = wind(t, tr.x);
-    const sway = 0.55 * gust * Math.sin(t * 1.3 - tr.x * 0.02 + hash(i) * 2)
-      + 0.2 * Math.sin(t * 2.9 + i);
-    // v is 0 at the top of the crown and 1 where it meets the trunk.
-    bend(ctx, src, tr.x - tr.w - 1, tr.y - tr.h, tr.w * 2 + 2, tr.h, v => sway * (1 - v) * (1 - v));
-  });
-}
 
 // --- Fernshadow ----------------------------------------------------------------
 //
@@ -529,7 +500,6 @@ export function drawPristine(ctx) {
 // `unlocked` is how many stages the player has reached.
 // `src` is the still map the towns stand on — see stillMap in src/overview.js.
 export function drawLife(ctx, t, unlocked, src) {
-  if (ON.trees) drawTrees(ctx, t, unlocked, src);
   if (ON.banners) drawBanners(ctx, t, unlocked, src);
   if (ON.fire) drawFire(ctx, t, unlocked);
   if (ON.fountain) drawFountain(ctx, t, unlocked);
