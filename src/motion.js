@@ -247,6 +247,11 @@ function buildMasks(img) {
   });
   currents.river.length = 0;
   currents.lake.length = 0;
+  // Where the falls land is not a bank: the foam there is the falls' own.
+  const fm = faceMask.getContext('2d').getImageData(0, 0, 960, 540).data;
+  const fallsAt = new Uint8Array(960 * 540);
+  for (let i = 0; i < fallsAt.length; i++) fallsAt[i] = fm[i * 4 + 3] > 8 ? 1 : 0;
+  shore = findShore(riverFlow, fallsAt);
   fallsBox = bounds(FALLS);
   maskFrom = img;
 }
@@ -323,6 +328,7 @@ function drawShimmer(ctx, t) {
   if (!CURRENTS && river) pass(ctx, t, RIVER_BANDS, WHOLE_BOARD, RIVER_FLOW, river);
   if (falls) pass(ctx, t, FALL_BANDS, fallsBox, FALLS_FLOW, falls);
   if (CURRENTS) drawCurrents(ctx, t);
+  if (CURRENTS) drawShore(ctx, t);
   if (FALLING) drawFalls(ctx, t);
 }
 
@@ -694,13 +700,14 @@ function drawFalls(ctx, t) {
   g.stroke();
 
   // THE CURTAIN'S FOOT: white water where the sheet hits the pool, churning —
-  // a band of foam across the bottom of the sheet whose brightness moves along it.
-  for (let i = 0; i <= 30; i++) {
-    const u = i / 30;
-    const churn = 0.45 + 0.3 * Math.sin(t * 5.1 + u * 13) + 0.2 * Math.sin(t * 3.7 - u * 7);
-    for (const [v, r, a] of [[0.93, 3.2, 0.55], [0.84, 2.4, 0.30]]) {
+  // three bands of foam across the bottom of the sheet, their brightness rolling
+  // along it at different speeds.
+  for (let i = 0; i <= 36; i++) {
+    const u = i / 36;
+    const churn = 0.5 + 0.3 * Math.sin(t * 5.1 + u * 13) + 0.25 * Math.sin(t * 3.7 - u * 7);
+    for (const [v, r, a] of [[0.96, 3.8, 0.75], [0.89, 3.0, 0.5], [0.8, 2.2, 0.28]]) {
       const [x, y] = laneAt(u, v);
-      g.fillStyle = `rgba(${FOAM_TINT},${Math.max(0, churn * a)})`;
+      g.fillStyle = `rgba(${FOAM_TINT},${Math.max(0, Math.min(1, churn * a))})`;
       g.beginPath();
       g.ellipse(x, y, r, r * 0.7, 0, 0, Math.PI * 2);
       g.fill();
@@ -714,50 +721,185 @@ function drawFalls(ctx, t) {
   ctx.drawImage(face.layer, face.rect.x, face.rect.y);
 
   ctx.save();
-  // RIPPLES on the pool, under the spray: rings spreading from the foot and fading,
-  // flattened to the map's own foreshortening.
   const [cx, cy] = mix(FOOT[0], FOOT[1], 0.5);
-  if (river) {
-    ctx.save();
-    for (let k = 0; k < 3; k++) {
-      const p = ((t / 2.6) + k / 3) % 1;
-      ctx.strokeStyle = `rgba(${FOAM_TINT},${0.5 * (1 - p) * Math.min(1, p / 0.15)})`;
-      ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.ellipse(cx - 2, cy + 6 + p * 5, 18 + p * 30, (18 + p * 30) * 0.3, 0, 0.05 * Math.PI, 0.95 * Math.PI);
-      ctx.stroke();
-    }
-    ctx.restore();
+  const span = Math.hypot(FOOT[1][0] - FOOT[0][0], FOOT[1][1] - FOOT[0][1]);
+
+  // RIPPLES on the pool, under the rest: rings spreading from the foot and fading,
+  // flattened to the map's own foreshortening, each a little off-centre and out of
+  // step with the last so they read as rings on moving water, not a target.
+  for (let k = 0; k < 6; k++) {
+    const p = ((t / 3.2) + k / 6) % 1;
+    const off = (hash(k + 700) - 0.5) * span * 0.5;
+    const rx = span * 0.35 + p * 42, ry = rx * 0.3;
+    ctx.strokeStyle = `rgba(${FOAM_TINT},${0.55 * (1 - p) * Math.min(1, p / 0.12)})`;
+    ctx.lineWidth = 1.1 - 0.5 * p;
+    ctx.beginPath();
+    ctx.ellipse(cx + off, cy + 7 + p * 7, rx, ry, 0, 0.04 * Math.PI, 0.96 * Math.PI);
+    ctx.stroke();
   }
 
-  // MIST, a few soft clouds over the foot, breathing and drifting up.
-  for (let k = 0; k < 4; k++) {
-    const p = ((t / (3.2 + k * 0.7)) + hash(k + 90)) % 1;
-    const [mx, my] = mix(FOOT[0], FOOT[1], 0.15 + 0.23 * k);
-    const r = 12 + 10 * p;
-    const a = 0.30 * Math.sin(Math.PI * p);
-    const grad = ctx.createRadialGradient(mx, my - 4 - p * 12, 0, mx, my - 4 - p * 12, r);
-    grad.addColorStop(0, `rgba(${FOAM_TINT},${a})`);
-    grad.addColorStop(1, `rgba(${FOAM_TINT},0)`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(mx - r, my - 4 - p * 12 - r, r * 2, r * 2);
+  // THE BOIL: foam heaving up in the pool just past the foot — soft white blobs
+  // that swell, drift away from the falls and melt, all along the landing line.
+  for (let k = 0; k < 26; k++) {
+    const life = 1.4 + hash(k + 800) * 1.2;
+    const p = ((t / life) + hash(k + 810)) % 1;
+    const [bx, by] = mix(FOOT[0], FOOT[1], hash(k + 820));
+    const x = bx + (hash(k + 830) - 0.5) * 6 + p * (hash(k + 840) - 0.3) * 10;
+    const y = by + 2 + p * 7;
+    const r = 2 + 4.5 * Math.sin(Math.PI * Math.min(1, p * 1.3));
+    ctx.globalAlpha = 0.7 * (1 - p) * Math.min(1, p / 0.1);
+    ctx.drawImage(soft(FOAM_TINT), x - r, y - r * 0.7, r * 2, r * 1.4);
   }
+  ctx.globalAlpha = 1;
 
-  // SPRAY: specks thrown up and out of the splash, slowing and fading.
-  for (let k = 0; k < 46; k++) {
-    const life = 0.8 + hash(k + 200) * 0.7;
+  // MIST: soft clouds rising off the foot, swelling as they climb and drift with
+  // the air, thick enough to veil the bottom of the sheet.
+  for (let k = 0; k < 9; k++) {
+    const life = 3.4 + hash(k + 90) * 2.6;
+    const p = ((t / life) + hash(k + 91)) % 1;
+    const [mx, my] = mix(FOOT[0], FOOT[1], hash(k + 92));
+    const x = mx + (hash(k + 93) - 0.5) * 12 + p * 10 * Math.sin(t * 0.3 + k);
+    const y = my - 2 - p * 26;
+    const r = 10 + 20 * p;
+    ctx.globalAlpha = 0.34 * Math.sin(Math.PI * p);
+    ctx.drawImage(soft(FOAM_TINT), x - r, y - r, r * 2, r * 2);
+  }
+  ctx.globalAlpha = 1;
+
+  // SPRAY: specks and droplets thrown up and out of the splash, arcing and falling
+  // back — a few big ones among many fine ones.
+  for (let k = 0; k < 90; k++) {
+    const life = 0.7 + hash(k + 200) * 0.8;
     const p = ((t / life) + hash(k + 300)) % 1;
     const [sx, sy] = mix(FOOT[0], FOOT[1], hash(k + 400));
-    const up = 10 + hash(k + 500) * 16, side = (hash(k + 600) - 0.5) * 18;
+    const big = hash(k + 450) < 0.15;
+    const up = (big ? 8 : 12) + hash(k + 500) * (big ? 10 : 22);
+    const side = (hash(k + 600) - 0.5) * 26;
     const e = 1 - (1 - p) * (1 - p);                  // quick out, slowing
-    const x = sx + side * e, y = sy - up * e + 9 * p * p;
-    const r = 0.6 + 1.2 * p;
-    ctx.fillStyle = `rgba(${FOAM_TINT},${0.8 * (1 - p)})`;
+    const x = sx + side * e, y = sy - up * e + 14 * p * p;
+    const r = big ? 1.1 + 0.8 * p : 0.5 + 0.9 * p;
+    // Stamped rather than traced: at this size a soft dot and a circle look the
+    // same, and ninety paths a frame were most of what the spray cost.
+    ctx.globalAlpha = 0.85 * (1 - p);
+    ctx.drawImage(dot(), x - r * 1.4, y - r * 1.4, r * 2.8, r * 2.8);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// --- spray on the banks ---------------------------------------------------------
+//
+// WHERE THE RIVER RUNS INTO LAND, it throws up spray: small bursts of white off
+// the outside of every bend, and against the rocks and islands in its way. Found
+// once from the flow field — a bank cell whose current points into land that goes
+// on being land for a good way (so a bridge's thin deck does not count) — and
+// spaced out along the banks. Each spot bursts now and then on its own beat.
+const SHORE_GAP = 13;         // canvas px between spray spots
+let shore = [];
+
+function findShore(f, fallsMask) {
+  const out = [];
+  const dry = (x, y) => {
+    const xi = Math.round(x / R), yi = Math.round(y / R);
+    if (xi < 0 || yi < 0 || xi >= f.W || yi >= f.H) return false;
+    return !f.wet[yi * f.W + xi];
+  };
+  for (const i of f.cells) {
+    if (f.bank[i] > R * 1.5) continue;
+    const x = (i % f.W) * R, y = ((i / f.W) | 0) * R;
+    if (x < 8 || x > 952 || y < 8 || y > 532) continue;
+    const v = flowAt(f, x, y);
+    if (!v) continue;
+    const [dx, dy] = v;
+    // Real river, not a speck of water-coloured paint on a wall: plenty of water
+    // round it.
+    const xi = i % f.W, yi = (i / f.W) | 0;
+    let wetAround = 0;
+    for (let oy = -4; oy <= 4; oy++) for (let ox = -4; ox <= 4; ox++) {
+      const X = xi + ox, Y = yi + oy;
+      if (X >= 0 && Y >= 0 && X < f.W && Y < f.H && f.wet[Y * f.W + X]) wetAround++;
+    }
+    if (wetAround < 30) continue;
+    // The current running INTO the bank, not along it: the way to the land (down
+    // the distance-to-bank) and the way the water goes have to agree.
+    const bk = (ox, oy) => { const X = xi + ox, Y = yi + oy; return X >= 0 && Y >= 0 && X < f.W && Y < f.H ? f.bank[Y * f.W + X] : 0; };
+    let lx = bk(-2, 0) - bk(2, 0), ly = bk(0, -2) - bk(0, 2);
+    const lm = Math.hypot(lx, ly);
+    if (lm < 1e-3 || (dx * lx + dy * ly) / lm < 0.55) continue;
+    // Land straight ahead, and still land well beyond it.
+    if (!dry(x + dx * 4, y + dy * 4) || !dry(x + dx * 16, y + dy * 16) || !dry(x + dx * 30, y + dy * 30)) continue;
+    if (fallsMask && fallsMask[Math.round(y) * 960 + Math.round(x)]) continue;
+    if (out.some(p => Math.abs(p.x - x) < SHORE_GAP && Math.abs(p.y - y) < SHORE_GAP)) continue;
+    out.push({ x, y, dx, dy, n: out.length });
+  }
+  return out;
+}
+
+function drawShore(ctx, t) {
+  if (!shore.length) return;
+  ctx.save();
+  for (const s of shore) {
+    const cycle = 2.2 + hash(s.n + 900) * 3.5;
+    const p = ((t / cycle) + hash(s.n + 910)) % 1;
+    const BURST = 0.3;                                // of the cycle
+    if (p > BURST) continue;
+    const q = p / BURST;
+    // A crescent of foam against the bank.
+    ctx.strokeStyle = `rgba(${FOAM_TINT},${0.7 * (1 - q)})`;
+    ctx.lineWidth = 1;
+    const ang = Math.atan2(s.dy, s.dx);
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(s.x, s.y, 2 + q * 3, ang - 1.1, ang + 1.1);
+    ctx.stroke();
+    // And a few specks thrown up and back off it.
+    for (let k = 0; k < 4; k++) {
+      const spread = (hash(s.n * 4 + k + 920) - 0.5) * 2.2;
+      const a = ang + Math.PI + spread;
+      const d = 2 + q * (4 + hash(s.n * 4 + k + 930) * 4);
+      const x = s.x + s.dx * 2 + Math.cos(a) * d;
+      const y = s.y + s.dy * 2 + Math.sin(a) * d * 0.6 - Math.sin(Math.PI * q) * 3.5;
+      const r = 0.55 + 0.35 * q;
+      ctx.globalAlpha = 0.85 * (1 - q);
+      ctx.drawImage(dot(), x - r * 1.4, y - r * 1.4, r * 2.8, r * 2.8);
+      ctx.globalAlpha = 1;
+    }
   }
   ctx.restore();
+}
+
+// A small hard-edged droplet, drawn once and stamped.
+let dotSheet = null;
+function dot() {
+  if (!dotSheet) {
+    dotSheet = document.createElement('canvas');
+    dotSheet.width = dotSheet.height = 16;
+    const g = dotSheet.getContext('2d');
+    const grad = g.createRadialGradient(8, 8, 0, 8, 8, 8);
+    grad.addColorStop(0, `rgba(${FOAM_TINT},1)`);
+    grad.addColorStop(0.6, `rgba(${FOAM_TINT},1)`);
+    grad.addColorStop(1, `rgba(${FOAM_TINT},0)`);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 16, 16);
+  }
+  return dotSheet;
+}
+
+// A soft round puff, drawn once per colour and stamped.
+const softs = new Map();
+function soft(rgb) {
+  let c = softs.get(rgb);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, `rgba(${rgb},1)`);
+    grad.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    softs.set(rgb, c);
+  }
+  return c;
 }
 
 // The one thing src/overview.js calls. `t` is wall-clock seconds — this is screen
