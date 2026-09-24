@@ -163,6 +163,13 @@ function landing(t) {
   return { drop, squash };
 }
 
+// WHEN THE SOUND STARTS, so the thud in it lands with the flag. The file's leading
+// silence is skipped by the loader; what is left has a short swish before the
+// impact, which peaks THUD_LEAD seconds in (measured off Flag_planted.mp3). So the
+// sound starts that much before the flag touches down at FALL.
+const THUD_LEAD = 0.11;
+const THUD_AT = FALL - THUD_LEAD / FLAG_SECONDS;
+
 // Begin revealing the road into stage `i`. The caller has already counted the
 // stage as unlocked — this governs how much of it is DRAWN, not whether it
 // exists, which is what lets a tap skip straight to the end without losing the
@@ -175,14 +182,17 @@ export function stepReveal(state, dt) {
   const r = state.reveal;
   if (!r) return;
   r.t += dt / (r.phase === 'road' ? (r.seconds || ROAD_MIN_SECONDS) : FLAG_SECONDS);
+  // THE FLAG GOES IN WHEN IT LANDS, at the owner's word — it used to sound as the
+  // flag set off, half a second before it reached the ground. Here rather than in
+  // the drawing, because it happens once and the drawing runs sixty times a second.
+  if (r.phase === 'flag' && !r.sounded && r.t >= THUD_AT) {
+    r.sounded = true;
+    solo(FLAG_PLANTED);
+  }
   if (r.t < 1) return;
   if (r.phase === 'road') {
     r.phase = 'flag';
     r.t = 0;
-    // THE FLAG GOES IN. Here rather than in the drawing, because it happens once
-    // and the drawing runs sixty times a second — and here rather than where the
-    // reveal is STARTED, because that is a road's length earlier than the flag.
-    solo(FLAG_PLANTED);
     return;
   }
   state.reveal = null;
@@ -1208,7 +1218,7 @@ export function drawOverview(ctx, state) {
   // stay still.
   drawMotion(ctx, now);
   // And the towns the player has reached, alive — see src/life.js.
-  drawLife(ctx, now, unlocked, base);
+  drawLife(ctx, now, unlocked, base, stillKey);
 
   // THE REGION NAMES, OVER ALL OF IT. They are a second image for exactly this
   // reason: the parchment is a multiply, so a name inside the map picks up whatever
