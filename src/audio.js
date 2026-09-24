@@ -497,6 +497,7 @@ const paths = {
   // answers a moment, and these answer a situation that lasts.
   marching:        'assets/audio/sfx/Marching_sound.mp3',
   flag_planted:    'assets/audio/sfx/Flag_planted.mp3',
+  villager_selected: 'assets/audio/sfx/Villager_selected.mp3',
   flag_waving:     'assets/audio/sfx/Flag_waving.mp3',
   bird_chirping:   'assets/audio/sfx/Bird_chirping.mp3',
 
@@ -754,6 +755,8 @@ export const GAIN = {
 // Category A — one at a time, and the rules above about repeating apply.
 export const CUE = {
   archery:      ['archery_1', 'archery_2', 'archery_3', 'archery_4', 'archery_5'],
+  // A villager's own answer when tapped — see selectionCue.
+  villager:     ['villager_selected'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
@@ -1664,6 +1667,9 @@ export function selectionCue(sel) {
   // gap waiting to be filled: the five lines in this game belong to men who fight,
   // and a villager running for his door is not one of them. The tap still clicks,
   // which is what tells the player it landed — see the note in src/input.js.
-  if (sel.kind === 'villager') return null;
+  //
+  // UNTIL HE HAD ONE: the owner's "villager selected", on every tap of every
+  // villager on every board.
+  if (sel.kind === 'villager') return CUE.villager;
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

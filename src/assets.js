@@ -165,13 +165,15 @@ export const paths = {
   // `villagers` in src/data/level00.js and src/villagers.js.
   villager:           'assets/units/Villager_Default.png',
   // The villagers who move, on the boards that let them — see src/villagers.js.
-  // Ten drawings: five poses, each facing the player (Front) or away (Back).
+  // Twelve drawings: six poses, each facing the player (Front) or away (Back).
   vill_front_standing:     'assets/villagers/Villager_Front_Standing.png',
+  vill_front_greeting:     'assets/villagers/Villager_Front_Greeting.png',
   vill_front_running:      'assets/villagers/Villager_Front_Running.png',
   vill_front_praying:      'assets/villagers/Villager_Front_Praying.png',
   vill_front_hopping:      'assets/villagers/Villager_Front_Hopping.png',
   vill_front_landing:      'assets/villagers/Villager_Front_Landing.png',
   vill_back_standing:      'assets/villagers/Villager_Back_Standing.png',
+  vill_back_greeting:      'assets/villagers/Villager_Back_Greeting.png',
   vill_back_running:       'assets/villagers/Villager_Back_Running.png',
   vill_back_praying:       'assets/villagers/Villager_Back_Praying.png',
   vill_back_hopping:       'assets/villagers/Villager_Back_Hopping.png',

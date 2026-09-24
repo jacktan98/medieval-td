@@ -12,7 +12,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
-import { VILLAGER_POSE } from './villagers.js';
+import { VILLAGER_POSE, villagerKey } from './villagers.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -1144,16 +1144,64 @@ function drawBuilding(ctx, t, box) {
 // A villager who moves — see src/villagers.js. One shared box for every pose, so
 // the figure stands on the same spot whatever it is doing; mirrored about its own
 // feet when it faces right.
+//
+// A GREETING WAVES. The drawing's raised hand is cut out and swung a little about
+// the shoulder, over a copy of the greeting with the hand taken out and the body
+// under it filled back in from the standing drawing — see greetLayers.
 function drawVillager(ctx, v) {
-  const img = art[`vill_${v.side}_${v.pose}`];
+  const key = villagerKey(v);
+  const img = art[key];
   if (!img) return;
   const [sx, sy, sw, sh] = VILLAGER_POSE.trim;
-  const w = sw * SCALE, h = sh * SCALE;
+  const k = SCALE, w = sw * k, h = sh * k;
   ctx.save();
   ctx.translate(v.x, v.y);
   if (v.flip) ctx.scale(-1, 1);
-  ctx.drawImage(img, sx, sy, sw, sh, -VILLAGER_POSE.pivot[0] * w, -VILLAGER_POSE.pivot[1] * h, w, h);
+  const left = -VILLAGER_POSE.pivot[0] * w, top = -VILLAGER_POSE.pivot[1] * h;
+  const layers = v.pose === 'greeting' && greetLayers(key);
+  if (!layers) {
+    ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);
+  } else {
+    ctx.drawImage(layers.body, sx, sy, sw, sh, left, top, w, h);
+    const hd = VILLAGER_POSE.hand;
+    // Canvas px of the shoulder the hand swings from.
+    const ox = left + (hd.px - sx) * k, oy = top + (hd.py - sy) * k;
+    ctx.translate(ox, oy);
+    ctx.rotate(0.32 * Math.sin(performance.now() / 1000 * 10 + v.n));
+    ctx.translate(-ox, -oy);
+    ctx.drawImage(layers.hand, sx, sy, sw, sh, left, top, w, h);
+  }
   ctx.restore();
+}
+
+// The greeting drawing in two pieces, made once per side: the hand alone, and the
+// rest with the standing drawing's body put back where the hand was.
+const greetCache = new Map();
+function greetLayers(key) {
+  if (greetCache.has(key)) return greetCache.get(key);
+  const img = art[key], still = art[key.replace('_greeting', '_standing')];
+  if (!img || !still || !img.complete || !still.complete) return null;
+  let out = null;
+  try {
+    const W = img.naturalWidth, H = img.naturalHeight, hd = VILLAGER_POSE.hand;
+    const make = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+    const circle = g => { g.beginPath(); g.arc(hd.x, hd.y, hd.r, 0, Math.PI * 2); };
+    const hand = make(), hg = hand.getContext('2d');
+    circle(hg); hg.clip();
+    hg.drawImage(img, 0, 0);
+    const body = make(), bg = body.getContext('2d');
+    bg.drawImage(img, 0, 0);
+    bg.save();
+    circle(bg); bg.clip();
+    bg.clearRect(0, 0, W, H);
+    bg.drawImage(still, 0, 0);
+    bg.restore();
+    out = { body, hand };
+  } catch {
+    out = null;
+  }
+  greetCache.set(key, out);
+  return out;
 }
 
 // One cache entry per drawing per board, because onGround hands back a

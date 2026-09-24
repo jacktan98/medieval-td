@@ -11,6 +11,7 @@ import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
+import { greetVillager } from './villagers.js';
 import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
@@ -328,6 +329,8 @@ export function tap(state, x, y, restart) {
   closeMenu(state);
   state.selected = pickFigure(state, x, y);
   solo(selectionCue(state.selected));
+  // A tapped villager stops to greet the player — see src/villagers.js.
+  if (state.selected && state.selected.kind === 'villager') greetVillager(state, state.selected.ref);
   // Picking somebody up is an action and so is putting them down; tapping bare
   // ground twice is not.
   return !!(state.selected || had);

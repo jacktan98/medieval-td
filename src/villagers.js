@@ -62,63 +62,72 @@ export function makeVillagers(state, level) {
   state.villagers = (level.villagers || []).map((v, i) => ({
     def: VILLAGER, x: v.x, y: v.y,
     // ON A BOARD THAT LETS THEM MOVE, each carries what it is doing. See PLAYS.
-    ...(play ? { live: true, n: i, side: 'front', pose: 'standing', flip: false,
-                 mode: 'idle', path: null, leg: 0 } : {})
+    ...(play ? { live: true, n: i, side: play.before[i] || 'front', pose: 'standing',
+                 flip: false, mode: 'idle', path: null, leg: 0, greetUntil: -1 } : {})
   }));
-  state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: 0, hopAt: null } : null;
+  state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })) } : null;
 }
 
 // --- villagers who move ----------------------------------------------------------
 //
 // ON THE BOARDS THAT SET `villagerPlay`, and only there: the painted villagers are
 // cut out of the artwork (tools/split-map.mjs) and drawn by the game from the
-// owner's ten drawings in assets/villagers — five poses, each facing the player
-// ("front") or turned away ("back"). Every drawing faces LEFT, like every figure
-// in the game; one facing right is the same drawing mirrored.
-//
-// WHICH WAY A VILLAGER FACES is which way the danger is. On Oakhaven the road runs
-// across the top of the village, so the three who gather by the lower houses turn
-// their backs to the player to watch it; the two up at the top right have the road
-// below them and face the player.
+// owner's drawings in assets/villagers — six poses, each facing the player
+// ("front") or turned away ("back"). Every drawing faces LEFT, like every figure in
+// the game; one facing right is the same drawing mirrored.
 export const VILLAGER_POSE = {
   // One shared box for every pose, so a change of pose never moves the figure: all
-  // ten stand on the same ground shadow, centred at (258, 305) on the 512 canvas.
+  // twelve stand on the same ground shadow, centred at (258, 305) on the 512 canvas.
   trim: [206, 176, 96, 142],
-  pivot: [(258 - 206) / 96, (305 - 176) / 142]
+  pivot: [(258 - 206) / 96, (305 - 176) / 142],
+  // The greeting hand, which waves: a circle round it on the 512 canvas, and the
+  // shoulder it swings from.
+  hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
 };
 
-// A board's script. `run` is who runs where when the first enemy of the first wave
-// appears: each runner follows its own path of points and ends at `spot`, beside
-// `to`. `back` is who turns to face the road then; `watch` is who faces the player
-// throughout.
+// A board's script. `before` is which way each villager faces until the first enemy
+// of the first wave appears. Then `run` sends some of them off along a path of
+// points, and `after` is which way each faces from then on. `hops` is who hops and
+// lands, one after another, each time `every` more enemies have fallen.
 const PLAYS = {
   oakhaven: {
-    // Villagers 1 and 2 by the campfire run to villager 3 by the lower houses —
-    // DOWN AND ROUND, not straight at the first house: south past the log, along
-    // the bottom of the village below the house and the grey rock, then in.
+    before: ['front', 'back', 'back', 'front', 'front'],
+    // VILLAGERS 1 AND 2 RUN TO THE ROAD, to the grass just under it beside the
+    // exit flag, at the owner's word: down past the log, along the bottom of the
+    // village below both houses and the plot, then up to the road's edge.
     run: [
       { who: 0, delay: 0,
-        path: [[200, 398], [250, 450], [330, 488], [425, 488], [476, 463]] },
+        path: [[205, 400], [250, 452], [330, 492], [430, 497], [525, 514], [630, 512],
+               [790, 498], [840, 482], [872, 468]] },
       { who: 1, delay: 0.35,
-        path: [[190, 432], [245, 470], [330, 496], [425, 494], [457, 465]] }
+        path: [[190, 432], [245, 470], [330, 500], [430, 505], [530, 520], [630, 518],
+               [790, 506], [850, 490], [895, 478]] }
     ],
-    back: [0, 1, 2],
-    watch: [3, 4]
+    // The road is above them all but villagers 4 and 5, who have it below.
+    after: ['back', 'back', 'back', 'front', 'front'],
+    hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }]
   }
 };
 
 const RUN_SPEED = 46;         // px a second
-const STRIDE = 0.13;          // seconds a running step lasts
-const KILLS_PER_HOP = 10;     // the villagers hop together each time this many fall
 const HOP_GAP = 0.16;         // seconds between one villager's hop and the next's
 const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawings show
+export const GREET_SECONDS = 1;       // how long a tapped villager greets the player
 
-// Three of them praying with their backs to the player, taking turns: each is
-// PRAY_BACK seconds standing and PRAY_BACK praying, a little out of step with the
-// next. The two who face the player pray now and then: WATCH_PRAY in every
-// WATCH_CYCLE seconds.
-const PRAY_BACK = 2.2;
-const WATCH_CYCLE = 7, WATCH_PRAY = 1.8;
+// NOW AND THEN, not all the time, and each villager on their own beat: before the
+// first wave they greet (GREET_FOR in every GREET_CYCLE seconds); once it has come
+// they pray (PRAY_FOR in every PRAY_CYCLE).
+const GREET_CYCLE = 8, GREET_FOR = 1.6;
+const PRAY_CYCLE = 6.5, PRAY_FOR = 2.4;
+
+// A TAP ON A VILLAGER, from src/input.js. One facing the player stops what they are
+// doing and greets for a second; one with their back to the player turns round to
+// do it. A runner stops mid-stride and then carries on.
+export function greetVillager(state, v) {
+  const vp = state.villagerPlay;
+  if (!vp || !v || !v.live) return;
+  v.greetUntil = vp.t + GREET_SECONDS;
+}
 
 export function updateVillagers(state, dt) {
   const vp = state.villagerPlay;
@@ -126,9 +135,11 @@ export function updateVillagers(state, dt) {
   vp.t += dt;
   const { plan } = vp;
 
-  // THE FIRST ENEMY OF THE FIRST WAVE sends the runners off.
+  // THE FIRST ENEMY OF THE FIRST WAVE sends the runners off, and turns everyone to
+  // face the way they will watch from now on.
   if (!vp.started && state.enemies.length) {
     vp.started = true;
+    for (const v of state.villagers) if (v.live) v.side = plan.after[v.n] || v.side;
     for (const r of plan.run) {
       const v = state.villagers[r.who];
       if (!v) continue;
@@ -137,54 +148,66 @@ export function updateVillagers(state, dt) {
       v.path = r.path;
       v.leg = 0;
     }
-    for (const i of plan.back) {
-      const v = state.villagers[i];
-      if (v && v.mode === 'idle') v.side = 'back';
-    }
   }
 
-  // EVERY TENTH KILL, a hop down the line.
-  const hops = Math.floor((state.slain || 0) / KILLS_PER_HOP);
-  if (hops > vp.hops) { vp.hops = hops; vp.hopAt = vp.t; }
+  // THE HOPS, each group on its own count of the fallen.
+  plan.hops.forEach((h, k) => {
+    const n = Math.floor((state.slain || 0) / h.every);
+    if (n > vp.hops[k].n) { vp.hops[k].n = n; vp.hops[k].at = vp.t; }
+  });
 
   for (const v of state.villagers) {
     if (!v.live) continue;
+    const greeting = vp.t < v.greetUntil;
 
     if (v.mode === 'wait' && vp.t >= v.leaveAt) v.mode = 'run';
 
     if (v.mode === 'run') {
+      if (greeting) { v.pose = 'greeting'; v.greetSide = 'front'; continue; }
       const [tx, ty] = v.path[v.leg];
       const dx = tx - v.x, dy = ty - v.y, d = Math.hypot(dx, dy);
       const stepLen = RUN_SPEED * dt;
       if (d <= stepLen) {
         v.x = tx; v.y = ty;
         v.leg++;
-        if (v.leg >= v.path.length) { v.mode = 'idle'; v.side = 'back'; v.flip = false; }
+        if (v.leg >= v.path.length) {
+          v.mode = 'idle';
+          v.side = plan.after[v.n] || v.side;
+          v.flip = false;
+        }
       } else {
         v.x += dx / d * stepLen;
         v.y += dy / d * stepLen;
-        // FRONT while running: they are running down the board, towards the player.
-        v.side = 'front';
         v.flip = dx > 0;                     // the drawings face left
       }
-      v.pose = v.mode === 'run' && Math.floor(vp.t / STRIDE) % 2 === 0 ? 'running' : 'standing';
-      continue;
+      // THE RUNNING DRAWING AND NOTHING ELSE, the whole way, facing the player.
+      if (v.mode === 'run') { v.pose = 'running'; v.greetSide = null; v.runSide = 'front'; continue; }
     }
 
-    // Standing, praying, or hopping.
     let pose = 'standing';
-    if (plan.watch.includes(v.n)) {
-      const c = (vp.t + v.n * 2.9) % WATCH_CYCLE;
-      if (c < WATCH_PRAY) pose = 'praying';
-    } else if (vp.started && v.side === 'back') {
-      const c = (vp.t + v.n * 0.9) % (PRAY_BACK * 2);
-      if (c >= PRAY_BACK) pose = 'praying';
+    if (!vp.started) {
+      if ((vp.t + v.n * 2.3) % GREET_CYCLE < GREET_FOR) pose = 'greeting';
+    } else if (v.mode === 'idle') {
+      if ((vp.t + v.n * 1.9) % PRAY_CYCLE < PRAY_FOR) pose = 'praying';
     }
-    if (vp.hopAt !== null) {
-      const h = vp.t - vp.hopAt - v.n * HOP_GAP;
-      if (h >= 0 && h < HOP_UP) pose = 'hopping';
-      else if (h >= HOP_UP && h < HOP_UP + HOP_DOWN) pose = 'landing';
-    }
+    plan.hops.forEach((h, k) => {
+      const at = vp.hops[k].at;
+      const j = h.who.indexOf(v.n);
+      if (at === null || j < 0) return;
+      const t = vp.t - at - j * HOP_GAP;
+      if (t >= 0 && t < HOP_UP) pose = 'hopping';
+      else if (t >= HOP_UP && t < HOP_UP + HOP_DOWN) pose = 'landing';
+    });
+    if (greeting) pose = 'greeting';
     v.pose = pose;
+    // A TAPPED villager turns to face the player to greet them.
+    v.greetSide = greeting ? 'front' : null;
   }
+}
+
+// Which drawing a villager is showing: their own side, or the front while a tap has
+// them greeting, or the front while they run.
+export function villagerKey(v) {
+  const side = v.greetSide || (v.mode === 'run' ? 'front' : v.side);
+  return `vill_${side}_${v.pose}`;
 }

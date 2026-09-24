@@ -269,11 +269,12 @@ console.log('\nWhat the panel says\n');
   ok(stats.length === 0 && info.traits.length === 0, '  and carries no statistic at all',
     stats.length ? stats.join(', ') + ' set' : 'health, attack, reach and traits all empty');
 
-  // HE SAYS NOTHING EITHER. The five voices in this game belong to men who fight,
-  // and the line that answers for everything else would ask his `fam` — which he
-  // has not got, so this is a crash as well as a wrong noise.
-  ok(selectionCue(state.selected) === null, '  and has no voice, which is not an oversight',
-    'the five lines belong to men who fight');
+  // HIS OWN SOUND, at the owner's word: "Use villager_selected sound everytime a
+  // villager is selected." One clip, not a fighter's voice, and asked without the
+  // `fam` he has not got, so no crash either.
+  const cue = selectionCue(state.selected);
+  ok(Array.isArray(cue) && cue.length === 1 && cue[0] === 'villager_selected', '  and a tap plays his own sound',
+    cue ? cue.join(', ') : 'nothing');
 
   // AND HE IS NOT IN THE BOOK, at the owner's word: "no need to add this villager
   // in encyclopedia." Asked of the order the encyclopedia is built from.
