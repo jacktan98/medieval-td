@@ -46,8 +46,13 @@ the player.
   the rest face the player. Now and then each one greets (waves).
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 run to the grass below
   the road by the exit flag, then pray now and then with their backs to the player.
-  Villagers 3, 4 and 5 start praying now and then.
+  Villagers 3, 4 and 5 start praying now and then. Once started, praying is the
+  long part: nine seconds in every twelve. As the runners set off, they shout
+  "runnn".
 - **Every 10 enemies killed:** villagers 3, 4 and 5 hop and land, one after another.
 - **Every 12 enemies killed:** villagers 1 and 2 hop and land.
 - **Tapping a villager:** they stop, turn to face the player and greet for 1 second,
   then carry on (a runner carries on running). The tap plays the villager-selected sound.
+- **A star lost** (lives dropping below 18, then below 10): the village cries "nooo".
+
+Their sounds are in `assets/audio/villagers`.

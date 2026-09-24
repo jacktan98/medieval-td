@@ -13,6 +13,7 @@ import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { VILLAGER_POSE, villagerKey } from './villagers.js';
+import { campfire } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -396,6 +397,11 @@ function drawFigures(ctx, state) {
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
   for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
   for (const v of state.villagers || []) if (v.live) add(v.y, 1, () => drawVillager(ctx, v));
+  // A LIVE CAMPFIRE, the world map's fire at board size, over the logs the artwork
+  // keeps (the painted flame is gone from it). Sorted at the logs' own depth and
+  // added after them, so it burns in front of them and behind anyone nearer.
+  const fire = level.campfire;
+  if (fire) add(fire.g, 1, () => campfire(ctx, fire.x, fire.y, performance.now() / 1000, fire.s, true));
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not

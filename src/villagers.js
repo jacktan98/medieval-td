@@ -18,6 +18,8 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
+import { play as sound, VILLAGER_RUN, VILLAGER_NOOO } from './audio.js';
+import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
 // a figure to be: `pickFigure` reads `def.r` and `def.spriteTrim`, and the info
@@ -65,7 +67,8 @@ export function makeVillagers(state, level) {
     ...(play ? { live: true, n: i, side: play.before[i] || 'front', pose: 'standing',
                  flip: false, mode: 'idle', path: null, leg: 0, greetUntil: -1 } : {})
   }));
-  state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })) } : null;
+  state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })),
+    startLives: level.startLives, stars: null, shouted: false } : null;
 }
 
 // --- villagers who move ----------------------------------------------------------
@@ -118,7 +121,9 @@ export const GREET_SECONDS = 1;       // how long a tapped villager greets the p
 // first wave they greet (GREET_FOR in every GREET_CYCLE seconds); once it has come
 // they pray (PRAY_FOR in every PRAY_CYCLE).
 const GREET_CYCLE = 8, GREET_FOR = 1.6;
-const PRAY_CYCLE = 6.5, PRAY_FOR = 2.4;
+// Praying is the long part — nine seconds of every twelve — so they are not
+// forever bobbing up between prayers.
+const PRAY_CYCLE = 12, PRAY_FOR = 9;
 
 // A TAP ON A VILLAGER, from src/input.js. One facing the player stops what they are
 // doing and greets for a second; one with their back to the player turns round to
@@ -150,6 +155,13 @@ export function updateVillagers(state, dt) {
     }
   }
 
+  // A STAR LOST — lives dropping below 18 and again below 10 on stage 1's 20 — and
+  // the village cries "nooo". Asked of the same rating the result screen uses, so it
+  // is exactly the moment a star goes; not at zero, which the lost sound answers.
+  const stars = starsFor(state.lives, vp.startLives);
+  if (vp.stars !== null && stars < vp.stars && state.lives > 0) sound(VILLAGER_NOOO);
+  vp.stars = stars;
+
   // THE HOPS, each group on its own count of the fallen.
   plan.hops.forEach((h, k) => {
     const n = Math.floor((state.slain || 0) / h.every);
@@ -160,7 +172,11 @@ export function updateVillagers(state, dt) {
     if (!v.live) continue;
     const greeting = vp.t < v.greetUntil;
 
-    if (v.mode === 'wait' && vp.t >= v.leaveAt) v.mode = 'run';
+    if (v.mode === 'wait' && vp.t >= v.leaveAt) {
+      v.mode = 'run';
+      // "RUNNN", once, as the first of them sets off.
+      if (!vp.shouted) { vp.shouted = true; sound(VILLAGER_RUN); }
+    }
 
     if (v.mode === 'run') {
       if (greeting) { v.pose = 'greeting'; v.greetSide = 'front'; continue; }

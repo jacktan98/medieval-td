@@ -223,25 +223,43 @@ function drawHoly(ctx, t, unlocked) {
 function drawFire(ctx, t, unlocked) {
   const f = CAMPFIRE;
   if (!awake(f.town, unlocked)) return;
+  campfire(ctx, f.x, f.y, t, 1);
+}
+
+// THE SAME FIRE, AT ANY SIZE. The world map draws it a few pixels tall; stage 1
+// (Oakhaven's own board) draws it at `s` times that over the logs its artwork keeps,
+// in place of the flame that used to be painted there. `ink` is the board's black
+// outline, which the world map's tiny fire has no room for.
+export function campfire(ctx, x0, y0, t, s, ink = false) {
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
-  const glow = ctx.createRadialGradient(f.x, f.y + 1, 0, f.x, f.y + 1, 11);
+  const R = 11 * s;
+  const glow = ctx.createRadialGradient(x0, y0 + s, 0, x0, y0 + s, R);
   glow.addColorStop(0, `rgba(255,170,70,${0.30 * flick})`);
   glow.addColorStop(1, 'rgba(255,170,70,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(f.x - 11, f.y - 10, 22, 22);
-  // Flames: three tongues licking up out of the logs, each its own height.
-  for (let k = 0; k < 3; k++) {
-    const h = (3.2 + 1.4 * Math.sin(t * (7 + k * 2.3) + k * 2)) * flick;
-    const x = f.x - 1.2 + k * 1.2;
-    const lean = Math.sin(t * 5 + k) * 0.6;
+  ctx.fillRect(x0 - R, y0 + s - R, R * 2, R * 2);
+  // Flames: three tongues licking up out of the logs, each its own height. The
+  // middle one is drawn last so the yellow heart sits in front.
+  for (const k of [0, 2, 1]) {
+    const h = (3.2 + 1.4 * Math.sin(t * (7 + k * 2.3) + k * 2)) * flick * s * (k === 1 ? 1.15 : 1);
+    const x = x0 + (-1.2 + k * 1.2) * s;
+    const lean = Math.sin(t * 5 + k) * 0.6 * s;
+    const w = (k === 1 ? 1.1 : 1) * s;
     ctx.fillStyle = k === 1 ? 'rgba(255,214,110,0.95)' : 'rgba(240,120,50,0.9)';
     ctx.beginPath();
-    ctx.moveTo(x - 1, f.y);
-    ctx.quadraticCurveTo(x - 0.9, f.y - h * 0.5, x + lean, f.y - h);
-    ctx.quadraticCurveTo(x + 0.9, f.y - h * 0.5, x + 1, f.y);
+    ctx.moveTo(x - w, y0);
+    ctx.quadraticCurveTo(x - w * 0.9, y0 - h * 0.5, x + lean, y0 - h);
+    ctx.quadraticCurveTo(x + w * 0.9, y0 - h * 0.5, x + w, y0);
     ctx.closePath();
-    ctx.fill();
+    if (ink) {
+      ctx.fillStyle = k === 1 ? '#ffd66e' : k === 0 ? '#e0441f' : '#f07832';
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    } else ctx.fill();
   }
   // Embers, drifting up and off with the wind.
   for (let k = 0; k < 5; k++) {
@@ -249,13 +267,13 @@ function drawFire(ctx, t, unlocked) {
     const p = ((t / life) + hash(k + 40)) % 1;
     ctx.fillStyle = `rgba(255,${150 + 60 * (1 - p) | 0},60,${0.85 * (1 - p)})`;
     ctx.beginPath();
-    ctx.arc(f.x + (hash(k) - 0.5) * 3 + 4 * p * p, f.y - 3 - 13 * p, 0.45, 0, Math.PI * 2);
+    ctx.arc(x0 + ((hash(k) - 0.5) * 3 + 4 * p * p) * s, y0 - (3 + 13 * p) * s, 0.45 * Math.sqrt(s), 0, Math.PI * 2);
     ctx.fill();
   }
   // And a thread of smoke over it.
   for (let k = 0; k < 4; k++) {
     const p = ((t / 4.5) + k / 4) % 1;
-    puff(ctx, f.x, f.y - 5, p, 16, 9 * wind(t, f.x), 1.2, 4.8, '240,236,226', 0.45);
+    puff(ctx, x0, y0 - 5 * s, p, 16 * s, 9 * wind(t, x0) * s, 1.2 * s, 4.8 * s, '240,236,226', 0.45);
   }
 }
 

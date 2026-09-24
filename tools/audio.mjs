@@ -42,7 +42,7 @@ const RATES = {
 // What the README asks for. Anything outside these is reported, not rejected —
 // the tool's job is to tell you, and whether a 2.4s line is wrong depends on
 // what it is a line of.
-const MAX_S = { sfx: 0.6, voice: 1.5 };
+const MAX_S = { sfx: 0.6, voice: 1.5, villagers: 1.5 };
 const MAX_KB = 50;
 
 // A file's playing time, by adding up its frames.
@@ -102,7 +102,7 @@ function measure(buf) {
 let worst = 0;
 let notes = [];
 
-for (const dir of ['sfx', 'voice']) {
+for (const dir of ['sfx', 'voice', 'villagers']) {
   const files = readdirSync(join(ROOT, dir)).filter(f => f.endsWith('.mp3')).sort();
   if (!files.length) continue;
 

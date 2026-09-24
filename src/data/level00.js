@@ -126,6 +126,12 @@ export const level00 = {
   // Written out by `node tools/split-map.mjs assets/map/Stage_1_Map`, which finds them
   // in the top layer by height and refuses if anything is sitting on the line.
   frontArt: 'front00',
+  // The campfire's flame, drawn live (src/life.js campfire) where the painted one
+  // was: its base on the logs at (x, y), `s` times the world map's fire, sorted at
+  // `g`, the depth of the logs' own front box below.
+  campfire: { x: 123, y: 369, s: 4.6, g: 383 },
+  // Birdsong under the whole battle, at half the world map's already quiet level.
+  ambience: { clip: 'bird_chirping', level: 0.5 },
   front: [
     // THREE OF THESE MOVED BY A PIXEL when the list was last re-derived: two houses
     // at the top left went 81 tall to 82 and the signpost 44 to 43. Nothing about

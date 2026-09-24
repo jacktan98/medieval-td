@@ -1,5 +1,5 @@
 import { loadArt } from './assets.js';
-import { loadAudio, fanfare, VICTORY, LOST, STAR } from './audio.js';
+import { loadAudio, fanfare, setLoop, VICTORY, LOST, STAR } from './audio.js';
 import { level } from './level.js';
 import { openingDelay, MODES } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
@@ -374,6 +374,10 @@ function frame(now) {
   // ones where the answer is silence, which is how the three loops get turned off
   // by starting a game rather than by somebody remembering to stop them.
   mapAudio(state);
+  // A BOARD'S OWN BACKGROUND, stage 1's being the world map's birdsong, soft: for as
+  // long as that board is being played, paused or not, and off at the result.
+  const bg = state.started && !state.result && level.ambience;
+  setLoop(bg ? bg.clip : 'bird_chirping', !!bg, bg ? bg.level : 1, 'board_ambience');
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.

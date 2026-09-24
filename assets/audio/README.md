@@ -1,6 +1,6 @@
 # Audio
 
-**Ninety-seven clips: fifty-two in `sfx/` and forty-five in `voice/`.**
+**Ninety-nine clips: fifty-one in `sfx/`, forty-five in `voice/` and three in `villagers/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -29,10 +29,13 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
-                      Captain_Thug_selected.mp3, Villager_selected.mp3,
+                      Captain_Thug_selected.mp3,
                       Marching_sound.mp3, Flag_planted.mp3,
                       Flag_waving.mp3, Bird_chirping.mp3,
                       Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3
+
+assets/audio/villagers/  Villager_selected.mp3, Villager_say_runnn.mp3,
+                         Villager_say_nooo.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -180,6 +183,9 @@ and it now means "how long a lull has to be before the game forgets".
 | an enemy is selected | `Thug_1`, or its def's own `voice` |
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | `Villager_selected` |
+| stage 1's villagers **start running** (the first enemy of wave 1 appears) | `Villager_say_runnn` |
+| on stage 1, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo` |
+| stage 1 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
 | an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |

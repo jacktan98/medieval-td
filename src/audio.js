@@ -497,7 +497,11 @@ const paths = {
   // answers a moment, and these answer a situation that lasts.
   marching:        'assets/audio/sfx/Marching_sound.mp3',
   flag_planted:    'assets/audio/sfx/Flag_planted.mp3',
-  villager_selected: 'assets/audio/sfx/Villager_selected.mp3',
+  // THE VILLAGERS' OWN FOLDER, assets/audio/villagers, at the owner's word — "i
+  // anticipate there will be much more sound incoming".
+  villager_selected: 'assets/audio/villagers/Villager_selected.mp3',
+  villager_runnn:    'assets/audio/villagers/Villager_say_runnn.mp3',
+  villager_nooo:     'assets/audio/villagers/Villager_say_nooo.mp3',
   flag_waving:     'assets/audio/sfx/Flag_waving.mp3',
   bird_chirping:   'assets/audio/sfx/Bird_chirping.mp3',
 
@@ -937,6 +941,13 @@ export const BOMB = ['bomb_sound'];
 // named by its key rather than chosen from a list.
 export const FLAG_PLANTED = ['flag_planted'];
 
+// --- THE VILLAGERS ------------------------------------------------------------------
+//
+// Stage 1's runners shout as they set off, and the whole village cries out each time
+// a star is lost. Category B, so neither waits on a voice line or cuts one off.
+export const VILLAGER_RUN  = ['villager_runnn'];
+export const VILLAGER_NOOO = ['villager_nooo'];
+
 // --- THE END OF A GAME -----------------------------------------------------------
 //
 // Three clips for the summary panel, and they are the first in this file that are
@@ -1293,15 +1304,18 @@ const loops = new Map();
 // march in particular has to stop ON the flag going in, not a beat after it.
 const LOOP_FADE = 0.35;
 
-export function setLoop(key, on) {
+// `level` scales the clip's own gain and `name` lets one clip run as a second loop:
+// stage 1's birdsong is the world map's birds, softer, under a name of its own so the
+// map switching its birds off every frame of a battle does not switch these off too.
+export function setLoop(key, on, level = 1, name = key) {
   if (!ctx || ctx.state !== 'running') return;
-  const live = loops.get(key);
+  const live = loops.get(name);
   if (on === !!live) return;
 
   const now = ctx.currentTime;
 
   if (!on) {
-    loops.delete(key);
+    loops.delete(name);
     try {
       live.g.gain.cancelScheduledValues(now);
       live.g.gain.setValueAtTime(live.g.gain.value, now);
@@ -1328,9 +1342,9 @@ export function setLoop(key, on) {
   g.gain.value = 0;
   src.connect(g).connect(busB);
   src.start(0, c.offset);
-  g.gain.linearRampToValueAtTime(c.gain, now + LOOP_FADE);
+  g.gain.linearRampToValueAtTime(c.gain * level, now + LOOP_FADE);
 
-  loops.set(key, { src, g });
+  loops.set(name, { src, g });
 }
 
 // Take the channel off whatever is speaking, over 60ms rather than instantly.
