@@ -24,7 +24,7 @@
 
 import { art } from './assets.js';
 import { drawExitFlag, EXIT_TALL } from './flag.js';
-import { STAGES, STAGE_COUNT, playable } from './data/overview.js';
+import { STAGES, STAGE_COUNT, playable, FALLS } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
@@ -758,6 +758,14 @@ const SUN_LIFT = 'rgb(31,27,14)';
 // sheet it runs on is drawn at SMALL, so a wider blur is a bigger box on a small
 // canvas rather than on the full one.
 const LIT_REACH = 132;
+
+// AND WHOLE PLACES THAT COME INTO VIEW WITH A STAGE, beyond what the road lights.
+// Reaching Serene Peak shows the whole of its lake and the falls, at the owner's
+// word — the road only skirts the lake's eastern end, and the far shore stayed in
+// the dark. Each entry is a stage index and the artboard outlines it lights, with
+// LIT_MARGIN px of light round them so the edge is soft like the rest.
+const LIT_PLACES = [{ stage: 12, shapes: () => FALLS.slice(0, 2) }];
+const LIT_MARGIN = 26;
 const LIT_BLUR = 165;
 
 let fogSheet = null, sunSheet = null, litSheet = null, fogKey = '';
@@ -1033,6 +1041,18 @@ function makeFog(unlocked, live, frac) {
       g.beginPath();
       g.arc(STAGES[i].x, STAGES[i].y, LIT_REACH, 0, Math.PI * 2);
       g.fill();
+      for (const place of LIT_PLACES) {
+        if (place.stage !== i) continue;
+        g.save();
+        g.scale(0.5, 0.5);                       // the outlines are on the 1920 artboard
+        g.lineWidth = LIT_MARGIN * 2 * 2;
+        for (const d of place.shapes()) {
+          const path = new Path2D(d);
+          g.fill(path);
+          g.stroke(path);
+        }
+        g.restore();
+      }
     }
   }
   g.setTransform(1, 0, 0, 1, 0, 0);
