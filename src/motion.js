@@ -48,11 +48,12 @@ const PULSE = true;
 // the drawing and the road never goes near it, so under the fog it would be frozen
 // for every player, for ever, no matter how far they got.
 //
-// So it is drawn over the fog instead. The drain still does its job — the far
-// country keeps no colour and no detail — and a river you can see from a distance
-// still runs, which is true of rivers. Set this false and the water goes back under
-// the fog with the clouds, still as everything else out there.
-const WATER_THROUGH_FOG = true;
+// It WAS drawn over the fog for that reason, and the owner has since ruled the
+// other way: water nobody has reached yet stays still. Under the fog, the currents,
+// the falls and the lake only move where the player has been — the waterfall comes
+// alive when Serene Peak's country is lit — and the dark keeps them hidden until
+// then. Set this true and the water runs through the fog everywhere again.
+const WATER_THROUGH_FOG = false;
 
 // --- the water ---------------------------------------------------------------
 

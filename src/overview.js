@@ -1207,9 +1207,9 @@ export function drawOverview(ctx, state) {
   // medallions and the flag are the interface and are never in shadow.
   spread(fog);
 
-  // AND THE WATER OVER THE TOP OF THE DARK, which is the one thing allowed through
-  // it. The waterfall is in country the road never reaches, so under the fog it
-  // would never be seen to move at all. See WATER_THROUGH_FOG in src/motion.js.
+  // WHATEVER IS ALLOWED THROUGH THE DARK. The water used to be, and no longer is —
+  // it runs under the fog now, so only water the player has reached moves; see
+  // WATER_THROUGH_FOG in src/motion.js. The birds overhead still come through.
   drawWater(ctx, now);
 
   // AND THE TRAIL OVER ALL OF IT. The dots are the last thing from the artwork
