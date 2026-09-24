@@ -14,11 +14,14 @@
 // Coordinates are canvas px, read off the map as drawn. A redraw of the world map
 // that moves a house moves its chimney away from its smoke — re-read them then.
 
-const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true, trees: true };
+import { art } from './assets.js';
+
+const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true, trees: true,
+             forest: true, birds: true, tumbleweeds: true, pristine: true };
 
 // The first stage of each town, by index into STAGES — the town wakes when the
 // player has reached it.
-const TOWN = { oakhaven: 0, winchester: 2, dawnford: 5, ironforge: 9 };
+const TOWN = { oakhaven: 0, winchester: 2, dawnford: 5, sandshroud: 8, ironforge: 9 };
 
 // SMOKE, AT THE OWNER'S WORD: grey from Ironforge's houses, and black from the
 // castles and the workshops of Winchester and Ironforge. The villages of Oakhaven,
@@ -101,7 +104,7 @@ function drawSmoke(ctx, t, unlocked) {
     if (!awake(c.town, unlocked)) return;
     const w = wind(t, c.x);
     for (let k = 0; k < 9; k++) {
-      const p = ((t / 5.2) + k / 9 + hash(i)) % 1;
+      const p = ((t / 9.5) + k / 9 + hash(i)) % 1;
       // A PALE grey: a mid grey is the grass's own brightness and vanished into it.
       puff(ctx, c.x, c.y, p, 22, 10 * w, 1.8, 6.2, '204,200,194', 0.85);
     }
@@ -111,7 +114,7 @@ function drawSmoke(ctx, t, unlocked) {
     const w = wind(t, c.x);
     // SLOW, at the owner's word: heavy smoke hangs and rolls rather than streams.
     for (let k = 0; k < 12; k++) {
-      const p = ((t / 7.5) + k / 12 + hash(i + 50)) % 1;
+      const p = ((t / 13) + k / 12 + hash(i + 50)) % 1;
       puff(ctx, c.x, c.y, p, 26, 13 * w, 2, 7.5, '26,24,22', 0.8);
     }
     // A spark now and then from the fires under it.
@@ -133,13 +136,13 @@ function drawSmoke(ctx, t, unlocked) {
 // brightening and fading on its own beat so the light seems to breathe, and a few
 // motes of light drifting down through it. Laid on with `screen`, so it lightens
 // what is there without covering it.
-// THE WHOLE ISLAND IS LIT, and the light gathers on the church and the High Altar:
-// the rays fan out to reach every shore, and the ones aimed at those two buildings
-// are the brightest and the widest.
-const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.60 };
+// THE WHOLE ISLAND IS LIT, and the light gathers on the middle of the town: the
+// rays fan out to reach every shore, and the ones aimed at its heart are the
+// brightest and the widest. `focus` is the angle from the source to SHRINE.
+const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.406 };
 const RAYS = 18;
 const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
-const SHRINE = { x: 462, y: 262, rx: 72, ry: 44 };   // the church and the High Altar
+const SHRINE = { x: 520, y: 240, rx: 82, ry: 50 };   // the middle of the town
 
 function drawHoly(ctx, t, unlocked) {
   const h = HOLY;
@@ -321,13 +324,178 @@ function drawTrees(ctx, t, unlocked) {
   });
 }
 
+// --- Fernshadow ----------------------------------------------------------------
+//
+// THE FOREST MOVES AS ONE, a gust rolling through it. Too dense for tree-by-tree
+// bending — every crown overlaps its neighbours — so the whole canopy is cut from
+// the canvas once and put back in small cells, each row of each column pushed by a
+// wave that travels west to east and ripples from row to row, like leaves turning
+// over. Clipped to the forest's outline so the river, the sand and the mountain
+// beside it stay put. It wakes with Sandshroud, the stage beside it.
+const FOREST = [[382, 540], [384, 420], [410, 376], [452, 352], [500, 340], [560, 335],
+  [606, 342], [612, 358], [592, 410], [576, 462], [562, 540]];
+const FOREST_BOX = { x: 380, y: 332, w: 236, h: 208 };
+const forestSheet = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+
+function drawForest(ctx, t, unlocked) {
+  if (!awake('sandshroud', unlocked)) return;
+  const m = ctx.getTransform(), k = m.a;
+  const { x, y, w, h } = FOREST_BOX;
+  const sw = Math.ceil(w * k), sh = Math.ceil(h * k);
+  if (forestSheet.width !== sw || forestSheet.height !== sh) { forestSheet.width = sw; forestSheet.height = sh; }
+  const g = forestSheet.getContext('2d');
+  g.clearRect(0, 0, sw, sh);
+  g.drawImage(ctx.canvas, x * k + m.e, y * k + m.f, sw, sh, 0, 0, sw, sh);
+  ctx.save();
+  ctx.beginPath();
+  FOREST.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+  ctx.closePath();
+  ctx.clip();
+  const COL = 10, ROW = 2;
+  for (let cy = 0; cy < h; cy += ROW) {
+    for (let cx = 0; cx < w; cx += COL) {
+      const X = x + cx, Y = y + cy;
+      const gust = wind(t, X) * (0.7 + 0.3 * Math.sin(t * 0.9 - X * 0.025));
+      const dx = 1.5 * gust * Math.sin(t * 1.5 - X * 0.03 + Y * 0.05)
+        + 0.5 * Math.sin(t * 3.1 + Y * 0.45 + X * 0.02);
+      ctx.drawImage(forestSheet, cx * k, cy * k, COL * k, ROW * k, X + dx - 0.25, Y, COL + 0.5, ROW + 0.05);
+    }
+  }
+  ctx.restore();
+}
+
+// --- birds over Oakhaven ---------------------------------------------------------
+//
+// A small flock now and then, low over the village and away east across the open
+// grass, where a dark bird can be seen — over the woods it vanished — wings
+// beating, then gone for a while.
+const FLOCKS = [
+  { seconds: 18, phase: 0.1, from: [110, 112], to: [450, 62], size: 4.6 },
+  { seconds: 26, phase: 0.6, from: [-20, 128], to: [340, 78], size: 4.0 }
+];
+const FLOCK = [[0, 0], [-10, 5], [-9, -5], [-19, 9], [-20, 1]];
+
+function drawBirds(ctx, t, unlocked) {
+  if (!awake('oakhaven', unlocked)) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(34,26,14,0.85)';
+  ctx.lineCap = 'round';
+  for (const f of FLOCKS) {
+    const at = ((t / f.seconds) + f.phase) % 1;
+    const SHOWN = 0.45;
+    if (at > SHOWN) continue;
+    const q = at / SHOWN;
+    const fade = Math.min(1, q / 0.1, (1 - q) / 0.15);
+    const bx = f.from[0] + (f.to[0] - f.from[0]) * q;
+    const by = f.from[1] + (f.to[1] - f.from[1]) * q - Math.sin(q * Math.PI) * 12;
+    FLOCK.forEach(([ox, oy], j) => {
+      const x = bx + ox + Math.sin(t * 1.7 + j) * 1.2, y = by + oy + Math.cos(t * 1.3 + j * 2) * 0.8;
+      const beat = Math.sin(t * 11 + j * 1.9);
+      const s = f.size * (j ? 0.85 : 1), drop = s * 0.5 * beat;
+      ctx.globalAlpha = fade;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(x - s, y - drop);
+      ctx.quadraticCurveTo(x - s * 0.4, y + drop * 0.5, x, y);
+      ctx.quadraticCurveTo(x + s * 0.4, y + drop * 0.5, x + s, y - drop);
+      ctx.stroke();
+    });
+  }
+  ctx.restore();
+}
+
+// --- tumbleweeds across Sandshroud -----------------------------------------------
+//
+// Now and then one blows in off the western edge and rolls east across the sand,
+// spinning and hopping, and fades before it reaches the woods.
+const WEEDS = [
+  { seconds: 12, phase: 0.0, y: 470, r: 5.0, speed: 1 },
+  { seconds: 17, phase: 0.45, y: 512, r: 4.2, speed: 0.8 },
+  { seconds: 21, phase: 0.75, y: 428, r: 3.6, speed: 0.9 }
+];
+
+function drawTumbleweeds(ctx, t, unlocked) {
+  if (!awake('sandshroud', unlocked)) return;
+  ctx.save();
+  for (const [i, wd] of WEEDS.entries()) {
+    const at = ((t / wd.seconds) + wd.phase) % 1;
+    const SHOWN = 0.55;
+    if (at > SHOWN) continue;
+    const q = at / SHOWN;
+    const x = -10 + q * 380 * wd.speed;
+    const hop = Math.abs(Math.sin(q * 28 + i)) * 5 * (0.6 + 0.4 * Math.sin(q * 7));
+    const y = wd.y - hop - q * 12;
+    const fade = Math.min(1, q / 0.05, (1 - q) / 0.2);
+    // Its shadow, on the sand under it.
+    ctx.globalAlpha = 0.25 * fade;
+    ctx.fillStyle = '#3a2a16';
+    ctx.beginPath();
+    ctx.ellipse(x, wd.y - q * 12 + wd.r * 0.9, wd.r * 0.9, wd.r * 0.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // A ball of tangled twigs, spinning as it rolls.
+    ctx.globalAlpha = 0.9 * fade;
+    ctx.strokeStyle = '#6b4c28';
+    ctx.lineWidth = 0.8;
+    const spin = q * 60;
+    for (let k = 0; k < 5; k++) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, wd.r, wd.r * (0.45 + 0.15 * k), spin + k * 0.8, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// --- Serene Peak, pristine -------------------------------------------------------
+//
+// THE GRASS UP BY THE LAKE A LITTLE GREENER, so the high country reads as untouched.
+// The map's grass is one flat colour, so it is found by that colour and nothing
+// else is touched — not the trees, the houses or the lake — and the tint fades out
+// towards the edge of the peak so there is no line where it stops.
+const PEAK = { x: 875, y: 55, rx: 150, ry: 95 };
+const GRASS = [131, 153, 84];
+let pristine = null, pristineFrom = null;
+
+function drawPristine(ctx) {
+  const img = art.overview;
+  if (!img) return;
+  if (pristineFrom !== img) {
+    pristineFrom = img;
+    const c = document.createElement('canvas');
+    c.width = 960; c.height = 540;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, 960, 540);
+    const d = g.getImageData(0, 0, 960, 540);
+    const px = d.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const p = i / 4, x = p % 960, y = (p / 960) | 0;
+      const e = ((x - PEAK.x) / PEAK.rx) ** 2 + ((y - PEAK.y) / PEAK.ry) ** 2;
+      const grass = Math.abs(px[i] - GRASS[0]) < 12 && Math.abs(px[i + 1] - GRASS[1]) < 12 &&
+        Math.abs(px[i + 2] - GRASS[2]) < 12;
+      px[i] = 96; px[i + 1] = 178; px[i + 2] = 72;
+      px[i + 3] = grass && e < 1 ? Math.round(255 * Math.min(1, (1 - e) * 2.5)) : 0;
+    }
+    g.putImageData(d, 0, 0);
+    pristine = c;
+  }
+  ctx.save();
+  ctx.globalCompositeOperation = 'soft-light';
+  ctx.globalAlpha = 0.55;
+  ctx.drawImage(pristine, 0, 0, 960, 540);
+  ctx.restore();
+}
+
 // Called from src/overview.js over the map and under the names and the fog.
 // `unlocked` is how many stages the player has reached.
 export function drawLife(ctx, t, unlocked) {
+  if (ON.pristine) drawPristine(ctx);
   if (ON.trees) drawTrees(ctx, t, unlocked);
   if (ON.banners) drawBanners(ctx, t, unlocked);
   if (ON.fire) drawFire(ctx, t, unlocked);
   if (ON.fountain) drawFountain(ctx, t, unlocked);
   if (ON.smoke) drawSmoke(ctx, t, unlocked);
   if (ON.holy) drawHoly(ctx, t, unlocked);
+  if (ON.forest) drawForest(ctx, t, unlocked);
+  if (ON.birds) drawBirds(ctx, t, unlocked);
+  if (ON.tumbleweeds) drawTumbleweeds(ctx, t, unlocked);
 }
