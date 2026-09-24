@@ -2971,18 +2971,23 @@ function readouts(ctx, state, draw, segs = null) {
   let from = x + icon('hud_gold');
   x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold', draw), state.gold, draw);
   segs?.push([from, x, false, 'hud_gold', 16]);
-  const lifeX = x + 26;
-  from = x + 26 + icon('hud_life');
-  x = statValue(ctx, hudIcon(ctx, 'hud_life', x + 26, 'Lives', draw), state.lives, draw);
+  const lifeX = x + SCRIM_PAD + READOUT_GAP;
+  from = lifeX + icon('hud_life');
+  x = statValue(ctx, hudIcon(ctx, 'hud_life', lifeX, 'Lives', draw), state.lives, draw);
   segs?.push([from, x, false, 'hud_life', lifeX]);
   // This game's own count, not a shared one: map 3 runs ten where the other two
   // run eight, and it is read off the state because that is where the waves the
   // player is actually facing live.
+  //
+  // THE SAME GAP between every pair of bars: a bar ends SCRIM_PAD past its text,
+  // and the next thing starts READOUT_GAP past that — the heart's left edge, or the
+  // wave bar's own left end, whose text sits a further SCRIM_PAD in.
   const n = state.waves.length;
   const wave = `Wave ${Math.min(state.waveIndex + 1, n)} / ${n}`;
-  if (draw) inkText(ctx, wave, x + 26);
-  segs?.push([x + 26 - SCRIM_PAD, x + 26 + ctx.measureText(wave).width, true]);
-  return x + 26 + ctx.measureText(wave).width;
+  const wx = x + SCRIM_PAD + READOUT_GAP + SCRIM_PAD;
+  if (draw) inkText(ctx, wave, wx);
+  segs?.push([wx - SCRIM_PAD, wx + ctx.measureText(wave).width, true]);
+  return wx + ctx.measureText(wave).width;
 }
 
 // --- the scrim the readouts sit on --------------------------------------------
@@ -3009,6 +3014,7 @@ function readouts(ctx, state, draw, segs = null) {
 // and starts being a bar across the top of the artwork.
 const SCRIM_FILL = 'rgba(22,24,18,0.55)';
 const SCRIM_PAD = 10;                  // air either side of the ink it is behind
+const READOUT_GAP = 16;                        // clear space between two bars
 const BAR_H = 22, BAR_TOP = 21 - BAR_H / 2;   // each readout's own bar, round the 21 midline
 
 function drawHud(ctx, state) {

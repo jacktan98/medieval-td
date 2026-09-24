@@ -94,10 +94,16 @@ const W = Math.PI;
 // a ring with ability buttons on it reaches 96 from the middle instead of 68, and
 // clamping every menu by the widest one would drag ordinary build menus 28px
 // further from their own plots for nothing.
+//
+// EDGE_GAP of air between the outermost button and the left, right and bottom
+// edges, at the owner's ask — a button flush with the edge of a phone reads as
+// cut off, and the bottom one sat right on it.
+const EDGE_GAP = 10;
 function centre(plot, margin) {
+  const m = margin + EDGE_GAP;
   return {
-    cx: Math.min(Math.max(plot.x, margin), 960 - margin),
-    cy: Math.min(Math.max(plot.y, HUD_H + margin), 540 - margin)
+    cx: Math.min(Math.max(plot.x, m), 960 - m),
+    cy: Math.min(Math.max(plot.y, HUD_H + margin), 540 - m)
   };
 }
 
