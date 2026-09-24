@@ -3242,14 +3242,20 @@ function drawMenu(ctx, state) {
     ctx.setLineDash([]);
   }
 
-  // Marks which plot the menu will act on. A clamped menu puts a button on top
-  // of the plot, so use a small dot there instead of the full ring.
+  // The cream ring round the cancel button, on EVERY menu. A clamped menu used
+  // to drop it for the dot below, and one pushed in from an edge — which the
+  // edge gap in menu.js makes common — read as a cancel button missing its rim.
+  // The dot still marks which plot a clamped menu will act on.
   ctx.strokeStyle = '#F0E6D2';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  if (clamped) ctx.arc(menu.plot.x, menu.plot.y, 5, 0, Math.PI * 2);
-  else ctx.arc(menu.plot.x, menu.plot.y, PLOT_R, 0, Math.PI * 2);
+  ctx.arc(menu.cx, menu.cy, PLOT_R, 0, Math.PI * 2);
   ctx.stroke();
+  if (clamped) {
+    ctx.beginPath();
+    ctx.arc(menu.plot.x, menu.plot.y, 5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   drawCancel(ctx, menu);
   for (const it of menu.items) drawButton(ctx, state, it);
