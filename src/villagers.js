@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { play as sound, VILLAGER_RUN, VILLAGER_NOOO } from './audio.js';
+import { solo, VILLAGER_RUN, VILLAGER_NOOO } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -115,6 +115,7 @@ const PLAYS = {
 const RUN_SPEED = 46;         // px a second
 const HOP_GAP = 0.16;         // seconds between one villager's hop and the next's
 const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawings show
+const HOPS = 2;                       // hops each time, one straight after the other
 export const GREET_SECONDS = 1;       // how long a tapped villager greets the player
 
 // NOW AND THEN, not all the time, and each villager on their own beat: before the
@@ -159,7 +160,7 @@ export function updateVillagers(state, dt) {
   // the village cries "nooo". Asked of the same rating the result screen uses, so it
   // is exactly the moment a star goes; not at zero, which the lost sound answers.
   const stars = starsFor(state.lives, vp.startLives);
-  if (vp.stars !== null && stars < vp.stars && state.lives > 0) sound(VILLAGER_NOOO);
+  if (vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
   vp.stars = stars;
 
   // THE HOPS, each group on its own count of the fallen.
@@ -175,7 +176,7 @@ export function updateVillagers(state, dt) {
     if (v.mode === 'wait' && vp.t >= v.leaveAt) {
       v.mode = 'run';
       // "RUNNN", once, as the first of them sets off.
-      if (!vp.shouted) { vp.shouted = true; sound(VILLAGER_RUN); }
+      if (!vp.shouted) { vp.shouted = true; solo(VILLAGER_RUN, true, true, true); }
     }
 
     if (v.mode === 'run') {
@@ -210,9 +211,10 @@ export function updateVillagers(state, dt) {
       const at = vp.hops[k].at;
       const j = h.who.indexOf(v.n);
       if (at === null || j < 0) return;
+      // TWICE, hop-land-hop-land, so the player has the time to catch it.
       const t = vp.t - at - j * HOP_GAP;
-      if (t >= 0 && t < HOP_UP) pose = 'hopping';
-      else if (t >= HOP_UP && t < HOP_UP + HOP_DOWN) pose = 'landing';
+      if (t < 0 || t >= HOPS * (HOP_UP + HOP_DOWN)) return;
+      pose = t % (HOP_UP + HOP_DOWN) < HOP_UP ? 'hopping' : 'landing';
     });
     if (greeting) pose = 'greeting';
     v.pose = pose;

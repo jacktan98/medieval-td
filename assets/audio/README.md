@@ -183,8 +183,8 @@ and it now means "how long a lull has to be before the game forgets".
 | an enemy is selected | `Thug_1`, or its def's own `voice` |
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | `Villager_selected` |
-| stage 1's villagers **start running** (the first enemy of wave 1 appears) | `Villager_say_runnn` |
-| on stage 1, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo` |
+| stage 1's villagers **start running** (the first enemy of wave 1 appears) | `Villager_say_runnn`, **before everything**: takes the channel and is never cut off |
+| on stage 1, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the run |
 | stage 1 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
 | an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |

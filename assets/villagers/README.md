@@ -25,6 +25,11 @@ right, for example while running to the right.
 | hopping  | `Villager_Front_Hopping.png`  | `Villager_Back_Hopping.png`  | in the air, during a hop |
 | landing  | `Villager_Front_Landing.png`  | `Villager_Back_Landing.png`  | touching down after it |
 
+**Villagers face the way the enemy comes from.** Most of the time a villager
+faces the direction of the enemy waves: on a board where the enemies walk from right
+to left, the villagers are mirrored in everything they do. (The owner's rule, for
+every stage that gets villagers from here on.)
+
 **Which way a villager faces is which way the danger is.** A villager with the road
 above them turns their back to the player to watch it; one with the road below faces
 the player.
@@ -48,11 +53,11 @@ the player.
   the road by the exit flag, then pray now and then with their backs to the player.
   Villagers 3, 4 and 5 start praying now and then. Once started, praying is the
   long part: nine seconds in every twelve. As the runners set off, they shout
-  "runnn".
-- **Every 10 enemies killed:** villagers 3, 4 and 5 hop and land, one after another.
-- **Every 12 enemies killed:** villagers 1 and 2 hop and land.
+  "runnn", ahead of every other sound.
+- **Every 10 enemies killed:** villagers 3, 4 and 5 hop and land twice, one after another.
+- **Every 12 enemies killed:** villagers 1 and 2 hop and land twice.
 - **Tapping a villager:** they stop, turn to face the player and greet for 1 second,
   then carry on (a runner carries on running). The tap plays the villager-selected sound.
-- **A star lost** (lives dropping below 18, then below 10): the village cries "nooo".
+- **A star lost** (lives dropping below 18, then below 10): the village cries "nooo", ahead of every other sound.
 
 Their sounds are in `assets/audio/villagers`.

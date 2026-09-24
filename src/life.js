@@ -239,28 +239,41 @@ export function campfire(ctx, x0, y0, t, s, ink = false) {
   glow.addColorStop(1, 'rgba(255,170,70,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(x0 - R, y0 + s - R, R * 2, R * 2);
-  // Flames: three tongues licking up out of the logs, each its own height. The
-  // middle one is drawn last so the yellow heart sits in front.
-  for (const k of [0, 2, 1]) {
-    const h = (3.2 + 1.4 * Math.sin(t * (7 + k * 2.3) + k * 2)) * flick * s * (k === 1 ? 1.15 : 1);
-    const x = x0 + (-1.2 + k * 1.2) * s;
-    const lean = Math.sin(t * 5 + k) * 0.6 * s;
-    const w = (k === 1 ? 1.1 : 1) * s;
-    ctx.fillStyle = k === 1 ? 'rgba(255,214,110,0.95)' : 'rgba(240,120,50,0.9)';
+  // THE FLAME, AS A FLAME BURNS: a big red one, an orange one inside it and a
+  // yellow heart inside that, each a teardrop with a rounded bottom sitting in the
+  // logs, each flickering on its own beat so the colours slide over each other.
+  // Two small red tongues either side lick up behind the main body.
+  const tongue = (x, y, w, h, lean) => {
     ctx.beginPath();
-    ctx.moveTo(x - w, y0);
-    ctx.quadraticCurveTo(x - w * 0.9, y0 - h * 0.5, x + lean, y0 - h);
-    ctx.quadraticCurveTo(x + w * 0.9, y0 - h * 0.5, x + w, y0);
+    ctx.moveTo(x - w, y - w * 0.5);
+    ctx.bezierCurveTo(x - w, y - h * 0.55, x + lean * 0.5 - w * 0.25, y - h * 0.8, x + lean, y - h);
+    ctx.bezierCurveTo(x + lean * 0.5 + w * 0.25, y - h * 0.8, x + w, y - h * 0.55, x + w, y - w * 0.5);
+    ctx.bezierCurveTo(x + w, y + w * 0.15, x - w, y + w * 0.15, x - w, y - w * 0.5);
     ctx.closePath();
-    if (ink) {
-      ctx.fillStyle = k === 1 ? '#ffd66e' : k === 0 ? '#e0441f' : '#f07832';
-      ctx.fill();
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 1;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-    } else ctx.fill();
+  };
+  const beat = (f, ph) => Math.sin(t * f + ph);
+  const lift = 0.8 + 0.25 * flick;       // the flicker sways the height, never halves it
+  const red = [
+    [x0 - 1.3 * s, y0 - 0.1 * s, 0.8 * s, (2.6 + 0.7 * beat(8.3, 1)) * s * lift, (-0.7 + 0.4 * beat(4.1, 2)) * s],
+    [x0 + 1.3 * s, y0 - 0.1 * s, 0.8 * s, (2.3 + 0.7 * beat(9.1, 4)) * s * lift, (0.7 + 0.4 * beat(3.7, 5)) * s],
+    [x0, y0, 2.0 * s, (4.6 + 0.8 * beat(6.3, 0) + 0.3 * beat(15, 1)) * s * lift, 0.7 * beat(4.6, 0) * s]
+  ];
+  const orange = [x0 + 0.1 * s * beat(5.2, 3), y0 - 0.15 * s, 1.4 * s, (3.3 + 0.6 * beat(7.7, 2)) * s * lift, 0.6 * beat(5.3, 1) * s];
+  const yellow = [x0 + 0.1 * s * beat(6.1, 5), y0 - 0.3 * s, 0.8 * s, (2.1 + 0.5 * beat(10.3, 3)) * s * lift, 0.4 * beat(6.7, 2) * s];
+  if (ink) {
+    // One black outline round the red silhouette only: stroked first, then the
+    // red filled back over it, so where tongues overlap no line shows inside.
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.2;
+    ctx.lineJoin = 'round';
+    for (const f of red) { tongue(...f); ctx.stroke(); }
   }
+  ctx.fillStyle = ink ? '#d8321b' : 'rgba(216,50,27,0.9)';
+  for (const f of red) { tongue(...f); ctx.fill(); }
+  ctx.fillStyle = ink ? '#f5862a' : 'rgba(245,134,42,0.95)';
+  tongue(...orange); ctx.fill();
+  ctx.fillStyle = ink ? '#ffd95a' : 'rgba(255,217,90,0.95)';
+  tongue(...yellow); ctx.fill();
   // Embers, drifting up and off with the wind.
   for (let k = 0; k < 5; k++) {
     const life = 1.4 + hash(k + 30) * 0.8;

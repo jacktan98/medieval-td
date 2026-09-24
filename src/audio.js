@@ -944,7 +944,10 @@ export const FLAG_PLANTED = ['flag_planted'];
 // --- THE VILLAGERS ------------------------------------------------------------------
 //
 // Stage 1's runners shout as they set off, and the whole village cries out each time
-// a star is lost. Category B, so neither waits on a voice line or cuts one off.
+// a star is lost. RARE, so they come before everything, at the owner's word: "make
+// the run and no sound precede all sound when triggered". Played through `solo` with
+// priority (they take the channel from whatever is speaking), hold (nothing cuts
+// them off) and always (the repeat rules never drop one) — see villagers.js.
 export const VILLAGER_RUN  = ['villager_runnn'];
 export const VILLAGER_NOOO = ['villager_nooo'];
 
@@ -1467,7 +1470,7 @@ export function alone(key, level = 1, rate = 1) {
 
 let holdUntil = 0;
 
-export function solo(cue, priority = false, hold = false) {
+export function solo(cue, priority = false, hold = false, always = false) {
   // Callers pass the result of a lookup straight in, and plenty of things have
   // nothing to say — bare ground, a siege plot, a family with no voice yet.
   if (!cue) return;
@@ -1539,6 +1542,9 @@ export function solo(cue, priority = false, hold = false) {
   // standing between one clip and the whole soundtrack. It stays absolute, and
   // the swing waits its turn or gives up the slot.
   if (!eligible.length && ready.length > 1) eligible = ready.filter(key => key !== last);
+  // `always`: a line so rare in a game that the repeat rules have nothing to guard
+  // against — the villagers' "runnn" and "nooo" — may never be passed over by them.
+  if (always) eligible = ready;
   if (!eligible.length) return;
 
   const key = eligible[(Math.random() * eligible.length) | 0];
