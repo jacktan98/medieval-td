@@ -74,8 +74,12 @@ for (const l of levels) l.routes = l.routes.map(prepare);
 // gets its flags for nothing. Two routes that leave by the same road share one
 // flag. A board that wants its flag somewhere else — stage 5's stands before the
 // bridge, not at the bottom of it — says so with `exitFlags` of its own.
-const EXIT_BOX = { x0: 24, x1: 936, y0: 95, y1: 522 };   // where a foot may stand
-const EXIT_IN = 26;                                       // and this far back along the road
+// The box is as close to the edge as the whole flag stays on screen: its banner
+// reaches ~11px either side of the pole and ~33 above the foot. The top is lower
+// than that, so a road leaving by the top edge plants its flag under the dashboard
+// buttons rather than behind them.
+const EXIT_BOX = { x0: 14, x1: 946, y0: 72, y1: 530 };   // where a foot may stand
+const EXIT_IN = 10;                                       // and this far back along the road
 const EXIT_APART = 60;                                    // closer than this is one exit
 
 const inBox = p => p.x >= EXIT_BOX.x0 && p.x <= EXIT_BOX.x1 && p.y >= EXIT_BOX.y0 && p.y <= EXIT_BOX.y1;

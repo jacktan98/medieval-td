@@ -741,18 +741,6 @@ hand:
 - `Overview_Map_names.svg` — the names alone, in the colour they were drawn, on no
   ground at all. The game draws it over the parchment, under the key
   `overviewNames`.
-- `Rally_Flag_pole.svg` and `Rally_Flag_cloth.svg` — the flag planted on the
-  furthest stage reached, cut out of `Rally_Flag.svg` by `node
-  tools/split-flag.mjs`. Two files because **the pole does not wave with the
-  cloth**: whatever transform makes a drawing flutter applies to all of it, so the
-  pennant is bent about the mast and the pole is drawn flat. Both carry the SAME
-  viewBox, cropped to the two paths together, which is what puts the cloth back on
-  the mast with no numbers lining them up.
-
-  The tool finds the two paths **by colour** — `#74592e` is the pole and `#055dab`
-  is the cloth — so a redraw may reorder them freely but must keep those two fills.
-  It prints the anchors `src/overview.js` holds as constants, and
-  `node tools/campaign.mjs` re-measures the drawing and fails if they drift.
 
 Run the tool after every redraw of any layer:
 
@@ -1007,9 +995,9 @@ None of this is artwork you supply, but it is sized against yours:
   foreshortening, deliberately not the game's `SQUASH` of 0.62, which is the angle
   all three battle boards are drawn at. A locked stage is a grey face and nothing
   else; the padlock that used to sit in it is gone.
-- **The flag** is `Rally_Flag.svg`, split into `Rally_Flag_pole.svg` and
-  `Rally_Flag_cloth.svg` so the pole can stand still while the cloth waves. Its pole
-  stands in the centre of the medallion.
+- **The flag** is the exit flag, `assets/ui/Exit_Flag.png` — the same one that
+  stands by every board's exit — drawn by `src/flag.js`, which waves the banner and
+  keeps the pole still. It stands on the centre of the medallion.
 - **The stars** are radius 10, outlined in the map's own ink at the same weight as
   the medallion, spaced at a multiple of that radius so changing one changes both.
 
