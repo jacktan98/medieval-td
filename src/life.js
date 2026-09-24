@@ -21,7 +21,7 @@ const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true,
 
 // The first stage of each town, by index into STAGES — the town wakes when the
 // player has reached it.
-const TOWN = { oakhaven: 0, winchester: 2, dawnford: 5, sandshroud: 8, ironforge: 9 };
+const TOWN = { oakhaven: 0, winchester: 2, dawnford: 5, sandshroud: 8, ironforge: 9, serene: 12 };
 
 // SMOKE, AT THE OWNER'S WORD: grey from Ironforge's houses, and black from the
 // castles and the workshops of Winchester and Ironforge. The villages of Oakhaven,
@@ -53,7 +53,13 @@ const BANNERS = [
   { x: 880, y: 216, w: 5, h: 12, town: 'ironforge' },
   { x: 893, y: 221, w: 5, h: 12, town: 'ironforge' },
   { x: 917, y: 326, w: 5, h: 11, town: 'ironforge' },
-  { x: 709, y: 346, w: 5, h: 12, town: 'ironforge' }
+  { x: 709, y: 346, w: 5, h: 12, town: 'ironforge' },
+  { x: 407, y: 262, w: 6, h: 11, town: 'dawnford' },     // the church
+  { x: 415, y: 262, w: 6, h: 11, town: 'dawnford' },
+  { x: 429, y: 264, w: 6, h: 12, town: 'dawnford' },
+  { x: 514, y: 205, w: 7, h: 12, town: 'dawnford' },     // the barracks
+  { x: 245, y: 360, w: 6, h: 13, town: 'sandshroud' },   // Sandshroud's barracks
+  { x: 823, y: 66, w: 5, h: 13, town: 'serene' }         // Serene Peak's temple
 ];
 
 const FOUNTAIN = { x: 517.5, y: 264, bowl: 276, town: 'dawnford' };
@@ -429,8 +435,8 @@ function drawForest(ctx, t, unlocked, src) {
     for (let cx = 0; cx < w; cx += COL) {
       const X = x + cx, Y = y + cy;
       const gust = wind(t, X) * (0.7 + 0.3 * Math.sin(t * 0.9 - X * 0.025));
-      const dx = 1.5 * gust * Math.sin(t * 1.5 - X * 0.03 + Y * 0.05)
-        + 0.5 * Math.sin(t * 3.1 + Y * 0.45 + X * 0.02);
+      const dx = 1.2 * gust * Math.sin(t * 1.5 - X * 0.03 + Y * 0.05)
+        + 0.4 * Math.sin(t * 3.1 + Y * 0.45 + X * 0.02);
       ctx.drawImage(src, X * k + m.e, Y * k + m.f, COL * k, ROW * k, X + dx - 0.25, Y, COL + 0.5, ROW + 0.05);
     }
   }
@@ -457,7 +463,7 @@ function drawBirds(ctx, t, unlocked) {
   ctx.lineWidth = 1.1;
   const now = Math.floor(t / BIRD_SLOT);
   for (const n of [now - 1, now]) {
-    if (hash(n * 3.1 + 7) < 0.45) continue;            // about half the slots are empty
+    if (hash(n * 3.1 + 7) < 0.34) continue;            // about a third of the slots are empty
     const start = n * BIRD_SLOT + hash(n * 5.7) * (BIRD_SLOT - FLIGHT);
     const q = (t - start) / FLIGHT;
     if (q < 0 || q > 1) continue;
@@ -501,7 +507,7 @@ function drawTumbleweeds(ctx, t, unlocked) {
   const now = Math.floor(t / WEED_SLOT);
   for (const n of [now - 1, now]) {
     const roll = hash(n * 4.7 + 3);
-    const count = roll < 0.4 ? 0 : roll < 0.75 ? 1 : roll < 0.93 ? 2 : 3;
+    const count = roll < 0.28 ? 0 : roll < 0.68 ? 1 : roll < 0.9 ? 2 : 3;
     for (let i = 0; i < count; i++) {
       const pace = 0.75 + hash(n * 7 + i) * 0.5;
       const dur = ROLL / pace;
