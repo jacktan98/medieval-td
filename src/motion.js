@@ -789,7 +789,8 @@ function drawFalls(ctx, t) {
 
 // --- spray on the banks ---------------------------------------------------------
 //
-// WHERE THE RIVER RUNS INTO LAND, it throws up spray: small bursts of white off
+// WHERE THE RIVER RUNS INTO LAND, it ripples back off the bank, and here and there
+// throws up spray: small bursts of white off
 // the outside of every bend, and against the rocks and islands in its way. Found
 // once from the flow field — a bank cell whose current points into land that goes
 // on being land for a good way (so a bridge's thin deck does not count) — and
@@ -839,6 +840,22 @@ function drawShore(ctx, t) {
   if (!shore.length) return;
   ctx.save();
   for (const s of shore) {
+    const ang = Math.atan2(s.dy, s.dx);
+    // RIPPLES OFF THE BANK, at every spot: small arcs spreading out from the land
+    // back into the river, fading as they go.
+    const rp = ((t / (2.6 + hash(s.n + 940) * 1.6)) + hash(s.n + 950)) % 1;
+    for (const lag of [0, 0.35]) {
+      const q = rp - lag;
+      if (q <= 0) continue;
+      const rr = 2 + q * 9;
+      ctx.strokeStyle = `rgba(${FOAM_TINT},${0.42 * (1 - q)})`;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.ellipse(s.x + s.dx * 3, s.y + s.dy * 3, rr, rr * 0.55, 0, ang + Math.PI - 1, ang + Math.PI + 1);
+      ctx.stroke();
+    }
+    // SPRAY, at four spots in ten: the rest only ripple.
+    if (hash(s.n + 960) >= 0.4) continue;
     const cycle = 2.2 + hash(s.n + 900) * 3.5;
     const p = ((t / cycle) + hash(s.n + 910)) % 1;
     const BURST = 0.3;                                // of the cycle
@@ -847,7 +864,6 @@ function drawShore(ctx, t) {
     // A crescent of foam against the bank.
     ctx.strokeStyle = `rgba(${FOAM_TINT},${0.7 * (1 - q)})`;
     ctx.lineWidth = 1;
-    const ang = Math.atan2(s.dy, s.dx);
     ctx.beginPath();
     ctx.arc(s.x, s.y, 2 + q * 3, ang - 1.1, ang + 1.1);
     ctx.stroke();

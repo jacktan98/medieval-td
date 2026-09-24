@@ -1,7 +1,7 @@
 // THE TOWNS ON THE WORLD MAP, ALIVE: smoke from Ironforge and from the castles
-// and workshops, Oakhaven's campfire, the castle banners, Dawnford's fountain and
-// the holy light on it, and Fernshadow in the wind. At the owner's ask, alongside
-// the water in src/motion.js.
+// and workshops, Oakhaven's campfire, the castle banners, and Dawnford's fountain
+// and the holy light on it. At the owner's ask, alongside the water in
+// src/motion.js.
 //
 // ONLY WHERE THE PLAYER HAS BEEN. Each town wakes when the first of its stages is
 // reached, so unlocking a stage visibly brings a town to life, and the country
@@ -17,7 +17,7 @@
 import { art } from './assets.js';
 
 const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true,
-             forest: true, birds: true, tumbleweeds: true, pristine: true };
+             birds: true, tumbleweeds: true, pristine: true };
 
 // The first stage of each town, by index into STAGES — the town wakes when the
 // player has reached it.
@@ -324,39 +324,6 @@ function drawBanners(ctx, t, unlocked, src) {
 }
 
 
-// --- Fernshadow ----------------------------------------------------------------
-//
-// THE FOREST MOVES AS ONE, a gust rolling through it. Too dense for tree-by-tree
-// bending — every crown overlaps its neighbours — so the whole canopy is cut from
-// the canvas once and put back in small cells, each row of each column pushed by a
-// wave that travels west to east and ripples from row to row, like leaves turning
-// over. Clipped to the forest's outline so the river, the sand and the mountain
-// beside it stay put. It wakes with Sandshroud, the stage beside it.
-const FOREST = [[382, 540], [384, 420], [410, 376], [452, 352], [500, 340], [560, 335],
-  [606, 342], [612, 358], [592, 410], [576, 462], [562, 540]];
-const FOREST_BOX = { x: 380, y: 332, w: 236, h: 208 };
-function drawForest(ctx, t, unlocked, src) {
-  if (!awake('sandshroud', unlocked)) return;
-  const m = ctx.getTransform(), k = m.a;
-  const { x, y, w, h } = FOREST_BOX;
-  ctx.save();
-  ctx.beginPath();
-  FOREST.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
-  ctx.closePath();
-  ctx.clip();
-  const COL = 14, ROW = 3;
-  for (let cy = 0; cy < h; cy += ROW) {
-    for (let cx = 0; cx < w; cx += COL) {
-      const X = x + cx, Y = y + cy;
-      const gust = wind(t, X) * (0.7 + 0.3 * Math.sin(t * 0.9 - X * 0.025));
-      const dx = 1.2 * gust * Math.sin(t * 1.5 - X * 0.03 + Y * 0.05)
-        + 0.4 * Math.sin(t * 3.1 + Y * 0.45 + X * 0.02);
-      ctx.drawImage(src, X * k + m.e, Y * k + m.f, COL * k, ROW * k, X + dx - 0.25, Y, COL + 0.5, ROW + 0.05);
-    }
-  }
-  ctx.restore();
-}
-
 // --- birds over Oakhaven ---------------------------------------------------------
 //
 // A small flock now and then, low over the village and away east across the open
@@ -505,7 +472,6 @@ export function drawLife(ctx, t, unlocked, src) {
   if (ON.fountain) drawFountain(ctx, t, unlocked);
   if (ON.smoke) drawSmoke(ctx, t, unlocked);
   if (ON.holy) drawHoly(ctx, t, unlocked);
-  if (ON.forest) drawForest(ctx, t, unlocked, src);
   if (ON.birds) drawBirds(ctx, t, unlocked);
   if (ON.tumbleweeds) drawTumbleweeds(ctx, t, unlocked);
 }
