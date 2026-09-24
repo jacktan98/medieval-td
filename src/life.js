@@ -164,6 +164,13 @@ function drawSmoke(ctx, t, unlocked) {
 // brightest and the widest. `focus` is the angle from the source to SHRINE.
 const HOLY = { x: 470, y: -60, town: 'dawnford', reach: 440, from: 0.95, to: 2.08, focus: 1.519 };
 const RAYS = 18;
+// RAYS THAT END ON THE GROUND, at the owner's ask: a few shafts come down onto the
+// church and the High Altar and stop at their shadows, with a soft pool of light
+// where each lands. `at` is where the shaft ends, `w` how wide it is there.
+const LANDING = [
+  { at: [418, 282], w: 16 }, { at: [436, 284], w: 12 },   // the church
+  { at: [488, 296], w: 13 }, { at: [500, 292], w: 9 }     // the High Altar
+];
 const ISLAND = { x: 512, y: 252, rx: 235, ry: 95 };
 const SHRINE = { x: 488, y: 250, rx: 82, ry: 50 };   // the town's middle, drawn towards the church
 
@@ -262,6 +269,38 @@ function drawHoly(out, t, unlocked) {
     ctx.closePath();
     ctx.fill();
   }
+  for (const [i, r] of LANDING.entries()) {
+    const [ex, ey] = r.at;
+    const dx = ex - h.x, dy = ey - h.y, len = Math.hypot(dx, dy);
+    const nx = -dy / len, ny = dx / len;
+    const glow = (0.11 + 0.07 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.1 * i) + i * 1.9)));
+    const half = r.w * (0.9 + 0.1 * Math.sin(t * 0.45 + i));
+    const g = ctx.createLinearGradient(h.x, h.y, ex, ey);
+    // Dark over Winchester's bank, growing across the river, full on the ground.
+    g.addColorStop(0, 'rgba(255,238,180,0)');
+    g.addColorStop(0.55, 'rgba(255,238,180,0)');
+    g.addColorStop(0.8, `rgba(255,236,170,${glow * 0.8})`);
+    g.addColorStop(1, `rgba(255,236,170,${glow})`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(h.x, h.y);
+    ctx.lineTo(ex + nx * half, ey + ny * half);
+    // The foot of the shaft follows the ground: a flat curve, not a straight cut.
+    ctx.quadraticCurveTo(ex, ey + 2.5, ex - nx * half, ey - ny * half);
+    ctx.closePath();
+    ctx.fill();
+    // Where it lands, a flat pool of light on the shadow.
+    ctx.save();
+    ctx.translate(ex, ey);
+    ctx.scale(1, 0.4);
+    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, half * 1.3);
+    pool.addColorStop(0, `rgba(255,238,178,${glow * 1.6})`);
+    pool.addColorStop(1, 'rgba(255,238,178,0)');
+    ctx.fillStyle = pool;
+    ctx.fillRect(-half * 1.3, -half * 1.3, half * 2.6, half * 2.6);
+    ctx.restore();
+  }
+
   // Warmth over the whole island, and more of it on the shrine.
   const breathe = 0.5 + 0.5 * Math.sin(t * 0.4);
   for (const [e, a] of [[ISLAND, 0.056 + 0.018 * breathe], [SHRINE, 0.112 + 0.035 * breathe]]) {
