@@ -110,7 +110,10 @@ console.log('\nStill in the picture\n');
 // window, in the base. A cut would empty it.
 {
   const W = 12, UP = 28, DOWN = 6;
-  for (const l of peopled) {
+  // EXCEPT ON A BOARD WHOSE VILLAGERS MOVE — `villagerPlay` — where the owner has
+  // drawn them running, praying and hopping, and the painted ones are cut out so
+  // the game can draw those instead. Asked the other way round below.
+  for (const l of peopled.filter(l => !l.villagerPlay)) {
     const base = allGroups(readFileSync(`${l.src}_base.svg`, 'utf8'));
     const standing = l.villagers.map(v => base.filter(g => {
       const b = bounds(g.subPaths.flat());
@@ -125,7 +128,7 @@ console.log('\nStill in the picture\n');
   // AND THE BASE IS THE ONE THE BOARD HAD BEFORE THEY WERE NAMED. Nothing is cut
   // for a villager, so adding the list must not have moved a single byte of the
   // artwork — which is the strongest form of "his pose is unchanged" there is.
-  for (const l of peopled) {
+  for (const l of peopled.filter(l => !l.villagerPlay)) {
     const art = readArtwork(l.src);
     const base = readFileSync(`${l.src}_base.svg`, 'utf8');
     const kept = l.villagers.filter(v => {
@@ -142,24 +145,37 @@ console.log('\nStill in the picture\n');
   }
 }
 
-// AND NOTHING IN THE GAME DRAWS ONE. The draw, the update loop and the tap that
-// sent him running were three separate edits and all three had to come out; a
-// villager still in the render pass would be a second copy of a man who is already
-// painted on the board, drawn over himself.
+// AND ON A BOARD WHOSE VILLAGERS MOVE, THE OPPOSITE: none of them is left painted
+// in the base — a painted one under a live one is the same man twice — and the
+// game draws every one of them.
 {
-  const files = ['render.js', 'main.js', 'input.js', 'villagers.js'];
-  const ghosts = files.filter(f => /drawVillager|updateVillagers|sendVillager/.test(code(f)));
-  ok(ghosts.length === 0, 'and nothing in the game draws, moves or sends one',
-    ghosts.length ? ghosts.join(', ') + ' still reference the running'
-                  : 'no draw, no update loop, no door');
+  for (const l of peopled.filter(l => l.villagerPlay)) {
+    const base = allGroups(readFileSync(`${l.src}_base.svg`, 'utf8'));
+    const left = l.villagers.filter(v => base.some(g => {
+      const b = bounds(g.subPaths.flat());
+      return b.x0 * MAP_SCALE >= v.x - 12 && b.x1 * MAP_SCALE <= v.x + 12 &&
+             b.y0 * MAP_SCALE >= v.y - 28 && b.y1 * MAP_SCALE <= v.y + 6 &&
+             (b.y1 - b.y0) * MAP_SCALE > 12;
+    }));
+    ok(left.length === 0, `${l.name}: its villagers are cut out, for the game to draw`,
+      left.length ? left.map(v => `(${v.x},${v.y})`).join(' ') + ' still painted' : `${l.villagers.length} cut`);
+    const state = { units: [], enemies: [], towers: [] };
+    makeVillagers(state, l);
+    ok(state.villagers.every(v => v.live), '  and every one of them is drawn live',
+      `${state.villagers.filter(v => v.live).length} of ${state.villagers.length}`);
+  }
 
-  // NOR CARRIES THE MACHINERY WITH NOTHING CALLING IT. A module that still exported
-  // a `sendVillager` nobody calls is a feature waiting to be switched back on by
-  // somebody who finds it and assumes it is wanted.
-  const left = ['going', 'door', 'face', 'SPEED', 'ARRIVED']
-    .filter(w => new RegExp(`\\b${w}\\b`).test(code('villagers.js')));
-  ok(left.length === 0, '  and src/villagers.js keeps none of it either',
-    left.length ? left.join(', ') : 'a def, a tap pad and a list of points');
+  // AND ONLY THERE. A board that has not asked for it keeps its villagers as points,
+  // with nothing drawn over the painted men.
+  const quiet = peopled.filter(l => !l.villagerPlay).filter(l => {
+    const state = { units: [], enemies: [], towers: [] };
+    makeVillagers(state, l);
+    return state.villagers.some(v => v.live);
+  });
+  ok(quiet.length === 0, 'and on every other board none of them is drawn',
+    quiet.length ? quiet.map(l => l.name).join(', ') : 'painted, and left painted');
+  ok(/if \(v\.live\) add\(v\.y, 1, \(\) => drawVillager/.test(code('render.js')),
+    '  the render pass draws only the live ones', 'drawVillager behind v.live');
 }
 
 // --- what a tap does ---------------------------------------------------------------

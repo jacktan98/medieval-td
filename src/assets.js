@@ -164,6 +164,18 @@ export const paths = {
   // 1's artwork and cut out of the base so the game can draw him itself — see
   // `villagers` in src/data/level00.js and src/villagers.js.
   villager:           'assets/units/Villager_Default.png',
+  // The villagers who move, on the boards that let them — see src/villagers.js.
+  // Ten drawings: five poses, each facing the player (Front) or away (Back).
+  vill_front_standing:     'assets/villagers/Villager_Front_Standing.png',
+  vill_front_running:      'assets/villagers/Villager_Front_Running.png',
+  vill_front_praying:      'assets/villagers/Villager_Front_Praying.png',
+  vill_front_hopping:      'assets/villagers/Villager_Front_Hopping.png',
+  vill_front_landing:      'assets/villagers/Villager_Front_Landing.png',
+  vill_back_standing:      'assets/villagers/Villager_Back_Standing.png',
+  vill_back_running:       'assets/villagers/Villager_Back_Running.png',
+  vill_back_praying:       'assets/villagers/Villager_Back_Praying.png',
+  vill_back_hopping:       'assets/villagers/Villager_Back_Hopping.png',
+  vill_back_landing:       'assets/villagers/Villager_Back_Landing.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.

@@ -102,7 +102,9 @@ thirteen boards. One drawing, no Attack and no Idle. Those painted holding a too
 a hammer, a plank, a fishing rod, a pitchfork — are villagers all the same and get
 the same card.
 
-**This PNG is only ever drawn on his card.** On the board he is the figure the
+**This PNG is only ever drawn on his card.** Stage 1 is the exception on the
+board: its villagers run, pray and hop, drawn from `assets/villagers`. Elsewhere, on
+the board he is the figure the
 artist painted, left exactly where and as he was drawn: nothing is cut out of the
 base for him and the game never draws one. What the level holds is where each of
 them stands, so a tap can find him — see `villagers` in each `src/data/levelNN.js` and

@@ -90,9 +90,13 @@ export const level00 = {
   // gone there is nothing left to move, and cutting a figure out of the board is
   // only worth its risks when the game needs to move him. So the `doors` that went
   // with it are gone too, and so is every field on a villager but where he stands.
+  // THE VILLAGERS ARE ALIVE HERE — cut out of the artwork and drawn by the game,
+  // at the owner's word. See src/villagers.js for what they do and when.
+  villagerPlay: 'oakhaven',
+
   villagers: [
     { x: 176, y: 351 },   // by the campfire
-    { x: 157, y: 379 },   // and the other one
+    { x: 155, y: 387 },   // and the other one
     { x: 495, y: 460 },   // outside the bottom house
     { x: 918, y: 298 },   // the pair up at the top right
     { x: 905, y: 319 }
@@ -128,13 +132,13 @@ export const level00 = {
     // the villagers did it — the base is byte-identical to the one before they were
     // added, and nothing is cut out for them — the committed numbers had simply
     // drifted from the tool at some earlier change.
-    { x:  30, y:  71, w:  77, h:  82, g: 136 },   // stands on y 136
-    { x: 157, y: 109, w:  77, h:  82, g: 174 },   // stands on y 174
-    { x:  80, y: 157, w:  35, h:  43, g: 198 },   // stands on y 198
+    { x:  18, y:  76, w:  77, h:  81, g: 141 },   // stands on y 141
+    { x: 140, y: 106, w:  77, h:  81, g: 170 },   // stands on y 170
+    { x:  80, y: 155, w:  46, h:  45, g: 198 },   // stands on y 198
     { x: 873, y: 181, w:  77, h:  81, g: 246 },   // stands on y 246
     { x: 782, y: 226, w:  77, h:  81, g: 290 },   // stands on y 290
     { x:  67, y: 346, w: 107, h:  43, g: 383 },   // stands on y 383 — the campfire
     { x: 397, y: 361, w:  77, h:  81, g: 426 },   // stands on y 426
-    { x: 526, y: 403, w:  80, h:  81, g: 467 }   // stands on y 467
+    { x: 522, y: 403, w:  84, h:  81, g: 467 }   // stands on y 467
   ]
 };

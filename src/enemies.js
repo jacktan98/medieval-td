@@ -1056,6 +1056,7 @@ export function updateEnemies(state, dt) {
 
     if (e.hp <= 0 && e.def.finale && !downed(e)) {
       state.gold += e.def.bounty;
+      state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
       // At the BIRD for a crow — he dies in the air — and on the ground for the rest.
       state.hits.push({ x: e.x, y: e.y - airLift(e), life: 0.25 });
       // NO KILL LINE. Every other death in this game answers with a cry keyed to
@@ -1107,6 +1108,7 @@ export function updateEnemies(state, dt) {
 
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
+      state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
       // A kill sounds like whatever landed the last blow, and the two are
       // different sounds because they are different events to watch: an arrow

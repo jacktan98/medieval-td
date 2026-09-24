@@ -12,7 +12,7 @@ import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
 import { updateUnits, makeUnits, makeGarrison } from './units.js';
-import { makeVillagers } from './villagers.js';
+import { makeVillagers, updateVillagers } from './villagers.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
 import { updateBombs } from './bombs.js';
@@ -401,6 +401,7 @@ function step(state, dt) {
   updateSplats(state, dt);
   updateImpacts(state, dt);
   updateSmoke(state, dt);
+  updateVillagers(state, dt);
   if (state.lives <= 0) state.result = 'lost';
 }
 

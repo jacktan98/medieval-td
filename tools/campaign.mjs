@@ -3887,7 +3887,9 @@ console.log('\n--- the road opens one stage at a time ---\n');
 // when it is loaded; change one, change both.
 {
   const W = 22, UP = 34, DOWN = 4;
-  for (const l of levels.filter(l => (l.garrison || []).length)) {
+  // A board whose villagers move has them cut out too — see `villagerPlay`.
+  const posts = l => [...(l.garrison || []), ...(l.villagerPlay ? l.villagers : [])];
+  for (const l of levels.filter(l => posts(l).length)) {
     const art = readArtwork(l.src);
     const kept = ['base'].map(s => {
       try { return readFileSync(`${l.src}_${s}.svg`, 'utf8'); } catch { return ''; }
@@ -3898,7 +3900,7 @@ console.log('\n--- the road opens one stage at a time ---\n');
     const lost = leaves.filter(g => !kept.some(k => k.includes(art.slice(g.start, g.end)))).filter(g => {
       const b = bounds(g.subPaths.flat());
       const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
-      const post = l.garrison.some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - UP && y1 <= at.y + DOWN);
+      const post = posts(l).some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - UP && y1 <= at.y + DOWN);
       // A MARKER is the oval the plot stands in and the signpost on it: about 97x45
       // around the plot point, the post reaching some 50px above it.
       const marker = l.plots.some(p => x0 >= p.x - 52 && x1 <= p.x + 52 && y0 >= p.y - 60 && y1 <= p.y + 26);
@@ -3909,7 +3911,7 @@ console.log('\n--- the road opens one stage at a time ---\n');
         const b = bounds(g.subPaths.flat());
         return `lost ${((b.x1 - b.x0) * MAP_SCALE).toFixed(0)}x${((b.y1 - b.y0) * MAP_SCALE).toFixed(0)} at ` +
                `(${(b.x0 * MAP_SCALE).toFixed(0)}, ${(b.y0 * MAP_SCALE).toFixed(0)})`;
-      }).join(', ') : `every drawing kept, ${l.garrison.length} figure(s) cut`);
+      }).join(', ') : `every drawing kept, ${posts(l).length} figure(s) cut`);
   }
 }
 

@@ -262,7 +262,15 @@ const GARRISON_DOWN = 4;  // and below
 // else. The level still names where they stand — see `villagers` in
 // src/data/level00.js — because a tap has to find them, and a tap needs a point
 // rather than a drawing.
-const figures = (level.garrison || []).map(at => ({ at, what: 'garrison' }));
+//
+// UNTIL A BOARD'S VILLAGERS ARE GIVEN SOMETHING TO DO. Stage 1's are now — the owner
+// drew them running, praying and hopping (assets/villagers) — so a board that sets
+// `villagerPlay` has its villagers cut out like a garrison and drawn by the game;
+// see src/villagers.js. Every other board's stay painted, exactly as before.
+const figures = [
+  ...(level.garrison || []).map(at => ({ at, what: 'garrison' })),
+  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager' }))
+];
 
 const garrisonGroups = [];
 if (figures.length) {

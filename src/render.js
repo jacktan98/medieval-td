@@ -12,6 +12,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
+import { VILLAGER_POSE } from './villagers.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -394,6 +395,7 @@ function drawFigures(ctx, state) {
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
   for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
+  for (const v of state.villagers || []) if (v.live) add(v.y, 1, () => drawVillager(ctx, v));
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
@@ -1139,6 +1141,21 @@ function drawBuilding(ctx, t, box) {
 // MIRRORED ABOUT THE MIDDLE OF ITS OWN DRAWING rather than about the tower or
 // about the post it stands on — see `axis` in machineBox for why that is the one
 // line that keeps the machine centred on the roof both ways round.
+// A villager who moves — see src/villagers.js. One shared box for every pose, so
+// the figure stands on the same spot whatever it is doing; mirrored about its own
+// feet when it faces right.
+function drawVillager(ctx, v) {
+  const img = art[`vill_${v.side}_${v.pose}`];
+  if (!img) return;
+  const [sx, sy, sw, sh] = VILLAGER_POSE.trim;
+  const w = sw * SCALE, h = sh * SCALE;
+  ctx.save();
+  ctx.translate(v.x, v.y);
+  if (v.flip) ctx.scale(-1, 1);
+  ctx.drawImage(img, sx, sy, sw, sh, -VILLAGER_POSE.pivot[0] * w, -VILLAGER_POSE.pivot[1] * h, w, h);
+  ctx.restore();
+}
+
 // One cache entry per drawing per board, because onGround hands back a
 // different recolour on a board with its own shadow colour.
 const groundId = key => `${key}|${(level.palette && level.palette.shadow) || ''}`;
