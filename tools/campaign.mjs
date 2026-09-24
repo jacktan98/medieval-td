@@ -3644,7 +3644,7 @@ console.log('\n--- the marker, the flag and the stars ---\n');
   // still and waves only the banner, which is what the old two-sheet pennant was
   // split for.
   const flagBody = (/function drawFlag\([\s\S]*?\n}/.exec(bare) || [''])[0];
-  ok(/drawExitFlag\(ctx, x, foot, h \/ EXIT_TALL/.test(flagBody) && !/map_flag_/.test(bare),
+  ok(/drawExitFlag\(ctx, x, y, h \/ EXIT_TALL/.test(flagBody) && !/map_flag_/.test(bare),
     'the map plants the exit flag',
     'one drawing, the same as on the boards');
 
@@ -3653,8 +3653,9 @@ console.log('\n--- the marker, the flag and the stars ---\n');
     'the board is unchanged');
 
   // AND ITS POLE STANDS IN THE MIDDLE OF THE MARKER.
-  ok(/const foot = y \+ drop;/.test(bare), 'and its pole stands in the middle of the marker',
-    'foot at the marker centre');
+  ok(/const foot = y - drop;/.test(bare) && /drop: FLAG_DROP \* \(1 - q \* q\)/.test(bare),
+    'and it falls onto the middle of the marker from above',
+    'foot at the marker centre, dropped from overhead');
 
   // A STAR IS SMALLER THAN THE MEDALLION IT ANNOTATES, which is the rule and is what
   // this asked backwards for three builds. It pinned the radius at 12, then 10, both

@@ -146,6 +146,23 @@ const plant = t => {
   return e + Math.sin(t * Math.PI) * 0.16;
 };
 
+// Where the falling flag is at `t` (0 to 1 of FLAG_SECONDS): how far above the
+// medallion its foot is, and how squashed it is. It falls for the first FALL of the
+// time, accelerating, then bounces twice, each bounce smaller, and squashes for a
+// moment on each touch-down.
+const FLAG_DROP = 48;
+const FALL = 0.5;
+function landing(t) {
+  if (t < FALL) {
+    const q = t / FALL;
+    return { drop: FLAG_DROP * (1 - q * q), squash: 1 };
+  }
+  const q = (t - FALL) / (1 - FALL);
+  const drop = 6 * Math.abs(Math.sin(q * Math.PI * 2)) * (1 - q) * (1 - q);
+  const squash = 1 - 0.12 * Math.exp(-q * 12) - 0.05 * Math.exp(-Math.abs(q - 0.5) * 30);
+  return { drop, squash };
+}
+
 // Begin revealing the road into stage `i`. The caller has already counted the
 // stage as unlocked — this governs how much of it is DRAWN, not whether it
 // exists, which is what lets a tap skip straight to the end without losing the
@@ -486,14 +503,19 @@ function drawStars(ctx, cx, cy, filled) {
 // moves the cloth.
 function drawFlag(ctx, x, y, t, wave) {
   const k = plant(t);
-  const drop = (1 - k) * 20;          // falls in from above
+  // IT FALLS FROM ABOVE AND LANDS, at the owner's word — it used to start below
+  // the medallion and rise into place, which read as popping up out of the ground.
+  // Now it drops in from FLAG_DROP px overhead, gathering speed as it falls, lands
+  // on the medallion with a little squash and settles with two small bounces.
+  //
   // THE POLE STANDS IN THE MIDDLE OF THE MEDALLION, at the owner's word. It used to
   // stand at the BACK of the ellipse, on the reasoning that a flag planted in ground
   // should meet it at the far edge rather than balance on the near one — but the
   // medallion is smaller and flatter now and its back edge is five pixels off the
   // centre, so the distinction cost more than it bought.
-  const foot = y + drop;
-  const h = FLAG_H * (0.62 + 0.38 * k);   // and grows into its full height
+  const { drop, squash } = landing(t);
+  const foot = y - drop;
+  const h = FLAG_H * squash;
 
   ctx.save();
   ctx.globalAlpha = Math.min(1, t * 2.4);
@@ -502,7 +524,8 @@ function drawFlag(ctx, x, y, t, wave) {
   // word — it replaced the rally pennant that used to be planted here. Its banner
   // waves and its pole stands still; see src/flag.js. The wave grows in with the
   // planting, so a flag still falling is a flag still furled.
-  if (!drawExitFlag(ctx, x, foot, h / EXIT_TALL, { wind: k, time: wave })) {
+  // Its shadow waits on the medallion while it falls — see `lift` in src/flag.js.
+  if (!drawExitFlag(ctx, x, y, h / EXIT_TALL, { wind: k, time: wave, lift: drop })) {
     // The same vector fallback the board carries, so a missing file is a plainer
     // flag rather than no flag.
     ctx.strokeStyle = '#3A2A12';

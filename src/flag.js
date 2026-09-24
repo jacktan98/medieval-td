@@ -26,6 +26,8 @@ const EXIT_BANNER = [[212, 179], [300, 201], [300, 224], [292, 224], [292, 259],
   [256, 284], [212, 246]];
 const EXIT_POLE = { x0: 246, x1: 266, row: 300, from: 186, to: 284 };
 const EXIT_WAVE = { amp: 5.5, top: 190, bottom: 284, speed: 3.2, length: 58 };
+const SHADOW = [54, 36, 7];      // the ground shadow's colour
+const SHADOW_TOP = 316;          // and the row it starts below
 
 let parts = null;
 function layers() {
@@ -53,7 +55,25 @@ function layers() {
     pg.globalCompositeOperation = 'destination-over';
     const { x0, x1, row, from, to } = EXIT_POLE;
     for (let y = from; y < to; y++) pg.drawImage(img, x0, row, x1 - x0, 1, x0, y, x1 - x0, 1);
-    parts = { cloth, pole };
+    // AND THE GROUND SHADOW LIFTED OFF THE POLE, so a flag dropped from above can
+    // leave its shadow on the ground rather than carry it through the air. It is the
+    // flat dark ellipse at the foot, found by its colour.
+    const shadow = make(), hg = shadow.getContext('2d', { willReadFrequently: true });
+    const pd = pg.getImageData(0, SHADOW_TOP, w, h - SHADOW_TOP);
+    const sd = hg.createImageData(w, h - SHADOW_TOP);
+    const a = pd.data, b = sd.data;
+    for (let i = 0; i < a.length; i += 4) {
+      if (!a[i + 3]) continue;
+      const tol = a[i + 3] >= 250 ? 10 : 10 + Math.round(255 / a[i + 3]);
+      if (Math.abs(a[i] - SHADOW[0]) > tol || Math.abs(a[i + 1] - SHADOW[1]) > tol ||
+          Math.abs(a[i + 2] - SHADOW[2]) > tol) continue;
+      b[i] = a[i]; b[i + 1] = a[i + 1]; b[i + 2] = a[i + 2]; b[i + 3] = a[i + 3];
+      a[i + 3] = 0;
+    }
+    pg.globalCompositeOperation = 'source-over';
+    pg.putImageData(pd, 0, SHADOW_TOP);
+    hg.putImageData(sd, 0, SHADOW_TOP);
+    parts = { cloth, pole, shadow };
   } catch {
     parts = false;
   }
@@ -63,9 +83,11 @@ function layers() {
 // The flag with its foot at (x, y), drawn at `scale` game px per source px.
 // `wind` scales the wave — 0 holds it still, 1 is a steady breeze — and `time` is
 // in seconds, wall-clock by default so it waves on a paused board too. Each flag
-// is put out of step with the next by where it stands. Returns false when the
-// drawing has not loaded, so a caller can fall back to its own.
-export function drawExitFlag(ctx, x, y, scale, { wind = 1, time = performance.now() / 1000 } = {}) {
+// is put out of step with the next by where it stands. `lift` raises the flag that
+// many px off the ground while its shadow stays where it would land, fainter and
+// smaller the higher it is. Returns false when the drawing has not loaded, so a
+// caller can fall back to its own.
+export function drawExitFlag(ctx, x, y, scale, { wind = 1, time = performance.now() / 1000, lift = 0 } = {}) {
   const img = art.exit_flag;
   if (!img) return false;
   const [tx, ty, tw, th] = EXIT_TRIM;
@@ -76,6 +98,18 @@ export function drawExitFlag(ctx, x, y, scale, { wind = 1, time = performance.no
     ctx.drawImage(img, tx, ty, tw, th, left, top, tw * scale, th * scale);
     return true;
   }
+  // The shadow on the ground, then everything else `lift` px above it.
+  const near = Math.max(0, 1 - lift / 60);
+  ctx.save();
+  ctx.globalAlpha *= 0.25 + 0.75 * near;
+  const ss = 0.55 + 0.45 * near;
+  ctx.translate(x, y);
+  ctx.scale(ss, ss);
+  ctx.translate(-x, -y);
+  ctx.drawImage(got.shadow, tx, ty, tw, th, left, top, tw * scale, th * scale);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(0, -lift);
   ctx.drawImage(got.pole, tx, ty, tw, th, left, top, tw * scale, th * scale);
 
   const t = time + x * 0.013;
@@ -90,5 +124,6 @@ export function drawExitFlag(ctx, x, y, scale, { wind = 1, time = performance.no
     ctx.drawImage(got.cloth, tx - 8, sy, tw + 16, STEP,
       left + (dx - 8) * scale, top + (sy - ty) * scale, (tw + 16) * scale, STEP * scale + 0.4);
   }
+  ctx.restore();
   return true;
 }
