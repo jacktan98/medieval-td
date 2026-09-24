@@ -3695,17 +3695,22 @@ function drawInfo(ctx, state) {
   // A ROUND MEDALLION the figure stands in, and the bar's bottom edge on the
   // line of its ground shadow, so the figure reads as standing on the bar.
   //
-  // SIZED TO THE FIGURE: 32 holds everything up to a thug, and a bigger one — a
+  // SIZED TO THE FIGURE: 36 holds everything up to a thug, and a bigger one — a
   // Giant Thug — gets a bigger medallion rather than spilling out of it. The
   // FEET stay on one line whatever the size, so the bar never moves up or down
   // as the player taps from one unit to the next; a bigger medallion grows up
   // and out round them.
-  const FEET = 0.69;
+  //
+  // 36 AND THE FEET AT 0.62, NOT 32 AND 0.69: at the old size a wide ground shadow
+  // — a pikeman's — ran almost to the ring, because the ring narrows fast that far
+  // below its middle. The bigger ring with the feet a little higher in it leaves
+  // air round the shadow. The feet are still on the same line as before.
+  const FEET = 0.62;
   // Grown until the drawing's top corners are inside the ring — a Giant's club
   // reaches out to the top left of his box.
-  let R = 32;
-  while (Math.hypot(dw / 2, dh - FEET * R) > R - 2) R++;
-  const feet = BOTTOM - 32 + FEET * 32;
+  let R = 36;
+  while (Math.hypot(dw / 2, dh - FEET * R) > R - 3) R++;
+  const feet = BOTTOM - 32 + 0.69 * 32;
   const cx = 12 + R, cy = feet - FEET * R;
   const barX = cx;
   const lx = cx + R + 6;
