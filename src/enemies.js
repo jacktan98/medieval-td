@@ -549,6 +549,36 @@ function turnTo(e, x) {
   if (x !== e.x) e.face = x > e.x ? 1 : -1;
 }
 
+// THE EXIT FLAG IS IN THE WAY, and a walker goes round it. The flag stands in the
+// middle of the road, which is the middle lane, so a man on that lane used to walk
+// straight through the pole with his shadow on its shadow — neither in front of it
+// nor behind it, just through. Now, near a flag, a walker is eased sideways until
+// his shadow clears the flag's: to the near side of it, and he is drawn over the
+// flag; to the far side, and the flag is drawn over him. The depth sort in render.js
+// does the rest, by the shadows' centres as it does for everything.
+//
+// An ellipse round the flag's foot, FLAG_CLEAR across the road and FLAG_EASE along
+// it, so the step aside begins well before the pole and is taken back smoothly after
+// it. A pure function of where the lane puts him, so nothing about it is stored but
+// which way a man dead on the pole's line steps; the kerb lanes, LANE off the middle,
+// are already clear and never move. The flier sails over and is left alone.
+const FLAG_CLEAR = 11, FLAG_EASE = 26;
+function roundFlags(e, p) {
+  for (const f of level.exitFlags || []) {
+    const vx = e.x - f.x, vy = e.y - f.y;
+    const along = vx * p.tx + vy * p.ty;
+    if (Math.abs(along) >= FLAG_EASE) continue;
+    const across = vx * p.nx + vy * p.ny;
+    const need = FLAG_CLEAR * Math.sqrt(1 - (along / FLAG_EASE) ** 2);
+    if (Math.abs(across) >= need) continue;
+    if (!e.flagSide) e.flagSide = Math.random() < 0.5 ? -1 : 1;
+    const side = Math.abs(across) > 0.5 ? Math.sign(across) : e.flagSide;
+    const push = side * need - across;
+    e.x += p.nx * push;
+    e.y += p.ny * push;
+  }
+}
+
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     // WHAT THIS CREATURE IS ON THIS FRAME, and for everything but the boss that is
@@ -958,6 +988,7 @@ export function updateEnemies(state, dt) {
     if (p.tx && e.thrust <= 0 && !e.nock && !e.shot) e.face = p.tx > 0 ? 1 : -1;
     e.x = p.x;
     e.y = p.y;
+    if (!e.def.flying) roundFlags(e, p);
 
     if (e.s >= road.total) e.leaked = true;
   }
