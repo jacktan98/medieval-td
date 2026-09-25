@@ -24,7 +24,7 @@ const ON = { smoke: true, holy: true, fire: true, banners: true, fountain: true,
 const TOWN = { oakhaven: 0, winchester: 2, dawnford: 5, sandshroud: 8, ironforge: 9, serene: 12 };
 
 // SMOKE, AT THE OWNER'S WORD: grey from Ironforge's houses, and black from the
-// castles and the workshops of Winchester and Ironforge. The villages of Oakhaven,
+// workshops of Winchester and Ironforge (not their castles). The villages of Oakhaven,
 // Winchester and Dawnford keep clean roofs — the campfire is Oakhaven's smoke.
 const HOUSE_SMOKE = [
   { x: 810, y: 231 }, { x: 783, y: 288 }, { x: 746, y: 302 }, { x: 759, y: 314 },
@@ -33,13 +33,9 @@ const HOUSE_SMOKE = [
 ].map(c => ({ ...c, town: 'ironforge' }));
 
 const BLACK_SMOKE = [
-  // The castle's — from inside it, the courtyard either side of the back tower, at
-  // the owner's word, as on stage 5's own board; they were on two towers' tops.
-  { x: 467, y: 67, town: 'winchester' },
-  { x: 487, y: 64, town: 'winchester' },
+  // The workshop at Winchester and the factory at Ironforge. NOT THE CASTLES, at the
+  // owner's word — the smoke that rose from both castles is gone.
   { x: 425, y: 121, town: 'winchester' },  // the workshop
-  { x: 909, y: 196, town: 'ironforge' },   // the castle's towers
-  { x: 937, y: 205, town: 'ironforge' },
   { x: 878, y: 292, town: 'ironforge' }    // the factory
 ];
 
@@ -351,45 +347,6 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
     puff(ctx, x0, y0 - 5 * s * smoke, p, 16 * s * smoke, 9 * wind(t, x0) * s * smoke, 1.2 * s * smoke, 4.8 * s * smoke, '240,236,226', 0.45);
   }
   ctx.restore();
-}
-
-// BLACK SMOKE FROM A TOWER ON A BOARD — stage 5's castle — the world map's black
-// smoke at board size: heavy, slow, rolling off with the wind. `s` its size against
-// the world map's, `a` how far it has thickened in (0 to 1).
-export function towerSmoke(ctx, x, y, t, s, a = 1) {
-  // SEPARATE CLOUDS, as on the world map: a column of puffs, each its own cloud
-  // drifting off with the wind — not one unbroken plume. Each starts small and black
-  // where it comes up out of the castle and swells as it climbs, keeping its black
-  // most of the way and only greying near the top. And NO TWO ALIKE: every cloud,
-  // each time round, draws its own size, lean and lumps, so some come up small and
-  // some big. Four soft blobs lumped together make each one, so it has a thick body
-  // and a lumpy edge.
-  const N = 8, PERIOD = 11;
-  const w = wind(t, x);
-  for (let k = 0; k < N; k++) {
-    const u = t / PERIOD + k / N;
-    const p = u % 1;
-    const n = Math.floor(u) * N + k;           // which cloud this is, ever
-    const big = 0.65 + 0.8 * hash(n * 3.1 + 7);
-    const lean = (hash(n * 5.7 + 2) - 0.5) * 6;
-    const e = 1 - (1 - p) * (1 - p);
-    const cx = x + (20 * w * p * p + lean * p) * s + Math.sin(p * 5 + k) * 1.2 * s;
-    const cy = y - 44 * s * e;
-    const r = (1.4 + 8 * p) * s * big;
-    const alpha = a * Math.min(1, p / 0.06) * Math.pow(1 - p, 0.5);
-    if (alpha <= 0.01) continue;
-    // Black to grey in six steps, slowly: dark for most of the climb.
-    const g = Math.min(5, Math.floor(Math.pow(p, 2.2) * 6)) / 5;
-    const rgb = `${24 + 110 * g | 0},${22 + 108 * g | 0},${20 + 104 * g | 0}`;
-    ctx.globalAlpha = alpha;
-    for (let j = 0; j < 4; j++) {
-      const ang = hash(n * 7.3 + j) * Math.PI * 2;
-      const off = 0.45 * hash(n * 2.9 + j * 11);
-      const R = r * (0.75 + 0.35 * hash(n * 4.1 + j * 5)) * 1.55;
-      ctx.drawImage(sprite(rgb), cx + Math.cos(ang) * off * r - R, cy + Math.sin(ang) * off * r * 0.7 - R, R * 2, R * 2);
-    }
-    ctx.globalAlpha = 1;
-  }
 }
 
 // --- the fountain --------------------------------------------------------------

@@ -140,9 +140,6 @@ export const level07 = {
     { colour: [5, 93, 171], box: [694, 276, 760, 383], top: 296, bottom: 375, amp: 1.6, g: 187.2 },
     { colour: [5, 93, 171], box: [825, 249, 885, 353], top: 272, bottom: 345, amp: 1.6, g: 187.2 }
   ],
-  // AND BLACK SMOKE FROM INSIDE THE CASTLE once villagers 1 and 2 are in — up out of
-  // the courtyard either side of the back tower, where the owner circled.
-  towerSmoke: [{ x: 255, y: 97 }, { x: 352, y: 85 }],
   waves: stage5Waves,
   wavesExtended: stage5Waves,
   oneLength: true,

@@ -263,9 +263,6 @@ const PLAYS = {
     // Villagers 5, 6 and 7 turn to praying by turns once the wave is on them; 3 and 4
     // keep working throughout.
     after: [{}, {}, {}, {}, back('pray'), back('pray'), back('pray')],
-    // ONCE BOTH ARE INSIDE, the castle's two back towers smoke (`towerSmoke` in the
-    // level file).
-    smokeAfter: [0, 1],
     // Villager 3 carries a part up to the broken ballista, throws it on, walks down
     // off the board for the next one and comes back with it — stage 4's loop, one
     // man and a part rather than two and a plank.
@@ -468,9 +465,6 @@ export function updateVillagers(state, dt) {
     }
   }
 
-  // SMOKE FROM THE CASTLE once everyone it waits for is through its gate.
-  if (plan.smokeAfter && vp.smokeAt === undefined &&
-      plan.smokeAfter.every(n => state.villagers[n] && state.villagers[n].hidden)) vp.smokeAt = vp.t;
 
   // THE HOPS, each group on its own count of the fallen.
   plan.hops.forEach((h, k) => {

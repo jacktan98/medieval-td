@@ -14,7 +14,7 @@ import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { VILLAGER_POSE, villagerKey } from './villagers.js';
 import { BANNERS } from './data/banners.js';
-import { campfire, towerSmoke } from './life.js';
+import { campfire } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -463,16 +463,6 @@ function drawFigures(ctx, state) {
   // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
   // threw it so it goes over the stack behind them.
   for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) add(pl.depth, 1, () => drawPlank(ctx, pl));
-  // BLACK SMOKE FROM A BOARD'S TOWERS, once its villagers have set it going (stage
-  // 5's castle, when the two sent inside have gone in), rising over everything round
-  // it; it thickens in over a few seconds rather than appearing.
-  const vpl = state.villagerPlay;
-  if (level.towerSmoke && vpl && vpl.smokeAt !== undefined) {
-    const since = vpl.t - vpl.smokeAt;
-    for (const sm of level.towerSmoke) {
-      add(sm.g ?? 999, 1, () => towerSmoke(ctx, sm.x, sm.y, (state.anim || 0) + sm.x * 0.1, sm.s ?? 2.4, Math.min(1, since / 3)));
-    }
-  }
   // LIVE FIRES, the world map's fire at board size, where the artwork's painted
   // flames were — stage 1's campfire over its logs, stage 3's two torches on their
   // pillars. Each sorted at the depth of what it burns on and added after it, so it
