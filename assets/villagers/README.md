@@ -171,7 +171,8 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
   it. Once both are inside, thick black smoke billows from the castle's two back towers.
   Villagers 5 and 6 start standing and praying by turns. Villager 7 runs straight
   to the river, to the bank right of the bridge, stands and prays there facing the
-  water for a while, then runs back to his spot and stands and prays with the others.
+  water for a while, then runs back to his spot and stands and prays with the others
+  for a while — and round again, back and forth, for the rest of the game.
   Villagers 3 and 4 keep working.
 - The two torches at the gate burn with live fire and smoke, and the two banners on
   the castle sway.

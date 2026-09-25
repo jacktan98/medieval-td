@@ -254,8 +254,9 @@ const PLAYS = {
       { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true },
       // VILLAGER 7 RUNS STRAIGHT TO THE RIVER, to the bank right of the bridge, and
       // stands and prays there facing the water (`there`) for `stay` seconds; then
-      // runs back the way he came and stands and prays at home with the others.
-      { who: 6, delay: 0.2, path: [[928, 395]], there: { side: 'front', act: 'pray', flip: true }, stay: 14 }
+      // runs back the way he came and stands and prays at home with the others for
+      // `loop` seconds — and round again, for as long as the game goes on.
+      { who: 6, delay: 0.2, path: [[928, 395]], there: { side: 'front', act: 'pray', flip: true }, stay: 14, loop: 14 }
     ],
     // Villagers 5, 6 and 7 turn to praying by turns once the wave is on them; 3 and 4
     // keep working throughout.
@@ -459,7 +460,8 @@ export function updateVillagers(state, dt) {
       v.leaveAt = vp.t + r.delay;
       v.path = r.path;
       v.vanish = !!r.vanish;
-      v.trip = r.stay ? { there: r.there, stay: r.stay, home: [v.x, v.y], back: false } : null;
+      v.trip = r.stay ? { there: r.there, stay: r.stay, home: [v.x, v.y], out: r.path, back: false,
+                          loop: r.loop || 0 } : null;
       v.leg = 0;
     }
   }
@@ -490,7 +492,15 @@ export function updateVillagers(state, dt) {
     // BACK FROM A TRIP when its time there is up.
     if (v.mode === 'idle' && v.trip && !v.trip.back && v.trip.at !== undefined && vp.t >= v.trip.at) {
       v.trip.back = true;
-      v.path = [...v.path.slice(0, -1).reverse(), v.trip.home];
+      v.path = [...v.trip.out.slice(0, -1).reverse(), v.trip.home];
+      v.leg = 0;
+      v.mode = 'run';
+    }
+    // AND OUT AGAIN, on a trip that loops, once its time at home is up.
+    if (v.mode === 'idle' && v.trip && v.trip.back && v.trip.again !== undefined && vp.t >= v.trip.again) {
+      v.trip.back = false;
+      v.trip.at = v.trip.again = undefined;
+      v.path = v.trip.out;
       v.leg = 0;
       v.mode = 'run';
     }
@@ -527,6 +537,8 @@ export function updateVillagers(state, dt) {
           const a = plan.after[v.n];
           if (a) { v.side = a.side; v.act = a.act; }
           v.flip = !!(a && a.flip);
+          // Home from a trip that loops: off again after `loop` seconds here.
+          if (v.trip && v.trip.back && v.trip.loop) v.trip.again = vp.t + v.trip.loop;
         }
       } else {
         v.x += dx / d * stepLen;
