@@ -13,6 +13,7 @@ import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { VILLAGER_POSE, villagerKey, PLANK_MID } from './villagers.js';
+import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
@@ -428,17 +429,21 @@ function drawFigures(ctx, state) {
     return v.y;
   };
   // A VILLAGER'S TOOL OVER THE BENCH: stage 4's smith stands behind his workbench,
-  // which is drawn over him — but the pipe in his hands is held out over it. So the
-  // strip of him right of his body (`tool`: from x0 to x1, the furnace's mouth
-  // edge) is drawn again after the bench, at depth `g`.
+  // which is drawn over him — but the pipe in his hands is held out over it and over
+  // the furnace's front. So his hands and pipe ALONE — see toolLayer — are drawn
+  // again after the bench, at depth `g`.
   for (const v of state.villagers || []) {
     if (!v.live || v.hidden || !v.tool) continue;
     add(v.tool.g, 1, () => {
+      const layer = toolLayer(villagerKey(v));
+      if (!layer) return;
+      // Everything but the furnace's mouth, so the pipe's tip stays inside the fire.
+      const clip = new Path2D();
+      clip.rect(0, 0, 960, 540);
+      if (v.tool.mouth) for (const f of level.fires || []) { const m = mouthPath(f); if (m) clip.addPath(m); }
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(v.tool.x0, v.y - 40, v.tool.x1 - v.tool.x0, 44);
-      ctx.clip();
-      drawVillager(ctx, state, v);
+      ctx.clip(clip, 'evenodd');
+      drawVillager(ctx, state, v, layer);
       ctx.restore();
     });
   }
@@ -1187,7 +1192,7 @@ function drawBuilding(ctx, t, box) {
     const [sx, sy, sw, sh] = t.def.spriteTrim;
     const split = shadowSplit(img, groundId(key));
     const body = split ? split.body : img;
-    if (t.def.banner && swayBanner(ctx, t, body, box)) return;
+    if (BANNERS[key] && swayBanner(ctx, t, BANNERS[key], body, box)) return;
     ctx.drawImage(body, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
     return;
   }
@@ -1195,18 +1200,22 @@ function drawBuilding(ctx, t, box) {
   else drawStoneTower(ctx, t, box);
 }
 
-// THE BANNER ON A TIER 4 TOWER, SWAYING, at the owner's word — the way the exit
-// flag's does. The cloth is lifted off the drawing (found by its colour inside the
-// def's `box`, taken out a few pixels wider to bring its black edge and everything
-// painted on it) and the wall behind it is rebuilt by carrying the bricks either
-// side of it inward, row by row, so a cloth swung aside shows stone rather than a
-// hole. Then the wall is drawn, and the cloth over it a few source rows at a time,
-// each pushed sideways by a ripple running down it: nothing where it is draped over
-// the battlements (above `top`), most at its tails.
+// THE CLOTH ON A TOWER, MOVING IN THE WIND, at the owner's word — tier 4's banners
+// and the flags on tiers 1 to 3; see src/data/banners.js for which and where. The
+// cloth is lifted off the drawing (found by its colour inside its `box`, taken out
+// a few pixels wider to bring its black edge, and with everything it closes in on,
+// its emblem) and the wall behind it is rebuilt by carrying what is either side of
+// it inward, row by row, so cloth swung aside shows stone rather than a hole — from
+// the far side where the near one is empty air, at the tower's edge. Then the wall
+// is drawn, and the cloth over it in thin strips, each pushed by a ripple: a banner
+// in rows pushed sideways, nothing where it is draped over the battlements (above
+// `top`), most at its tails; a flag in columns pushed up and down, nothing at its
+// pole, most at its tip.
 //
 // On the board's own clock, so it stops on the pause like everything else. Returns
 // false while the drawing cannot be read, and the tower is drawn still.
 const BANNER_SWAY = { amp: 11, speed: 2.4, length: 150, edge: 7, band: 3 };
+const FLAG_WAVE = { amp: 6, speed: 4.2, length: 70, band: 3 };
 const bannerCache = new WeakMap();
 function bannerLayers(img, b) {
   let got = bannerCache.get(img);
@@ -1251,9 +1260,21 @@ function bannerLayers(img, b) {
       if (y < bh - 1) todo.push(i + bw);
     }
     for (let i = 0; i < bw * bh; i++) if (!out0[i]) mask[i] = 1;
+    // A FLAG FLIES IN OPEN AIR: nothing behind it to rebuild, and its pole stays
+    // put — so neither the pole nor anything left of it is cloth, and where the
+    // cloth was is left empty.
+    if (b.kind === 'flag') {
+      for (let y = 0; y < bh; y++) for (let x = 0; x < b.pole - x0; x++) mask[y * bw + x] = 0;
+    }
     const clothData = new ImageData(bw, bh), cd = clothData.data;
     const out = new ImageData(new Uint8ClampedArray(d), bw, bh), od = out.data;
-    for (let y = 0; y < bh; y++) {
+    if (b.kind === 'flag') {
+      for (let i = 0; i < bw * bh; i++) {
+        if (!mask[i]) continue;
+        for (let c = 0; c < 4; c++) { cd[i * 4 + c] = d[i * 4 + c]; od[i * 4 + c] = 0; }
+      }
+    }
+    for (let y = 0; y < bh && b.kind !== 'flag'; y++) {
       for (let x = 0; x < bw; x++) {
         const i = y * bw + x;
         if (!mask[i]) continue;
@@ -1265,8 +1286,11 @@ function bannerLayers(img, b) {
         let e = x;
         while (e + 1 < bw && mask[y * bw + e + 1]) e++;
         const l = Math.max(0, x - 1), r = Math.min(bw - 1, e + 1), mid = (x + e) / 2;
+        const solid = c => d[(y * bw + c) * 4 + 3] > 200;
         for (let u = x; u <= e; u++) {
-          const from = (y * bw + (u <= mid ? l : r)) * 4;
+          let side = u <= mid ? l : r;
+          if (!solid(side)) side = side === l ? r : l;
+          const from = (y * bw + side) * 4;
           for (let c = 0; c < 4; c++) od[(y * bw + u) * 4 + c] = d[from + c];
         }
         x = e;
@@ -1283,14 +1307,24 @@ function bannerLayers(img, b) {
   return got;
 }
 
-function swayBanner(ctx, t, img, box) {
-  const b = t.def.banner;
+function swayBanner(ctx, t, b, img, box) {
   const got = bannerLayers(img, b);
   if (!got) return false;
   const [sx, sy, sw, sh] = t.def.spriteTrim;
   const kx = box.w / sw, ky = box.h / sh;
   ctx.drawImage(got.wall, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
   const time = boardTime + t.x * 0.013;
+  if (b.kind === 'flag') {
+    const { amp, speed, length, band } = FLAG_WAVE;
+    const [, y0, , y1] = b.box;
+    for (let x = b.box[0]; x < b.box[2]; x += band) {
+      const s = Math.max(0, Math.min(1, (x + band / 2 - b.pole) / (b.tip - b.pole)));
+      const dy = amp * s * Math.sin(time * speed - (x - b.pole) * (Math.PI * 2 / length));
+      ctx.drawImage(got.cloth, x, y0, band, y1 - y0,
+        box.left + (x - sx) * kx, box.top + (y0 - sy + dy) * ky, band * kx + 0.4, (y1 - y0) * ky);
+    }
+    return true;
+  }
   const { amp, speed, length, band } = BANNER_SWAY;
   const [x0, , x1] = b.box;
   for (let y = b.box[1]; y < b.box[3]; y += band) {
@@ -1316,9 +1350,9 @@ function swayBanner(ctx, t, img, box) {
 // A GREETING WAVES. The drawing's raised hand is cut out and swung a little about
 // the shoulder, over a copy of the greeting with the hand taken out and the body
 // under it filled back in from the standing drawing — see greetLayers.
-function drawVillager(ctx, state, v) {
+function drawVillager(ctx, state, v, layer = null) {
   const key = villagerKey(v);
-  const img = art[key];
+  const img = layer || art[key];
   if (!img) return;
   const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;
   const k = SCALE, w = sw * k, h = sh * k;
@@ -1327,7 +1361,7 @@ function drawVillager(ctx, state, v) {
   if (v.flip) ctx.scale(-1, 1);
   const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
   const left = -(fx - sx) * k, top = -(fy - sy) * k;
-  const layers = v.pose === 'greeting' && greetLayers(key);
+  const layers = !layer && v.pose === 'greeting' && greetLayers(key);
   if (!layers) {
     ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);
   } else {
@@ -1357,6 +1391,22 @@ function drawPlank(ctx, pl) {
   ctx.restore();
 }
 
+// THE MOUTH IS THE ARTIST'S OWN SHAPE, the outline the painted flame had — an SVG
+// path on the board's 1920 x 1080 art and its transform — brought down to the board.
+// Built once per fire.
+const mouths = new WeakMap();
+function mouthPath(fire) {
+  if (!fire.mouth) return null;
+  let p = mouths.get(fire);
+  if (!p) {
+    const [a, b, c, d, e, f] = fire.mouth.m, k = 1 / MAP_PX;
+    p = new Path2D();
+    p.addPath(new Path2D(fire.mouth.d), new DOMMatrix([a * k, b * k, c * k, d * k, e * k, f * k]));
+    mouths.set(fire, p);
+  }
+  return p;
+}
+
 // A BOARD'S LIVE FIRE. Most are the campfire as it is; a fire with a `mouth` burns
 // INSIDE something — stage 4's furnace — so the mouth is drawn dark first and the
 // flame clipped to it, and a fire with a `roof` keeps its glow, smoke and sparks
@@ -1369,13 +1419,8 @@ function drawFire(ctx, state, fire) {
   // roaring while it is in.
   const tall = fire.heated ? 0.55 + 0.95 * heat : 1;
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
-  // THE MOUTH IS THE ARTIST'S OWN SHAPE, the outline the painted flame had — an SVG
-  // path on the board's 1920 x 1080 art and its transform — brought down to the board.
-  let mouth = null;
-  if (fire.mouth) {
-    const [a, b, c, d, e, f] = fire.mouth.m, k = 1 / MAP_PX;
-    mouth = new Path2D();
-    mouth.addPath(new Path2D(fire.mouth.d), new DOMMatrix([a * k, b * k, c * k, d * k, e * k, f * k]));
+  const mouth = mouthPath(fire);
+  if (mouth) {
     ctx.fillStyle = '#2b0f06';
     ctx.fill(mouth);
   }
@@ -1392,6 +1437,38 @@ function drawFire(ctx, state, fire) {
 // THE BOARD'S CLOCK for this frame (state.anim — see main.js), for drawing code that
 // is handed a tower or a figure rather than the state.
 let boardTime = 0;
+
+// A VILLAGER'S HANDS AND WHAT THEY HOLD, alone: the pixels of a pose's drawing that
+// differ from the standing drawing — his body is the same in both, so it drops out
+// and only the arms and the tool are left. For the smith, whose pipe is drawn over
+// the bench he stands behind; see `tool` in src/villagers.js.
+const toolCache = new Map();
+function toolLayer(key) {
+  if (toolCache.has(key)) return toolCache.get(key);
+  const img = art[key], still = art.vill_front_standing;
+  if (!img || !still || !img.complete || !still.complete) return null;
+  let out = null;
+  try {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const read = im => { const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0); return g.getImageData(0, 0, W, H); };
+    const a = read(img), b = read(still), ad = a.data, bd = b.data;
+    // Nothing from his feet down: the ground shadow sits a pixel differently in
+    // the two drawings, and its edge would land on the bench as a speck.
+    const FEET = 292;
+    for (let i = 0; i < ad.length; i += 4) {
+      const same = Math.abs(ad[i] - bd[i]) + Math.abs(ad[i + 1] - bd[i + 1]) + Math.abs(ad[i + 2] - bd[i + 2]) < 24 &&
+                   Math.abs(ad[i + 3] - bd[i + 3]) < 24;
+      if (same || (i / 4 / W | 0) >= FEET) ad[i + 3] = 0;
+    }
+    out = document.createElement('canvas'); out.width = W; out.height = H;
+    out.getContext('2d').putImageData(a, 0, 0);
+  } catch {
+    out = null;
+  }
+  toolCache.set(key, out);
+  return out;
+}
 
 const greetCache = new Map();
 function greetLayers(key) {

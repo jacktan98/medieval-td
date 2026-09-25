@@ -1103,10 +1103,6 @@ const sentry = {
   frontPolys: [
     [[546, 295], [583, 302], [583, 346], [555, 370], [518, 361], [518, 315]]
   ],
-  // ITS BANNER SWAYS, as every tier 4's does — see swayBanner in render.js. The
-  // cloth is found by its colour inside `box`; it is draped over the battlements
-  // above `top` and still there, and hangs free from `top` to its tails at `bottom`.
-  banner: { colour: [5, 93, 171], box: [390, 250, 606, 642], top: 372, bottom: 634 },
   shape: 'tower'
 };
 
@@ -2131,8 +2127,6 @@ const ballista = {
   frontPolys: [
     [[577, 373], [622, 381], [622, 420], [596, 442], [555, 433], [554, 391]]
   ],
-  // Its banner sways — see `banner` on the Crossbow Sentry, and swayBanner.
-  banner: { colour: [5, 93, 171], box: [384, 442, 530, 694], top: 492, bottom: 687 },
   // THE DECK'S TOP FACE, as fractions of this trim, and it is the quad the note
   // above quotes: one #969696 path with corners (449.8, 242.5), (766.7, 291.2),
   // (595.7, 439.6) and (257.4, 364.7).

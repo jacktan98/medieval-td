@@ -873,10 +873,12 @@ since: same buildings, same churchmen, same missile, same voice. What changed is
 what arriving means. The pale blue ring that used to mark a slowed enemy is gone
 with the mechanic — there is nothing left for it to say.
 
-## Banners that sway
+## Banners and flags that sway
 
-A tier 4 tower's banner sways on the board (`banner` on its def in
-`src/data/towers.js`, drawn by swayBanner in `src/render.js`). The cloth is found
-in the drawing by its colour inside a box, and the wall behind it is rebuilt from the
-bricks either side, so nothing needs drawing separately. So far: the Crossbow Sentry
-and the Ballista Turret.
+Every tier 4 tower's banner sways on the board, and the blue flag on the pole at
+the top of every tier 1 to 3 archery, barracks and monastery tower flies and
+ripples. Where each one is in its drawing is in `src/data/banners.js`; swayBanner
+in `src/render.js` draws them. The cloth is found in the drawing by its colour inside
+a box, and the wall behind a banner is rebuilt from the stone either side, so nothing
+needs drawing separately — but a redrawn tower whose banner or flag moves, or changes
+colour, needs its entry in that file measured again.

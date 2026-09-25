@@ -204,9 +204,11 @@ const PLAYS = {
     // up to the fire and behind the workbench, rather than where he was painted.
     smith: { who: 0, at: [578, 431], back: 3.2, in: 2,
       // His hands and pipe, held out over the workbench (which is drawn over the
-      // rest of him): the strip right of his body, drawn again after the bench (440).
-      // It stops at the furnace's mouth, so the pipe's tip stays inside the fire.
-      tool: { x0: 584, x1: 591.4, g: 440.5 } },
+      // rest of him) and over the furnace's front: drawn again after the bench (440),
+      // his hands and pipe alone (see toolLayer in render.js — none of his body, so
+      // none of his outline lands on the bench as a speck), and not inside the
+      // furnace's mouth, so the pipe's tip stays in the fire.
+      tool: { g: 440.5, mouth: true } },
     // The two plank carriers, `lead` the back end (whose feet the carrying drawing
     // stands on) and `mate` the front end.
     crew: {
@@ -218,7 +220,8 @@ const PLAYS = {
       // ...then walk off, each on their own, towards the cut trees at the bottom and
       // off the board between them — the back end left of the middle stump gap, the
       // front end right of it...
-      away: { lead: [[470, 490], [480, 570]], mate: [[522, 478], [522, 570]] },
+      // The back end heads down and a little right, so he walks mirrored.
+      away: { lead: [[478, 500], [482, 570]], mate: [[522, 478], [522, 570]] },
       // ...and after `gone` seconds come back, carrying the next plank, from where
       // they left: the back end's feet from here.
       enter: [480, 582],
@@ -246,6 +249,9 @@ function walkTo(v, pts, speed, dt) {
   while (step > 0 && v.leg < pts.length) {
     const [tx, ty] = pts[v.leg];
     const dx = tx - v.x, dy = ty - v.y, d = Math.hypot(dx, dy);
+    // FACING WHICH WAY THEY GO: the drawings face left, so one heading right is
+    // mirrored. A leg straight up or down keeps whichever way they were facing.
+    if (Math.abs(dx) > 0.5) v.flip = dx > 0;
     if (d <= step) { v.x = tx; v.y = ty; v.leg++; step -= d; continue; }
     v.x += dx / d * step; v.y += dy / d * step; step = 0;
   }
@@ -288,7 +294,9 @@ function work(state, vp, dt) {
     mate.ride = true;
     lead.pose = 'carry';
     lead.leg = lead.leg || 0;
+    lead.flip = mate.flip = false;
     if (walkTo(lead, [crew.stack], WORK_WALK, dt)) { c.phase = 'throw'; c.at = vp.t; c.thrown = false; }
+    lead.flip = false;
     stick();
     lead.walking = c.phase === 'carry';
   } else if (c.phase === 'throw') {
