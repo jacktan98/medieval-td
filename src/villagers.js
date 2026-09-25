@@ -93,10 +93,15 @@ export const VILLAGER_POSE = {
           pipe_1: [257, 305], pipe_2: [257, 305],
           // Stage 4's plank carriers are ONE drawing of TWO villagers and their plank,
           // stood on the back-end man's shadow; the front-end man's is PAIR further on.
-          carry: [124.5, 341.5], throw: [124.5, 341.5] },
+          carry: [124.5, 341.5], throw: [124.5, 341.5],
+          // Stage 5's porter, one villager with a ballista part, and the hammerer.
+          carry_parts: [236, 311.5], throw_parts: [236, 311],
+          hammer_1: [276.5, 305], hammer_2: [276.5, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
-           carry: [85, 155, 340, 200], throw: [85, 155, 340, 200] },
+           carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
+           carry_parts: [195, 185, 120, 140], throw_parts: [195, 185, 120, 140],
+           hammer_1: [195, 185, 120, 135], hammer_2: [195, 185, 120, 135] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
@@ -105,9 +110,13 @@ export const VILLAGER_POSE = {
 // Where the front-end carrier stands against the back-end one, in game px — the two
 // shadows in the carrying drawing, (124.5, 341.5) and (386.5, 268.5), at SCALE.
 export const PAIR = [(386.5 - 124.5) * SCALE, (268.5 - 341.5) * SCALE];
-// Where the plank is in the carrying drawing (its middle), and in its own drawing.
-export const PLANK_HELD = [265, 241];
-export const PLANK_MID = [256, 255];
+// WHAT GETS THROWN: the drawing it flies as (`key`, the box of it `src` and its
+// middle `mid`), where it is in the carrying drawing (`held`, its middle there), and
+// how far it turns in the air. Stage 4's plank and stage 5's ballista part.
+export const PIECES = {
+  plank: { key: 'vill_wood_plank', src: [115, 195, 283, 122], mid: [256, 255], held: [265, 241], spin: -0.5 },
+  part:  { key: 'vill_ballista_parts', src: [231, 205, 50, 102], mid: [255.5, 255], held: [285, 241], spin: 1.4 }
+};
 
 // WHAT A VILLAGER DOES WHILE STANDING, each on their own beat: `pose` for `for`
 // seconds in every `every`, and `rest` the rest of the time.
@@ -213,6 +222,8 @@ const PLAYS = {
     // stands on) and `mate` the front end.
     crew: {
       lead: 2, mate: 1,
+      // The carrying and throwing drawings (both men in one), and what flies.
+      art: { carry: 'carry', throw: 'throw', piece: 'plank' },
       // They carry the plank up to the stack, stopping in front of it...
       stack: [476, 452],
       // ...throw it, and it lands on the top of the stack...
@@ -229,6 +240,40 @@ const PLAYS = {
     },
     before: [], after: [], run: [], hops: [],
     cries: { runnn: false, nooo: true }
+  },
+  // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle
+  // gate, 3 carrying a part to the broken ballista, 4 hammering at it, and 5, 6 and 7
+  // by the bridge.
+  castle: {
+    before: [front('greets'), front('greets'), {}, {}, back('greets'), back('greets'), back('greets')],
+    // VILLAGERS 1 AND 2 RUN INTO THE CASTLE, up the cobbles to the gate between the
+    // two torches — right of the left one's pole the whole way — and are gone
+    // through it (`vanish`).
+    run: [
+      { who: 1, delay: 0, path: [[410, 248], [403, 224], [401, 212]], vanish: true },
+      { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true }
+    ],
+    after: [{}, {}, {}, {}, back('greets'), back('greets'), back('greets')],
+    // ONCE BOTH ARE INSIDE, the castle's two back towers smoke (`towerSmoke` in the
+    // level file).
+    smokeAfter: [0, 1],
+    // Villager 3 carries a part up to the broken ballista, throws it on, walks down
+    // off the board for the next one and comes back with it — stage 4's loop, one
+    // man and a part rather than two and a plank.
+    crew: {
+      lead: 2,
+      art: { carry: 'carry_parts', throw: 'throw_parts', piece: 'part' },
+      stack: [508, 505],
+      landing: [540, 483],
+      away: { lead: [[505, 538], [502, 572]] },
+      enter: [502, 580],
+      gone: 3
+    },
+    // Villager 4 hammers at it: two quick blows, then a long rest with the hammer
+    // down, and again.
+    hammer: { who: 3, beats: [['hammer_1', 0.16], ['hammer_2', 0.12], ['hammer_1', 0.16], ['hammer_2', 0.12], ['hammer_2', 1.9]] },
+    hops: [],
+    cries: { runnn: false, nooo: false }
   }
 };
 
@@ -259,18 +304,19 @@ function walkTo(v, pts, speed, dt) {
 }
 
 // THE WORK LOOP, from the first frame to the last, whatever the waves are doing.
-//   carry — the pair walks the plank up to the stack (from the painted spot the
+//   carry — the crew walks its load up to where it goes (from the painted spot the
 //           first time, from off the bottom of the board every time after);
-//   throw — they heave it, and it flies in a lob onto the stack and is gone;
-//   away  — the two walk off separately, standing, towards the cut trees and off
-//           the board;
+//   throw — a heave, and the load flies in a lob onto the pile and is gone;
+//   away  — they walk off, standing, and off the board;
 //   gone  — out of sight for `gone` seconds, and round again.
+// The villagers it moves are marked `work`, and the rest of this file leaves them be.
 function work(state, vp, dt) {
-  const { smith, crew } = vp.plan;
+  const { smith, crew, hammer } = vp.plan;
 
   // THE SMITH: drawn back, then in the fire; the fire flares while the pipe is in.
-  const s = state.villagers[smith.who];
+  const s = smith && state.villagers[smith.who];
   if (s) {
+    s.work = true;
     const k = vp.t % (smith.back + smith.in);
     const inFire = k >= smith.back;
     s.pose = inFire ? 'pipe_2' : 'pipe_1';
@@ -283,75 +329,81 @@ function work(state, vp, dt) {
     vp.heat = (vp.heat || 0) + (target - (vp.heat || 0)) * Math.min(1, rate * dt);
   }
 
-  const lead = state.villagers[crew.lead], mate = state.villagers[crew.mate];
-  if (!lead || !mate) return;
+  // THE HAMMERER, on the beat he is given, round and round.
+  const h = hammer && state.villagers[hammer.who];
+  if (h) {
+    h.work = true;
+    const cycle = hammer.beats.reduce((n, [, d]) => n + d, 0);
+    let k = (vp.t + h.n * 0.7) % cycle;
+    for (const [pose, d] of hammer.beats) { if (k < d) { h.pose = pose; break; } k -= d; }
+  }
+
+  const lead = crew && state.villagers[crew.lead];
+  if (!lead) return;
+  const mate = crew.mate !== undefined ? state.villagers[crew.mate] : null;
+  const team = mate ? [lead, mate] : [lead];
+  for (const v of team) v.work = true;
+  const art = crew.art;
+  const piece = PIECES[art.piece];
   const c = vp.crew || (vp.crew = { phase: 'carry', at: vp.t, planks: [] });
-  vp.planks = c.planks;
-  const stick = () => { mate.x = lead.x + PAIR[0]; mate.y = lead.y + PAIR[1]; };
+  const stick = () => { if (mate) { mate.x = lead.x + PAIR[0]; mate.y = lead.y + PAIR[1]; } };
 
   if (c.phase === 'carry') {
-    lead.hidden = mate.hidden = false;
-    mate.ride = true;
-    lead.pose = 'carry';
+    for (const v of team) v.hidden = false;
+    if (mate) mate.ride = true;
+    lead.pose = art.carry;
     lead.leg = lead.leg || 0;
-    lead.flip = mate.flip = false;
     if (walkTo(lead, [crew.stack], WORK_WALK, dt)) { c.phase = 'throw'; c.at = vp.t; c.thrown = false; }
-    lead.flip = false;
+    // The carrying drawing is the way round the artist drew it, whichever way they go.
+    for (const v of team) v.flip = false;
     stick();
-    lead.walking = c.phase === 'carry';
   } else if (c.phase === 'throw') {
-    lead.walking = false;
     stick();
     const k = vp.t - c.at;
-    // Up for the heave, then down on their feet as two standing villagers.
-    if (k < THROW_FOR) lead.pose = 'throw';
-    else if (mate.ride) {
-      mate.ride = false;
-      lead.pose = mate.pose = 'standing';
-      lead.side = mate.side = 'front';
+    // Up for the heave, then down on their feet, standing.
+    if (k < THROW_FOR) lead.pose = art.throw;
+    else if (lead.pose !== 'standing') {
+      if (mate) mate.ride = false;
+      for (const v of team) { v.pose = 'standing'; v.side = 'front'; }
     }
     if (!c.thrown && k >= PLANK_AT) {
       c.thrown = true;
-      const k0 = SCALE;
-      c.planks.push({ x0: lead.x + (PLANK_HELD[0] - VILLAGER_POSE.feet.carry[0]) * k0,
-                      y0: lead.y + (PLANK_HELD[1] - VILLAGER_POSE.feet.carry[1]) * k0,
+      const [fx, fy] = VILLAGER_POSE.feet[art.carry];
+      c.planks.push({ piece, x0: lead.x + (piece.held[0] - fx) * SCALE, y0: lead.y + (piece.held[1] - fy) * SCALE,
                       x1: crew.landing[0], y1: crew.landing[1], at: vp.t, depth: lead.y });
     }
     if (k >= THROW_REST) {
       c.phase = 'away'; c.at = vp.t;
-      lead.leg = mate.leg = 0;
+      for (const v of team) v.leg = 0;
     }
   } else if (c.phase === 'away') {
-    lead.walking = mate.walking = true;
-    const a = walkTo(lead, crew.away.lead, WORK_WALK, dt);
-    const b = walkTo(mate, crew.away.mate, WORK_WALK, dt);
-    if (a && b) {
+    const done = walkTo(lead, crew.away.lead, WORK_WALK, dt) & (mate ? walkTo(mate, crew.away.mate, WORK_WALK, dt) : true);
+    if (done) {
       c.phase = 'gone'; c.at = vp.t;
-      lead.hidden = mate.hidden = true;
-      lead.walking = mate.walking = false;
+      for (const v of team) v.hidden = true;
     }
   } else if (c.phase === 'gone' && vp.t - c.at >= crew.gone) {
-    // BACK FROM WHERE THEY LEFT, with the next plank.
+    // BACK FROM WHERE THEY LEFT, with the next load.
     [lead.x, lead.y] = crew.enter;
     lead.leg = 0;
     c.phase = 'carry'; c.at = vp.t;
     stick();
   }
 
-  // THE PLANKS IN THE AIR: a lob from the carriers' hands to the top of the stack,
-  // gone the moment it lands.
+  // WHAT IS IN THE AIR: a lob from their hands onto the pile, gone the moment it lands.
   for (const p of c.planks) {
     const q = (vp.t - p.at) / PLANK_FLIGHT;
     p.q = q;
     p.x = p.x0 + (p.x1 - p.x0) * q;
     p.y = p.y0 + (p.y1 - p.y0) * q - PLANK_LOB * 4 * q * (1 - q);
-    p.rot = -0.5 * q;
+    p.rot = p.piece.spin * q;
   }
   c.planks = c.planks.filter(p => p.q < 1);
   vp.planks = c.planks;
 }
 
 const RUN_SPEED = 46;         // px a second
+const VANISH_FOR = 0.5;       // seconds to fade out through a door
 const RUN_UP = 0.05;          // how steeply up a runner must go to show their back
 const HOP_GAP = 0.16;         // seconds between one villager's hop and the next's
 const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawings show
@@ -382,7 +434,8 @@ export function updateVillagers(state, dt) {
   if (plan.cries.nooo && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
   vp.stars = stars;
 
-  if (plan.work) { work(state, vp, dt); return; }
+  work(state, vp, dt);
+  if (plan.work) return;
 
   // THE FIRST ENEMY OF THE FIRST WAVE sends the runners off, and turns everyone to
   // face the way they will watch from now on.
@@ -390,7 +443,7 @@ export function updateVillagers(state, dt) {
     vp.started = true;
     for (const v of state.villagers) {
       const a = plan.after[v.n];
-      if (v.live && a) { v.side = a.side; v.act = a.act; v.flip = !!a.flip; }
+      if (v.live && a && !v.work) { v.side = a.side || v.side; v.act = a.act || null; v.flip = !!a.flip; }
     }
     for (const r of plan.run) {
       const v = state.villagers[r.who];
@@ -399,9 +452,14 @@ export function updateVillagers(state, dt) {
       v.mode = 'wait';
       v.leaveAt = vp.t + r.delay;
       v.path = r.path;
+      v.vanish = !!r.vanish;
       v.leg = 0;
     }
   }
+
+  // SMOKE FROM THE CASTLE once everyone it waits for is through its gate.
+  if (plan.smokeAfter && vp.smokeAt === undefined &&
+      plan.smokeAfter.every(n => state.villagers[n] && state.villagers[n].hidden)) vp.smokeAt = vp.t;
 
   // THE HOPS, each group on its own count of the fallen.
   plan.hops.forEach((h, k) => {
@@ -410,7 +468,7 @@ export function updateVillagers(state, dt) {
   });
 
   for (const v of state.villagers) {
-    if (!v.live) continue;
+    if (!v.live || v.work) continue;
     const greeting = vp.t < v.greetUntil;
 
     if (v.mode === 'wait' && vp.t >= v.leaveAt) {
@@ -422,6 +480,13 @@ export function updateVillagers(state, dt) {
     }
     if (v.hidden) continue;
 
+    // THROUGH A DOOR AND GONE: faded out where the path ends, then out of sight.
+    if (v.mode === 'vanish') {
+      v.alpha = Math.max(0, 1 - (vp.t - v.fadeAt) / VANISH_FOR);
+      if (v.alpha <= 0) { v.hidden = true; v.mode = 'gone'; }
+      continue;
+    }
+
     if (v.mode === 'run') {
       if (greeting) { v.pose = 'greeting'; v.greetSide = 'front'; continue; }
       const [tx, ty] = v.path[v.leg];
@@ -430,6 +495,10 @@ export function updateVillagers(state, dt) {
       if (d <= stepLen) {
         v.x = tx; v.y = ty;
         v.leg++;
+        if (v.leg >= v.path.length && v.vanish) {
+          v.mode = 'vanish'; v.fadeAt = vp.t; v.pose = 'standing'; v.runSide = null; v.side = 'back';
+          continue;
+        }
         if (v.leg >= v.path.length) {
           v.mode = 'idle';
           const a = plan.after[v.n];
@@ -481,4 +550,6 @@ export function villagerKey(v) {
   return `vill_${side}_${v.pose}`;
 }
 const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood_plank',
-                   pipe_1: 'vill_holding_steel_pipe_1', pipe_2: 'vill_holding_steel_pipe_2' };
+                   pipe_1: 'vill_holding_steel_pipe_1', pipe_2: 'vill_holding_steel_pipe_2',
+                   carry_parts: 'vill_carrying_ballista_parts', throw_parts: 'vill_throwing_ballista_parts',
+                   hammer_1: 'vill_hammering_1', hammer_2: 'vill_hammering_2' };

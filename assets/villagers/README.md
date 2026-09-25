@@ -37,6 +37,18 @@ And stage 4's villagers at work, one drawing each (no front and back):
 | `Villager_Holding_Steel_Pipe_1.png` | the smith, pipe drawn back from the fire |
 | `Villager_Holding_Steel_Pipe_2.png` | the smith, pipe pushed into the fire |
 
+And stage 5's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Carrying_Ballista_Parts.png` | one villager carrying a ballista part to the broken ballista |
+| `Villager_Throwing_Ballista_Parts.png` | throwing it on |
+| `Villager_Ballista_Parts.png` | the part on its own, flying onto the ballista |
+| `Villager_Hammering_1.png` | hammer raised |
+| `Villager_Hammering_2.png` | hammer struck down |
+
+The ballista-part drawings stand on (236, 311); the hammering ones on (276.5, 305).
+
 The carrying and throwing drawings stand on the back-end villager's shadow, centred
 on (124.5, 341.5); the front-end villager's is at (386.5, 268.5). The steel pipe
 drawings stand on (257, 305).
@@ -141,3 +153,21 @@ them.
 
 Everything villagers do, and every live fire and flag on a board, runs on the game's
 own clock and stops when the game is paused.
+
+## Stage 5's script
+
+Numbered left to right: 1 and 2 by the path up to the castle gate, 3 carrying parts
+to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
+
+- **Before the first wave:** villagers 1 and 2 (facing the player) and 5, 6 and 7
+  (backs to the player) stand and greet by turns.
+- **All the time:** villager 3 carries a part up to the broken ballista, throws it on
+  (it flies onto the ballista and vanishes), walks down off the board for the next one
+  and comes back with it — stage 4's loop for one man. Villager 4 hammers at the
+  ballista: two quick blows, a long rest with the hammer down, and again.
+- **When the first enemy of wave 1 appears:** villagers 1 and 2 run up the cobbles to
+  the castle gate, between the torches and clear of their poles, and fade out through
+  it. Once both are inside, black smoke rises from the castle's two back towers.
+  Villagers 5, 6 and 7 carry on standing and greeting.
+- The two torches at the gate burn with live fire and smoke, and the two banners on
+  the castle sway.

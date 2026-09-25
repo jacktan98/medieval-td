@@ -109,15 +109,40 @@ export const level07 = {
   plots: plots1,
   // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
   // Each anchor is the centre of the figure's own ground shadow.
+  // LEFT TO RIGHT, which is how the owner numbers them: 1 is the most left.
   villagers: [
-    { x: 415, y: 274 },       // on the castle path
-    { x: 380, y: 314 },       // below it, by the road
-    { x: 816, y: 341 },       // the three by the bridge
+    { x: 380, y: 314 },       // 1, by the road below the castle path
+    { x: 415, y: 275 },       // 2, on the castle path
+    { x: 511, y: 516 },       // 3, carrying a part to the broken ballista
+    { x: 580, y: 484 },       // 4, hammering at it
+    { x: 752, y: 362 },       // 5, 6 and 7, the three by the bridge
     { x: 774, y: 358 },
-    { x: 752, y: 362 },
-    { x: 580, y: 484 },       // at the broken ballista
-    { x: 511, y: 516 }        // with the mallet below it
+    { x: 816, y: 341 }
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `castle` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs,
+  // with the part villager 3 is carrying and the head of villager 4's hammer (`props`).
+  villagerPlay: 'castle',
+  props: [{ x: 520.5, y: 510, w: 7, up: 21, down: 5 },
+          { x: 569.5, y: 473, w: 7, up: 10, down: 3 }],   // and villager 4's hammer head
+  // THE TWO TORCHES AT THE GATE, drawn live (src/life.js campfire, with its smoke)
+  // where the painted flames were, as on stage 3: base of each flame, its size
+  // against the world map's fire, and the depth it sorts at — just after the castle
+  // whose box the torches are drawn in.
+  fires: [
+    { x: 389, y: 188, s: 2.5, g: 187.5 },
+    { x: 442.5, y: 170, s: 2.5, g: 187.5 }
+  ],
+  // THE TWO BANNERS ON THE CASTLE, swaying (render.js, swayMapBanner): in the front
+  // sheet's own 1920 x 1080 pixels, the box the cloth is found in by its colour, where
+  // it hangs free from (`top`) and its tails (`bottom`), and how far it swings.
+  mapBanners: [
+    { colour: [5, 93, 171], box: [694, 276, 760, 383], top: 296, bottom: 375, amp: 1.6, g: 187.2 },
+    { colour: [5, 93, 171], box: [825, 249, 885, 353], top: 272, bottom: 345, amp: 1.6, g: 187.2 }
+  ],
+  // AND BLACK SMOKE FROM THE TWO BACK TOWERS once villagers 1 and 2 are inside —
+  // from inside the tops of the left corner tower and the tower at the back.
+  towerSmoke: [{ x: 170, y: 80 }, { x: 310, y: 50 }],
   waves: stage5Waves,
   wavesExtended: stage5Waves,
   oneLength: true,

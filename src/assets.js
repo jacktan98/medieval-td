@@ -189,6 +189,13 @@ export const paths = {
   vill_wood_plank:           'assets/villagers/Villager_Wood_Plank.png',
   vill_holding_steel_pipe_1: 'assets/villagers/Villager_Holding_Steel_Pipe_1.png',
   vill_holding_steel_pipe_2: 'assets/villagers/Villager_Holding_Steel_Pipe_2.png',
+  // Stage 5's: the porter with a ballista part (and the part flying on its own), and
+  // the man hammering at the broken ballista.
+  vill_carrying_ballista_parts: 'assets/villagers/Villager_Carrying_Ballista_Parts.png',
+  vill_throwing_ballista_parts: 'assets/villagers/Villager_Throwing_Ballista_Parts.png',
+  vill_ballista_parts:          'assets/villagers/Villager_Ballista_Parts.png',
+  vill_hammering_1:             'assets/villagers/Villager_Hammering_1.png',
+  vill_hammering_2:             'assets/villagers/Villager_Hammering_2.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.

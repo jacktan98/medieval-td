@@ -349,6 +349,16 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   ctx.restore();
 }
 
+// BLACK SMOKE FROM A TOWER ON A BOARD — stage 5's castle — the world map's black
+// smoke at board size: heavy, slow, rolling off with the wind. `s` its size against
+// the world map's, `a` how far it has thickened in (0 to 1).
+export function towerSmoke(ctx, x, y, t, s, a = 1) {
+  for (let k = 0; k < 9; k++) {
+    const p = ((t / 11) + k / 9) % 1;
+    puff(ctx, x, y, p, 26 * s, 13 * wind(t, x) * s, 2 * s, 7.5 * s, '26,24,22', 0.8 * a);
+  }
+}
+
 // --- the fountain --------------------------------------------------------------
 
 function drawFountain(ctx, t, unlocked) {

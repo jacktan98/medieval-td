@@ -12,9 +12,9 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
-import { VILLAGER_POSE, villagerKey, PLANK_MID } from './villagers.js';
+import { VILLAGER_POSE, villagerKey } from './villagers.js';
 import { BANNERS } from './data/banners.js';
-import { campfire } from './life.js';
+import { campfire, towerSmoke } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
@@ -386,6 +386,16 @@ function drawFigures(ctx, state) {
       });
     }
   }
+  // A BANNER PAINTED ON A BUILDING OF THE BOARD, swaying — stage 5's castle's two —
+  // at the building's own depth, just after it. See swayMapBanner.
+  if (front) {
+    for (const bn of level.mapBanners || []) {
+      add(bn.g, 1, () => {
+        const split = shadowSplit(front, `sheet|${front.src}`, true);
+        swayMapBanner(ctx, split ? split.body : front, bn);
+      });
+    }
+  }
   // A PIECE OF THE FRONT SHEET DRAWN AGAIN, clipped to its own outline, at a depth
   // of its own: stage 4's workbench, which stands in front of the smith behind it
   // though the forge it belongs to sorts behind him. See `overdraw` in level06.
@@ -460,6 +470,16 @@ function drawFigures(ctx, state) {
   // A fire with `over` burns in two layers: its glow at `g`, lighting what is round
   // it from underneath, and its flame and sparks at `over`, in front of whatever is
   // held in it (stage 4's pipe).
+  // BLACK SMOKE FROM A BOARD'S TOWERS, once its villagers have set it going (stage
+  // 5's castle, when the two sent inside have gone in), rising over everything round
+  // it; it thickens in over a few seconds rather than appearing.
+  const vpl = state.villagerPlay;
+  if (level.towerSmoke && vpl && vpl.smokeAt !== undefined) {
+    const since = vpl.t - vpl.smokeAt;
+    for (const sm of level.towerSmoke) {
+      add(sm.g ?? 999, 1, () => towerSmoke(ctx, sm.x, sm.y, (state.anim || 0) + sm.x * 0.1, sm.s ?? 2.4, Math.min(1, since / 3)));
+    }
+  }
   for (const fire of level.fires || []) {
     if (fire.over) {
       add(fire.g, 1, () => drawFire(ctx, state, fire, 'glow'));
@@ -1350,12 +1370,30 @@ function bannerLayers(img, b) {
 }
 
 function swayBanner(ctx, t, b, img, box) {
+  const [sx, sy, sw, sh] = t.def.spriteTrim;
   const got = bannerLayers(img, b);
   if (!got) return false;
-  const [sx, sy, sw, sh] = t.def.spriteTrim;
-  const kx = box.w / sw, ky = box.h / sh;
   ctx.drawImage(got.wall, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
-  const time = boardTime + t.x * 0.013;
+  swayCloth(ctx, b, got, [sx, sy, sw, sh], box, boardTime + t.x * 0.013);
+  return true;
+}
+
+// A BANNER PAINTED ON THE BOARD ITSELF — stage 5's two on the castle — swaying the
+// same way, out of the front sheet it is drawn in: the wall rebuilt behind it within
+// its own box, then the cloth. `amp` is in the sheet's pixels, which are bigger than
+// a tower drawing's, so a board banner states its own.
+function swayMapBanner(ctx, img, b) {
+  const got = bannerLayers(img, b);
+  if (!got) return;
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const box = { left: 0, top: 0, w: W / MAP_PX, h: H / MAP_PX };
+  const [x0, y0, x1, y1] = b.box;
+  ctx.drawImage(got.wall, x0, y0, x1 - x0, y1 - y0, x0 / MAP_PX, y0 / MAP_PX, (x1 - x0) / MAP_PX, (y1 - y0) / MAP_PX);
+  swayCloth(ctx, b, got, [0, 0, W, H], box, boardTime + x0 * 0.007);
+}
+
+function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
+  const kx = box.w / sw, ky = box.h / sh;
   if (b.kind === 'flag') {
     const { amp, speed, length, band } = FLAG_WAVE;
     const [, y0, , y1] = b.box;
@@ -1367,7 +1405,8 @@ function swayBanner(ctx, t, b, img, box) {
     }
     return true;
   }
-  const { amp, speed, length, band } = BANNER_SWAY;
+  const { speed, length, band } = BANNER_SWAY;
+  const amp = b.amp ?? BANNER_SWAY.amp;
   const [x0, , x1] = b.box;
   for (let y = b.box[1]; y < b.box[3]; y += band) {
     const s = Math.max(0, Math.min(1, (y + band / 2 - b.top) / (b.bottom - b.top)));
@@ -1399,6 +1438,8 @@ function drawVillager(ctx, state, v, layer = null) {
   const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;
   const k = SCALE, w = sw * k, h = sh * k;
   ctx.save();
+  // Fading out through a door (villagers.js, `vanish`).
+  if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;
   ctx.translate(v.x, v.y);
   if (v.flip) ctx.scale(-1, 1);
   const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
@@ -1421,15 +1462,17 @@ function drawVillager(ctx, state, v, layer = null) {
 
 // The greeting drawing in two pieces, made once per side: the hand alone, and the
 // rest with the standing drawing's body put back where the hand was.
-// A thrown plank: the plank drawing, centred on where it is, turning as it flies.
+// A thrown piece — stage 4's plank, stage 5's ballista part: its drawing, centred on
+// where it is, turning as it flies. See PIECES in villagers.js.
 function drawPlank(ctx, pl) {
-  const img = art.vill_wood_plank;
+  const { key, src: [sx, sy, sw, sh], mid } = pl.piece;
+  const img = art[key];
   if (!img) return;
   const k = SCALE;
   ctx.save();
   ctx.translate(pl.x, pl.y);
   ctx.rotate(pl.rot);
-  ctx.drawImage(img, 115, 195, 283, 122, (115 - PLANK_MID[0]) * k, (195 - PLANK_MID[1]) * k, 283 * k, 122 * k);
+  ctx.drawImage(img, sx, sy, sw, sh, (sx - mid[0]) * k, (sy - mid[1]) * k, sw * k, sh * k);
   ctx.restore();
 }
 
@@ -1449,6 +1492,23 @@ function mouthPath(fire) {
   return p;
 }
 
+// The mouth shrunk about its middle by half a pixel all round.
+const inners = new WeakMap();
+function innerMouth(fire) {
+  let p = inners.get(fire);
+  if (!p) {
+    const [a, b, c, d, e, f] = fire.mouth.m, k = 1 / MAP_PX;
+    const [cx, cy, w] = fire.mouth.mid;
+    const sc = (w - 1) / w;
+    const m = new DOMMatrix().translate(cx, cy).scale(sc, sc).translate(-cx, -cy)
+      .multiply(new DOMMatrix([a * k, b * k, c * k, d * k, e * k, f * k]));
+    p = new Path2D();
+    p.addPath(new Path2D(fire.mouth.d), m);
+    inners.set(fire, p);
+  }
+  return p;
+}
+
 // A BOARD'S LIVE FIRE. Most are the campfire as it is; a fire with a `mouth` burns
 // INSIDE something — stage 4's furnace — so the mouth is drawn dark first and the
 // flame clipped to it, and a fire with a `roof` keeps its glow, smoke and sparks
@@ -1461,15 +1521,20 @@ function drawFire(ctx, state, fire, part = 'all') {
   // roaring while it is in.
   const tall = fire.heated ? 0.55 + 0.95 * heat : 1;
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
+  // THE MOUTH — its dark inside and its black border — goes with the glow, UNDER
+  // whatever is held into the fire: the smith's pipe crosses the border, and only the
+  // flame and sparks, drawn after the pipe, burn over it.
   const mouth = mouthPath(fire);
-  if (mouth && part !== 'glow') {
+  if (mouth && part !== 'flame') {
     ctx.fillStyle = '#2b0f06';
     ctx.fill(mouth);
   }
+  // The flame is kept a hair inside the mouth, so the whole of its black border
+  // shows round the fire rather than half of it being burnt away.
   campfire(ctx, fire.x, fire.y, t, fire.s, true, {
-    heat, tall, flameClip: mouth, smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, part
+    heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, part
   });
-  if (mouth && part !== 'glow') {
+  if (mouth && part !== 'flame') {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.stroke(mouth);
