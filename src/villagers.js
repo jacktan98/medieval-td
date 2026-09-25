@@ -98,12 +98,16 @@ const PLAYS = {
     // VILLAGERS 1 AND 2 RUN TO THE ROAD, to the grass just under it beside the
     // exit flag, at the owner's word: down past the log, along the bottom of the
     // village below both houses and the plot, then up to the road's edge.
+    //
+    // ROUND THE ROCK, not over it: the grey boulder by the plot at the left
+    // (about x 270-297, y 455-471) is passed underneath by both, the first a
+    // dozen pixels below it and the second further out. Grass tufts they step over.
     run: [
       { who: 0, delay: 0,
-        path: [[205, 400], [250, 452], [330, 492], [430, 497], [525, 514], [630, 512],
+        path: [[205, 400], [238, 448], [262, 478], [300, 486], [330, 492], [430, 497], [525, 514], [630, 512],
                [790, 498], [840, 482], [872, 468]] },
       { who: 1, delay: 0.35,
-        path: [[190, 432], [245, 470], [330, 500], [430, 505], [530, 520], [630, 518],
+        path: [[190, 432], [228, 475], [270, 494], [330, 503], [430, 505], [530, 520], [630, 518],
                [790, 506], [850, 490], [895, 478]] }
     ],
     // The road is above them all but villagers 4 and 5, who have it below.
