@@ -357,28 +357,36 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
 // smoke at board size: heavy, slow, rolling off with the wind. `s` its size against
 // the world map's, `a` how far it has thickened in (0 to 1).
 export function towerSmoke(ctx, x, y, t, s, a = 1) {
-  // SEPARATE CLOUDS, as on the world map: a few puffs, well spaced, each its own
-  // cloud drifting off with the wind — not one unbroken column. Each starts SMALL and
-  // black where it comes up out of the castle and SWELLS as it climbs, going paler
-  // as it spreads, until it thins away. Three soft blobs lumped together make each
-  // one, so it has a body and a lumpy edge.
-  const N = 6;
+  // SEPARATE CLOUDS, as on the world map: a column of puffs, each its own cloud
+  // drifting off with the wind — not one unbroken plume. Each starts small and black
+  // where it comes up out of the castle and swells as it climbs, keeping its black
+  // most of the way and only greying near the top. And NO TWO ALIKE: every cloud,
+  // each time round, draws its own size, lean and lumps, so some come up small and
+  // some big. Four soft blobs lumped together make each one, so it has a thick body
+  // and a lumpy edge.
+  const N = 8, PERIOD = 11;
   const w = wind(t, x);
   for (let k = 0; k < N; k++) {
-    const p = ((t / 11) + k / N) % 1;
+    const u = t / PERIOD + k / N;
+    const p = u % 1;
+    const n = Math.floor(u) * N + k;           // which cloud this is, ever
+    const big = 0.65 + 0.8 * hash(n * 3.1 + 7);
+    const lean = (hash(n * 5.7 + 2) - 0.5) * 6;
     const e = 1 - (1 - p) * (1 - p);
-    const cx = x + 20 * w * s * p * p + Math.sin(p * 5 + k) * 1.2 * s;
+    const cx = x + (20 * w * p * p + lean * p) * s + Math.sin(p * 5 + k) * 1.2 * s;
     const cy = y - 44 * s * e;
-    const r = (1.2 + 8 * p) * s;
-    const alpha = a * Math.min(1, p / 0.06) * Math.pow(1 - p, 0.7);
+    const r = (1.4 + 8 * p) * s * big;
+    const alpha = a * Math.min(1, p / 0.06) * Math.pow(1 - p, 0.5);
     if (alpha <= 0.01) continue;
-    // Black to grey in six steps, so the puff drawings stay few.
-    const g = Math.min(5, Math.floor(Math.pow(p, 0.8) * 6)) / 5;
-    const rgb = `${24 + 126 * g | 0},${22 + 124 * g | 0},${20 + 120 * g | 0}`;
+    // Black to grey in six steps, slowly: dark for most of the climb.
+    const g = Math.min(5, Math.floor(Math.pow(p, 2.2) * 6)) / 5;
+    const rgb = `${24 + 110 * g | 0},${22 + 108 * g | 0},${20 + 104 * g | 0}`;
     ctx.globalAlpha = alpha;
-    for (const [ox, oy, rr] of [[-0.45, 0.15, 0.85], [0.45, 0.1, 0.8], [0, -0.3, 0.95]]) {
-      const R = r * rr * 1.5;
-      ctx.drawImage(sprite(rgb), cx + ox * r - R, cy + oy * r - R, R * 2, R * 2);
+    for (let j = 0; j < 4; j++) {
+      const ang = hash(n * 7.3 + j) * Math.PI * 2;
+      const off = 0.45 * hash(n * 2.9 + j * 11);
+      const R = r * (0.75 + 0.35 * hash(n * 4.1 + j * 5)) * 1.55;
+      ctx.drawImage(sprite(rgb), cx + Math.cos(ang) * off * r - R, cy + Math.sin(ang) * off * r * 0.7 - R, R * 2, R * 2);
     }
     ctx.globalAlpha = 1;
   }
