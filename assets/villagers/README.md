@@ -164,11 +164,14 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
 - **All the time:** villager 3 carries a part up to the broken ballista, throws it on
   (it flies onto the ballista and vanishes), walks down off the board for the next one
   and comes back with it — stage 4's loop for one man. Villager 4 hammers at the
-  ballista: two quick blows, a long rest with the hammer down, and again.
+  ballista: two quick blows (a quarter of a second each way), a long rest with the
+  hammer down, and again.
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 run up the cobbles to
   the castle gate, between the torches and clear of their poles, and fade out through
-  it. Once both are inside, black smoke rises from the castle's two back towers.
-  Villagers 5, 6 and 7 start standing and praying by turns; villagers 3 and 4 keep
-  working.
+  it. Once both are inside, thick black smoke billows from the castle's two back towers.
+  Villagers 5 and 6 start standing and praying by turns. Villager 7 runs straight
+  to the river, to the bank right of the bridge, stands and prays there facing the
+  water for a while, then runs back to his spot and stands and prays with the others.
+  Villagers 3 and 4 keep working.
 - The two torches at the gate burn with live fire and smoke, and the two banners on
   the castle sway.

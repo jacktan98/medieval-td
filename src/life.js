@@ -251,15 +251,15 @@ function drawFire(ctx, t, unlocked) {
 // a shape (the furnace mouth); `smokeClip` keeps the glow, embers, sparks and smoke
 // inside another (under the forge's roof); `smoke` scales the smoke, 1 as it is.
 // `tall` scales the flame's height alone — the forge's fire, small or roaring.
-// `part` draws half of it: 'glow' the light on the ground alone, 'flame' everything
-// else — so a fire can light what is round it from underneath and still burn in front
-// of something held in it.
+// `part` draws half of it: 'under' everything but the sparks, 'sparks' the sparks
+// alone — so something held in the fire (stage 4's pipe) is drawn over the flame and
+// only the sparks it throws fly over it.
 export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1, part = 'all' } = {}) {
   const clipTo = c => { ctx.save(); if (c) ctx.clip(c); };
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
   const R = 11 * s * (1 + 0.3 * heat);
-  if (part !== 'flame') {
+  if (part !== 'sparks') {
   clipTo(smokeClip);
   const glow = ctx.createRadialGradient(x0, y0 + s, 0, x0, y0 + s, R);
   glow.addColorStop(0, `rgba(255,170,70,${Math.min(0.75, 0.30 * flick * (1 + 1.2 * heat))})`);
@@ -268,7 +268,6 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   ctx.fillRect(x0 - R, y0 + s - R, R * 2, R * 2);
   ctx.restore();
   }
-  if (part === 'glow') return;
   // THE FLAME, AS A FLAME BURNS: a big red one, an orange one inside it and a
   // yellow heart inside that, each a teardrop with a rounded bottom sitting in the
   // logs, each flickering on its own beat so the colours slide over each other.
@@ -291,6 +290,8 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   ];
   const orange = [x0 + 0.1 * s * beat(5.2, 3), y0 - 0.15 * s, 1.4 * s, (3.3 + 0.6 * beat(7.7, 2)) * s * lift, 0.6 * beat(5.3, 1) * s];
   const yellow = [x0 + 0.1 * s * beat(6.1, 5), y0 - 0.3 * s, 0.8 * s, (2.1 + 0.5 * beat(10.3, 3)) * s * lift * (1 + 0.3 * heat), 0.4 * beat(6.7, 2) * s];
+  const under = part !== 'sparks', over = part !== 'under';
+  if (under) {
   clipTo(flameClip);
   if (ink) {
     // One black outline round the red silhouette only: stroked first, then the
@@ -307,9 +308,10 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   ctx.fillStyle = ink ? '#ffd95a' : 'rgba(255,217,90,0.95)';
   tongue(...yellow); ctx.fill();
   ctx.restore();
+  }
   clipTo(smokeClip);
   // Embers, drifting up and off with the wind.
-  for (let k = 0; k < 5; k++) {
+  for (let k = 0; k < 5 && under; k++) {
     const life = 1.4 + hash(k + 30) * 0.8;
     const p = ((t / life) + hash(k + 40)) % 1;
     ctx.fillStyle = `rgba(255,${150 + 60 * (1 - p) | 0},60,${0.85 * (1 - p)})`;
@@ -319,7 +321,7 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   }
   // SPARKS, while it is stoked: bright, quick, thrown up and out of the fire — a
   // shower of them at full heat, each with a short bright streak behind it.
-  if (heat > 0.05) {
+  if (heat > 0.05 && over) {
     const n = Math.round(26 * heat);
     for (let k = 0; k < n; k++) {
       const life = 0.3 + hash(k + 60) * 0.35;
@@ -342,7 +344,7 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
     }
   }
   // And a thread of smoke over it.
-  for (let k = 0; k < 4 && smoke > 0; k++) {
+  for (let k = 0; k < 4 && smoke > 0 && under; k++) {
     const p = ((t / 4.5) + k / 4) % 1;
     puff(ctx, x0, y0 - 5 * s * smoke, p, 16 * s * smoke, 9 * wind(t, x0) * s * smoke, 1.2 * s * smoke, 4.8 * s * smoke, '240,236,226', 0.45);
   }
@@ -353,9 +355,14 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
 // smoke at board size: heavy, slow, rolling off with the wind. `s` its size against
 // the world map's, `a` how far it has thickened in (0 to 1).
 export function towerSmoke(ctx, x, y, t, s, a = 1) {
-  for (let k = 0; k < 9; k++) {
-    const p = ((t / 11) + k / 9) % 1;
-    puff(ctx, x, y, p, 26 * s, 13 * wind(t, x) * s, 2 * s, 7.5 * s, '26,24,22', 0.8 * a);
+  // THICK: three columns of puffs side by side, many of them, big and dark and
+  // swelling as they climb, so the smoke billows out of the tower rather than
+  // threading up from it.
+  for (const [off, ph] of [[-1.6, 0], [0, 0.33], [1.6, 0.66]]) {
+    for (let k = 0; k < 18; k++) {
+      const p = ((t / 9) + k / 18 + ph / 18) % 1;
+      puff(ctx, x + off * s, y, p, 34 * s, 16 * wind(t, x) * s, 3.5 * s, 14 * s, '24,22,20', 1 * a);
+    }
   }
 }
 

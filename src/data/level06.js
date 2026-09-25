@@ -136,10 +136,10 @@ export const level06 = {
   // own outline, so it stands in front of him as it does in the picture.
   overdraw: [{ poly: [[571, 437.5], [588.5, 423], [601, 427.5], [601, 437], [587, 451], [573.5, 445]], g: 440 }],
   fires: [{
-    // Its glow sorted with the forge (439.7, after the smith at 439.5 — see
-    // platforms — and before the workbench, 440), lighting it from underneath; its
-    // flame and sparks after everything in it (`over`: after the pipe over the
-    // bench, 440.5), so they are drawn over the pipe going into the fire.
+    // The fire sorted with the forge (439.7, after the smith at 439.5 — see
+    // platforms — and before the workbench, 440), so the pipe held into it (440.5)
+    // lies over the flame; only its sparks come after everything (`over`), flying
+    // out over the pipe.
     x: 595, y: 426, s: 2.2, g: 439.7, over: 440.7, heated: true, smoke: 0.45,
     // The furnace's mouth: the artist's own outline of the painted flame, lifted from
     // Stage_4_Map_Layer_3.svg with its transform, so the fire fills exactly the

@@ -463,13 +463,6 @@ function drawFigures(ctx, state) {
   // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
   // threw it so it goes over the stack behind them.
   for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) add(pl.depth, 1, () => drawPlank(ctx, pl));
-  // LIVE FIRES, the world map's fire at board size, where the artwork's painted
-  // flames were — stage 1's campfire over its logs, stage 3's two torches on their
-  // pillars. Each sorted at the depth of what it burns on and added after it, so it
-  // burns in front of that and behind anyone nearer; each on its own beat.
-  // A fire with `over` burns in two layers: its glow at `g`, lighting what is round
-  // it from underneath, and its flame and sparks at `over`, in front of whatever is
-  // held in it (stage 4's pipe).
   // BLACK SMOKE FROM A BOARD'S TOWERS, once its villagers have set it going (stage
   // 5's castle, when the two sent inside have gone in), rising over everything round
   // it; it thickens in over a few seconds rather than appearing.
@@ -480,10 +473,17 @@ function drawFigures(ctx, state) {
       add(sm.g ?? 999, 1, () => towerSmoke(ctx, sm.x, sm.y, (state.anim || 0) + sm.x * 0.1, sm.s ?? 2.4, Math.min(1, since / 3)));
     }
   }
+  // LIVE FIRES, the world map's fire at board size, where the artwork's painted
+  // flames were — stage 1's campfire over its logs, stage 3's two torches on their
+  // pillars. Each sorted at the depth of what it burns on and added after it, so it
+  // burns in front of that and behind anyone nearer; each on its own beat.
+  // A fire with `over` burns in two layers: everything but its sparks at `g`, under
+  // whatever is held in it (stage 4's pipe, which is drawn over the flame), and the
+  // sparks alone at `over`, flying out over it.
   for (const fire of level.fires || []) {
     if (fire.over) {
-      add(fire.g, 1, () => drawFire(ctx, state, fire, 'glow'));
-      add(fire.over, 1, () => drawFire(ctx, state, fire, 'flame'));
+      add(fire.g, 1, () => drawFire(ctx, state, fire, 'under'));
+      add(fire.over, 1, () => drawFire(ctx, state, fire, 'sparks'));
     } else add(fire.g, 1, () => drawFire(ctx, state, fire));
   }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
@@ -1521,11 +1521,11 @@ function drawFire(ctx, state, fire, part = 'all') {
   // roaring while it is in.
   const tall = fire.heated ? 0.55 + 0.95 * heat : 1;
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
-  // THE MOUTH — its dark inside and its black border — goes with the glow, UNDER
-  // whatever is held into the fire: the smith's pipe crosses the border, and only the
-  // flame and sparks, drawn after the pipe, burn over it.
+  // THE MOUTH — its dark inside and its black border — goes with the flame, UNDER
+  // whatever is held into the fire: the smith's pipe crosses the border and lies over
+  // the flame, and only the sparks, drawn after the pipe, fly over it.
   const mouth = mouthPath(fire);
-  if (mouth && part !== 'flame') {
+  if (mouth && part !== 'sparks') {
     ctx.fillStyle = '#2b0f06';
     ctx.fill(mouth);
   }
@@ -1534,7 +1534,7 @@ function drawFire(ctx, state, fire, part = 'all') {
   campfire(ctx, fire.x, fire.y, t, fire.s, true, {
     heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, part
   });
-  if (mouth && part !== 'flame') {
+  if (mouth && part !== 'sparks') {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.stroke(mouth);

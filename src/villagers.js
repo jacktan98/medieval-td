@@ -213,11 +213,11 @@ const PLAYS = {
     // up to the fire and behind the workbench, rather than where he was painted.
     smith: { who: 0, at: [578, 431], back: 3.2, in: 2,
       // His hands and pipe, held out over the workbench (which is drawn over the
-      // rest of him) and over the furnace's front: drawn again after the bench (440),
-      // his hands and pipe alone (see toolLayer in render.js — none of his body, so
-      // none of his outline lands on the bench as a speck), and not inside the
-      // furnace's mouth, so the pipe's tip stays in the fire.
-      tool: { g: 440.5, mouth: true } },
+      // rest of him), the furnace's front and the fire itself: drawn again after the
+      // bench (440), his hands and pipe alone (see toolLayer in render.js — none of
+      // his body, so none of his outline lands on the bench as a speck). Only the
+      // sparks are drawn over it.
+      tool: { g: 440.5 } },
     // The two plank carriers, `lead` the back end (whose feet the carrying drawing
     // stands on) and `mate` the front end.
     crew: {
@@ -251,7 +251,11 @@ const PLAYS = {
     // through it (`vanish`).
     run: [
       { who: 1, delay: 0, path: [[410, 248], [403, 224], [401, 212]], vanish: true },
-      { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true }
+      { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true },
+      // VILLAGER 7 RUNS STRAIGHT TO THE RIVER, to the bank right of the bridge, and
+      // stands and prays there facing the water (`there`) for `stay` seconds; then
+      // runs back the way he came and stands and prays at home with the others.
+      { who: 6, delay: 0.2, path: [[928, 395]], there: { side: 'front', act: 'pray', flip: true }, stay: 14 }
     ],
     // Villagers 5, 6 and 7 turn to praying by turns once the wave is on them; 3 and 4
     // keep working throughout.
@@ -273,7 +277,7 @@ const PLAYS = {
     },
     // Villager 4 hammers at it: two quick blows, then a long rest with the hammer
     // down, and again.
-    hammer: { who: 3, beats: [['hammer_1', 0.16], ['hammer_2', 0.12], ['hammer_1', 0.16], ['hammer_2', 0.12], ['hammer_2', 1.9]] },
+    hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]] },
     hops: [],
     cries: { runnn: false, nooo: false }
   }
@@ -455,6 +459,7 @@ export function updateVillagers(state, dt) {
       v.leaveAt = vp.t + r.delay;
       v.path = r.path;
       v.vanish = !!r.vanish;
+      v.trip = r.stay ? { there: r.there, stay: r.stay, home: [v.x, v.y], back: false } : null;
       v.leg = 0;
     }
   }
@@ -482,6 +487,14 @@ export function updateVillagers(state, dt) {
     }
     if (v.hidden) continue;
 
+    // BACK FROM A TRIP when its time there is up.
+    if (v.mode === 'idle' && v.trip && !v.trip.back && v.trip.at !== undefined && vp.t >= v.trip.at) {
+      v.trip.back = true;
+      v.path = [...v.path.slice(0, -1).reverse(), v.trip.home];
+      v.leg = 0;
+      v.mode = 'run';
+    }
+
     // THROUGH A DOOR AND GONE: faded out where the path ends, then out of sight.
     if (v.mode === 'vanish') {
       v.alpha = Math.max(0, 1 - (vp.t - v.fadeAt) / VANISH_FOR);
@@ -499,6 +512,14 @@ export function updateVillagers(state, dt) {
         v.leg++;
         if (v.leg >= v.path.length && v.vanish) {
           v.mode = 'vanish'; v.fadeAt = vp.t; v.pose = 'standing'; v.runSide = null; v.side = 'back';
+          continue;
+        }
+        if (v.leg >= v.path.length && v.trip && !v.trip.back) {
+          // THERE: stand and pray a while, then home again the way he came.
+          const { there, stay } = v.trip;
+          v.mode = 'idle';
+          v.side = there.side; v.act = there.act; v.flip = !!there.flip;
+          v.trip.at = vp.t + stay;
           continue;
         }
         if (v.leg >= v.path.length) {
