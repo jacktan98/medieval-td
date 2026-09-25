@@ -396,12 +396,23 @@ function drawFigures(ctx, state) {
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
   for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
-  for (const v of state.villagers || []) if (v.live && !v.hidden) add(v.y, 1, () => drawVillager(ctx, v));
-  // A LIVE CAMPFIRE, the world map's fire at board size, over the logs the artwork
-  // keeps (the painted flame is gone from it). Sorted at the logs' own depth and
-  // added after them, so it burns in front of them and behind anyone nearer.
-  const fire = level.campfire;
-  if (fire) add(fire.g, 1, () => campfire(ctx, fire.x, fire.y, performance.now() / 1000, fire.s, true));
+  // A VILLAGER UP ON A PLATFORM — stage 3's statue plaza — is drawn after the
+  // platform's own box, whose depth is where its shadow is, below them. Standing on
+  // it, they are on top of it; the statue and pillars behind them stay behind.
+  const raised = v => {
+    for (const r of level.platforms || []) {
+      if (v.x >= r.x && v.x <= r.x + r.w && v.y >= r.y && v.y <= r.y + r.h) return Math.max(v.y, r.g + 0.5);
+    }
+    return v.y;
+  };
+  for (const v of state.villagers || []) if (v.live && !v.hidden) add(raised(v), 1, () => drawVillager(ctx, v));
+  // LIVE FIRES, the world map's fire at board size, where the artwork's painted
+  // flames were — stage 1's campfire over its logs, stage 3's two torches on their
+  // pillars. Each sorted at the depth of what it burns on and added after it, so it
+  // burns in front of that and behind anyone nearer; each on its own beat.
+  for (const fire of level.fires || []) {
+    add(fire.g, 1, () => campfire(ctx, fire.x, fire.y, performance.now() / 1000 + fire.x * 0.37, fire.s, true));
+  }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not

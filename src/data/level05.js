@@ -122,14 +122,33 @@ export const level05 = {
   src: 'assets/map/Stage_3_Map',
   routes: [south, north],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
+  // THE PEOPLE WHO LIVE HERE, left to right, which is how the owner numbers them:
+  // villager 1 is the most left and villager 5 the most right — the one at the top.
   // Each anchor is the centre of the figure's own ground shadow.
   villagers: [
-    { x: 427, y: 299 },       // on the plinth under the statue
-    { x: 415, y: 319 },       // and the one beside him
-    { x: 500, y: 374 },       // on the green below the plinth
-    { x: 758, y: 513 }        // between the two bottom-right houses
+    { x: 414, y: 320 },       // 1, on the plinth, front left
+    { x: 427, y: 299 },       // 2, on the plinth beside the left torch
+    { x: 500, y: 375 },       // 3, on the green below the plinth
+    { x: 758, y: 513 },       // 4, between the two bottom-right houses
+    { x: 775, y: 135 }        // 5, at the top, behind the barricade
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `winchester` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'winchester',
+  // Birdsong under the whole battle, as on stages 1 and 2.
+  ambience: { clip: 'bird_chirping', level: 0.5 },
+  // THE TWO TORCHES ON THE PILLARS either side of the statue, drawn live (src/life.js
+  // campfire, with its smoke) where the painted flames were: base of each flame, its
+  // size against the world map's fire, and the depth it sorts at — the plaza's, so
+  // it burns on top of its pillar.
+  fires: [
+    { x: 433.5, y: 222, s: 3.6, g: 309 },
+    { x: 517, y: 236, s: 3.6, g: 309 }
+  ],
+  // THE PLAZA IS A RAISED FLOOR, and its box sorts at its own shadow, y 309 — below
+  // the feet of a villager standing on it at the back, who would otherwise be drawn
+  // under it. A villager whose feet are on it is drawn after it (render.js).
+  platforms: [{ x: 350, y: 262, w: 205, h: 88, g: 309 }],
   waves: stage3Waves,
   wavesExtended: stage3Waves,
   oneLength: true,
@@ -178,12 +197,12 @@ export const level05 = {
   frontArt: 'front05',
   front: [
     { x: 745, y: 142, w:  95, h:  80, g: 187 },   // stands on y 187
-    { x: 785, y: 234, w:  60, h:  52, g: 283 },   // stands on y 283
+    { x: 785, y: 234, w:  59, h:  52, g: 283 },   // stands on y 283
     { x: 847, y: 258, w:  99, h:  56, g: 297 },   // stands on y 297
-    { x: 347, y: 206, w: 211, h: 144, g: 309 },   // stands on y 309 — the plaza
+    { x: 347, y: 220, w: 212, h: 130, g: 309 },   // stands on y 309 — the plaza
     { x: 663, y: 432, w:  77, h:  81, g: 497 },   // stands on y 497
     { x: 145, y: 442, w:  80, h:  81, g: 507 },   // stands on y 507
-    { x: 788, y: 455, w:  80, h:  81, g: 520 }   // stands on y 520
+    { x: 788, y: 455, w:  80, h:  82, g: 520 }   // stands on y 520
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

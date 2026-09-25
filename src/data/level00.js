@@ -129,7 +129,7 @@ export const level00 = {
   // The campfire's flame, drawn live (src/life.js campfire) where the painted one
   // was: its base on the logs at (x, y), `s` times the world map's fire, sorted at
   // `g`, the depth of the logs' own front box below.
-  campfire: { x: 123, y: 369, s: 4.6, g: 383 },
+  fires: [{ x: 123, y: 369, s: 4.6, g: 383 }],
   // Birdsong under the whole battle, at half the world map's already quiet level.
   ambience: { clip: 'bird_chirping', level: 0.5 },
   front: [

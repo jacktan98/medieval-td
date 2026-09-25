@@ -174,7 +174,7 @@ console.log('\nStill in the picture\n');
   });
   ok(quiet.length === 0, 'and on every other board none of them is drawn',
     quiet.length ? quiet.map(l => l.name).join(', ') : 'painted, and left painted');
-  ok(/if \(v\.live && !v\.hidden\) add\(v\.y, 1, \(\) => drawVillager/.test(code('render.js')),
+  ok(/if \(v\.live && !v\.hidden\) add\(raised\(v\), 1, \(\) => drawVillager/.test(code('render.js')),
     '  the render pass draws only the live ones', 'drawVillager behind v.live');
 }
 

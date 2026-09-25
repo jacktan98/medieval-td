@@ -41,6 +41,14 @@ const BLACK_SMOKE = [
   { x: 878, y: 292, town: 'ironforge' }    // the factory
 ];
 
+// AND TWO THREADS OF IT FROM WINCHESTER'S STATUE, at the owner's word — the two
+// torches on their pillars either side of it on stage 3, too small to see from here,
+// sending up a little pale smoke each.
+const STATUE_SMOKE = [
+  { x: 295.5, y: 71, town: 'winchester' },
+  { x: 309.5, y: 72, town: 'winchester' }
+];
+
 const CAMPFIRE = { x: 18, y: 84, town: 'oakhaven' };
 
 // A banner: the top of it (where it hangs from), its width and its length. They
@@ -112,6 +120,14 @@ function drawSmoke(ctx, t, unlocked) {
       const p = ((t / 9.5) + k / 6 + hash(i)) % 1;
       // A PALE grey: a mid grey is the grass's own brightness and vanished into it.
       puff(ctx, c.x, c.y, p, 22, 10 * w, 1.8, 6.2, '204,200,194', 0.85);
+    }
+  });
+  STATUE_SMOKE.forEach((c, i) => {
+    if (!awake(c.town, unlocked)) return;
+    const w = wind(t, c.x);
+    for (let k = 0; k < 4; k++) {
+      const p = ((t / 6.5) + k / 4 + hash(i + 70)) % 1;
+      puff(ctx, c.x, c.y, p, 16, 7 * w, 1.4, 5, '226,222,216', 0.9);
     }
   });
   BLACK_SMOKE.forEach((c, i) => {

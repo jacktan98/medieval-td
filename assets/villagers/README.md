@@ -84,3 +84,19 @@ tavern steps, 4 beside him.
   their greeting is mirrored too.
 - **A star lost** (lives dropping below 18, then below 10): the village cries "nooo",
   ahead of every other sound. (No "runnn" here.) Soft birdsong plays under the stage.
+
+## Stage 3's script
+
+Numbered left to right: 1 and 2 on the statue's plaza, 3 on the green below it, 4
+between the two bottom-right houses, 5 at the top (the most right).
+
+- **Before the first wave:** all five stand and greet by turns — 1, 2 and 5 facing
+  the player, 3 and 4 with their backs to the player.
+- **When the first enemy of wave 1 appears:** villagers 1, 2 and 4 stand and pray by
+  turns. Villager 3 walks up onto the plaza to stand beside villager 2, turns to face
+  the player and prays by turns. Villager 5 runs round the right-hand end of the
+  barricade to stand in its shade, on the near side, and prays by turns.
+- **Every 10 enemies killed:** villagers 1, 2 and 4 hop twice.
+- **Every 12 enemies killed:** villagers 3 and 5 hop twice.
+- **A star lost:** "nooo", as on stage 2. Soft birdsong plays under the stage, and
+  the two torches by the statue burn with live fire and smoke.

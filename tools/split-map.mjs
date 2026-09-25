@@ -267,9 +267,15 @@ const GARRISON_DOWN = 4;  // and below
 // drew them running, praying and hopping (assets/villagers) — so a board that sets
 // `villagerPlay` has its villagers cut out like a garrison and drawn by the game;
 // see src/villagers.js. Every other board's stay painted, exactly as before.
+// EACH WITH A WINDOW HIS OWN SIZE. A soldier is about 34px tall with a weapon out to
+// the side; a villager is 22px and empty-handed, and on stage 3 the soldier-sized
+// window reached far enough above one to take a stepping stone behind him as part of
+// him. A villager's window is cut to a villager.
+const VILLAGER_WIN = { w: 14, up: 27, down: 4 };
+const GARRISON_WIN = { w: GARRISON_W, up: GARRISON_UP, down: GARRISON_DOWN };
 const figures = [
-  ...(level.garrison || []).map(at => ({ at, what: 'garrison' })),
-  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager' }))
+  ...(level.garrison || []).map(at => ({ at, what: 'garrison', win: GARRISON_WIN })),
+  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager', win: VILLAGER_WIN }))
 ];
 
 const garrisonGroups = [];
@@ -410,10 +416,10 @@ if (figures.length) {
   // AND WHOLE DRAWINGS HELD BACK because they reach outside the window — scenery a
   // man stands beside, like stage 5's box of arrows.
   const spilled = new Set();
-  const inWindow = (g, at) => {
+  const inWindow = (g, { at, win }) => {
     const b = bounds(g.subPaths.flat());
-    return b.x0 * MAP_SCALE >= at.x - GARRISON_W && b.x1 * MAP_SCALE <= at.x + GARRISON_W &&
-           b.y0 * MAP_SCALE >= at.y - GARRISON_UP && b.y1 * MAP_SCALE <= at.y + GARRISON_DOWN;
+    return b.x0 * MAP_SCALE >= at.x - win.w && b.x1 * MAP_SCALE <= at.x + win.w &&
+           b.y0 * MAP_SCALE >= at.y - win.up && b.y1 * MAP_SCALE <= at.y + win.down;
   };
 
   const owner = new Map();
@@ -422,9 +428,9 @@ if (figures.length) {
     const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
     let best = -1, least = Infinity;
     const par = parentOf(g);
-    figures.forEach(({ at }, k) => {
-      if (x0 < at.x - GARRISON_W || x1 > at.x + GARRISON_W ||
-          y0 < at.y - GARRISON_UP || y1 > at.y + GARRISON_DOWN) return;
+    figures.forEach(({ at, win }, k) => {
+      if (x0 < at.x - win.w || x1 > at.x + win.w ||
+          y0 < at.y - win.up || y1 > at.y + win.down) return;
       // AND A BARE LINE DRAWN INSIDE SOMETHING TOO BIG TO BE A MAN is that thing's
       // line and not his — see the note above.
       if (par && !figureSized(par)) { withheld.add(g); return; }
@@ -435,7 +441,7 @@ if (figures.length) {
     // and only if that whole drawing fits the man's window. See the note on unitOf.
     if (best >= 0) {
       const unit = unitOf(g);
-      if (inWindow(unit, figures[best].at)) owner.set(unit, best);
+      if (inWindow(unit, figures[best])) owner.set(unit, best);
       else spilled.add(unit);
     }
   }

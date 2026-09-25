@@ -157,6 +157,23 @@ const PLAYS = {
     after: [mirrored('pray'), front('pray'), front('drink'), front('pray')],
     hops: [{ every: 10, who: [0, 1] }, { every: 12, who: [3] }],
     cries: { runnn: false, nooo: true }
+  },
+  // STAGE 3, Winchester Entrance, left to right: 1 and 2 on the statue's plaza, 3 on
+  // the green below it, 4 between the two bottom-right houses, 5 at the top behind
+  // the barricade.
+  winchester: {
+    before: [front('greets'), front('greets'), back('greets'), back('greets'), front('greets')],
+    run: [
+      // VILLAGER 3 GOES UP ONTO THE PLAZA, over its front corner, to stand beside
+      // villager 2 by the statue — turning to face the player.
+      { who: 2, delay: 0, path: [[490, 352], [462, 322], [447, 305]] },
+      // VILLAGER 5 GOES ROUND THE BARRICADE'S RIGHT-HAND END and in behind it, into
+      // the shade on its near side between the wall and the plot.
+      { who: 4, delay: 0.25, path: [[838, 138], [847, 168], [818, 190]] }
+    ],
+    after: [front('pray'), front('pray'), front('pray'), back('pray'), front('pray')],
+    hops: [{ every: 10, who: [0, 1, 3] }, { every: 12, who: [2, 4] }],
+    cries: { runnn: false, nooo: true }
   }
 };
 
