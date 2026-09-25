@@ -182,6 +182,13 @@ export const paths = {
   vill_front_drinking_2:   'assets/villagers/Villager_Front_Drinking_2.png',
   vill_back_drinking_1:    'assets/villagers/Villager_Back_Drinking_1.png',
   vill_back_drinking_2:    'assets/villagers/Villager_Back_Drinking_2.png',
+  // Stage 4's villagers at work — one drawing each, no front and back. The carrying
+  // and throwing drawings are BOTH carriers in one picture; see PAIR in villagers.js.
+  vill_carrying_wood_plank:  'assets/villagers/Villager_Carrying_Wood_Plank.png',
+  vill_throwing_wood_plank:  'assets/villagers/Villager_Throwing_Wood_Plank.png',
+  vill_wood_plank:           'assets/villagers/Villager_Wood_Plank.png',
+  vill_holding_steel_pipe_1: 'assets/villagers/Villager_Holding_Steel_Pipe_1.png',
+  vill_holding_steel_pipe_2: 'assets/villagers/Villager_Holding_Steel_Pipe_2.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.

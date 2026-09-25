@@ -12,7 +12,7 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
-import { VILLAGER_POSE, villagerKey } from './villagers.js';
+import { VILLAGER_POSE, villagerKey, PLANK_MID } from './villagers.js';
 import { campfire } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
@@ -396,22 +396,28 @@ function drawFigures(ctx, state) {
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
   for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
-  // A VILLAGER UP ON A PLATFORM — stage 3's statue plaza — is drawn after the
-  // platform's own box, whose depth is where its shadow is, below them. Standing on
-  // it, they are on top of it; the statue and pillars behind them stay behind.
+  // A VILLAGER UP ON A PLATFORM — stage 3's statue plaza — or INSIDE a building —
+  // stage 4's smith in his forge — is drawn after that box, whose depth is where its
+  // shadow is, below them. Standing on it or in it, they are in front of it; the
+  // statue and pillars behind them stay behind, as does the forge's back wall.
   const raised = v => {
     for (const r of level.platforms || []) {
       if (v.x >= r.x && v.x <= r.x + r.w && v.y >= r.y && v.y <= r.y + r.h) return Math.max(v.y, r.g + 0.5);
     }
     return v.y;
   };
-  for (const v of state.villagers || []) if (v.live && !v.hidden) add(raised(v), 1, () => drawVillager(ctx, v));
+  // `ride`: a villager drawn in someone else's drawing — stage 4's front-end plank
+  // carrier, who is in the back-end man's picture while they carry and throw.
+  for (const v of state.villagers || []) if (v.live && !v.hidden && !v.ride) add(raised(v), 1, () => drawVillager(ctx, v));
+  // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
+  // threw it so it goes over the stack behind them.
+  for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) add(pl.depth, 1, () => drawPlank(ctx, pl));
   // LIVE FIRES, the world map's fire at board size, where the artwork's painted
   // flames were — stage 1's campfire over its logs, stage 3's two torches on their
   // pillars. Each sorted at the depth of what it burns on and added after it, so it
   // burns in front of that and behind anyone nearer; each on its own beat.
   for (const fire of level.fires || []) {
-    add(fire.g, 1, () => campfire(ctx, fire.x, fire.y, performance.now() / 1000 + fire.x * 0.37, fire.s, true));
+    add(fire.g, 1, () => drawFire(ctx, state, fire));
   }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
@@ -1169,10 +1175,12 @@ function drawVillager(ctx, v) {
   const key = villagerKey(v);
   const img = art[key];
   if (!img) return;
-  const [sx, sy, sw, sh] = VILLAGER_POSE.trim;
+  const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;
   const k = SCALE, w = sw * k, h = sh * k;
   ctx.save();
-  ctx.translate(v.x, v.y);
+  // A little bob in the step while walking at work — the drawing is a standing one.
+  const bob = v.walking ? -Math.abs(Math.sin(performance.now() / 1000 * 7 + v.n)) * 1.2 : 0;
+  ctx.translate(v.x, v.y + bob);
   if (v.flip) ctx.scale(-1, 1);
   const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
   const left = -(fx - sx) * k, top = -(fy - sy) * k;
@@ -1194,6 +1202,49 @@ function drawVillager(ctx, v) {
 
 // The greeting drawing in two pieces, made once per side: the hand alone, and the
 // rest with the standing drawing's body put back where the hand was.
+// A thrown plank: the plank drawing, centred on where it is, turning as it flies.
+function drawPlank(ctx, pl) {
+  const img = art.vill_wood_plank;
+  if (!img) return;
+  const k = SCALE;
+  ctx.save();
+  ctx.translate(pl.x, pl.y);
+  ctx.rotate(pl.rot);
+  ctx.drawImage(img, 115, 195, 283, 122, (115 - PLANK_MID[0]) * k, (195 - PLANK_MID[1]) * k, 283 * k, 122 * k);
+  ctx.restore();
+}
+
+// A BOARD'S LIVE FIRE. Most are the campfire as it is; a fire with a `mouth` burns
+// INSIDE something — stage 4's furnace — so the mouth is drawn dark first and the
+// flame clipped to it, and a fire with a `roof` keeps its glow, smoke and sparks
+// below that line so none of it crosses the roof over it. A `heated` fire flares
+// with the smith's stroke (villagers.js keeps the heat).
+function drawFire(ctx, state, fire) {
+  const t = performance.now() / 1000 + fire.x * 0.37;
+  const heat = fire.heated && state.villagerPlay ? state.villagerPlay.heat || 0 : 0;
+  const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
+  let mouth = null;
+  if (fire.mouth) {
+    const { x0, x1, top, bottom } = fire.mouth, r = (x1 - x0) / 2;
+    mouth = new Path2D();
+    mouth.moveTo(x0, bottom);
+    mouth.lineTo(x0, top + r);
+    mouth.arc(x0 + r, top + r, r, Math.PI, 0);
+    mouth.lineTo(x1, bottom);
+    mouth.closePath();
+    ctx.fillStyle = '#2b0f06';
+    ctx.fill(mouth);
+  }
+  campfire(ctx, fire.x, fire.y, t, fire.s, true, {
+    heat, flameClip: mouth, smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1
+  });
+  if (mouth) {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.stroke(mouth);
+  }
+}
+
 const greetCache = new Map();
 function greetLayers(key) {
   if (greetCache.has(key)) return greetCache.get(key);

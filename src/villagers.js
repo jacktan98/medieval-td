@@ -89,24 +89,41 @@ export const VILLAGER_POSE = {
   // he lifts the mug and does not stand 3 px off his painted spot.
   trim: [200, 176, 110, 142],
   foot: [258, 305],
-  feet: { drinking_1: [272, 305], drinking_2: [272, 305] },
+  feet: { drinking_1: [272, 305], drinking_2: [272, 305],
+          pipe_1: [257, 305], pipe_2: [257, 305],
+          // Stage 4's plank carriers are ONE drawing of TWO villagers and their plank,
+          // stood on the back-end man's shadow; the front-end man's is PAIR further on.
+          carry: [124.5, 341.5], throw: [124.5, 341.5] },
+  // And the poses whose drawing does not fit the shared box.
+  trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
+           carry: [85, 155, 340, 200], throw: [85, 155, 340, 200] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
 };
 
+// Where the front-end carrier stands against the back-end one, in game px — the two
+// shadows in the carrying drawing, (124.5, 341.5) and (386.5, 268.5), at SCALE.
+export const PAIR = [(386.5 - 124.5) * SCALE, (268.5 - 341.5) * SCALE];
+// Where the plank is in the carrying drawing (its middle), and in its own drawing.
+export const PLANK_HELD = [265, 241];
+export const PLANK_MID = [256, 255];
+
 // WHAT A VILLAGER DOES WHILE STANDING, each on their own beat: `pose` for `for`
 // seconds in every `every`, and `rest` the rest of the time.
 //   greet  — now and then (stage 1, before the first wave).
 //   greets — standing and greeting by turns (stage 2).
-//   pray   — the long part is the praying, nine seconds in twelve, so they are not
-//            forever bobbing up between prayers.
-//   drink  — the mug held, then tipped up; no standing drawing at all.
+//   pray   — the long part is the praying, thirteen seconds in eighteen, so they are
+//            not forever bobbing up between prayers.
+//   drink  — the mug held, then tipped up; no standing drawing at all. Four seconds
+//            holding and two and a half drinking.
+// Both were half as long again as this until the owner asked for them to last
+// longer.
 const ACTS = {
   greet:  { rest: 'standing',   pose: 'greeting',   every: 8,  for: 1.6 },
   greets: { rest: 'standing',   pose: 'greeting',   every: 5,  for: 2 },
-  pray:   { rest: 'standing',   pose: 'praying',    every: 12, for: 9 },
-  drink:  { rest: 'drinking_1', pose: 'drinking_2', every: 4,  for: 1.5 }
+  pray:   { rest: 'standing',   pose: 'praying',    every: 18, for: 13 },
+  drink:  { rest: 'drinking_1', pose: 'drinking_2', every: 6.5, for: 2.5 }
 };
 
 // A board's script, villager by villager in the level's order. `before` is how each
@@ -177,8 +194,137 @@ const PLAYS = {
     after: [front('pray'), front('pray'), front('pray'), back('pray'), front('pray')],
     hops: [{ every: 10, who: [0, 1, 3] }, { every: 12, who: [2, 4] }],
     cries: { runnn: false, nooo: true }
+  },
+  // STAGE 4, the lumber yard: villagers AT WORK, who take no notice of the waves at
+  // all — no greeting, praying or hopping. See work() below.
+  lumberyard: {
+    work: true,
+    // The smith at the forge, pushing a steel pipe into the fire and drawing it
+    // back: pipe_1 (drawn back) and pipe_2 (in the fire) by turns.
+    smith: { who: 0, back: 1.8, in: 0.9 },
+    // The two plank carriers, `lead` the back end (whose feet the carrying drawing
+    // stands on) and `mate` the front end.
+    crew: {
+      lead: 2, mate: 1,
+      // They carry the plank up to the stack, stopping in front of it...
+      stack: [476, 452],
+      // ...throw it, and it lands on the top of the stack...
+      landing: [508, 384],
+      // ...then walk off, each on their own, towards the cut trees at the bottom and
+      // off the board between them — the back end left of the middle stump gap, the
+      // front end right of it...
+      away: { lead: [[470, 490], [480, 570]], mate: [[522, 478], [522, 570]] },
+      // ...and after `gone` seconds come back, carrying the next plank, from where
+      // they left: the back end's feet from here.
+      enter: [480, 582],
+      gone: 3
+    },
+    before: [], after: [], run: [], hops: [],
+    cries: { runnn: false, nooo: true }
   }
 };
+
+const WORK_WALK = 11;         // px a second, carrying or not — "slowly"
+const THROW_FOR = 0.9;        // how long the throwing drawing shows
+const PLANK_AT = 0.12;        // into the throw when the plank leaves their hands
+const PLANK_FLIGHT = 0.75;    // and how long it is in the air
+const PLANK_LOB = 22;         // how high it rises above the straight line
+
+// Along a list of points at `speed`, from wherever `v` is. True when there.
+function walkTo(v, pts, speed, dt) {
+  let step = speed * dt;
+  while (step > 0 && v.leg < pts.length) {
+    const [tx, ty] = pts[v.leg];
+    const dx = tx - v.x, dy = ty - v.y, d = Math.hypot(dx, dy);
+    if (d <= step) { v.x = tx; v.y = ty; v.leg++; step -= d; continue; }
+    v.x += dx / d * step; v.y += dy / d * step; step = 0;
+  }
+  return v.leg >= pts.length;
+}
+
+// THE WORK LOOP, from the first frame to the last, whatever the waves are doing.
+//   carry — the pair walks the plank up to the stack (from the painted spot the
+//           first time, from off the bottom of the board every time after);
+//   throw — they heave it, and it flies in a lob onto the stack and is gone;
+//   away  — the two walk off separately, standing, towards the cut trees and off
+//           the board;
+//   gone  — out of sight for `gone` seconds, and round again.
+function work(state, vp, dt) {
+  const { smith, crew } = vp.plan;
+
+  // THE SMITH: drawn back, then in the fire; the fire flares while the pipe is in.
+  const s = state.villagers[smith.who];
+  if (s) {
+    const k = vp.t % (smith.back + smith.in);
+    const inFire = k >= smith.back;
+    s.pose = inFire ? 'pipe_2' : 'pipe_1';
+    // Fast up, slower down, so the flare is a burst and the settling is a sigh.
+    const target = inFire ? 1 : 0;
+    const rate = inFire ? 14 : 4;
+    vp.heat = (vp.heat || 0) + (target - (vp.heat || 0)) * Math.min(1, rate * dt);
+  }
+
+  const lead = state.villagers[crew.lead], mate = state.villagers[crew.mate];
+  if (!lead || !mate) return;
+  const c = vp.crew || (vp.crew = { phase: 'carry', at: vp.t, planks: [] });
+  vp.planks = c.planks;
+  const stick = () => { mate.x = lead.x + PAIR[0]; mate.y = lead.y + PAIR[1]; };
+
+  if (c.phase === 'carry') {
+    lead.hidden = mate.hidden = false;
+    mate.ride = true;
+    lead.pose = 'carry';
+    lead.leg = lead.leg || 0;
+    if (walkTo(lead, [crew.stack], WORK_WALK, dt)) { c.phase = 'throw'; c.at = vp.t; c.thrown = false; }
+    stick();
+    lead.walking = c.phase === 'carry';
+  } else if (c.phase === 'throw') {
+    lead.pose = 'throw'; lead.walking = false;
+    stick();
+    const k = vp.t - c.at;
+    if (!c.thrown && k >= PLANK_AT) {
+      c.thrown = true;
+      const k0 = SCALE;
+      c.planks.push({ x0: lead.x + (PLANK_HELD[0] - VILLAGER_POSE.feet.carry[0]) * k0,
+                      y0: lead.y + (PLANK_HELD[1] - VILLAGER_POSE.feet.carry[1]) * k0,
+                      x1: crew.landing[0], y1: crew.landing[1], at: vp.t, depth: lead.y });
+    }
+    if (k >= THROW_FOR) {
+      c.phase = 'away'; c.at = vp.t;
+      mate.ride = false;
+      lead.leg = mate.leg = 0;
+      lead.pose = mate.pose = 'standing';
+      lead.side = mate.side = 'front';
+    }
+  } else if (c.phase === 'away') {
+    lead.walking = mate.walking = true;
+    const a = walkTo(lead, crew.away.lead, WORK_WALK, dt);
+    const b = walkTo(mate, crew.away.mate, WORK_WALK, dt);
+    if (a && b) {
+      c.phase = 'gone'; c.at = vp.t;
+      lead.hidden = mate.hidden = true;
+      lead.walking = mate.walking = false;
+    }
+  } else if (c.phase === 'gone' && vp.t - c.at >= crew.gone) {
+    // BACK FROM WHERE THEY LEFT, with the next plank.
+    [lead.x, lead.y] = crew.enter;
+    lead.leg = 0;
+    c.phase = 'carry'; c.at = vp.t;
+    stick();
+  }
+
+  // THE PLANKS IN THE AIR: a lob from the carriers' hands to the top of the stack,
+  // gone the moment it lands.
+  for (const p of c.planks) {
+    const q = (vp.t - p.at) / PLANK_FLIGHT;
+    p.q = q;
+    p.x = p.x0 + (p.x1 - p.x0) * q;
+    p.y = p.y0 + (p.y1 - p.y0) * q - PLANK_LOB * 4 * q * (1 - q);
+    p.rot = -0.5 * q;
+  }
+  c.planks = c.planks.filter(p => p.q < 1);
+  vp.planks = c.planks;
+}
 
 const RUN_SPEED = 46;         // px a second
 const RUN_UP = 0.05;          // how steeply up a runner must go to show their back
@@ -193,6 +339,8 @@ export const GREET_SECONDS = 1;       // how long a tapped villager greets the p
 export function greetVillager(state, v) {
   const vp = state.villagerPlay;
   if (!vp || !v || !v.live || v.hidden) return;
+  // At work they carry on working; the tap still opens the card and plays the sound.
+  if (vp.plan.work) return;
   v.greetUntil = vp.t + GREET_SECONDS;
 }
 
@@ -201,6 +349,15 @@ export function updateVillagers(state, dt) {
   if (!vp) return;
   vp.t += dt;
   const { plan } = vp;
+
+  // A STAR LOST — lives dropping below 18 and again below 10 on stage 1's 20 — and
+  // the village cries "nooo". Asked of the same rating the result screen uses, so it
+  // is exactly the moment a star goes; not at zero, which the lost sound answers.
+  const stars = starsFor(state.lives, vp.startLives);
+  if (plan.cries.nooo && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
+  vp.stars = stars;
+
+  if (plan.work) { work(state, vp, dt); return; }
 
   // THE FIRST ENEMY OF THE FIRST WAVE sends the runners off, and turns everyone to
   // face the way they will watch from now on.
@@ -220,13 +377,6 @@ export function updateVillagers(state, dt) {
       v.leg = 0;
     }
   }
-
-  // A STAR LOST — lives dropping below 18 and again below 10 on stage 1's 20 — and
-  // the village cries "nooo". Asked of the same rating the result screen uses, so it
-  // is exactly the moment a star goes; not at zero, which the lost sound answers.
-  const stars = starsFor(state.lives, vp.startLives);
-  if (plan.cries.nooo && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
-  vp.stars = stars;
 
   // THE HOPS, each group on its own count of the fallen.
   plan.hops.forEach((h, k) => {
@@ -300,6 +450,10 @@ export function updateVillagers(state, dt) {
 // Which drawing a villager is showing: their own side, or the front while a tap has
 // them greeting, or the front while they run.
 export function villagerKey(v) {
+  // The work drawings have no front and back: one each.
+  if (WORK_ART[v.pose]) return WORK_ART[v.pose];
   const side = v.greetSide || (v.mode === 'run' ? v.runSide || 'front' : v.side);
   return `vill_${side}_${v.pose}`;
 }
+const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood_plank',
+                   pipe_1: 'vill_holding_steel_pipe_1', pipe_2: 'vill_holding_steel_pipe_2' };

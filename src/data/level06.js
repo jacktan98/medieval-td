@@ -111,10 +111,32 @@ export const level06 = {
   // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
   // Each anchor is the centre of the figure's own ground shadow.
   villagers: [
-    { x: 571, y: 431 },       // at the anvil, hammer in hand
+    { x: 571, y: 431 },       // at the forge, with his steel pipe
     { x: 525, y: 462 },       // carrying the plank, front end
     { x: 473, y: 477 }        // and the back end
   ],
+  // AT WORK, drawn by the game from assets/villagers — see `lumberyard` in
+  // src/villagers.js — and cut out of the base for it by tools/split-map.mjs, with
+  // the plank the two carry (see `props`).
+  villagerPlay: 'lumberyard',
+  // What else is cut out with them: the painted plank between the two carriers,
+  // which the game now draws in their carrying drawing. A box: its middle, its
+  // half-width, and how far it reaches above and below.
+  props: [{ x: 499, y: 462, w: 33, up: 23, down: 10 }],
+  // THE FORGE'S FIRE, drawn live where the painted one was: the flame stands in the
+  // furnace's arched mouth and is clipped to it; its glow, sparks and a little smoke
+  // stay below the roof over it (`roof`: everything under the line of the roof's front
+  // edge, from (560, 402.5) to (612, 410.5), carried on either side); and it flares with
+  // the smith's stroke (`heated`).
+  // THE SMITH STANDS INSIDE THE FORGE, whose box sorts at its shadow, y 439 — below
+  // his feet — so its back wall would be drawn over him and his pipe. Standing in
+  // here, he is drawn after it (render.js, as on stage 3's plaza).
+  platforms: [{ x: 560, y: 424, w: 22, h: 12, g: 439 }],
+  fires: [{
+    x: 594.8, y: 426.5, s: 2.2, g: 439, heated: true, smoke: 0.45,
+    mouth: { x0: 591, x1: 598.6, top: 413.6, bottom: 426.5 },
+    roof: [[520, 396.3], [680, 421], [680, 520], [520, 520]]
+  }],
   waves: stage4Waves,
   wavesExtended: stage4Waves,
   oneLength: true,
@@ -180,10 +202,10 @@ export const level06 = {
   // Written out by `node tools/split-map.mjs assets/map/Stage_4_Map`.
   frontArt: 'front06',
   front: [
-    { x: 633, y:  64, w:  92, h:  78, g: 139 },   // stands on y 139 — the practice butt
-    { x: 473, y: 369, w:  73, h:  51, g: 406 },   // stands on y 406 — the stack of planks
+    { x: 633, y:  64, w:  92, h:  77, g: 139 },   // stands on y 139 — the practice butt
+    { x: 473, y: 369, w:  72, h:  52, g: 406 },   // stands on y 406 — the stack of planks
     { x: 547, y: 369, w:  83, h:  89, g: 439 },   // stands on y 439 — the forge
-    { x: 314, y: 359, w: 128, h: 108, g: 458 }   // stands on y 458 — the shed and its sign
+    { x: 314, y: 359, w: 128, h: 109, g: 458 }   // stands on y 458 — the shed and its sign
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

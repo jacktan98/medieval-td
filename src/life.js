@@ -246,15 +246,22 @@ function drawFire(ctx, t, unlocked) {
 // (Oakhaven's own board) draws it at `s` times that over the logs its artwork keeps,
 // in place of the flame that used to be painted there. `ink` is the board's black
 // outline, which the world map's tiny fire has no room for.
-export function campfire(ctx, x0, y0, t, s, ink = false) {
+// `heat` (0 to 1) flares it — taller, brighter, and throwing sparks — for stage 4's
+// forge, where the smith's pipe going in stokes it. `flameClip` keeps the flame inside
+// a shape (the furnace mouth); `smokeClip` keeps the glow, embers, sparks and smoke
+// inside another (under the forge's roof); `smoke` scales the smoke, 1 as it is.
+export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, flameClip = null, smokeClip = null, smoke = 1 } = {}) {
+  const clipTo = c => { ctx.save(); if (c) ctx.clip(c); };
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
-  const R = 11 * s;
+  const R = 11 * s * (1 + 0.3 * heat);
+  clipTo(smokeClip);
   const glow = ctx.createRadialGradient(x0, y0 + s, 0, x0, y0 + s, R);
-  glow.addColorStop(0, `rgba(255,170,70,${0.30 * flick})`);
+  glow.addColorStop(0, `rgba(255,170,70,${Math.min(0.75, 0.30 * flick * (1 + 1.2 * heat))})`);
   glow.addColorStop(1, 'rgba(255,170,70,0)');
   ctx.fillStyle = glow;
   ctx.fillRect(x0 - R, y0 + s - R, R * 2, R * 2);
+  ctx.restore();
   // THE FLAME, AS A FLAME BURNS: a big red one, an orange one inside it and a
   // yellow heart inside that, each a teardrop with a rounded bottom sitting in the
   // logs, each flickering on its own beat so the colours slide over each other.
@@ -268,14 +275,16 @@ export function campfire(ctx, x0, y0, t, s, ink = false) {
     ctx.closePath();
   };
   const beat = (f, ph) => Math.sin(t * f + ph);
-  const lift = 0.8 + 0.25 * flick;       // the flicker sways the height, never halves it
+  // The flicker sways the height, never halves it; the heat lifts it half again.
+  const lift = (0.8 + 0.25 * flick) * (1 + 0.5 * heat);
   const red = [
     [x0 - 1.3 * s, y0 - 0.1 * s, 0.8 * s, (2.6 + 0.7 * beat(8.3, 1)) * s * lift, (-0.7 + 0.4 * beat(4.1, 2)) * s],
     [x0 + 1.3 * s, y0 - 0.1 * s, 0.8 * s, (2.3 + 0.7 * beat(9.1, 4)) * s * lift, (0.7 + 0.4 * beat(3.7, 5)) * s],
     [x0, y0, 2.0 * s, (4.6 + 0.8 * beat(6.3, 0) + 0.3 * beat(15, 1)) * s * lift, 0.7 * beat(4.6, 0) * s]
   ];
   const orange = [x0 + 0.1 * s * beat(5.2, 3), y0 - 0.15 * s, 1.4 * s, (3.3 + 0.6 * beat(7.7, 2)) * s * lift, 0.6 * beat(5.3, 1) * s];
-  const yellow = [x0 + 0.1 * s * beat(6.1, 5), y0 - 0.3 * s, 0.8 * s, (2.1 + 0.5 * beat(10.3, 3)) * s * lift, 0.4 * beat(6.7, 2) * s];
+  const yellow = [x0 + 0.1 * s * beat(6.1, 5), y0 - 0.3 * s, 0.8 * s, (2.1 + 0.5 * beat(10.3, 3)) * s * lift * (1 + 0.3 * heat), 0.4 * beat(6.7, 2) * s];
+  clipTo(flameClip);
   if (ink) {
     // One black outline round the red silhouette only: stroked first, then the
     // red filled back over it, so where tongues overlap no line shows inside.
@@ -290,6 +299,8 @@ export function campfire(ctx, x0, y0, t, s, ink = false) {
   tongue(...orange); ctx.fill();
   ctx.fillStyle = ink ? '#ffd95a' : 'rgba(255,217,90,0.95)';
   tongue(...yellow); ctx.fill();
+  ctx.restore();
+  clipTo(smokeClip);
   // Embers, drifting up and off with the wind.
   for (let k = 0; k < 5; k++) {
     const life = 1.4 + hash(k + 30) * 0.8;
@@ -299,11 +310,24 @@ export function campfire(ctx, x0, y0, t, s, ink = false) {
     ctx.arc(x0 + ((hash(k) - 0.5) * 3 + 4 * p * p) * s, y0 - (3 + 13 * p) * s, 0.45 * Math.sqrt(s), 0, Math.PI * 2);
     ctx.fill();
   }
-  // And a thread of smoke over it.
-  for (let k = 0; k < 4; k++) {
-    const p = ((t / 4.5) + k / 4) % 1;
-    puff(ctx, x0, y0 - 5 * s, p, 16 * s, 9 * wind(t, x0) * s, 1.2 * s, 4.8 * s, '240,236,226', 0.45);
+  // SPARKS, while it is stoked: bright, quick, thrown up and out of the fire.
+  if (heat > 0.05) {
+    for (let k = 0; k < 10; k++) {
+      const life = 0.35 + hash(k + 60) * 0.3;
+      const p = ((t / life) + hash(k + 61)) % 1;
+      const dir = (hash(k + 62) - 0.5) * 2.4;
+      ctx.fillStyle = `rgba(255,${230 - 90 * p | 0},${120 - 80 * p | 0},${heat * (1 - p)})`;
+      ctx.beginPath();
+      ctx.arc(x0 + dir * 5 * s * p, y0 - 2 * s - 7 * s * p + 5 * s * p * p, 0.4 * Math.sqrt(s), 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
+  // And a thread of smoke over it.
+  for (let k = 0; k < 4 && smoke > 0; k++) {
+    const p = ((t / 4.5) + k / 4) % 1;
+    puff(ctx, x0, y0 - 5 * s * smoke, p, 16 * s * smoke, 9 * wind(t, x0) * s * smoke, 1.2 * s * smoke, 4.8 * s * smoke, '240,236,226', 0.45);
+  }
+  ctx.restore();
 }
 
 // --- the fountain --------------------------------------------------------------

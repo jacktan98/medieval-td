@@ -27,6 +27,20 @@ right, for example while running to the right.
 | drinking | `Villager_Front_Drinking_1.png` | `Villager_Back_Drinking_1.png` | holding the mug |
 |          | `Villager_Front_Drinking_2.png` | `Villager_Back_Drinking_2.png` | tipping it up to drink |
 
+And stage 4's villagers at work, one drawing each (no front and back):
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Carrying_Wood_Plank.png` | TWO villagers carrying one plank between them, walking it to the stack |
+| `Villager_Throwing_Wood_Plank.png` | the same two, throwing it onto the stack |
+| `Villager_Wood_Plank.png` | the plank on its own, flying from their hands onto the stack |
+| `Villager_Holding_Steel_Pipe_1.png` | the smith, pipe drawn back from the fire |
+| `Villager_Holding_Steel_Pipe_2.png` | the smith, pipe pushed into the fire |
+
+The carrying and throwing drawings stand on the back-end villager's shadow, centred
+on (124.5, 341.5); the front-end villager's is at (386.5, 268.5). The steel pipe
+drawings stand on (257, 305).
+
 **Villagers face the way the enemy comes from.** Most of the time a villager
 faces the direction of the enemy waves: on a board where the enemies walk from right
 to left, the villagers are mirrored in everything they do. (The owner's rule, for
@@ -57,7 +71,7 @@ the player.
   the road by the exit flag (front running below the houses, back running once past
   them and heading up towards the flag), then pray now and then with their backs to the player.
   Villagers 3, 4 and 5 start praying now and then. Once started, praying is the
-  long part: nine seconds in every twelve. As the runners set off, they shout
+  long part: thirteen seconds in every eighteen. As the runners set off, they shout
   "runnn", ahead of every other sound.
 - **Every 10 enemies killed:** villagers 3, 4 and 5 hop and land twice, one after another.
 - **Every 12 enemies killed:** villagers 1 and 2 hop and land twice.
@@ -101,3 +115,21 @@ between the two bottom-right houses, 5 at the top (the most right).
 - **Every 12 enemies killed:** villagers 3 and 5 hop twice.
 - **A star lost:** "nooo", as on stage 2. Soft birdsong plays under the stage, and
   the two torches by the statue burn with live fire and smoke.
+
+## Stage 4's script
+
+Villagers at work: they take no notice of the waves — no greeting, praying or
+hopping — and a tap opens their card and plays the villager sound without stopping
+them.
+
+- **The smith** in the forge pushes a steel pipe into the fire and draws it back,
+  by turns (1.8 seconds back, 0.9 in). While the pipe is in, the fire flares —
+  taller and brighter, throwing sparks — and settles as it comes out. The fire burns
+  in the furnace's mouth, with a little smoke that stays under the forge's roof.
+- **The two plank carriers**, in a loop from the start of the game to its end:
+  1. carry the plank slowly up to the stack;
+  2. throw it — it flies in a lob onto the stack and vanishes as it lands;
+  3. walk slowly off, each on their own and standing, towards the cut trees and
+     off the bottom of the board between them;
+  4. three seconds later come back from where they left, carrying the next plank.
+- **A star lost:** "nooo", as on stages 2 and 3.

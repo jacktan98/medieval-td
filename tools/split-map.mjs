@@ -275,7 +275,12 @@ const VILLAGER_WIN = { w: 14, up: 27, down: 4 };
 const GARRISON_WIN = { w: GARRISON_W, up: GARRISON_UP, down: GARRISON_DOWN };
 const figures = [
   ...(level.garrison || []).map(at => ({ at, what: 'garrison', win: GARRISON_WIN })),
-  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager', win: VILLAGER_WIN }))
+  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager', win: VILLAGER_WIN })),
+  // AND WHAT THEY HOLD, when the game draws it for them: stage 4's plank, painted
+  // between its two carriers and now part of their carrying drawing. Each prop is a
+  // window of its own, sized in the level file.
+  ...(level.villagerPlay ? level.props || [] : []).map(p => ({ at: { x: p.x, y: p.y }, what: 'prop',
+    win: { w: p.w, up: p.up, down: p.down } }))
 ];
 
 const garrisonGroups = [];

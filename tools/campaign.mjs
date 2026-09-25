@@ -3901,10 +3901,13 @@ console.log('\n--- the road opens one stage at a time ---\n');
       const b = bounds(g.subPaths.flat());
       const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
       const post = posts(l).some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - UP && y1 <= at.y + DOWN);
+      // AND WHAT THEY HOLD, cut with them in a window of its own — stage 4's plank.
+      const prop = (l.villagerPlay ? l.props || [] : []).some(p =>
+        x0 >= p.x - p.w && x1 <= p.x + p.w && y0 >= p.y - p.up && y1 <= p.y + p.down);
       // A MARKER is the oval the plot stands in and the signpost on it: about 97x45
       // around the plot point, the post reaching some 50px above it.
       const marker = l.plots.some(p => x0 >= p.x - 52 && x1 <= p.x + 52 && y0 >= p.y - 60 && y1 <= p.y + 26);
-      return !post && !marker;
+      return !post && !prop && !marker;
     });
     ok(lost.length === 0, `${l.name}: the split took nothing but markers and garrison men`,
       lost.length ? lost.map(g => {
