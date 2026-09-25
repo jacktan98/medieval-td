@@ -250,7 +250,8 @@ function drawFire(ctx, t, unlocked) {
 // forge, where the smith's pipe going in stokes it. `flameClip` keeps the flame inside
 // a shape (the furnace mouth); `smokeClip` keeps the glow, embers, sparks and smoke
 // inside another (under the forge's roof); `smoke` scales the smoke, 1 as it is.
-export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, flameClip = null, smokeClip = null, smoke = 1 } = {}) {
+// `tall` scales the flame's height alone — the forge's fire, small or roaring.
+export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1 } = {}) {
   const clipTo = c => { ctx.save(); if (c) ctx.clip(c); };
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
@@ -276,7 +277,7 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, flameClip =
   };
   const beat = (f, ph) => Math.sin(t * f + ph);
   // The flicker sways the height, never halves it; the heat lifts it half again.
-  const lift = (0.8 + 0.25 * flick) * (1 + 0.5 * heat);
+  const lift = (0.8 + 0.25 * flick) * (1 + 0.5 * heat) * tall;
   const red = [
     [x0 - 1.3 * s, y0 - 0.1 * s, 0.8 * s, (2.6 + 0.7 * beat(8.3, 1)) * s * lift, (-0.7 + 0.4 * beat(4.1, 2)) * s],
     [x0 + 1.3 * s, y0 - 0.1 * s, 0.8 * s, (2.3 + 0.7 * beat(9.1, 4)) * s * lift, (0.7 + 0.4 * beat(3.7, 5)) * s],

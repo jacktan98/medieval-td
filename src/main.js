@@ -316,6 +316,11 @@ function frame(now) {
   if (state.started && !state.paused && !state.result) {
     for (let i = 0; i < state.speed; i++) step(state, real);
   }
+  // THE BOARD'S OWN CLOCK, for what moves on it without being part of the game —
+  // fires, flags, a waving hand. It runs while a game is on and stops dead on the
+  // pause, at the owner's word: "All animations should be paused when pause button
+  // is used." Real seconds, not game ones, so 2x does not set the fires racing.
+  if (state.started && !state.paused) state.anim = (state.anim || 0) + real;
 
   // The moment a game ends, once. Outside the step because a result can be set
   // by either of two places — updateWaves for a win, the lives check for a loss —

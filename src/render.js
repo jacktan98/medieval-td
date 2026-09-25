@@ -384,6 +384,25 @@ function drawFigures(ctx, state) {
       });
     }
   }
+  // A PIECE OF THE FRONT SHEET DRAWN AGAIN, clipped to its own outline, at a depth
+  // of its own: stage 4's workbench, which stands in front of the smith behind it
+  // though the forge it belongs to sorts behind him. See `overdraw` in level06.
+  if (front) {
+    for (const o of level.overdraw || []) {
+      add(o.g, 1, () => {
+        const xs = o.poly.map(p => p[0]), ys = o.poly.map(p => p[1]);
+        const x = Math.floor(Math.min(...xs)), y = Math.floor(Math.min(...ys));
+        const box = { x, y, w: Math.ceil(Math.max(...xs)) - x, h: Math.ceil(Math.max(...ys)) - y };
+        ctx.save();
+        ctx.beginPath();
+        o.poly.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+        ctx.closePath();
+        ctx.clip();
+        drawFront(ctx, front, box);
+        ctx.restore();
+      });
+    }
+  }
   // Bodies are flat on the ground, so at equal depth they go under a figure
   // standing at the same spot rather than over its feet.
   for (const c of state.corpses) add(c.y, 0, () => drawCorpse(ctx, c));
@@ -395,7 +414,8 @@ function drawFigures(ctx, state) {
   // fixture in tools/ builds its own world by hand, and a renderer that insisted
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
-  for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
+  // On the board's own clock, so a paused board holds its flags still.
+  for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE, { time: state.anim || 0 }));
   // A VILLAGER UP ON A PLATFORM — stage 3's statue plaza — or INSIDE a building —
   // stage 4's smith in his forge — is drawn after that box, whose depth is where its
   // shadow is, below them. Standing on it or in it, they are in front of it; the
@@ -408,7 +428,7 @@ function drawFigures(ctx, state) {
   };
   // `ride`: a villager drawn in someone else's drawing — stage 4's front-end plank
   // carrier, who is in the back-end man's picture while they carry and throw.
-  for (const v of state.villagers || []) if (v.live && !v.hidden && !v.ride) add(raised(v), 1, () => drawVillager(ctx, v));
+  for (const v of state.villagers || []) if (v.live && !v.hidden && !v.ride) add(raised(v), 1, () => drawVillager(ctx, state, v));
   // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
   // threw it so it goes over the stack behind them.
   for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) add(pl.depth, 1, () => drawPlank(ctx, pl));
@@ -1171,16 +1191,14 @@ function drawBuilding(ctx, t, box) {
 // A GREETING WAVES. The drawing's raised hand is cut out and swung a little about
 // the shoulder, over a copy of the greeting with the hand taken out and the body
 // under it filled back in from the standing drawing — see greetLayers.
-function drawVillager(ctx, v) {
+function drawVillager(ctx, state, v) {
   const key = villagerKey(v);
   const img = art[key];
   if (!img) return;
   const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;
   const k = SCALE, w = sw * k, h = sh * k;
   ctx.save();
-  // A little bob in the step while walking at work — the drawing is a standing one.
-  const bob = v.walking ? -Math.abs(Math.sin(performance.now() / 1000 * 7 + v.n)) * 1.2 : 0;
-  ctx.translate(v.x, v.y + bob);
+  ctx.translate(v.x, v.y);
   if (v.flip) ctx.scale(-1, 1);
   const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
   const left = -(fx - sx) * k, top = -(fy - sy) * k;
@@ -1193,7 +1211,7 @@ function drawVillager(ctx, v) {
     // Canvas px of the shoulder the hand swings from.
     const ox = left + (hd.px - sx) * k, oy = top + (hd.py - sy) * k;
     ctx.translate(ox, oy);
-    ctx.rotate(0.32 * Math.sin(performance.now() / 1000 * 10 + v.n));
+    ctx.rotate(0.32 * Math.sin((state.anim || 0) * 10 + v.n));
     ctx.translate(-ox, -oy);
     ctx.drawImage(layers.hand, sx, sy, sw, sh, left, top, w, h);
   }
@@ -1220,23 +1238,24 @@ function drawPlank(ctx, pl) {
 // below that line so none of it crosses the roof over it. A `heated` fire flares
 // with the smith's stroke (villagers.js keeps the heat).
 function drawFire(ctx, state, fire) {
-  const t = performance.now() / 1000 + fire.x * 0.37;
+  const t = (state.anim || 0) + fire.x * 0.37;
   const heat = fire.heated && state.villagerPlay ? state.villagerPlay.heat || 0 : 0;
+  // A HEATED FIRE'S SIZE FOLLOWS THE STROKE: small while the pipe is drawn back,
+  // roaring while it is in.
+  const tall = fire.heated ? 0.55 + 0.95 * heat : 1;
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
+  // THE MOUTH IS THE ARTIST'S OWN SHAPE, the outline the painted flame had — an SVG
+  // path on the board's 1920 x 1080 art and its transform — brought down to the board.
   let mouth = null;
   if (fire.mouth) {
-    const { x0, x1, top, bottom } = fire.mouth, r = (x1 - x0) / 2;
+    const [a, b, c, d, e, f] = fire.mouth.m, k = 1 / MAP_PX;
     mouth = new Path2D();
-    mouth.moveTo(x0, bottom);
-    mouth.lineTo(x0, top + r);
-    mouth.arc(x0 + r, top + r, r, Math.PI, 0);
-    mouth.lineTo(x1, bottom);
-    mouth.closePath();
+    mouth.addPath(new Path2D(fire.mouth.d), new DOMMatrix([a * k, b * k, c * k, d * k, e * k, f * k]));
     ctx.fillStyle = '#2b0f06';
     ctx.fill(mouth);
   }
   campfire(ctx, fire.x, fire.y, t, fire.s, true, {
-    heat, flameClip: mouth, smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1
+    heat, tall, flameClip: mouth, smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1
   });
   if (mouth) {
     ctx.strokeStyle = '#000';

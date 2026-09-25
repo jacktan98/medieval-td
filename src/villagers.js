@@ -200,8 +200,9 @@ const PLAYS = {
   lumberyard: {
     work: true,
     // The smith at the forge, pushing a steel pipe into the fire and drawing it
-    // back: pipe_1 (drawn back) and pipe_2 (in the fire) by turns.
-    smith: { who: 0, back: 1.8, in: 0.9 },
+    // back: pipe_1 (drawn back) and pipe_2 (in the fire) by turns. He stands `at`,
+    // up to the fire and behind the workbench, rather than where he was painted.
+    smith: { who: 0, at: [578, 431], back: 3.2, in: 2 },
     // The two plank carriers, `lead` the back end (whose feet the carrying drawing
     // stands on) and `mate` the front end.
     crew: {
@@ -258,9 +259,11 @@ function work(state, vp, dt) {
     const k = vp.t % (smith.back + smith.in);
     const inFire = k >= smith.back;
     s.pose = inFire ? 'pipe_2' : 'pipe_1';
-    // Fast up, slower down, so the flare is a burst and the settling is a sigh.
+    [s.x, s.y] = smith.at;
+    // THE FIRE FOLLOWS THE PIPE: small while it is drawn back, roaring while it is
+    // in. Quick to flare and slower to die down, so it swells rather than blinks.
     const target = inFire ? 1 : 0;
-    const rate = inFire ? 14 : 4;
+    const rate = inFire ? 6 : 3;
     vp.heat = (vp.heat || 0) + (target - (vp.heat || 0)) * Math.min(1, rate * dt);
   }
 

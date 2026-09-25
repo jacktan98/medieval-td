@@ -130,11 +130,23 @@ export const level06 = {
   // the smith's stroke (`heated`).
   // THE SMITH STANDS INSIDE THE FORGE, whose box sorts at its shadow, y 439 — below
   // his feet — so its back wall would be drawn over him and his pipe. Standing in
-  // here, he is drawn after it (render.js, as on stage 3's plaza).
-  platforms: [{ x: 560, y: 424, w: 22, h: 12, g: 439 }],
+  // here, he is drawn after it (render.js, as on stage 3's plaza)...
+  platforms: [{ x: 560, y: 424, w: 30, h: 12, g: 439 }],
+  // ...and the WORKBENCH in front of him is drawn again over him, clipped to its
+  // own outline, so it stands in front of him as it does in the picture.
+  overdraw: [{ poly: [[571, 437.5], [588.5, 423], [601, 427.5], [601, 437], [587, 451], [573.5, 445]], g: 440 }],
   fires: [{
-    x: 594.8, y: 426.5, s: 2.2, g: 439, heated: true, smoke: 0.45,
-    mouth: { x0: 591, x1: 598.6, top: 413.6, bottom: 426.5 },
+    // Sorted just after the smith (439.5, see platforms) and before the workbench
+    // (440): the pipe's tip goes INTO the furnace, so the fire is drawn over it.
+    x: 595, y: 426, s: 2.2, g: 439.7, heated: true, smoke: 0.45,
+    // The furnace's mouth: the artist's own outline of the painted flame, lifted from
+    // Stage_4_Map_Layer_3.svg with its transform, so the fire fills exactly the
+    // shape that was drawn — flat on the left, round at the top, sloping down to
+    // the right, its foot sloping with it.
+    mouth: {
+      d: 'M815.1436412165446,418.09955152192805 C821.7281286534649,419.776255002192 821.7281286534649,436.7177411419414 821.7281286534649,440.9030774541652 C821.7281286534649,440.9030774541652 807.6047282288102,437.1229177497088 807.6047282288102,437.1229177497088 C807.6047282288102,432.937581437485 806.601390781274,415.9243144710083 815.1436412165446,418.09955152192805 Z',
+      m: [0.999195354, 0, 0, 1, 376.066494472, 411.361423186]
+    },
     roof: [[520, 396.3], [680, 421], [680, 520], [520, 520]]
   }],
   waves: stage4Waves,

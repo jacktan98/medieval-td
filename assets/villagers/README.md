@@ -122,14 +122,20 @@ Villagers at work: they take no notice of the waves — no greeting, praying or
 hopping — and a tap opens their card and plays the villager sound without stopping
 them.
 
-- **The smith** in the forge pushes a steel pipe into the fire and draws it back,
-  by turns (1.8 seconds back, 0.9 in). While the pipe is in, the fire flares —
-  taller and brighter, throwing sparks — and settles as it comes out. The fire burns
-  in the furnace's mouth, with a little smoke that stays under the forge's roof.
+- **The smith** stands up at the furnace, behind the workbench, and pushes a steel
+  pipe into the fire and draws it back, by turns (3.2 seconds back, 2 in). With the
+  pipe drawn back the fire burns small; with it in, the fire roars — tall, bright,
+  throwing sparks. The fire is kept inside the furnace's mouth, the shape the artist
+  drew, with a little smoke that stays under the forge's roof.
 - **The two plank carriers**, in a loop from the start of the game to its end:
-  1. carry the plank slowly up to the stack;
+  1. carry the plank slowly and smoothly up to the stack;
   2. throw it — it flies in a lob onto the stack and vanishes as it lands;
   3. walk slowly off, each on their own and standing, towards the cut trees and
      off the bottom of the board between them;
   4. three seconds later come back from where they left, carrying the next plank.
 - **A star lost:** "nooo", as on stages 2 and 3.
+
+## Paused means still
+
+Everything villagers do, and every live fire and flag on a board, runs on the game's
+own clock and stops when the game is paused.
