@@ -94,11 +94,17 @@ export const level04 = {
   plots: plots1,
   // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
   // Each anchor is the centre of the figure's own ground shadow.
+  // LEFT TO RIGHT, which is how the owner numbers them: villager 1 is the most left
+  // and villager 4 the most right. Measured off the ground shadows in the artwork.
   villagers: [
-    { x: 758, y: 263 },       // at the tavern door
-    { x: 636, y: 266 },       // on the tavern porch
-    { x: 232, y: 300 }        // at the well
+    { x: 232, y: 300 },       // 1, at the well
+    { x: 636, y: 266 },       // 2, by the tavern wall
+    { x: 758, y: 263 },       // 3, with his mug by the tavern steps
+    { x: 780, y: 276 }        // 4, beside him — indoors until the first wave
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `outskirts` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'outskirts',
   waves: stage2Waves,
   // SIX WAVES AT EITHER LENGTH, like the tutorial and for a plainer reason: the
   // owner wrote down six and there is no seventh to run. `oneLength` says so out
@@ -160,7 +166,7 @@ export const level04 = {
     { x: 611, y: 175, w: 139, h:  95, g: 245 },   // stands on y 245
     { x: 174, y: 255, w:  48, h:  65, g: 313 },   // stands on y 313
     { x: 694, y: 358, w:  77, h:  81, g: 422 },   // stands on y 422
-    { x: 573, y: 401, w:  77, h:  81, g: 466 }   // stands on y 466
+    { x: 570, y: 392, w:  77, h:  81, g: 456 }   // stands on y 456
   ],
 
   // WHAT IS ALREADY STANDING WHEN THE GAME OPENS.

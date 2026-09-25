@@ -396,7 +396,7 @@ function drawFigures(ctx, state) {
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
   for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE));
-  for (const v of state.villagers || []) if (v.live) add(v.y, 1, () => drawVillager(ctx, v));
+  for (const v of state.villagers || []) if (v.live && !v.hidden) add(v.y, 1, () => drawVillager(ctx, v));
   // A LIVE CAMPFIRE, the world map's fire at board size, over the logs the artwork
   // keeps (the painted flame is gone from it). Sorted at the logs' own depth and
   // added after them, so it burns in front of them and behind anyone nearer.
@@ -1163,7 +1163,8 @@ function drawVillager(ctx, v) {
   ctx.save();
   ctx.translate(v.x, v.y);
   if (v.flip) ctx.scale(-1, 1);
-  const left = -VILLAGER_POSE.pivot[0] * w, top = -VILLAGER_POSE.pivot[1] * h;
+  const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
+  const left = -(fx - sx) * k, top = -(fy - sy) * k;
   const layers = v.pose === 'greeting' && greetLayers(key);
   if (!layers) {
     ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);

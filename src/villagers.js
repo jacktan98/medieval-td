@@ -61,12 +61,14 @@ export const VILLAGER_H = VILLAGER.spriteTrim[3] * SCALE;
 // wrong about a man who does not move.
 export function makeVillagers(state, level) {
   const play = level.villagerPlay && PLAYS[level.villagerPlay];
-  state.villagers = (level.villagers || []).map((v, i) => ({
-    def: VILLAGER, x: v.x, y: v.y,
+  state.villagers = (level.villagers || []).map((v, i) => {
+    if (!play) return { def: VILLAGER, x: v.x, y: v.y };
     // ON A BOARD THAT LETS THEM MOVE, each carries what it is doing. See PLAYS.
-    ...(play ? { live: true, n: i, side: play.before[i] || 'front', pose: 'standing',
-                 flip: false, mode: 'idle', path: null, leg: 0, greetUntil: -1 } : {})
-  }));
+    const b = play.before[i] || {};
+    return { def: VILLAGER, x: v.x, y: v.y, live: true, n: i, side: b.side || 'front',
+             act: b.act || null, hidden: !!b.hidden, pose: 'standing', flip: false,
+             mode: 'idle', path: null, leg: 0, greetUntil: -1 };
+  });
   state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })),
     startLives: level.startLives, stars: null, shouted: false } : null;
 }
@@ -79,22 +81,45 @@ export function makeVillagers(state, level) {
 // ("front") or turned away ("back"). Every drawing faces LEFT, like every figure in
 // the game; one facing right is the same drawing mirrored.
 export const VILLAGER_POSE = {
-  // One shared box for every pose, so a change of pose never moves the figure: all
-  // twelve stand on the same ground shadow, centred at (258, 305) on the 512 canvas.
-  trim: [206, 176, 96, 142],
-  pivot: [(258 - 206) / 96, (305 - 176) / 142],
+  // One shared box for every pose, so a change of pose never moves the figure: every
+  // drawing stands on a ground shadow centred at (258, 305) on the 512 canvas — all
+  // but the two drinking ones, which the artist drew 14px further right, mug and all.
+  // `foot` is where each pose's shadow is when it is not (258, 305), and the game
+  // stands that point on the villager's anchor, so the drinker does not slide when
+  // he lifts the mug and does not stand 3 px off his painted spot.
+  trim: [200, 176, 110, 142],
+  foot: [258, 305],
+  feet: { drinking_1: [272, 305], drinking_2: [272, 305] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
 };
 
-// A board's script. `before` is which way each villager faces until the first enemy
-// of the first wave appears. Then `run` sends some of them off along a path of
-// points, and `after` is which way each faces from then on. `hops` is who hops and
-// lands, one after another, each time `every` more enemies have fallen.
+// WHAT A VILLAGER DOES WHILE STANDING, each on their own beat: `pose` for `for`
+// seconds in every `every`, and `rest` the rest of the time.
+//   greet  — now and then (stage 1, before the first wave).
+//   greets — standing and greeting by turns (stage 2).
+//   pray   — the long part is the praying, nine seconds in twelve, so they are not
+//            forever bobbing up between prayers.
+//   drink  — the mug held, then tipped up; no standing drawing at all.
+const ACTS = {
+  greet:  { rest: 'standing',   pose: 'greeting',   every: 8,  for: 1.6 },
+  greets: { rest: 'standing',   pose: 'greeting',   every: 5,  for: 2 },
+  pray:   { rest: 'standing',   pose: 'praying',    every: 12, for: 9 },
+  drink:  { rest: 'drinking_1', pose: 'drinking_2', every: 4,  for: 1.5 }
+};
+
+// A board's script, villager by villager in the level's order. `before` is how each
+// stands until the first enemy of the first wave appears — which way they face, what
+// they do, and whether they are out of sight — and `after` is the same from then on.
+// At that moment `run` sends some of them off along a path of points (from `from`,
+// if they were out of sight), each `delay` seconds after it. `hops` is who hops and
+// lands, twice, one after another, each time `every` more enemies have fallen.
+// `cries` is whether the village shouts "runnn" and "nooo" (see below).
+const front = act => ({ side: 'front', act }), back = act => ({ side: 'back', act });
 const PLAYS = {
   oakhaven: {
-    before: ['front', 'back', 'back', 'front', 'front'],
+    before: [front('greet'), back('greet'), back('greet'), front('greet'), front('greet')],
     // VILLAGERS 1 AND 2 RUN TO THE ROAD, to the grass just under it beside the
     // exit flag, at the owner's word: down past the log, along the bottom of the
     // village below both houses and the plot, then up to the road's edge.
@@ -111,8 +136,23 @@ const PLAYS = {
                [790, 506], [850, 490], [895, 478]] }
     ],
     // The road is above them all but villagers 4 and 5, who have it below.
-    after: ['back', 'back', 'back', 'front', 'front'],
-    hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }]
+    after: [back('pray'), back('pray'), back('pray'), front('pray'), front('pray')],
+    hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }],
+    cries: true
+  },
+  // STAGE 2, Oakhaven Outskirts, left to right: 1 at the well, 2 by the tavern wall,
+  // 3 with his mug by the tavern steps and 4 beside him — who, before the first
+  // wave, is inside the tavern and cannot be seen.
+  outskirts: {
+    before: [back('greets'), front('greets'), front('drink'), { side: 'front', hidden: true }],
+    // VILLAGER 4 RUNS OUT OF THE TAVERN, out of the door in its right-hand wall and
+    // down over the stepping stones to stand beside villager 3.
+    run: [
+      { who: 3, delay: 0.4, from: [716, 260], path: [[734, 272], [760, 283], [780, 276]] }
+    ],
+    after: [back('pray'), front('pray'), front('drink'), front('pray')],
+    hops: [{ every: 10, who: [0, 1] }, { every: 12, who: [3] }],
+    cries: false
   }
 };
 
@@ -123,20 +163,12 @@ const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawin
 const HOPS = 2;                       // hops each time, one straight after the other
 export const GREET_SECONDS = 1;       // how long a tapped villager greets the player
 
-// NOW AND THEN, not all the time, and each villager on their own beat: before the
-// first wave they greet (GREET_FOR in every GREET_CYCLE seconds); once it has come
-// they pray (PRAY_FOR in every PRAY_CYCLE).
-const GREET_CYCLE = 8, GREET_FOR = 1.6;
-// Praying is the long part — nine seconds of every twelve — so they are not
-// forever bobbing up between prayers.
-const PRAY_CYCLE = 12, PRAY_FOR = 9;
-
 // A TAP ON A VILLAGER, from src/input.js. One facing the player stops what they are
 // doing and greets for a second; one with their back to the player turns round to
 // do it. A runner stops mid-stride and then carries on.
 export function greetVillager(state, v) {
   const vp = state.villagerPlay;
-  if (!vp || !v || !v.live) return;
+  if (!vp || !v || !v.live || v.hidden) return;
   v.greetUntil = vp.t + GREET_SECONDS;
 }
 
@@ -150,10 +182,14 @@ export function updateVillagers(state, dt) {
   // face the way they will watch from now on.
   if (!vp.started && state.enemies.length) {
     vp.started = true;
-    for (const v of state.villagers) if (v.live) v.side = plan.after[v.n] || v.side;
+    for (const v of state.villagers) {
+      const a = plan.after[v.n];
+      if (v.live && a) { v.side = a.side; v.act = a.act; }
+    }
     for (const r of plan.run) {
       const v = state.villagers[r.who];
       if (!v) continue;
+      v.from = r.from || null;
       v.mode = 'wait';
       v.leaveAt = vp.t + r.delay;
       v.path = r.path;
@@ -165,7 +201,7 @@ export function updateVillagers(state, dt) {
   // the village cries "nooo". Asked of the same rating the result screen uses, so it
   // is exactly the moment a star goes; not at zero, which the lost sound answers.
   const stars = starsFor(state.lives, vp.startLives);
-  if (vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
+  if (plan.cries && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
   vp.stars = stars;
 
   // THE HOPS, each group on its own count of the fallen.
@@ -180,9 +216,12 @@ export function updateVillagers(state, dt) {
 
     if (v.mode === 'wait' && vp.t >= v.leaveAt) {
       v.mode = 'run';
+      // OUT OF SIGHT UNTIL NOW: they step out where `from` says — a doorway.
+      if (v.from) { [v.x, v.y] = v.from; v.hidden = false; }
       // "RUNNN", once, as the first of them sets off.
-      if (!vp.shouted) { vp.shouted = true; solo(VILLAGER_RUN, true, true, true); }
+      if (plan.cries && !vp.shouted) { vp.shouted = true; solo(VILLAGER_RUN, true, true, true); }
     }
+    if (v.hidden) continue;
 
     if (v.mode === 'run') {
       if (greeting) { v.pose = 'greeting'; v.greetSide = 'front'; continue; }
@@ -194,7 +233,8 @@ export function updateVillagers(state, dt) {
         v.leg++;
         if (v.leg >= v.path.length) {
           v.mode = 'idle';
-          v.side = plan.after[v.n] || v.side;
+          const a = plan.after[v.n];
+          if (a) { v.side = a.side; v.act = a.act; }
           v.flip = false;
         }
       } else {
@@ -213,10 +253,9 @@ export function updateVillagers(state, dt) {
     }
 
     let pose = 'standing';
-    if (!vp.started) {
-      if ((vp.t + v.n * 2.3) % GREET_CYCLE < GREET_FOR) pose = 'greeting';
-    } else if (v.mode === 'idle') {
-      if ((vp.t + v.n * 1.9) % PRAY_CYCLE < PRAY_FOR) pose = 'praying';
+    const act = ACTS[v.act];
+    if (act && v.mode === 'idle') {
+      pose = (vp.t + v.n * 2.3) % act.every < act.for ? act.pose : act.rest;
     }
     plan.hops.forEach((h, k) => {
       const at = vp.hops[k].at;

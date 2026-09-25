@@ -178,6 +178,10 @@ export const paths = {
   vill_back_praying:       'assets/villagers/Villager_Back_Praying.png',
   vill_back_hopping:       'assets/villagers/Villager_Back_Hopping.png',
   vill_back_landing:       'assets/villagers/Villager_Back_Landing.png',
+  vill_front_drinking_1:   'assets/villagers/Villager_Front_Drinking_1.png',
+  vill_front_drinking_2:   'assets/villagers/Villager_Front_Drinking_2.png',
+  vill_back_drinking_1:    'assets/villagers/Villager_Back_Drinking_1.png',
+  vill_back_drinking_2:    'assets/villagers/Villager_Back_Drinking_2.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.

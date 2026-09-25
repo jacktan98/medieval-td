@@ -174,7 +174,7 @@ console.log('\nStill in the picture\n');
   });
   ok(quiet.length === 0, 'and on every other board none of them is drawn',
     quiet.length ? quiet.map(l => l.name).join(', ') : 'painted, and left painted');
-  ok(/if \(v\.live\) add\(v\.y, 1, \(\) => drawVillager/.test(code('render.js')),
+  ok(/if \(v\.live && !v\.hidden\) add\(v\.y, 1, \(\) => drawVillager/.test(code('render.js')),
     '  the render pass draws only the live ones', 'drawVillager behind v.live');
 }
 
@@ -204,6 +204,9 @@ const board = level => {
   for (const lvl of peopled) {
     const state = board(lvl);
     for (const v of state.villagers) {
+      // One out of sight — stage 2's villager 4, indoors until the first wave —
+      // is not there to tap. See the check below.
+      if (v.hidden) continue;
       total++;
       const hit = pickFigure(state, v.x, v.y - VILLAGER_MID);
       if (!hit || hit.ref !== v) {
@@ -214,6 +217,20 @@ const board = level => {
   }
   ok(lost.length === 0, 'a tap on any of them opens his card and nobody else\'s',
     lost.length ? lost.join('; ') : `${total} of ${total}, on ${peopled.length} board(s)`);
+
+  // AND ONE INDOORS CANNOT BE TAPPED — there is nobody on the board to have tapped —
+  // until the first wave sends him out, when he can.
+  {
+    const lvl = peopled.find(l => l.villagerPlay === 'outskirts');
+    const state = board(lvl);
+    const v = state.villagers.find(u => u.hidden);
+    const before = v && pickFigure(state, v.x, v.y - VILLAGER_MID);
+    if (v) { v.hidden = false; }
+    const after = v && pickFigure(state, v.x, v.y - VILLAGER_MID);
+    ok(!!v && (!before || before.ref !== v) && after && after.ref === v,
+      '  one out of sight is not tappable until he comes out',
+      v ? `${lvl.name} (${v.x},${v.y}): ${before && before.ref === v ? 'tapped while hidden' : 'not while hidden'}, ${after && after.ref === v ? 'tapped once out' : 'NOT once out'}` : 'no hidden villager on stage 2');
+  }
 
   // AND THE REST OF THE GAME STILL PICKS NEAREST THE CAMERA. The exception is for
   // villagers among themselves; a soldier walking in front of one must still be

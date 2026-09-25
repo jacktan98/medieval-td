@@ -71,6 +71,8 @@ export function pickFigure(state, x, y) {
       // A soldier waiting to respawn is a muster ring, not a man. There is
       // nothing on the board to have tapped.
       if (kind === 'unit' && f.respawn > 0) continue;
+      // Nor is a villager out of sight — indoors, until the first wave sends him out.
+      if (kind === 'villager' && f.hidden) continue;
 
       // A BIGGER BOX FOR A VILLAGER, and the reason is what a miss costs. Missing
       // a soldier opens nothing and the player taps again; missing a villager is

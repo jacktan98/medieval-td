@@ -9,9 +9,9 @@ On every other stage the villagers stay painted in the artwork and never move. T
 game only knows where each one stands, so a tap can open their card. Their card
 picture is `assets/units/Villager_Default.png`.
 
-## The twelve drawings
+## The sixteen drawings
 
-Six poses, each drawn two ways: **Front**, with the villager's face towards the
+Seven poses (drinking has two drawings), each drawn two ways: **Front**, with the villager's face towards the
 player, and **Back**, with their back to the player. Every drawing faces **left**,
 like every figure in the game; the game mirrors a drawing when the villager faces
 right, for example while running to the right.
@@ -24,6 +24,8 @@ right, for example while running to the right.
 | praying  | `Villager_Front_Praying.png`  | `Villager_Back_Praying.png`  | praying |
 | hopping  | `Villager_Front_Hopping.png`  | `Villager_Back_Hopping.png`  | in the air, during a hop |
 | landing  | `Villager_Front_Landing.png`  | `Villager_Back_Landing.png`  | touching down after it |
+| drinking | `Villager_Front_Drinking_1.png` | `Villager_Back_Drinking_1.png` | holding the mug |
+|          | `Villager_Front_Drinking_2.png` | `Villager_Back_Drinking_2.png` | tipping it up to drink |
 
 **Villagers face the way the enemy comes from.** Most of the time a villager
 faces the direction of the enemy waves: on a board where the enemies walk from right
@@ -41,7 +43,9 @@ the player.
 - **Ground shadow:** the dark brown flat ellipse under the feet (`#362407`), centred
   on (258, 305), **in the same place in every drawing**. The game stands every pose
   on that one spot, so a shadow that moved would make the villager slide when they
-  change pose. All twelve are drawn this way.
+  change pose. All of them are drawn this way except the four drinking drawings, whose shadow
+  is centred on (272, 305), 14px further right; the game knows (see `feet` in
+  `src/villagers.js`) and stands that point on the villager's spot instead.
 - **The hop:** draw the figure lifted off its shadow in the hopping drawing, with the
   shadow left on the ground, as it is now.
 
@@ -62,3 +66,18 @@ the player.
 - **A star lost** (lives dropping below 18, then below 10): the village cries "nooo", ahead of every other sound.
 
 Their sounds are in `assets/audio/villagers`.
+
+## Stage 2's script
+
+Numbered left to right: 1 at the well, 2 by the tavern wall, 3 with the mug by the
+tavern steps, 4 beside him.
+
+- **Before the first wave:** villager 1 (back) and 2 (front) stand and greet by
+  turns. Villager 3 (front) drinks: holding the mug, then tipping it up, by turns.
+  Villager 4 is inside the tavern and cannot be seen (or tapped).
+- **When the first enemy of wave 1 appears:** villagers 1 and 2 stand and pray by
+  turns. Villager 3 keeps drinking. Villager 4 runs out of the tavern door and
+  over the stepping stones to stand beside villager 3, then stands and prays by turns.
+- **Every 10 enemies killed:** villagers 1 and 2 hop twice.
+- **Every 12 enemies killed:** villager 4 hops twice.
+- **Tapping a villager:** the same as on stage 1.
