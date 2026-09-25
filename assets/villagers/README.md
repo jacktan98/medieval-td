@@ -168,7 +168,8 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
   hammer down, and again.
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 run up the cobbles to
   the castle gate, between the torches and clear of their poles, and fade out through
-  it. Once both are inside, thick black smoke billows from the castle's two back towers.
+  it. Once both are inside, black smoke rises from the castle's two back towers in
+  separate clouds, one after another, as on the world map.
   Villagers 5 and 6 start standing and praying by turns. Villager 7 runs straight
   to the river, to the bank right of the bridge, stands and prays there facing the
   water for a while, then runs back to his spot and stands and prays with the others

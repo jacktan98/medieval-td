@@ -355,14 +355,26 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
 // smoke at board size: heavy, slow, rolling off with the wind. `s` its size against
 // the world map's, `a` how far it has thickened in (0 to 1).
 export function towerSmoke(ctx, x, y, t, s, a = 1) {
-  // THICK: three columns of puffs side by side, many of them, big and dark and
-  // swelling as they climb, so the smoke billows out of the tower rather than
-  // threading up from it.
-  for (const [off, ph] of [[-1.6, 0], [0, 0.33], [1.6, 0.66]]) {
-    for (let k = 0; k < 18; k++) {
-      const p = ((t / 9) + k / 18 + ph / 18) % 1;
-      puff(ctx, x + off * s, y, p, 34 * s, 16 * wind(t, x) * s, 3.5 * s, 14 * s, '24,22,20', 1 * a);
+  // SEPARATE CLOUDS, as on the world map: a few puffs, well spaced, each its own
+  // round cloud swelling as it climbs and drifts off with the wind — not one unbroken
+  // column. Each cloud is three soft blobs lumped together, so it has a body and a
+  // lumpy edge, and it keeps its darkness most of the way up before thinning out.
+  const N = 6;
+  const w = wind(t, x);
+  for (let k = 0; k < N; k++) {
+    const p = ((t / 11) + k / N) % 1;
+    const e = 1 - (1 - p) * (1 - p);
+    const cx = x + 20 * w * s * p * p + Math.sin(p * 5 + k) * 1.2 * s;
+    const cy = y - 44 * s * e;
+    const r = (3.2 + 7 * p) * s;
+    const alpha = a * Math.min(1, p / 0.08) * Math.pow(1 - p, 0.55);
+    if (alpha <= 0.01) continue;
+    ctx.globalAlpha = alpha;
+    for (const [ox, oy, rr] of [[-0.45, 0.15, 0.85], [0.45, 0.1, 0.8], [0, -0.3, 0.95]]) {
+      const R = r * rr * 1.5;
+      ctx.drawImage(sprite('26,24,22'), cx + ox * r - R, cy + oy * r - R, R * 2, R * 2);
     }
+    ctx.globalAlpha = 1;
   }
 }
 
