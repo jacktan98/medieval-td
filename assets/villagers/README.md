@@ -20,7 +20,7 @@ right, for example while running to the right.
 |----------|-------------------------------|------------------------------|----------|
 | standing | `Villager_Front_Standing.png` | `Villager_Back_Standing.png` | standing still |
 | greeting | `Villager_Front_Greeting.png` | `Villager_Back_Greeting.png` | waving; the game waves the raised left hand |
-| running  | `Villager_Front_Running.png`  | `Villager_Back_Running.png`  | running (only this drawing, no alternating) |
+| running  | `Villager_Front_Running.png`  | `Villager_Back_Running.png`  | running (only this drawing, no alternating): front going down or level, back going up the screen |
 | praying  | `Villager_Front_Praying.png`  | `Villager_Back_Praying.png`  | praying |
 | hopping  | `Villager_Front_Hopping.png`  | `Villager_Back_Hopping.png`  | in the air, during a hop |
 | landing  | `Villager_Front_Landing.png`  | `Villager_Back_Landing.png`  | touching down after it |
@@ -50,7 +50,8 @@ the player.
 - **Before the first wave:** villagers 2 and 3 stand with their backs to the player;
   the rest face the player. Now and then each one greets (waves).
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 run to the grass below
-  the road by the exit flag, then pray now and then with their backs to the player.
+  the road by the exit flag (front running below the houses, back running once past
+  them and heading up towards the flag), then pray now and then with their backs to the player.
   Villagers 3, 4 and 5 start praying now and then. Once started, praying is the
   long part: nine seconds in every twelve. As the runners set off, they shout
   "runnn", ahead of every other sound.

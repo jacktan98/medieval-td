@@ -113,6 +113,7 @@ const PLAYS = {
 };
 
 const RUN_SPEED = 46;         // px a second
+const RUN_UP = 0.05;          // how steeply up a runner must go to show their back
 const HOP_GAP = 0.16;         // seconds between one villager's hop and the next's
 const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawings show
 const HOPS = 2;                       // hops each time, one straight after the other
@@ -196,9 +197,15 @@ export function updateVillagers(state, dt) {
         v.x += dx / d * stepLen;
         v.y += dy / d * stepLen;
         v.flip = dx > 0;                     // the drawings face left
+        // HEADING UP THE SCREEN, THEIR BACKS TO THE PLAYER: once past the lower
+        // houses the runners climb towards the flag, and a villager running away
+        // from the camera shows their back. Going down or level, their front. Read
+        // off the direction of travel, with a little slack so a leg that is level
+        // but for a pixel or two does not turn them round.
+        v.runSide = dy < -RUN_UP * d ? 'back' : 'front';
       }
-      // THE RUNNING DRAWING AND NOTHING ELSE, the whole way, facing the player.
-      if (v.mode === 'run') { v.pose = 'running'; v.greetSide = null; v.runSide = 'front'; continue; }
+      // THE RUNNING DRAWING AND NOTHING ELSE, the whole way.
+      if (v.mode === 'run') { v.pose = 'running'; v.greetSide = null; continue; }
     }
 
     let pose = 'standing';
@@ -226,6 +233,6 @@ export function updateVillagers(state, dt) {
 // Which drawing a villager is showing: their own side, or the front while a tap has
 // them greeting, or the front while they run.
 export function villagerKey(v) {
-  const side = v.greetSide || (v.mode === 'run' ? 'front' : v.side);
+  const side = v.greetSide || (v.mode === 'run' ? v.runSide || 'front' : v.side);
   return `vill_${side}_${v.pose}`;
 }
