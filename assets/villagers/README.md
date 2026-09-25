@@ -99,13 +99,12 @@ Numbered left to right: 1 at the well, 2 by the tavern wall, 3 with the mug by t
 tavern steps, 4 beside him.
 
 - **Before the first wave:** villager 1 (front, mirrored so they face right) and 2
-  (front) stand and greet by turns. Villager 3 (front) drinks: holding the mug, then tipping it up, by turns.
-  Villager 4 is inside the tavern and cannot be seen (or tapped).
+  (front) stand and greet by turns. Villager 3 (front) drinks: holding the mug, then
+  tipping it up, by turns. Villager 4 (front), beside him, stands and greets by turns.
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 stand and pray by
-  turns. Villager 3 keeps drinking. Villager 4 runs out of the tavern door and
-  over the stepping stones to stand beside villager 3, then stands and prays by turns.
+  turns. Villager 3 keeps drinking. Villager 4 runs up over the stepping stones and
+  into the tavern through the door in its right-hand wall, and is gone.
 - **Every 10 enemies killed:** villagers 1 and 2 hop twice.
-- **Every 12 enemies killed:** villager 4 hops twice.
 - **Tapping a villager:** the same as on stage 1. Villager 1 stays mirrored, so
   their greeting is mirrored too.
 - **A star lost** (lives dropping below 18, then below 10): the village cries "nooo",

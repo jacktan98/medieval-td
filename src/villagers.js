@@ -172,18 +172,18 @@ const PLAYS = {
     cries: { runnn: true, nooo: true }
   },
   // STAGE 2, Oakhaven Outskirts, left to right: 1 at the well, 2 by the tavern wall,
-  // 3 with his mug by the tavern steps and 4 beside him — who, before the first
-  // wave, is inside the tavern and cannot be seen.
+  // 3 with his mug by the tavern steps and 4 beside him.
   outskirts: {
     // Villager 1 faces the player, mirrored, at the owner's word.
-    before: [mirrored('greets'), front('greets'), front('drink'), { side: 'front', hidden: true }],
-    // VILLAGER 4 RUNS OUT OF THE TAVERN, out of the door in its right-hand wall and
-    // down over the stepping stones to stand beside villager 3.
+    before: [mirrored('greets'), front('greets'), front('drink'), front('greets')],
+    // VILLAGER 4 RUNS INTO THE TAVERN when the first wave comes, up over the stepping
+    // stones to the door in its right-hand wall, and is gone through it (`vanish`).
+    // He was the other way round once — indoors until the wave, then out.
     run: [
-      { who: 3, delay: 0.4, from: [716, 260], path: [[734, 272], [760, 283], [780, 276]] }
+      { who: 3, delay: 0.3, path: [[760, 283], [734, 272], [716, 260]], vanish: true }
     ],
-    after: [mirrored('pray'), front('pray'), front('drink'), front('pray')],
-    hops: [{ every: 10, who: [0, 1] }, { every: 12, who: [3] }],
+    after: [mirrored('pray'), front('pray'), front('drink'), {}],
+    hops: [{ every: 10, who: [0, 1] }],
     cries: { runnn: false, nooo: true }
   },
   // STAGE 3, Winchester Entrance, left to right: 1 and 2 on the statue's plaza, 3 on

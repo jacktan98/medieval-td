@@ -218,18 +218,18 @@ const board = level => {
   ok(lost.length === 0, 'a tap on any of them opens his card and nobody else\'s',
     lost.length ? lost.join('; ') : `${total} of ${total}, on ${peopled.length} board(s)`);
 
-  // AND ONE INDOORS CANNOT BE TAPPED — there is nobody on the board to have tapped —
-  // until the first wave sends him out, when he can.
+  // AND ONE OUT OF SIGHT CANNOT BE TAPPED — there is nobody on the board to have
+  // tapped. Stage 2's villager 4, gone into the tavern once the wave comes.
   {
     const lvl = peopled.find(l => l.villagerPlay === 'outskirts');
     const state = board(lvl);
-    const v = state.villagers.find(u => u.hidden);
-    const before = v && pickFigure(state, v.x, v.y - VILLAGER_MID);
-    if (v) { v.hidden = false; }
-    const after = v && pickFigure(state, v.x, v.y - VILLAGER_MID);
-    ok(!!v && (!before || before.ref !== v) && after && after.ref === v,
-      '  one out of sight is not tappable until he comes out',
-      v ? `${lvl.name} (${v.x},${v.y}): ${before && before.ref === v ? 'tapped while hidden' : 'not while hidden'}, ${after && after.ref === v ? 'tapped once out' : 'NOT once out'}` : 'no hidden villager on stage 2');
+    const v = state.villagers[3];
+    const seen = v && pickFigure(state, v.x, v.y - VILLAGER_MID);
+    if (v) v.hidden = true;
+    const gone = v && pickFigure(state, v.x, v.y - VILLAGER_MID);
+    ok(!!v && seen && seen.ref === v && (!gone || gone.ref !== v),
+      '  one out of sight is not tappable',
+      v ? `${lvl.name} (${v.x},${v.y}): ${seen && seen.ref === v ? 'tapped outside' : 'NOT outside'}, ${gone && gone.ref === v ? 'tapped once gone in' : 'not once gone in'}` : 'no villager 4 on stage 2');
   }
 
   // AND THE REST OF THE GAME STILL PICKS NEAREST THE CAMERA. The exception is for
