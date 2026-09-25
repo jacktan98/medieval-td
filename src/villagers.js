@@ -114,7 +114,9 @@ export const PAIR = [(386.5 - 124.5) * SCALE, (268.5 - 341.5) * SCALE];
 // middle `mid`), where it is in the carrying drawing (`held`, its middle there), and
 // how far it turns in the air. Stage 4's plank and stage 5's ballista part.
 export const PIECES = {
-  plank: { key: 'vill_wood_plank', src: [115, 195, 283, 122], mid: [256, 255], held: [265, 241], spin: -0.5 },
+  // The plank turns CLOCKWISE in the air, from rising to the right as it is carried
+  // to lying the way the stack's planks lie, falling to the right, as it lands.
+  plank: { key: 'vill_wood_plank', src: [115, 195, 283, 122], mid: [256, 255], held: [265, 241], spin: 0.43 },
   part:  { key: 'vill_ballista_parts', src: [231, 205, 50, 102], mid: [255.5, 255], held: [285, 241], spin: 1.4 }
 };
 

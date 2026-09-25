@@ -33,8 +33,10 @@ const HOUSE_SMOKE = [
 ].map(c => ({ ...c, town: 'ironforge' }));
 
 const BLACK_SMOKE = [
-  { x: 446, y: 57, town: 'winchester' },   // the castle's towers
-  { x: 469, y: 50, town: 'winchester' },
+  // The castle's — from inside it, the courtyard either side of the back tower, at
+  // the owner's word, as on stage 5's own board; they were on two towers' tops.
+  { x: 467, y: 67, town: 'winchester' },
+  { x: 487, y: 64, town: 'winchester' },
   { x: 425, y: 121, town: 'winchester' },  // the workshop
   { x: 909, y: 196, town: 'ironforge' },   // the castle's towers
   { x: 937, y: 205, town: 'ironforge' },
@@ -356,9 +358,10 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
 // the world map's, `a` how far it has thickened in (0 to 1).
 export function towerSmoke(ctx, x, y, t, s, a = 1) {
   // SEPARATE CLOUDS, as on the world map: a few puffs, well spaced, each its own
-  // round cloud swelling as it climbs and drifts off with the wind — not one unbroken
-  // column. Each cloud is three soft blobs lumped together, so it has a body and a
-  // lumpy edge, and it keeps its darkness most of the way up before thinning out.
+  // cloud drifting off with the wind — not one unbroken column. Each starts SMALL and
+  // black where it comes up out of the castle and SWELLS as it climbs, going paler
+  // as it spreads, until it thins away. Three soft blobs lumped together make each
+  // one, so it has a body and a lumpy edge.
   const N = 6;
   const w = wind(t, x);
   for (let k = 0; k < N; k++) {
@@ -366,13 +369,16 @@ export function towerSmoke(ctx, x, y, t, s, a = 1) {
     const e = 1 - (1 - p) * (1 - p);
     const cx = x + 20 * w * s * p * p + Math.sin(p * 5 + k) * 1.2 * s;
     const cy = y - 44 * s * e;
-    const r = (3.2 + 7 * p) * s;
-    const alpha = a * Math.min(1, p / 0.08) * Math.pow(1 - p, 0.55);
+    const r = (1.2 + 8 * p) * s;
+    const alpha = a * Math.min(1, p / 0.06) * Math.pow(1 - p, 0.7);
     if (alpha <= 0.01) continue;
+    // Black to grey in six steps, so the puff drawings stay few.
+    const g = Math.min(5, Math.floor(Math.pow(p, 0.8) * 6)) / 5;
+    const rgb = `${24 + 126 * g | 0},${22 + 124 * g | 0},${20 + 120 * g | 0}`;
     ctx.globalAlpha = alpha;
     for (const [ox, oy, rr] of [[-0.45, 0.15, 0.85], [0.45, 0.1, 0.8], [0, -0.3, 0.95]]) {
       const R = r * rr * 1.5;
-      ctx.drawImage(sprite('26,24,22'), cx + ox * r - R, cy + oy * r - R, R * 2, R * 2);
+      ctx.drawImage(sprite(rgb), cx + ox * r - R, cy + oy * r - R, R * 2, R * 2);
     }
     ctx.globalAlpha = 1;
   }
