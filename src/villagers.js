@@ -167,9 +167,12 @@ const PLAYS = {
       // VILLAGER 3 GOES UP ONTO THE PLAZA, over its front corner, to stand beside
       // villager 2 by the statue — turning to face the player.
       { who: 2, delay: 0, path: [[490, 352], [462, 322], [447, 305]] },
-      // VILLAGER 5 GOES ROUND THE BARRICADE'S RIGHT-HAND END and in behind it, into
-      // the shade on its near side between the wall and the plot.
-      { who: 4, delay: 0.25, path: [[838, 138], [847, 168], [818, 190]] }
+      // VILLAGER 5 GOES WIDE ROUND THE BARRICADE'S RIGHT-HAND END, along the owner's
+      // arrow: over the top of it, out past its end — clear of the wall, so he never
+      // seems to walk through it, and behind a tower on the plot there, which is
+      // drawn over him — then down and back in on its near side, in front of the wall,
+      // to stand in its shade.
+      { who: 4, delay: 0.25, path: [[800, 128], [835, 134], [856, 153], [857, 176], [842, 192], [818, 191]] }
     ],
     after: [front('pray'), front('pray'), front('pray'), back('pray'), front('pray')],
     hops: [{ every: 10, who: [0, 1, 3] }, { every: 12, who: [2, 4] }],

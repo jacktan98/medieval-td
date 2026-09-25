@@ -139,11 +139,12 @@ export const level05 = {
   ambience: { clip: 'bird_chirping', level: 0.5 },
   // THE TWO TORCHES ON THE PILLARS either side of the statue, drawn live (src/life.js
   // campfire, with its smoke) where the painted flames were: base of each flame, its
-  // size against the world map's fire, and the depth it sorts at — the plaza's, so
+  // size against the world map's fire (30% under the painted flames, at the owner's
+  // word — the torches are not that big), and the depth it sorts at — the plaza's, so
   // it burns on top of its pillar.
   fires: [
-    { x: 433.5, y: 222, s: 3.6, g: 309 },
-    { x: 517, y: 236, s: 3.6, g: 309 }
+    { x: 433.5, y: 222, s: 2.5, g: 309 },
+    { x: 517, y: 236, s: 2.5, g: 309 }
   ],
   // THE PLAZA IS A RAISED FLOOR, and its box sorts at its own shadow, y 309 — below
   // the feet of a villager standing on it at the back, who would otherwise be drawn

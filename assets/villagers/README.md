@@ -95,7 +95,8 @@ between the two bottom-right houses, 5 at the top (the most right).
 - **When the first enemy of wave 1 appears:** villagers 1, 2 and 4 stand and pray by
   turns. Villager 3 walks up onto the plaza to stand beside villager 2, turns to face
   the player and prays by turns. Villager 5 runs round the right-hand end of the
-  barricade to stand in its shade, on the near side, and prays by turns.
+  barricade (over the top of it, out past its end, behind a tower on the plot
+  there, and back in front of the wall) to stand in its shade, and prays by turns.
 - **Every 10 enemies killed:** villagers 1, 2 and 4 hop twice.
 - **Every 12 enemies killed:** villagers 3 and 5 hop twice.
 - **A star lost:** "nooo", as on stage 2. Soft birdsong plays under the stage, and
