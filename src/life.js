@@ -251,11 +251,15 @@ function drawFire(ctx, t, unlocked) {
 // a shape (the furnace mouth); `smokeClip` keeps the glow, embers, sparks and smoke
 // inside another (under the forge's roof); `smoke` scales the smoke, 1 as it is.
 // `tall` scales the flame's height alone — the forge's fire, small or roaring.
-export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1 } = {}) {
+// `part` draws half of it: 'glow' the light on the ground alone, 'flame' everything
+// else — so a fire can light what is round it from underneath and still burn in front
+// of something held in it.
+export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1, part = 'all' } = {}) {
   const clipTo = c => { ctx.save(); if (c) ctx.clip(c); };
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
   const R = 11 * s * (1 + 0.3 * heat);
+  if (part !== 'flame') {
   clipTo(smokeClip);
   const glow = ctx.createRadialGradient(x0, y0 + s, 0, x0, y0 + s, R);
   glow.addColorStop(0, `rgba(255,170,70,${Math.min(0.75, 0.30 * flick * (1 + 1.2 * heat))})`);
@@ -263,6 +267,8 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   ctx.fillStyle = glow;
   ctx.fillRect(x0 - R, y0 + s - R, R * 2, R * 2);
   ctx.restore();
+  }
+  if (part === 'glow') return;
   // THE FLAME, AS A FLAME BURNS: a big red one, an orange one inside it and a
   // yellow heart inside that, each a teardrop with a rounded bottom sitting in the
   // logs, each flickering on its own beat so the colours slide over each other.
@@ -311,15 +317,27 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
     ctx.arc(x0 + ((hash(k) - 0.5) * 3 + 4 * p * p) * s, y0 - (3 + 13 * p) * s, 0.45 * Math.sqrt(s), 0, Math.PI * 2);
     ctx.fill();
   }
-  // SPARKS, while it is stoked: bright, quick, thrown up and out of the fire.
+  // SPARKS, while it is stoked: bright, quick, thrown up and out of the fire — a
+  // shower of them at full heat, each with a short bright streak behind it.
   if (heat > 0.05) {
-    for (let k = 0; k < 10; k++) {
-      const life = 0.35 + hash(k + 60) * 0.3;
+    const n = Math.round(26 * heat);
+    for (let k = 0; k < n; k++) {
+      const life = 0.3 + hash(k + 60) * 0.35;
       const p = ((t / life) + hash(k + 61)) % 1;
-      const dir = (hash(k + 62) - 0.5) * 2.4;
-      ctx.fillStyle = `rgba(255,${230 - 90 * p | 0},${120 - 80 * p | 0},${heat * (1 - p)})`;
+      const dir = (hash(k + 62) - 0.5) * 2.8;
+      const reach = 6 + 4 * hash(k + 63);
+      const px = q => x0 + dir * reach * 0.8 * s * q;
+      const py = q => y0 - 2 * s - reach * s * q + 6 * s * q * q;
+      const a = Math.min(1, heat * 1.3) * (1 - p);
+      ctx.strokeStyle = `rgba(255,${240 - 80 * p | 0},${150 - 110 * p | 0},${a})`;
+      ctx.lineWidth = 0.5 * Math.sqrt(s);
       ctx.beginPath();
-      ctx.arc(x0 + dir * 5 * s * p, y0 - 2 * s - 7 * s * p + 5 * s * p * p, 0.4 * Math.sqrt(s), 0, Math.PI * 2);
+      ctx.moveTo(px(Math.max(0, p - 0.08)), py(Math.max(0, p - 0.08)));
+      ctx.lineTo(px(p), py(p));
+      ctx.stroke();
+      ctx.fillStyle = `rgba(255,${250 - 70 * p | 0},${190 - 140 * p | 0},${a})`;
+      ctx.beginPath();
+      ctx.arc(px(p), py(p), 0.45 * Math.sqrt(s), 0, Math.PI * 2);
       ctx.fill();
     }
   }

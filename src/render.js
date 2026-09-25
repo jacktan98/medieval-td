@@ -457,8 +457,14 @@ function drawFigures(ctx, state) {
   // flames were — stage 1's campfire over its logs, stage 3's two torches on their
   // pillars. Each sorted at the depth of what it burns on and added after it, so it
   // burns in front of that and behind anyone nearer; each on its own beat.
+  // A fire with `over` burns in two layers: its glow at `g`, lighting what is round
+  // it from underneath, and its flame and sparks at `over`, in front of whatever is
+  // held in it (stage 4's pipe).
   for (const fire of level.fires || []) {
-    add(fire.g, 1, () => drawFire(ctx, state, fire));
+    if (fire.over) {
+      add(fire.g, 1, () => drawFire(ctx, state, fire, 'glow'));
+      add(fire.over, 1, () => drawFire(ctx, state, fire, 'flame'));
+    } else add(fire.g, 1, () => drawFire(ctx, state, fire));
   }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
@@ -1214,8 +1220,9 @@ function drawBuilding(ctx, t, box) {
 //
 // On the board's own clock, so it stops on the pause like everything else. Returns
 // false while the drawing cannot be read, and the tower is drawn still.
-const BANNER_SWAY = { amp: 11, speed: 2.4, length: 150, edge: 7, band: 3 };
-const FLAG_WAVE = { amp: 6, speed: 4.2, length: 70, band: 3 };
+// Gentle, at the owner's word — they were halved from 11 and 6.
+const BANNER_SWAY = { amp: 5.5, speed: 2.2, length: 150, edge: 5, band: 3 };
+const FLAG_WAVE = { amp: 3, speed: 4, length: 70, band: 3 };
 const bannerCache = new WeakMap();
 function bannerLayers(img, b) {
   let got = bannerCache.get(img);
@@ -1236,11 +1243,15 @@ function bannerLayers(img, b) {
       if (d[k + 3] > 200 && Math.abs(d[k] - b.colour[0]) + Math.abs(d[k + 1] - b.colour[1]) +
           Math.abs(d[k + 2] - b.colour[2]) < 90) core[i] = 1;
     }
+    // Grown by its black edge ONLY: dark pixels within `edge` of the colour. Grey
+    // stone next to it is not cloth, so the bricks beside a banner stay still.
     const mask = new Uint8Array(bw * bh), E = BANNER_SWAY.edge;
+    const dark = i => d[i * 4 + 3] > 120 && d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2] < 200;
     for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
       if (!core[y * bw + x]) continue;
+      mask[y * bw + x] = 1;
       for (let v = Math.max(0, y - E); v <= Math.min(bh - 1, y + E); v++)
-        for (let u = Math.max(0, x - E); u <= Math.min(bw - 1, x + E); u++) mask[v * bw + u] = 1;
+        for (let u = Math.max(0, x - E); u <= Math.min(bw - 1, x + E); u++) if (dark(v * bw + u)) mask[v * bw + u] = 1;
     }
     // And whatever is painted ON it — the emblem — which its colour does not reach:
     // anything the cloth closes in on every side. Found as what a fill from the
@@ -1269,9 +1280,22 @@ function bannerLayers(img, b) {
     const clothData = new ImageData(bw, bh), cd = clothData.data;
     const out = new ImageData(new Uint8ClampedArray(d), bw, bh), od = out.data;
     if (b.kind === 'flag') {
-      for (let i = 0; i < bw * bh; i++) {
+      // What is left behind the flag is cleared only well inside it — away from
+      // its pole and two pixels in from its edge. The edge of each moving strip is
+      // blended, and blended over empty air it showed as a pale line between the
+      // flag and its pole; over the flag's own picture it blends into itself.
+      const inside = (x, y) => {
+        if (x < b.pole - x0 + 6) return false;
+        for (let v = y - 2; v <= y + 2; v++) for (let u = x - 2; u <= x + 2; u++) {
+          if (u < 0 || v < 0 || u >= bw || v >= bh || !mask[v * bw + u]) return false;
+        }
+        return true;
+      };
+      for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+        const i = y * bw + x;
         if (!mask[i]) continue;
-        for (let c = 0; c < 4; c++) { cd[i * 4 + c] = d[i * 4 + c]; od[i * 4 + c] = 0; }
+        for (let c = 0; c < 4; c++) cd[i * 4 + c] = d[i * 4 + c];
+        if (inside(x, y)) od[i * 4 + 3] = 0;
       }
     }
     for (let y = 0; y < bh && b.kind !== 'flag'; y++) {
@@ -1280,18 +1304,36 @@ function bannerLayers(img, b) {
         if (!mask[i]) continue;
         for (let c = 0; c < 4; c++) cd[i * 4 + c] = d[i * 4 + c];
       }
-      // The wall behind, each run of cloth filled from the stone at its two ends.
+      // The wall behind, each run of cloth filled from the stone at its two ends —
+      // the TYPICAL stone there, the middle one by brightness of the nine pixels
+      // outward, so a single dark line at the banner's edge (the tower's corner, a
+      // joint between bricks) is not smeared across as a stripe, while a mortar line
+      // running along the row, dark all the way out, carries on through.
+      const typical = (c, step) => {
+        const got = [];
+        for (let k = 0; k < 9; k++) {
+          const u = c + step * k;
+          if (u < 0 || u >= bw) break;
+          const i = y * bw + u;
+          if (mask[i] || d[i * 4 + 3] < 200) continue;
+          got.push(i);
+        }
+        if (!got.length) return -1;
+        got.sort((a, b) => (d[a * 4] + d[a * 4 + 1] + d[a * 4 + 2]) - (d[b * 4] + d[b * 4 + 1] + d[b * 4 + 2]));
+        return got[got.length >> 1];
+      };
       for (let x = 0; x < bw; x++) {
         if (!mask[y * bw + x]) continue;
         let e = x;
         while (e + 1 < bw && mask[y * bw + e + 1]) e++;
-        const l = Math.max(0, x - 1), r = Math.min(bw - 1, e + 1), mid = (x + e) / 2;
-        const solid = c => d[(y * bw + c) * 4 + 3] > 200;
+        let L = typical(x - 1, -1), R = typical(e + 1, 1);
+        if (L < 0) L = R;
+        if (R < 0) R = L;
+        const mid = (x + e) / 2;
         for (let u = x; u <= e; u++) {
-          let side = u <= mid ? l : r;
-          if (!solid(side)) side = side === l ? r : l;
-          const from = (y * bw + side) * 4;
-          for (let c = 0; c < 4; c++) od[(y * bw + u) * 4 + c] = d[from + c];
+          const from = (u <= mid ? L : R);
+          if (from < 0) continue;
+          for (let c = 0; c < 4; c++) od[(y * bw + u) * 4 + c] = d[from * 4 + c];
         }
         x = e;
       }
@@ -1412,7 +1454,7 @@ function mouthPath(fire) {
 // flame clipped to it, and a fire with a `roof` keeps its glow, smoke and sparks
 // below that line so none of it crosses the roof over it. A `heated` fire flares
 // with the smith's stroke (villagers.js keeps the heat).
-function drawFire(ctx, state, fire) {
+function drawFire(ctx, state, fire, part = 'all') {
   const t = (state.anim || 0) + fire.x * 0.37;
   const heat = fire.heated && state.villagerPlay ? state.villagerPlay.heat || 0 : 0;
   // A HEATED FIRE'S SIZE FOLLOWS THE STROKE: small while the pipe is drawn back,
@@ -1420,14 +1462,14 @@ function drawFire(ctx, state, fire) {
   const tall = fire.heated ? 0.55 + 0.95 * heat : 1;
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
   const mouth = mouthPath(fire);
-  if (mouth) {
+  if (mouth && part !== 'glow') {
     ctx.fillStyle = '#2b0f06';
     ctx.fill(mouth);
   }
   campfire(ctx, fire.x, fire.y, t, fire.s, true, {
-    heat, tall, flameClip: mouth, smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1
+    heat, tall, flameClip: mouth, smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, part
   });
-  if (mouth) {
+  if (mouth && part !== 'glow') {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
     ctx.stroke(mouth);
