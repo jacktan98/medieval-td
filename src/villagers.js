@@ -283,7 +283,10 @@ const PLAYS = {
   }
 };
 
-const WORK_WALK = 11;         // px a second, carrying or not — "slowly"
+const WORK_WALK = 11;         // px a second carrying — "slowly"
+// And empty-handed, walking off for the next load, nearly twice that: they are no
+// longer carrying anything.
+const WORK_WALK_FREE = 20;
 // THE THROW IS A HEAVE AND A LANDING: the throwing drawing (the pair up off the
 // ground) for THROW_FOR, then back down on their feet, standing, while the plank is
 // still in the air — they used to hang up there until it landed — and off once it
@@ -383,7 +386,7 @@ function work(state, vp, dt) {
       for (const v of team) v.leg = 0;
     }
   } else if (c.phase === 'away') {
-    const done = walkTo(lead, crew.away.lead, WORK_WALK, dt) & (mate ? walkTo(mate, crew.away.mate, WORK_WALK, dt) : true);
+    const done = walkTo(lead, crew.away.lead, WORK_WALK_FREE, dt) & (mate ? walkTo(mate, crew.away.mate, WORK_WALK_FREE, dt) : true);
     if (done) {
       c.phase = 'gone'; c.at = vp.t;
       for (const v of team) v.hidden = true;

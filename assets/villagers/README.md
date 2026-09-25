@@ -144,8 +144,8 @@ them.
   1. carry the plank slowly and smoothly up to the stack;
   2. throw it, landing back on their feet while it is still in the air — it flies
      in a lob onto the stack and vanishes as it lands;
-  3. walk slowly off, each on their own and standing, towards the cut trees and
-     off the bottom of the board between them;
+  3. walk off, each on their own and standing — quicker now, with nothing to
+     carry — towards the cut trees and off the bottom of the board between them;
   4. three seconds later come back from where they left, carrying the next plank.
 - **A star lost:** "nooo", as on stages 2 and 3.
 
