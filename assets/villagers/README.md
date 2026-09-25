@@ -72,12 +72,15 @@ Their sounds are in `assets/audio/villagers`.
 Numbered left to right: 1 at the well, 2 by the tavern wall, 3 with the mug by the
 tavern steps, 4 beside him.
 
-- **Before the first wave:** villager 1 (back) and 2 (front) stand and greet by
-  turns. Villager 3 (front) drinks: holding the mug, then tipping it up, by turns.
+- **Before the first wave:** villager 1 (front, mirrored so they face right) and 2
+  (front) stand and greet by turns. Villager 3 (front) drinks: holding the mug, then tipping it up, by turns.
   Villager 4 is inside the tavern and cannot be seen (or tapped).
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 stand and pray by
   turns. Villager 3 keeps drinking. Villager 4 runs out of the tavern door and
   over the stepping stones to stand beside villager 3, then stands and prays by turns.
 - **Every 10 enemies killed:** villagers 1 and 2 hop twice.
 - **Every 12 enemies killed:** villager 4 hops twice.
-- **Tapping a villager:** the same as on stage 1.
+- **Tapping a villager:** the same as on stage 1. Villager 1 stays mirrored, so
+  their greeting is mirrored too.
+- **A star lost** (lives dropping below 18, then below 10): the village cries "nooo",
+  ahead of every other sound. (No "runnn" here.) Soft birdsong plays under the stage.

@@ -66,7 +66,7 @@ export function makeVillagers(state, level) {
     // ON A BOARD THAT LETS THEM MOVE, each carries what it is doing. See PLAYS.
     const b = play.before[i] || {};
     return { def: VILLAGER, x: v.x, y: v.y, live: true, n: i, side: b.side || 'front',
-             act: b.act || null, hidden: !!b.hidden, pose: 'standing', flip: false,
+             act: b.act || null, hidden: !!b.hidden, pose: 'standing', flip: !!b.flip,
              mode: 'idle', path: null, leg: 0, greetUntil: -1 };
   });
   state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })),
@@ -115,8 +115,11 @@ const ACTS = {
 // At that moment `run` sends some of them off along a path of points (from `from`,
 // if they were out of sight), each `delay` seconds after it. `hops` is who hops and
 // lands, twice, one after another, each time `every` more enemies have fallen.
-// `cries` is whether the village shouts "runnn" and "nooo" (see below).
+// `flip` mirrors a villager, facing right instead of left, in everything they do —
+// the greeting a tap asks for included. `cries` is which of the village's two shouts
+// the board has: "runnn" as the first runner sets off, "nooo" as a star is lost.
 const front = act => ({ side: 'front', act }), back = act => ({ side: 'back', act });
+const mirrored = act => ({ side: 'front', act, flip: true });
 const PLAYS = {
   oakhaven: {
     before: [front('greet'), back('greet'), back('greet'), front('greet'), front('greet')],
@@ -138,21 +141,22 @@ const PLAYS = {
     // The road is above them all but villagers 4 and 5, who have it below.
     after: [back('pray'), back('pray'), back('pray'), front('pray'), front('pray')],
     hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }],
-    cries: true
+    cries: { runnn: true, nooo: true }
   },
   // STAGE 2, Oakhaven Outskirts, left to right: 1 at the well, 2 by the tavern wall,
   // 3 with his mug by the tavern steps and 4 beside him — who, before the first
   // wave, is inside the tavern and cannot be seen.
   outskirts: {
-    before: [back('greets'), front('greets'), front('drink'), { side: 'front', hidden: true }],
+    // Villager 1 faces the player, mirrored, at the owner's word.
+    before: [mirrored('greets'), front('greets'), front('drink'), { side: 'front', hidden: true }],
     // VILLAGER 4 RUNS OUT OF THE TAVERN, out of the door in its right-hand wall and
     // down over the stepping stones to stand beside villager 3.
     run: [
       { who: 3, delay: 0.4, from: [716, 260], path: [[734, 272], [760, 283], [780, 276]] }
     ],
-    after: [back('pray'), front('pray'), front('drink'), front('pray')],
+    after: [mirrored('pray'), front('pray'), front('drink'), front('pray')],
     hops: [{ every: 10, who: [0, 1] }, { every: 12, who: [3] }],
-    cries: false
+    cries: { runnn: false, nooo: true }
   }
 };
 
@@ -184,7 +188,7 @@ export function updateVillagers(state, dt) {
     vp.started = true;
     for (const v of state.villagers) {
       const a = plan.after[v.n];
-      if (v.live && a) { v.side = a.side; v.act = a.act; }
+      if (v.live && a) { v.side = a.side; v.act = a.act; v.flip = !!a.flip; }
     }
     for (const r of plan.run) {
       const v = state.villagers[r.who];
@@ -201,7 +205,7 @@ export function updateVillagers(state, dt) {
   // the village cries "nooo". Asked of the same rating the result screen uses, so it
   // is exactly the moment a star goes; not at zero, which the lost sound answers.
   const stars = starsFor(state.lives, vp.startLives);
-  if (plan.cries && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
+  if (plan.cries.nooo && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
   vp.stars = stars;
 
   // THE HOPS, each group on its own count of the fallen.
@@ -219,7 +223,7 @@ export function updateVillagers(state, dt) {
       // OUT OF SIGHT UNTIL NOW: they step out where `from` says — a doorway.
       if (v.from) { [v.x, v.y] = v.from; v.hidden = false; }
       // "RUNNN", once, as the first of them sets off.
-      if (plan.cries && !vp.shouted) { vp.shouted = true; solo(VILLAGER_RUN, true, true, true); }
+      if (plan.cries.runnn && !vp.shouted) { vp.shouted = true; solo(VILLAGER_RUN, true, true, true); }
     }
     if (v.hidden) continue;
 
@@ -235,7 +239,7 @@ export function updateVillagers(state, dt) {
           v.mode = 'idle';
           const a = plan.after[v.n];
           if (a) { v.side = a.side; v.act = a.act; }
-          v.flip = false;
+          v.flip = !!(a && a.flip);
         }
       } else {
         v.x += dx / d * stepLen;
