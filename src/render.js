@@ -310,6 +310,7 @@ function drawOver(ctx, state) {
 }
 
 function drawFigures(ctx, state) {
+  boardTime = state.anim || 0;
   const items = [];
   const add = (y, rank, run) => items.push({ y, rank, run });
 
@@ -426,6 +427,21 @@ function drawFigures(ctx, state) {
     }
     return v.y;
   };
+  // A VILLAGER'S TOOL OVER THE BENCH: stage 4's smith stands behind his workbench,
+  // which is drawn over him — but the pipe in his hands is held out over it. So the
+  // strip of him right of his body (`tool`: from x0 to x1, the furnace's mouth
+  // edge) is drawn again after the bench, at depth `g`.
+  for (const v of state.villagers || []) {
+    if (!v.live || v.hidden || !v.tool) continue;
+    add(v.tool.g, 1, () => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(v.tool.x0, v.y - 40, v.tool.x1 - v.tool.x0, 44);
+      ctx.clip();
+      drawVillager(ctx, state, v);
+      ctx.restore();
+    });
+  }
   // `ride`: a villager drawn in someone else's drawing — stage 4's front-end plank
   // carrier, who is in the back-end man's picture while they carry and throw.
   for (const v of state.villagers || []) if (v.live && !v.hidden && !v.ride) add(raised(v), 1, () => drawVillager(ctx, state, v));
@@ -1170,11 +1186,120 @@ function drawBuilding(ctx, t, box) {
   if (img) {
     const [sx, sy, sw, sh] = t.def.spriteTrim;
     const split = shadowSplit(img, groundId(key));
-    ctx.drawImage(split ? split.body : img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+    const body = split ? split.body : img;
+    if (t.def.banner && swayBanner(ctx, t, body, box)) return;
+    ctx.drawImage(body, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
     return;
   }
   if (t.def.shape === 'camp') drawCamp(ctx, t, box);
   else drawStoneTower(ctx, t, box);
+}
+
+// THE BANNER ON A TIER 4 TOWER, SWAYING, at the owner's word — the way the exit
+// flag's does. The cloth is lifted off the drawing (found by its colour inside the
+// def's `box`, taken out a few pixels wider to bring its black edge and everything
+// painted on it) and the wall behind it is rebuilt by carrying the bricks either
+// side of it inward, row by row, so a cloth swung aside shows stone rather than a
+// hole. Then the wall is drawn, and the cloth over it a few source rows at a time,
+// each pushed sideways by a ripple running down it: nothing where it is draped over
+// the battlements (above `top`), most at its tails.
+//
+// On the board's own clock, so it stops on the pause like everything else. Returns
+// false while the drawing cannot be read, and the tower is drawn still.
+const BANNER_SWAY = { amp: 11, speed: 2.4, length: 150, edge: 7, band: 3 };
+const bannerCache = new WeakMap();
+function bannerLayers(img, b) {
+  let got = bannerCache.get(img);
+  if (got !== undefined) return got;
+  got = null;
+  try {
+    const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+    const make = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+    const wall = make(), wg = wall.getContext('2d', { willReadFrequently: true });
+    wg.drawImage(img, 0, 0);
+    const [x0, y0, x1, y1] = b.box;
+    const bw = x1 - x0, bh = y1 - y0;
+    const src = wg.getImageData(x0, y0, bw, bh), d = src.data;
+    // The cloth: its colour, then that grown by `edge` to take its outline in.
+    const core = new Uint8Array(bw * bh);
+    for (let i = 0; i < bw * bh; i++) {
+      const k = i * 4;
+      if (d[k + 3] > 200 && Math.abs(d[k] - b.colour[0]) + Math.abs(d[k + 1] - b.colour[1]) +
+          Math.abs(d[k + 2] - b.colour[2]) < 90) core[i] = 1;
+    }
+    const mask = new Uint8Array(bw * bh), E = BANNER_SWAY.edge;
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      if (!core[y * bw + x]) continue;
+      for (let v = Math.max(0, y - E); v <= Math.min(bh - 1, y + E); v++)
+        for (let u = Math.max(0, x - E); u <= Math.min(bw - 1, x + E); u++) mask[v * bw + u] = 1;
+    }
+    // And whatever is painted ON it — the emblem — which its colour does not reach:
+    // anything the cloth closes in on every side. Found as what a fill from the
+    // box's edge cannot get to, so the notch between the tails, open at the bottom,
+    // stays wall.
+    const out0 = new Uint8Array(bw * bh), todo = [];
+    for (let x = 0; x < bw; x++) todo.push(x, (bh - 1) * bw + x);
+    for (let y = 0; y < bh; y++) todo.push(y * bw, y * bw + bw - 1);
+    while (todo.length) {
+      const i = todo.pop();
+      if (out0[i] || mask[i]) continue;
+      out0[i] = 1;
+      const x = i % bw, y = (i - x) / bw;
+      if (x > 0) todo.push(i - 1);
+      if (x < bw - 1) todo.push(i + 1);
+      if (y > 0) todo.push(i - bw);
+      if (y < bh - 1) todo.push(i + bw);
+    }
+    for (let i = 0; i < bw * bh; i++) if (!out0[i]) mask[i] = 1;
+    const clothData = new ImageData(bw, bh), cd = clothData.data;
+    const out = new ImageData(new Uint8ClampedArray(d), bw, bh), od = out.data;
+    for (let y = 0; y < bh; y++) {
+      for (let x = 0; x < bw; x++) {
+        const i = y * bw + x;
+        if (!mask[i]) continue;
+        for (let c = 0; c < 4; c++) cd[i * 4 + c] = d[i * 4 + c];
+      }
+      // The wall behind, each run of cloth filled from the stone at its two ends.
+      for (let x = 0; x < bw; x++) {
+        if (!mask[y * bw + x]) continue;
+        let e = x;
+        while (e + 1 < bw && mask[y * bw + e + 1]) e++;
+        const l = Math.max(0, x - 1), r = Math.min(bw - 1, e + 1), mid = (x + e) / 2;
+        for (let u = x; u <= e; u++) {
+          const from = (y * bw + (u <= mid ? l : r)) * 4;
+          for (let c = 0; c < 4; c++) od[(y * bw + u) * 4 + c] = d[from + c];
+        }
+        x = e;
+      }
+    }
+    wg.putImageData(out, x0, y0);
+    const cloth = make();
+    cloth.getContext('2d').putImageData(clothData, x0, y0);
+    got = { wall, cloth };
+  } catch {
+    got = null;
+  }
+  bannerCache.set(img, got);
+  return got;
+}
+
+function swayBanner(ctx, t, img, box) {
+  const b = t.def.banner;
+  const got = bannerLayers(img, b);
+  if (!got) return false;
+  const [sx, sy, sw, sh] = t.def.spriteTrim;
+  const kx = box.w / sw, ky = box.h / sh;
+  ctx.drawImage(got.wall, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+  const time = boardTime + t.x * 0.013;
+  const { amp, speed, length, band } = BANNER_SWAY;
+  const [x0, , x1] = b.box;
+  for (let y = b.box[1]; y < b.box[3]; y += band) {
+    const s = Math.max(0, Math.min(1, (y + band / 2 - b.top) / (b.bottom - b.top)));
+    const dx = amp * s * s * Math.sin(time * speed - (y - b.top) * (Math.PI * 2 / length)) + amp * 0.25 * s * Math.sin(time * 0.9);
+    ctx.drawImage(got.cloth, x0, y, x1 - x0, band,
+      box.left + (x0 - sx + dx) * kx, box.top + (y - sy) * ky, (x1 - x0) * kx, band * ky + 0.4);
+  }
+  return true;
 }
 
 // The machine a turret carries, drawn on its deck and mirrored to face its
@@ -1263,6 +1388,10 @@ function drawFire(ctx, state, fire) {
     ctx.stroke(mouth);
   }
 }
+
+// THE BOARD'S CLOCK for this frame (state.anim — see main.js), for drawing code that
+// is handed a tower or a figure rather than the state.
+let boardTime = 0;
 
 const greetCache = new Map();
 function greetLayers(key) {

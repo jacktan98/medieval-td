@@ -202,7 +202,11 @@ const PLAYS = {
     // The smith at the forge, pushing a steel pipe into the fire and drawing it
     // back: pipe_1 (drawn back) and pipe_2 (in the fire) by turns. He stands `at`,
     // up to the fire and behind the workbench, rather than where he was painted.
-    smith: { who: 0, at: [578, 431], back: 3.2, in: 2 },
+    smith: { who: 0, at: [578, 431], back: 3.2, in: 2,
+      // His hands and pipe, held out over the workbench (which is drawn over the
+      // rest of him): the strip right of his body, drawn again after the bench (440).
+      // It stops at the furnace's mouth, so the pipe's tip stays inside the fire.
+      tool: { x0: 584, x1: 591.4, g: 440.5 } },
     // The two plank carriers, `lead` the back end (whose feet the carrying drawing
     // stands on) and `mate` the front end.
     crew: {
@@ -226,7 +230,12 @@ const PLAYS = {
 };
 
 const WORK_WALK = 11;         // px a second, carrying or not — "slowly"
-const THROW_FOR = 0.9;        // how long the throwing drawing shows
+// THE THROW IS A HEAVE AND A LANDING: the throwing drawing (the pair up off the
+// ground) for THROW_FOR, then back down on their feet, standing, while the plank is
+// still in the air — they used to hang up there until it landed — and off once it
+// has, THROW_REST after the throw began.
+const THROW_FOR = 0.3;
+const THROW_REST = 1.0;
 const PLANK_AT = 0.12;        // into the throw when the plank leaves their hands
 const PLANK_FLIGHT = 0.75;    // and how long it is in the air
 const PLANK_LOB = 22;         // how high it rises above the straight line
@@ -260,6 +269,7 @@ function work(state, vp, dt) {
     const inFire = k >= smith.back;
     s.pose = inFire ? 'pipe_2' : 'pipe_1';
     [s.x, s.y] = smith.at;
+    s.tool = smith.tool;
     // THE FIRE FOLLOWS THE PIPE: small while it is drawn back, roaring while it is
     // in. Quick to flare and slower to die down, so it swells rather than blinks.
     const target = inFire ? 1 : 0;
@@ -282,9 +292,16 @@ function work(state, vp, dt) {
     stick();
     lead.walking = c.phase === 'carry';
   } else if (c.phase === 'throw') {
-    lead.pose = 'throw'; lead.walking = false;
+    lead.walking = false;
     stick();
     const k = vp.t - c.at;
+    // Up for the heave, then down on their feet as two standing villagers.
+    if (k < THROW_FOR) lead.pose = 'throw';
+    else if (mate.ride) {
+      mate.ride = false;
+      lead.pose = mate.pose = 'standing';
+      lead.side = mate.side = 'front';
+    }
     if (!c.thrown && k >= PLANK_AT) {
       c.thrown = true;
       const k0 = SCALE;
@@ -292,12 +309,9 @@ function work(state, vp, dt) {
                       y0: lead.y + (PLANK_HELD[1] - VILLAGER_POSE.feet.carry[1]) * k0,
                       x1: crew.landing[0], y1: crew.landing[1], at: vp.t, depth: lead.y });
     }
-    if (k >= THROW_FOR) {
+    if (k >= THROW_REST) {
       c.phase = 'away'; c.at = vp.t;
-      mate.ride = false;
       lead.leg = mate.leg = 0;
-      lead.pose = mate.pose = 'standing';
-      lead.side = mate.side = 'front';
     }
   } else if (c.phase === 'away') {
     lead.walking = mate.walking = true;

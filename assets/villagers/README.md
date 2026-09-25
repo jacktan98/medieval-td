@@ -122,14 +122,16 @@ Villagers at work: they take no notice of the waves — no greeting, praying or
 hopping — and a tap opens their card and plays the villager sound without stopping
 them.
 
-- **The smith** stands up at the furnace, behind the workbench, and pushes a steel
+- **The smith** stands up at the furnace, behind the workbench (his hands and pipe
+  held out over it), and pushes a steel
   pipe into the fire and draws it back, by turns (3.2 seconds back, 2 in). With the
   pipe drawn back the fire burns small; with it in, the fire roars — tall, bright,
   throwing sparks. The fire is kept inside the furnace's mouth, the shape the artist
   drew, with a little smoke that stays under the forge's roof.
 - **The two plank carriers**, in a loop from the start of the game to its end:
   1. carry the plank slowly and smoothly up to the stack;
-  2. throw it — it flies in a lob onto the stack and vanishes as it lands;
+  2. throw it, landing back on their feet while it is still in the air — it flies
+     in a lob onto the stack and vanishes as it lands;
   3. walk slowly off, each on their own and standing, towards the cut trees and
      off the bottom of the board between them;
   4. three seconds later come back from where they left, carrying the next plank.
