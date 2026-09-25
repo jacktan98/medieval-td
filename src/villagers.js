@@ -253,7 +253,9 @@ const PLAYS = {
       { who: 1, delay: 0, path: [[410, 248], [403, 224], [401, 212]], vanish: true },
       { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true }
     ],
-    after: [{}, {}, {}, {}, back('greets'), back('greets'), back('greets')],
+    // Villagers 5, 6 and 7 turn to praying by turns once the wave is on them; 3 and 4
+    // keep working throughout.
+    after: [{}, {}, {}, {}, back('pray'), back('pray'), back('pray')],
     // ONCE BOTH ARE INSIDE, the castle's two back towers smoke (`towerSmoke` in the
     // level file).
     smokeAfter: [0, 1],

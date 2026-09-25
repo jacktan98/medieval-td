@@ -168,6 +168,7 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 run up the cobbles to
   the castle gate, between the torches and clear of their poles, and fade out through
   it. Once both are inside, black smoke rises from the castle's two back towers.
-  Villagers 5, 6 and 7 carry on standing and greeting.
+  Villagers 5, 6 and 7 start standing and praying by turns; villagers 3 and 4 keep
+  working.
 - The two torches at the gate burn with live fire and smoke, and the two banners on
   the castle sway.
