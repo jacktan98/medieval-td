@@ -152,9 +152,36 @@ function onBlend(px, i, from, to) {
   for (let k = 0; k < 3; k++) if (Math.abs(v[k] - t * d[k]) > 8) return false;
   return true;
 }
+// ONLY THE LATEST FEW BOARDS' SHEETS ARE KEPT. A sheet is 1920 x 1080 and its
+// split is two canvases of that — 16MB — and they used to be kept for every board
+// played since the page loaded. An iPhone's Safari caps the memory all of a page's
+// canvases may hold, and a few boards in, a new split could not be made; the board
+// then drew straight from its SVG, which that Safari cuts wrongly — the owner saw
+// stage 5's bridge rail drawn twice. The oldest sheet's canvases are emptied (a
+// canvas's memory goes when it is sized to nothing) and made again if it is needed.
+const SHEETS_KEPT = 3;
+function keepSheet(id) {
+  if (!id.startsWith('sheet|')) return;
+  const got = parts.get(id);
+  parts.delete(id);
+  parts.set(id, got);
+  const sheets = [...parts.keys()].filter(k => k.startsWith('sheet|'));
+  for (const old of sheets.slice(0, Math.max(0, sheets.length - SHEETS_KEPT))) {
+    const o = parts.get(old);
+    parts.delete(old);
+    if (o) for (const c of [o.body, o.shadow]) { c.width = 0; c.height = 0; }
+  }
+}
+
 export function shadowSplit(img, id, soft = false) {
   if (!img) return null;
-  if (parts.has(id)) return parts.get(id);
+  if (parts.has(id)) {
+    const got = parts.get(id);
+    // Refreshed only when it is not already the newest, so the board's own
+    // sheets cost a lookup a frame and nothing more.
+    if (got && id.startsWith('sheet|') && [...parts.keys()].pop() !== id) keepSheet(id);
+    return got;
+  }
   const w = img.naturalWidth || img.width;
   const h = img.naturalHeight || img.height;
   if (!w || !h) return null;
@@ -206,5 +233,6 @@ export function shadowSplit(img, id, soft = false) {
     out = null;
   }
   parts.set(id, out);
+  keepSheet(id);
   return out;
 }

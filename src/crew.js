@@ -50,7 +50,27 @@ async function build(c) {
     let i = -1;
     r.img = await raster(whole.replace(PATH, el => (r.paths.has(++i) ? el : '')));
   }
-  return { runs, axis: axisOf(runs.filter(r => r.man).map(r => r.img)) };
+  const axis = axisOf(runs.filter(r => r.man).map(r => r.img));
+  for (const r of runs) crop(r);
+  return { runs, axis };
+}
+
+// EACH PIECE KEPT ONLY AS BIG AS WHAT IS IN IT, with where it sat, rather than as a
+// whole 1024 square — a phone's Safari caps what all of a page's canvases may hold.
+function crop(r) {
+  const full = r.img, W = full.width, H = full.height;
+  const d = full.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!d[(y * W + x) * 4 + 3]) continue;
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+  }
+  if (x1 < 0) { x0 = y0 = 0; x1 = y1 = 0; }
+  const c = document.createElement('canvas');
+  c.width = x1 - x0 + 1; c.height = y1 - y0 + 1;
+  c.getContext('2d').drawImage(full, -x0, -y0);
+  full.width = 0; full.height = 0;
+  Object.assign(r, { img: c, ox: x0, oy: y0 });
 }
 
 function raster(svg) {
@@ -95,7 +115,7 @@ function axisOf(imgs) {
 export function drawCrewTurned(ctx, key, [sx, sy, sw, sh], box) {
   const got = crewLayers(key);
   if (!got) return false;
-  const kx = box.w / sw;
+  const kx = box.w / sw, ky = box.h / sh;
   const X = box.left + (got.axis - sx) * kx;
   for (const r of got.runs) {
     if (r.man) {
@@ -104,7 +124,7 @@ export function drawCrewTurned(ctx, key, [sx, sy, sw, sh], box) {
       ctx.scale(-1, 1);
       ctx.translate(-X, 0);
     }
-    ctx.drawImage(r.img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+    ctx.drawImage(r.img, box.left + (r.ox - sx) * kx, box.top + (r.oy - sy) * ky, r.img.width * kx, r.img.height * ky);
     if (r.man) ctx.restore();
   }
   return true;

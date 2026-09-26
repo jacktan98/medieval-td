@@ -207,14 +207,33 @@ const MARKER_PIVOT = [0.500, 0.532];
 const MARKER_W = MARKER_TRIM[2] * SCALE;
 const MARKER_H = MARKER_TRIM[3] * SCALE;
 
+// THE MARKER IS AN SVG, and an iPhone's Safari draws a piece cut out of an SVG in
+// the wrong place — see drawFront. So it is drawn once, whole, onto a canvas the
+// size of its trim, and the plots are stamped from that.
+let markerFlat = null;
+function marker(img) {
+  if (markerFlat) return markerFlat;
+  const [sx, sy, sw, sh] = MARKER_TRIM;
+  try {
+    const c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    c.getContext('2d').drawImage(img, -sx, -sy, img.naturalWidth || img.width, img.naturalHeight || img.height);
+    markerFlat = c;
+  } catch {
+    return null;
+  }
+  return markerFlat;
+}
+
 function drawPlots(ctx, state) {
   const img = art.plot_marker;
   if (!img) return;
 
-  const [sx, sy, sw, sh] = MARKER_TRIM;
+  const flat = marker(img);
+  const [sx, sy, sw, sh] = flat ? [0, 0, MARKER_TRIM[2], MARKER_TRIM[3]] : MARKER_TRIM;
   for (const p of level.plots) {
     if (state.towers.some(t => t.plot === p)) continue;
-    ctx.drawImage(img, sx, sy, sw, sh,
+    ctx.drawImage(flat || img, sx, sy, sw, sh,
       p.x - MARKER_PIVOT[0] * MARKER_W, p.y - MARKER_PIVOT[1] * MARKER_H,
       MARKER_W, MARKER_H);
   }
@@ -300,8 +319,21 @@ function drawFront(ctx, img, b) {
   // Keyed by the sheet itself: the bridge rail's `over` sheet comes through here
   // too, and a key naming the board alone handed it the front sheet's cut.
   const split = shadowSplit(img, `sheet|${img.src}`, true);
-  ctx.drawImage(split ? split.body : img, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
-    b.x, b.y, b.w, b.h);
+  if (split) {
+    ctx.drawImage(split.body, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
+      b.x, b.y, b.w, b.h);
+    return;
+  }
+  // NO CANVAS OF IT, so the SVG itself — and WHOLE, clipped to the box, never a
+  // piece cut out of it. An iPhone's Safari places a piece of an SVG wrongly (it
+  // drew stage 5's bridge rail a second time, off to one side of the first); the
+  // whole picture it draws where it should be.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(b.x, b.y, b.w, b.h);
+  ctx.clip();
+  ctx.drawImage(img, 0, 0, (img.naturalWidth || img.width) / MAP_PX, (img.naturalHeight || img.height) / MAP_PX);
+  ctx.restore();
 }
 
 // THE NEAREST THING ON THE BOARD, over the whole depth pass rather than inside it.
@@ -1273,13 +1305,16 @@ function bannerLayers(img, b) {
   if (got !== undefined) return got;
   got = null;
   try {
-    const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
-    const make = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
-    const wall = make(), wg = wall.getContext('2d', { willReadFrequently: true });
-    wg.drawImage(img, 0, 0);
+    // BOTH PIECES ARE ONLY THE SIZE OF THE BOX, and they were once the size of the
+    // whole drawing — 8MB a tower for a flag a hundred pixels across, on a phone
+    // whose Safari caps what all of a page's canvases may hold. The wall is a patch
+    // laid over the tower where the cloth was lifted off it.
     const [x0, y0, x1, y1] = b.box;
     const bw = x1 - x0, bh = y1 - y0;
-    const src = wg.getImageData(x0, y0, bw, bh), d = src.data;
+    const make = () => { const c = document.createElement('canvas'); c.width = bw; c.height = bh; return c; };
+    const wall = make(), wg = wall.getContext('2d', { willReadFrequently: true });
+    wg.drawImage(img, -x0, -y0);
+    const src = wg.getImageData(0, 0, bw, bh), d = src.data;
     // The cloth: its colour, then that grown by `edge` to take its outline in.
     // A COLOURED cloth takes only pixels with colour in them: the brown of the
     // Assassin Guild's is within reach of the darker greys of the stone's shading,
@@ -1450,9 +1485,9 @@ function bannerLayers(img, b) {
         x = e;
       }
     }
-    wg.putImageData(out, x0, y0);
+    wg.putImageData(out, 0, 0);
     const cloth = make();
-    cloth.getContext('2d').putImageData(clothData, x0, y0);
+    cloth.getContext('2d').putImageData(clothData, 0, 0);
     got = { wall, cloth };
   } catch {
     got = null;
@@ -1465,7 +1500,15 @@ function swayBanner(ctx, t, b, img, box) {
   const [sx, sy, sw, sh] = t.def.spriteTrim;
   const got = bannerLayers(img, b);
   if (!got) return false;
-  ctx.drawImage(got.wall, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+  // The tower, then the wall patched over it where the cloth was, then the cloth.
+  // A flag has no wall behind it and needs no patch: it flies in open air and moves
+  // 3px, so the still picture under it shows nowhere the moving one does not cover.
+  const kx = box.w / sw, ky = box.h / sh;
+  const [x0, y0, x1, y1] = b.box;
+  ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+  if (b.kind !== 'flag') {
+    ctx.drawImage(got.wall, box.left + (x0 - sx) * kx, box.top + (y0 - sy) * ky, (x1 - x0) * kx, (y1 - y0) * ky);
+  }
   swayCloth(ctx, b, got, [sx, sy, sw, sh], box, boardTime + t.x * 0.013);
   return true;
 }
@@ -1480,7 +1523,7 @@ function swayMapBanner(ctx, img, b) {
   const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
   const box = { left: 0, top: 0, w: W / MAP_PX, h: H / MAP_PX };
   const [x0, y0, x1, y1] = b.box;
-  ctx.drawImage(got.wall, x0, y0, x1 - x0, y1 - y0, x0 / MAP_PX, y0 / MAP_PX, (x1 - x0) / MAP_PX, (y1 - y0) / MAP_PX);
+  ctx.drawImage(got.wall, x0 / MAP_PX, y0 / MAP_PX, (x1 - x0) / MAP_PX, (y1 - y0) / MAP_PX);
   swayCloth(ctx, b, got, [0, 0, W, H], box, boardTime + x0 * 0.007);
 }
 
@@ -1488,23 +1531,27 @@ function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
   const kx = box.w / sw, ky = box.h / sh;
   if (b.kind === 'flag') {
     const { amp, speed, length, band } = FLAG_WAVE;
-    const [, y0, , y1] = b.box;
+    const [bx0, y0, , y1] = b.box;
     for (let x = b.box[0]; x < b.box[2]; x += band) {
       const s = Math.max(0, Math.min(1, (x + band / 2 - b.pole) / (b.tip - b.pole)));
       const dy = amp * s * Math.sin(time * speed - (x - b.pole) * (Math.PI * 2 / length));
-      ctx.drawImage(got.cloth, x, y0, band, y1 - y0,
-        box.left + (x - sx) * kx, box.top + (y0 - sy + dy) * ky, band * kx + 0.4, (y1 - y0) * ky);
+      // The cloth canvas is the box alone, so a strip of it is read from the box's
+      // corner.
+      const bw = Math.min(band, b.box[2] - x);
+      ctx.drawImage(got.cloth, x - bx0, 0, bw, y1 - y0,
+        box.left + (x - sx) * kx, box.top + (y0 - sy + dy) * ky, bw * kx + 0.4, (y1 - y0) * ky);
     }
     return true;
   }
   const { speed, length, band } = BANNER_SWAY;
   const amp = b.amp ?? BANNER_SWAY.amp;
-  const [x0, , x1] = b.box;
+  const [x0, by0, x1] = b.box;
   for (let y = b.box[1]; y < b.box[3]; y += band) {
     const s = Math.max(0, Math.min(1, (y + band / 2 - b.top) / (b.bottom - b.top)));
     const dx = amp * s * s * Math.sin(time * speed - (y - b.top) * (Math.PI * 2 / length)) + amp * 0.25 * s * Math.sin(time * 0.9);
-    ctx.drawImage(got.cloth, x0, y, x1 - x0, band,
-      box.left + (x0 - sx + dx) * kx, box.top + (y - sy) * ky, (x1 - x0) * kx, band * ky + 0.4);
+    const bh = Math.min(band, b.box[3] - y);
+    ctx.drawImage(got.cloth, 0, y - by0, x1 - x0, bh,
+      box.left + (x0 - sx + dx) * kx, box.top + (y - sy) * ky, (x1 - x0) * kx, bh * ky + 0.4);
   }
   return true;
 }

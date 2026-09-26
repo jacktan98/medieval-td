@@ -3384,7 +3384,12 @@ console.log('\n--- what a figure can walk behind ---\n');
   // there is no offset anywhere in the call — the moment there is, the copy on the
   // sheet and the copy in the base can disagree, which reads as a building with a
   // ghost of itself beside it.
-  ok(/drawImage\((?:img|split \? split\.body : img), b\.x \* MAP_PX, b\.y \* MAP_PX, b\.w \* MAP_PX, b\.h \* MAP_PX,\s*b\.x, b\.y, b\.w, b\.h\)/.test(bare),
+  //
+  // AND WITHOUT A CANVAS OF IT, THE WHOLE SHEET AT 0,0, CLIPPED — never a piece cut
+  // out of the SVG, which an iPhone's Safari places wrongly: it drew stage 5's
+  // bridge rail twice, the second copy off to one side.
+  ok(/drawImage\((?:img|split\.body|split \? split\.body : img), b\.x \* MAP_PX, b\.y \* MAP_PX, b\.w \* MAP_PX, b\.h \* MAP_PX,\s*b\.x, b\.y, b\.w, b\.h\)/.test(bare) &&
+     /ctx\.clip\(\);\s*ctx\.drawImage\(img, 0, 0, \(img\.naturalWidth \|\| img\.width\) \/ MAP_PX, \(img\.naturalHeight \|\| img\.height\) \/ MAP_PX\)/.test(bare),
     'and lands exactly where it was drawn on the board',
     'no offset between the sheet and the base it was cut from');
 
