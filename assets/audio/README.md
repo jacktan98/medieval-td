@@ -1,6 +1,6 @@
 # Audio
 
-**Ninety-nine clips: forty-two in `sfx/`, nine in `map/`, forty-five in `voice/` and three in `villagers/`.**
+**A hundred and eight clips: forty-two in `sfx/`, thirteen in `map/`, forty-five in `voice/` and eight in `villagers/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -33,12 +33,16 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3,
-                      Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3
+                      Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3,
+                      Fire_crackling.mp3, River_water_flowing.mp3,
+                      Steel_welding.mp3, Things_land_on_ground.mp3
                       — the sounds of the stage boards and the world map
                       themselves rather than of anybody on them
 
-assets/audio/villagers/  Villager_selected.mp3, Villager_say_runnn.mp3,
-                         Villager_say_nooo.mp3
+assets/audio/villagers/  Villager_selected_1.mp3 .. Villager_selected_3.mp3,
+                         Villager_say_runnn.mp3, Villager_say_nooo.mp3,
+                         Villager_say_thugs_are_here.mp3, Villager_say_hide.mp3,
+                         Villager_say_oh_no.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -185,10 +189,17 @@ and it now means "how long a lull has to be before the game forgets".
 | a barracks man is selected | `Barracks_1..5` |
 | an enemy is selected | `Thug_1`, or its def's own `voice` |
 | the **captain** is selected | `Captain_Thug_selected` |
-| a **villager** is selected | `Villager_selected` |
+| a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
 | stage 1's villagers **start running** (the first enemy of wave 1 appears) | `Villager_say_runnn`, **before everything**: takes the channel and is never cut off |
 | on stages 1 to 4, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the run |
 | stage 1, 2 or 3 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
+| stage 1, 3, 4 or 5 is being played (background, soft, looping) | `Fire_crackling` — stage 1's campfire, stage 3's and stage 5's torches, stage 4's forge |
+| stage 5 is being played (background, soft, looping) | `River_water_flowing` |
+| stage 4's smith has his pipe in the fire (the second pipe pose) | `Steel_welding`, soft, looping until he pulls it back (Category B; stops on pause) |
+| a villager's plank, ballista part or box **lands** (stages 4 and 5) | `Things_land_on_ground`, soft (Category B) |
+| the first enemy of wave 1 appears on **stage 2** | `Villager_say_thugs_are_here`, loud, once, **before everything** |
+| the first enemy of wave 1 appears on **stage 3** | `Villager_say_hide`, loud, once, **before everything** |
+| the first enemy of wave 1 appears on **stage 5** | `Villager_say_oh_no`, loud, once, **before everything** |
 | an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |

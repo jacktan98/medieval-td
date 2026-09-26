@@ -1,6 +1,6 @@
 import { loadArt } from './assets.js';
 import { loadAudio, fanfare, setLoop, VICTORY, LOST, STAR } from './audio.js';
-import { level } from './level.js';
+import { level, levels } from './level.js';
 import { openingDelay, MODES } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
@@ -68,6 +68,9 @@ function fitToDisplay() {
   // shrink the picture it was meant to be showing at full size.
   setDeviceScale(shown);
 }
+
+// Every background loop any board asks for — see `ambience` on the levels.
+const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.clip)))];
 
 const state = {};
 
@@ -386,10 +389,20 @@ function frame(now) {
   // ones where the answer is silence, which is how the three loops get turned off
   // by starting a game rather than by somebody remembering to stop them.
   mapAudio(state);
-  // A BOARD'S OWN BACKGROUND, stage 1's being the world map's birdsong, soft: for as
-  // long as that board is being played, paused or not, and off at the result.
-  const bg = state.started && !state.result && level.ambience;
-  setLoop(bg ? bg.clip : 'bird_chirping', !!bg, bg ? bg.level : 1, 'board_ambience');
+  // A BOARD'S OWN BACKGROUND — birdsong, a fire crackling, a river — each a loop of
+  // its own, for as long as that board is being played, paused or not, and off at the
+  // result. Every clip any board uses is asked about every frame, so leaving a board
+  // turns its sounds off without anybody remembering to.
+  const playing = state.started && !state.result;
+  const want = playing ? level.ambience || [] : [];
+  for (const clip of AMBIENT) {
+    const a = want.find(x => x.clip === clip);
+    setLoop(clip, !!a, a ? a.level : 1, `board_${clip}`);
+  }
+  // AND STAGE 4'S SMITH WELDING, while his pipe is in the fire — not on a paused
+  // board, where he is held with it in.
+  const vp = state.villagerPlay;
+  setLoop('steel_welding', playing && !state.paused && !!(vp && vp.welding), 1, 'board_weld');
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.

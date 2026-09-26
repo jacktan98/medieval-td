@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, VILLAGER_RUN, VILLAGER_NOOO } from './audio.js';
+import { solo, play, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -149,8 +149,9 @@ const ACTS = {
 // if they were out of sight), each `delay` seconds after it. `hops` is who hops and
 // lands, twice, one after another, each time `every` more enemies have fallen.
 // `flip` mirrors a villager, facing right instead of left, in everything they do —
-// the greeting a tap asks for included. `cries` is which of the village's two shouts
-// the board has: "runnn" as the first runner sets off, "nooo" as a star is lost.
+// the greeting a tap asks for included. `cries` is which of the village's shouts the
+// board has: "runnn" as the first runner sets off, "nooo" as a star is lost, and
+// `wave`, what it shouts as the first wave comes (VILLAGER_WAVE in src/audio.js).
 const front = act => ({ side: 'front', act }), back = act => ({ side: 'back', act });
 const mirrored = act => ({ side: 'front', act, flip: true });
 // STAGE 5'S BOX CARRIER'S WAY, from the right edge of the board to where he stands
@@ -194,7 +195,7 @@ const PLAYS = {
     ],
     after: [mirrored('pray'), front('pray'), front('drink'), {}],
     hops: [{ every: 10, who: [0, 1] }],
-    cries: { runnn: false, nooo: true }
+    cries: { runnn: false, nooo: true, wave: 'thugs' }
   },
   // STAGE 3, Winchester Entrance, left to right: 1 and 2 on the statue's plaza, 3 on
   // the green below it, 4 between the two bottom-right houses, 5 at the top behind
@@ -214,7 +215,7 @@ const PLAYS = {
     ],
     after: [front('pray'), front('pray'), front('pray'), back('pray'), front('pray')],
     hops: [{ every: 10, who: [0, 1, 3] }, { every: 12, who: [2, 4] }],
-    cries: { runnn: false, nooo: true }
+    cries: { runnn: false, nooo: true, wave: 'hide' }
   },
   // STAGE 4, the lumber yard: villagers AT WORK, who take no notice of the waves at
   // all — no greeting, praying or hopping. See work() below.
@@ -303,7 +304,7 @@ const PLAYS = {
     // down, and again.
     hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]] },
     hops: [],
-    cries: { runnn: false, nooo: false }
+    cries: { runnn: false, nooo: false, wave: 'oh_no' }
   }
 };
 
@@ -353,6 +354,8 @@ function work(state, vp, dt) {
     const k = vp.t % (smith.back + smith.in);
     const inFire = k >= smith.back;
     s.pose = inFire ? 'pipe_2' : 'pipe_1';
+    // The weld sounds for as long as the pipe is in — main.js keeps the loop to it.
+    vp.welding = inFire;
     [s.x, s.y] = smith.at;
     s.tool = smith.tool;
     // THE FIRE FOLLOWS THE PIPE: small while it is drawn back, roaring while it is
@@ -444,6 +447,8 @@ function carryLoop(state, vp, crew, c, dt) {
     p.y = p.y0 + (p.y1 - p.y0) * q - p.lob * 4 * q * (1 - q);
     p.rot = p.piece.spin * q;
   }
+  // A THUD AS EACH ONE LANDS, soft, under the battle.
+  for (const p of c.planks) if (p.q >= 1) play(LANDED);
   c.planks = c.planks.filter(p => p.q < 1);
   vp.planks.push(...c.planks);
 }
@@ -487,6 +492,9 @@ export function updateVillagers(state, dt) {
   // face the way they will watch from now on.
   if (!vp.started && state.enemies.length) {
     vp.started = true;
+    // AND THE VILLAGE SHOUTS, on the boards that have a shout — stage 2's "thugs are
+    // here", stage 3's "hide", stage 5's "oh no". Once, loud, before everything.
+    if (plan.cries.wave) solo(VILLAGER_WAVE[plan.cries.wave], true, true, true);
     for (const v of state.villagers) {
       const a = plan.after[v.n];
       if (v.live && a && !v.work) { v.side = a.side || v.side; v.act = a.act || null; v.flip = !!a.flip; }

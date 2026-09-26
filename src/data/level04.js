@@ -106,7 +106,7 @@ export const level04 = {
   // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
   villagerPlay: 'outskirts',
   // Birdsong under the whole battle, as on stage 1: the world map's birds, softer.
-  ambience: { clip: 'bird_chirping', level: 0.5 },
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }],
   waves: stage2Waves,
   // SIX WAVES AT EITHER LENGTH, like the tutorial and for a plainer reason: the
   // owner wrote down six and there is no seventh to run. `oneLength` says so out

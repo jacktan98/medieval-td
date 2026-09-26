@@ -135,6 +135,9 @@ export const level06 = {
   // ...and the WORKBENCH in front of him is drawn again over him, clipped to its
   // own outline, so it stands in front of him as it does in the picture.
   overdraw: [{ poly: [[571, 437.5], [588.5, 423], [601, 427.5], [601, 437], [587, 451], [573.5, 445]], g: 440 }],
+  // THE FORGE CRACKLING under the whole board, soft — and the weld while the pipe is
+  // in, which src/villagers.js asks for (`welding`).
+  ambience: [{ clip: 'fire_crackling', level: 1 }],
   fires: [{
     // The fire sorted with the forge (439.7, after the smith at 439.5 — see
     // platforms — and before the workbench, 440), so the pipe held into it (440.5)

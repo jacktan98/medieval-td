@@ -517,9 +517,11 @@ function paintMarks(g, list) {
 }
 
 // Sunlight caught on the water: a small four-pointed sparkle that swells and goes.
-const glints = [];
-function paintGlints(g, f, dt, t) {
-  while (glints.length < GLINTS) {
+const mapGlints = [];
+function paintGlints(g, f, dt, t, glints = mapGlints, want = GLINTS) {
+  // A bounded number of tries: a narrow board river may have few cells that far
+  // from a bank, and an unbounded search for one would hang the frame.
+  for (let tries = 0; glints.length < want && tries < 60; tries++) {
     const i = f.cells[(Math.random() * f.cells.length) | 0];
     if (f.bank[i] < 3) continue;
     glints.push({ x: (i % f.W) * R, y: ((i / f.W) | 0) * R, age: -Math.random() * 3, life: 0.7 + Math.random() * 0.5 });
@@ -1045,4 +1047,54 @@ export function drawWater(ctx, t) {
   // Birds fly over the far country as readily as the near: they are above the map
   // rather than on it, so the fog has no business hiding them.
   if (BIRDS) drawBirds(ctx, t);
+}
+
+// --- a board's own river --------------------------------------------------------
+//
+// STAGE 5'S RIVER, MOVING, in the world map's style at the owner's word: the same
+// pale current marks riding a flow field worked out from the water itself, and the
+// same glints of sunlight — see the currents above. `water` on the level says which
+// colour in the board's base is the water, the box it runs off the board through
+// (`sink`), how many marks it carries and how fast.
+//
+// On the board's own clock, so it holds still on a paused board. Built once per
+// drawing; null (and nothing drawn) if the drawing cannot be read.
+const boardWaters = new Map();
+export function drawBoardWater(ctx, img, spec, t) {
+  if (!img || !spec) return;
+  let w = boardWaters.get(img);
+  if (w === undefined) {
+    w = null;
+    try { w = buildBoardWater(img, spec); } catch { /* no canvas: still water */ }
+    boardWaters.set(img, w);
+  }
+  if (!w) return;
+  const dt = w.lastT === null ? 0 : Math.max(0, Math.min(0.1, t - w.lastT));
+  w.lastT = t;
+  step(w.marks, w.flow, spec.marks, spec.speed, dt, false);
+  ctx.drawImage(layerFor(w.grp, g => {
+    paintMarks(g, w.marks);
+    paintGlints(g, w.flow, dt, t, w.glints, spec.glints);
+  }), w.grp.rect.x, w.grp.rect.y);
+}
+
+function buildBoardWater(img, spec) {
+  const wet = sheet();
+  const g = wet.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, 960, 540);
+  const px = g.getImageData(0, 0, 960, 540);
+  const d = px.data;
+  const [wr, wg, wb] = spec.colour;
+  for (let i = 0; i < d.length; i += 4) {
+    const isWater = Math.abs(d[i] - wr) <= 10 && Math.abs(d[i + 1] - wg) <= 10 && Math.abs(d[i + 2] - wb) <= 10;
+    d[i] = d[i + 1] = d[i + 2] = 0;
+    d[i + 3] = isWater ? 255 : 0;
+  }
+  g.putImageData(px, 0, 0);
+  const grp = group(wet);
+  if (!grp) return null;
+  const [x0, y0, x1, y1] = spec.sink;
+  const flow = flowField(wet, (x, y) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
+  wet.width = 0; wet.height = 0;
+  return { grp, flow, marks: [], glints: [], lastT: null };
 }

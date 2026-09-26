@@ -129,6 +129,13 @@ export const level07 = {
   // where the painted flames were, as on stage 3: base of each flame, its size
   // against the world map's fire, and the depth it sorts at — just after the castle
   // whose box the torches are drawn in.
+  // THE TORCHES CRACKLING AND THE RIVER RUNNING, both soft, for as long as the board
+  // is played.
+  ambience: [{ clip: 'fire_crackling', level: 1 }, { clip: 'river_flowing', level: 1 }],
+  // THE RIVER RUNS, in the world map's style (src/motion.js, drawBoardWater): pale
+  // current marks and glints on the water's own colour, in from the right edge, past
+  // the bridge and off along the bottom-left, where `sink` is.
+  water: { colour: [166, 213, 255], sink: [600, 526, 660, 540], marks: 45, speed: 9, glints: 4 },
   fires: [
     { x: 389, y: 188, s: 2.5, g: 187.5 },
     { x: 442.5, y: 170, s: 2.5, g: 187.5 }

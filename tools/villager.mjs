@@ -287,10 +287,11 @@ console.log('\nWhat the panel says\n');
     stats.length ? stats.join(', ') + ' set' : 'health, attack, reach and traits all empty');
 
   // HIS OWN SOUND, at the owner's word: "Use villager_selected sound everytime a
-  // villager is selected." One clip, not a fighter's voice, and asked without the
-  // `fam` he has not got, so no crash either.
+  // villager is selected" — three takes of it now, one at random. Not a fighter's
+  // voice, and asked without the `fam` he has not got, so no crash either.
   const cue = selectionCue(state.selected);
-  ok(Array.isArray(cue) && cue.length === 1 && cue[0] === 'villager_selected', '  and a tap plays his own sound',
+  ok(Array.isArray(cue) && cue.join() === 'villager_selected_1,villager_selected_2,villager_selected_3',
+    '  and a tap plays one of his own three',
     cue ? cue.join(', ') : 'nothing');
 
   // AND HE IS NOT IN THE BOOK, at the owner's word: "no need to add this villager

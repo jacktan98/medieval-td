@@ -13,6 +13,7 @@ import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { drawCrewTurned } from './crew.js';
+import { drawBoardWater } from './motion.js';
 import { VILLAGER_POSE, villagerKey } from './villagers.js';
 import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
@@ -62,7 +63,7 @@ const DEBUG_MUZZLE = typeof location !== 'undefined' &&
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
 
-  drawGround(ctx);
+  drawGround(ctx, state);
   drawPlots(ctx, state);
   // Every tower's ground shadow, on the ground and under the range rings — the
   // building itself is drawn without it in the depth pass. See shadowSplit.
@@ -120,10 +121,12 @@ export function draw(ctx, state) {
 // bug in the export rather than something to paper over at draw time. If the
 // image is missing, fall back to flat ground — the game stays playable and the
 // console says which file did not load.
-function drawGround(ctx) {
+function drawGround(ctx, state) {
   const img = art[level.art];
   if (img) {
     ctx.drawImage(img, 0, 0, 960, 540);
+    // A river that runs — stage 5's, in the world map's style. See drawBoardWater.
+    if (level.water) drawBoardWater(ctx, img, level.water, state.anim || 0);
     return;
   }
   ctx.fillStyle = '#4A5744';

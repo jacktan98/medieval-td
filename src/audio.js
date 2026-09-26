@@ -181,7 +181,9 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 const LOUDEST = true;
 const LOUDER = new Set([
   'captain_enters', 'captain_pause', 'captain_healed',
-  'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked'
+  'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked',
+  // The village's shout as the first wave comes — loud, at the owner's word.
+  'villager_thugs_here', 'villager_hide', 'villager_oh_no'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -499,11 +501,27 @@ const paths = {
   flag_planted:    'assets/audio/map/Flag_planted.mp3',
   // THE VILLAGERS' OWN FOLDER, assets/audio/villagers, at the owner's word — "i
   // anticipate there will be much more sound incoming".
-  villager_selected: 'assets/audio/villagers/Villager_selected.mp3',
+  // Three answers to a tap, one chosen at random each time.
+  villager_selected_1: 'assets/audio/villagers/Villager_selected_1.mp3',
+  villager_selected_2: 'assets/audio/villagers/Villager_selected_2.mp3',
+  villager_selected_3: 'assets/audio/villagers/Villager_selected_3.mp3',
   villager_runnn:    'assets/audio/villagers/Villager_say_runnn.mp3',
   villager_nooo:     'assets/audio/villagers/Villager_say_nooo.mp3',
+  // What the village shouts when the first wave comes: stage 2's "thugs are here",
+  // stage 3's "hide", stage 5's "oh no". Once a game each — see `cries` in
+  // src/villagers.js.
+  villager_thugs_here: 'assets/audio/villagers/Villager_say_thugs_are_here.mp3',
+  villager_hide:       'assets/audio/villagers/Villager_say_hide.mp3',
+  villager_oh_no:      'assets/audio/villagers/Villager_say_oh_no.mp3',
   flag_waving:     'assets/audio/map/Flag_waving.mp3',
   bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
+  // THE BOARDS' OWN SOUNDS, stages 1 to 5. Fire and river LOOP for as long as the
+  // board is played (`ambience` on the level); the welding loops while stage 4's
+  // smith has his pipe in the fire; things landing is one thud a landing.
+  fire_crackling:  'assets/audio/map/Fire_crackling.mp3',
+  river_flowing:   'assets/audio/map/River_water_flowing.mp3',
+  steel_welding:   'assets/audio/map/Steel_welding.mp3',
+  things_land:     'assets/audio/map/Things_land_on_ground.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -589,6 +607,12 @@ export const GAIN = {
   // in is a single event on a quiet screen, so it needs no help at all.
   bird_chirping: 0.30,
   flag_waving: 0.45,
+  // The boards' own, all soft at the owner's word: a fire, a river and a smith's
+  // weld are the room the battle is in, not the battle.
+  fire_crackling: 0.35,
+  river_flowing: 0.35,
+  steel_welding: 0.35,
+  things_land: 0.5,
   marching: 0.65,
   rock_hit_ground: 1.6,
   rock_kill_enemy: 0.7,
@@ -760,7 +784,7 @@ export const GAIN = {
 export const CUE = {
   archery:      ['archery_1', 'archery_2', 'archery_3', 'archery_4', 'archery_5'],
   // A villager's own answer when tapped — see selectionCue.
-  villager:     ['villager_selected'],
+  villager:     ['villager_selected_1', 'villager_selected_2', 'villager_selected_3'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
@@ -950,6 +974,17 @@ export const FLAG_PLANTED = ['flag_planted'];
 // them off) and always (the repeat rules never drop one) — see villagers.js.
 export const VILLAGER_RUN  = ['villager_runnn'];
 export const VILLAGER_NOOO = ['villager_nooo'];
+// And the shout as the first wave comes, one per board that has one — the same
+// rules as the two above, and louder (LOUDER), at the owner's word.
+export const VILLAGER_WAVE = {
+  thugs: ['villager_thugs_here'],
+  hide:  ['villager_hide'],
+  oh_no: ['villager_oh_no']
+};
+// Something the villagers throw landing — a plank on the stack, a part on the
+// ballista, a box on the crates. Category B, soft (its GAIN): a working
+// noise under the battle, not an event in it.
+export const LANDED = ['things_land'];
 
 // --- THE END OF A GAME -----------------------------------------------------------
 //

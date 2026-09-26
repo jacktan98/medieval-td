@@ -131,7 +131,8 @@ export const level00 = {
   // `g`, the depth of the logs' own front box below.
   fires: [{ x: 123, y: 369, s: 4.6, g: 383 }],
   // Birdsong under the whole battle, at half the world map's already quiet level.
-  ambience: { clip: 'bird_chirping', level: 0.5 },
+  // And the campfire crackling, soft.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fire_crackling', level: 1 }],
   front: [
     // THREE OF THESE MOVED BY A PIXEL when the list was last re-derived: two houses
     // at the top left went 81 tall to 82 and the signpost 44 to 43. Nothing about

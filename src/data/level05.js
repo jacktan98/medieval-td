@@ -136,7 +136,8 @@ export const level05 = {
   // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
   villagerPlay: 'winchester',
   // Birdsong under the whole battle, as on stages 1 and 2.
-  ambience: { clip: 'bird_chirping', level: 0.5 },
+  // And the two torches crackling, soft.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fire_crackling', level: 1 }],
   // THE TWO TORCHES ON THE PILLARS either side of the statue, drawn live (src/life.js
   // campfire, with its smoke) where the painted flames were: base of each flame, its
   // size against the world map's fire (30% under the painted flames, at the owner's
