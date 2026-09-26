@@ -36,6 +36,7 @@ import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
          BOOK_BTN_START } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
+import { drawHoly } from './holy.js';
 import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
@@ -84,6 +85,8 @@ export function draw(ctx, state) {
   // is the difference: a box in the pass sorts by its foot and this one has none on
   // the canvas. See drawOver.
   drawOver(ctx, state);
+  // Dawnford's holy light over the board and everything on it — stages 6, 7 and 8.
+  drawHoly(ctx, level, state.anim || 0);
   // Health bars and muster rings after that, so status is never hidden by a
   // figure standing in front of the thing it belongs to.
   drawStatus(ctx, state);

@@ -118,6 +118,9 @@ export const level08 = {
   villagerPlay: 'dawnford',
   props: [{ x: 36, y: 259, w: 17, up: 18, down: 2 }],   // the angler's rod and line
   // Birdsong and the river under the bridge, both soft, for as long as it is played.
+  // HOLY LIGHT: soft shafts of sunlight slanting down over the board, dust drifting
+  // in them — Dawnford's, on all three of its boards. See src/holy.js.
+  holy: true,
   ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'river_flowing', level: 1 }],
   // THE RIVER RUNS, as stage 5's does (src/motion.js, drawBoardWater): in along the
   // top edge, narrowing, under the bridge — its shadow the darker blue — and out at

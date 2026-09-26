@@ -126,6 +126,9 @@ export const level10 = {
   // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
   villagerPlay: 'church',
   // Birdsong, soft, for as long as it is played.
+  // HOLY LIGHT: soft shafts of sunlight slanting down over the board, dust drifting
+  // in them — Dawnford's, on all three of its boards. See src/holy.js.
+  holy: true,
   ambience: [{ clip: 'bird_chirping', level: 0.5 }],
   // THE CHURCH BELL, swung as each wave comes (src/villagers.js, `bell`). The painted
   // one is cut out of the drawing and everything painted after it — the tower's roof

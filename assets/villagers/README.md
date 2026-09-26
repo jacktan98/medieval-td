@@ -298,3 +298,11 @@ of the church, 9 at the church's right-hand end.
   a second stroke for as long, and back — the roof and pillars over it, as drawn.
 - **Every 10 enemies killed:** villager 9 hops twice.
 - **A star lost:** "nooo". Birdsong plays softly throughout.
+
+## Holy light over Dawnford
+
+On stages 6, 7 and 8 — Dawnford's three boards — soft shafts of warm sunlight slant
+down over the board and everything on it, each brightening and dimming over ten
+seconds or more and leaning a little one way and back, with specks of dust drifting
+slowly up inside them. One colour, nothing flashing or sweeping: see `src/holy.js`
+and `holy` in the level files.

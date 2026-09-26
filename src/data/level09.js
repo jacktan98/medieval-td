@@ -125,6 +125,9 @@ export const level09 = {
   props: [{ x: 889, y: 330, w: 10, up: 10, down: 1 }],   // the cook's skewer
   // Birdsong, the fountain and the cooking fire crackling, all soft, for as long as
   // it is played — the fire at the same level as on stages 1, 3, 4 and 5.
+  // HOLY LIGHT: soft shafts of sunlight slanting down over the board, dust drifting
+  // in them — Dawnford's, on all three of its boards. See src/holy.js.
+  holy: true,
   ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fountain_water', level: 1 },
              { clip: 'fire_crackling', level: 1 }],
   // THE FOUNTAIN RUNS, the way the world map's waterfall does — see drawFountain in

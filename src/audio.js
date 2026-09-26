@@ -633,7 +633,8 @@ export const GAIN = {
   fish_cooking: 0.504,
   fountain_water: 0.4,
   // The church bell rings out over the board, but it is the board's, not the battle.
-  church_bell: 0.7,
+  // Then half as loud again, at the owner's word.
+  church_bell: 1.05,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
