@@ -340,8 +340,9 @@ const PLAYS = {
     hops: [{ every: 10, who: [8] }],
     // THE SIX ON THE MAT pray and kneel on a round of their own — see work(). Seconds
     // for each step: praying, kneeling up (`rise`, on the way down and on the way
-    // back up) and bowed down.
-    kneel: { who: [1, 2, 3, 4, 5, 6], pray: [3.5, 7], rise: [0.9, 1.6], bow: [3, 6] },
+    // back up) and bowed down. Praying and bowed down half as long again as they
+    // were, at the owner's word; kneeling up is only the way between, as it was.
+    kneel: { who: [1, 2, 3, 4, 5, 6], pray: [5.5, 10.5], rise: [0.9, 1.6], bow: [4.5, 9] },
     // VILLAGER 8 CARRIES BOXES out of the church: stage 5's box carrier, mirrored. Out
     // of the door, slowly down to the pile in front of the church, a toss onto it,
     // back up and in at the door — and ten seconds inside before the next box. The
@@ -360,8 +361,9 @@ const PLAYS = {
       enter: CHURCH_WAY[0],
       gone: 10
     }],
-    // The bell: each side for as long as its stroke rings, the middle between.
-    bell: { swing: [['middle', 0.15], ['left', 1.0], ['middle', 0.3], ['right', 1.0], ['middle', 0.2]] },
+    // The bell: each side for as long as its stroke rings, the middle between. Each
+    // side held longer, at the owner's word.
+    bell: { swing: [['middle', 0.15], ['left', 1.8], ['middle', 0.3], ['right', 1.8], ['middle', 0.2]] },
     cries: { runnn: false, nooo: true, wave: 'hide' }
   },
   // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle
@@ -602,13 +604,15 @@ function carryLoop(state, vp, crew, c, dt) {
     // The carrying drawing is the way round the artist drew it, whichever way they go
     // — or mirrored, for a crew that says so (stage 8's carrier).
     for (const v of team) v.flip = !!crew.flip;
-    // OUT OF A DOOR: faded in as he steps out of it.
-    if (crew.door) lead.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE);
+    // OUT OF A DOOR: faded in as he steps out of it — not the first time, when he
+    // starts from where he is painted.
+    if (crew.door) lead.alpha = c.outOfDoor ? Math.min(1, (vp.t - c.at) / DOOR_FADE) : 1;
     stick();
   } else if (c.phase === 'throw') {
     stick();
     const k = vp.t - c.at;
     // Up for the heave, then down on their feet, standing.
+    if (crew.door) lead.alpha = 1;
     if (k < THROW_FOR) { lead.pose = art.throw; lead.flip = !!crew.flip; }
     else if (lead.pose !== 'standing') {
       if (mate) mate.ride = false;
@@ -641,7 +645,7 @@ function carryLoop(state, vp, crew, c, dt) {
     // BACK FROM WHERE THEY LEFT, with the next load.
     [lead.x, lead.y] = crew.enter;
     lead.leg = 0;
-    c.phase = 'carry'; c.at = vp.t;
+    c.phase = 'carry'; c.at = vp.t; c.outOfDoor = !!crew.door;
     stick();
   }
 

@@ -128,14 +128,15 @@ export const level10 = {
   // Birdsong, soft, for as long as it is played.
   ambience: [{ clip: 'bird_chirping', level: 0.5 }],
   // THE CHURCH BELL, swung as each wave comes (src/villagers.js, `bell`). The painted
-  // one is cut out of the drawing and what hangs in front of it — the tower's roof and
-  // front pillars — kept apart in `cover` by tools/bell-cover.mjs, to be drawn again
-  // over the swinging bell (src/render.js, drawBell). The owner's three drawings share
-  // one canvas; its point `at` is laid on (x, y), where the painted bell's corner was,
-  // at `k` board px to its px — the painted bell's width against the drawing's. At
-  // the church's depth, just after it.
+  // one is cut out of the drawing and everything painted after it — the tower's roof
+  // and pillars, the cross, the nave — kept apart in `cover` by tools/bell-cover.mjs,
+  // to be drawn again over the swinging bell (src/render.js, drawBell), but only in
+  // `box`, the space the bell's three drawings swing through: everywhere else the
+  // church is exactly as drawn. The drawings share one canvas; its point `at` is laid
+  // on (x, y), where the painted bell's corner was, at `k` board px to its px — the
+  // painted bell's width against the drawing's. At the church's depth, just after it.
   bell: { x: 391.2, y: 101.9, at: [176, 171], k: 0.194, g: 225.01, cover: 'cover10',
-          box: { x: 355, y: 10, w: 105, h: 160 } },
+          box: { x: 387, y: 98, w: 43, h: 40 } },
   waves: stage8Waves,
   wavesExtended: stage8Waves,
   oneLength: true,

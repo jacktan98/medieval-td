@@ -283,8 +283,9 @@ of the church, 9 at the church's right-hand end.
 - **When the first enemy of wave 1 appears:** "hide". Villager 1 runs off the board
   to the left and is gone; villager 9 turns to standing and praying by turns.
 - **All game long, 2 to 7 on the mat** each go round on their own: praying with
-  their backs to the player, turned right (three and a half to seven seconds), then
-  kneeling up (about a second), bowed down (three to six), kneeling up again, and
+  their backs to the player, turned right (five and a half to ten and a half
+  seconds), then kneeling up (about a second), bowed down (four and a half to nine),
+  kneeling up again, and
   praying — each started at a different point, so no two do the same thing
   together. They take no notice of a tap.
 - **All game long, villager 8** carries a box — stage 5's box carrier, mirrored —
@@ -292,8 +293,8 @@ of the church, 9 at the church's right-hand end.
   landing thuds, softly), walks back up and in at the door, fading as he goes, and
   after ten seconds inside comes out with the next. The first time he starts from
   where he is painted, at the pile.
-- **As each wave starts** the church bell swings to the left with a stroke, back to
-  the middle as the stroke dies, to the right with a second stroke, and back — the
-  roof and front pillars over it, as drawn.
+- **As each wave starts** the church bell swings to the left with a stroke and holds
+  there nearly two seconds, back to the middle as the stroke dies, to the right with
+  a second stroke for as long, and back — the roof and pillars over it, as drawn.
 - **Every 10 enemies killed:** villager 9 hops twice.
 - **A star lost:** "nooo". Birdsong plays softly throughout.
