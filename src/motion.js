@@ -1092,6 +1092,8 @@ export function drawMotion(ctx, t, base = null, baseKey = '') {
 // figures, so this is drawn straight after it (see render.js) and on the board's
 // clock: it holds still on a paused board. Built once per drawing.
 const fountains = new Map();
+const FREE_SHARE = 0.25;      // of the jets' streaks, how many cross the line round a jet
+const SPILL = 7;              // droplets breaking away from each jet at once
 export function drawFountain(ctx, img, spec, t) {
   if (!img || !spec) return;
   let f = fountains.get(img);
@@ -1103,18 +1105,26 @@ export function drawFountain(ctx, img, spec, t) {
   if (!f) return;
   const dt = f.lastT === null ? 0 : Math.max(0, Math.min(0.1, t - f.lastT));
   f.lastT = t;
-  // THE STREAKS, cut to the falling water.
-  ctx.drawImage(layerFor(f.fall, g => {
+  // THE STREAKS, cut to the falling water — and a few of the jets' own, now and
+  // then, let over the black line round a jet, at the owner's word: water in the air
+  // does not keep to a drawn edge. Those are cut to the water grown by a couple of
+  // px, so they cross the line without wandering off over the grass.
+  const streaks = free => g => {
     g.lineCap = 'round';
     for (const lane of f.lanes) {
       for (let k = 0; k < lane.each; k++) {
+        // Which streaks cross the line changes from one pass down the jet to the next.
+        const pass = Math.floor(t * lane.rate + k / lane.each + lane.phase);
+        const loose = lane.jet && hash(lane.n * 13 + k * 7 + pass * 31) < FREE_SHARE;
+        if (loose !== free) continue;
         const p = (t * lane.rate + k / lane.each + lane.phase) % 1;
         // A jet leaves its spout fast and keeps going; a sheet tips over and
         // gathers speed as it falls.
         const v = lane.jet ? p : Math.pow(p, 1.4);
         const len = lane.jet ? 0.12 + 0.16 * p : 0.08 + 0.26 * p;
         const v0 = Math.max(0, v - len), v1 = Math.min(1, v);
-        const [x0, y0] = lane.at(v0), [x1, y1] = lane.at(v1), [xm, ym] = lane.at((v0 + v1) / 2);
+        const at = loose ? w => lane.at(w, lane.out) : lane.at;
+        const [x0, y0] = at(v0), [x1, y1] = at(v1), [xm, ym] = at((v0 + v1) / 2);
         const fade = Math.min(1, p / 0.08) * Math.min(1, (1 - p) / 0.08);
         const grad = g.createLinearGradient(x0, y0, x1, y1);
         grad.addColorStop(0, `rgba(${STREAK_TINT},0)`);
@@ -1127,7 +1137,34 @@ export function drawFountain(ctx, img, spec, t) {
         g.stroke();
       }
     }
-  }), f.fall.rect.x, f.fall.rect.y);
+  };
+  ctx.drawImage(layerFor(f.fall, streaks(false)), f.fall.rect.x, f.fall.rect.y);
+  ctx.drawImage(layerFor(f.free, streaks(true)), f.free.rect.x, f.free.rect.y);
+  // WATER SPILLING OFF THE JETS: droplets breaking away along each one, carried on
+  // the way the jet is going and a little out to its side, and falling.
+  ctx.save();
+  for (const j of f.jets) {
+    for (let k = 0; k < SPILL; k++) {
+      const n = j.n * 29 + k;
+      const life = 0.7 + hash(n + 500) * 0.6;
+      const p = ((t / life) + hash(n + 510)) % 1;
+      const round = Math.floor(t / life + hash(n + 510));
+      // Where along the jet it breaks away, afresh each time round.
+      const v = 0.3 + 0.65 * hash(n + round * 17 + 520);
+      const [ax, ay] = j.at(v), [bx, by] = j.at(Math.min(1, v + 0.02));
+      const tl = Math.hypot(bx - ax, by - ay) || 1;
+      const tx = (bx - ax) / tl, ty = (by - ay) / tl;
+      const side = (hash(n + round * 5 + 530) - 0.5) * 2;
+      const sp = 10 + hash(n + round * 3 + 540) * 12;
+      const tau = p * life;
+      const x = ax + (tx * sp - ty * side * 7) * tau;
+      const y = ay + (ty * sp + tx * side * 7) * tau + 0.5 * 45 * tau * tau;
+      const r = 0.5 + hash(n + 550) * 0.45;
+      ctx.globalAlpha = 0.9 * (1 - p) * Math.min(1, p / 0.1);
+      ctx.drawImage(dot(), x - r * 1.4, y - r * 1.4, r * 2.8, r * 2.8);
+    }
+  }
+  ctx.restore();
   // The pools: glints, and rings round every foot.
   ctx.drawImage(layerFor(f.pool, g => {
     paintGlints(g, f.still, dt, t, f.glints, spec.glints ?? 4);
@@ -1247,7 +1284,10 @@ function buildFountain(img, spec) {
     const count = Math.max(4, Math.round(j.w * 1.8));
     for (let i = 0; i < count; i++) {
       const u = ((i + 0.5 + (hash(n + 7) - 0.5) * 0.6) / count - 0.5) * j.w * 0.9;
-      lanes.push({ jet: true, at: v => j.at(v, u), rate: 0.7 + hash(n + 40) * 0.4, phase: hash(n + 60),
+      // `out`: where the streak runs when it is one let over the line — nearer the
+      // jet's edge than its lane, and past it for the outermost.
+      lanes.push({ jet: true, n, at: (v, uu = u) => j.at(v, uu), out: u * (1.25 + hash(n + 19) * 0.35),
+                   rate: 0.7 + hash(n + 40) * 0.4, phase: hash(n + 60),
                    each: 4, a: 0.75 + hash(n + 3) * 0.25, lw: 0.7 + hash(n + 11) * 0.5 });
       n++;
     }
@@ -1269,7 +1309,7 @@ function buildFountain(img, spec) {
       const x = Math.round(s.x0 + (i + 0.5) / count * (w - 1));
       if (!top.has(x)) continue;
       const y0 = top.get(x), y1 = low.get(x) + 1;
-      lanes.push({ jet: false, at: v => [x + 0.5, y0 + (y1 - y0) * v], rate: 0.5 + hash(n + 40) * 0.35,
+      lanes.push({ jet: false, n, at: v => [x + 0.5, y0 + (y1 - y0) * v], rate: 0.5 + hash(n + 40) * 0.35,
                    phase: hash(n + 60), each: 2, a: 0.5 + hash(n + 3) * 0.35, lw: 0.5 + hash(n + 11) * 0.5 });
       n++;
     }
@@ -1277,10 +1317,16 @@ function buildFountain(img, spec) {
     if (w >= 8 && inPool(mx, s.y1 + 1)) feet.push({ x: mx, y: s.y1 + 2, n: feet.length });
   }
   const fallMask = maskOf(falling), poolMask = maskOf(pools);
+  // The falling water grown by two px all round, for the streaks let over its line.
+  const freeMask = sheet(), fg2 = freeMask.getContext('2d');
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    if (dx * dx + dy * dy <= 5) fg2.drawImage(fallMask, dx, dy);
+  }
   const still = flowField(poolMask, () => true);
-  const out = { fall: group(fallMask), pool: group(poolMask), lanes, still, feet, glints: [], lastT: null };
-  fallMask.width = 0; fallMask.height = 0; poolMask.width = 0; poolMask.height = 0;
-  return out.fall && out.pool ? out : null;
+  const out = { fall: group(fallMask), free: group(freeMask), pool: group(poolMask), lanes, still, feet,
+                jets: jets.map((j, i) => ({ at: j.at, n: i })), glints: [], lastT: null };
+  for (const m of [fallMask, poolMask, freeMask]) { m.width = 0; m.height = 0; }
+  return out.fall && out.free && out.pool ? out : null;
 }
 
 // --- the shadows on the world map's water --------------------------------------

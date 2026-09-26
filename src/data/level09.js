@@ -131,6 +131,12 @@ export const level09 = {
   // is: up the middle jet from its spout and over either arm, and up out of each side
   // jet's inner foot, over and down to the basin. The sheets over the tiers fall
   // straight down on their own.
+  // THE COOKING FIRE'S FLAME, drawn live (src/life.js campfire, with its smoke)
+  // where the painted one was, at the owner's word: its base in the logs, its size
+  // against the world map's fire, and its depth — just in front of the fire's own
+  // box, so it burns over the fish on the spit, and just behind the cook, whose
+  // skewer is held in it.
+  fires: [{ x: 880, y: 335.5, s: 3.2, g: 339 }],
   fountain: { colour: [166, 213, 255], box: [397, 275, 149, 135], jets: [
     { w: 4, path: [[471.3, 310], [471.3, 284], [469, 280.5], [462, 283], [455.5, 289], [452.5, 298], [451.3, 309]] },
     { w: 4, path: [[471.3, 310], [471.3, 284], [473.5, 280.5], [480, 282], [486.5, 287], [489.5, 297], [490.5, 309]] },
