@@ -1236,7 +1236,11 @@ export function drawOverview(ctx, state) {
   // a band crossing a river under a label was lighting the lettering up with it, and
   // before the fog, because unexplored country is a drained still copy and should
   // stay still.
-  drawMotion(ctx, now);
+  // The shadows' soft edge on the water is made from the finished map, and remade
+  // when a stage is reached or the screen changes — see drawMapSeams.
+  const c = ctx.canvas;
+  drawMotion(ctx, now, base, `${unlocked}|${live}|${hd}|${c.width}x${c.height}|` +
+    `${tf ? [tf.a, tf.e, tf.f].join(',') : ''}|${img && img.complete ? img.src : ''}|${parchment ? 1 : 0}`);
   // And the towns the player has reached, alive — see src/life.js.
   drawLife(ctx, now, unlocked, base);
 

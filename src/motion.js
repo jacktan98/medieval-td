@@ -1066,8 +1066,197 @@ export function drawPulse(ctx, t, leg) {
 // through the fog, which it is — it stays because WATER_THROUGH_FOG is a real
 // switch and this is where the water goes when it is turned off. The cloud shadows
 // used to be its other occupant.
-export function drawMotion(ctx, t) {
+export function drawMotion(ctx, t, base = null, baseKey = '') {
+  if (SHIMMER && base) drawMapSeams(ctx, t, base, baseKey);
   if (SHIMMER && !WATER_THROUGH_FOG) drawShimmer(ctx, t);
+}
+
+// --- the shadows on the world map's water --------------------------------------
+//
+// THE SHADOW UNDER THE THREE BRIDGES AND ALONG THE FOOT OF THE MOUNTAINS, soft and
+// moving where it meets the water, at the owner's word — the same as the bridges'
+// shadow on stages 5 and 6 (buildSeam). Here the shadow is the drawing's dark brown,
+// painted straight against the water with no outline between, so the line between
+// the two is found by colour just as there.
+//
+// The map under it is not the drawing's flat colours but the drawing with the paper
+// and the sun over it (stillMap in src/overview.js), so the band is made from THAT:
+// the finished map along the line, blurred across it and nowhere else. It is remade
+// when a stage is reached or the screen changes size — not on every step of a road
+// being walked, which remakes the finished map thirty times over and would stall
+// each of them; for the few seconds of a walk the band keeps the light it had.
+// Worked at twice the map's size, as the drawing's own sheet is.
+//
+// Each piece is drawn in thin columns, each nudged up or down by two slow waves —
+// the mountains' shadow runs along the water and the arches' across it on a slant,
+// so up and down is what moves them both (the boards' bridges are nudged sideways
+// instead) — and cut to the water and the shadow, fading out at either side of the
+// band so it sits in the grain of the paper without an edge.
+const MAP_SHADOW = [68, 52, 31];
+const MAP_SEAM = 2;           // work px (a map px each) either way of the line
+const MAP_Z = 2;              // work px per map px
+const MAP_STRIP = 4;          // work px per row or column
+let mapSeams, mapSeamsKey = '';
+
+function drawMapSeams(ctx, t, base, key) {
+  const img = art.overview;
+  if (!img || img.complete === false) return;
+  if (mapSeams === undefined) {
+    mapSeams = null;
+    try { mapSeams = findMapSeams(img); } catch { /* no canvas: a still line */ }
+  }
+  if (!mapSeams) return;
+  if (key !== mapSeamsKey) {
+    mapSeamsKey = key;
+    try { for (const s of mapSeams) paintMapSeam(s, base, ctx.getTransform()); } catch { mapSeams = null; return; }
+  }
+  for (const s of mapSeams) {
+    const r = s.rect;
+    const g = s.layer.getContext('2d');
+    g.globalCompositeOperation = 'source-over';
+    g.clearRect(0, 0, r.w, r.h);
+    for (let x = 0; x < r.w; x += MAP_STRIP) {
+      const X = (r.x + x) / MAP_Z;
+      const dy = MAP_Z * (1.3 * Math.sin(t * 1.2 + X * 0.16) + 0.6 * Math.sin(t * 1.9 - X * 0.06));
+      const ww = Math.min(MAP_STRIP, r.w - x);
+      g.drawImage(s.band, x, 0, ww, r.h, x, dy, ww, r.h);
+    }
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(s.mask, 0, 0);
+    g.globalCompositeOperation = 'source-over';
+    ctx.drawImage(s.layer, r.x / MAP_Z, r.y / MAP_Z, r.w / MAP_Z, r.h / MAP_Z);
+  }
+}
+
+// WHERE THE LINES ARE, from the drawing: every place the dark brown touches the
+// water, gathered into pieces a few dozen px apart, each with how much of the wet
+// round every pixel of it is in shadow. Once.
+function findMapSeams(img) {
+  const W = 960 * MAP_Z, H = 540 * MAP_Z;
+  const c = sheet(W, H);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, W, H);
+  const d = g.getImageData(0, 0, W, H).data;
+  c.width = 0; c.height = 0;
+  const near = (i, col, tol) =>
+    Math.abs(d[i] - col[0]) <= tol && Math.abs(d[i + 1] - col[1]) <= tol && Math.abs(d[i + 2] - col[2]) <= tol;
+  // 1 water, 2 shadow, 3 the drawing's own soft pixels between the two.
+  const light = WATER_SHADE, dark = MAP_SHADOW;
+  const dv = [dark[0] - light[0], dark[1] - light[1], dark[2] - light[2]];
+  const dd = dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2];
+  const kind = new Uint8Array(W * H), mixK = new Float32Array(W * H);
+  for (let j = 0; j < W * H; j++) {
+    const i = j * 4;
+    if (near(i, light, WATER_TOLERANCE)) kind[j] = 1;
+    else if (near(i, dark, 10)) kind[j] = 2;
+    else {
+      const v = [d[i] - light[0], d[i + 1] - light[1], d[i + 2] - light[2]];
+      const k = (v[0] * dv[0] + v[1] * dv[1] + v[2] * dv[2]) / dd;
+      if (k < 0 || k > 1) continue;
+      let off = false;
+      for (let n = 0; n < 3; n++) if (Math.abs(v[n] - k * dv[n]) > 14) off = true;
+      if (!off) { kind[j] = 3; mixK[j] = k; }
+    }
+  }
+  // ONLY BETWEEN THE TWO: the mountains' grey falls on the line from the water's
+  // colour to the shadow's as well, and counted as wet it was blurred smooth. A real
+  // mix pixel has the water on one side of it and the shadow on the other.
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const j = y * W + x;
+    if (kind[j] !== 3) continue;
+    let w = false, s = false;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const X = x + dx, Y = y + dy;
+      if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+      const k = kind[Y * W + X];
+      if (k === 1) w = true; else if (k === 2) s = true;
+    }
+    if (!w || !s) kind[j] = 0;
+  }
+  // The shadow's edge against the water, in tiles, and the tiles that touch joined up.
+  const T = 24, tiles = new Map();
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    if (kind[y * W + x] !== 2) continue;
+    let wet = false;
+    for (let dy = -2; dy <= 2 && !wet; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (kind[(y + dy) * W + x + dx] === 1) { wet = true; break; }
+    }
+    if (!wet) continue;
+    const k = ((y / T) | 0) * 1000 + ((x / T) | 0);
+    tiles.set(k, (tiles.get(k) || 0) + 1);
+  }
+  const seen = new Set(), pieces = [];
+  const pad = MAP_SEAM * 3 + 2 * MAP_Z;
+  for (const k0 of tiles.keys()) {
+    if (seen.has(k0)) continue;
+    seen.add(k0);
+    const todo = [k0];
+    let tx0 = 1e9, ty0 = 1e9, tx1 = -1, ty1 = -1, n = 0;
+    while (todo.length) {
+      const k = todo.pop(), tx = k % 1000, ty = (k / 1000) | 0;
+      n += tiles.get(k);
+      tx0 = Math.min(tx0, tx); tx1 = Math.max(tx1, tx); ty0 = Math.min(ty0, ty); ty1 = Math.max(ty1, ty);
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+        const k2 = (ty + a) * 1000 + tx + b;
+        if (tiles.has(k2) && !seen.has(k2)) { seen.add(k2); todo.push(k2); }
+      }
+    }
+    // A pixel or two of brown against the water somewhere is a stray, not a shadow.
+    if (n < 10) continue;
+    const x0 = Math.max(0, tx0 * T - pad), y0 = Math.max(0, ty0 * T - pad);
+    const x1 = Math.min(W, (tx1 + 1) * T + pad), y1 = Math.min(H, (ty1 + 1) * T + pad);
+    const w = x1 - x0, h = y1 - y0;
+    let a = new Float32Array(w * h), q = new Float32Array(w * h);
+    const wet = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const j = (y + y0) * W + x + x0, s = kind[j];
+      if (!s) continue;
+      wet[y * w + x] = 1;
+      q[y * w + x] = 1;
+      a[y * w + x] = s === 2 ? 1 : s === 3 ? mixK[j] : 0;
+    }
+    a = soften(a, w, h, MAP_SEAM);
+    q = soften(q, w, h, MAP_SEAM);
+    for (let i = 0; i < a.length; i++) a[i] = q[i] > 1e-3 ? a[i] / q[i] : 0;
+    pieces.push({ rect: { x: x0, y: y0, w, h }, v: a, wet, q });
+  }
+  return pieces.length ? pieces : null;
+}
+
+// THE BAND'S COLOURS, from the finished map: what is under the piece, blurred across
+// the wet and nothing else, so the stone of a bridge never bleeds into it. The mask
+// fades in and out across the band — full strength on the line, nothing where the
+// shadow or the water is left to itself.
+function paintMapSeam(s, base, tf) {
+  const { x, y, w, h } = s.rect;
+  const c = sheet(w, h);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.setTransform(MAP_Z / tf.a, 0, 0, MAP_Z / tf.d, -tf.e * MAP_Z / tf.a - x, -tf.f * MAP_Z / tf.d - y);
+  g.drawImage(base, 0, 0);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const px = g.getImageData(0, 0, w, h), d = px.data;
+  const q = s.q;
+  const ch = [0, 1, 2].map(n => {
+    const a = new Float32Array(w * h);
+    for (let i = 0; i < a.length; i++) a[i] = s.wet[i] ? d[i * 4 + n] : 0;
+    return soften(a, w, h, MAP_SEAM);
+  });
+  const mask = new ImageData(w, h), m = mask.data;
+  for (let i = 0; i < w * h; i++) {
+    const k = i * 4;
+    if (q[i] > 1e-3) {
+      for (let n = 0; n < 3; n++) d[k + n] = ch[n][i] / q[i];
+      d[k + 3] = 255;
+    } else d[k + 3] = 0;
+    if (!s.wet[i]) continue;
+    const v = s.v[i];
+    m[k + 3] = Math.round(255 * Math.max(0, Math.min(1, Math.min(v, 1 - v) / 0.18)));
+  }
+  g.putImageData(px, 0, 0);
+  if (s.band) { s.band.width = 0; s.band.height = 0; }
+  const mc = s.mask || sheet(w, h);
+  mc.getContext('2d').putImageData(mask, 0, 0);
+  Object.assign(s, { band: c, mask: mc, layer: s.layer || sheet(w, h) });
 }
 
 // And OVER the fog, where only the water can go. Both call sites exist whichever
@@ -1226,21 +1415,8 @@ function buildSeam(open, shadow, light, dark, art) {
     a[y * w + x] = Math.max(0, k);
     q[y * w + x] = k >= 0 ? 1 : 0;
   }
-  const blur = (src, horiz) => {
-    const out = new Float32Array(w * h), n = horiz ? w : h, m = horiz ? h : w;
-    for (let j = 0; j < m; j++) {
-      let sum = 0, cnt = 0;
-      const at = k => (horiz ? j * w + k : k * w + j);
-      for (let k = -SEAM; k < n + SEAM; k++) {
-        const add = k + SEAM, drop = k - SEAM - 1;
-        if (add >= 0 && add < n) { sum += src[at(add)]; cnt++; }
-        if (drop >= 0 && drop < n) { sum -= src[at(drop)]; cnt--; }
-        if (k >= 0 && k < n) out[at(k)] = sum / cnt;
-      }
-    }
-    return out;
-  };
-  for (let pass = 0; pass < 2; pass++) { a = blur(blur(a, true), false); q = blur(blur(q, true), false); }
+  a = soften(a, w, h, SEAM);
+  q = soften(q, w, h, SEAM);
   for (let i = 0; i < a.length; i++) a[i] = q[i] > 1e-3 ? a[i] / q[i] : 0;
   const band = new ImageData(w, h), mask = new ImageData(w, h), b = band.data, m = mask.data;
   let any = false;
@@ -1256,6 +1432,28 @@ function buildSeam(open, shadow, light, dark, art) {
   if (!any) return null;
   const put = data => { const c = sheet(w, h); c.getContext('2d').putImageData(data, 0, 0); return c; };
   return { band: put(band), mask: put(mask), layer: sheet(w, h), rect: { x: x0, y: y0, w, h } };
+}
+
+// A box blur r px each way, across and then down, twice over — near enough a
+// gaussian. Each value is the mean of what the box holds, so the edges of the
+// array are not darkened by the nothing beyond them.
+function soften(a, w, h, r) {
+  const blur = (src, horiz) => {
+    const out = new Float32Array(w * h), n = horiz ? w : h, m = horiz ? h : w;
+    for (let j = 0; j < m; j++) {
+      let sum = 0, cnt = 0;
+      const at = k => (horiz ? j * w + k : k * w + j);
+      for (let k = -r; k < n + r; k++) {
+        const add = k + r, drop = k - r - 1;
+        if (add >= 0 && add < n) { sum += src[at(add)]; cnt++; }
+        if (drop >= 0 && drop < n) { sum -= src[at(drop)]; cnt--; }
+        if (k >= 0 && k < n) out[at(k)] = sum / cnt;
+      }
+    }
+    return out;
+  };
+  for (let pass = 0; pass < 2; pass++) a = blur(blur(a, true), false);
+  return a;
 }
 
 // The band, drawn in rows each nudged sideways by two slow waves of their own, and
