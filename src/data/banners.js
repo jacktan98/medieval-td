@@ -7,9 +7,10 @@
 // elsewhere on the tower (a book, a spire) — together with its black edge and
 // whatever is painted on it.
 //
-// THE BOX REACHES WELL PAST THE TAILS — 20px below `bottom`: at each point the
-// black edge runs on below the cloth, and whatever of it fell outside the box was
-// left on the wall as a speck when the tail swung.
+// `bottom` IS THE LOWEST PIXEL OF THE CLOTH'S COLOUR, measured, and THE BOX REACHES
+// 22px PAST IT: at each point the black edge runs on 8 to 10px below the colour, and
+// whatever of it fell outside the box was left on the wall as a speck when the tail
+// swung — the High Altar's box once stopped 4px short of its tip.
 //
 // A BANNER hangs from the battlements: draped over them above `top`, where it stays
 // put, and hanging free from there to its tails at `bottom`, where it swings most.
@@ -23,14 +24,14 @@ const flag = (x0, y0, x1, y1) => ({ kind: 'flag', colour: BLUE, box: [x0 - 8, y0
 
 export const BANNERS = {
   // Tier 4.
-  archery_t4:         banner(PURPLE, [390, 250, 612, 623], 350, 603),   // Musketeer Post
-  archery_t4b:        banner(BLUE,   [390, 262, 606, 623], 362, 603),   // Crossbow Sentry
-  barracks_t4:        banner(WHITE,  [320, 262, 672, 700], 405, 680),   // Paladin Keep
-  barracks_t4b:       banner(BROWN,  [320, 262, 672, 700], 405, 680),   // Assassin Guild
-  artillery_t4_base:  banner(BLUE,   [384, 442, 530, 683], 492, 663),   // Ballista Turret
-  artillery_t4b_base: banner(PURPLE, [384, 442, 530, 683], 492, 663),   // Cannon Outpost
-  monastery_t4:       banner(WHITE,  [376, 530, 622, 817], 615, 797),   // High Altar
-  monastery_t4b:      banner(ORANGE, [376, 515, 622, 805], 612, 785),   // Judgement Temple
+  archery_t4:         banner(PURPLE, [390, 250, 612, 629], 350, 607),   // Musketeer Post
+  archery_t4b:        banner(BLUE,   [390, 262, 606, 633], 362, 611),   // Crossbow Sentry
+  barracks_t4:        banner(WHITE,  [320, 262, 672, 707], 405, 685),   // Paladin Keep
+  barracks_t4b:       banner(BROWN,  [320, 262, 672, 711], 405, 689),   // Assassin Guild
+  artillery_t4_base:  banner(BLUE,   [384, 442, 530, 689], 492, 667),   // Ballista Turret
+  artillery_t4b_base: banner(PURPLE, [384, 442, 530, 693], 492, 671),   // Cannon Outpost
+  monastery_t4:       banner(WHITE,  [376, 530, 622, 833], 615, 811),   // High Altar
+  monastery_t4b:      banner(ORANGE, [376, 515, 622, 815], 612, 793),   // Judgement Temple
   // Tiers 1 to 3: the blue flag on its pole at the top of each.
   archery_t1:   flag(661, 217, 751, 272),
   archery_t2:   flag(569, 145, 659, 201),

@@ -31,6 +31,11 @@ beside it — `Artillery_Man_T1.png`, `Artillery_Man_T2.png`, `Artillery_Man_T3.
 and one per fourth rung: `Ballista_Engineer.png` and `Cannoneer.png`. The info box
 and the encyclopedia are the only things that ever draw them.
 
+Their SVGs (`Artillery_Man_T1.svg` … `Cannoneer.svg`) are read by the game too, as a
+stencil: every shape in one is looked for in the Default machine drawing's SVG, and
+what matches is the man, cut out so he alone can turn round while idle. See
+assets/towers/README.md.
+
 **The whole artillery family works this way**, both of its tier 4s included. The
 machine is the drawing; the man is a face for the panel. So an artillery upload is
 three machine frames plus one portrait, where an archery upload is two poses of a

@@ -549,51 +549,6 @@ function turnTo(e, x) {
   if (x !== e.x) e.face = x > e.x ? 1 : -1;
 }
 
-// THE EXIT FLAG IS IN THE WAY, and a walker goes round it. The flag stands in the
-// middle of the road, which is the middle lane, so a man on that lane used to walk
-// straight through the pole with his shadow on its shadow — neither in front of it
-// nor behind it, just through. Now, near a flag, a walker is eased sideways until
-// his shadow clears the flag's: to the near side of it, and he is drawn over the
-// flag; to the far side, and the flag is drawn over him. The depth sort in render.js
-// does the rest, by the shadows' centres as it does for everything.
-//
-// GENTLY, and it used to be abrupt. How far aside he must be is a smooth bell along
-// the road — FLAG_CLEAR at the flag, falling away to nothing FLAG_EASE either side,
-// with no corner at either end — so he drifts over well before the pole and drifts
-// back after it. The first cut was an ellipse, whose sides are vertical where it
-// begins, and a man stepped sideways in a single frame on reaching it.
-//
-// AND HE KEEPS TO ONE SIDE. Which side is decided once, when he first comes near,
-// and held until he is past: the side of the road he is already on, or a coin toss
-// for a man dead on the middle. It used to be read afresh every frame, and a man
-// whose lane wandered across the flag's line half way past it switched sides —
-// jumping across the road in front of the pole.
-//
-// A pure function of where the lane puts him but for that one choice. The kerb
-// lanes, LANE off the middle, are already clear and never move. The flier sails
-// over and is left alone.
-const FLAG_CLEAR = 12, FLAG_EASE = 55;
-function roundFlags(e, p) {
-  (level.exitFlags || []).forEach((f, i) => {
-    const vx = e.x - f.x, vy = e.y - f.y;
-    const along = vx * p.tx + vy * p.ty;
-    const sides = e.flagSides || (e.flagSides = {});
-    if (Math.abs(along) >= FLAG_EASE) { if (along > 0) delete sides[i]; return; }
-    const across = vx * p.nx + vy * p.ny;
-    if (!sides[i]) sides[i] = Math.abs(across) > 1 ? Math.sign(across) : (Math.random() < 0.5 ? -1 : 1);
-    const side = sides[i];
-    // The bell: 1 at the flag, 0 with a flat foot at FLAG_EASE either side.
-    const q = along / FLAG_EASE;
-    const need = FLAG_CLEAR * (0.5 + 0.5 * Math.cos(Math.PI * q));
-    // Where he is across the road, measured on his side; pushed out to `need` if short.
-    const have = across * side;
-    if (have >= need) return;
-    const push = (need - have) * side;
-    e.x += p.nx * push;
-    e.y += p.ny * push;
-  });
-}
-
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     // WHAT THIS CREATURE IS ON THIS FRAME, and for everything but the boss that is
@@ -1003,7 +958,6 @@ export function updateEnemies(state, dt) {
     if (p.tx && e.thrust <= 0 && !e.nock && !e.shot) e.face = p.tx > 0 ? 1 : -1;
     e.x = p.x;
     e.y = p.y;
-    if (!e.def.flying) roundFlags(e, p);
 
     if (e.s >= road.total) e.leaked = true;
   }

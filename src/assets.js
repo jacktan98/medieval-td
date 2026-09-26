@@ -897,7 +897,7 @@ export const art = {};
 // matters: half a dozen tools read `paths` to find files ON DISK, and a query
 // string is not part of a filename. The version belongs to the fetch.
 const stamp = typeof window !== 'undefined' && window.__stamp;
-const versioned = src => stamp ? `${src}?v=${stamp}` : src;
+export const versioned = src => stamp ? `${src}?v=${stamp}` : src;
 
 // --- WHAT AN ABILITY'S DISC IS MADE OF --------------------------------------------
 //

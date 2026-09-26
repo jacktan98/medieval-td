@@ -40,6 +40,11 @@ export function updateWaves(state, dt) {
   const group = groupAt(wave, state.spawned);
   if (group) {
     if (state.timer <= 0) {
+      // THE EXIT FLAGS LEAVE WITH THE FIRST ENEMY, at the owner's word: they are
+      // there so the player knows where the road ends while planning, and once the
+      // first wave is on the road they have done that. When, on the board's clock —
+      // see flagAway in src/render.js for the lift.
+      if (state.flagsAway === undefined) state.flagsAway = state.anim || 0;
       spawn(state, group.type);
       state.spawned++;
       // Read the group again: the one that just filled up hands over to the

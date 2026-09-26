@@ -568,8 +568,57 @@ export function updateTowers(state, dt) {
 
     if (framesOf(t.def, t)) stepCrew(state, t, dt, target);
     else stepWeapon(state, t, dt, target);
+    idleStep(t, dt, target);
   }
 }
+
+// MEN IN TOWERS STAND ABOUT WHEN THERE IS NOTHING TO SHOOT, at the owner's word:
+// "when idle, units in towers at random can turn to the other side". The barracks
+// squads have done this for a while — see REST_AFTER and the four ways of being idle
+// in src/units.js — and this is the same rhythm for the man on a deck: nothing in
+// range for IDLE_AFTER seconds and he is at rest, and then every SPELL_MIN to
+// SPELL_MAX seconds he may turn to look the other way, or back.
+//
+// ONLY IN HIS DEFAULT POSE. Anything that is still a shot — the bow just loosed
+// (`recoil`), an ability's held pose, the rest of a burst, a catapult anywhere but
+// resting — is the tower being needed, and turns him back on the same frame, facing
+// his target, exactly as a soldier comes to attention.
+//
+// PER MAN, so the Judgement Temple's two monks turn on their own clocks — each draws
+// his first wait out of IDLE_SPREAD, the way a squad does, so they do not turn as one.
+//
+// On an artillery tower the man is part of the drawing, and it is only HE who turns;
+// see src/crew.js. The machine keeps pointing where it last fired.
+const IDLE_AFTER = 5;
+const IDLE_SPREAD = 2.5;
+const SPELL_MIN = 7, SPELL_MAX = 18;
+const AWAY_ODDS = 0.45;
+
+function idleStep(t, dt, target) {
+  const busy = target || t.recoil > 0 || t.hold > 0 || t.burst > 0 ||
+    (framesOf(t.def, t) && (t.beat || 0) !== REST);
+  const n = t.def.pair ? t.def.pair.length : 1;
+  if (!t.idle || t.idle.men.length !== n) {
+    t.idle = { rest: 0, men: Array.from({ length: n }, () => ({ stance: 0, away: false })) };
+  }
+  const idle = t.idle;
+  if (busy) {
+    idle.rest = 0;
+    for (const m of idle.men) { m.away = false; m.stance = Math.random() * IDLE_SPREAD; }
+    return;
+  }
+  idle.rest += dt;
+  if (idle.rest < IDLE_AFTER) return;
+  for (const m of idle.men) {
+    m.stance -= dt;
+    if (m.stance > 0) continue;
+    m.stance = SPELL_MIN + Math.random() * (SPELL_MAX - SPELL_MIN);
+    m.away = Math.random() < AWAY_ODDS;
+  }
+}
+
+// Whether man `i` of this tower is looking the other way just now.
+export const turnedAway = (t, i = 0) => !!(t.idle && t.idle.men[i] && t.idle.men[i].away);
 
 // A tower that simply fires when its cooldown runs out, and whose GUNNER kicks
 // backward when it does. Archery, and anything else with one drawing and a man

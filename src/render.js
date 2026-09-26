@@ -12,11 +12,12 @@ import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
+import { drawCrewTurned } from './crew.js';
 import { VILLAGER_POSE, villagerKey } from './villagers.js';
 import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
-import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras,
+import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras, turnedAway,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen, atEase } from './units.js';
 import { stageOf } from './data/armour.js';
@@ -135,6 +136,29 @@ function drawGround(ctx) {
 //
 // Nothing draws a road with it any more. It survives because tools/formation.mjs
 // uses it to check the barracks squad stands on the road rather than beside it.
+// THE EXIT FLAGS GO WHEN THE FIRST WAVE COMES, at the owner's word — by then the
+// player has planned round where the road ends, and the flags would only be in the
+// way. They go the way the world map's flag comes, backwards: that one falls, lands
+// with a squash and settles; these crouch, spring up — slowly, then faster — and fade
+// out as they rise, their shadows shrinking on the ground below.
+//
+// `state.flagsAway` is when, on the board's clock, set by src/waves.js at the first
+// spawn. Returns how to draw them, or null once they are gone.
+const FLAG_AWAY = { crouch: 0.14, rise: 0.9, height: 80 };
+function flagAway(state) {
+  if (state.flagsAway === undefined) return { lift: 0, k: 1, alpha: 1, wind: 1 };
+  const t = (state.anim || 0) - state.flagsAway;
+  const { crouch, rise, height } = FLAG_AWAY;
+  if (t < crouch) {
+    // Down into the crouch and back up out of it, a little shorter for an instant.
+    return { lift: 0, k: 1 - 0.1 * Math.sin(Math.PI * t / crouch), alpha: 1, wind: 1 };
+  }
+  const q = (t - crouch) / rise;
+  if (q >= 1) return null;
+  // Furling as it goes, the reverse of the map flag's wave growing in as it plants.
+  return { lift: height * q * q, k: 1, alpha: 1 - q * q * q, wind: 1 - q };
+}
+
 export const ROAD_W = 125;
 
 // NOTHING ON THE GROUND IS DRAWN IN CODE. The grass, the road, the rocks and
@@ -426,8 +450,15 @@ function drawFigures(ctx, state) {
   // fixture in tools/ builds its own world by hand, and a renderer that insisted
   // on the field would take them all down. The smoke pass below does the same.
   for (const b of state.bombs || []) add(b.y, 1, () => drawBomb(ctx, b));
-  // On the board's own clock, so a paused board holds its flags still.
-  for (const f of level.exitFlags || []) add(f.y, 1, () => drawExitFlag(ctx, f.x, f.y, SCALE, { time: state.anim || 0 }));
+  // On the board's own clock, so a paused board holds its flags still. Lifted away
+  // when the first wave comes — see flagAway.
+  const away = flagAway(state);
+  if (away) for (const f of level.exitFlags || []) add(f.y, 1, () => {
+    ctx.save();
+    ctx.globalAlpha *= away.alpha;
+    drawExitFlag(ctx, f.x, f.y, SCALE * away.k, { time: state.anim || 0, lift: away.lift, wind: away.wind });
+    ctx.restore();
+  });
   // A VILLAGER UP ON A PLATFORM — stage 3's statue plaza — or INSIDE a building —
   // stage 4's smith in his forge — is drawn after that box, whose depth is where its
   // shadow is, below them. Standing on it or in it, they are in front of it; the
@@ -1209,6 +1240,9 @@ function drawBuilding(ctx, t, box) {
     const split = shadowSplit(img, groundId(key));
     const body = split ? split.body : img;
     if (BANNERS[key] && swayBanner(ctx, t, BANNERS[key], body, box)) return;
+    // A catapult's loader looking the other way while the machine stands idle —
+    // see src/crew.js.
+    if (turnedAway(t) && drawCrewTurned(ctx, key, t.def.spriteTrim, box)) return;
     ctx.drawImage(body, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
     return;
   }
@@ -1247,9 +1281,15 @@ function bannerLayers(img, b) {
     const bw = x1 - x0, bh = y1 - y0;
     const src = wg.getImageData(x0, y0, bw, bh), d = src.data;
     // The cloth: its colour, then that grown by `edge` to take its outline in.
+    // A COLOURED cloth takes only pixels with colour in them: the brown of the
+    // Assassin Guild's is within reach of the darker greys of the stone's shading,
+    // and those greys, taken as cloth, joined up across the wall beside it and the
+    // whole wall swayed with the banner.
+    const tinted = Math.max(...b.colour) - Math.min(...b.colour) > 40;
     const core = new Uint8Array(bw * bh);
     for (let i = 0; i < bw * bh; i++) {
       const k = i * 4;
+      if (tinted && Math.max(d[k], d[k + 1], d[k + 2]) - Math.min(d[k], d[k + 1], d[k + 2]) < 25) continue;
       if (d[k + 3] > 200 && Math.abs(d[k] - b.colour[0]) + Math.abs(d[k + 1] - b.colour[1]) +
           Math.abs(d[k + 2] - b.colour[2]) < 90) core[i] = 1;
     }
@@ -1280,7 +1320,7 @@ function bannerLayers(img, b) {
     // edge is followed further there: dark pixels TOUCHING the cloth, out to TIP of
     // the colour. Touching, so a mortar line nearby is not taken unless it runs into
     // the edge itself.
-    const TIP = 10;
+    const TIP = 14;
     const near = new Uint8Array(bw * bh);
     for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
       if (!core[y * bw + x]) continue;
@@ -1295,6 +1335,34 @@ function bannerLayers(img, b) {
         if (mask[i - 1] || mask[i + 1] || mask[i - bw] || mask[i + bw]) add.push(i);
       }
       if (!add.length) break;
+      for (const i of add) mask[i] = 1;
+    }
+    // AND THE SOFT RIM OUTSIDE ITS BLACK EDGE, where the edge fades into the stone:
+    // mid greys, too pale for `dark` and not the stone either. Left on the wall they
+    // were a thin line tracing where the edge had been, seen as soon as it swung
+    // away. Anything touching the cloth that is not the stone's own flat grey, two
+    // pixels deep, goes with it.
+    const hist = new Map();
+    for (let i = 0; i < bw * bh; i++) {
+      const k = i * 4, r = d[k], g = d[k + 1], bl = d[k + 2];
+      if (d[k + 3] < 250 || Math.max(r, g, bl) - Math.min(r, g, bl) > 6 || r < 100 || r > 200) continue;
+      hist.set(r, (hist.get(r) || 0) + 1);
+    }
+    let stone = 150, most = 0;
+    for (const [v, n] of hist) if (n > most) { most = n; stone = v; }
+    const rim = i => {
+      const k = i * 4;
+      if (d[k + 3] <= 40) return false;
+      const r = d[k], g = d[k + 1], bl = d[k + 2];
+      return Math.max(r, g, bl) - Math.min(r, g, bl) > 12 || Math.abs((r + g + bl) / 3 - stone) > 7 || d[k + 3] < 250;
+    };
+    for (let pass = 0; pass < 2; pass++) {
+      const add = [];
+      for (let y = 1; y < bh - 1; y++) for (let x = 1; x < bw - 1; x++) {
+        const i = y * bw + x;
+        if (mask[i] || !rim(i)) continue;
+        if (mask[i - 1] || mask[i + 1] || mask[i - bw] || mask[i + bw]) add.push(i);
+      }
       for (const i of add) mask[i] = 1;
     }
     // And whatever is painted ON it — the emblem — which its colour does not reach:
@@ -1355,7 +1423,7 @@ function bannerLayers(img, b) {
       // running along the row, dark all the way out, carries on through.
       const typical = (c, step) => {
         const got = [];
-        for (let k = 0; k < 9; k++) {
+        for (let k = 0; k < 15; k++) {
           const u = c + step * k;
           if (u < 0 || u >= bw) break;
           const i = y * bw + u;
@@ -1672,7 +1740,11 @@ function drawMachine(ctx, t, box) {
     ctx.scale(-1, 1);
     ctx.translate(-slot.axis, 0);
   }
-  ctx.drawImage(img, sx, sy, sw, sh, slot.left, slot.top, slot.w, slot.h);
+  // The engineer or the cannoneer looking the other way, the machine not — see
+  // src/crew.js.
+  if (!(turnedAway(t) && drawCrewTurned(ctx, frameOf(t), m.trim, slot))) {
+    ctx.drawImage(img, sx, sy, sw, sh, slot.left, slot.top, slot.w, slot.h);
+  }
   ctx.restore();
 }
 
@@ -1892,7 +1964,9 @@ function drawPair(ctx, t) {
     const dw = sw * SCALE, dh = sh * SCALE;
     ctx.save();
     ctx.translate(m.x, m.y);
-    ctx.scale(mirror(d, facing(t)), 1);
+    // Each monk looks away on his own clock while the temple is idle — see
+    // idleStep in src/towers.js.
+    ctx.scale(mirror(d, facing(t)) * (turnedAway(t, i) ? -1 : 1), 1);
     ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
     ctx.restore();
   }
@@ -1938,7 +2012,9 @@ function drawGunner(ctx, t) {
 
   ctx.save();
   ctx.translate(m.x, m.y);
-  ctx.scale(mirror(d, facing(t)), 1);
+  // Turned the other way now and then while there is nothing to shoot — see
+  // idleStep in src/towers.js.
+  ctx.scale(mirror(d, facing(t)) * (turnedAway(t) ? -1 : 1), 1);
   ctx.translate(-t.recoil * 3, 0);   // kicks backward, opposite the shot
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   ctx.restore();

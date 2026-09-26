@@ -88,6 +88,15 @@ fourth rungs are drawn differently again — a stone base with a separate machin
 standing on it, which is two files' worth of geometry and has its own section
 below.
 
+**The Default frames' SVGs are read by the game**, beside their PNGs:
+`Artillery_Default_T1.svg` to `_T3.svg`, `Ballista_Turret_Default.svg` (and
+`_Reinforced_Tension.svg`) and `Cannon_Outpost_Default.svg`. When the crew has
+stood idle a while the man turns to look the other way and the machine does not,
+so he is cut out of the drawing by matching his shapes against his own SVG in
+`units/` (see `src/data/crew.js` and `src/crew.js`). Re-export an SVG whenever its
+PNG changes, and draw the man with the same shapes in both; `node tools/crew.mjs`
+fails if they drift apart.
+
 Elsewhere, but artillery's: `units/Artillery_Man_T1.png` and its T2 and T3 (the
 crewman, for the info box only — he is drawn into all three frames already), and
 `projectiles/Artillery_Rock_T1.png` per tier. The two fourth rungs bring their own
