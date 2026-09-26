@@ -609,10 +609,16 @@ export const GAIN = {
   flag_waving: 0.45,
   // The boards' own, all soft at the owner's word: a fire, a river and a smith's
   // weld are the room the battle is in, not the battle.
-  fire_crackling: 0.35,
-  river_flowing: 0.35,
-  steel_welding: 0.35,
-  things_land: 0.5,
+  // Then by ear: the fire 60% down, the weld 20% down, the landing doubled and the
+  // river 20% up.
+  fire_crackling: 0.14,
+  river_flowing: 0.42,
+  steel_welding: 0.28,
+  things_land: 1.0,
+  // The village's wave-1 shouts are LOUDER (see above), and then 20% under that.
+  villager_thugs_here: 0.8,
+  villager_hide: 0.8,
+  villager_oh_no: 0.8,
   marching: 0.65,
   rock_hit_ground: 1.6,
   rock_kill_enemy: 0.7,

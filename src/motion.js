@@ -1054,7 +1054,7 @@ export function drawWater(ctx, t) {
 // STAGE 5'S RIVER, MOVING, in the world map's style at the owner's word: the same
 // pale current marks riding a flow field worked out from the water itself, and the
 // same glints of sunlight — see the currents above. `water` on the level says which
-// colour in the board's base is the water, the box it runs off the board through
+// colours in the board's base are the water, the box it runs off the board through
 // (`sink`), how many marks it carries and how fast.
 //
 // On the board's own clock, so it holds still on a paused board. Built once per
@@ -1076,6 +1076,15 @@ export function drawBoardWater(ctx, img, spec, t) {
     paintMarks(g, w.marks);
     paintGlints(g, w.flow, dt, t, w.glints, spec.glints);
   }), w.grp.rect.x, w.grp.rect.y);
+  // AND IN THE SHADE, the same marks, dimmer: water under the bridge catches less of
+  // the sky, and pale strokes at full strength stood out on the dark blue far more
+  // than on the light.
+  if (w.shade) {
+    ctx.save();
+    ctx.globalAlpha *= spec.shadeAlpha ?? 0.45;
+    ctx.drawImage(layerFor(w.shade, g => paintMarks(g, w.marks)), w.shade.rect.x, w.shade.rect.y);
+    ctx.restore();
+  }
 }
 
 function buildBoardWater(img, spec) {
@@ -1084,17 +1093,31 @@ function buildBoardWater(img, spec) {
   g.drawImage(img, 0, 0, 960, 540);
   const px = g.getImageData(0, 0, 960, 540);
   const d = px.data;
-  const [wr, wg, wb] = spec.colour;
+  // Every shade the water is painted in — open water first, then the same water in
+  // the bridge's shadow, which is water all the same. ONE flow field over all of it,
+  // so a current runs on under the bridge; two layers, so the shaded part can be
+  // drawn dimmer.
+  const near = (i, [wr, wg, wb]) =>
+    Math.abs(d[i] - wr) <= 10 && Math.abs(d[i + 1] - wg) <= 10 && Math.abs(d[i + 2] - wb) <= 10;
+  const [open, ...shaded] = spec.colours;
+  const shadeMask = sheet(), sd = new ImageData(960, 540);
   for (let i = 0; i < d.length; i += 4) {
-    const isWater = Math.abs(d[i] - wr) <= 10 && Math.abs(d[i + 1] - wg) <= 10 && Math.abs(d[i + 2] - wb) <= 10;
+    const inShade = shaded.some(c => near(i, c));
+    const isWater = inShade || near(i, open);
+    if (inShade) sd.data[i + 3] = 255;
     d[i] = d[i + 1] = d[i + 2] = 0;
-    d[i + 3] = isWater ? 255 : 0;
+    d[i + 3] = isWater && !inShade ? 255 : 0;
   }
   g.putImageData(px, 0, 0);
+  shadeMask.getContext('2d').putImageData(sd, 0, 0);
   const grp = group(wet);
+  const shade = group(shadeMask);
   if (!grp) return null;
+  // The flow over the lot: the shade laid back in with the open water.
+  g.drawImage(shadeMask, 0, 0);
+  shadeMask.width = 0; shadeMask.height = 0;
   const [x0, y0, x1, y1] = spec.sink;
   const flow = flowField(wet, (x, y) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
   wet.width = 0; wet.height = 0;
-  return { grp, flow, marks: [], glints: [], lastT: null };
+  return { grp, shade, flow, marks: [], glints: [], lastT: null };
 }

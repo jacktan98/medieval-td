@@ -133,9 +133,10 @@ export const level07 = {
   // is played.
   ambience: [{ clip: 'fire_crackling', level: 1 }, { clip: 'river_flowing', level: 1 }],
   // THE RIVER RUNS, in the world map's style (src/motion.js, drawBoardWater): pale
-  // current marks and glints on the water's own colour, in from the right edge, past
-  // the bridge and off along the bottom-left, where `sink` is.
-  water: { colour: [166, 213, 255], sink: [600, 526, 660, 540], marks: 45, speed: 9, glints: 4 },
+  // current marks and glints on the water's own colours — the open river and the
+  // dark blue of it in the bridge's shadow — in from the right edge, under the bridge
+  // and off along the bottom-left, where `sink` is.
+  water: { colours: [[166, 213, 255], [0, 44, 82]], sink: [600, 526, 660, 540], marks: 55, speed: 9, glints: 4 },
   fires: [
     { x: 389, y: 188, s: 2.5, g: 187.5 },
     { x: 442.5, y: 170, s: 2.5, g: 187.5 }
