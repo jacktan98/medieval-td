@@ -245,10 +245,10 @@ const MEMORY_S = 20;
 const paths = {
   // The one sound the UI makes. Not a battle noise at all — it answers the
   // player's finger rather than anything happening on the board.
-  select:          'assets/audio/sfx/Select_Sound.mp3',
+  select:          'assets/audio/map/Select_Sound.mp3',
   // Taking a tower down. The third of the three deliberate money noises, beside
   // the family lines a build and an upgrade play.
-  sell:            'assets/audio/sfx/Sell_Tower.mp3',
+  sell:            'assets/audio/map/Sell_Tower.mp3',
   // A flask breaking. Its own clip rather than a quieter rock, because the two
   // land for opposite reasons: a rock is the damage arriving and a flask is the
   // damage STARTING.
@@ -495,15 +495,15 @@ const paths = {
   // something on a battlefield. Three of them LOOP — see setLoop — which nothing
   // in the game had needed until the map got a soundtrack: every other clip here
   // answers a moment, and these answer a situation that lasts.
-  marching:        'assets/audio/sfx/Marching_sound.mp3',
-  flag_planted:    'assets/audio/sfx/Flag_planted.mp3',
+  marching:        'assets/audio/map/Marching_sound.mp3',
+  flag_planted:    'assets/audio/map/Flag_planted.mp3',
   // THE VILLAGERS' OWN FOLDER, assets/audio/villagers, at the owner's word — "i
   // anticipate there will be much more sound incoming".
   villager_selected: 'assets/audio/villagers/Villager_selected.mp3',
   villager_runnn:    'assets/audio/villagers/Villager_say_runnn.mp3',
   villager_nooo:     'assets/audio/villagers/Villager_say_nooo.mp3',
-  flag_waving:     'assets/audio/sfx/Flag_waving.mp3',
-  bird_chirping:   'assets/audio/sfx/Bird_chirping.mp3',
+  flag_waving:     'assets/audio/map/Flag_waving.mp3',
+  bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -525,9 +525,9 @@ const paths = {
   //            about half a second is three separate chimes rather than a chord. The
   //            shipped beat is 1.2s, well clear of it, which is why that number is
   //            free to be tuned by ear. See STAR_GAP in score.js.
-  victory:         'assets/audio/sfx/Victory_sound.mp3',
-  lost:            'assets/audio/sfx/Lost_sound.mp3',
-  star:            'assets/audio/sfx/Star_sound.mp3'
+  victory:         'assets/audio/map/Victory_sound.mp3',
+  lost:            'assets/audio/map/Lost_sound.mp3',
+  star:            'assets/audio/map/Star_sound.mp3'
 };
 
 // The clip table, by the name the game calls each one. See the note above `paths`

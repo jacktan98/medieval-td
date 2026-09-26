@@ -1,6 +1,6 @@
 # Audio
 
-**Ninety-nine clips: fifty-one in `sfx/`, forty-five in `voice/` and three in `villagers/`.**
+**Ninety-nine clips: forty-two in `sfx/`, nine in `map/`, forty-five in `voice/` and three in `villagers/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -21,7 +21,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Assassin_melee_attack.mp3, Assassin_kill_enemy.mp3,
                       Assassin_Knife_Throw.mp3,
                       Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
-                      Flask_Break.mp3, Sell_Tower.mp3, Select_Sound.mp3,
+                      Flask_Break.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
                       War_cry.mp3, Bomb_sound.mp3,
                       Crow_dies.mp3, Wings_flap.mp3,
@@ -29,10 +29,13 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
-                      Captain_Thug_selected.mp3,
-                      Marching_sound.mp3, Flag_planted.mp3,
-                      Flag_waving.mp3, Bird_chirping.mp3,
+                      Captain_Thug_selected.mp3
+
+assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
+                      Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3,
                       Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3
+                      — the sounds of the stage boards and the world map
+                      themselves rather than of anybody on them
 
 assets/audio/villagers/  Villager_selected.mp3, Villager_say_runnn.mp3,
                          Villager_say_nooo.mp3
