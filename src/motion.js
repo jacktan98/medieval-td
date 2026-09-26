@@ -1103,6 +1103,9 @@ export function drawBoardWater(ctx, img, spec, t) {
   const dt = w.lastT === null ? 0 : Math.max(0, Math.min(0.1, t - w.lastT));
   w.lastT = t;
   step(w.marks, w.flow, spec.marks, spec.speed, dt, false);
+  // The line between the bridge's shadow and the open water, soft and moving —
+  // under the currents, which run across it.
+  if (w.seam) drawSeam(ctx, w.seam, t);
   ctx.drawImage(layerFor(w.grp, g => {
     paintMarks(g, w.marks);
     paintGlints(g, w.flow, dt, t, w.glints, spec.glints);
@@ -1172,5 +1175,104 @@ function buildBoardWater(img, spec) {
     return false;
   };
   const shore = bankSpots(flow, spec.sprayGap ?? 9, land).map((p, n) => ({ ...p, n }));
-  return { grp, shade, flow, shore, marks: [], glints: [], lastT: null };
+  const seam = shaded.length ? buildSeam(d, sd.data, open, shaded[0], art) : null;
+  return { grp, shade, seam, flow, shore, marks: [], glints: [], lastT: null };
+}
+
+// WHERE THE BRIDGE'S SHADOW MEETS THE OPEN WATER, SOFTENED AND MOVING, at the
+// owner's word: "make the dark blue and light blue water sort of wobbly ... so that
+// the line between them is less obvious". A band along that line, SEAM px either
+// side of it, painted as the one blue fading into the other — worked out once by
+// blurring the shadow's outline — and drawn every frame in thin rows, each pushed
+// sideways by a slow ripple, and cut to the water so it never touches the bridge.
+// The band's edges are the two blues themselves, so wherever it lands it meets the
+// water beside it without a line.
+const SEAM = 4;
+function buildSeam(open, shadow, light, dark, art) {
+  const W = 960, H = 540;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    if (!shadow[i + 3]) continue;
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+  }
+  if (x1 < 0) return null;
+  const pad = SEAM * 3;
+  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+  x1 = Math.min(W - 1, x1 + pad); y1 = Math.min(H - 1, y1 + pad);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  // THE LINE ITSELF IS WATER TOO: the drawing's own soft pixels along it are a mix
+  // of the two blues, neither one nor the other, and left out they stayed on the
+  // board as a speckled line down the middle of the band. `mix` is how far along
+  // from the light blue to the dark one a pixel is, or -1 if it is no mix of them.
+  const dv = [dark[0] - light[0], dark[1] - light[1], dark[2] - light[2]];
+  const dd = dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2];
+  const mix = i => {
+    const v = [art[i] - light[0], art[i + 1] - light[1], art[i + 2] - light[2]];
+    const k = (v[0] * dv[0] + v[1] * dv[1] + v[2] * dv[2]) / dd;
+    if (k < 0 || k > 1) return -1;
+    for (let c = 0; c < 3; c++) if (Math.abs(v[c] - k * dv[c]) > 14) return -1;
+    return k;
+  };
+  const wetAt = i => shadow[i + 3] || open[i + 3] || mix(i) >= 0;
+  // How much of the WATER round each pixel is in shadow: the shadow and the water
+  // each blurred, twice over, by a box SEAM wide, and the one over the other — so the
+  // bridge and the banks count for nothing and the ramp is only across the line
+  // between the two blues, never along the shadow's edge against the stonework.
+  let a = new Float32Array(w * h), q = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = ((y + y0) * W + x + x0) * 4;
+    const k = shadow[i + 3] ? 1 : open[i + 3] ? 0 : mix(i);
+    a[y * w + x] = Math.max(0, k);
+    q[y * w + x] = k >= 0 ? 1 : 0;
+  }
+  const blur = (src, horiz) => {
+    const out = new Float32Array(w * h), n = horiz ? w : h, m = horiz ? h : w;
+    for (let j = 0; j < m; j++) {
+      let sum = 0, cnt = 0;
+      const at = k => (horiz ? j * w + k : k * w + j);
+      for (let k = -SEAM; k < n + SEAM; k++) {
+        const add = k + SEAM, drop = k - SEAM - 1;
+        if (add >= 0 && add < n) { sum += src[at(add)]; cnt++; }
+        if (drop >= 0 && drop < n) { sum -= src[at(drop)]; cnt--; }
+        if (k >= 0 && k < n) out[at(k)] = sum / cnt;
+      }
+    }
+    return out;
+  };
+  for (let pass = 0; pass < 2; pass++) { a = blur(blur(a, true), false); q = blur(blur(q, true), false); }
+  for (let i = 0; i < a.length; i++) a[i] = q[i] > 1e-3 ? a[i] / q[i] : 0;
+  const band = new ImageData(w, h), mask = new ImageData(w, h), b = band.data, m = mask.data;
+  let any = false;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = ((y + y0) * W + x + x0) * 4, k = (y * w + x) * 4, v = a[y * w + x];
+    if (!wetAt(i)) continue;
+    m[k + 3] = 255;
+    if (v <= 0.02 || v >= 0.98) continue;
+    for (let c = 0; c < 3; c++) b[k + c] = Math.round(light[c] + (dark[c] - light[c]) * v);
+    b[k + 3] = 255;
+    any = true;
+  }
+  if (!any) return null;
+  const put = data => { const c = sheet(w, h); c.getContext('2d').putImageData(data, 0, 0); return c; };
+  return { band: put(band), mask: put(mask), layer: sheet(w, h), rect: { x: x0, y: y0, w, h } };
+}
+
+// The band, drawn in rows each nudged sideways by two slow waves of their own, and
+// cut to the water.
+const SEAM_ROW = 2;
+function drawSeam(ctx, s, t) {
+  const g = s.layer.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, s.rect.w, s.rect.h);
+  for (let y = 0; y < s.rect.h; y += SEAM_ROW) {
+    const Y = s.rect.y + y;
+    const dx = 2.2 * Math.sin(t * 1.3 + Y * 0.19) + 1.1 * Math.sin(t * 2.1 - Y * 0.07);
+    const hh = Math.min(SEAM_ROW, s.rect.h - y);
+    g.drawImage(s.band, 0, y, s.rect.w, hh, dx, y, s.rect.w, hh);
+  }
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(s.mask, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  ctx.drawImage(s.layer, s.rect.x, s.rect.y);
 }
