@@ -119,6 +119,11 @@ export const level08 = {
   props: [{ x: 36, y: 259, w: 17, up: 18, down: 2 }],   // the angler's rod and line
   // Birdsong and the river under the bridge, both soft, for as long as it is played.
   ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'river_flowing', level: 1 }],
+  // THE RIVER RUNS, as stage 5's does (src/motion.js, drawBoardWater): in along the
+  // top edge, narrowing, under the bridge — its shadow the darker blue — and out at
+  // the left edge, where `sink` is; spray where it meets the banks.
+  water: { colours: [[166, 213, 255], [0, 44, 82]], land: [[92, 127, 73], [69, 96, 54], [255, 222, 158]],
+           sink: [0, 150, 4, 262], marks: 70, speed: 9, glints: 5 },
   waves: stage6Waves,
   wavesExtended: stage6Waves,
   oneLength: true,

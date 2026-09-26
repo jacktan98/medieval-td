@@ -216,4 +216,4 @@ helmet by the armour stand.
   shake — for about a second and a quarter, then stands still for two and a half
   seconds, and again.
 - **A star lost:** "nooo". Birdsong and the river under the bridge play softly
-  throughout.
+  throughout, and the river runs — currents and spray at its banks, as on stage 5.
