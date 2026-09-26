@@ -323,8 +323,18 @@ function drawFront(ctx, img, b) {
   // too, and a key naming the board alone handed it the front sheet's cut.
   const split = shadowSplit(img, `sheet|${img.src}`, true);
   if (split) {
-    ctx.drawImage(split.body, b.x * MAP_PX, b.y * MAP_PX, b.w * MAP_PX, b.h * MAP_PX,
-      b.x, b.y, b.w, b.h);
+    // THE BOX TRIMMED TO THE SHEET FIRST. A box may run off the board — stage 5's
+    // bridge rail runs to y 634 on a 540 board — and Chrome, asked for a piece that
+    // runs off its source, trims it and keeps the rest in place; an iPhone's Safari
+    // stretches what is left over the whole box instead, which drew the rail a second
+    // time, stretched down and to the side, over the one in the base (the owner, in
+    // landscape). Trimmed here, every browser is asked for the same thing.
+    const W = split.body.width / MAP_PX, H = split.body.height / MAP_PX;
+    const x0 = Math.max(0, b.x), y0 = Math.max(0, b.y);
+    const x1 = Math.min(W, b.x + b.w), y1 = Math.min(H, b.y + b.h);
+    if (x1 <= x0 || y1 <= y0) return;
+    ctx.drawImage(split.body, x0 * MAP_PX, y0 * MAP_PX, (x1 - x0) * MAP_PX, (y1 - y0) * MAP_PX,
+      x0, y0, x1 - x0, y1 - y0);
     return;
   }
   // NO CANVAS OF IT, so the SVG itself — and WHOLE, clipped to the box, never a

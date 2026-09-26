@@ -3388,7 +3388,12 @@ console.log('\n--- what a figure can walk behind ---\n');
   // AND WITHOUT A CANVAS OF IT, THE WHOLE SHEET AT 0,0, CLIPPED — never a piece cut
   // out of the SVG, which an iPhone's Safari places wrongly: it drew stage 5's
   // bridge rail twice, the second copy off to one side.
-  ok(/drawImage\((?:img|split\.body|split \? split\.body : img), b\.x \* MAP_PX, b\.y \* MAP_PX, b\.w \* MAP_PX, b\.h \* MAP_PX,\s*b\.x, b\.y, b\.w, b\.h\)/.test(bare) &&
+  //
+  // AND TRIMMED TO THE SHEET before it is asked for: a box running off the board (the
+  // bridge rail's) was stretched over its whole height by an iPhone's Safari, which
+  // does not trim a source rectangle that runs off its image the way Chrome does.
+  ok(/drawImage\(split\.body, x0 \* MAP_PX, y0 \* MAP_PX, \(x1 - x0\) \* MAP_PX, \(y1 - y0\) \* MAP_PX,\s*x0, y0, x1 - x0, y1 - y0\)/.test(bare) &&
+     /y1 = Math\.min\(H, b\.y \+ b\.h\)/.test(bare) &&
      /ctx\.clip\(\);\s*ctx\.drawImage\(img, 0, 0, \(img\.naturalWidth \|\| img\.width\) \/ MAP_PX, \(img\.naturalHeight \|\| img\.height\) \/ MAP_PX\)/.test(bare),
     'and lands exactly where it was drawn on the board',
     'no offset between the sheet and the base it was cut from');
