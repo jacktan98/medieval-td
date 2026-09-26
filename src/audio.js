@@ -626,8 +626,9 @@ export const GAIN = {
   // The hammer's knocks and the reel, soft: work going on, not the battle.
   hammering_nail: 0.5,
   fishing_reel: 0.35,
-  // Stage 7's sizzle and fountain, soft like the reel and the river.
-  fish_cooking: 0.35,
+  // Stage 7's sizzle and fountain, soft like the reel and the river — the sizzle
+  // then 20% up, by ear.
+  fish_cooking: 0.42,
   fountain_water: 0.4,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none

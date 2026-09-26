@@ -309,8 +309,8 @@ const PLAYS = {
     hops: [{ every: 10, who: [0, 1] }, { every: 15, who: [2, 3] }, { every: 20, who: [4] }],
     // THE COOK holds his skewer over the fire for `cook` seconds — the fish sizzling
     // while he does (main.js, `cooking`) — then draws it back out for `out`, and
-    // again, each for a while of its own drawn afresh every time.
-    cook: { who: 5, cook: [4, 6.5], out: [1.4, 2.2] },
+    // again. The two the same length, and longer than they were, at the owner's word.
+    cook: { who: 5, cook: [6, 6], out: [6, 6] },
     cries: { runnn: false, nooo: true, wave: 'thugs' }
   },
   // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle

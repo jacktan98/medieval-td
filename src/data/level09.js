@@ -125,10 +125,22 @@ export const level09 = {
   props: [{ x: 889, y: 330, w: 10, up: 10, down: 1 }],   // the cook's skewer
   // Birdsong and the fountain, both soft, for as long as it is played.
   ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fountain_water', level: 1 }],
-  // THE FOUNTAIN RUNS, in the world map's style — see drawFountain in src/motion.js:
-  // its jets falling, its pools glinting and rippling, spray where the jets land.
-  // `spout` is where the middle jet rises from, so its water runs away from it.
-  fountain: { colour: [166, 213, 255], box: [397, 275, 149, 135], spout: [470, 311] },
+  // THE FOUNTAIN RUNS, the way the world map's waterfall does — see drawFountain in
+  // src/motion.js — along the owner's arrows. `jets` are lines along the middle of
+  // each jet, from where the water comes out to where it lands, and how wide each
+  // is: up the middle jet from its spout and over either arm, and up out of each side
+  // jet's inner foot, over and down to the basin. The sheets over the tiers fall
+  // straight down on their own.
+  fountain: { colour: [166, 213, 255], box: [397, 275, 149, 135], jets: [
+    { w: 4, path: [[471.3, 310], [471.3, 284], [469, 280.5], [462, 283], [455.5, 289], [452.5, 298], [451.3, 309]] },
+    { w: 4, path: [[471.3, 310], [471.3, 284], [473.5, 280.5], [480, 282], [486.5, 287], [489.5, 297], [490.5, 309]] },
+    // The left pair, the inner arch and the outer band.
+    { w: 5, path: [[453, 323], [448, 309], [443, 302], [437.5, 301], [434.5, 307], [433.5, 320], [433.8, 344]] },
+    { w: 5, path: [[447.5, 305], [441, 297], [435, 294.5], [428.5, 297.5], [425, 306], [423.5, 320], [424, 336], [425.5, 356]] },
+    // And the right pair.
+    { w: 5, path: [[487.5, 322.5], [492.5, 309], [500, 305], [506, 307], [509.5, 314], [510.6, 322.5], [510.8, 332]] },
+    { w: 5, path: [[492.5, 304], [502.5, 300.6], [512.5, 305], [517.5, 317.5], [519.5, 332.5], [520.3, 355]] }
+  ] },
   waves: stage7Waves,
   wavesExtended: stage7Waves,
   oneLength: true,

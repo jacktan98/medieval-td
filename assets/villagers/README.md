@@ -242,9 +242,10 @@ level's list.
   standing and praying by turns, each facing as before.
 - **Every 10 enemies down** villagers 1 and 2 hop twice; **every 15**, 3 and 4;
   **every 20**, 5.
-- **All game long:** the cook holds his skewer over the fire for four to six and a
-  half seconds, the fish sizzling while he does, then draws it back out for one and
-  a half to two seconds, and again.
+- **All game long:** the cook holds his skewer over the fire for six seconds, the
+  fish sizzling while he does, then draws it back out for six seconds, and again.
 - **A star lost:** "nooo". Birdsong and the fountain play softly throughout, and the
-  fountain runs: marks falling down its jets and the sheets over its tiers, glints
-  on its pools, and rings and spray where each jet lands.
+  fountain runs the way the world map's waterfall does, in long streaks along the
+  owner's arrows: up the middle jet and down over both its arms, up out of each side
+  jet's inner foot, over and down to the basin, and straight down the sheets over
+  the tiers — with glints on its pools and rings and spray where the water lands.
