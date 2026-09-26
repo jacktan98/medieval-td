@@ -205,13 +205,15 @@ In the level's order: 1 by his rod planted on the bank, 2 by the top-right hut, 
 fishing with his rod in hand, 4 between the two bottom-right huts, 5 stuck in a
 helmet by the armour stand.
 
-- **Before the first wave:** villagers 1, 2 and 4 stand and greet by turns.
+- **Before the first wave:** villagers 1, 2 and 4 stand and greet by turns — 1
+  facing the player mirrored (turned right), in this and in his praying.
 - **When the first enemy of wave 1 appears:** "runnn", and villagers 1, 2 and 4
   start standing and praying by turns.
 - **All game long:** villager 3 waits with his line in the water for four to seven
   and a half seconds, then tugs at it for one and a half to two and a half, the reel
   whirring softly while he does, and back. Villager 5 heaves at the helmet stuck on
-  his head — his two drawings by turns, shaking — for nearly two seconds, then
-  stands still for a second and a half, and again.
+  his head — his two drawings by turns about three times a second, with a slight
+  shake — for about a second and a quarter, then stands still for two and a half
+  seconds, and again.
 - **A star lost:** "nooo". Birdsong and the river under the bridge play softly
   throughout.

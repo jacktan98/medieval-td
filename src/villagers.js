@@ -264,16 +264,19 @@ const PLAYS = {
   // huts, and 5 stuck in a helmet by the armour stand.
   dawnford: {
     // The three who are not busy greet by turns, and pray by turns once the wave is
-    // on them.
-    before: [front('greets'), front('greets'), {}, front('greets'), {}],
-    after: [front('pray'), front('pray'), {}, front('pray'), {}],
+    // on them. Villager 1, by the fishing spot, faces the player mirrored — turned
+    // right — in both.
+    before: [mirrored('greets'), front('greets'), {}, front('greets'), {}],
+    after: [mirrored('pray'), front('pray'), {}, front('pray'), {}],
     run: [], hops: [],
     // THE ANGLER waits with his line in the water for `wait` seconds, then tugs at it
     // for `tug` — the reel whirring while he does (main.js, `reeling`) — and back.
     angler: { who: 2, wait: [4, 7.5], tug: [1.6, 2.6] },
     // THE MAN IN THE HELMET heaves at it: his two drawings by turns every `beat`,
     // shaking, for `struggle` seconds, then stands still for `rest`, and again.
-    stuck: { who: 4, beat: 0.2, struggle: 1.8, rest: 1.5, shake: 0.8, flip: true },
+    // Toned down at the owner's word: slower heaves, a shorter bout, a smaller shake
+    // and a longer rest between.
+    stuck: { who: 4, beat: 0.32, struggle: 1.3, rest: 2.4, shake: 0.4, flip: true },
     // The village's "runnn" as the first wave comes, and its "nooo" for a lost star.
     cries: { runnn: false, nooo: true, wave: 'runnn' }
   },
