@@ -13,7 +13,7 @@ import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { drawCrewTurned } from './crew.js';
-import { drawBoardWater } from './motion.js';
+import { drawBoardWater, drawFountain } from './motion.js';
 import { VILLAGER_POSE, villagerKey } from './villagers.js';
 import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
@@ -449,8 +449,11 @@ function drawFigures(ctx, state) {
       // `g` is measured off the artwork by tools/split-map.mjs. The fall back is the
       // old rule, for a drawing with no shadow under it to measure.
       const foot = b.g ?? b.y + b.h;
+      // A FOUNTAIN IN THE SHEET RUNS, drawn with it at its depth — stage 7's.
+      const fountain = level.fountain && level.fountain.box[0] === b.x && level.fountain.box[1] === b.y;
       add(foot, 1, () => {
         drawFront(ctx, front, b);
+        if (fountain) drawFountain(ctx, front, level.fountain, state.anim || 0);
         ghostInside(ctx, state, box, foot);
       });
     }

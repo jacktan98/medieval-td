@@ -63,6 +63,17 @@ The fishing drawings stand on (324.5, 318) and carry the rod, so the rod painted
 the angler's hands is cut out of the board with him (`props` in level08.js); the
 helmet ones stand on (256, 312).
 
+And stage 7's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Cooking_1.png` | the cook, his skewer held out over the fire |
+| `Villager_Cooking_2.png` | the skewer drawn back out of it |
+
+Both stand on (297.5, 305) and carry the skewer, so the skewer painted in the cook's
+hands is cut out of the board with him (`props` in level09.js); the fish stays on
+the fire.
+
 The ballista-part drawings stand on (236, 311); the hammering ones on (276.5, 305).
 
 The carrying and throwing drawings stand on the back-end villager's shadow, centred
@@ -217,3 +228,23 @@ helmet by the armour stand.
   seconds, and again.
 - **A star lost:** "nooo". Birdsong and the river under the bridge play softly
   throughout, and the river runs — currents and spray at its banks, as on stage 5.
+
+## Stage 7's script
+
+Left to right as the owner numbers them: 1 by the left-hand huts, 2, 3 and 4 at the
+fountain from the top down, 5 behind the cooking fire — and the cook, last in the
+level's list.
+
+- **Before the first wave:** villagers 1 to 5 stand and greet by turns — 1, 2 and 3
+  facing the player turned right, 4 with his back to the player turned right, and 5
+  facing the player turned left.
+- **When the first enemy of wave 1 appears:** "thugs are here", and the five start
+  standing and praying by turns, each facing as before.
+- **Every 10 enemies down** villagers 1 and 2 hop twice; **every 15**, 3 and 4;
+  **every 20**, 5.
+- **All game long:** the cook holds his skewer over the fire for four to six and a
+  half seconds, the fish sizzling while he does, then draws it back out for one and
+  a half to two seconds, and again.
+- **A star lost:** "nooo". Birdsong and the fountain play softly throughout, and the
+  fountain runs: marks falling down its jets and the sheets over its tiers, glints
+  on its pools, and rings and spray where each jet lands.

@@ -107,16 +107,28 @@ export const level09 = {
   src: 'assets/map/Stage_7_Map',
   routes: [west, east],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
-  // Each anchor is the centre of the figure's own ground shadow.
+  // THE PEOPLE WHO LIVE HERE, left to right as the owner numbers them, and the cook
+  // last. Each anchor is the centre of the figure's own ground shadow.
   villagers: [
-    { x: 211, y: 238 },       // by the left-hand huts
-    { x: 521, y: 306 },       // the two at the fountain
-    { x: 530, y: 331 },
-    { x: 869, y: 312 },       // at the campfire
-    { x: 922, y: 341 },       // with the pitchfork
-    { x: 520, y: 405 }        // at the foot of the fountain
+    { x: 211,   y: 238 },     // 1, by the left-hand huts
+    { x: 520.5, y: 306 },     // 2, 3 and 4 at the fountain, top to bottom
+    { x: 530.5, y: 331 },
+    { x: 520,   y: 405 },
+    { x: 869,   y: 312.5 },   // 5, behind the cooking fire
+    { x: 903.5, y: 340 }      // the cook, his skewer over the fire
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `fountain` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs,
+  // with the skewer the cook holds (`props`): his drawings carry their own. The fish
+  // stays on the fire.
+  villagerPlay: 'fountain',
+  props: [{ x: 889, y: 330, w: 10, up: 10, down: 1 }],   // the cook's skewer
+  // Birdsong and the fountain, both soft, for as long as it is played.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fountain_water', level: 1 }],
+  // THE FOUNTAIN RUNS, in the world map's style — see drawFountain in src/motion.js:
+  // its jets falling, its pools glinting and rippling, spray where the jets land.
+  // `spout` is where the middle jet rises from, so its water runs away from it.
+  fountain: { colour: [166, 213, 255], box: [397, 275, 149, 135], spout: [470, 311] },
   waves: stage7Waves,
   wavesExtended: stage7Waves,
   oneLength: true,
@@ -165,14 +177,14 @@ export const level09 = {
   // WHAT A FIGURE CAN WALK BEHIND: the four stone huts, the cooking fire, and the
   // fountain.
   //
-  // THE FOUNTAIN IS THE BIGGEST BOX ON ANY BOARD at 149 x 141, and it earns it the
+  // THE FOUNTAIN IS THE BIGGEST BOX ON ANY BOARD at 149 x 135, and it earns it the
   // ordinary way — it stands on the ground, it has a shadow, and its ground line is
   // the centre of that shadow.
   //
   // NO ROAD PASSES BEHIND IT and no tower can be hidden by it either, which is worth
   // saying because the plot at (465, 243) sits directly above it and looks like it
   // should be. It is not: a tower stands ON its plot and draws UPWARD from it, so
-  // that one's ink runs from about y 130 to 243 and the fountain's box starts at 269.
+  // that one's ink runs from about y 130 to 243 and the fountain's box starts at 275.
   // The two never share a pixel. tools/campaign.mjs asks that of the ink rather than
   // of this paragraph.
   frontArt: 'front09',
@@ -182,6 +194,6 @@ export const level09 = {
     { x: 753, y: 212, w:  73, h:  91, g: 287 },   // stands on y 287
     { x: 186, y: 251, w:  75, h:  91, g: 326 },   // stands on y 326
     { x: 856, y: 309, w:  46, h:  38, g: 338 },   // stands on y 338 — the cooking fire
-    { x: 397, y: 269, w: 149, h: 141, g: 380 }    // stands on y 380 — the fountain
+    { x: 397, y: 275, w: 149, h: 135, g: 380 }    // stands on y 380 — the fountain
   ]
 };

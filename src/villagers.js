@@ -101,7 +101,9 @@ export const VILLAGER_POSE = {
           carry_box: [268.5, 305], throw_box: [268.5, 305],
           // Stage 6's angler, rod and line in his drawing, and the man in a helmet.
           fish_1: [324.5, 318], fish_2: [324.5, 318],
-          helmet_1: [256, 312], helmet_2: [256, 312] },
+          helmet_1: [256, 312], helmet_2: [256, 312],
+          // Stage 7's cook, his skewer out to the left in both.
+          cook_1: [297.5, 305], cook_2: [297.5, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -109,7 +111,8 @@ export const VILLAGER_POSE = {
            hammer_1: [195, 185, 120, 135], hammer_2: [195, 185, 120, 135],
            carry_box: [200, 185, 115, 135], throw_box: [200, 185, 115, 135],
            fish_1: [145, 165, 220, 165], fish_2: [145, 165, 220, 165],
-           helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137] },
+           helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137],
+           cook_1: [172, 188, 165, 130], cook_2: [172, 188, 165, 130] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -169,6 +172,7 @@ const ACTS = {
 // `wave`, what it shouts as the first wave comes (VILLAGER_WAVE in src/audio.js).
 const front = act => ({ side: 'front', act }), back = act => ({ side: 'back', act });
 const mirrored = act => ({ side: 'front', act, flip: true });
+const backMirrored = act => ({ side: 'back', act, flip: true });
 // STAGE 5'S BOX CARRIER'S WAY, from the right edge of the board to where he stands
 // to throw onto the crates — the owner's line, drawn on a screenshot, in board px.
 const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
@@ -290,6 +294,25 @@ const PLAYS = {
     // The village's "runnn" as the first wave comes, and its "nooo" for a lost star.
     cries: { runnn: false, nooo: true, wave: 'runnn' }
   },
+  // STAGE 7, Dawnford Fountain, left to right as the owner numbers them: 1 by the
+  // left-hand huts, 2, 3 and 4 at the fountain from the top down, 5 behind the
+  // cooking fire — and the cook, last in the level's list.
+  fountain: {
+    // Greeting by turns until the first wave, praying by turns after it. All but 4
+    // and 5 turned to the right: 1, 2 and 3 facing the player, 4 with his back to
+    // the player; 5 faces the player, turned left, as every drawing is.
+    before: [mirrored('greets'), mirrored('greets'), mirrored('greets'), backMirrored('greets'), front('greets'), {}],
+    after: [mirrored('pray'), mirrored('pray'), mirrored('pray'), backMirrored('pray'), front('pray'), {}],
+    run: [],
+    // Two hops each, 1 and 2 every tenth enemy down, 3 and 4 every fifteenth, and 5
+    // every twentieth.
+    hops: [{ every: 10, who: [0, 1] }, { every: 15, who: [2, 3] }, { every: 20, who: [4] }],
+    // THE COOK holds his skewer over the fire for `cook` seconds — the fish sizzling
+    // while he does (main.js, `cooking`) — then draws it back out for `out`, and
+    // again, each for a while of its own drawn afresh every time.
+    cook: { who: 5, cook: [4, 6.5], out: [1.4, 2.2] },
+    cries: { runnn: false, nooo: true, wave: 'thugs' }
+  },
   // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle
   // gate, 3 carrying a part to the broken ballista, 4 hammering at it, and 5, 6 and 7
   // by the bridge.
@@ -381,14 +404,24 @@ function walkTo(v, pts, speed, dt) {
 //   gone  — out of sight for `gone` seconds, and round again.
 // The villagers it moves are marked `work`, and the rest of this file leaves them be.
 function work(state, vp, dt) {
-  const { smith, crew, hammer, angler, stuck } = vp.plan;
+  const { smith, crew, hammer, angler, stuck, cook } = vp.plan;
+  const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+
+  // THE COOK: his skewer over the fire, then drawn back out, and over again.
+  const ck = cook && state.villagers[cook.who];
+  if (ck) {
+    ck.work = true;
+    const c = vp.cook || (vp.cook = { over: true, until: vp.t + span(cook.cook) });
+    if (vp.t >= c.until) { c.over = !c.over; c.until = vp.t + span(c.over ? cook.cook : cook.out); }
+    ck.pose = c.over ? 'cook_1' : 'cook_2';
+    vp.cooking = c.over;
+  }
 
   // THE ANGLER: waiting, then tugging at his line, and back, each for a while of its
   // own drawn afresh every time.
   const a = angler && state.villagers[angler.who];
   if (a) {
     a.work = true;
-    const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
     const c = vp.angling || (vp.angling = { tug: false, until: vp.t + span(angler.wait) });
     if (vp.t >= c.until) { c.tug = !c.tug; c.until = vp.t + span(c.tug ? angler.tug : angler.wait); }
     a.pose = c.tug ? 'fish_2' : 'fish_1';
@@ -706,4 +739,5 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    hammer_1: 'vill_hammering_1', hammer_2: 'vill_hammering_2',
                    carry_box: 'vill_carrying_box', throw_box: 'vill_throwing_box',
                    fish_1: 'vill_fishing_1', fish_2: 'vill_fishing_2',
-                   helmet_1: 'vill_helmet_stuck_1', helmet_2: 'vill_helmet_stuck_2' };
+                   helmet_1: 'vill_helmet_stuck_1', helmet_2: 'vill_helmet_stuck_2',
+                   cook_1: 'vill_cooking_1', cook_2: 'vill_cooking_2' };

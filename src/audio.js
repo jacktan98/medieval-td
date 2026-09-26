@@ -525,6 +525,10 @@ const paths = {
   // (HAMMER, below). Stage 6's angler: the reel, while he tugs.
   hammering_nail:  'assets/audio/map/Hammering_nail.mp3',
   fishing_reel:    'assets/audio/map/Fishing_reel.mp3',
+  // Stage 7: the fish sizzling while the cook holds it over the fire, and the
+  // fountain running for as long as the board is played.
+  fish_cooking:    'assets/audio/map/Fish_cooking.mp3',
+  fountain_water:  'assets/audio/map/Water_fountain_sound.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -622,6 +626,9 @@ export const GAIN = {
   // The hammer's knocks and the reel, soft: work going on, not the battle.
   hammering_nail: 0.5,
   fishing_reel: 0.35,
+  // Stage 7's sizzle and fountain, soft like the reel and the river.
+  fish_cooking: 0.35,
+  fountain_water: 0.4,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.

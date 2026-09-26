@@ -1071,6 +1071,166 @@ export function drawMotion(ctx, t, base = null, baseKey = '') {
   if (SHIMMER && !WATER_THROUGH_FOG) drawShimmer(ctx, t);
 }
 
+// --- a board's fountain -----------------------------------------------------------
+//
+// STAGE 7'S FOUNTAIN, RUNNING, in the world map's style at the owner's word. Its
+// water is one colour (`colour` on the level's `fountain`), drawn as shapes each
+// ringed in black, so the shapes come apart by colour alone: each one TALLER than
+// it is wide is water falling — a jet arching over, a sheet running down a tier —
+// and each one wider than tall is a pool. On the falling water the world map's
+// current marks ride down to where each shape ends; on the pools its glints come
+// and go; and where a jet lands in a pool, rings spread and spray jumps.
+//
+// The fountain is part of the board's front sheet, drawn at its own depth among the
+// figures, so this is drawn straight after it (see render.js) and on the board's
+// clock: it holds still on a paused board. Built once per drawing.
+const fountains = new Map();
+export function drawFountain(ctx, img, spec, t) {
+  if (!img || !spec) return;
+  let f = fountains.get(img);
+  if (f === undefined) {
+    f = null;
+    try { f = buildFountain(img, spec); } catch { /* no canvas: still water */ }
+    fountains.set(img, f);
+  }
+  if (!f) return;
+  const dt = f.lastT === null ? 0 : Math.max(0, Math.min(0.1, t - f.lastT));
+  f.lastT = t;
+  // MARKS ON THE FALLING WATER, short and bright — the jets are narrow and pale —
+  // spread evenly over every jet rather than gathered where the water is widest,
+  // and quickening as they fall.
+  const want = spec.marks ?? 40;
+  for (let tries = 0; f.marks.length < want && tries < 20; tries++) {
+    const i = f.flow.cells[(Math.random() * f.flow.cells.length) | 0];
+    const life = 0.8 + Math.random() * 1.0;
+    f.marks.push({ x: (i % f.flow.W) * R + Math.random(), y: ((i / f.flow.W) | 0) * R + Math.random(),
+                   age: Math.random() * life * 0.3, life, len: 1.6 + Math.random() * 2,
+                   a: 0.55 + Math.random() * 0.3 });
+  }
+  for (let k = f.marks.length - 1; k >= 0; k--) {
+    const m = f.marks[k];
+    m.age += dt;
+    const v = flowAt(f.flow, m.x, m.y);
+    if (!v || m.age > m.life) { f.marks.splice(k, 1); continue; }
+    m.vx = v[0]; m.vy = v[1];
+    m.s = (spec.speed ?? 10) * (0.6 + m.age / m.life);
+    m.x += m.vx * m.s * dt;
+    m.y += m.vy * m.s * dt;
+  }
+  ctx.drawImage(layerFor(f.fall, g => paintMarks(g, f.marks)), f.fall.rect.x, f.fall.rect.y);
+  // The pools: glints, and rings round every foot.
+  ctx.drawImage(layerFor(f.pool, g => {
+    paintGlints(g, f.still, dt, t, f.glints, spec.glints ?? 4);
+    g.lineWidth = 0.6;
+    for (const s of f.feet) {
+      const p = ((t / 1.7) + hash(s.n + 70)) % 1;
+      for (const lag of [0, 0.5]) {
+        const q = (p + lag) % 1;
+        g.strokeStyle = `rgba(255,252,240,${0.8 * (1 - q)})`;
+        g.beginPath();
+        g.ellipse(s.x, s.y + 1, 2 + q * 8, (2 + q * 8) * 0.4, 0, 0, Math.PI * 2);
+        g.stroke();
+      }
+    }
+  }), f.pool.rect.x, f.pool.rect.y);
+  // SPRAY where each jet lands: droplets thrown up and out, over and over.
+  ctx.save();
+  for (const s of f.feet) {
+    for (let j = 0; j < 5; j++) {
+      const q = ((t / 0.8) + hash(s.n * 5 + j + 80)) % 1;
+      const dir = -Math.PI / 2 + (hash(s.n * 5 + j + 90) - 0.5) * 2.6;
+      const d = q * (2.5 + hash(s.n * 5 + j + 100) * 3);
+      const x = s.x + Math.cos(dir) * d;
+      const y = s.y + Math.sin(dir) * d * 0.5 - Math.sin(Math.PI * q) * 3.4;
+      const r = 0.75;
+      ctx.globalAlpha = 0.9 * (1 - q);
+      ctx.drawImage(dot(), x - r * 1.4, y - r * 1.4, r * 2.8, r * 2.8);
+    }
+  }
+  ctx.restore();
+}
+
+function buildFountain(img, spec) {
+  const c = sheet();
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, 960, 540);
+  const d = g.getImageData(0, 0, 960, 540).data;
+  c.width = 0; c.height = 0;
+  const [bx, by, bw, bh] = spec.box;
+  const [cr, cg, cb] = spec.colour;
+  const wet = i => d[i * 4 + 3] > 200 && Math.abs(d[i * 4] - cr) <= 12 &&
+    Math.abs(d[i * 4 + 1] - cg) <= 12 && Math.abs(d[i * 4 + 2] - cb) <= 12;
+  // Each shape of water on its own: the pixels of the colour that touch.
+  const lab = new Int32Array(960 * 540).fill(-1);
+  const shapes = [];
+  for (let y = by; y < by + bh; y++) for (let x = bx; x < bx + bw; x++) {
+    const i0 = y * 960 + x;
+    if (lab[i0] >= 0 || !wet(i0)) continue;
+    const s = { px: [], x0: x, y0: y, x1: x, y1: y };
+    lab[i0] = shapes.length;
+    const todo = [i0];
+    while (todo.length) {
+      const i = todo.pop(), X = i % 960, Y = (i / 960) | 0;
+      s.px.push(i);
+      if (X < s.x0) s.x0 = X; if (X > s.x1) s.x1 = X; if (Y < s.y0) s.y0 = Y; if (Y > s.y1) s.y1 = Y;
+      for (const k of [i - 1, i + 1, i - 960, i + 960]) {
+        const KX = k % 960, KY = (k / 960) | 0;
+        if (KX < bx || KX >= bx + bw || KY < by || KY >= by + bh) continue;
+        if (lab[k] < 0 && wet(k)) { lab[k] = shapes.length; todo.push(k); }
+      }
+    }
+    shapes.push(s);
+  }
+  // A speck of the colour is antialiasing, not water.
+  const real = shapes.filter(s => s.px.length >= 20);
+  for (const s of real) s.falls = s.y1 - s.y0 + 1 > (s.x1 - s.x0 + 1) / 1.6;
+  const maskOf = list => {
+    const m = sheet(), mg = m.getContext('2d'), md = new ImageData(960, 540);
+    for (const s of list) for (const i of s.px) md.data[i * 4 + 3] = 255;
+    mg.putImageData(md, 0, 0);
+    return m;
+  };
+  const falling = real.filter(s => s.falls), pools = real.filter(s => !s.falls);
+  if (!falling.length || !pools.length) return null;
+  const pooled = new Uint8Array(960 * 540);
+  for (const s of pools) for (const i of s.px) pooled[i] = 1;
+  // WHERE EACH SHAPE OF FALLING WATER ENDS: its lowest px, in runs a few px apart —
+  // the two feet of an arch are two. The spout the middle jet rises from is where
+  // water starts rather than ends, so the way down runs away from it.
+  const [sx, sy] = spec.spout || [-99, -99];
+  const nearSpout = (x, y) => Math.hypot(x - sx, y - sy) < 6;
+  const ends = new Set(), feet = [];
+  for (const s of falling) {
+    const low = s.px.filter(i => ((i / 960) | 0) >= s.y1 - 1).map(i => i % 960).sort((a, b) => a - b);
+    let run = [];
+    const close = () => {
+      if (!run.length) return;
+      const x = (run[0] + run[run.length - 1]) / 2;
+      run = [];
+      if (nearSpout(x, s.y1)) return;
+      // A foot in a pool — something just below it is pool water — rings and sprays.
+      let inPool = false;
+      for (let dy = 1; dy <= 8 && !inPool; dy++) for (let dx = -2; dx <= 2; dx++) {
+        if (pooled[(s.y1 + dy) * 960 + Math.round(x) + dx]) { inPool = true; break; }
+      }
+      if (inPool) feet.push({ x, y: s.y1 + 2, n: feet.length });
+    };
+    // The whole of the bottom edge is where the water goes, so a sheet falls
+    // straight down rather than gathering to a point.
+    for (const i of s.px) if (((i / 960) | 0) >= s.y1 - 1 && !nearSpout(i % 960, s.y1)) { ends.add(i); ends.add(i - 960); }
+    for (const x of low) { if (run.length && x - run[run.length - 1] > 2) close(); run.push(x); }
+    close();
+  }
+  const fallMask = maskOf(falling), poolMask = maskOf(pools);
+  const flow = flowField(fallMask, (x, y) => ends.has(y * 960 + x) || ends.has((y + 1) * 960 + x),
+                         spec.spout ? nearSpout : null);
+  const still = flowField(poolMask, () => true);
+  const out = { fall: group(fallMask), pool: group(poolMask), flow, still, feet,
+                marks: [], glints: [], lastT: null };
+  fallMask.width = 0; fallMask.height = 0; poolMask.width = 0; poolMask.height = 0;
+  return out.fall && out.pool ? out : null;
+}
+
 // --- the shadows on the world map's water --------------------------------------
 //
 // THE SHADOW UNDER THE THREE BRIDGES AND ALONG THE FOOT OF THE MOUNTAINS, soft and

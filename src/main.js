@@ -405,6 +405,8 @@ function frame(now) {
   setLoop('steel_welding', playing && !state.paused && !!(vp && vp.welding), 1, 'board_weld');
   // AND STAGE 6'S ANGLER'S REEL, soft, for as long as he is tugging at his line.
   setLoop('fishing_reel', playing && !state.paused && !!(vp && vp.reeling), 1, 'board_reel');
+  // AND STAGE 7'S FISH SIZZLING, for as long as the cook holds it over the fire.
+  setLoop('fish_cooking', playing && !state.paused && !!(vp && vp.cooking), 1, 'board_cook');
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.
