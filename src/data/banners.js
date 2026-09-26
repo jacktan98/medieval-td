@@ -2,6 +2,7 @@
 // (the asset keys in src/assets.js). See swayBanner in src/render.js for how.
 //
 // Every drawing is the 1024 x 1024 export, and every number is a source pixel in it.
+// Tier 4's were measured again after the owner's redraw of the walls behind them.
 // The cloth is found by its `colour` inside `box` — the box keeps out the same colour
 // elsewhere on the tower (a book, a spire) — together with its black edge and
 // whatever is painted on it.
@@ -18,14 +19,14 @@ const flag = (x0, y0, x1, y1) => ({ kind: 'flag', colour: BLUE, box: [x0 - 8, y0
 
 export const BANNERS = {
   // Tier 4.
-  archery_t4:         banner(PURPLE, [390, 250, 612, 622], 350, 615),   // Musketeer Post
-  archery_t4b:        banner(BLUE,   [390, 250, 606, 642], 372, 634),   // Crossbow Sentry
-  barracks_t4:        banner(WHITE,  [320, 262, 672, 700], 405, 692),   // Paladin Keep
-  barracks_t4b:       banner(BROWN,  [320, 262, 672, 700], 405, 692),   // Assassin Guild
-  artillery_t4_base:  banner(BLUE,   [384, 442, 530, 694], 492, 687),   // Ballista Turret
-  artillery_t4b_base: banner(PURPLE, [384, 442, 530, 694], 492, 687),   // Cannon Outpost
-  monastery_t4:       banner(WHITE,  [376, 530, 622, 818], 615, 812),   // High Altar
-  monastery_t4b:      banner(ORANGE, [376, 515, 622, 806], 612, 800),   // Judgement Temple
+  archery_t4:         banner(PURPLE, [390, 250, 612, 610], 350, 603),   // Musketeer Post
+  archery_t4b:        banner(BLUE,   [390, 262, 606, 610], 362, 603),   // Crossbow Sentry
+  barracks_t4:        banner(WHITE,  [320, 262, 672, 688], 405, 680),   // Paladin Keep
+  barracks_t4b:       banner(BROWN,  [320, 262, 672, 688], 405, 680),   // Assassin Guild
+  artillery_t4_base:  banner(BLUE,   [384, 442, 530, 670], 492, 663),   // Ballista Turret
+  artillery_t4b_base: banner(PURPLE, [384, 442, 530, 670], 492, 663),   // Cannon Outpost
+  monastery_t4:       banner(WHITE,  [376, 530, 622, 804], 615, 797),   // High Altar
+  monastery_t4b:      banner(ORANGE, [376, 515, 622, 792], 612, 785),   // Judgement Temple
   // Tiers 1 to 3: the blue flag on its pole at the top of each.
   archery_t1:   flag(661, 217, 751, 272),
   archery_t2:   flag(569, 145, 659, 201),

@@ -219,7 +219,7 @@ const SPRITES = [
   ['assets/towers/archery/Archery_Tower_T3.png',    'watchtower3.groundFrac', towers.archery[2].spriteTrim, towers.archery[2].groundFrac, 'whole'],
   // Archery's SECOND fourth rung. The Musketeer Post is already further down
   // this list with the other tier 4 buildings; this is the one the fork added.
-  ['assets/towers/archery/Crossbow_Sentry_Tower.png', 'sentry.groundFrac', SENTRY.spriteTrim, SENTRY.groundFrac, 'whole'],
+  ['assets/towers/archery/Crossbow_Sentry.png', 'sentry.groundFrac', SENTRY.spriteTrim, SENTRY.groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T1.png',   'camp.groundFrac',        towers.barracks[0].spriteTrim, towers.barracks[0].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T2.png',   'camp2.groundFrac',       towers.barracks[1].spriteTrim, towers.barracks[1].groundFrac, 'whole'],
   ['assets/towers/barracks/Barracks_Tower_T3.png',   'camp3.groundFrac',       towers.barracks[2].spriteTrim, towers.barracks[2].groundFrac, 'whole'],

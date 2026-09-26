@@ -42,7 +42,7 @@ export const paths = {
   // The ladder's SECOND tier 4 BY KEY, and the first key that is a letter rather
   // than a number. There is no tier 5 to call it: a Crossbow Tower buys either of
   // these two, so they are 4 and 4b rather than 4 and 5.
-  archery_t4b: 'assets/towers/archery/Crossbow_Sentry_Tower.png',
+  archery_t4b: 'assets/towers/archery/Crossbow_Sentry.png',
   barracks_t1: 'assets/towers/barracks/Barracks_Tower_T1.png',
   barracks_t2: 'assets/towers/barracks/Barracks_Tower_T2.png',
   barracks_t3: 'assets/towers/barracks/Barracks_Tower_T3.png',

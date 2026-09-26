@@ -14,7 +14,7 @@ in `src/assets.js`.
 | `archery/Archery_Tower_T2.png`         | 1024   | 88 x 153 px  | Archer Post (2)    |
 | `archery/Archery_Tower_T3.png`         | 1024   | 74 x 153 px  | Crossbow Tower (3) |
 | `archery/Musketeer_Post.png`           | 1024   | 74 x 126 px  | Musketeer Post (4) |
-| `archery/Crossbow_Sentry_Tower.png`    | 1024   | 74 x 128 px  | Crossbow Sentry (4), the OTHER fourth rung |
+| `archery/Crossbow_Sentry.png`          | 1024   | 74 x 128 px  | Crossbow Sentry (4), the OTHER fourth rung |
 | `barracks/Barracks_Tower_T1.png`       | 1024   | 125 x 108 px | Militia Camp (1)   |
 | `barracks/Barracks_Tower_T2.png`       | 1024   | 128 x 129 px | Guard Post (2)     |
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
