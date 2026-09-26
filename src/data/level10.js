@@ -138,6 +138,14 @@ export const level10 = {
   // church is exactly as drawn. The drawings share one canvas; its point `at` is laid
   // on (x, y), where the painted bell's corner was, at `k` board px to its px — the
   // painted bell's width against the drawing's. At the church's depth, just after it.
+  // THE CHURCH'S TWO BANNERS, swaying (render.js, swayMapBanner): in the front
+  // sheet's own 1920 x 1080 pixels, the box each white cloth is found in by its
+  // colour, where it hangs free from (`top`) and its tails (`bottom`), and how far it
+  // swings. Just after the church, whose front sheet they are drawn in.
+  mapBanners: [
+    { colour: [233, 233, 233], box: [866, 327, 937, 437], top: 334, bottom: 430, amp: 1.6, g: 225.02 },
+    { colour: [233, 233, 233], box: [960, 351, 1031, 460], top: 358, bottom: 453, amp: 1.6, g: 225.02 }
+  ],
   bell: { x: 391.2, y: 101.9, at: [176, 171], k: 0.194, g: 225.01, cover: 'cover10',
           box: { x: 387, y: 98, w: 43, h: 40 } },
   waves: stage8Waves,

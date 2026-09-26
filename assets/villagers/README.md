@@ -298,6 +298,7 @@ of the church, 9 at the church's right-hand end.
   a second stroke for as long, and back — the roof and pillars over it, as drawn.
 - **Every 10 enemies killed:** villager 9 hops twice.
 - **A star lost:** "nooo". Birdsong plays softly throughout.
+- The church's two banners sway, the cross and the shield on them with the cloth.
 
 ## Holy light over Dawnford
 

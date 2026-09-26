@@ -464,7 +464,7 @@ function drawFigures(ctx, state) {
   // STAGE 8'S CHURCH BELL, swinging, at the church's depth just after it — and the
   // roof and pillars in front of it drawn again over it. See drawBell.
   if (level.bell && state.villagerPlay) add(level.bell.g, 1, () => drawBell(ctx, state));
-  // A BANNER PAINTED ON A BUILDING OF THE BOARD, swaying — stage 5's castle's two —
+  // A BANNER PAINTED ON A BUILDING OF THE BOARD, swaying — stage 8's church's two —
   // at the building's own depth, just after it. See swayMapBanner.
   if (front) {
     for (const bn of level.mapBanners || []) {
@@ -1323,7 +1323,13 @@ const BANNER_SWAY = { amp: 5.5, speed: 2.2, length: 150, edge: 5, band: 3 };
 const FLAG_WAVE = { amp: 3, speed: 4, length: 70, band: 3 };
 const bannerCache = new WeakMap();
 function bannerLayers(img, b) {
-  let got = bannerCache.get(img);
+  // ONE PER BANNER, not one per picture: a board's sheet carries more than one — the
+  // church's two on stage 8 — and keyed by the picture alone, the second banner was
+  // handed the first one's cloth.
+  let byBox = bannerCache.get(img);
+  if (!byBox) bannerCache.set(img, byBox = new Map());
+  const key = b.box.join(',');
+  let got = byBox.get(key);
   if (got !== undefined) return got;
   got = null;
   try {
@@ -1514,7 +1520,7 @@ function bannerLayers(img, b) {
   } catch {
     got = null;
   }
-  bannerCache.set(img, got);
+  byBox.set(key, got);
   return got;
 }
 
@@ -1535,7 +1541,7 @@ function swayBanner(ctx, t, b, img, box) {
   return true;
 }
 
-// A BANNER PAINTED ON THE BOARD ITSELF — stage 5's two on the castle — swaying the
+// A BANNER PAINTED ON THE BOARD ITSELF — stage 8's two on the church — swaying the
 // same way, out of the front sheet it is drawn in: the wall rebuilt behind it within
 // its own box, then the cloth. `amp` is in the sheet's pixels, which are bigger than
 // a tower drawing's, so a board banner states its own.
