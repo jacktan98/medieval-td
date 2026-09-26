@@ -167,6 +167,13 @@ function newGame() {
     bombs: [],
     waveIndex: 0,
     spawned: 0,
+    // THE EXIT FLAGS STAND AGAIN on a new game or a restart; they lift away only
+    // when its first wave comes. See flagAway in src/render.js.
+    flagsAway: undefined,
+    // THE FALLEN, counted for the villagers' hops (src/villagers.js). It was never
+    // cleared, so a game started after one with kills in it began with the count
+    // already past a hop, and the villagers hopped on the first frame.
+    slain: 0,
     timer: openingDelay,
     // Held at the title screen. Nothing steps until the player presses Start —
     // not the spawn clock and not `timer`, which is what the early-call bonus is

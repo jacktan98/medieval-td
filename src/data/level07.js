@@ -133,13 +133,8 @@ export const level07 = {
     { x: 389, y: 188, s: 2.5, g: 187.5 },
     { x: 442.5, y: 170, s: 2.5, g: 187.5 }
   ],
-  // THE TWO BANNERS ON THE CASTLE, swaying (render.js, swayMapBanner): in the front
-  // sheet's own 1920 x 1080 pixels, the box the cloth is found in by its colour, where
-  // it hangs free from (`top`) and its tails (`bottom`), and how far it swings.
-  mapBanners: [
-    { colour: [5, 93, 171], box: [694, 276, 760, 383], top: 296, bottom: 375, amp: 1.6, g: 187.2 },
-    { colour: [5, 93, 171], box: [825, 249, 885, 353], top: 272, bottom: 345, amp: 1.6, g: 187.2 }
-  ],
+  // NO SWAYING BANNERS: the castle's two hung still, at the owner's word, after
+  // swaying for a while through `mapBanners` (see swayMapBanner in render.js).
   waves: stage5Waves,
   wavesExtended: stage5Waves,
   oneLength: true,

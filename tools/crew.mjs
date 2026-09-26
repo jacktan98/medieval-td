@@ -71,18 +71,22 @@ for (const sprite of ['archery_t1', 'monastery_t4b', 'artillery_t1', 'artillery_
   const t = makeTower(plot, fam, def);
   s.towers.push(t);
   const men = def.pair ? def.pair.length : 1;
-  let early = false, turned = new Set(), back = 0;
+  let early = false, turned = new Set(), back = 0, apart = 0;
   for (let i = 0; i < 4.5 / DT; i++) { updateTowers(s, DT); for (let k = 0; k < men; k++) early ||= turnedAway(t, k); }
   ok(!early, `${def.name}: faces his post for the first seconds of quiet`);
   for (let i = 0; i < 90 / DT; i++) {
     updateTowers(s, DT);
     for (let k = 0; k < men; k++) {
       if (turnedAway(t, k)) turned.add(k);
+      if (k && turnedAway(t, k) !== turnedAway(t, 0)) apart++;
       else if (turned.has(k)) back++;
     }
   }
   ok(turned.size === men, `${def.name}: each man turns away in a quiet minute and a half`, `${turned.size} of ${men}`);
   ok(back > 0, `${def.name}: and turns back again`);
+  // THE TWO MONKS ON THEIR OWN: one facing left while the other faces right, at the
+  // owner's word, for a fair share of the quiet rather than a moment of it.
+  if (men > 1) ok(apart * DT > 10, `${def.name}: the two face opposite ways some of the time`, `${(apart * DT).toFixed(0)}s of 90`);
   // An enemy in the ring: everyone is facing the fight on the very next frame.
   for (let k = 0; k < men; k++) t.idle.men[k].away = true;
   spawn(s, 'light_inf');

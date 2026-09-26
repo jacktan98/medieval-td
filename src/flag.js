@@ -70,9 +70,38 @@ function layers() {
       b[i] = a[i]; b[i + 1] = a[i + 1]; b[i + 2] = a[i + 2]; b[i + 3] = a[i + 3];
       a[i + 3] = 0;
     }
+    // AND WHATEVER IS LEFT OF IT round the foot of the pole goes too — the soft rim
+    // where the pole's outline blends into the shadow. Left on the pole it rose with
+    // the flag as a faint dark ring. Below the shadow's top only the pole's own
+    // column stays, and in it only what is not shadow-coloured at all.
+    const W = w;
+    for (let i = 0; i < a.length; i += 4) {
+      if (!a[i + 3]) continue;
+      const x = (i / 4) % W;
+      const far = x < EXIT_POLE.x0 - 1 || x > EXIT_POLE.x1;
+      const dim = Math.abs(a[i] - SHADOW[0]) + Math.abs(a[i + 1] - SHADOW[1]) + Math.abs(a[i + 2] - SHADOW[2]) < 60;
+      if (far || dim) a[i + 3] = 0;
+    }
     pg.globalCompositeOperation = 'source-over';
     pg.putImageData(pd, 0, SHADOW_TOP);
-    hg.putImageData(sd, 0, SHADOW_TOP);
+    // THE SHADOW IS DRAWN AGAIN AS ONE WHOLE ELLIPSE, over the pixels found. Found by
+    // colour it has a hole where the pole's foot stood on it, and with the pole lifted
+    // away that hole showed as a paler circle in the middle of it. Its size and place
+    // are the found pixels' own.
+    let l = W, r = -1, t = h, bt = -1;
+    for (let i = 0; i < b.length; i += 4) {
+      if (b[i + 3] < 128) continue;
+      const x = (i / 4) % W, y = Math.floor(i / 4 / W) + SHADOW_TOP;
+      l = Math.min(l, x); r = Math.max(r, x); t = Math.min(t, y); bt = Math.max(bt, y);
+    }
+    if (r >= 0) {
+      hg.fillStyle = `rgb(${SHADOW.join(',')})`;
+      hg.beginPath();
+      hg.ellipse((l + r + 1) / 2, (t + bt + 1) / 2, (r - l + 1) / 2, (bt - t + 1) / 2, 0, 0, Math.PI * 2);
+      hg.fill();
+    } else {
+      hg.putImageData(sd, 0, SHADOW_TOP);
+    }
     parts = { cloth, pole, shadow };
   } catch {
     parts = false;
@@ -99,10 +128,12 @@ export function drawExitFlag(ctx, x, y, scale, { wind = 1, time = performance.no
     return true;
   }
   // The shadow on the ground, then everything else `lift` px above it.
-  const near = Math.max(0, 1 - lift / 60);
+  // THE HIGHER THE FLAG, THE SMALLER AND FAINTER ITS SHADOW — shrinking about its
+  // own middle as the board's flags lift away, and growing as the map's flag falls.
+  const near = Math.max(0, 1 - lift / 70);
   ctx.save();
-  ctx.globalAlpha *= 0.25 + 0.75 * near;
-  const ss = 0.55 + 0.45 * near;
+  ctx.globalAlpha *= 0.3 + 0.7 * near;
+  const ss = 0.25 + 0.75 * near;
   ctx.translate(x, y);
   ctx.scale(ss, ss);
   ctx.translate(-x, -y);
