@@ -181,9 +181,7 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 const LOUDEST = true;
 const LOUDER = new Set([
   'captain_enters', 'captain_pause', 'captain_healed',
-  'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked',
-  // The village's shout as the first wave comes — loud, at the owner's word.
-  'villager_thugs_here', 'villager_hide', 'villager_oh_no'
+  'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -611,14 +609,14 @@ export const GAIN = {
   // weld are the room the battle is in, not the battle.
   // Then by ear: the fire 60% down, the weld 20% down, the landing doubled and the
   // river 20% up.
-  fire_crackling: 0.14,
-  river_flowing: 0.42,
+  // And again: the fire a further 20% down, the river a further 10% up.
+  fire_crackling: 0.112,
+  river_flowing: 0.462,
   steel_welding: 0.28,
   things_land: 1.0,
-  // The village's wave-1 shouts are LOUDER (see above), and then 20% under that.
-  villager_thugs_here: 0.8,
-  villager_hide: 0.8,
-  villager_oh_no: 0.8,
+  // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
+  // word: levelled to the one target like every other voice, with no trim and none
+  // of the LOUDER boost they started with.
   marching: 0.65,
   rock_hit_ground: 1.6,
   rock_kill_enemy: 0.7,
@@ -981,7 +979,7 @@ export const FLAG_PLANTED = ['flag_planted'];
 export const VILLAGER_RUN  = ['villager_runnn'];
 export const VILLAGER_NOOO = ['villager_nooo'];
 // And the shout as the first wave comes, one per board that has one — the same
-// rules as the two above, and louder (LOUDER), at the owner's word.
+// rules as the two above, and the same loudness as "runnn".
 export const VILLAGER_WAVE = {
   thugs: ['villager_thugs_here'],
   hide:  ['villager_hide'],

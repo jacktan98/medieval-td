@@ -197,9 +197,9 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 5 is being played (background, soft, looping) | `River_water_flowing` |
 | stage 4's smith has his pipe in the fire (the second pipe pose) | `Steel_welding`, soft, looping until he pulls it back (Category B; stops on pause) |
 | a villager's plank, ballista part or box **lands** (stages 4 and 5) | `Things_land_on_ground`, soft (Category B) |
-| the first enemy of wave 1 appears on **stage 2** | `Villager_say_thugs_are_here`, loud, once, **before everything** |
-| the first enemy of wave 1 appears on **stage 3** | `Villager_say_hide`, loud, once, **before everything** |
-| the first enemy of wave 1 appears on **stage 5** | `Villager_say_oh_no`, loud, once, **before everything** |
+| the first enemy of wave 1 appears on **stage 2** | `Villager_say_thugs_are_here`, once, **before everything**, as loud as `Villager_say_runnn` |
+| the first enemy of wave 1 appears on **stage 3** | `Villager_say_hide`, once, **before everything**, as loud as `Villager_say_runnn` |
+| the first enemy of wave 1 appears on **stage 5** | `Villager_say_oh_no`, once, **before everything**, as loud as `Villager_say_runnn` |
 | an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |
