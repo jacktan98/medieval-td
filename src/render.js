@@ -1256,12 +1256,46 @@ function bannerLayers(img, b) {
     // Grown by its black edge ONLY: dark pixels within `edge` of the colour. Grey
     // stone next to it is not cloth, so the bricks beside a banner stay still.
     const mask = new Uint8Array(bw * bh), E = BANNER_SWAY.edge;
-    const dark = i => d[i * 4 + 3] > 120 && d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2] < 200;
+    // ...and so is anything near it that is not plain stone: its black edge, and the
+    // soft pixels where its colour blends into the edge or the wall. Those blends are
+    // neither the cloth's colour nor black, and left on the wall they showed as a
+    // speck at each tail's point once the tail swung away. Stone is a flat mid grey;
+    // a blend has colour in it, or is darker or paler than stone.
+    const dark = i => {
+      const k = i * 4;
+      if (d[k + 3] <= 120) return false;
+      const r = d[k], g = d[k + 1], b = d[k + 2];
+      const hi = Math.max(r, g, b), lo = Math.min(r, g, b);
+      return r + g + b < 200 || hi - lo > 22 || lo > 190;
+    };
     for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
       if (!core[y * bw + x]) continue;
       mask[y * bw + x] = 1;
       for (let v = Math.max(0, y - E); v <= Math.min(bh - 1, y + E); v++)
         for (let u = Math.max(0, x - E); u <= Math.min(bw - 1, x + E); u++) if (dark(v * bw + u)) mask[v * bw + u] = 1;
+    }
+    // AND THE POINTS OF ITS TAILS. At a sharp tip the black edge runs on past the
+    // colour further than `edge` — 8 or 9px on the tier 4 banners — and what was left
+    // behind stayed on the wall as a black speck while the tail swung away. So the
+    // edge is followed further there: dark pixels TOUCHING the cloth, out to TIP of
+    // the colour. Touching, so a mortar line nearby is not taken unless it runs into
+    // the edge itself.
+    const TIP = 10;
+    const near = new Uint8Array(bw * bh);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      if (!core[y * bw + x]) continue;
+      for (let v = Math.max(0, y - TIP); v <= Math.min(bh - 1, y + TIP); v++)
+        for (let u = Math.max(0, x - TIP); u <= Math.min(bw - 1, x + TIP); u++) near[v * bw + u] = 1;
+    }
+    for (let pass = 0; pass < TIP - E; pass++) {
+      const add = [];
+      for (let y = 1; y < bh - 1; y++) for (let x = 1; x < bw - 1; x++) {
+        const i = y * bw + x;
+        if (mask[i] || !near[i] || !dark(i)) continue;
+        if (mask[i - 1] || mask[i + 1] || mask[i - bw] || mask[i + bw]) add.push(i);
+      }
+      if (!add.length) break;
+      for (const i of add) mask[i] = 1;
     }
     // And whatever is painted ON it — the emblem — which its colour does not reach:
     // anything the cloth closes in on every side. Found as what a fill from the
