@@ -458,6 +458,9 @@ function drawFigures(ctx, state) {
       });
     }
   }
+  // STAGE 8'S CHURCH BELL, swinging, at the church's depth just after it — and the
+  // roof and pillars in front of it drawn again over it. See drawBell.
+  if (level.bell && state.villagerPlay) add(level.bell.g, 1, () => drawBell(ctx, state));
   // A BANNER PAINTED ON A BUILDING OF THE BOARD, swaying — stage 5's castle's two —
   // at the building's own depth, just after it. See swayMapBanner.
   if (front) {
@@ -1618,6 +1621,21 @@ function drawVillager(ctx, state, v, layer = null) {
 
 // The greeting drawing in two pieces, made once per side: the hand alone, and the
 // rest with the standing drawing's body put back where the hand was.
+// THE CHURCH BELL in whichever of its three drawings the swing has it in (villagers.js,
+// `bellPose`), laid where the painted one hung; then what hung in front of the painted
+// one — its `cover`, cut out of the drawing by tools/bell-cover.mjs — over it, so the
+// roof overlaps the bell as it always did.
+function drawBell(ctx, state) {
+  const b = level.bell;
+  const img = art[`bell_${state.villagerPlay.bellPose || 'middle'}`];
+  if (img) {
+    const n = img.naturalWidth || 512;
+    ctx.drawImage(img, b.x - b.at[0] * b.k, b.y - b.at[1] * b.k, n * b.k, n * b.k);
+  }
+  const cover = art[b.cover];
+  if (cover) drawFront(ctx, cover, b.box);
+}
+
 // A thrown piece — stage 4's plank, stage 5's ballista part: its drawing, centred on
 // where it is, turning as it flies. See PIECES in villagers.js.
 function drawPlank(ctx, pl) {

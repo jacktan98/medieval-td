@@ -733,6 +733,12 @@ hand:
   same command, given `--over 3e` and `--over 3c`, which name the layer part to lift.
   A bridge is drawn over water, so it has no shadow and no ground line, and a `_front`
   box could not be sorted for it at all — see "The near overlay" below.
+- `Stage_8_Map_bell_cover.svg` — **what hangs in front of stage 8's church bell**:
+  the tower's roof, its front pillars and the nave's roof edge, alone. Written by
+  `node tools/bell-cover.mjs`, which also cuts the painted bell out of
+  `Stage_8_Map_Layer_3b.svg` so the game can swing its own; the game draws this
+  again over the swinging bell, so the roof overlaps it as it did the painted one.
+  Run it once after a redraw of the church, before the splitter.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the

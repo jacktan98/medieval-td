@@ -1,6 +1,6 @@
 # Audio
 
-**A hundred and thirteen clips: forty-two in `sfx/`, seventeen in `map/`, forty-five in `voice/` and nine in `villagers/`.**
+**A hundred and fourteen clips: forty-two in `sfx/`, eighteen in `map/`, forty-five in `voice/` and nine in `villagers/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -37,7 +37,8 @@ assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Fire_crackling.mp3, River_water_flowing.mp3,
                       Steel_welding.mp3, Things_land_on_ground.mp3,
                       Hammering_nail.mp3, Fishing_reel.mp3,
-                      Fish_cooking.mp3, Water_fountain_sound.mp3
+                      Fish_cooking.mp3, Water_fountain_sound.mp3,
+                      Church_bell.mp3
                       — the sounds of the stage boards and the world map
                       themselves rather than of anybody on them
 
@@ -193,7 +194,7 @@ and it now means "how long a lull has to be before the game forgets".
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
 | stage 1's villagers **start running** (the first enemy of wave 1 appears) | `Villager_say_runnn`, **before everything**: takes the channel and is never cut off |
-| on stages 1 to 4, 6 and 7, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the run |
+| on stages 1 to 4 and 6 to 8, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the run |
 | stage 1, 2 or 3 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
 | stage 1, 3, 4, 5 or 7 is being played (background, soft, looping) | `Fire_crackling` — stage 1's campfire, stage 3's and stage 5's torches, stage 4's forge, stage 7's cooking fire |
 | stage 5 is being played (background, soft, looping) | `River_water_flowing` |
@@ -206,6 +207,9 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 5's hammerer brings the hammer down (twice a round) | one knock cut out of `Hammering_nail` — the first knock on the first blow, the second on the second (Category B, soft) |
 | stage 6's angler tugs at his line | `Fishing_reel`, soft, looping for as long as he tugs (Category B; stops on pause) |
 | stage 6 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `River_water_flowing` |
+| the first enemy of wave 1 appears on **stage 8** | `Villager_say_hide` again, the same way |
+| the first enemy of **each wave** appears on stage 8 | the church bell swings left — `Church_bell`, one stroke — back to the middle as the stroke is faded out, then right with a second stroke, and back (Category B) |
+| stage 8 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
 | the first enemy of wave 1 appears on **stage 7** | `Villager_say_thugs_are_here` again, the same way |
 | stage 7's cook holds his skewer over the fire | `Fish_cooking`, soft, looping for as long as he holds it there (Category B; stops on pause) |
 | stage 7 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `Water_fountain_sound` |

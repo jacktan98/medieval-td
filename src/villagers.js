@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, BELL } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -103,7 +103,9 @@ export const VILLAGER_POSE = {
           fish_1: [324.5, 318], fish_2: [324.5, 318],
           helmet_1: [256, 312], helmet_2: [256, 312],
           // Stage 7's cook, his skewer out to the left in both.
-          cook_1: [297.5, 305], cook_2: [297.5, 305] },
+          cook_1: [297.5, 305], cook_2: [297.5, 305],
+          // Stage 8's congregation, kneeling up and bowed down, turned right.
+          kneel_1: [254, 280.5], kneel_2: [250, 290] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -112,7 +114,8 @@ export const VILLAGER_POSE = {
            carry_box: [200, 185, 115, 135], throw_box: [200, 185, 115, 135],
            fish_1: [145, 165, 220, 165], fish_2: [145, 165, 220, 165],
            helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137],
-           cook_1: [172, 188, 165, 130], cook_2: [172, 188, 165, 130] },
+           cook_1: [172, 188, 165, 130], cook_2: [172, 188, 165, 130],
+           kneel_1: [200, 200, 110, 110], kneel_2: [200, 200, 110, 110] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -173,8 +176,13 @@ const ACTS = {
 const front = act => ({ side: 'front', act }), back = act => ({ side: 'back', act });
 const mirrored = act => ({ side: 'front', act, flip: true });
 const backMirrored = act => ({ side: 'back', act, flip: true });
+// The congregation's round on the mat, step by step: see `kneel` in work().
+const KNEEL_STEPS = ['pray', 'rise', 'bow', 'rise'];
 // STAGE 5'S BOX CARRIER'S WAY, from the right edge of the board to where he stands
 // to throw onto the crates — the owner's line, drawn on a screenshot, in board px.
+// STAGE 8'S BOX CARRIER'S WAY, from the church door — the step just in front of it —
+// down to where he stands to toss his box onto the pile, where he is painted.
+const CHURCH_WAY = [[389.5, 226.5], [393.5, 233.5], [399.3, 242.3]];
 const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
   [769.5, 331], [729.5, 336], [697.5, 346], [674, 361]];
 
@@ -318,6 +326,44 @@ const PLAYS = {
     cook: { who: 5, cook: [3, 3], out: [6, 6] },
     cries: { runnn: false, nooo: true, wave: 'thugs' }
   },
+  // STAGE 8, Dawnford Church, as the owner numbers them: 1 by the praying mat, 2 to 7
+  // on it, 8 carrying boxes out of the church, 9 at its right-hand end.
+  church: {
+    // Villager 1 greets by turns, his back to the player, turned right; 9 greets
+    // facing the player, turned left, as every drawing is.
+    before: [backMirrored('greets'), {}, {}, {}, {}, {}, {}, {}, front('greets')],
+    // VILLAGER 1 RUNS OFF THE BOARD to the left when the first wave comes, and is gone;
+    // 9 turns to standing and praying by turns.
+    run: [{ who: 0, delay: 0, path: [[40, 322], [-16, 324]], vanish: true }],
+    after: [{}, {}, {}, {}, {}, {}, {}, {}, front('pray')],
+    // Villager 9 hops twice every tenth enemy down.
+    hops: [{ every: 10, who: [8] }],
+    // THE SIX ON THE MAT pray and kneel on a round of their own — see work(). Seconds
+    // for each step: praying, kneeling up (`rise`, on the way down and on the way
+    // back up) and bowed down.
+    kneel: { who: [1, 2, 3, 4, 5, 6], pray: [3.5, 7], rise: [0.9, 1.6], bow: [3, 6] },
+    // VILLAGER 8 CARRIES BOXES out of the church: stage 5's box carrier, mirrored. Out
+    // of the door, slowly down to the pile in front of the church, a toss onto it,
+    // back up and in at the door — and ten seconds inside before the next box. The
+    // first time he starts from where he is painted, at the pile.
+    crews: [{
+      lead: 7,
+      art: { carry: 'carry_box', throw: 'throw_box', piece: 'box' },
+      flip: true,
+      door: true,
+      path: CHURCH_WAY,
+      from: CHURCH_WAY.length - 1,
+      stack: CHURCH_WAY[CHURCH_WAY.length - 1],
+      landing: [436, 243],
+      lob: 9,
+      away: { lead: CHURCH_WAY.slice(0, -1).reverse() },
+      enter: CHURCH_WAY[0],
+      gone: 10
+    }],
+    // The bell: each side for as long as its stroke rings, the middle between.
+    bell: { swing: [['middle', 0.15], ['left', 1.0], ['middle', 0.3], ['right', 1.0], ['middle', 0.2]] },
+    cries: { runnn: false, nooo: true, wave: 'hide' }
+  },
   // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle
   // gate, 3 carrying a part to the broken ballista, 4 hammering at it, and 5, 6 and 7
   // by the bridge.
@@ -374,6 +420,7 @@ const PLAYS = {
 };
 
 const WORK_WALK = 11;         // px a second carrying — "slowly"
+const DOOR_FADE = 0.5;        // seconds to step out of, or into, a doorway
 // And empty-handed, walking off for the next load, nearly twice that: they are no
 // longer carrying anything.
 const WORK_WALK_FREE = 20;
@@ -410,8 +457,53 @@ function walkTo(v, pts, speed, dt) {
 //   gone  — out of sight for `gone` seconds, and round again.
 // The villagers it moves are marked `work`, and the rest of this file leaves them be.
 function work(state, vp, dt) {
-  const { smith, crew, hammer, angler, stuck, cook } = vp.plan;
+  const { smith, crew, hammer, angler, stuck, cook, kneel, bell } = vp.plan;
   const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+
+  // THE CONGREGATION ON THE MAT, each on a round of his own: praying with his back to
+  // the player, turned right; then kneeling up, bowed down, kneeling up again; and
+  // praying — each step for a while drawn afresh, and each man started at a
+  // different place in it, so no two are ever doing the same thing together. At
+  // prayer they take no notice of a tap.
+  if (kneel) {
+    vp.kneel = vp.kneel || kneel.who.map(() => {
+      const step = (Math.random() * KNEEL_STEPS.length) | 0;
+      return { step, until: vp.t + Math.random() * span(kneel[KNEEL_STEPS[step]]) };
+    });
+    kneel.who.forEach((who, i) => {
+      const v = state.villagers[who];
+      if (!v) return;
+      v.work = true;
+      const c = vp.kneel[i];
+      if (vp.t >= c.until) {
+        c.step = (c.step + 1) % KNEEL_STEPS.length;
+        c.until = vp.t + span(kneel[KNEEL_STEPS[c.step]]);
+      }
+      const at = KNEEL_STEPS[c.step];
+      if (at === 'pray') { v.pose = 'praying'; v.side = 'back'; v.flip = true; }
+      else { v.pose = at === 'bow' ? 'kneel_1' : 'kneel_2'; v.flip = false; }
+    });
+  }
+
+  // THE CHURCH BELL, rung twice as each wave comes: swung to the left, a stroke, and
+  // back to the middle as the stroke dies away; then to the right, a second stroke,
+  // and back. Out of step with nothing else, and not a villager — render.js draws it
+  // from `vp.bellPose`.
+  if (bell) {
+    if (state.spawned > 0 && vp.rung !== state.waveIndex) { vp.rung = state.waveIndex; vp.bellAt = vp.t; }
+    const k = vp.bellAt === undefined ? Infinity : vp.t - vp.bellAt;
+    let pose = 'middle', t0 = 0;
+    for (const [p, d] of bell.swing) {
+      if (k >= t0 && k < t0 + d) { pose = p; break; }
+      t0 += d;
+    }
+    // A stroke as it reaches each side, cut off as it swings back.
+    if (pose !== 'middle' && vp.bellPose === 'middle') {
+      const d = bell.swing.find(([p]) => p === pose)[1];
+      slice(BELL.key, 0, d, 1, BELL.fade);
+    }
+    vp.bellPose = pose;
+  }
 
   // THE COOK: his skewer over the fire, then drawn back out, and over again.
   const ck = cook && state.villagers[cook.who];
@@ -507,14 +599,17 @@ function carryLoop(state, vp, crew, c, dt) {
     lead.pose = art.carry;
     if (c.first) { lead.leg = crew.from || 0; c.first = false; }
     if (walkTo(lead, route, WORK_WALK, dt)) { c.phase = 'throw'; c.at = vp.t; c.thrown = false; }
-    // The carrying drawing is the way round the artist drew it, whichever way they go.
-    for (const v of team) v.flip = false;
+    // The carrying drawing is the way round the artist drew it, whichever way they go
+    // — or mirrored, for a crew that says so (stage 8's carrier).
+    for (const v of team) v.flip = !!crew.flip;
+    // OUT OF A DOOR: faded in as he steps out of it.
+    if (crew.door) lead.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE);
     stick();
   } else if (c.phase === 'throw') {
     stick();
     const k = vp.t - c.at;
     // Up for the heave, then down on their feet, standing.
-    if (k < THROW_FOR) lead.pose = art.throw;
+    if (k < THROW_FOR) { lead.pose = art.throw; lead.flip = !!crew.flip; }
     else if (lead.pose !== 'standing') {
       if (mate) mate.ride = false;
       for (const v of team) { v.pose = 'standing'; v.side = 'front'; }
@@ -522,9 +617,10 @@ function carryLoop(state, vp, crew, c, dt) {
     if (!c.thrown && k >= PLANK_AT) {
       c.thrown = true;
       const [fx, fy] = VILLAGER_POSE.feet[art.carry];
-      c.planks.push({ piece, x0: lead.x + (piece.held[0] - fx) * SCALE, y0: lead.y + (piece.held[1] - fy) * SCALE,
+      const side = crew.flip ? -1 : 1;
+      c.planks.push({ piece, x0: lead.x + (piece.held[0] - fx) * SCALE * side, y0: lead.y + (piece.held[1] - fy) * SCALE,
                       x1: crew.landing[0], y1: crew.landing[1], at: vp.t, depth: lead.y,
-                      lob: crew.lob ?? PLANK_LOB });
+                      lob: crew.lob ?? PLANK_LOB, spin: side });
     }
     if (k >= THROW_REST) {
       c.phase = 'away'; c.at = vp.t;
@@ -532,10 +628,15 @@ function carryLoop(state, vp, crew, c, dt) {
     }
   } else if (c.phase === 'away') {
     const done = walkTo(lead, crew.away.lead, WORK_WALK_FREE, dt) & (mate ? walkTo(mate, crew.away.mate, WORK_WALK_FREE, dt) : true);
-    if (done) {
+    if (done && crew.door) { c.phase = 'fade'; c.at = vp.t; }
+    else if (done) {
       c.phase = 'gone'; c.at = vp.t;
       for (const v of team) v.hidden = true;
     }
+  } else if (c.phase === 'fade') {
+    // INTO A DOOR: faded out on its step, then gone.
+    lead.alpha = Math.max(0, 1 - (vp.t - c.at) / DOOR_FADE);
+    if (lead.alpha <= 0) { c.phase = 'gone'; c.at = vp.t; lead.hidden = true; }
   } else if (c.phase === 'gone' && vp.t - c.at >= crew.gone) {
     // BACK FROM WHERE THEY LEFT, with the next load.
     [lead.x, lead.y] = crew.enter;
@@ -550,7 +651,7 @@ function carryLoop(state, vp, crew, c, dt) {
     p.q = q;
     p.x = p.x0 + (p.x1 - p.x0) * q;
     p.y = p.y0 + (p.y1 - p.y0) * q - p.lob * 4 * q * (1 - q);
-    p.rot = p.piece.spin * q;
+    p.rot = p.piece.spin * (p.spin ?? 1) * q;
   }
   // A THUD AS EACH ONE LANDS, soft, under the battle.
   for (const p of c.planks) if (p.q >= 1) play(LANDED);
@@ -757,4 +858,5 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    carry_box: 'vill_carrying_box', throw_box: 'vill_throwing_box',
                    fish_1: 'vill_fishing_1', fish_2: 'vill_fishing_2',
                    helmet_1: 'vill_helmet_stuck_1', helmet_2: 'vill_helmet_stuck_2',
-                   cook_1: 'vill_cooking_1', cook_2: 'vill_cooking_2' };
+                   cook_1: 'vill_cooking_1', cook_2: 'vill_cooking_2',
+                   kneel_1: 'vill_kneeling_1', kneel_2: 'vill_kneeling_2' };

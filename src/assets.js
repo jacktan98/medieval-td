@@ -208,6 +208,13 @@ export const paths = {
   // Stage 7's cook, his skewer over the fire and drawn back out of it.
   vill_cooking_1:               'assets/villagers/Villager_Cooking_1.png',
   vill_cooking_2:               'assets/villagers/Villager_Cooking_2.png',
+  // Stage 8's congregation, kneeling, and its church bell at the middle of its swing
+  // and at either end.
+  vill_kneeling_1:              'assets/villagers/Villager_Kneeling_1.png',
+  vill_kneeling_2:              'assets/villagers/Villager_Kneeling_2.png',
+  bell_middle:                  'assets/villagers/Villager_Church_Bell_Middle.png',
+  bell_left:                    'assets/villagers/Villager_Church_Bell_Left.png',
+  bell_right:                   'assets/villagers/Villager_Church_Bell_Right.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.
@@ -847,6 +854,9 @@ export const paths = {
   over07:      'assets/map/Stage_5_Map_over.svg',
   // And stage 6's, which is the near side of the Dawnford bridge — same job.
   over08:      'assets/map/Stage_6_Map_over.svg',
+  // What hangs in front of stage 8's church bell — the roof and the front pillars —
+  // drawn again over the swinging bell. Written by tools/bell-cover.mjs.
+  cover10:     'assets/map/Stage_8_Map_bell_cover.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

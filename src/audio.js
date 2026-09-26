@@ -529,6 +529,8 @@ const paths = {
   // fountain running for as long as the board is played.
   fish_cooking:    'assets/audio/map/Fish_cooking.mp3',
   fountain_water:  'assets/audio/map/Water_fountain_sound.mp3',
+  // Stage 8's church bell, a stroke as it swings to each side.
+  church_bell:     'assets/audio/map/Church_bell.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -630,6 +632,8 @@ export const GAIN = {
   // then 20% up, by ear, and 20% again.
   fish_cooking: 0.504,
   fountain_water: 0.4,
+  // The church bell rings out over the board, but it is the board's, not the battle.
+  church_bell: 0.7,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
@@ -1007,6 +1011,9 @@ export const VILLAGER_WAVE = {
 // ballista, a box on the crates. Category B, soft (its GAIN): a working
 // noise under the battle, not an event in it.
 export const LANDED = ['things_land'];
+// STAGE 8'S CHURCH BELL: one stroke a swing, from the start of the recording, faded
+// out over `fade` as the bell swings back to the middle. Category B.
+export const BELL = { key: 'church_bell', fade: 0.35 };
 // STAGE 5'S HAMMER, one knock a blow, at the owner's word: "cut and time the sound so
 // that it aligns with 2 knocks". The recording is seven knocks 0.29s apart; the
 // first two are cut out of it by where they START in the file, measured (0.222s and
@@ -1480,7 +1487,7 @@ export function play(cue, level = 1) {
 // A PIECE OF A CLIP, Category B: `from` seconds into the FILE (the caller measured
 // where — no lead-in is skipped for it) for `dur` seconds, faded out over its last
 // 30ms so the cut does not click. See HAMMER.
-export function slice(key, from, dur, level = 1) {
+export function slice(key, from, dur, level = 1, fade = 0.03) {
   if (!ctx || ctx.state !== 'running') return;
   const c = clips[key];
   if (!c) return;
@@ -1490,7 +1497,7 @@ export function slice(key, from, dur, level = 1) {
   const g = ctx.createGain();
   const v = c.gain * level;
   g.gain.setValueAtTime(v, now);
-  g.gain.setValueAtTime(v, now + dur - 0.03);
+  g.gain.setValueAtTime(v, now + dur - fade);
   g.gain.linearRampToValueAtTime(0, now + dur);
   src.connect(g).connect(busB);
   src.start(now, from, dur);

@@ -74,6 +74,21 @@ Both stand on (297.5, 305) and carry the skewer, so the skewer painted in the co
 hands is cut out of the board with him (`props` in level09.js); the fish stays on
 the fire.
 
+And stage 8's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Kneeling_1.png` | a villager on the praying mat, bowed down, turned right |
+| `Villager_Kneeling_2.png` | kneeling up, on the way down to that and back |
+| `Villager_Church_Bell_Middle.png` | the church bell hanging still |
+| `Villager_Church_Bell_Left.png` | swung to the left |
+| `Villager_Church_Bell_Right.png` | swung to the right |
+
+The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
+share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
+and draws the roof and front pillars over it again — see
+`assets/map/Stage_8_Map_bell_cover.svg`.
+
 The ballista-part drawings stand on (236, 311); the hammering ones on (276.5, 305).
 
 The carrying and throwing drawings stand on the back-end villager's shadow, centred
@@ -257,3 +272,28 @@ level's list.
   the tiers — a few streaks now and then running over the black line round a jet,
   droplets breaking away from the jets and falling, glints on its pools and rings
   and spray where the water lands.
+
+## Stage 8's script
+
+As the owner numbers them: 1 by the praying mat, 2 to 7 on it, 8 carrying boxes out
+of the church, 9 at the church's right-hand end.
+
+- **Before the first wave:** villager 1 stands and greets by turns, his back to the
+  player, turned right; villager 9 stands and greets facing the player, turned left.
+- **When the first enemy of wave 1 appears:** "hide". Villager 1 runs off the board
+  to the left and is gone; villager 9 turns to standing and praying by turns.
+- **All game long, 2 to 7 on the mat** each go round on their own: praying with
+  their backs to the player, turned right (three and a half to seven seconds), then
+  kneeling up (about a second), bowed down (three to six), kneeling up again, and
+  praying — each started at a different point, so no two do the same thing
+  together. They take no notice of a tap.
+- **All game long, villager 8** carries a box — stage 5's box carrier, mirrored —
+  out of the church door, slowly down to the pile in front of it, tosses it on (the
+  landing thuds, softly), walks back up and in at the door, fading as he goes, and
+  after ten seconds inside comes out with the next. The first time he starts from
+  where he is painted, at the pile.
+- **As each wave starts** the church bell swings to the left with a stroke, back to
+  the middle as the stroke dies, to the right with a second stroke, and back — the
+  roof and front pillars over it, as drawn.
+- **Every 10 enemies killed:** villager 9 hops twice.
+- **A star lost:** "nooo". Birdsong plays softly throughout.

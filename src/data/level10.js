@@ -20,6 +20,7 @@
 // TRACED FROM THE ARTWORK:
 //
 //   node tools/trace-road.mjs assets/map/Stage_8_Map --exit bottom --pair 1,0
+//   node tools/bell-cover.mjs                (once per redraw of the church: see `bell`)
 //   node tools/split-map.mjs assets/map/Stage_8_Map --accept
 //
 // The `--accept` is a decision and belongs here rather than only in a shell history.
@@ -108,19 +109,33 @@ export const level10 = {
   src: 'assets/map/Stage_8_Map',
   routes: [east, west],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
-  // Each anchor is the centre of the figure's own ground shadow.
+  // THE PEOPLE WHO LIVE HERE, as the owner numbers them. Each anchor is the centre of
+  // the figure's own ground shadow.
   villagers: [
-    { x: 418, y: 241 },       // the two at the church door
-    { x: 437, y: 252 },
-    { x:  69, y: 321 },       // the congregation, standing
-    { x: 137, y: 345 },
-    { x:  56, y: 355 },
-    { x: 119, y: 376 },
-    { x:  71, y: 378 },
-    { x: 154, y: 354 },       // and kneeling, backs to us
-    { x: 101, y: 368 }
+    { x:  69.3, y: 321.3 },   // 1, by the praying mat
+    { x: 137.3, y: 345 },     // 2 to 7, the congregation on it
+    { x: 154.3, y: 354.3 },
+    { x:  56.5, y: 355.5 },
+    { x: 101.3, y: 369 },
+    { x: 118.8, y: 376 },
+    { x:  70.8, y: 378.5 },
+    { x: 399.3, y: 242.3 },   // 8, carrying a box out of the church to the pile
+    { x: 490.3, y: 260.5 }    // 9, at the church's right-hand end
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `church` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'church',
+  // Birdsong, soft, for as long as it is played.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }],
+  // THE CHURCH BELL, swung as each wave comes (src/villagers.js, `bell`). The painted
+  // one is cut out of the drawing and what hangs in front of it — the tower's roof and
+  // front pillars — kept apart in `cover` by tools/bell-cover.mjs, to be drawn again
+  // over the swinging bell (src/render.js, drawBell). The owner's three drawings share
+  // one canvas; its point `at` is laid on (x, y), where the painted bell's corner was,
+  // at `k` board px to its px — the painted bell's width against the drawing's. At
+  // the church's depth, just after it.
+  bell: { x: 391.2, y: 101.9, at: [176, 171], k: 0.194, g: 225.01, cover: 'cover10',
+          box: { x: 355, y: 10, w: 105, h: 160 } },
   waves: stage8Waves,
   wavesExtended: stage8Waves,
   oneLength: true,
@@ -174,7 +189,13 @@ export const level10 = {
     { x: 578, y: 481, unit: 'Paladin' }
   ],
 
-  // WHAT A FIGURE CAN WALK BEHIND: the church, and the congregation on its mat.
+  // WHAT A FIGURE CAN WALK BEHIND: the church.
+  //
+  // THE CONGREGATION'S MAT IS NOT HERE, though the splitter still offers it (11, 300,
+  // 173 x 105, standing on y 360). It was boxed while the congregation was painted on
+  // it — a box of people standing up. They are drawn live now, cut out of the drawing,
+  // and what is left is a mat, flat on the ground: boxed, it drew itself over every
+  // one of them standing on its far half.
   //
   // THE CHURCH IS THE TALLEST BOX IN THE GAME at 259px — bell tower, cross and all —
   // and it stands on y 225, which is the centre of its shadow rather than the bottom.
@@ -187,7 +208,6 @@ export const level10 = {
   // the same reason.
   frontArt: 'front10',
   front: [
-    { x: 354, y:  13, w: 224, h: 259, g: 225 },   // stands on y 225 — the church
-    { x:  11, y: 300, w: 173, h: 105, g: 360 }    // stands on y 360 — the congregation
+    { x: 354, y:  13, w: 224, h: 259, g: 225 }    // stands on y 225 — the church
   ]
 };
