@@ -283,9 +283,11 @@ const PLAYS = {
     before: [mirrored('greets'), front('greets'), {}, front('greets'), {}],
     after: [mirrored('pray'), front('pray'), {}, front('pray'), {}],
     run: [],
-    // Two hops each: villager 1 every tenth enemy down, 4 every twelfth, and 5 — in
-    // his helmet — every fourteenth.
-    hops: [{ every: 10, who: [0] }, { every: 12, who: [3] }, { every: 14, who: [4] }],
+    // Two hops each, the owner counting left to right: the villager by the planted
+    // rod every tenth enemy down, the one between the bottom-right huts every
+    // twelfth, and the one by the top-right hut every fourteenth. Only those who
+    // stand and pray hop — never the angler or the man in the helmet, at work.
+    hops: [{ every: 10, who: [0] }, { every: 12, who: [3] }, { every: 14, who: [1] }],
     // THE ANGLER waits with his line in the water for `wait` seconds, then tugs at it
     // for `tug` — the reel whirring while he does (main.js, `reeling`) — and back.
     angler: { who: 2, wait: [4, 7.5], tug: [1.6, 2.6] },
@@ -562,7 +564,6 @@ const RUN_UP = 0.05;          // how steeply up a runner must go to show their b
 const HOP_GAP = 0.16;         // seconds between one villager's hop and the next's
 const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawings show
 const HOPS = 2;                       // hops each time, one straight after the other
-const HOP_LIFT = 4;                   // px a worker with no hopping drawing jumps
 export const GREET_SECONDS = 1;       // how long a tapped villager greets the player
 
 // A TAP ON A VILLAGER, from src/input.js. One facing the player stops what they are
@@ -629,16 +630,6 @@ export function updateVillagers(state, dt) {
     const n = Math.floor((state.slain || 0) / h.every);
     if (n > vp.hops[k].n) { vp.hops[k].n = n; vp.hops[k].at = vp.t; }
   });
-
-  // A VILLAGER AT WORK WHO HOPS — stage 6's man in the helmet — has no hopping
-  // drawing of his own, so he jumps in the one he is in: stops heaving, and is lifted
-  // off the ground while his shadow stays on it (`lift`, drawn by render.js).
-  for (const v of state.villagers) {
-    if (!v.live || !v.work) continue;
-    const hop = hopping(vp, v);
-    v.lift = hop && hop.pose === 'hopping' ? HOP_LIFT * Math.sin(Math.PI * hop.k) : 0;
-    if (hop && v === state.villagers[plan.stuck?.who]) { v.pose = 'helmet_1'; v.shake = 0; }
-  }
 
   for (const v of state.villagers) {
     if (!v.live || v.work) continue;
@@ -735,7 +726,8 @@ export function updateVillagers(state, dt) {
 
 // WHETHER A VILLAGER IS IN THE MIDDLE OF A HOP, and which half: TWICE,
 // hop-land-hop-land, so the player has the time to catch it — `k` is how far through
-// the half it is. Null when not hopping.
+// the half it is. Null when not hopping. Asked only of villagers who stand and pray:
+// one at work (the angler, the cook, the man in the helmet...) never hops.
 function hopping(vp, v) {
   let out = null;
   vp.plan.hops.forEach((h, k) => {

@@ -228,9 +228,9 @@ helmet by the armour stand.
   shake — for about a second and a quarter, then stands still for two and a half
   seconds, and again.
 - **Every 10 enemies killed:** villager 1 hops twice. **Every 12:** villager 4.
-  **Every 14:** villager 5 — who has no hopping drawing with a helmet on, so he stops
-  heaving and jumps in his own drawing, lifted off the ground while his shadow stays
-  on it.
+  **Every 14:** villager 2. (The owner counts the right-hand two left to right, as 4
+  and 5.) The angler and the man in the helmet are at work and never hop — no
+  villager with something to do does.
 - **A star lost:** "nooo". Birdsong and the river under the bridge play softly
   throughout, and the river runs — currents and spray at its banks, as on stage 5.
 

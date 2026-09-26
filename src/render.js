@@ -1601,19 +1601,7 @@ function drawVillager(ctx, state, v, layer = null) {
   const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
   const left = -(fx - sx) * k, top = -(fy - sy) * k;
   const layers = !layer && v.pose === 'greeting' && greetLayers(key);
-  // OFF THE GROUND in a drawing of his own (villagers.js, `lift`): the shadow stays
-  // where it is, a little smaller, and the rest of him goes up.
-  const lifted = !layer && v.lift > 0 && liftLayers(key);
-  if (lifted) {
-    const sq = 1 - 0.04 * v.lift;
-    ctx.save();
-    ctx.translate(lifted.cx * k + left - sx * k, lifted.cy * k + top - sy * k);
-    ctx.scale(sq, sq);
-    ctx.translate(-(lifted.cx * k + left - sx * k), -(lifted.cy * k + top - sy * k));
-    ctx.drawImage(lifted.shadow, sx, sy, sw, sh, left, top, w, h);
-    ctx.restore();
-    ctx.drawImage(lifted.body, sx, sy, sw, sh, left, top - v.lift, w, h);
-  } else if (!layers) {
+  if (!layers) {
     ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);
   } else {
     ctx.drawImage(layers.body, sx, sy, sw, sh, left, top, w, h);
@@ -1626,45 +1614,6 @@ function drawVillager(ctx, state, v, layer = null) {
     ctx.drawImage(layers.hand, sx, sy, sw, sh, left, top, w, h);
   }
   ctx.restore();
-}
-
-// A DRAWING IN TWO: its ground shadow — the drawing's dark brown, remade whole as
-// an ellipse, since the body was drawn over its top — and everything else. Once per
-// drawing; null until it has loaded.
-const liftCache = new Map();
-function liftLayers(key) {
-  if (liftCache.has(key)) return liftCache.get(key);
-  const img = art[key];
-  if (!img || !img.complete) return null;
-  let out = null;
-  try {
-    const W = img.naturalWidth, H = img.naturalHeight;
-    const body = document.createElement('canvas'); body.width = W; body.height = H;
-    const g = body.getContext('2d', { willReadFrequently: true });
-    g.drawImage(img, 0, 0);
-    const px = g.getImageData(0, 0, W, H), d = px.data;
-    let x0 = W, y0 = H, x1 = -1, y1 = -1;
-    for (let i = 0; i < d.length; i += 4) {
-      if (!d[i + 3] || Math.abs(d[i] - 0x36) > 16 || Math.abs(d[i + 1] - 0x24) > 16 || Math.abs(d[i + 2] - 0x07) > 16) continue;
-      const x = (i / 4) % W, y = (i / 4 / W) | 0;
-      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-      d[i + 3] = 0;
-    }
-    g.putImageData(px, 0, 0);
-    if (x1 < 0) throw new Error('no shadow');
-    const shadow = document.createElement('canvas'); shadow.width = W; shadow.height = H;
-    const sg = shadow.getContext('2d');
-    const cx = (x0 + x1 + 1) / 2, cy = (y0 + y1 + 1) / 2;
-    sg.fillStyle = '#362407';
-    sg.beginPath();
-    sg.ellipse(cx, cy, (x1 - x0 + 1) / 2, (y1 - y0 + 1) / 2, 0, 0, Math.PI * 2);
-    sg.fill();
-    out = { body, shadow, cx, cy };
-  } catch {
-    out = null;
-  }
-  liftCache.set(key, out);
-  return out;
 }
 
 // The greeting drawing in two pieces, made once per side: the hand alone, and the
