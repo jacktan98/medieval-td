@@ -117,7 +117,7 @@ export const level07 = {
     { x: 580, y: 484 },       // 4, hammering at it
     { x: 752, y: 362 },       // 5, 6 and 7, the three by the bridge
     { x: 774, y: 358 },
-    { x: 816, y: 341 }
+    { x: 839.5, y: 346 }      // 7 redrawn carrying a box, and further right
   ],
   // THEY MOVE, drawn by the game from assets/villagers — see `castle` in
   // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs,

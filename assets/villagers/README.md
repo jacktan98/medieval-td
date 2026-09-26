@@ -46,6 +46,9 @@ And stage 5's:
 | `Villager_Ballista_Parts.png` | the part on its own, flying onto the ballista |
 | `Villager_Hammering_1.png` | hammer raised |
 | `Villager_Hammering_2.png` | hammer struck down |
+| `Villager_Carrying_Box.png` | stage 5's villager 7 carrying a box to the crates |
+| `Villager_Throwing_Box.png` | tossing it onto the pile |
+| `Villager_Box.png` | the box on its own, flying onto the crates |
 
 The ballista-part drawings stand on (236, 311); the hammering ones on (276.5, 305).
 
@@ -168,10 +171,14 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
 - **When the first enemy of wave 1 appears:** villagers 1 and 2 run up the cobbles to
   the castle gate, between the torches and clear of their poles, and fade out through
   it.
-  Villagers 5 and 6 start standing and praying by turns. Villager 7 runs straight
-  to the river, to the bank right of the bridge, stands and prays there facing the
-  water for a while, then runs back to his spot and stands and prays with the others
-  for a while — and round again, back and forth, for the rest of the game.
-  Villagers 3 and 4 keep working.
-- The two torches at the gate burn with live fire and smoke, and the two banners on
-  the castle sway.
+  Villagers 5 and 6 start standing and praying by turns. Villagers 3, 4 and 7 keep
+  working.
+- **Villager 7 carries boxes, all game long:** from where he is painted he joins the
+  owner's line above villagers 5 and 6 and carries his box left along it, slowly, to
+  the crates by the crossbowmen's barricade; tosses it onto the pile, where it lands
+  and is gone; walks back right, faster and empty-handed, along the same line and
+  off the right edge of the board; and after three seconds comes back in from there
+  with the next box. (He used to run to the river and pray there, until he was
+  redrawn carrying a box.)
+- The two torches at the gate burn with live fire and smoke. The two banners on the
+  castle hang still.

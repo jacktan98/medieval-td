@@ -687,8 +687,8 @@ export function makeGarrison(state, level) {
       // STANDING DOWN: seconds since anything needed him, seconds until he picks
       // a new way of being idle, and the two coins that say which way it is — the
       // pose he is in and whether he is looking away from the road. See REST_AFTER
-      // above. A garrison man carries all four and uses none of them unless his def
-      // has an `idle` drawing, which none of them does today.
+      // above. A garrison man with no `idle` drawing uses only the heading coin:
+      // he never puts his weapon up, but now and then looks the other way.
       rest: 0,
       stance: 0,
       easy: false,
@@ -1378,7 +1378,11 @@ export function updateUnits(state, dt) {
       // what spreads the squad. Three men whose fight ends on the same frame get
       // three different numbers here and stand down at three different moments.
       u.stance = Math.random() * ENTER_SPREAD;
-    } else if (u.def.idle) {
+    // A MAN STANDING ON THE BOARD WITHOUT A TOWER stands about too — stage 5's
+    // crossbowmen, stage 8's Pope, stage 12's musketeers — at the owner's word. None
+    // has an idle drawing, so for them it is the heading coin alone: now and then he
+    // looks the other way, the way a man on a deck does (idleStep in src/towers.js).
+    } else if (u.def.idle || u.garrison) {
       u.rest += dt;
       if (u.rest >= REST_AFTER) {
         // THE FOUR WAYS. One countdown; when it runs out he draws a new pose and a
@@ -1392,7 +1396,7 @@ export function updateUnits(state, dt) {
           // that a man refused the idle pose is refused for the reason the owner
           // gave rather than simply drawing it less often. `easyRoom` counts the
           // OTHERS, so a man already at ease re-drawing it keeps his place.
-          u.easy = Math.random() < EASY_ODDS && easyRoom(state, u);
+          u.easy = !!u.def.idle && Math.random() < EASY_ODDS && easyRoom(state, u);
         }
         if (u.away) u.face = u.faceIdle + Math.PI;
       }

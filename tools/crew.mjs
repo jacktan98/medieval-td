@@ -20,7 +20,8 @@ import { paths } from '../src/assets.js';
 import { families } from '../src/data/towers.js';
 import { makeTower, updateTowers, turnedAway } from '../src/towers.js';
 import { spawn } from '../src/enemies.js';
-import { useLevel } from '../src/level.js';
+import { useLevel, levels } from '../src/level.js';
+import { makeGarrison, updateUnits } from '../src/units.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -97,6 +98,33 @@ for (const sprite of ['archery_t1', 'monastery_t4b', 'artillery_t1', 'artillery_
   let any = false;
   for (let k = 0; k < men; k++) any ||= turnedAway(t, k);
   ok(e && !any, `${def.name}: an enemy in range turns him back at once`);
+}
+
+console.log('\nMEN WITHOUT A TOWER');
+// The owner's word: the crossbowmen, the Pope and the musketeers who stand on the
+// board with no tower under them idle too. None has an idle drawing, so it is the
+// heading alone: a quiet spell turns each of them the other way now and then.
+for (const unit of ['Crossbowman', 'Pope', 'Musketeer']) {
+  const li = levels.findIndex(l => (l.garrison || []).some(g => g.unit === unit));
+  ok(li >= 0, `a board stands a ${unit} without a tower`, li >= 0 ? levels[li].name : '');
+  if (li < 0) continue;
+  const level = useLevel(li);
+  const s = state();
+  makeGarrison(s, level);
+  const his = s.units.filter(u => u.def.name === unit);
+  let turned = 0, early = false, posed = false;
+  for (let i = 0; i < 90 / DT; i++) {
+    updateUnits(s, DT);
+    for (const u of his) {
+      const away = Math.cos(u.face - u.faceIdle) < 0;
+      if (i * DT < 4.5) early ||= away;
+      if (away) turned++;
+      posed ||= u.easy;
+    }
+  }
+  ok(!early, `${level.name}: the ${unit} faces his post for the first seconds of quiet`);
+  ok(turned > 0, `${level.name}: and looks the other way now and then`, `${(turned * DT / his.length).toFixed(0)}s of 90 each`);
+  ok(!posed, `${level.name}: without a pose he was never drawn in`);
 }
 
 console.log(bad ? `\n${bad} FAILED` : '\nall ok');

@@ -196,6 +196,10 @@ export const paths = {
   vill_ballista_parts:          'assets/villagers/Villager_Ballista_Parts.png',
   vill_hammering_1:             'assets/villagers/Villager_Hammering_1.png',
   vill_hammering_2:             'assets/villagers/Villager_Hammering_2.png',
+  // Stage 5's box carrier: carrying, throwing, and the box in the air.
+  vill_carrying_box:            'assets/villagers/Villager_Carrying_Box.png',
+  vill_throwing_box:            'assets/villagers/Villager_Throwing_Box.png',
+  vill_box:                     'assets/villagers/Villager_Box.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.

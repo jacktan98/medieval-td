@@ -96,12 +96,15 @@ export const VILLAGER_POSE = {
           carry: [124.5, 341.5], throw: [124.5, 341.5],
           // Stage 5's porter, one villager with a ballista part, and the hammerer.
           carry_parts: [236, 311.5], throw_parts: [236, 311],
-          hammer_1: [276.5, 305], hammer_2: [276.5, 305] },
+          hammer_1: [276.5, 305], hammer_2: [276.5, 305],
+          // And its box carrier, the two drawings stood on the same shadow.
+          carry_box: [268.5, 305], throw_box: [268.5, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
            carry_parts: [195, 185, 120, 140], throw_parts: [195, 185, 120, 140],
-           hammer_1: [195, 185, 120, 135], hammer_2: [195, 185, 120, 135] },
+           hammer_1: [195, 185, 120, 135], hammer_2: [195, 185, 120, 135],
+           carry_box: [200, 185, 115, 135], throw_box: [200, 185, 115, 135] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
@@ -117,7 +120,9 @@ export const PIECES = {
   // The plank turns CLOCKWISE in the air, from rising to the right as it is carried
   // to lying the way the stack's planks lie, falling to the right, as it lands.
   plank: { key: 'vill_wood_plank', src: [115, 195, 283, 122], mid: [256, 255], held: [265, 241], spin: 0.43 },
-  part:  { key: 'vill_ballista_parts', src: [231, 205, 50, 102], mid: [255.5, 255], held: [285, 241], spin: 1.4 }
+  part:  { key: 'vill_ballista_parts', src: [231, 205, 50, 102], mid: [255.5, 255], held: [285, 241], spin: 1.4 },
+  // Stage 5's box, which tumbles a little on its way onto the crates.
+  box:   { key: 'vill_box', src: [222, 229, 68, 54], mid: [256, 255.5], held: [242.5, 250.5], spin: -0.8 }
 };
 
 // WHAT A VILLAGER DOES WHILE STANDING, each on their own beat: `pose` for `for`
@@ -148,6 +153,11 @@ const ACTS = {
 // the board has: "runnn" as the first runner sets off, "nooo" as a star is lost.
 const front = act => ({ side: 'front', act }), back = act => ({ side: 'back', act });
 const mirrored = act => ({ side: 'front', act, flip: true });
+// STAGE 5'S BOX CARRIER'S WAY, from the right edge of the board to where he stands
+// to throw onto the crates — the owner's line, drawn on a screenshot, in board px.
+const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
+  [769.5, 331], [729.5, 336], [697.5, 346], [674, 361]];
+
 const PLAYS = {
   oakhaven: {
     before: [front('greet'), back('greet'), back('greet'), front('greet'), front('greet')],
@@ -247,26 +257,24 @@ const PLAYS = {
   // gate, 3 carrying a part to the broken ballista, 4 hammering at it, and 5, 6 and 7
   // by the bridge.
   castle: {
-    before: [front('greets'), front('greets'), {}, {}, back('greets'), back('greets'), back('greets')],
+    before: [front('greets'), front('greets'), {}, {}, back('greets'), back('greets'), {}],
     // VILLAGERS 1 AND 2 RUN INTO THE CASTLE, up the cobbles to the gate between the
     // two torches — right of the left one's pole the whole way — and are gone
     // through it (`vanish`).
     run: [
       { who: 1, delay: 0, path: [[410, 248], [403, 224], [401, 212]], vanish: true },
-      { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true },
-      // VILLAGER 7 RUNS STRAIGHT TO THE RIVER, to the bank right of the bridge, and
-      // stands and prays there facing the water (`there`) for `stay` seconds; then
-      // runs back the way he came and stands and prays at home with the others for
-      // `loop` seconds — and round again, for as long as the game goes on.
-      { who: 6, delay: 0.2, path: [[928, 395]], there: { side: 'front', act: 'pray', flip: true }, stay: 14, loop: 14 }
+      { who: 0, delay: 0.35, path: [[393, 292], [405, 256], [403, 226], [401, 213]], vanish: true }
+      // Villager 7 ran to the river and prayed there, on a loop, until the owner
+      // redrew him carrying a box — see `crews` below. `trip` in updateVillagers is
+      // what that was, and stays for the next villager who wants it.
     ],
-    // Villagers 5, 6 and 7 turn to praying by turns once the wave is on them; 3 and 4
+    // Villagers 5 and 6 turn to praying by turns once the wave is on them; 3, 4 and 7
     // keep working throughout.
-    after: [{}, {}, {}, {}, back('pray'), back('pray'), back('pray')],
+    after: [{}, {}, {}, {}, back('pray'), back('pray'), {}],
     // Villager 3 carries a part up to the broken ballista, throws it on, walks down
     // off the board for the next one and comes back with it — stage 4's loop, one
     // man and a part rather than two and a plank.
-    crew: {
+    crews: [{
       lead: 2,
       art: { carry: 'carry_parts', throw: 'throw_parts', piece: 'part' },
       stack: [508, 505],
@@ -274,7 +282,23 @@ const PLAYS = {
       away: { lead: [[505, 538], [502, 572]] },
       enter: [502, 580],
       gone: 3
-    },
+    }, {
+      // AND VILLAGER 7 CARRIES BOXES to the crates by the crossbowmen's barricade,
+      // along the owner's line: in from the right edge of the board, left above
+      // villagers 5 and 6, and down to the pile — the same loop as the porter's.
+      // The first time he joins the line from where he is painted, at `from`.
+      lead: 6,
+      art: { carry: 'carry_box', throw: 'throw_box', piece: 'box' },
+      path: BOX_WAY,
+      from: 4,
+      stack: BOX_WAY[BOX_WAY.length - 1],
+      landing: [654, 366],
+      // A short toss rather than a heave: the pile is a step away.
+      lob: 9,
+      away: { lead: [...BOX_WAY.slice(0, -1).reverse(), [978, 289]] },
+      enter: [978, 289],
+      gone: 3
+    }],
     // Villager 4 hammers at it: two quick blows, then a long rest with the hammer
     // down, and again.
     hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]] },
@@ -347,22 +371,34 @@ function work(state, vp, dt) {
     for (const [pose, d] of hammer.beats) { if (k < d) { h.pose = pose; break; } k -= d; }
   }
 
-  const lead = crew && state.villagers[crew.lead];
+  // EVERY CREW ON ITS OWN LOOP: stage 4's pair with a plank, and stage 5's porter
+  // and box carrier. What is in the air is one list for the renderer.
+  const crews = vp.plan.crews || (crew ? [crew] : []);
+  vp.crews = vp.crews || [];
+  vp.planks = [];
+  crews.forEach((cr, i) => carryLoop(state, vp, cr, vp.crews[i] || (vp.crews[i] = {}), dt));
+}
+
+function carryLoop(state, vp, crew, c, dt) {
+  const lead = state.villagers[crew.lead];
   if (!lead) return;
   const mate = crew.mate !== undefined ? state.villagers[crew.mate] : null;
   const team = mate ? [lead, mate] : [lead];
   for (const v of team) v.work = true;
   const art = crew.art;
   const piece = PIECES[art.piece];
-  const c = vp.crew || (vp.crew = { phase: 'carry', at: vp.t, planks: [] });
+  // THE WAY TO THE PILE: a straight walk to `stack`, or along `path` to it — joined
+  // the first time at `from`, from wherever the villager is painted.
+  const route = crew.path || [crew.stack];
+  if (!c.phase) Object.assign(c, { phase: 'carry', at: vp.t, planks: [], first: true });
   const stick = () => { if (mate) { mate.x = lead.x + PAIR[0]; mate.y = lead.y + PAIR[1]; } };
 
   if (c.phase === 'carry') {
     for (const v of team) v.hidden = false;
     if (mate) mate.ride = true;
     lead.pose = art.carry;
-    lead.leg = lead.leg || 0;
-    if (walkTo(lead, [crew.stack], WORK_WALK, dt)) { c.phase = 'throw'; c.at = vp.t; c.thrown = false; }
+    if (c.first) { lead.leg = crew.from || 0; c.first = false; }
+    if (walkTo(lead, route, WORK_WALK, dt)) { c.phase = 'throw'; c.at = vp.t; c.thrown = false; }
     // The carrying drawing is the way round the artist drew it, whichever way they go.
     for (const v of team) v.flip = false;
     stick();
@@ -379,7 +415,8 @@ function work(state, vp, dt) {
       c.thrown = true;
       const [fx, fy] = VILLAGER_POSE.feet[art.carry];
       c.planks.push({ piece, x0: lead.x + (piece.held[0] - fx) * SCALE, y0: lead.y + (piece.held[1] - fy) * SCALE,
-                      x1: crew.landing[0], y1: crew.landing[1], at: vp.t, depth: lead.y });
+                      x1: crew.landing[0], y1: crew.landing[1], at: vp.t, depth: lead.y,
+                      lob: crew.lob ?? PLANK_LOB });
     }
     if (k >= THROW_REST) {
       c.phase = 'away'; c.at = vp.t;
@@ -404,11 +441,11 @@ function work(state, vp, dt) {
     const q = (vp.t - p.at) / PLANK_FLIGHT;
     p.q = q;
     p.x = p.x0 + (p.x1 - p.x0) * q;
-    p.y = p.y0 + (p.y1 - p.y0) * q - PLANK_LOB * 4 * q * (1 - q);
+    p.y = p.y0 + (p.y1 - p.y0) * q - p.lob * 4 * q * (1 - q);
     p.rot = p.piece.spin * q;
   }
   c.planks = c.planks.filter(p => p.q < 1);
-  vp.planks = c.planks;
+  vp.planks.push(...c.planks);
 }
 
 const RUN_SPEED = 46;         // px a second
@@ -586,4 +623,5 @@ export function villagerKey(v) {
 const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood_plank',
                    pipe_1: 'vill_holding_steel_pipe_1', pipe_2: 'vill_holding_steel_pipe_2',
                    carry_parts: 'vill_carrying_ballista_parts', throw_parts: 'vill_throwing_ballista_parts',
-                   hammer_1: 'vill_hammering_1', hammer_2: 'vill_hammering_2' };
+                   hammer_1: 'vill_hammering_1', hammer_2: 'vill_hammering_2',
+                   carry_box: 'vill_carrying_box', throw_box: 'vill_throwing_box' };

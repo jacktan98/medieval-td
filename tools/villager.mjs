@@ -16,7 +16,7 @@
 import { readFileSync } from 'fs';
 import { levels } from '../src/level.js';
 import { allGroups, bounds, MAP_SCALE, readArtwork, shapesByFill } from './svg.mjs';
-import { makeVillagers, VILLAGER, TAP_PAD, VILLAGER_H } from '../src/villagers.js';
+import { makeVillagers, updateVillagers, VILLAGER, TAP_PAD, VILLAGER_H } from '../src/villagers.js';
 import { pickFigure, selectionInfo, validate, VILLAGER_MID } from '../src/select.js';
 import { selectionCue } from '../src/audio.js';
 import { BOOK_ORDER } from '../src/data/waves.js';
@@ -317,6 +317,38 @@ console.log('\nOut of the fight altogether\n');
   ok(state.units.length === 0 && state.enemies.length === 0 && state.villagers.length > 0,
     'and lives in a list of his own, not among the soldiers or the thugs',
     `${state.villagers.length} villager(s), 0 units, 0 enemies`);
+}
+
+// --- stage 5's box carrier --------------------------------------------------------
+
+console.log('\nThe box carrier\n');
+
+{
+  // THE OWNER'S LOOP: villager 7 carries a box along the drawn line to the crates by
+  // the barricade, tosses it on, walks back off the right edge and comes back with
+  // the next — for as long as the game goes on, whatever the waves are doing.
+  const level = levels.find(l => l.villagerPlay === 'castle');
+  const state = { villagers: [], enemies: [], lives: level.startLives || 20 };
+  makeVillagers(state, level);
+  const v = state.villagers[6];
+  const [sx, sy] = [v.x, v.y];
+  const seen = { carry: 0, toss: 0, gone: 0, back: 0, left: Infinity, right: -Infinity, boxes: 0 };
+  let wasGone = false;
+  for (let i = 0; i < 150 * 30; i++) {
+    updateVillagers(state, 1 / 30);
+    const c = state.villagerPlay.crews[1];
+    if (v.pose === 'carry_box') seen.carry++;
+    if (v.pose === 'throw_box') seen.toss++;
+    if (v.hidden) seen.gone++;
+    if (wasGone && !v.hidden) seen.back++;
+    wasGone = v.hidden;
+    if (!v.hidden) { seen.left = Math.min(seen.left, v.x); seen.right = Math.max(seen.right, v.x); }
+    seen.boxes = Math.max(seen.boxes, c.planks.filter(p => p.piece.key === 'vill_box').length);
+  }
+  ok(sx > 830 && sy > 340, 'he starts where he is painted, box in hand', `${sx},${sy}`);
+  ok(seen.carry && seen.toss && seen.boxes, 'carries a box, tosses it, and it flies', `${seen.toss} frames tossing`);
+  ok(seen.left < 680, 'as far as the crates by the barricade', `${seen.left.toFixed(0)}px`);
+  ok(seen.right > 955 && seen.gone && seen.back >= 2, 'off the right edge and back, again and again', `${seen.back} return(s)`);
 }
 
 console.log(bad ? `\n${bad} check(s) failed.` : '\nThe village is where it was.');
