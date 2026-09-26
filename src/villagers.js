@@ -112,7 +112,17 @@ export const VILLAGER_POSE = {
            helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
-  hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
+  //
+  // A CIRCLE BIG ENOUGH FOR THE WHOLE HAND, outline and all, and nothing right of
+  // `cut`, where the shoulder's outline runs. It was a hair too small and too far
+  // right, and a sliver of the hand's black outline stayed on the body, showing as a
+  // stripe by the shoulder whenever the hand swung away (the owner, on stage 6).
+  //
+  // What was behind the raised hand comes from the standing drawing down to `seam`,
+  // the last row above the standing drawing's own hand; below it the body's edge is
+  // carried on down, leaning, to where the greeting drawing's outline is clear of the
+  // hand again at `resume`. See greetLayers in src/render.js.
+  hand: { x: 229, y: 249, r: 14, cut: 240, seam: 253, resume: 262, px: 241, py: 256 }
 };
 
 // Where the front-end carrier stands against the back-end one, in game px — the two

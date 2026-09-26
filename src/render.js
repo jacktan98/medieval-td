@@ -1729,18 +1729,33 @@ function greetLayers(key) {
   try {
     const W = img.naturalWidth, H = img.naturalHeight, hd = VILLAGER_POSE.hand;
     const make = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
-    const circle = g => { g.beginPath(); g.arc(hd.x, hd.y, hd.r, 0, Math.PI * 2); };
-    const hand = make(), hg = hand.getContext('2d');
-    circle(hg); hg.clip();
-    hg.drawImage(img, 0, 0);
-    const body = make(), bg = body.getContext('2d');
-    bg.drawImage(img, 0, 0);
-    bg.save();
-    circle(bg); bg.clip();
-    bg.clearRect(0, 0, W, H);
-    bg.drawImage(still, 0, 0);
-    bg.restore();
-    out = { body, hand };
+    const read = im => { const c = make(), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0); return g.getImageData(0, 0, W, H); };
+    const gr = read(img), st = read(still), g = gr.data, sd = st.data;
+    const hand = new ImageData(W, H), body = new ImageData(new Uint8ClampedArray(g), W, H);
+    const hp = hand.data, bp = body.data;
+    // Where each drawing's body edge is on a row: its leftmost solid pixel near the hand.
+    const edge = (d, y) => { for (let x = hd.x - hd.r - 8; x < hd.cut; x++) if (d[(y * W + x) * 4 + 3] > 60) return x; return hd.cut; };
+    const top = edge(sd, hd.seam), bottom = edge(g, hd.resume);
+    const copy = (to, i, from, j) => { for (let c = 0; c < 4; c++) to[i + c] = from[j + c]; };
+    for (let y = hd.y - hd.r; y <= hd.y + hd.r; y++) {
+      for (let x = hd.x - hd.r; x <= hd.x + hd.r; x++) {
+        if (x >= hd.cut || (x - hd.x) ** 2 + (y - hd.y) ** 2 > hd.r * hd.r) continue;
+        const i = (y * W + x) * 4;
+        // The hand, lifted off the greeting drawing...
+        copy(hp, i, g, i);
+        // ...and the body behind it: the standing drawing's down to the seam, and
+        // below it the greeting drawing's own edge further down, slid across so the
+        // outline leans from where the one drawing has it to where the other does.
+        if (y <= hd.seam) copy(bp, i, sd, i);
+        else {
+          const k = (hd.resume - y) / (hd.resume - hd.seam);
+          const sx = x - Math.round(k * (top - bottom));
+          copy(bp, i, g, (hd.resume * W + sx) * 4);
+        }
+      }
+    }
+    const put = d => { const c = make(); c.getContext('2d').putImageData(d, 0, 0); return c; };
+    out = { body: put(body), hand: put(hand) };
   } catch {
     out = null;
   }
