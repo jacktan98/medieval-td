@@ -511,6 +511,7 @@ const paths = {
   villager_thugs_here: 'assets/audio/villagers/Villager_say_thugs_are_here.mp3',
   villager_hide:       'assets/audio/villagers/Villager_say_hide.mp3',
   villager_oh_no:      'assets/audio/villagers/Villager_say_oh_no.mp3',
+  villager_here_they_come: 'assets/audio/villagers/Villager_say_here_they_come.mp3',
   flag_waving:     'assets/audio/map/Flag_waving.mp3',
   bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
   // THE BOARDS' OWN SOUNDS, stages 1 to 5. Fire and river LOOP for as long as the
@@ -520,6 +521,10 @@ const paths = {
   river_flowing:   'assets/audio/map/River_water_flowing.mp3',
   steel_welding:   'assets/audio/map/Steel_welding.mp3',
   things_land:     'assets/audio/map/Things_land_on_ground.mp3',
+  // Stage 5's hammerer: a recording of seven knocks, of which each blow plays one
+  // (HAMMER, below). Stage 6's angler: the reel, while he tugs.
+  hammering_nail:  'assets/audio/map/Hammering_nail.mp3',
+  fishing_reel:    'assets/audio/map/Fishing_reel.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -614,6 +619,9 @@ export const GAIN = {
   river_flowing: 0.462,
   steel_welding: 0.28,
   things_land: 1.0,
+  // The hammer's knocks and the reel, soft: work going on, not the battle.
+  hammering_nail: 0.5,
+  fishing_reel: 0.35,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
@@ -983,12 +991,20 @@ export const VILLAGER_NOOO = ['villager_nooo'];
 export const VILLAGER_WAVE = {
   thugs: ['villager_thugs_here'],
   hide:  ['villager_hide'],
-  oh_no: ['villager_oh_no']
+  oh_no: ['villager_oh_no'],
+  here:  ['villager_here_they_come'],
+  runnn: ['villager_runnn']
 };
 // Something the villagers throw landing — a plank on the stack, a part on the
 // ballista, a box on the crates. Category B, soft (its GAIN): a working
 // noise under the battle, not an event in it.
 export const LANDED = ['things_land'];
+// STAGE 5'S HAMMER, one knock a blow, at the owner's word: "cut and time the sound so
+// that it aligns with 2 knocks". The recording is seven knocks 0.29s apart; the
+// first two are cut out of it by where they START in the file, measured (0.222s and
+// 0.508s, each over by 0.1s), and played a hair before, on the frame the hammer comes
+// down — the first on the first blow, the second on the second. Category B.
+export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0.24]] };
 
 // --- THE END OF A GAME -----------------------------------------------------------
 //
@@ -1451,6 +1467,25 @@ export function play(cue, level = 1) {
   lastB.set(cue, key);
 
   fire(key, busB, false, level);
+}
+
+// A PIECE OF A CLIP, Category B: `from` seconds into the FILE (the caller measured
+// where — no lead-in is skipped for it) for `dur` seconds, faded out over its last
+// 30ms so the cut does not click. See HAMMER.
+export function slice(key, from, dur, level = 1) {
+  if (!ctx || ctx.state !== 'running') return;
+  const c = clips[key];
+  if (!c) return;
+  const now = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = c.buf;
+  const g = ctx.createGain();
+  const v = c.gain * level;
+  g.gain.setValueAtTime(v, now);
+  g.gain.setValueAtTime(v, now + dur - 0.03);
+  g.gain.linearRampToValueAtTime(0, now + dur);
+  src.connect(g).connect(busB);
+  src.start(now, from, dur);
 }
 
 // Category A. One at a time, then a second of quiet — and never the same clip

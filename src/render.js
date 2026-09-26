@@ -1582,7 +1582,8 @@ function drawVillager(ctx, state, v, layer = null) {
   ctx.save();
   // Fading out through a door (villagers.js, `vanish`).
   if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;
-  ctx.translate(v.x, v.y);
+  // A small shake on the spot — stage 6's man heaving at the helmet stuck on him.
+  ctx.translate(v.x + (v.shake || 0), v.y);
   if (v.flip) ctx.scale(-1, 1);
   const [fx, fy] = VILLAGER_POSE.feet[v.pose] || VILLAGER_POSE.foot;
   const left = -(fx - sx) * k, top = -(fy - sy) * k;

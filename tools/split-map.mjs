@@ -275,7 +275,10 @@ const VILLAGER_WIN = { w: 14, up: 27, down: 4 };
 const GARRISON_WIN = { w: GARRISON_W, up: GARRISON_UP, down: GARRISON_DOWN };
 const figures = [
   ...(level.garrison || []).map(at => ({ at, what: 'garrison', win: GARRISON_WIN })),
-  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager', win: VILLAGER_WIN })),
+  // A villager may narrow his window (`w`), when something of the scenery that must
+  // stay stands at his elbow — stage 6's man beside his planted rod.
+  ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager',
+    win: at.w ? { ...VILLAGER_WIN, w: at.w } : VILLAGER_WIN })),
   // AND WHAT THEY HOLD, when the game draws it for them: stage 4's plank, painted
   // between its two carriers and now part of their carrying drawing. Each prop is a
   // window of its own, sized in the level file.

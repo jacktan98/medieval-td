@@ -844,7 +844,7 @@ function findShore(f, fallsMask, opts = {}) {
 
 // `k` sizes it and `a` strengthens it: a board's water is far paler than the map's
 // muted blue, and foam drawn at the map's size and strength all but vanished on it.
-function drawShore(ctx, t, list = shore, spray = 0.4, k = 1, a = 1) {
+function drawShore(ctx, t, list = shore, spray = 0.4, k = 1, a = 1, ripples = true) {
   if (!list.length) return;
   ctx.save();
   for (const s of list) {
@@ -852,7 +852,7 @@ function drawShore(ctx, t, list = shore, spray = 0.4, k = 1, a = 1) {
     // RIPPLES OFF THE BANK, at every spot: small arcs spreading out from the land
     // back into the river, fading as they go.
     const rp = ((t / (2.6 + hash(s.n + 940) * 1.6)) + hash(s.n + 950)) % 1;
-    for (const lag of [0, 0.35]) {
+    for (const lag of ripples ? [0, 0.35] : []) {
       const q = rp - lag;
       if (q <= 0) continue;
       const rr = (2 + q * 9) * k;
@@ -892,11 +892,9 @@ function drawShore(ctx, t, list = shore, spray = 0.4, k = 1, a = 1) {
   ctx.restore();
 }
 
-// Spots all along a board river's banks, `LAP_GAP` apart, facing the land: where
-// the water laps rather than breaks. Away from the canvas edge, clear of the spots
-// that already break, and only where there is real water behind them.
-const LAP_GAP = 22;
-function lapping(f, taken) {
+// Spots all along a board river's banks, `gap` apart, facing the land, that `keep`
+// accepts. Away from the canvas edge, and only where there is real water behind them.
+function bankSpots(f, gap, keep) {
   const out = [];
   for (const i of f.cells) {
     if (f.bank[i] > R * 1.5) continue;
@@ -910,8 +908,10 @@ function lapping(f, taken) {
     // Water behind it, a few px out from the bank.
     const back = (yi - Math.round(ly / lm * 4)) * f.W + (xi - Math.round(lx / lm * 4));
     if (!f.wet[back]) continue;
-    if ([...taken, ...out].some(p => Math.hypot(p.x - x, p.y - y) < LAP_GAP)) continue;
-    out.push({ x, y, dx: lx / lm, dy: ly / lm, spray: false });
+    const dx = lx / lm, dy = ly / lm;
+    if (!keep(x, y, dx, dy)) continue;
+    if (out.some(p => Math.hypot(p.x - x, p.y - y) < gap)) continue;
+    out.push({ x, y, dx, dy, spray: true });
   }
   return out;
 }
@@ -1109,7 +1109,7 @@ export function drawBoardWater(ctx, img, spec, t) {
   }), w.grp.rect.x, w.grp.rect.y);
   // WHERE THE WATER MEETS THE LAND: ripples off the bank and bursts of spray, the
   // world map's own (drawShore) at the spots the current runs into a bank.
-  if (w.shore.length) drawShore(ctx, t, w.shore, 0.4, spec.foam ?? 1.6, spec.foamAlpha ?? 2);
+  if (w.shore.length) drawShore(ctx, t, w.shore, 1, spec.foam ?? 1.6, spec.foamAlpha ?? 2, false);
   // AND IN THE SHADE, the same marks, dimmer: water under the bridge catches less of
   // the sky, and pale strokes at full strength stood out on the dark blue far more
   // than on the light.
@@ -1127,6 +1127,8 @@ function buildBoardWater(img, spec) {
   g.drawImage(img, 0, 0, 960, 540);
   const px = g.getImageData(0, 0, 960, 540);
   const d = px.data;
+  // The drawing itself, kept to tell a bank from a bridge by — see `land` below.
+  const art = new Uint8ClampedArray(d);
   // Every shade the water is painted in — open water first, then the same water in
   // the bridge's shadow, which is water all the same. ONE flow field over all of it,
   // so a current runs on under the bridge; two layers, so the shaded part can be
@@ -1153,11 +1155,22 @@ function buildBoardWater(img, spec) {
   const [x0, y0, x1, y1] = spec.sink;
   const flow = flowField(wet, (x, y) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
   wet.width = 0; wet.height = 0;
-  // THE SHORE: the spots where the current runs into the land throw spray, as on the
-  // map; and all along the rest of the banks the water laps — ripples only. A board's
-  // river is narrow and mostly runs along its banks rather than into them, so the
-  // map's test alone found four spots on the whole of stage 5's.
-  const hits = findShore(flow, null, { wet: 14, agree: 0.35, far: 18 }).map(p => ({ ...p, spray: true }));
-  const shore = [...hits, ...lapping(flow, hits)].map((p, n) => ({ ...p, n }));
+  // THE SHORE: spray all along the banks, where the water meets the LAND — not the
+  // bridge, at the owner's word, and no ripples. The bank and the bridge's deck are
+  // painted the same brown, so a spot is on land if, looking on from the water's edge
+  // into what it meets, grass or sand (`spec.land`) is reached within a few px: a
+  // bank is a thin strip of mud before the grass, a bridge is deck for a long way.
+  const like = (i, c) => Math.abs(art[i] - c[0]) + Math.abs(art[i + 1] - c[1]) + Math.abs(art[i + 2] - c[2]) < 24;
+  const land = (x, y, dx, dy) => {
+    for (let r = 3; r <= 26; r++) {
+      const X = Math.round(x + dx * r), Y = Math.round(y + dy * r);
+      if (X < 0 || Y < 0 || X >= 960 || Y >= 540) return false;
+      const i = (Y * 960 + X) * 4;
+      if (spec.land.some(c => like(i, c))) return true;
+      if (spec.colours.some(c => like(i, c))) return false;
+    }
+    return false;
+  };
+  const shore = bankSpots(flow, spec.sprayGap ?? 9, land).map((p, n) => ({ ...p, n }));
   return { grp, shade, flow, shore, marks: [], glints: [], lastT: null };
 }

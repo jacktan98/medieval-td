@@ -50,6 +50,19 @@ And stage 5's:
 | `Villager_Throwing_Box.png` | tossing it onto the pile |
 | `Villager_Box.png` | the box on its own, flying onto the crates |
 
+And stage 6's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Fishing_1.png` | the angler, rod and line in the water, waiting |
+| `Villager_Fishing_2.png` | tugging at it, the rod bent |
+| `Villager_Helmet_Stuck_1.png` | a villager with a helmet stuck on his head |
+| `Villager_Helmet_Stuck_2.png` | heaving at it |
+
+The fishing drawings stand on (324.5, 318) and carry the rod, so the rod painted in
+the angler's hands is cut out of the board with him (`props` in level08.js); the
+helmet ones stand on (256, 312).
+
 The ballista-part drawings stand on (236, 311); the hammering ones on (276.5, 305).
 
 The carrying and throwing drawings stand on the back-end villager's shadow, centred
@@ -150,6 +163,7 @@ them.
      carry — towards the cut trees and off the bottom of the board between them;
   4. three seconds later come back from where they left, carrying the next plank.
 - **A star lost:** "nooo", as on stages 2 and 3.
+- **When the first enemy of wave 1 appears:** "here they come".
 
 ## Paused means still
 
@@ -182,3 +196,22 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
   redrawn carrying a box.)
 - The two torches at the gate burn with live fire and smoke. The two banners on the
   castle hang still.
+- Each of villager 4's two quick blows knocks, one knock of the hammering recording
+  each.
+
+## Stage 6's script
+
+In the level's order: 1 by his rod planted on the bank, 2 by the top-right hut, 3
+fishing with his rod in hand, 4 between the two bottom-right huts, 5 stuck in a
+helmet by the armour stand.
+
+- **Before the first wave:** villagers 1, 2 and 4 stand and greet by turns.
+- **When the first enemy of wave 1 appears:** "runnn", and villagers 1, 2 and 4
+  start standing and praying by turns.
+- **All game long:** villager 3 waits with his line in the water for four to seven
+  and a half seconds, then tugs at it for one and a half to two and a half, the reel
+  whirring softly while he does, and back. Villager 5 heaves at the helmet stuck on
+  his head — his two drawings by turns, shaking — for nearly two seconds, then
+  stands still for a second and a half, and again.
+- **A star lost:** "nooo". Birdsong and the river under the bridge play softly
+  throughout.

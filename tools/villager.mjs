@@ -46,7 +46,10 @@ console.log('\nWho lives here\n');
   const extra = [];
   for (const l of peopled) {
     l.villagers.forEach((v, i) => {
-      const keys = Object.keys(v).filter(k => k !== 'x' && k !== 'y');
+      // `w` is allowed: it is not about the man at all but about cutting his painted
+      // figure out of the base (tools/split-map.mjs) — a narrower window beside
+      // something of the scenery that must stay.
+      const keys = Object.keys(v).filter(k => k !== 'x' && k !== 'y' && k !== 'w');
       if (keys.length) extra.push(`${l.name} villager ${i}: ${keys.join(', ')}`);
     });
     if (l.doors) extra.push(`${l.name} still lists doors`);

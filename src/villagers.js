@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -98,13 +98,18 @@ export const VILLAGER_POSE = {
           carry_parts: [236, 311.5], throw_parts: [236, 311],
           hammer_1: [276.5, 305], hammer_2: [276.5, 305],
           // And its box carrier, the two drawings stood on the same shadow.
-          carry_box: [268.5, 305], throw_box: [268.5, 305] },
+          carry_box: [268.5, 305], throw_box: [268.5, 305],
+          // Stage 6's angler, rod and line in his drawing, and the man in a helmet.
+          fish_1: [324.5, 318], fish_2: [324.5, 318],
+          helmet_1: [256, 312], helmet_2: [256, 312] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
            carry_parts: [195, 185, 120, 140], throw_parts: [195, 185, 120, 140],
            hammer_1: [195, 185, 120, 135], hammer_2: [195, 185, 120, 135],
-           carry_box: [200, 185, 115, 135], throw_box: [200, 185, 115, 135] },
+           carry_box: [200, 185, 115, 135], throw_box: [200, 185, 115, 135],
+           fish_1: [145, 165, 220, 165], fish_2: [145, 165, 220, 165],
+           helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   hand: { x: 227, y: 249, r: 11, px: 241, py: 256 }
@@ -252,7 +257,25 @@ const PLAYS = {
       gone: 3
     },
     before: [], after: [], run: [], hops: [],
-    cries: { runnn: false, nooo: true }
+    cries: { runnn: false, nooo: true, wave: 'here' }
+  },
+  // STAGE 6, Dawnford Bridge, in the level's order: 1 by his rod planted on the bank,
+  // 2 by the top-right hut, 3 fishing with his rod in hand, 4 between the bottom-right
+  // huts, and 5 stuck in a helmet by the armour stand.
+  dawnford: {
+    // The three who are not busy greet by turns, and pray by turns once the wave is
+    // on them.
+    before: [front('greets'), front('greets'), {}, front('greets'), {}],
+    after: [front('pray'), front('pray'), {}, front('pray'), {}],
+    run: [], hops: [],
+    // THE ANGLER waits with his line in the water for `wait` seconds, then tugs at it
+    // for `tug` — the reel whirring while he does (main.js, `reeling`) — and back.
+    angler: { who: 2, wait: [4, 7.5], tug: [1.6, 2.6] },
+    // THE MAN IN THE HELMET heaves at it: his two drawings by turns every `beat`,
+    // shaking, for `struggle` seconds, then stands still for `rest`, and again.
+    stuck: { who: 4, beat: 0.2, struggle: 1.8, rest: 1.5, shake: 0.8, flip: true },
+    // The village's "runnn" as the first wave comes, and its "nooo" for a lost star.
+    cries: { runnn: false, nooo: true, wave: 'runnn' }
   },
   // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle
   // gate, 3 carrying a part to the broken ballista, 4 hammering at it, and 5, 6 and 7
@@ -345,7 +368,31 @@ function walkTo(v, pts, speed, dt) {
 //   gone  — out of sight for `gone` seconds, and round again.
 // The villagers it moves are marked `work`, and the rest of this file leaves them be.
 function work(state, vp, dt) {
-  const { smith, crew, hammer } = vp.plan;
+  const { smith, crew, hammer, angler, stuck } = vp.plan;
+
+  // THE ANGLER: waiting, then tugging at his line, and back, each for a while of its
+  // own drawn afresh every time.
+  const a = angler && state.villagers[angler.who];
+  if (a) {
+    a.work = true;
+    const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+    const c = vp.angling || (vp.angling = { tug: false, until: vp.t + span(angler.wait) });
+    if (vp.t >= c.until) { c.tug = !c.tug; c.until = vp.t + span(c.tug ? angler.tug : angler.wait); }
+    a.pose = c.tug ? 'fish_2' : 'fish_1';
+    vp.reeling = c.tug;
+  }
+
+  // THE MAN STUCK IN A HELMET: heaving at it — his two drawings by turns, shaking —
+  // then a rest, and at it again.
+  const st = stuck && state.villagers[stuck.who];
+  if (st) {
+    st.work = true;
+    st.flip = !!stuck.flip;
+    const k = vp.t % (stuck.struggle + stuck.rest);
+    const heaving = k < stuck.struggle;
+    st.pose = heaving && Math.floor(k / stuck.beat) % 2 ? 'helmet_2' : 'helmet_1';
+    st.shake = heaving ? stuck.shake * Math.sin(vp.t * 41) : 0;
+  }
 
   // THE SMITH: drawn back, then in the fire; the fire flares while the pipe is in.
   const s = smith && state.villagers[smith.who];
@@ -371,7 +418,13 @@ function work(state, vp, dt) {
     h.work = true;
     const cycle = hammer.beats.reduce((n, [, d]) => n + d, 0);
     let k = (vp.t + h.n * 0.7) % cycle;
+    const was = h.pose;
     for (const [pose, d] of hammer.beats) { if (k < d) { h.pose = pose; break; } k -= d; }
+    // A KNOCK AS THE HAMMER COMES DOWN — the first blow's, then the second's.
+    if (was === 'hammer_1' && h.pose === 'hammer_2') {
+      const [from, dur] = HAMMER.knocks[(vp.knock = ((vp.knock ?? -1) + 1) % HAMMER.knocks.length)];
+      slice(HAMMER.key, from, dur);
+    }
   }
 
   // EVERY CREW ON ITS OWN LOOP: stage 4's pair with a plank, and stage 5's porter
@@ -485,6 +538,15 @@ export function updateVillagers(state, dt) {
   if (plan.cries.nooo && vp.stars !== null && stars < vp.stars && state.lives > 0) solo(VILLAGER_NOOO, true, true, true);
   vp.stars = stars;
 
+  // THE VILLAGE SHOUTS AS THE FIRST ENEMY OF WAVE 1 APPEARS, on the boards that have
+  // a shout — stage 2's "thugs are here", stage 3's "hide", stage 4's "here they
+  // come", stage 5's "oh no". Once, before everything. Ahead of the work boards'
+  // early return, so the lumberyard, whose villagers never stop working, shouts too.
+  if (!vp.cried && state.enemies.length) {
+    vp.cried = true;
+    if (plan.cries.wave) solo(VILLAGER_WAVE[plan.cries.wave], true, true, true);
+  }
+
   work(state, vp, dt);
   if (plan.work) return;
 
@@ -492,9 +554,6 @@ export function updateVillagers(state, dt) {
   // face the way they will watch from now on.
   if (!vp.started && state.enemies.length) {
     vp.started = true;
-    // AND THE VILLAGE SHOUTS, on the boards that have a shout — stage 2's "thugs are
-    // here", stage 3's "hide", stage 5's "oh no". Once, loud, before everything.
-    if (plan.cries.wave) solo(VILLAGER_WAVE[plan.cries.wave], true, true, true);
     for (const v of state.villagers) {
       const a = plan.after[v.n];
       if (v.live && a && !v.work) { v.side = a.side || v.side; v.act = a.act || null; v.flip = !!a.flip; }
@@ -632,4 +691,6 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    pipe_1: 'vill_holding_steel_pipe_1', pipe_2: 'vill_holding_steel_pipe_2',
                    carry_parts: 'vill_carrying_ballista_parts', throw_parts: 'vill_throwing_ballista_parts',
                    hammer_1: 'vill_hammering_1', hammer_2: 'vill_hammering_2',
-                   carry_box: 'vill_carrying_box', throw_box: 'vill_throwing_box' };
+                   carry_box: 'vill_carrying_box', throw_box: 'vill_throwing_box',
+                   fish_1: 'vill_fishing_1', fish_2: 'vill_fishing_2',
+                   helmet_1: 'vill_helmet_stuck_1', helmet_2: 'vill_helmet_stuck_2' };

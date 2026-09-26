@@ -106,11 +106,19 @@ export const level08 = {
   // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
   // Each anchor is the centre of the figure's own ground shadow.
   villagers: [
-    { x:  65, y: 227 },       // fishing off the bank
+    { x:  65, y: 227, w: 9 }, // by his rod planted on the bank — a narrow cut, so its holder stays
     { x: 885, y: 229 },       // by the top-right hut
-    { x:  55, y: 268 },       // fishing, with the bucket
-    { x: 804, y: 409 }        // between the two bottom-right huts
+    { x:  55, y: 268 },       // fishing, rod in hand, with the bucket
+    { x: 804, y: 409 },       // between the two bottom-right huts
+    { x:  93, y: 331 }        // stuck in a helmet, by the armour stand
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `dawnford` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs,
+  // with the rod the angler holds (`props`): his drawings carry their own.
+  villagerPlay: 'dawnford',
+  props: [{ x: 36, y: 259, w: 17, up: 18, down: 2 }],   // the angler's rod and line
+  // Birdsong and the river under the bridge, both soft, for as long as it is played.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'river_flowing', level: 1 }],
   waves: stage6Waves,
   wavesExtended: stage6Waves,
   oneLength: true,

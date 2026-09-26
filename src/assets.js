@@ -200,6 +200,11 @@ export const paths = {
   vill_carrying_box:            'assets/villagers/Villager_Carrying_Box.png',
   vill_throwing_box:            'assets/villagers/Villager_Throwing_Box.png',
   vill_box:                     'assets/villagers/Villager_Box.png',
+  // Stage 6's angler, waiting and tugging, and the man stuck in a helmet.
+  vill_fishing_1:               'assets/villagers/Villager_Fishing_1.png',
+  vill_fishing_2:               'assets/villagers/Villager_Fishing_2.png',
+  vill_helmet_stuck_1:          'assets/villagers/Villager_Helmet_Stuck_1.png',
+  vill_helmet_stuck_2:          'assets/villagers/Villager_Helmet_Stuck_2.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.

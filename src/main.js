@@ -403,6 +403,8 @@ function frame(now) {
   // board, where he is held with it in.
   const vp = state.villagerPlay;
   setLoop('steel_welding', playing && !state.paused && !!(vp && vp.welding), 1, 'board_weld');
+  // AND STAGE 6'S ANGLER'S REEL, soft, for as long as he is tugging at his line.
+  setLoop('fishing_reel', playing && !state.paused && !!(vp && vp.reeling), 1, 'board_reel');
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.
