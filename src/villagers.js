@@ -282,7 +282,10 @@ const PLAYS = {
     // right — in both.
     before: [mirrored('greets'), front('greets'), {}, front('greets'), {}],
     after: [mirrored('pray'), front('pray'), {}, front('pray'), {}],
-    run: [], hops: [],
+    run: [],
+    // Two hops each: villager 1 every tenth enemy down, 4 every twelfth, and 5 — in
+    // his helmet — every fourteenth.
+    hops: [{ every: 10, who: [0] }, { every: 12, who: [3] }, { every: 14, who: [4] }],
     // THE ANGLER waits with his line in the water for `wait` seconds, then tugs at it
     // for `tug` — the reel whirring while he does (main.js, `reeling`) — and back.
     angler: { who: 2, wait: [4, 7.5], tug: [1.6, 2.6] },
@@ -304,9 +307,9 @@ const PLAYS = {
     before: [mirrored('greets'), mirrored('greets'), mirrored('greets'), backMirrored('greets'), front('greets'), {}],
     after: [mirrored('pray'), mirrored('pray'), mirrored('pray'), backMirrored('pray'), front('pray'), {}],
     run: [],
-    // Two hops each, 1 and 2 every tenth enemy down, 3 and 4 every fifteenth, and 5
-    // every twentieth.
-    hops: [{ every: 10, who: [0, 1] }, { every: 15, who: [2, 3] }, { every: 20, who: [4] }],
+    // Two hops each, 1 and 2 every tenth enemy down, 3 and 4 every twelfth, and 5
+    // every fourteenth.
+    hops: [{ every: 10, who: [0, 1] }, { every: 12, who: [2, 3] }, { every: 14, who: [4] }],
     // THE COOK holds his skewer over the fire for `cook` seconds — the fish sizzling
     // while he does (main.js, `cooking`) — then draws it back out for `out`, and
     // again. Over the fire for half as long as drawn back, at the owner's word.
@@ -362,7 +365,8 @@ const PLAYS = {
     // Villager 4 hammers at it: two quick blows, then a long rest with the hammer
     // down, and again.
     hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]] },
-    hops: [],
+    // Two hops each: villager 5 every tenth enemy down, 6 every twelfth.
+    hops: [{ every: 10, who: [4] }, { every: 12, who: [5] }],
     cries: { runnn: false, nooo: false, wave: 'oh_no' }
   }
 };
@@ -558,6 +562,7 @@ const RUN_UP = 0.05;          // how steeply up a runner must go to show their b
 const HOP_GAP = 0.16;         // seconds between one villager's hop and the next's
 const HOP_UP = 0.3, HOP_DOWN = 0.2;   // how long the hopping and landing drawings show
 const HOPS = 2;                       // hops each time, one straight after the other
+const HOP_LIFT = 4;                   // px a worker with no hopping drawing jumps
 export const GREET_SECONDS = 1;       // how long a tapped villager greets the player
 
 // A TAP ON A VILLAGER, from src/input.js. One facing the player stops what they are
@@ -624,6 +629,16 @@ export function updateVillagers(state, dt) {
     const n = Math.floor((state.slain || 0) / h.every);
     if (n > vp.hops[k].n) { vp.hops[k].n = n; vp.hops[k].at = vp.t; }
   });
+
+  // A VILLAGER AT WORK WHO HOPS — stage 6's man in the helmet — has no hopping
+  // drawing of his own, so he jumps in the one he is in: stops heaving, and is lifted
+  // off the ground while his shadow stays on it (`lift`, drawn by render.js).
+  for (const v of state.villagers) {
+    if (!v.live || !v.work) continue;
+    const hop = hopping(vp, v);
+    v.lift = hop && hop.pose === 'hopping' ? HOP_LIFT * Math.sin(Math.PI * hop.k) : 0;
+    if (hop && v === state.villagers[plan.stuck?.who]) { v.pose = 'helmet_1'; v.shake = 0; }
+  }
 
   for (const v of state.villagers) {
     if (!v.live || v.work) continue;
@@ -709,20 +724,30 @@ export function updateVillagers(state, dt) {
     if (act && v.mode === 'idle') {
       pose = (vp.t + v.n * 2.3) % act.every < act.for ? act.pose : act.rest;
     }
-    plan.hops.forEach((h, k) => {
-      const at = vp.hops[k].at;
-      const j = h.who.indexOf(v.n);
-      if (at === null || j < 0) return;
-      // TWICE, hop-land-hop-land, so the player has the time to catch it.
-      const t = vp.t - at - j * HOP_GAP;
-      if (t < 0 || t >= HOPS * (HOP_UP + HOP_DOWN)) return;
-      pose = t % (HOP_UP + HOP_DOWN) < HOP_UP ? 'hopping' : 'landing';
-    });
+    const hop = hopping(vp, v);
+    if (hop) pose = hop.pose;
     if (greeting) pose = 'greeting';
     v.pose = pose;
     // A TAPPED villager turns to face the player to greet them.
     v.greetSide = greeting ? 'front' : null;
   }
+}
+
+// WHETHER A VILLAGER IS IN THE MIDDLE OF A HOP, and which half: TWICE,
+// hop-land-hop-land, so the player has the time to catch it — `k` is how far through
+// the half it is. Null when not hopping.
+function hopping(vp, v) {
+  let out = null;
+  vp.plan.hops.forEach((h, k) => {
+    const at = vp.hops[k].at;
+    const j = h.who.indexOf(v.n);
+    if (at === null || j < 0) return;
+    const t = vp.t - at - j * HOP_GAP;
+    if (t < 0 || t >= HOPS * (HOP_UP + HOP_DOWN)) return;
+    const q = t % (HOP_UP + HOP_DOWN);
+    out = q < HOP_UP ? { pose: 'hopping', k: q / HOP_UP } : { pose: 'landing', k: (q - HOP_UP) / HOP_DOWN };
+  });
+  return out;
 }
 
 // Which drawing a villager is showing: their own side, or the front while a tap has

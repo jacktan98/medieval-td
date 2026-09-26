@@ -209,6 +209,7 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
   castle hang still.
 - Each of villager 4's two quick blows knocks, one knock of the hammering recording
   each.
+- **Every 10 enemies killed:** villager 5 hops twice. **Every 12:** villager 6.
 
 ## Stage 6's script
 
@@ -226,6 +227,10 @@ helmet by the armour stand.
   his head — his two drawings by turns about three times a second, with a slight
   shake — for about a second and a quarter, then stands still for two and a half
   seconds, and again.
+- **Every 10 enemies killed:** villager 1 hops twice. **Every 12:** villager 4.
+  **Every 14:** villager 5 — who has no hopping drawing with a helmet on, so he stops
+  heaving and jumps in his own drawing, lifted off the ground while his shadow stays
+  on it.
 - **A star lost:** "nooo". Birdsong and the river under the bridge play softly
   throughout, and the river runs — currents and spray at its banks, as on stage 5.
 
@@ -240,8 +245,8 @@ level's list.
   facing the player turned left.
 - **When the first enemy of wave 1 appears:** "thugs are here", and the five start
   standing and praying by turns, each facing as before.
-- **Every 10 enemies down** villagers 1 and 2 hop twice; **every 15**, 3 and 4;
-  **every 20**, 5.
+- **Every 10 enemies down** villagers 1 and 2 hop twice; **every 12**, 3 and 4;
+  **every 14**, 5.
 - **All game long:** the cook holds his skewer over the fire for three seconds, the
   fish sizzling while he does, then draws it back out for six seconds, and again.
   The fire burns live, over the fish on its spit and under the cook's skewer.
