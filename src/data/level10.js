@@ -22,6 +22,7 @@
 //   node tools/trace-road.mjs assets/map/Stage_8_Map --exit bottom --pair 1,0
 //   node tools/bell-cover.mjs                (once per redraw of the church: see `bell`)
 //   node tools/split-map.mjs assets/map/Stage_8_Map --accept
+//   node tools/bare-banners.mjs              (after every split: see `mapBanners`)
 //
 // The `--accept` is a decision and belongs here rather than only in a shell history.
 // The church's stone wall is drawn as five separate courses of masonry, each 110px
@@ -142,9 +143,18 @@ export const level10 = {
   // sheet's own 1920 x 1080 pixels, the box each white cloth is found in by its
   // colour, where it hangs free from (`top`) and its tails (`bottom`), and how far it
   // swings. Just after the church, whose front sheet they are drawn in.
+  //
+  // `bottom` is the lowest pixel of the cloth's colour, as on the towers (src/data/
+  // banners.js), and the box reaches past it and either side, so the whole cloth,
+  // edges and all, is in it.
+  //
+  // THE WALL BEHIND EACH IS THE ARTIST'S OWN, not rebuilt: `bare` is the front sheet
+  // with both banners taken out (tools/bare-banners.mjs), and the cloth is whatever
+  // differs from it. Rebuilt from the stone either side, as a tower's is, the church's
+  // brickwork came out with broken mortar lines where the tails had swung away.
   mapBanners: [
-    { colour: [233, 233, 233], box: [866, 327, 937, 437], top: 334, bottom: 430, amp: 1.6, g: 225.02 },
-    { colour: [233, 233, 233], box: [960, 351, 1031, 460], top: 358, bottom: 453, amp: 1.6, g: 225.02 }
+    { colour: [233, 233, 233], box: [864, 322, 938, 447], top: 334, bottom: 425, amp: 1.6, g: 225.02, bare: 'bare10' },
+    { colour: [233, 233, 233], box: [958, 346, 1032, 470], top: 358, bottom: 448, amp: 1.6, g: 225.02, bare: 'bare10' }
   ],
   bell: { x: 391.2, y: 101.9, at: [176, 171], k: 0.194, g: 225.01, cover: 'cover10',
           box: { x: 387, y: 98, w: 43, h: 40 } },

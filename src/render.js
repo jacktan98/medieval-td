@@ -1331,6 +1331,14 @@ function bannerLayers(img, b) {
   const key = b.box.join(',');
   let got = byBox.get(key);
   if (got !== undefined) return got;
+  // THE WALL BEHIND IT DRAWN BY THE ARTIST, when there is one: see bareLayers.
+  if (b.bare) {
+    const bare = art[b.bare];
+    if (!bare || !bare.complete) return null;          // not yet: asked again next frame
+    got = bareLayers(img, bare, b);
+    byBox.set(key, got);
+    return got;
+  }
   got = null;
   try {
     // BOTH PIECES ARE ONLY THE SIZE OF THE BOX, and they were once the size of the
@@ -1539,6 +1547,52 @@ function swayBanner(ctx, t, b, img, box) {
   }
   swayCloth(ctx, b, got, [sx, sy, sw, sh], box, boardTime + t.x * 0.013);
   return true;
+}
+
+// A CLOTH FOUND BY WHAT IS UNDER IT rather than by its colour: the same sheet drawn
+// without the banner (`bare` — stage 8's church, tools/bare-banners.mjs) is the
+// wall behind it exactly, and the cloth is every pixel of the sheet that differs from
+// it, soft edges and all. Nothing is rebuilt, so the church's mortar lines run on
+// unbroken where the cloth swings away — which rebuilding them row by row did not.
+function bareLayers(img, bare, b) {
+  try {
+    const [x0, y0, x1, y1] = b.box;
+    const bw = x1 - x0, bh = y1 - y0;
+    const read = (src, w, h) => {
+      const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      // Both sheets at the size of the one drawn — the front sheet's canvas is.
+      g.drawImage(src, 0, 0, w, h, -x0, -y0, img.width, img.height);
+      return { c, d: g.getImageData(0, 0, bw, bh) };
+    };
+    const whole = read(img, img.width, img.height);
+    const wall = read(bare, bare.naturalWidth || bare.width, bare.naturalHeight || bare.height);
+    const a = whole.d.data, w = wall.d.data;
+    const diff = i => Math.abs(a[i] - w[i]) + Math.abs(a[i + 1] - w[i + 1]) + Math.abs(a[i + 2] - w[i + 2]) + Math.abs(a[i + 3] - w[i + 3]);
+    // The cloth is where the two differ plainly, and the soft pixels round that where
+    // they differ at all. Not a faint difference anywhere else: the two sheets are
+    // drawn separately, and a hair's difference in how the mortar lines are smoothed
+    // taken for cloth swung the lines about with it.
+    const NEAR = 3;
+    const strong = new Uint8Array(bw * bh);
+    for (let i = 0; i < bw * bh; i++) if (diff(i * 4) > 60) strong[i] = 1;
+    const cloth = new ImageData(bw, bh);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const i = (y * bw + x) * 4;
+      if (diff(i) < 6) continue;
+      let near = false;
+      for (let v = Math.max(0, y - NEAR); v <= Math.min(bh - 1, y + NEAR) && !near; v++)
+        for (let u = Math.max(0, x - NEAR); u <= Math.min(bw - 1, x + NEAR); u++) if (strong[v * bw + u]) { near = true; break; }
+      if (!near) continue;
+      for (let c = 0; c < 4; c++) cloth.data[i + c] = a[i + c];
+    }
+    const cc = document.createElement('canvas'); cc.width = bw; cc.height = bh;
+    cc.getContext('2d').putImageData(cloth, 0, 0);
+    whole.c.width = 0; whole.c.height = 0;
+    return { wall: wall.c, cloth: cc };
+  } catch {
+    return null;
+  }
 }
 
 // A BANNER PAINTED ON THE BOARD ITSELF — stage 8's two on the church — swaying the

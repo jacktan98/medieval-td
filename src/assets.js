@@ -857,6 +857,9 @@ export const paths = {
   // What hangs in front of stage 8's church bell — the roof and the front pillars —
   // drawn again over the swinging bell. Written by tools/bell-cover.mjs.
   cover10:     'assets/map/Stage_8_Map_bell_cover.svg',
+  // And stage 8's front sheet without the church's two banners, the wall behind them
+  // as drawn. Written by tools/bare-banners.mjs.
+  bare10:      'assets/map/Stage_8_Map_front_bare.svg',
   map01:       'assets/map/Map_1_base.svg',
   // The second stage. Same pipeline, same rule: DERIVED and committed, so
   // re-run tools/split-map.mjs on Map_2.svg after every redraw of it.

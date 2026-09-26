@@ -740,6 +740,12 @@ hand:
   again over the swinging bell, only in the space the bell swings through, so the
   roof and pillars overlap it as they did the painted one and the rest of the church
   is untouched. Run it once after a redraw of the church, before the splitter.
+- `Stage_8_Map_front_bare.svg` — **stage 8's front sheet without the church's two
+  banners**: the brick wall behind them as drawn. Written by
+  `node tools/bare-banners.mjs`, to be run after every run of the splitter on
+  stage 8. The banners sway over it, and since the wall under them is the artist's
+  own rather than rebuilt, its mortar lines run on unbroken where the cloth swings
+  away.
 - `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
   included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
