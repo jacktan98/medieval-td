@@ -77,7 +77,7 @@ export function drawWeed(ctx, w) {
 
 // --- sand on the wind ------------------------------------------------------------
 
-const STREAKS = 70;             // halved at the owner's word
+const STREAKS = 35;             // halved at the owner's word, and halved again
 const SAND = '255,247,226';       // the grains: sand in the sun, paler than the ground
 const DUST = '196,158,104';       // the gusts: a haze of it, darker than the ground
 
@@ -99,8 +99,9 @@ function dust() {
 export function drawSandWind(ctx, t) {
   ctx.save();
   // GUSTS: now and then a broad soft band of dust sweeps across the board, low and
-  // long, rising and thinning as it goes. Slots of 7 seconds, most with one.
-  const slot = 7, now = Math.floor(t / slot);
+  // long, rising and thinning as it goes. Slots of 4.7 seconds, most with one — half
+  // as many again as the 7 they were, at the owner's word.
+  const slot = 4.7, now = Math.floor(t / slot);
   for (let n = now - 2; n <= now; n++) {
     if (hash(n * 1.7 + 9) < 0.25) continue;
     const dur = 5 + hash(n * 2.3) * 3;
