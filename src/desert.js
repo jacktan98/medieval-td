@@ -77,7 +77,7 @@ export function drawWeed(ctx, w) {
 
 // --- sand on the wind ------------------------------------------------------------
 
-const STREAKS = 140;
+const STREAKS = 70;             // halved at the owner's word
 const SAND = '255,247,226';       // the grains: sand in the sun, paler than the ground
 const DUST = '196,158,104';       // the gusts: a haze of it, darker than the ground
 
