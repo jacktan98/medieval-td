@@ -1775,7 +1775,9 @@ function innerMouth(fire) {
 // with the smith's stroke (villagers.js keeps the heat).
 function drawFire(ctx, state, fire, part = 'all') {
   const t = (state.anim || 0) + fire.x * 0.37;
-  const heat = fire.heated && state.villagerPlay ? state.villagerPlay.heat || 0 : 0;
+  // A fire that FLARES while a cook holds something in it — stage 7's — takes the
+  // same heat, from its ordinary size up, rather than from small up as the forge's.
+  const heat = (fire.heated || fire.flare) && state.villagerPlay ? state.villagerPlay.heat || 0 : 0;
   // A HEATED FIRE'S SIZE FOLLOWS THE STROKE: small while the pipe is drawn back,
   // roaring while it is in.
   const tall = fire.heated ? 0.55 + 0.95 * heat : 1;

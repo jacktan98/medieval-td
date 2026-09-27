@@ -281,7 +281,9 @@ level's list.
   **every 14**, 5.
 - **All game long:** the cook holds his skewer over the fire for three seconds, the
   fish sizzling while he does, then draws it back out for six seconds, and again.
-  The fire burns live, over the fish on its spit and under the cook's skewer.
+  The fire burns live, over the fish on its spit and under the cook's skewer, and
+  flares up — taller, brighter, more sparks — while he holds the fish in it,
+  settling again as he draws it back.
 - **A star lost:** "nooo". Birdsong, the fountain and the fire crackling play softly
   throughout, and the fountain runs the way the world map's waterfall does, in long streaks along the
   owner's arrows: up the middle jet and down over both its arms, up out of each side

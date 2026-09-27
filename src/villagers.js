@@ -553,6 +553,10 @@ function work(state, vp, dt) {
     if (vp.t >= c.until) { c.over = !c.over; c.until = vp.t + span(c.over ? cook.cook : cook.out); }
     ck.pose = c.over ? 'cook_1' : 'cook_2';
     vp.cooking = c.over;
+    // THE FIRE FLARES UNDER THE FISH while he holds it there (the level's `flare`
+    // fire), quick to rise and slower to settle, so it swells rather than blinks.
+    const target = c.over ? 1 : 0, rate = c.over ? 4 : 2;
+    vp.heat = (vp.heat || 0) + (target - (vp.heat || 0)) * Math.min(1, rate * dt);
   }
 
   // THE ANGLER: waiting, then tugging at his line, and back, each for a while of its
