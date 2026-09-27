@@ -1879,21 +1879,38 @@ function puffOf(rgb) {
 // puffs, bigger, darker and quicker — stage 11's while it runs. A chimney may say how
 // far its smoke climbs (`rise`) and how far the wind carries it (`drift`), px.
 const GREY_SMOKE = '176,174,170', BLACK_SMOKE = '38,36,35';
+// EACH PUFF ONLY EVER GOES OUT, and keeps the thickness it left the chimney with.
+// The smoke quickens while boosted, and its clock was once the board's clock over a
+// lifetime that shortened with the boost — so as the factory stopped and the
+// lifetime grew back, every puff slid back down its own path and the smoke seemed
+// to pour INTO the chimney (the owner, on stage 11). Now each chimney keeps its own
+// clock, stepped forward at whatever pace the smoke has that frame, and each puff
+// takes the boost it was born with, so when the factory stops the thick ones rise
+// away and thin out as ever and the new ones come out thin.
+const smokeClocks = new WeakMap();
 function drawChimneySmoke(ctx, c, t, boost = 0) {
   const PUFFS = 7, LIFE = 6.5;
   const puff = puffOf(c.black ? BLACK_SMOKE : GREY_SMOKE);
   const lean = 0.7 + 0.3 * Math.sin(t * 0.13 + c.x * 0.01);   // the wind, slowly
-  const life = LIFE / (1 + 0.5 * boost);
+  let clock = smokeClocks.get(c);
+  // A new game, or a long gap between frames: started again from the board's clock.
+  if (!clock || t < clock.t || t - clock.t > 1) smokeClocks.set(c, clock = { t, q: t / LIFE, born: [] });
+  clock.q += (t - clock.t) * (1 + 0.5 * boost) / LIFE;
+  clock.t = t;
   ctx.save();
-  // The extra puffs only while boosted, each between two of the usual ones.
-  for (let k = 0; k < (boost > 0.01 ? PUFFS * 2 : PUFFS); k++) {
+  // The extra puffs show only when born boosted, each between two of the usual ones.
+  for (let k = 0; k < PUFFS * 2; k++) {
     const extra = k >= PUFFS;
-    const p = ((t / life) + (k % PUFFS + (extra ? 0.5 : 0)) / PUFFS + (c.x * 0.37 % 1)) % 1;
+    const q = clock.q + (k % PUFFS + (extra ? 0.5 : 0)) / PUFFS + (c.x * 0.37 % 1);
+    const n = Math.floor(q), p = q - n;
+    let born = clock.born[k];
+    if (!born || born.n !== n) born = clock.born[k] = { n, boost };
+    const bb = born.boost;
     const e = 1 - (1 - p) * (1 - p);                            // quick out, slowing
-    const x = c.x + (c.drift ?? 14) * (1 + 0.3 * boost) * lean * p * p + 1.2 * Math.sin(p * 6 + k + c.x);
-    const y = c.y - 2 - (c.rise ?? 38) * (1 + 0.3 * boost) * e;
-    const r = (2.2 + 8 * p) * (c.black ? 1.25 : 1) * (1 + 0.4 * boost);
-    const a = (c.black ? 0.8 + 0.2 * boost : 0.8) * Math.min(1, p / 0.12) * (1 - p) * (extra ? boost : 1);
+    const x = c.x + (c.drift ?? 14) * (1 + 0.3 * bb) * lean * p * p + 1.2 * Math.sin(p * 6 + k + c.x);
+    const y = c.y - 2 - (c.rise ?? 38) * (1 + 0.3 * bb) * e;
+    const r = (2.2 + 8 * p) * (c.black ? 1.25 : 1) * (1 + 0.4 * bb);
+    const a = (c.black ? 0.8 + 0.2 * bb : 0.8) * Math.min(1, p / 0.12) * (1 - p) * (extra ? bb : 1);
     if (a <= 0.01) continue;
     ctx.globalAlpha = a;
     ctx.drawImage(puff, x - r, y - r, r * 2, r * 2);

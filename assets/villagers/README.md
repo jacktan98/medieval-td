@@ -105,10 +105,11 @@ And stage 11's:
 
 | drawing | used for |
 |---------|----------|
-| `Villager_Carrying_Cannonball.png` | the cannonball carrier, a ball in his arms — mirrored while he holds it up facing the pile |
+| `Villager_Back_Carrying_Cannonball.png` | the cannonball carrier, a ball in his arms, his back to the player — carrying it up to the tower, mirrored while he goes up to the right |
+| `Villager_Front_Carrying_Cannonball.png` | the same facing the player — holding it up a moment, facing the pile |
 | `Villager_Picking_Up.png` | bent over the pile, picking one up |
 
-Both stand on (248, 305). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
+The carrying drawings stand on (263, 305), the picking-up one on (248, 305). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
 
 The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
 share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
@@ -380,11 +381,11 @@ As the owner numbers them: 1 by the top-left house; 2 carrying boxes to the fact
   empty-handed, back up the way he came and off the top of the board, and three
   seconds later he is back with the next box. The first time he starts where he is
   painted.
-- **All game long, villager 3:** carries a cannonball from the pile, round to the
-  right and up to the tower's door, and in; three seconds later out empty-handed
-  the same way to the pile; bent over it picking one up; a second holding it facing
-  the pile (the carrying drawing mirrored); then round, and back to the tower with
-  it. The first time he starts where he is painted.
+- **All game long, villager 3:** carries a cannonball from the pile, his back to
+  the player, up to the right (mirrored) and then up to the left to the tower's door
+  (as drawn), and in; three seconds later out empty-handed the same way to the pile;
+  bent over it picking one up; a second holding it facing the pile (the front
+  carrying drawing); then round, and back to the tower with it. The first time he starts where he is painted.
 - **If the Cannon Outpost is sold:** villager 3 stops what he is doing for two
   seconds, drops the cannonball if he has one (it stays on the grass), and walks to
   the lower house's door and is gone, for good — whatever is built there after. In
@@ -397,6 +398,7 @@ As the owner numbers them: 1 by the top-left house; 2 carrying boxes to the fact
 
 On stages 6, 7 and 8 — Dawnford's three boards — soft shafts of warm sunlight slant
 down over the board and everything on it, each brightening and dimming over ten
-seconds or more and leaning a little one way and back, with specks of dust drifting
+seconds or more and wandering slowly left and right, with specks of dust drifting
 slowly up inside them. One colour, nothing flashing or sweeping: see `src/holy.js`
-and `holy` in the level files.
+and `holy` in the level files. Where the four shafts stand, how wide they are and how
+they wander is drawn at random for each board, so no two boards share them.

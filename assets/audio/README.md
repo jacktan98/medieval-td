@@ -218,7 +218,7 @@ and it now means "how long a lull has to be before the game forgets".
 | the first enemy of wave 1 appears on **stage 9** | `Villager_say_here_they_come` again, the same way |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
 | the first enemy of wave 1 appears on **stage 8** | `Villager_say_hide` again, the same way |
-| the first enemy of **each wave** appears on stage 8 | the church bell swings left — `Church_bell`, one stroke — back to the middle as the stroke is faded out, then right with a second stroke, and back (Category B) |
+| the first enemy of **each wave** appears on stage 8 | the church bell swings left — `Church_bell`, one stroke — back to the middle as the stroke is faded out, then right with a second stroke, and back (Category B, loud: the board's, but it rings out over it) |
 | stage 8 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
 | the first enemy of wave 1 appears on **stage 7** | `Villager_say_thugs_are_here` again, the same way |
 | stage 7's cook holds his skewer over the fire | `Fish_cooking`, soft, looping for as long as he holds it there (Category B; stops on pause) |

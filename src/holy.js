@@ -11,12 +11,40 @@
 // A level asks for it with `holy: true`, or names its own shafts with
 // `holy: { beams: [[x, width], ...] }` — x where a shaft crosses the top of the board.
 // On the board's clock, so it holds still on a paused board.
+//
+// THE SHAFTS WANDER, and are never where they were: the owner found the same four in
+// the same places on all three boards. So each board draws its own the first time it
+// is shown — where each shaft starts, how wide it is — and each drifts slowly left
+// and right on two slow swings of its own, so their paths never repeat in step.
 
 const TINT = '255,238,190';
 const LEAN = 0.36;               // the slant of the light, across per down
 const LENGTH = 720;              // px of shaft, top edge to past the bottom
 const MOTES_PER_BEAM = 7;
-const DEFAULT_BEAMS = [[150, 120], [390, 90], [610, 130], [860, 100]];
+const BEAMS = 4;
+
+// A board's shafts, drawn at random once per board: spread across it one to each
+// quarter, anywhere in it, and each with its own slow wander — a wide swing of
+// `a1` px over `p1` seconds and a smaller one over `p2`, from phases of its own.
+const plans = new WeakMap();
+function plan(level) {
+  let p = plans.get(level);
+  if (p) return p;
+  const r = Math.random;
+  const given = level.holy.beams;
+  const n = given ? given.length : BEAMS;
+  p = [];
+  for (let i = 0; i < n; i++) {
+    p.push({
+      x: given ? given[i][0] : -40 + (i + 0.15 + r() * 0.7) * (1080 / n),
+      w: given ? given[i][1] : 80 + r() * 60,
+      a1: 30 + r() * 40, p1: 60 + r() * 40, f1: r() * 6.3,
+      a2: 8 + r() * 12, p2: 30 + r() * 15, f2: r() * 6.3
+    });
+  }
+  plans.set(level, p);
+  return p;
+}
 
 const hash = n => { const x = Math.sin(n * 91.7 + 17.3) * 43758.5453; return x - Math.floor(x); };
 
@@ -66,17 +94,18 @@ function mote() {
 
 export function drawHoly(ctx, level, t) {
   if (!level.holy) return;
-  const beams = level.holy.beams || DEFAULT_BEAMS;
+  const beams = plan(level);
   const angle = Math.atan(LEAN);
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  beams.forEach(([x, w], i) => {
+  beams.forEach((b, i) => {
+    const w = b.w;
     // Brightening and dimming, each on a beat of its own, never out altogether.
     const breathe = 0.6 + 0.4 * Math.sin(t * (2 * Math.PI) / (11 + hash(i + 1) * 6) + hash(i + 2) * 6.3);
-    // And leaning a few px one way and back.
-    const drift = 10 * Math.sin(t * (2 * Math.PI) / (26 + hash(i + 3) * 10) + hash(i + 4) * 6.3);
+    // And wandering slowly left and right.
+    const x = b.x + b.a1 * Math.sin(t * (2 * Math.PI) / b.p1 + b.f1) + b.a2 * Math.sin(t * (2 * Math.PI) / b.p2 + b.f2);
     ctx.save();
-    ctx.translate(x + drift, -20);
+    ctx.translate(x, -20);
     ctx.rotate(-angle);
     ctx.globalAlpha = 0.26 * breathe;
     ctx.drawImage(shaft(w), -w / 2, 0);

@@ -110,9 +110,9 @@ export const VILLAGER_POSE = {
           kneel_1: [254, 280.5], kneel_2: [250, 290],
           // Stage 10's lumberjack, the axe in the tree and drawn back, turned right.
           chop_1: [216, 305], chop_2: [216, 305],
-          // Stage 11's cannonball carrier, the ball held in both arms, and bent to pick
-          // one up.
-          carry_ball: [248, 305], pick_up: [248, 305] },
+          // Stage 11's cannonball carrier, the ball held in both arms — his back to
+          // the player, or facing the player — and bent to pick one up.
+          ball_back: [263, 305], ball_front: [263, 305], pick_up: [248, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -124,7 +124,8 @@ export const VILLAGER_POSE = {
            cook_1: [172, 188, 165, 130], cook_2: [172, 188, 165, 130],
            kneel_1: [200, 200, 110, 110], kneel_2: [200, 200, 110, 110],
            chop_1: [170, 190, 170, 145], chop_2: [170, 190, 170, 145],
-           carry_ball: [195, 185, 115, 135], pick_up: [195, 185, 115, 135] },
+           ball_back: [195, 185, 115, 135], ball_front: [195, 185, 115, 135],
+           pick_up: [195, 185, 115, 135] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -824,8 +825,8 @@ function porterLoop(state, vp, pl, dt) {
 }
 
 // Where the ball is in his arms, against his feet, in board px, the way he faces: the
-// middle of the ball in the carrying drawing.
-const BALL_HELD = [(270 - 248) * SCALE, (250 - 305) * SCALE];
+// middle of the ball in the carrying drawings, front and back alike.
+const BALL_HELD = [(241 - 263) * SCALE, (249 - 305) * SCALE];
 export const BALL_R = 22 * SCALE;
 const BALL_DROP = 0.35;       // seconds for a dropped ball to reach the ground
 
@@ -862,11 +863,12 @@ function ammoLoop(state, vp, am, dt) {
   if (c.phase === 'carry') {
     v.hidden = false;
     v.alpha = 1;
-    v.pose = 'carry_ball';
+    // HIS BACK TO THE PLAYER, the whole way up to the door: turned right — the
+    // drawing mirrored — while he goes up to the right, and as drawn once he turns
+    // up to the left for the door (walkTo faces him the way he goes).
+    v.pose = 'ball_back';
     if (c.first) { v.leg = am.from; c.first = false; }
     if (walkTo(v, am.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; }
-    // The ball on his right, as he is painted, whichever way he goes.
-    v.flip = false;
   } else if (c.phase === 'in') {
     v.alpha = Math.max(0, 1 - k / DOOR_FADE);
     if (v.alpha <= 0) { v.hidden = true; c.phase = 'inside'; c.at = vp.t; }
@@ -884,13 +886,14 @@ function ammoLoop(state, vp, am, dt) {
     v.pose = 'pick_up'; v.flip = false; v.side = 'front';
     if (k >= am.pick) { c.phase = 'heave'; c.at = vp.t; }
   } else if (c.phase === 'heave') {
-    // Up with it in his arms, still facing the pile: the carrying drawing mirrored.
-    v.pose = 'carry_ball'; v.flip = true;
+    // Up with it in his arms, still facing the pile, which is on his left: the
+    // front carrying drawing as it is.
+    v.pose = 'ball_front'; v.flip = false;
     if (k >= am.heave) { c.phase = 'carry'; c.at = vp.t; v.leg = 0; }
   } else if (c.phase === 'stop') {
     // As he was. Then the ball dropped at his feet, if he had one.
     if (k >= am.pause) {
-      if (v.pose === 'carry_ball') {
+      if (v.pose === 'ball_back' || v.pose === 'ball_front') {
         const side = v.flip ? -1 : 1;
         vp.balls = [...(vp.balls || []), { x: v.x + BALL_HELD[0] * side, y0: v.y + BALL_HELD[1] + BALL_R,
           y: v.y + 1.5, at: vp.t }];
@@ -1114,4 +1117,5 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    cook_1: 'vill_cooking_1', cook_2: 'vill_cooking_2',
                    kneel_1: 'vill_kneeling_1', kneel_2: 'vill_kneeling_2',
                    chop_1: 'vill_cutting_tree_1', chop_2: 'vill_cutting_tree_2',
-                   carry_ball: 'vill_carrying_cannonball', pick_up: 'vill_picking_up' };
+                   ball_back: 'vill_back_carrying_cannonball', ball_front: 'vill_front_carrying_cannonball',
+                   pick_up: 'vill_picking_up' };

@@ -640,8 +640,9 @@ export const GAIN = {
   fish_cooking: 0.504,
   fountain_water: 0.4,
   // The church bell rings out over the board, but it is the board's, not the battle.
-  // Then half as loud again, at the owner's word, and 30% more on top of that.
-  church_bell: 1.365,
+  // Then half as loud again, at the owner's word, 30% more on top of that, and 20%
+  // more again.
+  church_bell: 1.638,
   // The desert wind, soft like the river and the fountain — then half as loud
   // again, at the owner's word, twice over.
   desert_wind: 1.0125,
