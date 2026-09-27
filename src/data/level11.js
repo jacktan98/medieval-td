@@ -154,10 +154,17 @@ export const level11 = {
   // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
   // Each anchor is the centre of the figure's own ground shadow.
   villagers: [
-    { x: 568, y: 363 },       // at the middle house
-    { x: 276, y: 390 },       // by the left-hand houses
-    { x: 306, y: 443 }
+    { x: 276, y: 390.8 },     // 1 and 2 by the left-hand houses
+    { x: 305.8, y: 443.8 },
+    { x: 568, y: 364 }        // 3 at the middle house
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `sandshroud` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'sandshroud',
+  // THE DESERT WIND: tumbleweeds rolling across, sand streaming on the air (see
+  // src/desert.js), and the wind itself, looping softly for as long as it is played.
+  desert: true,
+  ambience: [{ clip: 'desert_wind', level: 1 }],
   waves: stage9Waves,
   wavesExtended: stage9Waves,
   oneLength: true,

@@ -84,6 +84,13 @@ And stage 8's:
 | `Villager_Church_Bell_Left.png` | swung to the left |
 | `Villager_Church_Bell_Right.png` | swung to the right |
 
+And stage 9's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Tumbleweed_1.png` | a tumbleweed blowing across the sand |
+| `Villager_Tumbleweed_2.png` | another, each tumbleweed taking one or the other |
+
 The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
 share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
 and draws the roof and front pillars over it again — see
@@ -299,6 +306,20 @@ of the church, 9 at the church's right-hand end.
 - **Every 10 enemies killed:** villager 9 hops twice.
 - **A star lost:** "nooo". Birdsong plays softly throughout.
 - The church's two banners sway, the cross and the shield on them with the cloth.
+
+## Stage 9's script
+
+Left to right: 1 and 2 by the left-hand houses, 3 at the middle house.
+
+- **Before the first wave:** all three stand and greet by turns — 1 and 2 facing the
+  player turned right, 3 turned left.
+- **When the first enemy of wave 1 appears:** "here they come", and the three start
+  standing and praying by turns, each facing as before.
+- **Every 10 enemies killed:** villagers 2 and 3 hop twice. **Every 12:** villager 1.
+- **A star lost:** "nooo". The desert wind blows softly throughout: now and then a
+  tumbleweed rolls in off the left edge, bouncing and spinning, and fades out along
+  the way; grains of sand stream east over the board and gusts of dust sweep across
+  (`src/desert.js`).
 
 ## Holy light over Dawnford
 

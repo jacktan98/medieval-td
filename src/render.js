@@ -37,6 +37,7 @@ import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
+import { weeds, drawWeed, drawSandWind } from './desert.js';
 import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
@@ -85,6 +86,8 @@ export function draw(ctx, state) {
   // is the difference: a box in the pass sorts by its foot and this one has none on
   // the canvas. See drawOver.
   drawOver(ctx, state);
+  // Sand on Sandshroud's wind, over the board and everything on it — stage 9.
+  if (level.desert) drawSandWind(ctx, state.anim || 0);
   // Dawnford's holy light over the board and everything on it — stages 6, 7 and 8.
   drawHoly(ctx, level, state.anim || 0);
   // Health bars and muster rings after that, so status is never hidden by a
@@ -545,6 +548,8 @@ function drawFigures(ctx, state) {
   // `ride`: a villager drawn in someone else's drawing — stage 4's front-end plank
   // carrier, who is in the back-end man's picture while they carry and throw.
   for (const v of state.villagers || []) if (v.live && !v.hidden && !v.ride) add(raised(v), 1, () => drawVillager(ctx, state, v));
+  // SANDSHROUD'S TUMBLEWEEDS, rolling across among everything else — see src/desert.js.
+  if (level.desert) for (const w of weeds(state.anim || 0)) add(w.y, 1, () => drawWeed(ctx, w));
   // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
   // threw it so it goes over the stack behind them.
   for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) add(pl.depth, 1, () => drawPlank(ctx, pl));

@@ -366,6 +366,18 @@ const PLAYS = {
     bell: { swing: [['middle', 0.15], ['left', 1.8], ['middle', 0.3], ['right', 1.8], ['middle', 0.2]] },
     cries: { runnn: false, nooo: true, wave: 'hide' }
   },
+  // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
+  // him, 3 at the middle house.
+  sandshroud: {
+    // Greeting by turns before the first wave and praying by turns after it: 1 and 2
+    // facing the player turned right, 3 turned left.
+    before: [mirrored('greets'), mirrored('greets'), front('greets')],
+    after: [mirrored('pray'), mirrored('pray'), front('pray')],
+    run: [],
+    // Two hops each: 2 and 3 every tenth enemy down, 1 every twelfth.
+    hops: [{ every: 10, who: [1, 2] }, { every: 12, who: [0] }],
+    cries: { runnn: false, nooo: true, wave: 'here' }
+  },
   // STAGE 5, Winchester Castle, left to right: 1 and 2 on the path up to the castle
   // gate, 3 carrying a part to the broken ballista, 4 hammering at it, and 5, 6 and 7
   // by the bridge.

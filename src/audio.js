@@ -531,6 +531,8 @@ const paths = {
   fountain_water:  'assets/audio/map/Water_fountain_sound.mp3',
   // Stage 8's church bell, a stroke as it swings to each side.
   church_bell:     'assets/audio/map/Church_bell.mp3',
+  // Stage 9's desert wind, looping for as long as it is played.
+  desert_wind:     'assets/audio/map/Desert_wind_sound.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -635,6 +637,8 @@ export const GAIN = {
   // The church bell rings out over the board, but it is the board's, not the battle.
   // Then half as loud again, at the owner's word, and 30% more on top of that.
   church_bell: 1.365,
+  // The desert wind, soft like the river and the fountain.
+  desert_wind: 0.45,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
