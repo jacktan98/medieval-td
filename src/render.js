@@ -1780,7 +1780,9 @@ function drawFire(ctx, state, fire, part = 'all') {
   const heat = (fire.heated || fire.flare) && state.villagerPlay ? state.villagerPlay.heat || 0 : 0;
   // A HEATED FIRE'S SIZE FOLLOWS THE STROKE: small while the pipe is drawn back,
   // roaring while it is in.
-  const tall = fire.heated ? 0.55 + 0.95 * heat : 1;
+  // And a FLARING fire burns low while nothing is held in it — smaller than it would
+  // on its own — and up to its full height as it flares.
+  const tall = fire.heated ? 0.55 + 0.95 * heat : fire.flare ? 0.62 + 0.38 * heat : 1;
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
   // THE MOUTH — its dark inside and its black border — goes with the flame, UNDER
   // whatever is held into the fire: the smith's pipe crosses the border and lies over
@@ -1793,7 +1795,7 @@ function drawFire(ctx, state, fire, part = 'all') {
   // The flame is kept a hair inside the mouth, so the whole of its black border
   // shows round the fire rather than half of it being burnt away.
   campfire(ctx, fire.x, fire.y, t, fire.s, true, {
-    heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, part
+    heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, sparks: fire.sparks ?? true, part
   });
   if (mouth && part !== 'sparks') {
     ctx.strokeStyle = '#000';
