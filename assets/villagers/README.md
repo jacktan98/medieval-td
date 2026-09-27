@@ -91,6 +91,16 @@ And stage 9's:
 | `Villager_Tumbleweed_1.png` | a tumbleweed blowing across the sand |
 | `Villager_Tumbleweed_2.png` | another, each tumbleweed taking one or the other |
 
+And stage 10's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Cutting_Tree_1.png` | the lumberjack, his axe in the tree |
+| `Villager_Cutting_Tree_2.png` | the axe drawn back |
+
+Both stand on (216, 305) and carry the axe, so the axe painted in the tree is cut out
+of the board with him (`props` in level12.js).
+
 The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
 share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
 and draws the roof and front pillars over it again — see
@@ -320,6 +330,24 @@ Left to right: 1 and 2 by the left-hand houses, 3 at the middle house.
   tumbleweed rolls in off the left edge, bouncing and spinning, and fades out along
   the way; grains of sand stream east over the board and gusts of dust sweep across
   (`src/desert.js`).
+
+## Stage 10's script
+
+As the owner numbers them: 1 the lumberjack at the tree, bottom left; 2 by the tools
+and crates; 3 at the front of the houses; 4 by the Ironforge sign; 5 on the
+top-right steps.
+
+- **Before the first wave:** 2 to 5 stand and greet by turns — 2 with his back to the
+  player turned right, 3 facing the player turned right, 4 facing the player turned
+  left, 5 with his back to the player turned left.
+- **When the first enemy of wave 1 appears:** "oh no", and 2 to 5 start standing and
+  praying by turns, each facing as before.
+- **All game long:** the lumberjack chops at the tree as stage 5's hammerer hammers —
+  two quick chops, a chop sounding each time the axe goes in, then a long rest with
+  the axe drawn back, and again. He is drawn in front of the tree's trunk, as painted.
+- **Every 10 enemies killed:** 4 and 5 hop twice. **Every 12:** 2 and 3.
+- **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
+  chimneys of all five houses.
 
 ## Holy light over Dawnford
 

@@ -194,10 +194,33 @@ export const level12 = {
   // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
   // Each anchor is the centre of the figure's own ground shadow.
   villagers: [
-    { x: 743, y:  93 },       // by the Ironforge sign
-    { x: 785, y: 113 },       // on the top-right steps
-    { x:  91, y: 328 },       // by the tools and crates
-    { x: 263, y: 380 }        // at the front of the houses
+    // 1, the lumberjack at the tree, bottom left — sorted just in front of the tree
+    // (`g`), as the artist drew him, though he stands higher up the board than its
+    // shadow's middle.
+    { x:  73.3, y: 483.5, g: 487.5 },
+    { x:  91.3, y: 328.5 },   // 2, by the tools and crates
+    { x: 263.3, y: 380.3 },   // 3, at the front of the houses
+    { x: 742.8, y:  93.5 },   // 4, by the Ironforge sign
+    { x: 785.5, y: 113.5 }    // 5, on the top-right steps
+  ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `ironforge` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs,
+  // with the axe the lumberjack holds in the tree (`props`): his drawings carry
+  // their own.
+  villagerPlay: 'ironforge',
+  props: [{ x: 84, y: 478, w: 12.5, up: 9, down: 1 }],   // the lumberjack's axe
+  // Crows, soft, for as long as it is played.
+  ambience: [{ clip: 'crows_cawing', level: 0.5 }],
+  // GREY SMOKE FROM THE HOUSES' CHIMNEYS, at the owner's word: the middle of each
+  // chimney's opening, and the depth of the house it stands on (its `front` box's),
+  // so it rises over the roof and behind anyone nearer. See drawChimneySmoke in
+  // src/render.js.
+  chimneys: [
+    { x: 810.6, y: 33.3, g: 89.01 },
+    { x: 505.5, y: 102.4, g: 216.01 },
+    { x: 515.1, y: 160.7, g: 216.01 },
+    { x: 134.7, y: 299.5, g: 409.01 },
+    { x: 228.1, y: 353.6, g: 409.01 }
   ],
   waves: stage10Waves,
   wavesExtended: stage10Waves,
@@ -292,9 +315,13 @@ export const level12 = {
   // markers have moved twice more and all four boxes are still clear of all nine.
   frontArt: 'front12',
   front: [
-    { x: 752, y:  25, w:  77, h:  89, g:  89 },   // stands on y 89
+    { x: 752, y:  25, w:  77, h:  81, g:  89 },   // stands on y 89
     { x: 693, y:  63, w:  35, h:  44, g: 105 },   // stands on y 105 — the signpost
     { x: 447, y:  94, w: 132, h: 139, g: 216 },   // stands on y 216
-    { x: 116, y: 291, w: 131, h: 135, g: 409 }    // stands on y 409
+    { x: 116, y: 291, w: 131, h: 135, g: 409 },   // stands on y 409
+    // THE LUMBERJACK'S TREE, boxed since the redraw that put him at it. He is drawn
+    // in front of its trunk though his shadow's middle is higher up the board than
+    // the tree's — see his `g` in `villagers`.
+    { x:  16, y: 380, w: 135, h: 121, g: 487 }    // stands on y 487
   ]
 };

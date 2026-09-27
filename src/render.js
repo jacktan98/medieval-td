@@ -521,6 +521,7 @@ function drawFigures(ctx, state) {
   // shadow is, below them. Standing on it or in it, they are in front of it; the
   // statue and pillars behind them stay behind, as does the forge's back wall.
   const raised = v => {
+    if (v.g !== undefined) return v.g;
     for (const r of level.platforms || []) {
       if (v.x >= r.x && v.x <= r.x + r.w && v.y >= r.y && v.y <= r.y + r.h) return Math.max(v.y, r.g + 0.5);
     }
@@ -560,6 +561,9 @@ function drawFigures(ctx, state) {
   // A fire with `over` burns in two layers: everything but its sparks at `g`, under
   // whatever is held in it (stage 4's pipe, which is drawn over the flame), and the
   // sparks alone at `over`, flying out over it.
+  // GREY SMOKE FROM A BOARD'S CHIMNEYS — stage 10's houses — at each house's depth,
+  // just after it. See drawChimneySmoke.
+  for (const c of level.chimneys || []) add(c.g, 1, () => drawChimneySmoke(ctx, c, state.anim || 0));
   for (const fire of level.fires || []) {
     if (fire.over) {
       add(fire.g, 1, () => drawFire(ctx, state, fire, 'under'));
@@ -1781,6 +1785,39 @@ function drawFire(ctx, state, fire, part = 'all') {
     ctx.lineWidth = 1;
     ctx.stroke(mouth);
   }
+}
+
+// SMOKE FROM A CHIMNEY: soft grey puffs rising out of its opening, swelling and
+// thinning as they climb and leaning with the wind, one after another on the board's
+// clock — each chimney on its own beat, so a row of houses does not breathe as one.
+let smokePuff = null;
+function drawChimneySmoke(ctx, c, t) {
+  if (!smokePuff) {
+    smokePuff = document.createElement('canvas');
+    smokePuff.width = smokePuff.height = 64;
+    const g = smokePuff.getContext('2d');
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(176,174,170,1)');
+    grad.addColorStop(0.55, 'rgba(176,174,170,0.7)');
+    grad.addColorStop(1, 'rgba(176,174,170,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+  }
+  const PUFFS = 7, LIFE = 6.5;
+  const lean = 0.7 + 0.3 * Math.sin(t * 0.13 + c.x * 0.01);   // the wind, slowly
+  ctx.save();
+  for (let k = 0; k < PUFFS; k++) {
+    const p = ((t / LIFE) + k / PUFFS + (c.x * 0.37 % 1)) % 1;
+    const e = 1 - (1 - p) * (1 - p);                            // quick out, slowing
+    const x = c.x + 14 * lean * p * p + 1.2 * Math.sin(p * 6 + k + c.x);
+    const y = c.y - 2 - 38 * e;
+    const r = 2.2 + 8 * p;
+    const a = 0.8 * Math.min(1, p / 0.12) * (1 - p);
+    if (a <= 0.01) continue;
+    ctx.globalAlpha = a;
+    ctx.drawImage(smokePuff, x - r, y - r, r * 2, r * 2);
+  }
+  ctx.restore();
 }
 
 // THE BOARD'S CLOCK for this frame (state.anim — see main.js), for drawing code that

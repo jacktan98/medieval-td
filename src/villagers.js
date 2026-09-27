@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, BELL } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -64,8 +64,10 @@ export function makeVillagers(state, level) {
   state.villagers = (level.villagers || []).map((v, i) => {
     if (!play) return { def: VILLAGER, x: v.x, y: v.y };
     // ON A BOARD THAT LETS THEM MOVE, each carries what it is doing. See PLAYS.
+    // `g`, when the level gives one, is the depth he is drawn at in place of where
+    // he stands: stage 10's lumberjack, in front of the tree he is felling.
     const b = play.before[i] || {};
-    return { def: VILLAGER, x: v.x, y: v.y, live: true, n: i, side: b.side || 'front',
+    return { def: VILLAGER, x: v.x, y: v.y, g: v.g, live: true, n: i, side: b.side || 'front',
              act: b.act || null, hidden: !!b.hidden, pose: 'standing', flip: !!b.flip,
              mode: 'idle', path: null, leg: 0, greetUntil: -1 };
   });
@@ -105,7 +107,9 @@ export const VILLAGER_POSE = {
           // Stage 7's cook, his skewer out to the left in both.
           cook_1: [297.5, 305], cook_2: [297.5, 305],
           // Stage 8's congregation, kneeling up and bowed down, turned right.
-          kneel_1: [254, 280.5], kneel_2: [250, 290] },
+          kneel_1: [254, 280.5], kneel_2: [250, 290],
+          // Stage 10's lumberjack, the axe in the tree and drawn back, turned right.
+          chop_1: [216, 305], chop_2: [216, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -115,7 +119,8 @@ export const VILLAGER_POSE = {
            fish_1: [145, 165, 220, 165], fish_2: [145, 165, 220, 165],
            helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137],
            cook_1: [172, 188, 165, 130], cook_2: [172, 188, 165, 130],
-           kneel_1: [200, 200, 110, 110], kneel_2: [200, 200, 110, 110] },
+           kneel_1: [200, 200, 110, 110], kneel_2: [200, 200, 110, 110],
+           chop_1: [170, 190, 170, 145], chop_2: [170, 190, 170, 145] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -366,6 +371,25 @@ const PLAYS = {
     bell: { swing: [['middle', 0.15], ['left', 1.8], ['middle', 0.3], ['right', 1.8], ['middle', 0.2]] },
     cries: { runnn: false, nooo: true, wave: 'hide' }
   },
+  // STAGE 10, Ironforge Town, as the owner numbers them: 1 the lumberjack at the tree,
+  // 2 by the tools and crates, 3 at the front of the houses, 4 by the Ironforge sign,
+  // 5 on the top-right steps.
+  ironforge: {
+    // Greeting by turns before the first wave and praying by turns after it: 2 with
+    // his back to the player turned right, 3 facing the player turned right, 4 facing
+    // the player turned left, 5 with his back to the player turned left.
+    before: [{}, backMirrored('greets'), mirrored('greets'), front('greets'), back('greets')],
+    after: [{}, backMirrored('pray'), mirrored('pray'), front('pray'), back('pray')],
+    run: [],
+    // Two hops each: 4 and 5 every tenth enemy down, 2 and 3 every twelfth.
+    hops: [{ every: 10, who: [3, 4] }, { every: 12, who: [1, 2] }],
+    // THE LUMBERJACK chops at the tree as stage 5's hammerer hammers: the axe drawn
+    // back, into the tree, back, into the tree — two quick chops, a chop sounding each
+    // time the axe goes in — then a long rest drawn back, and again.
+    hammer: { who: 0, strike: 'chop_1', sound: 'chop',
+      beats: [['chop_2', 0.24], ['chop_1', 0.2], ['chop_2', 0.24], ['chop_1', 0.2], ['chop_2', 1.9]] },
+    cries: { runnn: false, nooo: true, wave: 'oh_no' }
+  },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
   sandshroud: {
@@ -578,10 +602,12 @@ function work(state, vp, dt) {
     let k = (vp.t + h.n * 0.7) % cycle;
     const was = h.pose;
     for (const [pose, d] of hammer.beats) { if (k < d) { h.pose = pose; break; } k -= d; }
-    // A KNOCK AS THE HAMMER COMES DOWN — the first blow's, then the second's.
-    if (was === 'hammer_1' && h.pose === 'hammer_2') {
-      const [from, dur] = HAMMER.knocks[(vp.knock = ((vp.knock ?? -1) + 1) % HAMMER.knocks.length)];
-      slice(HAMMER.key, from, dur);
+    // A KNOCK AS THE HAMMER COMES DOWN — the first blow's, then the second's. Or a
+    // chop as the lumberjack's axe goes into the tree (`strike`, `sound`).
+    const strike = hammer.strike || 'hammer_2', knocks = hammer.sound === 'chop' ? CHOP : HAMMER;
+    if (was !== strike && h.pose === strike) {
+      const [from, dur] = knocks.knocks[(vp.knock = ((vp.knock ?? -1) + 1) % knocks.knocks.length)];
+      slice(knocks.key, from, dur);
     }
   }
 
@@ -875,4 +901,5 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    fish_1: 'vill_fishing_1', fish_2: 'vill_fishing_2',
                    helmet_1: 'vill_helmet_stuck_1', helmet_2: 'vill_helmet_stuck_2',
                    cook_1: 'vill_cooking_1', cook_2: 'vill_cooking_2',
-                   kneel_1: 'vill_kneeling_1', kneel_2: 'vill_kneeling_2' };
+                   kneel_1: 'vill_kneeling_1', kneel_2: 'vill_kneeling_2',
+                   chop_1: 'vill_cutting_tree_1', chop_2: 'vill_cutting_tree_2' };

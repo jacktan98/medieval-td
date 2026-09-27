@@ -533,6 +533,9 @@ const paths = {
   church_bell:     'assets/audio/map/Church_bell.mp3',
   // Stage 9's desert wind, looping for as long as it is played.
   desert_wind:     'assets/audio/map/Desert_wind_sound.mp3',
+  // Stage 10's lumberjack's chops, and crows over the town.
+  cutting_tree:    'assets/audio/map/Cutting_Tree.mp3',
+  crows_cawing:    'assets/audio/map/Crows_cawing.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -640,6 +643,9 @@ export const GAIN = {
   // The desert wind, soft like the river and the fountain — then half as loud
   // again, at the owner's word, twice over.
   desert_wind: 1.0125,
+  // The lumberjack's chops, soft like the hammer's knocks, and the crows softer still.
+  cutting_tree: 0.5,
+  crows_cawing: 0.3,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
@@ -1026,6 +1032,10 @@ export const BELL = { key: 'church_bell', fade: 0.35 };
 // 0.508s, each over by 0.1s), and played a hair before, on the frame the hammer comes
 // down — the first on the first blow, the second on the second. Category B.
 export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0.24]] };
+// STAGE 10'S LUMBERJACK, one chop as the axe goes into the tree, the same way: the
+// recording is a chop every 0.9s or so, and its two loudest, at 2.57s and 4.38s, are
+// cut out by where they START, with the ring after each. Category B.
+export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]] };
 
 // --- THE END OF A GAME -----------------------------------------------------------
 //

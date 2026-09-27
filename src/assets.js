@@ -218,6 +218,9 @@ export const paths = {
   // Stage 9's tumbleweeds, blowing across the sand.
   vill_tumbleweed_1:            'assets/villagers/Villager_Tumbleweed_1.png',
   vill_tumbleweed_2:            'assets/villagers/Villager_Tumbleweed_2.png',
+  // Stage 10's lumberjack, the axe in the tree and drawn back.
+  vill_cutting_tree_1:          'assets/villagers/Villager_Cutting_Tree_1.png',
+  vill_cutting_tree_2:          'assets/villagers/Villager_Cutting_Tree_2.png',
   assassin_attack:    'assets/units/Assassin_Attack.png',
   // His two ability poses. The first soldier in the game to have any beyond the
   // paladin's, and the first to have one for a thrown weapon.
