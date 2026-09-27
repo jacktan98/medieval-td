@@ -643,8 +643,9 @@ export const GAIN = {
   // The desert wind, soft like the river and the fountain — then half as loud
   // again, at the owner's word, twice over.
   desert_wind: 1.0125,
-  // The lumberjack's chops, soft like the hammer's knocks, and the crows softer still.
-  cutting_tree: 0.5,
+  // The lumberjack's chops, soft like the hammer's knocks — then half as loud again —
+  // and the crows softer still.
+  cutting_tree: 0.75,
   crows_cawing: 0.3,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none

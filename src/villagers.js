@@ -384,10 +384,12 @@ const PLAYS = {
     // Two hops each: 4 and 5 every tenth enemy down, 2 and 3 every twelfth.
     hops: [{ every: 10, who: [3, 4] }, { every: 12, who: [1, 2] }],
     // THE LUMBERJACK chops at the tree as stage 5's hammerer hammers: the axe drawn
-    // back, into the tree, back, into the tree — two quick chops, a chop sounding each
-    // time the axe goes in — then a long rest drawn back, and again.
+    // back, into the tree, back, into the tree — two chops, a chop sounding each time
+    // the axe goes in — then a long rest drawn back, and again. Slower than the
+    // hammer, at the owner's word: the axe stays in a moment, and he takes his time
+    // drawing it back between the two chops and after them.
     hammer: { who: 0, strike: 'chop_1', sound: 'chop',
-      beats: [['chop_2', 0.24], ['chop_1', 0.2], ['chop_2', 0.24], ['chop_1', 0.2], ['chop_2', 1.9]] },
+      beats: [['chop_2', 0.5], ['chop_1', 0.35], ['chop_2', 0.75], ['chop_1', 0.35], ['chop_2', 2.4]] },
     cries: { runnn: false, nooo: true, wave: 'oh_no' }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
