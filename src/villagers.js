@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -109,7 +109,10 @@ export const VILLAGER_POSE = {
           // Stage 8's congregation, kneeling up and bowed down, turned right.
           kneel_1: [254, 280.5], kneel_2: [250, 290],
           // Stage 10's lumberjack, the axe in the tree and drawn back, turned right.
-          chop_1: [216, 305], chop_2: [216, 305] },
+          chop_1: [216, 305], chop_2: [216, 305],
+          // Stage 11's cannonball carrier, the ball held in both arms, and bent to pick
+          // one up.
+          carry_ball: [248, 305], pick_up: [248, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -120,7 +123,8 @@ export const VILLAGER_POSE = {
            helmet_1: [215, 188, 80, 137], helmet_2: [215, 188, 80, 137],
            cook_1: [172, 188, 165, 130], cook_2: [172, 188, 165, 130],
            kneel_1: [200, 200, 110, 110], kneel_2: [200, 200, 110, 110],
-           chop_1: [170, 190, 170, 145], chop_2: [170, 190, 170, 145] },
+           chop_1: [170, 190, 170, 145], chop_2: [170, 190, 170, 145],
+           carry_ball: [195, 185, 115, 135], pick_up: [195, 185, 115, 135] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -188,6 +192,16 @@ const KNEEL_STEPS = ['pray', 'rise', 'bow', 'rise'];
 // STAGE 8'S BOX CARRIER'S WAY, from the church door — the step just in front of it —
 // down to where he stands to toss his box onto the pile, where he is painted.
 const CHURCH_WAY = [[389.5, 226.5], [393.5, 233.5], [399.3, 242.3]];
+// STAGE 11'S BOX CARRIER'S WAY, the owner's line: in over the top of the board, down
+// past where he is painted, and right — under the plank, in front of it — to the
+// factory's door.
+const FACTORY_WAY = [[397, -8], [396.8, 77], [400, 118], [418, 134], [450, 141], [479, 141]];
+// AND THE CANNONBALL CARRIER'S, the owner's line: from beside the pile, past where he
+// is painted, round to the right and back up to the Cannon Outpost's door.
+const AMMO_WAY = [[681, 318], [692.3, 310.3], [700, 300], [695, 289], [685, 283], [677, 280]];
+// And his way home when the tower is sold: down round the pile and left along the
+// stepping stones to the lower house's door.
+const HOUSE_WAY = [[686, 332], [660, 345], [610, 355], [560, 361], [507, 362]];
 const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
   [769.5, 331], [729.5, 336], [697.5, 346], [674, 361]];
 
@@ -391,6 +405,37 @@ const PLAYS = {
     hammer: { who: 0, strike: 'chop_1', sound: 'chop',
       beats: [['chop_2', 0.5], ['chop_1', 0.35], ['chop_2', 0.75], ['chop_1', 0.35], ['chop_2', 2.4]] },
     cries: { runnn: false, nooo: true, wave: 'oh_no' }
+  },
+  // STAGE 11, Ironforge Factory, as the owner numbers them: 1 by the top-left house,
+  // 2 carrying boxes to the factory, 3 carrying cannonballs to the Cannon Outpost.
+  factory: {
+    // Villager 1 greets by turns facing the player, turned left, until the first wave,
+    // and stands and prays by turns after it.
+    before: [front('greets'), {}, {}],
+    after: [front('pray'), {}, {}],
+    run: [],
+    // Villager 1 hops twice every tenth enemy down; the two carriers are at work.
+    hops: [{ every: 10, who: [0] }],
+    // VILLAGER 2 CARRIES A BOX INTO THE FACTORY — stage 5's box carrier, mirrored, as
+    // he is painted — along the owner's line, and in at the door. Inside, nothing for
+    // `idle` seconds; then the factory runs (FACTORY in src/audio.js), its door and
+    // window lit and its chimneys smoking black, for as long as the sound; `between`
+    // seconds' quiet, and it runs again; `idle` more, and he comes out empty-handed
+    // the way he came, off the top of the board, and after `gone` seconds is back with
+    // the next box. The first time he starts from where he is painted.
+    porter: { who: 1, path: FACTORY_WAY, from: 1, idle: 1, runs: 2, between: 3, gone: 3 },
+    // VILLAGER 3 CARRIES CANNONBALLS INTO THE CANNON OUTPOST standing on `tower`: in at
+    // its door, `inside` seconds there, out empty-handed back to the pile, bent over
+    // it picking one up for `pick`, a moment (`heave`) with it in his arms facing the
+    // pile, then round and back to the tower with it. The first time he starts from
+    // where he is painted.
+    //
+    // IF THE TOWER IS SOLD he stops where he is for `pause` seconds, drops the ball if
+    // he has one, and walks off to the lower house (`home`) and is gone for good —
+    // whatever is built there afterwards. Inside the tower when it goes, he goes too.
+    ammo: { who: 2, path: AMMO_WAY, from: 1, tower: [656, 274], inside: 3, pick: 0.9, heave: 1,
+            pause: 2, home: HOUSE_WAY },
+    cries: { runnn: false, nooo: true, wave: 'runnn' }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
@@ -620,6 +665,10 @@ function work(state, vp, dt) {
     }
   }
 
+  // STAGE 11'S TWO CARRIERS, each on a loop of his own.
+  if (vp.plan.porter) porterLoop(state, vp, vp.plan.porter, dt);
+  if (vp.plan.ammo) ammoLoop(state, vp, vp.plan.ammo, dt);
+
   // EVERY CREW ON ITS OWN LOOP: stage 4's pair with a plank, and stage 5's porter
   // and box carrier. What is in the air is one list for the renderer.
   const crews = vp.plan.crews || (crew ? [crew] : []);
@@ -708,6 +757,159 @@ function carryLoop(state, vp, crew, c, dt) {
   for (const p of c.planks) if (p.q >= 1) play(LANDED);
   c.planks = c.planks.filter(p => p.q < 1);
   vp.planks.push(...c.planks);
+}
+
+// Along `pts` empty-handed, standing, faced the way they go: their back to the player
+// heading up the board, their front otherwise.
+function stroll(v, pts, dt) {
+  const x = v.x, y = v.y;
+  const there = walkTo(v, pts, WORK_WALK_FREE, dt);
+  const dx = v.x - x, dy = v.y - y, d = Math.hypot(dx, dy);
+  if (d > 0) v.side = dy < -RUN_UP * d ? 'back' : 'front';
+  v.pose = 'standing';
+  return there;
+}
+
+// STAGE 11'S BOX CARRIER: down to the factory with a box, in at its door, the factory
+// run twice while he is inside, and out and away for the next. `vp.factory` is how
+// lit the factory is, 0 to 1, eased — render.js lights its door and window and
+// thickens its chimneys' smoke by it.
+//   carry  — the box, along the way to the door;
+//   in     — faded out on the step;
+//   inside — out of sight while the factory runs;
+//   out    — faded in on the step, and back up the way he came, empty-handed;
+//   gone   — off the top of the board, and back with the next box.
+function porterLoop(state, vp, pl, dt) {
+  const v = state.villagers[pl.who];
+  if (!v) return;
+  v.work = true;
+  const c = vp.porter || (vp.porter = { phase: 'carry', at: vp.t, first: true });
+  const k = vp.t - c.at;
+  // When each run of the factory starts, counted from the moment he is inside.
+  const runAt = n => pl.idle + n * (FACTORY.dur + pl.between);
+  let lit = 0;
+  if (c.phase === 'carry') {
+    v.hidden = false;
+    v.alpha = 1;
+    v.pose = 'carry_box';
+    if (c.first) { v.leg = pl.from; c.first = false; }
+    // The box on his right, as he is painted, whichever way he goes.
+    if (walkTo(v, pl.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; }
+    v.flip = true;
+  } else if (c.phase === 'in') {
+    v.alpha = Math.max(0, 1 - k / DOOR_FADE);
+    if (v.alpha <= 0) { v.hidden = true; c.phase = 'inside'; c.at = vp.t; c.runs = 0; }
+  } else if (c.phase === 'inside') {
+    // THE FACTORY RUNNING: a second after he goes in, and again `between` seconds
+    // after the first run ends — a run as long as its sound.
+    if (c.runs < pl.runs && k >= runAt(c.runs)) { c.runs++; slice(FACTORY.key, 0, FACTORY.len, 1, 0.15); }
+    for (let n = 0; n < pl.runs; n++) if (k >= runAt(n) && k < runAt(n) + FACTORY.dur) lit = 1;
+    // Out a second after the last run.
+    if (k >= runAt(pl.runs - 1) + FACTORY.dur + pl.idle) {
+      c.phase = 'out'; c.at = vp.t;
+      [v.x, v.y] = pl.path[pl.path.length - 1];
+      v.leg = 0; v.hidden = false; v.alpha = 0; v.side = 'front';
+    }
+  } else if (c.phase === 'out') {
+    v.alpha = Math.min(1, k / DOOR_FADE);
+    if (stroll(v, pl.path.slice(0, -1).reverse(), dt)) { c.phase = 'gone'; c.at = vp.t; v.hidden = true; }
+  } else if (c.phase === 'gone' && k >= pl.gone) {
+    [v.x, v.y] = pl.path[0];
+    v.leg = 0; v.side = 'front';
+    c.phase = 'carry'; c.at = vp.t;
+  }
+  // Quick to light, a little slower to go dark.
+  const rate = lit ? 5 : 2.5;
+  vp.factory = (vp.factory || 0) + (lit - (vp.factory || 0)) * Math.min(1, rate * dt);
+}
+
+// Where the ball is in his arms, against his feet, in board px, the way he faces: the
+// middle of the ball in the carrying drawing.
+const BALL_HELD = [(270 - 248) * SCALE, (250 - 305) * SCALE];
+export const BALL_R = 22 * SCALE;
+const BALL_DROP = 0.35;       // seconds for a dropped ball to reach the ground
+
+// STAGE 11'S CANNONBALL CARRIER, a round of his own:
+//   carry  — a ball, from the pile to the tower's door;
+//   in     — faded out on the step;
+//   inside — in the tower, out of sight;
+//   out    — faded in on the step, and back to the pile empty-handed;
+//   pick   — bent over the pile, facing it;
+//   heave  — up with it, still facing the pile, a moment — it is heavy;
+// and round to carry it again. And once the tower is sold:
+//   stop   — standing where he was, doing what he was, for `pause` seconds;
+//   home   — the ball dropped, if he had one, and off to the lower house;
+//   gone   — faded out at its door, for good.
+function ammoLoop(state, vp, am, dt) {
+  const v = state.villagers[am.who];
+  if (!v) return;
+  v.work = true;
+  const c = vp.ammo || (vp.ammo = {
+    phase: 'carry', at: vp.t, first: true,
+    // THE TOWER HE SERVES, the one standing on its plot when the board starts. Asked
+    // after by the object rather than the plot, so one built there after it is sold
+    // does not bring him back.
+    tower: (state.towers || []).find(t => Math.hypot(t.plot.x - am.tower[0], t.plot.y - am.tower[1]) < 1) || null
+  });
+  if (c.phase === 'lost') return;
+  // THE TOWER SOLD. In it, he goes with it; outside, he stops.
+  if (!c.sold && !(state.towers || []).includes(c.tower)) {
+    c.sold = true;
+    if (c.phase === 'in' || c.phase === 'inside') { v.hidden = true; c.phase = 'lost'; return; }
+    c.phase = 'stop'; c.at = vp.t;
+  }
+  const k = vp.t - c.at;
+  if (c.phase === 'carry') {
+    v.hidden = false;
+    v.alpha = 1;
+    v.pose = 'carry_ball';
+    if (c.first) { v.leg = am.from; c.first = false; }
+    if (walkTo(v, am.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; }
+    // The ball on his right, as he is painted, whichever way he goes.
+    v.flip = false;
+  } else if (c.phase === 'in') {
+    v.alpha = Math.max(0, 1 - k / DOOR_FADE);
+    if (v.alpha <= 0) { v.hidden = true; c.phase = 'inside'; c.at = vp.t; }
+  } else if (c.phase === 'inside') {
+    if (k >= am.inside) {
+      c.phase = 'out'; c.at = vp.t;
+      [v.x, v.y] = am.path[am.path.length - 1];
+      v.leg = 0; v.hidden = false; v.alpha = 0; v.side = 'front';
+    }
+  } else if (c.phase === 'out') {
+    v.alpha = Math.min(1, k / DOOR_FADE);
+    if (stroll(v, am.path.slice(0, -1).reverse(), dt)) { c.phase = 'pick'; c.at = vp.t; }
+  } else if (c.phase === 'pick') {
+    // Bent over the pile, which is on his left: the drawing as it is.
+    v.pose = 'pick_up'; v.flip = false; v.side = 'front';
+    if (k >= am.pick) { c.phase = 'heave'; c.at = vp.t; }
+  } else if (c.phase === 'heave') {
+    // Up with it in his arms, still facing the pile: the carrying drawing mirrored.
+    v.pose = 'carry_ball'; v.flip = true;
+    if (k >= am.heave) { c.phase = 'carry'; c.at = vp.t; v.leg = 0; }
+  } else if (c.phase === 'stop') {
+    // As he was. Then the ball dropped at his feet, if he had one.
+    if (k >= am.pause) {
+      if (v.pose === 'carry_ball') {
+        const side = v.flip ? -1 : 1;
+        vp.balls = [...(vp.balls || []), { x: v.x + BALL_HELD[0] * side, y0: v.y + BALL_HELD[1] + BALL_R,
+          y: v.y + 1.5, at: vp.t }];
+      }
+      c.phase = 'home'; c.at = vp.t; v.leg = 0; v.alpha = 1;
+    }
+  } else if (c.phase === 'home') {
+    v.alpha = 1;
+    if (stroll(v, am.home, dt)) { c.phase = 'gone'; c.at = vp.t; v.side = 'back'; }
+  } else if (c.phase === 'gone') {
+    v.alpha = Math.max(0, 1 - k / DOOR_FADE);
+    if (v.alpha <= 0) { v.hidden = true; c.phase = 'lost'; }
+  }
+  // A DROPPED BALL falls to the ground and stays there, with a thud as it lands.
+  for (const b of vp.balls || []) {
+    const q = Math.min(1, (vp.t - b.at) / BALL_DROP);
+    b.q = q;
+    if (q >= 1 && !b.landed) { b.landed = true; play(LANDED); }
+  }
 }
 
 const RUN_SPEED = 46;         // px a second
@@ -911,4 +1113,5 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    helmet_1: 'vill_helmet_stuck_1', helmet_2: 'vill_helmet_stuck_2',
                    cook_1: 'vill_cooking_1', cook_2: 'vill_cooking_2',
                    kneel_1: 'vill_kneeling_1', kneel_2: 'vill_kneeling_2',
-                   chop_1: 'vill_cutting_tree_1', chop_2: 'vill_cutting_tree_2' };
+                   chop_1: 'vill_cutting_tree_1', chop_2: 'vill_cutting_tree_2',
+                   carry_ball: 'vill_carrying_cannonball', pick_up: 'vill_picking_up' };

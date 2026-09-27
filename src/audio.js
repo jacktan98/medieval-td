@@ -536,6 +536,8 @@ const paths = {
   // Stage 10's lumberjack's chops, and crows over the town.
   cutting_tree:    'assets/audio/map/Cutting_Tree.mp3',
   crows_cawing:    'assets/audio/map/Crows_cawing.mp3',
+  // Stage 11's factory, running while the box carrier is inside (FACTORY, below).
+  factory:         'assets/audio/map/Factory_sound.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -647,6 +649,8 @@ export const GAIN = {
   // and the crows softer still.
   cutting_tree: 0.75,
   crows_cawing: 0.3,
+  // The factory running, soft like the smith's weld: the board's work, not the battle.
+  factory: 0.4,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
@@ -1037,6 +1041,10 @@ export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0
 // recording is a chop every 0.9s or so, and its two loudest, at 2.57s and 4.38s, are
 // cut out by where they START, with the ring after each. Category B.
 export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]] };
+// STAGE 11'S FACTORY RUNNING: the whole recording, `len` seconds, played each time it
+// runs. Its door and window are lit and its chimneys smoke black for `dur` — until
+// the sound dies away, a little short of its last sample. Category B.
+export const FACTORY = { key: 'factory', len: 5.38, dur: 5.1 };
 
 // --- THE END OF A GAME -----------------------------------------------------------
 //

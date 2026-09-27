@@ -156,14 +156,38 @@ export const level13 = {
 
   routes: [upper, lower, right, lowerRight],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
-  // Each anchor is the centre of the figure's own ground shadow.
+  // THE PEOPLE WHO LIVE HERE: 1 by the top-left house, 2 carrying a box to the
+  // factory, 3 carrying a cannonball to the Cannon Outpost. Each anchor is the centre
+  // of the figure's own ground shadow.
   villagers: [
-    { x: 452, y: 144 },       // at the mill door
-    { x: 394, y: 160 },       // carrying a crate from the store
-    { x: 137, y: 207 },       // by the top-left house
-    { x: 623, y: 326 }        // at the stone pile
+    { x: 137.3, y: 207.5 },   // 1, by the top-left house
+    { x: 396.8, y:  77.0 },   // 2, with a box, on his way down to the factory
+    { x: 692.3, y: 310.3 }    // 3, with a cannonball, beside the pile
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `factory` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'factory',
+  // Crows, soft, for as long as it is played.
+  ambience: [{ clip: 'crows_cawing', level: 0.5 }],
+  // SMOKE FROM THE CHIMNEYS, at the owner's word: black from the factory's two
+  // (`black`), thicker while the factory runs, and grey from the three houses'. The
+  // middle of each chimney's opening, and the depth of the building it stands on
+  // (its `front` box's), so it rises over the roof and behind anyone nearer. See
+  // drawChimneySmoke in src/render.js.
+  //
+  // THE FACTORY'S IS BLOWN SIDEWAYS, low over the roof: its chimneys stand just under
+  // the buttons along the top of the screen, and smoke climbing straight up from them
+  // went behind the buttons and was never seen.
+  chimneys: [
+    { x: 561.5, y: 37.0, g: 133.01, black: true, rise: 14, drift: 60 },
+    { x: 568.8, y: 48.5, g: 133.01, black: true, rise: 16, drift: 60 },
+    { x: 49.0, y: 110.0, g: 166.01 },
+    { x: 510.8, y: 247.5, g: 360.01 },
+    { x: 464.5, y: 303.3, g: 360.01 }
+  ],
+  // THE FACTORY'S DOOR AND WINDOW, lit while it runs — around each, x0 y0 x1 y1 —
+  // drawn at its depth just after it. See drawFactoryLight in src/render.js.
+  factory: { g: 133.02, lights: [[470, 107, 489, 146], [510, 107, 528, 128]] },
   waves: stage11Waves,
   wavesExtended: stage11Waves,
   oneLength: true,
@@ -240,8 +264,8 @@ export const level13 = {
   frontArt: 'front13',
   front: [
     { x: 301, y:  53, w:  86, h: 114, g: 133 },   // stands on y 133 — the sawmill
-    { x: 455, y:  33, w: 138, h: 122, g: 133 },   // stands on y 133 — the mill house
+    { x: 433, y:  33, w: 160, h: 122, g: 133 },   // stands on y 133 — the factory
     { x:  30, y: 101, w:  78, h:  81, g: 166 },   // stands on y 166
-    { x: 485, y: 239, w:  84, h: 149, g: 371 }    // stands on y 371
+    { x: 446, y: 239, w: 123, h: 138, g: 360 }    // stands on y 360
   ]
 };

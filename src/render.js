@@ -14,7 +14,7 @@ import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { drawCrewTurned } from './crew.js';
 import { drawBoardWater, drawFountain } from './motion.js';
-import { VILLAGER_POSE, villagerKey } from './villagers.js';
+import { VILLAGER_POSE, villagerKey, BALL_R } from './villagers.js';
 import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
 import { swingOut, flinch, flash } from './gesture.js';
@@ -576,7 +576,13 @@ function drawFigures(ctx, state) {
   if (level.felling && state.villagerPlay) add(level.felling.pivot[1] + 1, 1, () => drawFallingLeaves(ctx, state));
   // GREY SMOKE FROM A BOARD'S CHIMNEYS — stage 10's houses — at each house's depth,
   // just after it. See drawChimneySmoke.
-  for (const c of level.chimneys || []) add(c.g, 1, () => drawChimneySmoke(ctx, c, state.anim || 0));
+  // A FACTORY'S chimneys (`black`) smoke black, and thicker while it runs — stage 11's,
+  // by `factory` in src/villagers.js — and its door and window light up.
+  const running = (state.villagerPlay && state.villagerPlay.factory) || 0;
+  for (const c of level.chimneys || []) add(c.g, 1, () => drawChimneySmoke(ctx, c, state.anim || 0, c.black ? running : 0));
+  if (level.factory && front) add(level.factory.g, 1, () => drawFactoryLight(ctx, front, level.factory, running, state.anim || 0));
+  // A CANNONBALL DROPPED by stage 11's carrier when his tower is sold, where it fell.
+  for (const b of (state.villagerPlay && state.villagerPlay.balls) || []) add(b.y, 1, () => drawDroppedBall(ctx, b));
   for (const fire of level.fires || []) {
     if (fire.over) {
       add(fire.g, 1, () => drawFire(ctx, state, fire, 'under'));
@@ -1854,33 +1860,124 @@ const leafHash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; retu
 // SMOKE FROM A CHIMNEY: soft grey puffs rising out of its opening, swelling and
 // thinning as they climb and leaning with the wind, one after another on the board's
 // clock — each chimney on its own beat, so a row of houses does not breathe as one.
-let smokePuff = null;
-function drawChimneySmoke(ctx, c, t) {
-  if (!smokePuff) {
-    smokePuff = document.createElement('canvas');
-    smokePuff.width = smokePuff.height = 64;
-    const g = smokePuff.getContext('2d');
-    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(176,174,170,1)');
-    grad.addColorStop(0.55, 'rgba(176,174,170,0.7)');
-    grad.addColorStop(1, 'rgba(176,174,170,0)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, 64, 64);
-  }
+const smokePuffs = {};
+function puffOf(rgb) {
+  let c = smokePuffs[rgb];
+  if (c) return c;
+  c = smokePuffs[rgb] = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, `rgba(${rgb},1)`);
+  grad.addColorStop(0.55, `rgba(${rgb},0.7)`);
+  grad.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  return c;
+}
+// A FACTORY'S SMOKE (`black`) is sooty, and `boost`, 0 to 1, thickens it: twice the
+// puffs, bigger, darker and quicker — stage 11's while it runs. A chimney may say how
+// far its smoke climbs (`rise`) and how far the wind carries it (`drift`), px.
+const GREY_SMOKE = '176,174,170', BLACK_SMOKE = '38,36,35';
+function drawChimneySmoke(ctx, c, t, boost = 0) {
   const PUFFS = 7, LIFE = 6.5;
+  const puff = puffOf(c.black ? BLACK_SMOKE : GREY_SMOKE);
   const lean = 0.7 + 0.3 * Math.sin(t * 0.13 + c.x * 0.01);   // the wind, slowly
+  const life = LIFE / (1 + 0.5 * boost);
   ctx.save();
-  for (let k = 0; k < PUFFS; k++) {
-    const p = ((t / LIFE) + k / PUFFS + (c.x * 0.37 % 1)) % 1;
+  // The extra puffs only while boosted, each between two of the usual ones.
+  for (let k = 0; k < (boost > 0.01 ? PUFFS * 2 : PUFFS); k++) {
+    const extra = k >= PUFFS;
+    const p = ((t / life) + (k % PUFFS + (extra ? 0.5 : 0)) / PUFFS + (c.x * 0.37 % 1)) % 1;
     const e = 1 - (1 - p) * (1 - p);                            // quick out, slowing
-    const x = c.x + 14 * lean * p * p + 1.2 * Math.sin(p * 6 + k + c.x);
-    const y = c.y - 2 - 38 * e;
-    const r = 2.2 + 8 * p;
-    const a = 0.8 * Math.min(1, p / 0.12) * (1 - p);
+    const x = c.x + (c.drift ?? 14) * (1 + 0.3 * boost) * lean * p * p + 1.2 * Math.sin(p * 6 + k + c.x);
+    const y = c.y - 2 - (c.rise ?? 38) * (1 + 0.3 * boost) * e;
+    const r = (2.2 + 8 * p) * (c.black ? 1.25 : 1) * (1 + 0.4 * boost);
+    const a = (c.black ? 0.8 + 0.2 * boost : 0.8) * Math.min(1, p / 0.12) * (1 - p) * (extra ? boost : 1);
     if (a <= 0.01) continue;
     ctx.globalAlpha = a;
-    ctx.drawImage(smokePuff, x - r, y - r, r * 2, r * 2);
+    ctx.drawImage(puff, x - r, y - r, r * 2, r * 2);
   }
+  ctx.restore();
+}
+
+// A FACTORY RUNNING, its door and window lit from inside — stage 11's (`factory` on the
+// level, `lights` the boxes round each, board px). The dark of each opening in the
+// front sheet is found once and filled with a warm light by `k`, 0 to 1, flickering a
+// little, with a soft glow spilling out round it.
+const factoryMasks = new WeakMap();
+function factoryMask(img, f) {
+  let m = factoryMasks.get(f);
+  if (m !== undefined) return m;
+  m = null;
+  const split = shadowSplit(img, `sheet|${img.src}`, true);
+  if (split) {
+    try {
+      m = f.lights.map(([x0, y0, x1, y1]) => {
+        const w = Math.ceil((x1 - x0) * MAP_PX), h = Math.ceil((y1 - y0) * MAP_PX);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const g = c.getContext('2d', { willReadFrequently: true });
+        g.drawImage(split.body, -x0 * MAP_PX, -y0 * MAP_PX);
+        const im = g.getImageData(0, 0, w, h), d = im.data;
+        // The opening's dark brown, not its black outline or the grey stone.
+        for (let i = 0; i < d.length; i += 4) {
+          const on = d[i + 3] > 200 && d[i] >= 30 && d[i] < 110 && d[i] - d[i + 2] > 18 && d[i + 1] < d[i] * 0.85;
+          d[i] = 255; d[i + 1] = 196; d[i + 2] = 92; d[i + 3] = on ? 255 : 0;
+        }
+        g.putImageData(im, 0, 0);
+        return { c, x0, y0, x1, y1 };
+      });
+    } catch {
+      m = null;
+    }
+  }
+  factoryMasks.set(f, m);
+  return m;
+}
+function drawFactoryLight(ctx, img, f, k, t) {
+  if (k < 0.01) return;
+  const masks = factoryMask(img, f);
+  if (!masks) return;
+  const flicker = 0.88 + 0.12 * Math.sin(t * 13) * Math.sin(t * 7.3 + 1);
+  ctx.save();
+  for (const m of masks) {
+    ctx.globalAlpha = k * flicker;
+    ctx.drawImage(m.c, m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0);
+    // The glow spilling out of it.
+    const cx = (m.x0 + m.x1) / 2, cy = (m.y0 + m.y1) / 2, r = Math.max(m.x1 - m.x0, m.y1 - m.y0) * 0.9;
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    glow.addColorStop(0, 'rgba(255,200,110,0.5)');
+    glow.addColorStop(1, 'rgba(255,200,110,0)');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.6 * k * flicker;
+    ctx.fillStyle = glow;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.restore();
+}
+
+// A cannonball on the grass, drawn as the pile's are: grey, outlined in black, with
+// its shadow. Falling to the ground first (villagers.js, `balls`).
+function drawDroppedBall(ctx, b) {
+  const q = b.q ?? 1;
+  const bottom = b.y0 + (b.y - b.y0) * q * q;
+  const r = BALL_R;
+  ctx.save();
+  ctx.globalAlpha = 0.35 * q;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(b.x, b.y, r * 1.1, r * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#969696';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.arc(b.x, bottom - r, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
   ctx.restore();
 }
 

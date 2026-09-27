@@ -101,6 +101,15 @@ And stage 10's:
 Both stand on (216, 305) and carry the axe, so the axe painted in the tree is cut out
 of the board with him (`props` in level12.js).
 
+And stage 11's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Carrying_Cannonball.png` | the cannonball carrier, a ball in his arms — mirrored while he holds it up facing the pile |
+| `Villager_Picking_Up.png` | bent over the pile, picking one up |
+
+Both stand on (248, 305). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
+
 The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
 share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
 and draws the roof and front pillars over it again — see
@@ -353,6 +362,36 @@ top-right steps.
 - **Every 10 enemies killed:** 4 and 5 hop twice. **Every 12:** 2 and 3.
 - **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
   chimneys of all five houses.
+
+## Stage 11's script
+
+As the owner numbers them: 1 by the top-left house; 2 carrying boxes to the factory;
+3 carrying cannonballs to the Cannon Outpost standing beside the pile.
+
+- **Before the first wave:** 1 stands and greets by turns, facing the player, turned
+  left.
+- **When the first enemy of wave 1 appears:** "runnn", and 1 starts standing and
+  praying by turns.
+- **All game long, villager 2:** stage 5's box carrier, mirrored as painted. Down from
+  the top of the board, past where he is painted and right to the factory door, and
+  in (faded out on the step). A second later the factory runs — `Factory_sound`, its
+  door and window lit and its two chimneys' black smoke thicker — for as long as the
+  sound; three seconds' quiet and it runs again; a second later he comes out
+  empty-handed, back up the way he came and off the top of the board, and three
+  seconds later he is back with the next box. The first time he starts where he is
+  painted.
+- **All game long, villager 3:** carries a cannonball from the pile, round to the
+  right and up to the tower's door, and in; three seconds later out empty-handed
+  the same way to the pile; bent over it picking one up; a second holding it facing
+  the pile (the carrying drawing mirrored); then round, and back to the tower with
+  it. The first time he starts where he is painted.
+- **If the Cannon Outpost is sold:** villager 3 stops what he is doing for two
+  seconds, drops the cannonball if he has one (it stays on the grass), and walks to
+  the lower house's door and is gone, for good — whatever is built there after. In
+  the tower when it is sold, he is gone with it.
+- **Every 10 enemies killed:** 1 hops twice. The two carriers never hop.
+- **A star lost:** "nooo". Crows caw softly throughout; black smoke rises from the
+  factory's two chimneys and grey from the three houses'.
 
 ## Holy light over Dawnford
 

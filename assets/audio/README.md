@@ -1,6 +1,6 @@
 # Audio
 
-**A hundred and seventeen clips: forty-two in `sfx/`, twenty-one in `map/`, forty-five in `voice/` and nine in `villagers/`.**
+**A hundred and eighteen clips: forty-two in `sfx/`, twenty-two in `map/`, forty-five in `voice/` and nine in `villagers/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -39,7 +39,8 @@ assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Hammering_nail.mp3, Fishing_reel.mp3,
                       Fish_cooking.mp3, Water_fountain_sound.mp3,
                       Church_bell.mp3, Desert_wind_sound.mp3,
-                      Cutting_Tree.mp3, Crows_cawing.mp3
+                      Cutting_Tree.mp3, Crows_cawing.mp3,
+                      Factory_sound.mp3
                       — the sounds of the stage boards and the world map
                       themselves rather than of anybody on them
 
@@ -211,6 +212,9 @@ and it now means "how long a lull has to be before the game forgets".
 | the first enemy of wave 1 appears on **stage 10** | `Villager_say_oh_no` again, the same way |
 | stage 10's lumberjack's axe goes into the tree (twice a round) | one chop cut out of `Cutting_Tree` — its two loudest, at 2.57s and 4.38s, one each chop by turns (Category B, soft) |
 | stage 10 is being played (background, soft, looping) | `Crows_cawing`, softer than the rest |
+| the first enemy of wave 1 appears on **stage 11** | `Villager_say_runnn` again, the same way |
+| stage 11's factory runs (twice each time the box carrier is inside) | `Factory_sound`, whole (Category B, soft); the door and window lit and the chimneys' smoke thicker while it sounds |
+| stage 11 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | the first enemy of wave 1 appears on **stage 9** | `Villager_say_here_they_come` again, the same way |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
 | the first enemy of wave 1 appears on **stage 8** | `Villager_say_hide` again, the same way |

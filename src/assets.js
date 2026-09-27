@@ -200,6 +200,8 @@ export const paths = {
   vill_carrying_box:            'assets/villagers/Villager_Carrying_Box.png',
   vill_throwing_box:            'assets/villagers/Villager_Throwing_Box.png',
   vill_box:                     'assets/villagers/Villager_Box.png',
+  vill_carrying_cannonball:     'assets/villagers/Villager_Carrying_Cannonball.png',
+  vill_picking_up:              'assets/villagers/Villager_Picking_Up.png',
   // Stage 6's angler, waiting and tugging, and the man stuck in a helmet.
   vill_fishing_1:               'assets/villagers/Villager_Fishing_1.png',
   vill_fishing_2:               'assets/villagers/Villager_Fishing_2.png',
