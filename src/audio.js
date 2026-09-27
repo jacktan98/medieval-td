@@ -638,8 +638,8 @@ export const GAIN = {
   // Then half as loud again, at the owner's word, and 30% more on top of that.
   church_bell: 1.365,
   // The desert wind, soft like the river and the fountain — then half as loud
-  // again, at the owner's word.
-  desert_wind: 0.675,
+  // again, at the owner's word, twice over.
+  desert_wind: 1.0125,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
