@@ -208,6 +208,10 @@ export const level12 = {
   // with the axe the lumberjack holds in the tree (`props`): his drawings carry
   // their own.
   villagerPlay: 'ironforge',
+  // THE TREE HE IS FELLING, which shakes a little at every chop and lets fall a few
+  // leaves (src/render.js, drawFelledTree): its `front` box, the foot of its trunk
+  // it rocks about (`pivot`), and where its leaves are (`crown`, x0 y0 x1 y1).
+  felling: { box: [16, 380], pivot: [92, 487], crown: [40, 385, 140, 440] },
   props: [{ x: 84, y: 478, w: 12.5, up: 9, down: 1 }],   // the lumberjack's axe
   // Crows, soft, for as long as it is played.
   ambience: [{ clip: 'crows_cawing', level: 0.5 }],

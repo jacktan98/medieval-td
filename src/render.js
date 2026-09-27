@@ -457,8 +457,19 @@ function drawFigures(ctx, state) {
       const foot = b.g ?? b.y + b.h;
       // A FOUNTAIN IN THE SHEET RUNS, drawn with it at its depth — stage 7's.
       const fountain = level.fountain && level.fountain.box[0] === b.x && level.fountain.box[1] === b.y;
+      // A TREE BEING FELLED SHAKES at each chop — stage 10's. See treeRock.
+      const felled = level.felling && level.felling.box[0] === b.x && level.felling.box[1] === b.y;
       add(foot, 1, () => {
-        drawFront(ctx, front, b);
+        const rock = felled ? treeRock(state) : 0;
+        if (rock) {
+          const [px, py] = level.felling.pivot;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(rock);
+          ctx.translate(-px, -py);
+          drawFront(ctx, front, b);
+          ctx.restore();
+        } else drawFront(ctx, front, b);
         if (fountain) drawFountain(ctx, front, level.fountain, state.anim || 0);
         ghostInside(ctx, state, box, foot);
       });
@@ -561,6 +572,8 @@ function drawFigures(ctx, state) {
   // A fire with `over` burns in two layers: everything but its sparks at `g`, under
   // whatever is held in it (stage 4's pipe, which is drawn over the flame), and the
   // sparks alone at `over`, flying out over it.
+  // LEAVES FALLING FROM A TREE BEING FELLED, in front of it and of the man felling it.
+  if (level.felling && state.villagerPlay) add(level.felling.pivot[1] + 1, 1, () => drawFallingLeaves(ctx, state));
   // GREY SMOKE FROM A BOARD'S CHIMNEYS — stage 10's houses — at each house's depth,
   // just after it. See drawChimneySmoke.
   for (const c of level.chimneys || []) add(c.g, 1, () => drawChimneySmoke(ctx, c, state.anim || 0));
@@ -1786,6 +1799,53 @@ function drawFire(ctx, state, fire, part = 'all') {
     ctx.stroke(mouth);
   }
 }
+
+// A TREE BEING FELLED, at each chop (villagers.js, `chops`): rocked a little about
+// the foot of its trunk — most at its crown, which is furthest from it — back and
+// forth a few times, dying away in half a second.
+function treeRock(state) {
+  const vp = state.villagerPlay;
+  if (!vp || !vp.chops || !vp.chops.length) return 0;
+  const k = vp.t - vp.chops[vp.chops.length - 1];
+  if (k < 0 || k > 0.6) return 0;
+  return 0.011 * Math.exp(-k / 0.16) * Math.sin(k * 42);
+}
+
+// And a few small leaves shaken loose by each chop, drifting down from the crown,
+// swaying and turning as they go, and fading before they reach the ground.
+function drawFallingLeaves(ctx, state) {
+  const vp = state.villagerPlay;
+  if (!vp.chops) return;
+  const [x0, y0, x1, y1] = level.felling.crown;
+  ctx.save();
+  for (const c of vp.chops) {
+    const k = vp.t - c;
+    for (let i = 0; i < 5; i++) {
+      const n = c * 97.3 + i * 13.1;
+      const life = 2.6 + leafHash(n + 1) * 1.4;
+      if (k > life) continue;
+      const q = k / life;
+      const x = x0 + leafHash(n + 2) * (x1 - x0) + 7 * Math.sin(k * 3 + i) + 10 * q;
+      const y = y0 + (y1 - y0) * (0.4 + 0.6 * leafHash(n + 3)) + 62 * q;
+      const turn = k * (2 + leafHash(n + 4) * 2) + i;
+      ctx.globalAlpha = Math.min(1, k / 0.15) * (1 - q * q);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(turn);
+      ctx.scale(1, 0.45 + 0.55 * Math.abs(Math.cos(turn * 1.3)));   // tumbling
+      ctx.fillStyle = leafHash(n + 5) < 0.5 ? '#4f7a36' : '#6b9a45';
+      ctx.strokeStyle = '#1d2a14';
+      ctx.lineWidth = 0.45;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 2.6, 1.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+const leafHash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
 // SMOKE FROM A CHIMNEY: soft grey puffs rising out of its opening, swelling and
 // thinning as they climb and leaning with the wind, one after another on the board's

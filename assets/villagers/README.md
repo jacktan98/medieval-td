@@ -345,7 +345,9 @@ top-right steps.
 - **All game long:** the lumberjack chops at the tree as stage 5's hammerer hammers,
   but slower — two chops, the axe in the tree a third of a second each and drawn back
   three quarters of a second between them, a chop sounding each time it goes in,
-  then a rest of nearly three seconds with the axe drawn back, and again. He is drawn in front of the tree's trunk, as painted.
+  then a rest of nearly three seconds with the axe drawn back, and again. At each
+  chop the tree rocks a little about the foot of its trunk and a few small leaves
+  come down from its crown, tumbling and fading as they fall. He is drawn in front of the tree's trunk, as painted.
 - **Every 10 enemies killed:** 4 and 5 hop twice. **Every 12:** 2 and 3.
 - **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
   chimneys of all five houses.
