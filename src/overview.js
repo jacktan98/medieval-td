@@ -31,7 +31,7 @@ import { DIFFICULTIES } from './data/difficulty.js';
 import { MODES } from './data/waves.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
-import { drawMotion, drawWater, drawPulse } from './motion.js';
+import { drawMotion, drawWater, drawPulse, drawSplash, drawLeapingFish } from './motion.js';
 import { drawLife, drawPristine } from './life.js';
 // The map's own four sounds. Three of them last as long as a situation does, so
 // they go through setLoop rather than being started and stopped by hand — see the
@@ -200,30 +200,71 @@ export function stepReveal(state, dt) {
 
 // WHAT THE MAP SOUNDS LIKE, restated every frame rather than switched on events.
 //
-// Three situations, and each one is a plain reading of the state rather than a
-// flag somebody has to remember to clear:
-//
 //   THE ARMY IS WALKING — the road is drawing itself, which is the yellow dots
-//   moving. Marching, for exactly as long as that lasts.
+//   moving. Marching, for exactly as long as that lasts, and nothing else.
 //
-//   THE PLAYER IS LOOKING AT THE MAP AND HAS DONE NOTHING — on the world map, with
-//   no road drawing and no stage panel open. Birds and the flag together, which is
-//   what a quiet map sounds like. Opening a stage is an action, so the panel takes
-//   them off: it is a decision being made, not a view being looked at.
+//   THE MAP AT REST — the country the player has reached, heard: the background of
+//   the stage the rally flag stands at (its level's `ambience` — birdsong, a river,
+//   a fire, the desert wind, crows, a lake), at the owner's word, "if player has
+//   completed stage 5 and the rally flag is at stage 6, the overview map sound is the
+//   stage 6 sound." And the flag flapping, on the idle map.
 //
-//   ANYTHING ELSE — in a battle, at a result, under the dashboard — silence from
-//   all three, because none of them is a map.
+//   A STAGE OPENED — its preview panel up — and it is THAT stage's background
+//   instead, whichever it is: "if player selected stage 4 and is in the preview
+//   stage, use stage 4 sound." No flag while a decision is being made.
+//
+//   ANYTHING ELSE — in a battle, at a result — silence from all of it, because none
+//   of it is a map. The battle's own loops are named apart from these (board_ in
+//   src/main.js), so going in and coming out cross-fade rather than cut.
 //
 // See setLoop for why this is safe to call on every frame, and why it is the
-// reason the birds start by themselves once a phone unlocks its audio.
+// reason the sound starts by itself once a phone unlocks its audio.
+const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (levels[s.level].ambience || []).map(a => a.clip)))];
 export function mapAudio(state) {
-  const onMap = !state.started && (state.stage === null || state.stage === undefined);
+  const onMap = !state.started;
   const marching = !!(state.reveal && state.reveal.phase === 'road');
-  const idle = onMap && !state.reveal;
-
+  const opened = state.stage !== null && state.stage !== undefined;
+  const idle = onMap && !opened && !state.reveal;
+  const frontier = Math.max(0, Math.min(state.unlocked ?? 0, STAGE_COUNT) - 1);
+  const which = !onMap || marching ? -1 : opened ? state.stage : frontier;
+  const want = which >= 0 && playable(which) ? levels[STAGES[which].level].ambience || [] : [];
+  for (const clip of MAP_AMBIENT) {
+    const a = want.find(x => x.clip === clip);
+    setLoop(clip, !!a, a ? a.level : 1, `map_${clip}`);
+  }
   setLoop('marching', marching);
-  setLoop('bird_chirping', idle);
   setLoop('flag_waving', idle);
+}
+
+// FISH IN THE RIVER UNDER OAKHAVEN'S MOUNTAINS, at the owner's ask: "add some fishes
+// jumping around this area". Stage 13's fish, at the map's size, from one of these
+// spots well out in the water — never by the bridge, never in the dark at the map's
+// edge — now and then: slots of MAP_FISH_SLOT seconds, most with a leap in them, each
+// its own spot, way and height. On the map's own clock, and no splash sound: the map
+// is heard through its stage's background (mapAudio), not through its details.
+const MAP_FISH_SPOTS = [[70, 265], [95, 295], [125, 258], [150, 285], [175, 305], [200, 262],
+  [215, 292], [240, 275], [120, 305], [60, 300]];
+const MAP_FISH_SLOT = 3, MAP_FISH_DUR = 0.8, MAP_FISH_K = 0.13, MAP_FISH_RING = '58,76,90';
+const fishHash = n => { const x = Math.sin(n * 91.345 + 7.13) * 43758.5453; return x - Math.floor(x); };
+function drawMapFish(ctx, t) {
+  const img = art.fish_in_lake;
+  const now = Math.floor(t / MAP_FISH_SLOT);
+  for (let n = now - 1; n <= now; n++) {
+    // One leap in most slots, two in some.
+    for (let i = 0; i < 2; i++) {
+      const h = n * 2 + i;
+      if (fishHash(h) < (i ? 0.6 : 0.15)) continue;
+      const [x, y] = MAP_FISH_SPOTS[Math.floor(fishHash(h + 0.5) * MAP_FISH_SPOTS.length)];
+      const j = { x, y, dir: fishHash(h + 0.25) < 0.5 ? -1 : 1, span: 10 + fishHash(h + 0.75) * 7,
+                  height: 8 + fishHash(h + 0.9) * 5, dur: MAP_FISH_DUR };
+      const at = n * MAP_FISH_SLOT + fishHash(h + 0.33) * MAP_FISH_SLOT;
+      const k = t - at;
+      if (k < 0 || k > MAP_FISH_DUR + 1.6) continue;
+      drawSplash(ctx, { x, y }, k, MAP_FISH_RING, 0.75);
+      drawSplash(ctx, { x: x + j.dir * j.span, y, small: true }, k - MAP_FISH_DUR, MAP_FISH_RING, 0.75);
+      if (img) drawLeapingFish(ctx, img, j, k / MAP_FISH_DUR, MAP_FISH_K);
+    }
+  }
 }
 
 // A tap during the animation finishes it rather than being swallowed. Returns
@@ -1243,6 +1284,9 @@ export function drawOverview(ctx, state) {
     `${tf ? [tf.a, tf.e, tf.f].join(',') : ''}|${img && img.complete ? img.src : ''}|${parchment ? 1 : 0}`);
   // And the towns the player has reached, alive — see src/life.js.
   drawLife(ctx, now, unlocked, base);
+  // AND FISH LEAPING in the wide river under Oakhaven's mountains — see
+  // drawMapFish. Before the fog, so they only show once that water is reached.
+  drawMapFish(ctx, now);
 
   // THE REGION NAMES, OVER ALL OF IT. They are a second image for exactly this
   // reason: the parchment is a multiply, so a name inside the map picks up whatever

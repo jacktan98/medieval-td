@@ -13,7 +13,7 @@ import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
 import { drawExitFlag } from './flag.js';
 import { drawCrewTurned } from './crew.js';
-import { drawBoardWater, drawBoardLake, drawFountain } from './motion.js';
+import { drawBoardWater, drawBoardLake, drawFountain, drawSplash, drawLeapingFish } from './motion.js';
 import { VILLAGER_POSE, villagerKey, BALL_R } from './villagers.js';
 import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
@@ -1869,97 +1869,16 @@ function drawFire(ctx, state, fire, part = 'all') {
   }
 }
 
-// STAGE 13'S FISH, leaping (`vp.fishJump`, src/villagers.js): the owner's drawing,
-// out of the water in an arc and back in, its nose along the way it is going — and
-// hidden below the water line where it breaks the surface, so it rises out of the
-// lake and dives back into it rather than appearing above it. Rings spread where it
-// leaves the water and where it goes back in (`vp.splashes`), with a few drops
-// thrown up as it leaves.
-const FISH = { key: 'fish_in_lake', mid: [256, 256], k: 0.75 };
+// STAGE 13'S FISH, leaping (`vp.fishJump`, src/villagers.js), and the splashes where
+// it leaves the water and goes back in (`vp.splashes`) — drawn by drawSplash and
+// drawLeapingFish in src/motion.js, which the world map's river shares.
+const FISH = { key: 'fish_in_lake', k: 0.75 };
 function drawLakeFish(ctx, state) {
   const vp = state.villagerPlay;
   if (!vp) return;
-  ctx.save();
-  for (const s of vp.splashes || []) {
-    const k = vp.t - s.at;
-    const p = Math.min(1, k / 1.6);
-    const big = s.small ? 0.7 : 1;
-    // FOAM where the water broke, white and quickly gone.
-    if (k < 0.6) {
-      ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - k / 0.6)})`;
-      ctx.beginPath();
-      ctx.ellipse(s.x, s.y, (3 + 5 * k / 0.6) * big, (1.4 + 2 * k / 0.6) * big, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // RINGS spreading, in the lake's own deeper blue, which shows on its pale water
-    // where white did not.
-    ctx.strokeStyle = `rgba(52,128,196,${0.75 * (1 - p)})`;
-    ctx.lineWidth = 1;
-    for (const lag of [0, 0.25, 0.5]) {
-      const q = Math.max(0, p - lag);
-      if (q <= 0) continue;
-      ctx.beginPath();
-      ctx.ellipse(s.x, s.y, (2 + 12 * q) * big, (2 + 12 * q) * 0.42 * big, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // A SPLASH COLUMN, thrown straight up and falling back: a white burst over the
-    // spot as it leaves the water, smaller as it goes back in.
-    if (k < 0.45) {
-      const c = k / 0.45, h = (s.small ? 5 : 9) * Math.sin(Math.PI * c);
-      ctx.fillStyle = `rgba(255,255,255,${0.75 * (1 - c)})`;
-      ctx.beginPath();
-      ctx.moveTo(s.x - 2.2 * big, s.y);
-      ctx.quadraticCurveTo(s.x - 1.2 * big, s.y - h, s.x, s.y - h - 1);
-      ctx.quadraticCurveTo(s.x + 1.2 * big, s.y - h, s.x + 2.2 * big, s.y);
-      ctx.closePath();
-      ctx.fill();
-    }
-    // SPRAY: a crown of drops thrown up and out, falling back under their own weight
-    // — a dozen as it leaves the water, half as many as it goes back in — each with
-    // a short streak behind it while it is quick.
-    if (k < 0.9) {
-      const d = k / 0.9, n = s.small ? 6 : 12;
-      for (let m = 0; m < n; m++) {
-        const h = Math.sin(m * 12.9898 + s.x * 0.7 + s.y) * 43758.5453;
-        const r = h - Math.floor(h);
-        const a = -Math.PI / 2 + (m / (n - 1) - 0.5) * 2.4 + (r - 0.5) * 0.3;
-        const v = (s.small ? 7 : 11) * (0.7 + 0.6 * r);
-        const x = s.x + Math.cos(a) * v * d * 1.3, y = s.y + Math.sin(a) * v * d + 22 * d * d;
-        if (y > s.y + 1) continue;
-        ctx.fillStyle = `rgba(255,255,255,${0.9 * (1 - d)})`;
-        ctx.beginPath();
-        ctx.arc(x, y, 0.6 + 0.5 * r, 0, Math.PI * 2);
-        ctx.fill();
-        if (d < 0.35) {
-          ctx.strokeStyle = `rgba(255,255,255,${0.5 * (1 - d / 0.35)})`;
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x - Math.cos(a) * 2.5, y - Math.sin(a) * 2.5);
-          ctx.stroke();
-        }
-      }
-    }
-  }
-  ctx.restore();
+  for (const s of vp.splashes || []) drawSplash(ctx, s, vp.t - s.at);
   const j = vp.fishJump, img = art[FISH.key];
-  if (!j || !img) return;
-  const q = (vp.t - j.at) / j.dur;
-  if (q < 0 || q > 1) return;
-  const x = j.x + j.dir * j.span * q, y = j.y - j.height * 4 * q * (1 - q);
-  // Nose along the arc: the way it is heading, and the drawing faces left, so one
-  // leaping right is mirrored.
-  const heading = Math.atan2(-j.height * 4 * (1 - 2 * q), j.dir * j.span);
-  const k = SCALE * FISH.k;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(j.x - 40, j.y - 60, 80, 60 + 0.5);
-  ctx.clip();
-  ctx.translate(x, y);
-  if (j.dir > 0) { ctx.rotate(heading); ctx.scale(-1, 1); }
-  else ctx.rotate(heading - Math.PI);
-  ctx.drawImage(img, -FISH.mid[0] * k, -FISH.mid[1] * k, 512 * k, 512 * k);
-  ctx.restore();
+  if (j && img) drawLeapingFish(ctx, img, j, (vp.t - j.at) / j.dur, SCALE * FISH.k);
 }
 
 const TORCH_CATCH = 0.7;       // seconds for a torch lit by hand to burn up to size

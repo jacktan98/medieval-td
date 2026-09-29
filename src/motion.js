@@ -1859,3 +1859,110 @@ function drawSeam(ctx, s, t) {
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(s.layer, s.rect.x, s.rect.y);
 }
+
+// --- a fish leaping, and its splash ----------------------------------------------
+//
+// SHARED BY STAGE 13'S LAKE (src/render.js, drawLakeFish) AND THE WORLD MAP'S RIVER
+// (src/overview.js). A splash is where a fish breaks the water, `k` seconds ago:
+// foam, a little column of water thrown up, rings spreading in the water's own
+// deeper blue (`ring`, which shows on pale water where white did not), and a crown
+// of spray — half as much where it goes back in (`small`). The fish is the owner's
+// drawing (`img`, on its 512 canvas at `k`), out of the water in an arc and back in
+// over `j.dur`, its nose along the way it is going; `q` is how far through the leap
+// it is, 0 to 1. Hidden below the water line where it breaks the surface, so it
+// rises out of the water and dives back into it rather than appearing above it.
+export function drawSplash(ctx, s, k, ring = '52,128,196', size = 1) {
+  if (k < 0 || k > 1.6) return;
+  ctx.save();
+  if (size !== 1) {
+    ctx.translate(s.x, s.y);
+    ctx.scale(size, size);
+    ctx.translate(-s.x, -s.y);
+  }
+  const p = Math.min(1, k / 1.6);
+  const big = s.small ? 0.7 : 1;
+  // FOAM where the water broke, white and quickly gone.
+  if (k < 0.6) {
+    ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - k / 0.6)})`;
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, (3 + 5 * k / 0.6) * big, (1.4 + 2 * k / 0.6) * big, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // RINGS spreading, in the lake's own deeper blue, which shows on its pale water
+  // where white did not.
+  ctx.strokeStyle = `rgba(${ring},${0.75 * (1 - p)})`;
+  ctx.lineWidth = 1;
+  for (const lag of [0, 0.25, 0.5]) {
+    const q = Math.max(0, p - lag);
+    if (q <= 0) continue;
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, (2 + 12 * q) * big, (2 + 12 * q) * 0.42 * big, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // A SPLASH COLUMN, thrown straight up and falling back: a white burst over the
+  // spot as it leaves the water, smaller as it goes back in.
+  if (k < 0.45) {
+    const c = k / 0.45, h = (s.small ? 5 : 9) * Math.sin(Math.PI * c);
+    ctx.fillStyle = `rgba(255,255,255,${0.75 * (1 - c)})`;
+    ctx.beginPath();
+    ctx.moveTo(s.x - 2.2 * big, s.y);
+    ctx.quadraticCurveTo(s.x - 1.2 * big, s.y - h, s.x, s.y - h - 1);
+    ctx.quadraticCurveTo(s.x + 1.2 * big, s.y - h, s.x + 2.2 * big, s.y);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // SPRAY: a crown of drops thrown up and out, falling back under their own weight
+  // — a dozen as it leaves the water, half as many as it goes back in — each with
+  // a short streak behind it while it is quick.
+  if (k < 0.9) {
+    const d = k / 0.9, n = s.small ? 6 : 12;
+    for (let m = 0; m < n; m++) {
+      const h = Math.sin(m * 12.9898 + s.x * 0.7 + s.y) * 43758.5453;
+      const r = h - Math.floor(h);
+      const a = -Math.PI / 2 + (m / (n - 1) - 0.5) * 2.4 + (r - 0.5) * 0.3;
+      const v = (s.small ? 7 : 11) * (0.7 + 0.6 * r);
+      const x = s.x + Math.cos(a) * v * d * 1.3, y = s.y + Math.sin(a) * v * d + 22 * d * d;
+      if (y > s.y + 1) continue;
+      ctx.fillStyle = `rgba(255,255,255,${0.9 * (1 - d)})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 0.6 + 0.5 * r, 0, Math.PI * 2);
+      ctx.fill();
+      if (d < 0.35) {
+        ctx.strokeStyle = `rgba(255,255,255,${0.5 * (1 - d / 0.35)})`;
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - Math.cos(a) * 2.5, y - Math.sin(a) * 2.5);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+export function drawLeapingFish(ctx, img, j, q, k) {
+  if (q < 0 || q > 1) return;
+  const x = j.x + j.dir * j.span * q, y = j.y - j.height * 4 * q * (1 - q);
+  // Nose along the arc: the way it is heading, and the drawing faces left, so one
+  // leaping right is mirrored.
+  const heading = Math.atan2(-j.height * 4 * (1 - 2 * q), j.dir * j.span);
+  // Drawn on a scratch sheet first and cut off below the water line there — not
+  // clipped on the map, where nothing in this file clips (see drawShimmer) — at the
+  // pixel density it will be drawn at, so it is no softer for the detour.
+  const tf = ctx.getTransform ? ctx.getTransform() : null;
+  const d = Math.min(4, Math.max(1, Math.ceil(tf ? Math.hypot(tf.a, tf.b) : 1)));
+  const W = 80, H = 60;
+  if (!fishSheet) fishSheet = sheet(W * 4, H * 4);
+  const g = fishSheet.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, fishSheet.width, fishSheet.height);
+  g.setTransform(d, 0, 0, d, 0, 0);
+  g.translate(x - (j.x - W / 2), y - (j.y - H));
+  if (j.dir > 0) { g.rotate(heading); g.scale(-1, 1); }
+  else g.rotate(heading - Math.PI);
+  g.drawImage(img, -256 * k, -256 * k, 512 * k, 512 * k);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, Math.round((H + 0.5) * d), fishSheet.width, fishSheet.height);
+  ctx.drawImage(fishSheet, 0, 0, W * d, H * d, j.x - W / 2, j.y - H, W, H);
+}
+let fishSheet = null;

@@ -457,19 +457,19 @@ are different enough events to be worth telling apart with your eyes shut.
 `killedBy` on the victim is the ammunition's own `kind`, so a third projectile
 would need no branch anywhere.
 
-## The world map has four sounds, and three of them LOOP
+## The world map has its own three sounds, and sounds like the stage it is at
 
 Every other clip in this game answers a **moment**: an arrow leaves, a man dies,
 a button is pressed. The map needed the other kind — an army is marching and it
-marches for as long as the road takes; the player is looking at the map, and
-birds are what that sounds like until they do something.
+marches for as long as the road takes; the player is looking at the map, and the
+country the army has reached is what that sounds like until they do something.
 
 | clip | when |
 | --- | --- |
 | `Marching_sound.mp3` | loops while the road draws itself — the yellow dots moving |
 | `Flag_planted.mp3` | once, the moment the road arrives and the flag goes in |
 | `Flag_waving.mp3` | loops while the player is looking at the map, doing nothing |
-| `Bird_chirping.mp3` | loops with it, same situation |
+| **the stage's own background** | loops while the map is at rest: the background of the stage the rally flag stands at — or, with a stage's preview panel open, of that stage. Its level's `ambience`, at the levels the stage plays it at: birdsong, a river, a fire, a fountain, the desert wind, crows, the lake |
 
 ## The summary panel
 
@@ -516,8 +516,12 @@ It is also what makes them survive a locked audio context. A phone plays nothing
 until the first tap; because the truth is restated every frame, the birds start on
 their own the moment the context wakes rather than having missed their cue.
 
-**Opening a stage takes the ambience off.** Choosing a board is an action, not a
-view — and the panel covers the map anyway.
+**Opening a stage changes the ambience to that stage's**, at the owner's word — "if
+player selected stage 4 and is in the preview stage, use stage 4 sound" — and takes
+the flag's flapping off: choosing a board is a decision, not a view. With the flag at
+stage 6, the map is stage 6's background. The map's loops are named apart from the
+battle's own (`map_` against `board_`), so going into a stage and coming out cross-fade
+rather than cut.
 
 **A loop rounds the dead air rather than going through it.** Every clip here is
 measured for silence at its head and started past it; a loop wrapping to zero
