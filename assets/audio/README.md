@@ -216,6 +216,7 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 11's factory runs (twice each time the box carrier is inside) | `Factory_sound`, whole (Category B, soft); the door and window lit and the chimneys' smoke thicker while it sounds |
 | stage 11 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
+| stage 12's first gate torch is lit | `Fire_crackling`, looping from then on, as loud as every other board's fire |
 | the first enemy of wave 1 appears on **stage 9** | `Villager_say_here_they_come` again, the same way |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
 | the first enemy of wave 1 appears on **stage 8** | `Villager_say_hide` again, the same way |

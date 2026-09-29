@@ -394,14 +394,17 @@ function frame(now) {
   // result. Every clip any board uses is asked about every frame, so leaving a board
   // turns its sounds off without anybody remembering to.
   const playing = state.started && !state.result;
-  const want = playing ? level.ambience || [] : [];
+  const vp = state.villagerPlay;
+  // A LOOP THAT WAITS FOR A TORCH (`lit`): stage 12's fire crackling, from the moment
+  // the torch-lighter lights his first torch (`litAt` in src/villagers.js).
+  const burning = a => a.lit === undefined || !!(vp && vp.litAt && vp.litAt[a.lit] !== undefined);
+  const want = playing ? (level.ambience || []).filter(burning) : [];
   for (const clip of AMBIENT) {
     const a = want.find(x => x.clip === clip);
     setLoop(clip, !!a, a ? a.level : 1, `board_${clip}`);
   }
   // AND STAGE 4'S SMITH WELDING, while his pipe is in the fire — not on a paused
   // board, where he is held with it in.
-  const vp = state.villagerPlay;
   setLoop('steel_welding', playing && !state.paused && !!(vp && vp.welding), 1, 'board_weld');
   // AND STAGE 6'S ANGLER'S REEL, soft, for as long as he is tugging at his line.
   setLoop('fishing_reel', playing && !state.paused && !!(vp && vp.reeling), 1, 'board_reel');

@@ -179,8 +179,9 @@ export const level14 = {
   // THEY MOVE, drawn by the game from assets/villagers — see `ironcastle` in
   // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
   villagerPlay: 'ironcastle',
-  // Crows, soft, for as long as it is played.
-  ambience: [{ clip: 'crows_cawing', level: 0.5 }],
+  // Crows, soft, for as long as it is played — and the torches crackling, as loud as
+  // every other board's fire, from the moment the first is lit (`lit`).
+  ambience: [{ clip: 'crows_cawing', level: 0.5 }, { clip: 'fire_crackling', level: 1, lit: 0 }],
   // THE TWO TORCHES AT THE GATE, drawn unlit and lit by the torch-lighter as the board
   // opens (`lit`, the order he lights them in): each burns on its cup, sorted at the
   // foot of its pole.
