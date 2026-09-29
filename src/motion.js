@@ -1604,14 +1604,18 @@ export function drawBoardLake(ctx, img, spec, t) {
   const at = n => w.spots[Math.floor(lakeHash(n) * w.spots.length)];
   ctx.drawImage(layerFor(w.grp, g => {
     g.lineCap = 'round';
-    // RIPPLE LINES.
+    // RIPPLE LINES, drifting along on the breeze as they come and go, and rocking a
+    // little up and down with the water — more of both at the owner's "make the lake
+    // move a bit more".
     for (let k = 0; k < (spec.ripples ?? 20); k++) {
-      const life = 5 + lakeHash(k + 1) * 3;
+      const life = 4 + lakeHash(k + 1) * 2.5;
       const q = t / life + lakeHash(k + 2);
       const round = Math.floor(q), p = q - round;
-      const [x, y] = at(k * 13 + round * 7);
+      const [x0, y0] = at(k * 13 + round * 7);
       const len = 5 + lakeHash(k * 3 + round) * 7;
-      const dx = 2.5 * p;
+      const dx = 7 * p;
+      const x = x0 + 1.2 * Math.sin(t * 1.3 + k);
+      const y = y0 + 1.0 * Math.sin(t * 1.7 + k * 2.1);
       g.strokeStyle = `rgba(${LAKE_MARK},${0.7 * Math.sin(Math.PI * p)})`;
       g.lineWidth = 1.1;
       g.beginPath();
@@ -1641,8 +1645,8 @@ export function drawBoardLake(ctx, img, spec, t) {
       g.moveTo(x, y - r * 0.7); g.lineTo(x, y + r * 0.7);
       g.stroke();
     }
-    // RINGS: one every few seconds, spreading and thinning.
-    const RING = 3.4;
+    // RINGS: one every couple of seconds, spreading and thinning.
+    const RING = 2.2;
     for (let n = Math.floor(t / RING) - 1; n <= Math.floor(t / RING); n++) {
       const k = t - (n * RING + lakeHash(n + 90) * RING);
       if (k < 0 || k > 2.6) continue;

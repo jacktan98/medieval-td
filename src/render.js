@@ -1884,27 +1884,60 @@ function drawLakeFish(ctx, state) {
     const k = vp.t - s.at;
     const p = Math.min(1, k / 1.6);
     const big = s.small ? 0.7 : 1;
-    // The lake's own deeper blue, which shows on its pale water where white did not.
+    // FOAM where the water broke, white and quickly gone.
+    if (k < 0.6) {
+      ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - k / 0.6)})`;
+      ctx.beginPath();
+      ctx.ellipse(s.x, s.y, (3 + 5 * k / 0.6) * big, (1.4 + 2 * k / 0.6) * big, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // RINGS spreading, in the lake's own deeper blue, which shows on its pale water
+    // where white did not.
     ctx.strokeStyle = `rgba(52,128,196,${0.75 * (1 - p)})`;
     ctx.lineWidth = 1;
-    for (const lag of [0, 0.35]) {
+    for (const lag of [0, 0.25, 0.5]) {
       const q = Math.max(0, p - lag);
       if (q <= 0) continue;
       ctx.beginPath();
-      ctx.ellipse(s.x, s.y, (2 + 11 * q) * big, (2 + 11 * q) * 0.42 * big, 0, 0, Math.PI * 2);
+      ctx.ellipse(s.x, s.y, (2 + 12 * q) * big, (2 + 12 * q) * 0.42 * big, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-    // Drops, thrown up and falling back, as it leaves the water.
-    if (!s.small && k < 0.7) {
-      const d = k / 0.7;
-      ctx.fillStyle = `rgba(255,255,255,${0.85 * (1 - d)})`;
-      for (let n = 0; n < 5; n++) {
-        const a = -Math.PI / 2 + (n - 2) * 0.45;
-        const v = 9 + (n % 2) * 3;
-        const x = s.x + Math.cos(a) * v * d, y = s.y + Math.sin(a) * v * d + 16 * d * d;
+    // A SPLASH COLUMN, thrown straight up and falling back: a white burst over the
+    // spot as it leaves the water, smaller as it goes back in.
+    if (k < 0.45) {
+      const c = k / 0.45, h = (s.small ? 5 : 9) * Math.sin(Math.PI * c);
+      ctx.fillStyle = `rgba(255,255,255,${0.75 * (1 - c)})`;
+      ctx.beginPath();
+      ctx.moveTo(s.x - 2.2 * big, s.y);
+      ctx.quadraticCurveTo(s.x - 1.2 * big, s.y - h, s.x, s.y - h - 1);
+      ctx.quadraticCurveTo(s.x + 1.2 * big, s.y - h, s.x + 2.2 * big, s.y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // SPRAY: a crown of drops thrown up and out, falling back under their own weight
+    // — a dozen as it leaves the water, half as many as it goes back in — each with
+    // a short streak behind it while it is quick.
+    if (k < 0.9) {
+      const d = k / 0.9, n = s.small ? 6 : 12;
+      for (let m = 0; m < n; m++) {
+        const h = Math.sin(m * 12.9898 + s.x * 0.7 + s.y) * 43758.5453;
+        const r = h - Math.floor(h);
+        const a = -Math.PI / 2 + (m / (n - 1) - 0.5) * 2.4 + (r - 0.5) * 0.3;
+        const v = (s.small ? 7 : 11) * (0.7 + 0.6 * r);
+        const x = s.x + Math.cos(a) * v * d * 1.3, y = s.y + Math.sin(a) * v * d + 22 * d * d;
+        if (y > s.y + 1) continue;
+        ctx.fillStyle = `rgba(255,255,255,${0.9 * (1 - d)})`;
         ctx.beginPath();
-        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+        ctx.arc(x, y, 0.6 + 0.5 * r, 0, Math.PI * 2);
         ctx.fill();
+        if (d < 0.35) {
+          ctx.strokeStyle = `rgba(255,255,255,${0.5 * (1 - d / 0.35)})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x - Math.cos(a) * 2.5, y - Math.sin(a) * 2.5);
+          ctx.stroke();
+        }
       }
     }
   }
