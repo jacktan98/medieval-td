@@ -705,7 +705,7 @@ function work(state, vp, dt) {
     const strike = hammer.strike || 'hammer_2', knocks = hammer.sound === 'chop' ? CHOP : HAMMER;
     if (was !== strike && h.pose === strike) {
       const [from, dur] = knocks.knocks[(vp.knock = ((vp.knock ?? -1) + 1) % knocks.knocks.length)];
-      slice(knocks.key, from, dur, knocks.level ?? 1);
+      slice(knocks.key, from, dur);
       // And when it is an axe going into a tree, the tree shakes and a few leaves
       // come down — render.js reads the last few seconds' chops from here.
       if (hammer.sound === 'chop') vp.chops = [...(vp.chops || []).filter(c => vp.t - c < 4), vp.t];

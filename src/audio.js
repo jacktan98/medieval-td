@@ -821,7 +821,37 @@ export const GAIN = {
   // effect." The levelling brings every clip to the battle's loudness, so this is
   // what makes it background: about 9dB under an arrow, beside the world map's
   // birdsong at 0.30 — which is the other loop it most resembles.
-  wings_flap: 0.443
+  wings_flap: 0.443,
+  // THE OWNER'S SECOND BALANCE PASS. The shop's and the result screen's two
+  // chimes a step under a voice line (80 against 100); the arrow a hair under the
+  // other shots (40 against 45); and the Captain's lines, which the LOUDER rule
+  // takes straight to the ceiling, trimmed back to 300 against a voice's 100 — his
+  // kill line to 400, and his fall left where it was and lifted a little (LIFT).
+  sell: 0.8,
+  star: 0.8,
+  arrow_shot: 0.889,
+  captain_picked: 0.927,
+  captain_dying: 0.898,
+  captain_pause: 0.847,
+  captain_enters: 0.818,
+  captain_healed: 0.804,
+  captain_kills: 0.767
+};
+
+// A LIFT, APPLIED AFTER THE CAP, for the few clips the owner asked to be louder than
+// the leveller's peak ceiling allows. The ceiling keeps every clip's sharpest sample
+// under PEAK_OUT at the speaker as if it played on the voice bus at full; a trim above
+// it is capped straight back down. These are small — a few percent — and each is
+// checked against the real bus it plays on:
+//   cutting_tree   — 35 against a voice's 100, from the 33 the cap allows; on the
+//                    background bus, so it still peaks under half of full scale.
+//   defend_walking — 45 beside the other shots, from 44; the same.
+//   captain_fallen — 75, from 73; on the voice bus, peaking at 0.98 of full scale,
+//                    which is over PEAK_OUT's margin but under full scale.
+const LIFT = {
+  cutting_tree: 1.057,
+  defend_walking: 1.024,
+  captain_fallen: 1.028
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
@@ -1047,13 +1077,8 @@ export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0
 // STAGE 10'S LUMBERJACK, one chop as the axe goes into the tree, the same way: the
 // recording is a chop every 0.9s or so, and its two loudest, at 2.57s and 4.38s, are
 // cut out by where they START, with the ring after each. Category B.
-//
-// `level` ON TOP OF ITS TRIM, and only because the trim cannot go higher: the
-// recording's sharpest crack is already at the leveller's peak ceiling, so a bigger
-// trim is capped straight back down. The owner's balance pass asked for 35 against a
-// voice's 100 and the cap stops it at 33; this last 6% is a play level instead, and
-// the chop still peaks under half of full scale at the speaker.
-export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]], level: 1.057 };
+// (A little louder than its trim can make it: see LIFT.)
+export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]] };
 // STAGE 11'S FACTORY RUNNING: the whole recording, `len` seconds, played each time it
 // runs. Its door and window are lit and its chimneys smoke black for `dur` — until
 // the sound dies away, a little short of its last sample. Category B.
@@ -1250,7 +1275,7 @@ export function loadAudio() {
     fetch(stamp ? `${src}?v=${stamp}` : src)
       .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
       .then(data => ctx.decodeAudioData(data))
-      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key)); })
+      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key), LIFT[key] ?? 1); })
       .catch(() => { if (AWAITED.has(key)) absent.push(src); else console.warn('Missing or unreadable audio:', src); })
   );
 
@@ -1265,7 +1290,7 @@ export function loadAudio() {
 //
 // The channels are summed to mono first. What the player hears is the sum, and
 // measuring one side of a stereo file would under-read anything panned.
-function analyse(buf, trim, louder = false) {
+function analyse(buf, trim, louder = false, lift = 1) {
   const n = buf.length;
   const mix = new Float32Array(n);
   for (let c = 0; c < buf.numberOfChannels; c++) {
@@ -1311,7 +1336,7 @@ function analyse(buf, trim, louder = false) {
     // is not being matched to the battle, it is being played as loud as it can go.
     : louder && peak > 0 ? trim * Math.min(GAIN_MAX, PEAK_CEILING / peak)
     : trim * Math.min(GAIN_MAX, Math.max(GAIN_MIN, TARGET_LOUD / loud));
-  const gain = peak > 0 ? Math.min(levelled, PEAK_CEILING / peak) : levelled;
+  const gain = (peak > 0 ? Math.min(levelled, PEAK_CEILING / peak) : levelled) * lift;
 
   return {
     buf,
