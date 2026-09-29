@@ -112,7 +112,11 @@ export const VILLAGER_POSE = {
           chop_1: [216, 305], chop_2: [216, 305],
           // Stage 11's cannonball carrier, the ball held in both arms — his back to
           // the player, or facing the player — and bent to pick one up.
-          ball_back: [263, 305], ball_front: [263, 305], pick_up: [248, 305] },
+          ball_back: [263, 305], ball_front: [263, 305], pick_up: [248, 305],
+          // Stage 12's torch-lighter, his lit pole held up, and the villager who
+          // goes into the castle and comes out a musketeer.
+          pole_front: [259.5, 344], pole_back: [259.5, 344],
+          vm_front: [259.5, 310], vm_back: [259.5, 310], musk_front: [258, 305] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -125,7 +129,10 @@ export const VILLAGER_POSE = {
            kneel_1: [200, 200, 110, 110], kneel_2: [200, 200, 110, 110],
            chop_1: [170, 190, 170, 145], chop_2: [170, 190, 170, 145],
            ball_back: [195, 185, 115, 135], ball_front: [195, 185, 115, 135],
-           pick_up: [195, 185, 115, 135] },
+           pick_up: [195, 185, 115, 135],
+           pole_front: [195, 70, 110, 310], pole_back: [195, 70, 110, 310],
+           vm_front: [205, 190, 105, 135], vm_back: [205, 190, 105, 135],
+           musk_front: [180, 185, 150, 140] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -438,6 +445,35 @@ const PLAYS = {
             pause: 2, home: HOUSE_WAY },
     cries: { runnn: false, nooo: true, wave: 'runnn' }
   },
+  // STAGE 12, Ironforge Castle: the torch-lighter left of the gate, the villager below
+  // it who will be a musketeer, and villagers 1 and 2 to the right of the barricade.
+  ironcastle: {
+    // Villagers 1 and 2 greet by turns facing the player, turned left, until the first
+    // wave, and stand and pray by turns after it.
+    before: [{}, {}, front('greets'), front('greets')],
+    after: [{}, {}, front('pray'), front('pray')],
+    run: [],
+    // Two hops: villager 1 every tenth enemy down, villager 2 every twelfth.
+    hops: [{ every: 10, who: [2] }, { every: 12, who: [3] }],
+    // THE TORCHES ARE LIT as the board opens. He walks up to the first torch with his
+    // lit pole, his back to the player and turned right, and lights it; turns to face
+    // the player and walks down to the second, and lights that with his back turned
+    // again; then throws the pole down — it falls still burning and burns out on the
+    // grass (drawn by render.js from `vp.pole`) — and walks back into the castle.
+    // `at` is where he stands for each torch: the pole's flame at its cup.
+    lighter: { who: 0, start: 1.5, torches: [[604.5, 253], [657, 266]], hold: 1.0, lightAt: 0.45,
+               rest: 1.2, door: [651, 247] },
+    // THE VILLAGER WHO BECOMES A MUSKETEER: standing about, now and then turning to
+    // the right, knowing nothing of any war; at the first enemy he walks into the
+    // castle, his back to the player (turned right for the last step in at the
+    // door); as the second wave comes he walks back out in a musketeer's gear, down,
+    // right to the barricade, a quick turn left — and is a musketeer at his post, the
+    // same as the one at the bottom right, from then on.
+    recruit: { who: 1, in: [[664, 285], [647, 262], [645, 255], [651, 246]],
+               out: [[651, 262], [700, 287], [745, 301], [782, 315], [773, 321]],
+               post: { x: 773, y: 321, unit: 'Musketeer' } },
+    cries: { runnn: false, nooo: true }
+  },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
   sandshroud: {
@@ -504,6 +540,11 @@ const PLAYS = {
     cries: { runnn: false, nooo: false, wave: 'oh_no' }
   }
 };
+
+// A board's script, for the checks in tools/ that ask what it does.
+export function playOf(level) {
+  return (level.villagerPlay && PLAYS[level.villagerPlay]) || {};
+}
 
 const WORK_WALK = 11;         // px a second carrying — "slowly"
 const DOOR_FADE = 0.5;        // seconds to step out of, or into, a doorway
@@ -665,6 +706,10 @@ function work(state, vp, dt) {
       if (hammer.sound === 'chop') vp.chops = [...(vp.chops || []).filter(c => vp.t - c < 4), vp.t];
     }
   }
+
+  // STAGE 12'S TORCH-LIGHTER AND RECRUIT, each once.
+  if (vp.plan.lighter) lighterRound(state, vp, vp.plan.lighter, dt);
+  if (vp.plan.recruit) recruitRound(state, vp, vp.plan.recruit, dt);
 
   // STAGE 11'S TWO CARRIERS, each on a loop of his own.
   if (vp.plan.porter) porterLoop(state, vp, vp.plan.porter, dt);
@@ -915,6 +960,103 @@ function ammoLoop(state, vp, am, dt) {
   }
 }
 
+// STAGE 12'S TORCH-LIGHTER, once, as the board opens:
+//   wait   — a moment where he is painted;
+//   walk   — up to a torch with his pole held up, his back to the player (turned
+//            right) — or, going down to the second, facing the player;
+//   light  — the pole's flame at its cup; the torch catches (`vp.litAt`, read by the
+//            torch fires in render.js);
+//   throw  — the pole thrown down, falling still lit and burning out on the grass
+//            (`vp.pole`, drawn by render.js); he stands watching it land;
+//   home   — back to the castle door, faded out there, gone.
+const POLE_WALK = 14;         // px a second, carrying the pole up
+function lighterRound(state, vp, lt, dt) {
+  const v = state.villagers[lt.who];
+  if (!v) return;
+  v.work = true;
+  const c = vp.lighter || (vp.lighter = { phase: 'wait', at: vp.t, n: 0 });
+  vp.litAt = vp.litAt || [];
+  const k = vp.t - c.at;
+  if (c.phase === 'wait') {
+    v.pose = 'pole_back'; v.flip = true;
+    if (k >= lt.start) { c.phase = 'walk'; c.at = vp.t; v.leg = 0; }
+  } else if (c.phase === 'walk') {
+    // Up to the first his back turned; down to the second facing the player; turned
+    // right both times.
+    v.pose = c.n === 0 ? 'pole_back' : 'pole_front';
+    if (walkTo(v, [lt.torches[c.n]], POLE_WALK, dt)) { c.phase = 'light'; c.at = vp.t; }
+    v.flip = true;
+  } else if (c.phase === 'light') {
+    v.pose = 'pole_back'; v.flip = true;
+    if (k >= lt.lightAt && vp.litAt[c.n] === undefined) vp.litAt[c.n] = vp.t;
+    if (k >= lt.hold) {
+      c.n++;
+      c.at = vp.t;
+      if (c.n < lt.torches.length) { c.phase = 'walk'; v.leg = 0; }
+      else {
+        c.phase = 'throw';
+        // THE POLE LEAVES HIS HANDS where he held it and falls to his right.
+        vp.pole = { x: v.x, y: v.y, at: vp.t };
+      }
+    }
+  } else if (c.phase === 'throw') {
+    v.pose = 'standing'; v.side = 'front'; v.flip = true;
+    if (k >= lt.rest) { c.phase = 'home'; c.at = vp.t; v.leg = 0; }
+  } else if (c.phase === 'home') {
+    if (stroll(v, [lt.door], dt)) { c.phase = 'fade'; c.at = vp.t; }
+  } else if (c.phase === 'fade') {
+    v.alpha = Math.max(0, 1 - k / DOOR_FADE);
+    if (v.alpha <= 0) { v.hidden = true; c.phase = 'gone'; }
+  }
+}
+
+// STAGE 12'S RECRUIT, once:
+//   idle   — standing about, now and then turned to the right;
+//   in     — at the first enemy, up to the castle door, his back to the player;
+//   fade   — faded out on the step, and inside;
+//   inside — until the second wave's first enemy appears;
+//   out    — faded in on the step in a musketeer's gear, and down and along to his
+//            post behind the barricade;
+//   posted — gone from the villagers: `vp.recruit` asks main.js for a garrison
+//            musketeer where he stands, the same as the board's other one.
+function recruitRound(state, vp, rc, dt) {
+  const v = state.villagers[rc.who];
+  if (!v) return;
+  v.work = true;
+  const c = vp.recruitee || (vp.recruitee = { phase: 'idle', at: vp.t, turn: vp.t + 3 + Math.random() * 3 });
+  const k = vp.t - c.at;
+  if (c.phase === 'idle') {
+    v.pose = 'vm_front';
+    // Turned to the right a while, and back, on no beat of his own.
+    if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + (v.flip ? 1.5 + Math.random() * 1.5 : 3 + Math.random() * 3); }
+    if (state.enemies.length) { c.phase = 'in'; c.at = vp.t; v.leg = 0; }
+  } else if (c.phase === 'in') {
+    // His back to the player; walkTo turns him right for the last step to the door.
+    v.pose = 'vm_back';
+    if (walkTo(v, rc.in, WORK_WALK_FREE, dt)) { c.phase = 'fade'; c.at = vp.t; }
+  } else if (c.phase === 'fade') {
+    v.alpha = Math.max(0, 1 - k / DOOR_FADE);
+    if (v.alpha <= 0) { v.hidden = true; c.phase = 'inside'; c.at = vp.t; }
+  } else if (c.phase === 'inside') {
+    if (state.waveIndex >= 1 && state.spawned > 0) {
+      c.phase = 'out'; c.at = vp.t;
+      [v.x, v.y] = rc.in[rc.in.length - 1];
+      v.leg = 0; v.hidden = false; v.alpha = 0; v.flip = false;
+    }
+  } else if (c.phase === 'out') {
+    // Straight down out of the door as drawn, turned right along to the barricade,
+    // and a quick turn left onto his post: walkTo faces him the way he goes.
+    v.alpha = Math.min(1, k / DOOR_FADE);
+    v.pose = 'musk_front';
+    if (walkTo(v, rc.out, WORK_WALK_FREE, dt)) {
+      c.phase = 'posted';
+      v.hidden = true;
+      v.live = false;
+      vp.recruit = { ...rc.post };
+    }
+  }
+}
+
 const RUN_SPEED = 46;         // px a second
 const VANISH_FOR = 0.5;       // seconds to fade out through a door
 const RUN_UP = 0.05;          // how steeply up a runner must go to show their back
@@ -1118,4 +1260,7 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    kneel_1: 'vill_kneeling_1', kneel_2: 'vill_kneeling_2',
                    chop_1: 'vill_cutting_tree_1', chop_2: 'vill_cutting_tree_2',
                    ball_back: 'vill_back_carrying_cannonball', ball_front: 'vill_front_carrying_cannonball',
-                   pick_up: 'vill_picking_up' };
+                   pick_up: 'vill_picking_up',
+                   pole_front: 'vill_front_lighting_pole', pole_back: 'vill_back_lighting_pole',
+                   vm_front: 'vill_musketeer_front_standing', vm_back: 'vill_musketeer_back_standing',
+                   musk_front: 'musketeer_front_standing' };

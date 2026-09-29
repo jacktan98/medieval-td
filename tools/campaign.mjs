@@ -58,6 +58,7 @@ import { families, garrisonUnits } from '../src/data/towers.js';
 // both questions somebody else answers.
 import { fixture } from '../src/units.js';
 import { selectionCue, CUE } from '../src/audio.js';
+import { playOf } from '../src/villagers.js';
 
 // THE LAYERS ARE THE SOURCE, not the merged file. Overview_Map.svg is written by
 // the same tool this checks, so comparing the data against it would be asking the
@@ -2535,14 +2536,18 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
   // --- what is already standing on it ----------------------------------------
   //
   // NOTHING IS BUILT AND TWO MEN ARE GIVEN, which is the swap this board makes for
-  // the Factory's prebuilt Cannon Outpost.
+  // the Factory's prebuilt Cannon Outpost — one standing from the start, and one a
+  // villager who goes into the castle at the first wave and comes out a musketeer at
+  // the second, taking his post then (`recruit` in the board's villager script).
   ok(!cast.prebuilt || !cast.prebuilt.length,
     'nothing is prebuilt on it', `${(cast.prebuilt || []).length} prebuilt`);
-  ok(Array.isArray(cast.garrison) && cast.garrison.length === 2,
-    '  and two musketeers stand on it instead',
-    `${(cast.garrison || []).length} garrison figure(s)`);
+  const recruit = playOf(cast).recruit;
+  const posted = [...(cast.garrison || []), ...(recruit ? [recruit.post] : [])];
+  ok(posted.length === 2 && (cast.garrison || []).length === 1 && !!recruit,
+    '  and two musketeers stand on it instead, one of them a villager until wave 2',
+    `${(cast.garrison || []).length} garrison figure(s) and ${recruit ? 1 : 0} recruit`);
   {
-    const men = cast.garrison.map(g => garrisonUnits[g.unit]);
+    const men = posted.map(g => garrisonUnits[g.unit]);
     ok(men.every(m => m && m.name === 'Musketeer'), '  both of them Musketeers',
       cast.garrison.map(g => g.unit).join(', '));
     // THE POST'S NUMBERS WITH ONE CHANGE, read off the tier rather than trusted:
@@ -2571,8 +2576,8 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
     // What is checked here is the half the tool cannot: that they are on the BOARD
     // and not on the road.
     const onCanvas = p => p.x > 0 && p.x < 960 && p.y > 0 && p.y < 540;
-    ok(cast.garrison.every(onCanvas), '  standing inside the board',
-      cast.garrison.map(g => `(${g.x}, ${g.y})`).join(' '));
+    ok(posted.every(onCanvas), '  standing inside the board',
+      posted.map(g => `(${g.x}, ${g.y})`).join(' '));
     // AND BETWEEN THEM THEY SEE THE CROSSROADS, which is the claim the level file
     // makes about why these two spots. Every route passes through the middle of this
     // board, and a Musketeer Post reaches 480 — the longest in the game.
@@ -2582,7 +2587,7 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
         const p = routeAt(r, s);
         if (!onCanvas(p)) continue;
         total += 2;
-        if (cast.garrison.some(g => inRange(g.x, g.y, p.x, p.y, m.ranged.range))) inside += 2;
+        if (posted.some(g => inRange(g.x, g.y, p.x, p.y, m.ranged.range))) inside += 2;
       }
       return inside / total;
     });
@@ -3910,7 +3915,10 @@ console.log('\n--- the road opens one stage at a time ---\n');
     const lost = leaves.filter(g => !kept.some(k => k.includes(art.slice(g.start, g.end)))).filter(g => {
       const b = bounds(g.subPaths.flat());
       const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
-      const post = posts(l).some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - UP && y1 <= at.y + DOWN);
+      // A villager may have a taller window (`up`) for what he holds over his head —
+      // stage 12's lit pole — as split-map gives him.
+      const post = posts(l).some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - Math.max(UP, at.up || 0) &&
+        y1 <= at.y + DOWN);
       // AND WHAT THEY HOLD, cut with them in a window of its own — stage 4's plank.
       const prop = (l.villagerPlay ? l.props || [] : []).some(p =>
         x0 >= p.x - p.w && x1 <= p.x + p.w && y0 >= p.y - p.up && y1 <= p.y + p.down);

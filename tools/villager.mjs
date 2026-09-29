@@ -49,8 +49,9 @@ console.log('\nWho lives here\n');
       // `w` is allowed: it is not about the man at all but about cutting his painted
       // figure out of the base (tools/split-map.mjs) — a narrower window beside
       // something of the scenery that must stay. And `g`: where he is drawn in depth,
-      // not a thing he does — stage 10's lumberjack, in front of the tree he fells.
-      const keys = Object.keys(v).filter(k => !['x', 'y', 'w', 'g'].includes(k));
+      // not a thing he does — stage 10's lumberjack, in front of the tree he fells. And
+      // `up`, a taller window for one holding something up — stage 12's lit pole.
+      const keys = Object.keys(v).filter(k => !['x', 'y', 'w', 'up', 'g'].includes(k));
       if (keys.length) extra.push(`${l.name} villager ${i}: ${keys.join(', ')}`);
     });
     if (l.doors) extra.push(`${l.name} still lists doors`);

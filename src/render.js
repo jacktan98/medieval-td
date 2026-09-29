@@ -581,6 +581,11 @@ function drawFigures(ctx, state) {
   const running = (state.villagerPlay && state.villagerPlay.factory) || 0;
   for (const c of level.chimneys || []) add(c.g, 1, () => drawChimneySmoke(ctx, c, state.anim || 0, c.black ? running : 0));
   if (level.factory && front) add(level.factory.g, 1, () => drawFactoryLight(ctx, front, level.factory, running, state.anim || 0));
+  // STAGE 12'S LIGHTING POLE, thrown down, at the depth of where it lies.
+  if (state.villagerPlay && state.villagerPlay.pole) {
+    const pl = state.villagerPlay.pole;
+    add(pl.y + POLE.lie[1] + 0.5, 1, () => drawThrownPole(ctx, state));
+  }
   // A CANNONBALL DROPPED by stage 11's carrier when his tower is sold, where it fell.
   for (const b of (state.villagerPlay && state.villagerPlay.balls) || []) add(b.y, 1, () => drawDroppedBall(ctx, b));
   for (const fire of level.fires || []) {
@@ -1780,6 +1785,16 @@ function innerMouth(fire) {
 // below that line so none of it crosses the roof over it. A `heated` fire flares
 // with the smith's stroke (villagers.js keeps the heat).
 function drawFire(ctx, state, fire, part = 'all') {
+  // A TORCH THAT IS LIT BY HAND — stage 12's, by the torch-lighter (`litAt` in
+  // src/villagers.js) — is dark until then, and catches: small, and up to its full
+  // size over its first moments.
+  if (fire.lit !== undefined) {
+    const vp = state.villagerPlay;
+    const at = vp && vp.litAt && vp.litAt[fire.lit];
+    if (at === undefined) return;
+    const k = Math.min(1, (vp.t - at) / TORCH_CATCH);
+    if (k < 1) fire = { ...fire, s: fire.s * (0.35 + 0.65 * k * (2 - k)), lit: undefined };
+  }
   const t = (state.anim || 0) + fire.x * 0.37;
   // A fire that FLARES while a cook holds something in it — stage 7's — takes the
   // same heat, from its ordinary size up, rather than from small up as the forge's.
@@ -1808,6 +1823,122 @@ function drawFire(ctx, state, fire, part = 'all') {
     ctx.lineWidth = 1;
     ctx.stroke(mouth);
   }
+}
+
+const TORCH_CATCH = 0.7;       // seconds for a torch lit by hand to burn up to size
+
+// STAGE 12'S LIGHTING POLE, thrown down (`vp.pole`, src/villagers.js), from the owner's
+// drawing of it lying burnt out on the grass. That drawing is taken apart by colour
+// once — the pole itself, its dark green shadow on the grass, and the dark brown
+// scorch where its end burned — and put back together over time:
+//   falling — the pole swings down from upright in his hand to lying on the grass,
+//             still lit, its shadow stretching out along the grass under it as it
+//             comes down;
+//   burning — on the grass, its fire burning a while as it did in his hand;
+//   dying   — the fire shrinking to nothing, and the scorch spreading out under it
+//             as it goes, to the drawing's own.
+// The flame is the one painted on the pole in his hands, cut out of that drawing.
+const POLE = { key: 'vill_dimmed_lighting_pole', butt: [147, 318.5], tip: [367, 306], half: 6,
+               // Where the pole lies against the feet of the man who threw it, in board px.
+               lie: [3, 1],
+               // In his hands: its butt against his feet, and how it leans (mirrored).
+               held: [4.5 * 0.205, -14 * 0.205], up: Math.atan2(-235, 40),
+               flame: { key: 'vill_front_lighting_pole', box: [198, 76, 40, 37], foot: [217.5, 112] } };
+const POLE_FALL = 0.55, POLE_BURN = 1.8, POLE_DIE = 4.5;
+let poleParts = null;
+function polePieces() {
+  if (poleParts) return poleParts;
+  const img = art[POLE.key], fl = art[POLE.flame.key];
+  if (!img || !img.complete || !fl || !fl.complete) return null;
+  try {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const read = im => { const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0); return g.getImageData(0, 0, W, H); };
+    const src = read(img), d = src.data;
+    const [bx, by] = POLE.butt, [tx, ty] = POLE.tip;
+    const len = Math.hypot(tx - bx, ty - by), ux = (tx - bx) / len, uy = (ty - by) / len;
+    const layers = { pole: new ImageData(W, H), green: new ImageData(W, H), scorch: new ImageData(W, H) };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      if (d[i + 3] < 8) continue;
+      const along = (x - bx) * ux + (y - by) * uy, across = Math.abs((x - bx) * -uy + (y - by) * ux);
+      const onPole = across <= POLE.half && along >= -3 && along <= len + 3;
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      // The pole's own pixels, wherever they are; off it, green is its shadow and the
+      // dark brown is the scorch.
+      const to = onPole ? layers.pole : g > r + 4 ? layers.green : layers.scorch;
+      to.data.set(d.subarray(i, i + 4), i);
+    }
+    const canvasOf = im => { const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').putImageData(im, 0, 0); return c; };
+    // The flame: the top of the pole in his hands, above where the pole begins.
+    const [fx, fy, fw, fh] = POLE.flame.box;
+    const flame = document.createElement('canvas'); flame.width = fw; flame.height = fh;
+    flame.getContext('2d').drawImage(fl, fx, fy, fw, fh, 0, 0, fw, fh);
+    poleParts = { pole: canvasOf(layers.pole), green: canvasOf(layers.green), scorch: canvasOf(layers.scorch), flame };
+  } catch {
+    poleParts = null;
+  }
+  return poleParts;
+}
+function drawThrownPole(ctx, state) {
+  const vp = state.villagerPlay, pl = vp && vp.pole;
+  const parts = pl && polePieces();
+  if (!parts) return;
+  const k = SCALE, t = vp.t - pl.at;
+  const [bx, by] = POLE.butt, [tx, ty] = POLE.tip;
+  const lieAngle = Math.atan2(ty - by, tx - bx);
+  // Where the butt lies on the grass, in board px.
+  const gx = pl.x + POLE.lie[0], gy = pl.y + POLE.lie[1];
+  // How far down it has come, 0 upright in his hand to 1 lying, falling faster as it goes.
+  const q = Math.min(1, t / POLE_FALL), fall = q * q;
+  const angle = POLE.up + (lieAngle - POLE.up) * fall;
+  const hx = pl.x + POLE.held[0] + (gx - pl.x - POLE.held[0]) * fall;
+  const hy = pl.y + POLE.held[1] + (gy - pl.y - POLE.held[1]) * fall;
+  // Its fire: full while it falls and a while on the grass, then dying away.
+  const burn = t < POLE_FALL + POLE_BURN ? 1 : Math.max(0, 1 - (t - POLE_FALL - POLE_BURN) / POLE_DIE);
+  ctx.save();
+  // THE SHADOW, lying where the pole will lie, stretching out from the butt as the
+  // pole comes down — as long as the pole's reach across the grass.
+  const reach = Math.max(0, Math.cos(angle) / Math.cos(lieAngle));
+  ctx.save();
+  ctx.translate(gx, gy);
+  ctx.rotate(lieAngle);
+  ctx.beginPath();
+  ctx.rect(-10, -20, (Math.hypot(tx - bx, ty - by) + 30) * k * reach + 10, 40);
+  ctx.clip();
+  ctx.rotate(-lieAngle);
+  ctx.drawImage(parts.green, -bx * k, -by * k, 512 * k, 512 * k);
+  ctx.restore();
+  // THE SCORCH, spreading as the fire dies, about the end that burned.
+  if (burn < 1) {
+    const s = 1 - burn;
+    const cx = gx + (tx - bx) * k, cy = gy + (ty - by) * k;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, s * 1.5);
+    ctx.translate(cx, cy);
+    ctx.scale(s, s);
+    ctx.drawImage(parts.scorch, -tx * k, -ty * k, 512 * k, 512 * k);
+    ctx.restore();
+  }
+  // THE POLE, turned about its butt.
+  ctx.save();
+  ctx.translate(hx, hy);
+  ctx.rotate(angle - lieAngle);
+  ctx.drawImage(parts.pole, -bx * k, -by * k, 512 * k, 512 * k);
+  ctx.restore();
+  // THE FLAME at its end, upright whichever way the pole lies, flickering, and
+  // shrinking to nothing as it dies.
+  if (burn > 0) {
+    const L = Math.hypot(tx - bx, ty - by) * k;
+    const ex = hx + Math.cos(angle) * L, ey = hy + Math.sin(angle) * L;
+    const flick = 1 + 0.08 * Math.sin((state.anim || 0) * 23) * Math.sin((state.anim || 0) * 9.1);
+    const [fw, fh] = [POLE.flame.box[2], POLE.flame.box[3]];
+    const [ax, ay] = [POLE.flame.foot[0] - POLE.flame.box[0], POLE.flame.foot[1] - POLE.flame.box[1]];
+    const sz = k * burn * flick;
+    ctx.globalAlpha = Math.min(1, burn * 1.6);
+    ctx.drawImage(parts.flame, ex - ax * sz, ey - ay * sz, fw * sz, fh * sz);
+  }
+  ctx.restore();
 }
 
 // A TREE BEING FELLED, at each chop (villagers.js, `chops`): rocked a little about

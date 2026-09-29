@@ -164,16 +164,33 @@ export const level14 = {
 
   routes: [left, bottom, lowerRight, lowerTop],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
-  // Each anchor is the centre of the figure's own ground shadow.
+  // THE PEOPLE WHO LIVE HERE: the torch-lighter left of the gate with his lit pole,
+  // the villager below the gate who becomes a musketeer, and villagers 1 and 2 to the
+  // right of the barricade. Each anchor is the centre of the figure's own ground
+  // shadow.
   villagers: [
-    { x: 663, y: 305 },       // the two off the castle path
-    { x: 641, y: 309 },
-    { x: 918, y: 314 },       // the three to the right of the barricade
-    { x: 902, y: 320 },
-    { x: 867, y: 328 },
-    { x: 908, y: 517 }        // in the bottom-right corner
+    // The torch-lighter, cut out with the lit pole he holds up (`up`): his drawings
+    // carry their own.
+    { x: 565.8, y: 286.5, up: 58 },
+    { x: 673.8, y: 305.0 },   // the villager who becomes a musketeer
+    { x: 849.8, y: 293.3 },   // 1
+    { x: 868.8, y: 309.0 }    // 2
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `ironcastle` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'ironcastle',
+  // Crows, soft, for as long as it is played.
+  ambience: [{ clip: 'crows_cawing', level: 0.5 }],
+  // THE TWO TORCHES AT THE GATE, drawn unlit and lit by the torch-lighter as the board
+  // opens (`lit`, the order he lights them in): each burns on its cup, sorted at the
+  // foot of its pole.
+  fires: [
+    { x: 613.75, y: 202.5, s: 2.5, g: 247.5, lit: 0 },
+    { x: 666.25, y: 215.5, s: 2.5, g: 260, lit: 1 }
+  ],
+  // GREY SMOKE FROM THE COTTAGE'S CHIMNEY, top left. See drawChimneySmoke in
+  // src/render.js.
+  chimneys: [{ x: 49.0, y: 110.0, g: 166.01 }],
   waves: stage12Waves,
   wavesExtended: stage12Waves,
   oneLength: true,
@@ -231,8 +248,13 @@ export const level14 = {
   // the painted figure out of the base around them so the game's live one is not
   // drawn over a picture of itself, and it refuses if there is nothing there — so a
   // redraw that moves them is an error rather than a silent double.
+  //
+  // ONE OF THEM IS A VILLAGER FIRST. The owner redrew the post by the stone wall
+  // below the gate empty and put a villager on the grass above it: he walks into the
+  // castle at the first enemy and comes out in a musketeer's gear as the second wave
+  // comes, and takes up that post (773, 321) — joining the garrison there, a
+  // musketeer the same as this one. See `recruit` in src/villagers.js.
   garrison: [
-    { x: 773, y: 321, unit: 'Musketeer' },
     { x: 903, y: 457, unit: 'Musketeer' }
   ],
 
@@ -252,6 +274,6 @@ export const level14 = {
   frontArt: 'front14',
   front: [
     { x:  30, y: 101, w:  78, h:  81, g: 166 },   // stands on y 166 — the cottage
-    { x: 558, y:  68, w: 359, h: 216, g: 227 }    // stands on y 227 — the castle
+    { x: 558, y:  68, w: 359, h: 220, g: 227 }    // stands on y 227 — the castle
   ]
 };

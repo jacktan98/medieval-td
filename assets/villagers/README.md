@@ -109,7 +109,22 @@ And stage 11's:
 | `Villager_Front_Carrying_Cannonball.png` | the same facing the player — holding it up a moment, facing the pile |
 | `Villager_Picking_Up.png` | bent over the pile, picking one up |
 
-The carrying drawings stand on (263, 305), the picking-up one on (248, 305). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
+The carrying drawings stand on (263, 305), the picking-up one on (248, 305).
+
+And stage 12's:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Back_Lighting_Pole.png` | the torch-lighter, his lit pole held up, his back to the player — walking up to the first torch and lighting both (mirrored) |
+| `Villager_Front_Lighting_Pole.png` | the same facing the player — walking down to the second torch (mirrored) |
+| `Villager_Dimmed_Lighting_Pole.png` | the pole thrown down and burnt out: taken apart by colour into the pole, its green shadow and the brown scorch, and put back together as it falls and burns out (see `drawThrownPole` in src/render.js); its flame is the one cut from the front drawing |
+| `Villager_Musketeer_Front_Standing.png` | the villager who becomes a musketeer, standing about before the war |
+| `Villager_Musketeer_Back_Standing.png` | the same walking into the castle |
+| `Musketeer_Front_Standing.png` | him again in a musketeer's gear, walking out to his post |
+
+The pole drawings stand on (259.5, 344), the villager-musketeer ones on (259.5, 310)
+and the musketeer on (258, 305). The torch-lighter is cut out of the board with the
+lit pole he holds up (`up` on his anchor in level14.js). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
 
 The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
 share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
@@ -393,6 +408,32 @@ As the owner numbers them: 1 by the top-left house; 2 carrying boxes to the fact
 - **Every 10 enemies killed:** 1 hops twice. The two carriers never hop.
 - **A star lost:** "nooo". Crows caw softly throughout; black smoke rises from the
   factory's two chimneys and grey from the three houses'.
+
+## Stage 12's script
+
+The torch-lighter left of the gate with his lit pole; below the gate, the villager
+who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
+
+- **As the board opens:** the gate's two torches are drawn unlit. The torch-lighter
+  walks up to the first with his back to the player (turned right) and lights it; turns
+  to face the player and walks down to the second, and lights it with his back turned
+  again. He throws the pole down: it falls still lit, its shadow stretching out along
+  the grass as it comes down, and lies there burning a while; then its fire dies away
+  and the scorch spreads under its end. He walks back into the castle and is gone; the
+  pole stays where it fell.
+- **Before the first wave:** 1 and 2 stand and greet by turns, facing the player,
+  turned left. The villager below the gate stands about, now and then turned to the
+  right — he knows nothing of any war.
+- **When the first enemy of wave 1 appears:** 1 and 2 start standing and praying by
+  turns. The villager below the gate walks up into the castle, his back to the player,
+  turned right for the last step in at the door.
+- **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear,
+  down from the door, along to the right to the upper barricade and a quick turn left
+  onto his post — and is a musketeer there from then on, the same as the one at the
+  bottom right (`recruit` in src/villagers.js).
+- **Every 10 enemies killed:** 1 hops twice. **Every 12:** 2.
+- **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
+  cottage's chimney at the top left.
 
 ## Holy light over Dawnford
 

@@ -657,10 +657,17 @@ const NO_TOWER = Object.freeze({ def: null, fam: null, abilities: [], spent: 0, 
 // selection, health bars, the depth sort, the info panel and the death of them are all
 // code that already existed.
 export function makeGarrison(state, level) {
-  for (const [i, at] of (level.garrison || []).entries()) {
+  for (const [i, at] of (level.garrison || []).entries()) addGarrison(state, at, i, level.id);
+}
+
+// ONE MORE GARRISON MAN, standing at `at` — at the start of a board, or later: stage
+// 12's villager who goes into the castle and comes out a musketeer takes up his post
+// here once he reaches it (see `recruit` in src/villagers.js).
+export function addGarrison(state, at, i, where = 'garrison') {
+  {
     const def = garrisonUnits[at.unit];
     if (!def) {
-      throw new Error(`${level.id}: garrison ${i} wants "${at.unit}", which is not in garrisonUnits`);
+      throw new Error(`${where}: garrison ${i} wants "${at.unit}", which is not in garrisonUnits`);
     }
     state.units.push({
       tower: NO_TOWER,

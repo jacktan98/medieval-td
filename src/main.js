@@ -11,7 +11,7 @@ import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
-import { updateUnits, makeUnits, makeGarrison } from './units.js';
+import { updateUnits, makeUnits, makeGarrison, addGarrison } from './units.js';
 import { makeVillagers, updateVillagers } from './villagers.js';
 import { updateShots } from './projectiles.js';
 import { updateCorpses } from './corpses.js';
@@ -435,6 +435,13 @@ function step(state, dt) {
   updateImpacts(state, dt);
   updateSmoke(state, dt);
   updateVillagers(state, dt);
+  // A VILLAGER WHO HAS TAKEN UP A POST — stage 12's, a musketeer now — joins the
+  // garrison where he stands. See `recruit` in src/villagers.js.
+  if (state.villagerPlay && state.villagerPlay.recruit) {
+    const r = state.villagerPlay.recruit;
+    state.villagerPlay.recruit = null;
+    addGarrison(state, r, (level.garrison || []).length, level.id);
+  }
   if (state.lives <= 0) state.result = 'lost';
 }
 

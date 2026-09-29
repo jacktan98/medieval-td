@@ -203,6 +203,12 @@ export const paths = {
   vill_back_carrying_cannonball:  'assets/villagers/Villager_Back_Carrying_Cannonball.png',
   vill_front_carrying_cannonball: 'assets/villagers/Villager_Front_Carrying_Cannonball.png',
   vill_picking_up:              'assets/villagers/Villager_Picking_Up.png',
+  vill_front_lighting_pole:     'assets/villagers/Villager_Front_Lighting_Pole.png',
+  vill_back_lighting_pole:      'assets/villagers/Villager_Back_Lighting_Pole.png',
+  vill_dimmed_lighting_pole:    'assets/villagers/Villager_Dimmed_Lighting_Pole.png',
+  vill_musketeer_front_standing: 'assets/villagers/Villager_Musketeer_Front_Standing.png',
+  vill_musketeer_back_standing:  'assets/villagers/Villager_Musketeer_Back_Standing.png',
+  musketeer_front_standing:     'assets/villagers/Musketeer_Front_Standing.png',
   // Stage 6's angler, waiting and tugging, and the man stuck in a helmet.
   vill_fishing_1:               'assets/villagers/Villager_Fishing_1.png',
   vill_fishing_2:               'assets/villagers/Villager_Fishing_2.png',
