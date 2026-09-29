@@ -462,7 +462,7 @@ const PLAYS = {
     // grass (drawn by render.js from `vp.pole`) — and walks back into the castle.
     // `at` is where he stands for each torch: the pole's flame at its cup.
     lighter: { who: 0, start: 0, torches: [[604.5, 253], [657, 266]], hold: 1.0, lightAt: 0.45,
-               rest: 1.2, door: [651, 247] },
+               rest: 1.2, door: [651, 247], homeWalk: 7 },
     // THE VILLAGER WHO BECOMES A MUSKETEER: standing about, now and then turning to
     // the right, knowing nothing of any war; at the first enemy he walks into the
     // castle, his back to the player (turned right for the last step in at the
@@ -812,9 +812,9 @@ function carryLoop(state, vp, crew, c, dt) {
 
 // Along `pts` empty-handed, standing, faced the way they go: their back to the player
 // heading up the board, their front otherwise.
-function stroll(v, pts, dt) {
+function stroll(v, pts, dt, speed = WORK_WALK_FREE) {
   const x = v.x, y = v.y;
-  const there = walkTo(v, pts, WORK_WALK_FREE, dt);
+  const there = walkTo(v, pts, speed, dt);
   const dx = v.x - x, dy = v.y - y, d = Math.hypot(dx, dy);
   if (d > 0) v.side = dy < -RUN_UP * d ? 'back' : 'front';
   v.pose = 'standing';
@@ -1008,7 +1008,8 @@ function lighterRound(state, vp, lt, dt) {
     v.pose = 'standing'; v.side = 'front'; v.flip = true;
     if (k >= lt.rest) { c.phase = 'home'; c.at = vp.t; v.leg = 0; }
   } else if (c.phase === 'home') {
-    if (stroll(v, [lt.door], dt)) { c.phase = 'fade'; c.at = vp.t; }
+    // Unhurried, his work done: at `homeWalk`, slower than he came.
+    if (stroll(v, [lt.door], dt, lt.homeWalk)) { c.phase = 'fade'; c.at = vp.t; }
   } else if (c.phase === 'fade') {
     v.alpha = Math.max(0, 1 - k / DOOR_FADE);
     if (v.alpha <= 0) { v.hidden = true; c.phase = 'gone'; }
