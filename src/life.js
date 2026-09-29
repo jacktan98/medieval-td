@@ -169,8 +169,13 @@ function drawSmoke(ctx, t, unlocked) {
 // the upper left, over Winchester, onto the town — every shaft parallel, `SLANT`
 // px across for every px down, rather than fanning out from one point overhead.
 // And slower than they were, twice over (SLOW).
+//
+// THICKER AND BRIGHTER, at the owner's word: every shaft is WIDE times the width
+// listed below and BRIGHT times as strong, and shows from higher up the sky.
 const HOLY = { top: -60, slant: 0.47, town: 'dawnford' };
 const SLOW = 2.2;
+const WIDE = 1.6;
+const BRIGHT = 1.5;
 const LANDING = [
   { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23, k: 1 },     // the church
   { at: [434, 284], w: 12, rx: 10, ry: 3, lap: 31, k: 1 },
@@ -208,13 +213,13 @@ function drawHoly(ctx, t, unlocked) {
     const sx = ex - (ey - h.top) * h.slant, sy = h.top;
     const dx = ex - sx, dy = ey - sy, len = Math.hypot(dx, dy);
     const nx = -dy / len, ny = dx / len;
-    const glow = (0.35 + 0.65 * r.k) * (0.13 + 0.08 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.07 * i) / SLOW + i * 1.9)));
-    const half = r.w * (0.9 + 0.1 * Math.sin(t * 0.45 / SLOW + i));
+    const glow = BRIGHT * (0.35 + 0.65 * r.k) * (0.13 + 0.08 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.07 * i) / SLOW + i * 1.9)));
+    const half = WIDE * r.w * (0.9 + 0.1 * Math.sin(t * 0.45 / SLOW + i));
     const g = ctx.createLinearGradient(sx, sy, ex, ey);
     // Out of the sky: nothing high up, growing as it comes down, full on the ground.
     g.addColorStop(0, 'rgba(255,238,180,0)');
-    g.addColorStop(0.45, 'rgba(255,238,180,0)');
-    g.addColorStop(0.8, `rgba(255,236,170,${glow * 0.8})`);
+    g.addColorStop(0.3, 'rgba(255,238,180,0)');
+    g.addColorStop(0.75, `rgba(255,236,170,${glow * 0.8})`);
     g.addColorStop(1, `rgba(255,236,170,${glow})`);
     ctx.fillStyle = g;
     // A band, a little narrower up in the sky than where it lands.
@@ -245,7 +250,7 @@ function drawHoly(ctx, t, unlocked) {
     // Somewhere along the lower part of its shaft, drifting down it.
     const f = 0.6 + 0.35 * ((hash(k + 60) + p * 0.3) % 1);
     const sx = r.at[0] - (r.at[1] - h.top) * h.slant;
-    const x = sx + (r.at[0] - sx) * f + (hash(k + 70) - 0.5) * r.w + Math.sin(t * 0.6 / SLOW + k) * 2;
+    const x = sx + (r.at[0] - sx) * f + (hash(k + 70) - 0.5) * r.w * WIDE + Math.sin(t * 0.6 / SLOW + k) * 2;
     const y = h.top + (r.at[1] - h.top) * f;
     const rad = 0.8 + hash(k + 80) * 1.4;
     ctx.globalAlpha = 0.45 * Math.sin(Math.PI * p);
