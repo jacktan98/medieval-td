@@ -234,7 +234,7 @@ const PLAYS = {
     // The road is above them all but villagers 4 and 5, who have it below.
     after: [back('pray'), back('pray'), back('pray'), front('pray'), front('pray')],
     hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }],
-    cries: { runnn: true, nooo: true }
+    cries: { runnn: false, nooo: true, wave: 'runnn' }
   },
   // STAGE 2, Oakhaven Outskirts, left to right: 1 at the well, 2 by the tavern wall,
   // 3 with his mug by the tavern steps and 4 beside him.
@@ -249,7 +249,7 @@ const PLAYS = {
     ],
     after: [mirrored('pray'), front('pray'), front('drink'), {}],
     hops: [{ every: 10, who: [0, 1] }],
-    cries: { runnn: false, nooo: true, wave: 'thugs' }
+    cries: { runnn: false, nooo: true, wave: 'hide' }
   },
   // STAGE 3, Winchester Entrance, left to right: 1 and 2 on the statue's plaza, 3 on
   // the green below it, 4 between the two bottom-right houses, 5 at the top behind
@@ -269,7 +269,7 @@ const PLAYS = {
     ],
     after: [front('pray'), front('pray'), front('pray'), back('pray'), front('pray')],
     hops: [{ every: 10, who: [0, 1, 3] }, { every: 12, who: [2, 4] }],
-    cries: { runnn: false, nooo: true, wave: 'hide' }
+    cries: { runnn: false, nooo: true, wave: 'oh_no' }
   },
   // STAGE 4, the lumber yard: villagers AT WORK, who take no notice of the waves at
   // all — no greeting, praying or hopping. See work() below.
@@ -351,7 +351,7 @@ const PLAYS = {
     // while he does (main.js, `cooking`) — then draws it back out for `out`, and
     // again. Over the fire for half as long as drawn back, at the owner's word.
     cook: { who: 5, cook: [3, 3], out: [6, 6] },
-    cries: { runnn: false, nooo: true, wave: 'thugs' }
+    cries: { runnn: false, nooo: true, wave: 'hide' }
   },
   // STAGE 8, Dawnford Church, as the owner numbers them: 1 by the praying mat, 2 to 7
   // on it, 8 carrying boxes out of the church, 9 at its right-hand end.
@@ -391,7 +391,7 @@ const PLAYS = {
     // The bell: each side for as long as its stroke rings, the middle between. Each
     // side held longer, at the owner's word.
     bell: { swing: [['middle', 0.15], ['left', 1.8], ['middle', 0.3], ['right', 1.8], ['middle', 0.2]] },
-    cries: { runnn: false, nooo: true, wave: 'hide' }
+    cries: { runnn: false, nooo: true, wave: 'oh_no' }
   },
   // STAGE 10, Ironforge Town, as the owner numbers them: 1 the lumberjack at the tree,
   // 2 by the tools and crates, 3 at the front of the houses, 4 by the Ironforge sign,
@@ -412,7 +412,7 @@ const PLAYS = {
     // drawing it back between the two chops and after them.
     hammer: { who: 0, strike: 'chop_1', sound: 'chop',
       beats: [['chop_2', 0.5], ['chop_1', 0.35], ['chop_2', 0.75], ['chop_1', 0.35], ['chop_2', 2.4]] },
-    cries: { runnn: false, nooo: true, wave: 'oh_no' }
+    cries: { runnn: false, nooo: true, wave: 'thugs' }
   },
   // STAGE 11, Ironforge Factory, as the owner numbers them: 1 by the top-left house,
   // 2 carrying boxes to the factory, 3 carrying cannonballs to the Cannon Outpost.
@@ -479,7 +479,7 @@ const PLAYS = {
                // His card before his gear: his own name and picture.
                card: { title: 'Villager (Musketeer)', sprite: 'vill_musketeer_front_standing',
                        trim: [213, 200, 88, 119] } },
-    cries: { runnn: false, nooo: true }
+    cries: { runnn: false, nooo: true, wave: 'hide' }
   },
   // STAGE 13, Serene Peak Lake, left to right as the owner numbers them: 1 and 2 by
   // the lake, 3 at the top hut's steps, 4 between the two right-hand huts.
@@ -500,7 +500,7 @@ const PLAYS = {
     fish: { spots: [[35, 165], [80, 170], [125, 175], [30, 220], [25, 290], [45, 330], [70, 370],
                     [40, 420], [75, 455], [40, 490], [100, 480]],
             gap: [8, 18], span: [14, 24], height: [10, 17], dur: 0.9 },
-    cries: { runnn: false, nooo: true }
+    cries: { runnn: false, nooo: true, wave: 'oh_no' }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
@@ -565,7 +565,7 @@ const PLAYS = {
     hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]] },
     // Two hops each: villager 5 every tenth enemy down, 6 every twelfth.
     hops: [{ every: 10, who: [4] }, { every: 12, who: [5] }],
-    cries: { runnn: false, nooo: false, wave: 'oh_no' }
+    cries: { runnn: false, nooo: true, wave: 'thugs' }
   }
 };
 
@@ -1158,8 +1158,9 @@ export function updateVillagers(state, dt) {
   vp.stars = stars;
 
   // THE VILLAGE SHOUTS AS THE FIRST ENEMY OF WAVE 1 APPEARS, on the boards that have
-  // a shout — stage 2's "thugs are here", stage 3's "hide", stage 4's "here they
-  // come", stage 5's "oh no". Once, before everything. Ahead of the work boards'
+  // a shout — every board, in a round of five at the owner's word: "runnn" on
+  // stages 1, 6 and 11, "hide" on 2, 7 and 12, "oh no" on 3, 8 and 13, "here they
+  // come" on 4 and 9, "thugs are here" on 5 and 10. Once, before everything. Ahead of the work boards'
   // early return, so the lumberyard, whose villagers never stop working, shouts too.
   if (!vp.cried && state.enemies.length) {
     vp.cried = true;

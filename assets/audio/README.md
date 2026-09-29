@@ -196,39 +196,33 @@ and it now means "how long a lull has to be before the game forgets".
 | an enemy is selected | `Thug_1`, or its def's own `voice` |
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
-| stage 1's villagers **start running** (the first enemy of wave 1 appears) | `Villager_say_runnn`, **before everything**: takes the channel and is never cut off |
-| on stages 1 to 4 and 6 to 10, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the run |
+| the first enemy of wave 1 appears on **stages 1, 6 and 11** | `Villager_say_runnn`, once, **before everything**: takes the channel and is never cut off |
+| the first enemy of wave 1 appears on **stages 2, 7 and 12** | `Villager_say_hide`, the same way |
+| the first enemy of wave 1 appears on **stages 3, 8 and 13** | `Villager_say_oh_no`, the same way |
+| the first enemy of wave 1 appears on **stages 4 and 9** | `Villager_say_here_they_come`, the same way |
+| the first enemy of wave 1 appears on **stages 5 and 10** | `Villager_say_thugs_are_here`, the same way |
+| on **every stage**, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the first-wave shout |
 | stage 1, 2 or 3 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
 | stage 1, 3, 4, 5 or 7 is being played (background, soft, looping) | `Fire_crackling` — stage 1's campfire, stage 3's and stage 5's torches, stage 4's forge, stage 7's cooking fire |
 | stage 5 is being played (background, soft, looping) | `River_water_flowing` |
 | stage 4's smith has his pipe in the fire (the second pipe pose) | `Steel_welding`, soft, looping until he pulls it back (Category B; stops on pause) |
 | a villager's plank, ballista part or box **lands** (stages 4 and 5) | `Things_land_on_ground`, soft (Category B) |
-| the first enemy of wave 1 appears on **stage 2** | `Villager_say_thugs_are_here`, once, **before everything**, as loud as `Villager_say_runnn` |
-| the first enemy of wave 1 appears on **stage 3** | `Villager_say_hide`, once, **before everything**, as loud as `Villager_say_runnn` |
-| the first enemy of wave 1 appears on **stage 4** | `Villager_say_here_they_come`, once, **before everything**, as loud as `Villager_say_runnn` |
-| the first enemy of wave 1 appears on **stage 6** | `Villager_say_runnn` again, the same way |
 | stage 5's hammerer brings the hammer down (twice a round) | one knock cut out of `Hammering_nail` — the first knock on the first blow, the second on the second (Category B, soft) |
 | stage 6's angler tugs at his line | `Fishing_reel`, soft, looping for as long as he tugs (Category B; stops on pause) |
 | stage 6 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `River_water_flowing` |
-| the first enemy of wave 1 appears on **stage 10** | `Villager_say_oh_no` again, the same way |
 | stage 10's lumberjack's axe goes into the tree (twice a round) | one chop cut out of `Cutting_Tree` — its two loudest, at 2.57s and 4.38s, one each chop by turns (Category B, soft) |
 | stage 10 is being played (background, soft, looping) | `Crows_cawing`, softer than the rest |
-| the first enemy of wave 1 appears on **stage 11** | `Villager_say_runnn` again, the same way |
 | stage 11's factory runs (twice each time the box carrier is inside) | `Factory_sound`, whole (Category B, soft); the door and window lit and the chimneys' smoke thicker while it sounds |
 | stage 11 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12's first gate torch is lit | `Fire_crackling`, looping from then on, as loud as every other board's fire |
 | stage 13 is being played (background, looping) | `Lake_sound`, a notch above the river, and `Bird_chirping`, soft |
 | stage 13's fish leaps out of the lake | the first 1.4s of `Water_splash_sound`, faded out (Category B) |
-| the first enemy of wave 1 appears on **stage 9** | `Villager_say_here_they_come` again, the same way |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
-| the first enemy of wave 1 appears on **stage 8** | `Villager_say_hide` again, the same way |
 | the first enemy of **each wave** appears on stage 8 | the church bell swings left — `Church_bell`, one stroke — back to the middle as the stroke is faded out, then right with a second stroke, and back (Category B, loud: the board's, but it rings out over it) |
 | stage 8 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
-| the first enemy of wave 1 appears on **stage 7** | `Villager_say_thugs_are_here` again, the same way |
 | stage 7's cook holds his skewer over the fire | `Fish_cooking`, soft, looping for as long as he holds it there (Category B; stops on pause) |
 | stage 7 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `Water_fountain_sound` |
-| the first enemy of wave 1 appears on **stage 5** | `Villager_say_oh_no`, once, **before everything**, as loud as `Villager_say_runnn` |
 | an arrow kills an enemy **or a soldier** | `Arrow_kill_unit` |
 | a rock kills an enemy | `Rock_kill_enemy` |
 | a musket ball kills an enemy | `Musketeer_kill_enemy` |

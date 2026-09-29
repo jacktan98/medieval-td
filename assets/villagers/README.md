@@ -198,7 +198,8 @@ tavern steps, 4 beside him.
 - **Tapping a villager:** the same as on stage 1. Villager 1 stays mirrored, so
   their greeting is mirrored too.
 - **A star lost** (lives dropping below 18, then below 10): the village cries "nooo",
-  ahead of every other sound. (No "runnn" here.) Soft birdsong plays under the stage.
+  ahead of every other sound. Soft birdsong plays under the stage.
+- **When the first enemy of wave 1 appears:** "hide".
 
 ## Stage 3's script
 
@@ -216,6 +217,7 @@ between the two bottom-right houses, 5 at the top (the most right).
 - **Every 12 enemies killed:** villagers 3 and 5 hop twice.
 - **A star lost:** "nooo", as on stage 2. Soft birdsong plays under the stage, and
   the two torches by the statue burn with live fire and smoke.
+- **When the first enemy of wave 1 appears:** "oh no".
 
 ## Stage 4's script
 
@@ -256,7 +258,7 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
   and comes back with it — stage 4's loop for one man. Villager 4 hammers at the
   ballista: two quick blows (a quarter of a second each way), a long rest with the
   hammer down, and again.
-- **When the first enemy of wave 1 appears:** villagers 1 and 2 run up the cobbles to
+- **When the first enemy of wave 1 appears:** "thugs are here", and villagers 1 and 2 run up the cobbles to
   the castle gate, between the torches and clear of their poles, and fade out through
   it.
   Villagers 5 and 6 start standing and praying by turns. Villagers 3, 4 and 7 keep
@@ -273,6 +275,7 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
 - Each of villager 4's two quick blows knocks, one knock of the hammering recording
   each.
 - **Every 10 enemies killed:** villager 5 hops twice. **Every 12:** villager 6.
+- **A star lost:** "nooo".
 
 ## Stage 6's script
 
@@ -306,7 +309,7 @@ level's list.
 - **Before the first wave:** villagers 1 to 5 stand and greet by turns — 1, 2 and 3
   facing the player turned right, 4 with his back to the player turned right, and 5
   facing the player turned left.
-- **When the first enemy of wave 1 appears:** "thugs are here", and the five start
+- **When the first enemy of wave 1 appears:** "hide", and the five start
   standing and praying by turns, each facing as before.
 - **Every 10 enemies down** villagers 1 and 2 hop twice; **every 12**, 3 and 4;
   **every 14**, 5.
@@ -330,7 +333,7 @@ of the church, 9 at the church's right-hand end.
 
 - **Before the first wave:** villager 1 stands and greets by turns, his back to the
   player, turned right; villager 9 stands and greets facing the player, turned left.
-- **When the first enemy of wave 1 appears:** "hide". Villager 1 runs off the board
+- **When the first enemy of wave 1 appears:** "oh no". Villager 1 runs off the board
   to the left and is gone; villager 9 turns to standing and praying by turns.
 - **All game long, 2 to 7 on the mat** each go round on their own: praying with
   their backs to the player, turned right (five and a half to ten and a half
@@ -373,7 +376,7 @@ top-right steps.
 - **Before the first wave:** 2 to 5 stand and greet by turns — 2 with his back to the
   player turned right, 3 facing the player turned right, 4 facing the player turned
   left, 5 with his back to the player turned left.
-- **When the first enemy of wave 1 appears:** "oh no", and 2 to 5 start standing and
+- **When the first enemy of wave 1 appears:** "thugs are here", and 2 to 5 start standing and
   praying by turns, each facing as before.
 - **All game long:** the lumberjack chops at the tree as stage 5's hammerer hammers,
   but slower — two chops, the axe in the tree a third of a second each and drawn back
@@ -431,7 +434,7 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
 - **Before the first wave:** 1 and 2 stand and greet by turns, facing the player,
   turned left. The villager below the gate stands about, now and then turned to the
   right — he knows nothing of any war.
-- **When the first enemy of wave 1 appears:** 1 and 2 start standing and praying by
+- **When the first enemy of wave 1 appears:** "hide", and 1 and 2 start standing and praying by
   turns. The villager below the gate walks up into the castle, his back to the player,
   turned right for the last step in at the door.
 - **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear
@@ -453,7 +456,7 @@ right-hand huts.
 
 - **Before the first wave:** 1, 2 and 3 stand and greet by turns facing the player,
   turned right; 4 with his back to the player, turned left.
-- **When the first enemy of wave 1 appears:** they start standing and praying by
+- **When the first enemy of wave 1 appears:** "oh no", and they start standing and praying by
   turns, each facing as before.
 - **Every 10 enemies killed:** 1 and 4 hop twice. **Every 12:** 2. **Every 14:** 3.
 - **All game long:** every eight to eighteen seconds a fish leaps out of the lake with a
