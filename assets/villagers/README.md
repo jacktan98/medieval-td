@@ -117,7 +117,7 @@ And stage 12's:
 |---------|----------|
 | `Villager_Back_Lighting_Pole.png` | the torch-lighter, his lit pole held up, his back to the player — walking up to the first torch and lighting both (mirrored) |
 | `Villager_Front_Lighting_Pole.png` | the same facing the player — walking down to the second torch (mirrored) |
-| `Villager_Dimmed_Lighting_Pole.png` | the pole thrown down and burnt out: taken apart by colour into the pole, its green shadow and the brown scorch, and put back together as it falls and burns out (see `drawThrownPole` in src/render.js); its flame is the one cut from the front drawing |
+| `Villager_Dimmed_Lighting_Pole.png` | the pole thrown down and burnt out: taken apart by colour into the pole, its green shadow and the brown scorch, and put back together as it falls and burns out (see `drawThrownPole` in src/render.js); its flame is the live one it burned with in his hands |
 | `Villager_Musketeer_Front_Standing.png` | the villager who becomes a musketeer, standing about before the war |
 | `Villager_Musketeer_Back_Standing.png` | the same walking into the castle |
 | `Musketeer_Front_Standing.png` | him again in a musketeer's gear, walking out to his post |
@@ -415,7 +415,8 @@ The torch-lighter left of the gate with his lit pole; below the gate, the villag
 who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
 
 - **As the board opens:** the gate's two torches are drawn unlit. The torch-lighter
-  walks up to the first with his back to the player (turned right) and lights it; turns
+  sets off at once, his pole's flame burning live (the painted flame on his drawings
+  is the guide to its size and place, and is taken off for it), and walks up to the first with his back to the player (turned right) and lights it; turns
   to face the player and walks down to the second, and lights it with his back turned
   again. He throws the pole down: it falls still lit, its shadow stretching out along
   the grass as it comes down, and lies there burning a while; then its fire dies away
@@ -429,8 +430,10 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
   turned right for the last step in at the door.
 - **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear,
   down from the door, along to the right to the upper barricade and a quick turn left
-  onto his post — and is a musketeer there from then on, the same as the one at the
-  bottom right (`recruit` in src/villagers.js).
+  onto his post. He stands there two seconds, then takes aim for two more, and then
+  fires — a musketeer there from then on, the same as the one at the bottom right
+  (`recruit` in src/villagers.js). Tapped at any time, gear or not, he answers with the
+  Musketeer Post's voice.
 - **Every 10 enemies killed:** 1 hops twice. **Every 12:** 2.
 - **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
   cottage's chimney at the top left.

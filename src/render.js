@@ -1687,7 +1687,10 @@ function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
 // under it filled back in from the standing drawing — see greetLayers.
 function drawVillager(ctx, state, v, layer = null) {
   const key = villagerKey(v);
-  const img = layer || art[key];
+  // A LIT POLE BURNS: its painted flame is taken off the drawing and a live one
+  // burns where it was — stage 12's torch-lighter. See POLE_FIRE.
+  const lit = !layer && POLE_FIRE.poses.includes(v.pose);
+  const img = layer || (lit && unlitPole(key)) || art[key];
   if (!img) return;
   const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;
   const k = SCALE, w = sw * k, h = sh * k;
@@ -1713,6 +1716,41 @@ function drawVillager(ctx, state, v, layer = null) {
     ctx.drawImage(layers.hand, sx, sy, sw, sh, left, top, w, h);
   }
   ctx.restore();
+  if (lit) {
+    const [fx0, fy0] = VILLAGER_POSE.feet[v.pose];
+    const [px, py] = POLE_FIRE.at;
+    ctx.save();
+    if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;
+    campfire(ctx, v.x + (px - fx0) * k * (v.flip ? -1 : 1), v.y + (py - fy0) * k,
+      (state.anim || 0) * 1.3 + v.n, POLE_FIRE.s, true, { smoke: 0.5 });
+    ctx.restore();
+  }
+}
+
+// THE FLAME ON A LIT POLE, live: the owner's drawings of the torch-lighter paint it at
+// the top of his pole, as a guide to its size and place. The painted one is taken off
+// (everything above `cut` in the box round it) and a campfire of the same size
+// burns on the end of the pole instead — in his hands, and on the pole once he has
+// thrown it down (drawThrownPole).
+const POLE_FIRE = { poses: ['pole_front', 'pole_back'], box: [196, 70, 44, 44], cut: 114, at: [217.5, 113], s: 1.0 };
+const unlitPoles = new Map();
+function unlitPole(key) {
+  if (unlitPoles.has(key)) return unlitPoles.get(key);
+  const img = art[key];
+  if (!img || !img.complete) return null;
+  let out = null;
+  try {
+    out = document.createElement('canvas');
+    out.width = img.naturalWidth; out.height = img.naturalHeight;
+    const g = out.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const [bx, by, bw] = POLE_FIRE.box;
+    g.clearRect(bx, by, bw, POLE_FIRE.cut - by);
+  } catch {
+    out = null;
+  }
+  unlitPoles.set(key, out);
+  return out;
 }
 
 // The greeting drawing in two pieces, made once per side: the hand alone, and the
@@ -1837,19 +1875,18 @@ const TORCH_CATCH = 0.7;       // seconds for a torch lit by hand to burn up to 
 //   burning — on the grass, its fire burning a while as it did in his hand;
 //   dying   — the fire shrinking to nothing, and the scorch spreading out under it
 //             as it goes, to the drawing's own.
-// The flame is the one painted on the pole in his hands, cut out of that drawing.
+// Its flame is the live one it burned with in his hands (POLE_FIRE).
 const POLE = { key: 'vill_dimmed_lighting_pole', butt: [147, 318.5], tip: [367, 306], half: 6,
                // Where the pole lies against the feet of the man who threw it, in board px.
                lie: [3, 1],
                // In his hands: its butt against his feet, and how it leans (mirrored).
-               held: [4.5 * 0.205, -14 * 0.205], up: Math.atan2(-235, 40),
-               flame: { key: 'vill_front_lighting_pole', box: [198, 76, 40, 37], foot: [217.5, 112] } };
+               held: [4.5 * 0.205, -14 * 0.205], up: Math.atan2(-235, 40) };
 const POLE_FALL = 0.55, POLE_BURN = 1.8, POLE_DIE = 4.5;
 let poleParts = null;
 function polePieces() {
   if (poleParts) return poleParts;
-  const img = art[POLE.key], fl = art[POLE.flame.key];
-  if (!img || !img.complete || !fl || !fl.complete) return null;
+  const img = art[POLE.key];
+  if (!img || !img.complete) return null;
   try {
     const W = img.naturalWidth, H = img.naturalHeight;
     const read = im => { const c = document.createElement('canvas'); c.width = W; c.height = H;
@@ -1870,11 +1907,7 @@ function polePieces() {
       to.data.set(d.subarray(i, i + 4), i);
     }
     const canvasOf = im => { const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').putImageData(im, 0, 0); return c; };
-    // The flame: the top of the pole in his hands, above where the pole begins.
-    const [fx, fy, fw, fh] = POLE.flame.box;
-    const flame = document.createElement('canvas'); flame.width = fw; flame.height = fh;
-    flame.getContext('2d').drawImage(fl, fx, fy, fw, fh, 0, 0, fw, fh);
-    poleParts = { pole: canvasOf(layers.pole), green: canvasOf(layers.green), scorch: canvasOf(layers.scorch), flame };
+    poleParts = { pole: canvasOf(layers.pole), green: canvasOf(layers.green), scorch: canvasOf(layers.scorch) };
   } catch {
     poleParts = null;
   }
@@ -1926,17 +1959,13 @@ function drawThrownPole(ctx, state) {
   ctx.rotate(angle - lieAngle);
   ctx.drawImage(parts.pole, -bx * k, -by * k, 512 * k, 512 * k);
   ctx.restore();
-  // THE FLAME at its end, upright whichever way the pole lies, flickering, and
-  // shrinking to nothing as it dies.
-  if (burn > 0) {
+  // THE FLAME at its end, live — the same fire as in his hands — upright whichever
+  // way the pole lies, and shrinking to nothing as it dies.
+  if (burn > 0.02) {
     const L = Math.hypot(tx - bx, ty - by) * k;
     const ex = hx + Math.cos(angle) * L, ey = hy + Math.sin(angle) * L;
-    const flick = 1 + 0.08 * Math.sin((state.anim || 0) * 23) * Math.sin((state.anim || 0) * 9.1);
-    const [fw, fh] = [POLE.flame.box[2], POLE.flame.box[3]];
-    const [ax, ay] = [POLE.flame.foot[0] - POLE.flame.box[0], POLE.flame.foot[1] - POLE.flame.box[1]];
-    const sz = k * burn * flick;
-    ctx.globalAlpha = Math.min(1, burn * 1.6);
-    ctx.drawImage(parts.flame, ex - ax * sz, ey - ay * sz, fw * sz, fh * sz);
+    ctx.globalAlpha = Math.min(1, burn * 2);
+    campfire(ctx, ex, ey, (state.anim || 0) * 1.3, POLE_FIRE.s * burn, true, { smoke: 0.5 * burn });
   }
   ctx.restore();
 }

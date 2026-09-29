@@ -461,17 +461,19 @@ const PLAYS = {
     // again; then throws the pole down — it falls still burning and burns out on the
     // grass (drawn by render.js from `vp.pole`) — and walks back into the castle.
     // `at` is where he stands for each torch: the pole's flame at its cup.
-    lighter: { who: 0, start: 1.5, torches: [[604.5, 253], [657, 266]], hold: 1.0, lightAt: 0.45,
+    lighter: { who: 0, start: 0, torches: [[604.5, 253], [657, 266]], hold: 1.0, lightAt: 0.45,
                rest: 1.2, door: [651, 247] },
     // THE VILLAGER WHO BECOMES A MUSKETEER: standing about, now and then turning to
     // the right, knowing nothing of any war; at the first enemy he walks into the
     // castle, his back to the player (turned right for the last step in at the
     // door); as the second wave comes he walks back out in a musketeer's gear, down,
-    // right to the barricade, a quick turn left — and is a musketeer at his post, the
-    // same as the one at the bottom right, from then on.
+    // right to the barricade, a quick turn left; stands there `ready` seconds, then is
+    // a musketeer at his post, the same as the one at the bottom right, from then on —
+    // first holding his aim `aim` seconds before his first shot. Tapped, he answers
+    // with the Musketeer Post's voice all along, gear or no gear (`voice`).
     recruit: { who: 1, in: [[664, 285], [647, 262], [645, 255], [651, 246]],
                out: [[651, 262], [700, 287], [745, 301], [782, 315], [773, 321]],
-               post: { x: 773, y: 321, unit: 'Musketeer' } },
+               post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 2, aim: 2, voice: 'musketeer' },
     cries: { runnn: false, nooo: true }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
@@ -1017,14 +1019,17 @@ function lighterRound(state, vp, lt, dt) {
 //   inside — until the second wave's first enemy appears;
 //   out    — faded in on the step in a musketeer's gear, and down and along to his
 //            post behind the barricade;
+//   ready  — standing there a moment;
 //   posted — gone from the villagers: `vp.recruit` asks main.js for a garrison
-//            musketeer where he stands, the same as the board's other one.
+//            musketeer where he stands, the same as the board's other one, who holds
+//            his aim a moment before his first shot.
 function recruitRound(state, vp, rc, dt) {
   const v = state.villagers[rc.who];
   if (!v) return;
   v.work = true;
   const c = vp.recruitee || (vp.recruitee = { phase: 'idle', at: vp.t, turn: vp.t + 3 + Math.random() * 3 });
   const k = vp.t - c.at;
+  v.voice = rc.voice;
   if (c.phase === 'idle') {
     v.pose = 'vm_front';
     // Turned to the right a while, and back, on no beat of his own.
@@ -1048,11 +1053,13 @@ function recruitRound(state, vp, rc, dt) {
     // and a quick turn left onto his post: walkTo faces him the way he goes.
     v.alpha = Math.min(1, k / DOOR_FADE);
     v.pose = 'musk_front';
-    if (walkTo(v, rc.out, WORK_WALK_FREE, dt)) {
+    if (walkTo(v, rc.out, WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
+  } else if (c.phase === 'ready') {
+    if (k >= rc.ready) {
       c.phase = 'posted';
       v.hidden = true;
       v.live = false;
-      vp.recruit = { ...rc.post };
+      vp.recruit = { ...rc.post, aim: rc.aim };
     }
   }
 }

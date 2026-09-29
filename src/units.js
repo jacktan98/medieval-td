@@ -710,6 +710,7 @@ export function addGarrison(state, at, i, where = 'garrison') {
       garrison: true
     });
   }
+  return state.units[state.units.length - 1];
 }
 
 export function makeUnits(state, tower) {

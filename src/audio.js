@@ -1805,6 +1805,9 @@ export function selectionCue(sel) {
   //
   // UNTIL HE HAD ONE: the owner's "villager selected", on every tap of every
   // villager on every board.
-  if (sel.kind === 'villager') return CUE.villager;
+  //
+  // AND ONE WHO IS A SOLDIER IN THE MAKING speaks as the soldier he will be: stage
+  // 12's villager who becomes a musketeer (`voice`, set by his board's script).
+  if (sel.kind === 'villager') return (sel.ref && sel.ref.voice && CUE[sel.ref.voice]) || CUE.villager;
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

@@ -440,7 +440,9 @@ function step(state, dt) {
   if (state.villagerPlay && state.villagerPlay.recruit) {
     const r = state.villagerPlay.recruit;
     state.villagerPlay.recruit = null;
-    addGarrison(state, r, (level.garrison || []).length, level.id);
+    const u = addGarrison(state, r, (level.garrison || []).length, level.id);
+    // Holding his aim — his Attack drawing — before the first shot.
+    if (r.aim) u.hold = r.aim;
   }
   if (state.lives <= 0) state.result = 'lost';
 }
