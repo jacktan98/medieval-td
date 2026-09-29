@@ -475,7 +475,7 @@ const PLAYS = {
                out: [[651, 262], [700, 287], [745, 301], [782, 315], [773, 321]],
                post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 1, aim: 2, voice: 'musketeer',
                // "Musketeer, reporting for duty", as he steps out of the castle in his gear.
-               report: ['musketeer_1'],
+               report: ['musketeer_3'],
                // His card before his gear: his own name and picture.
                card: { title: 'Villager (Musketeer)', sprite: 'vill_musketeer_front_standing',
                        trim: [213, 200, 88, 119] } },

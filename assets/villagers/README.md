@@ -435,7 +435,7 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
   turns. The villager below the gate walks up into the castle, his back to the player,
   turned right for the last step in at the door.
 - **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear
-  — "Musketeer, reporting for duty" (`Musketeer_1`) as he steps out —
+  — "Musketeer, reporting for duty" (`Musketeer_3`) as he steps out —
   down from the door, along to the right to the upper barricade and a quick turn left
   onto his post. He stands there a second, then takes aim for two, and then fires — a
   musketeer there from then on, the same as the one at the bottom right (`recruit` in
