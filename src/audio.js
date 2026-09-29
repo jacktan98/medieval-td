@@ -610,6 +610,12 @@ const AWAITED = new Set();
 // One thing no gain here can fix: `Rock_kill_enemy` peaks at 1.011, meaning the
 // summed channels clip. Only a re-record helps that, and it is the same note
 // Thug_1 and Attack_1 already have against them.
+// THE OWNER'S BALANCE PASS: twenty-three of the trims below were set at once, from
+// a table of how loud each clip comes out against a voice line (100) — measured the
+// way the game plays it, levelling, trim, bus, and a board's own `level` all in —
+// to the number the owner gave for each. So a trim here may no longer read as the
+// round figure its comment above arrived at; the comment is its history, and this
+// is where it stands.
 export const GAIN = {
   // --- THE MAP'S OWN FOUR, and all four are trimmed DOWN.
   //
@@ -621,43 +627,43 @@ export const GAIN = {
   // The march is the loudest of them because it is the only one answering an
   // ACTION — the army is walking and you are watching it walk — and the flag going
   // in is a single event on a quiet screen, so it needs no help at all.
-  bird_chirping: 0.30,
+  bird_chirping: 0.446,
   flag_waving: 0.45,
   // The boards' own, all soft at the owner's word: a fire, a river and a smith's
   // weld are the room the battle is in, not the battle.
   // Then by ear: the fire 60% down, the weld 20% down, the landing doubled and the
   // river 20% up.
   // And again: the fire a further 20% down, the river a further 10% up.
-  fire_crackling: 0.112,
-  river_flowing: 0.462,
-  steel_welding: 0.28,
+  fire_crackling: 0.177,
+  river_flowing: 0.446,
+  steel_welding: 0.334,
   things_land: 1.0,
   // The hammer's knocks and the reel, soft: work going on, not the battle.
-  hammering_nail: 0.5,
-  fishing_reel: 0.35,
+  hammering_nail: 0.668,
+  fishing_reel: 0.332,
   // Stage 7's sizzle and fountain, soft like the reel and the river — the sizzle
   // then 20% up, by ear, and 20% again.
-  fish_cooking: 0.504,
-  fountain_water: 0.4,
+  fish_cooking: 0.555,
+  fountain_water: 0.333,
   // The church bell rings out over the board, but it is the board's, not the battle.
   // Then half as loud again, at the owner's word, 30% more on top of that, and 20%
   // more again.
-  church_bell: 1.638,
+  church_bell: 1.556,
   // The desert wind, soft like the river and the fountain — then half as loud
   // again, at the owner's word, twice over.
-  desert_wind: 1.0125,
+  desert_wind: 1.111,
   // The lumberjack's chops, soft like the hammer's knocks — then half as loud again —
   // and the crows softer still.
   cutting_tree: 0.75,
-  crows_cawing: 0.3,
+  crows_cawing: 0.446,
   // The factory running, soft like the smith's weld: the board's work, not the battle.
-  factory: 0.4,
+  factory: 0.444,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
-  marching: 0.65,
-  rock_hit_ground: 1.6,
-  rock_kill_enemy: 0.7,
+  marching: 0.555,
+  rock_hit_ground: 1.556,
+  rock_kill_enemy: 0.65,
   // The click, at half — asked for by ear, and the measurement says why the ear
   // was right. The recording is quiet, so the leveller was pushing it +5.3dB to
   // bring it up to everything else, and that is the one cue where matching
@@ -667,7 +673,7 @@ export const GAIN = {
   // only has to be heard, not noticed. -6dB puts it at -0.7dB net, which is why
   // it drops back out of the levelling report: it is no longer being moved far
   // enough to be worth mentioning.
-  select: 0.5,
+  select: 0.445,
   // THE BALLISTA'S ORDINARY BOLT, DOWN 4dB, and this one is about the difference
   // between two sounds rather than about either of them alone.
   //
@@ -686,7 +692,7 @@ export const GAIN = {
   // other weapons' reports and the heavy one lands where it always was, so the gap
   // between them goes from 2.9dB to 7.2dB — more than double, which is the size of
   // step an ear reads as "that was a different shot".
-  ballista_shot: 0.6,
+  ballista_shot: 0.555,
   // THE THREE GENERIC SWINGS, DOWN 6dB, and this is the ballista's argument made
   // about the loudest thing in the game by frequency rather than by level.
   //
@@ -722,9 +728,9 @@ export const GAIN = {
   // out-shout a dozen swings summing underneath. It can now, and so can a
   // paladin's longsword and an assassin's blade, which are supposed to be the
   // audible difference a tier 4 squad buys.
-  attack_1: 0.5,
-  attack_2: 0.5,
-  attack_3: 0.5,
+  attack_1: 0.445,
+  attack_2: 0.445,
+  attack_3: 0.445,
   // THE CANNON'S REPORT, AND IT IS THE ENTRY THAT EXPLAINS `rock_hit_ground`
   // ABOVE.
   //
@@ -762,7 +768,7 @@ export const GAIN = {
   // scale after the bus and the master; Fiery Shot, at 2.3 times this, reaches
   // 0.63. See `fieryBall` in data/abilities.js for that multiplier and why it is
   // the heavy bolt's own.
-  cannon_shot: 2.2,
+  cannon_shot: 1.778,
   // THE BOMB, AND IT IS THE LOUDEST THING IN THE BATTLE ON PURPOSE.
   //
   // 1 -> 2.2 -> 3.3 -> 4.0 over three rounds of the owner asking for louder, and
@@ -815,7 +821,7 @@ export const GAIN = {
   // effect." The levelling brings every clip to the battle's loudness, so this is
   // what makes it background: about 9dB under an arrow, beside the world map's
   // birdsong at 0.30 — which is the other loop it most resembles.
-  wings_flap: 0.35
+  wings_flap: 0.443
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
@@ -1041,7 +1047,13 @@ export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0
 // STAGE 10'S LUMBERJACK, one chop as the axe goes into the tree, the same way: the
 // recording is a chop every 0.9s or so, and its two loudest, at 2.57s and 4.38s, are
 // cut out by where they START, with the ring after each. Category B.
-export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]] };
+//
+// `level` ON TOP OF ITS TRIM, and only because the trim cannot go higher: the
+// recording's sharpest crack is already at the leveller's peak ceiling, so a bigger
+// trim is capped straight back down. The owner's balance pass asked for 35 against a
+// voice's 100 and the cap stops it at 33; this last 6% is a play level instead, and
+// the chop still peaks under half of full scale at the speaker.
+export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]], level: 1.057 };
 // STAGE 11'S FACTORY RUNNING: the whole recording, `len` seconds, played each time it
 // runs. Its door and window are lit and its chimneys smoke black for `dur` — until
 // the sound dies away, a little short of its last sample. Category B.
