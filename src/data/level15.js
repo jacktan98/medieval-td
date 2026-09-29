@@ -158,12 +158,12 @@ export const level15 = {
   art: 'map15',
   src: 'assets/map/Stage_13_Map',
 
-  // ITS OWN PALETTE, at the owner's colours: grass #4c8c29, road #eeca9d, and
+  // ITS OWN PALETTE, at the owner's colours: grass #50932c, road #eeca9d, and
   // shadows #476a2d — the trees' own green shade, now under the huts, the signpost
   // and every tower built here too (see src/tint.js), rather than the other grass
   // boards' #37422f. Every tool that reads this board is told through it; see
   // `palette` in level11.js and PALETTE in tools/svg.mjs.
-  palette: { ground: '#4c8c29', road: '#eeca9d', shadow: '#476a2d' },
+  palette: { ground: '#50932c', road: '#eeca9d', shadow: '#476a2d' },
 
   routes: [left, middle, right],
   plots: plots1,
@@ -240,7 +240,7 @@ export const level15 = {
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND: the four watchtowers, two at each end of the
-  // board, and the Serene Peak signpost.
+  // board.
   //
   // THE LAKE IS DELIBERATELY NOT HERE, and the splitter says why each time it runs:
   // 214 x 423 of water with no ground shadow under it, so it is not standing on
@@ -251,7 +251,10 @@ export const level15 = {
     { x: 377, y:   4, w:  74, h: 107, g:  95 },   // stands on y 95
     { x: 284, y:  30, w:  74, h: 107, g: 120 },   // stands on y 120
     { x: 864, y: 284, w:  79, h: 108, g: 375 },   // stands on y 375
-    { x: 776, y: 310, w:  75, h: 107, g: 401 },   // stands on y 401
-    { x: 540, y: 446, w:  39, h:  45, g: 489 }    // stands on y 489 — the signpost
+    { x: 776, y: 310, w:  75, h: 107, g: 401 }    // stands on y 401
+    // THE SERENE PEAK SIGNPOST IS NOT HERE NOW: in the owner's latest layer 3 its
+    // shadow is still the other grass boards' #37422f while the huts' are this
+    // board's #476a2d, so the splitter no longer reads it as standing and it stays
+    // in the base. Its shadow in #476a2d would bring it back.
   ]
 };
