@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH } from './audio.js';
 import { starsFor } from './score.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -479,6 +479,26 @@ const PLAYS = {
                        trim: [213, 200, 88, 119] } },
     cries: { runnn: false, nooo: true }
   },
+  // STAGE 13, Serene Peak Lake, left to right as the owner numbers them: 1 and 2 by
+  // the lake, 3 at the top hut's steps, 4 between the two right-hand huts.
+  serene: {
+    // Greeting by turns before the first wave and praying by turns after it: 1, 2 and
+    // 3 facing the player turned right, 4 with his back to the player turned left.
+    before: [mirrored('greets'), mirrored('greets'), mirrored('greets'), back('greets')],
+    after: [mirrored('pray'), mirrored('pray'), mirrored('pray'), back('pray')],
+    run: [],
+    // Two hops each: 1 and 4 every tenth enemy down, 2 every twelfth, 3 every
+    // fourteenth.
+    hops: [{ every: 10, who: [0, 3] }, { every: 12, who: [1] }, { every: 14, who: [2] }],
+    // A FISH JUMPS in the lake now and then — out of the water with a splash, over in
+    // a little arc and back in (src/render.js, drawLakeFish): from one of `spots`,
+    // well away from the banks, every `gap` seconds or so, `span` px along and
+    // `height` px up, for `dur` seconds.
+    fish: { spots: [[35, 165], [80, 170], [125, 175], [30, 220], [25, 290], [45, 330], [70, 370],
+                    [40, 420], [75, 455], [40, 490], [100, 480]],
+            gap: [4, 9], span: [14, 24], height: [10, 17], dur: 0.9 },
+    cries: { runnn: false, nooo: true }
+  },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
   sandshroud: {
@@ -711,6 +731,9 @@ function work(state, vp, dt) {
       if (hammer.sound === 'chop') vp.chops = [...(vp.chops || []).filter(c => vp.t - c < 4), vp.t];
     }
   }
+
+  // STAGE 13'S FISH, jumping now and then.
+  if (vp.plan.fish) fishJumps(vp, vp.plan.fish);
 
   // STAGE 12'S TORCH-LIGHTER AND RECRUIT, each once.
   if (vp.plan.lighter) lighterRound(state, vp, vp.plan.lighter, dt);
@@ -963,6 +986,31 @@ function ammoLoop(state, vp, am, dt) {
     b.q = q;
     if (q >= 1 && !b.landed) { b.landed = true; play(LANDED); }
   }
+}
+
+// STAGE 13'S FISH: every few seconds one leaps from a spot on the lake, turned
+// either way, with a splash as it breaks the water — `vp.fishJump` for render.js to
+// draw the leap from, and `vp.splashes` for the rings where it leaves the water and
+// where it goes back in.
+function fishJumps(vp, fs) {
+  const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  if (vp.fishNext === undefined) vp.fishNext = vp.t + span(fs.gap) * 0.5;
+  if (vp.t >= vp.fishNext) {
+    const [x, y] = fs.spots[(Math.random() * fs.spots.length) | 0];
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    const j = { x, y, dir, at: vp.t, span: span(fs.span), height: span(fs.height), dur: fs.dur };
+    vp.fishJump = j;
+    vp.fishNext = vp.t + fs.dur + span(fs.gap);
+    vp.splashes = [...(vp.splashes || []), { x, y, at: vp.t }];
+    // THE SPLASH as it comes out of the water.
+    slice(SPLASH.key, 0, SPLASH.dur, 1, SPLASH.fade);
+  }
+  const j = vp.fishJump;
+  if (j && !j.landed && vp.t - j.at >= j.dur) {
+    j.landed = true;
+    vp.splashes = [...(vp.splashes || []), { x: j.x + j.dir * j.span, y: j.y, at: vp.t, small: true }];
+  }
+  if (vp.splashes) vp.splashes = vp.splashes.filter(s => vp.t - s.at < 1.6);
 }
 
 // STAGE 12'S TORCH-LIGHTER, once, as the board opens:

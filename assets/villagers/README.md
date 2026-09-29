@@ -126,6 +126,12 @@ The pole drawings stand on (259.5, 344), the villager-musketeer ones on (259.5, 
 and the musketeer on (258, 305). The torch-lighter is cut out of the board with the
 lit pole he holds up (`up` on his anchor in level14.js). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
 
+And stage 13's:
+
+| drawing | used for |
+|---------|----------|
+| `Fish_In_Lake.png` | a fish leaping out of the lake and back in, its nose along its arc, mirrored when it leaps to the right (see `drawLakeFish` in src/render.js) |
+
 The kneeling drawings stand on (254, 280.5) and (250, 290). The three bell drawings
 share one canvas: the game lays it where the painted bell hung (`bell` in level10.js)
 and draws the roof and front pillars over it again — see
@@ -438,6 +444,23 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
 - **Every 10 enemies killed:** 1 hops twice. **Every 12:** 2.
 - **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
   cottage's chimney at the top left.
+
+## Stage 13's script
+
+Left to right: 1 and 2 by the lake, 3 at the top hut's steps, 4 between the two
+right-hand huts.
+
+- **Before the first wave:** 1, 2 and 3 stand and greet by turns facing the player,
+  turned right; 4 with his back to the player, turned left.
+- **When the first enemy of wave 1 appears:** they start standing and praying by
+  turns, each facing as before.
+- **Every 10 enemies killed:** 1 and 4 hop twice. **Every 12:** 2. **Every 14:** 3.
+- **All game long:** every four to nine seconds a fish leaps out of the lake with a
+  splash, arcs over and dives back in, rings spreading where it leaves the water and
+  where it goes back. The lake itself is still: faint ripple lines drifting and
+  fading on it, a few glints of sun, and now and then a ring spreading from nothing
+  (`lake` in level15.js, `drawBoardLake` in src/motion.js).
+- **A star lost:** "nooo". Birdsong, soft, and the lake lapping throughout.
 
 ## Holy light over Dawnford
 

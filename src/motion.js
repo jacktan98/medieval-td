@@ -1571,6 +1571,125 @@ export function drawBoardWater(ctx, img, spec, t) {
   }
 }
 
+// --- a board's own lake ---------------------------------------------------------
+//
+// STAGE 13'S LAKE, at the owner's "animate the lake but make it a bit more serene".
+// Nothing flows: a lake has no current, and the river's marks riding a flow field
+// read as a river however slowly they go. Three quiet things instead, each faint
+// and each on a slow beat of its own:
+//   ripple lines — short pale arcs, the drawn shorthand for a still surface, each
+//                  fading in, drifting a little and fading out over five to eight
+//                  seconds, somewhere new every time;
+//   glints       — a few specks of sun twinkling on it;
+//   rings        — now and then one ring spreading from nothing and thinning out,
+//                  as a drop or an insect makes.
+// All inside the lake's own colour, and none within `inset` px of its bank, so
+// nothing touches the mud. On the board's own clock, so it holds still on a paused
+// board.
+const boardLakes = new Map();
+const lakeHash = n => { const x = Math.sin(n * 157.31 + 41.7) * 43758.5453; return x - Math.floor(x); };
+export function drawBoardLake(ctx, img, spec, t) {
+  if (!img || !spec) return;
+  let w = boardLakes.get(img);
+  if (w === undefined) {
+    w = null;
+    try { w = buildBoardLake(img, spec); } catch { /* no canvas: still water */ }
+    boardLakes.set(img, w);
+  }
+  if (!w) return;
+  const at = n => w.spots[Math.floor(lakeHash(n) * w.spots.length)];
+  ctx.drawImage(layerFor(w.grp, g => {
+    g.lineCap = 'round';
+    // RIPPLE LINES.
+    for (let k = 0; k < (spec.ripples ?? 14); k++) {
+      const life = 5 + lakeHash(k + 1) * 3;
+      const q = t / life + lakeHash(k + 2);
+      const round = Math.floor(q), p = q - round;
+      const [x, y] = at(k * 13 + round * 7);
+      const len = 5 + lakeHash(k * 3 + round) * 7;
+      const dx = 2.5 * p;
+      g.strokeStyle = `rgba(255,255,255,${0.42 * Math.sin(Math.PI * p)})`;
+      g.lineWidth = 0.9;
+      g.beginPath();
+      g.moveTo(x - len / 2 + dx, y);
+      g.quadraticCurveTo(x + dx, y + 1.6, x + len / 2 + dx, y);
+      g.stroke();
+      // and now and then a second, shorter arc under the first
+      if (lakeHash(k + 5) < 0.5) {
+        g.beginPath();
+        g.moveTo(x - len / 4 + dx + 2, y + 3);
+        g.quadraticCurveTo(x + dx + 2, y + 4.2, x + len / 4 + dx + 2, y + 3);
+        g.stroke();
+      }
+    }
+    // GLINTS.
+    for (let k = 0; k < (spec.glints ?? 5); k++) {
+      const life = 3 + lakeHash(k + 40) * 2.5;
+      const q = t / life + lakeHash(k + 41);
+      const round = Math.floor(q), p = q - round;
+      const [x, y] = at(k * 29 + round * 11 + 500);
+      const a = 0.7 * Math.pow(Math.sin(Math.PI * p), 3);
+      const r = 1.6 + 0.8 * Math.sin(Math.PI * p);
+      g.strokeStyle = `rgba(255,255,255,${a})`;
+      g.lineWidth = 0.7;
+      g.beginPath();
+      g.moveTo(x - r, y); g.lineTo(x + r, y);
+      g.moveTo(x, y - r * 0.7); g.lineTo(x, y + r * 0.7);
+      g.stroke();
+    }
+    // RINGS: one every few seconds, spreading and thinning.
+    const RING = 3.4;
+    for (let n = Math.floor(t / RING) - 1; n <= Math.floor(t / RING); n++) {
+      const k = t - (n * RING + lakeHash(n + 90) * RING);
+      if (k < 0 || k > 2.6) continue;
+      const p = k / 2.6;
+      const [x, y] = at(n * 17 + 900);
+      g.strokeStyle = `rgba(255,255,255,${0.3 * (1 - p)})`;
+      g.lineWidth = 0.8;
+      g.beginPath();
+      g.ellipse(x, y, 2 + 9 * p, (2 + 9 * p) * 0.45, 0, 0, Math.PI * 2);
+      g.stroke();
+    }
+  }), w.grp.rect.x, w.grp.rect.y);
+}
+
+function buildBoardLake(img, spec) {
+  const wet = sheet();
+  const g = wet.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, 960, 540);
+  const px = g.getImageData(0, 0, 960, 540);
+  const d = px.data;
+  const [wr, wg, wb] = spec.colour;
+  const water = new Uint8Array(960 * 540);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+    water[j] = Math.abs(d[i] - wr) <= 10 && Math.abs(d[i + 1] - wg) <= 10 && Math.abs(d[i + 2] - wb) <= 10 ? 1 : 0;
+  }
+  // Kept only `inset` px clear of the bank every way.
+  const r = spec.inset ?? 4;
+  const inside = (x, y, m) => {
+    for (const [ox, oy] of [[m, 0], [-m, 0], [0, m], [0, -m], [m, m], [-m, m], [m, -m], [-m, -m]]) {
+      const X = x + ox, Y = y + oy;
+      if (X < 0 || Y < 0 || X >= 960 || Y >= 540 || !water[Y * 960 + X]) return false;
+    }
+    return true;
+  };
+  const spots = [];
+  for (let y = 0, j = 0; y < 540; y++) {
+    for (let x = 0; x < 960; x++, j++) {
+      const keep = water[j] && inside(x, y, r);
+      d[j * 4] = d[j * 4 + 1] = d[j * 4 + 2] = 0;
+      d[j * 4 + 3] = keep ? 255 : 0;
+      // Where things may start: well clear of the bank.
+      if (keep && x % 5 === 0 && y % 5 === 0 && inside(x, y, 12)) spots.push([x, y]);
+    }
+  }
+  g.putImageData(px, 0, 0);
+  const grp = group(wet);
+  wet.width = 0; wet.height = 0;
+  if (!grp || !spots.length) return null;
+  return { grp, spots };
+}
+
 function buildBoardWater(img, spec) {
   const wet = sheet();
   const g = wet.getContext('2d', { willReadFrequently: true });

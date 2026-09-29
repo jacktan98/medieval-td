@@ -538,6 +538,9 @@ const paths = {
   crows_cawing:    'assets/audio/map/Crows_cawing.mp3',
   // Stage 11's factory, running while the box carrier is inside (FACTORY, below).
   factory:         'assets/audio/map/Factory_sound.mp3',
+  // Stage 13's lake lapping, and a fish breaking its surface (SPLASH, below).
+  lake_water:      'assets/audio/map/Lake_sound.mp3',
+  water_splash:    'assets/audio/map/Water_splash_sound.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -658,6 +661,11 @@ export const GAIN = {
   crows_cawing: 0.446,
   // The factory running, soft like the smith's weld: the board's work, not the battle.
   factory: 0.444,
+  // Stage 13's lake lapping, a notch above the river (25 against a voice's 100) — the
+  // recording is very quiet and the leveller lifts it four times over to get there —
+  // and a fish's splash, 35, under the shots.
+  lake_water: 0.554,
+  water_splash: 0.776,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
@@ -1079,6 +1087,10 @@ export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0
 // cut out by where they START, with the ring after each. Category B.
 // (A little louder than its trim can make it: see LIFT.)
 export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]] };
+// STAGE 13'S FISH breaking the water as it jumps: the splash itself, the first
+// `dur` seconds of the recording — after that it is dripping for three seconds more,
+// longer than the fish is out of the water — faded out over `fade`. Category B.
+export const SPLASH = { key: 'water_splash', dur: 1.4, fade: 0.5 };
 // STAGE 11'S FACTORY RUNNING: the whole recording, `len` seconds, played each time it
 // runs. Its door and window are lit and its chimneys smoke black for `dur` — until
 // the sound dies away, a little short of its last sample. Category B.

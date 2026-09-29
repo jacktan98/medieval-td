@@ -1,6 +1,6 @@
 # Audio
 
-**A hundred and eighteen clips: forty-two in `sfx/`, twenty-two in `map/`, forty-five in `voice/` and nine in `villagers/`.**
+**A hundred and twenty clips: forty-two in `sfx/`, twenty-four in `map/`, forty-five in `voice/` and nine in `villagers/`.**
 
 *(The count was six low before the Bomb Thug's clip was added — every file was
 named in the list below, so `tools/readme.mjs` had nothing to catch: it asks
@@ -40,7 +40,8 @@ assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Fish_cooking.mp3, Water_fountain_sound.mp3,
                       Church_bell.mp3, Desert_wind_sound.mp3,
                       Cutting_Tree.mp3, Crows_cawing.mp3,
-                      Factory_sound.mp3
+                      Factory_sound.mp3, Lake_sound.mp3,
+                      Water_splash_sound.mp3
                       — the sounds of the stage boards and the world map
                       themselves rather than of anybody on them
 
@@ -217,6 +218,8 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 11 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12's first gate torch is lit | `Fire_crackling`, looping from then on, as loud as every other board's fire |
+| stage 13 is being played (background, looping) | `Lake_sound`, a notch above the river, and `Bird_chirping`, soft |
+| stage 13's fish leaps out of the lake | the first 1.4s of `Water_splash_sound`, faded out (Category B) |
 | the first enemy of wave 1 appears on **stage 9** | `Villager_say_here_they_come` again, the same way |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
 | the first enemy of wave 1 appears on **stage 8** | `Villager_say_hide` again, the same way |

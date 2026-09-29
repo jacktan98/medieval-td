@@ -203,6 +203,7 @@ export const paths = {
   vill_back_carrying_cannonball:  'assets/villagers/Villager_Back_Carrying_Cannonball.png',
   vill_front_carrying_cannonball: 'assets/villagers/Villager_Front_Carrying_Cannonball.png',
   vill_picking_up:              'assets/villagers/Villager_Picking_Up.png',
+  fish_in_lake:                 'assets/villagers/Fish_In_Lake.png',
   vill_front_lighting_pole:     'assets/villagers/Villager_Front_Lighting_Pole.png',
   vill_back_lighting_pole:      'assets/villagers/Villager_Back_Lighting_Pole.png',
   vill_dimmed_lighting_pole:    'assets/villagers/Villager_Dimmed_Lighting_Pole.png',

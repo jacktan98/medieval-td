@@ -160,14 +160,26 @@ export const level15 = {
 
   routes: [left, middle, right],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, as points: selectable, never drawn — see level00.
-  // Each anchor is the centre of the figure's own ground shadow.
+  // THE PEOPLE WHO LIVE HERE, left to right as the owner numbers them: 1 and 2 by the
+  // lake, 3 at the top hut's steps, 4 between the two right-hand huts. Each anchor
+  // is the centre of the figure's own ground shadow.
   villagers: [
-    { x: 410, y: 124 },       // at the hut steps
-    { x: 118, y: 266 },       // the two by the lake
-    { x: 102, y: 275 },
-    { x: 835, y: 337 }        // between the two right-hand huts
+    { x: 102.5, y: 276.0 },   // 1, by the lake
+    { x: 117.8, y: 266.5 },   // 2, beside him
+    { x: 410.3, y: 124.5 },   // 3, at the hut steps
+    { x: 835.3, y: 337.8 }    // 4, between the right-hand huts
   ],
+  // THEY MOVE, drawn by the game from assets/villagers — see `serene` in
+  // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
+  villagerPlay: 'serene',
+  // Birdsong, soft, and the lake lapping, for as long as it is played.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'lake_water', level: 1 }],
+  // THE LAKE, STILL AND ALIVE: faint ripple lines drifting on it, a few glints of
+  // sun, now and then a ring spreading from nothing — slower and fainter than any
+  // river's current, at the owner's "a bit more serene". `colour` is the lake's
+  // own blue in the base, and nothing is drawn within `inset` px of its bank. See
+  // drawBoardLake in src/motion.js.
+  lake: { colour: [166, 213, 255], inset: 4, ripples: 14, glints: 5 },
   waves: stage13Waves,
   wavesExtended: stage13Waves,
   oneLength: true,
@@ -229,7 +241,7 @@ export const level15 = {
   // nothing walks behind a lake.
   frontArt: 'front15',
   front: [
-    { x: 377, y:   4, w:  74, h: 120, g:  95 },   // stands on y 95
+    { x: 377, y:   4, w:  74, h: 107, g:  95 },   // stands on y 95
     { x: 284, y:  30, w:  74, h: 107, g: 120 },   // stands on y 120
     { x: 864, y: 284, w:  79, h: 108, g: 375 },   // stands on y 375
     { x: 776, y: 310, w:  75, h: 107, g: 401 },   // stands on y 401
