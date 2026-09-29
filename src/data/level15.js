@@ -158,6 +158,13 @@ export const level15 = {
   art: 'map15',
   src: 'assets/map/Stage_13_Map',
 
+  // ITS OWN PALETTE, at the owner's colours: grass #4c8c29, road #eeca9d, and
+  // shadows #476a2d — the trees' own green shade, now under the huts, the signpost
+  // and every tower built here too (see src/tint.js), rather than the other grass
+  // boards' #37422f. Every tool that reads this board is told through it; see
+  // `palette` in level11.js and PALETTE in tools/svg.mjs.
+  palette: { ground: '#4c8c29', road: '#eeca9d', shadow: '#476a2d' },
+
   routes: [left, middle, right],
   plots: plots1,
   // THE PEOPLE WHO LIVE HERE, left to right as the owner numbers them: 1 and 2 by the
