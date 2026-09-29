@@ -240,7 +240,7 @@ export const level15 = {
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND: the four watchtowers, two at each end of the
-  // board.
+  // board, and the Serene Peak signpost.
   //
   // THE LAKE IS DELIBERATELY NOT HERE, and the splitter says why each time it runs:
   // 214 x 423 of water with no ground shadow under it, so it is not standing on
@@ -251,10 +251,7 @@ export const level15 = {
     { x: 377, y:   4, w:  74, h: 107, g:  95 },   // stands on y 95
     { x: 284, y:  30, w:  74, h: 107, g: 120 },   // stands on y 120
     { x: 864, y: 284, w:  79, h: 108, g: 375 },   // stands on y 375
-    { x: 776, y: 310, w:  75, h: 107, g: 401 }    // stands on y 401
-    // THE SERENE PEAK SIGNPOST IS NOT HERE NOW: in the owner's latest layer 3 its
-    // shadow is still the other grass boards' #37422f while the huts' are this
-    // board's #476a2d, so the splitter no longer reads it as standing and it stays
-    // in the base. Its shadow in #476a2d would bring it back.
+    { x: 776, y: 310, w:  75, h: 107, g: 401 },   // stands on y 401
+    { x: 540, y: 446, w:  39, h:  45, g: 489 }    // stands on y 489 — the signpost
   ]
 };
