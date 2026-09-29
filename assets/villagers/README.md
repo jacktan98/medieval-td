@@ -430,10 +430,11 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
   turned right for the last step in at the door.
 - **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear,
   down from the door, along to the right to the upper barricade and a quick turn left
-  onto his post. He stands there two seconds, then takes aim for two more, and then
-  fires — a musketeer there from then on, the same as the one at the bottom right
-  (`recruit` in src/villagers.js). Tapped at any time, gear or not, he answers with the
-  Musketeer Post's voice.
+  onto his post. He stands there a second, then takes aim for two, and then fires — a
+  musketeer there from then on, the same as the one at the bottom right (`recruit` in
+  src/villagers.js). Tapped at any time, gear or not, he answers with the Musketeer
+  Post's voice. His card is "Villager (Musketeer)" in his villager-musketeer picture
+  until he comes out in his gear, and a musketeer's card from then on.
 - **Every 10 enemies killed:** 1 hops twice. **Every 12:** 2.
 - **A star lost:** "nooo". Crows caw softly throughout, and grey smoke rises from the
   cottage's chimney at the top left.

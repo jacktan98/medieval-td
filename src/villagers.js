@@ -467,13 +467,16 @@ const PLAYS = {
     // the right, knowing nothing of any war; at the first enemy he walks into the
     // castle, his back to the player (turned right for the last step in at the
     // door); as the second wave comes he walks back out in a musketeer's gear, down,
-    // right to the barricade, a quick turn left; stands there `ready` seconds, then is
+    // right to the barricade, a quick turn left; stands there `ready` second, then is
     // a musketeer at his post, the same as the one at the bottom right, from then on —
     // first holding his aim `aim` seconds before his first shot. Tapped, he answers
     // with the Musketeer Post's voice all along, gear or no gear (`voice`).
     recruit: { who: 1, in: [[664, 285], [647, 262], [645, 255], [651, 246]],
                out: [[651, 262], [700, 287], [745, 301], [782, 315], [773, 321]],
-               post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 2, aim: 2, voice: 'musketeer' },
+               post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 1, aim: 2, voice: 'musketeer',
+               // His card before his gear: his own name and picture.
+               card: { title: 'Villager (Musketeer)', sprite: 'vill_musketeer_front_standing',
+                       trim: [213, 200, 88, 119] } },
     cries: { runnn: false, nooo: true }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
@@ -1030,6 +1033,10 @@ function recruitRound(state, vp, rc, dt) {
   const c = vp.recruitee || (vp.recruitee = { phase: 'idle', at: vp.t, turn: vp.t + 3 + Math.random() * 3 });
   const k = vp.t - c.at;
   v.voice = rc.voice;
+  // His card: a villager of his own until he comes out in his gear, a musketeer's
+  // from then on (see selectionInfo in src/select.js).
+  v.card = rc.card;
+  v.asUnit = c.phase === 'out' || c.phase === 'ready' || c.phase === 'posted' ? rc.post.unit : null;
   if (c.phase === 'idle') {
     v.pose = 'vm_front';
     // Turned to the right a while, and back, on no beat of his own.
@@ -1059,7 +1066,7 @@ function recruitRound(state, vp, rc, dt) {
       c.phase = 'posted';
       v.hidden = true;
       v.live = false;
-      vp.recruit = { ...rc.post, aim: rc.aim };
+      vp.recruit = { ...rc.post, aim: rc.aim, who: rc.who };
     }
   }
 }

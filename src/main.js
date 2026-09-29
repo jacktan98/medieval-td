@@ -443,6 +443,9 @@ function step(state, dt) {
     const u = addGarrison(state, r, (level.garrison || []).length, level.id);
     // Holding his aim — his Attack drawing — before the first shot.
     if (r.aim) u.hold = r.aim;
+    // A player who had him selected now has the musketeer selected.
+    const sel = state.selected;
+    if (sel && sel.kind === 'villager' && sel.ref === state.villagers[r.who]) state.selected = { kind: 'unit', ref: u };
   }
   if (state.lives <= 0) state.result = 'lost';
 }

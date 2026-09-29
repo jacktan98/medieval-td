@@ -18,7 +18,7 @@
 // size the game draws it, and what you actually want to compare between tiers is
 // the soldier or the archer it puts on the road.
 
-import { SCALE } from './data/towers.js';
+import { SCALE, garrisonUnits } from './data/towers.js';
 import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
 import { fixture } from './units.js';
@@ -359,11 +359,31 @@ export function selectionInfo(state) {
   // panel printing "0" beside a sword would be inventing a statistic about a man
   // who has none. `damage: null` is what drawInfo reads as "no rows" — see the
   // note there, and the pair of nulls it needs to be sure.
-  if (s.kind === 'villager') {
+  //
+  // STAGE 12'S RECRUIT IS THE EXCEPTION BOTH WAYS. Before his gear he is still a
+  // villager, but a named one in his own picture — `card` — and once he walks out of
+  // the castle in it he is shown as the soldier he has become (`asUnit`): the same
+  // card as the garrison man he will be at his post a moment later.
+  if (s.kind === 'villager' && s.ref.asUnit) {
+    const d = garrisonUnits[s.ref.asUnit];
     return {
-      sprite: VILLAGER.sprite,
-      trim: VILLAGER.spriteTrim,
-      title: VILLAGER.name,
+      sprite: d.sprite,
+      trim: d.spriteTrim,
+      title: d.name,
+      hp: null,
+      maxHp: null,
+      damage: d.ranged ? d.ranged.damage : shownDamage(d),
+      attack: attackIcon(stageOf({ def: d })),
+      traits: [],
+      range: d.ranged ? d.ranged.range : null
+    };
+  }
+  if (s.kind === 'villager') {
+    const card = s.ref.card || {};
+    return {
+      sprite: card.sprite || VILLAGER.sprite,
+      trim: card.trim || VILLAGER.spriteTrim,
+      title: card.title || VILLAGER.name,
       hp: null,
       maxHp: null,
       damage: null,
