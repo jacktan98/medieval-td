@@ -239,29 +239,28 @@ export function mapAudio(state) {
 // FISH IN THE RIVER UNDER OAKHAVEN'S MOUNTAINS, at the owner's ask: "add some fishes
 // jumping around this area". Stage 13's fish, at the map's size, from one of these
 // spots well out in the water — never by the bridge, never in the dark at the map's
-// edge — now and then: slots of MAP_FISH_SLOT seconds, most with a leap in them, each
-// its own spot, way and height. On the map's own clock, and no splash sound: the map
+// edge — one leap every MAP_FISH_SLOT seconds, each its own spot, way and height.
+// Small, at the owner's word, and no more often than that. On the map's own clock, and no splash sound: the map
 // is heard through its stage's background (mapAudio), not through its details.
 const MAP_FISH_SPOTS = [[70, 265], [95, 295], [125, 258], [150, 285], [175, 305], [200, 262],
   [215, 292], [240, 275], [120, 305], [60, 300]];
-const MAP_FISH_SLOT = 3, MAP_FISH_DUR = 0.8, MAP_FISH_K = 0.13, MAP_FISH_RING = '58,76,90';
+const MAP_FISH_SLOT = 5, MAP_FISH_DUR = 0.8, MAP_FISH_K = 0.075, MAP_FISH_RING = '58,76,90';
 const fishHash = n => { const x = Math.sin(n * 91.345 + 7.13) * 43758.5453; return x - Math.floor(x); };
 function drawMapFish(ctx, t) {
   const img = art.fish_in_lake;
   const now = Math.floor(t / MAP_FISH_SLOT);
   for (let n = now - 1; n <= now; n++) {
-    // One leap in most slots, two in some.
-    for (let i = 0; i < 2; i++) {
+    // One leap a slot — one every five seconds, at the owner's word.
+    for (let i = 0; i < 1; i++) {
       const h = n * 2 + i;
-      if (fishHash(h) < (i ? 0.6 : 0.15)) continue;
       const [x, y] = MAP_FISH_SPOTS[Math.floor(fishHash(h + 0.5) * MAP_FISH_SPOTS.length)];
-      const j = { x, y, dir: fishHash(h + 0.25) < 0.5 ? -1 : 1, span: 10 + fishHash(h + 0.75) * 7,
-                  height: 8 + fishHash(h + 0.9) * 5, dur: MAP_FISH_DUR };
-      const at = n * MAP_FISH_SLOT + fishHash(h + 0.33) * MAP_FISH_SLOT;
+      const j = { x, y, dir: fishHash(h + 0.25) < 0.5 ? -1 : 1, span: 6 + fishHash(h + 0.75) * 4,
+                  height: 5 + fishHash(h + 0.9) * 3, dur: MAP_FISH_DUR };
+      const at = n * MAP_FISH_SLOT + fishHash(h + 0.33) * (MAP_FISH_SLOT - MAP_FISH_DUR - 1.6);
       const k = t - at;
       if (k < 0 || k > MAP_FISH_DUR + 1.6) continue;
-      drawSplash(ctx, { x, y }, k, MAP_FISH_RING, 0.75);
-      drawSplash(ctx, { x: x + j.dir * j.span, y, small: true }, k - MAP_FISH_DUR, MAP_FISH_RING, 0.75);
+      drawSplash(ctx, { x, y }, k, MAP_FISH_RING, 0.45);
+      drawSplash(ctx, { x: x + j.dir * j.span, y, small: true }, k - MAP_FISH_DUR, MAP_FISH_RING, 0.45);
       if (img) drawLeapingFish(ctx, img, j, k / MAP_FISH_DUR, MAP_FISH_K);
     }
   }

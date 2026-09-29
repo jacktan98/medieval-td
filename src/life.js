@@ -161,10 +161,16 @@ function drawSmoke(ctx, t, unlocked) {
 // High Altar; the rest are spread over the town.
 //
 // AND THEY WANDER, slowly: each foot drifts on its own small loop — `rx` by `ry`,
-// one lap every `lap` seconds, neighbours turning opposite ways — so the light
-// seems to shift as clouds pass, and each breathes brighter and dimmer on its own
-// beat. Laid on with `screen`, so it lightens what is there without covering it.
-const HOLY = { x: 470, y: -60, town: 'dawnford' };
+// one lap every `lap` seconds times SLOW, neighbours turning opposite ways — so the
+// light seems to shift as clouds pass, and each breathes brighter and dimmer on its
+// own beat. Laid on with `screen`, so it lightens what is there without covering it.
+//
+// ALL FROM ONE SIDE, at the owner's word and arrows: sunlight slanting down from
+// the upper left, over Winchester, onto the town — every shaft parallel, `SLANT`
+// px across for every px down, rather than fanning out from one point overhead.
+// And slower than they were, twice over (SLOW).
+const HOLY = { top: -60, slant: 0.47, town: 'dawnford' };
+const SLOW = 2.2;
 const LANDING = [
   { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23, k: 1 },     // the church
   { at: [434, 284], w: 12, rx: 10, ry: 3, lap: 31, k: 1 },
@@ -184,22 +190,26 @@ function drawHoly(ctx, t, unlocked) {
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
   for (const [i, r] of LANDING.entries()) {
-    const a = (t / r.lap) * Math.PI * 2 * (i % 2 ? -1 : 1) + i * 1.7;
+    const a = (t / (r.lap * SLOW)) * Math.PI * 2 * (i % 2 ? -1 : 1) + i * 1.7;
     const ex = r.at[0] + Math.cos(a) * r.rx;
     const ey = r.at[1] + Math.sin(a) * r.ry;
-    const dx = ex - h.x, dy = ey - h.y, len = Math.hypot(dx, dy);
+    // Where this shaft comes down from: straight back up the slant to the sky.
+    const sx = ex - (ey - h.top) * h.slant, sy = h.top;
+    const dx = ex - sx, dy = ey - sy, len = Math.hypot(dx, dy);
     const nx = -dy / len, ny = dx / len;
-    const glow = (0.35 + 0.65 * r.k) * (0.13 + 0.08 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.07 * i) + i * 1.9)));
-    const half = r.w * (0.9 + 0.1 * Math.sin(t * 0.45 + i));
-    const g = ctx.createLinearGradient(h.x, h.y, ex, ey);
+    const glow = (0.35 + 0.65 * r.k) * (0.13 + 0.08 * (0.5 + 0.5 * Math.sin(t * (0.3 + 0.07 * i) / SLOW + i * 1.9)));
+    const half = r.w * (0.9 + 0.1 * Math.sin(t * 0.45 / SLOW + i));
+    const g = ctx.createLinearGradient(sx, sy, ex, ey);
     // Out of the sky: nothing high up, growing as it comes down, full on the ground.
     g.addColorStop(0, 'rgba(255,238,180,0)');
     g.addColorStop(0.45, 'rgba(255,238,180,0)');
     g.addColorStop(0.8, `rgba(255,236,170,${glow * 0.8})`);
     g.addColorStop(1, `rgba(255,236,170,${glow})`);
     ctx.fillStyle = g;
+    // A band, a little narrower up in the sky than where it lands.
     ctx.beginPath();
-    ctx.moveTo(h.x, h.y);
+    ctx.moveTo(sx - nx * half * 0.5, sy - ny * half * 0.5);
+    ctx.lineTo(sx + nx * half * 0.5, sy + ny * half * 0.5);
     ctx.lineTo(ex + nx * half, ey + ny * half);
     // The foot of the shaft follows the ground: a flat curve, not a straight cut.
     ctx.quadraticCurveTo(ex, ey + 2.5, ex - nx * half, ey - ny * half);
@@ -219,12 +229,13 @@ function drawHoly(ctx, t, unlocked) {
   // Motes of light drifting down in the shafts, glowing and gone.
   for (let k = 0; k < 18; k++) {
     const r = LANDING[k % LANDING.length];
-    const life = 6 + hash(k + 40) * 5;
+    const life = (6 + hash(k + 40) * 5) * SLOW;
     const p = ((t / life) + hash(k + 50)) % 1;
     // Somewhere along the lower part of its shaft, drifting down it.
     const f = 0.6 + 0.35 * ((hash(k + 60) + p * 0.3) % 1);
-    const x = h.x + (r.at[0] - h.x) * f + (hash(k + 70) - 0.5) * r.w + Math.sin(t * 0.6 + k) * 2;
-    const y = h.y + (r.at[1] - h.y) * f;
+    const sx = r.at[0] - (r.at[1] - h.top) * h.slant;
+    const x = sx + (r.at[0] - sx) * f + (hash(k + 70) - 0.5) * r.w + Math.sin(t * 0.6 / SLOW + k) * 2;
+    const y = h.top + (r.at[1] - h.top) * f;
     const rad = 0.8 + hash(k + 80) * 1.4;
     ctx.globalAlpha = 0.45 * Math.sin(Math.PI * p);
     ctx.drawImage(sprite('255,245,205'), x - rad * 2, y - rad * 2, rad * 4, rad * 4);
@@ -515,42 +526,62 @@ function drawTumbleweeds(ctx, t, unlocked) {
 
 // --- Serene Peak, pristine -------------------------------------------------------
 //
-// THE GRASS UP BY THE LAKE A LITTLE GREENER, so the high country reads as untouched.
-// The map's grass is one flat colour, so it is found by that colour and nothing
-// else is touched — not the trees, the houses or the lake — and the tint fades out
-// towards the edge of the peak so there is no line where it stops.
+// THE GRASS UP BY THE LAKE A LITTLE GREENER, so the high country reads as untouched
+// — and, at the owner's word, the trees and their shadows with it, "a bit more
+// similar to stage 13", taking the grass here as the reference: the canopies from
+// the map's grey olive towards a leaf green, the shadows from brown-grey towards a
+// deep green, as stage 13's are. Each is found by its own flat colour on the map and
+// nothing else is touched — not the houses, the mountains or the lake — and the tint
+// fades out towards the edge of the peak so there is no line where it stops.
 const PEAK = { x: 875, y: 55, rx: 150, ry: 95 };
-const GRASS = [131, 153, 84];
-let pristine = null, pristineFrom = null;
+const TINTS = [
+  { from: [131, 153, 84], to: [96, 178, 72] },     // the grass
+  { from: [118, 123, 88], to: [62, 150, 58] },     // the trees' leaves
+  { from: [78, 75, 57], to: [40, 118, 52] }        // the ground shadows under them
+];
+let pristine = null, woods = null, pristineFrom = null;
 
-// Baked into the still map by src/overview.js rather than drawn every frame.
+// Baked into the still map by src/overview.js rather than drawn every frame. Two
+// sheets: the grass, laid on softly as it always was, and the trees and their
+// shadows, laid on harder — their olive and brown-grey are further from green than
+// the grass is, and at the grass's strength they barely moved.
 export function drawPristine(ctx) {
   if (!ON.pristine) return;
   const img = art.overview;
   if (!img) return;
   if (pristineFrom !== img) {
     pristineFrom = img;
-    const c = document.createElement('canvas');
-    c.width = 960; c.height = 540;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    g.drawImage(img, 0, 0, 960, 540);
-    const d = g.getImageData(0, 0, 960, 540);
-    const px = d.data;
-    for (let i = 0; i < px.length; i += 4) {
-      const p = i / 4, x = p % 960, y = (p / 960) | 0;
-      const e = ((x - PEAK.x) / PEAK.rx) ** 2 + ((y - PEAK.y) / PEAK.ry) ** 2;
-      const grass = Math.abs(px[i] - GRASS[0]) < 12 && Math.abs(px[i + 1] - GRASS[1]) < 12 &&
-        Math.abs(px[i + 2] - GRASS[2]) < 12;
-      px[i] = 96; px[i + 1] = 178; px[i + 2] = 72;
-      px[i + 3] = grass && e < 1 ? Math.round(255 * Math.min(1, (1 - e) * 2.5)) : 0;
-    }
-    g.putImageData(d, 0, 0);
-    pristine = c;
+    const sheetFor = keep => {
+      const c = document.createElement('canvas');
+      c.width = 960; c.height = 540;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      g.drawImage(img, 0, 0, 960, 540);
+      const d = g.getImageData(0, 0, 960, 540);
+      const px = d.data;
+      for (let i = 0; i < px.length; i += 4) {
+        const p = i / 4, x = p % 960, y = (p / 960) | 0;
+        const e = ((x - PEAK.x) / PEAK.rx) ** 2 + ((y - PEAK.y) / PEAK.ry) ** 2;
+        const tint = TINTS.find(({ from: [r, gg, b] }) =>
+          Math.abs(px[i] - r) < 12 && Math.abs(px[i + 1] - gg) < 12 && Math.abs(px[i + 2] - b) < 12);
+        const mine = tint && keep(tint);
+        if (mine) [px[i], px[i + 1], px[i + 2]] = tint.to;
+        px[i + 3] = mine && e < 1 ? Math.round(255 * Math.min(1, (1 - e) * 2.5)) : 0;
+      }
+      g.putImageData(d, 0, 0);
+      return c;
+    };
+    pristine = sheetFor(t => t === TINTS[0]);
+    woods = sheetFor(t => t !== TINTS[0]);
   }
   ctx.save();
   ctx.globalCompositeOperation = 'soft-light';
   ctx.globalAlpha = 0.55;
   ctx.drawImage(pristine, 0, 0, 960, 540);
+  ctx.globalAlpha = 1;
+  ctx.drawImage(woods, 0, 0, 960, 540);
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.45;
+  ctx.drawImage(woods, 0, 0, 960, 540);
   ctx.restore();
 }
 
