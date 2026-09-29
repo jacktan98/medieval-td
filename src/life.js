@@ -181,7 +181,18 @@ const LANDING = [
   { at: [517, 278], w: 10, rx: 6, ry: 2.5, lap: 21, k: 0.7 },  // the fountain
   { at: [560, 262], w: 12, rx: 10, ry: 4, lap: 35, k: 0.6 },   // the houses east of it
   { at: [590, 235], w: 11, rx: 9, ry: 3, lap: 26, k: 0.5 },
-  { at: [395, 252], w: 10, rx: 8, ry: 3, lap: 30, k: 0.5 }     // the trees west of the church
+  { at: [395, 252], w: 10, rx: 8, ry: 3, lap: 30, k: 0.5 },    // the trees west of the church
+  // AND MORE OF THEM, at the owner's word, over the rest of the island: between the
+  // church and the houses, down by the road, and out towards both bridges.
+  { at: [445, 262], w: 11, rx: 8, ry: 3, lap: 28, k: 0.6 },
+  { at: [470, 302], w: 10, rx: 7, ry: 3, lap: 34, k: 0.55 },
+  { at: [540, 300], w: 11, rx: 8, ry: 3, lap: 25, k: 0.55 },
+  { at: [575, 288], w: 10, rx: 7, ry: 3, lap: 32, k: 0.5 },
+  { at: [535, 250], w: 10, rx: 8, ry: 3, lap: 37, k: 0.55 },
+  { at: [455, 212], w: 10, rx: 7, ry: 3, lap: 24, k: 0.5 },
+  { at: [405, 298], w: 10, rx: 7, ry: 3, lap: 29, k: 0.5 },
+  { at: [612, 262], w: 11, rx: 8, ry: 3, lap: 36, k: 0.45 },
+  { at: [355, 280], w: 10, rx: 7, ry: 3, lap: 31, k: 0.4 }
 ];
 
 function drawHoly(ctx, t, unlocked) {
@@ -526,62 +537,42 @@ function drawTumbleweeds(ctx, t, unlocked) {
 
 // --- Serene Peak, pristine -------------------------------------------------------
 //
-// THE GRASS UP BY THE LAKE A LITTLE GREENER, so the high country reads as untouched
-// — and, at the owner's word, the trees and their shadows with it, "a bit more
-// similar to stage 13", taking the grass here as the reference: the canopies from
-// the map's grey olive towards a leaf green, the shadows from brown-grey towards a
-// deep green, as stage 13's are. Each is found by its own flat colour on the map and
-// nothing else is touched — not the houses, the mountains or the lake — and the tint
-// fades out towards the edge of the peak so there is no line where it stops.
+// THE GRASS UP BY THE LAKE A LITTLE GREENER, so the high country reads as untouched.
+// The map's grass is one flat colour, so it is found by that colour and nothing
+// else is touched — not the trees, the houses or the lake — and the tint fades out
+// towards the edge of the peak so there is no line where it stops.
 const PEAK = { x: 875, y: 55, rx: 150, ry: 95 };
-const TINTS = [
-  { from: [131, 153, 84], to: [96, 178, 72] },     // the grass
-  { from: [118, 123, 88], to: [62, 150, 58] },     // the trees' leaves
-  { from: [78, 75, 57], to: [40, 118, 52] }        // the ground shadows under them
-];
-let pristine = null, woods = null, pristineFrom = null;
+const GRASS = [131, 153, 84];
+let pristine = null, pristineFrom = null;
 
-// Baked into the still map by src/overview.js rather than drawn every frame. Two
-// sheets: the grass, laid on softly as it always was, and the trees and their
-// shadows, laid on harder — their olive and brown-grey are further from green than
-// the grass is, and at the grass's strength they barely moved.
+// Baked into the still map by src/overview.js rather than drawn every frame.
 export function drawPristine(ctx) {
   if (!ON.pristine) return;
   const img = art.overview;
   if (!img) return;
   if (pristineFrom !== img) {
     pristineFrom = img;
-    const sheetFor = keep => {
-      const c = document.createElement('canvas');
-      c.width = 960; c.height = 540;
-      const g = c.getContext('2d', { willReadFrequently: true });
-      g.drawImage(img, 0, 0, 960, 540);
-      const d = g.getImageData(0, 0, 960, 540);
-      const px = d.data;
-      for (let i = 0; i < px.length; i += 4) {
-        const p = i / 4, x = p % 960, y = (p / 960) | 0;
-        const e = ((x - PEAK.x) / PEAK.rx) ** 2 + ((y - PEAK.y) / PEAK.ry) ** 2;
-        const tint = TINTS.find(({ from: [r, gg, b] }) =>
-          Math.abs(px[i] - r) < 12 && Math.abs(px[i + 1] - gg) < 12 && Math.abs(px[i + 2] - b) < 12);
-        const mine = tint && keep(tint);
-        if (mine) [px[i], px[i + 1], px[i + 2]] = tint.to;
-        px[i + 3] = mine && e < 1 ? Math.round(255 * Math.min(1, (1 - e) * 2.5)) : 0;
-      }
-      g.putImageData(d, 0, 0);
-      return c;
-    };
-    pristine = sheetFor(t => t === TINTS[0]);
-    woods = sheetFor(t => t !== TINTS[0]);
+    const c = document.createElement('canvas');
+    c.width = 960; c.height = 540;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, 960, 540);
+    const d = g.getImageData(0, 0, 960, 540);
+    const px = d.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const p = i / 4, x = p % 960, y = (p / 960) | 0;
+      const e = ((x - PEAK.x) / PEAK.rx) ** 2 + ((y - PEAK.y) / PEAK.ry) ** 2;
+      const grass = Math.abs(px[i] - GRASS[0]) < 12 && Math.abs(px[i + 1] - GRASS[1]) < 12 &&
+        Math.abs(px[i + 2] - GRASS[2]) < 12;
+      px[i] = 96; px[i + 1] = 178; px[i + 2] = 72;
+      px[i + 3] = grass && e < 1 ? Math.round(255 * Math.min(1, (1 - e) * 2.5)) : 0;
+    }
+    g.putImageData(d, 0, 0);
+    pristine = c;
   }
   ctx.save();
   ctx.globalCompositeOperation = 'soft-light';
   ctx.globalAlpha = 0.55;
   ctx.drawImage(pristine, 0, 0, 960, 540);
-  ctx.globalAlpha = 1;
-  ctx.drawImage(woods, 0, 0, 960, 540);
-  ctx.globalCompositeOperation = 'color';
-  ctx.globalAlpha = 0.45;
-  ctx.drawImage(woods, 0, 0, 960, 540);
   ctx.restore();
 }
 
