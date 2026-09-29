@@ -172,12 +172,13 @@ function drawSmoke(ctx, t, unlocked) {
 //
 // THICKER AND BRIGHTER, at the owner's word: every shaft is WIDE times the width
 // listed below and BRIGHT times as strong, and shows from higher up the sky.
-// Then a quarter dimmer again (1.5 → 1.125), at the owner's word. FOOT is how flat
-// the ellipse each shaft stands on is: its depth over its width.
+// Then a quarter dimmer again (1.5 → 1.125), and another tenth (→ 1.0125), at the
+// owner's word. FOOT is how flat the ellipse each shaft stands on is: its depth
+// over its width.
 const HOLY = { top: -60, slant: 0.47, town: 'dawnford' };
 const SLOW = 2.2;
 const WIDE = 1.6;
-const BRIGHT = 1.125;
+const BRIGHT = 1.0125;
 const FOOT = 0.4;
 const LANDING = [
   { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23, k: 1 },     // the church
