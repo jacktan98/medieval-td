@@ -1884,8 +1884,9 @@ function drawLakeFish(ctx, state) {
     const k = vp.t - s.at;
     const p = Math.min(1, k / 1.6);
     const big = s.small ? 0.7 : 1;
-    ctx.strokeStyle = `rgba(255,255,255,${0.55 * (1 - p)})`;
-    ctx.lineWidth = 0.9;
+    // The lake's own deeper blue, which shows on its pale water where white did not.
+    ctx.strokeStyle = `rgba(52,128,196,${0.75 * (1 - p)})`;
+    ctx.lineWidth = 1;
     for (const lag of [0, 0.35]) {
       const q = Math.max(0, p - lag);
       if (q <= 0) continue;

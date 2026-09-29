@@ -179,7 +179,7 @@ export const level15 = {
   // river's current, at the owner's "a bit more serene". `colour` is the lake's
   // own blue in the base, and nothing is drawn within `inset` px of its bank. See
   // drawBoardLake in src/motion.js.
-  lake: { colour: [166, 213, 255], inset: 4, ripples: 14, glints: 5 },
+  lake: { colour: [166, 213, 255], inset: 4, ripples: 20, glints: 6 },
   waves: stage13Waves,
   wavesExtended: stage13Waves,
   oneLength: true,

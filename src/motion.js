@@ -1586,6 +1586,10 @@ export function drawBoardWater(ctx, img, spec, t) {
 // All inside the lake's own colour, and none within `inset` px of its bank, so
 // nothing touches the mud. On the board's own clock, so it holds still on a paused
 // board.
+// THE MARKS ARE A DEEPER BLUE, NOT WHITE: on the lake's pale blue a white line
+// barely showed, and the owner could not see the water move at all. White is kept
+// for the glints, which are the sun and should be the brightest thing on it.
+const LAKE_MARK = '52,128,196';
 const boardLakes = new Map();
 const lakeHash = n => { const x = Math.sin(n * 157.31 + 41.7) * 43758.5453; return x - Math.floor(x); };
 export function drawBoardLake(ctx, img, spec, t) {
@@ -1601,15 +1605,15 @@ export function drawBoardLake(ctx, img, spec, t) {
   ctx.drawImage(layerFor(w.grp, g => {
     g.lineCap = 'round';
     // RIPPLE LINES.
-    for (let k = 0; k < (spec.ripples ?? 14); k++) {
+    for (let k = 0; k < (spec.ripples ?? 20); k++) {
       const life = 5 + lakeHash(k + 1) * 3;
       const q = t / life + lakeHash(k + 2);
       const round = Math.floor(q), p = q - round;
       const [x, y] = at(k * 13 + round * 7);
       const len = 5 + lakeHash(k * 3 + round) * 7;
       const dx = 2.5 * p;
-      g.strokeStyle = `rgba(255,255,255,${0.42 * Math.sin(Math.PI * p)})`;
-      g.lineWidth = 0.9;
+      g.strokeStyle = `rgba(${LAKE_MARK},${0.7 * Math.sin(Math.PI * p)})`;
+      g.lineWidth = 1.1;
       g.beginPath();
       g.moveTo(x - len / 2 + dx, y);
       g.quadraticCurveTo(x + dx, y + 1.6, x + len / 2 + dx, y);
@@ -1628,7 +1632,7 @@ export function drawBoardLake(ctx, img, spec, t) {
       const q = t / life + lakeHash(k + 41);
       const round = Math.floor(q), p = q - round;
       const [x, y] = at(k * 29 + round * 11 + 500);
-      const a = 0.7 * Math.pow(Math.sin(Math.PI * p), 3);
+      const a = 0.95 * Math.pow(Math.sin(Math.PI * p), 3);
       const r = 1.6 + 0.8 * Math.sin(Math.PI * p);
       g.strokeStyle = `rgba(255,255,255,${a})`;
       g.lineWidth = 0.7;
@@ -1644,8 +1648,8 @@ export function drawBoardLake(ctx, img, spec, t) {
       if (k < 0 || k > 2.6) continue;
       const p = k / 2.6;
       const [x, y] = at(n * 17 + 900);
-      g.strokeStyle = `rgba(255,255,255,${0.3 * (1 - p)})`;
-      g.lineWidth = 0.8;
+      g.strokeStyle = `rgba(${LAKE_MARK},${0.55 * (1 - p)})`;
+      g.lineWidth = 1;
       g.beginPath();
       g.ellipse(x, y, 2 + 9 * p, (2 + 9 * p) * 0.45, 0, 0, Math.PI * 2);
       g.stroke();

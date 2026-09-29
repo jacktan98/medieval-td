@@ -434,7 +434,8 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
 - **When the first enemy of wave 1 appears:** 1 and 2 start standing and praying by
   turns. The villager below the gate walks up into the castle, his back to the player,
   turned right for the last step in at the door.
-- **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear,
+- **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear
+  — "Musketeer, reporting for duty" (`Musketeer_1`) as he steps out —
   down from the door, along to the right to the upper barricade and a quick turn left
   onto his post. He stands there a second, then takes aim for two, and then fires — a
   musketeer there from then on, the same as the one at the bottom right (`recruit` in
@@ -455,10 +456,10 @@ right-hand huts.
 - **When the first enemy of wave 1 appears:** they start standing and praying by
   turns, each facing as before.
 - **Every 10 enemies killed:** 1 and 4 hop twice. **Every 12:** 2. **Every 14:** 3.
-- **All game long:** every four to nine seconds a fish leaps out of the lake with a
+- **All game long:** every eight to eighteen seconds a fish leaps out of the lake with a
   splash, arcs over and dives back in, rings spreading where it leaves the water and
-  where it goes back. The lake itself is still: faint ripple lines drifting and
-  fading on it, a few glints of sun, and now and then a ring spreading from nothing
+  where it goes back. The lake itself is still: ripple lines in a deeper blue
+  drifting and fading on it, a few glints of sun, and now and then a ring spreading from nothing
   (`lake` in level15.js, `drawBoardLake` in src/motion.js).
 - **A star lost:** "nooo". Birdsong, soft, and the lake lapping throughout.
 

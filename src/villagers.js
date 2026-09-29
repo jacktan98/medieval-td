@@ -474,6 +474,8 @@ const PLAYS = {
     recruit: { who: 1, in: [[664, 285], [647, 262], [645, 255], [651, 246]],
                out: [[651, 262], [700, 287], [745, 301], [782, 315], [773, 321]],
                post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 1, aim: 2, voice: 'musketeer',
+               // "Musketeer, reporting for duty", as he steps out of the castle in his gear.
+               report: ['musketeer_1'],
                // His card before his gear: his own name and picture.
                card: { title: 'Villager (Musketeer)', sprite: 'vill_musketeer_front_standing',
                        trim: [213, 200, 88, 119] } },
@@ -492,11 +494,12 @@ const PLAYS = {
     hops: [{ every: 10, who: [0, 3] }, { every: 12, who: [1] }, { every: 14, who: [2] }],
     // A FISH JUMPS in the lake now and then — out of the water with a splash, over in
     // a little arc and back in (src/render.js, drawLakeFish): from one of `spots`,
-    // well away from the banks, every `gap` seconds or so, `span` px along and
+    // well away from the banks, every `gap` seconds or so — half as often as it
+    // first did, at the owner's word — `span` px along and
     // `height` px up, for `dur` seconds.
     fish: { spots: [[35, 165], [80, 170], [125, 175], [30, 220], [25, 290], [45, 330], [70, 370],
                     [40, 420], [75, 455], [40, 490], [100, 480]],
-            gap: [4, 9], span: [14, 24], height: [10, 17], dur: 0.9 },
+            gap: [8, 18], span: [14, 24], height: [10, 17], dur: 0.9 },
     cries: { runnn: false, nooo: true }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
@@ -1101,6 +1104,8 @@ function recruitRound(state, vp, rc, dt) {
   } else if (c.phase === 'inside') {
     if (state.waveIndex >= 1 && state.spawned > 0) {
       c.phase = 'out'; c.at = vp.t;
+      // REPORTING FOR DUTY as he steps out, a voice like any other (Category A).
+      if (rc.report) solo(rc.report, true);
       [v.x, v.y] = rc.in[rc.in.length - 1];
       v.leg = 0; v.hidden = false; v.alpha = 0; v.flip = false;
     }
