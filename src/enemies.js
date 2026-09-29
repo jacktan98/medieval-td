@@ -297,12 +297,13 @@ export function raiseGuard(fig) {
   // point is that a projectile must not be able to raise it at all. Suppressing it
   // one frame later instead is what made him strobe.
   if (fig.stowed > 0) return;
-  // ON THE WAY UP ONLY. This runs for every projectile that lands on him — that is
-  // the whole point of it, since each one refreshes the five seconds — so playing
-  // the clip here unconditionally would make a Blocker under steady fire the
-  // loudest thing on the board. What the player needs to hear is the shield
-  // GOING UP, which is the moment the drawing changes.
-  if (fig.guard <= 0) play(DEFEND);
+  // ON EVERY HIT WHILE HE IS DEFENDING, at the owner's word: "as long as the thug
+  // is in defend mode and projectiles hit it, it should have the sound." It was
+  // once on the shield going up only. Category B, so a volley that lands in the
+  // same instant is one sound (SAME_CLIP_GAP in src/audio.js), and quieter than
+  // the shots themselves (its GAIN), so a Blocker under steady fire does not drown
+  // the battle.
+  play(DEFEND);
   fig.guard = now.guard.seconds;
 }
 

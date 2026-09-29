@@ -245,7 +245,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |
-| **a blocker thug or the captain gets his shield up** — Category B | `Defend_while_walking` |
+| **a projectile hits a blocker thug or the captain while his shield is up** — Category B, a little under the shots | `Defend_while_walking` |
 | **a dark priest starts a heal, or the captain mends himself** — Category B | `Enemies_heal` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
@@ -310,10 +310,12 @@ being cast are things the player has to react to, so they are Category B beside
 the weapons and for the same reason — several can happen at once, and one channel
 would silence all but the first.
 
-**The shield plays on the way UP and not on the hits that hold it there.**
-`raiseGuard` in `src/enemies.js` runs for every projectile that lands on a
-Blocker, because each one refreshes his five seconds; playing the clip on all of
-them would make a Blocker under steady fire the loudest thing on the board.
+**The shield plays on every hit it takes**, at the owner's word — "as long as the
+thug is in defend mode and projectiles hit it, it should have the sound." It once
+played only as the shield went up. `raiseGuard` in `src/enemies.js` runs for every
+projectile that lands on him; the clip is a little under the shots, and a volley
+landing in the same instant is one sound, so a Blocker under steady fire does not
+drown the battle.
 
 **The heal plays when the cast STARTS, not when it lands.** The clip runs 2.53s
 against a two-second cast, so it is written to cover the casting — and the

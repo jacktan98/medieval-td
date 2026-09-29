@@ -835,7 +835,10 @@ export const GAIN = {
   captain_pause: 0.847,
   captain_enters: 0.818,
   captain_healed: 0.804,
-  captain_kills: 0.767
+  captain_kills: 0.767,
+  // And the shield taking a hit, a little under the shots (40 against their 45) now
+  // that it sounds on every one.
+  defend_walking: 0.891
 };
 
 // A LIFT, APPLIED AFTER THE CAP, for the few clips the owner asked to be louder than
@@ -845,12 +848,10 @@ export const GAIN = {
 // checked against the real bus it plays on:
 //   cutting_tree   — 35 against a voice's 100, from the 33 the cap allows; on the
 //                    background bus, so it still peaks under half of full scale.
-//   defend_walking — 45 beside the other shots, from 44; the same.
 //   captain_fallen — 75, from 73; on the voice bus, peaking at 0.98 of full scale,
 //                    which is over PEAK_OUT's margin but under full scale.
 const LIFT = {
   cutting_tree: 1.057,
-  defend_walking: 1.024,
   captain_fallen: 1.028
 };
 
@@ -990,10 +991,9 @@ export const CROSSBOW = ['crossbow_shot'];
                         // audio.js imports nothing, so both armies can read one
                         // table without a cycle.
 
-// A Blocker Thug getting behind his shield. Category B beside the weapons and for
-// the same reason. It plays on the shield GOING UP and not on the hits that hold
-// it there — see raiseGuard in src/enemies.js, which is called by every projectile
-// that lands on him and would otherwise make this the loudest thing in the game.
+// A Blocker Thug behind his shield. Category B beside the weapons and for the same
+// reason. It plays on every projectile that lands on him while his shield is up —
+// see raiseGuard in src/enemies.js.
 export const DEFEND = ['defend_walking'];
 // AN ENEMY MENDING SOMEBODY, whether that is a Dark Priest working on a thug or
 // the Captain working on himself. Category B, and the first sound in this game
