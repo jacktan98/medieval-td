@@ -172,10 +172,13 @@ function drawSmoke(ctx, t, unlocked) {
 //
 // THICKER AND BRIGHTER, at the owner's word: every shaft is WIDE times the width
 // listed below and BRIGHT times as strong, and shows from higher up the sky.
+// Then a quarter dimmer again (1.5 → 1.125), at the owner's word. FOOT is how flat
+// the ellipse each shaft stands on is: its depth over its width.
 const HOLY = { top: -60, slant: 0.47, town: 'dawnford' };
 const SLOW = 2.2;
 const WIDE = 1.6;
-const BRIGHT = 1.5;
+const BRIGHT = 1.125;
+const FOOT = 0.4;
 const LANDING = [
   { at: [420, 282], w: 16, rx: 12, ry: 4, lap: 23, k: 1 },     // the church
   { at: [434, 284], w: 12, rx: 10, ry: 3, lap: 31, k: 1 },
@@ -222,24 +225,32 @@ function drawHoly(ctx, t, unlocked) {
     g.addColorStop(0.75, `rgba(255,236,170,${glow * 0.8})`);
     g.addColorStop(1, `rgba(255,236,170,${glow})`);
     ctx.fillStyle = g;
-    // A band, a little narrower up in the sky than where it lands.
+    // A band, a little narrower up in the sky than where it lands. `hw` is its
+    // half-width measured level with the ground, so the foot can sit on it.
+    const hw = half / Math.abs(nx);
+    const ry = hw * FOOT;
     ctx.beginPath();
-    ctx.moveTo(sx - nx * half * 0.5, sy - ny * half * 0.5);
-    ctx.lineTo(sx + nx * half * 0.5, sy + ny * half * 0.5);
-    ctx.lineTo(ex + nx * half, ey + ny * half);
-    // The foot of the shaft follows the ground: a flat curve, not a straight cut.
-    ctx.quadraticCurveTo(ex, ey + 2.5, ex - nx * half, ey - ny * half);
+    ctx.moveTo(sx - hw * 0.5, sy);
+    ctx.lineTo(sx + hw * 0.5, sy);
+    ctx.lineTo(ex + hw, ey);
+    // THE FOOT, at the owner's drawing: the shaft stands on the ground like a
+    // column, so it ends in the near half of an ellipse lying flat on the grass —
+    // a round, downward-bowed edge that gives the ground its depth.
+    ctx.ellipse(ex, ey, hw, ry, 0, 0, Math.PI);
     ctx.closePath();
     ctx.fill();
-    // Where it lands, a flat pool of light on the ground.
+    // Where it lands, a flat pool of light filling that same ellipse.
     ctx.save();
     ctx.translate(ex, ey);
-    ctx.scale(1, 0.4);
-    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, half * 1.3);
-    pool.addColorStop(0, `rgba(255,238,178,${glow * 1.6})`);
+    ctx.scale(1, FOOT);
+    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, hw);
+    pool.addColorStop(0, `rgba(255,238,178,${glow * 1.4})`);
+    pool.addColorStop(0.7, `rgba(255,238,178,${glow * 0.8})`);
     pool.addColorStop(1, 'rgba(255,238,178,0)');
     ctx.fillStyle = pool;
-    ctx.fillRect(-half * 1.3, -half * 1.3, half * 2.6, half * 2.6);
+    ctx.beginPath();
+    ctx.arc(0, 0, hw, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
   // Motes of light drifting down in the shafts, glowing and gone.
