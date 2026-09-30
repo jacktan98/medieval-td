@@ -535,7 +535,12 @@ const PLAYS = {
     // seconds gone; back with the next box. The first time from where he is painted.
     // Tapped, he drops what he is carrying, goes into the hut, and three seconds later
     // comes out a Tough Thug and makes for the road.
-    boxman: { who: 1, path: HOLLOW_WAY, from: 3, inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
+    //
+    // THE FIRST TIME, from where he is painted, he takes `first`: a natural curve
+    // straight down and round to the door rather than stepping onto his usual line.
+    // Carrying, he faces the player turned left — the drawing as it is.
+    boxman: { who: 1, path: HOLLOW_WAY, first: [[168, 128], [177, 140], [190, 148], [211, 152]],
+              inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
     // THE TWO WHO ARM IN A HUT turn left and right where they stand. Tapped, each walks
     // up to his hut's door, his back to the player (`side`) — the man below the
     // top-left hut up and to the left, the drawing as it is; the man by the bottom hut
@@ -1152,20 +1157,22 @@ function hollowRound(state, vp, dt) {
         c.phase = 'drop';
       } else c.phase = 'drop';
       c.at = vp.t; bv.leg = 0; bv.alpha = 1;
-      // TO THE DOOR along the rest of his own way, from the point of it he is nearest.
+      // TO THE DOOR along the rest of the way he was on, from the point of it he is
+      // nearest.
+      const way = c.firstWay ? bx.first : bx.path;
       let near = 0;
-      bx.path.forEach(([x, y], i) => {
-        if (Math.hypot(x - bv.x, y - bv.y) < Math.hypot(bx.path[near][0] - bv.x, bx.path[near][1] - bv.y)) near = i;
+      way.forEach(([x, y], i) => {
+        if (Math.hypot(x - bv.x, y - bv.y) < Math.hypot(way[near][0] - bv.x, way[near][1] - bv.y)) near = i;
       });
-      c.door = bx.path.slice(Math.min(near + 1, bx.path.length - 1));
+      c.door = way.slice(Math.min(near + 1, way.length - 1));
     }
     if (c.phase === 'carry') {
       bv.hidden = false; bv.alpha = 1; bv.look = 'enemy'; bv.card = ENEMY_CARD;
       bv.pose = 'carry_box';
-      if (c.first) { bv.leg = bx.from; c.first = false; }
-      if (walkTo(bv, bx.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; }
-      // The box on his right, as he is painted, whichever way he goes.
-      bv.flip = true;
+      if (c.first) { bv.leg = 0; c.firstWay = true; c.first = false; }
+      if (walkTo(bv, c.firstWay ? bx.first : bx.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; c.firstWay = false; }
+      // Facing the player turned left — the drawing as it is — whichever way he goes.
+      bv.flip = false;
     } else if (c.phase === 'in') {
       bv.alpha = Math.max(0, 1 - k / DOOR_FADE);
       if (bv.alpha <= 0) { bv.hidden = true; c.phase = 'inside'; c.at = vp.t; }

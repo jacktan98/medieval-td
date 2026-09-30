@@ -432,8 +432,20 @@ if (figures.length) {
            b.y0 * MAP_SCALE >= at.y - win.up && b.y1 * MAP_SCALE <= at.y + win.down;
   };
 
+  // AND A PATCH OF THE BOARD'S OWN SHADOW COLOUR IS GROUND, never a man. Dark
+  // Hollow's stepping stones are drawn in its shadow grey (#595959) and two of them lie
+  // right behind villagers; they fitted the villagers' windows and went out of the
+  // board with them, so the path had holes in it once the men walked off (the owner:
+  // "there are missing stepping stones after the animation"). No figure is drawn in a
+  // board's shadow colour — a man's own shadow is #362407 on every board — so a
+  // piece filled with nothing else stays in the base.
+  const groundOnly = g => {
+    const fills = [...svg.slice(g.start, g.end).matchAll(/fill="(#[0-9a-fA-F]{6})"/g)].map(m => m[1].toLowerCase());
+    return fills.length > 0 && fills.every(f => f === PAL.shadow.toLowerCase());
+  };
   const owner = new Map();
   for (const g of nested2) {
+    if (groundOnly(g)) continue;
     const b = bounds(g.subPaths.flat());
     const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
     let best = -1, least = Infinity;

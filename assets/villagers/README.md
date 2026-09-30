@@ -484,7 +484,9 @@ src/villagers.js).
   other, and a life lost if he gets out.
 - **The box carrier** brings a box down from the top of the board, bending left down
   past where he is painted and right along below the stepping stones (the owner's
-  line), and in at the top hut's door; three seconds inside; out empty-handed and
+  line), and in at the top hut's door, facing the player turned left the whole way
+  (the carrying drawing as it is). The first time, from where he is painted, he just
+  curves down to the door; three seconds inside; out empty-handed and
   back up off the top; three seconds gone; back with the next box. **Tapped**, he
   drops the box: its shadow spreads out from its centre on the ground as it falls,
   and once down it is `Box_on_ground.png`, and stays there. He stands 2 seconds, goes
