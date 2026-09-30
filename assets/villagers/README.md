@@ -478,7 +478,8 @@ src/villagers.js).
 
 - **Tapped, every one of them** answers first (the voice takes priority over anything
   else speaking), stands where he is for **2 seconds**, and then walks **slowly** to
-  where he is going.
+  where he is going. Once armed and at the edge of the road, he quickens as he
+  crosses it, reaching the creature's own pace in its middle, where he joins it.
 - **The two thugs** turn left and right where they stand, all game. **Tapped**, each
   marches to the nearest point of the road and is a **Thug** there: shot at like any
   other, and a life lost if he gets out.

@@ -1061,6 +1061,7 @@ function ammoLoop(state, vp, am, dt) {
 // What he LOOKS like is `v.look`: 'enemy' (a villager in the thugs' dark clothes),
 // 'thug' or 'tough' (the creature's own drawing) — see drawVillager in src/render.js.
 const TURN_EVERY = [2.5, 6];
+const ROAD_EDGE = 40;         // px from the middle of a road to its edge, near enough
 function hollowRound(state, vp, dt) {
   const plan = vp.plan;
   const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
@@ -1081,8 +1082,15 @@ function hollowRound(state, vp, dt) {
     Object.assign(c, { phase: 'march', type, join: j, way: [...road, [j.x, j.y]] });
     v.leg = 0; v.look = 'thug'; v.lookType = type; v.card = cardOf(type);
   };
+  // SLOWLY UP TO THE ROAD, AND UP TO SPEED ACROSS IT: from its edge (`ROAD_EDGE` from
+  // its middle) he quickens, eased, until he is walking at the creature's own pace as
+  // he reaches the middle of it — where he is that creature — so there is no step
+  // from a stroll to a march.
   const marching = (v, c) => {
-    if (walkTo(v, c.way, plan.walk, dt)) {
+    const d = nearestOn(level.routes, v.x, v.y).d;
+    const k = Math.min(1, Math.max(0, 1 - d / ROAD_EDGE));
+    const pace = plan.walk + (enemyTypes[c.type].speed - plan.walk) * k * k * (3 - 2 * k);
+    if (walkTo(v, c.way, pace, dt)) {
       c.phase = 'done';
       v.hidden = true; v.live = false;
       (vp.turned = vp.turned || []).push({ who: v.n, type: c.type, route: c.join.route, s: c.join.s });
