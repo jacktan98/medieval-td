@@ -1692,6 +1692,21 @@ function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
 // the shoulder, over a copy of the greeting with the hand taken out and the body
 // under it filled back in from the standing drawing — see greetLayers.
 function drawVillager(ctx, state, v, layer = null) {
+  // GOING IN BEHIND A HUT — Dark Hollow's man at the bottom one: nothing of him inside
+  // `behind`, so the hut hides the whole of him rather than only where it is drawn.
+  if (v.behind) {
+    const b = v.behind, out = new Path2D();
+    out.rect(0, 0, 960, 540);
+    out.rect(b.x0, 0, b.x1 - b.x0, b.y1);
+    ctx.save();
+    ctx.clip(out, 'evenodd');
+    const was = v.behind;
+    v.behind = null;
+    drawVillager(ctx, state, v, layer);
+    v.behind = was;
+    ctx.restore();
+    return;
+  }
   // DARK HOLLOW'S THUGS, as the creature they are: its own drawing, turned the way he
   // faces. See `look` in hollowRound, src/villagers.js.
   if (v.look === 'thug' || v.look === 'tough') { drawLookingThug(ctx, v); return; }
@@ -1846,6 +1861,19 @@ function drawPlank(ctx, pl) {
   const img = art[key];
   if (!img) return;
   const k = SCALE;
+  // A PIECE LEFT ON THE GROUND casts a shadow there, in the board's own shadow colour
+  // — Dark Hollow's dropped box. It grows under the box as the box comes down.
+  if (pl.ground !== undefined) {
+    const q = Math.min(1, Math.max(0, (pl.y - pl.y0) / Math.max(1, pl.rest - pl.y0)));
+    const rx = sw * k * 0.62, ry = rx * 0.32;
+    ctx.save();
+    ctx.globalAlpha *= 0.4 + 0.6 * q;
+    ctx.fillStyle = (level.palette && level.palette.shadow) || '#37422f';
+    ctx.beginPath();
+    ctx.ellipse(pl.x, pl.ground, rx * (0.7 + 0.3 * q), ry * (0.7 + 0.3 * q), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.save();
   ctx.translate(pl.x, pl.y);
   ctx.rotate(pl.rot);

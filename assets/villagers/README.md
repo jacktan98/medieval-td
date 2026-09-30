@@ -484,11 +484,11 @@ them plays one of the two `Villager_enemy_selected` lines and sets him on the ro
   past where he is painted and right along below the stepping stones (the owner's
   line), and in at the top hut's door; three seconds inside; out empty-handed and back up off the top; three
   seconds gone; back with the next box. **Tapped**, he drops the box at his feet (it
-  stays there), stands 2 seconds, goes into the hut, and three seconds later comes out a **Tough Thug**
+  stays there, with its shadow under it), stands 2 seconds, goes into the hut, and three seconds later comes out a **Tough Thug**
   and makes for the road.
 - **The man by the bottom hut** turns left and right. **Tapped**, he walks down and left
   along the owner's line to the hut's near right-hand corner and in, out of sight
-  behind its wall, and three seconds later comes back out the same way a **Tough
+  behind its wall — the hut hides all of him as he goes, roof height included, and three seconds later comes back out the same way a **Tough
   Thug** and makes for the road.
 - The two enemy villagers are the ordinary villager drawings in the thugs' dark
   clothes: the game recolours the body's cream `#ffde9e` to `#362407` (`darkVillager`

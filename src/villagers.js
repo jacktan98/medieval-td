@@ -539,8 +539,14 @@ const PLAYS = {
     // down and left along the owner's line to the hut's near right-hand corner and
     // in, out of sight behind its wall; three seconds later he comes back out the
     // same way a Tough Thug, and makes for the road.
+    //
+    // THE HUT HIDES HIM on the way in and out: while he is on that curve, nothing of him
+    // is drawn inside `behind` — the hut's own box, from its left edge to its right and
+    // up to the top of the board — so he goes in behind its wall, rather than showing
+    // over its roof as a man walking behind a house that short would.
     hideout: { who: 2, way: [[303, 444], [285, 452], [268, 465], [259, 478]], arm: 3,
-               road: [[268, 465], [285, 452], [303, 444], [284, 432], [262, 404]] },
+               road: [[268, 465], [285, 452], [303, 444], [284, 432], [262, 404]],
+               behind: { x0: 211, x1: 291, y1: 512 } },
     cries: { runnn: false, nooo: false }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
@@ -1121,6 +1127,8 @@ function hollowRound(state, vp, dt) {
     if (c.phase === 'still' && vp.t - c.at >= plan.still) { c.phase = 'house'; c.at = vp.t; hv.leg = 0; }
     house(hv, c, hd.way, hd.arm, hd.road);
     if (c.phase === 'march') { if (c.fadeIn) hv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(hv, c); }
+    // Behind the hut from the moment he sets off for it until he is back out past it.
+    hv.behind = ['house', 'into', 'arming'].includes(c.phase) || (c.phase === 'march' && hv.leg < 3) ? hd.behind : null;
   }
 
   const bx = plan.boxman, bv = bx && state.villagers[bx.who];
@@ -1137,8 +1145,9 @@ function hollowRound(state, vp, dt) {
         const side = bv.flip ? -1 : 1, piece = PIECES.box;
         // Where it comes to rest: its bottom on the ground he stood on.
         const rest = bv.y + 1 - (piece.src[1] + piece.src[3] - piece.mid[1]) * SCALE;
+        // AND ITS SHADOW on the ground there (`ground`), drawn under it by render.js.
         c.box = { piece, x0: bv.x + (piece.held[0] - fx) * SCALE * side, y0: bv.y + (piece.held[1] - fy) * SCALE,
-                  rest, x: 0, y: 0, rot: 0, at: vp.t, depth: bv.y + 2 };
+                  rest, ground: bv.y + 1, x: 0, y: 0, rot: 0, at: vp.t, depth: bv.y + 2 };
         c.phase = 'drop';
       } else c.phase = 'drop';
       c.at = vp.t; bv.leg = 0; bv.alpha = 1;
