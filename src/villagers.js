@@ -1185,7 +1185,8 @@ function hollowRound(state, vp, dt) {
     } else if (c.phase === 'drop') {
       // STANDING THERE with empty hands, the box at his feet, and then to the hut.
       bv.pose = 'standing'; bv.side = 'front';
-      if (k >= plan.still) { c.phase = 'house'; c.at = vp.t; bv.leg = 0; }
+      // Timed from the tap itself — `k` above was read before it.
+      if (vp.t - c.at >= plan.still) { c.phase = 'house'; c.at = vp.t; bv.leg = 0; }
     }
     if (['house', 'into', 'arming'].includes(c.phase)) house(bv, c, c.door, bx.arm, bx.road);
     if (c.phase === 'march') { if (c.fadeIn) bv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(bv, c); }
