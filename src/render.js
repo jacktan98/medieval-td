@@ -570,7 +570,14 @@ function drawFigures(ctx, state) {
   if (level.desert) for (const w of weeds(state.anim || 0)) add(w.y, 1, () => drawWeed(ctx, w));
   // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
   // threw it so it goes over the stack behind them.
-  for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) add(pl.depth, 1, () => drawPlank(ctx, pl));
+  for (const pl of (state.villagerPlay && state.villagerPlay.planks) || []) {
+    add(pl.depth, 1, () => drawPlank(ctx, pl));
+    // A PIECE LEFT ON THE GROUND lays its shadow on the ground, UNDER every figure —
+    // so a man standing beside Dark Hollow's dropped box is never painted over by its
+    // shadow, though the box itself still stands in front of whatever it is nearer
+    // the camera than. See drawPieceGround.
+    if (pl.onGround) add(-Infinity, 0, () => drawPieceGround(ctx, pl));
+  }
   // LIVE FIRES, the world map's fire at board size, where the artwork's painted
   // flames were — stage 1's campfire over its logs, stage 3's two torches on their
   // pillars. Each sorted at the depth of what it burns on and added after it, so it
@@ -1846,32 +1853,34 @@ function drawPlank(ctx, pl) {
   const img = art[key];
   if (!img) return;
   const k = SCALE;
-  // A PIECE LEFT ON THE GROUND — Dark Hollow's dropped box. Falling, its shadow
-  // spreads out from its own centre on the ground as the box comes down; landed, it
-  // is the owner's drawing of the box on the ground, shadow and all (`onGround`, see
-  // BOX_GROUND in src/villagers.js), its box exactly where the falling one came to rest.
-  const og = pl.onGround;
-  if (og && pl.landed) {
-    const gi = art[og.key];
-    if (gi) {
-      const [gx, gy, gw, gh] = og.src;
-      ctx.drawImage(gi, gx, gy, gw, gh, pl.x + (gx - og.mid[0]) * k, pl.y + (gy - og.mid[1]) * k, gw * k, gh * k);
-      return;
-    }
-  }
-  if (og) {
-    const q = Math.min(1, Math.max(0, (pl.y - pl.y0) / Math.max(1, pl.rest - pl.y0)));
-    ctx.save();
-    ctx.fillStyle = og.fill;
-    ctx.beginPath();
-    ctx.ellipse(pl.x + og.shadow[0] * k, pl.ground, og.r[0] * k * q, og.r[1] * k * q, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
   ctx.save();
   ctx.translate(pl.x, pl.y);
   ctx.rotate(pl.rot);
   ctx.drawImage(img, sx, sy, sw, sh, (sx - mid[0]) * k, (sy - mid[1]) * k, sw * k, sh * k);
+  ctx.restore();
+}
+
+// THE GROUND UNDER A PIECE LEFT THERE — Dark Hollow's dropped box — drawn under every
+// figure. Falling, its shadow spreads out from its own centre as the box comes down;
+// landed, it is the owner's drawing of the box on the ground, shadow and all
+// (`onGround`, see BOX_GROUND in src/villagers.js), whose box is exactly the falling
+// one where it came to rest — so the box drawn over it at its own depth by drawPlank
+// lands on its own picture, and only the shadow shows from under a man beside it.
+function drawPieceGround(ctx, pl) {
+  const og = pl.onGround, k = SCALE;
+  if (pl.landed) {
+    const gi = art[og.key];
+    if (!gi) return;
+    const [gx, gy, gw, gh] = og.src;
+    ctx.drawImage(gi, gx, gy, gw, gh, pl.x + (gx - og.mid[0]) * k, pl.y + (gy - og.mid[1]) * k, gw * k, gh * k);
+    return;
+  }
+  const q = Math.min(1, Math.max(0, (pl.y - pl.y0) / Math.max(1, pl.rest - pl.y0)));
+  ctx.save();
+  ctx.fillStyle = og.fill;
+  ctx.beginPath();
+  ctx.ellipse(pl.x + og.shadow[0] * k, pl.ground, og.r[0] * k * q, og.r[1] * k * q, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
