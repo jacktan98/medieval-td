@@ -516,6 +516,9 @@ const paths = {
   villager_hide:       'assets/audio/villagers/Villager_say_hide.mp3',
   villager_oh_no:      'assets/audio/villagers/Villager_say_oh_no.mp3',
   villager_here_they_come: 'assets/audio/villagers/Villager_say_here_they_come.mp3',
+  // And stage 14's, where the village is the enemy's: "get rid of these intruders,
+  // brothers!"
+  villager_intruders: 'assets/audio/villagers/Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3',
   flag_waving:     'assets/audio/map/Flag_waving.mp3',
   bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
   // THE BOARDS' OWN SOUNDS, stages 1 to 5. Fire and river LOOP for as long as the
@@ -545,6 +548,8 @@ const paths = {
   // Stage 13's lake lapping, and a fish breaking its surface (SPLASH, below).
   lake_water:      'assets/audio/map/Lake_sound.mp3',
   water_splash:    'assets/audio/map/Water_splash_sound.mp3',
+  // Stage 14's dark woods, a low sound looping for as long as it is played.
+  dark_background: 'assets/audio/map/Dark_background_sound.mp3',
 
   // --- THE SUMMARY --------------------------------------------------------------
   //
@@ -670,6 +675,9 @@ export const GAIN = {
   // and a fish's splash, 35, under the shots.
   lake_water: 0.554,
   water_splash: 0.776,
+  // Stage 14's dark woods, a background like the lake's and at its level (25), where
+  // untrimmed it came out at 45.
+  dark_background: 0.554,
   // THE VILLAGE'S WAVE-1 SHOUTS sit at the level of its "runnn", at the owner's
   // word: levelled to the one target like every other voice, with no trim and none
   // of the LOUDER boost they started with.
@@ -1073,7 +1081,8 @@ export const VILLAGER_WAVE = {
   hide:  ['villager_hide'],
   oh_no: ['villager_oh_no'],
   here:  ['villager_here_they_come'],
-  runnn: ['villager_runnn']
+  runnn: ['villager_runnn'],
+  intruders: ['villager_intruders']
 };
 // Something the villagers throw landing — a plank on the stack, a part on the
 // ballista, a box on the crates. Category B, soft (its GAIN): a working

@@ -137,6 +137,8 @@ export const level16 = {
     { x: 218.1, y: 503.3 }    // 5, the thug beside him
   ],
   villagerPlay: 'hollow',
+  // The dark woods' own sound, low, for as long as the board is played.
+  ambience: [{ clip: 'dark_background', level: 1 }],
 
   // TWO ELITE ARCHERS BEHIND THE LOG BARRICADE, at the owner's word: "3b has 2 elite
   // archers with 20 physical damage but others same stats as elite archer in tower.

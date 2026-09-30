@@ -219,7 +219,7 @@ const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 3
 // DARK HOLLOW'S BOX CARRIER'S WAY, the owner's line: in over the top of the board, down
 // and bending left, down the left of where he is painted, then right along below the
 // stepping stones to the foot of the top hut's door, on its left-hand wall.
-const HOLLOW_WAY = [[203, -12], [198, 53], [181, 95], [175, 116], [176, 141], [182, 150], [211, 152]];
+const HOLLOW_WAY = [[203, -12], [198, 53], [181, 95], [175, 116], [175, 141], [182, 150], [211, 152]];
 
 const PLAYS = {
   oakhaven: {
@@ -538,7 +538,7 @@ const PLAYS = {
     //
     // THE FIRST TIME, from where he is painted, he takes `first`: a natural curve
     // straight down and round to the door rather than stepping onto his usual line.
-    // Carrying, he faces the player turned left — the drawing as it is.
+    // Carrying, he faces the player — turned left coming down, mirrored turning right.
     boxman: { who: 1, path: HOLLOW_WAY, first: [[168, 128], [177, 140], [190, 148], [211, 152]],
               inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
     // THE TWO WHO ARM IN A HUT turn left and right where they stand. Tapped, each walks
@@ -552,7 +552,9 @@ const PLAYS = {
       { who: 3, type: 'tough_inf', side: 'back', way: [[267, 491], [282, 479]], arm: 3,
         road: [[268, 490], [246, 470]] }
     ],
-    cries: { runnn: false, nooo: false }
+    // The village's cries are the enemy's here: "get rid of these intruders,
+    // brothers!" as the first wave comes, and "nooo" still as a star is lost.
+    cries: { runnn: false, nooo: true, wave: 'intruders' }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
@@ -1177,10 +1179,10 @@ function hollowRound(state, vp, dt) {
     if (c.phase === 'carry') {
       bv.hidden = false; bv.alpha = 1; bv.look = 'enemy'; bv.card = ENEMY_CARD;
       bv.pose = 'carry_box';
-      if (c.first) { bv.leg = 0; c.firstWay = true; c.first = false; }
+      if (c.first) { bv.leg = 0; c.firstWay = true; c.first = false; bv.flip = false; }
       if (walkTo(bv, c.firstWay ? bx.first : bx.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; c.firstWay = false; }
-      // Facing the player turned left — the drawing as it is — whichever way he goes.
-      bv.flip = false;
+      // Facing the player: turned left, the drawing as it is, coming down; mirrored once
+      // he turns right along below the stepping stones (walkTo turns him the way he goes).
     } else if (c.phase === 'in') {
       bv.alpha = Math.max(0, 1 - k / DOOR_FADE);
       if (bv.alpha <= 0) { bv.hidden = true; c.phase = 'inside'; c.at = vp.t; }
@@ -1195,7 +1197,7 @@ function hollowRound(state, vp, dt) {
       if (stroll(bv, bx.path.slice(0, -1).reverse(), dt)) { c.phase = 'gone'; c.at = vp.t; bv.hidden = true; }
     } else if (c.phase === 'gone' && k >= bx.gone) {
       [bv.x, bv.y] = bx.path[0];
-      bv.leg = 0; bv.side = 'front';
+      bv.leg = 0; bv.side = 'front'; bv.flip = false;
       c.phase = 'carry'; c.at = vp.t;
     } else if (c.phase === 'drop') {
       // STANDING THERE with empty hands, the box at his feet, and then to the hut.

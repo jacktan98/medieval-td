@@ -471,8 +471,9 @@ right-hand huts.
 
 Nobody here is on your side. As the level lists them: 1 the thug between the two
 top huts, 2 carrying a box to the top hut, 3 below the top-left hut, 4 by the bottom
-hut, 5 the thug beside him. None of them greets, prays or hops, and the village has
-no shout and no "nooo". A tap on any of them plays one of the two
+hut, 5 the thug beside him. None of them greets, prays or hops. As the first wave
+comes the village shouts "get rid of these intruders, brothers!", and it still cries
+"nooo" as a star is lost. A tap on any of them plays one of the two
 `Villager_enemy_selected` lines and sets him on the road (`hollow` in
 src/villagers.js).
 
@@ -485,8 +486,8 @@ src/villagers.js).
   other, and a life lost if he gets out.
 - **The box carrier** brings a box down from the top of the board, bending left down
   past where he is painted and right along below the stepping stones (the owner's
-  line), and in at the top hut's door, facing the player turned left the whole way
-  (the carrying drawing as it is). The first time, from where he is painted, he just
+  line), and in at the top hut's door, facing the player — turned left coming down
+  (the carrying drawing as it is), mirrored once he turns right. The first time, from where he is painted, he just
   curves down to the door; three seconds inside; out empty-handed and
   back up off the top; three seconds gone; back with the next box. **Tapped**, he
   drops the box: its shadow spreads out from its centre on the ground as it falls,

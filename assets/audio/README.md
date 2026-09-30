@@ -41,7 +41,7 @@ assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Church_bell.mp3, Desert_wind_sound.mp3,
                       Cutting_Tree.mp3, Crows_cawing.mp3,
                       Factory_sound.mp3, Lake_sound.mp3,
-                      Water_splash_sound.mp3
+                      Water_splash_sound.mp3, Dark_background_sound.mp3
                       — the sounds of the stage boards and the world map
                       themselves rather than of anybody on them
 
@@ -49,7 +49,8 @@ assets/audio/villagers/  Villager_selected_1.mp3 .. Villager_selected_3.mp3,
                          Villager_say_runnn.mp3, Villager_say_nooo.mp3,
                          Villager_say_thugs_are_here.mp3, Villager_say_hide.mp3,
                          Villager_say_oh_no.mp3, Villager_say_here_they_come.mp3,
-                         Villager_enemy_selected_1.mp3, Villager_enemy_selected_2.mp3
+                         Villager_enemy_selected_1.mp3, Villager_enemy_selected_2.mp3,
+                         Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -202,6 +203,7 @@ and it now means "how long a lull has to be before the game forgets".
 | the first enemy of wave 1 appears on **stages 1, 6 and 11** | `Villager_say_runnn`, once, **before everything**: takes the channel and is never cut off |
 | the first enemy of wave 1 appears on **stages 2, 7 and 12** | `Villager_say_hide`, the same way |
 | the first enemy of wave 1 appears on **stages 3, 8 and 13** | `Villager_say_oh_no`, the same way |
+| the first enemy of wave 1 appears on **stage 14** | `Villager_enemy_say_get_rid_of_these_intruders_brothers` — the village there is the enemy's — the same way |
 | the first enemy of wave 1 appears on **stages 4 and 9** | `Villager_say_here_they_come`, the same way |
 | the first enemy of wave 1 appears on **stages 5 and 10** | `Villager_say_thugs_are_here`, the same way |
 | on **every stage**, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the first-wave shout |
@@ -220,6 +222,7 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 12 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12's first gate torch is lit | `Fire_crackling`, looping from then on, as loud as every other board's fire |
 | stage 13 is being played (background, looping) | `Lake_sound`, a notch above the river, and `Bird_chirping`, soft |
+| stage 14 is being played (background, looping) | `Dark_background_sound`, at the lake's level |
 | stage 13's fish leaps out of the lake | the first 1.4s of `Water_splash_sound`, faded out (Category B) |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
 | the first enemy of **each wave** appears on stage 8 | the church bell swings left — `Church_bell`, one stroke — back to the middle as the stroke is faded out, then right with a second stroke, and back (Category B, loud: the board's, but it rings out over it) |
