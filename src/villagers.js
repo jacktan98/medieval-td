@@ -1160,13 +1160,16 @@ function hollowRound(state, vp, dt) {
       if (c.phase === 'carry') {
         const [fx, fy] = VILLAGER_POSE.feet.carry_box;
         const side = bv.flip ? -1 : 1, piece = PIECES.box;
-        // Where it comes to rest: sitting on its shadow, whose centre is on the ground in
-        // front of him — the owner's drawing of it on the ground (BOX_GROUND) says where
-        // the box stands on its shadow.
+        // Where it comes to rest: out to the side he holds it on, CLEAR OF HIM — its
+        // shadow's near edge BOX_CLEAR px beyond his own — and sitting on that shadow,
+        // whose centre is on the ground: the owner's drawing of it on the ground
+        // (BOX_GROUND) says where the box stands on its shadow. It falls out and down
+        // to there from his arms.
         const ground = bv.y + 2;
         const rest = ground - BOX_GROUND.shadow[1] * SCALE;
+        const x1 = bv.x - side * (BOX_GROUND.r[0] * SCALE + BOX_CLEAR) - BOX_GROUND.shadow[0] * SCALE;
         c.box = { piece, x0: bv.x + (piece.held[0] - fx) * SCALE * side, y0: bv.y + (piece.held[1] - fy) * SCALE,
-                  rest, ground, x: 0, y: 0, rot: 0, at: vp.t, depth: ground, onGround: BOX_GROUND };
+                  x1, rest, ground, x: 0, y: 0, rot: 0, at: vp.t, depth: ground, onGround: BOX_GROUND };
         c.phase = 'drop';
       } else c.phase = 'drop';
       c.at = vp.t; bv.leg = 0; bv.alpha = 1;
@@ -1178,6 +1181,9 @@ function hollowRound(state, vp, dt) {
         if (Math.hypot(x - bv.x, y - bv.y) < Math.hypot(way[near][0] - bv.x, way[near][1] - bv.y)) near = i;
       });
       c.door = way.slice(Math.min(near + 1, way.length - 1));
+      // AND ROUND THE BOX, never over it: a leg of that way passing near where it lies
+      // gets a step in front of it (lower on the board, nearer the player) first.
+      if (c.box) c.door = roundBox(bv, c.door, c.box.x1, c.box.ground);
     }
     if (c.phase === 'carry') {
       bv.hidden = false; bv.alpha = 1; bv.look = 'enemy'; bv.card = ENEMY_CARD;
@@ -1213,13 +1219,36 @@ function hollowRound(state, vp, dt) {
     // THE DROPPED BOX falls from his arms to the ground and stays there.
     if (c.box) {
       const b = c.box, q = Math.min(1, (vp.t - b.at) / BOX_DROP);
-      b.x = b.x0; b.y = b.y0 + (b.rest - b.y0) * q * q;
+      b.x = b.x0 + (b.x1 - b.x0) * q; b.y = b.y0 + (b.rest - b.y0) * q * q;
       if (q >= 1 && !b.landed) { b.landed = true; play(LANDED); }
       vp.dropped = [b];
     }
   }
 }
 const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground
+const BOX_CLEAR = 8;          // px from his middle to the near edge of its shadow
+const BOX_BERTH = 14;         // px a way must keep from the box's middle, or it goes round
+const BOX_ROUND = [15, 11];   // and how wide and how far in front of it he goes round
+// A WAY THAT KEEPS CLEAR OF A BOX ON THE GROUND at (bx, by). Points of the way on top
+// of it are dropped; then the first leg that still comes within BOX_BERTH of it gets
+// two steps in FRONT of the box first — below it on the board, one each side, in the
+// order he meets them — so he walks round its near side and is drawn over it rather
+// than stepping through it.
+function roundBox(v, way, bx, by) {
+  const clear = way.filter(([x, y], i) => i === way.length - 1 || Math.hypot(x - bx, y - by) >= BOX_ROUND[0] + 4);
+  const pts = [[v.x, v.y], ...clear];
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1], [cx, cy] = pts[i];
+    const dx = cx - ax, dy = cy - ay, len2 = dx * dx + dy * dy;
+    const t = len2 ? Math.max(0, Math.min(1, ((bx - ax) * dx + (by - ay) * dy) / len2)) : 0;
+    if (Math.hypot(ax + dx * t - bx, ay + dy * t - by) < BOX_BERTH) {
+      const dir = cx >= ax ? 1 : -1;
+      const round = [[bx - dir * BOX_ROUND[0], by + BOX_ROUND[1]], [bx + dir * BOX_ROUND[0], by + BOX_ROUND[1]]];
+      return [...clear.slice(0, i - 1), ...round, ...clear.slice(i - 1)];
+    }
+  }
+  return clear;
+}
 // THE OWNER'S DRAWING OF THE BOX ON THE GROUND, shadow and all (Box_on_ground.png),
 // which is what a dropped box is once it lands. Its box is the carried one's drawing
 // a pixel right and two up, so `mid` is where the flying box's middle lands in it;

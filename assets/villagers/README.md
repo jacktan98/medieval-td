@@ -490,8 +490,10 @@ src/villagers.js).
   (the carrying drawing as it is), mirrored once he turns right. The first time, from where he is painted, he just
   curves down to the door; three seconds inside; out empty-handed and
   back up off the top; three seconds gone; back with the next box. **Tapped**, he
-  drops the box: its shadow spreads out from its centre on the ground as it falls,
-  and once down it is `Box_on_ground.png`, and stays there. He stands 2 seconds, goes
+  drops the box out to the side he holds it on, clear of him (its shadow never
+  touches his): its shadow spreads out from its centre on the ground as it falls,
+  and once down it is `Box_on_ground.png`, and stays there. If it lies in his way to
+  the hut he walks round its near side rather than over it. He stands 2 seconds, goes
   into the hut, and three seconds later comes out a **Tough Thug** and makes for the
   road.
 - **The man below the top-left hut** turns left and right. **Tapped**, he walks up to
