@@ -39,7 +39,14 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
 import { spawn, updateEnemies, pickTarget } from '../src/enemies.js';
-import { enemyTypes } from '../src/data/waves.js';
+import { enemyTypes, MARCH_ORDER } from '../src/data/waves.js';
+
+// A WAVE AS ITS CREATURES AND THEIR COUNTS, in MARCH_ORDER whatever order it was
+// written in. The owner's lists say who comes and how many; the order they come in
+// is the house order (MARCH_ORDER, checked against every table in tools/admin.mjs),
+// which the owner re-set after most of these lists were written.
+const marched = line => line.split(' + ')
+  .sort((a, b) => MARCH_ORDER.indexOf(a.split(' ')[1]) - MARCH_ORDER.indexOf(b.split(' ')[1])).join(' + ');
 import { typeOf } from '../src/data/armour.js';
 import { inRange } from '../src/ground.js';
 import { at as routeAt } from '../src/route.js';
@@ -1237,8 +1244,8 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
     '8 blocker_inf + 5 heavy_inf + 16 archer_inf'
   ];
   const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got5.join(' | ') === WANT5.join(' | '), 'the Castle sends exactly the eight it was given',
-    got5.map((g, i) => (g === WANT5[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT5[i]})`)).join(' '));
+  ok(got5.join(' | ') === WANT5.map(marched).join(' | '), 'the Castle sends exactly the eight it was given',
+    got5.map((g, i) => (g === marched(WANT5[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT5[i])})`)).join(' '));
   ok(castle.plots.length === 9 && castle.startGold === 240 && castle.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
     `${castle.plots.length} plots, ${castle.startGold} gold, ${castle.waves.length} waves`);
@@ -1543,8 +1550,8 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
     '10 blocker_inf + 8 heavy_inf + 12 archer_inf + 6 plague_inf'
   ];
   const got6 = ford.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got6.join(' | ') === WANT6.join(' | '), 'Dawnford sends exactly the eight it was given',
-    got6.map((g, i) => (g === WANT6[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT6[i]})`)).join(' '));
+  ok(got6.join(' | ') === WANT6.map(marched).join(' | '), 'Dawnford sends exactly the eight it was given',
+    got6.map((g, i) => (g === marched(WANT6[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT6[i])})`)).join(' '));
   ok(ford.plots.length === 9 && ford.startGold === 240 && ford.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
     `${ford.plots.length} plots, ${ford.startGold} gold, ${ford.waves.length} waves`);
@@ -1604,8 +1611,8 @@ console.log('\n--- stage 8, two roads that cross, and five men already standing 
     '12 blocker_inf + 8 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
   ];
   const got8 = kirk.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got8.join(' | ') === WANT8.join(' | '), 'Dawnford Church sends exactly the eight it was given',
-    got8.map((g, i) => (g === WANT8[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT8[i]})`)).join(' '));
+  ok(got8.join(' | ') === WANT8.map(marched).join(' | '), 'Dawnford Church sends exactly the eight it was given',
+    got8.map((g, i) => (g === marched(WANT8[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT8[i])})`)).join(' '));
   // AND THE GIANTS CLIMB, which is the shape of the owner's second pass over this
   // table rather than a number in it. Every wave from the third carries more of them
   // than the wave before, and that is the thing a later edit could quietly flatten.
@@ -1711,8 +1718,8 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     '10 blocker_inf + 10 shadow_inf + 4 heavy_inf + 12 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got9 = sand.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got9.join(' | ') === WANT9.join(' | '), 'Sandshroud sends exactly the eight it was given',
-    got9.map((g, i) => (g === WANT9[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT9[i]})`)).join(' '));
+  ok(got9.join(' | ') === WANT9.map(marched).join(' | '), 'Sandshroud sends exactly the eight it was given',
+    got9.map((g, i) => (g === marched(WANT9[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT9[i])})`)).join(' '));
 
   // THE SHADOW THUG SHIPS HERE AND NOWHERE ELSE, which is the thing this table is
   // for and the thing a later retune could quietly undo from either end: take him
@@ -1934,8 +1941,8 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
     '14 blocker_inf + 6 shadow_inf + 2 rally_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got10.join(' | ') === WANT10.join(' | '), 'Ironforge sends exactly the eight it was given',
-    got10.map((g, i) => (g === WANT10[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT10[i]})`)).join(' '));
+  ok(got10.join(' | ') === WANT10.map(marched).join(' | '), 'Ironforge sends exactly the eight it was given',
+    got10.map((g, i) => (g === marched(WANT10[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT10[i])})`)).join(' '));
 
   // THE RALLY THUG SHIPS HERE AND NOWHERE ELSE, which is the thing this table is for
   // and the thing a later retune could quietly undo from either end: take him off
@@ -2237,8 +2244,8 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
     '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got11 = fact.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got11.join(' | ') === WANT11.join(' | '), 'the Factory sends exactly the eight it was given',
-    got11.map((g, i) => (g === WANT11[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT11[i]})`)).join(' '));
+  ok(got11.join(' | ') === WANT11.map(marched).join(' | '), 'the Factory sends exactly the eight it was given',
+    got11.map((g, i) => (g === marched(WANT11[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT11[i])})`)).join(' '));
 
   // IT SENDS EVERY CREATURE THE CAMPAIGN USES, which no other table does and which
   // is what makes it a last board rather than a harder version of the one before.
@@ -2452,8 +2459,8 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
     '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got12 = cast.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got12.join(' | ') === WANT12.join(' | '), 'the Castle sends exactly the eight it was given',
-    got12.map((g, i) => (g === WANT12[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT12[i]})`)).join(' '));
+  ok(got12.join(' | ') === WANT12.map(marched).join(' | '), 'the Castle sends exactly the eight it was given',
+    got12.map((g, i) => (g === marched(WANT12[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT12[i])})`)).join(' '));
 
   // AND THEY ARE THE FACTORY'S, WAVE FOR WAVE. The owner sent the same eight for
   // both boards, so this is a fact rather than a coincidence to tidy away — and it
@@ -2639,8 +2646,8 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     '14 blocker_inf + 8 shadow_inf + 10 bomb_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got13 = peak.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got13.join(' | ') === WANT13.join(' | '), 'the Lake sends exactly the eight it was given',
-    got13.map((g, i) => (g === WANT13[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT13[i]})`)).join(' '));
+  ok(got13.join(' | ') === WANT13.map(marched).join(' | '), 'the Lake sends exactly the eight it was given',
+    got13.map((g, i) => (g === marched(WANT13[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT13[i])})`)).join(' '));
 
   ok(peak.plots.length === 9 && peak.startGold === 240 && peak.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
@@ -2842,8 +2849,8 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
     '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got14 = hollow.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got14.join(' | ') === WANT14.join(' | '), 'the Hollow sends exactly the eight it was given',
-    got14.map((g, i) => (g === WANT14[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT14[i]})`)).join(' '));
+  ok(got14.join(' | ') === WANT14.map(marched).join(' | '), 'the Hollow sends exactly the eight it was given',
+    got14.map((g, i) => (g === marched(WANT14[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT14[i])})`)).join(' '));
 
   ok(hollow.plots.length === 9 && hollow.startGold === 300 && hollow.waves.length === 8 &&
      !(hollow.prebuilt || []).length && hollow.maxTier === undefined && hollow.allow === undefined,
@@ -2942,8 +2949,8 @@ console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n')
     '12 blocker_inf + 6 heavy_inf + 12 archer_inf + 6 plague_inf + 6 dark_priest'
   ];
   const got7 = well.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got7.join(' | ') === WANT7.join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
-    got7.map((g, i) => (g === WANT7[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT7[i]})`)).join(' '));
+  ok(got7.join(' | ') === WANT7.map(marched).join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
+    got7.map((g, i) => (g === marched(WANT7[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT7[i])})`)).join(' '));
   ok(well.plots.length === 9 && well.startGold === 240 && well.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
     `${well.plots.length} plots, ${well.startGold} gold, ${well.waves.length} waves`);

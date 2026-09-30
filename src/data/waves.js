@@ -1869,36 +1869,23 @@ export const enemyTypes = {
 // also checks that every enemy in the game appears here exactly once — a creature
 // missing from this list would be one the dashboard could not place.
 export const MARCH_ORDER = [
-  // The Shadow Thug marches with the other thug variants, which is where the note
-  // above puts "the same creature at three weights" — four now. He is last of them
-  // and in front of the Giant: a creature only a soldier can touch wants the squad
-  // already committed when he arrives, not waiting idle at the front of a column.
-  // The Rally Thug marches with the thug variants too, and LAST of them — in front
-  // of the Giant and behind everything he is there to rally. A standard-bearer at
-  // the head of a column carries his banner away from the men it is for; behind
-  // them, his hundred pixels cover the tail of the bodies ahead and the head of the
-  // heavies behind, which is the middle of the wave and the whole of what he is.
-  // The Bomb Thug marches with them too, and for the Shadow Thug's reason pointed
-  // at the opposite end of a fight: he wants the squad ALREADY COMMITTED when he
-  // arrives. A bomb that goes off against the first man to meet it kills one man;
-  // the same bomb against a line that has closed on the wave ahead of it takes
-  // three, because his blast is 100px and a squad holding a road stands inside
-  // that. He is also in front of the Rally Thug rather than behind, because the
-  // banner is worth half again on his blast and a standard-bearer arriving after
-  // the bomb has gone off is a standard-bearer who missed it.
-  'light_inf', 'tough_inf', 'blocker_inf', 'shadow_inf', 'bomb_inf', 'rally_inf',
-  'heavy_inf', 'archer_inf', 'plague_inf',
-  // THE CROW FLIES IN BEHIND THE WHOLE COLUMN AND OVERTAKES IT. He is a third
-  // again as fast as anything walking, so where he starts is not where he arrives:
-  // from the back he reaches the towers with the column, while the bows are already
-  // busy with it — which is the fight he is for. From the front he would arrive
-  // alone and be shot down by towers with nothing else to do.
-  'crow',
-  // The healer comes in LAST, behind everything he is there to mend. A priest at
-  // the head of a column would spend the wave walking with nobody hurt in front of
-  // him; behind it he arrives to a fight already going and men already wounded.
-  'dark_priest',
-  // AND THE BOSS BEHIND EVEN HIM, because groups spawn one after another and this
+  // It used to be argued creature by creature here — the Shadow Thug last of the thug
+  // variants so the squad is committed when he arrives, the Bomb Thug in front of
+  // the Rally Thug so the banner is up for his blast, the crow flying in behind the
+  // column and overtaking it, the priest behind everything he mends. The owner has
+  // since set the order himself, and it is the order the admin panel lists them in:
+  // "thug, tough thug, blocker thug, dark crow, shadow thug, giant thug, bomb thug,
+  // archer thug, plague doctor, dark priest, rally thug, captain thug".
+  //
+  // THE PANEL LISTS A WAVE IN THE ORDER IT MARCHES, so for the panel to read this way
+  // the tables had to march this way too: waves 4 to 8 of stages 10 to 14 were
+  // re-sorted into it — the same creatures, counts and gaps — which puts the Rally
+  // Thug at the back of his waves, behind the priests, and the Giants ahead of the
+  // Bomb Thugs. tools/admin.mjs checks every table is in this order but the Bend's
+  // boss finale, which leads with the boss on purpose.
+  'light_inf', 'tough_inf', 'blocker_inf', 'crow', 'shadow_inf', 'heavy_inf',
+  'bomb_inf', 'archer_inf', 'plague_inf', 'dark_priest', 'rally_inf',
+  // AND THE BOSS LAST OF ALL, because groups spawn one after another and this
   // list is therefore the order they arrive in. A boss at the front of a wave is a
   // boss the player meets with a full line and full towers; a boss at the back
   // arrives to a line that has already been chewed on, which is the fight worth
@@ -1926,9 +1913,11 @@ export const MARCH_ORDER = [
 // Shadow Thug, the Rally Thug, the Bomb Thug and the Dark Crow arrived in that order
 // and sit in that order, behind the roster the book opened with. The player meets them in
 // that order too, because each one was written into the late boards.
+//
+// THE DARK CROW AND THE RALLY THUG CHANGED PLACES, at the owner's word.
 export const BOOK_ORDER = [
   'light_inf', 'tough_inf', 'archer_inf', 'blocker_inf', 'heavy_inf',
-  'plague_inf', 'dark_priest', 'shadow_inf', 'rally_inf', 'bomb_inf', 'crow'
+  'plague_inf', 'dark_priest', 'shadow_inf', 'crow', 'bomb_inf', 'rally_inf'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a
@@ -2820,18 +2809,24 @@ export const stage10Waves = [
                        { type: 'shadow_inf', count: 2, gap: 1.8 },
                        { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 },
-                       { type: 'archer_inf', count: 6, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 6, gap: 1.5 },
-                       { type: 'rally_inf', count: 2, gap: 1.8 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
+                       { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'archer_inf', count: 6, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
+                       { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
+                       { type: 'shadow_inf', count: 6, gap: 1.5 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
 ];
 
 // STAGE 11: Ironforge Factory, the board at the end of the road.
@@ -2867,18 +2862,27 @@ export const stage11Waves = [
                        { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
                        { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
+                       { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
+                       { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
+                       { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
 ];
 
 // STAGE 12: Ironforge Castle, and the table is the Factory's, wave for wave.
@@ -2918,18 +2922,27 @@ export const stage12Waves = [
                        { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
                        { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
+                       { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
+                       { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
+                       { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
 ];
 
 // STAGE 13: Serene Peak Lake, and the first shipped table that sends a Bomb Thug.
@@ -2963,30 +2976,40 @@ export const stage13Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
                        { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'bomb_inf', count: 2, gap: 1.9 },
-                       { type: 'heavy_inf', count: 1, gap: 2.0 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'bomb_inf', count: 4, gap: 1.8 },
-                       { type: 'heavy_inf', count: 2, gap: 2.0 },
-                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 }, { type: 'bomb_inf', count: 2, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'bomb_inf', count: 6, gap: 1.7 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 },
+                       { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 }, { type: 'bomb_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'bomb_inf', count: 8, gap: 1.5 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'bomb_inf', count: 10, gap: 1.4 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
+                       { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 }, { type: 'bomb_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
+                       { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'heavy_inf', count: 4, gap: 1.8 }, { type: 'bomb_inf', count: 8, gap: 1.5 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
+                       { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'heavy_inf', count: 6, gap: 1.7 }, { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
 ];
 
 // STAGE 14: Dark Hollow Woods, and a TESTING table, at the owner's word: "Use this
@@ -3008,18 +3031,27 @@ export const stage14Waves = [
                        { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
                        { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
+                       { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
+                       { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
+                       { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
 ];
 
 export const wavesExtended = [

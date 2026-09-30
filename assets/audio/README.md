@@ -222,7 +222,7 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 12 is being played (background, soft, looping) | `Crows_cawing`, as on stage 10 |
 | stage 12's first gate torch is lit | `Fire_crackling`, looping from then on, as loud as every other board's fire |
 | stage 13 is being played (background, looping) | `Lake_sound`, a notch above the river, and `Bird_chirping`, soft |
-| stage 14 is being played (background, looping) | `Dark_background_sound`, at the lake's level |
+| stage 14 is being played (background, looping) | `Dark_background_sound`, at the lake's level, and `Crows_cawing`, soft, as over Ironforge |
 | stage 13's fish leaps out of the lake | the first 1.4s of `Water_splash_sound`, faded out (Category B) |
 | stage 9 is being played (background, soft, looping) | `Desert_wind_sound` |
 | the first enemy of **each wave** appears on stage 8 | the church bell swings left — `Church_bell`, one stroke — back to the middle as the stroke is faded out, then right with a second stroke, and back (Category B, loud: the board's, but it rings out over it) |
