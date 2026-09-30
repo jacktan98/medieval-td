@@ -2989,6 +2989,39 @@ export const stage13Waves = [
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
+// STAGE 14: Dark Hollow Woods, and a TESTING table, at the owner's word: "Use this
+// as testing wave first."
+//
+// It is the Castle's eight waves exactly — the owner's list, checked line by line
+// against stage12Waves — so the Bomb Thug that walks Serene Peak is not in it. A
+// second array rather than a shared reference, for the Castle's reason: the first
+// retune of either lands on one board.
+export const stage14Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 }, { type: 'shadow_inf', count: 4, gap: 1.7 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 8, gap: 1.2 }, { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 }, { type: 'shadow_inf', count: 6, gap: 1.6 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 4, gap: 1.8 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 }, { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 }, { type: 'shadow_inf', count: 8, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 6, gap: 1.7 },
+                       { type: 'archer_inf', count: 10, gap: 1.0 }, { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },

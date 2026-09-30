@@ -673,6 +673,13 @@ be re-derived by reading rather than by instrumenting it. All the geometry is re
 is dropped — everything except its background, which is the grass every other
 layer sits on and the only opaque ground in the stack.
 
+**A stage can stand where Layer 1 has no marker yet**, placed by hand in
+`TEMPORARY` in `tools/overview.mjs`: a spot in game px, the stage its road leaves
+from, and a few points the road bends through. Stage 14, Dark Hollow Woods, is one
+— a temporary spot in the dark ground below Ironforge, its road out of Ironforge
+Town's marker, at the owner's word. When its medallion and road line are drawn into
+Layer 1, delete the entry and put the new marker in `ORDER`.
+
 **The names layer is not part of the picture either.** It is found by its colour
 rather than by its number: a layer every shape of which is `#fff5e1` is lettering.
 It is pulled out and written to its own file, because the game multiplies a sheet
@@ -698,17 +705,19 @@ hand:
 - `Stage_1_Map_base.svg`, `Stage_2_Map_base.svg`, `Stage_3_Map_base.svg`,
   `Stage_4_Map_base.svg`, `Stage_5_Map_base.svg`, `Stage_6_Map_base.svg`,
   `Stage_7_Map_base.svg`, `Stage_8_Map_base.svg`, `Stage_9_Map_base.svg`,
-  `Stage_10_Map_base.svg`, `Stage_11_Map_base.svg`, `Stage_12_Map_base.svg` and
-  `Stage_13_Map_base.svg` — the thirteen drawn boards with their plot markers cut
-  out, written by `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for
-  the others. Note the **stem**: all thirteen are drawn in layers, so the command
+  `Stage_10_Map_base.svg`, `Stage_11_Map_base.svg`, `Stage_12_Map_base.svg`,
+  `Stage_13_Map_base.svg` and `Stage_14_Map_base.svg` — the fourteen drawn boards
+  with their plot markers cut out, written by
+  `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for the others.
+  Note the **stem**: all fourteen are drawn in layers, so the command
   names `Stage_1_Map` rather than a file. Same pipeline as `Map_N_base.svg`
   otherwise.
 - `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
   `Stage_4_Map_front.svg`, `Stage_5_Map_front.svg`, `Stage_6_Map_front.svg`,
   `Stage_7_Map_front.svg`, `Stage_8_Map_front.svg`, `Stage_9_Map_front.svg`,
-  `Stage_10_Map_front.svg`, `Stage_11_Map_front.svg`, `Stage_12_Map_front.svg` and
-  `Stage_13_Map_front.svg` — **the things on those boards that stand up**, on a
+  `Stage_10_Map_front.svg`, `Stage_11_Map_front.svg`, `Stage_12_Map_front.svg`,
+  `Stage_13_Map_front.svg` and `Stage_14_Map_front.svg` — **the things on those
+  boards that stand up**, on a
   transparent sheet of the same artboard. The same command writes them. See "What a figure can walk behind" below.
   Stages 10 and 11 need `--accept` on that command, for opposite reasons. Stage 10's
   archery target stands 29.5px tall, inside the 26–35px band where the splitter
@@ -722,7 +731,10 @@ hand:
   post takes a shape OUT of the count — see the two musketeers in
   `src/data/level14.js`. Stage 13 needs neither flag either, and for the plainest
   reason of the four: twenty-eight things on its top layer, five of which stand up,
-  and the shortest of those is 45px against 21px of flat.
+  and the shortest of those is 45px against 21px of flat. Stage 14 needs neither:
+  fifty-five things on its top layer, three of which stand up (the two stone huts
+  and the signpost), the shortest 45px against 21px of flat. Its dead trees and
+  stumps stay in the base, away from the road, and nothing walks behind them.
 
   **The lake is deliberately not on the sheet**, and the splitter says so on every
   run: 214x423 of water with no `#37422f` shadow under it, so it is not standing on

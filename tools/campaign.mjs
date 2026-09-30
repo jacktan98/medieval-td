@@ -222,16 +222,22 @@ const area = b => (b[2] - b[0]) * (b[3] - b[1]);
 
 console.log('\n--- the committed data still describes the drawing ---\n');
 
-ok(drawnMarkers.length === STAGE_COUNT,
+// EXCEPT THE STAGES PLACED BY HAND. Stage 14 is a temporary spot the owner asked for
+// before its medallion is drawn — see TEMPORARY in tools/overview.mjs — so it has
+// `marker: null` and no line in the guide, and these checks are about the rest.
+const DRAWN = STAGES.filter(s => s.marker !== null);
+
+ok(drawnMarkers.length === DRAWN.length,
   'the SVG holds one marker per stage',
-  `${drawnMarkers.length} drawn, ${STAGE_COUNT} in the data`);
+  `${drawnMarkers.length} drawn, ${DRAWN.length} in the data` +
+  (DRAWN.length < STAGE_COUNT ? `, and ${STAGE_COUNT - DRAWN.length} placed by hand` : ''));
 
 // STALENESS, and the reason this file exists. Every stage must sit on a marker
 // the artist has actually drawn. Half a pixel of slack because the data is
 // rounded to one decimal on the way out; anything larger is a marker that moved.
 {
   let off = 0, worst = 0;
-  for (const s of STAGES) {
+  for (const s of DRAWN) {
     const near = drawnMarkers.reduce((best, m) =>
       Math.hypot(s.x - m[0], s.y - m[1]) < Math.hypot(s.x - best[0], s.y - best[1]) ? m : best,
       drawnMarkers[0]);
@@ -249,8 +255,18 @@ ok(drawnMarkers.length === STAGE_COUNT,
 // the number of stages exactly — and a line added or removed since the tool last
 // ran is the staleness this file exists to catch, which the stage positions alone
 // would not notice.
-ok(roadLines.length === STAGE_COUNT, 'and one road line per stage, no more',
-  `${roadLines.length} line(s) in the guide, ${STAGE_COUNT} stage(s)`);
+ok(roadLines.length === DRAWN.length, 'and one road line per stage, no more',
+  `${roadLines.length} line(s) in the guide, ${DRAWN.length} stage(s)`);
+
+// AND A HAND-PLACED STAGE IS WHERE IT SAYS: its road ends on its spot, and it is
+// behind every drawn one on the road, so the drawing's order is untouched.
+{
+  const hand = STAGES.map((s, i) => [s, i]).filter(([s]) => s.marker === null);
+  const bad = hand.filter(([s, i]) => i < DRAWN.length ||
+    Math.hypot(s.leg.at(-1)[0] - s.x, s.leg.at(-1)[1] - s.y) > 0.5);
+  ok(bad.length === 0, 'and a stage placed by hand comes after them, its road ending on it',
+    hand.length ? hand.map(([, i]) => `stage ${i + 1}`).join(', ') : 'none placed by hand');
+}
 
 // AND EVERY ONE OF THEM IS OPEN. A road that closes back on itself is a shape the
 // artist has drawn by accident, and it would be followed all the way round.
@@ -717,6 +733,7 @@ console.log('\n--- the trail is evenly spaced along every leg ---\n');
     const SLACK = 2;
     let off = 0, worst = 0, offAt = new Set();
     for (const [i, st] of STAGES.entries()) {
+      if (st.marker === null) continue;
       for (const p of st.leg) {
         const q = [p[0] / SCALE, p[1] / SCALE];
         const d = Math.min(...roadLines.map(L => near(q, L)));
@@ -1027,8 +1044,8 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
   // campaign a player walks is the drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
-  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m1,m2,m3',
-    'the game loads the thirteen drawn boards, then the three testing ones',
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m1,m2,m3',
+    'the game loads the fourteen boards, then the three testing ones',
     play.join(' -> '));
   // And the stages carry them in that same order, as far as the markers go — which
   // is now ALL THIRTEEN, the road having grown a marker in the same batch as the
@@ -1044,8 +1061,10 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // medallion in Layer 1 and wrote Serene Peak Lake in the same batch, so the road
   // never spent a day with a locked marker on the end of it. The three testing maps
   // stay where they are: loaded, editable from the dashboard, off the map.
-  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15',
-    '  ending at Serene Peak, with the testing maps behind it and off the road',
+  // AND DARK HOLLOW WOODS AFTER IT, on a spot placed by hand until its medallion is
+  // drawn — see TEMPORARY in tools/overview.mjs.
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16',
+    '  ending at Dark Hollow, with the testing maps behind it and off the road',
     filled.join(' -> '));
 
   // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
@@ -2645,13 +2664,14 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     ok(!missing.length, '  and its table sends every creature in play',
       `${sent.size} of ${inPlay.length}` +
       (missing.length ? ` — missing ${missing.map(id => enemyTypes[id].name).join(', ')}` : ''));
-    // AND THE BOARDS THAT DO ARE THE LAST OF THE CAMPAIGN, which is the shape every
-    // other claim of this kind here takes: a player meets the full roster at the end
-    // of the road rather than somewhere in the middle of it.
-    const t = tailOfCampaign(l =>
+    // AND IT IS THE ONLY ONE THAT DOES, for now. This was "the last of the campaign"
+    // until Dark Hollow Woods came after it with a TESTING table, at the owner's word,
+    // which is the Castle's eight waves and so sends no Bomb Thug. When Dark Hollow
+    // gets its real table this may well go back to being a tail.
+    const all = onRoad().filter(l =>
       inPlay.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
-    ok(t.ok && t.hit.includes(peak), '  and the boards that do are the last of the campaign',
-      t.hit.map(l => l.id).join(', ') || 'none');
+    ok(all.length === 1 && all[0] === peak, '  and it is the one board on the road that does',
+      all.map(l => l.id).join(', ') || 'none');
   }
 
   // --- nothing held back ---------------------------------------------------------
@@ -2667,9 +2687,14 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     // AND IT IS THE ONLY BOARD ON THE ROAD THAT SAYS SO. Every other one caps, which
     // is what makes this a decision rather than an omission somebody forgot to fill
     // in — and an edit that quietly uncapped an earlier board would fail here.
-    const free = onRoad().filter(l => l.maxTier === undefined);
-    ok(free.length === 1 && free[0] === peak, '  and the only board on the road that does',
-      free.map(l => l.name).join(', ') || 'none');
+    //
+    // AND DARK HOLLOW WOODS AFTER IT, at the owner's word: "Towers are not restricted
+    // anymore." So the uncapped boards are the END of the road — asked as a tail, so
+    // an earlier board quietly uncapped still fails here.
+    const free = tailOfCampaign(l => l.maxTier === undefined);
+    ok(free.ok && free.hit.includes(peak) && free.hit.length === 2,
+      '  and the boards that do are the last two on the road',
+      free.hit.map(l => l.name).join(', ') || 'none');
 
     // THE RUNG NO OTHER BOARD OPENS, measured off the ladders rather than named.
     // Eight fourth rungs exist; seven of them are on some board's `allow` list and
@@ -2794,6 +2819,48 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
       '  and it is an ordinary tower, sellable and able to buy abilities',
       Object.keys(pre).join(', '));
   }
+}
+
+console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their own doors ---\n');
+
+// THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 300 gold,
+// no cap, eight testing waves, 50/50 — and "enemies who enter the left middle will
+// exit only at right middle road. Enemies that enter the left bottom will exit only
+// at right bottom road."
+{
+  const hollow = levels.find(l => l.id === 'm16');
+  ok(!!hollow, 'Dark Hollow Woods is in the game', hollow ? hollow.name : 'missing');
+
+  const WANT14 = [
+    '8 light_inf',
+    '10 light_inf + 2 tough_inf',
+    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+  ];
+  const got14 = hollow.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got14.join(' | ') === WANT14.join(' | '), 'the Hollow sends exactly the eight it was given',
+    got14.map((g, i) => (g === WANT14[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT14[i]})`)).join(' '));
+
+  ok(hollow.plots.length === 9 && hollow.startGold === 300 && hollow.waves.length === 8 &&
+     !(hollow.prebuilt || []).length && hollow.maxTier === undefined && hollow.allow === undefined,
+    'and is nine plots, 300 gold, eight waves, nothing prebuilt and nothing capped',
+    `${hollow.plots.length} plots, ${hollow.startGold} gold, ${hollow.waves.length} waves, ` +
+    `${(hollow.prebuilt || []).length} prebuilt, maxTier ${hollow.maxTier}`);
+
+  // EACH ROAD IN AT ITS MOUTH AND OUT AT ITS OWN DOOR: the middle one in and out
+  // above the bottom one at both ends.
+  const [mid, bot] = hollow.routes.map(r => r.pts);
+  const first = r => r[0], last = r => r[r.length - 1];
+  ok(first(mid).x < 0 && first(bot).x < 0 && last(mid).x > 960 && last(bot).x > 960 &&
+     first(mid).y < first(bot).y && last(mid).y < last(bot).y,
+    '  and the left-middle road leaves by the right-middle door, the left-bottom by the bottom',
+    `in at y ${first(mid).y} and ${first(bot).y}, out at y ${last(mid).y} and ${last(bot).y}`);
+  ok(JSON.stringify(hollow.routeMix) === '[1,1]', '  half of every wave down each',
+    JSON.stringify(hollow.routeMix));
 }
 
 console.log('\n--- a board may be drawn in another palette ---\n');

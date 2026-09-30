@@ -923,6 +923,48 @@ const stages = ORDER.map((m, i) => ({
   leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)])
 }));
 
+// STAGES THE DRAWING DOES NOT HAVE YET, placed by hand and appended after the ones
+// it does. Each is a spot in game px, the stage its road leaves from, and a few
+// points the road bends through on the way — smoothed and resampled like any
+// drawn leg. `marker` is null: there is no medallion in Layer 1 behind it.
+//
+// STAGE 14, Dark Hollow Woods, is TEMPORARY, at the owner's word: "Add a temporary
+// spot at the dark area of the bottom right of the overview map." The road is the
+// owner's red line — out of Ironforge Town's marker (stage 10), east and down past
+// the houses, and curling round into the dark ground below them. When the artist
+// draws its medallion into Layer 1, this entry goes and ORDER gains the marker.
+const TEMPORARY = [
+  { level: 13, from: 9, at: [874, 449],
+    via: [[776, 356], [814, 380], [848, 395], [872, 410], [884, 426], [882, 441]] }
+];
+
+// A smooth line through the points, Catmull-Rom, eight steps a span.
+function smooth(pts) {
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    for (let k = 0; k < 8; k++) {
+      const t = k / 8, t2 = t * t, t3 = t2 * t;
+      out.push([0, 1].map(d => 0.5 * (2 * p1[d] + (p2[d] - p0[d]) * t +
+        (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (3 * p1[d] - p0[d] - 3 * p2[d] + p3[d]) * t3)));
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+
+for (const T of TEMPORARY) {
+  const from = stages[T.from];
+  const line = smooth([[from.x, from.y], ...T.via, T.at]);
+  stages.push({
+    marker: null,
+    x: T.at[0],
+    y: T.at[1],
+    level: T.level,
+    leg: resampleOpen(line, POINTS).map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10])
+  });
+}
+
 const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand.
 //
 // Written by tools/overview.mjs from assets/map/Overview_Map_Layer_*.svg. Re-run it
