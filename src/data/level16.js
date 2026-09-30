@@ -95,19 +95,21 @@ const bottom = [
   { x: 999, y: 428 }
 ];
 // NINE, in road order, as `node tools/split-map.mjs assets/map/Stage_14_Map`
-// printed them. Three read FAR at the splitter's 95px, which is the big islands
+// printed them. Four read FAR at the splitter's 95px, which is the big islands
 // between the loops: a marker in the middle of one is a long way from every edge.
+// The two in the middle-right island moved up when the owner put the archers'
+// barricade at its foot.
 const plots1 = [
   { x:  79, y: 394 },   // 1312 from the keep,  83 off the road
   { x: 124, y: 297 },   // 1292 from the keep,  90 off the road
   { x: 357, y: 334 },   // 1097 from the keep, 107 off the road
-  { x: 411, y: 252 },   // 1027 from the keep,  83 off the road
+  { x: 421, y: 246 },   // 1016 from the keep,  78 off the road
   { x: 402, y: 425 },   //  535 from the keep, 112 off the road
-  { x: 620, y: 372 },   //  362 from the keep,  78 off the road
-  { x: 643, y: 259 },   //  318 from the keep, 106 off the road
+  { x: 636, y: 297 },   //  347 from the keep, 108 off the road
+  { x: 644, y: 208 },   //  284 from the keep, 115 off the road
   { x: 849, y: 351 },   //  147 from the keep,  85 off the road
   { x: 875, y: 244 }    //  131 from the keep,  83 off the road
-];
+]
 
 export const level16 = {
   id: 'm16',
@@ -123,15 +125,28 @@ export const level16 = {
 
   routes: [middle, bottom],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, two by the top hut and two by the bottom one, each at
-  // the centre of his own ground shadow. They stand as painted and can be tapped;
-  // there is no `villagerPlay` yet — the animations come next, at the owner's word.
+  // THE PEOPLE WHO LIVE HERE, and none of them is on your side: two thugs and two
+  // enemy villagers, each at the centre of his own ground shadow. At the owner's word
+  // they are the game's to move — see `hollow` in src/villagers.js — and a tap turns
+  // any of them into a creature on the road.
   villagers: [
-    { x: 121.8, y: 133.4 },   // 1, left of the top hut
-    { x: 160.2, y: 118.5 },   // 2, beside him
-    { x: 306.7, y: 440.5 },   // 3, right of the bottom hut
-    { x: 300.7, y: 485.9 }    // 4, below him
+    { x: 128.8, y: 135.0 },   // 1, the thug by the top hut
+    { x: 162.0, y: 115.7 },   // 2, carrying a box to the top hut
+    { x: 306.7, y: 440.5 },   // 3, by the bottom hut
+    { x: 306.3, y: 478.9 }    // 4, the thug below him
   ],
+  villagerPlay: 'hollow',
+
+  // TWO ELITE ARCHERS BEHIND THE LOG BARRICADE, at the owner's word: "3b has 2 elite
+  // archers with 20 physical damage but others same stats as elite archer in tower.
+  // Voices follow elite archer in tower." The Crossbow Tower's man, whose card says
+  // Elite Archer — see `Elite Archer` in garrisonUnits. Each anchor is the centre of
+  // his ground shadow in Layer 3b.
+  garrison: [
+    { x: 611.0, y: 361.9, unit: 'Elite Archer' },
+    { x: 638.1, y: 366.2, unit: 'Elite Archer' }
+  ],
+
   waves: stage14Waves,
   wavesExtended: stage14Waves,
   oneLength: true,

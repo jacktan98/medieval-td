@@ -80,18 +80,24 @@ function nextRoute(state) {
   return bag.cards.pop();
 }
 
-export function spawn(state, typeId) {
+// `from`, when given, is a place already on the road — `{ route, s }` — rather than a
+// mouth: Dark Hollow's thugs, who walk onto it from beside it when tapped (see
+// hollowRound in src/villagers.js). He takes the middle lane there, which is the
+// road's own centreline, so he stands exactly where he walked to; and he takes no card
+// from the route bag, so the wave's own shares are untouched.
+export function spawn(state, typeId, from = null) {
   const def = enemyTypes[typeId];
-  const ri = nextRoute(state);
-  const lane = randomLane();
+  const ri = from ? from.route : nextRoute(state);
+  const lane = from ? MIDDLE_LANE : randomLane();
   const road = laneOf(level.routes[ri], lane);
-  const at0 = pointOn(road, 0);
+  const s0 = from ? from.s : 0;
+  const at0 = pointOn(road, s0);
 
   state.enemies.push({
     def,
     route: ri,
     lane,            // which of the three, as an index into LANES
-    s: 0,            // distance walked along that lane's own polyline
+    s: s0,           // distance walked along that lane's own polyline
     x: at0.x,
     y: at0.y,
     hp: def.hp,
@@ -199,7 +205,9 @@ export function spawn(state, typeId) {
   // the game uses it — buying an upgrade — on the same argument: the gate exists to
   // stop the battle talking over itself, and neither of these is the battle.
   if (def.boss) solo(BOSS_ENTERS, true, true);
+  return state.enemies[state.enemies.length - 1];
 }
+const MIDDLE_LANE = 1;
 
 // IS THIS FIGURE PLAYING OUT ITS DEATH? True for the four seconds a boss spends
 // losing, and false for everything else in the game on every frame of its life.

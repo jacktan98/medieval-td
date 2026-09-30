@@ -7,7 +7,7 @@ import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked, startReveal as startStars, stepStars } from './score.js';
 import { startReveal, stepReveal, stageOfLevel, openedStages, roadGrew, mapAudio } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
-import { updateEnemies } from './enemies.js';
+import { updateEnemies, spawn } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
@@ -449,6 +449,17 @@ function step(state, dt) {
     // A player who had him selected now has the musketeer selected.
     const sel = state.selected;
     if (sel && sel.kind === 'villager' && sel.ref === state.villagers[r.who]) state.selected = { kind: 'unit', ref: u };
+  }
+  // DARK HOLLOW'S VILLAGERS WHO HAVE REACHED THE ROAD are creatures on it from here:
+  // a Thug or a Tough Thug where each one stands. See hollowRound in src/villagers.js.
+  if (state.villagerPlay && state.villagerPlay.turned) {
+    for (const t of state.villagerPlay.turned) {
+      const e = spawn(state, t.type, { route: t.route, s: t.s });
+      // A player who had him selected now has the creature selected.
+      const sel = state.selected;
+      if (sel && sel.kind === 'villager' && sel.ref === state.villagers[t.who]) state.selected = { kind: 'enemy', ref: e };
+    }
+    state.villagerPlay.turned = null;
   }
   if (state.lives <= 0) state.result = 'lost';
 }

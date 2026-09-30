@@ -3658,6 +3658,22 @@ const postStats = {
   cd: POST.cooldown
 };
 
+// AND THE CROSSBOW TOWER'S, for the two archers behind the log barricade in Dark
+// Hollow Woods. The same ask in the same words a fourth time: "2 elite archers with
+// 20 physical damage but others same stats as elite archer in tower."
+//
+// ELITE ARCHER is the name the Crossbow Tower gives its man (`unit` on tier 3), so it
+// is that tier's numbers: 240 reach on a 0.80s draw, with 20 where the tower hits for
+// 25. Two of them is 50 a second, the Winchester pair's figure again.
+const ELITE = archery.find(t => t.unit === 'Elite Archer');
+const eliteStats = {
+  // The only line here that is not the tower's. A tower is bought and these two are
+  // given.
+  damage: 20,
+  range: ELITE.range,
+  cd: ELITE.cooldown
+};
+
 export const garrisonUnits = {
   Crossbowman: {
     ...crossbowman,
@@ -3869,6 +3885,38 @@ export const garrisonUnits = {
     colour: '#8A7B5E',
     damageType: 'physical',
     ranged: { ...postStats, ammo: bullet }
+  },
+
+  // --- DARK HOLLOW'S BARRICADE ------------------------------------------------------
+  //
+  // TWO ELITE ARCHERS, the crossbowman's shape once more: what he is (the Crossbow
+  // Tower's bowman and its numbers, 20 damage aside), that nothing can touch him
+  // (`fixture`), and that he answers for himself when tapped — with the archery
+  // family's lines, which are what the Crossbow Tower says (it has no `voice` of its
+  // own). At the owner's word: "Voices follow elite archer in tower."
+  //
+  // `...archer3` brings the bow: his two poses, his shadow anchor, the muzzle the
+  // arrow leaves from, and the arrow itself.
+  'Elite Archer': {
+    ...archer3,
+    name: 'Elite Archer',
+    sprite: archer3.gunner,
+    spriteTrim: archer3.gunnerTrim,
+    pivot: archer3.gunnerPivot,
+    voice: 'archery',
+    // He never swings, and drawSoldier multiplies by this on every frame — see the
+    // crossbowman's note on NaN.
+    lunge: 0,
+    fixture: true,
+    hp: 120,
+    damage: eliteStats.damage,
+    cd: eliteStats.cd,
+    r: 8,
+    regen: 6,
+    speed: 0,
+    colour: '#B8B2A4',
+    damageType: 'physical',
+    ranged: { ...eliteStats, ammo: archer3.ammo }
   }
 };
 

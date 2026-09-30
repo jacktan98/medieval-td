@@ -1692,11 +1692,16 @@ function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
 // the shoulder, over a copy of the greeting with the hand taken out and the body
 // under it filled back in from the standing drawing — see greetLayers.
 function drawVillager(ctx, state, v, layer = null) {
+  // DARK HOLLOW'S THUGS, as the creature they are: its own drawing, turned the way he
+  // faces. See `look` in hollowRound, src/villagers.js.
+  if (v.look === 'thug' || v.look === 'tough') { drawLookingThug(ctx, v); return; }
   const key = villagerKey(v);
   // A LIT POLE BURNS: its painted flame is taken off the drawing and a live one
   // burns where it was — stage 12's torch-lighter. See POLE_FIRE.
   const lit = !layer && POLE_FIRE.poses.includes(v.pose);
-  const img = layer || (lit && unlitPole(key)) || art[key];
+  // (And his standing drawing made too, whatever he is doing, for his card.)
+  if (v.look === 'enemy') darkVillager('vill_front_standing');
+  const img = layer || (lit && unlitPole(key)) || (v.look === 'enemy' ? darkVillager(key) : art[key]);
   if (!img) return;
   const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;
   const k = SCALE, w = sw * k, h = sh * k;
@@ -1731,6 +1736,64 @@ function drawVillager(ctx, state, v, layer = null) {
       (state.anim || 0) * 1.3 + v.n, POLE_FIRE.s, true, { smoke: 0.5 });
     ctx.restore();
   }
+}
+
+// A THUG STANDING ABOUT OR MARCHING TO THE ROAD, before he is one of the creatures on
+// it: the Thug's or the Tough Thug's own Default drawing, stood on his anchor and
+// mirrored when he faces right (the drawings face left, as every villager's does).
+function drawLookingThug(ctx, v) {
+  const d = enemyTypes[v.look === 'thug' ? 'light_inf' : 'tough_inf'];
+  const img = art[d.sprite];
+  if (!img) return;
+  const [sx, sy, sw, sh] = d.spriteTrim;
+  const w = sw * SCALE, h = sh * SCALE;
+  ctx.save();
+  if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;
+  ctx.translate(v.x, v.y);
+  if (v.flip) ctx.scale(-1, 1);
+  ctx.drawImage(img, sx, sy, sw, sh, -d.pivot[0] * w, -d.pivot[1] * h, w, h);
+  ctx.restore();
+}
+
+// AN ENEMY VILLAGER: the villager's own drawing in the thugs' dark clothes, the way
+// the owner painted Dark Hollow's two. The body's cream (#ffde9e) goes to the thugs'
+// brown (#362407) — and so does every pixel that is a blend of it with the black
+// outline or with the head's paler cream, in proportion, so the edges stay soft.
+// Made once per drawing, and kept in `art` as `e` + its key so a card can show it.
+const BODY = [255, 222, 158], HEAD = [255, 239, 212], DARK = [0x36, 0x24, 0x07];
+function darkVillager(key) {
+  const name = 'e' + key;
+  if (art[name]) return art[name];
+  const img = art[key];
+  if (!img || !img.complete || !img.naturalWidth) return null;
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  const px = g.getImageData(0, 0, c.width, c.height), d = px.data;
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const HB = HEAD.map((h, i) => h - BODY[i]), HB2 = dot(HB, HB), B2 = dot(BODY, BODY);
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    const p = [d[i], d[i + 1], d[i + 2]];
+    // Between the outline's black and the body: some fraction `t` of the body colour.
+    const t = dot(p, BODY) / B2;
+    const off1 = Math.hypot(...p.map((v, k) => v - t * BODY[k]));
+    if (t > 0.15 && t <= 1.02 && off1 < 10) {
+      for (let k = 0; k < 3; k++) d[i + k] = Math.round(Math.min(1, t) * DARK[k]);
+      continue;
+    }
+    // Between the body and the head: a blend of the two, the body's share darkened.
+    const u = dot(p.map((v, k) => v - BODY[k]), HB) / HB2;
+    const off2 = Math.hypot(...p.map((v, k) => v - (BODY[k] + u * HB[k])));
+    if (u >= 0 && u < 0.85 && off2 < 6) {
+      for (let k = 0; k < 3; k++) d[i + k] = Math.round(DARK[k] + u * (HEAD[k] - DARK[k]));
+    }
+  }
+  g.putImageData(px, 0, 0);
+  c.naturalWidth = c.width; c.naturalHeight = c.height; c.complete = true;
+  art[name] = c;
+  return c;
 }
 
 // THE FLAME ON A LIT POLE, live: the owner's drawings of the torch-lighter paint it at

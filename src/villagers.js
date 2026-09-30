@@ -20,6 +20,9 @@
 import { SCALE } from './data/towers.js';
 import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH } from './audio.js';
 import { starsFor } from './score.js';
+import { level } from './level.js';
+import { nearestOn } from './route.js';
+import { enemyTypes } from './data/waves.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
 // a figure to be: `pickFigure` reads `def.r` and `def.spriteTrim`, and the info
@@ -212,6 +215,10 @@ const AMMO_WAY = [[681, 318], [692.3, 310.3], [700, 300], [695, 289], [685, 283]
 const HOUSE_WAY = [[686, 332], [660, 345], [610, 355], [560, 361], [507, 362]];
 const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
   [769.5, 331], [729.5, 336], [697.5, 346], [674, 361]];
+
+// DARK HOLLOW'S BOX CARRIER'S WAY, from off the top of the board down past where he is
+// painted to the step of the top hut's door, on its left-hand wall.
+const HOLLOW_WAY = [[168, -12], [165, 60], [162, 115.7], [186, 138], [208, 146.5]];
 
 const PLAYS = {
   oakhaven: {
@@ -502,6 +509,32 @@ const PLAYS = {
             gap: [8, 18], span: [14, 24], height: [10, 17], dur: 0.9 },
     cries: { runnn: false, nooo: true, wave: 'oh_no' }
   },
+  // STAGE 14, Dark Hollow Woods, as the level lists them: 1 the thug by the top hut,
+  // 2 carrying a box to it, 3 by the bottom hut, 4 the thug below him. NOBODY HERE IS
+  // ON YOUR SIDE — see hollowRound below. They are at work from the first frame to the
+  // last (no greeting, praying or hopping, and no village cries), and a tap on any of
+  // them sets him on the road as a creature like any other.
+  hollow: {
+    work: true,
+    before: [], after: [], run: [], hops: [],
+    // WHAT THEY SAY WHEN TAPPED, one of the owner's two at random.
+    voice: 'enemy_villager',
+    // THE TWO THUGS turn left and right where they stand, all game. Tapped, each marches
+    // down along `road` and on to the nearest point of the road proper, and is a Thug
+    // there — one that can be shot, and costs a life if he gets out.
+    thugs: [{ who: 0, road: [[132, 165]] }, { who: 3, road: [[296, 452], [268, 418]] }],
+    // THE BOX CARRIER: the box down from the north and in at the top hut's door; three
+    // seconds inside; out empty-handed, back up off the top of the board; three
+    // seconds gone; back with the next box. The first time from where he is painted.
+    // Tapped, he drops what he is carrying, goes into the hut, and three seconds later
+    // comes out a Tough Thug and makes for the road.
+    boxman: { who: 1, path: HOLLOW_WAY, from: 2, inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
+    // THE MAN BY THE BOTTOM HUT turns left and right where he stands. Tapped, he goes
+    // round behind the hut — its door is on the far side — and three seconds later
+    // comes back out a Tough Thug and makes for the road.
+    hideout: { who: 2, way: [[294, 447], [268, 444]], arm: 3, road: [[284, 432], [262, 404]] },
+    cries: { runnn: false, nooo: false }
+  },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
   sandshroud: {
@@ -742,6 +775,9 @@ function work(state, vp, dt) {
   if (vp.plan.lighter) lighterRound(state, vp, vp.plan.lighter, dt);
   if (vp.plan.recruit) recruitRound(state, vp, vp.plan.recruit, dt);
 
+  // STAGE 14'S FOUR, none of them friends.
+  if (vp.plan.thugs) hollowRound(state, vp, dt);
+
   // STAGE 11'S TWO CARRIERS, each on a loop of his own.
   if (vp.plan.porter) porterLoop(state, vp, vp.plan.porter, dt);
   if (vp.plan.ammo) ammoLoop(state, vp, vp.plan.ammo, dt);
@@ -752,6 +788,8 @@ function work(state, vp, dt) {
   vp.crews = vp.crews || [];
   vp.planks = [];
   crews.forEach((cr, i) => carryLoop(state, vp, cr, vp.crews[i] || (vp.crews[i] = {}), dt));
+  // A box dropped on the ground stays there, drawn among the flying ones.
+  if (vp.dropped) vp.planks.push(...vp.dropped);
 }
 
 function carryLoop(state, vp, crew, c, dt) {
@@ -991,6 +1029,159 @@ function ammoLoop(state, vp, am, dt) {
   }
 }
 
+// STAGE 14, DARK HOLLOW WOODS: two thugs and two enemy villagers, and a tap on any of
+// them puts him on the road. Each is in one of these, in `vp.hollow[who].phase`:
+//   idle    — a thug or the man by the bottom hut, turning left and right where he
+//             stands, now and then;
+//   carry / in / inside / out / gone — the box carrier's round (see `boxman`);
+//   drop    — tapped with a box: it falls at his feet, and he stands a moment;
+//   house   — to the hut and in at its door (or round behind it), faded out;
+//   arming  — inside, `arm` seconds;
+//   march   — out, as a Thug or a Tough Thug, to the road: `vp.turned` asks main.js
+//             for the creature where he reaches it, and he is gone from the villagers.
+// What he LOOKS like is `v.look`: 'enemy' (a villager in the thugs' dark clothes),
+// 'thug' or 'tough' (the creature's own drawing) — see drawVillager in src/render.js.
+const TURN_EVERY = [2.5, 6];
+function hollowRound(state, vp, dt) {
+  const plan = vp.plan;
+  const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  vp.hollow = vp.hollow || {};
+  const cardOf = type => ({ title: enemyTypes[type].name, sprite: enemyTypes[type].sprite,
+                            trim: enemyTypes[type].spriteTrim });
+  const ENEMY_CARD = { title: 'Enemy Villager', sprite: 'evill_front_standing', trim: VILLAGER.spriteTrim };
+
+  // Turning where he stands, one way and then the other, on no beat of his own.
+  const fidget = (v, c) => {
+    if (c.turn === undefined) c.turn = vp.t + span(TURN_EVERY);
+    if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(TURN_EVERY); }
+  };
+  // Off to the road: along `road`, and on to the nearest point of it — where he joins.
+  const march = (v, c, type, road) => {
+    const last = road[road.length - 1];
+    const j = nearestOn(level.routes, last[0], last[1]);
+    Object.assign(c, { phase: 'march', type, join: j, way: [...road, [j.x, j.y]] });
+    v.leg = 0; v.look = type === 'light_inf' ? 'thug' : 'tough'; v.card = cardOf(type);
+  };
+  const marching = (v, c) => {
+    if (walkTo(v, c.way, enemyTypes[c.type].speed, dt)) {
+      c.phase = 'done';
+      v.hidden = true; v.live = false;
+      (vp.turned = vp.turned || []).push({ who: v.n, type: c.type, route: c.join.route, s: c.join.s });
+    }
+  };
+  // Faded out at a door, `arm` seconds inside, and out faded in as a Tough Thug.
+  const house = (v, c, way, arm, road) => {
+    const k = vp.t - c.at;
+    if (c.phase === 'house') {
+      v.pose = 'standing';
+      if (walkTo(v, way, WORK_WALK_FREE, dt)) { c.phase = 'into'; c.at = vp.t; }
+      // His back to the player on the way to a door above him.
+      v.side = way[way.length - 1][1] < v.y + 1 ? 'back' : 'front';
+    } else if (c.phase === 'into') {
+      v.alpha = Math.max(0, 1 - k / DOOR_FADE);
+      if (v.alpha <= 0) { v.hidden = true; c.phase = 'arming'; c.at = vp.t; }
+    } else if (c.phase === 'arming' && k >= arm) {
+      v.hidden = false; v.alpha = 0; c.at = vp.t;
+      march(v, c, 'tough_inf', road);
+      c.fadeIn = true;
+    }
+  };
+
+  for (const th of plan.thugs) {
+    const v = state.villagers[th.who];
+    if (!v || !v.live) continue;
+    v.work = true; v.voice = plan.voice;
+    const c = vp.hollow[th.who] || (vp.hollow[th.who] = { phase: 'idle' });
+    if (c.phase === 'idle') {
+      v.look = 'thug'; v.card = cardOf('light_inf');
+      fidget(v, c);
+      if (c.tapped) march(v, c, 'light_inf', th.road);
+    }
+    if (c.phase === 'march') marching(v, c);
+  }
+
+  const hd = plan.hideout, hv = hd && state.villagers[hd.who];
+  if (hv && hv.live) {
+    hv.work = true; hv.voice = plan.voice;
+    const c = vp.hollow[hd.who] || (vp.hollow[hd.who] = { phase: 'idle' });
+    if (c.phase === 'idle') {
+      hv.look = 'enemy'; hv.card = ENEMY_CARD; hv.pose = 'standing'; hv.side = 'front';
+      fidget(hv, c);
+      if (c.tapped) { c.phase = 'house'; c.at = vp.t; hv.leg = 0; }
+    }
+    house(hv, c, hd.way, hd.arm, hd.road);
+    if (c.phase === 'march') { if (c.fadeIn) hv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(hv, c); }
+  }
+
+  const bx = plan.boxman, bv = bx && state.villagers[bx.who];
+  if (bv && bv.live) {
+    bv.work = true; bv.voice = plan.voice;
+    const c = vp.hollow[bx.who] || (vp.hollow[bx.who] = { phase: 'carry', at: vp.t, first: true });
+    const k = vp.t - c.at;
+    const door = bx.path.slice(-2);
+    // TAPPED, whatever he is doing that can see a tap: the box dropped if he has one,
+    // and into the hut.
+    if (c.tapped && !c.turning && ['carry', 'out'].includes(c.phase)) {
+      c.turning = true;
+      if (c.phase === 'carry') {
+        const [fx, fy] = VILLAGER_POSE.feet.carry_box;
+        const side = bv.flip ? -1 : 1, piece = PIECES.box;
+        // Where it comes to rest: its bottom on the ground he stood on.
+        const rest = bv.y + 1 - (piece.src[1] + piece.src[3] - piece.mid[1]) * SCALE;
+        c.box = { piece, x0: bv.x + (piece.held[0] - fx) * SCALE * side, y0: bv.y + (piece.held[1] - fy) * SCALE,
+                  rest, x: 0, y: 0, rot: 0, at: vp.t, depth: bv.y + 2 };
+        c.phase = 'drop';
+      } else c.phase = 'house';
+      c.at = vp.t; bv.leg = 0; bv.alpha = 1;
+    }
+    if (c.phase === 'carry') {
+      bv.hidden = false; bv.alpha = 1; bv.look = 'enemy'; bv.card = ENEMY_CARD;
+      bv.pose = 'carry_box';
+      if (c.first) { bv.leg = bx.from; c.first = false; }
+      if (walkTo(bv, bx.path, WORK_WALK, dt)) { c.phase = 'in'; c.at = vp.t; }
+      // The box on his right, as he is painted, whichever way he goes.
+      bv.flip = true;
+    } else if (c.phase === 'in') {
+      bv.alpha = Math.max(0, 1 - k / DOOR_FADE);
+      if (bv.alpha <= 0) { bv.hidden = true; c.phase = 'inside'; c.at = vp.t; }
+    } else if (c.phase === 'inside') {
+      if (k >= bx.inside) {
+        c.phase = 'out'; c.at = vp.t;
+        [bv.x, bv.y] = bx.path[bx.path.length - 1];
+        bv.leg = 0; bv.hidden = false; bv.alpha = 0; bv.side = 'front';
+      }
+    } else if (c.phase === 'out') {
+      bv.alpha = Math.min(1, k / DOOR_FADE);
+      if (stroll(bv, bx.path.slice(0, -1).reverse(), dt)) { c.phase = 'gone'; c.at = vp.t; bv.hidden = true; }
+    } else if (c.phase === 'gone' && k >= bx.gone) {
+      [bv.x, bv.y] = bx.path[0];
+      bv.leg = 0; bv.side = 'front';
+      c.phase = 'carry'; c.at = vp.t;
+    } else if (c.phase === 'drop') {
+      // A MOMENT WITH EMPTY HANDS while the box falls, and then to the hut.
+      bv.pose = 'standing'; bv.side = 'front';
+      if (k >= BOX_DROP + 0.4) { c.phase = 'house'; c.at = vp.t; bv.leg = 0; }
+    }
+    if (['house', 'into', 'arming'].includes(c.phase)) house(bv, c, door, bx.arm, bx.road);
+    if (c.phase === 'march') { if (c.fadeIn) bv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(bv, c); }
+    // THE DROPPED BOX falls from his arms to the ground and stays there.
+    if (c.box) {
+      const b = c.box, q = Math.min(1, (vp.t - b.at) / BOX_DROP);
+      b.x = b.x0; b.y = b.y0 + (b.rest - b.y0) * q * q;
+      if (q >= 1 && !b.landed) { b.landed = true; play(LANDED); }
+      vp.dropped = [b];
+    }
+  }
+}
+const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground
+
+// A TAP ON ONE OF DARK HOLLOW'S FOUR: noted, and his round does the rest.
+function hollowTap(vp, v) {
+  vp.hollow = vp.hollow || {};
+  const c = vp.hollow[v.n];
+  if (c) c.tapped = true;
+}
+
 // STAGE 13'S FISH: every few seconds one leaps from a spot on the lake, turned
 // either way, with a splash as it breaks the water — `vp.fishJump` for render.js to
 // draw the leap from, and `vp.splashes` for the rings where it leaves the water and
@@ -1139,6 +1330,8 @@ export const GREET_SECONDS = 1;       // how long a tapped villager greets the p
 export function greetVillager(state, v) {
   const vp = state.villagerPlay;
   if (!vp || !v || !v.live || v.hidden) return;
+  // DARK HOLLOW'S: a tap sets him on the road. See hollowRound.
+  if (vp.plan.thugs) { hollowTap(vp, v); return; }
   // At work they carry on working; the tap still opens the card and plays the sound.
   if (vp.plan.work) return;
   v.greetUntil = vp.t + GREET_SECONDS;

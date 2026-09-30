@@ -734,7 +734,11 @@ hand:
   and the shortest of those is 45px against 21px of flat. Stage 14 needs neither:
   fifty-five things on its top layer, three of which stand up (the two stone huts
   and the signpost), the shortest 45px against 21px of flat. Its dead trees and
-  stumps stay in the base, away from the road, and nothing walks behind them.
+  stumps stay in the base, away from the road, and nothing walks behind them. Its
+  Layer 3 comes in two files, `3a` and `3b`, and `3b` is the log barricade with the
+  two Elite Archers in it: the archers are a garrison, cut out for the game to draw,
+  and so the barricade is withheld from the front sheet like every other wall a
+  garrison man stands behind.
 
   **The lake is deliberately not on the sheet**, and the splitter says so on every
   run: 214x423 of water with no `#37422f` shadow under it, so it is not standing on

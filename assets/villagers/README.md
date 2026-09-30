@@ -466,6 +466,32 @@ right-hand huts.
   (`lake` in level15.js, `drawBoardLake` in src/motion.js).
 - **A star lost:** "nooo". Birdsong, soft, and the lake lapping throughout.
 
+## Stage 14's script
+
+Nobody here is on your side. As the level lists them: 1 the thug by the top hut, 2
+carrying a box to it, 3 by the bottom hut, 4 the thug below him. None of them
+greets, prays or hops, and the village has no shout and no "nooo". A tap on any of
+them plays one of the two `Villager_enemy_selected` lines and sets him on the road
+(`hollow` in src/villagers.js).
+
+- **The two thugs** turn left and right where they stand, all game. **Tapped**, each
+  marches to the nearest point of the road and is a **Thug** there: shot at like any
+  other, and a life lost if he gets out.
+- **The box carrier** brings a box down from the top of the board and in at the top
+  hut's door; three seconds inside; out empty-handed and back up off the top; three
+  seconds gone; back with the next box. **Tapped**, he drops the box at his feet (it
+  stays there), goes into the hut, and three seconds later comes out a **Tough Thug**
+  and makes for the road.
+- **The man by the bottom hut** turns left and right. **Tapped**, he goes round behind
+  the hut (its door is on the far side) and three seconds later comes back out a
+  **Tough Thug** and makes for the road.
+- The two enemy villagers are the ordinary villager drawings in the thugs' dark
+  clothes: the game recolours the body's cream `#ffde9e` to `#362407` (`darkVillager`
+  in src/render.js). The thugs are the Thug's and the Tough Thug's own drawings.
+- **Behind the log barricade**, two Elite Archers (Layer 3b) stand and shoot like the
+  Crossbow Tower's man for 20 physical damage. They cannot be hurt, and answer with
+  the archery voices when tapped.
+
 ## Holy light over Dawnford
 
 On stages 6, 7 and 8 — Dawnford's three boards — soft shafts of warm sunlight slant
