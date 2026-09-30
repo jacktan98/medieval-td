@@ -218,10 +218,11 @@ const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 3
 
 // DARK HOLLOW'S BOX CARRIER'S WAY, the owner's line (redrawn): in over the top of the
 // board, down and bending left past the thug, down to the left of where he is painted,
-// and round to the right along the stepping stones to the foot of the top hut's door,
-// on its left-hand wall.
+// and round to the right along the stepping stones to the top hut's door, on its
+// left-hand wall — his shadow in the middle of the door's floor as he goes in, at the
+// owner's word (the floor runs from (209, 138) to (219, 147) in the drawing).
 const HOLLOW_WAY = [[195, -12], [188, 35], [178, 63], [168, 82], [159, 105], [157, 122],
-  [162, 138], [178, 145], [195, 148], [211, 152]];
+  [162, 138], [178, 145], [196, 146], [214, 142.5]];
 
 const PLAYS = {
   oakhaven: {
@@ -541,7 +542,7 @@ const PLAYS = {
     // THE FIRST TIME, from where he is painted, he takes `first`: a natural curve
     // straight down and round to the door rather than stepping onto his usual line.
     // Carrying, he faces the player — turned left coming down, mirrored turning right.
-    boxman: { who: 1, path: HOLLOW_WAY, first: [[168, 128], [177, 140], [190, 148], [211, 152]],
+    boxman: { who: 1, path: HOLLOW_WAY, first: [[168, 128], [178, 139], [193, 144], [214, 142.5]],
               inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
     // THE TWO WHO ARM IN A HUT turn left and right where they stand. Tapped, each walks
     // up to his hut's door, his back to the player (`side`) — the man below the
