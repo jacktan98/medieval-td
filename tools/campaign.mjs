@@ -222,8 +222,8 @@ const area = b => (b[2] - b[0]) * (b[3] - b[1]);
 
 console.log('\n--- the committed data still describes the drawing ---\n');
 
-// EXCEPT THE STAGES PLACED BY HAND. Stage 14 is a temporary spot the owner asked for
-// before its medallion is drawn — see TEMPORARY in tools/overview.mjs — so it has
+// EXCEPT ANY STAGE PLACED BY HAND. Stage 14 was one, a temporary spot the owner asked
+// for before its medallion was drawn — see tools/overview.mjs. Such a stage has
 // `marker: null` and no line in the guide, and these checks are about the rest.
 const DRAWN = STAGES.filter(s => s.marker !== null);
 
@@ -1061,8 +1061,8 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // medallion in Layer 1 and wrote Serene Peak Lake in the same batch, so the road
   // never spent a day with a locked marker on the end of it. The three testing maps
   // stay where they are: loaded, editable from the dashboard, off the map.
-  // AND DARK HOLLOW WOODS AFTER IT, on a spot placed by hand until its medallion is
-  // drawn — see TEMPORARY in tools/overview.mjs.
+  // AND DARK HOLLOW WOODS AFTER IT, on the medallion the owner drew for it below
+  // Ironforge, with two more locked beyond it waiting for boards.
   ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16',
     '  ending at Dark Hollow, with the testing maps behind it and off the road',
     filled.join(' -> '));

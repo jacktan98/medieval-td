@@ -251,7 +251,7 @@ export function stepReveal(state, dt) {
 //
 // See setLoop for why this is safe to call on every frame, and why it is the
 // reason the sound starts by itself once a phone unlocks its audio.
-const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (levels[s.level].ambience || []).map(a => a.clip)))];
+const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (s.level === null ? [] : levels[s.level].ambience || []).map(a => a.clip)))];
 export function mapAudio(state) {
   const onMap = !state.started;
   const marching = !!(state.reveal && state.reveal.phase === 'road');

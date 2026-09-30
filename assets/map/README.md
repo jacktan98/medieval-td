@@ -674,11 +674,10 @@ is dropped — everything except its background, which is the grass every other
 layer sits on and the only opaque ground in the stack.
 
 **A stage can stand where Layer 1 has no marker yet**, placed by hand in
-`TEMPORARY` in `tools/overview.mjs`: a spot in game px, the stage its road leaves
-from, and a few points the road bends through. Stage 14, Dark Hollow Woods, is one
-— a temporary spot in the dark ground below Ironforge, its road out of Ironforge
-Town's marker, at the owner's word. When its medallion and road line are drawn into
-Layer 1, delete the entry and put the new marker in `ORDER`.
+`tools/overview.mjs` (appended after the drawn ones with `marker: null`). Stage 14,
+Dark Hollow Woods, was one until the owner drew its medallion; today every stage is
+on a marker in the drawing — sixteen of them, stages 15 and 16 still waiting for
+boards and shown locked.
 
 **The names layer is not part of the picture either.** It is found by its colour
 rather than by its number: a layer every shape of which is `#fff5e1` is lettering.

@@ -102,7 +102,7 @@ const MARKER_FILL = '#d30000';
 // HOW MANY STAGES THE ROAD HAS, which is a fact about the drawing and is stated here
 // so that adding one is a deliberate edit rather than a silent renumbering. Every
 // marker index in ORDER below moves when this changes.
-const STAGE_MARKERS = 13;
+const STAGE_MARKERS = 16;
 
 // How close a road line's end has to be to a marker centre to count as arriving
 // there: half the marker's drawn width plus slack. Every end in the current
@@ -499,7 +499,10 @@ for (const J of joined) console.log(`    ${String(J.from).padStart(2)} <-> ${J.t
 // are unreachable from the map for as long as stage 9 is empty. The tool prints
 // how many that is on every run — see the note by `blocked` below — so it is a
 // number somebody chose to accept rather than a surprise.
-const ORDER = [2, 3, 4, 6, 5, 7, 9, 8, 1, 10, 12, 11, 0];
+// AND THREE MORE, drawn by the owner below Ironforge: marker 13 by the dark ground,
+// then 14 and 15 on westward from it — 10 <-> 13 <-> 14 <-> 15. Stage 14, Dark Hollow
+// Woods, stood on a spot placed by hand until 13 was drawn for it.
+const ORDER = [2, 3, 4, 6, 5, 7, 9, 8, 1, 10, 12, 11, 0, 13, 14, 15];
 
 // WHICH MAP EACH STAGE PLAYS. All thirteen are drawn; a stage left out of this table
 // would be a marker on the road with nothing behind it, and the game would show it
@@ -559,7 +562,10 @@ const ORDER = [2, 3, 4, 6, 5, 7, 9, 8, 1, 10, 12, 11, 0];
 // coincidence of today rather than a rule — the next board drawn needs a fourteenth
 // medallion before it can have a line here, and the day one is finished for stage 15
 // before stage 14, this is the one place that can say so.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12 };
+// FOURTEEN BOARDS ON SIXTEEN STAGES now: Dark Hollow Woods is stage 14 on its own
+// medallion, and stages 15 and 16 are drawn with nothing behind them yet — locked at
+// the end of the road, which costs nothing.
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from
@@ -923,47 +929,11 @@ const stages = ORDER.map((m, i) => ({
   leg: resampleOpen(incoming.get(m), POINTS).map(([x, y]) => [px(x), px(y)])
 }));
 
-// STAGES THE DRAWING DOES NOT HAVE YET, placed by hand and appended after the ones
-// it does. Each is a spot in game px, the stage its road leaves from, and a few
-// points the road bends through on the way — smoothed and resampled like any
-// drawn leg. `marker` is null: there is no medallion in Layer 1 behind it.
-//
-// STAGE 14, Dark Hollow Woods, is TEMPORARY, at the owner's word: "Add a temporary
-// spot at the dark area of the bottom right of the overview map." The road is the
-// owner's red line — out of Ironforge Town's marker (stage 10), east and down past
-// the houses, and curling round into the dark ground below them. When the artist
-// draws its medallion into Layer 1, this entry goes and ORDER gains the marker.
-const TEMPORARY = [
-  { level: 13, from: 9, at: [874, 449],
-    via: [[776, 356], [814, 380], [848, 395], [872, 410], [884, 426], [882, 441]] }
-];
-
-// A smooth line through the points, Catmull-Rom, eight steps a span.
-function smooth(pts) {
-  const out = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
-    for (let k = 0; k < 8; k++) {
-      const t = k / 8, t2 = t * t, t3 = t2 * t;
-      out.push([0, 1].map(d => 0.5 * (2 * p1[d] + (p2[d] - p0[d]) * t +
-        (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * t2 + (3 * p1[d] - p0[d] - 3 * p2[d] + p3[d]) * t3)));
-    }
-  }
-  out.push(pts[pts.length - 1]);
-  return out;
-}
-
-for (const T of TEMPORARY) {
-  const from = stages[T.from];
-  const line = smooth([[from.x, from.y], ...T.via, T.at]);
-  stages.push({
-    marker: null,
-    x: T.at[0],
-    y: T.at[1],
-    level: T.level,
-    leg: resampleOpen(line, POINTS).map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10])
-  });
-}
+// STAGES THE DRAWING DOES NOT HAVE YET, placed by hand, would go here — a spot, the
+// stage its road leaves from and a few points it bends through, appended after the
+// drawn ones with `marker: null`. Stage 14 was one until the owner drew its medallion;
+// see the history of this file for the TEMPORARY list and the spline that drew its
+// road. None today.
 
 const body = `// THE CAMPAIGN MAP, DERIVED FROM THE ARTWORK. Do not edit by hand.
 //
