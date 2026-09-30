@@ -328,7 +328,10 @@ export function tap(state, x, y, restart) {
   const had = state.selected;
   closeMenu(state);
   state.selected = pickFigure(state, x, y);
-  solo(selectionCue(state.selected));
+  // WITH PRIORITY for Dark Hollow's thugs and enemy villagers, at the owner's word: the
+  // tap is what sets them on the road, so what they say has to be heard.
+  const sel = state.selected;
+  solo(selectionCue(sel), !!(sel && sel.kind === 'villager' && sel.ref.voice === 'enemy_villager'));
   // A tapped villager stops to greet the player — see src/villagers.js.
   if (state.selected && state.selected.kind === 'villager') greetVillager(state, state.selected.ref);
   // Picking somebody up is an action and so is putting them down; tapping bare

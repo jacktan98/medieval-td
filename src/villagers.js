@@ -216,9 +216,10 @@ const HOUSE_WAY = [[686, 332], [660, 345], [610, 355], [560, 361], [507, 362]];
 const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
   [769.5, 331], [729.5, 336], [697.5, 346], [674, 361]];
 
-// DARK HOLLOW'S BOX CARRIER'S WAY, from off the top of the board down past where he is
-// painted to the step of the top hut's door, on its left-hand wall.
-const HOLLOW_WAY = [[168, -12], [165, 60], [162, 115.7], [186, 138], [208, 146.5]];
+// DARK HOLLOW'S BOX CARRIER'S WAY, the owner's line: in over the top of the board, down
+// and bending left, down the left of where he is painted, then right along below the
+// stepping stones to the foot of the top hut's door, on its left-hand wall.
+const HOLLOW_WAY = [[203, -12], [198, 53], [181, 95], [175, 116], [176, 141], [182, 150], [211, 152]];
 
 const PLAYS = {
   oakhaven: {
@@ -522,17 +523,24 @@ const PLAYS = {
     // THE TWO THUGS turn left and right where they stand, all game. Tapped, each marches
     // down along `road` and on to the nearest point of the road proper, and is a Thug
     // there — one that can be shot, and costs a life if he gets out.
+    //
+    // TAPPED, EVERY ONE OF THEM STANDS `still` SECONDS where he is first — the box
+    // carrier with the box dropped at his feet — and then walks, slowly (`walk` px a
+    // second), to the road or to his hut to arm.
+    still: 2, walk: 14,
     thugs: [{ who: 0, road: [[132, 165]] }, { who: 3, road: [[296, 452], [268, 418]] }],
     // THE BOX CARRIER: the box down from the north and in at the top hut's door; three
     // seconds inside; out empty-handed, back up off the top of the board; three
     // seconds gone; back with the next box. The first time from where he is painted.
     // Tapped, he drops what he is carrying, goes into the hut, and three seconds later
     // comes out a Tough Thug and makes for the road.
-    boxman: { who: 1, path: HOLLOW_WAY, from: 2, inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
+    boxman: { who: 1, path: HOLLOW_WAY, from: 3, inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
     // THE MAN BY THE BOTTOM HUT turns left and right where he stands. Tapped, he goes
-    // round behind the hut — its door is on the far side — and three seconds later
-    // comes back out a Tough Thug and makes for the road.
-    hideout: { who: 2, way: [[294, 447], [268, 444]], arm: 3, road: [[284, 432], [262, 404]] },
+    // down and left along the owner's line to the hut's near right-hand corner and
+    // in, out of sight behind its wall; three seconds later he comes back out the
+    // same way a Tough Thug, and makes for the road.
+    hideout: { who: 2, way: [[303, 444], [285, 452], [268, 465], [259, 478]], arm: 3,
+               road: [[268, 465], [285, 452], [303, 444], [284, 432], [262, 404]] },
     cries: { runnn: false, nooo: false }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
@@ -1063,7 +1071,7 @@ function hollowRound(state, vp, dt) {
     v.leg = 0; v.look = type === 'light_inf' ? 'thug' : 'tough'; v.card = cardOf(type);
   };
   const marching = (v, c) => {
-    if (walkTo(v, c.way, enemyTypes[c.type].speed, dt)) {
+    if (walkTo(v, c.way, plan.walk, dt)) {
       c.phase = 'done';
       v.hidden = true; v.live = false;
       (vp.turned = vp.turned || []).push({ who: v.n, type: c.type, route: c.join.route, s: c.join.s });
@@ -1074,7 +1082,7 @@ function hollowRound(state, vp, dt) {
     const k = vp.t - c.at;
     if (c.phase === 'house') {
       v.pose = 'standing';
-      if (walkTo(v, way, WORK_WALK_FREE, dt)) { c.phase = 'into'; c.at = vp.t; }
+      if (walkTo(v, way, plan.walk, dt)) { c.phase = 'into'; c.at = vp.t; }
       // His back to the player on the way to a door above him.
       v.side = way[way.length - 1][1] < v.y + 1 ? 'back' : 'front';
     } else if (c.phase === 'into') {
@@ -1095,8 +1103,9 @@ function hollowRound(state, vp, dt) {
     if (c.phase === 'idle') {
       v.look = 'thug'; v.card = cardOf('light_inf');
       fidget(v, c);
-      if (c.tapped) march(v, c, 'light_inf', th.road);
+      if (c.tapped) { c.phase = 'still'; c.at = vp.t; }
     }
+    if (c.phase === 'still' && vp.t - c.at >= plan.still) march(v, c, 'light_inf', th.road);
     if (c.phase === 'march') marching(v, c);
   }
 
@@ -1107,8 +1116,9 @@ function hollowRound(state, vp, dt) {
     if (c.phase === 'idle') {
       hv.look = 'enemy'; hv.card = ENEMY_CARD; hv.pose = 'standing'; hv.side = 'front';
       fidget(hv, c);
-      if (c.tapped) { c.phase = 'house'; c.at = vp.t; hv.leg = 0; }
+      if (c.tapped) { c.phase = 'still'; c.at = vp.t; }
     }
+    if (c.phase === 'still' && vp.t - c.at >= plan.still) { c.phase = 'house'; c.at = vp.t; hv.leg = 0; }
     house(hv, c, hd.way, hd.arm, hd.road);
     if (c.phase === 'march') { if (c.fadeIn) hv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(hv, c); }
   }
@@ -1118,7 +1128,6 @@ function hollowRound(state, vp, dt) {
     bv.work = true; bv.voice = plan.voice;
     const c = vp.hollow[bx.who] || (vp.hollow[bx.who] = { phase: 'carry', at: vp.t, first: true });
     const k = vp.t - c.at;
-    const door = bx.path.slice(-2);
     // TAPPED, whatever he is doing that can see a tap: the box dropped if he has one,
     // and into the hut.
     if (c.tapped && !c.turning && ['carry', 'out'].includes(c.phase)) {
@@ -1131,8 +1140,14 @@ function hollowRound(state, vp, dt) {
         c.box = { piece, x0: bv.x + (piece.held[0] - fx) * SCALE * side, y0: bv.y + (piece.held[1] - fy) * SCALE,
                   rest, x: 0, y: 0, rot: 0, at: vp.t, depth: bv.y + 2 };
         c.phase = 'drop';
-      } else c.phase = 'house';
+      } else c.phase = 'drop';
       c.at = vp.t; bv.leg = 0; bv.alpha = 1;
+      // TO THE DOOR along the rest of his own way, from the point of it he is nearest.
+      let near = 0;
+      bx.path.forEach(([x, y], i) => {
+        if (Math.hypot(x - bv.x, y - bv.y) < Math.hypot(bx.path[near][0] - bv.x, bx.path[near][1] - bv.y)) near = i;
+      });
+      c.door = bx.path.slice(Math.min(near + 1, bx.path.length - 1));
     }
     if (c.phase === 'carry') {
       bv.hidden = false; bv.alpha = 1; bv.look = 'enemy'; bv.card = ENEMY_CARD;
@@ -1158,11 +1173,11 @@ function hollowRound(state, vp, dt) {
       bv.leg = 0; bv.side = 'front';
       c.phase = 'carry'; c.at = vp.t;
     } else if (c.phase === 'drop') {
-      // A MOMENT WITH EMPTY HANDS while the box falls, and then to the hut.
+      // STANDING THERE with empty hands, the box at his feet, and then to the hut.
       bv.pose = 'standing'; bv.side = 'front';
-      if (k >= BOX_DROP + 0.4) { c.phase = 'house'; c.at = vp.t; bv.leg = 0; }
+      if (k >= plan.still) { c.phase = 'house'; c.at = vp.t; bv.leg = 0; }
     }
-    if (['house', 'into', 'arming'].includes(c.phase)) house(bv, c, door, bx.arm, bx.road);
+    if (['house', 'into', 'arming'].includes(c.phase)) house(bv, c, c.door, bx.arm, bx.road);
     if (c.phase === 'march') { if (c.fadeIn) bv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(bv, c); }
     // THE DROPPED BOX falls from his arms to the ground and stays there.
     if (c.box) {
