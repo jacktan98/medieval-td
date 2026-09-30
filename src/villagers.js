@@ -216,10 +216,12 @@ const HOUSE_WAY = [[686, 332], [660, 345], [610, 355], [560, 361], [507, 362]];
 const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 329],
   [769.5, 331], [729.5, 336], [697.5, 346], [674, 361]];
 
-// DARK HOLLOW'S BOX CARRIER'S WAY, the owner's line: in over the top of the board, down
-// and bending left, down the left of where he is painted, then right along below the
-// stepping stones to the foot of the top hut's door, on its left-hand wall.
-const HOLLOW_WAY = [[203, -12], [198, 53], [181, 95], [175, 116], [175, 141], [182, 150], [211, 152]];
+// DARK HOLLOW'S BOX CARRIER'S WAY, the owner's line (redrawn): in over the top of the
+// board, down and bending left past the thug, down to the left of where he is painted,
+// and round to the right along the stepping stones to the foot of the top hut's door,
+// on its left-hand wall.
+const HOLLOW_WAY = [[195, -12], [188, 35], [178, 63], [168, 82], [159, 105], [157, 122],
+  [162, 138], [178, 145], [195, 148], [211, 152]];
 
 const PLAYS = {
   oakhaven: {
