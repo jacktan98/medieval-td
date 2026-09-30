@@ -49,6 +49,7 @@ And stage 5's:
 | `Villager_Carrying_Box.png` | stage 5's villager 7 carrying a box to the crates |
 | `Villager_Throwing_Box.png` | tossing it onto the pile |
 | `Villager_Box.png` | the box on its own, flying onto the crates |
+| `Box_on_ground.png` | the same box lying on the ground with its shadow — Dark Hollow's box carrier drops it when tapped |
 
 And stage 6's:
 
@@ -468,11 +469,12 @@ right-hand huts.
 
 ## Stage 14's script
 
-Nobody here is on your side. As the level lists them: 1 the thug by the top hut, 2
-carrying a box to it, 3 by the bottom hut, 4 the thug below him. None of them
-greets, prays or hops, and the village has no shout and no "nooo". A tap on any of
-them plays one of the two `Villager_enemy_selected` lines and sets him on the road
-(`hollow` in src/villagers.js).
+Nobody here is on your side. As the level lists them: 1 the thug between the two
+top huts, 2 carrying a box to the top hut, 3 below the top-left hut, 4 by the bottom
+hut, 5 the thug beside him. None of them greets, prays or hops, and the village has
+no shout and no "nooo". A tap on any of them plays one of the two
+`Villager_enemy_selected` lines and sets him on the road (`hollow` in
+src/villagers.js).
 
 - **Tapped, every one of them** answers first (the voice takes priority over anything
   else speaking), stands where he is for **2 seconds**, and then walks **slowly** to
@@ -482,17 +484,22 @@ them plays one of the two `Villager_enemy_selected` lines and sets him on the ro
   other, and a life lost if he gets out.
 - **The box carrier** brings a box down from the top of the board, bending left down
   past where he is painted and right along below the stepping stones (the owner's
-  line), and in at the top hut's door; three seconds inside; out empty-handed and back up off the top; three
-  seconds gone; back with the next box. **Tapped**, he drops the box at his feet (it
-  stays there, with its shadow under it), stands 2 seconds, goes into the hut, and three seconds later comes out a **Tough Thug**
-  and makes for the road.
-- **The man by the bottom hut** turns left and right. **Tapped**, he walks down and left
-  along the owner's line to the hut's near right-hand corner and in, out of sight
-  behind its wall — the hut hides all of him as he goes, roof height included, and three seconds later comes back out the same way a **Tough
-  Thug** and makes for the road.
-- The two enemy villagers are the ordinary villager drawings in the thugs' dark
+  line), and in at the top hut's door; three seconds inside; out empty-handed and
+  back up off the top; three seconds gone; back with the next box. **Tapped**, he
+  drops the box: its shadow spreads out from its centre on the ground as it falls,
+  and once down it is `Box_on_ground.png`, and stays there. He stands 2 seconds, goes
+  into the hut, and three seconds later comes out a **Tough Thug** and makes for the
+  road.
+- **The man below the top-left hut** turns left and right. **Tapped**, he walks up to
+  its door with his back to the player (`Villager_Back_Standing`, as drawn), and
+  three seconds later comes back out an **Archer Thug** and makes for the road.
+- **The man by the bottom hut** turns left and right. **Tapped**, he walks up to its
+  door with his back to the player, mirrored, and three seconds later comes back out
+  a **Tough Thug** and makes for the road.
+- The three enemy villagers are the ordinary villager drawings in the thugs' dark
   clothes: the game recolours the body's cream `#ffde9e` to `#362407` (`darkVillager`
-  in src/render.js). The thugs are the Thug's and the Tough Thug's own drawings.
+  in src/render.js). The thugs, and the men once armed, are the Thug's, Tough Thug's
+  and Archer Thug's own drawings.
 - **Behind the log barricade**, two Elite Archers (Layer 3b) stand and shoot like the
   Crossbow Tower's man for 20 physical damage. They cannot be hurt, and answer with
   the archery voices when tapped.

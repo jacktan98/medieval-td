@@ -200,6 +200,9 @@ export const paths = {
   vill_carrying_box:            'assets/villagers/Villager_Carrying_Box.png',
   vill_throwing_box:            'assets/villagers/Villager_Throwing_Box.png',
   vill_box:                     'assets/villagers/Villager_Box.png',
+  // THE SAME BOX LYING ON THE GROUND with its shadow — Dark Hollow's box carrier drops
+  // his when he is tapped. See BOX_GROUND in src/villagers.js.
+  vill_box_on_ground:           'assets/villagers/Box_on_ground.png',
   vill_back_carrying_cannonball:  'assets/villagers/Villager_Back_Carrying_Cannonball.png',
   vill_front_carrying_cannonball: 'assets/villagers/Villager_Front_Carrying_Cannonball.png',
   vill_picking_up:              'assets/villagers/Villager_Picking_Up.png',

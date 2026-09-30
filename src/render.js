@@ -1692,24 +1692,9 @@ function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
 // the shoulder, over a copy of the greeting with the hand taken out and the body
 // under it filled back in from the standing drawing — see greetLayers.
 function drawVillager(ctx, state, v, layer = null) {
-  // GOING IN BEHIND A HUT — Dark Hollow's man at the bottom one: nothing of him inside
-  // `behind`, so the hut hides the whole of him rather than only where it is drawn.
-  if (v.behind) {
-    const b = v.behind, out = new Path2D();
-    out.rect(0, 0, 960, 540);
-    out.rect(b.x0, 0, b.x1 - b.x0, b.y1);
-    ctx.save();
-    ctx.clip(out, 'evenodd');
-    const was = v.behind;
-    v.behind = null;
-    drawVillager(ctx, state, v, layer);
-    v.behind = was;
-    ctx.restore();
-    return;
-  }
   // DARK HOLLOW'S THUGS, as the creature they are: its own drawing, turned the way he
   // faces. See `look` in hollowRound, src/villagers.js.
-  if (v.look === 'thug' || v.look === 'tough') { drawLookingThug(ctx, v); return; }
+  if (v.look === 'thug') { drawLookingThug(ctx, v); return; }
   const key = villagerKey(v);
   // A LIT POLE BURNS: its painted flame is taken off the drawing and a live one
   // burns where it was — stage 12's torch-lighter. See POLE_FIRE.
@@ -1754,10 +1739,10 @@ function drawVillager(ctx, state, v, layer = null) {
 }
 
 // A THUG STANDING ABOUT OR MARCHING TO THE ROAD, before he is one of the creatures on
-// it: the Thug's or the Tough Thug's own Default drawing, stood on his anchor and
+// it: the Thug's, the Tough Thug's or the Archer Thug's own Default drawing (`lookType`), stood on his anchor and
 // mirrored when he faces right (the drawings face left, as every villager's does).
 function drawLookingThug(ctx, v) {
-  const d = enemyTypes[v.look === 'thug' ? 'light_inf' : 'tough_inf'];
+  const d = enemyTypes[v.lookType || 'light_inf'];
   const img = art[d.sprite];
   if (!img) return;
   const [sx, sy, sw, sh] = d.spriteTrim;
@@ -1861,16 +1846,25 @@ function drawPlank(ctx, pl) {
   const img = art[key];
   if (!img) return;
   const k = SCALE;
-  // A PIECE LEFT ON THE GROUND casts a shadow there, in the board's own shadow colour
-  // — Dark Hollow's dropped box. It grows under the box as the box comes down.
-  if (pl.ground !== undefined) {
+  // A PIECE LEFT ON THE GROUND — Dark Hollow's dropped box. Falling, its shadow
+  // spreads out from its own centre on the ground as the box comes down; landed, it
+  // is the owner's drawing of the box on the ground, shadow and all (`onGround`, see
+  // BOX_GROUND in src/villagers.js), its box exactly where the falling one came to rest.
+  const og = pl.onGround;
+  if (og && pl.landed) {
+    const gi = art[og.key];
+    if (gi) {
+      const [gx, gy, gw, gh] = og.src;
+      ctx.drawImage(gi, gx, gy, gw, gh, pl.x + (gx - og.mid[0]) * k, pl.y + (gy - og.mid[1]) * k, gw * k, gh * k);
+      return;
+    }
+  }
+  if (og) {
     const q = Math.min(1, Math.max(0, (pl.y - pl.y0) / Math.max(1, pl.rest - pl.y0)));
-    const rx = sw * k * 0.62, ry = rx * 0.32;
     ctx.save();
-    ctx.globalAlpha *= 0.4 + 0.6 * q;
-    ctx.fillStyle = (level.palette && level.palette.shadow) || '#37422f';
+    ctx.fillStyle = og.fill;
     ctx.beginPath();
-    ctx.ellipse(pl.x, pl.ground, rx * (0.7 + 0.3 * q), ry * (0.7 + 0.3 * q), 0, 0, Math.PI * 2);
+    ctx.ellipse(pl.x + og.shadow[0] * k, pl.ground, og.r[0] * k * q, og.r[1] * k * q, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }

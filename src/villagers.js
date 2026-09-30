@@ -510,8 +510,9 @@ const PLAYS = {
             gap: [8, 18], span: [14, 24], height: [10, 17], dur: 0.9 },
     cries: { runnn: false, nooo: true, wave: 'oh_no' }
   },
-  // STAGE 14, Dark Hollow Woods, as the level lists them: 1 the thug by the top hut,
-  // 2 carrying a box to it, 3 by the bottom hut, 4 the thug below him. NOBODY HERE IS
+  // STAGE 14, Dark Hollow Woods, as the level lists them: 1 the thug between the two
+  // top huts, 2 carrying a box to the top hut, 3 below the top-left hut, 4 by the
+  // bottom hut, 5 the thug beside him. NOBODY HERE IS
   // ON YOUR SIDE — see hollowRound below. They are at work from the first frame to the
   // last (no greeting, praying or hopping, and no village cries), and a tap on any of
   // them sets him on the road as a creature like any other.
@@ -528,25 +529,24 @@ const PLAYS = {
     // carrier with the box dropped at his feet — and then walks, slowly (`walk` px a
     // second), to the road or to his hut to arm.
     still: 2, walk: 14,
-    thugs: [{ who: 0, road: [[132, 165]] }, { who: 3, road: [[296, 452], [268, 418]] }],
+    thugs: [{ who: 0, road: [[140, 112], [134, 165]] }, { who: 4, road: [[228, 470]] }],
     // THE BOX CARRIER: the box down from the north and in at the top hut's door; three
     // seconds inside; out empty-handed, back up off the top of the board; three
     // seconds gone; back with the next box. The first time from where he is painted.
     // Tapped, he drops what he is carrying, goes into the hut, and three seconds later
     // comes out a Tough Thug and makes for the road.
     boxman: { who: 1, path: HOLLOW_WAY, from: 3, inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
-    // THE MAN BY THE BOTTOM HUT turns left and right where he stands. Tapped, he goes
-    // down and left along the owner's line to the hut's near right-hand corner and
-    // in, out of sight behind its wall; three seconds later he comes back out the
-    // same way a Tough Thug, and makes for the road.
-    //
-    // THE HUT HIDES HIM on the way in and out: while he is on that curve, nothing of him
-    // is drawn inside `behind` — the hut's own box, from its left edge to its right and
-    // up to the top of the board — so he goes in behind its wall, rather than showing
-    // over its roof as a man walking behind a house that short would.
-    hideout: { who: 2, way: [[303, 444], [285, 452], [268, 465], [259, 478]], arm: 3,
-               road: [[268, 465], [285, 452], [303, 444], [284, 432], [262, 404]],
-               behind: { x0: 211, x1: 291, y1: 512 } },
+    // THE TWO WHO ARM IN A HUT turn left and right where they stand. Tapped, each walks
+    // up to his hut's door, his back to the player (`side`) — the man below the
+    // top-left hut up and to the left, the drawing as it is; the man by the bottom hut
+    // up and to the right, mirrored — and in; three seconds later he comes back out
+    // of it armed, as `type`, and makes for the road.
+    hideouts: [
+      { who: 2, type: 'archer_inf', side: 'back', way: [[100, 118], [86, 105.5]], arm: 3,
+        road: [[100, 124], [108, 150]] },
+      { who: 3, type: 'tough_inf', side: 'back', way: [[267, 491], [282, 479]], arm: 3,
+        road: [[268, 490], [246, 470]] }
+    ],
     cries: { runnn: false, nooo: false }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
@@ -1074,7 +1074,7 @@ function hollowRound(state, vp, dt) {
     const last = road[road.length - 1];
     const j = nearestOn(level.routes, last[0], last[1]);
     Object.assign(c, { phase: 'march', type, join: j, way: [...road, [j.x, j.y]] });
-    v.leg = 0; v.look = type === 'light_inf' ? 'thug' : 'tough'; v.card = cardOf(type);
+    v.leg = 0; v.look = 'thug'; v.lookType = type; v.card = cardOf(type);
   };
   const marching = (v, c) => {
     if (walkTo(v, c.way, plan.walk, dt)) {
@@ -1084,19 +1084,19 @@ function hollowRound(state, vp, dt) {
     }
   };
   // Faded out at a door, `arm` seconds inside, and out faded in as a Tough Thug.
-  const house = (v, c, way, arm, road) => {
+  const house = (v, c, way, arm, road, type = 'tough_inf', side = null) => {
     const k = vp.t - c.at;
     if (c.phase === 'house') {
       v.pose = 'standing';
       if (walkTo(v, way, plan.walk, dt)) { c.phase = 'into'; c.at = vp.t; }
-      // His back to the player on the way to a door above him.
-      v.side = way[way.length - 1][1] < v.y + 1 ? 'back' : 'front';
+      // His back to the player on the way to a door above him — or as he is told.
+      v.side = side || (way[way.length - 1][1] < v.y + 1 ? 'back' : 'front');
     } else if (c.phase === 'into') {
       v.alpha = Math.max(0, 1 - k / DOOR_FADE);
       if (v.alpha <= 0) { v.hidden = true; c.phase = 'arming'; c.at = vp.t; }
     } else if (c.phase === 'arming' && k >= arm) {
       v.hidden = false; v.alpha = 0; c.at = vp.t;
-      march(v, c, 'tough_inf', road);
+      march(v, c, type, road);
       c.fadeIn = true;
     }
   };
@@ -1107,7 +1107,7 @@ function hollowRound(state, vp, dt) {
     v.work = true; v.voice = plan.voice;
     const c = vp.hollow[th.who] || (vp.hollow[th.who] = { phase: 'idle' });
     if (c.phase === 'idle') {
-      v.look = 'thug'; v.card = cardOf('light_inf');
+      v.look = 'thug'; v.lookType = 'light_inf'; v.card = cardOf('light_inf');
       fidget(v, c);
       if (c.tapped) { c.phase = 'still'; c.at = vp.t; }
     }
@@ -1115,8 +1115,9 @@ function hollowRound(state, vp, dt) {
     if (c.phase === 'march') marching(v, c);
   }
 
-  const hd = plan.hideout, hv = hd && state.villagers[hd.who];
-  if (hv && hv.live) {
+  for (const hd of plan.hideouts) {
+    const hv = state.villagers[hd.who];
+    if (!hv || !hv.live) continue;
     hv.work = true; hv.voice = plan.voice;
     const c = vp.hollow[hd.who] || (vp.hollow[hd.who] = { phase: 'idle' });
     if (c.phase === 'idle') {
@@ -1125,10 +1126,8 @@ function hollowRound(state, vp, dt) {
       if (c.tapped) { c.phase = 'still'; c.at = vp.t; }
     }
     if (c.phase === 'still' && vp.t - c.at >= plan.still) { c.phase = 'house'; c.at = vp.t; hv.leg = 0; }
-    house(hv, c, hd.way, hd.arm, hd.road);
+    house(hv, c, hd.way, hd.arm, hd.road, hd.type, hd.side);
     if (c.phase === 'march') { if (c.fadeIn) hv.alpha = Math.min(1, (vp.t - c.at) / DOOR_FADE); marching(hv, c); }
-    // Behind the hut from the moment he sets off for it until he is back out past it.
-    hv.behind = ['house', 'into', 'arming'].includes(c.phase) || (c.phase === 'march' && hv.leg < 3) ? hd.behind : null;
   }
 
   const bx = plan.boxman, bv = bx && state.villagers[bx.who];
@@ -1143,11 +1142,13 @@ function hollowRound(state, vp, dt) {
       if (c.phase === 'carry') {
         const [fx, fy] = VILLAGER_POSE.feet.carry_box;
         const side = bv.flip ? -1 : 1, piece = PIECES.box;
-        // Where it comes to rest: its bottom on the ground he stood on.
-        const rest = bv.y + 1 - (piece.src[1] + piece.src[3] - piece.mid[1]) * SCALE;
-        // AND ITS SHADOW on the ground there (`ground`), drawn under it by render.js.
+        // Where it comes to rest: sitting on its shadow, whose centre is on the ground in
+        // front of him — the owner's drawing of it on the ground (BOX_GROUND) says where
+        // the box stands on its shadow.
+        const ground = bv.y + 2;
+        const rest = ground - BOX_GROUND.shadow[1] * SCALE;
         c.box = { piece, x0: bv.x + (piece.held[0] - fx) * SCALE * side, y0: bv.y + (piece.held[1] - fy) * SCALE,
-                  rest, ground: bv.y + 1, x: 0, y: 0, rot: 0, at: vp.t, depth: bv.y + 2 };
+                  rest, ground, x: 0, y: 0, rot: 0, at: vp.t, depth: ground, onGround: BOX_GROUND };
         c.phase = 'drop';
       } else c.phase = 'drop';
       c.at = vp.t; bv.leg = 0; bv.alpha = 1;
@@ -1198,6 +1199,13 @@ function hollowRound(state, vp, dt) {
   }
 }
 const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground
+// THE OWNER'S DRAWING OF THE BOX ON THE GROUND, shadow and all (Box_on_ground.png),
+// which is what a dropped box is once it lands. Its box is the carried one's drawing
+// a pixel right and two up, so `mid` is where the flying box's middle lands in it;
+// `shadow` is the centre of its shadow from there, and `r` its two radii — the
+// shadow render.js grows from nothing under the falling box to exactly this.
+export const BOX_GROUND = { key: 'vill_box_on_ground', src: [208, 227, 96, 58], mid: [257, 253.5],
+                            shadow: [-1.5, 14], r: [47.5, 16.5], fill: '#595959' };
 
 // A TAP ON ONE OF DARK HOLLOW'S FOUR: noted, and his round does the rest.
 function hollowTap(vp, v) {

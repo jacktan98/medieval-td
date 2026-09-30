@@ -125,15 +125,16 @@ export const level16 = {
 
   routes: [middle, bottom],
   plots: plots1,
-  // THE PEOPLE WHO LIVE HERE, and none of them is on your side: two thugs and two
+  // THE PEOPLE WHO LIVE HERE, and none of them is on your side: two thugs and three
   // enemy villagers, each at the centre of his own ground shadow. At the owner's word
   // they are the game's to move — see `hollow` in src/villagers.js — and a tap turns
   // any of them into a creature on the road.
   villagers: [
-    { x: 128.8, y: 135.0 },   // 1, the thug by the top hut
+    { x: 135.4, y:  79.2 },   // 1, the thug between the two top huts
     { x: 162.0, y: 115.7 },   // 2, carrying a box to the top hut
-    { x: 306.7, y: 440.5 },   // 3, by the bottom hut
-    { x: 306.3, y: 478.9 }    // 4, the thug below him
+    { x: 107.0, y: 129.2 },   // 3, below the top-left hut — an Archer Thug when armed
+    { x: 255.2, y: 499.7 },   // 4, by the bottom hut
+    { x: 218.1, y: 503.3 }    // 5, the thug beside him
   ],
   villagerPlay: 'hollow',
 
@@ -160,11 +161,14 @@ export const level16 = {
   startGold: 300,
   startLives: 20,
 
-  // WHAT A FIGURE CAN WALK BEHIND: the two stone huts and the Dark Hollow signpost.
+  // WHAT A FIGURE CAN WALK BEHIND: the three stone huts and the Dark Hollow signpost.
+  // THE LOG BARRICADE IS DELIBERATELY NOT HERE, and the splitter says why each time:
+  // it stands over the two archers' posts, so a box would draw it in front of the men
+  // the artist drew in front of it.
   frontArt: 'front16',
   front: [
+    { x:  25, y:  36, w:  77, h:  82, g: 101 },   // stands on y 101 — the top-left hut
     { x: 728, y:  96, w:  41, h:  45, g: 138 },   // stands on y 138 — the signpost
     { x: 195, y:  76, w:  77, h:  81, g: 140 },   // stands on y 140 — the top hut
-    { x: 211, y: 430, w:  79, h:  82, g: 495 }    // stands on y 495 — the bottom hut
-  ]
-};
+    { x: 264, y: 407, w:  77, h:  81, g: 472 }    // stands on y 472 — the bottom hut
+  ]};
