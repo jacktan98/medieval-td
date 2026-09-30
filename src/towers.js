@@ -3,6 +3,8 @@ import { BEATS, SCALE } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
 import { typeOf, pierceOf } from './data/armour.js';
 import { play, FIRING } from './audio.js';
+import { inRange } from './ground.js';
+import { at as pointOn, nearestOn } from './route.js';
 
 // A TOWER, AS THE GAME KEEPS ONE. Every field it will ever read, set here, once.
 //
@@ -54,6 +56,45 @@ export function makeTower(plot, fam, def, spent = def.cost) {
   };
 }
 
+// FACING THE WAY THE ENEMY COMES, from the moment a tower is built or upgraded, at
+// the owner's word: "if enemies come from left to right, when the tower is built,
+// the unit should face left." Before this every man stood at `aim: 0`, looking
+// right, whatever the road did.
+//
+// THE WAY IN, not the nearest bit of road. Each route is walked from its mouth
+// until it first comes into this tower's reach, and the man looks at that point:
+// it is where the first creature on that road will appear. Of several roads, the
+// one that gets there first along its own length — the first creature any road
+// brings. A tower out of reach of every road looks up the nearest one instead.
+//
+// The machine and the building turn with him (`face`, see buildingFlip and
+// machineFlip), and anything he was doing idle is forgotten: he comes on duty
+// looking the right way, and only turns his head again once he has stood idle —
+// see idleStep.
+const ONCOMING_STEP = 4;
+export function faceOncoming(t, routes) {
+  const reach = rangeOf(t);
+  let best = null;
+  for (const r of routes) {
+    for (let s = 0; s <= r.total; s += ONCOMING_STEP) {
+      const p = pointOn(r, s);
+      if (!inRange(t.x, t.y, p.x, p.y, reach)) continue;
+      if (!best || s < best.s) best = { s, x: p.x, y: p.y };
+      break;
+    }
+  }
+  let dx, dy;
+  if (best) { dx = best.x - t.x; dy = best.y - t.y; }
+  else {
+    // Up the road from its nearest point: against the way it runs.
+    const n = nearestOn(routes, t.x, t.y);
+    dx = -n.tx; dy = -n.ty;
+  }
+  t.aim = Math.atan2(dy, dx);
+  t.face = Math.cos(t.aim) >= 0 ? 1 : -1;
+  t.idle = null;
+}
+
 // WHAT A LEVEL SAYS IS ALREADY STANDING, resolved against the families and the
 // plots. `level.prebuilt` names a plot by INDEX and a tier by NUMBER, so the
 // artwork can be redrawn and the plots re-extracted without a coordinate in the
@@ -91,7 +132,9 @@ export function prebuiltOn(level, families) {
     // to stand here. Summed by TIER NUMBER rather than by slicing the array,
     // because a forked ladder has two tier 4s and index n is not tier n+1.
     const spent = fam.tiers.reduce((sum, d) => sum + (d.tier < def.tier ? d.cost : 0), 0) + def.cost;
-    return makeTower(plot, fam, def, spent);
+    const t = makeTower(plot, fam, def, spent);
+    faceOncoming(t, level.routes);
+    return t;
   });
 }
 

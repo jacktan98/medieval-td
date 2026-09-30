@@ -6,7 +6,7 @@ import { STAGES } from './data/overview.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R,
          needsConfirm, armed } from './menu.js';
 import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
-import { towerBox, cooldownOf, makeTower } from './towers.js';
+import { towerBox, cooldownOf, makeTower, faceOncoming } from './towers.js';
 import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
@@ -461,6 +461,8 @@ function run(state, item) {
     // ALMOST the same, which is worse. See makeTower.
     state.towers.push(makeTower(menu.plot, item.family, def));
     const built = state.towers[state.towers.length - 1];
+    // Looking the way the enemy comes. See faceOncoming.
+    faceOncoming(built, level.routes);
     makeUnits(state, built);
     // The dust. All three money buttons raise one — see smoke.js for why the
     // BOX is passed rather than the tower.
@@ -494,6 +496,9 @@ function run(state, item) {
     // exact thing stepWeapon parks an idle temple's clock to prevent. It comes
     // online reloading instead, and pays its first second like any other.
     t.cd = next.charge != null ? cooldownOf(t) : 0;
+    // And the new tier's men come on duty looking the way the enemy comes, whatever
+    // the old ones were looking at. See faceOncoming.
+    faceOncoming(t, level.routes);
     // AFTER the def is swapped, so the cloud is sized to the building that is
     // arriving rather than the one that just left. On the monastery that is a
     // 29px difference in height between tiers 1 and 2, which is the difference
