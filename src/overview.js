@@ -73,11 +73,43 @@ function seedFromStars() {
 // zero is what makes the opening animation play.
 export function openedStages() {
   const saved = unlockedStages();
-  if (saved !== null) return saved;         // including a deliberate zero
+  if (saved !== null) return caughtUp(saved);   // including a deliberate zero
 
   const seeded = seedFromStars();
   saveUnlocked(seeded);                     // written even at zero, so this runs once
   return seeded;
+}
+
+// AND A ROAD THAT GREW PAST A PLAYER WHO HAD FINISHED IT. A win only opens the next
+// stage if there IS one, so somebody who cleared Serene Peak while it was the last
+// stage saved "13 of 13" — and when stage 14 was added, nothing opened it, because
+// the win that should have was already spent. The owner met exactly that.
+//
+// So on load, if the stage at the front of the road has been finished (a star at
+// any difficulty and length, the same test as seedFromStars), the next one opens,
+// and so on. A saved zero is left alone: that is Reset campaign, which keeps the
+// star records on purpose. The newest stage opened this way marches onto the map
+// like any win — see roadGrew, read once in src/main.js.
+let grew = null;
+function caughtUp(saved) {
+  let open = saved;
+  while (open > 0 && open < STAGE_COUNT && playable(open)) {
+    const id = levels[STAGES[open - 1].level].id;
+    if (!DIFFICULTIES.some(d => MODES.some(m => bestStars(id, d.id, m.id) > 0))) break;
+    open++;
+  }
+  if (open !== saved) {
+    saveUnlocked(open);
+    grew = open - 1;
+  }
+  return open;
+}
+
+// The stage the road just grew to on this load, for its march, once; else null.
+export function roadGrew() {
+  const g = grew;
+  grew = null;
+  return g;
 }
 
 // --- the animation ----------------------------------------------------------

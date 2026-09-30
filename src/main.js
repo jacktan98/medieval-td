@@ -5,7 +5,7 @@ import { openingDelay, MODES } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked, startReveal as startStars, stepStars } from './score.js';
-import { startReveal, stepReveal, stageOfLevel, openedStages, mapAudio } from './overview.js';
+import { startReveal, stepReveal, stageOfLevel, openedStages, roadGrew, mapAudio } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
@@ -101,7 +101,7 @@ function newGame() {
   const unlocked = state.unlocked ?? openedStages();
   // A stage opened by a win that has not yet been shown opening. Set when the
   // game is won and spent here, on the way back to the map.
-  const pendingReveal = state.pendingReveal ?? null;
+  const pendingReveal = state.pendingReveal ?? roadGrew();
 
   Object.assign(state, {
     levelIndex,
