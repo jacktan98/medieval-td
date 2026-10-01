@@ -41,10 +41,10 @@ the frame he is not there.
 
 | file                                | key          | what it is                                        |
 |-------------------------------------|--------------|---------------------------------------------------|
-| `Enemies_Bomb_Thug_Default.png`     | `bomb`       | the walk, the portrait and the encyclopedia card — on the board its fuse's little flame is lifted off and drawn back live, flickering (`FUSE_FIRE` in src/render.js); the card and the book keep it still |
+| `Enemies_Bomb_Thug_Default.png`     | `bomb`       | the walk, the portrait and the encyclopedia card — on the board its fuse's little flame is lifted off and drawn back live, flickering and 30% bigger (`FUSE_FIRE` in src/render.js); the card and the book keep it still |
 | `Enemies_Bomb_Thug_Explode.png`     | `bomb_blast` | the burst, on screen for 0.2s, both ways he goes off |
 | `Enemies_Bomb_Thug_Self.png`        | `bomb_dead`  | his body, when a projectile got him first         |
-| `Enemies_Bomb_Thug_Bomb.png`        | `bomb_live`  | the bomb lying beside it, fuse still burning      |
+| `Enemies_Bomb_Thug_Bomb.png`        | `bomb_live`  | the bomb lying beside it, fuse still burning — its flame drawn live and flickering like his |
 | `Enemies_Bomb_Thug_Dead.png`        | *(not loaded)* | the two of them together — the reference the offset is measured off |
 
 **His corpse is in this folder, not in `assets/dead/`.** Every other body in the

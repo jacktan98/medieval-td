@@ -2955,8 +2955,11 @@ function drawFall(ctx, c) {
 // has already put that flip into `b.x`; this is the other half of it, the picture
 // itself turning round.
 function drawBomb(ctx, b) {
-  const img = art.bomb_live;
+  let img = art.bomb_live;
   if (!img) return;
+  // ITS FUSE BURNS, as the thug's does. See FUSE_FIRE.
+  const fuse = fuseParts('bomb_live');
+  if (fuse) img = fuse.unlit;
   const [sx, sy, sw, sh] = BOMB_TRIM;
   const dw = sw * SCALE;
   const dh = sh * SCALE;
@@ -2965,6 +2968,8 @@ function drawBomb(ctx, b) {
   ctx.scale(mirror(b.def, b.face), 1);
   ctx.drawImage(img, sx, sy, sw, sh,
     -BOMB_PIVOT[0] * dw, -BOMB_PIVOT[1] * dh, dw, dh);
+  if (fuse) drawFuseFire(ctx, fuse, -BOMB_PIVOT[0] * dw + (fuse.at.base[0] - sx) * SCALE,
+    -BOMB_PIVOT[1] * dh + (fuse.at.base[1] - sy) * SCALE, b.x * 0.13 + b.y * 0.07);
   ctx.restore();
 }
 
@@ -3144,7 +3149,7 @@ function drawEnemy(ctx, e) {
   let [frame, trim, pivot, fade] = enemyArt(e);
   // THE BOMB THUG'S FUSE BURNS: the painted flame is lifted off his drawing and a live
   // one flickers in its place. See FUSE_FIRE.
-  const fuse = frame === art[FUSE_FIRE.key] && fuseParts(frame);
+  const fuse = frame === art.bomb && fuseParts('bomb');
   if (fuse) frame = fuse.unlit;
 
   const [sx, sy, sw, sh] = trim;
@@ -3164,8 +3169,8 @@ function drawEnemy(ctx, e) {
   ctx.scale(mirror(e.def, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, e, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
-  if (fuse) drawFuseFire(ctx, fuse.flame, -pivot[0] * dw + (FUSE_FIRE.base[0] - sx) * SCALE,
-    -pivot[1] * dh + (FUSE_FIRE.base[1] - sy) * SCALE, e);
+  if (fuse) drawFuseFire(ctx, fuse, -pivot[0] * dw + (fuse.at.base[0] - sx) * SCALE,
+    -pivot[1] * dh + (fuse.at.base[1] - sy) * SCALE, (e.s || 0) * 0.37 + (e.lane || 0) * 1.7);
   // AND THE LAYER THAT IS FADING, if this pose has one — the weapons the Captain
   // has thrown down, going out over two seconds. Inside the same transform, so it
   // is mirrored with the body and lands where it does in the single drawing the
@@ -3183,18 +3188,24 @@ function drawEnemy(ctx, e) {
   ctx.restore();
 }
 
-// THE BOMB THUG'S LIT FUSE, live. The owner's drawing paints a little flame on the
-// end of the fuse; on the board it is taken off (everything bright inside `box`, above
-// the black fuse) and drawn back on its own, flickering — taller and shorter, a
-// little narrower and wider, leaning from side to side — with a faint glow, each
-// thug on a beat of his own. `base` is where the flame sits on the fuse, in the
-// drawing's own pixels. The encyclopedia and the info card keep the still drawing.
-const FUSE_FIRE = { key: 'bomb', box: [212, 194, 26, 25], base: [225.5, 218.5] };
+// THE BOMB THUG'S LIT FUSE, live — and the fuse of the bomb he drops. The owner's
+// drawings paint a little flame on the end of each fuse; on the board it is taken off
+// (everything warm inside `box`) and drawn back on its own, flickering — taller and
+// shorter, a little narrower and wider, leaning from side to side — with a faint
+// glow, each on a beat of its own, and FUSE_SIZE times as big as painted, at the
+// owner's word. `base` is where the flame sits on the fuse, in the drawing's own
+// pixels. The encyclopedia and the info card keep the still drawing.
+const FUSE_FIRE = {
+  bomb:      { box: [212, 194, 26, 25], base: [225.5, 218.5] },
+  bomb_live: { box: [329, 228, 24, 19], base: [334.5, 241] }
+};
+const FUSE_SIZE = 1.3;
 let boardClock = 0;
 const fuseCache = new Map();
-function fuseParts(img) {
-  if (fuseCache.has(img)) return fuseCache.get(img);
-  if (!img.complete || !img.naturalWidth) return null;
+function fuseParts(key) {
+  if (fuseCache.has(key)) return fuseCache.get(key);
+  const img = art[key], at = FUSE_FIRE[key];
+  if (!img || !at || !img.complete || !img.naturalWidth) return null;
   let out = null;
   try {
     const W = img.naturalWidth, H = img.naturalHeight;
@@ -3202,7 +3213,7 @@ function fuseParts(img) {
     unlit.width = flame.width = W; unlit.height = flame.height = H;
     const gu = unlit.getContext('2d', { willReadFrequently: true });
     gu.drawImage(img, 0, 0);
-    const [bx, by, bw, bh] = FUSE_FIRE.box;
+    const [bx, by, bw, bh] = at.box;
     const px = gu.getImageData(bx, by, bw, bh), fx = new ImageData(bw, bh);
     for (let i = 0; i < px.data.length; i += 4) {
       const [r, g, b, a] = [px.data[i], px.data[i + 1], px.data[i + 2], px.data[i + 3]];
@@ -3214,19 +3225,18 @@ function fuseParts(img) {
     }
     gu.putImageData(px, bx, by);
     flame.getContext('2d').putImageData(fx, bx, by);
-    out = { unlit, flame };
+    out = { unlit, flame, at };
   } catch { out = null; }
-  fuseCache.set(img, out);
+  fuseCache.set(key, out);
   return out;
 }
-function drawFuseFire(ctx, flame, x, y, e) {
-  const [bx, by, bw, bh] = FUSE_FIRE.box, [fx, fy] = FUSE_FIRE.base;
-  const ph = ((e.s || 0) * 0.37 + (e.lane || 0) * 1.7) % 7;
-  const t = boardClock * 1 + ph;
+function drawFuseFire(ctx, fuse, x, y, phase) {
+  const { flame, at: { box: [bx, by, bw, bh], base: [fx, fy] } } = fuse;
+  const t = boardClock + (phase % 7);
   const tall = 1 + 0.22 * Math.sin(t * 19) + 0.1 * Math.sin(t * 31 + 1);
   const wide = 1 - 0.1 * Math.sin(t * 23 + 2);
   const lean = 0.16 * Math.sin(t * 9) + 0.06 * Math.sin(t * 27);
-  const k = SCALE;
+  const k = SCALE * FUSE_SIZE;
   ctx.save();
   ctx.translate(x, y);
   // A faint warm glow round it, breathing with it.
