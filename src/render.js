@@ -80,6 +80,7 @@ export function draw(ctx, state) {
   // spatter goes through that pass too — it is not solid, but it does have a
   // place on the board, and drawing it afterwards put it on top of buildings it
   // was thrown behind. See drawFigures.
+  boardClock = state.anim || 0;
   drawFigures(ctx, state);
   // And the one piece of scenery that is nearer the camera than anything standing
   // on the board — stage 5's bridge rail. After the pass rather than in it, which
@@ -3140,7 +3141,11 @@ function drawEnemy(ctx, e) {
   // plague doctor's `thrust` is set by the flask leaving his hand rather than by
   // a blow landing, and he gets the lunge with it, which is exactly right for a
   // man putting his shoulder into a throw.
-  const [frame, trim, pivot, fade] = enemyArt(e);
+  let [frame, trim, pivot, fade] = enemyArt(e);
+  // THE BOMB THUG'S FUSE BURNS: the painted flame is lifted off his drawing and a live
+  // one flickers in its place. See FUSE_FIRE.
+  const fuse = frame === art[FUSE_FIRE.key] && fuseParts(frame);
+  if (fuse) frame = fuse.unlit;
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -3159,6 +3164,8 @@ function drawEnemy(ctx, e) {
   ctx.scale(mirror(e.def, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, e, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
+  if (fuse) drawFuseFire(ctx, fuse.flame, -pivot[0] * dw + (FUSE_FIRE.base[0] - sx) * SCALE,
+    -pivot[1] * dh + (FUSE_FIRE.base[1] - sy) * SCALE, e);
   // AND THE LAYER THAT IS FADING, if this pose has one — the weapons the Captain
   // has thrown down, going out over two seconds. Inside the same transform, so it
   // is mirrored with the body and lands where it does in the single drawing the
@@ -3173,6 +3180,65 @@ function drawEnemy(ctx, e) {
     ctx.globalAlpha *= alpha;
     ctx.drawImage(img2, t2[0], t2[1], t2[2], t2[3], -p2[0] * w2, -p2[1] * h2, w2, h2);
   }
+  ctx.restore();
+}
+
+// THE BOMB THUG'S LIT FUSE, live. The owner's drawing paints a little flame on the
+// end of the fuse; on the board it is taken off (everything bright inside `box`, above
+// the black fuse) and drawn back on its own, flickering — taller and shorter, a
+// little narrower and wider, leaning from side to side — with a faint glow, each
+// thug on a beat of his own. `base` is where the flame sits on the fuse, in the
+// drawing's own pixels. The encyclopedia and the info card keep the still drawing.
+const FUSE_FIRE = { key: 'bomb', box: [212, 194, 26, 25], base: [225.5, 218.5] };
+let boardClock = 0;
+const fuseCache = new Map();
+function fuseParts(img) {
+  if (fuseCache.has(img)) return fuseCache.get(img);
+  if (!img.complete || !img.naturalWidth) return null;
+  let out = null;
+  try {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const unlit = document.createElement('canvas'), flame = document.createElement('canvas');
+    unlit.width = flame.width = W; unlit.height = flame.height = H;
+    const gu = unlit.getContext('2d', { willReadFrequently: true });
+    gu.drawImage(img, 0, 0);
+    const [bx, by, bw, bh] = FUSE_FIRE.box;
+    const px = gu.getImageData(bx, by, bw, bh), fx = new ImageData(bw, bh);
+    for (let i = 0; i < px.data.length; i += 4) {
+      const [r, g, b, a] = [px.data[i], px.data[i + 1], px.data[i + 2], px.data[i + 3]];
+      // The flame is the red and orange: warm, and well clear of the fuse's black.
+      if (a && r > 90 && r > b + 40) {
+        fx.data.set([r, g, b, a], i);
+        px.data[i + 3] = 0;
+      }
+    }
+    gu.putImageData(px, bx, by);
+    flame.getContext('2d').putImageData(fx, bx, by);
+    out = { unlit, flame };
+  } catch { out = null; }
+  fuseCache.set(img, out);
+  return out;
+}
+function drawFuseFire(ctx, flame, x, y, e) {
+  const [bx, by, bw, bh] = FUSE_FIRE.box, [fx, fy] = FUSE_FIRE.base;
+  const ph = ((e.s || 0) * 0.37 + (e.lane || 0) * 1.7) % 7;
+  const t = boardClock * 1 + ph;
+  const tall = 1 + 0.22 * Math.sin(t * 19) + 0.1 * Math.sin(t * 31 + 1);
+  const wide = 1 - 0.1 * Math.sin(t * 23 + 2);
+  const lean = 0.16 * Math.sin(t * 9) + 0.06 * Math.sin(t * 27);
+  const k = SCALE;
+  ctx.save();
+  ctx.translate(x, y);
+  // A faint warm glow round it, breathing with it.
+  const R = 7 * k * 4 * (0.9 + 0.1 * tall);
+  const glow = ctx.createRadialGradient(0, -2, 0, 0, -2, R);
+  glow.addColorStop(0, `rgba(255,170,70,${0.32 * tall})`);
+  glow.addColorStop(1, 'rgba(255,170,70,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(-R, -2 - R, R * 2, R * 2);
+  ctx.rotate(lean);
+  ctx.scale(wide, tall);
+  ctx.drawImage(flame, bx, by, bw, bh, (bx - fx) * k, (by - fy) * k, bw * k, bh * k);
   ctx.restore();
 }
 

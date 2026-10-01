@@ -669,8 +669,8 @@ console.log('\nWhat the knife changes about him\n');
 // This file exists because of one sentence in data/waves.js: a pinned thrower is
 // in a fight he loses, BECAUSE ENEMIES DO NOT HEAL, so a wave always ends. The
 // Dark Priest makes that sentence false, and unlike the version of him that
-// shipped for one build he makes it emphatically false — 10 health a second is
-// three times a spearman's damage, and only an assassin out-does it.
+// shipped for one build he makes it emphatically false — 20 health a second
+// (it was 10), far more than a spearman's damage.
 //
 // THAT IS THE OWNER'S DECISION, taken with the consequence in front of him: "I am
 // fine if the game stalls theoretically. Players will find ways to prevent this
@@ -689,8 +689,8 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
 {
   const priest = enemyTypes.dark_priest;
 
-  check(priest.heal.hps === 10 && priest.heal.seconds === 5,
-    'a dark healing mends 10 health a second for five',
+  check(priest.heal.hps === 20 && priest.heal.seconds === 5,
+    'a dark healing mends 20 health a second for five, 100 a cast',
     `${priest.heal.hps} x ${priest.heal.seconds} = ${priest.heal.hps * priest.heal.seconds} a cast`);
 
   // REFRESHES RATHER THAN STACKS, which is still true and still worth holding.
@@ -717,7 +717,8 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   check(priest.heal.hps > men[0].dps,
     'and it out-heals a tier 1 squad, which is the accepted consequence',
     `${priest.heal.hps} mended against ${men[0].name} ${men[0].dps.toFixed(2)}, ` +
-    `only ${best.name} ${best.dps.toFixed(2)} is over it`);
+    best.dps > priest.heal.hps ? `only ${best.name} ${best.dps.toFixed(2)} is over it`
+                               : `not even ${best.name}'s ${best.dps.toFixed(2)} reaches it`);
 
   // MENDING STOPS AT FULL HEALTH. Without the clamp the bar runs past its own
   // maximum and every health-bar fraction in the game goes over 1.

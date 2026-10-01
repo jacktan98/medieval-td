@@ -41,7 +41,7 @@ the frame he is not there.
 
 | file                                | key          | what it is                                        |
 |-------------------------------------|--------------|---------------------------------------------------|
-| `Enemies_Bomb_Thug_Default.png`     | `bomb`       | the walk, the portrait and the encyclopedia card  |
+| `Enemies_Bomb_Thug_Default.png`     | `bomb`       | the walk, the portrait and the encyclopedia card — on the board its fuse's little flame is lifted off and drawn back live, flickering (`FUSE_FIRE` in src/render.js); the card and the book keep it still |
 | `Enemies_Bomb_Thug_Explode.png`     | `bomb_blast` | the burst, on screen for 0.2s, both ways he goes off |
 | `Enemies_Bomb_Thug_Self.png`        | `bomb_dead`  | his body, when a projectile got him first         |
 | `Enemies_Bomb_Thug_Bomb.png`        | `bomb_live`  | the bomb lying beside it, fuse still burning      |
@@ -163,8 +163,8 @@ so it replaces the STANDING half of his pair and leaves his swing alone.
 | `Enemies_Dark_Priest_Heal.png`     | `dark_priest` |
 
 **He holds it for two seconds and stands still for all of them**, then the enemy
-he cast on wears `Dark_Healing_Status.png` and gets 10 health a second for 5
-seconds — 50 a cast. Being pinned mid-cast loses him the spell rather than
+he cast on wears `Dark_Healing_Status.png` and gets 20 health a second for 5
+seconds — 100 a cast. Being pinned mid-cast loses him the spell rather than
 pausing it. See `heal` on `dark_priest` in `src/data/waves.js`, `enemyStance` in
 `src/render.js` for which drawing is shown when, and `woundedNear` in
 `src/enemies.js` for who he picks: the worst wounded within reach, himself

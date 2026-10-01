@@ -1306,8 +1306,8 @@ export const enemyTypes = {
   // stays hurt.
   //
   // AT 10 A SECOND THAT ARGUMENT LARGELY DISSOLVES, which is worth writing down
-  // because the rule came out and the number went up in the same breath. 50 health
-  // a cast is most of a Thug and a fifth of a Blocker: the man he is working on
+  // because the rule came out and the number went up in the same breath — and it is
+  // 20 now, 100 a cast. That is a whole Thug and two fifths of a Blocker: the man he is working on
   // actually reaches full health and stops being a reason to stand still, so he
   // moves on by himself. Only something with a very deep bar keeps him in place,
   // and then he is doing his job.
@@ -1356,13 +1356,14 @@ export const enemyTypes = {
       // Seconds held in the pose before anything lands.
       cast: 2,
       // HEALTH A SECOND, and for how many. The owner's numbers: "healing is 10
-      // health per second for 5 seconds", so 50 a cast.
+      // health per second for 5 seconds", so 50 a cast — and then doubled, at his
+      // word: "increase healing to 20 health per second so now healing is 100".
       //
       // A RATE RATHER THAN A TOTAL, because that is what the status carries and
       // what he said. It was `hp: 10, seconds: 5` meaning 10 in TOTAL, which is a
       // fifth of this and reads identically at a glance; the field name is what
       // stops the two being confused after the fact.
-      hps: 10,
+      hps: 20,
       seconds: 5,
       // AND HOW LONG BEFORE ANYBODY WORKS ON THE SAME MAN AGAIN. The owner's rule:
       // "only go back to healing the same unit after 30 seconds. It goes to heal
