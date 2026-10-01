@@ -3289,7 +3289,7 @@ function drawFuseFire(ctx, fuse, x, y, phase) {
 // same place, so they share one spec. The encyclopedia and the info card keep the
 // still drawing.
 const RALLY_BANNER = { seed: [310, 215], pole: [[274, 190], [261.5, 210]], top: 178, tall: 80, wide: 100,
-  edge: 9, still: 6, reach: 70, amp: 5, wave: 44, speed: 1.6 };
+  edge: 9, still: 6, reach: 70, amp: 5, wave: 44, speed: 0.6 };   // speed in ripples a second; 1.6 was too brisk for the owner
 const WAVE_FLAG = { rally: RALLY_BANNER, rally_attack: RALLY_BANNER };
 const rallyClothCache = new Map();
 function rallyCloth(key) {
