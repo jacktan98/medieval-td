@@ -131,7 +131,7 @@ export function draw(ctx, state) {
 function drawGround(ctx, state) {
   const img = art[level.art];
   if (img) {
-    ctx.drawImage(img, 0, 0, 960, 540);
+    ctx.drawImage(boardBase(ctx, img), 0, 0, 960, 540);
     // A river that runs — stage 5's, in the world map's style. See drawBoardWater.
     if (level.water) drawBoardWater(ctx, img, level.water, state.anim || 0);
     // A still lake, and a fish leaping in it now and then — stage 13's. See
@@ -144,6 +144,25 @@ function drawGround(ctx, state) {
   }
   ctx.fillStyle = '#4A5744';
   ctx.fillRect(0, 0, 960, 540);
+}
+
+// THE BOARD'S BASE, DRAWN ONCE. It is an SVG, and the browser re-renders an SVG
+// every time it is drawn — the single biggest cost in a frame. So it is drawn
+// once onto a canvas the size of the screen's own pixels, and that canvas is what
+// each frame copies. Redone only when the drawing or the screen size changes.
+// The river and lake still read the drawing itself (they key on it).
+let baseCache = null;
+function boardBase(ctx, img) {
+  if (typeof document === 'undefined' || !ctx.getTransform) return img;
+  const m = ctx.getTransform();
+  const w = Math.max(1, Math.round(960 * Math.hypot(m.a, m.b)));
+  const h = Math.max(1, Math.round(540 * Math.hypot(m.c, m.d)));
+  if (baseCache && baseCache.img === img && baseCache.w === w && baseCache.h === h) return baseCache.c;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, 0, 0, w, h);
+  baseCache = { img, w, h, c };
+  return c;
 }
 
 // Width of the painted road, measured off the artwork rather than chosen: the
@@ -1388,7 +1407,7 @@ function bannerLayers(img, b) {
     const [x0, y0, x1, y1] = b.box;
     const bw = x1 - x0, bh = y1 - y0;
     const make = () => { const c = document.createElement('canvas'); c.width = bw; c.height = bh; return c; };
-    const wall = make(), wg = wall.getContext('2d', { willReadFrequently: true });
+    const wall = make(), wg = wall.getContext('2d');
     wg.drawImage(img, -x0, -y0);
     const src = wg.getImageData(0, 0, bw, bh), d = src.data;
     // The cloth: its colour, then that grown by `edge` to take its outline in.
@@ -1600,7 +1619,7 @@ function bareLayers(img, bare, b) {
     const bw = x1 - x0, bh = y1 - y0;
     const read = (src, w, h) => {
       const c = document.createElement('canvas'); c.width = bw; c.height = bh;
-      const g = c.getContext('2d', { willReadFrequently: true });
+      const g = c.getContext('2d');
       // Both sheets at the size of the one drawn — the front sheet's canvas is.
       g.drawImage(src, 0, 0, w, h, -x0, -y0, img.width, img.height);
       return { c, d: g.getImageData(0, 0, bw, bh) };
@@ -1769,7 +1788,7 @@ function darkVillager(key) {
   if (!img || !img.complete || !img.naturalWidth) return null;
   const c = document.createElement('canvas');
   c.width = img.naturalWidth; c.height = img.naturalHeight;
-  const g = c.getContext('2d', { willReadFrequently: true });
+  const g = c.getContext('2d');
   g.drawImage(img, 0, 0);
   const px = g.getImageData(0, 0, c.width, c.height), d = px.data;
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -2198,7 +2217,7 @@ function factoryMask(img, f) {
         const w = Math.ceil((x1 - x0) * MAP_PX), h = Math.ceil((y1 - y0) * MAP_PX);
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
-        const g = c.getContext('2d', { willReadFrequently: true });
+        const g = c.getContext('2d');
         g.drawImage(split.body, -x0 * MAP_PX, -y0 * MAP_PX);
         const im = g.getImageData(0, 0, w, h), d = im.data;
         // The opening's dark brown, not its black outline or the grey stone.
@@ -3211,7 +3230,7 @@ function fuseParts(key) {
     const W = img.naturalWidth, H = img.naturalHeight;
     const unlit = document.createElement('canvas'), flame = document.createElement('canvas');
     unlit.width = flame.width = W; unlit.height = flame.height = H;
-    const gu = unlit.getContext('2d', { willReadFrequently: true });
+    const gu = unlit.getContext('2d');
     gu.drawImage(img, 0, 0);
     const [bx, by, bw, bh] = at.box;
     const px = gu.getImageData(bx, by, bw, bh), fx = new ImageData(bw, bh);
@@ -5399,7 +5418,8 @@ function drawStart(ctx, state) {
 
   ctx.fillStyle = UI_INK;
   ctx.font = '700 24px system-ui, sans-serif';
-  ctx.fillText(lv ? 'Start' : 'Locked', b.x + b.w / 2, b.y + b.h / 2 + 1);
+  // 'Loading…' while a pressed Start waits for the board's pictures (src/main.js).
+  ctx.fillText(!lv ? 'Locked' : state.startWhenReady ? 'Loading…' : 'Start', b.x + b.w / 2, b.y + b.h / 2 + 1);
   ctx.restore();
 
   // Under Start rather than beside it. This is the one screen where a player has

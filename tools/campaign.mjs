@@ -74,7 +74,6 @@ import { playOf } from '../src/villagers.js';
 const DIR = 'assets/map';
 const GUIDE = `${DIR}/Overview_Map_Layer_1.svg`;
 const SEPIA = `${DIR}/Overview_Map_sepia.svg`;
-const MERGED = `${DIR}/Overview_Map_merged.svg`;
 const NAMES = `${DIR}/Overview_Map_names.svg`;
 const SCALE = 0.5;
 const NODE_HIT = 22;   // must match src/overview.js
@@ -502,11 +501,6 @@ console.log('\n--- the display map is the same drawing, muted ---\n');
     'the display map holds every shape in the picture layers',
     `${paths(sep).length} path(s), ${paths(pictureText).length} across ` +
     `${pictureFiles.length} layer(s)`);
-
-  const merged = readFileSync(MERGED, 'utf8');
-  ok(paths(merged).length === paths(allLayers).length,
-    'and the merged map holds every shape in every layer',
-    `${paths(merged).length} path(s), ${paths(allLayers).length} across ${LAYER_FILES.length}`);
 
   // THE GUIDES ARE ACTUALLY GONE from what the player sees, checked by colour
   // rather than by counting: a count can come out right while the wrong shapes

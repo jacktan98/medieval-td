@@ -779,6 +779,20 @@ button is that touch, so the player never sees the seam — and `unlock()` runs 
 tab going to the background all suspend the audio again. Without the repeat, the
 game would come back mute and stay that way.
 
+## Long background loops load when they are needed
+
+A decoded sound takes far more memory than its file — about 300 MB for every clip
+together, nearly all of it the long background loops (birds, river, lake, the dark
+woods, crows, desert wind, fountain, fire, fishing reel, cooking, welding, marching,
+flag waving). So those are NOT fetched at start: `LOOPED` in `src/audio.js` names
+them, and each is fetched the first time `setLoop` asks for it and played as soon
+as it has arrived. One nothing has asked for in 30 seconds is let go of, and
+fetched again if a later board wants it. Everything else — the short effects and
+voices — still loads at start, so a hit never waits on a download.
+
+A new long loop goes in `LOOPED`. A short effect must not: it would be silent the
+first time it plays.
+
 ## `src/audio.js` must stay importable in Node
 
 `tools/sim.mjs` runs the real combat modules headless, and they call into the

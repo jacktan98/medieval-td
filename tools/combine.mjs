@@ -16,8 +16,8 @@
 // comes out is what split-map and trace-road see and what the game will draw — not a
 // second opinion about how drawings stack.
 //
-// WHAT IT IS NOT FOR: nothing loads the PNG. It is the same kind of file as
-// `Overview_Map_merged.svg` — a thing to look at. A board the game draws is still
+// WHAT IT IS NOT FOR: nothing loads the PNG — it is a thing to look at, and is
+// not committed (to look at one, run this and open it). A board the game draws is still
 // `<Board>_base.svg` and is still written by split-map.
 //
 // TWO MODES, and they differ in ONE thing: the ground.

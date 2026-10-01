@@ -1294,22 +1294,65 @@ export function loadAudio() {
 
   const absent = [];
 
-  // VERSIONED like the artwork and the modules — see the note above `versioned` in
-  // src/assets.js. A re-recorded clip was stale for the same ten minutes a redrawn
-  // sprite was, and for the same reason.
-  const stamp = typeof window !== 'undefined' && window.__stamp;
-  const jobs = Object.entries(paths).map(([key, src]) =>
-    fetch(stamp ? `${src}?v=${stamp}` : src)
-      .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
-      .then(data => ctx.decodeAudioData(data))
-      .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key), LIFT[key] ?? 1); })
-      .catch(() => { if (AWAITED.has(key)) absent.push(src); else console.warn('Missing or unreadable audio:', src); })
-  );
+  // EVERYTHING BUT THE LONG LOOPS, which are fetched when first wanted — see LOOPED.
+  const jobs = Object.keys(paths).filter(key => !LOOPED.has(key))
+    .map(key => fetchClip(key).catch(() => {
+      if (AWAITED.has(key)) absent.push(paths[key]); else console.warn('Missing or unreadable audio:', paths[key]);
+    }));
 
   return Promise.all(jobs).then(() => {
     if (absent.length) console.info('Not recorded yet:', absent.join(', '));
     report();
   });
+}
+
+// One clip, fetched, decoded and measured into `clips`.
+//
+// VERSIONED like the artwork and the modules — see the note above `versioned` in
+// src/assets.js. A re-recorded clip was stale for the same ten minutes a redrawn
+// sprite was, and for the same reason.
+function fetchClip(key) {
+  const src = paths[key];
+  const stamp = typeof window !== 'undefined' && window.__stamp;
+  return fetch(stamp ? `${src}?v=${stamp}` : src)
+    .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
+    .then(data => ctx.decodeAudioData(data))
+    .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key), LIFT[key] ?? 1); });
+}
+
+// THE LONG BACKGROUND LOOPS ARE NOT LOADED UP FRONT. Decoded, a clip is about 380 KB
+// a second of memory, and these thirteen run from 10 seconds to over two minutes —
+// together most of the 300 MB that decoding every clip at start used to hold, which
+// is the kind of number that gets a phone's tab closed. Each is only ever played
+// through setLoop, and only on the board or screen that uses it, so setLoop fetches
+// one the first time it is wanted (it is asked every frame, so it simply starts a
+// moment later), and lets go of it RELEASE_AFTER seconds after anything last wanted
+// it. A loop not in this list is loaded at start like everything else, which is
+// slower but never wrong.
+const LOOPED = new Set([
+  'bird_chirping', 'river_flowing', 'lake_water', 'dark_background', 'crows_cawing',
+  'desert_wind', 'fountain_water', 'fire_crackling', 'fishing_reel', 'fish_cooking',
+  'steel_welding', 'marching', 'flag_waving'
+]);
+const RELEASE_AFTER = 30;
+const fetching = new Map();
+const wanted = new Map();
+function wantClip(key) {
+  wanted.set(key, ctx.currentTime);
+  if (clips[key] || fetching.has(key) || !paths[key]) return;
+  fetching.set(key, fetchClip(key)
+    .catch(() => console.warn('Missing or unreadable audio:', paths[key]))
+    .finally(() => fetching.delete(key)));
+}
+let sweptAt = 0;
+function sweepLoops() {
+  const now = ctx.currentTime;
+  if (now - sweptAt < 1) return;
+  sweptAt = now;
+  const playing = new Set([...loops.values()].map(l => l.key));
+  for (const key of LOOPED) {
+    if (clips[key] && !playing.has(key) && now - (wanted.get(key) ?? 0) > RELEASE_AFTER) delete clips[key];
+  }
 }
 
 // Everything the mix needs to know about a clip, worked out from the audio
@@ -1471,7 +1514,12 @@ const LOOP_FADE = 0.35;
 // stage 1's birdsong is the world map's birds, softer, under a name of its own so the
 // map switching its birds off every frame of a battle does not switch these off too.
 export function setLoop(key, on, level = 1, name = key) {
-  if (!ctx || ctx.state !== 'running') return;
+  if (!ctx) return;
+  // Fetched as soon as it is wanted, even before a tap has let sound play — decoding
+  // works on a suspended context — and let go of once nothing has wanted it a while.
+  if (on && LOOPED.has(key)) wantClip(key);
+  sweepLoops();
+  if (ctx.state !== 'running') return;
   const live = loops.get(name);
   if (on === !!live) return;
 
@@ -1507,7 +1555,7 @@ export function setLoop(key, on, level = 1, name = key) {
   src.start(0, c.offset);
   g.gain.linearRampToValueAtTime(c.gain * level, now + LOOP_FADE);
 
-  loops.set(name, { src, g });
+  loops.set(name, { src, g, key });
 }
 
 // Take the channel off whatever is speaking, over 60ms rather than instantly.

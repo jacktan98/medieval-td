@@ -499,6 +499,18 @@ Two traps worth knowing when you re-tune:
   cannot win" is a claim about the strongest all-archery build that exists.
 
 
+## A board's pictures load when the board is opened
+
+The world map loads at start; each board's own pictures (`map`, `front`, `over`,
+`cover` and `bare` keys in `src/assets.js`) load only when that board is chosen.
+Start shows "Loading…" until they are in, which on a normal connection is a
+blink. Once in, the base is drawn ONCE onto a canvas the size of the screen and
+each frame copies that, because the browser re-renders an SVG every time it is
+drawn — that was the single biggest cost in a frame.
+
+A new board key must follow the same names (`mapNN`, `frontNN`, ...) or it will
+load at start with everything else, which works but is slower.
+
 ## Two things every new map needs extracted
 
 A board is not playable until two lists have been read off it. Both have tools,
@@ -761,8 +773,6 @@ hand:
   stage 8. The banners sway over it, and since the wall under them is the artist's
   own rather than rebuilt, its mortar lines run on unbroken where the cloth swings
   away.
-- `Overview_Map_merged.svg` — every layer stacked into one, in colour, guides
-  included. Nothing loads it; it is there to look at.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the
   names dropped. **This is the one the game loads**, under the key `overview` in
   `src/assets.js`.

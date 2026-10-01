@@ -1029,19 +1029,47 @@ export function discFace(key, trim) {
   return faces[key];
 }
 
-export function loadArt() {
-  const absent = [];
-
-  const jobs = Object.entries(paths).map(([key, src]) => new Promise(resolve => {
+// One picture into `art`. Resolves either way: a missing file is a console line
+// and an absent picture, never a stalled game.
+function loadOne(key, absent = null) {
+  const src = paths[key];
+  return new Promise(resolve => {
     const img = new Image();
     img.onload = () => { art[key] = img; resolve(); };
     img.onerror = () => {
-      if (OPTIONAL.has(key)) absent.push(src);
+      failed.add(key);
+      if (OPTIONAL.has(key) && absent) absent.push(src);
       else console.warn('Missing sprite:', src);
       resolve();
     };
     img.src = versioned(src);
-  }));
+  });
+}
+const failed = new Set();
+
+// EACH STAGE'S OWN PICTURES ARE NOT LOADED AT START. Sixteen boards' bases and front
+// sheets were 5.9 MB of the 13.6 the game waited for before its first frame, and a
+// player plays one at a time. These keys — a board's base and front sheet, stage 5's
+// and 6's bridge rails, stage 8's bell cover and bare wall — are fetched when the
+// board is in view (ensureBoard, asked every frame by src/main.js), which is as soon
+// as its stage is chosen on the world map: the panel's picture fills in a moment
+// later, and Start waits for them (boardReady).
+const BOARD_ART = /^(map|front|over|cover|bare)\d\d$/;
+export const boardArt = lv => [lv.art, lv.frontArt, lv.overArt, lv.bell && lv.bell.cover,
+  ...(lv.mapBanners || []).map(b => b.bare)].filter(k => k && paths[k]);
+const boardJobs = new Map();
+export function ensureBoard(lv) {
+  if (!lv) return;
+  for (const key of boardArt(lv)) {
+    if (!art[key] && !failed.has(key) && !boardJobs.has(key)) boardJobs.set(key, loadOne(key));
+  }
+}
+export const boardReady = lv => !lv || boardArt(lv).every(key => art[key] || failed.has(key));
+
+export function loadArt() {
+  const absent = [];
+
+  const jobs = Object.keys(paths).filter(key => !BOARD_ART.test(key)).map(key => loadOne(key, absent));
 
   return Promise.all(jobs).then(() => {
     if (absent.length) console.info('Not drawn yet:', absent.join(', '));

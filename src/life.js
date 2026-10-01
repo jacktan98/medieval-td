@@ -571,7 +571,7 @@ export function drawPristine(ctx) {
     pristineFrom = img;
     const c = document.createElement('canvas');
     c.width = 960; c.height = 540;
-    const g = c.getContext('2d', { willReadFrequently: true });
+    const g = c.getContext('2d');
     g.drawImage(img, 0, 0, 960, 540);
     const d = g.getImageData(0, 0, 960, 540);
     const px = d.data;

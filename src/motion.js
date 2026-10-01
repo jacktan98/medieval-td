@@ -1488,7 +1488,7 @@ function findMapSeams(img) {
 function paintMapSeam(s, base, tf) {
   const { x, y, w, h } = s.rect;
   const c = sheet(w, h);
-  const g = c.getContext('2d', { willReadFrequently: true });
+  const g = c.getContext('2d');
   g.setTransform(MAP_Z / tf.a, 0, 0, MAP_Z / tf.d, -tf.e * MAP_Z / tf.a - x, -tf.f * MAP_Z / tf.d - y);
   g.drawImage(base, 0, 0);
   g.setTransform(1, 0, 0, 1, 0, 0);

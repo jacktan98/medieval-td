@@ -86,7 +86,7 @@ export function onGround(key) {
   try {
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
-    const g = c.getContext('2d', { willReadFrequently: true });
+    const g = c.getContext('2d');
     g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, w, h);
     const px = d.data;
@@ -211,7 +211,10 @@ export function shadowSplit(img, id, soft = false) {
       return c;
     };
     const bodyC = make(), shadowC = make();
-    const bg = bodyC.getContext('2d', { willReadFrequently: true });
+    // NOT willReadFrequently: that keeps a canvas off the graphics card, and this
+    // one is read once and then drawn every frame. Only scratch canvases, read and
+    // thrown away, ask for it.
+    const bg = bodyC.getContext('2d');
     bg.drawImage(img, 0, 0);
     const body = bg.getImageData(0, 0, w, h);
     const sg = shadowC.getContext('2d');

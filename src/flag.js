@@ -58,7 +58,7 @@ function layers() {
     // AND THE GROUND SHADOW LIFTED OFF THE POLE, so a flag dropped from above can
     // leave its shadow on the ground rather than carry it through the air. It is the
     // flat dark ellipse at the foot, found by its colour.
-    const shadow = make(), hg = shadow.getContext('2d', { willReadFrequently: true });
+    const shadow = make(), hg = shadow.getContext('2d');
     const pd = pg.getImageData(0, SHADOW_TOP, w, h - SHADOW_TOP);
     const sd = hg.createImageData(w, h - SHADOW_TOP);
     const a = pd.data, b = sd.data;

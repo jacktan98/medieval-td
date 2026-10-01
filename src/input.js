@@ -1,4 +1,5 @@
 import { level, levels, useLevel } from './level.js';
+import { boardReady } from './assets.js';
 import { PLOT_R, hitHudButton, hitStart, hitBack, hitModeButton, hitDifficultyButton,
          hitPauseButton } from './render.js';
 import { stageAt, skipReveal } from './overview.js';
@@ -200,7 +201,7 @@ export function tap(state, x, y, restart) {
 
     // Back out of the stage panel to the world map. Nothing is rebuilt: the
     // player has changed their mind about where, not about what.
-    if (hitBack(state, x, y)) { state.stage = null; return true; }
+    if (hitBack(state, x, y)) { state.stage = null; state.startWhenReady = false; return true; }
 
     // The LENGTH is a property of the game about to be played. It chooses which
     // of the level's two wave tables is loaded, and that is read once at newGame.
@@ -220,7 +221,12 @@ export function tap(state, x, y, restart) {
       return true;
     }
 
-    if (hitStart(state, x, y)) { state.started = true; return true; }
+    // Not before the board's pictures are here: until then the press is held, and
+    // the game starts the moment they arrive (src/main.js).
+    if (hitStart(state, x, y)) {
+      if (boardReady(level)) state.started = true; else state.startWhenReady = true;
+      return true;
+    }
     return false;
   }
 

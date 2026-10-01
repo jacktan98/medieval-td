@@ -1,4 +1,4 @@
-import { loadArt } from './assets.js';
+import { loadArt, ensureBoard, boardReady } from './assets.js';
 import { loadAudio, fanfare, setLoop, VICTORY, LOST, STAR } from './audio.js';
 import { level, levels } from './level.js';
 import { openingDelay, MODES } from './data/waves.js';
@@ -113,6 +113,9 @@ function newGame() {
     // started below from `pendingReveal`, so that a reveal cannot be inherited
     // half-finished by a game that has nothing to do with it.
     reveal: null,
+    // A Start held for the board's pictures (see the frame loop) is never carried
+    // into another game — backing out to the map rebuilds through here.
+    startWhenReady: false,
     // THE UNDEALT ROADS, on a board that divides its wave between its entries —
     // see nextRoute in src/enemies.js. Cleared here with everything else, because
     // a bag half dealt into a lost game is not the bag the next one should open
@@ -322,6 +325,12 @@ function frame(now) {
   // walks enemies straight through a blocker's ENGAGE radius without stopping.
   const real = Math.min((now - last) / 1000, 0.05);
   last = now;
+
+  // THE BOARD IN VIEW HAS ITS PICTURES, or is getting them — see ensureBoard in
+  // src/assets.js. A Start pressed before they have all arrived (`startWhenReady`,
+  // src/input.js) starts the game the frame they have.
+  ensureBoard(level);
+  if (state.startWhenReady && boardReady(level)) { state.startWhenReady = false; state.started = true; }
 
   if (state.started && !state.paused && !state.result) {
     for (let i = 0; i < state.speed; i++) step(state, real);

@@ -1,9 +1,8 @@
 // DERIVE THE CAMPAIGN MAP FROM THE ARTIST'S LAYERS.
 //
-// Reads assets/map/Overview_Map_Layer_*.svg and writes four things:
+// Reads assets/map/Overview_Map_Layer_*.svg and writes three things:
 //
 //   src/data/overview.js            where the stages are, and the road into each
-//   assets/map/Overview_Map_merged.svg  every layer stacked into one, in colour
 //   assets/map/Overview_Map_sepia.svg   the picture, muted — the map the game loads
 //   assets/map/Overview_Map_names.svg   the region names, untouched, drawn over it
 //
@@ -73,7 +72,6 @@ const OUT = 'src/data/overview.js';
 // DERIVED file wearing the name of a hand-drawn one is an invitation to open it,
 // edit it, and lose the work on the next run of this tool. The layers are the
 // source now; this is a stitched copy for looking at.
-const MERGED = 'assets/map/Overview_Map_merged.svg';
 const SEPIA = 'assets/map/Overview_Map_sepia.svg';
 // The region names, alone and untouched, drawn over the sheet rather than under it.
 const NAMES = 'assets/map/Overview_Map_names.svg';
@@ -895,11 +893,6 @@ function stack({ recolour, guides, only = null, ground = true }) {
 }
 
 {
-  const full = stack({ recolour: false, guides: true });
-  writeFileSync(MERGED, full.doc);
-  console.log(`wrote ${MERGED}`);
-  console.log(`  ${layers.length} layer(s) stacked in colour, guides included`);
-
   const shown = stack({ recolour: true, guides: false });
   writeFileSync(SEPIA, shown.doc);
   console.log(`wrote ${SEPIA}`);
