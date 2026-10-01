@@ -17,7 +17,7 @@ import { drawBoardWater, drawBoardLake, drawFountain, drawSplash, drawLeapingFis
 import { VILLAGER_POSE, villagerKey, BALL_R } from './villagers.js';
 import { BANNERS } from './data/banners.js';
 import { campfire } from './life.js';
-import { swingOut, flinch, flash } from './gesture.js';
+import { swingOut, flinch, flash, silhouette, HIT_FLASH } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras, turnedAway,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen, atEase } from './units.js';
@@ -3170,6 +3170,10 @@ function drawEnemy(ctx, e) {
   // one flickers in its place. See FUSE_FIRE.
   const fuse = frame === art.bomb && fuseParts('bomb');
   if (fuse) frame = fuse.unlit;
+  // THE RALLY THUG'S BANNER WAVES: lifted off and drawn behind him. See RALLY_BANNER.
+  const bannerKey = frame === art.rally ? 'rally' : frame === art.rally_attack ? 'rally_attack' : null;
+  const banner = bannerKey && rallyCloth(bannerKey);
+  if (banner) frame = banner.bare;
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -3186,6 +3190,8 @@ function drawEnemy(ctx, e) {
   // note in drawSoldier and src/gesture.js.
   ctx.translate(e.x + dir * swingOut(e.thrust || 0) * ENEMY_LUNGE + flinch(e), e.y);
   ctx.scale(mirror(e.def, dir), 1);
+  if (banner) drawRallyCloth(ctx, banner, -pivot[0] * dw - sx * SCALE, -pivot[1] * dh - sy * SCALE, SCALE,
+    (e.s || 0) * 0.37 + (e.lane || 0) * 1.7, e.hit || 0);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, e, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   if (fuse) drawFuseFire(ctx, fuse, -pivot[0] * dw + (fuse.at.base[0] - sx) * SCALE,
@@ -3268,6 +3274,112 @@ function drawFuseFire(ctx, fuse, x, y, phase) {
   ctx.rotate(lean);
   ctx.scale(wide, tall);
   ctx.drawImage(flame, bx, by, bw, bh, (bx - fx) * k, (by - fy) * k, bw * k, bh * k);
+  ctx.restore();
+}
+
+// THE RALLY THUG'S BANNER WAVES, at the owner's "make the rally thug flag wave in
+// the game". The cloth is lifted off his drawing — everything joined to the brown at
+// `seed`, and its black outline with it — and drawn back in thin strips running
+// along the pole, each strip pushed along the pole by a wave travelling out to the
+// free end. Nothing moves at the pole, where it is tied on, and the most at the tip.
+// Drawn BEHIND him, so the helmet stays in front of the cloth as it is painted.
+//
+// `pole` is the middle of the pole at two heights, in the drawing's own pixels;
+// strips are measured out from that line. Both poses carry the same banner in the
+// same place, so they share one spec. The encyclopedia and the info card keep the
+// still drawing.
+const RALLY_BANNER = { seed: [310, 215], pole: [[274, 190], [261.5, 210]], top: 178, tall: 80, wide: 100,
+  edge: 9, still: 6, reach: 70, amp: 5, wave: 44, speed: 1.6 };
+const WAVE_FLAG = { rally: RALLY_BANNER, rally_attack: RALLY_BANNER };
+const rallyClothCache = new Map();
+function rallyCloth(key) {
+  if (rallyClothCache.has(key)) return rallyClothCache.get(key);
+  const img = art[key], at = WAVE_FLAG[key];
+  if (!img || !at || !img.complete || !img.naturalWidth) return null;
+  let out = null;
+  try {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const [[px0, py0], [px1, py1]] = at.pole;
+    const lean = (px1 - px0) / (py1 - py0);              // pole x per pixel down
+    const mid = y => px0 + lean * (y - py0);
+    const bare = document.createElement('canvas');
+    bare.width = W; bare.height = H;
+    const gb = bare.getContext('2d');
+    gb.drawImage(img, 0, 0);
+    const all = gb.getImageData(0, 0, W, H), d = all.data;
+    // The cloth's own brown, flooded out from the seed and stopping at the outline.
+    const at4 = (x, y) => (y * W + x) * 4;
+    const s = at4(...at.seed), fill = [d[s], d[s + 1], d[s + 2]];
+    const near = i => d[i + 3] > 200 && Math.abs(d[i] - fill[0]) + Math.abs(d[i + 1] - fill[1]) + Math.abs(d[i + 2] - fill[2]) < 40;
+    const side = (x, y) => x - mid(y) > 2.5;               // clear of the pole itself
+    const mask = new Uint8Array(W * H), dist = new Int16Array(W * H).fill(-1);
+    const queue = [at.seed[1] * W + at.seed[0]];
+    dist[queue[0]] = 0;
+    for (let q = 0; q < queue.length; q++) {
+      const p = queue[q], x = p % W, y = (p / W) | 0;
+      mask[p] = 1;
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const n = ny * W + nx;
+        if (dist[n] >= 0 || !side(nx, ny)) continue;
+        const i = n * 4;
+        if (!d[i + 3]) continue;
+        // Inside: more of the brown. Out from it: the outline — dark, or the soft
+        // rim round it — no further than `edge`.
+        const inside = dist[p] === 0 && near(i);
+        const rim = d[i] + d[i + 1] + d[i + 2] < 150 || d[i + 3] < 250;
+        if (inside) dist[n] = 0;
+        else if (rim && dist[p] < at.edge) dist[n] = dist[p] + 1;
+        else continue;
+        queue.push(n);
+      }
+    }
+    // The cloth, sheared so the pole stands upright: column u is u px out from it.
+    const cloth = document.createElement('canvas');
+    cloth.width = at.wide; cloth.height = at.tall;
+    const piece = new ImageData(W, H);
+    for (let p = 0; p < W * H; p++) if (mask[p]) {
+      piece.data.set(d.subarray(p * 4, p * 4 + 4), p * 4);
+      d[p * 4 + 3] = 0;
+    }
+    gb.putImageData(all, 0, 0);
+    const lifted = document.createElement('canvas');
+    lifted.width = W; lifted.height = H;
+    lifted.getContext('2d').putImageData(piece, 0, 0);
+    const a = mid(at.top);
+    const gc = cloth.getContext('2d');
+    gc.setTransform(1, 0, -lean, 1, lean * at.top - a, -at.top);
+    gc.drawImage(lifted, 0, 0);
+    lifted.width = lifted.height = 0;
+    out = { bare, cloth, lean, a, at };
+  } catch { out = null; }
+  rallyClothCache.set(key, out);
+  return out;
+}
+// Inside drawEnemy's transform, with (x, y) where the drawing's (0, 0) lands and
+// `k` game px to a drawing px. `hit` is the flash, so the cloth flashes with him.
+function drawRallyCloth(ctx, b, x, y, k, phase, hit) {
+  const { cloth, lean, a, at } = b;
+  const t = boardClock * at.speed * Math.PI * 2 + (phase % 7);
+  const lit = hit > 0 && silhouette(cloth);
+  const STEP = 2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  ctx.transform(1, 0, lean, 1, a, at.top);
+  for (let u = 0; u < at.wide; u += STEP) {
+    const w = Math.min(1, Math.max(0, (u - at.still) / at.reach)) ** 1.2;
+    const dv = at.amp * w * Math.sin((u / at.wave) * Math.PI * 2 - t);
+    // Twice the step wide, the next strip laid over the overlap: any less and the
+    // soft edges of neighbouring strips showed as fine lines across the cloth.
+    ctx.drawImage(cloth, u, 0, STEP * 2, at.tall, u, dv, STEP * 2, at.tall);
+    if (lit) {
+      ctx.save();
+      ctx.globalAlpha = hit * HIT_FLASH;
+      ctx.drawImage(lit, u, 0, STEP, at.tall, u, dv, STEP, at.tall);   // not overlapped: the flash would double there
+      ctx.restore();
+    }
+  }
   ctx.restore();
 }
 

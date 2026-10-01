@@ -32,6 +32,13 @@ shadow sits at source (252.0, 321.5) in both poses. Everything standing inside a
 hundred game pixels of him wears `Health_Boost_Status.png`, so his own drawing has
 to be findable in a crowd that is all wearing the same mark.
 
+**His banner waves on the board.** The cloth is found by its colour — the brown at
+source (310, 215), flooded out to its black outline — lifted off both poses and
+drawn back behind him in strips along the pole, rippling more toward the free
+end (`RALLY_BANNER` in src/render.js). A redraw that moves the banner moves those
+numbers: `seed` must land on the cloth's brown and `pole` on the middle of the
+pole. The encyclopedia and the info card keep the still drawing.
+
 ## The Bomb Thug has no Attack, and four drawings that are all endings
 
 He is the one enemy in the game with no Attack pose, and it is not a file anybody

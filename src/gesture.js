@@ -133,7 +133,7 @@ export const swingOut = thrust => thrust * thrust * (3 - 2 * thrust);
 // compositor — nothing is ever read back, so a sheet from any origin works.
 const white = new Map();
 
-function silhouette(img) {
+export function silhouette(img) {
   if (white.has(img)) return white.get(img);
 
   // NOT UNTIL IT HAS LOADED, for the same reason tint.js waits: an Image still in
