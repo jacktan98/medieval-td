@@ -487,6 +487,8 @@ const PLAYS = {
                post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 1, aim: 2, voice: 'musketeer',
                // "Musketeer, reporting for duty", as he steps out of the castle in his gear.
                report: ['musketeer_3'],
+               // And stands in the doorway this long while he says it, before he walks.
+               pause: 1.5,
                // His card before his gear: his own name and picture.
                card: { title: 'Villager (Musketeer)', sprite: 'vill_musketeer_front_standing',
                        trim: [213, 200, 88, 119] } },
@@ -1358,7 +1360,10 @@ function recruitRound(state, vp, rc, dt) {
     // and a quick turn left onto his post: walkTo faces him the way he goes.
     v.alpha = Math.min(1, k / DOOR_FADE);
     v.pose = 'musk_front';
-    if (walkTo(v, rc.out, WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
+    // STANDING IN THE DOORWAY FOR `pause` SECONDS first, while he says it — at the
+    // owner's word, so the voice is heard from a man standing still rather than one
+    // already marching off.
+    if (k >= (rc.pause || 0) && walkTo(v, rc.out, WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
   } else if (c.phase === 'ready') {
     if (k >= rc.ready) {
       c.phase = 'posted';
