@@ -483,7 +483,12 @@ const PLAYS = {
     // first holding his aim `aim` seconds before his first shot. Tapped, he answers
     // with the Musketeer Post's voice all along, gear or no gear (`voice`).
     recruit: { who: 1, in: [[664, 285], [647, 262], [645, 255], [651, 246]],
-               out: [[651, 262], [700, 287], [745, 301], [782, 315], [773, 321]],
+               // OUT, the owner's line: down off the step onto the middle of the
+               // stepping-stone path in front of the gate, where he stops to report
+               // (the first `stop` points), then round to the right below the tower,
+               // along above the barricade, and down onto his post behind it.
+               out: [[641, 256], [630, 268], [644, 285], [673, 294], [720, 295], [756, 297],
+                     [779, 303], [786, 313], [773, 321]], stop: 2,
                post: { x: 773, y: 321, unit: 'Musketeer' }, ready: 1, aim: 2, voice: 'musketeer',
                // "Musketeer, reporting for duty", as he steps out of the castle in his gear.
                report: ['musketeer_3'],
@@ -1354,11 +1359,11 @@ function recruitRound(state, vp, rc, dt) {
       v.leg = 0; v.hidden = false; v.alpha = 0; v.flip = false;
     }
   } else if (c.phase === 'out') {
-    // A FEW STEPS OUT OF THE DOOR FIRST, straight down to the first point of his way
-    // out, faded in as he comes...
+    // A FEW STEPS OUT OF THE DOOR FIRST, down onto the stepping stones in front of
+    // it, faded in as he comes...
     v.alpha = Math.min(1, k / DOOR_FADE);
     v.pose = 'musk_front';
-    if (walkTo(v, rc.out.slice(0, 1), WORK_WALK_FREE, dt)) {
+    if (walkTo(v, rc.out.slice(0, rc.stop || 1), WORK_WALK_FREE, dt)) {
       c.phase = 'report'; c.at = vp.t; v.alpha = 1;
       // ...then REPORTING FOR DUTY, a voice like any other (Category A), standing
       // still for `pause` seconds while he says it — at the owner's word, so the
@@ -1372,7 +1377,7 @@ function recruitRound(state, vp, rc, dt) {
     // And on, turned right along to the barricade and a quick turn left onto his
     // post: walkTo faces him the way he goes.
     v.pose = 'musk_front';
-    if (walkTo(v, rc.out.slice(1), WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
+    if (walkTo(v, rc.out.slice(rc.stop || 1), WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
   } else if (c.phase === 'ready') {
     if (k >= rc.ready) {
       c.phase = 'posted';

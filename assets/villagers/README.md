@@ -439,10 +439,10 @@ who becomes a musketeer; villagers 1 and 2 to the right of the barricade.
   turns. The villager below the gate walks up into the castle, his back to the player,
   turned right for the last step in at the door.
 - **When the first enemy of wave 2 appears:** he comes back out in a musketeer's gear
-  — a few steps down out of the door, then he stops and says "Musketeer, reporting
-  for duty" (`Musketeer_3`), standing there 1.5 seconds before he walks on —
-  down from the door, along to the right to the upper barricade and a quick turn left
-  onto his post. He stands there a second, then takes aim for two, and then fires — a
+  — down off the step onto the middle of the stepping-stone path in front of the
+  gate, where he stops and says "Musketeer, reporting for duty" (`Musketeer_3`),
+  standing there 1.5 seconds; then round to the right below the tower, along above
+  the barricade, and down onto his post (the owner's line). He stands there a second, then takes aim for two, and then fires — a
   musketeer there from then on, the same as the one at the bottom right (`recruit` in
   src/villagers.js). Tapped at any time, gear or not, he answers with the Musketeer
   Post's voice. His card is "Villager (Musketeer)" in his villager-musketeer picture
