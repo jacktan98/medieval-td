@@ -1334,7 +1334,7 @@ function recruitRound(state, vp, rc, dt) {
   // His card: a villager of his own until he comes out in his gear, a musketeer's
   // from then on (see selectionInfo in src/select.js).
   v.card = rc.card;
-  v.asUnit = c.phase === 'out' || c.phase === 'ready' || c.phase === 'posted' ? rc.post.unit : null;
+  v.asUnit = ['out', 'report', 'march', 'ready', 'posted'].includes(c.phase) ? rc.post.unit : null;
   if (c.phase === 'idle') {
     v.pose = 'vm_front';
     // Turned to the right a while, and back, on no beat of his own.
@@ -1350,20 +1350,29 @@ function recruitRound(state, vp, rc, dt) {
   } else if (c.phase === 'inside') {
     if (state.waveIndex >= 1 && state.spawned > 0) {
       c.phase = 'out'; c.at = vp.t;
-      // REPORTING FOR DUTY as he steps out, a voice like any other (Category A).
-      if (rc.report) solo(rc.report, true);
       [v.x, v.y] = rc.in[rc.in.length - 1];
       v.leg = 0; v.hidden = false; v.alpha = 0; v.flip = false;
     }
   } else if (c.phase === 'out') {
-    // Straight down out of the door as drawn, turned right along to the barricade,
-    // and a quick turn left onto his post: walkTo faces him the way he goes.
+    // A FEW STEPS OUT OF THE DOOR FIRST, straight down to the first point of his way
+    // out, faded in as he comes...
     v.alpha = Math.min(1, k / DOOR_FADE);
     v.pose = 'musk_front';
-    // STANDING IN THE DOORWAY FOR `pause` SECONDS first, while he says it — at the
-    // owner's word, so the voice is heard from a man standing still rather than one
-    // already marching off.
-    if (k >= (rc.pause || 0) && walkTo(v, rc.out, WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
+    if (walkTo(v, rc.out.slice(0, 1), WORK_WALK_FREE, dt)) {
+      c.phase = 'report'; c.at = vp.t; v.alpha = 1;
+      // ...then REPORTING FOR DUTY, a voice like any other (Category A), standing
+      // still for `pause` seconds while he says it — at the owner's word, so the
+      // voice comes from a man who has stopped to announce himself.
+      if (rc.report) solo(rc.report, true);
+    }
+  } else if (c.phase === 'report') {
+    v.pose = 'musk_front'; v.alpha = 1;
+    if (k >= (rc.pause || 0)) { c.phase = 'march'; c.at = vp.t; v.leg = 0; }
+  } else if (c.phase === 'march') {
+    // And on, turned right along to the barricade and a quick turn left onto his
+    // post: walkTo faces him the way he goes.
+    v.pose = 'musk_front';
+    if (walkTo(v, rc.out.slice(1), WORK_WALK_FREE, dt)) { c.phase = 'ready'; c.at = vp.t; v.flip = false; }
   } else if (c.phase === 'ready') {
     if (k >= rc.ready) {
       c.phase = 'posted';
