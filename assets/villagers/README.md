@@ -491,8 +491,7 @@ src/villagers.js).
   curves down to the door; three seconds inside; out empty-handed and
   back up off the top; three seconds gone; back with the next box. **Tapped**, he
   drops the box: its shadow spreads out from its centre on the ground as it falls,
-  and once down it is `Box_on_ground.png`, and stays there. Its shadow is drawn on
-  the ground under him, so it never paints over him. He stands 2 seconds, goes
+  and once down it is `Box_on_ground.png`, and stays there. He stands 2 seconds, goes
   into the hut, and three seconds later comes out a **Tough Thug** and makes for the
   road.
 - **The man below the top-left hut** turns left and right. **Tapped**, he walks up to
