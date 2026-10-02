@@ -113,10 +113,10 @@ export const flask = {
 // own missiles rather than lobbed like a flask: it is the same magic, thrown by
 // the other side.
 // THE BOULDER GIANT'S BOULDER: hurled in a high lob at the ground a soldier stands
-// on, and everyone within `splash` of where it comes down takes the blow — 100, at
-// the owner's word. Earth thrown up where it lands, as a catapult's rock does, and
+// on, and everyone within `splash` of where it comes down takes the blow — 80, at
+// the owner's word (it was 100). Earth thrown up where it lands, as a catapult's rock does, and
 // `boulder_hit` as it does (LANDING in src/projectiles.js).
-export const BOULDER_SPLASH = 100;
+export const BOULDER_SPLASH = 80;   // 100 -> 80, at the owner's word
 const boulder = {
   kind: 'boulder',
   sprite: 'boulder',
@@ -1076,7 +1076,7 @@ export const enemyTypes = {
   //
   // THE DOCTOR'S SHAPE WITH A GIANT'S WEIGHT. He walks the road at the Club Giant's
   // pace until a soldier is within 150, then stands and hurls boulders out of the
-  // basket on his back — each one 30 physical to every man within 100 of where it
+  // basket on his back — each one 30 physical to every man within 80 of where it
   // comes down, breaking two ranks of plate. Held face to face, he brings a boulder
   // down on the man's head instead: 30 to that one man, no splash. Either way, as
   // the boulder hits home, `boulder_hit` (BOULDER_HIT in src/audio.js).

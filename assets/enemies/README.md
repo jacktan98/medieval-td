@@ -17,7 +17,7 @@ picture), `Enemies_Boulder_Giant_Ranged_Attack.png` (hurling a boulder from the 
 on his back — his `attack`) and `Enemies_Boulder_Giant_Melee_Attack.png` (bringing
 one down on a soldier's head — his `melee` attack). All three stand on his shadow at
 source (240, 324). The boulder he throws is `assets/projectiles/Enemies_Boulder_Giant_Boulder.png`:
-30 physical to every man within 100px of where it lands, two ranks of plate broken;
+30 physical to every man within 80px of where it lands, two ranks of plate broken;
 his blow in melee is 30 to one man. Either way `Boulder_hit` sounds as it hits.
 800 health, low physical plate, the Club Giant's pace, 40 gold, 2 lives.
 

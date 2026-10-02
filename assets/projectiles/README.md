@@ -44,7 +44,7 @@ right".
 | `Monk_Magic_Shot_Inner_Strength.png` | the same, once it has learned Inner Strength | 330 | flat, and half again the size |
 | `Monk_Magic_Shot_Inner_Strength_Slowed_Pulse.png` | the same, having learned both | 330 | flat, the big one in blue |
 | `Enemies_Plague_Thug_Flask.png` | the plague thug | 150 | lobbed, and it breaks on a man |
-| `Enemies_Boulder_Giant_Boulder.png` | the boulder giant | 190 | lobbed high, and lands on everyone within 100px |
+| `Enemies_Boulder_Giant_Boulder.png` | the boulder giant | 190 | lobbed high, and lands on everyone within 80px |
 
 **Eight drawings for one family, and the monk's four are the odd ones.** The three
 tiers under the fork share a 19 x 4 dart, the pope throws a 26 x 5 version of it,
