@@ -291,7 +291,7 @@ function drawFire(ctx, t, unlocked) {
 // `part` draws half of it: 'under' everything but the sparks, 'sparks' the sparks
 // alone — so something held in the fire (stage 4's pipe) is drawn over the flame and
 // only the sparks it throws fly over it.
-export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1, part = 'all', sparks = true, glow: glowOn = true } = {}) {
+export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1, part = 'all', sparks = true, glow: glowOn = true, heatSparks = true } = {}) {
   const clipTo = c => { ctx.save(); if (c) ctx.clip(c); };
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
@@ -361,7 +361,9 @@ export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, f
   }
   // SPARKS, while it is stoked: bright, quick, thrown up and out of the fire — a
   // shower of them at full heat, each with a short bright streak behind it.
-  if (heat > 0.05 && over && sparks) {
+  // `heatSparks` false when what is held in the fire throws them instead — stage 15's
+  // blade (see drawMetalSparks in render.js).
+  if (heat > 0.05 && over && sparks && heatSparks) {
     const n = Math.round(26 * heat);
     for (let k = 0; k < n; k++) {
       const life = 0.3 + hash(k + 60) * 0.35;

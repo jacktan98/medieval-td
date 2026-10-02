@@ -534,7 +534,8 @@ hut and 13 the enemy villager between the huts.
 
 - **The smith at the brazier** works as stage 4's at his forge, a little slower: the
   blade held up 4.2 seconds, then into the fire 2.6 seconds, the fire flaring while
-  it is in and the weld sounding. **The smith at the anvil** brings the hammer down
+  it is in and the weld sounding. The sparks fly off the blade, not out of the middle
+  of the fire. **The smith at the anvil** brings the hammer down
   twice and rests, unhurried, a hit from `Anvil_hit_sound` and a burst of sparks each
   time it lands. Both keep working when tapped.
 - **The brazier's fire** is the owner's shape: two flames, the front one lower and to

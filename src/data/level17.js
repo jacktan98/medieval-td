@@ -155,13 +155,13 @@ export const level17 = {
   // (`flames`: offset and size of each, back first), held low (`tall`) and flaring
   // together while the smith's blade is in (`flare`); sorted at the brazier's shadow,
   // so the blade, held in it by a man standing in front of it, lies over the flame.
-  // Its sparks fly over him.
+  // Its sparks fly off the blade, not out of the flame (`metalSparks`).
   // THE TWO TORCHES burn a little down in their cups, as stage 5's castle torches do —
   // just below the middle of the cup's rim, and their size (2.5) — sorted at the foot
   // of each pole.
   fires: [
     { x: 84.5, y: 65, s: 2.6, flames: [[3.6, -1.4, 1], [-3.6, 0.8, 0.92]], tall: 0.8, g: 73.8, over: 79,
-      flare: true, smoke: 0.35 },
+      flare: true, smoke: 0.35, metalSparks: true },
     { x: 111.8, y: 201.8, s: 2.5, g: 247, smoke: 0.5 },
     { x: 109.6, y: 357.1, s: 2.5, g: 402, smoke: 0.5 }
   ],

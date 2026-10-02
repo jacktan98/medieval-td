@@ -629,6 +629,13 @@ function drawFigures(ctx, state) {
   if (struck && state.villagerPlay.t - struck.at < ANVIL_SPARKS.life) {
     add(struck.g ?? struck.y + 7, 1, () => drawAnvilSparks(ctx, struck, state.villagerPlay.t - struck.at));
   }
+  // SPARKS OFF THE HOT METAL while it is in the fire — stage 15's blade (`vp.metal`,
+  // set by the smith in src/villagers.js) — thrown from the blade, not the flame's
+  // middle, as strongly as the fire is flaring.
+  const metal = state.villagerPlay && state.villagerPlay.metal;
+  if (metal && (state.villagerPlay.heat || 0) > 0.05) {
+    add(metal.g, 1, () => drawMetalSparks(ctx, metal, state.villagerPlay.t, state.villagerPlay.heat));
+  }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
@@ -1388,7 +1395,12 @@ function drawBuilding(ctx, t, box) {
 // false while the drawing cannot be read, and the tower is drawn still.
 // Gentle, at the owner's word — they were halved from 11 and 6.
 const BANNER_SWAY = { amp: 5.5, speed: 2.2, length: 150, edge: 5, band: 3 };
-const FLAG_WAVE = { amp: 3, speed: 4, length: 70, band: 3 };
+// THE TOWERS' FLAGS WAVE AS STAGE 15'S DARK FLAG DOES, at the owner's word — they
+// waved "too lightly": the same height of wave, length and pace on the board (BOARD_FLAG,
+// in the board's art pixels, 2 to a game px) put into a tower drawing's (1024 to 105
+// game px): 1.1 game px up and down at the tip on a 23 px wave, 3.2 a second. They
+// were 0.3 px.
+const FLAG_WAVE = { amp: 10.7, speed: 3.2, length: 224 };
 const bannerCache = new WeakMap();
 function bannerLayers(img, b) {
   // ONE PER BANNER, not one per picture: a board's sheet carries more than one — the
@@ -1526,27 +1538,33 @@ function bannerLayers(img, b) {
     // put — so neither the pole nor anything left of it is cloth, and where the
     // cloth was is left empty.
     if (b.kind === 'flag') {
+      // AND THE FAINTEST RIM ROUND IT, two pixels further: the soft outer edge of the
+      // outline, too pale to count as dark, was left in the air as a pale ghost of the
+      // flag's edge where the waving cloth had moved away.
+      for (let pass = 0; pass < 2; pass++) {
+        const grow = [];
+        for (let i = 0; i < bw * bh; i++) {
+          if (mask[i] || !d[i * 4 + 3]) continue;
+          if (mask[i - 1] || mask[i + 1] || mask[i - bw] || mask[i + bw]) grow.push(i);
+        }
+        for (const i of grow) mask[i] = 1;
+      }
       for (let y = 0; y < bh; y++) for (let x = 0; x < b.pole - x0; x++) mask[y * bw + x] = 0;
     }
     const clothData = new ImageData(bw, bh), cd = clothData.data;
     const out = new ImageData(new Uint8ClampedArray(d), bw, bh), od = out.data;
     if (b.kind === 'flag') {
-      // What is left behind the flag is cleared only well inside it — away from
-      // its pole and two pixels in from its edge. The edge of each moving strip is
-      // blended, and blended over empty air it showed as a pale line between the
-      // flag and its pole; over the flag's own picture it blends into itself.
-      const inside = (x, y) => {
-        if (x < b.pole - x0 + 6) return false;
-        for (let v = y - 2; v <= y + 2; v++) for (let u = x - 2; u <= x + 2; u++) {
-          if (u < 0 || v < 0 || u >= bw || v >= bh || !mask[v * bw + u]) return false;
-        }
-        return true;
-      };
+      // ALL OF IT IS CLEARED from what is left behind, outline and all: the flag waves
+      // as far as stage 15's dark flag does now, at the owner's word, and any of the
+      // still flag left under it showed as a second outline beside the moving one.
+      // (It used to be cleared only well inside, because the moving strips' blended
+      // edges showed as a pale line by the pole; the cloth is now bent in one piece —
+      // see swayCloth — and has no strip edges.)
       for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
         const i = y * bw + x;
         if (!mask[i]) continue;
         for (let c = 0; c < 4; c++) cd[i * 4 + c] = d[i * 4 + c];
-        if (inside(x, y)) od[i * 4 + 3] = 0;
+        od[i * 4 + 3] = 0;
       }
     }
     for (let y = 0; y < bh && b.kind !== 'flag'; y++) {
@@ -1605,14 +1623,22 @@ function swayBanner(ctx, t, b, img, box) {
   const got = bannerLayers(img, b);
   if (!got) return false;
   // The tower, then the wall patched over it where the cloth was, then the cloth.
-  // A flag has no wall behind it and needs no patch: it flies in open air and moves
-  // 3px, so the still picture under it shows nowhere the moving one does not cover.
+  // A FLAG flies in open air, so there is no wall to patch over it: the tower is drawn
+  // round its box instead, and the box from `wall` — the same pixels with the flag
+  // taken out — so nothing of the still flag shows under the waving one.
   const kx = box.w / sw, ky = box.h / sh;
   const [x0, y0, x1, y1] = b.box;
-  ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
-  if (b.kind !== 'flag') {
-    ctx.drawImage(got.wall, box.left + (x0 - sx) * kx, box.top + (y0 - sy) * ky, (x1 - x0) * kx, (y1 - y0) * ky);
-  }
+  const bx = box.left + (x0 - sx) * kx, by = box.top + (y0 - sy) * ky, bw = (x1 - x0) * kx, bh = (y1 - y0) * ky;
+  if (b.kind === 'flag') {
+    ctx.save();
+    const round = new Path2D();
+    round.rect(box.left - 1, box.top - 1, box.w + 2, box.h + 2);
+    round.rect(bx, by, bw, bh);
+    ctx.clip(round, 'evenodd');
+    ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+    ctx.restore();
+  } else ctx.drawImage(img, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+  ctx.drawImage(got.wall, bx, by, bw, bh);
   swayCloth(ctx, b, got, [sx, sy, sw, sh], box, boardTime + t.x * 0.013);
   return true;
 }
@@ -1712,20 +1738,28 @@ function swayMapBanner(ctx, img, b) {
   swayCloth(ctx, b, got, [0, 0, W, H], box, boardTime + x0 * 0.007);
 }
 
+let flagScratch = null;
 function swayCloth(ctx, b, got, [sx, sy, sw, sh], box, time) {
   const kx = box.w / sw, ky = box.h / sh;
   if (b.kind === 'flag') {
-    const { amp, speed, length, band } = FLAG_WAVE;
-    const [bx0, y0, , y1] = b.box;
-    for (let x = b.box[0]; x < b.box[2]; x += band) {
-      const s = Math.max(0, Math.min(1, (x + band / 2 - b.pole) / (b.tip - b.pole)));
+    // BENT IN ONE PIECE: each one-pixel column of the cloth moved up or down onto a
+    // scratch canvas at the drawing's own size, side by side on its pixel grid, and
+    // that drawn once — as the Rally Thug's banner is (see bentCloth). Drawn as strips
+    // straight onto the board, their edges blended into seams and specks.
+    const { amp, speed, length } = FLAG_WAVE;
+    const [bx0, y0, x1, y1] = b.box;
+    const W = x1 - bx0, H = y1 - y0, off = Math.ceil(amp) + 1;
+    flagScratch = flagScratch || document.createElement('canvas');
+    if (flagScratch.width !== W || flagScratch.height !== H + off * 2) { flagScratch.width = W; flagScratch.height = H + off * 2; }
+    const g = flagScratch.getContext('2d');
+    g.clearRect(0, 0, flagScratch.width, flagScratch.height);
+    for (let c = 0; c < W; c++) {
+      const x = bx0 + c + 0.5;
+      const s = Math.max(0, Math.min(1, (x - b.pole) / (b.tip - b.pole)));
       const dy = amp * s * Math.sin(time * speed - (x - b.pole) * (Math.PI * 2 / length));
-      // The cloth canvas is the box alone, so a strip of it is read from the box's
-      // corner.
-      const bw = Math.min(band, b.box[2] - x);
-      ctx.drawImage(got.cloth, x - bx0, 0, bw, y1 - y0,
-        box.left + (x - sx) * kx, box.top + (y0 - sy + dy) * ky, bw * kx + 0.4, (y1 - y0) * ky);
+      g.drawImage(got.cloth, c, 0, 1, H, c, off + dy, 1, H);
     }
+    ctx.drawImage(flagScratch, box.left + (bx0 - sx) * kx, box.top + (y0 - off - sy) * ky, W * kx, (H + off * 2) * ky);
     return true;
   }
   const { speed, length, band } = BANNER_SWAY;
@@ -2018,7 +2052,8 @@ function drawFire(ctx, state, fire, part = 'all') {
   flames.forEach(([dx, dy, k], i) => {
     campfire(ctx, fire.x + dx, fire.y + dy, t + i * 1.37, fire.s * k, true, {
       heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null,
-      smoke: i ? 0 : fire.smoke ?? 1, sparks: fire.sparks ?? true, part, glow: !i
+      smoke: i ? 0 : fire.smoke ?? 1, sparks: fire.sparks ?? true, part, glow: !i,
+      heatSparks: !fire.metalSparks
     });
   });
   if (mouth && part !== 'sparks') {
@@ -2047,6 +2082,32 @@ const TORCH_CATCH = 0.7;       // seconds for a torch lit by hand to burn up to 
 // short bright streak, yellow cooling to orange. The same burst for the same blow (it
 // is seeded by when the blow landed), so it does not shimmer frame to frame.
 const ANVIL_SPARKS = { n: 14, life: 0.5, speed: [26, 56], fall: 120 };
+// A SHOWER OF SPARKS off hot metal held in a fire: the forge's own sparks (see
+// campfire's in src/life.js), thrown up and out of the metal at (x, y) instead of
+// out of the flame — a dozen at full heat, each a short bright streak.
+function drawMetalSparks(ctx, m, t, heat) {
+  const hash = n => { const x = Math.sin(n * 157.31 + 41.7) * 43758.5453; return x - Math.floor(x); };
+  const n = Math.round(14 * heat);
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let k = 0; k < n; k++) {
+    const life = 0.3 + hash(k + 60) * 0.35;
+    const p = ((t / life) + hash(k + 61)) % 1;
+    const dir = (hash(k + 62) - 0.5) * 2.4;
+    const reach = 9 + 7 * hash(k + 63);
+    const px = q => m.x + (hash(k + 64) - 0.5) * 3 + dir * reach * 0.6 * q;
+    const py = q => m.y - reach * q + 14 * q * q;
+    const a = Math.min(1, heat * 1.3) * (1 - p);
+    ctx.strokeStyle = `rgba(255,${240 - 80 * p | 0},${150 - 110 * p | 0},${a})`;
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(px(Math.max(0, p - 0.08)), py(Math.max(0, p - 0.08)));
+    ctx.lineTo(px(p), py(p));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // `at.k` scales the burst — fewer, shorter, slower — for a smaller blow: stage 5's.
 function drawAnvilSparks(ctx, at, t) {
   const { life, fall } = ANVIL_SPARKS, k0 = at.k ?? 1;

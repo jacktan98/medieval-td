@@ -891,3 +891,10 @@ in `src/render.js` draws them. The cloth is found in the drawing by its colour i
 a box, and the wall behind a banner is rebuilt from the stone either side, so nothing
 needs drawing separately — but a redrawn tower whose banner or flag moves, or changes
 colour, needs its entry in that file measured again.
+
+The flags wave as stage 15's dark flag does (`FLAG_WAVE`, the board flag's height,
+length and pace of wave put into a tower drawing's pixels): about a game pixel up
+and down at the tip. Moving that far, any of the still flag left in the drawing
+showed beside the moving one, so the whole flag — outline and its faint rim — is
+taken out of the tower where it is drawn, and the cloth is bent in one piece at the
+drawing's own size before it is drawn.

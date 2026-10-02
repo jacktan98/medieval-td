@@ -589,7 +589,9 @@ const PLAYS = {
     // THE SMITH AT THE BRAZIER, as stage 4's at his forge: the blade held up, then
     // into the fire, which flares while it is in (the level's `flare` fire), and the
     // weld sounds — a little slower than stage 4's, at the owner's word. He keeps at it whether he is tapped or not.
-    smith: { who: 0, back: 4.2, in: 2.6, poses: ['heat_1', 'heat_2'], voice: 'enemy_villager',
+    // THE SPARKS FLY FROM THE BLADE (`sparks`, the hot middle of it in heat_2), not out
+    // of the middle of the fire, at the owner's word.
+    smith: { who: 0, back: 4.2, in: 2.6, poses: ['heat_1', 'heat_2'], sparks: [-12, -17], voice: 'enemy_villager',
              card: { title: 'Enemy Villager', sprite: 'vill_enemy_heating_1', trim: [160, 182, 146, 148] } },
     // THE SMITH AT THE ANVIL: the hammer raised, and down on the metal — a hit cut out
     // of the anvil recording (ANVIL in src/audio.js) and a burst of sparks each time it
@@ -841,6 +843,9 @@ function work(state, vp, dt) {
     if (smith.at) [s.x, s.y] = smith.at;
     s.tool = smith.tool;
     if (smith.card) { s.card = smith.card; s.voice = smith.voice; }
+    // WHERE THE METAL IS IN THE FIRE, for its sparks (`sparks`, from his feet the
+    // drawing's way round) — stage 15's blade. render.js throws them while it is hot.
+    if (smith.sparks) vp.metal = { x: s.x + smith.sparks[0] * (s.flip ? -1 : 1), y: s.y + smith.sparks[1], g: s.y + 1 };
     // THE FIRE FOLLOWS THE PIPE: small while it is drawn back, roaring while it is
     // in. Quick to flare and slower to die down, so it swells rather than blinks.
     const target = inFire ? 1 : 0;
