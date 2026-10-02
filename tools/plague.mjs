@@ -254,8 +254,8 @@ console.log('\nHe stands off\n');
   // do anything." So the check is inverted rather than deleted, because the
   // inversion is the rule. Left alone he stands there, and the squad stands
   // where it was posted.
-  // The men are kept on their feet for this part, as he is: at 10 a second for
-  // five seconds the spill kills a squad standing in it inside twenty, and a dead
+  // The men are kept on their feet for this part, as he is: a strong enough
+  // poison kills a squad standing in the spill inside twenty seconds, and a dead
   // squad is a road with nothing on it, which he would rightly walk on down.
   // What is measured is the stand-off, not who wins it, so they are healed to
   // full every second rather than given a health the altar pass would rescale.

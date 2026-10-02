@@ -86,17 +86,17 @@ export const flask = {
   impact: 'spill',
   landSound: true,
   poison: {
-    // Per second, for this many seconds. 10 x 5 is 50 health — half a spearman
-    // and nearly a third of a swordsman, so a man left standing in it is in real
-    // trouble rather than merely annoyed.
+    // Per second, for this many seconds. 6 x 5 is 30 health — under a third of
+    // a spearman and under a fifth of a swordsman, so a man left standing in it is
+    // hurt but not finished by one flask.
     //
-    // IT WAS 5 x 4, WHICH IS 20, and before that 6 x 3. Both factors moved this
-    // time at the owner's word: twice as hard and a second longer.
+    // IT WAS 10 x 5 FOR ONE BUILD, and 5 x 4 and 6 x 3 before that. The owner
+    // brought the rate back to 6 and kept the five seconds.
     //
     // The extra second is not free and is worth knowing about: the spill on the
     // ground lasts exactly as long as the poison does, so the patch he leaves is
-    // now dangerous for five seconds as well as adding up to more.
-    dps: 10,
+    // dangerous for five seconds.
+    dps: 6,
     seconds: 5
   }
 };
