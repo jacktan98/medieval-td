@@ -1045,8 +1045,8 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
   // campaign a player walks is the drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
-  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m1,m2,m3',
-    'the game loads the fourteen boards, then the three testing ones',
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m1,m2,m3',
+    'the game loads the fifteen boards, then the three testing ones',
     play.join(' -> '));
   // And the stages carry them in that same order, as far as the markers go — which
   // is now ALL THIRTEEN, the road having grown a marker in the same batch as the
@@ -1063,9 +1063,10 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // never spent a day with a locked marker on the end of it. The three testing maps
   // stay where they are: loaded, editable from the dashboard, off the map.
   // AND DARK HOLLOW WOODS AFTER IT, on the medallion the owner drew for it below
-  // Ironforge, with two more locked beyond it waiting for boards.
-  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16',
-    '  ending at Dark Hollow, with the testing maps behind it and off the road',
+  // Ironforge, and DARK HOLLOW QUARTERS on the next one, with one more locked
+  // beyond them waiting for a board.
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17',
+    '  ending at Dark Hollow Quarters, with the testing maps behind it and off the road',
     filled.join(' -> '));
 
   // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
@@ -2691,10 +2692,11 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     //
     // AND DARK HOLLOW WOODS AFTER IT, at the owner's word: "Towers are not restricted
     // anymore." So the uncapped boards are the END of the road — asked as a tail, so
-    // an earlier board quietly uncapped still fails here.
+    // an earlier board quietly uncapped still fails here. Dark Hollow Quarters, the
+    // same words again, makes it three.
     const free = tailOfCampaign(l => l.maxTier === undefined);
-    ok(free.ok && free.hit.includes(peak) && free.hit.length === 2,
-      '  and the boards that do are the last two on the road',
+    ok(free.ok && free.hit.includes(peak) && free.hit.length === 3,
+      '  and the boards that do are the last three on the road',
       free.hit.map(l => l.name).join(', ') || 'none');
 
     // THE RUNG NO OTHER BOARD OPENS, measured off the ladders rather than named.
@@ -2862,6 +2864,45 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
     `in at y ${first(mid).y} and ${first(bot).y}, out at y ${last(mid).y} and ${last(bot).y}`);
   ok(JSON.stringify(hollow.routeMix) === '[1,1]', '  half of every wave down each',
     JSON.stringify(hollow.routeMix));
+}
+
+console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link between them ---\n');
+
+// THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 300 gold, no
+// cap, the same eight testing waves as Dark Hollow Woods — and "60% of the enemies
+// will enter left top. 40% will exit right top road. 20% will cross the road path in
+// between to exit right bottom road. 40% of the enemies will enter left bottom and
+// will exit right bottom road."
+{
+  const quarters = levels.find(l => l.id === 'm17');
+  const woods = levels.find(l => l.id === 'm16');
+  ok(!!quarters, 'Dark Hollow Quarters is in the game', quarters ? quarters.name : 'missing');
+
+  const table = l => l.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ')).join(' | ');
+  ok(table(quarters) === table(woods) && quarters.waves !== woods.waves,
+    'it sends the eight testing waves it was given — Dark Hollow Woods\' list, in its own array',
+    `${quarters.waves.length} waves`);
+
+  ok(quarters.plots.length === 9 && quarters.startGold === 300 && quarters.waves.length === 8 &&
+     !(quarters.prebuilt || []).length && quarters.maxTier === undefined && quarters.allow === undefined,
+    'and is nine plots, 300 gold, eight waves, nothing prebuilt and nothing capped',
+    `${quarters.plots.length} plots, ${quarters.startGold} gold, ${quarters.waves.length} waves, ` +
+    `${(quarters.prebuilt || []).length} prebuilt, maxTier ${quarters.maxTier}`);
+
+  // THREE ROUTES: top to top, top down the link to bottom, bottom to bottom.
+  const [top, link, bot] = quarters.routes.map(r => r.pts);
+  const first = r => r[0], last = r => r[r.length - 1];
+  const high = p => p.y < 270;
+  ok(quarters.routes.length === 3 &&
+     high(first(top)) && high(last(top)) && high(first(link)) && !high(last(link)) &&
+     !high(first(bot)) && !high(last(bot)),
+    '  top in to top out, top in down the link to bottom out, and bottom in to bottom out',
+    [top, link, bot].map(r => `${first(r).y}->${last(r).y}`).join(', '));
+  // AND THE SHARES: 2:1:2 is 40/20/40, so the top mouth takes 60%.
+  const mix = quarters.routeMix, sum = mix.reduce((a, b) => a + b, 0);
+  ok(JSON.stringify(mix) === '[2,1,2]' && (mix[0] + mix[1]) / sum === 0.6,
+    '  60% in at the top, a third of them down the link; 40% in at the bottom',
+    JSON.stringify(mix));
 }
 
 console.log('\n--- a board may be drawn in another palette ---\n');

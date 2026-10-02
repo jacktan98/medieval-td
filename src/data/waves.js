@@ -3055,6 +3055,11 @@ export const stage14Waves = [
                        { type: 'rally_inf', count: 1, gap: 1.8 }] }
 ];
 
+// STAGE 15: Dark Hollow Quarters, and a TESTING table, at the owner's word: "Use
+// this as testing wave first." The owner's list is stage 14's exactly, line by line;
+// a second array all the same, so the first retune of either lands on one board.
+export const stage15Waves = stage14Waves.map(w => ({ ...w, groups: w.groups.map(g => ({ ...g })) }));
+
 export const wavesExtended = [
   { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
   { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
