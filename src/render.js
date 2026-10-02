@@ -514,6 +514,8 @@ function drawFigures(ctx, state) {
       });
     }
   }
+  // A FLAG ON A POLE OF THE BOARD, waving — stage 15's dark flag. See drawBoardFlag.
+  for (const f of level.flags || []) add(f.g, 1, () => drawBoardFlag(ctx, f, state.anim || 0));
   // A PIECE OF THE FRONT SHEET DRAWN AGAIN, clipped to its own outline, at a depth
   // of its own: stage 4's workbench, which stands in front of the smith behind it
   // though the forge it belongs to sorts behind him. See `overdraw` in level06.
@@ -620,11 +622,12 @@ function drawFigures(ctx, state) {
       add(fire.over, 1, () => drawFire(ctx, state, fire, 'sparks'));
     } else add(fire.g, 1, () => drawFire(ctx, state, fire));
   }
-  // SPARKS OFF THE ANVIL as the hammer lands — stage 15's smith (`vp.struck`, set by
-  // the hammer in src/villagers.js) — just in front of him.
+  // SPARKS OFF THE METAL as a hammer lands — stage 15's smith at his anvil, and stage
+  // 5's at the ballista (`vp.struck`, set by the hammer in src/villagers.js) — just in
+  // front of the man swinging it.
   const struck = state.villagerPlay && state.villagerPlay.struck;
   if (struck && state.villagerPlay.t - struck.at < ANVIL_SPARKS.life) {
-    add(struck.y + 7, 1, () => drawAnvilSparks(ctx, struck, state.villagerPlay.t - struck.at));
+    add(struck.g ?? struck.y + 7, 1, () => drawAnvilSparks(ctx, struck, state.villagerPlay.t - struck.at));
   }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
@@ -1660,6 +1663,41 @@ function bareLayers(img, bare, b) {
   }
 }
 
+// A FLAG PAINTED ON THE BOARD, WAVING — stage 15's dark flag on its pole. The painted
+// cloth is taken out of the board (`unpaint` on the level) and drawn here from the
+// artist's own outline (`d`, with its transform `m`, in the artwork's pixels), in thin
+// upright strips, each lifted or lowered by a wave running out from the pole: still
+// where it is tied on, most at the free end. On the board's own clock.
+const BOARD_FLAG = { amp: 2.2, speed: 3.2, length: 46, band: 1.5 };
+const flagPaths = new Map();
+function drawBoardFlag(ctx, f, time) {
+  let path = flagPaths.get(f);
+  if (!path) flagPaths.set(f, path = new Path2D(f.d));
+  const { amp, speed, length, band } = BOARD_FLAG;
+  const [x0, y0, x1, y1] = f.box;
+  ctx.save();
+  ctx.scale(1 / MAP_PX, 1 / MAP_PX);
+  for (let x = x0; x < x1; x += band) {
+    const s = Math.max(0, Math.min(1, (x + band / 2 - f.pole) / (f.tip - f.pole)));
+    const dy = amp * s * Math.sin(time * speed - (x - f.pole) * (Math.PI * 2 / length));
+    ctx.save();
+    // A hair wider than the strip, so no seam shows between them.
+    ctx.beginPath();
+    ctx.rect(x, y0, band + 0.4, y1 - y0);
+    ctx.clip();
+    ctx.translate(0, dy);
+    ctx.transform(...f.m);
+    ctx.fillStyle = f.fill;
+    ctx.fill(path);
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.stroke(path);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 // A BANNER PAINTED ON THE BOARD ITSELF — stage 8's two on the church — swaying the
 // same way, out of the front sheet it is drawn in: the wall rebuilt behind it within
 // its own box, then the cloth. `amp` is in the sheet's pixels, which are bigger than
@@ -2009,8 +2047,11 @@ const TORCH_CATCH = 0.7;       // seconds for a torch lit by hand to burn up to 
 // short bright streak, yellow cooling to orange. The same burst for the same blow (it
 // is seeded by when the blow landed), so it does not shimmer frame to frame.
 const ANVIL_SPARKS = { n: 14, life: 0.5, speed: [26, 56], fall: 120 };
+// `at.k` scales the burst — fewer, shorter, slower — for a smaller blow: stage 5's.
 function drawAnvilSparks(ctx, at, t) {
-  const { n, life, speed: [lo, hi], fall } = ANVIL_SPARKS;
+  const { life, fall } = ANVIL_SPARKS, k0 = at.k ?? 1;
+  const n = Math.max(3, Math.round(ANVIL_SPARKS.n * k0));
+  const [lo, hi] = ANVIL_SPARKS.speed.map(v => v * (0.4 + 0.6 * k0));
   const seed = Math.floor(at.at * 1000);
   const rnd = k => { const x = Math.sin((seed + k) * 12.9898) * 43758.5453; return x - Math.floor(x); };
   ctx.save();
@@ -2024,7 +2065,7 @@ function drawAnvilSparks(ctx, at, t) {
     const [x, y] = pos(t), [px, py] = pos(Math.max(0, t - 0.035));
     const p = t / own;
     ctx.strokeStyle = `rgba(255,${235 - 90 * p | 0},${120 - 100 * p | 0},${1 - p})`;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * (0.5 + 0.5 * k0);
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.lineTo(x, y);

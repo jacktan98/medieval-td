@@ -658,8 +658,8 @@ export const GAIN = {
   things_land: 1.0,
   // The hammer's knocks and the reel, soft: work going on, not the battle.
   hammering_nail: 0.668,
-  // The anvil, exactly as soft as stage 5's hammer: the camp's work, not the battle.
-  anvil_hit: 0.668,
+  // The anvil, as soft as stage 5's hammer — then 40% down, at the owner's word.
+  anvil_hit: 0.4,
   fishing_reel: 0.332,
   // Stage 7's sizzle and fountain, soft like the reel and the river — the sizzle
   // then 20% up, by ear, and 20% again.

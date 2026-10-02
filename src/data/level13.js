@@ -168,7 +168,7 @@ export const level13 = {
   // src/villagers.js — and are cut out of the base for it by tools/split-map.mjs.
   villagerPlay: 'factory',
   // Crows, soft, for as long as it is played.
-  ambience: [{ clip: 'crows_cawing', level: 0.5 }],
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'crows_cawing', level: 0.5 }],
   // SMOKE FROM THE CHIMNEYS, at the owner's word: black from the factory's two
   // (`black`), thicker while the factory runs, and grey from the three houses'. The
   // middle of each chimney's opening, and the depth of the building it stands on

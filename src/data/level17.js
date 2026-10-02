@@ -137,8 +137,19 @@ export const level17 = {
     { box: [72, 52, 97, 69], fills: ['#d30000', '#ffaa36'] },
     { box: [104, 183, 119, 203], fills: ['#d30000', '#ffaa36'] },
     { box: [102, 338, 117, 359], fills: ['#d30000', '#ffaa36'] },
-    { box: [86, 104, 114, 112], fills: ['#595959'] }
+    { box: [86, 104, 114, 112], fills: ['#595959'] },
+    // and the dark flag's cloth, which waves (`flags`)
+    { box: [250, 20, 279, 38], fills: ['#362407'] }
   ],
+  // THE DARK FLAG ON THE POLE AT THE TOP LEFT, waving, at the owner's word: its cloth
+  // drawn by the game from the artist's own outline in Layer 3a (`d`, `m`), in the
+  // artwork's pixels — tied on at `pole`, free at `tip`, inside `box` — and drawn just
+  // after the flagpole (`g`). See drawBoardFlag in src/render.js.
+  flags: [{
+    d: 'M500.04619306247986,29.360123649836428 L500.04619306248,54.77081573950477 C506.5921719395204,59.0897935312578 520.4863782315485,59.465502908935754 526.8942128553786,54.770815739504854 C537.4236840204733,47.05641983486819 553.0002786018701,54.770815739504854 553.0002786018701,54.770815739504854 L553.0002786018701,29.360123649836428 C553.0002786018701,29.360123649836428 538.9990277269935,25.132205745294115 526.3762569220332,29.360123649836428 C512.6657939897555,33.95235720985339 504.3208995559709,33.58602295444216 500.04619306247986,29.360123649836428 Z',
+    m: [1, 0, 0, 1, 2.34316959, 16.11874988], fill: '#362407',
+    pole: 502.4, tip: 555.4, box: [502.4, 36, 560, 82], g: 102.01
+  }],
   // LIVE FIRES where the painted ones were. THE BRAZIER'S is the owner's shape —
   // two flames, the front one lower and to the left overlapping the one behind it
   // (`flames`: offset and size of each, back first), held low (`tall`) and flaring

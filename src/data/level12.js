@@ -213,8 +213,8 @@ export const level12 = {
   // it rocks about (`pivot`), and where its leaves are (`crown`, x0 y0 x1 y1).
   felling: { box: [16, 380], pivot: [92, 487], crown: [40, 385, 140, 440] },
   props: [{ x: 84, y: 478, w: 12.5, up: 9, down: 1 }],   // the lumberjack's axe
-  // Crows, soft, for as long as it is played.
-  ambience: [{ clip: 'crows_cawing', level: 0.5 }],
+  // Birds and crows, soft, for as long as it is played.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'crows_cawing', level: 0.5 }],
   // GREY SMOKE FROM THE HOUSES' CHIMNEYS, at the owner's word: the middle of each
   // chimney's opening, and the depth of the house it stands on (its `front` box's),
   // so it rises over the roof and behind anyone nearer. See drawChimneySmoke in

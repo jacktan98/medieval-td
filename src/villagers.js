@@ -687,7 +687,10 @@ const PLAYS = {
     }],
     // Villager 4 hammers at it: two quick blows, then a long rest with the hammer
     // down, and again.
-    hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]] },
+    // A FEW TINY SPARKS each time the hammer meets the ballista's beam (`hammer_1`, its
+    // head down at the beam on his left), at the owner's word.
+    hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]],
+              sparks: [-13.6, -12.7], sparkOn: 'hammer_1', sparkSize: 0.45 },
     // Two hops each: villager 5 every tenth enemy down, 6 every twelfth.
     hops: [{ every: 10, who: [4] }, { every: 12, who: [5] }],
     cries: { runnn: false, nooo: true, wave: 'thugs' }
@@ -855,10 +858,16 @@ function work(state, vp, dt) {
     // chop as the lumberjack's axe goes into the tree (`strike`, `sound`).
     const strike = hammer.strike || 'hammer_2', knocks = { chop: CHOP, anvil: ANVIL }[hammer.sound] || HAMMER;
     if (hammer.card) { h.card = hammer.card; h.voice = hammer.voice; }
+    // AND SPARKS off the metal, where `sparks` says the hammer meets it (from his feet,
+    // the drawing's way round) as it lands in `sparkOn` — stage 15's anvil, and stage
+    // 5's ballista, tinier (`sparkSize`). render.js throws them from `vp.struck`.
+    const sparkOn = hammer.sparkOn || strike;
+    if (hammer.sparks && was !== sparkOn && h.pose === sparkOn) {
+      // `g`: just in front of the man swinging, so neither he nor what he works on hides them.
+      vp.struck = { at: vp.t, x: h.x + hammer.sparks[0] * (h.flip ? -1 : 1), y: h.y + hammer.sparks[1],
+                    k: hammer.sparkSize || 1, g: h.y + 1 };
+    }
     if (was !== strike && h.pose === strike) {
-      // AND SPARKS off the metal, where `sparks` says the hammer meets it — stage 15's
-      // anvil. render.js throws them from `vp.struck`.
-      if (hammer.sparks) vp.struck = { at: vp.t, x: h.x + hammer.sparks[0], y: h.y + hammer.sparks[1] };
       const [from, dur] = knocks.knocks[(vp.knock = ((vp.knock ?? -1) + 1) % knocks.knocks.length)];
       slice(knocks.key, from, dur);
       // And when it is an axe going into a tree, the tree shakes and a few leaves

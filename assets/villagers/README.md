@@ -288,7 +288,8 @@ to the broken ballista, 4 hammering at it, 5, 6 and 7 by the bridge.
 - The two torches at the gate burn with live fire and smoke. The two banners on the
   castle hang still.
 - Each of villager 4's two quick blows knocks, one knock of the hammering recording
-  each.
+  each, and throws a few tiny sparks where the hammer meets the ballista's beam (in
+  `Villager_Hammering_1`, its head down at the beam on his left).
 - **Every 10 enemies killed:** villager 5 hops twice. **Every 12:** villager 6.
 - **A star lost:** "nooo".
 
@@ -542,6 +543,9 @@ hut and 13 the enemy villager between the huts.
   wide until the blade goes in. The brazier's and the two torches' painted flames are
   taken out of the board (`unpaint`) and burn live — the torches sitting down in
   their cups at stage 5's castle torches' size.
+- **The dark flag** on the pole at the top left waves: its painted cloth is taken out
+  of the board and drawn by the game from the artist's own outline, still at the pole
+  and moving most at its free end (`flags` in level17.js).
 - **The thug by the left hut** and **the villager between the huts** are stage 14's:
   tapped, each stands 2 seconds; the thug walks down onto the road and is a Thug
   there, and the villager goes into the left hut and comes out a Tough Thug three
