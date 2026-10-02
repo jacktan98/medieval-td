@@ -140,19 +140,22 @@ export const level17 = {
     { box: [86, 104, 114, 112], fills: ['#595959'] }
   ],
   // LIVE FIRES where the painted ones were. THE BRAZIER'S is the owner's shape —
-  // wider and shorter than a torch's, a row of flames along the coals: three small
-  // fires side by side (`row`, `spread` apart), flaring together while the smith's
-  // blade is in (`heated`), sorted at the brazier's shadow so the blade, held in it
-  // by a man standing in front of it, lies over the flame. Its sparks fly over him.
-  // THE TWO TORCHES burn on their cups, sorted at the foot of each pole.
+  // two flames, the front one lower and to the left overlapping the one behind it
+  // (`flames`: offset and size of each, back first), held low (`tall`) and flaring
+  // together while the smith's blade is in (`flare`); sorted at the brazier's shadow,
+  // so the blade, held in it by a man standing in front of it, lies over the flame.
+  // Its sparks fly over him.
+  // THE TWO TORCHES burn a little down in their cups, as stage 5's castle torches do —
+  // just below the middle of the cup's rim, and their size (2.5) — sorted at the foot
+  // of each pole.
   fires: [
-    { x: 84.5, y: 65, s: 2.4, row: 3, spread: 7, tall: 0.72, g: 73.8, over: 79, flare: true, smoke: 0.35 },
-    { x: 111.4, y: 200.5, s: 2.9, g: 247, smoke: 0.5 },
-    { x: 109.2, y: 355.5, s: 2.9, g: 402, smoke: 0.5 }
+    { x: 84.5, y: 65, s: 2.6, flames: [[3.6, -1.4, 1], [-3.6, 0.8, 0.92]], tall: 0.8, g: 73.8, over: 79,
+      flare: true, smoke: 0.35 },
+    { x: 111.8, y: 201.8, s: 2.5, g: 247, smoke: 0.5 },
+    { x: 109.6, y: 357.1, s: 2.5, g: 402, smoke: 0.5 }
   ],
-  // The dark woods' own sound, as on Dark Hollow Woods, and the brazier crackling.
-  ambience: [{ clip: 'dark_background', level: 1 }, { clip: 'crows_cawing', level: 0.5 },
-             { clip: 'fire_crackling', level: 0.6 }],
+  // The dark woods' own sound, exactly as on Dark Hollow Woods.
+  ambience: [{ clip: 'dark_background', level: 1 }, { clip: 'crows_cawing', level: 0.5 }],
 
   waves: stage15Waves,
   wavesExtended: stage15Waves,

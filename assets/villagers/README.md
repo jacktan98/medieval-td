@@ -525,19 +525,23 @@ src/villagers.js).
 
 ## Stage 15's script
 
-Nobody here is on your side either (`quarters` in src/villagers.js). As the level
+Nobody here is on your side either (`quarters` in src/villagers.js). As the first
+wave comes the camp shouts "you are on forbidden ground!", and a tap on any of them
+plays one of the three `Villager_enemy_selected` lines. As the level
 lists them: 1 the smith at the brazier, 2 the smith at the anvil, 3–10 the eight
 thugs behind the long wall, 11 the Rally Thug at its corner, 12 the thug by the left
 hut and 13 the enemy villager between the huts.
 
-- **The smith at the brazier** works as stage 4's at his forge: the blade held up
-  3.2 seconds, then into the fire 2 seconds, the fire flaring while it is in and
-  the weld sounding. **The smith at the anvil** brings the hammer down twice and
-  rests, a knock and a burst of sparks each time it lands. Both keep working when
-  tapped.
-- **The brazier's fire** is the owner's shape — wider and shorter than a torch's: a
-  row of three small flames (`row` on the fire in level17.js). The brazier's and the
-  two torches' painted flames are taken out of the board (`unpaint`) and burn live.
+- **The smith at the brazier** works as stage 4's at his forge, a little slower: the
+  blade held up 4.2 seconds, then into the fire 2.6 seconds, the fire flaring while
+  it is in and the weld sounding. **The smith at the anvil** brings the hammer down
+  twice and rests, unhurried, a hit from `Anvil_hit_sound` and a burst of sparks each
+  time it lands. Both keep working when tapped.
+- **The brazier's fire** is the owner's shape: two flames, the front one lower and to
+  the left overlapping the one behind (`flames` on the fire in level17.js), low and
+  wide until the blade goes in. The brazier's and the two torches' painted flames are
+  taken out of the board (`unpaint`) and burn live — the torches sitting down in
+  their cups at stage 5's castle torches' size.
 - **The thug by the left hut** and **the villager between the huts** are stage 14's:
   tapped, each stands 2 seconds; the thug walks down onto the road and is a Thug
   there, and the villager goes into the left hut and comes out a Tough Thug three

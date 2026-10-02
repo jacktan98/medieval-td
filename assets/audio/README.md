@@ -41,7 +41,8 @@ assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Church_bell.mp3, Desert_wind_sound.mp3,
                       Cutting_Tree.mp3, Crows_cawing.mp3,
                       Factory_sound.mp3, Lake_sound.mp3,
-                      Water_splash_sound.mp3, Dark_background_sound.mp3
+                      Water_splash_sound.mp3, Dark_background_sound.mp3,
+                      Anvil_hit_sound.mp3
                       — the sounds of the stage boards and the world map
                       themselves rather than of anybody on them
 
@@ -49,8 +50,9 @@ assets/audio/villagers/  Villager_selected_1.mp3 .. Villager_selected_3.mp3,
                          Villager_say_runnn.mp3, Villager_say_nooo.mp3,
                          Villager_say_thugs_are_here.mp3, Villager_say_hide.mp3,
                          Villager_say_oh_no.mp3, Villager_say_here_they_come.mp3,
-                         Villager_enemy_selected_1.mp3, Villager_enemy_selected_2.mp3,
-                         Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3
+                         Villager_enemy_selected_1.mp3 .. Villager_enemy_selected_3.mp3,
+                         Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3,
+                         Villager_enemy_say_you_are_on_forbidden_ground.mp3
 
 assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Barracks_1.mp3 .. Barracks_5.mp3
@@ -198,12 +200,13 @@ and it now means "how long a lull has to be before the game forgets".
 | an enemy is selected | `Thug_1`, or its def's own `voice` |
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
-| on **stage 14**, a **thug or enemy villager** by the huts is selected | one of `Villager_enemy_selected_1` or `_2`, at random (Category A) — and the tap sets him on the road |
+| on **stages 14 and 15**, a **thug or enemy villager** is selected | one of `Villager_enemy_selected_1` to `_3`, at random (Category A) — and, by the huts, the tap sets him on the road |
 | on **stage 14**, an **Elite Archer** at the barricade is selected | `Archery_1..5`, as the Crossbow Tower answers |
 | the first enemy of wave 1 appears on **stages 1, 6 and 11** | `Villager_say_runnn`, once, **before everything**: takes the channel and is never cut off |
 | the first enemy of wave 1 appears on **stages 2, 7 and 12** | `Villager_say_hide`, the same way |
 | the first enemy of wave 1 appears on **stages 3, 8 and 13** | `Villager_say_oh_no`, the same way |
 | the first enemy of wave 1 appears on **stage 14** | `Villager_enemy_say_get_rid_of_these_intruders_brothers` — the village there is the enemy's — the same way |
+| the first enemy of wave 1 appears on **stage 15** | `Villager_enemy_say_you_are_on_forbidden_ground`, the same way |
 | the first enemy of wave 1 appears on **stages 4 and 9** | `Villager_say_here_they_come`, the same way |
 | the first enemy of wave 1 appears on **stages 5 and 10** | `Villager_say_thugs_are_here`, the same way |
 | on **every stage**, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the first-wave shout |
@@ -213,6 +216,7 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 4's smith has his pipe in the fire (the second pipe pose) | `Steel_welding`, soft, looping until he pulls it back (Category B; stops on pause) |
 | a villager's plank, ballista part or box **lands** (stages 4 and 5) | `Things_land_on_ground`, soft (Category B) |
 | stage 5's hammerer brings the hammer down (twice a round) | one knock cut out of `Hammering_nail` — the first knock on the first blow, the second on the second (Category B, soft) |
+| stage 15's smith at the anvil brings the hammer down (twice a round) | one hit cut out of `Anvil_hit_sound` — the first and third of its nineteen, at 0.16s and 1.62s, with their ring, by turns (Category B, soft) |
 | stage 6's angler tugs at his line | `Fishing_reel`, soft, looping for as long as he tugs (Category B; stops on pause) |
 | stage 6 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `River_water_flowing` |
 | stage 10's lumberjack's axe goes into the tree (twice a round) | one chop cut out of `Cutting_Tree` — its two loudest, at 2.57s and 4.38s, one each chop by turns (Category B, soft) |

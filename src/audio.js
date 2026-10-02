@@ -507,6 +507,7 @@ const paths = {
   // sets them on the road. See `hollow` in src/villagers.js.
   villager_enemy_selected_1: 'assets/audio/villagers/Villager_enemy_selected_1.mp3',
   villager_enemy_selected_2: 'assets/audio/villagers/Villager_enemy_selected_2.mp3',
+  villager_enemy_selected_3: 'assets/audio/villagers/Villager_enemy_selected_3.mp3',
   villager_runnn:    'assets/audio/villagers/Villager_say_runnn.mp3',
   villager_nooo:     'assets/audio/villagers/Villager_say_nooo.mp3',
   // What the village shouts when the first wave comes: stage 2's "thugs are here",
@@ -519,6 +520,8 @@ const paths = {
   // And stage 14's, where the village is the enemy's: "get rid of these intruders,
   // brothers!"
   villager_intruders: 'assets/audio/villagers/Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3',
+  // And stage 15's: "you are on forbidden ground!"
+  villager_forbidden: 'assets/audio/villagers/Villager_enemy_say_you_are_on_forbidden_ground.mp3',
   flag_waving:     'assets/audio/map/Flag_waving.mp3',
   bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
   // THE BOARDS' OWN SOUNDS, stages 1 to 5. Fire and river LOOP for as long as the
@@ -531,6 +534,9 @@ const paths = {
   // Stage 5's hammerer: a recording of seven knocks, of which each blow plays one
   // (HAMMER, below). Stage 6's angler: the reel, while he tugs.
   hammering_nail:  'assets/audio/map/Hammering_nail.mp3',
+  // Stage 15's smith at the anvil: a recording of nineteen hits, of which each blow
+  // plays one (ANVIL, below).
+  anvil_hit:       'assets/audio/map/Anvil_hit_sound.mp3',
   fishing_reel:    'assets/audio/map/Fishing_reel.mp3',
   // Stage 7: the fish sizzling while the cook holds it over the fire, and the
   // fountain running for as long as the board is played.
@@ -652,6 +658,8 @@ export const GAIN = {
   things_land: 1.0,
   // The hammer's knocks and the reel, soft: work going on, not the battle.
   hammering_nail: 0.668,
+  // The anvil, exactly as soft as stage 5's hammer: the camp's work, not the battle.
+  anvil_hit: 0.668,
   fishing_reel: 0.332,
   // Stage 7's sizzle and fountain, soft like the reel and the river — the sizzle
   // then 20% up, by ear, and 20% again.
@@ -885,7 +893,7 @@ export const CUE = {
   // A villager's own answer when tapped — see selectionCue.
   villager:     ['villager_selected_1', 'villager_selected_2', 'villager_selected_3'],
   // And Dark Hollow's, who are nobody's friend — see `voice` on the `hollow` play.
-  enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2'],
+  enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2', 'villager_enemy_selected_3'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
@@ -1082,7 +1090,8 @@ export const VILLAGER_WAVE = {
   oh_no: ['villager_oh_no'],
   here:  ['villager_here_they_come'],
   runnn: ['villager_runnn'],
-  intruders: ['villager_intruders']
+  intruders: ['villager_intruders'],
+  forbidden: ['villager_forbidden']
 };
 // Something the villagers throw landing — a plank on the stack, a part on the
 // ballista, a box on the crates. Category B, soft (its GAIN): a working
@@ -1101,6 +1110,10 @@ export const HAMMER = { key: 'hammering_nail', knocks: [[0.215, 0.24], [0.500, 0
 // recording is a chop every 0.9s or so, and its two loudest, at 2.57s and 4.38s, are
 // cut out by where they START, with the ring after each. Category B.
 // (A little louder than its trim can make it: see LIFT.)
+// STAGE 15'S ANVIL, one hit as the hammer lands, the same way: the recording is a hit
+// every 0.7s, each ringing out over about half a second; the first and the third, at
+// 0.16s and 1.62s, are cut out by where they START, with their ring. Category B.
+export const ANVIL = { key: 'anvil_hit', knocks: [[0.14, 0.55], [1.60, 0.55]] };
 export const CHOP = { key: 'cutting_tree', knocks: [[2.55, 0.4], [4.36, 0.4]] };
 // STAGE 13'S FISH breaking the water as it jumps: the splash itself, the first
 // `dur` seconds of the recording — after that it is dripping for three seconds more,

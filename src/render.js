@@ -1973,17 +1973,16 @@ function drawFire(ctx, state, fire, part = 'all') {
   }
   // The flame is kept a hair inside the mouth, so the whole of its black border
   // shows round the fire rather than half of it being burnt away.
-  // A ROW OF FLAMES — stage 15's brazier, wider and shorter than one fire — is `row`
-  // small fires `spread` apart, each on a beat of its own, the middle one glowing
-  // and smoking for all of them; the outer ones a little lower.
-  const n = fire.row || 1;
-  for (let i = 0; i < n; i++) {
-    const off = (i - (n - 1) / 2) * (fire.spread || 0), mid = Math.abs(off) < 0.01;
-    campfire(ctx, fire.x + off, fire.y, t + i * 1.37, fire.s, true, {
-      heat, tall: tall * (mid ? 1 : 0.8), flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null,
-      smoke: mid ? fire.smoke ?? 1 : 0, sparks: fire.sparks ?? true, part, glow: mid
+  // SEVERAL FLAMES IN ONE FIRE — stage 15's brazier, the owner's two: `flames` is
+  // each one's offset and size, the back one first so the front one overlaps it, each
+  // on a beat of its own. The first glows and smokes for all of them.
+  const flames = fire.flames || [[0, 0, 1]];
+  flames.forEach(([dx, dy, k], i) => {
+    campfire(ctx, fire.x + dx, fire.y + dy, t + i * 1.37, fire.s * k, true, {
+      heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null,
+      smoke: i ? 0 : fire.smoke ?? 1, sparks: fire.sparks ?? true, part, glow: !i
     });
-  }
+  });
   if (mouth && part !== 'sparks') {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;

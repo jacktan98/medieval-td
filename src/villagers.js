@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, WAR_CRY } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, WAR_CRY, ANVIL } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
 import { nearestOn } from './route.js';
@@ -585,15 +585,16 @@ const PLAYS = {
     after: [], run: [], hops: [],
     voice: 'enemy_villager',
     // THE SMITH AT THE BRAZIER, as stage 4's at his forge: the blade held up, then
-    // into the fire, which flares while it is in (the level's `heated` fire), and the
-    // weld sounds. He keeps at it whether he is tapped or not.
-    smith: { who: 0, back: 3.2, in: 2, poses: ['heat_1', 'heat_2'], voice: 'enemy_villager',
+    // into the fire, which flares while it is in (the level's `flare` fire), and the
+    // weld sounds — a little slower than stage 4's, at the owner's word. He keeps at it whether he is tapped or not.
+    smith: { who: 0, back: 4.2, in: 2.6, poses: ['heat_1', 'heat_2'], voice: 'enemy_villager',
              card: { title: 'Enemy Villager', sprite: 'vill_enemy_heating_1', trim: [160, 182, 146, 148] } },
-    // THE SMITH AT THE ANVIL: the hammer raised, and down on the metal — a knock and a
-    // burst of sparks each time it lands (`sparks`, from his feet in board px) — two
-    // quick blows and a breath, and again.
-    hammer: { who: 1, strike: 'anvil_1', sparks: [1, -6], voice: 'enemy_villager',
-              beats: [['anvil_2', 0.45], ['anvil_1', 0.3], ['anvil_2', 0.45], ['anvil_1', 0.3], ['anvil_2', 1.2]],
+    // THE SMITH AT THE ANVIL: the hammer raised, and down on the metal — a hit cut out
+    // of the anvil recording (ANVIL in src/audio.js) and a burst of sparks each time it
+    // lands (`sparks`, from his feet in board px) — two blows and a breath, and again,
+    // unhurried.
+    hammer: { who: 1, strike: 'anvil_1', sound: 'anvil', sparks: [1, -6], voice: 'enemy_villager',
+              beats: [['anvil_2', 0.6], ['anvil_1', 0.4], ['anvil_2', 0.6], ['anvil_1', 0.4], ['anvil_2', 1.7]],
               card: { title: 'Enemy Villager', sprite: 'vill_enemy_anvil_1', trim: [172, 175, 168, 162] } },
     // THE TWO BY THE HUTS, as stage 14's: tapped, each stands `still` seconds, then the
     // thug walks down onto the road and is a Thug there, and the villager goes into
@@ -623,7 +624,8 @@ const PLAYS = {
       top: 214, topRoutes: [0, 0, 1, 0], bottom: 408, bottomRoute: 2,
       rallyWay: [[96, 334], [84, 408]], march: 22
     },
-    cries: { runnn: false, nooo: false, wave: null }
+    // "You are on forbidden ground!" as the first wave comes, the camp's own shout.
+    cries: { runnn: false, nooo: false, wave: 'forbidden' }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
@@ -851,7 +853,7 @@ function work(state, vp, dt) {
     for (const [pose, d] of hammer.beats) { if (k < d) { h.pose = pose; break; } k -= d; }
     // A KNOCK AS THE HAMMER COMES DOWN — the first blow's, then the second's. Or a
     // chop as the lumberjack's axe goes into the tree (`strike`, `sound`).
-    const strike = hammer.strike || 'hammer_2', knocks = hammer.sound === 'chop' ? CHOP : HAMMER;
+    const strike = hammer.strike || 'hammer_2', knocks = { chop: CHOP, anvil: ANVIL }[hammer.sound] || HAMMER;
     if (hammer.card) { h.card = hammer.card; h.voice = hammer.voice; }
     if (was !== strike && h.pose === strike) {
       // AND SPARKS off the metal, where `sparks` says the hammer meets it — stage 15's
