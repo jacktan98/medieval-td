@@ -247,7 +247,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a paladin swings** — Category B | `Paladin_attack` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
-| **a Boulder Giant's boulder hits** — thrown and landing, or brought down on a man's head in melee — Category B, half again louder than the rest of the battle's (68% of a voice) | `Boulder_hit` |
+| **a Boulder Giant's boulder hits** — thrown and landing, or brought down on a man's head in melee — Category B, twice as loud as the rest of the battle's (90% of a voice) | `Boulder_hit` |
 | **a dark crow is shot down**, whatever shot him — Category B | `Crow_dies` |
 | **a dark crow's wings come down**, if the last play has finished — whole, one at a time, 1.25x speed, soft at 0.35 | `Wings_flap` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |

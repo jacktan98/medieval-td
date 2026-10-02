@@ -663,9 +663,10 @@ export const GAIN = {
   // The anvil, as soft as stage 5's hammer — then 40% down, and then to 15% of a
   // voice, at the owner's word (0.333 x the background bus's 0.45).
   anvil_hit: 0.333,
-  // The Boulder Giant's boulder hitting home, half again louder than the rest of the
-  // battle's Category B at the owner's word — about a catapult rock's landing.
-  boulder_hit: 1.5,
+  // The Boulder Giant's boulder hitting home, twice the rest of the battle's
+  // Category B: 90% of a voice at the owner's word (2.0 x the bus's 0.45; it was
+  // 1.5, 68%). Far under the peak ceiling — the file is loud and levelled down.
+  boulder_hit: 2.0,
   fishing_reel: 0.332,
   // Stage 7's sizzle and fountain, soft like the reel and the river — the sizzle
   // then 20% up, by ear, and 20% again.
