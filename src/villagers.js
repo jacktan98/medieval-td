@@ -230,6 +230,11 @@ const BOX_WAY = [[953, 295], [921.5, 306], [889.5, 318], [857.5, 326], [817.5, 3
 const HOLLOW_WAY = [[195, -12], [188, 35], [178, 63], [168, 82], [159, 105], [157, 122],
   [162, 138], [178, 145], [196, 146], [214, 142.5]];
 
+// THE ENEMY VILLAGER'S CARD: the villager standing in the thugs' dark clothes (made by
+// darkVillager in src/render.js), for every enemy villager — stage 15's two smiths
+// too, at the owner's word, rather than their working drawings.
+const ENEMY_VILLAGER_CARD = { title: 'Enemy Villager', sprite: 'evill_front_standing', trim: VILLAGER.spriteTrim };
+
 const PLAYS = {
   oakhaven: {
     before: [front('greet'), back('greet'), back('greet'), front('greet'), front('greet')],
@@ -592,14 +597,14 @@ const PLAYS = {
     // THE SPARKS FLY FROM THE BLADE (`sparks`, the hot middle of it in heat_2), not out
     // of the middle of the fire, at the owner's word.
     smith: { who: 0, back: 4.2, in: 2.6, poses: ['heat_1', 'heat_2'], sparks: [-12, -17], voice: 'enemy_villager',
-             card: { title: 'Enemy Villager', sprite: 'vill_enemy_heating_1', trim: [160, 182, 146, 148] } },
+             card: ENEMY_VILLAGER_CARD },
     // THE SMITH AT THE ANVIL: the hammer raised, and down on the metal — a hit cut out
     // of the anvil recording (ANVIL in src/audio.js) and a burst of sparks each time it
     // lands (`sparks`, from his feet in board px) — two blows and a breath, and again,
     // unhurried.
     hammer: { who: 1, strike: 'anvil_1', sound: 'anvil', sparks: [1, -6], voice: 'enemy_villager',
               beats: [['anvil_2', 0.6], ['anvil_1', 0.4], ['anvil_2', 0.6], ['anvil_1', 0.4], ['anvil_2', 1.7]],
-              card: { title: 'Enemy Villager', sprite: 'vill_enemy_anvil_1', trim: [172, 175, 168, 162] } },
+              card: ENEMY_VILLAGER_CARD },
     // THE TWO BY THE HUTS, as stage 14's: tapped, each stands `still` seconds, then the
     // thug walks down onto the road and is a Thug there, and the villager goes into
     // the left hut and comes out a Tough Thug three seconds later.
@@ -1166,7 +1171,7 @@ function hollowRound(state, vp, dt) {
   vp.hollow = vp.hollow || {};
   const cardOf = type => ({ title: enemyTypes[type].name, sprite: enemyTypes[type].sprite,
                             trim: enemyTypes[type].spriteTrim });
-  const ENEMY_CARD = { title: 'Enemy Villager', sprite: 'evill_front_standing', trim: VILLAGER.spriteTrim };
+  const ENEMY_CARD = ENEMY_VILLAGER_CARD;
 
   // Turning where he stands, one way and then the other, on no beat of his own.
   const fidget = (v, c) => {

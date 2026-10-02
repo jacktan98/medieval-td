@@ -1797,8 +1797,9 @@ function drawVillager(ctx, state, v, layer = null) {
   // A LIT POLE BURNS: its painted flame is taken off the drawing and a live one
   // burns where it was — stage 12's torch-lighter. See POLE_FIRE.
   const lit = !layer && POLE_FIRE.poses.includes(v.pose);
-  // (And his standing drawing made too, whatever he is doing, for his card.)
-  if (v.look === 'enemy') darkVillager('vill_front_standing');
+  // (And his standing drawing made too, whatever he is doing, for his card — and for
+  // anyone else wearing that card: stage 15's smiths.)
+  if (v.look === 'enemy' || (v.card && v.card.sprite === 'evill_front_standing')) darkVillager('vill_front_standing');
   const img = layer || (lit && unlitPole(key)) || (v.look === 'enemy' ? darkVillager(key) : art[key]);
   if (!img) return;
   const [sx, sy, sw, sh] = VILLAGER_POSE.trims[v.pose] || VILLAGER_POSE.trim;

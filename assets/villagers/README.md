@@ -537,7 +537,8 @@ hut and 13 the enemy villager between the huts.
   it is in and the weld sounding. The sparks fly off the blade, not out of the middle
   of the fire. **The smith at the anvil** brings the hammer down
   twice and rests, unhurried, a hit from `Anvil_hit_sound` and a burst of sparks each
-  time it lands. Both keep working when tapped.
+  time it lands. Both keep working when tapped, and their card shows the plain enemy
+  villager (`ENEMY_VILLAGER_CARD`), as stage 14's do, not their working drawings.
 - **The brazier's fire** is the owner's shape: two flames, the front one lower and to
   the left overlapping the one behind (`flames` on the fire in level17.js), low and
   wide until the blade goes in. The brazier's and the two torches' painted flames are
