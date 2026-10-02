@@ -184,11 +184,12 @@ export const level14 = {
   ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'crows_cawing', level: 0.5 },
              { clip: 'fire_crackling', level: 1, lit: 0 }],
   // THE TWO TORCHES AT THE GATE, drawn unlit and lit by the torch-lighter as the board
-  // opens (`lit`, the order he lights them in): each burns on its cup, sorted at the
-  // foot of its pole.
+  // opens (`lit`, the order he lights them in): each burns a little down in its cup, as
+  // stage 5's castle torches do — just below the middle of the cup's rim (203.5 and
+  // 216) — sorted at the foot of its pole.
   fires: [
-    { x: 613.75, y: 202.5, s: 2.5, g: 247.5, lit: 0 },
-    { x: 666.25, y: 215.5, s: 2.5, g: 260, lit: 1 }
+    { x: 614, y: 204.1, s: 2.5, g: 247.5, lit: 0 },
+    { x: 666.2, y: 216.6, s: 2.5, g: 260, lit: 1 }
   ],
   // GREY SMOKE FROM THE COTTAGE'S CHIMNEY, top left. See drawChimneySmoke in
   // src/render.js.
