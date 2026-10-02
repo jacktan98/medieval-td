@@ -279,6 +279,9 @@ const paths = {
   // would let exactly one of them be heard and silence the rest, which is the wrong
   // way round for the creature whose whole point is that there are several.
   bomb_sound:      'assets/audio/sfx/Bomb_sound.mp3',
+  // THE BOULDER GIANT'S BOULDER landing on a man — thrown, or brought down on his
+  // head in melee. See BOULDER_HIT.
+  boulder_hit:     'assets/audio/sfx/Boulder_hit.mp3',
   // THE DARK CROW'S. His cry when he is shot out of the air — Category B, in place
   // of the kill line the weapon would have played — and his wings.
   //
@@ -1238,6 +1241,17 @@ export const BREAK = ['flask_break'];
 // two landings, and for the third time the same reason: three assassins with
 // Knife Throw can land three blades on the same frame.
 export const KNIFE = ['assassin_knife_throw'];
+// THE BOULDER GIANT'S BOULDER hitting home, at the owner's word: "Whenever he
+// attacks (melee or ranged), when the boulder hits the target, trigger the
+// boulder_hit sound effect." Thrown, it is the landing (LANDING in projectiles.js);
+// in melee, the blow on the man's head (`meleeSound` on his def, read in units.js).
+// Category B, beside the other landings, for the same reason: several can land at
+// once.
+export const BOULDER_HIT = ['boulder_hit'];
+// What a melee blow sounds like, by the `meleeSound` an enemy's def names. Only the
+// Boulder Giant has one: every other creature's blow is the swing the soldier makes
+// a noise about.
+export const MELEE_SOUND = { boulder: BOULDER_HIT };
 
 // THE TAP. Every control in the game that does something answers with this, and
 // it is Category B for a reason that has nothing to do with the battle: it is a
@@ -1897,7 +1911,7 @@ export const abilityCue = key => ABILITY_CUES[key] || null;
 // selects what it just built — and the mapping should not be written out three
 // times.
 //
-// A giant thug answers with the common thug's line, because there is one enemy
+// A club giant answers with the common thug's line, because there is one enemy
 // voice for the whole roster. The note here used to say that a second recording
 // would turn this into a `def` lookup rather than a kind check, and the Captain
 // Thug is that second recording — so `voice` on an enemy's def now names its own

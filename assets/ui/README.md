@@ -499,7 +499,7 @@ This is the fix for the blur, and it is worth understanding rather than copying.
 The box used to fit every portrait into a 68px square. That is wrong twice. It
 drew a 114-source-pixel sprite at 68 game px, which at the 3x device-pixel cap
 wants 204 source pixels that do not exist — a 1.2x upscale on every figure, which
-is exactly what "blurry" looked like. And it drew a Giant Thug and a Thug the
+is exactly what "blurry" looked like. And it drew a Club Giant and a Thug the
 same size, which is a lie about the only thing that separates them.
 
 Portraits are now drawn at `PORTRAIT_SCALE` times the board's own `SCALE`. One
@@ -692,7 +692,7 @@ itself and the whole shelf follows. Nothing here needs re-typing after a redraw.
 
 The two picture slots are **different widths** on purpose. A building shrinks to
 fit, so it can have a narrow one; a figure is drawn at a fixed scale and its slot
-has to hold the widest man in the game — the Giant Thug, whose club reaches 45px
+has to hold the widest man in the game — the Club Giant, whose club reaches 45px
 left of the spot he stands on. One slot sized for both would either crop him or
 waste 30px of every tower card's text.
 

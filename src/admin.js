@@ -997,7 +997,14 @@ export function stepperAt(x, rowY, field, w = STEP_W, valueW = 96, h = STEP_H) {
 // "Plague Doctor" — so keeping them would have meant one column of enemies and
 // four rows a page, which is paging the roster on the one panel whose whole
 // purpose is seeing the roster at once.
-const WAVE_STEP_W = 46;
+// 46 -> 30 WIDE AND THREE COLUMNS, when the Boulder Giant made thirteen — the case
+// the note above said would come. Thirteen in two columns is seven rows, and seven
+// rows in this page's 242px is a 34px pitch: too tight for any stepper. Three
+// columns is five rows at a 48px pitch, so the steppers get their 36px of height
+// back, and the width comes out of each button instead: 28 drawn, 40 tapped across.
+// The type in the panel shrinks to suit, at the owner's word ("can make the overall
+// font size smaller"); see drawAdminWaves.
+const WAVE_STEP_W = 28;
 // AND 36 TALL RATHER THAN THE 40 EVERYWHERE ELSE, which the ninth enemy bought.
 //
 // The grid is two columns and does not page — that is the whole point of the tab —
@@ -1046,15 +1053,15 @@ const WAVE_STEP_W = 46;
 // then rather than now: page the roster the way the Units tab does, or go to three
 // columns and put each label above its own pair instead of beside it. Both are real
 // work on a panel nobody plays; neither should be done speculatively.
-const WAVE_STEP_H = 28;
+const WAVE_STEP_H = 36;
 export const waveStepper = (x, rowY, field, valueW) =>
   stepperAt(x, rowY, field, WAVE_STEP_W, valueW, WAVE_STEP_H);
 
 // The two value boxes are different widths because they hold different things: a
 // count is at most two digits and its "was" line at most six characters, while a
 // rate is always four ("1.60") and its "was" line eight ("was 1.60").
-export const COUNT_VALUE_W = 52;
-export const GAP_VALUE_W = 60;
+export const COUNT_VALUE_W = 34;
+export const GAP_VALUE_W = 42;
 
 // The rows of the WAVES tab: ONE PER ENEMY IN THE GAME, whether or not this wave
 // sends it, which is the owner's ask — "allow me to place any enemy for any wave,
@@ -1089,9 +1096,9 @@ const GROUP_TOP = INNER.y + 164;
 // 12 rather than 24, for the same reason the steppers shrank: the second control
 // per cell had to come from somewhere, and the gutter between two columns is the
 // cheapest 12px on the page.
-const WAVE_CELL_GAP = 12;
-const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP) / 2;
-const WAVE_COLS = 2;
+const WAVE_CELL_GAP = 16;
+export const WAVE_COLS = 3;
+const WAVE_CELL_W = (INNER.r - INNER.x - WAVE_CELL_GAP * (WAVE_COLS - 1)) / WAVE_COLS;
 
 // HOW MANY ROWS THE ROSTER NEEDS, and how tall each may be — DERIVED, because the
 // roster grows and this page does not.
@@ -1136,7 +1143,7 @@ export const groupRows = (levelIndex, wave, mode = 'normal') => {
     // against the right edge of the cell so the columns line up with each other
     // down the page and the right-hand pair lines up with Start gold above it.
     const gapX = x + WAVE_CELL_W - gapW;
-    const stepX = gapX - countW - 8;
+    const stepX = gapX - countW - 4;
     const count = waveCount(lv.id, mode, wave, type);
     const y = GROUP_TOP + Math.floor(i / WAVE_COLS) * WAVE_ROW_H();
     return {
@@ -1192,12 +1199,37 @@ export const SUMMARY2_Y = () => SUMMARY_Y() + SUMMARY_STEP;
 // families of three — so they are paged rather than crammed: six a page at the
 // same 60px pitch the waves tab uses, which keeps one row height in the whole
 // dashboard.
+//
+// TWO COLUMNS OF SEVEN NOW, fourteen a page where it was six, at the owner's word:
+// "units page in admin panel can squeeze in more units in one page." Each row is a
+// cell half the page wide — name and tower on the left, health and damage steppers
+// on the right — at a 48px pitch, with steppers 36 tall (48 tapped) and 36 wide.
 const UNIT_TOP = INNER.y + 76;
-const PER_PAGE = 6;
+const UNIT_COLS = 2, UNIT_GAP = 24;
+export const UNIT_ROW_H = 48;
+const UNIT_PER_COL = 7;
+const PER_PAGE = UNIT_COLS * UNIT_PER_COL;
+const UNIT_CELL_W = (INNER.r - INNER.x - UNIT_GAP) / UNIT_COLS;
+const UNIT_STEP_W = 36, UNIT_STEP_H = 36, UNIT_VALUE_W = 64;
+const UNIT_STEPPER_W = 2 * UNIT_STEP_W + UNIT_VALUE_W;
+// Where a unit cell's two stepper columns start, for its column (0 or 1): damage hard
+// against the cell's right edge, health a gap to its left. Shared with the column
+// heads in render.js.
+export const unitCols = col => {
+  const right = INNER.x + col * (UNIT_CELL_W + UNIT_GAP) + UNIT_CELL_W;
+  return { damage: right - UNIT_STEPPER_W, hp: right - 2 * UNIT_STEPPER_W - 14, w: UNIT_STEPPER_W,
+           x: INNER.x + col * (UNIT_CELL_W + UNIT_GAP) };
+};
 export const unitPages = () => Math.ceil(units().length / PER_PAGE);
 export const unitRows = page =>
   units().slice(page * PER_PAGE, page * PER_PAGE + PER_PAGE)
-    .map((u, i) => ({ ...u, y: UNIT_TOP + i * ROW_H }));
+    .map((u, i) => {
+      const col = Math.floor(i / UNIT_PER_COL), c = unitCols(col);
+      const y = UNIT_TOP + (i % UNIT_PER_COL) * UNIT_ROW_H;
+      return { ...u, x: c.x, y, col,
+               steps: { hp: stepperAt(c.hp, y, 'hp', UNIT_STEP_W, UNIT_VALUE_W, UNIT_STEP_H),
+                        damage: stepperAt(c.damage, y, 'damage', UNIT_STEP_W, UNIT_VALUE_W, UNIT_STEP_H) } };
+    });
 
 // The footer: Reset on the left where it is furthest from anything else, and the
 // page flip on the right for the Units tab. Both hang off the bottom margin, so
@@ -1574,7 +1606,7 @@ export function tapAdmin(state, x, y, restart) {
     for (const field of ['hp', 'damage']) {
       if (field === 'hp' && !u.hp) continue;
       if (field === 'damage' && !u.dmg) continue;
-      const s = stepper(field, u.y, field);
+      const s = u.steps[field];
       const now = u.def[field];
       if (on(s.minus)) { setUnitStat(u.id, field, now - statStep(now)); return true; }
       if (on(s.plus)) { setUnitStat(u.id, field, now + statStep(now)); return true; }

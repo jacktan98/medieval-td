@@ -1,7 +1,7 @@
 import { splat } from './blood.js';
 import { impact } from './impacts.js';
 import { inRange } from './ground.js';
-import { play, LAND, BREAK, KNIFE } from './audio.js';
+import { play, LAND, BREAK, KNIFE, BOULDER_HIT } from './audio.js';
 import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armour.js';
@@ -264,7 +264,7 @@ const victims = (state, s) =>
 // EXPORTED beside FIRING in towers.js and for the same reason: a `landSound`
 // with no row here is silence that nothing reports. tools/sound.mjs checks both
 // tables against every ammunition the game can actually fire.
-export const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE };
+export const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE, boulder: BOULDER_HIT };
 
 // SETTING SOMEBODY ALIGHT, and it is separate from hit() rather than a branch
 // inside it — because burning and being hit happen in two different patches now.

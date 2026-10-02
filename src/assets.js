@@ -421,11 +421,12 @@ export const paths = {
   // The plague doctor's flask, and the only projectile in the game thrown AT
   // the player's men rather than by them.
   flask:       'assets/projectiles/Enemies_Plague_Thug_Flask.png',
+  boulder:     'assets/projectiles/Enemies_Boulder_Giant_Boulder.png',
   // THE ENEMIES LOST THEIR TIERS. They were enemy_t1a and enemy_t1b, from an
   // upload that numbered them; the artist now names each one after what it is,
   // and the keys followed because the old ones had stopped being true — "t1a"
   // said the militia was the first of a ladder, and there is no ladder. A thug,
-  // a giant thug and a plague thug are three creatures, not three ranks.
+  // a club giant and a plague thug are three creatures, not three ranks.
   //
   // Each has a Default and an Attack for the same reason the soldiers do; see
   // the note over the units above for which is which.
@@ -437,8 +438,12 @@ export const paths = {
   shadow_attack:   'assets/enemies/Enemies_Shadow_Thug_Attack.png',
   rally:           'assets/enemies/Enemies_Rally_Thug_Default.png',
   rally_attack:    'assets/enemies/Enemies_Rally_Thug_Attack.png',
-  giant:           'assets/enemies/Enemies_Giant_Thug_Default.png',
-  giant_attack:    'assets/enemies/Enemies_Giant_Thug_Attack.png',
+  giant:           'assets/enemies/Enemies_Club_Giant_Default.png',
+  giant_attack:    'assets/enemies/Enemies_Club_Giant_Attack.png',
+  // THE BOULDER GIANT: standing, hurling a boulder, and bringing one down on a man.
+  boulder_giant:        'assets/enemies/Enemies_Boulder_Giant_Default.png',
+  boulder_giant_throw:  'assets/enemies/Enemies_Boulder_Giant_Ranged_Attack.png',
+  boulder_giant_attack: 'assets/enemies/Enemies_Boulder_Giant_Melee_Attack.png',
   // THE THIRD DRAWING NOBODY ELSE HAS. Every other figure in this game is a
   // Default and an Attack — what it looks like, and what it looks like doing its
   // thing. The Blocker has a stance as well: a man behind a raised shield, which
@@ -556,7 +561,8 @@ export const paths = {
   dead_shadow:     'assets/dead/Enemies_Shadow_Thug_Dead.png',
   dead_rally:      'assets/dead/Enemies_Rally_Thug_Dead.png',
   dead_blocker:    'assets/dead/Enemies_Blocker_Thug_Dead.png',
-  dead_giant:      'assets/dead/Enemies_Giant_Thug_Dead.png',
+  dead_giant:      'assets/dead/Enemies_Club_Giant_Dead.png',
+  dead_boulder_giant: 'assets/dead/Enemies_Boulder_Giant_Dead.png',
   dead_priest:     'assets/dead/Enemies_Dark_Priest_Dead.png',
   dead_plague:     'assets/dead/Enemies_Plague_Thug_Dead.png',
   dead_archer:     'assets/dead/Enemies_Archer_Thug_Dead.png',

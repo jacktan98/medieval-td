@@ -112,6 +112,25 @@ export const flask = {
 // projectiles.js reads them all the same way. Flat and fast like the monastery's
 // own missiles rather than lobbed like a flask: it is the same magic, thrown by
 // the other side.
+// THE BOULDER GIANT'S BOULDER: hurled in a high lob at the ground a soldier stands
+// on, and everyone within `splash` of where it comes down takes the blow — 100, at
+// the owner's word. Earth thrown up where it lands, as a catapult's rock does, and
+// `boulder_hit` as it does (LANDING in src/projectiles.js).
+export const BOULDER_SPLASH = 100;
+const boulder = {
+  kind: 'boulder',
+  sprite: 'boulder',
+  trim: [216, 226, 80, 60],
+  faces: 0,
+  grip: 0.5,
+  speed: 190,
+  lob: true,
+  arc: 0.3,
+  splash: BOULDER_SPLASH,
+  impact: true,
+  landSound: true
+};
+
 const darkMissile = {
   // `dark` rather than `arcane`, though it points at the monastery's own noise —
   // see FIRING in src/audio.js. A kind is what a sound is looked up by AND what a
@@ -947,7 +966,7 @@ export const enemyTypes = {
   // asked for. Do not read the wide band as permission to stop checking: it is
   // wide because of a mechanic, and a mechanic can be tuned away again.
   heavy_inf: {
-    name: 'Giant Thug',
+    name: 'Club Giant',
     sprite: 'giant',
     // He rests with his club shouldered and swings it out level to strike, so
     // his Attack box is much wider and a little shorter than this one. The man
@@ -1050,6 +1069,57 @@ export const enemyTypes = {
     // every scenario — so this is a picture change and not a balance one.
     r: 14,
     colour: '#8A6A4A'
+  },
+
+  // THE BOULDER GIANT, at the owner's word: "roughly similar concept to plague thug
+  // but heavily emphasises on AOE physical damage and has high health."
+  //
+  // THE DOCTOR'S SHAPE WITH A GIANT'S WEIGHT. He walks the road at the Club Giant's
+  // pace until a soldier is within 150, then stands and hurls boulders out of the
+  // basket on his back — each one 30 physical to every man within 100 of where it
+  // comes down, breaking two ranks of plate. Held face to face, he brings a boulder
+  // down on the man's head instead: 30 to that one man, no splash. Either way, as
+  // the boulder hits home, `boulder_hit` (BOULDER_HIT in src/audio.js).
+  //
+  // HIS DRAWINGS, all four stood on his shadow at source (240, 324): the standing
+  // one (also his card and his encyclopedia picture), the throw (his `attack`, as
+  // the doctor's, because throwing is what he does on the road) and the blow (his
+  // `melee` attack). Dead, at (159, 302).
+  boulder_giant: {
+    name: 'Boulder Giant',
+    sprite: 'boulder_giant',
+    spriteTrim: [178, 175, 156, 162],
+    pivot: [0.397, 0.920],
+    attack: { sprite: 'boulder_giant_throw', trim: [188, 175, 146, 162], pivot: [0.356, 0.920] },
+    melee: {
+      attack: { sprite: 'boulder_giant_attack', trim: [144, 175, 190, 162], pivot: [0.505, 0.920] }
+    },
+    spriteFaces: -1,
+    dead: 'dead_boulder_giant',
+    deadTrim: [114, 196, 284, 121],
+    deadPivot: [0.158, 0.876],
+    hp: 800,
+    damageType: 'physical',
+    // LOW PLATE AGAINST STEEL, none against magic: a big target, but not the Club
+    // Giant's wall.
+    armour: { physical: 'low', magic: 'none' },
+    // TWO RANKS BROKEN, thrown or swung — the owner's "Pierce Physical Damage: 2".
+    pierce: 2,
+    speed: 50,      // the Club Giant's pace
+    bounty: 40,
+    leak: 2,
+    // THE BLOW ON A MAN'S HEAD, face to face: 30 to him alone.
+    damage: 30,
+    atkCd: 1.2,
+    meleeSound: 'boulder',
+    r: 14,
+    colour: '#6A6A6A',
+    ranged: {
+      range: 150,
+      cd: 2.5,
+      ammo: boulder,
+      damage: 30
+    }
   },
 
   // THE FIRST ENEMY THAT DOES NOT WALK INTO THE FIGHT.
@@ -1160,7 +1230,7 @@ export const enemyTypes = {
     //
     // So this number is free, and it is set for how he should FEEL: 200 is two
     // and a half thugs, which is enough that he has to be focused rather than
-    // brushed aside, and nothing like a Giant Thug. Move it as you like — no
+    // brushed aside, and nothing like a Club Giant. Move it as you like — no
     // pure build won a single seed anywhere in the range above.
     // 200 -> 150. He was the second-toughest thing on the road and he is the one
     // enemy whose whole job is to be difficult to reach, which is a fair amount
@@ -1875,7 +1945,7 @@ export const MARCH_ORDER = [
   // the Rally Thug so the banner is up for his blast, the crow flying in behind the
   // column and overtaking it, the priest behind everything he mends. The owner has
   // since set the order himself, and it is the order the admin panel lists them in:
-  // "thug, tough thug, blocker thug, dark crow, shadow thug, giant thug, bomb thug,
+  // "thug, tough thug, blocker thug, dark crow, shadow thug, club giant, bomb thug,
   // archer thug, plague doctor, dark priest, rally thug, captain thug".
   //
   // THE PANEL LISTS A WAVE IN THE ORDER IT MARCHES, so for the panel to read this way
@@ -1885,6 +1955,8 @@ export const MARCH_ORDER = [
   // Bomb Thugs. tools/admin.mjs checks every table is in this order but the Bend's
   // boss finale, which leads with the boss on purpose.
   'light_inf', 'tough_inf', 'blocker_inf', 'crow', 'shadow_inf', 'heavy_inf',
+  // The Boulder Giant beside the Club Giant, the two giants together.
+  'boulder_giant',
   'bomb_inf', 'archer_inf', 'plague_inf', 'dark_priest', 'rally_inf',
   // AND THE BOSS LAST OF ALL, because groups spawn one after another and this
   // list is therefore the order they arrive in. A boss at the front of a wave is a
@@ -1918,7 +1990,9 @@ export const MARCH_ORDER = [
 // THE DARK CROW AND THE RALLY THUG CHANGED PLACES, at the owner's word.
 export const BOOK_ORDER = [
   'light_inf', 'tough_inf', 'archer_inf', 'blocker_inf', 'heavy_inf',
-  'plague_inf', 'dark_priest', 'shadow_inf', 'crow', 'bomb_inf', 'rally_inf'
+  'plague_inf', 'dark_priest', 'shadow_inf', 'crow', 'bomb_inf', 'rally_inf',
+  // And the Boulder Giant, newest of all.
+  'boulder_giant'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

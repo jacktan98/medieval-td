@@ -10,7 +10,7 @@ import { dropCorpse } from './corpses.js';
 import { detonate } from './bombs.js';
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
-import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS } from './audio.js';
+import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS, MELEE_SOUND } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
@@ -909,7 +909,7 @@ const swingPierce = (u, special, sneak) => Math.max(
 //
 // IT USED TO BE THE NEAREST ONE TO HIM, and that is a different rule with a visible
 // failure: the owner watched both crossbowmen in Winchester Castle empty their
-// quarrels into one Giant Thug while the militia beside it walked past. A giant is
+// quarrels into one Club Giant while the militia beside it walked past. A giant is
 // slow, so once it is the closest thing to a post it STAYS the closest thing for as
 // long as it lives, and "nearest to me" is a rule that locks on. Every tower in the
 // game already avoids this by ranking on distance REMAINING — see pickTarget in
@@ -1709,6 +1709,9 @@ export function updateUnits(state, dt) {
           // channel would silence all but one of them, which would make the boss
           // quieter the more of a fight he was in.
           if (u.foe.def.boss) play(HEAVY_STRIKE);
+          // AND A BLOW WITH A SOUND OF ITS OWN — the Boulder Giant bringing his boulder
+          // down on a man's head (`meleeSound`, MELEE_SOUND in src/audio.js).
+          if (u.foe.def.meleeSound) play(MELEE_SOUND[u.foe.def.meleeSound]);
           // AND WHOSE BLOW IT WAS, kept on the man so the death sweep below can ask
           // who put him down. `struckFrom` is only a sign — it says which way to
           // fall, not who did it — so it could not answer this.

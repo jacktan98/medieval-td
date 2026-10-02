@@ -7,9 +7,19 @@ they walk in and an Attack for the blow — plus a death pose in `assets/dead/`:
 |------------------------------------|-----------------------------------|--------------|----------------------------------------|
 | `Enemies_Thug_Default.png`         | `Enemies_Thug_Attack.png`         | `light_inf`  | the militia, in all 8 waves            |
 | `Enemies_Tough_Thug_Default.png`   | `Enemies_Tough_Thug_Attack.png`   | `tough_inf`  | the same man in low plate, 200 health  |
-| `Enemies_Giant_Thug_Default.png`   | `Enemies_Giant_Thug_Attack.png`   | `heavy_inf`  | the heavy, waves 4-8, in growing packs |
+| `Enemies_Club_Giant_Default.png`   | `Enemies_Club_Giant_Attack.png`   | `heavy_inf`  | the Club Giant (once the Giant Thug), waves 4-8, in growing packs |
 | `Enemies_Shadow_Thug_Default.png`  | `Enemies_Shadow_Thug_Attack.png`  | `shadow_inf` | masked, sword up at rest and thrust out swinging; invisible unless a soldier has hold of him |
 | `Enemies_Rally_Thug_Default.png`   | `Enemies_Rally_Thug_Attack.png`   | `rally_inf`  | helmeted, sword and a banner on his back; adds half again to the blows of everything physical within 150px |
+
+**The Boulder Giant has three living drawings** (`boulder_giant`), like the Plague
+Doctor: `Enemies_Boulder_Giant_Default.png` (walking, and his card and encyclopedia
+picture), `Enemies_Boulder_Giant_Ranged_Attack.png` (hurling a boulder from the basket
+on his back — his `attack`) and `Enemies_Boulder_Giant_Melee_Attack.png` (bringing
+one down on a soldier's head — his `melee` attack). All three stand on his shadow at
+source (240, 324). The boulder he throws is `assets/projectiles/Enemies_Boulder_Giant_Boulder.png`:
+30 physical to every man within 100px of where it lands, two ranks of plate broken;
+his blow in melee is 30 to one man. Either way `Boulder_hit` sounds as it hits.
+800 health, low physical plate, the Club Giant's pace, 40 gold, 2 lives.
 
 **The Tough Thug is drawn in the Thug's box** — 96 wide against 96, 119 tall
 against 116 — and his shadow sits at source (260.0, 304.5) in both poses. He is

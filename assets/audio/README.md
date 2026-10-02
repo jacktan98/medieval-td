@@ -23,7 +23,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Pope_kill_enemy.mp3, Monk_kill_enemy.mp3,
                       Flask_Break.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
-                      War_cry.mp3, Bomb_sound.mp3,
+                      War_cry.mp3, Bomb_sound.mp3, Boulder_hit.mp3,
                       Crow_dies.mp3, Wings_flap.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
@@ -247,6 +247,7 @@ and it now means "how long a lull has to be before the game forgets".
 | **a paladin swings** — Category B | `Paladin_attack` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
+| **a Boulder Giant's boulder hits** — thrown and landing, or brought down on a man's head in melee — Category B | `Boulder_hit` |
 | **a dark crow is shot down**, whatever shot him — Category B | `Crow_dies` |
 | **a dark crow's wings come down**, if the last play has finished — whole, one at a time, 1.25x speed, soft at 0.35 | `Wings_flap` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
@@ -358,7 +359,7 @@ cut-down version of the same courtesy — no share rules, but never the same tak
 twice running, because a sword making one identical noise forty times a wave is
 the machine-gun problem all over again.
 
-**A giant thug answers with the common thug's line**, there being one enemy
+**A club giant answers with the common thug's line**, there being one enemy
 voice so far. Silence for the giant would read as a bug rather than as a gap.
 
 **A TIER CAN HAVE ITS OWN VOICE, and the Musketeer Post is the first.** It is an

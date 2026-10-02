@@ -1345,7 +1345,7 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
   // AND THEY SHOOT THE MAN NEAREST THE EXIT, not the man nearest themselves.
   //
   // THE OWNER'S REPORT: "i see the both of them attacking a giant continuously without
-  // switching target". That is what "nearest to me" does on a board with a Giant Thug
+  // switching target". That is what "nearest to me" does on a board with a Club Giant
   // on it — a giant walks at 50 against a thug's 60, so once it is the closest thing
   // to the gatehouse it STAYS the closest thing for as long as it lives, and every
   // bolt from both men goes into it while the wave walks past.
@@ -2044,7 +2044,7 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
   // Checked as a whole-board claim rather than as a per-wave ladder, because a single
   // giant slipping back into any wave is the thing that would undo it.
   const giants10 = iron.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants10.every(n => n === 0), 'and it sends no Giant Thugs at all, on any wave',
+  ok(giants10.every(n => n === 0), 'and it sends no Club Giants at all, on any wave',
     giants10.join(','));
   {
     // AND IT IS THE FIRST BOARD SINCE STAGE 3 TO SEND NONE, which is the claim worth

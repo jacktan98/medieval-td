@@ -257,7 +257,7 @@ so how big a man appears is decided by how big you draw him, not by any number i
 the code. The six fighting men and the three engineers currently stand 21.5 to
 23.2 game px tall measured from the shadow to the top of the head — that spread
 is the artwork agreeing with itself, and it is what "one scale for everything"
-means in practice. The Giant Thug at 30px is the only figure meant to break it.
+means in practice. The Club Giant at 30px is the only figure meant to break it.
 
 ## After uploading
 
@@ -276,7 +276,7 @@ to.
 The row under the **Next wave** button previews what the wave holds — a face and
 a count per kind — and it draws each enemy from the same `spriteTrim` the board
 does, scaled so the tallest drawing in the game fills 26px and everything else
-comes out in proportion. So the Giant Thug is visibly bigger in that row exactly
+comes out in proportion. So the Club Giant is visibly bigger in that row exactly
 as he is on the road, and a re-export that changes a figure's height changes his
 size in the HUD with no number to update.
 

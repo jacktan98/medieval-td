@@ -559,7 +559,7 @@ export const aspect = key => ui[key].trim[2] / ui[key].trim[3];
 // How big a FIGURE is drawn in the info box, as a multiple of the board's SCALE.
 //
 // A multiple, not a box, and that is the whole point. Fitting every portrait
-// into one square would draw a Giant Thug and a Thug the same size, which is a
+// into one square would draw a Club Giant and a Thug the same size, which is a
 // lie about the only thing that distinguishes them. One factor keeps them all in
 // proportion to each other, exactly as the board does.
 //

@@ -221,12 +221,12 @@ function figureOf(def) {
 // OR AS MUCH LESS AS IT TAKES TO FIT, which is the second half and it is new.
 //
 // The info box shows ONE man, big, on a plate of his own; the book shows twenty
-// in a grid, and at the box's own scale they crowded their cards — a Giant Thug
+// in a grid, and at the box's own scale they crowded their cards — a Club Giant
 // reached 45px left of where he stands and left the name beside him a column
 // barely wide enough for it. 0.9 is the artist's number, asked for by eye.
 //
 // The cap exists because that eye was looking at a drawing that has since been
-// redrawn. The Giant Thug now rests with his club shouldered above his head, and
+// redrawn. The Club Giant now rests with his club shouldered above his head, and
 // his box went from 162 source px to 212 — at a flat 0.9 he is 62.6px tall in a
 // 60px card and his club is sawn off by the outline. So the factor is the
 // artist's number OR whatever fits, whichever is smaller, exactly as
@@ -317,7 +317,7 @@ const FIGURE_SPAN = anchored(FIGURES);
 // The two picture slots. They are DIFFERENT WIDTHS on purpose: a building
 // shrinks to fit its slot, so it can be given a narrow one, while a figure is
 // drawn at the fixed PORTRAIT_SCALE and its slot has to be wide enough for the
-// widest man in the game — the Giant Thug, whose club reaches 45px left of the
+// widest man in the game — the Club Giant, whose club reaches 45px left of the
 // spot he stands on. One slot sized for both would either crop him or waste
 // 30px of every tower card's text.
 //
@@ -390,7 +390,7 @@ export function towerArt(def) {
 //
 // HE IS ALLOWED TO OVERHANG HIS CELL, which is the whole idea and it took two
 // wrong answers to get to. Fitting him strictly inside the army's cell shrank him
-// to 81% — and 81% of the Captain is SHORTER than the Giant Thug, which is a boss
+// to 81% — and 81% of the Captain is SHORTER than the Club Giant, which is a boss
 // that looks less impressive than the creature below him in the same list. Letting
 // him size the cell instead is the other failure: he is 18% wider than the Giant,
 // so the cell grew 6px, the text column lost them, and three unrelated enemies'

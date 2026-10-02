@@ -35,7 +35,7 @@ import {
   adminWaves, adminGold, setStartGold, goldStep, goldStepper,
   statStep, countStep, PIN, ADMIN_BTN, mapSelect, mapList, mapOptions, labelW, waveTabs, tapAdmin,
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, PROGRESS_BTN, CLOSE_BTN,
-  PREV_BTN, NEXT_BTN, TABS, ROW_H, WAVE_ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y,
+  PREV_BTN, NEXT_BTN, TABS, ROW_H, WAVE_ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y, WAVE_COLS, UNIT_ROW_H,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
   modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
   diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
@@ -694,8 +694,9 @@ console.log('\nAnything, in any wave\n');
 
   // The two columns must not overlap each other, and the right-hand one must stay
   // on the panel — the same pair of checks the units tab's columns already get.
-  const lefts = rows.filter((_, i) => i % 2 === 0);
-  const rights = rows.filter((_, i) => i % 2 === 1);
+  // THREE COLUMNS since the Boulder Giant made thirteen: each column against the next.
+  const lefts = rows.filter((_, i) => i % WAVE_COLS === WAVE_COLS - 2);
+  const rights = rows.filter((_, i) => i % WAVE_COLS === WAVE_COLS - 1);
   // TWO STEPPERS PER CELL NOW — how many, and how fast — so there are three gaps
   // to keep open across a row rather than one: count clear of the label, rate
   // clear of count, and the right column clear of the panel edge.
@@ -734,10 +735,10 @@ console.log('\nAnything, in any wave\n');
   // every 1.60s" ran under the minus button on all four absent rows. A screenshot
   // caught it, which is the wrong thing to be relying on.
   //
-  // 0.58em for the 19px bold name and 0.52em for the 13px subtitle, both rounded
+  // 0.58em for the 13px bold name and 0.52em for the 11px subtitle, both rounded
   // UP from what system-ui actually sets, because the check is allowed to be
   // pessimistic and is not allowed to pass a row that does not fit.
-  const LABEL_W = rows[0].stepX - rows[0].x - 12;
+  const LABEL_W = rows[0].stepX - rows[0].x - 8;
   const widest = (list, em, size) =>
     list.reduce((w, t) => Math.max(w, t.length * size * em), 0);
   const names = MARCH_ORDER.map(t => enemyTypes[t].name);
@@ -747,12 +748,12 @@ console.log('\nAnything, in any wave\n');
   // it got a stepper of its own, so what is left is short — but it is still
   // checked, because the next thing added to that line will not be.
   const subs = ['not in this wave', `${MARCH_ORDER.length}th in`];
-  ok(widest(names, 0.58, adminPx(17)) < LABEL_W,
+  ok(widest(names, 0.58, adminPx(13)) < LABEL_W,
     'the longest enemy name fits its column',
-    `${Math.round(widest(names, 0.58, adminPx(17)))} of ${LABEL_W}px, "${names.reduce((a, b) => a.length > b.length ? a : b)}"`);
-  ok(widest(subs, 0.52, adminPx(13)) < LABEL_W,
+    `${Math.round(widest(names, 0.58, adminPx(13)))} of ${Math.round(LABEL_W)}px, "${names.reduce((a, b) => a.length > b.length ? a : b)}"`);
+  ok(widest(subs, 0.52, adminPx(11)) < LABEL_W,
     'and so does the longest line under it',
-    `${Math.round(widest(subs, 0.52, adminPx(13)))} of ${LABEL_W}px`);
+    `${Math.round(widest(subs, 0.52, adminPx(11)))} of ${Math.round(LABEL_W)}px`);
 }
 
 // --- the star rating ------------------------------------------------------------
@@ -868,18 +869,32 @@ console.log('\nWhat fits, and what you can hit\n');
   for (let p = 0; p < pages; p++) {
     const rows = unitRows(p);
     if (!rows.length) overrun.push(`page ${p + 1} is empty`);
-    const last = rows[rows.length - 1];
-    if (last && last.y + ROW_H > RESET_BTN.y) overrun.push(`page ${p + 1} runs into the footer`);
+    // Above the line of small print over the footer, not just the footer.
+    if (rows.some(r => r.y + UNIT_ROW_H > RESET_BTN.y - 20)) overrun.push(`page ${p + 1} runs into the footer`);
   }
   ok(!overrun.length, 'and every page of units fits its page', `${pages} pages`);
+  ok(unitRows(0).length >= 14, 'and a page holds fourteen units, two columns of seven',
+    `${unitRows(0).length} on page 1`);
 
-  // The two stepper columns must not touch, or a tap on "more health" lands on
-  // "less damage".
-  const s1 = stepper('hp', 100, 'hp');
-  const s2 = stepper('damage', 100, 'damage');
-  ok(s1.plus.x + s1.plus.w < s2.minus.x, 'the two stat columns keep clear of each other',
+  // The stepper columns must not touch, or a tap on "more health" lands on "less
+  // damage" — within a cell, and across the two columns of cells. And a row's tap
+  // boxes stay inside its pitch.
+  const page0 = unitRows(0);
+  const leftCell = page0.find(r => r.col === 0), rightCell = page0.find(r => r.col === 1);
+  const s1 = leftCell.steps.hp, s2 = leftCell.steps.damage;
+  ok(s1.plus.x + s1.plus.w + 2 * STEP_PAD <= s2.minus.x, 'the two stat columns keep clear of each other',
     `${s2.minus.x - (s1.plus.x + s1.plus.w)}px apart`);
-  ok(s2.plus.x + s2.plus.w <= PANEL.x + PANEL.w, 'and the right-hand one stays on the panel');
+  ok(s2.plus.x + s2.plus.w + STEP_PAD < rightCell.x, 'and the left cell clears the right cell',
+    `${rightCell.x - (s2.plus.x + s2.plus.w)}px apart`);
+  ok(rightCell.steps.damage.plus.x + rightCell.steps.damage.plus.w <= PANEL.x + PANEL.w - 16,
+    'and the right-hand column stays on the panel');
+  ok(s1.minus.h + 2 * STEP_PAD <= UNIT_ROW_H, 'and a unit row\'s tap boxes stay inside its pitch',
+    `${s1.minus.h + 2 * STEP_PAD} tapped, ${UNIT_ROW_H} pitch`);
+  // AND THE NAME FITS BESIDE THEM at the type the row is drawn in (15px bold).
+  const unitLabelW = s1.minus.x - leftCell.x - 10;
+  const longestUnit = units().reduce((w, u) => Math.max(w, u.name.length * adminPx(15) * 0.58), 0);
+  ok(longestUnit < unitLabelW * 1.25, 'and the longest unit name fits beside them (shrunk at most a fifth)',
+    `${Math.round(longestUnit)} at 15px, ${Math.round(unitLabelW)}px to fit in`);
 
   ok(mapOptions().length === levels.length, 'the map list has a row per map', `${levels.length}`);
 

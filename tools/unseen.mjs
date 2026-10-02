@@ -337,8 +337,11 @@ console.log('\n--- his blow lands whole on every man in the game ---\n');
     def.damage > 0 && typeOf(def) === 'physical' &&
     Object.values(men).every(m => taken(def.damage, 'physical', m.armour, pierceOf(def)) === def.damage));
   const rank = flat.filter(([, def]) => !def.boss);
-  ok(rank.length === 1 && rank[0][0] === 'shadow_inf',
-    'and he is the only creature on the road whose blow is flat against all of them',
+  // AND THE BOULDER GIANT, since the owner gave him the same two ranks: "Pierce
+  // Physical Damage: 2". Named here rather than allowed by count, so a third that
+  // arrives flat by accident still fails.
+  ok(rank.map(([id]) => id).sort().join() === 'boulder_giant,shadow_inf',
+    'and he and the Boulder Giant are the only creatures on the road whose blow is flat against all of them',
     rank.map(([id]) => id).join(', ') || 'none');
   ok(flat.some(([, def]) => def.boss),
     'a thing only the boss could do until now',

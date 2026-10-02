@@ -11,7 +11,8 @@ drawing each of them needs — see "Why only one file" below:
 | `Enemies_Rally_Thug_Dead.png` | the rally thug               | 45 x 17 px  |
 | `Enemies_Blocker_Thug_Dead.png`| the blocker thug            | 33 x 16 px  |
 | `Enemies_Dark_Priest_Dead.png`| the dark priest              | 36 x 17 px  |
-| `Enemies_Giant_Thug_Dead.png` | the giant                    | 57 x 25 px  |
+| `Enemies_Club_Giant_Dead.png` | the club giant               | 57 x 25 px  |
+| `Enemies_Boulder_Giant_Dead.png`| the boulder giant, his basket spilled | 58 x 25 px |
 | `Enemies_Plague_Thug_Dead.png`| the plague thug              | 57 x 20 px  |
 | `Enemies_Archer_Thug_Dead.png`| the archer thug              | 44 x 16 px  |
 | `Enemies_Dark_Crow_Dead.png`  | the dark crow, after his fall | 16 x 6 px  |
@@ -182,7 +183,8 @@ and paste the rect in as `deadTrim`. As shipped:
 | `Enemies_Dark_Priest_Dead.png`| `[169, 214, 174, 84]`| `[0.187, 0.804]` |
 | `Enemies_Archer_Thug_Dead.png`| `[149, 218, 214, 76]`| `[0.161, 0.875]` |
 | `Enemies_Dark_Crow_Dead.png`  | `[216, 241, 80, 30]` | `[0.456, 0.833]` |
-| `Enemies_Giant_Thug_Dead.png`| `[117, 195, 278, 122]`| `[0.171, 0.783]` |
+| `Enemies_Club_Giant_Dead.png`| `[117, 195, 278, 122]`| `[0.171, 0.783]` |
+| `Enemies_Boulder_Giant_Dead.png`| `[114, 196, 284, 121]`| `[0.158, 0.876]` |
 | `Enemies_Plague_Thug_Dead.png`| `[116, 207, 280, 97]`| `[0.118, 0.826]` |
 | `Soldiers_Spearman_Dead.png` | `[135, 215, 241, 82]` | `[0.118, 0.841]` |
 | `Soldiers_Pikeman_Dead.png`  | `[138, 217, 237, 77]` | `[0.120, 0.896]` |

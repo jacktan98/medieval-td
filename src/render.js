@@ -43,7 +43,7 @@ import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
 import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PROGRESS_BTN, PREV_BTN, NEXT_BTN,
          mapSelect, mapList, mapOptions, waveTabs,
-         groupRows, unitRows, unitPages, stepper, goldStepper, adminGold, keys,
+         groupRows, unitRows, unitPages, unitCols, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          shipped, touched, COLS, SUMMARY_Y,
          waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
@@ -5250,7 +5250,7 @@ export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art:
 
 // The portrait slot, sized to the BIGGEST figure rather than the other way
 // round. Every portrait is drawn at INFO_PORTRAIT * SCALE — one factor, so a
-// Giant Thug is genuinely bigger than a Thug — and the largest of them is the
+// Club Giant is genuinely bigger than a Thug — and the largest of them is the
 // heavy at 186 x 162 source, which lands at 61 x 53. 64 x 56 holds it.
 const PORTRAIT = { w: 58, h: 50 };
 
@@ -5285,7 +5285,7 @@ function drawInfo(ctx, state) {
   // line of its ground shadow, so the figure reads as standing on the bar.
   //
   // SIZED TO THE FIGURE: 36 holds everything up to a thug, and a bigger one — a
-  // Giant Thug — gets a bigger medallion rather than spilling out of it. The
+  // Club Giant — gets a bigger medallion rather than spilling out of it. The
   // FEET stay on one line whatever the size, so the bar never moves up or down
   // as the player taps from one unit to the next; a bigger medallion grows up
   // and out round them.
@@ -5787,7 +5787,7 @@ function starRow(ctx, cx, cy, r, filled, onLight = true) {
 // NOTHING HERE IS STRETCHED TO FIT AND NOTHING IS CENTRED ON ITS BOUNDING BOX.
 // Every building is drawn at one shared factor and every figure at another, so
 // the sizes on the page mean what they mean on the board — a Militia Camp really
-// is bigger than a Catapult, a Giant Thug really is bigger than a Thug. And each
+// is bigger than a Catapult, a Club Giant really is bigger than a Thug. And each
 // drawing is placed on its own ground shadow, so a column of towers shares one
 // vertical axis and one ground line and so does a column of men. Both factors
 // are downscales of art already crisp at 1x, so nothing here is upscaled.
@@ -6804,27 +6804,42 @@ function panelButton(ctx, b, label, { on = false, live = true, size = adminPx(15
 // to. `note` is the small line under the value: the shipped figure when a number
 // has been moved, and otherwise whatever the caller wants said about it, which on
 // the Normal view is the Hard number it came from.
+// A COMPACT STEPPER — under 40 tall, or a value box under 52 wide: the waves tab's
+// three-column grid and the units tab's two columns — takes smaller type throughout,
+// and the value is shrunk further if it would still run past its box.
 function stepperRow(ctx, s, value, base, { live = true, note = null } = {}) {
   const moved = live && value !== base;
   const under = moved ? `was ${base}` : note;
+  const compact = s.value.h < 40 || s.value.w < 52;
+  const valuePx = compact ? 16 : 22, notePx = compact ? 9.5 : 12, noteDy = compact ? 10 : 12;
 
   ctx.save();
   ctx.globalAlpha = live ? 1 : 0.45;
-  panelButton(ctx, s.minus, '−', { size: adminPx(22), r: 7, live });
-  panelButton(ctx, s.plus, '+', { size: adminPx(22), r: 7, live });
+  panelButton(ctx, s.minus, '−', { size: adminPx(compact ? 18 : 22), r: 7, live });
+  panelButton(ctx, s.plus, '+', { size: adminPx(compact ? 18 : 22), r: 7, live });
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = moved ? '#E0B24C' : ADMIN_INK;
-  ctx.font = `700 ${adminPx(22)}px system-ui, sans-serif`;
-  ctx.fillText(String(value), s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 - (under ? 5 : 0));
+  fitFont(ctx, String(value), 700, adminPx(valuePx), s.value.w - 4);
+  ctx.fillText(String(value), s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 - (under ? (compact ? 4 : 5) : 0));
 
   if (under) {
     ctx.fillStyle = ADMIN_DIM;
-    ctx.font = `${adminPx(12)}px system-ui, sans-serif`;
-    ctx.fillText(under, s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 + 12);
+    fitFont(ctx, under, 400, adminPx(notePx), s.value.w - 2);
+    ctx.fillText(under, s.value.x + s.value.w / 2, s.value.y + s.value.h / 2 + noteDy);
   }
   ctx.restore();
+}
+
+// The largest size, from `px` down, at which `text` fits `w` in this weight.
+function fitFont(ctx, text, weight, px, w) {
+  let size = px;
+  for (;;) {
+    ctx.font = `${weight} ${size}px system-ui, sans-serif`;
+    if (size <= 7 || ctx.measureText(text).width <= w) return size;
+    size -= 0.5;
+  }
 }
 
 function columnHead(ctx, x, w, label) {
@@ -7047,14 +7062,13 @@ function drawAdminWaves(ctx, a) {
     // from the same place the game gets it. See wavePlace in admin.js.
     const place = r.place;
 
-    // 17px, not the 19 the units tab uses. The label column lost width when the
-    // second stepper arrived — 134px against the old 232 — and "Plague Doctor"
-    // sets at 143 in 19px bold. tools/admin.mjs is what says so, and it checks the
-    // longest name in the game rather than a number typed here, so a creature with
-    // a longer one fails the check instead of being drawn through the minus button.
+    // 13px NOW, IN A COLUMN OF ABOUT 93: the grid went to three columns when the
+    // Boulder Giant made thirteen, and the owner allowed the type to shrink for it.
+    // Shrunk further, half a pixel at a time, if a long name would still reach the
+    // count stepper — tools/admin.mjs checks the longest name at 13px fits anyway.
     ctx.fillStyle = here ? ADMIN_INK : ADMIN_DIM;
-    ctx.font = `700 ${adminPx(17)}px system-ui, sans-serif`;
-    ctx.fillText(r.def.name, r.x, r.y + 16);
+    fitFont(ctx, r.def.name, 700, adminPx(13), r.order.w);
+    ctx.fillText(r.def.name, r.x, r.y + 10);
 
     // AND THE PLACE UNDER IT IS A BUTTON NOW, which is why it is drawn as a pill
     // rather than as the bare words it was.
@@ -7077,22 +7091,22 @@ function drawAdminWaves(ctx, a) {
     // away and reads on the row the moment there is one of anything.
     if (here) {
       const label = `${ordinal(place)} in`;
-      ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
-      const w = Math.ceil(ctx.measureText(label).width) + (total > r.count ? 30 : 18);
+      ctx.font = `${adminPx(11)}px system-ui, sans-serif`;
+      const w = Math.ceil(ctx.measureText(label).width) + (total > r.count ? 26 : 16);
       ctx.fillStyle = 'rgba(255,239,212,0.10)';
-      pill(ctx, r.x, r.y + 24, w, 20, 10);
+      pill(ctx, r.x, r.y + 19, w, 17, 8.5);
       ctx.fillStyle = ADMIN_DIM;
-      ctx.fillText(label, r.x + 9, r.y + 34);
+      ctx.fillText(label, r.x + 8, r.y + 28);
       // The caret, only when there is somewhere to move to — a wave sending one
       // kind of creature has an order of exactly one and nothing to reorder.
       if (total > r.count) {
         ctx.fillStyle = 'rgba(255,239,212,0.45)';
-        caretUp(ctx, r.x + w - 12, r.y + 34);
+        caretUp(ctx, r.x + w - 11, r.y + 28);
       }
     } else {
       ctx.fillStyle = ADMIN_DIM;
-      ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
-      ctx.fillText('not in this wave', r.x, r.y + 34);
+      ctx.font = `${adminPx(11)}px system-ui, sans-serif`;
+      ctx.fillText('not in this wave', r.x, r.y + 28);
     }
 
     // THE COUNT AT THE CHOSEN DIFFICULTY, with the number it came from under it on
@@ -7256,55 +7270,45 @@ function drawAdminUnits(ctx, a) {
   const rows = unitRows(a.page);
   const pages = unitPages();
 
-  columnHead(ctx, COLS.hp, 200, 'HEALTH');
-  columnHead(ctx, COLS.damage, 200, 'ATTACK DAMAGE');
+  // TWO COLUMNS OF SEVEN, fourteen a page (see unitRows), each column with its own
+  // two heads over its steppers.
+  for (const col of [0, 1]) {
+    const c = unitCols(col);
+    columnHead(ctx, c.hp, c.w, 'HEALTH');
+    columnHead(ctx, c.damage, c.w, 'DAMAGE');
+  }
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
   for (const u of rows) {
+    // The name and the tower under it, in the room left of the health stepper —
+    // shrunk to fit if a long one would reach it.
+    const labelW = u.steps.hp.minus.x - u.x - 10;
     ctx.fillStyle = ADMIN_INK;
-    ctx.font = `700 ${adminPx(19)}px system-ui, sans-serif`;
-    ctx.fillText(u.name, ADMIN_PANEL.x + 16, u.y + 16);
+    fitFont(ctx, u.name, 700, adminPx(15), labelW);
+    ctx.fillText(u.name, u.x, u.y + 11);
 
     ctx.fillStyle = ADMIN_DIM;
-    ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
-    ctx.fillText(u.of, ADMIN_PANEL.x + 16, u.y + 34);
+    fitFont(ctx, u.of, 400, adminPx(11.5), labelW);
+    ctx.fillText(u.of, u.x, u.y + 27);
 
-    if (u.hp) {
-      stepperRow(ctx, stepper('hp', u.y, 'hp'), u.def.hp, shipped(`${u.id}|hp`));
-    } else {
-      // A tower's man cannot be hurt, so there is no health to edit — said in
-      // words rather than left blank, because an empty column reads as a bug.
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255,239,212,0.28)';
-      ctx.font = `${adminPx(14)}px system-ui, sans-serif`;
-      ctx.fillText('out of reach', COLS.hp + 100, u.y + 20);
-      ctx.restore();
-    }
-
-    if (u.dmg) {
-      stepperRow(ctx, stepper('damage', u.y, 'damage'), u.def.damage, shipped(`${u.id}|damage`));
-    } else {
-      // A creature with no attack at all — the Dark Crow — said in words for the
-      // same reason as above.
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255,239,212,0.28)';
-      ctx.font = `${adminPx(14)}px system-ui, sans-serif`;
-      ctx.fillText('no attack', COLS.damage + 100, u.y + 20);
-      ctx.restore();
+    for (const [field, has, none] of [['hp', u.hp, 'out of reach'], ['damage', u.dmg, 'no attack']]) {
+      const st = u.steps[field];
+      if (has) {
+        stepperRow(ctx, st, u.def[field], shipped(`${u.id}|${field}`));
+      } else {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255,239,212,0.28)';
+        ctx.font = `${adminPx(12)}px system-ui, sans-serif`;
+        ctx.fillText(none, (st.minus.x + st.plus.x + st.plus.w) / 2, u.y + st.minus.h / 2);
+        ctx.restore();
+      }
     }
   }
 
-  // How far one tap moves a number, said once for the page rather than on every
-  // row. It is worth saying at all because the step is PROPORTIONAL — a tap on
-  // the giant's health moves 75 and a tap on a spearman's damage moves 1 — and a
-  // panel whose buttons do different things on different rows without saying so
-  // reads as broken.
   ctx.fillStyle = 'rgba(255,239,212,0.40)';
   ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
   ctx.fillText('Each tap moves a stat by about a twentieth of where it already is.',
@@ -7320,6 +7324,7 @@ function drawAdminUnits(ctx, a) {
     (PREV_BTN.x + PREV_BTN.w + NEXT_BTN.x) / 2, PREV_BTN.y + PREV_BTN.h / 2 + 1);
   ctx.textAlign = 'left';
 }
+
 
 // The keypad. Four rings for the digits, twelve keys, and no submit — the code is
 // checked the moment the fourth digit lands, so a correct PIN is exactly four
