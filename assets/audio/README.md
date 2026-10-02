@@ -50,7 +50,7 @@ assets/audio/villagers/  Villager_selected_1.mp3 .. Villager_selected_3.mp3,
                          Villager_say_runnn.mp3, Villager_say_nooo.mp3,
                          Villager_say_thugs_are_here.mp3, Villager_say_hide.mp3,
                          Villager_say_oh_no.mp3, Villager_say_here_they_come.mp3,
-                         Villager_enemy_selected_1.mp3 .. Villager_enemy_selected_3.mp3,
+                         Villager_enemy_selected_1.mp3, Villager_enemy_selected_2.mp3,
                          Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3,
                          Villager_enemy_say_you_are_on_forbidden_ground.mp3
 
@@ -200,7 +200,7 @@ and it now means "how long a lull has to be before the game forgets".
 | an enemy is selected | `Thug_1`, or its def's own `voice` |
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
-| on **stages 14 and 15**, a **thug or enemy villager** is selected | one of `Villager_enemy_selected_1` to `_3`, at random (Category A) — and, by the huts, the tap sets him on the road |
+| on **stages 14 and 15**, a **thug or enemy villager** is selected | one of `Villager_enemy_selected_1` or `_2`, at random (Category A) — and, by the huts, the tap sets him on the road |
 | on **stage 14**, an **Elite Archer** at the barricade is selected | `Archery_1..5`, as the Crossbow Tower answers |
 | the first enemy of wave 1 appears on **stages 1, 6 and 11** | `Villager_say_runnn`, once, **before everything**: takes the channel and is never cut off |
 | the first enemy of wave 1 appears on **stages 2, 7 and 12** | `Villager_say_hide`, the same way |

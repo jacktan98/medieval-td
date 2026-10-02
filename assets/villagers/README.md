@@ -527,7 +527,7 @@ comes the village shouts "get rid of these intruders, brothers!", and it still c
 
 Nobody here is on your side either (`quarters` in src/villagers.js). As the first
 wave comes the camp shouts "you are on forbidden ground!", and a tap on any of them
-plays one of the three `Villager_enemy_selected` lines. As the level
+plays one of the two `Villager_enemy_selected` lines. As the level
 lists them: 1 the smith at the brazier, 2 the smith at the anvil, 3–10 the eight
 thugs behind the long wall, 11 the Rally Thug at its corner, 12 the thug by the left
 hut and 13 the enemy villager between the huts.

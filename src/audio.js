@@ -507,7 +507,6 @@ const paths = {
   // sets them on the road. See `hollow` in src/villagers.js.
   villager_enemy_selected_1: 'assets/audio/villagers/Villager_enemy_selected_1.mp3',
   villager_enemy_selected_2: 'assets/audio/villagers/Villager_enemy_selected_2.mp3',
-  villager_enemy_selected_3: 'assets/audio/villagers/Villager_enemy_selected_3.mp3',
   villager_runnn:    'assets/audio/villagers/Villager_say_runnn.mp3',
   villager_nooo:     'assets/audio/villagers/Villager_say_nooo.mp3',
   // What the village shouts when the first wave comes: stage 2's "thugs are here",
@@ -893,7 +892,7 @@ export const CUE = {
   // A villager's own answer when tapped — see selectionCue.
   villager:     ['villager_selected_1', 'villager_selected_2', 'villager_selected_3'],
   // And Dark Hollow's, who are nobody's friend — see `voice` on the `hollow` play.
-  enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2', 'villager_enemy_selected_3'],
+  enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
