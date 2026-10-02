@@ -657,8 +657,9 @@ export const GAIN = {
   things_land: 1.0,
   // The hammer's knocks and the reel, soft: work going on, not the battle.
   hammering_nail: 0.668,
-  // The anvil, as soft as stage 5's hammer — then 40% down, at the owner's word.
-  anvil_hit: 0.4,
+  // The anvil, as soft as stage 5's hammer — then 40% down, and then to 15% of a
+  // voice, at the owner's word (0.333 x the background bus's 0.45).
+  anvil_hit: 0.333,
   fishing_reel: 0.332,
   // Stage 7's sizzle and fountain, soft like the reel and the river — the sizzle
   // then 20% up, by ear, and 20% again.
@@ -673,7 +674,9 @@ export const GAIN = {
   desert_wind: 1.111,
   // The lumberjack's chops, soft like the hammer's knocks — then half as loud again —
   // and the crows softer still.
-  cutting_tree: 0.75,
+  // At the owner's 35% of a voice: 0.736 x LIFT's 1.057 x the bus's 0.45. (It was
+  // 0.75, which the peak ceiling held to 0.735 anyway — the same 35%.)
+  cutting_tree: 0.736,
   crows_cawing: 0.446,
   // The factory running, soft like the smith's weld: the board's work, not the battle.
   factory: 0.444,
@@ -854,7 +857,8 @@ export const GAIN = {
   // other shots (40 against 45); and the Captain's lines, which the LOUDER rule
   // takes straight to the ceiling, trimmed back to 300 against a voice's 100 — his
   // kill line to 400, and his fall left where it was and lifted a little (LIFT).
-  sell: 0.8,
+  // 35% of a voice, at the owner's word (from 36%): 0.778 x the bus's 0.45.
+  sell: 0.778,
   star: 0.8,
   arrow_shot: 0.889,
   captain_picked: 0.927,

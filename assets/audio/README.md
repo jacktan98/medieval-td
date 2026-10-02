@@ -216,10 +216,10 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 4's smith has his pipe in the fire (the second pipe pose) | `Steel_welding`, soft, looping until he pulls it back (Category B; stops on pause) |
 | a villager's plank, ballista part or box **lands** (stages 4 and 5) | `Things_land_on_ground`, soft (Category B) |
 | stage 5's hammerer brings the hammer down (twice a round) | one knock cut out of `Hammering_nail` — the first knock on the first blow, the second on the second (Category B, soft) |
-| stage 15's smith at the anvil brings the hammer down (twice a round) | one hit cut out of `Anvil_hit_sound` — the first and third of its nineteen, at 0.16s and 1.62s, with their ring, by turns (Category B, softer than stage 5's hammer) |
+| stage 15's smith at the anvil brings the hammer down (twice a round) | one hit cut out of `Anvil_hit_sound` — the first and third of its nineteen, at 0.16s and 1.62s, with their ring, by turns (Category B, 15% of a voice) |
 | stage 6's angler tugs at his line | `Fishing_reel`, soft, looping for as long as he tugs (Category B; stops on pause) |
 | stage 6 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `River_water_flowing` |
-| stage 10's lumberjack's axe goes into the tree (twice a round) | one chop cut out of `Cutting_Tree` — its two loudest, at 2.57s and 4.38s, one each chop by turns (Category B, soft) |
+| stage 10's lumberjack's axe goes into the tree (twice a round) | one chop cut out of `Cutting_Tree` — its two loudest, at 2.57s and 4.38s, one each chop by turns (Category B, 35% of a voice) |
 | stage 10 is being played (background, soft, looping) | `Bird_chirping` at half the map's level, and `Crows_cawing`, softer than the rest |
 | stage 11's factory runs (twice each time the box carrier is inside) | `Factory_sound`, whole (Category B, soft); the door and window lit and the chimneys' smoke thicker while it sounds |
 | stage 11 is being played (background, soft, looping) | `Bird_chirping` and `Crows_cawing`, as on stage 10 |
@@ -241,7 +241,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a **pope's** missile kills an enemy | `Pope_kill_enemy` |
 | any other barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
-| a tower is **sold** | `Sell_Tower` |
+| a tower is **sold** | `Sell_Tower` (35% of a voice) |
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a spearman, pikeman or swordsman swings** — Category B | `Attack_1/2/3` |
 | **a paladin swings** — Category B | `Paladin_attack` |
