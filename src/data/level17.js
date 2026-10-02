@@ -165,8 +165,9 @@ export const level17 = {
     { x: 111.8, y: 201.8, s: 2.5, g: 247, smoke: 0.5 },
     { x: 109.6, y: 357.1, s: 2.5, g: 402, smoke: 0.5 }
   ],
-  // The dark woods' own sound, exactly as on Dark Hollow Woods.
-  ambience: [{ clip: 'dark_background', level: 1 }, { clip: 'crows_cawing', level: 0.5 }],
+  // The dark woods' own sound, as on Dark Hollow Woods, and the fires crackling.
+  ambience: [{ clip: 'dark_background', level: 1 }, { clip: 'crows_cawing', level: 0.5 },
+             { clip: 'fire_crackling', level: 1 }],
 
   waves: stage15Waves,
   wavesExtended: stage15Waves,

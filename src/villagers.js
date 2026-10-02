@@ -555,8 +555,10 @@ const PLAYS = {
     // THE FIRST TIME, from where he is painted, he takes `first`: a natural curve
     // straight down and round to the door rather than stepping onto his usual line.
     // Carrying, he faces the player — turned left coming down, mirrored turning right.
+    // TAPPED, HE CARRIES ON (`keepWorking`), at the owner's word. What a tap used to do —
+    // the box dropped, into the hut, out a Tough Thug — is kept below, unused.
     boxman: { who: 1, path: HOLLOW_WAY, first: [[168, 128], [178, 139], [193, 144], [214, 142.5]],
-              inside: 3, gone: 3, arm: 3, road: [[196, 170]] },
+              inside: 3, gone: 3, arm: 3, road: [[196, 170]], keepWorking: true },
     // THE TWO WHO ARM IN A HUT turn left and right where they stand. Tapped, each walks
     // up to his hut's door, his back to the player (`side`) — the man below the
     // top-left hut up and to the left, the drawing as it is; the man by the bottom hut
@@ -1421,8 +1423,12 @@ export const BOX_GROUND = { key: 'vill_box_on_ground', src: [208, 227, 96, 58], 
                             shadow: [-1.5, 14], r: [47.5, 16.5], fill: '#595959' };
 
 // A TAP ON ONE OF DARK HOLLOW'S FOUR: noted, and his round does the rest.
+// EXCEPT THE BOX CARRIER, at the owner's word: "remove the action when clicked. Let him
+// continue moving boxes even though he is clicked." A tap on him opens his card and
+// he answers, and he carries on.
 function hollowTap(vp, v) {
   vp.hollow = vp.hollow || {};
+  if (vp.plan.boxman && vp.plan.boxman.keepWorking && v.n === vp.plan.boxman.who) return;
   const c = vp.hollow[v.n];
   if (c) c.tapped = true;
 }

@@ -489,9 +489,9 @@ Nobody here is on your side. As the level lists them: 1 the thug between the two
 top huts, 2 carrying a box to the top hut, 3 below the top-left hut, 4 by the bottom
 hut, 5 the thug beside him. None of them greets, prays or hops. As the first wave
 comes the village shouts "get rid of these intruders, brothers!", and it still cries
-"nooo" as a star is lost. A tap on any of them plays one of the two
-`Villager_enemy_selected` lines and sets him on the road (`hollow` in
-src/villagers.js).
+"nooo" as a star is lost. A tap on any of them plays one of the
+`Villager_enemy_selected` lines and, all but the box carrier, sets him on the road
+(`hollow` in src/villagers.js).
 
 - **Tapped, every one of them** answers first (the voice takes priority over anything
   else speaking), stands where he is for **2 seconds**, and then walks **slowly** to
@@ -505,11 +505,10 @@ src/villagers.js).
   line), and in at the top hut's door, facing the player — turned left coming down
   (the carrying drawing as it is), mirrored once he turns right. The first time, from where he is painted, he just
   curves down to the door; three seconds inside; out empty-handed and
-  back up off the top; three seconds gone; back with the next box. **Tapped**, he
-  drops the box: its shadow spreads out from its centre on the ground as it falls,
-  and once down it is `Box_on_ground.png`, and stays there. He stands 2 seconds, goes
-  into the hut, and three seconds later comes out a **Tough Thug** and makes for the
-  road.
+  back up off the top; three seconds gone; back with the next box.
+  **Tapped**, he answers and carries on carrying, at the owner's word. (He used to
+  drop the box, go into the hut and come out a Tough Thug; that is kept in the code,
+  unused — `keepWorking` on `boxman`.)
 - **The man below the top-left hut** turns left and right. **Tapped**, he walks up to
   its door with his back to the player (`Villager_Back_Standing`, as drawn), and
   three seconds later comes back out an **Archer Thug** and makes for the road.

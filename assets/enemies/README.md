@@ -37,7 +37,11 @@ source (310, 215), flooded out to its black outline — lifted off both poses an
 drawn back behind him in strips along the pole, rippling more toward the free
 end (`RALLY_BANNER` in src/render.js). A redraw that moves the banner moves those
 numbers: `seed` must land on the cloth's brown and `pole` on the middle of the
-pole. The encyclopedia and the info card keep the still drawing.
+pole. The cut takes the cloth's black outline with it, 12px of it near the pole
+(any further takes the helmet's) and 30px out at the free end, whose top corner is a
+sharp point with a long outline. The bend is done once a frame on a scratch canvas
+at the drawing's own size, one pixel column at a time, and drawn in one piece —
+drawn as many thin strips straight onto the board, their edges met as black specks. The encyclopedia and the info card keep the still drawing.
 
 ## The Bomb Thug has no Attack, and four drawings that are all endings
 

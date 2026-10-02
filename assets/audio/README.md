@@ -211,7 +211,7 @@ and it now means "how long a lull has to be before the game forgets".
 | the first enemy of wave 1 appears on **stages 5 and 10** | `Villager_say_thugs_are_here`, the same way |
 | on **every stage**, **a star is lost** (lives drop below 18, then below 10) | `Villager_say_nooo`, **before everything**, like the first-wave shout |
 | stage 1, 2 or 3 is being played (background, soft, looping) | `Bird_chirping` at half the map's level |
-| stage 1, 3, 4, 5 or 7 is being played (background, soft, looping) | `Fire_crackling` — stage 1's campfire, stage 3's and stage 5's torches, stage 4's forge, stage 7's cooking fire |
+| stage 1, 3, 4, 5, 7 or 15 is being played (background, soft, looping) | `Fire_crackling` — stage 1's campfire, stage 3's and stage 5's torches, stage 4's forge, stage 7's cooking fire, stage 15's brazier and torches |
 | stage 5 is being played (background, soft, looping) | `River_water_flowing` |
 | stage 4's smith has his pipe in the fire (the second pipe pose) | `Steel_welding`, soft, looping until he pulls it back (Category B; stops on pause) |
 | a villager's plank, ballista part or box **lands** (stages 4 and 5) | `Things_land_on_ground`, soft (Category B) |

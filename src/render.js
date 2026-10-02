@@ -3375,7 +3375,7 @@ function drawFuseFire(ctx, fuse, x, y, phase) {
 // same place, so they share one spec. The encyclopedia and the info card keep the
 // still drawing.
 const RALLY_BANNER = { seed: [310, 215], pole: [[274, 190], [261.5, 210]], top: 178, tall: 80, wide: 100,
-  edge: 12, still: 6, reach: 70, amp: 3.5, wave: 90, speed: 0.6 };   // speed in ripples a second; 1.6 was too brisk for the owner
+  edge: 12, farEdge: 30, farFrom: 45, still: 6, reach: 70, amp: 3.5, wave: 90, speed: 0.6 };   // speed in ripples a second; 1.6 was too brisk for the owner
 // A LONG, SHALLOW WAVE (`wave`, `amp`), and one-pixel strips: the banner's free end runs
 // nearly parallel to the pole, so its black edge lies along the strips, and a steep
 // wave cut in two-pixel strips set neighbouring pieces of that edge at different
@@ -3419,7 +3419,11 @@ function rallyCloth(key) {
         const inside = dist[p] === 0 && near(i);
         const rim = d[i] + d[i + 1] + d[i + 2] < 150 || d[i + 3] < 250;
         if (inside) dist[n] = 0;
-        else if (rim && dist[p] < at.edge) dist[n] = dist[p] + 1;
+        // Out at the free end, `farEdge` (past `farFrom` from the pole): its top
+        // corner is a sharp point whose outline runs on past `edge`, and the tip of it
+        // was left on the still drawing as a black speck by the waving cloth. Near the
+        // pole the shorter reach stands, or it would take the helmet's outline too.
+        else if (rim && dist[p] < (nx - mid(ny) > at.farFrom ? at.farEdge : at.edge)) dist[n] = dist[p] + 1;
         else continue;
         queue.push(n);
       }
@@ -3448,27 +3452,44 @@ function rallyCloth(key) {
 }
 // Inside drawEnemy's transform, with (x, y) where the drawing's (0, 0) lands and
 // `k` game px to a drawing px. `hit` is the flash, so the cloth flashes with him.
+//
+// BENT ONCE, AT THE DRAWING'S OWN SIZE, THEN DRAWN ONCE. Each one-pixel column of
+// the cloth is moved up or down onto a scratch canvas the size of the cloth, the
+// columns exactly side by side on its pixel grid, and that canvas is what goes on the
+// board. It used to be a hundred overlapping strips drawn straight onto the board,
+// each a fraction of a screen pixel wide, and where their black edges met at
+// slightly different heights they blended into small black specks the owner saw as
+// the banner waved.
+let clothScratch = null;
+function bentCloth(src, at, t, slot) {
+  const H = at.tall + Math.ceil(at.amp) * 2 + 2, off = Math.ceil(at.amp) + 1;
+  clothScratch = clothScratch || [];
+  let c = clothScratch[slot];
+  if (!c) { c = clothScratch[slot] = document.createElement('canvas'); }
+  if (c.width !== at.wide || c.height !== H) { c.width = at.wide; c.height = H; }
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  for (let u = 0; u < at.wide; u++) {
+    const w = Math.min(1, Math.max(0, (u - at.still) / at.reach)) ** 1.2;
+    const dv = at.amp * w * Math.sin((u / at.wave) * Math.PI * 2 - t);
+    g.drawImage(src, u, 0, 1, at.tall, u, off + dv, 1, at.tall);
+  }
+  return { c, off };
+}
 function drawRallyCloth(ctx, b, x, y, k, phase, hit) {
   const { cloth, lean, a, at } = b;
   const t = boardClock * at.speed * Math.PI * 2 + (phase % 7);
-  const lit = hit > 0 && silhouette(cloth);
-  const STEP = 1;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(k, k);
   ctx.transform(1, 0, lean, 1, a, at.top);
-  for (let u = 0; u < at.wide; u += STEP) {
-    const w = Math.min(1, Math.max(0, (u - at.still) / at.reach)) ** 1.2;
-    const dv = at.amp * w * Math.sin((u / at.wave) * Math.PI * 2 - t);
-    // Twice the step wide, the next strip laid over the overlap: any less and the
-    // soft edges of neighbouring strips showed as fine lines across the cloth.
-    ctx.drawImage(cloth, u, 0, STEP * 2, at.tall, u, dv, STEP * 2, at.tall);
-    if (lit) {
-      ctx.save();
-      ctx.globalAlpha = hit * HIT_FLASH;
-      ctx.drawImage(lit, u, 0, STEP, at.tall, u, dv, STEP, at.tall);   // not overlapped: the flash would double there
-      ctx.restore();
-    }
+  const bent = bentCloth(cloth, at, t, 0);
+  ctx.drawImage(bent.c, 0, -bent.off);
+  const lit = hit > 0 && silhouette(cloth);
+  if (lit) {
+    const flash = bentCloth(lit, at, t, 1);
+    ctx.globalAlpha *= hit * HIT_FLASH;
+    ctx.drawImage(flash.c, 0, -flash.off);
   }
   ctx.restore();
 }
