@@ -291,12 +291,14 @@ function drawFire(ctx, t, unlocked) {
 // `part` draws half of it: 'under' everything but the sparks, 'sparks' the sparks
 // alone — so something held in the fire (stage 4's pipe) is drawn over the flame and
 // only the sparks it throws fly over it.
-export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1, part = 'all', sparks = true } = {}) {
+export function campfire(ctx, x0, y0, t, s, ink = false, { heat = 0, tall = 1, flameClip = null, smokeClip = null, smoke = 1, part = 'all', sparks = true, glow: glowOn = true } = {}) {
   const clipTo = c => { ctx.save(); if (c) ctx.clip(c); };
   // A warm glow on the ground round it, breathing.
   const flick = 0.75 + 0.15 * Math.sin(t * 9.1) + 0.1 * Math.sin(t * 13.7 + 1);
   const R = 11 * s * (1 + 0.3 * heat);
-  if (part !== 'sparks') {
+  // `glow` false for the side flames of a fire drawn as a row (stage 15's brazier),
+  // so the row glows once rather than three times over.
+  if (part !== 'sparks' && glowOn) {
   clipTo(smokeClip);
   const glow = ctx.createRadialGradient(x0, y0 + s, 0, x0, y0 + s, R);
   glow.addColorStop(0, `rgba(255,170,70,${Math.min(0.75, 0.30 * flick * (1 + 1.2 * heat))})`);

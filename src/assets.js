@@ -203,6 +203,12 @@ export const paths = {
   // THE SAME BOX LYING ON THE GROUND with its shadow — Dark Hollow's box carrier drops
   // his when he is tapped. See BOX_GROUND in src/villagers.js.
   vill_box_on_ground:           'assets/villagers/Box_on_ground.png',
+  // Stage 15's two smiths, enemy villagers both: one at the anvil, the hammer down on
+  // the metal and raised; the other holding a blade up, and into the brazier's fire.
+  vill_enemy_anvil_1:           'assets/villagers/Villager_Enemy_Anvil_1.png',
+  vill_enemy_anvil_2:           'assets/villagers/Villager_Enemy_Anvil_2.png',
+  vill_enemy_heating_1:         'assets/villagers/Villager_Enemy_Heating_1.png',
+  vill_enemy_heating_2:         'assets/villagers/Villager_Enemy_Heating_2.png',
   vill_back_carrying_cannonball:  'assets/villagers/Villager_Back_Carrying_Cannonball.png',
   vill_front_carrying_cannonball: 'assets/villagers/Villager_Front_Carrying_Cannonball.png',
   vill_picking_up:              'assets/villagers/Villager_Picking_Up.png',

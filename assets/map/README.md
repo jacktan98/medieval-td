@@ -511,6 +511,16 @@ drawn — that was the single biggest cost in a frame.
 A new board key must follow the same names (`mapNN`, `frontNN`, ...) or it will
 load at start with everything else, which works but is slower.
 
+## A painted flame the game burns live
+
+Most boards' torches and forges are drawn with empty cups and the game lights them.
+Stage 15's were painted burning, so its level lists them in `unpaint`: a box in game
+px round each flame and the flame's colours. `tools/split-map.mjs` takes every
+drawing inside a box made of nothing but those colours out of the artwork before it
+splits it, so the flame is in neither the base nor the front sheet, and the level's
+`fires` burn in its place. It refuses if a box has no flame in it, so a redraw that
+moves one is caught.
+
 ## Two things every new map needs extracted
 
 A board is not playable until two lists have been read off it. Both have tools,

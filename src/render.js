@@ -620,6 +620,12 @@ function drawFigures(ctx, state) {
       add(fire.over, 1, () => drawFire(ctx, state, fire, 'sparks'));
     } else add(fire.g, 1, () => drawFire(ctx, state, fire));
   }
+  // SPARKS OFF THE ANVIL as the hammer lands — stage 15's smith (`vp.struck`, set by
+  // the hammer in src/villagers.js) — just in front of him.
+  const struck = state.villagerPlay && state.villagerPlay.struck;
+  if (struck && state.villagerPlay.t - struck.at < ANVIL_SPARKS.life) {
+    add(struck.y + 7, 1, () => drawAnvilSparks(ctx, struck, state.villagerPlay.t - struck.at));
+  }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
@@ -1771,7 +1777,10 @@ function drawLookingThug(ctx, v) {
   if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;
   ctx.translate(v.x, v.y);
   if (v.flip) ctx.scale(-1, 1);
-  ctx.drawImage(img, sx, sy, sw, sh, -d.pivot[0] * w, -d.pivot[1] * h, w, h);
+  // The Rally Thug's banner waves here too, as it does on the road. See RALLY_BANNER.
+  const banner = d.sprite === 'rally' && rallyCloth('rally');
+  if (banner) drawRallyCloth(ctx, banner, -d.pivot[0] * w - sx * SCALE, -d.pivot[1] * h - sy * SCALE, SCALE, v.n || 0, 0);
+  ctx.drawImage(banner ? banner.bare : img, sx, sy, sw, sh, -d.pivot[0] * w, -d.pivot[1] * h, w, h);
   ctx.restore();
 }
 
@@ -1952,7 +1961,7 @@ function drawFire(ctx, state, fire, part = 'all') {
   // roaring while it is in.
   // And a FLARING fire burns low while nothing is held in it — smaller than it would
   // on its own — and up to its full height as it flares.
-  const tall = fire.heated ? 0.55 + 0.95 * heat : fire.flare ? 0.62 + 0.38 * heat : 1;
+  const tall = (fire.heated ? 0.55 + 0.95 * heat : fire.flare ? 0.62 + 0.38 * heat : 1) * (fire.tall ?? 1);
   const path = pts => { const p = new Path2D(); pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y))); p.closePath(); return p; };
   // THE MOUTH — its dark inside and its black border — goes with the flame, UNDER
   // whatever is held into the fire: the smith's pipe crosses the border and lies over
@@ -1964,9 +1973,17 @@ function drawFire(ctx, state, fire, part = 'all') {
   }
   // The flame is kept a hair inside the mouth, so the whole of its black border
   // shows round the fire rather than half of it being burnt away.
-  campfire(ctx, fire.x, fire.y, t, fire.s, true, {
-    heat, tall, flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null, smoke: fire.smoke ?? 1, sparks: fire.sparks ?? true, part
-  });
+  // A ROW OF FLAMES — stage 15's brazier, wider and shorter than one fire — is `row`
+  // small fires `spread` apart, each on a beat of its own, the middle one glowing
+  // and smoking for all of them; the outer ones a little lower.
+  const n = fire.row || 1;
+  for (let i = 0; i < n; i++) {
+    const off = (i - (n - 1) / 2) * (fire.spread || 0), mid = Math.abs(off) < 0.01;
+    campfire(ctx, fire.x + off, fire.y, t + i * 1.37, fire.s, true, {
+      heat, tall: tall * (mid ? 1 : 0.8), flameClip: mouth && innerMouth(fire), smokeClip: fire.roof ? path(fire.roof) : null,
+      smoke: mid ? fire.smoke ?? 1 : 0, sparks: fire.sparks ?? true, part, glow: mid
+    });
+  }
   if (mouth && part !== 'sparks') {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1;
@@ -1987,6 +2004,35 @@ function drawLakeFish(ctx, state) {
 }
 
 const TORCH_CATCH = 0.7;       // seconds for a torch lit by hand to burn up to size
+
+// A BURST OF SPARKS where a hammer meets hot metal: `n` of them thrown up and out,
+// both ways, falling back under their own weight and going out as they fall — each a
+// short bright streak, yellow cooling to orange. The same burst for the same blow (it
+// is seeded by when the blow landed), so it does not shimmer frame to frame.
+const ANVIL_SPARKS = { n: 14, life: 0.5, speed: [26, 56], fall: 120 };
+function drawAnvilSparks(ctx, at, t) {
+  const { n, life, speed: [lo, hi], fall } = ANVIL_SPARKS;
+  const seed = Math.floor(at.at * 1000);
+  const rnd = k => { const x = Math.sin((seed + k) * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let k = 0; k < n; k++) {
+    const own = life * (0.55 + 0.45 * rnd(k * 3));
+    if (t >= own) continue;
+    const a = -Math.PI / 2 + (rnd(k * 3 + 1) - 0.5) * 2.6;
+    const v = lo + (hi - lo) * rnd(k * 3 + 2);
+    const pos = q => [at.x + Math.cos(a) * v * q, at.y + Math.sin(a) * v * q + 0.5 * fall * q * q];
+    const [x, y] = pos(t), [px, py] = pos(Math.max(0, t - 0.035));
+    const p = t / own;
+    ctx.strokeStyle = `rgba(255,${235 - 90 * p | 0},${120 - 100 * p | 0},${1 - p})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 // STAGE 12'S LIGHTING POLE, thrown down (`vp.pole`, src/villagers.js), from the owner's
 // drawing of it lying burnt out on the grass. That drawing is taken apart by colour

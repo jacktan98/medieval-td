@@ -4026,15 +4026,21 @@ console.log('\n--- the road opens one stage at a time ---\n');
       const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
       // A villager may have a taller window (`up`) for what he holds over his head —
       // stage 12's lit pole — as split-map gives him.
+      // Or a deeper one (`down`), for a man whose drawing stands in front of him —
+      // stage 15's smith and his anvil.
       const post = posts(l).some(at => x0 >= at.x - W && x1 <= at.x + W && y0 >= at.y - Math.max(UP, at.up || 0) &&
-        y1 <= at.y + DOWN);
+        y1 <= at.y + Math.max(DOWN, at.down || 0));
+      // AND A PAINTED FLAME the game burns live instead, which the level names — stage
+      // 15's brazier and torches (`unpaint`).
+      const unpainted = (l.unpaint || []).some(u =>
+        x0 >= u.box[0] && y0 >= u.box[1] && x1 <= u.box[2] && y1 <= u.box[3]);
       // AND WHAT THEY HOLD, cut with them in a window of its own — stage 4's plank.
       const prop = (l.villagerPlay ? l.props || [] : []).some(p =>
         x0 >= p.x - p.w && x1 <= p.x + p.w && y0 >= p.y - p.up && y1 <= p.y + p.down);
       // A MARKER is the oval the plot stands in and the signpost on it: about 97x45
       // around the plot point, the post reaching some 50px above it.
       const marker = l.plots.some(p => x0 >= p.x - 52 && x1 <= p.x + 52 && y0 >= p.y - 60 && y1 <= p.y + 26);
-      return !post && !prop && !marker;
+      return !post && !prop && !marker && !unpainted;
     });
     ok(lost.length === 0, `${l.name}: the split took nothing but markers and garrison men`,
       lost.length ? lost.map(g => {

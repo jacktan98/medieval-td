@@ -50,7 +50,38 @@ if (!level) {
 const PAL = paletteFor(SRC);
 
 // A board is one file or a stack of layers, and only readArtwork knows which.
-const svg = readArtwork(SRC);
+//
+// LESS ANY PAINTED FLAME THE GAME DRAWS LIVE. The earlier boards' torches and forges
+// were drawn with their cups empty and the game lit them; stage 15's were painted
+// burning. `unpaint` on the level names the flame colours and the box each painted
+// flame is in, and every drawing inside a box made of nothing but those colours is
+// taken out of the artwork before anything else reads it — so it is in neither the
+// base nor the front sheet, and the live fire burns where it was.
+const svg = unpaintFlames(readArtwork(SRC), level.unpaint || []);
+function unpaintFlames(text, spots) {
+  if (!spots.length) return text;
+  const gs = allGroups(text);
+  const hits = gs.filter(g => {
+    const fills = [...text.slice(g.start, g.end).matchAll(/fill="(#[0-9a-fA-F]{6})"/g)].map(m => m[1].toLowerCase());
+    if (!fills.length) return false;
+    const b = bounds(g.subPaths.flat());
+    const [x0, y0, x1, y1] = [b.x0, b.y0, b.x1, b.y1].map(v => v * MAP_SCALE);
+    return spots.some(s => fills.every(f => s.fills.includes(f)) &&
+      x0 >= s.box[0] && y0 >= s.box[1] && x1 <= s.box[2] && y1 <= s.box[3]);
+  });
+  const outer = hits.filter(g => !hits.some(o => o !== g && o.start <= g.start && o.end >= g.end));
+  const missed = spots.filter(s => !outer.some(g => {
+    const b = bounds(g.subPaths.flat());
+    return b.x0 * MAP_SCALE >= s.box[0] && b.x1 * MAP_SCALE <= s.box[2] && b.y0 * MAP_SCALE >= s.box[1] && b.y1 * MAP_SCALE <= s.box[3];
+  }));
+  if (missed.length) {
+    throw new Error(`no painted flame in ${missed.map(s => `[${s.box}]`).join(', ')} — ` +
+      `if the artist moved or removed one, fix \`unpaint\` in the level file`);
+  }
+  console.log(`unpainted ${outer.length} flame piece(s) in ${spots.length} spot(s)`);
+  for (const g of [...outer].sort((a, b) => b.start - a.start)) text = text.slice(0, g.start) + text.slice(g.end);
+  return text;
+}
 // The layer files themselves, for the front-layer pass at the bottom. Empty for a
 // board drawn in one piece, which simply has no front sheet.
 const LAYERS = SRC.endsWith('.svg') ? [] : layerFiles(SRC);
@@ -280,7 +311,8 @@ const figures = [
   // (`up`), when he holds something up over his head that is part of his drawing:
   // stage 12's torch-lighter and his lit pole.
   ...(level.villagerPlay ? level.villagers : []).map(at => ({ at, what: 'villager',
-    win: { ...VILLAGER_WIN, ...(at.w ? { w: at.w } : {}), ...(at.up ? { up: at.up } : {}) } })),
+    win: { ...VILLAGER_WIN, ...(at.w ? { w: at.w } : {}), ...(at.up ? { up: at.up } : {}),
+           ...(at.down ? { down: at.down } : {}) } })),
   // AND WHAT THEY HOLD, when the game draws it for them: stage 4's plank, painted
   // between its two carriers and now part of their carrying drawing. Each prop is a
   // window of its own, sized in the level file.

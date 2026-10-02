@@ -103,23 +103,56 @@ export const level17 = {
 
   routes: [top, link, bottom],
   plots: plots1,
-  // THE PEOPLE PAINTED HERE, each at the centre of his own ground shadow, listed so
-  // they can be tapped. They stay as painted for now; the animations come next.
+  // THE PEOPLE HERE, each at the centre of his own ground shadow, and none of them on
+  // your side. Cut out of the board and drawn by the game — see `quarters` in
+  // src/villagers.js.
   villagers: [
-    { x: 103.7, y:  78.4 },   // 1, the smith at the forge fire
-    { x: 100.3, y: 110.0 },   // 2, the smith at the anvil
-    { x:  57.6, y: 269.1 },   // 3-10, the eight thugs drawn up behind the long wall,
-    { x:  89.3, y: 273.8 },   //       in two files
+    // 1, the smith heating a blade at the brazier.
+    { x: 103.7, y:  78.4 },
+    // 2, the smith at the anvil — his window wider and deeper than a man's, so his
+    // anvil is cut out with him: his drawing has its own.
+    { x: 100.3, y: 110.0, w: 19, down: 9 },
+    // 3-10, the eight thugs behind the long wall, in two files: the back line on the
+    // left (3, 5, 7, 9) and the front line nearer the wall (4, 6, 8, 10).
+    { x:  57.6, y: 269.1 },
+    { x:  89.3, y: 273.8 },
     { x:  49.8, y: 301.1 },
     { x:  81.4, y: 305.8 },
     { x:  41.5, y: 334.5 },
     { x:  73.1, y: 339.2 },
     { x:  32.4, y: 367.9 },
     { x:  64.1, y: 372.6 },
-    { x: 125.5, y: 324.3 }    // 11, the Rally Thug at the wall's corner
+    // 11, the Rally Thug at the wall's corner, his sword and banner out either side.
+    { x: 125.5, y: 324.3, w: 19, up: 30 },
+    // 12, the thug by the left hut, and 13 the enemy villager between the huts.
+    { x: 679.6, y: 106.3 },
+    { x: 809.8, y:  86.9 }
   ],
-  // The dark woods' own sound, as on Dark Hollow Woods.
-  ambience: [{ clip: 'dark_background', level: 1 }, { clip: 'crows_cawing', level: 0.5 }],
+  villagerPlay: 'quarters',
+  // THE PAINTED FLAMES — the brazier's and the two torches' — are taken out of the
+  // board by tools/split-map.mjs (each a box in game px and the flame's colours) and
+  // burn live instead: see `fires`. And the anvil's own shadow with them, which the
+  // anvil smith's drawing brings again.
+  unpaint: [
+    { box: [72, 52, 97, 69], fills: ['#d30000', '#ffaa36'] },
+    { box: [104, 183, 119, 203], fills: ['#d30000', '#ffaa36'] },
+    { box: [102, 338, 117, 359], fills: ['#d30000', '#ffaa36'] },
+    { box: [86, 104, 114, 112], fills: ['#595959'] }
+  ],
+  // LIVE FIRES where the painted ones were. THE BRAZIER'S is the owner's shape —
+  // wider and shorter than a torch's, a row of flames along the coals: three small
+  // fires side by side (`row`, `spread` apart), flaring together while the smith's
+  // blade is in (`heated`), sorted at the brazier's shadow so the blade, held in it
+  // by a man standing in front of it, lies over the flame. Its sparks fly over him.
+  // THE TWO TORCHES burn on their cups, sorted at the foot of each pole.
+  fires: [
+    { x: 84.5, y: 65, s: 2.4, row: 3, spread: 7, tall: 0.72, g: 73.8, over: 79, flare: true, smoke: 0.35 },
+    { x: 111.4, y: 200.5, s: 2.9, g: 247, smoke: 0.5 },
+    { x: 109.2, y: 355.5, s: 2.9, g: 402, smoke: 0.5 }
+  ],
+  // The dark woods' own sound, as on Dark Hollow Woods, and the brazier crackling.
+  ambience: [{ clip: 'dark_background', level: 1 }, { clip: 'crows_cawing', level: 0.5 },
+             { clip: 'fire_crackling', level: 0.6 }],
 
   waves: stage15Waves,
   wavesExtended: stage15Waves,

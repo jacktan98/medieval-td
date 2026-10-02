@@ -127,6 +127,20 @@ The pole drawings stand on (259.5, 344), the villager-musketeer ones on (259.5, 
 and the musketeer on (258, 305). The torch-lighter is cut out of the board with the
 lit pole he holds up (`up` on his anchor in level14.js). Stage 11's box carrier is stage 5's `Villager_Carrying_Box.png`.
 
+And stage 15's, both enemy villagers in the thugs' dark clothes as drawn:
+
+| drawing | used for |
+|---------|----------|
+| `Villager_Enemy_Anvil_1.png` | the smith at the anvil, hammer down on the metal — sparks fly as it lands |
+| `Villager_Enemy_Anvil_2.png` | the same, hammer raised |
+| `Villager_Enemy_Heating_1.png` | the smith at the brazier, the blade held up |
+| `Villager_Enemy_Heating_2.png` | the same, the blade in the fire |
+
+The anvil drawings are the man and his anvil; the game stands them on (268, 281) so
+the anvil lands where the painted one was, and cuts the painted anvil out with him
+(`w` and `down` on his anchor in level17.js). The heating drawings stand on
+(249, 318).
+
 And stage 13's:
 
 | drawing | used for |
@@ -508,6 +522,36 @@ src/villagers.js).
 - **Behind the log barricade**, two Elite Archers (Layer 3b) stand and shoot like the
   Crossbow Tower's man for 20 physical damage. They cannot be hurt, and answer with
   the archery voices when tapped.
+
+## Stage 15's script
+
+Nobody here is on your side either (`quarters` in src/villagers.js). As the level
+lists them: 1 the smith at the brazier, 2 the smith at the anvil, 3–10 the eight
+thugs behind the long wall, 11 the Rally Thug at its corner, 12 the thug by the left
+hut and 13 the enemy villager between the huts.
+
+- **The smith at the brazier** works as stage 4's at his forge: the blade held up
+  3.2 seconds, then into the fire 2 seconds, the fire flaring while it is in and
+  the weld sounding. **The smith at the anvil** brings the hammer down twice and
+  rests, a knock and a burst of sparks each time it lands. Both keep working when
+  tapped.
+- **The brazier's fire** is the owner's shape — wider and shorter than a torch's: a
+  row of three small flames (`row` on the fire in level17.js). The brazier's and the
+  two torches' painted flames are taken out of the board (`unpaint`) and burn live.
+- **The thug by the left hut** and **the villager between the huts** are stage 14's:
+  tapped, each stands 2 seconds; the thug walks down onto the road and is a Thug
+  there, and the villager goes into the left hut and comes out a Tough Thug three
+  seconds later.
+- **The camp behind the wall**, wave by wave as each one begins:
+  - before wave 1 — the Rally Thug walks in from the left edge to the wall's corner;
+  - waves 1 and 4 — the thugs come in from the left edge one by one, the front line
+    (nearest the wall) first, to their places, until there are eight;
+  - waves 3 and 6 — if all eight are standing, a war cry, and the back line marches
+    up to the top road and the front line down to the bottom one, joining them as
+    Thugs (one in four of the top road's down the link);
+  - wave 7 — eight more come in the same way, as Tough Thugs;
+  - wave 8 — a war cry, and whoever is standing goes, the Rally Thug down to the
+    bottom road with the front line.
 
 ## Holy light over Dawnford
 

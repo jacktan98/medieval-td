@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, WAR_CRY } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
 import { nearestOn } from './route.js';
@@ -119,7 +119,11 @@ export const VILLAGER_POSE = {
           // Stage 12's torch-lighter, his lit pole held up, and the villager who
           // goes into the castle and comes out a musketeer.
           pole_front: [259.5, 344], pole_back: [259.5, 344],
-          vm_front: [259.5, 310], vm_back: [259.5, 310], musk_front: [258, 305] },
+          vm_front: [259.5, 310], vm_back: [259.5, 310], musk_front: [258, 305],
+          // Stage 15's smiths. The anvil drawings are the man AND his anvil, stood so the
+          // anvil lands where the painted one was (the man's own shadow is behind it);
+          // the heating drawings on the man's shadow, under his round body.
+          anvil_1: [268, 281], anvil_2: [268, 281], heat_1: [249, 318], heat_2: [249, 318] },
   // And the poses whose drawing does not fit the shared box.
   trims: { pipe_1: [200, 176, 140, 142], pipe_2: [200, 176, 140, 142],
            carry: [85, 155, 340, 200], throw: [85, 155, 340, 200],
@@ -135,7 +139,9 @@ export const VILLAGER_POSE = {
            pick_up: [195, 185, 115, 135],
            pole_front: [195, 70, 110, 310], pole_back: [195, 70, 110, 310],
            vm_front: [205, 190, 105, 135], vm_back: [205, 190, 105, 135],
-           musk_front: [180, 185, 150, 140] },
+           musk_front: [180, 185, 150, 140],
+           anvil_1: [172, 175, 168, 162], anvil_2: [172, 175, 168, 162],
+           heat_1: [160, 182, 146, 148], heat_2: [160, 182, 146, 148] },
   // The greeting hand, which waves: a circle round it on the 512 canvas, and the
   // shoulder it swings from.
   //
@@ -566,6 +572,59 @@ const PLAYS = {
     // brothers!" as the first wave comes, and "nooo" still as a star is lost.
     cries: { runnn: false, nooo: true, wave: 'intruders' }
   },
+  // STAGE 15, Dark Hollow Quarters, as the level lists them: 1 the smith heating a
+  // blade at the brazier, 2 the smith at the anvil, 3–10 the eight thugs behind the
+  // long wall (back line 3, 5, 7, 9; front line 4, 6, 8, 10), 11 the Rally Thug at the
+  // wall's corner, 12 the thug by the left hut and 13 the enemy villager between the
+  // huts. Nobody here is on your side either.
+  quarters: {
+    work: true,
+    // The ten at the wall are not there when the board opens: they come in from the
+    // left edge as the waves begin (see `muster`).
+    before: [{}, {}, ...Array(9).fill({ hidden: true })],
+    after: [], run: [], hops: [],
+    voice: 'enemy_villager',
+    // THE SMITH AT THE BRAZIER, as stage 4's at his forge: the blade held up, then
+    // into the fire, which flares while it is in (the level's `heated` fire), and the
+    // weld sounds. He keeps at it whether he is tapped or not.
+    smith: { who: 0, back: 3.2, in: 2, poses: ['heat_1', 'heat_2'], voice: 'enemy_villager',
+             card: { title: 'Enemy Villager', sprite: 'vill_enemy_heating_1', trim: [160, 182, 146, 148] } },
+    // THE SMITH AT THE ANVIL: the hammer raised, and down on the metal — a knock and a
+    // burst of sparks each time it lands (`sparks`, from his feet in board px) — two
+    // quick blows and a breath, and again.
+    hammer: { who: 1, strike: 'anvil_1', sparks: [1, -6], voice: 'enemy_villager',
+              beats: [['anvil_2', 0.45], ['anvil_1', 0.3], ['anvil_2', 0.45], ['anvil_1', 0.3], ['anvil_2', 1.2]],
+              card: { title: 'Enemy Villager', sprite: 'vill_enemy_anvil_1', trim: [172, 175, 168, 162] } },
+    // THE TWO BY THE HUTS, as stage 14's: tapped, each stands `still` seconds, then the
+    // thug walks down onto the road and is a Thug there, and the villager goes into
+    // the left hut and comes out a Tough Thug three seconds later.
+    still: 2, walk: 14,
+    thugs: [{ who: 11, road: [[684, 132]] }],
+    hideouts: [{ who: 12, type: 'tough_inf', side: 'front', way: [[786, 95], [761, 100]], arm: 3,
+                 road: [[762, 104], [766, 128]] }],
+    // THE CAMP BEHIND THE WALL — see musterRound.
+    muster: {
+      rally: 10,
+      // Each line in the order they come in: the front line first, nearest the wall,
+      // so nobody walks in through a man already standing.
+      front: [3, 5, 7, 9], back: [2, 4, 6, 8],
+      // In from the left edge (`from` px off it), along his own row, `walk` px a
+      // second; one every `every` seconds.
+      from: -14, walk: 24, every: 2.2,
+      // WAVE BY WAVE, at the owner's word: `come` brings the line back, one by one, as
+      // `type`; `charge` sends the back line up to the top road and the front line
+      // down to the bottom one, with a war cry — only once all eight are standing,
+      // unless `always` (the last wave, when the Rally Thug goes with the front line).
+      waves: { 1: { come: 'light_inf' }, 3: { charge: true }, 4: { come: 'light_inf' },
+               6: { charge: true }, 7: { come: 'tough_inf' }, 8: { charge: true, always: true, rally: true } },
+      // Up to the top road (`top`, the y he walks up to before joining it) and down to
+      // the bottom one; the Rally Thug round the bottom torch on the way. The top
+      // road's men take its two routes one in four down the link, as the wave does.
+      top: 214, topRoutes: [0, 0, 1, 0], bottom: 408, bottomRoute: 2,
+      rallyWay: [[96, 334], [84, 408]], march: 22
+    },
+    cries: { runnn: false, nooo: false, wave: null }
+  },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
   sandshroud: {
@@ -767,11 +826,14 @@ function work(state, vp, dt) {
     s.work = true;
     const k = vp.t % (smith.back + smith.in);
     const inFire = k >= smith.back;
-    s.pose = inFire ? 'pipe_2' : 'pipe_1';
+    // Stage 4's pipe, or stage 15's blade (`poses`, drawn back and in the fire).
+    const [out, into] = smith.poses || ['pipe_1', 'pipe_2'];
+    s.pose = inFire ? into : out;
     // The weld sounds for as long as the pipe is in — main.js keeps the loop to it.
     vp.welding = inFire;
-    [s.x, s.y] = smith.at;
+    if (smith.at) [s.x, s.y] = smith.at;
     s.tool = smith.tool;
+    if (smith.card) { s.card = smith.card; s.voice = smith.voice; }
     // THE FIRE FOLLOWS THE PIPE: small while it is drawn back, roaring while it is
     // in. Quick to flare and slower to die down, so it swells rather than blinks.
     const target = inFire ? 1 : 0;
@@ -790,7 +852,11 @@ function work(state, vp, dt) {
     // A KNOCK AS THE HAMMER COMES DOWN — the first blow's, then the second's. Or a
     // chop as the lumberjack's axe goes into the tree (`strike`, `sound`).
     const strike = hammer.strike || 'hammer_2', knocks = hammer.sound === 'chop' ? CHOP : HAMMER;
+    if (hammer.card) { h.card = hammer.card; h.voice = hammer.voice; }
     if (was !== strike && h.pose === strike) {
+      // AND SPARKS off the metal, where `sparks` says the hammer meets it — stage 15's
+      // anvil. render.js throws them from `vp.struck`.
+      if (hammer.sparks) vp.struck = { at: vp.t, x: h.x + hammer.sparks[0], y: h.y + hammer.sparks[1] };
       const [from, dur] = knocks.knocks[(vp.knock = ((vp.knock ?? -1) + 1) % knocks.knocks.length)];
       slice(knocks.key, from, dur);
       // And when it is an axe going into a tree, the tree shakes and a few leaves
@@ -806,8 +872,10 @@ function work(state, vp, dt) {
   if (vp.plan.lighter) lighterRound(state, vp, vp.plan.lighter, dt);
   if (vp.plan.recruit) recruitRound(state, vp, vp.plan.recruit, dt);
 
-  // STAGE 14'S FOUR, none of them friends.
+  // STAGE 14'S FOUR, none of them friends — and stage 15's two by the huts.
   if (vp.plan.thugs) hollowRound(state, vp, dt);
+  // STAGE 15'S CAMP behind the long wall, mustering and charging wave by wave.
+  if (vp.plan.muster) musterRound(state, vp, vp.plan.muster, dt);
 
   // STAGE 11'S TWO CARRIERS, each on a loop of his own.
   if (vp.plan.porter) porterLoop(state, vp, vp.plan.porter, dt);
@@ -1226,6 +1294,112 @@ function hollowRound(state, vp, dt) {
     }
   }
 }
+// STAGE 15, THE CAMP BEHIND THE WALL. The Rally Thug walks in from the left edge as
+// the board opens and stands at the wall's corner. Each slot behind the wall is in one
+// of these, in `vp.muster[who].phase`:
+//   away   — not there (hidden);
+//   queued — called in by a wave, waiting his turn (`at`);
+//   come   — in from the left edge along his row to his place;
+//   stand  — at his place, facing the wall;
+//   charge — up to the top road or down to the bottom one, quickening as he reaches
+//            it — where he is the creature he looks like (`vp.turned`, as stage 14's)
+//            and his slot is empty again.
+// Waves are counted as they BEGIN — the first enemy of a wave on the board.
+function musterRound(state, vp, m, dt) {
+  const cardOf = type => ({ title: enemyTypes[type].name, sprite: enemyTypes[type].sprite,
+                            trim: enemyTypes[type].spriteTrim });
+  const slots = [...m.front, ...m.back];
+  if (!vp.muster) {
+    vp.muster = { begun: 0 };
+    for (const who of slots) vp.muster[who] = { phase: 'away', type: 'light_inf' };
+    // THE RALLY THUG, in from the left edge before anything else.
+    vp.muster[m.rally] = { phase: 'queued', at: 0, type: 'rally_inf' };
+  }
+  const M = vp.muster;
+  const home = who => (level.villagers || [])[who];
+
+  // WHICH WAVES HAVE BEGUN, and what each one starts here.
+  const total = state.waves ? state.waves.length : Infinity;
+  const begun = Math.min(total, state.waveIndex + (state.spawned > 0 ? 1 : 0));
+  while (M.begun < begun) {
+    M.begun++;
+    const ev = m.waves[M.begun];
+    if (!ev) continue;
+    if (ev.come) {
+      let k = 0;
+      for (const who of slots) {
+        const c = M[who];
+        if (c.phase !== 'away') continue;
+        Object.assign(c, { phase: 'queued', at: vp.t + k * m.every, type: ev.come });
+        k++;
+      }
+    }
+    if (ev.charge) {
+      const standing = slots.filter(who => M[who].phase === 'stand');
+      if (ev.always || standing.length === slots.length) {
+        const go = (who, way, route) => {
+          const v = state.villagers[who], last = way[way.length - 1];
+          const j = nearestOn([level.routes[route]], last[0], last[1]);
+          Object.assign(M[who], { phase: 'charge', route, s: j.s, way: [...way, [j.x, j.y]] });
+          v.leg = 0;
+        };
+        let top = 0;
+        for (const who of m.back) {
+          if (M[who].phase !== 'stand') continue;
+          const v = state.villagers[who];
+          go(who, [[v.x, m.top]], m.topRoutes[top++ % m.topRoutes.length]);
+        }
+        for (const who of m.front) {
+          if (M[who].phase !== 'stand') continue;
+          const v = state.villagers[who];
+          go(who, [[v.x, m.bottom]], m.bottomRoute);
+        }
+        if (ev.rally && M[m.rally].phase === 'stand') go(m.rally, m.rallyWay, m.bottomRoute);
+        // THE WAR CRY as they go.
+        if (standing.length || ev.rally) solo(WAR_CRY, true);
+      }
+    }
+  }
+
+  for (const who of [...slots, m.rally]) {
+    const v = state.villagers[who], c = M[who], at = home(who);
+    if (!v || !at) continue;
+    v.work = true; v.voice = vp.plan.voice;
+    v.look = 'thug'; v.lookType = c.type; v.card = cardOf(c.type);
+    if (c.phase === 'away') { v.hidden = true; continue; }
+    if (c.phase === 'queued') {
+      v.hidden = true;
+      if (vp.t < c.at) continue;
+      // Out of sight off the left edge, on his own row, and in.
+      Object.assign(v, { x: m.from, y: at.y, leg: 0, hidden: false, live: true, alpha: 1 });
+      c.phase = 'come';
+    }
+    if (c.phase === 'come') {
+      v.hidden = false;
+      if (walkTo(v, [[at.x, at.y]], m.walk, dt)) {
+        c.phase = 'stand';
+        // Facing the wall as they are painted: the thugs turned right, the Rally Thug
+        // as his drawing is, towards his men.
+        v.flip = who !== m.rally;
+      }
+    } else if (c.phase === 'stand') {
+      v.hidden = false; v.x = at.x; v.y = at.y;
+      v.flip = who !== m.rally;
+    } else if (c.phase === 'charge') {
+      // Quickening from his march to the creature's own pace across the road's edge,
+      // as stage 14's do — so there is no step from a walk to a march.
+      const d = nearestOn(level.routes, v.x, v.y).d;
+      const k = Math.min(1, Math.max(0, 1 - d / ROAD_EDGE));
+      const pace = m.march + (enemyTypes[c.type].speed - m.march) * k * k * (3 - 2 * k);
+      if (walkTo(v, c.way, pace, dt)) {
+        v.hidden = true; v.live = false;
+        (vp.turned = vp.turned || []).push({ who, type: c.type, route: c.route, s: c.s });
+        c.phase = 'away';
+      }
+    }
+  }
+}
+
 const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground
 // THE OWNER'S DRAWING OF THE BOX ON THE GROUND, shadow and all (Box_on_ground.png),
 // which is what a dropped box is once it lands. Its box is the carried one's drawing
@@ -1597,4 +1771,6 @@ const WORK_ART = { carry: 'vill_carrying_wood_plank', throw: 'vill_throwing_wood
                    pick_up: 'vill_picking_up',
                    pole_front: 'vill_front_lighting_pole', pole_back: 'vill_back_lighting_pole',
                    vm_front: 'vill_musketeer_front_standing', vm_back: 'vill_musketeer_back_standing',
-                   musk_front: 'musketeer_front_standing' };
+                   musk_front: 'musketeer_front_standing',
+                   anvil_1: 'vill_enemy_anvil_1', anvil_2: 'vill_enemy_anvil_2',
+                   heat_1: 'vill_enemy_heating_1', heat_2: 'vill_enemy_heating_2' };
