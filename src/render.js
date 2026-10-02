@@ -3375,7 +3375,11 @@ function drawFuseFire(ctx, fuse, x, y, phase) {
 // same place, so they share one spec. The encyclopedia and the info card keep the
 // still drawing.
 const RALLY_BANNER = { seed: [310, 215], pole: [[274, 190], [261.5, 210]], top: 178, tall: 80, wide: 100,
-  edge: 9, still: 6, reach: 70, amp: 5, wave: 44, speed: 0.6 };   // speed in ripples a second; 1.6 was too brisk for the owner
+  edge: 12, still: 6, reach: 70, amp: 3.5, wave: 90, speed: 0.6 };   // speed in ripples a second; 1.6 was too brisk for the owner
+// A LONG, SHALLOW WAVE (`wave`, `amp`), and one-pixel strips: the banner's free end runs
+// nearly parallel to the pole, so its black edge lies along the strips, and a steep
+// wave cut in two-pixel strips set neighbouring pieces of that edge at different
+// heights — the owner saw the end of the banner come apart.
 const WAVE_FLAG = { rally: RALLY_BANNER, rally_attack: RALLY_BANNER };
 const rallyClothCache = new Map();
 function rallyCloth(key) {
@@ -3448,7 +3452,7 @@ function drawRallyCloth(ctx, b, x, y, k, phase, hit) {
   const { cloth, lean, a, at } = b;
   const t = boardClock * at.speed * Math.PI * 2 + (phase % 7);
   const lit = hit > 0 && silhouette(cloth);
-  const STEP = 2;
+  const STEP = 1;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(k, k);
