@@ -86,23 +86,18 @@ export const flask = {
   impact: 'spill',
   landSound: true,
   poison: {
-    // Per second, for this many seconds. 6 x 3 is 18 health, which is a sixth of
-    // a spearman and a tenth of a swordsman: one flask is a nuisance and the
-    // basket is a problem, which is the shape this enemy should have.
-    // Per second, for this many seconds. 5 x 4 is 20 health — a fifth of a
-    // spearman and an eighth of a swordsman.
+    // Per second, for this many seconds. 10 x 5 is 50 health — half a spearman
+    // and nearly a third of a swordsman, so a man left standing in it is in real
+    // trouble rather than merely annoyed.
     //
-    // IT WAS 6 x 3, WHICH IS 18, and the total is the number that was asked to
-    // move rather than either factor. 5 x 4 is the pair that hits 20 exactly
-    // while keeping the shape: a trickle a man can walk out of, rather than a
-    // hit. 10 x 2 reaches 20 too and would make it a blow, and 6.67 x 3 reaches
-    // it while printing 20.000000000000004 on the enemy's card.
+    // IT WAS 5 x 4, WHICH IS 20, and before that 6 x 3. Both factors moved this
+    // time at the owner's word: twice as hard and a second longer.
     //
     // The extra second is not free and is worth knowing about: the spill on the
     // ground lasts exactly as long as the poison does, so the patch he leaves is
-    // now dangerous a third longer as well as adding up to more.
-    dps: 5,
-    seconds: 4
+    // now dangerous for five seconds as well as adding up to more.
+    dps: 10,
+    seconds: 5
   }
 };
 
@@ -440,7 +435,7 @@ export const enemyTypes = {
     dead: 'dead_rally',
     deadTrim: [147, 215, 217, 82],
     deadPivot: [0.161, 0.841],
-    hp: 350,
+    hp: 600,        // raised from 350 at the owner's word
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     pierce: 1,
@@ -477,11 +472,12 @@ export const enemyTypes = {
     // no aura, so this is the only creature the pass does any work for.
     rally: { range: 150, times: 1.5 },
     speed: 45,      // the slowest thing on the road but the boss
-    // Above the Giant's 40, which is the only other two-life creature on the road.
-    // He is worth more to kill than his own health says, because what he is worth
-    // is everything standing near him.
-    bounty: 45,
-    leak: 2,
+    // 60 AND THREE LIVES, both raised at the owner's word (from 45 and 2) along
+    // with his health. He is worth more to kill than his own health says, because
+    // what he is worth is everything standing near him — and no other creature
+    // costs as many lives to let through.
+    bounty: 60,
+    leak: 3,
     damage: 30,
     atkCd: 1.0,     // the Thug's, unchanged
     r: 8,
@@ -1077,7 +1073,7 @@ export const enemyTypes = {
   // THE DOCTOR'S SHAPE WITH A GIANT'S WEIGHT. He walks the road at the Club Giant's
   // pace until a soldier is within 150, then stands and hurls boulders out of the
   // basket on his back — each one 30 physical to every man within 80 of where it
-  // comes down, breaking two ranks of plate. Held face to face, he brings a boulder
+  // comes down, breaking one rank of plate. Held face to face, he brings a boulder
   // down on the man's head instead: 30 to that one man, no splash. Either way, as
   // the boulder hits home, `boulder_hit` (BOULDER_HIT in src/audio.js).
   //
@@ -1103,8 +1099,8 @@ export const enemyTypes = {
     // LOW PLATE AGAINST STEEL, none against magic: a big target, but not the Club
     // Giant's wall.
     armour: { physical: 'low', magic: 'none' },
-    // TWO RANKS BROKEN, thrown or swung — the owner's "Pierce Physical Damage: 2".
-    pierce: 2,
+    // ONE RANK BROKEN, thrown or swung — the owner's number, down from two.
+    pierce: 1,
     speed: 50,      // the Club Giant's pace
     bounty: 40,
     leak: 2,
@@ -1990,9 +1986,9 @@ export const MARCH_ORDER = [
 // THE DARK CROW AND THE RALLY THUG CHANGED PLACES, at the owner's word.
 export const BOOK_ORDER = [
   'light_inf', 'tough_inf', 'archer_inf', 'blocker_inf', 'heavy_inf',
-  'plague_inf', 'dark_priest', 'shadow_inf', 'crow', 'bomb_inf', 'rally_inf',
-  // And the Boulder Giant, newest of all.
-  'boulder_giant'
+  'plague_inf', 'dark_priest', 'shadow_inf', 'crow', 'bomb_inf',
+  // THE BOULDER GIANT AND THE RALLY THUG CHANGED PLACES, at the owner's word.
+  'boulder_giant', 'rally_inf'
 ];
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

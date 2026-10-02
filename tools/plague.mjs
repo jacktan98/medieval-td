@@ -254,9 +254,17 @@ console.log('\nHe stands off\n');
   // do anything." So the check is inverted rather than deleted, because the
   // inversion is the rule. Left alone he stands there, and the squad stands
   // where it was posted.
+  // The men are kept on their feet for this part, as he is: at 10 a second for
+  // five seconds the spill kills a squad standing in it inside twenty, and a dead
+  // squad is a road with nothing on it, which he would rightly walk on down.
+  // What is measured is the stand-off, not who wins it, so they are healed to
+  // full every second rather than given a health the altar pass would rescale.
   const before = doc.s;
   let secs = 0;
-  for (; secs < 20 && !doc.foe; secs++) step(state, 1);
+  for (; secs < 20 && !doc.foe; secs++) {
+    step(state, 1);
+    for (const u of state.units) u.hp = u.maxHp;
+  }
 
   check(!doc.foe, 'and no soldier leaves the rally point to fetch him',
     `${secs}s with the squad holding`);
