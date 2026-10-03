@@ -50,7 +50,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
 import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
-import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, FOE_CLOSE } from './newfoe.js';
+import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
 const PLOT_R = 30;
@@ -5823,12 +5823,11 @@ function drawFoeAlerts(ctx, state) {
   const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
   alertRects(state).forEach((r, i) => {
     const d = enemyTypes[r.id];
-    const { cx, cy, R, dw, dh, feet } = r;
+    const { cx, cy, R } = r;
 
-    // THE INFO BOX'S MEDALLION AND BAR, piece for piece — see drawInfo. The bar's
-    // bottom is on the line of the figure's feet and it starts under the middle of
-    // the medallion, cut away where the medallion covers it.
-    const ly = feet - ALERT_BAR_H;
+    // The info box's medallion and bar in miniature: a cream disc in a dark ring,
+    // and a bar that starts under its middle, cut away where the disc covers it.
+    const ly = cy - ALERT_BAR_H / 2;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, 960, 540);
@@ -5844,10 +5843,12 @@ function drawFoeAlerts(ctx, state) {
     ctx.strokeStyle = HUD_PLATE_EDGE;
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    // The figure in the middle, well inside the ring — see alertFigure.
     const img = d && art[d.sprite];
     if (img) {
       const [sx, sy, sw, sh] = d.spriteTrim;
-      ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
+      const { dw, dh } = alertFigure(d.spriteTrim);
+      ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, cy - dh / 2, dw, dh);
     }
 
     ctx.save();
@@ -5857,14 +5858,14 @@ function drawFoeAlerts(ctx, state) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = PANEL_INK;
-    ctx.font = '700 13px system-ui, sans-serif';
-    ctx.fillText('New Enemy!', cx + R + 6, ly + ALERT_BAR_H / 2 + 1);
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText('New Enemy!', cx + R + 6, cy + 1);
     ctx.restore();
 
     // And the "!" on its shoulder, which is what says "look at me". It is the one
     // thing that pulses — on the wall clock, so it still does on a paused board,
     // which is when a player has time to open it.
-    const br = 9 * (1 + 0.12 * Math.sin(t * 5 + i));
+    const br = 7.5 * (1 + 0.12 * Math.sin(t * 5 + i));
     const bx = cx + R * 0.71, by = cy - R * 0.71;
     ctx.fillStyle = ALERT_RED;
     ctx.beginPath();
@@ -5876,14 +5877,14 @@ function drawFoeAlerts(ctx, state) {
     ctx.fillStyle = '#F0E6D2';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '800 13px system-ui, sans-serif';
+    ctx.font = '800 11px system-ui, sans-serif';
     ctx.fillText('!', bx, by + 0.5);
   });
 }
 
-// What each stat icon is called on the card. The book prints icons alone, because
-// a player opening it already knows them; this card is the first time the player
-// sees the creature at all, so every number gets its word.
+// What each stat icon is called, for the tip the card shows over an icon under
+// the mouse or tapped. The card itself prints icons and numbers only, as the book
+// does — the words were on it for one build and the owner took them off.
 const FOE_STAT_LABEL = {
   stat_health: 'Health',
   stat_damage: 'Attack',
@@ -5919,8 +5920,9 @@ export function foeStats(d) {
 // The plate is as deep as the slot or the column, whichever is more.
 const FOE_COL_W = 300;
 const FOE_COL_MAX = 440;
+const FOE_STATS_PER_ROW = 4;
 const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
-const FOE_STAT_ROW = 20;
+const FOE_STAT_ROW = 22;
 const FOE_STAT_GAP = 10;               // between the prose and the numbers
 
 function drawFoeCard(ctx, state) {
@@ -5932,7 +5934,7 @@ function drawFoeCard(ctx, state) {
   const w = sw * slot.k, h = sh * slot.k;
 
   const rows = foeStats(d);
-  const statsH = Math.ceil(rows.length / 2) * FOE_STAT_ROW;
+  const statsH = Math.ceil(rows.length / FOE_STATS_PER_ROW) * FOE_STAT_ROW;
   // LENGTHENED RATHER THAN DEEPENED: where the picture is short — a sharp screen
   // caps it small — the column widens, up to FOE_COL_MAX, until the prose and the
   // numbers stand no taller than the picture, so the card stays the pop-up's depth
@@ -5944,18 +5946,16 @@ function drawFoeCard(ctx, state) {
     lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
   }
 
-  // The numbers in two columns, each an icon, its word and its number. The second
-  // column starts past the widest entry in the first, so a long word and a long
-  // number ("Magic armour Med") never run into the next icon.
+  // THE NUMBERS ON A GRID, each an icon and its number and nothing else — the
+  // book's own convention. What an icon means is a tip, shown under the mouse or
+  // on a tap (see FOE_STATS in src/newfoe.js), at the owner's word. Every cell is
+  // as wide as the widest entry, so the icons line up down the columns.
   const entryW = ([key, value]) => {
-    ctx.font = '600 11px system-ui, sans-serif';
-    const lw = ctx.measureText(FOE_STAT_LABEL[key] || '').width;
     ctx.font = '700 12px system-ui, sans-serif';
-    return uiSize(key, { h: POP_STAT_H }).w + 5 + lw + 5 + ctx.measureText(String(value)).width;
+    return uiSize(key, { h: POP_STAT_H }).w + 5 + ctx.measureText(String(value)).width;
   };
-  const firstW = Math.max(...rows.filter((_, i) => i % 2 === 0).map(entryW)) + 16;
-  const secondW = Math.max(0, ...rows.filter((_, i) => i % 2 === 1).map(entryW));
-  const colW = Math.max(textW, firstW + secondW);
+  const cellW = Math.max(...rows.map(entryW)) + 18;
+  const colW = Math.max(textW, cellW * Math.min(FOE_STATS_PER_ROW, rows.length));
   const columnH = lines.length * POP_LEAD + FOE_STAT_GAP + statsH;
 
   const bodyH = Math.max(slot.h, columnH);
@@ -5964,14 +5964,17 @@ function drawFoeCard(ctx, state) {
   const px = Math.round(480 - pw / 2);
   const py = Math.round(270 - ph / 2);
 
-  ctx.fillStyle = 'rgba(20,22,18,0.78)';
+  // A LIGHTER DIM than the book's, at the owner's word — the board it stopped
+  // stays readable behind it — and a black edge rather than the parchment's
+  // gold-brown one.
+  ctx.fillStyle = 'rgba(20,22,18,0.45)';
   ctx.fillRect(0, 0, 960, 540);
 
   ctx.fillStyle = SHEET_FILL;
   ctx.beginPath();
   ctx.roundRect(px, py, pw, ph, 12);
   ctx.fill();
-  ctx.strokeStyle = SHEET_EDGE;
+  ctx.strokeStyle = HUD_PLATE_EDGE;
   ctx.lineWidth = 2;
   ctx.stroke();
 
@@ -6021,20 +6024,36 @@ function drawFoeCard(ctx, state) {
   lines.forEach((line, i) => { if (line) ctx.fillText(line, tx, y0 + POP_LEAD * (i + 0.5)); });
 
   const top = y0 + lines.length * POP_LEAD + FOE_STAT_GAP;
+  FOE_STATS.length = 0;
   rows.forEach(([key, value], i) => {
-    const x = tx + (i % 2) * firstW;
-    const y = top + Math.floor(i / 2) * FOE_STAT_ROW + FOE_STAT_ROW / 2;
+    const x = tx + (i % FOE_STATS_PER_ROW) * cellW;
+    const y = top + Math.floor(i / FOE_STATS_PER_ROW) * FOE_STAT_ROW + FOE_STAT_ROW / 2;
     const { w: iw } = uiSize(key, { h: POP_STAT_H });
     drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
     ctx.textAlign = 'left';
-    ctx.fillStyle = INK_MUTED;
-    ctx.font = '600 11px system-ui, sans-serif';
-    const label = FOE_STAT_LABEL[key] || '';
-    ctx.fillText(label, x + iw + 5, y);
     ctx.fillStyle = POP_STAT_INK[key] || INK;
     ctx.font = '700 12px system-ui, sans-serif';
-    ctx.fillText(String(value), x + iw + 5 + ctx.measureText(label).width + 5, y);
+    ctx.fillText(String(value), x + iw + 5, y);
+    // The icon and its number are the target, the row's full height.
+    FOE_STATS.push({ key, x: x - 2, y: y - FOE_STAT_ROW / 2, w: entryW([key, value]) + 4, h: FOE_STAT_ROW });
   });
+
+  // THE TIP: the icon's name in a small dark plate over it, held inside the card.
+  const tip = state.foeTip !== null && state.foeTip !== undefined && FOE_STATS[state.foeTip];
+  if (tip) {
+    const label = FOE_STAT_LABEL[tip.key] || '';
+    ctx.font = '600 11px system-ui, sans-serif';
+    const lw = ctx.measureText(label).width + 14, lh = 20;
+    const lx = Math.max(px + 6, Math.min(px + pw - 6 - lw, tip.x + tip.w / 2 - lw / 2));
+    const ly = tip.y - lh + 1;
+    ctx.fillStyle = 'rgba(30,26,20,0.94)';
+    ctx.beginPath();
+    ctx.roundRect(lx, ly, lw, lh, 6);
+    ctx.fill();
+    ctx.fillStyle = PANEL_INK;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, lx + lw / 2, ly + lh / 2 + 0.5);
+  }
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';

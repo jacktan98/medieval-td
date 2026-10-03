@@ -16,7 +16,7 @@ import { greetVillager } from './villagers.js';
 import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
-import { hitAlert, openFoeCard, tapFoeCard } from './newfoe.js';
+import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { AIM_MODES } from './data/towers.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
@@ -88,7 +88,18 @@ export function attachInput(canvas, state, restart) {
     // without this the one input that needs no tap at all would walk straight
     // through both — and a radial menu opening itself behind the encyclopedia is
     // a menu the player cannot see and did not ask for.
-    if (state.paused || state.book !== null || state.admin || state.foeCard) {
+    // THE NEW-ENEMY CARD'S STAT ICONS name themselves under the mouse. The rest of
+    // the hover is off while it is up, as it is under the book.
+    if (state.foeCard) {
+      const { x, y } = at(e);
+      const i = hitFoeStat(x, y);
+      state.foeTip = i >= 0 ? i : null;
+      state.hoverTower = null;
+      state.ghost = null;
+      return;
+    }
+
+    if (state.paused || state.book !== null || state.admin) {
       state.hoverTower = null;
       state.ghost = null;
       return;

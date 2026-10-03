@@ -75,13 +75,16 @@ export function noticeFoes(state) {
   }
 }
 
-// --- the medallion ----------------------------------------------------------------
+// --- the info box's medallion ----------------------------------------------------
 //
-// THE INFO BOX'S OWN, at the owner's word: "make the medallion and unit image same
-// size as the ones in description panel". So the figure is drawn at INFO_PORTRAIT *
-// SCALE, as the info box draws every portrait, and the ring grows from 36 until the
-// drawing's top corners are inside it, with the feet 0.62 of the radius below the
-// middle. drawInfo in render.js asks this too, so the two cannot drift apart.
+// The figure drawn at INFO_PORTRAIT * SCALE, as the info box draws every portrait,
+// and the ring grown from 36 until the drawing's top corners are inside it, with
+// the feet 0.62 of the radius below the middle. Asked by drawInfo in render.js.
+//
+// THE ALERT DOES NOT USE IT ANY MORE. It did for one build, at the owner's word,
+// and the owner then found it too big: "go back to the previous size and make the
+// unit image even smaller so that there is good space between the image and edge
+// of medallion." See alertFigure below.
 export const MEDALLION_FEET = 0.62;
 export function medallionOf(trim) {
   const dw = trim ? trim[2] * SCALE * INFO_PORTRAIT : 58;
@@ -95,26 +98,32 @@ export function medallionOf(trim) {
 //
 // One medallion each with its bar, stacked downwards from just under the readout
 // bars, oldest on top. A wave that brings two new creatures at once shows two.
-// Each is as tall as its own medallion, so a giant's sits a little lower than a
-// thug's would.
-const ALERT_X = 12;
-const ALERT_Y = 38;                        // the bars end at 32
-const ALERT_GAP = 6;
+//
+// 44 ACROSS, the size it first had, with the figure fitted INSIDE a smaller circle
+// rather than to the ring: its corners stay ALERT_AIR clear of the edge, so there
+// is a clear band of parchment all the way round whatever the drawing's shape.
+export const ALERT_D = 44;
+export const ALERT_AIR = 7;
+const ALERT_X = 14;
+const ALERT_Y = 40;                        // the bars end at 32
+const ALERT_GAP = 8;
 // How far the bar reaches right of the medallion's middle — part of the target,
 // because it is part of the picture.
-export const ALERT_BAR_W = 140;
-export const ALERT_BAR_H = 28;
+export const ALERT_BAR_W = 104;
+export const ALERT_BAR_H = 24;
+
+// The figure's drawn size: its box's half-diagonal on the inner circle.
+export function alertFigure(trim) {
+  const [, , sw, sh] = trim;
+  const k = (ALERT_D / 2 - ALERT_AIR) / Math.hypot(sw / 2, sh / 2);
+  return { dw: sw * k, dh: sh * k };
+}
 
 export function alertRects(state) {
-  let y = ALERT_Y;
-  return (state.foeAlerts || []).map(id => {
-    const d = enemyTypes[id];
-    const m = medallionOf(d && d.spriteTrim);
-    const cx = ALERT_X + m.R, cy = y + m.R;
-    const r = { id, ...m, cx, cy, feet: cy + MEDALLION_FEET * m.R,
-      x: ALERT_X, y, w: m.R + ALERT_BAR_W, h: 2 * m.R };
-    y += 2 * m.R + ALERT_GAP;
-    return r;
+  const R = ALERT_D / 2;
+  return (state.foeAlerts || []).map((id, i) => {
+    const y = ALERT_Y + i * (ALERT_D + ALERT_GAP);
+    return { id, R, cx: ALERT_X + R, cy: y + R, x: ALERT_X, y, w: R + ALERT_BAR_W, h: ALERT_D };
   });
 }
 
@@ -134,11 +143,12 @@ export function hitAlert(state, x, y) {
 export function openFoeCard(state, i) {
   const [id] = state.foeAlerts.splice(i, 1);
   state.foeCard = id;
+  state.foeTip = null;
   state.menu = null;
   state.placing = null;
 }
 
-export const closeFoeCard = state => { state.foeCard = null; };
+export const closeFoeCard = state => { state.foeCard = null; state.foeTip = null; };
 
 // THE CARD IS SIZED BY render.js, which is the only place that knows how big the
 // picture can be drawn on this screen and how long the description wraps — see
@@ -146,11 +156,26 @@ export const closeFoeCard = state => { state.foeCard = null; };
 // are the same rect.
 export const FOE_CLOSE = { x: 0, y: 0, w: 30, h: 30 };
 
+// AND EACH STAT'S ICON AND NUMBER, as { x, y, w, h, key }, for the same reason.
+// The card prints icons and numbers only; what an icon MEANS — Health, Range — is
+// shown when the mouse is over it or it is tapped, at the owner's word: "remove
+// the icon names and only show the icon name when a player hovers or clicks on
+// the small icon". Which one is showing is `state.foeTip`.
+export const FOE_STATS = [];
+
+const inRect = (b, x, y, p) => x >= b.x - p && x <= b.x + b.w + p && y >= b.y - p && y <= b.y + b.h + p;
+
+export const hitFoeStat = (x, y) => FOE_STATS.findIndex(b => inRect(b, x, y, 2));
+
+// The X closes the card. A stat shows its name, and a tap anywhere else puts a
+// name that is showing away. Nothing else on screen answers.
 export function tapFoeCard(state, x, y) {
-  const b = FOE_CLOSE, p = 10;
-  if (x >= b.x - p && x <= b.x + b.w + p && y >= b.y - p && y <= b.y + b.h + p) {
+  if (inRect(FOE_CLOSE, x, y, 10)) {
     closeFoeCard(state);
     return true;
   }
+  const i = hitFoeStat(x, y);
+  if (i >= 0) { state.foeTip = i; return true; }
+  if (state.foeTip !== null && state.foeTip !== undefined) { state.foeTip = null; return true; }
   return false;
 }

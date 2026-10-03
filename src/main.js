@@ -258,7 +258,9 @@ function newGame() {
     // The card stops the game while it is up. Both reset here: an alert left
     // unopened goes with the game it was raised in. See src/newfoe.js.
     foeAlerts: [],
-    foeCard: null
+    foeCard: null,
+    // Which of the card's stat icons is showing its name, or null.
+    foeTip: null
   });
 
   // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the

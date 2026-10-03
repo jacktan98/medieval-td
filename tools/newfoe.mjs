@@ -101,6 +101,14 @@ console.log('\nThe card\n');
   const hits = [[200, 200], [480, 270], [10, 10], [x.x - 30, x.y + 14]]
     .filter(([px, py]) => m.tapFoeCard(s, px, py));
   check(!hits.length && s.foeCard === 'crow', 'a tap anywhere but the X leaves it open', `${hits.length} closed it`);
+
+  // THE ICONS NAME THEMSELVES on a tap, and a tap elsewhere puts the name away
+  // without closing the card. The rects are placed by render.js as it draws.
+  m.FOE_STATS.length = 0;
+  m.FOE_STATS.push({ key: 'stat_health', x: 400, y: 300, w: 50, h: 22 }, { key: 'stat_range', x: 470, y: 300, w: 50, h: 22 });
+  check(m.tapFoeCard(s, 490, 311) && s.foeTip === 1 && s.foeCard === 'crow', 'a tap on a stat icon shows its name', `tip ${s.foeTip}`);
+  check(m.tapFoeCard(s, 200, 200) && s.foeTip === null && s.foeCard === 'crow', 'and a tap elsewhere puts it away, the card still up');
+
   check(m.tapFoeCard(s, x.x + x.w / 2, x.y + x.h / 2) && s.foeCard === null, 'and the X closes it');
 }
 
@@ -118,11 +126,14 @@ console.log('\nUnder the gold\n');
   check(rects[0].y >= 32, 'and start under the readout bars', `top ${rects[0].y}`);
   check(rects.every((r, i) => !i || r.y >= rects[i - 1].y + rects[i - 1].h), 'and do not overlap one another');
 
-  // THE INFO BOX'S MEDALLION, at the owner's word: the same figure size and the
-  // same ring. 36 is the info box's smallest ring, and the Thug's.
-  const thug = rects[2];
-  check(thug.R === 36, 'a Thug\'s medallion is the info box\'s 36', `${thug.R}`);
-  check(rects[0].R > 36, 'and a giant\'s grows round him as it does there', `${rects[0].R}`);
+  // 44 ACROSS, every one, with the figure's corners kept off the ring — the
+  // owner's "good space between the image and edge of medallion".
+  check(rects.every(r => r.R * 2 === m.ALERT_D && m.ALERT_D === 44), 'every medallion is 44 across', `${rects.map(r => r.R * 2).join(' / ')}`);
+  const worst = Math.max(...Object.values(enemyTypes).map(d => {
+    const f = m.alertFigure(d.spriteTrim);
+    return Math.hypot(f.dw / 2, f.dh / 2);
+  }));
+  check(m.ALERT_D / 2 - worst >= 6, 'and no figure comes within 6px of its ring', `${(m.ALERT_D / 2 - worst).toFixed(1)}px at the closest`);
 
   const r = rects[1];
   check(m.hitAlert(s, r.x + 10, r.y + r.h / 2) === 1, 'a tap on the second alert finds the second');
