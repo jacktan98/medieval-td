@@ -20,6 +20,8 @@
 // The geometry lives here and the drawing in render.js, the same split as book.js,
 // so input.js hit-tests exactly the rects that get drawn.
 import { enemyTypes } from './data/waves.js';
+import { SCALE } from './data/towers.js';
+import { INFO_PORTRAIT } from './data/ui.js';
 
 const KEY = 'medieval-td/met';
 
@@ -73,32 +75,55 @@ export function noticeFoes(state) {
   }
 }
 
+// --- the medallion ----------------------------------------------------------------
+//
+// THE INFO BOX'S OWN, at the owner's word: "make the medallion and unit image same
+// size as the ones in description panel". So the figure is drawn at INFO_PORTRAIT *
+// SCALE, as the info box draws every portrait, and the ring grows from 36 until the
+// drawing's top corners are inside it, with the feet 0.62 of the radius below the
+// middle. drawInfo in render.js asks this too, so the two cannot drift apart.
+export const MEDALLION_FEET = 0.62;
+export function medallionOf(trim) {
+  const dw = trim ? trim[2] * SCALE * INFO_PORTRAIT : 58;
+  const dh = trim ? trim[3] * SCALE * INFO_PORTRAIT : 50;
+  let R = 36;
+  while (Math.hypot(dw / 2, dh - MEDALLION_FEET * R) > R - 3) R++;
+  return { dw, dh, R };
+}
+
 // --- the alerts, under the gold -------------------------------------------------
 //
-// One round badge each, stacked downwards from just under the readout bars, oldest
-// on top. A wave that brings two new creatures at once shows two.
-export const ALERT_D = 44;                 // the badge's diameter
-const ALERT_X = 14;
-const ALERT_Y = 40;                        // the bars end at 32
-const ALERT_STEP = ALERT_D + 10;
-// How far the label tag reaches right of the badge — part of the target, because
-// it is part of the picture.
-export const ALERT_TAG_W = 100;
+// One medallion each with its bar, stacked downwards from just under the readout
+// bars, oldest on top. A wave that brings two new creatures at once shows two.
+// Each is as tall as its own medallion, so a giant's sits a little lower than a
+// thug's would.
+const ALERT_X = 12;
+const ALERT_Y = 38;                        // the bars end at 32
+const ALERT_GAP = 6;
+// How far the bar reaches right of the medallion's middle — part of the target,
+// because it is part of the picture.
+export const ALERT_BAR_W = 140;
+export const ALERT_BAR_H = 28;
 
-export const alertRect = i => ({
-  x: ALERT_X, y: ALERT_Y + i * ALERT_STEP, w: ALERT_D + ALERT_TAG_W, h: ALERT_D
-});
+export function alertRects(state) {
+  let y = ALERT_Y;
+  return (state.foeAlerts || []).map(id => {
+    const d = enemyTypes[id];
+    const m = medallionOf(d && d.spriteTrim);
+    const cx = ALERT_X + m.R, cy = y + m.R;
+    const r = { id, ...m, cx, cy, feet: cy + MEDALLION_FEET * m.R,
+      x: ALERT_X, y, w: m.R + ALERT_BAR_W, h: 2 * m.R };
+    y += 2 * m.R + ALERT_GAP;
+    return r;
+  });
+}
 
 // Which alert a tap is on, or -1. Padded like the book footer's buttons, so a
-// thumb that lands just off the badge still finds it.
-const PAD = 6;
+// thumb that lands just off the medallion still finds it.
+const PAD = 4;
 export function hitAlert(state, x, y) {
-  const alerts = state.foeAlerts || [];
-  for (let i = 0; i < alerts.length; i++) {
-    const r = alertRect(i);
-    if (x >= r.x - PAD && x <= r.x + r.w + PAD && y >= r.y - PAD && y <= r.y + r.h + PAD) return i;
-  }
-  return -1;
+  return alertRects(state).findIndex(r =>
+    x >= r.x - PAD && x <= r.x + r.w + PAD && y >= r.y - PAD && y <= r.y + r.h + PAD);
 }
 
 // --- the card -----------------------------------------------------------------
@@ -115,10 +140,11 @@ export function openFoeCard(state, i) {
 
 export const closeFoeCard = state => { state.foeCard = null; };
 
-export const FOE_CARD = { x: 480 - 290, y: 270 - 175, w: 580, h: 350 };
-export const FOE_CLOSE = { x: FOE_CARD.x + FOE_CARD.w - 46, y: FOE_CARD.y + 12, w: 34, h: 34 };
-// The picture's slot, down the left of the card under the title band.
-export const FOE_PICTURE = { x: FOE_CARD.x + 22, y: FOE_CARD.y + 86, w: 200, h: 240 };
+// THE CARD IS SIZED BY render.js, which is the only place that knows how big the
+// picture can be drawn on this screen and how long the description wraps — see
+// drawFoeCard. It leaves the X where it drew it, here, so the tap and the picture
+// are the same rect.
+export const FOE_CLOSE = { x: 0, y: 0, w: 30, h: 30 };
 
 export function tapFoeCard(state, x, y) {
   const b = FOE_CLOSE, p = 10;

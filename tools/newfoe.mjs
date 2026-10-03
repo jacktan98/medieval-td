@@ -94,15 +94,14 @@ console.log('\nThe card\n');
     `${s.foeCard}, left ${s.foeAlerts.join(', ')}`);
   check(s.menu === null, 'and closes a build menu left open under it');
 
-  const c = m.FOE_CARD, x = m.FOE_CLOSE;
-  const hits = [[c.x + 40, c.y + 40], [480, 270], [10, 10], [c.x + c.w - 4, c.y + c.h - 4]]
+  // The X is placed by render.js as it draws the card; put it somewhere for the
+  // tap test, as a drawn card would.
+  Object.assign(m.FOE_CLOSE, { x: 700, y: 120, w: 28, h: 28 });
+  const x = m.FOE_CLOSE;
+  const hits = [[200, 200], [480, 270], [10, 10], [x.x - 30, x.y + 14]]
     .filter(([px, py]) => m.tapFoeCard(s, px, py));
   check(!hits.length && s.foeCard === 'crow', 'a tap anywhere but the X leaves it open', `${hits.length} closed it`);
   check(m.tapFoeCard(s, x.x + x.w / 2, x.y + x.h / 2) && s.foeCard === null, 'and the X closes it');
-
-  const inside = r => r.x >= c.x && r.y >= c.y && r.x + r.w <= c.x + c.w && r.y + r.h <= c.y + c.h;
-  check(inside(x) && inside(m.FOE_PICTURE), 'the X and the picture are on the card');
-  check(c.x >= 0 && c.y >= 0 && c.x + c.w <= 960 && c.y + c.h <= 540, 'and the card is on the board');
 }
 
 console.log('\nUnder the gold\n');
@@ -111,15 +110,21 @@ console.log('\nUnder the gold\n');
   const m = await fresh();
   const { HUD_BTN } = await import('../src/render.js');
   const left = Math.min(...Object.values(HUD_BTN).map(b => b.x));
-  const rects = [0, 1, 2, 3].map(m.alertRect);
+  const s = board();
+  s.foeAlerts = ['heavy_inf', 'boulder_giant', 'light_inf', 'crow'];
+  const rects = m.alertRects(s);
   check(rects.every(r => r.x + r.w + 6 < left), 'four alerts stacked stay clear of the HUD buttons',
     `right edge ${Math.max(...rects.map(r => r.x + r.w))} against ${left}`);
   check(rects[0].y >= 32, 'and start under the readout bars', `top ${rects[0].y}`);
   check(rects.every((r, i) => !i || r.y >= rects[i - 1].y + rects[i - 1].h), 'and do not overlap one another');
 
-  const s = board();
-  s.foeAlerts = ['crow', 'bomb_inf'];
-  const r = m.alertRect(1);
+  // THE INFO BOX'S MEDALLION, at the owner's word: the same figure size and the
+  // same ring. 36 is the info box's smallest ring, and the Thug's.
+  const thug = rects[2];
+  check(thug.R === 36, 'a Thug\'s medallion is the info box\'s 36', `${thug.R}`);
+  check(rects[0].R > 36, 'and a giant\'s grows round him as it does there', `${rects[0].R}`);
+
+  const r = rects[1];
   check(m.hitAlert(s, r.x + 10, r.y + r.h / 2) === 1, 'a tap on the second alert finds the second');
   check(m.hitAlert(s, 600, 300) === -1, 'and a tap on the board finds none');
 }

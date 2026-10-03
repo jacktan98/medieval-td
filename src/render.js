@@ -50,7 +50,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
 import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
-import { alertRect, ALERT_D, FOE_CARD, FOE_CLOSE, FOE_PICTURE } from './newfoe.js';
+import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, FOE_CLOSE } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
 const PLOT_R = 30;
@@ -5258,7 +5258,7 @@ export const INFO_BOX = { x: 960 - INFO_W - 12, y: 9, w: INFO_W, h: INFO_H, art:
 // round. Every portrait is drawn at INFO_PORTRAIT * SCALE — one factor, so a
 // Club Giant is genuinely bigger than a Thug — and the largest of them is the
 // heavy at 186 x 162 source, which lands at 61 x 53. 64 x 56 holds it.
-const PORTRAIT = { w: 58, h: 50 };
+// (The 58 x 50 fallback for a figure with no drawing lives in medallionOf now.)
 
 // The stat icons' height. 14, AND IT WAS 12. Twelve was what a 10px gap between the pairs left room for;
 // the gap is 6 now — see STAT_GAP.
@@ -5281,12 +5281,9 @@ function drawInfo(ctx, state) {
   // medallion, and the text starts just past it.
   const BOTTOM = 540 - 12;
   const img = info.sprite && art[info.sprite];
-  let dw = PORTRAIT.w, dh = PORTRAIT.h;
-  if (img && info.trim) {
-    const [, , sw, sh] = info.trim;
-    dw = sw * SCALE * INFO_PORTRAIT;
-    dh = sh * SCALE * INFO_PORTRAIT;
-  }
+  // The size of the figure and of the ring it stands in — see medallionOf in
+  // src/newfoe.js, which the "New Enemy!" alert asks too, so the two match.
+  const { dw, dh, R } = medallionOf(img && info.trim ? info.trim : null);
   // A ROUND MEDALLION the figure stands in, and the bar's bottom edge on the
   // line of its ground shadow, so the figure reads as standing on the bar.
   //
@@ -5300,11 +5297,9 @@ function drawInfo(ctx, state) {
   // — a pikeman's — ran almost to the ring, because the ring narrows fast that far
   // below its middle. The bigger ring with the feet a little higher in it leaves
   // air round the shadow. The feet are still on the same line as before.
-  const FEET = 0.62;
+  const FEET = MEDALLION_FEET;
   // Grown until the drawing's top corners are inside the ring — a Giant's club
-  // reaches out to the top left of his box.
-  let R = 36;
-  while (Math.hypot(dw / 2, dh - FEET * R) > R - 3) R++;
+  // reaches out to the top left of his box. That is in medallionOf now.
   const feet = BOTTOM - 32 + 0.69 * 32;
   const cx = 12 + R, cy = feet - FEET * R;
   const barX = cx;
@@ -5826,56 +5821,51 @@ const ALERT_RED = '#B3362A';
 
 function drawFoeAlerts(ctx, state) {
   const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
-  (state.foeAlerts || []).forEach((id, i) => {
-    const r = alertRect(i);
-    const d = enemyTypes[id];
-    const cx = r.x + ALERT_D / 2, cy = r.y + ALERT_D / 2;
-    const pulse = 1 + 0.06 * Math.sin(t * 5 + i);
-    const rad = ALERT_D / 2 * pulse;
+  alertRects(state).forEach((r, i) => {
+    const d = enemyTypes[r.id];
+    const { cx, cy, R, dw, dh, feet } = r;
 
-    // The tag first, so the badge overlaps its left end the way the gold coin
-    // overlaps its bar.
-    const tagX = cx, tagW = r.x + r.w - tagX, tagH = 24;
-    scrimBox(ctx, tagX, cy - tagH / 2, tagW, tagH, tagH / 2);
+    // THE INFO BOX'S MEDALLION AND BAR, piece for piece — see drawInfo. The bar's
+    // bottom is on the line of the figure's feet and it starts under the middle of
+    // the medallion, cut away where the medallion covers it.
+    const ly = feet - ALERT_BAR_H;
     ctx.save();
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.font = '700 12px system-ui, sans-serif';
-    ctx.shadowColor = 'rgba(12,14,10,0.85)';
-    ctx.shadowBlur = 3;
-    ctx.fillStyle = '#F0E6D2';
-    ctx.fillText('New enemy!', cx + ALERT_D / 2 + 6, cy);
-    ctx.restore();
-
-    // The badge: a parchment disc with the creature on it, in a gold rim.
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = SHEET_FILL;
     ctx.beginPath();
-    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.rect(0, 0, 960, 540);
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.clip('evenodd');
+    scrimBox(ctx, cx, ly, r.x + r.w - cx, ALERT_BAR_H);
     ctx.restore();
 
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = HUD_PLATE;
+    ctx.fill();
+    ctx.strokeStyle = HUD_PLATE_EDGE;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     const img = d && art[d.sprite];
     if (img) {
       const [sx, sy, sw, sh] = d.spriteTrim;
-      const k = Math.min((rad * 2 - 8) / sw, (rad * 2 - 8) / sh);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, rad - 2, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(img, sx, sy, sw, sh, cx - sw * k / 2, cy - sh * k / 2, sw * k, sh * k);
-      ctx.restore();
+      ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
     }
-    ctx.strokeStyle = ALERT_RIM;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-    ctx.stroke();
 
-    // And the "!" on its shoulder, which is what says "look at me".
-    const bx = cx + rad * 0.72, by = cy - rad * 0.72, br = 9;
+    ctx.save();
+    ctx.shadowColor = 'rgba(12,14,10,0.85)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 1;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = PANEL_INK;
+    ctx.font = '700 13px system-ui, sans-serif';
+    ctx.fillText('New Enemy!', cx + R + 6, ly + ALERT_BAR_H / 2 + 1);
+    ctx.restore();
+
+    // And the "!" on its shoulder, which is what says "look at me". It is the one
+    // thing that pulses — on the wall clock, so it still does on a paused board,
+    // which is when a player has time to open it.
+    const br = 9 * (1 + 0.12 * Math.sin(t * 5 + i));
+    const bx = cx + R * 0.71, by = cy - R * 0.71;
     ctx.fillStyle = ALERT_RED;
     ctx.beginPath();
     ctx.arc(bx, by, br, 0, Math.PI * 2);
@@ -5918,38 +5908,86 @@ export function foeStats(d) {
   return out;
 }
 
-const FOE_LEAD = 18;
-const FOE_STAT_ROW = 26;
-const FOE_STAT_ICON = 16;
+// THE CARD IS THE ENCYCLOPEDIA'S PICTURE POP-UP, LENGTHENED, at the owner's word:
+// "it should be limited by the resolution of the unit png. So, the size should
+// follow the card size when selected in encyclopedia. You can lengthen it
+// horizontally to fit the description and text on the right."
+//
+// So the picture's slot is popSlot's, at the same cap the pop-up uses — never more
+// than one source pixel per screen pixel — the padding and the title are the
+// pop-up's, and the description and the numbers make a column to the right of it.
+// The plate is as deep as the slot or the column, whichever is more.
+const FOE_COL_W = 300;
+const FOE_COL_MAX = 440;
+const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
+const FOE_STAT_ROW = 20;
+const FOE_STAT_GAP = 10;               // between the prose and the numbers
 
 function drawFoeCard(ctx, state) {
   const d = enemyTypes[state.foeCard];
   if (!d) return;
-  const c = FOE_CARD;
+
+  const slot = popSlot('figure', 1 / device);
+  const [sx, sy, sw, sh] = d.spriteTrim;
+  const w = sw * slot.k, h = sh * slot.k;
+
+  const rows = foeStats(d);
+  const statsH = Math.ceil(rows.length / 2) * FOE_STAT_ROW;
+  // LENGTHENED RATHER THAN DEEPENED: where the picture is short — a sharp screen
+  // caps it small — the column widens, up to FOE_COL_MAX, until the prose and the
+  // numbers stand no taller than the picture, so the card stays the pop-up's depth
+  // for as long as it can.
+  let textW = FOE_COL_W;
+  let lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
+  while (textW < FOE_COL_MAX && lines.length * POP_LEAD + FOE_STAT_GAP + statsH > slot.h) {
+    textW += 20;
+    lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
+  }
+
+  // The numbers in two columns, each an icon, its word and its number. The second
+  // column starts past the widest entry in the first, so a long word and a long
+  // number ("Magic armour Med") never run into the next icon.
+  const entryW = ([key, value]) => {
+    ctx.font = '600 11px system-ui, sans-serif';
+    const lw = ctx.measureText(FOE_STAT_LABEL[key] || '').width;
+    ctx.font = '700 12px system-ui, sans-serif';
+    return uiSize(key, { h: POP_STAT_H }).w + 5 + lw + 5 + ctx.measureText(String(value)).width;
+  };
+  const firstW = Math.max(...rows.filter((_, i) => i % 2 === 0).map(entryW)) + 16;
+  const secondW = Math.max(0, ...rows.filter((_, i) => i % 2 === 1).map(entryW));
+  const colW = Math.max(textW, firstW + secondW);
+  const columnH = lines.length * POP_LEAD + FOE_STAT_GAP + statsH;
+
+  const bodyH = Math.max(slot.h, columnH);
+  const pw = POP_PAD * 2 + slot.w + POP_GAP + colW;
+  const ph = POP_PAD * 2 + FOE_LABEL + POP_TITLE + POP_GAP + bodyH;
+  const px = Math.round(480 - pw / 2);
+  const py = Math.round(270 - ph / 2);
 
   ctx.fillStyle = 'rgba(20,22,18,0.78)';
   ctx.fillRect(0, 0, 960, 540);
 
   ctx.fillStyle = SHEET_FILL;
   ctx.beginPath();
-  ctx.roundRect(c.x, c.y, c.w, c.h, 12);
+  ctx.roundRect(px, py, pw, ph, 12);
   ctx.fill();
   ctx.strokeStyle = SHEET_EDGE;
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // The title band: what this is, then who.
+  // What this is, then who — the name in the pop-up's own title type.
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ALERT_RED;
-  ctx.font = '800 13px system-ui, sans-serif';
-  ctx.fillText('NEW ENEMY', 480, c.y + 28);
+  ctx.font = '800 11px system-ui, sans-serif';
+  ctx.fillText('NEW ENEMY', 480, py + POP_PAD + FOE_LABEL / 2 - 4);
   ctx.fillStyle = INK;
-  ctx.font = '700 24px system-ui, sans-serif';
-  ctx.fillText(d.name, 480, c.y + 56);
+  ctx.font = '700 18px system-ui, sans-serif';
+  ctx.fillText(d.name, 480, py + POP_PAD + FOE_LABEL + POP_TITLE / 2 - 4);
 
-  // The X, top right: a dark disc with a cream cross, the way every control on
-  // the board is drawn.
+  // The X, top right: a dark disc with a cream cross. Its rect is left in
+  // FOE_CLOSE for the tap to find.
+  Object.assign(FOE_CLOSE, { x: px + pw - 12 - 28, y: py + 12, w: 28, h: 28 });
   const b = FOE_CLOSE;
   const xr = b.w / 2, xc = b.x + xr, yc = b.y + xr;
   ctx.fillStyle = 'rgba(74,64,48,0.92)';
@@ -5957,66 +5995,45 @@ function drawFoeCard(ctx, state) {
   ctx.arc(xc, yc, xr, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = SHEET_FILL;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(xc - 7, yc - 7); ctx.lineTo(xc + 7, yc + 7);
-  ctx.moveTo(xc + 7, yc - 7); ctx.lineTo(xc - 7, yc + 7);
+  ctx.moveTo(xc - 6, yc - 6); ctx.lineTo(xc + 6, yc + 6);
+  ctx.moveTo(xc + 6, yc - 6); ctx.lineTo(xc - 6, yc + 6);
   ctx.stroke();
   ctx.lineCap = 'butt';
 
-  // The picture, standing in its own slot down the left.
-  const p = FOE_PICTURE;
-  card(ctx, p);
+  // The picture, centred in its slot both ways, exactly as the pop-up places it.
+  const bodyY = py + POP_PAD + FOE_LABEL + POP_TITLE + POP_GAP;
   const img = art[d.sprite];
   if (img) {
-    const [sx, sy, sw, sh] = d.spriteTrim;
-    // Never past 1.5x of the drawing: bigger than that and it goes soft.
-    const k = Math.min((p.w - 24) / sw, (p.h - 24) / sh, 1.5);
-    ctx.drawImage(img, sx, sy, sw, sh,
-      p.x + (p.w - sw * k) / 2, p.y + (p.h - sh * k) / 2, sw * k, sh * k);
+    const cx = px + POP_PAD + slot.w / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, cx - w / 2, bodyY + (bodyH - h) / 2, w, h);
   }
 
-  // The column beside it: what he does, then his numbers.
-  const tx = p.x + p.w + 22;
-  const tw = c.x + c.w - 24 - tx;
-  // wrapped() measures at POP_TEXT and this is set a pixel larger, so it is asked
-  // for a column narrowed by the same ratio — text width scales with its size.
-  const lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', tw * POP_TEXT / (POP_TEXT + 1));
-  const rows = foeStats(d);
-  // The prose and the stats as one block, centred against the picture.
-  const blockH = lines.length * FOE_LEAD + 16 + Math.ceil(rows.length / 2) * FOE_STAT_ROW;
-  const y0 = p.y + Math.max(0, (p.h - blockH) / 2);
+  // The column: what he does, then his numbers, centred against the picture.
+  const tx = px + POP_PAD + slot.w + POP_GAP;
+  const y0 = bodyY + (bodyH - columnH) / 2;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
-  ctx.font = `500 ${POP_TEXT + 1}px system-ui, sans-serif`;
-  lines.forEach((line, i) => ctx.fillText(line, tx, y0 + FOE_LEAD * (i + 0.5)));
+  ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
+  lines.forEach((line, i) => { if (line) ctx.fillText(line, tx, y0 + POP_LEAD * (i + 0.5)); });
 
-  // Two columns of stats under the prose, each an icon, its word and its number.
-  const top = y0 + lines.length * FOE_LEAD + 16;
-  // The second column starts past the widest entry in the first, so a long word
-  // and a long number ("Magic armour Med") never run into the next icon.
-  const entryW = ([key, value]) => {
-    ctx.font = '600 12px system-ui, sans-serif';
-    const lw = ctx.measureText(FOE_STAT_LABEL[key] || '').width;
-    ctx.font = '700 13px system-ui, sans-serif';
-    return uiSize(key, { h: FOE_STAT_ICON }).w + 6 + lw + 6 + ctx.measureText(String(value)).width;
-  };
-  const colW = Math.max(tw / 2, ...rows.filter((_, i) => i % 2 === 0).map(entryW).map(w => w + 20));
+  const top = y0 + lines.length * POP_LEAD + FOE_STAT_GAP;
   rows.forEach(([key, value], i) => {
-    const x = tx + (i % 2) * colW;
+    const x = tx + (i % 2) * firstW;
     const y = top + Math.floor(i / 2) * FOE_STAT_ROW + FOE_STAT_ROW / 2;
-    const { w } = uiSize(key, { h: FOE_STAT_ICON });
-    drawUi(ctx, key, x + w / 2, y, { h: FOE_STAT_ICON });
+    const { w: iw } = uiSize(key, { h: POP_STAT_H });
+    drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
     ctx.textAlign = 'left';
     ctx.fillStyle = INK_MUTED;
-    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.font = '600 11px system-ui, sans-serif';
     const label = FOE_STAT_LABEL[key] || '';
-    ctx.fillText(label, x + w + 6, y);
+    ctx.fillText(label, x + iw + 5, y);
     ctx.fillStyle = POP_STAT_INK[key] || INK;
-    ctx.font = '700 13px system-ui, sans-serif';
-    ctx.fillText(String(value), x + w + 6 + ctx.measureText(label).width + 6, y);
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.fillText(String(value), x + iw + 5 + ctx.measureText(label).width + 5, y);
   });
 
   ctx.textAlign = 'left';
