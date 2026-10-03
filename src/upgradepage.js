@@ -25,7 +25,10 @@ export const UP_SHEET = { x: 8, y: 8, w: 944, h: 524 };
 export const UP_TITLE_Y = 40;
 // The star counter's slot: its RIGHT edge and its height are fixed here; render.js
 // sizes its width to the number it holds, so the padding is even either side.
-export const UP_STARS = { x: 852, y: 20, w: 78, h: 38 };
+// 30 DOWN, AND IT WAS 20: as far below the sheet's top as its right edge stands in
+// from the sheet's right side, so the margin is the same both ways — and the same
+// as under Reset and Done.
+export const UP_STARS = { x: 852, y: 30, w: 78, h: 38 };
 
 // The four columns, left to right in the build menu's order, and the four rungs in
 // each, the first at the BOTTOM — a ladder is climbed.

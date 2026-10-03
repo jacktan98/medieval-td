@@ -6395,9 +6395,12 @@ function drawUpgrades(ctx, state) {
         ctx.strokeStyle = ring;
         ctx.lineWidth = 3;
         ctx.shadowColor = ring;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 18;
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
+        // Twice through the blur, which is what makes the glow carry rather than
+        // only soften the edge — "a bit more", at the owner's word.
+        ctx.stroke();
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.stroke();
@@ -6426,7 +6429,18 @@ function drawUpgrades(ctx, state) {
   // tapUpgrades — and says "Confirm?" while it waits. The screen's dark buttons
   // are edged in cream, at the owner's word.
   const armed = state.upArmed && Date.now() < state.upArmed;
-  bookButton(ctx, UP_RESET, armed ? 'Confirm?' : 'Reset', 0, `20px ${MAP_TYPE}`, UI_INK);
+  // ARMED, IT IS THE PAUSE ROW'S ARMED BUTTON, at the owner's word: the gold edge
+  // and the gold word that Restart and Quit wear when they ask "Confirm?".
+  if (armed) {
+    panelBox(ctx, UP_RESET.x, UP_RESET.y, UP_RESET.w, UP_RESET.h, { hot: true, r: 8, press: true });
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = UI_GOLD;
+    ctx.font = `20px ${MAP_TYPE}`;
+    ctx.fillText('Confirm?', UP_RESET.x + UP_RESET.w / 2, UP_RESET.y + UP_RESET.h / 2 + 1);
+  } else {
+    bookButton(ctx, UP_RESET, 'Reset', 0, `20px ${MAP_TYPE}`, UI_INK);
+  }
   bookButton(ctx, UP_DONE, 'Done', 0, `20px ${MAP_TYPE}`, UI_INK);
 
   ctx.textAlign = 'left';
