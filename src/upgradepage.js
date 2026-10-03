@@ -21,7 +21,8 @@ export const UPGRADES_BTN = { x: 270, y: 460, w: 200, h: 46 };
 
 export const UP_SHEET = { x: 8, y: 8, w: 944, h: 524 };
 export const UP_TITLE_Y = 40;
-export const UP_STARS = { x: 806, y: 20, w: 124, h: 38 };
+// Sized for two digits — forty-five stars is the most the campaign pays.
+export const UP_STARS = { x: 852, y: 20, w: 78, h: 38 };
 
 // The four columns, left to right in the build menu's order, and the four rungs in
 // each, the first at the BOTTOM — a ladder is climbed.

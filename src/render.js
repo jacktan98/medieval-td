@@ -6153,6 +6153,33 @@ const UP_GOLD = '#E7C15A';
 const UP_GLYPH = Object.fromEntries(families.map(f => [f.id, f.glyph]));
 const UP_PICK = '#2F5FA8';
 
+// A UI PICTURE IN BLACK AND WHITE, made once per key and kept. Done on the pixels
+// rather than with ctx.filter, which older Safari ignores — this works wherever a
+// canvas does. Returns false where the picture is not loaded yet.
+const grayCache = new Map();
+function drawGray(ctx, key, x, y, box) {
+  const img = art[key];
+  if (!img || !ui[key]) return false;
+  let c = grayCache.get(key);
+  if (!c) {
+    const [sx, sy, sw, sh] = ui[key].trim;
+    c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    const g = c.getContext('2d');
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+    const im = g.getImageData(0, 0, sw, sh), d = im.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      d[i] = d[i + 1] = d[i + 2] = l;
+    }
+    g.putImageData(im, 0, 0);
+    grayCache.set(key, c);
+  }
+  const { w, h } = uiSize(key, box);
+  ctx.drawImage(c, x - w / 2, y - h / 2, w, h);
+  return true;
+}
+
 function drawUpgrades(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.88)';
   ctx.fillRect(0, 0, 960, 540);
@@ -6218,17 +6245,22 @@ function drawUpgrades(ctx, state) {
       // THE ARTIST'S FACE FOR THE RUNG, whole — its own coloured disc and rim.
       //
       // FULL COLOUR MEANS BOUGHT, at the owner's word: "When the image is coloured,
-      // it means it has been bought. So without any upgrades, all the images should
-      // have faded colour." Every rung not yet bought is drawn washed out — most of
-      // its colour taken out and its strength turned down — and the one that can be
-      // bought next a little less so than the ones still locked above it. Where the
-      // browser cannot take the colour out, the fade alone still says it.
+      // it means it has been bought." Every rung not yet bought is drawn in BLACK AND
+      // WHITE and well faded — "more faded and if can black and white" — and the one
+      // that can be bought next a little less faded than those locked above it.
+      //
+      // SELECTED, IT SHOWS ITS COLOUR, less faded, so the player sees what they are
+      // reading about before they buy it: "if selected, it reveals colour with less
+      // fade". The rung under the mouse counts, as it fills the panel the same way.
+      const looked = same(pick, fam, i) || same(hover, fam, i);
+      const key = `up_${fam}_${i + 1}`;
       ctx.save();
+      let drawn = false;
       if (st8 !== 'bought') {
-        ctx.globalAlpha = st8 === 'next' ? 0.6 : 0.4;
-        ctx.filter = 'saturate(0.25)';
+        ctx.globalAlpha = looked ? 0.8 : st8 === 'next' ? 0.42 : 0.28;
+        if (!looked) drawn = drawGray(ctx, key, b.cx, b.cy, b.r * 2);
       }
-      if (!drawUi(ctx, `up_${fam}_${i + 1}`, b.cx, b.cy, b.r * 2)) {
+      if (!drawn && !drawUi(ctx, key, b.cx, b.cy, b.r * 2)) {
         ctx.fillStyle = '#FFEFD4';
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
