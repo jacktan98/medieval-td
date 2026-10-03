@@ -5934,12 +5934,13 @@ export function foeStats(d) {
 // than one source pixel per screen pixel — the padding and the title are the
 // pop-up's, and the description and the numbers make a column to the right of it.
 // The plate is as deep as the slot or the column, whichever is more.
-const FOE_COL_W = 300;
-const FOE_COL_MAX = 440;
+const FOE_COL_W = 240;
+const FOE_COL_MAX = 340;
+// Air either side of the rule between the words and the numbers.
+const FOE_RULE_GAP = 18;
 const FOE_ENTRY_GAP = 14;
 const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
 const FOE_STAT_ROW = 22;
-const FOE_STAT_GAP = 10;               // between the prose and the numbers
 
 function drawFoeCard(ctx, state) {
   const d = enemyTypes[state.foeCard];
@@ -5949,15 +5950,17 @@ function drawFoeCard(ctx, state) {
   const [sx, sy, sw, sh] = d.spriteTrim;
   const w = sw * slot.k, h = sh * slot.k;
 
+  // THREE COLUMNS, at the owner's word: the picture on the left, what he does in
+  // the middle, and his numbers on the right — "move the text to the middle and
+  // the stats to the right of the card".
   const rows = foeStats(d);
   const statsH = rows.length * FOE_STAT_ROW;
-  // LENGTHENED RATHER THAN DEEPENED: where the picture is short — a sharp screen
-  // caps it small — the column widens, up to FOE_COL_MAX, until the prose and the
-  // numbers stand no taller than the picture, so the card stays the pop-up's depth
-  // for as long as it can.
+  // LENGTHENED RATHER THAN DEEPENED: the prose widens, up to FOE_COL_MAX, until it
+  // stands no taller than the picture or the numbers beside it, so the card stays
+  // the pop-up's depth for as long as it can.
   let textW = FOE_COL_W;
   let lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
-  while (textW < FOE_COL_MAX && lines.length * POP_LEAD + FOE_STAT_GAP + statsH > slot.h) {
+  while (textW < FOE_COL_MAX && lines.length * POP_LEAD > Math.max(slot.h, statsH)) {
     textW += 20;
     lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
   }
@@ -5977,11 +5980,11 @@ function drawFoeCard(ctx, state) {
     return uiSize(key, { h: POP_STAT_H }).w + 5 + ctx.measureText(String(value)).width;
   };
   const pitch = Math.max(...rows.flat().map(entryW)) + FOE_ENTRY_GAP;
-  const colW = Math.max(textW, ...rows.map(row => (row.length - 1) * pitch + entryW(row[row.length - 1])));
-  const columnH = lines.length * POP_LEAD + FOE_STAT_GAP + statsH;
+  const statsW = Math.max(...rows.map(row => (row.length - 1) * pitch + entryW(row[row.length - 1])));
+  const textH = lines.length * POP_LEAD;
 
-  const bodyH = Math.max(slot.h, columnH);
-  const pw = POP_PAD * 2 + slot.w + POP_GAP + colW;
+  const bodyH = Math.max(slot.h, textH, statsH);
+  const pw = POP_PAD * 2 + slot.w + POP_GAP + textW + FOE_RULE_GAP * 2 + statsW;
   const ph = POP_PAD * 2 + FOE_LABEL + POP_TITLE + POP_GAP + bodyH;
   const px = Math.round(480 - pw / 2);
   const py = Math.round(270 - ph / 2);
@@ -6036,19 +6039,30 @@ function drawFoeCard(ctx, state) {
     ctx.drawImage(img, sx, sy, sw, sh, cx - w / 2, bodyY + (bodyH - h) / 2, w, h);
   }
 
-  // The column: what he does, then his numbers, centred against the picture.
+  // THE MIDDLE: what he does, centred against the picture.
   const tx = px + POP_PAD + slot.w + POP_GAP;
-  const y0 = bodyY + (bodyH - columnH) / 2;
+  const y0 = bodyY + (bodyH - textH) / 2;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
   ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
   lines.forEach((line, i) => { if (line) ctx.fillText(line, tx, y0 + POP_LEAD * (i + 0.5)); });
 
-  const top = y0 + lines.length * POP_LEAD + FOE_STAT_GAP;
+  // A faint rule between the words and the numbers.
+  const ruleX = tx + textW + FOE_RULE_GAP;
+  ctx.strokeStyle = CARD_EDGE;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ruleX, bodyY + 4);
+  ctx.lineTo(ruleX, bodyY + bodyH - 4);
+  ctx.stroke();
+
+  // THE RIGHT: his numbers, centred against the picture too.
+  const sx0 = ruleX + FOE_RULE_GAP;
+  const top = bodyY + (bodyH - statsH) / 2;
   FOE_STATS.length = 0;
   rows.forEach((row, r) => row.forEach(([key, value], c) => {
-    const x = tx + c * pitch;
+    const x = sx0 + c * pitch;
     const y = top + r * FOE_STAT_ROW + FOE_STAT_ROW / 2;
     const { w: iw } = uiSize(key, { h: POP_STAT_H });
     drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
