@@ -5935,8 +5935,6 @@ export function foeStats(d) {
 // pop-up's, and the description and the numbers make a column to the right of it.
 // The plate is as deep as the slot or the column, whichever is more.
 const FOE_COL_W = 240;
-// The new-enemy card's picture scale, in board units per source pixel — see drawFoeCard.
-const FOE_PICTURE_K = 0.45;
 const FOE_COL_MAX = 340;
 // Air either side of the rule between the words and the numbers.
 const FOE_RULE_GAP = 18;
@@ -5948,12 +5946,8 @@ function drawFoeCard(ctx, state) {
   const d = enemyTypes[state.foeCard];
   if (!d) return;
 
-  // A FIXED SHARE OF THE BOARD, not of the glass, at the owner's word: turning a
-  // phone to portrait shrinks the board, and the picture must shrink with it rather
-  // than stay the same size on the screen. FOE_PICTURE_K is about what an iPhone
-  // shows in landscape; 1 / device still caps it, so a 3x screen never blows a
-  // source pixel up past one of its own.
-  const slot = popSlot('figure', Math.min(FOE_PICTURE_K, 1 / device));
+  // A FIXED SHARE OF THE BOARD — see popCap.
+  const slot = popSlot('figure', popCap());
   const [sx, sy, sw, sh] = d.spriteTrim;
   const w = sw * slot.k, h = sh * slot.k;
 
@@ -6474,6 +6468,19 @@ const POP_GAP = 14;
 let device = 1;
 export const setDeviceScale = k => { device = Math.max(1, k); };
 
+// HOW BIG A POP-UP'S PICTURE IS DRAWN, in board units per source pixel: the
+// encyclopedia's picture pop-up and the new-enemy card both ask this.
+//
+// A FIXED SHARE OF THE BOARD, at the owner's word. It used to be 1 / device alone —
+// one source pixel per screen pixel — and that made the picture the same size ON
+// THE GLASS whatever the board did: turning a phone to portrait shrinks the board,
+// and the picture grew on it to stay put. Now it is POP_PICTURE_K of the board,
+// about what an iPhone showed in landscape, so it shrinks with the board. 1 /
+// device still caps it, so a sharp screen never blows a source pixel up past one
+// of its own — there it comes in smaller rather than soft.
+const POP_PICTURE_K = 0.45;
+const popCap = () => Math.min(POP_PICTURE_K, 1 / device);
+
 // The width of the prose column beside an ability's picture, and the type in it.
 // 340 at 12px is about 56 characters a line, which is inside the 45-75 a line of
 // body text wants and leaves the whole plate under 700px wide.
@@ -6517,11 +6524,8 @@ function drawZoom(ctx, z) {
   // and the drawing is placed inside it rather than the plate being fitted to the
   // drawing. That is what keeps every tower's box the same size as every other's.
   //
-  // 1 / device is the cap that keeps it crisp: at most one source pixel per screen
-  // pixel, whatever the canvas is being drawn at. On a laptop at 1x this is the
-  // 1:1 it always was; on a wide monitor the plate comes in so that nothing is
-  // invented. See the note on popSlot for what that costs.
-  const slot = popSlot(z.kind, 1 / device);
+  // A FIXED SHARE OF THE BOARD, capped so it stays crisp — see popCap.
+  const slot = popSlot(z.kind, popCap());
   const w = sw * slot.k;
   const h = sh * slot.k;
 
