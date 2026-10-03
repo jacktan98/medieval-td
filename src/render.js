@@ -5839,7 +5839,6 @@ const CARD_TITLE = 11;
 
 const SHEET_FILL = '#EFE4C8';
 const SHEET_EDGE = '#8A7A56';
-const CARD_FILL = 'rgba(58,48,38,0.06)';
 const CARD_EDGE = 'rgba(58,48,38,0.20)';
 const INK_MUTED = 'rgba(58,48,38,0.62)';
 
@@ -6911,18 +6910,18 @@ function heading(ctx, text, x) {
   ctx.fillText(text, x, HEAD_Y);
 }
 
+// THE UI'S CREAM, solid, with the Upgrades screen's tan for an edge, at the
+// owner's word. It was a faint tint that took its colour from the parchment page
+// under it, and the page is brown now.
+const BOOK_CARD = '#FFEFD4';
+const BOOK_CARD_EDGE = '#BE9F6D';
 function card(ctx, b) {
-  // ON ITS OWN PARCHMENT: the card's fill is a faint tint that took its colour
-  // from the page under it, and the page is brown now. The parchment goes down
-  // first so the card is exactly the card it was.
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, 8);
-  ctx.fillStyle = SHEET_FILL;
+  ctx.fillStyle = BOOK_CARD;
   ctx.fill();
-  ctx.fillStyle = CARD_FILL;
-  ctx.fill();
-  ctx.strokeStyle = CARD_EDGE;
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = BOOK_CARD_EDGE;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 }
 
