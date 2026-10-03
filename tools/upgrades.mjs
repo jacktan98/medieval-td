@@ -71,12 +71,12 @@ console.log('\nThe screen\n');
   const state = {};
   openUpgrades(state);
   const b = upBox(0, 0);
-  check(JSON.stringify(boxAt(b.x + 5, b.y + 5)) === '{"fam":"archery","i":0}', 'the bottom-left box is Archery\'s first rung');
+  check(JSON.stringify(boxAt(b.cx, b.cy)) === '{"fam":"archery","i":0}', 'the bottom-left box is Archery\'s first rung');
   const top = upBox(3, 3);
-  check(JSON.stringify(boxAt(top.x + 5, top.y + 5)) === '{"fam":"monastery","i":3}', 'the top-right box is Monastery\'s fourth');
-  check(upBox(0, 1).y < upBox(0, 0).y, 'and a ladder climbs: the second rung is above the first');
+  check(JSON.stringify(boxAt(top.cx, top.cy)) === '{"fam":"monastery","i":3}', 'the top-right box is Monastery\'s fourth');
+  check(upBox(0, 1).cy < upBox(0, 0).cy, 'and a ladder climbs: the second rung is above the first');
 
-  check(tapUpgrades(state, b.x + 5, b.y + 5) === 'tap' && boughtIn('archery') === 0, 'a tap on a box reads it and spends nothing');
+  check(tapUpgrades(state, b.cx, b.cy) === 'tap' && boughtIn('archery') === 0, 'a tap on a box reads it and spends nothing');
   check(tapUpgrades(state, UP_BUY.x + 5, UP_BUY.y + 5) === 'bought' && boughtIn('archery') === 1,
     'the panel\'s Buy button buys it', `${starsLeft()} left`);
   const t0 = 1000;

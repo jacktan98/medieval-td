@@ -25,25 +25,32 @@ export const UP_STARS = { x: 806, y: 20, w: 124, h: 38 };
 
 // The four columns, left to right in the build menu's order, and the four rungs in
 // each, the first at the BOTTOM — a ladder is climbed.
+//
+// ROUND, AS THE RING'S BUTTONS ARE, at the owner's word: "make the upgrades round
+// just like radial menu style". UP_R is the radial menu's own BTN_R less two, so a
+// rung reads as one of those buttons with four of them to a column.
 const COL_X = 46;
 const COL_W = 132;
-export const UP_BOX = 64;
-const BOTTOM_Y = 362;
-const STEP_Y = 84;
+export const UP_R = 28;
+const BOTTOM_CY = 352;
+const STEP_Y = 76;
 
-export const upBox = (col, i) => ({
-  x: COL_X + col * COL_W + (COL_W - UP_BOX) / 2,
-  y: BOTTOM_Y - i * STEP_Y,
-  w: UP_BOX, h: UP_BOX
-});
+// A rung's circle, as its centre and radius, with the square round it as x/y/w/h
+// for the hit test.
+export function upBox(col, i) {
+  const cx = COL_X + col * COL_W + COL_W / 2, cy = BOTTOM_CY - i * STEP_Y;
+  return { cx, cy, r: UP_R, x: cx - UP_R, y: cy - UP_R, w: UP_R * 2, h: UP_R * 2 };
+}
 
-// The family's name plate under its column.
-export const upLabel = col => ({ x: COL_X + col * COL_W + 10, y: 440, w: COL_W - 20, h: 30 });
+// THE FAMILY'S OWN BUTTON at the foot of its ladder: the build menu's plate and
+// the build menu's picture of the tower, the one a player has tapped every time
+// they built one. It replaced a name plate, at the owner's word.
+export const upFamily = col => ({ cx: COL_X + col * COL_W + COL_W / 2, cy: BOTTOM_CY + STEP_Y + 6, r: 30 });
 
 export const UP_PANEL = { x: 600, y: 84, w: 330, h: 340 };
 export const UP_BUY = { x: UP_PANEL.x + 45, y: UP_PANEL.y + UP_PANEL.h - 66, w: UP_PANEL.w - 90, h: 44 };
-export const UP_RESET = { x: 40, y: 482, w: 130, h: 40 };
-export const UP_DONE = { x: 790, y: 482, w: 130, h: 40 };
+export const UP_RESET = { x: 40, y: 484, w: 130, h: 38 };
+export const UP_DONE = { x: 790, y: 484, w: 130, h: 38 };
 
 // How long a half-pressed Reset waits for its second press, in ms.
 export const RESET_WINDOW = 3000;
@@ -56,7 +63,7 @@ export const hitUpgradesButton = (x, y) => inside(UPGRADES_BTN, x, y, 6);
 export function boxAt(x, y) {
   for (const [col, fam] of UPGRADE_FAMILIES.entries())
     for (let i = 0; i < UPGRADES[fam].length; i++)
-      if (inside(upBox(col, i), x, y)) return { fam, i };
+      if (Math.hypot(x - upBox(col, i).cx, y - upBox(col, i).cy) <= UP_R + 4) return { fam, i };
   return null;
 }
 

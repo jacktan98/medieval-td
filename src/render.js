@@ -1,7 +1,7 @@
 import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
-import { SCALE, EXPORT_PX, BLOOD_SCALE } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE, families } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled, falling, dropHeight } from './corpses.js';
 // The live bomb's window into its own drawing, and where in that window it sits
 // on the ground. Kept in bombs.js beside the offset that was measured with them —
@@ -52,7 +52,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
 import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
 import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft } from './upgrades.js';
-import { UPGRADES_BTN, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upLabel, UP_PANEL, UP_BUY, UP_RESET,
+import { UPGRADES_BTN, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
@@ -6134,6 +6134,9 @@ const UP_FAMILY_NAME = { archery: 'Archery', barracks: 'Barracks', siege: 'Artil
 // THE PLACEHOLDER ON EACH BOX until the owner's icons arrive: the rung's number.
 const UP_NUMERAL = ['I', 'II', 'III', 'IV'];
 const UP_GOLD = '#E7C15A';
+// Each family's glyph on the radial menu's build button — see `families` in
+// data/towers.js, where every family names the one it is built from.
+const UP_GLYPH = Object.fromEntries(families.map(f => [f.id, f.glyph]));
 const UP_PICK = '#2F5FA8';
 
 function drawUpgrades(ctx, state) {
@@ -6172,16 +6175,17 @@ function drawUpgrades(ctx, state) {
 
   for (const [col, fam] of UPGRADE_FAMILIES.entries()) {
     const rungs = UPGRADES[fam];
+    const foot = upFamily(col);
 
-    // The ladder's rails first, so the boxes sit on them: dark where the rung
-    // below is bought, faint where it is not.
-    for (let i = 0; i + 1 < rungs.length; i++) {
-      const a = upBox(col, i), b = upBox(col, i + 1);
-      ctx.strokeStyle = rungState(fam, i) === 'bought' ? INK : 'rgba(58,48,38,0.25)';
+    // The ladder's rail first, so the buttons sit on it: from the family's own
+    // button up through every rung, dark where the rung below is bought.
+    for (let i = -1; i + 1 < rungs.length; i++) {
+      const a = i < 0 ? foot : upBox(col, i), b = upBox(col, i + 1);
+      ctx.strokeStyle = i < 0 || rungState(fam, i) === 'bought' ? INK : 'rgba(58,48,38,0.25)';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(a.x + a.w / 2, a.y);
-      ctx.lineTo(b.x + b.w / 2, b.y + b.h);
+      ctx.moveTo(a.cx, a.cy);
+      ctx.lineTo(b.cx, b.cy);
       ctx.stroke();
     }
 
@@ -6196,61 +6200,76 @@ function drawUpgrades(ctx, state) {
         ctx.strokeStyle = same(pick, fam, i) ? UP_PICK : 'rgba(47,95,168,0.5)';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.roundRect(b.x - 5, b.y - 5, b.w + 10, b.h + 10, 12);
+        ctx.arc(b.cx, b.cy, b.r + 5, 0, Math.PI * 2);
         ctx.stroke();
       }
 
+      // THE RADIAL MENU'S BUTTON: its cream plate, at 45% when it cannot be had
+      // yet, exactly as the ring dims a button it will not let you press. A bought
+      // rung is the same disc in gold.
+      // A SOLID DISC OF PAGE UNDER IT FIRST, so a dimmed button is dim against the
+      // parchment rather than letting the rail show through it.
+      ctx.fillStyle = SHEET_FILL;
       ctx.beginPath();
-      ctx.roundRect(b.x, b.y, b.w, b.h, 9);
-      ctx.fillStyle = st8 === 'bought' ? UP_GOLD : st8 === 'next' ? '#FFF7E4' : 'rgba(58,48,38,0.14)';
+      ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = st8 === 'locked' ? 'rgba(58,48,38,0.35)' : afford ? UI_GOLD : INK;
-      ctx.lineWidth = afford ? 3 : 2;
-      ctx.stroke();
+      ctx.save();
+      if (st8 === 'locked') ctx.globalAlpha = 0.45;
+      if (st8 === 'bought' || !drawUi(ctx, 'btn_plate', b.cx, b.cy, b.r * 2)) {
+        ctx.fillStyle = st8 === 'bought' ? UP_GOLD : '#FFEFD4';
+        ctx.beginPath();
+        ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = st8 === 'bought' ? INK : '#C4A574';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      // The one that can be bought now wears a gold ring.
+      if (afford) {
+        ctx.strokeStyle = UI_GOLD;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(b.cx, b.cy, b.r - 1, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
+      // THE GLYPH OVER THE CAPTION, as the ring lays a button out: the rung's
+      // number until the owner's icons arrive, and under it what it costs — or a
+      // tick, once it is bought.
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = st8 === 'locked' ? 'rgba(58,48,38,0.4)' : INK;
-      ctx.font = '800 22px system-ui, sans-serif';
-      ctx.fillText(UP_NUMERAL[i], b.x + b.w / 2, b.y + b.h / 2 + 1);
-
-      // The corner badge: a tick on a bought rung, the price on the rest.
-      const bx = b.x + b.w - 22, by = b.y + b.h - 10;
+      ctx.fillStyle = INK;
+      ctx.font = '800 17px system-ui, sans-serif';
+      ctx.fillText(UP_NUMERAL[i], b.cx, b.cy - 6);
       if (st8 === 'bought') {
-        ctx.fillStyle = INK_GREEN;
-        ctx.beginPath();
-        ctx.arc(bx + 10, by + 4, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#F0E6D2';
+        ctx.strokeStyle = INK_GREEN;
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(bx + 5, by + 4); ctx.lineTo(bx + 9, by + 8); ctx.lineTo(bx + 15, by);
+        ctx.moveTo(b.cx - 6, b.cy + 12); ctx.lineTo(b.cx - 1, b.cy + 17); ctx.lineTo(b.cx + 7, b.cy + 8);
         ctx.stroke();
         ctx.lineCap = 'butt';
       } else {
-        ctx.fillStyle = st8 === 'locked' ? 'rgba(40,36,28,0.55)' : 'rgba(40,36,28,0.92)';
-        ctx.beginPath();
-        ctx.roundRect(bx - 6, by - 6, 34, 20, 7);
-        ctx.fill();
-        starShape(ctx, bx + 4, by + 4, 6, '#F2C64B');
-        ctx.fillStyle = '#F0E6D2';
-        ctx.font = '700 12px system-ui, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(String(UPGRADE_COSTS[i]), bx + 13, by + 5);
+        starShape(ctx, b.cx - 6, b.cy + 12, 5.5, '#F2C64B');
+        ctx.fillStyle = INK;
+        ctx.font = '700 11px system-ui, sans-serif';
+        ctx.fillText(String(UPGRADE_COSTS[i]), b.cx + 5, b.cy + 13);
       }
+      ctx.restore();
     });
 
-    // The family's name under its ladder.
-    const l = upLabel(col);
-    ctx.fillStyle = 'rgba(40,36,28,0.88)';
-    ctx.beginPath();
-    ctx.roundRect(l.x, l.y, l.w, l.h, 8);
-    ctx.fill();
-    ctx.fillStyle = '#F0E6D2';
-    ctx.textAlign = 'center';
-    ctx.font = '700 14px system-ui, sans-serif';
-    ctx.fillText(UP_FAMILY_NAME[fam], l.x + l.w / 2, l.y + l.h / 2 + 1);
+    // THE FAMILY'S BUTTON at the foot of the ladder: the build menu's plate with
+    // the build menu's picture of the tower on it, drawn the way drawButton draws
+    // a build button with nothing under it.
+    if (!drawUi(ctx, 'btn_plate', foot.cx, foot.cy, foot.r * 2)) {
+      ctx.fillStyle = '#FFEFD4';
+      ctx.beginPath();
+      ctx.arc(foot.cx, foot.cy, foot.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const key = GLYPH_ART[UP_GLYPH[fam]];
+    const nudge = (key && ui[key].nudge) || ZERO;
+    if (key) drawUi(ctx, key, foot.cx + nudge[0], foot.cy + nudge[1], ui[key].fit);
   }
 
   drawUpgradePanel(ctx, state);
