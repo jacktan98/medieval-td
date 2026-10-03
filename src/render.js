@@ -6187,7 +6187,7 @@ function drawUpgradesButton(ctx) {
 // One five-pointed star, filled, with a dark edge. `fill` may be 'map' for the world
 // map's own earned star — its gold gradient and its ink outline, see drawStars in
 // src/overview.js — so a star beside the hammer is the same star the map awards.
-function starShape(ctx, cx, cy, r, fill) {
+function starShape(ctx, cx, cy, r, fill, edge = '#2A1D0E') {
   ctx.save();
   ctx.beginPath();
   for (let p = 0; p < 10; p++) {
@@ -6204,8 +6204,8 @@ function starShape(ctx, cx, cy, r, fill) {
     g.addColorStop(1, '#BE8C2A');
     ctx.fillStyle = g;
     ctx.fill();
-    ctx.lineWidth = 1.2;
-    ctx.strokeStyle = '#2A1D0E';
+    ctx.lineWidth = Math.max(1.2, r * 0.14);
+    ctx.strokeStyle = edge;
   } else {
     ctx.fillStyle = fill;
     ctx.fill();
@@ -6287,7 +6287,9 @@ function drawUpgrades(ctx, state) {
   ctx.beginPath();
   ctx.roundRect(px0, st.y, plateW, st.h, 10);
   ctx.fill();
-  starShape(ctx, px0 + STAR_PAD + STAR_R, st.y + st.h / 2, STAR_R, '#F2C64B');
+  // The map's gold star, EDGED IN CREAM rather than ink, at the owner's word: on
+  // the dark plate an ink edge disappears.
+  starShape(ctx, px0 + STAR_PAD + STAR_R, st.y + st.h / 2, STAR_R, 'map', UI_INK);
   ctx.fillStyle = '#F0E6D2';
   ctx.textAlign = 'left';
   ctx.fillText(count, px0 + STAR_PAD + STAR_R * 2 + STAR_GAP, st.y + st.h / 2 + 1);
@@ -6392,10 +6394,12 @@ function drawUpgrades(ctx, state) {
 
   drawUpgradePanel(ctx, state);
 
-  // RESET AND DONE along the foot. Reset asks twice — see tapUpgrades.
+  // RESET AND DONE side by side at the bottom right. Reset asks twice — see
+  // tapUpgrades — and says "Confirm?" while it waits. The screen's dark buttons
+  // are edged in cream, at the owner's word.
   const armed = state.upArmed && Date.now() < state.upArmed;
-  bookButton(ctx, UP_RESET, armed ? 'Tap again' : 'Reset', 0, `20px ${MAP_TYPE}`);
-  bookButton(ctx, UP_DONE, 'Done', 0, `20px ${MAP_TYPE}`);
+  bookButton(ctx, UP_RESET, armed ? 'Confirm?' : 'Reset', 0, `20px ${MAP_TYPE}`, UI_INK);
+  bookButton(ctx, UP_DONE, 'Done', 0, `20px ${MAP_TYPE}`, UI_INK);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -6434,10 +6438,10 @@ function drawUpgradePanel(ctx, state) {
   ctx.fillText(u.name, cx, p.y + 34);
   ctx.fillStyle = INK_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
-  ctx.fillText(`${UP_FAMILY_NAME[fam]} · upgrade ${i + 1} of ${UPGRADES[fam].length}`, cx, p.y + 58);
+  ctx.fillText(UP_FAMILY_NAME[fam], cx, p.y + 58);
 
   // The price, a star and a number.
-  starShape(ctx, cx - 12, p.y + 86, 10, '#F2C64B');
+  starShape(ctx, cx - 12, p.y + 86, 10, 'map');
   ctx.fillStyle = INK;
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
@@ -6451,7 +6455,14 @@ function drawUpgradePanel(ctx, state) {
   lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 23));
 
   // Where it stands, over the button.
-  const note = st8 === 'bought' ? ['Bought', INK_GREEN]
+  // BOUGHT SITS WHERE BUY DID, the same size, at the owner's word — the button
+  // becomes the word.
+  if (st8 === 'bought') {
+    ctx.fillStyle = INK_GREEN;
+    ctx.font = `23px ${MAP_TYPE}`;
+    ctx.fillText('Bought', cx, UP_BUY.y + UP_BUY.h / 2 + 1);
+  }
+  const note = st8 === 'bought' ? null
     : st8 === 'locked' ? ['Buy the upgrade below it first.', INK_MUTED]
     : canBuy(fam, i) ? null
     : ['Not enough stars.', INK_RED];
@@ -6466,7 +6477,7 @@ function drawUpgradePanel(ctx, state) {
   if (st8 === 'next') {
     ctx.save();
     ctx.globalAlpha = canBuy(fam, i) ? 1 : 0.4;
-    bookButton(ctx, UP_BUY, 'Buy', 0, `23px ${MAP_TYPE}`);
+    bookButton(ctx, UP_BUY, 'Buy', 0, `23px ${MAP_TYPE}`, UI_INK);
     ctx.restore();
   }
 }
@@ -7249,12 +7260,12 @@ function drawBookFooter(ctx, state) {
 // they still read as the same kind of control.
 // `font`, where given, replaces the system type — the Upgrades screen's buttons are
 // set in Lobster, like the rest of what the world map opens.
-function bookButton(ctx, b, label, size, font = null) {
+function bookButton(ctx, b, label, size, font = null, edge = SHEET_EDGE) {
   ctx.fillStyle = 'rgba(40,36,28,0.88)';
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, 8);
   ctx.fill();
-  ctx.strokeStyle = SHEET_EDGE;
+  ctx.strokeStyle = edge;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 

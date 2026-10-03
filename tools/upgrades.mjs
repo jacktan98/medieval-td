@@ -215,13 +215,14 @@ console.log('\nThe barracks\n');
   updateUnits(state, 1 / 60);
   check(near(man.maxHp, plainHp * 1.05), 'Hardy Recruits: 5% more health', `${plainHp} → ${man.maxHp}`);
 
-  setBoughtForTest({ barracks: 3 });
+  setBoughtForTest({ barracks: 2 });
   check(near(soldierBlow(man), plainBlow * 1.1), 'Honed Blades: 10% more on every blow', `${plainBlow} → ${soldierBlow(man).toFixed(2)}`);
 
   const real = Math.random;
   try {
     // The dice say he dies.
     Math.random = () => 0.99;
+    setBoughtForTest({ barracks: 3 });
     man.hp = -5;
     updateUnits(state, 1 / 60);
     check(near(man.respawn, Math.max(1, barracks[0].soldier.respawn - 2)), 'Call to Arms: back two seconds sooner',

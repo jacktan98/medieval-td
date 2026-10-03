@@ -55,8 +55,10 @@ export const upFamily = col => ({ cx: COL_X + col * COL_W + COL_W / 2, cy: BOTTO
 
 export const UP_PANEL = { x: 600, y: 84, w: 330, h: 340 };
 export const UP_BUY = { x: UP_PANEL.x + 45, y: UP_PANEL.y + UP_PANEL.h - 66, w: UP_PANEL.w - 90, h: 44 };
-export const UP_RESET = { x: 40, y: 484, w: 130, h: 38 };
+// RESET BESIDE DONE at the bottom right, at the owner's word, and it was at the
+// bottom left. 20px of drawn gap keeps their padded tap boxes apart.
 export const UP_DONE = { x: 790, y: 484, w: 130, h: 38 };
+export const UP_RESET = { x: UP_DONE.x - 20 - 130, y: 484, w: 130, h: 38 };
 
 // How long a half-pressed Reset waits for its second press, in ms.
 export const RESET_WINDOW = 3000;

@@ -21,8 +21,8 @@ its own, drawn at the foot of its ladder.
 | `Upgrade_Archery_4_Icon.png` | Sharpshooter: 10% chance of +50% damage |
 | `Upgrade_Barracks_Icon.png` | the Barracks ladder's own button, at its foot |
 | `Upgrade_Barracks_1_Icon.png` | Hardy Recruits: health +5% |
-| `Upgrade_Barracks_2_Icon.png` | Call to Arms: respawn 2s sooner |
-| `Upgrade_Barracks_3_Icon.png` | Honed Blades: damage +10% |
+| `Upgrade_Barracks_2_Icon.png` | Honed Blades: damage +10% |
+| `Upgrade_Barracks_3_Icon.png` | Call to Arms: respawn 2s sooner |
 | `Upgrade_Barracks_4_Icon.png` | Last Stand: 10% chance to survive on 1 health |
 | `Upgrade_Artillery_Icon.png` | the Artillery ladder's own button, at its foot |
 | `Upgrade_Artillery_1_Icon.png` | Spotter's Glass: range +5% |
