@@ -6227,11 +6227,12 @@ const UP_GOLD = '#E7C15A';
 // data/towers.js, where every family names the one it is built from.
 const UP_GLYPH = Object.fromEntries(families.map(f => [f.id, f.glyph]));
 const UP_PICK = '#2F5FA8';
-// THE SCREEN'S OWN BROWN, at the owner's word — a test, and it was the book's
-// parchment. Everything written on it is the map's cream, and the colours that
+// THE SCREEN'S OWN BROWNS, at the owner's word — a test, and it was the book's
+// parchment: the darker for the sheet, #74592E for the panel that describes. Everything written on it is the map's cream, and the colours that
 // carried meaning on parchment (the name's red, Bought's green, the warning's red)
 // are lifted so they still read on the brown.
-const UP_BG = '#74592E';
+const UP_BG = '#634B27';
+const UP_PANEL_FILL = '#74592E';
 const UP_BG_EDGE = '#4A3820';
 const UP_MUTED = 'rgba(255,239,212,0.72)';
 const UP_NAME = '#F4A48E';
@@ -6421,7 +6422,7 @@ function drawUpgrades(ctx, state) {
 // does — and the Buy button, when it can be bought.
 function drawUpgradePanel(ctx, state) {
   const p = UP_PANEL;
-  ctx.fillStyle = 'rgba(20,14,6,0.18)';
+  ctx.fillStyle = UP_PANEL_FILL;
   ctx.beginPath();
   ctx.roundRect(p.x, p.y, p.w, p.h, 10);
   ctx.fill();
