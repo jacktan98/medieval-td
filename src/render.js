@@ -4393,7 +4393,7 @@ function haloOf(img, trim) {
   }
   return c;
 }
-function drawHaloed(ctx, img, trim, x, y, w, h) {
+function drawHaloed(ctx, img, trim, x, y, w, h, r = HALO_R) {
   const halo = haloOf(img, trim);
   // NO DROP SHADOW, even inside a caller's shadow block: twelve shadowed stamps
   // pool into a dark smudge, and the drawing's own shadow lands on the ring and
@@ -4402,7 +4402,7 @@ function drawHaloed(ctx, img, trim, x, y, w, h) {
   ctx.shadowColor = 'transparent';
   for (let i = 0; i < HALO_STEPS; i++) {
     const a = (i / HALO_STEPS) * Math.PI * 2;
-    ctx.drawImage(halo, x + Math.cos(a) * HALO_R, y + Math.sin(a) * HALO_R, w, h);
+    ctx.drawImage(halo, x + Math.cos(a) * r, y + Math.sin(a) * r, w, h);
   }
   const [sx, sy, sw, sh] = trim;
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
@@ -6106,10 +6106,16 @@ function drawFoeCard(ctx, state) {
 // ONE OF THE WORLD MAP'S DOORS: the artist's icon, standing on `at.foot` and centred
 // on `at.cx`, with its name under it in bold cream with a dark edge — the "Paused"
 // label's treatment — so it reads over sea, sand and forest alike.
+//
+// AND A CREAM BORDER ROUND THE ICON, at the owner's word: the units' halo — the
+// drawing's own silhouette stamped in a ring outside its black outline, so the
+// border follows the book and the hammer rather than boxing them — a little
+// thicker here, where the picture is bigger and the map behind it busier.
+const DOOR_HALO = 2.5;
 function drawMapDoor(ctx, key, at, label) {
   if (art[key] && ui[key]) {
     const { w, h } = uiSize(key);
-    ctx.drawImage(art[key], ...ui[key].trim, at.cx - w / 2, at.foot - h, w, h);
+    drawHaloed(ctx, art[key], ui[key].trim, at.cx - w / 2, at.foot - h, w, h, DOOR_HALO);
   }
   ctx.save();
   ctx.textAlign = 'center';
@@ -6137,12 +6143,17 @@ function drawUpgradesButton(ctx) {
   ctx.font = '800 12px system-ui, sans-serif';
   const tw = ctx.measureText(String(left)).width;
   const w = 26 + tw, h = 20;
-  ctx.fillStyle = 'rgba(40,36,28,0.92)';
+  // CREAM, at the owner's word (#FFEFD4, the UI's own cream), with a dark edge so
+  // it holds its shape on the pale sand under it.
+  ctx.fillStyle = UI_INK;
   ctx.beginPath();
   ctx.roundRect(bx - 4, by - h / 2, w, h, 10);
   ctx.fill();
+  ctx.strokeStyle = 'rgba(14,12,10,0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
   starShape(ctx, bx + 7, by, 7, '#F2C64B');
-  ctx.fillStyle = '#F0E6D2';
+  ctx.fillStyle = INK;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(left), bx + 17, by + 1);
