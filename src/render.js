@@ -6163,7 +6163,8 @@ function drawUpgradesButton(ctx) {
   // Far enough right that its left end clears the hammer's cream border.
   const bx = at.cx + 31, by = at.foot - 46;
   ctx.save();
-  ctx.font = '800 12px system-ui, sans-serif';
+  // In Lobster, like the label under the hammer, at the owner's word.
+  ctx.font = `15px ${MAP_TYPE}`;
   const tw = ctx.measureText(String(left)).width;
   const w = 26 + tw, h = 20;
   // CREAM, at the owner's word (#FFEFD4, the UI's own cream), with a dark edge so
