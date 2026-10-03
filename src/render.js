@@ -2734,7 +2734,7 @@ function drawCamp(ctx, t, box) {
 // The drawn size comes from gunnerR, so the body reads at a known radius
 // whatever the source art's proportions are, and it mirrors about the body
 // rather than the middle of a box that a bow pulls off-centre.
-// TWO MEN ON ONE DECK, which is the Judgement Temple and nothing else.
+// TWO MEN ON ONE DECK, which is the Judgment Temple and nothing else.
 //
 // WHY IT IS NOT drawGunner IN A LOOP. Two things differ, and both are about the
 // fact that the monks TAKE TURNS rather than fire together:

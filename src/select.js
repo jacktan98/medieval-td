@@ -322,7 +322,7 @@ export function occupant(def) {
   return {
     name: man ? man.name : def.unit,
     // HOW MANY OF HIM. A barracks says so on its squad; every tower said one, and
-    // that was true of every tower until the Judgement Temple put two monks on one
+    // that was true of every tower until the Judgment Temple put two monks on one
     // floor. `pair` is the list of where they stand, so its length is the count —
     // read from there rather than from a second field, because a number that had
     // to be kept in step with the list would be a number that eventually was not.
@@ -405,7 +405,7 @@ export function selectionInfo(state) {
     // damage rather than the building's.
     // TWO MULTIPLIERS, and both of them for the same reason. `boost` is the map's
     // — Holy Wrath, a fact about the other towers on the board — and `damageK` is
-    // this tower's own, which today is the Judgement Temple's Inner Strength.
+    // this tower's own, which today is the Judgment Temple's Inner Strength.
     //
     // The aura half has been here since Holy Wrath shipped and the argument was
     // written down then: a player who has bought it and reads 60 would think it

@@ -31,7 +31,7 @@ export const BANNERS = {
   artillery_t4_base:  banner(BLUE,   [384, 442, 530, 689], 492, 667),   // Ballista Turret
   artillery_t4b_base: banner(PURPLE, [384, 442, 530, 693], 492, 671),   // Cannon Outpost
   monastery_t4:       banner(WHITE,  [376, 530, 622, 833], 615, 811),   // High Altar
-  monastery_t4b:      banner(ORANGE, [376, 515, 622, 815], 612, 793),   // Judgement Temple
+  monastery_t4b:      banner(ORANGE, [376, 515, 622, 815], 612, 793),   // Judgment Temple
   // Tiers 1 to 3: the blue flag on its pole at the top of each.
   archery_t1:   flag(661, 217, 751, 272),
   archery_t2:   flag(569, 145, 659, 201),

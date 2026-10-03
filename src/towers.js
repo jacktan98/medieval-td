@@ -287,7 +287,7 @@ export function mountPoint(t, i) {
 
 // WHICH STANDING POINT, on a tower that has more than one.
 //
-// Every building in this game held exactly one figure until the Judgement Temple,
+// Every building in this game held exactly one figure until the Judgment Temple,
 // which holds two monks side by side on its belfry floor — see `pair` in
 // data/towers.js. `mountFrac` is still the answer for anything that wants ONE
 // point for the tower: the encyclopedia's card, the info box, crownTop's fallback.
@@ -460,7 +460,7 @@ function reloadK(t) {
 }
 
 // HOW MUCH HARDER THIS TOWER HITS THAN ITS TIER SAYS, as a multiplier. The damage
-// twin of reloadK, and it arrived with the Judgement Temple's Inner Strength —
+// twin of reloadK, and it arrived with the Judgment Temple's Inner Strength —
 // the first ability that raises the tower's ORDINARY blow rather than handing it
 // a rarer, bigger one.
 //
@@ -515,7 +515,7 @@ export function pierceUp(t) {
 // WHICH DRAWING THIS TOWER'S ORDINARY SHOT IS, which is the tier's own until an
 // ability re-skins it. The ammunition twin of gunnerOf below.
 //
-// TWO PASSES, AND THE ORDER IS THE POINT. A Judgement Temple that has bought both
+// TWO PASSES, AND THE ORDER IS THE POINT. A Judgment Temple that has bought both
 // of its abilities fires a fourth comet that belongs to neither of them alone, so
 // the COMBINATIONS are asked first — `shotWith` names another ability and the
 // drawing for owning both — and only then the singles. One pass would answer with
@@ -639,7 +639,7 @@ export function updateTowers(state, dt) {
 // resting — is the tower being needed, and turns him back on the same frame, facing
 // his target, exactly as a soldier comes to attention.
 //
-// PER MAN, so the Judgement Temple's two monks turn on their own clocks — each draws
+// PER MAN, so the Judgment Temple's two monks turn on their own clocks — each draws
 // his first wait out of IDLE_SPREAD, the way a squad does, so they do not turn as one.
 //
 // On an artillery tower the man is part of the drawing, and it is only HE who turns;

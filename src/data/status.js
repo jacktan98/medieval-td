@@ -36,7 +36,7 @@
 export const STATUS = {
   burnt: {
     icon: 'status_burnt',
-    name: 'Burnt',
+    name: 'Burned',   // American spelling, at the owner's word; the id stays `burnt`
     hurts: true
   },
   poisoned: {
@@ -46,7 +46,7 @@ export const STATUS = {
   },
   // THE THIRD, AND THE FIRST THAT DOES NOT HURT — which is what the note above
   // said a slow would be, two abilities before there was one. It arrived with the
-  // Judgement Temple's Slowed Pulse.
+  // Judgment Temple's Slowed Pulse.
   //
   // `hurts: false` is not a formality. `tick` reads it before touching health, so
   // a slow's magnitude never goes near the damage arithmetic; `harmed` reads it

@@ -258,7 +258,7 @@ export const ui = {
   // which fits the taller side — the same rule every glyph here is drawn by, so a
   // tall icon comes out narrower rather than cropped.
   glyph_altar: { trim: [218, 204, 76, 104], fit: GLYPH_BOX },
-  // The Judgement Temple's, and the fork's other face: two hands raised in prayer,
+  // The Judgment Temple's, and the fork's other face: two hands raised in prayer,
   // 66 x 89 source. Taller than wide like the altar's cross beside it, so both fit
   // the box by their height and the pair reads as one choice rather than two
   // differently sized buttons.
@@ -381,7 +381,7 @@ export const ui = {
   // The Cannon Outpost's two, on the same disc as every other ability face.
   ability_cannon_swift: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   ability_fiery:        { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  // The Judgement Temple's two, on the monastery's own ORANGE disc. Eleven files
+  // The Judgment Temple's two, on the monastery's own ORANGE disc. Eleven files
   // in a row now measure to 163,163,186,186 — the artist draws every ability face
   // into the same circle, and that is worth saying out loud because it is the
   // reason a new icon needs no thought: it lands on the plate where the last ten

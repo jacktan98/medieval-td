@@ -1999,19 +1999,19 @@ export const BOOK_ORDER = [
 // tools/newfoe.mjs fails if a creature in enemyTypes has no line here.
 export const FOE_NOTES = {
   light_inf: 'A common bandit with a club. Weak on his own, but they rarely come alone.',
-  tough_inf: 'A bigger, meaner thug in light armour. He takes a good deal more to bring down.',
+  tough_inf: 'A bigger, meaner thug in light armor. He takes a good deal more to bring down.',
   archer_inf: 'Shoots your soldiers from a distance and fights hand to hand when caught. ' +
     'Soldiers will not leave their post to chase him, so let your towers deal with him.',
   blocker_inf: 'Raises his shield when hit from afar, shrugging off most damage for five seconds ' +
-    'while he walks at half speed. Fighting a soldier, his armour is much lighter.',
-  heavy_inf: 'A huge brute in heavy armour whose club breaks through a rank of your soldiers\' ' +
-    'armour. Letting him through costs two lives.',
+    'while he walks at half speed. Fighting a soldier, his armor is much lighter.',
+  heavy_inf: 'A huge brute in heavy armor whose club breaks through a rank of your soldiers\' ' +
+    'armor. Letting him through costs two lives.',
   plague_inf: 'Throws poison flasks at your soldiers. Everyone in the spill is poisoned for ' +
-    'five seconds. His attacks are magic, so armour does little against them.',
+    'five seconds. His attacks are magic, so armor does little against them.',
   dark_priest: 'Hurls dark magic and heals the enemies around him. Heavily warded against magic, ' +
     'so archers and soldiers are the best answer.',
   shadow_inf: 'Invisible to your towers until a soldier stops him, and his blade cuts through ' +
-    'two ranks of armour. Keep soldiers on the road to catch him.',
+    'two ranks of armor. Keep soldiers on the road to catch him.',
   crow: 'Flies over your soldiers and attacks nobody. Only archer and monastery towers can hit it, ' +
     'and it is warded against magic, so archers do best.',
   bomb_inf: 'Runs at your soldiers and blows himself up, hurting everyone nearby. Shoot him down ' +

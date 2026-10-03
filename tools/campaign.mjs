@@ -2623,7 +2623,7 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
 // THE BOARD WITH NO CAP, and the simplest road shape a three-road board can have.
 //
 // Two decisions of the owner's meet on it: "towers are no longer restricted and can
-// access all towers for this stage", and a Judgement Temple already standing. The
+// access all towers for this stage", and a Judgment Temple already standing. The
 // Temple is the one fourth rung no `allow` list in the campaign has ever named, so
 // lifting the cap and giving one away are the same decision said twice.
 {
@@ -2701,12 +2701,12 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
 
     // THE RUNG NO OTHER BOARD OPENS, measured off the ladders rather than named.
     // Eight fourth rungs exist; seven of them are on some board's `allow` list and
-    // the Judgement Temple is on none, so this is the one board in the campaign
+    // the Judgment Temple is on none, so this is the one board in the campaign
     // where a player can build one.
     const top = families.flatMap(f => f.tiers.filter(t => t.tier === 4));
     const never = top.filter(t => !onRoad().some(l => (l.allow || []).includes(t.name)));
-    ok(never.length === 1 && never[0].name === 'Judgement Temple',
-      '  and the one rung no other board opens is the Judgement Temple',
+    ok(never.length === 1 && never[0].name === 'Judgment Temple',
+      '  and the one rung no other board opens is the Judgment Temple',
       `${never.map(t => t.name).join(', ') || 'none'}, of ${top.length} fourth rungs`);
   }
 
@@ -2799,8 +2799,8 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     ok(Array.isArray(peak.prebuilt) && peak.prebuilt.length === 1,
       'one tower is already standing on it', `${(peak.prebuilt || []).length} prebuilt`);
     const pre = peak.prebuilt[0];
-    ok(pre.family === 'monastery' && pre.name === 'Judgement Temple',
-      '  and it is a Judgement Temple', `${pre.family} "${pre.name}"`);
+    ok(pre.family === 'monastery' && pre.name === 'Judgment Temple',
+      '  and it is a Judgment Temple', `${pre.family} "${pre.name}"`);
 
     // THE MOST TOP LEFT PLOT MARKER, measured off the artwork's own plots rather
     // than trusted. "Top left" is what the owner asked for and an index is what the

@@ -758,7 +758,7 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
 
 // --- the monastery's OTHER fourth rung, and the two men on it -------------------
 //
-// The Judgement Temple, and the last fork in the game — every ladder offers two
+// The Judgment Temple, and the last fork in the game — every ladder offers two
 // top rungs now. Checked against the HIGH ALTAR rather than against the Abbey,
 // because they cost the same 220 and a player buying one is choosing not to buy
 // the other.
@@ -769,11 +769,11 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
 // taking turns rather than out of a second clock.
 console.log('\nMonastery tier 4 — the other one, cadence instead of weight\n');
 {
-  const temple = monastery.find(d => d.name === 'Judgement Temple');
+  const temple = monastery.find(d => d.name === 'Judgment Temple');
   const altar = monastery.find(d => d.name === 'High Altar');
 
   ok(temple.cost === altar.cost && temple.tier === altar.tier,
-    'the Judgement Temple is the Altar\'s price on the Altar\'s rung',
+    'the Judgment Temple is the Altar\'s price on the Altar\'s rung',
     `${temple.cost}g, tier ${temple.tier}, both`);
 
   // AND IT NOW REACHES FURTHER, which reverses this check rather than relaxing it.

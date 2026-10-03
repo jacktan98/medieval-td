@@ -275,7 +275,7 @@ const SPRITES = [
   // below the ellipse's. The number in data/towers.js comes from the artist's SVG,
   // and this is the row that says the fit agrees with it.
   ['assets/towers/monastery/High_Altar.png', 'altar.groundFrac', mon[3].spriteTrim, mon[3].groundFrac, 'whole'],
-  // Tier 4's other rung, the Judgement Temple. The same crescent problem as the
+  // Tier 4's other rung, the Judgment Temple. The same crescent problem as the
   // altar's — the stonework covers the back of its own shadow — and the same
   // answer: the number in data/towers.js is the SVG's ellipse and this row is what
   // says the PNG agrees with it.

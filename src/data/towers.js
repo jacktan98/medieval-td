@@ -221,14 +221,14 @@ const MON3_TRIM = [277, 165, 469, 694];
 // the tallest thing in the game, past the monastery's own 142 and the barracks'
 // 133.
 const MON4_TRIM = [332, 110, 360, 804];
-// Tier 4's second rung, the Judgement Temple, and it is the ALTAR'S BELFRY six
+// Tier 4's second rung, the Judgment Temple, and it is the ALTAR'S BELFRY six
 // game px shorter: 360 x 776 against 360 x 804, the same width to the pixel and
 // 28 source px less height. The artist drew one building twice — a plain spire
 // where the altar has a cross, and a banner hung across the near rail — so the
 // two share a footprint and differ in what stands inside them.
 const MON4B_TRIM = [332, 124, 360, 776];
 
-// THE MONK, and there are two of him on a Judgement Temple. He is the smallest
+// THE MONK, and there are two of him on a Judgment Temple. He is the smallest
 // figure in the game: 76 x 116 source against a priest's 80 x 154, because he
 // kneels rather than stands and carries no staff.
 //
@@ -2935,7 +2935,7 @@ const altar = {
   shape: 'tower'
 };
 
-// TIER 4'S OTHER RUNG, the Judgement Temple, and the first building in this game
+// TIER 4'S OTHER RUNG, the Judgment Temple, and the first building in this game
 // that carries TWO figures. Everything else on the board is one man on a deck, one
 // machine on a stone, or a squad that walks off the plot; two men standing still,
 // side by side, taking turns, is a shape nothing here had.
@@ -3093,7 +3093,7 @@ const judgement = {
   shape: 'tower'
 };
 
-// THE MONK, and a Judgement Temple stands two of him. One def for both, because
+// THE MONK, and a Judgment Temple stands two of him. One def for both, because
 // they are the same man twice — see `pair` above for where each of them stands.
 //
 // HE FIRES HIS OWN BLAST, and it is the fifth drawing in a family of four. It flies
@@ -3499,7 +3499,7 @@ export const monastery = [
   //
   // STILL THE OWNER'S NUMBER, on the owner's own terms — the sweep comes after he
   // has played it, the way the ballista's and the cannon's did.
-  { ...judgement, ...monk, tier: 4, name: 'Judgement Temple', title: 'Judgement Temple',
+  { ...judgement, ...monk, tier: 4, name: 'Judgment Temple', title: 'Judgment Temple',
     unit: 'Monk', cost: 220, damage: 50, range: 240, cooldown: 1.00,
     colour: '#A8A096', targeting: true, damageType: 'magic', pierce: 1,
     // The upgrade button's own picture on an Abbey, beside the altar's — the

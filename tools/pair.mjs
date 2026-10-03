@@ -1,4 +1,4 @@
-// Checks the two monks of a Judgement Temple take turns. Node only — never
+// Checks the two monks of a Judgment Temple take turns. Node only — never
 // loaded by the game.
 //
 //   node tools/pair.mjs

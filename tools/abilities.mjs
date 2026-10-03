@@ -147,7 +147,7 @@ const sentry = ids => tower('archery', SENTRY, 490, ids);
 // The Cannon Outpost, artillery's own second fourth rung.
 const outpost = ids => tower('siege', siege[4], 610, ids);
 
-// The Judgement Temple, monastery[4]: the ladder's second fourth rung, and the
+// The Judgment Temple, monastery[4]: the ladder's second fourth rung, and the
 // only tower in the game that stands TWO men — so `turn` matters here where it is
 // meaningless everywhere else in this file.
 const temple = ids => ({ ...tower('monastery', monastery[4], 590, ids), turn: 0 });
@@ -189,7 +189,7 @@ function fire(t, seconds, men = 1) {
                  // than what it does to a health bar.
                  pierce: s.pierce, type: s.type,
                  // WHICH DRAWING LEFT, which is the whole visible half of the
-                 // Judgement Temple's two abilities: nothing about the shot's
+                 // Judgment Temple's two abilities: nothing about the shot's
                  // kind, speed or report changes and the picture is what does.
                  sprite: s.ammo.sprite, slow: !!s.ammo.slow });
     }
@@ -1772,7 +1772,7 @@ console.log('\nThe Cannon Outpost\n');
     `${rate(drilled).toFixed(1)}/s with both`);
 }
 
-// --- the Judgement Temple's two -------------------------------------------------
+// --- the Judgment Temple's two -------------------------------------------------
 //
 // A SHAPE THIS FILE HAS NOT CHECKED BEFORE. Everything above is a rhythm, a
 // passive on the tower's own numbers, a reaction, or an aura. These two change
@@ -1790,7 +1790,7 @@ console.log('\nThe Cannon Outpost\n');
 // that disagrees so the drawing depends on which was bought first, and a slow
 // carried by the ammunition that never reaches the man.
 
-console.log('\nThe Judgement Temple\n');
+console.log('\nThe Judgment Temple\n');
 
 {
   const def = monastery[4];

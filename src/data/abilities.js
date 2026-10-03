@@ -316,7 +316,7 @@ export const fieryBall = {
 
 // THE MONK'S COMET IN THREE MORE COLOURS, and the first ammunition in this file
 // that is not a SPECIAL. Everything above is a shot the tower fires once every few
-// reloads; these are what a Judgement Temple's ORDINARY blast becomes once it has
+// reloads; these are what a Judgment Temple's ORDINARY blast becomes once it has
 // been taught something, so one of them is on every shot it fires for the rest of
 // the game.
 //
@@ -569,7 +569,7 @@ export const ABILITIES = [
       `${num(t.range * a.rangeTimes)}px instead of ${t.range} — level with a Ballista ` +
       `Turret that has bought the same thing, and behind only the Musketeer Post.\n\n` +
       `The steel also drives the quarrel through ${a.pierceUp} rank of physical ` +
-      `armour, for good: ${t.damage} against medium plate lands ` +
+      `armor, for good: ${t.damage} against medium plate lands ` +
       `${plate(t.damage, a.pierceUp)} instead of ${plate(t.damage)}. Every shot the ` +
       `sentry fires, ordinary or not. The reload and the ${t.damage} a bolt are ` +
       `unchanged, and the crossbowman is drawn with a steel bow from the moment it ` +
@@ -679,10 +679,10 @@ export const ABILITIES = [
       `the tower is on. That is the point of it: ${a.shots} bullets into 1 militiaman ` +
       `is most of them wasted, and ${a.shots} into ${a.shots} of them is a rank gone. ` +
       `With only 1 enemy in reach all ${a.shots} go to him.\n\n` +
-      `Every ball of the burst breaks ${a.pierce} ranks of physical armour where the ` +
+      `Every ball of the burst breaks ${a.pierce} ranks of physical armor where the ` +
       `Post's ordinary shot breaks ${t.pierce}, so a burst into medium plate lands ` +
       `${plate(t.damage, a.pierce) * a.shots} rather than ` +
-      `${plate(t.damage, t.pierce) * a.shots}. Against an unarmoured rank it changes ` +
+      `${plate(t.damage, t.pierce) * a.shots}. Against an unarmored rank it changes ` +
       `nothing: this is what stops plate being the 1 rank the burst cannot clear.`
   },
   {
@@ -807,11 +807,11 @@ export const ABILITIES = [
       `over the shot for ${a.hold} of those ${num(t.cooldown * a.reloadAfter)} ` +
       `seconds, so the pose costs nothing on top of it. Kept for the 1 thing on the ` +
       `road that has to die and cannot be chipped down.\n\n` +
-      `The round breaks ${a.pierce} ranks of physical armour where the Post's ` +
+      `The round breaks ${a.pierce} ranks of physical armor where the Post's ` +
       `ordinary shot breaks ${t.pierce}, so it lands ` +
       `${plate(blow(t.damage, a.times), a.pierce)} on medium plate rather than ` +
       `${plate(blow(t.damage, a.times), t.pierce)}. The 1 thing that has to die is ` +
-      `usually the 1 thing wearing armour.`
+      `usually the 1 thing wearing armor.`
   },
   {
     id: 'light',
@@ -940,7 +940,7 @@ export const ABILITIES = [
       `exactly ${num((a.every - 1 + a.times) / a.every)}x, from the man who starts ` +
       `with the least damage in the game. Each of the ${t.soldier.count} counts his ` +
       `own blows, so the strikes land spread out rather than all at once.\n\n` +
-      `The strike also breaks ${a.pierce} rank of physical armour, which his ordinary ` +
+      `The strike also breaks ${a.pierce} rank of physical armor, which his ordinary ` +
       `swings do not: ${blow(t.soldier.damage, a.times)} into medium plate lands ` +
       `${plate(blow(t.soldier.damage, a.times), a.pierce)} rather than ` +
       `${plate(blow(t.soldier.damage, a.times))}. Only the 1 blow in ${a.every}.`
@@ -1145,12 +1145,12 @@ export const ABILITIES = [
       `${blow(t.soldier.damage, a.thrownTimes)} on the first blade of a volley, with a ` +
       `heavier knife in the air to say so. Creeping to arm's length is the risk, so it ` +
       `is the one that pays more. His strike lands harder and sounds it.\n\n` +
-      `A sneaked blow goes through ${a.pierce} ranks of physical armour where his ` +
+      `A sneaked blow goes through ${a.pierce} ranks of physical armor where his ` +
       `ordinary blade goes through ${t.soldier.pierce} — both the strike and the ` +
       `throw. The opening blow into medium plate is ` +
       `${plate(blow(t.soldier.damage, a.times), a.pierce)} rather than ` +
       `${plate(blow(t.soldier.damage, a.times), t.soldier.pierce)}, which is what an ` +
-      `opener on an armoured man should be worth.`
+      `opener on an armored man should be worth.`
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its
@@ -1214,7 +1214,7 @@ export const ABILITIES = [
       `the game, behind only the Musketeer Post, on the one tower that has no dead ` +
       `zone in it.\n\n` +
       `The iron also drives the bolt through ${a.pierceUp} more rank of physical ` +
-      `armour, ${t.pierce + a.pierceUp} in all: ${t.damage} against medium plate lands ` +
+      `armor, ${t.pierce + a.pierceUp} in all: ${t.damage} against medium plate lands ` +
       `${plate(t.damage, t.pierce + a.pierceUp)} instead of ` +
       `${plate(t.damage, t.pierce)}. Every bolt, ordinary or heavy — the same reload ` +
       `and the same blast, and the machine is drawn in iron from the moment it is ` +
@@ -1280,7 +1280,7 @@ export const ABILITIES = [
       `The shaft goes on burning in the wound: ${a.ammo.burn.dps} a second for ` +
       `${a.ammo.burn.seconds} seconds, ${a.ammo.burn.dps * a.ammo.burn.seconds} more ` +
       `on everything the bolt caught, over the same ${t.splash}px it burst across. ` +
-      `Fire is true damage — no armour in the game turns it aside — so against ` +
+      `Fire is true damage — no armor in the game turns it aside — so against ` +
       `medium plate the bolt itself lands ` +
       `${plate(blow(t.damage, a.times), t.pierce)} and the fire adds its full ` +
       `${a.ammo.burn.dps * a.ammo.burn.seconds} on top.\n\n` +
@@ -1348,7 +1348,7 @@ export const ABILITIES = [
     detail: (a, t) => `Every ${a.every}th ball leaves the barrel alight. It hits for ` +
       `the ordinary ${t.damage} and sets fire to what it catches: ` +
       `${a.ammo.burn.dps} damage a second for ${a.ammo.burn.seconds} seconds, which no ` +
-      `armour turns aside.\n\n` +
+      `armor turns aside.\n\n` +
       `The fire reaches further than the ball breaks — ` +
       `${num(t.splash * a.ammo.burn.splashTimes)}px of flame around a blast of ` +
       `${t.splash}px — so men standing just clear of the crater burn anyway. They carry the ` +
@@ -1482,7 +1482,7 @@ export const ABILITIES = [
   {
     id: 'strength',
     name: 'Inner Strength',
-    of: 'Judgement Temple',
+    of: 'Judgment Temple',
     icon: 'ability_strength',
     cost: ABILITY_COST,
     // A THIRD MORE ON EVERY BLAST, at the owner's ask, and a MULTIPLE rather than
@@ -1530,7 +1530,7 @@ export const ABILITIES = [
       `${towerOf('High Altar').damage - blow(t.damage, a.damageTimes)} short of the ` +
       `altar on the blow itself, which is what the 2 towers are for. The comet is ` +
       `redrawn, and redrawn again in blue if the temple has also learned Slowed Pulse.\n\n` +
-      `The monks also learn to throw through ${a.pierceUp} more rank of magic armour, ` +
+      `The monks also learn to throw through ${a.pierceUp} more rank of magic armor, ` +
       `${t.pierce + a.pierceUp} in all: the bigger blast lands ` +
       `${plate(blow(t.damage, a.damageTimes), t.pierce + a.pierceUp)} on medium wards ` +
       `where the temple alone lands ${plate(t.damage, t.pierce)}. Against anything ` +
@@ -1556,7 +1556,7 @@ export const ABILITIES = [
     //               the two was bought first.
     id: 'pulse',
     name: 'Slowed Pulse',
-    of: 'Judgement Temple',
+    of: 'Judgment Temple',
     icon: 'ability_pulse',
     cost: ABILITY_COST,
     shot: monkSlowShot,

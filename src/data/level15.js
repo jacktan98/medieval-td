@@ -3,7 +3,7 @@
 // EVERY BOARD ON THE ROAD BEFORE THIS ONE HAS A CAP. Stage 1 stops at tier 2, the
 // other eleven stop at tier 3 and buy their way past it one named rung at a time —
 // one on stage 3, growing to the three Ironforge boards' seven, which is every
-// fourth rung in the game except the Judgement Temple. This one has no `maxTier`
+// fourth rung in the game except the Judgment Temple. This one has no `maxTier`
 // and no `allow`, at the owner's word: "towers are no longer restricted and can
 // access all towers for this stage."
 //
@@ -203,7 +203,7 @@ export const level15 = {
 
   // NO CAP, at the owner's word. No `maxTier` and no `allow`, which together mean
   // every rung of every ladder — the only board on the road that says that, and so
-  // the only one where a player can build a Judgement Temple of their own.
+  // the only one where a player can build a Judgment Temple of their own.
   //
   // It is written as an ABSENCE rather than as a list of all eleven names, because
   // that is what `capped` in src/menu.js reads: a board with neither field lets
@@ -214,7 +214,7 @@ export const level15 = {
   startLives: 20,
 
   // A JUDGEMENT TEMPLE ALREADY STANDING, at the owner's ask: "There is a prebuilt
-  // tower, Judgement Temple at the beginning of the game. This tower is placed at the
+  // tower, Judgment Temple at the beginning of the game. This tower is placed at the
   // most top left plot marker."
   //
   // PLOT 3 IS THAT MARKER, and the index is safe to write down because the geometry
@@ -236,7 +236,7 @@ export const level15 = {
   // of the middle one — the part of the board where a wave is still a column rather
   // than a crowd.
   prebuilt: [
-    { plot: 3, family: 'monastery', name: 'Judgement Temple' }
+    { plot: 3, family: 'monastery', name: 'Judgment Temple' }
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND: the four watchtowers, two at each end of the

@@ -378,7 +378,7 @@ function shotLeaves(def, famId, enemyDef) {
 
   // AND THE MONASTERY IS THE OTHER WAY ROUND, which is the whole matchup in two
   // numbers: the same giant that halves a bolt takes a blast in full.
-  const temple = monastery.find(d => d.name === 'Judgement Temple');
+  const temple = monastery.find(d => d.name === 'Judgment Temple');
   const giant = enemyTypes.heavy_inf.armour;
   const bolt = shootAt(siege.find(d => d.name === 'Ballista Turret'), 'siege', giant);
   const blast = shootAt(temple, 'monastery', giant);

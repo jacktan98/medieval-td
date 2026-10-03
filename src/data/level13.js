@@ -209,7 +209,7 @@ export const level13 = {
 
   // TIER 3, PLUS SEVEN NAMED RUNGS — one more than Ironforge Town and the most any
   // board has opened. Every tier 4 in the game is buildable here except the Trebuchet
-  // and the Judgement Temple, which is what a last board should look like.
+  // and the Judgment Temple, which is what a last board should look like.
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar',
           'Assassin Guild', 'Musketeer Post', 'Cannon Outpost'],

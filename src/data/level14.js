@@ -218,7 +218,7 @@ export const level14 = {
   // TIER 3, PLUS SEVEN NAMED RUNGS — the same set Ironforge Town and the Factory
   // open, which makes this the third board in a row to do it and the shape a last
   // board has settled into: every tier 4 in the game except the Trebuchet and the
-  // Judgement Temple.
+  // Judgment Temple.
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar',
           'Assassin Guild', 'Musketeer Post', 'Cannon Outpost'],

@@ -129,7 +129,7 @@ export const paths = {
   // tallest drawing in the game at 165 game px against the tier 2 and 3 towers'
   // 142.
   monastery_t4: 'assets/towers/monastery/High_Altar.png',
-  // Tier 4's OTHER rung, the Judgement Temple: the same belfry again, six game px
+  // Tier 4's OTHER rung, the Judgment Temple: the same belfry again, six game px
   // shorter than the altar, and the first building in the game that carries two
   // figures rather than one. See `pair` in data/towers.js.
   monastery_t4b: 'assets/towers/monastery/Judgement_Temple.png',
@@ -302,7 +302,7 @@ export const paths = {
   // tower with a named man in it, and the artist's files say so.
   pope:               'assets/units/Pope_Default.png',
   pope_attack:        'assets/units/Pope_Attack.png',
-  // The monk, and TWO of him stand in a Judgement Temple. One pair of drawings
+  // The monk, and TWO of him stand in a Judgment Temple. One pair of drawings
   // for both — they are the same man twice, so a second set of files would be the
   // same picture under another name and one more thing to keep in step.
   //
@@ -399,7 +399,7 @@ export const paths = {
   missile_t4:  'assets/projectiles/Pope_Arcane_Missile.png',
   // The monk's, and the smallest missile in the family: a 12 x 5 comet against a
   // priest's 19 x 4 dart and the pope's 26 x 5. Two men throwing small blasts is
-  // what a Judgement Temple looks like, so the drawing says so.
+  // what a Judgment Temple looks like, so the drawing says so.
   monk_shot:       'assets/projectiles/Monk_Magic_Shot.png',
   // AND THE SAME MAGIC THROWN BACK. The Dark Priest's missile is the first
   // projectile in this game that is a MONASTERY drawing pointed the other way —
@@ -408,7 +408,7 @@ export const paths = {
   // enemies; the drawing knows nothing about which army threw it.
   dark_missile:    'assets/projectiles/Enemies_Dark_Priest_Arcane_Missile.png',
   // AND THE SAME COMET IN THREE OTHER COLOURS, one per combination of the two
-  // things a Judgement Temple can be taught. This is the first tower in the game
+  // things a Judgment Temple can be taught. This is the first tower in the game
   // whose ORDINARY shot changes picture — every other re-skin in here belongs to
   // a special that fires once every few reloads — so there are four drawings and
   // no fourth ability: plain, slowed, strengthened, and both at once.
@@ -747,7 +747,7 @@ export const paths = {
   // moved here with the rest.
   ability_cannon_swift: 'assets/abilities/Cannon_Outpost_Swift_Reload_Icon.png',
   ability_fiery:        'assets/abilities/Cannon_Outpost_Fiery_Shot_Icon.png',
-  // The Judgement Temple's two. Named for their tower like every other pair —
+  // The Judgment Temple's two. Named for their tower like every other pair —
   // they arrived as Slowed_Pulse_Icon and Inner_Strength_Icon and were renamed
   // with the rest when the artist redrew all sixteen and dropped the `_Icon`
   // suffix. Nothing in the game reads a filename; the key below is the binding.
@@ -769,7 +769,7 @@ export const paths = {
   status_burnt:    'assets/status/Burnt_Status.png',
   status_poisoned: 'assets/status/Poisoned_Status.png',
   // AND SLOWED, which is the third and the first that does not hurt. It arrived
-  // with the Judgement Temple's Slowed Pulse — the folder was made for exactly
+  // with the Judgment Temple's Slowed Pulse — the folder was made for exactly
   // this, and the note above named it two abilities before it existed.
   //
   // IT IS THE FIRST MARK WIDER THAN IT IS TALL, two chevrons side by side against

@@ -545,7 +545,7 @@ function run(state, item) {
     t.def = next;
     t.spent += next.cost;
     // A NEW MACHINE COMES ONLINE LOADED, which is what a zero here means, and it
-    // is the right answer for every tower but one. A Judgement Temple's men have
+    // is the right answer for every tower but one. A Judgment Temple's men have
     // to be SEEN gathering the blast before it leaves — see `charge` in
     // data/towers.js and the note in stepWeapon — so upgrading into one beside a
     // wave would loose a blast out of a monk still drawn at rest, which is the

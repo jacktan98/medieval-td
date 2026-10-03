@@ -487,7 +487,7 @@ const paths = {
   cannoneer_1:     'assets/audio/voice/Cannoneer_1.mp3',
   cannoneer_2:     'assets/audio/voice/Cannoneer_2.mp3',
   cannoneer_3:     'assets/audio/voice/Cannoneer_3.mp3',
-  // The Judgement Temple's own three, and the eighth and LAST tier with a voice —
+  // The Judgment Temple's own three, and the eighth and LAST tier with a voice —
   // every fourth rung in the game now answers for itself. Spoken by one monk for
   // both of them: a tower speaks when it is built and when it is given an order,
   // and it is the tower speaking rather than either man.
@@ -926,7 +926,7 @@ export const CUE = {
   // The High Altar's, keyed the same way off the `voice` field on monastery
   // tier 4 — the fourth and last tier with lines of its own.
   pope:         ['pope_1', 'pope_2', 'pope_3'],
-  // The Judgement Temple's, keyed off `voice` on the monastery's OTHER tier 4.
+  // The Judgment Temple's, keyed off `voice` on the monastery's OTHER tier 4.
   // The monastery is the last ladder to carry two of these and, again, nothing in
   // familyCue had to learn it.
   monk:         ['monk_1', 'monk_2', 'monk_3'],
@@ -1215,7 +1215,7 @@ export const DEADEYE = ['musketeer_deadeye'];
 // ammunition that says `fireSound: true` and has no row here simply stops making
 // a noise — and the tower goes on working perfectly in every other respect.
 // `monk` is the sixth row and it points at ARCANE too, for the same reason `pope`
-// does and more plainly: the owner asked for the Judgement Temple's blast to be
+// does and more plainly: the owner asked for the Judgment Temple's blast to be
 // the monastery's own Arcane_shot. So the two monks needed a kind purely so their
 // KILLS could be theirs, and this row is what stops that kind going silent.
 export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, monk: ARCANE,
