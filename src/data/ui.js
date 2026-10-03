@@ -422,7 +422,7 @@ export const ui = {
   status_slowed:   { trim: [239, 244, 34, 24], fit: STATUS_H },
   // AND THE STUN'S, three stars on an arc: 54 x 30, wide, so `fit` like the
   // chevrons. A placeholder until the artist's file replaces it.
-  status_stunned:  { trim: [229, 241, 54, 30], fit: STATUS_H },
+  status_stunned:  { trim: [234, 240, 44, 32], fit: STATUS_H },
   // AND THE DARK HEALING, which takes `h` like the first two: 32 x 42, taller than
   // it is wide, so a height and a fit give the same answer and it keeps the field
   // that says what was meant. 42 source px is the same as the flame's, which is

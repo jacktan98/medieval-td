@@ -22,6 +22,9 @@ import { slowOf, wearing, apply as applyStatus } from '../src/status.js';
 import { slowOn } from '../src/data/status.js';
 import { makeUnits, updateUnits, soldierBlow } from '../src/units.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
+import { readFileSync } from 'node:fs';
+import { paths as ASSET_URLS } from '../src/assets.js';
+import { ui } from '../src/data/ui.js';
 import { boxAt, upBox, tapUpgrades, UP_BUY, UP_RESET, UP_DONE, openUpgrades, closeUpgrades } from '../src/upgradepage.js';
 
 let bad = 0;
@@ -260,6 +263,30 @@ console.log('\nWith nothing bought\n');
   check(fx.every(f => f.rangeTimes === 1 && f.damageTimes === 1 && f.reloadTimes === 1 && f.splashTimes === 1 &&
     f.hpTimes === 1 && !f.respawnLess && f.blowTimes === 1 && !f.deathSave && !f.crit && !f.stun && !f.slow),
     'every family is exactly as it was');
+}
+
+console.log('\nThe faces\n');
+
+// THE ARTIST'S SVGs, and the crop that data/ui.js puts round them. The faces came
+// as vectors to lose the white specks a PNG's soft edge left round the disc; the
+// game cuts each one to [132, 132, 248, 248] of its 512 canvas, so the disc has to
+// sit dead centre and 248 across, rim and all, or it is clipped or floats. Read
+// from the file's own first path: a circle drawn as four curves inside a matrix,
+// with its stroke.
+{
+  const off = [];
+  for (const [key, src] of Object.entries(ASSET_URLS)) {
+    if (!/^up_(archery|barracks|siege|monastery)(_\d)?$/.test(key)) continue;
+    const svg = readFileSync(src, 'utf8');
+    const m = /matrix\(([^)]*)\)">\s*<path d="M([\d.]+),([\d.]+) C[\d.]+,[\d.]+ [\d.]+,[\d.]+ ([\d.]+),([\d.]+)[^"]*"[^>]*stroke-width="([\d.]+)"/.exec(svg);
+    if (!m) { off.push(`${key}: no disc`); continue; }
+    const [a, , , d, tx, ty] = m[1].split(',').map(Number);
+    const cx = +m[2] * a + tx, cy = +m[5] * d + ty, outer = 2 * (+m[4] - +m[2]) * a + +m[6] * a;
+    const [x, y, w, h] = ui[key].trim;
+    if (Math.abs(cx - (x + w / 2)) > 0.5 || Math.abs(cy - (y + h / 2)) > 0.5 || Math.abs(outer - w) > 0.5 || w !== h)
+      off.push(`${key}: disc at ${cx.toFixed(1)},${cy.toFixed(1)} ${outer.toFixed(1)} across`);
+  }
+  check(!off.length, 'every face is a centred 248 disc, as its crop expects', off.join('; ') || '20 SVGs');
 }
 
 console.log(bad ? `\n${bad} failed.` : '\nThe upgrades do what they say.');

@@ -57,8 +57,14 @@ export const UP_PANEL = { x: 600, y: 84, w: 330, h: 340 };
 export const UP_BUY = { x: UP_PANEL.x + 45, y: UP_PANEL.y + UP_PANEL.h - 66, w: UP_PANEL.w - 90, h: 44 };
 // RESET BESIDE DONE at the bottom right, at the owner's word, and it was at the
 // bottom left. 20px of drawn gap keeps their padded tap boxes apart.
-export const UP_DONE = { x: 790, y: 484, w: 130, h: 38 };
-export const UP_RESET = { x: UP_DONE.x - 20 - 130, y: 484, w: 130, h: 38 };
+//
+// DONE'S RIGHT EDGE IS THE COLUMN'S: the star counter and the panel both end at
+// 930, so it does too. And the row stands as far above the sheet's foot as that
+// edge stands in from the sheet's right side, so the margin is the same both ways.
+const UP_RIGHT = UP_STARS.x + UP_STARS.w;
+const UP_MARGIN = UP_SHEET.x + UP_SHEET.w - UP_RIGHT;
+export const UP_DONE = { x: UP_RIGHT - 130, y: UP_SHEET.y + UP_SHEET.h - UP_MARGIN - 38, w: 130, h: 38 };
+export const UP_RESET = { x: UP_DONE.x - 20 - 130, y: UP_DONE.y, w: 130, h: 38 };
 
 // How long a half-pressed Reset waits for its second press, in ms.
 export const RESET_WINDOW = 3000;

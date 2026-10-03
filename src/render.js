@@ -6319,7 +6319,9 @@ function drawUpgrades(ctx, state) {
     // button up through every rung, dark where the rung below is bought.
     for (let i = -1; i + 1 < rungs.length; i++) {
       const a = i < 0 ? foot : upBox(col, i), b = upBox(col, i + 1);
-      ctx.strokeStyle = i < 0 || rungState(fam, i) === 'bought' ? UI_INK : 'rgba(255,239,212,0.3)';
+      // TAN, #BE9F6D, at the owner's word — the panel's edge colour. Solid where the
+      // rung below is bought, faint where the climb has not got that far.
+      ctx.strokeStyle = i < 0 || rungState(fam, i) === 'bought' ? UP_BG_EDGE : 'rgba(190,159,109,0.35)';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(a.cx, a.cy);
@@ -6382,12 +6384,20 @@ function drawUpgrades(ctx, state) {
       const ring = same(pick, fam, i) ? UP_PICK
         : same(hover, fam, i) ? 'rgba(47,95,168,0.55)'
         : afford ? UI_GOLD : null;
+      // A SOFT GLOW round it, in its own colour, at the owner's word: the ring
+      // is stroked once with a blur behind it and once more sharp on top.
       if (ring) {
+        ctx.save();
         ctx.strokeStyle = ring;
         ctx.lineWidth = 3;
+        ctx.shadowColor = ring;
+        ctx.shadowBlur = 12;
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+        ctx.restore();
       }
     });
 

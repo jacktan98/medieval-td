@@ -305,6 +305,10 @@ for (const d of dirs) {
   let solid = 0;
   for (const [key, src] of Object.entries(ASSET_URLS)) {
     if (!ui[key]) continue;   // boxed in data/ui.js, wherever it is filed
+    // A VECTOR FILE is not measured here: it has no pixels to read until a browser
+    // draws it. The star upgrades' faces came as SVG to lose the white specks a
+    // PNG's soft edge left round the disc; tools/upgrades.mjs checks their disc.
+    if (src.endsWith('.svg')) continue;
     // THE FOUR ABILITY BUTTONS ARE HELD TO THIS TOO, and were not always. They are
     // the one kind of UI file with nothing underneath them — each one IS the plate
     // rather than a mark laid over it — so a white square behind the disc was
@@ -346,7 +350,7 @@ for (const d of dirs) {
   const want = ui.btn_plate.trim;
   let wrong = 0;
   for (const [key, src] of Object.entries(ASSET_URLS)) {
-    if (!ui[key] || !ui[key].plate) continue;
+    if (!ui[key] || !ui[key].plate || src.endsWith('.svg')) continue;
     const img = decode(readFileSync(src));
     const t = trim(img, true);
     const square = t[2] === t[3];
@@ -441,7 +445,7 @@ if (soft) {
   const seen = new Map();
   const measured = key => {
     const file = ASSET_PATHS[key];
-    if (!file) return null;
+    if (!file || file.endsWith('.svg')) return null;   // vector: see above
     if (!seen.has(key)) seen.set(key, trim(decode(readFileSync(file))));
     return seen.get(key);
   };

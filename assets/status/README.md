@@ -8,7 +8,7 @@ so far; stunned and whatever else follows goes here.
 | `Burnt_Status.png`   | anything a Fiery Shot ball catches    | 10 damage a second for 5s |
 | `Poisoned_Status.png`| any soldier a flask or its spill catches | 5 damage a second for 4s |
 | `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | 30% off its speed and its swing, for 5s |
-| `Stunned_Status.png` | anything a Concussion rock lands on (the artillery's fourth star upgrade) | stands still for 0.5s; a boss is only held to half speed. **A placeholder** — three gold stars drawn by script — until the artist draws one |
+| `Stun_Status.png`    | anything a Concussion rock lands on (the artillery's fourth star upgrade) | stands still for 0.5s; a boss is only held to half speed |
 | `Dark_Healing_Status.png` | any enemy a Dark Priest has cast on | 10 health a second for 5s |
 | `Physical_Damage_Boost_Status.png` | any PHYSICAL striker standing within 150px of a Rally Thug | half again on its attack, for as long as it stands there |
 | `Health_Boost_Status.png` | **nothing — kept, not loaded** | see below |
