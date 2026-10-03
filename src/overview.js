@@ -1034,11 +1034,12 @@ function makeFog(unlocked, live, frac) {
   f.drawImage(parchment || makeParchment(), 0, 0);
   f.globalCompositeOperation = 'source-over';
 
-  if (art.overviewNames) {
+  const names = namesArt();
+  if (names) {
     // The names go through the same drain. A region nobody has reached should not
     // be announcing itself in white.
     if (drained) f.filter = `grayscale(1) sepia(0.62) brightness(${FOG_BRIGHT})`;
-    f.drawImage(art.overviewNames, 0, 0, 960, 540);
+    f.drawImage(names, 0, 0, 960, 540);
     f.filter = 'none';
   }
 
@@ -1238,10 +1239,57 @@ function stillMap(ctx, tf, img) {
   return stillSheet;
 }
 
+// --- THE REGION NAMES, AS TEXT: a test ---------------------------------------
+//
+// The owner's ask: "let's test using the text font for encyclopedia and upgrades
+// for the town names. Let's remove Overview map layer 9 and use this font style to
+// replace them. I will see whether it is a good fit."
+//
+// So the artist's lettering (layer 9, pulled out to Overview_Map_names.svg) is no
+// longer loaded, and each name is set in the world map doors' label style — bold
+// system type in the UI's cream with a dark edge, see drawMapDoor in render.js —
+// centred where the artist's name sat. Everything downstream is unchanged: this
+// hands back an image like the one it replaces, and it goes through the same fog.
+//
+// TO GO BACK: set NAMES_AS_TEXT to false and restore `overviewNames` in assets.js.
+// The artist's files are still in assets/map.
+const NAMES_AS_TEXT = true;
+// Each name's centre, measured off the artist's layer 9 (half its 1920 x 1080).
+const NAME_TEXT = [
+  ['Oakhaven', 119, 120], ['Winchester', 378, 149], ['Serene Peak', 729, 83],
+  ['Dawnford', 427, 256], ['Ironforge', 804, 302], ['Fernshadow', 528, 402],
+  ['Sandshroud', 216, 449]
+];
+const NAME_FONT = '800 17px system-ui, sans-serif';
+// Rasterised at twice the board, so it stays sharp on the glass the map is drawn to.
+const NAME_K = 2;
+let nameCanvas = null;
+function namesArt() {
+  if (!NAMES_AS_TEXT) return art.overviewNames || null;
+  if (nameCanvas || typeof document === 'undefined') return nameCanvas;
+  nameCanvas = document.createElement('canvas');
+  nameCanvas.width = 960 * NAME_K;
+  nameCanvas.height = 540 * NAME_K;
+  const g = nameCanvas.getContext('2d');
+  g.scale(NAME_K, NAME_K);
+  g.font = NAME_FONT;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineWidth = 4;
+  g.lineJoin = 'round';
+  g.strokeStyle = 'rgba(14,12,10,0.85)';
+  g.fillStyle = '#FFEFD4';
+  for (const [name, x, y] of NAME_TEXT) {
+    g.strokeText(name, x, y);
+    g.fillText(name, x, y);
+  }
+  return nameCanvas;
+}
+
 // The region names, rasterised once per screen size rather than every frame.
 let namesSheet = null, namesKey = '';
 function stillNames(ctx) {
-  const img = art.overviewNames;
+  const img = namesArt();
   if (!img) return null;
   const c = ctx.canvas, tf = ctx.getTransform();
   const key = `${c.width}x${c.height}|${tf.a},${tf.e},${tf.f}|${img.complete ? img.src : ''}`;

@@ -6138,7 +6138,8 @@ function drawUpgradesButton(ctx) {
   drawMapDoor(ctx, 'icon_upgrades', at, 'Upgrades');
   const left = starsLeft();
   if (!left) return;
-  const bx = at.cx + 22, by = at.foot - 46;
+  // Far enough right that its left end clears the hammer's cream border.
+  const bx = at.cx + 31, by = at.foot - 46;
   ctx.save();
   ctx.font = '800 12px system-ui, sans-serif';
   const tw = ctx.measureText(String(left)).width;

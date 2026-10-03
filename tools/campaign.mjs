@@ -875,7 +875,7 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // the names wherever it fell.
   const mk = draw.slice(draw.indexOf('function makeFog'));
   const fogBody = mk.slice(0, mk.indexOf('\n}\n') + 2);
-  ok(/art\.overview\b/.test(fogBody) && /parchment/.test(fogBody) && /overviewNames/.test(fogBody),
+  ok(/art\.overview\b/.test(fogBody) && /parchment/.test(fogBody) && /overviewNames|namesArt\(\)/.test(fogBody),
     'and it is drained from the same three layers the player sees',
     'map, paper and names');
 

@@ -944,13 +944,11 @@ export const paths = {
   // THE SEPIA ONE, and it is DERIVED: tools/overview.mjs recolours the artist's
   // Overview_Map.svg into browns that keep every fill's brightness and drop its
   // hue, then writes this beside it. The artist goes on drawing in colour.
-  overview:    'assets/map/Overview_Map_sepia.svg',
-  // THE REGION NAMES, on their own and in the colour they were drawn. They are a
-  // second image rather than part of the first because the map gets a sheet of
-  // parchment multiplied over it, and the owner asked for the names untouched by
-  // it — so they have to be laid down AFTER the sheet, which is only possible if
-  // they were never in the picture underneath it.
-  overviewNames: 'assets/map/Overview_Map_names.svg'
+  overview:    'assets/map/Overview_Map_sepia.svg'
+  // THE REGION NAMES used to be the second image here — `overviewNames:
+  // 'assets/map/Overview_Map_names.svg'`, the artist's lettering from layer 9. For
+  // now they are set as text instead, at the owner's word, as a test: see
+  // NAMES_AS_TEXT in src/overview.js, which says how to put them back.
 };
 
 // Art the game is wired for but does not have yet. A miss here is expected, so
