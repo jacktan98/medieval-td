@@ -6228,12 +6228,17 @@ const UP_GOLD = '#E7C15A';
 const UP_GLYPH = Object.fromEntries(families.map(f => [f.id, f.glyph]));
 const UP_PICK = '#2F5FA8';
 // THE SCREEN'S OWN BROWNS, at the owner's word — a test, and it was the book's
-// parchment: a dark sheet written in the map's cream, and a light tan panel that
-// describes, written in the book's own dark inks as the panel was on parchment.
-// The sheet and the panel share one #74592E edge.
+// parchment: a dark sheet and a lighter #74592E panel, both written in the map's
+// cream and sharing one tan #BE9F6D edge. The colours that carried meaning on
+// parchment (the name's red, Bought's green, the warning's red) are lifted so they
+// still read on the brown.
 const UP_BG = '#634B27';
-const UP_BG_EDGE = '#74592E';
-const UP_PANEL_FILL = '#BE9F6D';
+const UP_BG_EDGE = '#BE9F6D';
+const UP_PANEL_FILL = '#74592E';
+const UP_MUTED = 'rgba(255,239,212,0.72)';
+const UP_NAME = '#F4A48E';
+const UP_GREEN = '#B5E09A';
+const UP_RED = '#F4A48E';
 
 // A UI PICTURE IN BLACK AND WHITE, made once per key and kept. Done on the pixels
 // rather than with ctx.filter, which older Safari ignores — this works wherever a
@@ -6431,7 +6436,7 @@ function drawUpgradePanel(ctx, state) {
   ctx.textBaseline = 'middle';
   const shown = shownRung(state);
   if (!shown) {
-    ctx.fillStyle = INK_MUTED;
+    ctx.fillStyle = UP_MUTED;
     ctx.font = `17px ${MAP_TYPE}`;
     ctx.fillText('Tap an upgrade to see', cx, p.y + p.h / 2 - 10);
     ctx.fillText('what it does.', cx, p.y + p.h / 2 + 10);
@@ -6442,17 +6447,17 @@ function drawUpgradePanel(ctx, state) {
   const u = UPGRADES[fam][i];
   const st8 = rungState(fam, i);
 
-  ctx.fillStyle = ALERT_RED;
+  ctx.fillStyle = UP_NAME;
   ctx.font = `25px ${MAP_TYPE}`;
   ctx.fillText(u.name, cx, p.y + 34);
-  ctx.fillStyle = INK_MUTED;
+  ctx.fillStyle = UP_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
   ctx.fillText(UP_FAMILY_NAME[fam], cx, p.y + 58);
 
   // The price, a star and a number.
   // Cream-edged, as the map's stars are, at the owner's word.
   starShape(ctx, cx - 12, p.y + 86, 10, 'map');
-  ctx.fillStyle = INK;
+  ctx.fillStyle = UI_INK;
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
   ctx.fillText(String(UPGRADE_COSTS[i]), cx + 2, p.y + 87);
@@ -6461,21 +6466,21 @@ function drawUpgradePanel(ctx, state) {
   ctx.font = `17px ${MAP_TYPE}`;
   const lines = wrapIn(ctx, u.text, p.w - 48);
   ctx.textAlign = 'center';
-  ctx.fillStyle = INK;
+  ctx.fillStyle = UI_INK;
   lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 23));
 
   // Where it stands, over the button.
   // BOUGHT SITS WHERE BUY DID, the same size, at the owner's word — the button
   // becomes the word.
   if (st8 === 'bought') {
-    ctx.fillStyle = INK_GREEN;
+    ctx.fillStyle = UP_GREEN;
     ctx.font = `23px ${MAP_TYPE}`;
     ctx.fillText('Bought', cx, UP_BUY.y + UP_BUY.h / 2 + 1);
   }
   const note = st8 === 'bought' ? null
-    : st8 === 'locked' ? ['Buy the upgrade below it first.', INK_MUTED]
+    : st8 === 'locked' ? ['Buy the upgrade below it first.', UP_MUTED]
     : canBuy(fam, i) ? null
-    : ['Not enough stars.', INK_RED];
+    : ['Not enough stars.', UP_RED];
   if (note) {
     ctx.fillStyle = note[1];
     ctx.font = `17px ${MAP_TYPE}`;
