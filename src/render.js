@@ -5774,7 +5774,10 @@ function starRow(ctx, cx, cy, r, filled, onLight = true, map = false) {
   const left = cx - (MAX_STARS - 1) * gap / 2;
 
   ctx.save();
-  ctx.lineWidth = 1.5;
+  // The map's outline grows with the star, as it is a part of the drawing rather
+  // than a hairline round it: the result screen's 26px stars carry it at about the
+  // weight the map's small ones do.
+  ctx.lineWidth = map ? Math.max(1.5, r * 0.14) : 1.5;
   ctx.lineJoin = 'round';
 
   for (let i = 0; i < MAX_STARS; i++) {
@@ -6266,7 +6269,8 @@ function drawUpgrades(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
-  ctx.font = '700 22px system-ui, sans-serif';
+  // LOBSTER, the whole screen, at the owner's word — a test, like the world map's.
+  ctx.font = `28px ${MAP_TYPE}`;
   ctx.fillText('Upgrades', 480, UP_TITLE_Y);
 
   // THE STARS TO SPEND, top right. SIZED TO WHAT IT HOLDS, so the air between the
@@ -6275,7 +6279,7 @@ function drawUpgrades(ctx, state) {
   // sheet's right margin.
   const st = UP_STARS;
   const count = String(starsLeft());
-  ctx.font = '700 20px system-ui, sans-serif';
+  ctx.font = `23px ${MAP_TYPE}`;
   const STAR_PAD = 12, STAR_R = 12, STAR_GAP = 8;
   const plateW = STAR_PAD + STAR_R * 2 + STAR_GAP + ctx.measureText(count).width + STAR_PAD;
   const px0 = st.x + st.w - plateW;
@@ -6390,8 +6394,8 @@ function drawUpgrades(ctx, state) {
 
   // RESET AND DONE along the foot. Reset asks twice — see tapUpgrades.
   const armed = state.upArmed && Date.now() < state.upArmed;
-  bookButton(ctx, UP_RESET, armed ? 'Tap again' : 'Reset', 16);
-  bookButton(ctx, UP_DONE, 'Done', 16);
+  bookButton(ctx, UP_RESET, armed ? 'Tap again' : 'Reset', 0, `20px ${MAP_TYPE}`);
+  bookButton(ctx, UP_DONE, 'Done', 0, `20px ${MAP_TYPE}`);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -6415,7 +6419,7 @@ function drawUpgradePanel(ctx, state) {
   const shown = shownRung(state);
   if (!shown) {
     ctx.fillStyle = INK_MUTED;
-    ctx.font = '600 14px system-ui, sans-serif';
+    ctx.font = `17px ${MAP_TYPE}`;
     ctx.fillText('Tap an upgrade to see', cx, p.y + p.h / 2 - 10);
     ctx.fillText('what it does.', cx, p.y + p.h / 2 + 10);
     return;
@@ -6426,25 +6430,25 @@ function drawUpgradePanel(ctx, state) {
   const st8 = rungState(fam, i);
 
   ctx.fillStyle = ALERT_RED;
-  ctx.font = '800 19px system-ui, sans-serif';
+  ctx.font = `25px ${MAP_TYPE}`;
   ctx.fillText(u.name, cx, p.y + 34);
   ctx.fillStyle = INK_MUTED;
-  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.font = `15px ${MAP_TYPE}`;
   ctx.fillText(`${UP_FAMILY_NAME[fam]} · upgrade ${i + 1} of ${UPGRADES[fam].length}`, cx, p.y + 58);
 
   // The price, a star and a number.
   starShape(ctx, cx - 12, p.y + 86, 10, '#F2C64B');
   ctx.fillStyle = INK;
-  ctx.font = '700 17px system-ui, sans-serif';
+  ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
   ctx.fillText(String(UPGRADE_COSTS[i]), cx + 2, p.y + 87);
 
-  // What it does, in the owner's words.
-  const lines = wrapped(ctx, u.text, (p.w - 48) * POP_TEXT / 14);
+  // What it does, in the owner's words — wrapped in the face it is set in.
+  ctx.font = `17px ${MAP_TYPE}`;
+  const lines = wrapIn(ctx, u.text, p.w - 48);
   ctx.textAlign = 'center';
   ctx.fillStyle = INK;
-  ctx.font = '500 14px system-ui, sans-serif';
-  lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 21));
+  lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 23));
 
   // Where it stands, over the button.
   const note = st8 === 'bought' ? ['Bought', INK_GREEN]
@@ -6453,7 +6457,7 @@ function drawUpgradePanel(ctx, state) {
     : ['Not enough stars.', INK_RED];
   if (note) {
     ctx.fillStyle = note[1];
-    ctx.font = '700 14px system-ui, sans-serif';
+    ctx.font = `17px ${MAP_TYPE}`;
     ctx.fillText(note[0], cx, UP_BUY.y - 18);
   }
 
@@ -6462,7 +6466,7 @@ function drawUpgradePanel(ctx, state) {
   if (st8 === 'next') {
     ctx.save();
     ctx.globalAlpha = canBuy(fam, i) ? 1 : 0.4;
-    bookButton(ctx, UP_BUY, 'Buy', 18);
+    bookButton(ctx, UP_BUY, 'Buy', 0, `23px ${MAP_TYPE}`);
     ctx.restore();
   }
 }
@@ -6768,6 +6772,20 @@ function statsWidth(ctx, pairs) {
 // word longer than the column is left on a line of its own and allowed to overrun
 // rather than being cut — there are none, and silently losing characters is the
 // worse failure of the two.
+// Break a line of text to `width` in the font ALREADY set on the context — the
+// Upgrades panel's, which is not POP_TEXT's. A paragraph break is not needed there.
+function wrapIn(ctx, text, width) {
+  const out = [];
+  let line = '';
+  for (const word of text.split(/\s+/)) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(next).width > width) { out.push(line); line = word; }
+    else line = next;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
 function wrapped(ctx, text, width) {
   ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
   const out = [];
@@ -7229,7 +7247,9 @@ function drawBookFooter(ctx, state) {
 // Dark on the parchment, which is the reverse of the buttons everywhere else in
 // the game — those sit on grass. Same shape and the same cream lettering, so
 // they still read as the same kind of control.
-function bookButton(ctx, b, label, size) {
+// `font`, where given, replaces the system type — the Upgrades screen's buttons are
+// set in Lobster, like the rest of what the world map opens.
+function bookButton(ctx, b, label, size, font = null) {
   ctx.fillStyle = 'rgba(40,36,28,0.88)';
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, 8);
@@ -7241,7 +7261,7 @@ function bookButton(ctx, b, label, size) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
-  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.font = font || `700 ${size}px system-ui, sans-serif`;
   ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
@@ -7366,7 +7386,8 @@ function drawResult(ctx, state) {
   // without the loop running — a tool, a test page — has no clock ticking for it,
   // and falling back to the earned count means it draws the finished panel rather
   // than an empty row that never fills.
-  starRow(ctx, 480, 244, 26, state.starsShown ?? s.stars);
+  // THE MAP'S OWN EARNED STARS, gradient and ink outline, at the owner's word.
+  starRow(ctx, 480, 244, 26, state.starsShown ?? s.stars, true, true);
 
   // What the rating was earned with, and what the next one up would take. The
   // second line is only worth saying while there is a rating left to reach.
