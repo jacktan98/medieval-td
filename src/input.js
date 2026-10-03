@@ -16,6 +16,7 @@ import { greetVillager } from './villagers.js';
 import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
+import { hitAlert, openFoeCard, tapFoeCard } from './newfoe.js';
 import { AIM_MODES } from './data/towers.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
@@ -87,7 +88,7 @@ export function attachInput(canvas, state, restart) {
     // without this the one input that needs no tap at all would walk straight
     // through both — and a radial menu opening itself behind the encyclopedia is
     // a menu the player cannot see and did not ask for.
-    if (state.paused || state.book !== null || state.admin) {
+    if (state.paused || state.book !== null || state.admin || state.foeCard) {
       state.hoverTower = null;
       state.ghost = null;
       return;
@@ -150,6 +151,10 @@ export function tap(state, x, y, restart) {
   // THE BOOK SWALLOWS EVERYTHING while it is open, for the same reason and on
   // the same terms. Its own footer is the only thing on screen that acts.
   if (state.book !== null) return tapBook(state, x, y);
+
+  // AND SO DOES THE NEW-ENEMY CARD, whose X is the only thing on screen that acts
+  // while it is up. See src/newfoe.js.
+  if (state.foeCard) return tapFoeCard(state, x, y);
 
   // The title screen owns the whole board: nothing under it may act on a tap,
   // including a plot the Start button happens to be sitting over.
@@ -241,6 +246,12 @@ export function tap(state, x, y, restart) {
   // would lose to it.
   const hud = hitHudButton(state, x, y);
   if (hud === 'pause') { togglePause(state); return true; }
+
+  // A NEW-ENEMY ALERT, under the gold. Answers on a paused board as well — reading
+  // is not playing, the same argument that lets the book open there — and the card
+  // it opens stops the game whether or not it was already stopped.
+  const alert = hitAlert(state, x, y);
+  if (alert >= 0) { openFoeCard(state, alert); return true; }
 
   // PAUSED SWALLOWS EVERYTHING ELSE. Not just the board — the speed toggle and
   // the early wave call go too, because "paused" has to mean the game is not

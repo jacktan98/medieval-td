@@ -49,7 +49,8 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
          diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
-import { enemyTypes, MODES } from './data/waves.js';
+import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
+import { alertRect, ALERT_D, FOE_CARD, FOE_CLOSE, FOE_PICTURE } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
 const PLOT_R = 30;
@@ -103,12 +104,17 @@ export function draw(ctx, state) {
   drawHud(ctx, state);
   drawInfo(ctx, state);
   drawMenu(ctx, state);
+  // "NEW ENEMY" alerts under the gold — over the menu, because they are part of the
+  // HUD and answer a tap before it does. See src/newfoe.js.
+  if (state.started && !state.result) drawFoeAlerts(ctx, state);
 
   // Over everything, including the menu: while either of these is up the board
   // is not accepting the taps it normally would, and a dimmed board is how that
   // is said.
   if (!state.started) drawStart(ctx, state);
   else if (state.result) drawResult(ctx, state);
+  // And the new-enemy card over the board it stopped.
+  else if (state.foeCard) drawFoeCard(ctx, state);
 
   // Over even those. The encyclopedia is opened FROM the title screen and from a
   // paused game, so it has to cover the thing that offered it — and while it is
@@ -5807,6 +5813,215 @@ const SHEET_EDGE = '#8A7A56';
 const CARD_FILL = 'rgba(58,48,38,0.06)';
 const CARD_EDGE = 'rgba(58,48,38,0.20)';
 const INK_MUTED = 'rgba(58,48,38,0.62)';
+
+// --- "NEW ENEMY" ---------------------------------------------------------------
+//
+// The alert under the gold the first time a creature walks onto the board, and the
+// card it opens. The rects are in src/newfoe.js, where input.js reads them too.
+//
+// THE BADGE PULSES on the wall clock rather than the board's, so it keeps drawing
+// the eye on a paused game — which is exactly when a player has time to open it.
+const ALERT_RIM = '#C9A24A';
+const ALERT_RED = '#B3362A';
+
+function drawFoeAlerts(ctx, state) {
+  const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  (state.foeAlerts || []).forEach((id, i) => {
+    const r = alertRect(i);
+    const d = enemyTypes[id];
+    const cx = r.x + ALERT_D / 2, cy = r.y + ALERT_D / 2;
+    const pulse = 1 + 0.06 * Math.sin(t * 5 + i);
+    const rad = ALERT_D / 2 * pulse;
+
+    // The tag first, so the badge overlaps its left end the way the gold coin
+    // overlaps its bar.
+    const tagX = cx, tagW = r.x + r.w - tagX, tagH = 24;
+    scrimBox(ctx, tagX, cy - tagH / 2, tagW, tagH, tagH / 2);
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.shadowColor = 'rgba(12,14,10,0.85)';
+    ctx.shadowBlur = 3;
+    ctx.fillStyle = '#F0E6D2';
+    ctx.fillText('New enemy!', cx + ALERT_D / 2 + 6, cy);
+    ctx.restore();
+
+    // The badge: a parchment disc with the creature on it, in a gold rim.
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = SHEET_FILL;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const img = d && art[d.sprite];
+    if (img) {
+      const [sx, sy, sw, sh] = d.spriteTrim;
+      const k = Math.min((rad * 2 - 8) / sw, (rad * 2 - 8) / sh);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad - 2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(img, sx, sy, sw, sh, cx - sw * k / 2, cy - sh * k / 2, sw * k, sh * k);
+      ctx.restore();
+    }
+    ctx.strokeStyle = ALERT_RIM;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // And the "!" on its shoulder, which is what says "look at me".
+    const bx = cx + rad * 0.72, by = cy - rad * 0.72, br = 9;
+    ctx.fillStyle = ALERT_RED;
+    ctx.beginPath();
+    ctx.arc(bx, by, br, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#F0E6D2';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#F0E6D2';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '800 13px system-ui, sans-serif';
+    ctx.fillText('!', bx, by + 0.5);
+  });
+}
+
+// What each stat icon is called on the card. The book prints icons alone, because
+// a player opening it already knows them; this card is the first time the player
+// sees the creature at all, so every number gets its word.
+const FOE_STAT_LABEL = {
+  stat_health: 'Health',
+  stat_damage: 'Attack',
+  stat_damage_magic: 'Magic attack',
+  stat_range: 'Range',
+  stat_armour: 'Armour',
+  stat_armour_magic: 'Magic armour',
+  stat_pierce: 'Armour pierce',
+  stat_pierce_magic: 'Magic pierce',
+  stat_splash: 'Blast area',
+  stat_gold_cost: 'Bounty',
+  stat_life_cost: 'Lives lost'
+};
+
+// Every number the card shows, as [icon, value] — the same rows, from the same
+// helpers, as the creature's card in the encyclopedia, so the two cannot disagree.
+export function foeStats(d) {
+  const out = [['stat_health', d.hp]];
+  if (strikes(d)) out.push([attackIcon(d), shownDamage(d)]);
+  if (shownRange(d) !== null) out.push(['stat_range', shownRange(d)]);
+  out.push(...traitRow(d), ...rewardRow(d));
+  return out;
+}
+
+const FOE_LEAD = 18;
+const FOE_STAT_ROW = 26;
+const FOE_STAT_ICON = 16;
+
+function drawFoeCard(ctx, state) {
+  const d = enemyTypes[state.foeCard];
+  if (!d) return;
+  const c = FOE_CARD;
+
+  ctx.fillStyle = 'rgba(20,22,18,0.78)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  ctx.fillStyle = SHEET_FILL;
+  ctx.beginPath();
+  ctx.roundRect(c.x, c.y, c.w, c.h, 12);
+  ctx.fill();
+  ctx.strokeStyle = SHEET_EDGE;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // The title band: what this is, then who.
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = ALERT_RED;
+  ctx.font = '800 13px system-ui, sans-serif';
+  ctx.fillText('NEW ENEMY', 480, c.y + 28);
+  ctx.fillStyle = INK;
+  ctx.font = '700 24px system-ui, sans-serif';
+  ctx.fillText(d.name, 480, c.y + 56);
+
+  // The X, top right: a dark disc with a cream cross, the way every control on
+  // the board is drawn.
+  const b = FOE_CLOSE;
+  const xr = b.w / 2, xc = b.x + xr, yc = b.y + xr;
+  ctx.fillStyle = 'rgba(74,64,48,0.92)';
+  ctx.beginPath();
+  ctx.arc(xc, yc, xr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = SHEET_FILL;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(xc - 7, yc - 7); ctx.lineTo(xc + 7, yc + 7);
+  ctx.moveTo(xc + 7, yc - 7); ctx.lineTo(xc - 7, yc + 7);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // The picture, standing in its own slot down the left.
+  const p = FOE_PICTURE;
+  card(ctx, p);
+  const img = art[d.sprite];
+  if (img) {
+    const [sx, sy, sw, sh] = d.spriteTrim;
+    // Never past 1.5x of the drawing: bigger than that and it goes soft.
+    const k = Math.min((p.w - 24) / sw, (p.h - 24) / sh, 1.5);
+    ctx.drawImage(img, sx, sy, sw, sh,
+      p.x + (p.w - sw * k) / 2, p.y + (p.h - sh * k) / 2, sw * k, sh * k);
+  }
+
+  // The column beside it: what he does, then his numbers.
+  const tx = p.x + p.w + 22;
+  const tw = c.x + c.w - 24 - tx;
+  // wrapped() measures at POP_TEXT and this is set a pixel larger, so it is asked
+  // for a column narrowed by the same ratio — text width scales with its size.
+  const lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', tw * POP_TEXT / (POP_TEXT + 1));
+  const rows = foeStats(d);
+  // The prose and the stats as one block, centred against the picture.
+  const blockH = lines.length * FOE_LEAD + 16 + Math.ceil(rows.length / 2) * FOE_STAT_ROW;
+  const y0 = p.y + Math.max(0, (p.h - blockH) / 2);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = `500 ${POP_TEXT + 1}px system-ui, sans-serif`;
+  lines.forEach((line, i) => ctx.fillText(line, tx, y0 + FOE_LEAD * (i + 0.5)));
+
+  // Two columns of stats under the prose, each an icon, its word and its number.
+  const top = y0 + lines.length * FOE_LEAD + 16;
+  // The second column starts past the widest entry in the first, so a long word
+  // and a long number ("Magic armour Med") never run into the next icon.
+  const entryW = ([key, value]) => {
+    ctx.font = '600 12px system-ui, sans-serif';
+    const lw = ctx.measureText(FOE_STAT_LABEL[key] || '').width;
+    ctx.font = '700 13px system-ui, sans-serif';
+    return uiSize(key, { h: FOE_STAT_ICON }).w + 6 + lw + 6 + ctx.measureText(String(value)).width;
+  };
+  const colW = Math.max(tw / 2, ...rows.filter((_, i) => i % 2 === 0).map(entryW).map(w => w + 20));
+  rows.forEach(([key, value], i) => {
+    const x = tx + (i % 2) * colW;
+    const y = top + Math.floor(i / 2) * FOE_STAT_ROW + FOE_STAT_ROW / 2;
+    const { w } = uiSize(key, { h: FOE_STAT_ICON });
+    drawUi(ctx, key, x + w / 2, y, { h: FOE_STAT_ICON });
+    ctx.textAlign = 'left';
+    ctx.fillStyle = INK_MUTED;
+    ctx.font = '600 12px system-ui, sans-serif';
+    const label = FOE_STAT_LABEL[key] || '';
+    ctx.fillText(label, x + w + 6, y);
+    ctx.fillStyle = POP_STAT_INK[key] || INK;
+    ctx.font = '700 13px system-ui, sans-serif';
+    ctx.fillText(String(value), x + w + 6 + ctx.measureText(label).width + 6, y);
+  });
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
 
 function drawBook(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.88)';

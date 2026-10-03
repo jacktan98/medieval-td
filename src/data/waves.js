@@ -1991,6 +1991,39 @@ export const BOOK_ORDER = [
   'boulder_giant', 'rally_inf'
 ];
 
+// WHAT THE "NEW ENEMY" CARD SAYS about each creature, the first time the player
+// meets it (see src/newfoe.js). Two short sentences at most: what he does, then
+// what to do about it. The numbers are on the card beside this, drawn from the def,
+// so none are repeated here unless the sentence is about one.
+//
+// tools/newfoe.mjs fails if a creature in enemyTypes has no line here.
+export const FOE_NOTES = {
+  light_inf: 'A common bandit with a club. Weak on his own, but they rarely come alone.',
+  tough_inf: 'A bigger, meaner thug in light armour. He takes a good deal more to bring down.',
+  archer_inf: 'Shoots your soldiers from a distance and fights hand to hand when caught. ' +
+    'Soldiers will not leave their post to chase him, so let your towers deal with him.',
+  blocker_inf: 'Raises his shield when hit from afar, shrugging off most damage for five seconds ' +
+    'while he walks at half speed. Fighting a soldier, his armour is much lighter.',
+  heavy_inf: 'A huge brute in heavy armour whose club breaks through a rank of your soldiers\' ' +
+    'armour. Letting him through costs two lives.',
+  plague_inf: 'Throws poison flasks at your soldiers. Everyone in the spill is poisoned for ' +
+    'five seconds. His attacks are magic, so armour does little against them.',
+  dark_priest: 'Hurls dark magic and heals the enemies around him. Heavily warded against magic, ' +
+    'so archers and soldiers are the best answer.',
+  shadow_inf: 'Invisible to your towers until a soldier stops him, and his blade cuts through ' +
+    'two ranks of armour. Keep soldiers on the road to catch him.',
+  crow: 'Flies over your soldiers and attacks nobody. Only archer and monastery towers can hit it, ' +
+    'and it is warded against magic, so archers do best.',
+  bomb_inf: 'Runs at your soldiers and blows himself up, hurting everyone nearby. Shoot him down ' +
+    'early and his bomb still goes off two seconds later, so keep soldiers clear of it.',
+  rally_inf: 'His war banner makes every nearby enemy that fights with weapons hit half again ' +
+    'as hard. Kill him first. Letting him through costs three lives.',
+  boulder_giant: 'Hurls boulders that crush every soldier in the blast, and swings one in close. ' +
+    'Spread your soldiers out. Letting him through costs two lives.',
+  captain_thug: 'The bandit captain, with shield, bow and sword. Wounded badly, he throws down ' +
+    'his shield and fights on with a magic blade. If he reaches the end, the battle is lost.'
+};
+
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a
 // wave that never had one needs.
 //

@@ -23,6 +23,7 @@ import { updateWaves } from './waves.js';
 import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
+import { noticeFoes } from './newfoe.js';
 import { canvasScale } from './data/ui.js';
 
 const canvas = document.getElementById('game');
@@ -251,7 +252,13 @@ function newGame() {
     // What the info box is describing: { kind, ref } or null. A direct reference
     // to the live enemy, soldier or tower, which is what makes the health in the
     // box the same number the health bar over its head is reading.
-    selected: null
+    selected: null,
+    // "NEW ENEMY" — the creatures met for the first time in this game whose alert
+    // is up under the gold, oldest first, and the one whose card is open (or null).
+    // The card stops the game while it is up. Both reset here: an alert left
+    // unopened goes with the game it was raised in. See src/newfoe.js.
+    foeAlerts: [],
+    foeCard: null
   });
 
   // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the
@@ -332,14 +339,17 @@ function frame(now) {
   ensureBoard(level);
   if (state.startWhenReady && boardReady(level)) { state.startWhenReady = false; state.started = true; }
 
-  if (state.started && !state.paused && !state.result) {
+  // THE NEW-ENEMY CARD STOPS THE GAME as the pause does, at the owner's word, so
+  // the player can read it; closing it with its X lets the game run again.
+  const reading = !!state.foeCard;
+  if (state.started && !state.paused && !reading && !state.result) {
     for (let i = 0; i < state.speed; i++) step(state, real);
   }
   // THE BOARD'S OWN CLOCK, for what moves on it without being part of the game —
   // fires, flags, a waving hand. It runs while a game is on and stops dead on the
   // pause, at the owner's word: "All animations should be paused when pause button
   // is used." Real seconds, not game ones, so 2x does not set the fires racing.
-  if (state.started && !state.paused) state.anim = (state.anim || 0) + real;
+  if (state.started && !state.paused && !reading) state.anim = (state.anim || 0) + real;
 
   // The moment a game ends, once. Outside the step because a result can be set
   // by either of two places — updateWaves for a win, the lives check for a loss —
@@ -414,11 +424,11 @@ function frame(now) {
   }
   // AND STAGE 4'S SMITH WELDING, while his pipe is in the fire — not on a paused
   // board, where he is held with it in.
-  setLoop('steel_welding', playing && !state.paused && !!(vp && vp.welding), 1, 'board_weld');
+  setLoop('steel_welding', playing && !state.paused && !reading && !!(vp && vp.welding), 1, 'board_weld');
   // AND STAGE 6'S ANGLER'S REEL, soft, for as long as he is tugging at his line.
-  setLoop('fishing_reel', playing && !state.paused && !!(vp && vp.reeling), 1, 'board_reel');
+  setLoop('fishing_reel', playing && !state.paused && !reading && !!(vp && vp.reeling), 1, 'board_reel');
   // AND STAGE 7'S FISH SIZZLING, for as long as the cook holds it over the fire.
-  setLoop('fish_cooking', playing && !state.paused && !!(vp && vp.cooking), 1, 'board_cook');
+  setLoop('fish_cooking', playing && !state.paused && !reading && !!(vp && vp.cooking), 1, 'board_cook');
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.
@@ -470,6 +480,10 @@ function step(state, dt) {
     }
     state.villagerPlay.turned = null;
   }
+  // AFTER EVERYTHING THAT CAN PUT A CREATURE ON THE BOARD — the waves above and
+  // the villagers turning just now — so one met for the first time raises its
+  // alert on the step it arrives.
+  noticeFoes(state);
   if (state.lives <= 0) state.result = 'lost';
 }
 

@@ -55,6 +55,7 @@ exit non-zero when something is wrong.
 | `roof` | nothing pokes through a roof it should be behind |
 | `families` | each family's ladder still costs and pays what its design says |
 | `book` | every encyclopedia card fits its plate at every wrap |
+| `newfoe` | a creature's "New enemy!" alert comes up once ever, its card closes only on its X, and the dashboard's reset brings the alerts back |
 | `sound` | every clip is wired, levelled, and named by the thing that plays it |
 | `audio` | the level table matches the files |
 | `admin` | the dashboard reads and writes the numbers it claims to |
