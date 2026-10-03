@@ -286,6 +286,30 @@ export const ui = {
   // corners on the grass. All four are transparent now, both measurements agree to
   // the pixel, and the clip stays as the guard that made the white version merely
   // wrong rather than visibly broken.
+  // THE STAR UPGRADES' FACES: a 248px disc, centred, in every one of the twenty —
+  // larger than the ability faces' 186, at the owner's word, so the Upgrades
+  // screen can draw them bigger. Drawn at UP_ICON across (src/upgradepage.js),
+  // which keeps a source pixel to at most one screen pixel on a 3x display.
+  up_archery: { trim: [132, 132, 248, 248], fit: 72 },
+  up_archery_1: { trim: [132, 132, 248, 248], fit: 72 },
+  up_archery_2: { trim: [132, 132, 248, 248], fit: 72 },
+  up_archery_3: { trim: [132, 132, 248, 248], fit: 72 },
+  up_archery_4: { trim: [132, 132, 248, 248], fit: 72 },
+  up_barracks: { trim: [132, 132, 248, 248], fit: 72 },
+  up_barracks_1: { trim: [132, 132, 248, 248], fit: 72 },
+  up_barracks_2: { trim: [132, 132, 248, 248], fit: 72 },
+  up_barracks_3: { trim: [132, 132, 248, 248], fit: 72 },
+  up_barracks_4: { trim: [132, 132, 248, 248], fit: 72 },
+  up_siege: { trim: [132, 132, 248, 248], fit: 72 },
+  up_siege_1: { trim: [132, 132, 248, 248], fit: 72 },
+  up_siege_2: { trim: [132, 132, 248, 248], fit: 72 },
+  up_siege_3: { trim: [132, 132, 248, 248], fit: 72 },
+  up_siege_4: { trim: [132, 132, 248, 248], fit: 72 },
+  up_monastery: { trim: [132, 132, 248, 248], fit: 72 },
+  up_monastery_1: { trim: [132, 132, 248, 248], fit: 72 },
+  up_monastery_2: { trim: [132, 132, 248, 248], fit: 72 },
+  up_monastery_3: { trim: [132, 132, 248, 248], fit: 72 },
+  up_monastery_4: { trim: [132, 132, 248, 248], fit: 72 },
   ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
   // `pale` MEANS DARK INK ON THIS BUTTON'S PRICE — see buttonPrice in render.js —

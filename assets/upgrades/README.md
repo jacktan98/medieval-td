@@ -1,42 +1,47 @@
 # Upgrade icons
 
 The pictures for the star upgrades on the Upgrades screen (opened from the world
-map). One icon per upgrade, sixteen in all. Until they are here, each round button
-shows its number, I to IV.
+map): one per upgrade, sixteen in all, and one per family for the foot of its
+ladder. If a file is missing, its round button shows the rung's number, I to IV,
+instead.
 
 ## Names
 
 Named by family and rung (1 is the bottom of the ladder) rather than by the
-upgrade's name, so a renamed upgrade keeps its file. They are written here without
-code marks until they arrive, so tools/readme.mjs does not report them missing; once
-they are in the folder, mark them up like every other file name in these READMEs.
+upgrade's name, so a renamed upgrade keeps its file. Each family also has a face of
+its own, drawn at the foot of its ladder.
 
-| File | Upgrade |
-|------|---------|
-| Upgrade_Archery_1.png | Eagle Eye: range +5% |
-| Upgrade_Archery_2.png | Barbed Heads: damage +5% |
-| Upgrade_Archery_3.png | Quick Draw: attack speed +5% |
-| Upgrade_Archery_4.png | Sharpshooter: 10% chance of +50% damage |
-| Upgrade_Barracks_1.png | Hardy Recruits: health +5% |
-| Upgrade_Barracks_2.png | Quick Muster: respawn 2s sooner |
-| Upgrade_Barracks_3.png | Honed Blades: damage +10% |
-| Upgrade_Barracks_4.png | Last Stand: 10% chance to survive on 1 health |
-| Upgrade_Artillery_1.png | Counterweights: range +5% |
-| Upgrade_Artillery_2.png | Heavy Loads: damage +5% |
-| Upgrade_Artillery_3.png | Wide Blast: blast area +10% |
-| Upgrade_Artillery_4.png | Concussion: 10% chance to stun for 0.5s |
-| Upgrade_Monastery_1.png | Far Sight: range +5% |
-| Upgrade_Monastery_2.png | Divine Zeal: damage +5% |
-| Upgrade_Monastery_3.png | Swift Prayers: attack speed +5% |
-| Upgrade_Monastery_4.png | Binding Light: 10% chance to slow for 2s |
+| File | What it is |
+|------|------------|
+| `Upgrade_Archery_Icon.png` | the Archery ladder's own button, at its foot |
+| `Upgrade_Archery_1_Icon.png` | Eagle Eye: range +5% |
+| `Upgrade_Archery_2_Icon.png` | Barbed Heads: damage +5% |
+| `Upgrade_Archery_3_Icon.png` | Quick Draw: attack speed +5% |
+| `Upgrade_Archery_4_Icon.png` | Sharpshooter: 10% chance of +50% damage |
+| `Upgrade_Barracks_Icon.png` | the Barracks ladder's own button, at its foot |
+| `Upgrade_Barracks_1_Icon.png` | Hardy Recruits: health +5% |
+| `Upgrade_Barracks_2_Icon.png` | Quick Muster: respawn 2s sooner |
+| `Upgrade_Barracks_3_Icon.png` | Honed Blades: damage +10% |
+| `Upgrade_Barracks_4_Icon.png` | Last Stand: 10% chance to survive on 1 health |
+| `Upgrade_Artillery_Icon.png` | the Artillery ladder's own button, at its foot |
+| `Upgrade_Artillery_1_Icon.png` | Counterweights: range +5% |
+| `Upgrade_Artillery_2_Icon.png` | Heavy Loads: damage +5% |
+| `Upgrade_Artillery_3_Icon.png` | Wide Blast: blast area +10% |
+| `Upgrade_Artillery_4_Icon.png` | Concussion: 10% chance to stun for 0.5s |
+| `Upgrade_Monastery_Icon.png` | the Monastery ladder's own button, at its foot |
+| `Upgrade_Monastery_1_Icon.png` | Far Sight: range +5% |
+| `Upgrade_Monastery_2_Icon.png` | Divine Zeal: damage +5% |
+| `Upgrade_Monastery_3_Icon.png` | Swift Prayers: attack speed +5% |
+| `Upgrade_Monastery_4_Icon.png` | Binding Light: 10% chance to slow for 2s |
 
 ## How to draw them
 
-- **PNG, 512 × 512, transparent background**, the same canvas as the ability
-  buttons in `assets/abilities/` and the radial menu's plate.
-- **A round disc**, in the same place and at the same size as the radial menu's
-  plate (`assets/ui/Button_Plate_Icon.png`): 186 px across, centred.
-- **Keep the bottom third of the disc fairly clear.** The star price, or the tick
-  once bought, sits there.
-- **One picture per upgrade.** The game dims the ones not yet available and marks
-  the bought ones itself, so there is no need for locked or bought versions.
+- **PNG, 512 × 512, transparent background.**
+- **A whole round button**: the artist's own coloured disc and black rim, **248 px
+  across, centred** (the trim is `[132, 132, 248, 248]` in `src/data/ui.js`). The
+  game draws it as it is, with nothing under it.
+- **The picture centred in the disc.** The star price is in the panel on the right
+  of the screen, not on the button.
+- **One picture per upgrade.** The game dims the ones not yet available, and rings
+  and ticks the bought ones itself.
+- Drawn at 72 px across, which keeps the 248 px disc sharp on a 3× screen.

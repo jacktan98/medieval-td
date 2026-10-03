@@ -688,6 +688,30 @@ export const paths = {
   // The two High Altar BADGES stay in assets/ui, which is a line drawn on
   // purpose and not an oversight: they are not buttons and never appear in the
   // encyclopedia — they are marks the renderer hangs over a tower on the board.
+  // THE STAR UPGRADES' FACES, in assets/upgrades: one per rung, and one per family
+  // for the foot of its ladder. Each is a whole button — the artist's own coloured
+  // disc and rim — so nothing is drawn under it. Keyed by family id and rung,
+  // which is how src/upgrades.js names a rung.
+  up_archery: 'assets/upgrades/Upgrade_Archery_Icon.png',
+  up_archery_1: 'assets/upgrades/Upgrade_Archery_1_Icon.png',
+  up_archery_2: 'assets/upgrades/Upgrade_Archery_2_Icon.png',
+  up_archery_3: 'assets/upgrades/Upgrade_Archery_3_Icon.png',
+  up_archery_4: 'assets/upgrades/Upgrade_Archery_4_Icon.png',
+  up_barracks: 'assets/upgrades/Upgrade_Barracks_Icon.png',
+  up_barracks_1: 'assets/upgrades/Upgrade_Barracks_1_Icon.png',
+  up_barracks_2: 'assets/upgrades/Upgrade_Barracks_2_Icon.png',
+  up_barracks_3: 'assets/upgrades/Upgrade_Barracks_3_Icon.png',
+  up_barracks_4: 'assets/upgrades/Upgrade_Barracks_4_Icon.png',
+  up_siege: 'assets/upgrades/Upgrade_Artillery_Icon.png',
+  up_siege_1: 'assets/upgrades/Upgrade_Artillery_1_Icon.png',
+  up_siege_2: 'assets/upgrades/Upgrade_Artillery_2_Icon.png',
+  up_siege_3: 'assets/upgrades/Upgrade_Artillery_3_Icon.png',
+  up_siege_4: 'assets/upgrades/Upgrade_Artillery_4_Icon.png',
+  up_monastery: 'assets/upgrades/Upgrade_Monastery_Icon.png',
+  up_monastery_1: 'assets/upgrades/Upgrade_Monastery_1_Icon.png',
+  up_monastery_2: 'assets/upgrades/Upgrade_Monastery_2_Icon.png',
+  up_monastery_3: 'assets/upgrades/Upgrade_Monastery_3_Icon.png',
+  up_monastery_4: 'assets/upgrades/Upgrade_Monastery_4_Icon.png',
   ability_burst:   'assets/abilities/Musketeer_Post_Burst_Fire_Icon.png',
   ability_deadeye: 'assets/abilities/Musketeer_Post_Deadeye_Icon.png',
   ability_light:   'assets/abilities/Paladin_Keep_Holy_Light_Icon.png',

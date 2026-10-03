@@ -6214,76 +6214,79 @@ function drawUpgrades(ctx, state) {
         ctx.strokeStyle = same(pick, fam, i) ? UP_PICK : 'rgba(47,95,168,0.5)';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(b.cx, b.cy, b.r + 5, 0, Math.PI * 2);
+        ctx.arc(b.cx, b.cy, b.r + 6, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      // THE RADIAL MENU'S BUTTON: its cream plate, at 45% when it cannot be had
-      // yet, exactly as the ring dims a button it will not let you press. A bought
-      // rung is the same disc in gold.
       // A SOLID DISC OF PAGE UNDER IT FIRST, so a dimmed button is dim against the
       // parchment rather than letting the rail show through it.
       ctx.fillStyle = SHEET_FILL;
       ctx.beginPath();
       ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
       ctx.fill();
+
+      // THE ARTIST'S FACE FOR THE RUNG, whole — its own coloured disc and rim —
+      // at 45% while it cannot be had yet, exactly as the ring dims a button it
+      // will not let you press. The number stands in only if the file is missing.
       ctx.save();
       if (st8 === 'locked') ctx.globalAlpha = 0.45;
-      if (st8 === 'bought' || !drawUi(ctx, 'btn_plate', b.cx, b.cy, b.r * 2)) {
-        ctx.fillStyle = st8 === 'bought' ? UP_GOLD : '#FFEFD4';
+      if (!drawUi(ctx, `up_${fam}_${i + 1}`, b.cx, b.cy, b.r * 2)) {
+        ctx.fillStyle = '#FFEFD4';
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = st8 === 'bought' ? INK : '#C4A574';
+        ctx.strokeStyle = INK;
         ctx.lineWidth = 2;
         ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = INK;
+        ctx.font = '800 20px system-ui, sans-serif';
+        ctx.fillText(UP_NUMERAL[i], b.cx, b.cy + 1);
       }
-      // The one that can be bought now wears a gold ring.
-      if (afford) {
+      ctx.restore();
+
+      // THE ONE THAT CAN BE BOUGHT NOW wears a gold ring round its rim, and a
+      // BOUGHT one a gold ring and a tick on its shoulder. The price is in the
+      // panel now, at the owner's word, so the face is left whole.
+      if (afford || st8 === 'bought') {
         ctx.strokeStyle = UI_GOLD;
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(b.cx, b.cy, b.r - 1, 0, Math.PI * 2);
+        ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
         ctx.stroke();
       }
-
-      // THE GLYPH OVER THE CAPTION, as the ring lays a button out: the rung's
-      // number until the owner's icons arrive, and under it what it costs — or a
-      // tick, once it is bought.
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = INK;
-      ctx.font = '800 17px system-ui, sans-serif';
-      ctx.fillText(UP_NUMERAL[i], b.cx, b.cy - 6);
       if (st8 === 'bought') {
-        ctx.strokeStyle = INK_GREEN;
+        const tx = b.cx + b.r * 0.72, ty = b.cy + b.r * 0.72;
+        ctx.fillStyle = INK_GREEN;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#F0E6D2';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(b.cx - 6, b.cy + 12); ctx.lineTo(b.cx - 1, b.cy + 17); ctx.lineTo(b.cx + 7, b.cy + 8);
+        ctx.moveTo(tx - 5, ty); ctx.lineTo(tx - 1, ty + 4); ctx.lineTo(tx + 5, ty - 4);
         ctx.stroke();
         ctx.lineCap = 'butt';
-      } else {
-        starShape(ctx, b.cx - 6, b.cy + 12, 5.5, '#F2C64B');
-        ctx.fillStyle = INK;
-        ctx.font = '700 11px system-ui, sans-serif';
-        ctx.fillText(String(UPGRADE_COSTS[i]), b.cx + 5, b.cy + 13);
       }
-      ctx.restore();
     });
 
-    // THE FAMILY'S BUTTON at the foot of the ladder: the build menu's plate with
-    // the build menu's picture of the tower on it, drawn the way drawButton draws
-    // a build button with nothing under it.
-    if (!drawUi(ctx, 'btn_plate', foot.cx, foot.cy, foot.r * 2)) {
-      ctx.fillStyle = '#FFEFD4';
-      ctx.beginPath();
-      ctx.arc(foot.cx, foot.cy, foot.r, 0, Math.PI * 2);
-      ctx.fill();
+    // THE FAMILY'S BUTTON at the foot of the ladder: the artist's own face for the
+    // family, from assets/upgrades. The build menu's plate and picture stand in if
+    // it is missing.
+    ctx.fillStyle = SHEET_FILL;
+    ctx.beginPath();
+    ctx.arc(foot.cx, foot.cy, foot.r, 0, Math.PI * 2);
+    ctx.fill();
+    if (!drawUi(ctx, `up_${fam}`, foot.cx, foot.cy, foot.r * 2)) {
+      drawUi(ctx, 'btn_plate', foot.cx, foot.cy, foot.r * 2);
+      const key = GLYPH_ART[UP_GLYPH[fam]];
+      const nudge = (key && ui[key].nudge) || ZERO;
+      if (key) drawUi(ctx, key, foot.cx + nudge[0], foot.cy + nudge[1], ui[key].fit);
     }
-    const key = GLYPH_ART[UP_GLYPH[fam]];
-    const nudge = (key && ui[key].nudge) || ZERO;
-    if (key) drawUi(ctx, key, foot.cx + nudge[0], foot.cy + nudge[1], ui[key].fit);
   }
 
   drawUpgradePanel(ctx, state);
