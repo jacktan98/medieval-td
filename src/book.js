@@ -330,6 +330,12 @@ const FIGURE_SPAN = anchored(FIGURES);
 // bottom edge exactly.
 const SLOT_H = CARD_H;
 
+// HOW FAR IN FROM THE CARD'S LEFT EDGE EVERY PICTURE SLOT STARTS — and the words
+// beside it, which follow the slot. 14, AND IT WAS 6: the owner wanted air between
+// the card's border and what is on it, and the cream card with its tan edge made
+// the old 6 read as touching.
+const CARD_INSET = 14;
+
 // THE BUILDING SLOT'S WIDTH IS DERIVED NOW, and it was 48 typed in.
 //
 // A building is fitted by whichever of the two axes runs out first, and for as long
@@ -345,11 +351,11 @@ const SLOT_H = CARD_H;
 // has always used, and it means the next card-size change moves the buildings with
 // it instead of leaving them behind.
 export const TOWER_BOX = {
-  x: 6, y: 0,
+  x: CARD_INSET, y: 0,
   w: Math.ceil(TOWER_SPAN.w * (SLOT_H - 2 * AIR) / TOWER_SPAN.h),
   h: SLOT_H
 };
-export const FIGURE_BOX = { x: 6, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
+export const FIGURE_BOX = { x: CARD_INSET, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
 
 // THE BLANK PARCHMENT BETWEEN A PICTURE AND THE WORDS BESIDE IT. It was the
 // literal 8 in two places in render.js, which was fine until something needed to
@@ -671,7 +677,7 @@ export function abilityCards() {
 // air AIR keeps around a building on the towers page. It sits in a box the width
 // of TOWER_BOX so the text column starts in the same place on every page.
 export const ABILITY_ICON = 44;
-export const ICON_BOX = { x: 6, y: 0, w: 48, h: SLOT_H };
+export const ICON_BOX = { x: CARD_INSET, y: 0, w: 48, h: SLOT_H };
 
 // --- controls ----------------------------------------------------------------
 

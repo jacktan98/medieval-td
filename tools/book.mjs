@@ -353,7 +353,12 @@ console.log('\nWhat fits\n');
   // measured worst rounded up, so the check is once more the pessimistic side of
   // true — and it now also covers the widest WORD the row can hold, "Med", which
   // sets at 25.8 against this estimate's 25.9.
-  const DIGIT = 0.72;
+  //
+  // 0.56, AND IT WAS 0.72: the book is set in Lobster now. Measured in the browser
+  // at 10, 11 and 12px, its widest digit is 0.546em and its widest rank word, "Med",
+  // 0.549em a letter — so 0.56 is the measured worst rounded up, the pessimistic
+  // side of true again. Left at 0.72 it failed rows the card draws with room over.
+  const DIGIT = 0.56;
   const rowWidth = (figures, iconH = BOOK_ICON_H) => {
     const size = iconH - 2;
     let w = 0;
