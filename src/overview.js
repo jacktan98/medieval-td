@@ -356,6 +356,8 @@ export const stageOfLevel = li => {
 const NODE_R = 11;
 const NODE_SQUASH = 0.50;
 const INK = '#2A1D0E';
+// The earned star's edge: the UI's cream, as UI_INK is in render.js.
+const STAR_EDGE = '#FFEFD4';
 
 // A blue banner, and blue because it has to be the one thing on a brown map that
 // is not brown. The map is a parchment now: every fill in it went through a
@@ -560,11 +562,12 @@ function drawStars(ctx, cx, cy, filled) {
       g.addColorStop(1, STAR_LO);
       ctx.fillStyle = g;
       ctx.fill();
-      // THE MEDALLION'S OWN INK, not black, and thinner than it was. At radius 10 a
-      // 1.7 line was a sixth of the star; at 6 it would have been most of what you
-      // see, and a rim that heavy is what made these read as stickers laid on the
-      // map rather than as things drawn on it.
-      ctx.strokeStyle = INK;
+      // CREAM, at the owner's word, and it was the medallion's ink: the map's
+      // text is cream, and the stars beside the hammer and on the stage panel wear
+      // the same edge. Thin — at radius 10 a 1.7 line was a sixth of the star, and
+      // a rim that heavy is what made these read as stickers laid on the map rather
+      // than as things drawn on it.
+      ctx.strokeStyle = STAR_EDGE;
       ctx.lineWidth = 1;
       ctx.stroke();
     } else {

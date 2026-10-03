@@ -5767,7 +5767,7 @@ function drawAdminDoor(ctx) {
 // were the map buttons, where "the selected plate" and "the light plate" were the
 // same thing; the stage panel is dark and would have drawn three invisible stars.
 // `map` draws the lit stars as the world map's own earned star — its gold gradient and
-// ink outline — which the stage panel asks for, at the owner's word, so the stars in
+// cream outline — which the stage panel asks for, at the owner's word, so the stars in
 // the preview match the ones over the marker it was opened from.
 function starRow(ctx, cx, cy, r, filled, onLight = true, map = false) {
   const gap = r * 2.5;
@@ -5796,7 +5796,7 @@ function starRow(ctx, cx, cy, r, filled, onLight = true, map = false) {
       g.addColorStop(1, '#BE8C2A');
       ctx.fillStyle = g;
       ctx.fill();
-      ctx.strokeStyle = '#2A1D0E';
+      ctx.strokeStyle = UI_INK;
     } else if (i < filled) {
       ctx.fillStyle = '#F2C64B';
       ctx.fill();
@@ -6167,18 +6167,19 @@ function drawUpgradesButton(ctx) {
   ctx.font = `15px ${MAP_TYPE}`;
   const tw = ctx.measureText(String(left)).width;
   const w = 26 + tw, h = 20;
-  // CREAM, at the owner's word (#FFEFD4, the UI's own cream), with a dark edge so
-  // it holds its shape on the pale sand under it.
-  ctx.fillStyle = UI_INK;
+  // DARK, AND IT WAS CREAM: once the map's stars took a cream edge the owner
+  // turned the stripe dark, as the Upgrades screen's counter is, with a cream rim
+  // so it holds its shape against the forest and cream words.
+  ctx.fillStyle = 'rgba(40,36,28,0.88)';
   ctx.beginPath();
   ctx.roundRect(bx - 4, by - h / 2, w, h, 10);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(14,12,10,0.85)';
+  ctx.strokeStyle = UI_INK;
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  // THE MAP'S OWN EARNED STAR, gradient and ink outline, at the owner's word.
+  // THE MAP'S OWN EARNED STAR, gradient and cream outline.
   starShape(ctx, bx + 7, by, 7, 'map');
-  ctx.fillStyle = INK;
+  ctx.fillStyle = UI_INK;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(left), bx + 17, by + 1);
@@ -6186,9 +6187,9 @@ function drawUpgradesButton(ctx) {
 }
 
 // One five-pointed star, filled, with a dark edge. `fill` may be 'map' for the world
-// map's own earned star — its gold gradient and its ink outline, see drawStars in
+// map's own earned star — its gold gradient and its cream outline, see drawStars in
 // src/overview.js — so a star beside the hammer is the same star the map awards.
-function starShape(ctx, cx, cy, r, fill, edge = '#2A1D0E') {
+function starShape(ctx, cx, cy, r, fill, edge = UI_INK) {
   ctx.save();
   ctx.beginPath();
   for (let p = 0; p < 10; p++) {
@@ -6442,7 +6443,8 @@ function drawUpgradePanel(ctx, state) {
   ctx.fillText(UP_FAMILY_NAME[fam], cx, p.y + 58);
 
   // The price, a star and a number.
-  starShape(ctx, cx - 12, p.y + 86, 10, 'map');
+  // Ink-edged here: a cream edge would vanish on the pale panel.
+  starShape(ctx, cx - 12, p.y + 86, 10, 'map', '#2A1D0E');
   ctx.fillStyle = INK;
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
