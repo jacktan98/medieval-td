@@ -143,8 +143,12 @@ export function tapUpgrades(state, x, y, now = Date.now()) {
   const shown = shownRung(state);
   if (shown && inside(UP_BUY, x, y) && canBuy(shown.fam, shown.i)) {
     buy(shown.fam, shown.i);
-    state.upPick = shown;
-    rememberPick(shown);
+    // ON TO THE NEXT RUNG, at the owner's word, so Buy can be pressed again and
+    // again up a ladder; the top rung stays put.
+    const next = shown.i + 1 < UPGRADES[shown.fam].length ? { fam: shown.fam, i: shown.i + 1 } : shown;
+    state.upPick = next;
+    state.upHover = null;
+    rememberPick(next);
     return 'bought';
   }
   return null;

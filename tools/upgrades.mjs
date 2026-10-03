@@ -90,6 +90,16 @@ console.log('\nThe screen\n');
   check(tapUpgrades(state, b.cx, b.cy) === 'tap' && boughtIn('archery') === 0, 'a tap on a box reads it and spends nothing');
   check(tapUpgrades(state, UP_BUY.x + 5, UP_BUY.y + 5) === 'bought' && boughtIn('archery') === 1,
     'the panel\'s Buy button buys it', `${starsLeft()} left`);
+  check(JSON.stringify(state.upPick) === '{"fam":"archery","i":1}', 'and moves on to the next rung, Barbed Heads',
+    JSON.stringify(state.upPick));
+  check(tapUpgrades(state, UP_BUY.x + 5, UP_BUY.y + 5) === 'bought' && boughtIn('archery') === 2,
+    'so Buy can be pressed again straight away');
+  setBoughtForTest({ archery: 3 });
+  state.upPick = { fam: 'archery', i: 3 };
+  tapUpgrades(state, UP_BUY.x + 5, UP_BUY.y + 5);
+  check(JSON.stringify(state.upPick) === '{"fam":"archery","i":3}', 'and the top rung stays selected once bought',
+    JSON.stringify(state.upPick));
+  setBoughtForTest({ archery: 1 });
   const t0 = 1000;
   tapUpgrades(state, UP_RESET.x + 5, UP_RESET.y + 5, t0);
   check(boughtIn('archery') === 1, 'one press of Reset changes nothing');
