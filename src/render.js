@@ -5568,11 +5568,17 @@ export function hitBack(state, x, y) {
 // the rows stay centred on the same middle every other row uses.
 const CAPTION_GAP = 12;
 
+// THE WORLD MAP'S TYPE: Lobster, at the owner's word, for the region names, the two
+// doors, the Admin button and the stage panel. One weight only, so nothing here asks
+// for bold — the browser would fake it. The system font stands in until the file has
+// loaded; see MAP_FONT in src/overview.js.
+const MAP_TYPE = 'Lobster, system-ui, sans-serif';
+
 function settingRowUi(ctx, caption, row, chosen) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(240,230,210,0.55)';
-  ctx.font = '600 13px system-ui, sans-serif';
+  ctx.font = `15px ${MAP_TYPE}`;
   ctx.fillText(caption, row[0].x - CAPTION_GAP, row[0].y + row[0].h / 2 + 1);
   ctx.textAlign = 'center';
 
@@ -5582,7 +5588,7 @@ function settingRowUi(ctx, caption, row, chosen) {
     panelBox(ctx, b.x, b.y, b.w, b.h, { hot: on, r: 9 });
 
     ctx.fillStyle = on ? UI_GOLD : UI_INK;
-    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.font = `18px ${MAP_TYPE}`;
     ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h / 2 + 1);
   }
 }
@@ -5668,11 +5674,12 @@ function drawStart(ctx, state) {
   // the two because the name is what a player recognises — but it is there,
   // because the map is a sequence and the panel has to say where in it you are.
   ctx.fillStyle = 'rgba(240,230,210,0.6)';
-  ctx.font = '700 13px system-ui, sans-serif';
-  ctx.fillText(`STAGE ${state.stage + 1}`, 480, p.y + 34);
+  ctx.font = `16px ${MAP_TYPE}`;
+  // "Stage 1" rather than "STAGE 1": a script face in capitals is hard to read.
+  ctx.fillText(`Stage ${state.stage + 1}`, 480, p.y + 34);
 
   ctx.fillStyle = lv ? '#F0E6D2' : 'rgba(240,230,210,0.55)';
-  ctx.font = lv ? '700 30px system-ui, sans-serif' : 'italic 26px system-ui, sans-serif';
+  ctx.font = lv ? `32px ${MAP_TYPE}` : `26px ${MAP_TYPE}`;
   ctx.fillText(lv ? lv.name : 'Not drawn yet', 480, p.y + 64);
 
   // The best result at THE SETTINGS CURRENTLY CHOSEN, which is why the row lives
@@ -5684,7 +5691,7 @@ function drawStart(ctx, state) {
       bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false);
   } else {
     ctx.fillStyle = 'rgba(240,230,210,0.42)';
-    ctx.font = '14px system-ui, sans-serif';
+    ctx.font = `16px ${MAP_TYPE}`;
     ctx.fillText('This stretch of road has no battle on it yet.', 480, p.y + 96);
   }
 
@@ -5712,7 +5719,7 @@ function drawStart(ctx, state) {
   panelBox(ctx, b.x, b.y, b.w, b.h, { r: 10 });
 
   ctx.fillStyle = UI_INK;
-  ctx.font = '700 24px system-ui, sans-serif';
+  ctx.font = `28px ${MAP_TYPE}`;
   // 'Loading…' while a pressed Start waits for the board's pictures (src/main.js).
   ctx.fillText(!lv ? 'Locked' : state.startWhenReady ? 'Loading…' : 'Start', b.x + b.w / 2, b.y + b.h / 2 + 1);
   ctx.restore();
@@ -5742,7 +5749,7 @@ function drawAdminDoor(ctx) {
   ctx.textBaseline = 'middle';
   panelBox(ctx, ADMIN_BTN.x, ADMIN_BTN.y, ADMIN_BTN.w, ADMIN_BTN.h, { r: 9 });
   ctx.fillStyle = UI_INK;
-  ctx.font = '600 14px system-ui, sans-serif';
+  ctx.font = `18px ${MAP_TYPE}`;
   ctx.fillText('Admin', ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
 }
 
@@ -6122,7 +6129,7 @@ function drawMapDoor(ctx, key, at, label) {
   ctx.textBaseline = 'middle';
   // IN LOBSTER, like the region names — a test, at the owner's word. See MAP_FONT
   // in src/overview.js, which loads it; the system font stands in until it has.
-  ctx.font = '17px Lobster, system-ui, sans-serif';
+  ctx.font = `17px ${MAP_TYPE}`;
   ctx.lineWidth = 4;
   ctx.lineJoin = 'round';
   ctx.strokeStyle = 'rgba(14,12,10,0.85)';
@@ -6155,7 +6162,8 @@ function drawUpgradesButton(ctx) {
   ctx.strokeStyle = 'rgba(14,12,10,0.85)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  starShape(ctx, bx + 7, by, 7, '#F2C64B');
+  // THE MAP'S OWN EARNED STAR, gradient and ink outline, at the owner's word.
+  starShape(ctx, bx + 7, by, 7, 'map');
   ctx.fillStyle = INK;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -6163,7 +6171,9 @@ function drawUpgradesButton(ctx) {
   ctx.restore();
 }
 
-// One five-pointed star, filled, with a dark edge.
+// One five-pointed star, filled, with a dark edge. `fill` may be 'map' for the world
+// map's own earned star — its gold gradient and its ink outline, see drawStars in
+// src/overview.js — so a star beside the hammer is the same star the map awards.
 function starShape(ctx, cx, cy, r, fill) {
   ctx.save();
   ctx.beginPath();
@@ -6174,11 +6184,21 @@ function starShape(ctx, cx, cy, r, fill) {
     p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
   }
   ctx.closePath();
-  ctx.fillStyle = fill;
-  ctx.fill();
-  ctx.lineWidth = 1.2;
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(24,28,20,0.75)';
+  if (fill === 'map') {
+    const g = ctx.createLinearGradient(0, cy - r, 0, cy + r);
+    g.addColorStop(0, '#F5DB95');
+    g.addColorStop(1, '#BE8C2A');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = '#2A1D0E';
+  } else {
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(24,28,20,0.75)';
+  }
   ctx.stroke();
   ctx.restore();
 }
@@ -6239,17 +6259,24 @@ function drawUpgrades(ctx, state) {
   ctx.font = '700 22px system-ui, sans-serif';
   ctx.fillText('Upgrades', 480, UP_TITLE_Y);
 
-  // THE STARS TO SPEND, top right.
+  // THE STARS TO SPEND, top right. SIZED TO WHAT IT HOLDS, so the air between the
+  // plate's left edge and the star is the same as between the number and its right
+  // edge, however many digits — at the owner's word. It grows leftwards from the
+  // sheet's right margin.
   const st = UP_STARS;
+  const count = String(starsLeft());
+  ctx.font = '700 20px system-ui, sans-serif';
+  const STAR_PAD = 12, STAR_R = 12, STAR_GAP = 8;
+  const plateW = STAR_PAD + STAR_R * 2 + STAR_GAP + ctx.measureText(count).width + STAR_PAD;
+  const px0 = st.x + st.w - plateW;
   ctx.fillStyle = 'rgba(40,36,28,0.88)';
   ctx.beginPath();
-  ctx.roundRect(st.x, st.y, st.w, st.h, 10);
+  ctx.roundRect(px0, st.y, plateW, st.h, 10);
   ctx.fill();
-  starShape(ctx, st.x + 24, st.y + st.h / 2, 12, '#F2C64B');
+  starShape(ctx, px0 + STAR_PAD + STAR_R, st.y + st.h / 2, STAR_R, '#F2C64B');
   ctx.fillStyle = '#F0E6D2';
-  ctx.font = '700 20px system-ui, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(String(starsLeft()), st.x + 46, st.y + st.h / 2 + 1);
+  ctx.fillText(count, px0 + STAR_PAD + STAR_R * 2 + STAR_GAP, st.y + st.h / 2 + 1);
 
   const pick = state.upPick, hover = state.upHover;
   const same = (a, fam, i) => a && a.fam === fam && a.i === i;

@@ -23,7 +23,8 @@ export const UPGRADES_BTN = { x: 432, y: 428, w: 96, h: 94 };
 
 export const UP_SHEET = { x: 8, y: 8, w: 944, h: 524 };
 export const UP_TITLE_Y = 40;
-// Sized for two digits — forty-five stars is the most the campaign pays.
+// The star counter's slot: its RIGHT edge and its height are fixed here; render.js
+// sizes its width to the number it holds, so the padding is even either side.
 export const UP_STARS = { x: 852, y: 20, w: 78, h: 38 };
 
 // The four columns, left to right in the build menu's order, and the four rungs in
