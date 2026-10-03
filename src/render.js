@@ -5688,7 +5688,7 @@ function drawStart(ctx, state) {
   const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
   if (lv) {
     starRow(ctx, 480, p.y + 96, 9,
-      bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false);
+      bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false, true);
   } else {
     ctx.fillStyle = 'rgba(240,230,210,0.42)';
     ctx.font = `16px ${MAP_TYPE}`;
@@ -5766,7 +5766,10 @@ function drawAdminDoor(ctx) {
 // dark one or it is not there at all. It was called `lit` while its only callers
 // were the map buttons, where "the selected plate" and "the light plate" were the
 // same thing; the stage panel is dark and would have drawn three invisible stars.
-function starRow(ctx, cx, cy, r, filled, onLight = true) {
+// `map` draws the lit stars as the world map's own earned star — its gold gradient and
+// ink outline — which the stage panel asks for, at the owner's word, so the stars in
+// the preview match the ones over the marker it was opened from.
+function starRow(ctx, cx, cy, r, filled, onLight = true, map = false) {
   const gap = r * 2.5;
   const left = cx - (MAX_STARS - 1) * gap / 2;
 
@@ -5784,7 +5787,14 @@ function starRow(ctx, cx, cy, r, filled, onLight = true) {
       p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
     }
     ctx.closePath();
-    if (i < filled) {
+    if (i < filled && map) {
+      const g = ctx.createLinearGradient(0, cy - r, 0, cy + r);
+      g.addColorStop(0, '#F5DB95');
+      g.addColorStop(1, '#BE8C2A');
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = '#2A1D0E';
+    } else if (i < filled) {
       ctx.fillStyle = '#F2C64B';
       ctx.fill();
       ctx.strokeStyle = 'rgba(24,28,20,0.7)';
