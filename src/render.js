@@ -5935,6 +5935,8 @@ export function foeStats(d) {
 // pop-up's, and the description and the numbers make a column to the right of it.
 // The plate is as deep as the slot or the column, whichever is more.
 const FOE_COL_W = 240;
+// The new-enemy card's picture scale, in board units per source pixel — see drawFoeCard.
+const FOE_PICTURE_K = 0.45;
 const FOE_COL_MAX = 340;
 // Air either side of the rule between the words and the numbers.
 const FOE_RULE_GAP = 18;
@@ -5946,7 +5948,12 @@ function drawFoeCard(ctx, state) {
   const d = enemyTypes[state.foeCard];
   if (!d) return;
 
-  const slot = popSlot('figure', 1 / device);
+  // A FIXED SHARE OF THE BOARD, not of the glass, at the owner's word: turning a
+  // phone to portrait shrinks the board, and the picture must shrink with it rather
+  // than stay the same size on the screen. FOE_PICTURE_K is about what an iPhone
+  // shows in landscape; 1 / device still caps it, so a 3x screen never blows a
+  // source pixel up past one of its own.
+  const slot = popSlot('figure', Math.min(FOE_PICTURE_K, 1 / device));
   const [sx, sy, sw, sh] = d.spriteTrim;
   const w = sw * slot.k, h = sh * slot.k;
 
