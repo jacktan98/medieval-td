@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
+import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -70,7 +70,11 @@ export function attachInput(canvas, state, restart) {
     // AN UPGRADE BOUGHT plays the purchase sound, at the owner's word, rather than
     // the ordinary click — with priority, as selling a tower does.
     const did = tap(state, x, y, restart);
-    if (did === 'bought') solo(CUE.purchase, true);
+    // EVERY PURCHASE SOUNDS — see insist() in audio.js. Plain solo() could drop it
+    // twice over: it will not say the same clip twice running, so the second upgrade
+    // bought in a row was silent, and it gives up while a phone's audio is still
+    // waking from the tap.
+    if (did === 'bought') insist(CUE.purchase);
     else if (did) play(SELECT);
   });
 

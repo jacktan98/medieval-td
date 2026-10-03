@@ -867,10 +867,13 @@ export const GAIN = {
   // other shots (40 against 45); and the Captain's lines, which the LOUDER rule
   // takes straight to the ceiling, trimmed back to 300 against a voice's 100 — his
   // kill line to 400, and his fall left where it was and lifted a little (LIFT).
-  // 35% of a voice, at the owner's word (from 36%): 0.778 x the bus's 0.45.
-  sell: 0.778,
-  // Buying a star upgrade, at selling's level: the two are one kind of noise.
-  purchase: 0.778,
+  // 35% of a voice, at the owner's word. IT WAS 0.778, worked out as "x the
+  // background bus's 0.45" — but selling plays through solo(), on the VOICE bus at
+  // full level, so 0.778 was 78% of a voice and not 35%. Measured: 0.35 here is 35%.
+  sell: 0.35,
+  // Buying a star upgrade: 70% of a voice, at the owner's word. On the voice bus
+  // through solo(), like selling, so the trim is the share. Measured.
+  purchase: 0.7,
   star: 0.8,
   arrow_shot: 0.889,
   captain_picked: 0.927,
@@ -1494,6 +1497,18 @@ function report() {
 // suspend the context again, and without this the game would come back mute.
 export function unlock() {
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+}
+
+// A REPLY THAT MUST BE HEARD — buying a star upgrade, at the owner's word: "whenever
+// a player clicks purchase, the sound must be triggered." solo() gives up when the
+// context is not running, and on a phone it often is not at the instant of the tap:
+// the tap is what wakes it (see unlock above), and resume() takes a moment. So this
+// waits for the wake and then speaks, rather than dropping the reply. Priority and
+// `always`, so neither the gate nor the no-repeat rule can swallow it either.
+export function insist(cue) {
+  if (!ctx) return;
+  if (ctx.state === 'running') { solo(cue, true, false, true); return; }
+  ctx.resume().then(() => solo(cue, true, false, true)).catch(() => {});
 }
 
 // The Category A voice currently in the air, so a priority cue can take the

@@ -242,7 +242,7 @@ and it now means "how long a lull has to be before the game forgets".
 | any other barracks man kills an enemy | `Thug_dies` |
 | a barracks man dies | `Soldier_dies` |
 | a tower is **sold** | `Sell_Tower` (35% of a voice) |
-| a star **upgrade is bought** on the Upgrades screen | `Purchase_sound` (35% of a voice, Category A with priority, like selling) |
+| a star **upgrade is bought** on the Upgrades screen | `Purchase_sound` (70% of a voice, Category A with priority, played on every purchase) |
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a spearman, pikeman or swordsman swings** — Category B | `Attack_1/2/3` |
 | **a paladin swings** — Category B | `Paladin_attack` |
