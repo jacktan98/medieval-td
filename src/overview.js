@@ -574,8 +574,9 @@ function drawStars(ctx, cx, cy, filled) {
       // AN EMPTY SOCKET RATHER THAN A DARK STAR. It used to be filled with brown and
       // rimmed in ink like the others, so a one-star stage wore three lumps and only
       // the colour said which was which. What is wanted from it is "there is room for
-      // more here", and a faint outline says that without competing.
-      ctx.strokeStyle = 'rgba(42,29,14,0.34)';
+      // more here", and a faint outline says that without competing. CREAM, at the
+      // owner's word, as the earned stars' edges are — still faint.
+      ctx.strokeStyle = 'rgba(255,239,212,0.6)';
       ctx.lineWidth = 0.9;
       ctx.stroke();
     }
