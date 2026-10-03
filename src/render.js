@@ -5935,19 +5935,17 @@ const FOE_STAT_LABEL = {
 // Every number the card shows, as rows of [icon, value] — from the same helpers
 // as the creature's card in the encyclopedia, so the two cannot disagree.
 //
-// IN THE OWNER'S THREE ROWS: "1st row: Health, physical/magic damage, range, AOE.
-// 2nd row: any armor, any pierce armor. 3rd row: Bounty and Life Cost." A row with
-// nothing in it is left out, so the boss, who is worth nothing and costs nothing,
-// has two.
+// IN THE OWNER'S THREE ROWS: "1st row: Health, physical/magic damage, range.
+// 2nd row: any armor, any pierce armor, then AOE. 3rd row: Bounty and Life Cost."
+// The blast area was on the first row and moved down, at the owner's word, so the
+// second is traitRow as it stands — armour, pierce, blast, in that order. A row
+// with nothing in it is left out, so the boss, who is worth nothing and costs
+// nothing, has two.
 export function foeStats(d) {
-  const traits = traitRow(d);
-  const blast = traits.filter(([key]) => key === 'stat_splash');
   const first = [['stat_health', d.hp]];
   if (strikes(d)) first.push([attackIcon(d), shownDamage(d)]);
   if (shownRange(d) !== null) first.push(['stat_range', shownRange(d)]);
-  first.push(...blast);
-  return [first, traits.filter(([key]) => key !== 'stat_splash'), rewardRow(d)]
-    .filter(row => row.length);
+  return [first, traitRow(d), rewardRow(d)].filter(row => row.length);
 }
 
 // THE CARD IS THE ENCYCLOPEDIA'S PICTURE POP-UP, LENGTHENED, at the owner's word:
