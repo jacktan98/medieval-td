@@ -5899,14 +5899,22 @@ const FOE_STAT_LABEL = {
   stat_life_cost: 'Lives lost'
 };
 
-// Every number the card shows, as [icon, value] — the same rows, from the same
-// helpers, as the creature's card in the encyclopedia, so the two cannot disagree.
+// Every number the card shows, as rows of [icon, value] — from the same helpers
+// as the creature's card in the encyclopedia, so the two cannot disagree.
+//
+// IN THE OWNER'S THREE ROWS: "1st row: Health, physical/magic damage, range, AOE.
+// 2nd row: any armor, any pierce armor. 3rd row: Bounty and Life Cost." A row with
+// nothing in it is left out, so the boss, who is worth nothing and costs nothing,
+// has two.
 export function foeStats(d) {
-  const out = [['stat_health', d.hp]];
-  if (strikes(d)) out.push([attackIcon(d), shownDamage(d)]);
-  if (shownRange(d) !== null) out.push(['stat_range', shownRange(d)]);
-  out.push(...traitRow(d), ...rewardRow(d));
-  return out;
+  const traits = traitRow(d);
+  const blast = traits.filter(([key]) => key === 'stat_splash');
+  const first = [['stat_health', d.hp]];
+  if (strikes(d)) first.push([attackIcon(d), shownDamage(d)]);
+  if (shownRange(d) !== null) first.push(['stat_range', shownRange(d)]);
+  first.push(...blast);
+  return [first, traits.filter(([key]) => key !== 'stat_splash'), rewardRow(d)]
+    .filter(row => row.length);
 }
 
 // THE CARD IS THE ENCYCLOPEDIA'S PICTURE POP-UP, LENGTHENED, at the owner's word:
@@ -5920,7 +5928,7 @@ export function foeStats(d) {
 // The plate is as deep as the slot or the column, whichever is more.
 const FOE_COL_W = 300;
 const FOE_COL_MAX = 440;
-const FOE_STATS_PER_ROW = 4;
+const FOE_ENTRY_GAP = 16;
 const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
 const FOE_STAT_ROW = 22;
 const FOE_STAT_GAP = 10;               // between the prose and the numbers
@@ -5934,7 +5942,7 @@ function drawFoeCard(ctx, state) {
   const w = sw * slot.k, h = sh * slot.k;
 
   const rows = foeStats(d);
-  const statsH = Math.ceil(rows.length / FOE_STATS_PER_ROW) * FOE_STAT_ROW;
+  const statsH = rows.length * FOE_STAT_ROW;
   // LENGTHENED RATHER THAN DEEPENED: where the picture is short — a sharp screen
   // caps it small — the column widens, up to FOE_COL_MAX, until the prose and the
   // numbers stand no taller than the picture, so the card stays the pop-up's depth
@@ -5946,16 +5954,19 @@ function drawFoeCard(ctx, state) {
     lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
   }
 
-  // THE NUMBERS ON A GRID, each an icon and its number and nothing else — the
+  // THE NUMBERS IN THEIR ROWS, each an icon and its number and nothing else — the
   // book's own convention. What an icon means is a tip, shown under the mouse or
-  // on a tap (see FOE_STATS in src/newfoe.js), at the owner's word. Every cell is
-  // as wide as the widest entry, so the icons line up down the columns.
+  // on a tap (see FOE_STATS in src/newfoe.js), at the owner's word.
+  //
+  // THE SAME GAP BETWEEN EVERY PAIR: each entry starts FOE_ENTRY_GAP past the end
+  // of the number before it. (They sat on a grid of equal cells for one build,
+  // which lined the icons up but left short numbers with wide gaps after them.)
   const entryW = ([key, value]) => {
     ctx.font = '700 12px system-ui, sans-serif';
     return uiSize(key, { h: POP_STAT_H }).w + 5 + ctx.measureText(String(value)).width;
   };
-  const cellW = Math.max(...rows.map(entryW)) + 18;
-  const colW = Math.max(textW, cellW * Math.min(FOE_STATS_PER_ROW, rows.length));
+  const rowW = row => row.reduce((n, e) => n + entryW(e), 0) + (row.length - 1) * FOE_ENTRY_GAP;
+  const colW = Math.max(textW, ...rows.map(rowW));
   const columnH = lines.length * POP_LEAD + FOE_STAT_GAP + statsH;
 
   const bodyH = Math.max(slot.h, columnH);
@@ -6025,9 +6036,8 @@ function drawFoeCard(ctx, state) {
 
   const top = y0 + lines.length * POP_LEAD + FOE_STAT_GAP;
   FOE_STATS.length = 0;
-  rows.forEach(([key, value], i) => {
-    const x = tx + (i % FOE_STATS_PER_ROW) * cellW;
-    const y = top + Math.floor(i / FOE_STATS_PER_ROW) * FOE_STAT_ROW + FOE_STAT_ROW / 2;
+  rows.forEach((row, r) => { let x = tx; row.forEach(([key, value]) => {
+    const y = top + r * FOE_STAT_ROW + FOE_STAT_ROW / 2;
     const { w: iw } = uiSize(key, { h: POP_STAT_H });
     drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
     ctx.textAlign = 'left';
@@ -6036,7 +6046,8 @@ function drawFoeCard(ctx, state) {
     ctx.fillText(String(value), x + iw + 5, y);
     // The icon and its number are the target, the row's full height.
     FOE_STATS.push({ key, x: x - 2, y: y - FOE_STAT_ROW / 2, w: entryW([key, value]) + 4, h: FOE_STAT_ROW });
-  });
+    x += entryW([key, value]) + FOE_ENTRY_GAP;
+  }); });
 
   // THE TIP: the icon's name in a small dark plate over it, held inside the card.
   const tip = state.foeTip !== null && state.foeTip !== undefined && FOE_STATS[state.foeTip];

@@ -109,7 +109,9 @@ const ALERT_Y = 40;                        // the bars end at 32
 const ALERT_GAP = 8;
 // How far the bar reaches right of the medallion's middle — part of the target,
 // because it is part of the picture.
-export const ALERT_BAR_W = 104;
+// 122: the dark bar runs on well past the end of "New Enemy!" rather than
+// stopping just after it, at the owner's word ("more tint to the right").
+export const ALERT_BAR_W = 122;
 export const ALERT_BAR_H = 24;
 
 // The figure's drawn size: its box's half-diagonal on the inner circle.
