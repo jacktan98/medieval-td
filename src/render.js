@@ -6171,6 +6171,15 @@ function drawUpgradesButton(ctx) {
   ctx.font = `15px ${MAP_TYPE}`;
   const tw = ctx.measureText(String(left)).width;
   const w = 26 + tw, h = 20;
+  // IT PULSES while there are stars to spend, at the owner's word — the "!" on a
+  // new enemy's alert does the same, so both read as "something here for you".
+  // Swelled about its own middle, on the wall clock.
+  const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  const k = 1 + 0.08 * Math.sin(t * 5);
+  const mx = bx - 4 + w / 2;
+  ctx.translate(mx, by);
+  ctx.scale(k, k);
+  ctx.translate(-mx, -by);
   // DARK, AND IT WAS CREAM: once the map's stars took a cream edge the owner
   // turned the stripe dark, as the Upgrades screen's counter is, with a cream rim
   // so it holds its shape against the forest and cream words.
@@ -6401,7 +6410,7 @@ function drawUpgrades(ctx, state) {
         ctx.strokeStyle = ring;
         ctx.lineWidth = 3;
         ctx.shadowColor = ring;
-        ctx.shadowBlur = 4 + 28 * pulse;
+        ctx.shadowBlur = 6 + 18 * pulse;
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
         // Twice through the blur, which is what makes the glow carry rather than
