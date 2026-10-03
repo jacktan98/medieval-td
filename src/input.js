@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, fanfare, unlock, selectionCue, familyCue, CUE, SELECT, STAR } from './audio.js';
+import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -67,10 +67,10 @@ export function attachInput(canvas, state, restart) {
     // board refuses everything but two controls, and bare ground with nothing
     // selected has nothing to say. Clicking at those would teach the player that
     // the click means "heard you" rather than "done".
-    // A STAR SPENT sounds like one: the chime the result screen counts its stars
-    // out with, rather than the ordinary click.
+    // AN UPGRADE BOUGHT plays the purchase sound, at the owner's word, rather than
+    // the ordinary click — with priority, as selling a tower does.
     const did = tap(state, x, y, restart);
-    if (did === 'bought') fanfare(STAR);
+    if (did === 'bought') solo(CUE.purchase, true);
     else if (did) play(SELECT);
   });
 

@@ -22,7 +22,7 @@ import { slowOf, wearing, apply as applyStatus } from '../src/status.js';
 import { slowOn } from '../src/data/status.js';
 import { makeUnits, updateUnits, soldierBlow } from '../src/units.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
-import { boxAt, upBox, tapUpgrades, UP_BUY, UP_RESET, UP_DONE, openUpgrades } from '../src/upgradepage.js';
+import { boxAt, upBox, tapUpgrades, UP_BUY, UP_RESET, UP_DONE, openUpgrades, closeUpgrades } from '../src/upgradepage.js';
 
 let bad = 0;
 const check = (ok, label, detail = '') => {
@@ -73,6 +73,14 @@ console.log('\nThe screen\n');
 {
   const state = {};
   openUpgrades(state);
+  check(JSON.stringify(state.upPick) === '{"fam":"archery","i":0}', 'the screen opens on Eagle Eye the first time',
+    JSON.stringify(state.upPick));
+  const other = upBox(2, 1);
+  tapUpgrades(state, other.cx, other.cy);
+  closeUpgrades(state);
+  openUpgrades(state);
+  check(JSON.stringify(state.upPick) === '{"fam":"siege","i":1}', 'and on whatever was selected last after that',
+    JSON.stringify(state.upPick));
   const b = upBox(0, 0);
   check(JSON.stringify(boxAt(b.cx, b.cy)) === '{"fam":"archery","i":0}', 'the bottom-left box is Archery\'s first rung');
   const top = upBox(3, 3);

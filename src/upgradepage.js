@@ -74,9 +74,34 @@ export function boxAt(x, y) {
 // one last tapped.
 export const shownRung = state => state.upHover || state.upPick || null;
 
+// THE RUNG THE PANEL OPENS ON, at the owner's word: Eagle Eye the very first time —
+// so the panel is never an empty "tap one to see" — and after that whichever rung
+// was selected last, kept across closing the screen, a new game and a reload.
+// Module state rather than game state, because newGame rebuilds the latter; saved
+// like the purchases, and wrapped the same way.
+const PICK_KEY = 'medieval-td/upgrade-pick';
+const FIRST = { fam: 'archery', i: 0 };
+const pickStore = () => {
+  try { return globalThis.localStorage || null; } catch { return null; }
+};
+function loadPick() {
+  const s = pickStore();
+  try {
+    const p = s && JSON.parse(s.getItem(PICK_KEY));
+    if (p && UPGRADES[p.fam] && Number.isInteger(p.i) && UPGRADES[p.fam][p.i]) return { fam: p.fam, i: p.i };
+  } catch { /* a bad blob is the first rung */ }
+  return FIRST;
+}
+let lastPick = loadPick();
+function rememberPick(rung) {
+  lastPick = { fam: rung.fam, i: rung.i };
+  const s = pickStore();
+  if (s) try { s.setItem(PICK_KEY, JSON.stringify(lastPick)); } catch { /* full, or refused */ }
+}
+
 export function openUpgrades(state) {
   state.upgrades = true;
-  state.upPick = null;
+  state.upPick = { ...lastPick };
   state.upHover = null;
   state.upArmed = null;
 }
@@ -108,12 +133,13 @@ export function tapUpgrades(state, x, y, now = Date.now()) {
   state.upArmed = null;
 
   const rung = boxAt(x, y);
-  if (rung) { state.upPick = rung; return 'tap'; }
+  if (rung) { state.upPick = rung; rememberPick(rung); return 'tap'; }
 
   const shown = shownRung(state);
   if (shown && inside(UP_BUY, x, y) && canBuy(shown.fam, shown.i)) {
     buy(shown.fam, shown.i);
     state.upPick = shown;
+    rememberPick(shown);
     return 'bought';
   }
   return null;

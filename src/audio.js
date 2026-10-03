@@ -249,6 +249,9 @@ const paths = {
   // Taking a tower down. The third of the three deliberate money noises, beside
   // the family lines a build and an upgrade play.
   sell:            'assets/audio/map/Sell_Tower.mp3',
+  // Buying a star upgrade on the Upgrades screen. The fourth money noise, and the
+  // one that spends stars rather than gold.
+  purchase:        'assets/audio/map/Purchase_sound.mp3',
   // A flask breaking. Its own clip rather than a quieter rock, because the two
   // land for opposite reasons: a rock is the damage arriving and a flask is the
   // damage STARTING.
@@ -866,6 +869,8 @@ export const GAIN = {
   // kill line to 400, and his fall left where it was and lifted a little (LIFT).
   // 35% of a voice, at the owner's word (from 36%): 0.778 x the bus's 0.45.
   sell: 0.778,
+  // Buying a star upgrade, at selling's level: the two are one kind of noise.
+  purchase: 0.778,
   star: 0.8,
   arrow_shot: 0.889,
   captain_picked: 0.927,
@@ -998,7 +1003,9 @@ export const CUE = {
   // deliberate action has to arrive or the button feels dead. It is the only
   // one of the three that is a noise rather than a voice, because there is
   // nobody left in the tower to say anything.
-  sell:         ['sell']
+  sell:         ['sell'],
+  // Buying a star upgrade, on the same terms: Category A, always with priority.
+  purchase:     ['purchase']
 };
 
 // Category B — the battle underneath, on its own bus, every time it happens.
