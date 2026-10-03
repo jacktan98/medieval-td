@@ -3806,8 +3806,9 @@ console.log('\n--- the marker, the flag and the stars ---\n');
   ok(nodeStops.includes(str('STAR_HI')) && nodeStops.includes(str('STAR_LO')),
     'and is struck from the medallion\'s own two golds',
     `${str('STAR_HI')} / ${str('STAR_LO')}`);
-  ok(/ctx\.strokeStyle = INK;/.test(bare), 'and outlined in the same ink as the medallion',
-    'INK, the map\'s own outline colour');
+  // CREAM, at the owner's word, and it was the medallion's ink.
+  ok(/ctx\.strokeStyle = STAR_EDGE;/.test(bare) && str('STAR_EDGE') === '#FFEFD4',
+    'and outlined in the UI\'s cream', `STAR_EDGE ${str('STAR_EDGE')}`);
 }
 
 console.log('\n--- the stage panel stands on its own board ---\n');
