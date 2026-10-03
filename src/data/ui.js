@@ -195,6 +195,13 @@ export const ui = {
   // from src/menu.js — input.js hit-tests those same constants, so the drawn
   // size and the tappable size cannot drift apart.
   btn_plate:    { trim: [163, 163, 186, 186], fit: 60 },
+  // THE WORLD MAP'S TWO DOORS, at ONE SCALE: 0.3 board units per source pixel for
+  // both, so they keep the sizes the artist drew them at relative to each other —
+  // "use the exact px size for these 2 icons" — the book 198 x 187 and the hammer
+  // 120 x 162 in their files, rather than each stretched to a common box. 0.3 is
+  // under a third, so a 3x screen never blows a source pixel up past its own.
+  icon_book:     { trim: [157, 162, 198, 187], h: 187 * 0.3 },
+  icon_upgrades: { trim: [196, 175, 120, 162], h: 162 * 0.3 },
   btn_cancel:   { trim: [199, 199, 114, 114], fit: 36 },
 
   // Glyphs. Six sit on buttons that show a price and get the smaller box; the

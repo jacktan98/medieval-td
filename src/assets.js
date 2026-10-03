@@ -632,6 +632,10 @@ export const paths = {
   exit_flag:       'assets/ui/Exit_Flag.png',
   hud_life:        'assets/ui/Life_Icon.png',
   btn_plate:       'assets/ui/Button_Plate_Icon.png',
+  // The world map's two doors, bottom left and bottom middle: the encyclopedia and
+  // the upgrades. The hammer lives with the upgrade faces it opens.
+  icon_book:       'assets/ui/Encyclopedia_Icon.png',
+  icon_upgrades:   'assets/upgrades/Upgrade_Hammer_Icon.png',
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
   glyph_bow:       'assets/ui/Archery_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',

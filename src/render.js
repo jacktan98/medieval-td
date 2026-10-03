@@ -33,7 +33,7 @@ import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
          abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-         BOOK_BTN_START, BOOK_BTN_MAP } from './book.js';
+         BOOK_ICON } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
@@ -52,7 +52,7 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
 import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
 import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft } from './upgrades.js';
-import { UPGRADES_BTN, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
+import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
@@ -5605,8 +5605,9 @@ function drawStart(ctx, state) {
   // saying something the flag already says by being the only thing on the screen
   // that moves. The owner asked for it gone.
   if (state.stage === null || state.stage === undefined) {
-    // THE BOOK AND THE UPGRADES, side by side under the map.
-    drawBookButton(ctx, BOOK_BTN_MAP, 19);
+    // THE BOOK, BOTTOM LEFT, AND THE UPGRADES, BOTTOM MIDDLE: the artist's icons
+    // with their names under them.
+    drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia');
     drawUpgradesButton(ctx);
     drawAdminDoor(ctx);
     ctx.textAlign = 'left';
@@ -5720,7 +5721,8 @@ function drawStart(ctx, state) {
   // time to read, and the whole reason the book exists is the decision they are
   // about to make with 220 gold — but Start is still what they came for, so it
   // keeps the middle of the panel and this sits below.
-  drawBookButton(ctx, BOOK_BTN_START, 19);
+  // THE BOOK STAYS WHERE IT WAS ON THE MAP, bottom left, over the dimmed world.
+  drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia');
   drawAdminDoor(ctx);
 
   ctx.textAlign = 'left';
@@ -6101,27 +6103,50 @@ function drawFoeCard(ctx, state) {
 // Where stars are spent. The rects are in src/upgradepage.js, where input.js reads
 // them too; the store and the rules are in src/upgrades.js.
 
-// The world map's button. It carries the stars waiting to be spent, so a player
-// who has earned some is told so from the map — the "incentive to earn stars" is
-// only an incentive if the player can see it.
-function drawUpgradesButton(ctx) {
-  const b = UPGRADES_BTN;
-  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9 });
-  const left = starsLeft();
+// ONE OF THE WORLD MAP'S DOORS: the artist's icon, standing on `at.foot` and centred
+// on `at.cx`, with its name under it in bold cream with a dark edge — the "Paused"
+// label's treatment — so it reads over sea, sand and forest alike.
+function drawMapDoor(ctx, key, at, label) {
+  if (art[key] && ui[key]) {
+    const { w, h } = uiSize(key);
+    ctx.drawImage(art[key], ...ui[key].trim, at.cx - w / 2, at.foot - h, w, h);
+  }
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.font = '800 14px system-ui, sans-serif';
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(14,12,10,0.85)';
+  ctx.strokeText(label, at.cx, at.foot + 15);
   ctx.fillStyle = UI_INK;
-  ctx.font = '700 19px system-ui, sans-serif';
-  ctx.fillText('Upgrades', b.x + b.w / 2 - (left ? 14 : 0), b.y + b.h / 2 + 1);
-  if (left) {
-    const tw = ctx.measureText('Upgrades').width;
-    const sx = b.x + b.w / 2 - 14 + tw / 2 + 18;
-    starShape(ctx, sx, b.y + b.h / 2, 9, '#F2C64B');
-    ctx.fillStyle = UI_INK;
-    ctx.font = '700 14px system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(String(left), sx + 12, b.y + b.h / 2 + 1);
-  }
+  ctx.fillText(label, at.cx, at.foot + 15);
+  ctx.restore();
+}
+
+// The Upgrades door. It carries the stars waiting to be spent, on the hammer's
+// shoulder, so a player who has earned some is told so from the map — the
+// "incentive to earn stars" is only an incentive if the player can see it.
+function drawUpgradesButton(ctx) {
+  const at = UPGRADES_ICON;
+  drawMapDoor(ctx, 'icon_upgrades', at, 'Upgrades');
+  const left = starsLeft();
+  if (!left) return;
+  const bx = at.cx + 22, by = at.foot - 46;
+  ctx.save();
+  ctx.font = '800 12px system-ui, sans-serif';
+  const tw = ctx.measureText(String(left)).width;
+  const w = 26 + tw, h = 20;
+  ctx.fillStyle = 'rgba(40,36,28,0.92)';
+  ctx.beginPath();
+  ctx.roundRect(bx - 4, by - h / 2, w, h, 10);
+  ctx.fill();
+  starShape(ctx, bx + 7, by, 7, '#F2C64B');
+  ctx.fillStyle = '#F0E6D2';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(left), bx + 17, by + 1);
+  ctx.restore();
 }
 
 // One five-pointed star, filled, with a dark edge.
@@ -7171,37 +7196,32 @@ function bookButton(ctx, b, label, size) {
 
 // --- what a paused game puts on the board -------------------------------------
 //
-// Three controls under the "Paused" label, and no dimming veil: the whole point
+// Two controls under the "Paused" label, and no dimming veil: the whole point
 // of pausing here is to STUDY the board, and a game that greys out the thing you
 // paused to look at has answered the wrong question. So the row sits in the
 // strip the dashboard already owns rather than over the middle of the map.
 //
-// THE GAPS BETWEEN THEM ARE THE POINT. Restart and Quit both throw work away, and
-// they sit beside the button a player presses to read something — so no two
-// padded tap boxes may touch. 30px of drawn gap puts 4px of clear air between
+// THE GAP BETWEEN THEM IS THE POINT. Restart and Quit both throw work away, and
+// they sit side by side — so their padded tap boxes may not touch. 30px of drawn gap puts 4px of clear air between
 // them at PAUSE_PAD each side; at the 12 that looked right on screen they
 // overlapped by 14 and the loop would have handed the overlap to whichever came
 // first.
 //
-// LEFT TO RIGHT BY WHAT THEY COST YOU: the harmless one first, then the one that
-// throws the board away and gives you another, then the one that just throws it
-// away. A thumb travelling from the Encyclopedia has to pass Restart before it
-// can reach Quit, which is the right order for the mis-tap that would hurt most.
+// LEFT TO RIGHT BY WHAT THEY COST YOU: the one that throws the board away and gives
+// you another, then the one that just throws it away.
 const PAUSE_ROW_Y = 94;
 const PAUSE_H = 38;
 const PAUSE_GAP = 30;
-const PAUSE_BOOK_W = 170;
 const PAUSE_RESTART_W = 120;
 const PAUSE_QUIT_W = 110;
-const PAUSE_ROW_W = PAUSE_BOOK_W + PAUSE_GAP + PAUSE_RESTART_W + PAUSE_GAP + PAUSE_QUIT_W;
+const PAUSE_ROW_W = PAUSE_RESTART_W + PAUSE_GAP + PAUSE_QUIT_W;
 const PAUSE_ROW_X = Math.round(480 - PAUSE_ROW_W / 2);
 
+// NO ENCYCLOPEDIA ANY MORE, at the owner's word: "players have to exit the game then
+// only can access to Encyclopedia". It is on the world map, bottom left.
 export const PAUSE_ROW = {
-  book: { x: PAUSE_ROW_X, y: PAUSE_ROW_Y, w: PAUSE_BOOK_W, h: PAUSE_H },
-  restart: { x: PAUSE_ROW_X + PAUSE_BOOK_W + PAUSE_GAP, y: PAUSE_ROW_Y,
-             w: PAUSE_RESTART_W, h: PAUSE_H },
-  quit: { x: PAUSE_ROW_X + PAUSE_BOOK_W + PAUSE_GAP + PAUSE_RESTART_W + PAUSE_GAP,
-          y: PAUSE_ROW_Y, w: PAUSE_QUIT_W, h: PAUSE_H }
+  restart: { x: PAUSE_ROW_X, y: PAUSE_ROW_Y, w: PAUSE_RESTART_W, h: PAUSE_H },
+  quit: { x: PAUSE_ROW_X + PAUSE_RESTART_W + PAUSE_GAP, y: PAUSE_ROW_Y, w: PAUSE_QUIT_W, h: PAUSE_H }
 };
 
 // Drawn 38 deep, tapped 64, the same trick every other control in the game uses:
@@ -7217,12 +7237,6 @@ export function hitPauseButton(state, x, y) {
 }
 
 function drawPauseRow(ctx, state) {
-  // The other place the book opens from, and the more useful of the two: this is
-  // where a player stops mid-wave to work out whether the Mangonel is worth 115
-  // gold, and neither it nor the tier below it is selected — so the info box
-  // cannot answer and the radial menu only quotes a price.
-  drawBookButton(ctx, PAUSE_ROW.book, 15, true);
-
   // ARMED OR NOT, and the label is the only thing that says which. Both of these
   // throw away a board that may be half an hour old, so the first tap asks and
   // the second does it — see tapPaused in input.js. Amber while it waits, because
@@ -7250,19 +7264,6 @@ function askButton(ctx, b, word, armed) {
   ctx.fillStyle = armed ? UI_GOLD : UI_INK;
   ctx.font = '700 15px system-ui, sans-serif';
   ctx.fillText(armed ? 'Confirm?' : word, b.x + b.w / 2, b.y + b.h / 2 + 1);
-}
-
-// The button that opens the book, drawn in two places and in two styles. On the
-// title screen it is a full-sized panel button beside Start; on a paused game it
-// is a small plate in the row above.
-function drawBookButton(ctx, b, size, press = false) {
-  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9, press });
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = UI_INK;
-  ctx.font = `700 ${size}px system-ui, sans-serif`;
-  ctx.fillText('Encyclopedia', b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
 // The end-of-game summary.

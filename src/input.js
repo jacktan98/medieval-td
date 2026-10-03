@@ -408,8 +408,6 @@ export function tap(state, x, y, restart) {
 function tapPaused(state, x, y, restart) {
   const hit = hitPauseButton(state, x, y);
 
-  if (hit === 'book') { state.armed = null; openBook(state); return true; }
-
   if (hit === 'restart' || hit === 'quit') {
     const now = performance.now();
     if (state.armed && state.armed.id === hit && now < state.armed.until) {

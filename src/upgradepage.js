@@ -15,9 +15,11 @@
 import { UPGRADES, UPGRADE_FAMILIES } from './data/upgrades.js';
 import { canBuy, buy, resetUpgrades } from './upgrades.js';
 
-// The world map's button, beside the encyclopedia's — the two sit as a pair under
-// the map. See BOOK_BTN_MAP in book.js.
-export const UPGRADES_BTN = { x: 270, y: 460, w: 200, h: 46 };
+// THE WORLD MAP'S WAY IN: the artist's hammer, at the bottom middle of the map, with
+// "Upgrades" under it — laid out as the book is at the bottom left. See BOOK_ICON in
+// book.js. UPGRADES_BTN is the whole of the hammer and its label, for the tap.
+export const UPGRADES_ICON = { cx: 480, foot: 492 };
+export const UPGRADES_BTN = { x: 432, y: 428, w: 96, h: 94 };
 
 export const UP_SHEET = { x: 8, y: 8, w: 944, h: 524 };
 export const UP_TITLE_Y = 40;
@@ -60,7 +62,7 @@ export const RESET_WINDOW = 3000;
 
 const inside = (b, x, y, p = 4) => x >= b.x - p && x <= b.x + b.w + p && y >= b.y - p && y <= b.y + b.h + p;
 
-export const hitUpgradesButton = (x, y) => inside(UPGRADES_BTN, x, y, 6);
+export const hitUpgradesButton = (x, y) => inside(UPGRADES_BTN, x, y, 0);
 
 // Which rung is under a point, as { fam, i }, or null.
 export function boxAt(x, y) {

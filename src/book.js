@@ -700,25 +700,17 @@ const inside = (b, x, y) =>
   x >= b.x - BOOK_PAD && x <= b.x + b.w + BOOK_PAD &&
   y >= b.y - BOOK_PAD && y <= b.y + b.h + BOOK_PAD;
 
-// Where the book is opened from on the TITLE SCREEN. There is a second way in,
-// from a paused game, and that button does not live here: it shares a row with
-// Quit, so the row owns both and render.js lays it out. See PAUSE_ROW there.
-// UNDER the Start button, and it moved down 46px when the difficulty row was
-// added between the maps and Start. It used to sit at y 414 against a Start
-// button at 344; Start is at 390 now and the two overlapped by 24px — with the
-// book tested first in input.js, every tap on Start opened the encyclopedia
-// instead. The title column reads, top to bottom: title, hint, maps at 272,
-// difficulty at 328, Start at 390, this at 460.
-export const BOOK_BTN_START = { x: 380, y: 460, w: 200, h: 46 };
+// WHERE THE BOOK IS OPENED FROM: the artist's book icon, bottom left of the world
+// map, with "Encyclopedia" under it, at the owner's word. It is the only way in —
+// the paused game's button is gone ("players have to exit the game then only can
+// access to Encyclopedia") — and it stays put when a stage's panel is open.
+//
+// `cx` and `foot` place the drawing (centred, standing on `foot`); the label sits
+// under it; BOOK_ICON_HIT is the whole of both, which is what a tap finds.
+export const BOOK_ICON = { cx: 66, foot: 492 };
+export const BOOK_ICON_HIT = { x: 18, y: 428, w: 96, h: 94 };
 
-// AND ON THE WORLD MAP, beside the Upgrades button: the two sit as a centred pair
-// there, where the stage panel has the book alone under Start. See UPGRADES_BTN in
-// src/upgradepage.js.
-export const BOOK_BTN_MAP = { x: 490, y: 460, w: 200, h: 46 };
-
-// Which of the two the screen in front of the player is showing.
-export const bookBtn = state =>
-  state.stage === null || state.stage === undefined ? BOOK_BTN_MAP : BOOK_BTN_START;
+export const bookBtn = () => BOOK_ICON_HIT;
 
 export function hitBookButton(state, x, y) {
   return inside(bookBtn(state), x, y);

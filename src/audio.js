@@ -867,13 +867,13 @@ export const GAIN = {
   // other shots (40 against 45); and the Captain's lines, which the LOUDER rule
   // takes straight to the ceiling, trimmed back to 300 against a voice's 100 — his
   // kill line to 400, and his fall left where it was and lifted a little (LIFT).
-  // 35% of a voice, at the owner's word. IT WAS 0.778, worked out as "x the
-  // background bus's 0.45" — but selling plays through solo(), on the VOICE bus at
-  // full level, so 0.778 was 78% of a voice and not 35%. Measured: 0.35 here is 35%.
-  sell: 0.35,
-  // Buying a star upgrade: 70% of a voice, at the owner's word. On the voice bus
-  // through solo(), like selling, so the trim is the share. Measured.
-  purchase: 0.7,
+  // 70% of a voice, at the owner's word (it was 35%). Selling plays through solo(),
+  // on the VOICE bus at full level, so the trim is the share of a voice — 0.778 was
+  // once written down as "x the background bus's 0.45" and was really 78%.
+  sell: 0.7,
+  // Buying a star upgrade: 90% of a voice, at the owner's word (it was 70%). On the
+  // voice bus through solo(), like selling, so the trim is the share. Measured.
+  purchase: 0.9,
   star: 0.8,
   arrow_shot: 0.889,
   captain_picked: 0.927,

@@ -13,6 +13,7 @@ its own, drawn at the foot of its ladder.
 
 | File | What it is |
 |------|------------|
+| `Upgrade_Hammer_Icon.png` | the world map's Upgrades button, bottom middle, with the word under it (36 x 49: 0.3 per source px, the same scale as the Encyclopedia book) |
 | `Upgrade_Archery_Icon.png` | the Archery ladder's own button, at its foot |
 | `Upgrade_Archery_1_Icon.png` | Eagle Eye: range +5% |
 | `Upgrade_Archery_2_Icon.png` | Barbed Heads: damage +5% |

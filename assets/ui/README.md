@@ -13,6 +13,7 @@ usable button rather than a blank disc.
 | `Gold_Icon.png`          | the gold icon     | 51 x 24      |
 | `Life_Icon.png`          | the lives icon    | 30 x 24      |
 | `Button_Plate_Icon.png`  | the menu disc     | 60 diameter  |
+| `Encyclopedia_Icon.png`  | the world map's Encyclopedia button, bottom left, with the word under it | 59 x 56 (0.3 per source px, the same scale as the Upgrades hammer) |
 | `Confirm_Icon.png`       | the tick a purchase is confirmed with | 30 box |
 | `Cancel_Button_Icon.png` | the centre cancel | 36 diameter  |
 | `Archery_Icon.png`       | `bow`             | 27 x 32 box  |
