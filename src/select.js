@@ -579,7 +579,8 @@ export function selectionInfo(state) {
     // the fight, and this box exists to say what the fight is doing.
     // AND A BARRACKS MAN'S BLOW WITH THE STARS' WHETSTONES ON IT — soldierBlow in
     // units.js, the same function his swing reads.
-    damage: strikes(f.def) ? swing(f, f.tower ? soldierBlow(f) : shownDamage(f.def)) : null,
+    // To one place, so 10% on a 3 reads 3.3 rather than a run of float digits.
+    damage: strikes(f.def) ? Math.round(swing(f, f.tower ? soldierBlow(f) : shownDamage(f.def)) * 10) / 10 : null,
     // THE SWORD OR THE WAND, off this figure's own kind. The panel had no `attack`
     // at all until the armour row arrived, so it fell through to the sword for
     // everybody — which was a wrong picture rather than a missing one, and the one

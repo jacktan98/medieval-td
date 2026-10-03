@@ -18,7 +18,7 @@
 //   slow          { chance, seconds, times }: now and then a shot slows its man
 //   hpTimes       a soldier's health, times this       (units.js, updateUnits)
 //   respawnLess   seconds off a soldier's respawn      (units.js, the death block)
-//   damagePlus    added to a soldier's blow            (units.js, soldierBlow)
+//   blowTimes     a soldier's blow, times this         (units.js, soldierBlow)
 //   deathSave     the chance a killing blow leaves him on 1 health instead
 //
 // "BASE" in the owner's sentences is read as the tower's own number before an
@@ -37,7 +37,9 @@ export const UPGRADES = {
   barracks: [
     { name: 'Hardy Recruits', text: 'Increase health of barracks units by 5%.', hpTimes: 1.05 },
     { name: 'Quick Muster', text: 'Reduce respawn time of barracks units by 2 seconds.', respawnLess: 2 },
-    { name: 'Whetstones', text: 'Increase base attack damage of barracks units by 1.', damagePlus: 1 },
+    // 10%, AND IT WAS +1: the owner changed it. On a Militia Camp's 3 that is 3.3,
+    // a little under the old 4; on an Assassin Guild's 15 it is 16.5, a little over.
+    { name: 'Whetstones', text: 'Increase base attack damage of barracks units by 10%.', blowTimes: 1.10 },
     { name: 'Last Stand', text: 'Grants a 5% chance that a unit survives a killing blow with 1 health left.',
       deathSave: 0.05 }
   ],

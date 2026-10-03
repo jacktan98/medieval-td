@@ -34,7 +34,7 @@ check(UPGRADE_FAMILIES.join() === 'archery,barracks,siege,monastery', 'four fami
 check(UPGRADE_FAMILIES.every(f => UPGRADES[f].length === 4), 'four rungs each');
 check(UPGRADE_COSTS.join() === '2,2,2,3', 'at two, two, two and three stars', UPGRADE_COSTS.join(' / '));
 const EFFECTS = ['rangeTimes', 'damageTimes', 'reloadTimes', 'splashTimes', 'crit', 'bigBlast', 'slow',
-  'hpTimes', 'respawnLess', 'damagePlus', 'deathSave'];
+  'hpTimes', 'respawnLess', 'blowTimes', 'deathSave'];
 const blank = UPGRADE_FAMILIES.flatMap(f => UPGRADES[f].filter(u => !u.name || !u.text || !EFFECTS.some(k => u[k])));
 check(!blank.length, 'every rung has a name, a sentence and an effect', blank.map(u => u.name).join(', ') || '16 of them');
 
@@ -180,7 +180,7 @@ console.log('\nThe barracks\n');
   check(near(man.maxHp, plainHp * 1.05), 'Hardy Recruits: 5% more health', `${plainHp} → ${man.maxHp}`);
 
   setBoughtForTest({ barracks: 3 });
-  check(soldierBlow(man) === plainBlow + 1, 'Whetstones: one more on every blow', `${plainBlow} → ${soldierBlow(man)}`);
+  check(near(soldierBlow(man), plainBlow * 1.1), 'Whetstones: 10% more on every blow', `${plainBlow} → ${soldierBlow(man).toFixed(2)}`);
 
   const real = Math.random;
   try {
@@ -211,7 +211,7 @@ console.log('\nWith nothing bought\n');
   setBoughtForTest({});
   const fx = UPGRADE_FAMILIES.map(upgradeFx);
   check(fx.every(f => f.rangeTimes === 1 && f.damageTimes === 1 && f.reloadTimes === 1 && f.splashTimes === 1 &&
-    f.hpTimes === 1 && !f.respawnLess && !f.damagePlus && !f.deathSave && !f.crit && !f.bigBlast && !f.slow),
+    f.hpTimes === 1 && !f.respawnLess && f.blowTimes === 1 && !f.deathSave && !f.crit && !f.bigBlast && !f.slow),
     'every family is exactly as it was');
 }
 

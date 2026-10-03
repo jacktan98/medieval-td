@@ -115,11 +115,11 @@ export function resetUpgrades() {
 // wrote them. Rebuilt on every purchase rather than on every shot.
 function effectsOf(fam) {
   const fx = { rangeTimes: 1, damageTimes: 1, reloadTimes: 1, splashTimes: 1, hpTimes: 1,
-    respawnLess: 0, damagePlus: 0, deathSave: 0, crit: null, bigBlast: null, slow: null };
+    blowTimes: 1, respawnLess: 0, deathSave: 0, crit: null, bigBlast: null, slow: null };
   for (const u of (UPGRADES[fam] || []).slice(0, boughtIn(fam))) {
-    for (const k of ['rangeTimes', 'damageTimes', 'reloadTimes', 'splashTimes', 'hpTimes'])
+    for (const k of ['rangeTimes', 'damageTimes', 'reloadTimes', 'splashTimes', 'hpTimes', 'blowTimes'])
       if (u[k]) fx[k] *= u[k];
-    for (const k of ['respawnLess', 'damagePlus', 'deathSave']) if (u[k]) fx[k] += u[k];
+    for (const k of ['respawnLess', 'deathSave']) if (u[k]) fx[k] += u[k];
     for (const k of ['crit', 'bigBlast', 'slow']) if (u[k]) fx[k] = u[k];
   }
   return fx;

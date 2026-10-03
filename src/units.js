@@ -25,10 +25,11 @@ import { struck, tickHit } from './gesture.js';
 // barracks, and get nothing.
 const upOf = u => upgradeFx(u.tower && u.tower.fam && u.tower.fam.id === 'barracks' ? 'barracks' : null);
 
-// HIS BLOW, which is his def's plus whatever the stars have added to it. Every
+// HIS BLOW, which is his def's times whatever the stars have added to it. Every
 // strike he makes is read through this — a swing, an ability's multiple of it, a
-// thrown knife — so Whetstones' +1 is on all of them.
-export const soldierBlow = u => u.def.damage + upOf(u).damagePlus;
+// thrown knife — so Whetstones' 10% is on all of them. Left unrounded, as every
+// other multiplied blow on the road is until armour has had its say.
+export const soldierBlow = u => u.def.damage * upOf(u).blowTimes;
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
