@@ -47,7 +47,7 @@ import { enemyTypes, MARCH_ORDER } from '../src/data/waves.js';
 // which the owner re-set after most of these lists were written.
 const marched = line => line.split(' + ')
   .sort((a, b) => MARCH_ORDER.indexOf(a.split(' ')[1]) - MARCH_ORDER.indexOf(b.split(' ')[1])).join(' + ');
-import { typeOf } from '../src/data/armour.js';
+import { typeOf } from '../src/data/armor.js';
 import { inRange } from '../src/ground.js';
 import { at as routeAt } from '../src/route.js';
 import { updateShots } from '../src/projectiles.js';

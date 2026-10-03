@@ -17,7 +17,7 @@ import { boost } from './towers.js';
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from './status.js';
-import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
+import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armor.js';
 import { struck, tickHit } from './gesture.js';
 
 // THE BARRACKS' STAR UPGRADES, for a man a barracks put on the road. A garrison
@@ -1382,7 +1382,7 @@ export function updateUnits(state, dt) {
     // stand down. Every one of those is a live field this loop has already
     // settled by the time it gets here.
     //
-    // `needed` rather than `busy`, which is taken: src/data/armour.js exports a
+    // `needed` rather than `busy`, which is taken: src/data/armor.js exports a
     // `busy` this file already imports, and it answers a different question about
     // a different army.
     const needed = u.foe || mark || u.thrust > 0 || u.hold > 0 || u.hit > 0 || d > SETTLE;
@@ -1687,7 +1687,7 @@ export function updateUnits(state, dt) {
           //
           // AND THE ATTACKER'S `pierce` IS READ HERE TOO, which is the fifth of the
           // five places damage lands and the one the giant needs: his club breaks a
-          // rank, so it meets the paladin's medium as low. tools/armour.mjs runs
+          // rank, so it meets the paladin's medium as low. tools/armor.mjs runs
           // this exact path rather than trusting it.
           // THROUGH `stageOf` RATHER THAN OFF THE DEF, which is the one line the
           // Captain's second stage needed here. His blade is enchanted below a
@@ -1697,7 +1697,7 @@ export function updateUnits(state, dt) {
           // of stage 1, is worth nothing against it.
           //
           // Everything else in the game returns its own def from `stageOf`, so this
-          // reads exactly as it did. See data/armour.js.
+          // reads exactly as it did. See data/armor.js.
           const blow = stageOf(u.foe);
           // AND HALF AGAIN IF A RALLY THUG IS STANDING OVER HIM. blowTimes is 1 for
           // everything the aura is not touching, which is almost every blow in the

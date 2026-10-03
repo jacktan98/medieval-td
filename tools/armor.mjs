@@ -1,7 +1,7 @@
 // The damage triangle: what an attack is, what it runs into, and what is left.
 // Node only.
 //
-//   node tools/armour.mjs
+//   node tools/armor.mjs
 //
 // WHY THIS IS ITS OWN FILE. Armour is the first mechanic in this game that sits
 // BETWEEN two numbers that were previously the same number. A tower's card says
@@ -30,7 +30,7 @@
 //   losing half its worth against the one enemy it is bought for.
 
 import { RANKS, TAKES, taken, rankAgainst, typeOf, pierceOf,
-         RANK_NAME, RANK_SHORT } from '../src/data/armour.js';
+         RANK_NAME, RANK_SHORT } from '../src/data/armor.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { enemyTypes } from '../src/data/waves.js';
 import { STATUS } from '../src/data/status.js';
@@ -181,7 +181,7 @@ console.log('\nEvery def says what kind of blow it strikes\n');
     missing.join(', ') || RANKS.map(r => `${RANK_NAME[r]}/${RANK_SHORT[r]}`).join(' '));
 
   // AND THEY DIFFER ON EXACTLY ONE. The short table exists for `med` alone — see
-  // the note beside it in data/armour.js — and the claim worth holding is that
+  // the note beside it in data/armor.js — and the claim worth holding is that
   // nothing else was quietly abbreviated with it, because every rank that CAN be
   // one word across both surfaces should be.
   const split = RANKS.filter(r => RANK_NAME[r] !== RANK_SHORT[r]);
@@ -255,7 +255,7 @@ console.log('\nWhat the card and the panel say about a figure\n');
     wrongRank.map(d => d.name).join(', ') || `${foes.length + men.length} figures`);
 
   // THE BREAK IS DRAWN IN THE COLOUR OF THE BLOW IT BELONGS TO. A physical attack
-  // can only break physical armour — that is the rule in data/armour.js — so a
+  // can only break physical armour — that is the rule in data/armor.js — so a
   // Cannon Outpost showing the blue shield would be a picture of a mechanic this
   // game does not have. Checked on the defs that actually have a `pierce`.
   const breakers = [...TIERS, ...foes].filter(d => pierceOf(d.soldier || d) > 0);

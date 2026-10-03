@@ -21,7 +21,7 @@ import { swingOut, flinch, flash, silhouette, HIT_FLASH } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras, turnedAway,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen, atEase } from './units.js';
-import { stageOf } from './data/armour.js';
+import { stageOf } from './data/armor.js';
 import { downed, wingbeat } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
@@ -3194,7 +3194,7 @@ const ENEMY_LUNGE = 6;
 // doing something to somebody; a man standing behind a raised shield is doing
 // nothing to anybody, so it replaces the STANDING half and leaves the swing alone.
 //
-// THE ORDER MATTERS AND IT IS THE SAME ORDER wornBy uses in data/armour.js —
+// THE ORDER MATTERS AND IT IS THE SAME ORDER wornBy uses in data/armor.js —
 // held beats guarding beats walking. That is not a coincidence to be tidied up
 // later: it is the one thing that has to agree between the two files, because a
 // Blocker drawn behind his shield while taking damage as though it were down is

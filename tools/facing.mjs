@@ -41,7 +41,7 @@ import { KNOCKBACK } from '../src/corpses.js';
 import { enemyStance, enemyArt, figureSpan } from '../src/render.js';
 import { art } from '../src/assets.js';
 import { raiseGuard } from '../src/enemies.js';
-import { wornBy, stageOf } from '../src/data/armour.js';
+import { wornBy, stageOf } from '../src/data/armor.js';
 
 // Where on the road the test stands its victim. An enemy's position is DERIVED
 // from its route and how far along it has walked — setting x and y directly does
@@ -315,7 +315,7 @@ console.log('\nWhich drawing an enemy shows\n');
   // he shows — it is that the drawing and the PLATE agree.
   //
   // Two files answer "what state is this man in": enemyStance in render.js picks
-  // the picture, wornBy in data/armour.js picks what a blow meets. They read the
+  // the picture, wornBy in data/armor.js picks what a blow meets. They read the
   // same three conditions in the same order, in different files, and nothing but
   // this makes them stay in step. A Blocker drawn behind his shield while taking
   // arrows as though it were down is the bug this enemy would ship with, and it

@@ -279,7 +279,7 @@ const SPRITES = [
   // altar's — the stonework covers the back of its own shadow — and the same
   // answer: the number in data/towers.js is the SVG's ellipse and this row is what
   // says the PNG agrees with it.
-  ['assets/towers/monastery/Judgement_Temple.png', 'judgement.groundFrac', mon[4].spriteTrim, mon[4].groundFrac, 'whole'],
+  ['assets/towers/monastery/Judgment_Temple.png', 'judgement.groundFrac', mon[4].spriteTrim, mon[4].groundFrac, 'whole'],
   // Tier 4, the Musketeer Post. Same ellipse fit as the three archery towers
   // below it: the artist paints one #37422f patch of shaded grass under the
   // turret and its centre is the plot point.

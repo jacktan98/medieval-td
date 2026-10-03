@@ -14,7 +14,7 @@ import { solo, play, alone, WINGS_RATE, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
 // and has to be given back clean.
 import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing,
          wearing as wearingStatus } from './status.js';
-import { typeOf, pierceOf, stageOf, timesOf } from './data/armour.js';
+import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -295,7 +295,7 @@ export function raiseGuard(fig) {
   // health and the owner's rule is that he then "no longer defends himself when
   // projectiles hit him" — which is not a test here but an absence in the data:
   // `rage` declares no `guard`, so there is nothing to raise. Same for his bow
-  // and his nocking pose. See stageOf in data/armour.js.
+  // and his nocking pose. See stageOf in data/armor.js.
   const now = stageOf(fig);
   if (!now.guard) return;
   // NOT WHILE THE BOW IS UP. He put the shield on his back to shoot and it stays
@@ -561,7 +561,7 @@ function turnTo(e, x) {
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     // WHAT THIS CREATURE IS ON THIS FRAME, and for everything but the boss that is
-    // its def — see stageOf in data/armour.js. Read once at the top because half
+    // its def — see stageOf in data/armor.js. Read once at the top because half
     // the loop below asks it: his shield, his bow, his nocking pose and his plate
     // all belong to the stage rather than to the def.
     //
@@ -925,7 +925,7 @@ export function updateEnemies(state, dt) {
     // worth what it is worth on anything else — 0.75 x 0.5 — instead of one of the
     // two silently winning.
     // AND A THIRD FACTOR, which is the only one that can make a figure FASTER:
-    // the Captain's second stage walks at 1.2x, out of timesOf in data/armour.js.
+    // the Captain's second stage walks at 1.2x, out of timesOf in data/armor.js.
     // Multiplied in with the other two rather than replacing them, so an enraged
     // boss under a monk's pulse is still slowed by exactly a quarter.
     const flown = e.s;

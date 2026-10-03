@@ -32,7 +32,7 @@ import { splat } from './blood.js';
 import { inRange } from './ground.js';
 import { play, BOMB } from './audio.js';
 import { impact } from './impacts.js';
-import { taken, typeOf, pierceOf, wornBy } from './data/armour.js';
+import { taken, typeOf, pierceOf, wornBy } from './data/armor.js';
 // The one number that turns source px into game px, for `DROP` below.
 import { SCALE } from './data/towers.js';
 // The throw every body in the game takes from the blow that killed it. Read

@@ -20,7 +20,7 @@
 
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
-import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
+import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armor.js';
 import { fixture, soldierBlow } from './units.js';
 import { swing } from './status.js';
 import { VILLAGER, TAP_PAD, VILLAGER_H } from './villagers.js';
@@ -166,7 +166,7 @@ export const attackIcon = def =>
 // right: four of the five men in a barracks wear no magic plate, so `None` was
 // the most common word in the book and it said nothing.
 //
-// RANK_SHORT rather than RANK_NAME, and see the note beside it in data/armour.js:
+// RANK_SHORT rather than RANK_NAME, and see the note beside it in data/armor.js:
 // "Medium" is 4px wider than the description panel has left for it.
 //
 // Returns PAIRS, in the shape every stat row in this game is built from — an icon
@@ -231,7 +231,7 @@ export function shownSplash(def) {
 //
 // PIERCE TAKES THE COLOUR OF THE ATTACK IT BELONGS TO — the grey shield for a
 // cannonball, the blue one for a monk — because a break only ever applies to its
-// own kind of armour. That is the rule in data/armour.js, said in a picture.
+// own kind of armour. That is the rule in data/armor.js, said in a picture.
 // `fig` is the LIVE figure when there is one, and it only reaches the armour
 // half — see armourRow. Pierce and blast are facts about a weapon and do not
 // change while a man is holding it.

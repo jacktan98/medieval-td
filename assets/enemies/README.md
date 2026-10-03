@@ -160,7 +160,7 @@ after it, and while it is up he wears high plate on BOTH axes and walks at half
 pace. A soldier getting hold of him takes it straight back down — he cannot hold
 a shield and swing — and drops him below the plate he walks in. See `guard` and
 `fightArmour` on `blocker_inf` in `src/data/waves.js`, `wornBy` in
-`src/data/armour.js` for what he takes, and `enemyStance` in `src/render.js` for
+`src/data/armor.js` for what he takes, and `enemyStance` in `src/render.js` for
 what he shows. Those last two read the same three states in the same order on
 purpose: a man drawn behind a shield while taking damage as though it were down
 is the one bug this enemy could plausibly ship with, and `tools/facing.mjs`

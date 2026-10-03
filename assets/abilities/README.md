@@ -21,8 +21,8 @@ page.
 | Cannon Outpost | Swift Reload | `Cannon_Outpost_Swift_Reload_Icon.png` |
 | High Altar | Divine Fortitude | `High_Altar_Divine_Fortitude_Icon.png` |
 | High Altar | Holy Wrath | `High_Altar_Holy_Wrath_Icon.png` |
-| Judgement Temple | Inner Strength | `Judgement_Temple_Inner_Strength_Icon.png` |
-| Judgement Temple | Slowed Pulse | `Judgement_Temple_Slowed_Pulse_Icon.png` |
+| Judgement Temple | Inner Strength | `Judgment_Temple_Inner_Strength_Icon.png` |
+| Judgement Temple | Slowed Pulse | `Judgment_Temple_Slowed_Pulse_Icon.png` |
 
 **THE TABLE IS IN THE GAME'S OWN ORDER**, which is the order `ABILITIES` in
 `src/data/abilities.js` lists them and the order the encyclopedia lays them out

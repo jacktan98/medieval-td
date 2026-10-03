@@ -5,7 +5,7 @@ so far; stunned and whatever else follows goes here.
 
 | file                 | who wears it                          | what it does           |
 |----------------------|---------------------------------------|------------------------|
-| `Burnt_Status.png`   | anything a Fiery Shot ball catches    | 10 damage a second for 5s |
+| `Burned_Status.png`   | anything a Fiery Shot ball catches    | 10 damage a second for 5s |
 | `Poisoned_Status.png`| any soldier a flask or its spill catches | 5 damage a second for 4s |
 | `Slowed_Status.png`  | anything a Slowed Pulse blast hits    | 30% off its speed and its swing, for 5s |
 | `Stun_Status.png`    | anything a Concussion rock lands on (the artillery's fourth star upgrade) | stands still for 0.5s; a boss is only held to half speed |

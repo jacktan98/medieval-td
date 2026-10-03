@@ -38,7 +38,7 @@ import { makeTower } from '../src/towers.js';
 import { updateUnits, makeUnits } from '../src/units.js';
 import { updateEnemies } from '../src/enemies.js';
 import { updateBombs, dropBomb, FUSE, FLASH } from '../src/bombs.js';
-import { taken, wornBy, typeOf, pierceOf } from '../src/data/armour.js';
+import { taken, wornBy, typeOf, pierceOf } from '../src/data/armor.js';
 import { inRange } from '../src/ground.js';
 import { useLevel, levels } from '../src/level.js';
 

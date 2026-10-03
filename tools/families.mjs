@@ -33,7 +33,7 @@
 // claim of its own shape that nothing above can ask. It still takes no part in the
 // three-column table.
 import { archery, barracks, monastery, siege } from '../src/data/towers.js';
-import { RANKS, TAKES, taken } from '../src/data/armour.js';
+import { RANKS, TAKES, taken } from '../src/data/armor.js';
 // Every ability and every enemy fires something too, and the speed order below is
 // about all of them rather than about the three ladders this file grew up on.
 import { ABILITIES } from '../src/data/abilities.js';

@@ -24,7 +24,7 @@ usable button rather than a blank disc.
 | `Paladin_Keep_Icon.png`  | `keep`            | 26 box       |
 | `Ballista_Turret_Icon.png` | `ballista`      | 26 box       |
 | `High_Altar_Icon.png` | `altar`       | 26 box       |
-| `Judgement_Temple_Icon.png` | `temple`, the fork's other face | 26 box |
+| `Judgment_Temple_Icon.png` | `temple`, the fork's other face | 26 box |
 | `Refund_Icon.png`        | `refund`          | 26 box, and 14 in the book |
 | `Rally_Point_Icon.png`   | `flag`            | 30 box, and 20 tall on the board |
 | `Exit_Flag.png`          | nothing — new: marks where the road leaves the board | ~33 tall on the board, at the shared SCALE; the banner waves (see `drawExitFlag`), and it lifts away as the first wave comes (see `flagAway` in src/render.js) |

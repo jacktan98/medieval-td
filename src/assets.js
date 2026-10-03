@@ -132,7 +132,7 @@ export const paths = {
   // Tier 4's OTHER rung, the Judgment Temple: the same belfry again, six game px
   // shorter than the altar, and the first building in the game that carries two
   // figures rather than one. See `pair` in data/towers.js.
-  monastery_t4b: 'assets/towers/monastery/Judgement_Temple.png',
+  monastery_t4b: 'assets/towers/monastery/Judgment_Temple.png',
   // EVERY FIGHTING MAN IS TWO DRAWINGS NOW: a Default he stands and walks in,
   // and an Attack he swings or looses an arrow in. Same suffix rule as the
   // artillery frames above — the bare key is the resting pose, so the info box,
@@ -668,7 +668,7 @@ export const paths = {
   // And the fork's other face, on the same upgrade button. Two hands raised in
   // prayer: the monastery is the fourth family to fork and the last, so this is
   // the eighth and final tier 4 glyph.
-  glyph_temple:    'assets/ui/Judgement_Temple_Icon.png',
+  glyph_temple:    'assets/ui/Judgment_Temple_Icon.png',
   // Sell_Icon renamed to Refund_Icon by the artist, and the key came with it —
   // `glyph_coin` said what the picture was, `glyph_refund` says what the button
   // does, and the button is now the thing that can change without the drawing
@@ -751,8 +751,8 @@ export const paths = {
   // they arrived as Slowed_Pulse_Icon and Inner_Strength_Icon and were renamed
   // with the rest when the artist redrew all sixteen and dropped the `_Icon`
   // suffix. Nothing in the game reads a filename; the key below is the binding.
-  ability_pulse:    'assets/abilities/Judgement_Temple_Slowed_Pulse_Icon.png',
-  ability_strength: 'assets/abilities/Judgement_Temple_Inner_Strength_Icon.png',
+  ability_pulse:    'assets/abilities/Judgment_Temple_Slowed_Pulse_Icon.png',
+  ability_strength: 'assets/abilities/Judgment_Temple_Inner_Strength_Icon.png',
 
   // --- THE STATUS MARKS, in assets/status ---------------------------------------
   //
@@ -766,7 +766,7 @@ export const paths = {
   //
   // Keyed `status_` and read through STATUS in src/data/status.js, which is the
   // one place a status's picture, its colour and its rules are written down.
-  status_burnt:    'assets/status/Burnt_Status.png',
+  status_burnt:    'assets/status/Burned_Status.png',
   status_poisoned: 'assets/status/Poisoned_Status.png',
   // AND SLOWED, which is the third and the first that does not hurt. It arrived
   // with the Judgment Temple's Slowed Pulse — the folder was made for exactly

@@ -44,7 +44,7 @@ in `src/assets.js`.
 | `monastery/Monastery_Tower_T2.png`     | 1024   | 98 x 142 px  | Chapel (2)         |
 | `monastery/Monastery_Tower_T3.png`     | 1024   | 96 x 142 px  | Abbey (3)          |
 | `monastery/High_Altar.png`       | 1024   | 74 x 165 px  | High Altar (4) |
-| `monastery/Judgement_Temple.png` | 1024   | 74 x 159 px  | Judgement Temple (4), the other fourth rung |
+| `monastery/Judgment_Temple.png` | 1024   | 74 x 159 px  | Judgement Temple (4), the other fourth rung |
 
 **Three families fork at the top.** Archery, the barracks and artillery each have
 two fourth rungs and the player buys one of them; the monastery has one so far. So
@@ -54,7 +54,7 @@ ever pays for both.
 
 Every family has forked now. The monastery was the last, and its two fourth rungs
 are the same belfry drawn twice: `High_Altar.png` is 74 x 165 and
-`Judgement_Temple.png` is 74 x 159, the same width to the pixel and 28 source px
+`Judgment_Temple.png` is 74 x 159, the same width to the pixel and 28 source px
 shorter. That is the artist drawing one building twice rather than two buildings,
 and it is why the two share a footprint on the plot and differ only in what
 stands inside them and what hangs off the front.

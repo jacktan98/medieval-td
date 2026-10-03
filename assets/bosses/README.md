@@ -162,7 +162,7 @@ A boss is not just a bigger thug, so the wiring needs more than the art does:
   with an escort
 
 Everything the game does to figures already exists to build on: the damage
-triangle in `src/data/armour.js`, refreshing statuses in `src/data/status.js`,
+triangle in `src/data/armor.js`, refreshing statuses in `src/data/status.js`,
 the guard/heal stance chain, ranged ammunition with its own sound cue. An ability
 that fits one of those is wiring; one that does not is new machinery, and worth
 knowing which before you draw it.

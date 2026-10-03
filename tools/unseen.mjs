@@ -25,7 +25,7 @@
 // Four claims, and they are checked in that order: he is invisible; projectiles
 // cannot reach him; a blast can; a soldier reveals him. The fifth section is the
 // pierce, which is measured end to end through units.js rather than read off the
-// def — the same path tools/armour.mjs uses for the Giant's club, because an
+// def — the same path tools/armor.mjs uses for the Giant's club, because an
 // enemy's blow is a different call site from a tower's shot.
 
 import { enemyTypes } from '../src/data/waves.js';
@@ -34,7 +34,7 @@ import { pickTarget } from '../src/enemies.js';
 import { makeTower, updateTowers } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateUnits, unseen, hidden } from '../src/units.js';
-import { taken, pierceOf, typeOf } from '../src/data/armour.js';
+import { taken, pierceOf, typeOf } from '../src/data/armor.js';
 import { useLevel, levels } from '../src/level.js';
 
 const DT = 1 / 60;
@@ -275,7 +275,7 @@ console.log('\n--- his blow lands whole on every man in the game ---\n');
 
 {
   // MEASURED END TO END THROUGH units.js, which is a different call site from a
-  // tower's shot — the attacker and the target the other way round. tools/armour.mjs
+  // tower's shot — the attacker and the target the other way round. tools/armor.mjs
   // makes the same measurement for the Giant's club and the note there explains why
   // it is run rather than argued about.
   const swing = (soldierDef, enemyDef) => {

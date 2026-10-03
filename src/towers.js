@@ -1,7 +1,7 @@
 import { pickTarget, leadPoint } from './enemies.js';
 import { BEATS, SCALE } from './data/towers.js';
 import { abilitiesOf, owns } from './data/abilities.js';
-import { typeOf, pierceOf } from './data/armour.js';
+import { typeOf, pierceOf } from './data/armor.js';
 import { play, FIRING } from './audio.js';
 import { inRange } from './ground.js';
 // What the player has bought with stars — see src/upgrades.js.
@@ -484,7 +484,7 @@ export function damageK(t) {
 // HOW MANY MORE RANKS OF ARMOUR THIS TOWER BREAKS THAN ITS TIER SAYS. The fourth
 // of the passive family — rangeOf multiplies, reloadK divides, damageK multiplies,
 // and this one ADDS, because a rank is an INDEX and breaking armour is
-// subtraction. See rankAgainst in data/armour.js.
+// subtraction. See rankAgainst in data/armor.js.
 //
 // ADDITIVE IS THE ONLY READING THAT WORKS. Reinforced Tension is one ability on
 // two towers, and the owner's words are "adds pierce physical armor 1": the

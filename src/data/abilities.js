@@ -3,8 +3,8 @@ import { bolt, knife, sneakKnife, cannonball, monkShot,
 // For the prose only. Five of the cards below quote what a blow is worth once it
 // has been through armour, and quoting it means doing the arithmetic the game does
 // rather than typing the answer — see `plate` beside `blow` at the foot of this
-// file's helpers. armour.js imports nothing, so this cannot cycle.
-import { TAKES } from './armour.js';
+// file's helpers. armor.js imports nothing, so this cannot cycle.
+import { TAKES } from './armor.js';
 // Slowed Pulse's card quotes what a boss feels rather than typing 15%, for the
 // same reason: the halving is a rule in one place and the sentence follows it.
 import { slowOn, BOSS_SLOW_SHARE } from './status.js';
@@ -178,7 +178,7 @@ export const heavyBolt = {
   // seconds, at the owner's ask — the second burn in the game and the first on
   // something that is not a cannon.
   //
-  // TRUE DAMAGE, like every burn: see data/armour.js. That is what makes 16 worth
+  // TRUE DAMAGE, like every burn: see data/armor.js. That is what makes 16 worth
   // having on a tower that already pierces — the bolt itself is turned aside by
   // plate and the fire is not, so the ability's floor against the hardest target
   // in the game is the fire rather than nothing.
@@ -255,7 +255,7 @@ export const fieryBall = {
     // owner's 8 — worth writing down in that order, because the argument for
     // halving it is still true and the number moved anyway.
     //
-    // THE ARGUMENT FOR 5: a burn is TRUE damage — see data/armour.js — so it is
+    // THE ARGUMENT FOR 5: a burn is TRUE damage — see data/armor.js — so it is
     // the only thing this tower does that no armour in the game turns aside, and
     // 10 a second through plate was worth more than the ball that started it. At 5
     // it was 25 over the five seconds against a target taking 25% of the ball's
@@ -489,7 +489,7 @@ const TIERS = [...archery, ...barracks, ...siege, ...monastery];
 const towerOf = name => TIERS.find(d => d.name === name);
 
 // At most one decimal, and no trailing zero: 43.8, 30, 56.3. Damage figures in this
-// game are whole where they land — see taken() in data/armour.js — but a rate is a
+// game are whole where they land — see taken() in data/armor.js — but a rate is a
 // division and 43.75 in a sentence reads as a spreadsheet.
 const num = x => String(Math.round(x * 10) / 10);
 // Two, for the sub-second times a reload is measured in, where one would round 0.53
@@ -511,7 +511,7 @@ const blow = (damage, times) => Math.round(damage * times);
 // reading off the end of TAKES.
 //
 // Through TAKES rather than a typed percentage, so these sentences follow the
-// triangle the day somebody retunes it. See data/armour.js.
+// triangle the day somebody retunes it. See data/armor.js.
 const plate = (damage, pierce = 0) =>
   Math.round(damage * TAKES[Math.max(0, 2 - pierce)]);
 
@@ -1504,7 +1504,7 @@ export const ABILITIES = [
     //
     // `pierceUp`, THE SAME FIELD THE TWO BOWS CARRY, and it needs no `magic` in its
     // name: pierce is only ever measured against the armour of the attack's own
-    // kind — see rankAgainst in data/armour.js — so a break on a magic tower is a
+    // kind — see rankAgainst in data/armor.js — so a break on a magic tower is a
     // magic break by construction. That is why one field covers a crossbow and a
     // monk without a branch anywhere.
     //

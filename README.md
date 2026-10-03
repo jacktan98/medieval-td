@@ -133,7 +133,7 @@ is the answer, not the rendering code.
 `src/data/towers.js` holds the four families and their twenty buildings;
 `src/data/waves.js` the army and the three maps' wave tables;
 `src/data/abilities.js` the sixteen things a tier 4 tower can be taught;
-`src/data/armour.js` the damage triangle and the four ranks of plate;
+`src/data/armor.js` the damage triangle and the four ranks of plate;
 `src/data/status.js` what can be happening to a figure; and
 `src/data/level01.js` … `level03.js` the three boards, whose roads and build
 plots were traced off the artwork rather than typed.

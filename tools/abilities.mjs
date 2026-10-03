@@ -41,7 +41,7 @@ import { slowOf, apply as applyStatus } from '../src/status.js';
 // soldier's blow never becomes a projectile to read a field off, so what it breaks
 // is checked by putting armour on an enemy and comparing what he loses against
 // what the shipping arithmetic says he should.
-import { taken, RANKS } from '../src/data/armour.js';
+import { taken, RANKS } from '../src/data/armor.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 // Two real creatures, for the Holy Light block at the end: an ordinary thug and
 // the one that cannot be fought. See the note there for why the `victim` fixture
@@ -1488,7 +1488,7 @@ console.log('\nSneak Attack\n');
     // ROUNDED, like the blow the game actually lands. This compared the raw
     // product for as long as the assassin hit for 20 and x2.5 came out whole; at
     // 15 it is 37.5, the game rounds it to 38 where it applies the damage — see
-    // taken() in data/armour.js — and an exact comparison against 37.5 failed a
+    // taken() in data/armor.js — and an exact comparison against 37.5 failed a
     // check of a mechanic that was working perfectly.
     const sneaked = Math.round(man.damage * sneak.times);
     ok(blows[0] === sneaked,

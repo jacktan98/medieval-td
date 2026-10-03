@@ -727,7 +727,7 @@ export const enemyTypes = {
   // FIGHTING BEATS GUARDING when both are true, which is the precedence the
   // owner asked for — "vulnerable when attacking but still tough" — and it is
   // also the only ordering that leaves him beatable. See enemyStance in
-  // render.js for the drawing and wornBy in data/armour.js for the plate; the two
+  // render.js for the drawing and wornBy in data/armor.js for the plate; the two
   // read the same three states from one place, so what he looks like and what he
   // takes cannot disagree.
   blocker_inf: {
@@ -1016,14 +1016,14 @@ export const enemyTypes = {
     // At x1 he strikes whatever is holding him as though it wore one rank less, so
     // the answer to him stops being "wear enough" and goes back to "bring enough".
     // Measured end to end through units.js, which is a different call site from
-    // every other pierce in the game — see the last section of tools/armour.mjs:
+    // every other pierce in the game — see the last section of tools/armor.mjs:
     //
     //   a Pikeman    wears none, the break is worth nothing      40 of 40
     //   a Swordsman  low, broken to none                         40 of 40
     //   a Paladin    med, broken to low                          30 of 40
     //
     // The Paladin is the only rung where the number moves at all, and it moves a
-    // long way: without the break the same club lands 20 on him. tools/armour.mjs
+    // long way: without the break the same club lands 20 on him. tools/armor.mjs
     // measures all four through units.js rather than reading them off here, so this
     // table is a record of a run and not a claim — it re-printed itself when the
     // club came down from 30.
@@ -1672,7 +1672,7 @@ export const enemyTypes = {
     // HIS SWORD BREAKS TWO RANKS OF PHYSICAL PLATE, the owner's number for stage 1
     // melee. `pierceOf` reads it and `rankAgainst` subtracts it before looking up
     // what gets through, so two ranks is 50 percentage points of the blow — see the
-    // note on TAKES in data/armour.js for why a rank is always worth exactly a
+    // note on TAKES in data/armor.js for why a rank is always worth exactly a
     // quarter.
     //
     // It is the largest pierce in the game. A Cannon Outpost breaks two and it is
@@ -1834,7 +1834,7 @@ export const enemyTypes = {
       armour: { physical: 'low', magic: 'low' },
       // AND HIS BLADE BREAKS TWO RANKS OF MAGIC WARD, at the owner's number.
       //
-      // A pierce is always of its OWN kind — see pierceOf in data/armour.js — so
+      // A pierce is always of its OWN kind — see pierceOf in data/armor.js — so
       // this is magic where stage 1's is physical, and it follows the blade turning
       // magic rather than being a second thing to remember. It also lands on a line
       // that has almost nothing to break: a spearman wears no magic ward at all and

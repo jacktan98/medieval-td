@@ -4,7 +4,7 @@ import { inRange } from './ground.js';
 import { play, LAND, BREAK, KNIFE, BOULDER_HIT } from './audio.js';
 import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
-import { taken, wornBy } from './data/armour.js';
+import { taken, wornBy } from './data/armor.js';
 import { raiseGuard, airLift } from './enemies.js';
 import { struck } from './gesture.js';
 import { fixture, unseen } from './units.js';
