@@ -6225,11 +6225,19 @@ function drawUpgrades(ctx, state) {
       ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
       ctx.fill();
 
-      // THE ARTIST'S FACE FOR THE RUNG, whole — its own coloured disc and rim —
-      // at 45% while it cannot be had yet, exactly as the ring dims a button it
-      // will not let you press. The number stands in only if the file is missing.
+      // THE ARTIST'S FACE FOR THE RUNG, whole — its own coloured disc and rim.
+      //
+      // FULL COLOUR MEANS BOUGHT, at the owner's word: "When the image is coloured,
+      // it means it has been bought. So without any upgrades, all the images should
+      // have faded colour." Every rung not yet bought is drawn washed out — most of
+      // its colour taken out and its strength turned down — and the one that can be
+      // bought next a little less so than the ones still locked above it. Where the
+      // browser cannot take the colour out, the fade alone still says it.
       ctx.save();
-      if (st8 === 'locked') ctx.globalAlpha = 0.45;
+      if (st8 !== 'bought') {
+        ctx.globalAlpha = st8 === 'next' ? 0.6 : 0.4;
+        ctx.filter = 'saturate(0.25)';
+      }
       if (!drawUi(ctx, `up_${fam}_${i + 1}`, b.cx, b.cy, b.r * 2)) {
         ctx.fillStyle = '#FFEFD4';
         ctx.beginPath();
@@ -6246,10 +6254,10 @@ function drawUpgrades(ctx, state) {
       }
       ctx.restore();
 
-      // THE ONE THAT CAN BE BOUGHT NOW wears a gold ring round its rim, and a
-      // BOUGHT one a gold ring and a tick on its shoulder. The price is in the
-      // panel now, at the owner's word, so the face is left whole.
-      if (afford || st8 === 'bought') {
+      // THE ONE THAT CAN BE BOUGHT NOW wears a gold ring round its rim, so a faded
+      // face that is ready reads differently from one still waiting. The price is
+      // in the panel, at the owner's word, so the face is left whole.
+      if (afford) {
         ctx.strokeStyle = UI_GOLD;
         ctx.lineWidth = 3;
         ctx.beginPath();

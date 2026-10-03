@@ -45,7 +45,8 @@ export const UPGRADES = {
       deathSave: 0.10 }
   ],
   siege: [
-    { name: 'Counterweights', text: 'Increase base range of artillery towers by 5%.', rangeTimes: 1.05 },
+    // A SPYGLASS, and it was Counterweights: renamed to match the artist's telescope.
+    { name: 'Spotter\'s Glass', text: 'Increase base range of artillery towers by 5%.', rangeTimes: 1.05 },
     { name: 'Heavy Loads', text: 'Increase base attack damage of artillery towers by 5%.', damageTimes: 1.05 },
     { name: 'Wide Blast', text: 'Increase the area of artillery blasts by 10%.', splashTimes: 1.10 },
     // A STUN, AND IT WAS A BIGGER BLAST: the owner changed it. Everything the shot
@@ -61,7 +62,8 @@ export const UPGRADES = {
     // HOW HARD THE SLOW HOLDS is the owner's to set and was not given: 0.7 is the
     // figure left doing 70% of what he did, a third of the way to the Blocker's
     // own half-speed guard. Two seconds is the owner's.
-    { name: 'Binding Light', text: 'Grants a 10% chance that a projectile slows its target for 2 seconds.',
+    // SANDS OF TIME, and it was Binding Light: renamed to match the artist's hourglass.
+    { name: 'Sands of Time', text: 'Grants a 10% chance that a projectile slows its target for 2 seconds.',
       slow: { chance: 0.10, seconds: 2, times: 0.7 } }
   ]
 };

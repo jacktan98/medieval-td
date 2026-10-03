@@ -188,7 +188,7 @@ for (const [fam, def] of [['archery', archery[0]], ['siege', siege[0]], ['monast
   setBoughtForTest({ monastery: 4 });
   const held = shots(tower('monastery', monastery[0]), 3, 0)[0];
   const free = shots(tower('monastery', monastery[0]), 3, 0.99)[0];
-  check(held.slow && held.slow.seconds === 2 && !free.slow, 'monastery: Binding Light slows for two seconds, now and then',
+  check(held.slow && held.slow.seconds === 2 && !free.slow, 'monastery: Sands of Time slows for two seconds, now and then',
     held.slow ? `x${held.slow.times} for ${held.slow.seconds}s` : 'no slow');
 }
 

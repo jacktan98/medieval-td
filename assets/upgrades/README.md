@@ -24,7 +24,7 @@ its own, drawn at the foot of its ladder.
 | `Upgrade_Barracks_3_Icon.png` | Honed Blades: damage +10% |
 | `Upgrade_Barracks_4_Icon.png` | Last Stand: 10% chance to survive on 1 health |
 | `Upgrade_Artillery_Icon.png` | the Artillery ladder's own button, at its foot |
-| `Upgrade_Artillery_1_Icon.png` | Counterweights: range +5% |
+| `Upgrade_Artillery_1_Icon.png` | Spotter's Glass: range +5% |
 | `Upgrade_Artillery_2_Icon.png` | Heavy Loads: damage +5% |
 | `Upgrade_Artillery_3_Icon.png` | Wide Blast: blast area +10% |
 | `Upgrade_Artillery_4_Icon.png` | Concussion: 10% chance to stun for 0.5s |
@@ -32,7 +32,7 @@ its own, drawn at the foot of its ladder.
 | `Upgrade_Monastery_1_Icon.png` | Far Sight: range +5% |
 | `Upgrade_Monastery_2_Icon.png` | Divine Zeal: damage +5% |
 | `Upgrade_Monastery_3_Icon.png` | Swift Prayers: attack speed +5% |
-| `Upgrade_Monastery_4_Icon.png` | Binding Light: 10% chance to slow for 2s |
+| `Upgrade_Monastery_4_Icon.png` | Sands of Time: 10% chance to slow for 2s |
 
 ## How to draw them
 
@@ -42,6 +42,6 @@ its own, drawn at the foot of its ladder.
   game draws it as it is, with nothing under it.
 - **The picture centred in the disc.** The star price is in the panel on the right
   of the screen, not on the button.
-- **One picture per upgrade.** The game dims the ones not yet available, and rings
-  and ticks the bought ones itself.
+- **One picture per upgrade, in full colour.** Full colour on the screen means
+  BOUGHT: the game fades every upgrade not yet bought, and ticks the bought ones.
 - Drawn at 72 px across, which keeps the 248 px disc sharp on a 3× screen.

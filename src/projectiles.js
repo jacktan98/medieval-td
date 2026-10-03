@@ -298,7 +298,7 @@ const burn = (s, v) =>
 // number the card prints for everything else on the road, and the day a second
 // slowing thing exists it gets this rule for free.
 // A SHOT MAY CARRY ITS OWN, rolled as it left the tower — the monastery's star
-// upgrade, Binding Light — in which case that is the slow it leaves.
+// upgrade, Sands of Time — in which case that is the slow it leaves.
 const slowing = s => s.slow || s.ammo.slow;
 const slow = (s, v) =>
   applyStatus(v, 'slowed', slowOn(v, slowing(s).times), slowing(s).seconds, s.ammo.kind);
