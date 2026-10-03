@@ -37,7 +37,8 @@ export const UPGRADES = {
   ],
   barracks: [
     { name: 'Hardy Recruits', text: 'Increase health of barracks units by 5%.', hpTimes: 1.05 },
-    { name: 'Quick Muster', text: 'Reduce respawn time of barracks units by 2 seconds.', respawnLess: 2 },
+    // CALL TO ARMS, and it was Quick Muster: renamed to match the artist's war horn.
+    { name: 'Call to Arms', text: 'Reduce respawn time of barracks units by 2 seconds.', respawnLess: 2 },
     // 10%, AND IT WAS +1: the owner changed it. On a Militia Camp's 3 that is 3.3,
     // a little under the old 4; on an Assassin Guild's 15 it is 16.5, a little over.
     { name: 'Honed Blades', text: 'Increase base attack damage of barracks units by 10%.', blowTimes: 1.10 },
@@ -58,7 +59,9 @@ export const UPGRADES = {
   monastery: [
     { name: 'Far Sight', text: 'Increase base range of monastery towers by 5%.', rangeTimes: 1.05 },
     { name: 'Divine Zeal', text: 'Increase base attack damage of monastery towers by 5%.', damageTimes: 1.05 },
-    { name: 'Swift Prayers', text: 'Increase base attack speed of monastery towers by 5%.', reloadTimes: 1.05 },
+    // SWIFT SCRIPTURE, and it was Swift Prayers: renamed to match the artist's book,
+    // its pages flipping fast.
+    { name: 'Swift Scripture', text: 'Increase base attack speed of monastery towers by 5%.', reloadTimes: 1.05 },
     // HOW HARD THE SLOW HOLDS is the owner's to set and was not given: 0.7 is the
     // figure left doing 70% of what he did, a third of the way to the Blocker's
     // own half-speed guard. Two seconds is the owner's.

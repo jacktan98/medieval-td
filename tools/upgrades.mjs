@@ -216,7 +216,7 @@ console.log('\nThe barracks\n');
     Math.random = () => 0.99;
     man.hp = -5;
     updateUnits(state, 1 / 60);
-    check(near(man.respawn, Math.max(1, barracks[0].soldier.respawn - 2)), 'Quick Muster: back two seconds sooner',
+    check(near(man.respawn, Math.max(1, barracks[0].soldier.respawn - 2)), 'Call to Arms: back two seconds sooner',
       `${barracks[0].soldier.respawn}s → ${man.respawn.toFixed(2)}s`);
 
     // And with Last Stand, the dice say he does not.

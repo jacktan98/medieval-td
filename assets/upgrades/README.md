@@ -20,7 +20,7 @@ its own, drawn at the foot of its ladder.
 | `Upgrade_Archery_4_Icon.png` | Sharpshooter: 10% chance of +50% damage |
 | `Upgrade_Barracks_Icon.png` | the Barracks ladder's own button, at its foot |
 | `Upgrade_Barracks_1_Icon.png` | Hardy Recruits: health +5% |
-| `Upgrade_Barracks_2_Icon.png` | Quick Muster: respawn 2s sooner |
+| `Upgrade_Barracks_2_Icon.png` | Call to Arms: respawn 2s sooner |
 | `Upgrade_Barracks_3_Icon.png` | Honed Blades: damage +10% |
 | `Upgrade_Barracks_4_Icon.png` | Last Stand: 10% chance to survive on 1 health |
 | `Upgrade_Artillery_Icon.png` | the Artillery ladder's own button, at its foot |
@@ -31,7 +31,7 @@ its own, drawn at the foot of its ladder.
 | `Upgrade_Monastery_Icon.png` | the Monastery ladder's own button, at its foot |
 | `Upgrade_Monastery_1_Icon.png` | Far Sight: range +5% |
 | `Upgrade_Monastery_2_Icon.png` | Divine Zeal: damage +5% |
-| `Upgrade_Monastery_3_Icon.png` | Swift Prayers: attack speed +5% |
+| `Upgrade_Monastery_3_Icon.png` | Swift Scripture: attack speed +5% |
 | `Upgrade_Monastery_4_Icon.png` | Sands of Time: 10% chance to slow for 2s |
 
 ## How to draw them

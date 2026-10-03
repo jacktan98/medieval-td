@@ -27,7 +27,7 @@ const upOf = u => upgradeFx(u.tower && u.tower.fam && u.tower.fam.id === 'barrac
 
 // HIS BLOW, which is his def's times whatever the stars have added to it. Every
 // strike he makes is read through this — a swing, an ability's multiple of it, a
-// thrown knife — so Whetstones' 10% is on all of them. Left unrounded, as every
+// thrown knife — so Honed Blades' 10% is on all of them. Left unrounded, as every
 // other multiplied blow on the road is until armour has had its say.
 export const soldierBlow = u => u.def.damage * upOf(u).blowTimes;
 
@@ -1858,7 +1858,7 @@ export function updateUnits(state, dt) {
       // the middle of a loop over the list he is in.
       u.respawn = u.def.respawn || 0;
       if (!(u.respawn > 0)) u.fallen = true;
-      // QUICK MUSTER, the barracks' second star upgrade: two seconds off, and
+      // CALL TO ARMS, the barracks' second star upgrade: two seconds off, and
       // never down to nothing — a man is always gone for at least a second.
       else if (upOf(u).respawnLess) u.respawn = Math.max(1, u.respawn - upOf(u).respawnLess);
       // Everything being done to him dies with him. Without this he musters again
