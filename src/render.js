@@ -6544,17 +6544,20 @@ function drawBook(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.88)';
   ctx.fillRect(0, 0, 960, 540);
 
-  ctx.fillStyle = SHEET_FILL;
+  // THE UPGRADES SCREEN'S BROWN AND TAN EDGE, at the owner's word — a test, with
+  // the cards left as they were. The words written on the sheet itself (the
+  // title, the headings, the page count) go cream with it, as they are there.
+  ctx.fillStyle = UP_BG;
   ctx.beginPath();
   ctx.roundRect(SHEET.x, SHEET.y, SHEET.w, SHEET.h, 12);
   ctx.fill();
-  ctx.strokeStyle = SHEET_EDGE;
+  ctx.strokeStyle = UP_BG_EDGE;
   ctx.lineWidth = 2;
   ctx.stroke();
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = INK;
+  ctx.fillStyle = UI_INK;
   ctx.font = `22px ${MAP_TYPE}`;
   ctx.fillText('Encyclopedia', 480, TITLE_Y);
 
@@ -6903,15 +6906,20 @@ function drawUnitPage(ctx) {
 function heading(ctx, text, x) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = INK_MUTED;
+  ctx.fillStyle = UP_MUTED;
   ctx.font = `14px ${MAP_TYPE}`;
   ctx.fillText(text, x, HEAD_Y);
 }
 
 function card(ctx, b) {
-  ctx.fillStyle = CARD_FILL;
+  // ON ITS OWN PARCHMENT: the card's fill is a faint tint that took its colour
+  // from the page under it, and the page is brown now. The parchment goes down
+  // first so the card is exactly the card it was.
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+  ctx.fillStyle = SHEET_FILL;
+  ctx.fill();
+  ctx.fillStyle = CARD_FILL;
   ctx.fill();
   ctx.strokeStyle = CARD_EDGE;
   ctx.lineWidth = 1;
@@ -7238,7 +7246,7 @@ function drawEnemyPage(ctx, state) {
   if (!boss.length) return;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = INK_MUTED;
+  ctx.fillStyle = UP_MUTED;
   ctx.font = `14px ${MAP_TYPE}`;
   ctx.fillText('Boss', PAGE_X, BOSS_HEAD_Y);
   for (const c of boss) enemyCard(ctx, c, state.bookStage);
@@ -7302,13 +7310,15 @@ function drawRound(ctx, key, cx, cy, d) {
 }
 
 function drawBookFooter(ctx, state) {
-  bookButton(ctx, BOOK_CLOSE, 'Close', 15);
-  bookButton(ctx, BOOK_PREV, '\u2039', 22);
-  bookButton(ctx, BOOK_NEXT, '\u203a', 22);
+  // THE UPGRADES SCREEN'S BUTTONS: the same face at the same size, and the same
+  // cream edge, at the owner's word.
+  bookButton(ctx, BOOK_CLOSE, 'Close', 0, `20px ${MAP_TYPE}`, UI_INK);
+  bookButton(ctx, BOOK_PREV, '\u2039', 0, `28px ${MAP_TYPE}`, UI_INK);
+  bookButton(ctx, BOOK_NEXT, '\u203a', 0, `28px ${MAP_TYPE}`, UI_INK);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = INK_MUTED;
+  ctx.fillStyle = UP_MUTED;
   ctx.font = `14px ${MAP_TYPE}`;
   ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, FOLD, FOOT_Y + BOOK_PREV.h / 2);
 }
