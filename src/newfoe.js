@@ -109,9 +109,10 @@ const ALERT_Y = 40;                        // the bars end at 32
 const ALERT_GAP = 8;
 // How far the bar reaches right of the medallion's middle — part of the target,
 // because it is part of the picture.
-// 122: the dark bar runs on well past the end of "New Enemy!" rather than
-// stopping just after it, at the owner's word ("more tint to the right").
-export const ALERT_BAR_W = 122;
+// 100, AND IT WAS 122: the bar ran well past "New Enemy!" when that was set in a
+// wide bold face ("more tint to the right"); Lobster sets it at 57px, so the bar
+// was cut back to end 16px past the word, at the owner's word.
+export const ALERT_BAR_W = 100;
 export const ALERT_BAR_H = 24;
 
 // The figure's drawn size: its box's half-diagonal on the inner circle.

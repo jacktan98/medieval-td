@@ -6313,6 +6313,7 @@ function drawUpgrades(ctx, state) {
   ctx.fillText(count, px0 + STAR_PAD + STAR_R * 2 + STAR_GAP, st.y + st.h / 2 + 1);
 
   const pick = state.upPick, hover = state.upHover;
+  const glowT = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
   const same = (a, fam, i) => a && a.fam === fam && a.i === i;
 
   for (const [col, fam] of UPGRADE_FAMILIES.entries()) {
@@ -6390,12 +6391,17 @@ function drawUpgrades(ctx, state) {
         : afford ? UI_GOLD : null;
       // A SOFT GLOW round it, in its own colour, at the owner's word: the ring
       // is stroked once with a blur behind it and once more sharp on top.
+      //
+      // AND IT BREATHES, like the "!" on a new enemy's alert, so the rung that can
+      // be bought or is being read is the thing on the screen that moves. On the
+      // wall clock, and out of step column to column the way the alerts are.
       if (ring) {
+        const pulse = 0.5 + 0.5 * Math.sin(glowT * 4 + col);
         ctx.save();
         ctx.strokeStyle = ring;
         ctx.lineWidth = 3;
         ctx.shadowColor = ring;
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 4 + 28 * pulse;
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
         // Twice through the blur, which is what makes the glow carry rather than
