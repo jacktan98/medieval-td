@@ -948,7 +948,12 @@ const ABOVE = [0.5, 1];
 // It is the NUMBER OF SOURCES rather than the multiplier itself. "x2" for two
 // temples reads immediately; the multiplier they actually make is 1.21, and a
 // badge captioned x1.21 would be a number the player has to do arithmetic on.
-const MULT_FONT = '700 11px system-ui, sans-serif';
+// LOBSTER, the world map's face, for the words on every screen a game is played
+// on as well, at the owner's word — loaded in src/overview.js (MAP_FONT); the
+// system face stands in until it has. Up here because the badge fonts below are
+// built from it when the module loads.
+const MAP_TYPE = 'Lobster, system-ui, sans-serif';
+const MULT_FONT = `11px ${MAP_TYPE}`;
 const MULT_GAP = 2;
 
 // Cream on the same black the badges are outlined in, which is what makes it
@@ -4450,20 +4455,20 @@ function hudButton(ctx, b, label, sub, on) {
   const mid = b.y + b.h / 2;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.font = `13px ${MAP_TYPE}`;
   const lw = ctx.measureText(label).width;
-  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.font = `12px ${MAP_TYPE}`;
   const sw = sub ? ctx.measureText(sub).width + 5 : 0;
 
   const x = b.x + (b.w - lw - sw) / 2;
-  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.font = `13px ${MAP_TYPE}`;
   ctx.fillStyle = INK;
   ctx.fillText(label, x, mid);
 
   // The bonus for calling early stays green: it is money, and money is green
   // everywhere else in the game.
   if (sub) {
-    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.font = `12px ${MAP_TYPE}`;
     ctx.fillStyle = INK_GREEN;
     ctx.fillText(sub, x + lw + 5, mid);
   }
@@ -4578,7 +4583,7 @@ function iconEdge(key, x) {
   return pts;
 }
 
-const READOUT_INK = '600 16px system-ui, sans-serif';
+const READOUT_INK = `16px ${MAP_TYPE}`;
 // CENTRED ON THE DIGITS, not on the em box. 'middle' centres the font's whole
 // box, descender room and all, and a row of numbers has no descenders — so they
 // sat high in the bar. Measured off a zero, so every readout sits on the same
@@ -4606,7 +4611,7 @@ function inkText(ctx, text, x) {
 // `fillStyle` is deliberately NOT set here: what colour the readouts are is the
 // caller's business, and the drawing pass wants it inside its shadow block.
 function readouts(ctx, state, draw, segs = null) {
-  ctx.font = '600 17px system-ui, sans-serif';
+  ctx.font = `17px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   let x = 16;
@@ -4760,7 +4765,7 @@ function drawHud(ctx, state) {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.font = `15px ${MAP_TYPE}`;
     // Cream with a black edge — the two colours every control is drawn in.
     ctx.lineWidth = 4;
     ctx.lineJoin = 'round';
@@ -4823,7 +4828,7 @@ function drawWavePreview(ctx, state) {
   if (!next || !next.groups.length) return;
 
   ctx.save();
-  ctx.font = '700 12px system-ui, sans-serif';
+  ctx.font = `12px ${MAP_TYPE}`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
 
@@ -5115,7 +5120,7 @@ function buttonPrice(ctx, it, caption) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const onDark = it.face && !(ui[it.face] && ui[it.face].pale);
-  ctx.font = `700 ${it.cost === null && it.gain === null ? WORD_SIZE : 10}px system-ui, sans-serif`;
+  ctx.font = `${it.cost === null && it.gain === null ? WORD_SIZE : 10}px ${MAP_TYPE}`;
   ctx.fillStyle = onDark ? '#FFFFFF' : it.gain !== null ? INK_GREEN : INK;
   ctx.fillText(caption, it.x, it.y + 16);
   ctx.textAlign = 'left';
@@ -5327,8 +5332,8 @@ function drawInfo(ctx, state) {
   for (const [key, value] of info.traits) items.push([key, String(value), PANEL_INK]);
 
   const LINE_H = 28, LINE_PAD = 10, NAME_GAP = 12, ITEM_GAP = 10;
-  const NAME_FONT = '700 13px system-ui, sans-serif';
-  const STAT_FONT = '700 12px system-ui, sans-serif';
+  const NAME_FONT = `13px ${MAP_TYPE}`;
+  const STAT_FONT = `12px ${MAP_TYPE}`;
   ctx.save();
   ctx.font = NAME_FONT;
   const nameW = ctx.measureText(info.title).width;
@@ -5572,7 +5577,6 @@ const CAPTION_GAP = 12;
 // doors, the Admin button and the stage panel. One weight only, so nothing here asks
 // for bold — the browser would fake it. The system font stands in until the file has
 // loaded; see MAP_FONT in src/overview.js.
-const MAP_TYPE = 'Lobster, system-ui, sans-serif';
 
 function settingRowUi(ctx, caption, row, chosen) {
   ctx.textAlign = 'right';
@@ -5888,7 +5892,7 @@ function drawFoeAlerts(ctx, state) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = PANEL_INK;
-    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.font = `12px ${MAP_TYPE}`;
     ctx.fillText('New Enemy!', cx + R + 6, cy + 1);
     ctx.restore();
 
@@ -5907,7 +5911,7 @@ function drawFoeAlerts(ctx, state) {
     ctx.fillStyle = '#F0E6D2';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '800 11px system-ui, sans-serif';
+    ctx.font = `11px ${MAP_TYPE}`;
     ctx.fillText('!', bx, by + 0.5);
   });
 }
@@ -5982,10 +5986,10 @@ function drawFoeCard(ctx, state) {
   // stands no taller than the picture or the numbers beside it, so the card stays
   // the pop-up's depth for as long as it can.
   let textW = FOE_COL_W;
-  let lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
+  let lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW, `${POP_TEXT}px ${MAP_TYPE}`);
   while (textW < FOE_COL_MAX && lines.length * POP_LEAD > Math.max(slot.h, statsH)) {
     textW += 20;
-    lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW);
+    lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW, `${POP_TEXT}px ${MAP_TYPE}`);
   }
 
   // THE NUMBERS IN THEIR ROWS, each an icon and its number and nothing else — the
@@ -5999,7 +6003,7 @@ function drawFoeCard(ctx, state) {
   // is the widest entry on the card plus FOE_ENTRY_GAP, so no number runs into
   // the icon after it.
   const entryW = ([key, value]) => {
-    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.font = `12px ${MAP_TYPE}`;
     return uiSize(key, { h: POP_STAT_H }).w + 5 + ctx.measureText(String(value)).width;
   };
   const pitch = Math.max(...rows.flat().map(entryW)) + FOE_ENTRY_GAP;
@@ -6030,10 +6034,10 @@ function drawFoeCard(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ALERT_RED;
-  ctx.font = '800 11px system-ui, sans-serif';
+  ctx.font = `11px ${MAP_TYPE}`;
   ctx.fillText('NEW ENEMY', 480, py + POP_PAD + FOE_LABEL / 2 - 4);
   ctx.fillStyle = INK;
-  ctx.font = '700 18px system-ui, sans-serif';
+  ctx.font = `18px ${MAP_TYPE}`;
   ctx.fillText(d.name, 480, py + POP_PAD + FOE_LABEL + POP_TITLE / 2 - 4);
 
   // The X, top right: a dark disc with a cream cross. Its rect is left in
@@ -6068,7 +6072,7 @@ function drawFoeCard(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
-  ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
+  ctx.font = `${POP_TEXT}px ${MAP_TYPE}`;
   lines.forEach((line, i) => { if (line) ctx.fillText(line, tx, y0 + POP_LEAD * (i + 0.5)); });
 
   // A faint rule between the words and the numbers.
@@ -6091,7 +6095,7 @@ function drawFoeCard(ctx, state) {
     drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
     ctx.textAlign = 'left';
     ctx.fillStyle = POP_STAT_INK[key] || INK;
-    ctx.font = '700 12px system-ui, sans-serif';
+    ctx.font = `12px ${MAP_TYPE}`;
     ctx.fillText(String(value), x + iw + 5, y);
     // The icon and its number are the target, the row's full height.
     FOE_STATS.push({ key, x: x - 2, y: y - FOE_STAT_ROW / 2, w: entryW([key, value]) + 4, h: FOE_STAT_ROW });
@@ -6101,7 +6105,7 @@ function drawFoeCard(ctx, state) {
   const tip = state.foeTip !== null && state.foeTip !== undefined && FOE_STATS[state.foeTip];
   if (tip) {
     const label = FOE_STAT_LABEL[tip.key] || '';
-    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.font = `11px ${MAP_TYPE}`;
     const lw = ctx.measureText(label).width + 14, lh = 20;
     const lx = Math.max(px + 6, Math.min(px + pw - 6 - lw, tip.x + tip.w / 2 - lw / 2));
     const ly = tip.y - lh + 1;
@@ -6822,8 +6826,8 @@ function wrapIn(ctx, text, width) {
   return out;
 }
 
-function wrapped(ctx, text, width) {
-  ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
+function wrapped(ctx, text, width, font = `500 ${POP_TEXT}px system-ui, sans-serif`) {
+  ctx.font = font;
   const out = [];
 
   for (const para of text.split('\n\n')) {
@@ -7369,7 +7373,7 @@ function askButton(ctx, b, word, armed) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = armed ? UI_GOLD : UI_INK;
-  ctx.font = '700 15px system-ui, sans-serif';
+  ctx.font = `15px ${MAP_TYPE}`;
   ctx.fillText(armed ? 'Confirm?' : word, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
@@ -7395,17 +7399,17 @@ function drawResult(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
-  ctx.font = '700 44px system-ui, sans-serif';
+  ctx.font = `44px ${MAP_TYPE}`;
   ctx.fillText(state.result === 'won' ? 'Waves cleared' : 'The keep has fallen', 480, 148);
 
   if (!s) {
-    ctx.font = '20px system-ui, sans-serif';
+    ctx.font = `20px ${MAP_TYPE}`;
     ctx.fillText('Tap to play again', 480, 300);
     ctx.textAlign = 'left';
     return;
   }
 
-  ctx.font = '17px system-ui, sans-serif';
+  ctx.font = `17px ${MAP_TYPE}`;
   ctx.fillStyle = 'rgba(240,230,210,0.66)';
   // The three settings the run was played at, in the order the title screen asks
   // for them. The length belongs here for the same reason the difficulty does:
@@ -7428,7 +7432,7 @@ function drawResult(ctx, state) {
   // What the rating was earned with, and what the next one up would take. The
   // second line is only worth saying while there is a rating left to reach.
   const [three, two] = starCuts(s.startLives);
-  ctx.font = '700 21px system-ui, sans-serif';
+  ctx.font = `21px ${MAP_TYPE}`;
   ctx.fillStyle = '#F0E6D2';
   ctx.fillText(
     s.won
@@ -7439,7 +7443,7 @@ function drawResult(ctx, state) {
   // WHAT THE NEXT RATING WOULD TAKE, and a loss is not a thin version of a win:
   // there is no number of lives that earns a star on a run that did not finish,
   // so the line says the thing that actually stands between them and one.
-  ctx.font = '16px system-ui, sans-serif';
+  ctx.font = `16px ${MAP_TYPE}`;
   ctx.fillStyle = 'rgba(240,230,210,0.62)';
   const want = s.stars === 1 ? two : s.stars === 2 ? three : null;
   ctx.fillText(
@@ -7450,14 +7454,14 @@ function drawResult(ctx, state) {
 
   // The record line. "You beat it" is worth its own colour; matching it or
   // falling short both just report where the bar is.
-  ctx.font = '700 17px system-ui, sans-serif';
+  ctx.font = `17px ${MAP_TYPE}`;
   ctx.fillStyle = s.beat ? '#E0B24C' : 'rgba(240,230,210,0.62)';
   ctx.fillText(
     s.beat ? 'A new best on this map.'
            : `Best here: ${s.best} of ${MAX_STARS} stars.`,
     480, 386);
 
-  ctx.font = '20px system-ui, sans-serif';
+  ctx.font = `20px ${MAP_TYPE}`;
   ctx.fillStyle = '#F0E6D2';
   ctx.fillText('Tap to play again', 480, 440);
   ctx.textAlign = 'left';
