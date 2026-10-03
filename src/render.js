@@ -6384,7 +6384,7 @@ function drawUpgrades(ctx, state) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = INK;
-        ctx.font = '800 20px system-ui, sans-serif';
+        ctx.font = `20px ${MAP_TYPE}`;
         ctx.fillText(UP_NUMERAL[i], b.cx, b.cy + 1);
       }
       ctx.restore();
@@ -6555,7 +6555,7 @@ function drawBook(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
-  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.font = `22px ${MAP_TYPE}`;
   ctx.fillText('Encyclopedia', 480, TITLE_Y);
 
   // THE ENEMIES ARE LAST NOW and the abilities third, at the owner's word. It
@@ -6742,7 +6742,7 @@ function drawZoom(ctx, z) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
-  ctx.font = '700 18px system-ui, sans-serif';
+  ctx.font = `18px ${MAP_TYPE}`;
   ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
 
   const bodyY = py + POP_PAD + POP_TITLE + POP_GAP;
@@ -6809,7 +6809,7 @@ function drawZoom(ctx, z) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
-  ctx.font = `500 ${POP_TEXT}px system-ui, sans-serif`;
+  ctx.font = `${POP_TEXT}px ${MAP_TYPE}`;
   lines.forEach((line, i) => {
     if (line) ctx.fillText(line, tx, at + POP_LEAD * (i + 0.5));
   });
@@ -6828,7 +6828,7 @@ const POP_STAT_H = POP_TEXT + 2;
 // measurement in this file is: the plate is drawn from it, and a column costed at
 // anything but the truth is a plate with a number hanging out of it.
 function statsWidth(ctx, pairs) {
-  ctx.font = `700 ${POP_STAT_H - 2}px system-ui, sans-serif`;
+  ctx.font = `${POP_STAT_H - 2}px ${MAP_TYPE}`;
   return Math.max(...pairs.map(([key, value]) =>
     uiSize(key, { h: POP_STAT_H }).w + 4 + ctx.measureText(String(value)).width));
 }
@@ -6855,7 +6855,7 @@ function wrapIn(ctx, text, width) {
   return out;
 }
 
-function wrapped(ctx, text, width, font = `500 ${POP_TEXT}px system-ui, sans-serif`) {
+function wrapped(ctx, text, width, font = `${POP_TEXT}px ${MAP_TYPE}`) {
   ctx.font = font;
   const out = [];
 
@@ -6904,7 +6904,7 @@ function heading(ctx, text, x) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
-  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.font = `14px ${MAP_TYPE}`;
   ctx.fillText(text, x, HEAD_Y);
 }
 
@@ -6949,11 +6949,11 @@ function towerCard(ctx, b, e) {
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
-  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
+  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
   ctx.fillText(e.title, tx, r1);
 
   ctx.fillStyle = INK_MUTED;
-  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.font = `11px ${MAP_TYPE}`;
   ctx.fillText(e.occupier, tx, r2);
 
   // Price on the left of the row, refund on the right and in the green the game
@@ -7021,7 +7021,7 @@ function unitCard(ctx, b, e) {
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
-  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
+  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
   ctx.fillText(e.title, tx, r1);
 
   // Health, attack, reach — in that order, and each one skipped by the men it
@@ -7058,7 +7058,7 @@ const STAT_MIN_H = 10;
 // How wide a row of pairs would set at a given icon height. Measured through the
 // same ctx the row is drawn with, so it is the real width rather than an estimate.
 function statRowWidth(ctx, pairs, h = BOOK_ICON_H) {
-  ctx.font = `700 ${h - 2}px system-ui, sans-serif`;
+  ctx.font = `${h - 2}px ${MAP_TYPE}`;
   let w = 0;
   pairs.forEach(([key, value], i) => {
     if (i) w += STAT_GAP;
@@ -7109,7 +7109,7 @@ function stat(ctx, key, x, y, text, colour, h = BOOK_ICON_H) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = colour;
-  ctx.font = `700 ${h - 2}px system-ui, sans-serif`;
+  ctx.font = `${h - 2}px ${MAP_TYPE}`;
   ctx.fillText(text, x + w + 4, y);
   return x + w + 4 + ctx.measureText(text).width;
 }
@@ -7158,7 +7158,7 @@ function drawStageBadge(ctx, c, stage) {
   ctx.fillStyle = SHEET_FILL;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 11px system-ui, sans-serif';
+  ctx.font = `11px ${MAP_TYPE}`;
   ctx.fillText(String(stage), b.x + b.w / 2, b.y + b.h / 2);
 }
 
@@ -7209,7 +7209,7 @@ function enemyCard(ctx, c, stage = 1) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
-  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
+  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
   ctx.fillText(d.name, tx, r1);
 
   // Health, attack and — for the ones who fight at a distance — how far. The
@@ -7239,7 +7239,7 @@ function drawEnemyPage(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
-  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.font = `14px ${MAP_TYPE}`;
   ctx.fillText('Boss', PAGE_X, BOSS_HEAD_Y);
   for (const c of boss) enemyCard(ctx, c, state.bookStage);
 }
@@ -7273,11 +7273,11 @@ function abilityCard(ctx, b, e) {
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = INK;
-  ctx.font = `700 ${CARD_TITLE}px system-ui, sans-serif`;
+  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
   ctx.fillText(e.title, tx, r1);
 
   ctx.fillStyle = INK_MUTED;
-  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.font = `11px ${MAP_TYPE}`;
   ctx.fillText(e.of, tx, r2);
 
   // The price alone, with no refund beside it. An ability is folded into the
@@ -7309,7 +7309,7 @@ function drawBookFooter(ctx, state) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK_MUTED;
-  ctx.font = '700 14px system-ui, sans-serif';
+  ctx.font = `14px ${MAP_TYPE}`;
   ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, FOLD, FOOT_Y + BOOK_PREV.h / 2);
 }
 
@@ -7330,7 +7330,7 @@ function bookButton(ctx, b, label, size, font = null, edge = SHEET_EDGE) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
-  ctx.font = font || `700 ${size}px system-ui, sans-serif`;
+  ctx.font = font || `${size}px ${MAP_TYPE}`;
   ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
@@ -7518,7 +7518,7 @@ function panelButton(ctx, b, label, { on = false, live = true, size = adminPx(15
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = on ? UI_GOLD : ADMIN_INK;
-  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  ctx.font = `${size}px ${MAP_TYPE}`;
   ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
   ctx.restore();
 }
@@ -7571,7 +7571,7 @@ function stepperRow(ctx, s, value, base, { live = true, note = null } = {}) {
 function fitFont(ctx, text, weight, px, w) {
   let size = px;
   for (;;) {
-    ctx.font = `${weight} ${size}px system-ui, sans-serif`;
+    ctx.font = `${size}px ${MAP_TYPE}`;
     if (size <= 7 || ctx.measureText(text).width <= w) return size;
     size -= 0.5;
   }
@@ -7582,7 +7582,7 @@ function columnHead(ctx, x, w, label) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = `600 ${adminPx(12)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(12)}px ${MAP_TYPE}`;
   ctx.fillText(label, x + w / 2, ADMIN_PANEL.y + 78);
   ctx.restore();
 }
@@ -7605,7 +7605,7 @@ function drawAdmin(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_INK;
-  ctx.font = `700 ${adminPx(22)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(22)}px ${MAP_TYPE}`;
   const TITLES = { waves: 'Admin — waves and gold', units: 'Admin — unit stats',
                    road: 'Admin — the road' };
   ctx.fillText(TITLES[a.tab] || TITLES.waves, ADMIN_PANEL.x + 16, ADMIN_TITLE_Y);
@@ -7645,7 +7645,7 @@ function drawAdminRoad(ctx, state) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(255,239,212,0.6)';
-  ctx.font = `600 ${adminPx(13)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(13)}px ${MAP_TYPE}`;
   const queued = state.pendingReveal !== null && state.pendingReveal !== undefined;
   ctx.fillText(
     queued ? `Close to watch the road draw into stage ${state.pendingReveal + 1}.`
@@ -7663,11 +7663,11 @@ function drawAdminRoad(ctx, state) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = reached ? UI_INK : 'rgba(255,239,212,0.45)';
-    ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
+    ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
     ctx.fillText(String(row.i + 1).padStart(2, ' '), row.x, row.y + row.h / 2);
 
-    ctx.font = locked ? `italic ${adminPx(14)}px system-ui, sans-serif`
-                      : `600 ${adminPx(14)}px system-ui, sans-serif`;
+    ctx.font = locked ? `${adminPx(14)}px ${MAP_TYPE}`
+                      : `${adminPx(14)}px ${MAP_TYPE}`;
     ctx.fillStyle = locked ? 'rgba(255,239,212,0.4)'
       : (reached ? UI_INK : 'rgba(255,239,212,0.55)');
     ctx.fillText(locked ? 'no map yet' : row.name, row.x + 26, row.y + row.h / 2);
@@ -7747,7 +7747,7 @@ function drawAdminWaves(ctx, a) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = `700 ${adminPx(13)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(13)}px ${MAP_TYPE}`;
   ctx.fillText('Difficulty', diffs[0].x - 12, diffs[0].y + diffs[0].h / 2);
   ctx.restore();
   for (const d of diffs) panelButton(ctx, d, d.label, { on: d.id === a.diff, size: adminPx(15) });
@@ -7760,7 +7760,7 @@ function drawAdminWaves(ctx, a) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = `700 ${adminPx(14)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(14)}px ${MAP_TYPE}`;
   ctx.fillText('Start gold', purse.minus.x - 14, purse.minus.y + purse.minus.h / 2);
   // THE PURSE MOVES WITH THE DIFFICULTY TOO, and in the other direction to the
   // counts: Normal sends fewer enemies and hands you more gold to meet them with.
@@ -7826,7 +7826,7 @@ function drawAdminWaves(ctx, a) {
     // away and reads on the row the moment there is one of anything.
     if (here) {
       const label = `${ordinal(place)} in`;
-      ctx.font = `${adminPx(11)}px system-ui, sans-serif`;
+      ctx.font = `${adminPx(11)}px ${MAP_TYPE}`;
       const w = Math.ceil(ctx.measureText(label).width) + (total > r.count ? 26 : 16);
       ctx.fillStyle = 'rgba(255,239,212,0.10)';
       pill(ctx, r.x, r.y + 19, w, 17, 8.5);
@@ -7840,7 +7840,7 @@ function drawAdminWaves(ctx, a) {
       }
     } else {
       ctx.fillStyle = ADMIN_DIM;
-      ctx.font = `${adminPx(11)}px system-ui, sans-serif`;
+      ctx.font = `${adminPx(11)}px ${MAP_TYPE}`;
       ctx.fillText('not in this wave', r.x, r.y + 28);
     }
 
@@ -7868,7 +7868,7 @@ function drawAdminWaves(ctx, a) {
   // has three groups in it.
   ctx.textAlign = 'left';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = `${adminPx(15)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
   // The length is named here as well as on the button, because the wave COUNT in
   // this line is the thing that changes with it and a bare "wave 9 of 12" would
   // leave the reader working out which table they were looking at.
@@ -7900,7 +7900,7 @@ function drawAdminWaves(ctx, a) {
   // lines come off SUMMARY_Y now, and tools/admin.mjs checks the LOWER of them
   // against the footer rather than the upper.
   ctx.fillStyle = 'rgba(255,239,212,0.40)';
-  ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(13)}px ${MAP_TYPE}`;
   // READ OFF THE DIFFICULTIES rather than typed, because a percentage typed here
   // is a second copy of a number that lives in data/difficulty.js — and a copy of
   // that number going stale is precisely the bug this line is describing. The
@@ -7941,7 +7941,7 @@ function selectButton(ctx, b, label, open) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ink;
-  ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
   ctx.fillText(label, b.x + 14, b.y + b.h / 2 + 1);
 
   const cx = b.x + b.w - 17, cy = b.y + b.h / 2;
@@ -7985,7 +7985,7 @@ function drawMapList(ctx, a) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = `700 ${adminPx(15)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
   for (const o of mapOptions()) {
     const here = o.i === a.map;
     if (here) {
@@ -8037,7 +8037,7 @@ function drawAdminUnits(ctx, a) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(255,239,212,0.28)';
-        ctx.font = `${adminPx(12)}px system-ui, sans-serif`;
+        ctx.font = `${adminPx(12)}px ${MAP_TYPE}`;
         ctx.fillText(none, (st.minus.x + st.plus.x + st.plus.w) / 2, u.y + st.minus.h / 2);
         ctx.restore();
       }
@@ -8045,7 +8045,7 @@ function drawAdminUnits(ctx, a) {
   }
 
   ctx.fillStyle = 'rgba(255,239,212,0.40)';
-  ctx.font = `${adminPx(13)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(13)}px ${MAP_TYPE}`;
   ctx.fillText('Each tap moves a stat by about a twentieth of where it already is.',
     ADMIN_PANEL.x + 16, FOOT_Y - 14);
 
@@ -8054,7 +8054,7 @@ function drawAdminUnits(ctx, a) {
 
   ctx.textAlign = 'center';
   ctx.fillStyle = ADMIN_DIM;
-  ctx.font = `${adminPx(15)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
   ctx.fillText(`Page ${a.page + 1} / ${pages}`,
     (PREV_BTN.x + PREV_BTN.w + NEXT_BTN.x) / 2, PREV_BTN.y + PREV_BTN.h / 2 + 1);
   ctx.textAlign = 'left';
@@ -8068,10 +8068,10 @@ function drawPinPad(ctx, a) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ADMIN_INK;
-  ctx.font = `700 ${adminPx(26)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(26)}px ${MAP_TYPE}`;
   ctx.fillText('Admin', 480, 78);
 
-  ctx.font = `${adminPx(15)}px system-ui, sans-serif`;
+  ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
   ctx.fillStyle = a.wrong ? '#D4453A' : ADMIN_DIM;
   ctx.fillText(a.wrong ? 'Wrong code.' : `Enter the ${PIN.length}-digit code.`, 480, 108);
 
