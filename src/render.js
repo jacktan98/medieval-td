@@ -5918,18 +5918,20 @@ function drawFoeAlerts(ctx, state) {
 // What each stat icon is called, for the tip the card shows over an icon under
 // the mouse or tapped. The card itself prints icons and numbers only, as the book
 // does — the words were on it for one build and the owner took them off.
+//
+// THE OWNER'S NAMES, word for word and in capitals.
 const FOE_STAT_LABEL = {
   stat_health: 'Health',
-  stat_damage: 'Attack',
-  stat_damage_magic: 'Magic attack',
+  stat_damage: 'Physical Attack',
+  stat_damage_magic: 'Magic Attack',
   stat_range: 'Range',
-  stat_armour: 'Armour',
-  stat_armour_magic: 'Magic armour',
-  stat_pierce: 'Armour pierce',
-  stat_pierce_magic: 'Magic pierce',
-  stat_splash: 'Blast area',
+  stat_armour: 'Physical Armor',
+  stat_armour_magic: 'Magic Armor',
+  stat_pierce: 'Pierce Physical Armor',
+  stat_pierce_magic: 'Pierce Magic Armor',
+  stat_splash: 'Area of Effect (AOE)',
   stat_gold_cost: 'Bounty',
-  stat_life_cost: 'Lives lost'
+  stat_life_cost: 'Lives Lost'
 };
 
 // Every number the card shows, as rows of [icon, value] — from the same helpers
@@ -5957,8 +5959,10 @@ export function foeStats(d) {
 // than one source pixel per screen pixel — the padding and the title are the
 // pop-up's, and the description and the numbers make a column to the right of it.
 // The plate is as deep as the slot or the column, whichever is more.
-const FOE_COL_W = 240;
-const FOE_COL_MAX = 340;
+// 220 TO 260, AND IT WAS 240 TO 340: narrower, at the owner's word, so the card
+// stands more square — the prose takes another line rather than more width.
+const FOE_COL_W = 220;
+const FOE_COL_MAX = 260;
 // Air either side of the rule between the words and the numbers.
 const FOE_RULE_GAP = 18;
 const FOE_ENTRY_GAP = 14;
@@ -5988,6 +5992,11 @@ function drawFoeCard(ctx, state) {
     textW += 20;
     lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW, `${POP_TEXT}px ${MAP_TYPE}`);
   }
+  // AND THEN DRAWN IN TO THE WIDEST LINE, so the rule stands its gap from the
+  // words themselves rather than from the edge they were wrapped to — which left
+  // a band of empty card between them.
+  ctx.font = `${POP_TEXT}px ${MAP_TYPE}`;
+  textW = Math.ceil(Math.max(...lines.map(l => ctx.measureText(l).width)));
 
   // THE NUMBERS IN THEIR ROWS, each an icon and its number and nothing else — the
   // book's own convention. What an icon means is a tip, shown under the mouse or
