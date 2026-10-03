@@ -992,7 +992,7 @@ console.log('\n--- the world beyond the road is drained of colour ---\n');
   // only when what is lit changes; a window dragged to a denser screen changes
   // neither the stage nor the fraction, so without this the map would stay at the
   // old resolution until the player happened to walk a leg.
-  ok(/const key = `\$\{unlocked\}:\$\{live\}:\$\{Math\.round\(frac \* 30\)\}:\$\{hd\}`/.test(draw),
+  ok(/const key = `\$\{unlocked\}:\$\{live\}:\$\{Math\.round\(frac \* 30\)\}:\$\{hd\}[`:]/.test(draw),
     '  and rebuilt when the screen they are built for changes',
     'hd is part of the fog key');
 

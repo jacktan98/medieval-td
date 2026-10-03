@@ -1202,7 +1202,7 @@ function fogFor(unlocked, live, frac) {
   // dragged from a laptop screen to an external one changes the transform under a
   // cached sheet, and without this the map would stay at the old resolution until
   // the player happened to walk a leg.
-  const key = `${unlocked}:${live}:${Math.round(frac * 30)}:${hd}`;
+  const key = `${unlocked}:${live}:${Math.round(frac * 30)}:${hd}:${namesVersion}`;
   if (key !== fogKey) { makeFog(unlocked, live, frac); fogKey = key; }
   return fogSheet;
 }
@@ -1260,10 +1260,32 @@ const NAME_TEXT = [
   ['Dawnford', 427, 256], ['Ironforge', 804, 302], ['Fernshadow', 528, 402],
   ['Sandshroud', 216, 449]
 ];
-const NAME_FONT = '800 17px system-ui, sans-serif';
+// LOBSTER, as a second test at the owner's word: "can you use lobster font style for
+// the text in overview map. Want to see how it looks like". It has one weight, so no
+// bold — its strokes are heavy enough already. The system font stands in until the
+// file has arrived, and the names are redrawn the moment it does.
+const NAME_FONT = '20px Lobster, system-ui, sans-serif';
 // Rasterised at twice the board, so it stays sharp on the glass the map is drawn to.
 const NAME_K = 2;
 let nameCanvas = null;
+// Bumped when the names have to be drawn again — the font arriving — and part of
+// every cache key the names go into, so nothing keeps the old lettering.
+let namesVersion = 0;
+
+// THE FONT, from assets/fonts rather than from Google, so the game carries what it
+// draws. Started as soon as this module loads; a browser without FontFace, or Node,
+// simply never gets it and keeps the fallback.
+export const MAP_FONT = 'Lobster';
+if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && document.fonts) {
+  const v = (typeof window !== 'undefined' && window.__stamp) ? `?v=${window.__stamp}` : '';
+  const face = new FontFace(MAP_FONT, `url(assets/fonts/Lobster-Regular.woff2${v})`);
+  face.load().then(f => {
+    document.fonts.add(f);
+    nameCanvas = null;
+    namesVersion++;
+  }).catch(() => { /* no font: the system one stays */ });
+}
+
 function namesArt() {
   if (!NAMES_AS_TEXT) return art.overviewNames || null;
   if (nameCanvas || typeof document === 'undefined') return nameCanvas;
@@ -1292,7 +1314,7 @@ function stillNames(ctx) {
   const img = namesArt();
   if (!img) return null;
   const c = ctx.canvas, tf = ctx.getTransform();
-  const key = `${c.width}x${c.height}|${tf.a},${tf.e},${tf.f}|${img.complete ? img.src : ''}`;
+  const key = `${c.width}x${c.height}|${tf.a},${tf.e},${tf.f}|${img.complete ? img.src : ''}|${namesVersion}`;
   if (namesSheet && key === namesKey) return namesSheet;
   namesKey = key;
   namesSheet = namesSheet || document.createElement('canvas');

@@ -6120,7 +6120,9 @@ function drawMapDoor(ctx, key, at, label) {
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '800 14px system-ui, sans-serif';
+  // IN LOBSTER, like the region names — a test, at the owner's word. See MAP_FONT
+  // in src/overview.js, which loads it; the system font stands in until it has.
+  ctx.font = '17px Lobster, system-ui, sans-serif';
   ctx.lineWidth = 4;
   ctx.lineJoin = 'round';
   ctx.strokeStyle = 'rgba(14,12,10,0.85)';
