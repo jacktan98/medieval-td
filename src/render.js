@@ -5928,7 +5928,7 @@ export function foeStats(d) {
 // The plate is as deep as the slot or the column, whichever is more.
 const FOE_COL_W = 300;
 const FOE_COL_MAX = 440;
-const FOE_ENTRY_GAP = 16;
+const FOE_ENTRY_GAP = 14;
 const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
 const FOE_STAT_ROW = 22;
 const FOE_STAT_GAP = 10;               // between the prose and the numbers
@@ -5958,15 +5958,18 @@ function drawFoeCard(ctx, state) {
   // book's own convention. What an icon means is a tip, shown under the mouse or
   // on a tap (see FOE_STATS in src/newfoe.js), at the owner's word.
   //
-  // THE SAME GAP BETWEEN EVERY PAIR: each entry starts FOE_ENTRY_GAP past the end
-  // of the number before it. (They sat on a grid of equal cells for one build,
-  // which lined the icons up but left short numbers with wide gaps after them.)
+  // THE SAME PITCH, LEFT EDGE TO LEFT EDGE, at the owner's word: "the space
+  // between icons [is] based between the icon left edge and the other icon left
+  // edge." Every icon on every row starts a whole number of pitches from the
+  // column's edge, so the icons stand in columns down the rows as well. The pitch
+  // is the widest entry on the card plus FOE_ENTRY_GAP, so no number runs into
+  // the icon after it.
   const entryW = ([key, value]) => {
     ctx.font = '700 12px system-ui, sans-serif';
     return uiSize(key, { h: POP_STAT_H }).w + 5 + ctx.measureText(String(value)).width;
   };
-  const rowW = row => row.reduce((n, e) => n + entryW(e), 0) + (row.length - 1) * FOE_ENTRY_GAP;
-  const colW = Math.max(textW, ...rows.map(rowW));
+  const pitch = Math.max(...rows.flat().map(entryW)) + FOE_ENTRY_GAP;
+  const colW = Math.max(textW, ...rows.map(row => (row.length - 1) * pitch + entryW(row[row.length - 1])));
   const columnH = lines.length * POP_LEAD + FOE_STAT_GAP + statsH;
 
   const bodyH = Math.max(slot.h, columnH);
@@ -6036,7 +6039,8 @@ function drawFoeCard(ctx, state) {
 
   const top = y0 + lines.length * POP_LEAD + FOE_STAT_GAP;
   FOE_STATS.length = 0;
-  rows.forEach((row, r) => { let x = tx; row.forEach(([key, value]) => {
+  rows.forEach((row, r) => row.forEach(([key, value], c) => {
+    const x = tx + c * pitch;
     const y = top + r * FOE_STAT_ROW + FOE_STAT_ROW / 2;
     const { w: iw } = uiSize(key, { h: POP_STAT_H });
     drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
@@ -6046,8 +6050,7 @@ function drawFoeCard(ctx, state) {
     ctx.fillText(String(value), x + iw + 5, y);
     // The icon and its number are the target, the row's full height.
     FOE_STATS.push({ key, x: x - 2, y: y - FOE_STAT_ROW / 2, w: entryW([key, value]) + 4, h: FOE_STAT_ROW });
-    x += entryW([key, value]) + FOE_ENTRY_GAP;
-  }); });
+  }));
 
   // THE TIP: the icon's name in a small dark plate over it, held inside the card.
   const tip = state.foeTip !== null && state.foeTip !== undefined && FOE_STATS[state.foeTip];
