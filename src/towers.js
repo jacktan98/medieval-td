@@ -1183,12 +1183,12 @@ function shoot(state, t, target, special) {
   // read a flat shot as a steered one and quietly handed it an 85px blast that
   // dies with its target.
   // THE STAR UPGRADES' CHANCES, rolled once per shot as it leaves the tower: an
-  // archer's arrow that hits half again as hard, a rock whose blast reaches half
-  // again as far, a monk's bolt that slows its man. Each is the family's fourth
+  // archer's arrow that hits half again as hard, a rock that stuns what it lands
+  // on, a monk's bolt that slows its man. Each is the family's fourth
   // rung, so each is null until it is bought. See src/data/upgrades.js.
   const up = upgradeOf(t);
   if (up.crit && Math.random() < up.crit.chance) shot.damage = Math.round(shot.damage * up.crit.times);
-  if (up.bigBlast && shot.splash && Math.random() < up.bigBlast.chance) shot.splash *= up.bigBlast.times;
+  if (up.stun && Math.random() < up.stun.chance) shot.stun = up.stun;
   if (up.slow && Math.random() < up.slow.chance) shot.slow = up.slow;
 
   if (ammo.lob) aim(shot, m, target);

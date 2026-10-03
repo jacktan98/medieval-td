@@ -17,6 +17,9 @@ import { setStars } from '../src/score.js';
 import { levels } from '../src/level.js';
 import { STAGES } from '../src/data/overview.js';
 import { updateTowers, rangeOf, cooldownOf, damageK } from '../src/towers.js';
+import { updateShots } from '../src/projectiles.js';
+import { slowOf, wearing, apply as applyStatus } from '../src/status.js';
+import { slowOn } from '../src/data/status.js';
 import { makeUnits, updateUnits, soldierBlow } from '../src/units.js';
 import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { boxAt, upBox, tapUpgrades, UP_BUY, UP_RESET, UP_DONE, openUpgrades } from '../src/upgradepage.js';
@@ -33,7 +36,7 @@ console.log('\nThe ladders\n');
 check(UPGRADE_FAMILIES.join() === 'archery,barracks,siege,monastery', 'four families, in the build menu\'s order');
 check(UPGRADE_FAMILIES.every(f => UPGRADES[f].length === 4), 'four rungs each');
 check(UPGRADE_COSTS.join() === '2,2,2,3', 'at two, two, two and three stars', UPGRADE_COSTS.join(' / '));
-const EFFECTS = ['rangeTimes', 'damageTimes', 'reloadTimes', 'splashTimes', 'crit', 'bigBlast', 'slow',
+const EFFECTS = ['rangeTimes', 'damageTimes', 'reloadTimes', 'splashTimes', 'crit', 'stun', 'slow',
   'hpTimes', 'respawnLess', 'blowTimes', 'deathSave'];
 const blank = UPGRADE_FAMILIES.flatMap(f => UPGRADES[f].filter(u => !u.name || !u.text || !EFFECTS.some(k => u[k])));
 check(!blank.length, 'every rung has a name, a sentence and an effect', blank.map(u => u.name).join(', ') || '16 of them');
@@ -134,15 +137,15 @@ for (const [fam, def] of [['archery', archery[0]], ['siege', siege[0]], ['monast
 }
 
 {
-  // Lucky Shot: half again as hard on a winning roll, and not otherwise.
+  // Sharpshooter: half again as hard on a winning roll, and not otherwise.
   const t = () => tower('archery', archery[0]);
   setBoughtForTest({ archery: 2 });
   const usual = shots(t(), 2, 0)[0].damage;
   setBoughtForTest({ archery: 4 });
   const lucky = shots(t(), 2, 0)[0].damage;
   const miss = shots(t(), 2, 0.99)[0].damage;
-  check(lucky === Math.round(usual * 1.5) && miss === usual, 'archery: Lucky Shot hits half again as hard, now and then',
-    `${usual} usually, ${lucky} on a 5% roll`);
+  check(lucky === Math.round(usual * 1.5) && miss === usual, 'archery: Sharpshooter hits half again as hard, now and then',
+    `${usual} usually, ${lucky} on a 10% roll`);
 }
 
 {
@@ -152,8 +155,33 @@ for (const [fam, def] of [['archery', archery[0]], ['siege', siege[0]], ['monast
   const wide = shots(tower('siege', siege[0]), 4, 0.99, 180)[0].splash;
   check(near(wide, plain * 1.1), 'artillery: Wide Blast reaches 10% further', `${plain} → ${wide.toFixed(1)}`);
   setBoughtForTest({ siege: 4 });
-  const great = shots(tower('siege', siege[0]), 4, 0, 180)[0].splash;
-  check(near(great, plain * 1.1 * 1.5), 'artillery: Great Blast reaches half again as far, now and then', `${great.toFixed(1)}`);
+  const real = Math.random;
+  const t = tower('siege', siege[0]);
+  const state = { towers: [t], enemies: [dummy(t, 180)], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
+  Math.random = () => 0;
+  let shot = null;
+  try {
+    for (let i = 0; i < 4 * 60 && !shot; i++) { updateTowers(state, 1 / 60); shot = state.shots[0] || null; }
+  } finally { Math.random = real; }
+  check(shot && shot.stun && shot.stun.seconds === 0.5, 'artillery: Concussion arms a shot to stun for half a second, now and then',
+    shot && shot.stun ? `${shot.stun.seconds}s` : 'no stun');
+  const quiet = shots(tower('siege', siege[0]), 4, 0.99, 180)[0];
+  check(!quiet.stun, 'and not on a losing roll');
+  // Land it, and the man under it stands still. A rock is thrown at a point on the
+  // road (`to`) rather than at the man, so he is stood where it comes down.
+  const man = state.enemies[0];
+  if (shot && shot.to) { man.x = shot.to.x; man.y = shot.to.y; }
+  for (let i = 0; i < 5 * 60 && state.shots.length; i++) updateShots(state, 1 / 60);
+  check(wearing(man, 'stunned') && slowOf(man) === 0, 'and what it lands on stops dead', `slowed to x${slowOf(man)}`);
+  const boss = { def: { boss: true }, statuses: [] };
+  applyStatus(boss, 'stunned', slowOn(boss, 0), 0.5, 'rock');
+  check(slowOf(boss) === 0.5, 'while a boss is only held to half speed', `x${slowOf(boss)}`);
+}
+
+{
+  const chances = [UPGRADES.archery[3].crit.chance, UPGRADES.barracks[3].deathSave,
+    UPGRADES.siege[3].stun.chance, UPGRADES.monastery[3].slow.chance];
+  check(chances.every(c => c === 0.10), 'every fourth rung is a 10% chance', chances.join(' / '));
 }
 
 {
@@ -180,7 +208,7 @@ console.log('\nThe barracks\n');
   check(near(man.maxHp, plainHp * 1.05), 'Hardy Recruits: 5% more health', `${plainHp} → ${man.maxHp}`);
 
   setBoughtForTest({ barracks: 3 });
-  check(near(soldierBlow(man), plainBlow * 1.1), 'Whetstones: 10% more on every blow', `${plainBlow} → ${soldierBlow(man).toFixed(2)}`);
+  check(near(soldierBlow(man), plainBlow * 1.1), 'Honed Blades: 10% more on every blow', `${plainBlow} → ${soldierBlow(man).toFixed(2)}`);
 
   const real = Math.random;
   try {
@@ -211,7 +239,7 @@ console.log('\nWith nothing bought\n');
   setBoughtForTest({});
   const fx = UPGRADE_FAMILIES.map(upgradeFx);
   check(fx.every(f => f.rangeTimes === 1 && f.damageTimes === 1 && f.reloadTimes === 1 && f.splashTimes === 1 &&
-    f.hpTimes === 1 && !f.respawnLess && f.blowTimes === 1 && !f.deathSave && !f.crit && !f.bigBlast && !f.slow),
+    f.hpTimes === 1 && !f.respawnLess && f.blowTimes === 1 && !f.deathSave && !f.crit && !f.stun && !f.slow),
     'every family is exactly as it was');
 }
 

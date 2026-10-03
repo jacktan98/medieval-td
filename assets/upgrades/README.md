@@ -16,19 +16,19 @@ they are in the folder, mark them up like every other file name in these READMEs
 | Upgrade_Archery_1.png | Eagle Eye: range +5% |
 | Upgrade_Archery_2.png | Barbed Heads: damage +5% |
 | Upgrade_Archery_3.png | Quick Draw: attack speed +5% |
-| Upgrade_Archery_4.png | Lucky Shot: 5% chance of +50% damage |
+| Upgrade_Archery_4.png | Sharpshooter: 10% chance of +50% damage |
 | Upgrade_Barracks_1.png | Hardy Recruits: health +5% |
 | Upgrade_Barracks_2.png | Quick Muster: respawn 2s sooner |
-| Upgrade_Barracks_3.png | Whetstones: damage +10% |
-| Upgrade_Barracks_4.png | Last Stand: 5% chance to survive on 1 health |
+| Upgrade_Barracks_3.png | Honed Blades: damage +10% |
+| Upgrade_Barracks_4.png | Last Stand: 10% chance to survive on 1 health |
 | Upgrade_Artillery_1.png | Counterweights: range +5% |
 | Upgrade_Artillery_2.png | Heavy Loads: damage +5% |
 | Upgrade_Artillery_3.png | Wide Blast: blast area +10% |
-| Upgrade_Artillery_4.png | Great Blast: 5% chance of +50% blast area |
+| Upgrade_Artillery_4.png | Concussion: 10% chance to stun for 0.5s |
 | Upgrade_Monastery_1.png | Far Sight: range +5% |
-| Upgrade_Monastery_2.png | Holy Fervour: damage +5% |
+| Upgrade_Monastery_2.png | Divine Zeal: damage +5% |
 | Upgrade_Monastery_3.png | Swift Prayers: attack speed +5% |
-| Upgrade_Monastery_4.png | Binding Light: 5% chance to slow for 2s |
+| Upgrade_Monastery_4.png | Binding Light: 10% chance to slow for 2s |
 
 ## How to draw them
 

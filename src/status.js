@@ -178,7 +178,8 @@ export const swing = (v, damage) => Math.round(damage * blowTimes(v));
 
 export const slowOf = v => {
   let k = 1;
-  if (v.statuses) for (const s of v.statuses) if (s.slow && s.slow < k) k = s.slow;
+  // A NUMBER, not a truth test: a stun is a slow of exactly 0, which is falsy.
+  if (v.statuses) for (const s of v.statuses) if (typeof s.slow === 'number' && s.slow < k) k = s.slow;
   return k;
 };
 

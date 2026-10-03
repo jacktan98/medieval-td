@@ -91,6 +91,14 @@ export const STATUS = {
   // ceiling is below the weakest soldier in the game — a tier 1 spearman does
   // 3.16 — so a pinned enemy still loses the fight he is in, however many priests
   // are behind him. tools/plague.mjs checks that against the real numbers.
+  // STOPPED DEAD for a moment — the artillery's star upgrade, Concussion. A slow
+  // whose magnitude is 0: everything the figure does with time stands still,
+  // through the same slowOf every clock already reads. A boss is held to half.
+  stunned: {
+    icon: 'status_stunned',
+    name: 'Stunned',
+    hurts: false
+  },
   healing: {
     icon: 'status_healing',
     name: 'Dark Healing',

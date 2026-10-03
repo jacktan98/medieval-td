@@ -178,7 +178,8 @@ console.log('\nWearing one, and stopping\n');
   // never heard of, so a misspelt status cannot end up on a figure, ticking, with
   // no picture and no name and nothing to find it by.
   const v = man();
-  apply(v, 'stunned', 10, 5, 'nothing');
+  // ('stunned' was the made-up id here until the artillery upgrade made it real.)
+  apply(v, 'petrified', 10, 5, 'nothing');
   ok(v.statuses.length === 0, 'a status nobody has defined never goes on',
     `${v.statuses.length} worn`);
 }

@@ -750,6 +750,9 @@ export const paths = {
   // HEIGHT, or it would be half again as wide as the other two and blown up past
   // what its 34 source px can carry. See the note there.
   status_slowed:   'assets/status/Slowed_Status.png',
+  // The artillery upgrade Concussion's. A PLACEHOLDER — three gold stars drawn by
+  // script — until the artist's own arrives under the same name.
+  status_stunned:  'assets/status/Stunned_Status.png',
   // The fourth mark, and the first that is good news for the figure wearing it.
   status_healing:  'assets/status/Dark_Healing_Status.png',
   // The fifth, and the first worn for as long as a figure STANDS somewhere rather

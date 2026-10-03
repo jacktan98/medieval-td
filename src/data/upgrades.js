@@ -14,7 +14,7 @@
 //   reloadTimes   the tower's rate, times this         (towers.js, reloadK)
 //   splashTimes   the blast's reach, times this        (towers.js, shoot)
 //   crit          { chance, times }: now and then a shot hits half again as hard
-//   bigBlast      { chance, times }: now and then a blast reaches half again as far
+//   stun          { chance, seconds }: now and then a shot freezes what it hits
 //   slow          { chance, seconds, times }: now and then a shot slows its man
 //   hpTimes       a soldier's health, times this       (units.js, updateUnits)
 //   respawnLess   seconds off a soldier's respawn      (units.js, the death block)
@@ -31,34 +31,38 @@ export const UPGRADES = {
     { name: 'Eagle Eye', text: 'Increase base range of archery towers by 5%.', rangeTimes: 1.05 },
     { name: 'Barbed Heads', text: 'Increase base attack damage of archery towers by 5%.', damageTimes: 1.05 },
     { name: 'Quick Draw', text: 'Increase base attack speed of archery towers by 5%.', reloadTimes: 1.05 },
-    { name: 'Lucky Shot', text: 'Grants a 5% chance that a projectile deals 50% extra damage.',
-      crit: { chance: 0.05, times: 1.5 } }
+    // EVERY FOURTH RUNG IS 10%, at the owner's word, and it was 5%.
+    { name: 'Sharpshooter', text: 'Grants a 10% chance that a projectile deals 50% extra damage.',
+      crit: { chance: 0.10, times: 1.5 } }
   ],
   barracks: [
     { name: 'Hardy Recruits', text: 'Increase health of barracks units by 5%.', hpTimes: 1.05 },
     { name: 'Quick Muster', text: 'Reduce respawn time of barracks units by 2 seconds.', respawnLess: 2 },
     // 10%, AND IT WAS +1: the owner changed it. On a Militia Camp's 3 that is 3.3,
     // a little under the old 4; on an Assassin Guild's 15 it is 16.5, a little over.
-    { name: 'Whetstones', text: 'Increase base attack damage of barracks units by 10%.', blowTimes: 1.10 },
-    { name: 'Last Stand', text: 'Grants a 5% chance that a unit survives a killing blow with 1 health left.',
-      deathSave: 0.05 }
+    { name: 'Honed Blades', text: 'Increase base attack damage of barracks units by 10%.', blowTimes: 1.10 },
+    { name: 'Last Stand', text: 'Grants a 10% chance that a unit survives a killing blow with 1 health left.',
+      deathSave: 0.10 }
   ],
   siege: [
     { name: 'Counterweights', text: 'Increase base range of artillery towers by 5%.', rangeTimes: 1.05 },
     { name: 'Heavy Loads', text: 'Increase base attack damage of artillery towers by 5%.', damageTimes: 1.05 },
     { name: 'Wide Blast', text: 'Increase the area of artillery blasts by 10%.', splashTimes: 1.10 },
-    { name: 'Great Blast', text: 'Grants a 5% chance that a projectile\'s blast reaches 50% further.',
-      bigBlast: { chance: 0.05, times: 1.5 } }
+    // A STUN, AND IT WAS A BIGGER BLAST: the owner changed it. Everything the shot
+    // hits stands frozen for half a second — see `stunned` in data/status.js. A boss
+    // shrugs off half of it, as he does a slow, and is held to half speed instead.
+    { name: 'Concussion', text: 'Grants a 10% chance that a projectile stuns the enemies it hits for 0.5 seconds.',
+      stun: { chance: 0.10, seconds: 0.5 } }
   ],
   monastery: [
     { name: 'Far Sight', text: 'Increase base range of monastery towers by 5%.', rangeTimes: 1.05 },
-    { name: 'Holy Fervour', text: 'Increase base attack damage of monastery towers by 5%.', damageTimes: 1.05 },
+    { name: 'Divine Zeal', text: 'Increase base attack damage of monastery towers by 5%.', damageTimes: 1.05 },
     { name: 'Swift Prayers', text: 'Increase base attack speed of monastery towers by 5%.', reloadTimes: 1.05 },
     // HOW HARD THE SLOW HOLDS is the owner's to set and was not given: 0.7 is the
     // figure left doing 70% of what he did, a third of the way to the Blocker's
     // own half-speed guard. Two seconds is the owner's.
-    { name: 'Binding Light', text: 'Grants a 5% chance that a projectile slows its target for 2 seconds.',
-      slow: { chance: 0.05, seconds: 2, times: 0.7 } }
+    { name: 'Binding Light', text: 'Grants a 10% chance that a projectile slows its target for 2 seconds.',
+      slow: { chance: 0.10, seconds: 2, times: 0.7 } }
   ]
 };
 

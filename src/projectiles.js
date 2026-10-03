@@ -152,6 +152,7 @@ function land(state, s) {
       // And it may hold him up. The monk's is the shot that does — the first in
       // the game with no splash that leaves anything on the man it hits.
       if (slowing(s)) slow(s, s.target);
+      if (s.stun) stun(s, s.target);
     }
     return;
   }
@@ -169,6 +170,7 @@ function land(state, s) {
     if (!inRange(s.x, s.y, v.x, v.y, s.splash)) continue;
     hit(state, s, v);
     if (slowing(s)) slow(s, v);
+    if (s.stun) stun(s, v);
   }
 
   // AND THE FIRE SPREADS FURTHER THAN THE BALL DID, which is a second pass over
@@ -300,6 +302,12 @@ const burn = (s, v) =>
 const slowing = s => s.slow || s.ammo.slow;
 const slow = (s, v) =>
   applyStatus(v, 'slowed', slowOn(v, slowing(s).times), slowing(s).seconds, s.ammo.kind);
+
+// AND A STUN, which is a slow all the way to a standstill — the artillery's star
+// upgrade, Concussion, rolled as the shot left the tower. Through slowOn like any
+// slow, so a boss is held to half speed rather than frozen.
+const stun = (s, v) =>
+  applyStatus(v, 'stunned', slowOn(v, 0), s.stun.seconds, s.ammo.kind);
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what
