@@ -6208,16 +6208,6 @@ function drawUpgrades(ctx, state) {
       const st8 = rungState(fam, i);
       const afford = canBuy(fam, i);
 
-      // The ring round the rung being described: solid for the one tapped,
-      // fainter for the one only under the mouse.
-      if (same(pick, fam, i) || same(hover, fam, i)) {
-        ctx.strokeStyle = same(pick, fam, i) ? UP_PICK : 'rgba(47,95,168,0.5)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(b.cx, b.cy, b.r + 6, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
       // A SOLID DISC OF PAGE UNDER IT FIRST, so a dimmed button is dim against the
       // parchment rather than letting the rail show through it.
       ctx.fillStyle = SHEET_FILL;
@@ -6254,31 +6244,21 @@ function drawUpgrades(ctx, state) {
       }
       ctx.restore();
 
-      // THE ONE THAT CAN BE BOUGHT NOW wears a gold ring round its rim, so a faded
-      // face that is ready reads differently from one still waiting. The price is
-      // in the panel, at the owner's word, so the face is left whole.
-      if (afford) {
-        ctx.strokeStyle = UI_GOLD;
+      // ONE RING ROUND THE RIM, in one style: blue for the rung being described —
+      // solid for the one tapped, fainter for the one only under the mouse — and
+      // otherwise gold for the one that can be bought now, so a faded face that is
+      // ready reads differently from one still waiting. The same width at the same
+      // radius either way, at the owner's word, so selecting a rung changes the
+      // ring's colour and nothing else. No tick on a bought rung: its colour says so.
+      const ring = same(pick, fam, i) ? UP_PICK
+        : same(hover, fam, i) ? 'rgba(47,95,168,0.55)'
+        : afford ? UI_GOLD : null;
+      if (ring) {
+        ctx.strokeStyle = ring;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
         ctx.stroke();
-      }
-      if (st8 === 'bought') {
-        const tx = b.cx + b.r * 0.72, ty = b.cy + b.r * 0.72;
-        ctx.fillStyle = INK_GREEN;
-        ctx.beginPath();
-        ctx.arc(tx, ty, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#F0E6D2';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(tx - 5, ty); ctx.lineTo(tx - 1, ty + 4); ctx.lineTo(tx + 5, ty - 4);
-        ctx.stroke();
-        ctx.lineCap = 'butt';
       }
     });
 

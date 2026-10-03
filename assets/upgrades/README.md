@@ -43,5 +43,5 @@ its own, drawn at the foot of its ladder.
 - **The picture centred in the disc.** The star price is in the panel on the right
   of the screen, not on the button.
 - **One picture per upgrade, in full colour.** Full colour on the screen means
-  BOUGHT: the game fades every upgrade not yet bought, and ticks the bought ones.
+  BOUGHT: the game fades every upgrade not yet bought.
 - Drawn at 72 px across, which keeps the 248 px disc sharp on a 3× screen.
