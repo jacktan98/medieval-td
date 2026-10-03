@@ -33,7 +33,7 @@ import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
          abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
          SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP, rowsIn,
          BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-         BOOK_BTN_START } from './book.js';
+         BOOK_BTN_START, BOOK_BTN_MAP } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
@@ -50,6 +50,10 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
 import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
+import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
+import { rungState, canBuy, starsLeft } from './upgrades.js';
+import { UPGRADES_BTN, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upLabel, UP_PANEL, UP_BUY, UP_RESET,
+         UP_DONE, shownRung } from './upgradepage.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -120,6 +124,8 @@ export function draw(ctx, state) {
   // paused game, so it has to cover the thing that offered it — and while it is
   // up it owns every tap on the board, which is the other half of the same fact.
   if (state.book !== null) drawBook(ctx, state);
+  // And the upgrades screen, opened from the world map, on the same terms.
+  if (state.upgrades) drawUpgrades(ctx, state);
 
   // And the dashboard over everything, on the same terms: it is opened from the
   // title screen, it covers the board, and it owns every tap while it is up.
@@ -5599,7 +5605,9 @@ function drawStart(ctx, state) {
   // saying something the flag already says by being the only thing on the screen
   // that moves. The owner asked for it gone.
   if (state.stage === null || state.stage === undefined) {
-    drawBookButton(ctx, BOOK_BTN_START, 19);
+    // THE BOOK AND THE UPGRADES, side by side under the map.
+    drawBookButton(ctx, BOOK_BTN_MAP, 19);
+    drawUpgradesButton(ctx);
     drawAdminDoor(ctx);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -6071,6 +6079,259 @@ function drawFoeCard(ctx, state) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// --- the upgrades screen ----------------------------------------------------------
+//
+// Where stars are spent. The rects are in src/upgradepage.js, where input.js reads
+// them too; the store and the rules are in src/upgrades.js.
+
+// The world map's button. It carries the stars waiting to be spent, so a player
+// who has earned some is told so from the map — the "incentive to earn stars" is
+// only an incentive if the player can see it.
+function drawUpgradesButton(ctx) {
+  const b = UPGRADES_BTN;
+  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9 });
+  const left = starsLeft();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UI_INK;
+  ctx.font = '700 19px system-ui, sans-serif';
+  ctx.fillText('Upgrades', b.x + b.w / 2 - (left ? 14 : 0), b.y + b.h / 2 + 1);
+  if (left) {
+    const tw = ctx.measureText('Upgrades').width;
+    const sx = b.x + b.w / 2 - 14 + tw / 2 + 18;
+    starShape(ctx, sx, b.y + b.h / 2, 9, '#F2C64B');
+    ctx.fillStyle = UI_INK;
+    ctx.font = '700 14px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(String(left), sx + 12, b.y + b.h / 2 + 1);
+  }
+}
+
+// One five-pointed star, filled, with a dark edge.
+function starShape(ctx, cx, cy, r, fill) {
+  ctx.save();
+  ctx.beginPath();
+  for (let p = 0; p < 10; p++) {
+    const a = -Math.PI / 2 + p * Math.PI / 5;
+    const rr = p % 2 ? r * 0.45 : r;
+    const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+    p ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = 1.2;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(24,28,20,0.75)';
+  ctx.stroke();
+  ctx.restore();
+}
+
+// What each column is called. The siege family is "Artillery" to the player.
+const UP_FAMILY_NAME = { archery: 'Archery', barracks: 'Barracks', siege: 'Artillery', monastery: 'Monastery' };
+// THE PLACEHOLDER ON EACH BOX until the owner's icons arrive: the rung's number.
+const UP_NUMERAL = ['I', 'II', 'III', 'IV'];
+const UP_GOLD = '#E7C15A';
+const UP_PICK = '#2F5FA8';
+
+function drawUpgrades(ctx, state) {
+  ctx.fillStyle = 'rgba(20,22,18,0.88)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  const sh = UP_SHEET;
+  ctx.fillStyle = SHEET_FILL;
+  ctx.beginPath();
+  ctx.roundRect(sh.x, sh.y, sh.w, sh.h, 12);
+  ctx.fill();
+  ctx.strokeStyle = SHEET_EDGE;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK;
+  ctx.font = '700 22px system-ui, sans-serif';
+  ctx.fillText('Upgrades', 480, UP_TITLE_Y);
+
+  // THE STARS TO SPEND, top right.
+  const st = UP_STARS;
+  ctx.fillStyle = 'rgba(40,36,28,0.88)';
+  ctx.beginPath();
+  ctx.roundRect(st.x, st.y, st.w, st.h, 10);
+  ctx.fill();
+  starShape(ctx, st.x + 24, st.y + st.h / 2, 12, '#F2C64B');
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '700 20px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(String(starsLeft()), st.x + 46, st.y + st.h / 2 + 1);
+
+  const pick = state.upPick, hover = state.upHover;
+  const same = (a, fam, i) => a && a.fam === fam && a.i === i;
+
+  for (const [col, fam] of UPGRADE_FAMILIES.entries()) {
+    const rungs = UPGRADES[fam];
+
+    // The ladder's rails first, so the boxes sit on them: dark where the rung
+    // below is bought, faint where it is not.
+    for (let i = 0; i + 1 < rungs.length; i++) {
+      const a = upBox(col, i), b = upBox(col, i + 1);
+      ctx.strokeStyle = rungState(fam, i) === 'bought' ? INK : 'rgba(58,48,38,0.25)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(a.x + a.w / 2, a.y);
+      ctx.lineTo(b.x + b.w / 2, b.y + b.h);
+      ctx.stroke();
+    }
+
+    rungs.forEach((u, i) => {
+      const b = upBox(col, i);
+      const st8 = rungState(fam, i);
+      const afford = canBuy(fam, i);
+
+      // The ring round the rung being described: solid for the one tapped,
+      // fainter for the one only under the mouse.
+      if (same(pick, fam, i) || same(hover, fam, i)) {
+        ctx.strokeStyle = same(pick, fam, i) ? UP_PICK : 'rgba(47,95,168,0.5)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(b.x - 5, b.y - 5, b.w + 10, b.h + 10, 12);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.roundRect(b.x, b.y, b.w, b.h, 9);
+      ctx.fillStyle = st8 === 'bought' ? UP_GOLD : st8 === 'next' ? '#FFF7E4' : 'rgba(58,48,38,0.14)';
+      ctx.fill();
+      ctx.strokeStyle = st8 === 'locked' ? 'rgba(58,48,38,0.35)' : afford ? UI_GOLD : INK;
+      ctx.lineWidth = afford ? 3 : 2;
+      ctx.stroke();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = st8 === 'locked' ? 'rgba(58,48,38,0.4)' : INK;
+      ctx.font = '800 22px system-ui, sans-serif';
+      ctx.fillText(UP_NUMERAL[i], b.x + b.w / 2, b.y + b.h / 2 + 1);
+
+      // The corner badge: a tick on a bought rung, the price on the rest.
+      const bx = b.x + b.w - 22, by = b.y + b.h - 10;
+      if (st8 === 'bought') {
+        ctx.fillStyle = INK_GREEN;
+        ctx.beginPath();
+        ctx.arc(bx + 10, by + 4, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#F0E6D2';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(bx + 5, by + 4); ctx.lineTo(bx + 9, by + 8); ctx.lineTo(bx + 15, by);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+      } else {
+        ctx.fillStyle = st8 === 'locked' ? 'rgba(40,36,28,0.55)' : 'rgba(40,36,28,0.92)';
+        ctx.beginPath();
+        ctx.roundRect(bx - 6, by - 6, 34, 20, 7);
+        ctx.fill();
+        starShape(ctx, bx + 4, by + 4, 6, '#F2C64B');
+        ctx.fillStyle = '#F0E6D2';
+        ctx.font = '700 12px system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(String(UPGRADE_COSTS[i]), bx + 13, by + 5);
+      }
+    });
+
+    // The family's name under its ladder.
+    const l = upLabel(col);
+    ctx.fillStyle = 'rgba(40,36,28,0.88)';
+    ctx.beginPath();
+    ctx.roundRect(l.x, l.y, l.w, l.h, 8);
+    ctx.fill();
+    ctx.fillStyle = '#F0E6D2';
+    ctx.textAlign = 'center';
+    ctx.font = '700 14px system-ui, sans-serif';
+    ctx.fillText(UP_FAMILY_NAME[fam], l.x + l.w / 2, l.y + l.h / 2 + 1);
+  }
+
+  drawUpgradePanel(ctx, state);
+
+  // RESET AND DONE along the foot. Reset asks twice — see tapUpgrades.
+  const armed = state.upArmed && Date.now() < state.upArmed;
+  bookButton(ctx, UP_RESET, armed ? 'Tap again' : 'Reset', 16);
+  bookButton(ctx, UP_DONE, 'Done', 16);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+// The panel down the right: what the rung under the mouse, or the one last tapped,
+// does — and the Buy button, when it can be bought.
+function drawUpgradePanel(ctx, state) {
+  const p = UP_PANEL;
+  ctx.fillStyle = 'rgba(58,48,38,0.08)';
+  ctx.beginPath();
+  ctx.roundRect(p.x, p.y, p.w, p.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = CARD_EDGE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const cx = p.x + p.w / 2;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const shown = shownRung(state);
+  if (!shown) {
+    ctx.fillStyle = INK_MUTED;
+    ctx.font = '600 14px system-ui, sans-serif';
+    ctx.fillText('Tap an upgrade to see', cx, p.y + p.h / 2 - 10);
+    ctx.fillText('what it does.', cx, p.y + p.h / 2 + 10);
+    return;
+  }
+
+  const { fam, i } = shown;
+  const u = UPGRADES[fam][i];
+  const st8 = rungState(fam, i);
+
+  ctx.fillStyle = ALERT_RED;
+  ctx.font = '800 19px system-ui, sans-serif';
+  ctx.fillText(u.name, cx, p.y + 34);
+  ctx.fillStyle = INK_MUTED;
+  ctx.font = '600 12px system-ui, sans-serif';
+  ctx.fillText(`${UP_FAMILY_NAME[fam]} · upgrade ${i + 1} of ${UPGRADES[fam].length}`, cx, p.y + 58);
+
+  // The price, a star and a number.
+  starShape(ctx, cx - 12, p.y + 86, 10, '#F2C64B');
+  ctx.fillStyle = INK;
+  ctx.font = '700 17px system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(String(UPGRADE_COSTS[i]), cx + 2, p.y + 87);
+
+  // What it does, in the owner's words.
+  const lines = wrapped(ctx, u.text, (p.w - 48) * POP_TEXT / 14);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = INK;
+  ctx.font = '500 14px system-ui, sans-serif';
+  lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 21));
+
+  // Where it stands, over the button.
+  const note = st8 === 'bought' ? ['Bought', INK_GREEN]
+    : st8 === 'locked' ? ['Buy the upgrade below it first.', INK_MUTED]
+    : canBuy(fam, i) ? null
+    : ['Not enough stars.', INK_RED];
+  if (note) {
+    ctx.fillStyle = note[1];
+    ctx.font = '700 14px system-ui, sans-serif';
+    ctx.fillText(note[0], cx, UP_BUY.y - 18);
+  }
+
+  // THE BUY BUTTON, on the one rung that can be bought next — dimmed when the
+  // stars are not there for it.
+  if (st8 === 'next') {
+    ctx.save();
+    ctx.globalAlpha = canBuy(fam, i) ? 1 : 0.4;
+    bookButton(ctx, UP_BUY, 'Buy', 18);
+    ctx.restore();
+  }
 }
 
 function drawBook(ctx, state) {

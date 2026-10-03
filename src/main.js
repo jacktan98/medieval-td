@@ -260,7 +260,14 @@ function newGame() {
     foeAlerts: [],
     foeCard: null,
     // Which of the card's stat icons is showing its name, or null.
-    foeTip: null
+    foeTip: null,
+    // THE UPGRADES SCREEN, opened from the world map: whether it is up, the rung
+    // last tapped and the rung under the mouse (each { fam, i } or null), and a
+    // half-pressed Reset's deadline. See src/upgradepage.js.
+    upgrades: false,
+    upPick: null,
+    upHover: null,
+    upArmed: null
   });
 
   // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the

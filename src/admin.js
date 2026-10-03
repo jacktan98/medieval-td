@@ -53,6 +53,7 @@ import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from './data/wav
 import { families } from './data/towers.js';
 import { resetProgress, clearStars, saveUnlocked, bestStars, setStars, MAX_STARS } from './score.js';
 import { forgetFoes } from './newfoe.js';
+import { resetUpgrades } from './upgrades.js';
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
 // into the Normal one. Imported rather than reimplemented — see the note on
@@ -1505,6 +1506,9 @@ export function tapAdmin(state, x, y, restart) {
     // AND EVERY CREATURE IS NEW AGAIN, so the "New enemy!" alerts come back — the
     // owner's "fresh start with no memory". See src/newfoe.js.
     forgetFoes();
+    // AND EVERY STAR SPENT ON UPGRADES COMES BACK — there are no stars left to
+    // have spent. See src/upgrades.js.
+    resetUpgrades();
     state.unlocked = 0;
     state.stage = null;
     state.pendingReveal = null;

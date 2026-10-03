@@ -8,6 +8,8 @@ import { dropCorpse } from './corpses.js';
 // The Bomb Thug's ending, in place of the swing every other creature makes. The
 // file imports `fixture` back out of this one — see the note at the top of it.
 import { detonate } from './bombs.js';
+// What the player has bought with stars — see src/upgrades.js.
+import { upgradeFx } from './upgrades.js';
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
 import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS, MELEE_SOUND } from './audio.js';
@@ -17,6 +19,16 @@ import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from './status.js';
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armour.js';
 import { struck, tickHit } from './gesture.js';
+
+// THE BARRACKS' STAR UPGRADES, for a man a barracks put on the road. A garrison
+// man, a villager who took up arms and a paladin at the church belong to no
+// barracks, and get nothing.
+const upOf = u => upgradeFx(u.tower && u.tower.fam && u.tower.fam.id === 'barracks' ? 'barracks' : null);
+
+// HIS BLOW, which is his def's plus whatever the stars have added to it. Every
+// strike he makes is read through this — a swing, an ability's multiple of it, a
+// thrown knife — so Whetstones' +1 is on all of them.
+export const soldierBlow = u => u.def.damage + upOf(u).damagePlus;
 
 // Blocking soldiers. A barracks puts a few of these on the path; enemies that
 // walk into them stop and trade blows instead of continuing to the keep.
@@ -1037,7 +1049,7 @@ export function updateUnits(state, dt) {
     // without moving his health would heal nobody and quietly make him weaker as
     // a share of it; scaling both keeps the bar where the player last saw it and
     // is the only reading under which selling the altar cannot kill anybody.
-    const max = u.def.hp * wall;
+    const max = u.def.hp * wall * upOf(u).hpTimes;
     if (u.maxHp !== max) {
       u.hp = max * (u.hp / u.maxHp);
       u.maxHp = max;
@@ -1561,8 +1573,8 @@ export function updateUnits(state, dt) {
         // assassin breaks a rank, which is what his knife is for.
         u.foe.hp -= taken(
           (special
-            ? (special.times ? u.def.damage * special.times : special.damage)
-            : u.def.damage) * (sneak ? sneak.times : 1),
+            ? (special.times ? soldierBlow(u) * special.times : special.damage)
+            : soldierBlow(u)) * (sneak ? sneak.times : 1),
           typeOf(u.def), wornBy(u.foe), swingPierce(u, special, sneak));
         // SPENT, whether or not anything was bought. The flag means "his next blow
         // is the one he lands on showing himself", and that is true of every man
@@ -1766,7 +1778,7 @@ export function updateUnits(state, dt) {
         fling(state, u, mark,
           throwing.damage != null
             ? throwing.damage
-            : Math.round(u.def.damage * throwing.times *
+            : Math.round(soldierBlow(u) * throwing.times *
                 (sneak ? (sneak.thrownTimes ?? sneak.times) : 1)),
           (sneak && sneak.ammo) || throwing.ammo,
           // THROUGH THE SAME ARMOUR THE BLADE WOULD HAVE, and through the same
@@ -1821,6 +1833,11 @@ export function updateUnits(state, dt) {
       u.hp = Math.min(u.maxHp, u.hp + u.def.regen * dt);
     }
 
+    // LAST STAND, the barracks' fourth star upgrade: now and then a blow that
+    // would have killed him leaves him standing on 1 health instead. Rolled once
+    // per killing blow, here where every way of dying is resolved.
+    if (u.hp <= 0 && upOf(u).deathSave && Math.random() < upOf(u).deathSave) u.hp = 1;
+
     if (u.hp <= 0) {
       release(u);
       // A MAN WITH NOWHERE TO MUSTER FALLS FOR GOOD, and `fallen` is how the rest of
@@ -1840,6 +1857,9 @@ export function updateUnits(state, dt) {
       // the middle of a loop over the list he is in.
       u.respawn = u.def.respawn || 0;
       if (!(u.respawn > 0)) u.fallen = true;
+      // QUICK MUSTER, the barracks' second star upgrade: two seconds off, and
+      // never down to nothing — a man is always gone for at least a second.
+      else if (upOf(u).respawnLess) u.respawn = Math.max(1, u.respawn - upOf(u).respawnLess);
       // Everything being done to him dies with him. Without this he musters again
       // at full health with the clock still running and walks straight back out to
       // finish dying of a flask thrown at a man who is already dead — and, now

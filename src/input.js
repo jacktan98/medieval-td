@@ -13,10 +13,11 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
+import { solo, play, fanfare, unlock, selectionCue, familyCue, CUE, SELECT, STAR } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
+import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { AIM_MODES } from './data/towers.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
@@ -66,7 +67,11 @@ export function attachInput(canvas, state, restart) {
     // board refuses everything but two controls, and bare ground with nothing
     // selected has nothing to say. Clicking at those would teach the player that
     // the click means "heard you" rather than "done".
-    if (tap(state, x, y, restart)) play(SELECT);
+    // A STAR SPENT sounds like one: the chime the result screen counts its stars
+    // out with, rather than the ordinary click.
+    const did = tap(state, x, y, restart);
+    if (did === 'bought') fanfare(STAR);
+    else if (did) play(SELECT);
   });
 
   // --- desktop hover ---------------------------------------------------------
@@ -90,6 +95,13 @@ export function attachInput(canvas, state, restart) {
     // a menu the player cannot see and did not ask for.
     // THE NEW-ENEMY CARD'S STAT ICONS name themselves under the mouse. The rest of
     // the hover is off while it is up, as it is under the book.
+    // THE UPGRADES SCREEN describes the rung under the mouse.
+    if (state.upgrades) {
+      const { x, y } = at(e);
+      hoverUpgrades(state, x, y);
+      return;
+    }
+
     if (state.foeCard) {
       const { x, y } = at(e);
       const i = hitFoeStat(x, y);
@@ -135,6 +147,8 @@ export function attachInput(canvas, state, restart) {
     if (e.pointerType !== 'mouse') return;
     state.hoverTower = null;
     state.ghost = null;
+    state.upHover = null;
+    if (state.foeCard) state.foeTip = null;
     if (state.menu && state.menu.viaHover) closeMenu(state);
   });
 }
@@ -163,6 +177,9 @@ export function tap(state, x, y, restart) {
   // the same terms. Its own footer is the only thing on screen that acts.
   if (state.book !== null) return tapBook(state, x, y);
 
+  // AND SO DOES THE UPGRADES SCREEN. Its answer says whether a star was spent.
+  if (state.upgrades) return tapUpgrades(state, x, y);
+
   // AND SO DOES THE NEW-ENEMY CARD, whose X is the only thing on screen that acts
   // while it is up. See src/newfoe.js.
   if (state.foeCard) return tapFoeCard(state, x, y);
@@ -177,6 +194,12 @@ export function tap(state, x, y, restart) {
     if (skipReveal(state)) return true;
 
     if (hitBookButton(state, x, y)) { openBook(state); return true; }
+
+    // THE UPGRADES SCREEN, from the world map only — beside the book there.
+    if ((state.stage === null || state.stage === undefined) && hitUpgradesButton(x, y)) {
+      openUpgrades(state);
+      return true;
+    }
 
     // The corner button, and the only way into the dashboard. Tested before the
     // map row for the usual reason — it is drawn on top, so it answers first.

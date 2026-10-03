@@ -4,6 +4,8 @@ import { abilitiesOf, owns } from './data/abilities.js';
 import { typeOf, pierceOf } from './data/armour.js';
 import { play, FIRING } from './audio.js';
 import { inRange } from './ground.js';
+// What the player has bought with stars — see src/upgrades.js.
+import { upgradeFx } from './upgrades.js';
 import { at as pointOn, nearestOn } from './route.js';
 
 // A TOWER, AS THE GAME KEEPS ONE. Every field it will ever read, set here, once.
@@ -392,14 +394,24 @@ export function muzzlePoint(t) {
 // stays half again as far the next time the turret's 260 is retuned. `rangeTimes`
 // is the only shape here today; a flat `range` is still read, so an ability that
 // genuinely wants a fixed distance can have one.
+// AND THE STAR UPGRADES ON TOP of whatever the tower was taught — see upgradeOf.
+// Multiplied into an ability's absolute reach as well, because "base range" is
+// the tower's own number and an ability's reach is the tower's own number once
+// it is taught.
 export function rangeOf(t) {
+  const up = upgradeOf(t).rangeTimes;
   let k = 1;
   for (const a of boughtAbilities(t)) {
-    if (a.range) return a.range;
+    if (a.range) return Math.round(a.range * up);
     if (a.rangeTimes) k *= a.rangeTimes;
   }
-  return Math.round(t.def.range * k);
+  return Math.round(t.def.range * k * up);
 }
+
+// WHAT THE STARS HAVE BOUGHT THIS TOWER'S FAMILY, which is nothing for a barracks
+// as far as this file is concerned — its upgrades are all on its men, and are read
+// in units.js. A tower with no family (none in the game) gets nothing.
+const upgradeOf = t => upgradeFx(t.fam && t.fam.id);
 
 // HOW LONG THIS TOWER TAKES TO RELOAD, which is the tier's number unless an
 // ability it has bought says otherwise. The reload twin of rangeOf above.
@@ -442,7 +454,7 @@ export function cooldownOf(t) {
 // out of cooldownOf because artillery needs the same figure applied somewhere
 // else entirely — see beatsOf.
 function reloadK(t) {
-  let k = 1;
+  let k = upgradeOf(t).reloadTimes;
   for (const a of boughtAbilities(t)) if (a.reloadTimes) k *= a.reloadTimes;
   return k;
 }
@@ -464,7 +476,7 @@ function reloadK(t) {
 // both; the Musketeer Post is the tower that would, and if it ever learns a
 // damageTimes its Deadeye should scale with it.
 export function damageK(t) {
-  let k = 1;
+  let k = upgradeOf(t).damageTimes;
   for (const a of boughtAbilities(t)) if (a.damageTimes) k *= a.damageTimes;
   return k;
 }
@@ -1153,7 +1165,8 @@ function shoot(state, t, target, special) {
       + pierceUp(t),
     // 0 or absent on everything but a catapult, and read by projectiles.js as
     // "hit only what you hit".
-    splash: t.def.splash || 0,
+    // AND WIDER BY THE STAR UPGRADES — see the rolls after this object.
+    splash: (t.def.splash || 0) * upgradeOf(t).splashTimes,
     // Whether the mark over the target's head stays up while this is in the air.
     // Set from the ABILITY rather than from the ammunition, because the mark is
     // about the announcement — the wind-up above — and not about the ball. It ends
@@ -1169,6 +1182,15 @@ function shoot(state, t, target, special) {
   // ball — see `cannonball` in data/towers.js. Asking about `arc` here would have
   // read a flat shot as a steered one and quietly handed it an 85px blast that
   // dies with its target.
+  // THE STAR UPGRADES' CHANCES, rolled once per shot as it leaves the tower: an
+  // archer's arrow that hits half again as hard, a rock whose blast reaches half
+  // again as far, a monk's bolt that slows its man. Each is the family's fourth
+  // rung, so each is null until it is bought. See src/data/upgrades.js.
+  const up = upgradeOf(t);
+  if (up.crit && Math.random() < up.crit.chance) shot.damage = Math.round(shot.damage * up.crit.times);
+  if (up.bigBlast && shot.splash && Math.random() < up.bigBlast.chance) shot.splash *= up.bigBlast.times;
+  if (up.slow && Math.random() < up.slow.chance) shot.slow = up.slow;
+
   if (ammo.lob) aim(shot, m, target);
   state.shots.push(shot);
 

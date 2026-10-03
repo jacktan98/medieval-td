@@ -711,8 +711,17 @@ const inside = (b, x, y) =>
 // difficulty at 328, Start at 390, this at 460.
 export const BOOK_BTN_START = { x: 380, y: 460, w: 200, h: 46 };
 
+// AND ON THE WORLD MAP, beside the Upgrades button: the two sit as a centred pair
+// there, where the stage panel has the book alone under Start. See UPGRADES_BTN in
+// src/upgradepage.js.
+export const BOOK_BTN_MAP = { x: 490, y: 460, w: 200, h: 46 };
+
+// Which of the two the screen in front of the player is showing.
+export const bookBtn = state =>
+  state.stage === null || state.stage === undefined ? BOOK_BTN_MAP : BOOK_BTN_START;
+
 export function hitBookButton(state, x, y) {
-  return inside(BOOK_BTN_START, x, y);
+  return inside(bookBtn(state), x, y);
 }
 
 export function openBook(state) {

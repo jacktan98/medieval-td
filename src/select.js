@@ -21,7 +21,7 @@
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { boost, damageK, pierceUp, rangeOf, reachOf } from './towers.js';
 import { typeOf, pierceOf, RANK_SHORT, wornBy, stageOf } from './data/armour.js';
-import { fixture } from './units.js';
+import { fixture, soldierBlow } from './units.js';
 import { swing } from './status.js';
 import { VILLAGER, TAP_PAD, VILLAGER_H } from './villagers.js';
 
@@ -577,7 +577,9 @@ export function selectionInfo(state) {
     // THE SAME FUNCTION THE BLOW GOES THROUGH, not a second copy of the multiply.
     // A panel that computed the boost for itself is a panel that can disagree with
     // the fight, and this box exists to say what the fight is doing.
-    damage: strikes(f.def) ? swing(f, shownDamage(f.def)) : null,
+    // AND A BARRACKS MAN'S BLOW WITH THE STARS' WHETSTONES ON IT — soldierBlow in
+    // units.js, the same function his swing reads.
+    damage: strikes(f.def) ? swing(f, f.tower ? soldierBlow(f) : shownDamage(f.def)) : null,
     // THE SWORD OR THE WAND, off this figure's own kind. The panel had no `attack`
     // at all until the armour row arrived, so it fell through to the sword for
     // everybody — which was a wrong picture rather than a missing one, and the one

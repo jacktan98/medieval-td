@@ -151,7 +151,7 @@ function land(state, s) {
       if (s.ammo.burn) burn(s, s.target);
       // And it may hold him up. The monk's is the shot that does — the first in
       // the game with no splash that leaves anything on the man it hits.
-      if (s.ammo.slow) slow(s, s.target);
+      if (slowing(s)) slow(s, s.target);
     }
     return;
   }
@@ -168,7 +168,7 @@ function land(state, s) {
     if (v.hp <= 0 || v.respawn > 0) continue;
     if (!inRange(s.x, s.y, v.x, v.y, s.splash)) continue;
     hit(state, s, v);
-    if (s.ammo.slow) slow(s, v);
+    if (slowing(s)) slow(s, v);
   }
 
   // AND THE FIRE SPREADS FURTHER THAN THE BALL DID, which is a second pass over
@@ -295,8 +295,11 @@ const burn = (s, v) =>
 // hit rather than about what hit it. The magnitude on `monkSlowShot` stays the
 // number the card prints for everything else on the road, and the day a second
 // slowing thing exists it gets this rule for free.
+// A SHOT MAY CARRY ITS OWN, rolled as it left the tower — the monastery's star
+// upgrade, Binding Light — in which case that is the slow it leaves.
+const slowing = s => s.slow || s.ammo.slow;
 const slow = (s, v) =>
-  applyStatus(v, 'slowed', slowOn(v, s.ammo.slow.times), s.ammo.slow.seconds, s.ammo.kind);
+  applyStatus(v, 'slowed', slowOn(v, slowing(s).times), slowing(s).seconds, s.ammo.kind);
 
 function hit(state, s, v) {
   // POISON OR DAMAGE, never both. A flask does nothing at all on impact — what
