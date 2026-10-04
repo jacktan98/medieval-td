@@ -5839,7 +5839,7 @@ function drawFoeAlerts(ctx, state) {
     ctx.restore();
 
     // The same photo paper as the new-enemy card it opens, torn round.
-    paperDisc(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE);
+    paperDisc(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE, 1.5, SOFT_RIP);
     // The figure in the middle, well inside the ring — see alertFigure.
     const img = d && art[d.sprite];
     if (img) {
@@ -6906,7 +6906,7 @@ const seeded = seed => {
 const SHEET_RIP = 18;
 const CARD_RIP = 10;
 // Shallower, at the owner's word, on the encyclopedia's cards and pop-up and the
-// enemy info bar's medallion.
+// medallions of the enemy info bar and the New Enemy alerts.
 const SOFT_RIP = 5;
 // The tears round an edge `per` long: how far in each point is cut. A tear's
 // width grows with its depth, so a deep one is not a needle.
