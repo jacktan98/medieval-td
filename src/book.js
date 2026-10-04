@@ -307,7 +307,7 @@ export function pageEntry(state, item) {
   if (item.kind === 'tower') {
     const e = towerEntry(def, item.tiers);
     return { ...e, sub: e.occupier, prose: TOWER_NOTES[def.name] || null,
-      rows: [[band('stat_gold_cost', e.cost, 'Cost'), band('glyph_refund', e.refund, 'Refund', 'green')]] };
+      rows: [[band('stat_gold_cost', e.cost, 'Purchase Cost'), band('glyph_refund', e.refund, 'Sell Value', 'green')]] };
   }
   if (item.kind === 'unit') {
     const e = unitEntry(def);
@@ -321,7 +321,7 @@ export function pageEntry(state, item) {
   if (item.kind === 'ability') {
     const e = abilityEntry(def);
     return { ...e, sub: e.of, prose: e.detail, round: true,
-      rows: [[band('stat_gold_cost', e.cost, 'Cost')]] };
+      rows: [[band('stat_gold_cost', e.cost, 'Purchase Cost')]] };
   }
   const d = shown(state, def);
   const first = [band('stat_health', d.hp)];
@@ -387,6 +387,12 @@ const within = (b, x, y) =>
 export function tapBook(state, x, y) {
   // THE POP-UP SWALLOWS EVERYTHING while it is up, and ANY tap dismisses it.
   if (state.zoom) { state.zoom = null; return true; }
+
+  // A STAT'S NAME ON A TAP, as the new-enemy card does it: tapping an icon shows
+  // what it is, and the next tap anywhere else puts the name away first.
+  const stat = BOOK_BANDS.findIndex(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+  if (stat >= 0) { state.bookTip = stat; return true; }
+  if (state.bookTip !== null && state.bookTip !== undefined) { state.bookTip = null; return true; }
 
   if (inside(BOOK_CLOSE, x, y)) { state.book = null; return true; }
   // BOTH ARROWS ALWAYS WORK, wrapping round.
