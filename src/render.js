@@ -5879,8 +5879,8 @@ function drawFoeAlerts(ctx, state) {
 // THE OWNER'S NAMES, word for word and in capitals.
 const FOE_STAT_LABEL = {
   stat_health: 'Health',
-  stat_damage: 'Physical Attack',
-  stat_damage_magic: 'Magic Attack',
+  stat_damage: 'Physical Damage',
+  stat_damage_magic: 'Magic Damage',
   stat_range: 'Range',
   stat_armour: 'Physical Armor',
   stat_armour_magic: 'Magic Armor',
