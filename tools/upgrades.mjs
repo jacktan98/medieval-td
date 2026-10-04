@@ -17,7 +17,7 @@ import { setStars } from '../src/score.js';
 import { levels } from '../src/level.js';
 import { STAGES } from '../src/data/overview.js';
 import { updateTowers, rangeOf, cooldownOf, damageK } from '../src/towers.js';
-import { updateShots } from '../src/projectiles.js';
+import { updateShots, slowing } from '../src/projectiles.js';
 import { slowOf, wearing, apply as applyStatus } from '../src/status.js';
 import { slowOn } from '../src/data/status.js';
 import { makeUnits, updateUnits, soldierBlow } from '../src/units.js';
@@ -211,6 +211,13 @@ for (const [fam, def] of [['archery', archery[0]], ['siege', siege[0]], ['monast
   const free = shots(tower('monastery', monastery[0]), 3, 0.99)[0];
   check(held.slow && held.slow.seconds === 2 && !free.slow, 'monastery: Sands of Time slows for two seconds, now and then',
     held.slow ? `x${held.slow.times} for ${held.slow.seconds}s` : 'no slow');
+
+  // AND ON A SLOWED PULSE BLAST THE TWO ADD UP, at the owner's word: 5 and 2 is 7.
+  const pulse = { slow: UPGRADES.monastery[3].slow, ammo: { slow: { times: 0.7, seconds: 5 } } };
+  const both = slowing(pulse);
+  check(both.seconds === 7 && both.times === 0.7, 'and on a Slowed Pulse blast it adds to the pulse: 7 seconds',
+    `x${both.times} for ${both.seconds}s`);
+  check(slowing({ ammo: { slow: { times: 0.7, seconds: 5 } } }).seconds === 5, 'while an unlucky pulse blast slows for its own 5');
 }
 
 console.log('\nThe barracks\n');

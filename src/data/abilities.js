@@ -8,6 +8,7 @@ import { TAKES } from './armor.js';
 // Slowed Pulse's card quotes what a boss feels rather than typing 15%, for the
 // same reason: the halving is a rule in one place and the sentence follows it.
 import { slowOn, BOSS_SLOW_SHARE } from './status.js';
+import { UPGRADES } from './upgrades.js';
 
 // ABILITIES: what a tier 4 tower can be taught, once it is standing.
 //
@@ -1459,7 +1460,9 @@ export const ABILITIES = [
       `${t.cooldown === 1 ? 'once a second' : `every ${num(t.cooldown)} seconds`}, so anything in reach stays slowed, and stays slowed for ` +
       `${a.shot.slow.seconds} seconds after it leaves. The slow does not stack: a 2nd temple only ` +
       `refreshes it. Bosses are slowed by only ` +
-      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))}.`
+      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))}. When the Sands of Time upgrade ` +
+      `triggers on a blast, the slow lasts ` +
+      `${a.shot.slow.seconds + UPGRADES.monastery.find(u => u.slow).slow.seconds} seconds instead.`
   }
 ];
 

@@ -299,7 +299,16 @@ const burn = (s, v) =>
 // slowing thing exists it gets this rule for free.
 // A SHOT MAY CARRY ITS OWN, rolled as it left the tower — the monastery's star
 // upgrade, Sands of Time — in which case that is the slow it leaves.
-const slowing = s => s.slow || s.ammo.slow;
+//
+// AND ON A SHOT THAT SLOWS ANYWAY THE TWO ADD UP, at the owner's word: a Slowed
+// Pulse blast that rolls Sands of Time holds the man for the pulse's seconds AND
+// the upgrade's — 5 and 2, 7 in all — at the deeper of the two slows. It used to
+// take the upgrade's alone, so the lucky roll cut the pulse short.
+export const slowing = s => {
+  const own = s.slow, ammo = s.ammo && s.ammo.slow;
+  if (own && ammo) return { times: Math.min(own.times, ammo.times), seconds: own.seconds + ammo.seconds };
+  return own || ammo;
+};
 const slow = (s, v) =>
   applyStatus(v, 'slowed', slowOn(v, slowing(s).times), slowing(s).seconds, s.ammo.kind);
 
