@@ -6898,33 +6898,25 @@ const seeded = seed => {
 // out by a little noise — a few long waves for the wander, and grain for the nibble
 // — and the corners rounded off before they are torn.
 //
-// `rips`, for a whole sheet, makes the edge less even, at the owner's word, after
-// a scan of torn parchment: the wander swells and calms along the edge, so some
-// stretches are ragged and some nearly straight, and a few SHARP tears are cut in
-// — narrow, lopsided Vs up to RIP_DEEP deep — where a card's edge only nibbles.
-const RIP_DEEP = 10;
-function tornEdge(x, y, w, h, seed, amp, rips = false) {
-  const rnd = seeded(seed);
-  const r = Math.min(10, h / 5);
-  const step = rips ? 2.5 : amp > 2 ? 5 : 3;
-  const sides = [w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2,
-                 w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2];
-  const per = sides.reduce((a, b) => a + b, 0);
-  const n = Math.max(12, Math.round(per / step));
-  const waves = [0, 1, 2].map(() => ({ f: 1 + rnd() * 6, ph: rnd() * 6.28, a: rnd() }));
-  // How rough the edge is from place to place, 0.35 to 1.6 of `amp`.
-  const swell = [0, 1].map(() => ({ f: 2 + rnd() * 5, ph: rnd() * 6.28 }));
-  const envelope = u => rips
-    ? 0.35 + 1.25 * (0.5 + 0.5 * Math.sin(u * swell[0].f + swell[0].ph) * Math.cos(u * swell[1].f + swell[1].ph))
-    : 1;
-  // The tears: where round the edge, how wide either side of the point, how deep.
-  const tears = rips ? Array.from({ length: Math.round(per / 220) }, () => ({
+// `deep`, the depth of the deepest tear, makes the edge less even, at the owner's
+// word, after a scan of torn parchment: the wander swells and calms along the
+// edge, so some stretches are ragged and some nearly straight, and a few SHARP
+// tears are cut in — narrow, lopsided Vs. A whole sheet tears SHEET_RIP deep, and
+// everything on it (cards, panels, medallions) CARD_RIP. 0 leaves only the nibble.
+const SHEET_RIP = 18;
+const CARD_RIP = 10;
+// The tears round an edge `per` long: how far in each point is cut. A tear's
+// width grows with its depth, so a deep one is not a needle.
+function tearCuts(rnd, per, deep) {
+  if (!deep) return () => 0;
+  const z = deep / CARD_RIP;
+  const tears = Array.from({ length: Math.max(1, Math.round(per / 220)) }, () => ({
     at: rnd() * per,
-    left: 2 + rnd() * 7,
-    right: 2 + rnd() * 7,
-    deep: 4 + rnd() * (RIP_DEEP - 4)
-  })) : [];
-  const tearAt = t => {
+    left: (2 + rnd() * 7) * z,
+    right: (2 + rnd() * 7) * z,
+    deep: deep * (0.4 + rnd() * 0.6)
+  }));
+  return t => {
     let cut = 0;
     for (const tr of tears) {
       let dd = t - tr.at;
@@ -6934,6 +6926,22 @@ function tornEdge(x, y, w, h, seed, amp, rips = false) {
     }
     return cut;
   };
+}
+function tornEdge(x, y, w, h, seed, amp, deep = 0) {
+  const rnd = seeded(seed);
+  const r = Math.min(10, h / 5);
+  const step = deep ? 2.5 : amp > 2 ? 5 : 3;
+  const sides = [w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2,
+                 w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2];
+  const per = sides.reduce((a, b) => a + b, 0);
+  const n = Math.max(12, Math.round(per / step));
+  const waves = [0, 1, 2].map(() => ({ f: 1 + rnd() * 6, ph: rnd() * 6.28, a: rnd() }));
+  // How rough the edge is from place to place, 0.35 to 1.6 of `amp`.
+  const swell = [0, 1].map(() => ({ f: 2 + rnd() * 5, ph: rnd() * 6.28 }));
+  const envelope = u => deep
+    ? 0.35 + 1.25 * (0.5 + 0.5 * Math.sin(u * swell[0].f + swell[0].ph) * Math.cos(u * swell[1].f + swell[1].ph))
+    : 1;
+  const tearAt = tearCuts(rnd, per, deep);
   const arc = (cx, cy, a0, d) => {
     const a = a0 + d / r;
     return [cx + Math.cos(a) * r, cy + Math.sin(a) * r, Math.cos(a), Math.sin(a)];
@@ -7052,9 +7060,9 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = f
     c.height = Math.ceil((h + 2 * P) * K);
     const g = c.getContext('2d');
     g.scale(K, K);
-    // A WHOLE SHEET tears harder than a card — see `rips` on tornEdge.
+    // A WHOLE SHEET tears deeper than a card — see `deep` on tornEdge.
     const sheet = tear >= SHEET_TEAR;
-    const path = tornEdge(P, P, w, h, seed, tear, sheet);
+    const path = tornEdge(P, P, w, h, seed, tear, sheet ? SHEET_RIP : CARD_RIP);
     if (shadow) {
       // Shadow offsets and blur are in device pixels, so they take K by hand.
       g.save();
@@ -7105,11 +7113,13 @@ function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
     const rnd = seeded(seed);
     const n = Math.max(24, Math.round(Math.PI * D / 2.5));
     const waves = [0, 1].map(() => ({ f: 2 + rnd() * 4, ph: rnd() * 6.28, a: rnd() }));
+    // Torn as deep as a card is — see tearCuts.
+    const tearAt = tearCuts(rnd, Math.PI * D, CARD_RIP);
     const path = new Path2D();
     for (let i = 0; i < n; i++) {
       const a = i / n * Math.PI * 2;
       const o = waves.reduce((acc, wv) => acc + Math.sin(a * wv.f + wv.ph) * wv.a, 0) * 0.45
-        + (rnd() - 0.5) * 0.9;
+        + (rnd() - 0.5) * 0.9 - tearAt(i / n * Math.PI * D);
       const x = P + R + Math.cos(a) * (R + o), y = P + R + Math.sin(a) * (R + o);
       i ? path.lineTo(x, y) : path.moveTo(x, y);
     }
