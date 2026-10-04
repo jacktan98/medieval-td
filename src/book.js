@@ -1,38 +1,24 @@
-// The encyclopedia: every box description in the game, gathered onto three pages.
+// The encyclopedia: every box description in the game, gathered into a book.
 //
-// It exists because the info box can only ever describe ONE thing, and only
-// while that thing is in front of you. A player deciding between a Guard Post
-// and a Mangonel cannot select either — neither is built yet — so the numbers
-// they need to compare are the one set of numbers the game had no way to show.
+// AN OPEN BOOK, at the owner's word, after Kingdom Rush Frontiers' own: the LEFT
+// page is a grid of pictures and nothing else, and the RIGHT page describes the one
+// picked — a large framed picture, the name, a line or a paragraph, and the numbers
+// in a column of bands. Four pages, flipped under the grid:
 //
-// Three pages, flipped at the bottom:
-//
-//   0   TOWERS, every tier of every family, across the whole page.
+//   0   TOWERS, every tier of every family, one family per column.
 //   1   UNITS: the MAN each of those towers puts on the board, in the SAME CELL
-//       as his tower on page 1. Third card down the first column is a Barracks
-//       Tier I there and the Spearman it musters here.
-//   2   ENEMIES, with room for the two stats a tower entry has no space for:
-//       what a kill pays and what a leak costs.
-//   3   ABILITIES, the last page: what a topped-out tier 4 can be taught, its
-//       button, its price and a sentence about what it does.
-//
-// IT WAS TWO PAGES, towers on the left half of a spread and their men on the
-// right. The tier 4 Musketeer Post is what ended that: thirteen tiers do not fit
-// in the six rows by two columns that one half of a spread held, and the shelf
-// silently ran off the page when it was twelve. Giving the towers a whole page
-// and their men the next one has room for two more tier 4s before the same
-// question comes back, and the "same cell on both pages" rule keeps what the old
-// side-by-side layout was for.
+//       as his tower on page 0, so flipping the page keeps your place.
+//   2   ABILITIES: what a topped-out tier 4 can be taught, under its family.
+//   3   ENEMIES, and the boss on a row of his own under them.
 //
 // The geometry lives here and the drawing lives in render.js, the same split as
-// menu.js — so input.js hit-tests exactly the rects that get drawn. Two copies of
-// a button's position is how a tap target drifts off the picture it belongs to.
+// menu.js — so input.js hit-tests exactly the rects that get drawn.
 
 import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
-import { enemyTypes, BOOK_ORDER } from './data/waves.js';
+import { enemyTypes, BOOK_ORDER, FOE_NOTES } from './data/waves.js';
 import { refundOf } from './menu.js';
-import { occupant, shownRange, attackIcon, traitRow } from './select.js';
+import { occupant, shownRange, shownDamage, attackIcon, traitRow, strikes } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 
 export const PAGES = 4;
@@ -40,162 +26,119 @@ export const PAGES = 4;
 // --- the shelf ---------------------------------------------------------------
 
 // The tower ladders, in build-menu order. Read from the same arrays the game
-// builds from, so a tier whose cost or damage changes changes here too and there
-// is no second table to forget.
+// builds from, so a tier whose cost or damage changes changes here too.
 const LADDERS = [archery, barracks, siege, monastery];
+const TIERS = LADDERS.flat();
 
-// Which cell each tier sits in, across the FOUR columns of the page.
-//
-// ONE FAMILY PER COLUMN while the page has a column for each of them, which is
-// what the page wants to say: a column IS a ladder, read top to bottom, and the
-// four sit side by side to be compared rung for rung. Four families, four columns,
-// and six rows of room for a ladder that is currently four tiers at its longest.
-//
-// The flow rule underneath is the fallback for a FIFTH family: families stay whole
-// and a ladder that does not fit in what is left of a column starts the next one.
-// That was the only rule before, and it is what quietly overflowed when a
-// thirteenth tier landed — tools/book.mjs now fails if any card falls off the
-// page, so the next family will say so rather than vanish.
+// Which cell each tier sits in: ONE FAMILY PER COLUMN, read top to bottom, the four
+// side by side to be compared rung for rung. A fifth family would start a fifth
+// column, which the grid does not have — tools/book.mjs fails if a cell falls off.
 export function shelf() {
   const out = [];
-  const perColumn = LADDERS.length <= COLUMNS;
-  let col = 0, row = 0;
-
-  for (const tiers of LADDERS) {
-    if (row > 0 && (perColumn || row + tiers.length > ROWS)) { col++; row = 0; }
-    for (const def of tiers) {
-      out.push({ def, tiers, col, row });
-      row++;
-    }
-  }
-
+  LADDERS.forEach((tiers, col) => tiers.forEach((def, row) => out.push({ def, tiers, col, row })));
   return out;
 }
 
-// A shelf cell as a rect. One grid across the whole page — see `GAP` below for
-// why there is no longer a half to pick first.
-export function shelfRect(col, row) {
-  return {
-    x: PAGE_X + col * (CARD_W + GAP),
-    y: TOP + row * (CARD_H + GAP),
-    w: CARD_W,
-    h: CARD_H
-  };
-}
+// IN THE OWNER'S READING ORDER rather than the order the game defines them — see
+// BOOK_ORDER in data/waves.js. The filter is kept as well as the list, so a boss
+// named in BOOK_ORDER by mistake still cannot end up among the roster.
+const roster = BOOK_ORDER.map(id => enemyTypes[id]).filter(d => d && !d.boss);
+const bosses = Object.values(enemyTypes).filter(d => d.boss);
 
-// --- page geometry -----------------------------------------------------------
+// --- the spread ----------------------------------------------------------------
 //
-// ONE MARGIN, everywhere. The parchment sheet is inset from the board and every
-// piece of the page is inset from the sheet by the same `PAD` — the first card's
-// left edge, the last card's right edge, the Close button and the bottom of the
-// footer all sit exactly PAD from the parchment. Bands between them use the same
-// number again, so the gap above the footer is the gap around the outside.
-//
-// It was not this before, and the failure is the kind you only see once it is
-// pointed out: cards were 2px inside the sheet, the Close button was 12, and the
-// footer's bottom edge was flush with the parchment. Every one of those numbers
-// was chosen on its own and looked fine on its own.
+// ONE SHEET OF OLD PAPER, the Upgrades screen's, with a fold down the middle. Every
+// piece of either page is inset from the sheet by PAD, and the two pages stand
+// FOLD_GAP either side of the fold.
 export const SHEET = { x: 8, y: 8, w: 944, h: 524 };
 const PAD = 16;
-
-// The usable rectangle: what the page may draw in.
-const INNER = {
-  x: SHEET.x + PAD,
-  y: SHEET.y + PAD,
-  r: SHEET.x + SHEET.w - PAD,
-  b: SHEET.y + SHEET.h - PAD
-};
-
-// The two title bands, by the centre-line their text sits on.
-export const TITLE_Y = INNER.y + 15;
-export const HEAD_Y = INNER.y + 48;
-
-// The footer, hung off the bottom margin so its own bottom edge is PAD from the
-// parchment — the same PAD as the sides.
-const FOOT_H = 38;
-export const FOOT_Y = INNER.b - FOOT_H;
-
-// The grid. Both card sizes are DERIVED from what is left inside the margins
-// rather than chosen, so the margins are the fixed thing and the cards give way —
-// which is the right way round when the complaint is about gaps.
-//
-// 57 AND NOT 58, and the odd pixel is doing work: with five rows and four gaps of
-// 4, the height between here and the footer's margin has to divide by five, and at
-// 58 it comes out 72.8. See the note on ROWS. Both numbers were arbitrary — this
-// one at least has a reason.
-const TOP = INNER.y + 57;
-
-// Exported for tools/book.mjs, which checks the GRID rather than the cards that
-// happen to be in it: the shelf no longer fills every cell — thirteen tiers in
-// twenty-four — so "the bottom card sits on the margin" has to be asked of the
-// last row that exists rather than of the last one used.
-// FIVE, AND IT WAS SIX. The sixth row was never filled: the longest ladder in the
-// game is archery's five rungs — four tiers with a fork at the top — and the other
-// three pages are shorter still, so the bottom row of the grid has been a strip of
-// blank parchment above the footer on every page of the book since it was built.
-//
-// The owner spent it: "since I won't be building a 5th family soon, take more space
-// in the pages so that the icons have more space to have their full resolution."
-// Five rows instead of six is 13 more pixels in every card, on all four pages at
-// once, which is where the bigger icons and the bigger drawings come from.
-//
-// WHAT A FIFTH FAMILY WOULD ACTUALLY HAVE COST is a fifth COLUMN, not this row —
-// the grid is one family per column — so nothing here is being borrowed against
-// that. What this does spend is the room for a SIXTH RUNG on a ladder. If a family
-// ever grows one, this goes back to 6 and every card gives the 13px back.
-export const ROWS = 5;
-export const COLUMNS = 4;
-
-// Where the grid starts across. The name is not `HALVES[0]` any more, and the
-// reason is the whole of the note below.
-export const PAGE_X = INNER.x;
-
-// ONE GAP, BOTH WAYS, AND THE SAME GAP EVERYWHERE ACROSS.
-//
-// This used to be a spread: two halves of two columns each, with a 12px gutter
-// held clear on either side of the fold so the halves did not touch it. The
-// arithmetic was fine and the page was not. A reader looking at four columns of
-// tower cards sees three gaps between them, and they were 6, 24 and 6 — so the
-// middle pair read as belonging to different lists, which is exactly the thing
-// the fold used to mean and no longer does. The towers took the whole spread
-// when their men moved to a page of their own; the gutter was the last piece of
-// the old two-sided layout still being drawn, and nothing was left for it to
-// separate.
-//
-// So: one grid of four columns on one gap, and the same number down the page, so
-// no gap on the sheet is bigger than any other. 4 is the number that also DIVIDES
-// — 912px of usable width across four columns and three gaps is 225 exactly, and
-// 380px of height across six rows and five gaps is 60 exactly. The floors below
-// are therefore no-ops today and a tripwire tomorrow: change a margin so the
-// division stops coming out whole and tools/book.mjs fails on the margin the
-// remainder eats, rather than the page quietly drifting a pixel off its edge.
-const GAP = 4;
-const CARD_W = Math.floor((INNER.r - PAGE_X - (COLUMNS - 1) * GAP) / COLUMNS);
-const CARD_H = Math.floor((FOOT_Y - PAD - TOP - (ROWS - 1) * GAP) / ROWS);
-
-// The centre-line of the sheet. It is no longer a fold in the layout sense —
-// nothing is divided by it — but the footer is still built symmetrically about
-// it, and a card must not sit ON it: with a 4px gap between columns 2 and 3 the
-// line falls in that gap, which tools/book.mjs checks.
 export const FOLD = 480;
+const FOLD_GAP = 20;
 
-// --- what goes in a card's picture slot --------------------------------------
+// The two pages, as the rects they may draw in.
+export const LEFT = { x: SHEET.x + PAD, y: SHEET.y + PAD, r: FOLD - FOLD_GAP, b: SHEET.y + SHEET.h - PAD };
+export const RIGHT = { x: FOLD + FOLD_GAP, y: LEFT.y, r: SHEET.x + SHEET.w - PAD, b: LEFT.b };
+LEFT.w = LEFT.r - LEFT.x;
+RIGHT.w = RIGHT.r - RIGHT.x;
+LEFT.cx = LEFT.x + LEFT.w / 2;
+RIGHT.cx = RIGHT.x + RIGHT.w / 2;
 
-// EVERY DRAWING IN THE BOOK IS ANCHORED ON ITS SHADOW, never centred on its
-// bounding box, and that is the same rule the board itself follows.
+// The left page's title — what the page is a list of — on this line.
+export const TITLE_Y = LEFT.y + 15;
+export const PAGE_TITLES = ['Towers', 'Units', 'Abilities', 'Enemies'];
+
+// The footer, hung off the bottom margin: the page flip under the grid, and Close
+// at the foot of the right page where the Upgrades screen keeps its Done.
+const FOOT_H = 38;
+export const FOOT_Y = LEFT.b - FOOT_H;
+
+// --- the grid of pictures --------------------------------------------------------
 //
-// A bounding box is not where a thing is. The tier 2 watchtower's flagpole leans
-// out one side, so box-centring stands it 7px off its own axis; the barracks
-// tent's stakes hang 35px below its shadow, so box-bottoming lifts the whole
-// tent off the ground line. Among the men it is worse, because they carry
-// things: a spearman's spear and a pikeman's pike stick out by different amounts
-// on different sides, so three soldiers centred by their boxes stand in three
-// different places while their shadows say they are all standing still.
+// FOUR COLUMNS, FIVE ROWS: the towers need both — four families, and archery's
+// ladder is five rungs with its fork — and every other page fits inside them. The
+// cells are DERIVED from what is left between the title and the footer, so the
+// margins are the fixed thing and the cells give way.
+export const COLUMNS = 4;
+export const ROWS = 5;
+const GRID_TOP = LEFT.y + 38;
+const GRID_BOTTOM = FOOT_Y - 12;
+const GAP = 8;
+export const CELL_W = Math.floor((LEFT.w - (COLUMNS - 1) * GAP) / COLUMNS);
+export const CELL_H = Math.floor((GRID_BOTTOM - GRID_TOP - (ROWS - 1) * GAP) / ROWS);
+// The grid is centred on its page, so a remainder from the floors is split.
+const GRID_X = LEFT.x + Math.floor((LEFT.w - (COLUMNS * CELL_W + (COLUMNS - 1) * GAP)) / 2);
+
+export const cellRect = (col, row) => ({
+  x: GRID_X + col * (CELL_W + GAP),
+  y: GRID_TOP + row * (CELL_H + GAP),
+  w: CELL_W,
+  h: CELL_H
+});
+
+// EVERYTHING ON A PAGE, in reading order, each with its cell.
 //
-// So each drawing is placed by the anchor it already carries — `groundFrac` for
-// a building, `pivot` / `gunnerPivot` / `portraitPivot` for a figure — and every
-// card puts that anchor at the SAME point in its slot. A column of towers then
-// shares one vertical axis and one ground line, and so does a column of men.
+// Abilities sit under their own family's column, as on the towers page, so a
+// player who has learned that the third column is artillery finds artillery's
+// abilities there too. Enemies flow across four to a row, and the BOSS starts a
+// row of his own under them: he is not a heavier thug, and a row of him among the
+// thugs would say he was.
+export function pageItems(page) {
+  if (page === 0 || page === 1) {
+    return shelf().map(({ def, tiers, col, row }) =>
+      ({ kind: page === 0 ? 'tower' : 'unit', def, tiers, ...cellRect(col, row) }));
+  }
+  if (page === 2) {
+    const used = new Map();
+    return ABILITIES.map(def => {
+      const col = LADDERS.findIndex(tiers => tiers.some(d => d.name === def.of));
+      const row = used.get(col) || 0;
+      used.set(col, row + 1);
+      return { kind: 'ability', def, ...cellRect(col, row) };
+    });
+  }
+  const bossRow = Math.ceil(roster.length / COLUMNS);
+  return [
+    ...roster.map((def, i) => ({ kind: 'enemy', def, ...cellRect(i % COLUMNS, Math.floor(i / COLUMNS)) })),
+    ...bosses.map((def, i) => ({ kind: 'enemy', def, boss: true,
+      ...cellRect(i % COLUMNS, bossRow + Math.floor(i / COLUMNS)) }))
+  ];
+}
+
+// The item the right page is describing on this page. Remembered per page, so
+// flipping away and back keeps your place.
+export function picked(state, page = state.book) {
+  const items = pageItems(page);
+  return items[Math.min((state.bookPick && state.bookPick[page]) || 0, items.length - 1)];
+}
+
+// --- a picture in its cell ---------------------------------------------------------
+
+// EVERY DRAWING IS ANCHORED ON ITS SHADOW, never centred on its bounding box — the
+// rule the board itself follows. A bounding box is not where a thing is: a tier 2
+// watchtower's flagpole leans out one side and a tent's stakes hang below its
+// shadow. So each drawing is placed by the anchor it carries (`groundFrac` for a
+// building, `pivot` for a figure) and every cell puts that anchor at the SAME
+// point, which stands a page of them on one ground line.
 function anchored(items) {
   let left = 0, right = 0, above = 0, below = 0;
   for (const { w, h, a } of items) {
@@ -207,395 +150,116 @@ function anchored(items) {
   return { left, right, above, below, w: left + right, h: above + below };
 }
 
-// The shape of a tier's building and of the man inside it, both in the form
-// anchored() wants. Read through occupant() so the book and the info box cannot
-// disagree about which drawing a tower's man is.
 const buildingOf = d => ({ w: d.w, h: d.h, a: d.groundFrac });
+const figureAtBoard = (trim, pivot) => ({ w: trim[2] * SCALE, h: trim[3] * SCALE, a: pivot });
 
-function figureOf(def) {
-  const man = occupant(def);
-  return figureArt(man.trim, man.pivot);
-}
+// Clear paper kept round every drawing inside its cell.
+export const AIR = 6;
+const INNER_W = CELL_W - 2 * AIR;
+const INNER_H = CELL_H - 2 * AIR;
 
-// A figure on the page is drawn at 90% of the size the info box draws it —
-// OR AS MUCH LESS AS IT TAKES TO FIT, which is the second half and it is new.
-//
-// The info box shows ONE man, big, on a plate of his own; the book shows twenty
-// in a grid, and at the box's own scale they crowded their cards — a Club Giant
-// reached 45px left of where he stands and left the name beside him a column
-// barely wide enough for it. 0.9 is the artist's number, asked for by eye.
-//
-// The cap exists because that eye was looking at a drawing that has since been
-// redrawn. The Club Giant now rests with his club shouldered above his head, and
-// his box went from 162 source px to 212 — at a flat 0.9 he is 62.6px tall in a
-// 60px card and his club is sawn off by the outline. So the factor is the
-// artist's number OR whatever fits, whichever is smaller, exactly as
-// BOOK_TOWER_SCALE is already derived from the buildings' own span rather than
-// typed. The number nobody has to remember to change is the one that is right
-// after the next upload.
-//
-// Fitted to the SHADOW-ANCHORED span, not to the tallest single box: the men all
-// stand on one line, so what has to fit in the card is the tallest reach above
-// that line plus the deepest below it, and no one figure has both.
-//
-// It stays a fraction of PORTRAIT_SCALE so the two remain tied: raise the info
-// box's portraits and the book's follow. And it is still a downscale of art
-// already sharp at 1x, so it cannot cost sharpness — only the ceiling on
-// PORTRAIT_SCALE itself matters, and tools/book.mjs checks that.
-const FIGURE_WANT = PORTRAIT_SCALE * 0.9;
+// ONE FACTOR FOR EVERY BUILDING and one for every figure, never each drawing
+// fitted to its own cell: that would draw a Militia Camp and a Catapult the same
+// size, which is a lie about the two buildings a player is choosing between.
+const TOWER_SPAN = anchored(TIERS.map(buildingOf));
+export const BOOK_TOWER_K = Math.min(INNER_W / TOWER_SPAN.w, INNER_H / TOWER_SPAN.h);
 
-const TIERS = LADDERS.flat();
-
-// Every figure at the plain board scale, which is what the fit has to be
-// measured against — the factor cannot be derived from a span that already has
-// the factor in it.
-const figureAtBoard = (trim, pivot) => ({
-  w: trim[2] * SCALE,
-  h: trim[3] * SCALE,
-  a: pivot
-});
-// A BOSS IS NOT IN THE SPAN, and that is the whole of how the encyclopedia
-// survived getting one.
-//
-// Every figure on the page shares one scale, and the two spans decide it and the
-// size of the box it is drawn in. The Captain Thug is 212 source px wide against
-// the Giant's 179 — 62.6 game px against 52.9 — so letting him into the span
-// widened every figure cell in the book by 6px, which came straight out of the
-// text column beside it. Four enemies' stat rows stopped fitting their cards, and
-// three of them were creatures he has nothing to do with.
-//
-// So the ARMY sizes the furniture and the boss is fitted into it — see BOSS_FIT
-// below. He is drawn a little under the shared scale, which is the honest price
-// and the small one: the alternative was every card in the book shrinking about a
-// tenth to make room for one creature. tools/book.mjs measures both halves.
-// IN THE OWNER'S READING ORDER rather than in the order this game defines them.
-// See BOOK_ORDER in data/waves.js for why those are two different questions — and
-// note the filter is kept as well as the list, so a boss accidentally named in
-// BOOK_ORDER still cannot end up among the roster.
-const roster = BOOK_ORDER.map(id => enemyTypes[id]).filter(d => d && !d.boss);
-// And the other half of the same split. One `boss` flag decides both the page's
-// two bands and the figure sizing above, so a second boss needs no code at all.
-const bosses = Object.values(enemyTypes).filter(d => d.boss);
+// A figure is drawn at 90% of the info box's portrait — or as much less as fits.
+// THE BOSS IS NOT IN THE SPAN: the army sizes the furniture and he is fitted into
+// it (see BOSS_FIT), rather than every card in the book shrinking for one creature.
 const BOARD_SPAN = anchored([
   ...TIERS.map(d => { const m = occupant(d); return figureAtBoard(m.trim, m.pivot); }),
   ...roster.map(d => figureAtBoard(d.spriteTrim, d.pivot))
 ]);
-
-export const BOOK_FIGURE_SCALE = Math.min(FIGURE_WANT, CARD_H / BOARD_SPAN.h);
-
-const figureArt = (trim, pivot) => ({
-  w: trim[2] * SCALE * BOOK_FIGURE_SCALE,
-  h: trim[3] * SCALE * BOOK_FIGURE_SCALE,
-  a: pivot
-});
-
-const FIGURES = [
-  ...TIERS.map(figureOf),
-  ...roster.map(d => figureArt(d.spriteTrim, d.pivot))
-];
-
-// How much clear card a building keeps above and below itself. The span is
-// fitted to the slot MINUS this, and anchorIn centres it, so the air comes out
-// evenly at both ends.
-//
-// It is here because of the archery flag. The tallest thing on the shelf is a
-// watchtower's pennant, and with the span filling the slot edge to edge that
-// pennant touched the card's outline — a spike of blue ink resting on the
-// border, which reads as the drawing being too big for its box rather than as a
-// tower being tall.
-//
-// The cost is real and worth stating: this is a 13% cut to every building on the
-// page, not just archery, because there is ONE factor for all of them and that
-// is the point of it. A Militia Camp is bigger than a Catapult here because it
-// is bigger on the board, and shrinking only the family that happens to have the
-// tallest spike would throw that away to save 4px.
-export const AIR = 4;
-
-const TOWER_SPAN = anchored(TIERS.map(buildingOf));
-const FIGURE_SPAN = anchored(FIGURES);
-
-// The two picture slots. They are DIFFERENT WIDTHS on purpose: a building
-// shrinks to fit its slot, so it can be given a narrow one, while a figure is
-// drawn at the fixed PORTRAIT_SCALE and its slot has to be wide enough for the
-// widest man in the game — the Club Giant, whose club reaches 45px left of the
-// spot he stands on. One slot sized for both would either crop him or waste
-// 30px of every tower card's text.
-//
-// Height is shared, and it is the WHOLE card. The slot used to be inset 3px top
-// and bottom like a margin, and that inset was pure loss: it made every building
-// 11% smaller and stood the shared ground line 2px higher, which showed up as
-// archery towers floating with a gap under them. There is nothing above or below
-// a picture slot to keep clear of — the text sits beside it, not under it — so
-// the art gets the full 60px and the deepest building's stakes reach the card's
-// bottom edge exactly.
-const SLOT_H = CARD_H;
-
-// HOW FAR IN FROM THE CARD'S LEFT EDGE EVERY PICTURE SLOT STARTS — and the words
-// beside it, which follow the slot. 14, AND IT WAS 6: the owner wanted air between
-// the card's border and what is on it, and the cream card with its tan edge made
-// the old 6 read as touching.
-const CARD_INSET = 14;
-
-// THE BUILDING SLOT'S WIDTH IS DERIVED NOW, and it was 48 typed in.
-//
-// A building is fitted by whichever of the two axes runs out first, and for as long
-// as the card was 60px tall that was the height — the 48 had slack in it and the
-// tallest tower filled its slot to within AIR top and bottom, which is what
-// tools/book.mjs asserts. Taking the grid to five rows made the card 73 tall, the
-// height stopped being the binding axis, and every building on the page stayed the
-// size the 48 allowed while the card grew around it: 6.8px of air where 4 was
-// wanted, and the check said so.
-//
-// So the width is now whatever makes the HEIGHT bind — the span's own aspect at the
-// height the slot has left after its air. Which is the same rule FIGURE_BOX below
-// has always used, and it means the next card-size change moves the buildings with
-// it instead of leaving them behind.
-export const TOWER_BOX = {
-  x: CARD_INSET, y: 0,
-  w: Math.ceil(TOWER_SPAN.w * (SLOT_H - 2 * AIR) / TOWER_SPAN.h),
-  h: SLOT_H
-};
-export const FIGURE_BOX = { x: CARD_INSET, y: 0, w: Math.ceil(FIGURE_SPAN.w) + 2, h: SLOT_H };
-
-// THE BLANK PARCHMENT BETWEEN A PICTURE AND THE WORDS BESIDE IT. It was the
-// literal 8 in two places in render.js, which was fine until something needed to
-// know how much room there was — see BOSS_FIT, where a boss is allowed to spill
-// into this gap and has to be told how big it is.
-export const TEXT_GAP = 8;
-
-// ONE FACTOR FOR EVERY BUILDING, exactly as PORTRAIT_SCALE is one factor for
-// every figure, and for the same reason: fitting each drawing to its own slot
-// would draw a Militia Camp and a Catapult the same size, which is a lie about
-// the two buildings the player is choosing between.
-//
-// Derived from the defs, and from the SHADOW-ANCHORED span rather than the
-// bounding box — the span is what actually has to fit once everything shares a
-// ground line, and it is 171px tall against the tallest single building's 153
-// because the tent hangs below the line the towers stand on.
-//
-// It is always well under 1, so a thumbnail is a downscale of art already sharp
-// at 1x; the crispness question PORTRAIT_SCALE has to answer carefully does not
-// arise on this side of the page.
-export const BOOK_TOWER_SCALE =
-  SCALE * Math.min(TOWER_BOX.w / TOWER_SPAN.w, (TOWER_BOX.h - 2 * AIR) / TOWER_SPAN.h);
-
-// Where the shared anchor sits inside a slot: the span centred, with the anchor
-// at its own offset within that. Returned as a function of the box so render.js
-// has one thing to ask and no arithmetic of its own.
-const anchorIn = (box, span, k) => ({
-  x: box.x + (box.w - span.w * k) / 2 + span.left * k,
-  y: box.y + (box.h - span.h * k) / 2 + span.above * k
-});
-
-export function towerArt(def) {
-  const k = BOOK_TOWER_SCALE / SCALE;
-  return { ...buildingOf(def), k, box: TOWER_BOX, anchor: anchorIn(TOWER_BOX, TOWER_SPAN, k) };
-}
-
-// HOW MUCH A BOSS IS SHRUNK, as a multiplier, and it is 1 today.
-//
-// HE IS ALLOWED TO OVERHANG HIS CELL, which is the whole idea and it took two
-// wrong answers to get to. Fitting him strictly inside the army's cell shrank him
-// to 81% — and 81% of the Captain is SHORTER than the Club Giant, which is a boss
-// that looks less impressive than the creature below him in the same list. Letting
-// him size the cell instead is the other failure: he is 18% wider than the Giant,
-// so the cell grew 6px, the text column lost them, and three unrelated enemies'
-// stat rows fell off their cards.
-//
-// So he keeps the shared scale and spills into the GUTTER between the picture and
-// the words — 8px of blank parchment that exists to separate them. He may use all
-// but BOSS_AIR of it. Today he reaches 3.6px into it and stops 4.4px short of the
-// text, so nothing moved and nothing shrank.
-//
-// The multiplier is what happens when a future boss is wider than that: he is
-// scaled down until he clears the words, rather than pushing them. Derived from
-// every boss in the game rather than from the Captain by name.
-//
-// TODAY IT IS THE WIDTH THAT BINDS, and only just. Worth knowing before the next
-// boss is drawn: on this page a wide pose costs far more than a tall one.
-// The clear parchment kept between a boss and the words beside him, in game px.
-const BOSS_AIR = 4;
-
-const BOSS_FIT = (() => {
-  const bosses = Object.values(enemyTypes).filter(d => d.boss)
-    .map(d => figureArt(d.spriteTrim, d.pivot));
-  if (!bosses.length) return 1;
-  const s = anchored(bosses);
-  const at = anchorIn(FIGURE_BOX, FIGURE_SPAN, 1);
-  // How far he may reach from the shared anchor in each direction. Three of them
-  // are the cell; the fourth is the cell PLUS the gutter, less the air above.
-  return Math.min(1,
-    (at.x - FIGURE_BOX.x) / s.left,
-    (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP - BOSS_AIR - at.x) / s.right,
-    (at.y - FIGURE_BOX.y) / s.above,
-    (FIGURE_BOX.y + FIGURE_BOX.h - at.y) / s.below);
+export const BOOK_FIGURE_SCALE =
+  Math.min(PORTRAIT_SCALE * 0.9, INNER_H / BOARD_SPAN.h, INNER_W / BOARD_SPAN.w);
+const FIGURE_SPAN = (() => {
+  const k = BOOK_FIGURE_SCALE;
+  return { left: BOARD_SPAN.left * k, right: BOARD_SPAN.right * k,
+           above: BOARD_SPAN.above * k, below: BOARD_SPAN.below * k,
+           w: BOARD_SPAN.w * k, h: BOARD_SPAN.h * k };
 })();
 
-// `fit` is BOSS_FIT for a boss and 1 for everything else, and it arrives as the
-// slot's `k` — which drawArt in render.js already multiplies the drawn size by
-// while leaving the anchor alone. So a shrunk figure stands on the same ground
-// line as the rest of its column rather than floating in the middle of the cell.
-export function figureSlot(trim, pivot, fit = 1) {
-  return { ...figureArt(trim, pivot), k: fit, box: FIGURE_BOX,
-           anchor: anchorIn(FIGURE_BOX, FIGURE_SPAN, 1) };
-}
+// Where the shared anchor sits in a cell: the span centred, the anchor at its own
+// offset inside that.
+const anchorIn = span => ({
+  x: (CELL_W - span.w) / 2 + span.left,
+  y: (CELL_H - span.h) / 2 + span.above
+});
+const TOWER_ANCHOR = anchorIn({
+  left: TOWER_SPAN.left * BOOK_TOWER_K, w: TOWER_SPAN.w * BOOK_TOWER_K,
+  above: TOWER_SPAN.above * BOOK_TOWER_K, h: TOWER_SPAN.h * BOOK_TOWER_K
+});
+const FIGURE_ANCHOR = anchorIn(FIGURE_SPAN);
 
-// The fit a DEF is entitled to. One question, so no caller has to know what makes
-// a figure a boss.
+// HOW MUCH A BOSS IS SHRUNK to stand in a cell from the shared anchor, as a
+// multiplier — 1 when he already fits. Derived from every boss in the game.
+const BOSS_FIT = (() => {
+  if (!bosses.length) return 1;
+  const s = anchored(bosses.map(d => figureAtBoard(d.spriteTrim, d.pivot)));
+  const k = BOOK_FIGURE_SCALE;
+  return Math.min(1,
+    (FIGURE_ANCHOR.x - AIR) / (s.left * k),
+    (CELL_W - AIR - FIGURE_ANCHOR.x) / (s.right * k),
+    (FIGURE_ANCHOR.y - AIR) / (s.above * k),
+    (CELL_H - AIR - FIGURE_ANCHOR.y) / (s.below * k));
+})();
 export const figureFit = def => (def && def.boss ? BOSS_FIT : 1);
 
-// WHERE A CARD'S ROWS SIT, and the answer is not a list of fixed offsets.
-//
-// They were +16, +33, +50 in a 60px card, which hangs the block from the top and
-// leaves the last row 3px off the bottom edge while the first has 10px of air
-// above it. Nobody types a layout like that on purpose; it is what you get when
-// each row is nudged until it looks right on its own.
-//
-// So the block is measured and CENTRED, exactly the way drawInfo already treats
-// the info box's own two-or-three rows: count the rows first, then place them. A
-// tower card has three and a unit card has two, and both sit in the middle of
-// the plate rather than one of them crowding the floor.
-// 20, AND IT WAS 17. The pitch grew with the card: five rows of grid instead of
-// six put 13px into every plate, and a taller row is what turns that into a bigger
-// icon rather than into more blank parchment inside the card. Three rows of 20 in a
-// 73px card leave 6.5px of air top and bottom, which is the same proportion 17 left
-// in 60.
-export const ROW = 20;
-
-export function rowsIn(b, n) {
-  const top = b.y + (b.h - n * ROW) / 2;
-  return Array.from({ length: n }, (_, i) => top + ROW * (i + 0.5));
+// A drawing's place in a cell, as render.js wants it: the drawn size, the anchor
+// as a fraction of it, and where in the cell that anchor goes.
+export function towerArt(def) {
+  const k = BOOK_TOWER_K;
+  return { w: def.w * k, h: def.h * k, a: def.groundFrac, anchor: TOWER_ANCHOR };
+}
+export function figureArt(trim, pivot, fit = 1) {
+  const k = SCALE * BOOK_FIGURE_SCALE * fit;
+  return { w: trim[2] * k, h: trim[3] * k, a: pivot, anchor: FIGURE_ANCHOR };
 }
 
-// --- the enemies page --------------------------------------------------------
+// The ability's disc in its cell, a size rather than a fit: a disc is centred.
+export const ABILITY_ICON = Math.min(CELL_H, CELL_W) - 2 * AIR - 8;
 
-// THE SAME CARD, in the same grid. Enemies used to get full-width rows of their
-// own because two of them side by side left most of the page blank — which was
-// solving the wrong problem: a reference page whose boxes are three sizes reads
-// as three different kinds of thing, and an enemy is exactly as much "a box
-// description" as a tower is. Empty space on a short page is fine; boxes that do
-// not match are not.
+// --- THE RIGHT PAGE ----------------------------------------------------------------
 //
-// They flow across all four columns of the page and then down, so a third and
-// fourth enemy fill the row before anything starts a second one.
-// FOUR ROWS, WHICH IS WHY THE ENEMY PAGE HAS A CARD HEIGHT OF ITS OWN.
-//
-// Every other page holds a name over two rows and fits in the 73px the grid gives
-// it. An enemy now holds a name, its stats, its plate, and what killing it is
-// worth — four rows at ROW=20 is 80px before any air, so it cannot be the shelf's
-// card and stay legible.
-//
-// It costs the page nothing. Seven enemies in four columns is two rows and the
-// page has five rows' worth of room, which is the band of blank parchment the
-// mock-up shows under them. Taking 20px of that back for a row of numbers is the
-// best thing on the page to spend it on.
-//
-// The air is kept at what a tower card has — 73 less three rows is 13 — so the
-// block sits inside its plate exactly as every other card's does.
-const CARD_AIR = CARD_H - 3 * ROW;
-export const ENEMY_CARD_H = 4 * ROW + CARD_AIR;
+// From the top: the picture in a frame of photo paper, the name, a line under it
+// (who is inside a tower, which tower a man or an ability belongs to), a paragraph
+// where there is one, and the numbers in bands two to a row.
+export const FRAME = { w: 230, h: 164 };
+FRAME.x = Math.round(RIGHT.cx - FRAME.w / 2);
+FRAME.y = RIGHT.y + 6;
+// An ability's picture is a button and says little on its own; its paragraph is
+// the long one in the book, so its frame is shorter and gives the words the room.
+export const FRAME_SMALL = { w: 140, h: 108 };
+FRAME_SMALL.x = Math.round(RIGHT.cx - FRAME_SMALL.w / 2);
+FRAME_SMALL.y = FRAME.y;
+export const frameFor = kind => (kind === 'ability' ? FRAME_SMALL : FRAME);
 
-// A cell on the enemy page: the shelf's columns and gaps, its own height.
-const enemyRect = (col, row, h = ENEMY_CARD_H) => ({
-  x: PAGE_X + col * (CARD_W + GAP),
-  y: TOP + row * (h + GAP),
-  w: CARD_W,
-  h
-});
+// The air kept round a picture inside its frame.
+export const FRAME_AIR = 14;
 
-export function enemyCards() {
-  return roster.map((def, i) => ({
-    def, ...enemyRect(i % COLUMNS, Math.floor(i / COLUMNS))
-  }));
-}
+// The stat bands: two to a row across the page, below the words.
+export const BAND_COLUMNS = 2;
+export const BAND_H = 28;
+export const BAND_GAP = 8;
+export const BAND_X = RIGHT.x + 6;
+export const BAND_W = Math.floor((RIGHT.w - 12 - (BAND_COLUMNS - 1) * BAND_GAP) / BAND_COLUMNS);
 
-// --- the boss row -------------------------------------------------------------
-//
-// A BAND OF ITS OWN AT THE FOOT OF THE PAGE, under its own heading, which is the
-// owner's layout. A boss is not a heavier thug and a row of him among the thugs
-// would say he was: he arrives once, the run turns on him, and the page should
-// read that way before any number on it is looked at.
-//
-// HUNG OFF THE BOTTOM rather than off the enemies above it. The roster grows — it
-// has gone from four to seven while this page has existed — and a band measured
-// down from the last enemy row would walk up and down the page every time one was
-// added. Measured up from the footer it does not move at all, and the blank
-// parchment between the two groups is what separates them.
-//
-// THREE TO A ROW WHERE AN ENEMY GETS FOUR, at the owner's word: "3 bosses
-// description length equals to 4 normal enemies description length". His numbers
-// are the reason — four digits of health and three of damage are wider than
-// anything the roster prints, which tops out at the Giant's 800 and 30 — and the
-// arithmetic is exactly that sentence: three cards and
-// their two gaps fill what four cards and their three gaps do.
-const BOSS_COLUMNS = 3;
-const BOSS_CARD_W =
-  Math.floor((COLUMNS * CARD_W + (COLUMNS - 1) * GAP - (BOSS_COLUMNS - 1) * GAP) / BOSS_COLUMNS);
+// The boss's two halves, as two small buttons beside his frame.
+// Drawn 38 deep like every book button and 26 apart, so their padded tap boxes
+// never meet.
+export const STAGE_BTN = [1, 2].map(n => ({
+  n, x: FRAME.x + FRAME.w + 12, y: FRAME.y + 8 + (n - 1) * 64, w: 84, h: 38
+}));
 
-// Where the band sits. The cards stand on the footer's own margin and the heading
-// rides above them at the same distance the page's heading sits above its first
-// row, so the two bands are titled identically.
-// A BOSS CARD IS A ROW SHORTER, at the owner's word: "boss card only has 2 lines
-// for stats as there is no bounty or live lost. This way there will be enough space
-// for 3rd row of enemy units."
-//
-// He never printed that fourth row — rewardRow in render.js leaves it out for
-// anything worth no gold and no lives, which is the boss and nothing else — so the
-// card has been carrying twenty pixels of blank parchment for its whole life. It
-// cost nothing while the roster fitted in two rows. The ninth enemy makes it three,
-// and three rows of enemies reached y 368 against a boss heading at 360: the two
-// bands had started to overlap.
-//
-// Giving the band its own height moves it down by exactly one ROW and the overlap
-// goes with it. tools/book.mjs is what measures the gap.
-export const BOSS_CARD_H = 3 * ROW + CARD_AIR;
+// --- what the right page says --------------------------------------------------------
 
-export const BOSS_TOP = FOOT_Y - PAD - BOSS_CARD_H;
-export const BOSS_HEAD_Y = BOSS_TOP - (TOP - HEAD_Y);
-
-// --- THE STAGE BADGE ----------------------------------------------------------
-//
-// A boss with two stages is TWO creatures on one card, and the card can only show
-// one of them. The owner's answer is a small number in its top-right corner: it
-// reads 1, and tapping it makes it 2 and turns the card into the Enraged Captain
-// Thug — a different drawing, different plate, a magic blade and no bow.
-//
-// WHY A TOGGLE RATHER THAN A SECOND CARD. Two cards would say there are two
-// creatures in the game, and there is one that changes; and the band is sized for
-// three bosses, so the second one drawn would cost the next boss its place.
-//
-// WHICH STAGE IS SHOWING lives on the game state rather than in here, for the
-// reason every other book control does: this module is geometry and the page is
-// redrawn from scratch every frame, so anything remembered between frames belongs
-// to the caller. One number covers the band — nothing has two bosses today, and
-// when something does, this becomes a map keyed by name and the badge rect is
-// already per card.
-const BADGE = 16;
-const BADGE_PAD = 5;
-export const stageBadge = c => ({
-  x: c.x + c.w - BADGE - BADGE_PAD,
-  y: c.y + BADGE_PAD,
-  w: BADGE,
-  h: BADGE
-});
-
-// Does this creature have a second stage to show? The badge is drawn for exactly
-// these, so a boss written without one gets no control it cannot answer.
+// A BOSS WITH TWO STAGES is one creature that changes, so his page carries a
+// switch rather than the book carrying two of him. Stage 2 is `rage` merged over
+// the def — the drawing, the plate, the damage type and the pierce — and two fields
+// are CLEARED: `ranged`, because he threw the bow away, and `melee`, because
+// `rage` brings its own attack.
 export const staged = def => !!(def && def.rage);
-
-// THE CREATURE AS THE BOOK IS CURRENTLY SHOWING IT, as a def-shaped object.
-//
-// Stage 2 is `rage` merged over the def: it carries the drawing, the plate, the
-// damage type and the pierce, and the def carries what does not change — health,
-// the size of the blow, what killing him is worth.
-//
-// TWO FIELDS ARE CLEARED RATHER THAN INHERITED, and both are the point of the
-// second stage: `ranged` because he threw the bow away, so the card must not print
-// a reach he no longer has; and `melee` because `rage` brings its own attack and
-// the def's close pair belongs to the man who still had a shield.
-//
-// It answers with the def itself for stage 1 and for everything that is not a
-// boss, so every caller can go through it.
 export function stageOfCard(def, stage) {
   if (stage !== 2 || !staged(def)) return def;
   const r = def.rage;
@@ -607,99 +271,77 @@ export function stageOfCard(def, stage) {
     ranged: undefined,
     melee: undefined };
 }
-
-// The same question asked of the live book state, which is what the drawing and
-// the pop-up both use so they cannot show different halves of him.
 export const shown = (state, def) => stageOfCard(def, state.bookStage);
 
-export function bossCards() {
-  return bosses.map((def, i) => ({
-    def,
-    x: PAGE_X + (i % BOSS_COLUMNS) * (BOSS_CARD_W + GAP),
-    y: BOSS_TOP + Math.floor(i / BOSS_COLUMNS) * (BOSS_CARD_H + GAP),
-    w: BOSS_CARD_W,
-    h: BOSS_CARD_H
-  }));
+// What each stat icon is called, for the tip over a band under the mouse — the
+// owner's names, word for word. The book prints icons and numbers only.
+export const STAT_LABEL = {
+  stat_health: 'Health',
+  stat_damage: 'Physical Attack',
+  stat_damage_magic: 'Magic Attack',
+  stat_range: 'Range',
+  stat_armour: 'Physical Armor',
+  stat_armour_magic: 'Magic Armor',
+  stat_pierce: 'Pierce Physical Armor',
+  stat_pierce_magic: 'Pierce Magic Armor',
+  stat_splash: 'Area of Effect (AOE)',
+  stat_life_cost: 'Lives Lost'
+};
+// A creature's key in enemyTypes, which is what FOE_NOTES is keyed by.
+const idOf = def => Object.keys(enemyTypes).find(k => enemyTypes[k] === def);
+const band = (key, value, label = STAT_LABEL[key], tone = null) => ({ key, value, label, tone });
+
+// THE RIGHT PAGE FOR AN ITEM, as one shape whatever the kind: the picture, its
+// name, the line under it, a paragraph, and the bands.
+export function pageEntry(state, item) {
+  const { def } = item;
+  if (item.kind === 'tower') {
+    const e = towerEntry(def, item.tiers);
+    return { ...e, sub: e.occupier, prose: null,
+      bands: [band('stat_gold_cost', e.cost, 'Cost'), band('glyph_refund', e.refund, 'Refund', 'green')] };
+  }
+  if (item.kind === 'unit') {
+    const e = unitEntry(def);
+    const bands = [];
+    if (e.hp !== null) bands.push(band('stat_health', e.hp));
+    bands.push(band(e.attack || 'stat_damage', e.damage));
+    if (e.range !== null) bands.push(band('stat_range', e.range));
+    for (const [key, value] of e.traits) bands.push(band(key, value));
+    return { ...e, sub: def.title, prose: null, bands };
+  }
+  if (item.kind === 'ability') {
+    const e = abilityEntry(def);
+    return { ...e, sub: e.of, prose: e.detail, round: true,
+      bands: [band('stat_gold_cost', e.cost, 'Cost')] };
+  }
+  const d = shown(state, def);
+  const bands = [band('stat_health', d.hp)];
+  if (strikes(d)) bands.push(band(attackIcon(d), shownDamage(d)));
+  if (shownRange(d) !== null) bands.push(band('stat_range', shownRange(d)));
+  for (const [key, value] of traitRow(d)) bands.push(band(key, value));
+  // WHAT A KILL PAYS AND WHAT A LEAK COSTS — and nothing at all for a creature
+  // that has neither, which is the boss: reaching the exit ends the run outright,
+  // and a zero in a coin would say he is worth nothing to kill.
+  if (d.bounty || d.leak) {
+    bands.push(band('stat_gold_cost', d.bounty, 'Bounty'));
+    bands.push(band('stat_life_cost', d.leak));
+  }
+  return { title: d.name, sprite: d.sprite, trim: d.spriteTrim, kind: 'figure',
+    sub: null, prose: FOE_NOTES[idOf(def)] || null, bands, staged: staged(def) };
 }
-
-// --- the abilities page -------------------------------------------------------
-
-// THE SAME CARD AGAIN, in the same grid, flowing across the columns exactly as
-// the enemies do. Four abilities today, so one row of four; a fifth would start
-// the second row without anything here changing.
-//
-// AND WHAT IS INSIDE IT IS THE SAME SHAPE TOO. It carried two lines of prose for
-// one build and the artist asked for it to match the rest of the book instead, so
-// it is now a tower card exactly: a name, the thing it belongs to underneath, and
-// a price on an icon row. Four pages of one card is the whole point of the layout,
-// and a page whose boxes are laid out differently reads as a different kind of
-// thing however well the grid lines up.
-//
-// The explaining moved to the POP-UP, which is where there is room for it — see
-// `detail` in data/abilities.js.
-export function abilityCards() {
-  const col = new Map();   // family index -> how many of its cards are placed
-  return ABILITIES.map(def => {
-    const c = LADDERS.findIndex(tiers => tiers.some(d => d.name === def.of));
-    const row = col.get(c) || 0;
-    col.set(c, row + 1);
-    return { def, ...shelfRect(c, row) };
-  });
-}
-
-// DOWN THE COLUMN, NOT ACROSS THE ROW, and that is the owner's change: a family's
-// abilities sit under one another in the family's OWN column, the same column it
-// occupies on the towers page and in the same left-to-right order the build menu
-// uses — archery, barracks, artillery, monastery.
-//
-// It flowed across before, which put Burst Fire and Deadeye side by side in row 1
-// and the artillery pair side by side in row 2. That reads as rows of unrelated
-// pairs; every other page in the book reads as four columns of families, and this
-// one now does too — so a player who has learned that the third column is
-// artillery finds artillery's abilities in the third column.
-//
-// THE COLUMN IS THE FAMILY'S, not a running count divided by two, and that is
-// what a second tier 4 forced. Archery teaches FOUR now — two on the Musketeer
-// Post and two on the Crossbow Sentry — so a fixed two rows per column would have
-// flowed archery's third card into the barracks' column and pushed the monastery
-// off the page. Looked up from the ladders instead: `of` names the tower, the
-// tower belongs to a ladder, and the ladder's position is the column. Six rows of
-// room means a family could teach six before this has to be thought about again.
-//
-// It still assumes ABILITIES is GROUPED by tower — two towers interleaved down
-// one column would read as one list — which tools/book.mjs checks.
-
-// The picture slot on an ability card. A button rather than a figure or a
-// building, so it is neither anchored on a shadow nor scaled against anything —
-// it is a disc, and a disc is drawn at a size and centred.
-//
-// 44 against the card's 60 leaves 8px of air above and below, which is the same
-// air AIR keeps around a building on the towers page. It sits in a box the width
-// of TOWER_BOX so the text column starts in the same place on every page.
-export const ABILITY_ICON = 44;
-export const ICON_BOX = { x: CARD_INSET, y: 0, w: 48, h: SLOT_H };
 
 // --- controls ----------------------------------------------------------------
 
-// The footer. Close on the left where a thumb rests, the flip in the middle.
-//
-// EVERY NUMBER HERE IS DERIVED. Close starts on the page's own left margin, so
-// it lines up with the first card above it and sits PAD from the parchment like
-// everything else; the two arrows are placed symmetrically about the fold with
-// a fixed reading gap for the "Page 1 / 2" between them; all three hang off
-// FOOT_Y, whose bottom edge is PAD from the parchment. Type any of these as a
-// literal and it drifts the next time a margin moves.
+// The page flip, centred under the grid, with room for "Page 1 / 4" between the
+// arrows; and Close at the foot of the right page, the Upgrades screen's Done.
 const FLIP_W = 56;
-const LABEL_HALF = 62;   // room for "Page 1 / 2" between the arrows
-
-export const BOOK_CLOSE = { x: INNER.x, y: FOOT_Y, w: 110, h: FOOT_H };
-export const BOOK_PREV = { x: FOLD - LABEL_HALF - FLIP_W, y: FOOT_Y, w: FLIP_W, h: FOOT_H };
-export const BOOK_NEXT = { x: FOLD + LABEL_HALF, y: FOOT_Y, w: FLIP_W, h: FOOT_H };
+const LABEL_HALF = 62;
+export const BOOK_PREV = { x: LEFT.cx - LABEL_HALF - FLIP_W, y: FOOT_Y, w: FLIP_W, h: FOOT_H };
+export const BOOK_NEXT = { x: LEFT.cx + LABEL_HALF, y: FOOT_Y, w: FLIP_W, h: FOOT_H };
+export const BOOK_CLOSE = { x: RIGHT.r - 130, y: FOOT_Y, w: 130, h: FOOT_H };
 
 // The drawn boxes are 38 deep and the tap targets are 64, the same trick the
-// dashboard and the radial menu both use: 64 logical px is 44 real ones on the
-// narrowest canvas this game targets, and shrinking the picture never shrinks
-// the target.
+// dashboard and the radial menu both use.
 const BOOK_PAD = 13;
 
 const inside = (b, x, y) =>
@@ -707,12 +349,7 @@ const inside = (b, x, y) =>
   y >= b.y - BOOK_PAD && y <= b.y + b.h + BOOK_PAD;
 
 // WHERE THE BOOK IS OPENED FROM: the artist's book icon, bottom left of the world
-// map, with "Encyclopedia" under it, at the owner's word. It is the only way in —
-// the paused game's button is gone ("players have to exit the game then only can
-// access to Encyclopedia") — and it stays put when a stage's panel is open.
-//
-// `cx` and `foot` place the drawing (centred, standing on `foot`); the label sits
-// under it; BOOK_ICON_HIT is the whole of both, which is what a tap finds.
+// map, with "Encyclopedia" under it.
 export const BOOK_ICON = { cx: 66, foot: 492 };
 export const BOOK_ICON_HIT = { x: 18, y: 428, w: 96, h: 94 };
 
@@ -725,147 +362,87 @@ export function hitBookButton(state, x, y) {
 export function openBook(state) {
   state.book = 0;
   state.zoom = null;
-  // WHICH HALF OF A TWO-STAGE BOSS THE PAGE IS SHOWING. Reset on opening rather
-  // than left where it was: the book is a reference and it should read the same
-  // way every time it is opened, and a card that is still enraged from a visit
-  // three waves ago is a page that remembers something the reader does not.
+  // The first picture of every page, and the boss's first half, every time the
+  // book is opened: it is a reference, and should read the same way each time.
+  state.bookPick = [0, 0, 0, 0];
   state.bookStage = 1;
+  state.bookTip = null;
 }
 
-// Tapping the book's own controls. Every tap while the book is open comes here
-// and none of them go anywhere else: the page covers the whole board, so nothing
-// underneath may act on one — including the plot a card happens to be drawn over.
-// A tap that hits none of the controls does nothing, which is the right answer
-// for a page you are reading.
+// A WHOLE CELL picks its picture — the gap between cells is split between them,
+// so a tap that misses one picks its neighbour rather than nothing.
+const half = GAP / 2;
+const within = (b, x, y) =>
+  x >= b.x - half && x <= b.x + b.w + half && y >= b.y - half && y <= b.y + b.h + half;
+
+// Tapping the book's own controls. Every tap while the book is open comes here and
+// none go anywhere else: the page covers the whole board.
 export function tapBook(state, x, y) {
-  // THE POP-UP SWALLOWS EVERYTHING while it is up, on the same terms the book
-  // itself swallows the board — and ANY tap dismisses it, including one that
-  // lands on the Close button underneath. A picture you opened by tapping is a
-  // picture you expect to close by tapping, and a first tap that flipped the page
-  // behind the thing you are looking at would be the worst of both.
+  // THE POP-UP SWALLOWS EVERYTHING while it is up, and ANY tap dismisses it.
   if (state.zoom) { state.zoom = null; return true; }
 
   if (inside(BOOK_CLOSE, x, y)) { state.book = null; return true; }
-  // BOTH ARROWS ALWAYS WORK, wrapping round. With two pages a disabled arrow
-  // would be dead half the time it is on screen, and a control that does nothing
-  // when you press it reads as the game having stopped listening.
-  if (inside(BOOK_PREV, x, y)) { state.book = (state.book + PAGES - 1) % PAGES; return true; }
-  if (inside(BOOK_NEXT, x, y)) { state.book = (state.book + 1) % PAGES; return true; }
+  // BOTH ARROWS ALWAYS WORK, wrapping round.
+  if (inside(BOOK_PREV, x, y)) { flip(state, -1); return true; }
+  if (inside(BOOK_NEXT, x, y)) { flip(state, 1); return true; }
 
-  // THE STAGE BADGE, BEFORE THE CARD IT SITS ON. It is inside the cell, so asking
-  // in the other order would open the pop-up on every tap and the badge would
-  // never be reachable at all.
-  //
-  // Only on the enemy page, and only for a boss that HAS a second stage — a badge
-  // that turned into a 2 and changed nothing would be worse than no badge.
-  if (state.book === 3) {
-    for (const c of bossCards()) {
-      if (!staged(c.def) || !inside(stageBadge(c), x, y)) continue;
-      state.bookStage = state.bookStage === 2 ? 1 : 2;
-      return true;
-    }
+  const item = picked(state);
+  if (item && item.kind === 'enemy' && staged(item.def)) {
+    const b = STAGE_BTN.find(b => inside(b, x, y));
+    if (b) { state.bookStage = b.n; return true; }
   }
 
-  const art = artAt(state, x, y);
-  if (art) { state.zoom = art; return true; }
+  const items = pageItems(state.book);
+  const i = items.findIndex(c => within(c, x, y));
+  if (i >= 0) {
+    if (!state.bookPick) state.bookPick = [0, 0, 0, 0];
+    // A boss picked fresh shows his first half.
+    if (state.bookPick[state.book] !== i) state.bookStage = 1;
+    state.bookPick[state.book] = i;
+    return true;
+  }
+
+  // THE FRAMED PICTURE OPENS LARGE, as a card used to.
+  const f = item && frameFor(item.kind);
+  if (f && x >= f.x && x <= f.x + f.w && y >= f.y && y <= f.y + f.h) {
+    state.zoom = zoomOf(state, item);
+    return !!state.zoom;
+  }
   return false;
 }
 
-// --- the picture pop-up -------------------------------------------------------
-
-// THE WHOLE CELL OPENS THE PICTURE, not just the 48px slot the drawing sits in.
-//
-// The ask was "tapping an image shows it big", and the image is a thumbnail 48
-// wide — under the 44 real px this game holds every target to, and a miss on it
-// lands on the card's own text, which does nothing. So the target is the CELL:
-// the card grown by half a gap on every side, which tiles the grid exactly and
-// makes the whole entry the handle for its own drawing. 229x64 is a thumb-sized
-// target, and a tap that misses one card hits its neighbour rather than nothing.
-const half = GAP / 2;
-const cell = b => ({ x: b.x - half, y: b.y - half, w: b.w + GAP, h: b.h + GAP });
-
-const within = (b, x, y) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
-
-// What a tap on the open page is pointing at, as the pop-up wants it: a sprite,
-// the rect of it to show, and what it is called. Read from the same entry
-// builders the cards themselves draw from, so the picture in the pop-up cannot
-// be a different drawing from the picture that was tapped.
-function artAt(state, x, y) {
-  if (state.book === 2) {
-    for (const c of abilityCards()) {
-      if (within(cell(c), x, y)) {
-        // `round` is the one thing an ability's picture needs that nothing else
-        // does: the file is an opaque disc on an opaque white square, so the
-        // pop-up has to clip it exactly as the menu button does. See the `plate`
-        // entries in data/ui.js.
-        return { sprite: c.def.icon, trim: ui[c.def.icon].trim,
-                 title: c.def.name, kind: 'ability', round: true,
-                 // The paragraphs that go beside the picture. An ability is a RULE
-                 // rather than a thing, so its drawing says almost nothing on its
-                 // own — a tower opens as a portrait and this opens as an
-                 // explanation with a badge next to it.
-                 detail: c.def.detail };
-      }
-    }
-    return null;
-  }
-
-  if (state.book === 3) {
-    for (const c of [...enemyCards(), ...bossCards()]) {
-      if (within(cell(c), x, y)) {
-        // AND WHAT KILLING HIM IS WORTH, which used to be the card's third row and
-        // is here at the owner's word: "for enemies, move the bounty gold and live
-        // lost icon inside the description when they click the preview". That is
-        // the right trade twice over — the row it vacated is where the armour went,
-        // and a bounty is a REWARD rather than a stat, so it does not belong lined
-        // up with the health it is not comparable to.
-        //
-        // AND IT IS ALL THAT IS LEFT IN HERE. The paragraph that used to sit beside
-        // the picture is gone with statLines — see the note where it was, in
-        // select.js — so this pop-up is now a portrait with two figures under it.
-        // THE PICTURE AND NOTHING ELSE, at the owner's word: "remove description
-        // text from enemy page. When players click on each preview, only the image
-        // is shown."
-        //
-        // It carried the bounty and the lives lost in a column beside the drawing,
-        // which was the right place for them while the CARD had nowhere to put
-        // them. The card has a fourth row for them now, so the pop-up was saying a
-        // second time what the page already says — and the reason to open it is to
-        // see the drawing large, which a column of numbers beside it works against.
-        //
-        // An ability is the last thing in the book with anything but a picture in
-        // it, and it earns that: a rule's drawing says almost nothing on its own.
-        //
-        // The stage badge is why this reads through `shown` rather than off the def
-        // — tapping the enraged Captain opens the enraged drawing.
-        const d = shown(state, c.def);
-        return { sprite: d.sprite, trim: d.spriteTrim, title: d.name, kind: 'figure' };
-      }
-    }
-    return null;
-  }
-
-  for (const { def, tiers, col, row } of shelf()) {
-    if (!within(cell(shelfRect(col, row)), x, y)) continue;
-    const e = state.book === 0 ? towerEntry(def, tiers) : unitEntry(def);
-    return { sprite: e.sprite, trim: e.trim, title: e.title,
-             kind: state.book === 0 ? 'tower' : 'figure',
-             // NOTHING BUT THE PICTURE, on either page. The tower's never had a
-             // description and the man's no longer does — see the note where
-             // statLines was, in select.js. `detail` stays in the shape because an
-             // ABILITY still carries one, and this is the same builder.
-             detail: e.detail,
-             // AND THE MACHINE ON TOP, for the two tiers that are two drawings.
-             // The pop-up opened on the bare stone before this, which is not the
-             // tower — half of a Ballista Turret is the ballista, and the man
-             // standing beside it is the only place in the game he is drawn big
-             // enough to look at. The Cannon Outpost needed nothing added here:
-             // the rule is `def.machine`, not a tier number, so artillery's
-             // second fourth rung arrived already drawn.
-             machine: e.machine || null };
-  }
-  return null;
+function flip(state, by) {
+  state.book = (state.book + PAGES + by) % PAGES;
+  state.bookTip = null;
 }
+
+// The tip over a stat band under the mouse: which band, or null. The rects are the
+// ones render.js last drew — see BOOK_BANDS.
+export const BOOK_BANDS = [];
+export function hoverBook(state, x, y) {
+  if (state.zoom) { state.bookTip = null; return; }
+  const i = BOOK_BANDS.findIndex(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+  state.bookTip = i >= 0 ? i : null;
+}
+
+// What the pop-up shows for the picked item: a sprite, the rect of it, and its name.
+function zoomOf(state, item) {
+  if (item.kind === 'ability') {
+    // An ability is a RULE rather than a thing; its words are on the page beside
+    // it now, so the pop-up is the disc alone.
+    return { sprite: item.def.icon, trim: ui[item.def.icon].trim, title: item.def.name,
+             kind: 'ability', round: true };
+  }
+  if (item.kind === 'enemy') {
+    const d = shown(state, item.def);
+    return { sprite: d.sprite, trim: d.spriteTrim, title: d.name, kind: 'figure' };
+  }
+  const e = item.kind === 'tower' ? towerEntry(item.def, item.tiers) : unitEntry(item.def);
+  return { sprite: e.sprite, trim: e.trim, title: e.title,
+           kind: item.kind === 'tower' ? 'tower' : 'figure', machine: e.machine || null };
+}
+
+// --- the picture pop-up -------------------------------------------------------
 
 // The most room a pop-up may take on the board, which is a CEILING rather than a
 // size — see POP. 400 deep leaves the plate 22px clear of the top and bottom of
@@ -953,6 +530,14 @@ const POP_GROUPS = {
 //
 // Everything else still applies underneath: the ceiling box, the per-kind shrink,
 // and never an upscale past 1:1 even on a display that could take one.
+// THE RIGHT PAGE'S FRAME, the same idea at a smaller size: one factor for every
+// drawing of a kind, fitted so the largest of them fills `frame` inside its air,
+// and never more than `cap` — one source pixel per screen pixel.
+export function frameSlot(kind, frame, cap = 1) {
+  const g = POP_GROUPS[kind] || POP_GROUPS.figure;
+  return Math.min(cap, (frame.w - 2 * FRAME_AIR) / g.w, (frame.h - 2 * FRAME_AIR) / g.h);
+}
+
 export function popSlot(kind, cap = 1) {
   const g = POP_GROUPS[kind] || POP_GROUPS.figure;
   const k = Math.min(1, cap, POP_BOX.w / g.w, POP_BOX.h / g.h) * g.shrink;
@@ -1010,7 +595,7 @@ export function unitEntry(def) {
     title: man.name,
     sprite: man.sprite,
     trim: man.trim,
-    art: figureSlot(man.trim, man.pivot, figureFit(def)),
+    art: figureArt(man.trim, man.pivot, figureFit(def)),
     hp: man.hp,
     damage: man.damage,
     // WHICH ATTACK ICON HE SHOWS — the sword or the wand. Off the def, so the

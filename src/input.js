@@ -14,7 +14,7 @@ import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
 import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, setSoundLevel } from './audio.js';
-import { hitBookButton, openBook, tapBook } from './book.js';
+import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
@@ -112,6 +112,16 @@ export function attachInput(canvas, state, restart) {
     if (state.upgrades) {
       const { x, y } = at(e);
       hoverUpgrades(state, x, y);
+      return;
+    }
+
+    // THE BOOK'S STAT BANDS name themselves under the mouse, as the new-enemy
+    // card's icons do.
+    if (state.book !== null && !state.admin) {
+      const { x, y } = at(e);
+      hoverBook(state, x, y);
+      state.hoverTower = null;
+      state.ghost = null;
       return;
     }
 

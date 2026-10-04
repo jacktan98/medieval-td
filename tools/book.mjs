@@ -35,19 +35,17 @@ import { ui, PORTRAIT_SCALE, BOOK_ICON_H,
          canvasScale, MIN_SCALE, MAX_SCALE } from '../src/data/ui.js';
 import { ABILITIES } from '../src/data/abilities.js';
 import {
-  PAGES, shelf, shelfRect, COLUMNS, ROWS, enemyCards, abilityCards,
-  towerEntry, unitEntry, figureSlot, figureFit, ABILITY_ICON, bossCards, ENEMY_CARD_H, BOSS_TOP,
-  SHEET, FOLD, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP,
-  BOOK_TOWER_SCALE, BOOK_FIGURE_SCALE, AIR, ROW, rowsIn,
-  BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-  BOOK_ICON_HIT, popSlot
+  PAGES, shelf, pageItems, pageEntry, towerEntry, unitEntry, towerArt, figureArt, figureFit,
+  COLUMNS, ROWS, CELL_W, CELL_H, AIR, ABILITY_ICON, BOOK_TOWER_K, BOOK_FIGURE_SCALE,
+  SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, FRAME, FRAME_SMALL, frameFor, frameSlot, FRAME_AIR,
+  BAND_X, BAND_W, BAND_H, BAND_GAP, BAND_COLUMNS, STAGE_BTN, staged,
+  BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON_HIT, popSlot
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
-import { PAUSE_ROW, STAT_GAP,
-         POP_PAD_OUT, POP_TITLE_H, POP_GAP_OUT, POP_LEAD_OUT } from '../src/render.js';
+import { PAUSE_ROW, ENTRY_NAME, ENTRY_SUB, ENTRY_TEXT, ENTRY_LEAD, ENTRY_TEXT_W, ENTRY_ICON_H,
+         ENTRY_TEXT_SMALL, ENTRY_LEAD_SMALL, PARA_GAP } from '../src/render.js';
 import { uiSize } from '../src/data/ui.js';
-import { shownDamage, shownRange, traitRow } from '../src/select.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
@@ -109,17 +107,20 @@ console.log('\nWhat is on the pages\n');
   ok(forkedLow.length === 0, 'and any fork in a ladder is at its top rung',
     LADDERS.map(t => t.map(d => d.tier).join('')).join(' / '));
 
-  // BOTH BANDS. The enemy page is a roster above a boss band now, so a check that
-  // counted one of them would have quietly stopped covering the other — which is
-  // exactly what it did the moment the Captain arrived: seven cards for eight
-  // creatures, and the missing one was the boss.
-  const onPage = enemyCards().length + bossCards().length;
-  ok(onPage === Object.keys(enemyTypes).length,
-    'every enemy has a card, in one band or the other',
-    `${enemyCards().length} + ${bossCards().length} boss`);
+  // EVERY CREATURE HAS A PICTURE on the enemy page, the boss included — a check
+  // that counted only the roster would quietly stop covering him.
+  const foes = pageItems(3);
+  ok(foes.length === Object.keys(enemyTypes).length,
+    'every enemy has a picture, the boss among them',
+    `${foes.filter(c => !c.boss).length} + ${foes.filter(c => c.boss).length} boss`);
 
-  ok(abilityCards().length === ABILITIES.length,
-    'and every ability has one', `${abilityCards().length}`);
+  ok(pageItems(2).length === ABILITIES.length,
+    'and every ability has one', `${pageItems(2).length}`);
+
+  // THE BOSS STARTS A ROW OF HIS OWN, under the roster rather than among it.
+  const lastFoe = Math.max(...foes.filter(c => !c.boss).map(c => c.y));
+  ok(foes.filter(c => c.boss).every(c => c.y > lastFoe && c.x === LEFT.x + (c.x - LEFT.x)),
+    'and the boss stands on a row below the roster');
 
   // EVERY ABILITY A TIER OFFERS IS ON THE PAGE, and nothing on the page is
   // offered by nobody. Both halves matter: an ability wired to a tower and left
@@ -201,404 +202,149 @@ console.log('\nWhat the cards say\n');
                  : `${ABILITIES.length} cards checked`);
 }
 
-console.log('\nWhat fits\n');
+console.log('\nThe left page\n');
 
 {
-  // ONE CARD PER TIER now, not one per tier per half: the towers have a whole
-  // spread and their men have the page after it, so a shelf cell is one rect
-  // rather than two. Both pages draw the same cells, so checking them once is
-  // checking both.
-  const cards = shelf().map(({ col, row }) => shelfRect(col, row));
-  // The shelf pages and the abilities, which share one card. The enemy roster and
-  // the boss band each have their own and are checked as their own bands below.
-  const all = [...cards, ...abilityCards()];
+  const pages = [0, 1, 2, 3].map(pageItems);
+  const all = pages.flat();
 
-  // THE OVERFLOW CHECK, and it is here because the shelf has silently run off the
-  // page once: twelve tiers exactly filled the two columns one half of a spread
-  // holds, and the thirteenth had nowhere to go and was flowed into a column that
-  // does not exist. Nothing complained — the card was simply drawn off the
-  // parchment. Ask the question directly rather than hoping a margin check catches
-  // it sideways.
-  const placed = shelf().every(({ col, row }) => col < COLUMNS && row < ROWS);
-  ok(placed, 'every tier has a cell on the page',
-    `${shelf().length} tiers in ${COLUMNS} columns of ${ROWS}`);
+  // THE OVERFLOW CHECK: a fifth family or a twenty-first enemy has nowhere to go,
+  // and nothing would complain — the cell would simply be drawn off the page.
+  const inLeft = c => c.x >= LEFT.x && c.x + c.w <= LEFT.r && c.y >= TITLE_Y && c.y + c.h <= FOOT_Y;
+  ok(all.every(inLeft), 'every picture sits on the left page, above the footer',
+    `${CELL_W}x${CELL_H} cells, ${COLUMNS} by ${ROWS}`);
+  ok(all.every(c => c.x + c.w <= FOLD), 'and nothing crosses the fold', `fold at ${FOLD}`);
 
-  const inSheet = b =>
-    b.x >= SHEET.x && b.y >= SHEET.y &&
-    b.x + b.w <= SHEET.x + SHEET.w && b.y + b.h <= SHEET.y + SHEET.h;
-
-  ok(all.every(inSheet), 'every card sits on the parchment');
-
-  // --- THE ENEMY PAGE'S TWO BANDS ------------------------------------------------
-  //
-  // It is the one page with a layout of its own — a roster above, a boss band hung
-  // off the footer below — and the numbers that place it are derived from four
-  // others. Nothing checked any of it, which is how the old "every box the same
-  // size" check came to be the only thing standing near this geometry while not
-  // being about it at all.
-  //
-  // Four things have to hold, and each is a way the page could go wrong silently as
-  // the roster grows or a card gains a row:
-  {
-    const roster = enemyCards(), boss = bossCards();
-    const band = [...roster, ...boss];
-    ok(band.every(inSheet), 'every enemy and boss card sits on the parchment');
-
-    // THE TWO BANDS DO NOT MEET. The roster flows downward and the boss band is
-    // pinned upward, so they close on each other as enemies are added — an eighth
-    // roster member starts a third row and eats into the gap.
-    const lowest = Math.max(...roster.map(c => c.y + c.h));
-    const clear = BOSS_TOP - lowest;
-    ok(clear > 0, 'and the roster clears the boss band beneath it',
-      `${clear}px of parchment between them`);
-
-    // AND THE BOSS BAND CLEARS THE FOOTER, which is what it is measured against.
-    //
-    // MEASURED OFF THE CARDS THEMSELVES rather than off BOSS_TOP plus a height
-    // named here. It used to add ENEMY_CARD_H, which was the boss card's height
-    // until the band got one of its own — and then this reported the boss band
-    // hanging 4px through the footer while it was in fact sitting exactly on the
-    // margin. A check that names a card's height separately from the card is a
-    // check that measures the wrong card the moment the two differ.
-    const under = FOOT_Y - Math.max(...boss.map(c => c.y + c.h));
-    ok(under >= 0, 'and the boss band clears the footer', `${under}px`);
-
-    // AND THREE BOSSES FILL THE WIDTH FOUR ENEMIES DO, which is the owner's rule
-    // for the wider card and the only reason it has a width of its own.
-    // The gap is MEASURED off the roster rather than imported, so this compares two
-    // spans the page actually draws instead of one it draws and one it computes.
-    const gap = roster[1].x - (roster[0].x + roster[0].w);
-    const rosterSpan = roster[COLUMNS - 1].x + roster[COLUMNS - 1].w - roster[0].x;
-    const bossSpan = 3 * boss[0].w + 2 * gap;
-    ok(Math.abs(rosterSpan - bossSpan) <= 2,
-      'and three boss cards span what four enemy cards do',
-      `${bossSpan} against ${rosterSpan}`);
-  }
-
-  // The fold is a gutter, not a divider, now that one list flows across both
-  // halves — but nothing may sit ON it: a card that straddles the fold reads as
-  // the page being folded through the middle of a box.
-  ok(cards.every(b => b.x + b.w <= FOLD || b.x >= FOLD),
-    'nothing crosses the fold', `fold at ${FOLD}`);
-
-  const overlap = (a, b) =>
-    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
   let clashes = 0;
-  for (let i = 0; i < cards.length; i++)
-    for (let j = i + 1; j < cards.length; j++)
-      if (overlap(cards[i], cards[j])) clashes++;
-  ok(clashes === 0, 'and no two cards overlap', `${clashes} clash(es)`);
+  for (const items of pages)
+    for (let i = 0; i < items.length; i++)
+      for (let j = i + 1; j < items.length; j++) if (overlap(items[i], items[j])) clashes++;
+  ok(clashes === 0, 'and no two pictures on a page overlap', `${clashes} clash(es)`);
 
-  // EVERY GAP THE SAME, and this is the check the layout change was made for.
-  // The four columns used to be two halves of two, with a 12px gutter either side
-  // of the fold — so the three gaps across the page were 6, 24 and 6, and the
-  // middle pair of columns read as two separate lists. Measure the gaps rather
-  // than the constants: a gutter reintroduced anywhere, by any means, shows up
-  // here as a second number.
-  const grid = [];
-  for (let col = 0; col < COLUMNS; col++)
-    for (let row = 0; row < ROWS; row++) grid.push({ col, row, ...shelfRect(col, row) });
+  // EVERY GAP THE SAME, across and down, measured off the cells the towers page
+  // draws rather than off the constant.
+  const towers = pages[0];
+  const at = (c, r) => towers.find(t => t.x === towers.find(u => u.col === c)?.x);
+  const xs = [...new Set(towers.map(c => c.x))].sort((a, b) => a - b);
+  const ys = [...new Set(towers.map(c => c.y))].sort((a, b) => a - b);
+  const gaps = new Set([
+    ...xs.slice(1).map((x, i) => x - (xs[i] + CELL_W)),
+    ...ys.slice(1).map((y, i) => y - (ys[i] + CELL_H))
+  ]);
+  ok(gaps.size === 1, 'and every gap between pictures is the same', [...gaps].join(', '));
 
-  const at = (c, r) => grid.find(b => b.col === c && b.row === r);
-  const across = [];
-  for (let c = 1; c < COLUMNS; c++) across.push(at(c, 0).x - (at(c - 1, 0).x + at(c - 1, 0).w));
-  const down = [];
-  for (let r = 1; r < ROWS; r++) down.push(at(0, r).y - (at(0, r - 1).y + at(0, r - 1).h));
+  // THE GRID IS CENTRED ON ITS PAGE, so the left page reads as a page.
+  const left = xs[0] - LEFT.x, right = LEFT.r - (xs[xs.length - 1] + CELL_W);
+  ok(Math.abs(left - right) <= 1, 'and the grid is centred on the left page',
+    `${left}px and ${right}px either side`);
 
-  const gaps = new Set([...across, ...down]);
-  ok(gaps.size === 1, 'and every gap between cards is the same',
-    `across ${across.join('/')}, down ${down.join('/')}`);
-
-  // EVERY BOX THE SAME SIZE AS ITS SIBLINGS. It was every box in the BOOK, on the
-  // argument that an enemy is exactly as much "a box description" as a tower is and
-  // a page whose boxes are three sizes reads as three kinds of thing.
-  //
-  // That argument still holds inside a band and no longer holds across the book,
-  // and the owner's layout is why: an enemy card carries four rows where a tower
-  // carries three, so it is taller; and a boss card is wider, at three to a row
-  // where an enemy gets four, because his numbers are wider than anything else
-  // prints. Both are deliberate and neither is a size that "crept in".
-  //
-  // So the check is now the one that catches what the old one was really for —
-  // a card that does not match the cards beside it.
-  const shape = b => `${b.w}x${b.h}`;
-  const sizes = new Set(all.map(shape));
-  ok(sizes.size === 1, 'and every box on the shelf pages is the same size',
-    [...sizes].join(', '));
-
-  // THE ABILITY PAGE USES THE SAME CARD AS A TOWER'S — a name, the tower that
-  // teaches it, and a price on an icon row — so the only thing left to check about
-  // it here is the one part that is not shared: the disc has to fit the card it
-  // sits in. Its prose moved to the pop-up and is checked there.
-  ok(ABILITY_ICON <= shelfRect(0, 0).h,
-    'the ability disc fits the card it sits in',
-    `${ABILITY_ICON}px in ${shelfRect(0, 0).h}`);
-
-  // AND THE STAT ROW FITS THE CARD, which is the check the reach figure was
-  // added under. Health, attack and range on one line came to 146px of a 141px
-  // card at the old icon size and the last number ran off the edge — silently,
-  // because a canvas clips nothing. There is no canvas out here to measure a
-  // font with, so the digits are estimated at 0.62em of the row's size, which is
-  // wider than bold system-ui actually sets them: the check is allowed to be
-  // pessimistic, it is not allowed to pass a row that does not fit.
-  // 0.72, AND IT WAS 0.62, and the recalibration is the point of writing it down.
-  //
-  // 0.62 was measured against the row's old 10px type and it WAS pessimistic there.
-  // At the 12px the bigger icons brought with them, bold system-ui sets digits at
-  // 0.696em — hinting squeezes small type harder than large — so the estimate
-  // silently became optimistic, and it passed a 14px archer thug's row at 136.9
-  // that really sets at 144.1 and drew its reach off the edge of the card.
-  //
-  // A screenshot caught it, which is the wrong thing to be relying on. 0.72 is the
-  // measured worst rounded up, so the check is once more the pessimistic side of
-  // true — and it now also covers the widest WORD the row can hold, "Med", which
-  // sets at 25.8 against this estimate's 25.9.
-  //
-  // 0.56, AND IT WAS 0.72: the book is set in Lobster now. Measured in the browser
-  // at 10, 11 and 12px, its widest digit is 0.546em and its widest rank word, "Med",
-  // 0.549em a letter — so 0.56 is the measured worst rounded up, the pessimistic
-  // side of true again. Left at 0.72 it failed rows the card draws with room over.
-  const DIGIT = 0.56;
-  const rowWidth = (figures, iconH = BOOK_ICON_H) => {
-    const size = iconH - 2;
-    let w = 0;
-    figures.forEach(([key, text], i) => {
-      if (i) w += STAT_GAP;
-      w += uiSize(key, { h: iconH }).w + 4 + String(text).length * size * DIGIT;
-    });
-    return w;
-  };
-
-  // THE SECOND ROW IS THE ONE WITH WORDS IN IT, which is why the estimate above is
-  // being asked a question it was not written for. 0.62em a CHARACTER was pitched
-  // at digits; "Med" is three letters and an M is nearly an em on its own. Measured
-  // in the browser at 700 12px system-ui the word sets at 25.8px against the
-  // estimate's 22.3 — so for THIS word the estimate is optimistic by 3.5px, which
-  // is the one place in this check it is not pessimistic. The row has 20px of slack
-  // at its widest, so it is inside; if a rank word ever gets longer, measure it.
-  //
-  // Through traitRow rather than rebuilt here, because what has to fit the card is
-  // the row the game actually draws — armour, pierce and blast, in that order, with
-  // the `None`s already dropped.
-
-  // THE ROOM IS PER CARD NOW, not one number for the book. A boss card is wider
-  // than an enemy card — see bossCards in src/book.js — so measuring his rows
-  // against the shelf's width said his health did not fit a card it fits easily.
-  // Each row carries the width of the card it is actually printed on.
-  const roomIn = w => w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
-  const shelfRoom = roomIn(shelfRect(0, 0).w);
-  const rows = [];
-  for (const { def } of shelf()) {
-    const e = unitEntry(def);
-    const r = [];
-    if (e.hp !== null) r.push(['stat_health', e.hp]);
-    r.push(['stat_damage', e.damage]);
-    if (e.range !== null) r.push(['stat_range', e.range]);
-    rows.push([occupant(def).name, r, shelfRoom]);
-    // And the second row, for the men who have anything to put in one.
-    if (e.traits.length) rows.push([`${occupant(def).name} (traits)`, e.traits, shelfRoom]);
-  }
-  // BOTH BANDS OF THE ENEMY PAGE, each against its own card. Taken from the cards
-  // themselves rather than from enemyTypes, so a creature that gained a band and
-  // lost its card would show up as a missing row rather than as a row measured
-  // against a width nothing draws it at.
-  for (const c of [...enemyCards(), ...bossCards()]) {
-    const d = c.def;
-    const room = roomIn(c.w);
-    const r = [['stat_health', d.hp], ['stat_damage', shownDamage(d)]];
-    if (shownRange(d) !== null) r.push(['stat_range', shownRange(d)]);
-    rows.push([d.name, r, room]);
-    if (traitRow(d).length) rows.push([`${d.name} (traits)`, traitRow(d), room]);
-    // AND THE FOURTH ROW, which the enemy card gained for the bounty and the leak.
-    // Absent on a creature that has neither — the boss — and that absence is the
-    // card printing nothing rather than a coin with a zero in it.
-    if (d.bounty || d.leak) {
-      rows.push([`${d.name} (rewards)`,
-        [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]], room]);
-    }
-  }
-  // NO REWARDS ROW HERE ANY MORE. The coin and the broken heart moved inside the
-  // picture at the owner's word, and the card row they vacated is the armour's —
-  // so a rewards row checked against a card would be checking a layout the game no
-  // longer draws. They are measured against the POP-UP's column instead, below.
-
-  // A ROW THAT DOES NOT FIT IS SET SMALLER, and that rule is now in render.js
-  // rather than in this check's imagination — see statRow. So there are two things
-  // to assert and they are different questions:
-  //
-  //   which rows need shrinking at all, which should be a short list and is worth
-  //   printing, because a page where everything is being squeezed is a page whose
-  //   cards are the wrong size;
-  //
-  //   and that the shrink is enough. The floor is STAT_MIN_H, and a row that still
-  //   does not fit at the floor is a card that needs redesigning — that is the
-  //   failure, not the shrinking.
-  const MIN_H = 10;
-  let squeezed = 0, worst = 0, stuck = 0;
-  for (const [who, r, room] of rows) {
-    const w = rowWidth(r);
-    if (w / room > worst) worst = w / room;
-    if (w <= room) continue;
-    squeezed++;
-    // The same arithmetic statRow does: the height that would fit, floored.
-    const h = Math.max(MIN_H, Math.floor(BOOK_ICON_H * room / w));
-    const after = rowWidth(r, h);
-    const fits = after <= room;
-    if (!fits) stuck++;
-    console.log(`      ${who}: ${w.toFixed(1)}px of ${room}, set at ${h}px -> ` +
-      `${after.toFixed(1)}px${fits ? '' : '  STILL OVER'}`);
-  }
-  ok(stuck === 0, 'and every stat row fits the card it is printed in',
-    `fullest row is ${(worst * 100).toFixed(0)}% of its card, ${squeezed} set smaller`);
-}
-
-console.log('\nOne margin, everywhere\n');
-
-{
-  // The complaint this section exists for: cards were 2px inside the sheet, the
-  // Close button was 12, and the footer's bottom edge was flush with the
-  // parchment — three numbers each chosen on its own and each fine on its own.
-  // Every edge below is now measured against the SAME pad.
-  const PAD = 16;
-  const inner = { x: SHEET.x + PAD, y: SHEET.y + PAD,
-                  r: SHEET.x + SHEET.w - PAD, b: SHEET.y + SHEET.h - PAD };
-
-  const cards = shelf().map(({ col, row }) => shelfRect(col, row));
-  // The GRID's own outer corners, which is what the margins are about — the last
-  // column and the last row exist whether or not a tier is sitting in them.
-  const grid = [];
-  for (let col = 0; col < COLUMNS; col++)
-    for (let row = 0; row < ROWS; row++) grid.push(shelfRect(col, row));
-
-  ok(Math.min(...cards.map(b => b.x)) === inner.x,
-    'the first card starts on the left margin', `${Math.min(...cards.map(b => b.x))} of ${inner.x}`);
-  ok(Math.max(...grid.map(b => b.x + b.w)) === inner.r,
-    'and the last column ends on the right margin', `${Math.max(...grid.map(b => b.x + b.w))} of ${inner.r}`);
-
-  ok(BOOK_CLOSE.x === inner.x, 'Close lines up under the first card',
-    `${BOOK_CLOSE.x} of ${inner.x}`);
-  ok(BOOK_CLOSE.y + BOOK_CLOSE.h === inner.b,
-    'and the footer sits on the bottom margin', `${BOOK_CLOSE.y + BOOK_CLOSE.h} of ${inner.b}`);
-
-  // All three footer controls on one line, so no button is a pixel proud of its
-  // neighbours.
-  const feet = [BOOK_CLOSE, BOOK_PREV, BOOK_NEXT];
-  ok(feet.every(b => b.y === FOOT_Y && b.h === BOOK_CLOSE.h),
-    'and all three footer buttons share a baseline', `y ${FOOT_Y}`);
-
-  // The two arrows equidistant from the fold, so "Page 1 / 2" is centred in a
-  // gap of the same width on both sides rather than looking centred.
-  ok(FOLD - (BOOK_PREV.x + BOOK_PREV.w) === BOOK_NEXT.x - FOLD,
-    'and the two arrows are equidistant from the fold',
-    `${FOLD - (BOOK_PREV.x + BOOK_PREV.w)}px each side`);
-
-  const bottom = Math.max(...grid.map(b => b.y + b.h));
-  ok(FOOT_Y - bottom === PAD, 'the gap above the footer is the outer margin',
-    `${FOOT_Y - bottom} of ${PAD}`);
-
-  ok(TITLE_Y > inner.y && HEAD_Y > TITLE_Y && Math.min(...cards.map(b => b.y)) > HEAD_Y,
-    'and the two headings sit above the grid in order',
-    `title ${TITLE_Y}, heading ${HEAD_Y}, cards ${Math.min(...cards.map(b => b.y))}`);
-
-  // INSIDE a card too. A tower's three rows and a unit's two are both centred in
-  // the plate, so neither block crowds the floor — which is what the old fixed
-  // offsets did, leaving 10px above the first row and 3 below the last.
-  const b0 = cards[0];
-  for (const n of [2, 3]) {
-    const rows = rowsIn(b0, n);
-    const overhead = rows[0] - ROW / 2 - b0.y;
-    const underfoot = b0.y + b0.h - (rows[n - 1] + ROW / 2);
-    ok(Math.abs(overhead - underfoot) < 0.01,
-      `a ${n}-row card's text is centred in it`,
-      `${overhead.toFixed(1)}px above, ${underfoot.toFixed(1)} below`);
-  }
-
-  // And the rows have to fit: a block taller than the card would be centred and
-  // still hang out of both ends.
-  ok(3 * ROW <= b0.h, 'and three rows fit inside one', `${3 * ROW} of ${b0.h}`);
+  ok(ABILITY_ICON + 2 * AIR <= CELL_H, 'the ability disc fits its cell', `${ABILITY_ICON}px in ${CELL_H}`);
 }
 
 console.log('\nEverything stands on its shadow\n');
 
 {
-  // A bounding box is not where a thing is. Both slots are sized from the
-  // SHADOW-ANCHORED span, so this is the check that a redrawn building or a man
-  // carrying something longer has not quietly started hanging out of its card.
-  const k = BOOK_TOWER_SCALE / SCALE;
-  const fits = TIERS.every(d => {
-    const a = towerEntry(d, archery).art;
-    const x = a.anchor.x - d.groundFrac[0] * d.w * k;
-    const y = a.anchor.y - d.groundFrac[1] * d.h * k;
-    return x >= TOWER_BOX.x - 0.01 && y >= TOWER_BOX.y - 0.01 &&
-      x + d.w * k <= TOWER_BOX.x + TOWER_BOX.w + 0.01 &&
-      y + d.h * k <= TOWER_BOX.y + TOWER_BOX.h + 0.01;
-  });
-  ok(fits, 'every building fits its slot once anchored on its shadow',
-    `${k.toFixed(3)}x board scale`);
+  // A bounding box is not where a thing is. Every building is placed by its own
+  // shadow at one shared point, and has to fit its cell from there.
+  const inCell = (s) => {
+    const x = s.anchor.x - s.a[0] * s.w, y = s.anchor.y - s.a[1] * s.h;
+    return x >= -0.01 && y >= -0.01 && x + s.w <= CELL_W + 0.01 && y + s.h <= CELL_H + 0.01;
+  };
+  ok(TIERS.every(d => inCell(towerArt(d))), 'every building fits its cell, anchored on its shadow',
+    `${BOOK_TOWER_K.toFixed(3)}x`);
+  const lines = new Set(TIERS.map(d => towerArt(d).anchor.y.toFixed(3)));
+  ok(lines.size === 1, 'and every tower stands on the same line', [...lines][0]);
 
-  // ONE GROUND LINE for the whole shelf, which is the point of anchoring at all.
-  // A single number, so a redrawn building cannot quietly stand on its own.
-  const lines = new Set(TIERS.map(d => towerEntry(d, archery).art.anchor.y.toFixed(3)));
-  ok(lines.size === 1, 'and every tower stands on the same line',
-    `${[...lines][0]} of ${TOWER_BOX.h}`);
-
-  // The largest one filling its slot to within AIR of the edges is what proves
-  // the factor is derived rather than typed and left behind by a redraw — and
-  // that the clearance the archery flag was given is the clearance it still has.
-  const spanH = Math.max(...TIERS.map(d => d.groundFrac[1] * d.h)) +
-                Math.max(...TIERS.map(d => (1 - d.groundFrac[1]) * d.h));
-  const air = (TOWER_BOX.h - spanH * k) / 2;
-  ok(Math.abs(air - AIR) < 0.6, 'and keeps its air at the top and bottom',
-    `${air.toFixed(1)}px each end, wanted ${AIR}`);
-
-  // Figures are drawn at the FIXED PORTRAIT_SCALE — they never shrink to fit —
-  // so their slot has to be wide enough for the widest man in the game rather
-  // than the other way round.
-  //
-  // WITH ONE EXCEPTION, AND IT IS DELIBERATE. A boss DOES shrink to fit, because
-  // the alternative is a boss that makes every other card in the book smaller: the
-  // Captain Thug is 18% wider than the Giant, and letting him size the slot took
-  // 6px out of the text column beside it and pushed three unrelated enemies' stat
-  // rows off their cards. So `figureFit` scales him into the army's cell — see
-  // BOSS_FIT in src/book.js — and this walks the drawing WITH that factor applied,
-  // which is the version the page actually draws.
   const men = [
-    ...TIERS.map(d => unitEntry(d)),
-    ...Object.values(enemyTypes).map(d => ({
-      boss: !!d.boss, trim: d.spriteTrim,
-      art: figureSlot(d.spriteTrim, d.pivot, figureFit(d)) }))
+    ...TIERS.map(d => { const m = occupant(d); return figureArt(m.trim, m.pivot, figureFit(d)); }),
+    ...Object.values(enemyTypes).map(d => figureArt(d.spriteTrim, d.pivot, figureFit(d)))
   ];
-  // A BOSS MAY REACH INTO THE GUTTER and no further, which is the exception this
-  // check is really about. Everything else must be inside its cell; a boss must
-  // clear the WORDS, which is the cell plus the 8px gap. Measured as one rule with
-  // a per-figure right edge rather than as two loops, so a boss that ever did
-  // reach the text fails here instead of being drawn over it.
-  const room = m => (m.boss ? FIGURE_BOX.w + TEXT_GAP : FIGURE_BOX.w);
-  let tightest = Infinity;
-  const inBox = men.every(m => {
-    const w = m.art.w * m.art.k;
-    const h = m.art.h * m.art.k;
-    const x = m.art.anchor.x - m.art.a[0] * w;
-    const y = m.art.anchor.y - m.art.a[1] * h;
-    tightest = Math.min(tightest, FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP - (x + w));
-    return x >= FIGURE_BOX.x - 0.01 && y >= FIGURE_BOX.y - 0.01 &&
-      x + w <= FIGURE_BOX.x + room(m) + 0.01 &&
-      y + h <= FIGURE_BOX.y + FIGURE_BOX.h + 0.01;
-  });
-  ok(inBox, 'every figure fits its slot, and a boss clears the words beside it',
-    `${FIGURE_BOX.w}x${FIGURE_BOX.h}, tightest ${tightest.toFixed(1)}px of air to the text`);
+  ok(men.every(inCell), 'every figure fits its cell, the boss shrunk to fit if he must',
+    `boss at ${figureFit(Object.values(enemyTypes).find(d => d.boss)).toFixed(2)}x`);
+  const anchors = new Set(men.map(m => `${m.anchor.x.toFixed(2)},${m.anchor.y.toFixed(2)}`));
+  ok(anchors.size === 1, 'and every man stands on the same point', [...anchors][0]);
+  ok(TIERS.every(d => occupant(d).pivot), 'and no figure is missing a shadow anchor');
+}
 
-  // The whole point: one anchor point per slot, so a column lines up. If any
-  // drawing were placed by its box instead, its anchor would land somewhere
-  // else and this would differ.
-  const anchors = new Set(men.map(m => `${m.art.anchor.x.toFixed(2)},${m.art.anchor.y.toFixed(2)}`));
-  ok(anchors.size === 1, 'and every man in a column stands on the same point',
-    [...anchors][0]);
+console.log('\nThe right page\n');
 
-  // Nobody may be missing a pivot: a figure with none would be centred by its
-  // box while the row beside it stood on a line, which is exactly the fault the
-  // catapult crewman had before he was measured.
-  ok(TIERS.every(d => unitEntry(d).art.a), 'and no figure is missing a shadow anchor');
+{
+  // THE DEEPEST PAGE FITS ABOVE THE FOOTER. There is no canvas out here to measure
+  // the prose with, so it is estimated at 0.45em a character — measured in the
+  // browser, the widest whole description in Lobster sets at 0.40em, so this is
+  // the pessimistic side of true and counts MORE lines than the page draws.
+  // Lines and paragraph breaks, separately: a break is PARA_GAP of a line.
+  const wrapLines = (text, size) => {
+    const EM = 0.45 * size;
+    let n = 0, breaks = 0;
+    for (const para of text.split('\n\n')) {
+      if (n) breaks++;
+      let line = '';
+      for (const word of para.split(/\s+/)) {
+        const next = line ? `${line} ${word}` : word;
+        if (line && next.length * EM > ENTRY_TEXT_W) { n++; line = word; } else line = next;
+      }
+      if (line) n++;
+    }
+    return { n, breaks };
+  };
+  // The same walk drawBookEntry makes down the page: frame, name, line, the bands,
+  // and then the words.
+  const bottomOf = (item, state) => {
+    const e = pageEntry(state, item);
+    const f = frameFor(item.kind);
+    let y = f.y + f.h + 26 + ENTRY_NAME / 2 + 6;
+    if (e.sub) y += ENTRY_SUB + 8;
+    y += 4;
+    const rows = Math.ceil(e.bands.length / BAND_COLUMNS);
+    y += rows * BAND_H + Math.max(0, rows - 1) * BAND_GAP + 14;
+    if (e.prose) {
+      const small = item.kind === 'ability';
+      const { n, breaks } = wrapLines(e.prose, small ? ENTRY_TEXT_SMALL : ENTRY_TEXT);
+      const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;
+      y += n * lead + breaks * lead * PARA_GAP;
+    }
+    return { y, name: e.title };
+  };
+  let deepest = { y: 0 };
+  for (const page of [0, 1, 2, 3]) {
+    for (const item of pageItems(page)) {
+      for (const stage of [1, 2]) {
+        const b = bottomOf(item, { bookStage: stage });
+        if (b.y > deepest.y) deepest = b;
+      }
+    }
+  }
+  ok(deepest.y <= FOOT_Y - 6, 'every page\'s words and numbers end above the footer',
+    `deepest is ${deepest.name}, to ${deepest.y.toFixed(0)} of ${FOOT_Y}`);
+
+  // THE FRAME, THE BANDS AND THE BOSS'S SWITCH ARE ON THE RIGHT PAGE.
+  const onRight = b => b.x >= RIGHT.x && b.x + b.w <= RIGHT.r;
+  ok([FRAME, FRAME_SMALL, ...STAGE_BTN].every(onRight) &&
+     BAND_X >= RIGHT.x && BAND_X + BAND_COLUMNS * BAND_W + (BAND_COLUMNS - 1) * BAND_GAP <= RIGHT.r,
+    'and the frame, the bands and the stage switch sit on the right page');
+  ok(STAGE_BTN.every(b => b.x >= FRAME.x + FRAME.w),
+    'and the switch stands clear of the frame', `${STAGE_BTN[0].x - (FRAME.x + FRAME.w)}px`);
+
+  // EVERY DRAWING OF A KIND FITS ITS FRAME at one factor, at both ends of the range
+  // the game is drawn at, and never more than its own pixels.
+  const kinds = {
+    tower: TIERS.map(d => d.spriteTrim),
+    figure: [...TIERS.map(d => occupant(d).trim), ...Object.values(enemyTypes).map(d => d.spriteTrim)]
+  };
+  for (const [label, cap] of [['1x', 1], ['3x', 1 / MAX_SCALE]]) {
+    for (const [kind, trims] of Object.entries(kinds)) {
+      const k = frameSlot(kind, FRAME, cap);
+      const fits = trims.every(t => t[2] * k <= FRAME.w - 2 * FRAME_AIR + 0.01 &&
+                                     t[3] * k <= FRAME.h - 2 * FRAME_AIR + 0.01);
+      ok(fits && k <= cap + 0.001, `at ${label}, every ${kind} fits its frame`, `${k.toFixed(3)}x`);
+    }
+  }
+
+  // EVERY CREATURE WITH TWO STAGES has the switch; nothing else does.
+  ok(pageItems(3).every(c => pageEntry({ bookStage: 1 }, c).staged === staged(c.def)),
+    'and only a two-stage boss has a stage switch');
 }
 
 console.log('\nWhat you can hit\n');
@@ -609,10 +355,12 @@ console.log('\nWhat you can hit\n');
   // 63.3 logical px. Every control below is drawn smaller than that and padded
   // out to it in the hit test, the same trick the dashboard uses.
   const MIN = 44 * 960 / 667;
-  const PAD = 13;   // BOOK_PAD in src/book.js
+  const PAD = 13;   // BOOK_PAD in src/book.js; a picture's cell is padded by half a gap
 
   const targets = {
     Close: BOOK_CLOSE, Prev: BOOK_PREV, Next: BOOK_NEXT,
+    'Stage 1': STAGE_BTN[0], 'Stage 2': STAGE_BTN[1],
+    'a picture': { x: 0, y: 0, w: CELL_W - 2 * PAD + 8, h: CELL_H - 2 * PAD + 8 },
     'open (map)': BOOK_ICON_HIT,
     'restart (paused)': PAUSE_ROW.restart, 'quit (paused)': PAUSE_ROW.quit
   };
@@ -639,11 +387,18 @@ console.log('\nWhat you can hit\n');
   ok(gap > 0, 'and Quit does not share a pixel with Restart beside it',
     `${gap}px of clear air`);
 
-  // Everything the footer draws has to be on the sheet to be pressed.
-  const onSheet = Object.values(targets).slice(0, 3).every(b =>
-    b.x >= SHEET.x && b.x + b.w <= SHEET.x + SHEET.w &&
-    b.y + b.h <= SHEET.y + SHEET.h);
-  ok(onSheet, 'and the footer is inside the page it belongs to');
+  // THE TWO STAGE BUTTONS, one above the other, must not share a pixel either.
+  ok(STAGE_BTN[0].y + STAGE_BTN[0].h + PAD <= STAGE_BTN[1].y - PAD,
+    'and the two stage buttons do not share a pixel', `${STAGE_BTN[1].y - (STAGE_BTN[0].y + STAGE_BTN[0].h)}px drawn gap`);
+
+  // The footer: the flip centred under the grid, Close at the foot of the right
+  // page, all three on one line on the bottom margin.
+  ok([BOOK_CLOSE, BOOK_PREV, BOOK_NEXT].every(b => b.y === FOOT_Y && b.y + b.h === LEFT.b),
+    'and the footer sits on the bottom margin', `y ${FOOT_Y}`);
+  ok(Math.abs((LEFT.x + LEFT.w / 2) - (BOOK_PREV.x + BOOK_PREV.w) - (BOOK_NEXT.x - (LEFT.x + LEFT.w / 2))) < 0.01,
+    'and the arrows are centred under the grid');
+  ok(BOOK_CLOSE.x >= RIGHT.x && BOOK_CLOSE.x + BOOK_CLOSE.w === RIGHT.r,
+    'and Close stands at the right margin of the right page');
 
   ok(PAGES >= 2, 'there is more than one page to flip between', `${PAGES}`);
 }
@@ -702,58 +457,6 @@ console.log('\nThe picture pop-up\n');
       `worst ${worst.toFixed(3)}x of ${cap.toFixed(3)}x`);
   }
 
-  // EVERY ABILITY EXPLAINS ITSELF BESIDE ITS PICTURE, and the paragraphs fit the
-  // PLATE the pop-up builds for them. There is no canvas in Node, so the wrap has
-  // to be estimated — and the estimate here was wrong in the dangerous direction
-  // for a long time.
-  //
-  // It said 0.5em a character, "against system-ui's real 0.48 for mixed case —
-  // high, which is the safe direction". The 0.48 was the mistake: measured in the
-  // browser at the size and font the pop-up actually uses, the widest line in the
-  // set averages 0.5750em. So the estimate allowed more characters a line than the
-  // renderer does, under-counted, and passed two descriptions that were drawing
-  // past the bottom of their own plate — Fiery Shot and Holy Light, both at
-  // thirteen real lines against a twelve-line cap.
-  //
-  // 0.58 is the measured worst rounded up, which puts the estimate ABOVE the true
-  // line count for every description rather than below it. That is what "the safe
-  // direction" means for a fits-in-the-box check, and it is now true.
-  const COLUMN = 340, EM = 0.58 * 12;
-  const wrapLines = text => {
-    let n = 0;
-    for (const para of text.split('\n\n')) {
-      if (n) n++;
-      let line = '';
-      for (const word of para.split(/\s+/)) {
-        const next = line ? `${line} ${word}` : word;
-        if (line && next.length * EM > COLUMN) { n++; line = word; } else line = next;
-      }
-      if (line) n++;
-    }
-    return n;
-  };
-
-  // THE ABILITIES ARE THE ONLY PAGE WITH PROSE ON IT AGAIN. A man and an enemy each
-  // carried a paragraph about their armour for one build; the owner replaced both
-  // with the icons on their cards, so the deepest plate in the book is once more
-  // whichever ability has the most to say.
-  const maxLines = Math.max(...ABILITIES.map(a => wrapLines(a.detail)));
-
-  // The whole thing has to sit on the board with air around it, at its BIGGEST,
-  // which is a laptop at 1x.
-  //
-  // THROUGH RENDER.JS' OWN CONSTANTS, not copies of them. This read `22 * 2 + 30 +
-  // 14 + max(..., 12 * 17)` with all four numbers typed in — and the 12 was the
-  // one that mattered, because the plate is no longer capped at twelve lines. It
-  // grows with its text now (see the note above POP_PAD_OUT in render.js), so what
-  // has to be checked is the DEEPEST description rather than a ceiling nothing
-  // enforces.
-  const big = ['tower', 'figure', 'ability'].map(k => popSlot(k, 1).h);
-  const deepest = POP_PAD_OUT * 2 + POP_TITLE_H + POP_GAP_OUT +
-    Math.max(...big, maxLines * POP_LEAD_OUT);
-  ok(deepest <= 540 - 2 * POP_PAD_OUT, 'and the deepest plate leaves a margin on the board',
-    `${deepest.toFixed(0)}px of 540, at ${maxLines} lines`);
-
   // THE ABILITY BUTTONS ARE A CIRCLE IN A SQUARE, and the pop-up clips them to
   // one because the artist draws them round. That only works
   // while the plate is square: a rectangular plate would clip to the shorter side
@@ -765,38 +468,17 @@ console.log('\nThe picture pop-up\n');
     `${disc.w.toFixed(0)}x${disc.h.toFixed(0)}`);
 
   ok(ABILITIES.every(a => a.detail && a.detail.length > 80),
-    'every ability has a description to open',
+    'every ability has a description for its page',
     ABILITIES.map(a => (a.detail || '').length).join('/') + ' chars');
-  ok(true, 'and the longest of them runs to', `${maxLines} estimated lines`);
 
-  // NOTHING BUT AN ABILITY SAYS ANYTHING. The owner's call, in two steps: first the
-  // towers lost their description — "units having them will do" — and then the
-  // units and the enemies lost theirs too, for icons. This is a real risk of
-  // drifting back, because a tower's pop-up and a man's are built from the same def
-  // by the same line in artAt; what keeps them empty is that neither entry carries
-  // a `detail` at all, so this checks the entries rather than the drawing.
+  // NOTHING BUT AN ABILITY AND AN ENEMY SAYS ANYTHING: a tower and a man are
+  // icons and numbers, at the owner's word.
   const worded = shelf().filter(({ def, tiers }) =>
-    towerEntry(def, tiers).detail != null || unitEntry(def).detail != null);
-  ok(worded.length === 0, 'no tower and no man opens with a paragraph',
+    pageEntry({}, { kind: 'tower', def, tiers }).prose != null ||
+    pageEntry({}, { kind: 'unit', def }).prose != null);
+  ok(worded.length === 0, 'no tower and no man has a paragraph',
     worded.map(({ def }) => def.name).join(', ') || `${shelf().length} tiers and their men`);
-
-  // AND THE ENEMY'S REWARDS ROW FITS THE PLATE IT MOVED INTO. It is centred under
-  // the portrait now that the paragraph beside it is gone, so what it has to fit is
-  // the picture plate's own width rather than a text column — but the text column
-  // is the narrower of the two and still the honest bound to check it against.
-  const POP_STAT_H = 14;
-  const rewards = Object.values(enemyTypes).map(d => {
-    const size = POP_STAT_H - 2;
-    return [d.name, [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]]
-      .reduce((w, [key, n], i) => w + (i ? STAT_GAP + 2 : 0) +
-        uiSize(key, { h: POP_STAT_H }).w + 4 + String(n).length * size * 0.62, 0)];
-  });
-  const spill = rewards.filter(([, w]) => w > COLUMN);
-  ok(spill.length === 0, 'and the bounty and the leak fit the column beside the picture',
-    spill.map(([n]) => n).join(', ') ||
-    `widest ${Math.max(...rewards.map(([, w]) => w)).toFixed(1)}px of ${COLUMN}`);
 }
-
 
 console.log('\nWhat stays sharp at 3x\n');
 
@@ -811,24 +493,21 @@ console.log('\nWhat stays sharp at 3x\n');
     `${BOOK_FIGURE_SCALE.toFixed(3)}x, ${Math.round(100 * BOOK_FIGURE_SCALE / PORTRAIT_SCALE)}% of the box's`);
 
   // Buildings. Always a downscale, so this can only fail if the slot grows.
-  const k = BOOK_TOWER_SCALE / SCALE;
-  ok(k <= ceiling, 'building thumbnails', `${k.toFixed(3)}x board scale`);
+  ok(BOOK_TOWER_K <= ceiling, 'building thumbnails', `${BOOK_TOWER_K.toFixed(3)}x board scale`);
 
   // Icons, which are NOT sized by any board scale — a book row's icon is 12px
   // because the number beside it is 10. So each one is checked against its own
   // source height.
-  const icons = [
-    ['stat_gold_cost', BOOK_ICON_H], ['glyph_refund', BOOK_ICON_H],
-    ['stat_health', BOOK_ICON_H], ['stat_damage', BOOK_ICON_H],
-    ['stat_range', BOOK_ICON_H], ['stat_life_cost', BOOK_ICON_H]
-  ];
+  const icons = ['stat_gold_cost', 'glyph_refund', 'stat_health', 'stat_damage', 'stat_damage_magic',
+    'stat_range', 'stat_armour', 'stat_armour_magic', 'stat_pierce', 'stat_pierce_magic', 'stat_splash',
+    'stat_life_cost'].map(key => [key, ENTRY_ICON_H]);
 
   let soft = 0;
   for (const [key, h] of icons) {
     const src = ui[key].trim[3];
     if (h * MAX_SCALE > src) { soft++; console.log(`      ${key} at ${h}px needs ${h * MAX_SCALE} source px, has ${src}`); }
   }
-  ok(soft === 0, 'every icon on the page', `${icons.length} checked at ${BOOK_ICON_H}px`);
+  ok(soft === 0, 'every icon on the page', `${icons.length} checked at ${ENTRY_ICON_H}px`);
 
   // AND THE OTHER END OF THE BRACKET, which is the one that was wrong.
   //

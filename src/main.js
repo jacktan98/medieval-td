@@ -217,6 +217,10 @@ function newGame() {
     // openBook as well; here so that a state built and never opened still has the
     // field, on the same rule every other one in this object follows.
     bookStage: 1,
+    // Which picture each of the book's four pages is describing, and the stat band
+    // the mouse is over. See openBook in book.js.
+    bookPick: [0, 0, 0, 0],
+    bookTip: null,
     // The encyclopedia's picture pop-up: the drawing a card was tapped to open,
     // or null. A mode inside a mode — while it is set the book's own footer stops
     // answering and any tap closes it. Only ever set while `book` is, and cleared

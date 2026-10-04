@@ -27,13 +27,11 @@ import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
-import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes } from './select.js';
-import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
-         abilityCards, towerEntry, unitEntry, stageBadge, staged, stageOfCard,
-         abilityEntry, figureSlot, figureFit, ABILITY_ICON, ICON_BOX,
-         SHEET, FOLD, PAGE_X, popSlot, TITLE_Y, HEAD_Y, FOOT_Y, TOWER_BOX, FIGURE_BOX, TEXT_GAP, rowsIn,
-         BOOK_CLOSE, BOOK_PREV, BOOK_NEXT,
-         BOOK_ICON } from './book.js';
+import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes, occupant } from './select.js';
+import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFit, shown,
+         ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
+         BAND_X, BAND_W, BAND_H, BAND_GAP, BAND_COLUMNS, STAGE_BTN, BOOK_BANDS,
+         popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
@@ -5800,12 +5798,6 @@ function starRow(ctx, cx, cy, r, filled, onLight = true, map = false) {
 
 // Parchment, and the ink that reads on it. Deliberately the same INK family the
 // dashboard plates use, so the book and the box do not look like two games.
-// A CARD TITLE, and it is 11 for the same reason the info box's is 11.5: the
-// longest name has to fit. A unit card's text column is 125px wide once the
-// figure slot is taken out, and "Trebuchet Engineer" measures 131.9px at 12 and
-// 121.0 at 11. At 12 it was landing within a pixel of the card's right edge —
-// which looked fine only because no name in the game is longer.
-const CARD_TITLE = 11;
 
 const SHEET_FILL = '#EFE4C8';
 const SHEET_EDGE = '#8A7A56';
@@ -6519,30 +6511,229 @@ function drawBook(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.88)';
   ctx.fillRect(0, 0, 960, 540);
 
-  // The same old paper as the Upgrades screen — see paperRect.
+  // The same old paper as the Upgrades screen — see paperRect — opened flat, with
+  // a fold down the middle.
   paperRect(ctx, SHEET.x, SHEET.y, SHEET.w, SHEET.h, SHEET_SEED, SHEET_TONE, SHEET_TEAR, UP_BG_EDGE, 2);
+  drawFold(ctx);
 
+  // THE LEFT PAGE: what this page is a list of, and the pictures, nothing else.
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_INK;
-  ctx.font = `22px ${MAP_TYPE}`;
-  ctx.fillText('Encyclopedia', 480, TITLE_Y);
+  ctx.font = `24px ${MAP_TYPE}`;
+  ctx.fillText(PAGE_TITLES[state.book], LEFT.cx, TITLE_Y);
 
-  // THE ENEMIES ARE LAST NOW and the abilities third, at the owner's word. It
-  // reads as a progression that way: what you build, who it musters, what those
-  // can be taught, and then what is coming for all of it. The enemy page is also
-  // the longest of the four — it has a boss band under the roster — so putting it
-  // at the back means the page that grows is the page nothing sits behind.
-  if (state.book === 0) drawTowerPage(ctx);
-  else if (state.book === 1) drawUnitPage(ctx);
-  else if (state.book === 2) drawAbilityPage(ctx);
-  else drawEnemyPage(ctx, state);
+  const items = pageItems(state.book);
+  const pick = Math.min((state.bookPick && state.bookPick[state.book]) || 0, items.length - 1);
+  items.forEach((it, i) => bookCell(ctx, state, it, i === pick));
+
+  // THE RIGHT PAGE: the one picked, described.
+  drawBookEntry(ctx, state, items[pick]);
 
   drawBookFooter(ctx, state);
   if (state.zoom) drawZoom(ctx, state.zoom);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// THE FOLD: a soft shadow either side of the spine and a faint crease along it,
+// fading out toward the top and bottom of the sheet rather than stopping square —
+// made once and kept.
+let foldArt = null;
+function drawFold(ctx) {
+  const y0 = SHEET.y + 18, h = SHEET.h - 36, W = 44, K = 2;
+  if (!foldArt) {
+    foldArt = document.createElement('canvas');
+    foldArt.width = W * K;
+    foldArt.height = h * K;
+    const g = foldArt.getContext('2d');
+    g.scale(K, K);
+    const across = g.createLinearGradient(0, 0, W, 0);
+    across.addColorStop(0, 'rgba(70,40,12,0)');
+    across.addColorStop(0.5, 'rgba(70,40,12,0.22)');
+    across.addColorStop(1, 'rgba(70,40,12,0)');
+    g.fillStyle = across;
+    g.fillRect(0, 0, W, h);
+    g.fillStyle = 'rgba(80,50,20,0.35)';
+    g.fillRect(W / 2 - 0.5, 0, 1, h);
+    const down = g.createLinearGradient(0, 0, 0, h);
+    down.addColorStop(0, 'rgba(0,0,0,0)');
+    down.addColorStop(0.1, 'rgba(0,0,0,1)');
+    down.addColorStop(0.9, 'rgba(0,0,0,1)');
+    down.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalCompositeOperation = 'destination-in';
+    g.fillStyle = down;
+    g.fillRect(0, 0, W, h);
+  }
+  ctx.drawImage(foldArt, FOLD - W / 2, y0, W, h);
+}
+
+// ONE PICTURE ON THE LEFT PAGE: a photo card with the drawing on it and nothing
+// else. The one picked is edged in gold, as Kingdom Rush marks its own.
+const PICK_EDGE = '#D99A1E';
+function bookCell(ctx, state, it, on) {
+  paperRect(ctx, it.x, it.y, it.w, it.h, Math.round(it.x * 7 + it.y * 13) % 997 + 1,
+    CARD_TONE, CARD_TEAR, on ? PICK_EDGE : CARD_EDGE_INK, on ? 3.2 : 1.2, true, SOFT_RIP);
+  const def = it.def;
+  if (it.kind === 'tower') {
+    const slot = towerArt(def);
+    drawArt(ctx, def.sprite, def.spriteTrim, it, slot);
+    if (def.machine) drawCardMachine(ctx, it, slot, def);
+  } else if (it.kind === 'unit') {
+    const man = occupant(def);
+    drawArt(ctx, man.sprite, man.trim, it, figureArt(man.trim, man.pivot, figureFit(def)));
+  } else if (it.kind === 'ability') {
+    const cx = it.x + it.w / 2, cy = it.y + it.h / 2;
+    roundShadow(ctx, cx, cy, ABILITY_ICON / 2);
+    drawRound(ctx, def.icon, cx, cy, ABILITY_ICON);
+  } else {
+    const d = it.boss ? shown(state, def) : def;
+    drawArt(ctx, d.sprite, d.spriteTrim, it, figureArt(d.spriteTrim, d.pivot, figureFit(d)));
+    // THE BOSS'S ROW IS NAMED beside him, in the row he has to himself.
+    if (it.boss) {
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = UP_MUTED;
+      ctx.font = `18px ${MAP_TYPE}`;
+      ctx.fillText('Boss', it.x + it.w + 14, it.y + it.h / 2);
+    }
+  }
+}
+
+// --- the right page -------------------------------------------------------------
+
+// EXPORTED for tools/book.mjs, which checks the deepest page fits above the footer.
+export const ENTRY_NAME = 24;
+export const ENTRY_SUB = 15;
+export const ENTRY_TEXT = 13;
+export const ENTRY_LEAD = 17;
+// An ability's paragraph is the long one in the book, so it is set a size smaller.
+export const ENTRY_TEXT_SMALL = 12;
+export const ENTRY_LEAD_SMALL = 15;
+// The gap between two paragraphs, as a share of a line.
+export const PARA_GAP = 0.5;
+export const ENTRY_TEXT_W = RIGHT.w - 24;
+export const ENTRY_ICON_H = 20;
+// The ink a band's number is printed in, by what it means.
+const BAND_INK = { green: INK_GREEN };
+
+function drawBookEntry(ctx, state, item) {
+  BOOK_BANDS.length = 0;
+  if (!item) return;
+  const e = pageEntry(state, item);
+  const f = frameFor(item.kind);
+
+  // THE PICTURE, on a photo card of its own, pasted onto the page.
+  paperRect(ctx, f.x, f.y, f.w, f.h, 89 + item.kind.length, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true, SOFT_RIP);
+  drawFramed(ctx, item, e, f);
+
+  // A BOSS'S TWO HALVES, as two buttons beside his picture.
+  if (e.staged) {
+    for (const b of STAGE_BTN) {
+      const on = (state.bookStage || 1) === b.n;
+      bookButton(ctx, b, `Stage ${b.n}`, 0, `14px ${MAP_TYPE}`, on ? UI_GOLD : UI_INK);
+    }
+  }
+
+  let y = f.y + f.h + 26;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UP_NAME;
+  ctx.font = `${ENTRY_NAME}px ${MAP_TYPE}`;
+  ctx.fillText(e.title, RIGHT.cx, y);
+  y += ENTRY_NAME / 2 + 6;
+
+  if (e.sub) {
+    ctx.fillStyle = UP_MUTED;
+    ctx.font = `${ENTRY_SUB}px ${MAP_TYPE}`;
+    ctx.fillText(e.sub, RIGHT.cx, y + ENTRY_SUB / 2);
+    y += ENTRY_SUB + 8;
+  }
+
+  // THE NUMBERS, two to a row in pale bands across the page — before the words,
+  // so they stand in the same place whatever the paragraph's length.
+  y += 4;
+  e.bands.forEach((b, i) => {
+    const bx = BAND_X + (i % BAND_COLUMNS) * (BAND_W + BAND_GAP);
+    const by = y + Math.floor(i / BAND_COLUMNS) * (BAND_H + BAND_GAP);
+    ctx.fillStyle = 'rgba(255,246,222,0.55)';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, BAND_W, BAND_H, 7);
+    ctx.fill();
+    const ih = ENTRY_ICON_H;
+    const { w: iw } = uiSize(b.key, { h: ih });
+    drawUi(ctx, b.key, bx + 10 + iw / 2, by + BAND_H / 2, { h: ih });
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = BAND_INK[b.tone] || INK;
+    ctx.font = `16px ${MAP_TYPE}`;
+    ctx.fillText(String(b.value), bx + 10 + iw + 10, by + BAND_H / 2 + 1);
+    BOOK_BANDS.push({ x: bx, y: by, w: BAND_W, h: BAND_H, label: b.label });
+  });
+  const rows = Math.ceil(e.bands.length / BAND_COLUMNS);
+  y += rows * BAND_H + Math.max(0, rows - 1) * BAND_GAP + 14;
+
+  // AND THE WORDS: what an enemy does and what to do about him, or what an ability
+  // does, in full.
+  if (e.prose) {
+    const small = item.kind === 'ability';
+    const size = small ? ENTRY_TEXT_SMALL : ENTRY_TEXT;
+    const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;
+    const lines = wrapped(ctx, e.prose, ENTRY_TEXT_W, `${size}px ${MAP_TYPE}`);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = UP_INK;
+    const x = RIGHT.x + (RIGHT.w - ENTRY_TEXT_W) / 2;
+    for (const line of lines) {
+      if (!line) { y += lead * PARA_GAP; continue; }
+      ctx.fillText(line, x, y + lead / 2);
+      y += lead;
+    }
+  }
+
+  // THE TIP: what the band under the mouse is, in a small dark plate over it.
+  const tip = state.bookTip !== null && state.bookTip !== undefined && BOOK_BANDS[state.bookTip];
+  if (tip && tip.label) {
+    ctx.font = `12px ${MAP_TYPE}`;
+    const lw = ctx.measureText(tip.label).width + 16, lh = 22;
+    const lx = Math.max(RIGHT.x, Math.min(RIGHT.r - lw, tip.x + tip.w / 2 - lw / 2));
+    const ly = tip.y - lh - 2;
+    ctx.fillStyle = 'rgba(30,26,20,0.94)';
+    ctx.beginPath();
+    ctx.roundRect(lx, ly, lw, lh, 6);
+    ctx.fill();
+    ctx.fillStyle = PANEL_INK;
+    ctx.textAlign = 'center';
+    ctx.fillText(tip.label, lx + lw / 2, ly + lh / 2 + 0.5);
+  }
+}
+
+// The picked drawing in its frame: one factor for every drawing of its kind, so a
+// Militia Camp stays smaller than a Watchtower here too, centred both ways.
+function drawFramed(ctx, item, e, f) {
+  const cap = popCap();
+  if (item.kind === 'ability') {
+    const d = Math.min(f.w, f.h) - 2 * FRAME_AIR;
+    const cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+    roundShadow(ctx, cx, cy, d / 2);
+    drawRound(ctx, e.sprite, cx, cy, d);
+    return;
+  }
+  const kind = item.kind === 'tower' ? 'tower' : 'figure';
+  const img = e.sprite && art[e.sprite];
+  if (!img || !e.trim) return;
+  const k = frameSlot(kind, f, cap);
+  const [sx, sy, sw, sh] = e.trim;
+  const w = sw * k, h = sh * k;
+  const left = f.x + (f.w - w) / 2, top = f.y + (f.h - h) / 2;
+  ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);
+  const mimg = e.machine && art[e.machine.sprite];
+  if (mimg) {
+    const m = machineBox(e.machine.def, { left, top, w, h });
+    const [mx, my, mw, mh] = e.machine.trim;
+    ctx.drawImage(mimg, mx, my, mw, mh, m.left, m.top, m.w, m.h);
+  }
 }
 
 // The picture pop-up: one drawing, as the artist drew it, in the middle of the
@@ -6841,41 +7032,6 @@ function wrapped(ctx, text, width, font = `${POP_TEXT}px ${MAP_TYPE}`) {
   return out;
 }
 
-// Page 1: every tower in the game, one family per column across the spread.
-//
-// NO GUTTER RULE, and it went with the layout change. A line down the fold used to
-// say "towers on this side, their men on that" — two halves of one spread. The
-// towers now have the whole spread and their men have the next page, so a rule
-// through the middle of one list would divide something that is not divided. The
-// enemy page has never had one, for the same reason.
-function drawTowerPage(ctx) {
-  heading(ctx, 'Tower', PAGE_X);
-
-  for (const { def, tiers, col, row } of shelf()) {
-    towerCard(ctx, shelfRect(col, row), towerEntry(def, tiers));
-  }
-}
-
-// Page 2: the man each of those towers puts on the board, IN THE SAME CELL as his
-// tower on page 1. That is the whole trick of splitting them: flipping the page
-// keeps your place, so the third card down the first column is a Crossbow Tower on
-// one page and the Elite Archer inside it on the next.
-function drawUnitPage(ctx) {
-  heading(ctx, 'Unit', PAGE_X);
-
-  for (const { def, col, row } of shelf()) {
-    unitCard(ctx, shelfRect(col, row), unitEntry(def));
-  }
-}
-
-function heading(ctx, text, x) {
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = UP_MUTED;
-  ctx.font = `14px ${MAP_TYPE}`;
-  ctx.fillText(text, x, HEAD_Y);
-}
-
 // --- old paper -------------------------------------------------------------
 //
 // THE OWNER'S PICTURE was a scan of an old photograph's back: pale where the light
@@ -7171,187 +7327,36 @@ function roundShadow(ctx, cx, cy, r) {
 }
 
 // A card: a photo of its own, seeded from where it sits.
-function card(ctx, b) {
-  paperRect(ctx, b.x, b.y, b.w, b.h, Math.round(b.x * 7 + b.y * 13) % 997 + 1, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2, true, SOFT_RIP);
-}
-
-// A drawing standing on its own shadow inside a card's picture slot.
-//
-// `art` comes from towerArt() or figureSlot() and carries four things: the drawn
-// size, the anchor as a fraction of it, and where in the slot that anchor goes.
-// Every card in a column passes the same anchor, which is what lines the column
-// up — see the note on anchored() in src/book.js for why a bounding box will not
-// do it.
+// A drawing standing on its own shadow inside a cell: `slot` carries the drawn
+// size, the anchor as a fraction of it, and where in the cell that anchor goes.
+// Every cell of a kind passes the same anchor, which lines the page up — see the
+// note on anchored() in src/book.js.
 function drawArt(ctx, sprite, trim, b, slot) {
   const img = sprite && art[sprite];
   if (!img || !trim || !slot.a) return;
-
   const [sx, sy, sw, sh] = trim;
-  const dw = slot.w * slot.k;
-  const dh = slot.h * slot.k;
   ctx.drawImage(img, sx, sy, sw, sh,
-    b.x + slot.anchor.x - slot.a[0] * dw,
-    b.y + slot.anchor.y - slot.a[1] * dh,
-    dw, dh);
+    b.x + slot.anchor.x - slot.a[0] * slot.w,
+    b.y + slot.anchor.y - slot.a[1] * slot.h,
+    slot.w, slot.h);
 }
 
-function towerCard(ctx, b, e) {
-  card(ctx, b);
-  drawArt(ctx, e.sprite, e.trim, b, e.art);
-  if (e.machine) drawCardMachine(ctx, b, e);
-
-  const tx = b.x + TOWER_BOX.x + TOWER_BOX.w + 8;
-  const [r1, r2, r3] = rowsIn(b, 3);
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  ctx.fillStyle = INK;
-  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
-  ctx.fillText(e.title, tx, r1);
-
-  ctx.fillStyle = INK_MUTED;
-  ctx.font = `11px ${MAP_TYPE}`;
-  ctx.fillText(e.occupier, tx, r2);
-
-  // Price on the left of the row, refund on the right and in the green the game
-  // already uses for gold coming back to you — the same colour the refund button
-  // prints its own figure in.
-  const x = stat(ctx, 'stat_gold_cost', tx, r3, String(e.cost), INK);
-  stat(ctx, 'glyph_refund', x + 14, r3, String(e.refund), INK_GREEN);
-}
-
-// The ballista on its turret, in a card. The base has already been drawn into
-// the slot; this works out the box that drawing occupies and hands it to the
-// same machineBox the board uses, so the machine sits on the same spot of the
-// same roof at whatever scale the page happens to be drawn at.
-//
-// Never mirrored here. A card is a portrait of the tower at rest, and the
-// drawing's own direction is the one the artist chose.
-function drawCardMachine(ctx, b, e) {
-  const img = art[e.machine.sprite];
-  const slot = e.art;
-  if (!img || !slot.a) return;
-
-  const dw = slot.w * slot.k;
-  const dh = slot.h * slot.k;
+// The ballista or the cannon on its turret, in a cell, through the same machineBox
+// the board uses, so the machine sits on the same spot of the same roof.
+function drawCardMachine(ctx, b, slot, def) {
+  const img = art[def.machine.frames[0]];
+  if (!img) return;
   const box = {
-    left: b.x + slot.anchor.x - slot.a[0] * dw,
-    top: b.y + slot.anchor.y - slot.a[1] * dh,
-    w: dw,
-    h: dh
+    left: b.x + slot.anchor.x - slot.a[0] * slot.w,
+    top: b.y + slot.anchor.y - slot.a[1] * slot.h,
+    w: slot.w,
+    h: slot.h
   };
-  const m = machineBox(e.machine.def, box);
-  const [sx, sy, sw, sh] = e.machine.trim;
+  const m = machineBox(def, box);
+  const [sx, sy, sw, sh] = def.machine.trim;
   ctx.drawImage(img, sx, sy, sw, sh, m.left, m.top, m.w, m.h);
 }
 
-// The air between one stat and the next icon. It was 14 when a row held two of
-// them and 10 when a third arrived; 6 is what a 14px icon leaves.
-//
-// THE GAP IS THE CHEAPEST THING IN THE ROW, which is why it pays for the icons
-// rather than the other way round. The binding line in the book is the archer
-// thug's — health, attack and reach, three icons and three numbers in a text column
-// 141px wide — and at the new icon height it measures 144.1px at a gap of 10, 140.1
-// at 8 and 136.1 at 6. Only the last of those has margin worth the name.
-//
-// And a bigger icon needs less air, not more: the pairs are separated by the
-// pictures, and 10px of parchment between a 14px shield and a 14px sword reads as
-// loose where the same 10 between two 12px ones read as tight.
-export const STAT_GAP = 6;
-
-function unitCard(ctx, b, e) {
-  card(ctx, b);
-  drawArt(ctx, e.sprite, e.trim, b, e.art);
-
-  const tx = b.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
-  // THREE ROWS, ALWAYS, however few of them have anything in them. It counted the
-  // man's own rows for one build, and rowsIn CENTRES what it is given — so a card
-  // with no armour re-centred, and its name and its stats slid half a line down the
-  // plate. That is exactly what the owner ruled out: "don't shift the text to the
-  // middle when the bottom line is empty without armor stats."
-  //
-  // So the grid is the fixed thing and the rows fill it or do not. A page whose
-  // titles all sit on one line reads as a page; a page whose titles wander by 8px
-  // depending on whether a man happens to own a shield reads as a mistake.
-  const [r1, r2, r3] = rowsIn(b, 3);
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  ctx.fillStyle = INK;
-  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
-  ctx.fillText(e.title, tx, r1);
-
-  // Health, attack, reach — in that order, and each one skipped by the men it
-  // does not apply to rather than printed as a blank. An archer on his deck
-  // cannot be reached to be hurt and has no health; a swordsman walks up to
-  // what he hits and has no reach. So no man on the page shows all three.
-  const top = [];
-  if (e.hp !== null) top.push(['stat_health', e.hp]);
-  top.push([e.attack || 'stat_damage', e.damage]);
-  if (e.range !== null) top.push(['stat_range', e.range]);
-
-  // The room a row has is the card's own width, less the picture column and the
-  // gutter it is measured from. Passed rather than assumed, because it is the same
-  // arithmetic `tx` is built from and two copies of it could drift.
-  const room = b.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
-  statRow(ctx, top, tx, r2, INK, room);
-  statRow(ctx, e.traits, tx, r3, INK, room);
-}
-
-// A ROW OF ICONS AND THE NUMBERS BESIDE THEM, wherever one is printed — a unit
-// card, an enemy card, either of their second lines. One function because the
-// pages have to lay them out identically: a rank is a thing a player compares
-// ACROSS the book, a swordsman's plate against the giant's, and two icons sitting
-// at different distances from their words would make that comparison harder than
-// reading the numbers would.
-//
-// AN EMPTY LIST DRAWS NOTHING AND STILL COSTS ITS ROW, which is the whole reason
-// the callers hand it one rather than skipping the call — see the note in unitCard.
-// The smallest a stat row may be set at, in icon px. Below this the numbers stop
-// being readable at arm's length on a phone, and a row that cannot fit at 10 is a
-// card that needs redesigning rather than squeezing.
-const STAT_MIN_H = 10;
-
-// How wide a row of pairs would set at a given icon height. Measured through the
-// same ctx the row is drawn with, so it is the real width rather than an estimate.
-function statRowWidth(ctx, pairs, h = BOOK_ICON_H) {
-  ctx.font = `${h - 2}px ${MAP_TYPE}`;
-  let w = 0;
-  pairs.forEach(([key, value], i) => {
-    if (i) w += STAT_GAP;
-    w += uiSize(key, { h }).w + 4 + ctx.measureText(String(value)).width;
-  });
-  return w;
-}
-
-function statRow(ctx, pairs, x, y, colour = INK, room = 0) {
-  // SET SMALLER RATHER THAN RUN OFF THE CARD, when a row is too long for the space
-  // beside its picture.
-  //
-  // The Captain Thug is what needed it and the reason is his health: every other
-  // figure in this game has at most three digits and he has 5,000, which is one
-  // whole extra character in the widest column on the page. His row sets 146.8px
-  // into 141px of card.
-  //
-  // A RULE RATHER THAN AN EXCEPTION FOR HIM. Any row that does not fit is set at
-  // whatever height does fit, floored at STAT_MIN_H, and every row that already
-  // fits is untouched — so nothing else on any page moved. That is the difference
-  // between this and the two alternatives: dropping his reach from the card loses
-  // information the player needs, and widening the column moves every other card.
-  //
-  // `room` is optional. A caller that does not pass one gets the old behaviour,
-  // which is what the pop-up's rows want — they are laid out in a column with no
-  // hard right edge.
-  let h = BOOK_ICON_H;
-  if (room > 0) {
-    const want = statRowWidth(ctx, pairs, h);
-    if (want > room) h = Math.max(STAT_MIN_H, Math.floor(h * room / want));
-  }
-  let at = x;
-  for (const [key, value] of pairs)
-    at = stat(ctx, key, at, y, String(value), colour, h) + STAT_GAP;
-  return at;
-}
 
 // One icon and its number, returning the x to carry on from. The icon is drawn
 // through the same uiSize/drawUi path as the dashboard's, so a re-exported file
@@ -7371,179 +7376,11 @@ function stat(ctx, key, x, y, text, colour, h = BOOK_ICON_H) {
   return x + w + 4 + ctx.measureText(text).width;
 }
 
-// Page 2: the enemies, in the same cards as everything else.
-//
-// Three lines, laid out exactly like a tower's: a name, then two stat rows —
-// health, attack and reach over the two ranks of armour. What it is worth to kill
-// and what it costs to let through are inside the picture instead, which is the
-// swap the armour paid for: they are the two facts a player learns once and then
-// knows, and the plate is the one they have to re-read for every tower they build.
-// WHAT A KILL PAYS AND WHAT A LEAK COSTS, as a row.
-//
-// They were the card's third row, then they moved inside the pop-up's picture to
-// make room for the armour, and the owner has now given the card a fourth row so
-// that both can be on it: "add 1 more line in their description preview so that
-// the bounty and lives lost can be shown there." The page is the place for them —
-// a bounty is a thing you compare across the roster, and comparing it meant
-// opening seven pop-ups.
-//
-// AN EMPTY ROW FOR A CREATURE THAT HAS NEITHER, which today is the boss and is
-// not an oversight: he pays nothing and costs nothing, because reaching the exit
-// ends the run outright. A zero in a coin would say he is worth nothing to kill,
-// which is the opposite of true, and a zero in a heart would say he is harmless.
-// Nothing said is better than either.
+// WHAT A KILL PAYS AND WHAT A LEAK COSTS, as a row — and nothing for a creature
+// that has neither, which is the boss.
 const rewardRow = d => (d.bounty || d.leak)
   ? [['stat_gold_cost', d.bounty], ['stat_life_cost', d.leak]]
   : [];
-
-// THE LITTLE NUMBER IN A BOSS CARD'S CORNER, and tapping it swaps the card to his
-// other stage. See stageBadge in book.js for the rect and the argument.
-//
-// A ROUNDED PLATE RATHER THAN A BARE DIGIT, because it has to read as a control. A
-// number alone on a card of numbers is one more statistic, and this is the only
-// thing on the page that answers a tap with something other than a picture.
-function drawStageBadge(ctx, c, stage) {
-  const b = stageBadge(c);
-  ctx.fillStyle = 'rgba(74,64,48,0.92)';
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 5);
-  ctx.fill();
-  // THE PARCHMENT'S OWN COLOUR, not CARD_FILL. CARD_FILL is the plate a card is
-  // drawn WITH — 6% dark over the page — so on this badge's dark ground it is
-  // invisible, and the badge rendered as a blank square with nothing in it. It is
-  // the ink that has to contrast here, and the page's own paper is what does.
-  ctx.fillStyle = SHEET_FILL;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `11px ${MAP_TYPE}`;
-  ctx.fillText(String(stage), b.x + b.w / 2, b.y + b.h / 2);
-}
-
-// One enemy or boss card. The two are the same card at two widths — see
-// bossCards in book.js for why a boss gets a wider one — so they are drawn by one
-// function and differ only in the rect they are handed.
-//
-// `stage` is which half of a two-stage boss to show, and every figure on the page
-// goes through the same lookup — see stageOfCard in book.js — so the drawing, the
-// name, the plate, the blade and the reach can never come from different halves.
-// AN EMPTY LAST ROW IS NOT LAID OUT, at the owner's ask: "align name and stats for
-// bosses to the center of the box... just move the name and stats down a bit so
-// that there are good gaps on top and below."
-//
-// rowsIn already centres a block of n rows in a card — that is its whole job, and
-// the note over it says so. The boss card was asking it for FOUR while drawing
-// three: he is worth no gold and costs no lives, so rewardRow gives him nothing,
-// and four rows of 20 in a 73px card start 3.5px ABOVE the plate. The three rows
-// he does draw were hung from that, which is the gap at the bottom.
-//
-// SO THE COUNT IS DERIVED rather than passed in. Trailing empty rows are dropped
-// and the rest are centred, which needs no caller to know anything and fixes the
-// next card with a blank last row without being edited.
-//
-// IT LEAVES THE ROSTER ALONE, and that is what makes it safe rather than merely
-// general: every enemy on the page is worth gold and costs lives, so the reward
-// row is never their last-and-empty one. The Thug and the Archer Thug have a blank
-// row in the MIDDLE — no armour to print — and that one stays, because it is what
-// lines their bounty up with everybody else's across the row.
-function enemyCard(ctx, c, stage = 1) {
-  const d = stageOfCard(c.def, stage);
-  card(ctx, c);
-  drawArt(ctx, d.sprite, d.spriteTrim, c, figureSlot(d.spriteTrim, d.pivot, figureFit(d)));
-
-  const tx = c.x + FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP;
-  const room = c.w - (FIGURE_BOX.x + FIGURE_BOX.w + TEXT_GAP);
-
-  const top = [['stat_health', d.hp]];
-  if (strikes(d)) top.push([attackIcon(d), shownDamage(d)]);
-  if (shownRange(d) !== null) top.push(['stat_range', shownRange(d)]);
-  const traits = traitRow(d);
-  const reward = rewardRow(d);
-
-  // The name always counts; after it, the last row with anything in it.
-  const used = reward.length ? 4 : traits.length ? 3 : 2;
-  const [r1, r2, r3, r4] = rowsIn(c, used);
-
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = INK;
-  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
-  ctx.fillText(d.name, tx, r1);
-
-  // Health, attack and — for the ones who fight at a distance — how far. The
-  // archer's 200 and the doctor's 130 are the whole difference between them
-  // and everything else on the page, and a player who cannot see the number
-  // learns it by watching a tower fail to answer.
-  statRow(ctx, top, tx, r2, INK, room);
-
-  // AND WHAT HE WEARS AND WHAT HE THROWS. The four enemies are read as a column,
-  // and what a tower can hurt is the question the page is being opened to answer.
-  statRow(ctx, traits, tx, r3, INK, room);
-  statRow(ctx, reward, tx, r4, INK, room);
-
-  // LAST, so it sits over the plate and over anything that reaches its corner.
-  if (staged(c.def)) drawStageBadge(ctx, c, stage);
-}
-
-function drawEnemyPage(ctx, state) {
-  heading(ctx, 'Enemy', PAGE_X);
-  for (const c of enemyCards()) enemyCard(ctx, c);
-
-  // AND THE BOSS BAND, under a heading of its own at the foot of the page. Only
-  // drawn when there IS one, so the heading cannot end up standing over blank
-  // parchment on a build where the roster has no boss in it.
-  const boss = bossCards();
-  if (!boss.length) return;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = UP_MUTED;
-  ctx.font = `14px ${MAP_TYPE}`;
-  ctx.fillText('Boss', PAGE_X, BOSS_HEAD_Y);
-  for (const c of boss) enemyCard(ctx, c, state.bookStage);
-}
-
-// Page 4: what a topped-out tier 4 can be taught.
-//
-// THE SAME CARD AS A TOWER'S, and that is the change the artist asked for. It
-// carried two lines of prose in a smaller face for one build, which was the one
-// card in the book laid out differently from the rest — and a reference page whose
-// boxes are two shapes reads as two kinds of thing however well the grid lines up.
-//
-// So it is a tower card exactly: three rows, centred by rowsIn like every other
-// card, with the name on top, the tower that teaches it underneath in the row a
-// tower gives to the man it musters, and the price on an icon row at the bottom.
-// The explaining moved to the pop-up, where there is room for it.
-function drawAbilityPage(ctx) {
-  heading(ctx, 'Ability', PAGE_X);
-
-  for (const c of abilityCards()) {
-    abilityCard(ctx, c, abilityEntry(c.def));
-  }
-}
-
-function abilityCard(ctx, b, e) {
-  card(ctx, b);
-  roundShadow(ctx, b.x + ICON_BOX.x + ICON_BOX.w / 2, b.y + b.h / 2, ABILITY_ICON / 2);
-  drawRound(ctx, e.sprite, b.x + ICON_BOX.x + ICON_BOX.w / 2, b.y + b.h / 2, ABILITY_ICON);
-
-  const tx = b.x + ICON_BOX.x + ICON_BOX.w + 8;
-  const [r1, r2, r3] = rowsIn(b, 3);
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  ctx.fillStyle = INK;
-  ctx.font = `${CARD_TITLE}px ${MAP_TYPE}`;
-  ctx.fillText(e.title, tx, r1);
-
-  ctx.fillStyle = INK_MUTED;
-  ctx.font = `11px ${MAP_TYPE}`;
-  ctx.fillText(e.of, tx, r2);
-
-  // The price alone, with no refund beside it. An ability is folded into the
-  // tower's own `spent` when it is bought, so it does come back at the same 60% —
-  // but only by taking the whole tower down, and a refund figure on a line of its
-  // own would read as something you can sell separately.
-  stat(ctx, 'stat_gold_cost', tx, r3, String(e.cost), INK);
-}
 
 // A UI disc drawn to a diameter and clipped to a circle. The four ability files
 // are drawn as a disc rather than a rectangle — see plateFace() for the whole
@@ -7570,7 +7407,7 @@ function drawBookFooter(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_MUTED;
   ctx.font = `14px ${MAP_TYPE}`;
-  ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, FOLD, FOOT_Y + BOOK_PREV.h / 2);
+  ctx.fillText(`Page ${state.book + 1} / ${PAGES}`, LEFT.cx, FOOT_Y + BOOK_PREV.h / 2);
 }
 
 // Dark on the parchment, which is the reverse of the buttons everywhere else in
