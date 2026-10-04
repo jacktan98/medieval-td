@@ -5349,14 +5349,14 @@ function drawInfo(ctx, state) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, 0, 960, 540);
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  printPath(ctx, cx, cy, R);
   ctx.clip('evenodd');
   scrimBox(ctx, barX, ly, lx + lw - barX, LINE_H);
   ctx.restore();
-  // OLD PHOTO PAPER, torn round, with the dark ring it always had — the
+  // AN OLD PHOTO PRINT, leaning, with the dark edge the disc always had — the
   // encyclopedia's cards in miniature, at the owner's word. No cream halo on the
   // figure here — on pale paper it would be an outline nobody can see.
-  paperDisc(ctx, cx, cy, R, 19, HUD_PLATE_EDGE);
+  paperPrint(ctx, cx, cy, R, 19, HUD_PLATE_EDGE);
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
     ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
@@ -5853,19 +5853,19 @@ function drawFoeAlerts(ctx, state) {
     const d = enemyTypes[r.id];
     const { cx, cy, R } = r;
 
-    // The info box's medallion and bar in miniature: a cream disc in a dark ring,
-    // and a bar that starts under its middle, cut away where the disc covers it.
+    // The info box's medallion and bar in miniature: a leaning print, and a bar
+    // that starts under its middle, cut away where the print covers it.
     const ly = cy - ALERT_BAR_H / 2;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, 960, 540);
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    printPath(ctx, cx, cy, R);
     ctx.clip('evenodd');
     scrimBox(ctx, cx, ly, r.x + r.w - cx, ALERT_BAR_H);
     ctx.restore();
 
-    // The same photo paper as the new-enemy card it opens, torn round.
-    paperDisc(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE);
+    // A leaning print of the same photo paper as the new-enemy card it opens.
+    paperPrint(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE);
     // The figure in the middle, well inside the ring — see alertFigure.
     const img = d && art[d.sprite];
     if (img) {
@@ -5889,7 +5889,7 @@ function drawFoeAlerts(ctx, state) {
     // thing that pulses — on the wall clock, so it still does on a paused board,
     // which is when a player has time to open it.
     const br = 7.5 * (1 + 0.12 * Math.sin(t * 5 + i));
-    const bx = cx + R * 0.71, by = cy - R * 0.71;
+    const [bx, by] = printCorners(cx, cy, R)[1];   // pinned to the print's corner
     ctx.fillStyle = ALERT_RED;
     ctx.beginPath();
     ctx.arc(bx, by, br, 0, Math.PI * 2);
@@ -7035,41 +7035,68 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2) {
   ctx.drawImage(c, x - PAPER_PAD, y - PAPER_PAD, w + 2 * PAPER_PAD, h + 2 * PAPER_PAD);
 }
 
-// A ROUND ONE, for the medallions: the same photo paper cut to a circle with a
-// torn rim, made once per size and kept like paperRect's sheets.
-const discCache = new Map();
-function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
+// A PRINT, for the medallions: a near-square of the same photo paper, leaning a
+// little — the top edge set back to the left of the bottom one, at the owner's
+// word, so it reads as a snapshot lying on the board rather than a badge. Made
+// once per size and kept, like paperRect's sheets. The figure drawn on it is not
+// touched; only the paper leans.
+//
+// `R` is the half-size the round medallion had, so every caller keeps its
+// layout: the print is PRINT_K of that across each way, and leans PRINT_LEAN of
+// its height.
+const PRINT_K = 0.92;
+const PRINT_LEAN = 0.16;
+// Its four corners, untorn, for whoever needs its outline — the bar a medallion
+// sits on is cut away under it, and the alert's "!" is pinned to its corner.
+function printCorners(cx, cy, R) {
+  const a = R * PRINT_K, k = a * PRINT_LEAN;
+  return [[cx - a - k, cy - a], [cx + a - k, cy - a], [cx + a + k, cy + a], [cx - a + k, cy + a]];
+}
+const printCache = new Map();
+function paperPrint(ctx, cx, cy, R, seed, edge, lw = 1.5) {
   const key = `${R}:${seed}:${edge}:${lw}`;
-  let c = discCache.get(key);
+  let c = printCache.get(key);
+  const P = PAPER_PAD, S = 2 * R * (PRINT_K * (1 + PRINT_LEAN)) + 2 * P;
   if (!c) {
-    const P = PAPER_PAD, K = 3, D = 2 * R;
+    const K = 3;
     c = document.createElement('canvas');
-    c.width = c.height = Math.ceil((D + 2 * P) * K);
+    c.width = c.height = Math.ceil(S * K);
     const g = c.getContext('2d');
     g.scale(K, K);
     const rnd = seeded(seed);
-    const n = Math.max(24, Math.round(Math.PI * D / 2.5));
-    const waves = [0, 1].map(() => ({ f: 2 + rnd() * 4, ph: rnd() * 6.28, a: rnd() }));
+    const pts = printCorners(S / 2, S / 2, R);
+    // Each side walked in short steps, each point nudged across the side.
     const path = new Path2D();
-    for (let i = 0; i < n; i++) {
-      const a = i / n * Math.PI * 2;
-      const o = waves.reduce((acc, wv) => acc + Math.sin(a * wv.f + wv.ph) * wv.a, 0) * 0.45
-        + (rnd() - 0.5) * 0.9;
-      const x = P + R + Math.cos(a) * (R + o), y = P + R + Math.sin(a) * (R + o);
-      i ? path.lineTo(x, y) : path.moveTo(x, y);
-    }
+    let first = true;
+    pts.forEach(([x0, y0], k) => {
+      const [x1, y1] = pts[(k + 1) % 4];
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      const nx = (y1 - y0) / len, ny = -(x1 - x0) / len;
+      const n = Math.max(6, Math.round(len / 2.5));
+      for (let i = 0; i < n; i++) {
+        const t = i / n, o = (rnd() - 0.5) * 1.1;
+        const x = x0 + (x1 - x0) * t + nx * o, y = y0 + (y1 - y0) * t + ny * o;
+        first ? path.moveTo(x, y) : path.lineTo(x, y);
+        first = false;
+      }
+    });
     path.closePath();
     g.save();
     g.clip(path);
-    g.drawImage(agedPaper(D + 8, D + 8, seed, CARD_TONE), P - 4, P - 4, D + 8, D + 8);
+    g.drawImage(agedPaper(S, S, seed, CARD_TONE), 0, 0, S, S);
     g.restore();
     g.strokeStyle = edge;
     g.lineWidth = lw;
+    g.lineJoin = 'round';
     g.stroke(path);
-    discCache.set(key, c);
+    printCache.set(key, c);
   }
-  const S = 2 * R + 2 * PAPER_PAD;
   ctx.drawImage(c, cx - S / 2, cy - S / 2, S, S);
+}
+// The print's outline as a path, for cutting the bar away under it.
+function printPath(ctx, cx, cy, R) {
+  printCorners(cx, cy, R).forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
 }
 
 // A card: a photo of its own, seeded from where it sits.
