@@ -43,6 +43,7 @@ import {
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
+import { UP_DONE } from '../src/upgradepage.js';
 import { PAUSE_ROW, ENTRY_NAME, ENTRY_SUB, ENTRY_TEXT, ENTRY_LEAD, ENTRY_TEXT_W, ENTRY_ICON_H,
          ENTRY_TEXT_SMALL, ENTRY_LEAD_SMALL, PARA_GAP } from '../src/render.js';
 import { uiSize } from '../src/data/ui.js';
@@ -406,8 +407,8 @@ console.log('\nWhat you can hit\n');
 
   // The footer: the flip centred under the grid, Close at the foot of the right
   // page, all three on one line on the bottom margin.
-  ok([BOOK_CLOSE, BOOK_PREV, BOOK_NEXT].every(b => b.y === FOOT_Y && b.y + b.h === LEFT.b),
-    'and the footer sits on the bottom margin', `y ${FOOT_Y}`);
+  ok([BOOK_CLOSE, BOOK_PREV, BOOK_NEXT].every(b => b.y === UP_DONE.y && b.h === UP_DONE.h),
+    'and the footer stands level with the Upgrades screen\'s Done', `y ${FOOT_Y}`);
   ok(Math.abs((LEFT.x + LEFT.w / 2) - (BOOK_PREV.x + BOOK_PREV.w) - (BOOK_NEXT.x - (LEFT.x + LEFT.w / 2))) < 0.01,
     'and the arrows are centred under the grid');
   ok(BOOK_CLOSE.x >= RIGHT.x && BOOK_CLOSE.x + BOOK_CLOSE.w === RIGHT.r,

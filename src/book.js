@@ -20,6 +20,7 @@ import { enemyTypes, BOOK_ORDER, FOE_NOTES } from './data/waves.js';
 import { refundOf } from './menu.js';
 import { occupant, shownRange, shownDamage, attackIcon, traitRow, strikes } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
+import { UP_DONE } from './upgradepage.js';
 
 export const PAGES = 4;
 
@@ -69,8 +70,10 @@ export const PAGE_TITLES = ['Towers', 'Units', 'Abilities', 'Enemies'];
 
 // The footer, hung off the bottom margin: the page flip under the grid, and Close
 // at the foot of the right page where the Upgrades screen keeps its Done.
+// ON THE UPGRADES SCREEN'S LINE, at the owner's word: the flip and Close stand at
+// the height of its Reset and Done, so the two screens' buttons sit level.
 const FOOT_H = 38;
-export const FOOT_Y = LEFT.b - FOOT_H;
+export const FOOT_Y = UP_DONE.y;
 
 // --- the grid of pictures --------------------------------------------------------
 //
@@ -216,7 +219,7 @@ FRAME.x = Math.round(RIGHT.cx - FRAME.w / 2);
 FRAME.y = RIGHT.y + 6;
 // An ability's picture is a button and says little on its own; its paragraph is
 // the long one in the book, so its frame is shorter and gives the words the room.
-export const FRAME_SMALL = { w: 128, h: 84 };
+export const FRAME_SMALL = { w: 128, h: 80 };
 FRAME_SMALL.x = Math.round(RIGHT.cx - FRAME_SMALL.w / 2);
 FRAME_SMALL.y = FRAME.y;
 export const frameFor = kind => (kind === 'ability' ? FRAME_SMALL : FRAME);
@@ -231,7 +234,7 @@ export const BOX_PAD = 16;
 export function boxFor(kind) {
   const f = frameFor(kind);
   const y = f.y + f.h + 12;
-  return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - 8 - y };
+  return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - 6 - y };
 }
 
 // The numbers: each an icon and its figure centred in a slot of its own, and each
