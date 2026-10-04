@@ -5357,7 +5357,7 @@ function drawInfo(ctx, state) {
   // encyclopedia's cards in miniature, at the owner's word. (It was a leaning
   // square print for two builds; the owner had it back round.) No cream halo on
   // the figure here — on pale paper it would be an outline nobody can see.
-  paperDisc(ctx, cx, cy, R, 19, HUD_PLATE_EDGE);
+  paperDisc(ctx, cx, cy, R, 19, HUD_PLATE_EDGE, 1.5, SOFT_RIP);
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
     ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
@@ -6702,7 +6702,7 @@ function drawZoom(ctx, z) {
 
   // THE ENCYCLOPEDIA'S PHOTO PAPER, torn at the edge, at the owner's word — the
   // card the picture was opened from, held up close.
-  paperRect(ctx, px, py, pw, ph, 67, CARD_TONE, 2, SHEET_EDGE, 2);
+  paperRect(ctx, px, py, pw, ph, 67, CARD_TONE, 2, SHEET_EDGE, 2, false, SOFT_RIP);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -6905,6 +6905,9 @@ const seeded = seed => {
 // everything on it (cards, panels, medallions) CARD_RIP. 0 leaves only the nibble.
 const SHEET_RIP = 18;
 const CARD_RIP = 10;
+// Shallower, at the owner's word, on the encyclopedia's cards and pop-up and the
+// enemy info bar's medallion.
+const SOFT_RIP = 5;
 // The tears round an edge `per` long: how far in each point is cut. A tear's
 // width grows with its depth, so a deep one is not a needle.
 function tearCuts(rnd, per, deep) {
@@ -7049,9 +7052,10 @@ const sheetCache = new Map();
 // cards and the Upgrades panel. Baked into the same canvas, so it costs nothing a
 // frame; the canvas is padded wider to hold it.
 const SHADOW_PAD = 12;
-function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = false) {
+function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = false,
+                   deep = tear >= SHEET_TEAR ? SHEET_RIP : CARD_RIP) {
   const P = shadow ? SHADOW_PAD : PAPER_PAD;
-  const key = `${w}x${h}:${seed}:${tone.a}:${tear}:${edge}:${lw}:${shadow}`;
+  const key = `${w}x${h}:${seed}:${tone.a}:${tear}:${edge}:${lw}:${shadow}:${deep}`;
   let c = sheetCache.get(key);
   if (!c) {
     const K = w * h > 100000 ? 2 : 3;
@@ -7062,7 +7066,7 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = f
     g.scale(K, K);
     // A WHOLE SHEET tears deeper than a card — see `deep` on tornEdge.
     const sheet = tear >= SHEET_TEAR;
-    const path = tornEdge(P, P, w, h, seed, tear, sheet ? SHEET_RIP : CARD_RIP);
+    const path = tornEdge(P, P, w, h, seed, tear, deep);
     if (shadow) {
       // Shadow offsets and blur are in device pixels, so they take K by hand.
       g.save();
@@ -7101,8 +7105,8 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = f
 // A ROUND ONE, for the medallions: the same photo paper cut to a circle with a
 // torn rim, made once per size and kept like paperRect's sheets.
 const discCache = new Map();
-function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
-  const key = `${R}:${seed}:${edge}:${lw}`;
+function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5, deep = CARD_RIP) {
+  const key = `${R}:${seed}:${edge}:${lw}:${deep}`;
   let c = discCache.get(key);
   if (!c) {
     const P = PAPER_PAD, K = 3, D = 2 * R;
@@ -7113,8 +7117,8 @@ function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
     const rnd = seeded(seed);
     const n = Math.max(24, Math.round(Math.PI * D / 2.5));
     const waves = [0, 1].map(() => ({ f: 2 + rnd() * 4, ph: rnd() * 6.28, a: rnd() }));
-    // Torn as deep as a card is — see tearCuts.
-    const tearAt = tearCuts(rnd, Math.PI * D, CARD_RIP);
+    // Torn as deep as a card is, unless told otherwise — see tearCuts.
+    const tearAt = tearCuts(rnd, Math.PI * D, deep);
     const path = new Path2D();
     for (let i = 0; i < n; i++) {
       const a = i / n * Math.PI * 2;
@@ -7167,7 +7171,7 @@ function roundShadow(ctx, cx, cy, r) {
 
 // A card: a photo of its own, seeded from where it sits.
 function card(ctx, b) {
-  paperRect(ctx, b.x, b.y, b.w, b.h, Math.round(b.x * 7 + b.y * 13) % 997 + 1, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2, true);
+  paperRect(ctx, b.x, b.y, b.w, b.h, Math.round(b.x * 7 + b.y * 13) % 997 + 1, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2, true, SOFT_RIP);
 }
 
 // A drawing standing on its own shadow inside a card's picture slot.
