@@ -1308,15 +1308,20 @@ let busB = null;
 //   AMBIENCE — every LOOP: a board's birds, river, wind, fire and fountain, the
 //              villagers' welding, reeling and sizzling, and the world map's birds,
 //              march and flag. Anything that goes on for as long as a situation does.
+//              AND THE MAP'S ONE-OFF NOISES, at the owner's word — see MAP_ONE_OFFS.
 //   EFFECTS  — everything else: shots, blows, deaths, the voices, the buttons, the
-//              villagers' one-off noises, the victory and defeat fanfares, the stars.
+//              victory and defeat fanfares, the stars.
 //
 // Each is a gain node of its own in front of the bus it feeds, so the duck still
 // moves both together and neither touches the levels the mix was balanced at:
 //
 //   busA ── fxA ──────────────┐
+//   ambA ─────────────────────┤
 //   fxB ──┐                   ├── master ── speakers
 //   amb ──┴── busB (ducked) ──┘
+//
+// (ambA is the flag planted on the world map, the one map noise that speaks on
+// Category A's bus — busA is never ducked, so going round it changes nothing else.)
 //
 // A slider's 0..1 is SQUARED on the way to the gain: the ear hears loudness on a
 // curve, and a straight line spends the whole top half of the slider on changes
@@ -1339,6 +1344,18 @@ const levels = (() => {
 let fxA = null;
 let fxB = null;
 let amb = null;
+let ambA = null;
+
+// THE MAP'S OWN ONE-OFF NOISES, on the Ambience slider though each is a single
+// sound rather than a loop — the world going about its business, not the battle:
+// the church bell, hammering, the anvil, the tree being chopped, the factory, a
+// splash, things landing, a crow's wings, and the flag planted on the world map.
+const MAP_ONE_OFFS = new Set([
+  'church_bell', 'hammering_nail', 'anvil_hit', 'cutting_tree', 'factory',
+  'water_splash', 'things_land', 'wings_flap', 'flag_planted'
+]);
+// Where a clip goes in place of the bus its caller named.
+const routed = (key, bus) => !MAP_ONE_OFFS.has(key) ? bus : bus === busA ? ambA : amb;
 export const soundLevel = kind => levels[kind] ?? 1;
 export function setSoundLevel(kind, v) {
   if (!SOUND_KINDS.includes(kind)) return;
@@ -1354,6 +1371,7 @@ function applyLevels() {
   set(fxA, levels.effects);
   set(fxB, levels.effects);
   set(amb, levels.ambience);
+  set(ambA, levels.ambience);
 }
 
 // When Category A may speak again, on the context's clock.
@@ -1397,9 +1415,12 @@ export function loadAudio() {
   fxB.connect(busB);
   amb = ctx.createGain();
   amb.connect(busB);
+  ambA = ctx.createGain();
+  ambA.connect(master);
   fxA.gain.value = levels.effects ** 2;
   fxB.gain.value = levels.effects ** 2;
   amb.gain.value = levels.ambience ** 2;
+  ambA.gain.value = levels.ambience ** 2;
 
   const absent = [];
 
@@ -1599,7 +1620,7 @@ function fire(key, bus, keep = false, level = 1) {
   const g = ctx.createGain();
   g.gain.value = c.gain * level;
 
-  src.connect(g).connect(bus);
+  src.connect(g).connect(routed(key, bus));
   // Second argument is WHERE IN THE CLIP to begin. Starting past the dead air
   // is what makes a hit sound land on the hit.
   src.start(0, c.offset);
@@ -1758,7 +1779,7 @@ export function slice(key, from, dur, level = 1, fade = 0.03) {
   g.gain.setValueAtTime(v, now);
   g.gain.setValueAtTime(v, now + dur - fade);
   g.gain.linearRampToValueAtTime(0, now + dur);
-  src.connect(g).connect(fxB);
+  src.connect(g).connect(routed(key, fxB));
   src.start(now, from, dur);
 }
 
@@ -1811,7 +1832,7 @@ export function alone(key, level = 1, rate = 1) {
   src.playbackRate.value = rate;
   const g = ctx.createGain();
   g.gain.value = c.gain * level;
-  src.connect(g).connect(fxB);
+  src.connect(g).connect(routed(key, fxB));
   src.start(0, 0);
   return true;
 }
