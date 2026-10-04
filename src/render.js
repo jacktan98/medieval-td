@@ -7674,7 +7674,10 @@ function drawResult(ctx, state) {
   // for them. The length belongs here for the same reason the difficulty does:
   // two records are kept per map and a panel that named only one of the two
   // settings would be the same panel for two different achievements.
-  ctx.fillText(`${s.map}  ·  ${s.mode}  ·  ${s.difficulty}`, 480, 186);
+  // EACH SETTING SAYS WHICH IT IS. It read "Normal · Hard", and the owner, having
+  // picked Hard, reasonably asked what the Normal was: the stage panel's Length
+  // row, which on its own reads like a second difficulty.
+  ctx.fillText(`${s.map}  ·  ${s.difficulty} difficulty  ·  ${s.mode} length`, 480, 186);
 
   // THE STARS ARE COUNTED OUT rather than shown all at once — see stepStars in
   // score.js for the clock, and the `star` cue in audio.js for the chime that goes
@@ -7704,12 +7707,15 @@ function drawResult(ctx, state) {
   // so the line says the thing that actually stands between them and one.
   ctx.font = `16px ${MAP_TYPE}`;
   ctx.fillStyle = 'rgba(240,230,210,0.62)';
+  // NOTHING AT THREE STARS: it said "Nothing left to prove on this one", and the
+  // owner took it out — a map is worth playing again for its own sake.
   const want = s.stars === 1 ? two : s.stars === 2 ? three : null;
-  ctx.fillText(
-    !s.won ? `Hold the keep to the end of wave ${s.ofWaves} for a star.`
-      : want === null ? 'Nothing left to prove on this one.'
-      : `${want} lives for ${s.stars === 2 ? 'three' : 'two'} stars.`,
-    480, 348);
+  if (!s.won || want !== null) {
+    ctx.fillText(
+      !s.won ? `Hold the keep to the end of wave ${s.ofWaves} for a star.`
+        : `${want} lives for ${s.stars === 2 ? 'three' : 'two'} stars.`,
+      480, 348);
+  }
 
   // The record line. "You beat it" is worth its own colour; matching it or
   // falling short both just report where the bar is.
