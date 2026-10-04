@@ -30,7 +30,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes, occupant } from './select.js';
 import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFit, shown,
          ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
-         BAND_X, BAND_W, BAND_H, BAND_GAP, BAND_COLUMNS, STAGE_BTN, BOOK_BANDS,
+         boxFor, BOX_PAD, STAT_COLS, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
@@ -6526,6 +6526,14 @@ function drawBook(ctx, state) {
   const items = pageItems(state.book);
   const pick = Math.min((state.bookPick && state.bookPick[state.book]) || 0, items.length - 1);
   items.forEach((it, i) => bookCell(ctx, state, it, i === pick));
+  // AND THE BOSS'S OWN HEADING, set like the title above, over his row.
+  if (items.some(it => it.boss)) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = UP_INK;
+    ctx.font = `24px ${MAP_TYPE}`;
+    ctx.fillText('Boss', LEFT.cx, bossHeadY());
+  }
 
   // THE RIGHT PAGE: the one picked, described.
   drawBookEntry(ctx, state, items[pick]);
@@ -6590,14 +6598,6 @@ function bookCell(ctx, state, it, on) {
   } else {
     const d = it.boss ? shown(state, def) : def;
     drawArt(ctx, d.sprite, d.spriteTrim, it, figureArt(d.spriteTrim, d.pivot, figureFit(d)));
-    // THE BOSS'S ROW IS NAMED beside him, in the row he has to himself.
-    if (it.boss) {
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = UP_MUTED;
-      ctx.font = `18px ${MAP_TYPE}`;
-      ctx.fillText('Boss', it.x + it.w + 14, it.y + it.h / 2);
-    }
   }
 }
 
@@ -6613,7 +6613,7 @@ export const ENTRY_TEXT_SMALL = 12;
 export const ENTRY_LEAD_SMALL = 15;
 // The gap between two paragraphs, as a share of a line.
 export const PARA_GAP = 0.5;
-export const ENTRY_TEXT_W = RIGHT.w - 24;
+export const ENTRY_TEXT_W = RIGHT.w - 2 * 18;
 export const ENTRY_ICON_H = 20;
 // The ink a band's number is printed in, by what it means.
 const BAND_INK = { green: INK_GREEN };
@@ -6636,47 +6636,61 @@ function drawBookEntry(ctx, state, item) {
     }
   }
 
-  let y = f.y + f.h + 26;
+  // AND THE REST IN ONE CREAM BOX, as the Upgrades screen describes a rung.
+  const box = boxFor(item.kind);
+  paperRect(ctx, box.x, box.y, box.w, box.h, 31, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true);
+
+  let y = box.y + BOX_PAD + ENTRY_NAME / 2;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_NAME;
   ctx.font = `${ENTRY_NAME}px ${MAP_TYPE}`;
-  ctx.fillText(e.title, RIGHT.cx, y);
+  fillRoman(ctx, e.title, RIGHT.cx, y);
   y += ENTRY_NAME / 2 + 6;
 
   if (e.sub) {
+    ctx.textAlign = 'center';
     ctx.fillStyle = UP_MUTED;
     ctx.font = `${ENTRY_SUB}px ${MAP_TYPE}`;
-    ctx.fillText(e.sub, RIGHT.cx, y + ENTRY_SUB / 2);
-    y += ENTRY_SUB + 8;
+    fillRoman(ctx, e.sub, RIGHT.cx, y + ENTRY_SUB / 2);
+    y += ENTRY_SUB + 6;
   }
 
-  // THE NUMBERS, two to a row in pale bands across the page — before the words,
-  // so they stand in the same place whatever the paragraph's length.
+  // THE NUMBERS, before the words so they stand in the same place whatever the
+  // paragraph's length: three to a row, each centred in its slot.
   y += 4;
-  e.bands.forEach((b, i) => {
-    const bx = BAND_X + (i % BAND_COLUMNS) * (BAND_W + BAND_GAP);
-    const by = y + Math.floor(i / BAND_COLUMNS) * (BAND_H + BAND_GAP);
-    ctx.fillStyle = 'rgba(255,246,222,0.55)';
-    ctx.beginPath();
-    ctx.roundRect(bx, by, BAND_W, BAND_H, 7);
-    ctx.fill();
-    const ih = ENTRY_ICON_H;
-    const { w: iw } = uiSize(b.key, { h: ih });
-    drawUi(ctx, b.key, bx + 10 + iw / 2, by + BAND_H / 2, { h: ih });
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = BAND_INK[b.tone] || INK;
-    ctx.font = `16px ${MAP_TYPE}`;
-    ctx.fillText(String(b.value), bx + 10 + iw + 10, by + BAND_H / 2 + 1);
-    BOOK_BANDS.push({ x: bx, y: by, w: BAND_W, h: BAND_H, label: b.label });
-  });
-  const rows = Math.ceil(e.bands.length / BAND_COLUMNS);
-  y += rows * BAND_H + Math.max(0, rows - 1) * BAND_GAP + 14;
+  for (let r = 0; r * STAT_COLS < e.bands.length; r++) {
+    const row = e.bands.slice(r * STAT_COLS, (r + 1) * STAT_COLS);
+    const x0 = RIGHT.cx - row.length * STAT_SLOT_W / 2;
+    const cy = y + STAT_ROW_H / 2;
+    row.forEach((b, i) => {
+      const ih = ENTRY_ICON_H;
+      const { w: iw } = uiSize(b.key, { h: ih });
+      ctx.font = `16px ${MAP_TYPE}`;
+      const tw = ctx.measureText(String(b.value)).width;
+      const ew = iw + 8 + tw;
+      const sx = x0 + i * STAT_SLOT_W + (STAT_SLOT_W - ew) / 2;
+      drawUi(ctx, b.key, sx + iw / 2, cy, { h: ih });
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = BAND_INK[b.tone] || INK;
+      ctx.fillText(String(b.value), sx + iw + 8, cy + 1);
+      BOOK_BANDS.push({ x: sx - 4, y: y, w: ew + 8, h: STAT_ROW_H, label: b.label });
+    });
+    y += STAT_ROW_H;
+  }
 
-  // AND THE WORDS: what an enemy does and what to do about him, or what an ability
-  // does, in full.
+  // AND THE WORDS, under a faint rule: what an enemy does and what to do about
+  // him, or what an ability does, in full.
   if (e.prose) {
+    y += 8;
+    ctx.strokeStyle = CARD_EDGE;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(box.x + BOX_PAD + 20, y);
+    ctx.lineTo(box.x + box.w - BOX_PAD - 20, y);
+    ctx.stroke();
+    y += 10;
     const small = item.kind === 'ability';
     const size = small ? ENTRY_TEXT_SMALL : ENTRY_TEXT;
     const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;
@@ -6684,7 +6698,7 @@ function drawBookEntry(ctx, state, item) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = UP_INK;
-    const x = RIGHT.x + (RIGHT.w - ENTRY_TEXT_W) / 2;
+    const x = box.x + (box.w - ENTRY_TEXT_W) / 2;
     for (const line of lines) {
       if (!line) { y += lead * PARA_GAP; continue; }
       ctx.fillText(line, x, y + lead / 2);
@@ -6692,13 +6706,13 @@ function drawBookEntry(ctx, state, item) {
     }
   }
 
-  // THE TIP: what the band under the mouse is, in a small dark plate over it.
+  // THE TIP: what the number under the mouse is, in a small dark plate over it.
   const tip = state.bookTip !== null && state.bookTip !== undefined && BOOK_BANDS[state.bookTip];
   if (tip && tip.label) {
     ctx.font = `12px ${MAP_TYPE}`;
     const lw = ctx.measureText(tip.label).width + 16, lh = 22;
     const lx = Math.max(RIGHT.x, Math.min(RIGHT.r - lw, tip.x + tip.w / 2 - lw / 2));
-    const ly = tip.y - lh - 2;
+    const ly = tip.y - lh + 2;
     ctx.fillStyle = 'rgba(30,26,20,0.94)';
     ctx.beginPath();
     ctx.roundRect(lx, ly, lw, lh, 6);
@@ -6709,12 +6723,46 @@ function drawBookEntry(ctx, state, item) {
   }
 }
 
+// A ROMAN NUMERAL IN A SERIF FACE. Lobster's capital I is a script stroke, so
+// "Tier III" in it reads as "Tier 111"; a standalone numeral word is drawn in a
+// bold serif at the same size instead, and the rest of the line in whatever font
+// is set. Honours the context's textAlign, like fillText.
+const ROMAN = /^(I{1,3}|IV|VI{0,3}|IX|X)$/;
+const SERIF = `Georgia, 'Times New Roman', serif`;
+function fillRoman(ctx, text, x, y) {
+  const words = text.split(' ');
+  if (!words.some(w => ROMAN.test(w))) { ctx.fillText(text, x, y); return; }
+  const font = ctx.font;
+  const size = parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
+  const serif = `bold ${Math.round(size * 0.86)}px ${SERIF}`;
+  const parts = words.map((w, i) => ({ t: (i ? ' ' : '') + w, f: ROMAN.test(w) ? serif : font }));
+  // The space before a numeral belongs to the Lobster run, so it is Lobster wide.
+  parts.forEach(p => { if (p.f === serif && p.t.startsWith(' ')) { p.t = p.t.slice(1); p.pre = ' '; } });
+  let total = 0;
+  for (const p of parts) {
+    if (p.pre) { ctx.font = font; p.preW = ctx.measureText(p.pre).width; total += p.preW; }
+    ctx.font = p.f; p.w = ctx.measureText(p.t).width; total += p.w;
+  }
+  const align = ctx.textAlign;
+  let at = align === 'center' ? x - total / 2 : align === 'right' || align === 'end' ? x - total : x;
+  ctx.textAlign = 'left';
+  for (const p of parts) {
+    if (p.pre) at += p.preW;
+    ctx.font = p.f;
+    ctx.fillText(p.t, at, y);
+    at += p.w;
+  }
+  ctx.textAlign = align;
+  ctx.font = font;
+}
+
 // The picked drawing in its frame: one factor for every drawing of its kind, so a
 // Militia Camp stays smaller than a Watchtower here too, centred both ways.
 function drawFramed(ctx, item, e, f) {
   const cap = popCap();
   if (item.kind === 'ability') {
-    const d = Math.min(f.w, f.h) - 2 * FRAME_AIR;
+    // A disc has no corners to keep clear, so it takes less air than a drawing.
+    const d = Math.min(f.w, f.h) - FRAME_AIR;
     const cx = f.x + f.w / 2, cy = f.y + f.h / 2;
     roundShadow(ctx, cx, cy, d / 2);
     drawRound(ctx, e.sprite, cx, cy, d);
@@ -6726,7 +6774,9 @@ function drawFramed(ctx, item, e, f) {
   const k = frameSlot(kind, f, cap);
   const [sx, sy, sw, sh] = e.trim;
   const w = sw * k, h = sh * k;
-  const left = f.x + (f.w - w) / 2, top = f.y + (f.h - h) / 2;
+  // Centred on its own shadow across, and on itself down, as the cells are.
+  const a = e.pivot || [0.5, 0.5];
+  const left = f.x + f.w / 2 - a[0] * w, top = f.y + (f.h - h) / 2;
   ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);
   const mimg = e.machine && art[e.machine.sprite];
   if (mimg) {
@@ -6900,7 +6950,7 @@ function drawZoom(ctx, z) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
   ctx.font = `18px ${MAP_TYPE}`;
-  ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
+  fillRoman(ctx, z.title, 480, py + POP_PAD + POP_TITLE / 2);
 
   const bodyY = py + POP_PAD + POP_TITLE + POP_GAP;
   const cx = beside ? px + POP_PAD + slot.w / 2 : 480;

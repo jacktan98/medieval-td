@@ -38,7 +38,7 @@ import {
   PAGES, shelf, pageItems, pageEntry, towerEntry, unitEntry, towerArt, figureArt, figureFit,
   COLUMNS, ROWS, CELL_W, CELL_H, AIR, ABILITY_ICON, BOOK_TOWER_K, BOOK_FIGURE_SCALE,
   SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, FRAME, FRAME_SMALL, frameFor, frameSlot, FRAME_AIR,
-  BAND_X, BAND_W, BAND_H, BAND_GAP, BAND_COLUMNS, STAGE_BTN, staged,
+  boxFor, BOX_PAD, STAT_COLS, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, hitStage, bossHeadY, staged,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON_HIT, popSlot
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
@@ -116,6 +116,13 @@ console.log('\nWhat is on the pages\n');
 
   ok(pageItems(2).length === ABILITIES.length,
     'and every ability has one', `${pageItems(2).length}`);
+
+  // THE BOSS HAS A HEADING between the roster and his row, clear of both.
+  const rosterFoot = Math.max(...foes.filter(c => !c.boss).map(c => c.y + c.h));
+  const bossTop = Math.min(...foes.filter(c => c.boss).map(c => c.y));
+  ok(bossHeadY() - 12 > rosterFoot && bossHeadY() + 12 < bossTop,
+    'and the boss\'s heading sits between the roster and his row',
+    `roster to ${rosterFoot}, heading at ${bossHeadY()}, boss from ${bossTop}`);
 
   // THE BOSS STARTS A ROW OF HIS OWN, under the roster rather than among it.
   const lastFoe = Math.max(...foes.filter(c => !c.boss).map(c => c.y));
@@ -242,41 +249,39 @@ console.log('\nThe left page\n');
   ok(ABILITY_ICON + 2 * AIR <= CELL_H, 'the ability disc fits its cell', `${ABILITY_ICON}px in ${CELL_H}`);
 }
 
-console.log('\nEverything stands on its shadow\n');
+console.log('\nEverything stands on its own shadow\n');
 
 {
-  // A bounding box is not where a thing is. Every building is placed by its own
-  // shadow at one shared point, and has to fit its cell from there.
-  const inCell = (s) => {
+  // EACH DRAWING IS CENTRED ON ITS OWN SHADOW in its own photo: the spot it stands
+  // on is on the cell's centre line, the drawing is centred down, and it fits.
+  const check = s => {
     const x = s.anchor.x - s.a[0] * s.w, y = s.anchor.y - s.a[1] * s.h;
-    return x >= -0.01 && y >= -0.01 && x + s.w <= CELL_W + 0.01 && y + s.h <= CELL_H + 0.01;
+    return Math.abs(s.anchor.x - CELL_W / 2) < 0.01 &&
+      Math.abs(y - (CELL_H - s.h) / 2) < 0.01 &&
+      x >= -0.01 && y >= -0.01 && x + s.w <= CELL_W + 0.01 && y + s.h <= CELL_H + 0.01;
   };
-  ok(TIERS.every(d => inCell(towerArt(d))), 'every building fits its cell, anchored on its shadow',
+  ok(TIERS.every(d => check(towerArt(d))), 'every building is centred on its shadow and fits its cell',
     `${BOOK_TOWER_K.toFixed(3)}x`);
-  const lines = new Set(TIERS.map(d => towerArt(d).anchor.y.toFixed(3)));
-  ok(lines.size === 1, 'and every tower stands on the same line', [...lines][0]);
-
   const men = [
     ...TIERS.map(d => { const m = occupant(d); return figureArt(m.trim, m.pivot, figureFit(d)); }),
-    ...Object.values(enemyTypes).map(d => figureArt(d.spriteTrim, d.pivot, figureFit(d)))
+    ...Object.values(enemyTypes).flatMap(d => [figureArt(d.spriteTrim, d.pivot, figureFit(d)),
+      ...(d.rage ? [figureArt(d.rage.trim, d.rage.pivot, figureFit(d))] : [])])
   ];
-  ok(men.every(inCell), 'every figure fits its cell, the boss shrunk to fit if he must',
+  ok(men.every(check), 'and every figure, both halves of the boss among them',
     `boss at ${figureFit(Object.values(enemyTypes).find(d => d.boss)).toFixed(2)}x`);
-  const anchors = new Set(men.map(m => `${m.anchor.x.toFixed(2)},${m.anchor.y.toFixed(2)}`));
-  ok(anchors.size === 1, 'and every man stands on the same point', [...anchors][0]);
   ok(TIERS.every(d => occupant(d).pivot), 'and no figure is missing a shadow anchor');
 }
 
 console.log('\nThe right page\n');
 
 {
-  // THE DEEPEST PAGE FITS ABOVE THE FOOTER. There is no canvas out here to measure
-  // the prose with, so it is estimated at 0.45em a character — measured in the
-  // browser, the widest whole description in Lobster sets at 0.40em, so this is
-  // the pessimistic side of true and counts MORE lines than the page draws.
+  // THE FULLEST PAGE FITS ITS BOX. There is no canvas out here to measure the
+  // prose with, so a line is estimated at 0.40em a character — measured in the
+  // browser against every description in the book at the size it is set, that
+  // never counts fewer lines than the page draws, and is the closest that doesn't.
   // Lines and paragraph breaks, separately: a break is PARA_GAP of a line.
   const wrapLines = (text, size) => {
-    const EM = 0.45 * size;
+    const EM = 0.40 * size;
     let n = 0, breaks = 0;
     for (const para of text.split('\n\n')) {
       if (n) breaks++;
@@ -289,41 +294,43 @@ console.log('\nThe right page\n');
     }
     return { n, breaks };
   };
-  // The same walk drawBookEntry makes down the page: frame, name, line, the bands,
-  // and then the words.
+  // The same walk drawBookEntry makes down the box: name, line, the numbers, a
+  // rule, and then the words — which have to end a pad above the box's foot.
   const bottomOf = (item, state) => {
     const e = pageEntry(state, item);
-    const f = frameFor(item.kind);
-    let y = f.y + f.h + 26 + ENTRY_NAME / 2 + 6;
-    if (e.sub) y += ENTRY_SUB + 8;
-    y += 4;
-    const rows = Math.ceil(e.bands.length / BAND_COLUMNS);
-    y += rows * BAND_H + Math.max(0, rows - 1) * BAND_GAP + 14;
+    const box = boxFor(item.kind);
+    let y = box.y + BOX_PAD + ENTRY_NAME / 2 + ENTRY_NAME / 2 + 6;
+    if (e.sub) y += ENTRY_SUB + 6;
+    y += 4 + Math.ceil(e.bands.length / STAT_COLS) * STAT_ROW_H;
     if (e.prose) {
+      y += 18;
       const small = item.kind === 'ability';
       const { n, breaks } = wrapLines(e.prose, small ? ENTRY_TEXT_SMALL : ENTRY_TEXT);
       const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;
       y += n * lead + breaks * lead * PARA_GAP;
     }
-    return { y, name: e.title };
+    return { y, room: box.y + box.h - 6, name: e.title };
   };
-  let deepest = { y: 0 };
+  let deepest = { y: 0, room: Infinity };
   for (const page of [0, 1, 2, 3]) {
     for (const item of pageItems(page)) {
       for (const stage of [1, 2]) {
         const b = bottomOf(item, { bookStage: stage });
-        if (b.y > deepest.y) deepest = b;
+        if (b.y - b.room > (deepest.y - deepest.room || -Infinity)) deepest = b;
       }
     }
   }
-  ok(deepest.y <= FOOT_Y - 6, 'every page\'s words and numbers end above the footer',
-    `deepest is ${deepest.name}, to ${deepest.y.toFixed(0)} of ${FOOT_Y}`);
+  ok(deepest.y <= deepest.room, 'every page\'s words and numbers end inside their box',
+    `fullest is ${deepest.name}, to ${deepest.y.toFixed(0)} of ${deepest.room.toFixed(0)}`);
+  ok([0, 1, 2, 3].every(p => pageItems(p).every(it => { const b = boxFor(it.kind); return b.y + b.h <= FOOT_Y; })),
+    'and the box ends above the footer');
+  ok(ENTRY_TEXT_W <= RIGHT.w - 2 * BOX_PAD && STAT_COLS * STAT_SLOT_W <= RIGHT.w - 2 * BOX_PAD,
+    'and the words and the numbers are narrower than the box');
 
   // THE FRAME, THE BANDS AND THE BOSS'S SWITCH ARE ON THE RIGHT PAGE.
   const onRight = b => b.x >= RIGHT.x && b.x + b.w <= RIGHT.r;
-  ok([FRAME, FRAME_SMALL, ...STAGE_BTN].every(onRight) &&
-     BAND_X >= RIGHT.x && BAND_X + BAND_COLUMNS * BAND_W + (BAND_COLUMNS - 1) * BAND_GAP <= RIGHT.r,
-    'and the frame, the bands and the stage switch sit on the right page');
+  ok([FRAME, FRAME_SMALL, ...STAGE_BTN].every(onRight),
+    'and the frame and the stage switch sit on the right page');
   ok(STAGE_BTN.every(b => b.x >= FRAME.x + FRAME.w),
     'and the switch stands clear of the frame', `${STAGE_BTN[0].x - (FRAME.x + FRAME.w)}px`);
 
@@ -387,9 +394,15 @@ console.log('\nWhat you can hit\n');
   ok(gap > 0, 'and Quit does not share a pixel with Restart beside it',
     `${gap}px of clear air`);
 
-  // THE TWO STAGE BUTTONS, one above the other, must not share a pixel either.
-  ok(STAGE_BTN[0].y + STAGE_BTN[0].h + PAD <= STAGE_BTN[1].y - PAD,
-    'and the two stage buttons do not share a pixel', `${STAGE_BTN[1].y - (STAGE_BTN[0].y + STAGE_BTN[0].h)}px drawn gap`);
+  // THE TWO STAGE BUTTONS SIT CLOSE, so their padded boxes overlap: every point
+  // of either drawn button must still go to that button.
+  const own = STAGE_BTN.every(b => {
+    const cx = b.x + b.w / 2;
+    for (let y = b.y; y <= b.y + b.h; y += 1) if (hitStage(cx, y) !== b) return false;
+    return true;
+  });
+  ok(own, 'and a tap on either stage button is never taken by the other',
+    `${STAGE_BTN[1].y - (STAGE_BTN[0].y + STAGE_BTN[0].h)}px drawn gap`);
 
   // The footer: the flip centred under the grid, Close at the foot of the right
   // page, all three on one line on the bottom margin.

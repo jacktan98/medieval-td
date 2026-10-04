@@ -116,13 +116,24 @@ export function pageItems(page) {
       return { kind: 'ability', def, ...cellRect(col, row) };
     });
   }
-  const bossRow = Math.ceil(roster.length / COLUMNS);
+  const top = bossTop();
   return [
     ...roster.map((def, i) => ({ kind: 'enemy', def, ...cellRect(i % COLUMNS, Math.floor(i / COLUMNS)) })),
     ...bosses.map((def, i) => ({ kind: 'enemy', def, boss: true,
-      ...cellRect(i % COLUMNS, bossRow + Math.floor(i / COLUMNS)) }))
+      ...cellRect(i % COLUMNS, 0), y: top + Math.floor(i / COLUMNS) * (CELL_H + GAP) }))
   ];
 }
+
+// THE BOSS HAS A HEADING OF HIS OWN, set like the page's title, at the owner's
+// word, and stands under it the way the Thug stands under "Enemies": the heading
+// sits as far below the roster as the title sits above the grid's top, less the
+// gap, and his row hangs the same distance below it.
+const TITLE_TO_GRID = GRID_TOP - TITLE_Y;
+export function bossHeadY() {
+  const rows = Math.ceil(roster.length / COLUMNS);
+  return GRID_TOP + rows * (CELL_H + GAP) - GAP + 4 + TITLE_TO_GRID - 8;
+}
+const bossTop = () => bossHeadY() + TITLE_TO_GRID;
 
 // The item the right page is describing on this page. Remembered per page, so
 // flipping away and back keeps your place.
@@ -133,92 +144,64 @@ export function picked(state, page = state.book) {
 
 // --- a picture in its cell ---------------------------------------------------------
 
-// EVERY DRAWING IS ANCHORED ON ITS SHADOW, never centred on its bounding box — the
-// rule the board itself follows. A bounding box is not where a thing is: a tier 2
-// watchtower's flagpole leans out one side and a tent's stakes hang below its
-// shadow. So each drawing is placed by the anchor it carries (`groundFrac` for a
-// building, `pivot` for a figure) and every cell puts that anchor at the SAME
-// point, which stands a page of them on one ground line.
-function anchored(items) {
-  let left = 0, right = 0, above = 0, below = 0;
-  for (const { w, h, a } of items) {
-    left = Math.max(left, a[0] * w);
-    right = Math.max(right, (1 - a[0]) * w);
-    above = Math.max(above, a[1] * h);
-    below = Math.max(below, (1 - a[1]) * h);
-  }
-  return { left, right, above, below, w: left + right, h: above + below };
-}
-
+// EVERY DRAWING IS CENTRED ON ITS OWN SHADOW in its own photo, at the owner's
+// word: across, the spot it stands on (`groundFrac` for a building, `pivot` for a
+// figure) is on the cell's centre line — a bounding box is not where a thing is, a
+// watchtower's flagpole leans out one side and a spearman's spear sticks out
+// further than he does — and down, the drawing is centred in the cell.
 const buildingOf = d => ({ w: d.w, h: d.h, a: d.groundFrac });
 const figureAtBoard = (trim, pivot) => ({ w: trim[2] * SCALE, h: trim[3] * SCALE, a: pivot });
 
+// The largest factor at which every one of `items` fits `w` x `h` when centred
+// across on its own shadow: each needs twice its longer reach from that spot.
+const fitOnShadow = (items, w, h) => Math.min(...items.map(it =>
+  Math.min(w / (2 * Math.max(it.a[0], 1 - it.a[0]) * it.w), h / it.h)));
+
 // Clear paper kept round every drawing inside its cell.
-export const AIR = 6;
+export const AIR = 5;
 const INNER_W = CELL_W - 2 * AIR;
 const INNER_H = CELL_H - 2 * AIR;
 
 // ONE FACTOR FOR EVERY BUILDING and one for every figure, never each drawing
 // fitted to its own cell: that would draw a Militia Camp and a Catapult the same
 // size, which is a lie about the two buildings a player is choosing between.
-const TOWER_SPAN = anchored(TIERS.map(buildingOf));
-export const BOOK_TOWER_K = Math.min(INNER_W / TOWER_SPAN.w, INNER_H / TOWER_SPAN.h);
+// Capped so a building is never drawn past its own pixels on a 3x screen.
+const TOWER_CEILING = 1 / (3 * SCALE);
+export const BOOK_TOWER_K = Math.min(TOWER_CEILING, fitOnShadow(TIERS.map(buildingOf), INNER_W, INNER_H));
 
-// A figure is drawn at 90% of the info box's portrait — or as much less as fits.
-// THE BOSS IS NOT IN THE SPAN: the army sizes the furniture and he is fitted into
-// it (see BOSS_FIT), rather than every card in the book shrinking for one creature.
-const BOARD_SPAN = anchored([
+// A figure is drawn at most at the info box's own portrait scale — or as much less
+// as fits. THE BOSS IS NOT IN THE FIT: the army sizes the furniture and he is
+// fitted into it (see BOSS_FIT), rather than every picture shrinking for him.
+const ARMY = [
   ...TIERS.map(d => { const m = occupant(d); return figureAtBoard(m.trim, m.pivot); }),
   ...roster.map(d => figureAtBoard(d.spriteTrim, d.pivot))
-]);
-export const BOOK_FIGURE_SCALE =
-  Math.min(PORTRAIT_SCALE * 0.9, INNER_H / BOARD_SPAN.h, INNER_W / BOARD_SPAN.w);
-const FIGURE_SPAN = (() => {
-  const k = BOOK_FIGURE_SCALE;
-  return { left: BOARD_SPAN.left * k, right: BOARD_SPAN.right * k,
-           above: BOARD_SPAN.above * k, below: BOARD_SPAN.below * k,
-           w: BOARD_SPAN.w * k, h: BOARD_SPAN.h * k };
-})();
+];
+export const BOOK_FIGURE_SCALE = Math.min(PORTRAIT_SCALE, fitOnShadow(ARMY, INNER_W, INNER_H));
 
-// Where the shared anchor sits in a cell: the span centred, the anchor at its own
-// offset inside that.
-const anchorIn = span => ({
-  x: (CELL_W - span.w) / 2 + span.left,
-  y: (CELL_H - span.h) / 2 + span.above
-});
-const TOWER_ANCHOR = anchorIn({
-  left: TOWER_SPAN.left * BOOK_TOWER_K, w: TOWER_SPAN.w * BOOK_TOWER_K,
-  above: TOWER_SPAN.above * BOOK_TOWER_K, h: TOWER_SPAN.h * BOOK_TOWER_K
-});
-const FIGURE_ANCHOR = anchorIn(FIGURE_SPAN);
-
-// HOW MUCH A BOSS IS SHRUNK to stand in a cell from the shared anchor, as a
-// multiplier — 1 when he already fits. Derived from every boss in the game.
+// HOW MUCH A BOSS IS SHRUNK to fit his photo, as a multiplier — 1 when he already
+// fits. Both of his halves, and every boss in the game.
 const BOSS_FIT = (() => {
-  if (!bosses.length) return 1;
-  const s = anchored(bosses.map(d => figureAtBoard(d.spriteTrim, d.pivot)));
-  const k = BOOK_FIGURE_SCALE;
-  return Math.min(1,
-    (FIGURE_ANCHOR.x - AIR) / (s.left * k),
-    (CELL_W - AIR - FIGURE_ANCHOR.x) / (s.right * k),
-    (FIGURE_ANCHOR.y - AIR) / (s.above * k),
-    (CELL_H - AIR - FIGURE_ANCHOR.y) / (s.below * k));
+  const forms = bosses.flatMap(d => [figureAtBoard(d.spriteTrim, d.pivot),
+    ...(d.rage ? [figureAtBoard(d.rage.trim, d.rage.pivot)] : [])]);
+  if (!forms.length) return 1;
+  return Math.min(1, fitOnShadow(forms, INNER_W, INNER_H) / BOOK_FIGURE_SCALE);
 })();
 export const figureFit = def => (def && def.boss ? BOSS_FIT : 1);
 
 // A drawing's place in a cell, as render.js wants it: the drawn size, the anchor
-// as a fraction of it, and where in the cell that anchor goes.
+// as a fraction of it, and where in the cell that anchor goes — on the centre line
+// across, and wherever centring the drawing puts it down.
+const placed = (w, h, a) => ({ w, h, a, anchor: { x: CELL_W / 2, y: (CELL_H - h) / 2 + a[1] * h } });
 export function towerArt(def) {
-  const k = BOOK_TOWER_K;
-  return { w: def.w * k, h: def.h * k, a: def.groundFrac, anchor: TOWER_ANCHOR };
+  return placed(def.w * BOOK_TOWER_K, def.h * BOOK_TOWER_K, def.groundFrac);
 }
 export function figureArt(trim, pivot, fit = 1) {
   const k = SCALE * BOOK_FIGURE_SCALE * fit;
-  return { w: trim[2] * k, h: trim[3] * k, a: pivot, anchor: FIGURE_ANCHOR };
+  return placed(trim[2] * k, trim[3] * k, pivot);
 }
 
-// The ability's disc in its cell, a size rather than a fit: a disc is centred.
-export const ABILITY_ICON = Math.min(CELL_H, CELL_W) - 2 * AIR - 8;
+// The ability's disc in its cell, centred, as big as the cell's air allows.
+export const ABILITY_ICON = Math.min(CELL_H, CELL_W) - 2 * AIR;
 
 // --- THE RIGHT PAGE ----------------------------------------------------------------
 //
@@ -230,7 +213,7 @@ FRAME.x = Math.round(RIGHT.cx - FRAME.w / 2);
 FRAME.y = RIGHT.y + 6;
 // An ability's picture is a button and says little on its own; its paragraph is
 // the long one in the book, so its frame is shorter and gives the words the room.
-export const FRAME_SMALL = { w: 140, h: 108 };
+export const FRAME_SMALL = { w: 128, h: 84 };
 FRAME_SMALL.x = Math.round(RIGHT.cx - FRAME_SMALL.w / 2);
 FRAME_SMALL.y = FRAME.y;
 export const frameFor = kind => (kind === 'ability' ? FRAME_SMALL : FRAME);
@@ -238,19 +221,35 @@ export const frameFor = kind => (kind === 'ability' ? FRAME_SMALL : FRAME);
 // The air kept round a picture inside its frame.
 export const FRAME_AIR = 14;
 
-// The stat bands: two to a row across the page, below the words.
-export const BAND_COLUMNS = 2;
-export const BAND_H = 28;
-export const BAND_GAP = 8;
-export const BAND_X = RIGHT.x + 6;
-export const BAND_W = Math.floor((RIGHT.w - 12 - (BAND_COLUMNS - 1) * BAND_GAP) / BAND_COLUMNS);
+// EVERYTHING ELSE IN ONE BIG CREAM BOX under the picture, the Upgrades screen's
+// description panel, at the owner's word: the name, the line under it, the numbers
+// and the words. It runs down to just above the footer.
+export const BOX_PAD = 16;
+export function boxFor(kind) {
+  const f = frameFor(kind);
+  const y = f.y + f.h + 12;
+  return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - 8 - y };
+}
+
+// The numbers: up to three to a row, each an icon and its figure centred in a slot
+// of its own, and each row centred in the box.
+export const STAT_COLS = 3;
+export const STAT_SLOT_W = 128;
+export const STAT_ROW_H = 30;
 
 // The boss's two halves, as two small buttons beside his frame.
 // Drawn 38 deep like every book button and 26 apart, so their padded tap boxes
 // never meet.
 export const STAGE_BTN = [1, 2].map(n => ({
-  n, x: FRAME.x + FRAME.w + 12, y: FRAME.y + 8 + (n - 1) * 64, w: 84, h: 38
+  n, x: FRAME.x + FRAME.w + 12, y: FRAME.y + 8 + (n - 1) * 46, w: 84, h: 38
 }));
+// THE TWO SIT CLOSE, at the owner's word, so their padded tap boxes overlap: a
+// tap in the overlap goes to whichever button's middle it is nearer.
+export function hitStage(x, y) {
+  const near = STAGE_BTN.filter(b => inside(b, x, y));
+  if (!near.length) return null;
+  return near.reduce((a, b) => Math.abs(y - (a.y + a.h / 2)) <= Math.abs(y - (b.y + b.h / 2)) ? a : b);
+}
 
 // --- what the right page says --------------------------------------------------------
 
@@ -326,7 +325,7 @@ export function pageEntry(state, item) {
     bands.push(band('stat_gold_cost', d.bounty, 'Bounty'));
     bands.push(band('stat_life_cost', d.leak));
   }
-  return { title: d.name, sprite: d.sprite, trim: d.spriteTrim, kind: 'figure',
+  return { title: d.name, sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot, kind: 'figure',
     sub: null, prose: FOE_NOTES[idOf(def)] || null, bands, staged: staged(def) };
 }
 
@@ -388,7 +387,7 @@ export function tapBook(state, x, y) {
 
   const item = picked(state);
   if (item && item.kind === 'enemy' && staged(item.def)) {
-    const b = STAGE_BTN.find(b => inside(b, x, y));
+    const b = hitStage(x, y);
     if (b) { state.bookStage = b.n; return true; }
   }
 
@@ -530,12 +529,20 @@ const POP_GROUPS = {
 //
 // Everything else still applies underneath: the ceiling box, the per-kind shrink,
 // and never an upscale past 1:1 even on a display that could take one.
-// THE RIGHT PAGE'S FRAME, the same idea at a smaller size: one factor for every
-// drawing of a kind, fitted so the largest of them fills `frame` inside its air,
-// and never more than `cap` — one source pixel per screen pixel.
+// THE RIGHT PAGE'S FRAME, the same idea at a larger size: one factor for every
+// drawing of a kind, centred on its own shadow as the cells are, and never more
+// than `cap` — one source pixel per screen pixel.
+const FRAME_ITEMS = {
+  tower: TIERS.map(d => ({ w: d.spriteTrim[2], h: d.spriteTrim[3], a: d.groundFrac })),
+  figure: [
+    ...TIERS.map(d => { const m = occupant(d); return { w: m.trim[2], h: m.trim[3], a: m.pivot }; }),
+    ...Object.values(enemyTypes).flatMap(d => [{ w: d.spriteTrim[2], h: d.spriteTrim[3], a: d.pivot },
+      ...(d.rage ? [{ w: d.rage.trim[2], h: d.rage.trim[3], a: d.rage.pivot }] : [])])
+  ]
+};
 export function frameSlot(kind, frame, cap = 1) {
-  const g = POP_GROUPS[kind] || POP_GROUPS.figure;
-  return Math.min(cap, (frame.w - 2 * FRAME_AIR) / g.w, (frame.h - 2 * FRAME_AIR) / g.h);
+  const items = FRAME_ITEMS[kind] || FRAME_ITEMS.figure;
+  return Math.min(cap, fitOnShadow(items, frame.w - 2 * FRAME_AIR, frame.h - 2 * FRAME_AIR));
 }
 
 export function popSlot(kind, cap = 1) {
@@ -562,6 +569,7 @@ export function towerEntry(def, tiers) {
     title: def.title,
     sprite: def.sprite,
     trim: def.spriteTrim,
+    pivot: def.groundFrac,
     // The resting frame for an animated building, which `def.sprite` already is
     // — a catapult in the book is not mid-throw.
     art: towerArt(def),
@@ -595,6 +603,7 @@ export function unitEntry(def) {
     title: man.name,
     sprite: man.sprite,
     trim: man.trim,
+    pivot: man.pivot,
     art: figureArt(man.trim, man.pivot, figureFit(def)),
     hp: man.hp,
     damage: man.damage,
