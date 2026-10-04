@@ -219,7 +219,7 @@ FRAME.x = Math.round(RIGHT.cx - FRAME.w / 2);
 FRAME.y = RIGHT.y + 6;
 // An ability's picture is a button and says little on its own; its paragraph is
 // the long one in the book, so its frame is shorter and gives the words the room.
-export const FRAME_SMALL = { w: 128, h: 74 };
+export const FRAME_SMALL = { w: 140, h: 108 };
 FRAME_SMALL.x = Math.round(RIGHT.cx - FRAME_SMALL.w / 2);
 FRAME_SMALL.y = FRAME.y;
 export const frameFor = kind => (kind === 'ability' ? FRAME_SMALL : FRAME);
@@ -234,7 +234,7 @@ export const BOX_PAD = 16;
 export const BOX_FOOT = 16;
 export function boxFor(kind) {
   const f = frameFor(kind);
-  const y = f.y + f.h + 10;
+  const y = f.y + f.h + 12;
   // Clear of the footer by BOX_FOOT, at the owner's word, so Close does not crowd it.
   return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - BOX_FOOT - y };
 }

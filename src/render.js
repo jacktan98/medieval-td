@@ -6608,9 +6608,10 @@ export const ENTRY_NAME = 24;
 export const ENTRY_SUB = 15;
 export const ENTRY_TEXT = 13;
 export const ENTRY_LEAD = 17;
-// An ability's paragraph is the long one in the book, so it is set a size smaller.
-export const ENTRY_TEXT_SMALL = 12;
-export const ENTRY_LEAD_SMALL = 15;
+// An ability's paragraph was set a size smaller while it was the long one in the
+// book; summarised, at the owner's word, it is set like every other.
+export const ENTRY_TEXT_SMALL = ENTRY_TEXT;
+export const ENTRY_LEAD_SMALL = ENTRY_LEAD;
 // The gap between two paragraphs, as a share of a line.
 export const PARA_GAP = 0.5;
 export const ENTRY_TEXT_W = RIGHT.w - 2 * 18;
@@ -6691,14 +6692,14 @@ function drawBookEntry(ctx, state, item) {
   // AND THE WORDS, under a faint rule: what an enemy does and what to do about
   // him, or what an ability does, in full.
   if (e.prose) {
-    y += 7;
+    y += 8;
     ctx.strokeStyle = CARD_EDGE;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(box.x + BOX_PAD + 20, y);
     ctx.lineTo(box.x + box.w - BOX_PAD - 20, y);
     ctx.stroke();
-    y += 9;
+    y += 10;
     const small = item.kind === 'ability';
     const size = small ? ENTRY_TEXT_SMALL : ENTRY_TEXT;
     const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;

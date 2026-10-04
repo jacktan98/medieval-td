@@ -565,15 +565,10 @@ export const ABILITIES = [
     // trims and the same shadow pixel as the timber pair, so nothing moves.
     gunner: { sprite: 'crossbowman_steel', attack: 'crossbowman_steel_attack' },
 
-    detail: (a, t) => `The engineers rebuild the bow in steel and the sentry reaches ` +
-      `${num(t.range * a.rangeTimes)}px instead of ${t.range} — level with a Ballista ` +
-      `Turret that has bought the same thing, and behind only the Musketeer Post.\n\n` +
-      `The steel also drives the quarrel through ${a.pierceUp} rank of physical ` +
-      `armor, for good: ${t.damage} against medium plate lands ` +
-      `${plate(t.damage, a.pierceUp)} instead of ${plate(t.damage)}. Every shot the ` +
-      `sentry fires, ordinary or not. The reload and the ${t.damage} a bolt are ` +
-      `unchanged, and the crossbowman is drawn with a steel bow from the moment it ` +
-      `is bought.`
+    detail: (a, t) => `The bow is rebuilt in steel, stretching the sentry's reach from ${t.range} ` +
+      `to ${num(t.range * a.rangeTimes)}. Every quarrel also breaks through ${a.pierceUp} rank of ` +
+      `physical armor, so a shot into medium plate lands ${plate(t.damage, a.pierceUp)} instead of ` +
+      `${plate(t.damage)}. The reload and the ${t.damage} damage stay the same.`
   },
   {
     // A MULTIPLIER LIKE EVERY OTHER MAGNITUDE HERE, and it was an absolute 0.50
@@ -606,13 +601,10 @@ export const ABILITIES = [
     cost: ABILITY_COST,
     reloadTimes: 1.5,
 
-    detail: (a, t) => `The crossbowman works a windlass instead of a belt hook and ` +
-      `reloads ${a.reloadTimes}x faster — a quarrel every ` +
-      `${sec(t.cooldown / a.reloadTimes)} seconds instead of every ${num(t.cooldown)}, ` +
-      `which is ${num(t.damage * a.reloadTimes / t.cooldown)} damage a second where ` +
-      `the sentry alone does ${num(t.damage / t.cooldown)}.\n\n` +
-      `Nothing else changes: the same ${t.damage} a quarrel and the same reach. It ` +
-      `stacks with Reinforced Tension rather than competing with it.`
+    detail: (a, t) => `The crossbowman reloads ${a.reloadTimes}x faster, firing every ` +
+      `${sec(t.cooldown / a.reloadTimes)} seconds instead of every ${num(t.cooldown)}. That takes the ` +
+      `sentry from ${num(t.damage / t.cooldown)} to ${num(t.damage * a.reloadTimes / t.cooldown)} ` +
+      `damage a second, with the same damage and reach. It stacks with Reinforced Tension.`
   },
   {
     id: 'burst',
@@ -670,20 +662,12 @@ export const ABILITIES = [
     // The long form, shown beside the picture when the card is tapped open. Two or
     // three sentences: what it does, then the thing a player would only find out by
     // watching it for a while.
-    detail: (a, t) => `After ${a.every - 1} ordinary shots the musketeer empties ` +
-      `${a.shots} bullets into the road as fast as he can work the lock, ${a.gap}s ` +
-      `apart, then holds the smoke for ${a.hold} second before loading again. Each ` +
-      `ball is the Post's own ${t.damage}, so the burst is ${t.damage * a.shots} in ` +
-      `${num((a.shots - 1) * a.gap)} seconds.\n\n` +
-      `Each of the ${a.shots} picks a different man, through whatever standing order ` +
-      `the tower is on. That is the point of it: ${a.shots} bullets into 1 militiaman ` +
-      `is most of them wasted, and ${a.shots} into ${a.shots} of them is a rank gone. ` +
-      `With only 1 enemy in reach all ${a.shots} go to him.\n\n` +
-      `Every ball of the burst breaks ${a.pierce} ranks of physical armor where the ` +
-      `Post's ordinary shot breaks ${t.pierce}, so a burst into medium plate lands ` +
-      `${plate(t.damage, a.pierce) * a.shots} rather than ` +
-      `${plate(t.damage, t.pierce) * a.shots}. Against an unarmored rank it changes ` +
-      `nothing: this is what stops plate being the 1 rank the burst cannot clear.`
+    detail: (a, t) => `After every ${a.every - 1} ordinary shots, the musketeer fires ${a.shots} quick ` +
+      `bullets of ${t.damage} each, ${t.damage * a.shots} damage in ${num((a.shots - 1) * a.gap)} ` +
+      `seconds, then pauses for ${a.hold} second. Each bullet picks a different enemy, and all ` +
+      `${a.shots} hit the same one if it is alone. Burst bullets break ${a.pierce} ranks of physical ` +
+      `armor instead of ${t.pierce}, so the burst lands ${plate(t.damage, a.pierce) * a.shots} on ` +
+      `medium plate instead of ${plate(t.damage, t.pierce) * a.shots}.`
   },
   {
     id: 'deadeye',
@@ -795,23 +779,12 @@ export const ABILITIES = [
     // ability that fires something announces itself by firing it; `cue` is for the
     // two that do not, which are the paladin's.
 
-    detail: (a, t) => `After ${a.every - 1} ordinary shots the musketeer takes ` +
-      `${a.lock} second to aim — a mark appears over the man he has chosen and stays ` +
-      `there until the bullet arrives — and then fires ${a.shots} round for ` +
-      `${a.times}x the Post's own ${t.damage}, ${blow(t.damage, a.times)} damage, the ` +
-      `hardest blow in the game. It reaches anywhere on the map: this ${a.shots} shot ` +
-      `ignores the tower's range ring entirely.\n\n` +
-      `Reloading after it takes ${num(t.cooldown * a.reloadAfter)} seconds against ` +
-      `the Post's usual ${num(t.cooldown)}, which is the only price any ability in ` +
-      `this game charges — every other one is free once bought. He stands ` +
-      `over the shot for ${a.hold} of those ${num(t.cooldown * a.reloadAfter)} ` +
-      `seconds, so the pose costs nothing on top of it. Kept for the 1 thing on the ` +
-      `road that has to die and cannot be chipped down.\n\n` +
-      `The round breaks ${a.pierce} ranks of physical armor where the Post's ` +
-      `ordinary shot breaks ${t.pierce}, so it lands ` +
-      `${plate(blow(t.damage, a.times), a.pierce)} on medium plate rather than ` +
-      `${plate(blow(t.damage, a.times), t.pierce)}. The 1 thing that has to die is ` +
-      `usually the 1 thing wearing armor.`
+    detail: (a, t) => `After every ${a.every - 1} ordinary shots, the musketeer aims for ${a.lock} ` +
+      `second at a marked enemy, then fires ${a.shots} round for ${a.times}x damage: ` +
+      `${blow(t.damage, a.times)}, the hardest blow in the game. The shot reaches anywhere on the ` +
+      `map, ignoring the tower's range. It breaks ${a.pierce} ranks of physical armor, landing ` +
+      `${plate(blow(t.damage, a.times), a.pierce)} on medium plate. The reload after it takes ` +
+      `${num(t.cooldown * a.reloadAfter)} seconds instead of ${num(t.cooldown)}.`
   },
   {
     id: 'light',
@@ -848,17 +821,11 @@ export const ABILITIES = [
     pose: HOLY_LIGHT_POSE,
     cue: 'holyLight',
 
-    detail: (a, t) => `The moment a paladin drops under ${pc(1 + a.below)} of his ` +
-      `health he stops fighting, kneels, and takes ${pc(1 + a.healFrac)} of his full ` +
-      `health back over ${a.seconds} seconds — ` +
-      `${Math.round(t.soldier.hp * a.healFrac)} on a paladin, more under a Divine ` +
-      `Fortitude. He keeps his grip on the enemy the whole time, so the road stays ` +
-      `held — and the enemy keeps hitting him, so it is a race rather than a free ` +
-      `reset.\n\n` +
-      `Each of the ${t.soldier.count} calls it for himself and has his own ` +
-      `${a.refresh} seconds before he can call it again, counted from the moment he ` +
-      `kneels. A paladin killed anyway takes that clock with him: the man who musters ` +
-      `in his place can call the light at once.`
+    detail: (a, t) => `When a paladin drops below ${pc(1 + a.below)} health, he kneels and heals ` +
+      `${pc(1 + a.healFrac)} of his full health over ${a.seconds} seconds: ` +
+      `${Math.round(t.soldier.hp * a.healFrac)}, or more with Divine Fortitude. He keeps holding the ` +
+      `enemy while he heals, but can still be hit. Each paladin can use it once every ` +
+      `${a.refresh} seconds, and a newly mustered paladin can use it right away.`
   },
   {
     // IT WAS HOLY SLASH, and the owner renamed it: "there are too many 'Holy'
@@ -930,20 +897,13 @@ export const ABILITIES = [
     pose: BLINDING_STRIKE_POSE,
     cue: 'blindingStrike',
 
-    detail: (a, t) => `${a.every - 1} ordinary blows and then ${a.shots} worth ` +
-      `${a.times} of them — ${blow(t.soldier.damage, a.times)} where he normally does ` +
-      `${t.soldier.damage} — struck in the time an ordinary swing takes, so the ` +
-      `rhythm never breaks.\n\n` +
-      `It works out at ` +
+    detail: (a, t) => `Every ${a.every}th blow is a strike worth ${a.times} ordinary ones: ` +
+      `${blow(t.soldier.damage, a.times)} damage instead of ${t.soldier.damage}, with no wind-up. ` +
+      `That takes a paladin from ${num(t.soldier.damage / t.soldier.cd)} to ` +
       `${num((t.soldier.damage * (a.every - 1) + blow(t.soldier.damage, a.times)) / (a.every * t.soldier.cd))} ` +
-      `damage a second against a plain paladin's ${num(t.soldier.damage / t.soldier.cd)}, ` +
-      `exactly ${num((a.every - 1 + a.times) / a.every)}x, from the man who starts ` +
-      `with the least damage in the game. Each of the ${t.soldier.count} counts his ` +
-      `own blows, so the strikes land spread out rather than all at once.\n\n` +
-      `The strike also breaks ${a.pierce} rank of physical armor, which his ordinary ` +
-      `swings do not: ${blow(t.soldier.damage, a.times)} into medium plate lands ` +
-      `${plate(blow(t.soldier.damage, a.times), a.pierce)} rather than ` +
-      `${plate(blow(t.soldier.damage, a.times))}. Only the 1 blow in ${a.every}.`
+      `damage a second. The strike also breaks ${a.pierce} rank of physical armor, landing ` +
+      `${plate(blow(t.soldier.damage, a.times), a.pierce)} on medium plate instead of ` +
+      `${plate(blow(t.soldier.damage, a.times))}.`
   },
   {
     // --- THE FIRST ABILITY THAT GIVES A SOLDIER A WEAPON HE DID NOT HAVE -------
@@ -1008,16 +968,11 @@ export const ABILITIES = [
     // LUNGE there.
     pose: KNIFE_THROW_POSE,
 
-    detail: (a, t) => `The assassin throws at ${a.reach}px for ` +
-      `${blow(t.soldier.damage, a.times)} — the whole of what his blade does — ` +
-      `without leaving his post. ${t.soldier.count} of them is ` +
-      `${num(t.soldier.count * blow(t.soldier.damage, a.times) / t.soldier.cd)} damage ` +
-      `a second at range, on a tower that is still a wall.\n\n` +
-      `No squad in this game walks out to fetch an enemy, so this is the only reach a ` +
-      `barracks has. Men who would otherwise wait to be walked into open on the road ` +
-      `first, and never break formation to do it. He is out in the open for as long as ` +
-      `anything is in reach of him, and gone again the moment the road in front of him ` +
-      `is clear.`
+    detail: (a, t) => `Assassins throw knives at enemies up to ${a.reach} away for ` +
+      `${blow(t.soldier.damage, a.times)} damage each without leaving their post, ` +
+      `${num(t.soldier.count * blow(t.soldier.damage, a.times) / t.soldier.cd)} damage a second from ` +
+      `all ${t.soldier.count}. It is the only barracks attack that reaches past arm's length. An ` +
+      `assassin can be seen while he throws, and fades again once the road in front of him is clear.`
   },
   {
     // --- AND THE ONE THAT PAYS FOR BEING UNSEEN -------------------------------
@@ -1137,20 +1092,11 @@ export const ABILITIES = [
     // a heavier blow, still inside the mix.
     loud: 1.8,
 
-    detail: (a, t) => `The first blow after an assassin shows himself is worth ` +
-      `${a.times}x — ${blow(t.soldier.damage, a.times)} where his blade does ` +
-      `${t.soldier.damage} — and it comes back the moment he fades again, which in a ` +
-      `melee means the opening strike of every fight he picks.\n\n` +
-      `Thrown it is worth ${a.thrownTimes}x instead of ${a.times}x: ` +
-      `${blow(t.soldier.damage, a.thrownTimes)} on the first blade of a volley, with a ` +
-      `heavier knife in the air to say so. Creeping to arm's length is the risk, so it ` +
-      `is the one that pays more. His strike lands harder and sounds it.\n\n` +
-      `A sneaked blow goes through ${a.pierce} ranks of physical armor where his ` +
-      `ordinary blade goes through ${t.soldier.pierce} — both the strike and the ` +
-      `throw. The opening blow into medium plate is ` +
-      `${plate(blow(t.soldier.damage, a.times), a.pierce)} rather than ` +
-      `${plate(blow(t.soldier.damage, a.times), t.soldier.pierce)}, which is what an ` +
-      `opener on an armored man should be worth.`
+    detail: (a, t) => `The first blow after an assassin shows himself deals ${a.times}x damage: ` +
+      `${blow(t.soldier.damage, a.times)} instead of ${t.soldier.damage}. It comes back each time he ` +
+      `fades again, so he opens every fight with it. A sneak throw deals ${a.thrownTimes}x instead, ` +
+      `${blow(t.soldier.damage, a.thrownTimes)} damage. Sneak blows break ${a.pierce} ranks of ` +
+      `physical armor instead of ${t.soldier.pierce}.`
   },
   {
     // ONE ABILITY ON TWO TOWERS, and the first id in this file that names its
@@ -1209,16 +1155,11 @@ export const ABILITIES = [
     // tier ships with.
     frames: ['artillery_t4_tension', 'artillery_t4_reload_tension', 'artillery_t4_fire_tension'],
 
-    detail: (a, t) => `The engineers rebuild the bow in steel and the turret reaches ` +
-      `${num(t.range * a.rangeTimes)}px instead of ${t.range} — the 2nd-longest arm in ` +
-      `the game, behind only the Musketeer Post, on the one tower that has no dead ` +
-      `zone in it.\n\n` +
-      `The iron also drives the bolt through ${a.pierceUp} more rank of physical ` +
-      `armor, ${t.pierce + a.pierceUp} in all: ${t.damage} against medium plate lands ` +
-      `${plate(t.damage, t.pierce + a.pierceUp)} instead of ` +
-      `${plate(t.damage, t.pierce)}. Every bolt, ordinary or heavy — the same reload ` +
-      `and the same blast, and the machine is drawn in iron from the moment it is ` +
-      `bought.`
+    detail: (a, t) => `The bow is rebuilt in steel, stretching the turret's reach from ${t.range} ` +
+      `to ${num(t.range * a.rangeTimes)}, the 2nd longest in the game after the Musketeer Post. ` +
+      `Every bolt also breaks ${a.pierceUp} more rank of physical armor, ${t.pierce + a.pierceUp} in ` +
+      `all, so it lands ${plate(t.damage, t.pierce + a.pierceUp)} on medium plate instead of ` +
+      `${plate(t.damage, t.pierce)}. The reload and the blast stay the same.`
   },
   {
     id: 'heavybolt',
@@ -1266,27 +1207,13 @@ export const ABILITIES = [
     // than a cooldown a pose could delay. The ability announces itself by what
     // leaves the bow — a bolt with its tail on fire — and by being louder.
 
-    detail: (a, t) => `Every ${a.every}th bolt comes off the rack burning and hits ` +
-      `for ${a.times}x the damage — ${blow(t.damage, a.times)} instead of ${t.damage}. ` +
-      `There is no wind-up: the machine works at its ordinary rhythm right up to the ` +
-      `shot.\n\n` +
-      `The reload afterwards takes ${pc(a.afterTimes)} longer — ` +
-      `${num(t.cooldown * a.afterTimes)} seconds instead of ${num(t.cooldown)} — so ` +
-      `the cycle runs ` +
-      `${Array.from({ length: a.every }, (_, i) => num(t.cooldown * (i === a.every - 1 ? a.afterTimes : 1))).join(' / ')}. ` +
-      `That works out at ` +
+    detail: (a, t) => `Every ${a.every}th bolt burns and hits for ${a.times}x damage: ` +
+      `${blow(t.damage, a.times)} instead of ${t.damage}. Everything in its ${t.splash} blast also ` +
+      `burns for ${a.ammo.burn.dps} damage a second for ${a.ammo.burn.seconds} seconds, which no ` +
+      `armor can stop. The reload after it takes ${num(t.cooldown * a.afterTimes)} seconds instead ` +
+      `of ${num(t.cooldown)}, so the turret deals ` +
       `${num((t.damage * (a.every - 1) + blow(t.damage, a.times) + a.ammo.burn.dps * a.ammo.burn.seconds) / (t.cooldown * (a.every - 1 + a.afterTimes)))} ` +
-      `damage a second against a plain turret's ${num(t.damage / t.cooldown)}.\n\n` +
-      `The shaft goes on burning in the wound: ${a.ammo.burn.dps} a second for ` +
-      `${a.ammo.burn.seconds} seconds, ${a.ammo.burn.dps * a.ammo.burn.seconds} more ` +
-      `on everything the bolt caught, over the same ${t.splash}px it burst across. ` +
-      `Fire is true damage — no armor in the game turns it aside — so against ` +
-      `medium plate the bolt itself lands ` +
-      `${plate(blow(t.damage, a.times), t.pierce)} and the fire adds its full ` +
-      `${a.ammo.burn.dps * a.ammo.burn.seconds} on top.\n\n` +
-      `What it buys is the shape rather than the size: the same output in fewer, ` +
-      `harder blows, on a machine whose every shot already bursts. You can hear which ` +
-      `one it is — the heavy bolt leaves louder than the others.`
+      `damage a second instead of ${num(t.damage / t.cooldown)}.`
   },
   {
     // AND ITS SECOND, which is Heavy Bolt's shape pointed at a different problem.
@@ -1345,26 +1272,12 @@ export const ABILITIES = [
     afterTimes: 1.5,
     ammo: fieryBall,
 
-    detail: (a, t) => `Every ${a.every}th ball leaves the barrel alight. It hits for ` +
-      `the ordinary ${t.damage} and sets fire to what it catches: ` +
-      `${a.ammo.burn.dps} damage a second for ${a.ammo.burn.seconds} seconds, which no ` +
-      `armor turns aside.\n\n` +
-      `The fire reaches further than the ball breaks — ` +
-      `${num(t.splash * a.ammo.burn.splashTimes)}px of flame around a blast of ` +
-      `${t.splash}px — so men standing just clear of the crater burn anyway. They carry the ` +
-      `flame over their health bar until it goes out, and you can hear which shot it ` +
-      `was.\n\n` +
-      `The reload after it takes ${pc(a.afterTimes)} longer — ` +
-      `${num(t.cooldown * a.afterTimes)} seconds instead of ${num(t.cooldown)} — so ` +
-      `the cycle runs ` +
-      `${Array.from({ length: a.every }, (_, i) => num(t.cooldown * (i === a.every - 1 ? a.afterTimes : 1))).join(' / ')}. ` +
-      `Against 1 straggler that is ` +
-      `${num((t.damage * a.every + a.ammo.burn.dps * a.ammo.burn.seconds) / (t.cooldown * (a.every - 1 + a.afterTimes)))} ` +
-      `damage a second where the outpost alone does ${num(t.damage / t.cooldown)} — so ` +
-      `it is not bought for one man. Against a rank it is ` +
-      `${a.ammo.burn.dps * a.ammo.burn.seconds} extra on each of them, and that is what ` +
-      `it is for. Swift Reload shortens the pause with everything else, to ` +
-      `${num(t.cooldown * (a.afterTimes - 1) / 1.5)} second.`
+    detail: (a, t) => `Every ${a.every}th cannonball sets enemies on fire for ${a.ammo.burn.dps} ` +
+      `damage a second for ${a.ammo.burn.seconds} seconds, which no armor can stop. The flames reach ` +
+      `${num(t.splash * a.ammo.burn.splashTimes)}, past the ${t.splash} blast, so enemies just ` +
+      `outside it still burn. The reload after it takes ${num(t.cooldown * a.afterTimes)} seconds ` +
+      `instead of ${num(t.cooldown)}. It is best against groups: every burning enemy takes ` +
+      `${a.ammo.burn.dps * a.ammo.burn.seconds} extra damage.`
   },
   {
     // THE CANNON OUTPOST'S FIRST, and it is the SAME ABILITY the Crossbow Sentry
@@ -1397,14 +1310,10 @@ export const ABILITIES = [
     cost: ABILITY_COST,
     reloadTimes: 1.5,
 
-    detail: (a, t) => `The gun crew work a faster drill and the cannon reloads ` +
-      `${a.reloadTimes}x quicker — a ball every ${num(t.cooldown / a.reloadTimes)} ` +
-      `seconds instead of every ${num(t.cooldown)}, which is ` +
-      `${num(t.damage * a.reloadTimes / t.cooldown)} damage a second where the outpost ` +
-      `alone does ${num(t.damage / t.cooldown)}.\n\n` +
-      `Nothing else changes: the same ${t.damage} a ball, the same ${t.splash} blast ` +
-      `and the same ${t.range} reach. The machine visibly works faster — its 3 beats ` +
-      `are the clock, so the drill you see is the reload the rules use.`
+    detail: (a, t) => `The gun crew reloads ${a.reloadTimes}x faster, firing every ` +
+      `${num(t.cooldown / a.reloadTimes)} seconds instead of every ${num(t.cooldown)}. That takes the ` +
+      `outpost from ${num(t.damage / t.cooldown)} to ${num(t.damage * a.reloadTimes / t.cooldown)} ` +
+      `damage a second, with the same damage, blast and reach.`
   },
   {
     id: 'fortitude',
@@ -1428,15 +1337,12 @@ export const ABILITIES = [
       badge: 'badge_fortitude'
     },
 
-    detail: a => `Every man a barracks musters carries ${pc(a.aura.hp)} more health, ` +
-      `on every tier and anywhere on the map: a spearman goes from ` +
-      `${barracks[0].soldier.hp} to ${Math.round(barracks[0].soldier.hp * a.aura.hp)} ` +
-      `and a paladin from ${towerOf('Paladin Keep').soldier.hp} to ` +
-      `${Math.round(towerOf('Paladin Keep').soldier.hp * a.aura.hp)}.\n\n` +
-      `It reaches men already standing on the road, not only the next ones to muster, ` +
-      `and a wounded man keeps the share of his health he had. A heart and an arrow ` +
-      `appear over every barracks it is working on, and a second altar compounds with ` +
-      `the first — marked x2 on the badge.`
+    detail: a => `Every barracks soldier on the map gets ${pc(a.aura.hp)} more health: a ` +
+      `spearman goes from ${barracks[0].soldier.hp} to ` +
+      `${Math.round(barracks[0].soldier.hp * a.aura.hp)}, and a paladin from ` +
+      `${towerOf('Paladin Keep').soldier.hp} to ` +
+      `${Math.round(towerOf('Paladin Keep').soldier.hp * a.aura.hp)}. It works on soldiers already ` +
+      `on the road, not only new ones. A 2nd High Altar with it adds another ${pc(a.aura.hp)} on top.`
   },
   {
     id: 'wrath',
@@ -1471,13 +1377,9 @@ export const ABILITIES = [
       badge: 'badge_wrath'
     },
 
-    detail: a => `Every archery tower, artillery machine and monastery on the map ` +
-      `hits for ${pc(a.aura.damage)} more, wherever it stands. The altar does not have ` +
-      `to see them and does not fire any differently itself.\n\n` +
-      `Barracks men are the exception: their damage belongs to the man rather than to ` +
-      `the tower. A sword and an arrow appear over every tower it is working on, and a ` +
-      `second altar that has bought it compounds with the first — ${pc(a.aura.damage)} ` +
-      `on top of ${pc(a.aura.damage)}, marked x2 on the badge.`
+    detail: a => `Every archery, artillery and monastery tower on the map deals ` +
+      `${pc(a.aura.damage)} more damage, wherever it stands. Barracks soldiers are not affected. ` +
+      `A 2nd High Altar with it adds another ${pc(a.aura.damage)} on top.`
   },
   {
     id: 'strength',
@@ -1519,22 +1421,12 @@ export const ABILITIES = [
     shot: monkStrongShot,
     shotWith: { pulse: monkBothShot },
 
-    detail: (a, t) => `Every blast a monk throws hits for ${pc(a.damageTimes)} more: ` +
-      `${t.damage} becomes ${blow(t.damage, a.damageTimes)}, and the temple goes from ` +
-      `${num(t.damage / t.cooldown)} to ` +
-      `${num(blow(t.damage, a.damageTimes) / t.cooldown)} damage a second. Both monks, ` +
-      `every shot, from the moment it is bought.\n\n` +
-      `That is more a second than a High Altar does at ` +
-      `${num(towerOf('High Altar').damage / towerOf('High Altar').cooldown)}, on the ` +
-      `same rung for the same gold — and still ` +
-      `${towerOf('High Altar').damage - blow(t.damage, a.damageTimes)} short of the ` +
-      `altar on the blow itself, which is what the 2 towers are for. The comet is ` +
-      `redrawn, and redrawn again in blue if the temple has also learned Slowed Pulse.\n\n` +
-      `The monks also learn to throw through ${a.pierceUp} more rank of magic armor, ` +
-      `${t.pierce + a.pierceUp} in all: the bigger blast lands ` +
-      `${plate(blow(t.damage, a.damageTimes), t.pierce + a.pierceUp)} on medium wards ` +
-      `where the temple alone lands ${plate(t.damage, t.pierce)}. Against anything ` +
-      `warded the ability is worth far more than its ${pc(a.damageTimes)} says.`
+    detail: (a, t) => `Every blast the monks throw deals ${pc(a.damageTimes)} more damage: ` +
+      `${blow(t.damage, a.damageTimes)} instead of ${t.damage}. Blasts also break ${a.pierceUp} more ` +
+      `rank of magic armor, ${t.pierce + a.pierceUp} in all, so they land ` +
+      `${plate(blow(t.damage, a.damageTimes), t.pierce + a.pierceUp)} on medium wards instead of ` +
+      `${plate(t.damage, t.pierce)}. Against warded enemies it is worth far more than ` +
+      `${pc(a.damageTimes)}.`
   },
   {
     // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
@@ -1562,23 +1454,12 @@ export const ABILITIES = [
     shot: monkSlowShot,
     shotWith: { strength: monkBothShot },
 
-    detail: (a, t) => `Every blast a monk throws now holds a man up: ` +
-      `${pc(a.shot.slow.times)} off how fast he walks and ${pc(a.shot.slow.times)} off ` +
-      `how often he swings, for ${a.shot.slow.seconds} seconds, and 2 chevrons appear ` +
-      `over his health bar while it lasts. The temple looses on a ${num(t.cooldown)} ` +
-      `second cadence, so anything it keeps firing at stays slowed — and ` +
-      `stays slowed for ${a.shot.slow.seconds} seconds after it walks out of reach.` +
-      `\n\n` +
-      `It does not stack. A 2nd temple on the same man refreshes the ` +
-      `${a.shot.slow.seconds} seconds rather than stacking a 2nd slow on him — what 2 ` +
-      `of them buy is the slow holding across a wider stretch of road, not a man ` +
-      `standing still. Both monks throw it, and it costs the tower nothing: the ` +
-      `damage, the reach and the cadence are exactly what they were.\n\n` +
-      `A boss shrugs off ${pc(1 + BOSS_SLOW_SHARE)} of it — ` +
-      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))} instead of ` +
-      `${pc(a.shot.slow.times)}, for the same ${a.shot.slow.seconds} seconds. ` +
-      `Slowing the 1 thing on the road that cannot be outrun is worth something, but ` +
-      `it is not worth what it is worth against a wave.`
+    detail: (a, t) => `Every blast slows the enemy it hits by ${pc(a.shot.slow.times)}, both ` +
+      `walking and attacking, for ${a.shot.slow.seconds} seconds. The temple fires ` +
+      `${t.cooldown === 1 ? 'once a second' : `every ${num(t.cooldown)} seconds`}, so anything in reach stays slowed, and stays slowed for ` +
+      `${a.shot.slow.seconds} seconds after it leaves. The slow does not stack: a 2nd temple only ` +
+      `refreshes it. Bosses are slowed by only ` +
+      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))}.`
   }
 ];
 
