@@ -219,7 +219,7 @@ FRAME.x = Math.round(RIGHT.cx - FRAME.w / 2);
 FRAME.y = RIGHT.y + 6;
 // An ability's picture is a button and says little on its own; its paragraph is
 // the long one in the book, so its frame is shorter and gives the words the room.
-export const FRAME_SMALL = { w: 128, h: 80 };
+export const FRAME_SMALL = { w: 128, h: 74 };
 FRAME_SMALL.x = Math.round(RIGHT.cx - FRAME_SMALL.w / 2);
 FRAME_SMALL.y = FRAME.y;
 export const frameFor = kind => (kind === 'ability' ? FRAME_SMALL : FRAME);
@@ -231,10 +231,12 @@ export const FRAME_AIR = 14;
 // description panel, at the owner's word: the name, the line under it, the numbers
 // and the words. It runs down to just above the footer.
 export const BOX_PAD = 16;
+export const BOX_FOOT = 16;
 export function boxFor(kind) {
   const f = frameFor(kind);
-  const y = f.y + f.h + 12;
-  return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - 6 - y };
+  const y = f.y + f.h + 10;
+  // Clear of the footer by BOX_FOOT, at the owner's word, so Close does not crowd it.
+  return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - BOX_FOOT - y };
 }
 
 // The numbers: each an icon and its figure centred in a slot of its own, and each

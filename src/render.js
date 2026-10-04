@@ -6691,14 +6691,14 @@ function drawBookEntry(ctx, state, item) {
   // AND THE WORDS, under a faint rule: what an enemy does and what to do about
   // him, or what an ability does, in full.
   if (e.prose) {
-    y += 8;
+    y += 7;
     ctx.strokeStyle = CARD_EDGE;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(box.x + BOX_PAD + 20, y);
     ctx.lineTo(box.x + box.w - BOX_PAD - 20, y);
     ctx.stroke();
-    y += 10;
+    y += 9;
     const small = item.kind === 'ability';
     const size = small ? ENTRY_TEXT_SMALL : ENTRY_TEXT;
     const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;

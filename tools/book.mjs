@@ -304,7 +304,7 @@ console.log('\nThe right page\n');
     if (e.sub) y += ENTRY_SUB + 6;
     y += 4 + e.rows.length * STAT_ROW_H;
     if (e.prose) {
-      y += 18;
+      y += 16;
       const small = item.kind === 'ability';
       const { n, breaks } = wrapLines(e.prose, small ? ENTRY_TEXT_SMALL : ENTRY_TEXT);
       const lead = small ? ENTRY_LEAD_SMALL : ENTRY_LEAD;
