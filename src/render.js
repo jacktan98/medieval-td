@@ -6194,7 +6194,7 @@ function drawUpgradesButton(ctx) {
 // One five-pointed star, filled, with a dark edge. `fill` may be 'map' for the world
 // map's own earned star — its gold gradient and its cream outline, see drawStars in
 // src/overview.js — so a star beside the hammer is the same star the map awards.
-function starShape(ctx, cx, cy, r, fill, edge = UI_INK) {
+function starShape(ctx, cx, cy, r, fill, edge = UI_INK, keep = null) {
   ctx.save();
   ctx.beginPath();
   for (let p = 0; p < 10; p++) {
@@ -6212,6 +6212,17 @@ function starShape(ctx, cx, cy, r, fill, edge = UI_INK) {
     ctx.fillStyle = g;
     ctx.fill();
     ctx.lineWidth = Math.max(1.2, r * 0.14);
+    // `keep`, where given, is a dark ring drawn OUTSIDE the cream one: the cream
+    // edge every map star wears stays, and the dark one gives it something to
+    // stand against on pale paper.
+    if (keep) {
+      const lw = ctx.lineWidth;
+      ctx.lineWidth = lw * 3;
+      ctx.strokeStyle = keep;
+      ctx.stroke();
+      ctx.fill();
+      ctx.lineWidth = lw;
+    }
     ctx.strokeStyle = edge;
   } else {
     ctx.fillStyle = fill;
@@ -6479,8 +6490,9 @@ function drawUpgradePanel(ctx, state) {
   ctx.fillText(UP_FAMILY_NAME[fam], cx, p.y + 58);
 
   // The price, a star and a number.
-  // Cream-edged, as the map's stars are, at the owner's word.
-  starShape(ctx, cx - 12, p.y + 86, 10, 'map');
+  // Cream-edged, as the map's stars are, with a dark ring outside the cream so
+  // it stands out on the pale paper — both at the owner's word.
+  starShape(ctx, cx - 12, p.y + 86, 10, 'map', UI_INK, '#3A2410');
   ctx.fillStyle = UP_INK;
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
@@ -7045,7 +7057,7 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2) {
 // layout: the print is PRINT_K of that across each way, and leans PRINT_LEAN of
 // its height.
 const PRINT_K = 0.92;
-const PRINT_LEAN = 0.16;
+const PRINT_LEAN = 0.10;   // 0.16 at first; eased off at the owner's word
 // Its four corners, untorn, for whoever needs its outline — the bar a medallion
 // sits on is cut away under it, and the alert's "!" is pinned to its corner.
 function printCorners(cx, cy, R) {
