@@ -6750,6 +6750,8 @@ function drawZoom(ctx, z) {
     // artist draws them as a disc, and a disc shown in a square frame wants the
     // corners taken off whether or not there is ink in them — the same clip the
     // menu button uses, for the same reason. See plateFace().
+    // And the pasted-on shadow the same disc has on its card, at the owner's word.
+    if (z.round) roundShadow(ctx, cx, top + h / 2, Math.min(w, h) / 2);
     ctx.save();
     if (z.round) {
       ctx.beginPath();
@@ -7115,7 +7117,10 @@ function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
 // Upgrades screen, at the owner's word. Blurred once per radius and kept.
 const roundShadowCache = new Map();
 function roundShadow(ctx, cx, cy, r) {
-  const K = 3, P = 10;
+  // A bigger disc throws a bigger shadow: the card-sized ones keep the cards'
+  // offset and blur, and the pop-up's large disc scales them up with it.
+  const z = Math.max(1, r / 30);
+  const K = 3, P = Math.ceil(10 * z);
   let c = roundShadowCache.get(r);
   if (!c) {
     c = document.createElement('canvas');
@@ -7124,7 +7129,7 @@ function roundShadow(ctx, cx, cy, r) {
     g.scale(K, K);
     // The disc itself is drawn far off the canvas and only its shadow lands on it.
     g.shadowColor = 'rgba(45,25,8,0.45)';
-    g.shadowBlur = 5 * K;
+    g.shadowBlur = 5 * z * K;
     g.shadowOffsetX = 1000 * K;
     g.beginPath();
     g.arc(P + r - 1000, P + r, r, 0, Math.PI * 2);
@@ -7132,7 +7137,7 @@ function roundShadow(ctx, cx, cy, r) {
     roundShadowCache.set(r, c);
   }
   const S = 2 * r + 2 * P;
-  ctx.drawImage(c, cx - S / 2 + 1.5, cy - S / 2 + 2.5, S, S);
+  ctx.drawImage(c, cx - S / 2 + 1.5 * z, cy - S / 2 + 2.5 * z, S, S);
 }
 
 // A card: a photo of its own, seeded from where it sits.
