@@ -146,13 +146,14 @@ export function picked(state, page = state.book) {
 
 // --- a picture in its cell ---------------------------------------------------------
 
-// EVERY DRAWING IS CENTRED ON ITS OWN SHADOW in its own photo, at the owner's
-// word: across, the spot it stands on (`groundFrac` for a building, `pivot` for a
-// figure) is on the cell's centre line — a bounding box is not where a thing is, a
-// watchtower's flagpole leans out one side and a spearman's spear sticks out
-// further than he does — and down, the drawing is centred in the cell.
+// EVERY DRAWING IS CENTRED IN ITS OWN PHOTO, at the owner's word. A building is
+// centred across on its SHADOW — the spot it stands on, `groundFrac` — since a
+// watchtower's flagpole leans out one side; a FIGURE (a man, an enemy, the boss) is
+// centred on its own middle, both ways. Down, every drawing is centred in the cell.
 const buildingOf = d => ({ w: d.w, h: d.h, a: d.groundFrac });
-const figureAtBoard = (trim, pivot) => ({ w: trim[2] * SCALE, h: trim[3] * SCALE, a: pivot });
+// A figure is centred on its own middle, so its anchor is the middle of its box.
+const MIDDLE = [0.5, 0.5];
+const figureAtBoard = trim => ({ w: trim[2] * SCALE, h: trim[3] * SCALE, a: MIDDLE });
 
 // The largest factor at which every one of `items` fits `w` x `h` when centred
 // across on its own shadow: each needs twice its longer reach from that spot.
@@ -175,16 +176,16 @@ export const BOOK_TOWER_K = Math.min(TOWER_CEILING, fitOnShadow(TIERS.map(buildi
 // as fits. THE BOSS IS NOT IN THE FIT: the army sizes the furniture and he is
 // fitted into it (see BOSS_FIT), rather than every picture shrinking for him.
 const ARMY = [
-  ...TIERS.map(d => { const m = occupant(d); return figureAtBoard(m.trim, m.pivot); }),
-  ...roster.map(d => figureAtBoard(d.spriteTrim, d.pivot))
+  ...TIERS.map(d => figureAtBoard(occupant(d).trim)),
+  ...roster.map(d => figureAtBoard(d.spriteTrim))
 ];
 export const BOOK_FIGURE_SCALE = Math.min(PORTRAIT_SCALE, fitOnShadow(ARMY, INNER_W, INNER_H));
 
 // HOW MUCH A BOSS IS SHRUNK to fit his photo, as a multiplier — 1 when he already
 // fits. Both of his halves, and every boss in the game.
 const BOSS_FIT = (() => {
-  const forms = bosses.flatMap(d => [figureAtBoard(d.spriteTrim, d.pivot),
-    ...(d.rage ? [figureAtBoard(d.rage.trim, d.rage.pivot)] : [])]);
+  const forms = bosses.flatMap(d => [figureAtBoard(d.spriteTrim),
+    ...(d.rage ? [figureAtBoard(d.rage.trim)] : [])]);
   if (!forms.length) return 1;
   return Math.min(1, fitOnShadow(forms, INNER_W, INNER_H) / BOOK_FIGURE_SCALE);
 })();
@@ -199,7 +200,7 @@ export function towerArt(def) {
 }
 export function figureArt(trim, pivot, fit = 1) {
   const k = SCALE * BOOK_FIGURE_SCALE * fit;
-  return placed(trim[2] * k, trim[3] * k, pivot);
+  return placed(trim[2] * k, trim[3] * k, MIDDLE);
 }
 
 // The ability's disc in its cell, centred, as big as the cell's air allows.
@@ -235,7 +236,8 @@ export function boxFor(kind) {
 
 // The numbers: each an icon and its figure centred in a slot of its own, and each
 // row centred in the box — see pageEntry for which facts share a row.
-export const STAT_SLOT_W = 128;
+// THE GAP between one number and the next icon, at the owner's word: closer than it was.
+export const STAT_GAP = 22;
 export const STAT_ROW_H = 30;
 
 // The boss's two halves, as two small buttons beside his frame.
@@ -330,7 +332,7 @@ export function pageEntry(state, item) {
   // and a zero in a coin would say he is worth nothing to kill.
   const reward = (d.bounty || d.leak)
     ? [band('stat_gold_cost', d.bounty, 'Bounty'), band('stat_life_cost', d.leak)] : [];
-  return { title: d.name, sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot, kind: 'figure',
+  return { title: d.name, sprite: d.sprite, trim: d.spriteTrim, pivot: MIDDLE, kind: 'figure',
     sub: null, prose: FOE_NOTES[idOf(def)] || null, staged: staged(def),
     rows: [first, traitRow(d).map(([key, value]) => band(key, value)), reward].filter(r => r.length) };
 }
@@ -541,9 +543,9 @@ const POP_GROUPS = {
 const FRAME_ITEMS = {
   tower: TIERS.map(d => ({ w: d.spriteTrim[2], h: d.spriteTrim[3], a: d.groundFrac })),
   figure: [
-    ...TIERS.map(d => { const m = occupant(d); return { w: m.trim[2], h: m.trim[3], a: m.pivot }; }),
-    ...Object.values(enemyTypes).flatMap(d => [{ w: d.spriteTrim[2], h: d.spriteTrim[3], a: d.pivot },
-      ...(d.rage ? [{ w: d.rage.trim[2], h: d.rage.trim[3], a: d.rage.pivot }] : [])])
+    ...TIERS.map(d => { const m = occupant(d); return { w: m.trim[2], h: m.trim[3], a: MIDDLE }; }),
+    ...Object.values(enemyTypes).flatMap(d => [{ w: d.spriteTrim[2], h: d.spriteTrim[3], a: MIDDLE },
+      ...(d.rage ? [{ w: d.rage.trim[2], h: d.rage.trim[3], a: MIDDLE }] : [])])
   ]
 };
 export function frameSlot(kind, frame, cap = 1) {
@@ -609,7 +611,7 @@ export function unitEntry(def) {
     title: man.name,
     sprite: man.sprite,
     trim: man.trim,
-    pivot: man.pivot,
+    pivot: MIDDLE,
     art: figureArt(man.trim, man.pivot, figureFit(def)),
     hp: man.hp,
     damage: man.damage,

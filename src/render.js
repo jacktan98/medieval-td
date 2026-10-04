@@ -30,7 +30,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes, occupant } from './select.js';
 import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFit, shown,
          ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
-         boxFor, BOX_PAD, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
+         boxFor, BOX_PAD, STAT_GAP, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
@@ -6645,39 +6645,45 @@ function drawBookEntry(ctx, state, item) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_NAME;
   ctx.font = `${ENTRY_NAME}px ${MAP_TYPE}`;
-  fillRoman(ctx, e.title, RIGHT.cx, y);
+  ctx.fillText(e.title, RIGHT.cx, y);
   y += ENTRY_NAME / 2 + 6;
 
   if (e.sub) {
     ctx.textAlign = 'center';
     ctx.fillStyle = UP_MUTED;
     ctx.font = `${ENTRY_SUB}px ${MAP_TYPE}`;
-    fillRoman(ctx, e.sub, RIGHT.cx, y + ENTRY_SUB / 2);
+    ctx.fillText(e.sub, RIGHT.cx, y + ENTRY_SUB / 2);
     y += ENTRY_SUB + 6;
   }
 
   // THE NUMBERS, before the words so they stand in the same place whatever the
   // paragraph's length: three to a row, each centred in its slot.
   y += 4;
-  const inner = box.w - 2 * BOX_PAD;
+  // ONE GRID OF COLUMNS FOR EVERY ROW, at the owner's word: each icon starts a
+  // whole number of steps from the grid's left edge, so a row with a single entry
+  // stands under the first entry of the rows around it rather than in the middle.
+  // The step is the widest entry on the page plus STAT_GAP, and the grid is
+  // centred in the box.
+  ctx.font = `16px ${MAP_TYPE}`;
+  const entryW = b => uiSize(b.key, { h: ENTRY_ICON_H }).w + 8 + ctx.measureText(String(b.value)).width;
+  const all = e.rows.flat();
+  const step = Math.max(...all.map(entryW)) + STAT_GAP;
+  const cols = Math.max(...e.rows.map(r => r.length));
+  const gridW = (cols - 1) * step + Math.max(...e.rows.filter(r => r.length === cols).map(r => entryW(r[cols - 1])));
+  const x0 = RIGHT.cx - gridW / 2;
   for (const row of e.rows) {
-    // A slot each, as wide as STAT_SLOT_W or as a full row allows.
-    const slot = Math.min(STAT_SLOT_W, inner / row.length);
-    const x0 = RIGHT.cx - row.length * slot / 2;
     const cy = y + STAT_ROW_H / 2;
     row.forEach((b, i) => {
       const ih = ENTRY_ICON_H;
       const { w: iw } = uiSize(b.key, { h: ih });
-      ctx.font = `16px ${MAP_TYPE}`;
-      const tw = ctx.measureText(String(b.value)).width;
-      const ew = iw + 8 + tw;
-      const sx = x0 + i * slot + (slot - ew) / 2;
+      const sx = x0 + i * step;
       drawUi(ctx, b.key, sx + iw / 2, cy, { h: ih });
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = BAND_INK[b.tone] || INK;
+      ctx.font = `16px ${MAP_TYPE}`;
       ctx.fillText(String(b.value), sx + iw + 8, cy + 1);
-      BOOK_BANDS.push({ x: sx - 4, y: y, w: ew + 8, h: STAT_ROW_H, label: b.label });
+      BOOK_BANDS.push({ x: sx - 4, y: y, w: entryW(b) + 8, h: STAT_ROW_H, label: b.label });
     });
     y += STAT_ROW_H;
   }
@@ -6723,39 +6729,6 @@ function drawBookEntry(ctx, state, item) {
     ctx.textAlign = 'center';
     ctx.fillText(tip.label, lx + lw / 2, ly + lh / 2 + 0.5);
   }
-}
-
-// A ROMAN NUMERAL IN A SERIF FACE. Lobster's capital I is a script stroke, so
-// "Tier III" in it reads as "Tier 111"; a standalone numeral word is drawn in a
-// bold serif at the same size instead, and the rest of the line in whatever font
-// is set. Honours the context's textAlign, like fillText.
-const ROMAN = /^(I{1,3}|IV|VI{0,3}|IX|X)$/;
-const SERIF = `Georgia, 'Times New Roman', serif`;
-function fillRoman(ctx, text, x, y) {
-  const words = text.split(' ');
-  if (!words.some(w => ROMAN.test(w))) { ctx.fillText(text, x, y); return; }
-  const font = ctx.font;
-  const size = parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
-  const serif = `bold ${Math.round(size * 0.86)}px ${SERIF}`;
-  const parts = words.map((w, i) => ({ t: (i ? ' ' : '') + w, f: ROMAN.test(w) ? serif : font }));
-  // The space before a numeral belongs to the Lobster run, so it is Lobster wide.
-  parts.forEach(p => { if (p.f === serif && p.t.startsWith(' ')) { p.t = p.t.slice(1); p.pre = ' '; } });
-  let total = 0;
-  for (const p of parts) {
-    if (p.pre) { ctx.font = font; p.preW = ctx.measureText(p.pre).width; total += p.preW; }
-    ctx.font = p.f; p.w = ctx.measureText(p.t).width; total += p.w;
-  }
-  const align = ctx.textAlign;
-  let at = align === 'center' ? x - total / 2 : align === 'right' || align === 'end' ? x - total : x;
-  ctx.textAlign = 'left';
-  for (const p of parts) {
-    if (p.pre) at += p.preW;
-    ctx.font = p.f;
-    ctx.fillText(p.t, at, y);
-    at += p.w;
-  }
-  ctx.textAlign = align;
-  ctx.font = font;
 }
 
 // The picked drawing in its frame: one factor for every drawing of its kind, so a
@@ -6952,7 +6925,7 @@ function drawZoom(ctx, z) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = INK;
   ctx.font = `18px ${MAP_TYPE}`;
-  fillRoman(ctx, z.title, 480, py + POP_PAD + POP_TITLE / 2);
+  ctx.fillText(z.title, 480, py + POP_PAD + POP_TITLE / 2);
 
   const bodyY = py + POP_PAD + POP_TITLE + POP_GAP;
   const cx = beside ? px + POP_PAD + slot.w / 2 : 480;

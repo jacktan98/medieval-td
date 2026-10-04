@@ -1366,9 +1366,9 @@ export const AIM_MODES = [
 // see the whole board is a tower whose choice of target is the only thing left to
 // decide, and 60 damage into an 80-health militiaman is most of a reload wasted.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier I',   unit: 'Novice Archer', cost: 60,  damage: 10, range: 200, damageType: 'physical', cooldown: 1.00, colour: '#9C7248', targeting: true },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier II',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 220, damageType: 'physical', cooldown: 0.90, colour: '#7A5230', targeting: true },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier III', unit: 'Elite Archer',  cost: 140, damage: 25, range: 240, damageType: 'physical', cooldown: 0.80, colour: '#B8B2A4', targeting: true },
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier 1',   unit: 'Novice Archer', cost: 60,  damage: 10, range: 200, damageType: 'physical', cooldown: 1.00, colour: '#9C7248', targeting: true },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier 2',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 220, damageType: 'physical', cooldown: 0.90, colour: '#7A5230', targeting: true },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier 3', unit: 'Elite Archer',  cost: 140, damage: 25, range: 240, damageType: 'physical', cooldown: 0.80, colour: '#B8B2A4', targeting: true },
   // THE LADDER'S FIRST FORK, and the first of its two fourth rungs. A Crossbow
   // Tower can become either of these two, which is why `tier` rather than array
   // index is what decides what follows what — see upgradesFrom below.
@@ -1789,17 +1789,17 @@ const assassin = {
 
 export const barracks = [
   {
-    ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier I', cost: 70, range: 165, colour: '#6E7A6A',
+    ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier 1', cost: 70, range: 165, colour: '#6E7A6A',
     soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 60, respawn: 8, regen: 4, colour: '#7C93B8',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
-    ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier II', cost: 100, range: 180, colour: '#5E6B5C',
+    ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier 2', cost: 100, range: 180, colour: '#5E6B5C',
     soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 150, damage: 4, cd: 0.90, speed: 60, respawn: 7, regen: 5, colour: '#6E86B4',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
-    ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier III', cost: 150, range: 195, colour: '#8A8478',
+    ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier 3', cost: 150, range: 195, colour: '#8A8478',
     soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 60, respawn: 6, regen: 6, colour: '#5C79AE',
                damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
   },
@@ -2515,13 +2515,13 @@ const cannon = {
 // one of him rather than a squad, which is what the book prints: a barracks
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
-  { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier I',   unit: 'Catapult Engineer',
+  { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier 1',   unit: 'Catapult Engineer',
     cost: 90,  damage: 18, splash: 70, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A',
     damageType: 'physical', pierce: 1 },
-  { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier II',  unit: 'Mangonel Engineer',
+  { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier 2',  unit: 'Mangonel Engineer',
     cost: 120, damage: 24, splash: 80, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042',
     damageType: 'physical', pierce: 1 },
-  { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier III', unit: 'Trebuchet Engineer',
+  { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier 3', unit: 'Trebuchet Engineer',
     cost: 170, damage: 36, splash: 90, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56',
     damageType: 'physical', pierce: 1 },
   // TIER 4, and it is the opposite tower to the three below it in every way that
@@ -3382,11 +3382,11 @@ const pope = {
 // itself for a tier 4 that costs 570 gold of cumulative spend, which is the more
 // honest shape for a ladder whose lower rungs are the reason to take the family.
 export const monastery = [
-  { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier I',   unit: 'Priest',
+  { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier 1',   unit: 'Priest',
     cost: 80,  damage: 20, range: 160, cooldown: 1.80, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
-  { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier II',  unit: 'Bishop',
+  { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier 2',  unit: 'Bishop',
     cost: 110, damage: 30, range: 180, cooldown: 1.60, colour: '#7E6E52', targeting: true, damageType: 'magic' },
-  { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier III', unit: 'Cardinal',
+  { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier 3', unit: 'Cardinal',
     cost: 160, damage: 50, range: 200, cooldown: 1.40, colour: '#9A948A', targeting: true, damageType: 'magic' },
   // TIER 4, AND THE ONE TOP RUNG THAT IS NOT A TRADE.
   //

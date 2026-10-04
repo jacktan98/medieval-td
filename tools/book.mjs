@@ -38,7 +38,7 @@ import {
   PAGES, shelf, pageItems, pageEntry, towerEntry, unitEntry, towerArt, figureArt, figureFit,
   COLUMNS, ROWS, CELL_W, CELL_H, AIR, ABILITY_ICON, BOOK_TOWER_K, BOOK_FIGURE_SCALE,
   SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, FRAME, FRAME_SMALL, frameFor, frameSlot, FRAME_AIR,
-  boxFor, BOX_PAD, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, hitStage, bossHeadY, staged,
+  boxFor, BOX_PAD, STAT_ROW_H, STAGE_BTN, hitStage, bossHeadY, staged,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON_HIT, popSlot
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
@@ -249,11 +249,11 @@ console.log('\nThe left page\n');
   ok(ABILITY_ICON + 2 * AIR <= CELL_H, 'the ability disc fits its cell', `${ABILITY_ICON}px in ${CELL_H}`);
 }
 
-console.log('\nEverything stands on its own shadow\n');
+console.log('\nEverything is centred in its own photo\n');
 
 {
-  // EACH DRAWING IS CENTRED ON ITS OWN SHADOW in its own photo: the spot it stands
-  // on is on the cell's centre line, the drawing is centred down, and it fits.
+  // EACH DRAWING IS CENTRED IN ITS OWN PHOTO: a building's shadow on the cell's
+  // centre line, a figure's own middle on it, every drawing centred down, and it fits.
   const check = s => {
     const x = s.anchor.x - s.a[0] * s.w, y = s.anchor.y - s.a[1] * s.h;
     return Math.abs(s.anchor.x - CELL_W / 2) < 0.01 &&
@@ -267,7 +267,7 @@ console.log('\nEverything stands on its own shadow\n');
     ...Object.values(enemyTypes).flatMap(d => [figureArt(d.spriteTrim, d.pivot, figureFit(d)),
       ...(d.rage ? [figureArt(d.rage.trim, d.rage.pivot, figureFit(d))] : [])])
   ];
-  ok(men.every(check), 'and every figure, both halves of the boss among them',
+  ok(men.every(s => check(s) && s.a[0] === 0.5), 'and every figure on its own middle, both halves of the boss among them',
     `boss at ${figureFit(Object.values(enemyTypes).find(d => d.boss)).toFixed(2)}x`);
   ok(TIERS.every(d => occupant(d).pivot), 'and no figure is missing a shadow anchor');
 }
