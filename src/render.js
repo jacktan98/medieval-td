@@ -6351,7 +6351,9 @@ function drawUpgrades(ctx, state) {
       const afford = canBuy(fam, i);
 
       // A SOLID DISC OF PAGE UNDER IT FIRST, so a dimmed button is dim against the
-      // parchment rather than letting the rail show through it.
+      // parchment rather than letting the rail show through it — and a shadow under
+      // that, so the button sits on the page like the book's discs.
+      roundShadow(ctx, b.cx, b.cy, b.r);
       ctx.fillStyle = SHEET_FILL;
       ctx.beginPath();
       ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
@@ -6428,6 +6430,7 @@ function drawUpgrades(ctx, state) {
     // THE FAMILY'S BUTTON at the foot of the ladder: the artist's own face for the
     // family, from assets/upgrades. The build menu's plate and picture stand in if
     // it is missing.
+    roundShadow(ctx, foot.cx, foot.cy, foot.r);
     ctx.fillStyle = SHEET_FILL;
     ctx.beginPath();
     ctx.arc(foot.cx, foot.cy, foot.r, 0, Math.PI * 2);
@@ -7107,6 +7110,31 @@ function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
   ctx.drawImage(c, cx - S / 2, cy - S / 2, S, S);
 }
 
+// THE SAME PASTED-ON SHADOW for a round button: a soft brown disc, down and to the
+// right, drawn under it — the ability discs in the book and the rungs on the
+// Upgrades screen, at the owner's word. Blurred once per radius and kept.
+const roundShadowCache = new Map();
+function roundShadow(ctx, cx, cy, r) {
+  const K = 3, P = 10;
+  let c = roundShadowCache.get(r);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = Math.ceil((2 * r + 2 * P) * K);
+    const g = c.getContext('2d');
+    g.scale(K, K);
+    // The disc itself is drawn far off the canvas and only its shadow lands on it.
+    g.shadowColor = 'rgba(45,25,8,0.45)';
+    g.shadowBlur = 5 * K;
+    g.shadowOffsetX = 1000 * K;
+    g.beginPath();
+    g.arc(P + r - 1000, P + r, r, 0, Math.PI * 2);
+    g.fill();
+    roundShadowCache.set(r, c);
+  }
+  const S = 2 * r + 2 * P;
+  ctx.drawImage(c, cx - S / 2 + 1.5, cy - S / 2 + 2.5, S, S);
+}
+
 // A card: a photo of its own, seeded from where it sits.
 function card(ctx, b) {
   paperRect(ctx, b.x, b.y, b.w, b.h, Math.round(b.x * 7 + b.y * 13) % 997 + 1, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2, true);
@@ -7459,6 +7487,7 @@ function drawAbilityPage(ctx) {
 
 function abilityCard(ctx, b, e) {
   card(ctx, b);
+  roundShadow(ctx, b.x + ICON_BOX.x + ICON_BOX.w / 2, b.y + b.h / 2, ABILITY_ICON / 2);
   drawRound(ctx, e.sprite, b.x + ICON_BOX.x + ICON_BOX.w / 2, b.y + b.h / 2, ABILITY_ICON);
 
   const tx = b.x + ICON_BOX.x + ICON_BOX.w + 8;
