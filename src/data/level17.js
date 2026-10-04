@@ -170,8 +170,6 @@ export const level17 = {
              { clip: 'fire_crackling', level: 1 }],
 
   waves: stage15Waves,
-  wavesExtended: stage15Waves,
-  oneLength: true,
 
   // 40 / 20 / 40, at the owner's word: the top mouth takes 60% and sends a third of
   // it down the link; the bottom mouth takes the other 40%.

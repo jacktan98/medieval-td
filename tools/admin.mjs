@@ -27,7 +27,7 @@
 // browser that the whole tool suite would trip over.
 
 import { readFileSync } from 'fs';
-import { enemyTypes, MARCH_ORDER, defaultGap, MODES, tableFor } from '../src/data/waves.js';
+import { enemyTypes, MARCH_ORDER, defaultGap } from '../src/data/waves.js';
 import { levels, useLevel } from '../src/level.js';
 import { families } from '../src/data/towers.js';
 import {
@@ -37,7 +37,7 @@ import {
   groupRows, unitRows, unitPages, stepper, keys, PANEL, RESET_BTN, PROGRESS_BTN, CLOSE_BTN,
   PREV_BTN, NEXT_BTN, TABS, ROW_H, WAVE_ROW_H, SUMMARY_Y, SUMMARY2_Y, FOOT_Y, WAVE_COLS, UNIT_ROW_H,
   waveStepper, COUNT_VALUE_W, GAP_VALUE_W, STEP_PAD, setWaveGap, waveGap, gapStep,
-  modeTabs, waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
+  waveCountFor, waveOrder, wavePlace, promoteType, shippedOrder,
   diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
   roadRows, reachedBtn, starStepper, canReach, setReached
 } from '../src/admin.js';
@@ -120,17 +120,17 @@ console.log('\nReset reaches the defs, not just the store\n');
 
   setUnitStat(u.id, 'hp', hp * 2);
   setUnitStat(u.id, 'damage', dmg + 5);
-  setWaveCount('m1', 'normal', 0, 'light_inf', 99);
+  setWaveCount('m1', 0, 'light_inf', 99);
 
-  ok(u.def.hp === hp * 2 && u.def.damage === dmg + 5 && waveCount('m1', 'normal', 0, 'light_inf') === 99,
+  ok(u.def.hp === hp * 2 && u.def.damage === dmg + 5 && waveCount('m1', 0, 'light_inf') === 99,
     'three edits take',
-    `${u.def.hp} / ${u.def.damage} / ${waveCount('m1', 'normal', 0, 'light_inf')}`);
+    `${u.def.hp} / ${u.def.damage} / ${waveCount('m1', 0, 'light_inf')}`);
 
   reset();
   ok(!touched(), 'reset empties the store');
   ok(u.def.hp === hp && u.def.damage === dmg,
     'and puts the DEFS back too', `${u.def.hp} / ${u.def.damage}`);
-  ok(waveCount('m1', 'normal', 0, 'light_inf') === shipped('m1|normal|0|light_inf'),
+  ok(waveCount('m1', 0, 'light_inf') === shipped('m1|normal|0|light_inf'),
     'and the wave counts with them');
 }
 
@@ -148,11 +148,11 @@ console.log('\nLimits\n');
   // ZERO IS A REAL SETTING NOW and it is how a type says it is not in this wave —
   // the floor used to be 1, back when a row could only exist for a group the table
   // already had. See setWaveCount.
-  setWaveCount('m1', 'normal', 0, 'light_inf', -3);
-  ok(waveCount('m1', 'normal', 0, 'light_inf') === 0,
+  setWaveCount('m1', 0, 'light_inf', -3);
+  ok(waveCount('m1', 0, 'light_inf') === 0,
     'a count can be taken to none, which is how a type leaves a wave');
-  setWaveCount('m1', 'normal', 0, 'light_inf', 5000);
-  ok(waveCount('m1', 'normal', 0, 'light_inf') === 99, 'and never above ninety-nine');
+  setWaveCount('m1', 0, 'light_inf', 5000);
+  ok(waveCount('m1', 0, 'light_inf') === 99, 'and never above ninety-nine');
   reset();
 
   ok(countStep() === 1, 'a count moves by one');
@@ -164,15 +164,15 @@ console.log('\nThe wave table the game is handed\n');
 
 {
   const lv = levels[0];
-  const plain = adminWaves(lv, 'normal');
+  const plain = adminWaves(lv);
 
   ok(plain !== lv.waves, 'adminWaves always returns a COPY');
   ok(plain[0].groups !== lv.waves[0].groups, 'and copies the groups too');
   ok(plain.every((w, i) => w.groups.every((g, j) => g.count === lv.waves[i].groups[j].count)),
     'and matches the level exactly when nothing is overridden');
 
-  setWaveCount(lv.id, 'normal', 2, 'light_inf', 20);
-  const edited = adminWaves(lv, 'normal');
+  setWaveCount(lv.id, 2, 'light_inf', 20);
+  const edited = adminWaves(lv);
   ok(edited[2].groups[0].count === 20, 'an override shows up in it', `${edited[2].groups[0].count}`);
   ok(lv.waves[2].groups[0].count === shipped(`${lv.id}|normal|2|light_inf`),
     'and the LEVEL is untouched underneath it', `${lv.waves[2].groups[0].count}`);
@@ -189,8 +189,7 @@ console.log('\nThe wave table the game is handed\n');
 // read the table, and the multiplier lived one file away.
 //
 // So this section reads the table the DIFFICULTY hands over, not the one the panel
-// builds, and it checks the two are identical at Hard on every map and both
-// lengths. It is the only assertion in the project that ties data/waves.js to
+// builds, and it checks the two are identical at Hard on every map. It is the only assertion in the project that ties data/waves.js to
 // data/difficulty.js, and it is the one that was missing.
 console.log('\nWhat the difficulty does to it\n');
 
@@ -200,16 +199,14 @@ console.log('\nWhat the difficulty does to it\n');
     `${DIFFICULTIES[1].count}`);
 
   for (const lv of levels) {
-    for (const mode of MODES) {
-      const table = tableFor(lv, mode.id);
-      const played = scaleWaves(adminWaves(lv, mode.id), DIFFICULTIES[1]);
-      const same = played.length === table.length && played.every((w, i) =>
-        w.groups.length === table[i].groups.length &&
-        w.groups.every((g, j) => g.count === table[i].groups[j].count));
-      const total = t => t.reduce((a, w) => a + w.groups.reduce((b, g) => b + g.count, 0), 0);
-      ok(same, `${lv.name} ${mode.name} on Hard sends exactly what the table says`,
-        `${total(played)} vs ${total(table)}`);
-    }
+    const table = lv.waves;
+    const played = scaleWaves(adminWaves(lv), DIFFICULTIES[1]);
+    const same = played.length === table.length && played.every((w, i) =>
+      w.groups.length === table[i].groups.length &&
+      w.groups.every((g, j) => g.count === table[i].groups[j].count));
+    const total = t => t.reduce((a, w) => a + w.groups.reduce((b, g) => b + g.count, 0), 0);
+    ok(same, `${lv.name} on Hard sends exactly what the table says`,
+      `${total(played)} vs ${total(table)}`);
   }
 
   // NEAREST, NOT UP. The dashboard's own steppers round a typed count up — that is
@@ -237,8 +234,8 @@ console.log('\nWhat the difficulty does to it\n');
 console.log('\nAnything, in any wave\n');
 
 {
-  // NOT levels[0] ANY MORE. That is the tutorial now, and this block is about a
-  // level with a longer Extended table — which a tutorial deliberately has not.
+  // NOT levels[0] ANY MORE. That is the tutorial now, and this block wants a board
+  // with no tier cap.
   const lv = levels.find(l => !l.maxTier);
 
   // THE ONE THAT MATTERS MOST: with nothing edited, the builder must hand the
@@ -249,7 +246,7 @@ console.log('\nAnything, in any wave\n');
   // this project would notice.
   let waves = 0, matched = 0;
   for (const l of levels) {
-    const built = adminWaves(l, 'normal');
+    const built = adminWaves(l);
     l.waves.forEach((w, i) => {
       waves++;
       const a = JSON.stringify(w.groups.map(g => [g.type, g.count, g.gap]));
@@ -271,9 +268,9 @@ console.log('\nAnything, in any wave\n');
 
   // A CREATURE THE WAVE NEVER HAD. Wave 1 of map 1 is four militia and nothing
   // else; this is the edit the whole change exists for.
-  ok(waveCount(lv.id, 'normal', 0, 'heavy_inf') === 0, 'wave 1 ships with no Giant in it');
-  setWaveCount(lv.id, 'normal', 0, 'heavy_inf', 2);
-  const withGiant = adminWaves(lv, 'normal')[0];
+  ok(waveCount(lv.id, 0, 'heavy_inf') === 0, 'wave 1 ships with no Giant in it');
+  setWaveCount(lv.id, 0, 'heavy_inf', 2);
+  const withGiant = adminWaves(lv)[0];
   const giant = withGiant.groups.find(g => g.type === 'heavy_inf');
   ok(!!giant && giant.count === 2, 'and one can be placed into it', `${giant && giant.count}`);
   ok(giant.gap === defaultGap('heavy_inf'),
@@ -286,26 +283,26 @@ console.log('\nAnything, in any wave\n');
   // AND OUT AGAIN, all the way to an empty wave. groupAt walks groups by
   // cumulative count, so a type at zero must be ABSENT rather than an empty group
   // sitting in the middle of that walk.
-  setWaveCount(lv.id, 'normal', 0, 'light_inf', 0);
-  const noMilitia = adminWaves(lv, 'normal')[0];
+  setWaveCount(lv.id, 0, 'light_inf', 0);
+  const noMilitia = adminWaves(lv)[0];
   ok(noMilitia.groups.every(g => g.count > 0),
     'a type at zero leaves no empty group behind',
     noMilitia.groups.map(g => `${g.type} x${g.count}`).join(', '));
-  setWaveCount(lv.id, 'normal', 0, 'heavy_inf', 0);
-  ok(adminWaves(lv, 'normal')[0].groups.length === 0, 'and a wave can be emptied completely');
+  setWaveCount(lv.id, 0, 'heavy_inf', 0);
+  ok(adminWaves(lv)[0].groups.length === 0, 'and a wave can be emptied completely');
   reset();
 
   // AND HOW FAST THEY COME, which is the third control on a row and the newest.
-  const shippedGap = waveGap(lv.id, 'normal', 3, 'light_inf');
+  const shippedGap = waveGap(lv.id, 3, 'light_inf');
   ok(shippedGap === lv.waves[3].groups[0].gap,
     'an untouched rate is the one the table ships', `every ${shippedGap}s`);
-  setWaveGap(lv.id, 'normal', 3, 'light_inf', shippedGap + gapStep());
-  ok(adminWaves(lv, 'normal')[3].groups[0].gap === +(shippedGap + 0.1).toFixed(1),
+  setWaveGap(lv.id, 3, 'light_inf', shippedGap + gapStep());
+  ok(adminWaves(lv)[3].groups[0].gap === +(shippedGap + 0.1).toFixed(1),
     'and an override reaches the wave the game is handed',
-    `every ${adminWaves(lv, 'normal')[3].groups[0].gap}s`);
+    `every ${adminWaves(lv)[3].groups[0].gap}s`);
   ok(lv.waves[3].groups[0].gap === shippedGap,
     'while the LEVEL keeps its own underneath', `every ${lv.waves[3].groups[0].gap}s`);
-  setWaveGap(lv.id, 'normal', 3, 'light_inf', shippedGap);
+  setWaveGap(lv.id, 3, 'light_inf', shippedGap);
   ok(!touched(), 'and stepping it back to the shipped rate clears the edit');
 
   // A TENTH IS NOT REPRESENTABLE IN BINARY, so ten taps down from 2.0 lands on
@@ -313,132 +310,25 @@ console.log('\nAnything, in any wave\n');
   // as an override that can never equal its shipped value again. This is that
   // rounding, run through the real setter ten times rather than asserted.
   let g = 2.0;
-  for (let i = 0; i < 10; i++) { setWaveGap(lv.id, 'normal', 5, 'light_inf', g - gapStep()); g = waveGap(lv.id, 'normal', 5, 'light_inf'); }
+  for (let i = 0; i < 10; i++) { setWaveGap(lv.id, 5, 'light_inf', g - gapStep()); g = waveGap(lv.id, 5, 'light_inf'); }
   ok(g === 1, 'ten taps down from 2.0 lands exactly on 1', `${g}`);
   reset();
 
   // AND THE FLOOR IS A TENTH RATHER THAN ZERO. `gap` is what goes on the spawn
   // clock, so 0 puts one enemy on the road every frame — thirty of them in half a
   // second, stacked on one point of the map.
-  setWaveGap(lv.id, 'normal', 0, 'light_inf', -5);
-  ok(waveGap(lv.id, 'normal', 0, 'light_inf') === 0.1,
+  setWaveGap(lv.id, 0, 'light_inf', -5);
+  ok(waveGap(lv.id, 0, 'light_inf') === 0.1,
     'a rate can never reach zero, which would spawn one a frame',
-    `${waveGap(lv.id, 'normal', 0, 'light_inf')}s`);
-  setWaveGap(lv.id, 'normal', 0, 'light_inf', 999);
-  ok(waveGap(lv.id, 'normal', 0, 'light_inf') === 10, 'and is capped at ten seconds');
+    `${waveGap(lv.id, 0, 'light_inf')}s`);
+  setWaveGap(lv.id, 0, 'light_inf', 999);
+  ok(waveGap(lv.id, 0, 'light_inf') === 10, 'and is capped at ten seconds');
   reset();
 
-  // --- AND THE OTHER LENGTH OF THE MAP ------------------------------------------
-  //
-  // A map has two wave tables — see MODES in data/waves.js — and the panel only
-  // ever showed the Normal one. The owner asked for both, and the thing that makes
-  // that more than a second tab is that they have to be SEPARATE: with both in
-  // front of you, changing wave 3 of the long game must not change wave 3 of the
-  // short one.
-  //
-  // They shared a key before this, because a key was level-plus-wave-plus-type and
-  // had no room to say which table. So the first thing checked is the separation,
-  // and it is checked in both directions — a Normal edit not reaching Extended is
-  // the same bug as the reverse and would pass a one-way test.
-  ok(MODES.length === 2 && MODES.map(m => m.id).join() === 'normal,extended',
-    'a map has two lengths and both are named', MODES.map(m => m.name).join(' / '));
-
-  // AND THE LONG ONE IS LONGER, per map, which used to be "two waves longer"
-  // everywhere. The Bend's Extended game grew a boss finale that its short game
-  // does not get, so it is three longer and the other two are still two — see
-  // shortOf in data/waves.js, where the number is the argument that says so.
-  //
-  // CHECKED AS A RANGE PER MAP rather than as one constant, because what has to
-  // stay true is that Extended is a strict superset with at least the two waves
-  // the owner's tables always had. A map whose Extended table lost a wave, or one
-  // whose short table grew past its long one, is what this is for.
-  // THE BEND IS LEVEL 1 NOW, not level 0 — the tutorial took the front of the list
-  // when it became stage 1. Found by name rather than by index, because that is the
-  // thing this assertion is actually about.
-  const bend = levels.findIndex(l => l.id === 'm1');
-  const nWaves = waveCountFor(bend, 'normal');
-  const xWaves = waveCountFor(bend, 'extended');
-  // A TUTORIAL IS THE EXCEPTION and says so by capping the tower ladder: it runs
-  // the same five waves at either length, because a longer version of a lesson is
-  // the same lesson twice.
-  for (let m = 0; m < levels.length; m++) {
-    const short = waveCountFor(m, 'normal');
-    const long = waveCountFor(m, 'extended');
-    // READ OFF `oneLength`, not off the tier cap. The cap was the proxy while the
-    // tutorial was the only capped board; stage 2 caps at tier 3 AND runs one
-    // length, and the two are separate decisions — a board could have either
-    // without the other, and inferring one from the other is how a real difference
-    // becomes invisible.
-    if (levels[m].oneLength) {
-      ok(long === short, `${levels[m].name} runs the same waves at either length`,
-        `${short} against ${long}`);
-    } else {
-      ok(long >= short + 2, `${levels[m].name}'s long game is at least 2 waves longer`,
-        `${short} against ${long}`);
-    }
-  }
-  ok(xWaves === nWaves + 3, 'and the Bend is 3 longer, for the boss finale',
-    `${nWaves} against ${xWaves}`);
-
-  const nBefore = waveCount(lv.id, 'normal', 2, 'light_inf');
-  const xBefore = waveCount(lv.id, 'extended', 2, 'light_inf');
-  setWaveCount(lv.id, 'extended', 2, 'light_inf', 42);
-  ok(waveCount(lv.id, 'extended', 2, 'light_inf') === 42,
-    'an Extended edit takes', `${waveCount(lv.id, 'extended', 2, 'light_inf')}`);
-  ok(waveCount(lv.id, 'normal', 2, 'light_inf') === nBefore,
-    'and does not touch the same wave of the Normal table', `still ${nBefore}`);
-  ok(adminWaves(lv, 'extended')[2].groups.some(g => g.type === 'light_inf' && g.count === 42) &&
-     adminWaves(lv, 'normal')[2].groups.every(g => g.type !== 'light_inf' || g.count === nBefore),
-    'and the two tables the game is handed differ by exactly that',
-    `extended 42, normal ${nBefore}`);
-  reset();
-
-  setWaveCount(lv.id, 'normal', 2, 'light_inf', 7);
-  ok(waveCount(lv.id, 'extended', 2, 'light_inf') === xBefore,
-    'and a Normal edit does not reach Extended either', `still ${xBefore}`);
-  reset();
-
-  // THE TWO EXTRA WAVES ARE REACHABLE AT ALL, which they were not: the panel's
-  // wave row was built from the level's own table, so waves 9 and 10 of an
-  // Extended run had no button and no shipped entry.
-  //
-  // MEASURED OFF `lv`, not off the Bend. It was `xWaves - 1`, which is the Bend's
-  // count — right while `lv` WAS the Bend and wrong the moment a shorter board took
-  // the front of the non-tutorial list, which Oakhaven Outskirts did. The check then
-  // asked m4 for its wave 11 of 10 and reported the panel broken. Two levels in one
-  // assertion is the bug; one of them is enough.
-  const lastWave = waveCountFor(levels.indexOf(lv), 'extended') - 1;
-  ok(shipped(`${lv.id}|extended|${lastWave}|light_inf`) !== undefined,
-    'the last wave of the long game has a shipped entry to compare against',
-    `wave ${lastWave + 1}`);
-  setWaveCount(lv.id, 'extended', lastWave, 'heavy_inf', 9);
-  ok(adminWaves(lv, 'extended')[lastWave].groups.some(g => g.type === 'heavy_inf' && g.count === 9),
-    'and can be edited like any other', 'nine giants on the last wave');
-  reset();
-
-  // AND AN UNTOUCHED DASHBOARD REBUILDS THE EXTENDED TABLES TOO, on the same
-  // terms as the Normal ones above. The Extended table is DERIVED from the shipped
-  // Normal one at level-load time, so this is also what says the derivation and
-  // the rebuild agree.
-  let xw = 0, xm = 0;
-  for (const l of levels) {
-    const built = adminWaves(l, 'extended');
-    tableFor(l, 'extended').forEach((w, i) => {
-      xw++;
-      const a = JSON.stringify(w.groups.map(g => [g.type, g.count, g.gap]));
-      const b = JSON.stringify(built[i].groups.map(g => [g.type, g.count, g.gap]));
-      if (a === b) xm++;
-    });
-  }
-  ok(xm === xw, 'and an untouched dashboard rebuilds every Extended wave exactly',
-    `${xm} of ${xw} waves on ${levels.length} maps`);
-
-  // THE WAVE ROW FOLLOWS THE LENGTH, and the longest one still fits the panel.
-  // Twelve buttons is map 3 at Extended, which is the widest this row will ever be
-  // unless a map grows.
-  const longest = Math.max(...levels.map((_, i) => waveCountFor(i, 'extended')));
-  const tabs = waveTabs(levels.findIndex((_, i) => waveCountFor(i, 'extended') === longest), 'extended');
-  ok(tabs.length === longest, 'the wave row has a button per wave of the chosen length',
+  // THE WAVE ROW HAS A BUTTON PER WAVE, and the longest table still fits the panel.
+  const longest = Math.max(...levels.map((_, i) => waveCountFor(i)));
+  const tabs = waveTabs(levels.findIndex((_, i) => waveCountFor(i) === longest));
+  ok(tabs.length === longest, 'the wave row has a button per wave of the map',
     `${tabs.length} buttons`);
   ok(tabs[tabs.length - 1].x + tabs[tabs.length - 1].w <= PANEL.x + PANEL.w - 16,
     'and the longest row still fits the panel',
@@ -448,7 +338,6 @@ console.log('\nAnything, in any wave\n');
   // board push the row off the panel — is gone. What is left is whether the control
   // can show what it is asked to show, and whether the list it opens fits.
   const sel = mapSelect();
-  const modes = modeTabs();
   const longestName = levels.reduce((a, l) => (l.name.length > a.name.length ? l : a));
   ok(labelW(longestName.name) <= sel.w - 28 - 26,
     'the map button is wide enough for the longest board name',
@@ -483,18 +372,6 @@ console.log('\nAnything, in any wave\n');
     'and the list is inside the panel however many columns it takes',
     `ends ${box.x + box.w} of ${PANEL.x + PANEL.w - 16}`);
 
-  // AND THE LENGTH BUTTONS SIT BESIDE THE MAP, which is the row the dropdown gave
-  // back to them. They spent one build on the wave row, on top of the difficulty
-  // buttons — see the overlap check below, which is what should have caught it.
-  ok(modes[0].y === sel.y, 'the length buttons are on the map row',
-    `y ${modes[0].y}`);
-  ok(modes[0].x > sel.x + sel.w,
-    'and clear of the map button beside them',
-    `${modes[0].x - (sel.x + sel.w)}px apart`);
-  ok(modes[modes.length - 1].x + modes[modes.length - 1].w <= PANEL.x + PANEL.w - 16,
-    'and the row still ends inside the panel',
-    `ends ${modes[modes.length - 1].x + modes[modes.length - 1].w} of ${PANEL.x + PANEL.w - 16}`);
-
   // NO TWO CONTROLS ON THIS TAB MAY SHARE A PIXEL, and this asks nothing about which
   // control is which. That is the whole point of it.
   //
@@ -508,7 +385,6 @@ console.log('\nAnything, in any wave\n');
   const hits = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
   const controls = [
     ['map', sel],
-    ...modes.map(m => [`length "${m.label}"`, m]),
     ...tabs.map(t => [`wave ${t.i + 1}`, t]),
     ...diffTabs().map(d => [`difficulty "${d.label}"`, d]),
     ['gold -', goldStepper().minus], ['gold +', goldStepper().plus],
@@ -531,11 +407,6 @@ console.log('\nAnything, in any wave\n');
   ok(labelLeft > PROGRESS_BTN.x + PROGRESS_BTN.w,
     'clear of the two reset buttons',
     `${Math.round(labelLeft - (PROGRESS_BTN.x + PROGRESS_BTN.w))}px between them`);
-  // And the longer of the two labels fits its own button.
-  const longestMode = MODES.map(m => m.name).reduce((a, b) => a.length > b.length ? a : b);
-  ok(longestMode.length * adminPx(15) * 0.58 < modes[0].w - 12,
-    'and the longer length name fits its button',
-    `"${longestMode}" at ${Math.round(longestMode.length * adminPx(15) * 0.58)} of ${modes[0].w - 12}px`);
   // EVERY NAME FITS ITS OWN ROW IN THE LIST, which is the dropdown's version of the
   // question the tab row used to raise. A row is as wide as the widest name there
   // is, so this can only fail if a board arrives with a longer one than the control
@@ -560,7 +431,7 @@ console.log('\nAnything, in any wave\n');
     diffs.map(d => d.label).join(' / '));
 
   // On the wave row, hard against the right margin, and clear of the longest table
-  // of wave buttons there is — ten, on Two Rivers Extended.
+  // of wave buttons there is — ten, on Two Rivers.
   ok(diffs[0].y === tabs[0].y, 'on the same row as the wave numbers',
     `y ${diffs[0].y}`);
   // With room for the CAPTION between them, not merely for the buttons. The word
@@ -641,22 +512,20 @@ console.log('\nAnything, in any wave\n');
   // The steppers clamp: a count to 0..99 and a rate to 0.1..10, rounded to a
   // tenth. A shipped value outside that cannot be returned to — the first tap
   // pulls it inside the range and the "was" marker then never clears, so the panel
-  // shows an override that can never be undone except by Reset. Two Rivers
-  // Extended already runs a 0.20s rate on its last wave, which is the closest
-  // anything has come to the floor.
+  // shows an override that can never be undone except by Reset.
   //
-  // Checked across BOTH lengths of every map, and against the setters rather than
-  // against numbers typed here: the clamp is the authority.
+  // Checked across every map, and against the setters rather than against numbers
+  // typed here: the clamp is the authority.
   {
     const outside = [];
-    for (const l of levels) for (const mode of MODES) {
-      tableFor(l, mode.id).forEach((w, i) => {
+    for (const l of levels) {
+      l.waves.forEach((w, i) => {
         for (const g of w.groups) {
-          setWaveCount(l.id, mode.id, i, g.type, g.count);
-          setWaveGap(l.id, mode.id, i, g.type, g.gap);
-          if (waveCount(l.id, mode.id, i, g.type) !== g.count ||
-              waveGap(l.id, mode.id, i, g.type) !== g.gap)
-            outside.push(`${l.id} ${mode.id} w${i + 1} ${g.type} x${g.count}@${g.gap}`);
+          setWaveCount(l.id, i, g.type, g.count);
+          setWaveGap(l.id, i, g.type, g.gap);
+          if (waveCount(l.id, i, g.type) !== g.count ||
+              waveGap(l.id, i, g.type) !== g.gap)
+            outside.push(`${l.id} w${i + 1} ${g.type} x${g.count}@${g.gap}`);
         }
       });
     }
@@ -818,7 +687,7 @@ console.log('\nWhat fits, and what you can hit\n');
   //
   // Checked against the count stepper's TAPPED box, padding included, rather than
   // its drawn one: the padding is the part a finger actually lands in.
-  for (const r of groupRows(0, 4, 'normal')) {
+  for (const r of groupRows(0, 4)) {
     const c = waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W);
     ok(r.order.x + r.order.w <= c.minus.x - STEP_PAD,
       `the ${r.type} order button stops clear of its count stepper`,
@@ -829,7 +698,7 @@ console.log('\nWhat fits, and what you can hit\n');
   // AND TWO ROWS' BUTTONS NEVER MEET, across the page or down it. The waves tab is
   // a 2-column grid and this is the only control on it wide enough for the left
   // column's to reach the right column's.
-  const boxes = groupRows(0, 4, 'normal').map(r => r.order);
+  const boxes = groupRows(0, 4).map(r => r.order);
   const meets = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
   const collide = boxes.some((a, i) => boxes.slice(i + 1).some(b => meets(a, b)));
   ok(!collide, 'and no two order buttons overlap', `${boxes.length} rows`);
@@ -988,8 +857,7 @@ console.log('\nWhich of them comes out first\n');
   const lv = levels.find(l => l.id === 'm1');
   reset();
 
-  // THE DEFAULT IS THE WAVE'S OWN SHIPPED ORDER, on every wave of every map and
-  // both lengths. This is the check that says the feature costs nothing until it
+  // THE DEFAULT IS THE WAVE'S OWN SHIPPED ORDER, on every wave of every map. This is the check that says the feature costs nothing until it
   // is used — the same promise the counts and the gaps each make.
   //
   // IT USED TO SAY "MARCH_ORDER" and that was a weaker claim wearing a stronger
@@ -998,61 +866,60 @@ console.log('\nWhich of them comes out first\n');
   // to hold is that an untouched dashboard hands back the table as typed, whatever
   // order that is.
   let waves = 0, defaulted = 0;
-  for (const l of levels) for (const m of ['normal', 'extended']) {
-    for (let i = 0; i < waveCountFor(levels.indexOf(l), m); i++) {
+  for (const l of levels) {
+    for (let i = 0; i < waveCountFor(levels.indexOf(l)); i++) {
       waves++;
-      if (waveOrder(l.id, m, i).join() === shippedOrder(l.id, m, i).join()) defaulted++;
+      if (waveOrder(l.id, i).join() === shippedOrder(l.id, i).join()) defaulted++;
     }
   }
   ok(defaulted === waves, 'an untouched dashboard marches every wave as its table types it',
-    `${defaulted} of ${waves} waves on ${levels.length} maps, both lengths`);
+    `${defaulted} of ${waves} waves on ${levels.length} maps`);
 
-  // AND EXACTLY ONE WAVE IN THE GAME IS TYPED OUT OF MARCH_ORDER, which is the
-  // other half of the same fact. MARCH_ORDER is still the house style and a table
-  // that drifts out of it by accident is a wave nobody meant to reshape; the Bend's
-  // finale is the one that means it, so it is named here rather than merely
-  // tolerated. Add a second deliberate one and this line is where you say so.
+  // AND NO WAVE IN THE GAME IS TYPED OUT OF MARCH_ORDER, which is the other half
+  // of the same fact. MARCH_ORDER is the house style and a table that drifts out of
+  // it by accident is a wave nobody meant to reshape. There was one deliberate
+  // exception, the Bend's Extended boss finale; it went with Extended. Add a new
+  // deliberate one and this line is where you say so.
   const offOrder = [];
-  for (const l of levels) for (const m of ['normal', 'extended']) {
-    tableFor(l, m).forEach((w, i) => {
+  for (const l of levels) {
+    l.waves.forEach((w, i) => {
       const sent = w.groups.map(g => g.type);
       const inMarch = [...sent].sort((a, b) => MARCH_ORDER.indexOf(a) - MARCH_ORDER.indexOf(b));
-      if (sent.join() !== inMarch.join()) offOrder.push(`${l.id} ${m} wave ${i + 1}`);
+      if (sent.join() !== inMarch.join()) offOrder.push(`${l.id} wave ${i + 1}`);
     });
   }
-  ok(offOrder.length === 1 && offOrder[0] === 'm1 extended wave 11',
-    'and exactly 1 wave is deliberately typed out of MARCH_ORDER',
+  ok(offOrder.length === 0, 'and no wave is typed out of MARCH_ORDER',
     offOrder.join(', ') || 'none');
 
   // WAVE 5 OF MAP 1 sends three kinds, which is the smallest wave that can show
   // every part of this: a promotion, a wrap, and a type stepped over.
   const w = 4;
-  const sent = () => adminWaves(lv, 'normal')[w].groups.map(g => g.type);
+  const sent = () => adminWaves(lv)[w].groups.map(g => g.type);
   const before = sent();
   ok(before.length === 3, 'wave 5 of map 1 sends 3 kinds', before.join(' -> '));
 
   // ONE TAP MOVES A CREATURE ONE PLACE EARLIER.
   const last = before[2];
-  promoteType(lv.id, 'normal', w, last);
+  promoteType(lv.id, w, last);
   ok(sent()[1] === last, 'and one tap moves the last of them up one',
     `${before.join(' -> ')}  =>  ${sent().join(' -> ')}`);
 
   // AND KEEPS GOING TO THE FRONT.
-  promoteType(lv.id, 'normal', w, last);
+  promoteType(lv.id, w, last);
   ok(sent()[0] === last, 'and again puts it at the head of the wave', sent().join(' -> '));
-  ok(wavePlace(lv.id, 'normal', w, last) === 1, 'which is what the panel prints under it',
-    `place ${wavePlace(lv.id, 'normal', w, last)} of ${before.length}`);
+  ok(wavePlace(lv.id, w, last) === 1, 'which is what the panel prints under it',
+    `place ${wavePlace(lv.id, w, last)} of ${before.length}`);
   // AND THE PLACES ARE 1..n WITH NO GAPS AND NO REPEATS, counted over the types
   // the wave actually sends. That is what the row labels claim and it is the kind
   // of thing that goes wrong quietly: a place counted over the whole roster would
   // print "1st, 4th, 6th" on a wave of three.
-  const places = before.map(t => wavePlace(lv.id, 'normal', w, t)).sort();
+  const places = before.map(t => wavePlace(lv.id, w, t)).sort();
   ok(places.join() === before.map((_, i) => i + 1).join(),
     'and the places read 1 upwards with no gaps', places.join(', '));
 
   // AND WRAPS OFF THE FRONT TO THE BACK, which is what makes one button enough:
   // every order is reachable from every other by pressing it.
-  promoteType(lv.id, 'normal', w, last);
+  promoteType(lv.id, w, last);
   ok(sent()[2] === last, 'and once more wraps it round to the back', sent().join(' -> '));
 
   // A FULL CYCLE COMES HOME, and an order equal to the default is not an override.
@@ -1067,9 +934,9 @@ console.log('\nWhich of them comes out first\n');
   // builds state.waves from, and groupAt walks those groups in the order they are
   // listed — so this is the line that says a reordered wave really arrives
   // reordered.
-  promoteType(lv.id, 'normal', w, last);
-  promoteType(lv.id, 'normal', w, last);
-  const built = adminWaves(lv, 'normal')[w].groups;
+  promoteType(lv.id, w, last);
+  promoteType(lv.id, w, last);
+  const built = adminWaves(lv)[w].groups;
   ok(built[0].type === last, 'a promoted creature leads the wave the game is given',
     built.map(g => `${g.type} x${g.count}`).join(' -> '));
   // AND CARRIES ITS OWN COUNT AND RATE WITH IT. Reordering must move the group,
@@ -1091,8 +958,8 @@ console.log('\nWhich of them comes out first\n');
   // it every time a count passed through zero.
   const order = sent().join(' -> ');
   const middle = sent()[1];
-  setWaveCount(lv.id, 'normal', w, middle, 0);
-  setWaveCount(lv.id, 'normal', w, middle, src.count);
+  setWaveCount(lv.id, w, middle, 0);
+  setWaveCount(lv.id, w, middle, src.count);
   ok(sent().join(' -> ') === order, 'zeroing a creature and restoring it does not shuffle',
     order);
 
@@ -1100,95 +967,6 @@ console.log('\nWhich of them comes out first\n');
   reset();
   ok(sent().join() === before.join() && !touched(), 'and Reset restores the shipped order',
     sent().join(' -> '));
-}
-
-// --- the Bend's boss finale ------------------------------------------------------
-//
-// THE FIRST BOSS IN A SHIPPED TABLE, on one map at one length: "add a last wave for
-// Hard Extended The Bend only, bringing it to 11 waves. This last wave will have 1
-// Captain Thug coming out followed by 20 Tough Thugs 2.50 gap stepper."
-//
-// Checked here rather than in a wave-data tool because every part of it is a claim
-// about what the DASHBOARD hands the game: the wave is typed against MARCH_ORDER on
-// purpose, and the panel is what would quietly put it back.
-console.log('\nThe Bend\'s boss finale\n');
-
-{
-  reset();
-  // The Bend by name. It was levels[0] until the tutorial took the front of the
-  // list, and everything in this block is about that one map by name.
-  const bend = levels.find(l => l.id === 'm1');
-  const w = 10;
-
-  const bendAt = levels.indexOf(bend);
-  ok(waveCountFor(bendAt, 'extended') === 11, 'the Bend\'s long game is 11 waves now',
-    `${waveCountFor(0, 'extended')} waves`);
-  // AND THE SHORT GAME IS UNTOUCHED, which is the whole of "Extended only". The two
-  // tables share a derivation — see shortOf — so an eleventh wave on the long one
-  // reaching the short one is the exact mistake this guards.
-  ok(waveCountFor(bendAt, 'normal') === 8, 'and the short one is still 8', `${waveCountFor(bendAt, 'normal')}`);
-  const shortLast = adminWaves(bend, 'normal')[7];
-  const longEighth = tableFor(bend, 'extended')[7];
-  ok(JSON.stringify(shortLast.groups) === JSON.stringify(longEighth.groups),
-    'with the same 8 waves it always had', `${shortLast.groups.length} groups in its last`);
-  ok(shortLast.rest === 0, 'and its last wave still rests 0, because nothing follows');
-
-  // THE WAVE ITSELF, read off the builder main.js is handed rather than off the
-  // table — the table is what was typed and this is what gets played.
-  const built = adminWaves(bend, 'extended')[w];
-  ok(built.groups.length === 2, 'the finale sends 2 groups',
-    built.groups.map(g => `${g.type} x${g.count}`).join(' -> '));
-  ok(built.groups[0].type === 'captain_thug' && built.groups[0].count === 1,
-    'the Captain comes out first, alone', `${built.groups[0].type} x${built.groups[0].count}`);
-  ok(built.groups[1].type === 'tough_inf' && built.groups[1].count === 20,
-    'and 20 Tough Thugs follow him', `${built.groups[1].type} x${built.groups[1].count}`);
-  ok(built.groups[1].gap === 2.5, 'at the 2.50 gap the owner asked for',
-    `${built.groups[1].gap}s apart`);
-  ok(built.rest === 0, 'and nothing rests after it — it is the last wave there is');
-
-  // THE PANEL AGREES WITH THE GAME, which is the claim that needed a new mechanism
-  // to stay true: the boss is LAST in MARCH_ORDER, so a dashboard defaulting to
-  // that list would print him 2nd and hand the game a wave with the Toughs in
-  // front. See SHIPPED_ORDER in src/admin.js.
-  ok(wavePlace(bend.id, 'extended', w, 'captain_thug') === 1,
-    'and the panel prints the Captain as 1st in',
-    `place ${wavePlace(bend.id, 'extended', w, 'captain_thug')}`);
-  ok(wavePlace(bend.id, 'extended', w, 'tough_inf') === 2,
-    'with the Tough Thugs 2nd');
-  const rows = groupRows(bendAt, w, 'extended');
-  ok(rows.find(r => r.type === 'captain_thug').count === 1 &&
-     rows.find(r => r.type === 'tough_inf').count === 20 &&
-     rows.filter(r => r.count).length === 2,
-    'and the wave shows on the panel with 2 rows filled in',
-    rows.filter(r => r.count).map(r => `${r.type} x${r.count}`).join(', '));
-
-  // AND IT IS EDITABLE LIKE ANY OTHER WAVE, which is the second half of "ensure
-  // admin panel also have this added wave" — a wave you can see and not change is
-  // half a feature.
-  setWaveCount(bend.id, 'extended', w, 'tough_inf', 25);
-  ok(adminWaves(bend, 'extended')[w].groups[1].count === 25, 'its counts can be edited', 'x25');
-  setWaveGap(bend.id, 'extended', w, 'tough_inf', 3.0);
-  ok(adminWaves(bend, 'extended')[w].groups[1].gap === 3.0, 'and its rate', '3s');
-  promoteType(bend.id, 'extended', w, 'tough_inf');
-  ok(adminWaves(bend, 'extended')[w].groups[0].type === 'tough_inf',
-    'and its order — the Toughs can be put in front of the boss',
-    adminWaves(bend, 'extended')[w].groups.map(g => g.type).join(' -> '));
-  reset();
-  ok(adminWaves(bend, 'extended')[w].groups[0].type === 'captain_thug' &&
-     adminWaves(bend, 'extended')[w].groups[1].count === 20 &&
-     adminWaves(bend, 'extended')[w].groups[1].gap === 2.5,
-    'and Reset puts all 3 back to the boss in front of 20 at 2.50');
-
-  // NORMAL THINS IT AND HARD PLAYS IT EXACTLY, which is the difficulty rule this
-  // table was tuned under — and the one place it could bite is the boss himself:
-  // a count of 1 scaled by 0.8 must not round to 0, or the finale of the game would
-  // arrive with no boss in it.
-  for (const d of DIFFICULTIES) {
-    const scaled = scaleWaves(adminWaves(bend, 'extended'), d)[w];
-    const boss = scaled.groups.find(g => g.type === 'captain_thug');
-    ok(boss && boss.count === 1, `${d.name} still sends exactly 1 Captain`,
-      `${scaled.groups.map(g => `${g.type} x${g.count}`).join(', ')}`);
-  }
 }
 
 // A STORED ORDER IS SIEVED ON THE WAY OUT, which is what makes a year-old blob in
@@ -1231,7 +1009,7 @@ console.log('\nA stored order that has gone stale\n');
   ]) {
     held = JSON.stringify({ waves: {}, gaps: {}, order: { [key]: list }, gold: {}, units: {} });
     const fresh = await import(`../src/admin.js?stale=${n++}`);
-    const got = fresh.waveOrder(lv.id, 'normal', 0);
+    const got = fresh.waveOrder(lv.id, 0);
     ok(got.length === MARCH_ORDER.length &&
        MARCH_ORDER.every(t => got.includes(t)) &&
        new Set(got).size === got.length,
@@ -1253,9 +1031,9 @@ console.log('\nA stored order that has gone stale\n');
   // when they arrived.
   held = JSON.stringify({ waves: { [`${lv.id}|normal|0|light_inf`]: 7 }, gold: {}, units: {} });
   const older = await import('../src/admin.js?stale=old');
-  ok(older.waveOrder(lv.id, 'normal', 0).join() === full,
+  ok(older.waveOrder(lv.id, 0).join() === full,
     'and a saved blob from before this feature reads as MARCH_ORDER');
-  ok(older.waveCount(lv.id, 'normal', 0, 'light_inf') === 7,
+  ok(older.waveCount(lv.id, 0, 'light_inf') === 7,
     'with the counts it was already holding kept', 'light_inf x7');
 
   delete globalThis.localStorage;
@@ -1271,7 +1049,7 @@ console.log('\nA stored order that has gone stale\n');
 console.log('\nThe map dropdown\n');
 {
   const open = () => ({ admin: { stage: 'board', typed: '', wrong: false, tab: 'waves',
-                                 map: 0, mapOpen: false, mode: 'normal', wave: 0, page: 0, diff: 'hard' } });
+                                 map: 0, mapOpen: false, wave: 0, page: 0, diff: 'hard' } });
   const mid = b => [b.x + b.w / 2, b.y + b.h / 2];
   const tap = (st, b) => tapAdmin(st, ...mid(b), () => {});
 
@@ -1295,15 +1073,15 @@ console.log('\nThe map dropdown\n');
   //
   // Read on the LONGEST table there is, so that the row has buttons both under the
   // list and clear of it.
-  const longestTable = Math.max(...levels.map((_, i) => waveCountFor(i, 'extended')));
-  const busiest = levels.findIndex((_, i) => waveCountFor(i, 'extended') === longestTable);
+  const longestTable = Math.max(...levels.map((_, i) => waveCountFor(i)));
+  const busiest = levels.findIndex((_, i) => waveCountFor(i) === longestTable);
   const covered = w => { const b = mapList();
     return w.x < b.x + b.w && b.x < w.x + w.w && w.y < b.y + b.h && b.y < w.y + w.h; };
   const set = wave => Object.assign(st.admin,
-    { map: busiest, mode: 'extended', wave, mapOpen: false });
+    { map: busiest, wave, mapOpen: false });
 
   set(2);
-  const numbers = waveTabs(busiest, 'extended');
+  const numbers = waveTabs(busiest);
   const under = numbers.filter(covered);
   const beside = numbers.filter(w => !covered(w));
   ok(under.length > 0 && beside.length > 0,

@@ -53,9 +53,8 @@ import { prepare } from './route.js';
 //
 // WHAT THAT MEANS IN THE GAME: no player can reach them, because the world map is the
 // only way in. What it means everywhere else: they are still loaded, still in the
-// admin panel's map tabs, and still the only board in the game with a longer Extended
-// table (The Bend) and the only one with no tier cap. Several checkers exercise the
-// dashboard's two-length path against The Bend and there is nothing else to point
+// admin panel's map list, and still the only boards with no tier cap. Several
+// checkers exercise the dashboard against The Bend and there is nothing else to point
 // them at — see the note beside SHIPPED in src/admin.js, which is built from THIS
 // array, so a board taken out of it stops being editable at all.
 export const levels = [level00, level04, level05, level06, level07, level08, level09, level10,

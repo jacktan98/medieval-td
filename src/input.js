@@ -1,6 +1,6 @@
 import { level, levels, useLevel } from './level.js';
 import { boardReady } from './assets.js';
-import { PLOT_R, hitHudButton, hitStart, hitBack, hitModeButton, hitDifficultyButton,
+import { PLOT_R, hitHudButton, hitStart, hitBack, hitDifficultyButton,
          hitPauseButton } from './render.js';
 import { stageAt, skipReveal } from './overview.js';
 import { STAGES } from './data/overview.js';
@@ -231,13 +231,6 @@ export function tap(state, x, y, restart) {
       state.levelIndex = li;
       useLevel(li);
 
-      // A BOARD WITH ONE LENGTH IS ALWAYS PLAYED AT THE FIRST ONE. The row is not
-      // drawn for it — see hasLength in src/render.js — so a modeIndex carried in
-      // from the last board would be a setting the player cannot see and cannot
-      // change. It matters beyond the panel: a star record keys on the mode id, so
-      // the same six waves could be recorded twice under two names.
-      if (levels[li].oneLength) state.modeIndex = 0;
-
       restart();
       return true;
     }
@@ -245,15 +238,6 @@ export function tap(state, x, y, restart) {
     // Back out of the stage panel to the world map. Nothing is rebuilt: the
     // player has changed their mind about where, not about what.
     if (hitBack(state, x, y)) { state.stage = null; state.startWhenReady = false; return true; }
-
-    // The LENGTH is a property of the game about to be played. It chooses which
-    // of the level's two wave tables is loaded, and that is read once at newGame.
-    const longer = hitModeButton(state, x, y);
-    if (longer !== null) {
-      state.modeIndex = longer;
-      restart();
-      return true;
-    }
 
     // Same treatment again: a difficulty scales the wave table and the purse,
     // both of which are read once at newGame.

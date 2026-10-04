@@ -76,17 +76,15 @@ function persist(table) {
 
 let table = load();
 
-// WHERE A RESULT IS FILED, and Normal deliberately keeps the key it has always
-// had. A map has two lengths now, and they are two separate records — clearing
-// eight waves is not clearing ten — so Extended carries a suffix and Normal
-// carries none. Written this way round so that every star already saved on
-// somebody's phone still counts: adding the mode to the key unconditionally would
-// have quietly wiped the board for everyone who had played before today.
-const slot = (levelId, difficultyId, modeId = 'normal') =>
-  `${levelId}${modeId === 'normal' ? '' : '+' + modeId}/${difficultyId}`;
+// WHERE A RESULT IS FILED: map and difficulty. There was a third field for a while,
+// the map's LENGTH, when the first three maps could also be played Extended; that
+// carried a suffix and Normal never did, so every record saved at Normal length
+// is still under the key it was saved with. Extended came out at the owner's word
+// and any record saved under it is simply no longer read.
+const slot = (levelId, difficultyId) => `${levelId}/${difficultyId}`;
 
-export const bestStars = (levelId, difficultyId, modeId) =>
-  table[slot(levelId, difficultyId, modeId)] || 0;
+export const bestStars = (levelId, difficultyId) =>
+  table[slot(levelId, difficultyId)] || 0;
 
 // The settings that are strictly easier than a given one. DIFFICULTIES is listed
 // on the title screen in the order it is written, easiest first, and that order IS
@@ -112,18 +110,14 @@ function easierThan(difficultyId) {
 //
 // It fills in rather than overwrites: `stars >` at each rung, so a better Normal
 // record already standing is left alone.
-export function recordStars(levelId, difficultyId, stars, modeId) {
-  const key = slot(levelId, difficultyId, modeId);
+export function recordStars(levelId, difficultyId, stars) {
+  const key = slot(levelId, difficultyId);
   const beat = stars > (table[key] || 0);
   if (beat) table[key] = stars;
 
-  // THE FILL-IN STAYS INSIDE ONE LENGTH. Three stars on Hard is three stars on
-  // Normal difficulty at the SAME length — an Extended run says nothing about a
-  // Normal one, because it is a different map's worth of waves rather than the
-  // same map turned up.
   let filled = false;
   for (const id of easierThan(difficultyId)) {
-    const below = slot(levelId, id, modeId);
+    const below = slot(levelId, id);
     if (stars > (table[below] || 0)) { table[below] = stars; filled = true; }
   }
 
@@ -144,8 +138,8 @@ export function clearStars() {
 // Only the dashboard's Road tab calls it. Nothing in a played game does, and it
 // does NOT fill in the easier difficulties the way recordStars does: this writes
 // the one slot it is given and no other.
-export function setStars(levelId, difficultyId, modeId, stars) {
-  const key = slot(levelId, difficultyId, modeId);
+export function setStars(levelId, difficultyId, stars) {
+  const key = slot(levelId, difficultyId);
   if (stars > 0) table[key] = stars;
   else delete table[key];
   persist(table);
@@ -205,10 +199,10 @@ export const resetProgress = () => saveUnlocked(0);
 // only for the run that set the record, and a summary rebuilt every frame would
 // answer true on the first frame and false for the rest of the time the panel is
 // on screen. It is also the only place the store is written.
-export function finish(state, level, difficulty, mode) {
+export function finish(state, level, difficulty) {
   const stars = state.result === 'won' ? starsFor(state.lives, level.startLives) : 0;
-  const before = bestStars(level.id, difficulty.id, mode && mode.id);
-  const beat = recordStars(level.id, difficulty.id, stars, mode && mode.id);
+  const before = bestStars(level.id, difficulty.id);
+  const beat = recordStars(level.id, difficulty.id, stars);
 
   return {
     won: state.result === 'won',
@@ -222,11 +216,7 @@ export function finish(state, level, difficulty, mode) {
     waves: Math.min(state.waveIndex, state.waves.length),
     ofWaves: state.waves.length,
     map: level.name,
-    difficulty: difficulty.name,
-    // The length, for the summary line. Two records per map per difficulty now,
-    // and a summary that did not say which one this was would be the same panel
-    // for two different achievements.
-    mode: mode ? mode.name : 'Normal'
+    difficulty: difficulty.name
   };
 }
 

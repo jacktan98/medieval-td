@@ -128,8 +128,6 @@ export const level08 = {
   water: { colours: [[166, 213, 255], [0, 44, 82]], land: [[92, 127, 73], [69, 96, 54], [255, 222, 158]],
            sink: [0, 150, 4, 262], marks: 70, speed: 9, glints: 5 },
   waves: stage6Waves,
-  wavesExtended: stage6Waves,
-  oneLength: true,
 
   // HALF THE WAVE OUT OF EACH DOOR, dealt rather than rolled, at the owner's ask:
   // "Assign 50% of enemies to exit bottom road and another 50% for right road."

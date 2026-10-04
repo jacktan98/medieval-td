@@ -159,8 +159,6 @@ export const level10 = {
   bell: { x: 391.2, y: 101.9, at: [176, 171], k: 0.194, g: 225.01, cover: 'cover10',
           box: { x: 387, y: 98, w: 43, h: 40 } },
   waves: stage8Waves,
-  wavesExtended: stage8Waves,
-  oneLength: true,
 
   // HALF THE WAVE DOWN EACH ROAD, dealt rather than rolled, at the owner's ask:
   // "Assign 50% of enemies to exit bottom left road and another 50% for bottom right

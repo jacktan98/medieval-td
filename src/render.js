@@ -46,10 +46,10 @@ import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as
          groupRows, unitRows, unitPages, unitCols, stepper, goldStepper, adminGold, keys,
          PIN_DOTS, PIN_CANCEL,
          shipped, touched, COLS, SUMMARY_Y,
-         waveStepper, COUNT_VALUE_W, GAP_VALUE_W, modeTabs, waveCountFor,
+         waveStepper, COUNT_VALUE_W, GAP_VALUE_W, waveCountFor,
          diffTabs, countAtDiff, goldAtDiff, editable, adminPx,
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
-import { enemyTypes, MODES, FOE_NOTES } from './data/waves.js';
+import { enemyTypes, FOE_NOTES } from './data/waves.js';
 import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
@@ -5495,30 +5495,11 @@ const settingRow = (items, y) => {
   }));
 };
 
-const MODE_ROW_Y = 258;
-const DIFF_ROW_Y = 302;
+// One setting row now — the Length row above it came out with Extended — so the
+// difficulty sits where the first row of two used to.
+const DIFF_ROW_Y = 258;
 
-// WHICH BOARD THE PANEL IS OPEN ON, or null on a stretch of road with no battle.
-// Three things need it now and none of them had it: the two setting rows and the
-// wash over the board behind them.
-export const stageLevel = state => {
-  const stage = STAGES[state.stage];
-  return stage && stage.level !== null ? levels[stage.level] : null;
-};
-
-// AND WHETHER THERE IS A LENGTH TO CHOOSE. Both Oakhaven boards run one table at
-// either setting — see `oneLength` in their level files — so the row offered a
-// choice that changed nothing, which is worse than no choice at all: a player who
-// picks Extended and gets the same six waves has been told something untrue.
-//
-// The row is REMOVED rather than drawn dead, at the owner's ask, and the
-// difficulty moves up into its place so the panel does not carry a hole where a
-// setting used to be.
-export const hasLength = lv => !(lv && lv.oneLength);
-
-export const modeButtons = () => settingRow(MODES, MODE_ROW_Y);
-export const difficultyButtons = lv =>
-  settingRow(DIFFICULTIES, hasLength(lv) ? DIFF_ROW_Y : MODE_ROW_Y);
+export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
 
 const hitRow = (row, x, y) => {
   for (const b of row) {
@@ -5527,13 +5508,8 @@ const hitRow = (row, x, y) => {
   return null;
 };
 
-// A board with one length has no row to press, and the hit test says so rather
-// than the drawing alone: a button that is not on screen must not still answer,
-// or the panel has an invisible control where the difficulty row now sits.
-export const hitModeButton = (state, x, y) =>
-  hasLength(stageLevel(state)) ? hitRow(modeButtons(), x, y) : null;
 export const hitDifficultyButton = (state, x, y) =>
-  hitRow(difficultyButtons(stageLevel(state)), x, y);
+  hitRow(difficultyButtons(), x, y);
 
 // Generous on a thumb without being a whole-screen tap: a mis-tap on the board
 // should do nothing rather than start a game you were not ready for.
@@ -5688,7 +5664,7 @@ function drawStart(ctx, state) {
   const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
   if (lv) {
     starRow(ctx, 480, p.y + 96, 9,
-      bestStars(lv.id, diff.id, MODES[state.modeIndex ?? 0].id), false, true);
+      bestStars(lv.id, diff.id), false, true);
   } else {
     ctx.fillStyle = 'rgba(240,230,210,0.42)';
     ctx.font = `16px ${MAP_TYPE}`;
@@ -5705,10 +5681,7 @@ function drawStart(ctx, state) {
   ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx - 6, cy + 6);
   ctx.stroke();
 
-  // The setting rows — one or two, depending on whether this board has a length
-  // worth choosing. See hasLength.
-  if (hasLength(lv)) settingRowUi(ctx, 'Length', modeButtons(), state.modeIndex ?? 0);
-  settingRowUi(ctx, 'Difficulty', difficultyButtons(lv), state.difficultyIndex ?? 0);
+  settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
 
   const b = START_BTN;
   ctx.save();
@@ -7674,10 +7647,10 @@ function drawResult(ctx, state) {
   // for them. The length belongs here for the same reason the difficulty does:
   // two records are kept per map and a panel that named only one of the two
   // settings would be the same panel for two different achievements.
-  // EACH SETTING SAYS WHICH IT IS. It read "Normal · Hard", and the owner, having
-  // picked Hard, reasonably asked what the Normal was: the stage panel's Length
-  // row, which on its own reads like a second difficulty.
-  ctx.fillText(`${s.map}  ·  ${s.difficulty} difficulty  ·  ${s.mode} length`, 480, 186);
+  // THE DIFFICULTY SAYS IT IS THE DIFFICULTY. It once read "Normal · Hard", the
+  // first word the map's length, which the owner had to ask about; the length is
+  // gone and the remaining setting keeps its label.
+  ctx.fillText(`${s.map}  ·  ${s.difficulty} difficulty`, 480, 186);
 
   // THE STARS ARE COUNTED OUT rather than shown all at once — see stepStars in
   // score.js for the clock, and the `star` cue in audio.js for the chime that goes
@@ -7966,18 +7939,12 @@ function drawAdminWaves(ctx, a) {
   // drawn at the END of this function, over everything, because that is what makes
   // it a dropdown rather than a panel with a hole in it.
   selectButton(ctx, mapSelect(), lv.name, a.mapOpen);
-  // The two LENGTHS, beside the map and on the same row: both answer "which
-  // table", where the numbers below answer "which wave of it".
-  for (const m of modeTabs()) panelButton(ctx, m, m.label, { on: m.id === a.mode, size: adminPx(15) });
-  for (const w of waveTabs(a.map, a.mode)) {
+  for (const w of waveTabs(a.map)) {
     panelButton(ctx, w, String(w.i + 1), { on: w.i === a.wave, r: 7, size: adminPx(15) });
   }
 
   // AND THE DIFFICULTY, on the same row as the wave numbers and hard against the
-  // right margin. Labelled, because this row already carries a Normal on the line
-  // above it that means something else entirely — that one is the LENGTH of the
-  // game and this one is how hard it plays, and the two words being the same is
-  // the whole reason the caption is worth its 11px.
+  // right margin, with its caption.
   const diffs = diffTabs();
   ctx.save();
   ctx.textAlign = 'right';
@@ -8013,7 +7980,7 @@ function drawAdminWaves(ctx, a) {
   // A row at zero is drawn DIMMED rather than left out: the point of the panel is
   // that the whole roster is in front of you and any of it can be dialled up, and
   // a list that hid what was absent would be the old panel with extra steps.
-  const rows = groupRows(a.map, a.wave, a.mode);
+  const rows = groupRows(a.map, a.wave);
   // THE WHOLE WAVE'S COUNT, SUMMED BEFORE THE LOOP RATHER THAN DURING IT.
   //
   // It was a running accumulator, which was fine while the only reader was the
@@ -8086,7 +8053,7 @@ function drawAdminWaves(ctx, a) {
     // which of those a change lands on is not something anybody should have to
     // work out in their head while dialling counts in.
     stepperRow(ctx, waveStepper(r.stepX, r.y, 'count', COUNT_VALUE_W), at(r.count),
-      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}`),
+      shipped(`${lv.id}|normal|${a.wave}|${r.type}`),
       { live, note: live || !here ? null : `hard ${r.count}` });
     // Printed to two places and compared to two places, so a rate the player has
     // stepped back onto its shipped value stops showing a "was" line — 1.6 and
@@ -8096,7 +8063,7 @@ function drawAdminWaves(ctx, a) {
     // the note at the top of data/difficulty.js — so a rate that changed with the
     // tab would be inventing a third.
     stepperRow(ctx, waveStepper(r.gapX, r.y, 'gap', GAP_VALUE_W), r.gap.toFixed(2),
-      shipped(`${lv.id}|${a.mode}|${a.wave}|${r.type}|gap`).toFixed(2), { live });
+      shipped(`${lv.id}|normal|${a.wave}|${r.type}|gap`).toFixed(2), { live });
   }
 
   // The total, because the count that matters to a player is the wave's, and it
@@ -8105,11 +8072,7 @@ function drawAdminWaves(ctx, a) {
   ctx.textAlign = 'left';
   ctx.fillStyle = ADMIN_DIM;
   ctx.font = `${adminPx(15)}px ${MAP_TYPE}`;
-  // The length is named here as well as on the button, because the wave COUNT in
-  // this line is the thing that changes with it and a bare "wave 9 of 12" would
-  // leave the reader working out which table they were looking at.
-  const waves = waveCountFor(a.map, a.mode);
-  const length = a.mode === 'normal' ? '' : ' Extended';
+  const waves = waveCountFor(a.map);
   // BOTH TOTALS, ALWAYS, WHICHEVER TAB IS OPEN. This is the line that answers the
   // question the tabs make you flip for — change a count on Hard and the Normal
   // figure moves here as you press, without leaving the view you are editing in.
@@ -8125,7 +8088,7 @@ function drawAdminWaves(ctx, a) {
   const otherTotal = rows.reduce((n, r) => n + countAtDiff(r.count, other.id), 0);
   const both = shownTotal && otherTotal !== shownTotal ? `, ${otherTotal} on ${other.name}` : '';
   ctx.fillText(
-    `Wave ${a.wave + 1} of ${waves} on ${lv.name}${length} — ` +
+    `Wave ${a.wave + 1} of ${waves} on ${lv.name} — ` +
     `${shownTotal ? `${shownTotal} enemies${both}` : 'empty, a wave off'}` +
     `${a.wave === waves - 1 ? ', the last one' : ''}`,
     ADMIN_PANEL.x + 16, SUMMARY_Y());

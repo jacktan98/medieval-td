@@ -152,8 +152,6 @@ export const level05 = {
   // under it. A villager whose feet are on it is drawn after it (render.js).
   platforms: [{ x: 350, y: 262, w: 205, h: 88, g: 309 }],
   waves: stage3Waves,
-  wavesExtended: stage3Waves,
-  oneLength: true,
 
   // HALF THE WAVE ROUND EACH SIDE OF THE ISLAND, dealt rather than rolled.
   //

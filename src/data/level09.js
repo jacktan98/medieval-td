@@ -156,8 +156,6 @@ export const level09 = {
     { w: 5, path: [[492.5, 304], [502.5, 300.6], [512.5, 305], [517.5, 317.5], [519.5, 332.5], [520.3, 355]] }
   ] },
   waves: stage7Waves,
-  wavesExtended: stage7Waves,
-  oneLength: true,
 
   // HALF THE WAVE OUT OF EACH DOOR, dealt rather than rolled, at the owner's ask:
   // "Assign 50% of enemies to exit bottom left road and another 50% for bottom

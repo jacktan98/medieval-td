@@ -59,16 +59,8 @@ export const level00 = {
   src: 'assets/map/Stage_1_Map',
   routes: [route1],
   plots: plots1,
-  // FIVE WAVES, and the same five whichever length is chosen. Every other level
-  // has a longer table for Extended; a tutorial that got longer when you asked for
-  // more of it would be teaching the same lesson twice.
+  // FIVE WAVES, the whole of what a tutorial sends.
   waves: tutorialWaves,
-  wavesExtended: tutorialWaves,
-  // SAID OUT LOUD rather than inferred from the tier cap. The checkers used to read
-  // `maxTier` as "this is a tutorial, so its two tables may match", which happened
-  // to be true while the tutorial was the only capped board — stage 2 has a cap of
-  // 3 and is not a tutorial. A cap and a fixed length are two decisions.
-  oneLength: true,
   // THE CEILING ON THIS BOARD. Tier 1 and tier 2 only — the rungs above are drawn
   // and priced as normal and refuse the purchase, so a player learns that the
   // ladder exists here and climbs it somewhere else.

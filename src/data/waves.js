@@ -2068,10 +2068,10 @@ export const defaultGap = type => {
 // opening is the tightest part of the whole curve, not the easiest. 220 gold is
 // three tier 1 towers, and you have not earned a bounty yet, so wave 1 is the
 // only wave you meet with whatever you could afford before it started.
-// MAPS 1 AND 2'S SHORT TABLES AND MAP 3'S ARE ALL DERIVED NOW, from the tuned
-// Extended tables at the foot of this file. The literal arrays that used to sit
-// here are gone, and so is the ramp they described — see `shortOf` down there for
-// the relationship and why it points that way round.
+// MAPS 1, 2 AND 3'S TABLES ARE FURTHER DOWN, under THE FIRST THREE MAPS' TABLES.
+// They were derived for a while from tuned Extended tables, and are written out
+// again now Extended is gone. The literal arrays that first sat here are gone, and
+// so is the ramp they described.
 //
 // WHAT THEY USED TO SAY, kept because it is the balance history of this game and
 // none of it is written down anywhere else:
@@ -2149,7 +2149,7 @@ export const defaultGap = type => {
 // reason, and see the grid over wavesLong for the mechanism. The grid above is
 // still the right search; what it is missing is that every one of its `BROKE`
 // judgements came from five seeds. `node tools/sweep.mjs 2` runs twenty now.
-// MAP 2'S SHORT TABLE, derived like map 1's — see `shortOf`.
+// MAP 2'S TABLE is written out with map 1's — see THE FIRST THREE MAPS' TABLES.
 
 // MAP 3'S TEN, AND THEY ARE SMALLER THAN THE EIGHT ABOVE, NOT BIGGER.
 //
@@ -2323,81 +2323,178 @@ export const defaultGap = type => {
 // Waves 1-4 are militia only and teach the map, which takes a wave longer here
 // than elsewhere: the lesson is not "enemies walk down a road", it is "there are
 // two roads and you cannot cover both yet".
-// MAP 3'S SHORT TABLE, derived like the other two — see `shortOf`. It is TEN
-// waves where they are eight, which is the one part of the old shape that is a
-// property of the map rather than of the ramp: two roads to defend and more
-// board to cover, so the long game is twelve there and the short one ten.
+// MAP 3'S TABLE is TEN waves where the others are eight, which is the one part of
+// the old shape that is a property of the map rather than of the ramp: two roads
+// to defend and more board to cover.
 
-// --- THE EXTENDED TABLES -------------------------------------------------------
+// --- THE FIRST THREE MAPS' TABLES ----------------------------------------------
 //
-// A second length for every map, and it is now three tables the owner typed out
-// rather than a rule applied to the three above.
+// ONE LENGTH, at the owner's word. These maps had a second, Extended length, two
+// or three waves longer, and these tables were cut from it — see the history
+// above. Extended was there to test the numbers on the first three boards, the
+// owner does not mean to build it for the rest, and it went: the Length setting,
+// its tables and the derivation with them. What is left is written out here as
+// the game played it on the day Extended came out, wave for wave.
 //
-// IT WAS A RULE, and the rule was defensible while it lasted: sixty rows of
-// hand-written numbers have to be kept in step with the sixty above them, and
-// every balance note in this file is about the SHAPE of a ramp rather than one row
-// of it, so one derivation that continued the ramp kept a single source of truth.
-// `extendedOf` added one archer and one doctor from wave 5 on, then grew two more
-// waves off the last one — a fifth more militia, one more heavy, one more archer
-// each, and one more doctor across the two.
-//
-// WHAT ENDED IT is that the long game stopped being a variant of the short one.
-// The owner has played all three maps at Hard Extended and tuned every wave by
-// hand, and the result is not a ramp continued: the Extended tables introduce
-// creatures in a different ORDER from their Normal twins, and one of them takes a
-// creature back OUT of a late wave. Two Rivers meets a Dark Priest on wave 6 and
-// its Normal table never sends one; its wave 9 sends no Tough Thugs while waves 8
-// and 10 both do. No function produces that from the table above it.
-//
-// So the derivation is gone rather than left unused beside the tables that
-// replaced it — an exported rule nothing calls is a rule that goes stale in
-// silence, which is the argument the note that used to sit here made about three
-// unused constants at this very spot. The constants are the live thing now.
-//
-// `node tools/preview.mjs` prints every extended table beside its normal one, so
-// what the two lengths actually send is inspectable rather than something to read
-// off this comment.
-
-// THE TWO LENGTHS A MAP CAN BE PLAYED AT, in the order the title screen offers
-// them. `id` is what the save file records, so renaming one loses its records —
-// see slot() in src/score.js, where Normal deliberately keeps the key it has
-// always had and only Extended carries a suffix.
-export const MODES = [
-  { id: 'normal', name: 'Normal', label: 'the map as it was tuned' },
-  { id: 'extended', name: 'Extended', label: 'two more waves, and more of the throwers' }
-];
-
-// THE THREE EXTENDED TABLES, TYPED OUT, and they are the owner's own numbers.
-//
-// They were DERIVED until now — extendedOf below took a map's Normal table, added
-// one to the throwers from wave 5 on, and appended two more waves by stepping the
-// last one twice. That was a rule for making a longer game out of a tuned one, and
-// it did its job while the long game was a variant.
-//
-// It is not a variant any more. The owner has played all three maps at Hard
-// Extended and hand-tuned every wave of every one of them, mostly through the
-// admin dashboard, and a derivation cannot express what came back: the Extended
-// game now introduces creatures in a different order from the Normal one — Two
-// Rivers meets a Dark Priest on wave 6 and a Blocker on wave 7, where its Normal
-// table has neither at all — and wave 9 of it sends no Tough Thugs while waves 8
-// and 10 both do. No rule produces that. A person playing it does.
-//
-// SO extendedOf IS GONE, and with it the note that used to sit here explaining why
-// three constants at this spot had no business existing. They have business now:
-// three level files import them, which is exactly the thing the old note said was
-// missing.
+// The Captain Thug's boss wave rode on the end of the Bend's Extended table and
+// went with it. He stays defined — the book and the dashboard still know him — for
+// a board that has not been drawn yet.
 //
 // THESE ARE THE HARD COUNTS, not base counts, and that distinction cost a
 // release. They were tuned by playing at Hard, so Hard multiplies by 1 and plays
 // them exactly — see DIFFICULTIES in data/difficulty.js. Normal takes 0.85 of
 // them.
 //
-// The line that stood here claimed Hard still multiplied by 1.10 AND that "Hard
-// Extended plays exactly what was tested", which cannot both be true. It was the
-// second half that was meant and the first half that was running: a wave dialled
-// to 22 in the panel arrived as 25. Anything written here about a difficulty is a
-// claim about scaleWaves, and the two have to be read together or not at all.
-//
+// The line that stood here once claimed Hard still multiplied by 1.10 AND that the
+// tested table played exactly, which cannot both be true. It was the second half
+// that was meant and the first half that was running: a wave dialled to 22 in the
+// panel arrived as 25. Anything written here about a difficulty is a claim about
+// scaleWaves, and the two have to be read together or not at all.
+
+export const waves = [
+  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 8, gap: 1.10 },
+      { type: 'tough_inf', count: 2, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 10, gap: 1.00 },
+      { type: 'tough_inf', count: 4, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 12, gap: 0.90 },
+      { type: 'tough_inf', count: 4, gap: 1.60 },
+      { type: 'heavy_inf', count: 2, gap: 2.00 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 14, gap: 0.80 },
+      { type: 'tough_inf', count: 4, gap: 1.60 },
+      { type: 'blocker_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 2, gap: 1.80 },
+      { type: 'archer_inf', count: 2, gap: 1.80 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 18, gap: 0.70 },
+      { type: 'tough_inf', count: 4, gap: 1.60 },
+      { type: 'blocker_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 4, gap: 1.80 },
+      { type: 'archer_inf', count: 6, gap: 1.70 }
+    ] },
+  { rest: 0, groups: [
+      { type: 'light_inf', count: 22, gap: 0.60 },
+      { type: 'tough_inf', count: 6, gap: 1.40 },
+      { type: 'blocker_inf', count: 4, gap: 1.40 },
+      { type: 'heavy_inf', count: 4, gap: 1.60 },
+      { type: 'archer_inf', count: 8, gap: 1.60 },
+      { type: 'plague_inf', count: 2, gap: 2.00 }
+    ] }
+];
+
+export const wavesFork = [
+  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 8, gap: 1.10 },
+      { type: 'tough_inf', count: 2, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 10, gap: 1.00 },
+      { type: 'tough_inf', count: 4, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 12, gap: 0.90 },
+      { type: 'heavy_inf', count: 2, gap: 2.00 },
+      { type: 'dark_priest', count: 2, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 14, gap: 0.80 },
+      { type: 'blocker_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 2, gap: 1.80 },
+      { type: 'archer_inf', count: 2, gap: 1.80 },
+      { type: 'plague_inf', count: 2, gap: 2.00 },
+      { type: 'dark_priest', count: 2, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 18, gap: 0.70 },
+      { type: 'tough_inf', count: 4, gap: 1.60 },
+      { type: 'blocker_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 2, gap: 1.60 },
+      { type: 'archer_inf', count: 4, gap: 1.60 },
+      { type: 'plague_inf', count: 4, gap: 2.00 },
+      { type: 'dark_priest', count: 2, gap: 1.60 }
+    ] },
+  { rest: 0, groups: [
+      { type: 'light_inf', count: 24, gap: 0.60 },
+      { type: 'tough_inf', count: 4, gap: 1.60 },
+      { type: 'blocker_inf', count: 4, gap: 1.60 },
+      { type: 'heavy_inf', count: 4, gap: 1.40 },
+      { type: 'archer_inf', count: 6, gap: 1.60 },
+      { type: 'plague_inf', count: 2, gap: 2.00 },
+      { type: 'dark_priest', count: 2, gap: 1.60 }
+    ] }
+];
+
+export const wavesLong = [
+  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
+  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 8, gap: 1.20 },
+      { type: 'tough_inf', count: 1, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 10, gap: 1.10 },
+      { type: 'tough_inf', count: 2, gap: 1.60 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 12, gap: 1.00 },
+      { type: 'tough_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 1, gap: 1.20 },
+      { type: 'archer_inf', count: 2, gap: 1.20 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 14, gap: 0.90 },
+      { type: 'tough_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 2, gap: 1.20 },
+      { type: 'dark_priest', count: 2, gap: 0.80 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 16, gap: 0.80 },
+      { type: 'tough_inf', count: 2, gap: 1.40 },
+      { type: 'blocker_inf', count: 2, gap: 1.60 },
+      { type: 'heavy_inf', count: 2, gap: 1.20 },
+      { type: 'archer_inf', count: 4, gap: 1.20 },
+      { type: 'plague_inf', count: 2, gap: 1.20 },
+      { type: 'dark_priest', count: 2, gap: 0.80 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 16, gap: 0.70 },
+      { type: 'tough_inf', count: 4, gap: 1.40 },
+      { type: 'blocker_inf', count: 4, gap: 1.60 },
+      { type: 'heavy_inf', count: 4, gap: 1.20 },
+      { type: 'archer_inf', count: 4, gap: 1.20 },
+      { type: 'plague_inf', count: 2, gap: 1.20 },
+      { type: 'dark_priest', count: 2, gap: 0.80 }
+    ] },
+  { rest: 9, groups: [
+      { type: 'light_inf', count: 16, gap: 0.60 },
+      { type: 'blocker_inf', count: 6, gap: 1.60 },
+      { type: 'heavy_inf', count: 6, gap: 1.20 },
+      { type: 'archer_inf', count: 6, gap: 1.20 },
+      { type: 'plague_inf', count: 2, gap: 0.80 },
+      { type: 'dark_priest', count: 2, gap: 0.80 }
+    ] },
+  { rest: 0, groups: [
+      { type: 'light_inf', count: 18, gap: 0.50 },
+      { type: 'tough_inf', count: 6, gap: 1.00 },
+      { type: 'blocker_inf', count: 6, gap: 1.40 },
+      { type: 'heavy_inf', count: 6, gap: 1.20 },
+      { type: 'archer_inf', count: 6, gap: 1.00 },
+      { type: 'plague_inf', count: 2, gap: 0.60 },
+      { type: 'dark_priest', count: 4, gap: 0.60 }
+    ] }
+];
+
 // GROUPS ARE IN MARCH_ORDER, which is not decoration: groups spawn one after
 // another, so the order they are listed in is the order they arrive in, and it is
 // also the order the dashboard rebuilds them in. Written any other way, an
@@ -2675,8 +2772,8 @@ export const stage6Waves = [
 
 // STAGE 7: Dawnford Fountain, and the first table with a HEALER in it as standard.
 //
-// Every board before this met the dark priest once, on the last wave of the long
-// game — he is in `wavesExtended` at wave 10 and nowhere else. Here he arrives on
+// The first two maps' tables send a dark priest only in their later waves, and the
+// Bend never does. Here he arrives on
 // wave 4 and there are six of him on the last, at the owner's ask, which changes
 // what a wave IS on this board: damage that does not kill inside his reach is damage
 // undone. Two towers that each chip a giant are worth less than one that finishes
@@ -3163,230 +3260,6 @@ export const stage14Waves = [
 // a second array all the same, so the first retune of either lands on one board.
 export const stage15Waves = stage14Waves.map(w => ({ ...w, groups: w.groups.map(g => ({ ...g })) }));
 
-export const wavesExtended = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 8, gap: 1.10 }, { type: 'tough_inf', count: 2, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 10, gap: 1.00 }, { type: 'tough_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 12, gap: 0.90 },
-      { type: 'tough_inf', count: 4, gap: 1.60 },
-      { type: 'heavy_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 14, gap: 0.80 },
-      { type: 'tough_inf', count: 4, gap: 1.60 },
-      { type: 'blocker_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 2, gap: 1.80 },
-      { type: 'archer_inf', count: 2, gap: 1.80 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 18, gap: 0.70 },
-      { type: 'tough_inf', count: 4, gap: 1.60 },
-      { type: 'blocker_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 4, gap: 1.80 },
-      { type: 'archer_inf', count: 6, gap: 1.70 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 22, gap: 0.60 },
-      { type: 'tough_inf', count: 6, gap: 1.40 },
-      { type: 'blocker_inf', count: 4, gap: 1.40 },
-      { type: 'heavy_inf', count: 4, gap: 1.60 },
-      { type: 'archer_inf', count: 8, gap: 1.60 },
-      { type: 'plague_inf', count: 2, gap: 2.00 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 26, gap: 0.50 },
-      { type: 'tough_inf', count: 6, gap: 1.00 },
-      { type: 'blocker_inf', count: 4, gap: 1.20 },
-      { type: 'heavy_inf', count: 6, gap: 1.20 },
-      { type: 'archer_inf', count: 8, gap: 1.40 },
-      { type: 'plague_inf', count: 2, gap: 1.40 },
-      { type: 'dark_priest', count: 2, gap: 1.40 }
-    ] },
-  // NINE AGAIN, NOT ZERO. This was the last wave and rested 0, which is how a
-  // table says "nothing follows"; something follows now. `shortOf` still forces
-  // the last wave it keeps back to 0, so the eight-wave game is unaffected.
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 20, gap: 0.50 },
-      { type: 'tough_inf', count: 12, gap: 0.50 },
-      { type: 'blocker_inf', count: 12, gap: 0.80 },
-      { type: 'heavy_inf', count: 8, gap: 0.80 },
-      { type: 'archer_inf', count: 10, gap: 0.60 },
-      { type: 'plague_inf', count: 4, gap: 0.60 },
-      { type: 'dark_priest', count: 4, gap: 0.60 }
-    ] },
-  // --- WAVE 11: THE CAPTAIN, AND THEN THE COLUMN HE CAME IN FRONT OF ---------
-  //
-  // THE FIRST BOSS IN A SHIPPED TABLE. He has been placeable from the dashboard
-  // since he was drawn; this is the owner putting him into the game proper, on one
-  // map at one length: "add a last wave for Hard Extended The Bend only".
-  //
-  // THE BOSS COMES OUT FIRST, which is the whole shape of the wave and the reason
-  // this table is no longer typed in MARCH_ORDER. That list puts him last — a boss
-  // behind his escort arrives to a line already chewed on, which is the fight worth
-  // having on a wave that has an escort to chew on it. This wave inverts it: he
-  // walks in alone against everything the player has built, and the 20 Tough Thugs
-  // come up the road behind him while he is being fought. The 2.50 gap is what
-  // makes that a column rather than a crowd — 50 seconds of them, arriving one at
-  // a time into a fight that is already going.
-  //
-  // A wave typed out of MARCH_ORDER is new, so it is worth saying what carries it:
-  // the ORDER GROUPS ARE LISTED IN IS THE ORDER THEY ARRIVE IN (groupAt in
-  // src/waves.js), and the dashboard now defaults each wave to its own table's
-  // order rather than to MARCH_ORDER (SHIPPED_ORDER in src/admin.js). Both halves
-  // are checked in tools/admin.mjs.
-  //
-  // HIS OWN GAP IS 2.50 TOO, and it is never read while he leads: the first spawn
-  // of a wave is immediate and a group's gap governs the pause before each of ITS
-  // units, so the Toughs' 2.50 is what separates him from the first of them. It
-  // matters the moment somebody reorders this wave in the dashboard, which is
-  // exactly the thing the panel is for.
-  //
-  // REST 0, because nothing follows: this is the last wave of the longest game on
-  // this map. See shortOf.
-  { rest: 0, groups: [
-      { type: 'captain_thug', count: 1, gap: 2.50 },
-      { type: 'tough_inf', count: 20, gap: 2.50 }
-    ] }
-];
-
-export const wavesForkExtended = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 8, gap: 1.10 }, { type: 'tough_inf', count: 2, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 10, gap: 1.00 }, { type: 'tough_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 12, gap: 0.90 },
-      { type: 'heavy_inf', count: 2, gap: 2.00 },
-      { type: 'dark_priest', count: 2, gap: 1.60 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 14, gap: 0.80 },
-      { type: 'blocker_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 2, gap: 1.80 },
-      { type: 'archer_inf', count: 2, gap: 1.80 },
-      { type: 'plague_inf', count: 2, gap: 2.00 },
-      { type: 'dark_priest', count: 2, gap: 1.60 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 18, gap: 0.70 },
-      { type: 'tough_inf', count: 4, gap: 1.60 },
-      { type: 'blocker_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 2, gap: 1.60 },
-      { type: 'archer_inf', count: 4, gap: 1.60 },
-      { type: 'plague_inf', count: 4, gap: 2.00 },
-      { type: 'dark_priest', count: 2, gap: 1.60 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 24, gap: 0.60 },
-      { type: 'tough_inf', count: 4, gap: 1.60 },
-      { type: 'blocker_inf', count: 4, gap: 1.60 },
-      { type: 'heavy_inf', count: 4, gap: 1.40 },
-      { type: 'archer_inf', count: 6, gap: 1.60 },
-      { type: 'plague_inf', count: 2, gap: 2.00 },
-      { type: 'dark_priest', count: 2, gap: 1.60 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 30, gap: 0.50 },
-      { type: 'tough_inf', count: 6, gap: 1.40 },
-      { type: 'blocker_inf', count: 4, gap: 1.40 },
-      { type: 'heavy_inf', count: 6, gap: 1.20 },
-      { type: 'archer_inf', count: 6, gap: 1.40 },
-      { type: 'plague_inf', count: 2, gap: 1.40 },
-      { type: 'dark_priest', count: 4, gap: 1.40 }
-    ] },
-  { rest: 0, groups: [
-      { type: 'light_inf', count: 34, gap: 0.40 },
-      { type: 'tough_inf', count: 8, gap: 1.00 },
-      { type: 'blocker_inf', count: 8, gap: 1.00 },
-      { type: 'heavy_inf', count: 6, gap: 1.00 },
-      { type: 'archer_inf', count: 6, gap: 1.00 },
-      { type: 'plague_inf', count: 4, gap: 1.00 },
-      { type: 'dark_priest', count: 4, gap: 1.00 }
-    ] }
-];
-
-export const wavesLongExtended = [
-  { rest: 9, groups: [{ type: 'light_inf', count: 4, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 6, gap: 1.40 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 8, gap: 1.20 }, { type: 'tough_inf', count: 1, gap: 1.60 }] },
-  { rest: 9, groups: [{ type: 'light_inf', count: 10, gap: 1.10 }, { type: 'tough_inf', count: 2, gap: 1.60 }] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 12, gap: 1.00 },
-      { type: 'tough_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 1, gap: 1.20 },
-      { type: 'archer_inf', count: 2, gap: 1.20 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 14, gap: 0.90 },
-      { type: 'tough_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 2, gap: 1.20 },
-      { type: 'dark_priest', count: 2, gap: 0.80 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 16, gap: 0.80 },
-      { type: 'tough_inf', count: 2, gap: 1.40 },
-      { type: 'blocker_inf', count: 2, gap: 1.60 },
-      { type: 'heavy_inf', count: 2, gap: 1.20 },
-      { type: 'archer_inf', count: 4, gap: 1.20 },
-      { type: 'plague_inf', count: 2, gap: 1.20 },
-      { type: 'dark_priest', count: 2, gap: 0.80 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 16, gap: 0.70 },
-      { type: 'tough_inf', count: 4, gap: 1.40 },
-      { type: 'blocker_inf', count: 4, gap: 1.60 },
-      { type: 'heavy_inf', count: 4, gap: 1.20 },
-      { type: 'archer_inf', count: 4, gap: 1.20 },
-      { type: 'plague_inf', count: 2, gap: 1.20 },
-      { type: 'dark_priest', count: 2, gap: 0.80 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 16, gap: 0.60 },
-      { type: 'blocker_inf', count: 6, gap: 1.60 },
-      { type: 'heavy_inf', count: 6, gap: 1.20 },
-      { type: 'archer_inf', count: 6, gap: 1.20 },
-      { type: 'plague_inf', count: 2, gap: 0.80 },
-      { type: 'dark_priest', count: 2, gap: 0.80 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 18, gap: 0.50 },
-      { type: 'tough_inf', count: 6, gap: 1.00 },
-      { type: 'blocker_inf', count: 6, gap: 1.40 },
-      { type: 'heavy_inf', count: 6, gap: 1.20 },
-      { type: 'archer_inf', count: 6, gap: 1.00 },
-      { type: 'plague_inf', count: 2, gap: 0.60 },
-      { type: 'dark_priest', count: 4, gap: 0.60 }
-    ] },
-  { rest: 9, groups: [
-      { type: 'light_inf', count: 20, gap: 0.40 },
-      { type: 'tough_inf', count: 8, gap: 0.80 },
-      { type: 'blocker_inf', count: 6, gap: 1.20 },
-      { type: 'heavy_inf', count: 8, gap: 1.20 },
-      { type: 'archer_inf', count: 8, gap: 0.80 },
-      { type: 'plague_inf', count: 4, gap: 0.60 },
-      { type: 'dark_priest', count: 4, gap: 0.40 }
-    ] },
-  { rest: 0, groups: [
-      { type: 'light_inf', count: 24, gap: 0.30 },
-      { type: 'tough_inf', count: 10, gap: 0.60 },
-      { type: 'blocker_inf', count: 8, gap: 0.80 },
-      { type: 'heavy_inf', count: 8, gap: 1.00 },
-      { type: 'archer_inf', count: 10, gap: 0.60 },
-      { type: 'plague_inf', count: 4, gap: 0.40 },
-      { type: 'dark_priest', count: 4, gap: 0.20 }
-    ] }
-];
-
-// WHICH TABLE A MAP IS PLAYED WITH, in one place. A level carries both — see
-// `waves` and `wavesExtended` on each level file — and this is what turns the
-// title screen's choice into the array the game steps through. A mode id nothing
-// recognises falls back to the shipped table rather than to nothing at all: an
-// unknown setting should be a map you can play, not a black screen.
-export const tableFor = (level, modeId) =>
-  (modeId === 'extended' && level.wavesExtended) || level.waves;
-
 export const waveClearBonus = 40;
 
 // Seconds before the first enemy appears. It was 2, which is not enough time to
@@ -3400,56 +3273,6 @@ export const openingDelay = 14;
 // whole point is that it is a real choice: 9 seconds of rest is 36 gold, which
 // is half a tower, against facing the next wave with whatever is standing now.
 export const earlyCallRate = 4;
-
-// --- THE SHORT TABLES, DERIVED FROM THE LONG ONES ------------------------------
-//
-// The short game is the long game without its last two waves. One line, and the
-// direction it points is the whole of what this section is about.
-//
-// IT USED TO POINT THE OTHER WAY: three short tables were the tuned thing and
-// `extendedOf` grew two waves off the end of each. That was right while the short
-// game was the tuned one — and it stopped being right the moment the owner played
-// and hand-tuned all three maps at the LONG length. The numbers that have been
-// tested now live in the long tables, so the short ones are the derivation.
-//
-// THE RELATIONSHIP IS THE OWNER'S, not an invention of this file: he asked for
-// "my hard difficulty extended waves numbers to update normal length", and the
-// tables he supplied are exactly two waves longer than each map's short one. That
-// is the same relationship the old rule asserted, read off real data instead of
-// asserted by a function.
-//
-// WHAT IT FIXES is bigger than tidiness. The short tables were written before the
-// Tough Thug, the Blocker Thug and the Dark Priest existed and had never been
-// touched since — so the ONLY way to meet three of the game's seven enemies was to
-// pick Extended on the title screen. A player choosing the shorter game got an
-// older game.
-//
-// THE LAST WAVE'S REST GOES TO 0, which is not cosmetic: `rest` is the breather
-// after a wave clears, and 0 is how a table says "nothing follows". Wave 8 of the
-// long table has two waves behind it and rests 9; as the last wave of the short
-// one it has none, and a 9 there would hold the win screen back for nine seconds
-// of empty road.
-// HOW MANY TO DROP, and it is an argument now because the answer stopped being
-// the same for all three maps.
-//
-// It was a bare `-2` on the reading above: the owner's long tables are two waves
-// longer than his short ones. That is still true of the Fork and of Two Rivers.
-// It is not true of the Bend any more — its Extended game has a boss finale on the
-// end that the short game does not get — so the Bend drops three and lands on the
-// same eight waves it has always had.
-//
-// A NUMBER OF WAVES TO DROP rather than a length to keep, because the thing being
-// expressed is still the RELATIONSHIP between a map's two tables. Pinning the
-// short one to 8 would make the two independent, and the next wave appended to a
-// long table would silently stop reaching the short game on every map at once.
-const shortOf = (table, drop = 2) => table.slice(0, -drop).map((w, i, kept) =>
-  i === kept.length - 1 ? { ...w, rest: 0 } : w);
-
-// THREE, because of the boss wave. Everything before it is the eight-wave game
-// exactly as it was.
-export const waves = shortOf(wavesExtended, 3);
-export const wavesFork = shortOf(wavesForkExtended);
-export const wavesLong = shortOf(wavesLongExtended);
 
 // Total enemies in a wave, for the HUD and for tools/sim.mjs.
 export const waveSize = w => w.groups.reduce((n, g) => n + g.count, 0);

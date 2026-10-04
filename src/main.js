@@ -1,7 +1,7 @@
 import { loadArt, ensureBoard, boardReady } from './assets.js';
 import { loadAudio, fanfare, setLoop, VICTORY, LOST, STAR } from './audio.js';
 import { level, levels } from './level.js';
-import { openingDelay, MODES } from './data/waves.js';
+import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked, startReveal as startStars, stepStars } from './score.js';
@@ -84,10 +84,6 @@ function newGame() {
   // rather than part of the game being reset.
   const difficultyIndex = state.difficultyIndex ?? DEFAULT_DIFFICULTY;
   const difficulty = DIFFICULTIES[difficultyIndex];
-  // WHICH LENGTH, and it survives a reset for the same reason the map and the
-  // difficulty do: it is a menu setting rather than part of the game being reset.
-  const modeIndex = state.modeIndex ?? 0;
-  const mode = MODES[modeIndex];
 
   // WHERE ON THE WORLD MAP THE PLAYER IS, and how much of it has opened. Both
   // survive the reset for the same reason the map and the difficulty do — they
@@ -107,7 +103,6 @@ function newGame() {
   Object.assign(state, {
     levelIndex,
     difficultyIndex,
-    modeIndex,
     stage,
     unlocked,
     // The road drawing itself, or null. Never carried across a rebuild — it is
@@ -134,7 +129,7 @@ function newGame() {
     // whatever it finds. So a wave the owner sets to 20 is 17 on Normal and 22 on
     // Hard, exactly as a wave the data file sets to 20 would be — the dashboard
     // edits the table, it does not sit outside the difficulty.
-    waves: scaleWaves(adminWaves(level, mode.id), difficulty),
+    waves: scaleWaves(adminWaves(level), difficulty),
     // The same two layers the wave table above has, in the same order: the
     // dashboard replaces the map's own purse, and the difficulty scales what it
     // finds. A purse dialled to 2000 for testing is still 2200 on Easy.
@@ -369,7 +364,7 @@ function frame(now) {
   // best" is true exactly once, and a summary recomputed every frame would say so
   // for one frame and then contradict itself for the rest of the panel's life.
   if (state.result && !state.summary) {
-    state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex], MODES[state.modeIndex ?? 0]);
+    state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex]);
 
     // AND THE PANEL ANNOUNCES ITSELF. Here rather than in `finish` because finish
     // is a record-keeper — it writes the star table — and a function that saves a

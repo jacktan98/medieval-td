@@ -916,10 +916,6 @@ tower ladder — the rungs above tier 2 are drawn and priced as normal and simpl
 have nowhere to go, so they read as "Maxed", which is already how the menu says a
 tower has topped out.
 
-It also runs the **same five waves at either length**. Every other board's Extended
-table is at least two waves longer; a longer tutorial would be the same lesson
-twice, and `tools/preview.mjs` and `tools/admin.mjs` both know about the exception.
-
 ### Stage 5 is the castle, and the keep is not on the right
 
 `Stage_5_Map_Layer_1.svg`, `_Layer_2.svg` and then **five files for layer 3** —

@@ -19,9 +19,9 @@
 // it, Hard above.
 //
 // THAT IS NO LONGER TRUE, and the reason is that the owner played the game. The
-// three Extended tables in data/waves.js are hand-tuned counts from real runs at
-// HARD Extended, dialled in through the admin dashboard, and the short tables are
-// derived from them. The tables are the Hard end of the scale now, not the middle
+// first three maps' tables in data/waves.js are cut from hand-tuned counts from real
+// runs at Hard, dialled in through the admin dashboard (on a longer, Extended length
+// since taken out). The tables are the Hard end of the scale now, not the middle
 // of it, so Hard multiplies by ONE: the numbers in the file are the numbers that
 // were tested, and the setting they were tested at plays them untouched.
 //

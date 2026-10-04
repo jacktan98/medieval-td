@@ -166,8 +166,6 @@ export const level11 = {
   desert: true,
   ambience: [{ clip: 'desert_wind', level: 1 }],
   waves: stage9Waves,
-  wavesExtended: stage9Waves,
-  oneLength: true,
 
   // HALF THE WAVE OUT OF EACH DOOR, at the owner's ask: "Assign 50% of enemies to
   // exit bottom middle road and another 50% for bottom right road."

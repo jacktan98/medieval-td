@@ -14,7 +14,6 @@ import { STAGES } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
-import { MODES } from './data/waves.js';
 
 const KEY = 'medieval-td/upgrades';
 
@@ -63,7 +62,7 @@ export function starsEarned() {
     if (s.level === null || !levels[s.level]) continue;
     const id = levels[s.level].id;
     let best = 0;
-    for (const d of DIFFICULTIES) for (const m of MODES) best = Math.max(best, bestStars(id, d.id, m.id));
+    for (const d of DIFFICULTIES) best = Math.max(best, bestStars(id, d.id));
     n += best;
   }
   return n;

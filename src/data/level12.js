@@ -227,8 +227,6 @@ export const level12 = {
     { x: 228.1, y: 353.6, g: 409.01 }
   ],
   waves: stage10Waves,
-  wavesExtended: stage10Waves,
-  oneLength: true,
 
   // 40 / 30 / 30, at the owner's ask: "Assign 40% of enemies to exit bottom left road
   // and another 30% each for bottom right and right road."

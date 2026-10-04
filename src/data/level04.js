@@ -108,13 +108,6 @@ export const level04 = {
   // Birdsong under the whole battle, as on stage 1: the world map's birds, softer.
   ambience: [{ clip: 'bird_chirping', level: 0.5 }],
   waves: stage2Waves,
-  // SIX WAVES AT EITHER LENGTH, like the tutorial and for a plainer reason: the
-  // owner wrote down six and there is no seventh to run. `oneLength` says so out
-  // loud rather than leaving it to be inferred from the tier cap, which is what
-  // the checkers used to do — a cap and a fixed length are two different
-  // decisions and a board can have either without the other.
-  wavesExtended: stage2Waves,
-  oneLength: true,
 
   // HALF THE WAVE UP EACH ROAD, DEALT RATHER THAN ROLLED, at the owner's ask —
   // "assign 50% to left road for stage 2 and 3 too."

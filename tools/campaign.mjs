@@ -31,7 +31,6 @@ import { stageAt, stageOfLevel, startReveal } from '../src/overview.js';
 import { hitStart, START_BTN } from '../src/render.js';
 import { canReach, setReached } from '../src/admin.js';
 // The stage panel's own geometry, for the setting rows below.
-import { difficultyButtons, modeButtons } from '../src/render.js';
 import { levels, useLevel } from '../src/level.js';
 // For the prebuilt-tower checks below: the resolver the game itself runs, so a
 // check here cannot pass against a tower the game would refuse to build.
@@ -3396,45 +3395,20 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
 
 console.log('\n--- the panel a stage opens ---\n');
 
-// WHAT THE PLAYER IS ASKED BEFORE A GAME, and the one setting that stopped being
-// a question. Both Oakhaven boards run one wave table at either length, so the
-// Length row offered a choice that changed nothing — and a player who picks
-// Extended and gets the same six waves has been told something untrue.
+// WHAT THE PLAYER IS ASKED BEFORE A GAME: the difficulty, and nothing else. There
+// was a Length row too, Normal or Extended; Extended came out at the owner's word,
+// and the row with it.
 {
   const draw = readFileSync('src/render.js', 'utf8');
   const bare = draw.replace(/\/\/.*$/gm, '');
 
-  ok(/export const hasLength = lv => !\(lv && lv\.oneLength\);/.test(bare),
-    'a board that runs one length says so, and the panel reads it',
-    'hasLength off the level, not off the tier cap');
-
-  // DRAWN AND TAPPED HAVE TO AGREE. A row that is not on screen must not still
-  // answer a tap, or the panel has an invisible control sitting exactly where the
-  // difficulty row moved to.
-  ok(/if \(hasLength\(lv\)\) settingRowUi\(ctx, 'Length'/.test(bare),
-    'the row is left out rather than drawn dead', 'not drawn on a one-length board');
-  ok(/hasLength\(stageLevel\(state\)\) \? hitRow\(modeButtons\(\), x, y\) : null/.test(bare),
-    'and it does not answer a tap either', 'the hit test asks the same question');
-
-  // AND THE DIFFICULTY MOVES UP INTO ITS PLACE, so the panel does not carry a hole
-  // where a setting used to be.
-  const withLength = difficultyButtons(levels.find(l => !l.oneLength));
-  const without = difficultyButtons(levels.find(l => l.oneLength));
-  ok(without[0].y < withLength[0].y,
-    'and the difficulty row moves up to fill the gap',
-    `y ${without[0].y} against ${withLength[0].y}`);
-  ok(without[0].y === modeButtons()[0].y,
-    'into exactly the row the length had',
-    `both at y ${without[0].y}`);
-
-  // AND A ONE-LENGTH BOARD IS ALWAYS PLAYED AT THE FIRST MODE. The setting is
-  // invisible now, so a modeIndex carried in from the last board would be a choice
-  // the player cannot see — and star records key on the mode id, so the same six
-  // waves could be recorded twice under two names.
+  ok(!/'Length'/.test(bare) && !/modeButtons/.test(bare),
+    'the stage panel has no Length row', 'difficulty only');
+  ok(/settingRowUi\(ctx, 'Difficulty', difficultyButtons\(\)/.test(bare),
+    'and draws the difficulty row', 'one setting');
   const tap = readFileSync('src/input.js', 'utf8');
-  ok(/if \(levels\[li\]\.oneLength\) state\.modeIndex = 0;/.test(tap),
-    'and opening one resets the length it will be played at',
-    'modeIndex 0 on a one-length board');
+  ok(!/modeIndex/.test(tap) && !/hitModeButton/.test(tap),
+    'and no tap sets a length any more', 'no modeIndex in input.js');
 
   // THE BOARD BEHIND THE PANEL IS BRIGHTER, at the owner's ask. Held as a number
   // rather than a feeling: at 0.80 the map under the settings was a smudge that

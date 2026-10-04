@@ -188,8 +188,6 @@ export const level15 = {
   // drawBoardLake in src/motion.js.
   lake: { colour: [166, 213, 255], inset: 4, ripples: 28, glints: 7 },
   waves: stage13Waves,
-  wavesExtended: stage13Waves,
-  oneLength: true,
 
   // 30 / 30 / 40, and for once there is nothing to reconcile.
   //

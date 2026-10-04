@@ -147,8 +147,6 @@ export const level07 = {
   // NO SWAYING BANNERS: the castle's two hung still, at the owner's word, after
   // swaying for a while through `mapBanners` (see swayMapBanner in render.js).
   waves: stage5Waves,
-  wavesExtended: stage5Waves,
-  oneLength: true,
 
   // HALF THE WAVE DOWN EACH ROAD, dealt rather than rolled, at the owner's ask.
   // See nextRoute in src/enemies.js. Shares, in the same order as `routes`.

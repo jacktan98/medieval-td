@@ -53,10 +53,10 @@ console.log('\nThe budget\n');
 
   // Three stars on each of the first three stages: nine.
   const ids = STAGES.filter(s => s.level !== null).slice(0, 3).map(s => levels[s.level].id);
-  for (const id of ids) setStars(id, 'normal', 'normal', 3);
+  for (const id of ids) setStars(id, 'normal', 3);
   // And a better Hard run on the first does not count twice — a stage is worth
   // its best, across every setting.
-  setStars(ids[0], 'hard', 'normal', 3);
+  setStars(ids[0], 'hard', 3);
   check(starsEarned() === 9, 'a stage is worth its best, across every setting', `${starsEarned()} from three stages`);
 
   check(rungState('archery', 0) === 'next' && rungState('archery', 1) === 'locked', 'the bottom rung is the one on offer');

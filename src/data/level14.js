@@ -195,8 +195,6 @@ export const level14 = {
   // src/render.js.
   chimneys: [{ x: 49.0, y: 110.0, g: 166.01 }],
   waves: stage12Waves,
-  wavesExtended: stage12Waves,
-  oneLength: true,
 
   // 30 / 30 / 20 / 20, and the shares have to be given from the ENTRY end on this
   // board because the exit end cannot determine them.

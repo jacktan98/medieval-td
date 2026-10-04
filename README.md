@@ -67,7 +67,7 @@ exit non-zero when something is wrong.
 | `svg` | the artist's SVGs still parse to the shapes the maps are built from |
 | `png` | every PNG is the canvas size the folder's README asks for |
 | `abilities` | all sixteen abilities do what their encyclopedia card says |
-| `preview` | every wave table, normal and extended, beside its twin |
+| `preview` | the Next-wave preview promises exactly what each wave sends |
 | `plague` | the thug throws, the flask breaks, and the spill poisons |
 | `hud-clear` | no tower or badge is drawn into the HUD or off the board |
 | `status` | a status goes on, hurts, shows and comes off, for both armies |

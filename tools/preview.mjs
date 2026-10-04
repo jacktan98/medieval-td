@@ -22,7 +22,7 @@
 //   empty row appearing only at the end reads as something having broken
 
 import { updateWaves, upcomingWave, canCallWave, WIN_PAUSE } from '../src/waves.js';
-import { enemyTypes, openingDelay, MODES, tableFor } from '../src/data/waves.js';
+import { enemyTypes, openingDelay } from '../src/data/waves.js';
 import { levels, useLevel, level } from '../src/level.js';
 import { DIFFICULTIES, scaleWaves } from '../src/data/difficulty.js';
 
@@ -45,9 +45,9 @@ const show = counts => [...counts.entries()]
 // The field is cleared every frame, which is what makes this fast and is also
 // exactly the condition updateWaves is waiting for between waves: no towers, no
 // fight, no walking — the spawner alone, running its own clock.
-function run(modeId = 'normal') {
+function run() {
   const state = {
-    waves: scaleWaves(tableFor(level, modeId), DIFFICULTIES[0]),
+    waves: scaleWaves(level.waves, DIFFICULTIES[0]),
     enemies: [], waveIndex: 0, spawned: 0, timer: openingDelay,
     resting: false, gold: 0, result: null
   };
@@ -95,10 +95,9 @@ for (const [li, lv] of levels.entries()) {
   useLevel(li);
   console.log(`\n${lv.id} ${lv.name}\n`);
 
-  for (const mode of MODES) {
   for (const diff of DIFFICULTIES) {
-    const state = run(mode.id);
-    state.waves = scaleWaves(tableFor(level, mode.id), diff);
+    const state = run();
+    state.waves = scaleWaves(level.waves, diff);
     const { promised, sent } = play(state);
 
     let wrong = 0;
@@ -114,37 +113,9 @@ for (const [li, lv] of levels.entries()) {
       }
     }
 
-    ok(wrong === 0, `${mode.name} / ${diff.name}: every wave sends what was shown`,
+    ok(wrong === 0, `${diff.name}: every wave sends what was shown`,
       `${state.waves.length} waves`);
   }
-  }
-
-  // AND EXTENDED IS LONGER, by at least the two waves the owner's tables have
-  // always been. Checked as a relationship rather than as typed lengths, so a map
-  // that grows a wave keeps it.
-  //
-  // IT WAS "EXACTLY TWO" and the Bend broke it on purpose: its long game now ends
-  // with a boss finale the short game does not get, so it is three longer while
-  // the other two maps are still two. What has to stay true is that Extended is a
-  // strict superset — a map whose long table lost a wave, or whose short table
-  // grew past it, is what this catches. The exact number for each map is asserted
-  // in tools/admin.mjs, which is where shortOf's argument is checked.
-  // EXCEPT ON A BOARD THAT SAYS IT RUNS ONE LENGTH. The tutorial does, because a
-  // longer version of a lesson teaches the same lesson twice; stage 2 does because
-  // the owner wrote down six waves and there is no seventh. Either way the setting
-  // is left on screen rather than hidden, so a player still learns the choice
-  // exists.
-  //
-  // READ OFF `oneLength` rather than off the tier cap, which is what it used to
-  // be. That worked while the tutorial was the only capped board and stopped the
-  // day stage 2 capped at tier 3: a cap and a fixed length are two decisions, and
-  // a check that infers one from the other stops asking its own question.
-  ok(level.oneLength
-      ? tableFor(level, 'extended').length === tableFor(level, 'normal').length
-      : tableFor(level, 'extended').length >= tableFor(level, 'normal').length + 2,
-    level.oneLength ? 'and this board runs the same waves at either length'
-                    : 'and Extended is at least two waves longer',
-    `${tableFor(level, 'normal').length} -> ${tableFor(level, 'extended').length}`);
 
   // THE FIRST WAVE IS PREVIEWED, and it is the one time the row names the wave
   // the HUD is already showing rather than the one after it — nothing has
@@ -197,7 +168,7 @@ console.log('\nWhat the dashboard changes\n');
 console.log('\nHow a game ends\n');
 for (const [li, lv] of levels.entries()) {
   useLevel(li);
-  const table = scaleWaves(tableFor(level, 'normal'), DIFFICULTIES[0]);
+  const table = scaleWaves(level.waves, DIFFICULTIES[0]);
   const state = {
     waves: table, enemies: [], waveIndex: table.length - 1, spawned: 999,
     timer: 0, resting: false, stall: null, gold: 0, result: null
@@ -227,7 +198,7 @@ for (const [li, lv] of levels.entries()) {
 // every rest collapsed to two seconds would be a different game.
 {
   useLevel(levels.findIndex(l => l.id === 'm1'));
-  const table = scaleWaves(tableFor(level, 'normal'), DIFFICULTIES[0]);
+  const table = scaleWaves(level.waves, DIFFICULTIES[0]);
   const state = {
     waves: table, enemies: [], waveIndex: 0, spawned: 999,
     timer: 0, resting: false, stall: null, gold: 0, result: null

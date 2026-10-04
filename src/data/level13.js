@@ -189,8 +189,6 @@ export const level13 = {
   // drawn at its depth just after it. See drawFactoryLight in src/render.js.
   factory: { g: 133.02, lights: [[470, 107, 489, 146], [510, 107, 528, 128]] },
   waves: stage11Waves,
-  wavesExtended: stage11Waves,
-  oneLength: true,
 
   // 30 / 30 / 20 / 20, which is BOTH of the owner's asks at once and the reason this
   // board's shares are worth a note.

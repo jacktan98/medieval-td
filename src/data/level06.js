@@ -157,8 +157,6 @@ export const level06 = {
     roof: [[520, 396.3], [680, 421], [680, 520], [520, 520]]
   }],
   waves: stage4Waves,
-  wavesExtended: stage4Waves,
-  oneLength: true,
 
   // HALF THE WAVE COMES UP THE WEST ROAD. The other half is shared by the two out
   // of the trees.

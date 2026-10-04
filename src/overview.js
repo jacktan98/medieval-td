@@ -28,7 +28,6 @@ import { STAGES, STAGE_COUNT, playable, FALLS } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
-import { MODES } from './data/waves.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse, drawSplash, drawLeapingFish } from './motion.js';
@@ -61,7 +60,7 @@ function seedFromStars() {
   for (let i = 0; i < STAGE_COUNT; i++) {
     if (!playable(i)) break;
     const id = levels[STAGES[i].level].id;
-    const cleared = DIFFICULTIES.some(d => MODES.some(m => bestStars(id, d.id, m.id) > 0));
+    const cleared = DIFFICULTIES.some(d => bestStars(id, d.id) > 0);
     if (!cleared) break;
     open = i + 2;                       // this one is done, so the next is open
   }
@@ -95,7 +94,7 @@ function caughtUp(saved) {
   let open = saved;
   while (open > 0 && open < STAGE_COUNT && playable(open)) {
     const id = levels[STAGES[open - 1].level].id;
-    if (!DIFFICULTIES.some(d => MODES.some(m => bestStars(id, d.id, m.id) > 0))) break;
+    if (!DIFFICULTIES.some(d => bestStars(id, d.id) > 0)) break;
     open++;
   }
   if (open !== saved) {
@@ -508,9 +507,7 @@ function starsAt(i) {
   if (s.level === null) return 0;
   const id = levels[s.level].id;
   let best = 0;
-  for (const d of DIFFICULTIES) {
-    for (const m of MODES) best = Math.max(best, bestStars(id, d.id, m.id));
-  }
+  for (const d of DIFFICULTIES) best = Math.max(best, bestStars(id, d.id));
   return best;
 }
 

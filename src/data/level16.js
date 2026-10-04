@@ -152,8 +152,6 @@ export const level16 = {
   ],
 
   waves: stage14Waves,
-  wavesExtended: stage14Waves,
-  oneLength: true,
 
   // 50 / 50, at the owner's word, and like Serene Peak the same two numbers at
   // both ends: one route per mouth and one door per route.
