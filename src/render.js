@@ -6897,15 +6897,43 @@ const seeded = seed => {
 // THE TORN EDGE: the outline walked every `step` px with each point pushed in or
 // out by a little noise — a few long waves for the wander, and grain for the nibble
 // — and the corners rounded off before they are torn.
-function tornEdge(x, y, w, h, seed, amp) {
+//
+// `rips`, for a whole sheet, makes the edge less even, at the owner's word, after
+// a scan of torn parchment: the wander swells and calms along the edge, so some
+// stretches are ragged and some nearly straight, and a few SHARP tears are cut in
+// — narrow, lopsided Vs up to RIP_DEEP deep — where a card's edge only nibbles.
+const RIP_DEEP = 10;
+function tornEdge(x, y, w, h, seed, amp, rips = false) {
   const rnd = seeded(seed);
   const r = Math.min(10, h / 5);
-  const step = amp > 2 ? 5 : 3;
+  const step = rips ? 2.5 : amp > 2 ? 5 : 3;
   const sides = [w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2,
                  w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2];
   const per = sides.reduce((a, b) => a + b, 0);
   const n = Math.max(12, Math.round(per / step));
   const waves = [0, 1, 2].map(() => ({ f: 1 + rnd() * 6, ph: rnd() * 6.28, a: rnd() }));
+  // How rough the edge is from place to place, 0.35 to 1.6 of `amp`.
+  const swell = [0, 1].map(() => ({ f: 2 + rnd() * 5, ph: rnd() * 6.28 }));
+  const envelope = u => rips
+    ? 0.35 + 1.25 * (0.5 + 0.5 * Math.sin(u * swell[0].f + swell[0].ph) * Math.cos(u * swell[1].f + swell[1].ph))
+    : 1;
+  // The tears: where round the edge, how wide either side of the point, how deep.
+  const tears = rips ? Array.from({ length: Math.round(per / 220) }, () => ({
+    at: rnd() * per,
+    left: 2 + rnd() * 7,
+    right: 2 + rnd() * 7,
+    deep: 4 + rnd() * (RIP_DEEP - 4)
+  })) : [];
+  const tearAt = t => {
+    let cut = 0;
+    for (const tr of tears) {
+      let dd = t - tr.at;
+      if (dd > per / 2) dd -= per; else if (dd < -per / 2) dd += per;
+      const half = dd < 0 ? tr.left : tr.right;
+      if (Math.abs(dd) < half) cut = Math.max(cut, tr.deep * (1 - Math.abs(dd) / half));
+    }
+    return cut;
+  };
   const arc = (cx, cy, a0, d) => {
     const a = a0 + d / r;
     return [cx + Math.cos(a) * r, cy + Math.sin(a) * r, Math.cos(a), Math.sin(a)];
@@ -6925,7 +6953,7 @@ function tornEdge(x, y, w, h, seed, amp) {
       :           arc(x + r, y + r, Math.PI, d);
     const u = i / n * Math.PI * 2;
     const wander = waves.reduce((a, wv) => a + Math.sin(u * wv.f * 4 + wv.ph) * wv.a, 0) / 1.5;
-    const o = wander * amp * 0.6 + (rnd() - 0.5) * amp * 0.8;
+    const o = (wander * amp * 0.6 + (rnd() - 0.5) * amp * 0.8) * envelope(u) - tearAt(i / n * per);
     i ? path.lineTo(px + nx * o, py + ny * o) : path.moveTo(px + nx * o, py + ny * o);
   }
   path.closePath();
@@ -7024,7 +7052,9 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = f
     c.height = Math.ceil((h + 2 * P) * K);
     const g = c.getContext('2d');
     g.scale(K, K);
-    const path = tornEdge(P, P, w, h, seed, tear);
+    // A WHOLE SHEET tears harder than a card — see `rips` on tornEdge.
+    const sheet = tear >= SHEET_TEAR;
+    const path = tornEdge(P, P, w, h, seed, tear, sheet);
     if (shadow) {
       // Shadow offsets and blur are in device pixels, so they take K by hand.
       g.save();
@@ -7039,9 +7069,21 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = f
     g.save();
     g.clip(path);
     g.drawImage(agedPaper(w + 8, h + 8, seed, tone), P - 4, P - 4, w + 8, h + 8);
+    // AND A SHEET IS BROWNED ALONG ITS TORN EDGE, into every tear, the way old
+    // paper darkens where it was handled and where it frayed — strokes of the
+    // outline itself, inside the clip, wide and faint to narrow and darker.
+    if (sheet) {
+      g.lineJoin = 'round';
+      for (const [lw2, a] of [[16, 0.07], [10, 0.08], [5, 0.12], [2.5, 0.16]]) {
+        g.strokeStyle = `rgba(95,55,18,${a})`;
+        g.lineWidth = lw2;
+        g.stroke(path);
+      }
+    }
     g.restore();
     g.strokeStyle = edge;
     g.lineWidth = lw;
+    g.lineJoin = 'round';
     g.stroke(path);
     sheetCache.set(key, c);
   }
