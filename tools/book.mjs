@@ -38,7 +38,7 @@ import {
   PAGES, shelf, pageItems, pageEntry, towerEntry, unitEntry, towerArt, figureArt, figureFit,
   COLUMNS, ROWS, CELL_W, CELL_H, AIR, ABILITY_ICON, BOOK_TOWER_K, BOOK_FIGURE_SCALE,
   SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, FRAME, FRAME_SMALL, frameFor, frameSlot, FRAME_AIR,
-  boxFor, BOX_PAD, STAT_COLS, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, hitStage, bossHeadY, staged,
+  boxFor, BOX_PAD, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, hitStage, bossHeadY, staged,
   BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON_HIT, popSlot
 } from '../src/book.js';
 // The paused game's own row — the book's second entrance and the Quit beside it
@@ -301,7 +301,7 @@ console.log('\nThe right page\n');
     const box = boxFor(item.kind);
     let y = box.y + BOX_PAD + ENTRY_NAME / 2 + ENTRY_NAME / 2 + 6;
     if (e.sub) y += ENTRY_SUB + 6;
-    y += 4 + Math.ceil(e.bands.length / STAT_COLS) * STAT_ROW_H;
+    y += 4 + e.rows.length * STAT_ROW_H;
     if (e.prose) {
       y += 18;
       const small = item.kind === 'ability';
@@ -324,8 +324,8 @@ console.log('\nThe right page\n');
     `fullest is ${deepest.name}, to ${deepest.y.toFixed(0)} of ${deepest.room.toFixed(0)}`);
   ok([0, 1, 2, 3].every(p => pageItems(p).every(it => { const b = boxFor(it.kind); return b.y + b.h <= FOOT_Y; })),
     'and the box ends above the footer');
-  ok(ENTRY_TEXT_W <= RIGHT.w - 2 * BOX_PAD && STAT_COLS * STAT_SLOT_W <= RIGHT.w - 2 * BOX_PAD,
-    'and the words and the numbers are narrower than the box');
+  ok(ENTRY_TEXT_W <= RIGHT.w - 2 * BOX_PAD,
+    'and the words are narrower than the box');
 
   // THE FRAME, THE BANDS AND THE BOSS'S SWITCH ARE ON THE RIGHT PAGE.
   const onRight = b => b.x >= RIGHT.x && b.x + b.w <= RIGHT.r;
@@ -484,13 +484,31 @@ console.log('\nThe picture pop-up\n');
     'every ability has a description for its page',
     ABILITIES.map(a => (a.detail || '').length).join('/') + ' chars');
 
-  // NOTHING BUT AN ABILITY AND AN ENEMY SAYS ANYTHING: a tower and a man are
-  // icons and numbers, at the owner's word.
-  const worded = shelf().filter(({ def, tiers }) =>
-    pageEntry({}, { kind: 'tower', def, tiers }).prose != null ||
-    pageEntry({}, { kind: 'unit', def }).prose != null);
-  ok(worded.length === 0, 'no tower and no man has a paragraph',
-    worded.map(({ def }) => def.name).join(', ') || `${shelf().length} tiers and their men`);
+  // EVERY TOWER AND EVERY MAN HAS A FEW SENTENCES, at the owner's word — 2 to 4
+  // each — and every quantity in them is a numeral, the book's standing rule.
+  const sentences = t => t.split(/[.!?](?:\s|$)/).filter(x => x.trim()).length;
+  const notes = shelf().flatMap(({ def, tiers }) => [
+    [def.name, pageEntry({}, { kind: 'tower', def, tiers }).prose],
+    [occupant(def).name, pageEntry({}, { kind: 'unit', def }).prose]]);
+  const off = notes.filter(([, t]) => !t || sentences(t) < 2 || sentences(t) > 4);
+  ok(off.length === 0, 'every tower and every man has 2 to 4 sentences',
+    off.map(([n]) => n).join(', ') || `${notes.length} descriptions`);
+  const SPELLED = /\b(two|three|four|five|six|seven|eight|nine|ten|twice|half)\b/gi;
+  const wordy = notes.filter(([, t]) => t && t.match(SPELLED));
+  ok(wordy.length === 0, 'and every quantity in them is a numeral', wordy.map(([n]) => n).join(', '));
+
+  // THE NUMBERS COME IN THE OWNER'S THREE ROWS: health, attack and range; then
+  // armor, pierce and blast; then bounty and lives lost.
+  const ROW_OF = { stat_health: 0, stat_damage: 0, stat_damage_magic: 0, stat_range: 0,
+    stat_armour: 1, stat_armour_magic: 1, stat_pierce: 1, stat_pierce_magic: 1, stat_splash: 1,
+    stat_gold_cost: 2, stat_life_cost: 2 };
+  const rowed = [...pageItems(1), ...pageItems(3)].every(item => {
+    const rows = pageEntry({ bookStage: 1 }, item).rows.map(r => r.map(b => ROW_OF[b.key]));
+    return rows.every(r => new Set(r).size === 1) && rows.every((r, i) => i === 0 || r[0] > rows[i - 1][0]);
+  });
+  ok(rowed, 'and every man\'s and enemy\'s numbers sit in their own rows, in order');
+  const widest = Math.max(...[1, 3].flatMap(p => pageItems(p).map(i => Math.max(...pageEntry({}, i).rows.map(r => r.length)))));
+  ok(widest * 80 <= RIGHT.w - 2 * BOX_PAD, 'and the fullest row fits the box', `${widest} to a row`);
 }
 
 console.log('\nWhat stays sharp at 3x\n');

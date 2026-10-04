@@ -14,7 +14,7 @@
 // The geometry lives here and the drawing lives in render.js, the same split as
 // menu.js — so input.js hit-tests exactly the rects that get drawn.
 
-import { archery, barracks, siege, monastery, SCALE } from './data/towers.js';
+import { archery, barracks, siege, monastery, SCALE, TOWER_NOTES, UNIT_NOTES } from './data/towers.js';
 import { ABILITIES } from './data/abilities.js';
 import { enemyTypes, BOOK_ORDER, FOE_NOTES } from './data/waves.js';
 import { refundOf } from './menu.js';
@@ -129,9 +129,11 @@ export function pageItems(page) {
 // sits as far below the roster as the title sits above the grid's top, less the
 // gap, and his row hangs the same distance below it.
 const TITLE_TO_GRID = GRID_TOP - TITLE_Y;
+// The clear paper between the last enemy's photo and the heading, at the owner's word.
+const BOSS_GAP = 22;
 export function bossHeadY() {
   const rows = Math.ceil(roster.length / COLUMNS);
-  return GRID_TOP + rows * (CELL_H + GAP) - GAP + 4 + TITLE_TO_GRID - 8;
+  return GRID_TOP + rows * (CELL_H + GAP) - GAP + BOSS_GAP + TITLE_TO_GRID - 8;
 }
 const bossTop = () => bossHeadY() + TITLE_TO_GRID;
 
@@ -231,9 +233,8 @@ export function boxFor(kind) {
   return { x: RIGHT.x, y, w: RIGHT.w, h: FOOT_Y - 8 - y };
 }
 
-// The numbers: up to three to a row, each an icon and its figure centred in a slot
-// of its own, and each row centred in the box.
-export const STAT_COLS = 3;
+// The numbers: each an icon and its figure centred in a slot of its own, and each
+// row centred in the box — see pageEntry for which facts share a row.
 export const STAT_SLOT_W = 128;
 export const STAT_ROW_H = 30;
 
@@ -292,41 +293,46 @@ const band = (key, value, label = STAT_LABEL[key], tone = null) => ({ key, value
 
 // THE RIGHT PAGE FOR AN ITEM, as one shape whatever the kind: the picture, its
 // name, the line under it, a paragraph, and the bands.
+//
+// THE NUMBERS COME IN ROWS, at the owner's word, each row one kind of fact:
+//   1st  health, physical or magic attack, range
+//   2nd  physical or magic armor, pierce physical or magic armor, area of effect
+//   3rd  bounty and lives lost
+// A row with nothing in it is left out. A tower's price and an ability's are a
+// row of their own.
 export function pageEntry(state, item) {
   const { def } = item;
   if (item.kind === 'tower') {
     const e = towerEntry(def, item.tiers);
-    return { ...e, sub: e.occupier, prose: null,
-      bands: [band('stat_gold_cost', e.cost, 'Cost'), band('glyph_refund', e.refund, 'Refund', 'green')] };
+    return { ...e, sub: e.occupier, prose: TOWER_NOTES[def.name] || null,
+      rows: [[band('stat_gold_cost', e.cost, 'Cost'), band('glyph_refund', e.refund, 'Refund', 'green')]] };
   }
   if (item.kind === 'unit') {
     const e = unitEntry(def);
-    const bands = [];
-    if (e.hp !== null) bands.push(band('stat_health', e.hp));
-    bands.push(band(e.attack || 'stat_damage', e.damage));
-    if (e.range !== null) bands.push(band('stat_range', e.range));
-    for (const [key, value] of e.traits) bands.push(band(key, value));
-    return { ...e, sub: def.title, prose: null, bands };
+    const first = [];
+    if (e.hp !== null) first.push(band('stat_health', e.hp));
+    first.push(band(e.attack || 'stat_damage', e.damage));
+    if (e.range !== null) first.push(band('stat_range', e.range));
+    return { ...e, sub: def.title, prose: UNIT_NOTES[e.title] || null,
+      rows: [first, e.traits.map(([key, value]) => band(key, value))].filter(r => r.length) };
   }
   if (item.kind === 'ability') {
     const e = abilityEntry(def);
     return { ...e, sub: e.of, prose: e.detail, round: true,
-      bands: [band('stat_gold_cost', e.cost, 'Cost')] };
+      rows: [[band('stat_gold_cost', e.cost, 'Cost')]] };
   }
   const d = shown(state, def);
-  const bands = [band('stat_health', d.hp)];
-  if (strikes(d)) bands.push(band(attackIcon(d), shownDamage(d)));
-  if (shownRange(d) !== null) bands.push(band('stat_range', shownRange(d)));
-  for (const [key, value] of traitRow(d)) bands.push(band(key, value));
+  const first = [band('stat_health', d.hp)];
+  if (strikes(d)) first.push(band(attackIcon(d), shownDamage(d)));
+  if (shownRange(d) !== null) first.push(band('stat_range', shownRange(d)));
   // WHAT A KILL PAYS AND WHAT A LEAK COSTS — and nothing at all for a creature
   // that has neither, which is the boss: reaching the exit ends the run outright,
   // and a zero in a coin would say he is worth nothing to kill.
-  if (d.bounty || d.leak) {
-    bands.push(band('stat_gold_cost', d.bounty, 'Bounty'));
-    bands.push(band('stat_life_cost', d.leak));
-  }
+  const reward = (d.bounty || d.leak)
+    ? [band('stat_gold_cost', d.bounty, 'Bounty'), band('stat_life_cost', d.leak)] : [];
   return { title: d.name, sprite: d.sprite, trim: d.spriteTrim, pivot: d.pivot, kind: 'figure',
-    sub: null, prose: FOE_NOTES[idOf(def)] || null, bands, staged: staged(def) };
+    sub: null, prose: FOE_NOTES[idOf(def)] || null, staged: staged(def),
+    rows: [first, traitRow(d).map(([key, value]) => band(key, value)), reward].filter(r => r.length) };
 }
 
 // --- controls ----------------------------------------------------------------

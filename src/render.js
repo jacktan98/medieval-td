@@ -30,7 +30,7 @@ import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H,
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes, occupant } from './select.js';
 import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFit, shown,
          ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
-         boxFor, BOX_PAD, STAT_COLS, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
+         boxFor, BOX_PAD, STAT_SLOT_W, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
@@ -6659,9 +6659,11 @@ function drawBookEntry(ctx, state, item) {
   // THE NUMBERS, before the words so they stand in the same place whatever the
   // paragraph's length: three to a row, each centred in its slot.
   y += 4;
-  for (let r = 0; r * STAT_COLS < e.bands.length; r++) {
-    const row = e.bands.slice(r * STAT_COLS, (r + 1) * STAT_COLS);
-    const x0 = RIGHT.cx - row.length * STAT_SLOT_W / 2;
+  const inner = box.w - 2 * BOX_PAD;
+  for (const row of e.rows) {
+    // A slot each, as wide as STAT_SLOT_W or as a full row allows.
+    const slot = Math.min(STAT_SLOT_W, inner / row.length);
+    const x0 = RIGHT.cx - row.length * slot / 2;
     const cy = y + STAT_ROW_H / 2;
     row.forEach((b, i) => {
       const ih = ENTRY_ICON_H;
@@ -6669,7 +6671,7 @@ function drawBookEntry(ctx, state, item) {
       ctx.font = `16px ${MAP_TYPE}`;
       const tw = ctx.measureText(String(b.value)).width;
       const ew = iw + 8 + tw;
-      const sx = x0 + i * STAT_SLOT_W + (STAT_SLOT_W - ew) / 2;
+      const sx = x0 + i * slot + (slot - ew) / 2;
       drawUi(ctx, b.key, sx + iw / 2, cy, { h: ih });
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';

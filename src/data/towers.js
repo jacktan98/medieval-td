@@ -3930,3 +3930,94 @@ export const families = [
   { id: 'siege',     name: 'Siege',     glyph: 'catapult', tiers: siege },
   { id: 'monastery', name: 'Monastery', glyph: 'cross',    tiers: monastery }
 ];
+
+// WHAT THE ENCYCLOPEDIA SAYS about each tower and the man inside it, at the owner's
+// word: "add some description for towers and units, 2-4 sentences each". What it is
+// for and where it earns its place, rather than its numbers, which are printed
+// beside it. Every quantity is a numeral, the standing rule for the book.
+//
+// tools/book.mjs fails if a tower or a man on the shelf has no line here.
+export const TOWER_NOTES = {
+  'Watchtower': 'A wooden lookout with a single archer. Cheap and quick to put up, it shoots steadily at ' +
+    'anything in reach, crows included. A good first tower on almost any plot.',
+  'Archer Post': 'A sturdier post for a better archer. It shoots harder, a little faster and a little ' +
+    'further than the Watchtower.',
+  'Crossbow Tower': 'A stone tower that holds an elite archer. The strongest of the plain archery towers, ' +
+    'with the reach to cover a long stretch of road.',
+  'Crossbow Sentry': 'A crossbowman on a quick reload, putting heavy quarrels into 1 target after another. ' +
+    'Like every archery tower it can shoot down crows. Its abilities stretch its reach or speed up its reload.',
+  'Musketeer Post': 'The longest reach of any tower. The musketeer reloads slowly, but every ball hits hard ' +
+    'and breaks through 1 rank of physical armor. Set it far back and let it pick off targets from afar.',
+  'Militia Camp': 'Musters 3 spearmen who stand on the road and hold enemies in place while your towers do ' +
+    'the work. A fallen man is replaced after a short wait, and the wounded slowly heal. Select the tower to ' +
+    'move their rally point.',
+  'Guard Post': 'Musters 3 pikemen with more health than the militia, so they hold the line for longer. ' +
+    'They also return to the fight sooner after falling.',
+  "Knight's Hall": 'Musters 3 swordsmen in light armor that turns aside part of every physical blow. The ' +
+    'sturdiest wall a plain barracks can build.',
+  'Paladin Keep': 'Musters 3 paladins in plate armor, with the most health of any soldier. They are built to ' +
+    'hold the road against the toughest enemies, and can learn to heal themselves or land crushing blows.',
+  'Assassin Guild': 'Musters 3 assassins who stay unseen until they strike, so enemies cannot single them out ' +
+    'first. They hit far harder than any other soldier and their blades cut through 1 rank of armor, but they ' +
+    'have less health than a paladin.',
+  'Catapult': 'Hurls rocks that crush everything in the blast. It reaches far, but cannot hit anything that ' +
+    'comes too close to the machine, and a rock never reaches a crow. Build it back from the road.',
+  'Mangonel': 'A bigger machine with a wider blast and more damage in every rock. It keeps the same blind ' +
+    'spot up close, so give it some distance from the road.',
+  'Trebuchet': 'The heaviest of the plain siege machines, with the widest blast and the longest reach of the ' +
+    '3. Best behind a line of soldiers that keeps the enemy bunched together.',
+  'Ballista Turret': 'A bolt thrower on a stone turret. Every bolt bursts where it lands, and unlike the other ' +
+    'machines it has no blind spot, so it can defend the road right beside it. It cannot hit crows.',
+  'Cannon Outpost': 'A cannon whose balls blast a wide area and break through 2 ranks of physical armor. Slow ' +
+    'to reload, but devastating against packed, armored groups. It cannot hit crows.',
+  'Wayside Shrine': 'A priest casts bolts of magic that physical armor cannot stop, so it is the answer to ' +
+    'armored enemies. It can hit crows, but its reach is shorter than other towers\'.',
+  'Chapel': 'A bishop with stronger, faster magic than the shrine. Build it where armored enemies will pass ' +
+    'within its shorter reach.',
+  'Abbey': 'A cardinal whose magic hits hard enough to bring down heavy brutes on its own. The strongest of the ' +
+    'plain monastery towers.',
+  'High Altar': 'The pope casts the strongest single blast of magic in the game, breaking through 2 ranks of ' +
+    'magic armor. Its abilities strengthen every soldier or every tower on the map.',
+  'Judgment Temple': '2 monks take turns casting, so a blast leaves the temple every second. Its abilities ' +
+    'make every blast hit harder or slow down whatever it hits.'
+};
+
+export const UNIT_NOTES = {
+  'Novice Archer': 'A young archer still learning the trade. He looses an arrow every second at anything ' +
+    'in reach, crows included.',
+  'Combat Archer': 'A seasoned archer who shoots harder and quicker than a novice. He stays on his post and ' +
+    'cannot be reached by enemies on the road.',
+  'Elite Archer': 'A veteran marksman whose arrows hit hard and fly far. The best of the plain archers.',
+  'Crossbowman': 'He winds his crossbow quickly and puts a heavy quarrel into a single target with every ' +
+    'shot. Steady damage, shot after shot.',
+  'Musketeer': 'Slow to reload, but his musket reaches further than any other weapon. Every ball punches ' +
+    'through 1 rank of physical armor.',
+  'Spearman': 'A militiaman with a spear. He stands his ground to hold enemies up, but does little damage on ' +
+    'his own.',
+  'Pikeman': 'Tougher than a spearman, he holds an enemy in place for longer. Still more of a wall than a ' +
+    'weapon.',
+  'Swordsman': 'A trained soldier in light armor, quicker with his blade than the men below him. His armor ' +
+    'turns aside part of every physical blow.',
+  'Paladin': 'A holy knight in plate armor, with the most health of any soldier. His blows are slow, but he is ' +
+    'very hard to bring down.',
+  'Assassin': 'Unseen until he strikes, so enemies cannot pick him out first. His blade hits harder than any ' +
+    'other soldier\'s and cuts through 1 rank of physical armor.',
+  'Catapult Engineer': 'He works the catapult, timing each throw to land among as many enemies as he can. ' +
+    'Anything that gets too close to the machine is safe from him.',
+  'Mangonel Engineer': 'He works the mangonel, a heavier machine with a bigger rock and a wider blast. ' +
+    'Like the catapult, it cannot hit what gets too close.',
+  'Trebuchet Engineer': 'He works the trebuchet, the heaviest of the throwing machines. His rocks land the ' +
+    'furthest and crush the widest.',
+  'Ballista Engineer': 'He aims the ballista and loads its bursting bolts. He can hit enemies right beside ' +
+    'the turret.',
+  'Cannoneer': 'He loads and fires the cannon. Every ball breaks through 2 ranks of physical armor.',
+  'Priest': 'He casts bolts of holy magic that physical armor cannot stop. Weak against enemies warded ' +
+    'against magic.',
+  'Bishop': 'A senior cleric whose magic is stronger and faster than a priest\'s. Like every cleric, he ' +
+    'can hit crows.',
+  'Cardinal': 'He calls down magic strong enough to fell armored brutes. The best of the plain clerics.',
+  'Pope': 'The head of the church, casting the strongest single blast of magic in the game. It breaks through ' +
+    '2 ranks of magic armor.',
+  'Monk': 'One of 2 monks who take turns casting, so the temple never stops firing. Each blast breaks through ' +
+    '1 rank of magic armor.'
+};
