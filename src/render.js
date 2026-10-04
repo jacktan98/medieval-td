@@ -6254,6 +6254,8 @@ const UP_PICK = '#2F5FA8';
 const UP_BG = '#634B27';
 const UP_BG_EDGE = '#BE9F6D';
 const UP_PANEL_FILL = '#74592E';
+// The words written on the sheet and in the panel, and the quieter ones.
+const UP_INK = UI_INK;
 const UP_MUTED = 'rgba(255,239,212,0.72)';
 const UP_NAME = '#F4A48E';
 const UP_GREEN = '#B5E09A';
@@ -6301,7 +6303,7 @@ function drawUpgrades(ctx, state) {
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = UI_INK;
+  ctx.fillStyle = UP_INK;
   // LOBSTER, the whole screen, at the owner's word — a test, like the world map's.
   ctx.font = `28px ${MAP_TYPE}`;
   ctx.fillText('Upgrades', 480, UP_TITLE_Y);
@@ -6506,7 +6508,7 @@ function drawUpgradePanel(ctx, state) {
   // The price, a star and a number.
   // Cream-edged, as the map's stars are, at the owner's word.
   starShape(ctx, cx - 12, p.y + 86, 10, 'map');
-  ctx.fillStyle = UI_INK;
+  ctx.fillStyle = UP_INK;
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
   ctx.fillText(String(UPGRADE_COSTS[i]), cx + 2, p.y + 87);
@@ -6515,7 +6517,7 @@ function drawUpgradePanel(ctx, state) {
   ctx.font = `17px ${MAP_TYPE}`;
   const lines = wrapIn(ctx, u.text, p.w - 48);
   ctx.textAlign = 'center';
-  ctx.fillStyle = UI_INK;
+  ctx.fillStyle = UP_INK;
   lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 23));
 
   // Where it stands, over the button.
@@ -6563,7 +6565,7 @@ function drawBook(ctx, state) {
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = UI_INK;
+  ctx.fillStyle = UP_INK;
   ctx.font = `22px ${MAP_TYPE}`;
   ctx.fillText('Encyclopedia', 480, TITLE_Y);
 
