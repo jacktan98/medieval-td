@@ -229,6 +229,9 @@ function newGame() {
     //
     // Null is also what it resets to: a restart cannot inherit a half-press.
     armed: null,
+    // The sound slider a finger or mouse is dragging, 'ambience' or 'effects', or
+    // null. See tapPaused in input.js.
+    soundDrag: null,
     // The admin dashboard, or null for closed. Cleared with everything else for
     // the same reason the book is: a panel left open across a rebuild would be
     // sitting on top of a game it no longer describes.

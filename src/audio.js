@@ -1300,6 +1300,62 @@ let master = null;
 let busA = null;
 let busB = null;
 
+// --- THE PLAYER'S TWO VOLUMES -------------------------------------------------
+//
+// Set from the pause menu, at the owner's word, and kept between visits. There is
+// no music in the game, so the two are:
+//
+//   AMBIENCE — every LOOP: a board's birds, river, wind, fire and fountain, the
+//              villagers' welding, reeling and sizzling, and the world map's birds,
+//              march and flag. Anything that goes on for as long as a situation does.
+//   EFFECTS  — everything else: shots, blows, deaths, the voices, the buttons, the
+//              villagers' one-off noises, the victory and defeat fanfares, the stars.
+//
+// Each is a gain node of its own in front of the bus it feeds, so the duck still
+// moves both together and neither touches the levels the mix was balanced at:
+//
+//   busA ── fxA ──────────────┐
+//   fxB ──┐                   ├── master ── speakers
+//   amb ──┴── busB (ducked) ──┘
+//
+// A slider's 0..1 is SQUARED on the way to the gain: the ear hears loudness on a
+// curve, and a straight line spends the whole top half of the slider on changes
+// nobody can hear.
+const SOUND_KEY = 'medieval-td/sound';
+export const SOUND_KINDS = ['ambience', 'effects'];
+function soundStore() {
+  try { return globalThis.localStorage || null; } catch { return null; }
+}
+const levels = (() => {
+  const out = { ambience: 1, effects: 1 };
+  try {
+    const raw = JSON.parse(soundStore()?.getItem(SOUND_KEY)) || {};
+    for (const k of SOUND_KINDS) {
+      if (typeof raw[k] === 'number' && raw[k] >= 0 && raw[k] <= 1) out[k] = raw[k];
+    }
+  } catch { /* nothing saved, or junk: full volume */ }
+  return out;
+})();
+let fxA = null;
+let fxB = null;
+let amb = null;
+export const soundLevel = kind => levels[kind] ?? 1;
+export function setSoundLevel(kind, v) {
+  if (!SOUND_KINDS.includes(kind)) return;
+  levels[kind] = Math.round(Math.max(0, Math.min(1, v)) * 100) / 100;
+  applyLevels();
+  try { soundStore()?.setItem(SOUND_KEY, JSON.stringify(levels)); } catch { /* private mode: this visit only */ }
+}
+function applyLevels() {
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  // A short glide rather than a step, so dragging a slider does not crackle.
+  const set = (node, v) => { node.gain.cancelScheduledValues(now); node.gain.setTargetAtTime(v * v, now, 0.02); };
+  set(fxA, levels.effects);
+  set(fxB, levels.effects);
+  set(amb, levels.ambience);
+}
+
 // When Category A may speak again, on the context's clock.
 let gateUntil = 0;
 
@@ -1329,12 +1385,21 @@ export function loadAudio() {
   master.gain.value = MASTER;
   master.connect(ctx.destination);
 
+  fxA = ctx.createGain();
+  fxA.connect(master);
   busA = ctx.createGain();
-  busA.connect(master);
+  busA.connect(fxA);
 
   busB = ctx.createGain();
   busB.gain.value = BG_LEVEL;
   busB.connect(master);
+  fxB = ctx.createGain();
+  fxB.connect(busB);
+  amb = ctx.createGain();
+  amb.connect(busB);
+  fxA.gain.value = levels.effects ** 2;
+  fxB.gain.value = levels.effects ** 2;
+  amb.gain.value = levels.ambience ** 2;
 
   const absent = [];
 
@@ -1607,7 +1672,7 @@ export function setLoop(key, on, level = 1, name = key) {
 
   const g = ctx.createGain();
   g.gain.value = 0;
-  src.connect(g).connect(busB);
+  src.connect(g).connect(amb);
   src.start(0, c.offset);
   g.gain.linearRampToValueAtTime(c.gain * level, now + LOOP_FADE);
 
@@ -1675,7 +1740,7 @@ export function play(cue, level = 1) {
   lastStart[key] = now;
   lastB.set(cue, key);
 
-  fire(key, busB, false, level);
+  fire(key, fxB, false, level);
 }
 
 // A PIECE OF A CLIP, Category B: `from` seconds into the FILE (the caller measured
@@ -1693,7 +1758,7 @@ export function slice(key, from, dur, level = 1, fade = 0.03) {
   g.gain.setValueAtTime(v, now);
   g.gain.setValueAtTime(v, now + dur - fade);
   g.gain.linearRampToValueAtTime(0, now + dur);
-  src.connect(g).connect(busB);
+  src.connect(g).connect(fxB);
   src.start(now, from, dur);
 }
 
@@ -1746,7 +1811,7 @@ export function alone(key, level = 1, rate = 1) {
   src.playbackRate.value = rate;
   const g = ctx.createGain();
   g.gain.value = c.gain * level;
-  src.connect(g).connect(busB);
+  src.connect(g).connect(fxB);
   src.start(0, 0);
   return true;
 }

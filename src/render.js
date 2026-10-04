@@ -37,6 +37,7 @@ import { PAGES, shelf, shelfRect, enemyCards, bossCards, BOSS_HEAD_Y,
 import { MAX_STARS, bestStars, starCuts } from './score.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
+import { soundLevel } from './audio.js';
 import { weeds, drawWeed, drawSandWind } from './desert.js';
 import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
@@ -7645,6 +7646,81 @@ function drawPauseRow(ctx, state) {
 
   askButton(ctx, PAUSE_ROW.restart, 'Restart', armed === 'restart');
   askButton(ctx, PAUSE_ROW.quit, 'Quit', armed === 'quit');
+  drawSoundPanel(ctx);
+}
+
+// --- THE SOUND SETTINGS, under Restart and Quit -------------------------------
+//
+// At the owner's word: two sliders on a dark plate, Ambience and Effects — see the
+// note above SOUND_KINDS in audio.js for which sound is which. Tapped anywhere on a
+// track it jumps there, and dragged it follows the finger (see input.js). Kept
+// between visits, by audio.js.
+const SOUND_PANEL = { x: 330, y: 150, w: 300, h: 92 };
+const SOUND_TRACK_X = SOUND_PANEL.x + 108;
+const SOUND_TRACK_W = SOUND_PANEL.w - 108 - 26;
+const SOUND_ROWS = [
+  { kind: 'ambience', label: 'Ambience', y: SOUND_PANEL.y + 28 },
+  { kind: 'effects', label: 'Effects', y: SOUND_PANEL.y + 64 }
+];
+const SOUND_KNOB_R = 9;
+// Half the rows' spacing, so the two tap bands meet and never overlap; and wide
+// enough past the ends that 0 and full are easy to hit with a thumb.
+const SOUND_PAD_Y = 18;
+const SOUND_PAD_X = 16;
+
+// Where along a slider `x` falls, 0..1.
+export const soundValueAt = x => Math.max(0, Math.min(1, (x - SOUND_TRACK_X) / SOUND_TRACK_W));
+
+// The slider under a tap, as its kind, or null.
+export function hitSoundSlider(x, y) {
+  if (x < SOUND_TRACK_X - SOUND_PAD_X || x > SOUND_TRACK_X + SOUND_TRACK_W + SOUND_PAD_X) return null;
+  const row = SOUND_ROWS.find(r => Math.abs(y - r.y) <= SOUND_PAD_Y);
+  return row ? row.kind : null;
+}
+
+function drawSoundPanel(ctx) {
+  const p = SOUND_PANEL;
+  // SOLID, unlike the buttons above it, which are see-through: a plate this size
+  // let the plots, stones and grass under it show through the sliders.
+  ctx.beginPath();
+  ctx.roundRect(p.x, p.y, p.w, p.h, 9);
+  ctx.fillStyle = '#211E1A';
+  ctx.fill();
+  panelBox(ctx, p.x, p.y, p.w, p.h, { r: 9, press: true });
+  ctx.save();
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.font = `15px ${MAP_TYPE}`;
+  for (const row of SOUND_ROWS) {
+    const v = soundLevel(row.kind);
+    ctx.fillStyle = UI_INK;
+    ctx.fillText(row.label, p.x + 18, row.y + 1);
+    // The track: dim cream all the way, gold as far as the volume goes.
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(255,239,212,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(SOUND_TRACK_X, row.y);
+    ctx.lineTo(SOUND_TRACK_X + SOUND_TRACK_W, row.y);
+    ctx.stroke();
+    const kx = SOUND_TRACK_X + v * SOUND_TRACK_W;
+    if (v > 0) {
+      ctx.strokeStyle = UI_GOLD;
+      ctx.beginPath();
+      ctx.moveTo(SOUND_TRACK_X, row.y);
+      ctx.lineTo(kx, row.y);
+      ctx.stroke();
+    }
+    // The knob, cream with the dark edge every control wears.
+    ctx.beginPath();
+    ctx.arc(kx, row.y, SOUND_KNOB_R, 0, Math.PI * 2);
+    ctx.fillStyle = UI_INK;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(14,12,10,0.85)';
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // One of the two buttons that ask before they act, drawn plain or as a question.

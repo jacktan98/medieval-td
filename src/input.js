@@ -1,7 +1,7 @@
 import { level, levels, useLevel } from './level.js';
 import { boardReady } from './assets.js';
 import { PLOT_R, hitHudButton, hitStart, hitBack, hitDifficultyButton,
-         hitPauseButton } from './render.js';
+         hitPauseButton, hitSoundSlider, soundValueAt } from './render.js';
 import { stageAt, skipReveal } from './overview.js';
 import { STAGES } from './data/overview.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R,
@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT } from './audio.js';
+import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, setSoundLevel } from './audio.js';
 import { hitBookButton, openBook, tapBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -70,6 +70,9 @@ export function attachInput(canvas, state, restart) {
     // AN UPGRADE BOUGHT plays the purchase sound, at the owner's word, rather than
     // the ordinary click — with priority, as selling a tower does.
     const did = tap(state, x, y, restart);
+    // A SOUND SLIDER TAPPED keeps the finger, so a drag that wanders off the track
+    // or off the canvas still moves it. See hitSoundSlider in render.js.
+    if (state.soundDrag) { try { canvas.setPointerCapture(e.pointerId); } catch { /* gone already */ } }
     // EVERY PURCHASE SOUNDS — see insist() in audio.js. Plain solo() could drop it
     // twice over: it will not say the same clip twice running, so the second upgrade
     // bought in a row was silent, and it gives up while a phone's audio is still
@@ -90,6 +93,12 @@ export function attachInput(canvas, state, restart) {
   // plot opens the build menu outright, which is the thing you want on a mouse
   // and would be unusable on a thumb.
   canvas.addEventListener('pointermove', e => {
+    // DRAGGING A SOUND SLIDER, by mouse or by finger — the one drag in the game.
+    if (state.soundDrag) {
+      if (!state.paused) { state.soundDrag = null; return; }
+      setSoundLevel(state.soundDrag, soundValueAt(at(e).x));
+      return;
+    }
     if (e.pointerType !== 'mouse') return;
 
     // A paused game does not follow the mouse either, and neither does one with
@@ -146,6 +155,12 @@ export function attachInput(canvas, state, restart) {
       state.menu.viaHover = true;
     }
   });
+
+  const letGo = () => { state.soundDrag = null; };
+  canvas.addEventListener('pointerup', letGo);
+  canvas.addEventListener('pointercancel', letGo);
+  // A finger dragging a slider must not be taken for a pan, which would cancel it.
+  canvas.addEventListener('touchmove', e => { if (state.soundDrag) e.preventDefault(); }, { passive: false });
 
   canvas.addEventListener('pointerleave', e => {
     if (e.pointerType !== 'mouse') return;
@@ -390,6 +405,15 @@ export function tap(state, x, y, restart) {
 // confirming. The arming is cleared by anything else that happens, including
 // unpausing, so a half-press can never wait around to catch a later tap.
 function tapPaused(state, x, y, restart) {
+  // A SOUND SLIDER jumps to the tap, and the finger may drag it on from there.
+  const slider = hitSoundSlider(x, y);
+  if (slider) {
+    state.armed = null;
+    setSoundLevel(slider, soundValueAt(x));
+    state.soundDrag = slider;
+    return true;
+  }
+
   const hit = hitPauseButton(state, x, y);
 
   if (hit === 'restart' || hit === 'quit') {
