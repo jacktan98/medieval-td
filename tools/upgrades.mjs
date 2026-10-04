@@ -40,7 +40,7 @@ check(UPGRADE_FAMILIES.join() === 'archery,barracks,siege,monastery', 'four fami
 check(UPGRADE_FAMILIES.every(f => UPGRADES[f].length === 4), 'four rungs each');
 check(UPGRADE_COSTS.join() === '2,2,2,3', 'at two, two, two and three stars', UPGRADE_COSTS.join(' / '));
 const EFFECTS = ['rangeTimes', 'damageTimes', 'reloadTimes', 'splashTimes', 'crit', 'stun', 'slow',
-  'hpTimes', 'respawnLess', 'blowTimes', 'deathSave'];
+  'hpTimes', 'respawnTimes', 'blowTimes', 'deathSave'];
 const blank = UPGRADE_FAMILIES.flatMap(f => UPGRADES[f].filter(u => !u.name || !u.text || !EFFECTS.some(k => u[k])));
 check(!blank.length, 'every rung has a name, a sentence and an effect', blank.map(u => u.name).join(', ') || '16 of them');
 
@@ -245,7 +245,7 @@ console.log('\nThe barracks\n');
     setBoughtForTest({ barracks: 3 });
     man.hp = -5;
     updateUnits(state, 1 / 60);
-    check(near(man.respawn, Math.max(1, barracks[0].soldier.respawn - 2)), 'Call to Arms: back two seconds sooner',
+    check(near(man.respawn, barracks[0].soldier.respawn * 0.9), 'Call to Arms: back 10% sooner',
       `${barracks[0].soldier.respawn}s → ${man.respawn.toFixed(2)}s`);
 
     // And with Last Stand, the dice say he does not.
@@ -268,7 +268,7 @@ console.log('\nWith nothing bought\n');
   setBoughtForTest({});
   const fx = UPGRADE_FAMILIES.map(upgradeFx);
   check(fx.every(f => f.rangeTimes === 1 && f.damageTimes === 1 && f.reloadTimes === 1 && f.splashTimes === 1 &&
-    f.hpTimes === 1 && !f.respawnLess && f.blowTimes === 1 && !f.deathSave && !f.crit && !f.stun && !f.slow),
+    f.hpTimes === 1 && f.respawnTimes === 1 && f.blowTimes === 1 && !f.deathSave && !f.crit && !f.stun && !f.slow),
     'every family is exactly as it was');
 }
 

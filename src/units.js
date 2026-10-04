@@ -1858,9 +1858,8 @@ export function updateUnits(state, dt) {
       // the middle of a loop over the list he is in.
       u.respawn = u.def.respawn || 0;
       if (!(u.respawn > 0)) u.fallen = true;
-      // CALL TO ARMS, the barracks' second star upgrade: two seconds off, and
-      // never down to nothing — a man is always gone for at least a second.
-      else if (upOf(u).respawnLess) u.respawn = Math.max(1, u.respawn - upOf(u).respawnLess);
+      // CALL TO ARMS, the barracks' third star upgrade: 10% off every tier's wait.
+      else u.respawn *= upOf(u).respawnTimes;
       // Everything being done to him dies with him. Without this he musters again
       // at full health with the clock still running and walks straight back out to
       // finish dying of a flask thrown at a man who is already dead — and, now

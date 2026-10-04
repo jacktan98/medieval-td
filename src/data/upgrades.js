@@ -17,7 +17,7 @@
 //   stun          { chance, seconds }: now and then a shot freezes what it hits
 //   slow          { chance, seconds, times }: now and then a shot slows its man
 //   hpTimes       a soldier's health, times this       (units.js, updateUnits)
-//   respawnLess   seconds off a soldier's respawn      (units.js, the death block)
+//   respawnTimes  a soldier's respawn, times this      (units.js, the death block)
 //   blowTimes     a soldier's blow, times this         (units.js, soldierBlow)
 //   deathSave     the chance a killing blow leaves him on 1 health instead
 //
@@ -42,7 +42,9 @@ export const UPGRADES = {
     // a little under the old 4; on an Assassin Guild's 15 it is 16.5, a little over.
     { name: 'Honed Blades', text: 'Increase base attack damage of barracks units by 10%.', blowTimes: 1.10 },
     // CALL TO ARMS, and it was Quick Muster: renamed to match the artist's war horn.
-    { name: 'Call to Arms', text: 'Reduce respawn time of barracks units by 2 seconds.', respawnLess: 2 },
+    // 10%, AND IT WAS 2 SECONDS: the owner changed it. A Militia Camp's 8 is 7.2, a
+    // Paladin Keep's 5 is 4.5 — a share of every tier's own wait rather than a flat cut.
+    { name: 'Call to Arms', text: 'Reduce respawn time of barracks units by 10%.', respawnTimes: 0.9 },
     { name: 'Last Stand', text: 'Grants a 10% chance that a unit survives a killing blow with 1 health left.',
       deathSave: 0.10 }
   ],
