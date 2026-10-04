@@ -5353,15 +5353,10 @@ function drawInfo(ctx, state) {
   ctx.clip('evenodd');
   scrimBox(ctx, barX, ly, lx + lw - barX, LINE_H);
   ctx.restore();
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  // Cream inside, a dark ring, at the transport buttons' own opacity. No cream
-  // halo on the figure here — on cream it would be an outline nobody can see.
-  ctx.fillStyle = HUD_PLATE;
-  ctx.fill();
-  ctx.strokeStyle = HUD_PLATE_EDGE;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  // OLD PHOTO PAPER, torn round, with the dark ring it always had — the
+  // encyclopedia's cards in miniature, at the owner's word. No cream halo on the
+  // figure here — on pale paper it would be an outline nobody can see.
+  paperDisc(ctx, cx, cy, R, 19, HUD_PLATE_EDGE);
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
     ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
@@ -5869,13 +5864,8 @@ function drawFoeAlerts(ctx, state) {
     scrimBox(ctx, cx, ly, r.x + r.w - cx, ALERT_BAR_H);
     ctx.restore();
 
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.fillStyle = HUD_PLATE;
-    ctx.fill();
-    ctx.strokeStyle = HUD_PLATE_EDGE;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    // The same photo paper as the new-enemy card it opens, torn round.
+    paperDisc(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE);
     // The figure in the middle, well inside the ring — see alertFigure.
     const img = d && art[d.sprite];
     if (img) {
@@ -6717,13 +6707,9 @@ function drawZoom(ctx, z) {
   ctx.fillStyle = 'rgba(20,22,18,0.78)';
   ctx.fillRect(0, 0, 960, 540);
 
-  ctx.fillStyle = SHEET_FILL;
-  ctx.beginPath();
-  ctx.roundRect(px, py, pw, ph, 12);
-  ctx.fill();
-  ctx.strokeStyle = SHEET_EDGE;
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // THE ENCYCLOPEDIA'S PHOTO PAPER, torn at the edge, at the owner's word — the
+  // card the picture was opened from, held up close.
+  paperRect(ctx, px, py, pw, ph, 67, CARD_TONE, 2, SHEET_EDGE, 2);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -7047,6 +7033,43 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2) {
     sheetCache.set(key, c);
   }
   ctx.drawImage(c, x - PAPER_PAD, y - PAPER_PAD, w + 2 * PAPER_PAD, h + 2 * PAPER_PAD);
+}
+
+// A ROUND ONE, for the medallions: the same photo paper cut to a circle with a
+// torn rim, made once per size and kept like paperRect's sheets.
+const discCache = new Map();
+function paperDisc(ctx, cx, cy, R, seed, edge, lw = 1.5) {
+  const key = `${R}:${seed}:${edge}:${lw}`;
+  let c = discCache.get(key);
+  if (!c) {
+    const P = PAPER_PAD, K = 3, D = 2 * R;
+    c = document.createElement('canvas');
+    c.width = c.height = Math.ceil((D + 2 * P) * K);
+    const g = c.getContext('2d');
+    g.scale(K, K);
+    const rnd = seeded(seed);
+    const n = Math.max(24, Math.round(Math.PI * D / 2.5));
+    const waves = [0, 1].map(() => ({ f: 2 + rnd() * 4, ph: rnd() * 6.28, a: rnd() }));
+    const path = new Path2D();
+    for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2;
+      const o = waves.reduce((acc, wv) => acc + Math.sin(a * wv.f + wv.ph) * wv.a, 0) * 0.45
+        + (rnd() - 0.5) * 0.9;
+      const x = P + R + Math.cos(a) * (R + o), y = P + R + Math.sin(a) * (R + o);
+      i ? path.lineTo(x, y) : path.moveTo(x, y);
+    }
+    path.closePath();
+    g.save();
+    g.clip(path);
+    g.drawImage(agedPaper(D + 8, D + 8, seed, CARD_TONE), P - 4, P - 4, D + 8, D + 8);
+    g.restore();
+    g.strokeStyle = edge;
+    g.lineWidth = lw;
+    g.stroke(path);
+    discCache.set(key, c);
+  }
+  const S = 2 * R + 2 * PAPER_PAD;
+  ctx.drawImage(c, cx - S / 2, cy - S / 2, S, S);
 }
 
 // A card: a photo of its own, seeded from where it sits.
