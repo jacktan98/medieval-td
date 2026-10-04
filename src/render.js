@@ -6028,13 +6028,9 @@ function drawFoeCard(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.45)';
   ctx.fillRect(0, 0, 960, 540);
 
-  ctx.fillStyle = SHEET_FILL;
-  ctx.beginPath();
-  ctx.roundRect(px, py, pw, ph, 12);
-  ctx.fill();
-  ctx.strokeStyle = HUD_PLATE_EDGE;
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // THE SAME PHOTO PAPER as the encyclopedia's cards, torn at the edge, with the
+  // dark edge it always had so it holds its own over the board.
+  paperRect(ctx, px, py, pw, ph, 53, CARD_TONE, 2, HUD_PLATE_EDGE, 2);
 
   // What this is, then who — the name in the pop-up's own title type.
   ctx.textAlign = 'center';
@@ -6246,20 +6242,18 @@ const UP_GOLD = '#E7C15A';
 // data/towers.js, where every family names the one it is built from.
 const UP_GLYPH = Object.fromEntries(families.map(f => [f.id, f.glyph]));
 const UP_PICK = '#2F5FA8';
-// THE SCREEN'S OWN BROWNS, at the owner's word — a test, and it was the book's
-// parchment: a dark sheet and a lighter #74592E panel, both written in the map's
-// cream and sharing one tan #BE9F6D edge. The colours that carried meaning on
-// parchment (the name's red, Bought's green, the warning's red) are lifted so they
-// still read on the brown.
-const UP_BG = '#634B27';
-const UP_BG_EDGE = '#BE9F6D';
-const UP_PANEL_FILL = '#74592E';
-// The words written on the sheet and in the panel, and the quieter ones.
-const UP_INK = UI_INK;
-const UP_MUTED = 'rgba(255,239,212,0.72)';
-const UP_NAME = '#F4A48E';
-const UP_GREEN = '#B5E09A';
-const UP_RED = '#F4A48E';
+// OLD PAPER, at the owner's word, after a run of flat browns: the Upgrades screen
+// and the encyclopedia are a sheet of browned paper with lighter, photo-like cards
+// laid on it, every edge torn rather than ruled — see paperRect below. Everything
+// written on them is in the book's own dark inks.
+//
+// UP_BG_EDGE is the ink of the sheet's torn edge and of a bought ladder's rail.
+const UP_BG_EDGE = '#6E4C28';
+const UP_INK = INK;
+const UP_MUTED = 'rgba(58,48,38,0.70)';
+const UP_NAME = ALERT_RED;
+const UP_GREEN = INK_GREEN;
+const UP_RED = INK_RED;
 
 // A UI PICTURE IN BLACK AND WHITE, made once per key and kept. Done on the pixels
 // rather than with ctx.filter, which older Safari ignores — this works wherever a
@@ -6293,13 +6287,7 @@ function drawUpgrades(ctx, state) {
   ctx.fillRect(0, 0, 960, 540);
 
   const sh = UP_SHEET;
-  ctx.fillStyle = UP_BG;
-  ctx.beginPath();
-  ctx.roundRect(sh.x, sh.y, sh.w, sh.h, 12);
-  ctx.fill();
-  ctx.strokeStyle = UP_BG_EDGE;
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  paperRect(ctx, sh.x, sh.y, sh.w, sh.h, SHEET_SEED, SHEET_TONE, SHEET_TEAR, UP_BG_EDGE, 2);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -6343,7 +6331,7 @@ function drawUpgrades(ctx, state) {
       const a = i < 0 ? foot : upBox(col, i), b = upBox(col, i + 1);
       // TAN, #BE9F6D, at the owner's word — the panel's edge colour. Solid where the
       // rung below is bought, faint where the climb has not got that far.
-      ctx.strokeStyle = i < 0 || rungState(fam, i) === 'bought' ? UP_BG_EDGE : 'rgba(190,159,109,0.35)';
+      ctx.strokeStyle = i < 0 || rungState(fam, i) === 'bought' ? UP_BG_EDGE : 'rgba(58,48,38,0.25)';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(a.cx, a.cy);
@@ -6474,13 +6462,8 @@ function drawUpgrades(ctx, state) {
 // does — and the Buy button, when it can be bought.
 function drawUpgradePanel(ctx, state) {
   const p = UP_PANEL;
-  ctx.fillStyle = UP_PANEL_FILL;
-  ctx.beginPath();
-  ctx.roundRect(p.x, p.y, p.w, p.h, 10);
-  ctx.fill();
-  ctx.strokeStyle = UP_BG_EDGE;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  // A CARD OF THE SAME PHOTO PAPER as the encyclopedia's, lying on the sheet.
+  paperRect(ctx, p.x, p.y, p.w, p.h, 31, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4);
 
   const cx = p.x + p.w / 2;
   ctx.textAlign = 'center';
@@ -6552,16 +6535,8 @@ function drawBook(ctx, state) {
   ctx.fillStyle = 'rgba(20,22,18,0.88)';
   ctx.fillRect(0, 0, 960, 540);
 
-  // THE UPGRADES SCREEN'S BROWN AND TAN EDGE, at the owner's word — a test, with
-  // the cards left as they were. The words written on the sheet itself (the
-  // title, the headings, the page count) go cream with it, as they are there.
-  ctx.fillStyle = UP_BG;
-  ctx.beginPath();
-  ctx.roundRect(SHEET.x, SHEET.y, SHEET.w, SHEET.h, 12);
-  ctx.fill();
-  ctx.strokeStyle = UP_BG_EDGE;
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // The same old paper as the Upgrades screen — see paperRect.
+  paperRect(ctx, SHEET.x, SHEET.y, SHEET.w, SHEET.h, SHEET_SEED, SHEET_TONE, SHEET_TEAR, UP_BG_EDGE, 2);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -6919,19 +6894,164 @@ function heading(ctx, text, x) {
   ctx.fillText(text, x, HEAD_Y);
 }
 
-// THE UI'S CREAM, solid, with the Upgrades screen's tan for an edge, at the
-// owner's word. It was a faint tint that took its colour from the parchment page
-// under it, and the page is brown now.
-const BOOK_CARD = '#FFEFD4';
-const BOOK_CARD_EDGE = '#BE9F6D';
+// --- old paper -------------------------------------------------------------
+//
+// THE OWNER'S PICTURE was a scan of an old photograph's back: pale where the light
+// caught it, yellowed where it did not, browner at the edges, foxed with rust spots,
+// and with a deckled edge rather than a cut one. So a card is that — drawn here
+// rather than shipped as a picture, so every card can have its own stains and its
+// own edge without a file per size.
+//
+// DRAWN ONCE AND KEPT. A sheet or a card is painted into a canvas the first time
+// it is asked for, at its size and seed, and only copied after — see paperRect —
+// and the seed comes from where the card sits, so the same card has the same
+// stains on every visit.
+
+// A small seeded generator, so a card's marks are the same every time it is drawn.
+const seeded = seed => {
+  let r = (seed * 9301 + 49297) % 233280;
+  return () => (r = (r * 9301 + 49297) % 233280) / 233280;
+};
+
+// THE TORN EDGE: the outline walked every `step` px with each point pushed in or
+// out by a little noise — a few long waves for the wander, and grain for the nibble
+// — and the corners rounded off before they are torn.
+function tornEdge(x, y, w, h, seed, amp) {
+  const rnd = seeded(seed);
+  const r = Math.min(10, h / 5);
+  const step = amp > 2 ? 5 : 3;
+  const sides = [w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2,
+                 w - 2 * r, Math.PI * r / 2, h - 2 * r, Math.PI * r / 2];
+  const per = sides.reduce((a, b) => a + b, 0);
+  const n = Math.max(12, Math.round(per / step));
+  const waves = [0, 1, 2].map(() => ({ f: 1 + rnd() * 6, ph: rnd() * 6.28, a: rnd() }));
+  const arc = (cx, cy, a0, d) => {
+    const a = a0 + d / r;
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r, Math.cos(a), Math.sin(a)];
+  };
+  const path = new Path2D();
+  for (let i = 0; i < n; i++) {
+    let d = i / n * per, k = 0;
+    while (k < 7 && d > sides[k]) d -= sides[k++];
+    const [px, py, nx, ny] =
+        k === 0 ? [x + r + d, y, 0, -1]
+      : k === 1 ? arc(x + w - r, y + r, -Math.PI / 2, d)
+      : k === 2 ? [x + w, y + r + d, 1, 0]
+      : k === 3 ? arc(x + w - r, y + h - r, 0, d)
+      : k === 4 ? [x + w - r - d, y + h, 0, 1]
+      : k === 5 ? arc(x + r, y + h - r, Math.PI / 2, d)
+      : k === 6 ? [x, y + h - r - d, -1, 0]
+      :           arc(x + r, y + r, Math.PI, d);
+    const u = i / n * Math.PI * 2;
+    const wander = waves.reduce((a, wv) => a + Math.sin(u * wv.f * 4 + wv.ph) * wv.a, 0) / 1.5;
+    const o = wander * amp * 0.6 + (rnd() - 0.5) * amp * 0.8;
+    i ? path.lineTo(px + nx * o, py + ny * o) : path.moveTo(px + nx * o, py + ny * o);
+  }
+  path.closePath();
+  return path;
+}
+
+// THE PAPER: a gradient between three tones, a bleached patch and a stained one,
+// browned edges, a fine grain, a crease or two and some foxing.
+// Made only while paperRect builds a sheet, which keeps the finished one.
+function agedPaper(w, h, seed, tone) {
+  // 3x for a card, so it is sharp on a phone; 2x for a whole sheet, which is all
+  // texture and would otherwise be a 17 MB canvas.
+  const K = w * h > 100000 ? 2 : 3;
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(w * K);
+  c.height = Math.ceil(h * K);
+  const g = c.getContext('2d');
+  g.scale(K, K);
+  const rnd = seeded(seed);
+  const lin = g.createLinearGradient(0, 0, w, h);
+  lin.addColorStop(0, tone.a);
+  lin.addColorStop(0.55, tone.b);
+  lin.addColorStop(1, tone.c);
+  g.fillStyle = lin;
+  g.fillRect(0, 0, w, h);
+  for (const [col, a] of [[tone.light, tone.lightA], [tone.stain, tone.stainA]]) {
+    for (let j = 0; j < tone.patches; j++) {
+      const x = rnd() * w, y = rnd() * h, rr = (0.25 + rnd() * 0.35) * Math.max(w, h);
+      const rad = g.createRadialGradient(x, y, 0, x, y, rr);
+      rad.addColorStop(0, `rgba(${col},${a})`);
+      rad.addColorStop(1, `rgba(${col},0)`);
+      g.fillStyle = rad;
+      g.fillRect(0, 0, w, h);
+    }
+  }
+  const v = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.62);
+  v.addColorStop(0, `rgba(${tone.edge},0)`);
+  v.addColorStop(1, `rgba(${tone.edge},${tone.edgeA})`);
+  g.fillStyle = v;
+  g.fillRect(0, 0, w, h);
+  for (let i = 0; i < w * h / 40; i++) {
+    g.fillStyle = rnd() < 0.5 ? 'rgba(255,245,220,0.05)' : 'rgba(60,35,10,0.05)';
+    g.fillRect(rnd() * w, rnd() * h, 1, 1);
+  }
+  g.strokeStyle = tone.crease;
+  g.lineWidth = 0.5;
+  for (let i = 0; i < tone.creases; i++) {
+    g.beginPath();
+    g.moveTo(rnd() * w, rnd() * h);
+    g.lineTo(rnd() * w, rnd() * h);
+    g.stroke();
+  }
+  for (let i = 0; i < Math.round(w * h / tone.fox); i++) {
+    g.fillStyle = `rgba(${120 + rnd() * 40 | 0},${60 + rnd() * 30 | 0},25,${0.15 + rnd() * 0.3})`;
+    g.beginPath();
+    g.arc(rnd() * w, rnd() * h, 0.3 + rnd() * 0.8, 0, Math.PI * 2);
+    g.fill();
+  }
+  return c;
+}
+
+// THE TWO PAPERS, a step lighter than the first trial at the owner's word: the
+// photo cards, and the browned sheet they lie on.
+const CARD_TONE = { a: '#F7E9C9', b: '#F1DEB5', c: '#E9CFA0',
+  light: '255,248,228', lightA: 0.5, stain: '196,150,90', stainA: 0.14, patches: 1,
+  edge: '150,100,45', edgeA: 0.22, crease: 'rgba(255,250,235,0.16)', creases: 2, fox: 1700 };
+const SHEET_TONE = { a: '#DCC08F', b: '#D0B07C', c: '#C09C68',
+  light: '240,220,180', lightA: 0.35, stain: '120,80,40', stainA: 0.18, patches: 2,
+  edge: '90,55,20', edgeA: 0.38, crease: 'rgba(245,225,185,0.15)', creases: 3, fox: 3200 };
+const CARD_EDGE_INK = '#8A6538';
+const CARD_TEAR = 1.3;
+const SHEET_TEAR = 3;
+const SHEET_SEED = 77;
+
+// A TORN SHEET OF PAPER, made once and kept whole: the texture cut to the torn
+// outline and the outline inked, all in one canvas, so a frame draws a card as a
+// single copy. Cutting the shape out live cost more than the rest of the page.
+// The canvas is a little larger than the rect, so the tear's outward nibbles and
+// the ink have room.
+const PAPER_PAD = 6;
+const sheetCache = new Map();
+function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2) {
+  const key = `${w}x${h}:${seed}:${tone.a}:${tear}:${edge}:${lw}`;
+  let c = sheetCache.get(key);
+  if (!c) {
+    const P = PAPER_PAD, K = w * h > 100000 ? 2 : 3;
+    c = document.createElement('canvas');
+    c.width = Math.ceil((w + 2 * P) * K);
+    c.height = Math.ceil((h + 2 * P) * K);
+    const g = c.getContext('2d');
+    g.scale(K, K);
+    const path = tornEdge(P, P, w, h, seed, tear);
+    g.save();
+    g.clip(path);
+    g.drawImage(agedPaper(w + 8, h + 8, seed, tone), P - 4, P - 4, w + 8, h + 8);
+    g.restore();
+    g.strokeStyle = edge;
+    g.lineWidth = lw;
+    g.stroke(path);
+    sheetCache.set(key, c);
+  }
+  ctx.drawImage(c, x - PAPER_PAD, y - PAPER_PAD, w + 2 * PAPER_PAD, h + 2 * PAPER_PAD);
+}
+
+// A card: a photo of its own, seeded from where it sits.
 function card(ctx, b) {
-  ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 8);
-  ctx.fillStyle = BOOK_CARD;
-  ctx.fill();
-  ctx.strokeStyle = BOOK_CARD_EDGE;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  paperRect(ctx, b.x, b.y, b.w, b.h, Math.round(b.x * 7 + b.y * 13) % 997 + 1, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2);
 }
 
 // A drawing standing on its own shadow inside a card's picture slot.
