@@ -5499,11 +5499,12 @@ Object.assign(START_BTN, {
 // competing with Start.
 const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12, w: 30, h: 30 };
 
-// THE DIFFICULTY IS ONE BUTTON, at the owner's word: it reads the setting in force
-// and a tap moves it to the next — Normal, Hard, and round again — and what it is
-// left on is the player's default from then on. Centred under the story, as Start
-// is, with its caption beside it on the story's left edge.
-const DIFF_BTN_W = 132, DIFF_BTN_H = 34;
+// THE DIFFICULTY IS ONE TOGGLE, at the owner's word: a pill with Normal and Hard
+// side by side and a knob over the setting in force. A tap anywhere on it slides
+// the knob to the other side, and what it is left on is the player's default from
+// then on. Centred under the story, as Start is, with its caption beside it on the
+// story's left edge — as wide as the gap after the caption allows.
+const DIFF_BTN_W = 144, DIFF_BTN_H = 34;
 const DIFF_CAPTION_X = STORY_CARD.x + STORY_PAD;
 
 // Halfway between the story and Start.
@@ -5556,23 +5557,51 @@ export function hitBack(state, x, y) {
 // for bold — the browser would fake it. The system font stands in until the file has
 // loaded; see MAP_FONT in src/overview.js.
 
-// The difficulty, captioned on the story's left edge, and the one button that
-// reads the setting in force. HARD IS GOLD — edge and word — so the harder setting
-// is plain at a glance; Normal is the quiet cream every other button wears.
+// The difficulty, captioned on the story's left edge, and the toggle. BOTH SIDES
+// WEAR THE SAME LOOK — the knob is a lighter pill with a cream edge and the word
+// on it is cream; the other word is faded — so neither setting is dressed up over
+// the other. The knob slides rather than jumps, over DIFF_SLIDE ms.
+const DIFF_INSET = 4;
+const DIFF_SLIDE = 160;
+const DIFF_OFF = 'rgba(255,239,212,0.45)';
+const diffKnob = { at: null, from: 0, to: 0, t0: 0 };
 function difficultyUi(ctx, index) {
-  const d = DIFFICULTIES[index] || DIFFICULTIES[0];
   const b = DIFF_BTN;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
   ctx.fillText('Difficulty', DIFF_CAPTION_X, b.y + b.h / 2 + 1);
-  const hard = index > 0;
-  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: hard, r: 9 });
+
+  const now = performance.now();
+  const side = index > 0 ? 1 : 0;
+  if (diffKnob.at === null) Object.assign(diffKnob, { at: side, from: side, to: side, t0: now });
+  else if (side !== diffKnob.to) Object.assign(diffKnob, { from: diffKnob.at, to: side, t0: now });
+  const k = Math.min(1, (now - diffKnob.t0) / DIFF_SLIDE);
+  diffKnob.at = diffKnob.from + (diffKnob.to - diffKnob.from) * (1 - (1 - k) ** 3);
+
+  panelBox(ctx, b.x, b.y, b.w, b.h, { r: b.h / 2 });
+  const half = b.w / 2;
+  const kw = half - DIFF_INSET, kh = b.h - DIFF_INSET * 2;
+  const kx = b.x + DIFF_INSET + diffKnob.at * (half - DIFF_INSET);
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(kx, b.y + DIFF_INSET, kw, kh, kh / 2);
+  ctx.fillStyle = 'rgba(255,239,212,0.16)';
+  ctx.fill();
+  ctx.strokeStyle = UI_EDGE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+
   ctx.textAlign = 'center';
-  ctx.fillStyle = hard ? UI_GOLD : UI_INK;
-  ctx.font = `18px ${MAP_TYPE}`;
-  ctx.fillText(d.name, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  ctx.font = `16px ${MAP_TYPE}`;
+  for (let i = 0; i < 2; i++) {
+    const d = DIFFICULTIES[i];
+    if (!d) continue;
+    ctx.fillStyle = i === side ? UI_INK : DIFF_OFF;
+    ctx.fillText(d.name, b.x + half * i + half / 2 + (i ? -DIFF_INSET / 2 : DIFF_INSET / 2), b.y + b.h / 2 + 1);
+  }
 }
 
 function drawStart(ctx, state) {
