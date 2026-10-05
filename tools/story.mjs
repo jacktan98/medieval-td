@@ -55,5 +55,13 @@ ok(long.length === 0, 'and none runs past 4 sentences', long.map(lv => lv.name).
   ok(sealOf(id).name === 'Hard', 'and the seal reads the setting\'s own name', sealOf(id).name);
 }
 
+// AND ITS STARS ARE THE ONES EARNED on the setting it names, 1 to 3.
+{
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/render.js', import.meta.url), 'utf8');
+  ok(/drawSeal\([^)]*bestStars\(lv\.id, seal\.id\)\)/.test(src), 'the seal is given the stars won on its setting');
+  ok(/for \(let i = 0; i < n; i\+\+\)/.test(src.slice(src.indexOf('function drawSeal'))), 'and draws that many');
+}
+
 console.log(bad ? `\n${bad} problem(s) with the story.` : '\nThe story holds together.');
 process.exit(bad ? 1 : 0);

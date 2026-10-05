@@ -5712,9 +5712,10 @@ function drawStart(ctx, state) {
 
   // A RED WAX-INK SEAL on a stage that has been won, stamped on the photograph's
   // bottom-left corner at the owner's word: "Hard" for a win on Hard, otherwise
-  // "Normal". Whatever difficulty is chosen, it shows the best won.
+  // "Normal". Whatever difficulty is chosen, it shows the best won, with as many
+  // stars as were earned on that difficulty.
   const seal = lv && sealOf(lv.id);
-  if (seal) drawSeal(ctx, ix + 50, iy + ih - 48, SEAL_R, seal.name);
+  if (seal) drawSeal(ctx, ix + 50, iy + ih - 48, SEAL_R, seal.name, bestStars(lv.id, seal.id));
 
   // The back door, top-right of the plate, in the paper's ink.
   ctx.strokeStyle = UP_MUTED;
@@ -5767,14 +5768,17 @@ function drawStart(ctx, state) {
   ctx.textBaseline = 'middle';
 }
 
-// THE SEAL: a round red stamp — a double ring, "Victory" round the top, two stars
-// round the bottom, and the difficulty in the middle — pressed on slightly askew and
-// worn, as ink from a hand stamp is. Made once per word and kept.
+// THE SEAL: a round red stamp — a double ring, "Victory" round the top, the stars
+// earned (1 to 3) round the bottom, and the difficulty in the middle — pressed on slightly askew and
+// worn, as ink from a hand stamp is. Made once per word and star count, and kept.
 const SEAL_R = 36;
 const SEAL_INK = '#B3261E';
 const sealCache = new Map();
-function drawSeal(ctx, cx, cy, r, word) {
-  let c = sealCache.get(word);
+const SEAL_STAR_STEP = 0.5;  // radians between stars round the bottom
+function drawSeal(ctx, cx, cy, r, word, stars) {
+  const n = Math.max(1, Math.min(MAX_STARS, stars || 1));
+  const key = `${word}|${n}`;
+  let c = sealCache.get(key);
   const K = 3, P = 4, S = 2 * (r + P);
   if (!c) {
     c = document.createElement('canvas');
@@ -5800,8 +5804,9 @@ function drawSeal(ctx, cx, cy, r, word) {
       g.fillText(ch, 0, -ring);
       g.restore();
     });
-    // Two stars round the bottom.
-    for (const a of [Math.PI / 2 - 0.45, Math.PI / 2 + 0.45]) {
+    // The stars earned, round the bottom, centred on it.
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI / 2 + (i - (n - 1) / 2) * SEAL_STAR_STEP;
       const sx = Math.cos(a) * (r - 13), sy = Math.sin(a) * (r - 13);
       g.beginPath();
       for (let p = 0; p < 10; p++) {
@@ -5824,7 +5829,7 @@ function drawSeal(ctx, cx, cy, r, word) {
       g.arc(rnd() * S * K, rnd() * S * K, (0.4 + rnd() * 1.4) * K * 0.5, 0, Math.PI * 2);
       g.fill();
     }
-    sealCache.set(word, c);
+    sealCache.set(key, c);
   }
   ctx.save();
   // Laid over rather than multiplied in: on a green field a multiply turns red ink
