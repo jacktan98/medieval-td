@@ -88,29 +88,18 @@ export function boxAt(x, y) {
 // one last tapped.
 export const shownRung = state => state.upHover || state.upPick || null;
 
-// THE RUNG THE PANEL OPENS ON, at the owner's word: Eagle Eye the very first time —
+// THE RUNG THE PANEL OPENS ON, at the owner's word: Eagle Eye when the game starts —
 // so the panel is never an empty "tap one to see" — and after that whichever rung
-// was selected last, kept across closing the screen, a new game and a reload.
-// Module state rather than game state, because newGame rebuilds the latter; saved
-// like the purchases, and wrapped the same way.
-const PICK_KEY = 'medieval-td/upgrade-pick';
+// was selected last, kept across closing the screen and a new game. NOT across a
+// reload: "make the selected upgrade go back to eagle eye as default if i restart the
+// game", so it is held in memory only and starts again from the first rung.
+// Module state rather than game state, because newGame rebuilds the latter.
 const FIRST = { fam: 'archery', i: 0 };
-const pickStore = () => {
-  try { return globalThis.localStorage || null; } catch { return null; }
-};
-function loadPick() {
-  const s = pickStore();
-  try {
-    const p = s && JSON.parse(s.getItem(PICK_KEY));
-    if (p && UPGRADES[p.fam] && Number.isInteger(p.i) && UPGRADES[p.fam][p.i]) return { fam: p.fam, i: p.i };
-  } catch { /* a bad blob is the first rung */ }
-  return FIRST;
-}
-let lastPick = loadPick();
+let lastPick = FIRST;
+// A pick saved by an earlier build is dropped, so it cannot come back.
+try { globalThis.localStorage && globalThis.localStorage.removeItem('medieval-td/upgrade-pick'); } catch { /* refused */ }
 function rememberPick(rung) {
   lastPick = { fam: rung.fam, i: rung.i };
-  const s = pickStore();
-  if (s) try { s.setItem(PICK_KEY, JSON.stringify(lastPick)); } catch { /* full, or refused */ }
 }
 
 export function openUpgrades(state) {
