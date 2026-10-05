@@ -181,8 +181,9 @@ export const level17 = {
   startLives: 20,
 
   // WHAT A FIGURE CAN WALK BEHIND: the two huts, the forge's wall, its flagpole and
-  // stacked logs and pipes, and the long wall the thugs stand behind. The two
-  // torches by that wall have no grey shadow, so the splitter leaves them flat.
+  // stacked logs and pipes, the long wall the thugs stand behind, and the two torches
+  // by that wall — which stand up now that they cast the board's grey shadow, at the
+  // owner's re-export (they had been drawn with a grass board's).
   frontArt: 'front17',
   front: [
     { x:   0, y:  45, w:  58, h:  39, g:  75 },   // stands on y 75  — the plank stack
@@ -190,7 +191,9 @@ export const level17 = {
     { x: 838, y:  25, w:  77, h:  81, g:  89 },   // stands on y 89  — the right hut
     { x:   0, y:  68, w:  55, h:  37, g:  93 },   // stands on y 93  — the pipes
     { x: 701, y:  28, w:  77, h:  81, g:  93 },   // stands on y 93  — the left hut
-    { x: 243, y:  22, w:  35, h:  83, g: 102 },   // stands on y 102 — the flagpole
-    { x: 123, y: 228, w:  70, h: 166, g: 356 }    // stands on y 356 — the long wall
+    { x: 243, y:  22, w:  14, h:  83, g: 102 },   // stands on y 102 — the flagpole
+    { x: 105, y: 199, w:  13, h:  49, g: 245 },   // stands on y 245 — the upper torch
+    { x: 123, y: 228, w:  70, h: 166, g: 356 },   // stands on y 356 — the long wall
+    { x: 102, y: 354, w:  14, h:  50, g: 401 }    // stands on y 401 — the lower torch
   ]
 };
