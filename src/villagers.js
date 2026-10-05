@@ -639,6 +639,8 @@ const PLAYS = {
       // the wall, up to the top road, and down the LINK (`captainRoute`) to the bottom
       // door — the boss fight that ends the board.
       watch: [4, 8], idle: [2.5, 4],
+      // And he waits `pause` seconds once the board is clear before he sets off.
+      pause: 2,
       captainWay: [[92, 318], [88, 214]], captainRoute: 1
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Captain speaks for this camp instead —
@@ -1416,7 +1418,13 @@ function musterRound(state, vp, m, dt) {
   // road, or a tapped hut-dweller about to turn.
   const coming = slots.some(w => M[w].phase === 'charge') ||
     Object.values(vp.hollow || {}).some(c => ['still', 'house', 'into', 'arming', 'march'].includes(c.phase));
-  if (over && state.enemies.length === 0 && !coming && cap.phase === 'stand') {
+  // HE WAITS TWO SECONDS FIRST, at the owner's word — the board clear, then a beat
+  // of quiet, then he goes and says so. The wait starts again if anything comes
+  // back onto the board in the meantime.
+  const clear = over && state.enemies.length === 0 && !coming && cap.phase === 'stand';
+  if (!clear) cap.clearAt = null;
+  else if (cap.clearAt == null) cap.clearAt = vp.t;
+  if (clear && vp.t - cap.clearAt >= m.pause) {
     const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
     const j = nearestOn([level.routes[m.captainRoute]], last[0], last[1]);
     Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]],
