@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, closeBookSound, setSoundLevel } from './audio.js';
+import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -83,8 +83,8 @@ export function attachInput(canvas, state, restart) {
     // A PAGE TURNED in the encyclopedia sounds like one, and so does opening a
     // "New enemy!" or "New tower!" card.
     else if (did === 'flip') play(PAGE_FLIP);
-    // AND CLOSING THE ENCYCLOPEDIA sounds like a book shutting.
-    else if (did === 'close') closeBookSound();
+    // AND OPENING OR CLOSING THE ENCYCLOPEDIA sounds like the book doing it.
+    else if (did === 'open' || did === 'close') bookSound();
     else if (did) play(SELECT);
   });
 
@@ -229,7 +229,8 @@ export function tap(state, x, y, restart) {
     // tap that did nothing.
     if (skipReveal(state)) return true;
 
-    if (hitBookButton(state, x, y)) { openBook(state); return true; }
+    // 'open', so the book sounds rather than the click.
+    if (hitBookButton(state, x, y)) { openBook(state); return 'open'; }
 
     // THE UPGRADES SCREEN, from the world map only — beside the book there.
     if ((state.stage === null || state.stage === undefined) && hitUpgradesButton(x, y)) {

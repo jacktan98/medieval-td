@@ -256,9 +256,9 @@ const paths = {
   alert:           'assets/audio/map/Alert_sound.mp3',
   // Turning a page of the encyclopedia, in place of the click, at the owner's word.
   page_flip:       'assets/audio/map/Page_flip.mp3',
-  // Closing the encyclopedia: four book closes in one recording, cut apart — see
-  // BOOK_CLOSE.
-  book_close:      'assets/audio/map/Book_close_sound.mp3',
+  // Opening and closing the encyclopedia: four book closes in one recording, cut
+  // apart — see BOOK_CLOSE.
+  book_close:      'assets/audio/map/Book_open_close_sound.mp3',
   // A flask breaking. Its own clip rather than a quieter rock, because the two
   // land for opposite reasons: a rock is the damage arriving and a flask is the
   // damage STARTING.
@@ -1301,7 +1301,8 @@ export const MELEE_SOUND = { boulder: BOULDER_HIT };
 export const SELECT = ['select'];
 // The encyclopedia's ‹ and ›, played like the click it replaces.
 export const PAGE_FLIP = ['page_flip'];
-// THE ENCYCLOPEDIA CLOSING, at the owner's word. The recording is four separate book
+// THE ENCYCLOPEDIA OPENING AND CLOSING, at the owner's word — the same sound both
+// ways ("Book_open_close_sound"). The recording is four separate book
 // closes, about 2.4s apart; each is cut out by where it STARTS in the file, measured
 // (0.10s, 2.10s, 4.75s, 7.18s, at 2% of the loudest sample), with a hair of lead-in and
 // its tail. A close plays one of the four, never the one heard last. Category B.
@@ -1317,7 +1318,7 @@ export const PAGE_FLIP = ['page_flip'];
 export const BOOK_CLOSE = { key: 'book_close',
   closes: [[0.08, 0.62, 1.56], [2.08, 0.84, 2.41], [4.73, 0.48, 2.01], [7.16, 0.42, 2.42]] };
 let lastClose = -1;
-export function closeBookSound() {
+export function bookSound() {
   const { key, closes } = BOOK_CLOSE;
   const pick = (lastClose + 1 + Math.floor(Math.random() * (closes.length - 1))) % closes.length;
   lastClose = pick;
