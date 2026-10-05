@@ -5979,22 +5979,21 @@ const ALERT_RIM = '#C9A24A';
 const ALERT_RED = '#B3362A';
 
 // WHAT AN ALERT OR ITS CARD SHOWS. A creature, as itself; a TOWER the stage has just
-// offered, as the TOWER — its drawing (the machine on its roof with it) and its own
-// description, at the owner's word — with the numbers of the men it musters, which
-// are what the player builds it for.
+// offered, as the TOWER — its drawing (the machine on its roof with it), its own
+// description, and its Purchase Cost and Sell Value, the encyclopedia's tower card,
+// at the owner's word. A stat may carry its own name and ink as a third and fourth
+// entry; otherwise FOE_STAT_LABEL and POP_STAT_INK say.
 function newCard(id) {
   if (id && typeof id === 'object' && id.tower) {
     const def = towerNamed(id.tower);
-    if (!def) return null;
-    const e = unitEntry(def);
-    const first = [];
-    if (e.hp !== null) first.push(['stat_health', e.hp]);
-    first.push([e.attack || 'stat_damage', e.damage]);
-    if (e.range !== null) first.push(['stat_range', e.range]);
+    const fam = def && families.find(f => f.tiers.includes(def));
+    if (!fam) return null;
+    const e = towerEntry(def, fam.tiers);
     return { kind: 'tower', alert: 'New Tower!', label: 'NEW TOWER', name: def.title,
              sprite: def.sprite, trim: def.spriteTrim, pivot: def.groundFrac,
              machine: def.machine ? { def, sprite: def.machine.frames[0], trim: def.machine.trim } : null,
-             prose: TOWER_NOTES[def.name] || '', rows: [first, e.traits].filter(r => r.length) };
+             prose: TOWER_NOTES[def.name] || '',
+             rows: [[['stat_gold_cost', e.cost, 'Purchase Cost', INK], ['glyph_refund', e.refund, 'Sell Value', INK_GREEN]]] };
   }
   const d = enemyTypes[id];
   if (!d) return null;
@@ -6249,23 +6248,24 @@ function drawFoeCard(ctx, state) {
   const sx0 = ruleX + FOE_RULE_GAP;
   const top = bodyY + (bodyH - statsH) / 2;
   FOE_STATS.length = 0;
-  rows.forEach((row, r) => row.forEach(([key, value], c) => {
+  rows.forEach((row, r) => row.forEach(([key, value, name, ink], c) => {
     const x = sx0 + c * pitch;
     const y = top + r * FOE_STAT_ROW + FOE_STAT_ROW / 2;
     const { w: iw } = uiSize(key, { h: POP_STAT_H });
     drawUi(ctx, key, x + iw / 2, y, { h: POP_STAT_H });
     ctx.textAlign = 'left';
-    ctx.fillStyle = POP_STAT_INK[key] || INK;
+    ctx.fillStyle = ink || POP_STAT_INK[key] || INK;
     ctx.font = `12px ${MAP_TYPE}`;
     ctx.fillText(String(value), x + iw + 5, y);
     // The icon and its number are the target, the row's full height.
-    FOE_STATS.push({ key, x: x - 2, y: y - FOE_STAT_ROW / 2, w: entryW([key, value]) + 4, h: FOE_STAT_ROW });
+    FOE_STATS.push({ key, label: name || FOE_STAT_LABEL[key] || '', x: x - 2, y: y - FOE_STAT_ROW / 2,
+                     w: entryW([key, value]) + 4, h: FOE_STAT_ROW });
   }));
 
   // THE TIP: the icon's name in a small dark plate over it, held inside the card.
   const tip = state.foeTip !== null && state.foeTip !== undefined && FOE_STATS[state.foeTip];
   if (tip) {
-    const label = FOE_STAT_LABEL[tip.key] || '';
+    const label = tip.label;
     ctx.font = `11px ${MAP_TYPE}`;
     const lw = ctx.measureText(label).width + 14, lh = 20;
     const lx = Math.max(px + 6, Math.min(px + pw - 6 - lw, tip.x + tip.w / 2 - lw / 2));
