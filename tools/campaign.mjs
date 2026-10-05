@@ -107,6 +107,12 @@ const tailOfCampaign = (matching) => {
   return { hit, tail, ok: hit.length > 0 && hit.every((l, i) => l === tail[i]) };
 };
 
+// WHERE A CREATURE IS FIRST MET: the first board on the road that sends one. The
+// story (src/data/story.js) introduces each newcomer on a named board, and this is
+// how the wave tables are held to it.
+const sendsType = (l, type) => l.waves.some(w => w.groups.some(g => g.type === type));
+const firstSends = type => onRoad().find(l => sendsType(l, type)) || null;
+
 // --- what the drawing says today --------------------------------------------
 
 // WHICH FILES THE DRAWING IS, through the same layerFiles the tool reads it with.
@@ -1730,9 +1736,13 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
     // not the claim any more. What is: he belongs to the LAST boards of the campaign
     // and to no earlier one, and a retune that scattered him over the early ones
     // would be a different creature. See tailOfCampaign.
-    const t = tailOfCampaign(l => l.waves.some(w => w.groups.some(g => g.type === 'shadow_inf')));
-    ok(t.ok, '  and the others that send one are the last boards of the campaign',
-      t.hit.map(l => l.id).join(', ') || 'none');
+    // Serene Peak Lake now sends none, at the owner's word, so the run is no longer
+    // unbroken to the end; what holds is that no board BEFORE this one sends him.
+    const road = onRoad();
+    const hit = road.filter(l => sendsType(l, 'shadow_inf'));
+    ok(firstSends('shadow_inf') === sand,
+      '  and every other board that sends one comes after it',
+      hit.map(l => l.id).join(', ') || 'none');
   }
 
   // AND THE BOARD THAT SENDS TEN OF THEM IS THE BOARD WITH TWO WAYS TO ANSWER.
@@ -1924,143 +1934,31 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
   const iron = levels.find(l => l.id === 'm12');
   ok(!!iron, 'Ironforge Town is in the game', iron ? iron.name : 'missing');
 
+  // THE OWNER'S EIGHT WAVES. Compared in MARCH_ORDER, which is how they march.
   const WANT10 = [
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
-    '10 light_inf + 2 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '14 blocker_inf + 6 shadow_inf + 2 rally_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf + 2 tough_inf + 1 blocker_inf + 4 crow + 1 shadow_inf',
+    '10 light_inf + 4 blocker_inf + 6 crow + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 8 crow + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '6 blocker_inf + 10 crow + 2 shadow_inf + 2 heavy_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
+    '8 blocker_inf + 12 crow + 4 shadow_inf + 3 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '10 blocker_inf + 14 crow + 6 shadow_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got10.join(' | ') === WANT10.map(marched).join(' | '), 'Ironforge sends exactly the eight it was given',
     got10.map((g, i) => (g === marched(WANT10[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT10[i])})`)).join(' '));
 
-  // THE RALLY THUG SHIPS HERE AND NOWHERE ELSE, which is the thing this table is for
-  // and the thing a later retune could quietly undo from either end: take him off
-  // this board and he is a creature nothing sends again.
-  const rally = iron.waves.map(w => (w.groups.find(g => g.type === 'rally_inf') || {}).count || 0);
-  ok(rally.join(',') === '0,0,0,0,0,1,1,2',
-    'its Rally Thugs are one in each of waves 6 and 7, and two in the last',
-    rally.join(','));
-  {
-    // THE BOARDS AFTER THIS ONE SEND HIM TOO, so "nowhere else" is not the claim any
-    // more. What holds is that he belongs to the last boards of the campaign and to
-    // no earlier one.
-    const t = tailOfCampaign(l => l.waves.some(w => w.groups.some(g => g.type === 'rally_inf')));
-    ok(t.ok, '  and the others that send one are the last boards of the campaign',
-      t.hit.map(l => l.id).join(', ') || 'none');
-  }
-  // AND HE ARRIVES WHERE THE CROWD IS. His aura reaches 100px, so the waves that
-  // carry him have to be the dense ones — asked as "every wave he is in carries more
-  // bodies than every wave he is not".
-  //
-  // THE MARGIN IS NARROW NOW and the figure below says so on every run: the owner's
-  // rebalance took wave 6 from 29 bodies to 23 and left wave 5 at 21, so his thinnest
-  // wave is 2 bodies clear of the thickest without him where it used to be 5. Still
-  // the right shape, and close enough that another trim to wave 6 would invert it.
-  {
-    const bodies = iron.waves.map(w => w.groups.reduce((n, g) => n + g.count, 0));
-    const withHim = bodies.filter((_, i) => rally[i] > 0);
-    const without = bodies.filter((_, i) => rally[i] === 0);
-    ok(Math.min(...withHim) > Math.max(...without),
-      '  arriving only on waves denser than every wave without him',
-      `${Math.min(...withHim)} bodies at his thinnest against ${Math.max(...without)} at their thickest`);
-  }
+  // THE DARK CROW FIRST FLIES HERE, as the story has it: no board before this one
+  // sends a crow, and this one does from wave 3.
+  ok(firstSends('crow') === iron, 'it is the first board to send a Dark Crow',
+    (firstSends('crow') || {}).name || 'none');
+  const crows10 = iron.waves.map(w => (w.groups.find(g => g.type === 'crow') || {}).count || 0);
+  ok(crows10.every((n, i) => i === 0 || n >= crows10[i - 1]),
+    '  and its crows never come fewer than the wave before', crows10.join(' -> '));
 
-  // AND HIS AURA HAS TO CLEAR THE ROUTE SPLIT, not just the spacing.
-  //
-  // THE SPACING ALONE IS NOT THE TEST, and believing it was is what made the first
-  // version of this check worthless. An enemy's spacing is its GAP times its SPEED,
-  // and after the owner's speed pass wave 6's column is 72 to 95px apart — every type
-  // apparently inside even the 100px radius he shipped with. Played for real at 100px,
-  // with no towers on the board, he boosted NOBODY.
-  //
-  // The reason is this board. Ironforge deals 40/30/30 across three roads, so the man
-  // 80px behind him in the table is usually on a different road entirely, and the
-  // spacing arithmetic describes a column that never exists. Measured over wave 6 by
-  // the game's own spawner: 0 boosted at 100px, 3 at 150, 4 at 200.
-  //
-  // SO WHAT IS CHECKED IS THE MARGIN OVER THE SPACING, not that it merely reaches.
-  // A radius equal to the widest gap is the case that measured zero; the aura has to
-  // be far enough clear of it to catch a neighbour that is one place further back in a
-  // column dealt three ways. Half again as far is the owner's 150 against a 95px
-  // widest, and this fails if a retune brings the two back level.
-  {
-    const aura = enemyTypes.rally_inf.rally.range;
-    const withRally = iron.waves.filter(w => w.groups.some(g => g.type === 'rally_inf'));
-    const spans = withRally.flatMap(w => w.groups.map(g => ({
-      type: g.type, px: Math.round(g.gap * enemyTypes[g.type].speed)
-    })));
-    const worst = spans.reduce((a, b) => (b.px > a.px ? b : a));
-    ok(aura >= worst.px * 1.5,
-      '  and his aura reaches half again past the widest gap in his waves',
-      `${aura}px against a widest spacing of ${worst.px}px (${worst.type}) — ` +
-      `${(aura / worst.px).toFixed(2)}x`);
-    // AND HE IS THE SLOWEST THING ON THE ROAD BUT THE BOSS, which is what carries the
-    // column through his reach rather than leaving it holding station outside.
-    const road = Object.values(enemyTypes).filter(d => !d.boss && d.speed);
-    ok(road.every(d => d === enemyTypes.rally_inf || d.speed > enemyTypes.rally_inf.speed),
-      '  while he himself walks slower than all of them, so they pass through him',
-      `${enemyTypes.rally_inf.speed} against a next-slowest ${Math.min(...road
-        .filter(d => d !== enemyTypes.rally_inf).map(d => d.speed))}`);
-
-    // AND WHAT HIS AURA IS WORTH ON THIS BOARD, now that it sharpens blows rather
-    // than lending health. Wave 8 is the one to measure: it sends TWO of him, which
-    // is the first wave in the game to, and the owner's rule is that two are worth
-    // exactly what one is.
-    const last = iron.waves[iron.waves.length - 1];
-    const physical = last.groups.filter(g => typeOf(enemyTypes[g.type]) === 'physical' &&
-                                             g.type !== 'rally_inf');
-    const plain = physical.reduce((n, g) => n + g.count * enemyTypes[g.type].damage, 0);
-    const lifted = physical.reduce((n, g) =>
-      n + g.count * Math.round(enemyTypes[g.type].damage * enemyTypes.rally_inf.rally.times), 0);
-    ok(lifted > plain,
-      '  and in his last wave he can sharpen every physical striker on it',
-      `${physical.reduce((n, g) => n + g.count, 0)} of them, ${plain} damage a swing ` +
-      `between them against ${lifted} inside his reach`);
-    // THE TWO OF HIM ARE NOT WORTH TWICE ONE, at the owner's ask, and the arithmetic
-    // above is per-enemy so it cannot show that. It is checked in tools/status.mjs
-    // through the real aura pass; what is pinned HERE is only that the wave really
-    // does send two, because that is the wave-table half of the same claim.
-    const two = (last.groups.find(g => g.type === 'rally_inf') || {}).count || 0;
-    ok(two === 2, '  the first wave in the game to send two of him',
-      `${two} in wave ${iron.waves.length}`);
-  }
-
-  // NO GIANTS AT ALL, which is not a ladder going flat but a creature the owner took
-  // off the board. They climbed 0,0,0,1,2,2,4,6 when it shipped, then 0,0,0,0,1,2,2,4,
-  // and now nothing.
-  //
-  // WHAT REPLACES THEM IS THE RALLY THUG, and the two changes arrived together. A
-  // giant is a wall a player answers with damage; a Rally Thug is half again on
-  // fourteen blockers' blows, which is a threat to the SQUAD. The board's late waves
-  // are no longer about chewing through 800-point bodies, they are about a crowd that
-  // hits harder than its card says, and killing the one creature making that true.
-  //
-  // Checked as a whole-board claim rather than as a per-wave ladder, because a single
-  // giant slipping back into any wave is the thing that would undo it.
-  const giants10 = iron.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants10.every(n => n === 0), 'and it sends no Club Giants at all, on any wave',
-    giants10.join(','));
-  {
-    // AND IT IS THE FIRST BOARD SINCE STAGE 3 TO SEND NONE, which is the claim worth
-    // making and is NOT "the only one past the tutorial" — stages 2 and 3 send none
-    // either, because the giant has not been introduced yet. The interesting fact is
-    // that this one comes AFTER six boards that all send them: a player reaching
-    // Ironforge has been answering giants for the whole back half of the campaign and
-    // meets a board that has none.
-    const sends = l => l.waves.some(w => w.groups.some(g => g.type === 'heavy_inf'));
-    const road = STAGES.map(st => (st.level === null ? null : levels[st.level])).filter(Boolean);
-    const here = road.indexOf(iron);
-    const before = road.slice(0, here);
-    const lastQuiet = before.map(sends).lastIndexOf(false);
-    ok(here > 0 && !sends(iron) && before.slice(lastQuiet + 1).every(sends),
-      '  and the first board since stage ' + (lastQuiet + 1) + ' to send none',
-      `${before.length - lastQuiet - 1} board(s) in a row before it do`);
-  }
+  // AND NO RALLY THUG: he waits for Dark Hollow now.
+  ok(!sendsType(iron, 'rally_inf'), 'it sends no Rally Thug', '');
 
   ok(iron.plots.length === 9 && iron.startGold === 240 && iron.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
@@ -2229,73 +2127,33 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
 
   const WANT11 = [
     '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf + 4 crow',
+    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
+    '10 light_inf + 8 crow + 1 heavy_inf + 4 bomb_inf + 2 plague_inf + 2 dark_priest',
+    '10 crow + 2 heavy_inf + 6 bomb_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 crow + 1 shadow_inf + 2 heavy_inf + 8 bomb_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
+    '14 crow + 2 shadow_inf + 3 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '16 crow + 3 shadow_inf + 4 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got11 = fact.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got11.join(' | ') === WANT11.map(marched).join(' | '), 'the Factory sends exactly the eight it was given',
     got11.map((g, i) => (g === marched(WANT11[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT11[i])})`)).join(' '));
 
-  // IT SENDS EVERY CREATURE THE CAMPAIGN USES, which no other table does and which
-  // is what makes it a last board rather than a harder version of the one before.
-  //
-  // "THE CAMPAIGN USES" RATHER THAN "EXISTS", and that clause was bought by the
-  // Bomb Thug. The claim here was "every creature but the boss" and it was true on
-  // the day it was written; the next creature added to the game broke it without
-  // anything about the Factory changing, because a creature wired into the game is
-  // not the same thing as a creature any board sends.
-  //
-  // So the question is asked in two halves now. The first names what no table sends
-  // ANYWHERE — a report, not a failure, because a creature built ahead of the board
-  // that will use it is a normal state for this project to be in and the owner is
-  // the one who decides which waves it joins. The second is the check that still has
-  // teeth: everything the campaign DOES send, the Factory sends.
-  //
-  // AND IT IS NO LONGER THE ONLY ONE. The Castle behind it ships the same eight waves
-  // — the owner sent the same table for both boards — so "no other board does" went
-  // from true to false without a line of either level changing. It is the last-boards
-  // claim the Shadow and Rally Thugs already make, and it is made the same way.
+  // A REPORT, NOT A CHECK: any creature built that no board sends yet. A creature
+  // built ahead of the board that will use it is a normal state for this project,
+  // and the owner decides which waves it joins.
   {
-    const sent = new Set(fact.waves.flatMap(w => w.groups.map(g => g.type)));
     const road = Object.entries(enemyTypes).filter(([, d]) => !d.boss).map(([id]) => id);
     const anywhere = new Set(levels.flatMap(l => l.waves.flatMap(w => w.groups.map(g => g.type))));
     const unused = road.filter(id => !anywhere.has(id));
     console.log(`note  ${'built, and no board sends one yet'.padEnd(56)} ` +
       (unused.length ? unused.map(id => enemyTypes[id].name).join(', ') : 'none'));
-
-    const inPlay = road.filter(id => anywhere.has(id));
-
-    // AND THE SAME THING HAPPENED AGAIN, one creature later. The Bomb Thug is IN
-    // PLAY now — Serene Peak Lake sends it in five of its eight waves — and the
-    // Factory does not, because the Factory's table was written before the creature
-    // existed. "Every creature in play" went from true to false with nothing about
-    // this board changing, for the second build running.
-    //
-    // SO THE CLAIM MOVES TO WHERE IT IS LOAD-BEARING and what stays here is the part
-    // that cannot rot: whatever the Factory lacks is sent ONLY BY BOARDS AFTER IT.
-    // That still has teeth — putting the Bomb Thug into an earlier board's waves and
-    // not into the Factory's fails this line — and it stops being a claim about
-    // which creature was invented last.
-    //
-    // The whole-set claim now lives on the LAST board, in the stage 13 block below,
-    // which is where it belongs: the board at the end of the road is the one that
-    // has to show the player everything.
-    const road11 = onRoad();
-    const behind = new Set(road11.slice(0, road11.indexOf(fact) + 1)
-      .flatMap(l => l.waves.flatMap(w => w.groups.map(g => g.type))));
-    const missing = inPlay.filter(id => !sent.has(id));
-    ok(missing.every(id => !behind.has(id)),
-      '  and lacks nothing the campaign has already shown by then',
-      `${sent.size} of ${inPlay.length}` +
-      (missing.length
-        ? ` — ${missing.map(id => enemyTypes[id].name).join(', ')}, first sent after it`
-        : ''));
   }
+
+  // THE BOMB THUG FIRST RUNS HERE, as the story has it: no board before this one
+  // sends a Bomb Thug, and this one does from wave 3.
+  ok(firstSends('bomb_inf') === fact, 'it is the first board to send a Bomb Thug',
+    (firstSends('bomb_inf') || {}).name || 'none');
 
   ok(fact.plots.length === 9 && fact.startGold === 240 && fact.waves.length === 8,
     'and is nine plots, 240 gold and eight waves',
@@ -2444,13 +2302,13 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
 
   const WANT12 = [
     '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf + 4 crow',
+    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
+    '10 light_inf + 8 crow + 1 heavy_inf + 4 bomb_inf + 2 plague_inf + 2 dark_priest',
+    '10 crow + 2 heavy_inf + 6 bomb_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '12 crow + 1 shadow_inf + 2 heavy_inf + 8 bomb_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
+    '14 crow + 2 shadow_inf + 3 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
+    '16 crow + 3 shadow_inf + 4 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got12 = cast.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got12.join(' | ') === WANT12.map(marched).join(' | '), 'the Castle sends exactly the eight it was given',
@@ -2632,12 +2490,12 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
   const WANT13 = [
     '8 light_inf',
     '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 2 bomb_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 4 bomb_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 6 bomb_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 8 bomb_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '14 blocker_inf + 8 shadow_inf + 10 bomb_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf + 2 blocker_inf + 2 bomb_inf',
+    '10 light_inf + 1 heavy_inf + 4 bomb_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 1 heavy_inf + 1 boulder_giant + 6 bomb_inf + 2 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 2 heavy_inf + 2 boulder_giant + 8 bomb_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
+    '4 blocker_inf + 3 heavy_inf + 3 boulder_giant + 10 bomb_inf + 6 archer_inf + 4 plague_inf + 4 dark_priest',
+    '4 blocker_inf + 4 heavy_inf + 4 boulder_giant + 12 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest'
   ];
   const got13 = peak.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got13.join(' | ') === WANT13.map(marched).join(' | '), 'the Lake sends exactly the eight it was given',
@@ -2647,32 +2505,22 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     'and is nine plots, 240 gold and eight waves',
     `${peak.plots.length} plots, ${peak.startGold} gold, ${peak.waves.length} waves`);
 
-  // --- AND IT IS THE BOARD THAT SENDS EVERYTHING ---------------------------------
-  //
-  // THE CLAIM THE FACTORY USED TO MAKE, moved to where it holds. It sat in the
-  // stage 11 block for two builds and broke twice without that board changing a
-  // line, because each new creature was in play the moment some board sent it and
-  // the Factory's table was already written. The board at the END of the road is the
-  // one that has to show the player everything, so that is where the whole-set
-  // question is asked — and the day a creature is added it fails HERE, which is the
-  // table that ought to gain it.
+  // THE BOULDER GIANT FIRST THROWS HERE, as the story has it: no board before this
+  // one sends him, and this one does from wave 5, beside the Club Giant.
+  ok(firstSends('boulder_giant') === peak, 'it is the first board to send a Boulder Giant',
+    (firstSends('boulder_giant') || {}).name || 'none');
+
+  // AND THE GIANTS WALK OUT AHEAD OF THE BOMB THUGS, at the owner's word, in every
+  // wave that sends both.
   {
-    const road13 = Object.entries(enemyTypes).filter(([, d]) => !d.boss).map(([id]) => id);
-    const anywhere = new Set(levels.flatMap(l => l.waves.flatMap(w => w.groups.map(g => g.type))));
-    const inPlay = road13.filter(id => anywhere.has(id));
-    const sent = new Set(peak.waves.flatMap(w => w.groups.map(g => g.type)));
-    const missing = inPlay.filter(id => !sent.has(id));
-    ok(!missing.length, '  and its table sends every creature in play',
-      `${sent.size} of ${inPlay.length}` +
-      (missing.length ? ` — missing ${missing.map(id => enemyTypes[id].name).join(', ')}` : ''));
-    // AND IT IS THE ONLY ONE THAT DOES, for now. This was "the last of the campaign"
-    // until Dark Hollow Woods came after it with a TESTING table, at the owner's word,
-    // which is the Castle's eight waves and so sends no Bomb Thug. When Dark Hollow
-    // gets its real table this may well go back to being a tail.
-    const all = onRoad().filter(l =>
-      inPlay.every(id => l.waves.some(w => w.groups.some(g => g.type === id))));
-    ok(all.length === 1 && all[0] === peak, '  and it is the one board on the road that does',
-      all.map(l => l.id).join(', ') || 'none');
+    const late = peak.waves.map((w, i) => {
+      const at = t => w.groups.findIndex(g => g.type === t);
+      const bomb = at('bomb_inf');
+      const giants = ['heavy_inf', 'boulder_giant'].map(at).filter(n => n >= 0);
+      return bomb >= 0 && giants.some(n => n > bomb) ? i + 1 : null;
+    }).filter(Boolean);
+    ok(!late.length, '  and its giants march ahead of its Bomb Thugs',
+      late.length ? `out of order in wave ${late.join(', ')}` : 'giants first in every wave with both');
   }
 
   // --- nothing held back ---------------------------------------------------------

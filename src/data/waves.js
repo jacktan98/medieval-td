@@ -2942,275 +2942,198 @@ export const stage9Waves = [
                        { type: 'plague_inf', count: 4, gap: 1.8 }, { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
-// STAGE 10: Ironforge Town, and the board the Rally Thug walks onto.
+// STAGES 10 TO 13, at the owner's word, creature for creature and count for count.
+// Each wave marches in MARCH_ORDER — the order the admin panel lists them in — so
+// the giants walk out ahead of the Bomb Thugs, which is the owner's "giants out
+// first before bomb thugs". tools/admin.mjs checks every table keeps that order.
 //
-// HE SHIPS HERE AND NOWHERE ELSE, exactly as the Shadow Thug shipped on the desert
-// and for the same reason: a creature nothing sends is a creature no player meets.
-// One in wave 6, one in wave 7, and TWO in wave 8 — the first wave in the game to
-// send a second, which it can now that the aura no longer lends health. Two of him
-// used to be pointless (an enemy could be boosted once in its life, so the second
-// one had nothing left to give); two of him now means two patches of road where the
-// crowd hits half again as hard, and if the two happen to walk within reach of each
-// other they sharpen EACH OTHER as well — the owner's "rally thugs can boost each
-// other too but only 1 boost at a time". What standing them together does NOT buy is
-// a bigger boost for anything: one mark, x1.5, however many auras overlap.
+// WHAT EACH BOARD INTRODUCES, following the story (src/data/story.js): the Dark
+// Crow at Ironforge Town, the Bomb Thug at Ironforge Factory, and the Boulder Giant
+// at Serene Peak Lake. The Rally Thug has left all four; he waits for Dark Hollow.
 //
-// WHAT HE DOES CHANGED ENTIRELY. He lent a fifth of an enemy's own health; he now
-// puts half again on the ATTACK of every physical striker near him — "No more health
-// boost but for those enemies that deals physical damage is boosted by 50% on their
-// attack damage." That turns him from a creature who makes a wave take longer to
-// kill into one who makes it kill faster, which is a threat to the SQUAD rather than
-// to the clock, and it is answered by killing him rather than by out-damaging him.
-//
-// AND THE GIANTS CAME OFF THE BOARD IN THE SAME PASS. They were 0,0,0,1,2,2,4,6 when
-// this shipped, then 0,0,0,0,1,2,2,4, and now there are none at all — the first board
-// since stage 3 to send none, after six in a row that do. The two changes are one
-// decision: a giant is a wall you answer with damage, and this board's back half is
-// now about fourteen blockers striking for 15 apiece instead of 10, which is a
-// different question. What the player must kill has moved from the biggest body on
-// the road to the one making the rest dangerous.
-//
-// 150px IS THE RADIUS AT WHICH HE WORKS ON THIS BOARD AT ALL, and that was measured
-// before the aura changed — the reach is the reach whatever it carries. Wave 6 sent
-// down Ironforge by the game's own spawner, no towers and no soldiers, so nothing
-// bunches the column but the road itself; how many of its other bodies came within
-// reach at some point:
-//
-//   100px   0        the radius he shipped with
-//   150px   3        the owner's, and 3 of them in reach at once
-//   200px   4
-//
-// ZERO IS THE NUMBER TO UNDERSTAND. Spacing on a road is a gap in seconds times a
-// speed, and after the speed pass wave 6's column is 72 to 95px apart — every type
-// apparently inside a 100px reach. It still reached nobody, and the reason is THIS
-// BOARD: Ironforge has three doors and `routeMix` deals 40/30/30, so the man walking
-// beside him in the TABLE is usually on another road entirely. See data/level12.js.
-// The arithmetic says the aura reaches; the deal says there is often nothing there to
-// reach.
-//
-// So 150 is not "half again as much aura", it is the difference between a creature
-// who does something here and one who does not. The counts here are the owner's and
-// the two facts still pull against each other on purpose — a wave split three ways is
-// a wave that bunches less — but at 150 he wins that argument often enough to matter.
-//
-// THE SHADOW THUG COMES TOO, at 1, 1, 2, 4, 6, 6 — flatter than Sandshroud's 1, 2, 2,
-// 4, 6, 10, and flat at the top now that the last two waves both send six.
+// THE GAPS ARE THE LADDERS THE SHIPPED TABLES ALREADY USED, a type's gap
+// tightening as the waves go on, so wave N of one board sends a type at the rate
+// wave N of the next one does. The two newcomers with no ladder of their own: the
+// crow from 1.2s down to 0.8 — a flock, light and quick, that should arrive as one
+// — and the Boulder Giant on the Club Giant's 2.0 to 1.7, the two giants together.
 //
 // Every gap is a multiple of 0.1, because the admin panel's rate stepper rounds to a
 // tenth and a shipped number it cannot return to is one the owner can never put back.
+
+// STAGE 10: Ironforge Town, where the Dark Crow first flies.
 export const stage10Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.6 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'shadow_inf', count: 1, gap: 1.8 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 },
-                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
-                       { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'archer_inf', count: 6, gap: 1.2 },
-                       { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
-                       { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 },
-                       { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
-                       { type: 'shadow_inf', count: 6, gap: 1.5 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 },
-                       { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
-];
-
-// STAGE 11: Ironforge Factory, the board at the end of the road.
-//
-// IT SENDS EVERYTHING. Nine of the ten creatures in the game walk this board — every
-// one but the boss — and it is the only table that does. Ironforge Town took the
-// giants off; the Factory puts them back and keeps everything the Town had, which is
-// what makes it a last board rather than a harder version of the one before.
-//
-// THE GIANTS ARE THE TABLE'S SPINE, at 0,0,0,1,2,2,4,6, which is the ladder the Town
-// shipped with before the owner stripped it. 6 giants in the last wave is 4,800
-// points of health in six bodies, against 3,500 spread over fourteen blockers beside
-// them — so the last wave asks two different questions at once and a board answering
-// only one of them leaks.
-//
-// AND ONE RALLY THUG FROM WAVE 6, not two. The Town's last wave sends a pair; this
-// one does not, and the reason is what else is on the road. Half again on the blow of
-// six giants is 60 a swing rather than 40, and a second aura would add nothing to
-// that — the boost does not compound — while a second body would. One is the number
-// that makes the giants hurt; two would just be another 350-point creature.
-//
-// Every gap is a multiple of 0.1, because the admin panel's rate stepper rounds to a
-// tenth and a shipped number it cannot return to is one the owner can never put back.
-export const stage11Waves = [
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
-                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
-                       { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 },
-                       { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
-                       { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 },
-                       { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
-                       { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 },
-                       { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
-];
-
-// STAGE 12: Ironforge Castle, and the table is the Factory's, wave for wave.
-//
-// THAT IS NOT A SHORTCUT AND IT IS WORTH SAYING PLAINLY: the owner sent the same
-// eight waves for both boards, counts and creatures identical down to the single
-// Rally Thug from wave 6. Nothing was copied from the Factory in the sense of a
-// decision being reused — two asks arrived and they happened to be the same ask.
-//
-// SO WHY A SECOND ARRAY RATHER THAN `export const stage12Waves = stage11Waves`.
-// Because they are equal today and not the same thing. These are two boards with
-// different roads and different shapes, and the first retune of either one has to
-// be able to land on one of them. A shared reference would make "make stage 11's
-// last wave harder" quietly mean both, and the failure would be a board nobody
-// edited playing differently — which is the exact class of bug this file's notes
-// keep warning about, pointed the other way.
-//
-// WHAT IS DIFFERENT IS THE BOARD UNDER IT, and that is a lot. The Factory sends
-// these eight down four routes over three mouths and three doors; the Castle sends
-// them down four routes over three mouths and TWO, with the shares decided at the
-// entry end — see routeMix in src/data/level14.js. The same wave arrives split
-// differently and leaves by different doors, so the two tables being equal does
-// not make the two boards equal.
-//
-// Every gap is a multiple of 0.1, for the reason the Factory's note gives: the
-// admin panel's rate stepper rounds to a tenth and a shipped number it cannot
-// return to is one the owner can never put back.
-export const stage12Waves = [
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
-                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
-                       { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 },
-                       { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
-                       { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 },
-                       { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
-                       { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 },
-                       { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
-];
-
-// STAGE 13: Serene Peak Lake, and the first shipped table that sends a Bomb Thug.
-//
-// He has been in the game for two boards without a wave to walk in — tools/campaign
-// printed "built, and no board sends one yet" every run — and this is where he
-// arrives. 2, 4, 6, 8, 10 across waves 4 to 8, which is the steepest ramp any
-// creature has: the Shadow Thug's is 1,2,4,6,8 and the Giant's 1,2,2,4,6.
-//
-// WHAT THAT DOES TO THE BOARD is the point of him rather than a side effect. Ten
-// Bomb Thugs in the last wave is 1,200 damage looking for a squad, delivered 120 at
-// a time to everybody inside 100px — so a barracks line that holds the other
-// fourteen blockers is a barracks line that is deleted five times over. He is the
-// creature that makes a wall stop being the answer, and he lands on the board that
-// finally lets the player build every tower in the game.
-//
-// EVERYTHING ELSE IS THE CASTLE'S TABLE, wave for wave, which is itself the
-// Factory's. Three boards now ship the same eight waves with one creature threaded
-// through the last five of this one — so the difference between the end of the
-// campaign's three hardest boards is the roads under them and, here, the bombs.
-//
-// They arrive at 1.9s and then quicken to 1.4, which is slower than the blockers
-// beside them on purpose: a column of bombs is a column of separate problems, and
-// two arriving together is two blasts on one line rather than one.
-//
-// Every gap is a multiple of 0.1, for the reason the Factory's note gives: the admin
-// panel's rate stepper rounds to a tenth and a shipped number it cannot return to is
-// one the owner can never put back.
-export const stage13Waves = [
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'tough_inf', count: 2, gap: 1.6 },
+                       { type: 'blocker_inf', count: 1, gap: 1.7 },
+                       { type: 'crow', count: 4, gap: 1.2 },
+                       { type: 'shadow_inf', count: 1, gap: 1.8 }] },
   { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
                        { type: 'blocker_inf', count: 4, gap: 1.7 },
+                       { type: 'crow', count: 6, gap: 1.1 },
                        { type: 'shadow_inf', count: 1, gap: 1.8 },
-                       { type: 'heavy_inf', count: 1, gap: 2.0 }, { type: 'bomb_inf', count: 2, gap: 1.9 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
                        { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 },
-                       { type: 'blocker_inf', count: 6, gap: 1.6 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 },
+                       { type: 'crow', count: 8, gap: 1.0 },
                        { type: 'shadow_inf', count: 2, gap: 1.8 },
-                       { type: 'heavy_inf', count: 2, gap: 2.0 }, { type: 'bomb_inf', count: 4, gap: 1.8 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 },
                        { type: 'archer_inf', count: 4, gap: 1.3 },
                        { type: 'plague_inf', count: 2, gap: 2.0 },
                        { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
-                       { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'heavy_inf', count: 2, gap: 1.9 }, { type: 'bomb_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 6, gap: 1.6 },
+                       { type: 'crow', count: 10, gap: 0.9 },
+                       { type: 'shadow_inf', count: 2, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'archer_inf', count: 6, gap: 1.2 },
                        { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
-                       { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'heavy_inf', count: 4, gap: 1.8 }, { type: 'bomb_inf', count: 8, gap: 1.5 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.4 },
+                       { type: 'crow', count: 12, gap: 0.8 },
+                       { type: 'shadow_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 3, gap: 1.8 },
                        { type: 'archer_inf', count: 8, gap: 1.1 },
                        { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
-                       { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'heavy_inf', count: 6, gap: 1.7 }, { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.3 },
+                       { type: 'crow', count: 14, gap: 0.8 },
+                       { type: 'shadow_inf', count: 6, gap: 1.5 },
+                       { type: 'heavy_inf', count: 4, gap: 1.7 },
                        { type: 'archer_inf', count: 10, gap: 1.0 },
                        { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
+// STAGE 11: Ironforge Factory, where the Bomb Thug first runs.
+export const stage11Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'crow', count: 6, gap: 1.2 },
+                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'crow', count: 8, gap: 1.1 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 4, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'bomb_inf', count: 6, gap: 1.8 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
+                       { type: 'shadow_inf', count: 1, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'bomb_inf', count: 8, gap: 1.7 },
+                       { type: 'archer_inf', count: 6, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.6 },
+                       { type: 'heavy_inf', count: 3, gap: 1.8 },
+                       { type: 'bomb_inf', count: 10, gap: 1.5 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
+                       { type: 'shadow_inf', count: 3, gap: 1.5 },
+                       { type: 'heavy_inf', count: 4, gap: 1.7 },
+                       { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'archer_inf', count: 8, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
+// STAGE 12: Ironforge Castle. The owner's list is the Factory's exactly, wave for
+// wave; a second array all the same, so the first retune of either lands on one
+// board rather than quietly on both.
+export const stage12Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'crow', count: 6, gap: 1.2 },
+                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'crow', count: 8, gap: 1.1 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 4, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
+                       { type: 'heavy_inf', count: 2, gap: 2.0 },
+                       { type: 'bomb_inf', count: 6, gap: 1.8 },
+                       { type: 'archer_inf', count: 4, gap: 1.3 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
+                       { type: 'shadow_inf', count: 1, gap: 1.7 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'bomb_inf', count: 8, gap: 1.7 },
+                       { type: 'archer_inf', count: 6, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.6 },
+                       { type: 'heavy_inf', count: 3, gap: 1.8 },
+                       { type: 'bomb_inf', count: 10, gap: 1.5 },
+                       { type: 'archer_inf', count: 8, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
+                       { type: 'shadow_inf', count: 3, gap: 1.5 },
+                       { type: 'heavy_inf', count: 4, gap: 1.7 },
+                       { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'archer_inf', count: 8, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
+];
+
+// STAGE 13: Serene Peak Lake, where the Boulder Giant first throws.
+export const stage13Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 4, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'boulder_giant', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 6, gap: 1.8 },
+                       { type: 'archer_inf', count: 2, gap: 1.3 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.6 },
+                       { type: 'heavy_inf', count: 2, gap: 1.9 },
+                       { type: 'boulder_giant', count: 2, gap: 1.9 },
+                       { type: 'bomb_inf', count: 8, gap: 1.7 },
+                       { type: 'archer_inf', count: 4, gap: 1.2 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.4 },
+                       { type: 'heavy_inf', count: 3, gap: 1.8 },
+                       { type: 'boulder_giant', count: 3, gap: 1.8 },
+                       { type: 'bomb_inf', count: 10, gap: 1.5 },
+                       { type: 'archer_inf', count: 6, gap: 1.1 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.3 },
+                       { type: 'heavy_inf', count: 4, gap: 1.7 },
+                       { type: 'boulder_giant', count: 4, gap: 1.7 },
+                       { type: 'bomb_inf', count: 12, gap: 1.4 },
+                       { type: 'archer_inf', count: 8, gap: 1.0 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
 // STAGE 14: Dark Hollow Woods, and a TESTING table, at the owner's word: "Use this
