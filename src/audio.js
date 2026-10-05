@@ -252,6 +252,8 @@ const paths = {
   // Buying a star upgrade on the Upgrades screen. The fourth money noise, and the
   // one that spends stars rather than gold.
   purchase:        'assets/audio/map/Purchase_sound.mp3',
+  // A "New enemy!" or "New tower!" alert going up under the gold, at the owner's word.
+  alert:           'assets/audio/map/Alert_sound.mp3',
   // Turning a page of the encyclopedia, in place of the click, at the owner's word.
   page_flip:       'assets/audio/map/Page_flip.mp3',
   // A flask breaking. Its own clip rather than a quieter rock, because the two
@@ -878,6 +880,8 @@ export const GAIN = {
   // Buying a star upgrade: 90% of a voice, at the owner's word (it was 70%). On the
   // voice bus through solo(), like selling, so the trim is the share. Measured.
   purchase: 0.9,
+  // The alert: beside the purchase chime, a step under a voice line.
+  alert: 0.9,
   star: 0.8,
   arrow_shot: 0.889,
   captain_picked: 0.927,
@@ -1017,7 +1021,10 @@ export const CUE = {
   // nobody left in the tower to say anything.
   sell:         ['sell'],
   // Buying a star upgrade, on the same terms: Category A, always with priority.
-  purchase:     ['purchase']
+  purchase:     ['purchase'],
+  // An alert going up — a creature or a tower never seen before. Played with
+  // insist(), like the purchase: it is the game asking to be looked at.
+  alert:        ['alert']
 };
 
 // Category B — the battle underneath, on its own bus, every time it happens.

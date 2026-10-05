@@ -1,5 +1,5 @@
 import { loadArt, ensureBoard, boardReady } from './assets.js';
-import { loadAudio, fanfare, setLoop, VICTORY, LOST, STAR } from './audio.js';
+import { loadAudio, fanfare, setLoop, insist, CUE, VICTORY, LOST, STAR } from './audio.js';
 import { level, levels } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
@@ -25,6 +25,9 @@ import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { canvasScale } from './data/ui.js';
+
+// HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
+const TOWER_ALERT_DELAY = 1;
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -262,8 +265,10 @@ function newGame() {
     // unopened goes with the game it was raised in. See src/newfoe.js.
     foeAlerts: [],
     foeCard: null,
-    // Whether this game's stage has had its towers noticed yet — see noticeTowers.
+    // Whether this game's stage has had its towers noticed yet — see noticeTowers —
+    // and the game seconds still to wait before it does.
     towersNoticed: false,
+    towerWait: TOWER_ALERT_DELAY,
     // Which of the card's stat icons is showing its name, or null.
     foeTip: null,
     // THE UPGRADES SCREEN, opened from the world map: whether it is up, the rung
@@ -494,13 +499,20 @@ function step(state, dt) {
     }
     state.villagerPlay.turned = null;
   }
-  // THE TOWERS THIS STAGE OFFERS, on its first step — the moment it starts — so a
-  // tower never offered before raises its alert ahead of any creature's.
-  if (!state.towersNoticed) { state.towersNoticed = true; noticeTowers(state, level); }
+  const alerts = (state.foeAlerts || []).length;
+  // THE TOWERS THIS STAGE OFFERS, a second after it starts — not on its first frame,
+  // at the owner's word, so the player has the board in front of them and sees the
+  // alert arrive.
+  if (!state.towersNoticed) {
+    state.towerWait -= dt;
+    if (state.towerWait <= 0) { state.towersNoticed = true; noticeTowers(state, level); }
+  }
   // AFTER EVERYTHING THAT CAN PUT A CREATURE ON THE BOARD — the waves above and
   // the villagers turning just now — so one met for the first time raises its
   // alert on the step it arrives.
   noticeFoes(state);
+  // AND THE ALERT SOUNDS as one goes up — once, however many arrive together.
+  if ((state.foeAlerts || []).length > alerts) insist(CUE.alert);
   if (state.lives <= 0) state.result = 'lost';
 }
 
