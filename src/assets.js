@@ -540,6 +540,9 @@ export const paths = {
   captain_pause_self:    'assets/bosses/Captain_Thug_Pause_Self.png',
   captain_pause_weapons: 'assets/bosses/Captain_Thug_Pause_Weapons.png',
   captain_mend:    'assets/bosses/Captain_Thug_Heal.png',
+  // STANDING WATCH at stage 15's camp wall, his sword lowered: the pose he drops
+  // into now and then while he watches his men. See `captain` in src/villagers.js.
+  captain_idle:    'assets/bosses/Captain_Thug_Idle.png',
   captain_raged:   'assets/bosses/Captain_Thug_Enraged_Default.png',
   captain_rage_swing: 'assets/bosses/Captain_Thug_Enraged_Attack.png',
   captain_fall:    'assets/bosses/Captain_Thug_Before_Dying.png',

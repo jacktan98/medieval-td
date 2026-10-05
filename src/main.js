@@ -485,7 +485,7 @@ function step(state, dt) {
   // a Thug or a Tough Thug where each one stands. See hollowRound in src/villagers.js.
   if (state.villagerPlay && state.villagerPlay.turned) {
     for (const t of state.villagerPlay.turned) {
-      const e = spawn(state, t.type, { route: t.route, s: t.s });
+      const e = spawn(state, t.type, { route: t.route, s: t.s, quiet: t.quiet });
       // A player who had him selected now has the creature selected.
       const sel = state.selected;
       if (sel && sel.kind === 'villager' && sel.ref === state.villagers[t.who]) state.selected = { kind: 'enemy', ref: e };

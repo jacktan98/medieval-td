@@ -14,7 +14,7 @@
 // is gone properly — a half-removed feature leaves the machinery that broke the
 // board in place with nothing calling it.
 import { readFileSync } from 'fs';
-import { levels } from '../src/level.js';
+import { levels, useLevel } from '../src/level.js';
 import { allGroups, bounds, MAP_SCALE, readArtwork, shapesByFill } from './svg.mjs';
 import { makeVillagers, updateVillagers, VILLAGER, TAP_PAD, VILLAGER_H } from '../src/villagers.js';
 import { pickFigure, selectionInfo, validate, VILLAGER_MID } from '../src/select.js';
@@ -357,6 +357,59 @@ console.log('\nThe box carrier\n');
   ok(seen.carry && seen.toss && seen.boxes, 'carries a box, tosses it, and it flies', `${seen.toss} frames tossing`);
   ok(seen.left < 680, 'as far as the crates by the barricade', `${seen.left.toFixed(0)}px`);
   ok(seen.right > 955 && seen.gone && seen.back >= 2, 'off the right edge and back, again and again', `${seen.back} return(s)`);
+}
+
+// --- stage 15's Captain ------------------------------------------------------------
+
+console.log('\nStage 15, the Captain at the camp wall\n');
+
+{
+  // THE OWNER'S WORDS: he stands at the wall's corner and watches his men, now and
+  // then in his Idle drawing; he walks out only when every enemy is dead, up to the
+  // top road and across the link to the bottom door; and the board is not won until
+  // he is.
+  const level = levels.find(l => l.villagerPlay === 'quarters');
+  useLevel(levels.indexOf(level));
+  const waves = level.waves.map(w => ({ ...w }));
+  const state = { villagers: [], enemies: [], lives: level.startLives, waves, waveIndex: 0, spawned: 0, resting: false };
+  makeVillagers(state, level);
+  const cap = state.villagers[10];
+  const home = level.villagers[10];
+  const poses = new Set();
+  for (let i = 0; i < 60 * 30; i++) {
+    updateVillagers(state, 1 / 30);
+    if (!cap.hidden && cap.x === home.x) poses.add(cap.lookPose || 'default');
+  }
+  const vp = state.villagerPlay;
+  ok(cap.lookType === 'captain_thug' && vp.muster[10].phase === 'stand',
+    'the Captain walks in and stands at the wall\'s corner', `${cap.lookType}, ${vp.muster[10].phase}`);
+  ok(poses.has('default') && poses.has('idle'), '  watching his men, now and then in his Idle drawing',
+    [...poses].join(' and '));
+  ok(vp.holdWin === true, '  and while he stands there the board cannot be won', `holdWin ${vp.holdWin}`);
+
+  // An enemy still on the road at the end: he stays.
+  state.waveIndex = waves.length;
+  state.enemies = [{ def: {}, hp: 1 }];
+  for (let i = 0; i < 30; i++) updateVillagers(state, 1 / 30);
+  ok(vp.muster[10].phase === 'stand', '  he does not walk out while an enemy is alive', vp.muster[10].phase);
+
+  // The field clear: out he goes, onto the link.
+  state.enemies = [];
+  let turned = null;
+  for (let i = 0; i < 60 * 30 && !turned; i++) {
+    updateVillagers(state, 1 / 30);
+    turned = (vp.turned || []).find(t => t.who === 10) || null;
+  }
+  const link = level.routes[1].pts;
+  ok(!!turned && turned.type === 'captain_thug' && turned.route === 1,
+    '  once every enemy is dead he walks out, onto the link road',
+    turned ? `${turned.type} on route ${turned.route}` : 'never left');
+  ok(link[0].y < 270 && link[link.length - 1].y > 270,
+    '  which runs from the top road down to the bottom door',
+    `in at y ${link[0].y}, out at y ${link[link.length - 1].y}`);
+  ok(vp.holdWin === false && turned && turned.quiet,
+    '  the board can be won from then, and he steps on without a second entrance line',
+    `holdWin ${vp.holdWin}, quiet ${turned && turned.quiet}`);
 }
 
 console.log(bad ? `\n${bad} check(s) failed.` : '\nThe village is where it was.');

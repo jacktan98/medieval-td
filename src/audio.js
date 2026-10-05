@@ -527,8 +527,6 @@ const paths = {
   // And stage 14's, where the village is the enemy's: "get rid of these intruders,
   // brothers!"
   villager_intruders: 'assets/audio/villagers/Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3',
-  // And stage 15's: "you are on forbidden ground!"
-  villager_forbidden: 'assets/audio/villagers/Villager_enemy_say_you_are_on_forbidden_ground.mp3',
   flag_waving:     'assets/audio/map/Flag_waving.mp3',
   bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
   // THE BOARDS' OWN SOUNDS, stages 1 to 5. Fire and river LOOP for as long as the
@@ -1113,7 +1111,8 @@ export const VILLAGER_WAVE = {
   here:  ['villager_here_they_come'],
   runnn: ['villager_runnn'],
   intruders: ['villager_intruders'],
-  forbidden: ['villager_forbidden']
+  // Stage 15's is the Captain's own, from the camp wall: Captain_Thug_enters.
+  captain: ['captain_enters']
 };
 // Something the villagers throw landing — a plank on the stack, a part on the
 // ballista, a box on the crates. Category B, soft (its GAIN): a working

@@ -2674,7 +2674,7 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
 console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their own doors ---\n');
 
 // THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 300 gold,
-// no cap, eight testing waves, 50/50 — and "enemies who enter the left middle will
+// no cap, eight waves, 50/50 — and "enemies who enter the left middle will
 // exit only at right middle road. Enemies that enter the left bottom will exit only
 // at right bottom road."
 {
@@ -2683,17 +2683,21 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
 
   const WANT14 = [
     '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 tough_inf + 6 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 shadow_inf + 1 rally_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 blocker_inf + 6 shadow_inf + 1 rally_inf + 4 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '14 blocker_inf + 8 shadow_inf + 1 rally_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf + 4 crow',
+    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
+    '10 light_inf + 8 crow + 4 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
+    '10 crow + 1 heavy_inf + 1 boulder_giant + 6 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
+    '12 crow + 1 shadow_inf + 1 heavy_inf + 1 boulder_giant + 8 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
+    '14 crow + 2 shadow_inf + 2 heavy_inf + 2 boulder_giant + 10 bomb_inf + 4 plague_inf + 4 dark_priest + 2 rally_inf',
+    '16 crow + 2 shadow_inf + 3 heavy_inf + 3 boulder_giant + 10 bomb_inf + 4 plague_inf + 4 dark_priest + 2 rally_inf'
   ];
   const got14 = hollow.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got14.join(' | ') === WANT14.map(marched).join(' | '), 'the Hollow sends exactly the eight it was given',
     got14.map((g, i) => (g === marched(WANT14[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT14[i])})`)).join(' '));
+
+  // THE RALLY THUG FIRST RAISES HIS BANNER HERE, as the story has it.
+  ok(firstSends('rally_inf') === hollow, 'it is the first board to send a Rally Thug',
+    (firstSends('rally_inf') || {}).name || 'none');
 
   ok(hollow.plots.length === 9 && hollow.startGold === 300 && hollow.waves.length === 8 &&
      !(hollow.prebuilt || []).length && hollow.maxTier === undefined && hollow.allow === undefined,
@@ -2716,7 +2720,7 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
 console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link between them ---\n');
 
 // THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 300 gold, no
-// cap, the same eight testing waves as Dark Hollow Woods — and "60% of the enemies
+// cap, the same eight waves as Dark Hollow Woods — and "60% of the enemies
 // will enter left top. 40% will exit right top road. 20% will cross the road path in
 // between to exit right bottom road. 40% of the enemies will enter left bottom and
 // will exit right bottom road."
@@ -2727,7 +2731,7 @@ console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link betwee
 
   const table = l => l.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ')).join(' | ');
   ok(table(quarters) === table(woods) && quarters.waves !== woods.waves,
-    'it sends the eight testing waves it was given — Dark Hollow Woods\' list, in its own array',
+    'it sends the eight waves it was given — Dark Hollow Woods\' list, in its own array',
     `${quarters.waves.length} waves`);
 
   ok(quarters.plots.length === 9 && quarters.startGold === 300 && quarters.waves.length === 8 &&

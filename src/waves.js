@@ -30,7 +30,10 @@ function groupAt(wave, spawned) {
 export function updateWaves(state, dt) {
   const waves = state.waves;
   if (state.waveIndex >= waves.length) {
-    if (state.enemies.length === 0 && state.result === null) state.result = 'won';
+    // NOT WHILE A BOSS IS STILL TO COME: stage 15's Captain walks out from the camp
+    // wall only once the board is clear, and the game is won by killing him.
+    const held = state.villagerPlay && state.villagerPlay.holdWin;
+    if (state.enemies.length === 0 && state.result === null && !held) state.result = 'won';
     return;
   }
 

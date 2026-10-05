@@ -776,7 +776,8 @@ function drawStatus(ctx, state) {
     ctx.save();
     if (unseen(e)) ctx.globalAlpha *= UNSEEN;
     const top = e.y - artHeight(e.def, e) - 4;
-    healthBar(ctx, e.x, top, e.def.r, e.hp / e.maxHp);
+    if (e.def.boss) bossBar(ctx, e.x, top - 3, e.hp / e.maxHp);
+    else healthBar(ctx, e.x, top, e.def.r, e.hp / e.maxHp);
     statusMarks(ctx, e, e.x, top);
     ctx.restore();
   }
@@ -1858,7 +1859,11 @@ function drawVillager(ctx, state, v, layer = null) {
 // it: the Thug's, the Tough Thug's or the Archer Thug's own Default drawing (`lookType`), stood on his anchor and
 // mirrored when he faces right (the drawings face left, as every villager's does).
 function drawLookingThug(ctx, v) {
-  const d = enemyTypes[v.lookType || 'light_inf'];
+  const type = enemyTypes[v.lookType || 'light_inf'];
+  // A POSE OF HIS OWN when he has one to stand in — stage 15's Captain, Idle at his
+  // watch (`lookPose`, src/villagers.js).
+  const pose = v.lookPose && type[v.lookPose];
+  const d = pose ? { sprite: pose.sprite, spriteTrim: pose.trim, pivot: pose.pivot } : type;
   const img = art[d.sprite];
   if (!img) return;
   const [sx, sy, sw, sh] = d.spriteTrim;
@@ -3650,6 +3655,32 @@ function healthBar(ctx, x, y, r, pct) {
   ctx.fillRect(x - w / 2, y, w, 4);
   ctx.fillStyle = pct > 0.5 ? '#6BBF59' : '#D4453A';
   ctx.fillRect(x - w / 2 + 1, y + 1, (w - 2) * Math.max(0, pct), 2);
+}
+
+// A BOSS'S BAR, MORE OBVIOUS at the owner's word: always shown, even full, more than
+// twice an ordinary bar's width and twice its height, on a dark plate with a cream
+// rim, filled crimson — so the one creature the board is about can be found and
+// read at a glance in a crowd.
+const BOSS_BAR = { w: 48, h: 8 };
+function bossBar(ctx, x, y, pct) {
+  const { w, h } = BOSS_BAR, x0 = x - w / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x0 - 1, y - 1, w + 2, h + 2, 3);
+  ctx.fillStyle = 'rgba(20,16,12,0.9)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,239,212,0.9)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  const fill = (w - 2) * Math.max(0, Math.min(1, pct));
+  if (fill > 0) {
+    const g = ctx.createLinearGradient(0, y + 1, 0, y + h - 1);
+    g.addColorStop(0, '#F0584A');
+    g.addColorStop(1, '#A81F16');
+    ctx.fillStyle = g;
+    ctx.fillRect(x0 + 1, y + 1, fill, h - 2);
+  }
+  ctx.restore();
 }
 
 // Soldiers stay upright and only mirror, same as the gunners — the art is

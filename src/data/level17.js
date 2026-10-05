@@ -114,16 +114,17 @@ export const level17 = {
     { x: 100.3, y: 110.0, w: 19, down: 9 },
     // 3-10, the eight thugs behind the long wall, in two files: the back line on the
     // left (3, 5, 7, 9) and the front line nearer the wall (4, 6, 8, 10).
-    { x:  57.6, y: 269.1 },
-    { x:  89.3, y: 273.8 },
-    { x:  49.8, y: 301.1 },
-    { x:  81.4, y: 305.8 },
-    { x:  41.5, y: 334.5 },
-    { x:  73.1, y: 339.2 },
-    { x:  32.4, y: 367.9 },
-    { x:  64.1, y: 372.6 },
-    // 11, the Rally Thug at the wall's corner, his sword and banner out either side.
-    { x: 125.5, y: 324.3, w: 19, up: 30 },
+    { x:  45.9, y: 274.1 },
+    { x:  77.6, y: 278.3 },
+    { x:  40.3, y: 307.4 },
+    { x:  71.9, y: 311.6 },
+    { x:  33.3, y: 340.8 },
+    { x:  64.6, y: 344.7 },
+    { x:  25.7, y: 373.7 },
+    { x:  57.4, y: 378.4 },
+    // 11, the Captain Thug at the wall's corner, watching his men — sword up on one
+    // side, his quiver on the other, so his window is wider than a man's.
+    { x: 121.5, y: 327, w: 24, up: 36 },
     // 12, the thug by the left hut, and 13 the enemy villager between the huts.
     { x: 679.6, y: 106.3 },
     { x: 809.8, y:  86.9 }

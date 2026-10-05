@@ -1522,6 +1522,10 @@ export const enemyTypes = {
     // because on the road shooting is what he does at range, exactly as the
     // Archer Thug's `attack` is his bow rather than his club.
     attack: { sprite: 'captain_shoot', trim: [179, 182, 183, 167], pivot: [0.459, 0.904] },
+    // STANDING WATCH, sword lowered — only ever at stage 15's camp wall, before he
+    // walks out (see `captain` in src/villagers.js). Measured by tools/trim.mjs and
+    // pinned to the same ground point as every other pose of his, source (263, 333).
+    idle: { sprite: 'captain_idle', trim: [105, 183, 257, 166], pivot: [0.615, 0.904] },
     // AND THE HALF-SECOND BEFORE IT. Nothing else in this game has a wind-up
     // drawing: every other figure goes from standing to struck in one frame.
     //
@@ -3136,52 +3140,104 @@ export const stage13Waves = [
                        { type: 'dark_priest', count: 4, gap: 1.8 }] }
 ];
 
-// STAGE 14: Dark Hollow Woods, and a TESTING table, at the owner's word: "Use this
-// as testing wave first."
-//
-// It is the Castle's eight waves exactly — the owner's list, checked line by line
-// against stage12Waves — so the Bomb Thug that walks Serene Peak is not in it. A
-// second array rather than a shared reference, for the Castle's reason: the first
-// retune of either lands on one board.
+// STAGE 14: Dark Hollow Woods, where the Rally Thug first raises his banner, from
+// wave 4. Same house order and gap ladders as stages 10 to 13, so he marches at the
+// back of each wave, behind the priests.
 export const stage14Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 2, gap: 1.7 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'tough_inf', count: 4, gap: 1.6 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 }, { type: 'shadow_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 }, { type: 'blocker_inf', count: 4, gap: 1.7 },
-                       { type: 'shadow_inf', count: 1, gap: 1.8 }, { type: 'heavy_inf', count: 1, gap: 2.0 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 }, { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'tough_inf', count: 6, gap: 1.5 }, { type: 'blocker_inf', count: 6, gap: 1.6 },
-                       { type: 'shadow_inf', count: 2, gap: 1.8 }, { type: 'heavy_inf', count: 2, gap: 2.0 },
-                       { type: 'archer_inf', count: 4, gap: 1.3 }, { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 10, gap: 1.6 },
-                       { type: 'shadow_inf', count: 4, gap: 1.7 },
-                       { type: 'heavy_inf', count: 2, gap: 1.9 },
-                       { type: 'archer_inf', count: 8, gap: 1.2 },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'crow', count: 6, gap: 1.2 },
+                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'crow', count: 8, gap: 1.1 },
+                       { type: 'bomb_inf', count: 4, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'boulder_giant', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 6, gap: 1.8 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
+                       { type: 'shadow_inf', count: 1, gap: 1.7 },
+                       { type: 'heavy_inf', count: 1, gap: 1.9 },
+                       { type: 'boulder_giant', count: 1, gap: 1.9 },
+                       { type: 'bomb_inf', count: 8, gap: 1.7 },
                        { type: 'plague_inf', count: 2, gap: 1.9 },
                        { type: 'dark_priest', count: 2, gap: 1.8 },
                        { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 12, gap: 1.4 },
-                       { type: 'shadow_inf', count: 6, gap: 1.6 },
-                       { type: 'heavy_inf', count: 4, gap: 1.8 },
-                       { type: 'archer_inf', count: 8, gap: 1.1 },
+  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.6 },
+                       { type: 'heavy_inf', count: 2, gap: 1.8 },
+                       { type: 'boulder_giant', count: 2, gap: 1.8 },
+                       { type: 'bomb_inf', count: 10, gap: 1.5 },
                        { type: 'plague_inf', count: 4, gap: 1.9 },
                        { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 14, gap: 1.3 },
-                       { type: 'shadow_inf', count: 8, gap: 1.5 },
-                       { type: 'heavy_inf', count: 6, gap: 1.7 },
-                       { type: 'archer_inf', count: 10, gap: 1.0 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.5 },
+                       { type: 'heavy_inf', count: 3, gap: 1.7 },
+                       { type: 'boulder_giant', count: 3, gap: 1.7 },
+                       { type: 'bomb_inf', count: 10, gap: 1.4 },
                        { type: 'plague_inf', count: 4, gap: 1.8 },
                        { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] }
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
 ];
 
-// STAGE 15: Dark Hollow Quarters, and a TESTING table, at the owner's word: "Use
-// this as testing wave first." The owner's list is stage 14's exactly, line by line;
-// a second array all the same, so the first retune of either lands on one board.
-export const stage15Waves = stage14Waves.map(w => ({ ...w, groups: w.groups.map(g => ({ ...g })) }));
+// STAGE 15: Dark Hollow Quarters. The owner's list is stage 14's exactly, wave for
+// wave; a second array all the same, so the first retune of either lands on one
+// board. THE CAPTAIN IS NOT IN IT: he stands at the camp wall all game and walks out
+// once the last wave is dead — see `captain` under `quarters` in src/villagers.js.
+export const stage15Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'crow', count: 6, gap: 1.2 },
+                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'crow', count: 8, gap: 1.1 },
+                       { type: 'bomb_inf', count: 4, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'boulder_giant', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 6, gap: 1.8 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
+                       { type: 'shadow_inf', count: 1, gap: 1.7 },
+                       { type: 'heavy_inf', count: 1, gap: 1.9 },
+                       { type: 'boulder_giant', count: 1, gap: 1.9 },
+                       { type: 'bomb_inf', count: 8, gap: 1.7 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.6 },
+                       { type: 'heavy_inf', count: 2, gap: 1.8 },
+                       { type: 'boulder_giant', count: 2, gap: 1.8 },
+                       { type: 'bomb_inf', count: 10, gap: 1.5 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.5 },
+                       { type: 'heavy_inf', count: 3, gap: 1.7 },
+                       { type: 'boulder_giant', count: 3, gap: 1.7 },
+                       { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
+];
 
 export const waveClearBonus = 40;
 

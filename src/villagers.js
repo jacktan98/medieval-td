@@ -581,7 +581,7 @@ const PLAYS = {
   },
   // STAGE 15, Dark Hollow Quarters, as the level lists them: 1 the smith heating a
   // blade at the brazier, 2 the smith at the anvil, 3–10 the eight thugs behind the
-  // long wall (back line 3, 5, 7, 9; front line 4, 6, 8, 10), 11 the Rally Thug at the
+  // long wall (back line 3, 5, 7, 9; front line 4, 6, 8, 10), 11 the Captain Thug at the
   // wall's corner, 12 the thug by the left hut and 13 the enemy villager between the
   // huts. Nobody here is on your side either.
   quarters: {
@@ -614,7 +614,7 @@ const PLAYS = {
                  road: [[762, 104], [766, 128]] }],
     // THE CAMP BEHIND THE WALL — see musterRound.
     muster: {
-      rally: 10,
+      captain: 10,
       // Each line in the order they come in: the front line first, nearest the wall,
       // so nobody walks in through a man already standing.
       front: [3, 5, 7, 9], back: [2, 4, 6, 8],
@@ -624,17 +624,25 @@ const PLAYS = {
       // WAVE BY WAVE, at the owner's word: `come` brings the line back, one by one, as
       // `type`; `charge` sends the back line up to the top road and the front line
       // down to the bottom one, with a war cry — only once all eight are standing,
-      // unless `always` (the last wave, when the Rally Thug goes with the front line).
+      // unless `always` (the last wave, whoever is standing goes).
       waves: { 1: { come: 'light_inf' }, 3: { charge: true }, 4: { come: 'light_inf' },
-               6: { charge: true }, 7: { come: 'tough_inf' }, 8: { charge: true, always: true, rally: true } },
+               6: { charge: true }, 7: { come: 'tough_inf' }, 8: { charge: true, always: true } },
       // Up to the top road (`top`, the y he walks up to before joining it) and down to
-      // the bottom one; the Rally Thug round the bottom torch on the way. The top
-      // road's men take its two routes one in four down the link, as the wave does.
-      top: 214, topRoutes: [0, 0, 1, 0], bottom: 408, bottomRoute: 2,
-      rallyWay: [[96, 334], [84, 408]], march: 22
+      // the bottom one. The top road's men take its two routes one in four down the
+      // link, as the wave does.
+      top: 214, topRoutes: [0, 0, 1, 0], bottom: 408, bottomRoute: 2, march: 22,
+      // THE CAPTAIN WATCHES HIS MEN from the wall's corner, at the owner's word, and
+      // now and then drops into his Idle drawing, sword lowered — for `idle` seconds,
+      // after `watch` seconds of the Default one (each a range). He walks out only
+      // once every enemy on the board is dead and the last wave is over: left of
+      // the wall, up to the top road, and down the LINK (`captainRoute`) to the bottom
+      // door — the boss fight that ends the board.
+      watch: [4, 8], idle: [2.5, 4],
+      captainWay: [[92, 318], [88, 214]], captainRoute: 1
     },
-    // "You are on forbidden ground!" as the first wave comes, the camp's own shout.
-    cries: { runnn: false, nooo: false, wave: 'forbidden' }
+    // THE CAPTAIN'S OWN VOICE as the first wave comes, from the camp wall, at the
+    // owner's word — his entrance line, in place of the camp's old shout.
+    cries: { runnn: false, nooo: false, wave: 'captain' }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
@@ -1317,8 +1325,11 @@ function hollowRound(state, vp, dt) {
     }
   }
 }
-// STAGE 15, THE CAMP BEHIND THE WALL. The Rally Thug walks in from the left edge as
-// the board opens and stands at the wall's corner. Each slot behind the wall is in one
+// STAGE 15, THE CAMP BEHIND THE WALL. The Captain Thug walks in from the left edge as
+// the board opens and stands at the wall's corner, watching his men; once the last
+// wave is over and every enemy is dead he walks out to the road and is the boss
+// (`leave`, below). Until he has, the board cannot be won (`holdWin`, read by
+// updateWaves in src/waves.js). Each slot behind the wall is in one
 // of these, in `vp.muster[who].phase`:
 //   away   — not there (hidden);
 //   queued — called in by a wave, waiting his turn (`at`);
@@ -1335,8 +1346,9 @@ function musterRound(state, vp, m, dt) {
   if (!vp.muster) {
     vp.muster = { begun: 0 };
     for (const who of slots) vp.muster[who] = { phase: 'away', type: 'light_inf' };
-    // THE RALLY THUG, in from the left edge before anything else.
-    vp.muster[m.rally] = { phase: 'queued', at: 0, type: 'rally_inf' };
+    // THE CAPTAIN, in from the left edge before anything else.
+    vp.muster[m.captain] = { phase: 'queued', at: 0, type: 'captain_thug' };
+    vp.holdWin = true;
   }
   const M = vp.muster;
   const home = who => (level.villagers || [])[who];
@@ -1377,14 +1389,30 @@ function musterRound(state, vp, m, dt) {
           const v = state.villagers[who];
           go(who, [[v.x, m.bottom]], m.bottomRoute);
         }
-        if (ev.rally && M[m.rally].phase === 'stand') go(m.rally, m.rallyWay, m.bottomRoute);
         // THE WAR CRY as they go.
-        if (standing.length || ev.rally) solo(WAR_CRY, true);
+        if (standing.length) solo(WAR_CRY, true);
       }
     }
   }
 
-  for (const who of [...slots, m.rally]) {
+  // EVERY ENEMY DEAD AND THE LAST WAVE OVER — resting after it, or past it.
+  const waves = state.waves || [];
+  const over = state.waveIndex >= waves.length ||
+    (state.waveIndex === waves.length - 1 && state.resting);
+  const cap = M[m.captain];
+  // AND NOBODY STILL ON HIS WAY TO BECOME ONE: a man of the wall marching to the
+  // road, or a tapped hut-dweller about to turn.
+  const coming = slots.some(w => M[w].phase === 'charge') ||
+    Object.values(vp.hollow || {}).some(c => ['still', 'house', 'into', 'arming', 'march'].includes(c.phase));
+  if (over && state.enemies.length === 0 && !coming && cap.phase === 'stand') {
+    const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
+    const j = nearestOn([level.routes[m.captainRoute]], last[0], last[1]);
+    Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]],
+                         idle: false });
+    v.leg = 0;
+  }
+
+  for (const who of [...slots, m.captain]) {
     const v = state.villagers[who], c = M[who], at = home(who);
     if (!v || !at) continue;
     v.work = true; v.voice = vp.plan.voice;
@@ -1401,13 +1429,19 @@ function musterRound(state, vp, m, dt) {
       v.hidden = false;
       if (walkTo(v, [[at.x, at.y]], m.walk, dt)) {
         c.phase = 'stand';
-        // Facing the wall as they are painted: the thugs turned right, the Rally Thug
+        // Facing the wall as they are painted: the thugs turned right, the Captain
         // as his drawing is, towards his men.
-        v.flip = who !== m.rally;
+        v.flip = who !== m.captain;
       }
     } else if (c.phase === 'stand') {
       v.hidden = false; v.x = at.x; v.y = at.y;
-      v.flip = who !== m.rally;
+      v.flip = who !== m.captain;
+      // THE CAPTAIN'S WATCH: Default for a while, then Idle for a while, and again.
+      if (who === m.captain) {
+        const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+        if (c.next === undefined) c.next = vp.t + span(m.watch);
+        if (vp.t >= c.next) { c.idle = !c.idle; c.next = vp.t + span(c.idle ? m.idle : m.watch); }
+      }
     } else if (c.phase === 'charge') {
       // Quickening from his march to the creature's own pace across the road's edge,
       // as stage 14's do — so there is no step from a walk to a march.
@@ -1418,8 +1452,12 @@ function musterRound(state, vp, m, dt) {
         v.hidden = true; v.live = false;
         (vp.turned = vp.turned || []).push({ who, type: c.type, route: c.route, s: c.s });
         c.phase = 'away';
+        // On the road he is a creature like any other, and the board can be won by
+        // killing him. His entrance line was spoken at wave 1, so he steps on quietly.
+        if (who === m.captain) { vp.holdWin = false; vp.turned[vp.turned.length - 1].quiet = true; }
       }
     }
+    if (who === m.captain) v.lookPose = c.phase === 'stand' && c.idle ? 'idle' : null;
   }
 }
 

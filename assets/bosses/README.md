@@ -1,11 +1,11 @@
 # Boss artwork
 
-## Captain Thug — the first boss, in thirteen drawings
+## Captain Thug — the first boss, in fourteen drawings
 
-Twelve of them are alive and one is a body. Nothing else in this game has more
+Thirteen of them are alive and one is a body. Nothing else in this game has more
 than five.
 
-**Two of the thirteen are one moment in two layers.** `Pause_Self` and
+**Two of the fourteen are one moment in two layers.** `Pause_Self` and
 `Pause_Weapons` are `Pause` taken apart, so the second half of the channelling can
 animate: the body holds still while the weapons fade off the ground under it. They
 decompose the combined drawing exactly — the weapons share its x extent and its
@@ -15,6 +15,7 @@ own ground point and land where they do in the single picture.
 | file | when it shows | plate |
 |------|---------------|-------|
 | `Captain_Thug_Default.png` | walking, unshot and unbothered. Also the encyclopedia and the description panel, for stage 1 | med / med |
+| `Captain_Thug_Idle.png` | standing watch at stage 15's camp wall, sword lowered, now and then between his Default; never on the road | — |
 | `Captain_Thug_Defend.png` | a projectile has hit him and no soldier is near. 5s, refreshed by every hit, half pace | high / high |
 | `Captain_Thug_Ranged_Reload.png` | a soldier is inside 150px: shield away, nocking. The long half of a 0.5s shot cycle | med / med |
 | `Captain_Thug_Ranged_Attack.png` | the arrow is away. The other sixth of a second of it | med / med |
@@ -28,7 +29,7 @@ own ground point and land where they do in the single picture.
 | `Captain_Thug_Before_Dying.png` | out of health, sword dropped. 3s, and nothing may touch him | — |
 | `Captain_Thug_Dead.png` | on the ground. 2s, and only then may the game end. Becomes his corpse | — |
 
-**All twelve living poses share one ground point — source (263, 333) — to the pixel.**
+**All thirteen living poses share one ground point — source (263, 333) — to the pixel.**
 He swaps between more drawings than anything else in the game, so this is the
 figure where a pivot out by two would be most obvious, and the artist got it
 exactly right. Six of them show the shadow ellipse edge to edge and five of those
