@@ -1,7 +1,7 @@
 import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
-import { SCALE, EXPORT_PX, BLOOD_SCALE, families } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE, families, UNIT_NOTES } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled, falling, dropHeight } from './corpses.js';
 // The live bomb's window into its own drawing, and where in that window it sits
 // on the ground. Kept in bombs.js beside the offset that was measured with them —
@@ -31,7 +31,7 @@ import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes, 
 import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFit, shown,
          ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
          boxFor, BOX_PAD, STAT_GAP, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
-         popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
+         popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON, locked, towerEntry, unitEntry } from './book.js';
 import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
 import { STORY } from './data/story.js';
 import { drawOverview } from './overview.js';
@@ -54,7 +54,7 @@ import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
-import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS } from './newfoe.js';
+import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS, towerNamed } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
 const PLOT_R = 30;
@@ -5978,10 +5978,32 @@ const INK_MUTED = 'rgba(58,48,38,0.62)';
 const ALERT_RIM = '#C9A24A';
 const ALERT_RED = '#B3362A';
 
+// WHAT AN ALERT OR ITS CARD SHOWS. A creature, as itself; a TOWER the stage has just
+// offered, as the man it musters — "the image used will be the unit not the tower" —
+// with his own description and numbers, the encyclopedia's unit card.
+function newCard(id) {
+  if (id && typeof id === 'object' && id.tower) {
+    const def = towerNamed(id.tower);
+    if (!def) return null;
+    const e = unitEntry(def);
+    const first = [];
+    if (e.hp !== null) first.push(['stat_health', e.hp]);
+    first.push([e.attack || 'stat_damage', e.damage]);
+    if (e.range !== null) first.push(['stat_range', e.range]);
+    return { alert: 'New Tower!', label: `NEW TOWER \u00b7 ${def.title.toUpperCase()}`, name: e.title,
+             sprite: e.sprite, trim: e.trim, prose: UNIT_NOTES[e.title] || '',
+             rows: [first, e.traits].filter(r => r.length) };
+  }
+  const d = enemyTypes[id];
+  if (!d) return null;
+  return { alert: 'New Enemy!', label: 'NEW ENEMY', name: d.name, sprite: d.sprite, trim: d.spriteTrim,
+           prose: FOE_NOTES[id] || '', rows: foeStats(d) };
+}
+
 function drawFoeAlerts(ctx, state) {
   const t = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
   alertRects(state).forEach((r, i) => {
-    const d = enemyTypes[r.id];
+    const card = newCard(r.id);
     const { cx, cy, R } = r;
 
     // The info box's medallion and bar in miniature: a paper disc, and a bar that
@@ -5998,10 +6020,10 @@ function drawFoeAlerts(ctx, state) {
     // The same photo paper as the new-enemy card it opens, torn round.
     paperDisc(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE, 1.5, SOFT_RIP);
     // The figure in the middle, well inside the ring — see alertFigure.
-    const img = d && art[d.sprite];
+    const img = card && art[card.sprite];
     if (img) {
-      const [sx, sy, sw, sh] = d.spriteTrim;
-      const { dw, dh } = alertFigure(d.spriteTrim);
+      const [sx, sy, sw, sh] = card.trim;
+      const { dw, dh } = alertFigure(card.trim);
       ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, cy - dh / 2, dw, dh);
     }
 
@@ -6013,7 +6035,7 @@ function drawFoeAlerts(ctx, state) {
     ctx.textBaseline = 'middle';
     ctx.fillStyle = PANEL_INK;
     ctx.font = `12px ${MAP_TYPE}`;
-    ctx.fillText('New Enemy!', cx + R + 6, cy + 1);
+    ctx.fillText(card ? card.alert : '', cx + R + 6, cy + 1);
     ctx.restore();
 
     // And the "!" on its shoulder, which is what says "look at me". It is the one
@@ -6091,27 +6113,28 @@ const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
 const FOE_STAT_ROW = 22;
 
 function drawFoeCard(ctx, state) {
-  const d = enemyTypes[state.foeCard];
-  if (!d) return;
+  // A NEW CREATURE, OR A NEW TOWER'S MAN — see newCard.
+  const card = newCard(state.foeCard);
+  if (!card) return;
 
   // A FIXED SHARE OF THE BOARD — see popCap.
   const slot = popSlot('figure', popCap());
-  const [sx, sy, sw, sh] = d.spriteTrim;
+  const [sx, sy, sw, sh] = card.trim;
   const w = sw * slot.k, h = sh * slot.k;
 
   // THREE COLUMNS, at the owner's word: the picture on the left, what he does in
   // the middle, and his numbers on the right — "move the text to the middle and
   // the stats to the right of the card".
-  const rows = foeStats(d);
+  const rows = card.rows;
   const statsH = rows.length * FOE_STAT_ROW;
   // LENGTHENED RATHER THAN DEEPENED: the prose widens, up to FOE_COL_MAX, until it
   // stands no taller than the picture or the numbers beside it, so the card stays
   // the pop-up's depth for as long as it can.
   let textW = FOE_COL_W;
-  let lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW, `${POP_TEXT}px ${MAP_TYPE}`);
+  let lines = wrapped(ctx, card.prose, textW, `${POP_TEXT}px ${MAP_TYPE}`);
   while (textW < FOE_COL_MAX && lines.length * POP_LEAD > Math.max(slot.h, statsH)) {
     textW += 20;
-    lines = wrapped(ctx, FOE_NOTES[state.foeCard] || '', textW, `${POP_TEXT}px ${MAP_TYPE}`);
+    lines = wrapped(ctx, card.prose, textW, `${POP_TEXT}px ${MAP_TYPE}`);
   }
   // AND THEN DRAWN IN TO THE WIDEST LINE, so the rule stands its gap from the
   // words themselves rather than from the edge they were wrapped to — which left
@@ -6158,10 +6181,10 @@ function drawFoeCard(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ALERT_RED;
   ctx.font = `11px ${MAP_TYPE}`;
-  ctx.fillText('NEW ENEMY', 480, py + POP_PAD + FOE_LABEL / 2 - 4);
+  ctx.fillText(card.label, 480, py + POP_PAD + FOE_LABEL / 2 - 4);
   ctx.fillStyle = INK;
   ctx.font = `18px ${MAP_TYPE}`;
-  ctx.fillText(d.name, 480, py + POP_PAD + FOE_LABEL + POP_TITLE / 2 - 4);
+  ctx.fillText(card.name, 480, py + POP_PAD + FOE_LABEL + POP_TITLE / 2 - 4);
 
   // The X, top right — THE STAGE PANEL'S OWN, at the owner's word: a plain cross in
   // the paper's ink, no disc behind it. Its rect is left in FOE_CLOSE for the tap.
@@ -6179,7 +6202,7 @@ function drawFoeCard(ctx, state) {
 
   // The picture, centred in its slot both ways, exactly as the pop-up places it.
   const bodyY = py + POP_PAD + FOE_LABEL + POP_TITLE + POP_GAP;
-  const img = art[d.sprite];
+  const img = art[card.sprite];
   if (img) {
     const cx = px + POP_PAD + slot.w / 2;
     ctx.drawImage(img, sx, sy, sw, sh, cx - w / 2, bodyY + (bodyH - h) / 2, w, h);
@@ -6744,6 +6767,25 @@ function bookCell(ctx, state, it, on) {
   paperRect(ctx, it.x, it.y, it.w, it.h, Math.round(it.x * 7 + it.y * 13) % 997 + 1,
     CARD_TONE, CARD_TEAR, on ? PICK_EDGE : CARD_EDGE_INK, on ? 3.2 : 1.2, true, SOFT_RIP);
   const def = it.def;
+  // LOCKED: its shape in shadow, faint, and a padlock over it — see `locked` in
+  // src/book.js.
+  if (locked(it)) {
+    if (it.kind === 'ability') {
+      ctx.fillStyle = LOCK_SHADE;
+      ctx.beginPath();
+      ctx.arc(it.x + it.w / 2, it.y + it.h / 2, ABILITY_ICON / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const { sprite, trim, slot } = cellArt(state, it);
+      const ink = inked(sprite);
+      ctx.save();
+      ctx.globalAlpha *= LOCK_ALPHA;
+      if (ink) drawArt(ctx, ink, trim, it, slot);
+      ctx.restore();
+    }
+    padlock(ctx, it.x + it.w / 2, it.y + it.h / 2, CELL_LOCK);
+    return;
+  }
   if (it.kind === 'tower') {
     const slot = towerArt(def);
     drawArt(ctx, def.sprite, def.spriteTrim, it, slot);
@@ -6759,6 +6801,74 @@ function bookCell(ctx, state, it, on) {
     const d = it.boss ? shown(state, def) : def;
     drawArt(ctx, d.sprite, d.spriteTrim, it, figureArt(d.spriteTrim, d.pivot, figureFit(d)));
   }
+}
+
+// What a cell draws for an item, as the sprite, its trim and its slot — the three
+// branches above, for a picture in shadow.
+function cellArt(state, it) {
+  const def = it.def;
+  if (it.kind === 'tower') return { sprite: def.sprite, trim: def.spriteTrim, slot: towerArt(def) };
+  if (it.kind === 'unit') {
+    const man = occupant(def);
+    return { sprite: man.sprite, trim: man.trim, slot: figureArt(man.trim, man.pivot, figureFit(def)) };
+  }
+  const d = it.boss ? shown(state, def) : def;
+  return { sprite: d.sprite, trim: d.spriteTrim, slot: figureArt(d.spriteTrim, d.pivot, figureFit(d)) };
+}
+
+// THE LOCKED LOOK: the drawing's own shape in one dark ink, faint, under a padlock.
+const LOCK_INK = '#4A3826';
+const LOCK_SHADE = 'rgba(74,56,38,0.22)';
+const LOCK_ALPHA = 0.22;
+const CELL_LOCK = 18;          // the padlock's width on a cell
+const FRAME_LOCK = 34;         // and in the right page's frame
+
+// A drawing in shadow: every pixel it has, in LOCK_INK. Made once per drawing and
+// kept in `art` beside it, so drawArt can draw it by key.
+function inked(key) {
+  if (!key) return null;
+  const k = `ink:${key}`;
+  if (art[k]) return k;
+  const img = art[key];
+  const w = img && (img.naturalWidth || img.width), h = img && (img.naturalHeight || img.height);
+  if (!w || !h) return null;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = LOCK_INK;
+  g.fillRect(0, 0, w, h);
+  art[k] = c;
+  return k;
+}
+
+// A PADLOCK, `s` wide, centred on (cx, cy): the shackle, the body, the keyhole.
+function padlock(ctx, cx, cy, s) {
+  const bw = s, bh = s * 0.78, r = s * 0.3, lw = Math.max(2, s * 0.15);
+  const H = r + lw / 2 + bh * 0.25 + bh;
+  const top = cy - H / 2;
+  const bodyY = top + r + lw / 2 + bh * 0.25;
+  ctx.save();
+  ctx.strokeStyle = LOCK_INK;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - r, bodyY);
+  ctx.lineTo(cx - r, top + r + lw / 2);
+  ctx.arc(cx, top + r + lw / 2, r, Math.PI, 0);
+  ctx.lineTo(cx + r, bodyY);
+  ctx.stroke();
+  ctx.fillStyle = LOCK_INK;
+  ctx.beginPath();
+  ctx.roundRect(cx - bw / 2, bodyY, bw, bh, s * 0.14);
+  ctx.fill();
+  ctx.fillStyle = CARD_TONE.b;
+  ctx.beginPath();
+  ctx.arc(cx, bodyY + bh * 0.42, s * 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(cx - s * 0.04, bodyY + bh * 0.42, s * 0.08, bh * 0.3);
+  ctx.restore();
 }
 
 // --- the right page -------------------------------------------------------------
@@ -6787,6 +6897,7 @@ function drawBookEntry(ctx, state, item) {
 
   // THE PICTURE, on a photo card of its own, pasted onto the page.
   paperRect(ctx, f.x, f.y, f.w, f.h, 89 + item.kind.length, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true, SOFT_RIP);
+  if (e.locked) { drawLockedEntry(ctx, state, item, e, f); return; }
   drawFramed(ctx, item, e, f);
 
   // A BOSS'S TWO HALVES, as two buttons beside his picture.
@@ -6890,6 +7001,42 @@ function drawBookEntry(ctx, state, item) {
     ctx.textAlign = 'center';
     ctx.fillText(tip.label, lx + lw / 2, ly + lh / 2 + 0.5);
   }
+}
+
+// LOCKED: the drawing in shadow under a padlock in the frame, and in the box only
+// "Locked" and how it opens — no name, no numbers, no words about it.
+function drawLockedEntry(ctx, state, item, e, f) {
+  if (item.kind === 'ability') {
+    const d = Math.min(f.w, f.h) - FRAME_AIR;
+    ctx.fillStyle = LOCK_SHADE;
+    ctx.beginPath();
+    ctx.arc(f.x + f.w / 2, f.y + f.h / 2, d / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    const def = item.def;
+    const real = item.kind === 'tower' ? towerEntry(def, item.tiers)
+      : item.kind === 'unit' ? unitEntry(def)
+      : (d => ({ sprite: d.sprite, trim: d.spriteTrim, pivot: [0.5, 0.5] }))(item.boss ? shown(state, def) : def);
+    const ink = inked(real.sprite);
+    ctx.save();
+    ctx.globalAlpha *= LOCK_ALPHA;
+    if (ink) drawFramed(ctx, item, { ...real, sprite: ink, machine: null }, f);
+    ctx.restore();
+  }
+  padlock(ctx, f.x + f.w / 2, f.y + f.h / 2, FRAME_LOCK);
+
+  const box = boxFor(item.kind);
+  paperRect(ctx, box.x, box.y, box.w, box.h, 31, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true);
+  let y = box.y + BOX_PAD + ENTRY_NAME / 2;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UP_NAME;
+  ctx.font = `${ENTRY_NAME}px ${MAP_TYPE}`;
+  ctx.fillText(e.title, RIGHT.cx, y);
+  y += ENTRY_NAME / 2 + 6;
+  ctx.fillStyle = UP_MUTED;
+  ctx.font = `${ENTRY_SUB}px ${MAP_TYPE}`;
+  ctx.fillText(e.sub, RIGHT.cx, y + ENTRY_SUB / 2);
 }
 
 // The picked drawing in its frame: one factor for every drawing of its kind, so a

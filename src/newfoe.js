@@ -20,8 +20,11 @@
 // The geometry lives here and the drawing in render.js, the same split as book.js,
 // so input.js hit-tests exactly the rects that get drawn.
 import { enemyTypes } from './data/waves.js';
-import { SCALE } from './data/towers.js';
+import { SCALE, families } from './data/towers.js';
 import { INFO_PORTRAIT } from './data/ui.js';
+import { levels } from './level.js';
+import { STAGES } from './data/overview.js';
+import { sealOf } from './score.js';
 
 const KEY = 'medieval-td/met';
 
@@ -55,6 +58,86 @@ export function forgetFoes() {
   met = new Set();
   persist();
 }
+
+// --- the towers the player has been offered -----------------------------------------
+//
+// "NEW TOWER!", at the owner's word: "create a new unit/tower notification once a stage
+// with new tower starts (just like new enemy style). The image used will be the unit
+// not the tower." And the encyclopedia locks what has not been offered yet — a tower,
+// the man it musters and the abilities it teaches go together.
+//
+// A TOWER IS OFFERED BY A STAGE THAT LETS IT BE BUILT — its tier inside the board's
+// cap, or named on its `allow` list — and it is marked offered the moment that stage
+// STARTS, as a creature is marked met the moment it walks on. Saved, like `met`.
+const TOWERS_KEY = 'medieval-td/towers';
+
+// Every tower a board lets the player build, by name — the build menu's own rule
+// (`capped` in src/menu.js).
+export const offeredOn = lv => families.flatMap(f => f.tiers
+  .filter(d => !lv.maxTier || d.tier <= lv.maxTier || (lv.allow || []).includes(d.name))
+  .map(d => d.name));
+
+// THE STAGES ON THE ROAD, in order, as boards.
+const road = () => STAGES.map(s => (s.level === null ? null : levels[s.level])).filter(Boolean);
+
+function loadTowers() {
+  const s = store();
+  const names = new Set(families.flatMap(f => f.tiers.map(d => d.name)));
+  try {
+    const list = s && JSON.parse(s.getItem(TOWERS_KEY));
+    if (Array.isArray(list)) return new Set(list.filter(n => names.has(n)));
+  } catch { /* unreadable: start again below */ }
+  // A SAVE FROM BEFORE THIS WAS RECORDED: every stage already won has certainly been
+  // started, so what those offered is known — a returning player's book does not
+  // lock what they have already built.
+  return new Set(road().filter(lv => sealOf(lv.id)).flatMap(offeredOn));
+}
+
+let offered = null;
+const towersKnown = () => (offered ||= loadTowers());
+
+function persistTowers() {
+  const s = store();
+  if (!s) return;
+  try { s.setItem(TOWERS_KEY, JSON.stringify([...towersKnown()])); } catch { /* full, or refused */ }
+}
+
+export const hasTower = name => towersKnown().has(name);
+
+// The dashboard's reset, beside forgetFoes.
+export function forgetTowers() {
+  offered = new Set();
+  persistTowers();
+}
+
+// AS A STAGE STARTS: whatever it offers that was never offered before is marked, and
+// each one puts its alert up under the gold — EXCEPT ON STAGE 1, whose eight are the
+// whole starting kit, unlocked quietly: eight medallions on the first screen of the
+// game would bury the first enemy's under them. A board off the road (the testing
+// maps) offers nothing.
+export function noticeTowers(state, lv) {
+  const stage = road().indexOf(lv);
+  if (stage < 0) return;
+  const known = towersKnown();
+  const fresh = offeredOn(lv).filter(n => !known.has(n));
+  if (!fresh.length) return;
+  for (const n of fresh) known.add(n);
+  persistTowers();
+  if (stage > 0) (state.foeAlerts ||= []).push(...fresh.map(tower => ({ tower })));
+}
+
+// EVERYTHING KNOWN, in memory only — for the tools, which check what the encyclopedia
+// SAYS about each thing and would otherwise find every page locked on an empty save.
+export function knowEverything() {
+  met = new Set(Object.keys(enemyTypes));
+  offered = new Set(families.flatMap(f => f.tiers.map(d => d.name)));
+}
+
+// The tower's def by its name — what a tower alert carries.
+export const towerNamed = name => {
+  for (const f of families) for (const d of f.tiers) if (d.name === name) return d;
+  return null;
+};
 
 // A live enemy carries its def, not its name in the table — so the name is found
 // by the def. Built once; a def that is not in the table (none today) is ignored.
@@ -98,6 +181,8 @@ export function medallionOf(trim) {
 //
 // One medallion each with its bar, stacked downwards from just under the readout
 // bars, oldest on top. A wave that brings two new creatures at once shows two.
+// AN ALERT IS A CREATURE'S ID, or `{ tower: name }` for a tower the stage has just
+// offered (noticeTowers above) — drawn with the man it musters.
 //
 // 44 ACROSS, the size it first had, with the figure fitted INSIDE a smaller circle
 // rather than to the ring: its corners stay ALERT_AIR clear of the edge, so there

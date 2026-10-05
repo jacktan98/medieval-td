@@ -47,12 +47,62 @@ import { UP_DONE } from '../src/upgradepage.js';
 import { PAUSE_ROW, ENTRY_NAME, ENTRY_SUB, ENTRY_TEXT, ENTRY_LEAD, ENTRY_TEXT_W, ENTRY_ICON_H,
          ENTRY_TEXT_SMALL, ENTRY_LEAD_SMALL, PARA_GAP } from '../src/render.js';
 import { uiSize } from '../src/data/ui.js';
+import { locked } from '../src/book.js';
+import { noticeTowers, noticeFoes, knowEverything } from '../src/newfoe.js';
+import { levels } from '../src/level.js';
+import { STAGES } from '../src/data/overview.js';
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {
   console.log(`${cond ? 'ok  ' : 'FAIL'}  ${label.padEnd(54)} ${detail}`);
   if (!cond) bad++;
 };
+
+// --- LOCKED until the campaign has shown it -------------------------------------
+//
+// THE OWNER'S EXAMPLE, checked as given: having played up to Winchester Castle, every
+// tier 3 tower and its man is open, plus the Crossbow Sentry and the Ballista Turret
+// and their men; the abilities are those two towers' — Reinforced Tension (both),
+// Swift Reload and Heavy Bolt; and the enemies are exactly the ones seen.
+console.log('\nLocked until shown\n');
+{
+  const all = [0, 1, 2, 3].flatMap(p => pageItems(p));
+  ok(all.every(locked), 'on an empty save every card on every page is locked', `${all.length} cards`);
+
+  const road = STAGES.map(s => (s.level === null ? null : levels[s.level])).filter(Boolean);
+  const castle = road.findIndex(l => l.name === 'Winchester Castle');
+  const st = { foeAlerts: [] };
+  noticeTowers(st, road[0]);
+  ok(st.foeAlerts.length === 0, 'stage 1 opens its eight towers without an alert each',
+    `${pageItems(0).filter(i => !locked(i)).length} open, ${st.foeAlerts.length} alerts`);
+  noticeTowers(st, road[1]);
+  ok(st.foeAlerts.length === 4 && st.foeAlerts.every(a => a.tower),
+    'the next stage raises one "New tower!" for each tower it adds', st.foeAlerts.map(a => a.tower).join(', '));
+  for (const lv of road.slice(2, castle + 1)) noticeTowers(st, lv);
+
+  const open = p => pageItems(p).filter(i => !locked(i));
+  const towers = open(0).map(i => i.def.name);
+  const want = [archery, barracks, siege, monastery].flat().filter(d => d.tier <= 3).map(d => d.name).concat(['Crossbow Sentry', 'Ballista Turret']);
+  ok(towers.length === want.length && want.every(n => towers.includes(n)),
+    'after Winchester Castle: every tier 3, the Sentry and the Ballista', `${towers.length} towers open`);
+  ok(open(1).map(i => i.def.name).join() === open(0).map(i => i.def.name).join(),
+    '  and each tower\'s man with it, and no other', `${open(1).length} men`);
+  ok(open(2).map(i => i.def.id).sort().join() === ['ballista_tension', 'heavybolt', 'sentry_tension', 'swift'].join(),
+    '  and only those two towers\' abilities', open(2).map(i => i.def.name).join(', '));
+
+  // A CREATURE ONLY ONCE IT HAS WALKED ON: a run quit before the Plague Doctor
+  // leaves him locked.
+  noticeFoes({ enemies: ['light_inf', 'tough_inf'].map(id => ({ def: enemyTypes[id] })), foeAlerts: [] });
+  const foes = open(3).map(i => i.def.name);
+  ok(foes.join() === 'Thug,Tough Thug', '  and the enemies are exactly the ones seen', foes.join(', '));
+  ok(locked(pageItems(3).find(i => i.def === enemyTypes.plague_inf)), '  so the Plague Doctor, never seen, stays locked');
+
+  ok(pageEntry({ bookStage: 1 }, pageItems(3).find(i => i.def === enemyTypes.plague_inf)).rows.length === 0,
+    'a locked card\'s page shows no numbers', '');
+}
+
+// FROM HERE ON, EVERYTHING KNOWN: the rest of this file checks what each page SAYS.
+knowEverything();
 
 const LADDERS = [archery, barracks, siege, monastery];
 const TIERS = LADDERS.flat();

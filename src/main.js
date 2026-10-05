@@ -23,7 +23,7 @@ import { updateWaves } from './waves.js';
 import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
-import { noticeFoes } from './newfoe.js';
+import { noticeFoes, noticeTowers } from './newfoe.js';
 import { canvasScale } from './data/ui.js';
 
 const canvas = document.getElementById('game');
@@ -262,6 +262,8 @@ function newGame() {
     // unopened goes with the game it was raised in. See src/newfoe.js.
     foeAlerts: [],
     foeCard: null,
+    // Whether this game's stage has had its towers noticed yet — see noticeTowers.
+    towersNoticed: false,
     // Which of the card's stat icons is showing its name, or null.
     foeTip: null,
     // THE UPGRADES SCREEN, opened from the world map: whether it is up, the rung
@@ -492,6 +494,9 @@ function step(state, dt) {
     }
     state.villagerPlay.turned = null;
   }
+  // THE TOWERS THIS STAGE OFFERS, on its first step — the moment it starts — so a
+  // tower never offered before raises its alert ahead of any creature's.
+  if (!state.towersNoticed) { state.towersNoticed = true; noticeTowers(state, level); }
   // AFTER EVERYTHING THAT CAN PUT A CREATURE ON THE BOARD — the waves above and
   // the villagers turning just now — so one met for the first time raises its
   // alert on the step it arrives.

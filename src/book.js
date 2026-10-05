@@ -21,6 +21,7 @@ import { refundOf } from './menu.js';
 import { occupant, shownRange, shownDamage, attackIcon, traitRow, strikes } from './select.js';
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 import { UP_DONE } from './upgradepage.js';
+import { hasMet, hasTower } from './newfoe.js';
 
 export const PAGES = 4;
 
@@ -298,6 +299,23 @@ export const STAT_LABEL = {
 const idOf = def => Object.keys(enemyTypes).find(k => enemyTypes[k] === def);
 const band = (key, value, label = STAT_LABEL[key], tone = null) => ({ key, value, label, tone });
 
+// LOCKED, at the owner's word, until the campaign has shown it: a tower until a stage
+// that lets it be built has started (see noticeTowers in src/newfoe.js), its man and
+// its abilities with it; a creature until one has walked onto the board. Only the
+// stages on the road count — so finishing Winchester Castle opens every tier 3 and the
+// Crossbow Sentry and Ballista Turret, and nothing more.
+export function locked(item) {
+  if (!item) return false;
+  if (item.kind === 'tower' || item.kind === 'unit') return !hasTower(item.def.name);
+  if (item.kind === 'ability') return !hasTower(item.def.of);
+  return !hasMet(idOf(item.def));
+}
+
+// What the right page says about something locked: no name, no numbers, only how it
+// opens.
+export const LOCKED_TITLE = 'Locked';
+export const lockedLine = item => (item.kind === 'enemy' ? 'Not met yet' : 'Opens on a later stage');
+
 // THE RIGHT PAGE FOR AN ITEM, as one shape whatever the kind: the picture, its
 // name, the line under it, a paragraph, and the bands.
 //
@@ -309,6 +327,7 @@ const band = (key, value, label = STAT_LABEL[key], tone = null) => ({ key, value
 // row of their own.
 export function pageEntry(state, item) {
   const { def } = item;
+  if (locked(item)) return { title: LOCKED_TITLE, sub: lockedLine(item), prose: null, rows: [], locked: true };
   if (item.kind === 'tower') {
     const e = towerEntry(def, item.tiers);
     return { ...e, sub: e.occupier, prose: TOWER_NOTES[def.name] || null,
@@ -446,6 +465,8 @@ export function hoverBook(state, x, y) {
 
 // What the pop-up shows for the picked item: a sprite, the rect of it, and its name.
 function zoomOf(state, item) {
+  // Nothing to look at closely while it is locked.
+  if (locked(item)) return null;
   if (item.kind === 'ability') {
     // An ability is a RULE rather than a thing; its words are on the page beside
     // it now, so the pop-up is the disc alone.
