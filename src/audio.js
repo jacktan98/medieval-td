@@ -1305,15 +1305,25 @@ export const PAGE_FLIP = ['page_flip'];
 // closes, about 2.4s apart; each is cut out by where it STARTS in the file, measured
 // (0.10s, 2.10s, 4.75s, 7.18s, at 2% of the loudest sample), with a hair of lead-in and
 // its tail. A close plays one of the four, never the one heard last. Category B.
+//
+// EACH AT ONE LOUDNESS, AND LOUDER, at the owner's word: "increase and standardise the
+// volume so that each of them can be heard." The file's four differ by up to 1.6x —
+// loudest 0.3s RMS 0.109, 0.071, 0.085, 0.070 — and the leveller set the whole file by
+// the loudest, so the quiet three were 4dB down on it. So each cut carries its OWN gain
+// (`[from, dur, gain]`, the clip's gain replaced), measured to bring every one to an
+// RMS of 0.17 before the bus: 6dB over where the loudest sat and nearly 10 over the
+// quietest. The ceiling is the fourth's: a peak of 0.94 x 2.42 x the bus's 0.45 x the
+// master's 0.9 is 0.93 at the speaker, under PEAK_OUT.
 export const BOOK_CLOSE = { key: 'book_close',
-  closes: [[0.08, 0.62], [2.08, 0.84], [4.73, 0.48], [7.16, 0.42]] };
+  closes: [[0.08, 0.62, 1.56], [2.08, 0.84, 2.41], [4.73, 0.48, 2.01], [7.16, 0.42, 2.42]] };
 let lastClose = -1;
 export function closeBookSound() {
   const { key, closes } = BOOK_CLOSE;
   const pick = (lastClose + 1 + Math.floor(Math.random() * (closes.length - 1))) % closes.length;
   lastClose = pick;
-  const [from, dur] = closes[pick];
-  slice(key, from, dur, 1, 0.05);
+  const [from, dur, gain] = closes[pick];
+  const c = clips[key];
+  if (c && c.gain > 0) slice(key, from, dur, gain / c.gain, 0.05);
 }
 
 let ctx = null;
