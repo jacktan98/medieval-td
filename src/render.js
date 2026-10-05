@@ -33,6 +33,7 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          boxFor, BOX_PAD, STAT_GAP, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
 import { MAX_STARS, bestStars, starCuts } from './score.js';
+import { STORY } from './data/story.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
 import { soundLevel } from './audio.js';
@@ -5445,7 +5446,7 @@ function infoStat(ctx, key, x, y, text, colour) {
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 356, w: 160, h: 46 };
+export const START_BTN = { x: 400, y: 378, w: 160, h: 46 };
 
 // THE ROW OF MAP BUTTONS IS GONE. Which map you play is a place on the world map
 // now — see src/overview.js — so the thing that used to be three plates side by
@@ -5460,7 +5461,16 @@ export const START_BTN = { x: 400, y: 356, w: 160, h: 46 };
 // so the two were two pixels apart and read as one stuck-together block. The
 // panel is the thing being decided on and the book is a door out of it; they
 // need air between them.
-const STAGE_PANEL = { x: 258, y: 136, w: 444, h: 292 };
+// TALLER, AND IT WAS 292 FROM y 136: the stage's story sits on a scrap of paper
+// between the stars and the difficulty, at the owner's word — see STORY_CARD.
+const STAGE_PANEL = { x: 258, y: 54, w: 444, h: 400 };
+
+// THE STORY, on the encyclopedia's photo paper, torn at the edge and pasted on.
+// Sized to the longest stage's words — tools/story.mjs checks every one fits.
+export const STORY_CARD = { x: 290, y: STAGE_PANEL.y + 116, w: 380, h: 132 };
+export const STORY_TEXT = 14;
+export const STORY_LEAD = 18;
+export const STORY_PAD = 16;
 
 // Back to the world map without starting anything. Top-right of the panel, drawn
 // as a plain glyph rather than a plate — it is an escape, not a third choice
@@ -5496,7 +5506,7 @@ const settingRow = (items, y) => {
 
 // One setting row now — the Length row above it came out with Extended — so the
 // difficulty sits where the first row of two used to.
-const DIFF_ROW_Y = 258;
+const DIFF_ROW_Y = 322;
 
 export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
 
@@ -5679,6 +5689,19 @@ function drawStart(ctx, state) {
   ctx.moveTo(cx - 6, cy - 6); ctx.lineTo(cx + 6, cy + 6);
   ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx - 6, cy + 6);
   ctx.stroke();
+
+  // THE STAGE'S STORY, on old paper, between the stars and the difficulty.
+  const story = lv && STORY[lv.id];
+  if (story) {
+    const c = STORY_CARD;
+    paperRect(ctx, c.x, c.y, c.w, c.h, 23 + state.stage, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2, true, SOFT_RIP);
+    const lines = wrapped(ctx, story, c.w - 2 * STORY_PAD, `${STORY_TEXT}px ${MAP_TYPE}`);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = INK;
+    const top = c.y + (c.h - lines.length * STORY_LEAD) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, c.x + STORY_PAD, top + STORY_LEAD * (i + 0.5)));
+    ctx.textAlign = 'center';
+  }
 
   settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
 

@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, setSoundLevel } from './audio.js';
+import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, setSoundLevel } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -78,6 +78,8 @@ export function attachInput(canvas, state, restart) {
     // bought in a row was silent, and it gives up while a phone's audio is still
     // waking from the tap.
     if (did === 'bought') insist(CUE.purchase);
+    // A PAGE TURNED in the encyclopedia sounds like one.
+    else if (did === 'flip') play(PAGE_FLIP);
     else if (did) play(SELECT);
   });
 

@@ -252,6 +252,8 @@ const paths = {
   // Buying a star upgrade on the Upgrades screen. The fourth money noise, and the
   // one that spends stars rather than gold.
   purchase:        'assets/audio/map/Purchase_sound.mp3',
+  // Turning a page of the encyclopedia, in place of the click, at the owner's word.
+  page_flip:       'assets/audio/map/Page_flip.mp3',
   // A flask breaking. Its own clip rather than a quieter rock, because the two
   // land for opposite reasons: a rock is the damage arriving and a flask is the
   // damage STARTING.
@@ -1278,6 +1280,8 @@ export const MELEE_SOUND = { boulder: BOULDER_HIT };
 // everything else down here, which is right: the line is the more important of
 // the two and the click still comes through under it.
 export const SELECT = ['select'];
+// The encyclopedia's ‹ and ›, played like the click it replaces.
+export const PAGE_FLIP = ['page_flip'];
 
 let ctx = null;
 

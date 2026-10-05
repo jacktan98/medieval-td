@@ -401,8 +401,9 @@ export function tapBook(state, x, y) {
 
   if (inside(BOOK_CLOSE, x, y)) { state.book = null; return true; }
   // BOTH ARROWS ALWAYS WORK, wrapping round.
-  if (inside(BOOK_PREV, x, y)) { flip(state, -1); return true; }
-  if (inside(BOOK_NEXT, x, y)) { flip(state, 1); return true; }
+  // 'flip', so input.js plays the page turning rather than the click.
+  if (inside(BOOK_PREV, x, y)) { flip(state, -1); return 'flip'; }
+  if (inside(BOOK_NEXT, x, y)) { flip(state, 1); return 'flip'; }
 
   const item = picked(state);
   if (item && item.kind === 'enemy' && staged(item.def)) {
