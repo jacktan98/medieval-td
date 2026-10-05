@@ -28,12 +28,12 @@ its own, drawn at the foot of its ladder.
 | `Upgrade_Artillery_1_Icon.svg` | Spotter's Glass: range +5% |
 | `Upgrade_Artillery_2_Icon.svg` | Heavy Loads: damage +5% |
 | `Upgrade_Artillery_3_Icon.svg` | Wide Blast: blast area +10% |
-| `Upgrade_Artillery_4_Icon.svg` | Concussion: 10% chance to stun for 0.5s |
+| `Upgrade_Artillery_4_Icon.svg` | Concussion: 10% chance to stun for 1s |
 | `Upgrade_Monastery_Icon.svg` | the Monastery ladder's own button, at its foot |
 | `Upgrade_Monastery_1_Icon.svg` | Far Sight: range +5% |
 | `Upgrade_Monastery_2_Icon.svg` | Divine Zeal: damage +5% |
 | `Upgrade_Monastery_3_Icon.svg` | Swift Scripture: attack speed +5% |
-| `Upgrade_Monastery_4_Icon.svg` | Sands of Time: 10% chance to slow for 2s |
+| `Upgrade_Monastery_4_Icon.svg` | Sands of Time: 10% chance to slow for 5s |
 
 ## How to draw them
 

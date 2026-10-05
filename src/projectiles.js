@@ -302,7 +302,7 @@ const burn = (s, v) =>
 //
 // AND ON A SHOT THAT SLOWS ANYWAY THE TWO ADD UP, at the owner's word: a Slowed
 // Pulse blast that rolls Sands of Time holds the man for the pulse's seconds AND
-// the upgrade's — 5 and 2, 7 in all — at the deeper of the two slows. It used to
+// the upgrade's — 5 and 5, 10 in all — at the deeper of the two slows. It used to
 // take the upgrade's alone, so the lucky roll cut the pulse short.
 export const slowing = s => {
   const own = s.slow, ammo = s.ammo && s.ammo.slow;

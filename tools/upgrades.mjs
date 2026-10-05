@@ -184,7 +184,7 @@ for (const [fam, def] of [['archery', archery[0]], ['siege', siege[0]], ['monast
   try {
     for (let i = 0; i < 4 * 60 && !shot; i++) { updateTowers(state, 1 / 60); shot = state.shots[0] || null; }
   } finally { Math.random = real; }
-  check(shot && shot.stun && shot.stun.seconds === 0.5, 'artillery: Concussion arms a shot to stun for half a second, now and then',
+  check(shot && shot.stun && shot.stun.seconds === 1, 'artillery: Concussion arms a shot to stun for 1 second, now and then',
     shot && shot.stun ? `${shot.stun.seconds}s` : 'no stun');
   const quiet = shots(tower('siege', siege[0]), 4, 0.99, 180)[0];
   check(!quiet.stun, 'and not on a losing roll');
@@ -209,13 +209,13 @@ for (const [fam, def] of [['archery', archery[0]], ['siege', siege[0]], ['monast
   setBoughtForTest({ monastery: 4 });
   const held = shots(tower('monastery', monastery[0]), 3, 0)[0];
   const free = shots(tower('monastery', monastery[0]), 3, 0.99)[0];
-  check(held.slow && held.slow.seconds === 2 && !free.slow, 'monastery: Sands of Time slows for two seconds, now and then',
+  check(held.slow && held.slow.seconds === 5 && !free.slow, 'monastery: Sands of Time slows for 5 seconds, now and then',
     held.slow ? `x${held.slow.times} for ${held.slow.seconds}s` : 'no slow');
 
   // AND ON A SLOWED PULSE BLAST THE TWO ADD UP, at the owner's word: 5 and 2 is 7.
   const pulse = { slow: UPGRADES.monastery[3].slow, ammo: { slow: { times: 0.7, seconds: 5 } } };
   const both = slowing(pulse);
-  check(both.seconds === 7 && both.times === 0.7, 'and on a Slowed Pulse blast it adds to the pulse: 7 seconds',
+  check(both.seconds === 10 && both.times === 0.7, 'and on a Slowed Pulse blast it adds to the pulse: 10 seconds',
     `x${both.times} for ${both.seconds}s`);
   check(slowing({ ammo: { slow: { times: 0.7, seconds: 5 } } }).seconds === 5, 'while an unlucky pulse blast slows for its own 5');
 }
