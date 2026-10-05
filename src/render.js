@@ -5512,14 +5512,16 @@ const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12,
 // BOTH ROWS ARE CAPTIONED, which the difficulty row managed without until the
 // length arrived beside it. Two rows whose left-hand button both say "Normal" are
 // unreadable without a word saying what each row is choosing.
-const DIFF_BTN_W = 104, DIFF_BTN_H = 34, DIFF_GAP = 12;
+const DIFF_BTN_W = 100, DIFF_BTN_H = 34, DIFF_GAP = 12;
 
 // THE CAPTION'S ROOM beside the row, so the caption and the row are centred in the
 // right column as one group.
-const CAPTION_W = 78;
+// THE CAPTION STARTS WHERE THE STORY'S WORDS DO, at the owner's word — its "D" on
+// the paragraph's left edge — and the buttons follow it.
+const CAPTION_W = 64;
+const DIFF_CAPTION_X = STORY_CARD.x + STORY_PAD;
 const settingRow = (items, y) => {
-  const total = items.length * DIFF_BTN_W + (items.length - 1) * DIFF_GAP;
-  const left = STAGE_RIGHT.cx - (total + CAPTION_W + CAPTION_GAP) / 2 + CAPTION_W + CAPTION_GAP;
+  const left = DIFF_CAPTION_X + CAPTION_W + CAPTION_GAP;
   return items.map((d, i) => ({
     i,
     name: d.name,
@@ -5585,11 +5587,11 @@ const CAPTION_GAP = 12;
 // loaded; see MAP_FONT in src/overview.js.
 
 function settingRowUi(ctx, caption, row, chosen) {
-  ctx.textAlign = 'right';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
-  ctx.fillText(caption, row[0].x - CAPTION_GAP, row[0].y + row[0].h / 2 + 1);
+  ctx.fillText(caption, DIFF_CAPTION_X, row[0].y + row[0].h / 2 + 1);
   ctx.textAlign = 'center';
 
   for (const b of row) {
@@ -5708,6 +5710,14 @@ function drawStart(ctx, state) {
   ctx.lineWidth = 1;
   ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
 
+  // A RED WAX-INK SEAL on a stage that has been won, stamped on the photograph's
+  // bottom-left corner at the owner's word: "Hard" for a win on Hard, otherwise
+  // "Normal". Whatever difficulty is chosen, it shows the best won.
+  if (lv) {
+    const won = ['hard', 'normal'].find(id => bestStars(lv.id, id) > 0);
+    if (won) drawSeal(ctx, ix + 50, iy + ih - 48, SEAL_R, won === 'hard' ? 'Hard' : 'Normal');
+  }
+
   // The back door, top-right of the plate, in the paper's ink.
   ctx.strokeStyle = UP_MUTED;
   ctx.lineWidth = 2.4;
@@ -5757,6 +5767,75 @@ function drawStart(ctx, state) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// THE SEAL: a round red stamp — a double ring, "Victory" round the top, two stars
+// round the bottom, and the difficulty in the middle — pressed on slightly askew and
+// worn, as ink from a hand stamp is. Made once per word and kept.
+const SEAL_R = 36;
+const SEAL_INK = '#B3261E';
+const sealCache = new Map();
+function drawSeal(ctx, cx, cy, r, word) {
+  let c = sealCache.get(word);
+  const K = 3, P = 4, S = 2 * (r + P);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = S * K;
+    const g = c.getContext('2d');
+    g.scale(K, K);
+    g.translate(S / 2, S / 2);
+    g.strokeStyle = g.fillStyle = SEAL_INK;
+    g.lineWidth = 2.6;
+    g.beginPath(); g.arc(0, 0, r - 1.5, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = 1.2;
+    g.beginPath(); g.arc(0, 0, r - 6, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.arc(0, 0, r * 0.57, 0, Math.PI * 2); g.stroke();
+    // "VICTORY" round the top, letter by letter along the ring.
+    g.font = `bold 9px Georgia, 'Times New Roman', serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const text = 'VICTORY', ring = r - 13, span = 1.55;
+    [...text].forEach((ch, i) => {
+      const a = -Math.PI / 2 - span / 2 + span * (i / (text.length - 1));
+      g.save();
+      g.rotate(a + Math.PI / 2);
+      g.fillText(ch, 0, -ring);
+      g.restore();
+    });
+    // Two stars round the bottom.
+    for (const a of [Math.PI / 2 - 0.45, Math.PI / 2 + 0.45]) {
+      const sx = Math.cos(a) * (r - 13), sy = Math.sin(a) * (r - 13);
+      g.beginPath();
+      for (let p = 0; p < 10; p++) {
+        const t = -Math.PI / 2 + p * Math.PI / 5, rr = p % 2 ? 1.6 : 3.8;
+        p ? g.lineTo(sx + Math.cos(t) * rr, sy + Math.sin(t) * rr) : g.moveTo(sx + Math.cos(t) * rr, sy + Math.sin(t) * rr);
+      }
+      g.closePath();
+      g.fill();
+    }
+    // The difficulty, in the middle.
+    g.font = `${word.length > 4 ? 10.5 : 14}px ${MAP_TYPE}`;
+    g.fillText(word, 0, 1);
+    // WORN: specks of ink that did not take, knocked out of the print.
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'destination-out';
+    const rnd = seeded(word.length * 97 + 13);
+    for (let i = 0; i < 260; i++) {
+      g.globalAlpha = 0.3 + rnd() * 0.7;
+      g.beginPath();
+      g.arc(rnd() * S * K, rnd() * S * K, (0.4 + rnd() * 1.4) * K * 0.5, 0, Math.PI * 2);
+      g.fill();
+    }
+    sealCache.set(word, c);
+  }
+  ctx.save();
+  // Laid over rather than multiplied in: on a green field a multiply turns red ink
+  // brown, and the stamp has to read as red on any board.
+  ctx.globalAlpha = 0.88;
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.22);
+  ctx.drawImage(c, -S / 2, -S / 2, S, S);
+  ctx.restore();
 }
 
 // The dashboard's door, in the bottom-right corner. Drawn quiet — a thin outline
