@@ -1026,7 +1026,7 @@ export const CUE = {
   // Buying a star upgrade, on the same terms: Category A, always with priority.
   purchase:     ['purchase'],
   // An alert going up — a creature or a tower never seen before. Played with
-  // insist(), like the purchase: it is the game asking to be looked at.
+  // chime(), over anything else speaking: it is the game asking to be looked at.
   alert:        ['alert']
 };
 
@@ -2007,6 +2007,19 @@ export function solo(cue, priority = false, hold = false, always = false) {
 //
 // SAME_CLIP_GAP still applies, from `fire`. Two calls for the same clip inside one
 // frame cannot double-fire, which is the one collision this path could still have.
+// THE ALERT CHIME, OVER WHATEVER IS SPEAKING, at the owner's word: it did not sound
+// when wave 1 arrived with the village's shout, because that shout is a HELD line
+// (solo's `hold`) and nothing on the voice channel may start until it ends — the
+// chime asked, was refused, and was gone. So it goes the way the result screen's
+// fanfare does: the same bus at the same level, ducking the battle, but NEITHER
+// waiting for the gate NOR held off by a held line, so it rings with the shout. And
+// like insist(), it waits for a phone's sound to wake rather than being dropped.
+export function chime(cue) {
+  if (!ctx) return;
+  if (ctx.state === 'running') { fanfare(cue); return; }
+  ctx.resume().then(() => fanfare(cue)).catch(() => {});
+}
+
 export function fanfare(cue, level = 1) {
   if (!cue) return 0;
   if (!ctx || ctx.state !== 'running') return 0;

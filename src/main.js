@@ -1,5 +1,5 @@
 import { loadArt, ensureBoard, boardReady } from './assets.js';
-import { loadAudio, fanfare, setLoop, insist, CUE, VICTORY, LOST, STAR } from './audio.js';
+import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR } from './audio.js';
 import { level, levels } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
@@ -512,7 +512,8 @@ function step(state, dt) {
   // alert on the step it arrives.
   noticeFoes(state);
   // AND THE ALERT SOUNDS as one goes up — once, however many arrive together.
-  if ((state.foeAlerts || []).length > alerts) insist(CUE.alert);
+  // Over the village's shout if the two arrive together — see chime() in audio.js.
+  if ((state.foeAlerts || []).length > alerts) chime(CUE.alert);
   if (state.lives <= 0) state.result = 'lost';
 }
 
