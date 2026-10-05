@@ -6050,17 +6050,13 @@ function drawFoeCard(ctx, state) {
   ctx.font = `18px ${MAP_TYPE}`;
   ctx.fillText(d.name, 480, py + POP_PAD + FOE_LABEL + POP_TITLE / 2 - 4);
 
-  // The X, top right: a dark disc with a cream cross. Its rect is left in
-  // FOE_CLOSE for the tap to find.
+  // The X, top right — THE STAGE PANEL'S OWN, at the owner's word: a plain cross in
+  // the paper's ink, no disc behind it. Its rect is left in FOE_CLOSE for the tap.
   Object.assign(FOE_CLOSE, { x: px + pw - 12 - 28, y: py + 12, w: 28, h: 28 });
   const b = FOE_CLOSE;
   const xr = b.w / 2, xc = b.x + xr, yc = b.y + xr;
-  ctx.fillStyle = 'rgba(74,64,48,0.92)';
-  ctx.beginPath();
-  ctx.arc(xc, yc, xr, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = SHEET_FILL;
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = UP_MUTED;
+  ctx.lineWidth = 2.4;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(xc - 6, yc - 6); ctx.lineTo(xc + 6, yc + 6);
