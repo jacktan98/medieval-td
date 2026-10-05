@@ -1341,6 +1341,7 @@ function hollowRound(state, vp, dt) {
 //            it — where he is the creature he looks like (`vp.turned`, as stage 14's)
 //            and his slot is empty again.
 // Waves are counted as they BEGIN — the first enemy of a wave on the board.
+const SAY_WAIT = 4;
 function musterRound(state, vp, m, dt) {
   const cardOf = type => ({ title: enemyTypes[type].name, sprite: enemyTypes[type].sprite,
                             trim: enemyTypes[type].spriteTrim });
@@ -1354,6 +1355,15 @@ function musterRound(state, vp, m, dt) {
   }
   const M = vp.muster;
   const home = who => (level.villagers || [])[who];
+
+  // THE CAPTAIN'S LINES MUST BE HEARD. A line the mixer cannot play this frame — the
+  // sound not yet awake on the stage's first frame, or another held line still
+  // speaking — is asked for again every frame for up to SAY_WAIT seconds, rather
+  // than lost. A newer line replaces one still waiting.
+  const say = cue => { vp.say = { cue, until: vp.t + SAY_WAIT }; };
+  if (vp.say) {
+    if (solo(vp.say.cue, true, true, true) || vp.t > vp.say.until) vp.say = null;
+  }
 
   // WHICH WAVES HAVE BEGUN, and what each one starts here.
   const total = state.waves ? state.waves.length : Infinity;
@@ -1392,7 +1402,7 @@ function musterRound(state, vp, m, dt) {
           go(who, [[v.x, m.bottom]], m.bottomRoute);
         }
         // THE CAPTAIN LEADS THEM OUT, in his own voice, as they go.
-        if (standing.length) solo(BOSS_LEADS, true, true, true);
+        if (standing.length) say(BOSS_LEADS);
       }
     }
   }
@@ -1413,7 +1423,7 @@ function musterRound(state, vp, m, dt) {
                          idle: false });
     v.leg = 0;
     // AND HE SAYS SO as he sets off for the road.
-    solo(BOSS_BATTLE, true, true, true);
+    say(BOSS_BATTLE);
   }
 
   for (const who of [...slots, m.captain]) {
@@ -1429,7 +1439,7 @@ function musterRound(state, vp, m, dt) {
       Object.assign(v, { x: m.from, y: at.y, leg: 0, hidden: false, live: true, alpha: 1 });
       c.phase = 'come';
       // THE CAPTAIN'S ENTRANCE LINE as he walks in, when the stage starts.
-      if (who === m.captain) solo(BOSS_ENTERS, true, true, true);
+      if (who === m.captain) say(BOSS_ENTERS);
     }
     if (c.phase === 'come') {
       v.hidden = false;

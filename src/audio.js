@@ -1852,11 +1852,15 @@ export function alone(key, level = 1, rate = 1) {
 
 let holdUntil = 0;
 
+// TRUE IF IT PLAYED. Almost every caller lets a dropped line go — that is the gate
+// doing its job — but a line that must be heard can ask again: stage 15's Captain,
+// whose entrance falls on the very first frame of the stage, when a phone may not
+// have finished waking the sound up (see `say` in musterRound, src/villagers.js).
 export function solo(cue, priority = false, hold = false, always = false) {
   // Callers pass the result of a lookup straight in, and plenty of things have
   // nothing to say — bare ground, a siege plot, a family with no voice yet.
-  if (!cue) return;
-  if (!ctx || ctx.state !== 'running') return;
+  if (!cue) return false;
+  if (!ctx || ctx.state !== 'running') return false;
 
   const now = ctx.currentTime;
 
@@ -1869,7 +1873,7 @@ export function solo(cue, priority = false, hold = false, always = false) {
   // It applies to HIS OWN lines as well. Two of his set pieces can only collide by
   // landing inside the same second — entering and being shot to a third, say — and
   // hearing the first of them whole is better than hearing half of each.
-  if (now < holdUntil) return;
+  if (now < holdUntil) return false;
 
   // PRIORITY TAKES THE CHANNEL, and two things use it now: buying an upgrade, and
   // the boss's five set pieces.
@@ -1893,7 +1897,7 @@ export function solo(cue, priority = false, hold = false, always = false) {
   // channel, not about being allowed to say the same line five times running —
   // and a family with several takes has alternatives to rotate to anyway.
   if (now < gateUntil) {
-    if (!priority) return;
+    if (!priority) return false;
     hush(now);
   }
 
@@ -1927,7 +1931,7 @@ export function solo(cue, priority = false, hold = false, always = false) {
   // `always`: a line so rare in a game that the repeat rules have nothing to guard
   // against — the villagers' "runnn" and "nooo" — may never be passed over by them.
   if (always) eligible = ready;
-  if (!eligible.length) return;
+  if (!eligible.length) return false;
 
   const key = eligible[(Math.random() * eligible.length) | 0];
 
@@ -1941,6 +1945,7 @@ export function solo(cue, priority = false, hold = false, always = false) {
   // between two ordinary sounds; this is about not cutting a line off, so it ends
   // when the line does.
   if (hold) holdUntil = now + seconds;
+  return true;
 }
 
 // THE SUMMARY PANEL'S OWN WAY OF SPEAKING, and the third alongside `play` and
