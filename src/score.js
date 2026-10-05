@@ -151,6 +151,25 @@ export function setStars(levelId, difficultyId, stars) {
   persist(table);
 }
 
+// --- THE DIFFICULTY THE PLAYER LAST CHOSE ---------------------------------------
+//
+// KEPT BETWEEN VISITS, at the owner's word: the stage panel's one difficulty button
+// is left on whatever it was last set to, and that is the default the next time.
+const DIFF_KEY = 'medieval-td/difficulty';
+export function savedDifficulty() {
+  const s = store();
+  if (!s) return null;
+  try {
+    const i = JSON.parse(s.getItem(DIFF_KEY));
+    return Number.isInteger(i) && i >= 0 && i < DIFFICULTIES.length ? i : null;
+  } catch { return null; }
+}
+export function saveDifficulty(i) {
+  const s = store();
+  if (!s) return;
+  try { s.setItem(DIFF_KEY, JSON.stringify(i)); } catch { /* full, or refused */ }
+}
+
 // --- HOW FAR ALONG THE ROAD THE PLAYER HAS GOT -------------------------------
 //
 // A SEPARATE KEY FROM THE STARS, and separate on purpose. A star record is per

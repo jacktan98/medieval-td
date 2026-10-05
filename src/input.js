@@ -19,6 +19,8 @@ import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { AIM_MODES } from './data/towers.js';
+import { DIFFICULTIES } from './data/difficulty.js';
+import { saveDifficulty } from './score.js';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
@@ -268,9 +270,11 @@ export function tap(state, x, y, restart) {
 
     // Same treatment again: a difficulty scales the wave table and the purse,
     // both of which are read once at newGame.
-    const harder = hitDifficultyButton(state, x, y);
-    if (harder !== null) {
-      state.difficultyIndex = harder;
+    // ONE BUTTON: a tap moves it to the next setting, round again after the last,
+    // and the setting it is left on is the default from now on.
+    if (hitDifficultyButton(state, x, y)) {
+      state.difficultyIndex = ((state.difficultyIndex ?? 0) + 1) % DIFFICULTIES.length;
+      saveDifficulty(state.difficultyIndex);
       restart();
       return true;
     }

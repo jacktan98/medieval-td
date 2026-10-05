@@ -3404,8 +3404,8 @@ console.log('\n--- the panel a stage opens ---\n');
 
   ok(!/'Length'/.test(bare) && !/modeButtons/.test(bare),
     'the stage panel has no Length row', 'difficulty only');
-  ok(/settingRowUi\(ctx, 'Difficulty', difficultyButtons\(\)/.test(bare),
-    'and draws the difficulty row', 'one setting');
+  ok(/difficultyUi\(ctx, state\.difficultyIndex/.test(bare),
+    'and draws the one difficulty button', 'one setting, one button');
   const tap = readFileSync('src/input.js', 'utf8');
   ok(!/modeIndex/.test(tap) && !/hitModeButton/.test(tap),
     'and no tap sets a length any more', 'no modeIndex in input.js');

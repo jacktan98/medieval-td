@@ -5499,53 +5499,25 @@ Object.assign(START_BTN, {
 // competing with Start.
 const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12, w: 30, h: 30 };
 
-// The two setting rows, under the maps. Narrower buttons than the map ones and
-// laid out from the middle the same way, so a third entry in either would need no
-// numbers re-typed here.
-//
-// UNDER rather than beside, and one row each: the three choices are not the same
-// kind of thing. The map is WHERE, the length is HOW LONG, the difficulty is HOW
-// HARD — and a single row of seven buttons would read as seven maps. They are
-// stacked in the order the player decides them, which is the order the owner
-// asked for: map, then length, then difficulty.
-//
-// BOTH ROWS ARE CAPTIONED, which the difficulty row managed without until the
-// length arrived beside it. Two rows whose left-hand button both say "Normal" are
-// unreadable without a word saying what each row is choosing.
-const DIFF_BTN_W = 100, DIFF_BTN_H = 34, DIFF_GAP = 12;
-
-// THE CAPTION'S ROOM beside the row, so the caption and the row are centred in the
-// right column as one group.
-// THE CAPTION STARTS WHERE THE STORY'S WORDS DO, at the owner's word — its "D" on
-// the paragraph's left edge — and the buttons follow it.
-const CAPTION_W = 64;
+// THE DIFFICULTY IS ONE BUTTON, at the owner's word: it reads the setting in force
+// and a tap moves it to the next — Normal, Hard, and round again — and what it is
+// left on is the player's default from then on. Centred under the story, as Start
+// is, with its caption beside it on the story's left edge.
+const DIFF_BTN_W = 132, DIFF_BTN_H = 34;
 const DIFF_CAPTION_X = STORY_CARD.x + STORY_PAD;
-const settingRow = (items, y) => {
-  const left = DIFF_CAPTION_X + CAPTION_W + CAPTION_GAP;
-  return items.map((d, i) => ({
-    i,
-    name: d.name,
-    x: Math.round(left + i * (DIFF_BTN_W + DIFF_GAP)),
-    y,
-    w: DIFF_BTN_W,
-    h: DIFF_BTN_H
-  }));
-};
 
 // Halfway between the story and Start.
 const DIFF_ROW_Y = Math.round((STORY_CARD.y + STORY_CARD.h + START_BTN.y) / 2 - DIFF_BTN_H / 2);
 
-export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
-
-const hitRow = (row, x, y) => {
-  for (const b of row) {
-    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b.i;
-  }
-  return null;
+export const DIFF_BTN = {
+  x: Math.round(STAGE_RIGHT.cx - DIFF_BTN_W / 2), y: DIFF_ROW_Y, w: DIFF_BTN_W, h: DIFF_BTN_H
 };
 
+// Padded like Start, so a thumb need not be exact.
+const DIFF_PAD = 10;
 export const hitDifficultyButton = (state, x, y) =>
-  hitRow(difficultyButtons(), x, y);
+  x >= DIFF_BTN.x - DIFF_PAD && x <= DIFF_BTN.x + DIFF_BTN.w + DIFF_PAD &&
+  y >= DIFF_BTN.y - DIFF_PAD && y <= DIFF_BTN.y + DIFF_BTN.h + DIFF_PAD;
 
 // Generous on a thumb without being a whole-screen tap: a mis-tap on the board
 // should do nothing rather than start a game you were not ready for.
@@ -5579,37 +5551,28 @@ export function hitBack(state, x, y) {
 // there is no room for two more lines of text between the rows — a caption above
 // each row landed inside the plate above it. Beside them it costs nothing, and
 // the rows stay centred on the same middle every other row uses.
-const CAPTION_GAP = 12;
-
-// START'S RIGHT EDGE ON THE LAST DIFFICULTY BUTTON'S, at the owner's word.
-{
-  const row = difficultyButtons();
-  const last = row[row.length - 1];
-  START_BTN.x = last.x + last.w - START_BTN.w;
-}
-
 // THE WORLD MAP'S TYPE: Lobster, at the owner's word, for the region names, the two
 // doors, the Admin button and the stage panel. One weight only, so nothing here asks
 // for bold — the browser would fake it. The system font stands in until the file has
 // loaded; see MAP_FONT in src/overview.js.
 
-function settingRowUi(ctx, caption, row, chosen) {
+// The difficulty, captioned on the story's left edge, and the one button that
+// reads the setting in force. HARD IS GOLD — edge and word — so the harder setting
+// is plain at a glance; Normal is the quiet cream every other button wears.
+function difficultyUi(ctx, index) {
+  const d = DIFFICULTIES[index] || DIFFICULTIES[0];
+  const b = DIFF_BTN;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
-  ctx.fillText(caption, DIFF_CAPTION_X, row[0].y + row[0].h / 2 + 1);
+  ctx.fillText('Difficulty', DIFF_CAPTION_X, b.y + b.h / 2 + 1);
+  const hard = index > 0;
+  panelBox(ctx, b.x, b.y, b.w, b.h, { hot: hard, r: 9 });
   ctx.textAlign = 'center';
-
-  for (const b of row) {
-    const on = b.i === chosen;
-    // THE CHOSEN ONE IS GOLD — edge and word — on the same dark fill as the rest.
-    panelBox(ctx, b.x, b.y, b.w, b.h, { hot: on, r: 9 });
-
-    ctx.fillStyle = on ? UI_GOLD : UI_INK;
-    ctx.font = `18px ${MAP_TYPE}`;
-    ctx.fillText(b.name, b.x + b.w / 2, b.y + b.h / 2 + 1);
-  }
+  ctx.fillStyle = hard ? UI_GOLD : UI_INK;
+  ctx.font = `18px ${MAP_TYPE}`;
+  ctx.fillText(d.name, b.x + b.w / 2, b.y + b.h / 2 + 1);
 }
 
 function drawStart(ctx, state) {
@@ -5747,7 +5710,7 @@ function drawStart(ctx, state) {
     ctx.textAlign = 'center';
   }
 
-  settingRowUi(ctx, 'Difficulty', difficultyButtons(), state.difficultyIndex ?? 0);
+  difficultyUi(ctx, state.difficultyIndex ?? 0);
 
   const b = START_BTN;
   ctx.save();

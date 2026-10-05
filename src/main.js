@@ -4,7 +4,7 @@ import { level, levels } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
-import { finish, saveUnlocked, startReveal as startStars, stepStars } from './score.js';
+import { finish, saveUnlocked, startReveal as startStars, stepStars, savedDifficulty } from './score.js';
 import { startReveal, stepReveal, stageOfLevel, openedStages, roadGrew, mapAudio } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies, spawn } from './enemies.js';
@@ -82,7 +82,8 @@ function newGame() {
   const levelIndex = state.levelIndex ?? 0;
   // Survives the reset for the same reason the map does: it is a menu setting
   // rather than part of the game being reset.
-  const difficultyIndex = state.difficultyIndex ?? DEFAULT_DIFFICULTY;
+  // AND ON FIRST LOAD, the one the player last left the button on.
+  const difficultyIndex = state.difficultyIndex ?? savedDifficulty() ?? DEFAULT_DIFFICULTY;
   const difficulty = DIFFICULTIES[difficultyIndex];
 
   // WHERE ON THE WORLD MAP THE PLAYER IS, and how much of it has opened. Both
