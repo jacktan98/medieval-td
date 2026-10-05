@@ -33,7 +33,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_enters_battle.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
-                      Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3,
+                      Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3, Book_close_sound.mp3,
                       Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3,
                       Fire_crackling.mp3, River_water_flowing.mp3,
                       Steel_welding.mp3, Things_land_on_ground.mp3,
@@ -246,6 +246,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a star **upgrade is bought** on the Upgrades screen | `Purchase_sound` (90% of a voice, Category A with priority, played on every purchase) |
 | a **"New Enemy!" or "New Tower!" alert** goes up under the gold | `Alert_sound` (90% of a voice, Category A with priority; once for alerts that arrive together) |
 | an encyclopedia **page is turned** with ‹ or › | `Page_flip` (in place of the click, Category B) |
+| the encyclopedia is **closed** | `Book_close_sound` — one of the four closes in the file, cut apart, never the same one twice running (in place of the click, Category B) |
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a spearman, pikeman or swordsman swings** — Category B | `Attack_1/2/3` |
 | **a paladin swings** — Category B | `Paladin_attack` |

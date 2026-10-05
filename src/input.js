@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, setSoundLevel } from './audio.js';
+import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, closeBookSound, setSoundLevel } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -83,6 +83,8 @@ export function attachInput(canvas, state, restart) {
     // A PAGE TURNED in the encyclopedia sounds like one, and so does opening a
     // "New enemy!" or "New tower!" card.
     else if (did === 'flip') play(PAGE_FLIP);
+    // AND CLOSING THE ENCYCLOPEDIA sounds like a book shutting.
+    else if (did === 'close') closeBookSound();
     else if (did) play(SELECT);
   });
 

@@ -418,7 +418,8 @@ export function tapBook(state, x, y) {
   if (stat >= 0) { state.bookTip = stat; return true; }
   if (state.bookTip !== null && state.bookTip !== undefined) { state.bookTip = null; return true; }
 
-  if (inside(BOOK_CLOSE, x, y)) { state.book = null; return true; }
+  // 'close', so input.js plays the book shutting rather than the click.
+  if (inside(BOOK_CLOSE, x, y)) { state.book = null; return 'close'; }
   // BOTH ARROWS ALWAYS WORK, wrapping round.
   // 'flip', so input.js plays the page turning rather than the click.
   if (inside(BOOK_PREV, x, y)) { flip(state, -1); return 'flip'; }
