@@ -1787,10 +1787,12 @@ const assassin = {
   hidden: true
 };
 
+// EVERY RUNG RESPAWNS IN 7 SECONDS, at the owner's word, where it used to climb
+// 8 / 7 / 6 / 5: a tier buys a better man, not a quicker return.
 export const barracks = [
   {
     ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier 1', cost: 70, range: 165, colour: '#6E7A6A',
-    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 60, respawn: 8, regen: 4, colour: '#7C93B8',
+    soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 60, respawn: 7, regen: 4, colour: '#7C93B8',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
@@ -1800,7 +1802,7 @@ export const barracks = [
   },
   {
     ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier 3', cost: 150, range: 195, colour: '#8A8478',
-    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 60, respawn: 6, regen: 6, colour: '#5C79AE',
+    soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 60, respawn: 7, regen: 6, colour: '#5C79AE',
                damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
   },
   // TIER 4 IS A FIRST GUESS, exactly as the Musketeer Post's numbers are, and it is
@@ -1844,7 +1846,7 @@ export const barracks = [
     // squad is replaced every time one of them falls. A paladin who died would
     // otherwise muster again having forgotten what you paid for.
     abilities: ['light', 'blinding'],
-    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 200, damage: 8, cd: 0.80, speed: 60, respawn: 5, regen: 7, colour: '#4A6BA0',
+    soldier: { ...paladin,   name: 'Paladin',   count: 3, hp: 200, damage: 8, cd: 0.80, speed: 60, respawn: 7, regen: 7, colour: '#4A6BA0',
                damageType: 'physical', armour: { physical: 'med', magic: 'low' },
                // HIS OWN THREE LINES WHEN HE IS TAPPED, at the owner's word: "when
                // I select any paladin unit, they should use their own paladin voice
@@ -1898,7 +1900,7 @@ export const barracks = [
     // heavier blow on the strike that comes out of nowhere. Both are read in
     // src/units.js, which is where the men are, rather than in src/towers.js.
     abilities: ['knife', 'sneak'],
-    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 15, cd: 0.8, speed: 60, respawn: 5, regen: 7, colour: '#6B5B43',
+    soldier: { ...assassin, name: 'Assassin', count: 3, hp: 150, damage: 15, cd: 0.8, speed: 60, respawn: 7, regen: 7, colour: '#6B5B43',
               damageType: 'physical', pierce: 1, armour: { physical: 'low', magic: 'none' },
               // HIS OWN THREE LINES WHEN HE IS TAPPED, on the Keep's terms — see the
               // note beside the Paladin's `voice` above, which is the whole of the
@@ -3952,7 +3954,7 @@ export const TOWER_NOTES = {
     'the work. A fallen man is replaced after a short wait, and the wounded slowly heal. Select the tower to ' +
     'move their rally point.',
   'Guard Post': 'Musters 3 pikemen with more health than the militia, so they hold the line for longer. ' +
-    'They also return to the fight sooner after falling.',
+    'They also hit a little harder and heal a little faster between fights.',
   "Knight's Hall": 'Musters 3 swordsmen in light armor that turns aside part of every physical blow. The ' +
     'sturdiest wall a plain barracks can build.',
   'Paladin Keep': 'Musters 3 paladins in plate armor, with the most health of any soldier. They are built to ' +

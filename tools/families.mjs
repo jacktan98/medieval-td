@@ -666,7 +666,7 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   const climbs = [
     ['health', m => m.hp * soak(m), 1], ['damage', m => m.damage, 1],
     ['reload', m => m.cd, -1],
-    ['respawn', m => m.respawn, -1], ['regen', m => m.regen, 1]
+    ['regen', m => m.regen, 1]
   ];
   const men = [...spine, keep].map(d => d.soldier);
   for (const [name, pick, dir] of climbs) {
@@ -685,6 +685,11 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // well as a better fighter, and the ladder here is deliberately only about the
   // fighting. Asked over all five rungs, the Guild included, because the Assassin was
   // the fastest man in the game at 78 and is now level with the militia.
+  // AND EVERY RUNG RESPAWNS IN THE SAME TIME, at the owner's word: 7 seconds, where
+  // it used to climb 8 / 7 / 6 / 5. A tier buys a better man, not a quicker return.
+  const waits = barracks.map(d => d.soldier.respawn);
+  ok(waits.every(w => w === 7), 'and every rung respawns in exactly 7 seconds', waits.join(' / '));
+
   const paces = barracks.map(d => d.soldier.speed);
   ok(new Set(paces).size === 1, 'while every rung walks at exactly the same pace',
     `${paces.join(' / ')} — the Guild included`);
@@ -716,7 +721,7 @@ console.log('\nBarracks tier 4 — a wall, not a weapon\n');
   // assassin already wore LOW at the same 150 health — so the two squads are now
   // the same wall to the point, 600 against 600, and the Guild is ahead of the Hall
   // on every other dial it has: 56 damage a second against 18, a rank of pierce,
-  // faster men, a shorter respawn.
+  // faster men.
   //
   // THE FORK IS STILL A DECISION, but it is now a decision against the KEEP alone
   // rather than against the tier below as well — see the wall comparison above, and

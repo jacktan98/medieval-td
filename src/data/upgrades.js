@@ -42,8 +42,8 @@ export const UPGRADES = {
     // a little under the old 4; on an Assassin Guild's 15 it is 16.5, a little over.
     { name: 'Honed Blades', text: 'Increase base attack damage of barracks units by 10%.', blowTimes: 1.10 },
     // CALL TO ARMS, and it was Quick Muster: renamed to match the artist's war horn.
-    // 10%, AND IT WAS 2 SECONDS: the owner changed it. A Militia Camp's 8 is 7.2, a
-    // Paladin Keep's 5 is 4.5 — a share of every tier's own wait rather than a flat cut.
+    // 10%, AND IT WAS 2 SECONDS: the owner changed it. Every barracks waits 7, so
+    // with it a man is back in 6.3.
     { name: 'Call to Arms', text: 'Reduce respawn time of barracks units by 10%.', respawnTimes: 0.9 },
     { name: 'Last Stand', text: 'Grants a 10% chance that a unit survives a killing blow with 1 health left.',
       deathSave: 0.10 }
