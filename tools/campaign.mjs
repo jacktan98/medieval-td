@@ -3410,12 +3410,9 @@ console.log('\n--- the panel a stage opens ---\n');
   ok(!/modeIndex/.test(tap) && !/hitModeButton/.test(tap),
     'and no tap sets a length any more', 'no modeIndex in input.js');
 
-  // THE BOARD BEHIND THE PANEL IS BRIGHTER, at the owner's ask. Held as a number
-  // rather than a feeling: at 0.80 the map under the settings was a smudge that
-  // could be told from another board only by the line of its road.
-  const wash = /ctx\.fillStyle = 'rgba\(26,21,13,([\d.]+)\)';/.exec(bare);
-  ok(wash && +wash[1] <= 0.6, 'and the map behind it is not washed out',
-    wash ? `${wash[1]} of cover, where it was 0.80` : 'the wash is gone');
+  // THE BOARD IS A PHOTOGRAPH NOW, on the left of the panel rather than under it,
+  // so nothing is laid over it to read type against — see the photo checks below.
+  ok(/STAGE_PHOTO/.test(bare), 'and shows the board as a photograph beside the settings');
 }
 
 console.log('\n--- what a figure can walk behind ---\n');
@@ -3805,16 +3802,16 @@ console.log('\n--- the stage panel stands on its own board ---\n');
   ok(clipAt >= 0 && drawAt > clipAt, 'and cut to the panel rather than overhanging it',
     'clipped before the board is drawn');
 
-  // COVER-FITTED. A 960x540 board in a 444x292 panel: fitting the width leaves the
-  // panel half empty, and stretching bends roads that are never drawn bent.
-  ok(/Math\.max\(p\.w \/ 960, p\.h \/ 540\)/.test(body),
+  // COVER-FITTED into its photograph: fitting the width leaves the print half
+  // empty, and stretching bends roads that are never drawn bent.
+  ok(/Math\.max\(iw \/ 960, ih \/ 540\)/.test(body),
     'and scaled to cover it rather than stretched to fit',
     'one scale for both axes, the larger');
 
   // AND DIMMED AFTERWARDS, because it is a background and the settings are the
   // point. A board at full strength is a lovely thing to read a label off badly.
-  ok(drawAt >= 0 && body.indexOf('fillRect(p.x, p.y, p.w, p.h)', drawAt) > drawAt,
-    'and then dimmed, because the settings are what the panel is for',
+  ok(drawAt >= 0 && body.indexOf("'multiply'", drawAt) > drawAt,
+    'and then aged, warmed like an old print',
     'a wash over the board');
 }
 

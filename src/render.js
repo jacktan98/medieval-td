@@ -5446,7 +5446,8 @@ function infoStat(ctx, key, x, y, text, colour) {
 // So nothing runs until this is dismissed. main.js skips the whole step while
 // state.started is false, which means the wave timer, the bonus, the spawns and
 // the clock are all held, not just hidden.
-export const START_BTN = { x: 400, y: 378, w: 160, h: 46 };
+// Placed under the story in the panel's right column — see STAGE_RIGHT below.
+export const START_BTN = { x: 0, y: 0, w: 160, h: 46 };
 
 // THE ROW OF MAP BUTTONS IS GONE. Which map you play is a place on the world map
 // now — see src/overview.js — so the thing that used to be three plates side by
@@ -5461,16 +5462,37 @@ export const START_BTN = { x: 400, y: 378, w: 160, h: 46 };
 // so the two were two pixels apart and read as one stuck-together block. The
 // panel is the thing being decided on and the book is a door out of it; they
 // need air between them.
-// TALLER, AND IT WAS 292 FROM y 136: the stage's story sits on a scrap of paper
-// between the stars and the difficulty, at the owner's word — see STORY_CARD.
-const STAGE_PANEL = { x: 258, y: 54, w: 444, h: 400 };
+// WIDER, AND ON THE BOOK'S OLD PAPER, at the owner's word: the stage's name across
+// the top, the board as an old photograph on the left, and on the right the story,
+// the difficulty and Start. Clear of the Encyclopedia door bottom left (which ends
+// at x 114) and of the Admin door bottom right (which starts at y 484).
+const STAGE_PANEL = { x: 120, y: 52, w: 720, h: 384 };
+const COL_TOP = STAGE_PANEL.y + 120;
+const COL_PAD = 24;
+
+// THE BOARD, AS A PHOTOGRAPH pasted on the left.
+export const STAGE_PHOTO = { x: STAGE_PANEL.x + COL_PAD, y: COL_TOP, w: 348, h: 236 };
+const PHOTO_BORDER = 12;
+
+// THE RIGHT COLUMN: everything the player reads and decides.
+const STAGE_RIGHT = {
+  x: STAGE_PHOTO.x + STAGE_PHOTO.w + 20,
+  r: STAGE_PANEL.x + STAGE_PANEL.w - COL_PAD
+};
+STAGE_RIGHT.w = STAGE_RIGHT.r - STAGE_RIGHT.x;
+STAGE_RIGHT.cx = STAGE_RIGHT.x + STAGE_RIGHT.w / 2;
 
 // THE STORY, on the encyclopedia's photo paper, torn at the edge and pasted on.
 // Sized to the longest stage's words — tools/story.mjs checks every one fits.
-export const STORY_CARD = { x: 290, y: STAGE_PANEL.y + 116, w: 380, h: 132 };
-export const STORY_TEXT = 14;
-export const STORY_LEAD = 18;
-export const STORY_PAD = 16;
+export const STORY_CARD = { x: STAGE_RIGHT.x, y: COL_TOP, w: STAGE_RIGHT.w, h: 140 };
+export const STORY_TEXT = 13;
+export const STORY_LEAD = 17;
+export const STORY_PAD = 14;
+
+Object.assign(START_BTN, {
+  x: Math.round(STAGE_RIGHT.cx - START_BTN.w / 2),
+  y: STAGE_PHOTO.y + STAGE_PHOTO.h - START_BTN.h
+});
 
 // Back to the world map without starting anything. Top-right of the panel, drawn
 // as a plain glyph rather than a plate — it is an escape, not a third choice
@@ -5490,23 +5512,26 @@ const BACK_BTN = { x: STAGE_PANEL.x + STAGE_PANEL.w - 42, y: STAGE_PANEL.y + 12,
 // BOTH ROWS ARE CAPTIONED, which the difficulty row managed without until the
 // length arrived beside it. Two rows whose left-hand button both say "Normal" are
 // unreadable without a word saying what each row is choosing.
-const DIFF_BTN_W = 116, DIFF_BTN_H = 34, DIFF_GAP = 14;
+const DIFF_BTN_W = 104, DIFF_BTN_H = 34, DIFF_GAP = 12;
 
+// THE CAPTION'S ROOM beside the row, so the caption and the row are centred in the
+// right column as one group.
+const CAPTION_W = 78;
 const settingRow = (items, y) => {
   const total = items.length * DIFF_BTN_W + (items.length - 1) * DIFF_GAP;
+  const left = STAGE_RIGHT.cx - (total + CAPTION_W + CAPTION_GAP) / 2 + CAPTION_W + CAPTION_GAP;
   return items.map((d, i) => ({
     i,
     name: d.name,
-    x: Math.round(480 - total / 2 + i * (DIFF_BTN_W + DIFF_GAP)),
+    x: Math.round(left + i * (DIFF_BTN_W + DIFF_GAP)),
     y,
     w: DIFF_BTN_W,
     h: DIFF_BTN_H
   }));
 };
 
-// One setting row now — the Length row above it came out with Extended — so the
-// difficulty sits where the first row of two used to.
-const DIFF_ROW_Y = 322;
+// Halfway between the story and Start.
+const DIFF_ROW_Y = Math.round((STORY_CARD.y + STORY_CARD.h + START_BTN.y) / 2 - DIFF_BTN_H / 2);
 
 export const difficultyButtons = () => settingRow(DIFFICULTIES, DIFF_ROW_Y);
 
@@ -5562,7 +5587,7 @@ const CAPTION_GAP = 12;
 function settingRowUi(ctx, caption, row, chosen) {
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(240,230,210,0.55)';
+  ctx.fillStyle = UP_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
   ctx.fillText(caption, row[0].x - CAPTION_GAP, row[0].y + row[0].h / 2 + 1);
   ctx.textAlign = 'center';
@@ -5614,74 +5639,77 @@ function drawStart(ctx, state) {
   const p = STAGE_PANEL;
   const stage = STAGES[state.stage];
   const board = stage.level === null ? null : art[levels[stage.level].art];
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(p.x, p.y, p.w, p.h, 14);
-  ctx.clip();
-
-  // THE BOARD ITSELF, BEHIND THE SETTINGS. The panel used to be a flat plate, and a
-  // flat plate is the one thing on this screen that says nothing — the player is
-  // choosing whether to fight HERE, and here has a shape.
-  //
-  // COVER-FITTED, not stretched. The panel is 444x292 and a board is 960x540, so
-  // fitting the width would leave the panel half empty and stretching it would put
-  // the map's roads at an angle they are never drawn at. Scaled to cover and centred
-  // takes the middle of the board, which is where the route is.
-  ctx.fillStyle = 'rgba(30,26,18,0.94)';
-  ctx.fillRect(p.x, p.y, p.w, p.h);
-  if (board) {
-    const k = Math.max(p.w / 960, p.h / 540);
-    const bw = 960 * k, bh = 540 * k;
-    ctx.drawImage(board, p.x + (p.w - bw) / 2, p.y + (p.h - bh) / 2, bw, bh);
-
-    // AND THEN COVERED AGAIN, because it is a background and the settings are the
-    // point — but LESS than it was, at the owner's ask. At 0.80 the board behind
-    // this panel was a dark smudge that could be told from another board only by
-    // the line of its road; at 0.52 it is the map, and the type over it is still
-    // cream on brown at a contrast the whole game is drawn at.
-    ctx.fillStyle = 'rgba(26,21,13,0.52)';
-    ctx.fillRect(p.x, p.y, p.w, p.h);
-  }
-  ctx.restore();
-
-  ctx.strokeStyle = UI_EDGE;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(p.x, p.y, p.w, p.h, 14);
-  ctx.stroke();
   // A stage the artist has drawn a marker for but not a board. The panel opens
   // anyway — see stageAt in src/overview.js for why the refusal lives here rather
   // than on the marker — and says what is missing.
   const lv = stage.level === null ? null : levels[stage.level];
 
-  // WHICH PLACE ON THE ROAD, then what it is called. The number is the smaller of
-  // the two because the name is what a player recognises — but it is there,
-  // because the map is a sequence and the panel has to say where in it you are.
-  ctx.fillStyle = 'rgba(240,230,210,0.6)';
+  // THE ENCYCLOPEDIA'S OLD PAPER, the whole panel.
+  paperRect(ctx, p.x, p.y, p.w, p.h, SHEET_SEED + 5, SHEET_TONE, SHEET_TEAR, UP_BG_EDGE, 2);
+
+  // WHICH PLACE ON THE ROAD, then what it is called, then the best result at the
+  // difficulty chosen — across the top, in the book's ink.
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UP_MUTED;
   ctx.font = `16px ${MAP_TYPE}`;
-  // "Stage 1" rather than "STAGE 1": a script face in capitals is hard to read.
-  ctx.fillText(`Stage ${state.stage + 1}`, 480, p.y + 34);
-
-  ctx.fillStyle = lv ? '#F0E6D2' : 'rgba(240,230,210,0.55)';
+  ctx.fillText(`Stage ${state.stage + 1}`, 480, p.y + 32);
+  ctx.fillStyle = lv ? UP_INK : UP_MUTED;
   ctx.font = lv ? `32px ${MAP_TYPE}` : `26px ${MAP_TYPE}`;
-  ctx.fillText(lv ? lv.name : 'Not drawn yet', 480, p.y + 64);
-
-  // The best result at THE SETTINGS CURRENTLY CHOSEN, which is why the row lives
-  // here rather than on the marker: it changes as the rows below it are tapped,
-  // and a rating painted on the world map could not say which ladder it was for.
+  ctx.fillText(lv ? lv.name : 'Not drawn yet', 480, p.y + 62);
   const diff = DIFFICULTIES[state.difficultyIndex ?? 0];
   if (lv) {
-    starRow(ctx, 480, p.y + 96, 9,
-      bestStars(lv.id, diff.id), false, true);
+    // The map's own gold stars, with the dark ring that keeps them on pale paper.
+    const got = bestStars(lv.id, diff.id);
+    for (let i = 0; i < MAX_STARS; i++) {
+      const sx = 480 + (i - (MAX_STARS - 1) / 2) * 26;
+      if (i < got) starShape(ctx, sx, p.y + 94, 10, 'map', UI_INK, '#3A2410');
+      else starShape(ctx, sx, p.y + 94, 10, 'rgba(255,248,228,0.45)');
+    }
   } else {
-    ctx.fillStyle = 'rgba(240,230,210,0.42)';
+    ctx.fillStyle = UP_MUTED;
     ctx.font = `16px ${MAP_TYPE}`;
-    ctx.fillText('This stretch of road has no battle on it yet.', 480, p.y + 96);
+    ctx.fillText('This stretch of road has no battle on it yet.', 480, p.y + 94);
   }
 
-  // The back door, top-right of the plate.
-  ctx.strokeStyle = 'rgba(240,230,210,0.65)';
+  // THE BOARD, AS AN OLD PHOTOGRAPH: the photo paper with a border, the map inside
+  // it cover-fitted, and warmed and faded toward its edges like an old print.
+  const ph = STAGE_PHOTO;
+  paperRect(ctx, ph.x, ph.y, ph.w, ph.h, 61 + state.stage, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.2, true, SOFT_RIP);
+  const iw = ph.w - 2 * PHOTO_BORDER, ih = ph.h - 2 * PHOTO_BORDER;
+  const ix = ph.x + PHOTO_BORDER, iy = ph.y + PHOTO_BORDER;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(ix, iy, iw, ih);
+  ctx.clip();
+  if (board) {
+    const k = Math.max(iw / 960, ih / 540);
+    ctx.drawImage(board, ix + (iw - 960 * k) / 2, iy + (ih - 540 * k) / 2, 960 * k, 540 * k);
+    // WARMED (a sepia wash, multiplied in) and FADED (a little of the paper over
+    // it), which is what years do to a print. By compositing rather than a canvas
+    // filter, which not every phone's browser draws.
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = 'rgb(226,192,140)';
+    ctx.fillRect(ix, iy, iw, ih);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(240,222,186,0.30)';
+    ctx.fillRect(ix, iy, iw, ih);
+    const v = ctx.createRadialGradient(ix + iw / 2, iy + ih / 2, ih * 0.35, ix + iw / 2, iy + ih / 2, iw * 0.62);
+    v.addColorStop(0, 'rgba(90,60,25,0)');
+    v.addColorStop(1, 'rgba(90,60,25,0.38)');
+    ctx.fillStyle = v;
+    ctx.fillRect(ix, iy, iw, ih);
+  } else {
+    ctx.fillStyle = 'rgba(120,90,50,0.18)';
+    ctx.fillRect(ix, iy, iw, ih);
+  }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(90,60,25,0.45)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
+
+  // The back door, top-right of the plate, in the paper's ink.
+  ctx.strokeStyle = UP_MUTED;
   ctx.lineWidth = 2.4;
   ctx.lineCap = 'round';
   const b0 = BACK_BTN, cx = b0.x + b0.w / 2, cy = b0.y + b0.h / 2;
