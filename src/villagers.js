@@ -18,7 +18,8 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, WAR_CRY, ANVIL } from './audio.js';
+import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
+         BOSS_ENTERS, BOSS_LEADS, BOSS_BATTLE } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
 import { nearestOn } from './route.js';
@@ -640,9 +641,10 @@ const PLAYS = {
       watch: [4, 8], idle: [2.5, 4],
       captainWay: [[92, 318], [88, 214]], captainRoute: 1
     },
-    // THE CAPTAIN'S OWN VOICE as the first wave comes, from the camp wall, at the
-    // owner's word — his entrance line, in place of the camp's old shout.
-    cries: { runnn: false, nooo: false, wave: 'captain' }
+    // NO SHOUT AS THE FIRST WAVE COMES: the Captain speaks for this camp instead —
+    // as he walks in, as he sends his men out, and as he walks out himself (see
+    // musterRound).
+    cries: { runnn: false, nooo: false, wave: null }
   },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
@@ -1389,8 +1391,8 @@ function musterRound(state, vp, m, dt) {
           const v = state.villagers[who];
           go(who, [[v.x, m.bottom]], m.bottomRoute);
         }
-        // THE WAR CRY as they go.
-        if (standing.length) solo(WAR_CRY, true);
+        // THE CAPTAIN LEADS THEM OUT, in his own voice, as they go.
+        if (standing.length) solo(BOSS_LEADS, true, true, true);
       }
     }
   }
@@ -1410,6 +1412,8 @@ function musterRound(state, vp, m, dt) {
     Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]],
                          idle: false });
     v.leg = 0;
+    // AND HE SAYS SO as he sets off for the road.
+    solo(BOSS_BATTLE, true, true, true);
   }
 
   for (const who of [...slots, m.captain]) {
@@ -1424,6 +1428,8 @@ function musterRound(state, vp, m, dt) {
       // Out of sight off the left edge, on his own row, and in.
       Object.assign(v, { x: m.from, y: at.y, leg: 0, hidden: false, live: true, alpha: 1 });
       c.phase = 'come';
+      // THE CAPTAIN'S ENTRANCE LINE as he walks in, when the stage starts.
+      if (who === m.captain) solo(BOSS_ENTERS, true, true, true);
     }
     if (c.phase === 'come') {
       v.hidden = false;
@@ -1453,7 +1459,7 @@ function musterRound(state, vp, m, dt) {
         (vp.turned = vp.turned || []).push({ who, type: c.type, route: c.route, s: c.s });
         c.phase = 'away';
         // On the road he is a creature like any other, and the board can be won by
-        // killing him. His entrance line was spoken at wave 1, so he steps on quietly.
+        // killing him. He has said his lines already, so he steps on quietly.
         if (who === m.captain) { vp.holdWin = false; vp.turned[vp.turned.length - 1].quiet = true; }
       }
     }

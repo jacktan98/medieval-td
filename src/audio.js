@@ -180,7 +180,7 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 // help anybody.
 const LOUDEST = true;
 const LOUDER = new Set([
-  'captain_enters', 'captain_pause', 'captain_healed',
+  'captain_enters', 'captain_leads', 'captain_battle', 'captain_pause', 'captain_healed',
   'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked'
 ]);
 
@@ -324,6 +324,10 @@ const paths = {
   // run, and a shield clanking over the top of one would be the game losing its
   // own set piece.
   captain_enters:   'assets/audio/sfx/Captain_Thug_enters.mp3',
+  // STAGE 15'S CAMP, at the owner's word: his line as he sends the eight thugs from
+  // behind the wall to the road, and his line as he walks out to the road himself.
+  captain_leads:    'assets/audio/sfx/Captain_Thug_leads_thugs.mp3',
+  captain_battle:   'assets/audio/sfx/Captain_Thug_enters_battle.mp3',
   captain_pause:    'assets/audio/sfx/Captain_Thug_pause.mp3',
   captain_healed:   'assets/audio/sfx/Captain_Thug_heal.mp3',
   captain_dying:    'assets/audio/sfx/Captain_Thug_before_dying.mp3',
@@ -879,7 +883,12 @@ export const GAIN = {
   captain_picked: 0.927,
   captain_dying: 0.898,
   captain_pause: 0.847,
-  captain_enters: 0.818,
+  // His newer lines, trimmed to the same 300 against a voice's 100 as the rest —
+  // measured: each clip's loudest 0.3s at its LOUDER gain, brought to 0.27. The new
+  // entrance is a quiet recording that GAIN_MAX holds back, so its trim is over 1.
+  captain_enters: 1.175,
+  captain_leads: 0.818,
+  captain_battle: 0.76,
   captain_healed: 0.804,
   captain_kills: 0.767,
   // And the shield taking a hit, a little under the shots (40 against their 45) now
@@ -1110,9 +1119,7 @@ export const VILLAGER_WAVE = {
   oh_no: ['villager_oh_no'],
   here:  ['villager_here_they_come'],
   runnn: ['villager_runnn'],
-  intruders: ['villager_intruders'],
-  // Stage 15's is the Captain's own, from the camp wall: Captain_Thug_enters.
-  captain: ['captain_enters']
+  intruders: ['villager_intruders']
 };
 // Something the villagers throw landing — a plank on the stack, a part on the
 // ballista, a box on the crates. Category B, soft (its GAIN): a working
@@ -1162,6 +1169,9 @@ export const STAR    = ['star'];
 // enemies.js, one from the spawn, one from the health check, one from units.js
 // where his blows land.
 export const BOSS_ENTERS = ['captain_enters'];
+// Stage 15's camp: sending his men out, and walking out himself. See musterRound.
+export const BOSS_LEADS  = ['captain_leads'];
+export const BOSS_BATTLE = ['captain_battle'];
 // WHAT HE SAYS WHILE HE CHANNELS. It was the line for first dropping below 30%
 // health and the owner has repointed it: the file is Captain_Thug_pause now and
 // "health drop to 30% no longer uses this". So the warning-shot moment is gone

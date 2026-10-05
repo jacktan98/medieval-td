@@ -204,8 +204,8 @@ export function spawn(state, typeId, from = null) {
   // Priority takes the channel off whatever is speaking. Exactly one other thing in
   // the game uses it — buying an upgrade — on the same argument: the gate exists to
   // stop the battle talking over itself, and neither of these is the battle.
-  // (NOT WHEN HE HAS ALREADY SPOKEN: stage 15's Captain says his line from the camp
-  // wall as wave 1 comes, and steps onto the road at the end quietly — `quiet`.)
+  // (NOT WHEN HE HAS ALREADY SPOKEN: stage 15's Captain says his lines at the camp
+  // wall — walking in, and walking out — and steps onto the road quietly, `quiet`.)
   if (def.boss && !(from && from.quiet)) solo(BOSS_ENTERS, true, true);
   return state.enemies[state.enemies.length - 1];
 }

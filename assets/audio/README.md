@@ -29,7 +29,8 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
-                      Captain_Thug_selected.mp3
+                      Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
+                      Captain_Thug_enters_battle.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Page_flip.mp3,
@@ -264,7 +265,9 @@ and it now means "how long a lull has to be before the game forgets".
 | **a paladin calls Holy Light** — Category B | `Paladin_Holy_Light` |
 | **a paladin's 5th blow lands, or the captain's sword does** — Category B | `Heavy_strike` |
 | the **captain** kills his 5th, 10th, 15th man | `Captain_Thug_kill_soldier` |
-| the **captain** walks on | `Captain_Thug_enters` |
+| the **captain** walks on — on stage 15, as he walks in to the camp wall when the stage starts | `Captain_Thug_enters` |
+| stage 15: the **captain** sends the 8 thugs from the wall to the road | `Captain_Thug_leads_thugs` |
+| stage 15: the **captain** walks out to the road himself | `Captain_Thug_enters_battle` |
 | the **captain** channels, for 3s | `Captain_Thug_pause` |
 | the **captain** finishes mending himself | `Captain_Thug_heal` |
 | the **captain** is beaten and standing | `Captain_Thug_before_dying` |
