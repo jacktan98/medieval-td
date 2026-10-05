@@ -1,7 +1,7 @@
 import { level, levels } from './level.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { canCallWave, earlyCallBonus, upcomingWave } from './waves.js';
-import { SCALE, EXPORT_PX, BLOOD_SCALE, families, UNIT_NOTES } from './data/towers.js';
+import { SCALE, EXPORT_PX, BLOOD_SCALE, families, TOWER_NOTES } from './data/towers.js';
 import { CORPSE_FADE, knockbackOffset, settled, falling, dropHeight } from './corpses.js';
 // The live bomb's window into its own drawing, and where in that window it sits
 // on the ground. Kept in bombs.js beside the offset that was measured with them —
@@ -5979,8 +5979,9 @@ const ALERT_RIM = '#C9A24A';
 const ALERT_RED = '#B3362A';
 
 // WHAT AN ALERT OR ITS CARD SHOWS. A creature, as itself; a TOWER the stage has just
-// offered, as the man it musters — "the image used will be the unit not the tower" —
-// with his own description and numbers, the encyclopedia's unit card.
+// offered, as the TOWER — its drawing (the machine on its roof with it) and its own
+// description, at the owner's word — with the numbers of the men it musters, which
+// are what the player builds it for.
 function newCard(id) {
   if (id && typeof id === 'object' && id.tower) {
     const def = towerNamed(id.tower);
@@ -5990,14 +5991,29 @@ function newCard(id) {
     if (e.hp !== null) first.push(['stat_health', e.hp]);
     first.push([e.attack || 'stat_damage', e.damage]);
     if (e.range !== null) first.push(['stat_range', e.range]);
-    return { alert: 'New Tower!', label: `NEW TOWER \u00b7 ${def.title.toUpperCase()}`, name: e.title,
-             sprite: e.sprite, trim: e.trim, prose: UNIT_NOTES[e.title] || '',
-             rows: [first, e.traits].filter(r => r.length) };
+    return { kind: 'tower', alert: 'New Tower!', label: 'NEW TOWER', name: def.title,
+             sprite: def.sprite, trim: def.spriteTrim, pivot: def.groundFrac,
+             machine: def.machine ? { def, sprite: def.machine.frames[0], trim: def.machine.trim } : null,
+             prose: TOWER_NOTES[def.name] || '', rows: [first, e.traits].filter(r => r.length) };
   }
   const d = enemyTypes[id];
   if (!d) return null;
-  return { alert: 'New Enemy!', label: 'NEW ENEMY', name: d.name, sprite: d.sprite, trim: d.spriteTrim,
-           prose: FOE_NOTES[id] || '', rows: foeStats(d) };
+  return { kind: 'figure', alert: 'New Enemy!', label: 'NEW ENEMY', name: d.name, sprite: d.sprite,
+           trim: d.spriteTrim, pivot: null, machine: null, prose: FOE_NOTES[id] || '', rows: foeStats(d) };
+}
+
+// A card's drawing at (left, top), `w` x `h`, and the machine on its roof if it has one.
+function drawCardPicture(ctx, card, left, top, w, h) {
+  const img = art[card.sprite];
+  if (!img) return;
+  const [sx, sy, sw, sh] = card.trim;
+  ctx.drawImage(img, sx, sy, sw, sh, left, top, w, h);
+  const mimg = card.machine && art[card.machine.sprite];
+  if (mimg) {
+    const m = machineBox(card.machine.def, { left, top, w, h });
+    const [mx, my, mw, mh] = card.machine.trim;
+    ctx.drawImage(mimg, mx, my, mw, mh, m.left, m.top, m.w, m.h);
+  }
 }
 
 function drawFoeAlerts(ctx, state) {
@@ -6020,11 +6036,9 @@ function drawFoeAlerts(ctx, state) {
     // The same photo paper as the new-enemy card it opens, torn round.
     paperDisc(ctx, cx, cy, R, 41 + i, HUD_PLATE_EDGE, 1.5, SOFT_RIP);
     // The figure in the middle, well inside the ring — see alertFigure.
-    const img = card && art[card.sprite];
-    if (img) {
-      const [sx, sy, sw, sh] = card.trim;
+    if (card) {
       const { dw, dh } = alertFigure(card.trim);
-      ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, cy - dh / 2, dw, dh);
+      drawCardPicture(ctx, card, cx - dw / 2, cy - dh / 2, dw, dh);
     }
 
     ctx.save();
@@ -6112,14 +6126,20 @@ const FOE_ENTRY_GAP = 14;
 const FOE_LABEL = 16;                  // the "NEW ENEMY" line over the name
 const FOE_STAT_ROW = 22;
 
+const TOWER_CARD = 1.35;
 function drawFoeCard(ctx, state) {
   // A NEW CREATURE, OR A NEW TOWER'S MAN — see newCard.
   const card = newCard(state.foeCard);
   if (!card) return;
 
-  // A FIXED SHARE OF THE BOARD — see popCap.
-  const slot = popSlot('figure', popCap());
-  const [sx, sy, sw, sh] = card.trim;
+  // A FIXED SHARE OF THE BOARD — see popCap. A TOWER is brought down from the book's
+  // pop-up size to TOWER_CARD of a figure's height: legible, without the card filling
+  // the board — every tower at one factor, so a taller tier still draws taller.
+  const fig = popSlot('figure', popCap());
+  const tall = card.kind === 'tower' && popSlot('tower', popCap());
+  const fit = tall && TOWER_CARD * fig.h / tall.h;
+  const slot = tall ? { k: tall.k * fit, w: tall.w * fit, h: tall.h * fit } : fig;
+  const [, , sw, sh] = card.trim;
   const w = sw * slot.k, h = sh * slot.k;
 
   // THREE COLUMNS, at the owner's word: the picture on the left, what he does in
@@ -6202,11 +6222,10 @@ function drawFoeCard(ctx, state) {
 
   // The picture, centred in its slot both ways, exactly as the pop-up places it.
   const bodyY = py + POP_PAD + FOE_LABEL + POP_TITLE + POP_GAP;
-  const img = art[card.sprite];
-  if (img) {
-    const cx = px + POP_PAD + slot.w / 2;
-    ctx.drawImage(img, sx, sy, sw, sh, cx - w / 2, bodyY + (bodyH - h) / 2, w, h);
-  }
+  // A tower centred across on its shadow, as the book frames it.
+  const cx = px + POP_PAD + slot.w / 2;
+  const ax = card.pivot ? card.pivot[0] : 0.5;
+  drawCardPicture(ctx, card, cx - ax * w, bodyY + (bodyH - h) / 2, w, h);
 
   // THE MIDDLE: what he does, centred against the picture.
   const tx = px + POP_PAD + slot.w + POP_GAP;
