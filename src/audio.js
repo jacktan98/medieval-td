@@ -1304,8 +1304,11 @@ export const PAGE_FLIP = ['page_flip'];
 // THE ENCYCLOPEDIA OPENING AND CLOSING, at the owner's word — the same sound both
 // ways ("Book_open_close_sound"). The recording is four separate book
 // closes, about 2.4s apart; each is cut out by where it STARTS in the file, measured
-// (0.10s, 2.10s, 4.75s, 7.18s, at 2% of the loudest sample), with a hair of lead-in and
+// (0.10s, 2.59s, 4.75s, 7.18s, at 2% of the loudest sample), with a hair of lead-in and
 // its tail. A close plays one of the four, never the one heard last. Category B.
+// THE SECOND STARTS AT 2.59s, NOT 2.10s, at the owner's word: the half second before it
+// is small rustles (2.10, 2.18, 2.31, 2.51s) ahead of the book itself, and is cut off —
+// 0.84s down to 0.30s. Its loudness is the book's either way, so its gain is unchanged.
 //
 // EACH AT ONE LOUDNESS, AND LOUDER, at the owner's word: "increase and standardise the
 // volume so that each of them can be heard." The file's four differ by up to 1.6x —
@@ -1316,7 +1319,7 @@ export const PAGE_FLIP = ['page_flip'];
 // quietest. The ceiling is the fourth's: a peak of 0.94 x 2.42 x the bus's 0.45 x the
 // master's 0.9 is 0.93 at the speaker, under PEAK_OUT.
 export const BOOK_CLOSE = { key: 'book_close',
-  closes: [[0.08, 0.62, 1.56], [2.08, 0.84, 2.41], [4.73, 0.48, 2.01], [7.16, 0.42, 2.42]] };
+  closes: [[0.08, 0.62, 1.56], [2.58, 0.30, 2.41], [4.73, 0.48, 2.01], [7.16, 0.42, 2.42]] };
 let lastClose = -1;
 export function bookSound() {
   const { key, closes } = BOOK_CLOSE;
