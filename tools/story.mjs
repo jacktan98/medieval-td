@@ -39,5 +39,21 @@ const sentences = t => t.split(/[.!?](?:\s|$)/).filter(x => x.trim()).length;
 const long = boards.filter(lv => STORY[lv.id] && sentences(STORY[lv.id]) > 4);
 ok(long.length === 0, 'and none runs past 4 sentences', long.map(lv => lv.name).join(', '));
 
+// THE SEAL: one per stage, the hardest setting it has been won at.
+{
+  const { setStars, sealOf } = await import('../src/score.js');
+  const id = boards[0].id;
+  const was = s => (s ? s.id : 'none');
+  setStars(id, 'normal', 0); setStars(id, 'hard', 0);
+  ok(sealOf(id) === null, 'an unwon stage has no seal', was(sealOf(id)));
+  setStars(id, 'normal', 2);
+  ok(was(sealOf(id)) === 'normal', 'a Normal win stamps Normal', was(sealOf(id)));
+  setStars(id, 'hard', 1);
+  ok(was(sealOf(id)) === 'hard', 'and a later Hard win replaces it with Hard', was(sealOf(id)));
+  setStars(id, 'normal', 3);
+  ok(was(sealOf(id)) === 'hard', 'and a Normal win after that leaves Hard alone', was(sealOf(id)));
+  ok(sealOf(id).name === 'Hard', 'and the seal reads the setting\'s own name', sealOf(id).name);
+}
+
 console.log(bad ? `\n${bad} problem(s) with the story.` : '\nThe story holds together.');
 process.exit(bad ? 1 : 0);

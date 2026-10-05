@@ -32,7 +32,7 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
          boxFor, BOX_PAD, STAT_GAP, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON } from './book.js';
-import { MAX_STARS, bestStars, starCuts } from './score.js';
+import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
 import { STORY } from './data/story.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
@@ -5581,6 +5581,13 @@ export function hitBack(state, x, y) {
 // the rows stay centred on the same middle every other row uses.
 const CAPTION_GAP = 12;
 
+// START'S RIGHT EDGE ON THE LAST DIFFICULTY BUTTON'S, at the owner's word.
+{
+  const row = difficultyButtons();
+  const last = row[row.length - 1];
+  START_BTN.x = last.x + last.w - START_BTN.w;
+}
+
 // THE WORLD MAP'S TYPE: Lobster, at the owner's word, for the region names, the two
 // doors, the Admin button and the stage panel. One weight only, so nothing here asks
 // for bold — the browser would fake it. The system font stands in until the file has
@@ -5690,15 +5697,16 @@ function drawStart(ctx, state) {
     // WARMED (a sepia wash, multiplied in) and FADED (a little of the paper over
     // it), which is what years do to a print. By compositing rather than a canvas
     // filter, which not every phone's browser draws.
+    // LESS AGED than it first was, at the owner's word: a lighter wash and fade.
     ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = 'rgb(226,192,140)';
+    ctx.fillStyle = 'rgb(242,224,192)';
     ctx.fillRect(ix, iy, iw, ih);
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(240,222,186,0.30)';
+    ctx.fillStyle = 'rgba(240,222,186,0.14)';
     ctx.fillRect(ix, iy, iw, ih);
     const v = ctx.createRadialGradient(ix + iw / 2, iy + ih / 2, ih * 0.35, ix + iw / 2, iy + ih / 2, iw * 0.62);
     v.addColorStop(0, 'rgba(90,60,25,0)');
-    v.addColorStop(1, 'rgba(90,60,25,0.38)');
+    v.addColorStop(1, 'rgba(90,60,25,0.22)');
     ctx.fillStyle = v;
     ctx.fillRect(ix, iy, iw, ih);
   } else {
@@ -5713,10 +5721,8 @@ function drawStart(ctx, state) {
   // A RED WAX-INK SEAL on a stage that has been won, stamped on the photograph's
   // bottom-left corner at the owner's word: "Hard" for a win on Hard, otherwise
   // "Normal". Whatever difficulty is chosen, it shows the best won.
-  if (lv) {
-    const won = ['hard', 'normal'].find(id => bestStars(lv.id, id) > 0);
-    if (won) drawSeal(ctx, ix + 50, iy + ih - 48, SEAL_R, won === 'hard' ? 'Hard' : 'Normal');
-  }
+  const seal = lv && sealOf(lv.id);
+  if (seal) drawSeal(ctx, ix + 50, iy + ih - 48, SEAL_R, seal.name);
 
   // The back door, top-right of the plate, in the paper's ink.
   ctx.strokeStyle = UP_MUTED;

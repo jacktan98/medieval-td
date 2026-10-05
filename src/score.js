@@ -86,6 +86,12 @@ const slot = (levelId, difficultyId) => `${levelId}/${difficultyId}`;
 export const bestStars = (levelId, difficultyId) =>
   table[slot(levelId, difficultyId)] || 0;
 
+// THE SEAL ON A WON STAGE: the HARDEST setting it has been won at, or null. One
+// seal only, at the owner's word — a Hard win is never stamped over by a later
+// Normal one, and a Normal seal gives way to Hard the day Hard is won.
+export const sealOf = levelId =>
+  [...DIFFICULTIES].reverse().find(d => bestStars(levelId, d.id) > 0) || null;
+
 // The settings that are strictly easier than a given one. DIFFICULTIES is listed
 // on the title screen in the order it is written, easiest first, and that order IS
 // the ranking — there is one lever between the two entries and Hard turns it up.
