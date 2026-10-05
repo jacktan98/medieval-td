@@ -80,7 +80,8 @@ export function attachInput(canvas, state, restart) {
     // bought in a row was silent, and it gives up while a phone's audio is still
     // waking from the tap.
     if (did === 'bought') insist(CUE.purchase);
-    // A PAGE TURNED in the encyclopedia sounds like one.
+    // A PAGE TURNED in the encyclopedia sounds like one, and so does opening a
+    // "New enemy!" or "New tower!" card.
     else if (did === 'flip') play(PAGE_FLIP);
     else if (did) play(SELECT);
   });
@@ -303,8 +304,10 @@ export function tap(state, x, y, restart) {
   // A NEW-ENEMY ALERT, under the gold. Answers on a paused board as well — reading
   // is not playing, the same argument that lets the book open there — and the card
   // it opens stops the game whether or not it was already stopped.
+  // Opening one turns a page — 'flip', so the tap plays the page turning rather than
+  // the click, at the owner's word.
   const alert = hitAlert(state, x, y);
-  if (alert >= 0) { openFoeCard(state, alert); return true; }
+  if (alert >= 0) { openFoeCard(state, alert); return 'flip'; }
 
   // PAUSED SWALLOWS EVERYTHING ELSE. Not just the board — the speed toggle and
   // the early wave call go too, because "paused" has to mean the game is not
