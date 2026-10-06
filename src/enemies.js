@@ -12,8 +12,7 @@ import { solo, play, alone, WINGS_RATE, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
-import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing,
-         wearing as wearingStatus } from './status.js';
+import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing } from './status.js';
 import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
 
@@ -207,6 +206,12 @@ export function spawn(state, typeId, from = null) {
   // (NOT WHEN HE HAS ALREADY SPOKEN: stage 15's Captain says his lines at the camp
   // wall — walking in, and walking out — and steps onto the road quietly, `quiet`.)
   if (def.boss && !(from && from.quiet)) solo(BOSS_ENTERS, true, true);
+  // A RALLY THUG SHOUTS AS HE WALKS ON, at the owner's word — on entering the field,
+  // not on his banner first reaching someone, which on the late boards (he marches
+  // last, behind the magic-users, and is the slowest thing on the road) hardly ever
+  // happened. With priority, and past the repeat rules, so a busy board cannot
+  // swallow it: a set piece rather than battle noise.
+  if (def.rally) solo(WAR_CRY, true, false, true);
   return state.enemies[state.enemies.length - 1];
 }
 const MIDDLE_LANE = 1;
@@ -1289,17 +1294,9 @@ function rallyAura(state) {
     // aura that is actually in range rather than off the first one in the list.
     // Two of different strengths could never lend at each other's rate.
     if (source) {
-      // THE SHOUT GOES ON THE TRANSITION, which is the owner's "if rally thug boosts
-      // a NEW enemy". applyStatus below refreshes an existing mark silently, so
-      // without this test the cry would be requested sixty times a second for as long
-      // as anything stood in the aura — and Category A would drop all but one of them,
-      // which would SOUND right and would be a channel held open for nothing.
-      //
-      // Asked of the figure before the status is written, because afterwards there is
-      // no way to tell a new hold from a refreshed one.
-      const fresh = !wearingStatus(e, 'rallied');
+      // THE SHOUT IS NO LONGER HERE. It went on the first boost of each enemy; it goes
+      // as he walks on now — see spawn() — at the owner's word.
       applyStatus(e, 'rallied', source.def.rally.times, Infinity, null);
-      if (fresh) solo(WAR_CRY);
     } else {
       dropStatus(e, 'rallied');
     }
