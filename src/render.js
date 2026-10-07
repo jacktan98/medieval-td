@@ -3274,7 +3274,7 @@ export function enemyStance(e) {
   // second timer. `actT` is seconds left, the drop is the last `drop.seconds` of
   // them, so the share left IS the opacity — full when the fade starts and nothing
   // when the beat ends. One clock cannot drift from itself.
-  const drop = e.act === 'pause' && d.rage.pause.drop;
+  const drop = dropBeat(e) && dropBeat(e).drop;
   const fading = drop && e.actT <= drop.seconds
     ? { ...drop.weapons, alpha: Math.max(0, Math.min(1, e.actT / drop.seconds)) }
     : null;
@@ -3599,14 +3599,26 @@ function rageTint(ctx, e, img, sx, sy, sw, sh, dx, dy, dw, dh) {
   ctx.restore();
 }
 
+// THE BEAT A BOSS DROPS THINGS IN, if he is in one: the Captain's pause, where he
+// throws down his shield and bow, and the Crow Harbinger's fall, where his hat and
+// crow come off him. Either carries a `drop` — himself alone and the things dropped,
+// as two drawings — or this is null.
+function dropBeat(e) {
+  const d = e.def;
+  const beat = e.act === 'pause' ? d.rage && d.rage.pause
+             : e.act === 'fall'  ? d.finale && d.finale.fall
+             : null;
+  return beat && beat.drop ? beat : null;
+}
+
 // THE SHIELD AND BOW, THROWN: for the first WEAPON_POP.seconds of the pause, his body
 // alone (the pause's own `self` drawing) and the weapons as their own layer, lifted on
 // a hop that lands where the pause drawing has them. The two layers are the pause
 // drawing taken apart to the pixel, so the landing is seamless.
 function weaponHop(e) {
-  if (!BOSS_FX.weaponPop || e.act !== 'pause' || !e.def.rage) return null;
-  const p = e.def.rage.pause, drop = p.drop;
-  if (!drop) return null;
+  const p = BOSS_FX.weaponPop && dropBeat(e);
+  if (!p) return null;
+  const drop = p.drop;
   const since = p.seconds - (e.actT || 0);
   if (since < 0 || since >= WEAPON_POP.seconds) return null;
   const body = art[drop.self.sprite], arms = art[drop.weapons.sprite];

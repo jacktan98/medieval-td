@@ -572,6 +572,8 @@ export const paths = {
   harbinger_crow:       'assets/bosses/Crow_Harbinger_Attack_Point_Tower_Crow.png',
   harbinger_call:       'assets/bosses/Crow_Harbinger_Call_Crows.png',
   harbinger_fall:       'assets/bosses/Crow_Harbinger_Before_Dying.png',
+  harbinger_fall_self:  'assets/bosses/Crow_Harbinger_Before_Dying_Self.png',
+  harbinger_fall_drop:  'assets/bosses/Crow_Harbinger_Before_Dying_Weapons.png',
   harbinger_dead:       'assets/bosses/Crow_Harbinger_Dead.png',
   harbinger_bolt:       'assets/bosses/Crow_Harbinger_Arcane_Projectile.png',
 

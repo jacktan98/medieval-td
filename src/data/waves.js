@@ -1952,19 +1952,19 @@ export const enemyTypes = {
     boss: true,
     // WITH HIS CROW, which is how he walks on and how he is drawn everywhere else.
     sprite: 'harbinger',
-    spriteTrim: [193, 164, 126, 184],
-    pivot: [0.389, 0.929],
+    spriteTrim: [186, 164, 133, 184],
+    pivot: [0.421, 0.929],
     attack: { sprite: 'harbinger_cast', trim: [175, 164, 144, 184], pivot: [0.465, 0.929] },
     // AND WITHOUT IT, while it is away at a tower: the same pair, the shoulder bare.
     crowless: {
-      sprite: 'harbinger_bare', trim: [193, 164, 100, 184], pivot: [0.49, 0.929],
+      sprite: 'harbinger_bare', trim: [186, 164, 107, 184], pivot: [0.523, 0.929],
       attack: { sprite: 'harbinger_cast_bare', trim: [175, 164, 118, 184], pivot: [0.568, 0.929] }
     },
     // He casts toward the left, as drawn.
     spriteFaces: -1,
     dead: 'harbinger_dead',
-    deadTrim: [143, 226, 150, 107],
-    deadPivot: [0.29, 0.869],
+    deadTrim: [137, 217, 168, 110],
+    deadPivot: [0.295, 0.882],
 
     // THE OWNER'S NUMBERS: 8000 health, 120 magic damage that breaks 2 ranks of magic
     // armour, a 200 reach, high plate both ways — and 30 a second, slower than the
@@ -2032,7 +2032,19 @@ export const enemyTypes = {
     // AND HIS DEATH, the Captain's: three seconds of his falling pose, then two of his
     // body, and only then may the battle end.
     finale: {
-      fall: { sprite: 'harbinger_fall', trim: [128, 172, 256, 168], pivot: [0.229, 0.875], seconds: 3 },
+      // HIS HAT AND CROW FALL OFF AS HE GOES DOWN and fade away before he lies dead, at
+      // the owner's word. The Captain's thrown shield and bow, done the same way: the
+      // drawing taken apart into himself and the hat and crow, which hop off him for
+      // the first moment (WEAPON_POP in src/data/bossfx.js) and fade out over the last
+      // `drop.seconds` of the beat. Between the two it is the whole drawing.
+      fall: {
+        sprite: 'harbinger_fall', trim: [124, 166, 264, 180], pivot: [0.237, 0.822], seconds: 3,
+        drop: {
+          seconds: 2,
+          self:    { sprite: 'harbinger_fall_self', trim: [124, 166, 114, 161], pivot: [0.548, 0.919] },
+          weapons: { sprite: 'harbinger_fall_drop', trim: [245, 285, 143, 61], pivot: [-0.409, 0.475] }
+        }
+      },
       rest: 2
     },
     // HIS ONE LINE so far, at the owner's word: the captain's fall, renamed Boss_fall_dead

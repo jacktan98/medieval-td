@@ -191,6 +191,8 @@ the fallen body, pinned to the spot he stood on. See `crow_harbinger` in
 | `Crow_Harbinger_Attack_Point_Tower_Crow.png` | the crow alone, as it sits on his arm in the pose — in the air it is drawn with the Dark Crow's own flying drawings |
 | `Crow_Harbinger_Call_Crows.png` | Call Crows: 3s channelling, mending 10% of his health a second, with the wind drawn live round him |
 | `Crow_Harbinger_Before_Dying.png` | out of health. 3s |
+| `Crow_Harbinger_Before_Dying_Self.png` | the same drawing, himself alone — while his hat and crow hop off him, and while they fade |
+| `Crow_Harbinger_Before_Dying_Weapons.png` | his hat and crow alone, as they lie in the fall drawing: they hop off him as he goes down and fade over the last 2s |
 | `Crow_Harbinger_Dead.png` | on the ground. 2s, then his corpse |
 | `Crow_Harbinger_Arcane_Projectile.png` | his bolt, flying head-first to the left as drawn |
 
