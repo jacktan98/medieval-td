@@ -24,6 +24,7 @@ own ground point and land where they do in the single picture.
 | `Captain_Thug_Pause_Self.png` | the last 2s of it — the body, standing unchanged | med / med |
 | `Captain_Thug_Pause_Weapons.png` | drawn over it and faded out across those 2s: the weapons on the ground | — |
 | `Captain_Thug_Heal.png` | mending, worth three fifths of his maximum. 4s | high / high |
+| `Captain_Thug_Heal_Bare.png` | the board's Heal pose: the same drawing without its painted dome and floor, which the game draws live as a glow. Made from `Captain_Thug_Heal.svg` by `node tools/heal-bare.mjs --write` | high / high |
 | `Captain_Thug_Enraged_Default.png` | stage 2, walking at 1.2x. Also the description panel from here on | low / low |
 | `Captain_Thug_Enraged_Attack.png` | stage 2, swinging at 1.2x — magic now, and the same blow to everyone within 60px | low / low |
 | `Captain_Thug_Before_Dying.png` | out of health, sword dropped. 3s, and nothing may touch him | — |

@@ -540,6 +540,9 @@ export const paths = {
   captain_pause_self:    'assets/bosses/Captain_Thug_Pause_Self.png',
   captain_pause_weapons: 'assets/bosses/Captain_Thug_Pause_Weapons.png',
   captain_mend:    'assets/bosses/Captain_Thug_Heal.png',
+  // THE SAME, WITHOUT ITS PAINTED DOME AND FLOOR — the board draws those live as a
+  // glow instead. Made from the SVG by tools/heal-bare.mjs; see BOSS_FX.bareHeal.
+  captain_mend_bare: 'assets/bosses/Captain_Thug_Heal_Bare.png',
   // STANDING WATCH at stage 15's camp wall, his sword lowered: the pose he drops
   // into now and then while he watches his men. See `captain` in src/villagers.js.
   captain_idle:    'assets/bosses/Captain_Thug_Idle.png',

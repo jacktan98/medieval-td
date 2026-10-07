@@ -7,7 +7,7 @@
 export const BOSS_FX = {
   healGlow: true,     // a soft light behind him, pulsing, while he mends
   healFloor: true,    // a soft oval of light on the ground under him while he mends
-  softDome: true,     // the grey radiance and brown floor painted round him in his Heal drawing fade out at their edges
+  bareHeal: true,     // his Heal drawing without its painted dome and floor — the glow and its floor stand in for them
   rageBurst: true,    // a ring out from his feet and a short shake of the board as he turns enraged
   rageTint: true,     // his drawing flushes red as he turns enraged, and fades back
   weaponPop: true     // the shield and bow jump up as he throws them down, then land
@@ -29,11 +29,6 @@ export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], w: 40, h: 62, alpha: 1, core
 // half-width and half-height (board px); how strong in the middle; and how far out it
 // stays nearly solid before thinning.
 export const HEAL_FLOOR = { rgb: [0x74, 0x59, 0x2E], w: 46, h: 14, alpha: 1, core: 0.6 };
-
-// The painted radiance's fade: the colours in the drawing that fade — the grey dome and
-// the brown floor — how close a pixel must be to one to count, and how far in from the
-// edge (source px) it takes to reach full.
-export const SOFT_DOME = { rgb: [[0xBA, 0xAC, 0x97], [0x74, 0x59, 0x2E]], near: 36, fade: 45 };
 
 // The moment he turns: the ring's life and how far it spreads, and the board's shake —
 // how far (board px) and for how long.
