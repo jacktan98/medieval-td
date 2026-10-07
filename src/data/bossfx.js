@@ -57,7 +57,7 @@ export const UNIT_FX = {
 
 // The same shape as the Captain's, scaled to a paladin — his kneeling drawing stands
 // about 0.8 of the Captain's mending one. #FFF3B3 and #FFEB7E, the drawing's own.
-// 20% smaller than it first was, at the owner's word (32 x 50).
-export const HOLY_GLOW = { rgb: [0xFF, 0xF3, 0xB3], w: 26, h: 40, alpha: 1, core: 0.6, mid: 0.3, foot: 6, pulse: 5 };
-// 20% smaller than it first was, at the owner's word (37 x 11).
-export const HOLY_FLOOR = { rgb: [0xFF, 0xEB, 0x7E], w: 30, h: 9, alpha: 1, core: 0.6 };
+// 20% smaller than it first was (32 x 50), and then another 10%, at the owner's word.
+export const HOLY_GLOW = { rgb: [0xFF, 0xF3, 0xB3], w: 23.4, h: 36, alpha: 1, core: 0.6, mid: 0.3, foot: 6, pulse: 5 };
+// 20% smaller than it first was (37 x 11), and then another 10%, at the owner's word.
+export const HOLY_FLOOR = { rgb: [0xFF, 0xEB, 0x7E], w: 27, h: 8.1, alpha: 1, core: 0.6 };
