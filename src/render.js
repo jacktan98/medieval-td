@@ -34,7 +34,7 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON, locked, towerEntry, unitEntry } from './book.js';
 import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
 import { STORY } from './data/story.js';
-import { BOSS_FX, HEAL_GLOW, RAGE_BURST, RAGE_TINT, WEAPON_POP, SOFT_DOME } from './data/bossfx.js';
+import { BOSS_FX, HEAL_GLOW, HEAL_FLOOR, RAGE_BURST, RAGE_TINT, WEAPON_POP, SOFT_DOME } from './data/bossfx.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
 import { soundLevel } from './audio.js';
@@ -3441,6 +3441,26 @@ function bossUnderlay(ctx, e, dh) {
     const dome = healDome(e, dh);
     if (dome) ctx.drawImage(dome.c, dome.x, dome.y, dome.w, dome.h);
   }
+  // AND ITS FLOOR, in front of the dome's foot as the drawing has it.
+  if (BOSS_FX.healFloor && e.act === 'mend') {
+    const k = healFade(e) * HEAL_FLOOR.alpha;
+    if (k > 0) {
+      const { rgb: [r, g, b], w, h, core } = HEAL_FLOOR;
+      ctx.save();
+      ctx.translate(0, -1);
+      ctx.scale(1, h / w);
+      const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, w);
+      pool.addColorStop(0, `rgba(${r},${g},${b},${k})`);
+      pool.addColorStop(core, `rgba(${r},${g},${b},${k * 0.92})`);
+      pool.addColorStop(core + (1 - core) * 0.5, `rgba(${r},${g},${b},${k * 0.4})`);
+      pool.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = pool;
+      ctx.beginPath();
+      ctx.arc(0, 0, w, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
   const age = BOSS_FX.rageBurst ? rageAge(e) : null;
   if (age !== null && age < RAGE_BURST.seconds) {
     const k = age / RAGE_BURST.seconds;
@@ -3474,27 +3494,59 @@ function softDome(img) {
     const g = c.getContext('2d');
     g.drawImage(img, 0, 0);
     const px = g.getImageData(0, 0, w, h), d = px.data;
-    const [R0, G0, B0] = SOFT_DOME.rgb;
-    // Distance (in px, 8-way steps) from every pixel to the nearest empty one.
-    const dist = new Float32Array(w * h).fill(Infinity);
-    const queue = new Int32Array(w * h);
-    let head = 0, tail = 0;
-    for (let i = 0; i < w * h; i++) if (d[i * 4 + 3] === 0) { dist[i] = 0; queue[tail++] = i; }
-    while (head < tail) {
-      const i = queue[head++], x = i % w, y = (i / w) | 0, n = dist[i] + 1;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const X = x + dx, Y = y + dy;
-        if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h) {
-          const j = Y * w + X;
-          if (dist[j] > n) { dist[j] = n; queue[tail++] = j; }
-        }
-      }
-    }
+    // Which painted colour a pixel is, if either: 0 the grey dome, 1 the brown floor.
+    // A pixel BETWEEN the two — the export's smoothing where the floor meets the dome —
+    // is neither, and was left standing as a faint arc; it counts as whichever of the
+    // two it is nearer, if it lies on the blend between them.
+    const [A, B] = SOFT_DOME.rgb;
+    const AB = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+    const AB2 = AB[0] * AB[0] + AB[1] * AB[1] + AB[2] * AB[2];
+    const near = o => {
+      const i = SOFT_DOME.rgb.findIndex(([R0, G0, B0]) =>
+        Math.abs(d[o] - R0) + Math.abs(d[o + 1] - G0) + Math.abs(d[o + 2] - B0) <= SOFT_DOME.near);
+      if (i >= 0) return i;
+      const v = [d[o] - A[0], d[o + 1] - A[1], d[o + 2] - A[2]];
+      const t = (v[0] * AB[0] + v[1] * AB[1] + v[2] * AB[2]) / AB2;
+      if (t < 0 || t > 1) return -1;
+      const off = Math.hypot(v[0] - t * AB[0], v[1] - t * AB[1], v[2] - t * AB[2]);
+      return off <= 12 ? (t < 0.5 ? 0 : 1) : -1;
+    };
+    const kind = new Int8Array(w * h);
     for (let i = 0; i < w * h; i++) {
       const o = i * 4;
-      if (!d[o + 3]) continue;
-      if (Math.abs(d[o] - R0) + Math.abs(d[o + 1] - G0) + Math.abs(d[o + 2] - B0) > SOFT_DOME.near) continue;
-      const k = Math.min(1, dist[i] / SOFT_DOME.fade);
+      // THE EXPORT'S WHITE FRINGE round the radiance — a pixel of near-transparent
+      // white along its edge — goes too: it is neither colour, so it would otherwise
+      // be left standing as a faint light line where the radiance used to end.
+      if (d[o + 3] && d[o + 3] < 128 && d[o] + d[o + 1] + d[o + 2] > 600) d[o + 3] = 0;
+      kind[i] = d[o + 3] ? near(o) : -2;
+    }
+    // Distance (in px, 8-way steps) from every pixel to the nearest seed.
+    const distFrom = seed => {
+      const dist = new Float32Array(w * h).fill(Infinity);
+      const queue = new Int32Array(w * h);
+      let head = 0, tail = 0;
+      for (let i = 0; i < w * h; i++) if (seed(i)) { dist[i] = 0; queue[tail++] = i; }
+      while (head < tail) {
+        const i = queue[head++], x = i % w, y = (i / w) | 0, n = dist[i] + 1;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const X = x + dx, Y = y + dy;
+          if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h) {
+            const j = Y * w + X;
+            if (dist[j] > n) { dist[j] = n; queue[tail++] = j; }
+          }
+        }
+      }
+      return dist;
+    };
+    // THE FLOOR fades from the empty edge; THE DOME from the empty edge AND from the
+    // floor — the floor is wider than the dome, so without that the dome's lower
+    // sides, where they stand on it, stayed solid and drew two faint lines.
+    const toEdge = distFrom(i => kind[i] === -2);
+    const toFloor = distFrom(i => kind[i] === -2 || kind[i] === 1);
+    for (let i = 0; i < w * h; i++) {
+      if (kind[i] < 0) continue;
+      const o = i * 4;
+      const k = Math.min(1, (kind[i] === 0 ? toFloor[i] : toEdge[i]) / SOFT_DOME.fade);
       d[o + 3] = Math.round(d[o + 3] * k * k * (3 - 2 * k));
     }
     g.putImageData(px, 0, 0);
@@ -3511,14 +3563,18 @@ function softDome(img) {
 // canvas of its own each frame, which is what lets the foot be faded rather than cut.
 // Returns the canvas and where it goes, relative to his feet.
 const domeCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+// How far up the mend's light is: in over its first quarter second, out over its last.
+function healFade(e) {
+  const total = e.def.rage.mend.seconds || 4;
+  const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
+  return Math.max(0, Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25));
+}
 function healDome(e, dh) {
   if (!domeCanvas) return null;
   const { rgb: [r, g, b], w, h, alpha, core, mid, foot, pulse } = HEAL_GLOW;
-  const total = e.def.rage.mend.seconds || 4;
-  const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
   // Up in the first quarter second, out in the last, and pulsing between — the
   // pulse only in the outer part, so the middle stays almost solid throughout.
-  const env = Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25);
+  const env = healFade(e);
   const swell = 0.85 + 0.15 * Math.sin(boardClock * pulse * Math.PI);
   const k = env * alpha;
   if (k <= 0) return null;
