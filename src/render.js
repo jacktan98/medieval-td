@@ -34,7 +34,7 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON, locked, towerEntry, unitEntry } from './book.js';
 import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
 import { STORY } from './data/story.js';
-import { BOSS_FX, HEAL_GLOW, RAGE_BURST, RAGE_TINT, WEAPON_POP } from './data/bossfx.js';
+import { BOSS_FX, HEAL_GLOW, RAGE_BURST, RAGE_TINT, WEAPON_POP, SOFT_DOME } from './data/bossfx.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
 import { soundLevel } from './audio.js';
@@ -3353,6 +3353,8 @@ function drawEnemy(ctx, e) {
   // alone and the shield and bow as their own layer, lifted on an arc. See weaponHop.
   const hop = weaponHop(e);
   if (hop) { [frame, trim, pivot] = hop.body; fade = hop.weapons; }
+  // AND HIS HEAL DRAWING WITH ITS RADIANCE SOFTENED AT THE EDGE. See softDome.
+  if (BOSS_FX.softDome && e.act === 'mend' && frame === art[e.def.rage.mend.sprite]) frame = softDome(frame) || frame;
   // THE BOMB THUG'S FUSE BURNS: the painted flame is lifted off his drawing and a live
   // one flickers in its place. See FUSE_FIRE.
   const fuse = frame === art.bomb && fuseParts('bomb');
@@ -3445,7 +3447,7 @@ function bossUnderlay(ctx, e, dh) {
     const cy = -dh * 0.45;
     const glow = ctx.createRadialGradient(0, cy, 0, 0, cy, R);
     glow.addColorStop(0, `rgba(${r},${g},${b},${k})`);
-    glow.addColorStop(0.55, `rgba(${r},${g},${b},${k * 0.45})`);
+    glow.addColorStop(0.5, `rgba(${r},${g},${b},${k * 0.7})`);
     glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
     ctx.fillStyle = glow;
     ctx.fillRect(-R, cy - R, R * 2, R * 2);
@@ -3462,6 +3464,55 @@ function bossUnderlay(ctx, e, dh) {
     ctx.stroke();
     ctx.restore();
   }
+}
+
+// THE RADIANCE IN HIS HEAL DRAWING, SOFTENED: the painted grey round him is a flat
+// shape with a hard edge, and the glow behind it is soft, so the two read as two
+// things. Every pixel of that grey (SOFT_DOME.rgb, within `near`) has its opacity
+// taken down by how close it is to the drawing's empty edge — nothing at the rim,
+// full SOFT_DOME.fade source px in — so the radiance thins out into the glow. The
+// figure is untouched. Made once from the loaded drawing and kept; the file is not
+// changed.
+const softCache = new Map();
+function softDome(img) {
+  if (softCache.has(img)) return softCache.get(img);
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if (!w || !h) return null;
+  let out = null;
+  try {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const px = g.getImageData(0, 0, w, h), d = px.data;
+    const [R0, G0, B0] = SOFT_DOME.rgb;
+    // Distance (in px, 8-way steps) from every pixel to the nearest empty one.
+    const dist = new Float32Array(w * h).fill(Infinity);
+    const queue = new Int32Array(w * h);
+    let head = 0, tail = 0;
+    for (let i = 0; i < w * h; i++) if (d[i * 4 + 3] === 0) { dist[i] = 0; queue[tail++] = i; }
+    while (head < tail) {
+      const i = queue[head++], x = i % w, y = (i / w) | 0, n = dist[i] + 1;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const X = x + dx, Y = y + dy;
+        if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h) {
+          const j = Y * w + X;
+          if (dist[j] > n) { dist[j] = n; queue[tail++] = j; }
+        }
+      }
+    }
+    for (let i = 0; i < w * h; i++) {
+      const o = i * 4;
+      if (!d[o + 3]) continue;
+      if (Math.abs(d[o] - R0) + Math.abs(d[o + 1] - G0) + Math.abs(d[o + 2] - B0) > SOFT_DOME.near) continue;
+      const k = Math.min(1, dist[i] / SOFT_DOME.fade);
+      d[o + 3] = Math.round(d[o + 3] * k * k * (3 - 2 * k));
+    }
+    g.putImageData(px, 0, 0);
+    out = c;
+  } catch { out = null; }
+  softCache.set(img, out);
+  return out;
 }
 
 // OVER the figure: the red flush as he turns, fading out.
