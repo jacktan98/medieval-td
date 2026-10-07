@@ -3516,10 +3516,10 @@ function healDome(e, dh) {
   const { rgb: [r, g, b], w, h, alpha, core, mid, foot, pulse } = HEAL_GLOW;
   const total = e.def.rage.mend.seconds || 4;
   const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
-  // Up in the first quarter second, out in the last, and breathing between — the
-  // breath only in the outer part, so the middle stays almost solid throughout.
+  // Up in the first quarter second, out in the last, and pulsing between — the
+  // pulse only in the outer part, so the middle stays almost solid throughout.
   const env = Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25);
-  const breath = 0.85 + 0.15 * Math.sin(boardClock * pulse * Math.PI);
+  const swell = 0.85 + 0.15 * Math.sin(boardClock * pulse * Math.PI);
   const k = env * alpha;
   if (k <= 0) return null;
   const K = 3;                                   // drawn at 3x, for a phone's screen
@@ -3534,7 +3534,7 @@ function healDome(e, dh) {
   const glow = c.createRadialGradient(0, 0, 0, 0, 0, w);
   glow.addColorStop(0, `rgba(${r},${g},${b},${k})`);
   glow.addColorStop(core, `rgba(${r},${g},${b},${k * 0.92})`);
-  glow.addColorStop(core + (1 - core) * 0.5, `rgba(${r},${g},${b},${k * 0.45 * breath})`);
+  glow.addColorStop(core + (1 - core) * 0.5, `rgba(${r},${g},${b},${k * 0.45 * swell})`);
   glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
   c.fillStyle = glow;
   c.beginPath();
