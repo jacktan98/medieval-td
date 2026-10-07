@@ -205,7 +205,7 @@ export function spawn(state, typeId, from = null) {
   // stop the battle talking over itself, and neither of these is the battle.
   // (NOT WHEN HE HAS ALREADY SPOKEN: stage 15's Captain says his lines at the camp
   // wall — walking in, and walking out — and steps onto the road quietly, `quiet`.)
-  if (def.boss && def.lines && def.lines.enters && !(from && from.quiet)) solo(def.lines.enters, true, true);
+  if (def.boss && def.lines && def.lines.enters && !(from && from.quiet)) bossSay(state.enemies[state.enemies.length - 1], def.lines.enters);
   // A RALLY THUG SHOUTS AS HE WALKS ON, at the owner's word — on entering the field,
   // not on his banner first reaching someone, which on the late boards (he marches
   // last, behind the magic-users, and is the slowest thing on the road) hardly ever
@@ -395,6 +395,22 @@ const GONE = 'gone';
 // so the three seconds of channelling are what the player hears him over.
 // The mend is the shared enemy heal; every other beat is the boss's OWN line for it
 // (`lines` on his def), so a boss with none recorded is silent.
+// A BOSS'S LINE WAITS ITS TURN rather than being lost. A held line cannot be talked
+// over — his own included — so a second line inside the first one's length was being
+// dropped outright: the Crow Harbinger walking on in reach of a tower points at once,
+// and his Point Tower line went unheard under his entrance. So a line that cannot
+// speak now is kept on him and tried every frame for SAY_WAIT seconds; past that it
+// is no longer news and is let go. One at a time — a newer line replaces a waiting one.
+const SAY_WAIT = 2;
+function bossSay(e, cue) {
+  if (!cue) return;
+  e.say = solo(cue, true, true) ? null : { cue, t: SAY_WAIT };
+}
+function sayTick(e, dt) {
+  e.say.t -= dt;
+  if (e.say.t <= 0 || solo(e.say.cue, true, true)) e.say = null;
+}
+
 const beatCue = (d, act) => (act === 'mend' ? HEAL : (d.lines && d.lines[act]) || null);
 
 // Start a beat.
@@ -429,10 +445,10 @@ function begin(e, act) {
   // The mend's cue is the SHARED enemy heal — a Dark Priest makes the same noise —
   // so it stays Category B and unheld: it is not his voice. The other three are,
   // and they take the channel and keep it until they have finished.
-  // THE CROW HARBINGER'S POINT AND CALL are Category B too, as the mend is: they are
-  // the noise of an ability rather than his voice, and on the shared channel a held
-  // line (a villager's cry, the other boss) could drop one outright.
-  if (cue) (act === 'mend' || act === 'point' || act === 'call' ? play(cue) : solo(cue, true, true));
+  if (cue) (act === 'mend' ? play(cue) : bossSay(e, cue));
+  // AND THE NOISE OF THE BEAT under the voice, Category B so neither drops the other:
+  // the Crow Harbinger's wind as he calls. See `sounds` on his def.
+  if (e.def.sounds && e.def.sounds[act]) play(e.def.sounds[act]);
   // Everything he was doing stops. A shot half-nocked is lost rather than banked,
   // on the rule the Dark Priest's interrupted cast follows: a moment that gets
   // taken off you should cost you the moment.
@@ -458,7 +474,7 @@ function land(state, e) {
     // the 3 seconds" — this line, not the start of the mend, which has its own
     // sound above. Category A: it is the moment the player learns the fight is not
     // over, and it should cut through whatever they are doing about it.
-    if (e.def.lines && e.def.lines.healed) solo(e.def.lines.healed, true, true);
+    if (e.def.lines && e.def.lines.healed) bossSay(e, e.def.lines.healed);
     // AND HE IS THE OTHER CREATURE NOW. Set here rather than when the pause began,
     // so the whole five seconds of the transition are fought against the armour he
     // is transitioning IN — medium for the pause, high for the mend — and the low
@@ -602,7 +618,13 @@ function crowWork(state, e, dt) {
     r.dir = to.x >= r.fx ? 1 : -1;
     r.x = r.fx + (to.x + CIRCLE.rx - r.fx) * ease;
     r.y = r.fy + (to.y - r.fy) * ease - Math.sin(Math.PI * k) * 18;
-    if (k >= 1) { Object.assign(r, { phase: 'circle', t: 0, a: 0 }); r.tower.blinded = true; }
+    if (k >= 1) {
+      Object.assign(r, { phase: 'circle', t: 0, a: 0 });
+      r.tower.blinded = true;
+      // The crow's own noise as it reaches the tower and starts to circle, at the
+      // owner's word — not as it sets off.
+      if (e.def.sounds && e.def.sounds.circle) play(e.def.sounds.circle);
+    }
   } else if (r.phase === 'circle') {
     const c = towerCrown(r.tower);
     r.a += CIRCLE.turn * dt;
@@ -785,6 +807,7 @@ export function updateEnemies(state, dt) {
     // standing still on a clock is not doing any of it. See bossBeat above.
     // AND THE CROW HARBINGER'S CROW AND FLOCK, every frame, beat or no beat.
     if (e.def.point || e.def.call) crowWork(state, e, dt);
+    if (e.say) sayTick(e, dt);
     if ((e.def.rage || e.def.finale) && bossBeat(state, e, dt)) continue;
 
     // AND THE SHIELD GOES BEHIND HIS BACK when a man comes into view, which is the

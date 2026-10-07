@@ -181,7 +181,9 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 const LOUDEST = true;
 const LOUDER = new Set([
   'captain_enters', 'captain_leads', 'captain_battle', 'captain_pause', 'captain_healed',
-  'captain_dying', 'boss_fallen', 'captain_kills', 'captain_picked'
+  'captain_dying', 'boss_fallen', 'captain_kills', 'captain_picked',
+  // And the Crow Harbinger's voice, a boss's like the captain's.
+  'harbinger_enters', 'harbinger_point', 'harbinger_call', 'harbinger_dying', 'harbinger_kills'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -336,12 +338,20 @@ const paths = {
   captain_healed:   'assets/audio/sfx/Captain_Thug_heal.mp3',
   captain_dying:    'assets/audio/sfx/Captain_Thug_before_dying.mp3',
   boss_fallen:      'assets/audio/sfx/Boss_fall_dead.mp3',
-  // THE CROW HARBINGER'S TWO ABILITIES, at the owner's word: as he points his crow at a
-  // tower, and as he calls the flock and the wind rises round him. Each plays on the
-  // frame the pose comes up — see `lines` on his def and beatCue in src/enemies.js —
-  // and on the background bus, Category B, so nothing on the voice channel drops them.
+  // THE CROW HARBINGER'S VOICE, at the owner's word, held and with priority like the
+  // captain's: as he walks on, as he points his crow at a tower, as he calls the
+  // flock, as he is beaten and standing, and every fifth man he kills. See `lines`
+  // on his def.
+  harbinger_enters: 'assets/audio/sfx/Crow_Harbinger_enters.mp3',
   harbinger_point:  'assets/audio/sfx/Crow_Harbinger_Point_Tower.mp3',
   harbinger_call:   'assets/audio/sfx/Crow_Harbinger_Call_Crows.mp3',
+  harbinger_dying:  'assets/audio/sfx/Crow_Harbinger_before_dying.mp3',
+  harbinger_kills:  'assets/audio/sfx/Crow_Harbinger_kill_soldier.mp3',
+  // AND THE NOISE OF HIS TWO ABILITIES, Category B under the voice so neither drops
+  // the other: the wind as he calls (with the call line), and his crow as it reaches
+  // the tower and starts to circle it. See `sounds` on his def.
+  harbinger_wind:   'assets/audio/sfx/Crow_Harbinger_Call_Crows_Wind.mp3',
+  harbinger_circle: 'assets/audio/sfx/Crow_Harbinger_Point_Tower_Encircling.mp3',
   // The sixth is not a set piece — it is a running tally, every fifth man he
   // kills — so it is Category B and does not duck anything.
   captain_kills:    'assets/audio/sfx/Captain_Thug_kill_soldier.mp3',

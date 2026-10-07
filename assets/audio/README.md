@@ -31,7 +31,10 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_before_dying.mp3, Boss_fall_dead.mp3,
                       Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
                       Captain_Thug_enters_battle.mp3,
-                      Crow_Harbinger_Point_Tower.mp3, Crow_Harbinger_Call_Crows.mp3
+                      Crow_Harbinger_enters.mp3, Crow_Harbinger_Point_Tower.mp3,
+                      Crow_Harbinger_Point_Tower_Encircling.mp3,
+                      Crow_Harbinger_Call_Crows.mp3, Crow_Harbinger_Call_Crows_Wind.mp3,
+                      Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3, Book_open_close_sound.mp3,
@@ -261,8 +264,8 @@ and it now means "how long a lull has to be before the game forgets".
 | **a dark priest looses one** — Category B | `Arcane_shot` |
 | **a projectile hits a blocker thug or the captain while his shield is up** — Category B, a little under the shots | `Defend_while_walking` |
 | **a dark priest starts a heal, or the captain mends himself** — Category B | `Enemies_heal` |
-| **the Crow Harbinger points his crow at a tower** — Category B, so no voice can drop it | `Crow_Harbinger_Point_Tower` |
-| **the Crow Harbinger calls the flock**, as the wind rises round him — Category B | `Crow_Harbinger_Call_Crows` |
+| **the Crow Harbinger's crow reaches a tower and starts to circle it** — Category B | `Crow_Harbinger_Point_Tower_Encircling` |
+| **the Crow Harbinger calls the flock**, the wind rising round him — Category B, with his call line | `Crow_Harbinger_Call_Crows_Wind` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 7.2dB louder |
@@ -277,6 +280,11 @@ and it now means "how long a lull has to be before the game forgets".
 | the **captain** finishes mending himself | `Captain_Thug_heal` |
 | the **captain** is beaten and standing | `Captain_Thug_before_dying` |
 | a **boss** goes down — the captain, and the Crow Harbinger | `Boss_fall_dead` |
+| the **Crow Harbinger** walks on | `Crow_Harbinger_enters` |
+| the **Crow Harbinger** points his crow at a tower | `Crow_Harbinger_Point_Tower` |
+| the **Crow Harbinger** calls the flock | `Crow_Harbinger_Call_Crows` |
+| the **Crow Harbinger** is beaten and standing | `Crow_Harbinger_before_dying` |
+| the **Crow Harbinger** kills his 5th, 10th, 15th man | `Crow_Harbinger_kill_soldier` |
 | an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |
 
 Everything above the line is Category A and shares the one channel; the ones
@@ -285,7 +293,8 @@ below run on the background bus and play every time.
 **The seven Captain Thug clips skip the levelling entirely and are played AS LOUD
 AS THEY CAN GO** — amplified until their peak reaches the ceiling, which comes to
 bodies of 0.30 to 0.47 against everything else's 0.09, between +10dB and +14dB.
-See `LOUDER` in src/audio.js.
+See `LOUDER` in src/audio.js. The Crow Harbinger's five voice lines are in it too,
+and held the same way.
 
 That is where this ended up after two rounds of "still too soft", and the reason
 the first two attempts fell short is worth keeping: matching him to a higher line

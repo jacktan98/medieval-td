@@ -2047,10 +2047,17 @@ export const enemyTypes = {
       },
       rest: 2
     },
-    // HIS SOUNDS, at the owner's word, by beat: Point Tower and Call Crows as each pose
-    // comes up (the wind starts with the call), and the captain's fall, renamed
-    // Boss_fall_dead so either boss can use it, as he hits the ground.
-    lines: { point: ['harbinger_point'], call: ['harbinger_call'], rest: ['boss_fallen'] },
+    // HIS VOICE, at the owner's word, by moment as the captain's is: walking on, Point
+    // Tower and Call Crows as each pose comes up, beaten and standing, every fifth man
+    // he kills — and the captain's fall, renamed Boss_fall_dead so either boss can use
+    // it, as he hits the ground.
+    lines: {
+      enters: ['harbinger_enters'], point: ['harbinger_point'], call: ['harbinger_call'],
+      fall: ['harbinger_dying'], rest: ['boss_fallen'], kills: ['harbinger_kills']
+    },
+    // AND THE NOISE OF HIS ABILITIES, under the voice: the wind with the call, and his
+    // crow's as it reaches the tower and starts to circle it.
+    sounds: { call: ['harbinger_wind'], circle: ['harbinger_circle'] },
     r: 14,
     colour: '#4A3A52'
   }
