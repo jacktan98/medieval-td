@@ -22,7 +22,8 @@ export const BOSS_FX = {
 // way to its edge) it stays nearly solid before thinning; where its middle sits (a
 // share of his height up from his feet); how far (board px) its flat foot fades in
 // over, so it stands on the ground without a hard line; and how fast it pulses.
-export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], w: 40, h: 62, alpha: 1, core: 0.6, mid: 0.3, foot: 8, pulse: 5 };
+// 20% smaller than it first was, at the owner's word (40 x 62).
+export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], w: 32, h: 50, alpha: 1, core: 0.6, mid: 0.3, foot: 8, pulse: 5 };
 
 // The glow's FLOOR, at the owner's word — the brown oval painted under his feet in the
 // Heal drawing, as light on the ground: its colour (#74592E, that oval's brown); its
@@ -55,5 +56,6 @@ export const UNIT_FX = {
 
 // The same shape as the Captain's, scaled to a paladin — his kneeling drawing stands
 // about 0.8 of the Captain's mending one. #FFF3B3 and #FFEB7E, the drawing's own.
-export const HOLY_GLOW = { rgb: [0xFF, 0xF3, 0xB3], w: 32, h: 50, alpha: 1, core: 0.6, mid: 0.3, foot: 6, pulse: 5 };
+// 20% smaller than it first was, at the owner's word (32 x 50).
+export const HOLY_GLOW = { rgb: [0xFF, 0xF3, 0xB3], w: 26, h: 40, alpha: 1, core: 0.6, mid: 0.3, foot: 6, pulse: 5 };
 export const HOLY_FLOOR = { rgb: [0xFF, 0xEB, 0x7E], w: 37, h: 11, alpha: 1, core: 0.6 };
