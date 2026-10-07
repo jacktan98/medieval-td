@@ -429,7 +429,10 @@ function begin(e, act) {
   // The mend's cue is the SHARED enemy heal — a Dark Priest makes the same noise —
   // so it stays Category B and unheld: it is not his voice. The other three are,
   // and they take the channel and keep it until they have finished.
-  if (cue) (act === 'mend' ? play(cue) : solo(cue, true, true));
+  // THE CROW HARBINGER'S POINT AND CALL are Category B too, as the mend is: they are
+  // the noise of an ability rather than his voice, and on the shared channel a held
+  // line (a villager's cry, the other boss) could drop one outright.
+  if (cue) (act === 'mend' || act === 'point' || act === 'call' ? play(cue) : solo(cue, true, true));
   // Everything he was doing stops. A shot half-nocked is lost rather than banked,
   // on the rule the Dark Priest's interrupted cast follows: a moment that gets
   // taken off you should cost you the moment.

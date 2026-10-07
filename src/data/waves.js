@@ -2047,9 +2047,10 @@ export const enemyTypes = {
       },
       rest: 2
     },
-    // HIS ONE LINE so far, at the owner's word: the captain's fall, renamed Boss_fall_dead
-    // so either boss can use it, plays as he hits the ground. The rest wait for his own.
-    lines: { rest: ['boss_fallen'] },
+    // HIS SOUNDS, at the owner's word, by beat: Point Tower and Call Crows as each pose
+    // comes up (the wind starts with the call), and the captain's fall, renamed
+    // Boss_fall_dead so either boss can use it, as he hits the ground.
+    lines: { point: ['harbinger_point'], call: ['harbinger_call'], rest: ['boss_fallen'] },
     r: 14,
     colour: '#4A3A52'
   }

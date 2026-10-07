@@ -30,7 +30,8 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3, Boss_fall_dead.mp3,
                       Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
-                      Captain_Thug_enters_battle.mp3
+                      Captain_Thug_enters_battle.mp3,
+                      Crow_Harbinger_Point_Tower.mp3, Crow_Harbinger_Call_Crows.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3, Book_open_close_sound.mp3,
@@ -260,6 +261,8 @@ and it now means "how long a lull has to be before the game forgets".
 | **a dark priest looses one** — Category B | `Arcane_shot` |
 | **a projectile hits a blocker thug or the captain while his shield is up** — Category B, a little under the shots | `Defend_while_walking` |
 | **a dark priest starts a heal, or the captain mends himself** — Category B | `Enemies_heal` |
+| **the Crow Harbinger points his crow at a tower** — Category B, so no voice can drop it | `Crow_Harbinger_Point_Tower` |
+| **the Crow Harbinger calls the flock**, as the wind rises round him — Category B | `Crow_Harbinger_Call_Crows` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |
 | **a HEAVY bolt looses** — Category B | `Ballista_Bolt_shot`, 7.2dB louder |
