@@ -794,7 +794,10 @@ function drawStatus(ctx, state) {
     const top = e.y - artHeight(e.def, e) - 4;
     if (e.def.boss) bossBar(ctx, e.x, top - 3, e.hp / e.maxHp);
     else healthBar(ctx, e.x, top, e.def.r, e.hp / e.maxHp);
-    statusMarks(ctx, e, e.x, top);
+    // A BOSS'S MARKS STAND CLEAR OF HIS BAR, at the owner's word: it is taller than
+    // an ordinary bar and starts above it, rim and all, so the marks are lifted to
+    // its top edge and a gap past that. See BOSS_BAR.
+    statusMarks(ctx, e, e.x, e.def.boss ? top - 3 - 1 - BOSS_BAR.gap : top);
     ctx.restore();
   }
   for (const u of state.units) {
@@ -3988,7 +3991,9 @@ function healthBar(ctx, x, y, r, pct) {
 // twice an ordinary bar's width and twice its height, on a dark plate with a cream
 // rim, filled crimson — so the one creature the board is about can be found and
 // read at a glance in a crowd.
-const BOSS_BAR = { w: 48, h: 8 };
+// `gap`: the clear air (board px) between the top of its rim and any status marks
+// over it.
+const BOSS_BAR = { w: 48, h: 8, gap: 2 };
 function bossBar(ctx, x, y, pct) {
   const { w, h } = BOSS_BAR, x0 = x - w / 2;
   ctx.save();
