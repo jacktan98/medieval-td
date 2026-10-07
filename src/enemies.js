@@ -557,7 +557,9 @@ function freeCrow(e) {
   e.raven = null;
 }
 
-const CIRCLE = { rx: 15, ry: 6, turn: 3.2 };   // the crow's ring over a tower, and how fast it goes round
+// The crow's ring over a tower, and how fast it goes round. Wider at the owner's word
+// (it was 15 x 6).
+const CIRCLE = { rx: 22, ry: 9, turn: 3.2 };
 
 // Every frame he is on the board: his cooldowns, his crow and his flock.
 function crowWork(state, e, dt) {

@@ -2567,10 +2567,27 @@ function drawTowerShadows(ctx, state) {
       ctx.scale(-1, 1);
       ctx.translate(-t.x, 0);
     }
+    // A TOWER BLINDED BY THE CROW HARBINGER'S CROW: its shadow glows, at the owner's
+    // word — the shadow itself drawn with a pulsing violet glow round it, under the
+    // ordinary one, for as long as the crow circles. See BLIND_GLOW.
+    if (t.blinded) {
+      const k = 0.5 + 0.5 * Math.sin(boardClock * BLIND_GLOW.pulse);
+      ctx.save();
+      ctx.shadowColor = BLIND_GLOW.color;
+      ctx.shadowBlur = BLIND_GLOW.blur[0] + (BLIND_GLOW.blur[1] - BLIND_GLOW.blur[0]) * k;
+      ctx.globalAlpha *= BLIND_GLOW.alpha[0] + (BLIND_GLOW.alpha[1] - BLIND_GLOW.alpha[0]) * k;
+      for (let i = 0; i < BLIND_GLOW.passes; i++) ctx.drawImage(split.shadow, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
+      ctx.restore();
+    }
     ctx.drawImage(split.shadow, sx, sy, sw, sh, box.left, box.top, box.w, box.h);
     ctx.restore();
   }
 }
+
+// The blinded tower's glow: its colour, how far it spreads (board px, low and high of
+// the pulse), how strong (the same), how many times it is laid on, and how fast it
+// pulses (radians a second).
+const BLIND_GLOW = { color: 'rgba(175, 105, 255, 1)', blur: [16, 28], alpha: [0.8, 1], passes: 4, pulse: 4 };
 
 function drawMachine(ctx, t, box) {
   const m = t.def.machine;

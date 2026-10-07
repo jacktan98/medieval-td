@@ -1966,7 +1966,7 @@ export const enemyTypes = {
     deadTrim: [143, 226, 150, 107],
     deadPivot: [0.29, 0.869],
 
-    // THE OWNER'S NUMBERS: 8000 health, 80 magic damage that breaks 2 ranks of magic
+    // THE OWNER'S NUMBERS: 8000 health, 120 magic damage that breaks 2 ranks of magic
     // armour, a 200 reach, high plate both ways — and 30 a second, slower than the
     // Captain's 40, at the owner's second word.
     hp: 8000,
@@ -1977,15 +1977,16 @@ export const enemyTypes = {
     leak: 0,
     // Reaching the end loses the battle, as the Captain does.
     ends: true,
-    // Held by a soldier, he casts at him point blank on the same numbers.
-    damage: 80,
+    // Held by a soldier, he casts at him point blank on the same numbers. 120, at the
+    // owner's word (it was 80).
+    damage: 120,
     pierce: 2,
     atkCd: 1,
     ranged: {
       range: 200,
       // ONE BOLT A SECOND, at the owner's word.
       cd: 1,
-      damage: 80,
+      damage: 120,
       pierce: 2,
       ammo: arcaneBolt
     },
@@ -2000,7 +2001,8 @@ export const enemyTypes = {
       sprite: 'harbinger_point', trim: [180, 164, 148, 184], pivot: [0.419, 0.929],
       self: { sprite: 'harbinger_point_self', trim: [180, 164, 113, 184], pivot: [0.549, 0.929] },
       crow: { sprite: 'harbinger_crow', trim: [247, 197, 81, 87] },
-      seconds: 1,
+      // 2 seconds of pointing, at the owner's word (it was 1).
+      seconds: 2,
       launch: 0.4,
       above: 0.5,
       cooldown: 20,
