@@ -28,7 +28,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
-                      Captain_Thug_before_dying.mp3, Captain_Thug_fall_dead.mp3,
+                      Captain_Thug_before_dying.mp3, Boss_fall_dead.mp3,
                       Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
                       Captain_Thug_enters_battle.mp3
 
@@ -273,7 +273,7 @@ and it now means "how long a lull has to be before the game forgets".
 | the **captain** channels, for 3s | `Captain_Thug_pause` |
 | the **captain** finishes mending himself | `Captain_Thug_heal` |
 | the **captain** is beaten and standing | `Captain_Thug_before_dying` |
-| the **captain** goes down | `Captain_Thug_fall_dead` |
+| a **boss** goes down — the captain, and the Crow Harbinger | `Boss_fall_dead` |
 | an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |
 
 Everything above the line is Category A and shares the one channel; the ones
@@ -299,10 +299,10 @@ mid-word. It is the only thing in the mixer that cannot be talked over.
 
 **No clip may be amplified past full scale at the output**, whatever the levelling
 wants — `PEAK_CEILING` in src/audio.js. That is a real fix rather than a
-precaution: `Captain_Thug_fall_dead` was being pushed to 1.30 at the output and
+precaution: `Boss_fall_dead` was being pushed to 1.30 at the output and
 every sample over the top was being squared off.
 
-**`Captain_Thug_fall_dead` cannot go as loud as the other five, and the file is
+**`Boss_fall_dead` cannot go as loud as the other five, and the file is
 why.** It is 0.63s at 0.038 RMS with a **0.1 millisecond spike** at 0.774 — three
 samples, right at the front. The ceiling is set by that spike, so the clip is held
 at a gain of 1.36 where the levelling would like 4.67. Re-export it with the spike

@@ -1628,7 +1628,7 @@ export const enemyTypes = {
     // speaking with this one's voice. Read by src/enemies.js and src/units.js.
     lines: {
       enters: ['captain_enters'], pause: ['captain_pause'], healed: ['captain_healed'],
-      fall: ['captain_dying'], rest: ['captain_fallen'], kills: ['captain_kills']
+      fall: ['captain_dying'], rest: ['boss_fallen'], kills: ['captain_kills']
     },
     voice: 'captainPicked',
     spriteFaces: -1,
@@ -2035,6 +2035,9 @@ export const enemyTypes = {
       fall: { sprite: 'harbinger_fall', trim: [128, 172, 256, 168], pivot: [0.229, 0.875], seconds: 3 },
       rest: 2
     },
+    // HIS ONE LINE so far, at the owner's word: the captain's fall, renamed Boss_fall_dead
+    // so either boss can use it, plays as he hits the ground. The rest wait for his own.
+    lines: { rest: ['boss_fallen'] },
     r: 14,
     colour: '#4A3A52'
   }

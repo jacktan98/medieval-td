@@ -124,7 +124,7 @@ const GAIN_MAX = 5;
 // This is a real bug the boss uncovered rather than a precaution. The leveller
 // works on the RMS of the loudest 0.3s window, which is the right measure for
 // almost everything and badly wrong for a clip that is mostly quiet with one big
-// transient in it: `Captain_Thug_fall_dead` reads 0.048 loud — half the target —
+// transient in it: `Boss_fall_dead` reads 0.048 loud — half the target —
 // so it was being multiplied by 1.87, and 0.774 peak x 1.87 is 1.446. Every
 // sample over full scale was being squared off, which is distortion, and
 // distortion on a clip with a quiet body is exactly what "too soft" sounds like.
@@ -132,7 +132,7 @@ const GAIN_MAX = 5;
 //
 // EXPRESSED AT THE OUTPUT, which is why MASTER is in it. A source peak is not
 // what the speaker sees: it goes through its bus and then through the master at
-// 0.9, so the honest question is what comes out the end. `fall_dead` was reaching
+// 0.9, so the honest question is what comes out the end. `Boss_fall_dead` was reaching
 // 1.446 x 0.9 = 1.30 there, which is a third over and unambiguously clipping.
 //
 // 0.95 rather than 1.0 leaves a little room for the sum: Category A and the
@@ -181,7 +181,7 @@ const PEAK_CEILING = PEAK_OUT / MASTER;
 const LOUDEST = true;
 const LOUDER = new Set([
   'captain_enters', 'captain_leads', 'captain_battle', 'captain_pause', 'captain_healed',
-  'captain_dying', 'captain_fallen', 'captain_kills', 'captain_picked'
+  'captain_dying', 'boss_fallen', 'captain_kills', 'captain_picked'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -335,7 +335,7 @@ const paths = {
   captain_pause:    'assets/audio/sfx/Captain_Thug_pause.mp3',
   captain_healed:   'assets/audio/sfx/Captain_Thug_heal.mp3',
   captain_dying:    'assets/audio/sfx/Captain_Thug_before_dying.mp3',
-  captain_fallen:   'assets/audio/sfx/Captain_Thug_fall_dead.mp3',
+  boss_fallen:      'assets/audio/sfx/Boss_fall_dead.mp3',
   // The sixth is not a set piece — it is a running tally, every fifth man he
   // kills — so it is Category B and does not duck anything.
   captain_kills:    'assets/audio/sfx/Captain_Thug_kill_soldier.mp3',
@@ -909,11 +909,11 @@ export const GAIN = {
 // checked against the real bus it plays on:
 //   cutting_tree   — 35 against a voice's 100, from the 33 the cap allows; on the
 //                    background bus, so it still peaks under half of full scale.
-//   captain_fallen — 75, from 73; on the voice bus, peaking at 0.98 of full scale,
+//   boss_fallen    — 75, from 73; on the voice bus, peaking at 0.98 of full scale,
 //                    which is over PEAK_OUT's margin but under full scale.
 const LIFT = {
   cutting_tree: 1.057,
-  captain_fallen: 1.028
+  boss_fallen: 1.028
 };
 
 // The cues. A cue is a LIST, and the game asks for the list rather than for a
@@ -1181,7 +1181,7 @@ export const BOSS_BATTLE = ['captain_battle'];
 export const BOSS_PAUSE  = ['captain_pause'];
 export const BOSS_HEALED = ['captain_healed'];
 export const BOSS_DYING  = ['captain_dying'];
-export const BOSS_FALLEN = ['captain_fallen'];
+export const BOSS_FALLEN = ['boss_fallen'];
 export const BOSS_KILLS  = ['captain_kills'];
 // A ballista loosing. Category B beside the bow, the staff and the musket, and
 // for the same reason: it is a thing that happens rather than a thing announced,

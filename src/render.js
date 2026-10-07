@@ -2587,7 +2587,7 @@ function drawTowerShadows(ctx, state) {
 // The blinded tower's glow: its colour (#362407, at the owner's word), how far it spreads (board px, low and high of
 // the pulse), how strong (the same), how many times it is laid on, and how fast it
 // pulses (radians a second).
-const BLIND_GLOW = { color: 'rgba(54, 36, 7, 1)', blur: [16, 28], alpha: [0.8, 1], passes: 4, pulse: 4 };
+const BLIND_GLOW = { color: 'rgba(54, 36, 7, 1)', blur: [20, 34], alpha: [1, 1], passes: 10, pulse: 4 };
 
 function drawMachine(ctx, t, box) {
   const m = t.def.machine;
