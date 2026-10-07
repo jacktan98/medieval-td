@@ -540,6 +540,10 @@ export function selectionInfo(state) {
   return {
     sprite: shown.sprite || f.def.sprite,
     trim: shown.trim || f.def.spriteTrim,
+    // A BOSS STANDS IN HIS MEDALLION ON HIS SHADOW, at the owner's word, as he does in
+    // the encyclopedia: the across share of his ground point, which drawInfo centres
+    // on. Everyone else is centred on his box and leaves this null.
+    anchorX: f.def.boss ? (shown.pivot || f.def.pivot)[0] : null,
     title: f.def.name,
     // WHOLE NUMBERS, BOTH OF THEM, and rounded UP. Display only — the fight goes
     // on using the fractions.

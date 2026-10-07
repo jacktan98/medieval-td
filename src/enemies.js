@@ -1103,12 +1103,14 @@ export function updateEnemies(state, dt) {
     // `ranged` block in data/waves.js: a thrower who halts where nothing reaches
     // him is killed by nothing and advances never, and the wave hands over on the
     // stall clock rather than on a clear field.
-    // AND ONE WHO NEVER CASTS ON THE MOVE: `plant` on his `ranged` block — the Crow
-    // Harbinger's, at the owner's word, "don't let him attack while walking" — stops him
-    // whenever anyone is in his reach, wherever they stand, not only when they are
-    // ahead of him on the road.
+    // AND NO SHOOTER LOOSES ON THE MOVE, at the owner's word — first for the Crow
+    // Harbinger ("don't let him attack while walking"), then for every one of them:
+    // "the standing when shooting projectiles should apply to all units". So a
+    // thrower stops whenever there is someone he could shoot — the same nearestUnit
+    // the shot itself aims with, so he stands exactly when he is shooting — wherever
+    // they stand, not only when they are ahead of him on the road.
     e.halted = !!now.ranged && (screened(state, e, road) ||
-      (!!now.ranged.plant && !!nearestUnit(state, e.x, e.y, now.ranged.range)));
+      !!nearestUnit(state, e.x, e.y, now.ranged.range));
     if (e.halted) continue;
 
     // One number forward along the road, then the position is looked up. The

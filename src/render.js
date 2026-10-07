@@ -5664,7 +5664,9 @@ function drawInfo(ctx, state) {
   const img = info.sprite && art[info.sprite];
   // The size of the figure and of the ring it stands in — see medallionOf in
   // src/newfoe.js, which the "New Enemy!" alert asks too, so the two match.
-  const { dw, dh, R } = medallionOf(img && info.trim ? info.trim : null);
+  // A BOSS IS CENTRED ON HIS SHADOW rather than his box — see `anchorX` in select.js.
+  const anchor = info.anchorX ?? 0.5;
+  const { dw, dh, R } = medallionOf(img && info.trim ? info.trim : null, anchor);
   // A ROUND MEDALLION the figure stands in, and the bar's bottom edge on the
   // line of its ground shadow, so the figure reads as standing on the bar.
   //
@@ -5730,7 +5732,7 @@ function drawInfo(ctx, state) {
   paperDisc(ctx, cx, cy, R, 19, HUD_PLATE_EDGE, 1.5, SOFT_RIP);
   if (img && info.trim) {
     const [sx, sy, sw, sh] = info.trim;
-    ctx.drawImage(img, sx, sy, sw, sh, cx - dw / 2, feet - dh, dw, dh);
+    ctx.drawImage(img, sx, sy, sw, sh, cx - anchor * dw, feet - dh, dw, dh);
   }
 
   const mid = ly + LINE_H / 2;

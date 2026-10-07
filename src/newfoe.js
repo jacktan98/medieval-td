@@ -169,11 +169,15 @@ export function noticeFoes(state) {
 // unit image even smaller so that there is good space between the image and edge
 // of medallion." See alertFigure below.
 export const MEDALLION_FEET = 0.62;
-export function medallionOf(trim) {
+// `ax` is where across the drawing its middle goes — a half for a figure centred on
+// its box, a boss's ground point for one centred on his shadow — so the ring is grown
+// round whichever side reaches further.
+export function medallionOf(trim, ax = 0.5) {
   const dw = trim ? trim[2] * SCALE * INFO_PORTRAIT : 58;
   const dh = trim ? trim[3] * SCALE * INFO_PORTRAIT : 50;
+  const reach = Math.max(ax, 1 - ax) * dw;
   let R = 36;
-  while (Math.hypot(dw / 2, dh - MEDALLION_FEET * R) > R - 3) R++;
+  while (Math.hypot(reach, dh - MEDALLION_FEET * R) > R - 3) R++;
   return { dw, dh, R };
 }
 
