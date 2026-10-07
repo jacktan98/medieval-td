@@ -40,3 +40,20 @@ export const RAGE_TINT = { color: '#D8261C', alpha: 0.75, seconds: 1.1 };
 
 // The thrown shield and bow: how long their hop takes, and how high it goes (board px).
 export const WEAPON_POP = { seconds: 0.5, height: 12 };
+
+// --- AND THE SAME LIGHT FOR THE PALADIN'S HOLY LIGHT ------------------------------
+//
+// At the owner's word: "I want this style when paladins cast the spell too." His Holy
+// Light drawing paints the same kind of radiance, in yellow, and it is drawn the same
+// way: taken out of the drawing (tools/heal-bare.mjs) and drawn live as a dome of
+// light and a floor, for the three seconds he kneels. Each a switch, like the above.
+export const UNIT_FX = {
+  holyGlow: true,     // a dome of pale yellow light round him while he kneels
+  holyFloor: true,    // a soft oval of yellow light on the ground under him
+  bareHoly: true      // his Holy Light drawing without its painted dome and floor
+};
+
+// The same shape as the Captain's, scaled to a paladin — his kneeling drawing stands
+// about 0.8 of the Captain's mending one. #FFF3B3 and #FFEB7E, the drawing's own.
+export const HOLY_GLOW = { rgb: [0xFF, 0xF3, 0xB3], w: 32, h: 50, alpha: 1, core: 0.6, mid: 0.3, foot: 6, pulse: 5 };
+export const HOLY_FLOOR = { rgb: [0xFF, 0xEB, 0x7E], w: 37, h: 11, alpha: 1, core: 0.6 };

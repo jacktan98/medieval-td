@@ -34,7 +34,8 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON, locked, towerEntry, unitEntry } from './book.js';
 import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
 import { STORY } from './data/story.js';
-import { BOSS_FX, HEAL_GLOW, HEAL_FLOOR, RAGE_BURST, RAGE_TINT, WEAPON_POP } from './data/bossfx.js';
+import { BOSS_FX, HEAL_GLOW, HEAL_FLOOR, RAGE_BURST, RAGE_TINT, WEAPON_POP,
+         UNIT_FX, HOLY_GLOW, HOLY_FLOOR } from './data/bossfx.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
 import { soundLevel } from './audio.js';
@@ -3442,30 +3443,9 @@ function bossShake(state) {
 // the board, before the mirror, so neither is flipped.
 function bossUnderlay(ctx, e, dh) {
   if (!e.def.rage) return;
-  if (BOSS_FX.healGlow && e.act === 'mend') {
-    const dome = healDome(e, dh);
-    if (dome) ctx.drawImage(dome.c, dome.x, dome.y, dome.w, dome.h);
-  }
+  if (BOSS_FX.healGlow && e.act === 'mend') domeGlow(ctx, HEAL_GLOW, healFade(e), dh);
   // AND ITS FLOOR, in front of the dome's foot as the drawing has it.
-  if (BOSS_FX.healFloor && e.act === 'mend') {
-    const k = healFade(e) * HEAL_FLOOR.alpha;
-    if (k > 0) {
-      const { rgb: [r, g, b], w, h, core } = HEAL_FLOOR;
-      ctx.save();
-      ctx.translate(0, -1);
-      ctx.scale(1, h / w);
-      const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, w);
-      pool.addColorStop(0, `rgba(${r},${g},${b},${k})`);
-      pool.addColorStop(core, `rgba(${r},${g},${b},${k * 0.92})`);
-      pool.addColorStop(core + (1 - core) * 0.5, `rgba(${r},${g},${b},${k * 0.4})`);
-      pool.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      ctx.fillStyle = pool;
-      ctx.beginPath();
-      ctx.arc(0, 0, w, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
+  if (BOSS_FX.healFloor && e.act === 'mend') floorGlow(ctx, HEAL_FLOOR, healFade(e));
   const age = BOSS_FX.rageBurst ? rageAge(e) : null;
   if (age !== null && age < RAGE_BURST.seconds) {
     const k = age / RAGE_BURST.seconds;
@@ -3493,15 +3473,14 @@ function healFade(e) {
   const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
   return Math.max(0, Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25));
 }
-function healDome(e, dh) {
-  if (!domeCanvas) return null;
-  const { rgb: [r, g, b], w, h, alpha, core, mid, foot, pulse } = HEAL_GLOW;
-  // Up in the first quarter second, out in the last, and pulsing between — the
-  // pulse only in the outer part, so the middle stays almost solid throughout.
-  const env = healFade(e);
+function domeGlow(ctx, spec, env, dh) {
+  if (!domeCanvas) return;
+  const { rgb: [r, g, b], w, h, alpha, core, mid, foot, pulse } = spec;
+  // `env` is how far up the light is — see healFade and holyFade — and the pulse is
+  // only in the outer part, so the middle stays almost solid throughout.
   const swell = 0.85 + 0.15 * Math.sin(boardClock * pulse * Math.PI);
   const k = env * alpha;
-  if (k <= 0) return null;
+  if (k <= 0) return;
   const K = 3;                                   // drawn at 3x, for a phone's screen
   const cy = dh * mid;                           // his middle, up from his feet
   const W = 2 * w, H = Math.ceil(cy + h);        // the box from the dome's top to his feet
@@ -3528,8 +3507,39 @@ function healDome(e, dh) {
   fade.addColorStop(1, 'rgba(0,0,0,1)');
   c.fillStyle = fade;
   c.fillRect(0, H - foot, W, foot);
-  return { c: domeCanvas, x: -w, y: -H + 2, w: W, h: H };
+  ctx.drawImage(domeCanvas, -w, -H + 2, W, H);
 }
+
+// THE FLOOR UNDER IT: a soft oval of light on the ground at his feet, nearly solid in
+// the middle and thinning to nothing at its edge.
+function floorGlow(ctx, spec, env) {
+  const k = env * spec.alpha;
+  if (k <= 0) return;
+  const { rgb: [r, g, b], w, h, core } = spec;
+  ctx.save();
+  ctx.translate(0, -1);
+  ctx.scale(1, h / w);
+  const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, w);
+  pool.addColorStop(0, `rgba(${r},${g},${b},${k})`);
+  pool.addColorStop(core, `rgba(${r},${g},${b},${k * 0.92})`);
+  pool.addColorStop(core + (1 - core) * 0.5, `rgba(${r},${g},${b},${k * 0.4})`);
+  pool.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = pool;
+  ctx.beginPath();
+  ctx.arc(0, 0, w, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// A PALADIN'S HOLY LIGHT, the same way: how far up his light is — in over its first
+// quarter second, out over its last — while he kneels in its pose (`holdFor`, the
+// light's length, is set where he calls it in src/units.js).
+function holyFade(u) {
+  const total = u.holdFor || 3;
+  const left = Math.max(0, u.hold || 0);
+  return Math.max(0, Math.min(1, (total - left) / 0.25, left / 0.25));
+}
+const kneeling = u => !!(u.holdArt && u.holdArt.sprite === 'paladin_holy_light' && u.hold > 0);
 
 // OVER the figure: the red flush as he turns, fading out.
 const redCopies = new Map();
@@ -3932,7 +3942,14 @@ function drawSoldier(ctx, u) {
   // Light or the follow-through of Blinding Strike — and it stays up for as long as
   // `hold` does. A spearman carries both at zero forever and draws exactly as he
   // always did.
-  const [frame, trim, pivot] = soldierArt(u);
+  let [frame, trim, pivot] = soldierArt(u);
+  // A PALADIN KNEELING IN HOLY LIGHT: his drawing without its painted dome and floor,
+  // which are drawn live behind him — see UNIT_FX in src/data/bossfx.js. The same 512
+  // canvas as the painted one, so its trim and pivot hold.
+  const holy = kneeling(u);
+  if (holy && UNIT_FX.bareHoly && frame === art.paladin_holy_light && art.paladin_holy_light_bare) {
+    frame = art.paladin_holy_light_bare;
+  }
 
   const [sx, sy, sw, sh] = trim;
   const dw = sw * SCALE;
@@ -3949,6 +3966,11 @@ function drawSoldier(ctx, u) {
   //   the SWING, eased rather than linear, so he holds the blow and recovers
   //   the FLINCH, away from whatever last hit him
   ctx.translate(u.x + dir * swingOut(u.thrust) * s.lunge + flinch(u), u.y);
+  // Behind him, while he kneels: the dome of light and its floor.
+  if (holy) {
+    if (UNIT_FX.holyGlow) domeGlow(ctx, HOLY_GLOW, holyFade(u), dh);
+    if (UNIT_FX.holyFloor) floorGlow(ctx, HOLY_FLOOR, holyFade(u));
+  }
   ctx.scale(mirror(s, dir), 1);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, u, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);

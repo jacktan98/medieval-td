@@ -1302,6 +1302,8 @@ export function updateUnits(state, dt) {
     if (light && u.hold <= 0 && u.healCd <= 0 && u.hp < light.below * u.maxHp) {
       u.hold = light.seconds;
       u.holdArt = light.pose;
+      // How long the light lasts, for the glow drawn round him (holyFade in render.js).
+      u.holdFor = light.seconds;
       // A SHARE OF HIS OWN MAXIMUM rather than a number of points, so the heal
       // follows the man it is healing: 220 on a paladin's 275, and 264 under a
       // Divine Fortitude that raised him to 330. Read off `maxHp` rather than off

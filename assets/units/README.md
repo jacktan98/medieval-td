@@ -52,6 +52,7 @@ nothing shows them until 150 gold has been spent.
 |-------------------------|--------------------------|--------------------------------------|
 | Musketeer, Deadeye      | `Musketeer_Deadeye`      | the heavy ball leaves, and 2s after  |
 | Paladin, Holy Light     | `Paladin_Holy_Light`     | he kneels and heals, 3s              |
+| Paladin, Holy Light, on the board | `Paladin_Holy_Light_Bare` | the same, without its painted dome and floor — drawn live as light. Made from `Paladin_Holy_Light.svg` by `node tools/heal-bare.mjs --write` |
 | Paladin, Blinding Strike| `Paladin_Blinding_Strike`| the 5th blow lands, one swing        |
 | Assassin, Knife Throw   | `Assassin_Knife_Throw`   | each knife leaves, and the throw decays |
 | Assassin, Sneak Attack  | `Assassin_Sneak_Attack`  | the opening blow of a fight          |

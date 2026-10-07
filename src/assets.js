@@ -286,6 +286,9 @@ export const paths = {
   // paladin only ever shows these if his Keep has bought the ability they belong
   // to. Holy Light is the kneel-and-heal; Blinding Strike is the tenth blow.
   paladin_holy_light: 'assets/units/Paladin_Holy_Light.png',
+  // THE SAME, WITHOUT ITS PAINTED DOME AND FLOOR — the board draws them live as light.
+  // Made from the SVG by tools/heal-bare.mjs; see UNIT_FX.bareHoly.
+  paladin_holy_light_bare: 'assets/units/Paladin_Holy_Light_Bare.png',
   paladin_blinding_strike: 'assets/units/Paladin_Blinding_Strike.png',
   // The monastery's three churchmen, who stand on their decks exactly as the
   // archers do. The keys stay tiered — the code reaches them through
