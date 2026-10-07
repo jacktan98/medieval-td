@@ -1967,11 +1967,12 @@ export const enemyTypes = {
     deadPivot: [0.29, 0.869],
 
     // THE OWNER'S NUMBERS: 8000 health, 80 magic damage that breaks 2 ranks of magic
-    // armour, a 200 reach, high plate both ways, and the Captain's pace.
+    // armour, a 200 reach, high plate both ways — and 30 a second, slower than the
+    // Captain's 40, at the owner's second word.
     hp: 8000,
     damageType: 'magic',
     armour: { physical: 'high', magic: 'high' },
-    speed: 40,
+    speed: 30,
     bounty: 0,
     leak: 0,
     // Reaching the end loses the battle, as the Captain does.
@@ -1979,11 +1980,11 @@ export const enemyTypes = {
     // Held by a soldier, he casts at him point blank on the same numbers.
     damage: 80,
     pierce: 2,
-    atkCd: 1.5,
+    atkCd: 1,
     ranged: {
       range: 200,
-      // NOT GIVEN by the owner, and so a guess to tune: a bolt every 1.5 seconds.
-      cd: 1.5,
+      // ONE BOLT A SECOND, at the owner's word.
+      cd: 1,
       damage: 80,
       pierce: 2,
       ammo: arcaneBolt
@@ -2009,15 +2010,18 @@ export const enemyTypes = {
       blind: 10
     },
     // CALL CROWS, below half and every 20 seconds: he stands channelling for `seconds`
-    // in the wind he raises, and `count` crows come in from the road's mouths — a
-    // random one each, on a board with more than one — `gap` seconds apart.
+    // in the wind he raises, MENDING `heal` of his maximum health every second of it,
+    // and `count` crows come in from the road's mouths — a random one each, on a board
+    // with more than one — `gap` seconds apart. 3 seconds and 0.4 apart, at the owner's
+    // second word (they were 2 and 0.2); the mending is his too.
     call: {
       sprite: 'harbinger_call', trim: [172, 164, 156, 184], pivot: [0.449, 0.929],
-      seconds: 2,
+      seconds: 3,
+      heal: 0.1,
       below: 0.5,
       cooldown: 20,
       count: 20,
-      gap: 0.2,
+      gap: 0.4,
       type: 'crow'
     },
     // AND HIS DEATH, the Captain's: three seconds of his falling pose, then two of his
@@ -2145,8 +2149,7 @@ export const FOE_NOTES = {
   captain_thug: 'The bandit captain, with shield, bow and sword. Wounded badly, he throws down ' +
     'his shield and fights on with a magic blade. If he reaches the end, the battle is lost.',
   crow_harbinger: 'A sorcerer whose crow blinds one of your towers for 10 seconds. Badly hurt, he ' +
-    'calls 20 crows down the road, so keep archers and monasteries ready. If he reaches the end, ' +
-    'the battle is lost.'
+    'calls 20 crows down the road and heals while he calls, so keep archers and monasteries ready.'
 };
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

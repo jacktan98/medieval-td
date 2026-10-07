@@ -22,7 +22,7 @@ import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFli
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
 import { hidden, fixture, unseen, atEase } from './units.js';
 import { stageOf } from './data/armor.js';
-import { downed, wingbeat } from './enemies.js';
+import { downed, wingbeat, crowFrame } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
 import { ringPath, clampToRange, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
@@ -3605,21 +3605,28 @@ function weaponHop(e) {
 
 // HIS CROW IN THE AIR: flying to a tower, circling its top, and flying back to him —
 // where it is and which way it faces are worked out in crowWork (src/enemies.js); this
-// only draws it. The drawing faces left, so a crow heading right is mirrored, and it
-// bobs a little as it beats its wings.
+// only draws it. IN THE DARK CROW'S OWN FLYING DRAWINGS, at the owner's word, beating
+// its wings as one does (crowFrame) — the bird only, cut off above the ground shadow
+// those drawings carry, since this one is up at a tower's top rather than over the
+// road. Each frame is anchored on the bird's body (its pivot `lift` px up), so the
+// body holds still and the wings move round it. The drawings face left, so a crow
+// heading right is mirrored.
 function drawRavens(ctx, state) {
   for (const e of state.enemies) {
-    const r = e.raven, p = e.def.point;
-    if (!r || !p) continue;
-    const img = art[p.crow.sprite];
+    const r = e.raven;
+    const flyer = r && e.def.call && enemyTypes[e.def.call.type];
+    const f = flyer && flyer.flying;
+    if (!f) continue;
+    const fr = crowFrame(f, r.dist || 0);
+    const img = art[fr.sprite];
     if (!img) continue;
-    const [sx, sy, sw, sh] = p.crow.trim;
-    const w = sw * SCALE, h = sh * SCALE;
-    const beat = Math.sin((boardClock + e.lane) * 18);
+    const [tx, ty, tw, th] = fr.trim;
+    const cut = Math.min(th, f.shadow[1] - ty);          // the bird, above its shadow
+    const ax = tx + fr.pivot[0] * tw, ay = ty + fr.pivot[1] * th - fr.lift;
     ctx.save();
-    ctx.translate(r.x, r.y + beat * 1.2);
-    ctx.scale(r.dir > 0 ? -1 : 1, 1 + 0.1 * beat);
-    ctx.drawImage(img, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
+    ctx.translate(r.x, r.y);
+    ctx.scale(r.dir > 0 ? -1 : 1, 1);
+    ctx.drawImage(img, tx, ty, tw, cut, (tx - ax) * SCALE, (ty - ay) * SCALE, tw * SCALE, cut * SCALE);
     ctx.restore();
   }
 }

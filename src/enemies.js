@@ -244,6 +244,11 @@ export const downed = e => !!e && (e.act === 'fall' || e.act === 'rest' || e.act
 // would. Two crows side by side are out of step because they were not spawned on
 // the same frame, and that is all the variety a flock needs.
 const BEAT = [0, 1, 2, 1];
+// THE SAME WINGBEAT FOR A BIRD THAT IS NOT AN ENEMY: the Crow Harbinger's crow, which
+// flies to a tower and back. The frame for having flown `dist` px, as a Dark Crow
+// would be showing at that distance.
+export const crowFrame = (flying, dist) =>
+  flying.frames[BEAT[Math.floor(Math.max(0, dist) / flying.stride) % BEAT.length]];
 export function wingbeat(e) {
   const f = e.def.flying;
   // `|| 0` for a figure built by hand without a distance — the tools stand enemies
@@ -580,6 +585,7 @@ function crowWork(state, e, dt) {
   if (!r) return;
   const p = d.point;
   r.t += dt;
+  const was = { x: r.x, y: r.y };
   // The tower sold or gone from under it: back to him.
   if (r.phase !== 'back' && !(state.towers || []).includes(r.tower)) {
     if (r.tower) r.tower.blinded = false;
@@ -610,8 +616,12 @@ function crowWork(state, e, dt) {
     r.dir = to.x >= r.fx ? 1 : -1;
     r.x = r.fx + (to.x - r.fx) * ease;
     r.y = r.fy + (to.y - r.fy) * ease - Math.sin(Math.PI * k) * 18;
-    if (k >= 1) e.raven = null;
+    if (k >= 1) { e.raven = null; return; }
   }
+  // HOW FAR IT HAS FLOWN, for its wingbeat — but never slower than a Dark Crow beats
+  // his wings, so a crow circling slowly still flaps rather than gliding.
+  const flyer = enemyTypes[d.call ? d.call.type : 'crow'];
+  r.dist = (r.dist || 0) + Math.max(Math.hypot(r.x - was.x, r.y - was.y), (flyer ? flyer.speed : 80) * dt);
 }
 
 // One frame of the script. Returns true when it has owned the frame, which is
@@ -639,6 +649,9 @@ function bossBeat(state, e, dt) {
       const m = d.rage.mend;
       e.hp = Math.min(e.maxHp, e.hp + e.maxHp * m.share * dt / m.seconds);
     }
+    // CALLING THE FLOCK MENDS HIM, `heal` of his maximum every second he channels,
+    // clamped at his bar — real seconds, on the beat's own clock.
+    if (e.act === 'call' && d.call.heal) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * d.call.heal * dt);
     // THE CROW LEAVES HIS ARM `launch` seconds into the pointing pose.
     if (e.act === 'point' && !e.raven && d.point.seconds - e.actT >= d.point.launch) launchCrow(state, e);
     e.actT -= dt;
