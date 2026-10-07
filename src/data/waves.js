@@ -148,6 +148,20 @@ const darkMissile = {
   impact: null
 };
 
+// THE CROW HARBINGER'S BOLT: a smoky blot of arcane, drawn head-first to the LEFT
+// with its wisps trailing right, so it faces -1. Credited and heard as the Dark
+// Priest's missile is (`kind: 'dark'`) until he has sounds of his own.
+const arcaneBolt = {
+  kind: 'dark',
+  sprite: 'harbinger_bolt',
+  trim: [207, 229, 98, 54],
+  faces: -1,
+  grip: 0.5,
+  speed: 330,
+  fireSound: true,
+  impact: null
+};
+
 export const enemyTypes = {
   light_inf: {
     // What the info box calls him. The gameplay key stays light_inf: what he is
@@ -1609,6 +1623,13 @@ export const enemyTypes = {
     // a line of his own — everything else answers with the common thug's. One word
     // on the def, read by selectionCue in src/audio.js, which is the same opt-in a
     // tower tier uses to override its family's voice.
+    // HIS OWN LINES, by moment, as the clips they play — a boss's voice belongs to the
+    // boss, so a second one is silent where he has nothing recorded rather than
+    // speaking with this one's voice. Read by src/enemies.js and src/units.js.
+    lines: {
+      enters: ['captain_enters'], pause: ['captain_pause'], healed: ['captain_healed'],
+      fall: ['captain_dying'], rest: ['captain_fallen'], kills: ['captain_kills']
+    },
     voice: 'captainPicked',
     spriteFaces: -1,
     // HIS BODY IS HIS OWN ELEVENTH DRAWING, dropped by the finale below rather
@@ -1912,6 +1933,101 @@ export const enemyTypes = {
     // Giant's 37 x 37.
     r: 15,
     colour: '#B08A4A'
+  },
+
+  // THE CROW HARBINGER, the second boss, at the owner's word. A sorcerer with a crow on
+  // his shoulder: he walks and casts at soldiers like any ranged creature, and has two
+  // powers that turn on his health — POINT TOWER above half (his crow flies to a tower
+  // and blinds it) and CALL CROWS below it (a flock comes down the road). He dies the
+  // way the Captain does: his falling pose, then his body. See crowWork in
+  // src/enemies.js.
+  //
+  // ONE GROUND POINT FOR EVERY STANDING POSE, source (242, 335) — the centre of the
+  // shadow ellipse, the same in all seven of them — and every pivot below is that
+  // point over its own trim. His fall and his body are drawn lying further left on the
+  // canvas, so theirs is the shadow under the fallen body, (186.5, 319): pinned to the
+  // spot he stood on, he collapses where he was.
+  crow_harbinger: {
+    name: 'Crow Harbinger',
+    boss: true,
+    // WITH HIS CROW, which is how he walks on and how he is drawn everywhere else.
+    sprite: 'harbinger',
+    spriteTrim: [193, 164, 126, 184],
+    pivot: [0.389, 0.929],
+    attack: { sprite: 'harbinger_cast', trim: [175, 164, 144, 184], pivot: [0.465, 0.929] },
+    // AND WITHOUT IT, while it is away at a tower: the same pair, the shoulder bare.
+    crowless: {
+      sprite: 'harbinger_bare', trim: [193, 164, 100, 184], pivot: [0.49, 0.929],
+      attack: { sprite: 'harbinger_cast_bare', trim: [175, 164, 118, 184], pivot: [0.568, 0.929] }
+    },
+    // He casts toward the left, as drawn.
+    spriteFaces: -1,
+    dead: 'harbinger_dead',
+    deadTrim: [143, 226, 150, 107],
+    deadPivot: [0.29, 0.869],
+
+    // THE OWNER'S NUMBERS: 8000 health, 80 magic damage that breaks 2 ranks of magic
+    // armour, a 200 reach, high plate both ways, and the Captain's pace.
+    hp: 8000,
+    damageType: 'magic',
+    armour: { physical: 'high', magic: 'high' },
+    speed: 40,
+    bounty: 0,
+    leak: 0,
+    // Reaching the end loses the battle, as the Captain does.
+    ends: true,
+    // Held by a soldier, he casts at him point blank on the same numbers.
+    damage: 80,
+    pierce: 2,
+    atkCd: 1.5,
+    ranged: {
+      range: 200,
+      // NOT GIVEN by the owner, and so a guess to tune: a bolt every 1.5 seconds.
+      cd: 1.5,
+      damage: 80,
+      pierce: 2,
+      ammo: arcaneBolt
+    },
+
+    // POINT TOWER, above half his health and every 20 seconds: he points at the
+    // nearest archery, monastery or artillery tower within his reach, and his crow
+    // leaves his shoulder `launch` seconds into the `seconds`-long pose. It flies to
+    // the tower's top in `flight` seconds, circles it for `blind` seconds — the tower
+    // cannot fire — and flies back to him. `self` and `crow` are the pose in its two
+    // layers, the crow's on the same canvas, so it leaves from exactly where it sat.
+    point: {
+      sprite: 'harbinger_point', trim: [180, 164, 148, 184], pivot: [0.419, 0.929],
+      self: { sprite: 'harbinger_point_self', trim: [180, 164, 113, 184], pivot: [0.549, 0.929] },
+      crow: { sprite: 'harbinger_crow', trim: [247, 197, 81, 87] },
+      seconds: 1,
+      launch: 0.4,
+      above: 0.5,
+      cooldown: 20,
+      range: 200,
+      families: ['archery', 'monastery', 'siege'],
+      flight: 0.8,
+      blind: 10
+    },
+    // CALL CROWS, below half and every 20 seconds: he stands channelling for `seconds`
+    // in the wind he raises, and `count` crows come in from the road's mouths — a
+    // random one each, on a board with more than one — `gap` seconds apart.
+    call: {
+      sprite: 'harbinger_call', trim: [172, 164, 156, 184], pivot: [0.449, 0.929],
+      seconds: 2,
+      below: 0.5,
+      cooldown: 20,
+      count: 20,
+      gap: 0.2,
+      type: 'crow'
+    },
+    // AND HIS DEATH, the Captain's: three seconds of his falling pose, then two of his
+    // body, and only then may the battle end.
+    finale: {
+      fall: { sprite: 'harbinger_fall', trim: [128, 172, 256, 168], pivot: [0.229, 0.875], seconds: 3 },
+      rest: 2
+    },
+    r: 14,
+    colour: '#4A3A52'
   }
 };
 
@@ -1963,7 +2079,9 @@ export const MARCH_ORDER = [
   // boss the player meets with a full line and full towers; a boss at the back
   // arrives to a line that has already been chewed on, which is the fight worth
   // having. It also puts him behind his own healer rather than in front of one.
-  'captain_thug'
+  'captain_thug',
+  // And the second boss behind the first, for the same reason.
+  'crow_harbinger'
 ];
 
 // AND THE ORDER THE ENCYCLOPEDIA LISTS THEM IN, which is a different question from
@@ -2025,7 +2143,10 @@ export const FOE_NOTES = {
   boulder_giant: 'Hurls boulders that crush every soldier in the blast, and swings one in close. ' +
     'Spread your soldiers out. Letting him through costs two lives.',
   captain_thug: 'The bandit captain, with shield, bow and sword. Wounded badly, he throws down ' +
-    'his shield and fights on with a magic blade. If he reaches the end, the battle is lost.'
+    'his shield and fights on with a magic blade. If he reaches the end, the battle is lost.',
+  crow_harbinger: 'A sorcerer whose crow blinds one of your towers for 10 seconds. Badly hurt, he ' +
+    'calls 20 crows down the road, so keep archers and monasteries ready. If he reaches the end, ' +
+    'the battle is lost.'
 };
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a

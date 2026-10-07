@@ -105,6 +105,8 @@ export function draw(ctx, state) {
   // is the difference: a box in the pass sorts by its foot and this one has none on
   // the canvas. See drawOver.
   drawOver(ctx, state);
+  // The Crow Harbinger's crow, in the air over everything standing — see drawRavens.
+  drawRavens(ctx, state);
   // Sand on Sandshroud's wind, over the board and everything on it — stage 9.
   if (level.desert) drawSandWind(ctx, state.anim || 0);
   // Dawnford's holy light over the board and everything on it — stages 6, 7 and 8.
@@ -3265,6 +3267,11 @@ export function enemyStance(e) {
              : e.act === 'pause' ? d.rage.pause
              : e.act === 'mend'  ? d.rage.mend
              : e.act === 'fall'  ? d.finale.fall
+             // THE CROW HARBINGER'S TWO: pointing (the whole pose, then himself alone
+             // once the crow has left his arm — it is drawn flying, see drawRavens)
+             // and calling the flock.
+             : e.act === 'point' ? (e.raven ? d.point.self : d.point)
+             : e.act === 'call'  ? d.call
              : (e.act === 'rest' || e.act === 'gone')
                ? { sprite: d.dead, trim: d.deadTrim, pivot: d.deadPivot }
                : null;
@@ -3282,7 +3289,11 @@ export function enemyStance(e) {
   // OR, FOR A BIRD, WHICHEVER BEAT OF THE WINGBEAT HE IS ON. A crow has no pair —
   // he never strikes — and no stance; what he is showing is only ever a frame of
   // flight, chosen off the distance he has flown. See wingbeat in src/enemies.js.
+  // AND THE CROW HARBINGER WITHOUT HIS CROW while it is away at a tower: the same
+  // pair, his shoulder bare.
+  const bare = d.crowless && e.raven ? d.crowless : null;
   const own = d.flying ? wingbeat(e)
+            : bare ? { sprite: bare.sprite, trim: bare.trim, pivot: bare.pivot }
             : { sprite: now.sprite || d.sprite,
                 trim: now.trim || d.spriteTrim,
                 pivot: now.pivot || d.pivot };
@@ -3294,7 +3305,7 @@ export function enemyStance(e) {
   const melee = now.melee;
   return {
     stand: beat || (close && melee && melee.default) || stance || own,
-    swing: (close && melee) ? melee.attack : now.attack,
+    swing: (close && melee) ? melee.attack : bare ? bare.attack : now.attack,
     fade: fading
   };
 }
@@ -3394,6 +3405,8 @@ function drawEnemy(ctx, e) {
   flash(ctx, frame, e, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   // And the red flush as he turns enraged, over the drawing. See rageTint.
   rageTint(ctx, e, frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
+  // AND THE WIND THE CROW HARBINGER RAISES as he calls the flock. See windSwirl.
+  if (e.act === 'call' && e.def.call) windSwirl(ctx, e, dh);
   if (fuse) drawFuseFire(ctx, fuse, -pivot[0] * dw + (fuse.at.base[0] - sx) * SCALE,
     -pivot[1] * dh + (fuse.at.base[1] - sy) * SCALE, (e.s || 0) * 0.37 + (e.lane || 0) * 1.7);
   // AND THE LAYER THAT IS FADING, if this pose has one — the weapons the Captain
@@ -3586,6 +3599,62 @@ function weaponHop(e) {
     body: [body, drop.self.trim, drop.self.pivot],
     weapons: [arms, drop.weapons.trim, drop.weapons.pivot, 1, WEAPON_POP.height * Math.sin(Math.PI * k)]
   };
+}
+
+// --- THE CROW HARBINGER ------------------------------------------------------------
+
+// HIS CROW IN THE AIR: flying to a tower, circling its top, and flying back to him —
+// where it is and which way it faces are worked out in crowWork (src/enemies.js); this
+// only draws it. The drawing faces left, so a crow heading right is mirrored, and it
+// bobs a little as it beats its wings.
+function drawRavens(ctx, state) {
+  for (const e of state.enemies) {
+    const r = e.raven, p = e.def.point;
+    if (!r || !p) continue;
+    const img = art[p.crow.sprite];
+    if (!img) continue;
+    const [sx, sy, sw, sh] = p.crow.trim;
+    const w = sw * SCALE, h = sh * SCALE;
+    const beat = Math.sin((boardClock + e.lane) * 18);
+    ctx.save();
+    ctx.translate(r.x, r.y + beat * 1.2);
+    ctx.scale(r.dir > 0 ? -1 : 1, 1 + 0.1 * beat);
+    ctx.drawImage(img, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+}
+
+// THE WIND HE RAISES AS HE CALLS THE FLOCK, at the owner's word — "a lot of wind
+// flying up his body": pale streaks spiralling up round him from his feet to over his
+// head, each one a short arc of its own ring, fading in at the bottom and out at the
+// top, and a ring of dust thrown out along the ground. Faded in and out with the pose.
+const WIND = { streaks: 14, rise: 1.6, spin: 6, r: 17, alpha: 0.8 };
+function windSwirl(ctx, e, dh) {
+  const total = e.def.call.seconds || 2;
+  const left = Math.max(0, e.actT || 0);
+  const env = Math.max(0, Math.min(1, (total - left) / 0.25, left / 0.25));
+  if (env <= 0) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let i = 0; i < WIND.streaks; i++) {
+    const p = (boardClock * WIND.rise + i / WIND.streaks) % 1;
+    const y = -p * dh * 1.25;
+    const R = WIND.r * (1 - 0.35 * p);
+    const a = boardClock * WIND.spin + i * 2.4 + p * 4;
+    ctx.strokeStyle = `rgba(236,230,218,${env * WIND.alpha * Math.sin(Math.PI * p)})`;
+    ctx.lineWidth = 1.6 - 0.6 * p;
+    ctx.beginPath();
+    ctx.ellipse(0, y, R, R * 0.32, 0, a, a + 1.1);
+    ctx.stroke();
+  }
+  // The dust, thrown out round his feet and fading as it goes.
+  const q = (boardClock * 1.3) % 1;
+  ctx.strokeStyle = `rgba(200,188,165,${env * 0.6 * (1 - q)})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(0, -1, 10 + 22 * q, (10 + 22 * q) * 0.32, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // THE CAPTAIN SHAKES AS HE MENDS, at the owner's word — "like he is channeling

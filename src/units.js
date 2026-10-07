@@ -12,7 +12,7 @@ import { detonate } from './bombs.js';
 import { upgradeFx } from './upgrades.js';
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
-import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, BOSS_KILLS, MELEE_SOUND } from './audio.js';
+import { solo, play, CUE, FIRING, blowCue, abilityCue, HEAVY_STRIKE, MELEE_SOUND } from './audio.js';
 import { boost } from './towers.js';
 import { SCALE, garrisonUnits } from './data/towers.js';
 import { abilityById, owns } from './data/abilities.js';
@@ -1913,7 +1913,8 @@ export function updateUnits(state, dt) {
       // twice on its own, before the levelling change.
       if (u.killer && u.killer.def && u.killer.def.boss && u.killer.hp > 0) {
         u.killer.kills = (u.killer.kills || 0) + 1;
-        if (u.killer.kills % 5 === 0) solo(BOSS_KILLS, true, true);
+        const kl = u.killer.def && u.killer.def.lines && u.killer.def.lines.kills;
+        if (kl && u.killer.kills % 5 === 0) solo(kl, true, true);
       }
       u.killer = null;
       // He falls facing whatever killed him. The fallback is his own facing —

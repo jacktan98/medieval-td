@@ -559,6 +559,22 @@ export const paths = {
   // that has nothing to do with how they are used.
   captain_dead:    'assets/bosses/Captain_Thug_Dead.png',
 
+  // THE CROW HARBINGER, the second boss. With his crow on his shoulder and without it
+  // (while it is away blinding a tower — see `point` on his def), his Point Tower pose
+  // whole and in its two layers (himself, and the crow that flies from his arm), his
+  // Call Crows channel, his fall and his body, and his arcane bolt.
+  harbinger:            'assets/bosses/Crow_Harbinger_Default_With_Crow.png',
+  harbinger_bare:       'assets/bosses/Crow_Harbinger_Default_Without_Crow.png',
+  harbinger_cast:       'assets/bosses/Crow_Harbinger_Attack_With_Crow.png',
+  harbinger_cast_bare:  'assets/bosses/Crow_Harbinger_Attack_Without_Crow.png',
+  harbinger_point:      'assets/bosses/Crow_Harbinger_Attack_Point_Tower.png',
+  harbinger_point_self: 'assets/bosses/Crow_Harbinger_Attack_Point_Tower_Self.png',
+  harbinger_crow:       'assets/bosses/Crow_Harbinger_Attack_Point_Tower_Crow.png',
+  harbinger_call:       'assets/bosses/Crow_Harbinger_Call_Crows.png',
+  harbinger_fall:       'assets/bosses/Crow_Harbinger_Before_Dying.png',
+  harbinger_dead:       'assets/bosses/Crow_Harbinger_Dead.png',
+  harbinger_bolt:       'assets/bosses/Crow_Harbinger_Arcane_Projectile.png',
+
   // Death poses. See assets/dead/README.md.
   //
   // The tier comes LAST in these names — Man_Dead_T1, not Man_T1_Dead — because

@@ -7,8 +7,8 @@ import { poolFor } from './blood.js';
 import { unhook, hidden, fixture, unseen } from './units.js';
 import { inRange } from './ground.js';
 import { SCALE } from './data/towers.js';
-import { solo, play, alone, WINGS_RATE, CUE, FIRING, DEFEND, HEAL, WAR_CRY,
-         BOSS_ENTERS, BOSS_PAUSE, BOSS_HEALED, BOSS_DYING, BOSS_FALLEN } from './audio.js';
+import { crownTop } from './towers.js';
+import { solo, play, alone, WINGS_RATE, CUE, FIRING, DEFEND, HEAL, WAR_CRY } from './audio.js';
 // Only the tick. An enemy that dies is dropped from the array on the same frame,
 // so there is nothing left to clear anything off — where a soldier musters again
 // and has to be given back clean.
@@ -205,7 +205,7 @@ export function spawn(state, typeId, from = null) {
   // stop the battle talking over itself, and neither of these is the battle.
   // (NOT WHEN HE HAS ALREADY SPOKEN: stage 15's Captain says his lines at the camp
   // wall — walking in, and walking out — and steps onto the road quietly, `quiet`.)
-  if (def.boss && !(from && from.quiet)) solo(BOSS_ENTERS, true, true);
+  if (def.boss && def.lines && def.lines.enters && !(from && from.quiet)) solo(def.lines.enters, true, true);
   // A RALLY THUG SHOUTS AS HE WALKS ON, at the owner's word — on entering the field,
   // not on his banner first reaching someone, which on the late boards (he marches
   // last, behind the magic-users, and is the slowest thing on the road) hardly ever
@@ -362,7 +362,12 @@ const BEATS = {
   // And on the ground. When this runs out he leaves the enemy list and a corpse
   // takes his place, which is a handover the player cannot see: the body on the
   // ground is the same drawing either side of it.
-  rest:  { next: 'gone',   at: d => d.finale.rest }
+  rest:  { next: 'gone',   at: d => d.finale.rest },
+  // THE CROW HARBINGER'S TWO. He points at a tower and his crow leaves his shoulder
+  // partway through — see crowWork — and he channels while a flock is called. Back
+  // on his feet after either.
+  point: { next: null,     at: d => d.point.seconds },
+  call:  { next: null,     at: d => d.call.seconds }
 };
 
 // THE ONE ACT THAT IS NOT A BEAT. 'gone' means the script has finished and the
@@ -383,7 +388,9 @@ const GONE = 'gone';
 // moment before it — a second line on top would have trodden on the first. The
 // owner has taken that warning away and given its recording to this beat instead,
 // so the three seconds of channelling are what the player hears him over.
-const BEAT_CUE = { pause: BOSS_PAUSE, mend: HEAL, fall: BOSS_DYING, rest: BOSS_FALLEN };
+// The mend is the shared enemy heal; every other beat is the boss's OWN line for it
+// (`lines` on his def), so a boss with none recorded is silent.
+const beatCue = (d, act) => (act === 'mend' ? HEAL : (d.lines && d.lines[act]) || null);
 
 // Start a beat.
 function begin(e, act) {
@@ -409,7 +416,7 @@ function begin(e, act) {
   // the Dark Priest's cast already follows: the sound covers the beat rather than
   // marking its end. Category B for the mend, because it is the shared enemy heal
   // and two creatures could be casting; Category A for the two death beats.
-  const cue = BEAT_CUE[act];
+  const cue = beatCue(e.def, act);
   // Category B for the mend — it is the shared enemy heal and two creatures could
   // be casting — and Category A WITH PRIORITY for the two death beats, on the same
   // argument the entrance is: the gate is a queue, and a boss dying should not lose
@@ -443,7 +450,7 @@ function land(state, e) {
     // the 3 seconds" — this line, not the start of the mend, which has its own
     // sound above. Category A: it is the moment the player learns the fight is not
     // over, and it should cut through whatever they are doing about it.
-    solo(BOSS_HEALED, true, true);
+    if (e.def.lines && e.def.lines.healed) solo(e.def.lines.healed, true, true);
     // AND HE IS THE OTHER CREATURE NOW. Set here rather than when the pause began,
     // so the whole five seconds of the transition are fought against the armour he
     // is transitioning IN — medium for the pause, high for the mend — and the low
@@ -466,6 +473,144 @@ function land(state, e) {
     // Back on his feet, which only happens at the end of the mend: the other chain
     // ends at GONE and he never walks again.
     if (!after) e.halted = false;
+  }
+}
+
+// --- THE CROW HARBINGER ---------------------------------------------------------
+//
+// TWO POWERS, at the owner's word, and which one he has depends on his health:
+//
+//   POINT TOWER, above half: he points at the nearest archery, monastery or artillery
+//   tower in his reach and his crow flies to it, circles its top, and the tower cannot
+//   fire for `blind` seconds; then it flies back to his shoulder. He walks and casts on
+//   meanwhile, drawn without it (`crowless` on his def). Every `cooldown` seconds.
+//
+//   CALL CROWS, below half: he channels in a rising wind for `seconds`, and `count`
+//   crows come in from the road's mouths, `gap` seconds apart. Every `cooldown`.
+//
+// Both cooldowns count from the moment the power is used, and both start ready.
+
+// The tower he would point at now, or null.
+function pointable(state, e) {
+  const p = e.def.point;
+  let best = null, bestD = Infinity;
+  for (const t of state.towers || []) {
+    if (!t.def.cooldown || t.blinded || !t.fam || !p.families.includes(t.fam.id)) continue;
+    const d = Math.hypot(t.x - e.x, t.y - e.y);
+    if (d <= p.range && d < bestD) { best = t; bestD = d; }
+  }
+  return best;
+}
+
+// Starts one of his powers if one is due. True if he did.
+function crowPowers(state, e) {
+  const d = e.def;
+  if (d.call && (e.callCd || 0) <= 0 && e.hp < e.maxHp * d.call.below) {
+    e.callCd = d.call.cooldown;
+    begin(e, 'call');
+    // The flock comes in over the next few seconds, one every `gap` — see crowWork.
+    e.flock = { left: d.call.count, t: 0 };
+    return true;
+  }
+  if (d.point && !e.raven && (e.pointCd || 0) <= 0 && e.hp > e.maxHp * d.point.above) {
+    const tower = pointable(state, e);
+    if (tower) {
+      e.pointCd = d.point.cooldown;
+      e.pointAt = tower;
+      begin(e, 'point');
+      turnTo(e, tower.x);
+      return true;
+    }
+  }
+  return false;
+}
+
+// WHERE HIS CROW SITS ON HIM, in board px from his feet: the crow layer's own middle
+// on the shared canvas, measured against his ground point, and mirrored with him.
+function shoulder(e) {
+  const p = e.def.point, [cx, cy, cw, ch] = p.crow.trim;
+  const [tx, ty, tw, th] = p.trim;
+  const gx = tx + p.pivot[0] * tw, gy = ty + p.pivot[1] * th;
+  const side = e.face === e.def.spriteFaces ? 1 : -1;
+  return { x: e.x + (cx + cw / 2 - gx) * SCALE * side, y: e.y + (cy + ch / 2 - gy) * SCALE };
+}
+
+// Over a tower's top, where the crow circles.
+const towerCrown = t => ({ x: t.x, y: crownTop(t) - 6 });
+
+function launchCrow(state, e) {
+  const tower = e.pointAt;
+  e.pointAt = null;
+  if (!tower || !(state.towers || []).includes(tower)) return;
+  const from = shoulder(e);
+  e.raven = { tower, phase: 'out', t: 0, x: from.x, y: from.y, fx: from.x, fy: from.y, a: 0, dir: 1 };
+}
+
+// Lets the tower go, whatever the crow was doing.
+function freeCrow(e) {
+  if (e.raven && e.raven.tower) e.raven.tower.blinded = false;
+  e.raven = null;
+}
+
+const CIRCLE = { rx: 15, ry: 6, turn: 3.2 };   // the crow's ring over a tower, and how fast it goes round
+
+// Every frame he is on the board: his cooldowns, his crow and his flock.
+function crowWork(state, e, dt) {
+  const d = e.def;
+  if (e.pointCd > 0) e.pointCd = Math.max(0, e.pointCd - dt);
+  if (e.callCd > 0) e.callCd = Math.max(0, e.callCd - dt);
+
+  // BEATEN, and both his powers go with him: the tower can fire again and no more
+  // crows are called.
+  if (e.hp <= 0 || downed(e)) { freeCrow(e); e.flock = null; return; }
+
+  // THE FLOCK, one crow every `gap` seconds from a mouth of the road chosen at random.
+  if (e.flock && e.flock.left > 0) {
+    e.flock.t -= dt;
+    while (e.flock.left > 0 && e.flock.t <= 0) {
+      const routes = level.routes || [];
+      spawn(state, d.call.type, { route: (Math.random() * routes.length) | 0, s: 0 });
+      e.flock.left--;
+      e.flock.t += d.call.gap;
+    }
+    if (e.flock.left <= 0) e.flock = null;
+  }
+
+  const r = e.raven;
+  if (!r) return;
+  const p = d.point;
+  r.t += dt;
+  // The tower sold or gone from under it: back to him.
+  if (r.phase !== 'back' && !(state.towers || []).includes(r.tower)) {
+    if (r.tower) r.tower.blinded = false;
+    Object.assign(r, { phase: 'back', t: 0, fx: r.x, fy: r.y, tower: null });
+  }
+  if (r.phase === 'out') {
+    const to = towerCrown(r.tower), k = Math.min(1, r.t / p.flight);
+    const ease = k * k * (3 - 2 * k);
+    r.dir = to.x >= r.fx ? 1 : -1;
+    r.x = r.fx + (to.x + CIRCLE.rx - r.fx) * ease;
+    r.y = r.fy + (to.y - r.fy) * ease - Math.sin(Math.PI * k) * 18;
+    if (k >= 1) { Object.assign(r, { phase: 'circle', t: 0, a: 0 }); r.tower.blinded = true; }
+  } else if (r.phase === 'circle') {
+    const c = towerCrown(r.tower);
+    r.a += CIRCLE.turn * dt;
+    r.x = c.x + Math.cos(r.a) * CIRCLE.rx;
+    r.y = c.y + Math.sin(r.a) * CIRCLE.ry;
+    // Going round: faces the way it is moving along the ring.
+    r.dir = -Math.sin(r.a) >= 0 ? 1 : -1;
+    if (r.t >= p.blind) {
+      r.tower.blinded = false;
+      Object.assign(r, { phase: 'back', t: 0, fx: r.x, fy: r.y });
+    }
+  } else {
+    // BACK TO HIS SHOULDER, wherever he has walked to meanwhile.
+    const to = shoulder(e), k = Math.min(1, r.t / p.flight);
+    const ease = k * k * (3 - 2 * k);
+    r.dir = to.x >= r.fx ? 1 : -1;
+    r.x = r.fx + (to.x - r.fx) * ease;
+    r.y = r.fy + (to.y - r.fy) * ease - Math.sin(Math.PI * k) * 18;
+    if (k >= 1) e.raven = null;
   }
 }
 
@@ -494,6 +639,8 @@ function bossBeat(state, e, dt) {
       const m = d.rage.mend;
       e.hp = Math.min(e.maxHp, e.hp + e.maxHp * m.share * dt / m.seconds);
     }
+    // THE CROW LEAVES HIS ARM `launch` seconds into the pointing pose.
+    if (e.act === 'point' && !e.raven && d.point.seconds - e.actT >= d.point.launch) launchCrow(state, e);
     e.actT -= dt;
     if (e.actT <= 0) land(state, e);
     return true;
@@ -516,6 +663,8 @@ function bossBeat(state, e, dt) {
     begin(e, 'pause');
     return true;
   }
+  // THE CROW HARBINGER'S POWERS, on their health thresholds and their cooldowns.
+  if ((d.point || d.call) && e.hp > 0) return crowPowers(state, e);
   return false;
 }
 
@@ -616,6 +765,8 @@ export function updateEnemies(state, dt) {
 
     // THE BOSS'S SCRIPT, and it comes before everything else because a figure
     // standing still on a clock is not doing any of it. See bossBeat above.
+    // AND THE CROW HARBINGER'S CROW AND FLOCK, every frame, beat or no beat.
+    if (e.def.point || e.def.call) crowWork(state, e, dt);
     if ((e.def.rage || e.def.finale) && bossBeat(state, e, dt)) continue;
 
     // AND THE SHIELD GOES BEHIND HIS BACK when a man comes into view, which is the
@@ -1085,6 +1236,8 @@ export function updateEnemies(state, dt) {
       // to be released explicitly or a soldier would go on swinging at a corpse.
       unhook(e);
       e.foe = null;
+      freeCrow(e);
+      e.flock = null;
       begin(e, 'fall');
       return true;
     }

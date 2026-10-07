@@ -199,8 +199,11 @@ console.log('\nHow much room a figure takes up\n');
     // Nothing to compare for a creature with one drawing. See the note by the
     // stub list above, and the check further down that says which one that is.
     if (!at) continue;
+    // BY MORE THAN A SOURCE PIXEL. The Crow Harbinger's cast reaches 77.04 px from his
+    // feet against his walk's 76.99 — the same reach, drawn — and a twentieth of a
+    // pixel rounds away in the span, so it is not a creature this check is about.
     const drawnWider = at.trim[2] * Math.max(at.pivot[0], 1 - at.pivot[0])
-                     > d.spriteTrim[2] * Math.max(d.pivot[0], 1 - d.pivot[0]);
+                     > d.spriteTrim[2] * Math.max(d.pivot[0], 1 - d.pivot[0]) + 1;
     if (!drawnWider) continue;
     checked++;
     const calm = wide(stand(d));

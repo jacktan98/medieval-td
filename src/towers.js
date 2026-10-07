@@ -618,7 +618,10 @@ export function updateTowers(state, dt) {
     // tower's own ammunition. A special that throws something else — a Heavy Bolt,
     // Deadeye's ball — throws it from a tower whose ordinary shot already answered
     // this, and every one of them answers it the same way the ordinary one does.
-    const target = pickTarget(state.enemies, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode, reachesAir(t));
+    // BLINDED BY THE CROW HARBINGER'S CROW, circling its top: it sees nothing to fire
+    // at until the crow leaves. See crowWork in src/enemies.js.
+    const target = t.blinded ? null
+      : pickTarget(state.enemies, t.x, t.y, rangeOf(t), t.def.minRange, t.aimMode, reachesAir(t));
     if (target) t.aim = Math.atan2(target.y - t.y, target.x - t.x);
 
     if (framesOf(t.def, t)) stepCrew(state, t, dt, target);

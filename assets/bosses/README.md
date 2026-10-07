@@ -170,3 +170,27 @@ that fits one of those is wiring; one that does not is new machinery, and worth
 knowing which before you draw it.
 
 Expect a boss to move other numbers. Adding the Plague Doctor did.
+
+---
+
+## Crow Harbinger — the second boss, in eleven drawings
+
+All seven standing poses share one ground point — source **(242, 335)**, the centre of
+the shadow ellipse — and his fall and his body share **(186.5, 319)**, the shadow under
+the fallen body, pinned to the spot he stood on. See `crow_harbinger` in
+`src/data/waves.js`.
+
+| file | when it shows |
+|------|---------------|
+| `Crow_Harbinger_Default_With_Crow.png` | walking, his crow on his shoulder. Also the encyclopedia |
+| `Crow_Harbinger_Attack_With_Crow.png` | casting at a soldier |
+| `Crow_Harbinger_Default_Without_Crow.png` | walking while his crow is away blinding a tower |
+| `Crow_Harbinger_Attack_Without_Crow.png` | casting while it is away |
+| `Crow_Harbinger_Attack_Point_Tower.png` | Point Tower, the first moment: pointing, the crow still on his arm |
+| `Crow_Harbinger_Attack_Point_Tower_Self.png` | the rest of the pose, once the crow has flown — the same drawing without it |
+| `Crow_Harbinger_Attack_Point_Tower_Crow.png` | the crow alone, drawn flying to the tower, circling its top and back |
+| `Crow_Harbinger_Call_Crows.png` | Call Crows: 2s channelling, with the wind drawn live round him |
+| `Crow_Harbinger_Before_Dying.png` | out of health. 3s |
+| `Crow_Harbinger_Dead.png` | on the ground. 2s, then his corpse |
+| `Crow_Harbinger_Arcane_Projectile.png` | his bolt, flying head-first to the left as drawn |
+
