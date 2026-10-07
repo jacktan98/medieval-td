@@ -29,7 +29,8 @@ export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], w: 32, h: 50, alpha: 1, core
 // Heal drawing, as light on the ground: its colour (#74592E, that oval's brown); its
 // half-width and half-height (board px); how strong in the middle; and how far out it
 // stays nearly solid before thinning.
-export const HEAL_FLOOR = { rgb: [0x74, 0x59, 0x2E], w: 46, h: 14, alpha: 1, core: 0.6 };
+// 20% smaller than it first was, at the owner's word (46 x 14).
+export const HEAL_FLOOR = { rgb: [0x74, 0x59, 0x2E], w: 37, h: 11, alpha: 1, core: 0.6 };
 
 // The moment he turns: the ring's life and how far it spreads, and the board's shake —
 // how far (board px) and for how long.
@@ -58,4 +59,5 @@ export const UNIT_FX = {
 // about 0.8 of the Captain's mending one. #FFF3B3 and #FFEB7E, the drawing's own.
 // 20% smaller than it first was, at the owner's word (32 x 50).
 export const HOLY_GLOW = { rgb: [0xFF, 0xF3, 0xB3], w: 26, h: 40, alpha: 1, core: 0.6, mid: 0.3, foot: 6, pulse: 5 };
-export const HOLY_FLOOR = { rgb: [0xFF, 0xEB, 0x7E], w: 37, h: 11, alpha: 1, core: 0.6 };
+// 20% smaller than it first was, at the owner's word (37 x 11).
+export const HOLY_FLOOR = { rgb: [0xFF, 0xEB, 0x7E], w: 30, h: 9, alpha: 1, core: 0.6 };
