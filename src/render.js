@@ -34,6 +34,7 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON, locked, towerEntry, unitEntry } from './book.js';
 import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
 import { STORY } from './data/story.js';
+import { BOSS_FX, HEAL_GLOW, RAGE_BURST, RAGE_TINT, WEAPON_POP } from './data/bossfx.js';
 import { drawOverview } from './overview.js';
 import { drawHoly } from './holy.js';
 import { soundLevel } from './audio.js';
@@ -70,6 +71,18 @@ const DEBUG_MUZZLE = typeof location !== 'undefined' &&
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
 
+  // THE BOARD SHAKES AS THE BOSS TURNS — see bossShake. Everything on the board
+  // moves together, a hair enlarged so no edge shows; the HUD below does not.
+  boardClock = state.anim || 0;
+  const quake = bossShake(state);
+  ctx.save();
+  if (quake) {
+    const k = 1 + (2 * RAGE_BURST.shake) / 540;
+    ctx.translate(480 + quake[0], 270 + quake[1]);
+    ctx.scale(k, k);
+    ctx.translate(-480, -270);
+  }
+
   drawGround(ctx, state);
   drawPlots(ctx, state);
   // Every tower's ground shadow, on the ground and under the range rings — the
@@ -85,7 +98,6 @@ export function draw(ctx, state) {
   // spatter goes through that pass too — it is not solid, but it does have a
   // place on the board, and drawing it afterwards put it on top of buildings it
   // was thrown behind. See drawFigures.
-  boardClock = state.anim || 0;
   drawFigures(ctx, state);
   // And the one piece of scenery that is nearer the camera than anything standing
   // on the board — stage 5's bridge rail. After the pass rather than in it, which
@@ -105,6 +117,7 @@ export function draw(ctx, state) {
   drawShots(ctx, state);
   drawHits(ctx, state);
   drawRally(ctx, state);
+  ctx.restore();
   drawHud(ctx, state);
   drawInfo(ctx, state);
   drawMenu(ctx, state);
@@ -3336,6 +3349,10 @@ function drawEnemy(ctx, e) {
   // a blow landing, and he gets the lunge with it, which is exactly right for a
   // man putting his shoulder into a throw.
   let [frame, trim, pivot, fade] = enemyArt(e);
+  // THE THROWN WEAPONS HOP: for the first moment of the pause he is drawn as his body
+  // alone and the shield and bow as their own layer, lifted on an arc. See weaponHop.
+  const hop = weaponHop(e);
+  if (hop) { [frame, trim, pivot] = hop.body; fade = hop.weapons; }
   // THE BOMB THUG'S FUSE BURNS: the painted flame is lifted off his drawing and a live
   // one flickers in its place. See FUSE_FIRE.
   const fuse = frame === art.bomb && fuseParts('bomb');
@@ -3360,11 +3377,15 @@ function drawEnemy(ctx, e) {
   // note in drawSoldier and src/gesture.js.
   const [qx, qy] = channelShake(e);
   ctx.translate(e.x + dir * swingOut(e.thrust || 0) * ENEMY_LUNGE + flinch(e) + qx, e.y + qy);
+  // Behind him: the glow while he mends, and the ring as he turns.
+  bossUnderlay(ctx, e, dh);
   ctx.scale(mirror(e.def, dir), 1);
   if (banner) drawRallyCloth(ctx, banner, -pivot[0] * dw - sx * SCALE, -pivot[1] * dh - sy * SCALE, SCALE,
     (e.s || 0) * 0.37 + (e.lane || 0) * 1.7, e.hit || 0);
   ctx.drawImage(frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   flash(ctx, frame, e, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
+  // And the red flush as he turns enraged, over the drawing. See rageTint.
+  rageTint(ctx, e, frame, sx, sy, sw, sh, -pivot[0] * dw, -pivot[1] * dh, dw, dh);
   if (fuse) drawFuseFire(ctx, fuse, -pivot[0] * dw + (fuse.at.base[0] - sx) * SCALE,
     -pivot[1] * dh + (fuse.at.base[1] - sy) * SCALE, (e.s || 0) * 0.37 + (e.lane || 0) * 1.7);
   // AND THE LAYER THAT IS FADING, if this pose has one — the weapons the Captain
@@ -3376,12 +3397,118 @@ function drawEnemy(ctx, e) {
   // ghosting through a building fades his weapons out of the ghost rather than
   // painting them over it at full strength.
   if (fade) {
-    const [img2, t2, p2, alpha] = fade;
+    const [img2, t2, p2, alpha, lift = 0] = fade;
     const w2 = t2[2] * SCALE, h2 = t2[3] * SCALE;
     ctx.globalAlpha *= alpha;
-    ctx.drawImage(img2, t2[0], t2[1], t2[2], t2[3], -p2[0] * w2, -p2[1] * h2, w2, h2);
+    ctx.drawImage(img2, t2[0], t2[1], t2[2], t2[3], -p2[0] * w2, -p2[1] * h2 - lift, w2, h2);
   }
   ctx.restore();
+}
+
+// --- THE BOSS FIGHT'S EXTRA EFFECTS -------------------------------------------------
+//
+// Each one is switched in src/data/bossfx.js, and each one is drawn on top of the
+// fight rather than being part of it. Set its switch to false and it is gone.
+
+// WHEN HE TURNED ENRAGED, on the board's clock: noted the first frame he is drawn in
+// stage 2, which is the frame his mend finished (`land` in src/enemies.js). Kept on
+// the figure, so it is his own and goes when he does.
+function rageAge(e) {
+  if (!e.def.rage || e.stage !== 2) return null;
+  if (e.rageAt === undefined) e.rageAt = boardClock;
+  return boardClock - e.rageAt;
+}
+
+// The board's shake, as an offset, or null.
+function bossShake(state) {
+  if (!BOSS_FX.rageBurst) return null;
+  for (const e of state.enemies || []) {
+    const age = rageAge(e);
+    if (age === null || age >= RAGE_BURST.shakeSeconds) continue;
+    const a = RAGE_BURST.shake * (1 - age / RAGE_BURST.shakeSeconds);
+    return [a * Math.sin(age * 90), a * 0.6 * Math.sin(age * 71 + 1)];
+  }
+  return null;
+}
+
+// Under the figure: the mend's glow, and the turn's ring. Drawn in his own place on
+// the board, before the mirror, so neither is flipped.
+function bossUnderlay(ctx, e, dh) {
+  if (!e.def.rage) return;
+  if (BOSS_FX.healGlow && e.act === 'mend') {
+    const { rgb: [r, g, b], r: R, alpha, pulse } = HEAL_GLOW;
+    const total = e.def.rage.mend.seconds || 4;
+    const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
+    // Up in the first quarter second, out in the last, and breathing between.
+    const env = Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25);
+    const k = env * alpha * (0.75 + 0.25 * Math.sin(boardClock * pulse * Math.PI * 2 / 2));
+    const cy = -dh * 0.45;
+    const glow = ctx.createRadialGradient(0, cy, 0, 0, cy, R);
+    glow.addColorStop(0, `rgba(${r},${g},${b},${k})`);
+    glow.addColorStop(0.55, `rgba(${r},${g},${b},${k * 0.45})`);
+    glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(-R, cy - R, R * 2, R * 2);
+  }
+  const age = BOSS_FX.rageBurst ? rageAge(e) : null;
+  if (age !== null && age < RAGE_BURST.seconds) {
+    const k = age / RAGE_BURST.seconds;
+    const rr = RAGE_BURST.r * (1 - (1 - k) * (1 - k));
+    ctx.save();
+    ctx.strokeStyle = `rgba(216,38,28,${0.85 * (1 - k)})`;
+    ctx.lineWidth = RAGE_BURST.width * (1 - 0.5 * k);
+    ctx.beginPath();
+    ctx.ellipse(0, -2, rr, rr * 0.45, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// OVER the figure: the red flush as he turns, fading out.
+const redCopies = new Map();
+function redCopy(img) {
+  if (redCopies.has(img)) return redCopies.get(img);
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if (!w || !h) return null;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'source-atop';
+  g.fillStyle = RAGE_TINT.color;
+  g.fillRect(0, 0, w, h);
+  redCopies.set(img, c);
+  return c;
+}
+function rageTint(ctx, e, img, sx, sy, sw, sh, dx, dy, dw, dh) {
+  if (!BOSS_FX.rageTint || !img) return;
+  const age = rageAge(e);
+  if (age === null || age >= RAGE_TINT.seconds) return;
+  const red = redCopy(img);
+  if (!red) return;
+  ctx.save();
+  ctx.globalAlpha *= RAGE_TINT.alpha * (1 - age / RAGE_TINT.seconds);
+  ctx.drawImage(red, sx, sy, sw, sh, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+// THE SHIELD AND BOW, THROWN: for the first WEAPON_POP.seconds of the pause, his body
+// alone (the pause's own `self` drawing) and the weapons as their own layer, lifted on
+// a hop that lands where the pause drawing has them. The two layers are the pause
+// drawing taken apart to the pixel, so the landing is seamless.
+function weaponHop(e) {
+  if (!BOSS_FX.weaponPop || e.act !== 'pause' || !e.def.rage) return null;
+  const p = e.def.rage.pause, drop = p.drop;
+  if (!drop) return null;
+  const since = p.seconds - (e.actT || 0);
+  if (since < 0 || since >= WEAPON_POP.seconds) return null;
+  const body = art[drop.self.sprite], arms = art[drop.weapons.sprite];
+  if (!body || !arms) return null;
+  const k = since / WEAPON_POP.seconds;
+  return {
+    body: [body, drop.self.trim, drop.self.pivot],
+    weapons: [arms, drop.weapons.trim, drop.weapons.pivot, 1, WEAPON_POP.height * Math.sin(Math.PI * k)]
+  };
 }
 
 // THE CAPTAIN SHAKES AS HE MENDS, at the owner's word — "like he is channeling

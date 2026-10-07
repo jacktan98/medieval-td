@@ -1,5 +1,6 @@
 import { loadArt, ensureBoard, boardReady } from './assets.js';
 import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR } from './audio.js';
+import { BOSS_FX, SLOW_FINISH } from './data/bossfx.js';
 import { level, levels } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
@@ -28,6 +29,25 @@ import { canvasScale } from './data/ui.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
 const TOWER_ALERT_DELAY = 1;
+
+// THE SLOW FINISH, switched in src/data/bossfx.js: the frame a boss is beaten (his
+// `fall` beat begins) the whole board slows to SLOW_FINISH.speed for SLOW_FINISH.seconds
+// of real time, then eases back up. Returns the share of real time to step this frame.
+// Counted only while the game is running, so a pause holds it where it is.
+function finishSlow(state, real, running) {
+  if (!BOSS_FX.slowFinish) return 1;
+  for (const e of state.enemies) {
+    if (e.def.boss && e.act === 'fall' && !e.slowed) { e.slowed = true; state.slowT = 0; }
+  }
+  if (state.slowT === null || state.slowT === undefined) return 1;
+  const { speed, seconds, ease } = SLOW_FINISH;
+  const t = state.slowT;
+  if (running) state.slowT += real;
+  if (t < seconds) return speed;
+  if (t < seconds + ease) return speed + (1 - speed) * (t - seconds) / ease;
+  state.slowT = null;
+  return 1;
+}
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -269,6 +289,8 @@ function newGame() {
     // and the game seconds still to wait before it does.
     towersNoticed: false,
     towerWait: TOWER_ALERT_DELAY,
+    // The slow finish's clock, or null when it is not running. See finishSlow.
+    slowT: null,
     // Which of the card's stat icons is showing its name, or null.
     foeTip: null,
     // THE UPGRADES SCREEN, opened from the world map: whether it is up, the rung
@@ -361,14 +383,17 @@ function frame(now) {
   // THE NEW-ENEMY CARD STOPS THE GAME as the pause does, at the owner's word, so
   // the player can read it; closing it with its X lets the game run again.
   const reading = !!state.foeCard;
-  if (state.started && !state.paused && !reading && !state.result) {
-    for (let i = 0; i < state.speed; i++) step(state, real);
+  const running = state.started && !state.paused && !reading && !state.result;
+  // THE SLOW FINISH, when a boss is beaten — 1 the rest of the time.
+  const slow = finishSlow(state, real, running);
+  if (running) {
+    for (let i = 0; i < state.speed; i++) step(state, real * slow);
   }
   // THE BOARD'S OWN CLOCK, for what moves on it without being part of the game —
   // fires, flags, a waving hand. It runs while a game is on and stops dead on the
   // pause, at the owner's word: "All animations should be paused when pause button
   // is used." Real seconds, not game ones, so 2x does not set the fires racing.
-  if (state.started && !state.paused && !reading) state.anim = (state.anim || 0) + real;
+  if (state.started && !state.paused && !reading) state.anim = (state.anim || 0) + real * slow;
 
   // The moment a game ends, once. Outside the step because a result can be set
   // by either of two places — updateWaves for a win, the lives check for a loss —
