@@ -7159,7 +7159,7 @@ function bookCell(ctx, state, it, on) {
     drawRound(ctx, def.icon, cx, cy, ABILITY_ICON);
   } else {
     const d = it.boss ? shown(state, def) : def;
-    drawArt(ctx, d.sprite, d.spriteTrim, it, figureArt(d.spriteTrim, d.pivot, figureFit(d), !!d.boss));
+    drawArt(ctx, d.sprite, d.spriteTrim, it, figureArt(d.spriteTrim, d.pivot, figureFit(d), !!d.centreOnShadow));
   }
 }
 
@@ -7173,7 +7173,7 @@ function cellArt(state, it) {
     return { sprite: man.sprite, trim: man.trim, slot: figureArt(man.trim, man.pivot, figureFit(def)) };
   }
   const d = it.boss ? shown(state, def) : def;
-  return { sprite: d.sprite, trim: d.spriteTrim, slot: figureArt(d.spriteTrim, d.pivot, figureFit(d), !!d.boss) };
+  return { sprite: d.sprite, trim: d.spriteTrim, slot: figureArt(d.spriteTrim, d.pivot, figureFit(d), !!d.centreOnShadow) };
 }
 
 // THE LOCKED LOOK: the drawing's own shape in one dark ink, faint, under a padlock.

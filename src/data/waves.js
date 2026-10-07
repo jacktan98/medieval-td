@@ -1962,6 +1962,9 @@ export const enemyTypes = {
     },
     // He casts toward the left, as drawn.
     spriteFaces: -1,
+    // CENTRED ON HIS SHADOW in the encyclopedia and the info box medallion, at the
+    // owner's word, rather than on his box — his crow reaches out to one side.
+    centreOnShadow: true,
     dead: 'harbinger_dead',
     deadTrim: [137, 217, 168, 110],
     deadPivot: [0.295, 0.882],
