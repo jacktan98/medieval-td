@@ -13,10 +13,11 @@ export const BOSS_FX = {
 
 // AND THEIR NUMBERS, for tuning rather than removing.
 
-// The glow behind him while he mends: its colour (#362407, the thugs' own dark brown,
-// at the owner's word), how far it reaches (board px), how strong at its brightest,
-// and how fast it pulses (beats a second, roughly).
-export const HEAL_GLOW = { rgb: [0x36, 0x24, 0x07], r: 46, alpha: 0.8, pulse: 5 };
+// The glow behind him while he mends: its colour (#BAAC97, the grey of the radiance
+// painted round him in his Heal drawing, at the owner's word, so the two read as one
+// light), how far it reaches (board px), how strong at its brightest, and how fast it
+// pulses (beats a second, roughly).
+export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], r: 46, alpha: 0.8, pulse: 5 };
 
 // The moment he turns: the ring's life and how far it spreads, and the board's shake —
 // how far (board px) and for how long.
