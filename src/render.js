@@ -3358,7 +3358,8 @@ function drawEnemy(ctx, e) {
   // AND THE SAME TWO OFFSETS A SOLDIER GETS, for the same reasons and out of the
   // same file — the eased swing and the flinch away from the last blow. See the
   // note in drawSoldier and src/gesture.js.
-  ctx.translate(e.x + dir * swingOut(e.thrust || 0) * ENEMY_LUNGE + flinch(e), e.y);
+  const [qx, qy] = channelShake(e);
+  ctx.translate(e.x + dir * swingOut(e.thrust || 0) * ENEMY_LUNGE + flinch(e) + qx, e.y + qy);
   ctx.scale(mirror(e.def, dir), 1);
   if (banner) drawRallyCloth(ctx, banner, -pivot[0] * dw - sx * SCALE, -pivot[1] * dh - sy * SCALE, SCALE,
     (e.s || 0) * 0.37 + (e.lane || 0) * 1.7, e.hit || 0);
@@ -3381,6 +3382,23 @@ function drawEnemy(ctx, e) {
     ctx.drawImage(img2, t2[0], t2[1], t2[2], t2[3], -p2[0] * w2, -p2[1] * h2, w2, h2);
   }
   ctx.restore();
+}
+
+// THE CAPTAIN SHAKES AS HE MENDS, at the owner's word — "like he is channeling
+// energy". A fast tremble on two uneven beats each way, so it never settles into a
+// visible rhythm, growing over the beat from CHANNEL_SHAKE[0] to [1] board px as the
+// heal builds. On the board's clock, so it stops dead on the pause like everything
+// else alive on the board. The body only: his ground point does not move, nor his
+// health bar, which is drawn from `e.x` elsewhere.
+const CHANNEL_SHAKE = [0.7, 1.6];
+function channelShake(e) {
+  if (e.act !== 'mend' || !e.def.rage) return [0, 0];
+  const total = e.def.rage.mend.seconds || 4;
+  const built = Math.max(0, Math.min(1, 1 - (e.actT || 0) / total));
+  const a = CHANNEL_SHAKE[0] + (CHANNEL_SHAKE[1] - CHANNEL_SHAKE[0]) * built;
+  const t = boardClock;
+  return [a * (0.65 * Math.sin(t * 57) + 0.35 * Math.sin(t * 89 + 1.3)),
+          a * 0.5 * (0.6 * Math.sin(t * 71 + 0.7) + 0.4 * Math.sin(t * 103))];
 }
 
 // THE BOMB THUG'S LIT FUSE, live — and the fuse of the bomb he drops. The owner's
