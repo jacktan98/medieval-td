@@ -2304,7 +2304,7 @@ export const defaultGap = type => {
 // than walking into the line — the same doubling map 3 shows, for the same
 // reason, and see the grid over wavesLong for the mechanism. The grid above is
 // still the right search; what it is missing is that every one of its `BROKE`
-// judgements came from five seeds. `node tools/sweep.mjs 2` runs twenty now.
+// judgements came from five seeds. `node tools/sweep.mjs m2` runs twenty now.
 // MAP 2'S TABLE is written out with map 1's — see THE FIRST THREE MAPS' TABLES.
 
 // MAP 3'S TEN, AND THEY ARE SMALLER THAN THE EIGHT ABOVE, NOT BIGGER.

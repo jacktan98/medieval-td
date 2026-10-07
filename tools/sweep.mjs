@@ -63,12 +63,13 @@
 // says archery alone wins, the level is an archery level and needs a lever
 // moved — the heavy's hp, which is the one the difficulty is held with.
 
-import { run, A, B } from './sim.mjs';
+import { run, A, B, levelIndex } from './sim.mjs';
 import { level, useLevel } from '../src/level.js';
 
-// Which map to sweep. `node tools/sweep.mjs 2` for the second.
-const WHICH = Number(process.argv[2] || 1);
-useLevel(WHICH - 1);
+// Which board to sweep, as tools/sim.mjs names them: `node tools/sweep.mjs m2` for
+// The Fork, `node tools/sweep.mjs 3` for stage 3. See levelIndex there.
+const WHICH = process.argv[2] || 'm1';
+useLevel(levelIndex(WHICH));
 console.log(`level ${WHICH}: ${level.name}`);
 
 // Which plots are worth measuring. Map 1's plots 2 and 5 are more than 130px
@@ -81,10 +82,10 @@ console.log(`level ${WHICH}: ${level.name}`);
 // rather than typed. Map 2's nine sit 79 to 91px off the road and map 3's ten
 // sit 68 to 86 — none of them is a dead plot, and hard-coding nine indices
 // quietly measured only nine of map 3's ten.
-const DEAD = { 1: [2, 5] };
+const DEAD = { m1: [2, 5] };
 const USABLE = level.plots
   .map((_, i) => i)
-  .filter(i => !(DEAD[WHICH] || []).includes(i));
+  .filter(i => !(DEAD[level.id] || []).includes(i));
 
 console.log(`  ${USABLE.length} usable plots of ${level.plots.length}, ` +
   `${level.routes.length} road(s), ${level.waves.length} waves`);

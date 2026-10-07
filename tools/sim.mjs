@@ -11,19 +11,22 @@
 // and it should keep reading "won 20/20" — if it moves, something changed that
 // you did not mean to change.
 
-import { updateEnemies } from '../src/enemies.js';
-import { updateTowers } from '../src/towers.js';
+import { updateEnemies, spawn } from '../src/enemies.js';
+import { updateTowers, prebuiltOn } from '../src/towers.js';
 import { updateShots } from '../src/projectiles.js';
 import { updateWaves } from '../src/waves.js';
-import { updateUnits, makeUnits } from '../src/units.js';
+import { updateUnits, makeUnits, makeGarrison, addGarrison } from '../src/units.js';
+import { updateBombs } from '../src/bombs.js';
+import { makeVillagers, updateVillagers } from '../src/villagers.js';
 import { updateCorpses } from '../src/corpses.js';
 import { updateSplats } from '../src/blood.js';
 import { updateImpacts } from '../src/impacts.js';
 import { families } from '../src/data/towers.js';
-import { level, useLevel } from '../src/level.js';
+import { level, useLevel, levels } from '../src/level.js';
 import { openingDelay } from '../src/data/waves.js';
 import { ABILITY_COST } from '../src/data/abilities.js';
 import { DIFFICULTIES, scaleWaves, startingGold } from '../src/data/difficulty.js';
+import { STAGES } from '../src/data/overview.js';
 
 // WHICH DIFFICULTY THE SIM IS MEASURING. Every balance note in data/waves.js was
 // written before difficulty existed, so the tables are the middle and the sim
@@ -74,7 +77,14 @@ function newState() {
     waves: scaleWaves(level.waves, difficulty),
     gold: startingGold(level.startGold, difficulty),
     lives: level.startLives,
-    towers: [], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [],
+    // THE BOARD AS THE GAME OPENS IT, through newGame's own helpers: the towers a
+    // stage starts with, their squads, the figures that belong to no tower, and
+    // the villagers. The sim used to start every board empty, which was right when
+    // no board had any of these and quietly wrong once stage 2 opened with a tier 3
+    // barracks — a stage measured without the help it is designed around.
+    towers: prebuiltOn(level, families),
+    enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [],
+    smoke: [], bombs: [], foeAlerts: [], slain: 0,
     waveIndex: 0, spawned: 0, timer: openingDelay,
     // Set explicitly rather than left undefined: the game holds everything until
     // the player presses Start, and a headless run has no player. If this is ever
@@ -84,12 +94,24 @@ function newState() {
   };
 }
 
+// The rungs this board sells, as the build menu filters them: up to the stage's
+// `maxTier`, and past it only what `allow` names. See `capped` in src/menu.js.
+const onSale = def => !level.maxTier || def.tier <= level.maxTier || (level.allow || []).includes(def.name);
+
 function build(state, entry) {
   const fam = families.find(f => f.id === entry.fam);
   const def = fam.tiers[0];
+  const plot = level.plots[entry.plot];
+  // A PLOT THE BOARD ALREADY STANDS ON: a plan naming it takes over the tower that
+  // is there when the family matches — its ladder is climbed as any other's — and
+  // otherwise leaves it. Selling a free tower to build another is not a plan.
+  const there = state.towers.find(t => t.plot === plot);
+  if (there) {
+    if (there.fam.id === entry.fam) { there.wantTier = entry.tier; there.wantAbil = entry.abil || []; }
+    return true;
+  }
   if (state.gold < def.cost) return false;
 
-  const plot = level.plots[entry.plot];
   const t = {
     plot, fam, def,
     x: plot.x, y: plot.y,
@@ -114,9 +136,10 @@ function build(state, entry) {
 
 function upgrade(state) {
   for (const t of state.towers) {
+    if (t.wantTier === undefined) continue;   // a prebuilt tower no plan has named
     while (t.def.tier - 1 < t.wantTier) {
       const next = t.fam.tiers[t.def.tier];
-      if (!next || state.gold < next.cost) break;
+      if (!next || !onSale(next) || state.gold < next.cost) break;
       state.gold -= next.cost;
       t.def = next;
       t.spent += next.cost;
@@ -126,7 +149,7 @@ function upgrade(state) {
     // THEN THE ABILITIES, and only ones the tier standing there actually offers —
     // a plan that asks a tier 3 for Deadeye is asking for something the menu would
     // never draw, and buying it anyway would measure a game nobody can play.
-    for (const id of t.wantAbil) {
+    for (const id of t.wantAbil || []) {
       if (t.abilities.includes(id)) continue;
       if (!(t.def.abilities || []).includes(id)) break;
       if (state.gold < ABILITY_COST) break;
@@ -183,6 +206,10 @@ export function run(plan, seed = 1, patience = 1) {
 
 function play(plan, patience = 1) {
   const state = newState();
+  // After the state exists, as newGame does it: each of these pushes onto it.
+  for (const t of state.towers) makeUnits(state, t);
+  makeGarrison(state, level);
+  makeVillagers(state, level);
   const pending = [...plan];
   let time = 0;
 
@@ -199,6 +226,7 @@ function play(plan, patience = 1) {
     updateEnemies(state, DT);    // is already held when movement is decided
     updateTowers(state, DT);
     updateShots(state, DT);
+    updateBombs(state, DT);      // a fuse that runs out takes soldiers with it
     updateCorpses(state, DT);    // decoration, but kept so this stays the game
     updateSplats(state, DT);
     // Decoration too, and kept for the same reason: a plague doctor's spill is
@@ -206,6 +234,21 @@ function play(plan, patience = 1) {
     // without this the list grows for the whole run and the sim stops being the
     // game it claims to be.
     updateImpacts(state, DT);
+    // AND THE VILLAGERS, who on some boards are part of the fight: stage 12's man
+    // who takes up a musket, and Dark Hollow's who walk onto the road as thugs. The
+    // same two hand-offs step() in src/main.js makes, minus the selection.
+    updateVillagers(state, DT);
+    const vp = state.villagerPlay;
+    if (vp && vp.recruit) {
+      const r = vp.recruit;
+      vp.recruit = null;
+      const u = addGarrison(state, r, (level.garrison || []).length, level.id);
+      if (r.aim) u.hold = r.aim;
+    }
+    if (vp && vp.turned) {
+      for (const t of vp.turned) spawn(state, t.type, { route: t.route, s: t.s, quiet: t.quiet });
+      vp.turned = null;
+    }
     if (state.lives <= 0) state.result = 'lost';
     time += DT;
   }
@@ -297,7 +340,7 @@ function play(plan, patience = 1) {
 //
 // PER LEVEL, because a plot index means a different place on each map and a
 // shopping list is only meaningful against the map it was swept on. Run
-// `node tools/sweep.mjs 2` after redrawing map 2 and paste its rows here.
+// `node tools/sweep.mjs m2` after redrawing map 2 and paste its rows here.
 // EXPORTED so an experiment can run the real scenarios instead of retyping
 // them. Retyping is how a damage sweep spent an afternoon measuring map 2's
 // builds on map 1: the plot indices are per-map and the two lists look alike.
@@ -417,7 +460,7 @@ m2: {
   'under-built     (expect LOSS)':  [A(2, 0)]
 },
 
-// Map 3, from `node tools/sweep.mjs 3`. ELEVEN TOWERS, not six, and that is the
+// Map 3, from `node tools/sweep.mjs m3`. ELEVEN TOWERS, not six, and that is the
 // map rather than a change of convention: its roads never meet, so six here is
 // three per road where six on map 1 all shoot at the one road. The sweep now
 // uses every plot the map has rather than a fixed ten — see SIZE there. Tuning this
@@ -471,7 +514,7 @@ m2: {
 //
 // See the pure-build re-check in tools/sweep.mjs, which runs twenty seeds.
 //
-// A stale scenario list is worse than no list. Re-run `node tools/sweep.mjs 3`
+// A stale scenario list is worse than no list. Re-run `node tools/sweep.mjs m3`
 // and paste after any redraw, not just after a rule change.
 m3: {
   'ALL archery x11 (expect LOSS)':  [A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10)],
@@ -520,7 +563,51 @@ m3: {
 }
 };
 
-// Which map to balance. `node tools/sim.mjs 2` runs the second one.
+// WHICH BOARD, BY STAGE NUMBER — the number on the world map. It used to be the
+// board's place in `levels`, and that broke the day the stages were reordered:
+// Oakhaven Village went to the front, `node tools/sim.mjs` ran it, found no
+// scenarios and threw, and the three boards the hand-picked lists below were written
+// for had moved to the end of the list, off the road.
+//
+// So `node tools/sim.mjs 3` is stage 3 (Winchester Entrance), and those three old
+// boards, which no stage leads to, are named by id: `m1` The Bend, `m2` The Fork,
+// `m3` Two Rivers. Shared with tools/sweep.mjs, which takes the same argument.
+export function levelIndex(arg = '1') {
+  const id = String(arg);
+  if (/^m\d+$/.test(id)) {
+    const i = levels.findIndex(l => l.id === id);
+    if (i < 0) throw new Error(`no board ${id}: there are ${levels.map(l => l.id).join(', ')}`);
+    return i;
+  }
+  const stage = STAGES[Number(id) - 1];
+  if (!stage || stage.level === null) {
+    throw new Error(`no stage ${id}: stages run 1 to ${STAGES.filter(s => s.level !== null).length}, or name a board as m1, m2, m3`);
+  }
+  return stage.level;
+}
+
+// A MAP WITH NO HAND-PICKED LIST gets these: each family on every plot, and the
+// two families most builds are made of split down the middle. They are not tuned
+// readings — sweep that map and paste a list into byLevel for those — but they
+// mean every map runs rather than throwing, and a family that suddenly wins or
+// loses everything stands out.
+//
+// UP TO TIER 4 where the board sells it (the first of each fork), because that is
+// how a stage is played: a list that stopped at tier 3 measured a player who never
+// upgraded past the middle, and on the later stages everything lost.
+export function generic(n) {
+  const all = f => Array.from({ length: n }, (_, i) => f(i));
+  return {
+    [`ALL archery x${n}`]:   all(i => A(i, 3)),
+    [`ALL barracks x${n}`]:  all(i => B(i, 3)),
+    [`ALL siege x${n}`]:     all(i => S(i, 3)),
+    [`ALL monastery x${n}`]: all(i => M(i, 3)),
+    [`MIX archery + barracks, alternating`]: all(i => (i % 2 ? B(i, 3) : A(i, 3))),
+    'under-built     (expect LOSS)': [A(0, 0)]
+  };
+}
+
+// Which board to balance: `node tools/sim.mjs 3` runs stage 3, `node tools/sim.mjs m2` The Fork.
 //
 // Only when this file IS the program. It used to select the level at import
 // time from process.argv, which quietly broke every other script that imports
@@ -529,17 +616,16 @@ m3: {
 // with map 2's plot indices. Two hours of "the second map is unwinnable" came
 // out of that.
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const which = Number(process.argv[2] || 1);
-  useLevel(which - 1);
-  console.log(`level ${which}: ${level.name}\n`);
+  const which = process.argv[2] || '1';
+  useLevel(levelIndex(which));
+  console.log(`${/^m/.test(which) ? `board ${which}` : `stage ${which}`}: ${level.name} (${level.id})\n`);
 
   // Five battles per build, not one. See mulberry32 above: with lanes in, a
   // single run is a single battle, and the spread between them is wide enough
   // to flip a verdict.
   const SEEDS = [1, 2, 3, 4, 5];
 
-  const scenarios = byLevel[level.id];
-  if (!scenarios) throw new Error(`no scenarios for level ${level.id}`);
+  const scenarios = byLevel[level.id] || generic(level.plots.length);
 
   for (const [label, plan] of Object.entries(scenarios)) {
     const rs = SEEDS.map(s => run(plan, s));
