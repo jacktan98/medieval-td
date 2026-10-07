@@ -3438,19 +3438,8 @@ function bossShake(state) {
 function bossUnderlay(ctx, e, dh) {
   if (!e.def.rage) return;
   if (BOSS_FX.healGlow && e.act === 'mend') {
-    const { rgb: [r, g, b], r: R, alpha, pulse } = HEAL_GLOW;
-    const total = e.def.rage.mend.seconds || 4;
-    const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
-    // Up in the first quarter second, out in the last, and breathing between.
-    const env = Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25);
-    const k = env * alpha * (0.75 + 0.25 * Math.sin(boardClock * pulse * Math.PI * 2 / 2));
-    const cy = -dh * 0.45;
-    const glow = ctx.createRadialGradient(0, cy, 0, 0, cy, R);
-    glow.addColorStop(0, `rgba(${r},${g},${b},${k})`);
-    glow.addColorStop(0.5, `rgba(${r},${g},${b},${k * 0.7})`);
-    glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
-    ctx.fillStyle = glow;
-    ctx.fillRect(-R, cy - R, R * 2, R * 2);
+    const dome = healDome(e, dh);
+    if (dome) ctx.drawImage(dome.c, dome.x, dome.y, dome.w, dome.h);
   }
   const age = BOSS_FX.rageBurst ? rageAge(e) : null;
   if (age !== null && age < RAGE_BURST.seconds) {
@@ -3513,6 +3502,53 @@ function softDome(img) {
   } catch { out = null; }
   softCache.set(img, out);
   return out;
+}
+
+// THE HEAL GLOW, DOME-SHAPED: a circle of light squeezed into a tall oval round his
+// middle, almost solid out to `core` of the way and thinning after, and standing on
+// the ground — everything below his feet gone, with the last `foot` px above them
+// fading in, so there is no hard line where it meets the ground. Painted on a small
+// canvas of its own each frame, which is what lets the foot be faded rather than cut.
+// Returns the canvas and where it goes, relative to his feet.
+const domeCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+function healDome(e, dh) {
+  if (!domeCanvas) return null;
+  const { rgb: [r, g, b], w, h, alpha, core, mid, foot, pulse } = HEAL_GLOW;
+  const total = e.def.rage.mend.seconds || 4;
+  const into = Math.min(1, Math.max(0, 1 - (e.actT || 0) / total));
+  // Up in the first quarter second, out in the last, and breathing between — the
+  // breath only in the outer part, so the middle stays almost solid throughout.
+  const env = Math.min(1, into * total / 0.25, (e.actT || 0) / 0.25);
+  const breath = 0.85 + 0.15 * Math.sin(boardClock * pulse * Math.PI);
+  const k = env * alpha;
+  if (k <= 0) return null;
+  const K = 3;                                   // drawn at 3x, for a phone's screen
+  const cy = dh * mid;                           // his middle, up from his feet
+  const W = 2 * w, H = Math.ceil(cy + h);        // the box from the dome's top to his feet
+  domeCanvas.width = W * K; domeCanvas.height = H * K;
+  const c = domeCanvas.getContext('2d');
+  c.scale(K, K);
+  c.save();
+  c.translate(w, H - cy);
+  c.scale(1, h / w);
+  const glow = c.createRadialGradient(0, 0, 0, 0, 0, w);
+  glow.addColorStop(0, `rgba(${r},${g},${b},${k})`);
+  glow.addColorStop(core, `rgba(${r},${g},${b},${k * 0.92})`);
+  glow.addColorStop(core + (1 - core) * 0.5, `rgba(${r},${g},${b},${k * 0.45 * breath})`);
+  glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  c.fillStyle = glow;
+  c.beginPath();
+  c.arc(0, 0, w, 0, Math.PI * 2);
+  c.fill();
+  c.restore();
+  // The foot, faded in rather than cut.
+  c.globalCompositeOperation = 'destination-out';
+  const fade = c.createLinearGradient(0, H - foot, 0, H);
+  fade.addColorStop(0, 'rgba(0,0,0,0)');
+  fade.addColorStop(1, 'rgba(0,0,0,1)');
+  c.fillStyle = fade;
+  c.fillRect(0, H - foot, W, foot);
+  return { c: domeCanvas, x: -w, y: -H + 2, w: W, h: H };
 }
 
 // OVER the figure: the red flush as he turns, fading out.

@@ -14,11 +14,14 @@ export const BOSS_FX = {
 
 // AND THEIR NUMBERS, for tuning rather than removing.
 
-// The glow behind him while he mends: its colour (#BAAC97, the grey of the radiance
-// painted round him in his Heal drawing, at the owner's word, so the two read as one
-// light), how far it reaches (board px), how strong at its brightest, and how fast it
-// pulses (beats a second, roughly).
-export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], r: 54, alpha: 1, pulse: 5 };
+// The glow behind him while he mends, DOME-SHAPED, at the owner's word: a tall oval
+// of light round his middle, cut flat just under his feet like the radiance painted in
+// his Heal drawing. Its colour (#BAAC97, that radiance's grey); its half-width and
+// half-height (board px); how strong it is in the middle; how far out (a share of the
+// way to its edge) it stays nearly solid before thinning; where its middle sits (a
+// share of his height up from his feet); how far (board px) its flat foot fades in
+// over, so it stands on the ground without a hard line; and how fast it pulses.
+export const HEAL_GLOW = { rgb: [0xBA, 0xAC, 0x97], w: 40, h: 62, alpha: 1, core: 0.6, mid: 0.3, foot: 8, pulse: 5 };
 
 // The painted radiance's fade: its colour in the drawing, how close a pixel must be
 // to it to count, and how far in from its edge (source px) it takes to reach full.
