@@ -1986,6 +1986,9 @@ export const enemyTypes = {
       range: 200,
       // ONE BOLT A SECOND, at the owner's word.
       cd: 1,
+      // AND HE STANDS TO CAST: never walking while anyone is in his reach. See the
+      // standoff in src/enemies.js.
+      plant: true,
       damage: 120,
       pierce: 2,
       ammo: arcaneBolt
