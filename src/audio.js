@@ -913,6 +913,17 @@ export const GAIN = {
   captain_battle: 0.76,
   captain_healed: 0.804,
   captain_kills: 0.767,
+  // The Crow Harbinger's, at the owner's word, the same as the Captain's: 300 against
+  // a voice's 100, his kill line 400. Measured the same way. Point Tower is a quiet
+  // recording that GAIN_MAX holds back, so its trim is over 1, as the entrance's is.
+  harbinger_enters: 0.891,
+  harbinger_point: 1.169,
+  harbinger_call: 0.854,
+  harbinger_dying: 0.732,
+  harbinger_kills: 0.859,
+  // And his wind, 60 against a voice's 100 — on the background bus, so 0.12 at the
+  // clip for 0.049 at the speaker, where the battle's other sounds sit at 0.036.
+  harbinger_wind: 1.333,
   // And the shield taking a hit, a little under the shots (40 against their 45) now
   // that it sounds on every one.
   defend_walking: 0.891
