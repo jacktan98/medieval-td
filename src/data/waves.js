@@ -2011,7 +2011,12 @@ export const enemyTypes = {
       cooldown: 20,
       range: 200,
       families: ['archery', 'monastery', 'siege'],
-      flight: 0.8,
+      // HOW FAST HIS CROW FLIES to the tower and back, px a second — slower, at the
+      // owner's word: it was a fixed 0.8s whatever the distance, which across the board
+      // from stage 16's balcony was a streak. At least `flightMin` seconds.
+      fly: 100, flightMin: 1,
+      // And the tower is blind for `blind` seconds FROM THE MOMENT THE CROW BEGINS TO
+      // CIRCLE IT, not from when it set off (see crowWork).
       blind: 10
     },
     // CALL CROWS, below half and every 20 seconds: he stands channelling for `seconds`

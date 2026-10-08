@@ -610,10 +610,13 @@ function crowWork(state, e, dt) {
   // The tower sold or gone from under it: back to him.
   if (r.phase !== 'back' && !(state.towers || []).includes(r.tower)) {
     if (r.tower) r.tower.blinded = false;
-    Object.assign(r, { phase: 'back', t: 0, fx: r.x, fy: r.y, tower: null });
+    Object.assign(r, { phase: 'back', t: 0, dur: 0, fx: r.x, fy: r.y, tower: null });
   }
   if (r.phase === 'out') {
-    const to = towerCrown(r.tower), k = Math.min(1, r.t / p.flight);
+    const to = towerCrown(r.tower);
+    // Its flight time set once, from how far it has to go. See `fly` on his def.
+    if (!r.dur) r.dur = Math.max(p.flightMin, Math.hypot(to.x + CIRCLE.rx - r.fx, to.y - r.fy) / p.fly);
+    const k = Math.min(1, r.t / r.dur);
     const ease = k * k * (3 - 2 * k);
     r.dir = to.x >= r.fx ? 1 : -1;
     r.x = r.fx + (to.x + CIRCLE.rx - r.fx) * ease;
@@ -634,11 +637,13 @@ function crowWork(state, e, dt) {
     r.dir = -Math.sin(r.a) >= 0 ? 1 : -1;
     if (r.t >= p.blind) {
       r.tower.blinded = false;
-      Object.assign(r, { phase: 'back', t: 0, fx: r.x, fy: r.y });
+      Object.assign(r, { phase: 'back', t: 0, dur: 0, fx: r.x, fy: r.y });
     }
   } else {
     // BACK TO HIS SHOULDER, wherever he has walked to meanwhile.
-    const to = shoulder(e), k = Math.min(1, r.t / p.flight);
+    const to = shoulder(e);
+    if (!r.dur) r.dur = Math.max(p.flightMin, Math.hypot(to.x - r.fx, to.y - r.fy) / p.fly);
+    const k = Math.min(1, r.t / r.dur);
     const ease = k * k * (3 - 2 * k);
     r.dir = to.x >= r.fx ? 1 : -1;
     r.x = r.fx + (to.x - r.fx) * ease;

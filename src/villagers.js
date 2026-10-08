@@ -1547,6 +1547,7 @@ function musterRound(state, vp, m, dt) {
 //          the spot he joins it — and is a Dark Crow there (`vp.turned`).
 // His drawing is `v.look`: 'perch', then 'flying' — see drawVillager in render.js.
 const PERCH_K = (9.5 / 74) / SCALE;     // the painted crow's size, as a share of a road crow's
+const CROW_FLAP = 0.5, CROW_GLIDE = 0.8;  // seconds of one wingbeat, and of the glide after it
 function perchRound(state, vp, dt) {
   vp.hollow = vp.hollow || {};
   const crow = enemyTypes.crow;
@@ -1566,7 +1567,7 @@ function perchRound(state, vp, dt) {
         // Where he joins the road, and where his body is when he gets there: a crow's
         // flying height above it, as every crow on the road is drawn.
         const j = joinAt(p.route, p.at);
-        Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j, dist: 0,
+        Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j,
                            dur: Math.max(0.6, Math.hypot(j.x - v.x, j.y - v.y) / crow.speed) });
         v.look = 'flying'; v.g = 900;
         // His wings as he goes — the whole recording, one at a time, as a crow's on the
@@ -1582,8 +1583,11 @@ function perchRound(state, vp, dt) {
       v.y = c.fy + (c.ty - c.fy) * ease - Math.sin(Math.PI * k) * 26;
       // Facing the way he flies: the drawings face left, so heading right is mirrored.
       if (Math.abs(v.x - was.x) > 0.01) v.flip = v.x > was.x;
-      c.dist += Math.max(Math.hypot(v.x - was.x, v.y - was.y), crow.speed * dt);
-      v.flyDist = c.dist;
+      // ONE WINGBEAT, THEN A GLIDE, at the owner's word — flapping all the way, his head
+      // bobbed with every stroke. A beat is the four flying drawings in `FLAP` seconds;
+      // the glide holds the wings level (the second drawing) for `GLIDE`, and again.
+      const cyc = c.t % (CROW_FLAP + CROW_GLIDE), stride = crow.flying.stride;
+      v.flyDist = cyc < CROW_FLAP ? (cyc / CROW_FLAP) * 4 * stride : stride;
       // From the size he is painted at on the merlon up to a road crow's, over the
       // first third of the flight. See PERCH in src/render.js.
       v.grow = PERCH_K + (1 - PERCH_K) * Math.min(1, k * 3);
